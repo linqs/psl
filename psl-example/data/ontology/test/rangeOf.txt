@@ -1,0 +1,14 @@
+o1provides	o1service&products
+o1buys	o1service&products
+o1produces	o1service&products
+o1helps	o1customers
+o1sellsto	o1customers
+o1interacts	o1customers
+o1workfor	o1organization
+
+o2develop	o2products&services
+o2worksfor	o2company
+o2buys	o2products&Services
+o2interactswith	o2customer
+o2helps	o2customer
+o2sells	o2customer

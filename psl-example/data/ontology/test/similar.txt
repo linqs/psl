@@ -1,0 +1,19 @@
+o1provides	o2develop
+o1buys	o2buys
+o1workfor	o2worksfor
+o1interacts	o2interactswith
+o1helps	o2helps
+o1sellsto	o2sells
+	
+o1organization	o2company
+o1customers	o2customer
+o1service&products	02products&services
+o1customers	o2customer
+o1employees	o2employee
+o1software	o2softwaredev
+o1hardware	o2hardware
+o1developer	o2technician
+o1salesperson	o2sales
+
+o1itservices	o2itconsulting
+o1finance	o2accountant

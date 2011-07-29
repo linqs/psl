@@ -1,0 +1,18 @@
+o1software	o1service&products
+o1hardware	o1service&products
+o1itservices	o1service&products
+
+o1developer	o1employees
+o1salesperson	o1employees
+o1finance	o1employees
+
+o2softwaredev	o2products&services
+o2hardware	o2products&services
+o2itconsulting	o2products&services
+
+o2technician	o2employee
+o2sales	o2employee
+o2accountant	o2employee
+
+
+

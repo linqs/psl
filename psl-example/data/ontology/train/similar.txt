@@ -1,0 +1,19 @@
+o1offers	o2develop	1.0
+o1purchases	o2purchases	1.0
+o1workfor	o2worksfor	1.0
+o1interacts	o2interactswith	1.0
+o1helps	o2helps	1.0
+o1sellsto	o2sells	1.0
+	
+o1org	o2enterprise	1.0
+o1clients	o2client	1.0
+o1service&products	02products&services	1.0
+o1customers	o2customer	1.0
+o1employees	o2employee	1.0
+o1software	o2softwaredev	1.0
+o1hardware	o2hardware	1.0
+o1developer	o2technician	1.0
+o1salesperson	o2sales	1.0
+
+o1itservices	o1itconsulting	1.0
+o1finance	o1accountant	1.0

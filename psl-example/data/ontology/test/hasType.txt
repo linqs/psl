@@ -1,0 +1,36 @@
+o1provides	property
+o1buys	property
+o1produces	property
+o1helps	property
+o1sellsto	property
+o1interacts	property
+o1workfor	property
+
+o1organization	class
+o1service&products	class
+o1software	class
+o1hardware	class
+o1itservices	class
+o1customers	class
+o1developer	class
+o1salesperson	class
+o1finance	class
+o1employees	class
+
+o2develop	property
+o2worksfor	property
+o2buys	property
+o2interactswith	property
+o2helps	property
+o2sells	property
+
+o2company	class
+o2products&services	class
+o2softwaredev	class
+o2hardware	class
+o2itconsulting	class
+o2customer	class
+o2employee	class
+o2technician	class
+o2sales	class
+o2accountant	class

@@ -1,0 +1,14 @@
+o1offers	o1org
+o1purchases	o1clients
+o1produces	o1developer
+o1helps	o1developer
+o1sellsto	o1salesperson
+o1interacts	o1employees
+o1workfor	o1employees
+
+o2develop	o2enterprise
+o2worksfor	o2employee
+o2purchases	o2client
+o2interactswith	o2employee
+o2helps	o2technician
+o2sells	o2sales
