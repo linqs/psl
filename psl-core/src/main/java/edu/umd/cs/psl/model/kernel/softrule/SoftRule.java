@@ -100,9 +100,12 @@ public class SoftRule extends GroundCompatibilityKernel {
 	@Override
 	public FunctionTerm getFunctionDefinition() {
 		assert numGroundings>=0;
+		return getFunctionDefinition(getWeight()*numGroundings);
+	}
+	
+	private FunctionTerm getFunctionDefinition(double multiplier) {
 		Formula f;
 		Atom a;
-		double multiplier = getWeight()*numGroundings;
 		double constant = 0.0;
 		FunctionSum sum = new FunctionSum();
 		
@@ -151,7 +154,7 @@ public class SoftRule extends GroundCompatibilityKernel {
 	}
 	
 	public double getTruthValue() {
-		return 1 - getFunctionDefinition().getValue()/(numGroundings*getWeight());
+		return 1 - getFunctionDefinition(1.0).getValue();
 	}
 
 	@Override
