@@ -109,6 +109,14 @@
 			<artifactId>sqlbuilder</artifactId>
 			<version>2.0.6</version>
 		</dependency>
+
+		<!-- testing dependencies -->
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.5</version>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 </project>
 

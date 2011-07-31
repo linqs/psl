@@ -1,0 +1,10 @@
+<archetype>
+	<id>psl-archetype-groovy</id>
+	<allowPartial>true</allowPartial>
+	<sources>
+		<source>src/main/java/App.groovy</source>
+	</sources>
+	<resources>
+		<resource>src/main/resources/log4j.properties</resource>
+	</resources>
+</archetype>
