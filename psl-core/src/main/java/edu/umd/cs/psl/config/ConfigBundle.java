@@ -16,26 +16,15 @@
  */
 package edu.umd.cs.psl.config;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-public class ConfigBundle {
+/**
+ * Encapsulates a set of configuration options organized by keys.
+ */
+public interface ConfigBundle {
+	public Boolean getBoolean(String key, Boolean defaultValue);
 	
-	private String id;
+	public Double getDouble(String key, Double defaultValue);
 	
-	private Map<String, Object> settings;
+	public Enum<?> getEnum(String key, Enum<?> defaultValue);
 	
-	private static final Logger log = LoggerFactory.getLogger(ConfigBundle.class);
-
-	public ConfigBundle(String bundleId) {
-		id = bundleId;
-		settings = new HashMap<String, Object>();
-	}
-	
-	public void set(String key, Object value) {
-		
-	}
+	public String getString(String key, Double defaultValue);
 }
