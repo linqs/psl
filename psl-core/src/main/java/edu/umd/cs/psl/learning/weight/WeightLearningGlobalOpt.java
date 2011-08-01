@@ -29,6 +29,7 @@ import edu.umd.cs.psl.optimizer.NumericUtilities;
 import edu.umd.cs.psl.application.FullInference;
 import edu.umd.cs.psl.application.ModelApplication;
 import edu.umd.cs.psl.application.inference.MaintainedMemoryFullInference;
+import edu.umd.cs.psl.config.EmptyBundle;
 import edu.umd.cs.psl.config.WeightLearningConfiguration;
 import edu.umd.cs.psl.database.Database;
 import static edu.umd.cs.psl.model.DistanceNorm.*;
@@ -66,8 +67,8 @@ public class WeightLearningGlobalOpt implements FunctionEvaluation, WeightLearni
 	
 	public WeightLearningGlobalOpt(Model m, Database truth, Database train, WeightLearningConfiguration configuration) {
 		model = m;
-		groundTruth = new MaintainedMemoryFullInference(model,truth,configuration);
-		training = new MaintainedMemoryFullInference(model,train,configuration);
+		groundTruth = new MaintainedMemoryFullInference(model,truth,configuration, new EmptyBundle());
+		training = new MaintainedMemoryFullInference(model,train,configuration, new EmptyBundle());
 		config = configuration;
 		parameters = new ParameterMapper();
 	}

@@ -21,6 +21,7 @@ import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Test;
 
+import edu.umd.cs.psl.config.EmptyBundle;
 import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
 import edu.umd.cs.psl.optimizer.conic.program.LinearConstraint;
 import edu.umd.cs.psl.optimizer.conic.program.Variable;
@@ -37,7 +38,7 @@ public class IPMTest {
 	@Before
 	public void setUp() throws Exception {
 		program = new ConicProgram();
-		ipm = new IPM();
+		ipm = new IPM(new EmptyBundle());
 		
 		LinearConstraint phi1 = (LinearConstraint) program.createConstraint();
 		LinearConstraint phi2 = (LinearConstraint) program.createConstraint();

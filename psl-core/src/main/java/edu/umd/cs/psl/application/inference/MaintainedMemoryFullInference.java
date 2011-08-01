@@ -27,6 +27,8 @@ import edu.umd.cs.psl.application.GroundingMode;
 import edu.umd.cs.psl.application.ModelApplication;
 import edu.umd.cs.psl.application.groundkernelstore.MemoryGroundKernelStore;
 import edu.umd.cs.psl.application.util.Grounding;
+import edu.umd.cs.psl.config.ConfigBundle;
+import edu.umd.cs.psl.config.EmptyBundle;
 import edu.umd.cs.psl.config.PSLCoreConfiguration;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.database.DatabaseAtomStoreQuery;
@@ -57,7 +59,6 @@ public class MaintainedMemoryFullInference implements ModelApplication, FullInfe
 	private final AtomEventFramework atomEvents;
 	private final AtomStore store;
 	private final Reasoner reasoner;
-	private final PSLCoreConfiguration config;
 	private final Model model;
 	private final GroundKernelStore groundkernels;
 	
@@ -66,8 +67,7 @@ public class MaintainedMemoryFullInference implements ModelApplication, FullInfe
 	
 //	private final Proxy defaultProxy;
 	
-	public MaintainedMemoryFullInference(Model m, Database db, PSLCoreConfiguration configuration) {
-		config = configuration;
+	public MaintainedMemoryFullInference(Model m, Database db, PSLCoreConfiguration configuration, ConfigBundle config) {
 		model = m;
 		database = db;
 		store = new MemoryAtomStore(database);
@@ -76,7 +76,7 @@ public class MaintainedMemoryFullInference implements ModelApplication, FullInfe
 		groundkernels = new MemoryGroundKernelStore();
 		atomEvents = new MemoryAtomEventFramework(m,this,store);
 		database.registerDatabaseEventObserver(atomEvents);
-		reasoner = new ConicReasoner(atomEvents, config);
+		reasoner = new ConicReasoner(atomEvents, configuration, config);
 		model.registerModelObserver(this);
 		model.registerModelObserver(atomEvents);
 		
@@ -85,7 +85,7 @@ public class MaintainedMemoryFullInference implements ModelApplication, FullInfe
 	}
 	
 	public MaintainedMemoryFullInference(Model m, Database db) {
-		this(m,db,new PSLCoreConfiguration());
+		this(m,db,new PSLCoreConfiguration(), new EmptyBundle());
 	}
 	
 	//####### Evidence Handling #####

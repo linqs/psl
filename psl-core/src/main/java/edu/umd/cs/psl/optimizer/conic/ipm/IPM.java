@@ -30,6 +30,7 @@ import cern.colt.matrix.tdouble.algo.decomposition.SparseDoubleCholeskyDecomposi
 import cern.colt.matrix.tdouble.impl.SparseCCDoubleMatrix2D;
 import cern.colt.matrix.tdouble.impl.SparseDoubleMatrix2D;
 import cern.jet.math.tdouble.DoubleFunctions;
+import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.optimizer.conic.ConicProgramSolver;
 import edu.umd.cs.psl.optimizer.conic.program.Cone;
 import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
@@ -43,8 +44,16 @@ import edu.umd.cs.psl.optimizer.conic.program.Dualizer;
 public class IPM implements ConicProgramSolver {
 	
 	private static final Logger log = LoggerFactory.getLogger(IPM.class);
+	
+	public static final String CONFIG_NAMESPACE = "ipm";
+	
+	public static final String DUALIZE = CONFIG_NAMESPACE + ".dualize";
+	public static final boolean DUALIZE_DEFAULT = true;
+	
+	public static final String INIT_FEASIBLE = CONFIG_NAMESPACE + ".initfeasible";
+	public static final boolean INIT_FEASIBLE_DEFAULT = false;
 
-	protected boolean dualized;
+	protected boolean dualize;
 	protected boolean initFeasible;
 	
 	// Error messages
@@ -53,9 +62,9 @@ public class IPM implements ConicProgramSolver {
 	protected static final String UNOWNED_CONE = "Cone " + UNOWNED;
 	protected static final String UNOWNED_LC = "Linear constraint " + UNOWNED;
 	
-	public IPM() {
-		dualized = true;
-		initFeasible = false;
+	public IPM(ConfigBundle config) {
+		dualize = config.getBoolean(DUALIZE, DUALIZE_DEFAULT);
+		initFeasible = config.getBoolean(INIT_FEASIBLE, INIT_FEASIBLE_DEFAULT);
 	}
 
 	@Override
@@ -63,7 +72,7 @@ public class IPM implements ConicProgramSolver {
 		ConicProgram oldProgram = null;
 		Dualizer dualizer = null;
 		
-		if (dualized) {
+		if (dualize) {
 			log.debug("Dualizing!");
 			oldProgram = program;
 			dualizer = new Dualizer(program);
@@ -101,7 +110,7 @@ public class IPM implements ConicProgramSolver {
 		/* Updates variables */
 		program.update();
 		
-		if (dualized) {
+		if (dualize) {
 			dualizer.updateData();
 			program = oldProgram;
 		}

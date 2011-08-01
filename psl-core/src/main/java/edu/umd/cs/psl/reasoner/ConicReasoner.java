@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import edu.umd.cs.psl.application.GroundingMode;
 import edu.umd.cs.psl.application.ModelApplication;
+import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.PSLCoreConfiguration;
 import edu.umd.cs.psl.model.DistanceNorm;
 import edu.umd.cs.psl.model.atom.Atom;
@@ -64,10 +65,10 @@ public class ConicReasoner implements Reasoner, AtomEventObserver {
 	private final AtomEventFramework atomFramework;
 	private final DistanceNorm norm;
 	
-	public ConicReasoner(AtomEventFramework framework, PSLCoreConfiguration configuration) {
+	public ConicReasoner(AtomEventFramework framework, PSLCoreConfiguration configuration, ConfigBundle config) {
 		atomFramework = framework;
 		program = new ConicProgram();
-		solver = new IPM();
+		solver = new IPM(config);
 		gkRepresentation = new HashMap<GroundKernel, ConicProgramProxy>();
 		vars = new HashMap<AtomFunctionVariable, VariableConicProgramProxy>();
 		maxMapRounds = configuration.getMaxNoInferenceSteps();
@@ -76,8 +77,8 @@ public class ConicReasoner implements Reasoner, AtomEventObserver {
 		atomFramework.registerAtomEventObserver(AtomEventSets.MadeRevokedCertainty, this);
 	}
 	
-	public static final ConicReasoner getDefaultReasoner(AtomEventFramework framework, PSLCoreConfiguration configuration) {
-		return new ConicReasoner(framework,configuration);
+	public static final ConicReasoner getDefaultReasoner(AtomEventFramework framework, PSLCoreConfiguration configuration, ConfigBundle config) {
+		return new ConicReasoner(framework,configuration, config);
 	}
 	
 	@Override

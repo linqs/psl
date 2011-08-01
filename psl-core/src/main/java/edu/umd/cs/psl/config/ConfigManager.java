@@ -16,6 +16,8 @@
  */
 package edu.umd.cs.psl.config;
 
+import java.io.FileNotFoundException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,15 +36,28 @@ public class ConfigManager {
 	
 	private ConfigManager() {
 		settings = new HashMap<String, Object>();
-		loadResource("psl.properties");
+		//loadResource("psl.properties");
+		settings.put("test.ipm.dualize", "false");
+		settings.put("test.ipm.initfeasible", Boolean.TRUE);
 	}
 	
 	public static ConfigManager getManager() {
 		return instance;
 	}
 	
-	public void loadResource(String resource) {
-		URL url = Loader.getResource(resource);
+	public void loadResource(String resource) throws FileNotFoundException {
+		URL url;
+		try {
+			url = new URL(resource);
+		}
+		catch (MalformedURLException ex) {
+			url = Loader.getResource(resource);
+		}
+		if (url != null) {
+			
+		}
+		else
+			throw new FileNotFoundException();
 	}
 	
 	public ConfigBundle getBundle(String id) {
@@ -62,7 +77,7 @@ public class ConfigManager {
 		private Object getObject(String key, Object defaultValue) {
 			String scopedKey = id + "." + key;
 			if (settings.containsKey(scopedKey)) {
-				Object value = settings.get(key);
+				Object value = settings.get(scopedKey);
 				log.debug("Found value {} for option {}.", value, scopedKey);
 				return value;
 			}
@@ -103,7 +118,7 @@ public class ConfigManager {
 		}
 
 		@Override
-		public String getString(String key, Double defaultValue) {
+		public String getString(String key, String defaultValue) {
 			Object value = getObject(key, defaultValue);
 			if (value instanceof String) {
 				return (String) value;

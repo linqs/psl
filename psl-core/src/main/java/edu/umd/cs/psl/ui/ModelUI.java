@@ -27,6 +27,8 @@ import edu.umd.cs.psl.application.FullInference;
 import edu.umd.cs.psl.application.ModelApplication;
 import edu.umd.cs.psl.application.inference.MaintainedMemoryFullInference;
 import edu.umd.cs.psl.application.inference.MemoryFullConfidenceAnalysis;
+import edu.umd.cs.psl.config.ConfigBundle;
+import edu.umd.cs.psl.config.EmptyBundle;
 import edu.umd.cs.psl.config.PSLCoreConfiguration;
 import edu.umd.cs.psl.database.DataStore;
 import edu.umd.cs.psl.database.Database;
@@ -116,11 +118,11 @@ public class ModelUI {
 	}
 	
 	public UIFullInferenceResult mapInference(Database db) {
-		return mapInference(db,new PSLCoreConfiguration());
+		return mapInference(db,new PSLCoreConfiguration(), new EmptyBundle());
 	}
 	
-	public UIFullInferenceResult mapInference(Database db, PSLCoreConfiguration config) {
-		FullInference app = new MaintainedMemoryFullInference(model,db,config);
+	public UIFullInferenceResult mapInference(Database db, PSLCoreConfiguration configOld, ConfigBundle config) {
+		FullInference app = new MaintainedMemoryFullInference(model,db,configOld, config);
 		FullInferenceResult stats = app.runInference();
 		return new UIFullInferenceResult(app.getDatabase(),stats);
 	}

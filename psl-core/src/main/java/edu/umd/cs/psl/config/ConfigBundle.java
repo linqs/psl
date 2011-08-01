@@ -26,5 +26,5 @@ public interface ConfigBundle {
 	
 	public Enum<?> getEnum(String key, Enum<?> defaultValue);
 	
-	public String getString(String key, Double defaultValue);
+	public String getString(String key, String defaultValue);
 }

@@ -32,6 +32,7 @@ import edu.umd.cs.psl.application.GroundingMode;
 import edu.umd.cs.psl.application.ModelApplication;
 import edu.umd.cs.psl.application.groundkernelstore.MemoryGroundKernelStore;
 import edu.umd.cs.psl.application.util.Grounding;
+import edu.umd.cs.psl.config.EmptyBundle;
 import edu.umd.cs.psl.config.PSLCoreConfiguration;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.database.DatabaseAtomStoreQuery;
@@ -79,7 +80,7 @@ public class MemoryFullConfidenceAnalysis implements ModelApplication, FullConfi
 		dbProxy = new DatabaseAtomStoreQuery(database);
 		groundkernels = new MemoryGroundKernelStore();
 		atomEvents = new MemoryAtomEventFramework(m,this,store,AtomEventFramework.ActivationMode.All);
-		reasoner = new ConicReasoner(atomEvents, config);
+		reasoner = new ConicReasoner(atomEvents, config, new EmptyBundle());
 		
 		isInitialized=false;
 	}

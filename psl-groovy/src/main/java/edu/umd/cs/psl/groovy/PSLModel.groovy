@@ -49,8 +49,6 @@ import edu.umd.cs.psl.model.set.term.SetTerm;
 import edu.umd.cs.psl.groovy.syntax.*;
 import edu.umd.cs.psl.ui.ModelUI;
 
-
-
 class PSLModel extends ModelUI {
 	private static final String predicateKey ='predicate';
 	private static final String functionKey = 'function';
