@@ -6,5 +6,6 @@
 	</sources>
 	<resources>
 		<resource>src/main/resources/log4j.properties</resource>
+		<resource>src/main/resources/psl.properties</resource>
 	</resources>
 </archetype>
