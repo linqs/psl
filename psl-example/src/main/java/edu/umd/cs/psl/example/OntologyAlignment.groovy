@@ -93,15 +93,15 @@ insert = data.getInserter(similar,2)
 insert.loadFromFileWithTruth(trainDir+"similar.txt","\t");
 
 ConfigManager cm = ConfigManager.getManager();
-ConfigBundle testBundle = cm.getBundle("test");
+ConfigBundle exampleBundle = cm.getBundle("example");
 
 //////////////////////////// weight learning ///////////////////////////
 println "\t\tLEARNING WEIGHTS...";
 
-//WeightLearningConfiguration config = new WeightLearningConfiguration();
-//config.setLearningType(WeightLearningConfiguration.Type.Perceptron);
-//config.setInitialParameter(0.0);
-//m.learn data, evidence : 1, infered: 2, close : similar, config: config
+WeightLearningConfiguration config = new WeightLearningConfiguration();
+config.setLearningType(WeightLearningConfiguration.Type.Perceptron);
+config.setInitialParameter(0.0);
+m.learn data, evidence : 1, infered: 2, close : similar, config: config
 println m
 
 println "\t\tLEARNING WEIGHTS DONE";
@@ -118,7 +118,7 @@ for (Predicate p : [domainOf,fromOntology,name,hasType,rangeOf,subclass])
 	insert.loadFromFile(testDir+p.getName()+".txt");
 }
 
-result = m.mapInference(data.getDatabase(write: 1004, read : 5), new PSLCoreConfiguration(), testBundle);
+result = m.mapInference(data.getDatabase(write: 1004, read : 5), new PSLCoreConfiguration(), exampleBundle);
 
 println "\t\tINFERENCE DONE";
 
