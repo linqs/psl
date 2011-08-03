@@ -398,8 +398,7 @@ public class ConicProgram {
 				}
 				
 				/* Uses decompositions to find general and particular solutions to Ax = b */
-				DenseDoubleQRDecomposition denseQR = new DenseDoubleQRDecomposition(
-						new DenseDoubleMatrix2D(A.columns(), A.rows()).assign(A.viewDice()));
+				DenseDoubleQRDecomposition denseQR = new DenseDoubleQRDecomposition(new DenseDoubleMatrix2D(A.rows(), A.columns()).assign(A).viewDice());
 				nullity = denseQR.getQ(false).viewPart(0, A.rows(), A.columns(), A.columns()-A.rows());
 				
 				SparseDoubleQRDecomposition qr = new SparseDoubleQRDecomposition(A.getColumnCompressed(false), 0);

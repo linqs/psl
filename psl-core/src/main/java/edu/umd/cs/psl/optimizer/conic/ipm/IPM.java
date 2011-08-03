@@ -51,7 +51,7 @@ public class IPM implements ConicProgramSolver {
 	 * 
 	 * @see ConfigManager
 	 */
-	public static final String CONFIG_NAMESPACE = "ipm";
+	public static final String CONFIG_PREFIX = "ipm";
 	
 	/**
 	 * Key for boolean property. If true, the IPM will dualize the conic
@@ -61,7 +61,7 @@ public class IPM implements ConicProgramSolver {
 	 * 
 	 * @see Dualizer
 	 */
-	public static final String DUALIZE_KEY = CONFIG_NAMESPACE + ".dualize";
+	public static final String DUALIZE_KEY = CONFIG_PREFIX + ".dualize";
 	/** Default value for DUALIZE_KEY property */
 	public static final boolean DUALIZE_DEFAULT = true;
 	
@@ -72,7 +72,7 @@ public class IPM implements ConicProgramSolver {
 	 * 
 	 * @see ConicProgram#makeFeasible()
 	 */
-	public static final String INIT_FEASIBLE_KEY = CONFIG_NAMESPACE + ".initfeasible";
+	public static final String INIT_FEASIBLE_KEY = CONFIG_PREFIX + ".initfeasible";
 	/** Default value for INIT_FEASIBLE_KEY property */
 	public static final boolean INIT_FEASIBLE_DEFAULT = false;
 	
@@ -80,7 +80,7 @@ public class IPM implements ConicProgramSolver {
 	 * Key for double property. The IPM will iterate until the duality gap
 	 * is less than its value.
 	 */
-	public static final String DUALITY_GAP_THRESHOLD_KEY = CONFIG_NAMESPACE + ".dualitygapthreshold";
+	public static final String DUALITY_GAP_THRESHOLD_KEY = CONFIG_PREFIX + ".dualitygapthreshold";
 	/** Default value for DUALITY_GAP_THRESHOLD_KEY property. */
 	public static final double DUALITY_GAP_THRESHOLD_DEFAULT = 0.01;
 	
@@ -91,7 +91,7 @@ public class IPM implements ConicProgramSolver {
 	 * @see ConicProgram#primalInfeasibility()
 	 * @see ConicProgram#dualInfeasibility()
 	 */
-	public static final String INFEASIBILITY_THRESHOLD_KEY = CONFIG_NAMESPACE + ".infeasibilitythreshold";
+	public static final String INFEASIBILITY_THRESHOLD_KEY = CONFIG_PREFIX + ".infeasibilitythreshold";
 	/** Default value for INFEASIBILITY_THRESHOLD_KEY property. */
 	public static final double INFEASIBILITY_THRESHOLD_DEFAULT = 10e-8;
 
@@ -185,17 +185,14 @@ public class IPM implements ConicProgramSolver {
 		stepNum = 0;
 		inNeighborhood = false;
 		while (mu >= dualityGapThreshold || primalInfeasibility >= infeasibilityThreshold || dualInfeasibility >= infeasibilityThreshold) {
-			log.trace("Setting barriers.");
 			for (Cone cone : cones) {
 				cone.setBarrierGradient(program.getVarMap(), x, g);
 				cone.setBarrierHessianInv(program.getVarMap(), x, Hinv);
 			}
-			log.trace("Done setting barriers.");
 			
 			if (!inNeighborhood && initFeasible) {
 				r = s.copy().assign(g, DoubleFunctions.plusMultSecond(muInitial));
 				theta = alg.mult(r, alg.mult(Hinv, r)) / muInitial;
-				log.trace("Theta: {}", theta);
 				if (theta < .1)
 					inNeighborhood = true;
 			}
@@ -271,7 +268,6 @@ public class IPM implements ConicProgramSolver {
 				if (ds.get(i) < 0)
 					dualStepSize = Math.min(dualStepSize, (s.get(i) * .67) / (- ds.get(i)));
 			}
-			
 
 			dx.assign(DoubleFunctions.mult(primalStepSize));
 			dw.assign(DoubleFunctions.mult(dualStepSize));
