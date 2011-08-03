@@ -56,6 +56,11 @@
 			<artifactId>csparsej</artifactId>
 			<version>1.0</version>
 		</dependency>
+		<dependency>
+			<groupId>edu.emory.mathcs</groupId>
+			<artifactId>jplasma</artifactId>
+			<version>1.2</version>
+		</dependency>
 
 		<!-- logging dependencies -->
 		<dependency>

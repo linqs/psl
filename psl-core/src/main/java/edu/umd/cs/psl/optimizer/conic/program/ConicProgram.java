@@ -32,9 +32,10 @@ import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.algo.DenseDoubleAlgebra;
 import cern.colt.matrix.tdouble.algo.decomposition.DenseDoubleLUDecompositionQuick;
-import cern.colt.matrix.tdouble.algo.decomposition.DenseDoubleSingularValueDecomposition;
+import cern.colt.matrix.tdouble.algo.decomposition.DenseDoubleQRDecomposition;
 import cern.colt.matrix.tdouble.algo.decomposition.SparseDoubleQRDecomposition;
 import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix1D;
+import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
 import cern.colt.matrix.tdouble.impl.SparseDoubleMatrix2D;
 import cern.jet.math.tdouble.DoubleFunctions;
 import edu.umd.cs.psl.optimizer.conic.program.graph.Graph;
@@ -330,7 +331,7 @@ public class ConicProgram {
 		DenseDoubleAlgebra alg = new DenseDoubleAlgebra();
 		DoubleMatrix1D x, dp, intDir, feasibilityCheck;
 		SparseDoubleMatrix2D A;
-		DoubleMatrix2D AstarA, nullity;
+		DoubleMatrix2D nullity;
 		DenseDoubleLUDecompositionQuick lu = new DenseDoubleLUDecompositionQuick();
 		Set<Cone> cones = new HashSet<Cone>();
 		
@@ -396,20 +397,17 @@ public class ConicProgram {
 					x.set(con.getValue(), con.getKey().getConstrainedValue());
 				}
 				
-				/* Constructs AstarA */
-				AstarA = alg.mult(A.viewDice(), A);
-
 				/* Uses decompositions to find general and particular solutions to Ax = b */
-				AstarA = DoubleFactory2D.dense.make(AstarA.toArray());
-				DenseDoubleSingularValueDecomposition svd = new DenseDoubleSingularValueDecomposition(AstarA, true, true);
-				nullity = svd.getV().viewPart(0, svd.rank(), (int) x.size(), (int) x.size() - svd.rank());
+				DenseDoubleQRDecomposition denseQR = new DenseDoubleQRDecomposition(
+						new DenseDoubleMatrix2D(A.columns(), A.rows()).assign(A.viewDice()));
+				nullity = denseQR.getQ(false).viewPart(0, A.rows(), A.columns(), A.columns()-A.rows());
 				
 				SparseDoubleQRDecomposition qr = new SparseDoubleQRDecomposition(A.getColumnCompressed(false), 0);
 				qr.solve(x);
 				
 				lu.decompose(alg.mult(nullity.viewDice(), nullity));
 				intDir = x.copy();
-				feasibilityCheck = x.viewSelection(DoubleFunctions.isLess(0.05));
+				feasibilityCheck = x.viewSelection(DoubleFunctions.isLess(0.025));
 				// TODO: Add check for getting stuck
 				while (feasibilityCheck.size() > 0) {
 					for (Cone c : cones) {
@@ -417,8 +415,8 @@ public class ConicProgram {
 					}
 					dp = alg.mult(nullity.viewDice(), intDir);
 					lu.solve(dp);
-					x.assign(alg.mult(nullity, dp), DoubleFunctions.minus);
-					feasibilityCheck = x.viewSelection(DoubleFunctions.isLess(0.05));
+					x.assign(alg.mult(nullity, dp), DoubleFunctions.plus);
+					feasibilityCheck = x.viewSelection(DoubleFunctions.isLess(0.025));
 				}
 
 				/* Finalize initialization */
