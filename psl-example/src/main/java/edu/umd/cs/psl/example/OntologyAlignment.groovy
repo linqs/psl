@@ -101,7 +101,7 @@ println "\t\tLEARNING WEIGHTS...";
 WeightLearningConfiguration config = new WeightLearningConfiguration();
 config.setLearningType(WeightLearningConfiguration.Type.Perceptron);
 config.setInitialParameter(0.0);
-//m.learn data, evidence : 1, infered: 2, close : similar, config: config
+m.learn data, evidence : 1, infered: 2, close : similar, config: config
 println m
 
 println "\t\tLEARNING WEIGHTS DONE";
