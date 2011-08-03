@@ -31,6 +31,7 @@ import cern.colt.matrix.tdouble.impl.SparseCCDoubleMatrix2D;
 import cern.colt.matrix.tdouble.impl.SparseDoubleMatrix2D;
 import cern.jet.math.tdouble.DoubleFunctions;
 import edu.umd.cs.psl.config.ConfigBundle;
+import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.optimizer.conic.ConicProgramSolver;
 import edu.umd.cs.psl.optimizer.conic.program.Cone;
 import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
@@ -45,26 +46,67 @@ public class IPM implements ConicProgramSolver {
 	
 	private static final Logger log = LoggerFactory.getLogger(IPM.class);
 	
+	/**
+	 * Prefix of property keys used by this class.
+	 * 
+	 * @see ConfigManager
+	 */
 	public static final String CONFIG_NAMESPACE = "ipm";
 	
-	public static final String DUALIZE = CONFIG_NAMESPACE + ".dualize";
+	/**
+	 * Key for boolean property. If true, the IPM will dualize the conic
+	 * program before solving it. The IPM will substitute the results back
+	 * into the original problem, so this should only affect the computational
+	 * cost of {@link #solve(ConicProgram)}, not the quality of the solution.
+	 * 
+	 * @see Dualizer
+	 */
+	public static final String DUALIZE_KEY = CONFIG_NAMESPACE + ".dualize";
+	/** Default value for DUALIZE_KEY property */
 	public static final boolean DUALIZE_DEFAULT = true;
 	
-	public static final String INIT_FEASIBLE = CONFIG_NAMESPACE + ".initfeasible";
+	/**
+	 * Key for boolean property. If true, the conic program will be initialized
+	 * to a feasible point before solving. Initialization will be done after
+	 * dualization, if the DUALIZE_KEY property is true. 
+	 * 
+	 * @see ConicProgram#makeFeasible()
+	 */
+	public static final String INIT_FEASIBLE_KEY = CONFIG_NAMESPACE + ".initfeasible";
+	/** Default value for INIT_FEASIBLE_KEY property */
 	public static final boolean INIT_FEASIBLE_DEFAULT = false;
+	
+	/**
+	 * Key for double property. The IPM will iterate until the duality gap
+	 * is less than its value.
+	 */
+	public static final String DUALITY_GAP_THRESHOLD_KEY = CONFIG_NAMESPACE + ".dualitygapthreshold";
+	/** Default value for DUALITY_GAP_THRESHOLD_KEY property. */
+	public static final double DUALITY_GAP_THRESHOLD_DEFAULT = 0.01;
+	
+	/**
+	 * Key for double property. The IPM will iterate until the primal and dual infeasibilites
+	 * are each less than its value.
+	 * 
+	 * @see ConicProgram#primalInfeasibility()
+	 * @see ConicProgram#dualInfeasibility()
+	 */
+	public static final String INFEASIBILITY_THRESHOLD_KEY = CONFIG_NAMESPACE + ".infeasibilitythreshold";
+	/** Default value for INFEASIBILITY_THRESHOLD_KEY property. */
+	public static final double INFEASIBILITY_THRESHOLD_DEFAULT = 10e-8;
 
 	protected boolean dualize;
 	protected boolean initFeasible;
+	protected double dualityGapThreshold;
+	protected double infeasibilityThreshold;
 	
-	// Error messages
-	protected static final String UNOWNED = "does not belong to this conic program.";
-	protected static final String UNOWNED_VAR = "Variable " + UNOWNED;
-	protected static final String UNOWNED_CONE = "Cone " + UNOWNED;
-	protected static final String UNOWNED_LC = "Linear constraint " + UNOWNED;
+	private int stepNum;
 	
 	public IPM(ConfigBundle config) {
-		dualize = config.getBoolean(DUALIZE, DUALIZE_DEFAULT);
-		initFeasible = config.getBoolean(INIT_FEASIBLE, INIT_FEASIBLE_DEFAULT);
+		dualize = config.getBoolean(DUALIZE_KEY, DUALIZE_DEFAULT);
+		initFeasible = config.getBoolean(INIT_FEASIBLE_KEY, INIT_FEASIBLE_DEFAULT);
+		dualityGapThreshold = config.getDouble(DUALITY_GAP_THRESHOLD_KEY, DUALITY_GAP_THRESHOLD_DEFAULT);
+		infeasibilityThreshold = config.getDouble(INFEASIBILITY_THRESHOLD_KEY, INFEASIBILITY_THRESHOLD_DEFAULT);
 	}
 
 	@Override
@@ -73,7 +115,7 @@ public class IPM implements ConicProgramSolver {
 		Dualizer dualizer = null;
 		
 		if (dualize) {
-			log.debug("Dualizing!");
+			log.debug("Dualizing conic program.");
 			oldProgram = program;
 			dualizer = new Dualizer(program);
 			program = dualizer.getData();
@@ -87,23 +129,15 @@ public class IPM implements ConicProgramSolver {
 		
 		log.debug("Starting optimzation with {} variables and {} constraints.", A.columns(), A.rows());
 		
-		primalFeasibilityDist = program.distanceFromPrimalFeasibility();
-		if (primalFeasibilityDist > 10e-8)
-			log.error("Primal infeasible - Total distance: " + primalFeasibilityDist);
-		
-		dualFeasibilityDist = program.distanceFromDualFeasibility();
-		if (dualFeasibilityDist > 10e-8)
-			log.error("Dual infeasible - Total distance: " + dualFeasibilityDist);
-
 		mu = doSolve(program);
 		
 		log.debug("Optimum found.");
 		
-		primalFeasibilityDist = program.distanceFromPrimalFeasibility();
+		primalFeasibilityDist = program.primalInfeasibility();
 		if (primalFeasibilityDist > 10e-8)
 			log.error("Primal infeasible - Total distance: " + primalFeasibilityDist);
 		
-		dualFeasibilityDist = program.distanceFromDualFeasibility();
+		dualFeasibilityDist = program.dualInfeasibility();
 		if (dualFeasibilityDist > 10e-8)
 			log.error("Dual infeasible - Total distance: " + dualFeasibilityDist);
 		
@@ -121,7 +155,7 @@ public class IPM implements ConicProgramSolver {
 	protected double doSolve(ConicProgram program) {
 		DoubleMatrix1D x, s, g, r;
 		DoubleMatrix2D Hinv, A;
-		double mu, tau, muInitial, theta;
+		double mu, primalInfeasibility, dualInfeasibility, tau, muInitial, theta;
 		boolean inNeighborhood;
 		Set<Cone> cones = program.getCones();
 		DenseDoubleAlgebra alg = new DenseDoubleAlgebra();
@@ -137,12 +171,20 @@ public class IPM implements ConicProgramSolver {
 		/* Initializes mu */
 		muInitial = alg.mult(x, s) / program.getV();
 		mu = muInitial;
-		log.trace("Initial mu: {}", mu);
 		
-		/* Iterates until the duality gap (mu) is sufficiently small */
+		/* Computes initial infeasibility */
+		primalInfeasibility = program.primalInfeasibility();
+		dualInfeasibility = program.dualInfeasibility();
+		
+		log.trace("Itr: Start -- Gap: {} -- P. Inf: {} -- D. Inf: {} -- Obj: {}", new Object[] {mu, primalInfeasibility, dualInfeasibility, alg.mult(program.getC(), x)});
+		
+		/*
+		 * Iterates until the duality gap (mu) is sufficiently small and the
+		 * point is sufficiently close to primal-dual feasibility
+		 */
+		stepNum = 0;
 		inNeighborhood = false;
-		while (mu > .01) {
-			log.trace("Mu: {}", mu);
+		while (mu >= dualityGapThreshold || primalInfeasibility >= infeasibilityThreshold || dualInfeasibility >= infeasibilityThreshold) {
 			log.trace("Setting barriers.");
 			for (Cone cone : cones) {
 				cone.setBarrierGradient(program.getVarMap(), x, g);
@@ -151,10 +193,7 @@ public class IPM implements ConicProgramSolver {
 			log.trace("Done setting barriers.");
 			
 			if (!inNeighborhood && initFeasible) {
-				log.trace("Computing r.");
 				r = s.copy().assign(g, DoubleFunctions.plusMultSecond(muInitial));
-				log.trace("Done computing r.");
-				log.trace("Computing theta.");
 				theta = alg.mult(r, alg.mult(Hinv, r)) / muInitial;
 				log.trace("Theta: {}", theta);
 				if (theta < .1)
@@ -162,21 +201,20 @@ public class IPM implements ConicProgramSolver {
 			}
 			
 			if (inNeighborhood || !initFeasible) {
-				tau = .8;
+				tau = .65;
 			}
 			else {
 				mu = muInitial;
 				tau = 1;
 			}
 
-			log.trace("Starting step.");
 			step(program, g, Hinv, mu, tau, inNeighborhood);
-			log.trace("Done step.");
 			
-			log.trace("Computing mu.");
 			mu = alg.mult(x, s) / program.getV();
-			log.trace("Done computing mu.");
-		}
+			primalInfeasibility = program.primalInfeasibility();
+			dualInfeasibility = program.dualInfeasibility();
+			log.trace("Itr: {} -- Gap: {} -- P. Inf: {} -- D. Inf: {} -- Obj: {}", new Object[] {++stepNum, mu, primalInfeasibility, dualInfeasibility, alg.mult(program.getC(), x)});
+		} 
 		
 		return mu;
 	}
@@ -201,11 +239,8 @@ public class IPM implements ConicProgramSolver {
 		SparseCCDoubleMatrix2D partial = new SparseCCDoubleMatrix2D(A.rows(), A.columns());
 		SparseCCDoubleMatrix2D coeff = new SparseCCDoubleMatrix2D(A.rows(), A.rows());
 		
-		log.trace("Computing coeff matrix.");
 		ccA.zMult(ccHinv, partial, 1.0, 0.0, false, false);
 		partial.zMult(ccA, coeff, 1.0, 0.0, false, true);
-		log.trace("Done computing coeff matrix.");
-		log.trace("Computing r.");
 		if (initFeasible)
 			r = alg.mult(partial, s.copy().assign(g, DoubleFunctions.plusMultSecond(tau * mu)));
 		else
@@ -214,62 +249,37 @@ public class IPM implements ConicProgramSolver {
 				.assign(DoubleFunctions.mult(mu))
 				.assign(alg.mult(coeff, w), DoubleFunctions.minus)
 				.assign(alg.mult(partial, c), DoubleFunctions.plus);
-		log.trace("Done computing r.");
-		log.trace("Computing Cholesky decomposition.");
 		cd = new SparseDoubleCholeskyDecomposition(coeff, 1);
-		log.trace("Done computing Cholesky decomposition.");
-		log.trace("Nnz: {}", cd.getL().cardinality());
 		dw = r;
 		
-		log.trace("Solving for dw.");
 		cd.solve(dw);
-		log.trace("Solving for ds.");
 		ccA.zMult(dw, ds, 1.0, 0.0, true);
 		if (initFeasible)
 			ds.assign(DoubleFunctions.mult(-1.0));
 		else
 			ds.assign(alg.mult(ccA.getTranspose(), w), DoubleFunctions.plus).assign(s, DoubleFunctions.plus)
 				.assign(c, DoubleFunctions.minus).assign(DoubleFunctions.mult(-1.0));
-		log.trace("Solving for dx.");
 		dx = alg.mult(ccHinv, g.copy().assign(DoubleFunctions.mult(-1*tau*mu)).assign(ds, DoubleFunctions.minus).assign(s, DoubleFunctions.minus))
 			.assign(DoubleFunctions.div(mu));
-		log.trace("Done solving.");
 		
 		if (!inNeighborhood) {
 			double primalStepSize = 1.0;
 			double dualStepSize = 1.0;
-			log.trace("Computing primal step size.");
 			for (Cone cone : program.getCones())
 				primalStepSize = Math.min(primalStepSize, cone.getMaxStep(program.getVarMap(), x, dx));
-			log.trace("Computing dual step size.");
 			for (int i = 0; i < s.size(); i++) {
 				if (ds.get(i) < 0)
 					dualStepSize = Math.min(dualStepSize, (s.get(i) * .67) / (- ds.get(i)));
 			}
-
-			log.trace("Primal step size: {} * {}", primalStepSize, alg.norm2(dx));
-			log.trace("Dual step size: {} * {}", dualStepSize, alg.norm2(ds));
 			
 
-			log.trace("Assigning dx.");
 			dx.assign(DoubleFunctions.mult(primalStepSize));
-			log.trace("Assigning dw.");
 			dw.assign(DoubleFunctions.mult(dualStepSize));
-			log.trace("Assigning ds.");
 			ds.assign(DoubleFunctions.mult(dualStepSize));
-			log.trace("Done assigning steps.");
 		}
 		
-		log.trace("Assigning w.");
 		w.assign(dw, DoubleFunctions.plus);
-		log.trace("Assigning s.");
 		s.assign(ds, DoubleFunctions.plus);
-		log.trace("Assigning x.");
 		x.assign(dx, DoubleFunctions.plus);
-		log.trace("Done assigning variables.");
-		
-		log.trace("Dx check: {}", alg.norm2(alg.mult(A, dx)));
-		log.trace("Distance from primal feasibility: {}", alg.norm2(b.copy().assign(alg.mult(A, x), DoubleFunctions.minus)));
-		log.trace("Distance from dual feasibility: {}", alg.norm2(A.zMult(w, s.copy(), 1.0, 1.0, true).assign(c, DoubleFunctions.minus)));
 	}
 }

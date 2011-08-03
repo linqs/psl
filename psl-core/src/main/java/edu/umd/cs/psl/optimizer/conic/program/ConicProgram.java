@@ -685,14 +685,14 @@ public class ConicProgram {
 		return null;
 	}
 	
-	public double distanceFromPrimalFeasibility() {
+	public double primalInfeasibility() {
 		DenseDoubleAlgebra alg = new DenseDoubleAlgebra();
 		validate();
 		return alg.norm2(alg.mult(A, x).assign(b, DoubleFunctions.minus));
 	}
 	
 	
-	public double distanceFromDualFeasibility() {
+	public double dualInfeasibility() {
 		DenseDoubleAlgebra alg = new DenseDoubleAlgebra();
 		validate();
 		return alg.norm2(A.zMult(w, s.copy(), 1.0, 1.0, true).assign(c, DoubleFunctions.minus));
