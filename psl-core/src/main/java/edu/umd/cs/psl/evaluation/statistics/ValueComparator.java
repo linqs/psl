@@ -20,7 +20,18 @@ import com.google.common.base.Preconditions;
 
 public enum ValueComparator {
 
-	Single {
+	Threshold {
+		
+		@Override
+		public double getDifference(double[] expected, double[] actual, double threshold) {
+			Preconditions.checkArgument(expected.length==1 && actual.length==1,"Expected singleton values!");
+			double actualVal = actual[0] >= threshold ? 1.0 : 0.0;
+			double expectedVal = expected[0] >= threshold ? 1.0 : 0.0;
+			return Math.abs(actualVal - expectedVal);
+		}
+	},
+
+	AbsoluteDifference {
 
 		@Override
 		public double getDifference(double[] expected, double[] actual,

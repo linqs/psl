@@ -42,7 +42,7 @@ public class SimpleResultComparator implements ResultComparator {
 	private AtomFilter resultFilter = AtomFilter.NoFilter;
 	private AtomFilter baselineFilter = AtomFilter.NoFilter;
 	
-	private ValueComparator valueCompare = ValueComparator.Single;
+	private ValueComparator valueCompare = ValueComparator.Threshold;
 	private double tolerance = DefaultTolerance;
 	
 	public SimpleResultComparator(DatabaseAtomStoreQuery outcome) {
