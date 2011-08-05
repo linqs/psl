@@ -185,6 +185,7 @@ public class IPM implements ConicProgramSolver {
 		stepNum = 0;
 		inNeighborhood = false;
 		while (mu >= dualityGapThreshold || primalInfeasibility >= infeasibilityThreshold || dualInfeasibility >= infeasibilityThreshold) {
+			program.trimUnrestrictedVariablePairs();
 			for (Cone cone : cones) {
 				cone.setBarrierGradient(program.getVarMap(), x, g);
 				cone.setBarrierHessianInv(program.getVarMap(), x, Hinv);
@@ -198,7 +199,7 @@ public class IPM implements ConicProgramSolver {
 			}
 			
 			if (inNeighborhood || !initFeasible) {
-				tau = .65;
+				tau = .75;
 			}
 			else {
 				mu = muInitial;

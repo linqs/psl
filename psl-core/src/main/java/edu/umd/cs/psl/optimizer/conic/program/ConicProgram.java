@@ -26,6 +26,8 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import cern.colt.list.tdouble.DoubleArrayList;
+import cern.colt.list.tint.IntArrayList;
 import cern.colt.matrix.tdouble.DoubleFactory1D;
 import cern.colt.matrix.tdouble.DoubleFactory2D;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
@@ -205,6 +207,57 @@ public class ConicProgram {
 	
 	public int getV() {
 		return v;
+	}
+	
+	public void trimUnrestrictedVariablePairs() {
+		validate();
+		boolean pair, check = true;
+		DoubleMatrix1D col1, col2, row;
+		IntArrayList col1Indices = new IntArrayList()
+				, col2Indices = new IntArrayList()
+				, rowIndices = new IntArrayList()
+				;
+		DoubleArrayList col1Values = new DoubleArrayList()
+				, col2Values = new DoubleArrayList()
+				, rowValues = new DoubleArrayList()
+				;
+		while (check) {
+			double[] max = x.getMaxLocation();
+			int maxIndex = (int) max[1];
+			if (max[0] > 10e4) {
+				col1 = A.viewColumn((int) max[1]);
+				col1.getNonZeros(col1Indices, col1Values);
+				col1Indices.sort();
+				row = A.viewRow(col1Indices.get(0));
+				row.getNonZeros(rowIndices, rowValues);
+				for (int i = 0; i < rowIndices.size(); i++) {
+					if (rowIndices.get(i) != maxIndex && c.get(maxIndex) * -1 == c.get(rowIndices.get(i))) {
+						col2 = A.viewColumn(rowIndices.get(i));
+						if (col1Indices.size() == col2.cardinality()) {
+							col2.getNonZeros(col2Indices, col2Values);
+							col2Indices.sort();
+							pair = true;
+							for (int j = 0; j < col1Indices.size(); j++) {
+								if (col1Indices.get(j) != col2Indices.get(j)
+										|| col1.get(col1Indices.get(j)) * col2.get(col2Indices.get(j)) >= 0) {
+									pair = false;
+									break;
+								}
+							}
+							if (pair) {
+								if (x.get(rowIndices.get(i)) > x.get(maxIndex) / 3) {
+									x.set(maxIndex, x.get(maxIndex) - x.get(rowIndices.get(i)) + 1);
+									x.set(rowIndices.get(i), 1);
+									break;
+								}
+							}
+						}
+					}
+					if (i == rowIndices.size() - 1) check = false;
+				}
+			}
+			else check = false;
+		}
 	}
 	
 	int index(Variable v) {
