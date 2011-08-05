@@ -85,26 +85,47 @@ public class SimpleResultComparison implements ResultComparison {
 	}
 	
 	public double getPrecision(BinaryClass c) {
-		if (c == BinaryClass.NEGATIVE)
-			return tn/(tn+fn);
-		else
-			return tp/(tp+fp);
+		if (c == BinaryClass.NEGATIVE) {
+			double n = tn + fn;
+			if (n == 0.0)
+				return 0.0;
+			return tn/n;
+		}
+		else {
+			double p = tp + fp;
+			if (p == 0.0)
+				return 0.0;
+			return tp/p;
+		}
 	}
 	
 	public double getRecall(BinaryClass c) {
-		if (c == BinaryClass.NEGATIVE)
+		if (c == BinaryClass.NEGATIVE) {
+			double n = tn + fp;
+			if (n == 0.0)
+				return 0.0;
 			return tn/(tn+fp);
-		else
+		}
+		else {
+			double p = tp + fn;
+			if (p == 0.0)
+				return 0.0;
 			return tp/(tp+fn);
+		}
 	}
 	
 	public double getF1(BinaryClass c) {
 		double prec = this.getPrecision(c);
 		double rec = this.getRecall(c);
-		return 2*(prec*rec)/(prec + rec);
+		double sum = prec + rec;
+		if (sum == 0.0)
+			return 0.0;
+		return 2*(prec*rec)/sum;
 	}
 	
 	public double getAccuracy() {
+		if (noBaseAtoms == 0)
+			return 0;
 		return (tp + tn) / (tp + fp + tn + fn);
 	}
 	
