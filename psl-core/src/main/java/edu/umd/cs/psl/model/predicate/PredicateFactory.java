@@ -28,7 +28,7 @@ import edu.umd.cs.psl.model.function.AttributeSimilarityFunction;
 import edu.umd.cs.psl.model.function.ExternalFunction;
 import edu.umd.cs.psl.model.predicate.type.PredicateType;
 import edu.umd.cs.psl.ui.functions.textsimilarity.CosineSimilarity;
-import edu.umd.cs.psl.ui.functions.textsimilarity.LevensteinStringSimilarity;
+import edu.umd.cs.psl.ui.functions.textsimilarity.LevenshteinStringSimilarity;
 import edu.umd.cs.psl.util.dynamicclass.DynamicClassLoader;
 
 public class PredicateFactory {
@@ -104,7 +104,7 @@ public class PredicateFactory {
 	
 	public static final Map<String,Class<? extends AttributeSimilarityFunction>> definedAttributeSimFun = 
 		new ImmutableMap.Builder<String,Class<? extends AttributeSimilarityFunction>>()
-			.put("basicstring", LevensteinStringSimilarity.class)
+			.put("basicstring", LevenshteinStringSimilarity.class)
 			.put("cosine", CosineSimilarity.class)
 			.build();
 	
