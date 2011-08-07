@@ -48,8 +48,7 @@ import edu.umd.cs.psl.optimizer.conic.program.graph.TraversalEvaluator;
 import edu.umd.cs.psl.optimizer.conic.program.graph.cosi.COSIGraph;
 
 /**
- * Stores information about the primal and dual forms of a conic program for
- * an interior-point method.
+ * Stores information about the primal and dual forms of a conic program.
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  */
@@ -86,7 +85,7 @@ public class ConicProgram {
 	private boolean madeFeasibleOnce;
 	private int v;
 	
-	private boolean valid;
+	private boolean checkedOut;
 	
 	private SparseDoubleMatrix2D A;
 	private DenseDoubleMatrix1D x;
@@ -128,7 +127,7 @@ public class ConicProgram {
 		madeFeasibleOnce = false;
 		v = 0;
 		
-		valid = false;
+		checkedOut = false;
 	}
 	
 	Graph getGraph() {
@@ -136,6 +135,7 @@ public class ConicProgram {
 	}
 	
 	public NonNegativeOrthantCone createNonNegativeOrthantCone() {
+		verifyCheckedIn();
 		return new NonNegativeOrthantCone(this);
 	}
 	
@@ -154,6 +154,7 @@ public class ConicProgram {
 	}
 	
 	public LinearConstraint createConstraint() {
+		verifyCheckedIn();
 		return new LinearConstraint(this);
 	}
 	
@@ -165,115 +166,8 @@ public class ConicProgram {
 		return lc;
 	}
 	
-	public Map<Variable, Integer> getVarMap() {
-		validate();
-		return varMap;
-	}
-	
-	public Map<LinearConstraint, Integer> getLcMap() {
-		validate();
-		return lcMap;
-	}
-	
-	public SparseDoubleMatrix2D getA() {
-		validate();
-		return A;
-	}
-	
-	public DenseDoubleMatrix1D getX() {
-		validate();
-		return x;
-	}
-	
-	public DenseDoubleMatrix1D getB() {
-		validate();
-		return b;
-	}
-	
-	public DenseDoubleMatrix1D getW() {
-		validate();
-		return w;
-	}
-	
-	public DenseDoubleMatrix1D getS() {
-		validate();
-		return s;
-	}
-	
-	public DenseDoubleMatrix1D getC() {
-		validate();
-		return c;
-	}
-	
-	public int getV() {
-		return v;
-	}
-	
-	public void trimUnrestrictedVariablePairs() {
-		validate();
-		boolean pair, check = true;
-		DoubleMatrix1D col1, col2, row;
-		IntArrayList col1Indices = new IntArrayList()
-				, col2Indices = new IntArrayList()
-				, rowIndices = new IntArrayList()
-				;
-		DoubleArrayList col1Values = new DoubleArrayList()
-				, col2Values = new DoubleArrayList()
-				, rowValues = new DoubleArrayList()
-				;
-		while (check) {
-			double[] max = x.getMaxLocation();
-			int maxIndex = (int) max[1];
-			if (max[0] > 10e4) {
-				col1 = A.viewColumn((int) max[1]);
-				col1.getNonZeros(col1Indices, col1Values);
-				col1Indices.sort();
-				row = A.viewRow(col1Indices.get(0));
-				row.getNonZeros(rowIndices, rowValues);
-				for (int i = 0; i < rowIndices.size(); i++) {
-					if (rowIndices.get(i) != maxIndex && c.get(maxIndex) * -1 == c.get(rowIndices.get(i))) {
-						col2 = A.viewColumn(rowIndices.get(i));
-						if (col1Indices.size() == col2.cardinality()) {
-							col2.getNonZeros(col2Indices, col2Values);
-							col2Indices.sort();
-							pair = true;
-							for (int j = 0; j < col1Indices.size(); j++) {
-								if (col1Indices.get(j) != col2Indices.get(j)
-										|| col1.get(col1Indices.get(j)) * col2.get(col2Indices.get(j)) >= 0) {
-									pair = false;
-									break;
-								}
-							}
-							if (pair) {
-								if (x.get(rowIndices.get(i)) > x.get(maxIndex) / 3) {
-									x.set(maxIndex, x.get(maxIndex) - x.get(rowIndices.get(i)) + 1);
-									x.set(rowIndices.get(i), 1);
-									break;
-								}
-							}
-						}
-					}
-					if (i == rowIndices.size() - 1) check = false;
-				}
-			}
-			else check = false;
-		}
-	}
-	
-	int index(Variable v) {
-		validate();
-		return varMap.get(v);
-	}
-	
-	int index(LinearConstraint lc) {
-		validate();
-		return lcMap.get(lc);
-	}
-	
-	private void validate() {
-		if (valid)
-			return;
-		
+	public void checkOutMatrices() {
+		verifyCheckedIn();
 		Variable var;
 		int i, j;
 		Set<Node> vars;
@@ -322,27 +216,143 @@ public class ConicProgram {
 			c.set(v.getValue(), v.getKey().getObjectiveCoefficient());
 		}
 		
-		valid = true;
+		checkedOut = true;
 	}
 	
-	private void invalidate() {
-		valid = false;
-	}
-	
-	public void update() {
-		if (valid) {
-			for (Map.Entry<Variable, Integer> v : varMap.entrySet()) {
-				v.getKey().setValue(x.get(v.getValue()));
-				v.getKey().setDualValue(s.get(v.getValue()));
-			}
-			for (Map.Entry<LinearConstraint, Integer> lc : lcMap.entrySet())
-				lc.getKey().setLagrange(w.get(lc.getValue()));
+	public void checkInMatrices() {
+		verifyCheckedOut();
+		for (Map.Entry<Variable, Integer> v : varMap.entrySet()) {
+			v.getKey().setValue(x.get(v.getValue()));
+			v.getKey().setDualValue(s.get(v.getValue()));
 		}
-		else
-			throw new IllegalStateException("Conic program has been modified. Cannot update.");
+		for (Map.Entry<LinearConstraint, Integer> lc : lcMap.entrySet())
+			lc.getKey().setLagrange(w.get(lc.getValue()));
+		checkedOut = false;
+	}
+	
+	public Map<Variable, Integer> getVarMap() {
+		verifyCheckedOut();
+		return varMap;
+	}
+	
+	public Map<LinearConstraint, Integer> getLcMap() {
+		verifyCheckedOut();
+		return lcMap;
+	}
+	
+	public SparseDoubleMatrix2D getA() {
+		verifyCheckedOut();
+		return A;
+	}
+	
+	public DenseDoubleMatrix1D getX() {
+		verifyCheckedOut();
+		return x;
+	}
+	
+	public DenseDoubleMatrix1D getB() {
+		verifyCheckedOut();
+		return b;
+	}
+	
+	public DenseDoubleMatrix1D getW() {
+		verifyCheckedOut();
+		return w;
+	}
+	
+	public DenseDoubleMatrix1D getS() {
+		verifyCheckedOut();
+		return s;
+	}
+	
+	public DenseDoubleMatrix1D getC() {
+		verifyCheckedOut();
+		return c;
+	}
+	
+	public int getV() {
+		return v;
+	}
+	
+	int index(Variable v) {
+		verifyCheckedOut();
+		return varMap.get(v);
+	}
+	
+	int index(LinearConstraint lc) {
+		verifyCheckedOut();
+		return lcMap.get(lc);
+	}
+	
+	void verifyCheckedOut() {
+		if (!checkedOut)
+			throw new IllegalAccessError("Matrices are not checked out.");
+	}
+	
+	void verifyCheckedIn() {
+		if (checkedOut)
+			throw new IllegalAccessError("Matrices are not checked in.");
+	}
+	
+	public void trimUnrestrictedVariablePairs() {
+		boolean checkInWhenFinished = false;
+		if (!checkedOut) {
+			checkOutMatrices();
+			checkInWhenFinished = true;
+		}
+		boolean pair, trim = true;
+		DoubleMatrix1D col1, col2, row;
+		IntArrayList col1Indices = new IntArrayList()
+				, col2Indices = new IntArrayList()
+				, rowIndices = new IntArrayList()
+				;
+		DoubleArrayList col1Values = new DoubleArrayList()
+				, col2Values = new DoubleArrayList()
+				, rowValues = new DoubleArrayList()
+				;
+		while (trim) {
+			double[] max = x.getMaxLocation();
+			int maxIndex = (int) max[1];
+			if (max[0] > 10e4) {
+				col1 = A.viewColumn((int) max[1]);
+				col1.getNonZeros(col1Indices, col1Values);
+				col1Indices.sort();
+				row = A.viewRow(col1Indices.get(0));
+				row.getNonZeros(rowIndices, rowValues);
+				for (int i = 0; i < rowIndices.size(); i++) {
+					if (rowIndices.get(i) != maxIndex && c.get(maxIndex) * -1 == c.get(rowIndices.get(i))) {
+						col2 = A.viewColumn(rowIndices.get(i));
+						if (col1Indices.size() == col2.cardinality()) {
+							col2.getNonZeros(col2Indices, col2Values);
+							col2Indices.sort();
+							pair = true;
+							for (int j = 0; j < col1Indices.size(); j++) {
+								if (col1Indices.get(j) != col2Indices.get(j)
+										|| col1.get(col1Indices.get(j)) * col2.get(col2Indices.get(j)) >= 0) {
+									pair = false;
+									break;
+								}
+							}
+							if (pair) {
+								if (x.get(rowIndices.get(i)) > x.get(maxIndex) / 3) {
+									x.set(maxIndex, x.get(maxIndex) - x.get(rowIndices.get(i)) + 1);
+									x.set(rowIndices.get(i), 1);
+									break;
+								}
+							}
+						}
+					}
+					if (i == rowIndices.size() - 1) trim = false;
+				}
+			}
+			else trim = false;
+		}
+		
+		if (checkInWhenFinished) checkInMatrices();
 	}
 	
 	public void makeFeasible() {
+		verifyCheckedIn();
 		makePrimalFeasible();
 		log.debug("Found primal feasible point.");
 		makeDualFeasible();
@@ -739,24 +749,33 @@ public class ConicProgram {
 	
 	public double primalInfeasibility() {
 		DenseDoubleAlgebra alg = new DenseDoubleAlgebra();
-		validate();
-		return alg.norm2(alg.mult(A, x).assign(b, DoubleFunctions.minus));
+		boolean checkInWhenFinished = false;
+		if (!checkedOut) {
+			checkOutMatrices();
+			checkInWhenFinished = true;
+		}
+		double inf = alg.norm2(alg.mult(A, x).assign(b, DoubleFunctions.minus));
+		if (checkInWhenFinished) checkInMatrices();
+		return inf;
 	}
-	
 	
 	public double dualInfeasibility() {
 		DenseDoubleAlgebra alg = new DenseDoubleAlgebra();
-		validate();
-		return alg.norm2(A.zMult(w, s.copy(), 1.0, 1.0, true).assign(c, DoubleFunctions.minus));
+		boolean checkInWhenFinished = false;
+		if (!checkedOut) {
+			checkOutMatrices();
+			checkInWhenFinished = true;
+		}
+		double inf = alg.norm2(A.zMult(w, s.copy(), 1.0, 1.0, true).assign(c, DoubleFunctions.minus));
+		if (checkInWhenFinished) checkInMatrices();
+		return inf;
 	}
-	
 	
 	void notify(ConicProgramEvent e, Entity sender, Object... data) {
 		switch (e) {
 		case NNOCCreated:
 		case NNOCDeleted:
 			if (sender instanceof NonNegativeOrthantCone) {
-				invalidate();
 				NonNegativeOrthantCone nnoc = (NonNegativeOrthantCone) sender;
 				switch (e) {
 				case NNOCCreated:
@@ -775,7 +794,6 @@ public class ConicProgram {
 			break;
 		case ObjCoeffChanged:
 			if (sender instanceof Variable) {
-				invalidate();
 				Variable var = (Variable) sender;
 				if (madeFeasibleOnce) dualInfeasible.add(var);
 			}
@@ -786,7 +804,6 @@ public class ConicProgram {
 		case ConValueChanged:
 		case ConDeleted:
 			if (sender instanceof LinearConstraint) {
-				invalidate();
 				LinearConstraint lc = (LinearConstraint) sender;
 				switch(e) {
 				case ConCreated:
@@ -804,7 +821,6 @@ public class ConicProgram {
 		case VarAddedToCon:
 		case VarRemovedFromCon:
 			if (sender instanceof LinearConstraint && data.length > 0 && data[0] instanceof Variable) {
-				invalidate();
 				LinearConstraint lc = (LinearConstraint) sender;
 				Variable var = (Variable) data[0];
 				if (madeFeasibleOnce) {

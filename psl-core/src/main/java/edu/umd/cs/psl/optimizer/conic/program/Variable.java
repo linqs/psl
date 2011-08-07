@@ -54,6 +54,7 @@ public class Variable extends Entity {
 	}
 	
 	public void setObjectiveCoefficient(Double c) {
+		program.verifyCheckedIn();
 		doSetObjectiveCoefficient(c);
 		program.notify(ConicProgramEvent.ObjCoeffChanged, this);
 	}

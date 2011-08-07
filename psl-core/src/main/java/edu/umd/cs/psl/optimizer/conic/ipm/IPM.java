@@ -123,6 +123,8 @@ public class IPM implements ConicProgramSolver {
 		
 		if (initFeasible)
 			program.makeFeasible();
+		
+		program.checkOutMatrices();
 
 		double mu, primalFeasibilityDist, dualFeasibilityDist;
 		DoubleMatrix2D A = program.getA();
@@ -141,8 +143,7 @@ public class IPM implements ConicProgramSolver {
 		if (dualFeasibilityDist > 10e-8)
 			log.error("Dual infeasible - Total distance: " + dualFeasibilityDist);
 		
-		/* Updates variables */
-		program.update();
+		program.checkInMatrices();
 		
 		if (dualize) {
 			dualizer.updateData();

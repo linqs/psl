@@ -42,6 +42,7 @@ public class LinearConstraint extends Entity {
 	}
 	
 	public void addVariable(Variable v, Double coefficient) {
+		program.verifyCheckedIn();
 		Node vNode = v.getNode();
 		Relationship rel = node.createRelationship(ConicProgram.LC_REL, vNode);
 		rel.createProperty(ConicProgram.LC_REL_COEFF, coefficient);
@@ -49,6 +50,7 @@ public class LinearConstraint extends Entity {
 	}
 
 	public void removeVariable(Variable v) {
+		program.verifyCheckedIn();
 		Node vNode = ((Variable) v).getNode();
 		for (Relationship rel : node.getRelationships(ConicProgram.LC_REL)) {
 			if (rel.getEnd().equals(vNode)) {
@@ -72,6 +74,7 @@ public class LinearConstraint extends Entity {
 	}
 
 	public void setConstrainedValue(Double v) {
+		program.verifyCheckedIn();
 		doSetConstrainedValue(v);
 		program.notify(ConicProgramEvent.ConValueChanged, this);
 	}
@@ -107,6 +110,7 @@ public class LinearConstraint extends Entity {
 	
 	@Override
 	final public void delete() {
+		program.verifyCheckedIn();
 		for (Variable var : getVariables().keySet()) {
 			removeVariable(var);
 		}

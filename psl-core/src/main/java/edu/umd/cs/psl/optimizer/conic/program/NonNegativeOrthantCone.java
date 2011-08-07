@@ -45,6 +45,7 @@ public class NonNegativeOrthantCone extends Cone {
 	
 	@Override
 	public final void delete() {
+		program.verifyCheckedIn();
 		program.notify(ConicProgramEvent.NNOCDeleted, this);
 		Variable var = getVariable();
 		node.getRelationshipIterator(ConicProgram.CONE_REL).next().delete();

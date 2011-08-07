@@ -46,9 +46,6 @@ public class Dualizer {
 		Double lowerBound, upperBound, newBound, coeff;
 		int numConstraints;
 		
-		log.trace("Starting first pass.");
-		int i = 0;
-		
 		for (Cone c : primalData.getNonNegativeOrthantCones()) {
 			Variable primalVar = ((NonNegativeOrthantCone) c).getVariable();
 			numConstraints = primalVar.getLinearConstraints().size();
@@ -91,8 +88,6 @@ public class Dualizer {
 				else
 					throw new IllegalStateException("Unexpected state.");
 			}
-			if (++i % 1000 == 0)
-				log.trace("Finished {} variables.", i);
 		}
 		
 		log.trace("Starting second pass.");
