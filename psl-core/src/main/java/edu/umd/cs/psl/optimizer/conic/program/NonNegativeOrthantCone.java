@@ -78,7 +78,7 @@ public class NonNegativeOrthantCone extends Cone {
 	void setInteriorDirection(Map<Variable, Integer> varMap, DoubleMatrix1D x,
 			DoubleMatrix1D d) {
 		int i = varMap.get(getVariable());
-		if (x.get(i) < .05)
+		if (x.get(i) <= .05)
 			d.set(i, 0.25 - x.get(i));
 		else
 			d.set(i, 0);

@@ -77,6 +77,7 @@ public class ConicProgram {
 	
 	// Relationship type names
 	static final String CONE_REL = "coneRel";
+	static final String SOC_N_REL = "socpNRel";
 	static final String LC_REL = "lcRel";
 	
 	// Property type names for lcRel relationships
@@ -120,6 +121,7 @@ public class ConicProgram {
 		graph.createPropertyType(LAGRANGE, Double.class);
 		
 		graph.createRelationshipType(CONE_REL);
+		graph.createRelationshipType(SOC_N_REL);
 		graph.createRelationshipType(LC_REL);
 		
 		graph.createPropertyType(LC_REL_COEFF, Double.class);
@@ -142,7 +144,20 @@ public class ConicProgram {
 	public Set<NonNegativeOrthantCone> getNonNegativeOrthantCones() {
 		Set<NonNegativeOrthantCone> cones = new HashSet<NonNegativeOrthantCone>();
 		for (Node n : graph.getNodesByAttribute(NODE_TYPE, NodeType.nnoc)) {
-			cones.add(new NonNegativeOrthantCone(this, n));
+			cones.add((NonNegativeOrthantCone) Entity.createEntity(this, n));
+		}
+		return cones;
+	}
+	
+	public SecondOrderCone createSecondOrderCone(int n) {
+		verifyCheckedIn();
+		return new SecondOrderCone(this, n);
+	}
+	
+	public Set<SecondOrderCone> getSecondOrderCones() {
+		Set<SecondOrderCone> cones = new HashSet<SecondOrderCone>();
+		for (Node n : graph.getNodesByAttribute(NODE_TYPE, NodeType.soc)) {
+			cones.add((SecondOrderCone) Entity.createEntity(this, n));
 		}
 		return cones;
 	}
@@ -150,6 +165,7 @@ public class ConicProgram {
 	public Set<Cone> getCones() {
 		Set<Cone> cones = new HashSet<Cone>();
 		cones.addAll(getNonNegativeOrthantCones());
+		cones.addAll(getSecondOrderCones());
 		return cones;
 	}
 	
@@ -786,6 +802,29 @@ public class ConicProgram {
 					v--;
 					dualInfeasible.remove(nnoc.getVariable());
 					dualIsolated.remove(nnoc.getVariable());
+					break;
+				}
+			}
+			else
+				throw new IllegalArgumentException(UNEXPECTED_SENDER);
+			break;
+		case SOCCreated:
+		case SOCDeleted:
+			if (sender instanceof SecondOrderCone) {
+				SecondOrderCone soc = (SecondOrderCone) sender;
+				switch (e) {
+				case SOCCreated:
+					v += 2;
+					if (madeFeasibleOnce)
+						for (Variable v : soc.getVariables())
+							dualInfeasible.add(v);
+					break;
+				case SOCDeleted:
+					v -= 2;
+					for (Variable v : soc.getVariables()) {
+						dualInfeasible.remove(v);
+						dualIsolated.remove(v);
+					}
 					break;
 				}
 			}

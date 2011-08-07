@@ -41,6 +41,7 @@ import edu.umd.cs.psl.optimizer.conic.ipm.IPM;
 import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
 import edu.umd.cs.psl.optimizer.conic.program.LinearConstraint;
 import edu.umd.cs.psl.optimizer.conic.program.NonNegativeOrthantCone;
+import edu.umd.cs.psl.optimizer.conic.program.SecondOrderCone;
 import edu.umd.cs.psl.optimizer.conic.program.Variable;
 import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
 import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
@@ -225,6 +226,8 @@ public class ConicReasoner implements Reasoner, AtomEventObserver {
 	
 	private class FunctionConicProgramProxy extends ConicProgramProxy {
 		protected Variable featureVar;
+		protected Variable squaredFeatureVar, innerFeatureVar, innerSquaredVar, outerSquaredVar;
+		protected LinearConstraint innerFeatureCon, innerSquaredCon, outerSquaredCon;
 		protected Vector<ConstraintConicProgramProxy> constraints;
 		
 		FunctionConicProgramProxy(FunctionTerm fun) {
@@ -234,6 +237,36 @@ public class ConicReasoner implements Reasoner, AtomEventObserver {
 			case L1:
 				featureVar = program.createNonNegativeOrthantCone().getVariable();
 				featureVar.setObjectiveCoefficient(1.0);
+				break;
+			case L2:
+				featureVar = program.createNonNegativeOrthantCone().getVariable();
+				featureVar.setObjectiveCoefficient(0.0);
+				squaredFeatureVar = program.createNonNegativeOrthantCone().getVariable();
+				squaredFeatureVar.setObjectiveCoefficient(1.0);
+				SecondOrderCone soc = program.createSecondOrderCone(3);
+				outerSquaredVar = soc.getNthVariable();
+				for (Variable v : soc.getVariables()) {
+					if (!v.equals(outerSquaredVar))
+						if (innerFeatureVar == null)
+							innerFeatureVar = v;
+						else
+							innerSquaredVar = v;
+				}
+				
+				innerFeatureCon = program.createConstraint();
+				innerFeatureCon.addVariable(featureVar, 1.0);
+				innerFeatureCon.addVariable(innerFeatureVar, -1.0);
+				innerFeatureCon.setConstrainedValue(0.0);
+				
+				innerSquaredCon = program.createConstraint();
+				innerSquaredCon.addVariable(innerSquaredVar, 1.0);
+				innerSquaredCon.addVariable(squaredFeatureVar, 0.5);
+				innerSquaredCon.setConstrainedValue(0.5);
+				
+				outerSquaredCon = program.createConstraint();
+				outerSquaredCon.addVariable(outerSquaredVar, 1.0);
+				outerSquaredCon.addVariable(squaredFeatureVar, -0.5);
+				outerSquaredCon.setConstrainedValue(0.5);
 				break;
 			default:
 				throw new IllegalArgumentException("Unsupported distance norm.");
@@ -285,6 +318,13 @@ public class ConicReasoner implements Reasoner, AtomEventObserver {
 			case L1:
 				featureVar.getCone().delete();
 				break;
+			case L2:
+				innerFeatureCon.delete();
+				innerSquaredCon.delete();
+				outerSquaredCon.delete();
+				featureVar.getCone().delete();
+				squaredFeatureVar.getCone().delete();
+				outerSquaredVar.getCone().delete();
 			default:
 				throw new IllegalArgumentException("Unsupported distance norm.");
 			}

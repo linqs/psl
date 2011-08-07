@@ -18,6 +18,7 @@ package edu.umd.cs.psl.optimizer.conic.program;
 
 enum ConicProgramEvent {
 	NNOCCreated, NNOCDeleted,
+	SOCCreated, SOCDeleted,
 	ObjCoeffChanged,
 	ConCreated, VarAddedToCon, VarRemovedFromCon, ConValueChanged, ConDeleted 
 }

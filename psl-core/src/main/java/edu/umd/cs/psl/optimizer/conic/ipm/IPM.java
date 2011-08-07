@@ -199,8 +199,9 @@ public class IPM implements ConicProgramSolver {
 					inNeighborhood = true;
 			}
 			
-			if (inNeighborhood || !initFeasible) {
-				tau = .75;
+			//if (inNeighborhood || !initFeasible) {
+			if (inNeighborhood || (primalInfeasibility < infeasibilityThreshold && dualInfeasibility < infeasibilityThreshold)) {
+				tau = .85;
 			}
 			else {
 				mu = muInitial;
@@ -264,11 +265,9 @@ public class IPM implements ConicProgramSolver {
 		if (!inNeighborhood) {
 			double primalStepSize = 1.0;
 			double dualStepSize = 1.0;
-			for (Cone cone : program.getCones())
+			for (Cone cone : program.getCones()) {
 				primalStepSize = Math.min(primalStepSize, cone.getMaxStep(program.getVarMap(), x, dx));
-			for (int i = 0; i < s.size(); i++) {
-				if (ds.get(i) < 0)
-					dualStepSize = Math.min(dualStepSize, (s.get(i) * .67) / (- ds.get(i)));
+				dualStepSize = Math.min(dualStepSize, cone.getMaxStep(program.getVarMap(), s, ds));
 			}
 
 			dx.assign(DoubleFunctions.mult(primalStepSize));

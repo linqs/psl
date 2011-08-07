@@ -17,5 +17,5 @@
 package edu.umd.cs.psl.optimizer.conic.program;
 
 enum NodeType {
-	var, nnoc, lc;
+	var, nnoc, soc, lc;
 }
