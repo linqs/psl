@@ -19,39 +19,80 @@ package edu.umd.cs.psl.model.argument;
 import edu.umd.cs.psl.model.argument.type.ArgumentType;
 import edu.umd.cs.psl.model.argument.type.ArgumentTypes;
 
+/**
+ * A domain attribute for numerical values.
+ * 
+ * @author
+ *
+ */
 public class NumberAttribute implements Attribute {
 
 	private final double number;
 	
+	/**
+	 * Constructs a numerical attribute.
+	 * 
+	 * @param no A numerical value
+	 */
 	public NumberAttribute(double no) {
 		number = no;
 	}
 	
+	/**
+	 * Returns a string representation of the numerical value.
+	 * 
+	 * @return A string representation of the numerical value
+	 */
 	@Override
 	public String toString() {
 		return "'" + number + "'";
 	}
 	
+	/**
+	 * Returns the attribute value.
+	 * 
+	 * @return The attribute value
+	 */
 	@Override
 	public Double getAttribute() {
 		return number;
 	}
 	
+	/**
+	 * Returns true, as an attribute is ground.
+	 * 
+	 * @return true
+	 */
 	@Override
 	public boolean isGround() {
 		return true;
 	}
 	
+	/**
+	 * Returns the argument type.
+	 * 
+	 * @return {@link ArgumentType.Number}
+	 */
 	@Override
 	public ArgumentType getType() {
 		return ArgumentTypes.Number;
 	}
 	
+	/**
+	 * Returns the hash code.
+	 * 
+	 * @return The integer hash code
+	 */
 	@Override
 	public int hashCode() {
 		return (new Double(number)).hashCode();
 	}
 	
+	/**
+	 * Determines equality with another object.
+	 * 
+	 * @return true if equal; false otherwise
+	 */
 	@Override
 	public boolean equals(Object oth) {
 		if (oth==this) return true;
@@ -59,5 +100,4 @@ public class NumberAttribute implements Attribute {
 		return number==((NumberAttribute)oth).number;  
 	}
 
-	
 }

@@ -16,44 +16,68 @@
  */
 package edu.umd.cs.psl.model.argument;
 
-
-
 /**
  * This class implements a variable predicate argument which is specified by the variable name.
  * @author Matthias Broecheler
  *
  */
-//@Contract
-//@Invar("$this.identifier!=null && $this.identifier.length()>0")
 public class Variable implements Term {
 
 	private final String identifier;
 	
-	//@Pre
+	/**
+	 * Constructs a variable, given a string ID.
+	 * 
+	 * @param id A string ID
+	 */
 	public Variable(String id) {
 		identifier = id;
 	}
 	
+	/**
+	 * Returns the variable ID.
+	 * 
+	 * @return The variable ID
+	 */
 	public String getName() {
 		return identifier;
 	}
 
+	/**
+	 * Returns the variable ID
+	 * 
+	 * @return The variable ID
+	 */
 	@Override
 	public String toString() {
 		return identifier;
 	}
 	
-	
+	/**
+	 * Returns false, as a variable is not ground.
+	 * 
+	 * @return false
+	 */
 	@Override
 	public boolean isGround() {
 		return false;
 	}
 	
+	/**
+	 * Returns the hash code.
+	 * 
+	 * @return The integer hash code
+	 */
 	@Override
 	public int hashCode() {
 		return identifier.hashCode() * 1163;
 	}
 	
+	/**
+	 * Determines equality with another object.
+	 * 
+	 * @return true if equal; false otherwise
+	 */
 	@Override
 	public boolean equals(Object oth) {
 		if (oth==this) return true;

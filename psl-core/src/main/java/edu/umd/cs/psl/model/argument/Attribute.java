@@ -17,12 +17,18 @@
 package edu.umd.cs.psl.model.argument;
 
 /**
- * A particular domain attribute for strings.
+ * An interface for domain attributes.
+ * 
  * @author Matthias Broecheler
  *
  */
 public interface Attribute extends GroundTerm {
 	
+	/**
+	 * Returns the attribute value.
+	 * 
+	 * @return The attribute value
+	 */
 	public Object getAttribute();
 
 }
