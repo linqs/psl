@@ -85,14 +85,19 @@ public class FormulaEventAnalysis {
 			}
 		}
 		
-		//if (oneOf.isEmpty()) {
-			queries.add(new Conjunction((Formula[]) necessary.toArray(new Formula[necessary.size()])));
-		//}
-		//else {
-		//	for (Formula formula : oneOf) {
-		//		queries.add(new Conjunction(new Conjunction((Formula[]) necessary.toArray(new Formula[necessary.size()])), formula));
-		//	}
-		//}
+		if (necessary.size() == 1) {
+			queries.add(necessary.get(0));
+		}
+		else {
+			//if (oneOf.isEmpty()) {
+				queries.add(new Conjunction((Formula[]) necessary.toArray(new Formula[necessary.size()])));
+			//}
+			//else {
+			//	for (Formula formula : oneOf) {
+			//		queries.add(new Conjunction(new Conjunction((Formula[]) necessary.toArray(new Formula[necessary.size()])), formula));
+			//	}
+			//}			
+		}
 	}
 	
 	public Formula getFormula() {
