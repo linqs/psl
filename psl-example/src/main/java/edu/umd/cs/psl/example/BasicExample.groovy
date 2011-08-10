@@ -39,7 +39,7 @@ m.add predicate: "knows" , person1: Entity, person2 : Entity
 // This additional predicate is declared as open, which means we will infer its truth values. By default, predicates are closed.
 m.add predicate: "samePerson", person1: Entity, person2: Entity, open: true
 // Now, we define a string similarity function bound to a predicate. Note that we can use any implementation of AttributeSimilarityFunction here!
-m.add function: "sameName" , name1: Text, name2: Text, implementation: new LevensteinStringSimilarity() // also, try: new MyStringSimilarity(), see end of file
+m.add function: "sameName" , name1: Text, name2: Text, implementation: new LevenshteinStringSimilarity() // also, try: new MyStringSimilarity(), see end of file
 
 /* Having added all the predicates we need to represent our problem, we finally insert some rules into the model.
  * Rules are defined using a logical syntax. Uppercase letters are variables and the predicates used in the rules below

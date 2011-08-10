@@ -34,10 +34,6 @@ public class DatabaseAtomStoreQuery extends DatabaseQuery {
 		store = db.getAtomStore();
 	}
 	
-//	public AtomStore getAtomStore() {
-//		return store;
-//	}
-	
 	public Atom getConsideredAtom(Predicate p, GroundTerm[] arguments) {
 		return store.getConsideredAtom(p, arguments);
 	}
