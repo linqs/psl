@@ -44,7 +44,7 @@ public interface Term {
 	/**
 	 * Standard equals
 	 * @param oth Object to compare to
-	 * @return true if equal, else false
+	 * @return TRUE if equal, FALSE otherwise
 	 */
 	public boolean equals(Object oth);
 

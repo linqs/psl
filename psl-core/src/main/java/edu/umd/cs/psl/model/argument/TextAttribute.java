@@ -59,9 +59,9 @@ public class TextAttribute implements Attribute {
 	}
 	
 	/**
-	 * Returns true, as an the attribute is ground.
+	 * Returns TRUE, as an the attribute is ground.
 	 * 
-	 * @return true
+	 * @return TRUE
 	 */
 	@Override
 	public boolean isGround() {
@@ -91,7 +91,7 @@ public class TextAttribute implements Attribute {
 	/**
 	 * Determines equality with another object.
 	 * 
-	 * @return true if equal; false otherwise
+	 * @return TRUE if equal, FALSE otherwise
 	 */
 	@Override
 	public boolean equals(Object oth) {

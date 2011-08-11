@@ -72,9 +72,9 @@ public class ArgumentFactory {
 	}
 	
 	/**
-	 * Returns a {@link NumberAttribute}, given an int.
+	 * Returns a {@link NumberAttribute}, given an integer value.
 	 * 
-	 * @param i An int
+	 * @param i An integer value
 	 * @return A numerical attribute
 	 */
 	public static Attribute getAttribute(int i) {

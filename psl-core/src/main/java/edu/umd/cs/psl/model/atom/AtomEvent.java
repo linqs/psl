@@ -20,6 +20,12 @@ import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
 
+/**
+ * An enum for various atom event types.
+ * 
+ * @author
+ *
+ */
 public enum AtomEvent {
 
 	ChangedFactFromDefault,

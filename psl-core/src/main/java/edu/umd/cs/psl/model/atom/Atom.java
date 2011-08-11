@@ -54,30 +54,99 @@ import edu.umd.cs.psl.reasoner.function.FunctionVariable;
  */
 public interface Atom extends Formula, RandomVariable {
 	
-	
+	/**
+	 * Returns the predicate associated with this atom.
+	 * 
+	 * @return A predicate
+	 */
 	public Predicate getPredicate();
 	
+	/**
+	 * Returns the cardinality of the atom values.
+	 * 
+	 * Atoms in PSL can be multi-valued vectors.
+	 * Currently, this functionality is not yet supported, so this function should always return 1.
+	 * 
+	 * @return The number of values
+	 */
 	public int getNumberOfValues();
 	
+	/**
+	 * Returns the number of arguments to the associated predicate.
+	 * 
+	 * @return The number of arguments
+	 */
 	public int getArity();
 	
+	/**
+	 * Sets the soft values.
+	 * 
+	 * @param val An array of soft values
+	 */
 	public void setSoftValues(double[] val);
 
+	/**
+	 * Sets the soft value at a given index.
+	 * 
+	 * @param pos A zero-based index
+	 * @param val A soft value
+	 */
 	public void setSoftValue(int pos, double val);
 	
+	/**
+	 * Sets the confidence values.
+	 * 
+	 * @param val An array of confidence values
+	 */
 	public void setConfidenceValues(double[] val);
 	
+	/**
+	 * Sets the confidence values at a given index.
+	 * 
+	 * @param pos A zero-based index
+	 * @param val A confidence value
+	 */
 	public void setConfidenceValue(int pos, double val);
 	
+	/**
+	 * Returns whether the atom has the {@link Predicate predicate's} default value.
+	 * 
+	 * For information on default value, refer to {@link Predicate}.
+	 * 
+	 * @return TRUE if default value; FALSE otherwise
+	 */
 	public boolean hasNonDefaultValues();
 	
+	/**
+	 * Returns the soft value at a given index.
+	 * 
+	 * @param pos A zero-based index
+	 * @return The soft value at index pos
+	 */
 	public double getSoftValue(int pos);
 	
+	/**
+	 * Returns all soft values.
+	 * 
+	 * @return An array of soft values
+	 */
 	public double[] getSoftValues();
 	
+	/**
+	 * Returns the confidence values at a given index.
+	 * 
+	 * @param pos A zero-based index
+	 * @return The confidence value at index pos
+	 */
 	public double getConfidenceValue(int pos);
 
+	/**
+	 * Returns all confidence values.
+	 * 
+	 * @return An array of confidence values
+	 */
 	public double[] getConfidenceValues();
+	
 	
 	public boolean registerGroundKernel(GroundKernel f);
 	

@@ -87,9 +87,9 @@ public class Entity implements GroundTerm {
 	}
 	
 	/**
-	 * Returns true, as an entity is ground.
+	 * Returns TRUE, as an entity is ground.
 	 * 
-	 * @return true
+	 * @return TRUE
 	 */
 	@Override
 	public boolean isGround() {

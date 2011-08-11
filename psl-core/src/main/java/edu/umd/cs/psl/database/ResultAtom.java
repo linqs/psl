@@ -14,6 +14,7 @@ public class ResultAtom {
 	public ResultAtom(double[] values, double[] confidences) {
 		this.values=values;
 		this.confidences=confidences;
+		this.status = Status.RV;
 	}
 	
 	public ResultAtom(double[] values, double[] confidences, Status status) {

@@ -16,8 +16,17 @@
  */
 package edu.umd.cs.psl.model.argument.type;
 
+/**
+ * An enum containing the various types of arguments.
+ * 
+ * @author 
+ *
+ */
 public enum ArgumentTypes implements ArgumentType {
 
+	/**
+	 * A textual argument.
+	 */
 	Text {
 		@Override
 		public boolean isAttribute() { return true;	}
@@ -31,6 +40,10 @@ public enum ArgumentTypes implements ArgumentType {
 		@Override
 		public String getName() { return "Text"; }
 	},
+	
+	/**
+	 * A numerical argument.
+	 */
 	Number {
 		@Override
 		public boolean isAttribute() { return true;	}
@@ -44,6 +57,10 @@ public enum ArgumentTypes implements ArgumentType {
 		@Override
 		public String getName() { return "Number"; }
 	},
+	
+	/**
+	 * An entity argument.
+	 */
 	Entity {
 		@Override
 		public boolean isAttribute() { return false; }

@@ -23,6 +23,16 @@ import com.google.common.base.Preconditions;
 import edu.umd.cs.psl.database.DatabaseAtomStoreQuery;
 import edu.umd.cs.psl.model.argument.type.ArgumentType;
 
+/**
+ * A catch-all entity is an aggregate entity, representing multiple entities.
+ * 
+ * Certain entities may be less important than others. For such entities, one may wish to aggregate them
+ * under one predicate argument. Though this functionality is not yet supported in PSL, this class
+ * lays the groundwork for a future release.
+ * 
+ * @author 
+ *
+ */
 public class CatchAllEntity implements EntitySet {
 
 	private Set<Entity> excludedEntities;
