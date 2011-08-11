@@ -23,6 +23,7 @@ import edu.umd.cs.psl.model.argument.Term;
 import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.AtomStore;
+import edu.umd.cs.psl.model.atom.memory.MemoryAtomStore;
 import edu.umd.cs.psl.model.predicate.Predicate;
 
 public class DatabaseAtomStoreQuery extends DatabaseQuery {
@@ -32,6 +33,15 @@ public class DatabaseAtomStoreQuery extends DatabaseQuery {
 	public DatabaseAtomStoreQuery(AtomStore store) {
 		super(store.getDatabase());
 		this.store = store;
+	}
+	
+	private DatabaseAtomStoreQuery(Database db) {
+		super(db);
+		store = new MemoryAtomStore(db);
+	}
+	
+	public static DatabaseAtomStoreQuery getIndependentInstance(Database db) {
+		return new DatabaseAtomStoreQuery(db);
 	}
 	
 	public Atom getConsideredAtom(Predicate p, GroundTerm[] arguments) {

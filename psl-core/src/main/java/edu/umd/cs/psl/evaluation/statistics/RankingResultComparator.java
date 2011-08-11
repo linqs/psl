@@ -17,14 +17,17 @@
 package edu.umd.cs.psl.evaluation.statistics;
 
 import edu.umd.cs.psl.database.Database;
+import edu.umd.cs.psl.database.DatabaseAtomStoreQuery;
 import edu.umd.cs.psl.evaluation.statistics.filter.AtomFilter;
 import edu.umd.cs.psl.model.predicate.Predicate;
 
 public interface RankingResultComparator {
 
-	public void setBaseline(Database baseline);
+	public void setBaseline(DatabaseAtomStoreQuery baseline);
 	
-	public void setBaseline(Database baseline, boolean initializeAtomStore);
+	public void setBaseline(Database db);
+	
+	//public void setBaseline(Database baseline, boolean initializeAtomStore);
 
 	public void setBaselineFilter(AtomFilter af);
 	
