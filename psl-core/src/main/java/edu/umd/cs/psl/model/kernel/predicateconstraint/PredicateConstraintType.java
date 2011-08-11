@@ -22,7 +22,7 @@ import edu.umd.cs.psl.reasoner.function.FunctionComparator;
 /**
  * PredicateConstraintType provides a method of specifying predicate constraints as used by the 
  * {@link PredicateConstraintKernel}. The constraint functions are based on the types supported by 
- * {@link FunctionComprator} and include equality and non-equality constraints. 
+ * {@link FunctionComparator} and include equality and non-equality constraints. 
  * PredicateConstraintType provides the ability to determine whether a constraint holds or not.
  */
 public enum PredicateConstraintType {

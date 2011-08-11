@@ -115,8 +115,8 @@ public class PredicateConstraintKernel implements Kernel {
 	 * GroundPredicateConstraint} to add to the
 	 * {@link edu.umd.cs.psl.application.ModelApplication ModelApplication}
 	 * 
-	 * @Override
 	 */
+	@Override
 	public void notifyAtomEvent(AtomEvent event, Atom atom, GroundingMode mode,
 			ModelApplication app) {
 		if (AtomEventSets.IntroducedInferenceAtom.subsumes(event)) {

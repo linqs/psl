@@ -26,50 +26,57 @@ import edu.umd.cs.psl.factorgraph.RandomVariable;
 import edu.umd.cs.psl.model.atom.Atom;
 
 /**
- * Evidence is responsible for maintaince of the numeric representation
- * as well as registeration with any affected atoms.
+ * Evidence is responsible for maintaince of the numeric representation as well
+ * as registeration with any affected atoms.
  * 
  * @author matthias
- *
+ * 
  */
 public abstract class GroundKernel implements Factor {
 
 	/**
-	 * This method is called by {@link ModelApplication} after it has been alerted to changes in the parameters
-	 * of an {@link Kernel} on all {@link GroundKernel} instantiations of that type.
+	 * This method is called by
+	 * {@link edu.umd.cs.psl.application.ModelApplication ModelApplication}
+	 * after it has been alerted to changes in the parameters of an
+	 * {@link Kernel} on all {@link GroundKernel} instantiations of that type.
 	 * 
-	 * The method serves two purposes:
-	 * 1) It allows the ground kernels to update their internal parameters if they are cached (for instance, because
-	 * they require non-trivial computation)
-	 * 2) It allows the {@link ModelApplication} to determine whether the change in the parameters of the kernel
-	 * effects this particular instantiation. If the method returns TRUE, then it does, otherwise the ground kernel is unaffected.
-	 * Note that any call to this method implicitly assumes that the kernel of this particular ground kernel has changed
-	 * its parameters. Hence, this method might always return true or throw an {@link UnsupportedOperationException} if the
-	 * parameters could not possibly have changed.
+	 * The method serves two purposes: 1) It allows the ground kernels to update
+	 * their internal parameters if they are cached (for instance, because they
+	 * require non-trivial computation) 2) It allows the
+	 * {@link edu.umd.cs.psl.application.ModelApplication ModelApplication} to
+	 * determine whether the change in the parameters of the kernel effects this
+	 * particular instantiation. If the method returns TRUE, then it does,
+	 * otherwise the ground kernel is unaffected. Note that any call to this
+	 * method implicitly assumes that the kernel of this particular ground
+	 * kernel has changed its parameters. Hence, this method might always return
+	 * true or throw an {@link UnsupportedOperationException} if the parameters
+	 * could not possibly have changed.
 	 * 
-	 * @return Whether or not the change in parameters of the associated Kernel affected this particular instantiation.
-	 * @throws UnsupportedOperationException If there are no parameters to change.
+	 * @return Whether or not the change in parameters of the associated Kernel
+	 *         affected this particular instantiation.
+	 * @throws UnsupportedOperationException
+	 *             If there are no parameters to change.
 	 */
 	abstract public boolean updateParameters();
-	
+
 	abstract public Kernel getKernel();
-	
+
 	abstract public Set<Atom> getAtoms();
-	
+
 	abstract public double getIncompatibility();
-	
+
 	abstract public BindingMode getBinding(Atom atom);
-	
+
 	@Override
 	public Set<? extends RandomVariable> getRandomVariables() {
-		return Sets.filter(getAtoms(),new Predicate<Atom>() {
+		return Sets.filter(getAtoms(), new Predicate<Atom>() {
 
 			@Override
 			public boolean apply(Atom atom) {
 				return atom.isInferenceAtom();
 			}
-			
+
 		});
 	}
-	
+
 }

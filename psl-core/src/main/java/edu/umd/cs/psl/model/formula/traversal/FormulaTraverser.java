@@ -18,7 +18,11 @@ package edu.umd.cs.psl.model.formula.traversal;
 
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.formula.*;
-
+/**
+ * Implements the traversal of a formula, but performs no actions during traversal
+ * Derived classes can extend this class to implement desired outcomes from traversal
+ *
+ */
 public abstract class FormulaTraverser implements FormulaTraversal {
 
 	
