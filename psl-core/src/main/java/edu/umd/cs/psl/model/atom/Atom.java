@@ -16,29 +16,17 @@
  */
 package edu.umd.cs.psl.model.atom;
 
-import java.util.*;
-
-import org.apache.commons.lang.builder.HashCodeBuilder;
-
-import com.google.common.base.Preconditions;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.SetMultimap;
+import java.util.Collection;
+import java.util.Set;
 
 import edu.umd.cs.psl.database.DatabaseAtomStoreQuery;
-import edu.umd.cs.psl.factorgraph.Factor;
 import edu.umd.cs.psl.factorgraph.RandomVariable;
-import edu.umd.cs.psl.model.ConfidenceValues;
-import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.Term;
-import edu.umd.cs.psl.model.argument.Variable;
-import edu.umd.cs.psl.model.argument.type.ArgumentType;
-import edu.umd.cs.psl.model.argument.type.VariableTypeMap;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
-import edu.umd.cs.psl.reasoner.function.FunctionVariable;
 
 
 /**
