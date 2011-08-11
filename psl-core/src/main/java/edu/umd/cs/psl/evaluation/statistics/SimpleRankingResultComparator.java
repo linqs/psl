@@ -56,24 +56,30 @@ public class SimpleRankingResultComparator implements RankingResultComparator {
 	}
 
 	@Override
-	public void setBaseline(Database baseline) {
-		setBaseline(baseline,false);
+	public void setBaseline(DatabaseAtomStoreQuery baseline) {
+		this.baseline = baseline;
 	}
 	
 	@Override
-	public void setBaseline(Database baseline, boolean initializeAtomStore) {
-		AtomStore store = null;
-		if(!initializeAtomStore) {
-			try {
-				store = baseline.getAtomStore();
-			} catch (IllegalStateException e) {}
-		}
-		if (store==null) {
-			store = new MemoryAtomStore(baseline);
-			baseline.setAtomStore(store);
-		}
-		this.baseline = new DatabaseAtomStoreQuery(baseline);
+	public void setBaseline(Database baseline) {
+		this.baseline = DatabaseAtomStoreQuery.getIndependentInstance(baseline);
 	}
+
+	
+//	@Override
+//	public void setBaseline(Database baseline, boolean initializeAtomStore) {
+//		AtomStore store = null;
+//		if(!initializeAtomStore) {
+//			try {
+//				store = baseline.getAtomStore();
+//			} catch (IllegalStateException e) {}
+//		}
+//		if (store==null) {
+//			store = new MemoryAtomStore(baseline);
+//			baseline.setAtomStore(store);
+//		}
+//		this.baseline = new DatabaseAtomStoreQuery(baseline);
+//	}
 
 	@Override
 	public void setResultFilter(AtomFilter af) {

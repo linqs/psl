@@ -16,6 +16,7 @@
  */
 package edu.umd.cs.psl.evaluation.statistics;
 
+import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.database.DatabaseAtomStoreQuery;
 import edu.umd.cs.psl.evaluation.statistics.filter.AtomFilter;
 import edu.umd.cs.psl.model.predicate.Predicate;
@@ -23,6 +24,8 @@ import edu.umd.cs.psl.model.predicate.Predicate;
 public interface ResultComparator {
 
 	public void setBaseline(DatabaseAtomStoreQuery baseline);
+	
+	public void setBaseline(Database db);
 	
 	public void setBaselineFilter(AtomFilter af);
 	

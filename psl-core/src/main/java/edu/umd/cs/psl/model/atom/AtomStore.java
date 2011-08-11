@@ -18,6 +18,7 @@ package edu.umd.cs.psl.model.atom;
 
 import java.util.Set;
 
+import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.predicate.*;
 
@@ -38,13 +39,15 @@ public interface AtomStore {
 	
 	public int getNumAtoms(Set<AtomStatus> stati);
 	
-	public Atom initializeFactAtom(Predicate p, GroundTerm[] terms, double[] values, double[] confidences);
+	public Database getDatabase();
 	
-	public Atom initializeCertaintyAtom(Predicate p, GroundTerm[] terms, double[] values, double[] confidences);
-	
-	public Atom initializeRVAtom(Predicate p, GroundTerm[] terms, double[] values, double[] confidences);
-	
-	public Atom initializeRVAtom(Predicate p, GroundTerm[] terms);
+//	public Atom initializeFactAtom(Predicate p, GroundTerm[] terms, double[] values, double[] confidences);
+//	
+//	public Atom initializeCertaintyAtom(Predicate p, GroundTerm[] terms, double[] values, double[] confidences);
+//	
+//	public Atom initializeRVAtom(Predicate p, GroundTerm[] terms, double[] values, double[] confidences);
+//	
+//	public Atom initializeRVAtom(Predicate p, GroundTerm[] terms);
 
 	
 }

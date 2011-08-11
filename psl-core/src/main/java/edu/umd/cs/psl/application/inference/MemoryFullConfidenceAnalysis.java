@@ -76,8 +76,7 @@ public class MemoryFullConfidenceAnalysis implements ModelApplication, FullConfi
 		model = m;
 		database = db;
 		store = new MemoryAtomStore(database);
-		database.setAtomStore(store);
-		dbProxy = new DatabaseAtomStoreQuery(database);
+		dbProxy = new DatabaseAtomStoreQuery(store);
 		groundkernels = new MemoryGroundKernelStore();
 		atomEvents = new MemoryAtomEventFramework(m,this,store,AtomEventFramework.ActivationMode.All);
 		reasoner = new ConicReasoner(atomEvents, config, new EmptyBundle());

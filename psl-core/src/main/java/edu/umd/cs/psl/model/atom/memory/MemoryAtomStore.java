@@ -24,6 +24,7 @@ import com.google.common.collect.Iterables;
 
 import de.mathnbits.util.RetrievalSet;
 import edu.umd.cs.psl.database.Database;
+import edu.umd.cs.psl.database.ResultAtom;
 import edu.umd.cs.psl.model.ConfidenceValues;
 import edu.umd.cs.psl.model.argument.EntitySet;
 import edu.umd.cs.psl.model.argument.GroundTerm;
@@ -53,7 +54,12 @@ public class MemoryAtomStore implements AtomStore {
 		if (!atom.isAtomGroup()) {
 			db.persist(atom);
 		}
-	}	
+	}
+	
+	@Override
+	public Database getDatabase() {
+		return db;
+	}
 	
 	@Override
 	public void free(Atom atom) {
@@ -74,11 +80,15 @@ public class MemoryAtomStore implements AtomStore {
 				if (containsEntitySet(arguments)) {
 					return initializeGroupAtom(p,arguments);
 				} else {
-					return db.getAtom(p, arguments);
+					ResultAtom res = db.getAtom(p,arguments);
+					return this.initializeAtom(p, arguments, res);
 				}
 			} else if (p instanceof FunctionalPredicate){
-				return initializeFactAtom(p, arguments, ((FunctionalPredicate)p).computeValues(arguments), 
-															ConfidenceValues.getMaxConfidence(p.getNumberOfValues()));
+				return initializeAtom(p, arguments, 
+						new ResultAtom(((FunctionalPredicate)p).computeValues(arguments), 
+						ConfidenceValues.getMaxConfidence(p.getNumberOfValues()),
+						ResultAtom.Status.FACT
+						));
 			} else throw new IllegalArgumentException("Unsupported predicate: " + p);
 		}
 
@@ -145,25 +155,46 @@ public class MemoryAtomStore implements AtomStore {
 		}
 	}
 	
-	@Override
-	public Atom initializeFactAtom(Predicate p, GroundTerm[] terms, double[] values, double[] confidences) {
-		return addToCache(initializeAtom(p,terms,AtomStatus.UnconsideredFact,values,confidences));
+	private Atom initializeAtom(Predicate p, GroundTerm[] terms, ResultAtom res) {
+		double[] values = res.getValues();
+		double[] confidences = res.getConfidences();
+		AtomStatus s = null;
+		switch(res.getStatus()) {
+		case CERTAINTY: 
+			s = AtomStatus.UnconsideredCertainty;
+			break;
+		case FACT:
+			s = AtomStatus.UnconsideredFact;
+			break;
+		case RV:
+			s = AtomStatus.UnconsideredRV;
+			break;
+		}
+		if (values==null) values = p.getDefaultValues();
+		if (confidences==null) confidences = ConfidenceValues.getDefaultConfidence(p.getNumberOfValues());
+		return addToCache(initializeAtom(p,terms,s,values,confidences));
 	}
 	
-	@Override
-	public Atom initializeCertaintyAtom(Predicate p, GroundTerm[] terms, double[] values, double[] confidences) {
-		return addToCache(initializeAtom(p,terms,AtomStatus.UnconsideredCertainty,values,confidences));
-	}
 	
-	@Override
-	public Atom initializeRVAtom(Predicate p, GroundTerm[] terms, double[] values, double[] confidences) {
-		return addToCache(initializeAtom(p,terms,AtomStatus.UnconsideredRV,values,confidences));
-	}
-	
-	@Override
-	public Atom initializeRVAtom(Predicate p, GroundTerm[] terms) {
-		return initializeRVAtom(p,terms,p.getDefaultValues(),ConfidenceValues.getDefaultConfidence(p.getNumberOfValues()));
-	}
+//	@Override
+//	public Atom initializeFactAtom(Predicate p, GroundTerm[] terms, double[] values, double[] confidences) {
+//		return addToCache(initializeAtom(p,terms,AtomStatus.UnconsideredFact,values,confidences));
+//	}
+//	
+//	@Override
+//	public Atom initializeCertaintyAtom(Predicate p, GroundTerm[] terms, double[] values, double[] confidences) {
+//		return addToCache(initializeAtom(p,terms,AtomStatus.UnconsideredCertainty,values,confidences));
+//	}
+//	
+//	@Override
+//	public Atom initializeRVAtom(Predicate p, GroundTerm[] terms, double[] values, double[] confidences) {
+//		return addToCache(initializeAtom(p,terms,AtomStatus.UnconsideredRV,values,confidences));
+//	}
+//	
+//	@Override
+//	public Atom initializeRVAtom(Predicate p, GroundTerm[] terms) {
+//		return initializeRVAtom(p,terms,p.getDefaultValues(),ConfidenceValues.getDefaultConfidence(p.getNumberOfValues()));
+//	}
 	
 	private Atom initializeGroupAtom(Predicate p, GroundTerm[] terms) {
 		return addToCache(new MemoryGroupAtom(p,terms));

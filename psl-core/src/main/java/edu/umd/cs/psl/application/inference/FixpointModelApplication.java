@@ -72,9 +72,8 @@ public class FixpointModelApplication implements ModelApplication, FullInference
 		model = m;
 		database = db;
 		store = new MemoryAtomStore(database);
-		database.setAtomStore(store);
 		groundkernels = new MemoryGroundKernelStore();
-		dbProxy = new DatabaseAtomStoreQuery(database);
+		dbProxy = new DatabaseAtomStoreQuery(store);
 		atomEvents = new MemoryAtomEventFramework(m,this,store);
 		//database.registerDatabaseEventObserver(atomEvents);
 		nextGKernels = new HashSet<GroundKernel>();

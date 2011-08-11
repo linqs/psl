@@ -50,6 +50,7 @@ import edu.umd.cs.psl.database.DatabaseEventObserver;
 import edu.umd.cs.psl.database.PSLValue;
 import edu.umd.cs.psl.database.Partition;
 import edu.umd.cs.psl.database.PredicatePosition;
+import edu.umd.cs.psl.database.ResultAtom;
 import edu.umd.cs.psl.database.ResultList;
 import edu.umd.cs.psl.database.ResultListValues;
 import edu.umd.cs.psl.database.UniqueID;
@@ -64,7 +65,6 @@ import edu.umd.cs.psl.model.argument.type.ArgumentType;
 import edu.umd.cs.psl.model.argument.type.ArgumentTypes;
 import edu.umd.cs.psl.model.argument.type.VariableTypeMap;
 import edu.umd.cs.psl.model.atom.Atom;
-import edu.umd.cs.psl.model.atom.AtomStore;
 import edu.umd.cs.psl.model.atom.TemplateAtom;
 import edu.umd.cs.psl.model.atom.VariableAssignment;
 import edu.umd.cs.psl.model.formula.Formula;
@@ -117,10 +117,6 @@ public class RDBMSDatabase implements Database {
 	private final boolean persistDefaultRVValues;
 	
 	/**
-	 * The AtomStore linked to this database instance.
-	 */
-	private AtomStore store;
-	/**
 	 * The parent RDBMSDataStore from which this database instance was derived.
 	 */
 	private final RDBMSDataStore parentDataStore;
@@ -143,7 +139,6 @@ public class RDBMSDatabase implements Database {
 	public RDBMSDatabase(RDBMSDataStore parent, Connection con, Partition write, Partition[] reads) {
 		parentDataStore = parent;
 		db = con;
-		this.store=null;
 		writePartition = write;
 		writeID = writePartition.getID();
 		readPartitions = reads;
@@ -157,18 +152,6 @@ public class RDBMSDatabase implements Database {
 		isPriorInitialized = defaultisPriorInitialized;
 		persistDefaultRVValues = defaultPersistDefaultRVValues;
 		registerFunctionAlias();
-	}
-	
-	@Override
-	public void setAtomStore(AtomStore store) {
-		if (this.store!=null) throw new IllegalStateException("An atom store has already been registered with this database!");
-		this.store=store;
-	}
-	
-	@Override
-	public AtomStore getAtomStore() {
-		if (this.store==null) throw new IllegalStateException("An atom store has not yet been registered with this database!");
-		return this.store;
 	}
 
 	@Override
@@ -207,7 +190,6 @@ public class RDBMSDatabase implements Database {
 	
 	@Override
 	public void persist(Atom atom) {
-		Preconditions.checkArgument(store!=null);
 		assert atom.isGround();
 		assert atom.isConsidered() || atom.isActive() : atom;
 		RDBMSPredicateHandle ph = getHandle(atom.getPredicate());
@@ -377,12 +359,11 @@ public class RDBMSDatabase implements Database {
 	}
 	
 	@Override
-	public Atom getAtom(Predicate p, GroundTerm[] arguments) {
-		Preconditions.checkArgument(store!=null);
+	public ResultAtom getAtom(Predicate p, GroundTerm[] arguments) {
 		RDBMSPredicateHandle ph = getHandle(p);
 		boolean notFound = false;
 		if (!isPriorInitialized && !ph.isClosed()) notFound=true;
-		Atom atom=null;
+		ResultAtom atom=null;
 		
 		if (!notFound) {
 			SelectQuery q = queryAtom(p,arguments);
@@ -417,24 +398,24 @@ public class RDBMSDatabase implements Database {
 				    			if (!ph.hasConfidenceValues()) {
 				    				confidences = ConfidenceValues.getMaxConfidence(p.getNumberOfValues());
 				    			}
-				    			atom = store.initializeFactAtom(p, arguments, values, confidences);
+				    			atom = new ResultAtom(values,confidences,ResultAtom.Status.FACT);
 				    		} else {
 				    			assert ph.hasSoftValues();
 				    			assert ph.hasConfidenceValues();
 				    			PSLValue pslval = PSLValue.parse(rs.getInt(ph.pslColumn()));
-				    			atom = store.initializeRVAtom(p, arguments, values, confidences);
+				    			atom = new ResultAtom(values,confidences,ResultAtom.Status.RV);
 				    			switch(pslval) {
 				    			case Fact:
-				    				atom = store.initializeCertaintyAtom(p, arguments, values, confidences);
+				    				atom.setStatus(ResultAtom.Status.CERTAINTY);
 				    				break;
 				    			case DefaultFact:
-				    				atom = store.initializeCertaintyAtom(p, arguments, values, confidences);
+				    				atom.setStatus(ResultAtom.Status.CERTAINTY);
 				    				break;
 				    			case DefaultRV:
-				    				atom = store.initializeRVAtom(p, arguments, values, confidences);
+				    				atom.setStatus(ResultAtom.Status.RV);
 				    				break;
 				    			case ActiveRV:
-				    				atom = store.initializeRVAtom(p, arguments, values, confidences);
+				    				atom.setStatus(ResultAtom.Status.RV);
 				    				break;
 				    			default: throw new IllegalArgumentException("Unknown psl value: " + pslval); 
 				    			}
@@ -457,9 +438,9 @@ public class RDBMSDatabase implements Database {
 		if (notFound) {
 			assert atom==null;
     		if (ph.isClosed()) {
-    			atom = store.initializeFactAtom(p, arguments, p.getDefaultValues(), ConfidenceValues.getMaxConfidence(p.getNumberOfValues()));
+    			atom = new ResultAtom(p.getDefaultValues(),ConfidenceValues.getMaxConfidence(p.getNumberOfValues()),ResultAtom.Status.FACT);
     		} else {
-    			atom = store.initializeRVAtom(p, arguments);
+    			atom = new ResultAtom(ResultAtom.Status.RV);
     		}
 		}
 		assert atom!=null;
@@ -703,7 +684,6 @@ public class RDBMSDatabase implements Database {
 	@Override
 	public void close() {
 		parentDataStore.closeDatabase(this,writePartition,readPartitions);
-		store=null;
 		allEntities.clear();
 		dbObserver=null;
 	}

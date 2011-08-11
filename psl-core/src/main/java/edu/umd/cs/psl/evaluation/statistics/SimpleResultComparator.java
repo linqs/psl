@@ -61,6 +61,11 @@ public class SimpleResultComparator implements ResultComparator {
 	}
 	
 	@Override
+	public void setBaseline(Database baseline) {
+		this.baseline = DatabaseAtomStoreQuery.getIndependentInstance(baseline);
+	}
+	
+	@Override
 	public void setTolerance(double tolerance) {
 		this.tolerance = tolerance;
 	}
