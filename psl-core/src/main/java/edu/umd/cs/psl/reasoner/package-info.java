@@ -14,23 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.model.argument;
-
-import edu.umd.cs.psl.model.argument.type.ArgumentType;
 
 /**
- * An interface for ground terms.
+ * Provides interfaces and classes for performing probabilistic inference over
+ * {@link edu.umd.cs.psl.model.atom.Atom Atoms}.
  * 
- * @author
- *
+ * {@link Reasoner} and its implementations are the main tools for inference.
+ * See the function subpackage provides interfaces and classes for defining functions
+ * that {@link edu.umd.cs.psl.model.kernel.GroundKernel GroundKernels} should use.
  */
-public interface GroundTerm extends Term {
-
-	/**
-	 * Returns the argument type.
-	 * 
-	 * @return An argument type
-	 */
-	public ArgumentType getType();
-	
-}
+package edu.umd.cs.psl.reasoner;

@@ -16,8 +16,6 @@
  */
 package edu.umd.cs.psl.model.argument;
 
-
-
 /**
  * The standard interface for predicate arguments
  * @author Matthias Broecheler
@@ -30,7 +28,6 @@ public interface Term {
 	 * @return A string representing the predicate argument
 	 */
 	public String toString();
-	
 	
 	/**
 	 * Whether the predicate argument is ground, i.e not a variable

@@ -40,7 +40,7 @@ m.add predicate: "hasType"     , entity    : Entity,  type1    : Text   ,  type:
 //target predicate
 m.add predicate: "similar"     , entity1   : Entity,  entity2  : Entity ,  open: true, type: PredicateTypes.SoftTruth;
 
-m.add function: "similarName" , name1: Text, name2: Text, implementation: new LevensteinStringSimilarity();
+m.add function: "similarName" , name1: Text, name2: Text, implementation: new LevenshteinStringSimilarity();
 
 
 ///////////////////////////// rules ////////////////////////////////////

@@ -19,45 +19,85 @@ package edu.umd.cs.psl.model.argument;
 import edu.umd.cs.psl.model.argument.type.ArgumentType;
 import edu.umd.cs.psl.model.argument.type.ArgumentTypes;
 
+/**
+ * A particular domain attribute for strings.
+ * 
+ * @author
+ *
+ */
 public class TextAttribute implements Attribute {
 
 	private final String attribute;
 	
+	/**
+	 * Constructs a textual attribute, given a string.
+	 * 
+	 * @param a A string value
+	 */
 	public TextAttribute(String a) {
 		attribute = a;
 	}
 	
+	/**
+	 * Returns the string value.
+	 * 
+	 * @return The string value, with a maximum length 30
+	 */
 	@Override
 	public String toString() {
 		return "'" + attribute.substring(0, Math.min(attribute.length(), 30)) + "'";
 	}
 	
+	/**
+	 * Returns the string value.
+	 * 
+	 * @return The string value
+	 */
 	@Override
 	public String getAttribute() {
 		return attribute;
 	}
 	
+	/**
+	 * Returns true, as an the attribute is ground.
+	 * 
+	 * @return true
+	 */
 	@Override
 	public boolean isGround() {
 		return true;
 	}
 	
+	/**
+	 * Returns the argument type.
+	 * 
+	 * @return The argument type
+	 */
 	@Override
 	public ArgumentType getType() {
 		return ArgumentTypes.Text;
 	}
 	
+	/**
+	 * Returns the hash code.
+	 * 
+	 * @return The integer hash code
+	 */
 	@Override
 	public int hashCode() {
 		return attribute.hashCode();
 	}
 	
+	/**
+	 * Determines equality with another object.
+	 * 
+	 * @return true if equal; false otherwise
+	 */
 	@Override
 	public boolean equals(Object oth) {
 		if (oth==this) return true;
 		if (oth==null || !(getClass().isInstance(oth)) ) return false;
 		return attribute.equals(((TextAttribute)oth).attribute);  
 	}
-
 	
 }

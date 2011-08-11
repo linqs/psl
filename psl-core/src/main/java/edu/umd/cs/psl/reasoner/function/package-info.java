@@ -14,23 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.model.argument;
-
-import edu.umd.cs.psl.model.argument.type.ArgumentType;
 
 /**
- * An interface for ground terms.
- * 
- * @author
+ * Provides interfaces and classes for defining functions that
+ * {@link edu.umd.cs.psl.reasoner.Reasoner Reasoners} can interpret.
  *
+ * {@link edu.umd.cs.psl.model.kernel.GroundKernel GroundKernels} use these
+ * to define their incompatibility and constraint functions.
  */
-public interface GroundTerm extends Term {
-
-	/**
-	 * Returns the argument type.
-	 * 
-	 * @return An argument type
-	 */
-	public ArgumentType getType();
-	
-}
+package edu.umd.cs.psl.reasoner.function;

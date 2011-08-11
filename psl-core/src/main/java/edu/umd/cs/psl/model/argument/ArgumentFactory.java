@@ -16,25 +16,37 @@
  */
 package edu.umd.cs.psl.model.argument;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 import edu.umd.cs.psl.database.UniqueID;
 import edu.umd.cs.psl.model.argument.type.ArgumentType;
-import edu.umd.cs.psl.model.argument.type.ArgumentTypes;
 
+/**
+ * Factory for arguments to a predicate.
+ * Entities are created as singletons. 
+ *
+ * @author 
+ *
+ */
 public class ArgumentFactory {
 
 	private final Map<ArgumentType,Map<UniqueID,Entity>> cache;
 	
+	/**
+	 * Default constructor
+	 */
 	public ArgumentFactory() {
 		cache = new HashMap<ArgumentType,Map<UniqueID,Entity>>();
 	}
-	
-//	public Entity getEntity(UniqueID id) {
-//		return getEntity(id,ArgumentTypes.Entity);
-//	}
 
-	
+	/**
+	 * Returns an {@link Entity}, given a {@link UniqueID} and {@link ArgumentType}.
+	 * 
+	 * @param id A unique ID
+	 * @param t An argument type
+	 * @returns An entity with the given unique ID and argument type
+	 */
 	public Entity getEntity(UniqueID id, ArgumentType t) {
 		Map<UniqueID,Entity> map = cache.get(t);
 		if (map==null) {
@@ -49,22 +61,53 @@ public class ArgumentFactory {
 		return e;
 	}
 	
+	/**
+	 * Returns a {@link TextAttribute}, given a string.
+	 * 
+	 * @param s A string
+	 * @return A textual attribute
+	 */
 	public static Attribute getAttribute(String s) {
 		return new TextAttribute(s);
 	}
 	
+	/**
+	 * Returns a {@link NumberAttribute}, given an int.
+	 * 
+	 * @param i An int
+	 * @return A numerical attribute
+	 */
 	public static Attribute getAttribute(int i) {
 		return new NumberAttribute(i);
 	}
 
+	/**
+	 * Returns a {@link NumberAttribute}, given a double.
+	 * 
+	 * @param d A double
+	 * @return A numerical attribute
+	 */
 	public static Attribute getAttribute(double d) {
 		return new NumberAttribute(d);
 	}
 	
+	/**
+	 * Returns a {@link NumberAttribute}, given a {@link Number}.
+	 * 
+	 * @param n A number
+	 * @return A numerical attribute
+	 */
 	public static Attribute getAttribute(Number n) {
 		return new NumberAttribute(n.doubleValue());
 	}
 	
+	/**
+	 * Returns a non-cached {@link Entity}, given a {@link UniqueID} and {@link ArgumentType}.
+	 * 
+	 * @param id A unique ID
+	 * @param t An argument type
+	 * @returns An entity with the given unique ID and argument type
+	 */
 	public static Entity getNonCachedEntity(UniqueID id, ArgumentType t) {
 		return new Entity(id,t);
 	}
