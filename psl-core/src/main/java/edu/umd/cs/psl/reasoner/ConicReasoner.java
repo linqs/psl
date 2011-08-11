@@ -52,6 +52,17 @@ import edu.umd.cs.psl.reasoner.function.FunctionTerm;
 import edu.umd.cs.psl.reasoner.function.FunctionVariable;
 import edu.umd.cs.psl.reasoner.function.MaxFunction;
 
+/**
+ * Performs probablistic inference over {@link edu.umd.cs.psl.model.atom.Atom Atoms}
+ * based on a set of {@link edu.umd.cs.psl.model.kernel.GroundKernel GroundKernels}.
+ * 
+ * The (unnomralized) probability density function is an exponential model of the
+ * following form: P(X) = exp(-sum(w_i * pow(k_i, l))), where w_i is the weight of
+ * the ith {@link edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel}, k_i is
+ * its incompatibility value, and l is an exponent with value 1 (linear model)
+ * or 2 (quadratic model). A state X has zero density if any
+ * {@link edu.umd.cs.psl.model.kernel.GroundConstraintKernel} is unsatisfied.
+ */
 public class ConicReasoner implements Reasoner, AtomEventObserver {
 
 	private static final Logger log = LoggerFactory.getLogger(ConicReasoner.class);
@@ -65,6 +76,13 @@ public class ConicReasoner implements Reasoner, AtomEventObserver {
 	private final AtomEventFramework atomFramework;
 	private final DistanceNorm norm;
 	
+	/**
+	 * Constructs a ConicReasoner.
+	 * 
+	 * @arg framework  the AtomEventFramework that manages the {@link edu.umd.cs.psl.model.atom.Atom Atoms}
+	 *                     being reasoned over
+	 * @arg config     configuration for the ConicReasoner
+	 */
 	public ConicReasoner(AtomEventFramework framework, PSLCoreConfiguration configuration, ConfigBundle config) {
 		atomFramework = framework;
 		program = new ConicProgram();
@@ -142,8 +160,7 @@ public class ConicReasoner implements Reasoner, AtomEventObserver {
 		proxy.remove();
 	}
 	
-	@Override
-	public void inferenceStep() {
+	private void inferenceStep() {
 		solver.solve(program);
 		
 		for (Map.Entry<AtomFunctionVariable, VariableConicProgramProxy> e : vars.entrySet()) {
