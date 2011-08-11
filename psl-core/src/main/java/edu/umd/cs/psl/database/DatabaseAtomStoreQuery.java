@@ -29,9 +29,9 @@ public class DatabaseAtomStoreQuery extends DatabaseQuery {
 
 	private final AtomStore store;
 	
-	public DatabaseAtomStoreQuery(Database db) {
-		super(db);
-		store = db.getAtomStore();
+	public DatabaseAtomStoreQuery(AtomStore store) {
+		super(store.getDatabase());
+		this.store = store;
 	}
 	
 //	public AtomStore getAtomStore() {

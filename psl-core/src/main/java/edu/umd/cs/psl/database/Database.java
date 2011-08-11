@@ -31,7 +31,7 @@ import edu.umd.cs.psl.model.predicate.Predicate;
 
 public interface Database {
 
-	public Atom getAtom(Predicate p, GroundTerm[] arguments);
+	public ResultAtom getAtom(Predicate p, GroundTerm[] arguments);
 	
 	public ResultListValues getFacts(Predicate p, Term[] arguments);
 	
@@ -51,9 +51,9 @@ public interface Database {
 	
 	public void deregisterDatabaseEventObserver(DatabaseEventObserver atomEvents);
 	
-	public void setAtomStore(AtomStore store);
-	
-	public AtomStore getAtomStore();
+//	public void setAtomStore(AtomStore store);
+//	
+//	public AtomStore getAtomStore();
 	
 	public Entity getEntity(Object entity, ArgumentType type);
 	

@@ -71,8 +71,7 @@ public class MaintainedMemoryFullInference implements ModelApplication, FullInfe
 		model = m;
 		database = db;
 		store = new MemoryAtomStore(database);
-		database.setAtomStore(store);
-		dbProxy = new DatabaseAtomStoreQuery(database);
+		dbProxy = new DatabaseAtomStoreQuery(store);
 		groundkernels = new MemoryGroundKernelStore();
 		atomEvents = new MemoryAtomEventFramework(m,this,store);
 		database.registerDatabaseEventObserver(atomEvents);
