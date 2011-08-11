@@ -16,6 +16,9 @@
  */
 package edu.umd.cs.psl.reasoner.function;
 
+/**
+ * A {@link FunctionTerm} with at most one {@link FunctionVariable}.
+ */
 public interface FunctionSingleton extends FunctionTerm {
 
 }

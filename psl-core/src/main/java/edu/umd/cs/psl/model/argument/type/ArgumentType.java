@@ -16,10 +16,28 @@
  */
 package edu.umd.cs.psl.model.argument.type;
 
+/**
+ * Interface for argument type.
+ * 
+ * @author
+ *
+ */
 public interface ArgumentType {
 	
+	/**
+	 * Returns whether the argument is an attribute.
+	 * 
+	 * Arguments can be either an attribute or an entity, but not both.
+	 * @return TRUE if attribute; FALSE otherwise
+	 */
 	public boolean isAttribute();
 	
+	/**
+	 * Returns whether the argument is an entity.
+	 * 
+	 * Arguments can be either an attribute or an entity, but not both.
+	 * @return TRUE if entity; FALSE otherwise
+	 */
 	public boolean isEntity();
 	
 	/**

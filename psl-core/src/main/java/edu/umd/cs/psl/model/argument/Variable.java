@@ -54,9 +54,9 @@ public class Variable implements Term {
 	}
 	
 	/**
-	 * Returns false, as a variable is not ground.
+	 * Returns FALSE, as a variable is not ground.
 	 * 
-	 * @return false
+	 * @return FALSE
 	 */
 	@Override
 	public boolean isGround() {
@@ -76,7 +76,7 @@ public class Variable implements Term {
 	/**
 	 * Determines equality with another object.
 	 * 
-	 * @return true if equal; false otherwise
+	 * @return TRUE if equal, FALSE otherwise
 	 */
 	@Override
 	public boolean equals(Object oth) {

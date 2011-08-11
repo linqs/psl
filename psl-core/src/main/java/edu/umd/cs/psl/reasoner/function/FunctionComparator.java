@@ -16,6 +16,10 @@
  */
 package edu.umd.cs.psl.reasoner.function;
 
+/**
+ * Enumerates possible equality and inequality relationships among
+ * numeric functions and values.
+ */
 public enum FunctionComparator {
 
 	Equality, SmallerThan, LargerThan;

@@ -20,10 +20,25 @@ import java.util.*;
 
 import edu.umd.cs.psl.model.argument.Variable;
 
+/**
+ * A hashed storage class for arguments, keyed on their associated variables.
+ * 
+ * This class extends the functionality of its parent class, {@link HashMap},
+ * adding functionality specific to predicate arguments.
+ * 
+ * @author
+ *
+ */
 public class VariableTypeMap extends HashMap<Variable,ArgumentType> {
 
 	private static final long serialVersionUID = -6590175777602710989L;
 
+	/**
+	 * Adds a variable-type pair to the hashmap.
+	 * 
+	 * @param var A variable
+	 * @param type An argument type
+	 */
 	public void addVariable(Variable var, ArgumentType type) {
 		ArgumentType t = get(var);
 		if (t!=null) {
@@ -31,20 +46,42 @@ public class VariableTypeMap extends HashMap<Variable,ArgumentType> {
 		} else put(var,type);
 	}
 
+	/**
+	 * Returns all variables in the hashmap.
+	 *  
+	 * @return A set of variables
+	 */
 	public Set<Variable> getVariables() {
 		return keySet();
 	}
 	
+	/**
+	 * Returns the type of a given variable.
+	 * 
+	 * @param var A variable
+	 * @return The argument type of the given variable
+	 */
 	public ArgumentType getType(Variable var) {
 		ArgumentType t = get(var);
 		if (t==null) throw new IllegalArgumentException("Specified variable is unknown: "+var);
 		return t;
 	}
 	
+	/**
+	 * Returns whether the given variable exists in the hashmap.
+	 * 
+	 * @param var A variable
+	 * @return TRUE if exists; FALSE otherwise
+	 */
 	public boolean hasVariable(Variable var) {
 		return containsKey(var);
 	}
 	
+	/**
+	 * Performs a shallow copy of all variable-type pairs from another VariableTypeMap to this one.
+	 * 
+	 * @param other Another VariableTypeMap
+	 */
 	public void addAll(VariableTypeMap other) {
 		for (Map.Entry<Variable, ArgumentType> entry : other.entrySet()) {
 			addVariable(entry.getKey(),entry.getValue());

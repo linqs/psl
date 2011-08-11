@@ -18,6 +18,9 @@ package edu.umd.cs.psl.reasoner.function;
 
 import java.util.Map;
 
+/**
+ * A {@link FunctionTerm} with constant value.
+ */
 public class ConstantNumber implements FunctionSingleton {
 
 	private final double value;

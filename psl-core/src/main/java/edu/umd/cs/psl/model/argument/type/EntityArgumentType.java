@@ -18,6 +18,12 @@ package edu.umd.cs.psl.model.argument.type;
 
 import com.google.common.base.Preconditions;
 
+/**
+ * An implementation of {@link ArgumentType} specifically for entities.
+ * 
+ * @author
+ *
+ */
 public class EntityArgumentType implements ArgumentType {
 
 	private final String name;

@@ -59,9 +59,9 @@ public class NumberAttribute implements Attribute {
 	}
 	
 	/**
-	 * Returns true, as an attribute is ground.
+	 * Returns TRUE, as an attribute is ground.
 	 * 
-	 * @return true
+	 * @return TRUE
 	 */
 	@Override
 	public boolean isGround() {

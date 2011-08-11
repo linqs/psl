@@ -20,13 +20,30 @@ import edu.umd.cs.psl.reasoner.function.ConstantNumber;
 import edu.umd.cs.psl.reasoner.function.FunctionTerm;
 import edu.umd.cs.psl.reasoner.function.MaxFunction;
 
+/**
+ * Utilities for analyzing functions.
+ */
 public class FunctionAnalyser {
 
+	/**
+	 * Returns whether a function has a core function.
+	 *
+	 * @param fun  the function to analyze
+	 * @return  whether the function has a core function
+	 * @see #getCoreObjectiveFunction(FunctionTerm)
+	 */
 	public static boolean isSimpleObjectiveFunction(FunctionTerm fun) {
 		return getCoreObjectiveFunction(fun)!=null;
 		
 	}
 	
+	/**
+	 * Extracts a function from a {@link MaxFunction} additionally containing
+	 * only the constant value zero.
+	 *
+	 * @param fun  the function to check
+	 * @return  the extracted function, null if not found
+	 */
 	public static FunctionTerm getCoreObjectiveFunction(FunctionTerm fun) {
 		if (!(fun instanceof MaxFunction)) return null;
 		MaxFunction max = (MaxFunction)fun;

@@ -20,6 +20,14 @@ import java.util.Set;
 
 import edu.umd.cs.psl.database.DatabaseAtomStoreQuery;
 
+/**
+ * An interface for aggregates of entities.
+ * 
+ * NOTE: PSL does not yet support this functionality. This class lays the groundwork for a future release.
+ * 
+ * @author
+ *
+ */
 public interface EntitySet extends GroundTerm {
 
 	public void excludeEntity(Entity e);

@@ -19,8 +19,9 @@
  * Provides interfaces and classes for performing probabilistic inference over
  * {@link edu.umd.cs.psl.model.atom.Atom Atoms}.
  * 
- * {@link Reasoner} and its implementations are the main tools for inference.
- * See the function subpackage provides interfaces and classes for defining functions
- * that {@link edu.umd.cs.psl.model.kernel.GroundKernel GroundKernels} should use.
+ * {@link edu.umd.cs.psl.reasoner.Reasoner} and its implementations are the main
+ * tools for inference. See the function subpackage provides interfaces and classes
+ * for defining functions that {@link edu.umd.cs.psl.model.kernel.GroundKernel GroundKernels}
+ * should use.
  */
 package edu.umd.cs.psl.reasoner;
