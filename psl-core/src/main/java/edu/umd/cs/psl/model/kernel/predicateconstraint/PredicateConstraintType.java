@@ -19,6 +19,12 @@ package edu.umd.cs.psl.model.kernel.predicateconstraint;
 import edu.umd.cs.psl.optimizer.NumericUtilities;
 import edu.umd.cs.psl.reasoner.function.FunctionComparator;
 
+/**
+ * PredicateConstraintType provides a method of specifying predicate constraints as used by the 
+ * {@link PredicateConstraintKernel}. The constraint functions are based on the types supported by 
+ * {@link FunctionComprator} and include equality and non-equality constraints. 
+ * PredicateConstraintType provides the ability to determine whether a constraint holds or not.
+ */
 public enum PredicateConstraintType {
 	Functional {
 
@@ -109,10 +115,26 @@ public enum PredicateConstraintType {
 		}
 		
 	};
-	
+	/**
+	 * Get the position of the constrained argument in the predicate
+	 * @return integer position of constrained element in predicate arguments
+	 */
 	abstract int position();
+	/**
+	 * Determines whether this is an equality constraint or not
+	 * @return boolean true if the constraint is an equality constraint, false otherwise
+	 */
 	abstract boolean equality();
+	/**
+	 * The constraint type (eg. SmallerThan, Equality) as one of the types in {@link FunctionComparator}. 
+	 * @return Enumerated type from {@link FunctionComparator}
+	 */
 	abstract FunctionComparator constraint();
+	/**
+	 * 
+	 * @param val the value of the computed function derived from the {@link edu.umd.cs.psl.model.predicate.Predicate Predicate}, eg. from a {@link edu.umd.cs.psl.model.kernel.predicateconstraint.GroundPredicateConstraint GroundPredicateConstraint}
+	 * @return boolean specifying whther the constraint is met
+	 */
 	boolean constraintHolds(double val) {
 		switch(this.constraint()) {
 		case SmallerThan:

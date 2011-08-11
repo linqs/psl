@@ -98,7 +98,7 @@ public class PriorWeightKernel implements Kernel {
 
 	private void addPrior(Atom atom, ModelApplication app) {
 		if (atom.getRegisteredGroundKernels(this).isEmpty()) {
-			PriorWeight pw = new PriorWeight(this,atom);
+			GroundPriorWeight pw = new GroundPriorWeight(this,atom);
 			app.addGroundKernel(pw);
 		} // else it already has such a prior weight defined
 	}
@@ -108,7 +108,7 @@ public class PriorWeightKernel implements Kernel {
 		if (AtomEventSets.IntroducedInferenceAtom.subsumes(event)) {
 			addPrior(atom,app);
 		} else if (AtomEventSets.ReleasedInferenceAtom.subsumes(event)) {
-			PriorWeight pw = (PriorWeight)Iterables.getOnlyElement(atom.getRegisteredGroundKernels(this));
+			GroundPriorWeight pw = (GroundPriorWeight)Iterables.getOnlyElement(atom.getRegisteredGroundKernels(this));
 			app.removeGroundKernel(pw);
 		} else {
 			throw new UnsupportedOperationException("Unsupported event encountered: " + event);

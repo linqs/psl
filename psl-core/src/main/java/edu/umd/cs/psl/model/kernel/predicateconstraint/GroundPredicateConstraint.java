@@ -29,8 +29,12 @@ import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
 import edu.umd.cs.psl.reasoner.function.FunctionSum;
 import edu.umd.cs.psl.reasoner.function.FunctionSummand;
-
-public class PredicateConstraint extends GroundConstraintKernel {
+/**
+ * 
+ * 
+ *
+ */
+public class GroundPredicateConstraint extends GroundConstraintKernel {
 
 	private final PredicateConstraintKernel template;
 	private final Entity anchor;
@@ -39,7 +43,7 @@ public class PredicateConstraint extends GroundConstraintKernel {
 	
 	private final int hashcode;
 	
-	public PredicateConstraint(PredicateConstraintKernel t, Entity a) {
+	public GroundPredicateConstraint(PredicateConstraintKernel t, Entity a) {
 		template = t;
 		anchor = a;
 		atoms = new HashSet<Atom>();
@@ -108,7 +112,7 @@ public class PredicateConstraint extends GroundConstraintKernel {
 	public boolean equals(Object oth) {
 		if (oth==this) return true;
 		if (oth==null || !(getClass().isInstance(oth)) ) return false;
-		PredicateConstraint con = (PredicateConstraint)oth;
+		GroundPredicateConstraint con = (GroundPredicateConstraint)oth;
 		return template.equals(con.template) && anchor.equals(con.anchor);
 	}
 	

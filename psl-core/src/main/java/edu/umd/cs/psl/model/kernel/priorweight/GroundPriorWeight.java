@@ -14,47 +14,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.model.kernel.externalinducer;
+package edu.umd.cs.psl.model.kernel.priorweight;
 
 import java.util.Set;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.kernel.BindingMode;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
-import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
-import edu.umd.cs.psl.model.kernel.priorweight.PriorWeight;
-import edu.umd.cs.psl.optimizer.NumericUtilities;
 import edu.umd.cs.psl.reasoner.function.ConstantNumber;
-import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
-import edu.umd.cs.psl.reasoner.function.FunctionComparator;
 import edu.umd.cs.psl.reasoner.function.FunctionSum;
 import edu.umd.cs.psl.reasoner.function.FunctionSummand;
 import edu.umd.cs.psl.reasoner.function.FunctionTerm;
 import edu.umd.cs.psl.reasoner.function.MaxFunction;
 
-public class ExternalInducer extends GroundCompatibilityKernel {
+public class GroundPriorWeight extends GroundCompatibilityKernel {
 
-	private final ExternalInducerKernel kernel;
+	private final PriorWeightKernel kernel;
+	
 	private final Atom atom;
-	private double[] values;
 	
-	public ExternalInducer(ExternalInducerKernel k, Atom atom, double[] vals) {
-		Preconditions.checkArgument(atom.getNumberOfValues()==1 && vals.length==1);
-		kernel = k;
-		this.atom = atom;
-		values = vals.clone();
+	private final int hashcode;
+	
+	public GroundPriorWeight(PriorWeightKernel t, Atom a) {
+		kernel = t;
+		atom = a;
+		hashcode = new HashCodeBuilder().append(kernel).append(atom).toHashCode();
 	}
-	
-//	public void updateValues(double[] values) {
-//		this.values = values.clone();
-//	}
-	
+		
 
 	@Override
 	public boolean updateParameters() {
@@ -63,10 +54,25 @@ public class ExternalInducer extends GroundCompatibilityKernel {
 	
 	@Override
 	public FunctionTerm getFunctionDefinition() {
-		FunctionSum sum = new FunctionSum();
-		sum.add(new FunctionSummand(getWeight(),new ConstantNumber(values[0])));
-		sum.add(new FunctionSummand(-getWeight(),atom.getVariable()));
-		return MaxFunction.of(sum,new ConstantNumber(0.0));
+		
+		assert atom.getNumberOfValues()==1;
+		
+		if (atom.getPredicate().getDefaultValues()[0] == 0.0) {
+			return new FunctionSummand(kernel.getWeight().getWeight(), atom.getVariable());
+		}
+		else {
+			FunctionSum sum1 = new FunctionSum();
+			FunctionSum sum2 = new FunctionSum();
+			sum1.add(new FunctionSummand(kernel.getWeight().getWeight(), atom.getVariable()));
+			sum1.add(new FunctionSummand(-kernel.getWeight().getWeight(),
+					new ConstantNumber(atom.getPredicate().getDefaultValues()[0])));
+			
+			sum2.add(new FunctionSummand(-kernel.getWeight().getWeight(), atom.getVariable()));
+			sum2.add(new FunctionSummand(kernel.getWeight().getWeight(),
+					new ConstantNumber(atom.getPredicate().getDefaultValues()[0])));
+			
+			return MaxFunction.of(sum1, sum2);
+		}
 	}
 	
 	@Override
@@ -87,20 +93,20 @@ public class ExternalInducer extends GroundCompatibilityKernel {
 	@Override
 	public BindingMode getBinding(Atom atom) {
 		if (this.atom.equals(atom)) {
-			return BindingMode.StrongRV;
+			return BindingMode.WeakRV;
 		} else return BindingMode.NoBinding;
 	}
 	
 	@Override
 	public int hashCode() {
-		return new HashCodeBuilder().append(atom).append(kernel).toHashCode();
+		return hashcode;
 	}
 	
 	@Override
 	public boolean equals(Object oth) {
 		if (oth==this) return true;
 		if (oth==null || !(getClass().isInstance(oth)) ) return false;
-		ExternalInducer con = (ExternalInducer)oth;
+		GroundPriorWeight con = (GroundPriorWeight)oth;
 		return kernel.equals(con.kernel) && atom.equals(con.atom);
 	}
 
@@ -111,34 +117,38 @@ public class ExternalInducer extends GroundCompatibilityKernel {
 
 	@Override
 	public String toString() {
-		return "External Function: " + atom + " | values " + values + " | weight: " + kernel.getWeight();
+		return "prior on " + atom + " " + kernel.getWeight();
 	}
 	
 	/*
 	 * ######## Derivatives ###########
 	 */
 
-	private double getValue() {
-		return Math.max(0.0, values[0]-atom.getSoftValue(0));
-	}
-	
 	@Override
 	public double getIncompatibilityDerivative(int parameterNo) {
-		assert parameterNo==0 && getWeight()>=0;
-		return getValue();
+		assert parameterNo==0;
+		return getL1Distance();
 	}
 
 	@Override
 	public double getIncompatibility() {
-		assert getWeight()>=0;
-		return getWeight()*getValue();
+		return getWeight()*getL1Distance();
+	}
+	
+	protected double getL1Distance() {
+		double[] softValues = atom.getSoftValues();
+		double[] defaultValues = atom.getPredicate().getDefaultValues();
+		double d = 0.0;
+		for (int i = 0; i < atom.getNumberOfValues(); i++) {
+			d += Math.abs(softValues[i] - defaultValues[i]); 
+		}
+		return d;
 	}
 
 	@Override
 	public double getIncompatibilityHessian(int parameterNo1, int parameterNo2) {
-		assert parameterNo1==0 && parameterNo2==0 && getWeight()<=0;
+		assert parameterNo1==0 && parameterNo2==0;
 		return 0;
 	}
-
 
 }
