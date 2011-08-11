@@ -26,8 +26,8 @@ import edu.umd.cs.psl.factorgraph.RandomVariable;
 import edu.umd.cs.psl.model.atom.Atom;
 
 /**
- * Evidence is responsible for maintaince of the numeric representation
- * as well as registeration with any affected atoms.
+ * Evidence is responsible for maintenance of the numeric representation,
+ * as well as registration with any affected atoms.
  * 
  * @author matthias
  *
