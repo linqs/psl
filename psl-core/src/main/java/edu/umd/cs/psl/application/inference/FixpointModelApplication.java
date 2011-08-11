@@ -48,9 +48,9 @@ import edu.umd.cs.psl.model.atom.memory.MemoryAtomEventFramework;
 import edu.umd.cs.psl.model.atom.memory.MemoryAtomStore;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
-import edu.umd.cs.psl.model.kernel.datacertainty.DataCertainty;
-import edu.umd.cs.psl.model.kernel.setdefinition.SetDefinition;
-import edu.umd.cs.psl.model.kernel.softrule.SoftRule;
+import edu.umd.cs.psl.model.kernel.datacertainty.GroundDataCertainty;
+import edu.umd.cs.psl.model.kernel.setdefinition.GroundSetDefinition;
+import edu.umd.cs.psl.model.kernel.softrule.GroundSoftRule;
 
 public class FixpointModelApplication implements ModelApplication, FullInference {
 	
@@ -154,22 +154,22 @@ public class FixpointModelApplication implements ModelApplication, FullInference
 				GroundKernel e = iter.next();
 				Atom atom=null;
 				double deltavalue=0.0;
-				if (e instanceof SoftRule) {
-					SoftRule rule = (SoftRule)e;
+				if (e instanceof GroundSoftRule) {
+					GroundSoftRule rule = (GroundSoftRule)e;
 					//if (rule.getHeadAtoms().length!=1) throw new IllegalArgumentException("Only support rules with a single atom in the head! " + e);
 					//atom = rule.getHeadAtoms()[0];
 					//log.trace("Head {} has value {}",atom,atom.getSoftValue(0));
 					//TODO: We assume implicitly that the multiplier in front of the head atom is 1
 					deltavalue = (1.0-rule.getTruthValue());
 					//log.trace("Delta value {} on rule {}",deltavalue,rule);
-				} else if (e instanceof SetDefinition) {
-					SetDefinition set = (SetDefinition)e;
+				} else if (e instanceof GroundSetDefinition) {
+					GroundSetDefinition set = (GroundSetDefinition)e;
 					atom = set.getSetAtom();
 					double setval = set.getAggregateValue();
 					assert setval>= atom.getSoftValue(0);
 					//TODO: We assume implicitly that the multiplier in front of the setAtom is 1
 					deltavalue = setval-atom.getSoftValue(0);
-				} else if (e instanceof DataCertainty) {
+				} else if (e instanceof GroundDataCertainty) {
 					//Ignore
 				} else {
 					throw new IllegalArgumentException("The fixpoint operator can only handle rules and constraints but was given: " + e);

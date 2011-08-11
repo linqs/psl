@@ -38,7 +38,7 @@
 		<dependency>
 			<groupId>org.codehaus.groovy</groupId>
 			<artifactId>groovy-eclipse-batch</artifactId>
-			<version>1.8.0-02</version>
+			<version>1.8.0-03</version>
 		</dependency>
 	</dependencies>
 	<build>
@@ -58,7 +58,7 @@
 					<dependency>
 						<groupId>org.codehaus.groovy</groupId>
 						<artifactId>groovy-eclipse-batch</artifactId>
-						<version>1.8.0-02</version>
+						<version>1.8.0-03</version>
 					</dependency>
 				</dependencies>
 			</plugin>

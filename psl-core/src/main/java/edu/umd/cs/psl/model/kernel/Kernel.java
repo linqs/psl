@@ -24,10 +24,14 @@ import edu.umd.cs.psl.model.parameters.Parameters;
 
 
 /**
- * Evidence type implementations are responsible for grounding out the respective evidences
- * upon initial grounding or triggered by changes to individual atoms. Evidence types register new
- * evidence with the model application and are responsible for communicating changes to atom states
- * to the model application.
+ * Kernels provide a framework to express the adherence of a formula with some set of data. 
+ * Kernels currently support formulas that include constraints as well as relations between 
+ * predicates. By grounding the atoms  
+ * GroundKernels measure the incompatibility of a particular formula given a grounding of the atoms
+ * 
+ * *upon initial grounding or triggered by changes to individual atoms. Evidence types register new
+ * *evidence with the model application and are responsible for communicating changes to atom states
+ * *to the model application.
  * 
  * @author Matthias Broecheler (mail@knowledgefrominformation.com)
  *

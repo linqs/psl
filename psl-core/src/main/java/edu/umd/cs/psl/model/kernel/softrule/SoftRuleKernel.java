@@ -85,10 +85,10 @@ public class SoftRuleKernel implements Kernel {
 		log.trace("Grounding {} rules",res.size());
 		FormulaGrounder grounder = new FormulaGrounder(app.getAtomManager(),res, var);
 		while (grounder.hasNext()) {
-			SoftRule groundRule = new SoftRule(this,grounder.ground(rule.getFormula()));
+			GroundSoftRule groundRule = new GroundSoftRule(this,grounder.ground(rule.getFormula()));
 			GroundKernel oldrule = app.getGroundKernel(groundRule);
 			if (oldrule!=null) {
-				((SoftRule)oldrule).increaseGroundings();
+				((GroundSoftRule)oldrule).increaseGroundings();
 				app.changedGroundKernel(oldrule);
 			} else {
 				app.addGroundKernel(groundRule);

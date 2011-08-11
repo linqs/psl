@@ -93,7 +93,7 @@ public class DataCertaintyKernel implements Kernel {
 	public void notifyAtomEvent(AtomEvent event, Atom atom, GroundingMode mode,
 			ModelApplication app) {
 		Preconditions.checkArgument(event==AtomEvent.ReleasedCertainty);
-		DataCertainty dc = (DataCertainty)Iterables.getOnlyElement(atom.getRegisteredGroundKernels(this));
+		GroundDataCertainty dc = (GroundDataCertainty)Iterables.getOnlyElement(atom.getRegisteredGroundKernels(this));
 		app.removeGroundKernel(dc);		
 	}
 	
@@ -104,20 +104,20 @@ public class DataCertaintyKernel implements Kernel {
 	public void addDataCertainty(Atom atom, ModelApplication app, double[] values) {
 		Preconditions.checkArgument(atom.getRegisteredGroundKernels(this).isEmpty());
 		//Preconditions.checkArgument(atom.isCertainty());
-		DataCertainty dc = new DataCertainty(atom,values);
+		GroundDataCertainty dc = new GroundDataCertainty(atom,values);
 		app.addGroundKernel(dc);
 	}
 	
 	public void updateDataCertainty(Atom atom, ModelApplication app, double[] values) {
 		Preconditions.checkArgument(atom.getRegisteredGroundKernels(this).size()==1);
-		DataCertainty dc = (DataCertainty)Iterables.getOnlyElement(atom.getRegisteredGroundKernels(this));
+		GroundDataCertainty dc = (GroundDataCertainty)Iterables.getOnlyElement(atom.getRegisteredGroundKernels(this));
 		dc.updateValues(values);
 		app.changedGroundKernel(dc);
 	}
 	
 	public void removeDataCertainty(Atom atom, ModelApplication app) {
 		Preconditions.checkArgument(atom.getRegisteredGroundKernels(this).size()==1);
-		DataCertainty dc = (DataCertainty)Iterables.getOnlyElement(atom.getRegisteredGroundKernels(this));
+		GroundDataCertainty dc = (GroundDataCertainty)Iterables.getOnlyElement(atom.getRegisteredGroundKernels(this));
 		app.removeGroundKernel(dc);
 	}
 	

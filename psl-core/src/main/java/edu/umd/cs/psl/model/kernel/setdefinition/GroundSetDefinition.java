@@ -40,7 +40,7 @@ import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
  * @author Matthias Broecheler
  *
  */
-public class SetDefinition extends GroundConstraintKernel {
+public class GroundSetDefinition extends GroundConstraintKernel {
 
 	private final SetDefinitionKernel definitionType;
 	
@@ -53,7 +53,7 @@ public class SetDefinition extends GroundConstraintKernel {
 	
 	private final int hashcode;
 	
-	SetDefinition(SetDefinitionKernel s, Atom atom, TermMembership s1, TermMembership s2, Set<Atom> refAtoms) {
+	GroundSetDefinition(SetDefinitionKernel s, Atom atom, TermMembership s1, TermMembership s2, Set<Atom> refAtoms) {
 		assert s!=null;
 		definitionType = s;
 		setAtom = atom;
@@ -133,7 +133,7 @@ public class SetDefinition extends GroundConstraintKernel {
 	public boolean equals(Object oth) {
 		if (oth==this) return true;
 		if (oth==null || !(getClass().isInstance(oth)) ) return false;
-		SetDefinition p = (SetDefinition)oth;
+		GroundSetDefinition p = (GroundSetDefinition)oth;
 		return setAtom.equals(p.setAtom);
 	}
 

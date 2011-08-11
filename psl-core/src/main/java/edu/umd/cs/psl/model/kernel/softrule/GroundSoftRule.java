@@ -46,9 +46,9 @@ import edu.umd.cs.psl.reasoner.function.MaxFunction;
  * @author Stephen Bach
  */
 
-public class SoftRule extends GroundCompatibilityKernel {
+public class GroundSoftRule extends GroundCompatibilityKernel {
 	
-	private static final Logger log = LoggerFactory.getLogger(SoftRule.class);
+	private static final Logger log = LoggerFactory.getLogger(GroundSoftRule.class);
 
 	
 	public static final Tnorm tnorm = Tnorm.LUKASIEWICZ;
@@ -62,7 +62,7 @@ public class SoftRule extends GroundCompatibilityKernel {
 	
 	private final int hashcode;
 	
-	public SoftRule(SoftRuleKernel t, Formula f) {
+	public GroundSoftRule(SoftRuleKernel t, Formula f) {
 		rule = t;
 		formula = ((Conjunction) f).flatten();
 		numGroundings=1;
@@ -186,7 +186,7 @@ public class SoftRule extends GroundCompatibilityKernel {
 	public boolean equals(Object oth) {
 		if (oth==this) return true;
 		if (oth==null || !(getClass().isInstance(oth)) ) return false;
-		SoftRule rule = (SoftRule)oth;
+		GroundSoftRule rule = (GroundSoftRule)oth;
 		return formula.equals(rule.formula) && rule.equals(rule.rule);
 	}
 

@@ -30,13 +30,13 @@ import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
 import edu.umd.cs.psl.reasoner.function.FunctionComparator;
 import edu.umd.cs.psl.reasoner.function.FunctionSummand;
 
-public class EmptySetDefinition extends GroundConstraintKernel {
+public class GroundEmptySetDefinition extends GroundConstraintKernel {
 
 	private final SetDefinitionKernel kernel;
 	private final Atom atom;
 	private double value;
 	
-	public EmptySetDefinition(SetDefinitionKernel k, Atom atom, double val) {
+	public GroundEmptySetDefinition(SetDefinitionKernel k, Atom atom, double val) {
 		Preconditions.checkArgument(atom.getNumberOfValues()==1);
 		this.atom = atom;
 		value = val;
@@ -86,7 +86,7 @@ public class EmptySetDefinition extends GroundConstraintKernel {
 	public boolean equals(Object oth) {
 		if (oth==this) return true;
 		if (oth==null || !(getClass().isInstance(oth)) ) return false;
-		EmptySetDefinition es = (EmptySetDefinition)oth;
+		GroundEmptySetDefinition es = (GroundEmptySetDefinition)oth;
 		return es.kernel.equals(this.kernel) && atom.equals(es.atom);
 	}	
 

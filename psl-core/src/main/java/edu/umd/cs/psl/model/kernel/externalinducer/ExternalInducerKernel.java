@@ -244,7 +244,7 @@ public class ExternalInducerKernel implements Kernel {
 					if ((head.getArguments()[i] instanceof Variable)) 
 						arguments[i]=result[varkeymap.get((Variable)head.getArguments()[i])];
 				}
-				ExternalInducer ei = new ExternalInducer(this,amanager.getAtom(p, arguments),entry.getValue());
+				GroundExternalInducer ei = new GroundExternalInducer(this,amanager.getAtom(p, arguments),entry.getValue());
 				app.addGroundKernel(ei);
 			}
 		} else if (exe==Execution.Learn) {

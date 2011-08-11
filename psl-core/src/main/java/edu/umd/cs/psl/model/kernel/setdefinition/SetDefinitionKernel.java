@@ -45,7 +45,7 @@ import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.formula.traversal.FormulaEventAnalysis;
 import edu.umd.cs.psl.model.formula.traversal.FormulaGrounder;
 import edu.umd.cs.psl.model.kernel.Kernel;
-import edu.umd.cs.psl.model.kernel.softrule.SoftRule;
+import edu.umd.cs.psl.model.kernel.softrule.GroundSoftRule;
 import edu.umd.cs.psl.model.parameters.Parameters;
 import edu.umd.cs.psl.model.predicate.SpecialPredicates;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
@@ -282,7 +282,7 @@ public class SetDefinitionKernel implements Kernel {
 						FormulaGrounder grounder = new FormulaGrounder(app.getAtomManager(), res, ass);
 						while (grounder.hasNext()) {
 							Formula f = grounder.ground(setterm.getFormula());
-							double truth = SoftRule.formulaNorm.getTruthValue(f);
+							double truth = GroundSoftRule.formulaNorm.getTruthValue(f);
 							//if (truth<=0.0) log.debug("Untrue formula: {}",f);
 							members[i].addMember(grounder.getResultVariable((Variable)setterm.getLeaf()), truth);
 							grounder.next();
@@ -313,11 +313,11 @@ public class SetDefinitionKernel implements Kernel {
 			
 			if (isEmpty) {
 				double truthval = setCompareFct.aggregateValue(members[0], members[1], compAtoms);
-				EmptySetDefinition edef = new EmptySetDefinition(this,setAtom,truthval);
+				GroundEmptySetDefinition edef = new GroundEmptySetDefinition(this,setAtom,truthval);
 				app.getAtomManager().changeCertainty(setAtom,new double[]{truthval},new double[]{ConfidenceValues.maxConfidence});
 				app.addGroundKernel(edef);
 			} else {
-				SetDefinition sdef = new SetDefinition(this,setAtom,members[0],members[1],compAtoms);
+				GroundSetDefinition sdef = new GroundSetDefinition(this,setAtom,members[0],members[1],compAtoms);
 				app.addGroundKernel(sdef);
 			}
 

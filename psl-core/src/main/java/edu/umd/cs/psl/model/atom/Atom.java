@@ -42,7 +42,7 @@ import edu.umd.cs.psl.reasoner.function.FunctionVariable;
 
 
 /**
- * The abstract FormulaPredicateAtom is the base class for all atoms with a predicate and arguments.
+ * The abstract Atom is the base class for all atoms with a predicate and arguments.
  * It defines most of the standard functionality of predicate atoms with some of it implemented in its
  * two child classes.
  * 
