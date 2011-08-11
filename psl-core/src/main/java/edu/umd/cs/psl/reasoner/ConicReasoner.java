@@ -79,9 +79,9 @@ public class ConicReasoner implements Reasoner, AtomEventObserver {
 	/**
 	 * Constructs a ConicReasoner.
 	 * 
-	 * @arg framework  the AtomEventFramework that manages the {@link edu.umd.cs.psl.model.atom.Atom Atoms}
+	 * @param framework  the AtomEventFramework that manages the {@link edu.umd.cs.psl.model.atom.Atom Atoms}
 	 *                     being reasoned over
-	 * @arg config     configuration for the ConicReasoner
+	 * @param config     configuration for the ConicReasoner
 	 */
 	public ConicReasoner(AtomEventFramework framework, PSLCoreConfiguration configuration, ConfigBundle config) {
 		atomFramework = framework;

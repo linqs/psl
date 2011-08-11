@@ -18,14 +18,43 @@ package edu.umd.cs.psl.reasoner.function;
 
 import java.util.Map;
 
+/**
+ * A numeric function.
+ */
 public interface FunctionTerm {
 
+	/**
+	 * Returns the term's value
+	 *
+	 * @return  the term's value
+	 */
 	public double getValue();
 	
+	/**
+	 * Returns the term's value using provided values for {@link FunctionVariable Variables}.
+	 * 
+	 * @param values		values to use
+	 * @param assumeDefaultValue	use an {@link edu.umd.cs.psl.model.atom.Atom Atom's}
+	 *					default value if its variable is unspecified in values
+	 * @throws IllegalArgumentException	if a variable is unspecified and assumeDefaultValue is false
+	 * @return 				the term's value
+	 */
 	public double getValue(Map<? extends FunctionVariable,Double> values, boolean assumeDefaultValue);
 	
+	/**
+	 * Returns whether the term is linear in its {@link FunctionVariable Variables}.
+	 *
+	 * Returns true if the term is a constant.
+	 *
+	 * @return  whether the term is linear
+	 */
 	public boolean isLinear();
 	
+	/**
+	 * Returns whether the term is constant.
+	 *
+	 * @return  whether the term is constant
+	 */
 	public boolean isConstant();
-	
 }
+

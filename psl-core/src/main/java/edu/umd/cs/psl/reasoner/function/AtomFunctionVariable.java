@@ -20,6 +20,10 @@ import java.util.Map;
 
 import edu.umd.cs.psl.model.atom.Atom;
 
+/**
+ * Encapsulates the value of an {@link edu.umd.cs.psl.model.atom.Atom}
+ * for use in numeric functions.
+ */
 public abstract class AtomFunctionVariable implements FunctionVariable {
 
 	@Override

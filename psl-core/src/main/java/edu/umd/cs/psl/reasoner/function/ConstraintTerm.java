@@ -16,6 +16,13 @@
  */
 package edu.umd.cs.psl.reasoner.function;
 
+/**
+ * A numeric constraint.
+ *
+ * A ConstraintTerm encapsulates a {@link FunctionTerm}, a {@link FunctionComparator},
+ * and a value. Together these define an equality or inequality statement between
+ * the value of a function and constant value.
+ */
 public class ConstraintTerm {
 
 	private final FunctionTerm function;

@@ -18,6 +18,9 @@ package edu.umd.cs.psl.reasoner.function;
 
 import java.util.*;
 
+/**
+ * A numeric function defined as a sum of {@link FunctionSummand FunctionSummands}.
+ */
 public class FunctionSum implements Iterable<FunctionSummand>, FunctionTerm {
 
 	private final List<FunctionSummand> sum;
@@ -26,6 +29,11 @@ public class FunctionSum implements Iterable<FunctionSummand>, FunctionTerm {
 		sum = new ArrayList<FunctionSummand>();
 	}
 	
+	/**
+	 * Adds a {@link FunctionSummand} to the sum.
+	 *
+	 * @param summand  the summand to add
+	 */
 	public void add(FunctionSummand summand) {
 		sum.add(summand);
 	}
@@ -43,6 +51,11 @@ public class FunctionSum implements Iterable<FunctionSummand>, FunctionTerm {
 		return sum.get(pos);
 	}
 
+	/**
+	 * Returns the sum of the {@link FunctionSummand} values.
+	 *
+	 * @return  the FunctionSum's value
+	 */
 	@Override
 	public double getValue() {
 		double val = 0.0;

@@ -18,6 +18,9 @@ package edu.umd.cs.psl.reasoner.function;
 
 import java.util.*;
 
+/**
+ * Selects the maximum value among {@link FunctionTerm FunctionTerms}.
+ */
 public class MaxFunction implements Iterable<FunctionTerm>, FunctionTerm {
 
 	private final List<FunctionTerm> terms;
@@ -26,6 +29,9 @@ public class MaxFunction implements Iterable<FunctionTerm>, FunctionTerm {
 		terms = new ArrayList<FunctionTerm>();
 	}
 	
+	/**
+	 * Adds a {@link FunctionTerm} to the set of functions to consider.
+	 */
 	public void add(FunctionTerm t) {
 		terms.add(t);
 	}
@@ -39,10 +45,21 @@ public class MaxFunction implements Iterable<FunctionTerm>, FunctionTerm {
 		return terms.size();
 	}
 	
+	/**
+	 * Returns a function in the MaxFunction's set.
+	 *
+	 * @param pos  the index of the function to return
+	 * @return  the function
+	 */
 	public FunctionTerm get(int pos) {
 		return terms.get(pos);
 	}
 
+	/**
+	 * Returns the maximum of the values of the functions.
+	 *
+	 * @return  the MaxFunction's value
+	 */
 	@Override
 	public double getValue() {
 		if (terms.isEmpty()) throw new AssertionError("Undefined max value for zero terms!");
@@ -77,6 +94,12 @@ public class MaxFunction implements Iterable<FunctionTerm>, FunctionTerm {
 		return true;
 	}
 	
+	/**
+	 * Constructs a MaxFunction term containing the specified terms.
+	 *
+	 * @param terms  the terms to add to the MaxFunction
+	 * @return  the MaxFunction
+	 */
 	public static MaxFunction of(FunctionTerm...terms) {
 		MaxFunction max = new MaxFunction();
 		for (FunctionTerm t : terms) max.add(t);

@@ -18,16 +18,31 @@ package edu.umd.cs.psl.reasoner.function;
 
 import java.util.Map;
 
+/**
+ * Associates a {@link FunctionSingleton} with a coefficient.
+ */
 public class FunctionSummand implements FunctionTerm {
 
 	private final double coeff;
 	private final FunctionSingleton term;
 	
+	/**
+	 * Constructs a FunctionSummand from a {@link FunctionSingleton} and a coefficient.
+	 *
+	 * @param c  the coefficient of the term
+	 * @param t  the term to multiply with the coefficient
+	 */
 	public FunctionSummand(double c, FunctionSingleton t) {
 		term = t;
 		coeff = c;
 	}
 
+	/**
+	 * Returns the value of the encapsulated {@link FunctionSingleton} multiplied
+	 * by the coefficient.
+	 *
+	 * @return  the FunctionSummand's value
+	 */
 	@Override
 	public double getValue() {
 		return coeff*term.getValue();
