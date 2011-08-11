@@ -18,8 +18,19 @@ package edu.umd.cs.psl.model.argument;
 
 import edu.umd.cs.psl.model.argument.type.ArgumentType;
 
+/**
+ * An interface for ground terms.
+ * 
+ * @author
+ *
+ */
 public interface GroundTerm extends Term {
 
+	/**
+	 * Returns the argument type.
+	 * 
+	 * @return An argument type
+	 */
 	public ArgumentType getType();
 	
 }
