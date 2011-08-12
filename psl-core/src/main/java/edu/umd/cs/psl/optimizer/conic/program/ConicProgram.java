@@ -290,12 +290,12 @@ public class ConicProgram {
 		return v;
 	}
 	
-	int index(Variable v) {
+	public int index(Variable v) {
 		verifyCheckedOut();
 		return varMap.get(v);
 	}
 	
-	int index(LinearConstraint lc) {
+	public int index(LinearConstraint lc) {
 		verifyCheckedOut();
 		return lcMap.get(lc);
 	}
