@@ -184,7 +184,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 			step(program, pm, vars);
 			
 			mu		= (x.zDotProduct(s) + vars.tau * vars.kappa) / pm.k;
-			cDotX	= x.zDotProduct(x);
+			cDotX	= c.zDotProduct(x);
 			bDotW	= b.zDotProduct(w);
 			
 			primalInfeasibility = alg.norm2(
