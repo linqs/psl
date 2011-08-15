@@ -106,7 +106,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 	private double tauThreshold;
 	private double muThreshold;
 	
-	private double gamma = 0.9;
+	private double gamma = 0.8;
 	
 	private int stepNum;
 	
@@ -413,8 +413,8 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		log.trace("Computing intermediate matrices.");
 		
 		/* Computes more intermediate matrices */
-		im.AThetaSqWSq = new SparseDoubleMatrix2D(A.rows(), n); 
-		A.zMult(im.ThetaSqWSq, im.AThetaSqWSq, 1.0, 0.0, false, false);
+		im.AInvThetaSqInvWSq = new SparseDoubleMatrix2D(A.rows(), n); 
+		A.zMult(im.invThetaSqInvWSq, im.AInvThetaSqInvWSq, 1.0, 0.0, false, false);
 		
 		log.trace("Computing M.");
 		
@@ -430,7 +430,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		/* Computes intermediate vectors */
 		
 		/* g2 */
-		im.g2 = im.AThetaSqWSq.zMult(c, b.copy(), 1.0, 1.0, false);
+		im.g2 = im.AInvThetaSqInvWSq.zMult(c, b.copy(), 1.0, 1.0, false);
 		im.M.solve(im.g2);
 		
 		/* g1 */
@@ -477,8 +477,8 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		
 		/* h2 */
 		DoubleMatrix1D h2 = res.r1.copy().assign(
-				im.AThetaSqWSq.zMult(res.r2.copy().assign(
-						im.invThetaInvW.zMult(
+				im.AInvThetaSqInvWSq.zMult(res.r2.copy().assign(
+						im.ThetaW.zMult(
 								pm.invT.zMult(im.invXBar.zMult(res.r4, null)
 								, null), null)
 						, DoubleFunctions.minus), null)
@@ -496,10 +496,10 @@ public class HomogeneousIPM implements ConicProgramSolver {
 				, null).assign(DoubleFunctions.mult(-1.0));
 	
 		/* Computes search direction */
-		sd.dTau = (res.r3 - c.zDotProduct(h1) + b.zDotProduct(h2))
-				/ ((vars.kappa/vars.tau) + c.zDotProduct(im.g1) - b.zDotProduct(im.g2));
-		sd.dx = h1.copy().assign(DoubleFunctions.mult(sd.dTau)).assign(im.g1, DoubleFunctions.plus);
-		sd.dw = h2.copy().assign(DoubleFunctions.mult(sd.dTau)).assign(im.g2, DoubleFunctions.plus);
+		sd.dTau = (res.r3 + c.zDotProduct(h1) - b.zDotProduct(h2) + res.r5 / vars.tau)
+				/ ((vars.kappa/vars.tau) - c.zDotProduct(im.g1) + b.zDotProduct(im.g2));
+		sd.dx = im.g1.copy().assign(DoubleFunctions.mult(sd.dTau)).assign(h1, DoubleFunctions.plus);
+		sd.dw = im.g2.copy().assign(DoubleFunctions.mult(sd.dTau)).assign(h2, DoubleFunctions.plus);
 		sd.dKappa = (res.r5 - vars.kappa*sd.dTau) / vars.tau;
 		sd.ds = im.ThetaW.zMult(pm.T.zMult(im.invXBar.zMult(
 				res.r4.copy().assign(
@@ -664,7 +664,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		private SparseDoubleMatrix2D SBar;
 		private SparseDoubleMatrix2D ThetaW;
 		private SparseDoubleMatrix2D invThetaInvW;
-		private SparseDoubleMatrix2D AThetaSqWSq;
+		private SparseDoubleMatrix2D AInvThetaSqInvWSq;
 		private SparseDoubleMatrix2D ThetaSqWSq;
 		private SparseDoubleMatrix2D invThetaSqInvWSq;
 		private SparseDoubleCholeskyDecomposition M;
