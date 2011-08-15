@@ -158,9 +158,9 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		HIPMProgramMatrices pm = getProgramMatrices(program);
 		
 		/* Initializes program variables */
-		x.assign(1.0);
-		w.assign(0.0);
-		s.assign(1.0);
+//		x.assign(1.0);
+//		w.assign(0.0);
+//		s.assign(1.0);
 		
 		/* Initializes special variables for the homogeneous model */
 		HIPMVars vars = new HIPMVars();
@@ -236,9 +236,6 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		log.trace("Getting step size.");
 		double alphaMax = getMaxStepSize(program, vars, sd);
 		double stepSize = getStepSize(program, vars, im, sd, alphaMax, 10e-8, gamma);
-		double testStepSize = getStepSize(program, vars, im, sd, stepSize, 10e-8, gamma);
-		if (stepSize != testStepSize)
-			throw new IllegalStateException();
 		log.trace("Step size: {}", stepSize);
 		
 		program.getX().assign(sd.dx.assign(DoubleFunctions.mult(stepSize)), DoubleFunctions.plus);
@@ -413,18 +410,16 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		log.trace("Computing intermediate matrices.");
 		
 		/* Computes more intermediate matrices */
-		im.AInvThetaSqInvWSq = new SparseDoubleMatrix2D(A.rows(), n); 
-		A.zMult(im.invThetaSqInvWSq, im.AInvThetaSqInvWSq, 1.0, 0.0, false, false);
+		im.AInvThetaSqInvWSq = new SparseDoubleMatrix2D(A.rows(), n);
+		im.AInvThetaSqInvWSq.assign(A.getColumnCompressed(false).zMult(im.invThetaSqInvWSq.getColumnCompressed(false), null, 1.0, 0.0, false, false));
 		
 		log.trace("Computing M.");
 		
 		/* Computes M and finds its Cholesky factorization */
-		SparseDoubleMatrix2D partial = new SparseDoubleMatrix2D(A.rows(), n);
-		A.zMult(im.invThetaSqInvWSq, partial, 1.0, 0.0, false, false);
-		SparseDoubleMatrix2D M = new SparseDoubleMatrix2D(A.rows(), A.rows());
-		partial.zMult(A, M, 1.0, 0.0, false, true);
+		SparseCCDoubleMatrix2D M = new SparseCCDoubleMatrix2D(A.rows(), A.rows());
+		im.AInvThetaSqInvWSq.getColumnCompressed(false).zMult(A.getColumnCompressed(false), M, 1.0, 0.0, false, true);
 		log.trace("Starting decomposition.");
-		im.M = new SparseDoubleCholeskyDecomposition(M.getColumnCompressed(false), 1);
+		im.M = new SparseDoubleCholeskyDecomposition(M, 1);
 		log.trace("Finished decomposition.");
 		
 		/* Computes intermediate vectors */
@@ -656,7 +651,6 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		private double kappa;
 	}
 	
-	
 	private class HIPMIntermediates {
 		private double mu;
 		private SparseDoubleMatrix2D XBar;
@@ -671,7 +665,6 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		private DoubleMatrix1D g1;
 		private DoubleMatrix1D g2;
 	}
-	
 	
 	private class HIPMResiduals {
 		private DoubleMatrix1D r1;
