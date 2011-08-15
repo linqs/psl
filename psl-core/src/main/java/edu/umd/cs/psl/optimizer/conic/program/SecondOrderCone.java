@@ -219,6 +219,16 @@ public class SecondOrderCone extends Cone {
 			else
 				return Double.MAX_VALUE;
 		}
+		else if (!Double.isNaN(sol1))
+			if (sol1 > 0)
+				return sol1;
+			else
+				return 1.0;
+		else if (!Double.isNaN(sol2))
+			if (sol2 > 0)
+				return sol2;
+			else
+				return 1.0;
 		else throw new IllegalStateException();
 	}
 }

@@ -37,6 +37,7 @@ import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.optimizer.conic.ConicProgramSolver;
+import edu.umd.cs.psl.optimizer.conic.ipm.HomogeneousIPM;
 import edu.umd.cs.psl.optimizer.conic.ipm.IPM;
 import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
 import edu.umd.cs.psl.optimizer.conic.program.LinearConstraint;
@@ -69,7 +70,7 @@ public class ConicReasoner implements Reasoner, AtomEventObserver {
 	public ConicReasoner(AtomEventFramework framework, PSLCoreConfiguration configuration, ConfigBundle config) {
 		atomFramework = framework;
 		program = new ConicProgram();
-		solver = new IPM(config);
+		solver = new HomogeneousIPM(config);
 		gkRepresentation = new HashMap<GroundKernel, ConicProgramProxy>();
 		vars = new HashMap<AtomFunctionVariable, VariableConicProgramProxy>();
 		maxMapRounds = configuration.getMaxNoInferenceSteps();

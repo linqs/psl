@@ -90,9 +90,9 @@ public class NonNegativeOrthantCone extends Cone {
 			DoubleMatrix1D dx) {
 		int i = varMap.get(getVariable());
 		if (dx.get(i) >= 0)
-			return Double.POSITIVE_INFINITY;
+			return 1.0;
 		else
-			return (x.get(i) * .67) / (- dx.get(i));
+			return (x.get(i) * .95) / (- dx.get(i));
 	}
 }
 
