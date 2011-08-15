@@ -211,11 +211,11 @@ public class SecondOrderCone extends Cone {
 		
 		if (!Double.isNaN(sol1) && !Double.isNaN(sol2)) {
 			if (sol1 > 0 && sol2 > 0)
-				return Math.min(sol1, sol2) * .67;
+				return Math.min(sol1, sol2) * .95;
 			else if (sol1 > 0)
-				return sol1 * .67;
+				return sol1 * .95;
 			else if (sol2 > 0)
-				return sol2 * .67;
+				return sol2 * .95;
 			else
 				return Double.MAX_VALUE;
 		}

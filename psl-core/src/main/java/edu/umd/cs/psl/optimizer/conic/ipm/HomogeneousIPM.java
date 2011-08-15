@@ -106,7 +106,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 	private double tauThreshold;
 	private double muThreshold;
 	
-	private double gamma = 0.8;
+	private double gamma = 0.9;
 	
 	private int stepNum;
 	
@@ -353,17 +353,11 @@ public class HomogeneousIPM implements ConicProgramSolver {
 			double xSelQNorm = Math.sqrt(Q.zMult(xSel, null).zDotProduct(xSel));
 			double sSelQNorm = Math.sqrt(Q.zMult(sSel, null).zDotProduct(sSel));
 			
-			/* Computes theta values */
-			double thetaSq = sSelQNorm / xSelQNorm; 
-			double theta = Math.sqrt(thetaSq);
-			double invTheta = 1 / theta;
-			double invThetaSq = 1 / thetaSq;
-			
 			/* Computes wCone vector */
-			DoubleMatrix1D wCone = sSel.copy().assign(DoubleFunctions.mult(invTheta));
-			wCone.assign(Q.zMult(xSel, null).assign(DoubleFunctions.mult(theta)), DoubleFunctions.plus);
-			double denominator = Math.sqrt(2.0) * Math.sqrt(xSel.zDotProduct(sSel) + xSelQNorm * sSelQNorm);
-			wCone.assign(DoubleFunctions.div(denominator));
+			double gamma = Math.sqrt(0.5 + xSel.zDotProduct(sSel) / (2 * xSelQNorm * sSelQNorm));
+			DoubleMatrix1D wCone = sSel.copy().assign(DoubleFunctions.div(sSelQNorm));
+			wCone.assign(Q.zMult(xSel, null).assign(DoubleFunctions.div(xSelQNorm)), DoubleFunctions.plus);
+			wCone.assign(DoubleFunctions.div(2 * gamma));
 			
 			/*
 			 * Computes selections of matrices
@@ -379,27 +373,27 @@ public class HomogeneousIPM implements ConicProgramSolver {
 			DoubleMatrix2D invThetaSqInvWSqSel	= im.invThetaSqInvWSq.viewSelection(selection, selection);
 			
 			/* Computes W selection */
-			DoubleMatrix1D e = new DenseDoubleMatrix1D(nCone).assign(1.0);
-			DoubleMatrix1D ePlusWCone = wCone.copy().assign(DoubleFunctions.plus(1.0));
-			ThetaWSel.assign(Q).assign(DoubleFunctions.mult(-1.0));
-			ThetaWSel.assign(alg.multOuter(ePlusWCone, ePlusWCone, null).assign(DoubleFunctions.div(1.0 + e.zDotProduct(wCone))), DoubleFunctions.plus);
+			//DoubleMatrix1D e = new DenseDoubleMatrix1D(nCone).assign(1.0);
+			double beta = Math.sqrt(sSelQNorm / xSelQNorm);
+			ThetaWSel.viewColumn(0).assign(wCone);
+			ThetaWSel.viewRow(0).assign(wCone);
+			DoubleMatrix2D subMatrixSelection = ThetaWSel.viewPart(1, 1, nCone-1, nCone-1);
+			DoubleMatrix1D subVectorSelection = wCone.viewPart(1, nCone-1);
+			alg.multOuter(subVectorSelection, subVectorSelection, subMatrixSelection);
+			subMatrixSelection.assign(DoubleFunctions.div(1+wCone.getQuick(0)));
+			for (int i = 1; i < nCone; i++)
+				ThetaWSel.setQuick(i, i, ThetaWSel.getQuick(i, i) + 1);
+			ThetaWSel.assign(DoubleFunctions.mult(beta));
+			try{
+			invThetaInvWSel.assign(alg.inverse(ThetaWSel));
+			}
+			catch (IllegalArgumentException exception) {
+				throw exception;
+			}
 			
-			/* Computes WSq selection */
-			ThetaSqWSqSel.assign(Q).assign(DoubleFunctions.mult(-1.0));
-			ThetaSqWSqSel.assign(
-					alg.multOuter(wCone, wCone, null).assign(DoubleFunctions.mult(2.0))
-					, DoubleFunctions.plus
-					);
-			
-			/* Before multiplying by theta, computes invW and invWSq */
-			invThetaInvWSel.assign(Q.zMult(ThetaWSel.zMult(Q, null), null));
-			invThetaSqInvWSqSel.assign(Q.zMult(ThetaSqWSqSel.zMult(Q, null), null));
-			
-			/* Multiplies by theta */
-			ThetaWSel.assign(DoubleFunctions.mult(theta));
-			ThetaSqWSqSel.assign(DoubleFunctions.mult(thetaSq));
-			invThetaInvWSel.assign(DoubleFunctions.mult(invTheta));
-			invThetaSqInvWSqSel.assign(DoubleFunctions.mult(invThetaSq));
+			/* Computes squared selections */
+			invThetaInvWSel.zMult(invThetaInvWSel, invThetaSqInvWSqSel);
+			ThetaWSel.zMult(ThetaWSel, ThetaSqWSqSel);
 			
 			/* Computes selections of XBar, invXBar, and SBar */
 			XBarSel.assign(getArrowheadMatrix(ThetaWSel.zMult(xSel, null)));
@@ -410,14 +404,14 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		log.trace("Computing intermediate matrices.");
 		
 		/* Computes more intermediate matrices */
-		im.AInvThetaSqInvWSq = new SparseDoubleMatrix2D(A.rows(), n);
-		im.AInvThetaSqInvWSq.assign(A.getColumnCompressed(false).zMult(im.invThetaSqInvWSq.getColumnCompressed(false), null, 1.0, 0.0, false, false));
+		im.AInvThetaSqInvWSq = new SparseCCDoubleMatrix2D(A.rows(), n);
+		A.getColumnCompressed(false).zMult(im.invThetaSqInvWSq.getColumnCompressed(false), im.AInvThetaSqInvWSq, 1.0, 0.0, false, false);
 		
 		log.trace("Computing M.");
 		
 		/* Computes M and finds its Cholesky factorization */
 		SparseCCDoubleMatrix2D M = new SparseCCDoubleMatrix2D(A.rows(), A.rows());
-		im.AInvThetaSqInvWSq.getColumnCompressed(false).zMult(A.getColumnCompressed(false), M, 1.0, 0.0, false, true);
+		im.AInvThetaSqInvWSq.zMult(A.getColumnCompressed(false), M, 1.0, 0.0, false, true);
 		log.trace("Starting decomposition.");
 		im.M = new SparseDoubleCholeskyDecomposition(M, 1);
 		log.trace("Finished decomposition.");
@@ -658,7 +652,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		private SparseDoubleMatrix2D SBar;
 		private SparseDoubleMatrix2D ThetaW;
 		private SparseDoubleMatrix2D invThetaInvW;
-		private SparseDoubleMatrix2D AInvThetaSqInvWSq;
+		private SparseCCDoubleMatrix2D AInvThetaSqInvWSq;
 		private SparseDoubleMatrix2D ThetaSqWSq;
 		private SparseDoubleMatrix2D invThetaSqInvWSq;
 		private SparseDoubleCholeskyDecomposition M;
