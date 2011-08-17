@@ -158,6 +158,10 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		HIPMProgramMatrices pm = getProgramMatrices(program);
 		
 		/* Initializes program variables */
+//		for (Cone cone : program.getCones()) {
+//			cone.setBarrierGradient(program.getVarMap(), x, s);
+//		}
+//		s.assign(DoubleFunctions.mult(-1.0));
 //		x.assign(1.0);
 //		w.assign(0.0);
 //		s.assign(1.0);
@@ -165,7 +169,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		/* Initializes special variables for the homogeneous model */
 		HIPMVars vars = new HIPMVars();
 		vars.tau = 1;
-		vars.kappa = 1;
+		vars.kappa = x.zDotProduct(s) / pm.k;
 		
 		/* Computes values for stopping criteria */
 		double muZero = (x.zDotProduct(s) + vars.tau * vars.kappa) / pm.k;
@@ -448,7 +452,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 				.assign(DoubleFunctions.mult(gamma-1));
 		res.r2 = A.zMult(w, c.copy().assign(DoubleFunctions.mult(vars.tau)), 1.0, -1.0, true);
 		res.r2.assign(s, DoubleFunctions.plus).assign(DoubleFunctions.mult(gamma-1));
-		res.r3 = (gamma-1) * (b.zDotProduct(w) - c.zDotProduct(x) - vars.kappa);
+		res.r3 = (gamma-1) * (b.zDotProduct(w) - c.zDotProduct(x) + vars.kappa);
 		res.r4 = e.copy().assign(DoubleFunctions.mult(gamma*im.mu)).assign(im.XBar.zMult(im.SBar.zMult(e, null), null), DoubleFunctions.minus);
 		res.r5 = gamma * im.mu - vars.tau * vars.kappa;
 		
@@ -485,8 +489,8 @@ public class HomogeneousIPM implements ConicProgramSolver {
 				, null).assign(DoubleFunctions.mult(-1.0));
 	
 		/* Computes search direction */
-		sd.dTau = (res.r3 + c.zDotProduct(h1) - b.zDotProduct(h2) + res.r5 / vars.tau)
-				/ ((vars.kappa/vars.tau) - c.zDotProduct(im.g1) + b.zDotProduct(im.g2));
+		sd.dTau = (res.r3 + c.zDotProduct(h1) - b.zDotProduct(h2) - res.r5 / vars.tau)
+				/ (-1*(vars.kappa/vars.tau) - c.zDotProduct(im.g1) + b.zDotProduct(im.g2));
 		sd.dx = im.g1.copy().assign(DoubleFunctions.mult(sd.dTau)).assign(h1, DoubleFunctions.plus);
 		sd.dw = im.g2.copy().assign(DoubleFunctions.mult(sd.dTau)).assign(h2, DoubleFunctions.plus);
 		sd.dKappa = (res.r5 - vars.kappa*sd.dTau) / vars.tau;
@@ -551,13 +555,18 @@ public class HomogeneousIPM implements ConicProgramSolver {
 			double vS2 = 2 * sd.ds.getQuick(index) * s.getQuick(index);
 			double vS3 = Math.pow(sd.ds.getQuick(index), 2);
 			
-			while (Math.sqrt(
-					(vX1 + stepSize * vX2 + stepSize * stepSize * vX3)
-					* (vS1 + stepSize * vS2 + stepSize * stepSize * vS3)
-					) < ssCond) {
+//			while (Math.sqrt(
+//					(vX1 + stepSize * vX2 + stepSize * stepSize * vX3)
+//					* (vS1 + stepSize * vS2 + stepSize * stepSize * vS3)
+//					) < ssCond) {
+			while ((x.getQuick(index) + sd.dx.getQuick(index) * stepSize)
+					* (s.getQuick(index) + sd.ds.getQuick(index) * stepSize)
+					< ssCond) {
 				log.trace("Decrementing step size.");
 				stepSize -= stepSizeDecrement;
 				ssCond = getStepSizeCondition(stepSize, beta, gamma, im.mu);
+				if (stepSize <= 0)
+					throw new IllegalStateException("Stuck.");
 			}
 		}
 		
@@ -597,13 +606,20 @@ public class HomogeneousIPM implements ConicProgramSolver {
 			double vS2 = 2 * Q.zMult(sSel, null).zDotProduct(dsSel);
 			double vS3 = Q.zMult(dsSel, null).zDotProduct(dsSel);
 			
-			while (Math.sqrt(
-					(vX1 + stepSize * vX2 + stepSize * stepSize * vX3)
-					* (vS1 + stepSize * vS2 + stepSize * stepSize * vS3)
-					) < ssCond) {
+//			while (Math.sqrt(
+//					(vX1 + stepSize * vX2 + stepSize * stepSize * vX3)
+//					* (vS1 + stepSize * vS2 + stepSize * stepSize * vS3)
+//					) < ssCond) {
+			DoubleMatrix1D newX = xSel.copy().assign(dxSel.copy().assign(DoubleFunctions.mult(stepSize)), DoubleFunctions.plus);
+			DoubleMatrix1D newS = sSel.copy().assign(dsSel.copy().assign(DoubleFunctions.mult(stepSize)), DoubleFunctions.plus);
+			while (Q.zMult(newX, null).zDotProduct(newX) * Q.zMult(newS, null).zDotProduct(newS)
+					/ newX.zDotProduct(newS)
+					< ssCond) {
 				log.trace("Decrementing step size.");
 				stepSize -= stepSizeDecrement;
 				ssCond = getStepSizeCondition(stepSize, beta, gamma, im.mu);
+				if (stepSize <= 0)
+					throw new IllegalStateException("Stuck.");
 			}
 		}
 		

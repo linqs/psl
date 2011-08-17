@@ -39,8 +39,8 @@ public class SecondOrderCone extends Cone {
 			node.createRelationship(ConicProgram.CONE_REL, var.getNode());
 		}
 		node.createRelationship(ConicProgram.SOC_N_REL, var.getNode());
-		var.setValue(.5 * (n-1));
-		var.setDualValue(.5 * (n-1));
+		var.setValue(1.5 * (n-1));
+		var.setDualValue(1.5 * (n-1));
 		p.notify(ConicProgramEvent.SOCCreated, this);
 	}
 	
