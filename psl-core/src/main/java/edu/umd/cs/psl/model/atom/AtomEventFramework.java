@@ -21,17 +21,54 @@ import edu.umd.cs.psl.database.DatabaseEventObserver;
 import edu.umd.cs.psl.model.ModelObserver;
 import edu.umd.cs.psl.model.predicate.Predicate;
 
+/**
+ * The event framework for managing observers (listeners) and managers.
+ *   
+ * @author
+ *
+ */
 public interface AtomEventFramework extends AtomManager, DatabaseEventObserver, ModelObserver {
 
-	public static enum ActivationMode { NonDefault, All }	
+	/**
+	 * Determines when an atom is activated.
+	 *   NonDefault: whenever it crosses the activation threshold
+	 *   All: any event
+	 */
+	public static enum ActivationMode { NonDefault, All }
 	public static final ActivationMode defaultActivationMode = ActivationMode.NonDefault;
 	
+	/**
+	 * Unregisters an observer for a given set of atom events.
+	 * 
+	 * @param event A set of atom events
+	 * @param me An observer
+	 */
 	public void unregisterAtomEventObserver(AtomEventSets event, AtomEventObserver me);
 	
+	/**
+	 * Unregisters an observer for a given predicate and set of atom events.
+	 * 
+	 * @param p A predicate
+	 * @param event A set of atom events
+	 * @param me An observer
+	 */
 	public void unregisterAtomEventObserver(Predicate p, AtomEventSets event, AtomEventObserver me);
 	
+	/**
+	 * Registers an observer for a given set of atom events.
+	 * 
+	 * @param event A set of atom events
+	 * @param me An observer
+	 */
 	public void registerAtomEventObserver(AtomEventSets event, AtomEventObserver me);
 	
+	/**
+	 * Registers an observer for a given predicate and set of atom events.
+	 * 
+	 * @param p A predicate
+	 * @param event A set of atom events
+	 * @param me An observer
+	 */
 	public void registerAtomEventObserver(Predicate p, AtomEventSets event, AtomEventObserver me);
 	
 	public void workOffJobQueue();

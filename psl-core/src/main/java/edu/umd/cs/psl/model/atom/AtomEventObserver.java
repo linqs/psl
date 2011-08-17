@@ -19,8 +19,22 @@ package edu.umd.cs.psl.model.atom;
 import edu.umd.cs.psl.application.GroundingMode;
 import edu.umd.cs.psl.application.ModelApplication;
 
+/**
+ * An atom event observer (listener) interface.
+ * 
+ * @author
+ *
+ */
 public interface AtomEventObserver {
 
+	/**
+	 * Method called by manager to inform observer of atom update.
+	 * 
+	 * @param event The atom event
+	 * @param atom The updated atom
+	 * @param mode The grounding mode
+	 * @param app The model application
+	 */
 	public void notifyAtomEvent(AtomEvent event, Atom atom, GroundingMode mode, ModelApplication app);
 	
 }

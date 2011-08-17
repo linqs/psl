@@ -22,23 +22,75 @@ import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.predicate.*;
 
-
+/**
+ * An interface for atom storage classes.
+ * 
+ * @author
+ *
+ */
 public interface AtomStore {
 
+	/**
+	 * Adds an atom to the store.
+	 * 
+	 * @param atom An atom
+	 */
 	public void store(Atom atom);
 	
+	/**
+	 * Frees an atom (removes it from the store).
+	 * 
+	 * @param atom Atom to be freed
+	 */
 	public void free(Atom atom);
 	
+	/**
+	 * Returns the atom pertaining to the given predicate and ground terms.
+	 * 
+	 * @param p A predicate
+	 * @param arguments An array of ground terms.
+	 * @return An atom
+	 */
 	public Atom getAtom(Predicate p, GroundTerm[] arguments);
 	
+	/**
+	 * Returns the considered atoms pertaining to the given predicate and ground terms.
+	 * 
+	 * @param p A predicate
+	 * @param arguments An array of ground terms
+	 * @return An atom
+	 */
 	public Atom getConsideredAtom(Predicate p, GroundTerm[] arguments);
 	
+	/**
+	 * Returns all atoms with the given status.
+	 * 
+	 * @param status A status
+	 * @return An iterable structure containing atoms
+	 */
 	public Iterable<Atom> getAtoms(AtomStatus status);
 
+	/**
+	 * Returns all atoms with any of the given statuses.
+	 * 
+	 * @param stati A set of statuses
+	 * @return An iterable structure containing atoms
+	 */
 	public Iterable<Atom> getAtoms(Set<AtomStatus> stati);
 	
+	/**
+	 * Returns the number of atoms with the given statuses.
+	 * 
+	 * @param stati A set of statuses
+	 * @return The number of atoms
+	 */
 	public int getNumAtoms(Set<AtomStatus> stati);
 	
+	/**
+	 * Returns the database associated with this atom store.
+	 * 
+	 * @return A database
+	 */
 	public Database getDatabase();
 	
 //	public Atom initializeFactAtom(Predicate p, GroundTerm[] terms, double[] values, double[] confidences);

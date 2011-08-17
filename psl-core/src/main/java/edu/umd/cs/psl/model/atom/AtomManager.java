@@ -19,6 +19,11 @@ package edu.umd.cs.psl.model.atom;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.predicate.Predicate;
 
+/**
+ * The atom manager interface contains base functionality for {@link AtomEventFramework}. 
+ * @author
+ *
+ */
 public interface AtomManager {
 
 	public Atom getAtom(Predicate p, GroundTerm[] arguments);

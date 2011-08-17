@@ -22,6 +22,9 @@ import com.google.common.collect.ImmutableSet;
 
 //import static edu.umd.cs.psl.model.atom.AtomEvent.*;
 
+/**
+ * Commonly used combinations of various {@link AtomEvent AtomEvents}.
+ */
 public enum AtomEventSets {
 
 	ReleasedCertainty {
