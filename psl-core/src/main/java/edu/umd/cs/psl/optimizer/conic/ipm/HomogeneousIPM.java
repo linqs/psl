@@ -106,8 +106,6 @@ public class HomogeneousIPM implements ConicProgramSolver {
 	private double tauThreshold;
 	private double muThreshold;
 	
-	private double gamma = 0.9;
-	
 	private int stepNum;
 	
 	public HomogeneousIPM(ConfigBundle config) {
@@ -137,15 +135,12 @@ public class HomogeneousIPM implements ConicProgramSolver {
 	}
 	
 	private double doSolve(ConicProgram program) {
-		DoubleMatrix2D A;
-		DoubleMatrix1D x, b, w, s, c;
-	
-		A = program.getA();
-		x = program.getX();
-		b = program.getB();
-		w = program.getW();
-		s = program.getS();
-		c = program.getC();
+		DoubleMatrix2D A = program.getA();
+		DoubleMatrix1D x = program.getX();
+		DoubleMatrix1D b = program.getB();
+		DoubleMatrix1D w = program.getW();
+		DoubleMatrix1D s = program.getS();
+		DoubleMatrix1D c = program.getC();
 		
 		DenseDoubleAlgebra alg = new DenseDoubleAlgebra();
 		
@@ -158,6 +153,9 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		HIPMProgramMatrices pm = getProgramMatrices(program);
 		
 		/* Initializes program variables */
+		pm.T.zMult(pm.e, x);
+		s.assign(x);
+		w.assign(0.0);
 //		for (Cone cone : program.getCones()) {
 //			cone.setBarrierGradient(program.getVarMap(), x, s);
 //		}
@@ -200,7 +198,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 			gap = Math.abs(bDotW - cDotX - vars.kappa) / gapRedDenom;
 			sig = Math.abs(cDotX / vars.tau - bDotW / vars.tau) / (1 + Math.abs(bDotW / vars.tau));
 			
-			log.trace("Itr: {} -- Gap: {} -- Other Gap: {} -- P. Inf: {} -- D. Inf: {} -- Sig: {}", new Object[] {++stepNum, mu, vars.kappa / vars.tau, primalInfeasibility, dualInfeasibility, sig});
+			log.trace("Itr: {} -- P. Inf: {} -- D. Inf: {} -- Sig: {}", new Object[] {++stepNum, primalInfeasibility, dualInfeasibility, sig});
 			
 			primalFeasible	= primalInfeasibility <= infeasibilityRedThreshold;
 			dualFeasible	= dualInfeasibility <= infeasibilityRedThreshold;
@@ -230,12 +228,22 @@ public class HomogeneousIPM implements ConicProgramSolver {
 	private void step(ConicProgram program, HIPMProgramMatrices pm, HIPMVars vars) {
 		log.trace("Getting intermediates.");
 		HIPMIntermediates im = getIntermediates(program, pm, vars);
-		log.trace("Getting residuals");
-		HIPMResiduals res = getResiduals(program, pm, vars, im, gamma);
-		log.trace("Getting search direction.");
+		log.trace("Getting predictor residuals.");
+		HIPMResiduals res = getResiduals(program, pm, vars, im, 0.0, null);
+		log.trace("Getting Newton search direction.");
 		HIPMSearchDirection sd = getSearchDirection(program, pm, vars, res, im);
-		log.trace("Getting step size.");
+		log.trace("Getting Newton max step size.");
 		double alphaMax = getMaxStepSize(program, vars, sd);
+		log.trace("{}", alphaMax);
+		double delta = 0.5;
+		double gamma = Math.min(delta, Math.pow(1-alphaMax, 2)) * (1-alphaMax);
+		log.trace("Getting corrected residuals.");
+		res = getResiduals(program, pm, vars, im, gamma, sd);
+		log.trace("Getting corrected search direction.");
+		sd = getSearchDirection(program, pm, vars, res, im);
+		logResults(program, pm, vars, res, im, sd, gamma);
+		log.trace("Getting step size.");
+		alphaMax = getMaxStepSize(program, vars, sd);
 		double stepSize = getStepSize(program, vars, im, sd, alphaMax, 10e-8, gamma);
 		log.trace("Step size: {}", stepSize);
 		
@@ -253,6 +261,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		int size = A.columns();
 		
 		pm.k	= program.getCones().size();
+		pm.e	= new DenseDoubleMatrix1D(size);
 		pm.T	= new SparseDoubleMatrix2D(size, size);
 		pm.invT	= new SparseDoubleMatrix2D(size, size);
 		pm.Q	= new SparseDoubleMatrix2D(size, size);
@@ -261,6 +270,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		// TODO: Watch out for new cone types. Should throw exception if they exist. 
 		for (NonNegativeOrthantCone cone : program.getNonNegativeOrthantCones()) {
 			int i = program.index(cone.getVariable());
+			pm.e.setQuick(i, 1.0);
 			pm.T.setQuick(i, i, 1.0);
 			pm.invT.setQuick(i, i, 1.0);
 			pm.Q.setQuick(i, i, 1.0);
@@ -270,12 +280,14 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		for (SecondOrderCone cone : program.getSecondOrderCones()) {
 			for (Variable var : cone.getVariables()) {
 				int i = program.index(var);
+				pm.e.setQuick(i, 0);
 				pm.T.setQuick(i, i, 1.0);
 				pm.invT.setQuick(i, i, 1.0);
 				pm.Q.setQuick(i, i, -1.0);
 				pm.invQ.setQuick(i, i, -1.0);
 			}
 			int i = program.index(cone.getNthVariable());
+			pm.e.setQuick(i, 1.0);
 			pm.Q.setQuick(i, i, 1.0);
 			pm.invQ.setQuick(i, i, 1.0);
 		}
@@ -431,9 +443,27 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		return im;
 	}
 	
+	/**
+	 * Computes residuals for the system of equations to be solved.
+	 * 
+	 * This method optionally uses a search direction to correct the residuals
+	 * with a second-order estimate. If the search direction is the Newton
+	 * direction, then this is equivalent to the correction used in Mehrotra's
+	 * predictor-corrector method.
+	 * 
+	 * @param program	program being solved
+	 * @param pm		saved program information
+	 * @param vars		homogeneous-model variables
+	 * @param im		saved step-specific computations
+	 * @param gamma		parameter in [0,1] controlling adherence to central path.
+	 * 						If 0, this method returns the Newton direction.
+	 * @param sd		search direction used to estimate second-order terms.
+	 * 						If null, no second-order terms are added.
+	 * @return  the computed residuals
+	 */
 	private HIPMResiduals getResiduals(ConicProgram program
 			, HIPMProgramMatrices pm, HIPMVars vars, HIPMIntermediates im
-			, double gamma
+			, double gamma, HIPMSearchDirection sd
 			) {
 		HIPMResiduals res = new HIPMResiduals();
 		
@@ -443,15 +473,63 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		DenseDoubleMatrix1D w = program.getW();
 		DenseDoubleMatrix1D s = program.getS();
 		DenseDoubleMatrix1D c = program.getC();
-		DoubleMatrix1D e = new DenseDoubleMatrix1D((int) x.size()).assign(1.0);
 		
 		res.r1 = A.zMult(x, b.copy().assign(DoubleFunctions.mult(vars.tau)), 1.0, -1.0, false)
 				.assign(DoubleFunctions.mult(gamma-1));
 		res.r2 = A.zMult(w, c.copy().assign(DoubleFunctions.mult(vars.tau)), 1.0, -1.0, true);
 		res.r2.assign(s, DoubleFunctions.plus).assign(DoubleFunctions.mult(gamma-1));
 		res.r3 = (gamma-1) * (c.zDotProduct(x) - b.zDotProduct(w) + vars.kappa);
-		res.r4 = e.copy().assign(DoubleFunctions.mult(gamma*im.mu)).assign(im.XBar.zMult(im.SBar.zMult(e, null), null), DoubleFunctions.minus);
+		res.r4 = pm.e.copy().assign(DoubleFunctions.mult(gamma*im.mu)).assign(im.XBar.zMult(im.SBar.zMult(pm.e, null), null), DoubleFunctions.minus);
 		res.r5 = gamma * im.mu - vars.tau * vars.kappa;
+		
+		/* Corrects residuals with second-order estimate */
+		if (sd != null) {
+			DoubleMatrix1D dxn = pm.T.zMult(im.ThetaW.zMult(sd.dx, null), null);
+			DoubleMatrix1D dsn = pm.T.zMult(im.invThetaInvW.zMult(sd.ds, null), null);
+			int size = (int) dxn.size();
+			DoubleMatrix2D Dxn = new SparseDoubleMatrix2D(size, size);
+			DoubleMatrix2D Dsn = new SparseDoubleMatrix2D(size, size);
+			
+			for (NonNegativeOrthantCone cone : program.getNonNegativeOrthantCones()) {
+				int index = program.index(cone.getVariable());
+				Dxn.setQuick(index, index, dxn.getQuick(index));
+				Dsn.setQuick(index, index, dsn.getQuick(index));
+			}
+			
+			for (SecondOrderCone cone : program.getSecondOrderCones()) {
+				/* Collects the cone's variables */
+				Set<Variable> coneVars = cone.getVariables();
+				Variable nthVariable = cone.getNthVariable();
+				int nCone = coneVars.size();
+				
+				/* Creates an array of the variables' indices */
+				int[] selection = new int[nCone];
+				int selectionIndex = 1;
+				for (Variable var : coneVars) {
+					if (nthVariable.equals(var))
+						selection[0] = program.index(var);
+					else
+						selection[selectionIndex++] = program.index(var);
+				}
+				
+				/* Selects the variables */
+				DoubleMatrix1D dxnSel = dxn.viewSelection(selection);
+				DoubleMatrix1D dsnSel = dsn.viewSelection(selection);
+				
+				/* Gets the selections */
+				DoubleMatrix2D DxnSel				= Dxn.viewSelection(selection, selection);
+				DoubleMatrix2D DsnSel				= Dsn.viewSelection(selection, selection);
+				
+				/* Computes the arrowhead matrices */
+				DxnSel.assign(getArrowheadMatrix(dxnSel));
+				DsnSel.assign(getArrowheadMatrix(dsnSel));
+			}
+			
+			res.r4.assign(Dxn.zMult(Dsn.zMult(pm.e, null), null), DoubleFunctions.minus);
+			res.r5 -= sd.dTau * sd.dKappa;
+			log.trace("Dot product: {}", sd.dx.zDotProduct(sd.ds));
+			log.trace("Fancier product: {}", Dxn.zMult(Dsn.zMult(pm.e, null), null).zDotProduct(pm.e));
+		}
 		
 		return res;
 	}
@@ -496,45 +574,6 @@ public class HomogeneousIPM implements ConicProgramSolver {
 						im.SBar.zMult(pm.T.zMult(im.ThetaW.zMult(sd.dx, null), null), null)
 						, DoubleFunctions.minus)
 				, null), null), null);
-		
-		/* Computes how closely the system was solved */
-		DenseDoubleAlgebra alg = new DenseDoubleAlgebra();
-		log.trace("First equations: {}", alg.norm2(program.getA().zMult(sd.dx, program.getB().copy().assign(DoubleFunctions.mult(sd.dTau)), 1.0, -1.0, false)
-				.assign(res.r1, DoubleFunctions.minus)));
-		log.trace("Second equations: {}", alg.norm2(program.getA().zMult(sd.dx, program.getB().copy().assign(DoubleFunctions.mult(sd.dTau)), 1.0, -1.0, false)
-				.assign(res.r1, DoubleFunctions.minus)));
-		log.trace("Third equations: {}", program.getC().zDotProduct(sd.dx) - program.getB().zDotProduct(sd.dw) + sd.dKappa - res.r3);
-		log.trace("Fourth equations: {}", alg.norm2(im.XBar.zMult(pm.T.zMult(im.invThetaInvW.zMult(sd.ds, null), null), null)
-				.assign(im.SBar.zMult(pm.T.zMult(im.ThetaW.zMult(sd.dx, null), null), null), DoubleFunctions.plus)
-				.assign(res.r4, DoubleFunctions.minus)));
-		log.trace("Fifth equations: {}", vars.tau*sd.dKappa + vars.kappa*sd.dTau - res.r5);
-		
-		/* Computes properties of search direction */
-		log.trace("Norm primal: {}", alg.norm2(A.zMult(program.getX().copy().assign(DoubleFunctions.mult(1-gamma)).assign(sd.dx, DoubleFunctions.plus), null)
-				.assign(b.copy().assign(DoubleFunctions.mult((1-gamma)*vars.tau+sd.dTau)), DoubleFunctions.minus)));
-		log.trace("Norm dual: {}", alg.norm2(A.zMult(program.getW().copy().assign(DoubleFunctions.mult(1-gamma)).assign(sd.dw, DoubleFunctions.plus), null, 1.0, 0.0, true)
-				.assign(program.getS().copy().assign(DoubleFunctions.mult(1-gamma)).assign(sd.ds, DoubleFunctions.plus), DoubleFunctions.plus)
-				.assign(program.getC().copy().assign(DoubleFunctions.mult((1-gamma)*vars.tau+sd.dTau)), DoubleFunctions.minus)));
-		log.trace("Gap condition: {}", c.zDotProduct(program.getX().copy().assign(DoubleFunctions.mult(1-gamma)).assign(sd.dx, DoubleFunctions.plus))
-				- b.zDotProduct(program.getW().copy().assign(DoubleFunctions.mult(1-gamma)).assign(sd.dw, DoubleFunctions.plus))
-				+ ((1-gamma) * vars.kappa + sd.dKappa));
-		
-		/* Verifies consequences of properties */
-		log.trace("First consequence: {}", program.getX().copy().assign(DoubleFunctions.mult(1-gamma)).assign(sd.dx, DoubleFunctions.plus)
-				.zDotProduct(program.getS().copy().assign(DoubleFunctions.mult(1-gamma)).assign(sd.ds, DoubleFunctions.plus))
-				+ ((1-gamma) * vars.kappa + sd.dKappa) * ((1-gamma)*vars.tau+sd.dTau));
-		log.trace("Second consequence: {}", Math.pow(1-gamma, 2) * (program.getX().zDotProduct(program.getS()) + vars.tau*vars.kappa)
-				+ (1-gamma) * (program.getX().zDotProduct(sd.ds)
-						+ sd.dx.zDotProduct(program.getS())
-						+ vars.tau*sd.dKappa + sd.dTau*vars.kappa)
-				+ sd.dx.zDotProduct(sd.ds) + sd.dTau * sd.dKappa);
-		
-		/* Computes another property of the search direction */
-		log.trace("Other condition: {}", program.getX().zDotProduct(sd.ds) + program.getS().zDotProduct(sd.dx) + vars.tau*sd.dKappa + sd.dTau*vars.kappa
-				- (gamma - 1) * im.mu * pm.k);
-		
-		/* Verifies orthogonality of search direction components */
-		log.trace("Step dot: {}", sd.dx.zDotProduct(sd.ds) + sd.dTau * sd.dKappa);
 		
 		return sd;
 	}
@@ -683,6 +722,62 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		
 		return ahm;
 	}
+	
+	private void logResults(ConicProgram program
+			, HIPMProgramMatrices pm, HIPMVars vars, HIPMResiduals res
+			, HIPMIntermediates im, HIPMSearchDirection sd, double gamma
+			) {
+		DoubleMatrix2D A = program.getA();
+		DoubleMatrix1D x = program.getX();
+		DoubleMatrix1D b = program.getB();
+		DoubleMatrix1D w = program.getW();
+		DoubleMatrix1D s = program.getS();
+		DoubleMatrix1D c = program.getC();
+		
+		log.trace("Gamma: {}", gamma);
+		
+		/* Computes how closely the system was solved */
+		DenseDoubleAlgebra alg = new DenseDoubleAlgebra();
+		log.trace("First equations: {}", alg.norm2(program.getA().zMult(sd.dx, b.copy().assign(DoubleFunctions.mult(sd.dTau)), 1.0, -1.0, false)
+				.assign(res.r1, DoubleFunctions.minus)));
+		log.trace("Second equations: {}", alg.norm2(program.getA().zMult(sd.dx, b.copy().assign(DoubleFunctions.mult(sd.dTau)), 1.0, -1.0, false)
+				.assign(res.r1, DoubleFunctions.minus)));
+		log.trace("Third equations: {}", c.zDotProduct(sd.dx) - b.zDotProduct(sd.dw) + sd.dKappa - res.r3);
+		log.trace("Fourth equations: {}", alg.norm2(im.XBar.zMult(pm.T.zMult(im.invThetaInvW.zMult(sd.ds, null), null), null)
+				.assign(im.SBar.zMult(pm.T.zMult(im.ThetaW.zMult(sd.dx, null), null), null), DoubleFunctions.plus)
+				.assign(res.r4, DoubleFunctions.minus)));
+		log.trace("Fifth equations: {}", vars.tau*sd.dKappa + vars.kappa*sd.dTau - res.r5);
+		
+		/* Computes properties of search direction */
+		log.trace("Norm primal: {}", alg.norm2(A.zMult(x.copy().assign(DoubleFunctions.mult(1-gamma)).assign(sd.dx, DoubleFunctions.plus), null)
+				.assign(b.copy().assign(DoubleFunctions.mult((1-gamma)*vars.tau+sd.dTau)), DoubleFunctions.minus)));
+		log.trace("Norm dual: {}", alg.norm2(A.zMult(w.copy().assign(DoubleFunctions.mult(1-gamma)).assign(sd.dw, DoubleFunctions.plus), null, 1.0, 0.0, true)
+				.assign(s.copy().assign(DoubleFunctions.mult(1-gamma)).assign(sd.ds, DoubleFunctions.plus), DoubleFunctions.plus)
+				.assign(c.copy().assign(DoubleFunctions.mult((1-gamma)*vars.tau+sd.dTau)), DoubleFunctions.minus)));
+		log.trace("Gap condition: {}", c.zDotProduct(x.copy().assign(DoubleFunctions.mult(1-gamma)).assign(sd.dx, DoubleFunctions.plus))
+				- b.zDotProduct(w.copy().assign(DoubleFunctions.mult(1-gamma)).assign(sd.dw, DoubleFunctions.plus))
+				+ ((1-gamma) * vars.kappa + sd.dKappa));
+		
+		/* Verifies consequences of properties */
+		log.trace("First consequence: {}", x.copy().assign(DoubleFunctions.mult(1-gamma)).assign(sd.dx, DoubleFunctions.plus)
+				.zDotProduct(s.copy().assign(DoubleFunctions.mult(1-gamma)).assign(sd.ds, DoubleFunctions.plus))
+				+ ((1-gamma) * vars.kappa + sd.dKappa) * ((1-gamma)*vars.tau+sd.dTau));
+		log.trace("Second consequence: {}", Math.pow(1-gamma, 2) * (x.zDotProduct(s) + vars.tau*vars.kappa)
+				+ (1-gamma) * (x.zDotProduct(sd.ds)
+						+ sd.dx.zDotProduct(s)
+						+ vars.tau*sd.dKappa + sd.dTau*vars.kappa)
+				+ sd.dx.zDotProduct(sd.ds) + sd.dTau * sd.dKappa);
+		
+		/* Computes another property of the search direction */
+		log.trace("Other condition: {}", x.zDotProduct(sd.ds) + s.zDotProduct(sd.dx) + vars.tau*sd.dKappa + sd.dTau*vars.kappa
+				- (gamma - 1) * im.mu * pm.k);
+		
+		log.trace("{}", im.XBar.zMult(im.SBar, null).zMult(pm.e, null).zDotProduct(pm.e) + vars.tau*vars.kappa);
+		log.trace("{}", im.mu * pm.k);
+		
+		/* Verifies orthogonality of search direction components */
+		log.trace("Step dot: {}", sd.dx.zDotProduct(sd.ds) + sd.dTau * sd.dKappa);
+	}
 
 	private class HIPMProgramMatrices {
 		private int k;
@@ -690,6 +785,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		private SparseDoubleMatrix2D invT;
 		private SparseDoubleMatrix2D Q;
 		private SparseDoubleMatrix2D invQ;
+		private DoubleMatrix1D e;
 	}
 	
 	private class HIPMVars {
