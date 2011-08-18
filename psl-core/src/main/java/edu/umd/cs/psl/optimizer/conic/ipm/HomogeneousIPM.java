@@ -449,7 +449,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 				.assign(DoubleFunctions.mult(gamma-1));
 		res.r2 = A.zMult(w, c.copy().assign(DoubleFunctions.mult(vars.tau)), 1.0, -1.0, true);
 		res.r2.assign(s, DoubleFunctions.plus).assign(DoubleFunctions.mult(gamma-1));
-		res.r3 = (gamma-1) * (-1*b.zDotProduct(w) + c.zDotProduct(x) - vars.kappa);
+		res.r3 = (gamma-1) * (c.zDotProduct(x) - b.zDotProduct(w) + vars.kappa);
 		res.r4 = e.copy().assign(DoubleFunctions.mult(gamma*im.mu)).assign(im.XBar.zMult(im.SBar.zMult(e, null), null), DoubleFunctions.minus);
 		res.r5 = gamma * im.mu - vars.tau * vars.kappa;
 		
@@ -486,8 +486,8 @@ public class HomogeneousIPM implements ConicProgramSolver {
 				, null).assign(DoubleFunctions.mult(-1.0));
 	
 		/* Computes search direction */
-		sd.dTau = (res.r3 - c.zDotProduct(h1) + b.zDotProduct(h2) + res.r5 / vars.tau)
-				/ ((vars.kappa/vars.tau) + c.zDotProduct(im.g1) - b.zDotProduct(im.g2));
+		sd.dTau = (res.r3 - c.zDotProduct(h1) + b.zDotProduct(h2) - res.r5 / vars.tau)
+				/ (-1*(vars.kappa/vars.tau) + c.zDotProduct(im.g1) - b.zDotProduct(im.g2));
 		sd.dx = im.g1.copy().assign(DoubleFunctions.mult(sd.dTau)).assign(h1, DoubleFunctions.plus);
 		sd.dw = im.g2.copy().assign(DoubleFunctions.mult(sd.dTau)).assign(h2, DoubleFunctions.plus);
 		sd.dKappa = (res.r5 - vars.kappa*sd.dTau) / vars.tau;
@@ -503,7 +503,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 				.assign(res.r1, DoubleFunctions.minus)));
 		log.trace("Second equations: {}", alg.norm2(program.getA().zMult(sd.dx, program.getB().copy().assign(DoubleFunctions.mult(sd.dTau)), 1.0, -1.0, false)
 				.assign(res.r1, DoubleFunctions.minus)));
-		log.trace("Third equations: {}", program.getC().zDotProduct(sd.dx) - program.getB().zDotProduct(sd.dw) - sd.dKappa - res.r3);
+		log.trace("Third equations: {}", program.getC().zDotProduct(sd.dx) - program.getB().zDotProduct(sd.dw) + sd.dKappa - res.r3);
 		log.trace("Fourth equations: {}", alg.norm2(im.XBar.zMult(pm.T.zMult(im.invThetaInvW.zMult(sd.ds, null), null), null)
 				.assign(im.SBar.zMult(pm.T.zMult(im.ThetaW.zMult(sd.dx, null), null), null), DoubleFunctions.plus)
 				.assign(res.r4, DoubleFunctions.minus)));
@@ -517,15 +517,20 @@ public class HomogeneousIPM implements ConicProgramSolver {
 				.assign(program.getC().copy().assign(DoubleFunctions.mult((1-gamma)*vars.tau+sd.dTau)), DoubleFunctions.minus)));
 		log.trace("Gap condition: {}", c.zDotProduct(program.getX().copy().assign(DoubleFunctions.mult(1-gamma)).assign(sd.dx, DoubleFunctions.plus))
 				- b.zDotProduct(program.getW().copy().assign(DoubleFunctions.mult(1-gamma)).assign(sd.dw, DoubleFunctions.plus))
-				- ((1-gamma) * vars.kappa + sd.dKappa));
+				+ ((1-gamma) * vars.kappa + sd.dKappa));
 		
 		/* Verifies consequences of properties */
 		log.trace("First consequence: {}", program.getX().copy().assign(DoubleFunctions.mult(1-gamma)).assign(sd.dx, DoubleFunctions.plus)
 				.zDotProduct(program.getS().copy().assign(DoubleFunctions.mult(1-gamma)).assign(sd.ds, DoubleFunctions.plus))
 				+ ((1-gamma) * vars.kappa + sd.dKappa) * ((1-gamma)*vars.tau+sd.dTau));
+		log.trace("Second consequence: {}", Math.pow(1-gamma, 2) * (program.getX().zDotProduct(program.getS()) + vars.tau*vars.kappa)
+				+ (1-gamma) * (program.getX().zDotProduct(sd.ds)
+						+ sd.dx.zDotProduct(program.getS())
+						+ vars.tau*sd.dKappa + sd.dTau*vars.kappa)
+				+ sd.dx.zDotProduct(sd.ds) + sd.dTau * sd.dKappa);
 		
 		/* Computes another property of the search direction */
-		log.trace("Other condition: {}", program.getX().zDotProduct(sd.ds) + program.getS().zDotProduct(sd.dx) + vars.tau*sd.dKappa + vars.kappa*sd.dTau
+		log.trace("Other condition: {}", program.getX().zDotProduct(sd.ds) + program.getS().zDotProduct(sd.dx) + vars.tau*sd.dKappa + sd.dTau*vars.kappa
 				- (gamma - 1) * im.mu * pm.k);
 		
 		/* Verifies orthogonality of search direction components */
