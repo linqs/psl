@@ -27,6 +27,7 @@ import cern.colt.matrix.tdouble.algo.DenseDoubleAlgebra;
 import cern.colt.matrix.tdouble.algo.SparseDoubleAlgebra;
 import cern.colt.matrix.tdouble.algo.decomposition.SparseDoubleCholeskyDecomposition;
 import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix1D;
+import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
 import cern.colt.matrix.tdouble.impl.SparseCCDoubleMatrix2D;
 import cern.colt.matrix.tdouble.impl.SparseDoubleMatrix2D;
 import cern.jet.math.tdouble.DoubleFunctions;
@@ -163,7 +164,6 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		vars.tau = 1;
 		vars.kappa = x.zDotProduct(s) / pm.k;
 		vars.d = x.copy().assign(DoubleFunctions.mult(Math.sqrt(2)));
-		//vars.detD = vars.d.copy().assign(DoubleFunctions.div(2));
 		vars.detD = x.copy();
 		vars.v = x.copy();
 		
@@ -227,6 +227,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		DoubleMatrix1D x = program.getX();
 		DoubleMatrix1D w = program.getW();
 		DoubleMatrix1D s = program.getS();
+		DenseDoubleAlgebra alg = new DenseDoubleAlgebra();
 		
 		log.trace("Getting intermediates.");
 		HIPMIntermediates im = getIntermediates(program, pm, vars);
@@ -289,35 +290,42 @@ public class HomogeneousIPM implements ConicProgramSolver {
 			xBarPlus.assign(vSel).assign(ThetaWSel.zMult(sd.dx.viewSelection(selection), null).assign(DoubleFunctions.mult(stepSize)), DoubleFunctions.plus);
 			DoubleMatrix1D sBarPlus = new DenseDoubleMatrix1D(nCone);
 			sBarPlus.assign(vSel).assign(invThetaInvWSel.zMult(sd.ds.viewSelection(selection), null).assign(DoubleFunctions.mult(stepSize)), DoubleFunctions.plus);
-			DoubleMatrix1D dPlus = new DenseDoubleMatrix1D(nCone);
 			
 			/* Computes intermediate values */
-			double detXBarPlus = Math.pow(xBarPlus.getQuick(0), 2) - xBarPlus.zDotProduct(xBarPlus, 1, nCone-1);
-			double detSBarPlus = Math.pow(sBarPlus.getQuick(0), 2) - sBarPlus.zDotProduct(sBarPlus, 1, nCone-1);
+			double detXBarPlus = (Math.pow(xBarPlus.getQuick(0), 2) - xBarPlus.zDotProduct(xBarPlus, 1, nCone-1)) / 2;
+			double detSBarPlus = (Math.pow(sBarPlus.getQuick(0), 2) - sBarPlus.zDotProduct(sBarPlus, 1, nCone-1)) / 2;
 			double detVPlus = Math.sqrt(detXBarPlus * detSBarPlus);
 			double traceVPlus = Math.sqrt(xBarPlus.zDotProduct(sBarPlus) + 2 * detVPlus);
 			
-			//DoubleMatrix1D chi = sBarPlus.copy().assign(DoubleFunctions.inv);
-			DoubleMatrix1D chi = sBarPlus.copy();
-			chi.assign(DoubleFunctions.mult(detVPlus));
+			DoubleMatrix1D chi = Q.zMult(sBarPlus, null);
+			chi.assign(DoubleFunctions.mult(detVPlus/detSBarPlus));
 			chi.assign(xBarPlus, DoubleFunctions.plus);
 			chi.assign(DoubleFunctions.div(traceVPlus));
 			double detChi = detVPlus / detSBarPlus;
 			
-			invThetaInvWSel.zMult(chi, dPlus);
-			double detDPlus = detDSel.getQuick(0) * detChi;
-			//double traceDPlus = Math.sqrt(2.0) * dPlus.getQuick(0);
-			double traceDPlus = Math.sqrt(2.0) * dPlus.getQuick(0) + 2 * detDPlus;
+			DoubleMatrix1D sqrtD = dSel.copy();
+			sqrtD.setQuick(0, sqrtD.getQuick(0) + Math.sqrt(2 * detDSel.getQuick(0)));
+			sqrtD.assign(DoubleFunctions.div(Math.sqrt(Math.sqrt(2) * dSel.getQuick(0) + 2 * Math.sqrt(detDSel.getQuick(0)))));
+			double detSqrtD = Q.zMult(sqrtD, null).zDotProduct(sqrtD) / 2;
+			DoubleMatrix2D POfSqrtD = alg.multOuter(sqrtD, sqrtD, null);
+			POfSqrtD.assign(Q.copy().assign(DoubleFunctions.mult(detSqrtD)), DoubleFunctions.minus);
 			
-			//DoubleMatrix1D psi = sBarPlus.copy().assign(DoubleFunctions.inv);
-			DoubleMatrix1D psi = sBarPlus.copy();
-			psi.assign(DoubleFunctions.mult(-1*detVPlus)).assign(xBarPlus, DoubleFunctions.plus);
-			double alpha = dSel.zDotProduct(psi) / traceDPlus;
+			DoubleMatrix1D dPlus = POfSqrtD.zMult(chi, null);
+			double detDPlus = detDSel.getQuick(0) * detChi;
+			double traceDPlus = Math.sqrt(2.0) * dPlus.getQuick(0);
+			
+			DoubleMatrix1D psi = Q.zMult(sBarPlus, null);
+			psi.assign(DoubleFunctions.mult(-1 * detVPlus/detSBarPlus));
+			psi.assign(xBarPlus, DoubleFunctions.plus);
+			
+			double alpha = dSel.zDotProduct(psi) / (traceDPlus + 2 * Math.sqrt(detDPlus));
+			
 			DoubleMatrix1D phi = chi.copy().assign(DoubleFunctions.mult(-1 * alpha));
 			phi.assign(psi, DoubleFunctions.plus);
 			phi.assign(DoubleFunctions.div(2 * Math.sqrt(detChi)));
-			double gammaForUpdate = alpha + Math.sqrt(2.0) * phi.getQuick(0)
-					/ (Math.sqrt(2.0) * dSel.getQuick(0) + 2 * detDSel.getQuick(0));
+			
+			double gammaForUpdate = (alpha + Math.sqrt(2.0) * phi.getQuick(0))
+					/ (Math.sqrt(2.0) * dSel.getQuick(0) + 2 * Math.sqrt(detDSel.getQuick(0)));
 			
 			/* Updates v */
 			vSel.setQuick(0, traceVPlus / Math.sqrt(2.0));
@@ -329,9 +337,9 @@ public class HomogeneousIPM implements ConicProgramSolver {
 			detDSel.setQuick(0, detDPlus);
 		}
 		
-		x.assign(sd.dx.assign(DoubleFunctions.mult(stepSize)), DoubleFunctions.plus);
-		w.assign(sd.dw.assign(DoubleFunctions.mult(stepSize)), DoubleFunctions.plus);
-		s.assign(sd.ds.assign(DoubleFunctions.mult(stepSize)), DoubleFunctions.plus);
+		x.assign(sd.dx.copy().assign(DoubleFunctions.mult(stepSize)), DoubleFunctions.plus);
+		w.assign(sd.dw.copy().assign(DoubleFunctions.mult(stepSize)), DoubleFunctions.plus);
+		s.assign(sd.ds.copy().assign(DoubleFunctions.mult(stepSize)), DoubleFunctions.plus);
 		vars.tau += sd.dTau * stepSize;
 		vars.kappa += sd.dKappa * stepSize;
 	}
