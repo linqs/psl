@@ -189,8 +189,8 @@ public class HomogeneousIPMTest {
 	@Test
 	public void testSolve() {
 		ipm.solve(program);
-		assertTrue(Math.abs(x1.getValue() - 0.2) < SOLUTION_TOLERANCE);
-		assertTrue(Math.abs(x2.getValue() - 0.2) < SOLUTION_TOLERANCE);
+		assertTrue(Math.abs(x1.getValue() - 0.427) < SOLUTION_TOLERANCE);
+		assertTrue(Math.abs(x2.getValue() - 0.2909) < SOLUTION_TOLERANCE);
 	}
 
 }
