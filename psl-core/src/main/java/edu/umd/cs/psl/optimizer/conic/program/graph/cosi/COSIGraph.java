@@ -59,7 +59,7 @@ public class COSIGraph implements Graph {
 				Map<Object, Set<Node>> propertyIndex = index.get(propertyType);
 				Set<Node> nodes = null;
 		
-				if (propertyIndex != null)
+				if (propertyIndex != null && propertyIndex.get(attribute) != null)
 					nodes = new HashSet<Node>(propertyIndex.get(attribute));
 				
 				if (nodes == null)

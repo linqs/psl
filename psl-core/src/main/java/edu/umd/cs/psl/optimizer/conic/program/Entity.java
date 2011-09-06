@@ -68,6 +68,8 @@ abstract class Entity {
 			return new Variable(p, n);
 		case nnoc:
 			return new NonNegativeOrthantCone(p, n);
+		case soc:
+			return new SecondOrderCone(p, n);
 		case lc:
 			return new LinearConstraint(p, n);
 		default:
