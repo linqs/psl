@@ -67,7 +67,8 @@ public class MaintainedMemoryFullInference implements ModelApplication, FullInfe
 	
 //	private final Proxy defaultProxy;
 	
-	public MaintainedMemoryFullInference(Model m, Database db, PSLCoreConfiguration configuration, ConfigBundle config) {
+	public MaintainedMemoryFullInference(Model m, Database db, PSLCoreConfiguration configuration, ConfigBundle config)
+			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		model = m;
 		database = db;
 		store = new MemoryAtomStore(database);
@@ -83,7 +84,8 @@ public class MaintainedMemoryFullInference implements ModelApplication, FullInfe
 		isInitialized=false;
 	}
 	
-	public MaintainedMemoryFullInference(Model m, Database db) {
+	public MaintainedMemoryFullInference(Model m, Database db)
+			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		this(m,db,new PSLCoreConfiguration(), new EmptyBundle());
 	}
 	

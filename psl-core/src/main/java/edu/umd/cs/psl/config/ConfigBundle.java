@@ -332,4 +332,21 @@ public interface ConfigBundle {
 	 *             is thrown if the key maps to an object that is not a List.
 	 */
 	List<String> getList(String key, List<String> defaultValue);
+	
+	/**
+	 * Gets a {@link Factory} associated with the given configuration key.
+	 * 
+	 * If the value found is a String, then this method returns an instance of the
+	 * class with that <a href="http://download.oracle.com/javase/6/docs/api/java/lang/ClassLoader.html#name">
+	 * binary name</a>.
+	 * 
+	 * @param key  The configuration key.
+	 * @param defaultValue  The default value.
+	 * @return  The requested {@link Factory} if found, otherwise the default value.
+	 * @throws ClassNotFoundException  The value found indicated a class that could not be found.
+	 * @throws IllegalAccessException  The value found indicated a class that is not accessible.
+	 * @throws InstantiationException  Instantiating the indicated class failed.
+	 */
+	Factory getFactory(String key, Factory defaultValue)
+			throws ClassNotFoundException, IllegalAccessException, InstantiationException;
 }

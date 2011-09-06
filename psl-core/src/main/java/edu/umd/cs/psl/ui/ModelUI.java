@@ -117,21 +117,25 @@ public class ModelUI {
 		model.addKernel(et);
 	}
 	
-	public UIFullInferenceResult mapInference(Database db) {
+	public UIFullInferenceResult mapInference(Database db)
+			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		return mapInference(db,new PSLCoreConfiguration(), new EmptyBundle());
 	}
 	
-	public UIFullInferenceResult mapInference(Database db, PSLCoreConfiguration configOld, ConfigBundle config) {
+	public UIFullInferenceResult mapInference(Database db, PSLCoreConfiguration configOld, ConfigBundle config)
+			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		FullInference app = new MaintainedMemoryFullInference(model,db,configOld, config);
 		FullInferenceResult stats = app.runInference();
 		return new UIFullInferenceResult(app.getDatabase(),stats);
 	}
 	
-	public UIFullConfidenceAnalysisResult marginalInference(Database db) {
+	public UIFullConfidenceAnalysisResult marginalInference(Database db)
+			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		return marginalInference(db,new PSLCoreConfiguration());
 	}
 	
-	public UIFullConfidenceAnalysisResult marginalInference(Database db, PSLCoreConfiguration config) {
+	public UIFullConfidenceAnalysisResult marginalInference(Database db, PSLCoreConfiguration config)
+			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		FullConfidenceAnalysis app = new MemoryFullConfidenceAnalysis(model,db,config);
 		FullConfidenceAnalysisResult stats = app.runConfidenceAnalysis();
 		return new UIFullConfidenceAnalysisResult(app.getDatabase(),stats);

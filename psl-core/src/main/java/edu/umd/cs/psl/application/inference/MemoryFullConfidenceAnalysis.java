@@ -71,7 +71,8 @@ public class MemoryFullConfidenceAnalysis implements ModelApplication, FullConfi
 	
 //	private final Proxy defaultProxy;
 	
-	public MemoryFullConfidenceAnalysis(Model m, Database db, PSLCoreConfiguration configuration) {
+	public MemoryFullConfidenceAnalysis(Model m, Database db, PSLCoreConfiguration configuration)
+			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		config = configuration;
 		model = m;
 		database = db;
@@ -84,7 +85,8 @@ public class MemoryFullConfidenceAnalysis implements ModelApplication, FullConfi
 		isInitialized=false;
 	}
 	
-	public MemoryFullConfidenceAnalysis(Model m, Database db) {
+	public MemoryFullConfidenceAnalysis(Model m, Database db)
+			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		this(m,db,new PSLCoreConfiguration());
 	}
 	

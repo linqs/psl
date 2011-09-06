@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import edu.umd.cs.psl.application.GroundingMode;
 import edu.umd.cs.psl.application.ModelApplication;
 import edu.umd.cs.psl.config.ConfigBundle;
+import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.config.PSLCoreConfiguration;
 import edu.umd.cs.psl.model.DistanceNorm;
 import edu.umd.cs.psl.model.atom.Atom;
@@ -37,8 +38,8 @@ import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.optimizer.conic.ConicProgramSolver;
-import edu.umd.cs.psl.optimizer.conic.ipm.HomogeneousIPM;
-import edu.umd.cs.psl.optimizer.conic.ipm.IPM;
+import edu.umd.cs.psl.optimizer.conic.factory.ConicProgramSolverFactory;
+import edu.umd.cs.psl.optimizer.conic.factory.HomogeneousIPMFactory;
 import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
 import edu.umd.cs.psl.optimizer.conic.program.LinearConstraint;
 import edu.umd.cs.psl.optimizer.conic.program.NonNegativeOrthantCone;
@@ -68,6 +69,30 @@ import edu.umd.cs.psl.reasoner.function.MaxFunction;
 public class ConicReasoner implements Reasoner, AtomEventObserver {
 
 	private static final Logger log = LoggerFactory.getLogger(ConicReasoner.class);
+	
+	/**
+	 * Prefix of property keys used by this class.
+	 * 
+	 * @see ConfigManager
+	 */
+	public static final String CONFIG_PREFIX = "conicreasoner";
+	
+	/**
+	 * Key for {@link edu.umd.cs.psl.config.Factory} or String property.
+	 * 
+	 * Should be set to a {@link edu.umd.cs.psl.optimizer.conic.ConicProgramSolverFactory}
+	 * (or the binary name of one). The ConicReasoner will use this
+	 * {@link edu.umd.cs.psl.optimizer.conic.ConicProgramSolverFactory} to
+	 * instantiate a {@link edu.umd.cs.psl.optimizer.conic.ConicProgramSolver},
+	 * which will then be used for inference.
+	 */
+	public static final String CPS_KEY = CONFIG_PREFIX + ".conicprogramsolver";
+	/**
+	 * Default value for CPS_KEY property.
+	 * 
+	 * Value is instance of {@link edu.umd.cs.psl.optimizer.conic.factory.HomogeneousIPMFactory}.
+	 */
+	public static final ConicProgramSolverFactory CPS_DEFAULT = new HomogeneousIPMFactory();
 
 	private final int maxMapRounds;
 	
@@ -85,20 +110,18 @@ public class ConicReasoner implements Reasoner, AtomEventObserver {
 	 *                     being reasoned over
 	 * @param config     configuration for the ConicReasoner
 	 */
-	public ConicReasoner(AtomEventFramework framework, PSLCoreConfiguration configuration, ConfigBundle config) {
+	public ConicReasoner(AtomEventFramework framework, PSLCoreConfiguration configuration, ConfigBundle config)
+			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		atomFramework = framework;
 		program = new ConicProgram();
-		solver = new HomogeneousIPM(config);
+		ConicProgramSolverFactory cpsFactory = (ConicProgramSolverFactory) config.getFactory(CPS_KEY, CPS_DEFAULT);
+		solver = cpsFactory.getConicProgramSolver(config);
 		gkRepresentation = new HashMap<GroundKernel, ConicProgramProxy>();
 		vars = new HashMap<AtomFunctionVariable, VariableConicProgramProxy>();
 		maxMapRounds = configuration.getMaxNoInferenceSteps();
 		norm = configuration.getNorm();
 		
 		atomFramework.registerAtomEventObserver(AtomEventSets.MadeRevokedCertainty, this);
-	}
-	
-	public static final ConicReasoner getDefaultReasoner(AtomEventFramework framework, PSLCoreConfiguration configuration, ConfigBundle config) {
-		return new ConicReasoner(framework,configuration, config);
 	}
 	
 	@Override

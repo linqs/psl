@@ -101,4 +101,9 @@ public class EmptyBundle implements ConfigBundle {
 		return defaultValue;
 	}
 
+	@Override
+	public Factory getFactory(String key, Factory defaultValue) {
+		return defaultValue;
+	}
+	
 }

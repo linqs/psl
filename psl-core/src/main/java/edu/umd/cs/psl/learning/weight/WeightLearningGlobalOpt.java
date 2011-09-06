@@ -65,7 +65,8 @@ public class WeightLearningGlobalOpt implements FunctionEvaluation, WeightLearni
   private double[] minParams;
 
 	
-	public WeightLearningGlobalOpt(Model m, Database truth, Database train, WeightLearningConfiguration configuration) {
+	public WeightLearningGlobalOpt(Model m, Database truth, Database train, WeightLearningConfiguration configuration)
+			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		model = m;
 		groundTruth = new MaintainedMemoryFullInference(model,truth,configuration, new EmptyBundle());
 		training = new MaintainedMemoryFullInference(model,train,configuration, new EmptyBundle());
@@ -73,7 +74,8 @@ public class WeightLearningGlobalOpt implements FunctionEvaluation, WeightLearni
 		parameters = new ParameterMapper();
 	}
 
-	public WeightLearningGlobalOpt(Model m, Database truth, Database train) {
+	public WeightLearningGlobalOpt(Model m, Database truth, Database train)
+			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		this(m,truth,train,new WeightLearningConfiguration());
 	}
 	

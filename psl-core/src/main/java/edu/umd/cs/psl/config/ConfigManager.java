@@ -216,5 +216,20 @@ public class ConfigManager {
 			}
 			return toReturn;
 		}
+		
+		@Override
+		public Factory getFactory(String key, Factory defaultValue)
+				throws ClassNotFoundException, IllegalAccessException, InstantiationException {
+			logAccess(key, defaultValue);
+			Object value = config.getProperty(key);
+			if (value == null)
+				return defaultValue;
+			if (value instanceof Factory)
+				return (Factory) value;
+			else if (value instanceof String)
+				return (Factory) ClassLoader.getSystemClassLoader().loadClass((String) value).newInstance();
+			else
+				throw new IllegalArgumentException("Value " + value + " is not a Factory nor a String.");
+		}
 	}
 }
