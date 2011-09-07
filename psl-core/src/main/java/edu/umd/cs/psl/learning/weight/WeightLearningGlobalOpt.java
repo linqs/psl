@@ -29,6 +29,7 @@ import edu.umd.cs.psl.optimizer.NumericUtilities;
 import edu.umd.cs.psl.application.FullInference;
 import edu.umd.cs.psl.application.ModelApplication;
 import edu.umd.cs.psl.application.inference.MaintainedMemoryFullInference;
+import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.EmptyBundle;
 import edu.umd.cs.psl.config.WeightLearningConfiguration;
 import edu.umd.cs.psl.database.Database;
@@ -52,7 +53,8 @@ public class WeightLearningGlobalOpt implements FunctionEvaluation, WeightLearni
 	private final Model model;
 	private final FullInference groundTruth;
 	private final FullInference training;
-	private final WeightLearningConfiguration config;
+	private final WeightLearningConfiguration configuration;
+	private final ConfigBundle config;
 	
 	private ParameterMapper parameters;
 	
@@ -65,18 +67,19 @@ public class WeightLearningGlobalOpt implements FunctionEvaluation, WeightLearni
   private double[] minParams;
 
 	
-	public WeightLearningGlobalOpt(Model m, Database truth, Database train, WeightLearningConfiguration configuration)
+	public WeightLearningGlobalOpt(Model m, Database truth, Database train, WeightLearningConfiguration configuration, ConfigBundle config)
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		model = m;
-		groundTruth = new MaintainedMemoryFullInference(model,truth, new EmptyBundle());
-		training = new MaintainedMemoryFullInference(model,train, new EmptyBundle());
-		config = configuration;
+		groundTruth = new MaintainedMemoryFullInference(model,truth, config);
+		training = new MaintainedMemoryFullInference(model,train, config);
+		this.configuration = configuration;
+		this.config = config;
 		parameters = new ParameterMapper();
 	}
 
 	public WeightLearningGlobalOpt(Model m, Database truth, Database train)
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-		this(m,truth,train,new WeightLearningConfiguration());
+		this(m,truth,train,new WeightLearningConfiguration(), new EmptyBundle());
 	}
 	
 	private void initialize() {
@@ -90,7 +93,7 @@ public class WeightLearningGlobalOpt implements FunctionEvaluation, WeightLearni
 		for (Kernel et : model.getKernelTypes()) {
 			if (et.isCompatibilityKernel()) parameters.add(et);
 		}
-		parameters.setAllParameters(config.getInitialParameter());
+		parameters.setAllParameters(configuration.getInitialParameter());
 		//assert verifyModelCoverage() : "Not all probabilistic evidence types in the model are covered in this learning!";
 		
 		training.initialize();
@@ -116,16 +119,16 @@ public class WeightLearningGlobalOpt implements FunctionEvaluation, WeightLearni
 	@Override
   public void learn() {
     //CHANGED:
-    if (config.getLearningType()==WeightLearningConfiguration.Type.LBFGSB) learnLBFGSB();
-    else if (config.getLearningType()==WeightLearningConfiguration.Type.Perceptron) learnPerceptron();
+    if (configuration.getLearningType()==WeightLearningConfiguration.Type.LBFGSB) learnLBFGSB();
+    else if (configuration.getLearningType()==WeightLearningConfiguration.Type.Perceptron) learnPerceptron();
     else throw new AssertionError("unsupporte type!");
   }
 
   private void learnLBFGSB()
   {
 		initialize();
-    int    maxIter    = config.getMaxOptIterations();
-    double convThresh = config.getPointMoveConvergenceThres();
+    int    maxIter    = configuration.getMaxOptIterations();
+    double convThresh = configuration.getPointMoveConvergenceThres();
     int    numParams  = parameters.getNumParameters();
 
     minValue = Double.POSITIVE_INFINITY;
@@ -136,9 +139,9 @@ public class WeightLearningGlobalOpt implements FunctionEvaluation, WeightLearni
     log.debug("maxIter         = {}", maxIter);
     log.debug("convThresh      = {}", convThresh);
     log.debug("numParams       = {}", numParams);
-    log.debug("1/var           = {}", config.getParameterPrior());
-    log.debug("rule mean       = {}", config.getRuleMean());
-    log.debug("unit rule mean  = {}", config.getUnitRuleMean());
+    log.debug("1/var           = {}", configuration.getParameterPrior());
+    log.debug("rule mean       = {}", configuration.getRuleMean());
+    log.debug("unit rule mean  = {}", configuration.getUnitRuleMean());
 
 		LBFGSB lbfgsb = new LBFGSB(maxIter, convThresh, numParams, this);
 
@@ -182,14 +185,14 @@ public class WeightLearningGlobalOpt implements FunctionEvaluation, WeightLearni
     {
       if (et instanceof PriorWeightKernel)   
       {
-        params[ii+1] = config.getUnitRuleMean();
-        means[ii+1]  = config.getUnitRuleMean();
+        params[ii+1] = configuration.getUnitRuleMean();
+        means[ii+1]  = configuration.getUnitRuleMean();
         log.debug("initParam+rule: " + params[ii+1] + "  " + et.toString());
       }
       else if (et instanceof SoftRuleKernel) 
       {
-        params[ii+1] = config.getRuleMean();
-        means[ii+1]  = config.getRuleMean();
+        params[ii+1] = configuration.getRuleMean();
+        means[ii+1]  = configuration.getRuleMean();
         log.debug("initParam+rule: " + params[ii+1] + "  " + et.toString());
       }
       else continue;
@@ -257,7 +260,7 @@ public class WeightLearningGlobalOpt implements FunctionEvaluation, WeightLearni
     //Finally, add priors on weights
     double squaredSum = 0.0;
     //double inverseSum = 0.0;
-    double prior = config.getParameterPrior();
+    double prior = configuration.getParameterPrior();
     for (int i = 1; i < params.length; i++)
     {
       //squaredSum += params[i] * params[i] * prior;
@@ -298,20 +301,20 @@ public class WeightLearningGlobalOpt implements FunctionEvaluation, WeightLearni
 
   private double evaluateApp2(ModelApplication app, double[] gradient)
   {
-    if (config.getNorm()!= L1 && config.getNorm()!= L2) throw new UnsupportedOperationException("Not yet implemented");
+    if (configuration.getNorm()!= L1 && configuration.getNorm()!= L2) throw new UnsupportedOperationException("Not yet implemented");
 
     double value = 0.0;
     for (GroundCompatibilityKernel e : app.getCompatibilityKernels())
     {
       double pvalue = e.getIncompatibility();
-      value += (config.getNorm()==L1) ? pvalue : pvalue*pvalue;
+      value += (configuration.getNorm()==L1) ? pvalue : pvalue*pvalue;
       Kernel et = e.getKernel();
       int numParas = et.getParameters().numParameters();
       double[] pgradient = new double[numParas];
       for (int x1 = 0; x1 < numParas; x1++)
       {
         pgradient[x1] = e.getIncompatibilityDerivative(x1);
-        parameters.add2ArrayValue(et, x1, gradient, (config.getNorm()==L1) ? pgradient[x1] : (2*pvalue*pgradient[x1]));
+        parameters.add2ArrayValue(et, x1, gradient, (configuration.getNorm()==L1) ? pgradient[x1] : (2*pvalue*pgradient[x1]));
         //parameters.add2ArrayValue2(et, x1, gradient, (config.getNorm()==L1) ? pgradient[x1] : (2*pvalue*pgradient[x1]));
         //gradient does not start from 1
       }
@@ -320,22 +323,22 @@ public class WeightLearningGlobalOpt implements FunctionEvaluation, WeightLearni
   }
 
   private double evaluateApp(ModelApplication app, double[] gradient, double[][] hessian) {
-		if (config.getNorm()!=L1 && config.getNorm()!=L2) throw new UnsupportedOperationException("Not yet implemented");
+		if (configuration.getNorm()!=L1 && configuration.getNorm()!=L2) throw new UnsupportedOperationException("Not yet implemented");
 		double value = 0.0;
 		for (GroundCompatibilityKernel e : app.getCompatibilityKernels()) {
 			double pvalue = e.getIncompatibility();
-			value += (config.getNorm()==L1)?pvalue:pvalue*pvalue;
+			value += (configuration.getNorm()==L1)?pvalue:pvalue*pvalue;
 			Kernel et = e.getKernel();
 			int numParas = et.getParameters().numParameters();
 			double[] pgradient = new double[numParas];
 			for (int x1=0;x1<numParas;x1++) {
 				pgradient[x1] = e.getIncompatibilityDerivative(x1);
-				parameters.add2ArrayValue(et, x1, gradient, (config.getNorm()==L1)?pgradient[x1]:(2*pvalue*pgradient[x1]));
+				parameters.add2ArrayValue(et, x1, gradient, (configuration.getNorm()==L1)?pgradient[x1]:(2*pvalue*pgradient[x1]));
 				if (hessian!=null) {
 					for (int x2=0;x2<=x1;x2++) {
 						double hessvalue = e.getIncompatibilityHessian(x1, x2);
 						double secDeriv = hessvalue;
-						if (config.getNorm()==L2) {
+						if (configuration.getNorm()==L2) {
 							secDeriv = 2 * pgradient[x1]*pgradient[x2] + 2 * pvalue * hessvalue;
 						}
 						parameters.add2ArrayValue(et, x1, x2, hessian, secDeriv);
@@ -389,7 +392,7 @@ public class WeightLearningGlobalOpt implements FunctionEvaluation, WeightLearni
 		//Finally, add priors on weights
 		double squaredSum = 0.0;
 		//double inverseSum = 0.0;
-		double prior = config.getParameterPrior();
+		double prior = configuration.getParameterPrior();
     //System.out.println("---PRIOR: " + prior);
 
 		for (int i=0;i<paras.length;i++) {
@@ -432,11 +435,11 @@ public class WeightLearningGlobalOpt implements FunctionEvaluation, WeightLearni
 	public void learnPerceptron() {
 		initialize();
 		double[] paras = parameters.getAllParameters();
-		double prior = config.getParameterPrior();
-		double[][] weights = new double[config.getPerceptronIterations()+1][paras.length];
+		double prior = configuration.getParameterPrior();
+		double[][] weights = new double[configuration.getPerceptronIterations()+1][paras.length];
 		for (int i=0;i<paras.length;i++) weights[0][i]=paras[i];
 		
-		for (int iteration=1;iteration<=config.getPerceptronIterations();iteration++) {
+		for (int iteration=1;iteration<=configuration.getPerceptronIterations();iteration++) {
 			double[] currentWeights = weights[iteration-1];
 			log.debug("Current point: {}",Arrays.toString(currentWeights));
 			parameters.setAllParameters(currentWeights);
@@ -459,7 +462,7 @@ public class WeightLearningGlobalOpt implements FunctionEvaluation, WeightLearni
 			
 			//Update weights
 			for (int i=0;i<paras.length;i++) {
-				 double w= weights[iteration-1][i] - config.getPerceptronUpdateFactor() * (gradientTruth[i] - gradientTrain[i] + 2 * prior * weights[iteration-1][i]);
+				 double w= weights[iteration-1][i] - configuration.getPerceptronUpdateFactor() * (gradientTruth[i] - gradientTrain[i] + 2 * prior * weights[iteration-1][i]);
 				 double[] bounds = parameters.getBounds(i);
 				 w = Math.max(w, bounds[0]);
 				 w = Math.min(w, bounds[1]);
@@ -471,10 +474,10 @@ public class WeightLearningGlobalOpt implements FunctionEvaluation, WeightLearni
 		//Average weights
 		for (int i=0;i<paras.length;i++) {
 			double total = 0.0;
-			for (int t=1;t<=config.getPerceptronIterations();t++) {
+			for (int t=1;t<=configuration.getPerceptronIterations();t++) {
 				total += weights[t][i];
 			}
-			paras[i]=total/config.getPerceptronIterations();
+			paras[i]=total/configuration.getPerceptronIterations();
 		}
 		parameters.setAllParameters(paras);
 		log.debug("Learned parameters: {}",Arrays.toString(paras));

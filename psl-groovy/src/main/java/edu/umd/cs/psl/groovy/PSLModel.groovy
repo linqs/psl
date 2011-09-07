@@ -20,6 +20,8 @@ package edu.umd.cs.psl.groovy;
 
 
 import edu.umd.cs.psl.learning.weight.WeightLearningGlobalOpt;
+import edu.umd.cs.psl.config.ConfigBundle;
+import edu.umd.cs.psl.config.EmptyBundle;
 import edu.umd.cs.psl.config.WeightLearningConfiguration;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.database.PredicateDBType;
@@ -190,15 +192,22 @@ class PSLModel extends ModelUI {
 		inferedArgs['read']=inferedIDs;
 		evidenceArgs['read']=evidenceIDs;
 		
-		WeightLearningConfiguration config = null;
-		if (args['config']!=null) {
-			if (args['config'] instanceof WeightLearningConfiguration) config = args['config'];
+		WeightLearningConfiguration configuration = null;
+		if (args['configuration']!=null) {
+			if (args['configuration'] instanceof WeightLearningConfiguration) configuration = args['configuration'];
 			else throw new IllegalArgumentException("The configuration parameter must be of type 'WeightLearningConfiguration'");
 		}
 		
+		ConfigBundle config = null;
+		if (args['config']!=null) {
+			if (args['config'] instanceof ConfigBundle) config = args['config'];
+			else throw new IllegalArgumentException("The configuration parameter must be of type 'ConfigBundle'");
+		}
+		
 		WeightLearningGlobalOpt w;
-		if (config==null) w =  new WeightLearningGlobalOpt(getModel(),data.getDatabase(inferedArgs),data.getDatabase(evidenceArgs));
-		else w =  new WeightLearningGlobalOpt(getModel(),data.getDatabase(inferedArgs),data.getDatabase(evidenceArgs),config);
+		if (configuration==null) configuration = new WeightLearningConfiguration();
+		if (config==null) config = new EmptyBundle();
+		w =  new WeightLearningGlobalOpt(getModel(),data.getDatabase(inferedArgs),data.getDatabase(evidenceArgs),configuration, config);
 		w.learn();
 	}
 	

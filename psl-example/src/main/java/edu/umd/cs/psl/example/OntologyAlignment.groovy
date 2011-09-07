@@ -98,10 +98,10 @@ ConfigBundle exampleBundle = cm.getBundle("example");
 //////////////////////////// weight learning ///////////////////////////
 println "\t\tLEARNING WEIGHTS...";
 
-WeightLearningConfiguration config = new WeightLearningConfiguration();
-config.setLearningType(WeightLearningConfiguration.Type.Perceptron);
-config.setInitialParameter(0.0);
-m.learn data, evidence : 1, infered: 2, close : similar, config: config
+WeightLearningConfiguration configuration = new WeightLearningConfiguration();
+configuration.setLearningType(WeightLearningConfiguration.Type.LBFGSB);
+configuration.setInitialParameter(0.0);
+m.learn data, evidence : 1, infered: 2, close : similar, configuration: configuration, config: exampleBundle
 println m
 
 println "\t\tLEARNING WEIGHTS DONE";
