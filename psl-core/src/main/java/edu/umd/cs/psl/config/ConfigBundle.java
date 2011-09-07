@@ -349,4 +349,16 @@ public interface ConfigBundle {
 	 */
 	Factory getFactory(String key, Factory defaultValue)
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException;
+	
+	/**
+	 * Returns an enum associated with the given configuration key.
+	 * 
+	 * If the value found is a String, then it will be cast to an enum value of
+	 * the same class as the default value.
+	 * 
+	 * @param key  The configuration key.
+	 * @param defaultValue  The default value.
+	 * @return  The associated enum if the key is found, default value otherwise.
+	 */
+	Enum<?> getEnum(String key, Enum<?> defaultValue);
 }

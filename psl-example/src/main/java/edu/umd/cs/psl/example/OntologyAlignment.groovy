@@ -118,7 +118,7 @@ for (Predicate p : [domainOf,fromOntology,name,hasType,rangeOf,subclass])
 	insert.loadFromFile(testDir+p.getName()+".txt");
 }
 
-result = m.mapInference(data.getDatabase(write: 1004, read : 5), new PSLCoreConfiguration(), exampleBundle);
+result = m.mapInference(data.getDatabase(write: 1004, read : 5), exampleBundle);
 
 println "\t\tINFERENCE DONE";
 

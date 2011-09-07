@@ -119,12 +119,12 @@ public class ModelUI {
 	
 	public UIFullInferenceResult mapInference(Database db)
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-		return mapInference(db,new PSLCoreConfiguration(), new EmptyBundle());
+		return mapInference(db, new EmptyBundle());
 	}
 	
-	public UIFullInferenceResult mapInference(Database db, PSLCoreConfiguration configOld, ConfigBundle config)
+	public UIFullInferenceResult mapInference(Database db, ConfigBundle config)
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-		FullInference app = new MaintainedMemoryFullInference(model,db,configOld, config);
+		FullInference app = new MaintainedMemoryFullInference(model,db, config);
 		FullInferenceResult stats = app.runInference();
 		return new UIFullInferenceResult(app.getDatabase(),stats);
 	}

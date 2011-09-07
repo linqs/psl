@@ -68,8 +68,8 @@ public class WeightLearningGlobalOpt implements FunctionEvaluation, WeightLearni
 	public WeightLearningGlobalOpt(Model m, Database truth, Database train, WeightLearningConfiguration configuration)
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		model = m;
-		groundTruth = new MaintainedMemoryFullInference(model,truth,configuration, new EmptyBundle());
-		training = new MaintainedMemoryFullInference(model,train,configuration, new EmptyBundle());
+		groundTruth = new MaintainedMemoryFullInference(model,truth, new EmptyBundle());
+		training = new MaintainedMemoryFullInference(model,train, new EmptyBundle());
 		config = configuration;
 		parameters = new ParameterMapper();
 	}

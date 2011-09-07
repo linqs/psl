@@ -519,7 +519,6 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		SparseCCDoubleMatrix2D APhi = new SparseCCDoubleMatrix2D(A.rows(), A.columns());
 		A.getColumnCompressed(false).zMult(im.invThetaInvW.getColumnCompressed(false), APhi);
 		SparseCCDoubleMatrix2D M = new SparseCCDoubleMatrix2D(A.rows(), A.rows());
-		//im.AInvThetaSqInvWSq.zMult(A.getColumnCompressed(false), M, 1.0, 0.0, false, true);
 		APhi.zMult(APhi, M, 1.0, 0.0, false, true);
 		log.trace("Starting decomposition.");
 		im.M = new SparseDoubleCholeskyDecomposition(M, 1);

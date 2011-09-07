@@ -106,4 +106,9 @@ public class EmptyBundle implements ConfigBundle {
 		return defaultValue;
 	}
 	
+	@Override
+	public Enum<?> getEnum(String key, Enum<?> defaultValue) {
+		return defaultValue;
+	}
+	
 }

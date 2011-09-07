@@ -67,7 +67,7 @@ public class MaintainedMemoryFullInference implements ModelApplication, FullInfe
 	
 //	private final Proxy defaultProxy;
 	
-	public MaintainedMemoryFullInference(Model m, Database db, PSLCoreConfiguration configuration, ConfigBundle config)
+	public MaintainedMemoryFullInference(Model m, Database db, ConfigBundle config)
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		model = m;
 		database = db;
@@ -76,7 +76,7 @@ public class MaintainedMemoryFullInference implements ModelApplication, FullInfe
 		groundkernels = new MemoryGroundKernelStore();
 		atomEvents = new MemoryAtomEventFramework(m,this,store);
 		database.registerDatabaseEventObserver(atomEvents);
-		reasoner = new ConicReasoner(atomEvents, configuration, config);
+		reasoner = new ConicReasoner(atomEvents, config);
 		model.registerModelObserver(this);
 		model.registerModelObserver(atomEvents);
 		
@@ -86,7 +86,7 @@ public class MaintainedMemoryFullInference implements ModelApplication, FullInfe
 	
 	public MaintainedMemoryFullInference(Model m, Database db)
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-		this(m,db,new PSLCoreConfiguration(), new EmptyBundle());
+		this(m,db, new EmptyBundle());
 	}
 	
 	//####### Evidence Handling #####

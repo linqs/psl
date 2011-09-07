@@ -26,6 +26,7 @@ import java.util.List;
 
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.DataConfiguration;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.configuration.SubsetConfiguration;
 import org.apache.log4j.helpers.Loader;
@@ -38,10 +39,10 @@ public class ConfigManager {
 	
 	private static final Logger log = LoggerFactory.getLogger(ConfigManager.class);
 	
-	private BaseConfiguration masterConfig;
+	private DataConfiguration masterConfig;
 	
 	private ConfigManager() throws ConfigurationException {
-		masterConfig = new BaseConfiguration();
+		masterConfig = new DataConfiguration(new BaseConfiguration());
 		try {
 			loadResource("psl.properties");
 		}
@@ -82,14 +83,16 @@ public class ConfigManager {
 	}
 	
 	private class ManagedBundle implements ConfigBundle {
-		private SubsetConfiguration config;
+		private DataConfiguration config;
+		private String prefix;
 		
 		private ManagedBundle(SubsetConfiguration bundleConfig) {
-			config = bundleConfig;
+			prefix = bundleConfig.getPrefix();
+			config = new DataConfiguration(bundleConfig);
 		}
 		
 		private void logAccess(String key, Object defaultValue) {
-			String scopedKey = config.getPrefix() + "." + key;
+			String scopedKey = prefix + "." + key;
 			if (config.containsKey(key)) {
 				Object value = config.getProperty(key);
 				log.debug("Found value {} for option {}.", value, scopedKey);
@@ -230,6 +233,12 @@ public class ConfigManager {
 				return (Factory) ClassLoader.getSystemClassLoader().loadClass((String) value).newInstance();
 			else
 				throw new IllegalArgumentException("Value " + value + " is not a Factory nor a String.");
+		}
+
+		@Override
+		public Enum<?> getEnum(String key, Enum<?> defaultValue) {
+			logAccess(key, defaultValue);
+			return (Enum<?>) config.get(defaultValue.getDeclaringClass(), key, defaultValue);
 		}
 	}
 }

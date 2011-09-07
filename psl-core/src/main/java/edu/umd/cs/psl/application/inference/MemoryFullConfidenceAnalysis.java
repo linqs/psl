@@ -80,7 +80,7 @@ public class MemoryFullConfidenceAnalysis implements ModelApplication, FullConfi
 		dbProxy = new DatabaseAtomStoreQuery(store);
 		groundkernels = new MemoryGroundKernelStore();
 		atomEvents = new MemoryAtomEventFramework(m,this,store,AtomEventFramework.ActivationMode.All);
-		reasoner = new ConicReasoner(atomEvents, config, new EmptyBundle());
+		reasoner = new ConicReasoner(atomEvents, new EmptyBundle());
 		
 		isInitialized=false;
 	}

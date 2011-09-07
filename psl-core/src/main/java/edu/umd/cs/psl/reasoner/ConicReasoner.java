@@ -27,8 +27,6 @@ import edu.umd.cs.psl.application.GroundingMode;
 import edu.umd.cs.psl.application.ModelApplication;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
-import edu.umd.cs.psl.config.PSLCoreConfiguration;
-import edu.umd.cs.psl.model.DistanceNorm;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.AtomEvent;
 import edu.umd.cs.psl.model.atom.AtomEventFramework;
@@ -56,10 +54,10 @@ import edu.umd.cs.psl.reasoner.function.FunctionVariable;
 import edu.umd.cs.psl.reasoner.function.MaxFunction;
 
 /**
- * Performs probablistic inference over {@link edu.umd.cs.psl.model.atom.Atom Atoms}
+ * Performs probabilistic inference over {@link edu.umd.cs.psl.model.atom.Atom Atoms}
  * based on a set of {@link edu.umd.cs.psl.model.kernel.GroundKernel GroundKernels}.
  * 
- * The (unnomralized) probability density function is an exponential model of the
+ * The (unnormalized) probability density function is an exponential model of the
  * following form: P(X) = exp(-sum(w_i * pow(k_i, l))), where w_i is the weight of
  * the ith {@link edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel}, k_i is
  * its incompatibility value, and l is an exponent with value 1 (linear model)
@@ -93,15 +91,34 @@ public class ConicReasoner implements Reasoner, AtomEventObserver {
 	 * Value is instance of {@link edu.umd.cs.psl.optimizer.conic.factory.HomogeneousIPMFactory}.
 	 */
 	public static final ConicProgramSolverFactory CPS_DEFAULT = new HomogeneousIPMFactory();
-
-	private final int maxMapRounds;
 	
-	protected ConicProgram program;
-	private ConicProgramSolver solver; 
+	/**
+	 * Distribution types supported by ConicReasoner.
+	 * 
+	 * A linear distribution does not modify the incompatibility values,
+	 * and a quadratic distribution squares them.
+	 */
+	public static enum DistributionType {linear, quadratic};
+	
+	/** Key for {@link DistributionType} property. */
+	public static final String DISTRIBUTION_KEY = CONFIG_PREFIX + ".distribution";
+	
+	/** Default value for DISTRIBUTION_KEY property. */
+	public static final DistributionType DISTRIBUTION_DEFAULT = DistributionType.linear;
+	
+	/** Key for int property for the maximum number of rounds of inference. */
+	public static final String MAX_ROUNDS_KEY = CONFIG_PREFIX + ".maxrounds";
+	
+	/** Default value for MAX_ROUNDS_KEY property */
+	public static final int MAX_ROUNDS_DEFAULT = 500;
+
+	private ConicProgram program;
+	private ConicProgramSolver solver;
+	private final AtomEventFramework atomFramework;
+	private final DistributionType type;
+	private final int maxMapRounds;
 	private final Map<GroundKernel, ConicProgramProxy> gkRepresentation;
 	private final Map<AtomFunctionVariable, VariableConicProgramProxy> vars;
-	private final AtomEventFramework atomFramework;
-	private final DistanceNorm norm;
 	
 	/**
 	 * Constructs a ConicReasoner.
@@ -110,16 +127,16 @@ public class ConicReasoner implements Reasoner, AtomEventObserver {
 	 *                     being reasoned over
 	 * @param config     configuration for the ConicReasoner
 	 */
-	public ConicReasoner(AtomEventFramework framework, PSLCoreConfiguration configuration, ConfigBundle config)
+	public ConicReasoner(AtomEventFramework framework, ConfigBundle config)
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		atomFramework = framework;
 		program = new ConicProgram();
 		ConicProgramSolverFactory cpsFactory = (ConicProgramSolverFactory) config.getFactory(CPS_KEY, CPS_DEFAULT);
 		solver = cpsFactory.getConicProgramSolver(config);
+		type = (DistributionType) config.getEnum(DISTRIBUTION_KEY, DISTRIBUTION_DEFAULT);
+		maxMapRounds = config.getInt(MAX_ROUNDS_KEY, MAX_ROUNDS_DEFAULT);
 		gkRepresentation = new HashMap<GroundKernel, ConicProgramProxy>();
 		vars = new HashMap<AtomFunctionVariable, VariableConicProgramProxy>();
-		maxMapRounds = configuration.getMaxNoInferenceSteps();
-		norm = configuration.getNorm();
 		
 		atomFramework.registerAtomEventObserver(AtomEventSets.MadeRevokedCertainty, this);
 	}
@@ -274,12 +291,12 @@ public class ConicReasoner implements Reasoner, AtomEventObserver {
 		FunctionConicProgramProxy(FunctionTerm fun) {
 			constraints = new Vector<ConstraintConicProgramProxy>(1);
 			
-			switch (norm) {
-			case L1:
+			switch (type) {
+			case linear:
 				featureVar = program.createNonNegativeOrthantCone().getVariable();
 				featureVar.setObjectiveCoefficient(1.0);
 				break;
-			case L2:
+			case quadratic:
 				featureVar = program.createNonNegativeOrthantCone().getVariable();
 				featureVar.setObjectiveCoefficient(0.0);
 				squaredFeatureVar = program.createNonNegativeOrthantCone().getVariable();
@@ -355,11 +372,11 @@ public class ConicReasoner implements Reasoner, AtomEventObserver {
 		@Override
 		void remove() {
 			deleteConstraints();
-			switch (norm) {
-			case L1:
+			switch (type) {
+			case linear:
 				featureVar.getCone().delete();
 				break;
-			case L2:
+			case quadratic:
 				innerFeatureCon.delete();
 				innerSquaredCon.delete();
 				outerSquaredCon.delete();
