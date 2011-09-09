@@ -36,8 +36,8 @@ import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.optimizer.conic.ConicProgramSolver;
-import edu.umd.cs.psl.optimizer.conic.factory.ConicProgramSolverFactory;
-import edu.umd.cs.psl.optimizer.conic.factory.HomogeneousIPMFactory;
+import edu.umd.cs.psl.optimizer.conic.ConicProgramSolverFactory;
+import edu.umd.cs.psl.optimizer.conic.ipm.HomogeneousIPMFactory;
 import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
 import edu.umd.cs.psl.optimizer.conic.program.LinearConstraint;
 import edu.umd.cs.psl.optimizer.conic.program.NonNegativeOrthantCone;
@@ -88,7 +88,7 @@ public class ConicReasoner implements Reasoner, AtomEventObserver {
 	/**
 	 * Default value for CPS_KEY property.
 	 * 
-	 * Value is instance of {@link edu.umd.cs.psl.optimizer.conic.factory.HomogeneousIPMFactory}.
+	 * Value is instance of {@link edu.umd.cs.psl.optimizer.conic.ipm.HomogeneousIPMFactory}.
 	 */
 	public static final ConicProgramSolverFactory CPS_DEFAULT = new HomogeneousIPMFactory();
 	
@@ -169,7 +169,7 @@ public class ConicReasoner implements Reasoner, AtomEventObserver {
 		if (gkRepresentation.containsKey(gk)) throw new IllegalArgumentException("Provided evidence has already been added to the reasoner: " + gk);
 		ConicProgramProxy proxy;
 		if (gk instanceof GroundCompatibilityKernel) {
-			proxy = new FunctionConicProgramProxy(((GroundCompatibilityKernel)gk).getFunctionDefinition());
+			proxy = new FunctionConicProgramProxy((GroundCompatibilityKernel) gk);
 		} else if (gk instanceof GroundConstraintKernel) {
 			proxy = new ConstraintConicProgramProxy(((GroundConstraintKernel)gk).getConstraintDefinition());
 		} else throw new AssertionError("Unrecognized evidence type provided: " + gk);
@@ -187,7 +187,7 @@ public class ConicReasoner implements Reasoner, AtomEventObserver {
 		ConicProgramProxy proxy = gkRepresentation.get(gk);
 		if (gk instanceof GroundCompatibilityKernel) {
 			assert proxy instanceof FunctionConicProgramProxy;
-			((FunctionConicProgramProxy)proxy).updateFunction(((GroundCompatibilityKernel)gk).getFunctionDefinition());
+			((FunctionConicProgramProxy)proxy).updateGroundKernel((GroundCompatibilityKernel) gk);
 		} else if (gk instanceof GroundConstraintKernel) {
 			assert proxy instanceof ConstraintConicProgramProxy;
 			((ConstraintConicProgramProxy)proxy).updateConstraint(((GroundConstraintKernel)gk).getConstraintDefinition());
@@ -288,19 +288,20 @@ public class ConicReasoner implements Reasoner, AtomEventObserver {
 		protected LinearConstraint innerFeatureCon, innerSquaredCon, outerSquaredCon;
 		protected Vector<ConstraintConicProgramProxy> constraints;
 		
-		FunctionConicProgramProxy(FunctionTerm fun) {
+		FunctionConicProgramProxy(GroundCompatibilityKernel gk) {
+			FunctionTerm fun = gk.getFunctionDefinition();
 			constraints = new Vector<ConstraintConicProgramProxy>(1);
 			
 			switch (type) {
 			case linear:
 				featureVar = program.createNonNegativeOrthantCone().getVariable();
-				featureVar.setObjectiveCoefficient(1.0);
+				featureVar.setObjectiveCoefficient(gk.getWeight().getWeight());
 				break;
 			case quadratic:
 				featureVar = program.createNonNegativeOrthantCone().getVariable();
 				featureVar.setObjectiveCoefficient(0.0);
 				squaredFeatureVar = program.createNonNegativeOrthantCone().getVariable();
-				squaredFeatureVar.setObjectiveCoefficient(1.0);
+				squaredFeatureVar.setObjectiveCoefficient(gk.getWeight().getWeight());
 				SecondOrderCone soc = program.createSecondOrderCone(3);
 				outerSquaredVar = soc.getNthVariable();
 				for (Variable v : soc.getVariables()) {
@@ -326,16 +327,22 @@ public class ConicReasoner implements Reasoner, AtomEventObserver {
 				outerSquaredCon.addVariable(squaredFeatureVar, -0.5);
 				outerSquaredCon.setConstrainedValue(0.5);
 				break;
-			default:
-				throw new IllegalArgumentException("Unsupported distance norm.");
 			}
 			
 			addFunctionTerm(fun);
 		}
 		
-		void updateFunction(FunctionTerm fun) {
+		void updateGroundKernel(GroundCompatibilityKernel gk) {
 			deleteConstraints();
-			addFunctionTerm(fun);
+			addFunctionTerm(gk.getFunctionDefinition());
+			switch (type) {
+			case linear:
+				featureVar.setObjectiveCoefficient(gk.getWeight().getWeight());
+				break;
+			case quadratic:
+				squaredFeatureVar.setObjectiveCoefficient(gk.getWeight().getWeight());
+				break;
+			}
 		}
 		
 		protected void addFunctionTerm(FunctionTerm fun) {

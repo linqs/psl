@@ -25,6 +25,8 @@ import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.kernel.BindingMode;
 import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
+import edu.umd.cs.psl.model.parameters.PositiveWeight;
+import edu.umd.cs.psl.model.parameters.Weight;
 import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
 import edu.umd.cs.psl.reasoner.function.FunctionSum;
 import edu.umd.cs.psl.reasoner.function.FunctionSummand;
@@ -106,7 +108,7 @@ public class GroundPredicateConstraint extends GroundConstraintKernel {
 	public Kernel getKernel() {
 		return template;
 	}
-
+	
 	@Override
 	public BindingMode getBinding(Atom atom) {
 		if (atoms.contains(atom))

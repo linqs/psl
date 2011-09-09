@@ -141,6 +141,13 @@ result.printAtoms(samePerson)
 insert = data.getInserter(samePerson,2)
 insert.loadFromFileWithTruth(dir+"sn_align.txt","\t");
 
+/*
+ * We'll use the ConfigManager to access configurable properties. One place these
+ * can be defined is in psl-example/src/main/resources/psl.properties
+ */
+ConfigManager cm = ConfigManager.getManager();
+ConfigBundle exampleBundle = cm.getBundle("example");
+
 /* Now, we can learn the weight, by specifying where the respective data fragments are stored
  * in the database (see above). In addition, we need to specify, which predicate we would like to
  * infer, i.e. learn on, which in our case is 'samePerson'.
@@ -149,7 +156,7 @@ WeightLearningConfiguration config = new WeightLearningConfiguration();
 config.setLearningType(WeightLearningConfiguration.Type.LBFGSB);
 config.setInitialParameter(1.0);
 
-m.learn data, evidence : 1, infered: 2, close : samePerson, config: config
+m.learn data, evidence : 1, infered: 2, close : samePerson, configuration: config, config: exampleBundle
 
 //Let's have a look at the newly learned weights.
 println m

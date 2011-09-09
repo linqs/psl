@@ -32,6 +32,7 @@ import edu.umd.cs.psl.model.formula.traversal.FormulaEvaluator;
 import edu.umd.cs.psl.model.kernel.BindingMode;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
+import edu.umd.cs.psl.model.parameters.Weight;
 import edu.umd.cs.psl.reasoner.function.ConstantNumber;
 import edu.umd.cs.psl.reasoner.function.FunctionSum;
 import edu.umd.cs.psl.reasoner.function.FunctionSummand;
@@ -83,13 +84,14 @@ public class GroundSoftRule extends GroundCompatibilityKernel {
 		assert numGroundings>0;
 	}
 	
-	private double getWeight() {
-		return rule.getWeight().getWeight();
+	@Override
+	public Weight getWeight() {
+		return rule.getWeight();
 	}
 	
 	@Override
 	public double getStrength() {
-		return getWeight();
+		return getWeight().getWeight();
 	}
 
 	@Override
@@ -100,7 +102,7 @@ public class GroundSoftRule extends GroundCompatibilityKernel {
 	@Override
 	public FunctionTerm getFunctionDefinition() {
 		assert numGroundings>=0;
-		return getFunctionDefinition(getWeight()*numGroundings);
+		return getFunctionDefinition(numGroundings);
 	}
 	
 	private FunctionTerm getFunctionDefinition(double multiplier) {
@@ -159,7 +161,7 @@ public class GroundSoftRule extends GroundCompatibilityKernel {
 
 	@Override
 	public double getIncompatibility() {
-		return numGroundings*getWeight()*(1.0-getTruthValue());
+		return numGroundings*getWeight().getWeight()*(1.0-getTruthValue());
 	}
 	
 	@Override

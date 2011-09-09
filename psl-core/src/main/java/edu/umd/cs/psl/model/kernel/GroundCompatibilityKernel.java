@@ -16,9 +16,12 @@
  */
 package edu.umd.cs.psl.model.kernel;
 
+import edu.umd.cs.psl.model.parameters.Weight;
 import edu.umd.cs.psl.reasoner.function.FunctionTerm;
 
 public abstract class GroundCompatibilityKernel extends GroundKernel {
+	
+	abstract public Weight getWeight();
 	
 	abstract public double getIncompatibilityDerivative(int parameterNo);
 	

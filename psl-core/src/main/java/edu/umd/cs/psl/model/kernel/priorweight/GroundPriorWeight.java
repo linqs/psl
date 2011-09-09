@@ -26,6 +26,7 @@ import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.kernel.BindingMode;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
+import edu.umd.cs.psl.model.parameters.Weight;
 import edu.umd.cs.psl.reasoner.function.ConstantNumber;
 import edu.umd.cs.psl.reasoner.function.FunctionSum;
 import edu.umd.cs.psl.reasoner.function.FunctionSummand;
@@ -58,17 +59,17 @@ public class GroundPriorWeight extends GroundCompatibilityKernel {
 		assert atom.getNumberOfValues()==1;
 		
 		if (atom.getPredicate().getDefaultValues()[0] == 0.0) {
-			return new FunctionSummand(kernel.getWeight().getWeight(), atom.getVariable());
+			return new FunctionSummand(1.0, atom.getVariable());
 		}
 		else {
 			FunctionSum sum1 = new FunctionSum();
 			FunctionSum sum2 = new FunctionSum();
-			sum1.add(new FunctionSummand(kernel.getWeight().getWeight(), atom.getVariable()));
-			sum1.add(new FunctionSummand(-kernel.getWeight().getWeight(),
+			sum1.add(new FunctionSummand(1.0, atom.getVariable()));
+			sum1.add(new FunctionSummand(-1.0,
 					new ConstantNumber(atom.getPredicate().getDefaultValues()[0])));
 			
-			sum2.add(new FunctionSummand(-kernel.getWeight().getWeight(), atom.getVariable()));
-			sum2.add(new FunctionSummand(kernel.getWeight().getWeight(),
+			sum2.add(new FunctionSummand(-1.0, atom.getVariable()));
+			sum2.add(new FunctionSummand(1.0,
 					new ConstantNumber(atom.getPredicate().getDefaultValues()[0])));
 			
 			return MaxFunction.of(sum1, sum2);
@@ -82,11 +83,12 @@ public class GroundPriorWeight extends GroundCompatibilityKernel {
 	
 	@Override
 	public double getStrength() {
-		return getWeight();
+		return getWeight().getWeight();
 	}
 	
-	private final double getWeight() {
-		return kernel.getWeight().getWeight();
+	@Override
+	public Weight getWeight() {
+		return kernel.getWeight();
 	}
 	
 
@@ -132,7 +134,7 @@ public class GroundPriorWeight extends GroundCompatibilityKernel {
 
 	@Override
 	public double getIncompatibility() {
-		return getWeight()*getL1Distance();
+		return getWeight().getWeight()*getL1Distance();
 	}
 	
 	protected double getL1Distance() {

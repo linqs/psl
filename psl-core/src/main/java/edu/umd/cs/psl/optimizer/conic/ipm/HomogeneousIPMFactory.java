@@ -14,12 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.optimizer.conic.factory;
+package edu.umd.cs.psl.optimizer.conic.ipm;
 
 import edu.umd.cs.psl.config.ConfigBundle;
-import edu.umd.cs.psl.config.Factory;
 import edu.umd.cs.psl.optimizer.conic.ConicProgramSolver;
+import edu.umd.cs.psl.optimizer.conic.ConicProgramSolverFactory;
 
-public interface ConicProgramSolverFactory extends Factory {
-	ConicProgramSolver getConicProgramSolver(ConfigBundle config);
+public class HomogeneousIPMFactory implements ConicProgramSolverFactory {
+
+	@Override
+	public ConicProgramSolver getConicProgramSolver(ConfigBundle config) {
+		return new HomogeneousIPM(config);
+	}
+
 }

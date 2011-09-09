@@ -26,13 +26,9 @@ import com.google.common.collect.ImmutableSet;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.kernel.BindingMode;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
-import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
-import edu.umd.cs.psl.model.kernel.priorweight.GroundPriorWeight;
-import edu.umd.cs.psl.optimizer.NumericUtilities;
+import edu.umd.cs.psl.model.parameters.Weight;
 import edu.umd.cs.psl.reasoner.function.ConstantNumber;
-import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
-import edu.umd.cs.psl.reasoner.function.FunctionComparator;
 import edu.umd.cs.psl.reasoner.function.FunctionSum;
 import edu.umd.cs.psl.reasoner.function.FunctionSummand;
 import edu.umd.cs.psl.reasoner.function.FunctionTerm;
@@ -64,8 +60,8 @@ public class GroundExternalInducer extends GroundCompatibilityKernel {
 	@Override
 	public FunctionTerm getFunctionDefinition() {
 		FunctionSum sum = new FunctionSum();
-		sum.add(new FunctionSummand(getWeight(),new ConstantNumber(values[0])));
-		sum.add(new FunctionSummand(-getWeight(),atom.getVariable()));
+		sum.add(new FunctionSummand(1.0,new ConstantNumber(values[0])));
+		sum.add(new FunctionSummand(-1.0,atom.getVariable()));
 		return MaxFunction.of(sum,new ConstantNumber(0.0));
 	}
 	
@@ -76,11 +72,12 @@ public class GroundExternalInducer extends GroundCompatibilityKernel {
 	
 	@Override
 	public double getStrength() {
-		return getWeight();
+		return getWeight().getWeight();
 	}
 	
-	private final double getWeight() {
-		return kernel.getWeight().getWeight();
+	@Override
+	public Weight getWeight() {
+		return kernel.getWeight();
 	}
 	
 
@@ -124,19 +121,19 @@ public class GroundExternalInducer extends GroundCompatibilityKernel {
 	
 	@Override
 	public double getIncompatibilityDerivative(int parameterNo) {
-		assert parameterNo==0 && getWeight()>=0;
+		assert parameterNo==0 && getWeight().getWeight()>=0;
 		return getValue();
 	}
 
 	@Override
 	public double getIncompatibility() {
-		assert getWeight()>=0;
-		return getWeight()*getValue();
+		assert getWeight().getWeight()>=0;
+		return getWeight().getWeight()*getValue();
 	}
 
 	@Override
 	public double getIncompatibilityHessian(int parameterNo1, int parameterNo2) {
-		assert parameterNo1==0 && parameterNo2==0 && getWeight()<=0;
+		assert parameterNo1==0 && parameterNo2==0 && getWeight().getWeight()<=0;
 		return 0;
 	}
 
