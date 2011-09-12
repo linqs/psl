@@ -79,6 +79,67 @@ public class SimpleResultComparator implements ResultComparator {
 	public void setBaselineFilter(AtomFilter af) {
 		baselineFilter = af;
 	}
+	/**
+	 * Compares the baseline with the inferred result for a given predicate.
+	 * 
+	 * @param Predicate
+	 *            p : The predicate to compare
+	 * 
+	 */
+	public ResultComparison compare(Predicate p) {
+		RetrievalSet<Atom> resultAtoms = new RetrievalSet<Atom>();
+		Iterator<Atom> iter = resultFilter.filter(result.getAtomSet(p).iterator());
+		int tp = 0;
+		int fn = 0;
+		int tn = 0;
+		int fp = 0;
+		while (iter.hasNext()) {
+			resultAtoms.add(iter.next());
+		}
+
+		Map<Atom, Double> errors = new HashMap<Atom, Double>();
+
+		Set<Atom> correctAtoms = new HashSet<Atom>();
+		Iterator<Atom> baselineAtom = baselineFilter.filter(baseline.getAtomSet(p).iterator());
+		while (baselineAtom.hasNext()) {
+			Atom bAtom = baselineAtom.next();
+			Atom resultAtom = resultAtoms.get(bAtom);
+			double[] compValue = null;
+			if (resultAtom == null) { // baseline atom not present in result
+				compValue = bAtom.getSoftValues();
+				double[] resultValues = { 0.0 };
+				double diff = valueCompare.getDifference(compValue, resultValues, tolerance);
+				if (diff == 0.0) {
+					tn++; // true negative
+					correctAtoms.add(bAtom);
+				} else {
+					fn++; // false negative
+					errors.put(bAtom, diff);
+				}
+			} else { // baseline atom present in result
+				compValue = bAtom.getSoftValues();
+				double diff = valueCompare.getDifference(compValue,
+						resultAtom.getSoftValues(), tolerance);
+				if (diff == 0.0)
+					if (compValue[0] < tolerance) {
+						tn++; // true negative
+						correctAtoms.add(resultAtom);
+					} else {
+						tp++; // true positive
+						correctAtoms.add(resultAtom);
+					}
+				else if (compValue[0] < tolerance) {
+					fp++; // false positive
+					errors.put(resultAtom, diff);
+				} else {
+					fn++; // false negative
+					errors.put(resultAtom, diff);
+				}
+			}
+		}
+		int noOfBaseAtoms = tp + fp + tn + fn;
+		return new SimpleResultComparison(errors, correctAtoms, tp, fp, tn, fn, noOfBaseAtoms);
+	}
 	
 	/**
 	 * Compares the baseline with the inferred result for a given predicate.
