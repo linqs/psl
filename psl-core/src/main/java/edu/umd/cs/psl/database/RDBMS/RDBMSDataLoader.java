@@ -198,7 +198,6 @@ public class RDBMSDataLoader implements DataLoader {
 			int partitionID = partition.getID();
 			if (partitionID<0) throw new IllegalArgumentException("Partition IDs must be non-negative!");
 			if (data.length!=argSize) throw new IllegalArgumentException("Data length does not match." + data.length + " " + argSize);
-			if (!handle.predicate().isNonDefaultValues(values)) throw new IllegalArgumentException("Should not add default data!");
 			if (!handle.predicate().validValues(values)) throw new IllegalArgumentException("Invalid values!");
 			if (!ConfidenceValues.isValidValues(confidences)) throw new IllegalArgumentException("Invalid confidence values!");
 			if (confidences.length!=handle.predicate().getNumberOfValues()) throw new IllegalArgumentException("Invalid confidence values!");
