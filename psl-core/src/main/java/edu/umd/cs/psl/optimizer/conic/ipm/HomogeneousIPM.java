@@ -132,7 +132,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		
 		mu = doSolve(program);
 		
-		log.debug("Optimum found.");
+		log.debug("Completed optimization.");
 		
 		program.checkInMatrices();
 		
