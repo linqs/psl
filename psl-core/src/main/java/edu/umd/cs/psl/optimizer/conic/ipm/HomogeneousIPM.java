@@ -530,7 +530,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		im.M.solve(im.g2);
 		
 		/* g1 */
-		im.g1 = im.invThetaInvW.getColumnCompressed(false).zMult(A.getColumnCompressed(false), null, 1.0, 0.0, false, true).zMult(im.g2, null);
+		im.g1 = im.invThetaInvW.getColumnCompressed(false).zMult(A.getColumnCompressed(false).zMult(im.g2, null, 1.0, 0.0, true), null);
 		im.g1.assign(im.invThetaInvW.zMult(c, null), DoubleFunctions.minus);
 		
 		return im;
@@ -626,23 +626,20 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		DoubleMatrix1D c = program.getC();
 		
 		DoubleMatrix1D TInvVR4 = pm.T.getColumnCompressed(false)
-				.zMult(im.invXBar.getColumnCompressed(false), null)
-				.zMult(res.r4, null);
+				.zMult(im.invXBar.getColumnCompressed(false).zMult(res.r4, null), null);
 		
 		/* h2 */
 		DoubleMatrix1D h2 = res.r1.copy()
 				.assign(im.AInvThetaSqInvWSq.zMult(res.r2.copy(), null), DoubleFunctions.plus)
 				.assign(A.getColumnCompressed(false)
-						.zMult(im.invThetaInvW.getColumnCompressed(false), null)
-						.zMult(TInvVR4, null),
+						.zMult(im.invThetaInvW.getColumnCompressed(false).zMult(TInvVR4, null), null),
 						DoubleFunctions.minus);
 		im.M.solve(h2);
 		
 		/* h1 */
 		DoubleMatrix1D h1 = TInvVR4.copy();
 		h1.assign(im.invThetaInvW.getColumnCompressed(false)
-				.zMult(A.getColumnCompressed(false), null, 1.0, 0.0, false, true)
-				.zMult(h2, null),
+				.zMult(A.getColumnCompressed(false).zMult(h2, null, 1.0, 0.0, true), null),
 				DoubleFunctions.plus);
 		h1.assign(im.invThetaInvW.zMult(res.r2, null), DoubleFunctions.minus);
 	
