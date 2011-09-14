@@ -15,6 +15,8 @@ import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.optimizer.conic.ConicProgramSolver;
 import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
 import edu.umd.cs.psl.optimizer.conic.program.NonNegativeOrthantCone;
+import edu.umd.cs.psl.optimizer.conic.program.SecondOrderCone;
+import edu.umd.cs.psl.optimizer.conic.program.Variable;
 
 public class MOSEK implements ConicProgramSolver {
 	
@@ -39,10 +41,8 @@ public class MOSEK implements ConicProgramSolver {
 			/* Initializes task */
 			Task task = new Task(environment, A.rows(), A.columns());
 			task.putcfix(0.0);
-			if (log.isTraceEnabled()) {
-				MsgClass msgobj = new MsgClass();
-				task.set_Stream(mosek.Env.streamtype.log, msgobj); 
-			}
+			MsgClass msgobj = new MsgClass();
+			task.set_Stream(mosek.Env.streamtype.log, msgobj);
 			
 			/* Creates the variables and sets the objective coefficients */
 			for (int i = 0; i < x.size(); i++) {
@@ -54,6 +54,24 @@ public class MOSEK implements ConicProgramSolver {
 			for (NonNegativeOrthantCone cone : program.getNonNegativeOrthantCones()) {
 				int index = program.index(cone.getVariable());
 				task.putbound(Env.accmode.var, index, Env.boundkey.lo, 0.0, Double.POSITIVE_INFINITY);
+			}
+			
+			/* Processes SecondOrderCones */
+			for (SecondOrderCone cone : program.getSecondOrderCones()) {
+				int[] indices = new int[cone.getN()];
+				int i = 1;
+				for (Variable v : cone.getVariables()) {
+					int index = program.index(v);
+					if (v.equals(cone.getNthVariable())) {
+						indices[0] = index;
+						task.putbound(Env.accmode.var, index, Env.boundkey.lo, 0.0, Double.POSITIVE_INFINITY);
+					}
+					else {
+						indices[i++] = index;
+						task.putbound(Env.accmode.var, index, Env.boundkey.fr, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY);
+					}
+				}
+				task.appendcone(Env.conetype.quad, 0.0, indices);
 			}
 			
 			/* Sets the linear constraints */
@@ -101,8 +119,8 @@ public class MOSEK implements ConicProgramSolver {
 		public MsgClass () { 
 			super (); 
 		} 
-		public void stream (String msg) { 
-			System.out.print(msg); 
+		public void stream (String msg) {
+			log.trace(msg);
 		} 
 	}
 }
