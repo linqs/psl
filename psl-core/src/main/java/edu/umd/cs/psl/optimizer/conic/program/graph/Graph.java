@@ -26,8 +26,4 @@ public interface Graph {
 	public void createRelationshipType(String name);
 	
 	public Set<Node> getNodesByAttribute(String propertyType, Object attribute);
-	
-	public Traversal getTraversal();
-	
-	public Partitioning getPartitioning();
 }

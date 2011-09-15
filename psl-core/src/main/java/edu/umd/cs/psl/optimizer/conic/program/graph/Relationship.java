@@ -16,16 +16,12 @@
  */
 package edu.umd.cs.psl.optimizer.conic.program.graph;
 
-import java.util.Collection;
-
 public interface Relationship extends Edge {
 	 public Node getEnd();
 
-	 public int getMultiplicity(Node n);
-
 	 public Node getOtherNode(Node n);
 
-	 public Collection<? extends Node> getOtherNodes(Node n);
+	 public boolean isSelfLoop(Node node);
 	 
 	 public String getRelationshipType();
 }

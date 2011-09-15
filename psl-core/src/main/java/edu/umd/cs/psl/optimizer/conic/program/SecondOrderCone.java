@@ -55,7 +55,7 @@ public class SecondOrderCone extends Cone {
 	
 	public int getN() {
 		int n = 0;
-		Iterator<Relationship> rels = node.getRelationshipIterator(ConicProgram.CONE_REL);
+		Iterator<? extends Relationship> rels = node.getRelationshipIterator(ConicProgram.CONE_REL);
 		while (rels.hasNext()) {
 			rels.next();
 			n++;

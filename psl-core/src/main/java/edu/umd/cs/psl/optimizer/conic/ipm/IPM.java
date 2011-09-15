@@ -66,23 +66,12 @@ public class IPM implements ConicProgramSolver {
 	public static final boolean DUALIZE_DEFAULT = true;
 	
 	/**
-	 * Key for boolean property. If true, the conic program will be initialized
-	 * to a feasible point before solving. Initialization will be done after
-	 * dualization, if the DUALIZE_KEY property is true. 
-	 * 
-	 * @see ConicProgram#makeFeasible()
-	 */
-	public static final String INIT_FEASIBLE_KEY = CONFIG_PREFIX + ".initfeasible";
-	/** Default value for INIT_FEASIBLE_KEY property */
-	public static final boolean INIT_FEASIBLE_DEFAULT = false;
-	
-	/**
 	 * Key for double property. The IPM will iterate until the duality gap
 	 * is less than its value.
 	 */
 	public static final String DUALITY_GAP_THRESHOLD_KEY = CONFIG_PREFIX + ".dualitygapthreshold";
 	/** Default value for DUALITY_GAP_THRESHOLD_KEY property. */
-	public static final double DUALITY_GAP_THRESHOLD_DEFAULT = 0.01;
+	public static final double DUALITY_GAP_THRESHOLD_DEFAULT = 0.0001;
 	
 	/**
 	 * Key for double property. The IPM will iterate until the primal and dual infeasibilites
@@ -96,7 +85,6 @@ public class IPM implements ConicProgramSolver {
 	public static final double INFEASIBILITY_THRESHOLD_DEFAULT = 10e-8;
 
 	protected boolean dualize;
-	protected boolean initFeasible;
 	protected double dualityGapThreshold;
 	protected double infeasibilityThreshold;
 	
@@ -104,7 +92,6 @@ public class IPM implements ConicProgramSolver {
 	
 	public IPM(ConfigBundle config) {
 		dualize = config.getBoolean(DUALIZE_KEY, DUALIZE_DEFAULT);
-		initFeasible = config.getBoolean(INIT_FEASIBLE_KEY, INIT_FEASIBLE_DEFAULT);
 		dualityGapThreshold = config.getDouble(DUALITY_GAP_THRESHOLD_KEY, DUALITY_GAP_THRESHOLD_DEFAULT);
 		infeasibilityThreshold = config.getDouble(INFEASIBILITY_THRESHOLD_KEY, INFEASIBILITY_THRESHOLD_DEFAULT);
 	}
@@ -120,9 +107,6 @@ public class IPM implements ConicProgramSolver {
 			dualizer = new Dualizer(program);
 			program = dualizer.getData();
 		}
-		
-		if (initFeasible)
-			program.makeFeasible();
 		
 		program.checkOutMatrices();
 
@@ -170,7 +154,7 @@ public class IPM implements ConicProgramSolver {
 		Hinv = DoubleFactory2D.sparse.make(A.columns(), A.columns());
 		
 		/* Initializes mu */
-		muInitial = alg.mult(x, s) / program.getV();
+		muInitial = alg.mult(x, s) / getV(program);
 		mu = muInitial;
 		
 		/* Computes initial infeasibility */
@@ -192,7 +176,7 @@ public class IPM implements ConicProgramSolver {
 				cone.setBarrierHessianInv(program.getVarMap(), x, Hinv);
 			}
 			
-			if (!inNeighborhood && initFeasible) {
+			if (!inNeighborhood) {
 				r = s.copy().assign(g, DoubleFunctions.plusMultSecond(muInitial));
 				theta = alg.mult(r, alg.mult(Hinv, r)) / muInitial;
 				if (theta < .1)
@@ -210,7 +194,7 @@ public class IPM implements ConicProgramSolver {
 
 			step(program, g, Hinv, mu, tau, inNeighborhood);
 			
-			mu = alg.mult(x, s) / program.getV();
+			mu = alg.mult(x, s) / getV(program);
 			primalInfeasibility = program.primalInfeasibility();
 			dualInfeasibility = program.dualInfeasibility();
 			log.trace("Itr: {} -- Gap: {} -- P. Inf: {} -- D. Inf: {} -- Obj: {}", new Object[] {++stepNum, mu, primalInfeasibility, dualInfeasibility, alg.mult(program.getC(), x)});
@@ -241,24 +225,18 @@ public class IPM implements ConicProgramSolver {
 		
 		ccA.zMult(ccHinv, partial, 1.0, 0.0, false, false);
 		partial.zMult(ccA, coeff, 1.0, 0.0, false, true);
-		if (initFeasible)
-			r = alg.mult(partial, s.copy().assign(g, DoubleFunctions.plusMultSecond(tau * mu)));
-		else
-			r = b.copy().assign(alg.mult(A, x), DoubleFunctions.minus)
-				.assign(alg.mult(partial, g).assign(DoubleFunctions.mult(tau)), DoubleFunctions.plus)
-				.assign(DoubleFunctions.mult(mu))
-				.assign(alg.mult(coeff, w), DoubleFunctions.minus)
-				.assign(alg.mult(partial, c), DoubleFunctions.plus);
+		r = b.copy().assign(alg.mult(A, x), DoubleFunctions.minus)
+			.assign(alg.mult(partial, g).assign(DoubleFunctions.mult(tau)), DoubleFunctions.plus)
+			.assign(DoubleFunctions.mult(mu))
+			.assign(alg.mult(coeff, w), DoubleFunctions.minus)
+			.assign(alg.mult(partial, c), DoubleFunctions.plus);
 		cd = new SparseDoubleCholeskyDecomposition(coeff, 1);
 		dw = r;
 		
 		cd.solve(dw);
 		ccA.zMult(dw, ds, 1.0, 0.0, true);
-		if (initFeasible)
-			ds.assign(DoubleFunctions.mult(-1.0));
-		else
-			ds.assign(alg.mult(ccA.getTranspose(), w), DoubleFunctions.plus).assign(s, DoubleFunctions.plus)
-				.assign(c, DoubleFunctions.minus).assign(DoubleFunctions.mult(-1.0));
+		ds.assign(alg.mult(ccA.getTranspose(), w), DoubleFunctions.plus).assign(s, DoubleFunctions.plus)
+			.assign(c, DoubleFunctions.minus).assign(DoubleFunctions.mult(-1.0));
 		dx = alg.mult(ccHinv, g.copy().assign(DoubleFunctions.mult(-1*tau*mu)).assign(ds, DoubleFunctions.minus).assign(s, DoubleFunctions.minus))
 			.assign(DoubleFunctions.div(mu));
 		
@@ -278,5 +256,9 @@ public class IPM implements ConicProgramSolver {
 		w.assign(dw, DoubleFunctions.plus);
 		s.assign(ds, DoubleFunctions.plus);
 		x.assign(dx, DoubleFunctions.plus);
+	}
+	
+	private int getV(ConicProgram program) {
+		return program.numNNOC() + 2*program.numSOC();
 	}
 }

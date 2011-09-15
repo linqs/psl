@@ -62,7 +62,7 @@ public class LinearConstraint extends Entity {
 
 	public Map<Variable, Double> getVariables() {
 		Map<Variable, Double> vars = new HashMap<Variable, Double>();
-		Iterable<Relationship> rels = node.getRelationships(ConicProgram.LC_REL);
+		Iterable<? extends Relationship> rels = node.getRelationships(ConicProgram.LC_REL);
 		for (Relationship rel : rels) {
 			vars.put((Variable) Entity.createEntity(program, rel.getEnd()), (Double) rel.getAttribute(ConicProgram.LC_REL_COEFF));
 		}

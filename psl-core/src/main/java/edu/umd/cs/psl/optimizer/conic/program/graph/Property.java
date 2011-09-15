@@ -21,5 +21,5 @@ public interface Property extends Edge {
 
 	 public <O> O getAttribute(Class<O> clazz);
 
-	 public String getPropertyType(); 
+	 public String getPropertyType();
 }

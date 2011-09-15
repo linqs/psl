@@ -19,28 +19,14 @@ package edu.umd.cs.psl.optimizer.conic.program.graph;
 import java.util.Collection;
 
 public interface Edge extends Node {
-	public int getArity();
-
-	public String getEdgeType();
-
-	public Collection<? extends Node> getEndNodes();
-
 	public Collection<? extends Node> getNodes();
 
 	public Node getStart();
-
-	public Collection<? extends Node> getStartNodes();
-
-	public boolean isBinaryEdge();
 
 	public boolean isIncidentOn(Node n);
 
 	public boolean isProperty();
 
 	public boolean isRelationship();
-
-	public boolean isSelfLoop(Node node);
-
-	public boolean isSimple();
 
 }

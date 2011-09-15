@@ -14,16 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.optimizer.conic.program.graph;
+package edu.umd.cs.psl.optimizer.conic.program.graph.memory;
 
-import java.util.Iterator;
+import edu.umd.cs.psl.optimizer.conic.program.graph.Edge;
+import edu.umd.cs.psl.optimizer.conic.program.graph.Node;
 
-public interface Traversal {
-	public Traversal setDepth(int d);
+abstract public class MemoryEdge extends MemoryNode implements Edge {
+
+	final MemoryNode startNode;
 	
-	public Traversal setEvaluator(TraversalEvaluator e);
-	
-	public Traversal addRelationshipType(String t);
-	
-	public Iterator<Node> traverse(Node seed);
+	MemoryEdge(MemoryGraph g, MemoryNode start) {
+		super(g);
+		startNode = start;
+	}
+
+	@Override
+	public Node getStart() {
+		if (startNode == null)
+			throw new IllegalStateException();
+		return startNode;
+	}
 }

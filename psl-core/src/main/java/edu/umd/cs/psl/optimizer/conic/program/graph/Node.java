@@ -18,7 +18,7 @@ package edu.umd.cs.psl.optimizer.conic.program.graph;
 
 import java.util.Iterator;
 
-public interface Node extends Entity {
+public interface Node {
 	
 	public Property createProperty(String type, Object attribute);
 	
@@ -28,9 +28,9 @@ public interface Node extends Entity {
 	 
 	public <O> O getAttribute(String type, Class<O> c);
 
-	public Iterator<Edge> getEdgeIterator();
+	public Iterator<? extends Edge> getEdgeIterator();
 	 
-	public Iterable<Edge> getEdges();
+	public Iterable<? extends Edge> getEdges();
 
 	public int getNoEdges();
 	 
@@ -38,19 +38,21 @@ public interface Node extends Entity {
 	 
 	public int getNoRelationships();
 	 
-	public Iterator<Property> getPropertyIterator();
+	public Iterator<? extends Property> getPropertyIterator();
 
-	public Iterable<Property> getProperties();
+	public Iterable<? extends Property> getProperties();
 	 
-	public Iterator<Property> getPropertyIterator(String type);
+	public Iterator<? extends Property> getPropertyIterator(String type);
 	 
-	public Iterable<Property> getProperties(String type);
+	public Iterable<? extends Property> getProperties(String type);
 	 
-	public Iterator<Relationship> getRelationshipIterator();
+	public Iterator<? extends Relationship> getRelationshipIterator();
 
-	public Iterable<Relationship> getRelationships();
+	public Iterable<? extends Relationship> getRelationships();
 	 
-	public Iterator<Relationship> getRelationshipIterator(String type);
+	public Iterator<? extends Relationship> getRelationshipIterator(String type);
 	 
-	public Iterable<Relationship> getRelationships(String type);
+	public Iterable<? extends Relationship> getRelationships(String type);
+	
+	public void delete();
 }
