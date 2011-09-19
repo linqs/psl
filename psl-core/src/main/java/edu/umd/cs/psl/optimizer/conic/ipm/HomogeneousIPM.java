@@ -17,6 +17,7 @@
 package edu.umd.cs.psl.optimizer.conic.ipm;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Set;
 
 import org.slf4j.Logger;
@@ -36,6 +37,7 @@ import edu.umd.cs.psl.optimizer.conic.ConicProgramSolver;
 import edu.umd.cs.psl.optimizer.conic.program.Cone;
 import edu.umd.cs.psl.optimizer.conic.program.ConeType;
 import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
+import edu.umd.cs.psl.optimizer.conic.program.Dualizer;
 import edu.umd.cs.psl.optimizer.conic.program.NonNegativeOrthantCone;
 import edu.umd.cs.psl.optimizer.conic.program.SecondOrderCone;
 import edu.umd.cs.psl.optimizer.conic.program.Variable;
@@ -70,6 +72,18 @@ public class HomogeneousIPM implements ConicProgramSolver {
 	 * @see ConfigManager
 	 */
 	public static final String CONFIG_PREFIX = "hipm";
+	
+	/**
+	 * Key for boolean property. If true, the IPM will dualize the conic
+	 * program before solving it. The IPM will substitute the results back
+	 * into the original problem, so this should only affect the computational
+	 * cost of {@link #solve(ConicProgram)}, not the quality of the solution.
+	 * 
+	 * @see Dualizer
+	 */
+	public static final String DUALIZE_KEY = CONFIG_PREFIX + ".dualize";
+	/** Default value for DUALIZE_KEY property */
+	public static final boolean DUALIZE_DEFAULT = false;
 	
 	/**
 	 * Key for double property. The IPM will consider the problem primal, dual, or
@@ -128,6 +142,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		supportedCones.add(ConeType.SecondOrderCone);
 	}
 
+	private final boolean tryDualize;
 	private final double infeasibilityThreshold;
 	private final double gapThreshold;
 	private final double tauThreshold;
@@ -142,6 +157,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 	private double baseResG;
 	
 	public HomogeneousIPM(ConfigBundle config) {
+		tryDualize = config.getBoolean(DUALIZE_KEY, DUALIZE_DEFAULT);
 		infeasibilityThreshold = config.getDouble(INFEASIBILITY_THRESHOLD_KEY, INFEASIBILITY_THRESHOLD_DEFAULT);
 		gapThreshold = config.getDouble(GAP_THRESHOLD_KEY, GAP_THRESHOLD_DEFAULT);
 		tauThreshold = config.getDouble(TAU_THRESHOLD_KEY, TAU_THRESHOLD_DEFAULT);
@@ -155,29 +171,41 @@ public class HomogeneousIPM implements ConicProgramSolver {
 	}
 
 	@Override
-	public boolean coneSupported(ConeType type) {
-		return supportedCones.contains(type);
+	public boolean supportsConeTypes(Collection<ConeType> types) {
+		return supportedCones.containsAll(types);
 	}
 
 	@Override
 	public Double solve(ConicProgram program) {
-		program.checkOutMatrices();
-		if (!program.containsOnly(supportedCones)) {
-			program.checkInMatrices();
+		boolean dualized = false;
+		Dualizer dualizer = null;
+		
+		if (tryDualize && Dualizer.supportsConeTypes(program.getConeTypes())) {
+			log.debug("Dualizing conic program.");
+			dualized = true;
+			dualizer = new Dualizer(program);
+			program = dualizer.checkOutProgram();
+		}
+		
+		if (!supportsConeTypes(program.getConeTypes())) {
 			throw new IllegalArgumentException("Program contains at least one unsupported cone."
 					+ " Supported cones are non-negative orthant cones and second-order cones.");
 		}
 
 		double mu;
+		program.checkOutMatrices();
 		DoubleMatrix2D A = program.getA();
 		
 		log.debug("Starting optimzation with {} variables and {} constraints.", A.columns(), A.rows());
 		
 		mu = doSolve(program);
 		
-		log.debug("Completed optimization.");
-		
 		program.checkInMatrices();
+		
+		if (dualized)
+			dualizer.checkInProgram();
+		
+		log.debug("Completed optimization.");
 		
 		return mu;
 	}

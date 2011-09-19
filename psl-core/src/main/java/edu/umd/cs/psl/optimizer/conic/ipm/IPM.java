@@ -17,6 +17,7 @@
 package edu.umd.cs.psl.optimizer.conic.ipm;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Set;
 
 import org.slf4j.Logger;
@@ -86,7 +87,7 @@ public class IPM implements ConicProgramSolver {
 	/** Default value for INFEASIBILITY_THRESHOLD_KEY property. */
 	public static final double INFEASIBILITY_THRESHOLD_DEFAULT = 10e-8;
 
-	protected boolean dualize;
+	protected boolean tryDualize;
 	protected double dualityGapThreshold;
 	protected double infeasibilityThreshold;
 	
@@ -98,53 +99,47 @@ public class IPM implements ConicProgramSolver {
 	private int stepNum;
 	
 	public IPM(ConfigBundle config) {
-		dualize = config.getBoolean(DUALIZE_KEY, DUALIZE_DEFAULT);
+		tryDualize = config.getBoolean(DUALIZE_KEY, DUALIZE_DEFAULT);
 		dualityGapThreshold = config.getDouble(DUALITY_GAP_THRESHOLD_KEY, DUALITY_GAP_THRESHOLD_DEFAULT);
 		infeasibilityThreshold = config.getDouble(INFEASIBILITY_THRESHOLD_KEY, INFEASIBILITY_THRESHOLD_DEFAULT);
 	}
 
 	@Override
-	public boolean coneSupported(ConeType type) {
-		return supportedCones.contains(type);
+	public boolean supportsConeTypes(Collection<ConeType> types) {
+		return supportedCones.containsAll(types);
 	}
 
 	@Override
 	public Double solve(ConicProgram program) {
-		ConicProgram oldProgram = null;
+		boolean dualized = false;
 		Dualizer dualizer = null;
 		
-		if (dualize) {
+		if (tryDualize && Dualizer.supportsConeTypes(program.getConeTypes())) {
 			log.debug("Dualizing conic program.");
-			oldProgram = program;
+			dualized = true;
 			dualizer = new Dualizer(program);
-			program = dualizer.getData();
+			program = dualizer.checkOutProgram();
 		}
 		
-		program.checkOutMatrices();
+		if (!supportsConeTypes(program.getConeTypes())) {
+			throw new IllegalArgumentException("Program contains at least one unsupported cone."
+					+ " Supported cones are non-negative orthant cones and second-order cones.");
+		}
 
-		double mu, primalFeasibilityDist, dualFeasibilityDist;
+		double mu;
+		program.checkOutMatrices();
 		DoubleMatrix2D A = program.getA();
 		
 		log.debug("Starting optimzation with {} variables and {} constraints.", A.columns(), A.rows());
 		
 		mu = doSolve(program);
 		
-		log.debug("Optimum found.");
-		
-		primalFeasibilityDist = program.primalInfeasibility();
-		if (primalFeasibilityDist > 10e-8)
-			log.error("Primal infeasible - Total distance: " + primalFeasibilityDist);
-		
-		dualFeasibilityDist = program.dualInfeasibility();
-		if (dualFeasibilityDist > 10e-8)
-			log.error("Dual infeasible - Total distance: " + dualFeasibilityDist);
-		
 		program.checkInMatrices();
 		
-		if (dualize) {
-			dualizer.updateData();
-			program = oldProgram;
-		}
+		if (dualized)
+			dualizer.checkInProgram();
+		
+		log.debug("Completed optimization.");
 		
 		return mu;
 	}

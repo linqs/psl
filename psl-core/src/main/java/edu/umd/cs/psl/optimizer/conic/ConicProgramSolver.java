@@ -16,11 +16,13 @@
  */
 package edu.umd.cs.psl.optimizer.conic;
 
+import java.util.Collection;
+
 import edu.umd.cs.psl.optimizer.conic.program.ConeType;
 import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
 
 public interface ConicProgramSolver {
 	public Double solve(ConicProgram program);
 	
-	public boolean coneSupported(ConeType type);
+	public boolean supportsConeTypes(Collection<ConeType> types);
 }

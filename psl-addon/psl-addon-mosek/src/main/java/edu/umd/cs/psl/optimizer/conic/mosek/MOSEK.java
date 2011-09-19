@@ -17,6 +17,7 @@
 package edu.umd.cs.psl.optimizer.conic.mosek;
 
 import java.util.ArrayList;
+import java.util.Collection;
 
 import mosek.Env;
 import mosek.Task;
@@ -55,8 +56,8 @@ public class MOSEK implements ConicProgramSolver {
 	}
 
 	@Override
-	public boolean coneSupported(ConeType type) {
-		return supportedCones.contains(type);
+	public boolean supportsConeTypes(Collection<ConeType> types) {
+		return supportedCones.containsAll(types);
 	}
 
 	@Override

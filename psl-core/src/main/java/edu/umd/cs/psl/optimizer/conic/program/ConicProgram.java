@@ -23,9 +23,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import cern.colt.list.tdouble.DoubleArrayList;
 import cern.colt.list.tint.IntArrayList;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
@@ -43,8 +40,6 @@ import edu.umd.cs.psl.optimizer.conic.program.graph.memory.MemoryGraph;
  * @author Stephen Bach <bach@cs.umd.edu>
  */
 public class ConicProgram {
-	
-	private static final Logger log = LoggerFactory.getLogger(ConicProgram.class);
 	
 	private Graph graph;
 	
@@ -83,9 +78,6 @@ public class ConicProgram {
 	private Map<Variable, Integer> varMap;
 	private Map<LinearConstraint, Integer> lcMap;
 	
-	// Default starting capacities
-	protected static final int defaultStartingVarCapacity = 1000;
-	
 	// Error messages
 	private static final String UNEXPECTED_SENDER = "Unexpected sender type.";
 	private static final String UNEXPECTED_DATA = "Unexpected data.";
@@ -118,10 +110,12 @@ public class ConicProgram {
 		return graph;
 	}
 	
-	public boolean containsOnly(Collection<ConeType> types) {
-		return !((numNNOC() > 0 && !types.contains(ConeType.NonNegativeOrthantCone))
-				|| (numSOC() > 0 && !types.contains(ConeType.SecondOrderCone))
-				|| (numRSOC() > 0 && !types.contains(ConeType.RotatedSecondOrderCone)));
+	public Collection<ConeType> getConeTypes() {
+		Set<ConeType> types = new HashSet<ConeType>();
+		if (numNNOC() > 0) types.add(ConeType.NonNegativeOrthantCone);
+		if (numSOC() > 0) types.add(ConeType.SecondOrderCone);
+		if (numRSOC() > 0) types.add(ConeType.RotatedSecondOrderCone);
+		return types;
 	}
 	
 	public NonNegativeOrthantCone createNonNegativeOrthantCone() {
