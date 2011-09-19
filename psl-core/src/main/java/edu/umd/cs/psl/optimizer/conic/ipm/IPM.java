@@ -16,6 +16,7 @@
  */
 package edu.umd.cs.psl.optimizer.conic.ipm;
 
+import java.util.ArrayList;
 import java.util.Set;
 
 import org.slf4j.Logger;
@@ -34,6 +35,7 @@ import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.optimizer.conic.ConicProgramSolver;
 import edu.umd.cs.psl.optimizer.conic.program.Cone;
+import edu.umd.cs.psl.optimizer.conic.program.ConeType;
 import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
 import edu.umd.cs.psl.optimizer.conic.program.Dualizer;
 
@@ -88,12 +90,22 @@ public class IPM implements ConicProgramSolver {
 	protected double dualityGapThreshold;
 	protected double infeasibilityThreshold;
 	
+	private static final ArrayList<ConeType> supportedCones = new ArrayList<ConeType>(2);
+	static {
+		supportedCones.add(ConeType.NonNegativeOrthantCone);
+	}
+	
 	private int stepNum;
 	
 	public IPM(ConfigBundle config) {
 		dualize = config.getBoolean(DUALIZE_KEY, DUALIZE_DEFAULT);
 		dualityGapThreshold = config.getDouble(DUALITY_GAP_THRESHOLD_KEY, DUALITY_GAP_THRESHOLD_DEFAULT);
 		infeasibilityThreshold = config.getDouble(INFEASIBILITY_THRESHOLD_KEY, INFEASIBILITY_THRESHOLD_DEFAULT);
+	}
+
+	@Override
+	public boolean coneSupported(ConeType type) {
+		return supportedCones.contains(type);
 	}
 
 	@Override

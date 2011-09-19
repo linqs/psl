@@ -14,13 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.optimizer.conic;
+package edu.umd.cs.psl.optimizer.conic.program;
 
-import edu.umd.cs.psl.optimizer.conic.program.ConeType;
-import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
-
-public interface ConicProgramSolver {
-	public Double solve(ConicProgram program);
-	
-	public boolean coneSupported(ConeType type);
+public enum ConeType {
+	NonNegativeOrthantCone, SecondOrderCone, RotatedSecondOrderCone; 
 }

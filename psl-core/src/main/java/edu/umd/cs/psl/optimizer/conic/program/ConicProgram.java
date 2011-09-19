@@ -16,6 +16,7 @@
  */
 package edu.umd.cs.psl.optimizer.conic.program;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -69,6 +70,7 @@ public class ConicProgram {
 
 	private int numNNOC;
 	private int numSOC;
+	private int numRSOC;
 	
 	private boolean checkedOut;
 	
@@ -107,12 +109,19 @@ public class ConicProgram {
 		
 		numNNOC = 0;
 		numSOC = 0;
+		numRSOC = 0;
 		
 		checkedOut = false;
 	}
 	
 	Graph getGraph() {
 		return graph;
+	}
+	
+	public boolean containsOnly(Collection<ConeType> types) {
+		return !((numNNOC() > 0 && !types.contains(ConeType.NonNegativeOrthantCone))
+				|| (numSOC() > 0 && !types.contains(ConeType.SecondOrderCone))
+				|| (numRSOC() > 0 && !types.contains(ConeType.RotatedSecondOrderCone)));
 	}
 	
 	public NonNegativeOrthantCone createNonNegativeOrthantCone() {
@@ -275,12 +284,20 @@ public class ConicProgram {
 		return lcMap.get(lc);
 	}
 	
+	public int numCones() {
+		return numNNOC() + numSOC() + numRSOC();
+	}
+	
 	public int numNNOC() {
 		return numNNOC;
 	}
 	
 	public int numSOC() {
 		return numSOC;
+	}
+	
+	public int numRSOC() {
+		return numRSOC;
 	}
 	
 	void verifyCheckedOut() {

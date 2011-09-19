@@ -16,6 +16,7 @@
  */
 package edu.umd.cs.psl.optimizer.conic.ipm;
 
+import java.util.ArrayList;
 import java.util.Set;
 
 import org.slf4j.Logger;
@@ -24,7 +25,6 @@ import org.slf4j.LoggerFactory;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.algo.DenseDoubleAlgebra;
-import cern.colt.matrix.tdouble.algo.SparseDoubleAlgebra;
 import cern.colt.matrix.tdouble.algo.decomposition.SparseDoubleCholeskyDecomposition;
 import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix1D;
 import cern.colt.matrix.tdouble.impl.SparseCCDoubleMatrix2D;
@@ -34,18 +34,28 @@ import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.optimizer.conic.ConicProgramSolver;
 import edu.umd.cs.psl.optimizer.conic.program.Cone;
+import edu.umd.cs.psl.optimizer.conic.program.ConeType;
 import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
 import edu.umd.cs.psl.optimizer.conic.program.NonNegativeOrthantCone;
 import edu.umd.cs.psl.optimizer.conic.program.SecondOrderCone;
 import edu.umd.cs.psl.optimizer.conic.program.Variable;
 
 /**
- * Primal-dual interior-point method using the homogeneous model.
+ * Primal-dual interior-point method using the self-dual homogeneous model.
+ * 
+ * Supports conic programs with non-negative orthant cones and second-order cones.
  * 
  * This solver follows the algorithm presented in
  * E. D. Andersen, C. Roos and T. Terlaky. "On implementing a primal-dual
  * interior-point method for conic quadratic optimization."
  * <i>Math. Programming</i> 95(2), February 2003.
+ * 
+ * It also uses the product form for numeric stability presented in J. F. Sturm.
+ * "Avoiding numerical cancellation in the interior point method for solving
+ * semidefinite programs. <i>Math. Programming</i> 95(2), February 2003;
+ * and J. F. Sturm. "Implementation of interior point methods for mixed semidefinite
+ * and second order cone optimization problems."
+ * <i>Optimization Methods and Software</i> 17(6), September 2002. 
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  *
@@ -62,50 +72,68 @@ public class HomogeneousIPM implements ConicProgramSolver {
 	public static final String CONFIG_PREFIX = "hipm";
 	
 	/**
-	 * Key for double property. The IPM will iterate until the duality gap
-	 * is less than its value.
+	 * Key for double property. The IPM will consider the problem primal, dual, or
+	 * gap feasible if the primal, dual, or gap infeasibility is less than its value,
+	 * respectively.
 	 */
-	public static final String DUALITY_GAP_RED_THRESHOLD_KEY = CONFIG_PREFIX + ".dualitygapredthreshold";
-	/** Default value for DUALITY_GAP_THRESHOLD_KEY property. */
-	public static final double DUALITY_GAP_RED_THRESHOLD_DEFAULT = 0.01;
-	
-	/**
-	 * Key for double property. The IPM will iterate until the primal and dual infeasibilites
-	 * are each less than its value.
-	 */
-	public static final String INFEASIBILITY_RED_THRESHOLD_KEY = CONFIG_PREFIX + ".infeasibilityredthreshold";
+	public static final String INFEASIBILITY_THRESHOLD_KEY = CONFIG_PREFIX + ".infeasibilitythreshold";
 	/** Default value for INFEASIBILITY_THRESHOLD_KEY property. */
-	public static final double INFEASIBILITY_RED_THRESHOLD_DEFAULT = 10e-8;
+	public static final double INFEASIBILITY_THRESHOLD_DEFAULT = 10e-8;
 	
 	/**
-	 * Key for double property. The IPM will iterate until the primal and dual infeasibilites
-	 * are each less than its value.
+	 * Key for double property. The IPM will iterate until the duality gap is
+	 * less than its value.
 	 */
-	public static final String SIG_THRESHOLD_KEY = CONFIG_PREFIX + ".sigthreshold";
-	/** Default value for INFEASIBILITY_THRESHOLD_KEY property. */
-	public static final double SIG_THRESHOLD_DEFAULT = 10e-6;
+	public static final String GAP_THRESHOLD_KEY = CONFIG_PREFIX + ".gapthreshold";
+	/** Default value for GAP_THRESHOLD_KEY property. */
+	public static final double GAP_THRESHOLD_DEFAULT = 10e-6;
 	
 	/**
-	 * Key for double property. The IPM will iterate until the primal and dual infeasibilites
-	 * are each less than its value.
+	 * Key for double property. The IPM will multiply its value by another value
+	 * and consider tau small if tau is less than that product.
 	 */
 	public static final String TAU_THRESHOLD_KEY = CONFIG_PREFIX + ".tauthreshold";
-	/** Default value for INFEASIBILITY_THRESHOLD_KEY property. */
+	/** Default value for TAU_THRESHOLD_KEY property. */
 	public static final double TAU_THRESHOLD_DEFAULT = 10e-8;
 	
 	/**
-	 * Key for double property. The IPM will iterate until the primal and dual infeasibilites
-	 * are each less than its value.
+	 * Key for double property. The IPM will consider mu small if mu is less than
+	 * its value times the initial mu.
 	 */
 	public static final String MU_THRESHOLD_KEY = CONFIG_PREFIX + ".muthreshold";
-	/** Default value for INFEASIBILITY_THRESHOLD_KEY property. */
+	/** Default value for MU_THRESHOLD_KEY property. */
 	public static final double MU_THRESHOLD_DEFAULT = 10e-8;
+	
+	/**
+	 * Key for double property in (0,1). The IPM will stay in a neighborhood of
+	 * the central path, the size of which is defined by its value. Larger
+	 * values correspond to smaller neighborhoods.
+	 */
+	public static final String BETA_KEY = CONFIG_PREFIX + ".beta";
+	/** Default value for BETA_KEY property. */
+	public static final double BETA_DEFAULT = 10e-8;
+	
+	/**
+	 * Key for double property in [0,1]. The IPM will use its value to determine
+	 * how aggressively to minimize the objective (versus to follow the central path).
+	 * Lower values correspond to more aggressive strategies.
+	 */
+	public static final String DELTA_KEY = CONFIG_PREFIX + ".delta";
+	/** Default value for DELTA_KEY property. */
+	public static final double DELTA_DEFAULT = 0.5;
+	
+	private static final ArrayList<ConeType> supportedCones = new ArrayList<ConeType>(2);
+	static {
+		supportedCones.add(ConeType.NonNegativeOrthantCone);
+		supportedCones.add(ConeType.SecondOrderCone);
+	}
 
-	private double dualityGapRedThreshold;
-	private double infeasibilityRedThreshold;
-	private double sigThreshold;
-	private double tauThreshold;
-	private double muThreshold;
+	private final double infeasibilityThreshold;
+	private final double gapThreshold;
+	private final double tauThreshold;
+	private final double muThreshold;
+	private final double beta;
+	private final double delta;
 	
 	private int stepNum;
 	
@@ -114,16 +142,31 @@ public class HomogeneousIPM implements ConicProgramSolver {
 	private double baseResG;
 	
 	public HomogeneousIPM(ConfigBundle config) {
-		dualityGapRedThreshold = config.getDouble(DUALITY_GAP_RED_THRESHOLD_KEY, DUALITY_GAP_RED_THRESHOLD_DEFAULT);
-		infeasibilityRedThreshold = config.getDouble(INFEASIBILITY_RED_THRESHOLD_KEY, INFEASIBILITY_RED_THRESHOLD_DEFAULT);
-		sigThreshold = config.getDouble(SIG_THRESHOLD_KEY, SIG_THRESHOLD_DEFAULT);
+		infeasibilityThreshold = config.getDouble(INFEASIBILITY_THRESHOLD_KEY, INFEASIBILITY_THRESHOLD_DEFAULT);
+		gapThreshold = config.getDouble(GAP_THRESHOLD_KEY, GAP_THRESHOLD_DEFAULT);
 		tauThreshold = config.getDouble(TAU_THRESHOLD_KEY, TAU_THRESHOLD_DEFAULT);
 		muThreshold = config.getDouble(MU_THRESHOLD_KEY, MU_THRESHOLD_DEFAULT);
+		beta = config.getDouble(BETA_KEY, BETA_DEFAULT);
+		if (beta <= 0 || beta >= 1)
+			throw new IllegalArgumentException("Property " + BETA_KEY + " must be in (0,1).");
+		delta = config.getDouble(DELTA_KEY, DELTA_DEFAULT);
+		if (delta < 0 || delta > 1)
+			throw new IllegalArgumentException("Property " + DELTA_KEY + " must be in [0,1].");
+	}
+
+	@Override
+	public boolean coneSupported(ConeType type) {
+		return supportedCones.contains(type);
 	}
 
 	@Override
 	public Double solve(ConicProgram program) {
 		program.checkOutMatrices();
+		if (!program.containsOnly(supportedCones)) {
+			program.checkInMatrices();
+			throw new IllegalArgumentException("Program contains at least one unsupported cone."
+					+ " Supported cones are non-negative orthant cones and second-order cones.");
+		}
 
 		double mu;
 		DoubleMatrix2D A = program.getA();
@@ -150,8 +193,8 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		DenseDoubleAlgebra alg = new DenseDoubleAlgebra();
 		
 		double cDotX, bDotW;
-		double gap, mu, primalInfeasibility, dualInfeasibility, sig;
-		boolean primalFeasible, dualFeasible, isSig, gapIsReduced, tauIsSmall, muIsSmall; 
+		double gapInfeasibility, mu, primalInfeasibility, dualInfeasibility, gap;
+		boolean primalFeasible, dualFeasible, gapIsSmall, gapFeasible, tauIsSmall, tauIsVerySmall, muIsSmall; 
 		boolean solved, programInfeasible, illPosed;
 		
 		/* Initializes program matrices that can be reused for entire procedure */
@@ -185,12 +228,12 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		
 		/* Computes values for stopping criteria */
 		double muZero = (vars.v.zDotProduct(vars.v) + vars.tau * vars.kappa) / (pm.k+1);
-		double primalInfRedDenom = Math.max(1.0, alg.norm2(
+		double primalInfDenom = Math.max(1.0, alg.norm2(
 				A.zMult(x, b.copy().assign(DoubleFunctions.mult(vars.tau)), 1.0, -1.0, false)));
-		double dualInfRedDenom = Math.max(1.0, alg.norm2(
+		double dualInfDenom = Math.max(1.0, alg.norm2(
 				A.zMult(w, c.copy().assign(DoubleFunctions.mult(vars.tau)), 1.0, -1.0, true)
 				.assign(s, DoubleFunctions.plus)));
-		double gapRedDenom = Math.max(1.0, Math.abs(b.zDotProduct(w) - c.zDotProduct(x) - vars.kappa));
+		double gapInfDenom = Math.max(1.0, Math.abs(b.zDotProduct(w) - c.zDotProduct(x) - vars.kappa));
 		
 		stepNum = 0;
 		do {
@@ -202,28 +245,29 @@ public class HomogeneousIPM implements ConicProgramSolver {
 			
 			primalInfeasibility = alg.norm2(
 					A.zMult(x, b.copy().assign(DoubleFunctions.mult(vars.tau)), 1.0, -1.0, false)
-					) / primalInfRedDenom;
+					) / primalInfDenom;
 			
 			dualInfeasibility = alg.norm2(
 					A.zMult(w, c.copy().assign(DoubleFunctions.mult(vars.tau)), 1.0, -1.0, true)
 					.assign(s, DoubleFunctions.plus)
-					) / dualInfRedDenom;
+					) / dualInfDenom;
 			
-			gap = Math.abs(bDotW - cDotX - vars.kappa) / gapRedDenom;
-			sig = Math.abs(cDotX / vars.tau - bDotW / vars.tau) / (1 + Math.abs(bDotW / vars.tau));
+			gapInfeasibility = Math.abs(bDotW - cDotX - vars.kappa) / gapInfDenom;
+			gap = Math.abs(cDotX / vars.tau - bDotW / vars.tau) / (1 + Math.abs(bDotW / vars.tau));
 			
-			log.trace("Itr: {} -- Comp: {} -- P. Inf: {} -- D. Inf: {} -- Sig: {}", new Object[] {++stepNum, mu, primalInfeasibility, dualInfeasibility, sig});
+			log.trace("Itr: {} -- Comp: {} -- P. Inf: {} -- D. Inf: {} -- Sig: {}", new Object[] {++stepNum, mu, primalInfeasibility, dualInfeasibility, gap});
 			
-			primalFeasible	= primalInfeasibility <= infeasibilityRedThreshold;
-			dualFeasible	= dualInfeasibility <= infeasibilityRedThreshold;
-			isSig			= sig <= sigThreshold;
-			gapIsReduced	= gap <= dualityGapRedThreshold;
+			primalFeasible	= primalInfeasibility <= infeasibilityThreshold;
+			dualFeasible	= dualInfeasibility <= infeasibilityThreshold;
+			gapFeasible		= gapInfeasibility <= infeasibilityThreshold;
+			gapIsSmall		= gap <= gapThreshold;
 			tauIsSmall		= vars.tau <= tauThreshold * Math.max(1.0, vars.kappa);
+			tauIsVerySmall	= vars.tau <= tauThreshold * Math.min(1.0, vars.kappa);
 			muIsSmall		= mu <= muThreshold * muZero;
 			
-			solved				= primalFeasible && dualFeasible && isSig;
-			programInfeasible	= primalFeasible && dualFeasible && gapIsReduced && tauIsSmall;
-			illPosed			= muIsSmall && tauIsSmall;
+			solved				= primalFeasible && dualFeasible && gapIsSmall;
+			programInfeasible	= primalFeasible && dualFeasible && gapFeasible && tauIsSmall;
+			illPosed			= muIsSmall && tauIsVerySmall;
 		} while (!solved && !programInfeasible && !illPosed);
 		
 		if (illPosed)
@@ -254,7 +298,6 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		
 		/* Uses affine scaling direction to compute gamma */
 		double	alphaMax	= getMaxStepSize(program, vars, descaledSD);
-		double	delta		= 0.5;
 		double	gamma		= Math.min(delta, Math.pow(1-alphaMax, 2)) * (1-alphaMax);
 		
 		/* Computes corrected direction */
@@ -264,7 +307,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		
 		/* Gets step size */
 				alphaMax	= getMaxStepSize(program, vars, descaledSD);
-		double	stepSize	= getStepSize(program, vars, im, sd, alphaMax, 10e-8, gamma);
+		double	stepSize	= getStepSize(program, vars, im, sd, alphaMax, beta, gamma);
 		
 		/* Updates variables */
 		x.assign(descaledSD.dx.copy().assign(DoubleFunctions.mult(stepSize)), DoubleFunctions.plus);
@@ -377,7 +420,6 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		pm.Q	= new SparseDoubleMatrix2D(size, size);
 		pm.invQ	= new SparseDoubleMatrix2D(size, size);
 		
-		// TODO: Watch out for new cone types. Should throw exception if they exist. 
 		for (NonNegativeOrthantCone cone : program.getNonNegativeOrthantCones()) {
 			int i = program.index(cone.getVariable());
 			pm.e.setQuick(i, 1.0);
@@ -514,13 +556,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		SparseCCDoubleMatrix2D M = new SparseCCDoubleMatrix2D(A.rows(), A.rows());
 		APhi.zMult(APhi, M, 1.0, 0.0, false, true);
 		log.trace("Starting decomposition.");
-		try {
-			im.M = new SparseDoubleCholeskyDecomposition(M, 1);
-		}
-		catch (IllegalArgumentException e) {
-			//System.out.println(alg.toVerboseString(M.getDense()));
-			throw e;
-		}
+		im.M = new SparseDoubleCholeskyDecomposition(M, 1);
 		log.trace("Finished decomposition.");
 		
 		/* Computes intermediate vectors */
@@ -685,12 +721,11 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		DoubleMatrix1D x = program.getX();
 		DoubleMatrix1D s = program.getS();
 		double stepSize = alphaMax;
-		double stepSizeDecrement = alphaMax / 20;
+		double stepSizeDecrement = alphaMax / 50;
 		
 		double ssCond = getStepSizeCondition(stepSize, beta, gamma, im.mu);
 		
 		while ((vars.tau + stepSize * sd.dTau) * (vars.kappa + stepSize * sd.dKappa) < ssCond) {
-			log.trace("Decrementing step size because of tau and/or kappa.");
 			stepSize -= stepSizeDecrement;
 			ssCond = getStepSizeCondition(stepSize, beta, gamma, im.mu);
 		}
@@ -709,10 +744,6 @@ public class HomogeneousIPM implements ConicProgramSolver {
 					(vX1 + stepSize * vX2 + stepSize * stepSize * vX3)
 					* (vS1 + stepSize * vS2 + stepSize * stepSize * vS3)
 					) < ssCond) {
-//			while ((x.getQuick(index) + sd.dx.getQuick(index) * stepSize)
-//					* (s.getQuick(index) + sd.ds.getQuick(index) * stepSize)
-//					< ssCond) {
-				log.trace("Decrementing step size because of NNOC.");
 				stepSize -= stepSizeDecrement;
 				ssCond = getStepSizeCondition(stepSize, beta, gamma, im.mu);
 				if (stepSize <= 0)
@@ -760,12 +791,6 @@ public class HomogeneousIPM implements ConicProgramSolver {
 					(vX1 + stepSize * vX2 + stepSize * stepSize * vX3)
 					* (vS1 + stepSize * vS2 + stepSize * stepSize * vS3)
 					) < ssCond) {
-//			DoubleMatrix1D newX = xSel.copy().assign(dxSel.copy().assign(DoubleFunctions.mult(stepSize)), DoubleFunctions.plus);
-//			DoubleMatrix1D newS = sSel.copy().assign(dsSel.copy().assign(DoubleFunctions.mult(stepSize)), DoubleFunctions.plus);
-//			while (Q.zMult(newX, null).zDotProduct(newX) * Q.zMult(newS, null).zDotProduct(newS)
-//					/ newX.zDotProduct(newS)
-//					< ssCond) {
-				log.trace("Decrementing step size because of SOC.");
 				stepSize -= stepSizeDecrement;
 				ssCond = getStepSizeCondition(stepSize, beta, gamma, im.mu);
 				if (stepSize <= 0)
