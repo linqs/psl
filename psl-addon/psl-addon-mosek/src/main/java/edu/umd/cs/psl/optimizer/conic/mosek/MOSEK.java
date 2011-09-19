@@ -16,6 +16,8 @@
  */
 package edu.umd.cs.psl.optimizer.conic.mosek;
 
+import java.util.ArrayList;
+
 import mosek.Env;
 import mosek.Task;
 
@@ -29,6 +31,7 @@ import cern.colt.matrix.tdouble.impl.SparseDoubleMatrix2D;
 
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.optimizer.conic.ConicProgramSolver;
+import edu.umd.cs.psl.optimizer.conic.program.ConeType;
 import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
 import edu.umd.cs.psl.optimizer.conic.program.NonNegativeOrthantCone;
 import edu.umd.cs.psl.optimizer.conic.program.SecondOrderCone;
@@ -38,11 +41,22 @@ public class MOSEK implements ConicProgramSolver {
 	
 	private static final Logger log = LoggerFactory.getLogger(MOSEK.class);
 	
+	private static final ArrayList<ConeType> supportedCones = new ArrayList<ConeType>(2);
+	static {
+		supportedCones.add(ConeType.NonNegativeOrthantCone);
+		supportedCones.add(ConeType.SecondOrderCone);
+	}
+	
 	private Env environment;
 	
 	public MOSEK(ConfigBundle config) {
 		environment = new mosek.Env();
 		environment.init();
+	}
+
+	@Override
+	public boolean coneSupported(ConeType type) {
+		return supportedCones.contains(type);
 	}
 
 	@Override
