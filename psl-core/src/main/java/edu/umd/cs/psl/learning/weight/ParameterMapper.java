@@ -81,17 +81,23 @@ public class ParameterMapper {
 			et.setParameters(para);
 		}
 	}
+	// CHANGED: This is the third version
+	public void setAllParameters2(final double[] vals) {
+		double min = 1e100;
+		for (int i = 1; i < vals.length; i++)
+			if (vals[i] > 1e-4 && vals[i] < min)
+				min = vals[i];
 
-  //CHANGED:
-  public void setAllParameters2(final double[] vals)
-  {
-		if (vals.length != numParameters+1) throw new IllegalArgumentException("Invalid vector length!");
-		for (Kernel et : offset.keySet())
-    {
+		if (vals.length != numParameters + 1)
+			throw new IllegalArgumentException("Invalid vector length!");
+		for (Kernel et : offset.keySet()) {
 			int off = offset.get(et);
 			Parameters para = et.getParameters();
-			for (int i = 0; i < para.numParameters(); i++)
-				para.setParameter(i, vals[off+i+1]);
+			for (int i = 0; i < para.numParameters(); i++) {
+				para.setParameter(i, vals[off + i + 1] / min);
+				//System.out.println("param " + off + "," + i + " = "
+				//		+ vals[off + i + 1] / min);
+			}
 			et.setParameters(para);
 		}
 	}

@@ -21,11 +21,8 @@ import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Preconditions;
-
 //CHANGED
 import edu.umd.cs.psl.optimizer.lbfgs.*;
-import edu.umd.cs.psl.optimizer.NumericUtilities;
 import edu.umd.cs.psl.application.FullInference;
 import edu.umd.cs.psl.application.ModelApplication;
 import edu.umd.cs.psl.application.inference.MaintainedMemoryFullInference;
@@ -54,17 +51,17 @@ public class WeightLearningGlobalOpt implements FunctionEvaluation, WeightLearni
 	private final FullInference groundTruth;
 	private final FullInference training;
 	private final WeightLearningConfiguration configuration;
-	private final ConfigBundle config;
+//	private final ConfigBundle config;
 	
 	private ParameterMapper parameters;
 	
 	private double[] gradientCache;
 	private double[][] hessianCache;
 
-  private double[] means;
+	private double[] means;
 
-  private double  minValue;
-  private double[] minParams;
+	private double  minValue;
+	private double[] minParams;
 
 	
 	public WeightLearningGlobalOpt(Model m, Database truth, Database train, WeightLearningConfiguration configuration, ConfigBundle config)
@@ -73,7 +70,7 @@ public class WeightLearningGlobalOpt implements FunctionEvaluation, WeightLearni
 		groundTruth = new MaintainedMemoryFullInference(model,truth, config);
 		training = new MaintainedMemoryFullInference(model,train, config);
 		this.configuration = configuration;
-		this.config = config;
+//		this.config = config;
 		parameters = new ParameterMapper();
 	}
 
