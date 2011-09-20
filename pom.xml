@@ -37,7 +37,7 @@
 		<repository>
 			<releases>
 				<enabled>true</enabled>
-				<updatePolicy>always</updatePolicy>
+				<updatePolicy>daily</updatePolicy>
 				<checksumPolicy>fail</checksumPolicy>
 			</releases>
 			<snapshots>
@@ -53,7 +53,7 @@
 		<repository>
 			<releases>
 				<enabled>true</enabled>
-				<updatePolicy>always</updatePolicy>
+				<updatePolicy>daily</updatePolicy>
 				<checksumPolicy>fail</checksumPolicy>
 			</releases>
 			<snapshots>
@@ -67,6 +67,15 @@
 			<layout>default</layout>
 		</repository>
 	</repositories>
+	<distributionManagement>
+		<repository>
+			<uniqueVersion>false</uniqueVersion>
+			<id>psl-releases</id>
+			<name>PSL Releases</name>
+			<url>https://scm.umiacs.umd.edu/maven/lccd/content/repositories/psl-releases/</url>
+			<layout>default</layout>
+		</repository>
+	</distributionManagement>
 	<build>
 		<plugins>
 			<plugin>

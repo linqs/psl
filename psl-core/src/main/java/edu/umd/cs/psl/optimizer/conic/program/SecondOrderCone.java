@@ -206,10 +206,11 @@ public class SecondOrderCone extends Cone {
 		double b = 2*(dxSel.get(i)*xSel.get(i) - dxSel.zDotProduct(xSel, 0, i));
 		double c = Math.pow(xSel.get(i), 2) - xSel.zDotProduct(xSel, 0, i);
 		
-		double sol1 = (-1 * b + Math.sqrt(Math.pow(b, 2) - 4 * a * c)) / (2 * a);
-		double sol2 = (-1 * b - Math.sqrt(Math.pow(b, 2) - 4 * a * c)) / (2 * a);
-		
-		if (!Double.isNaN(sol1) && !Double.isNaN(sol2)) {
+		double discriminant = Math.pow(b, 2) - 4 * a * c;
+		if (discriminant > 0) {
+			double sol1 = (-1 * b + Math.sqrt(discriminant)) / (2 * a);
+			double sol2 = (-1 * b - Math.sqrt(discriminant)) / (2 * a);
+			
 			if (sol1 > 0 && sol2 > 0)
 				return Math.min(sol1, sol2) * .95;
 			else if (sol1 > 0)
@@ -217,19 +218,18 @@ public class SecondOrderCone extends Cone {
 			else if (sol2 > 0)
 				return sol2 * .95;
 			else
-				return Double.MAX_VALUE;
+				return 1.0;
 		}
-		else if (!Double.isNaN(sol1))
-			if (sol1 > 0)
-				return sol1;
+		else {
+			double stepSize = 1.0;
+			while (a * Math.pow(stepSize, 2) + b * stepSize + c <= 0 && stepSize > 0)
+				stepSize *= 0.5;
+			
+			if (stepSize > 0)
+				return stepSize;
 			else
-				return 1.0;
-		else if (!Double.isNaN(sol2))
-			if (sol2 > 0)
-				return sol2;
-			else
-				return 1.0;
-		else throw new IllegalStateException();
+				throw new IllegalStateException("Stuck.");
+		}
 	}
 }
 

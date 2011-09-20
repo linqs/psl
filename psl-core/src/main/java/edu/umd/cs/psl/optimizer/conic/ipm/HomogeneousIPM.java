@@ -83,7 +83,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 	 */
 	public static final String DUALIZE_KEY = CONFIG_PREFIX + ".dualize";
 	/** Default value for DUALIZE_KEY property */
-	public static final boolean DUALIZE_DEFAULT = false;
+	public static final boolean DUALIZE_DEFAULT = true;
 	
 	/**
 	 * Key for double property. The IPM will consider the problem primal, dual, or
