@@ -21,13 +21,13 @@
 	<groupId>edu.umd.cs</groupId>
 	<artifactId>psl-addon-mosek</artifactId>
 	<name>psl-addon-mosek</name>
-	<version>1.0</version>
+	<version>1.1-SNAPSHOT</version>
 	<packaging>jar</packaging>
 	<description>A wrapper to use the MOSEK numeric optimization software with the PSL software from the University of Maryland.</description>
 	<parent>
 		<groupId>edu.umd.cs</groupId>
 		<artifactId>psl-addon</artifactId>
-		<version>1.0</version>
+		<version>1.1-SNAPSHOT</version>
 	</parent>
 	<dependencies>
 		<dependency>
