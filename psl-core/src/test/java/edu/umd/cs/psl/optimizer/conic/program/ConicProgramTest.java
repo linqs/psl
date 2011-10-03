@@ -14,33 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.optimizer.conic.ipm;
+package edu.umd.cs.psl.optimizer.conic.program;
 
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Before;
 import org.junit.Test;
 
-import edu.umd.cs.psl.config.EmptyBundle;
-import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
-import edu.umd.cs.psl.optimizer.conic.program.LinearConstraint;
-import edu.umd.cs.psl.optimizer.conic.program.SecondOrderCone;
-import edu.umd.cs.psl.optimizer.conic.program.Variable;
+import cern.colt.matrix.tdouble.DoubleMatrix1D;
 
-public class HomogeneousIPMTest {
+/**
+ * Tests {@link ConicProgram}. 
+ */
+public class ConicProgramTest {
 	
-	private static final double SOLUTION_TOLERANCE = 0.01;
+	private ConicProgram program;
+	private Variable x1, x2;
 	
-	ConicProgram program;
-	HomogeneousIPM ipm;
-	
-	Variable x1, x2;
-
 	@Before
-	public void setUp() throws Exception {
+	public final void setUp() throws Exception {
 		program = new ConicProgram();
-		ipm = new HomogeneousIPM(new EmptyBundle());
-		
+	}
+	
+	private void defineSOCP() {
 		LinearConstraint phi1 = (LinearConstraint) program.createConstraint();
 		LinearConstraint phi2 = (LinearConstraint) program.createConstraint();
 		LinearConstraint phi3 = (LinearConstraint) program.createConstraint();
@@ -186,11 +182,123 @@ public class HomogeneousIPMTest {
 		x7Sq.setObjectiveCoefficient(3.0);
 	}
 
+	/** Tests the creation of a second-order cone program. */
 	@Test
-	public void testSolve() {
-		ipm.solve(program);
-		assertTrue(Math.abs(x1.getValue() - 0.427) < SOLUTION_TOLERANCE);
-		assertTrue(Math.abs(x2.getValue() - 0.2909) < SOLUTION_TOLERANCE);
+	public void testCreateSOCP() {
+		defineSOCP();
+
+		assertTrue(program.numNNOC() == 13);
+		assertTrue(program.numSOC() == 3);
+		assertTrue(program.numRSOC() == 0);
+		
+		assertTrue(program.getNonNegativeOrthantCones().size() == 13);
+		assertTrue(program.getSecondOrderCones().size() == 3);
+		assertTrue(program.getCones().size() == 16);
+
+		assertTrue(program.getConstraints().size() == 14);
 	}
 
+	/** Tests checking out matrices for a second-order cone program. */
+	@Test
+	public void testCheckOutSOCP() {
+		defineSOCP();
+		
+		program.checkOutMatrices();
+		
+		assertTrue(program.getA().rows() == 14);
+		assertTrue(program.getA().columns() == 22);
+		assertTrue(program.getX().size() == 22);
+		assertTrue(program.getB().size() == 14);
+		assertTrue(program.getW().size() == 14);
+		assertTrue(program.getS().size() == 22);
+		assertTrue(program.getC().size() == 22);
+		
+		assertTrue(program.getC().cardinality() == 3);
+	}
+	
+	/** Tests checking in matrices for a second-order cone program. */
+	@Test
+	public void testCheckInSOCP() {
+		defineSOCP();
+		
+		double newPrimalValue1 = x1.getValue() + 1.0;
+		double newPrimalValue2 = x2.getValue() + 2.0;
+		double newDualValue1 = x1.getDualValue() + 1.0;
+		double newDualValue2 = x2.getDualValue() + 2.0;
+		
+		program.checkOutMatrices();
+		int index1 = program.index(x1);
+		int index2 = program.index(x2);
+		DoubleMatrix1D x = program.getX();
+		x.set(index1, newPrimalValue1);
+		x.set(index2, newPrimalValue2);
+		DoubleMatrix1D s = program.getS();
+		s.set(index1, newDualValue1);
+		s.set(index2, newDualValue2);
+		program.checkInMatrices();
+		
+		assertTrue(x1.getValue() == newPrimalValue1);
+		assertTrue(x2.getValue() == newPrimalValue2);
+		assertTrue(x1.getDualValue() == newDualValue1);
+		assertTrue(x2.getDualValue() == newDualValue2);
+	}
+	
+	/** Tests deleting the components of a second-order cone program. */
+	@Test
+	public void testDeleteSOCP() {
+		defineSOCP();
+		
+		for (Cone cone : program.getCones())
+			cone.delete();
+				
+		for (LinearConstraint lc : program.getConstraints())
+			lc.delete();
+				
+		assertTrue(program.numNNOC() == 0);
+		assertTrue(program.numSOC() == 0);
+		assertTrue(program.numRSOC() == 0);
+		
+		assertTrue(program.getNonNegativeOrthantCones().size() == 0);
+		assertTrue(program.getSecondOrderCones().size() == 0);
+		assertTrue(program.getCones().size() == 0);
+
+		assertTrue(program.getConstraints().size() == 0);
+	}
+	
+	/** Tests recreating a second-order cone program. */
+	@Test
+	public void testRecreateSOCP() {
+		defineSOCP();
+		
+		for (Cone cone : program.getCones())
+			cone.delete();
+				
+		for (LinearConstraint lc : program.getConstraints())
+			lc.delete();
+				
+		defineSOCP();
+				
+		assertTrue(program.numNNOC() == 13);
+		assertTrue(program.numSOC() == 3);
+		assertTrue(program.numRSOC() == 0);
+		
+		assertTrue(program.getNonNegativeOrthantCones().size() == 13);
+		assertTrue(program.getSecondOrderCones().size() == 3);
+		assertTrue(program.getCones().size() == 16);
+
+		assertTrue(program.getConstraints().size() == 14);
+		
+		program.checkOutMatrices();
+		
+		assertTrue(program.getA().rows() == 14);
+		assertTrue(program.getA().columns() == 22);
+		assertTrue(program.getX().size() == 22);
+		assertTrue(program.getB().size() == 14);
+		assertTrue(program.getW().size() == 14);
+		assertTrue(program.getS().size() == 22);
+		assertTrue(program.getC().size() == 22);
+		
+		assertTrue(program.getC().cardinality() == 3);
+	}
 }
+
