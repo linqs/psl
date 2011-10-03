@@ -23,8 +23,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 /**
- * Contract tests for classes that implement
- * {@link edu.umd.cs.psl.optimizer.conic.program.graph Graph}.
+ * Contract tests for classes that implement {@link Graph}.
  */
 abstract public class GraphContractTest {
 	
@@ -157,6 +156,31 @@ abstract public class GraphContractTest {
 		assertFalse(node.getProperties(P2).iterator().hasNext());
 	}
 	
+	/** Tests deleting a property while leaving another untouched. */
+	@Test
+	public void testDeletePropertySelectively() {
+		Node node;
+		node = graph.createNode();
+		String p = "test property value";
+		
+		createPropertyTypes();
+		node.createProperty(P1, p);
+		node.createProperty(P1, p).delete();
+		
+		assertTrue(node.getNoEdges() == 1);
+		assertTrue(node.getNoProperties() == 1);
+		assertTrue(node.getNoRelationships() == 0);
+		
+		assertTrue(node.getPropertyIterator().next().getAttribute().equals(p));
+		assertTrue(node.getProperties().iterator().next().getAttribute().equals(p));
+		assertTrue(node.getPropertyIterator(P1).next().getAttribute().equals(p));
+		assertTrue(node.getProperties(P1).iterator().next().getAttribute().equals(p));
+		
+		/* Tests that no property is return for type P2 */
+		assertFalse(node.getPropertyIterator(P2).hasNext());
+		assertFalse(node.getProperties(P2).iterator().hasNext());
+	}
+	
 	/** Tests that a boolean property is indexed correctly after creation. */
 	@Test
 	public void testCreateBooleanProperty() {
@@ -183,6 +207,39 @@ abstract public class GraphContractTest {
 		
 		assertTrue(graph.getNodesByAttribute(P2, true).size() == 0);
 		assertTrue(graph.getNodesByAttribute(P2, false).size() == 0);
+	}
+	
+	/**
+	 * Tests that boolean properties are indexed correctly after deleting
+	 * one and leaving others untouched.
+	 */
+	@Test
+	public void testDeleteBooleanPropertySelectively() {
+		Node node = graph.createNode();
+		
+		createPropertyTypes();
+		node.createProperty(P2, true);
+		node.createProperty(P2, true).delete();
+		node.createProperty(P2, false).delete();
+		
+		assertTrue(graph.getNodesByAttribute(P2, true).size() == 1);
+		assertTrue(graph.getNodesByAttribute(P2, false).size() == 0);
+	}
+	
+	/**
+	 * Tests getting an attribute from a node with multiple properties of the same type.
+	 * 
+	 * {@link Node#getAttribute(String)} should throw {@link IllegalArgumentException}.  
+	 */
+	@Test(expected=IllegalArgumentException.class)
+	public void testGetAttribute() {
+		Node node = graph.createNode();
+		
+		createPropertyTypes();
+		node.createProperty(P2, true);
+		node.createProperty(P2, true);
+		
+		node.getAttribute(P2);
 	}
 	
 	/** Tests that an enum property is indexed correctly after creation. */

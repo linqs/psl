@@ -82,7 +82,7 @@ public class SoftRuleKernel implements Kernel {
 	}
 	
 	private void groundFormula(ResultList res, ModelApplication app, VariableAssignment var) {
-		log.trace("Grounding {} rules",res.size());
+		log.trace("Grounding {} instances of rule {}", res.size(), rule.getFormula());
 		FormulaGrounder grounder = new FormulaGrounder(app.getAtomManager(),res, var);
 		while (grounder.hasNext()) {
 			GroundSoftRule groundRule = new GroundSoftRule(this,grounder.ground(rule.getFormula()));
@@ -101,7 +101,6 @@ public class SoftRuleKernel implements Kernel {
 	public void groundAll(ModelApplication app) {
 		for (Formula query : rule.getQueryFormulas()) {
 			ResultList res = app.getDatabase().query(query);
-			log.debug("Grounding {} instances of rule {}", res.size(), rule.getFormula());
 			groundFormula(res,app,null);
 		}
 	}

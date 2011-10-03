@@ -16,6 +16,7 @@
  */
 package edu.umd.cs.psl.optimizer.conic.program.graph.memory;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -154,13 +155,21 @@ public class MemoryGraph implements Graph {
 	}
 	
 	void notifyPropertyDeleted(MemoryNode n, MemoryProperty p) {
-		Map<Object, Set<Node>> propertyIndex = index.get(p.getPropertyType());
-		Set<Node> nodes;
+		Collection<MemoryProperty> properties = n.getProperties(p.getPropertyType());
+		int count = 0;
+		for (MemoryProperty prop : properties)
+			if (prop.getAttribute().equals(p.getAttribute()))
+				count++;
 		
-		if (propertyIndex != null) {
-			nodes = propertyIndex.get(p.getAttribute());
-			if (nodes != null) {
-				nodes.remove(n);
+		if (count == 1) {
+			Map<Object, Set<Node>> propertyIndex = index.get(p.getPropertyType());
+			Set<Node> nodes;
+			
+			if (propertyIndex != null) {
+				nodes = propertyIndex.get(p.getAttribute());
+				if (nodes != null) {
+					nodes.remove(n);
+				}
 			}
 		}
 	}

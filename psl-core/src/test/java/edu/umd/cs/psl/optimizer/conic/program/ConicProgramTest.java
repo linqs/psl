@@ -265,7 +265,7 @@ public class ConicProgramTest {
 		assertTrue(program.getConstraints().size() == 0);
 	}
 	
-	/** Tests recreating a second-order cone program. */
+	/** Tests creating, deleting, and then recreating a second-order cone program. */
 	@Test
 	public void testRecreateSOCP() {
 		defineSOCP();
