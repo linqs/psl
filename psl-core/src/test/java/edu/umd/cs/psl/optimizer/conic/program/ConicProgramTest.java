@@ -241,6 +241,24 @@ public class ConicProgramTest {
 		assertTrue(x2.getValue() == newPrimalValue2);
 		assertTrue(x1.getDualValue() == newDualValue1);
 		assertTrue(x2.getDualValue() == newDualValue2);
+		
+		newPrimalValue1 = x1.getValue() + 1.0;
+		newPrimalValue2 = x2.getValue() + 2.0;
+		newDualValue1 = x1.getDualValue() + 1.0;
+		newDualValue2 = x2.getDualValue() + 2.0;
+		
+		x1.setValue(newPrimalValue1);
+		x2.setValue(newPrimalValue2);
+		x1.setDualValue(newDualValue1);
+		x2.setDualValue(newDualValue2);
+		
+		program.checkOutMatrices();
+		program.checkInMatrices();
+		
+		assertTrue(x1.getValue() == newPrimalValue1);
+		assertTrue(x2.getValue() == newPrimalValue2);
+		assertTrue(x1.getDualValue() == newDualValue1);
+		assertTrue(x2.getDualValue() == newDualValue2);
 	}
 	
 	/** Tests deleting the components of a second-order cone program. */
@@ -297,6 +315,77 @@ public class ConicProgramTest {
 		assertTrue(program.getW().size() == 14);
 		assertTrue(program.getS().size() == 22);
 		assertTrue(program.getC().size() == 22);
+		
+		assertTrue(program.getC().cardinality() == 3);
+	}
+	
+	/** Tests creating more non-negative orthant cones after checking matrices in. */
+	@Test
+	public void testCreateNNOCAfterCheckIn() {
+		defineSOCP();
+		
+		program.checkOutMatrices();
+		program.checkInMatrices();
+		
+		assertTrue(program.numNNOC() == 13);
+		assertTrue(program.numSOC() == 3);
+		assertTrue(program.numRSOC() == 0);
+		
+		program.createNonNegativeOrthantCone();
+		program.createNonNegativeOrthantCone();
+		
+		assertTrue(program.getNonNegativeOrthantCones().size() == 15);
+		assertTrue(program.getSecondOrderCones().size() == 3);
+		assertTrue(program.getCones().size() == 18);
+
+		assertTrue(program.getConstraints().size() == 14);
+	}
+	
+	/** Tests creating more constraints after checking matrices in. */
+	@Test
+	public void testCreateConstraintAfterCheckIn() {
+		defineSOCP();
+		
+		program.checkOutMatrices();
+		program.checkInMatrices();
+		
+		assertTrue(program.numNNOC() == 13);
+		assertTrue(program.numSOC() == 3);
+		assertTrue(program.numRSOC() == 0);
+		
+		program.createConstraint().addVariable(x1, 1.0);
+		program.createConstraint();
+		
+		assertTrue(program.getNonNegativeOrthantCones().size() == 13);
+		assertTrue(program.getSecondOrderCones().size() == 3);
+		assertTrue(program.getCones().size() == 16);
+
+		assertTrue(program.getConstraints().size() == 16);
+	}
+	
+	/** Tests checking out matrices after checking them in and modifying the program. */
+	@Test
+	public void testCheckOutModifiedSOCP() {
+		defineSOCP();
+		
+		program.checkOutMatrices();
+		program.checkInMatrices();
+		
+		program.createNonNegativeOrthantCone();
+		program.createNonNegativeOrthantCone();
+		
+		program.createConstraint().addVariable(x1, 1.0);
+		program.createConstraint().addVariable(x2, 1.0);
+		
+		program.checkOutMatrices();
+		
+		assertTrue(program.getA().rows() == 16);
+		assertTrue(program.getA().columns() == 24);
+		assertTrue(program.getX().size() == 24);
+		assertTrue(program.getB().size() == 16);
+		assertTrue(program.getW().size() == 16);
+		assertTrue(program.getS().size() == 24);
+		assertTrue(program.getC().size() == 24);
 		
 		assertTrue(program.getC().cardinality() == 3);
 	}
