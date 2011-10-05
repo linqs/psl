@@ -305,6 +305,26 @@ abstract public class GraphContractTest {
 		assertTrue(node2.getRelationships().iterator().next().getEnd().equals(node2));
 	}
 	
+	/** Tests creating a duplicate relationship. */
+	@Test
+	public void testCreateDuplicateRelationship() {
+		Node node1, node2;
+		node1 = graph.createNode();
+		node2 = graph.createNode();
+		
+		createRelationshipTypes();
+		node1.createRelationship(R1, node2);
+		node1.createRelationship(R1, node2);
+		
+		assertTrue(node1.getNoEdges() == 2);
+		assertTrue(node1.getNoProperties() == 0);
+		assertTrue(node1.getNoRelationships() == 2);
+		
+		assertTrue(node2.getNoEdges() == 2);
+		assertTrue(node2.getNoProperties() == 0);
+		assertTrue(node2.getNoRelationships() == 2);
+	}
+	
 	/** Tests deleting a relationship. */
 	@Test
 	public void testDeleteRelationship() {
@@ -338,5 +358,25 @@ abstract public class GraphContractTest {
 		assertFalse(node2.getEdges().iterator().hasNext());
 		assertFalse(node2.getProperties().iterator().hasNext());
 		assertFalse(node2.getRelationships().iterator().hasNext());
+	}
+	
+	/** Tests deleting a duplicate relationship. */
+	@Test
+	public void testDeleteDuplicateRelationship() {
+		Node node1, node2;
+		node1 = graph.createNode();
+		node2 = graph.createNode();
+		
+		createRelationshipTypes();
+		node1.createRelationship(R1, node2);
+		node1.createRelationship(R1, node2).delete();
+		
+		assertTrue(node1.getNoEdges() == 1);
+		assertTrue(node1.getNoProperties() == 0);
+		assertTrue(node1.getNoRelationships() == 1);
+		
+		assertTrue(node2.getNoEdges() == 1);
+		assertTrue(node2.getNoProperties() == 0);
+		assertTrue(node2.getNoRelationships() == 1);
 	}
 }

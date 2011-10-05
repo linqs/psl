@@ -389,5 +389,18 @@ public class ConicProgramTest {
 		
 		assertTrue(program.getC().cardinality() == 3);
 	}
+	
+	/** Tests adding the same variable twice to a linear constraint. */
+	@Test
+	public void testAddDuplicateVariableToConstraint() {
+		Variable x = program.createNonNegativeOrthantCone().getVariable();
+		LinearConstraint lc = program.createConstraint();
+		
+		lc.addVariable(x, 1.0);
+		lc.addVariable(x, -1.0);
+		
+		assertTrue(lc.getVariables().size() == 1);
+		assertTrue(lc.getVariables().get(x) == 0.0);
+	}
 }
 
