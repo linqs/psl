@@ -19,14 +19,14 @@
  */
 package ${package};
 
-import ${groupId}.psl.groovy.*;
-import ${groupId}.psl.database.RDBMS.DatabaseDriver;
-import ${groupId}.psl.ui.functions.textsimilarity.*;
-import ${groupId}.psl.model.function.AttributeSimilarityFunction;
-import ${groupId}.psl.model.predicate.Predicate;
-import ${groupId}.psl.model.argument.type.*;
-import ${groupId}.psl.model.predicate.type.*;
-import ${groupId}.psl.config.*;
+import edu.umd.cs.psl.groovy.*;
+import edu.umd.cs.psl.database.RDBMS.DatabaseDriver;
+import edu.umd.cs.psl.ui.functions.textsimilarity.*;
+import edu.umd.cs.psl.model.function.AttributeSimilarityFunction;
+import edu.umd.cs.psl.model.predicate.Predicate;
+import edu.umd.cs.psl.model.argument.type.*;
+import edu.umd.cs.psl.model.predicate.type.*;
+import edu.umd.cs.psl.config.*;
 
 PSLModel m = new PSLModel(this);
 

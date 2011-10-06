@@ -20,13 +20,13 @@
 package ${package};
 
 //Imports the standard groovy interface to PSL, the attribute similarity function interface and the database drivers
-import ${groupId}.psl.groovy.*;
-import ${groupId}.psl.database.RDBMS.DatabaseDriver;
-import ${groupId}.psl.model.function.AttributeSimilarityFunction;
-import ${groupId}.psl.config.*;
+import edu.umd.cs.psl.groovy.*;
+import edu.umd.cs.psl.database.RDBMS.DatabaseDriver;
+import edu.umd.cs.psl.model.function.AttributeSimilarityFunction;
+import edu.umd.cs.psl.config.*;
 
 //Import this package if you want to use attribute similarity functions that come with PSL
-import ${groupId}.psl.ui.functions.textsimilarity.*;
+import edu.umd.cs.psl.ui.functions.textsimilarity.*;
 
 /* The first thing we need to do, is initialize a PSLModel which is the core component of PSL.
  * The constructor argument is the context in which the PSLModel is defined. Predicates defined
@@ -185,7 +185,7 @@ result.printAtoms(samePerson,true);
  * This simple implementation checks whether two strings are identical, in which case it returns 1.0
  * or different (returning 0.0).
  *
- * The package ${groupId}.psl.model.similarityfunction.attribute contains additional and more sophisticated
+ * The package edu.umd.cs.psl.model.similarityfunction.attribute contains additional and more sophisticated
  * string similarity functions of which BasicStringSimilarity is probably the most general.
  */
 class MyStringSimilarity implements AttributeSimilarityFunction {
