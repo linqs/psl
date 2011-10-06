@@ -29,7 +29,7 @@
 			<name>Apache 2</name>
 			<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
 			<distribution>repo</distribution>
-			<comments>A business-friendly OSS license</comments>
+			<comments>A business-friendly OSS license.</comments>
 		</license>
 	</licenses>
 	<organization>
@@ -188,6 +188,9 @@
 								<goals>
 									<goal>jar</goal>
 								</goals>
+								<configuration>
+									<bottom>Copyright &#169; {inceptionYear}-{currentYear} {organizationName}.</bottom>
+								</configuration>
 							</execution>
 						</executions>
 					</plugin>
