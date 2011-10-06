@@ -20,13 +20,13 @@
 	<groupId>edu.umd.cs</groupId>
 	<artifactId>psl-addon</artifactId>
 	<name>psl-addon</name>
-	<version>1.0.1-SNAPSHOT</version>
+	<version>1.0.1</version>
 	<packaging>pom</packaging>
 	<description>Collection of add-on packages for the PSL software from the University of Maryland.</description>
 	<parent>
 		<groupId>edu.umd.cs</groupId>
 		<artifactId>psl</artifactId>
-		<version>1.0.1-SNAPSHOT</version>
+		<version>1.0.1</version>
 	</parent>
 	<modules>
 		<module>psl-addon-mosek</module>
