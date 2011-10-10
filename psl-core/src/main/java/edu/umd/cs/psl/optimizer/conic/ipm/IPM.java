@@ -38,7 +38,7 @@ import edu.umd.cs.psl.optimizer.conic.ConicProgramSolver;
 import edu.umd.cs.psl.optimizer.conic.program.Cone;
 import edu.umd.cs.psl.optimizer.conic.program.ConeType;
 import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
-import edu.umd.cs.psl.optimizer.conic.program.Dualizer;
+import edu.umd.cs.psl.optimizer.conic.util.Dualizer;
 
 /**
  * Primal-dual short-step interior point method.

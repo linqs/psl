@@ -69,6 +69,8 @@ public class ConicProgram {
 	
 	private boolean checkedOut;
 	
+	private Set<ConicProgramListener> listeners;
+	
 	private SparseDoubleMatrix2D A;
 	private DenseDoubleMatrix1D x;
 	private DenseDoubleMatrix1D b;
@@ -104,6 +106,8 @@ public class ConicProgram {
 		numRSOC = 0;
 		
 		checkedOut = false;
+		
+		listeners = new HashSet<ConicProgramListener>();
 	}
 	
 	Graph getGraph() {
@@ -385,6 +389,14 @@ public class ConicProgram {
 		return inf;
 	}
 	
+	public void registerForConicProgramEvents(ConicProgramListener l) {
+		listeners.add(l);
+	}
+	
+	public void unregisterForConicProgramEvents(ConicProgramListener l) {
+		listeners.remove(l);
+	}
+	
 	void notify(ConicProgramEvent e, Entity sender, Object... data) {
 		switch (e) {
 		case NNOCCreated:
@@ -451,5 +463,8 @@ public class ConicProgram {
 				throw new IllegalArgumentException(UNEXPECTED_SENDER);
 			break;
 		}
+		
+		for (ConicProgramListener l : listeners)
+			l.notify(e, sender, data);
 	}
 }

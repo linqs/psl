@@ -16,9 +16,6 @@
  */
 package edu.umd.cs.psl.optimizer.conic.program;
 
-public enum ConicProgramEvent {
-	NNOCCreated, NNOCDeleted,
-	SOCCreated, SOCDeleted,
-	ObjCoeffChanged,
-	ConCreated, VarAddedToCon, VarRemovedFromCon, ConValueChanged, ConDeleted 
+public interface ConicProgramListener {
+	public void notify(ConicProgramEvent e, Entity sender, Object... data);
 }
