@@ -14,14 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.optimizer.conic.program.graph;
+package edu.umd.cs.psl.util.graph.memory;
 
-public interface Relationship extends Edge {
-	 public Node getEnd();
+import edu.umd.cs.psl.util.graph.Edge;
+import edu.umd.cs.psl.util.graph.Node;
 
-	 public Node getOtherNode(Node n);
+abstract public class MemoryEdge extends MemoryNode implements Edge {
 
-	 public boolean isSelfLoop(Node node);
-	 
-	 public String getRelationshipType();
+	final MemoryNode startNode;
+	
+	MemoryEdge(MemoryGraph g, MemoryNode start) {
+		super(g);
+		startNode = start;
+	}
+
+	@Override
+	public Node getStart() {
+		if (startNode == null)
+			throw new IllegalStateException();
+		return startNode;
+	}
 }

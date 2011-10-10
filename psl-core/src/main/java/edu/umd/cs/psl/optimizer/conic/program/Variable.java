@@ -19,8 +19,8 @@ package edu.umd.cs.psl.optimizer.conic.program;
 import java.util.HashSet;
 import java.util.Set;
 
-import edu.umd.cs.psl.optimizer.conic.program.graph.Node;
-import edu.umd.cs.psl.optimizer.conic.program.graph.Relationship;
+import edu.umd.cs.psl.util.graph.Node;
+import edu.umd.cs.psl.util.graph.Relationship;
 
 public class Variable extends Entity {
 	Variable(ConicProgram p) {

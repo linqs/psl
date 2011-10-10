@@ -14,24 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.optimizer.conic.program.graph.memory;
+package edu.umd.cs.psl.util.graph;
 
-import edu.umd.cs.psl.optimizer.conic.program.graph.Edge;
-import edu.umd.cs.psl.optimizer.conic.program.graph.Node;
+import java.util.Collection;
 
-abstract public class MemoryEdge extends MemoryNode implements Edge {
+public interface Edge extends Node {
+	public Collection<? extends Node> getNodes();
 
-	final MemoryNode startNode;
-	
-	MemoryEdge(MemoryGraph g, MemoryNode start) {
-		super(g);
-		startNode = start;
-	}
+	public Node getStart();
 
-	@Override
-	public Node getStart() {
-		if (startNode == null)
-			throw new IllegalStateException();
-		return startNode;
-	}
+	public boolean isIncidentOn(Node n);
+
+	public boolean isProperty();
+
+	public boolean isRelationship();
+
 }

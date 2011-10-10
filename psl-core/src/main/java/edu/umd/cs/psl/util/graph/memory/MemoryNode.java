@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.optimizer.conic.program.graph.memory;
+package edu.umd.cs.psl.util.graph.memory;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -23,10 +23,10 @@ import java.util.Iterator;
 
 import org.apache.commons.collections15.multimap.MultiHashMap;
 
-import edu.umd.cs.psl.optimizer.conic.program.graph.Edge;
-import edu.umd.cs.psl.optimizer.conic.program.graph.Node;
-import edu.umd.cs.psl.optimizer.conic.program.graph.Property;
-import edu.umd.cs.psl.optimizer.conic.program.graph.Relationship;
+import edu.umd.cs.psl.util.graph.Edge;
+import edu.umd.cs.psl.util.graph.Node;
+import edu.umd.cs.psl.util.graph.Property;
+import edu.umd.cs.psl.util.graph.Relationship;
 
 public class MemoryNode implements Node {
 	

@@ -30,9 +30,9 @@ import cern.colt.matrix.tdouble.algo.DenseDoubleAlgebra;
 import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix1D;
 import cern.colt.matrix.tdouble.impl.SparseDoubleMatrix2D;
 import cern.jet.math.tdouble.DoubleFunctions;
-import edu.umd.cs.psl.optimizer.conic.program.graph.Graph;
-import edu.umd.cs.psl.optimizer.conic.program.graph.Node;
-import edu.umd.cs.psl.optimizer.conic.program.graph.memory.MemoryGraph;
+import edu.umd.cs.psl.util.graph.Graph;
+import edu.umd.cs.psl.util.graph.Node;
+import edu.umd.cs.psl.util.graph.memory.MemoryGraph;
 
 /**
  * Stores information about the primal and dual forms of a conic program.

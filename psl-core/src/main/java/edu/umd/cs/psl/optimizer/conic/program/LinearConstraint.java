@@ -19,8 +19,8 @@ package edu.umd.cs.psl.optimizer.conic.program;
 import java.util.HashMap;
 import java.util.Map;
 
-import edu.umd.cs.psl.optimizer.conic.program.graph.Node;
-import edu.umd.cs.psl.optimizer.conic.program.graph.Relationship;
+import edu.umd.cs.psl.util.graph.Node;
+import edu.umd.cs.psl.util.graph.Relationship;
 
 public class LinearConstraint extends Entity {
 	protected static final String UNOWNED_VAR = "Variable does not belong to this conic program.";

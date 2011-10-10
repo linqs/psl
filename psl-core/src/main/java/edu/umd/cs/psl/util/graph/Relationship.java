@@ -14,16 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.optimizer.conic.program.graph.memory;
+package edu.umd.cs.psl.util.graph;
 
-import edu.umd.cs.psl.optimizer.conic.program.graph.Graph;
-import edu.umd.cs.psl.optimizer.conic.program.graph.GraphContractTest;
+public interface Relationship extends Edge {
+	 public Node getEnd();
 
-public class MemoryGraphTest extends GraphContractTest {
+	 public Node getOtherNode(Node n);
 
-	@Override
-	protected Graph getGraphImplementation() {
-		return new MemoryGraph();
-	}
-
+	 public boolean isSelfLoop(Node node);
+	 
+	 public String getRelationshipType();
 }

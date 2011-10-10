@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.optimizer.conic.program.graph;
+package edu.umd.cs.psl.util.graph;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;

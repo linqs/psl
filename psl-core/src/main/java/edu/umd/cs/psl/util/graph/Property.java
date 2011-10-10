@@ -14,19 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.optimizer.conic.program.graph;
+package edu.umd.cs.psl.util.graph;
 
-import java.util.Collection;
+public interface Property extends Edge {
+	 public Object getAttribute();
 
-public interface Edge extends Node {
-	public Collection<? extends Node> getNodes();
+	 public <O> O getAttribute(Class<O> clazz);
 
-	public Node getStart();
-
-	public boolean isIncidentOn(Node n);
-
-	public boolean isProperty();
-
-	public boolean isRelationship();
-
+	 public String getPropertyType();
 }

@@ -20,7 +20,7 @@ import java.util.Map;
 
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
-import edu.umd.cs.psl.optimizer.conic.program.graph.Node;
+import edu.umd.cs.psl.util.graph.Node;
 
 abstract public class Cone extends Entity {
 	Cone(ConicProgram p) {

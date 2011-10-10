@@ -25,8 +25,8 @@ import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.algo.DenseDoubleAlgebra;
 import cern.jet.math.tdouble.DoubleFunctions;
-import edu.umd.cs.psl.optimizer.conic.program.graph.Node;
-import edu.umd.cs.psl.optimizer.conic.program.graph.Relationship;
+import edu.umd.cs.psl.util.graph.Node;
+import edu.umd.cs.psl.util.graph.Relationship;
 
 public class SecondOrderCone extends Cone {
 	SecondOrderCone(ConicProgram p, int n) {
