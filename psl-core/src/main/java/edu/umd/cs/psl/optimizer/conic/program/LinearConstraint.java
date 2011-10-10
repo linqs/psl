@@ -43,6 +43,11 @@ public class LinearConstraint extends Entity {
 	
 	public void addVariable(Variable v, Double coefficient) {
 		program.verifyCheckedIn();
+		Double currentCoefficient = getVariables().get(v);
+		if (currentCoefficient != null) {
+			removeVariable(v);
+			coefficient += currentCoefficient;
+		}
 		Node vNode = v.getNode();
 		Relationship rel = node.createRelationship(ConicProgram.LC_REL, vNode);
 		rel.createProperty(ConicProgram.LC_REL_COEFF, coefficient);

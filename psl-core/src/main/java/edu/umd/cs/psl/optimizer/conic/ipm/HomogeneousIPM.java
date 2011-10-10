@@ -196,7 +196,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		program.checkOutMatrices();
 		DoubleMatrix2D A = program.getA();
 		
-		log.debug("Starting optimzation with {} variables and {} constraints.", A.columns(), A.rows());
+		log.debug("Starting optimization with {} variables and {} constraints.", A.columns(), A.rows());
 		
 		mu = doSolve(program);
 		

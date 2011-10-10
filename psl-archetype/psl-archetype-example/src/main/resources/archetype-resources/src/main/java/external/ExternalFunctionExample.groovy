@@ -20,10 +20,10 @@
 package ${package}.external;
 
 //Imports the standard groovy interface to PSL, the attribute similarity function interface and the database drivers
-import ${groupId}.psl.config.*
-import ${groupId}.psl.database.RDBMS.DatabaseDriver
-import ${groupId}.psl.groovy.*
-import ${groupId}.psl.ui.functions.textsimilarity.*
+import edu.umd.cs.psl.config.*
+import edu.umd.cs.psl.database.RDBMS.DatabaseDriver
+import edu.umd.cs.psl.groovy.*
+import edu.umd.cs.psl.ui.functions.textsimilarity.*
 
 /* The first thing we need to do, is initialize a PSLModel which is the core component of PSL.
  * The constructor argument is the context in which the PSLModel is defined. Predicates defined

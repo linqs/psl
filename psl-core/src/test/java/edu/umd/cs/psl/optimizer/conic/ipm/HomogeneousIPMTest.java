@@ -83,7 +83,7 @@ public class HomogeneousIPMTest {
 		c1.setConstrainedValue(1.0);
 		c2.setConstrainedValue(1.0);
 		
-		/* Squares the variable x3 in the phi1 contstraint */
+		/* Squares the variable x3 in the phi1 constraint */
 		
 		Variable x3Sq = program.createNonNegativeOrthantCone().getVariable();
 		SecondOrderCone soc = program.createSecondOrderCone(3);
@@ -112,7 +112,7 @@ public class HomogeneousIPMTest {
 		phi1OuterSquaredCon.addVariable(x3Sq, -0.5);
 		phi1OuterSquaredCon.setConstrainedValue(0.5);
 		
-		/* Squares the variable x5 in the phi2 contstraint */
+		/* Squares the variable x5 in the phi2 constraint */
 		
 		Variable x5Sq = program.createNonNegativeOrthantCone().getVariable();
 		soc = program.createSecondOrderCone(3);
@@ -141,7 +141,7 @@ public class HomogeneousIPMTest {
 		phi2OuterSquaredCon.addVariable(x5Sq, -0.5);
 		phi2OuterSquaredCon.setConstrainedValue(0.5);
 		
-		/* Squares the variable x7 in the phi3 contstraint */
+		/* Squares the variable x7 in the phi3 constraint */
 		
 		Variable x7Sq = program.createNonNegativeOrthantCone().getVariable();
 		soc = program.createSecondOrderCone(3);

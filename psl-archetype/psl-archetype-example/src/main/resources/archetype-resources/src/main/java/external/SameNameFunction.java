@@ -19,13 +19,13 @@
  */
 package ${package}.external;
 
-import ${groupId}.psl.model.argument.Attribute;
-import ${groupId}.psl.model.argument.GroundTerm;
-import ${groupId}.psl.model.argument.type.ArgumentType;
-import ${groupId}.psl.model.argument.type.ArgumentTypes;
-import ${groupId}.psl.model.function.ExternalFunction;
-import ${groupId}.psl.model.predicate.type.PredicateType;
-import ${groupId}.psl.model.predicate.type.PredicateTypes;
+import edu.umd.cs.psl.model.argument.Attribute;
+import edu.umd.cs.psl.model.argument.GroundTerm;
+import edu.umd.cs.psl.model.argument.type.ArgumentType;
+import edu.umd.cs.psl.model.argument.type.ArgumentTypes;
+import edu.umd.cs.psl.model.function.ExternalFunction;
+import edu.umd.cs.psl.model.predicate.type.PredicateType;
+import edu.umd.cs.psl.model.predicate.type.PredicateTypes;
 
 /**
  * This is an example external function.
