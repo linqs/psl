@@ -19,63 +19,48 @@ package edu.umd.cs.psl.optimizer.conic.program;
 import java.util.HashMap;
 import java.util.Map;
 
-import edu.umd.cs.psl.util.graph.Node;
-import edu.umd.cs.psl.util.graph.Relationship;
-
 public class LinearConstraint extends Entity {
+	
+	private Map<Variable, Double> vars;
+	
+	private double constrainedValue;
+	private double lagrange;
+	
 	protected static final String UNOWNED_VAR = "Variable does not belong to this conic program.";
 	
 	LinearConstraint(ConicProgram p) {
 		super(p);
+		vars = new HashMap<Variable, Double>();
 		doSetConstrainedValue(0.0);
 		setLagrange(0.0);
 		program.notify(ConicProgramEvent.ConCreated, this);
 	}
 	
-	LinearConstraint(ConicProgram p, Node n) {
-		super(p, n);
-	}
-
-	@Override
-	NodeType getType() {
-		return NodeType.lc;
-	}
-	
 	public void addVariable(Variable v, Double coefficient) {
 		program.verifyCheckedIn();
-		Double currentCoefficient = getVariables().get(v);
+		Double currentCoefficient = vars.get(v);
 		if (currentCoefficient != null) {
 			removeVariable(v);
 			coefficient += currentCoefficient;
 		}
-		Node vNode = v.getNode();
-		Relationship rel = node.createRelationship(ConicProgram.LC_REL, vNode);
-		rel.createProperty(ConicProgram.LC_REL_COEFF, coefficient);
+		vars.put(v, coefficient);
+		v.notifyAddedToLinearConstraint(this);
 		program.notify(ConicProgramEvent.VarAddedToCon, this, v);
 	}
 
 	public void removeVariable(Variable v) {
 		program.verifyCheckedIn();
-		Node vNode = ((Variable) v).getNode();
-		for (Relationship rel : node.getRelationships(ConicProgram.LC_REL)) {
-			if (rel.getEnd().equals(vNode)) {
-				rel.delete();
-			}
-		}
+		vars.remove(v);
+		v.notifyRemovedFromLinearConstraint(this);
 		program.notify(ConicProgramEvent.VarRemovedFromCon, this, v);
 	}
 
 	public Map<Variable, Double> getVariables() {
-		Map<Variable, Double> vars = new HashMap<Variable, Double>();
-		Iterable<? extends Relationship> rels = node.getRelationships(ConicProgram.LC_REL);
-		for (Relationship rel : rels) {
-			vars.put((Variable) Entity.createEntity(program, rel.getEnd()), (Double) rel.getAttribute(ConicProgram.LC_REL_COEFF));
-		}
-		return vars;
+		return new HashMap<Variable, Double>(vars);
 	}
 
 	public Double getConstrainedValue() {
-		return (Double) node.getAttribute(ConicProgram.LC_VALUE);
+		return constrainedValue;
 	}
 
 	public void setConstrainedValue(Double v) {
@@ -85,19 +70,15 @@ public class LinearConstraint extends Entity {
 	}
 	
 	private void doSetConstrainedValue(Double v) {
-		for (Node n : node.getProperties(ConicProgram.LC_VALUE))
-			n.delete();
-		node.createProperty(ConicProgram.LC_VALUE, v);
+		constrainedValue = v;
 	}
 	
-	Double getLagrange() {
-		return (Double) node.getAttribute(ConicProgram.LAGRANGE);
+	public Double getLagrange() {
+		return lagrange;
 	}
 	
-	void setLagrange(Double v) {
-		for (Node n : node.getProperties(ConicProgram.LAGRANGE))
-			n.delete();
-		node.createProperty(ConicProgram.LAGRANGE, v);
+	void setLagrange(Double l) {
+		lagrange = l;
 	}
 	
 	boolean isPrimalFeasible() {
@@ -120,6 +101,6 @@ public class LinearConstraint extends Entity {
 			removeVariable(var);
 		}
 		program.notify(ConicProgramEvent.ConDeleted, this);
-		super.delete();
+		vars = null;
 	}
 }

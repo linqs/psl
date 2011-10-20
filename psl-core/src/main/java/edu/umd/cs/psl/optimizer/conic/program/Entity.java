@@ -16,64 +16,29 @@
  */
 package edu.umd.cs.psl.optimizer.conic.program;
 
-import edu.umd.cs.psl.util.graph.Node;
-import edu.umd.cs.psl.util.graph.Property;
-
 abstract public class Entity {
 	protected ConicProgram program;
-	protected Node node;
+	protected int id;
 
 	Entity(ConicProgram p) {
-		this(p, p.getGraph().createNode());
-		node.createProperty(ConicProgram.NODE_TYPE, getType());
-	}
-	
-	Entity(ConicProgram p, Node n) {
 		program = p;
-		node = n;
+		id = p.getNextID();
 	}
 	
-	abstract NodeType getType();
-	
-	Node getNode() {
-		return node;
-	}
-	
-	void delete() {
-		for (Property p : node.getProperties())
-			p.delete();
-		node.delete();
-	}
+	abstract void delete();
 	
 	@Override
 	public boolean equals(Object o) {
 		if (o == null)
 			return false;
 		if (o instanceof Entity)
-			return node.equals(((Entity) o).node);
+			return id == ((Entity) o).id;
 		else
 			return false;
 	}
 	
 	@Override
 	public int hashCode() {
-		return node.hashCode();
-	}
-
-	static Entity createEntity(ConicProgram p, Node n) {
-		NodeType type = (NodeType) n.getAttribute(ConicProgram.NODE_TYPE);
-		
-		switch (type) {
-		case var:
-			return new Variable(p, n);
-		case nnoc:
-			return new NonNegativeOrthantCone(p, n);
-		case soc:
-			return new SecondOrderCone(p, n);
-		case lc:
-			return new LinearConstraint(p, n);
-		default:
-			throw new IllegalArgumentException("Unknown node type: " + type);
-		}
+		return id;
 	}
 }

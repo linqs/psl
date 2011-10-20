@@ -20,31 +20,23 @@ import java.util.Map;
 
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
-import edu.umd.cs.psl.util.graph.Node;
 
 abstract public class Cone extends Entity {
 	Cone(ConicProgram p) {
 		super(p);
 	}
 	
-	Cone(ConicProgram p, Node n) {
-		super(p, n);
-	}
+	abstract public void delete();
 	
-	public abstract void setBarrierGradient(Map<Variable, Integer> varMap, DoubleMatrix1D x, DoubleMatrix1D g);
+	abstract public void setBarrierGradient(Map<Variable, Integer> varMap, DoubleMatrix1D x, DoubleMatrix1D g);
 	
 	abstract void setBarrierHessian(Map<Variable, Integer> varMap, DoubleMatrix1D x, DoubleMatrix2D H);
 	
-	public abstract void setBarrierHessianInv(Map<Variable, Integer> varMap, DoubleMatrix1D x, DoubleMatrix2D Hinv);
+	abstract public void setBarrierHessianInv(Map<Variable, Integer> varMap, DoubleMatrix1D x, DoubleMatrix2D Hinv);
 	
 	abstract boolean isInterior(Map<Variable, Integer> varMap, DoubleMatrix1D x);
 	
 	abstract void setInteriorDirection(Map<Variable, Integer> varMap, DoubleMatrix1D x, DoubleMatrix1D d);
 	
-	public abstract double getMaxStep(Map<Variable, Integer> varMap, DoubleMatrix1D x, DoubleMatrix1D dx);
-	
-	@Override
-	public void delete() {
-		super.delete();
-	}
+	abstract public double getMaxStep(Map<Variable, Integer> varMap, DoubleMatrix1D x, DoubleMatrix1D dx);
 }

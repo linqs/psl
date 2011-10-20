@@ -20,37 +20,27 @@ import java.util.Map;
 
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
-import edu.umd.cs.psl.util.graph.Node;
 
 public class NonNegativeOrthantCone extends Cone {
+	
+	private Variable var;
+	
 	NonNegativeOrthantCone(ConicProgram p) {
 		super(p);
-		Variable var = new Variable(p);
-		node.createRelationship(ConicProgram.CONE_REL, var.getNode());
+		var = new Variable(p, this);
 		p.notify(ConicProgramEvent.NNOCCreated, this);
 	}
 	
-	NonNegativeOrthantCone(ConicProgram p, Node n) {
-		super(p, n);
-	}
-	
-	@Override
-	NodeType getType() {
-		return NodeType.nnoc;
-	}
-	
 	public Variable getVariable() {
-		return (Variable) Entity.createEntity(program, node.getRelationshipIterator(ConicProgram.CONE_REL).next().getEnd());
+		return var;
 	}
 	
 	@Override
 	public final void delete() {
 		program.verifyCheckedIn();
 		program.notify(ConicProgramEvent.NNOCDeleted, this);
-		Variable var = getVariable();
-		node.getRelationshipIterator(ConicProgram.CONE_REL).next().delete();
 		var.delete();
-		super.delete();
+		var = null;
 	}
 	
 	public void setBarrierGradient(Map<Variable, Integer> varMap, DoubleMatrix1D x, DoubleMatrix1D g) {
