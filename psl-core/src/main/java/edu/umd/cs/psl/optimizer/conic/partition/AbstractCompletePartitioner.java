@@ -18,16 +18,32 @@ package edu.umd.cs.psl.optimizer.conic.partition;
 
 import java.util.Vector;
 
+import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
+
 abstract public class AbstractCompletePartitioner implements CompletePartitioner {
 	
 	protected Vector<ConicProgramPartition> partitions;
 	
-	public AbstractCompletePartitioner() {
+	protected ConicProgram program;
+	
+	public AbstractCompletePartitioner(ConicProgram p) {
 		partitions = new Vector<ConicProgramPartition>();
+		program = p;
+		if (!supportsConeTypes(p.getConeTypes()))
+			throw new IllegalArgumentException("Unsupported cone type.");
 	}
 
 	@Override
-	abstract public void partition();
+	public void partition() {
+		program.verifyCheckedOut();
+		
+		if (!supportsConeTypes(program.getConeTypes()))
+			throw new IllegalStateException("Unsupported cone type.");
+		
+		doPartition();
+	}
+	
+	abstract protected void doPartition();
 
 	@Override
 	public ConicProgramPartition getPartition(int i) {
