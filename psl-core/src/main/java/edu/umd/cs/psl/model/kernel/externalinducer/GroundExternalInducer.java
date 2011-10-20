@@ -71,11 +71,6 @@ public class GroundExternalInducer extends GroundCompatibilityKernel {
 	}
 	
 	@Override
-	public double getStrength() {
-		return getWeight().getWeight();
-	}
-	
-	@Override
 	public Weight getWeight() {
 		return kernel.getWeight();
 	}

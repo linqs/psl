@@ -20,13 +20,6 @@ import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
 
 public abstract class GroundConstraintKernel extends GroundKernel {
 
-	public static final double defaultConstraintStrength = Double.POSITIVE_INFINITY;
-	
 	abstract public ConstraintTerm getConstraintDefinition();
-	
-	@Override
-	public double getStrength() {
-		return defaultConstraintStrength;
-	}
 	
 }

@@ -16,14 +16,14 @@
  */
 package edu.umd.cs.psl.model.atom.memory;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Set;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.SetMultimap;
 
-import edu.umd.cs.psl.factorgraph.Factor;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.Term;
 import edu.umd.cs.psl.model.atom.Atom;
@@ -33,8 +33,6 @@ import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
-import edu.umd.cs.psl.reasoner.function.FunctionVariable;
-
 
 /**
  * The abstract FormulaPredicateAtom is the base class for all atoms with a predicate and arguments.
@@ -100,11 +98,6 @@ public class MemoryAtom extends StatusAtom {
 	public int getNumRegisteredGroundKernels() {
 		if (dependentKernels==null) return 0; 
 		return dependentKernels.size();
-	}
-	
-	@Override
-	public Collection<? extends Factor> getFactors() {
-		return getAllRegisteredGroundKernels();
 	}
 	
 	/*

@@ -24,6 +24,8 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import cern.colt.matrix.tdouble.DoubleMatrix1D;
+
 import edu.umd.cs.psl.optimizer.conic.program.Cone;
 import edu.umd.cs.psl.optimizer.conic.program.ConeType;
 import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
@@ -192,11 +194,13 @@ public class Dualizer {
 		Variable primalVar, dualVar;
 		LinearConstraint dualCon;
 		
+		DoubleMatrix1D x = primalProgram.getX();
+		
 		for (Cone c : primalProgram.getNonNegativeOrthantCones()) {
 			primalVar = ((NonNegativeOrthantCone) c).getVariable();
 			dualCon = primalVarsToDualCons.get(primalVar);
 			if (dualCon != null)
-				primalVar.setValue(-1.0*dualCon.getLagrange());
+				x.set(primalProgram.index(primalVar), (-1.0*dualCon.getLagrange()));
 		}
 	}
 	

@@ -126,7 +126,7 @@ public enum AtomEventSets {
 
 	
 	All {
-		private Set<AtomEvent> entailment = ImmutableSet.of(AtomEvent.values());
+		private Set<AtomEvent> entailment = ImmutableSet.copyOf(AtomEvent.values());
 		@Override
 		public Set<AtomEvent> subsumes() {
 			return entailment;

@@ -19,7 +19,6 @@ package edu.umd.cs.psl.model.set.aggregator;
 import java.util.Set;
 
 import edu.umd.cs.psl.model.atom.Atom;
-import edu.umd.cs.psl.model.set.*;
 import edu.umd.cs.psl.model.set.membership.TermMembership;
 import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
 

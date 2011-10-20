@@ -39,7 +39,6 @@ import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.formula.Negation;
 import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.model.predicate.Predicate;
-import edu.umd.cs.psl.model.predicate.StandardPredicate;
 
 public class FormulaEventAnalysis {
 
@@ -148,17 +147,4 @@ public class FormulaEventAnalysis {
 			else af.unregisterAtomEventObserver(p, inferenceAtomEvent, me);
 		}
 	}
-	
-	private class FormulaAnalyser extends FormulaTraverser {
-		
-		@Override
-		public void visitAtom(Atom atom) {
-			if (atom.getPredicate() instanceof StandardPredicate) {
-				dependence.put(atom.getPredicate(), atom);
-			}
-				
-		}
-		
-	}
-	
 }

@@ -79,10 +79,6 @@ public class ArrayFormulaGrounder extends FormulaTraverser {
 		reset();
 	}
 	
-	private GroundTerm getResultVariable(Variable var) {
-		return results.get(position, var);
-	}
-	
 	@Override
 	public void visitAtom(Atom atom) {
 		if (!includeBooleanFacts && atom.getPredicate().getType()==PredicateTypes.BooleanTruth && database.isClosed(atom.getPredicate()))

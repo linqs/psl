@@ -16,9 +16,8 @@
  */
 package edu.umd.cs.psl.model.formula;
 
-import java.util.*;
-
-import org.apache.commons.lang.builder.HashCodeBuilder;
+import java.util.Arrays;
+import java.util.Collection;
 
 import edu.umd.cs.psl.model.argument.type.VariableTypeMap;
 import edu.umd.cs.psl.model.atom.Atom;
