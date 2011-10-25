@@ -25,5 +25,7 @@ public interface Graph {
 	
 	public void createRelationshipType(String name);
 	
+	public Iterable<? extends Node> getNodes();
+	
 	public Set<Node> getNodesByAttribute(String propertyType, Object attribute);
 }

@@ -24,12 +24,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.Vector;
 
-import cern.colt.Partitioning;
-import cern.colt.matrix.tdouble.algo.DenseDoubleAlgebra;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import com.sun.org.apache.xalan.internal.xsltc.compiler.util.NodeType;
 
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.optimizer.conic.program.Cone;
@@ -43,17 +42,22 @@ import edu.umd.cs.psl.optimizer.conic.program.Variable;
 import edu.umd.cs.psl.util.graph.Graph;
 import edu.umd.cs.psl.util.graph.Node;
 import edu.umd.cs.psl.util.graph.Relationship;
+import edu.umd.cs.psl.util.graph.memory.MemoryGraph;
+import edu.umd.cs.psl.util.graph.partition.Partitioner;
+import edu.umd.cs.psl.util.graph.partition.hierarchical.HierarchicalPartitioning;
 import edu.umd.cs.psl.util.graph.weight.RelationshipWeighter;
 
 public class SequentialHierarchicalCompletePartitioner extends AbstractCompletePartitioner
 		implements ConicProgramListener {
+	
+	private static final Logger log = LoggerFactory.getLogger(SequentialHierarchicalCompletePartitioner.class);
 
 	private BiMap<Cone, Node> coneMap;
 	private BiMap<LinearConstraint, Node> lcMap;
 	
 	private Graph graph;
+	private static final String LC_REL = "lcRel";
 	
-	private static final int defaultNumPartitions = 2;
 	private static final int defaultNumPartitionElements = 2;
 	
 	private static final ArrayList<ConeType> supportedCones = new ArrayList<ConeType>(2);
@@ -65,11 +69,31 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 	public SequentialHierarchicalCompletePartitioner(ConicProgram p, ConfigBundle config) {
 		super(p);
 		
+		Node node;
+		
+		graph = new MemoryGraph();
+		graph.createRelationshipType(LC_REL);
+		
 		coneMap = HashBiMap.create();
 		lcMap = HashBiMap.create();
 		
+		for (Cone cone : program.getCones()) {
+			node = graph.createNode();
+			coneMap.put(cone, node);
+		}
+		
+		Set<Cone> coneSet = new HashSet<Cone>();
 		for (LinearConstraint con : program.getConstraints()) {
+			node = graph.createNode();
+			for (Variable var : con.getVariables().keySet()) {
+				coneSet.add(var.getCone());
+			}
 			
+			for (Cone cone : coneSet) {
+				node.createRelationship(LC_REL, coneMap.get(cone));
+			}
+			
+			coneSet.clear();
 		}
 		
 		program.registerForConicProgramEvents(this);
@@ -81,38 +105,22 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 
 	@Override
 	protected void doPartition() {
-		int numPartitions = defaultNumPartitions;
 		int numElements = defaultNumPartitionElements;
 		numElements = (int) Math.ceil((double) program.numLinearConstraints() / 5000);
 		
-		double mu, tau, muInitial, theta, err, epsilon_1;
-		boolean inNeighborhood;
-		DenseDoubleAlgebra alg = new DenseDoubleAlgebra();
-		
-		List<Set<Node>> partition;
-		Variable var;
+		List<List<Node>> graphPartition = null;
 		Set<LinearConstraint> cutConstraints = new HashSet<LinearConstraint>();
 		Set<LinearConstraint> alwaysCutConstraints = new HashSet<LinearConstraint>();
 		final Set<LinearConstraint> restrictedConstraints = new HashSet<LinearConstraint>();
 		boolean isInnerConstraint;
 
-		List<List<Set<Node>>> partitions = new Vector<List<Set<Node>>>(numPartitions);
+		//List<List<Set<Node>>> partitions = new Vector<List<Set<Node>>>(numPartitions);
+		List<Set<Cone>> blocks;
 		
 		/* Partitions IPM graph into elements */
-		Partitioning partitioning = graph.getPartitioning();
-		partitioning.setSize(numElements);
+		Partitioner partitioner = new HierarchicalPartitioning();
+		partitioner.setSize(numElements);
 		
-		final Set<LinearConstraint> isolatedConstraints =  new HashSet<LinearConstraint>();
-		
-		for (Node n : graph.getNodesByAttribute(NODE_TYPE, NodeType.lc)) {
-			if (((LinearConstraint) IPMEntity.createEntity(this, n)).getIsolatedStructure() != null)
-				isolatedConstraints.add(((LinearConstraint) IPMEntity.createEntity(this, n)));
-		}
-		
-		for (Node n : graph.getNodesByAttribute(NODE_TYPE, NodeType.lis))
-			((LinearIsolatedStructure) IPMEntity.createEntity(this, n)).delete();
-		
-		//for (int p = 0; p < numPartitions; p++) {
 		boolean redoPartition;
 		int p = 0;
 		do {
@@ -122,61 +130,40 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 			//}
 			try {
 				if (p % 2 == 0) {
-					partitions.add(partitioning.partition(new RelationshipWeighter() {
+					graphPartition = partitioner.partition(graph, graph.getNodes(), new RelationshipWeighter() {
 						@Override
 						public double getWeight(Relationship r) {
-							if (r.getEdgeType().equals(LC_REL)) {
-								double weight = 0.0;
-								LinearConstraint lc = (LinearConstraint) IPMEntity.createEntity(PartitionedIPM.this, r.getStart());
-	
-								//if (lc.getIsolatedStructure() == null) {
-								if (!isolatedConstraints.contains(lc)) {
-									return Double.POSITIVE_INFINITY;
-								}
-								else if (restrictedConstraints.contains(lc)) {
+							if (r.getRelationshipType().equals(LC_REL)) {
+								LinearConstraint lc = (LinearConstraint) lcMap.inverse().get(r.getStart());
+								if (restrictedConstraints.contains(lc)) {
 									return 300;
-									//return Double.POSITIVE_INFINITY;
 								}
 								else {
-									Variable v = (Variable) IPMEntity.createEntity(PartitionedIPM.this, r.getEnd());
-									weight += Math.abs(lc.getConstrainedValue());
-									weight += Math.abs(lc.getVariables().get(v));
-									return weight;
-									//return 1;
+									return 1;
 								}
 							}
 							else
 								return Double.POSITIVE_INFINITY;
 						}
-					}));
+					});
 				}
 				else {
-					partitions.add(partitioning.partition(new RelationshipWeighter()  {
+					graphPartition = partitioner.partition(graph, graph.getNodes(), new RelationshipWeighter()  {
 						@Override
 						public double getWeight(Relationship r) {
-							if (r.getEdgeType().equals(LC_REL)) {
-								double weight = 0.0;
-								LinearConstraint lc = (LinearConstraint) IPMEntity.createEntity(PartitionedIPM.this, r.getStart());
-								//if (lc.getIsolatedStructure() == null) {
-								if (!isolatedConstraints.contains(lc)) {
-									return Double.POSITIVE_INFINITY;
-								}
-								else if (restrictedConstraints.contains(lc)) {
+							if (r.getRelationshipType().equals(LC_REL)) {
+								LinearConstraint lc = (LinearConstraint) lcMap.inverse().get(r.getStart());
+								if (restrictedConstraints.contains(lc)) {
 									return 300;
-									//return Double.POSITIVE_INFINITY;
 								}
 								else {
-									Variable v = (Variable) IPMEntity.createEntity(PartitionedIPM.this, r.getEnd());
-									weight += Math.abs(lc.getConstrainedValue());
-									weight += Math.abs(lc.getVariables().get(v));
-									return 1/(2*weight);
-									//return 1;
+									return 1;
 								}
 							}
 							else
 								return Double.POSITIVE_INFINITY;
 						}
-					}));
+					});
 				}
 			}
 			catch (IllegalArgumentException e) {
@@ -197,10 +184,10 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 			boolean balanced = true;
 			if (!redoPartition) {
 				int totalSize = 0;
-				for (Set<Node> block : partitions.get(p))
+				for (List<Node> block : graphPartition)
 					totalSize += block.size();
 				
-				for (Set<Node> block : partitions.get(p)){
+				for (List<Node> block : graphPartition){
 					if (block.size() > 2*(totalSize - block.size())) {
 						log.trace("{} > {}", block.size(), 2*(totalSize - block.size()));
 						balanced = false;
@@ -230,28 +217,31 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 
 			/* Partition accepted */
 			if (!redoPartition) {
-				partition = partitions.get(p);
-				
-				for (int i = 0; i < partition.size(); i++) {
-					System.out.println("Size: " + partition.get(i).size());
-					for (Node n : partition.get(i)) {
-						if (NodeType.var.equals(n.getAttribute(NODE_TYPE))) {
-							var = (Variable) IPMEntity.createEntity(this, n);
-							for (LinearConstraint lc : var.getLinearConstraints()) {
-								/* Checks if constraint has been cut */
-								isInnerConstraint = partition.get(i).contains(lc.getNode());
-								for (Variable v : lc.getVariables().keySet())
-									isInnerConstraint = isInnerConstraint && partition.get(i).contains(v.getNode());
-								if (!isInnerConstraint) {
-									cutConstraints.add(lc);
-									if (p == 0) {
-										alwaysCutConstraints.add(lc);
-										restrictedConstraints.add(lc);
-									}
+				/* Collects cones in blocks and checks which constraints were cut */
+				blocks = new Vector<Set<Cone>>();
+				for (int i = 0; i < graphPartition.size(); i++) {
+					Set<Cone> block = new HashSet<Cone>();
+					for (Node n : graphPartition.get(i)) {
+						/* Adds cone to block */
+						if (coneMap.containsValue(n)) {
+							block.add(coneMap.inverse().get(n));
+						}
+						/* Checks if constraint has been cut */
+						else if (lcMap.containsValue(n)) {
+							isInnerConstraint = true;
+							for (Relationship r : n.getRelationships(LC_REL))
+								isInnerConstraint = isInnerConstraint && graphPartition.get(i).contains(r.getEnd());
+							if (!isInnerConstraint) {
+								LinearConstraint lc = lcMap.inverse().get(n);
+								cutConstraints.add(lc);
+								if (p == 0) {
+									alwaysCutConstraints.add(lc);
+									restrictedConstraints.add(lc);
 								}
 							}
 						}
 					}
+					blocks.add(block);
 				}
 				
 				if (p != 0) {
@@ -260,39 +250,12 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 					restrictedConstraints.addAll(alwaysCutConstraints);
 				}
 				
-				for (LinearConstraint lc : cutConstraints) {
-					List<Set<Node>> blocks = new Vector<Set<Node>>();
-					CurrentStructure cs;
-					for (Variable v : lc.getVariables().keySet()) {
-						for (Set<Node> block : partition) {
-							if (block.contains(v.getNode())) {
-								if (!blocks.contains(block))
-									blocks.add(block);
-								break;
-							}
-						}
-					}
-					
-					cs = ((LinearIsolatedStructure) lc.getIsolatedStructure()).getStructure();
-					if (blocks.size() < 3) {
-						blocks.get(0).remove(cs.negativeSlack.getNode());
-						blocks.get(0).add(cs.positiveSlack.getNode());
-						blocks.get(1).remove(cs.positiveSlack.getNode());
-						blocks.get(1).add(cs.negativeSlack.getNode());
-					}
-					else throw new IllegalStateException();
-				}
+				partitions.add(new ConicProgramPartition(program, blocks));
+				
 				cutConstraints.clear();
 				p++;
 			}
 		} while (alwaysCutConstraints.size() > 0 || redoPartition);
-		
-		log.trace("Beginning subproblem construction.");
-		
-		/* Constructs subproblem representation for each element */
-		for (p = 0; p < partitions.size(); p++) {
-			subProblemSets.add(new SubProblemSet(partitions.get(p), varMap, lcMap, dx, ds, dw, r, Hinv));
-		}
 	}
 
 	@Override

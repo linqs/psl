@@ -32,6 +32,8 @@ public class MemoryGraph implements Graph {
 	
 	final private Map<String, Map<Object, Set<Node>>> index;
 	
+	final private Set<Node> nodes;
+	
 	final private BiMap<String, Integer> propertyTypes;
 	final private BiMap<String, Integer> relationshipTypes;
 	
@@ -41,6 +43,7 @@ public class MemoryGraph implements Graph {
 	
 	public MemoryGraph() {
 		index = new HashMap<String, Map<Object,Set<Node>>>();
+		nodes = new HashSet<Node>();
 		propertyTypes = HashBiMap.create();
 		relationshipTypes = HashBiMap.create();
 		propertyClasses = new HashMap<Integer, Class<?>>();
@@ -49,7 +52,9 @@ public class MemoryGraph implements Graph {
 
 	@Override
 	public Node createNode() {
-		return new MemoryNode(this);
+		Node node = new MemoryNode(this);
+		nodes.add(node);
+		return node;
 	}
 
 	@Override
@@ -71,6 +76,11 @@ public class MemoryGraph implements Graph {
 		}
 		else
 			throw new IllegalArgumentException("Relationship type already exists.");
+	}
+
+	@Override
+	public Iterable<? extends Node> getNodes() {
+		return nodes;
 	}
 
 	@Override
@@ -132,6 +142,10 @@ public class MemoryGraph implements Graph {
 	
 	Class<?> getPropertyClass(Integer pt) {
 		return propertyClasses.get(pt);
+	}
+	
+	void notifyNodeDeleted(MemoryNode n) {
+		nodes.remove(n);
 	}
 	
 	void notifyPropertyCreated(MemoryNode n, MemoryProperty p) {

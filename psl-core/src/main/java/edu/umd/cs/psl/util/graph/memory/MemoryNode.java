@@ -182,6 +182,7 @@ public class MemoryNode implements Node {
 			p.delete();
 		for (MemoryRelationship r : getRelationships())
 			r.delete();
+		graph.notifyNodeDeleted(this);
 	}
 
 }
