@@ -59,13 +59,13 @@ public class NonNegativeOrthantCone extends Cone {
 	}
 
 	@Override
-	boolean isInterior(Map<Variable, Integer> varMap, DoubleMatrix1D x) {
+	public boolean isInterior(Map<Variable, Integer> varMap, DoubleMatrix1D x) {
 		int i = varMap.get(getVariable());
 		return x.get(i) > 0.05;
 	}
 
 	@Override
-	void setInteriorDirection(Map<Variable, Integer> varMap, DoubleMatrix1D x,
+	public void setInteriorDirection(Map<Variable, Integer> varMap, DoubleMatrix1D x,
 			DoubleMatrix1D d) {
 		int i = varMap.get(getVariable());
 		if (x.get(i) <= .05)
@@ -75,8 +75,7 @@ public class NonNegativeOrthantCone extends Cone {
 	}
 
 	@Override
-	public
-	double getMaxStep(Map<Variable, Integer> varMap, DoubleMatrix1D x,
+	public double getMaxStep(Map<Variable, Integer> varMap, DoubleMatrix1D x,
 			DoubleMatrix1D dx) {
 		int i = varMap.get(getVariable());
 		if (dx.get(i) >= 0)

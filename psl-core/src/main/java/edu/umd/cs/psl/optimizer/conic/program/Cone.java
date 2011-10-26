@@ -34,9 +34,9 @@ abstract public class Cone extends Entity {
 	
 	abstract public void setBarrierHessianInv(Map<Variable, Integer> varMap, DoubleMatrix1D x, DoubleMatrix2D Hinv);
 	
-	abstract boolean isInterior(Map<Variable, Integer> varMap, DoubleMatrix1D x);
+	abstract public boolean isInterior(Map<Variable, Integer> varMap, DoubleMatrix1D x);
 	
-	abstract void setInteriorDirection(Map<Variable, Integer> varMap, DoubleMatrix1D x, DoubleMatrix1D d);
+	abstract public void setInteriorDirection(Map<Variable, Integer> varMap, DoubleMatrix1D x, DoubleMatrix1D d);
 	
 	abstract public double getMaxStep(Map<Variable, Integer> varMap, DoubleMatrix1D x, DoubleMatrix1D dx);
 }

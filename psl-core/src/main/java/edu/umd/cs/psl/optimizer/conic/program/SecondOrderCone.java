@@ -137,7 +137,7 @@ public class SecondOrderCone extends Cone {
 	}
 
 	@Override
-	boolean isInterior(Map<Variable, Integer> varMap, DoubleMatrix1D x) {
+	public boolean isInterior(Map<Variable, Integer> varMap, DoubleMatrix1D x) {
 		Set<Variable> vars = getVariables();
 		int[] indices = new int[vars.size()];
 		Variable varN = getNthVariable();
@@ -152,7 +152,7 @@ public class SecondOrderCone extends Cone {
 	}
 
 	@Override
-	void setInteriorDirection(Map<Variable, Integer> varMap, DoubleMatrix1D x,
+	public void setInteriorDirection(Map<Variable, Integer> varMap, DoubleMatrix1D x,
 			DoubleMatrix1D d) {
 		Set<Variable> vars = getVariables();
 		int[] indices = new int[vars.size()];

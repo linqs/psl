@@ -20,11 +20,11 @@ import edu.umd.cs.psl.config.EmptyBundle;
 import edu.umd.cs.psl.optimizer.conic.ConicProgramSolver;
 import edu.umd.cs.psl.optimizer.conic.ConicProgramSolverContractTest;
 
-public class HomogeneousIPMTest extends ConicProgramSolverContractTest {
+public class IPMTest extends ConicProgramSolverContractTest {
 
 	@Override
 	protected ConicProgramSolver getConicProgramSolverImplementation() {
-		return new HomogeneousIPM(new EmptyBundle());
+		return new IPM(new EmptyBundle());
 	}
 
 }

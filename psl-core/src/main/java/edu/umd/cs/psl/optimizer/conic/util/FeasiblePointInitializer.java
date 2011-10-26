@@ -16,21 +16,683 @@
  */
 package edu.umd.cs.psl.optimizer.conic.util;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.Stack;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import cern.colt.matrix.tdouble.DoubleFactory1D;
+import cern.colt.matrix.tdouble.DoubleFactory2D;
+import cern.colt.matrix.tdouble.DoubleMatrix1D;
+import cern.colt.matrix.tdouble.DoubleMatrix2D;
+import cern.colt.matrix.tdouble.algo.DenseDoubleAlgebra;
+import cern.colt.matrix.tdouble.algo.decomposition.DenseDoubleLUDecompositionQuick;
+import cern.colt.matrix.tdouble.algo.decomposition.DenseDoubleQRDecomposition;
+import cern.colt.matrix.tdouble.algo.decomposition.SparseDoubleQRDecomposition;
+import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
+import cern.colt.matrix.tdouble.impl.SparseDoubleMatrix2D;
+import cern.jet.math.tdouble.DoubleFunctions;
+import edu.umd.cs.psl.optimizer.conic.program.Cone;
+import edu.umd.cs.psl.optimizer.conic.program.ConeType;
 import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
 import edu.umd.cs.psl.optimizer.conic.program.ConicProgramEvent;
 import edu.umd.cs.psl.optimizer.conic.program.ConicProgramListener;
 import edu.umd.cs.psl.optimizer.conic.program.Entity;
+import edu.umd.cs.psl.optimizer.conic.program.LinearConstraint;
+import edu.umd.cs.psl.optimizer.conic.program.NonNegativeOrthantCone;
+import edu.umd.cs.psl.optimizer.conic.program.SecondOrderCone;
+import edu.umd.cs.psl.optimizer.conic.program.Variable;
 
 public class FeasiblePointInitializer implements ConicProgramListener {
+	
+	private static final Logger log = LoggerFactory.getLogger(ConicProgram.class);
+	
+	private final ConicProgram program;
+	
+	private Set<LinearConstraint> primalInfeasible;
+	private Set<Variable> dualInfeasible;
+	private Map<LinearConstraint, IsolatedStructure> primalIsolated;
+	private Map<Variable, LinearConstraint> dualIsolated;
+	
+	private boolean madePrimalFeasibleOnce;
+	private boolean madeDualFeasibleOnce;
+	
+	private static final ArrayList<ConeType> supportedCones = new ArrayList<ConeType>(2);
+	static {
+		supportedCones.add(ConeType.NonNegativeOrthantCone);
+	}
+	
+	// Error messages
+	private static final String UNEXPECTED_SENDER = "Unexpected sender type.";
+	private static final String UNEXPECTED_DATA = "Unexpected data.";
 
 	public FeasiblePointInitializer(ConicProgram p) {
+		program = p;
 		
+		madePrimalFeasibleOnce = false;
+		madeDualFeasibleOnce = false;
+	}
+	
+	public static boolean supportsConeTypes(Collection<ConeType> types) {
+		return supportedCones.containsAll(types);
 	}
 	
 	@Override
 	public void notify(ConicProgramEvent e, Entity sender, Object... data) {
-		// TODO Auto-generated method stub
-		
+		switch (e) {
+		case NNOCCreated:
+		case NNOCDeleted:
+			if (sender instanceof NonNegativeOrthantCone) {
+				NonNegativeOrthantCone nnoc = (NonNegativeOrthantCone) sender;
+				switch (e) {
+				case NNOCCreated:
+					if (madeDualFeasibleOnce) dualInfeasible.add(nnoc.getVariable());
+					break;
+				case NNOCDeleted:
+					dualInfeasible.remove(nnoc.getVariable());
+					dualIsolated.remove(nnoc.getVariable());
+					break;
+				}
+			}
+			else
+				throw new IllegalArgumentException(UNEXPECTED_SENDER);
+			break;
+		case SOCCreated:
+		case SOCDeleted:
+			if (sender instanceof SecondOrderCone) {
+				SecondOrderCone soc = (SecondOrderCone) sender;
+				switch (e) {
+				case SOCCreated:
+					if (madeDualFeasibleOnce)
+						for (Variable v : soc.getVariables())
+							dualInfeasible.add(v);
+					break;
+				case SOCDeleted:
+					for (Variable v : soc.getVariables()) {
+						dualInfeasible.remove(v);
+						dualIsolated.remove(v);
+					}
+					break;
+				}
+			}
+			else
+				throw new IllegalArgumentException(UNEXPECTED_SENDER);
+			break;
+		case ObjCoeffChanged:
+			if (sender instanceof Variable) {
+				Variable var = (Variable) sender;
+				if (madeDualFeasibleOnce) dualInfeasible.add(var);
+			}
+			else
+				throw new IllegalArgumentException(UNEXPECTED_SENDER);
+			break;
+		case ConCreated:
+		case ConValueChanged:
+		case ConDeleted:
+			if (sender instanceof LinearConstraint) {
+				LinearConstraint lc = (LinearConstraint) sender;
+				switch(e) {
+				case ConCreated:
+				case ConValueChanged:
+					if (madePrimalFeasibleOnce) primalInfeasible.add(lc);
+					break;
+				case ConDeleted:
+					primalInfeasible.remove(lc);
+					primalIsolated.remove(lc);
+				}
+			}
+			else
+				throw new IllegalArgumentException(UNEXPECTED_SENDER);
+			break;
+		case VarAddedToCon:
+		case VarRemovedFromCon:
+			if (sender instanceof LinearConstraint && data.length > 0 && data[0] instanceof Variable) {
+				LinearConstraint lc = (LinearConstraint) sender;
+				Variable var = (Variable) data[0];
+				if (madePrimalFeasibleOnce) {
+					primalInfeasible.add(lc);
+				}
+				if (madeDualFeasibleOnce) {
+					dualInfeasible.add(var);
+				}
+				primalIsolated.remove(lc);
+				if (lc.equals(dualIsolated.get(var))) {
+					dualIsolated.remove(var);
+				}
+				if (ConicProgramEvent.VarAddedToCon.equals(e)) {
+					for (Variable v : lc.getVariables().keySet()) {
+						if (lc.equals(dualIsolated.get(v))) {
+							dualIsolated.remove(v);
+						}
+					}
+				}
+			}
+			else if (sender instanceof LinearConstraint)
+				throw new IllegalArgumentException(UNEXPECTED_DATA);
+			else
+				throw new IllegalArgumentException(UNEXPECTED_SENDER);
+			break;
+		}
 	}
 
+	public void makeFeasible() {
+		makePrimalFeasible();
+		makeDualFeasible();
+	}
+	
+	public void makePrimalFeasible() {
+		if (!supportsConeTypes(program.getConeTypes()))
+			throw new IllegalStateException("Unsupported cone type.");
+		
+		LinearConstraint lc;
+		IsolatedStructure iso;
+		Map<LinearConstraint, Integer> lcInit = new HashMap<LinearConstraint, Integer>();
+		Map<Variable, Integer> varInit = new HashMap<Variable, Integer>();
+		
+		final Set<IsolatedStructure> isoNeedsInit = new HashSet<IsolatedStructure>();
+		
+		LinearConstraintTraversal trav = new LinearConstraintTraversal(new LinearConstraintTraversalEvaluator() {
+			@Override
+			public boolean nextConstraint(LinearConstraint con) {
+				IsolatedStructure iso = getPrimalIsolatedStructure(con);
+				if (iso != null) {
+					isoNeedsInit.add(iso);
+					return false;
+				}
+				else
+					return true;
+			}
+		});
+
+		int i,j;
+		Iterator<LinearConstraint> itr;
+		DenseDoubleAlgebra alg = new DenseDoubleAlgebra();
+		DoubleMatrix1D x, dp, intDir, feasibilityCheck;
+		SparseDoubleMatrix2D A;
+		DoubleMatrix2D nullity;
+		DenseDoubleLUDecompositionQuick lu = new DenseDoubleLUDecompositionQuick();
+		Set<Cone> cones = new HashSet<Cone>();
+		
+		if (!madePrimalFeasibleOnce)
+			 primalInfeasible.addAll(program.getConstraints());
+		
+		log.debug("Finding primal feasible point: {} constraints marked", primalInfeasible.size());
+		
+		while (!primalInfeasible.isEmpty()) {
+			log.trace("{} primal constraints left to initialize.", primalInfeasible.size());
+			lc = primalInfeasible.iterator().next();
+			iso = getPrimalIsolatedStructure(lc);
+			if (iso != null) {
+				isoNeedsInit.add(iso);
+				primalInfeasible.remove(lc);
+			}
+			else {
+				i = 0;
+				lcInit.clear();
+				j = 0;
+				varInit.clear();
+				cones.clear();
+				itr = trav.traverse(lc);
+				
+				/* Collects linear constraints to be initialized */
+				while (itr.hasNext()) {
+					lc = itr.next();
+					primalInfeasible.remove(lc);
+					lcInit.put(lc, i++);
+				}
+				
+				/* Collects variables to be initialized */
+				for (LinearConstraint con : lcInit.keySet())
+					for (Variable v : con.getVariables().keySet())
+						if (!varInit.containsKey(v)) {
+							varInit.put((Variable) v, j++);
+							cones.add((Cone) ((Variable) v).getCone());
+						}
+				
+				/* Initializes data matrices */
+				A = (SparseDoubleMatrix2D) DoubleFactory2D.sparse.make(lcInit.size(), varInit.size());
+				x = DoubleFactory1D.dense.make(varInit.size());
+				
+				/* Constructs A, b, and AstarA */
+				for (Map.Entry<LinearConstraint, Integer> con : lcInit.entrySet()) {
+					for (Entry<Variable, Double> v : con.getKey().getVariables().entrySet()) {
+						/*
+						 * This monstrosity of a statement sets an element of A to its
+						 * coefficient. The element is specified by the constraint index
+						 * (the value of the lcInit entry) and the variable index
+						 * (the value stored in varInit with the same key as the
+						 * key of v). The value of v is the coefficient.
+						 */
+						A.set(con.getValue(), varInit.get(v.getKey()), v.getValue());
+					}
+					x.set(con.getValue(), con.getKey().getConstrainedValue());
+				}
+				
+				/* Uses decompositions to find general and particular solutions to Ax = b */
+				DenseDoubleQRDecomposition denseQR = new DenseDoubleQRDecomposition(new DenseDoubleMatrix2D(A.rows(), A.columns()).assign(A).viewDice());
+				nullity = denseQR.getQ(false).viewPart(0, A.rows(), A.columns(), A.columns()-A.rows());
+				
+				SparseDoubleQRDecomposition qr = new SparseDoubleQRDecomposition(A.getColumnCompressed(false), 0);
+				qr.solve(x);
+				
+				lu.decompose(alg.mult(nullity.viewDice(), nullity));
+				intDir = x.copy();
+				feasibilityCheck = x.viewSelection(DoubleFunctions.isLess(0.025));
+				// TODO: Add check for getting stuck
+				while (feasibilityCheck.size() > 0) {
+					for (Cone c : cones) {
+						((Cone) c).setInteriorDirection(varInit, x, intDir);
+					}
+					dp = alg.mult(nullity.viewDice(), intDir);
+					lu.solve(dp);
+					x.assign(alg.mult(nullity, dp), DoubleFunctions.plus);
+					feasibilityCheck = x.viewSelection(DoubleFunctions.isLess(0.025));
+				}
+
+				/* Finalize initialization */
+				for (Map.Entry<Variable, Integer> v : varInit.entrySet())
+					program.getX().set(program.index(v.getKey()), x.get(v.getValue()));
+			}
+		}
+		
+		/* Initializes the isolated structures */
+		for (IsolatedStructure toInit : isoNeedsInit) {
+			toInit.makePrimalFeasible();
+		}
+		
+		madePrimalFeasibleOnce = true;
+	}
+	
+	public void makeDualFeasible() {
+		if (!supportsConeTypes(program.getConeTypes()))
+			throw new IllegalStateException("Unsupported cone type.");
+		
+		Variable var;
+		LinearConstraint iso;
+		Map<LinearConstraint, Integer> lcInit = new HashMap<LinearConstraint, Integer>();
+		Map<Variable, Integer> varInit = new HashMap<Variable, Integer>();
+		
+		final Set<LinearConstraint> isoNeedsInit = new HashSet<LinearConstraint>();
+		
+		VariableTraversal trav = new VariableTraversal((new VariableTraversalEvaluator() {
+			@Override
+			public boolean nextVariable(Variable var) {
+				LinearConstraint iso = getDualIsolatedConstraint(var);
+				if (iso != null) {
+					isoNeedsInit.add(iso);
+					return false;
+				}
+				else
+					return true;
+			}
+			
+		}));
+
+		int i,j;
+		Iterator<Variable> itr;
+		DenseDoubleAlgebra alg = new DenseDoubleAlgebra();
+		DoubleMatrix1D w, dw, s, ds, c, r;
+		DoubleMatrix2D A;
+		DenseDoubleLUDecompositionQuick lu = new DenseDoubleLUDecompositionQuick();
+		double stepSize;
+		
+		if (!madeDualFeasibleOnce) {
+			for (Cone cone : program.getCones()) {
+				if (cone instanceof NonNegativeOrthantCone) {
+					dualInfeasible.add(((NonNegativeOrthantCone) cone).getVariable());
+				}
+				else
+					throw new IllegalStateException("Unsupported cone type.");
+			}
+		}
+
+		log.debug("Finding dual feasible point: {} constraints marked.", dualInfeasible.size());
+		
+		while (!dualInfeasible.isEmpty()) {
+			log.trace("{} dual constraints left to initialize.", dualInfeasible.size());
+			var = dualInfeasible.iterator().next();
+			iso = getDualIsolatedConstraint(var);
+			if (iso != null) {
+				makeDualFeasible(iso);
+				for (Variable v : iso.getVariables().keySet())
+					dualInfeasible.remove(v);
+			}
+			else {
+				i = 0;
+				varInit.clear();
+				j = 0;
+				lcInit.clear();
+				itr = trav.traverse(var);
+				
+				/* Collects variables to be initialized */
+				while (itr.hasNext()) {
+					var = itr.next();
+					dualInfeasible.remove(var);
+					if (!varInit.containsKey(var)){
+						varInit.put(var, i++);
+					}
+				}
+			
+				/* Collects linear constraints to be initialized */
+				for (Variable v : varInit.keySet()) {
+					for (LinearConstraint lc : v.getLinearConstraints()) {
+						if (!lcInit.containsKey(lc)) {
+							lcInit.put((LinearConstraint) lc, j++);
+						}
+					}
+				}
+				
+				/* Adds isolated linear constraints and any additional variables */
+				for (LinearConstraint lc : isoNeedsInit) {
+					lcInit.put(lc, j++);
+					for (Variable v : lc.getVariables().keySet()) {
+						if (!varInit.containsKey(v)) {
+							varInit.put(v, i++);
+							dualInfeasible.remove(v);
+						}
+					}
+				}
+				
+				/* Initializes data matrices */
+				A = DoubleFactory2D.sparse.make(lcInit.size(), varInit.size());
+				w = DoubleFactory1D.dense.make(lcInit.size());
+				s = DoubleFactory1D.dense.make(varInit.size());
+				c = DoubleFactory1D.dense.make(varInit.size());
+				r = DoubleFactory1D.dense.make(varInit.size());
+				
+				/* Constructs A and w */
+				for (Map.Entry<LinearConstraint, Integer> lc : lcInit.entrySet()) {
+					for (Map.Entry<Variable, Double> v : lc.getKey().getVariables().entrySet()) {
+						if (varInit.containsKey(v.getKey())) {
+							A.set(lc.getValue(), varInit.get(v.getKey()), v.getValue());
+						}
+					}
+					w.set(lc.getValue(), lc.getKey().getLagrange());
+				}
+				
+				lu.decompose(alg.mult(A, A.viewDice()));
+				
+				/* Constructs s and c */
+				for (Map.Entry<Variable, Integer> v : varInit.entrySet()) {
+					s.set(v.getValue(), v.getKey().getDualValue());
+					double temp = 0.0;
+					for (LinearConstraint lc : v.getKey().getLinearConstraints())
+						if (!lcInit.containsKey(lc))
+							temp += lc.getVariables().get(v.getKey()) * lc.getLagrange();
+					c.set(v.getValue(), v.getKey().getObjectiveCoefficient() - temp);
+				}
+				
+				/* Initializes r */
+				r = alg.mult(A.viewDice(), w).assign(s, DoubleFunctions.plus).assign(c, DoubleFunctions.minus);
+				
+				boolean wStep = true;
+				// TODO: Add check for getting stuck
+				while (alg.norm2(r) > 10e-8) {
+					dw = alg.mult(A, r);
+					lu.solve(dw);
+					
+					if (wStep) {
+						wStep = false;
+						dw = alg.mult(A, r);
+						lu.solve(dw);
+						w.assign(dw, DoubleFunctions.minus);
+					}
+					else {
+						wStep = true;
+						ds = r;
+						stepSize = 1;
+						for (int k = 0; k < s.size(); k++) {
+							if (s.get(k) - ds.get(k) * stepSize < 10e-8) {
+								while (s.get(k) - ds.get(k) * stepSize < 10e-8) {
+									stepSize *= .67;
+									if (stepSize < 10e-2)
+										s.set(k, s.get(k) + .5);
+								}
+							}
+						}
+						s.assign(ds, DoubleFunctions.minusMult(stepSize));
+					}
+					
+					r = alg.mult(A.viewDice(), w).assign(s, DoubleFunctions.plus).assign(c, DoubleFunctions.minus);
+				}
+				
+				/* Finalize initialization */
+				for (Map.Entry<Variable, Integer> v : varInit.entrySet()) {
+					program.getS().set(program.index(v.getKey()), s.get(v.getValue()));
+				}
+				for (Map.Entry<LinearConstraint, Integer> lc : lcInit.entrySet())
+					program.getW().set(program.index(lc.getKey()), w.get(lc.getValue()));
+				
+				isoNeedsInit.clear();
+			}
+		}
+		
+		madeDualFeasibleOnce = true;
+	}
+
+	private void makeDualFeasible(LinearConstraint lc) {
+		double temp;
+		for (Map.Entry<Variable, Double> e : lc.getVariables().entrySet()) {
+			temp = 0.0;
+			for (LinearConstraint con : e.getKey().getLinearConstraints()) {
+				temp += con.getVariables().get(e.getKey()) * con.getLagrange();
+			}
+			if (e.getKey().getObjectiveCoefficient() - temp - 0.05 < 0) {
+				temp -= lc.getVariables().get(e.getKey()) * lc.getLagrange();
+				temp = e.getKey().getObjectiveCoefficient() - temp - 0.25;
+				program.getW().set(program.index(lc), temp / lc.getVariables().get(e.getKey()));
+			}
+		}
+		
+		for (Variable v : lc.getVariables().keySet()) {
+			temp = 0.0;
+			for (LinearConstraint con : v.getLinearConstraints()) {
+				temp += con.getVariables().get(v) * con.getLagrange();
+			}
+			program.getS().set(program.index(v), v.getObjectiveCoefficient() - temp);
+//			if (!v.isDualFeasible()) {
+//				log.error("Variable dual infeasible after isolated initialization.");
+//			}
+		}
+	}
+
+	private IsolatedStructure getPrimalIsolatedStructure(LinearConstraint lc) {
+		IsolatedStructure iso = primalIsolated.get(lc);
+		if (iso != null)
+			return iso;
+		
+		//if (Boolean.TRUE.equals(node.getAttribute(ConicProgram.CHECK_ISOLATED))) {
+		/* Checks for linear isolated structure */
+		Variable	positiveSlack = null,
+					negativeSlack = null;
+		for (Entry<Variable, Double> e : lc.getVariables().entrySet()) {
+			if (e.getKey().getLinearConstraints().size() == 1
+					&& e.getKey().getCone() instanceof NonNegativeOrthantCone) {
+				if (e.getValue() < 0) {
+					negativeSlack = e.getKey();
+					if (positiveSlack != null)
+						break;
+				}
+				else if (e.getValue() > 0) {
+					positiveSlack = e.getKey();
+					if (negativeSlack != null)
+						break;
+				}
+			}
+		}
+		
+		if (positiveSlack != null && negativeSlack != null) {
+			iso = new LinearIsolatedStructure(lc, positiveSlack, negativeSlack);
+			primalIsolated.put(lc, iso);
+			return iso;
+		}
+		
+		/* If execution reaches this line, then no isolated structure could be found */
+		
+		return null;
+	}
+	
+	private LinearConstraint getDualIsolatedConstraint(Variable v) {
+		LinearConstraint lc = dualIsolated.get(v);
+		if (lc != null)
+			return lc;
+
+		boolean posCoeff, isolated;
+		for (LinearConstraint con : v.getLinearConstraints()) {
+			isolated = true;
+			if (con.getVariables().get(v) != 0.0) {
+				posCoeff = (con.getVariables().get(v) > 0.0) ? true : false;
+				for (Double coeff : con.getVariables().values()) {
+					isolated = isolated  && (((posCoeff && coeff > 0.0) ? true : false) || ((!posCoeff && coeff < 0.0)));
+				}
+				if (isolated) {
+					dualIsolated.put(v, con);
+					return con;
+				}
+			}
+		}
+		return null;
+	}
+	
+	abstract private class IsolatedStructure {
+		abstract void makePrimalFeasible();
+	}
+	
+	private class LinearIsolatedStructure extends IsolatedStructure {
+		private LinearConstraint lc;
+		private Variable positiveSlack;
+		private Variable negativeSlack;
+
+
+		LinearIsolatedStructure(LinearConstraint lc, Variable positiveSlack,
+				Variable negativeSlack) {
+			super();
+			this.lc = lc;
+			this.positiveSlack = positiveSlack;
+			this.negativeSlack = negativeSlack;
+		}
+
+		@Override
+		void makePrimalFeasible() {
+			double value, diff;
+
+			value = 0.0;
+			for (Entry<Variable, Double> e : lc.getVariables().entrySet()) {
+				value += e.getKey().getValue() * e.getValue();
+			}
+			diff = lc.getConstrainedValue() - value;
+			if (diff < 0) {
+				program.getX().set(program.index(negativeSlack), negativeSlack.getValue() - diff);
+			}
+			else {
+				program.getX().set(program.index(positiveSlack), positiveSlack.getValue() - diff);
+			}
+		}
+	}
+	
+	private interface LinearConstraintTraversalEvaluator {
+		public boolean nextConstraint(LinearConstraint con);
+	}
+	
+	private class LinearConstraintTraversal {
+		private Stack<LinearConstraint> stack;
+		private Set<LinearConstraint> closedSet;
+		private LinearConstraintTraversalEvaluator eval;
+		
+		private LinearConstraintTraversal(LinearConstraintTraversalEvaluator e) {
+			stack = new Stack<LinearConstraint>();
+			closedSet = new HashSet<LinearConstraint>();
+			eval = e;
+		}
+		
+		private Iterator<LinearConstraint> traverse(LinearConstraint con) {
+			stack.push(con);
+			closedSet.add(con);
+			return new Iterator<LinearConstraint>() {
+
+				@Override
+				public boolean hasNext() {
+					return !stack.isEmpty();
+				}
+
+				@Override
+				public LinearConstraint next() {
+					LinearConstraint next = stack.pop();
+					if (eval.nextConstraint(next)) {
+						for (Variable v : next.getVariables().keySet()) {
+							for (LinearConstraint con : v.getLinearConstraints()) {
+								if (!closedSet.contains(con)) {
+									stack.push(con);
+									closedSet.add(con);
+								}
+							}
+						}
+					}
+					return next;
+				}
+
+				@Override
+				public void remove() {
+					throw new UnsupportedOperationException();
+				}
+			};
+		}
+	}
+	
+	private interface VariableTraversalEvaluator {
+		public boolean nextVariable(Variable var);
+	}
+	
+	private class VariableTraversal {
+		private Stack<Variable> stack;
+		private Set<Variable> closedSet;
+		private VariableTraversalEvaluator eval;
+		
+		private VariableTraversal(VariableTraversalEvaluator e) {
+			stack = new Stack<Variable>();
+			closedSet = new HashSet<Variable>();
+			eval = e;
+		}
+		
+		private Iterator<Variable> traverse(Variable var) {
+			stack.push(var);
+			closedSet.add(var);
+			return new Iterator<Variable>() {
+
+				@Override
+				public boolean hasNext() {
+					return !stack.isEmpty();
+				}
+
+				@Override
+				public Variable next() {
+					Variable next = stack.pop();
+					if (eval.nextVariable(next)) {
+						for (LinearConstraint con : next.getLinearConstraints()) {
+							for (Variable v : con.getVariables().keySet()) {
+								if (!closedSet.contains(v)) {
+									stack.push(v);
+									closedSet.add(v);
+								}
+							}
+						}
+					}
+					return next;
+				}
+
+				@Override
+				public void remove() {
+					throw new UnsupportedOperationException();
+				}
+			};
+		}
+	}
 }
