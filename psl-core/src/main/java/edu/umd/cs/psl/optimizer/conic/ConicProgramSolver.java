@@ -22,7 +22,9 @@ import edu.umd.cs.psl.optimizer.conic.program.ConeType;
 import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
 
 public interface ConicProgramSolver {
-	public Double solve(ConicProgram program);
+	public void setConicProgram(ConicProgram p);
+	
+	public void solve();
 	
 	public boolean supportsConeTypes(Collection<ConeType> types);
 }

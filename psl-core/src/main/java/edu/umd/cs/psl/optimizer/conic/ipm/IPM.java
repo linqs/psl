@@ -39,6 +39,7 @@ import edu.umd.cs.psl.optimizer.conic.program.Cone;
 import edu.umd.cs.psl.optimizer.conic.program.ConeType;
 import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
 import edu.umd.cs.psl.optimizer.conic.util.Dualizer;
+import edu.umd.cs.psl.optimizer.conic.util.FeasiblePointInitializer;
 
 /**
  * Primal-dual short-step interior point method.
@@ -55,6 +56,16 @@ public class IPM implements ConicProgramSolver {
 	 * @see ConfigManager
 	 */
 	public static final String CONFIG_PREFIX = "ipm";
+	
+	/**
+	 * Key for boolean property. If true, the IPM will initialize the
+	 * conic program to a feasible point before solving it.
+	 * 
+	 * @see FeasiblePointInitializer
+	 */
+	public static final String INIT_FEASIBLE_KEY = CONFIG_PREFIX + ".initfeasible";
+	/** Default value for INIT_FEASIBLE_KEY property */
+	public static final boolean INIT_FEASIBLE_DEFAULT = true;
 	
 	/**
 	 * Key for boolean property. If true, the IPM will dualize the conic
@@ -86,10 +97,18 @@ public class IPM implements ConicProgramSolver {
 	public static final String INFEASIBILITY_THRESHOLD_KEY = CONFIG_PREFIX + ".infeasibilitythreshold";
 	/** Default value for INFEASIBILITY_THRESHOLD_KEY property. */
 	public static final double INFEASIBILITY_THRESHOLD_DEFAULT = 10e-8;
-
-	protected boolean tryDualize;
-	protected double dualityGapThreshold;
-	protected double infeasibilityThreshold;
+	
+	private ConicProgram currentProgram;
+	
+	protected FeasiblePointInitializer initializer;
+	
+	protected boolean dualized;
+	protected Dualizer dualizer;
+	
+	protected final boolean initFeasible;
+	protected final boolean tryDualize;
+	protected final double dualityGapThreshold;
+	protected final double infeasibilityThreshold;
 	
 	private static final ArrayList<ConeType> supportedCones = new ArrayList<ConeType>(2);
 	static {
@@ -99,26 +118,54 @@ public class IPM implements ConicProgramSolver {
 	private int stepNum;
 	
 	public IPM(ConfigBundle config) {
+		initFeasible = config.getBoolean(INIT_FEASIBLE_KEY, INIT_FEASIBLE_DEFAULT);
 		tryDualize = config.getBoolean(DUALIZE_KEY, DUALIZE_DEFAULT);
 		dualityGapThreshold = config.getDouble(DUALITY_GAP_THRESHOLD_KEY, DUALITY_GAP_THRESHOLD_DEFAULT);
 		infeasibilityThreshold = config.getDouble(INFEASIBILITY_THRESHOLD_KEY, INFEASIBILITY_THRESHOLD_DEFAULT);
+		
+		currentProgram = null;
+		dualized = false;
+		dualizer = null;
+		initializer = null;
 	}
 
 	@Override
 	public boolean supportsConeTypes(Collection<ConeType> types) {
 		return supportedCones.containsAll(types);
 	}
+	
+	@Override public void setConicProgram(ConicProgram p) {
+		currentProgram = p;
+		
+		if (initFeasible && FeasiblePointInitializer.supportsConeTypes(currentProgram.getConeTypes())) {
+			initializer = new FeasiblePointInitializer(currentProgram); 
+		}
+		
+		if (tryDualize && Dualizer.supportsConeTypes(currentProgram.getConeTypes())) {
+			dualized = true;
+			dualizer = new Dualizer(currentProgram);
+		}
+	}
 
 	@Override
-	public Double solve(ConicProgram program) {
-		boolean dualized = false;
-		Dualizer dualizer = null;
+	public void solve() {
+		if (currentProgram == null)
+			throw new IllegalStateException("No conic program has been set.");
 		
-		if (tryDualize && Dualizer.supportsConeTypes(program.getConeTypes())) {
-			log.debug("Dualizing conic program.");
-			dualized = true;
-			dualizer = new Dualizer(program);
-			program = dualizer.checkOutProgram();
+		ConicProgram program;
+		
+		currentProgram.checkOutMatrices();
+		
+		if (initializer != null)
+			initializer.makeFeasible();
+		
+		if (dualized) {
+			dualizer.checkOutProgram();
+			program = dualizer.getDualProgram();
+			program.checkOutMatrices();
+		}
+		else {
+			program = currentProgram;
 		}
 		
 		if (!supportsConeTypes(program.getConeTypes())) {
@@ -126,25 +173,24 @@ public class IPM implements ConicProgramSolver {
 					+ " Supported cones are non-negative orthant cones and second-order cones.");
 		}
 
-		double mu;
 		program.checkOutMatrices();
 		DoubleMatrix2D A = program.getA();
 		
 		log.debug("Starting optimzation with {} variables and {} constraints.", A.columns(), A.rows());
 		
-		mu = doSolve(program);
+		doSolve(program);
 		
-		program.checkInMatrices();
-		
-		if (dualized)
+		if (dualized) {
+			program.checkInMatrices();
 			dualizer.checkInProgram();
+		}
+		
+		currentProgram.checkInMatrices();
 		
 		log.debug("Completed optimization.");
-		
-		return mu;
 	}
 	
-	protected double doSolve(ConicProgram program) {
+	protected void doSolve(ConicProgram program) {
 		DoubleMatrix1D x, s, g, r;
 		DoubleMatrix2D Hinv, A;
 		double mu, primalInfeasibility, dualInfeasibility, tau, muInitial, theta;
@@ -205,9 +251,7 @@ public class IPM implements ConicProgramSolver {
 			primalInfeasibility = program.primalInfeasibility();
 			dualInfeasibility = program.dualInfeasibility();
 			log.trace("Itr: {} -- Gap: {} -- P. Inf: {} -- D. Inf: {} -- Obj: {}", new Object[] {++stepNum, mu, primalInfeasibility, dualInfeasibility, alg.mult(program.getC(), x)});
-		} 
-		
-		return mu;
+		}
 	}
 
 	protected void step(ConicProgram program, DoubleMatrix1D g, DoubleMatrix2D Hinv, double mu, double tau, boolean inNeighborhood) {

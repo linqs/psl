@@ -133,6 +133,7 @@ public class ConicReasoner implements Reasoner, AtomEventObserver {
 		program = new ConicProgram();
 		ConicProgramSolverFactory cpsFactory = (ConicProgramSolverFactory) config.getFactory(CPS_KEY, CPS_DEFAULT);
 		solver = cpsFactory.getConicProgramSolver(config);
+		solver.setConicProgram(program);
 		type = (DistributionType) config.getEnum(DISTRIBUTION_KEY, DISTRIBUTION_DEFAULT);
 		maxMapRounds = config.getInt(MAX_ROUNDS_KEY, MAX_ROUNDS_DEFAULT);
 		gkRepresentation = new HashMap<GroundKernel, ConicProgramProxy>();
@@ -203,7 +204,7 @@ public class ConicReasoner implements Reasoner, AtomEventObserver {
 	}
 	
 	private void inferenceStep() {
-		solver.solve(program);
+		solver.solve();
 		
 		for (Map.Entry<AtomFunctionVariable, VariableConicProgramProxy> e : vars.entrySet()) {
 			e.getKey().setValue(e.getValue().getVariable().getValue());

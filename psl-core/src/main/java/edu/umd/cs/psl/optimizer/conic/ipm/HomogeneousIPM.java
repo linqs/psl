@@ -142,6 +142,11 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		supportedCones.add(ConeType.SecondOrderCone);
 	}
 
+	private ConicProgram currentProgram;
+	
+	private boolean dualized;
+	private Dualizer dualizer;
+	
 	private final boolean tryDualize;
 	private final double infeasibilityThreshold;
 	private final double gapThreshold;
@@ -168,28 +173,42 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		delta = config.getDouble(DELTA_KEY, DELTA_DEFAULT);
 		if (delta < 0 || delta > 1)
 			throw new IllegalArgumentException("Property " + DELTA_KEY + " must be in [0,1].");
+		
+		currentProgram = null;
+		dualized = false;
 	}
 
 	@Override
 	public boolean supportsConeTypes(Collection<ConeType> types) {
 		return supportedCones.containsAll(types);
 	}
-
+	
 	@Override
-	public Double solve(ConicProgram program) {
-		boolean dualized = false;
-		Dualizer dualizer = null;
-		ConicProgram oldProgram = null;
-
-		program.checkOutMatrices();
-		
-		if (tryDualize && Dualizer.supportsConeTypes(program.getConeTypes())) {
+	public void setConicProgram(ConicProgram p) {
+		currentProgram = p;
+		if (tryDualize && Dualizer.supportsConeTypes(currentProgram.getConeTypes())) {
 			log.debug("Dualizing conic program.");
 			dualized = true;
-			dualizer = new Dualizer(program);
-			oldProgram = program;
-			program = dualizer.checkOutProgram();
+			dualizer = new Dualizer(currentProgram);
+		}
+	}
+
+	@Override
+	public void solve() {
+		if (currentProgram == null)
+			throw new IllegalStateException("No conic program has been set.");
+		
+		ConicProgram program;
+
+		currentProgram.checkOutMatrices();
+		
+		if (dualized) {
+			dualizer.checkOutProgram();
+			program = dualizer.getDualProgram();
 			program.checkOutMatrices();
+		}
+		else {
+			program = currentProgram;
 		}
 		
 		if (!supportsConeTypes(program.getConeTypes())) {
@@ -197,26 +216,23 @@ public class HomogeneousIPM implements ConicProgramSolver {
 					+ " Supported cones are non-negative orthant cones and second-order cones.");
 		}
 
-		double mu;
 		DoubleMatrix2D A = program.getA();
 		
 		log.debug("Starting optimization with {} variables and {} constraints.", A.columns(), A.rows());
 		
-		mu = doSolve(program);
-		
-		program.checkInMatrices();
+		doSolve(program);
 		
 		if (dualized) {
+			program.checkInMatrices();
 			dualizer.checkInProgram();
-			oldProgram.checkInMatrices();
 		}
 		
-		log.debug("Completed optimization.");
+		currentProgram.checkInMatrices();
 		
-		return mu;
+		log.debug("Completed optimization.");
 	}
 	
-	private double doSolve(ConicProgram program) {
+	private void doSolve(ConicProgram program) {
 		DoubleMatrix2D A = program.getA();
 		DoubleMatrix1D x = program.getX();
 		DoubleMatrix1D b = program.getB();
@@ -313,8 +329,6 @@ public class HomogeneousIPM implements ConicProgramSolver {
 			w.assign(DoubleFunctions.div(vars.tau));
 			s.assign(DoubleFunctions.div(vars.tau));
 		}
-		
-		return mu;
 	}
 
 	private void step(ConicProgram program, HIPMProgramMatrices pm, HIPMVars vars) {

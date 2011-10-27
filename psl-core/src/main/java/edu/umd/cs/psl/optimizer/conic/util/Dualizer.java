@@ -37,6 +37,8 @@ public class Dualizer {
 	
 	private static final Logger log = LoggerFactory.getLogger(Dualizer.class);
 	
+	private boolean checkedOut;
+	
 	private static final ArrayList<ConeType> supportedCones = new ArrayList<ConeType>(2);
 	static {
 		supportedCones.add(ConeType.NonNegativeOrthantCone);
@@ -50,13 +52,30 @@ public class Dualizer {
 	
 	public Dualizer(ConicProgram program) {
 		primalProgram = program;
+		checkedOut = false;
 	}
 	
 	public static boolean supportsConeTypes(Collection<ConeType> types) {
 		return supportedCones.containsAll(types);
 	}
 	
+	public ConicProgram getDualProgram() {
+		verifyCheckedOut();
+		return dualProgram;
+	}
+	
+	public void verifyCheckedOut() {
+		if (!checkedOut)
+			throw new IllegalStateException("Matrices are not checked out.");
+	}
+	
+	public void verifyCheckedIn() {
+		if (checkedOut)
+			throw new IllegalStateException("Matrices are not checked in.");
+	}
+	
 	public ConicProgram checkOutProgram() {
+		verifyCheckedIn();
 		dualProgram = new ConicProgram();
 		primalVarsToDualCons = new HashMap<Variable, LinearConstraint>();
 		primalConsToDualVars = new HashMap<LinearConstraint, Variable>();
@@ -189,6 +208,7 @@ public class Dualizer {
 	}
 	
 	public void checkInProgram() {
+		verifyCheckedOut();
 		// TODO: Fill in implicit values.
 		Variable primalVar, dualVar;
 		LinearConstraint dualCon;
