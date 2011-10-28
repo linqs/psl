@@ -19,7 +19,7 @@ package edu.umd.cs.psl.optimizer.conic.program;
 import edu.umd.cs.psl.util.graph.Node;
 import edu.umd.cs.psl.util.graph.Property;
 
-abstract class Entity {
+abstract public class Entity {
 	protected ConicProgram program;
 	protected Node node;
 

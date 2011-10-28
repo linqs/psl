@@ -17,6 +17,7 @@
 package edu.umd.cs.psl.optimizer.conic.program;
 
 public enum ConicProgramEvent {
+	MatricesCheckedIn, MatricesCheckedOut,
 	NNOCCreated, NNOCDeleted,
 	SOCCreated, SOCDeleted,
 	ObjCoeffChanged,

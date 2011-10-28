@@ -14,18 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.factorgraph;
+package edu.umd.cs.psl.optimizer.conic.util;
 
-import java.util.Collection;
-import java.util.Set;
+import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
+import edu.umd.cs.psl.optimizer.conic.program.ConicProgramEvent;
+import edu.umd.cs.psl.optimizer.conic.program.ConicProgramListener;
+import edu.umd.cs.psl.optimizer.conic.program.Entity;
 
-import edu.umd.cs.psl.model.atom.Atom;
+public class FeasiblePointInitializer implements ConicProgramListener {
 
-public interface FactorGraph {
-
-	public Collection<Set<Atom>> clusterAtoms(int minVertices, int maxVertices);
+	public FeasiblePointInitializer(ConicProgram p) {
+		
+	}
 	
-	public void add(Factor factor);
-	
-	public void add(Factor factor, double randomStrengthPerturbation);
+	@Override
+	public void notify(ConicProgramEvent e, Entity sender, Object... data) {
+		// TODO Auto-generated method stub
+		
+	}
+
 }
