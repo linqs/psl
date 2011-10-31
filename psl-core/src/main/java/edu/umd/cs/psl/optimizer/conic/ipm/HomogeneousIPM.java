@@ -450,17 +450,11 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		pm.k	= program.getCones().size();
 		pm.e	= new DenseDoubleMatrix1D(size);
 		pm.T	= new SparseDoubleMatrix2D(size, size);
-		pm.invT	= new SparseDoubleMatrix2D(size, size);
-		pm.Q	= new SparseDoubleMatrix2D(size, size);
-		pm.invQ	= new SparseDoubleMatrix2D(size, size);
 		
 		for (NonNegativeOrthantCone cone : program.getNonNegativeOrthantCones()) {
 			int i = program.index(cone.getVariable());
 			pm.e.setQuick(i, 1.0);
 			pm.T.setQuick(i, i, 1.0);
-			pm.invT.setQuick(i, i, 1.0);
-			pm.Q.setQuick(i, i, 1.0);
-			pm.invQ.setQuick(i, i, 1.0);
 		}
 		
 		for (SecondOrderCone cone : program.getSecondOrderCones()) {
@@ -468,14 +462,9 @@ public class HomogeneousIPM implements ConicProgramSolver {
 				int i = program.index(var);
 				pm.e.setQuick(i, 0);
 				pm.T.setQuick(i, i, 1.0);
-				pm.invT.setQuick(i, i, 1.0);
-				pm.Q.setQuick(i, i, -1.0);
-				pm.invQ.setQuick(i, i, -1.0);
 			}
 			int i = program.index(cone.getNthVariable());
 			pm.e.setQuick(i, 1.0);
-			pm.Q.setQuick(i, i, 1.0);
-			pm.invQ.setQuick(i, i, 1.0);
 		}
 		
 		return pm;
@@ -501,7 +490,6 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		im.invThetaSqInvWSq	= new SparseDoubleMatrix2D(n, n);
 		im.XBar				= new SparseDoubleMatrix2D(n, n);
 		im.invXBar			= new SparseDoubleMatrix2D(n, n);
-		im.SBar				= new SparseDoubleMatrix2D(n, n);
 		
 		for (NonNegativeOrthantCone cone : program.getNonNegativeOrthantCones()) {
 			int index = program.index(cone.getVariable());
@@ -513,7 +501,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 			im.invThetaSqInvWSq.setQuick(index, index, 1 / thetaSq);
 			im.XBar.setQuick(index, index, theta * x.getQuick(index));
 			im.invXBar.setQuick(index, index, invTheta * 1 / x.getQuick(index));
-			im.SBar.setQuick(index, index, invTheta * s.getQuick(index));
+			//im.SBar.setQuick(index, index, invTheta * s.getQuick(index));
 		}
 		
 		for (SecondOrderCone cone : program.getSecondOrderCones()) {
@@ -552,7 +540,6 @@ public class HomogeneousIPM implements ConicProgramSolver {
 			DoubleMatrix2D invThetaInvWSel		= im.invThetaInvW.viewSelection(selection, selection);
 			DoubleMatrix2D XBarSel				= im.XBar.viewSelection(selection, selection);
 			DoubleMatrix2D invXBarSel			= im.invXBar.viewSelection(selection, selection);
-			DoubleMatrix2D SBarSel				= im.SBar.viewSelection(selection, selection);
 			DoubleMatrix2D invThetaSqInvWSqSel	= im.invThetaSqInvWSq.viewSelection(selection, selection);
 			
 			/* Computes invThetaSqInvWSq selection */
@@ -564,8 +551,6 @@ public class HomogeneousIPM implements ConicProgramSolver {
 			/* Computes selections of XBar, SBar, and invXBar */
 			DoubleMatrix1D xbar = vSel.copy();
 			XBarSel.assign(getArrowheadMatrix(xbar));
-			DoubleMatrix1D sbar = vSel.copy();
-			SBarSel.assign(getArrowheadMatrix(sbar));
 			alg.multOuter(xbar, xbar, invXBarSel);
 			invXBarSel.assign(DoubleFunctions.div(xbar.getQuick(0)));
 			invXBarSel.viewColumn(0).assign(xbar).assign(DoubleFunctions.mult(-1));
@@ -583,12 +568,11 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		/* Computes more intermediate matrices */
 		im.AInvThetaSqInvWSq = new SparseCCDoubleMatrix2D(A.rows(), n);
 		A.getColumnCompressed(false).zMult(im.invThetaSqInvWSq.getColumnCompressed(false), im.AInvThetaSqInvWSq, 1.0, 0.0, false, false);
+		im.invThetaSqInvWSq = null;
 		
 		/* Computes M and finds its Cholesky factorization */
-		SparseCCDoubleMatrix2D APhi = new SparseCCDoubleMatrix2D(A.rows(), A.columns());
-		A.getColumnCompressed(false).zMult(im.invThetaInvW.getColumnCompressed(false), APhi);
 		SparseCCDoubleMatrix2D M = new SparseCCDoubleMatrix2D(A.rows(), A.rows());
-		APhi.zMult(APhi, M, 1.0, 0.0, false, true);
+		im.AInvThetaSqInvWSq.zMult(A.getColumnCompressed(false), M, 1.0, 0.0, false, true);
 		log.trace("Starting decomposition.");
 		im.M = new SparseDoubleCholeskyDecomposition(M, 1);
 		log.trace("Finished decomposition.");
@@ -633,7 +617,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		res.r1 = baseResP.copy().assign(DoubleFunctions.mult(gamma-1));
 		res.r2 = baseResD.copy().assign(DoubleFunctions.mult(gamma-1));
 		res.r3 = baseResG * (gamma-1);
-		res.r4 = pm.e.copy().assign(DoubleFunctions.mult(gamma*im.mu)).assign(im.XBar.zMult(im.SBar.zMult(pm.e, null), null), DoubleFunctions.minus);
+		res.r4 = pm.e.copy().assign(DoubleFunctions.mult(gamma*im.mu)).assign(im.XBar.zMult(im.XBar.zMult(pm.e, null), null), DoubleFunctions.minus);
 		res.r5 = gamma * im.mu - vars.tau * vars.kappa;
 		
 		/* Corrects residuals with second-order estimate */
@@ -903,9 +887,6 @@ public class HomogeneousIPM implements ConicProgramSolver {
 	private class HIPMProgramMatrices {
 		private int k;
 		private SparseDoubleMatrix2D T;
-		private SparseDoubleMatrix2D invT;
-		private SparseDoubleMatrix2D Q;
-		private SparseDoubleMatrix2D invQ;
 		private DoubleMatrix1D e;
 	}
 	
@@ -921,7 +902,6 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		private double mu;
 		private SparseDoubleMatrix2D XBar;
 		private SparseDoubleMatrix2D invXBar;
-		private SparseDoubleMatrix2D SBar;
 		private SparseDoubleMatrix2D ThetaW;
 		private SparseDoubleMatrix2D invThetaInvW;
 		private SparseCCDoubleMatrix2D AInvThetaSqInvWSq;
