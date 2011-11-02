@@ -16,6 +16,7 @@
  */
 package edu.umd.cs.psl.optimizer.conic.program;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -35,7 +36,7 @@ public class Variable extends Entity {
 		setValue(0.5);
 		setDualValue(0.5);
 		doSetObjectiveCoefficient(0.0);
-		cons = new HashSet<LinearConstraint>();
+		cons = new HashSet<LinearConstraint>(8);
 	}
 
 	public Cone getCone() {
@@ -73,7 +74,7 @@ public class Variable extends Entity {
 	}
 	
 	public Set<LinearConstraint> getLinearConstraints() {
-		return new HashSet<LinearConstraint>(cons);
+		return Collections.unmodifiableSet(cons);
 	}
 	
 	void notifyAddedToLinearConstraint(LinearConstraint con) {

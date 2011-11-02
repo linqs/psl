@@ -17,11 +17,14 @@
 package edu.umd.cs.psl.optimizer.conic.program;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+
+import com.google.common.collect.ImmutableSet;
 
 import cern.colt.list.tdouble.DoubleArrayList;
 import cern.colt.list.tint.IntArrayList;
@@ -95,7 +98,9 @@ public class ConicProgram {
 	}
 	
 	public Set<NonNegativeOrthantCone> getNonNegativeOrthantCones() {
-		return new HashSet<NonNegativeOrthantCone>(NNOCs);
+		return Collections.unmodifiableSet(NNOCs);
+		//return ImmutableSet.copyOf(NNOCs);
+		//return new HashSet<NonNegativeOrthantCone>(NNOCs);
 	}
 	
 	public SecondOrderCone createSecondOrderCone(int n) {
@@ -104,15 +109,18 @@ public class ConicProgram {
 	}
 	
 	public Set<SecondOrderCone> getSecondOrderCones() {
-		return new HashSet<SecondOrderCone>(SOCs);
+		return Collections.unmodifiableSet(SOCs);
+		//return ImmutableSet.copyOf(SOCs);
+		//return new HashSet<SecondOrderCone>(SOCs);
 	}
 	
 	public Set<Cone> getCones() {
-		Set<Cone> cones = new HashSet<Cone>(numCones());
-		cones.addAll(NNOCs);
-		cones.addAll(SOCs);
-		cones.addAll(RSOCs);
-		return cones;
+//		Set<Cone> cones = new HashSet<Cone>(numCones());
+//		cones.addAll(NNOCs);
+//		cones.addAll(SOCs);
+//		cones.addAll(RSOCs);
+		return ImmutableSet.<Cone>builder().addAll(NNOCs).addAll(SOCs).addAll(RSOCs).build();
+		//return cones;
 	}
 	
 	public LinearConstraint createConstraint() {
@@ -162,7 +170,7 @@ public class ConicProgram {
 				
 		
 		/* Initializes data matrices */
-		A = new SparseDoubleMatrix2D(lcMap.size(), varMap.size());
+		A = new SparseDoubleMatrix2D(lcMap.size(), varMap.size(), lcMap.size()*4, 0.2, 0.5);
 		x = new DenseDoubleMatrix1D(varMap.size());
 		b = new DenseDoubleMatrix1D(lcMap.size());
 		w = new DenseDoubleMatrix1D(lcMap.size());
@@ -201,12 +209,12 @@ public class ConicProgram {
 	
 	public Map<Variable, Integer> getVarMap() {
 		verifyCheckedOut();
-		return varMap;
+		return Collections.unmodifiableMap(varMap);
 	}
 	
 	public Map<LinearConstraint, Integer> getLcMap() {
 		verifyCheckedOut();
-		return lcMap;
+		return Collections.unmodifiableMap(lcMap);
 	}
 	
 	public SparseDoubleMatrix2D getA() {

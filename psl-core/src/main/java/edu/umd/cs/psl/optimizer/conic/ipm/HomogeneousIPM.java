@@ -273,9 +273,9 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		do {
 			step(program, pm, vars);
 			
-			mu		= (vars.v.zDotProduct(vars.v) + vars.tau * vars.kappa) / (pm.k+1);
-			cDotX	= c.zDotProduct(x);
-			bDotW	= b.zDotProduct(w);
+			mu     = (vars.v.zDotProduct(vars.v) + vars.tau * vars.kappa) / (pm.k+1);
+			cDotX  = c.zDotProduct(x);
+			bDotW  = b.zDotProduct(w);
 			
 			primalInfeasibility = alg.norm2(
 					A.zMult(x, b.copy().assign(DoubleFunctions.mult(vars.tau)), 1.0, -1.0, false)
@@ -291,17 +291,17 @@ public class HomogeneousIPM implements ConicProgramSolver {
 			
 			log.trace("Itr: {} -- Comp: {} -- P. Inf: {} -- D. Inf: {} -- Sig: {}", new Object[] {++stepNum, mu, primalInfeasibility, dualInfeasibility, gap});
 			
-			primalFeasible	= primalInfeasibility <= infeasibilityThreshold;
-			dualFeasible	= dualInfeasibility <= infeasibilityThreshold;
-			gapFeasible		= gapInfeasibility <= infeasibilityThreshold;
-			gapIsSmall		= gap <= gapThreshold;
-			tauIsSmall		= vars.tau <= tauThreshold * Math.max(1.0, vars.kappa);
-			tauIsVerySmall	= vars.tau <= tauThreshold * Math.min(1.0, vars.kappa);
-			muIsSmall		= mu <= muThreshold * muZero;
+			primalFeasible  = primalInfeasibility <= infeasibilityThreshold;
+			dualFeasible    = dualInfeasibility <= infeasibilityThreshold;
+			gapFeasible     = gapInfeasibility <= infeasibilityThreshold;
+			gapIsSmall      = gap <= gapThreshold;
+			tauIsSmall      = vars.tau <= tauThreshold * Math.max(1.0, vars.kappa);
+			tauIsVerySmall  = vars.tau <= tauThreshold * Math.min(1.0, vars.kappa);
+			muIsSmall       = mu <= muThreshold * muZero;
 			
-			solved				= primalFeasible && dualFeasible && gapIsSmall;
-			programInfeasible	= primalFeasible && dualFeasible && gapFeasible && tauIsSmall;
-			illPosed			= muIsSmall && tauIsVerySmall;
+			solved             = primalFeasible && dualFeasible && gapIsSmall;
+			programInfeasible  = primalFeasible && dualFeasible && gapFeasible && tauIsSmall;
+			illPosed           = muIsSmall && tauIsVerySmall;
 		} while (!solved && !programInfeasible && !illPosed);
 		
 		if (illPosed)
@@ -319,29 +319,30 @@ public class HomogeneousIPM implements ConicProgramSolver {
 
 	private void step(ConicProgram program, HIPMProgramMatrices pm, HIPMVars vars) {
 		/* Prepares for step */
-		DoubleMatrix1D		x	= program.getX();
-		DoubleMatrix1D		w	= program.getW();
-		DoubleMatrix1D		s	= program.getS();
-		DenseDoubleAlgebra	alg	= new DenseDoubleAlgebra();
-		HIPMIntermediates	im	= getIntermediates(program, pm, vars);
+		DoubleMatrix1D      x   = program.getX();
+		DoubleMatrix1D      w   = program.getW();
+		DoubleMatrix1D      s   = program.getS();
+		DenseDoubleAlgebra  alg = new DenseDoubleAlgebra();
+		log.trace("Computing intermediates.");
+		HIPMIntermediates   im  = getIntermediates(program, pm, vars);
 		
 		/* Computes affine scaling (Newton) direction */
-		HIPMResiduals		res			= getResiduals(program, pm, vars, im, 0.0, null);
-		HIPMSearchDirection	sd			= getSearchDirection(program, pm, vars, res, im);
-		HIPMSearchDirection	descaledSD	= descaleSearchDirection(sd, im);
+		HIPMResiduals        res        = getResiduals(program, pm, vars, im, 0.0, null);
+		HIPMSearchDirection  sd         = getSearchDirection(program, pm, vars, res, im);
+		HIPMSearchDirection  descaledSD = descaleSearchDirection(sd, im);
 		
 		/* Uses affine scaling direction to compute gamma */
-		double	alphaMax	= getMaxStepSize(program, vars, descaledSD);
-		double	gamma		= Math.min(delta, Math.pow(1-alphaMax, 2)) * (1-alphaMax);
+		double  alphaMax = getMaxStepSize(program, vars, descaledSD);
+		double  gamma    = Math.min(delta, Math.pow(1-alphaMax, 2)) * (1-alphaMax);
 		
 		/* Computes corrected direction */
-		res			= getResiduals(program, pm, vars, im, gamma, sd);
-		sd			= getSearchDirection(program, pm, vars, res, im);
-		descaledSD	= descaleSearchDirection(sd, im);
+		res         = getResiduals(program, pm, vars, im, gamma, sd);
+		sd          = getSearchDirection(program, pm, vars, res, im);
+		descaledSD  = descaleSearchDirection(sd, im);
 		
 		/* Gets step size */
-				alphaMax	= getMaxStepSize(program, vars, descaledSD);
-		double	stepSize	= getStepSize(program, vars, im, sd, alphaMax, beta, gamma);
+		        alphaMax = getMaxStepSize(program, vars, descaledSD);
+		double  stepSize = getStepSize(program, vars, im, sd, alphaMax, beta, gamma);
 		
 		/* Updates variables */
 		x.assign(descaledSD.dx.copy().assign(DoubleFunctions.mult(stepSize)), DoubleFunctions.plus);
@@ -378,9 +379,9 @@ public class HomogeneousIPM implements ConicProgramSolver {
 			}
 			
 			/* Selects the variables */
-			DoubleMatrix1D dSel		= vars.d.viewSelection(selection);
-			DoubleMatrix1D detDSel	= vars.detD.viewSelection(selection);
-			DoubleMatrix1D vSel		= vars.v.viewSelection(selection);
+			DoubleMatrix1D  dSel    = vars.d.viewSelection(selection);
+			DoubleMatrix1D  detDSel = vars.detD.viewSelection(selection);
+			DoubleMatrix1D  vSel    = vars.v.viewSelection(selection);
 			
 			/* Creates a Q matrix for the variables */
 			DoubleMatrix2D Q = new SparseDoubleMatrix2D(nCone, nCone);
@@ -447,9 +448,9 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		SparseDoubleMatrix2D A = program.getA();
 		int size = A.columns();
 		
-		pm.k	= program.getCones().size();
-		pm.e	= new DenseDoubleMatrix1D(size);
-		pm.T	= new SparseDoubleMatrix2D(size, size);
+		pm.k  = program.getCones().size();
+		pm.e  = new DenseDoubleMatrix1D(size);
+		pm.T  = new SparseDoubleMatrix2D(size, size, size*4, 0.2, 0.5);
 		
 		for (NonNegativeOrthantCone cone : program.getNonNegativeOrthantCones()) {
 			int i = program.index(cone.getVariable());
@@ -485,25 +486,26 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		
 		im.mu = (vars.v.zDotProduct(vars.v) + vars.tau * vars.kappa) / (pm.k+1);
 		
-		im.ThetaW			= new SparseDoubleMatrix2D(n, n);
-		im.invThetaInvW		= new SparseDoubleMatrix2D(n, n);
-		im.invThetaSqInvWSq	= new SparseDoubleMatrix2D(n, n);
-		im.XBar				= new SparseDoubleMatrix2D(n, n);
-		im.invXBar			= new SparseDoubleMatrix2D(n, n);
+		SparseDoubleMatrix2D  ThetaW           = new SparseDoubleMatrix2D(n, n, n*4, 0.2, 0.5);
+		SparseDoubleMatrix2D  invThetaInvW     = new SparseDoubleMatrix2D(n, n, n*4, 0.2, 0.5);
+		SparseDoubleMatrix2D  invThetaSqInvWSq = new SparseDoubleMatrix2D(n, n, n*4, 0.2, 0.5);
+		SparseDoubleMatrix2D  XBar             = new SparseDoubleMatrix2D(n, n, n*4, 0.2, 0.5);
+		SparseDoubleMatrix2D  invXBar          = new SparseDoubleMatrix2D(n, n, n*4, 0.2, 0.5);
 		
+		/* Processes NNOCs */
 		for (NonNegativeOrthantCone cone : program.getNonNegativeOrthantCones()) {
 			int index = program.index(cone.getVariable());
 			double thetaSq = s.getQuick(index) / x.getQuick(index);
 			double theta = Math.sqrt(thetaSq);
 			double invTheta = 1 / theta;
-			im.ThetaW.setQuick(index, index, theta);
-			im.invThetaInvW.setQuick(index, index, invTheta);
-			im.invThetaSqInvWSq.setQuick(index, index, 1 / thetaSq);
-			im.XBar.setQuick(index, index, theta * x.getQuick(index));
-			im.invXBar.setQuick(index, index, invTheta * 1 / x.getQuick(index));
-			//im.SBar.setQuick(index, index, invTheta * s.getQuick(index));
+			ThetaW.setQuick(index, index, theta);
+			invThetaInvW.setQuick(index, index, invTheta);
+			invThetaSqInvWSq.setQuick(index, index, 1 / thetaSq);
+			XBar.setQuick(index, index, theta * x.getQuick(index));
+			invXBar.setQuick(index, index, invTheta * 1 / x.getQuick(index));
 		}
 		
+		/* Processes SOCs */
 		for (SecondOrderCone cone : program.getSecondOrderCones()) {
 			/* Collects the cone's variables */
 			Set<Variable> coneVars = cone.getVariables();
@@ -521,9 +523,9 @@ public class HomogeneousIPM implements ConicProgramSolver {
 			}
 			
 			/* Selects the variables */
-			DoubleMatrix1D dSel		= vars.d.viewSelection(selection);
-			double			detDSel	= vars.detD.viewSelection(selection).getQuick(0);
-			DoubleMatrix1D vSel		= vars.v.viewSelection(selection);
+			DoubleMatrix1D  dSel    = vars.d.viewSelection(selection);
+			double          detDSel = vars.detD.viewSelection(selection).getQuick(0);
+			DoubleMatrix1D  vSel    = vars.v.viewSelection(selection);
 			
 			/* Creates a Q matrix for the variables */
 			DoubleMatrix2D Q = new SparseDoubleMatrix2D(nCone, nCone);
@@ -536,11 +538,11 @@ public class HomogeneousIPM implements ConicProgramSolver {
 			 */
 			
 			/* Gets the selections */
-			DoubleMatrix2D ThetaWSel			= im.ThetaW.viewSelection(selection, selection);
-			DoubleMatrix2D invThetaInvWSel		= im.invThetaInvW.viewSelection(selection, selection);
-			DoubleMatrix2D XBarSel				= im.XBar.viewSelection(selection, selection);
-			DoubleMatrix2D invXBarSel			= im.invXBar.viewSelection(selection, selection);
-			DoubleMatrix2D invThetaSqInvWSqSel	= im.invThetaSqInvWSq.viewSelection(selection, selection);
+			DoubleMatrix2D ThetaWSel			= ThetaW.viewSelection(selection, selection);
+			DoubleMatrix2D invThetaInvWSel		= invThetaInvW.viewSelection(selection, selection);
+			DoubleMatrix2D XBarSel				= XBar.viewSelection(selection, selection);
+			DoubleMatrix2D invXBarSel			= invXBar.viewSelection(selection, selection);
+			DoubleMatrix2D invThetaSqInvWSqSel	= invThetaSqInvWSq.viewSelection(selection, selection);
 			
 			/* Computes invThetaSqInvWSq selection */
 			alg.multOuter(dSel, dSel, invThetaSqInvWSqSel);
@@ -548,7 +550,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 			ThetaWSel.assign(getSOCFunction(getSOCSqrt(getSOCInverse(dSel, detDSel), 1 / detDSel), 1 / Math.sqrt(detDSel)));
 			invThetaInvWSel.assign(getSOCFunction(getSOCSqrt(dSel, detDSel), Math.sqrt(detDSel)));
 			
-			/* Computes selections of XBar, SBar, and invXBar */
+			/* Computes selections of XBar and invXBar */
 			DoubleMatrix1D xbar = vSel.copy();
 			XBarSel.assign(getArrowheadMatrix(xbar));
 			alg.multOuter(xbar, xbar, invXBarSel);
@@ -561,13 +563,26 @@ public class HomogeneousIPM implements ConicProgramSolver {
 			for (int i = 1; i < nCone; i++)
 				invXBarSel.setQuick(i, i, invXBarSel.getQuick(i, i) + coeff);
 			invXBarSel.assign(DoubleFunctions.div(Math.pow(xbar.getQuick(0), 2) - normSq));
-			if (alg.inverse(XBarSel).assign(invXBarSel, DoubleFunctions.minus).assign(DoubleFunctions.abs).getMaxLocation()[0] > 10e-8)
-				coeff += 0;
 		}
+		
+		/* Creates column-compressed matrices */
+		
+		im.invThetaInvW      = invThetaInvW.getColumnCompressed(false);
+		im.invThetaSqInvWSq  = invThetaSqInvWSq.getColumnCompressed(false);
+		im.XBar              = XBar.getColumnCompressed(false);
+		im.invXBar           = invXBar.getColumnCompressed(false);
+		im.ThetaW            = ThetaW.getColumnCompressed(false);
+		
+		/* Makes memory available to garbage collector */
+		ThetaW            = null;
+		invThetaInvW      = null;
+		invThetaSqInvWSq  = null;
+		XBar              = null;
+		invXBar           = null;
 		
 		/* Computes more intermediate matrices */
 		im.AInvThetaSqInvWSq = new SparseCCDoubleMatrix2D(A.rows(), n);
-		A.getColumnCompressed(false).zMult(im.invThetaSqInvWSq.getColumnCompressed(false), im.AInvThetaSqInvWSq, 1.0, 0.0, false, false);
+		A.getColumnCompressed(false).zMult(im.invThetaSqInvWSq, im.AInvThetaSqInvWSq, 1.0, 0.0, false, false);
 		im.invThetaSqInvWSq = null;
 		
 		/* Computes M and finds its Cholesky factorization */
@@ -584,7 +599,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		im.M.solve(im.g2);
 		
 		/* g1 */
-		im.g1 = im.invThetaInvW.getColumnCompressed(false).zMult(A.getColumnCompressed(false).zMult(im.g2, null, 1.0, 0.0, true), null);
+		im.g1 = im.invThetaInvW.zMult(A.getColumnCompressed(false).zMult(im.g2, null, 1.0, 0.0, true), null);
 		im.g1.assign(im.invThetaInvW.zMult(c, null), DoubleFunctions.minus);
 		
 		return im;
@@ -598,15 +613,15 @@ public class HomogeneousIPM implements ConicProgramSolver {
 	 * direction, then this is equivalent to the correction used in Mehrotra's
 	 * predictor-corrector method.
 	 * 
-	 * @param program	program being solved
-	 * @param pm		saved program information
-	 * @param vars		homogeneous-model variables
-	 * @param im		saved step-specific computations
-	 * @param gamma		parameter in [0,1] controlling adherence to central path.
-	 * 						If 0, this method returns the Newton direction.
-	 * @param sd		search direction used to estimate second-order terms.
-	 * 						If null, no second-order terms are added.
-	 * @return  the computed residuals
+	 * @param program  program being solved
+	 * @param pm       saved program information
+	 * @param vars     homogeneous-model variables
+	 * @param im       saved step-specific computations
+	 * @param gamma    parameter in [0,1] controlling adherence to central path.
+	 *                     If 0, this method returns the Newton direction.
+	 * @param sd       search direction used to estimate second-order terms.
+	 *                     If null, no second-order terms are added.
+	 * @return         the computed residuals
 	 */
 	private HIPMResiduals getResiduals(ConicProgram program
 			, HIPMProgramMatrices pm, HIPMVars vars, HIPMIntermediates im
@@ -655,8 +670,8 @@ public class HomogeneousIPM implements ConicProgramSolver {
 				DoubleMatrix1D dsnSel = dsn.viewSelection(selection);
 				
 				/* Gets the selections */
-				DoubleMatrix2D DxnSel	= Dxn.viewSelection(selection, selection);
-				DoubleMatrix2D DsnSel	= Dsn.viewSelection(selection, selection);
+				DoubleMatrix2D DxnSel  = Dxn.viewSelection(selection, selection);
+				DoubleMatrix2D DsnSel  = Dsn.viewSelection(selection, selection);
 				
 				/* Computes the arrowhead matrices */
 				DxnSel.assign(getArrowheadMatrix(dxnSel));
@@ -680,19 +695,19 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		DoubleMatrix1D c = program.getC();
 		
 		DoubleMatrix1D TInvVR4 = pm.T.getColumnCompressed(false)
-				.zMult(im.invXBar.getColumnCompressed(false).zMult(res.r4, null), null);
+				.zMult(im.invXBar.zMult(res.r4, null), null);
 		
 		/* h2 */
 		DoubleMatrix1D h2 = res.r1.copy()
 				.assign(im.AInvThetaSqInvWSq.zMult(res.r2.copy(), null), DoubleFunctions.plus)
 				.assign(A.getColumnCompressed(false)
-						.zMult(im.invThetaInvW.getColumnCompressed(false).zMult(TInvVR4, null), null),
+						.zMult(im.invThetaInvW.zMult(TInvVR4, null), null),
 						DoubleFunctions.minus);
 		im.M.solve(h2);
 		
 		/* h1 */
 		DoubleMatrix1D h1 = TInvVR4.copy();
-		h1.assign(im.invThetaInvW.getColumnCompressed(false)
+		h1.assign(im.invThetaInvW
 				.zMult(A.getColumnCompressed(false).zMult(h2, null, 1.0, 0.0, true), null),
 				DoubleFunctions.plus);
 		h1.assign(im.invThetaInvW.zMult(res.r2, null), DoubleFunctions.minus);
@@ -900,12 +915,12 @@ public class HomogeneousIPM implements ConicProgramSolver {
 	
 	private class HIPMIntermediates {
 		private double mu;
-		private SparseDoubleMatrix2D XBar;
-		private SparseDoubleMatrix2D invXBar;
-		private SparseDoubleMatrix2D ThetaW;
-		private SparseDoubleMatrix2D invThetaInvW;
+		private SparseCCDoubleMatrix2D XBar;
+		private SparseCCDoubleMatrix2D invXBar;
+		private SparseCCDoubleMatrix2D ThetaW;
+		private SparseCCDoubleMatrix2D invThetaInvW;
 		private SparseCCDoubleMatrix2D AInvThetaSqInvWSq;
-		private SparseDoubleMatrix2D invThetaSqInvWSq;
+		private SparseCCDoubleMatrix2D invThetaSqInvWSq;
 		private SparseDoubleCholeskyDecomposition M;
 		private DoubleMatrix1D g1;
 		private DoubleMatrix1D g2;

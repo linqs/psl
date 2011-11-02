@@ -16,6 +16,7 @@
  */
 package edu.umd.cs.psl.optimizer.conic.program;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,7 +31,7 @@ public class LinearConstraint extends Entity {
 	
 	LinearConstraint(ConicProgram p) {
 		super(p);
-		vars = new HashMap<Variable, Double>();
+		vars = new HashMap<Variable, Double>(8);
 		doSetConstrainedValue(0.0);
 		setLagrange(0.0);
 		program.notify(ConicProgramEvent.ConCreated, this);
@@ -56,7 +57,7 @@ public class LinearConstraint extends Entity {
 	}
 
 	public Map<Variable, Double> getVariables() {
-		return new HashMap<Variable, Double>(vars);
+		return Collections.unmodifiableMap(vars);
 	}
 
 	public Double getConstrainedValue() {
