@@ -100,7 +100,8 @@ public class Variable extends Entity {
 	
 	@Override
 	final void delete() {
-		for (LinearConstraint lc : getLinearConstraints()) {
+		Set<LinearConstraint> originalCons = new HashSet<LinearConstraint>(cons);
+		for (LinearConstraint lc : originalCons) {
 			lc.removeVariable(this);
 		}
 		cone = null;

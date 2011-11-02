@@ -18,7 +18,9 @@ package edu.umd.cs.psl.optimizer.conic.program;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public class LinearConstraint extends Entity {
 	
@@ -98,7 +100,8 @@ public class LinearConstraint extends Entity {
 	@Override
 	final public void delete() {
 		program.verifyCheckedIn();
-		for (Variable var : getVariables().keySet()) {
+		Set<Variable> originalVars = new HashSet<Variable>(getVariables().keySet());
+		for (Variable var : originalVars) {
 			removeVariable(var);
 		}
 		program.notify(ConicProgramEvent.ConDeleted, this);

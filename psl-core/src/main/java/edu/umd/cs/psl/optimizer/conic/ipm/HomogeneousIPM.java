@@ -537,11 +537,11 @@ public class HomogeneousIPM implements ConicProgramSolver {
 			 */
 			
 			/* Gets the selections */
-			DoubleMatrix2D ThetaWSel			= ThetaW.viewSelection(selection, selection);
-			DoubleMatrix2D invThetaInvWSel		= invThetaInvW.viewSelection(selection, selection);
-			DoubleMatrix2D XBarSel				= XBar.viewSelection(selection, selection);
-			DoubleMatrix2D invXBarSel			= invXBar.viewSelection(selection, selection);
-			DoubleMatrix2D invThetaSqInvWSqSel	= invThetaSqInvWSq.viewSelection(selection, selection);
+			DoubleMatrix2D  ThetaWSel           = ThetaW.viewSelection(selection, selection);
+			DoubleMatrix2D  invThetaInvWSel     = invThetaInvW.viewSelection(selection, selection);
+			DoubleMatrix2D  XBarSel             = XBar.viewSelection(selection, selection);
+			DoubleMatrix2D  invXBarSel          = invXBar.viewSelection(selection, selection);
+			DoubleMatrix2D  invThetaSqInvWSqSel = invThetaSqInvWSq.viewSelection(selection, selection);
 			
 			/* Computes invThetaSqInvWSq selection */
 			alg.multOuter(dSel, dSel, invThetaSqInvWSqSel);
