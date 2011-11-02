@@ -537,52 +537,103 @@ public class HomogeneousIPM implements ConicProgramSolver {
 			 */
 			
 			/* Gets the selections */
-			DoubleMatrix2D  ThetaWSel           = ThetaW.viewSelection(selection, selection);
-			DoubleMatrix2D  invThetaInvWSel     = invThetaInvW.viewSelection(selection, selection);
-			DoubleMatrix2D  XBarSel             = XBar.viewSelection(selection, selection);
-			DoubleMatrix2D  invXBarSel          = invXBar.viewSelection(selection, selection);
-			DoubleMatrix2D  invThetaSqInvWSqSel = invThetaSqInvWSq.viewSelection(selection, selection);
+//			DoubleMatrix2D  ThetaWSel           = ThetaW.viewSelection(selection, selection);
+//			DoubleMatrix2D  invThetaInvWSel     = invThetaInvW.viewSelection(selection, selection);
+//			DoubleMatrix2D  XBarSel             = XBar.viewSelection(selection, selection);
+//			DoubleMatrix2D  invXBarSel          = invXBar.viewSelection(selection, selection);
+//			DoubleMatrix2D  invThetaSqInvWSqSel = invThetaSqInvWSq.viewSelection(selection, selection);
+			
+			DoubleMatrix2D temp;
 			
 			/* Computes invThetaSqInvWSq selection */
-			alg.multOuter(dSel, dSel, invThetaSqInvWSqSel);
-			invThetaSqInvWSqSel.assign(Q.copy().assign(DoubleFunctions.mult(detDSel)), DoubleFunctions.minus);
-			ThetaWSel.assign(getSOCFunction(getSOCSqrt(getSOCInverse(dSel, detDSel), 1 / detDSel), 1 / Math.sqrt(detDSel)));
-			invThetaInvWSel.assign(getSOCFunction(getSOCSqrt(dSel, detDSel), Math.sqrt(detDSel)));
+			temp = alg.multOuter(dSel, dSel, null);
+			for (int i = 0; i < temp.rows(); i++) {
+				for (int j = 0; j < temp.columns(); j++) {
+					invThetaSqInvWSq.setQuick(selection[i], selection[j], temp.getQuick(i, j));
+				}
+			}
+//			alg.multOuter(dSel, dSel, invThetaSqInvWSqSel);
+			temp = Q.copy().assign(DoubleFunctions.mult(detDSel)); 
+			for (int i = 0; i < temp.rows(); i++) {
+				for (int j = 0; j < temp.columns(); j++) {
+					invThetaSqInvWSq.setQuick(selection[i], selection[j], invThetaSqInvWSq.getQuick(selection[i], selection[j]) - temp.getQuick(i, j));
+				}
+			}
+//			invThetaSqInvWSqSel.assign(Q.copy().assign(DoubleFunctions.mult(detDSel)), DoubleFunctions.minus);
+			temp = getSOCFunction(getSOCSqrt(getSOCInverse(dSel, detDSel), 1 / detDSel), 1 / Math.sqrt(detDSel));
+			for (int i = 0; i < temp.rows(); i++) {
+				for (int j = 0; j < temp.columns(); j++) {
+					ThetaW.setQuick(selection[i], selection[j], temp.getQuick(i, j));
+				}
+			}
+//			ThetaWSel.assign(getSOCFunction(getSOCSqrt(getSOCInverse(dSel, detDSel), 1 / detDSel), 1 / Math.sqrt(detDSel)));
+			temp = getSOCFunction(getSOCSqrt(dSel, detDSel), Math.sqrt(detDSel));
+			for (int i = 0; i < temp.rows(); i++) {
+				for (int j = 0; j < temp.columns(); j++) {
+					invThetaInvW.setQuick(selection[i], selection[j], temp.getQuick(i, j));
+				}
+			}
+//			invThetaInvWSel.assign(getSOCFunction(getSOCSqrt(dSel, detDSel), Math.sqrt(detDSel)));
 			
 			/* Computes selections of XBar and invXBar */
 			DoubleMatrix1D xbar = vSel.copy();
-			XBarSel.assign(getArrowheadMatrix(xbar));
-			alg.multOuter(xbar, xbar, invXBarSel);
-			invXBarSel.assign(DoubleFunctions.div(xbar.getQuick(0)));
-			invXBarSel.viewColumn(0).assign(xbar).assign(DoubleFunctions.mult(-1));
-			invXBarSel.viewRow(0).assign(xbar).assign(DoubleFunctions.mult(-1));
-			invXBarSel.setQuick(0, 0, xbar.getQuick(0));
+			temp = getArrowheadMatrix(xbar);
+			for (int i = 0; i < temp.rows(); i++) {
+				for (int j = 0; j < temp.columns(); j++) {
+					XBar.setQuick(selection[i], selection[j], temp.getQuick(i, j));
+				}
+			}
+//			XBarSel.assign(getArrowheadMatrix(xbar));
+			temp = alg.multOuter(xbar, xbar, null);
+			for (int i = 0; i < temp.rows(); i++) {
+				for (int j = 0; j < temp.columns(); j++) {
+					invXBar.setQuick(selection[i], selection[j], temp.getQuick(i, j) / xbar.getQuick(0));
+				}
+			}
+//			alg.multOuter(xbar, xbar, invXBarSel);
+//			invXBarSel.assign(DoubleFunctions.div(xbar.getQuick(0)));
+			
+			for (int i = 0; i < xbar.size(); i++) {
+				invXBar.setQuick(selection[i], selection[0], -1 * xbar.getQuick(i));
+				invXBar.setQuick(selection[0], selection[i], -1 * xbar.getQuick(i));
+			}
+//			invXBarSel.viewColumn(0).assign(xbar).assign(DoubleFunctions.mult(-1));
+//			invXBarSel.viewRow(0).assign(xbar).assign(DoubleFunctions.mult(-1));
+//			
+			invXBar.setQuick(selection[0], selection[0], xbar.getQuick(0));
+//			invXBarSel.setQuick(0, 0, xbar.getQuick(0));
 			double normSq = Math.pow(alg.norm2(xbar.viewPart(1, nCone-1)), 2);
 			double coeff = xbar.getQuick(0) - normSq / xbar.getQuick(0);
 			for (int i = 1; i < nCone; i++)
-				invXBarSel.setQuick(i, i, invXBarSel.getQuick(i, i) + coeff);
-			invXBarSel.assign(DoubleFunctions.div(Math.pow(xbar.getQuick(0), 2) - normSq));
+				invXBar.setQuick(selection[i], selection[i], invXBar.getQuick(selection[i], selection[i]) + coeff);
+//			for (int i = 1; i < nCone; i++)
+//				invXBarSel.setQuick(i, i, invXBarSel.getQuick(i, i) + coeff);
+			coeff = Math.pow(xbar.getQuick(0), 2) - normSq;
+			for (int i = 0; i < selection.length; i++) {
+				for (int j = 0; j < selection.length; j++) {
+					invXBar.setQuick(selection[i], selection[j],
+							invXBar.getQuick(selection[i], selection[j]) / coeff);
+				}
+			}
+//			invXBarSel.assign(DoubleFunctions.div(Math.pow(xbar.getQuick(0), 2) - normSq));
 		}
 		
 		/* Creates column-compressed matrices */
-		
-		im.invThetaInvW      = invThetaInvW.getColumnCompressed(false);
-		im.invThetaSqInvWSq  = invThetaSqInvWSq.getColumnCompressed(false);
-		im.XBar              = XBar.getColumnCompressed(false);
-		im.invXBar           = invXBar.getColumnCompressed(false);
-		im.ThetaW            = ThetaW.getColumnCompressed(false);
+		im.ThetaW        = ThetaW.getColumnCompressed(false);
+		im.invThetaInvW  = invThetaInvW.getColumnCompressed(false);
+		im.XBar          = XBar.getColumnCompressed(false);
+		im.invXBar       = invXBar.getColumnCompressed(false);
 		
 		/* Makes memory available to garbage collector */
-		ThetaW            = null;
-		invThetaInvW      = null;
-		invThetaSqInvWSq  = null;
-		XBar              = null;
-		invXBar           = null;
+		ThetaW        = null;
+		invThetaInvW  = null;
+		XBar          = null;
+		invXBar       = null;
 		
 		/* Computes more intermediate matrices */
 		im.AInvThetaSqInvWSq = new SparseCCDoubleMatrix2D(A.rows(), n);
-		A.getColumnCompressed(false).zMult(im.invThetaSqInvWSq, im.AInvThetaSqInvWSq, 1.0, 0.0, false, false);
-		im.invThetaSqInvWSq = null;
+		A.getColumnCompressed(false).zMult(invThetaSqInvWSq.getColumnCompressed(false), im.AInvThetaSqInvWSq, 1.0, 0.0, false, false);
+		invThetaSqInvWSq = null;
 		
 		/* Computes M and finds its Cholesky factorization */
 		SparseCCDoubleMatrix2D M = new SparseCCDoubleMatrix2D(A.rows(), A.rows());
@@ -669,12 +720,25 @@ public class HomogeneousIPM implements ConicProgramSolver {
 				DoubleMatrix1D dsnSel = dsn.viewSelection(selection);
 				
 				/* Gets the selections */
-				DoubleMatrix2D DxnSel  = Dxn.viewSelection(selection, selection);
-				DoubleMatrix2D DsnSel  = Dsn.viewSelection(selection, selection);
+//				DoubleMatrix2D DxnSel  = Dxn.viewSelection(selection, selection);
+//				DoubleMatrix2D DsnSel  = Dsn.viewSelection(selection, selection);
 				
 				/* Computes the arrowhead matrices */
-				DxnSel.assign(getArrowheadMatrix(dxnSel));
-				DsnSel.assign(getArrowheadMatrix(dsnSel));
+				DoubleMatrix2D temp;
+				temp = getArrowheadMatrix(dxnSel);
+				for (int i = 0; i < temp.rows(); i++) {
+					for (int j = 0; j < temp.columns(); j++) {
+						Dxn.setQuick(selection[i], selection[j], temp.getQuick(i, j));
+					}
+				}
+//				DxnSel.assign(getArrowheadMatrix(dxnSel));
+				temp = getArrowheadMatrix(dsnSel);
+				for (int i = 0; i < temp.rows(); i++) {
+					for (int j = 0; j < temp.columns(); j++) {
+						Dsn.setQuick(selection[i], selection[j], temp.getQuick(i, j));
+					}
+				}
+//				DsnSel.assign(getArrowheadMatrix(dsnSel));
 			}
 			
 			res.r4.assign(Dxn.zMult(Dsn.zMult(pm.e, null), null), DoubleFunctions.minus);
@@ -919,7 +983,6 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		private SparseCCDoubleMatrix2D ThetaW;
 		private SparseCCDoubleMatrix2D invThetaInvW;
 		private SparseCCDoubleMatrix2D AInvThetaSqInvWSq;
-		private SparseCCDoubleMatrix2D invThetaSqInvWSq;
 		private SparseDoubleCholeskyDecomposition M;
 		private DoubleMatrix1D g1;
 		private DoubleMatrix1D g2;
