@@ -99,8 +99,6 @@ public class ConicProgram {
 	
 	public Set<NonNegativeOrthantCone> getNonNegativeOrthantCones() {
 		return Collections.unmodifiableSet(NNOCs);
-		//return ImmutableSet.copyOf(NNOCs);
-		//return new HashSet<NonNegativeOrthantCone>(NNOCs);
 	}
 	
 	public SecondOrderCone createSecondOrderCone(int n) {
@@ -110,17 +108,10 @@ public class ConicProgram {
 	
 	public Set<SecondOrderCone> getSecondOrderCones() {
 		return Collections.unmodifiableSet(SOCs);
-		//return ImmutableSet.copyOf(SOCs);
-		//return new HashSet<SecondOrderCone>(SOCs);
 	}
 	
 	public Set<Cone> getCones() {
-//		Set<Cone> cones = new HashSet<Cone>(numCones());
-//		cones.addAll(NNOCs);
-//		cones.addAll(SOCs);
-//		cones.addAll(RSOCs);
 		return ImmutableSet.<Cone>builder().addAll(NNOCs).addAll(SOCs).addAll(RSOCs).build();
-		//return cones;
 	}
 	
 	public LinearConstraint createConstraint() {

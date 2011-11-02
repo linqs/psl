@@ -323,7 +323,6 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		DoubleMatrix1D      w   = program.getW();
 		DoubleMatrix1D      s   = program.getS();
 		DenseDoubleAlgebra  alg = new DenseDoubleAlgebra();
-		log.trace("Computing intermediates.");
 		HIPMIntermediates   im  = getIntermediates(program, pm, vars);
 		
 		/* Computes affine scaling (Newton) direction */
