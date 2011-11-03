@@ -17,6 +17,7 @@
 package edu.umd.cs.psl.groovy;
 import edu.umd.cs.psl.model.set.aggregator.AggregatorFunction;
 import edu.umd.cs.psl.ui.aggregators.AggregateSetAverage;
+import edu.umd.cs.psl.ui.aggregators.AggregateSetCrossEquality;
 import edu.umd.cs.psl.ui.aggregators.AggregateSetEquality;
 
 public enum SetComparison {
@@ -28,6 +29,13 @@ public enum SetComparison {
 			return new AggregateSetEquality();
 		}
 		
+	},
+	
+	CrossEquality {
+		@Override
+		public AggregatorFunction getAggregator() {
+			return new AggregateSetCrossEquality();
+		}
 	},
 	
 	Average {

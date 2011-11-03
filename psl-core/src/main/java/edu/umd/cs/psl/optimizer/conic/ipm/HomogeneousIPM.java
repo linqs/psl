@@ -447,7 +447,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		SparseDoubleMatrix2D A = program.getA();
 		int size = A.columns();
 		
-		pm.k  = program.getCones().size();
+		pm.k  = program.numCones();
 		pm.e  = new DenseDoubleMatrix1D(size);
 		pm.T  = new SparseDoubleMatrix2D(size, size, size*4, 0.2, 0.5);
 		

@@ -60,6 +60,7 @@ public class GroundSetDefinition extends GroundConstraintKernel {
 		set1 = s1;
 		set2 = s2;
 		referencedAtoms = refAtoms;
+		setAtom.setSoftValue(0, getAggregateValue());
 		
 		hashcode = new HashCodeBuilder().append(setAtom).toHashCode();
 	}

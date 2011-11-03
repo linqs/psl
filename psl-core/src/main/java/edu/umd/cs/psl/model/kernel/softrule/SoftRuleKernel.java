@@ -107,7 +107,7 @@ public class SoftRuleKernel implements Kernel {
 
 	@Override
 	public void notifyAtomEvent(AtomEvent event, Atom atom, GroundingMode mode,	ModelApplication app) {
-		if (mode==GroundingMode.Forward) {
+		if (mode==GroundingMode.Forward || mode==GroundingMode.ForwardInitial) {
 			if (AtomEventSets.ActivationEvent.subsumes(event)) {
 				List<VariableAssignment> vars = rule.traceAtomEvent(atom);
 				if (!vars.isEmpty()) {

@@ -69,7 +69,6 @@ public class AggregateSetEquality implements EntityAggregatorFunction {
 	}
 	
 	protected double constantFactor(TermMembership set1, TermMembership set2) {
-		//return 2.0/(set1.size()+set2.size());
 		return 1.0/(multiplier*Math.max(set1.size(),set2.size()));
 	}
 	
@@ -134,9 +133,4 @@ public class AggregateSetEquality implements EntityAggregatorFunction {
 	public String toString() {
 		return getName();
 	}
-
-
-
-
-	
 }
