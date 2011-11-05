@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.optimizer.conic.program.graph.memory;
+package edu.umd.cs.psl.util.graph.memory;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -25,8 +25,8 @@ import java.util.Set;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 
-import edu.umd.cs.psl.optimizer.conic.program.graph.Graph;
-import edu.umd.cs.psl.optimizer.conic.program.graph.Node;
+import edu.umd.cs.psl.util.graph.Graph;
+import edu.umd.cs.psl.util.graph.Node;
 
 public class MemoryGraph implements Graph {
 	

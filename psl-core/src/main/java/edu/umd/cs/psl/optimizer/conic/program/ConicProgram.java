@@ -17,11 +17,14 @@
 package edu.umd.cs.psl.optimizer.conic.program;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+
+import com.google.common.collect.ImmutableSet;
 
 import cern.colt.list.tdouble.DoubleArrayList;
 import cern.colt.list.tint.IntArrayList;
@@ -30,9 +33,6 @@ import cern.colt.matrix.tdouble.algo.DenseDoubleAlgebra;
 import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix1D;
 import cern.colt.matrix.tdouble.impl.SparseDoubleMatrix2D;
 import cern.jet.math.tdouble.DoubleFunctions;
-import edu.umd.cs.psl.optimizer.conic.program.graph.Graph;
-import edu.umd.cs.psl.optimizer.conic.program.graph.Node;
-import edu.umd.cs.psl.optimizer.conic.program.graph.memory.MemoryGraph;
 
 /**
  * Stores information about the primal and dual forms of a conic program.
@@ -41,33 +41,15 @@ import edu.umd.cs.psl.optimizer.conic.program.graph.memory.MemoryGraph;
  */
 public class ConicProgram {
 	
-	private Graph graph;
+	private Set<NonNegativeOrthantCone> NNOCs;
+	private Set<SecondOrderCone> SOCs;
+	private Set<RotatedSecondOrderCone> RSOCs;
 	
-	// Property type names for all nodes
-	static final String NODE_TYPE = "nodeType";
-	
-	// Property type names for variable nodes
-	static final String VAR_VALUE = "varValue";
-	static final String VAR_DUAL_VALUE = "varDualValue";
-	static final String OBJ_COEFF = "objCoeff";
-	
-	// Property type names for linear constraint nodes
-	static final String LC_VALUE = "lcValue";
-	static final String LAGRANGE = "lagrange";
-	
-	// Relationship type names
-	static final String CONE_REL = "coneRel";
-	static final String SOC_N_REL = "socpNRel";
-	static final String LC_REL = "lcRel";
-	
-	// Property type names for lcRel relationships
-	static final String LC_REL_COEFF = "lcRelCoeff";
-
-	private int numNNOC;
-	private int numSOC;
-	private int numRSOC;
+	private Set<LinearConstraint> cons;
 	
 	private boolean checkedOut;
+	
+	private Set<ConicProgramListener> listeners;
 	
 	private SparseDoubleMatrix2D A;
 	private DenseDoubleMatrix1D x;
@@ -78,36 +60,28 @@ public class ConicProgram {
 	private Map<Variable, Integer> varMap;
 	private Map<LinearConstraint, Integer> lcMap;
 	
+	private int nextID;
+	
 	// Error messages
 	private static final String UNEXPECTED_SENDER = "Unexpected sender type.";
 	private static final String UNEXPECTED_DATA = "Unexpected data.";
 	
 	public ConicProgram() {
-
-		graph = new MemoryGraph();
+		NNOCs = new HashSet<NonNegativeOrthantCone>();
+		SOCs = new HashSet<SecondOrderCone>();
+		RSOCs = new HashSet<RotatedSecondOrderCone>();
 		
-		graph.createPropertyType(NODE_TYPE, NodeType.class);
-		graph.createPropertyType(VAR_VALUE, Double.class);
-		graph.createPropertyType(VAR_DUAL_VALUE, Double.class);
-		graph.createPropertyType(OBJ_COEFF, Double.class);
-		graph.createPropertyType(LC_VALUE, Double.class);
-		graph.createPropertyType(LAGRANGE, Double.class);
-		
-		graph.createRelationshipType(CONE_REL);
-		graph.createRelationshipType(SOC_N_REL);
-		graph.createRelationshipType(LC_REL);
-		
-		graph.createPropertyType(LC_REL_COEFF, Double.class);
-		
-		numNNOC = 0;
-		numSOC = 0;
-		numRSOC = 0;
+		cons = new HashSet<LinearConstraint>();
 		
 		checkedOut = false;
+		
+		listeners = new HashSet<ConicProgramListener>();
+		
+		nextID = 0;
 	}
 	
-	Graph getGraph() {
-		return graph;
+	int getNextID() {
+		return nextID++;
 	}
 	
 	public Collection<ConeType> getConeTypes() {
@@ -124,11 +98,7 @@ public class ConicProgram {
 	}
 	
 	public Set<NonNegativeOrthantCone> getNonNegativeOrthantCones() {
-		Set<NonNegativeOrthantCone> cones = new HashSet<NonNegativeOrthantCone>();
-		for (Node n : graph.getNodesByAttribute(NODE_TYPE, NodeType.nnoc)) {
-			cones.add((NonNegativeOrthantCone) Entity.createEntity(this, n));
-		}
-		return cones;
+		return Collections.unmodifiableSet(NNOCs);
 	}
 	
 	public SecondOrderCone createSecondOrderCone(int n) {
@@ -137,18 +107,11 @@ public class ConicProgram {
 	}
 	
 	public Set<SecondOrderCone> getSecondOrderCones() {
-		Set<SecondOrderCone> cones = new HashSet<SecondOrderCone>();
-		for (Node n : graph.getNodesByAttribute(NODE_TYPE, NodeType.soc)) {
-			cones.add((SecondOrderCone) Entity.createEntity(this, n));
-		}
-		return cones;
+		return Collections.unmodifiableSet(SOCs);
 	}
 	
 	public Set<Cone> getCones() {
-		Set<Cone> cones = new HashSet<Cone>();
-		cones.addAll(getNonNegativeOrthantCones());
-		cones.addAll(getSecondOrderCones());
-		return cones;
+		return ImmutableSet.<Cone>builder().addAll(NNOCs).addAll(SOCs).addAll(RSOCs).build();
 	}
 	
 	public LinearConstraint createConstraint() {
@@ -157,41 +120,48 @@ public class ConicProgram {
 	}
 	
 	public Set<LinearConstraint> getConstraints() {
-		Set<LinearConstraint> lc = new HashSet<LinearConstraint>();
-		for (Node n : graph.getNodesByAttribute(NODE_TYPE, NodeType.lc)) {
-			lc.add(new LinearConstraint(this, n));
-		}
-		return lc;
+		return new HashSet<LinearConstraint>(this.cons);
 	}
 	
 	public void checkOutMatrices() {
 		verifyCheckedIn();
 		Variable var;
 		int i, j;
-		Set<Node> vars;
 		varMap = new HashMap<Variable, Integer>();
 		lcMap = new HashMap<LinearConstraint, Integer>();
 		
-		vars = graph.getNodesByAttribute(NODE_TYPE, NodeType.var);
-		
 		/* Collects variables */
 		i = 0;
-		for (Node n : vars) {
-			var = (Variable) Entity.createEntity(this, n);
+		
+		/* NNOCs */
+		for (NonNegativeOrthantCone cone : NNOCs) {
+			var = cone.getVariable();
 			if (!varMap.containsKey(var)){
 				varMap.put(var, i++);
 			}
 		}
 		
+		/* SOCs */
+		for (SecondOrderCone cone : SOCs)
+			for (Variable v : cone.getVariables())
+				if (!varMap.containsKey(v))
+					varMap.put(v, i++);
+		
+		/* RSOCs */
+		for (RotatedSecondOrderCone cone : RSOCs)
+			for (Variable v : cone.getVariables())
+				if (!varMap.containsKey(v))
+					varMap.put(v, i++);
+		
 		/* Collects linear constraints */
 		j = 0;
-		for (Variable v : varMap.keySet())
-			for (LinearConstraint lc : v.getLinearConstraints())
-				if (!lcMap.containsKey(lc))
-					lcMap.put((LinearConstraint) lc, j++);
+		for (LinearConstraint con : cons)
+			if (!lcMap.containsKey(con))
+				lcMap.put((LinearConstraint) con, j++);
+				
 		
 		/* Initializes data matrices */
-		A = new SparseDoubleMatrix2D(lcMap.size(), varMap.size());
+		A = new SparseDoubleMatrix2D(lcMap.size(), varMap.size(), lcMap.size()*4, 0.2, 0.5);
 		x = new DenseDoubleMatrix1D(varMap.size());
 		b = new DenseDoubleMatrix1D(lcMap.size());
 		w = new DenseDoubleMatrix1D(lcMap.size());
@@ -230,12 +200,12 @@ public class ConicProgram {
 	
 	public Map<Variable, Integer> getVarMap() {
 		verifyCheckedOut();
-		return varMap;
+		return Collections.unmodifiableMap(varMap);
 	}
 	
 	public Map<LinearConstraint, Integer> getLcMap() {
 		verifyCheckedOut();
-		return lcMap;
+		return Collections.unmodifiableMap(lcMap);
 	}
 	
 	public SparseDoubleMatrix2D getA() {
@@ -283,15 +253,15 @@ public class ConicProgram {
 	}
 	
 	public int numNNOC() {
-		return numNNOC;
+		return NNOCs.size();
 	}
 	
 	public int numSOC() {
-		return numSOC;
+		return SOCs.size();
 	}
 	
 	public int numRSOC() {
-		return numRSOC;
+		return RSOCs.size();
 	}
 	
 	void verifyCheckedOut() {
@@ -385,6 +355,14 @@ public class ConicProgram {
 		return inf;
 	}
 	
+	public void registerForConicProgramEvents(ConicProgramListener l) {
+		listeners.add(l);
+	}
+	
+	public void unregisterForConicProgramEvents(ConicProgramListener l) {
+		listeners.remove(l);
+	}
+	
 	void notify(ConicProgramEvent e, Entity sender, Object... data) {
 		switch (e) {
 		case NNOCCreated:
@@ -392,10 +370,10 @@ public class ConicProgram {
 			if (sender instanceof NonNegativeOrthantCone) {
 				switch (e) {
 				case NNOCCreated:
-					numNNOC++;
+					NNOCs.add((NonNegativeOrthantCone) sender);
 					break;
 				case NNOCDeleted:
-					numNNOC--;
+					NNOCs.remove((NonNegativeOrthantCone) sender);
 					break;
 				}
 			}
@@ -407,10 +385,10 @@ public class ConicProgram {
 			if (sender instanceof SecondOrderCone) {
 				switch (e) {
 				case SOCCreated:
-					numSOC++;
+					SOCs.add((SecondOrderCone) sender);
 					break;
 				case SOCDeleted:
-					numSOC--;
+					SOCs.remove((SecondOrderCone) sender);
 					break;
 				}
 			}
@@ -430,11 +408,13 @@ public class ConicProgram {
 			if (sender instanceof LinearConstraint) {
 				switch(e) {
 				case ConCreated:
+					cons.add((LinearConstraint) sender);
+					break;
 				case ConValueChanged:
 					/* Intentionally blank */
 					break;
 				case ConDeleted:
-					/* Intentionally blank */
+					cons.remove((LinearConstraint) sender);
 				}
 			}
 			else
@@ -451,5 +431,8 @@ public class ConicProgram {
 				throw new IllegalArgumentException(UNEXPECTED_SENDER);
 			break;
 		}
+		
+		for (ConicProgramListener l : listeners)
+			l.notify(e, sender, data);
 	}
 }

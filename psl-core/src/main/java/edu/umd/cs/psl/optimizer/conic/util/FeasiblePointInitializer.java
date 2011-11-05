@@ -14,8 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.factorgraph;
+package edu.umd.cs.psl.optimizer.conic.util;
 
-public interface Vertex {
+import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
+import edu.umd.cs.psl.optimizer.conic.program.ConicProgramEvent;
+import edu.umd.cs.psl.optimizer.conic.program.ConicProgramListener;
+import edu.umd.cs.psl.optimizer.conic.program.Entity;
+
+public class FeasiblePointInitializer implements ConicProgramListener {
+
+	public FeasiblePointInitializer(ConicProgram p) {
+		
+	}
+	
+	@Override
+	public void notify(ConicProgramEvent e, Entity sender, Object... data) {
+		// TODO Auto-generated method stub
+		
+	}
 
 }

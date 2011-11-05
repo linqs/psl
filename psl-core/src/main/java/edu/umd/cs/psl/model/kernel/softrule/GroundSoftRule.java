@@ -20,8 +20,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.formula.Conjunction;
@@ -48,9 +46,6 @@ import edu.umd.cs.psl.reasoner.function.MaxFunction;
  */
 
 public class GroundSoftRule extends GroundCompatibilityKernel {
-	
-	private static final Logger log = LoggerFactory.getLogger(GroundSoftRule.class);
-
 	
 	public static final Tnorm tnorm = Tnorm.LUKASIEWICZ;
 	public static final FormulaEvaluator formulaNorm =FormulaEvaluator.LUKASIEWICZ;
@@ -89,11 +84,6 @@ public class GroundSoftRule extends GroundCompatibilityKernel {
 		return rule.getWeight();
 	}
 	
-	@Override
-	public double getStrength() {
-		return getWeight().getWeight();
-	}
-
 	@Override
 	public boolean updateParameters() {
 		return true;

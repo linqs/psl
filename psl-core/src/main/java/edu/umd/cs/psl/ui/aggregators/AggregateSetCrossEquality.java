@@ -17,8 +17,6 @@
 package edu.umd.cs.psl.ui.aggregators;
 
 import edu.umd.cs.psl.model.set.membership.TermMembership;
-import edu.umd.cs.psl.reasoner.function.FunctionComparator;
-
 
 public class AggregateSetCrossEquality extends AggregateSetEquality {
 
@@ -36,27 +34,17 @@ public class AggregateSetCrossEquality extends AggregateSetEquality {
 	}
 	
 	@Override
-	FunctionComparator getConstraintType() {
-		return FunctionComparator.LargerThan;
-	}
-	
-	@Override
 	double getDefaultSimilarityforEmptySets() {
-		return 1.0;
+		return 0.0;
 	}
 	
 	@Override
 	public double getSizeMultiplier(TermMembership set1, TermMembership set2) {
-		//assert set1.size()>0.0 && set2.size()>0.0;
 		return set1.size()*set2.size();
 	}
 	
 	@Override
 	protected double constantFactor(TermMembership set1, TermMembership set2) {
-		//assert set1.size()>0.0 && set2.size()>0.0;
 		return 1.0/(set1.size()*set2.size());
 	}
-
-
-	
 }

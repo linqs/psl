@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.optimizer.conic.program;
+package edu.umd.cs.psl.optimizer.conic.util;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -23,6 +23,16 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import cern.colt.matrix.tdouble.DoubleMatrix1D;
+
+import edu.umd.cs.psl.optimizer.conic.program.Cone;
+import edu.umd.cs.psl.optimizer.conic.program.ConeType;
+import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
+import edu.umd.cs.psl.optimizer.conic.program.LinearConstraint;
+import edu.umd.cs.psl.optimizer.conic.program.NonNegativeOrthantCone;
+import edu.umd.cs.psl.optimizer.conic.program.SecondOrderCone;
+import edu.umd.cs.psl.optimizer.conic.program.Variable;
 
 public class Dualizer {
 	
@@ -64,16 +74,16 @@ public class Dualizer {
 			Variable primalVar = ((NonNegativeOrthantCone) c).getVariable();
 			numConstraints = primalVar.getLinearConstraints().size();
 			if (numConstraints > 1) {
-				dualCon = new LinearConstraint(dualProgram);
+				dualCon = dualProgram.createConstraint();
 				dualCon.setConstrainedValue(primalVar.getObjectiveCoefficient());
-				dualCon.addVariable(new NonNegativeOrthantCone(dualProgram).getVariable(), 1.0);
+				dualCon.addVariable(dualProgram.createNonNegativeOrthantCone().getVariable(), 1.0);
 				primalVarsToDualCons.put(primalVar, dualCon);
 			}
 			else if (numConstraints == 1) {
 				LinearConstraint primalCon = primalVar.getLinearConstraints().iterator().next();
 				dualVar = primalConsToDualVars.get(primalCon);
 				if (dualVar == null) {
-					dualVar = new NonNegativeOrthantCone(dualProgram).getVariable();
+					dualVar = dualProgram.createNonNegativeOrthantCone().getVariable();
 					primalConsToDualVars.put(primalCon, dualVar);
 				}
 				
@@ -115,7 +125,7 @@ public class Dualizer {
 				VariablePair pair = varPairs.get(con);
 				if (pair == null) {
 					pair = new VariablePair();
-					SecondOrderCone cone = new SecondOrderCone(dualProgram, 2);
+					SecondOrderCone cone = dualProgram.createSecondOrderCone(2);
 					for (Variable v : cone.getVariables()) {
 						if (cone.getNthVariable().equals(v))
 							pair.outer = v;
@@ -165,9 +175,9 @@ public class Dualizer {
 					upperBound = upperBounds.get(dualVar);
 					if (upperBound != null) {
 						upperBound -= lowerBound;
-						dualCon = new LinearConstraint(dualProgram);
+						dualCon = dualProgram.createConstraint();
 						dualCon.addVariable(dualVar, 1.0);
-						dualVar = new NonNegativeOrthantCone(dualProgram).getVariable();
+						dualVar = dualProgram.createNonNegativeOrthantCone().getVariable();
 						dualVar.setObjectiveCoefficient(0.0);
 						dualCon.addVariable(dualVar, 1.0);
 						dualCon.setConstrainedValue(upperBound);
@@ -184,11 +194,13 @@ public class Dualizer {
 		Variable primalVar, dualVar;
 		LinearConstraint dualCon;
 		
+		DoubleMatrix1D x = primalProgram.getX();
+		
 		for (Cone c : primalProgram.getNonNegativeOrthantCones()) {
 			primalVar = ((NonNegativeOrthantCone) c).getVariable();
 			dualCon = primalVarsToDualCons.get(primalVar);
 			if (dualCon != null)
-				primalVar.setValue(-1.0*dualCon.getLagrange());
+				x.set(primalProgram.index(primalVar), (-1.0*dualCon.getLagrange()));
 		}
 	}
 	

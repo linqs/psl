@@ -18,11 +18,6 @@ package edu.umd.cs.psl.model.kernel;
 
 import java.util.Set;
 
-import com.google.common.base.Predicate;
-import com.google.common.collect.Sets;
-
-import edu.umd.cs.psl.factorgraph.Factor;
-import edu.umd.cs.psl.factorgraph.RandomVariable;
 import edu.umd.cs.psl.model.atom.Atom;
 
 /**
@@ -33,7 +28,7 @@ import edu.umd.cs.psl.model.atom.Atom;
  * @author matthias
  * 
  */
-public abstract class GroundKernel implements Factor {
+public abstract class GroundKernel {
 
 	/**
 	 * This method is called by
@@ -67,17 +62,4 @@ public abstract class GroundKernel implements Factor {
 	abstract public double getIncompatibility();
 
 	abstract public BindingMode getBinding(Atom atom);
-
-	@Override
-	public Set<? extends RandomVariable> getRandomVariables() {
-		return Sets.filter(getAtoms(), new Predicate<Atom>() {
-
-			@Override
-			public boolean apply(Atom atom) {
-				return atom.isInferenceAtom();
-			}
-
-		});
-	}
-
 }

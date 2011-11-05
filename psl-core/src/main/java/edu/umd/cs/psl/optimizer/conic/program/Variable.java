@@ -16,41 +16,51 @@
  */
 package edu.umd.cs.psl.optimizer.conic.program;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import edu.umd.cs.psl.optimizer.conic.program.graph.Node;
-import edu.umd.cs.psl.optimizer.conic.program.graph.Relationship;
-
 public class Variable extends Entity {
-	Variable(ConicProgram p) {
+	
+	private Cone cone;
+	
+	private double primalValue;
+	private double dualValue;
+	private double objCoeff;
+	
+	private Set<LinearConstraint> cons;
+	
+	Variable(ConicProgram p, Cone c) {
 		super(p);
+		cone = c;
 		setValue(0.5);
 		setDualValue(0.5);
 		doSetObjectiveCoefficient(0.0);
-	}
-	
-	Variable(ConicProgram p, Node n) {
-		super(p, n);
-	}
-	
-	@Override
-	NodeType getType() {
-		return NodeType.var;
+		cons = new HashSet<LinearConstraint>(8);
 	}
 
+	public Cone getCone() {
+		return cone;
+	}
+	
 	public Double getValue() {
-		return (Double) node.getAttribute(ConicProgram.VAR_VALUE);
+		return primalValue;
 	}
 	
 	void setValue(Double v) {
-		for (Node n : node.getProperties(ConicProgram.VAR_VALUE))
-			n.delete();
-		node.createProperty(ConicProgram.VAR_VALUE, v);
+		primalValue = v;
+	}
+	
+	public Double getDualValue() {
+		return dualValue;
+	}
+	
+	void setDualValue(Double v) {
+		dualValue = v;
 	}
 	
 	public Double getObjectiveCoefficient() {
-		return (Double) node.getAttribute(ConicProgram.OBJ_COEFF);
+		return objCoeff;
 	}
 	
 	public void setObjectiveCoefficient(Double c) {
@@ -60,31 +70,18 @@ public class Variable extends Entity {
 	}
 	
 	private void doSetObjectiveCoefficient(Double c) {
-		for (Node n : node.getProperties(ConicProgram.OBJ_COEFF))
-			n.delete();
-		node.createProperty(ConicProgram.OBJ_COEFF, c);
-	}
-
-	public Cone getCone() {
-		return (Cone) Entity.createEntity(program, node.getRelationshipIterator(ConicProgram.CONE_REL).next().getStart());
+		objCoeff = c;
 	}
 	
 	public Set<LinearConstraint> getLinearConstraints() {
-		Set<LinearConstraint> lc = new HashSet<LinearConstraint>();
-		for (Relationship rel : node.getRelationships(ConicProgram.LC_REL)) {
-			lc.add((LinearConstraint) Entity.createEntity(program, rel.getStart()));
-		}
-		return lc;
+		return Collections.unmodifiableSet(cons);
 	}
 	
-	public Double getDualValue() {
-		return (Double) node.getAttribute(ConicProgram.VAR_DUAL_VALUE);
+	void notifyAddedToLinearConstraint(LinearConstraint con) {
+		cons.add(con);
 	}
-	
-	void setDualValue(Double v) {
-		for (Node n : node.getProperties(ConicProgram.VAR_DUAL_VALUE))
-			n.delete();
-		node.createProperty(ConicProgram.VAR_DUAL_VALUE, v);
+	void notifyRemovedFromLinearConstraint(LinearConstraint con) {
+		cons.remove(con);
 	}
 	
 	boolean isDualFeasible() {
@@ -103,9 +100,11 @@ public class Variable extends Entity {
 	
 	@Override
 	final void delete() {
-		for (LinearConstraint lc : getLinearConstraints()) {
+		Set<LinearConstraint> originalCons = new HashSet<LinearConstraint>(cons);
+		for (LinearConstraint lc : originalCons) {
 			lc.removeVariable(this);
 		}
-		super.delete();
+		cone = null;
+		cons = null;
 	}
 }

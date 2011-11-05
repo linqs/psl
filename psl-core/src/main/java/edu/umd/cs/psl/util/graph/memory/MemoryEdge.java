@@ -14,12 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.factorgraph;
+package edu.umd.cs.psl.util.graph.memory;
 
-import java.util.Collection;
+import edu.umd.cs.psl.util.graph.Edge;
+import edu.umd.cs.psl.util.graph.Node;
 
-public interface RandomVariable extends Vertex {
+abstract public class MemoryEdge extends MemoryNode implements Edge {
 
-	public Collection<? extends Factor> getFactors();
+	final MemoryNode startNode;
 	
+	MemoryEdge(MemoryGraph g, MemoryNode start) {
+		super(g);
+		startNode = start;
+	}
+
+	@Override
+	public Node getStart() {
+		if (startNode == null)
+			throw new IllegalStateException();
+		return startNode;
+	}
 }

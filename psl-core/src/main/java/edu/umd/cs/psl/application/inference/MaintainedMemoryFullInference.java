@@ -159,7 +159,8 @@ public class MaintainedMemoryFullInference implements ModelApplication, FullInfe
 		if (!isInitialized) {
 			atomEvents.setGroundingMode(GroundingMode.ForwardInitial);
 			Grounding.groundAll(model, this);
-			atomEvents.workOffJobQueue();
+			while (atomEvents.checkToActivate() > 0)
+				atomEvents.workOffJobQueue();
 			isInitialized=true;
 		}
 	}

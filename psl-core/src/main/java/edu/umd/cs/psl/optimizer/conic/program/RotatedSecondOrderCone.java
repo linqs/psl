@@ -17,7 +17,6 @@
 package edu.umd.cs.psl.optimizer.conic.program;
 
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -25,65 +24,49 @@ import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.algo.DenseDoubleAlgebra;
 import cern.jet.math.tdouble.DoubleFunctions;
-import edu.umd.cs.psl.optimizer.conic.program.graph.Node;
-import edu.umd.cs.psl.optimizer.conic.program.graph.Relationship;
 
 public class RotatedSecondOrderCone extends Cone {
+	
+	private Set<Variable> vars;
+	private Variable varN;
+	
 	RotatedSecondOrderCone(ConicProgram p, int n) {
 		super(p);
 		if (n < 2)
 			throw new IllegalArgumentException("Second-order cones must have at least two dimensions.");
+		vars = new HashSet<Variable>();
 		Variable var = null;
 		for (int i = 0; i < n; i++) {
-			var = new Variable(p);
-			node.createRelationship(ConicProgram.CONE_REL, var.getNode());
+			var = new Variable(p, this);
+			vars.add(var);
 		}
-		node.createRelationship(ConicProgram.SOC_N_REL, var.getNode());
+		varN = var;
 		var.setValue(1.5 * (n-1));
 		var.setDualValue(1.5 * (n-1));
 		p.notify(ConicProgramEvent.SOCCreated, this);
 	}
 	
-	RotatedSecondOrderCone(ConicProgram p, Node n) {
-		super(p, n);
-	}
-	
-	@Override
-	NodeType getType() {
-		return NodeType.soc;
-	}
-	
 	public int getN() {
-		int n = 0;
-		Iterator<? extends Relationship> rels = node.getRelationshipIterator(ConicProgram.CONE_REL);
-		while (rels.hasNext()) {
-			rels.next();
-			n++;
-		}
-		return n;
+		return vars.size();
 	}
 	
 	public Set<Variable> getVariables() {
-		Set<Variable> vars = new HashSet<Variable>();
-		for (Relationship r : node.getRelationships(ConicProgram.CONE_REL))
-			vars.add((Variable) Entity.createEntity(program, r.getEnd()));
-		return vars;
+		return new HashSet<Variable>(vars);
 	}
 	
 	public Variable getNthVariable() {
-		return (Variable) Entity.createEntity(program, node.getRelationshipIterator(ConicProgram.SOC_N_REL).next().getEnd());
+		return varN;
 	}
 	
 	@Override
 	public final void delete() {
 		program.verifyCheckedIn();
 		program.notify(ConicProgramEvent.SOCDeleted, this);
-		node.getRelationshipIterator(ConicProgram.SOC_N_REL).next().delete();
 		for (Variable v : getVariables()) {
-			v.getNode().getRelationshipIterator(ConicProgram.CONE_REL).next().delete();
 			v.delete();
 		}
-		super.delete();
+		vars = null;
+		varN = null;
 	}
 	
 	public void setBarrierGradient(Map<Variable, Integer> varMap, DoubleMatrix1D x, DoubleMatrix1D g) {
@@ -206,10 +189,11 @@ public class RotatedSecondOrderCone extends Cone {
 		double b = 2*(dxSel.get(i)*xSel.get(i) - dxSel.zDotProduct(xSel, 0, i));
 		double c = Math.pow(xSel.get(i), 2) - xSel.zDotProduct(xSel, 0, i);
 		
-		double sol1 = (-1 * b + Math.sqrt(Math.pow(b, 2) - 4 * a * c)) / (2 * a);
-		double sol2 = (-1 * b - Math.sqrt(Math.pow(b, 2) - 4 * a * c)) / (2 * a);
-		
-		if (!Double.isNaN(sol1) && !Double.isNaN(sol2)) {
+		double discriminant = Math.pow(b, 2) - 4 * a * c;
+		if (discriminant > 0) {
+			double sol1 = (-1 * b + Math.sqrt(discriminant)) / (2 * a);
+			double sol2 = (-1 * b - Math.sqrt(discriminant)) / (2 * a);
+			
 			if (sol1 > 0 && sol2 > 0)
 				return Math.min(sol1, sol2) * .95;
 			else if (sol1 > 0)
@@ -217,19 +201,18 @@ public class RotatedSecondOrderCone extends Cone {
 			else if (sol2 > 0)
 				return sol2 * .95;
 			else
-				return Double.MAX_VALUE;
+				return 1.0;
 		}
-		else if (!Double.isNaN(sol1))
-			if (sol1 > 0)
-				return sol1;
+		else {
+			double stepSize = 1.0;
+			while (a * Math.pow(stepSize, 2) + b * stepSize + c <= 0 && stepSize > 0)
+				stepSize *= 0.5;
+			
+			if (stepSize > 0)
+				return stepSize;
 			else
-				return 1.0;
-		else if (!Double.isNaN(sol2))
-			if (sol2 > 0)
-				return sol2;
-			else
-				return 1.0;
-		else throw new IllegalStateException();
+				throw new IllegalStateException("Stuck.");
+		}
 	}
 }
 

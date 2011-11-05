@@ -14,16 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.optimizer.conic.program.graph.memory;
+package edu.umd.cs.psl.optimizer.conic.program;
 
-import edu.umd.cs.psl.optimizer.conic.program.graph.Graph;
-import edu.umd.cs.psl.optimizer.conic.program.graph.GraphContractTest;
-
-public class MemoryGraphTest extends GraphContractTest {
-
-	@Override
-	protected Graph getGraphImplementation() {
-		return new MemoryGraph();
-	}
-
+public interface ConicProgramListener {
+	public void notify(ConicProgramEvent e, Entity sender, Object... data);
 }

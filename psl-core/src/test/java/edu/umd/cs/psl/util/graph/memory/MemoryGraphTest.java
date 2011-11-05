@@ -14,8 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.optimizer.conic.program;
+package edu.umd.cs.psl.util.graph.memory;
 
-enum NodeType {
-	var, nnoc, soc, lc;
+import edu.umd.cs.psl.util.graph.Graph;
+import edu.umd.cs.psl.util.graph.GraphContractTest;
+
+public class MemoryGraphTest extends GraphContractTest {
+
+	@Override
+	protected Graph getGraphImplementation() {
+		return new MemoryGraph();
+	}
+
 }

@@ -18,6 +18,8 @@ package edu.umd.cs.psl.optimizer.conic.mosek;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
 
 import mosek.Env;
 import mosek.Task;
@@ -25,15 +27,13 @@ import mosek.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import cern.colt.list.tdouble.DoubleArrayList;
-import cern.colt.list.tint.IntArrayList;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.impl.SparseDoubleMatrix2D;
-
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.optimizer.conic.ConicProgramSolver;
 import edu.umd.cs.psl.optimizer.conic.program.ConeType;
 import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
+import edu.umd.cs.psl.optimizer.conic.program.LinearConstraint;
 import edu.umd.cs.psl.optimizer.conic.program.NonNegativeOrthantCone;
 import edu.umd.cs.psl.optimizer.conic.program.SecondOrderCone;
 import edu.umd.cs.psl.optimizer.conic.program.Variable;
@@ -76,8 +76,8 @@ public class MOSEK implements ConicProgramSolver {
 			task.set_Stream(mosek.Env.streamtype.log, msgobj);
 			
 			/* Creates the variables and sets the objective coefficients */
+			task.append(mosek.Env.accmode.var, (int) x.size());
 			for (int i = 0; i < x.size(); i++) {
-				task.append(mosek.Env.accmode.var,1);
 				task.putcj(i, c.getQuick(i));
 			}
 			
@@ -106,14 +106,25 @@ public class MOSEK implements ConicProgramSolver {
 			}
 			
 			/* Sets the linear constraints */
-			for (int j = 0; j < A.rows(); j++) {
-				DoubleMatrix1D con = A.viewRow(j);
-				IntArrayList indexList = new IntArrayList();
-				DoubleArrayList valueList = new DoubleArrayList();
-				con.getNonZeros(indexList, valueList);
-				task.append(mosek.Env.accmode.con,1);
-				task.putavec(mosek.Env.accmode.con, j, indexList.elements(), valueList.elements());
-				task.putbound(mosek.Env.accmode.con,j,Env.boundkey.fx,b.getQuick(j),b.getQuick(j));
+			Set<LinearConstraint> constraints = program.getConstraints();
+			task.append(mosek.Env.accmode.con, constraints.size());
+			
+			Map<Variable, Double> variables;
+			int listIndex, constraintIndex;
+			int[] indexList;
+			double[] valueList;
+			for (LinearConstraint con : constraints) {
+				constraintIndex = program.index(con);
+				variables = con.getVariables();
+				indexList = new int[variables.size()];
+				valueList = new double[variables.size()];
+				listIndex = 0;
+				for (Map.Entry<Variable, Double> e : variables.entrySet()) { 
+					indexList[listIndex] = program.index(e.getKey());
+					valueList[listIndex++] = e.getValue();
+				}
+				task.putavec(mosek.Env.accmode.con, constraintIndex, indexList, valueList);
+				task.putbound(mosek.Env.accmode.con, constraintIndex, Env.boundkey.fx,b.getQuick(constraintIndex), b.getQuick(constraintIndex));
 			}
 			
 			/* Solves the program */
@@ -123,7 +134,11 @@ public class MOSEK implements ConicProgramSolver {
 			task.optimize(); 
 			
 			log.debug("Completed optimization");
-			task.solutionsummary(mosek.Env.streamtype.msg); 
+			task.solutionsummary(mosek.Env.streamtype.msg);
+			
+			mosek.Env.solsta solsta[] = new mosek.Env.solsta[1];
+			mosek.Env.prosta prosta[] = new mosek.Env.prosta[1];
+			task.getsolutionstatus(mosek.Env.soltype.itr, prosta, solsta);
 			
 			double[] solution = new double[A.columns()];
 			task.getsolutionslice(mosek.Env.soltype.itr, /* Interior solution. */  
@@ -132,9 +147,23 @@ public class MOSEK implements ConicProgramSolver {
 									A.columns(), /* Index of last variable+1 */  
 									solution);
 			
-			/* Stores solution in conic program */
-			x.assign(solution);
-			program.checkInMatrices();
+			switch(solsta[0]) {
+			case optimal:
+			case near_optimal:
+				/* Stores solution in conic program */
+				x.assign(solution);
+				program.checkInMatrices();
+				break;
+			case dual_infeas_cer:
+			case prim_infeas_cer:
+			case near_dual_infeas_cer:
+			case near_prim_infeas_cer:
+				throw new IllegalStateException("Infeasible.");
+			case unknown:
+				throw new IllegalStateException("Unknown solution status.");
+			default:
+				throw new IllegalStateException("Other solution status.");
+			}
 			
 			task.dispose();
 			

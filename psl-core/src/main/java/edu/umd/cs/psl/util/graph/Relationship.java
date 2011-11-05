@@ -14,18 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.factorgraph;
+package edu.umd.cs.psl.util.graph;
 
-import java.util.Collection;
-import java.util.Set;
+public interface Relationship extends Edge {
+	 public Node getEnd();
 
-import edu.umd.cs.psl.model.atom.Atom;
+	 public Node getOtherNode(Node n);
 
-public interface FactorGraph {
-
-	public Collection<Set<Atom>> clusterAtoms(int minVertices, int maxVertices);
-	
-	public void add(Factor factor);
-	
-	public void add(Factor factor, double randomStrengthPerturbation);
+	 public boolean isSelfLoop(Node node);
+	 
+	 public String getRelationshipType();
 }

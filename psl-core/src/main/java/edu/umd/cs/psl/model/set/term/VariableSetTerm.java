@@ -73,5 +73,10 @@ public class VariableSetTerm implements BasicSetTerm {
 	public String toString() {
 		return var.toString() + "[" +varType + "]";
 	}
+	
+	@Override
+	public int hashCode() {
+		return hashcode;
+	}
 
 }

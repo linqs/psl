@@ -20,7 +20,6 @@ import java.util.Collection;
 import java.util.Set;
 
 import edu.umd.cs.psl.database.DatabaseAtomStoreQuery;
-import edu.umd.cs.psl.factorgraph.RandomVariable;
 import edu.umd.cs.psl.model.argument.Term;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
@@ -40,7 +39,7 @@ import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
  * @author Matthias Broecheler
  *
  */
-public interface Atom extends Formula, RandomVariable {
+public interface Atom extends Formula {
 	
 	/**
 	 * Returns the predicate associated with this atom.

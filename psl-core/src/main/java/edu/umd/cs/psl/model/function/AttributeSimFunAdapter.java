@@ -36,11 +36,10 @@ public class AttributeSimFunAdapter implements ExternalFunction, BulkExternalFun
 	private static final ArgumentType[] argumenttypes = new ArgumentType[]{ArgumentTypes.Text,ArgumentTypes.Text};
 	
 	private final AttributeSimilarityFunction function;
-	private final double threshold;
 	
 	public AttributeSimFunAdapter(AttributeSimilarityFunction fct, double thres) {
 		function = fct;
-		threshold = thres;
+		//threshold = thres;
 	}
 	
 	public AttributeSimFunAdapter(AttributeSimilarityFunction fct) {

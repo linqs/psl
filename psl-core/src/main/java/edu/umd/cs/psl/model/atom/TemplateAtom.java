@@ -23,7 +23,6 @@ import java.util.Set;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import edu.umd.cs.psl.database.DatabaseAtomStoreQuery;
-import edu.umd.cs.psl.factorgraph.Factor;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.Term;
 import edu.umd.cs.psl.model.argument.Variable;
@@ -298,11 +297,6 @@ public class TemplateAtom implements Atom {
 
 	@Override
 	public void setSoftValues(double[] val) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public Collection<? extends Factor> getFactors() {
 		throw new UnsupportedOperationException();
 	}
 

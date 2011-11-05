@@ -14,15 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.optimizer.conic.program.graph.memory;
+package edu.umd.cs.psl.util.graph.memory;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import edu.umd.cs.psl.optimizer.conic.program.graph.Node;
-import edu.umd.cs.psl.optimizer.conic.program.graph.Property;
-import edu.umd.cs.psl.optimizer.conic.program.graph.Relationship;
+import edu.umd.cs.psl.util.graph.Node;
+import edu.umd.cs.psl.util.graph.Property;
+import edu.umd.cs.psl.util.graph.Relationship;
 
 public class MemoryProperty extends MemoryEdge implements Property {
 	

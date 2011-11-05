@@ -238,7 +238,6 @@ public class WeightLearningGlobalOpt implements FunctionEvaluation, WeightLearni
     parameters.setAllParameters2(params);
 
     //Evaluate for ground truth with current weights
-    groundTruth.runInference();
     double[]  gradientTruth = new double[parameters.getNumParameters()];
     double    fctValueTruth = evaluateApp2(groundTruth, gradientTruth);
 
