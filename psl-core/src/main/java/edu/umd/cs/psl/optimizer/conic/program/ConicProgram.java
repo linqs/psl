@@ -264,14 +264,18 @@ public class ConicProgram {
 		return RSOCs.size();
 	}
 	
+	public int numLinearConstraints() {
+		return cons.size();
+	}
+	
 	void verifyCheckedOut() {
 		if (!checkedOut)
-			throw new IllegalAccessError("Matrices are not checked out.");
+			throw new IllegalStateException("Matrices are not checked out.");
 	}
 	
 	void verifyCheckedIn() {
 		if (checkedOut)
-			throw new IllegalAccessError("Matrices are not checked in.");
+			throw new IllegalStateException("Matrices are not checked in.");
 	}
 	
 	public void trimUnrestrictedVariablePairs() {
