@@ -77,6 +77,11 @@ public class FeasiblePointInitializer implements ConicProgramListener {
 	public FeasiblePointInitializer(ConicProgram p) {
 		program = p;
 		
+		primalInfeasible = new HashSet<LinearConstraint>();
+		dualInfeasible = new HashSet<Variable>();
+		primalIsolated = new HashMap<LinearConstraint, FeasiblePointInitializer.IsolatedStructure>();
+		dualIsolated = new HashMap<Variable, LinearConstraint>();
+		
 		madePrimalFeasibleOnce = false;
 		madeDualFeasibleOnce = false;
 	}
@@ -201,7 +206,7 @@ public class FeasiblePointInitializer implements ConicProgramListener {
 		
 		LinearConstraintTraversal trav = new LinearConstraintTraversal(new LinearConstraintTraversalEvaluator() {
 			@Override
-			public boolean nextConstraint(LinearConstraint con) {
+			public boolean next(LinearConstraint con) {
 				IsolatedStructure iso = getPrimalIsolatedStructure(con);
 				if (iso != null) {
 					isoNeedsInit.add(iso);
@@ -324,7 +329,7 @@ public class FeasiblePointInitializer implements ConicProgramListener {
 		
 		VariableTraversal trav = new VariableTraversal((new VariableTraversalEvaluator() {
 			@Override
-			public boolean nextVariable(Variable var) {
+			public boolean next(Variable var) {
 				LinearConstraint iso = getDualIsolatedConstraint(var);
 				if (iso != null) {
 					isoNeedsInit.add(iso);
@@ -412,7 +417,12 @@ public class FeasiblePointInitializer implements ConicProgramListener {
 				for (Map.Entry<LinearConstraint, Integer> lc : lcInit.entrySet()) {
 					for (Map.Entry<Variable, Double> v : lc.getKey().getVariables().entrySet()) {
 						if (varInit.containsKey(v.getKey())) {
+							try{
 							A.set(lc.getValue(), varInit.get(v.getKey()), v.getValue());
+							}
+							catch(IndexOutOfBoundsException e) {
+								throw e;
+							}
 						}
 					}
 					w.set(lc.getValue(), lc.getKey().getLagrange());
@@ -598,74 +608,68 @@ public class FeasiblePointInitializer implements ConicProgramListener {
 		}
 	}
 	
-	private interface LinearConstraintTraversalEvaluator {
-		public boolean nextConstraint(LinearConstraint con);
-	}
+	private interface LinearConstraintTraversalEvaluator extends TraversalEvaluator<LinearConstraint> { }
 	
-	private class LinearConstraintTraversal {
-		private Stack<LinearConstraint> stack;
-		private Set<LinearConstraint> closedSet;
-		private LinearConstraintTraversalEvaluator eval;
-		
+	private class LinearConstraintTraversal extends Traversal<LinearConstraint> {
 		private LinearConstraintTraversal(LinearConstraintTraversalEvaluator e) {
-			stack = new Stack<LinearConstraint>();
-			closedSet = new HashSet<LinearConstraint>();
-			eval = e;
+			super(e);
 		}
-		
-		private Iterator<LinearConstraint> traverse(LinearConstraint con) {
-			stack.push(con);
-			closedSet.add(con);
-			return new Iterator<LinearConstraint>() {
 
-				@Override
-				public boolean hasNext() {
-					return !stack.isEmpty();
-				}
-
-				@Override
-				public LinearConstraint next() {
-					LinearConstraint next = stack.pop();
-					if (eval.nextConstraint(next)) {
-						for (Variable v : next.getVariables().keySet()) {
-							for (LinearConstraint con : v.getLinearConstraints()) {
-								if (!closedSet.contains(con)) {
-									stack.push(con);
-									closedSet.add(con);
-								}
-							}
-						}
-					}
-					return next;
-				}
-
-				@Override
-				public void remove() {
-					throw new UnsupportedOperationException();
-				}
-			};
+		@Override
+		Set<LinearConstraint> getNeighbors(LinearConstraint ego) {
+			Set<LinearConstraint> neighbors = new HashSet<LinearConstraint>();
+			for (Variable v : ego.getVariables().keySet())
+				for (LinearConstraint con : v.getLinearConstraints())
+					neighbors.add(con);
+			return neighbors;
 		}
 	}
 	
-	private interface VariableTraversalEvaluator {
-		public boolean nextVariable(Variable var);
-	}
+	private interface VariableTraversalEvaluator extends TraversalEvaluator<Variable> {	}
 	
-	private class VariableTraversal {
-		private Stack<Variable> stack;
-		private Set<Variable> closedSet;
-		private VariableTraversalEvaluator eval;
-		
+	private class VariableTraversal extends Traversal<Variable> {
 		private VariableTraversal(VariableTraversalEvaluator e) {
-			stack = new Stack<Variable>();
-			closedSet = new HashSet<Variable>();
+			super(e);
+		}
+
+		@Override
+		Set<Variable> getNeighbors(Variable ego) {
+			Set<Variable> neighbors = new HashSet<Variable>();
+			for (LinearConstraint con : ego.getLinearConstraints())
+				for (Variable v : con.getVariables().keySet())
+					neighbors.add(v);
+			return neighbors;
+		}
+	}
+	
+	private interface TraversalEvaluator<T> {
+		public boolean next(T n);
+	}
+	
+	abstract private class Traversal<T> {
+		private Stack<T> stack;
+		private Set<T> closedSet;
+		private TraversalEvaluator<T> eval;
+		
+		private Traversal(TraversalEvaluator<T> e) {
+			stack = new Stack<T>();
+			closedSet = new HashSet<T>();
 			eval = e;
 		}
 		
-		private Iterator<Variable> traverse(Variable var) {
-			stack.push(var);
-			closedSet.add(var);
-			return new Iterator<Variable>() {
+		abstract Set<T> getNeighbors(T ego);
+		
+		Iterator<T> traverse(T origin) {
+			if (!stack.empty())
+				throw new IllegalStateException("Did not finish previous traversal.");
+			
+			closedSet.clear();
+			
+			if (eval.next(origin)) {
+				stack.push(origin);
+				closedSet.add(origin);
+			}
+			return new Iterator<T>() {
 
 				@Override
 				public boolean hasNext() {
@@ -673,16 +677,12 @@ public class FeasiblePointInitializer implements ConicProgramListener {
 				}
 
 				@Override
-				public Variable next() {
-					Variable next = stack.pop();
-					if (eval.nextVariable(next)) {
-						for (LinearConstraint con : next.getLinearConstraints()) {
-							for (Variable v : con.getVariables().keySet()) {
-								if (!closedSet.contains(v)) {
-									stack.push(v);
-									closedSet.add(v);
-								}
-							}
+				public T next() {
+					T next = stack.pop();
+					for (T t : getNeighbors(next)) {
+						if (!closedSet.contains(t) && eval.next(t)) {
+							stack.push(t);
+							closedSet.add(t);
 						}
 					}
 					return next;

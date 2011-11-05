@@ -66,12 +66,12 @@ public class Dualizer {
 	
 	public void verifyCheckedOut() {
 		if (!checkedOut)
-			throw new IllegalStateException("Matrices are not checked out.");
+			throw new IllegalStateException("Dual program is not checked out.");
 	}
 	
 	public void verifyCheckedIn() {
 		if (checkedOut)
-			throw new IllegalStateException("Matrices are not checked in.");
+			throw new IllegalStateException("Dual program is not checked in.");
 	}
 	
 	public ConicProgram checkOutProgram() {
@@ -204,6 +204,8 @@ public class Dualizer {
 			}
 		}
 		
+		checkedOut = true;
+		
 		return dualProgram;
 	}
 	
@@ -221,6 +223,8 @@ public class Dualizer {
 			if (dualCon != null)
 				x.set(primalProgram.index(primalVar), (-1.0*dualCon.getLagrange()));
 		}
+		
+		checkedOut = false;
 	}
 	
 //	private class VariablePair {

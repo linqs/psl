@@ -173,7 +173,6 @@ public class IPM implements ConicProgramSolver {
 					+ " Supported cones are non-negative orthant cones and second-order cones.");
 		}
 
-		program.checkOutMatrices();
 		DoubleMatrix2D A = program.getA();
 		
 		log.debug("Starting optimzation with {} variables and {} constraints.", A.columns(), A.rows());

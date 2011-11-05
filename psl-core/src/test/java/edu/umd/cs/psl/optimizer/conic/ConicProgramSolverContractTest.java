@@ -18,10 +18,13 @@ package edu.umd.cs.psl.optimizer.conic;
 
 import static org.junit.Assert.assertTrue;
 
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.Vector;
 
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
@@ -38,48 +41,57 @@ import edu.umd.cs.psl.optimizer.conic.program.Variable;
  */
 abstract public class ConicProgramSolverContractTest {
 	
-	private static final double SOLUTION_TOLERANCE = 0.01;
+	private static final double SOLUTION_TOLERANCE = 0.001;
 	
-	private ConicProgramSolver solver;
+	private List<? extends ConicProgramSolver> solvers;
 	
 	private Vector<ConicProgram> programs;
-	private Vector<DoubleMatrix1D> solutions;
+	private Vector<Map<Variable, Double>> solutions;
 	
-	@BeforeClass
-	public void init() {
-		programs = new Vector<ConicProgram>();
-		solutions = new Vector<DoubleMatrix1D>();
-		
-		addLP();
-		addSOCP();
-	}
-
 	@Before
 	public final void setUp() {
-		solver = getConicProgramSolverImplementation();
+		solvers = getConicProgramSolverImplementations();
+		programs = new Vector<ConicProgram>();
+		solutions = new Vector<Map<Variable, Double>>();
 	}
 
-	abstract protected ConicProgramSolver getConicProgramSolverImplementation();
+	abstract protected List<? extends ConicProgramSolver> getConicProgramSolverImplementations();
 	
 	@Test
 	public void testSolve() {
 		ConicProgram program;
-		DoubleMatrix1D solution;
+		ConicProgramSolver solver;
+		Map<Variable, Double> solution;
+		DoubleMatrix1D solutionMatrix;
 		
 		DenseDoubleAlgebra alg = new DenseDoubleAlgebra();
+		Iterator<? extends ConicProgramSolver> itr = solvers.iterator();
 		
-		for (int i = 0; i < programs.size(); i++) {
-			program = programs.get(i);
-			solution = solutions.get(i);
+		while (itr.hasNext()) {
+			solver = itr.next();
+			addLP();
+			addSOCP();
 			
-			if (solver.supportsConeTypes(program.getConeTypes())) {
-				solver.solve(program);
-				program.checkOutMatrices();
-				assertTrue(alg.norm2(solution.copy().assign(program.getX(), DoubleFunctions.minus)) < SOLUTION_TOLERANCE);
-				//assertTrue(Math.abs(x1.getValue() - 0.427) < SOLUTION_TOLERANCE);
-				//assertTrue(Math.abs(x2.getValue() - 0.2909) < SOLUTION_TOLERANCE);
-				program.checkInMatrices();
+			for (int i = 0; i < programs.size(); i++) {
+				program = programs.get(i);
+				solution = solutions.get(i);
+				
+				if (solver.supportsConeTypes(program.getConeTypes())) {
+					solver.setConicProgram(program);
+					solver.solve();
+					program.checkOutMatrices();
+					solutionMatrix = new DenseDoubleMatrix1D((int) program.getX().size());
+					
+					for (Map.Entry<Variable, Double> e : solution.entrySet()) {
+						solutionMatrix.set(program.index(e.getKey()), e.getValue());
+					}
+					assertTrue(alg.norm2(solutionMatrix.assign(program.getX(), DoubleFunctions.minus)) < SOLUTION_TOLERANCE);
+					program.checkInMatrices();
+				}
 			}
+			
+			programs.clear();
+			solutions.clear();
 		}
 	}
 	
@@ -141,7 +153,17 @@ abstract public class ConicProgramSolverContractTest {
 		
 		programs.add(program);
 		
-		DoubleMatrix1D solution = new DenseDoubleMatrix1D(10);
+		Map<Variable, Double> solution = new HashMap<Variable, Double>();
+		solution.put(x1, 0.2);
+		solution.put(x2, 0.2);
+		solution.put(x3, 0.5);
+		solution.put(x4, 0.0);
+		solution.put(x5, 0.0);
+		solution.put(x6, 0.0);
+		solution.put(x7, 0.0);
+		solution.put(x8, 0.0);
+		solution.put(x9, 0.8);
+		solution.put(x10, 0.8);
 		
 		solutions.add(solution);
 	}
@@ -295,7 +317,34 @@ abstract public class ConicProgramSolverContractTest {
 		
 		programs.add(program);
 		
-		DoubleMatrix1D solution = new DenseDoubleMatrix1D(10);
+		Map<Variable, Double> solution = new HashMap<Variable, Double>();
+		
+		solution.put(x1, 0.4273);
+		solution.put(x2, 0.2909);
+		solution.put(x3, 0.2727);
+		solution.put(x4, 0.0);
+		solution.put(x5, 0.1363);
+		solution.put(x6, 0.0);
+		solution.put(x7, 0.0909);
+		solution.put(x8, 0.0);
+		solution.put(x9, 0.5727);
+		solution.put(x10, 0.7091);
+		
+		solution.put(phi1InnerFeatureVar, 0.2727);
+		solution.put(phi1InnerSquaredVar, 0.4628);
+		solution.put(phi1OuterSquaredVar, 0.5372);
+
+		solution.put(phi2InnerFeatureVar, 0.1364);
+		solution.put(phi2InnerSquaredVar, 0.4907);
+		solution.put(phi2OuterSquaredVar, 0.5093);
+
+		solution.put(phi3InnerFeatureVar, 0.0909);
+		solution.put(phi3InnerSquaredVar, 0.4959);
+		solution.put(phi3OuterSquaredVar, 0.5041);
+
+		solution.put(x3Sq, 0.0744);
+		solution.put(x5Sq, 0.0186);
+		solution.put(x7Sq, 0.0083);
 		
 		solutions.add(solution);
 	}

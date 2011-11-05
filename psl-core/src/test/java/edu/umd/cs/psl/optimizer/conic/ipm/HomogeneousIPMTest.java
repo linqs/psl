@@ -16,6 +16,9 @@
  */
 package edu.umd.cs.psl.optimizer.conic.ipm;
 
+import java.util.List;
+import java.util.Vector;
+
 import edu.umd.cs.psl.config.EmptyBundle;
 import edu.umd.cs.psl.optimizer.conic.ConicProgramSolver;
 import edu.umd.cs.psl.optimizer.conic.ConicProgramSolverContractTest;
@@ -23,8 +26,10 @@ import edu.umd.cs.psl.optimizer.conic.ConicProgramSolverContractTest;
 public class HomogeneousIPMTest extends ConicProgramSolverContractTest {
 
 	@Override
-	protected ConicProgramSolver getConicProgramSolverImplementation() {
-		return new HomogeneousIPM(new EmptyBundle());
+	protected List<? extends ConicProgramSolver> getConicProgramSolverImplementations() {
+		Vector<HomogeneousIPM> solvers = new Vector<HomogeneousIPM>(1);
+		solvers.add(new HomogeneousIPM(new EmptyBundle()));
+		return solvers;
 	}
 
 }
