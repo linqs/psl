@@ -76,6 +76,7 @@ public class FeasiblePointInitializer implements ConicProgramListener {
 
 	public FeasiblePointInitializer(ConicProgram p) {
 		program = p;
+		program.registerForConicProgramEvents(this);
 		
 		primalInfeasible = new HashSet<LinearConstraint>();
 		dualInfeasible = new HashSet<Variable>();

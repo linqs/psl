@@ -138,12 +138,18 @@ public class IPM implements ConicProgramSolver {
 		currentProgram = p;
 		
 		if (initFeasible && FeasiblePointInitializer.supportsConeTypes(currentProgram.getConeTypes())) {
-			initializer = new FeasiblePointInitializer(currentProgram); 
+			initializer = new FeasiblePointInitializer(currentProgram);
+		}
+		else {
+			initializer = null;
 		}
 		
 		if (tryDualize && Dualizer.supportsConeTypes(currentProgram.getConeTypes())) {
 			dualized = true;
 			dualizer = new Dualizer(currentProgram);
+		}
+		else {
+			dualized = false;
 		}
 	}
 

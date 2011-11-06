@@ -42,6 +42,8 @@ public class MOSEK implements ConicProgramSolver {
 	
 	private static final Logger log = LoggerFactory.getLogger(MOSEK.class);
 	
+	private ConicProgram program;
+	
 	private static final ArrayList<ConeType> supportedCones = new ArrayList<ConeType>(2);
 	static {
 		supportedCones.add(ConeType.NonNegativeOrthantCone);
@@ -53,6 +55,8 @@ public class MOSEK implements ConicProgramSolver {
 	public MOSEK(ConfigBundle config) {
 		environment = new mosek.Env();
 		environment.init();
+		
+		program = null;
 	}
 
 	@Override
@@ -61,7 +65,15 @@ public class MOSEK implements ConicProgramSolver {
 	}
 
 	@Override
-	public Double solve(ConicProgram program) {
+	public void setConicProgram(ConicProgram p) {
+		program = p;
+	}
+
+	@Override
+	public void solve() {
+		if (program == null)
+			throw new IllegalStateException("No conic program has been set.");
+		
 		program.checkOutMatrices();
 		SparseDoubleMatrix2D A = program.getA();
 		DoubleMatrix1D x = program.getX();
@@ -171,8 +183,6 @@ public class MOSEK implements ConicProgramSolver {
 			/* Catch both Error and Warning */ 
 			throw new AssertionError(e.getMessage()); 
 		}
-		
-		return null;
 	}
 
 	class MsgClass extends mosek.Stream { 

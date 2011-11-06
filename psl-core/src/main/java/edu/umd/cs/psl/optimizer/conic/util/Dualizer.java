@@ -19,13 +19,13 @@ package edu.umd.cs.psl.optimizer.conic.util;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
-import edu.umd.cs.psl.optimizer.conic.program.Cone;
 import edu.umd.cs.psl.optimizer.conic.program.ConeType;
 import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
 import edu.umd.cs.psl.optimizer.conic.program.LinearConstraint;
@@ -46,9 +46,9 @@ public class Dualizer {
 	
 	private ConicProgram primalProgram, dualProgram;
 	private Map<Variable, LinearConstraint> primalVarsToDualCons;
+	private Map<Variable, Variable> primalVarsToDualVars;
 	private Map<LinearConstraint, Variable> primalConsToDualVars;
-	private Map<Variable, Double> lowerBounds, upperBounds;
-	private Map<LinearConstraint, VariablePair> varPairs;
+	private Map<LinearConstraint, SOCVariablePair> varPairs;
 	
 	public Dualizer(ConicProgram program) {
 		primalProgram = program;
@@ -74,166 +74,122 @@ public class Dualizer {
 			throw new IllegalStateException("Dual program is not checked in.");
 	}
 	
-	public ConicProgram checkOutProgram() {
+	public void checkOutProgram() {
 		verifyCheckedIn();
 		dualProgram = new ConicProgram();
 		primalVarsToDualCons = new HashMap<Variable, LinearConstraint>();
+		primalVarsToDualVars = new HashMap<Variable, Variable>();
 		primalConsToDualVars = new HashMap<LinearConstraint, Variable>();
-		lowerBounds = new HashMap<Variable, Double>();
-		upperBounds = new HashMap<Variable, Double>();
-		varPairs = new HashMap<LinearConstraint, VariablePair>();
+		varPairs = new HashMap<LinearConstraint, SOCVariablePair>();
 		
-		Variable dualVar;
+		Variable slack, primalVar, dualVar;
 		LinearConstraint dualCon;
-		Double lowerBound, upperBound, newBound, coeff;
-		int numConstraints;
+		Double coeff, scaledValue;
 		
-		for (Cone c : primalProgram.getNonNegativeOrthantCones()) {
-			Variable primalVar = ((NonNegativeOrthantCone) c).getVariable();
-			numConstraints = primalVar.getLinearConstraints().size();
-			if (numConstraints > 1) {
-				dualCon = dualProgram.createConstraint();
-				dualCon.setConstrainedValue(primalVar.getObjectiveCoefficient());
-				dualCon.addVariable(dualProgram.createNonNegativeOrthantCone().getVariable(), 1.0);
-				primalVarsToDualCons.put(primalVar, dualCon);
+		for (LinearConstraint con : primalProgram.getConstraints()) {
+			slack = null;
+			for (Variable slackCandidate : con.getVariables().keySet()) {
+				if (slackCandidate.getLinearConstraints().size() == 1
+						&& slackCandidate.getCone() instanceof NonNegativeOrthantCone
+						&& slackCandidate.getObjectiveCoefficient() == 0.0) {
+					slack = slackCandidate;
+					break;
+				}
 			}
-			else if (numConstraints == 1) {
-				LinearConstraint primalCon = primalVar.getLinearConstraints().iterator().next();
-				dualVar = primalConsToDualVars.get(primalCon);
-				if (dualVar == null) {
-					dualVar = dualProgram.createNonNegativeOrthantCone().getVariable();
-					primalConsToDualVars.put(primalCon, dualVar);
+			
+			/* If a slack variable is found, it will be represented as a dual slack variable */
+			if (slack != null) {
+				dualVar = dualProgram.createNonNegativeOrthantCone().getVariable();
+				dualVar.setObjectiveCoefficient(con.getConstrainedValue());
+				primalVarsToDualVars.put(slack, dualVar);
+				primalConsToDualVars.put(con, dualVar);
+			}
+			/*
+			 * Otherwise, the Lagrange multiplier of the primal constraint cannot, in
+			 * general, be bounded at zero. Therefore, its value will be represented
+			 * by the inner variable of a second-order cone.
+			 */
+			else {
+				SOCVariablePair pair = new SOCVariablePair();
+				SecondOrderCone cone = dualProgram.createSecondOrderCone(2);
+				for (Variable v : cone.getVariables()) {
+					if (cone.getNthVariable().equals(v))
+						pair.inner = v;
 				}
-				
-				coeff = primalCon.getVariables().get(primalVar);
-
-				newBound = primalVar.getObjectiveCoefficient() / coeff;
-				
-				if (coeff > 0) {
-					upperBound = upperBounds.get(dualVar);
-					if (upperBound == null) {
-						upperBound = Double.POSITIVE_INFINITY;
-					}
-					if (newBound < upperBound) {
-						upperBounds.put(dualVar, newBound);
-					}
-				}
-				else if (coeff < 0) {
-					lowerBound = lowerBounds.get(dualVar);
-					if (lowerBound == null) {
-						lowerBound = Double.NEGATIVE_INFINITY;
-					}
-					if (newBound > lowerBound) {
-						lowerBounds.put(dualVar, newBound);
-					}
-				}
-				else
-					throw new IllegalStateException("Unexpected state.");
+				pair.inner.setObjectiveCoefficient(con.getConstrainedValue());
+				varPairs.put(con, pair);
 			}
 		}
 		
-		log.trace("Starting second pass.");
+		for (NonNegativeOrthantCone cone : primalProgram.getNonNegativeOrthantCones()) {
+			primalVar = cone.getVariable();
+			/*
+			 * If the variable isn't marked as a slack variable, makes a constraint
+			 * in the dualized program for it. Immediately creates a new variable
+			 * to keep the new constraint's Lagrange multiplier non-negative (to
+			 * match the primal variable in the primal program).
+			 */
+			if (primalVarsToDualVars.get(primalVar) == null) {
+				dualCon = dualProgram.createConstraint();
+				dualCon.setConstrainedValue(-1 * primalVar.getObjectiveCoefficient());
+				primalVarsToDualCons.put(primalVar, dualCon);
+				dualVar = dualProgram.createNonNegativeOrthantCone().getVariable();
+				dualCon.addVariable(dualVar, -1.0);
+				dualVar.setObjectiveCoefficient(0.0);
+			}
+		}
 		
+		/* Puts it all together */
 		for (LinearConstraint con : primalProgram.getConstraints()) {
-			LinearConstraint primalCon = (LinearConstraint) con;
-			dualVar = primalConsToDualVars.get(primalCon);
-			/* If Lagrange multiplier is unbounded */
-			if (dualVar == null) {
-				/* Checks for existing pair of non-negative variables for this multiplier */
-				VariablePair pair = varPairs.get(con);
-				if (pair == null) {
-					pair = new VariablePair();
-					SecondOrderCone cone = dualProgram.createSecondOrderCone(2);
-					for (Variable v : cone.getVariables()) {
-						if (cone.getNthVariable().equals(v))
-							pair.outer = v;
-						else
-							pair.inner = v;
-					}
-					pair.inner.setObjectiveCoefficient(-1 * primalCon.getConstrainedValue());
-					varPairs.put(con, pair);
-				}
-				/* Adds two variables with opposite multipliers to match unbounded variable */
-				for (Variable primalVar : primalCon.getVariables().keySet()) {
-					dualCon = primalVarsToDualCons.get(primalVar);
-					if (dualCon != null) {
-						coeff = primalCon.getVariables().get(primalVar);
-						dualCon.addVariable(pair.inner, coeff);
-					}
+			dualVar = primalConsToDualVars.get(con);
+			if (dualVar == null)
+				dualVar = varPairs.get(con).inner;
+			
+			for (Map.Entry<Variable, Double> e : con.getVariables().entrySet()) {
+				dualCon = primalVarsToDualCons.get(e.getKey());
+				if (dualCon != null) {
+					dualCon.addVariable(dualVar, e.getValue());
 				}
 			}
-			else {
-				lowerBound = lowerBounds.get(dualVar);
-				/* If x only has an upper bound, flip it and shift it to be x' >= 0 */
-				if (lowerBound == null) {
-					dualVar.setObjectiveCoefficient(primalCon.getConstrainedValue());
-					upperBound = upperBounds.get(dualVar);
-					for (Variable primalVar : primalCon.getVariables().keySet()) {
-						dualCon = primalVarsToDualCons.get(primalVar);
-						if (dualCon != null) {
-							coeff = primalCon.getVariables().get(primalVar);
-							dualCon.addVariable(dualVar, -1*coeff);
-							dualCon.setConstrainedValue(dualCon.getConstrainedValue() - coeff * upperBound);
-						}
-					}
-				}
-				else {
-					dualVar.setObjectiveCoefficient(-1 * primalCon.getConstrainedValue());
-					for (Variable primalVar : primalCon.getVariables().keySet()) {
-						dualCon = primalVarsToDualCons.get(primalVar);
-						if (dualCon != null) {
-							coeff = primalCon.getVariables().get(primalVar);
-							dualCon.addVariable(dualVar, coeff);
-							if (lowerBound != 0) {
-								dualCon.setConstrainedValue(dualCon.getConstrainedValue() - coeff * lowerBound);
-							}
-						}
-					}
-					
-					upperBound = upperBounds.get(dualVar);
-					if (upperBound != null) {
-						upperBound -= lowerBound;
-						dualCon = dualProgram.createConstraint();
-						dualCon.addVariable(dualVar, 1.0);
-						dualVar = dualProgram.createNonNegativeOrthantCone().getVariable();
-						dualVar.setObjectiveCoefficient(0.0);
-						dualCon.addVariable(dualVar, 1.0);
-						dualCon.setConstrainedValue(upperBound);
-					}
+		}
+		
+		/*
+		 * Scales and flips constraints in dual program to make slacks have
+		 * coefficients of 1.
+		 */
+		for (Map.Entry<Variable, Variable> e : primalVarsToDualVars.entrySet()) {
+			coeff = e.getKey().getLinearConstraints().iterator().next().getVariables().get(e.getKey());
+			if (coeff != 1.0) {
+				dualVar = e.getValue();
+				dualVar.setObjectiveCoefficient(dualVar.getObjectiveCoefficient() / coeff);
+				for (LinearConstraint con : new HashSet<LinearConstraint>(dualVar.getLinearConstraints())) {
+					scaledValue = con.getVariables().get(dualVar) / coeff;
+					con.removeVariable(dualVar);
+					con.addVariable(dualVar, scaledValue);
 				}
 			}
 		}
 		
 		checkedOut = true;
-		
-		return dualProgram;
 	}
 	
 	public void checkInProgram() {
 		verifyCheckedOut();
-		// TODO: Fill in implicit values.
-		Variable primalVar, dualVar;
-		LinearConstraint dualCon;
 		
 		DoubleMatrix1D x = primalProgram.getX();
 		
-		for (Cone c : primalProgram.getNonNegativeOrthantCones()) {
-			primalVar = ((NonNegativeOrthantCone) c).getVariable();
-			dualCon = primalVarsToDualCons.get(primalVar);
-			if (dualCon != null)
-				x.set(primalProgram.index(primalVar), (-1.0*dualCon.getLagrange()));
+		for (Map.Entry<Variable, LinearConstraint> e : primalVarsToDualCons.entrySet()) {
+			x.set(primalProgram.index(e.getKey()), e.getValue().getLagrange());
+		}
+		
+		for (Map.Entry<Variable, Variable> e : primalVarsToDualVars.entrySet()) {
+			x.set(primalProgram.index(e.getKey()), e.getValue().getDualValue());
 		}
 		
 		checkedOut = false;
 	}
 	
-//	private class VariablePair {
-//		private Variable positive;
-//		private Variable negative;
-//	}
-	
-	private class VariablePair {
+	private class SOCVariablePair {
 		private Variable inner;
-		private Variable outer;
 	}
 }

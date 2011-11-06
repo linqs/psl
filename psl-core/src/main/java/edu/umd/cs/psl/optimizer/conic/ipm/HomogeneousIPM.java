@@ -191,6 +191,9 @@ public class HomogeneousIPM implements ConicProgramSolver {
 			dualized = true;
 			dualizer = new Dualizer(currentProgram);
 		}
+		else {
+			dualized = false;
+		}
 	}
 
 	@Override
