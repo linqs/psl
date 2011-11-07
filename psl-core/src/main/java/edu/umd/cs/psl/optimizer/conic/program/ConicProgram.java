@@ -185,6 +185,8 @@ public class ConicProgram {
 		}
 		
 		checkedOut = true;
+		
+		notify(ConicProgramEvent.MatricesCheckedOut, null, (Object[]) null);
 	}
 	
 	public void checkInMatrices() {
@@ -196,6 +198,8 @@ public class ConicProgram {
 		for (Map.Entry<LinearConstraint, Integer> lc : lcMap.entrySet())
 			lc.getKey().setLagrange(w.get(lc.getValue()));
 		checkedOut = false;
+				
+		notify(ConicProgramEvent.MatricesCheckedIn, null, (Object[]) null);
 	}
 	
 	public Map<Variable, Integer> getVarMap() {
@@ -268,12 +272,12 @@ public class ConicProgram {
 		return cons.size();
 	}
 	
-	void verifyCheckedOut() {
+	public void verifyCheckedOut() {
 		if (!checkedOut)
 			throw new IllegalStateException("Matrices are not checked out.");
 	}
 	
-	void verifyCheckedIn() {
+	public void verifyCheckedIn() {
 		if (checkedOut)
 			throw new IllegalStateException("Matrices are not checked in.");
 	}

@@ -63,6 +63,9 @@ public class Dualizer implements ConicProgramListener {
 		varPairs = new HashMap<LinearConstraint, SOCVariablePair>();
 		
 		checkedOut = false;
+		
+		primalProgram.registerForConicProgramEvents(this);
+		dualProgram.registerForConicProgramEvents(this);
 	}
 	
 	public static boolean supportsConeTypes(Collection<ConeType> types) {
@@ -85,16 +88,37 @@ public class Dualizer implements ConicProgramListener {
 
 	@Override
 	public void notify(ConicProgram sender, ConicProgramEvent event, Entity entity, Object... data) {
-		// TODO Auto-generated method stub
-		
+		if (primalProgram.equals(sender)) {
+			switch (event) {
+			case MatricesCheckedIn:
+				verifyCheckedIn();
+				break;
+			}
+		}
+		else if (dualProgram.equals(sender)) {
+			switch (event) {
+			case MatricesCheckedIn:
+				break;
+			case MatricesCheckedOut:
+				verifyCheckedOut();
+				break;
+			default:
+				throw new UnsupportedOperationException("Dual program cannot be modified directly.");
+			}
+		}
+		else
+			throw new IllegalArgumentException("Unknown sender.");
 	}
 	
 	public void checkOutProgram() {
 		verifyCheckedIn();
+		primalProgram.verifyCheckedOut();
 		
 		Variable slack, primalVar, dualVar;
 		LinearConstraint dualCon;
 		Double coeff, scaledValue;
+		
+		dualProgram.unregisterForConicProgramEvents(this);
 		
 		for (LinearConstraint con : primalProgram.getConstraints()) {
 			slack = null;
@@ -180,11 +204,14 @@ public class Dualizer implements ConicProgramListener {
 			}
 		}
 		
+		dualProgram.registerForConicProgramEvents(this);
+		
 		checkedOut = true;
 	}
 	
 	public void checkInProgram() {
 		verifyCheckedOut();
+		dualProgram.verifyCheckedIn();
 		
 		DoubleMatrix1D x = primalProgram.getX();
 		
