@@ -437,6 +437,6 @@ public class ConicProgram {
 		}
 		
 		for (ConicProgramListener l : listeners)
-			l.notify(e, sender, data);
+			l.notify(this, e, sender, data);
 	}
 }

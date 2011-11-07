@@ -92,13 +92,13 @@ public class FeasiblePointInitializer implements ConicProgramListener {
 	}
 	
 	@Override
-	public void notify(ConicProgramEvent e, Entity sender, Object... data) {
-		switch (e) {
+	public void notify(ConicProgram sender, ConicProgramEvent event, Entity entity, Object... data) {
+		switch (event) {
 		case NNOCCreated:
 		case NNOCDeleted:
-			if (sender instanceof NonNegativeOrthantCone) {
-				NonNegativeOrthantCone nnoc = (NonNegativeOrthantCone) sender;
-				switch (e) {
+			if (entity instanceof NonNegativeOrthantCone) {
+				NonNegativeOrthantCone nnoc = (NonNegativeOrthantCone) entity;
+				switch (event) {
 				case NNOCCreated:
 					if (madeDualFeasibleOnce) dualInfeasible.add(nnoc.getVariable());
 					break;
@@ -113,9 +113,9 @@ public class FeasiblePointInitializer implements ConicProgramListener {
 			break;
 		case SOCCreated:
 		case SOCDeleted:
-			if (sender instanceof SecondOrderCone) {
-				SecondOrderCone soc = (SecondOrderCone) sender;
-				switch (e) {
+			if (entity instanceof SecondOrderCone) {
+				SecondOrderCone soc = (SecondOrderCone) entity;
+				switch (event) {
 				case SOCCreated:
 					if (madeDualFeasibleOnce)
 						for (Variable v : soc.getVariables())
@@ -133,8 +133,8 @@ public class FeasiblePointInitializer implements ConicProgramListener {
 				throw new IllegalArgumentException(UNEXPECTED_SENDER);
 			break;
 		case ObjCoeffChanged:
-			if (sender instanceof Variable) {
-				Variable var = (Variable) sender;
+			if (entity instanceof Variable) {
+				Variable var = (Variable) entity;
 				if (madeDualFeasibleOnce) dualInfeasible.add(var);
 			}
 			else
@@ -143,9 +143,9 @@ public class FeasiblePointInitializer implements ConicProgramListener {
 		case ConCreated:
 		case ConValueChanged:
 		case ConDeleted:
-			if (sender instanceof LinearConstraint) {
-				LinearConstraint lc = (LinearConstraint) sender;
-				switch(e) {
+			if (entity instanceof LinearConstraint) {
+				LinearConstraint lc = (LinearConstraint) entity;
+				switch(event) {
 				case ConCreated:
 				case ConValueChanged:
 					if (madePrimalFeasibleOnce) primalInfeasible.add(lc);
@@ -160,8 +160,8 @@ public class FeasiblePointInitializer implements ConicProgramListener {
 			break;
 		case VarAddedToCon:
 		case VarRemovedFromCon:
-			if (sender instanceof LinearConstraint && data.length > 0 && data[0] instanceof Variable) {
-				LinearConstraint lc = (LinearConstraint) sender;
+			if (entity instanceof LinearConstraint && data.length > 0 && data[0] instanceof Variable) {
+				LinearConstraint lc = (LinearConstraint) entity;
 				Variable var = (Variable) data[0];
 				if (madePrimalFeasibleOnce) {
 					primalInfeasible.add(lc);
@@ -173,7 +173,7 @@ public class FeasiblePointInitializer implements ConicProgramListener {
 				if (lc.equals(dualIsolated.get(var))) {
 					dualIsolated.remove(var);
 				}
-				if (ConicProgramEvent.VarAddedToCon.equals(e)) {
+				if (ConicProgramEvent.VarAddedToCon.equals(event)) {
 					for (Variable v : lc.getVariables().keySet()) {
 						if (lc.equals(dualIsolated.get(v))) {
 							dualIsolated.remove(v);
@@ -181,7 +181,7 @@ public class FeasiblePointInitializer implements ConicProgramListener {
 					}
 				}
 			}
-			else if (sender instanceof LinearConstraint)
+			else if (entity instanceof LinearConstraint)
 				throw new IllegalArgumentException(UNEXPECTED_DATA);
 			else
 				throw new IllegalArgumentException(UNEXPECTED_SENDER);

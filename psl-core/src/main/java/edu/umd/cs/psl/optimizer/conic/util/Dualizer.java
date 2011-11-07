@@ -28,12 +28,15 @@ import org.slf4j.LoggerFactory;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import edu.umd.cs.psl.optimizer.conic.program.ConeType;
 import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
+import edu.umd.cs.psl.optimizer.conic.program.ConicProgramEvent;
+import edu.umd.cs.psl.optimizer.conic.program.ConicProgramListener;
+import edu.umd.cs.psl.optimizer.conic.program.Entity;
 import edu.umd.cs.psl.optimizer.conic.program.LinearConstraint;
 import edu.umd.cs.psl.optimizer.conic.program.NonNegativeOrthantCone;
 import edu.umd.cs.psl.optimizer.conic.program.SecondOrderCone;
 import edu.umd.cs.psl.optimizer.conic.program.Variable;
 
-public class Dualizer {
+public class Dualizer implements ConicProgramListener {
 	
 	private static final Logger log = LoggerFactory.getLogger(Dualizer.class);
 	
@@ -52,6 +55,13 @@ public class Dualizer {
 	
 	public Dualizer(ConicProgram program) {
 		primalProgram = program;
+		
+		dualProgram = new ConicProgram();
+		primalVarsToDualCons = new HashMap<Variable, LinearConstraint>();
+		primalVarsToDualVars = new HashMap<Variable, Variable>();
+		primalConsToDualVars = new HashMap<LinearConstraint, Variable>();
+		varPairs = new HashMap<LinearConstraint, SOCVariablePair>();
+		
 		checkedOut = false;
 	}
 	
@@ -60,7 +70,6 @@ public class Dualizer {
 	}
 	
 	public ConicProgram getDualProgram() {
-		verifyCheckedOut();
 		return dualProgram;
 	}
 	
@@ -73,14 +82,15 @@ public class Dualizer {
 		if (checkedOut)
 			throw new IllegalStateException("Dual program is not checked in.");
 	}
+
+	@Override
+	public void notify(ConicProgram sender, ConicProgramEvent event, Entity entity, Object... data) {
+		// TODO Auto-generated method stub
+		
+	}
 	
 	public void checkOutProgram() {
 		verifyCheckedIn();
-		dualProgram = new ConicProgram();
-		primalVarsToDualCons = new HashMap<Variable, LinearConstraint>();
-		primalVarsToDualVars = new HashMap<Variable, Variable>();
-		primalConsToDualVars = new HashMap<LinearConstraint, Variable>();
-		varPairs = new HashMap<LinearConstraint, SOCVariablePair>();
 		
 		Variable slack, primalVar, dualVar;
 		LinearConstraint dualCon;
