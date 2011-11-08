@@ -21,11 +21,13 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
+import edu.umd.cs.psl.optimizer.conic.program.Cone;
 import edu.umd.cs.psl.optimizer.conic.program.ConeType;
 import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
 import edu.umd.cs.psl.optimizer.conic.program.ConicProgramEvent;
@@ -53,6 +55,10 @@ public class Dualizer implements ConicProgramListener {
 	private Map<LinearConstraint, Variable> primalConsToDualVars;
 	private Map<LinearConstraint, SOCVariablePair> varPairs;
 	
+	private Set<Cone> newCones;
+	private Set<LinearConstraint> newConstraints;
+	
+	
 	public Dualizer(ConicProgram program) {
 		primalProgram = program;
 		
@@ -61,6 +67,9 @@ public class Dualizer implements ConicProgramListener {
 		primalVarsToDualVars = new HashMap<Variable, Variable>();
 		primalConsToDualVars = new HashMap<LinearConstraint, Variable>();
 		varPairs = new HashMap<LinearConstraint, SOCVariablePair>();
+		
+		newCones = new HashSet<Cone>(program.getCones());
+		newConstraints = new HashSet<LinearConstraint>(program.getConstraints());
 		
 		checkedOut = false;
 		
@@ -93,6 +102,9 @@ public class Dualizer implements ConicProgramListener {
 			case MatricesCheckedIn:
 				verifyCheckedIn();
 				break;
+			case ConCreated:
+				newConstraints.add((LinearConstraint) entity);
+				break;
 			}
 		}
 		else if (dualProgram.equals(sender)) {
@@ -120,7 +132,8 @@ public class Dualizer implements ConicProgramListener {
 		
 		dualProgram.unregisterForConicProgramEvents(this);
 		
-		for (LinearConstraint con : primalProgram.getConstraints()) {
+		/* Processes new constraints */
+		for (LinearConstraint con : newConstraints) {
 			slack = null;
 			for (Variable slackCandidate : con.getVariables().keySet()) {
 				if (slackCandidate.getLinearConstraints().size() == 1
@@ -155,21 +168,24 @@ public class Dualizer implements ConicProgramListener {
 			}
 		}
 		
-		for (NonNegativeOrthantCone cone : primalProgram.getNonNegativeOrthantCones()) {
-			primalVar = cone.getVariable();
-			/*
-			 * If the variable isn't marked as a slack variable, makes a constraint
-			 * in the dualized program for it. Immediately creates a new variable
-			 * to keep the new constraint's Lagrange multiplier non-negative (to
-			 * match the primal variable in the primal program).
-			 */
-			if (primalVarsToDualVars.get(primalVar) == null) {
-				dualCon = dualProgram.createConstraint();
-				dualCon.setConstrainedValue(-1 * primalVar.getObjectiveCoefficient());
-				primalVarsToDualCons.put(primalVar, dualCon);
-				dualVar = dualProgram.createNonNegativeOrthantCone().getVariable();
-				dualCon.addVariable(dualVar, -1.0);
-				dualVar.setObjectiveCoefficient(0.0);
+		/* Processes new cones */
+		for (Cone cone : newCones) {
+			if (cone instanceof NonNegativeOrthantCone) {
+				primalVar = ((NonNegativeOrthantCone) cone).getVariable();
+				/*
+				 * If the variable isn't marked as a slack variable, makes a constraint
+				 * in the dualized program for it. Immediately creates a new variable
+				 * to keep the new constraint's Lagrange multiplier non-negative (to
+				 * match the primal variable in the primal program).
+				 */
+				if (primalVarsToDualVars.get(primalVar) == null) {
+					dualCon = dualProgram.createConstraint();
+					dualCon.setConstrainedValue(-1 * primalVar.getObjectiveCoefficient());
+					primalVarsToDualCons.put(primalVar, dualCon);
+					dualVar = dualProgram.createNonNegativeOrthantCone().getVariable();
+					dualCon.setVariable(dualVar, -1.0);
+					dualVar.setObjectiveCoefficient(0.0);
+				}
 			}
 		}
 		
@@ -182,7 +198,7 @@ public class Dualizer implements ConicProgramListener {
 			for (Map.Entry<Variable, Double> e : con.getVariables().entrySet()) {
 				dualCon = primalVarsToDualCons.get(e.getKey());
 				if (dualCon != null) {
-					dualCon.addVariable(dualVar, e.getValue());
+					dualCon.setVariable(dualVar, e.getValue());
 				}
 			}
 		}
@@ -198,8 +214,7 @@ public class Dualizer implements ConicProgramListener {
 				dualVar.setObjectiveCoefficient(dualVar.getObjectiveCoefficient() / coeff);
 				for (LinearConstraint con : new HashSet<LinearConstraint>(dualVar.getLinearConstraints())) {
 					scaledValue = con.getVariables().get(dualVar) / coeff;
-					con.removeVariable(dualVar);
-					con.addVariable(dualVar, scaledValue);
+					con.setVariable(dualVar, scaledValue);
 				}
 			}
 		}

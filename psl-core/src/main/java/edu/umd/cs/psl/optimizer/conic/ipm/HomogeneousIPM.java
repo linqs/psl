@@ -215,7 +215,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		}
 		
 		if (!supportsConeTypes(program.getConeTypes())) {
-			throw new IllegalArgumentException("Program contains at least one unsupported cone."
+			throw new IllegalStateException("Program contains at least one unsupported cone."
 					+ " Supported cones are non-negative orthant cones and second-order cones.");
 		}
 

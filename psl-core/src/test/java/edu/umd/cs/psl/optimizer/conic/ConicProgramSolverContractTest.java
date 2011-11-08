@@ -95,6 +95,109 @@ abstract public class ConicProgramSolverContractTest {
 		}
 	}
 	
+	/** Tests solving a program after it has been solved once and modified. */
+	@Test
+	public void testSolveAfterModification() {
+		ConicProgram program;
+		ConicProgramSolver solver;
+		Map<Variable, Double> solution;
+		DoubleMatrix1D solutionMatrix;
+		
+		DenseDoubleAlgebra alg = new DenseDoubleAlgebra();
+		Iterator<? extends ConicProgramSolver> itr = solvers.iterator();
+		
+		while (itr.hasNext()) {
+			solver = itr.next();
+			program = new ConicProgram();
+			
+			LinearConstraint phi1 = (LinearConstraint) program.createConstraint();
+			LinearConstraint phi2 = (LinearConstraint) program.createConstraint();
+			LinearConstraint phi3 = (LinearConstraint) program.createConstraint();
+			LinearConstraint c1 = (LinearConstraint) program.createConstraint();
+			LinearConstraint c2 = (LinearConstraint) program.createConstraint();
+
+			Variable x1 = program.createNonNegativeOrthantCone().getVariable();
+			Variable x2 = program.createNonNegativeOrthantCone().getVariable();
+			Variable x3 = program.createNonNegativeOrthantCone().getVariable();
+			Variable x4 = program.createNonNegativeOrthantCone().getVariable();
+			Variable x5 = program.createNonNegativeOrthantCone().getVariable();
+			Variable x6 = program.createNonNegativeOrthantCone().getVariable();
+			Variable x7 = program.createNonNegativeOrthantCone().getVariable();
+			Variable x8 = program.createNonNegativeOrthantCone().getVariable();
+			Variable x9 = program.createNonNegativeOrthantCone().getVariable();
+			Variable x10 = program.createNonNegativeOrthantCone().getVariable();
+
+			phi1.addVariable(x1, 1.0);
+			phi1.addVariable(x3, 1.0);
+			phi1.addVariable(x4, -1.0);
+
+			phi2.addVariable(x1, -1.0);
+			phi2.addVariable(x2, 1.0);
+			phi2.addVariable(x5, 1.0);
+			phi2.addVariable(x6, -1.0);
+
+			phi3.addVariable(x2, -1.0);
+			phi3.addVariable(x7, 1.0);
+			phi3.addVariable(x8, -1.0);
+
+			c1.addVariable(x1, 1.0);
+			c1.addVariable(x9, 1.0);
+
+			c2.addVariable(x2, 1.0);
+			c2.addVariable(x10, 1.0);
+
+			phi1.setConstrainedValue(0.7);
+			phi2.setConstrainedValue(0.0);
+			phi3.setConstrainedValue(-0.2);
+			c1.setConstrainedValue(1.0);
+			c2.setConstrainedValue(1.0);
+
+			x1.setObjectiveCoefficient(0.0);
+			x2.setObjectiveCoefficient(0.0);
+			x3.setObjectiveCoefficient(1.0);
+			x4.setObjectiveCoefficient(0.0);
+			x5.setObjectiveCoefficient(2.0);
+			x6.setObjectiveCoefficient(0.0);
+			x7.setObjectiveCoefficient(3.0);
+			x8.setObjectiveCoefficient(0.0);
+			x9.setObjectiveCoefficient(0.0);
+			x10.setObjectiveCoefficient(0.0);
+			
+			solver.setConicProgram(program);
+			solver.solve();
+			
+			Variable x11 = program.createNonNegativeOrthantCone().getVariable();
+			LinearConstraint c3 = program.createConstraint();
+			c3.addVariable(x2, 1.0);
+			c3.addVariable(x11, 1.0);
+			c3.setConstrainedValue(0.1);
+			
+			solver.solve();
+			
+			solution = new HashMap<Variable, Double>();
+			solution.put(x1, 0.1);
+			solution.put(x2, 0.1);
+			solution.put(x3, 0.6);
+			solution.put(x4, 0.0);
+			solution.put(x5, 0.0);
+			solution.put(x6, 0.0);
+			solution.put(x7, 0.0);
+			solution.put(x8, 0.1);
+			solution.put(x9, 0.9);
+			solution.put(x10, 0.9);
+			solution.put(x11, 0.0);
+			
+			program.checkOutMatrices();
+			solutionMatrix = new DenseDoubleMatrix1D((int) program.getX().size());
+			
+			for (Map.Entry<Variable, Double> e : solution.entrySet()) {
+				solutionMatrix.set(program.index(e.getKey()), e.getValue());
+			}
+			assertTrue(alg.norm2(solutionMatrix.assign(program.getX(), DoubleFunctions.minus)) < SOLUTION_TOLERANCE);
+			program.checkInMatrices();
+		}
+	}
+	
 	private void addLP() {
 		ConicProgram program = new ConicProgram();
 		
