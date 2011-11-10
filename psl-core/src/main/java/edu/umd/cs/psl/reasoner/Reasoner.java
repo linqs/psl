@@ -19,7 +19,7 @@ package edu.umd.cs.psl.reasoner;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 
 /**
- * Performs probablistic inference over {@link edu.umd.cs.psl.model.atom.Atom Atoms}
+ * Performs probabilistic inference over {@link edu.umd.cs.psl.model.atom.Atom Atoms}
  * based on a set of {@link edu.umd.cs.psl.model.kernel.GroundKernel GroundKernels}.
  * 
  * A Reasoner infers the most probable values of atoms. The form of the probability
@@ -64,7 +64,7 @@ public interface Reasoner {
 	
 	/**
 	 * Stops any listening for {@link edu.umd.cs.psl.model.atom.Atom} lifecycle events
-	 * and releases any resources that have been accquired.
+	 * and releases any resources that have been acquired.
 	 *
 	 * This method allows the Reasoner to stop maintaining an accurate probability distribution
 	 * relative to the current states of Atoms and should only be called when the Reasoner

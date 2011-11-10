@@ -151,6 +151,13 @@ public class IPM implements ConicProgramSolver {
 		else {
 			dualized = false;
 		}
+		
+		if (initFeasible && FeasiblePointInitializer.supportsConeTypes(currentProgram.getConeTypes())) {
+			initializer = new FeasiblePointInitializer((dualized) ? dualizer.getDualProgram() : currentProgram);
+		}
+		else {
+			initializer = null;
+		}
 	}
 
 	@Override
@@ -162,9 +169,6 @@ public class IPM implements ConicProgramSolver {
 		
 		currentProgram.checkOutMatrices();
 		
-		if (initializer != null)
-			initializer.makeFeasible();
-		
 		if (dualized) {
 			dualizer.checkOutProgram();
 			program = dualizer.getDualProgram();
@@ -173,6 +177,9 @@ public class IPM implements ConicProgramSolver {
 		else {
 			program = currentProgram;
 		}
+		
+		if (initializer != null)
+			initializer.makeFeasible();
 		
 		if (!supportsConeTypes(program.getConeTypes())) {
 			throw new IllegalStateException("Program contains at least one unsupported cone."

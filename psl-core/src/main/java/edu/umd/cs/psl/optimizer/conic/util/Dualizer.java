@@ -105,6 +105,9 @@ public class Dualizer implements ConicProgramListener {
 			case ConCreated:
 				newConstraints.add((LinearConstraint) entity);
 				break;
+			case NNOCCreated:
+				newCones.add((NonNegativeOrthantCone) entity);
+				break;
 			}
 		}
 		else if (dualProgram.equals(sender)) {
@@ -127,8 +130,8 @@ public class Dualizer implements ConicProgramListener {
 		primalProgram.verifyCheckedOut();
 		
 		Variable slack, primalVar, dualVar;
-		LinearConstraint dualCon;
-		Double coeff, scaledValue;
+		LinearConstraint primalCon, dualCon;
+		Double coeff;
 		
 		dualProgram.unregisterForConicProgramEvents(this);
 		
@@ -190,12 +193,12 @@ public class Dualizer implements ConicProgramListener {
 		}
 		
 		/* Puts it all together */
-		for (LinearConstraint con : primalProgram.getConstraints()) {
-			dualVar = primalConsToDualVars.get(con);
+		for (LinearConstraint pCon : primalProgram.getConstraints()) {
+			dualVar = primalConsToDualVars.get(pCon);
 			if (dualVar == null)
-				dualVar = varPairs.get(con).inner;
+				dualVar = varPairs.get(pCon).inner;
 			
-			for (Map.Entry<Variable, Double> e : con.getVariables().entrySet()) {
+			for (Map.Entry<Variable, Double> e : pCon.getVariables().entrySet()) {
 				dualCon = primalVarsToDualCons.get(e.getKey());
 				if (dualCon != null) {
 					dualCon.setVariable(dualVar, e.getValue());
@@ -208,13 +211,15 @@ public class Dualizer implements ConicProgramListener {
 		 * coefficients of 1.
 		 */
 		for (Map.Entry<Variable, Variable> e : primalVarsToDualVars.entrySet()) {
-			coeff = e.getKey().getLinearConstraints().iterator().next().getVariables().get(e.getKey());
+			primalCon = e.getKey().getLinearConstraints().iterator().next();
+			coeff = primalCon.getVariables().get(e.getKey());
 			if (coeff != 1.0) {
 				dualVar = e.getValue();
-				dualVar.setObjectiveCoefficient(dualVar.getObjectiveCoefficient() / coeff);
-				for (LinearConstraint con : new HashSet<LinearConstraint>(dualVar.getLinearConstraints())) {
-					scaledValue = con.getVariables().get(dualVar) / coeff;
-					con.setVariable(dualVar, scaledValue);
+				dualVar.setObjectiveCoefficient(primalCon.getConstrainedValue() / coeff);
+				for (Variable pVar : primalCon.getVariables().keySet()) {
+					dualCon = primalVarsToDualCons.get(pVar);
+					if (dualCon != null)
+						dualCon.setVariable(dualVar, primalCon.getVariables().get(pVar) / coeff);
 				}
 			}
 		}

@@ -340,26 +340,72 @@ public class ConicProgram {
 	}
 	
 	public double primalInfeasibility() {
-		DenseDoubleAlgebra alg = new DenseDoubleAlgebra();
-		boolean checkInWhenFinished = false;
-		if (!checkedOut) {
-			checkOutMatrices();
-			checkInWhenFinished = true;
+		return primalInfeasibility(false);
+	}
+	
+	public double primalInfeasibility(boolean requireInterior) {
+		verifyCheckedOut();
+		
+		double value;
+		
+		for (NonNegativeOrthantCone cone : NNOCs) {
+			value = x.get(index(cone.getVariable()));
+			if (value < 0.0 || (requireInterior && value == 0.0))
+				return Double.POSITIVE_INFINITY;
 		}
+		
+		for (SecondOrderCone cone : SOCs) {
+			value = 0.0;
+			for (Variable v : cone.getVariables()) {
+				if (!v.equals(cone.getNthVariable())) {
+					value += Math.pow(x.get(index(v)), 2);
+				} 
+			}
+			value = Math.sqrt(value);
+			value = x.get(index(cone.getNthVariable())) - value;
+			if (value < 0.0 || (requireInterior && value == 0.0))
+				return Double.POSITIVE_INFINITY;
+		}
+		
+		DenseDoubleAlgebra alg = new DenseDoubleAlgebra();
+		
 		double inf = alg.norm2(alg.mult(A, x).assign(b, DoubleFunctions.minus));
-		if (checkInWhenFinished) checkInMatrices();
+		
 		return inf;
 	}
 	
 	public double dualInfeasibility() {
-		DenseDoubleAlgebra alg = new DenseDoubleAlgebra();
-		boolean checkInWhenFinished = false;
-		if (!checkedOut) {
-			checkOutMatrices();
-			checkInWhenFinished = true;
+		return dualInfeasibility(false);
+	}
+	
+	public double dualInfeasibility(boolean requireInterior) {
+		verifyCheckedOut();
+		
+		double value;
+		
+		for (NonNegativeOrthantCone cone : NNOCs) {
+			value = s.get(index(cone.getVariable()));
+			if (value < 0.0 || (requireInterior && value == 0.0))
+				return Double.POSITIVE_INFINITY;
 		}
+		
+		for (SecondOrderCone cone : SOCs) {
+			value = 0.0;
+			for (Variable v : cone.getVariables()) {
+				if (!v.equals(cone.getNthVariable())) {
+					value += Math.pow(s.get(index(v)), 2);
+				} 
+			}
+			value = Math.sqrt(value);
+			value = s.get(index(cone.getNthVariable())) - value;
+			if (value < 0.0 || (requireInterior && value == 0.0))
+				return Double.POSITIVE_INFINITY;
+		}
+		
+		DenseDoubleAlgebra alg = new DenseDoubleAlgebra();
+		
 		double inf = alg.norm2(A.zMult(w, s.copy(), 1.0, 1.0, true).assign(c, DoubleFunctions.minus));
-		if (checkInWhenFinished) checkInMatrices();
+		
 		return inf;
 	}
 	

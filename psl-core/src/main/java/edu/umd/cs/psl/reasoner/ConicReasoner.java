@@ -275,7 +275,7 @@ public class ConicReasoner implements Reasoner, AtomEventObserver {
 				}
 				else {
 					coeff = vars.get(v);
-					lc.removeVariable(v);
+					lc.setVariable(v, 0.0);
 					lc.setConstrainedValue(lc.getConstrainedValue() - coeff * v.getValue());
 				}
 			}
@@ -314,18 +314,18 @@ public class ConicReasoner implements Reasoner, AtomEventObserver {
 				}
 				
 				innerFeatureCon = program.createConstraint();
-				innerFeatureCon.addVariable(featureVar, 1.0);
-				innerFeatureCon.addVariable(innerFeatureVar, -1.0);
+				innerFeatureCon.setVariable(featureVar, 1.0);
+				innerFeatureCon.setVariable(innerFeatureVar, -1.0);
 				innerFeatureCon.setConstrainedValue(0.0);
 				
 				innerSquaredCon = program.createConstraint();
-				innerSquaredCon.addVariable(innerSquaredVar, 1.0);
-				innerSquaredCon.addVariable(squaredFeatureVar, 0.5);
+				innerSquaredCon.setVariable(innerSquaredVar, 1.0);
+				innerSquaredCon.setVariable(squaredFeatureVar, 0.5);
 				innerSquaredCon.setConstrainedValue(0.5);
 				
 				outerSquaredCon = program.createConstraint();
-				outerSquaredCon.addVariable(outerSquaredVar, 1.0);
-				outerSquaredCon.addVariable(squaredFeatureVar, -0.5);
+				outerSquaredCon.setVariable(outerSquaredVar, 1.0);
+				outerSquaredCon.setVariable(squaredFeatureVar, -0.5);
 				outerSquaredCon.setConstrainedValue(0.5);
 				break;
 			}
@@ -424,14 +424,16 @@ public class ConicReasoner implements Reasoner, AtomEventObserver {
 				for (FunctionSummand summand : sum) {
 					if (summand.getTerm() instanceof ConicReasonerSingleton) {
 						v = ((ConicReasonerSingleton)summand.getTerm()).getVariable();
-						lc.addVariable(v, summand.getCoefficient());
+						lc.setVariable(v, summand.getCoefficient()
+								+ ((lc.getVariables().get(v) != null) ? lc.getVariables().get(v) : 0.0));
 					}
 					else if (summand.getTerm().isConstant()) {
 						constrainedValue -= summand.getTerm().getValue() * summand.getCoefficient();
 					}
 					else if (summand.getTerm() instanceof AtomFunctionVariable) {
 						v = getVarProxy((AtomFunctionVariable)summand.getTerm()).getVariable();
-						lc.addVariable(v, summand.getCoefficient());
+						lc.setVariable(v, summand.getCoefficient()
+								+ ((lc.getVariables().get(v) != null) ? lc.getVariables().get(v) : 0.0));
 					}
 					else
 						throw new IllegalArgumentException("Unsupported FunctionSingleton: " + summand.getTerm());
@@ -441,11 +443,11 @@ public class ConicReasoner implements Reasoner, AtomEventObserver {
 				FunctionSummand summand = (FunctionSummand)fun;
 				if (summand.getTerm() instanceof ConicReasonerSingleton) {
 					v = ((ConicReasonerSingleton)summand.getTerm()).getVariable();
-					lc.addVariable(v, summand.getCoefficient());
+					lc.setVariable(v, summand.getCoefficient());
 				}
 				else if (summand.getTerm() instanceof AtomFunctionVariable) {
 					v = getVarProxy((AtomFunctionVariable) summand.getTerm()).getVariable();
-					lc.addVariable(v, summand.getCoefficient());
+					lc.setVariable(v, summand.getCoefficient());
 				}
 				else
 					throw new IllegalArgumentException("Unsupported FunctionSingleton: " + summand.getTerm());
@@ -460,9 +462,9 @@ public class ConicReasoner implements Reasoner, AtomEventObserver {
 					slackVar.setObjectiveCoefficient(0.0);
 				}
 				if (con.getComparator().equals(FunctionComparator.LargerThan))
-					lc.addVariable(slackVar, -1.0);
+					lc.setVariable(slackVar, -1.0);
 				else
-					lc.addVariable(slackVar, 1.0);
+					lc.setVariable(slackVar, 1.0);
 			}
 			else if (slackVar != null) {
 				slackVar.getCone().delete();

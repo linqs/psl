@@ -43,11 +43,11 @@ public class DualizerTest {
 		Variable x3 = program.createNonNegativeOrthantCone().getVariable();
 		LinearConstraint con1 = program.createConstraint();
 		LinearConstraint con2 = program.createConstraint();
-		con1.addVariable(x1, 1.0);
-		con1.addVariable(x2, 1.0);
+		con1.setVariable(x1, 1.0);
+		con1.setVariable(x2, 1.0);
 		con1.setConstrainedValue(2.0);
-		con2.addVariable(x1, 1.0);
-		con2.addVariable(x3, -1.0);
+		con2.setVariable(x1, 1.0);
+		con2.setVariable(x3, -1.0);
 		con2.setConstrainedValue(1.0);
 		
 		program.checkOutMatrices();
