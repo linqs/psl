@@ -14,26 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.optimizer.conic.partition;
+package edu.umd.cs.psl.optimizer.conic.ipm;
 
-import java.util.Collection;
+import edu.umd.cs.psl.config.ConfigBundle;
+import edu.umd.cs.psl.optimizer.conic.ConicProgramSolver;
+import edu.umd.cs.psl.optimizer.conic.ConicProgramSolverFactory;
 
-import edu.umd.cs.psl.optimizer.conic.program.ConeType;
-import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
+public class PartitionedIPMFactory implements ConicProgramSolverFactory {
 
-public interface CompletePartitioner {
-	
-	public void setConicProgram(ConicProgram p);
+	@Override
+	public ConicProgramSolver getConicProgramSolver(ConfigBundle config) {
+		return new PartitionedIPM(config);
+	}
 
-	public void partition();
-	
-	public ConicProgramPartition getPartition(int i);
-	
-	public int size();
-	
-	public void checkOutAllMatrices();
-	
-	public void checkInAllMatrices();
-	
-	public boolean supportsConeTypes(Collection<ConeType> types);
 }

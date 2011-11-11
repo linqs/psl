@@ -66,8 +66,14 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 		supportedCones.add(ConeType.SecondOrderCone);
 	}
 	
-	public SequentialHierarchicalCompletePartitioner(ConicProgram p, ConfigBundle config) {
-		super(p);
+	public SequentialHierarchicalCompletePartitioner(ConfigBundle config) {
+		super();
+	}
+	
+	@Override
+	public void setConicProgram(ConicProgram p) {
+		if (program != null)
+			program.unregisterForConicProgramEvents(this);
 		
 		Node node;
 		

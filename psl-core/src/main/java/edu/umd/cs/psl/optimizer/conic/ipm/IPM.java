@@ -98,7 +98,7 @@ public class IPM implements ConicProgramSolver {
 	/** Default value for INFEASIBILITY_THRESHOLD_KEY property. */
 	public static final double INFEASIBILITY_THRESHOLD_DEFAULT = 10e-8;
 	
-	private ConicProgram currentProgram;
+	protected ConicProgram currentProgram;
 	
 	protected FeasiblePointInitializer initializer;
 	
@@ -321,7 +321,7 @@ public class IPM implements ConicProgramSolver {
 		x.assign(dx, DoubleFunctions.plus);
 	}
 	
-	private int getV(ConicProgram program) {
+	protected int getV(ConicProgram program) {
 		return program.numNNOC() + 2*program.numSOC();
 	}
 }

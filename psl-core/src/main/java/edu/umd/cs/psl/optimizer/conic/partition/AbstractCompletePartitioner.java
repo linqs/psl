@@ -26,8 +26,13 @@ abstract public class AbstractCompletePartitioner implements CompletePartitioner
 	
 	protected ConicProgram program;
 	
-	public AbstractCompletePartitioner(ConicProgram p) {
+	public AbstractCompletePartitioner() {
+		program = null;
 		partitions = new Vector<ConicProgramPartition>();
+	}
+
+	@Override
+	public void setConicProgram(ConicProgram p) {
 		program = p;
 		if (!supportsConeTypes(p.getConeTypes()))
 			throw new IllegalArgumentException("Unsupported cone type.");
@@ -35,6 +40,9 @@ abstract public class AbstractCompletePartitioner implements CompletePartitioner
 
 	@Override
 	public void partition() {
+		if (program == null)
+			throw new IllegalStateException("No conic program has been set.");
+		
 		program.verifyCheckedOut();
 		
 		if (!supportsConeTypes(program.getConeTypes()))
