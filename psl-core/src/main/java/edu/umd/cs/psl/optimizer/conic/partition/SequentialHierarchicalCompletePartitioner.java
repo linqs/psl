@@ -259,7 +259,7 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 	}
 
 	@Override
-	public void notify(ConicProgramEvent e, Entity sender, Object... data) {
+	public void notify(ConicProgram sender, ConicProgramEvent event, Entity entity, Object... data) {
 		// TODO Auto-generated method stub
 		
 	}

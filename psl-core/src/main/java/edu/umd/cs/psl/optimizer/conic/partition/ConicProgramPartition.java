@@ -315,20 +315,20 @@ public class ConicProgramPartition implements ConicProgramListener {
 	}
 
 	@Override
-	public void notify(ConicProgramEvent e, Entity sender, Object... data) {
-		switch (e) {
+	public void notify(ConicProgram sender, ConicProgramEvent event, Entity entity, Object... data) {
+		switch (event) {
 		case MatricesCheckedIn:
 			verifyCheckedIn();
 			break;
 		case NNOCCreated:
 		case SOCCreated:
-			unassignedCones.add((Cone) sender);
+			unassignedCones.add((Cone) entity);
 			break;
 		case NNOCDeleted:
 		case SOCDeleted:
-			int element = coneMap.get(sender);
-			coneMap.remove(sender);
-			elements.get(element).remove(sender);
+			int element = coneMap.get(entity);
+			coneMap.remove(entity);
+			elements.get(element).remove(entity);
 			break;
 		}
 	}
