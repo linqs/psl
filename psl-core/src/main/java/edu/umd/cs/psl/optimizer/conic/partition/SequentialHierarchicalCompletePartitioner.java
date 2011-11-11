@@ -38,13 +38,15 @@ import edu.umd.cs.psl.optimizer.conic.program.ConicProgramEvent;
 import edu.umd.cs.psl.optimizer.conic.program.ConicProgramListener;
 import edu.umd.cs.psl.optimizer.conic.program.Entity;
 import edu.umd.cs.psl.optimizer.conic.program.LinearConstraint;
+import edu.umd.cs.psl.optimizer.conic.program.NonNegativeOrthantCone;
+import edu.umd.cs.psl.optimizer.conic.program.SecondOrderCone;
 import edu.umd.cs.psl.optimizer.conic.program.Variable;
 import edu.umd.cs.psl.util.graph.Graph;
 import edu.umd.cs.psl.util.graph.Node;
 import edu.umd.cs.psl.util.graph.Relationship;
 import edu.umd.cs.psl.util.graph.memory.MemoryGraph;
 import edu.umd.cs.psl.util.graph.partition.Partitioner;
-import edu.umd.cs.psl.util.graph.partition.hierarchical.HierarchicalPartitioning;
+import edu.umd.cs.psl.util.graph.partition.hierarchical.HyperPartitioning;
 import edu.umd.cs.psl.util.graph.weight.RelationshipWeighter;
 
 public class SequentialHierarchicalCompletePartitioner extends AbstractCompletePartitioner
@@ -57,8 +59,6 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 	
 	private Graph graph;
 	private static final String LC_REL = "lcRel";
-	
-	private static final int defaultNumPartitionElements = 2;
 	
 	private static final ArrayList<ConeType> supportedCones = new ArrayList<ConeType>(2);
 	static {
@@ -74,6 +74,8 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 	public void setConicProgram(ConicProgram p) {
 		if (program != null)
 			program.unregisterForConicProgramEvents(this);
+		
+		super.setConicProgram(p);
 		
 		Node node;
 		
@@ -111,8 +113,34 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 
 	@Override
 	protected void doPartition() {
-		int numElements = defaultNumPartitionElements;
-		numElements = (int) Math.ceil((double) program.numLinearConstraints() / 5000);
+		Node node;
+		
+		graph = new MemoryGraph();
+		graph.createRelationshipType(LC_REL);
+		
+		coneMap = HashBiMap.create();
+		lcMap = HashBiMap.create();
+		
+		for (Cone cone : program.getCones()) {
+			node = graph.createNode();
+			coneMap.put(cone, node);
+		}
+		
+		Set<Cone> coneSet = new HashSet<Cone>();
+		for (LinearConstraint con : program.getConstraints()) {
+			node = graph.createNode();
+			for (Variable var : con.getVariables().keySet()) {
+				coneSet.add(var.getCone());
+			}
+			
+			for (Cone cone : coneSet) {
+				node.createRelationship(LC_REL, coneMap.get(cone));
+			}
+			
+			coneSet.clear();
+		}
+		
+		int numElements = (int) Math.ceil((double) program.numLinearConstraints() / 5000);
 		
 		List<List<Node>> graphPartition = null;
 		Set<LinearConstraint> cutConstraints = new HashSet<LinearConstraint>();
@@ -124,7 +152,7 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 		List<Set<Cone>> blocks;
 		
 		/* Partitions IPM graph into elements */
-		Partitioner partitioner = new HierarchicalPartitioning();
+		Partitioner partitioner = new HyperPartitioning();
 		partitioner.setSize(numElements);
 		
 		boolean redoPartition;
@@ -136,7 +164,7 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 			//}
 			try {
 				if (p % 2 == 0) {
-					graphPartition = partitioner.partition(graph, graph.getNodes(), new RelationshipWeighter() {
+					graphPartition = partitioner.partition(graph, graph.getNodeSnapshot(), new RelationshipWeighter() {
 						@Override
 						public double getWeight(Relationship r) {
 							if (r.getRelationshipType().equals(LC_REL)) {
@@ -145,6 +173,17 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 									return 300;
 								}
 								else {
+//									Cone cone = coneMap.inverse().get(r.getEnd());
+//									if (cone instanceof NonNegativeOrthantCone)
+//										return Math.max(((NonNegativeOrthantCone) cone).getVariable().getObjectiveCoefficient() + 5, 0.1);
+//									else if (cone instanceof SecondOrderCone) {
+//										double weight = 0.0;
+//										for (Variable var : ((SecondOrderCone) cone).getVariables())
+//											weight += var.getObjectiveCoefficient();
+//										return Math.max(weight + 5, 0.1);
+//									}
+//									else
+//										throw new IllegalStateException();
 									return 1;
 								}
 							}
@@ -154,7 +193,7 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 					});
 				}
 				else {
-					graphPartition = partitioner.partition(graph, graph.getNodes(), new RelationshipWeighter()  {
+					graphPartition = partitioner.partition(graph, graph.getNodeSnapshot(), new RelationshipWeighter()  {
 						@Override
 						public double getWeight(Relationship r) {
 							if (r.getRelationshipType().equals(LC_REL)) {
@@ -173,6 +212,7 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 				}
 			}
 			catch (IllegalArgumentException e) {
+				log.trace("Caught illegal argument exception.");
 				if (restrictedConstraints.size() > 1) {
 					int cut = Math.min((int) Math.ceil(restrictedConstraints.size() / 3), restrictedConstraints.size()-1);
 					Iterator<LinearConstraint> itr = restrictedConstraints.iterator();
@@ -183,8 +223,10 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 					
 					redoPartition = true;
 				}
-				else throw new IllegalStateException("Could not complete partitioning.");
+				else throw e;
 			}
+			
+			log.trace("Partition finished. Checking for balance.");
 			
 			/* Checks if blocks are sufficiently balanced */
 			boolean balanced = true;
@@ -195,7 +237,7 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 				
 				for (List<Node> block : graphPartition){
 					if (block.size() > 2*(totalSize - block.size())) {
-						log.trace("{} > {}", block.size(), 2*(totalSize - block.size()));
+						log.debug("{} > {}", block.size(), 2*(totalSize - block.size()));
 						balanced = false;
 					}
 					if (!balanced) {
@@ -205,10 +247,9 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 				}
 				
 				if (!balanced) {
-					log.trace("Redoing parition {}.", p);
+					log.debug("Redoing parition {}.", p);
 					//log.trace("Block size: {}", partitions.get(p).size());
 					//log.trace("Need at least: {}", varMap.size()/(numElements) );
-					partitions.remove(p);
 					redoPartition = true;
 					
 					if (restrictedConstraints.size() > 1 && restrictedConstraints.size() > alwaysCutConstraints.size() / 2) {

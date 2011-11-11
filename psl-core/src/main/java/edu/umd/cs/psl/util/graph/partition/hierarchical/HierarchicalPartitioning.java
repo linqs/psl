@@ -165,7 +165,7 @@ public class HierarchicalPartitioning implements Partitioner {
 		double bestEdgeCut = Double.POSITIVE_INFINITY;
 		double bestBalance = Double.POSITIVE_INFINITY;
 		
-		for (int trail=1; trail<=noTrials; trail++) {
+		for (int trial=1; trial<=noTrials; trial++) {
 			Map<Node,Integer> pAssign = new HashMap<Node,Integer>();
 			List<ObjectAccumulator<Node>> pnghs = new ArrayList<ObjectAccumulator<Node>>(noPartitions);
 			double[] pweights = new double[noPartitions];
@@ -183,6 +183,7 @@ public class HierarchicalPartitioning implements Partitioner {
 			}
 			//assign remaining in neighborhood
 			while(true) {
+				log.trace("assigning remaining");
 				int pid = findMinPartitionBlock(pweights,pnghs);
 				if (pid<0) break;
 				Node n = findMostConnected(pnghs.get(pid));
@@ -366,11 +367,25 @@ public class HierarchicalPartitioning implements Partitioner {
 	}
 	
 	private int indexOfMin(double[] values) {
-		return 0;
+		int indexOfMin = 0;
+		double min = values[0];
+		for (int i = 0; i < values.length; i++) {
+			if (values[i] < min) {
+				min = values[i];
+				indexOfMin = i;
+			}
+		}
+		return indexOfMin;
 	}
 	
 	private double stdDev(double[] values) {
-		return 0;
+		double sum = 0.0;
+		double sumOfSquares = 0.0;
+		for (int i = 0; i < values.length; i++) {
+			sum += values[i];
+			sumOfSquares += Math.pow(values[i], 2);
+		}
+		return (sumOfSquares - Math.pow(sum, 2) / values.length) / values.length;
 	}
 	
 	private class ConstantOneNodeWeighter implements NodeWeighter {

@@ -69,8 +69,10 @@ public class ConicProgramPartition implements ConicProgramListener {
 	}
 	
 	public ConicProgramPartition(ConicProgram p, Collection<Set<Cone>> partition) {
-		if (!supportsConeTypes(program.getConeTypes()))
+		if (!supportsConeTypes(p.getConeTypes()))
 			throw new IllegalArgumentException("Program contains unsupported cone type.");
+		
+		program = p;
 		
 		unassignedCones = new HashSet<Cone>(program.getCones());
 		elements = new Vector<Set<Cone>>(partition.size());
@@ -229,7 +231,10 @@ public class ConicProgramPartition implements ConicProgramListener {
 			varMapPart.clear();
 			lcMapPart.clear();
 			innerLcMapPart.clear();
+			varsToProcess.clear();
 		}
+		
+		checkedOut = true;
 	}
 	
 	public void checkInMatrices() {
@@ -308,7 +313,7 @@ public class ConicProgramPartition implements ConicProgramListener {
 			@Override
 			public double apply(int first, int second, double third) {
 				int block = varElementMap[first];
-				matrices.get(block).setQuick(varIndexMap[first], varIndexMap[second], third);
+				matrices.get(block).set(varIndexMap[first], varIndexMap[second], third);
 				return third;
 			}
 		});

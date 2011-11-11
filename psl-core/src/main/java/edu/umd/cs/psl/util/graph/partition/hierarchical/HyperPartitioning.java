@@ -62,7 +62,7 @@ public class HyperPartitioning extends HierarchicalPartitioning {
 		Map<Node,SuperNode> assign = new HashMap<Node,SuperNode>();
 		
 		ArrayList<Node> hyperedges = new ArrayList<Node>();
-		double heighestWeight = 0;
+		double highestWeight = 0;
 		for (Node node : nodes) {
 			//Check if HyperEdge with infinite weight
 			Double weight = getHyperWeight(node,rweight);
@@ -91,14 +91,14 @@ public class HyperPartitioning extends HierarchicalPartitioning {
 			} else if (!Double.isNaN(weight)) {
 				Preconditions.checkArgument(weight>0,"All weights must be positive: " + weight);
 				hyperedges.add(node);
-				if (weight>heighestWeight) heighestWeight = weight;
+				if (weight>highestWeight) highestWeight = weight;
 			}
 		}
 		
 		
 		while (!hyperedges.isEmpty()) {
-			double currentWeight = heighestWeight/2;
-			heighestWeight = 0;
+			double currentWeight = highestWeight/2;
+			highestWeight = 0;
 			
 			RandomStack<Node> rnodes = new RandomStack<Node>(hyperedges);
 			hyperedges = new ArrayList<Node>();
@@ -122,7 +122,7 @@ public class HyperPartitioning extends HierarchicalPartitioning {
 					}
 				} else {
 					hyperedges.add(node);
-					if (weight>heighestWeight) heighestWeight = weight;
+					if (weight>highestWeight) highestWeight = weight;
 				}
 			}
 		}

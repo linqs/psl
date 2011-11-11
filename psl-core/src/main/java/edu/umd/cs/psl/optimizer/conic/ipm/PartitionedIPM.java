@@ -88,15 +88,17 @@ public class PartitionedIPM extends IPM {
 		
 		partitioner.partition();
 		
+		partitioner.checkOutAllMatrices();
+		
 		Vector<Partition> partitions = new Vector<Partition>(partitioner.size());
 		for (int i = 0; i < partitioner.size(); i++) {
 			ConicProgramPartition cpp = partitioner.getPartition(i);
 			Partition partition = new Partition();
 			partition.A = cpp.getACopies();
 			partition.innerA = cpp.getInnerACopies();
-			partition.dx = cpp.get1DViewsByVars(x);
-			partition.innerDw = cpp.get1DViewsByInnerConstraints(w);
-			partition.ds = cpp.get1DViewsByVars(s);
+			partition.dx = cpp.get1DViewsByVars(dx);
+			partition.innerDw = cpp.get1DViewsByInnerConstraints(dw);
+			partition.ds = cpp.get1DViewsByVars(ds);
 			partition.r = cpp.get1DViewsByVars(r);
 			partition.invH = cpp.getSparse2DByVars(invH);
 			partitions.add(partition);
@@ -140,9 +142,7 @@ public class PartitionedIPM extends IPM {
 			rInitial.assign(r);
 			
 			epsilon_1 = 0.01;
-			log.debug("Computing err.");
 			err = Math.sqrt(alg.mult(r, alg.mult(invH, r))) /(mu * tau * Math.sqrt(v));
-			log.trace("Err: {}", err);
 			Partition partition;
 			do {
 				p = (p+1) % partitions.size();
@@ -173,10 +173,8 @@ public class PartitionedIPM extends IPM {
 				double dualStepSize = 1.0;
 				for (Cone cone : cones)
 					primalStepSize = Math.min(primalStepSize, cone.getMaxStep(varMap, x, dx));
-				for (int i = 0; i < s.size(); i++) {
-					if (ds.get(i) < 0)
-						dualStepSize = Math.min(dualStepSize, (s.get(i) * .67) / (- ds.get(i)));
-				}
+				for (Cone cone : cones)
+					dualStepSize = Math.min(primalStepSize, cone.getMaxStep(varMap, s, ds));
 
 				log.trace("Primal step size: {} * {}", primalStepSize, alg.norm2(dx));
 				log.trace("Dual step size: {} * {}", dualStepSize, alg.norm2(ds));
@@ -196,6 +194,8 @@ public class PartitionedIPM extends IPM {
 			dw.assign(0);
 			mu = alg.mult(x, s) / v;
 		}
+		
+		partitioner.checkInAllMatrices();
 	}
 
 	private void fullSpaceStep(DoubleMatrix1D r, DoubleMatrix2D A, DoubleMatrix2D Hinv, DoubleMatrix1D dx, double mu) {
