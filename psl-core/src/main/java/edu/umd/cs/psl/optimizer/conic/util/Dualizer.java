@@ -55,6 +55,9 @@ public class Dualizer implements ConicProgramListener {
 	private Map<LinearConstraint, Variable> primalConsToDualVars;
 	private Map<LinearConstraint, SOCVariablePair> varPairs;
 	
+	private Set<Cone> conesToDelete;
+	private Set<LinearConstraint> constraintsToDelete;
+	
 	private Set<Cone> newCones;
 	private Set<LinearConstraint> newConstraints;
 	
@@ -67,6 +70,9 @@ public class Dualizer implements ConicProgramListener {
 		primalVarsToDualVars = new HashMap<Variable, Variable>();
 		primalConsToDualVars = new HashMap<LinearConstraint, Variable>();
 		varPairs = new HashMap<LinearConstraint, SOCVariablePair>();
+		
+		conesToDelete = new HashSet<Cone>();
+		constraintsToDelete = new HashSet<LinearConstraint>();
 		
 		newCones = new HashSet<Cone>(program.getCones());
 		newConstraints = new HashSet<LinearConstraint>(program.getConstraints());
@@ -97,6 +103,10 @@ public class Dualizer implements ConicProgramListener {
 
 	@Override
 	public void notify(ConicProgram sender, ConicProgramEvent event, Entity entity, Object... data) {
+		Variable primalVar, dualVar;
+		LinearConstraint primalCon, dualCon;
+		SOCVariablePair socPair;
+		
 		if (primalProgram.equals(sender)) {
 			switch (event) {
 			case MatricesCheckedIn:
@@ -105,8 +115,55 @@ public class Dualizer implements ConicProgramListener {
 			case ConCreated:
 				newConstraints.add((LinearConstraint) entity);
 				break;
+			case ConDeleted:
+				if (!newConstraints.remove(entity)) {
+					dualVar = primalConsToDualVars.get(entity);
+					if (dualVar != null) {
+						conesToDelete.add(dualVar.getCone());
+						primalConsToDualVars.remove(entity);
+					}
+					else {
+						dualVar = varPairs.get(entity).inner;
+						conesToDelete.add(dualVar.getCone());
+						varPairs.remove(entity);
+					}
+				}
+				break;
 			case NNOCCreated:
 				newCones.add((NonNegativeOrthantCone) entity);
+				break;
+			case NNOCDeleted:
+				primalVar = ((NonNegativeOrthantCone) entity).getVariable();
+				dualVar = primalVarsToDualVars.get(primalVar);
+				
+				/*
+				 * If it's a slack variable, needs to ensure that whether the
+				 * primal constraint is still an inequality is checked
+				 */
+				if (dualVar != null) {
+					primalCon = primalVar.getLinearConstraints().iterator().next();
+					conesToDelete.add(primalConsToDualVars.get(primalCon).getCone());
+					newConstraints.add(primalCon);
+				}
+				/* Otherwise, marks the dual constraint and the lower bound on the Lagrange multiplier for deletion */
+				else {
+					dualCon = primalVarsToDualCons.get(primalVar);
+					for (Variable var : dualCon.getVariables().keySet()) {
+						boolean mappedTo = false;
+						for (LinearConstraint con : primalVar.getLinearConstraints()) {
+							socPair = varPairs.get(con);
+							if (var.equals(primalConsToDualVars.get(con)) || (socPair != null && var.equals(socPair.inner))) {
+								mappedTo = true;
+								break;
+							}
+						}
+						
+						if (!mappedTo) {
+							conesToDelete.add(var.getCone());
+						}
+					}
+					constraintsToDelete.add(dualCon);
+				}
 				break;
 			}
 		}
@@ -134,6 +191,14 @@ public class Dualizer implements ConicProgramListener {
 		Double coeff;
 		
 		dualProgram.unregisterForConicProgramEvents(this);
+		
+		/* Deletes cones marked for deletion */
+		for (Cone cone : conesToDelete)
+			cone.delete();
+				
+		/* Deletes constraints marked for deletion */
+		for (LinearConstraint con : constraintsToDelete)
+			con.delete();
 		
 		/* Processes new constraints */
 		for (LinearConstraint con : newConstraints) {
@@ -225,6 +290,11 @@ public class Dualizer implements ConicProgramListener {
 		}
 		
 		dualProgram.registerForConicProgramEvents(this);
+
+		conesToDelete.clear();
+		constraintsToDelete.clear();
+		newCones.clear();
+		newConstraints.clear();
 		
 		checkedOut = true;
 	}
