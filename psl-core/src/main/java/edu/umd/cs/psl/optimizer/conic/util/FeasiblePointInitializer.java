@@ -221,7 +221,6 @@ public class FeasiblePointInitializer implements ConicProgramListener {
 
 		int i,j;
 		Iterator<LinearConstraint> itr;
-		DenseDoubleAlgebra alg = new DenseDoubleAlgebra();
 		DoubleMatrix1D x, dp, intDir;
 		SparseDoubleMatrix2D A;
 		DoubleMatrix2D nullity;
@@ -300,18 +299,17 @@ public class FeasiblePointInitializer implements ConicProgramListener {
 				SparseDoubleQRDecomposition qr = new SparseDoubleQRDecomposition(A.getColumnCompressed(false), 0);
 				qr.solve(x);
 				
-				lu.decompose(alg.mult(nullity.viewDice(), nullity));
+				lu.decompose(nullity.zMult(nullity, null, 1.0, 0.0, true, false));
 				intDir = x.copy();
-				
 				
 				// TODO: Add check for getting stuck
 				while (!isInterior(cones, x, varInit)) {
 					for (Cone c : cones) {
 						((Cone) c).setInteriorDirection(varInit, x, intDir);
 					}
-					dp = alg.mult(nullity.viewDice(), intDir);
+					dp = nullity.zMult(intDir, null, 1.0, 0.0, true);
 					lu.solve(dp);
-					x.assign(alg.mult(nullity, dp), DoubleFunctions.plus);
+					nullity.zMult(dp, x, 1.0, 1.0, false);
 				}
 
 				/* Finalize initialization */
@@ -644,12 +642,14 @@ public class FeasiblePointInitializer implements ConicProgramListener {
 			for (Entry<Variable, Double> e : lc.getVariables().entrySet()) {
 				value += x.get(program.index(e.getKey())) * e.getValue();
 			}
-			diff = lc.getConstrainedValue() - value;
-			if (diff < 0) {
-				x.set(program.index(negativeSlack), negativeSlack.getValue() - diff);
+			diff = value - lc.getConstrainedValue() ;
+			if (diff > 0) {
+				x.set(program.index(negativeSlack), negativeSlack.getValue()
+						- diff / negativeSlack.getLinearConstraints().iterator().next().getVariables().get(negativeSlack));
 			}
 			else {
-				x.set(program.index(positiveSlack), positiveSlack.getValue() - diff);
+				x.set(program.index(positiveSlack), positiveSlack.getValue()
+						- diff / positiveSlack.getLinearConstraints().iterator().next().getVariables().get(positiveSlack));
 			}
 		}
 	}
