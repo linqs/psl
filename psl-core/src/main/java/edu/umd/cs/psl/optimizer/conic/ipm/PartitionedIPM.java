@@ -111,7 +111,7 @@ public class PartitionedIPM extends IPM {
 		/* Iterates until the duality gap (mu) is sufficiently small */
 		inNeighborhood = false;
 		p = -1;
-		while (mu > .01) {
+		while (mu >= dualityGapThreshold) {
 			log.trace("Mu: {}", mu);
 			
 			for (Cone cone : cones) {

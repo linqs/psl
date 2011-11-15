@@ -144,7 +144,7 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 			coneSet.clear();
 		}
 		
-		int numElements = (int) Math.ceil((double) program.numLinearConstraints() / 5000);
+		int numElements = (int) Math.ceil((double) program.numLinearConstraints() / 10000);
 		
 		List<List<Node>> graphPartition = null;
 		Set<LinearConstraint> cutConstraints = new HashSet<LinearConstraint>();
@@ -243,7 +243,7 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 			
 			/* Checks if blocks are sufficiently balanced */
 			boolean balanced = true;
-			if (!redoPartition) {
+			if (!redoPartition && numElements > 1) {
 				int totalSize = 0;
 				for (List<Node> block : graphPartition)
 					totalSize += block.size();
@@ -260,9 +260,6 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 				}
 				
 				if (!balanced) {
-					log.debug("Redoing parition {}.", p);
-					//log.trace("Block size: {}", partitions.get(p).size());
-					//log.trace("Need at least: {}", varMap.size()/(numElements) );
 					redoPartition = true;
 					
 					if (restrictedConstraints.size() > 1 && restrictedConstraints.size() > alwaysCutConstraints.size() / 2) {
@@ -314,6 +311,9 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 				
 				cutConstraints.clear();
 				p++;
+			}
+			else {
+				log.trace("Redoing partition {}.", p);
 			}
 		} while (alwaysCutConstraints.size() > 0 || redoPartition);
 	}

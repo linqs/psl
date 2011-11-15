@@ -29,7 +29,6 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 
-import de.mathnbits.statistics.ObjectAccumulator;
 import de.mathnbits.util.RandomStack;
 import edu.umd.cs.psl.util.graph.Graph;
 import edu.umd.cs.psl.util.graph.Node;

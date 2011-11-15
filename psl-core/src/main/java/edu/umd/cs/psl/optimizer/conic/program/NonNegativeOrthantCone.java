@@ -38,8 +38,8 @@ public class NonNegativeOrthantCone extends Cone {
 	@Override
 	public final void delete() {
 		program.verifyCheckedIn();
-		program.notify(ConicProgramEvent.NNOCDeleted, this);
 		var.delete();
+		program.notify(ConicProgramEvent.NNOCDeleted, this);
 		var = null;
 	}
 	

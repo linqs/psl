@@ -61,10 +61,10 @@ public class RotatedSecondOrderCone extends Cone {
 	@Override
 	public final void delete() {
 		program.verifyCheckedIn();
-		program.notify(ConicProgramEvent.SOCDeleted, this);
 		for (Variable v : getVariables()) {
 			v.delete();
 		}
+		program.notify(ConicProgramEvent.SOCDeleted, this);
 		vars = null;
 		varN = null;
 	}
@@ -126,14 +126,7 @@ public class RotatedSecondOrderCone extends Cone {
 		for (int j = 0; j < i; j++)
 			HSel.set(j, j, HSel.get(j, j) + coeff);
 		HSel.set(i, i, HSel.get(i,i) - coeff);
-		try{
 		HSel.assign(alg.inverse(HSel));
-		}
-		catch (IllegalArgumentException e) {
-			System.out.println(x.viewSelection(indices));
-		System.out.println(alg.toVerboseString(HSel));
-		throw e;
-		}
 	}
 
 	@Override

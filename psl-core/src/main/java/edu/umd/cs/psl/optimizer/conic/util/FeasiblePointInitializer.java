@@ -387,7 +387,7 @@ public class FeasiblePointInitializer implements ConicProgramListener {
 			var = dualInfeasible.iterator().next();
 			iso = getDualIsolatedConstraint(var);
 			if (iso != null) {
-				makeDualFeasible(iso);
+				isoNeedsInit.add(iso);
 				for (Variable v : iso.getVariables().keySet())
 					dualInfeasible.remove(v);
 			}

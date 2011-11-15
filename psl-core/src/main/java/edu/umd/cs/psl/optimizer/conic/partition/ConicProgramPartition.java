@@ -115,7 +115,7 @@ public class ConicProgramPartition implements ConicProgramListener {
 			i++;
 		}
 		
-		program.registerForConicProgramEvents(this);
+//		program.registerForConicProgramEvents(this);
 	}
 
 	public boolean supportsConeTypes(Collection<ConeType> types) {
@@ -342,7 +342,7 @@ public class ConicProgramPartition implements ConicProgramListener {
 			elements.get(element).remove(entity);
 			break;
 		case SOCDeleted:
-			numVars += ((SecondOrderCone) entity).getN();
+			numVars -= ((SecondOrderCone) entity).getN();
 			element = coneMap.get(entity);
 			coneMap.remove(entity);
 			elements.get(element).remove(entity);
