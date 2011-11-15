@@ -321,17 +321,29 @@ public class ConicProgramPartition implements ConicProgramListener {
 
 	@Override
 	public void notify(ConicProgram sender, ConicProgramEvent event, Entity entity, Object... data) {
+		int element;
+		
 		switch (event) {
 		case MatricesCheckedIn:
 			verifyCheckedIn();
 			break;
 		case NNOCCreated:
+			numVars++;
+			unassignedCones.add((Cone) entity);
+			break;
 		case SOCCreated:
+			numVars += ((SecondOrderCone) entity).getN();
 			unassignedCones.add((Cone) entity);
 			break;
 		case NNOCDeleted:
+			numVars--;
+			element = coneMap.get(entity);
+			coneMap.remove(entity);
+			elements.get(element).remove(entity);
+			break;
 		case SOCDeleted:
-			int element = coneMap.get(entity);
+			numVars += ((SecondOrderCone) entity).getN();
+			element = coneMap.get(entity);
 			coneMap.remove(entity);
 			elements.get(element).remove(entity);
 			break;

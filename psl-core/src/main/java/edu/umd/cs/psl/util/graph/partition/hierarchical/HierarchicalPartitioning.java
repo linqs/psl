@@ -167,13 +167,13 @@ public class HierarchicalPartitioning implements Partitioner {
 		
 		for (int trial=1; trial<=noTrials; trial++) {
 			Map<Node,Integer> pAssign = new HashMap<Node,Integer>();
-			List<ObjectAccumulator<Node>> pnghs = new ArrayList<ObjectAccumulator<Node>>(noPartitions);
+			List<Map<Node, Double>> pnghs = new ArrayList<Map<Node, Double>>(noPartitions);
 			double[] pweights = new double[noPartitions];
 			double edgeCut = 0.0;
 			//initial assignment
 			RandomStack<Node> rnodes = new RandomStack<Node>(topnodes);
 			for (int pid=0;pid<noPartitions;pid++) {
-				ObjectAccumulator<Node> nghs = new ObjectAccumulator<Node>(topnodes.size()/noPartitions);
+				Map<Node, Double> nghs = new HashMap<Node, Double>(topnodes.size()/noPartitions);
 				pnghs.add(nghs);
 				Node n = rnodes.popRandom();
 				assert n!=null;
@@ -183,7 +183,6 @@ public class HierarchicalPartitioning implements Partitioner {
 			}
 			//assign remaining in neighborhood
 			while(true) {
-				log.trace("assigning remaining");
 				int pid = findMinPartitionBlock(pweights,pnghs);
 				if (pid<0) break;
 				Node n = findMostConnected(pnghs.get(pid));
@@ -227,36 +226,35 @@ public class HierarchicalPartitioning implements Partitioner {
 		return edgeCut+Math.pow(balance,balanceExponent);
 	}
 	
-	private static final int findMinPartitionBlock(double[] pweights, List<ObjectAccumulator<Node>> neighborhoods) {
+	private static final int findMinPartitionBlock(double[] pweights, List<Map<Node, Double>> neighborhoods) {
 		int index = -1;
 		for (int i=0;i<pweights.length;i++) {
-			if ( (index<0 || pweights[i]<pweights[index]) && neighborhoods.get(i).numObjects()!=0) {
+			if ( (index<0 || pweights[i]<pweights[index]) && neighborhoods.get(i).size()!=0) {
 				index = i;
 			}
 		}
 		return index;
 	}
 	
-	private static final Node findMostConnected(ObjectAccumulator<Node> neighborhood) {
+	private static final Node findMostConnected(Map<Node, Double> neighborhood) {
 		Node bestNode = null;
 		double bestValue = Double.NEGATIVE_INFINITY;
-		for (Node n : neighborhood.getObjects()) {
-			double v = neighborhood.getCount(n);
-			if (v>bestValue) {
-				bestValue = v;
-				bestNode = n;
+		for (Map.Entry<Node, Double> e : neighborhood.entrySet()) {
+			if (e.getValue()>bestValue) {
+				bestValue = e.getValue();
+				bestNode = e.getKey();
 			}
 		}
 		return bestNode;
 	}
 	
 	private static final double assign(Node n, int pid, double[] pweights, Map<Node,Integer> pAssign, 
-			List<ObjectAccumulator<Node>> neighborhoods, NodeWeighter nweight, RelationshipWeighter rweight) {
+			List<Map<Node, Double>> neighborhoods, NodeWeighter nweight, RelationshipWeighter rweight) {
 		pAssign.put(n, pid);
 		pweights[pid]+= nweight.getWeight(n);
 		
 		double incEdgeCut = 0.0;
-		ObjectAccumulator<Node> nghs = neighborhoods.get(pid);
+		Map<Node, Double> nghs = neighborhoods.get(pid);
 		//Update neighborhoods and compute edge cut
 		for (Relationship r : n.getRelationships()) {
 			assert r.getRelationshipType().equals(relType);
@@ -264,11 +262,10 @@ public class HierarchicalPartitioning implements Partitioner {
 			Node other = r.getOtherNode(n);
 			Integer opid = pAssign.get(other);
 			if (opid==null) { //Not yet assigned => add to neighborhood
-				nghs.incBy(other, rw);
+				nghs.put(other, (nghs.get(other) != null) ? nghs.get(other) + rw : rw);
 			} else { //Already assigned => remove from its neighborhood, increase edge cut
-				ObjectAccumulator<Node> onghs = neighborhoods.get(opid);
-				//onghs.removeObject(n);
-				onghs.incBy(n, -1 * onghs.getCount(n));
+				Map<Node, Double> onghs = neighborhoods.get(opid);
+				onghs.remove(n);
 				if (opid!=pid) incEdgeCut += rw;
 			}
 		}
@@ -345,22 +342,25 @@ public class HierarchicalPartitioning implements Partitioner {
 		
 		
 		for (SuperNode snode : supernodes) {
-			ObjectAccumulator<Node> acc = new ObjectAccumulator<Node>();
+			Map<Node, Double> acc = new HashMap<Node, Double>();
 			for (int ch=0;ch<snode.getNoChildren();ch++) {
 				Node child = snode.getChild(ch);
 				for (Relationship r : child.getRelationships()) {
 					SuperNode other = assign.get(r.getOtherNode(child));
 					if (snode.compareTo(other)>0) {
-						acc.incBy(other.getRepresentationNode(), rweight.getWeight(r));
+						acc.put(other.getRepresentationNode(),
+								(acc.get(other.getRepresentationNode()) != null)
+									? acc.get(other.getRepresentationNode()) + rweight.getWeight(r)
+									: rweight.getWeight(r)
+						);
 					}
 				}
 			}
 			Node center = snode.getRepresentationNode();
 			center.createProperty(weightType, snode.getWeight());
-			for (Node other : acc.getObjects()) {
-				double w = acc.getCount(other);
-				Relationship rel = center.createRelationship(relType, other);
-				relWeighter.setWeight(rel, w);
+			for (Map.Entry<Node, Double> e : acc.entrySet()) {
+				Relationship rel = center.createRelationship(relType, e.getKey());
+				relWeighter.setWeight(rel, e.getValue());
 			}
 		}
 		return relWeighter;

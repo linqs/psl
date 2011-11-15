@@ -190,6 +190,9 @@ public class IPM implements ConicProgramSolver {
 		
 		log.debug("Starting optimzation with {} variables and {} constraints.", A.columns(), A.rows());
 		
+		if (program.dualInfeasibility() > 0.01 || program.primalInfeasibility() > 0.01)
+			throw new IllegalStateException();
+		
 		doSolve(program);
 		
 		if (dualized) {

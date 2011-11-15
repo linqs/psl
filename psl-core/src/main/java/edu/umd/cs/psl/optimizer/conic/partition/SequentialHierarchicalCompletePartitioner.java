@@ -115,6 +115,8 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 	protected void doPartition() {
 		Node node;
 		
+		partitions.clear();
+		
 		graph = new MemoryGraph();
 		graph.createRelationshipType(LC_REL);
 		
@@ -129,6 +131,8 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 		Set<Cone> coneSet = new HashSet<Cone>();
 		for (LinearConstraint con : program.getConstraints()) {
 			node = graph.createNode();
+			lcMap.put(con, node);
+			
 			for (Variable var : con.getVariables().keySet()) {
 				coneSet.add(var.getCone());
 			}
@@ -148,7 +152,6 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 		final Set<LinearConstraint> restrictedConstraints = new HashSet<LinearConstraint>();
 		boolean isInnerConstraint;
 
-		//List<List<Set<Node>>> partitions = new Vector<List<Set<Node>>>(numPartitions);
 		List<Set<Cone>> blocks;
 		
 		/* Partitions IPM graph into elements */
@@ -170,21 +173,21 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 							if (r.getRelationshipType().equals(LC_REL)) {
 								LinearConstraint lc = (LinearConstraint) lcMap.inverse().get(r.getStart());
 								if (restrictedConstraints.contains(lc)) {
-									return 300;
+									return 1000;
 								}
 								else {
-//									Cone cone = coneMap.inverse().get(r.getEnd());
-//									if (cone instanceof NonNegativeOrthantCone)
-//										return Math.max(((NonNegativeOrthantCone) cone).getVariable().getObjectiveCoefficient() + 5, 0.1);
-//									else if (cone instanceof SecondOrderCone) {
-//										double weight = 0.0;
-//										for (Variable var : ((SecondOrderCone) cone).getVariables())
-//											weight += var.getObjectiveCoefficient();
-//										return Math.max(weight + 5, 0.1);
-//									}
-//									else
-//										throw new IllegalStateException();
-									return 1;
+									Cone cone = coneMap.inverse().get(r.getEnd());
+									if (cone instanceof NonNegativeOrthantCone)
+										return Math.abs(((NonNegativeOrthantCone) cone).getVariable().getObjectiveCoefficient()) + 10e-5;
+									else if (cone instanceof SecondOrderCone) {
+										double weight = 0.0;
+										for (Variable var : ((SecondOrderCone) cone).getVariables())
+											weight += var.getObjectiveCoefficient();
+										return Math.abs(weight) + 10e-5;
+									}
+									else
+										throw new IllegalStateException();
+//									return 1;
 								}
 							}
 							else
@@ -199,10 +202,20 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 							if (r.getRelationshipType().equals(LC_REL)) {
 								LinearConstraint lc = (LinearConstraint) lcMap.inverse().get(r.getStart());
 								if (restrictedConstraints.contains(lc)) {
-									return 300;
+									return 1000;
 								}
 								else {
-									return 1;
+									Cone cone = coneMap.inverse().get(r.getEnd());
+									if (cone instanceof NonNegativeOrthantCone)
+										return 1 / (Math.abs(((NonNegativeOrthantCone) cone).getVariable().getObjectiveCoefficient()) + 10e-2);
+									else if (cone instanceof SecondOrderCone) {
+										double weight = 0.0;
+										for (Variable var : ((SecondOrderCone) cone).getVariables())
+											weight += var.getObjectiveCoefficient();
+										return 1 / (Math.abs(weight) + 10e-2);
+									}
+									else
+										throw new IllegalStateException();
 								}
 							}
 							else
