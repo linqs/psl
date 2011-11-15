@@ -292,27 +292,34 @@ public class FeasiblePointInitializer implements ConicProgramListener {
 					x.set(con.getValue(), con.getKey().getConstrainedValue());
 				}
 				
-				/* Uses decompositions to find general and particular solutions to Ax = b */
-				DenseDoubleQRDecomposition denseQR = new DenseDoubleQRDecomposition(new DenseDoubleMatrix2D(A.rows(), A.columns()).assign(A).viewDice());
-				nullity = denseQR.getQ(false).viewPart(0, A.rows(), A.columns(), A.columns()-A.rows());
-				
+				/* Uses decomposition to find particular solution to Ax = b */
 				SparseDoubleQRDecomposition qr = new SparseDoubleQRDecomposition(A.getColumnCompressed(false), 0);
 				qr.solve(x);
 				
-				lu.decompose(nullity.zMult(nullity, null, 1.0, 0.0, true, false));
-				intDir = x.copy();
-				
-				// TODO: Add check for getting stuck
-				while (!isInterior(cones, x, varInit)) {
-					for (Cone c : cones) {
-						((Cone) c).setInteriorDirection(varInit, x, intDir);
-					}
-					dp = nullity.zMult(intDir, null, 1.0, 0.0, true);
-					lu.solve(dp);
-					nullity.zMult(dp, x, 1.0, 1.0, false);
+				/*
+				 * If the particular solution is not in the interior of the cones, uses a decomposition
+				 * to find the general solution to Ax = b and moves through the solution space until an
+				 * interior point is found
+				 */
+				if (!isInterior(cones, x, varInit)) {
+					DenseDoubleQRDecomposition denseQR = new DenseDoubleQRDecomposition(new DenseDoubleMatrix2D(A.rows(), A.columns()).assign(A).viewDice());
+					nullity = denseQR.getQ(false).viewPart(0, A.rows(), A.columns(), A.columns()-A.rows());
+					
+					lu.decompose(nullity.zMult(nullity, null, 1.0, 0.0, true, false));
+					intDir = x.copy();
+					
+					// TODO: Add check for getting stuck
+					do {
+						for (Cone c : cones) {
+							((Cone) c).setInteriorDirection(varInit, x, intDir);
+						}
+						dp = nullity.zMult(intDir, null, 1.0, 0.0, true);
+						lu.solve(dp);
+						nullity.zMult(dp, x, 1.0, 1.0, false);
+					} while (!isInterior(cones, x, varInit));
 				}
 
-				/* Finalize initialization */
+				/* Finalizes initialization */
 				for (Map.Entry<Variable, Integer> v : varInit.entrySet())
 					program.getX().set(program.index(v.getKey()), x.get(v.getValue()));
 			}
