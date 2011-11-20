@@ -87,7 +87,7 @@ public class WeightLearningGlobalOpt implements FunctionEvaluation, WeightLearni
 //			counter++;
 //		}
 //		log.debug("Ground probabilistic evidence # {}",counter);
-		for (Kernel et : model.getKernelTypes()) {
+		for (Kernel et : model.getKernels()) {
 			if (et.isCompatibilityKernel()) parameters.add(et);
 		}
 		parameters.setAllParameters(configuration.getInitialParameter());
@@ -176,7 +176,7 @@ public class WeightLearningGlobalOpt implements FunctionEvaluation, WeightLearni
     //for (int i = 0; i < paras.length; i++)
     //  params[i+1] = paras[i];
 
-    Iterable<Kernel> modelEvidence = model.getKernelTypes();
+    Iterable<Kernel> modelEvidence = model.getKernels();
     int ii = 0;
 		for (Kernel et : modelEvidence) 
     {

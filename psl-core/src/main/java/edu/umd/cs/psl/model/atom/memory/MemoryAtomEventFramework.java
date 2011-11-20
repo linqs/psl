@@ -82,7 +82,7 @@ public class MemoryAtomEventFramework implements AtomEventFramework {
 	
 	public MemoryAtomEventFramework(Model model, ModelApplication application, AtomStore store, ActivationMode activemode) {
 		this(application,store,activemode);
-		for (Kernel k : model.getKernelTypes()) {
+		for (Kernel k : model.getKernels()) {
 			addKernel(k);
 		}
 	}
@@ -90,17 +90,17 @@ public class MemoryAtomEventFramework implements AtomEventFramework {
 
 	@Override
 	public void notifyModelEvent(ModelEvent event) {
-		switch(event.eventType) {
-		case KernelAddition:
-			addKernel(event.kernel);
+		switch(event) {
+		case KernelAdded:
+			addKernel(event.getKernel());
 			break;
-		case KernelRemoval:
-			removeKernel(event.kernel);
+		case KernelRemoved:
+			removeKernel(event.getKernel());
 			break;
-		case KernelParameterUpdate:
+		case KernelParametersModified:
 			//Do nothing
 			break;
-		default: throw new IllegalArgumentException("Unrecognized model event type: " + event.eventType);
+		default: throw new IllegalArgumentException("Unrecognized model event type: " + event);
 		}
 	}
 	

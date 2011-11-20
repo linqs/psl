@@ -42,6 +42,7 @@ import edu.umd.cs.psl.model.argument.type.ArgumentType;
 import edu.umd.cs.psl.model.function.AttributeSimilarityFunction;
 import edu.umd.cs.psl.model.function.ExternalFunction;
 import edu.umd.cs.psl.model.kernel.Kernel;
+import edu.umd.cs.psl.model.predicate.PredicateFactory;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
 import edu.umd.cs.psl.model.predicate.FunctionalPredicate;
 import edu.umd.cs.psl.model.predicate.Predicate;
@@ -53,6 +54,7 @@ public class ModelUI {
 	public static final double defaultActivationParameter = 0.1;
 	
 	private final Model model;
+	private final PredicateFactory predicateFactory;
 	protected final Map<String,PredicateInfo> predicates;
 	protected final Map<String,PredicateInfo> aggregatePredicate;
 	protected final Map<String,PredicateInfo> simFunctions;
@@ -61,6 +63,7 @@ public class ModelUI {
 	public ModelUI() {
 		activationParameter = defaultActivationParameter;
 		model=new Model();
+		predicateFactory = new PredicateFactory();
 		predicates = new HashMap<String,PredicateInfo>();
 		aggregatePredicate = new HashMap<String,PredicateInfo>();
 		simFunctions = new HashMap<String,PredicateInfo>();
@@ -83,7 +86,7 @@ public class ModelUI {
 		} else if (type==PredicateTypes.Gaussian) {
 			throw new UnsupportedOperationException();
 		}
-		StandardPredicate p = model.getPredicateFactory().createStandardPredicate(name, type, types,activeParas);
+		StandardPredicate p = predicateFactory.createStandardPredicate(name, type, types,activeParas);
 		predicates.put(name, new PredicateInfo(p,argNames,(open?PredicateDBType.Open:PredicateDBType.Closed) ));
 		return p;
 	}
@@ -94,7 +97,7 @@ public class ModelUI {
 	
 	public StandardPredicate addAggregatePredicate(String name, ArgumentType[] types, List<String> argNames) {
 		if (types.length!=argNames.size()) throw new IllegalArgumentException("Expected equal number of argument types and names!");
-		StandardPredicate p = model.getPredicateFactory().createStandardPredicate(name, PredicateTypes.SoftTruth, types, new double[]{activationParameter});
+		StandardPredicate p = predicateFactory.createStandardPredicate(name, PredicateTypes.SoftTruth, types, new double[]{activationParameter});
 		predicates.put(name, new PredicateInfo(p,argNames,PredicateDBType.Aggregate));
 		return p;
 	}
@@ -108,7 +111,7 @@ public class ModelUI {
 	
 	public FunctionalPredicate addFunctionalPredicate(String name, List<String> argNames, ExternalFunction extFun) {
 		if (argNames.size()!=extFun.getArity()) throw new IllegalArgumentException("Arity does not match: " + argNames.size());
-		FunctionalPredicate p = model.getPredicateFactory().createFunctionalPredicate(name, extFun);
+		FunctionalPredicate p = predicateFactory.createFunctionalPredicate(name, extFun);
 		simFunctions.put(name, new PredicateInfo(p,argNames));
 		return p;
 	}

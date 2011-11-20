@@ -18,7 +18,7 @@ package edu.umd.cs.psl.model.atom;
 
 import edu.umd.cs.psl.application.GroundingMode;
 import edu.umd.cs.psl.database.DatabaseEventObserver;
-import edu.umd.cs.psl.model.ModelObserver;
+import edu.umd.cs.psl.model.ModelEvent;
 import edu.umd.cs.psl.model.predicate.Predicate;
 
 /**
@@ -27,7 +27,7 @@ import edu.umd.cs.psl.model.predicate.Predicate;
  * @author
  *
  */
-public interface AtomEventFramework extends AtomManager, DatabaseEventObserver, ModelObserver {
+public interface AtomEventFramework extends AtomManager, DatabaseEventObserver, ModelEvent.Listener {
 
 	/**
 	 * Determines when an atom is activated.

@@ -32,7 +32,7 @@ public class Grounding {
 	}
 	
 	public static void groundAll(Model m, ModelApplication app, com.google.common.base.Predicate<Kernel> filter) {
-		for (Kernel me : m.getKernelTypes()) {
+		for (Kernel me : m.getKernels()) {
 			if (filter.apply(me))
 				me.groundAll(app);
 		}

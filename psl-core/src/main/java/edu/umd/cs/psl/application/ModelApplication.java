@@ -17,12 +17,12 @@
 package edu.umd.cs.psl.application;
 
 import edu.umd.cs.psl.database.DatabaseAtomStoreQuery;
-import edu.umd.cs.psl.model.ModelObserver;
+import edu.umd.cs.psl.model.ModelEvent;
 import edu.umd.cs.psl.model.atom.AtomManager;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 
-public interface ModelApplication extends ModelObserver {
+public interface ModelApplication extends ModelEvent.Listener {
 	
 	public void addGroundKernel(GroundKernel e);
 	
@@ -33,14 +33,10 @@ public interface ModelApplication extends ModelObserver {
 	public boolean containsGroundKernel(GroundKernel e);
 	
 	public GroundKernel getGroundKernel(GroundKernel e);
-	
-	
 
 	public Iterable<GroundCompatibilityKernel> getCompatibilityKernels();
 	
 	public Iterable<GroundKernel> getGroundKernel();
-	
-
 	
 	public DatabaseAtomStoreQuery getDatabase();
 

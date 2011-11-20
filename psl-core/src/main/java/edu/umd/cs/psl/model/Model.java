@@ -16,27 +16,33 @@
  */
 package edu.umd.cs.psl.model;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 
 import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.model.kernel.datacertainty.DataCertaintyKernel;
-import edu.umd.cs.psl.model.predicate.PredicateFactory;
 
+/**
+ * A probabilistic soft logic model.
+ * 
+ * Encapsulates a set of {@link Kernel Kernels}. Objects which use
+ * a Model should register with it to listen for {@link ModelEvent ModelEvents}.
+ */
 public class Model {
 
-	private final PredicateFactory predicateFac;
-	private final Set<Kernel> modelEvidence;
+	protected final Set<Kernel> kernels;
+	protected final List<ModelEvent.Listener> modelObservers;
 	
-	private final List<ModelObserver> modelObservers;
-	
+	/**
+	 * Sole constructor.
+	 */
 	public Model() {
-		this(new PredicateFactory());
-	}
-	
-	public Model(PredicateFactory fac) {
-		predicateFac = fac;
-		modelEvidence = new HashSet<Kernel>();
-		modelObservers = new ArrayList<ModelObserver>();
+		kernels = new HashSet<Kernel>();
+		modelObservers = new ArrayList<ModelEvent.Listener>();
 		addDefaultKernels();
 	}
 	
@@ -44,62 +50,116 @@ public class Model {
 		addKernel(DataCertaintyKernel.get());
 	}
 	
-	public void registerModelObserver(ModelObserver app) {
-		if (!modelObservers.contains(app)) modelObservers.add(app);
+	/**
+	 * Registers an observer to receive {@link ModelEvent ModelEvents}.
+	 * 
+	 * @param observer  object to notify of events
+	 */
+	public void registerModelObserver(ModelEvent.Listener observer) {
+		if (!modelObservers.contains(observer)) modelObservers.add(observer);
 	}
 	
-	public void unregisterModelObserver(ModelObserver app) {
-		if  (!modelObservers.contains(app)) throw new IllegalArgumentException("Application is not a registered observer of this model!");
-		modelObservers.remove(app);
+	/**
+	 * Unregisters an observer so it will no longer receive {@link ModelEvent ModelEvents}
+	 * from this model.
+	 * 
+	 * @param observer  object to stop notifying
+	 */
+	public void unregisterModelObserver(ModelEvent.Listener observer) {
+		if  (!modelObservers.contains(observer))
+			throw new IllegalArgumentException("Object is not a registered observer of this model.");
+		modelObservers.remove(observer);
 	}
 	
-	public Iterable<Kernel> getKernelTypes() {
-		return modelEvidence;
+	/**
+	 * @return the {@link Kernel Kernels} contained in this model
+	 */
+	public Iterable<Kernel> getKernels() {
+		return Collections.unmodifiableSet(kernels);
 	}
 	
-	public PredicateFactory getPredicateFactory() {
-		return predicateFac;
-	}
-	
-	private void broadcastModelEvent(ModelEvent event) {
-		for (ModelObserver app : modelObservers) {
-			app.notifyModelEvent(event);
-		}
-	}
-	
-	public boolean addKernel(Kernel me) {
-		if (modelEvidence.contains(me)) throw new IllegalArgumentException("Evidence type already exists!");
+	/**
+	 * Adds a Kernel to this Model.
+	 * 
+	 * All observers of this Model will receive a {@link ModelEvent#KernelAdded} event.
+	 * 
+	 * @param k  Kernel to add
+	 * @throws IllegalArgumentException  if the Kernel is already in this Model
+	 */
+	public void addKernel(Kernel k) {
+		if (kernels.contains(k))
+			throw new IllegalArgumentException("Kernel already added to this model.");
 		else {
-			modelEvidence.add(me);
-			broadcastModelEvent(ModelEvent.addition(me));
-			return true;
+			kernels.add(k);
+			broadcastModelEvent(ModelEvent.KernelAdded.setModel(this).setKernel(k));
 		}
 	}
 	
-	public boolean removeKernel(Kernel me) {
-		if (!modelEvidence.contains(me)) throw new IllegalArgumentException("Evidence type is not part of model!");
+	/**
+	 * Removes a Kernel from this Model.
+	 * 
+	 * All observers of this Model will receive a {@link ModelEvent#KernelRemoved} event.
+	 * 
+	 * @param k  Kernel to remove
+	 * @throws IllegalArgumentException  if the Kernel is not in this Model
+	 */
+	public void removeKernel(Kernel k) {
+		if (!kernels.contains(k))
+			throw new IllegalArgumentException("Kernel not in this model.");
 		else {
-			modelEvidence.remove(me);
-			broadcastModelEvent(ModelEvent.addition(me));
-			return true;
+			kernels.remove(k);
+			broadcastModelEvent(ModelEvent.KernelRemoved.setModel(this).setKernel(k));
 		}
 	}
 	
-	public void changedKernelParameters(Kernel me) {
-		if (!modelEvidence.contains(me)) throw new IllegalArgumentException("Model does not contain specified evidence type: " + me);
-		broadcastModelEvent(ModelEvent.parameterUpate(me));
+	/**
+	 * Notifies this Model that a Kernel's parameters were modified.
+	 * 
+	 * All observers of this model will receive a {@link ModelEvent#KernelParametersModified} event.
+	 * 
+	 * @param k  the Kernel that was modified
+	 * @throws IllegalArgumentException  if the Kernel is not in this Model
+	 */
+	public void notifyKernelParametersModified(Kernel k) {
+		if (!kernels.contains(k))
+			throw new IllegalArgumentException("Kernel not in this model.");
+		broadcastModelEvent(ModelEvent.KernelParametersModified.setModel(this).setKernel(k));
 	}
 	
-	
+	/**
+	 * Returns a String representation of this Model.
+	 * 
+	 * The String will start with "Model:", followed by a newline, then
+	 * the String representations of each Kernel in this Model (each followed
+	 * by a newline). Constraint Kernels will come before compatibility kernels.
+	 * 
+	 * @return the String representation 
+	 * @see Kernel#isCompatibilityKernel()
+	 */
 	@Override
 	public String toString() {
+		List<Kernel> constraintKernels = new LinkedList<Kernel>();
+		List<Kernel> compatibilityKernels = new LinkedList<Kernel>();
+		for (Kernel kernel : kernels)
+			if (kernel.isCompatibilityKernel())
+				compatibilityKernels.add(kernel);
+			else
+				constraintKernels.add(kernel);
+
 		StringBuilder s = new StringBuilder();
-		//s.append("Predicates:\n").append(predicateFac.toString()).append("\n");
-		s.append("Model Evidence:\n");
-		for (Kernel et : modelEvidence) {
-			s.append(et.toString()).append("\n");
-		}
+		s.append("Model:\n");
+		for (Kernel kernel : constraintKernels)
+			s.append(kernel.toString()).append("\n");
+		for (Kernel kernel : compatibilityKernels)
+			s.append(kernel.toString()).append("\n");
+		
 		return s.toString();
+	}
+	
+	protected void broadcastModelEvent(ModelEvent event) {
+		for (ModelEvent.Listener observer : modelObservers) {
+			observer.notifyModelEvent(event);
+		}
 	}
 	
 }

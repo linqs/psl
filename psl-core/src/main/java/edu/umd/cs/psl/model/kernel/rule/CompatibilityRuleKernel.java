@@ -63,7 +63,7 @@ public class CompatibilityRuleKernel extends AbstractRuleKernel {
 		PositiveWeight newweight = (PositiveWeight)para;
 		if (!newweight.equals(weight)) {
 			weight = newweight;
-			model.changedKernelParameters(this);
+			model.notifyKernelParametersModified(this);
 		}
 	}
 	

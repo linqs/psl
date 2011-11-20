@@ -18,30 +18,70 @@ package edu.umd.cs.psl.model;
 
 import edu.umd.cs.psl.model.kernel.Kernel;
 
-public class ModelEvent {
+/**
+ * An event related to a {@link Model}.
+ */
+public enum ModelEvent {
+	
+	/** A kernel was added to a model */
+	KernelAdded,
+	/** A kernel was removed from a model */
+	KernelRemoved,
+	/** A kernel's parameters were modified */
+	KernelParametersModified;
+	
+	/** A listener for ModelEvents */
+	public interface Listener {
+		/**
+		 * Notifies this object of a ModelEvent.
+		 * 
+		 * @param event  event information
+		 */
+		public void notifyModelEvent(ModelEvent event);
+	}
+	
+	private Model model;
+	private Kernel kernel;
+	
+	private ModelEvent() {
+		model = null;
+		kernel = null;
+	}
 
-	public static enum Type {
-		KernelAddition, KernelRemoval, KernelParameterUpdate;
+	/**
+	 * @return the associated Model, or null if no Model is associated
+	 */
+	public Model getModel() {
+		return model;
 	}
-	
-	public final Type eventType;
-	public final Kernel kernel;
-	
-	public ModelEvent(Type t, Kernel k) {
-		kernel = k;
-		eventType = t;
+
+	/**
+	 * Associates a Model with this event.
+	 * 
+	 * @param model  the model to associate
+	 * @return this event, for convenience
+	 */
+	public ModelEvent setModel(Model model) {
+		this.model = model;
+		return this;
 	}
-	
-	public static ModelEvent addition(Kernel k) {
-		return new ModelEvent(Type.KernelAddition,k);
+
+	/**
+	 * @return the associated Kernel, or null if no Kernel is associated
+	 */
+	public Kernel getKernel() {
+		return kernel;
 	}
-	
-	public static ModelEvent removal(Kernel k) {
-		return new ModelEvent(Type.KernelRemoval,k);
-	}
-	
-	public static ModelEvent parameterUpate(Kernel k) {
-		return new ModelEvent(Type.KernelParameterUpdate,k);
+
+	/**
+	 * Associates a Kernel with this event.
+	 * 
+	 * @param kernel  the kernel to associate
+	 * @return this event, for convenience
+	 */
+	public ModelEvent setKernel(Kernel kernel) {
+		this.kernel = kernel;
+		return this;
 	}
 	
 }
