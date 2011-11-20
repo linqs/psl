@@ -30,7 +30,7 @@ import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
 import edu.umd.cs.psl.reasoner.function.FunctionComparator;
 import edu.umd.cs.psl.reasoner.function.FunctionSummand;
 
-public class GroundEmptySetDefinition extends GroundConstraintKernel {
+public class GroundEmptySetDefinition implements GroundConstraintKernel {
 
 	private final SetDefinitionKernel kernel;
 	private final Atom atom;

@@ -56,7 +56,7 @@ public class MemoryAtom extends StatusAtom {
 	private SetMultimap<Kernel,GroundKernel> dependentKernels;
 	
 	MemoryAtom(Predicate p, GroundTerm[] args, AtomStatus status) {
-		super(p,(Term[])args,status);
+		super(p,args,status);
 		
 		dependentKernels=null;
 		

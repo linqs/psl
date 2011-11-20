@@ -17,18 +17,21 @@
 package edu.umd.cs.psl.evaluation.debug;
 
 import java.text.DecimalFormat;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 
 import de.mathnbits.io.BasicUserInteraction;
 import edu.umd.cs.psl.application.ModelApplication;
-import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.predicate.Predicate;
+import edu.umd.cs.psl.model.predicate.PredicateFactory;
 
 public class CmdDebugger implements Debugger {
 
@@ -41,14 +44,13 @@ public class CmdDebugger implements Debugger {
 
 
 	private final ModelApplication application;
-	private final Model model;
+	private final PredicateFactory predicateFactory;
 	
 	private Map<Integer,Atom> atomHandles;
 	
-	public CmdDebugger(Model m, ModelApplication app) {
+	public CmdDebugger(ModelApplication app, PredicateFactory pf) {
 		application = app;
-		model = m;
-		
+		predicateFactory = pf;
 	}
 	
 	@Override
@@ -125,7 +127,7 @@ public class CmdDebugger implements Debugger {
 	
 	private void queryPredicate(String predicate) {
 		try {
-			Predicate p = model.getPredicateFactory().getPredicate(predicate);
+			Predicate p = predicateFactory.getPredicate(predicate);
 			printAtoms(application.getDatabase().getConsideredAtoms(p));
 		} catch (IllegalArgumentException e) {
 			error(e.getMessage());
@@ -160,7 +162,7 @@ public class CmdDebugger implements Debugger {
 				args[i-1]=(String)queryParts[i];
 			}
 			try {
-				Predicate p = model.getPredicateFactory().getPredicate(predicate);
+				Predicate p = predicateFactory.getPredicate(predicate);
 				printAtoms(application.getDatabase().getConsideredAtoms(p, args));
 			} catch (IllegalArgumentException e) {
 				error(e.getMessage());

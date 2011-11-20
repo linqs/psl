@@ -36,6 +36,9 @@ import edu.umd.cs.psl.database.Partition;
 import edu.umd.cs.psl.model.argument.type.*;
 import edu.umd.cs.psl.model.argument.*;
 import edu.umd.cs.psl.model.predicate.*;
+import edu.umd.cs.psl.model.kernel.rule.AbstractRuleKernel;
+import edu.umd.cs.psl.model.kernel.rule.CompatibilityRuleKernel
+import edu.umd.cs.psl.model.kernel.rule.ConstraintRuleKernel;
 import edu.umd.cs.psl.model.kernel.softrule.*;
 import edu.umd.cs.psl.model.kernel.priorweight.*;
 import edu.umd.cs.psl.model.kernel.predicateconstraint.*;
@@ -272,9 +275,9 @@ class PSLModel extends ModelUI {
 	
 	def addRule(FormulaContainer rule, Map args) {
 		boolean isFact = false;
-		if (args.containsKey('fact')) {
-			if (!(args['fact'] instanceof Boolean)) throw new IllegalArgumentException("The parameter [fact] for a rule must be either TRUE or FALSE");
-			isFact = args['fact'];
+		if (args.containsKey('constraint')) {
+			if (!(args['constraint'] instanceof Boolean)) throw new IllegalArgumentException("The parameter [constraint] for a rule must be either TRUE or FALSE");
+			isFact = args['constraint'];
 		}
 		double weight = Double.NaN;
 		if (args.containsKey('weight')) {
@@ -283,25 +286,22 @@ class PSLModel extends ModelUI {
 				throw new IllegalArgumentException("The weight parameter is expected to be a real number: ${args['weight'].class}");
 			weight = args['weight'];
 		}
-		double multiplier = 1.0;
-		if (args.containsKey('factor')) {
-			if (!isNumber(args['factor']))
-				throw new IllegalArgumentException("The factor parameter is expected to be a real number: ${args['factor'].class}");
-			multiplier = args['factor'];
-		}
+		
+		if (!Double.isNaN(weight) && isFact)
+			throw new IllegalArgumentException("A rule cannot be a constraint and have a weight.");
 
 		def ruleformula = rule.getFormula();
 		if (!(ruleformula instanceof Rule)) throw new IllegalArgumentException("Expected a rule definition but got: ${ruleformula}");
 		
+		AbstractRuleKernel pslrule;
 		if (isFact) {
-			throw new UnsupportedOperationException("Fact rules are not yet supported!");
+			pslrule = new ConstraintRuleKernel(getModel(), ruleformula);
 		} else {
-			SoftRuleKernel pslrule = new SoftRuleKernel(getModel(),(Rule)ruleformula, multiplier, weight);
-			addKernel(pslrule);
-			return pslrule;
+			pslrule = new CompatibilityRuleKernel(getModel(), ruleformula, weight);
 		}
-
 		
+		addKernel(pslrule);
+		return pslrule;
 	}
 	
 	def addSetComparison(String name, Map args) {

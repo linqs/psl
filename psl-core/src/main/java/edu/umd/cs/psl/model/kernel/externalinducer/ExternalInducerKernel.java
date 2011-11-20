@@ -148,7 +148,7 @@ public class ExternalInducerKernel implements Kernel {
 		PositiveWeight newweight = (PositiveWeight)para;
 		if (!newweight.equals(weight)) {
 			weight = newweight;
-			model.changedKernelParameters(this);
+			model.notifyKernelParametersModified(this);
 		}
 	}
 	
@@ -304,20 +304,11 @@ public class ExternalInducerKernel implements Kernel {
 	
 	@Override
 	public String toString() {
-		return "External Function: " + body.toString() + " => " + head.toString() + " | w: " + weight.toString();
+		return "{" + weight.toString() + "} External Function: " + body.toString() + " => " + head.toString();
 	}
 
 	@Override
 	public int hashCode() {
 		return hashcode;
 	}
-	
-	@Override
-	public boolean equals(Object oth) {
-		if (oth==this) return true;
-		if (oth==null || !(getClass().isInstance(oth)) ) return false;
-		ExternalInducerKernel ext = (ExternalInducerKernel)oth;
-		return body.equals(ext.body) && head.equals(ext.head);
-	}
-
 }

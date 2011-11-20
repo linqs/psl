@@ -33,7 +33,7 @@ import edu.umd.cs.psl.reasoner.function.FunctionSummand;
 import edu.umd.cs.psl.reasoner.function.FunctionTerm;
 import edu.umd.cs.psl.reasoner.function.MaxFunction;
 
-public class GroundPriorWeight extends GroundCompatibilityKernel {
+public class GroundPriorWeight implements GroundCompatibilityKernel {
 
 	private final PriorWeightKernel kernel;
 	

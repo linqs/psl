@@ -134,20 +134,20 @@ public class MaintainedMemoryFullInference implements ModelApplication, FullInfe
 
 	@Override
 	public void notifyModelEvent(ModelEvent event) {
-		switch(event.eventType) {
-		case KernelAddition:
+		switch(event) {
+		case KernelAdded:
 			throw new UnsupportedOperationException();
-		case KernelRemoval:
+		case KernelRemoved:
 			throw new UnsupportedOperationException();
-		case KernelParameterUpdate:
-			for (GroundKernel e : groundkernels.getGroundKernels(event.kernel)) {
+		case KernelParametersModified:
+			for (GroundKernel e : groundkernels.getGroundKernels(event.getKernel())) {
 				if (e.updateParameters()) {
 					reasoner.updateGroundKernel(e);
 				}
 			}
 			hasChanged=true;
 			break;
-		default: throw new IllegalArgumentException("Unrecognized model event type: " + event.eventType);
+		default: throw new IllegalArgumentException("Unrecognized model event type: " + event);
 		}
 		
 	}

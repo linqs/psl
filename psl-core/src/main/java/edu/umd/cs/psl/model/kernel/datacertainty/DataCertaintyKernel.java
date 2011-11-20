@@ -53,7 +53,7 @@ public class DataCertaintyKernel implements Kernel {
 	
 	@Override
 	public String toString() {
-		return "DataCertainty";
+		return "{constraint} DataCertainty";
 	}
 	
 	@Override

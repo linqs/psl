@@ -83,7 +83,7 @@ public class PriorWeightKernel implements Kernel {
 		PositiveWeight newweight = (PositiveWeight)para;
 		if (!newweight.equals(weight)) {
 			weight = newweight;
-			model.changedKernelParameters(this);
+			model.notifyKernelParametersModified(this);
 		}
 	}
 
@@ -130,21 +130,11 @@ public class PriorWeightKernel implements Kernel {
 	
 	@Override
 	public String toString() {
-		return "Prior weight on "  + predicate + " : " + weight.getWeight();
+		return "{" + weight.getWeight() +"} Prior weight on "  + predicate;
 	}
 
 	@Override
 	public int hashCode() {
 		return hashcode;
 	}
-	
-	@Override
-	public boolean equals(Object oth) {
-		if (oth==this) return true;
-		if (oth==null || !(getClass().isInstance(oth)) ) return false;
-		PriorWeightKernel con = (PriorWeightKernel)oth;
-		return predicate.equals(con.predicate);
-	}
-
-
 }

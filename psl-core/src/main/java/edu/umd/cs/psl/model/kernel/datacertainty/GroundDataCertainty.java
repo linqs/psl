@@ -30,7 +30,7 @@ import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
 import edu.umd.cs.psl.reasoner.function.FunctionComparator;
 import edu.umd.cs.psl.reasoner.function.FunctionSummand;
 
-public class GroundDataCertainty extends GroundConstraintKernel {
+public class GroundDataCertainty implements GroundConstraintKernel {
 
 	private final Atom atom;
 	private double[] values;
@@ -81,13 +81,4 @@ public class GroundDataCertainty extends GroundConstraintKernel {
 	public int hashCode() {
 		return atom.hashCode()*94231;
 	}
-	
-	@Override
-	public boolean equals(Object oth) {
-		if (oth==this) return true;
-		if (oth==null || !(getClass().isInstance(oth)) ) return false;
-		GroundDataCertainty dc = (GroundDataCertainty)oth;
-		return atom.equals(dc.atom);
-	}	
-
 }

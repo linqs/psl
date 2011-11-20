@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.model.kernel.softrule;
+package edu.umd.cs.psl.model.kernel.rule;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -28,9 +28,8 @@ import edu.umd.cs.psl.model.formula.Negation;
 import edu.umd.cs.psl.model.formula.Tnorm;
 import edu.umd.cs.psl.model.formula.traversal.FormulaEvaluator;
 import edu.umd.cs.psl.model.kernel.BindingMode;
-import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
-import edu.umd.cs.psl.model.parameters.Weight;
 import edu.umd.cs.psl.reasoner.function.ConstantNumber;
 import edu.umd.cs.psl.reasoner.function.FunctionSum;
 import edu.umd.cs.psl.reasoner.function.FunctionSummand;
@@ -45,25 +44,23 @@ import edu.umd.cs.psl.reasoner.function.MaxFunction;
  * @author Stephen Bach
  */
 
-public class GroundSoftRule extends GroundCompatibilityKernel {
+abstract public class AbstractGroundRule implements GroundKernel {
 	
 	public static final Tnorm tnorm = Tnorm.LUKASIEWICZ;
 	public static final FormulaEvaluator formulaNorm =FormulaEvaluator.LUKASIEWICZ;
 	
-	private final SoftRuleKernel rule;
-	private final Conjunction formula;
+	protected AbstractRuleKernel kernel;
+	protected final Conjunction formula;
 	
-	private int numGroundings;
+	protected int numGroundings;
 
-	
 	private final int hashcode;
 	
-	public GroundSoftRule(SoftRuleKernel t, Formula f) {
-		rule = t;
+	public AbstractGroundRule(Formula f) {
 		formula = ((Conjunction) f).flatten();
 		numGroundings=1;
 		
-		hashcode = new HashCodeBuilder().append(rule).append(f).toHashCode();
+		hashcode = new HashCodeBuilder().append(kernel).append(f).toHashCode();
 	}
 	
 	int getNumGroundings() {
@@ -80,22 +77,11 @@ public class GroundSoftRule extends GroundCompatibilityKernel {
 	}
 	
 	@Override
-	public Weight getWeight() {
-		return rule.getWeight();
-	}
-	
-	@Override
 	public boolean updateParameters() {
 		return true;
 	}
 	
-	@Override
-	public FunctionTerm getFunctionDefinition() {
-		assert numGroundings>=0;
-		return getFunctionDefinition(numGroundings);
-	}
-	
-	private FunctionTerm getFunctionDefinition(double multiplier) {
+	protected FunctionTerm getFunction(double multiplier) {
 		Formula f;
 		Atom a;
 		double constant = 0.0;
@@ -130,34 +116,11 @@ public class GroundSoftRule extends GroundCompatibilityKernel {
 
 	@Override
 	public Kernel getKernel() {
-		return rule;
-	}
-	
-	@Override
-	public String toString() {
-		return formula + " : " + rule.getWeight().toString();
-	}
-	
-
-	@Override
-	public double getIncompatibilityDerivative(int parameterNo) {
-		assert parameterNo==0;
-		return numGroundings*(1.0-getTruthValue());
+		return kernel;
 	}
 	
 	public double getTruthValue() {
-		return 1 - getFunctionDefinition(1.0).getValue();
-	}
-
-	@Override
-	public double getIncompatibility() {
-		return numGroundings*getWeight().getWeight()*(1.0-getTruthValue());
-	}
-	
-	@Override
-	public double getIncompatibilityHessian(int parameterNo1, int parameterNo2) {
-		assert parameterNo1==0 && parameterNo2==0;
-		return 0;
+		return 1 - getFunction(1.0).getValue();
 	}
 	
 	@Override
@@ -168,20 +131,16 @@ public class GroundSoftRule extends GroundCompatibilityKernel {
 		return BindingMode.NoBinding;
 	}
 	
-
+	@Override
+	public boolean equals(Object other) {
+		if (other==this) return true;
+		if (other==null || !(other instanceof GroundCompatibilityRule)) return false;
+		GroundCompatibilityRule otherRule = (GroundCompatibilityRule) other;
+		return kernel.equals(otherRule.kernel) && formula.equals(otherRule.formula);
+	}
+	
 	@Override
 	public int hashCode() {
 		return hashcode;
 	}
-	
-	@Override
-	public boolean equals(Object oth) {
-		if (oth==this) return true;
-		if (oth==null || !(getClass().isInstance(oth)) ) return false;
-		GroundSoftRule rule = (GroundSoftRule)oth;
-		return formula.equals(rule.formula) && rule.equals(rule.rule);
-	}
-
-
-	
 }

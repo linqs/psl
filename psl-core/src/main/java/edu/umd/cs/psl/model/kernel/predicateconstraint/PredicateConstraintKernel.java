@@ -185,19 +185,8 @@ public class PredicateConstraintKernel implements Kernel {
 	}
 
 	@Override
-	public boolean equals(Object oth) {
-		if (oth == this)
-			return true;
-		if (oth == null || !(getClass().isInstance(oth)))
-			return false;
-		PredicateConstraintKernel con = (PredicateConstraintKernel) oth;
-		return predicate.equals(con.predicate)
-				&& constraintType == con.constraintType;
-	}
-
-	@Override
 	public String toString() {
-		return constraintType.toString() + " on " + predicate.toString();
+		return "{constraint} " + constraintType.toString() + " on " + predicate.toString();
 	}
 
 }

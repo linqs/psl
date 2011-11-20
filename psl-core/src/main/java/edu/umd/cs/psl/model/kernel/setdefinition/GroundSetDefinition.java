@@ -40,7 +40,7 @@ import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
  * @author Matthias Broecheler
  *
  */
-public class GroundSetDefinition extends GroundConstraintKernel {
+public class GroundSetDefinition implements GroundConstraintKernel {
 
 	private final SetDefinitionKernel definitionType;
 	
