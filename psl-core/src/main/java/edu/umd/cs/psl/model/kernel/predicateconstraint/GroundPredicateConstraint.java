@@ -42,7 +42,7 @@ import edu.umd.cs.psl.reasoner.function.FunctionSummand;
  * 
  * 
  */
-public class GroundPredicateConstraint extends GroundConstraintKernel {
+public class GroundPredicateConstraint implements GroundConstraintKernel {
 
 	private final PredicateConstraintKernel template;
 	private final Entity anchor;

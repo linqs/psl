@@ -197,7 +197,7 @@ public class PredicateConstraintKernel implements Kernel {
 
 	@Override
 	public String toString() {
-		return constraintType.toString() + " on " + predicate.toString();
+		return "{constraint} " + constraintType.toString() + " on " + predicate.toString();
 	}
 
 }

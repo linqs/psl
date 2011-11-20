@@ -45,7 +45,7 @@ import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.formula.traversal.FormulaEventAnalysis;
 import edu.umd.cs.psl.model.formula.traversal.FormulaGrounder;
 import edu.umd.cs.psl.model.kernel.Kernel;
-import edu.umd.cs.psl.model.kernel.softrule.GroundSoftRule;
+import edu.umd.cs.psl.model.kernel.rule.AbstractGroundRule;
 import edu.umd.cs.psl.model.parameters.Parameters;
 import edu.umd.cs.psl.model.predicate.SpecialPredicates;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
@@ -282,7 +282,7 @@ public class SetDefinitionKernel implements Kernel {
 						FormulaGrounder grounder = new FormulaGrounder(app.getAtomManager(), res, ass);
 						while (grounder.hasNext()) {
 							Formula f = grounder.ground(setterm.getFormula());
-							double truth = GroundSoftRule.formulaNorm.getTruthValue(f);
+							double truth = AbstractGroundRule.formulaNorm.getTruthValue(f);
 							//if (truth<=0.0) log.debug("Untrue formula: {}",f);
 							members[i].addMember(grounder.getResultVariable((Variable)setterm.getLeaf()), truth);
 							grounder.next();

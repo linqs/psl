@@ -130,7 +130,7 @@ public class PriorWeightKernel implements Kernel {
 	
 	@Override
 	public String toString() {
-		return "Prior weight on "  + predicate + " : " + weight.getWeight();
+		return "{" + weight.getWeight() +"} Prior weight on "  + predicate;
 	}
 
 	@Override

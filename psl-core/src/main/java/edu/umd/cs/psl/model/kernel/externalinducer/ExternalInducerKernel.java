@@ -304,7 +304,7 @@ public class ExternalInducerKernel implements Kernel {
 	
 	@Override
 	public String toString() {
-		return "External Function: " + body.toString() + " => " + head.toString() + " | w: " + weight.toString();
+		return "{" + weight.toString() + "} External Function: " + body.toString() + " => " + head.toString();
 	}
 
 	@Override

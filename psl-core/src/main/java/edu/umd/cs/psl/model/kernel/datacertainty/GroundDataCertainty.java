@@ -30,7 +30,7 @@ import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
 import edu.umd.cs.psl.reasoner.function.FunctionComparator;
 import edu.umd.cs.psl.reasoner.function.FunctionSummand;
 
-public class GroundDataCertainty extends GroundConstraintKernel {
+public class GroundDataCertainty implements GroundConstraintKernel {
 
 	private final Atom atom;
 	private double[] values;

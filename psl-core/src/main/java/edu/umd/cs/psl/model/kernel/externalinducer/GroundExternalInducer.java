@@ -34,7 +34,7 @@ import edu.umd.cs.psl.reasoner.function.FunctionSummand;
 import edu.umd.cs.psl.reasoner.function.FunctionTerm;
 import edu.umd.cs.psl.reasoner.function.MaxFunction;
 
-public class GroundExternalInducer extends GroundCompatibilityKernel {
+public class GroundExternalInducer implements GroundCompatibilityKernel {
 
 	private final ExternalInducerKernel kernel;
 	private final Atom atom;
@@ -103,7 +103,7 @@ public class GroundExternalInducer extends GroundCompatibilityKernel {
 
 	@Override
 	public String toString() {
-		return "External Function: " + atom + " | values " + values + " | weight: " + kernel.getWeight();
+		return "{" + kernel.getWeight() + "} External Function: " + atom + " | values " + values;
 	}
 	
 	/*

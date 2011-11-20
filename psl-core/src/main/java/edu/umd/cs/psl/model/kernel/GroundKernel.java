@@ -28,7 +28,7 @@ import edu.umd.cs.psl.model.atom.Atom;
  * @author matthias
  * 
  */
-public abstract class GroundKernel {
+public interface GroundKernel {
 
 	/**
 	 * This method is called by
@@ -53,13 +53,13 @@ public abstract class GroundKernel {
 	 * @throws UnsupportedOperationException
 	 *             If there are no parameters to change.
 	 */
-	abstract public boolean updateParameters();
+	public boolean updateParameters();
 
-	abstract public Kernel getKernel();
+	public Kernel getKernel();
 
-	abstract public Set<Atom> getAtoms();
+	public Set<Atom> getAtoms();
 
-	abstract public double getIncompatibility();
+	public double getIncompatibility();
 
-	abstract public BindingMode getBinding(Atom atom);
+	public BindingMode getBinding(Atom atom);
 }

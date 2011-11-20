@@ -36,7 +36,7 @@ import edu.umd.cs.psl.model.parameters.Parameters;
  * @author Matthias Broecheler (mail@knowledgefrominformation.com)
  *
  */
-public interface Kernel extends AtomEventObserver {
+public interface Kernel extends AtomEventObserver, Cloneable {
 
 	public void registerForAtomEvents(AtomEventFramework framework, DatabaseAtomStoreQuery db);
 	
@@ -50,6 +50,6 @@ public interface Kernel extends AtomEventObserver {
 	
 	public boolean isCompatibilityKernel();
 	
-	public Kernel clone();
+	public Kernel clone() throws CloneNotSupportedException;
 	
 }

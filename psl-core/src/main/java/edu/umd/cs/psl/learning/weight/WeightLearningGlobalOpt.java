@@ -36,7 +36,7 @@ import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
 import de.mathnbits.util.ArrayUtil;
 import edu.umd.cs.psl.model.kernel.priorweight.PriorWeightKernel;
-import edu.umd.cs.psl.model.kernel.softrule.SoftRuleKernel;
+import edu.umd.cs.psl.model.kernel.rule.AbstractRuleKernel;
 
 
 public class WeightLearningGlobalOpt implements FunctionEvaluation, WeightLearning, ConvexFunc {
@@ -186,7 +186,7 @@ public class WeightLearningGlobalOpt implements FunctionEvaluation, WeightLearni
         means[ii+1]  = configuration.getUnitRuleMean();
         log.debug("initParam+rule: " + params[ii+1] + "  " + et.toString());
       }
-      else if (et instanceof SoftRuleKernel) 
+      else if (et instanceof AbstractRuleKernel) 
       {
         params[ii+1] = configuration.getRuleMean();
         means[ii+1]  = configuration.getRuleMean();

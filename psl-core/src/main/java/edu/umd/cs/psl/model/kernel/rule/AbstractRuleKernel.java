@@ -14,11 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.model.kernel.softrule;
+package edu.umd.cs.psl.model.kernel.rule;
 
 import java.util.List;
 
-import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,61 +33,41 @@ import edu.umd.cs.psl.model.atom.AtomEvent;
 import edu.umd.cs.psl.model.atom.AtomEventFramework;
 import edu.umd.cs.psl.model.atom.AtomEventSets;
 import edu.umd.cs.psl.model.atom.VariableAssignment;
+import edu.umd.cs.psl.model.formula.Conjunction;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.formula.Negation;
 import edu.umd.cs.psl.model.formula.traversal.FormulaEventAnalysis;
 import edu.umd.cs.psl.model.formula.traversal.FormulaGrounder;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
-import edu.umd.cs.psl.model.parameters.Parameters;
-import edu.umd.cs.psl.model.parameters.PositiveWeight;
-import edu.umd.cs.psl.model.parameters.Weight;
 
-public class SoftRuleKernel implements Kernel {
+abstract public class AbstractRuleKernel implements Kernel {
 
-	private static final Logger log = LoggerFactory.getLogger(SoftRuleKernel.class);
+	private static final Logger log = LoggerFactory.getLogger(AbstractRuleKernel.class);
 	
-	private final FormulaEventAnalysis rule;
-
-	private final Model model;
+	protected final Model model;
+	protected Formula formula;
+	protected final FormulaEventAnalysis rule;
 	
-	private PositiveWeight weight;
-	
-	private final int hashcode;
-	
-	public SoftRuleKernel(Model m, Formula r, double mult, double w) {
-		this(m, r, w);
-	}
-	
-	public SoftRuleKernel(Model m, Formula r, double w) {
+	public AbstractRuleKernel(Model m, Formula f) {
 		Preconditions.checkNotNull(m);
 		model = m;
-		rule = new FormulaEventAnalysis(new Negation(r).dnf());
-		weight = new PositiveWeight(w);
-		hashcode = new HashCodeBuilder().append(rule.getFormula()).toHashCode();
+		formula = f;
+		Formula notF = new Negation(f).dnf();
+		if (notF instanceof Conjunction)
+			rule = new FormulaEventAnalysis((Conjunction) notF);
+		else
+			throw new IllegalArgumentException("Formula must be a disjunction of literals.");
 	}
 	
-	@Override
-	public Kernel clone() {
-		return new SoftRuleKernel(model,rule.getFormula(),weight.getWeight());
-	}
-	
-	public SoftRuleKernel(Model m, Formula r) {
-		this(m, r, Double.NaN);
-	}
-	
-	public Weight getWeight() {
-		return weight;
-	}
-	
-	private void groundFormula(ResultList res, ModelApplication app, VariableAssignment var) {
-		log.trace("Grounding {} instances of rule {}", res.size(), rule.getFormula());
+	protected void groundFormula(ResultList res, ModelApplication app, VariableAssignment var) {
+		log.trace("Grounding {} instances of rule {}", res.size(), formula);
 		FormulaGrounder grounder = new FormulaGrounder(app.getAtomManager(),res, var);
 		while (grounder.hasNext()) {
-			GroundSoftRule groundRule = new GroundSoftRule(this,grounder.ground(rule.getFormula()));
+			AbstractGroundRule groundRule = groundFormulaInstance(grounder.ground(rule.getFormula()));
 			GroundKernel oldrule = app.getGroundKernel(groundRule);
 			if (oldrule!=null) {
-				((GroundSoftRule)oldrule).increaseGroundings();
+				((AbstractGroundRule)oldrule).increaseGroundings();
 				app.changedGroundKernel(oldrule);
 			} else {
 				app.addGroundKernel(groundRule);
@@ -96,6 +75,8 @@ public class SoftRuleKernel implements Kernel {
 			grounder.next();
 		}
 	}
+	
+	abstract protected AbstractGroundRule groundFormulaInstance(Formula f);
 	
 	@Override
 	public void groundAll(ModelApplication app) {
@@ -144,50 +125,10 @@ public class SoftRuleKernel implements Kernel {
 	public void unregisterForAtomEvents(AtomEventFramework framework,
 			DatabaseAtomStoreQuery db) {
 		rule.unregisterFormulaForEvents(framework, this, AtomEventSets.DeOrActivationEvent, db);
-		
-	}
-
-
-	@Override
-	public Parameters getParameters() {
-		return weight.duplicate();
 	}
 
 	@Override
-	public void setParameters(Parameters para) {
-		if (!(para instanceof Weight)) throw new IllegalArgumentException("Expected weight parameter!");
-		PositiveWeight newweight = (PositiveWeight)para;
-		if (!newweight.equals(weight)) {
-			weight = newweight;
-			model.changedKernelParameters(this);
-		}
+	public Kernel clone() throws CloneNotSupportedException {
+		throw new CloneNotSupportedException();
 	}
-	
-	@Override
-	public boolean isCompatibilityKernel() {
-		return true;
-	}
-	
-	
-	@Override
-	public String toString() {
-		return weight.getWeight() + " : " + rule.getFormula();
-	}
-	
-	@Override
-	public int hashCode() {
-		return super.hashCode();
-		//return hashcode;
-	}
-	
-	@Override
-	public boolean equals(Object oth) {
-		return super.equals(oth);
-//		if (oth==this) return true;
-//		if (oth==null || !(getClass().isInstance(oth)) ) return false;
-//		SoftRuleKernel r = (SoftRuleKernel)oth;
-//		return body.getFormula().equals(r.body.getFormula()) && head.getFormula().equals(r.head.getFormula()) && multiplier==r.multiplier;
-	}
-
-
 }

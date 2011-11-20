@@ -49,8 +49,8 @@ import edu.umd.cs.psl.model.atom.memory.MemoryAtomStore;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.kernel.datacertainty.GroundDataCertainty;
+import edu.umd.cs.psl.model.kernel.rule.AbstractGroundRule;
 import edu.umd.cs.psl.model.kernel.setdefinition.GroundSetDefinition;
-import edu.umd.cs.psl.model.kernel.softrule.GroundSoftRule;
 
 public class FixpointModelApplication implements ModelApplication, FullInference {
 	
@@ -154,8 +154,8 @@ public class FixpointModelApplication implements ModelApplication, FullInference
 				GroundKernel e = iter.next();
 				Atom atom=null;
 				double deltavalue=0.0;
-				if (e instanceof GroundSoftRule) {
-					GroundSoftRule rule = (GroundSoftRule)e;
+				if (e instanceof AbstractGroundRule) {
+					AbstractGroundRule rule = (AbstractGroundRule)e;
 					//if (rule.getHeadAtoms().length!=1) throw new IllegalArgumentException("Only support rules with a single atom in the head! " + e);
 					//atom = rule.getHeadAtoms()[0];
 					//log.trace("Head {} has value {}",atom,atom.getSoftValue(0));
