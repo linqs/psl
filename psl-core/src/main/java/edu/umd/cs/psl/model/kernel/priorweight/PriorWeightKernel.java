@@ -137,14 +137,4 @@ public class PriorWeightKernel implements Kernel {
 	public int hashCode() {
 		return hashcode;
 	}
-	
-	@Override
-	public boolean equals(Object oth) {
-		if (oth==this) return true;
-		if (oth==null || !(getClass().isInstance(oth)) ) return false;
-		PriorWeightKernel con = (PriorWeightKernel)oth;
-		return predicate.equals(con.predicate);
-	}
-
-
 }

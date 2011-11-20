@@ -49,8 +49,7 @@ public class ConstraintRuleKernel extends AbstractRuleKernel {
 
 	@Override
 	protected AbstractGroundRule groundFormulaInstance(Formula f) {
-		// TODO Auto-generated method stub
-		return null;
+		return new GroundConstraintRule(this, formula);
 	}
 	
 	@Override
@@ -61,15 +60,6 @@ public class ConstraintRuleKernel extends AbstractRuleKernel {
 	@Override
 	public int hashCode() {
 		return hashcode;
-	}
-	
-	@Override
-	public boolean equals(Object other) {
-		if (other==this) return true;
-		if (other==null || !(other instanceof CompatibilityRuleKernel)) return false;
-		CompatibilityRuleKernel otherKernel = (CompatibilityRuleKernel) other;
-		return model.equals(otherKernel.model)
-				&& formula.equals(otherKernel.formula);
 	}
 	
 	@Override

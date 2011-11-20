@@ -362,16 +362,6 @@ public class SetDefinitionKernel implements Kernel {
 	public int hashCode() {
 		return hashcode;
 	}
-	
-	@Override
-	public boolean equals(Object oth) {
-		if (oth==this) return true;
-		if (oth==null || !(getClass().isInstance(oth)) ) return false;
-		SetDefinitionKernel p = (SetDefinitionKernel)oth;
-		return setPredicate.equals(p.setPredicate);
-	}
-	
-
 
 
 	

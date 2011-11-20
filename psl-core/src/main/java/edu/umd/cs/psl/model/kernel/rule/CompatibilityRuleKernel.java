@@ -78,16 +78,6 @@ public class CompatibilityRuleKernel extends AbstractRuleKernel {
 	}
 	
 	@Override
-	public boolean equals(Object other) {
-		if (other==this) return true;
-		if (other==null || !(other instanceof CompatibilityRuleKernel)) return false;
-		CompatibilityRuleKernel otherKernel = (CompatibilityRuleKernel) other;
-		return model.equals(otherKernel.model)
-				&& formula.equals(otherKernel.formula)
-				&& weight.equals(otherKernel.weight);
-	}
-	
-	@Override
 	public Kernel clone() {
 		return new CompatibilityRuleKernel(model, formula, weight.getWeight());
 	}

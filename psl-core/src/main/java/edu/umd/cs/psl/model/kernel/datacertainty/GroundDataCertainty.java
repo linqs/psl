@@ -81,13 +81,4 @@ public class GroundDataCertainty implements GroundConstraintKernel {
 	public int hashCode() {
 		return atom.hashCode()*94231;
 	}
-	
-	@Override
-	public boolean equals(Object oth) {
-		if (oth==this) return true;
-		if (oth==null || !(getClass().isInstance(oth)) ) return false;
-		GroundDataCertainty dc = (GroundDataCertainty)oth;
-		return atom.equals(dc.atom);
-	}	
-
 }

@@ -311,13 +311,4 @@ public class ExternalInducerKernel implements Kernel {
 	public int hashCode() {
 		return hashcode;
 	}
-	
-	@Override
-	public boolean equals(Object oth) {
-		if (oth==this) return true;
-		if (oth==null || !(getClass().isInstance(oth)) ) return false;
-		ExternalInducerKernel ext = (ExternalInducerKernel)oth;
-		return body.equals(ext.body) && head.equals(ext.head);
-	}
-
 }
