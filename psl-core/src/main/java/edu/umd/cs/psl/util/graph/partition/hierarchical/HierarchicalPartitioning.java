@@ -134,12 +134,14 @@ public class HierarchicalPartitioning implements Partitioner {
 		if (partition==null || partition.size()!=noPartitions) 
 			throw new IllegalArgumentException("Partition container does not have the right size - expected: " + noPartitions);
 		for (int i=0;i<noPartitions;i++) Preconditions.checkNotNull(partition.get(i));
+		
+		log.debug("Partitioning into {} blocks with {} trials", noPartitions,noTrials);
+		
 		int level = 1;
 		int sizeThreshold = coarseSizeThreshold(noPartitions);
 		CoarseningResult coarsening = coarsen(g, nodes, nweight, rweight,level);
 		Map<Node,SuperNode> coarsemap = coarsening.map;
 		
-		log.debug("Partitioning into {} blocks with {} trials", noPartitions,noTrials);
 		log.debug("New Size: {} | Shrinkage: {}",coarsening.getNoSuperNodes(),coarsening.getShrinkageFactor());
 		
 		while (coarsening.getNoSuperNodes()>sizeThreshold && 
@@ -181,22 +183,41 @@ public class HierarchicalPartitioning implements Partitioner {
 						coarsening.nweight,coarsening.rweight);
 			}
 			//assign remaining in neighborhood
-			while(true) {
+			while(!rnodes.isEmpty()) {
 				int pid = findMinPartitionBlock(pweights,pnghs);
-				if (pid<0) break;
-				Node n = findMostConnected(pnghs.get(pid));
-				assert !pAssign.containsKey(n);
-				edgeCut += assign(n,pid,pweights,pAssign,pnghs,
-						coarsening.nweight,coarsening.rweight);
-			}
-			//check whether any node has not yet been assigned
-			for (Node n : topnodes) {
-				if (!pAssign.containsKey(n)) {
-					int pid = indexOfMin(pweights);
-					pAssign.put(n, pid);
-					pweights[pid]+= coarsening.nweight.getWeight(n);
+				if (pid<0) {
+					Node n;
+					for (pid=0; pid<noPartitions && !rnodes.isEmpty(); pid++) {
+						do {
+							n = rnodes.popRandom();
+						} while (pAssign.containsKey(n) && !rnodes.isEmpty());
+						edgeCut += assign(n, pid, pweights, pAssign, pnghs,
+								coarsening.nweight,coarsening.rweight);
+					}
+				}
+				else {
+					Node n = findMostConnected(pnghs.get(pid));
+					assert !pAssign.containsKey(n);
+					edgeCut += assign(n,pid,pweights,pAssign,pnghs,
+							coarsening.nweight,coarsening.rweight);
 				}
 			}
+//			while(true) {
+//				int pid = findMinPartitionBlock(pweights,pnghs);
+//				if (pid<0) break;
+//				Node n = findMostConnected(pnghs.get(pid));
+//				assert !pAssign.containsKey(n);
+//				edgeCut += assign(n,pid,pweights,pAssign,pnghs,
+//						coarsening.nweight,coarsening.rweight);
+//			}
+			//check whether any node has not yet been assigned
+//			for (Node n : topnodes) {
+//				if (!pAssign.containsKey(n)) {
+//					int pid = indexOfMin(pweights);
+//					pAssign.put(n, pid);
+//					pweights[pid]+= coarsening.nweight.getWeight(n);
+//				}
+//			}
 			double balance = stdDev(pweights);
 			
 			log.debug("Current partitions edge cut: {} | Balance : {}",edgeCut,balance);
@@ -384,7 +405,7 @@ public class HierarchicalPartitioning implements Partitioner {
 			sum += values[i];
 			sumOfSquares += Math.pow(values[i], 2);
 		}
-		return (sumOfSquares - Math.pow(sum, 2) / values.length) / values.length;
+		return Math.sqrt((sumOfSquares - Math.pow(sum, 2) / values.length) / values.length);
 	}
 	
 	private class ConstantOneNodeWeighter implements NodeWeighter {
