@@ -50,7 +50,7 @@ import edu.umd.cs.psl.database.DatabaseEventObserver;
 import edu.umd.cs.psl.database.PSLValue;
 import edu.umd.cs.psl.database.Partition;
 import edu.umd.cs.psl.database.PredicatePosition;
-import edu.umd.cs.psl.database.ResultAtom;
+import edu.umd.cs.psl.database.AtomRecord;
 import edu.umd.cs.psl.database.ResultList;
 import edu.umd.cs.psl.database.ResultListValues;
 import edu.umd.cs.psl.database.UniqueID;
@@ -359,11 +359,11 @@ public class RDBMSDatabase implements Database {
 	}
 	
 	@Override
-	public ResultAtom getAtom(Predicate p, GroundTerm[] arguments) {
+	public AtomRecord getAtom(Predicate p, GroundTerm[] arguments) {
 		RDBMSPredicateHandle ph = getHandle(p);
 		boolean notFound = false;
 		if (!isPriorInitialized && !ph.isClosed()) notFound=true;
-		ResultAtom atom=null;
+		AtomRecord atom=null;
 		
 		if (!notFound) {
 			SelectQuery q = queryAtom(p,arguments);
@@ -398,24 +398,24 @@ public class RDBMSDatabase implements Database {
 				    			if (!ph.hasConfidenceValues()) {
 				    				confidences = ConfidenceValues.getMaxConfidence(p.getNumberOfValues());
 				    			}
-				    			atom = new ResultAtom(values,confidences,ResultAtom.Status.FACT);
+				    			atom = new AtomRecord(values,confidences,AtomRecord.Status.FACT);
 				    		} else {
 				    			assert ph.hasSoftValues();
 				    			assert ph.hasConfidenceValues();
 				    			PSLValue pslval = PSLValue.parse(rs.getInt(ph.pslColumn()));
-				    			atom = new ResultAtom(values,confidences,ResultAtom.Status.RV);
+				    			atom = new AtomRecord(values,confidences,AtomRecord.Status.RV);
 				    			switch(pslval) {
 				    			case Fact:
-				    				atom.setStatus(ResultAtom.Status.CERTAINTY);
+				    				atom.setStatus(AtomRecord.Status.CERTAINTY);
 				    				break;
 				    			case DefaultFact:
-				    				atom.setStatus(ResultAtom.Status.CERTAINTY);
+				    				atom.setStatus(AtomRecord.Status.CERTAINTY);
 				    				break;
 				    			case DefaultRV:
-				    				atom.setStatus(ResultAtom.Status.RV);
+				    				atom.setStatus(AtomRecord.Status.RV);
 				    				break;
 				    			case ActiveRV:
-				    				atom.setStatus(ResultAtom.Status.RV);
+				    				atom.setStatus(AtomRecord.Status.RV);
 				    				break;
 				    			default: throw new IllegalArgumentException("Unknown psl value: " + pslval); 
 				    			}
@@ -438,9 +438,9 @@ public class RDBMSDatabase implements Database {
 		if (notFound) {
 			assert atom==null;
     		if (ph.isClosed()) {
-    			atom = new ResultAtom(p.getDefaultValues(),ConfidenceValues.getMaxConfidence(p.getNumberOfValues()),ResultAtom.Status.FACT);
+    			atom = new AtomRecord(p.getDefaultValues(),ConfidenceValues.getMaxConfidence(p.getNumberOfValues()),AtomRecord.Status.FACT);
     		} else {
-    			atom = new ResultAtom(ResultAtom.Status.RV);
+    			atom = new AtomRecord(AtomRecord.Status.RV);
     		}
 		}
 		assert atom!=null;
@@ -571,7 +571,7 @@ public class RDBMSDatabase implements Database {
 		assert partialGrounding!=null;
 		
 		
-		VariableTypeMap varTypes = f.getVariables(new VariableTypeMap());
+		VariableTypeMap varTypes = f.collectVariables(new VariableTypeMap());
 		if (projectTo==null) {
 			projectTo = new ArrayList<Variable>(varTypes.getVariables());
 			projectTo.removeAll(partialGrounding.getVariables());

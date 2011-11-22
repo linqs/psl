@@ -27,10 +27,10 @@ public class Disjunction extends AbstractBranchFormula {
 	}
 	
 	@Override
-	public Formula dnf() {
+	public Formula getDNF() {
 		Formula[] components = new Formula[getNoFormulas()];
 		for (int i = 0; i < components.length; i++)
-			components[i] = get(i).dnf();
+			components[i] = get(i).getDNF();
 		return new Disjunction(components);
 	}
 

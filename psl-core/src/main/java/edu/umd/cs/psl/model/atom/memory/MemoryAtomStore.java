@@ -24,7 +24,7 @@ import com.google.common.collect.Iterables;
 
 import de.mathnbits.util.RetrievalSet;
 import edu.umd.cs.psl.database.Database;
-import edu.umd.cs.psl.database.ResultAtom;
+import edu.umd.cs.psl.database.AtomRecord;
 import edu.umd.cs.psl.model.ConfidenceValues;
 import edu.umd.cs.psl.model.argument.EntitySet;
 import edu.umd.cs.psl.model.argument.GroundTerm;
@@ -80,14 +80,14 @@ public class MemoryAtomStore implements AtomStore {
 				if (containsEntitySet(arguments)) {
 					return initializeGroupAtom(p,arguments);
 				} else {
-					ResultAtom res = db.getAtom(p,arguments);
+					AtomRecord res = db.getAtom(p,arguments);
 					return this.initializeAtom(p, arguments, res);
 				}
 			} else if (p instanceof FunctionalPredicate){
 				return initializeAtom(p, arguments, 
-						new ResultAtom(((FunctionalPredicate)p).computeValues(arguments), 
+						new AtomRecord(((FunctionalPredicate)p).computeValues(arguments), 
 						ConfidenceValues.getMaxConfidence(p.getNumberOfValues()),
-						ResultAtom.Status.FACT
+						AtomRecord.Status.FACT
 						));
 			} else throw new IllegalArgumentException("Unsupported predicate: " + p);
 		}
@@ -155,7 +155,7 @@ public class MemoryAtomStore implements AtomStore {
 		}
 	}
 	
-	private Atom initializeAtom(Predicate p, GroundTerm[] terms, ResultAtom res) {
+	private Atom initializeAtom(Predicate p, GroundTerm[] terms, AtomRecord res) {
 		double[] values = res.getValues();
 		double[] confidences = res.getConfidences();
 		AtomStatus s = null;

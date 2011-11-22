@@ -17,10 +17,7 @@
 package edu.umd.cs.psl.model.atom;
 
 /**
- * An enum for atom status constants.
- * 
- * @author
- *
+ * A status of an {@link Atom}.
  */
 public enum AtomStatus {
 

@@ -49,25 +49,25 @@ public class Negation implements Formula {
 	}
 	
 	@Override
-	public Formula dnf() {
+	public Formula getDNF() {
 		if (body instanceof Atom)
 			return this;
 		else if (body instanceof Negation)
-			return ((Negation) body).body.dnf();
+			return ((Negation) body).body.getDNF();
 		else if (body instanceof Conjunction) {
 			Formula[] components = new Formula[((Conjunction) body).getNoFormulas()];
 			for (int i = 0; i < components.length; i++)
 				components[i] = new Negation(((Conjunction) body).get(i));
-			return new Disjunction(components).dnf();
+			return new Disjunction(components).getDNF();
 		}
 		else if (body instanceof Disjunction) {
 			Formula[] components = new Formula[((Disjunction) body).getNoFormulas()];
 			for (int i = 0; i < components.length; i++)
 				components[i] = new Negation(((Disjunction) body).get(i));
-			return new Conjunction(components).dnf();
+			return new Conjunction(components).getDNF();
 		}
 		else if (body instanceof Rule)
-			return new Negation(body.dnf()).dnf();
+			return new Negation(body.getDNF()).getDNF();
 		else
 			throw new IllegalStateException("Body of negation is unrecognized type.");
 	}
@@ -90,15 +90,15 @@ public class Negation implements Formula {
 	}
 
 	@Override
-	public Collection<Atom> getAtoms(Collection<Atom> list) {
+	public Set<Atom> getAtoms(Set<Atom> list) {
 		body.getAtoms(list);
 		return list;
 	}
 
 
 	@Override
-	public VariableTypeMap getVariables(VariableTypeMap varMap) {
-		body.getVariables(varMap);
+	public VariableTypeMap collectVariables(VariableTypeMap varMap) {
+		body.collectVariables(varMap);
 		return varMap;
 	}
 

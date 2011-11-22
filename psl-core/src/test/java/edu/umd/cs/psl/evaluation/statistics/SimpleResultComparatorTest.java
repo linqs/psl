@@ -30,8 +30,8 @@ import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.database.DatabaseAtomStoreQuery;
 import edu.umd.cs.psl.database.DatabaseEventObserver;
 import edu.umd.cs.psl.database.PredicatePosition;
-import edu.umd.cs.psl.database.ResultAtom;
-import edu.umd.cs.psl.database.ResultAtom.Status;
+import edu.umd.cs.psl.database.AtomRecord;
+import edu.umd.cs.psl.database.AtomRecord.Status;
 import edu.umd.cs.psl.database.ResultList;
 import edu.umd.cs.psl.database.ResultListValues;
 import edu.umd.cs.psl.database.UniqueID;
@@ -68,26 +68,26 @@ public class SimpleResultComparatorTest {
 	private class FakeDatabase implements Database {
 		
 		private RDBMSResultList resultList;
-		private HashMap<GroundTerm[],ResultAtom> data;
+		private HashMap<GroundTerm[],AtomRecord> data;
 		
 		public FakeDatabase(Predicate p, int[][] terms, double[] atoms) {
 			resultList = new RDBMSResultList(2);
-			data = new HashMap<GroundTerm[],ResultAtom>();
+			data = new HashMap<GroundTerm[],AtomRecord>();
 			for (int i = 0; i < atoms.length; i++) {
 				GroundTerm[] t = new GroundTerm[2];
 				t[0] = Entity.getEntity(new RDBMSUniqueIntID(terms[i][0]));
 				t[1] = Entity.getEntity(new RDBMSUniqueIntID(terms[i][1]));
 				resultList.addResult(t);
-				ResultAtom a = new ResultAtom(new double[]{atoms[i]}, new double[]{1.0}, Status.FACT);
+				AtomRecord a = new AtomRecord(new double[]{atoms[i]}, new double[]{1.0}, Status.FACT);
 				data.put(t, a);
 			}
 		}
 		
 		@Override
-		public ResultAtom getAtom(Predicate p, GroundTerm[] arguments) {
+		public AtomRecord getAtom(Predicate p, GroundTerm[] arguments) {
 			if (data.containsKey(arguments))
 				return data.get(arguments);
-			return new ResultAtom(p.getDefaultValues(), new double[]{1.0}, Status.FACT);
+			return new AtomRecord(p.getDefaultValues(), new double[]{1.0}, Status.FACT);
 		}
 
 		@Override

@@ -61,7 +61,7 @@ public class TemplateAtom implements Atom {
 	}
 	
 	@Override
-	public Formula dnf() {
+	public Formula getDNF() {
 		return this;
 	}
 	
@@ -81,7 +81,7 @@ public class TemplateAtom implements Atom {
 	}
 	
 	@Override
-	public VariableTypeMap getVariables(VariableTypeMap varMap) {
+	public VariableTypeMap collectVariables(VariableTypeMap varMap) {
 		for (int i=0;i<arguments.length;i++) {
 			if (arguments[i] instanceof Variable) {
 				ArgumentType t = predicate.getArgumentType(i);
@@ -105,7 +105,7 @@ public class TemplateAtom implements Atom {
 	}
 	
 	@Override
-	public Collection<Atom> getAtoms(Collection<Atom> atoms) {
+	public Set<Atom> getAtoms(Set<Atom> atoms) {
 		atoms.add(this);
 		return atoms;
 	}

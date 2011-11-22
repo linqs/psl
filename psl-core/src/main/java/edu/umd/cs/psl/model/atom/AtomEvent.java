@@ -21,10 +21,7 @@ import java.util.Set;
 import com.google.common.collect.ImmutableSet;
 
 /**
- * An enum for various atom event types.
- * 
- * @author
- *
+ * An event related to an {@link Atom}.
  */
 public enum AtomEvent {
 

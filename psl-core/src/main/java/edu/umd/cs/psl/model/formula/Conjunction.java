@@ -29,12 +29,12 @@ public class Conjunction extends AbstractBranchFormula {
 	}
 	
 	@Override
-	public Formula dnf() {
+	public Formula getDNF() {
 		Formula[] components = new Formula[getNoFormulas()];
 		Vector<Integer> disjunctions = new Vector<Integer>();
 		int size = 1;
 		for (int i = 0; i < components.length; i++) {
-			components[i] = get(i).dnf();
+			components[i] = get(i).getDNF();
 			if (components[i] instanceof Disjunction) {
 				size *= ((Disjunction) components[i]).getNoFormulas();
 				disjunctions.add(i);
@@ -74,7 +74,7 @@ public class Conjunction extends AbstractBranchFormula {
 					conjunctionComponents[j] = components[j];
 			}
 			
-			dnfComponents[i] = new Conjunction(conjunctionComponents).dnf();
+			dnfComponents[i] = new Conjunction(conjunctionComponents).getDNF();
 		}
 		
 		return new Disjunction(dnfComponents);

@@ -58,7 +58,7 @@ public enum ModelEvent {
 	/**
 	 * Associates a Model with this event.
 	 * 
-	 * @param model  the model to associate
+	 * @param model  the Model to associate
 	 * @return this event, for convenience
 	 */
 	public ModelEvent setModel(Model model) {
@@ -76,7 +76,7 @@ public enum ModelEvent {
 	/**
 	 * Associates a Kernel with this event.
 	 * 
-	 * @param kernel  the kernel to associate
+	 * @param kernel  the Kernel to associate
 	 * @return this event, for convenience
 	 */
 	public ModelEvent setKernel(Kernel kernel) {

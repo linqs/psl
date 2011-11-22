@@ -23,14 +23,18 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
+import edu.umd.cs.psl.application.ModelApplication;
 import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.model.kernel.datacertainty.DataCertaintyKernel;
 
 /**
  * A probabilistic soft logic model.
  * 
- * Encapsulates a set of {@link Kernel Kernels}. Objects which use
- * a Model should register with it to listen for {@link ModelEvent ModelEvents}.
+ * Encapsulates a set of {@link Kernel Kernels}. A {@link ModelApplication}
+ * can be used to combine a Model with evidence to perform inference or learn.
+ * 
+ * Objects which use a Model should register with it to listen
+ * for {@link ModelEvent ModelEvents}.
  */
 public class Model {
 

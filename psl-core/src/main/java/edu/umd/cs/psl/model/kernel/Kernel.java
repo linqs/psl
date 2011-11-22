@@ -18,16 +18,15 @@ package edu.umd.cs.psl.model.kernel;
 
 import edu.umd.cs.psl.application.ModelApplication;
 import edu.umd.cs.psl.database.DatabaseAtomStoreQuery;
+import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.AtomEventFramework;
 import edu.umd.cs.psl.model.atom.AtomEventObserver;
 import edu.umd.cs.psl.model.parameters.Parameters;
 
 
 /**
- * Kernels provide a framework to express the adherence of a formula with some set of data. 
- * Kernels currently support formulas that include constraints as well as relations between 
- * predicates. By grounding the atoms  
- * GroundKernels measure the incompatibility of a particular formula given a grounding of the atoms
+ * A template for a function that either constrains or measures
+ * the compatibility of the values of {@link Atom Atoms}
  * 
  * *upon initial grounding or triggered by changes to individual atoms. Evidence types register new
  * *evidence with the model application and are responsible for communicating changes to atom states

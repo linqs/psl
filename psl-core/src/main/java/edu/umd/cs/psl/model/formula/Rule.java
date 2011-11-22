@@ -52,19 +52,19 @@ public class Rule implements Formula {
 	}
 	
 	@Override
-	public Formula dnf() {
-		return new Disjunction(new Negation(body), head).dnf();
+	public Formula getDNF() {
+		return new Disjunction(new Negation(body), head).getDNF();
 	}
 	
 	@Override
-	public VariableTypeMap getVariables(VariableTypeMap varMap) {
-		body.getVariables(varMap);
-		head.getVariables(varMap);
+	public VariableTypeMap collectVariables(VariableTypeMap varMap) {
+		body.collectVariables(varMap);
+		head.collectVariables(varMap);
 		return varMap;
 	}
 	
 	@Override
-	public Collection<Atom> getAtoms(Collection<Atom> atoms) {
+	public Set<Atom> getAtoms(Set<Atom> atoms) {
 		body.getAtoms(atoms);
 		head.getAtoms(atoms);
 		return atoms;

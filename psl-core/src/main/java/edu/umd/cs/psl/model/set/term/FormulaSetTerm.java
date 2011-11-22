@@ -45,7 +45,7 @@ public class FormulaSetTerm implements BasicSetTerm {
 		
 		//Determine free variables
 		VariableTypeMap variables = new VariableTypeMap();
-		identificationFormula.getVariables(variables);
+		identificationFormula.collectVariables(variables);
 		
 		leafType = variables.getType(leafVar);
 	

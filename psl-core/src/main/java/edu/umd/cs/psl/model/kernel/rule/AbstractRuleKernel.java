@@ -53,7 +53,7 @@ abstract public class AbstractRuleKernel implements Kernel {
 		Preconditions.checkNotNull(m);
 		model = m;
 		formula = f;
-		Formula notF = new Negation(f).dnf();
+		Formula notF = new Negation(f).getDNF();
 		if (notF instanceof Conjunction)
 			rule = new FormulaEventAnalysis((Conjunction) notF);
 		else
