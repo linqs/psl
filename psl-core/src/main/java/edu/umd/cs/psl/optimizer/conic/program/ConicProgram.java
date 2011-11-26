@@ -45,6 +45,8 @@ public class ConicProgram {
 	private Set<SecondOrderCone> SOCs;
 	private Set<RotatedSecondOrderCone> RSOCs;
 	
+	private int numVars;
+	
 	private Set<LinearConstraint> cons;
 	
 	private boolean checkedOut;
@@ -71,6 +73,8 @@ public class ConicProgram {
 		SOCs = new HashSet<SecondOrderCone>();
 		RSOCs = new HashSet<RotatedSecondOrderCone>();
 		
+		numVars = 0;
+		
 		cons = new HashSet<LinearConstraint>();
 		
 		checkedOut = false;
@@ -86,9 +90,9 @@ public class ConicProgram {
 	
 	public Collection<ConeType> getConeTypes() {
 		Set<ConeType> types = new HashSet<ConeType>();
-		if (numNNOC() > 0) types.add(ConeType.NonNegativeOrthantCone);
-		if (numSOC() > 0) types.add(ConeType.SecondOrderCone);
-		if (numRSOC() > 0) types.add(ConeType.RotatedSecondOrderCone);
+		if (getNumNNOC() > 0) types.add(ConeType.NonNegativeOrthantCone);
+		if (gtNumSOC() > 0) types.add(ConeType.SecondOrderCone);
+		if (getNumRSOC() > 0) types.add(ConeType.RotatedSecondOrderCone);
 		return types;
 	}
 	
@@ -242,33 +246,37 @@ public class ConicProgram {
 		return c;
 	}
 	
-	public int index(Variable v) {
+	public int getIndex(Variable v) {
 		verifyCheckedOut();
 		return varMap.get(v);
 	}
 	
-	public int index(LinearConstraint lc) {
+	public int getIndex(LinearConstraint lc) {
 		verifyCheckedOut();
 		return lcMap.get(lc);
 	}
 	
-	public int numCones() {
-		return numNNOC() + numSOC() + numRSOC();
+	public int getNumCones() {
+		return getNumNNOC() + gtNumSOC() + getNumRSOC();
 	}
 	
-	public int numNNOC() {
+	public int getNumNNOC() {
 		return NNOCs.size();
 	}
 	
-	public int numSOC() {
+	public int gtNumSOC() {
 		return SOCs.size();
 	}
 	
-	public int numRSOC() {
+	public int getNumRSOC() {
 		return RSOCs.size();
 	}
 	
-	public int numLinearConstraints() {
+	public int getNumVariables() {
+		return numVars;
+	}
+	
+	public int getNumLinearConstraints() {
 		return cons.size();
 	}
 	
@@ -339,17 +347,17 @@ public class ConicProgram {
 		if (checkInWhenFinished) checkInMatrices();
 	}
 	
-	public double primalInfeasibility() {
-		return primalInfeasibility(false);
+	public double getPrimalInfeasibility() {
+		return getPrimalInfeasibility(false);
 	}
 	
-	public double primalInfeasibility(boolean requireInterior) {
+	public double getPrimalInfeasibility(boolean requireInterior) {
 		verifyCheckedOut();
 		
 		double value;
 		
 		for (NonNegativeOrthantCone cone : NNOCs) {
-			value = x.get(index(cone.getVariable()));
+			value = x.get(getIndex(cone.getVariable()));
 			if (value < 0.0 || (requireInterior && value == 0.0))
 				return Double.POSITIVE_INFINITY;
 		}
@@ -358,11 +366,11 @@ public class ConicProgram {
 			value = 0.0;
 			for (Variable v : cone.getVariables()) {
 				if (!v.equals(cone.getNthVariable())) {
-					value += Math.pow(x.get(index(v)), 2);
+					value += Math.pow(x.get(getIndex(v)), 2);
 				} 
 			}
 			value = Math.sqrt(value);
-			value = x.get(index(cone.getNthVariable())) - value;
+			value = x.get(getIndex(cone.getNthVariable())) - value;
 			if (value < 0.0 || (requireInterior && value == 0.0))
 				return Double.POSITIVE_INFINITY;
 		}
@@ -374,17 +382,17 @@ public class ConicProgram {
 		return inf;
 	}
 	
-	public double dualInfeasibility() {
-		return dualInfeasibility(false);
+	public double getDualInfeasibility() {
+		return getDualInfeasibility(false);
 	}
 	
-	public double dualInfeasibility(boolean requireInterior) {
+	public double getDualInfeasibility(boolean requireInterior) {
 		verifyCheckedOut();
 		
 		double value;
 		
 		for (NonNegativeOrthantCone cone : NNOCs) {
-			value = s.get(index(cone.getVariable()));
+			value = s.get(getIndex(cone.getVariable()));
 			if (value < 0.0 || (requireInterior && value == 0.0))
 				return Double.POSITIVE_INFINITY;
 		}
@@ -393,11 +401,11 @@ public class ConicProgram {
 			value = 0.0;
 			for (Variable v : cone.getVariables()) {
 				if (!v.equals(cone.getNthVariable())) {
-					value += Math.pow(s.get(index(v)), 2);
+					value += Math.pow(s.get(getIndex(v)), 2);
 				} 
 			}
 			value = Math.sqrt(value);
-			value = s.get(index(cone.getNthVariable())) - value;
+			value = s.get(getIndex(cone.getNthVariable())) - value;
 			if (value < 0.0 || (requireInterior && value == 0.0))
 				return Double.POSITIVE_INFINITY;
 		}
@@ -425,9 +433,11 @@ public class ConicProgram {
 				switch (e) {
 				case NNOCCreated:
 					NNOCs.add((NonNegativeOrthantCone) sender);
+					numVars++;
 					break;
 				case NNOCDeleted:
 					NNOCs.remove((NonNegativeOrthantCone) sender);
+					numVars--;
 					break;
 				}
 			}
@@ -440,9 +450,11 @@ public class ConicProgram {
 				switch (e) {
 				case SOCCreated:
 					SOCs.add((SecondOrderCone) sender);
+					numVars += ((SecondOrderCone) sender).getN();
 					break;
 				case SOCDeleted:
 					SOCs.remove((SecondOrderCone) sender);
+					numVars -= ((SecondOrderCone) sender).getN();
 					break;
 				}
 			}

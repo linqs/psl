@@ -321,7 +321,7 @@ public class FeasiblePointInitializer implements ConicProgramListener {
 
 				/* Finalizes initialization */
 				for (Map.Entry<Variable, Integer> v : varInit.entrySet())
-					program.getX().set(program.index(v.getKey()), x.get(v.getValue()));
+					program.getX().set(program.getIndex(v.getKey()), x.get(v.getValue()));
 			}
 		}
 		
@@ -491,10 +491,10 @@ public class FeasiblePointInitializer implements ConicProgramListener {
 				
 				/* Finalizes initialization */
 				for (Map.Entry<Variable, Integer> v : varInit.entrySet()) {
-					program.getS().set(program.index(v.getKey()), s.get(v.getValue()));
+					program.getS().set(program.getIndex(v.getKey()), s.get(v.getValue()));
 				}
 				for (Map.Entry<LinearConstraint, Integer> lc : lcInit.entrySet())
-					program.getW().set(program.index(lc.getKey()), w.get(lc.getValue()));
+					program.getW().set(program.getIndex(lc.getKey()), w.get(lc.getValue()));
 			}
 		}
 		
@@ -515,9 +515,9 @@ public class FeasiblePointInitializer implements ConicProgramListener {
 		for (Map.Entry<Variable, Double> e : lc.getVariables().entrySet()) {
 			gap = 0.0;
 			for (LinearConstraint con : e.getKey().getLinearConstraints()) {
-				gap += con.getVariables().get(e.getKey()) * w.get(program.index(con));
+				gap += con.getVariables().get(e.getKey()) * w.get(program.getIndex(con));
 			}
-			gap = gap + s.get(program.index(e.getKey())) + 0.01 - c.get(program.index(e.getKey()));
+			gap = gap + s.get(program.getIndex(e.getKey())) + 0.01 - c.get(program.getIndex(e.getKey()));
 			gap /= Math.abs(e.getValue());
 			if (gap > maxGap)
 				maxGap = gap;
@@ -526,15 +526,15 @@ public class FeasiblePointInitializer implements ConicProgramListener {
 		if (lc.getVariables().values().iterator().next() < 0.0)
 			maxGap *= -1;
 		
-		w.set(program.index(lc), w.get(program.index(lc)) - maxGap);
+		w.set(program.getIndex(lc), w.get(program.getIndex(lc)) - maxGap);
 		
 		for (Map.Entry<Variable, Double> e : lc.getVariables().entrySet()) {
 			gap = 0.0;
 			for (LinearConstraint con : e.getKey().getLinearConstraints()) {
-				gap += con.getVariables().get(e.getKey()) * w.get(program.index(con));
+				gap += con.getVariables().get(e.getKey()) * w.get(program.getIndex(con));
 			}
-			gap = gap + s.get(program.index(e.getKey())) - c.get(program.index(e.getKey()));
-			s.set(program.index(e.getKey()), s.get(program.index(e.getKey())) - gap);
+			gap = gap + s.get(program.getIndex(e.getKey())) - c.get(program.getIndex(e.getKey()));
+			s.set(program.getIndex(e.getKey()), s.get(program.getIndex(e.getKey())) - gap);
 		}
 	}
 
@@ -647,15 +647,15 @@ public class FeasiblePointInitializer implements ConicProgramListener {
 
 			value = 0.0;
 			for (Entry<Variable, Double> e : lc.getVariables().entrySet()) {
-				value += x.get(program.index(e.getKey())) * e.getValue();
+				value += x.get(program.getIndex(e.getKey())) * e.getValue();
 			}
 			diff = value - lc.getConstrainedValue() ;
 			if (diff > 0) {
-				x.set(program.index(negativeSlack), negativeSlack.getValue()
+				x.set(program.getIndex(negativeSlack), negativeSlack.getValue()
 						- diff / negativeSlack.getLinearConstraints().iterator().next().getVariables().get(negativeSlack));
 			}
 			else {
-				x.set(program.index(positiveSlack), positiveSlack.getValue()
+				x.set(program.getIndex(positiveSlack), positiveSlack.getValue()
 						- diff / positiveSlack.getLinearConstraints().iterator().next().getVariables().get(positiveSlack));
 			}
 		}

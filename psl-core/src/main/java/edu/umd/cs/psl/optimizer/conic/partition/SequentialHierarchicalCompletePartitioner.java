@@ -117,40 +117,11 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 		
 		partitions.clear();
 		
-		graph = new MemoryGraph();
-		graph.createRelationshipType(LC_REL);
-		
-		coneMap = HashBiMap.create();
-		lcMap = HashBiMap.create();
-		
-		for (Cone cone : program.getCones()) {
-			node = graph.createNode();
-			coneMap.put(cone, node);
-		}
-		
-		Set<Cone> coneSet = new HashSet<Cone>();
-		for (LinearConstraint con : program.getConstraints()) {
-			node = graph.createNode();
-			lcMap.put(con, node);
-			
-			for (Variable var : con.getVariables().keySet()) {
-				coneSet.add(var.getCone());
-			}
-			
-			for (Cone cone : coneSet) {
-				node.createRelationship(LC_REL, coneMap.get(cone));
-			}
-			
-			coneSet.clear();
-		}
-		
-		int numElements = (int) Math.ceil((double) program.numLinearConstraints() / 10000);
+		int numElements = (int) Math.ceil((double) program.getNumLinearConstraints() / 20000);
 		
 		List<List<Node>> graphPartition = null;
-		Set<LinearConstraint> cutConstraints = new HashSet<LinearConstraint>();
 		Set<LinearConstraint> alwaysCutConstraints = new HashSet<LinearConstraint>();
 		final Set<LinearConstraint> restrictedConstraints = new HashSet<LinearConstraint>();
-		boolean isInnerConstraint;
 
 		List<Set<Cone>> blocks;
 		
@@ -162,10 +133,34 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 		int p = 0;
 		do {
 			redoPartition = false;
-			//if (partitions.size() == 1) {
-			//	partitioning.setSize(partitioning.getSize()+1);
-			//}
 			try {
+				graph = new MemoryGraph();
+				graph.createRelationshipType(LC_REL);
+				
+				coneMap = HashBiMap.create();
+				lcMap = HashBiMap.create();
+				
+				for (Cone cone : program.getCones()) {
+					node = graph.createNode();
+					coneMap.put(cone, node);
+				}
+				
+				Set<Cone> coneSet = new HashSet<Cone>();
+				for (LinearConstraint con : program.getConstraints()) {
+					node = graph.createNode();
+					lcMap.put(con, node);
+					
+					for (Variable var : con.getVariables().keySet()) {
+						coneSet.add(var.getCone());
+					}
+					
+					for (Cone cone : coneSet) {
+						node.createRelationship(LC_REL, coneMap.get(cone));
+					}
+					
+					coneSet.clear();
+				}
+				
 				if (p % 2 == 0) {
 					graphPartition = partitioner.partition(graph, graph.getNodeSnapshot(), new RelationshipWeighter() {
 						@Override
@@ -173,17 +168,17 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 							if (r.getRelationshipType().equals(LC_REL)) {
 								LinearConstraint lc = (LinearConstraint) lcMap.inverse().get(r.getStart());
 								if (restrictedConstraints.contains(lc)) {
-									return 1000;
+									return 2000;
 								}
 								else {
 									Cone cone = coneMap.inverse().get(r.getEnd());
 									if (cone instanceof NonNegativeOrthantCone)
-										return Math.abs(((NonNegativeOrthantCone) cone).getVariable().getObjectiveCoefficient()) + 10e-5;
+										return Math.abs(((NonNegativeOrthantCone) cone).getVariable().getObjectiveCoefficient()) + 1;
 									else if (cone instanceof SecondOrderCone) {
 										double weight = 0.0;
 										for (Variable var : ((SecondOrderCone) cone).getVariables())
 											weight += var.getObjectiveCoefficient();
-										return Math.abs(weight) + 10e-5;
+										return Math.abs(weight) + 1;
 									}
 									else
 										throw new IllegalStateException();
@@ -202,17 +197,17 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 							if (r.getRelationshipType().equals(LC_REL)) {
 								LinearConstraint lc = (LinearConstraint) lcMap.inverse().get(r.getStart());
 								if (restrictedConstraints.contains(lc)) {
-									return 1000;
+									return 2000;
 								}
 								else {
 									Cone cone = coneMap.inverse().get(r.getEnd());
 									if (cone instanceof NonNegativeOrthantCone)
-										return 1 / (Math.abs(((NonNegativeOrthantCone) cone).getVariable().getObjectiveCoefficient()) + 10e-2);
+										return 1 / (Math.abs(((NonNegativeOrthantCone) cone).getVariable().getObjectiveCoefficient()) + 1);
 									else if (cone instanceof SecondOrderCone) {
 										double weight = 0.0;
 										for (Variable var : ((SecondOrderCone) cone).getVariables())
 											weight += var.getObjectiveCoefficient();
-										return 1 / (Math.abs(weight) + 10e-2);
+										return 1 / (Math.abs(weight) + 1);
 									}
 									else
 										throw new IllegalStateException();
@@ -274,7 +269,8 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 
 			/* Partition accepted */
 			if (!redoPartition) {
-				/* Collects cones in blocks and checks which constraints were cut */
+				
+				/* Collects cones in blocks */
 				blocks = new Vector<Set<Cone>>();
 				for (int i = 0; i < graphPartition.size(); i++) {
 					Set<Cone> block = new HashSet<Cone>();
@@ -283,33 +279,58 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 						if (coneMap.containsValue(n)) {
 							block.add(coneMap.inverse().get(n));
 						}
-						/* Checks if constraint has been cut */
-						else if (lcMap.containsValue(n)) {
-							isInnerConstraint = true;
-							for (Relationship r : n.getRelationships(LC_REL))
-								isInnerConstraint = isInnerConstraint && graphPartition.get(i).contains(r.getEnd());
-							if (!isInnerConstraint) {
-								LinearConstraint lc = lcMap.inverse().get(n);
-								cutConstraints.add(lc);
-								if (p == 0) {
-									alwaysCutConstraints.add(lc);
-									restrictedConstraints.add(lc);
-								}
-							}
-						}
 					}
 					blocks.add(block);
 				}
 				
-				if (p != 0) {
-					alwaysCutConstraints.retainAll(cutConstraints);
+				/* Initializes the partition */
+				ConicProgramPartition partition = new ConicProgramPartition(program, blocks);
+				log.debug("Size of cut constraints: {}", partition.getCutConstraints().size());
+				partitions.add(partition);
+				
+				/* Updates the sets of always cut constraints and restricted constraints */
+				if (p == 0) {
+					alwaysCutConstraints.addAll(partition.getCutConstraints());
+					restrictedConstraints.addAll(partition.getCutConstraints());
+				}
+				else {
+					alwaysCutConstraints.retainAll(partition.getCutConstraints());
 					restrictedConstraints.clear();
 					restrictedConstraints.addAll(alwaysCutConstraints);
 				}
+
+				log.debug("Number of always cut constraints right after update: {}", alwaysCutConstraints.size());
 				
-				partitions.add(new ConicProgramPartition(program, blocks));
+				/* Ensures that each cut constraint has a singleton in each element it spans */
+				HashSet<Integer> elements = new HashSet<Integer>();
+				ArrayList<Cone> singletons = new ArrayList<Cone>();
+				for (LinearConstraint lc : partition.getCutConstraints()) {
+					elements.clear();
+					singletons.clear();
+					for (Variable var : lc.getVariables().keySet()) {
+						Cone cone = var.getCone();
+						elements.add(partition.getElement(cone));
+						if (isSingleton(cone)) {
+							partition.removeCone(cone);
+							singletons.add(cone);
+						}
+					}
+					
+					if (singletons.size() < elements.size())
+//						throw new IllegalStateException("Not enough singletons to cut constraint. Needed " + elements.size() + ".");
+						log.warn("Not enough singletons to cut constraint. Needed {}.", elements.size());
+					
+					Iterator<Integer> itr = elements.iterator();
+					for (Cone cone : singletons) {
+						partition.addCone(cone, itr.next());
+						if (!itr.hasNext())
+							itr = elements.iterator();
+					}
+				}
 				
-				cutConstraints.clear();
+				log.debug("Number of cut constraints after singleton shuffling: {}", partition.getCutConstraints().size());
+				
+				log.debug("Number of always cut constraints: {}", alwaysCutConstraints.size());
 				p++;
 			}
 			else {
@@ -322,6 +343,31 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 	public void notify(ConicProgram sender, ConicProgramEvent event, Entity entity, Object... data) {
 		// TODO Auto-generated method stub
 		
+	}
+
+	private boolean isSingleton(Cone cone) {
+		if (cone instanceof NonNegativeOrthantCone) {
+			return ((NonNegativeOrthantCone) cone).getVariable().getLinearConstraints().size() == 1;
+		}
+		else if (cone instanceof SecondOrderCone) {
+			LinearConstraint lc = null;
+			for (Variable socVar : ((SecondOrderCone) cone).getVariables()) {
+				Set<LinearConstraint> cons = socVar.getLinearConstraints();
+				if (cons.size() > 1) {
+					return false;
+				}
+				else if (cons.size() == 1) {
+					if (lc == null)
+						lc = cons.iterator().next();
+					else if (!lc.equals(cons.iterator().next()))
+						return false;
+				}
+			}
+			
+			return true;
+		}
+		else
+			throw new IllegalStateException();
 	}
 
 }

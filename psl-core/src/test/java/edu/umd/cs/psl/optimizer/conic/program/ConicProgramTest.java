@@ -187,9 +187,9 @@ public class ConicProgramTest {
 	public void testCreateSOCP() {
 		defineSOCP();
 
-		assertTrue(program.numNNOC() == 13);
-		assertTrue(program.numSOC() == 3);
-		assertTrue(program.numRSOC() == 0);
+		assertTrue(program.getNumNNOC() == 13);
+		assertTrue(program.gtNumSOC() == 3);
+		assertTrue(program.getNumRSOC() == 0);
 		
 		assertTrue(program.getNonNegativeOrthantCones().size() == 13);
 		assertTrue(program.getSecondOrderCones().size() == 3);
@@ -227,8 +227,8 @@ public class ConicProgramTest {
 		double newDualValue2 = x2.getDualValue() + 2.0;
 		
 		program.checkOutMatrices();
-		int index1 = program.index(x1);
-		int index2 = program.index(x2);
+		int index1 = program.getIndex(x1);
+		int index2 = program.getIndex(x2);
 		DoubleMatrix1D x = program.getX();
 		x.set(index1, newPrimalValue1);
 		x.set(index2, newPrimalValue2);
@@ -272,9 +272,9 @@ public class ConicProgramTest {
 		for (LinearConstraint lc : program.getConstraints())
 			lc.delete();
 				
-		assertTrue(program.numNNOC() == 0);
-		assertTrue(program.numSOC() == 0);
-		assertTrue(program.numRSOC() == 0);
+		assertTrue(program.getNumNNOC() == 0);
+		assertTrue(program.gtNumSOC() == 0);
+		assertTrue(program.getNumRSOC() == 0);
 		
 		assertTrue(program.getNonNegativeOrthantCones().size() == 0);
 		assertTrue(program.getSecondOrderCones().size() == 0);
@@ -296,9 +296,9 @@ public class ConicProgramTest {
 				
 		defineSOCP();
 				
-		assertTrue(program.numNNOC() == 13);
-		assertTrue(program.numSOC() == 3);
-		assertTrue(program.numRSOC() == 0);
+		assertTrue(program.getNumNNOC() == 13);
+		assertTrue(program.gtNumSOC() == 3);
+		assertTrue(program.getNumRSOC() == 0);
 		
 		assertTrue(program.getNonNegativeOrthantCones().size() == 13);
 		assertTrue(program.getSecondOrderCones().size() == 3);
@@ -327,9 +327,9 @@ public class ConicProgramTest {
 		program.checkOutMatrices();
 		program.checkInMatrices();
 		
-		assertTrue(program.numNNOC() == 13);
-		assertTrue(program.numSOC() == 3);
-		assertTrue(program.numRSOC() == 0);
+		assertTrue(program.getNumNNOC() == 13);
+		assertTrue(program.gtNumSOC() == 3);
+		assertTrue(program.getNumRSOC() == 0);
 		
 		program.createNonNegativeOrthantCone();
 		program.createNonNegativeOrthantCone();
@@ -349,9 +349,9 @@ public class ConicProgramTest {
 		program.checkOutMatrices();
 		program.checkInMatrices();
 		
-		assertTrue(program.numNNOC() == 13);
-		assertTrue(program.numSOC() == 3);
-		assertTrue(program.numRSOC() == 0);
+		assertTrue(program.getNumNNOC() == 13);
+		assertTrue(program.gtNumSOC() == 3);
+		assertTrue(program.getNumRSOC() == 0);
 		
 		program.createConstraint().setVariable(x1, 1.0);
 		program.createConstraint();

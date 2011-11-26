@@ -18,6 +18,7 @@ package edu.umd.cs.psl.optimizer.conic.partition;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -51,9 +52,9 @@ public class ConicProgramPartition implements ConicProgramListener {
 	
 	private Set<Cone> unassignedCones;
 	
-	private boolean checkedOut;
+	private Set<LinearConstraint> cutConstraints;
 	
-	private int numVars;
+	private boolean checkedOut;
 	
 	private Vector<SparseCCDoubleMatrix2D> APart;
 	private Vector<SparseCCDoubleMatrix2D> innerAPart;
@@ -75,43 +76,17 @@ public class ConicProgramPartition implements ConicProgramListener {
 		program = p;
 		
 		unassignedCones = new HashSet<Cone>(program.getCones());
+		cutConstraints = new HashSet<LinearConstraint>();
 		elements = new Vector<Set<Cone>>(partition.size());
 		coneMap = new HashMap<Cone, Integer>(unassignedCones.size());
 		
 		checkedOut = false;
 		
-		numVars = 0;
-		
-		Set<Cone> element;
-		
 		int i = 0;
 		for (Set<Cone> cones : partition) {
-			element = new HashSet<Cone>();
-			for (Cone c : cones) {
-				if (coneMap.get(c) != null)
-					throw new IllegalArgumentException("Partition assigns same cone to multiple elements.");
-				
-				if (!unassignedCones.remove(c))
-					throw new IllegalArgumentException("Partition contains cone that does not belong to the given conic program.");
-				
-				element.add(c);
-				
-				coneMap.put(c, i);
-				
-				/* Counts number of variables */
-				if (c instanceof NonNegativeOrthantCone) {
-					numVars++;
-				}
-				else if (c instanceof SecondOrderCone) {
-					numVars += ((SecondOrderCone) c).getVariables().size();
-				}
-				else if (c instanceof RotatedSecondOrderCone) {
-					numVars += ((RotatedSecondOrderCone) c).getVariables().size();
-				}
-				else
-					throw new IllegalStateException("Unrecognized cone type.");
-			}
-			elements.add(element);
+			elements.add(new HashSet<Cone>());
+			for (Cone c : cones)
+				addCone(c, i);
 			i++;
 		}
 		
@@ -143,8 +118,8 @@ public class ConicProgramPartition implements ConicProgramListener {
 		
 		APart = new Vector<SparseCCDoubleMatrix2D>(size());
 		innerAPart = new Vector<SparseCCDoubleMatrix2D>(size());
-		varElementMap = new int[numVars];
-		varIndexMap = new int[numVars];
+		varElementMap = new int[program.getNumVariables()];
+		varIndexMap = new int[program.getNumVariables()];
 		varSelections = new int[size()][];
 		innerConSelections = new int[size()][];
 		
@@ -178,8 +153,8 @@ public class ConicProgramPartition implements ConicProgramListener {
 			/* Processes each variable and incident linear constraints */
 			for (Variable v : varsToProcess) {
 				varMapPart.put(v, varIndex);
-				varElementMap[program.index(v)] = i;
-				varIndexMap[program.index(v)] = varIndex++;
+				varElementMap[program.getIndex(v)] = i;
+				varIndexMap[program.getIndex(v)] = varIndex++;
 				for (LinearConstraint lc : v.getLinearConstraints()) {
 					if (!lcMapPart.containsKey(lc)) {
 						lcMapPart.put(lc, lcIndex++);
@@ -191,8 +166,11 @@ public class ConicProgramPartition implements ConicProgramListener {
 							innerLcMapPart.put(lc, innerLcIndex++);
 						}
 					}
-				}	
+				}
 			}
+			
+			cutConstraints.clear();
+			cutConstraints.addAll(lcMapPart.keySet());
 			
 			/* Constructs A WITH cut constraints for this element */
 			temp = new SparseDoubleMatrix2D(lcMapPart.size(), varMapPart.size());
@@ -223,9 +201,9 @@ public class ConicProgramPartition implements ConicProgramListener {
 			innerConSelections[i] = new int[innerLcMapPart.size()];
 			
 			for (Map.Entry<Variable, Integer> e : varMapPart.entrySet())
-				varSelections[i][e.getValue()] = program.index(e.getKey());
+				varSelections[i][e.getValue()] = program.getIndex(e.getKey());
 			for (Map.Entry<LinearConstraint, Integer> e : innerLcMapPart.entrySet())
-				innerConSelections[i][e.getValue()] = program.index(e.getKey());
+				innerConSelections[i][e.getValue()] = program.getIndex(e.getKey());
 			
 			/* Cleans up for next iteration */
 			varMapPart.clear();
@@ -247,23 +225,84 @@ public class ConicProgramPartition implements ConicProgramListener {
 	}
 	
 	public void addCone(Cone c, Integer i) {
-		// TODO
-		throw new UnsupportedOperationException();
+		verifyCheckedIn();
 		
+		if (getElement(c) != null)
+			throw new IllegalStateException("Cone already belongs to a partition element.");
+		elements.get(i).add(c);
+		coneMap.put(c, i);
+		unassignedCones.remove(c);
+		updateCutConstraints(c, i);
 	}
 	
-	public void removeCone(Cone c, Integer i) {
+	public boolean removeCone(Cone c) {
+		verifyCheckedIn();
+		
+		Integer element = coneMap.get(c);
+		
+		if (element != null) {
+			coneMap.remove(c);
+			if (elements.get(element).remove(c)) {
+				unassignedCones.add(c);
+				updateCutConstraints(c, element);
+				return true;
+			}
+			else
+				return false;
+		}
+		else
+			return false;
+	}
+	
+	public Set<Cone> getUnassignedCones() {
 		// TODO
 		throw new UnsupportedOperationException();
 	}
 	
-	Set<Cone> getUnassignedCones() {
-		// TODO
-		throw new UnsupportedOperationException();
-	}
-	
-	Integer getElement(Cone c) {
+	public Integer getElement(Cone c) {
 		return coneMap.get(c);
+	}
+	
+	public Set<LinearConstraint> getCutConstraints() {
+//		return Collections.unmodifiableSet(cutConstraints);
+		Set<Variable> varsToProcess = new HashSet<Variable>();
+		Set<LinearConstraint> cutConstraints = new HashSet<LinearConstraint>();
+		
+		/* Processes each partition element */
+		for (int i = 0; i < size(); i++) {
+			/* Collects the variables to process */
+			for (Cone c : elements.get(i)) {
+				if (c instanceof NonNegativeOrthantCone) {
+					varsToProcess.add(((NonNegativeOrthantCone) c).getVariable());
+				}
+				else if (c instanceof SecondOrderCone) {
+					varsToProcess.addAll(((SecondOrderCone) c).getVariables());
+				}
+				else if (c instanceof RotatedSecondOrderCone) {
+					varsToProcess.addAll(((RotatedSecondOrderCone) c).getVariables());
+				}
+				else
+					throw new IllegalStateException("Unrecognized cone type.");
+			}
+				
+			/* Processes each variable and incident linear constraints */
+			for (Variable v : varsToProcess) {
+				for (LinearConstraint lc : v.getLinearConstraints()) {
+					if (!cutConstraints.contains(lc)) {
+						/* Checks if constraint has been cut */
+						boolean isInnerConstraint = true;
+						for (Variable v2 : lc.getVariables().keySet())
+							isInnerConstraint = isInnerConstraint && elements.get(i).contains(v2.getCone());
+						if (!isInnerConstraint) {
+							cutConstraints.add(lc);
+						}
+					}
+				}	
+			}
+		}
+		
+		return cutConstraints;
+
 	}
 	
 	public List<SparseCCDoubleMatrix2D> getACopies() {
@@ -321,32 +360,55 @@ public class ConicProgramPartition implements ConicProgramListener {
 
 	@Override
 	public void notify(ConicProgram sender, ConicProgramEvent event, Entity entity, Object... data) {
-		int element;
-		
 		switch (event) {
 		case MatricesCheckedIn:
 			verifyCheckedIn();
 			break;
 		case NNOCCreated:
-			numVars++;
 			unassignedCones.add((Cone) entity);
 			break;
 		case SOCCreated:
-			numVars += ((SecondOrderCone) entity).getN();
 			unassignedCones.add((Cone) entity);
 			break;
 		case NNOCDeleted:
-			numVars--;
-			element = coneMap.get(entity);
-			coneMap.remove(entity);
-			elements.get(element).remove(entity);
+			removeCone((Cone) entity);
 			break;
 		case SOCDeleted:
-			numVars -= ((SecondOrderCone) entity).getN();
-			element = coneMap.get(entity);
-			coneMap.remove(entity);
-			elements.get(element).remove(entity);
+			removeCone((Cone) entity);
 			break;
+		}
+	}
+	
+	private void updateCutConstraints(Cone cone, int element) {
+		Set<LinearConstraint> consToProcess = new HashSet<LinearConstraint>();
+		
+		if (cone instanceof NonNegativeOrthantCone) {
+			consToProcess.addAll(((NonNegativeOrthantCone) cone).getVariable().getLinearConstraints());
+		}
+		else if (cone instanceof SecondOrderCone) {
+			for (Variable v : ((SecondOrderCone) cone).getVariables())
+				consToProcess.addAll(v.getLinearConstraints());
+		}
+		else if (cone instanceof RotatedSecondOrderCone) {
+			for (Variable v : ((RotatedSecondOrderCone) cone).getVariables())
+				consToProcess.addAll(v.getLinearConstraints());
+		}
+		else
+			throw new IllegalStateException("Unrecognized cone type.");
+		
+		for (LinearConstraint con : consToProcess) {
+			boolean cutConstraint = false;
+			for (Variable v : con.getVariables().keySet()) {
+				if (!elements.get(element).contains(v.getCone())) {
+					cutConstraint = true;
+					break;
+				}
+			}
+			
+			if (cutConstraint)
+				cutConstraints.add(con);
+			else
+				cutConstraints.remove(con);
 		}
 	}
 }

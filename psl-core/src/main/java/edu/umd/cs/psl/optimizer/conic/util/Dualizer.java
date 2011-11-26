@@ -306,11 +306,11 @@ public class Dualizer implements ConicProgramListener {
 		DoubleMatrix1D x = primalProgram.getX();
 		
 		for (Map.Entry<Variable, LinearConstraint> e : primalVarsToDualCons.entrySet()) {
-			x.set(primalProgram.index(e.getKey()), e.getValue().getLagrange());
+			x.set(primalProgram.getIndex(e.getKey()), e.getValue().getLagrange());
 		}
 		
 		for (Map.Entry<Variable, Variable> e : primalVarsToDualVars.entrySet()) {
-			x.set(primalProgram.index(e.getKey()), e.getValue().getDualValue());
+			x.set(primalProgram.getIndex(e.getKey()), e.getValue().getDualValue());
 		}
 		
 		checkedOut = false;

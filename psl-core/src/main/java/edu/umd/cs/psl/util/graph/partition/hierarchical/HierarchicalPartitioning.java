@@ -47,13 +47,13 @@ public class HierarchicalPartitioning implements Partitioner {
 	protected static final String relType = "connect";
 	protected static final String weightType = "weight";
 	
-	private static final double shrinkingThreshold = 0.75;
+	private static final double shrinkingThreshold = 0.25;
 	private static final int finalMultiple = 8;
 	private static final int initialMultiple = 400;
 	
 	private static final int defaultNoTrials = 10;
 	private static final int defaultNoPartitions = 2;
-	private static final double defaultBalanceExponent = 2.0;
+	private static final double defaultBalanceExponent = 3.0;
 	
 	private double balanceExponent;
 	private int noTrials;

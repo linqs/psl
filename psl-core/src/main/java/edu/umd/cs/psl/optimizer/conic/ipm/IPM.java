@@ -91,8 +91,8 @@ public class IPM implements ConicProgramSolver {
 	 * Key for double property. The IPM will iterate until the primal and dual infeasibilites
 	 * are each less than its value.
 	 * 
-	 * @see ConicProgram#primalInfeasibility()
-	 * @see ConicProgram#dualInfeasibility()
+	 * @see ConicProgram#getPrimalInfeasibility()
+	 * @see ConicProgram#getDualInfeasibility()
 	 */
 	public static final String INFEASIBILITY_THRESHOLD_KEY = CONFIG_PREFIX + ".infeasibilitythreshold";
 	/** Default value for INFEASIBILITY_THRESHOLD_KEY property. */
@@ -190,7 +190,7 @@ public class IPM implements ConicProgramSolver {
 		
 		log.debug("Starting optimzation with {} variables and {} constraints.", A.columns(), A.rows());
 		
-		if (program.dualInfeasibility() > 0.01 || program.primalInfeasibility() > 0.01)
+		if (program.getDualInfeasibility() > 0.01 || program.getPrimalInfeasibility() > 0.01)
 			throw new IllegalStateException();
 		
 		doSolve(program);
@@ -226,8 +226,8 @@ public class IPM implements ConicProgramSolver {
 		mu = muInitial;
 		
 		/* Computes initial infeasibility */
-		primalInfeasibility = program.primalInfeasibility();
-		dualInfeasibility = program.dualInfeasibility();
+		primalInfeasibility = program.getPrimalInfeasibility();
+		dualInfeasibility = program.getDualInfeasibility();
 		
 		log.trace("Itr: Start -- Gap: {} -- P. Inf: {} -- D. Inf: {} -- Obj: {}", new Object[] {mu, primalInfeasibility, dualInfeasibility, alg.mult(program.getC(), x)});
 		
@@ -263,8 +263,8 @@ public class IPM implements ConicProgramSolver {
 			step(program, g, Hinv, mu, tau, inNeighborhood);
 			
 			mu = alg.mult(x, s) / getV(program);
-			primalInfeasibility = program.primalInfeasibility();
-			dualInfeasibility = program.dualInfeasibility();
+			primalInfeasibility = program.getPrimalInfeasibility();
+			dualInfeasibility = program.getDualInfeasibility();
 			log.trace("Itr: {} -- Gap: {} -- P. Inf: {} -- D. Inf: {} -- Obj: {}", new Object[] {++stepNum, mu, primalInfeasibility, dualInfeasibility, alg.mult(program.getC(), x)});
 		}
 	}
@@ -325,6 +325,6 @@ public class IPM implements ConicProgramSolver {
 	}
 	
 	protected int getV(ConicProgram program) {
-		return program.numNNOC() + 2*program.numSOC();
+		return program.getNumNNOC() + 2*program.gtNumSOC();
 	}
 }

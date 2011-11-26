@@ -16,9 +16,14 @@
  */
 package edu.umd.cs.psl.optimizer.conic.partition;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.Vector;
 
 import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
+import edu.umd.cs.psl.optimizer.conic.program.LinearConstraint;
 
 abstract public class AbstractCompletePartitioner implements CompletePartitioner {
 	
@@ -73,6 +78,71 @@ abstract public class AbstractCompletePartitioner implements CompletePartitioner
 	public void checkInAllMatrices() {
 		for (ConicProgramPartition p : partitions)
 			p.checkInMatrices();
+	}
+	
+	@Override
+	public String toString() {
+		double[] stats;
+		ArrayList<Double> sizes = new ArrayList<Double>(size());
+		ArrayList<Double> similarities = new ArrayList<Double>(size() * (size()-1));
+		
+		for (ConicProgramPartition p : partitions) {
+			sizes.add(Double.valueOf(p.getCutConstraints().size()));
+		}
+		
+		stats = meanAndStdDev(sizes);
+		double sizeMean = stats[0];
+		double sizeStdDev = stats[1];
+		
+		Set<LinearConstraint> cutSet1, cutSet2, intersection, union;
+		
+		for (ConicProgramPartition p1 : partitions) {
+			for (ConicProgramPartition p2 : partitions) {
+				if (!p1.equals(p2)) {
+					cutSet1 = p1.getCutConstraints();
+					cutSet2 = p2.getCutConstraints();
+					
+					intersection = new HashSet<LinearConstraint>(cutSet1);
+					intersection.retainAll(cutSet2);
+					union = new HashSet<LinearConstraint>(cutSet1);
+					union.addAll(cutSet2);
+					
+					similarities.add((double) intersection.size() / union.size());
+				}
+			}
+		}
+		
+		stats = meanAndStdDev(similarities);
+		
+		double simMean = stats[0];
+		double simStdDev = stats[1];
+		String toReturn = "Complete Partition\n"
+				+ "Size: " + size() + "\n"
+				+ "Mean cut set size: " + sizeMean + "\n"
+				+ "Std. dev.: " + sizeStdDev + "\n"
+				+ "Mean pairwise similarity: " + simMean + "\n"
+				+ "Std. dev.: " + simStdDev;
+		
+		for (ConicProgramPartition p : partitions) {
+			toReturn = toReturn + "\n" + p.getCutConstraints().size();
+		}
+		
+		return toReturn;
+	}
+	
+	double[] meanAndStdDev(List<Double> values) {
+		double[] toReturn = new double[2];
+		double sum = 0.0;
+		double sumOfSquares = 0.0;
+		for (Double sim : values) {
+			sum += sim;
+			sumOfSquares += Math.pow(sim, 2);
+		}
+		
+		toReturn[0] = sum / values.size();
+		toReturn[1] = Math.sqrt(sumOfSquares / values.size() - Math.pow(toReturn[0], 2));
+		
+		return toReturn;
 	}
 
 }

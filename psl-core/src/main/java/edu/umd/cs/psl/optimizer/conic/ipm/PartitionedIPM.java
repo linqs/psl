@@ -90,6 +90,8 @@ public class PartitionedIPM extends IPM {
 		
 		partitioner.checkOutAllMatrices();
 		
+		log.debug("Partitioner: {}", partitioner);
+		
 		Vector<Partition> partitions = new Vector<Partition>(partitioner.size());
 		for (int i = 0; i < partitioner.size(); i++) {
 			ConicProgramPartition cpp = partitioner.getPartition(i);
@@ -112,7 +114,7 @@ public class PartitionedIPM extends IPM {
 		inNeighborhood = false;
 		p = -1;
 		while (mu >= dualityGapThreshold) {
-			log.trace("Mu: {}", mu);
+			log.debug("Mu: {}", mu);
 			
 			for (Cone cone : cones) {
 				cone.setBarrierGradient(varMap, x, g);
@@ -162,7 +164,7 @@ public class PartitionedIPM extends IPM {
 
 				log.trace("Full space step.");
 				err = Math.sqrt(alg.mult(r, alg.mult(invH, r))) /(mu * tau * Math.sqrt(v));
-				log.trace("Err: {}", err);
+				log.debug("Err: {}", err);
 				if (Double.isNaN(err)) {
 					throw new IllegalStateException();
 				}
