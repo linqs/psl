@@ -51,9 +51,9 @@ public class HierarchicalPartitioning implements Partitioner {
 	private static final int finalMultiple = 8;
 	private static final int initialMultiple = 400;
 	
-	private static final int defaultNoTrials = 10;
+	private static final int defaultNoTrials = 20;
 	private static final int defaultNoPartitions = 2;
-	private static final double defaultBalanceExponent = 3.0;
+	private static final double defaultBalanceExponent = 1.5;
 	
 	private double balanceExponent;
 	private int noTrials;
@@ -243,7 +243,10 @@ public class HierarchicalPartitioning implements Partitioner {
 	}
 	
 	private final double partitionEvaluation(double edgeCut, double balance) {
-		return edgeCut+Math.pow(balance,balanceExponent);
+		if (balance > 5000)
+			return 10e30;
+		else
+			return edgeCut+Math.pow(balance,balanceExponent);
 	}
 	
 	private static final int findMinPartitionBlock(double[] pweights, List<Map<Node, Double>> neighborhoods) {

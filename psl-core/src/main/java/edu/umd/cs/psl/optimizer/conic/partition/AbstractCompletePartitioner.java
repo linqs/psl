@@ -54,6 +54,7 @@ abstract public class AbstractCompletePartitioner implements CompletePartitioner
 			throw new IllegalStateException("Unsupported cone type.");
 		
 		doPartition();
+		reorderPartitions();
 	}
 	
 	abstract protected void doPartition();
@@ -80,6 +81,69 @@ abstract public class AbstractCompletePartitioner implements CompletePartitioner
 			p.checkInMatrices();
 	}
 	
+	protected void reorderPartitions() {
+		if (partitions.size() > 1) {
+			Vector<ConicProgramPartition> newOrdering = new Vector<ConicProgramPartition>();
+			Set<ConicProgramPartition> remainingPartitions = new HashSet<ConicProgramPartition>(partitions);
+			
+			Set<LinearConstraint> cutSet1, cutSet2, intersection, union;
+			ConicProgramPartition bestPartition1 = null;
+			ConicProgramPartition bestPartition2 = null;
+			double similarity;
+			double lowestSimilarity = 1.0;
+			
+			for (int i = 0; i < partitions.size(); i++) {
+				for (int j = i+1; j < partitions.size(); j++) {
+					cutSet1 = partitions.get(i).getCutConstraints();
+					cutSet2 = partitions.get(j).getCutConstraints();
+					
+					intersection = new HashSet<LinearConstraint>(cutSet1);
+					intersection.retainAll(cutSet2);
+					union = new HashSet<LinearConstraint>(cutSet1);
+					union.addAll(cutSet2);
+					similarity = (double) intersection.size() / union.size();
+					
+					if (bestPartition1 == null || similarity < lowestSimilarity) {
+						bestPartition1 = partitions.get(i);
+						bestPartition2 = partitions.get(j);
+						lowestSimilarity = similarity;
+					}
+				}
+			}
+			
+			newOrdering.add(bestPartition1);
+			newOrdering.add(bestPartition2);
+			remainingPartitions.remove(bestPartition1);
+			remainingPartitions.remove(bestPartition2);
+			
+			while (!remainingPartitions.isEmpty()) {
+				bestPartition1 = null;
+				lowestSimilarity = 1.0;
+				cutSet1 = newOrdering.lastElement().getCutConstraints();
+				
+				for (ConicProgramPartition p : remainingPartitions) {
+					cutSet2 = p.getCutConstraints();
+					
+					intersection = new HashSet<LinearConstraint>(cutSet1);
+					intersection.retainAll(cutSet2);
+					union = new HashSet<LinearConstraint>(cutSet1);
+					union.addAll(cutSet2);
+					similarity = (double) intersection.size() / union.size();
+					
+					if (bestPartition1 == null || similarity < lowestSimilarity) {
+						bestPartition1 = p;
+						lowestSimilarity = similarity;
+					}
+				}
+				
+				newOrdering.add(bestPartition1);
+				remainingPartitions.remove(bestPartition1);
+			}
+			
+			partitions = newOrdering;
+		}
+	}
+	
 	@Override
 	public String toString() {
 		double[] stats;
@@ -96,19 +160,17 @@ abstract public class AbstractCompletePartitioner implements CompletePartitioner
 		
 		Set<LinearConstraint> cutSet1, cutSet2, intersection, union;
 		
-		for (ConicProgramPartition p1 : partitions) {
-			for (ConicProgramPartition p2 : partitions) {
-				if (!p1.equals(p2)) {
-					cutSet1 = p1.getCutConstraints();
-					cutSet2 = p2.getCutConstraints();
-					
-					intersection = new HashSet<LinearConstraint>(cutSet1);
-					intersection.retainAll(cutSet2);
-					union = new HashSet<LinearConstraint>(cutSet1);
-					union.addAll(cutSet2);
-					
-					similarities.add((double) intersection.size() / union.size());
-				}
+		for (int i =  0; i < partitions.size(); i++) {
+			for (int j = i+1; j < partitions.size(); j++) {
+				cutSet1 = partitions.get(i).getCutConstraints();
+				cutSet2 = partitions.get(j).getCutConstraints();
+				
+				intersection = new HashSet<LinearConstraint>(cutSet1);
+				intersection.retainAll(cutSet2);
+				union = new HashSet<LinearConstraint>(cutSet1);
+				union.addAll(cutSet2);
+				
+				similarities.add((double) intersection.size() / union.size());
 			}
 		}
 		
@@ -130,7 +192,7 @@ abstract public class AbstractCompletePartitioner implements CompletePartitioner
 		return toReturn;
 	}
 	
-	double[] meanAndStdDev(List<Double> values) {
+	private double[] meanAndStdDev(List<Double> values) {
 		double[] toReturn = new double[2];
 		double sum = 0.0;
 		double sumOfSquares = 0.0;

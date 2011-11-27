@@ -18,6 +18,7 @@ package edu.umd.cs.psl.optimizer.conic.ipm;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.Vector;
 
@@ -36,7 +37,8 @@ import cern.jet.math.tdouble.DoubleFunctions;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.optimizer.conic.partition.CompletePartitioner;
 import edu.umd.cs.psl.optimizer.conic.partition.ConicProgramPartition;
-import edu.umd.cs.psl.optimizer.conic.partition.SequentialHierarchicalCompletePartitioner;
+import edu.umd.cs.psl.optimizer.conic.partition.ObjectiveCoefficientPartitioner;
+import edu.umd.cs.psl.optimizer.conic.partition.WeightedDistancePartitioner;
 import edu.umd.cs.psl.optimizer.conic.program.Cone;
 import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
 import edu.umd.cs.psl.optimizer.conic.program.Variable;
@@ -45,11 +47,16 @@ public class PartitionedIPM extends IPM {
 
 	private static final Logger log = LoggerFactory.getLogger(PartitionedIPM.class);
 	
+	private boolean selectNextPartitionRandomly;
+	private Random rand;
 	private CompletePartitioner partitioner;
 	
 	public PartitionedIPM(ConfigBundle config) {
 		super(config);
-		partitioner = new SequentialHierarchicalCompletePartitioner(config);
+		selectNextPartitionRandomly = false;
+		rand = new Random();
+//		partitioner = new WeightedDistancePartitioner(config);
+		partitioner = new ObjectiveCoefficientPartitioner(config);
 	}
 	
 	@Override
@@ -61,8 +68,11 @@ public class PartitionedIPM extends IPM {
 	@Override
 	protected void doSolve(ConicProgram program) {
 		
-		int p;
-		double mu, tau, muInitial, theta, err, epsilon_1;
+		int p, oldP;
+		double mu, tau, muInitial, theta, err, weight, epsilon_1;
+		double[] weights;
+		double oldErr = 0.0;
+		double totalWeight = 0.0;
 		boolean inNeighborhood;
 		DenseDoubleAlgebra alg = new DenseDoubleAlgebra();
 		
@@ -105,6 +115,7 @@ public class PartitionedIPM extends IPM {
 			partition.invH = cpp.getSparse2DByVars(invH);
 			partitions.add(partition);
 		}
+		weights = new double[partitioner.size()];
 		
 		/* Initializes mu */
 		muInitial = alg.mult(x, s) / v;
@@ -133,7 +144,7 @@ public class PartitionedIPM extends IPM {
 			}
 			
 			if (inNeighborhood) {
-				tau = .8;
+				tau = .80;
 			}
 			else {
 				mu = muInitial;
@@ -147,7 +158,25 @@ public class PartitionedIPM extends IPM {
 			err = Math.sqrt(alg.mult(r, alg.mult(invH, r))) /(mu * tau * Math.sqrt(v));
 			Partition partition;
 			do {
-				p = (p+1) % partitions.size();
+				if (selectNextPartitionRandomly) {
+					if (totalWeight == 0.0 || partitioner.size() == 1)
+						p = 0;
+					else {
+						oldP = p;
+						do {
+							double cutoff = rand.nextDouble() * totalWeight;
+							double temp = 0.0;
+							for (p = 0; p < weights.length; p++) {
+								temp += weights[p];
+								if (temp > cutoff)
+									break;
+							}
+						} while (oldP == p);
+					}
+				}
+				else {
+					p = (p+1) % partitions.size();
+				}
 				partition = partitions.get(p);
 				log.trace("P = {}", p);
 				for (int i = 0; i < partition.dx.size(); i++) {
@@ -163,7 +192,20 @@ public class PartitionedIPM extends IPM {
 				log.trace("Done updating r.");
 
 				log.trace("Full space step.");
+				if (selectNextPartitionRandomly) {
+					oldErr = err;
+				}
 				err = Math.sqrt(alg.mult(r, alg.mult(invH, r))) /(mu * tau * Math.sqrt(v));
+				if (selectNextPartitionRandomly) {
+					weight = oldErr / err;
+					weights[p] += weight;
+					totalWeight += weight;
+					
+					for (int i = 0; i < weights.length; i++) {
+						weights[i] += 1.05;
+						totalWeight += 1.05;
+					}
+				}
 				log.debug("Err: {}", err);
 				if (Double.isNaN(err)) {
 					throw new IllegalStateException();

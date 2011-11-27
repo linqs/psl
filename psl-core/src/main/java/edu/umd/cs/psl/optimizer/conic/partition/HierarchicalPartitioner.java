@@ -49,15 +49,18 @@ import edu.umd.cs.psl.util.graph.partition.Partitioner;
 import edu.umd.cs.psl.util.graph.partition.hierarchical.HyperPartitioning;
 import edu.umd.cs.psl.util.graph.weight.RelationshipWeighter;
 
-public class SequentialHierarchicalCompletePartitioner extends AbstractCompletePartitioner
+abstract public class HierarchicalPartitioner extends AbstractCompletePartitioner
 		implements ConicProgramListener {
 	
-	private static final Logger log = LoggerFactory.getLogger(SequentialHierarchicalCompletePartitioner.class);
+	private static final Logger log = LoggerFactory.getLogger(HierarchicalPartitioner.class);
 
-	private BiMap<Cone, Node> coneMap;
-	private BiMap<LinearConstraint, Node> lcMap;
+	protected BiMap<Cone, Node> coneMap;
+	protected BiMap<LinearConstraint, Node> lcMap;
+	protected Set<LinearConstraint> alwaysCutConstraints;
+	protected Set<LinearConstraint> restrictedConstraints;
 	
-	private Graph graph;
+	protected int p;
+	
 	private static final String LC_REL = "lcRel";
 	
 	private static final ArrayList<ConeType> supportedCones = new ArrayList<ConeType>(2);
@@ -66,7 +69,7 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 		supportedCones.add(ConeType.SecondOrderCone);
 	}
 	
-	public SequentialHierarchicalCompletePartitioner(ConfigBundle config) {
+	public HierarchicalPartitioner(ConfigBundle config) {
 		super();
 	}
 	
@@ -77,33 +80,6 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 		
 		super.setConicProgram(p);
 		
-		Node node;
-		
-		graph = new MemoryGraph();
-		graph.createRelationshipType(LC_REL);
-		
-		coneMap = HashBiMap.create();
-		lcMap = HashBiMap.create();
-		
-		for (Cone cone : program.getCones()) {
-			node = graph.createNode();
-			coneMap.put(cone, node);
-		}
-		
-		Set<Cone> coneSet = new HashSet<Cone>();
-		for (LinearConstraint con : program.getConstraints()) {
-			node = graph.createNode();
-			for (Variable var : con.getVariables().keySet()) {
-				coneSet.add(var.getCone());
-			}
-			
-			for (Cone cone : coneSet) {
-				node.createRelationship(LC_REL, coneMap.get(cone));
-			}
-			
-			coneSet.clear();
-		}
-		
 		program.registerForConicProgramEvents(this);
 	}
 
@@ -113,6 +89,7 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 
 	@Override
 	protected void doPartition() {
+		Graph graph;
 		Node node;
 		
 		partitions.clear();
@@ -120,17 +97,17 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 		int numElements = (int) Math.ceil((double) program.getNumLinearConstraints() / 20000);
 		
 		List<List<Node>> graphPartition = null;
-		Set<LinearConstraint> alwaysCutConstraints = new HashSet<LinearConstraint>();
-		final Set<LinearConstraint> restrictedConstraints = new HashSet<LinearConstraint>();
+		alwaysCutConstraints = new HashSet<LinearConstraint>();
+		restrictedConstraints = new HashSet<LinearConstraint>();
 
 		List<Set<Cone>> blocks;
 		
-		/* Partitions IPM graph into elements */
+		/* Partitions conic program graph into elements */
 		Partitioner partitioner = new HyperPartitioning();
 		partitioner.setSize(numElements);
 		
 		boolean redoPartition;
-		int p = 0;
+		p = 0;
 		do {
 			redoPartition = false;
 			try {
@@ -161,66 +138,21 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 					coneSet.clear();
 				}
 				
-				if (p % 2 == 0) {
-					graphPartition = partitioner.partition(graph, graph.getNodeSnapshot(), new RelationshipWeighter() {
-						@Override
-						public double getWeight(Relationship r) {
-							if (r.getRelationshipType().equals(LC_REL)) {
-								LinearConstraint lc = (LinearConstraint) lcMap.inverse().get(r.getStart());
-								if (restrictedConstraints.contains(lc)) {
-									return 2000;
-								}
-								else {
-									Cone cone = coneMap.inverse().get(r.getEnd());
-									if (cone instanceof NonNegativeOrthantCone)
-										return Math.abs(((NonNegativeOrthantCone) cone).getVariable().getObjectiveCoefficient()) + 1;
-									else if (cone instanceof SecondOrderCone) {
-										double weight = 0.0;
-										for (Variable var : ((SecondOrderCone) cone).getVariables())
-											weight += var.getObjectiveCoefficient();
-										return Math.abs(weight) + 1;
-									}
-									else
-										throw new IllegalStateException();
-//									return 1;
-								}
-							}
-							else
-								return Double.POSITIVE_INFINITY;
+				graphPartition = partitioner.partition(graph, graph.getNodeSnapshot(), new RelationshipWeighter() {
+					@Override
+					public double getWeight(Relationship r) {
+						if (r.getRelationshipType().equals(LC_REL)) {
+							LinearConstraint lc = (LinearConstraint) lcMap.inverse().get(r.getStart());
+							Cone cone = coneMap.inverse().get(r.getEnd());
+							return HierarchicalPartitioner.this.getWeight(lc, cone);
 						}
-					});
-				}
-				else {
-					graphPartition = partitioner.partition(graph, graph.getNodeSnapshot(), new RelationshipWeighter()  {
-						@Override
-						public double getWeight(Relationship r) {
-							if (r.getRelationshipType().equals(LC_REL)) {
-								LinearConstraint lc = (LinearConstraint) lcMap.inverse().get(r.getStart());
-								if (restrictedConstraints.contains(lc)) {
-									return 2000;
-								}
-								else {
-									Cone cone = coneMap.inverse().get(r.getEnd());
-									if (cone instanceof NonNegativeOrthantCone)
-										return 1 / (Math.abs(((NonNegativeOrthantCone) cone).getVariable().getObjectiveCoefficient()) + 1);
-									else if (cone instanceof SecondOrderCone) {
-										double weight = 0.0;
-										for (Variable var : ((SecondOrderCone) cone).getVariables())
-											weight += var.getObjectiveCoefficient();
-										return 1 / (Math.abs(weight) + 1);
-									}
-									else
-										throw new IllegalStateException();
-								}
-							}
-							else
-								return Double.POSITIVE_INFINITY;
-						}
-					});
-				}
+						else
+							return Double.POSITIVE_INFINITY;
+					}
+				});
 			}
 			catch (IllegalArgumentException e) {
-				log.trace("Caught illegal argument exception.");
+				log.debug("Caught illegal argument exception.");
 				if (restrictedConstraints.size() > 1) {
 					int cut = Math.min((int) Math.ceil(restrictedConstraints.size() / 3), restrictedConstraints.size()-1);
 					Iterator<LinearConstraint> itr = restrictedConstraints.iterator();
@@ -299,8 +231,6 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 					restrictedConstraints.addAll(alwaysCutConstraints);
 				}
 
-				log.debug("Number of always cut constraints right after update: {}", alwaysCutConstraints.size());
-				
 				/* Ensures that each cut constraint has a singleton in each element it spans */
 				HashSet<Integer> elements = new HashSet<Integer>();
 				ArrayList<Cone> singletons = new ArrayList<Cone>();
@@ -328,13 +258,13 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 					}
 				}
 				
-				log.debug("Number of cut constraints after singleton shuffling: {}", partition.getCutConstraints().size());
+				processAcceptedPartition();
 				
 				log.debug("Number of always cut constraints: {}", alwaysCutConstraints.size());
 				p++;
 			}
 			else {
-				log.trace("Redoing partition {}.", p);
+				log.debug("Redoing partition {}.", p);
 			}
 		} while (alwaysCutConstraints.size() > 0 || redoPartition);
 	}
@@ -344,8 +274,12 @@ public class SequentialHierarchicalCompletePartitioner extends AbstractCompleteP
 		// TODO Auto-generated method stub
 		
 	}
+	
+	abstract protected double getWeight(LinearConstraint lc, Cone cone);
+	
+	abstract protected void processAcceptedPartition();
 
-	private boolean isSingleton(Cone cone) {
+	protected boolean isSingleton(Cone cone) {
 		if (cone instanceof NonNegativeOrthantCone) {
 			return ((NonNegativeOrthantCone) cone).getVariable().getLinearConstraints().size() == 1;
 		}
