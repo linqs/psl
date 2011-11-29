@@ -49,14 +49,15 @@ abstract public class AbstractGroundRule implements GroundKernel {
 	public static final Tnorm tnorm = Tnorm.LUKASIEWICZ;
 	public static final FormulaEvaluator formulaNorm =FormulaEvaluator.LUKASIEWICZ;
 	
-	protected AbstractRuleKernel kernel;
+	protected final AbstractRuleKernel kernel;
 	protected final Conjunction formula;
 	
 	protected int numGroundings;
 
 	private final int hashcode;
 	
-	public AbstractGroundRule(Formula f) {
+	public AbstractGroundRule(AbstractRuleKernel k, Formula f) {
+		kernel = k;
 		formula = ((Conjunction) f).flatten();
 		numGroundings=1;
 		

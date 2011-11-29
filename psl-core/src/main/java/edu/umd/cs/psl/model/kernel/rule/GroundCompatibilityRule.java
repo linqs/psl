@@ -24,16 +24,13 @@ import edu.umd.cs.psl.reasoner.function.FunctionTerm;
 public class GroundCompatibilityRule extends AbstractGroundRule implements
 		GroundCompatibilityKernel {
 	
-	protected final CompatibilityRuleKernel kernel;
-	
 	public GroundCompatibilityRule(CompatibilityRuleKernel k, Formula f) {
-		super(f);
-		kernel = k;
+		super(k, f);
 	}
 
 	@Override
 	public Weight getWeight() {
-		return kernel.getWeight();
+		return ((CompatibilityRuleKernel) kernel).getWeight();
 	}
 	
 	@Override
@@ -61,6 +58,6 @@ public class GroundCompatibilityRule extends AbstractGroundRule implements
 	
 	@Override
 	public String toString() {
-		return "{" + kernel.getWeight().toString() + "} " + formula; 
+		return "{" + getWeight().toString() + "} " + formula; 
 	}
 }
