@@ -25,15 +25,15 @@ import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.AtomManager;
 import edu.umd.cs.psl.model.atom.AtomStatus;
+import edu.umd.cs.psl.model.atom.StatusAtom;
 import edu.umd.cs.psl.model.predicate.Predicate;
 
-public class MemoryGroupAtom extends ComplexMemoryAtom {
+public class MemoryGroupAtom extends StatusAtom {
 
 	MemoryGroupAtom(Predicate p, GroundTerm[] args) {
 		super(p, args, AtomStatus.UnconsideredRV);
 	}
 
-	@Override
 	public Collection<Atom> getAtomsInGroup(AtomManager atommanager,  DatabaseAtomStoreQuery db) {
 		assert isConsidered();
 		List<Atom> result = new ArrayList<Atom>();

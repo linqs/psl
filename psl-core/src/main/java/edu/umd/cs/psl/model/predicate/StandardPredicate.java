@@ -16,32 +16,26 @@
  */
 package edu.umd.cs.psl.model.predicate;
 
+import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.argument.type.ArgumentType;
-import edu.umd.cs.psl.model.predicate.type.PredicateType;
-
+import edu.umd.cs.psl.model.atom.Atom;
 
 /**
- * This class implements a boolean predicate which is defined by its name and type signature.
- * Boolean Predicates cannot be directly constructed but must be constructed through the static
- * create() methods in Predicate.java
- * 
- * @author Matthias Broecheler
- *
+ * Basic Predicate that can be made open and make {@link Atom Atoms}
+ * that can be persisted in a {@link Database}.
  */
 public class StandardPredicate extends AbstractPredicate {
-
-	private final double[] defaultParameters;
 	
-	StandardPredicate(String name, PredicateType type, ArgumentType[] types, double[] defaultParas) {
-		super(name, type, types);
-		if (defaultParas.length!=type.getNumberOfActivationParameters()) throw new IllegalArgumentException();
-		defaultParameters=defaultParas;
+	/**
+	 * Sole constructor.
+	 * 
+	 * @param name  name for this predicate
+	 * @param types  types for each of the predicate's arguments
+	 * @throws IllegalArgumentException  if name begins with '#'
+	 * @see PredicateFactory
+	 */
+	StandardPredicate(String name, ArgumentType[] types) {
+		super(name, types);
 	}
-	
-	@Override
-	public boolean isNonDefaultValues(double[] values) {
-		return type.isNonDefaultValues(values, defaultParameters);
-	}
-
 	
 }

@@ -111,7 +111,7 @@ public class GroundExternalInducer implements GroundCompatibilityKernel {
 	 */
 
 	private double getValue() {
-		return Math.max(0.0, values[0]-atom.getSoftValue(0));
+		return Math.max(0.0, values[0]-atom.getValue());
 	}
 	
 	@Override

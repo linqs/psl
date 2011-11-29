@@ -18,15 +18,15 @@ package edu.umd.cs.psl.model.atom;
 
 import java.util.Set;
 
+import edu.umd.cs.psl.application.ModelApplication;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.predicate.*;
 
 /**
- * An interface for atom storage classes.
+ * Repository and factory for {@link Atom Atoms}.
  * 
- * @author
- *
+ * An AtomStore is the authoritative source of Atoms for a {@link ModelApplication}. 
  */
 public interface AtomStore {
 
@@ -38,9 +38,12 @@ public interface AtomStore {
 	public void store(Atom atom);
 	
 	/**
-	 * Frees an atom (removes it from the store).
+	 * Removes an unconsidered or undefined Atom from this AtomStore.
 	 * 
 	 * @param atom Atom to be freed
+	 * @throws IllegalArgumentException if atom is defined and not unconsidered
+	 * @see Atom#isUnconsidered()
+	 * @see Atom#isDefined()
 	 */
 	public void free(Atom atom);
 	
@@ -92,14 +95,5 @@ public interface AtomStore {
 	 * @return A database
 	 */
 	public Database getDatabase();
-	
-//	public Atom initializeFactAtom(Predicate p, GroundTerm[] terms, double[] values, double[] confidences);
-//	
-//	public Atom initializeCertaintyAtom(Predicate p, GroundTerm[] terms, double[] values, double[] confidences);
-//	
-//	public Atom initializeRVAtom(Predicate p, GroundTerm[] terms, double[] values, double[] confidences);
-//	
-//	public Atom initializeRVAtom(Predicate p, GroundTerm[] terms);
-
 	
 }

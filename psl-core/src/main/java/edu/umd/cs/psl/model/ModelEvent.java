@@ -30,7 +30,7 @@ public enum ModelEvent {
 	/** A kernel's parameters were modified */
 	KernelParametersModified;
 	
-	/** A listener for ModelEvents */
+	/** A listener for ModelEvents. */
 	public interface Listener {
 		/**
 		 * Notifies this object of a ModelEvent.

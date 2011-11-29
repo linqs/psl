@@ -41,7 +41,7 @@ public class OutOfBoundsFilter implements AtomFilter {
 			@Override
 			public boolean apply(Atom atom) {
 				for (int i=0;i<atom.getArity();i++) {
-					double val = atom.getSoftValue(i);
+					double val = atom.getValue();
 					if (val>=bounds[0] && val<=bounds[1]) return false;
 				}
 				return true;

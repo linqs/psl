@@ -49,12 +49,24 @@ public class TemplateAtom implements Atom {
 		checkSchema();
 	}
 	
+	/**
+	 * Verifies that this atom has valid arguments.
+	 * 
+	 * @throws IllegalArgumentException 
+	 *             if the number of arguments doesn't match the number of arguments
+	 *             of the predicate
+	 * @throws IllegalArgumentException  if any argument is null
+	 * @throws IllegalArgumentException
+	 *             if any argument is a {@link GroundTerm} and is not a subtype
+	 *             of the perdicate's {@link ArgumentType}.
+	 */
 	private void checkSchema() {
 		if (predicate.getArity()!=arguments.length) {
 			throw new IllegalArgumentException("Length of Schema does not match the number of arguments.");
 		}
 		for (int i=0;i<arguments.length;i++) {
-			if (arguments[i]==null) throw new IllegalArgumentException("Arguments must not be null!");
+			if (arguments[i]==null)
+				throw new IllegalArgumentException("Arguments must not be null!");
 			if ((arguments[i] instanceof GroundTerm) && !((GroundTerm)arguments[i]).getType().isSubTypeOf(predicate.getArgumentType(i)))
 				throw new IllegalArgumentException("Expected type "+predicate.getArgumentType(i)+" at position "+i+" but was given: " + arguments[i] + " for predicate " + predicate);
 		}
@@ -68,11 +80,6 @@ public class TemplateAtom implements Atom {
 	@Override
 	public Predicate getPredicate() {
 		return predicate;
-	}
-	
-	@Override
-	public int getNumberOfValues() {
-		return predicate.getNumberOfValues();
 	}
 	
 	@Override
@@ -177,7 +184,7 @@ public class TemplateAtom implements Atom {
 	}
 
 	@Override
-	public boolean deregisterGroundKernel(GroundKernel f) {
+	public boolean unregisterGroundKernel(GroundKernel f) {
 		throw new UnsupportedOperationException();	}
 
 	@Override
@@ -186,12 +193,7 @@ public class TemplateAtom implements Atom {
 	}
 
 	@Override
-	public double getConfidenceValue(int pos) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public double[] getConfidenceValues() {
+	public double getConfidenceValue() {
 		throw new UnsupportedOperationException();
 	}
 
@@ -206,27 +208,12 @@ public class TemplateAtom implements Atom {
 	}
 
 	@Override
-	public double getSoftValue(int pos) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public double[] getSoftValues() {
+	public double getValue() {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public AtomFunctionVariable getVariable() {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public AtomFunctionVariable getVariable(int position) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public boolean hasNonDefaultValues() {
 		throw new UnsupportedOperationException();
 	}
 
@@ -256,7 +243,7 @@ public class TemplateAtom implements Atom {
 	}
 	
 	@Override
-	public boolean isKnownAtom() {
+	public boolean isKnowledge() {
 		throw new UnsupportedOperationException();
 	}
 		
@@ -281,22 +268,12 @@ public class TemplateAtom implements Atom {
 	}
 
 	@Override
-	public void setConfidenceValue(int pos, double val) {
+	public void setConfidenceValue(double val) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void setConfidenceValues(double[] val) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public void setSoftValue(int pos, double val) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public void setSoftValues(double[] val) {
+	public void setValue(double value) {
 		throw new UnsupportedOperationException();
 	}
 

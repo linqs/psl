@@ -52,7 +52,7 @@ import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.model.parameters.Parameters;
 import edu.umd.cs.psl.model.parameters.PositiveWeight;
 import edu.umd.cs.psl.model.parameters.Weight;
-import edu.umd.cs.psl.model.predicate.ExternalFunctionPredicate;
+import edu.umd.cs.psl.model.predicate.ExternalFunctionalPredicate;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
 import edu.umd.cs.psl.model.predicate.type.PredicateTypes;
@@ -96,10 +96,10 @@ public class ExternalInducerKernel implements Kernel {
 		body = c;
 		//Preconditions.checkArgument(FormulaUtil.isConjunction(c));
 		for (Atom atom : c.getAtoms(new HashSet<Atom>())) {
-			if (atom.getPredicate() instanceof ExternalFunctionPredicate) {
+			if (atom.getPredicate() instanceof ExternalFunctionalPredicate) {
 				if (externalAtom!=null) throw new IllegalArgumentException("Only one external function is allowed!");
 				externalAtom = atom;
-				extFun = ((ExternalFunctionPredicate)atom.getPredicate()).getExternalFunction();
+				extFun = ((ExternalFunctionalPredicate)atom.getPredicate()).getExternalFunction();
 			} else {
 				assert atom.getPredicate() instanceof StandardPredicate;
 				boolean associated=false;

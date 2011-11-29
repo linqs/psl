@@ -65,7 +65,8 @@ public class MemoryAtomStore implements AtomStore {
 	public void free(Atom atom) {
 		Preconditions.checkArgument(atom.isUnconsidered() || !atom.isDefined());
 		assert atom.getNumRegisteredGroundKernels()==0;
-		if (!atomCache.remove(atom)) throw new IllegalArgumentException("Cannot free non-existant atom: " + atom);
+		if (!atomCache.remove(atom))
+			throw new IllegalArgumentException("Cannot free non-existant atom: " + atom);
 		atom.delete();
 	}
 
@@ -85,8 +86,8 @@ public class MemoryAtomStore implements AtomStore {
 				}
 			} else if (p instanceof FunctionalPredicate){
 				return initializeAtom(p, arguments, 
-						new AtomRecord(((FunctionalPredicate)p).computeValues(arguments), 
-						ConfidenceValues.getMaxConfidence(p.getNumberOfValues()),
+						new AtomRecord(((FunctionalPredicate)p).computeValue(arguments), 
+						ConfidenceValues.getMax(),
 						AtomRecord.Status.FACT
 						));
 			} else throw new IllegalArgumentException("Unsupported predicate: " + p);
@@ -129,38 +130,20 @@ public class MemoryAtomStore implements AtomStore {
 		return getAtoms(ImmutableSet.of(status));
 	}
 	
-//	public static Atom initializeAtom(Predicate p, GroundTerm[] terms) {
-//		if (p instanceof FunctionalPredicate) {
-//			//Compute once
-//			if (p.getArity()!=terms.length) throw new IllegalArgumentException("Number of arguments does not match!");
-//			double[] softValues = ((FunctionalPredicate)p).computeValues(terms);
-//			return initializeFactAtom(p,terms,softValues,ConfidenceValues.getMaxConfidence(softValues.length));
-//		} else 
-//			return new Atom(p,terms);
-//	}
-	
 	private Atom addToCache(Atom a) {
 		assert !atomCache.contains(a);
 		atomCache.add(a);
 		return a;
 	}
 	
-	private Atom initializeAtom(Predicate p, GroundTerm[] terms, AtomStatus status, double[] values, double[] confidences) {
-		if (p.getNumberOfValues()==1) {
-			Preconditions.checkArgument(values.length==1);
-			Preconditions.checkArgument(confidences.length==1);
-			return new SimpleMemoryAtom(p,terms,status,values[0],confidences[0]);
-		} else {
-			return new ComplexMemoryAtom(p,terms,status,values,confidences);
-		}
+	private Atom initializeAtom(Predicate p, GroundTerm[] terms, AtomStatus status, double value, double confidence) {
+		return new MemoryAtom(p, terms, status, value, confidence);
 	}
 	
-	private Atom initializeAtom(Predicate p, GroundTerm[] terms, AtomRecord res) {
-		double[] values = res.getValues();
-		double[] confidences = res.getConfidences();
+	private Atom initializeAtom(Predicate p, GroundTerm[] terms, AtomRecord record) {
 		AtomStatus s = null;
-		switch(res.getStatus()) {
-		case CERTAINTY: 
+		switch(record.getStatus()) {
+		case CERTAINTY:
 			s = AtomStatus.UnconsideredCertainty;
 			break;
 		case FACT:
@@ -170,36 +153,11 @@ public class MemoryAtomStore implements AtomStore {
 			s = AtomStatus.UnconsideredRV;
 			break;
 		}
-		if (values==null) values = p.getDefaultValues();
-		if (confidences==null) confidences = ConfidenceValues.getDefaultConfidence(p.getNumberOfValues());
-		return addToCache(initializeAtom(p,terms,s,values,confidences));
+		return addToCache(initializeAtom(p, terms, s, record.getValue(), record.getConfidence()));
 	}
-	
-	
-//	@Override
-//	public Atom initializeFactAtom(Predicate p, GroundTerm[] terms, double[] values, double[] confidences) {
-//		return addToCache(initializeAtom(p,terms,AtomStatus.UnconsideredFact,values,confidences));
-//	}
-//	
-//	@Override
-//	public Atom initializeCertaintyAtom(Predicate p, GroundTerm[] terms, double[] values, double[] confidences) {
-//		return addToCache(initializeAtom(p,terms,AtomStatus.UnconsideredCertainty,values,confidences));
-//	}
-//	
-//	@Override
-//	public Atom initializeRVAtom(Predicate p, GroundTerm[] terms, double[] values, double[] confidences) {
-//		return addToCache(initializeAtom(p,terms,AtomStatus.UnconsideredRV,values,confidences));
-//	}
-//	
-//	@Override
-//	public Atom initializeRVAtom(Predicate p, GroundTerm[] terms) {
-//		return initializeRVAtom(p,terms,p.getDefaultValues(),ConfidenceValues.getDefaultConfidence(p.getNumberOfValues()));
-//	}
 	
 	private Atom initializeGroupAtom(Predicate p, GroundTerm[] terms) {
 		return addToCache(new MemoryGroupAtom(p,terms));
 	}
-
-
 	
 }

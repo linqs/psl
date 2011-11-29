@@ -35,7 +35,7 @@ import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
 import de.mathnbits.util.ArrayUtil;
-import edu.umd.cs.psl.model.kernel.priorweight.PriorWeightKernel;
+import edu.umd.cs.psl.model.kernel.bias.BiasKernel;
 import edu.umd.cs.psl.model.kernel.rule.AbstractRuleKernel;
 
 
@@ -180,7 +180,7 @@ public class WeightLearningGlobalOpt implements FunctionEvaluation, WeightLearni
     int ii = 0;
 		for (Kernel et : modelEvidence) 
     {
-      if (et instanceof PriorWeightKernel)   
+      if (et instanceof BiasKernel)   
       {
         params[ii+1] = configuration.getUnitRuleMean();
         means[ii+1]  = configuration.getUnitRuleMean();

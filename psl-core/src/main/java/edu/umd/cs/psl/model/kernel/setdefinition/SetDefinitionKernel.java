@@ -16,13 +16,18 @@
  */
 package edu.umd.cs.psl.model.kernel.setdefinition;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -32,7 +37,9 @@ import edu.umd.cs.psl.application.ModelApplication;
 import edu.umd.cs.psl.database.DatabaseAtomStoreQuery;
 import edu.umd.cs.psl.database.ResultList;
 import edu.umd.cs.psl.model.ConfidenceValues;
-import edu.umd.cs.psl.model.argument.*;
+import edu.umd.cs.psl.model.argument.GroundTerm;
+import edu.umd.cs.psl.model.argument.Term;
+import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.argument.type.VariableTypeMap;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.AtomEvent;
@@ -47,9 +54,9 @@ import edu.umd.cs.psl.model.formula.traversal.FormulaGrounder;
 import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.model.kernel.rule.AbstractGroundRule;
 import edu.umd.cs.psl.model.parameters.Parameters;
-import edu.umd.cs.psl.model.predicate.SpecialPredicates;
-import edu.umd.cs.psl.model.predicate.StandardPredicate;
 import edu.umd.cs.psl.model.predicate.Predicate;
+import edu.umd.cs.psl.model.predicate.SpecialPredicate;
+import edu.umd.cs.psl.model.predicate.StandardPredicate;
 import edu.umd.cs.psl.model.set.aggregator.EntityAggregatorFunction;
 import edu.umd.cs.psl.model.set.membership.SoftTermMembership;
 import edu.umd.cs.psl.model.set.membership.TermMembership;
@@ -97,9 +104,7 @@ public class SetDefinitionKernel implements Kernel {
 	
 	@SuppressWarnings("unchecked")
 	public SetDefinitionKernel(StandardPredicate setP, SetTerm s1, SetTerm s2, Variable[] variables, Predicate compareP, EntityAggregatorFunction compare, boolean soft) {
-		if (!(compareP instanceof StandardPredicate) && !(compareP instanceof SpecialPredicates)) throw new IllegalArgumentException("Expected basic predicate for comparison!");
-		Preconditions.checkArgument(setP.getNumberOfValues()==1);
-		Preconditions.checkArgument(compareP.getNumberOfValues()==1);
+		if (!(compareP instanceof StandardPredicate) && !(compareP instanceof SpecialPredicate)) throw new IllegalArgumentException("Expected basic predicate for comparison!");
 		
 		set1 = s1;
 		set2 = s2;

@@ -16,40 +16,34 @@
  */
 package edu.umd.cs.psl.model.predicate;
 
+import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.database.UniqueID;
 import edu.umd.cs.psl.model.argument.Entity;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.type.ArgumentType;
 import edu.umd.cs.psl.model.argument.type.ArgumentTypes;
-import edu.umd.cs.psl.model.predicate.type.PredicateType;
-import edu.umd.cs.psl.model.predicate.type.PredicateTypes;
 
-public enum SpecialPredicates implements FunctionalPredicate {
-
-	Unequal {
-
-		@Override
-		public double[] computeValues(GroundTerm... args) {
-			assert args.length==2;
-			assert args[0] instanceof Entity && args[1] instanceof Entity;
-			if (args[0].equals(args[1])) return new double[]{0.0};
-			else return new double[]{1.0};
-		}
-
-		@Override
-		public String getName() {
-			return "#NonReflexive";
-		}		
-	},
+/**
+ * A commonly used FunctionalPredicate.
+ * 
+ * A SpecialPredicate should be preferred over a user-made FunctionalPredicate
+ * or ExternalFunctionalPredicate because some PSL components can evaluate
+ * SpecialPredicates more efficiently. For example, a {@link Database} backed
+ * by a relational database with an SQL interface might translate some
+ * SpecialPredicates directly to SQL.
+ * 
+ * The names of SpecialPredicates begin with '#'.
+ */
+public enum SpecialPredicate implements FunctionalPredicate {
 	
+	/** True if arguments are equal. */
 	Equal {
 
 		@Override
-		public double[] computeValues(GroundTerm... args) {
+		public double computeValue(GroundTerm... args) {
 			assert args.length==2;
 			assert args[0] instanceof Entity && args[1] instanceof Entity;
-			if (args[0].equals(args[1])) return new double[]{1.0};
-			else return new double[]{0.0};
+			return (args[0].equals(args[1])) ? 1.0 : 0.0;
 		}
 
 		@Override
@@ -58,17 +52,37 @@ public enum SpecialPredicates implements FunctionalPredicate {
 		}
 		
 	},
-
 	
+	/** True if arguments are not equal. */
+	Unequal {
+
+		@Override
+		public double computeValue(GroundTerm... args) {
+			assert args.length==2;
+			assert args[0] instanceof Entity && args[1] instanceof Entity;
+			return (!args[0].equals(args[1])) ? 1.0 : 0.0;
+		}
+
+		@Override
+		public String getName() {
+			return "#NotEqual";
+		}		
+	},
+
+	/**
+	 * True if the first argument's {@link UniqueID} is less than the second's.
+	 * 
+	 * Used to ground only one of a symmetric pair of ground rules.
+	 */
 	NonSymmetric {
 		
 		@Override
-		public double[] computeValues(GroundTerm... args) {
+		public double computeValue(GroundTerm... args) {
 			assert args.length==2;
 			assert args[0] instanceof Entity && args[1] instanceof Entity;
 			UniqueID uid1 = ((Entity)args[0]).getID();
 			UniqueID uid2 = ((Entity)args[1]).getID();
-			return new double[]{(uid1.compareTo(uid2)<0)?1.0:0.0};
+			return (uid1.compareTo(uid2) < 0) ? 1.0 : 0.0;
 		}
 
 		@Override
@@ -77,8 +91,6 @@ public enum SpecialPredicates implements FunctionalPredicate {
 		}
 		
 	};
-	
-	private static final PredicateType type = PredicateTypes.BooleanTruth;
 	
 	@Override
 	public ArgumentType getArgumentType(int position) {
@@ -89,47 +101,6 @@ public enum SpecialPredicates implements FunctionalPredicate {
 	@Override
 	public int getArity() {
 		return 2;
-	}
-	
-	@Override
-	public PredicateType getType() {
-		return type;
-	}
-	
-	@Override
-	public int getNumberOfValues() {
-		return 1;
-	}
-	
-	@Override
-	public double[] getDefaultValues() {
-		return type.getDefaultValues();
-	}
-	
-	
-	@Override
-	public double[] getStandardValues() {
-		return type.getStandardValues();
-	}
-
-	@Override
-	public String getValueName(int pos) {
-		return type.getValueName(pos);
-	}
-
-	@Override
-	public boolean isNonDefaultValues(double[] values) {
-		return type.isNonDefaultValues(values, new double[0]);
-	}
-
-	@Override
-	public boolean validValue(int pos, double value) {
-		return type.validValue(pos, value);
-	}
-	
-	@Override
-	public boolean validValues(double[] values) {
-		return AbstractPredicate.validValues(this,values);
 	}
 	
 }

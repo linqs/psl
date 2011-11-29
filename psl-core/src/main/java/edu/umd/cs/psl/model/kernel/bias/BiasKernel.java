@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.model.kernel.priorweight;
+package edu.umd.cs.psl.model.kernel.bias;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
@@ -35,7 +35,7 @@ import edu.umd.cs.psl.model.parameters.PositiveWeight;
 import edu.umd.cs.psl.model.parameters.Weight;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
 
-public class PriorWeightKernel implements Kernel {
+public class BiasKernel implements Kernel {
 
 
 	
@@ -46,7 +46,7 @@ public class PriorWeightKernel implements Kernel {
 	
 	private final int hashcode;
 	
-	public PriorWeightKernel(Model m, StandardPredicate p, double w) {
+	public BiasKernel(Model m, StandardPredicate p, double w) {
 		predicate = p;
 		weight = new PositiveWeight(w);
 		model=m;
@@ -56,7 +56,7 @@ public class PriorWeightKernel implements Kernel {
 
 	@Override
 	public Kernel clone() {
-		return new PriorWeightKernel(model,predicate,weight.getWeight());
+		return new BiasKernel(model,predicate,weight.getWeight());
 	}
 	
 	public StandardPredicate getPredicate() {
@@ -98,7 +98,7 @@ public class PriorWeightKernel implements Kernel {
 
 	private void addPrior(Atom atom, ModelApplication app) {
 		if (atom.getRegisteredGroundKernels(this).isEmpty()) {
-			GroundPriorWeight pw = new GroundPriorWeight(this,atom);
+			GroundBias pw = new GroundBias(this,atom);
 			app.addGroundKernel(pw);
 		} // else it already has such a prior weight defined
 	}
@@ -108,7 +108,7 @@ public class PriorWeightKernel implements Kernel {
 		if (AtomEventSets.IntroducedInferenceAtom.subsumes(event)) {
 			addPrior(atom,app);
 		} else if (AtomEventSets.ReleasedInferenceAtom.subsumes(event)) {
-			GroundPriorWeight pw = (GroundPriorWeight)Iterables.getOnlyElement(atom.getRegisteredGroundKernels(this));
+			GroundBias pw = (GroundBias)Iterables.getOnlyElement(atom.getRegisteredGroundKernels(this));
 			app.removeGroundKernel(pw);
 		} else {
 			throw new UnsupportedOperationException("Unsupported event encountered: " + event);
@@ -130,7 +130,7 @@ public class PriorWeightKernel implements Kernel {
 	
 	@Override
 	public String toString() {
-		return "{" + weight.getWeight() +"} Prior weight on "  + predicate;
+		return "{" + weight.getWeight() +"} Bias on "  + predicate;
 	}
 
 	@Override

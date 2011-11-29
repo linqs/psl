@@ -17,20 +17,26 @@
 package edu.umd.cs.psl.model.predicate;
 
 import edu.umd.cs.psl.model.argument.GroundTerm;
+import edu.umd.cs.psl.model.atom.Atom;
 
 /**
- * This class implements an abstract fuzzy predicate which is extended by particular fuzzy predicate
- * classes. This class provides some standard functionality for fuzzy predicates.
+ * A Predicate with {@link Atom Atoms} that have truth values implicitly defined
+ * by a function of their arguments.
  * 
- * To construct a fuzzy predicate use the static create() methods in Predicate.java
+ * Before implementing this interface directly, users should consider using an
+ * {@link ExternalFunctionalPredicate} or a {@link SpecialPredicate}.
  * 
  * @author Matthias Broecheler
- *
  */
 public interface FunctionalPredicate extends Predicate {
 
-	
-	public double[] computeValues(GroundTerm... args);
-	
+	/**
+	 * Computes the truth value of the {@link Atom} of this Predicate
+	 * with the given arguments.
+	 * 
+	 * @param args  the arguments for which the truth value will be computed
+	 * @return the computed truth value
+	 */
+	public double computeValue(GroundTerm... args);
 	
 }

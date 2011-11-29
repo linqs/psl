@@ -266,12 +266,12 @@ public class RDBMSDatabase implements Database {
 		assert ph.valueColumns().length==ph.confidenceColumns().length;
 		assert ph.valueColumns().length==atom.getPredicate().getNumberOfValues();
 		for (int i=0;i<ph.valueColumns().length;i++) {
-			q.addCustomColumn(ph.valueColumns()[i], atom.getSoftValue(i));
+			q.addCustomColumn(ph.valueColumns()[i], atom.getValue());
 		}
 		for (int i=0;i<ph.confidenceColumns().length;i++) {
-			double conf = atom.getConfidenceValue(i);
-			if (ConfidenceValues.isDefaultConfidence(conf)) continue;
-			assert ConfidenceValues.isValidValue(conf);
+			double conf = atom.getConfidenceValue();
+			if (ConfidenceValues.isDefault(conf)) continue;
+			assert ConfidenceValues.isValid(conf);
 			q.addCustomColumn(ph.confidenceColumns()[i], conf);
 		}
 		String query = q.validate().toString();
@@ -311,14 +311,14 @@ public class RDBMSDatabase implements Database {
 		assert ph.valueColumns().length==ph.confidenceColumns().length;
 		assert ph.valueColumns().length==atom.getPredicate().getNumberOfValues();
 		for (int i=0;i<ph.valueColumns().length;i++) {
-			q.addCustomSetClause(ph.valueColumns()[i], atom.getSoftValue(i));
+			q.addCustomSetClause(ph.valueColumns()[i], atom.getValue());
 		}
 		for (int i=0;i<ph.confidenceColumns().length;i++) {
-			double conf = atom.getConfidenceValue(i);
-			if (ConfidenceValues.isDefaultConfidence(conf)) {
+			double conf = atom.getConfidenceValue();
+			if (ConfidenceValues.isDefault(conf)) {
 				q.addCustomSetClause(ph.confidenceColumns()[i], null);
 			} else {
-				assert ConfidenceValues.isValidValue(conf);
+				assert ConfidenceValues.isValid(conf);
 				q.addCustomSetClause(ph.confidenceColumns()[i], conf);
 			}
 		}
@@ -385,7 +385,7 @@ public class RDBMSDatabase implements Database {
 				    		}
 				    		for (int i=0;i<ph.confidenceColumns().length;i++) {
 				    			double conf = rs.getDouble(ph.confidenceColumns()[i]);
-				    			if (ConfidenceValues.isValidValue(conf)) 
+				    			if (ConfidenceValues.isValid(conf)) 
 				    				confidences[i]=conf;
 				    			else
 				    				confidences[i]=ConfidenceValues.defaultConfidence;
@@ -396,7 +396,7 @@ public class RDBMSDatabase implements Database {
 				    				values = p.getStandardValues();
 				    			}
 				    			if (!ph.hasConfidenceValues()) {
-				    				confidences = ConfidenceValues.getMaxConfidence(p.getNumberOfValues());
+				    				confidences = ConfidenceValues.getMax();
 				    			}
 				    			atom = new AtomRecord(values,confidences,AtomRecord.Status.FACT);
 				    		} else {
@@ -438,7 +438,7 @@ public class RDBMSDatabase implements Database {
 		if (notFound) {
 			assert atom==null;
     		if (ph.isClosed()) {
-    			atom = new AtomRecord(p.getDefaultValues(),ConfidenceValues.getMaxConfidence(p.getNumberOfValues()),AtomRecord.Status.FACT);
+    			atom = new AtomRecord(p.getDefaultValues(),ConfidenceValues.getMax(),AtomRecord.Status.FACT);
     		} else {
     			atom = new AtomRecord(AtomRecord.Status.RV);
     		}

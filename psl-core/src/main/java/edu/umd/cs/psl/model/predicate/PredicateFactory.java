@@ -19,55 +19,67 @@ package edu.umd.cs.psl.model.predicate;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 
 import edu.umd.cs.psl.model.argument.type.ArgumentType;
-import edu.umd.cs.psl.model.function.AttributeSimFunAdapter;
-import edu.umd.cs.psl.model.function.AttributeSimilarityFunction;
 import edu.umd.cs.psl.model.function.ExternalFunction;
-import edu.umd.cs.psl.model.predicate.type.PredicateType;
-import edu.umd.cs.psl.ui.functions.textsimilarity.CosineSimilarity;
-import edu.umd.cs.psl.ui.functions.textsimilarity.LevenshteinStringSimilarity;
-import edu.umd.cs.psl.util.dynamicclass.DynamicClassLoader;
 
+/**
+ * A factory for Predicates.
+ * 
+ * PredicateFactories act as namespaces, so a Predicate's name must be unique
+ * among those made by a particular factory.
+ */
 public class PredicateFactory {
 
 	private final Map<String,Predicate> predicateByName;
 	
-
+	/** Sole constructor. */
 	public PredicateFactory() {
 		predicateByName = new HashMap<String,Predicate>();
 	}
 	
-	public StandardPredicate createStandardPredicate(String name, PredicateType type,  ArgumentType[] types, double[] activationParas) {
-		StandardPredicate p = new StandardPredicate(name,type,types,activationParas);
+	/**
+	 * Constructs a StandardPredicate and registers it in this factory's namespace.
+	 *
+	 * @param name  name for the new predicate
+	 * @param types  types for each of the predicate's arguments
+	 * @throws IllegalArgumentException
+	 *             if this factory already constructed a predicate with the same name
+	 * @throws IllegalArgumentException  if name begins with '#'
+	 * @return the newly constructed predicate
+	 */
+	public StandardPredicate createStandardPredicate(String name, ArgumentType[] types) {
+		StandardPredicate p = new StandardPredicate(name, types);
 		addPredicate(p,name);
 		return p;
 	}
 	
-	public FunctionalPredicate createFunctionalPredicate(String name, String definition) {
-		return createFunctionalPredicate(name,parseDefinition(definition));
-	}
-	
-	public FunctionalPredicate createFunctionalPredicate(String name, AttributeSimilarityFunction simFun) {
-		return createFunctionalPredicate(name,new AttributeSimFunAdapter(simFun));
-	}
-	
-	public FunctionalPredicate createFunctionalPredicate(String name, ExternalFunction simFun) {
-		FunctionalPredicate p = new ExternalFunctionPredicate(name,simFun);
+	/**
+	 * Constructs an ExternalFunctionalPredicate and registers it in this factory's namespace.
+	 *
+	 * @param name  name for the new predicate
+	 * @param extFun  the ExternalFunction the new predicate will use
+	 * @throws IllegalArgumentException
+	 *             if this factory already constructed a predicate with the same name
+	 * @throws IllegalArgumentException  if name begins with '#'
+	 * @return the newly constructed predicate
+	 */
+	public ExternalFunctionalPredicate createFunctionalPredicate(String name, ExternalFunction extFun) {
+		ExternalFunctionalPredicate p = new ExternalFunctionalPredicate(name, extFun);
 		addPredicate(p,name);
 		return p;
 	}
 	
 	private void addPredicate(Predicate p, String name) {
-		if (predicateByName.containsKey(name)) throw new IllegalArgumentException("Predicate by that name has already been defined: " + name);
+		if (predicateByName.containsKey(name))
+			throw new IllegalArgumentException("Predicate '" + name + "' has already been created.");
 		predicateByName.put(name, p);
 
 	}
 	
 	public Predicate getPredicate(String name) {
-		if (!predicateByName.containsKey(name)) throw new IllegalArgumentException("Predicate is unkown: " + name);
+		if (!predicateByName.containsKey(name)) throw new IllegalArgumentException("Predicate '" + name + "' is unknown.");
 		return predicateByName.get(name);
 	}
 	
@@ -98,24 +110,6 @@ public class PredicateFactory {
 			s.append(p.toString()).append("\n");
 		}
 		return s.toString();
-	}
-	
-	//============== STATIC ============================
-	
-	public static final Map<String,Class<? extends AttributeSimilarityFunction>> definedAttributeSimFun = 
-		new ImmutableMap.Builder<String,Class<? extends AttributeSimilarityFunction>>()
-			.put("basicstring", LevenshteinStringSimilarity.class)
-			.put("cosine", CosineSimilarity.class)
-			.build();
-	
-	public static final AttributeSimilarityFunction parseDefinition(String definition) {
-		try {
-			return DynamicClassLoader.loadClassArbitraryArgs(definition, definedAttributeSimFun, AttributeSimilarityFunction.class);
-		} catch (Throwable e) {
-			e.printStackTrace();
-			throw new AssertionError("Unknown similarity function: " + definition);
-		}
-		
 	}
 	
 }

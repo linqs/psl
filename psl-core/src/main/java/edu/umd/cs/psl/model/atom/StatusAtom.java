@@ -101,7 +101,7 @@ public class StatusAtom extends TemplateAtom {
 	}
 	
 	@Override
-	public boolean isKnownAtom() {
+	public boolean isKnowledge() {
 		return status.isKnowledge();
 	}
 

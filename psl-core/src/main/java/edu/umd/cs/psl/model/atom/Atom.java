@@ -49,16 +49,6 @@ public interface Atom extends Formula {
 	public Predicate getPredicate();
 	
 	/**
-	 * Returns the cardinality of the atom values.
-	 * 
-	 * Atoms in PSL can be multi-valued vectors.
-	 * Currently, this functionality is not yet supported, so this function should always return 1.
-	 * 
-	 * @return The number of values
-	 */
-	public int getNumberOfValues();
-	
-	/**
 	 * Returns the number of arguments to the associated predicate.
 	 * 
 	 * @return The number of arguments
@@ -66,26 +56,25 @@ public interface Atom extends Formula {
 	public int getArity();
 	
 	/**
-	 * Sets the soft values.
+	 * Returns the soft value at a given index.
 	 * 
-	 * @param val An array of soft values
+	 * @return The soft value at index pos
 	 */
-	public void setSoftValues(double[] val);
-
-	/**
-	 * Sets the soft value at a given index.
-	 * 
-	 * @param pos A zero-based index
-	 * @param val A soft value
-	 */
-	public void setSoftValue(int pos, double val);
+	public double getValue();
 	
 	/**
-	 * Sets the confidence values.
+	 * Sets the soft values.
 	 * 
-	 * @param val An array of confidence values
+	 * @param value An array of soft values
 	 */
-	public void setConfidenceValues(double[] val);
+	public void setValue(double value);
+	
+	/**
+	 * Returns the confidence values at a given index.
+	 * 
+	 * @return The confidence value at index pos
+	 */
+	public double getConfidenceValue();
 	
 	/**
 	 * Sets the confidence values at a given index.
@@ -93,46 +82,7 @@ public interface Atom extends Formula {
 	 * @param pos A zero-based index
 	 * @param val A confidence value
 	 */
-	public void setConfidenceValue(int pos, double val);
-	
-	/**
-	 * Returns whether the atom has the {@link Predicate predicate's} default value.
-	 * 
-	 * For information on default value, refer to {@link Predicate}.
-	 * 
-	 * @return TRUE if default value; FALSE otherwise
-	 */
-	public boolean hasNonDefaultValues();
-	
-	/**
-	 * Returns the soft value at a given index.
-	 * 
-	 * @param pos A zero-based index
-	 * @return The soft value at index pos
-	 */
-	public double getSoftValue(int pos);
-	
-	/**
-	 * Returns all soft values.
-	 * 
-	 * @return An array of soft values
-	 */
-	public double[] getSoftValues();
-	
-	/**
-	 * Returns the confidence values at a given index.
-	 * 
-	 * @param pos A zero-based index
-	 * @return The confidence value at index pos
-	 */
-	public double getConfidenceValue(int pos);
-
-	/**
-	 * Returns all confidence values.
-	 * 
-	 * @return An array of confidence values
-	 */
-	public double[] getConfidenceValues();
+	public void setConfidenceValue(double val);
 	
 	/**
 	 * Registers a ground kernel to receive update events.
@@ -148,7 +98,7 @@ public interface Atom extends Formula {
 	 * @param f A ground kernel
 	 * @return TRUE if successful; FALSE if kernel was never registered
 	 */
-	public boolean deregisterGroundKernel(GroundKernel f);
+	public boolean unregisterGroundKernel(GroundKernel f);
 	
 	/**
 	 * Returns a set of all registered ground kernels that match a given kernel.
@@ -212,7 +162,7 @@ public interface Atom extends Formula {
 	 * 
 	 * @return TRUE if known; FALSE otherwise
 	 */
-	public boolean isKnownAtom();
+	public boolean isKnowledge();
 	
 	/**
 	 * Returns whether this atom is a certainty.
@@ -326,9 +276,6 @@ public interface Atom extends Formula {
 	 */
 	
 	public AtomFunctionVariable getVariable();
-	
-	public AtomFunctionVariable getVariable(int position);	
-
 
 	
 }

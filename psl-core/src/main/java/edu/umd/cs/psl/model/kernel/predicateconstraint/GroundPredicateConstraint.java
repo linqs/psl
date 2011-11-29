@@ -121,7 +121,7 @@ public class GroundPredicateConstraint implements GroundConstraintKernel {
 	public double getIncompatibility() {
 		double sum = 0.0;
 		for (Atom atom : atoms) {
-			sum += atom.getSoftValue(0);
+			sum += atom.getValue();
 		}
 		if (template.getConstraintType().constraintHolds(sum)) {
 			return 0.0;

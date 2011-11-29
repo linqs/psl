@@ -104,7 +104,7 @@ public class SetMin implements EntityAggregatorFunction {
 		double truth = 0.0;
 		for (Atom atom : comparisonAtoms) {
 			assert atom.getNumberOfValues()==1;
-			truth+=getAtomFactor(atom,set1,set2)*atom.getSoftValue(0);     
+			truth+=getAtomFactor(atom,set1,set2)*atom.getValue();     
       //System.out.println("\tatom: " + atom.toString() + " = " + atom.getSoftValue(0));
 		}
 

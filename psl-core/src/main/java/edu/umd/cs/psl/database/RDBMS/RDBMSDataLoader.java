@@ -152,7 +152,7 @@ public class RDBMSDataLoader implements DataLoader {
 		}
 		
 		private double[] getConfidenceValues() {
-			return ConfidenceValues.getMaxConfidence(handle.predicate().getNumberOfValues());
+			return ConfidenceValues.getMax();
 		}
 		
 		@Override

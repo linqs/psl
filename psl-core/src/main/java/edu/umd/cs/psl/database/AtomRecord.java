@@ -16,6 +16,9 @@
  */
 package edu.umd.cs.psl.database;
 
+import edu.umd.cs.psl.model.ConfidenceValues;
+import edu.umd.cs.psl.model.TruthValues;
+
 /**
  * A {@link DataStore} record of an {@link Atom}.
  */
@@ -23,30 +26,19 @@ public class AtomRecord {
 
 	public enum Status { FACT, CERTAINTY, RV }
 		
-	private final double[] values;
+	private final double value;
 	
-	private final double[] confidences;
+	private final double confidence;
 	
 	private Status status;
 	
-	public AtomRecord(double[] values, double[] confidences) {
-		this.values=values;
-		this.confidences=confidences;
-		this.status = Status.RV;
-	}
-	
-	public AtomRecord(double[] values, double[] confidences, Status status) {
-		this.values=values;
-		this.confidences=confidences;
-		setStatus(status);
-	}
-	
-	public AtomRecord() {
-		this(null,null);
-	}
-	
 	public AtomRecord(Status status) {
-		this();
+		this(TruthValues.getDefault(), ConfidenceValues.getDefault(), status);
+	}
+	
+	public AtomRecord(double value, double confidence, Status status) {
+		this.value = value;
+		this.confidence = confidence;
 		setStatus(status);
 	}
 	
@@ -58,14 +50,12 @@ public class AtomRecord {
 		this.status=status;		
 	}
 
-	public double[] getValues() {
-		return values;
+	public double getValue() {
+		return value;
 	}
 
-	public double[] getConfidences() {
-		return confidences;
+	public double getConfidence() {
+		return confidence;
 	}
-	
-	
 	
 }

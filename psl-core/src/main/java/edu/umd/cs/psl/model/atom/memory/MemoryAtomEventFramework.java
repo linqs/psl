@@ -30,6 +30,8 @@ import com.google.common.collect.SetMultimap;
 
 import edu.umd.cs.psl.application.GroundingMode;
 import edu.umd.cs.psl.application.ModelApplication;
+import edu.umd.cs.psl.config.ConfigBundle;
+import edu.umd.cs.psl.config.EmptyBundle;
 import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.ModelEvent;
 import edu.umd.cs.psl.model.argument.GroundTerm;
@@ -62,12 +64,15 @@ public class MemoryAtomEventFramework implements AtomEventFramework {
 	private final ActivationMode activationMode;
 	
 	private GroundingMode groundingMode;
+
+	private final double activationThreshold;
 	
-	public MemoryAtomEventFramework(ModelApplication application, AtomStore store, ActivationMode activemode) {
+	public MemoryAtomEventFramework(ModelApplication application, AtomStore store, ConfigBundle config) {
 		this.application = application;
 		this.store = store;
 		atomjobs= new LinkedList<AtomJob>();
-		activationMode = activemode;
+		activationMode = (ActivationMode) config.getEnum("memoryatomeventframework.activationmode", AtomEventFramework.defaultActivationMode);
+		activationThreshold = config.getDouble("memoryatomeventframework.activationthreshold", 0.1);
 		groundingMode = GroundingMode.defaultGroundingMode;
 		atomObservers = new EnumMap<AtomEvent,SetMultimap<Predicate,AtomEventObserver>>(AtomEvent.class);
 		for (AtomEvent ae : AtomEvent.values()) {
@@ -77,11 +82,11 @@ public class MemoryAtomEventFramework implements AtomEventFramework {
 	}
 	
 	public MemoryAtomEventFramework(Model model, ModelApplication application, AtomStore store) {
-		this(model,application,store,AtomEventFramework.defaultActivationMode);
+		this(model,application,store, new EmptyBundle());
 	}
 	
-	public MemoryAtomEventFramework(Model model, ModelApplication application, AtomStore store, ActivationMode activemode) {
-		this(application,store,activemode);
+	public MemoryAtomEventFramework(Model model, ModelApplication application, AtomStore store, ConfigBundle config) {
+		this(application,store,config);
 		for (Kernel k : model.getKernels()) {
 			addKernel(k);
 		}
@@ -164,7 +169,7 @@ public class MemoryAtomEventFramework implements AtomEventFramework {
 	public boolean activateAtom(Atom atom) {
 		if (atom.isConsidered() && atom.isRandomVariable()) {
 			//Should we activate it?
-			if (activationMode==ActivationMode.All || atom.hasNonDefaultValues()) {
+			if (activationMode==ActivationMode.All || isAboveActivationThreshold(atom)) {
 				if (atom.isAtomGroup()) {
 					log.debug("Retrieving entire atom group for: {}",atom);
 					atom.getAtomsInGroup(this, application.getDatabase());
@@ -184,7 +189,7 @@ public class MemoryAtomEventFramework implements AtomEventFramework {
 	public boolean deactivateAtom(Atom atom) {
 		if (atom.isActive() && atom.isRandomVariable()) {
 			//Should we de-activate it?
-			if (activationMode==ActivationMode.NonDefault && !atom.hasNonDefaultValues()) {
+			if (activationMode==ActivationMode.NonDefault && !isAboveActivationThreshold(atom)) {
 				assert !atom.isAtomGroup();
 				atom.deactivate();
 				addAtomJob(atom,AtomEvent.DeactivatedRV);
@@ -204,10 +209,10 @@ public class MemoryAtomEventFramework implements AtomEventFramework {
 				atom.consider();
 			} else if (atom.isCertainty()) {
 				//add special database certainty kernel
-				DataCertaintyKernel.get().addDataCertainty(atom, application, atom.getSoftValues());
+				DataCertaintyKernel.get().addDataCertainty(atom, application, atom.getValue());
 				addAtomJob(atom,AtomEvent.IntroducedCertainty);
 				atom.consider();
-				if (atom.hasNonDefaultValues()) 
+				if (isAboveActivationThreshold(atom)) 
 					atom.activate(); //No need for notification here, since status was known in database before
 			} else if (atom.isRandomVariable()) {
 				addAtomJob(atom,AtomEvent.IntroducedRV);
@@ -218,7 +223,7 @@ public class MemoryAtomEventFramework implements AtomEventFramework {
 	}
 	
 	@Override
-	public void changeCertainty(Atom atom, double[] values, double[] confidences) {
+	public void changeCertainty(Atom atom, double value, double confidence) {
 		Preconditions.checkArgument(atom.isInferenceAtom() && atom.isConsideredOrActive() && !atom.isAtomGroup());
 
 		if (atom.isRandomVariable()) {
@@ -226,7 +231,7 @@ public class MemoryAtomEventFramework implements AtomEventFramework {
 			addAtomJob(atom,AtomEvent.MadeCertainty);
 		} 
 		
-		if (atom.isActive() && !atom.getPredicate().isNonDefaultValues(values)) {
+		if (atom.isActive() && value <= activationThreshold) {
 			//Deactivate
 			//TODO: This is currently not supported!!
 //			atom.deactivate();
@@ -236,13 +241,13 @@ public class MemoryAtomEventFramework implements AtomEventFramework {
 //				assert atom.isRandomVariable();
 //				addAtomJob(atom,AtomEvent.DeactivatedRV);
 //			}
-		} else if (atom.isConsidered() && atom.getPredicate().isNonDefaultValues(values)) {
+		} else if (atom.isConsidered() && value > activationThreshold) {
 			//Activate
 			atom.activate();
 			addAtomJob(atom,AtomEvent.ActivatedCertainty);
 		}
-		atom.setSoftValues(values);
-		atom.setConfidenceValues(confidences);
+		atom.setValue(value);
+		atom.setConfidenceValue(confidence);
 	}
 
 	@Override
@@ -414,7 +419,7 @@ public class MemoryAtomEventFramework implements AtomEventFramework {
 			addAtomJob(atom,AtomEvent.IntroducedCertainty);
 			addAtomJob(atom,AtomEvent.ActivatedCertainty);
 		}
-		atom.setSoftValues(values);
+		atom.setValue(values);
 		atom.setConfidenceValues(confidences);
 	}
 
@@ -429,7 +434,7 @@ public class MemoryAtomEventFramework implements AtomEventFramework {
 			if (newNondefault) addAtomJob(atom,AtomEvent.ChangedFactFromDefault);
 			else addAtomJob(atom,AtomEvent.ChangedFactInDefault);
 		}
-		atom.setSoftValues(newvalues);
+		atom.setValue(newvalues);
 		atom.setConfidenceValues(newconfidences);
 	}
 
@@ -439,7 +444,9 @@ public class MemoryAtomEventFramework implements AtomEventFramework {
 		DataCertaintyKernel.get().removeDataCertainty(atom, application);
 		release(atom);
 	}
-
-
+	
+	private boolean isAboveActivationThreshold(Atom atom) {
+		return atom.getValue() > activationThreshold;
+	}
 
 }

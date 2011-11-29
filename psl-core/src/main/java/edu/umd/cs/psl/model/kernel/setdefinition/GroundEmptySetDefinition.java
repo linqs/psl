@@ -50,7 +50,7 @@ public class GroundEmptySetDefinition implements GroundConstraintKernel {
 	
 	@Override
 	public double getIncompatibility() {
-		if (NumericUtilities.equals(atom.getSoftValue(0), value)) return 0;
+		if (NumericUtilities.equals(atom.getValue(), value)) return 0;
 		else return Double.POSITIVE_INFINITY;
 	}
 

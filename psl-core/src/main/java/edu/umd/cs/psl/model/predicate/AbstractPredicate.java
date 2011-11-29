@@ -17,19 +17,11 @@
 package edu.umd.cs.psl.model.predicate;
 
 import edu.umd.cs.psl.model.argument.type.ArgumentType;
-import edu.umd.cs.psl.model.predicate.type.PredicateType;
-
 
 /**
- * This class implements a generic predicate, hence it is abstract since only specific implementations
- * of a predicate, i.e. boolean or composite, can be instantiated.
- * 
- * A predicate is defined by its name and its signature, i.e. types of its arguments. Predicates can be
- * defined in different namespaces to avoid naming conflicts. Predicates must be constructed using the 
- * static create() methods.
+ * General, abstract Predicate.
  * 
  * @author Matthias Broecheler
- *
  */
 abstract class AbstractPredicate implements Predicate {
 	
@@ -37,11 +29,18 @@ abstract class AbstractPredicate implements Predicate {
 	
 	private final ArgumentType[] types;
 	
-	protected final PredicateType type;
-	
-	AbstractPredicate(String name, PredicateType _type, ArgumentType[] _types) {
-		types = _types;
-		type = _type;
+	/**
+	 * Sole constructor.
+	 * 
+	 * @param name  name for this predicate
+	 * @param types  types for each of the predicate's arguments
+	 * @throws IllegalArgumentException  if name begins with '#'
+	 */
+	AbstractPredicate(String name, ArgumentType[] types) {
+		if (name.startsWith("#"))
+			throw new IllegalArgumentException("Predicate name must not begin with '#'." +
+					" That prefix is reserved for SpecialPredicates.");
+		this.types = types;
 		predicateName = name;
 	}
 	
@@ -73,60 +72,11 @@ abstract class AbstractPredicate implements Predicate {
 	}
 	
 	@Override
-	public PredicateType getType() {
-		return type;
-	}
-
-	@Override
-	public int getNumberOfValues() {
-		return type.getNumberOfValues();
-	}
-	
-
-	@Override
-	public double[] getDefaultValues() {
-		return type.getDefaultValues();
-	}
-
-	@Override
-	public double[] getStandardValues() {
-		return type.getStandardValues();
-	}
-
-//	@Override
-//	public int getNumberOfActivationParameters() {
-//		return type.getNumberOfActivationParameters();
-//	}
-
-	@Override
-	public String getValueName(int pos) {
-		return type.getValueName(pos);
-	}
-
-	@Override
-	public boolean validValue(int pos, double value) {
-		return type.validValue(pos, value);
-	}
-	
-	@Override
-	public boolean validValues(double[] values) {
-		return validValues(this,values);
-	}
-	
-	public static boolean validValues(Predicate p, double[] values) {
-		if (values.length!=p.getNumberOfValues()) return false;
-		for (int i=0;i<values.length;i++) {
-			if (!p.validValue(i,values[i])) return false;
-		}
-		return true;
-	}
-	
-	
-	/* The predicate factory ensures that names uniquely identify predicates within the same {@link PredicateFactory}.
-	 * Hence, equality of predicates can be determined by identity;
-	 */
-	@Override
 	public int hashCode() {
+		/*
+		 * The predicate factory ensures that names uniquely identify predicates within the same {@link PredicateFactory}.
+		 * Hence, equality of predicates can be determined by identity;
+		 */
 		return super.hashCode();
 		//return predicateName.hashCode()*17;
 	}

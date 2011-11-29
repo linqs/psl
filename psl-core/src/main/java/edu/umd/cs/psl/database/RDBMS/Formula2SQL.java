@@ -35,8 +35,8 @@ import edu.umd.cs.psl.model.formula.*;
 import edu.umd.cs.psl.model.formula.traversal.FormulaTraverser;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
 import edu.umd.cs.psl.model.predicate.FunctionalPredicate;
-import edu.umd.cs.psl.model.predicate.ExternalFunctionPredicate;
-import edu.umd.cs.psl.model.predicate.SpecialPredicates;
+import edu.umd.cs.psl.model.predicate.ExternalFunctionalPredicate;
+import edu.umd.cs.psl.model.predicate.SpecialPredicate;
 
 public class Formula2SQL extends FormulaTraverser {
 
@@ -93,19 +93,19 @@ public class Formula2SQL extends FormulaTraverser {
 		assert arguments.length==2;
 		Object[] convert = convertArguments(arguments);
 		
-		if (atom.getPredicate() instanceof ExternalFunctionPredicate) {
-			ExternalFunctionPredicate predicate = (ExternalFunctionPredicate)atom.getPredicate();
+		if (atom.getPredicate() instanceof ExternalFunctionalPredicate) {
+			ExternalFunctionalPredicate predicate = (ExternalFunctionalPredicate)atom.getPredicate();
 			FunctionCall fun = new FunctionCall(RDBMSDatabase.aliasFunctionName);
 			fun.addCustomParams(RDBMSDatabase.getSimilarityFunctionID(predicate.getExternalFunction()));
 			for (int i=0;i<arguments.length;i++) fun.addCustomParams(convert[i]);
 			query.addCondition(BinaryCondition.greaterThan(fun, 0.0, false));
 		} else {
 			FunctionalPredicate predicate = (FunctionalPredicate)atom.getPredicate();
-			if (predicate==SpecialPredicates.Unequal) {
+			if (predicate==SpecialPredicate.Unequal) {
 				query.addCondition(BinaryCondition.notEqualTo(convert[0], convert[1]));
-			} else if (predicate==SpecialPredicates.Equal) {
+			} else if (predicate==SpecialPredicate.Equal) {
 				query.addCondition(BinaryCondition.equalTo(convert[0], convert[1]));
-			} else if (predicate==SpecialPredicates.NonSymmetric) {
+			} else if (predicate==SpecialPredicate.NonSymmetric) {
 				query.addCondition(BinaryCondition.lessThan(convert[0], convert[1],false));
 			} else throw new UnsupportedOperationException("Unrecognized functional Predicate: " + predicate);
 		}

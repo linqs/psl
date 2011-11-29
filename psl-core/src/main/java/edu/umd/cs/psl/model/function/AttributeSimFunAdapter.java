@@ -73,7 +73,7 @@ public class AttributeSimFunAdapter implements ExternalFunction, BulkExternalFun
 	}
 	
 	@Override
-	public double[] getValue(GroundTerm... args) {
+	public double getValue(GroundTerm... args) {
 		String[] strs = args2String(args);
 		return new double[]{function.similarity(strs[0], strs[1])};
 	}

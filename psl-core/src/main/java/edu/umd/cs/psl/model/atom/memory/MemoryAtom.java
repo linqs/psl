@@ -19,13 +19,13 @@ package edu.umd.cs.psl.model.atom.memory;
 import java.util.Collection;
 import java.util.Set;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.SetMultimap;
 
+import edu.umd.cs.psl.model.ConfidenceValues;
+import edu.umd.cs.psl.model.TruthValues;
 import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.argument.Term;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.AtomStatus;
 import edu.umd.cs.psl.model.atom.StatusAtom;
@@ -48,6 +48,9 @@ import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
 public class MemoryAtom extends StatusAtom {
 	
 	private static final Set<GroundKernel> emptyGroundKernels = ImmutableSet.of();
+
+	private double softValue;
+	private double confidenceValue;
 	
 	/**
 	 * A set of evidence which depend on this atom. A dependent formula is one which truth value could
@@ -55,18 +58,20 @@ public class MemoryAtom extends StatusAtom {
 	 */
 	private SetMultimap<Kernel,GroundKernel> dependentKernels;
 	
-	MemoryAtom(Predicate p, GroundTerm[] args, AtomStatus status) {
+	public MemoryAtom(Predicate p, GroundTerm[] args, AtomStatus status) {
+		this(p, args, status, TruthValues.getDefault(), ConfidenceValues.getDefault());
+	}
+	
+	MemoryAtom(Predicate p, GroundTerm[] args, AtomStatus status, double softval, double confidence) {
 		super(p,args,status);
-		
 		dependentKernels=null;
-		
+		setValue(softval);
+		setConfidenceValue(confidence);
 	}
 	
 	void checkAccess() {
 		if (!isDefined()) throw new IllegalStateException("Cannot modify this atom since it is undefined");
 	}
-	
-
 	
 	@Override
 	public boolean registerGroundKernel(GroundKernel f) {
@@ -76,7 +81,7 @@ public class MemoryAtom extends StatusAtom {
 	}
 	
 	@Override
-	public boolean deregisterGroundKernel(GroundKernel f) {
+	public boolean unregisterGroundKernel(GroundKernel f) {
 		checkAccess();
 		if (dependentKernels==null) return false;
 		return dependentKernels.remove(f.getKernel(), f);
@@ -106,54 +111,66 @@ public class MemoryAtom extends StatusAtom {
 	
 	@Override
 	public AtomFunctionVariable getVariable() {
-		if (getPredicate().getNumberOfValues()!=1) throw new IllegalStateException();
-		return getVariable(0);
+		checkAccess();
+		return new AtomVariable();
 	}
 	
 	@Override
-	public AtomFunctionVariable getVariable(int position) {
+	public void setValue(double value) {
 		checkAccess();
-		Preconditions.checkArgument(position>=0 && position<getPredicate().getNumberOfValues());
-		return new AtomVariable(position);
+		if (!TruthValues.isValid(value))
+			throw new IllegalArgumentException("Illegal truth value: "+ value);
+		softValue = value;
 	}
-	
+
+	@Override
+	public void setConfidenceValue(double val) {
+		checkAccess();
+		if (!ConfidenceValues.isValid(val))
+			throw new IllegalArgumentException("Illegal confidence value: "+ val);
+		confidenceValue = val;
+	}
+
+	@Override
+	public double getValue() {
+		return softValue;
+	}
+
+	@Override
+	public double getConfidenceValue() {
+		return confidenceValue;
+	}
+
 	private class AtomVariable extends AtomFunctionVariable {
-		
-		private final int position;
-		
-		private AtomVariable(int pos) {
-			position = pos;
-		}
 		
 		@Override
 		public boolean isConstant() {
-			return isKnownAtom();
+			return isKnowledge();
 		}
 
 		@Override
-		public void setValue(double val) {
-			setSoftValue(position,val);
+		public void setValue(double value) {
+			setValue(value);
 		}
 
 		@Override
 		public double getValue() {
-			return getSoftValue(position);
+			return getValue();
 		}
-		
 
 		@Override
 		public double getConfidence() {
-			return getConfidenceValue(position);
+			return getConfidenceValue();
 		}
 
 		@Override
 		public void setConfidence(double val) {
-			setConfidenceValue(position,val);
+			setConfidenceValue(val);
 		}
 		
 		@Override
 		public int hashCode() {
-			return MemoryAtom.this.hashCode() + position + 97;
+			return MemoryAtom.this.hashCode() + 97;
 		}
 		
 		@Override
@@ -163,23 +180,19 @@ public class MemoryAtom extends StatusAtom {
 		
 		@Override
 		public boolean equals(Object oth) {
-			if (oth==this) return true;
-			if (oth==null || !(getClass().isInstance(oth)) ) return false;
-			AtomVariable other = (AtomVariable)oth;
-			return position==other.position && getAtom().equals(other.getAtom());
+			if (oth==this)
+				return true;
+			if (oth==null || !(getClass().isInstance(oth)) )
+				return false;
+			AtomVariable other = (AtomVariable) oth;
+			return getAtom().equals(other.getAtom());
 		}
 		
 		@Override
 		public String toString() {
-			if (MemoryAtom.this.getNumberOfValues()==1) return MemoryAtom.this.toString();
-			else return MemoryAtom.this.toString()+"#"+position;
+			return MemoryAtom.this.toString();
 		}
 
-		
 	}
-	
-	
 
-
-	
 }

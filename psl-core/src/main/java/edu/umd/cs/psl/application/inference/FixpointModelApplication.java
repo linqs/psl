@@ -166,9 +166,9 @@ public class FixpointModelApplication implements ModelApplication, FullInference
 					GroundSetDefinition set = (GroundSetDefinition)e;
 					atom = set.getSetAtom();
 					double setval = set.getAggregateValue();
-					assert setval>= atom.getSoftValue(0);
+					assert setval>= atom.getValue();
 					//TODO: We assume implicitly that the multiplier in front of the setAtom is 1
-					deltavalue = setval-atom.getSoftValue(0);
+					deltavalue = setval-atom.getValue();
 				} else if (e instanceof GroundDataCertainty) {
 					//Ignore
 				} else {
@@ -180,7 +180,7 @@ public class FixpointModelApplication implements ModelApplication, FullInference
 				if (deltavalue>0.0) {
 					//log.trace("Atom {}",atom);
 					//log.trace("Delta value: {} | New truth value {}",deltavalue, atom.getSoftValue(0)+deltavalue);
-					atom.setSoftValue(0, atom.getSoftValue(0)+deltavalue);
+					atom.setSoftValue(0, atom.getValue()+deltavalue);
 					
 					if (atom.hasNonDefaultValues()) {
 						assert atom.isRandomVariable() : atom;

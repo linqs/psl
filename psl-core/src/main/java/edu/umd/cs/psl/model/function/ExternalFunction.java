@@ -22,7 +22,7 @@ import edu.umd.cs.psl.model.predicate.type.PredicateType;
 
 public interface ExternalFunction {
 
-	public double[] getValue(GroundTerm... args);
+	public double getValue(GroundTerm... args);
 	
 	public int getArity();
 	

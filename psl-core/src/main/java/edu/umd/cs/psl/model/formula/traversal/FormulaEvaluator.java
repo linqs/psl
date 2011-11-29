@@ -82,7 +82,7 @@ public class FormulaEvaluator extends FormulaTraverser {
 	@Override
 	public void visitAtom(Atom atom) {
 		assert atom.getNumberOfValues()==1;
-		push(atom.getSoftValue(0));
+		push(atom.getValue());
 	}
 	
 }

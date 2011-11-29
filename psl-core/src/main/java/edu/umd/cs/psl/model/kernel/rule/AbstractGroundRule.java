@@ -91,13 +91,11 @@ abstract public class AbstractGroundRule implements GroundKernel {
 			f = formula.get(i);
 			if (f instanceof Atom) {
 				a = (Atom) f;
-				assert a.getNumberOfValues() == 1;
 				sum.add(new FunctionSummand(multiplier, a.getVariable()));
 				constant++;
 			}
 			else if (f instanceof Negation) {
 				a = (Atom) ((Negation) f).getFormula();
-				assert a.getNumberOfValues() == 1;
 				sum.add(new FunctionSummand(-1*multiplier, a.getVariable()));
 			}
 			else

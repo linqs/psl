@@ -121,9 +121,9 @@ public class SimpleRankingResultComparator implements RankingResultComparator {
 			assert a1.getNumberOfValues() == 1;
 			assert a2.getNumberOfValues() == 1;
 			
-			if (a1.getSoftValue(0) > a1.getSoftValue(0))
+			if (a1.getValue() > a1.getValue())
 				return 1;
-			else if (a1.getSoftValue(0) == a2.getSoftValue(0))
+			else if (a1.getValue() == a2.getValue())
 				return 0;
 			else
 				return -1;

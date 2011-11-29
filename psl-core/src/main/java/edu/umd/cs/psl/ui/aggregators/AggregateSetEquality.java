@@ -92,7 +92,7 @@ public class AggregateSetEquality implements EntityAggregatorFunction {
 		double truth = 0.0;
 		for (Atom atom : comparisonAtoms) {
 			assert atom.getNumberOfValues()==1;
-			truth+=getAtomFactor(atom,set1,set2)*atom.getSoftValue(0);
+			truth+=getAtomFactor(atom,set1,set2)*atom.getValue();
 		}
 		double sim = constantFactor(set1,set2)*truth;
 		if (comparisonAtoms.isEmpty()) sim = getDefaultSimilarityforEmptySets();

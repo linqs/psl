@@ -47,7 +47,7 @@ public class MaxValueFilter implements AtomFilter {
 			Preconditions.checkArgument(atom.getNumberOfValues()==1,"MaxValueFilter works only with single value atoms.");
 			ArgumentWrapper w = new ArgumentWrapper(atom.getArguments());
 			Atom existing = argMapper.get(w);
-			if (existing==null || existing.getSoftValue(0)<atom.getSoftValue(0)) {
+			if (existing==null || existing.getValue()<atom.getValue()) {
 				argMapper.put(w, atom);
 			}			
 		}

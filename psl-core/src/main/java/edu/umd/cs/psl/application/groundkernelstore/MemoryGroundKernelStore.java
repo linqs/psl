@@ -77,7 +77,7 @@ public class MemoryGroundKernelStore implements GroundKernelStore {
 	@Override
 	public void removeGroundKernel(GroundKernel e) {
 		//Deregister with atoms and remove from reasoner
-		for (Atom atom : e.getAtoms()) if (!atom.deregisterGroundKernel(e)) throw new AssertionError("Evidence has never been registered with atom!");
+		for (Atom atom : e.getAtoms()) if (!atom.unregisterGroundKernel(e)) throw new AssertionError("Evidence has never been registered with atom!");
 		evidences.remove(e.getKernel(), e);
 	}
 	

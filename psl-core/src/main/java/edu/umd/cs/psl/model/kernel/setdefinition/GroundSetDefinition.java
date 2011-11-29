@@ -159,7 +159,7 @@ public class GroundSetDefinition implements GroundConstraintKernel {
 	@Override
 	public double getIncompatibility() {
 		assert setAtom.getNumberOfValues()==1;
-		if (NumericUtilities.equals(setAtom.getSoftValue(0), getAggregateValue())) {
+		if (NumericUtilities.equals(setAtom.getValue(), getAggregateValue())) {
 			return 0.0;
 		} else
 			return Double.POSITIVE_INFINITY;

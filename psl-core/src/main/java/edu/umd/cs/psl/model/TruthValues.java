@@ -14,22 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.model.predicate.type;
+package edu.umd.cs.psl.model;
 
-public interface PredicateType {
+public class TruthValues {
 
-	public int getNumberOfValues();
+	private static final double defaultTruth = 1.0;
+	private static final double minTruth = 0.0;
+	private static final double maxTruth = 1.0;
 	
-	public String getValueName(int pos);
+	public static final double getDefault() {
+		return defaultTruth;
+	}
 	
-	public double[] getDefaultValues();
+	public static final boolean isValid(double truthVal) {
+		return truthVal>minTruth && truthVal<=maxTruth;
+	}
 	
-	public double[] getStandardValues();
-	
-	public int getNumberOfActivationParameters();
-	
-	public boolean isNonDefaultValues(double[] values, double[] defaultParas);
-	
-	public boolean validValue(int pos, double value);
+	public static final boolean isDefault(double value) {
+		return defaultTruth == value;
+	}
 	
 }

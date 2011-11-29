@@ -103,7 +103,7 @@ public class EvidSetMin implements EntityAggregatorFunction {
 		double truth = 0.0;
 		for (Atom atom : comparisonAtoms) {
 			assert atom.getNumberOfValues()==1;
-			truth+=getAtomFactor(atom,set1,set2)*atom.getSoftValue(0);     
+			truth+=getAtomFactor(atom,set1,set2)*atom.getValue();     
       //System.out.println("\tatom: " + atom.toString() + " = " + atom.getSoftValue(0));
 		}
 
@@ -140,7 +140,7 @@ public class EvidSetMin implements EntityAggregatorFunction {
 
       double totalTruth = 0.0;
 			for (Atom atom : comparisonAtoms)
-        totalTruth += atom.getSoftValue(0);
+        totalTruth += atom.getValue();
 
       //System.out.println("\tTotalTruth = " + totalTruth);
       if ( totalTruth > coeff) coeff = 1/totalTruth; 

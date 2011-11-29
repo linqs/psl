@@ -16,37 +16,25 @@
  */
 package edu.umd.cs.psl.model;
 
-import java.util.Arrays;
-
 public class ConfidenceValues {
 
-	public static final double defaultConfidence = Double.NaN;
-	public static final double minConfidence = 0.0;
-	public static final double maxConfidence = Double.MAX_VALUE;
+	private static final double defaultConfidence = Double.NaN;
+	private static final double minConfidence = 0.0;
+	private static final double maxConfidence = Double.MAX_VALUE;
 	
-	public static final double[] getDefaultConfidence(int noValues) {
-		double[] res = new double[noValues];
-		Arrays.fill(res, defaultConfidence);
-		return res;
+	public static final double getDefault() {
+		return defaultConfidence;
 	}
 	
-	public static final double[] getMaxConfidence(int noValues) {
-		double[] res = new double[noValues];
-		Arrays.fill(res, maxConfidence);
-		return res;
+	public static final double getMax() {
+		return maxConfidence;
 	}
 	
-	public static final boolean isValidValue(double confidenceVal) {
+	public static final boolean isValid(double confidenceVal) {
 		return confidenceVal>minConfidence && confidenceVal<=maxConfidence;
 	}
 	
-	public static final boolean isValidValues(double[] confidenceVal) {
-		for (int i=0;i<confidenceVal.length;i++)
-			if (!isValidValue(confidenceVal[i])) return false;
-		return true;
-	}
-	
-	public static final boolean isDefaultConfidence(double confidence) {
+	public static final boolean isDefault(double confidence) {
 		return Double.isNaN(confidence);
 	}
 	

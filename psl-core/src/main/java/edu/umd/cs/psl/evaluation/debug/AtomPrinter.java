@@ -33,7 +33,7 @@ public class AtomPrinter {
 		s.append(atom.toString());
 		s.append(" V=[");
 		for (int i=0;i<atom.getNumberOfValues();i++) {
-			s.append(valueFormatter.format(atom.getSoftValue(i)));
+			s.append(valueFormatter.format(atom.getValue()));
 			if (i>0) s.append(", ");
 		}
 		s.append("]");
@@ -43,7 +43,7 @@ public class AtomPrinter {
 		if (printConfidence) {
 			s.append(" C=[");
 			for (int i=0;i<atom.getNumberOfValues();i++) {
-				s.append(valueFormatter.format(atom.getConfidenceValue(i)));
+				s.append(valueFormatter.format(atom.getConfidenceValue()));
 				if (i>0) s.append(", ");
 			}
 			s.append("]");

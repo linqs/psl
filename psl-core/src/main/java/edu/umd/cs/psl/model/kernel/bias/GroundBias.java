@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.model.kernel.priorweight;
+package edu.umd.cs.psl.model.kernel.bias;
 
 import java.util.Set;
 
@@ -33,15 +33,15 @@ import edu.umd.cs.psl.reasoner.function.FunctionSummand;
 import edu.umd.cs.psl.reasoner.function.FunctionTerm;
 import edu.umd.cs.psl.reasoner.function.MaxFunction;
 
-public class GroundPriorWeight implements GroundCompatibilityKernel {
+public class GroundBias implements GroundCompatibilityKernel {
 
-	private final PriorWeightKernel kernel;
+	private final BiasKernel kernel;
 	
 	private final Atom atom;
 	
 	private final int hashcode;
 	
-	public GroundPriorWeight(PriorWeightKernel t, Atom a) {
+	public GroundBias(BiasKernel t, Atom a) {
 		kernel = t;
 		atom = a;
 		hashcode = new HashCodeBuilder().append(kernel).append(atom).toHashCode();
@@ -55,8 +55,6 @@ public class GroundPriorWeight implements GroundCompatibilityKernel {
 	
 	@Override
 	public FunctionTerm getFunctionDefinition() {
-		
-		assert atom.getNumberOfValues()==1;
 		
 		if (atom.getPredicate().getDefaultValues()[0] == 0.0) {
 			return new FunctionSummand(1.0, atom.getVariable());
@@ -103,7 +101,7 @@ public class GroundPriorWeight implements GroundCompatibilityKernel {
 	public boolean equals(Object oth) {
 		if (oth==this) return true;
 		if (oth==null || !(getClass().isInstance(oth)) ) return false;
-		GroundPriorWeight con = (GroundPriorWeight)oth;
+		GroundBias con = (GroundBias)oth;
 		return kernel.equals(con.kernel) && atom.equals(con.atom);
 	}
 
@@ -133,12 +131,12 @@ public class GroundPriorWeight implements GroundCompatibilityKernel {
 	}
 	
 	protected double getL1Distance() {
-		double[] softValues = atom.getSoftValues();
+//		double[] softValues = atom.getSoftValues();
 		double[] defaultValues = atom.getPredicate().getDefaultValues();
 		double d = 0.0;
-		for (int i = 0; i < atom.getNumberOfValues(); i++) {
-			d += Math.abs(softValues[i] - defaultValues[i]); 
-		}
+//		for (int i = 0; i < atom.getNumberOfValues(); i++) {
+//			d += Math.abs(softValues[i] - defaultValues[i]); 
+//		}
 		return d;
 	}
 
