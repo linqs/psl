@@ -49,7 +49,7 @@ public class ConstraintRuleKernel extends AbstractRuleKernel {
 
 	@Override
 	protected AbstractGroundRule groundFormulaInstance(Formula f) {
-		return new GroundConstraintRule(this, formula);
+		return new GroundConstraintRule(this, f);
 	}
 	
 	@Override

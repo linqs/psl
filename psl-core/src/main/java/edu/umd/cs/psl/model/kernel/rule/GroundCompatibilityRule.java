@@ -19,7 +19,9 @@ package edu.umd.cs.psl.model.kernel.rule;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.parameters.Weight;
+import edu.umd.cs.psl.reasoner.function.ConstantNumber;
 import edu.umd.cs.psl.reasoner.function.FunctionTerm;
+import edu.umd.cs.psl.reasoner.function.MaxFunction;
 
 public class GroundCompatibilityRule extends AbstractGroundRule implements
 		GroundCompatibilityKernel {
@@ -36,7 +38,7 @@ public class GroundCompatibilityRule extends AbstractGroundRule implements
 	@Override
 	public FunctionTerm getFunctionDefinition() {
 		assert numGroundings>=0;
-		return getFunction(numGroundings);
+		return MaxFunction.of(getFunction(numGroundings), new ConstantNumber(0.0));
 	}
 
 	@Override

@@ -33,8 +33,6 @@ import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.reasoner.function.ConstantNumber;
 import edu.umd.cs.psl.reasoner.function.FunctionSum;
 import edu.umd.cs.psl.reasoner.function.FunctionSummand;
-import edu.umd.cs.psl.reasoner.function.FunctionTerm;
-import edu.umd.cs.psl.reasoner.function.MaxFunction;
 
 /**
  * Currently, we assume that the body of the rule is a conjunction and the head of the rule is
@@ -82,7 +80,7 @@ abstract public class AbstractGroundRule implements GroundKernel {
 		return true;
 	}
 	
-	protected FunctionTerm getFunction(double multiplier) {
+	protected FunctionSum getFunction(double multiplier) {
 		Formula f;
 		Atom a;
 		double constant = 0.0;
@@ -107,7 +105,7 @@ abstract public class AbstractGroundRule implements GroundKernel {
 		
 		sum.add(new FunctionSummand(multiplier, new ConstantNumber(1.0 - constant)));
 		
-		return MaxFunction.of(sum,new ConstantNumber(0.0));
+		return sum;
 	}
 	
 	@Override

@@ -35,7 +35,7 @@ public class GroundConstraintRule extends AbstractGroundRule implements
 
 	@Override
 	public ConstraintTerm getConstraintDefinition() {
-		return new ConstraintTerm(getFunction(1.0), FunctionComparator.Equality, 0.0);
+		return new ConstraintTerm(getFunction(1.0), FunctionComparator.SmallerThan, 0.0);
 	}
 	
 	@Override
