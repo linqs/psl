@@ -18,7 +18,7 @@ package edu.umd.cs.psl.model.argument;
 
 import java.util.Set;
 
-import edu.umd.cs.psl.database.DatabaseAtomStoreQuery;
+import edu.umd.cs.psl.model.atom.AtomManager;
 
 /**
  * An interface for aggregates of entities.
@@ -36,6 +36,6 @@ public interface EntitySet extends GroundTerm {
 	
 	public int getCardinality();
 	
-	public Set<Entity> getEntities(DatabaseAtomStoreQuery db);
+	public Set<Entity> getEntities(AtomManager atomManager);
 	
 }

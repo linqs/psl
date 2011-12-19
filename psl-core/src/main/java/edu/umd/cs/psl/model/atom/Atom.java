@@ -19,7 +19,6 @@ package edu.umd.cs.psl.model.atom;
 import java.util.Collection;
 import java.util.Set;
 
-import edu.umd.cs.psl.database.DatabaseAtomStoreQuery;
 import edu.umd.cs.psl.model.argument.Term;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
@@ -93,7 +92,7 @@ public interface Atom extends Formula {
 	public boolean registerGroundKernel(GroundKernel f);
 	
 	/**
-	 * Deregisters a ground kernel, so that it no longer receives update events.
+	 * Unregisters a ground kernel, so that it no longer receives update events.
 	 * 
 	 * @param f A ground kernel
 	 * @return TRUE if successful; FALSE if kernel was never registered
@@ -113,7 +112,7 @@ public interface Atom extends Formula {
 	 * 
 	 * @return A collection of all registered ground kernels
 	 */
-	public Collection<GroundKernel> getAllRegisteredGroundKernels();
+	public Collection<GroundKernel> getRegisteredGroundKernels();
 	
 	/**
 	 * Returns the number of registered ground kernels.
@@ -269,7 +268,7 @@ public interface Atom extends Formula {
 	 * @param db A database query
 	 * @return A collection of atoms
 	 */
-	public Collection<Atom> getAtomsInGroup(AtomManager atommanager, DatabaseAtomStoreQuery db);
+	public Collection<Atom> getAtomsInGroup(AtomManager atommanager);
 	
 	/*
 	 * ###### FunctionVariable Interface ##########

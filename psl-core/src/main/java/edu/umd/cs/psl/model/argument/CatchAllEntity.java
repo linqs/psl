@@ -16,12 +16,13 @@
  */
 package edu.umd.cs.psl.model.argument;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Set;
 
 import com.google.common.base.Preconditions;
 
-import edu.umd.cs.psl.database.DatabaseAtomStoreQuery;
 import edu.umd.cs.psl.model.argument.type.ArgumentType;
+import edu.umd.cs.psl.model.atom.AtomManager;
 
 /**
  * A catch-all entity is an aggregate entity, representing multiple entities.
@@ -78,8 +79,8 @@ public class CatchAllEntity implements EntitySet {
 	}
 
 	@Override
-	public Set<Entity> getEntities(DatabaseAtomStoreQuery db) {
-		Set<Entity> result = db.getEntities(type);
+	public Set<Entity> getEntities(AtomManager atomManager) {
+		Set<Entity> result = atomManager.getEntities(type);
 		result.removeAll(excludedEntities);
 		return result;
 	}

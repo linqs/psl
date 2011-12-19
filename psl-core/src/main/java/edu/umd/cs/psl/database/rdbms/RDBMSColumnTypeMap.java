@@ -14,28 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.model.formula.traversal;
+package edu.umd.cs.psl.database.rdbms;
 
-import edu.umd.cs.psl.model.atom.Atom;
-/**
- * Interface specifying the methods needed to properly traverse a formula
- * 
- *
- */
-public interface FormulaTraversal {
+import edu.umd.cs.psl.database.DataFormat;
 
-	public boolean beforeConjunction();
-	
-	public void afterConjunction(int noFormulas);
-	
-	public boolean beforeDisjunction();
-	
-	public void afterDisjunction(int noFormulas);
-	
-	public boolean beforeNegation();
-	
-	public void afterNegation();
-	
-	public void visitAtom(Atom atom);
+public class RDBMSColumnTypeMap {
+
+	static String getColumnType(DataFormat df) {
+		switch(df) {
+		case IntegerID:
+			return "INT";
+		case String:
+			return "VARCHAR(255)";
+		case LongString:
+			return "MEDIUMTEXT";
+		case Number:
+			return "DOUBLE";
+		default: throw new IllegalArgumentException("Unknown data format: " + df);
+		}
+	}
 	
 }

@@ -16,9 +16,10 @@
  */
 package edu.umd.cs.psl.model.atom.memory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
-import edu.umd.cs.psl.database.DatabaseAtomStoreQuery;
 import edu.umd.cs.psl.model.argument.Entity;
 import edu.umd.cs.psl.model.argument.EntitySet;
 import edu.umd.cs.psl.model.argument.GroundTerm;
@@ -34,14 +35,14 @@ public class MemoryGroupAtom extends StatusAtom {
 		super(p, args, AtomStatus.UnconsideredRV);
 	}
 
-	public Collection<Atom> getAtomsInGroup(AtomManager atommanager,  DatabaseAtomStoreQuery db) {
+	public Collection<Atom> getAtomsInGroup(AtomManager atommanager) {
 		assert isConsidered();
 		List<Atom> result = new ArrayList<Atom>();
-		expandAtom(0,new GroundTerm[getArity()],atommanager,db,result);
+		expandAtom(0,new GroundTerm[getArity()],atommanager,result);
 		return result;
 	}
 	
-	private void expandAtom(int argpos,GroundTerm[] args, AtomManager atommanager, DatabaseAtomStoreQuery db, Collection<Atom> result) {
+	private void expandAtom(int argpos,GroundTerm[] args, AtomManager atommanager, Collection<Atom> result) {
 		if (argpos>=args.length) {
 			//Create atom
 			GroundTerm[] copy = args.clone();
@@ -51,13 +52,13 @@ public class MemoryGroupAtom extends StatusAtom {
 		} else {
 			GroundTerm t = (GroundTerm)getArguments()[argpos];
 			if (t instanceof EntitySet) {
-				for (Entity e : ((EntitySet)t).getEntities(db)) {
+				for (Entity e : ((EntitySet)t).getEntities(atommanager)) {
 					args[argpos]=e;
-					expandAtom(argpos+1,args,atommanager,db,result);
+					expandAtom(argpos+1,args,atommanager,result);
 				}
 			} else {
 				args[argpos]=t;
-				expandAtom(argpos+1,args,atommanager,db,result);
+				expandAtom(argpos+1,args,atommanager,result);
 			}
 		}
 	}

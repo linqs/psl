@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.database.RDBMS;
+package edu.umd.cs.psl.database.rdbms;
 
 import java.sql.Connection;
 import java.sql.DriverManager;

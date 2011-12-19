@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.database.RDBMS;
+package edu.umd.cs.psl.database.rdbms;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -39,7 +39,6 @@ import edu.umd.cs.psl.database.DataFormat;
 import edu.umd.cs.psl.database.DataStore;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.database.Partition;
-import edu.umd.cs.psl.database.PredicateDBType;
 import edu.umd.cs.psl.database.loading.Inserter;
 import edu.umd.cs.psl.database.loading.Updater;
 import edu.umd.cs.psl.model.predicate.Predicate;
@@ -48,15 +47,15 @@ public class RDBMSDataStore implements DataStore {
 	
 	private static final Logger log = LoggerFactory.getLogger(RDBMSDataStore.class);
 	
-	protected static final String defaultValueColumnSuffix = "_value";
-	protected static final String defaultConfidenceColumnSuffix = "_confidence";
-	protected static final String defaultPslColumnName = "psl";
-	protected static final String defaultPartitionColumnName = "part";
+	protected static final String defaultValueColumnName = "value";
+	protected static final String defaultConfidenceColumnName = "confidence";
+	protected static final String defaultPSLColumnName = "psl";
+	protected static final String defaultPartitionColumnName = "partition";
 	
 	
-	private final Map<Predicate,PredicateDBInfo> predicates;
-	protected String valueColumnSuffix;
-	protected String confidenceColumnSuffix;
+	private final Map<Predicate,RDBMSPredicateInfo> predicates;
+	protected String valueColumnName;
+	protected String confidenceColumnName;
 	protected String pslColumnName;
 	protected String partitionColumnName;
 	
@@ -67,56 +66,53 @@ public class RDBMSDataStore implements DataStore {
 	private final Set<Partition> writePartitionIDs;
 	
 	public RDBMSDataStore() {
-		this(defaultValueColumnSuffix, defaultConfidenceColumnSuffix,defaultPslColumnName, defaultPartitionColumnName);
+		this(defaultValueColumnName, defaultConfidenceColumnName,defaultPSLColumnName, defaultPartitionColumnName);
 		
 	}
 	
 	public RDBMSDataStore(String valueColName, String confidenceColName, String pslColName, String partitionColName) {
-		valueColumnSuffix = valueColName;
-		confidenceColumnSuffix = confidenceColName;
+		valueColumnName = valueColName;
+		confidenceColumnName = confidenceColName;
 		pslColumnName =  pslColName;
 		partitionColumnName = partitionColName;
 		
-		predicates = new HashMap<Predicate,PredicateDBInfo>();
+		predicates = new HashMap<Predicate,RDBMSPredicateInfo>();
 		openDatabases= HashMultimap.create();
 		writePartitionIDs = new HashSet<Partition>();
 	}
 	
 	@Override
-	public void registerPredicate(Predicate predicate, List<String> argnames, PredicateDBType type) {
-		registerPredicate(predicate,argnames,type,DataFormat.getDefaultFormat(predicate));
+	public void registerPredicate(Predicate predicate, List<String> argnames) {
+		registerPredicate(predicate, argnames, DataFormat.getDefaultFormat(predicate));
 	}
 
 	@Override
-	public void registerPredicate(Predicate predicate, List<String> argnames, PredicateDBType type, DataFormat[] format) {
-		if (predicates.containsKey(predicate)) throw new AssertionError("Predicate has already been registered: " + predicate);
-		predicates.put(predicate, getDefaultPredicateDBInfo(predicate,argnames,type,format));
+	public void registerPredicate(Predicate predicate, List<String> argnames, DataFormat[] format) {
+		if (predicates.containsKey(predicate))
+			throw new IllegalArgumentException("Predicate has already been registered: " + predicate);
+		predicates.put(predicate, getDefaultPredicateDBInfo(predicate, argnames, format));
 	}
 	
-	private PredicateDBInfo getDefaultPredicateDBInfo(Predicate predicate, List<String> argnames, PredicateDBType type, DataFormat[] format) {
+	private RDBMSPredicateInfo getDefaultPredicateDBInfo(Predicate predicate, List<String> argnames, DataFormat[] format) {
 		String[] argNames = argnames.toArray(new String[argnames.size()]);
-		String[] valueCols = new String[predicate.getNumberOfValues()];
-		String[] confidenceCols = new String[predicate.getNumberOfValues()];
-		for (int i=0;i<predicate.getNumberOfValues();i++) {
-			valueCols[i] = predicate.getValueName(i)+valueColumnSuffix;
-			confidenceCols[i] = predicate.getValueName(i)+confidenceColumnSuffix;
-		}
-		return new PredicateDBInfo(predicate,argNames,type,predicate.getName(),
-				(type==PredicateDBType.Closed?null:pslColumnName),
-				valueCols,confidenceCols,partitionColumnName,format);
+		return new RDBMSPredicateInfo(predicate, argNames, predicate.getName(),
+				pslColumnName, valueColumnName, confidenceColumnName,
+				partitionColumnName,format);
 	}
 	
-	private void getConnection(DatabaseDriver db, DatabaseDriver.Type type, String name, String folder, boolean empty) {
-		if (name==null) throw new IllegalArgumentException("Need to specify a name for the database.");
+	private void getConnection(DatabaseDriver db, DatabaseDriver.Type type, String name, String path, boolean empty) {
+		if (name==null) throw new IllegalArgumentException("Need to specify a name for the RDBMS.");
 		switch(type) {
 			case Disk:
-				if (folder==null) throw new IllegalArgumentException("Need to specify folder where disk database is to be stored.");
-				connection = db.getDatabase(folder,name, empty);
+				if (path==null)
+					throw new IllegalArgumentException("Need to specify path where disk database is to be stored.");
+				connection = db.getDatabase(path,name, empty);
 				break;
 			case Memory: 
 				connection = db.getMemoryDatabase(name);
 				break;
-			default: throw new IllegalArgumentException("Type can be one of 'disk' or 'memory', but was given: " + type);
+			default:
+				throw new IllegalArgumentException("Type can be one of 'disk' or 'memory', but was given: " + type);
 		}
 	}
 	
@@ -133,37 +129,40 @@ public class RDBMSDataStore implements DataStore {
 	
 	@Override
 	public Database getDatabase(Partition writeID, Partition... partitionIDs) {
-		return getDatabase(writeID,new HashSet<Predicate>(),partitionIDs);
-	}
-	
-	@Override
-	public Database getDatabase(Partition writeID, Set<Predicate> toclose, Partition... partitionIDs) {
 		RDBMSDatabase db = new RDBMSDatabase(this,connection, writeID, partitionIDs);
-		for (PredicateDBInfo predinfo : predicates.values()) {
-			boolean close = toclose.contains(predinfo.predicate);
-			db.registerPredicate(getPredicateHandle(predinfo,close));
+		for (RDBMSPredicateInfo predinfo : predicates.values()) {
+			db.registerPredicate(getPredicateHandle(predinfo));
 		}
-		if (writePartitionIDs.contains(writeID)) throw new IllegalArgumentException("The specified write partition ID is already used by another database!");
-		if (openDatabases.containsKey(writeID)) throw new IllegalArgumentException("The specified write partition ID is also a read partition!");
-		for (Partition partID : partitionIDs) {
-			assert !openDatabases.containsEntry(partID, db);
+		
+		/*
+		 * Verifies that no other Database is reading from the specificed write partition
+		 * and no other Database is writing to any of the specified read partitions
+		 */
+		if (writePartitionIDs.contains(writeID))
+			throw new IllegalArgumentException("The specified write partition ID is already used by another database.");
+		if (openDatabases.containsKey(writeID))
+			throw new IllegalArgumentException("The specified write partition ID is also a read partition.");
+		for (Partition partID : partitionIDs)
+			if (writePartitionIDs.contains(partID))
+				throw new IllegalArgumentException("Another database is writing to a specified read partition: " + partID);
+		
+		for (Partition partID : partitionIDs)
 			openDatabases.put(partID, db);
-		}
 		writePartitionIDs.add(writeID);
 		return db;
 	}
 	
 	void closeDatabase(RDBMSDatabase db, Partition writeID, Partition[] partitionIDs) {
 		for (Partition partID : partitionIDs) {
-			assert openDatabases.containsEntry(partID, db);
 			openDatabases.remove(partID, db);
 		}
-		if (!writePartitionIDs.remove(writeID)) throw new IllegalArgumentException("Database has not been opened with this data store!");
+		if (!writePartitionIDs.remove(writeID))
+			throw new IllegalArgumentException("Database has not been opened with this data store.");
 	}
 	
 	private void setupDataloader() {
 		List<RDBMSPredicateHandle> predicateHandles = new ArrayList<RDBMSPredicateHandle>();
-		for (PredicateDBInfo predinfo : predicates.values()) {
+		for (RDBMSPredicateInfo predinfo : predicates.values()) {
 			predicateHandles.add(getPredicateHandle(predinfo));
 		}
 		dataloader = new RDBMSDataLoader(connection,predicateHandles);
@@ -183,7 +182,7 @@ public class RDBMSDataStore implements DataStore {
 	}
 	
 	private void createTables() {
-		for (PredicateDBInfo predinfo : predicates.values()) {
+		for (RDBMSPredicateInfo predinfo : predicates.values()) {
 			createTableFor(predinfo);
 		}
 	}
@@ -245,8 +244,8 @@ public class RDBMSDataStore implements DataStore {
 		int deletedEntries = 0;
 		try {
 			Statement stmt = connection.createStatement();
-			for (PredicateDBInfo pred : predicates.values()) {
-				String sql = "DELETE FROM "+pred.tableName+" WHERE " + pred.partitioncol +"="+partID.getID();
+			for (RDBMSPredicateInfo pred : predicates.values()) {
+				String sql = "DELETE FROM "+pred.tableName+" WHERE " + pred.partitionCol +"="+partID.getID();
 				deletedEntries+= stmt.executeUpdate(sql);
 			}
 		} catch(SQLException e) {
@@ -266,57 +265,38 @@ public class RDBMSDataStore implements DataStore {
 		}
 	}
 	
-//	private RDBMSPredicateHandle getPredicateHandle(Predicate predicate, boolean toclose) {
-//		return getPredicateHandle(predicate.getName(),toclose);
-//	}
-//	
-//	private RDBMSPredicateHandle getPredicateHandle(Predicate predicate) {
-//		return getPredicateHandle(predicate.getName());
-//	}
-	
-	private RDBMSPredicateHandle getPredicateHandle(PredicateDBInfo predinfo) {
-		return getPredicateHandle(predinfo,false);
+	private RDBMSPredicateHandle getPredicateHandle(RDBMSPredicateInfo predinfo) {
+		if (!predicates.containsKey(predinfo.predicate))
+			throw new IllegalArgumentException("Predicate info. refers to an unregistered predicate: " + predinfo.predicate);
+		return predinfo.getPredicateHandle();
 	}
 	
-	private RDBMSPredicateHandle getPredicateHandle(PredicateDBInfo predinfo, boolean toclose) {
-		if (!predicates.containsKey(predinfo.predicate)) throw new AssertionError("Refering to undefined predicate : " + predinfo.predicate);
-		return predinfo.getPredicateHandle(toclose);
-	}
-	
-	
-	private void createTableFor(PredicateDBInfo ph) {
+	private void createTableFor(RDBMSPredicateInfo ph) {
 		CreateTableQuery q = new CreateTableQuery(ph.tableName);
 		
-		List<String> hashIndexes = new ArrayList<String>(ph.argColumns.length);
+		List<String> hashIndexes = new ArrayList<String>(ph.argCols.length);
 		StringBuilder keyColumns = new StringBuilder();
 		
-		for (int i=0;i<ph.argColumns.length;i++) {
-			String colName = ph.argColumns[i];
+		for (int i=0;i<ph.argCols.length;i++) {
+			String colName = ph.argCols[i];
 			keyColumns.append(colName).append(", ");
 			if (ph.predicate.getArgumentType(i).isEntity()) {
 				hashIndexes.add(colName);
 			}
 			q.addCustomColumn(colName+" " + RDBMSColumnTypeMap.getColumnType(ph.columnTypes[i]), ColumnConstraint.NOT_NULL);
 		}
-		q.addCustomColumn(ph.partitioncol+" INT DEFAULT 0", ColumnConstraint.NOT_NULL);
-		keyColumns.append(ph.partitioncol);
-		for (int j=0;j<ph.valuecols.length;j++) {
-			q.addCustomColumn(ph.valuecols[j]+" DOUBLE", ColumnConstraint.NOT_NULL);
-		}
-		for (int j=0;j<ph.confidencecols.length;j++) {
-			q.addCustomColumns(ph.confidencecols[j]+" DOUBLE");
-		}
-		if (ph.type!=PredicateDBType.Closed) {
-			q.addCustomColumn(ph.pslcol+" INT DEFAULT 0", ColumnConstraint.NOT_NULL);
-		}
+		q.addCustomColumn(ph.partitionCol+" INT DEFAULT 0", ColumnConstraint.NOT_NULL);
+		keyColumns.append(ph.partitionCol);
+		q.addCustomColumn(ph.valueCol + " DOUBLE", ColumnConstraint.NOT_NULL);
+		q.addCustomColumns(ph.confidenceCol + " DOUBLE");
+		q.addCustomColumn(ph.pslCol + " INT DEFAULT 0", ColumnConstraint.NOT_NULL);
 			
 		try {
 			Statement stmt = connection.createStatement();
 
 			try {
-			    //stmt.executeUpdate(q.getDropQuery().validate().toString());
 			    stmt.executeUpdate(q.validate().toString());
-			    //Create indexes
+			    /* Creates indexes */
 				for (String hashcol : hashIndexes) {
 					stmt.executeUpdate("CREATE HASH INDEX " + ph.tableName+hashcol+"hashidx ON " + ph.tableName + " (" + hashcol + " ) ");
 				}

@@ -77,7 +77,6 @@ public class ExternalInducerKernel implements Kernel {
 		weight = new PositiveWeight(w);
 
 		Preconditions.checkArgument(head.getPredicate() instanceof StandardPredicate);
-		Preconditions.checkArgument(head.getPredicate().getNumberOfValues()==1);
 		this.head = head;
 		retrievals = new HashMap<Variable,List<Atom>>();
 		vartypes = new VariableTypeMap();
@@ -170,7 +169,6 @@ public class ExternalInducerKernel implements Kernel {
 	private void validatePredicates(DatabaseAtomStoreQuery db) {
 		for (Predicate p : getRetrievalPredicates()) {
 				Preconditions.checkArgument(db.isClosed(p),p);
-				Preconditions.checkArgument(p.getType()==PredicateTypes.BooleanTruth,p);
 		}
 	}
 	
@@ -184,7 +182,7 @@ public class ExternalInducerKernel implements Kernel {
 	private static enum Execution { Bulk, Learn }
 	
 	@SuppressWarnings("unchecked")
-	private void getDataAndExecute(DatabaseAtomStoreQuery db, Execution exe, ModelApplication app) {
+	private void getDataAndExecute(AtomManager atomManager, Execution exe, ModelApplication app) {
 		Map<GroundTerm,GroundTerm[]>[] datas = (Map<GroundTerm,GroundTerm[]>[])new Object[retrievals.size()];
 		Map<Variable,int[]> argMap = new HashMap<Variable,int[]>();
 		
@@ -202,7 +200,7 @@ public class ExternalInducerKernel implements Kernel {
 			assert atoms!=null;
 			if (atoms.isEmpty()) {
 				assert externalAtomVariables.contains(var);
-				Set<Entity> entities = db.getEntities(vartypes.get(var));
+				Set<Entity> entities = atomManager.getEntities(vartypes.get(var));
 				for (Entity e : entities) {
 					datas[position].put(e, new GroundTerm[]{e});
 				}
@@ -214,7 +212,7 @@ public class ExternalInducerKernel implements Kernel {
 				for (Atom a : atoms) for (Term t : a.getArguments())
 					if (externalAtomVariables.contains(t) && !projectTo.contains(t)) projectTo.add((Variable)t);
 				assert !projectTo.isEmpty();
-				ResultList results = db.query(c, projectTo);
+				ResultList results = atomManager.query(c, projectTo);
 				for (int k=0;k<results.size();k++) {
 					GroundTerm[] result = results.get(k);
 					if (externalAtomVariables.contains(var)) datas[position].put(result[0], result);
@@ -252,7 +250,7 @@ public class ExternalInducerKernel implements Kernel {
 			for (int i=0;i<head.getArity();i++) {
 				if (head.getArguments()[i] instanceof GroundTerm) query[i]=(GroundTerm)head.getArguments()[i];
 			}
-			ResultListValues results = db.getFacts(head.getPredicate(),query);
+			ResultListValues results = atomManager.getFacts(head.getPredicate(),query);
 
 			Map<GroundTerm[],double[]> truth = new HashMap<GroundTerm[],double[]>();
 
@@ -267,7 +265,7 @@ public class ExternalInducerKernel implements Kernel {
 	public void groundAll(ModelApplication app) {
 		if (!(extFun instanceof BulkExternalFunction))
 			throw new IllegalStateException("The provided external function is not learnable!");
-		getDataAndExecute(app.getDatabase(),Execution.Learn,app);
+		getDataAndExecute(app.getAtomManager(),Execution.Learn,app);
 	}
 	
 
@@ -286,19 +284,19 @@ public class ExternalInducerKernel implements Kernel {
 	}
 	
 	@Override
-	public void registerForAtomEvents(AtomEventFramework framework, DatabaseAtomStoreQuery db) {
+	public void registerForAtomEvents(AtomManager manager) {
 		validatePredicates(db);
-		framework.registerAtomEventObserver(head.getPredicate(), AtomEventSets.DeOrActivationEvent, this);
+		manager.registerAtomEventObserver(head.getPredicate(), AtomEventSets.DeOrActivationEvent, this);
 		for (Predicate p : getRetrievalPredicates()) {
-			framework.registerAtomEventObserver(p, AtomEventSets.NonDefaultFactEvent, this);
+			manager.registerAtomEventObserver(p, AtomEventSets.NonDefaultFactEvent, this);
 		}
 	}
 	
 	@Override
-	public void unregisterForAtomEvents(AtomEventFramework framework, DatabaseAtomStoreQuery db) {
-		framework.unregisterAtomEventObserver(head.getPredicate(), AtomEventSets.DeOrActivationEvent, this);
+	public void unregisterForAtomEvents(AtomManager manager) {
+		manager.unregisterAtomEventObserver(head.getPredicate(), AtomEventSets.DeOrActivationEvent, this);
 		for (Predicate p : getRetrievalPredicates()) {
-			framework.unregisterAtomEventObserver(p, AtomEventSets.NonDefaultFactEvent, this);
+			manager.unregisterAtomEventObserver(p, AtomEventSets.NonDefaultFactEvent, this);
 		}
 	}
 	

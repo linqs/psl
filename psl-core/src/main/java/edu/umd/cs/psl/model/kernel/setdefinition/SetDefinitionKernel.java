@@ -34,7 +34,6 @@ import com.google.common.collect.Lists;
 
 import edu.umd.cs.psl.application.GroundingMode;
 import edu.umd.cs.psl.application.ModelApplication;
-import edu.umd.cs.psl.database.DatabaseAtomStoreQuery;
 import edu.umd.cs.psl.database.ResultList;
 import edu.umd.cs.psl.model.ConfidenceValues;
 import edu.umd.cs.psl.model.argument.GroundTerm;
@@ -45,11 +44,12 @@ import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.AtomEvent;
 import edu.umd.cs.psl.model.atom.AtomEventFramework;
 import edu.umd.cs.psl.model.atom.AtomEventSets;
+import edu.umd.cs.psl.model.atom.AtomManager;
 import edu.umd.cs.psl.model.atom.TemplateAtom;
 import edu.umd.cs.psl.model.atom.VariableAssignment;
 import edu.umd.cs.psl.model.formula.Conjunction;
 import edu.umd.cs.psl.model.formula.Formula;
-import edu.umd.cs.psl.model.formula.traversal.FormulaEventAnalysis;
+import edu.umd.cs.psl.model.formula.FormulaEventAnalysis;
 import edu.umd.cs.psl.model.formula.traversal.FormulaGrounder;
 import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.model.kernel.rule.AbstractGroundRule;
@@ -211,7 +211,7 @@ public class SetDefinitionKernel implements Kernel {
 	@Override
 	public void groundAll(ModelApplication app) {
 		for (int k=0;k<triggerFormulas.size();k++) {
-			ResultList res = app.getDatabase().query(triggerFormulas.get(k).getFormula(), projection);
+			ResultList res = app.getAtomStore().query(triggerFormulas.get(k).getFormula(), projection);
 			log.debug("Grounding size {} for formula {}",res.size(),triggerFormulas.get(k).getFormula());
 			for (int i=0;i<res.size();i++) {
 				newSetDefinition(app,res.get(i),true);
@@ -243,7 +243,7 @@ public class SetDefinitionKernel implements Kernel {
 					
 					for (VariableAssignment var : vars) {
 						log.trace("{}",analysis.getFormula());
-						ResultList res = app.getDatabase().query(analysis.getFormula(), var, projection);
+						ResultList res = app.getAtomStore().query(analysis.getFormula(), var, projection);
 						for (int i=0;i<res.size();i++) {
 							newSetDefinition(app,res.get(i),false);
 						}
@@ -257,7 +257,7 @@ public class SetDefinitionKernel implements Kernel {
 	}
 	
 	private void newSetDefinition(ModelApplication app, GroundTerm[] args, boolean forceCreation) {
-		Atom setAtom = app.getDatabase().getConsideredAtom(setPredicate, args);
+		Atom setAtom = app.getAtomStore().getConsideredAtom(setPredicate, args);
 		//If the definition already exists, then we can directly return
 		if (setAtom!=null && !setAtom.getRegisteredGroundKernels(this).isEmpty()) return;
 		
@@ -283,7 +283,7 @@ public class SetDefinitionKernel implements Kernel {
 				} else {
 					assert setterm.getLeaf() instanceof Variable;
 					if (isSoftSet) {
-						ResultList res = app.getDatabase().query(setterm.getFormula(), ass);
+						ResultList res = app.getAtomStore().query(setterm.getFormula(), ass);
 						FormulaGrounder grounder = new FormulaGrounder(app.getAtomManager(), res, ass);
 						while (grounder.hasNext()) {
 							Formula f = grounder.ground(setterm.getFormula());
@@ -293,7 +293,7 @@ public class SetDefinitionKernel implements Kernel {
 							grounder.next();
 						}
 					} else {
-						ResultList res = app.getDatabase().query(setterm.getFormula(), ass, ImmutableList.of((Variable)setterm.getLeaf()));
+						ResultList res = app.getAtomStore().query(setterm.getFormula(), ass, ImmutableList.of((Variable)setterm.getLeaf()));
 						for (int j=0;j<res.size();j++)
 							members[i].addMember(res.get(j)[0], 1.0);
 					}
@@ -334,7 +334,7 @@ public class SetDefinitionKernel implements Kernel {
 		Set<Atom> compAtoms = new HashSet<Atom>();
 		for (GroundTerm s1 : set1) {
 			for (GroundTerm s2 : set2) {
-				Atom atom = app.getDatabase().getConsideredAtom(comparisonPredicate, new GroundTerm[]{s1,s2});
+				Atom atom = app.getAtomStore().getConsideredAtom(comparisonPredicate, new GroundTerm[]{s1,s2});
 				if (atom!=null) compAtoms.add(atom);
 			}
 		}
@@ -345,7 +345,7 @@ public class SetDefinitionKernel implements Kernel {
 	
 	
 	@Override
-	public void registerForAtomEvents(AtomEventFramework framework, DatabaseAtomStoreQuery db) {
+	public void registerForAtomEvents(AtomManager manager) {
 		for (FormulaEventAnalysis analysis : triggerFormulas) {
 			analysis.registerFormulaForEvents(framework, this, AtomEventSets.DeOrActivationEvent, db);
 		}
@@ -354,7 +354,7 @@ public class SetDefinitionKernel implements Kernel {
 	}
 	
 	@Override
-	public void unregisterForAtomEvents(AtomEventFramework framework, DatabaseAtomStoreQuery db) {
+	public void unregisterForAtomEvents(AtomManager manager) {
 		for (FormulaEventAnalysis analysis : triggerFormulas) {
 			analysis.unregisterFormulaForEvents(framework, this, AtomEventSets.DeOrActivationEvent, db);
 		}

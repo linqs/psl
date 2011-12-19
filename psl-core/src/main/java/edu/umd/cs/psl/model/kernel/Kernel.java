@@ -17,10 +17,9 @@
 package edu.umd.cs.psl.model.kernel;
 
 import edu.umd.cs.psl.application.ModelApplication;
-import edu.umd.cs.psl.database.DatabaseAtomStoreQuery;
 import edu.umd.cs.psl.model.atom.Atom;
-import edu.umd.cs.psl.model.atom.AtomEventFramework;
 import edu.umd.cs.psl.model.atom.AtomEventObserver;
+import edu.umd.cs.psl.model.atom.AtomManager;
 import edu.umd.cs.psl.model.parameters.Parameters;
 
 
@@ -37,9 +36,9 @@ import edu.umd.cs.psl.model.parameters.Parameters;
  */
 public interface Kernel extends AtomEventObserver, Cloneable {
 
-	public void registerForAtomEvents(AtomEventFramework framework, DatabaseAtomStoreQuery db);
+	public void registerForAtomEvents(AtomManager manager);
 	
-	public void unregisterForAtomEvents(AtomEventFramework framework, DatabaseAtomStoreQuery db);
+	public void unregisterForAtomEvents(AtomManager manager);
 	
 	public void groundAll(ModelApplication app);
 	

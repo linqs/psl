@@ -21,14 +21,12 @@ import java.util.Map;
 
 import com.google.common.base.Preconditions;
 
+import edu.umd.cs.psl.model.TruthValues;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.TextAttribute;
 import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.argument.type.ArgumentType;
 import edu.umd.cs.psl.model.argument.type.ArgumentTypes;
-import edu.umd.cs.psl.model.predicate.type.PredicateType;
-import edu.umd.cs.psl.model.predicate.type.PredicateTypes;
-import edu.umd.cs.psl.optimizer.NumericUtilities;
 
 public class AttributeSimFunAdapter implements ExternalFunction, BulkExternalFunction {
 
@@ -56,11 +54,6 @@ public class AttributeSimFunAdapter implements ExternalFunction, BulkExternalFun
 		return 2;
 	}
 
-	@Override
-	public PredicateType getPredicateType() {
-		return PredicateTypes.SoftTruth;
-	}
-	
 	private static final String[] args2String(GroundTerm... args) {
 		if (args.length!=2) throw new IllegalArgumentException("Expectecd 2 arguments, but was given: " + args);
 		String[] s = new String[2];
@@ -75,7 +68,7 @@ public class AttributeSimFunAdapter implements ExternalFunction, BulkExternalFun
 	@Override
 	public double getValue(GroundTerm... args) {
 		String[] strs = args2String(args);
-		return new double[]{function.similarity(strs[0], strs[1])};
+		return function.similarity(strs[0], strs[1]);
 	}
 
 
@@ -92,7 +85,7 @@ public class AttributeSimFunAdapter implements ExternalFunction, BulkExternalFun
 				assert inner.getValue().length==1;
 				String[] strs = args2String(outer.getValue()[0],inner.getValue()[0]);
 				double val = function.similarity(strs[0],strs[1]);
-				if (!NumericUtilities.equals(val,getPredicateType().getDefaultValues()[0])) {
+				if (!TruthValues.isDefault(val)) {
 					result.put(new GroundTerm[]{outer.getKey(),inner.getKey()}, new double[]{val});
 				}
 			}

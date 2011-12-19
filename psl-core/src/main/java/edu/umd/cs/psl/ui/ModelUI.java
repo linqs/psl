@@ -129,7 +129,7 @@ public class ModelUI {
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		FullInference app = new MaintainedMemoryFullInference(model,db, config);
 		FullInferenceResult stats = app.runInference();
-		return new UIFullInferenceResult(app.getDatabase(),stats);
+		return new UIFullInferenceResult(app.getAtomStore(),stats);
 	}
 	
 	public UIFullConfidenceAnalysisResult marginalInference(Database db)
@@ -141,7 +141,7 @@ public class ModelUI {
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		FullConfidenceAnalysis app = new MemoryFullConfidenceAnalysis(model,db,config);
 		FullConfidenceAnalysisResult stats = app.runConfidenceAnalysis();
-		return new UIFullConfidenceAnalysisResult(app.getDatabase(),stats);
+		return new UIFullConfidenceAnalysisResult(app.getAtomStore(),stats);
 	}
 	
 	public String toString() {

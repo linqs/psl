@@ -18,12 +18,17 @@ package edu.umd.cs.psl.model;
 
 public class TruthValues {
 
-	private static final double defaultTruth = 1.0;
+	private static final double defaultTruth = 0.0;
+	private static final double defaultEvidenceTruth = 1.0;
 	private static final double minTruth = 0.0;
 	private static final double maxTruth = 1.0;
 	
 	public static final double getDefault() {
 		return defaultTruth;
+	}
+	
+	public static final double getDefaultEvidence() {
+		return defaultEvidenceTruth;
 	}
 	
 	public static final boolean isValid(double truthVal) {

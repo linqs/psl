@@ -94,7 +94,7 @@ public class MemoryAtom extends StatusAtom {
 	}
 	
 	@Override
-	public Collection<GroundKernel> getAllRegisteredGroundKernels() {
+	public Collection<GroundKernel> getRegisteredGroundKernels() {
 		if (dependentKernels==null) return emptyGroundKernels;
 		return dependentKernels.values();
 	}

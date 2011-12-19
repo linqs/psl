@@ -27,11 +27,8 @@ import edu.umd.cs.psl.model.kernel.BindingMode;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.model.parameters.Weight;
-import edu.umd.cs.psl.reasoner.function.ConstantNumber;
-import edu.umd.cs.psl.reasoner.function.FunctionSum;
 import edu.umd.cs.psl.reasoner.function.FunctionSummand;
 import edu.umd.cs.psl.reasoner.function.FunctionTerm;
-import edu.umd.cs.psl.reasoner.function.MaxFunction;
 
 public class GroundBias implements GroundCompatibilityKernel {
 
@@ -55,23 +52,7 @@ public class GroundBias implements GroundCompatibilityKernel {
 	
 	@Override
 	public FunctionTerm getFunctionDefinition() {
-		
-		if (atom.getPredicate().getDefaultValues()[0] == 0.0) {
-			return new FunctionSummand(1.0, atom.getVariable());
-		}
-		else {
-			FunctionSum sum1 = new FunctionSum();
-			FunctionSum sum2 = new FunctionSum();
-			sum1.add(new FunctionSummand(1.0, atom.getVariable()));
-			sum1.add(new FunctionSummand(-1.0,
-					new ConstantNumber(atom.getPredicate().getDefaultValues()[0])));
-			
-			sum2.add(new FunctionSummand(-1.0, atom.getVariable()));
-			sum2.add(new FunctionSummand(1.0,
-					new ConstantNumber(atom.getPredicate().getDefaultValues()[0])));
-			
-			return MaxFunction.of(sum1, sum2);
-		}
+		return new FunctionSummand(1.0, atom.getVariable());
 	}
 	
 	@Override
@@ -112,7 +93,7 @@ public class GroundBias implements GroundCompatibilityKernel {
 
 	@Override
 	public String toString() {
-		return "prior on " + atom + " " + kernel.getWeight();
+		return "Bias on " + atom + " " + kernel.getWeight();
 	}
 	
 	/*
@@ -131,13 +112,7 @@ public class GroundBias implements GroundCompatibilityKernel {
 	}
 	
 	protected double getL1Distance() {
-//		double[] softValues = atom.getSoftValues();
-		double[] defaultValues = atom.getPredicate().getDefaultValues();
-		double d = 0.0;
-//		for (int i = 0; i < atom.getNumberOfValues(); i++) {
-//			d += Math.abs(softValues[i] - defaultValues[i]); 
-//		}
-		return d;
+		return atom.getValue();
 	}
 
 	@Override

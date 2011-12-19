@@ -22,13 +22,11 @@ import com.google.common.collect.Iterables;
 
 import edu.umd.cs.psl.application.GroundingMode;
 import edu.umd.cs.psl.application.ModelApplication;
-import edu.umd.cs.psl.database.DatabaseAtomStoreQuery;
-import edu.umd.cs.psl.database.ResultList;
 import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.AtomEvent;
-import edu.umd.cs.psl.model.atom.AtomEventFramework;
 import edu.umd.cs.psl.model.atom.AtomEventSets;
+import edu.umd.cs.psl.model.atom.AtomManager;
 import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.model.parameters.Parameters;
 import edu.umd.cs.psl.model.parameters.PositiveWeight;
@@ -89,14 +87,11 @@ public class BiasKernel implements Kernel {
 
 	@Override
 	public void groundAll(ModelApplication app) {
-		ResultList res = app.getDatabase().getAtoms(predicate);
-		for (int i=0;i<res.size();i++) {
-			Atom atom = app.getAtomManager().getAtom(predicate, res.get(i));
-			addPrior(atom,app);
-		}
+		for (Atom atom : app.getAtomManager().getConsideredAtoms(predicate))
+			addBias(atom, app);
 	}
 
-	private void addPrior(Atom atom, ModelApplication app) {
+	private void addBias(Atom atom, ModelApplication app) {
 		if (atom.getRegisteredGroundKernels(this).isEmpty()) {
 			GroundBias pw = new GroundBias(this,atom);
 			app.addGroundKernel(pw);
@@ -106,7 +101,7 @@ public class BiasKernel implements Kernel {
 	@Override
 	public void notifyAtomEvent(AtomEvent event, Atom atom, GroundingMode mode, ModelApplication app) {
 		if (AtomEventSets.IntroducedInferenceAtom.subsumes(event)) {
-			addPrior(atom,app);
+			addBias(atom,app);
 		} else if (AtomEventSets.ReleasedInferenceAtom.subsumes(event)) {
 			GroundBias pw = (GroundBias)Iterables.getOnlyElement(atom.getRegisteredGroundKernels(this));
 			app.removeGroundKernel(pw);
@@ -116,16 +111,13 @@ public class BiasKernel implements Kernel {
 	}
 	
 	@Override
-	public void registerForAtomEvents(AtomEventFramework framework, DatabaseAtomStoreQuery db) {
-		if (predicate.getNumberOfValues()!=1) throw new IllegalArgumentException("Invalid predicate: " + predicate);
-		if (!db.isClosed(predicate))
-			framework.registerAtomEventObserver(predicate, AtomEventSets.IntroducedReleasedInferenceAtom, this);
+	public void registerForAtomEvents(AtomManager manager) {
+		manager.registerAtomEventObserver(predicate, AtomEventSets.IntroducedReleasedInferenceAtom, this);
 	}
 	
 	@Override
-	public void unregisterForAtomEvents(AtomEventFramework framework, DatabaseAtomStoreQuery db) {
-		if (!db.isClosed(predicate))
-			framework.unregisterAtomEventObserver(predicate, AtomEventSets.IntroducedReleasedInferenceAtom, this);
+	public void unregisterForAtomEvents(AtomManager manager) {
+		manager.unregisterAtomEventObserver(predicate, AtomEventSets.IntroducedReleasedInferenceAtom, this);
 	}
 	
 	@Override

@@ -23,46 +23,42 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
 import de.mathnbits.util.RetrievalSet;
-import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.database.AtomRecord;
+import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.ConfidenceValues;
 import edu.umd.cs.psl.model.argument.EntitySet;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.AtomStatus;
-import edu.umd.cs.psl.model.atom.AtomStore;
 import edu.umd.cs.psl.model.predicate.FunctionalPredicate;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
 
-public class MemoryAtomStore implements AtomStore {
+class MemoryAtomStore {
 
 	private final Database db;
 
 	
 	private final RetrievalSet<Atom> atomCache;
 	
-	public MemoryAtomStore(Database _db) {
+	MemoryAtomStore(Database _db) {
 		db = _db;
 
 		atomCache = new RetrievalSet<Atom>();
 	}
 
-	@Override
-	public void store(Atom atom) {
+	void store(Atom atom) {
 		assert atom.isInferenceAtom();
 		if (!atom.isAtomGroup()) {
 			db.persist(atom);
 		}
 	}
 	
-	@Override
-	public Database getDatabase() {
+	Database getDatabase() {
 		return db;
 	}
 	
-	@Override
-	public void free(Atom atom) {
+	void free(Atom atom) {
 		Preconditions.checkArgument(atom.isUnconsidered() || !atom.isDefined());
 		assert atom.getNumRegisteredGroundKernels()==0;
 		if (!atomCache.remove(atom))
@@ -70,8 +66,7 @@ public class MemoryAtomStore implements AtomStore {
 		atom.delete();
 	}
 
-	@Override
-	public Atom getAtom(Predicate p, GroundTerm[] arguments) {
+	Atom getAtom(Predicate p, GroundTerm[] arguments) {
 		Atom atom = new MemoryAtom(p,arguments,AtomStatus.Undefined);
 		Atom oldAtom = atomCache.get(atom);
 		if (oldAtom!=null) {
@@ -95,20 +90,19 @@ public class MemoryAtomStore implements AtomStore {
 
 	}
 	
-	public static boolean containsEntitySet(GroundTerm[] terms) {
+	static boolean containsEntitySet(GroundTerm[] terms) {
 		for (int i=0;i<terms.length;i++) {
 			if (terms[i] instanceof EntitySet) return true;
 		}
 		return false;
  	}
 	
-	@Override
-	public Atom getConsideredAtom(Predicate p, GroundTerm[] arguments) {
+	Atom getConsideredAtom(Predicate p, GroundTerm[] arguments) {
 		Atom atom = new MemoryAtom(p,arguments,AtomStatus.Undefined);
 		return atomCache.get(atom);
 	}
 	
-	public int getNumAtoms(final Set<AtomStatus> stati) {
+	int getNumAtoms(final Set<AtomStatus> stati) {
 		int result = 0;
 		for (Atom atom : atomCache) {
 			if (stati.contains(atom.getStatus())) result++;
@@ -116,7 +110,7 @@ public class MemoryAtomStore implements AtomStore {
 		return result;
 	}
 	
-	public Iterable<Atom> getAtoms(final Set<AtomStatus> stati) {
+	Iterable<Atom> getAtoms(final Set<AtomStatus> stati) {
 		return Iterables.filter(atomCache, new com.google.common.base.Predicate<Atom>(){
 			@Override
 			public boolean apply(Atom atom) {
@@ -125,8 +119,7 @@ public class MemoryAtomStore implements AtomStore {
 		});
 	}
 
-	@Override
-	public Iterable<Atom> getAtoms(final AtomStatus status) {
+	Iterable<Atom> getAtoms(final AtomStatus status) {
 		return getAtoms(ImmutableSet.of(status));
 	}
 	

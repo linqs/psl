@@ -38,10 +38,6 @@ public interface Database {
 
 	public AtomRecord getAtom(Predicate p, GroundTerm[] arguments);
 	
-	public ResultListValues getFacts(Predicate p, Term[] arguments);
-	
-	public Map<PredicatePosition,ResultListValues> getAllFactsWith(GroundTerm e);
-	
 	public void persist(Atom atom);
 	
 	public ResultList query(Formula f, VariableAssignment partialGrounding, List<Variable> projectTo);
@@ -54,15 +50,13 @@ public interface Database {
 	
 	public void registerDatabaseEventObserver(DatabaseEventObserver atomEvents);
 	
-	public void deregisterDatabaseEventObserver(DatabaseEventObserver atomEvents);
+	public void unregisterDatabaseEventObserver(DatabaseEventObserver atomEvents);
 	
 	public Entity getEntity(Object entity, ArgumentType type);
 	
 	public Set<Entity> getEntities(ArgumentType type);
 	
 	public int getNumEntities(ArgumentType type);
-	
-	public boolean isClosed(Predicate p);
 	
 	public void close();
 }

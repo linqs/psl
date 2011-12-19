@@ -35,8 +35,8 @@ import edu.umd.cs.psl.database.AtomRecord.Status;
 import edu.umd.cs.psl.database.ResultList;
 import edu.umd.cs.psl.database.ResultListValues;
 import edu.umd.cs.psl.database.UniqueID;
-import edu.umd.cs.psl.database.RDBMS.RDBMSResultList;
-import edu.umd.cs.psl.database.RDBMS.RDBMSUniqueIntID;
+import edu.umd.cs.psl.database.rdbms.RDBMSResultList;
+import edu.umd.cs.psl.database.rdbms.RDBMSUniqueIntID;
 import edu.umd.cs.psl.evaluation.statistics.ResultComparison.BinaryClass;
 import edu.umd.cs.psl.model.argument.Entity;
 import edu.umd.cs.psl.model.argument.GroundTerm;
@@ -131,7 +131,7 @@ public class SimpleResultComparatorTest {
 		}
 
 		@Override
-		public void deregisterDatabaseEventObserver(DatabaseEventObserver atomEvents) {
+		public void unregisterDatabaseEventObserver(DatabaseEventObserver atomEvents) {
 			throw new UnsupportedOperationException();
 		}
 

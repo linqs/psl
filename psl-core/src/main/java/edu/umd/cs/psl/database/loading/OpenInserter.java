@@ -24,10 +24,6 @@ public interface OpenInserter {
 	
 	public void insertValue(Partition partitionID, double truth, Object... data);
 	
-	public void insertValues(Partition partitionID, double[] values, Object... data);
-	
 	public void insertValue(Partition partitionID, double value, double confidence, Object... data);
-	
-	public void insertValues(Partition partitionID, double[] values, double[] confidences, Object... data);
 	
 }

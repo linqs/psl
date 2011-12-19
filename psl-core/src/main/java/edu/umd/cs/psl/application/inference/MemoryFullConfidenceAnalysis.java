@@ -45,7 +45,7 @@ import edu.umd.cs.psl.model.ModelEvent;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.AtomEventFramework;
 import edu.umd.cs.psl.model.atom.AtomStore;
-import edu.umd.cs.psl.model.atom.memory.MemoryAtomEventFramework;
+import edu.umd.cs.psl.model.atom.memory.MemoryAtomManager;
 import edu.umd.cs.psl.model.atom.memory.MemoryAtomStore;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
@@ -79,7 +79,7 @@ public class MemoryFullConfidenceAnalysis implements ModelApplication, FullConfi
 		store = new MemoryAtomStore(database);
 		dbProxy = new DatabaseAtomStoreQuery(store);
 		groundkernels = new MemoryGroundKernelStore();
-		atomEvents = new MemoryAtomEventFramework(m,this,store,AtomEventFramework.ActivationMode.All);
+		atomEvents = new MemoryAtomManager(m,this,store,AtomEventFramework.ActivationMode.All);
 		reasoner = new ConicReasoner(atomEvents, new EmptyBundle());
 		
 		isInitialized=false;
@@ -191,7 +191,7 @@ public class MemoryFullConfidenceAnalysis implements ModelApplication, FullConfi
 	//####### Interface to other components #####
 	
 	@Override
-	public DatabaseAtomStoreQuery getDatabase() {
+	public AtomStore getAtomStore() {
 		return dbProxy;
 	}
 	

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.database.RDBMS;
+package edu.umd.cs.psl.database.rdbms;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -32,6 +32,7 @@ import edu.umd.cs.psl.database.loading.OpenInserter;
 import edu.umd.cs.psl.database.partition.PartitionID;
 import edu.umd.cs.psl.database.Partition;
 import edu.umd.cs.psl.model.ConfidenceValues;
+import edu.umd.cs.psl.model.TruthValues;
 import edu.umd.cs.psl.model.predicate.Predicate;
 
 public class RDBMSDataLoader implements DataLoader {
@@ -85,11 +86,6 @@ public class RDBMSDataLoader implements DataLoader {
 		@Override
 		public void insertValue(double value, Object... data) {
 			inserter.insertValue(partitionID, value, data);
-		}	
-		
-		@Override
-		public void insertValues(double[] values, Object... data) {
-			inserter.insertValues(partitionID, values, data);
 		}
 		
 		@Override
@@ -97,19 +93,15 @@ public class RDBMSDataLoader implements DataLoader {
 			inserter.insertValue(partitionID, value, confidence, data);
 		}
 		
-		@Override
-		public void insertValues(double[] values, double[] confidences, Object... data) {
-			inserter.insertValues(partitionID, values, confidences, data);
-		}
-		
 	}
-	
 	
 	private class RDBMSTableInserter implements OpenInserter {
 		
 		private final RDBMSPredicateHandle handle;
 		private final int argSize;
 		private final PreparedStatement insertStmt;
+		private final double defaultEvidenceValue;
+		private final double defaultConfidence;
 		
 		public RDBMSTableInserter(RDBMSPredicateHandle ph) {
 			handle = ph;
@@ -124,19 +116,10 @@ public class RDBMSDataLoader implements DataLoader {
 				sql.append(", ").append(handle.argumentColumns()[i]);
 				numCols++;
 			}
-			
-			if (handle.hasSoftValues()) {
-				for (int i=0;i<handle.valueColumns().length;i++) {
-					sql.append(", ").append(handle.valueColumns()[i]);
-					numCols++;
-				}
-			}
-			if (handle.hasConfidenceValues()) {
-				for (int i=0;i<handle.confidenceColumns().length;i++) {
-					sql.append(", ").append(handle.confidenceColumns()[i]);
-					numCols++;
-				}
-			}
+			sql.append(", ").append(handle.valueColumn());
+			numCols++;
+			sql.append(", ").append(handle.confidenceColumn());
+			numCols++;
 			
 			sql.append(") VALUES ( ");
 			for (int i=0;i<numCols;i++) {
@@ -149,58 +132,38 @@ public class RDBMSDataLoader implements DataLoader {
 			} catch (SQLException e) {
 				throw new AssertionError(e);
 			}
-		}
-		
-		private double[] getConfidenceValues() {
-			return ConfidenceValues.getMax();
-		}
-		
-		@Override
-		public void insertValue(Partition partitionID, double value, Object... data) {
-			double[] values = new double[]{value};
-			if (!handle.hasSoftValues()) throw new IllegalArgumentException("This predicate does not have value columns");
-			insertInternal(partitionID, values, getConfidenceValues(), data);
+			
+			defaultEvidenceValue = TruthValues.getDefaultEvidence();
+			defaultConfidence = ConfidenceValues.getMax();
 		}
 		
 		@Override
 		public void insert(Partition partitionID, Object... data) {
-			insertInternal(partitionID, handle.predicate().getStandardValues(), getConfidenceValues(), data);
+			insertInternal(partitionID, defaultEvidenceValue, defaultConfidence, data);
 		}
 		
 		@Override
-		public void insertValues(Partition partitionID, double[] values, Object... data) {
-			if (!handle.hasSoftValues()) throw new IllegalArgumentException("This predicate does not have value columns");
-			insertInternal(partitionID, values, getConfidenceValues(), data);
+		public void insertValue(Partition partitionID, double value, Object... data) {
+			insertInternal(partitionID, value, defaultConfidence, data);
 		}
 		
 		@Override
 		public void insertValue(Partition partitionID, double value, double confidence, Object... data) {
-			double[] values = new double[]{value};
-			double[] confidences = new double[]{confidence};
-			if (!handle.hasSoftValues()) throw new IllegalArgumentException("This predicate does not have value columns");
-			if (!handle.hasConfidenceValues())  throw new IllegalArgumentException("This predicate does not have confidence columns");
-			insertInternal(partitionID, values, confidences, data);
+			insertInternal(partitionID, value, confidence, data);
 		}
 		
-		@Override
-		public void insertValues(Partition partitionID, double[] values, double[] confidences, Object... data) {
-			if (!handle.hasSoftValues()) throw new IllegalArgumentException("This predicate does not have value columns");
-			if (!handle.hasConfidenceValues())  throw new IllegalArgumentException("This predicate does not have confidence columns");
-			insertInternal(partitionID, values, confidences, data);
-		}
-		
-		private String cleanString(String s) {
-			return s.replace("'", " ");
-		}
-		
-		private void insertInternal(Partition partition, double[] values, double[] confidences, Object[] data) {
-			if (!(partition instanceof PartitionID)) throw new IllegalArgumentException("Expected PartitionID object: " + partition);
+		private void insertInternal(Partition partition, double value, double confidence, Object[] data) {
+			if (!(partition instanceof PartitionID))
+				throw new IllegalArgumentException("Expected PartitionID object: " + partition);
 			int partitionID = partition.getID();
-			if (partitionID<0) throw new IllegalArgumentException("Partition IDs must be non-negative!");
-			if (data.length!=argSize) throw new IllegalArgumentException("Data length does not match." + data.length + " " + argSize);
-			if (!handle.predicate().validValues(values)) throw new IllegalArgumentException("Invalid values!");
-			if (!ConfidenceValues.isValidValues(confidences)) throw new IllegalArgumentException("Invalid confidence values!");
-			if (confidences.length!=handle.predicate().getNumberOfValues()) throw new IllegalArgumentException("Invalid confidence values!");
+			if (partitionID<0)
+				throw new IllegalArgumentException("Partition IDs must be non-negative.");
+			if (data.length!=argSize)
+				throw new IllegalArgumentException("Data length does not match: " + data.length + " " + argSize);
+			if (!TruthValues.isValid(value))
+				throw new IllegalArgumentException("Invalid truth value: " + value);
+			if (!ConfidenceValues.isValid(confidence))
+				throw new IllegalArgumentException("Invalid confidence value: " + confidence);
 			
 			try {
 				insertStmt.setInt(1,partitionID);
@@ -217,21 +180,10 @@ public class RDBMSDataLoader implements DataLoader {
 					} else throw new IllegalArgumentException("Unknown data type for :"+data[i]);
 				}
 				
-				if (handle.hasSoftValues()) {
-					assert values.length==handle.valueColumns().length;
-					for (int i=0;i<handle.valueColumns().length;i++) {
-						noCol++;
-						insertStmt.setDouble(noCol, values[i]);
-					}
-				}
-				if (handle.hasConfidenceValues()) {
-					assert confidences.length==handle.confidenceColumns().length;
-					for (int i=0;i<handle.confidenceColumns().length;i++) {
-						noCol++;
-						insertStmt.setDouble(noCol, confidences[i]);
-					}
-				}
-				
+				noCol++;
+				insertStmt.setDouble(noCol, value);
+				noCol++;
+				insertStmt.setDouble(noCol, confidence);
 
 			    insertStmt.executeUpdate();
 
@@ -239,6 +191,10 @@ public class RDBMSDataLoader implements DataLoader {
 				log.error(e.getMessage() + "\n" + Arrays.toString(data));
 				throw new AssertionError(e);
 			}
+		}
+		
+		private String cleanString(String s) {
+			return s.replace("'", " ");
 		}
 		
 	}

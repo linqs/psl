@@ -18,7 +18,6 @@ package edu.umd.cs.psl.model.function;
 
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.type.ArgumentType;
-import edu.umd.cs.psl.model.predicate.type.PredicateType;
 
 public interface ExternalFunction {
 
@@ -27,9 +26,5 @@ public interface ExternalFunction {
 	public int getArity();
 	
 	public ArgumentType[] getArgumentTypes();
-	
-	public PredicateType getPredicateType();
-	
-	
 	
 }

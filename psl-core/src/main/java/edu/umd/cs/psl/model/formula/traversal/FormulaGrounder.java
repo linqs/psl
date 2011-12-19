@@ -16,17 +16,20 @@
  */
 package edu.umd.cs.psl.model.formula.traversal;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 import edu.umd.cs.psl.database.ResultList;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.Term;
 import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.atom.Atom;
-import edu.umd.cs.psl.model.atom.AtomEventFramework;
 import edu.umd.cs.psl.model.atom.AtomManager;
 import edu.umd.cs.psl.model.atom.VariableAssignment;
-import edu.umd.cs.psl.model.formula.*;
+import edu.umd.cs.psl.model.formula.Conjunction;
+import edu.umd.cs.psl.model.formula.Disjunction;
+import edu.umd.cs.psl.model.formula.Formula;
+import edu.umd.cs.psl.model.formula.Negation;
 
 /**
  * FormulaGrounder is an object capable of traversing a {@link Formula},
@@ -36,7 +39,7 @@ import edu.umd.cs.psl.model.formula.*;
  * 
  */
 
-public class FormulaGrounder extends FormulaTraverser {
+public class FormulaGrounder extends AbstractFormulaTraverser {
 
 	private final AtomManager atommanger;
 	private final ArrayList<Formula> stack;
@@ -60,7 +63,7 @@ public class FormulaGrounder extends FormulaTraverser {
 
 	public Formula ground(Formula f) {
 		reset();
-		FormulaTraverser.traverse(f, this);
+		AbstractFormulaTraverser.traverse(f, this);
 		return pop();
 	}
 
@@ -150,12 +153,12 @@ public class FormulaGrounder extends FormulaTraverser {
 		push(atommanger.getAtom(atom.getPredicate(), args));
 	}
 
-	public static List<Formula> ground(Formula f, AtomEventFramework store,
+	public static List<Formula> ground(Formula f, AtomManager atomManager,
 			ResultList results) {
 		List<Formula> formulas = new ArrayList<Formula>(results.size());
-		FormulaGrounder grounder = new FormulaGrounder(store, results);
+		FormulaGrounder grounder = new FormulaGrounder(atomManager, results);
 		while (grounder.hasNext()) {
-			FormulaTraverser.traverse(f, grounder);
+			AbstractFormulaTraverser.traverse(f, grounder);
 			formulas.add(grounder.pop());
 			grounder.next();
 		}

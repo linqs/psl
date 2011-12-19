@@ -20,7 +20,6 @@ import java.util.Set;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
 import edu.umd.cs.psl.model.atom.Atom;
@@ -41,7 +40,6 @@ public class GroundExternalInducer implements GroundCompatibilityKernel {
 	private double[] values;
 	
 	public GroundExternalInducer(ExternalInducerKernel k, Atom atom, double[] vals) {
-		Preconditions.checkArgument(atom.getNumberOfValues()==1 && vals.length==1);
 		kernel = k;
 		this.atom = atom;
 		values = vals.clone();

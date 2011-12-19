@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.model.formula.traversal;
+package edu.umd.cs.psl.model.formula;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -31,12 +31,9 @@ import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.Term;
 import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.atom.Atom;
-import edu.umd.cs.psl.model.atom.AtomEventFramework;
 import edu.umd.cs.psl.model.atom.AtomEventSets;
+import edu.umd.cs.psl.model.atom.AtomManager;
 import edu.umd.cs.psl.model.atom.VariableAssignment;
-import edu.umd.cs.psl.model.formula.Conjunction;
-import edu.umd.cs.psl.model.formula.Formula;
-import edu.umd.cs.psl.model.formula.Negation;
 import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.model.predicate.Predicate;
 
@@ -51,36 +48,18 @@ public class FormulaEventAnalysis {
 	public FormulaEventAnalysis(Formula f) {
 		formula = f;
 		dependence = ArrayListMultimap.create();
-		//FormulaTraverser.traverse(formula, new FormulaAnalyser());
+		//AbstractFormulaTraverser.traverse(formula, new FormulaAnalyser());
 		queries = new HashSet<Formula>();
 		Conjunction c = ((Conjunction) formula).flatten();
 		
 		Vector<Formula> necessary = new Vector<Formula>(c.getNoFormulas());
-		Vector<Formula> oneOf = new Vector<Formula>(c.getNoFormulas());
 		Atom a;
 		for (int i = 0; i < c.getNoFormulas(); i++) {
+			/* If the formula is an atom, not a negated atom */
 			if (c.get(i) instanceof Atom) {
 				a = (Atom) c.get(i);
-				if (a.getPredicate().getNumberOfValues() == 1) {
-					if (a.getPredicate().getDefaultValues()[0] == 0.0) {
-						necessary.add(a);
-						dependence.put(a.getPredicate(), a);
-					}
-					else {
-						oneOf.add(a);
-					}
-				}
-				else {
-					oneOf.add(a);
-				}
-			}
-			else if (c.get(i) instanceof Negation) {
-				a = (Atom) ((Negation) c.get(i)).getFormula();
-				if (a.getPredicate().getNumberOfValues() == 1) {
-					if (a.getPredicate().getDefaultValues()[0] != 0.0) {
-						oneOf.add(a);
-					}
-				}
+				necessary.add(a);
+				dependence.put(a.getPredicate(), a);
 			}
 		}
 		
@@ -88,14 +67,7 @@ public class FormulaEventAnalysis {
 			queries.add(necessary.get(0));
 		}
 		else {
-			//if (oneOf.isEmpty()) {
-				queries.add(new Conjunction((Formula[]) necessary.toArray(new Formula[necessary.size()])));
-			//}
-			//else {
-			//	for (Formula formula : oneOf) {
-			//		queries.add(new Conjunction(new Conjunction((Formula[]) necessary.toArray(new Formula[necessary.size()])), formula));
-			//	}
-			//}			
+			queries.add(new Conjunction((Formula[]) necessary.toArray(new Formula[necessary.size()])));
 		}
 	}
 	
@@ -134,17 +106,17 @@ public class FormulaEventAnalysis {
 		return vars;
 	}
 	
-	public void registerFormulaForEvents(AtomEventFramework af, Kernel me, AtomEventSets inferenceAtomEvent, DatabaseAtomStoreQuery db) {
+	public void registerFormulaForEvents(AtomManager atomManager, Kernel me, AtomEventSets inferenceAtomEvent, DatabaseAtomStoreQuery db) {
 		for (Predicate p : dependence.keySet()) {
-			if (db.isClosed(p)) af.registerAtomEventObserver(p, defaultFactEvent, me);
-			else af.registerAtomEventObserver(p, inferenceAtomEvent, me);
+			if (db.isClosed(p)) atomManager.registerAtomEventObserver(p, defaultFactEvent, me);
+			else atomManager.registerAtomEventObserver(p, inferenceAtomEvent, me);
 		}
 	}
 	
-	public void unregisterFormulaForEvents(AtomEventFramework af, Kernel me, AtomEventSets inferenceAtomEvent, DatabaseAtomStoreQuery db) {
+	public void unregisterFormulaForEvents(AtomManager atomManager, Kernel me, AtomEventSets inferenceAtomEvent, DatabaseAtomStoreQuery db) {
 		for (Predicate p : dependence.keySet()) {
-			if (db.isClosed(p)) af.unregisterAtomEventObserver(p, defaultFactEvent, me);
-			else af.unregisterAtomEventObserver(p, inferenceAtomEvent, me);
+			if (db.isClosed(p)) atomManager.unregisterAtomEventObserver(p, defaultFactEvent, me);
+			else atomManager.unregisterAtomEventObserver(p, inferenceAtomEvent, me);
 		}
 	}
 }

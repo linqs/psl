@@ -29,9 +29,9 @@ import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.AtomEvent;
-import edu.umd.cs.psl.model.atom.AtomEventFramework;
 import edu.umd.cs.psl.model.atom.AtomEventObserver;
 import edu.umd.cs.psl.model.atom.AtomEventSets;
+import edu.umd.cs.psl.model.atom.AtomManager;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
@@ -114,7 +114,7 @@ public class ConicReasoner implements Reasoner, AtomEventObserver {
 
 	private ConicProgram program;
 	private ConicProgramSolver solver;
-	private final AtomEventFramework atomFramework;
+	private final AtomManager atomManager;
 	private final DistributionType type;
 	private final int maxMapRounds;
 	private final Map<GroundKernel, ConicProgramProxy> gkRepresentation;
@@ -127,9 +127,9 @@ public class ConicReasoner implements Reasoner, AtomEventObserver {
 	 *                     being reasoned over
 	 * @param config     configuration for the ConicReasoner
 	 */
-	public ConicReasoner(AtomEventFramework framework, ConfigBundle config)
+	public ConicReasoner(AtomManager manager, ConfigBundle config)
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-		atomFramework = framework;
+		atomManager = manager;
 		program = new ConicProgram();
 		ConicProgramSolverFactory cpsFactory = (ConicProgramSolverFactory) config.getFactory(CPS_KEY, CPS_DEFAULT);
 		solver = cpsFactory.getConicProgramSolver(config);
@@ -139,7 +139,7 @@ public class ConicReasoner implements Reasoner, AtomEventObserver {
 		gkRepresentation = new HashMap<GroundKernel, ConicProgramProxy>();
 		vars = new HashMap<AtomFunctionVariable, VariableConicProgramProxy>();
 		
-		atomFramework.registerAtomEventObserver(AtomEventSets.MadeRevokedCertainty, this);
+		atomManager.registerAtomEventObserver(AtomEventSets.MadeRevokedCertainty, this);
 	}
 	
 	@Override
@@ -152,10 +152,8 @@ public class ConicReasoner implements Reasoner, AtomEventObserver {
 		 */
 		switch(event) {
 		case MadeCertainty:
-			for (int i=0;i<atom.getNumberOfValues();i++) {
-				vars.get(atom.getVariable(i)).remove();
-				vars.remove(atom.getVariable(i));
-			}
+			vars.get(atom.getVariable()).remove();
+			vars.remove(atom.getVariable());
 			break;
 		case RevokedCertainty:
 			//Don't have to do anything
@@ -221,8 +219,8 @@ public class ConicReasoner implements Reasoner, AtomEventObserver {
 			inferenceStep();
 			//Only activate if there is another iteration
 			if (rounds<maxMapRounds) {
-				numActivated = atomFramework.checkToActivate();
-				atomFramework.workOffJobQueue();
+				numActivated = atomManager.checkToActivate();
+				atomManager.workOffJobQueue();
 			}
 			log.debug("Completed Round {} and activated {} atoms",rounds,numActivated);
 		} while (numActivated>0 && rounds<maxMapRounds);
@@ -230,7 +228,7 @@ public class ConicReasoner implements Reasoner, AtomEventObserver {
 	
 	@Override
 	public void close() {
-		atomFramework.unregisterAtomEventObserver(AtomEventSets.MadeRevokedCertainty, this);
+		atomManager.unregisterAtomEventObserver(AtomEventSets.MadeRevokedCertainty, this);
 	}
 	
 	protected VariableConicProgramProxy getVarProxy(AtomFunctionVariable v) {

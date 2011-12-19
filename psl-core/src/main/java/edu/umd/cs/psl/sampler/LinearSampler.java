@@ -169,8 +169,7 @@ public class LinearSampler implements Sampler {
 			//Determine dimensionality
 			for (Atom a : e.getAtoms()) {
 				if (a.isRandomVariable()) {
-					for (int i=0;i<a.getNumberOfValues();i++)
-						getorSetIndex(a.getVariable(i));	
+					getorSetIndex(a.getVariable());
 				}
 			}
 		}

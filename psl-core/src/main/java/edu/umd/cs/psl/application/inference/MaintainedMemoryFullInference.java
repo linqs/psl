@@ -43,7 +43,7 @@ import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.AtomEventFramework;
 import edu.umd.cs.psl.model.atom.AtomStatus;
 import edu.umd.cs.psl.model.atom.AtomStore;
-import edu.umd.cs.psl.model.atom.memory.MemoryAtomEventFramework;
+import edu.umd.cs.psl.model.atom.memory.MemoryAtomManager;
 import edu.umd.cs.psl.model.atom.memory.MemoryAtomStore;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
@@ -74,7 +74,7 @@ public class MaintainedMemoryFullInference implements ModelApplication, FullInfe
 		store = new MemoryAtomStore(database);
 		dbProxy = new DatabaseAtomStoreQuery(store);
 		groundkernels = new MemoryGroundKernelStore();
-		atomEvents = new MemoryAtomEventFramework(m,this,store);
+		atomEvents = new MemoryAtomManager(m,this,store);
 		database.registerDatabaseEventObserver(atomEvents);
 		reasoner = new ConicReasoner(atomEvents, config);
 		model.registerModelObserver(this);
@@ -194,7 +194,7 @@ public class MaintainedMemoryFullInference implements ModelApplication, FullInfe
 	//####### Interface to other components #####
 	
 	@Override
-	public DatabaseAtomStoreQuery getDatabase() {
+	public AtomStore getAtomStore() {
 		return dbProxy;
 	}
 	

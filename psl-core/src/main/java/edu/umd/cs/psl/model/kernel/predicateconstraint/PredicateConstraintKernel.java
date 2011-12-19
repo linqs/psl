@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableList;
 
 import edu.umd.cs.psl.application.GroundingMode;
 import edu.umd.cs.psl.application.ModelApplication;
-import edu.umd.cs.psl.database.DatabaseAtomStoreQuery;
 import edu.umd.cs.psl.database.ResultList;
 import edu.umd.cs.psl.model.argument.Entity;
 import edu.umd.cs.psl.model.argument.GroundTerm;
@@ -56,9 +55,6 @@ public class PredicateConstraintKernel implements Kernel {
 
 	public PredicateConstraintKernel(StandardPredicate p,
 			PredicateConstraintType t) {
-		Preconditions
-				.checkArgument(p.getNumberOfValues() == 1,
-						"Predicate Constraints are only supported on single valued predicates!");
 		Preconditions
 				.checkArgument(p.getArity() == 2,
 						"Currently, PredicateConstraints only support binary predicates!");
@@ -143,7 +139,7 @@ public class PredicateConstraintKernel implements Kernel {
 					args[1 - pos] = var;
 					Atom query = new TemplateAtom(predicate, args);
 
-					ResultList res = app.getDatabase().query(query,
+					ResultList res = app.getAtomManager().getNonzeroGroundings(query,
 							ImmutableList.of(var));
 					for (int i = 0; i < res.size(); i++) {
 						GroundTerm[] terms = new GroundTerm[2];
@@ -164,17 +160,15 @@ public class PredicateConstraintKernel implements Kernel {
 	}
 
 	@Override
-	public void registerForAtomEvents(AtomEventFramework framework,
-			DatabaseAtomStoreQuery db) {
-		framework.registerAtomEventObserver(predicate,
+	public void registerForAtomEvents(AtomManager manager) {
+		manager.registerAtomEventObserver(predicate,
 				AtomEventSets.IntroducedReleasedInferenceAtom, this);
 
 	}
 
 	@Override
-	public void unregisterForAtomEvents(AtomEventFramework framework,
-			DatabaseAtomStoreQuery db) {
-		framework.unregisterAtomEventObserver(predicate,
+	public void unregisterForAtomEvents(AtomManager manager) {
+		manager.unregisterAtomEventObserver(predicate,
 				AtomEventSets.IntroducedReleasedInferenceAtom, this);
 
 	}

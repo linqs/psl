@@ -22,34 +22,18 @@ public interface Inserter {
 	
 	public void insertValue(double value, Object... data);
 	
-	public void insertValues(double[] values, Object... data);
-	
 	public void insertValueConfidence(double value, double confidence, Object... data);
-	
-	public void insertValues(double[] values, double[] confidences, Object... data);
 	
 	public static final Inserter nullInserter = new Inserter() {
 
 		@Override
-		public void insert(Object... data) {
-		}
+		public void insert(Object... data) { }
 
 		@Override
-		public void insertValue(double value, Object... data) {
-		}
+		public void insertValue(double value, Object... data) { }
 
 		@Override
-		public void insertValues(double[] values, Object... data) {
-		}
-
-		@Override
-		public void insertValueConfidence(double value, double confidence, Object... data) {
-		}
-
-		@Override
-		public void insertValues(double[] values, double[] confidences, Object... data) {
-		}
-
+		public void insertValueConfidence(double value, double confidence, Object... data) { }
 		
 	};
 }

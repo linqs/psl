@@ -21,7 +21,7 @@ import cern.colt.list.tdouble.DoubleArrayList;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.formula.*;
 
-public class FormulaEvaluator extends FormulaTraverser {
+public class FormulaEvaluator extends AbstractFormulaTraverser {
 	
 	public final static FormulaEvaluator LUKASIEWICZ = new FormulaEvaluator(Tnorm.LUKASIEWICZ);
 	public final static FormulaEvaluator GOEDEL = new FormulaEvaluator(Tnorm.GOEDEL);
@@ -37,7 +37,7 @@ public class FormulaEvaluator extends FormulaTraverser {
 	
 	public double getTruthValue(Formula f) {
 		reset();
-		FormulaTraverser.traverse(f, this);
+		AbstractFormulaTraverser.traverse(f, this);
 		return pop();
 	}
 	
@@ -81,7 +81,6 @@ public class FormulaEvaluator extends FormulaTraverser {
 	
 	@Override
 	public void visitAtom(Atom atom) {
-		assert atom.getNumberOfValues()==1;
 		push(atom.getValue());
 	}
 	

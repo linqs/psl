@@ -36,7 +36,7 @@ public class GroundDataCertainty implements GroundConstraintKernel {
 	private double[] values;
 	
 	public GroundDataCertainty(Atom atom, double[] vals) {
-		Preconditions.checkArgument(atom.getNumberOfValues()==1 && vals.length==1);
+		Preconditions.checkArgument(vals.length==1);
 		this.atom = atom;
 		values = vals.clone();
 	}
@@ -52,7 +52,7 @@ public class GroundDataCertainty implements GroundConstraintKernel {
 	
 	@Override
 	public double getIncompatibility() {
-		if (NumericUtilities.equals(atom.getSoftValues(), values)) return 0;
+		if (NumericUtilities.equals(atom.getValue(), values[0])) return 0;
 		else return Double.POSITIVE_INFINITY;
 	}
 

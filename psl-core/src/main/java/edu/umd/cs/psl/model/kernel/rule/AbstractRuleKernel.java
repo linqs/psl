@@ -25,18 +25,17 @@ import com.google.common.base.Preconditions;
 
 import edu.umd.cs.psl.application.GroundingMode;
 import edu.umd.cs.psl.application.ModelApplication;
-import edu.umd.cs.psl.database.DatabaseAtomStoreQuery;
 import edu.umd.cs.psl.database.ResultList;
 import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.AtomEvent;
-import edu.umd.cs.psl.model.atom.AtomEventFramework;
 import edu.umd.cs.psl.model.atom.AtomEventSets;
+import edu.umd.cs.psl.model.atom.AtomManager;
 import edu.umd.cs.psl.model.atom.VariableAssignment;
 import edu.umd.cs.psl.model.formula.Conjunction;
 import edu.umd.cs.psl.model.formula.Formula;
+import edu.umd.cs.psl.model.formula.FormulaEventAnalysis;
 import edu.umd.cs.psl.model.formula.Negation;
-import edu.umd.cs.psl.model.formula.traversal.FormulaEventAnalysis;
 import edu.umd.cs.psl.model.formula.traversal.FormulaGrounder;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
@@ -47,7 +46,7 @@ abstract public class AbstractRuleKernel implements Kernel {
 	
 	protected final Model model;
 	protected Formula formula;
-	protected final FormulaEventAnalysis rule;
+	protected final FormulaEventAnalysis formulaAnalysis;
 	
 	public AbstractRuleKernel(Model m, Formula f) {
 		Preconditions.checkNotNull(m);
@@ -55,7 +54,7 @@ abstract public class AbstractRuleKernel implements Kernel {
 		formula = f;
 		Formula notF = new Negation(f).getDNF();
 		if (notF instanceof Conjunction)
-			rule = new FormulaEventAnalysis((Conjunction) notF);
+			formulaAnalysis = new FormulaEventAnalysis((Conjunction) notF);
 		else
 			throw new IllegalArgumentException("Formula must be a disjunction of literals.");
 	}
@@ -64,7 +63,7 @@ abstract public class AbstractRuleKernel implements Kernel {
 		log.trace("Grounding {} instances of rule {}", res.size(), formula);
 		FormulaGrounder grounder = new FormulaGrounder(app.getAtomManager(),res, var);
 		while (grounder.hasNext()) {
-			AbstractGroundRule groundRule = groundFormulaInstance(grounder.ground(rule.getFormula()));
+			AbstractGroundRule groundRule = groundFormulaInstance(grounder.ground(formulaAnalysis.getFormula()));
 			GroundKernel oldrule = app.getGroundKernel(groundRule);
 			if (oldrule!=null) {
 				((AbstractGroundRule)oldrule).increaseGroundings();
@@ -80,8 +79,8 @@ abstract public class AbstractRuleKernel implements Kernel {
 	
 	@Override
 	public void groundAll(ModelApplication app) {
-		for (Formula query : rule.getQueryFormulas()) {
-			ResultList res = app.getDatabase().query(query);
+		for (Formula query : formulaAnalysis.getQueryFormulas()) {
+			ResultList res = app.getAtomManager().getNonzeroGroundings(query);
 			groundFormula(res,app,null);
 		}
 	}
@@ -90,11 +89,11 @@ abstract public class AbstractRuleKernel implements Kernel {
 	public void notifyAtomEvent(AtomEvent event, Atom atom, GroundingMode mode,	ModelApplication app) {
 		if (mode==GroundingMode.Forward || mode==GroundingMode.ForwardInitial) {
 			if (AtomEventSets.ActivationEvent.subsumes(event)) {
-				List<VariableAssignment> vars = rule.traceAtomEvent(atom);
+				List<VariableAssignment> vars = formulaAnalysis.traceAtomEvent(atom);
 				if (!vars.isEmpty()) {
 					for (VariableAssignment var : vars) {
-						for (Formula query : rule.getQueryFormulas()) {
-							ResultList res = app.getDatabase().query(query, var);
+						for (Formula query : formulaAnalysis.getQueryFormulas()) {
+							ResultList res = app.getAtomManager().getNonzeroGroundings(query, var);
 							groundFormula(res,app,var);
 						}
 					}
@@ -102,11 +101,11 @@ abstract public class AbstractRuleKernel implements Kernel {
 			} else throw new UnsupportedOperationException("Only handles activation for now! " + event);
 		} else if (mode==GroundingMode.Backward) {
 			if (AtomEventSets.ActivationEvent.subsumes(event)) {
-				List<VariableAssignment> vars = rule.traceAtomEvent(atom);
+				List<VariableAssignment> vars = formulaAnalysis.traceAtomEvent(atom);
 				if (!vars.isEmpty()) {
 					for (VariableAssignment var : vars) {
-						for (Formula query : rule.getQueryFormulas()) {
-							ResultList res = app.getDatabase().query(query, var);
+						for (Formula query : formulaAnalysis.getQueryFormulas()) {
+							ResultList res = app.getAtomManager().getNonzeroGroundings(query, var);
 							groundFormula(res,app,var);
 						}
 					}
@@ -116,15 +115,13 @@ abstract public class AbstractRuleKernel implements Kernel {
 	}
 	
 	@Override
-	public void registerForAtomEvents(AtomEventFramework framework,
-			DatabaseAtomStoreQuery db) {
-		rule.registerFormulaForEvents(framework, this, AtomEventSets.DeOrActivationEvent, db);
+	public void registerForAtomEvents(AtomManager manager) {
+		formulaAnalysis.registerFormulaForEvents(manager, this, AtomEventSets.DeOrActivationEvent);
 	}
 
 	@Override
-	public void unregisterForAtomEvents(AtomEventFramework framework,
-			DatabaseAtomStoreQuery db) {
-		rule.unregisterFormulaForEvents(framework, this, AtomEventSets.DeOrActivationEvent, db);
+	public void unregisterForAtomEvents(AtomManager manager) {
+		formulaAnalysis.unregisterFormulaForEvents(manager, this, AtomEventSets.DeOrActivationEvent);
 	}
 
 	@Override

@@ -16,13 +16,14 @@
  */
 package edu.umd.cs.psl.application;
 
-import edu.umd.cs.psl.database.DatabaseAtomStoreQuery;
 import edu.umd.cs.psl.model.ModelEvent;
 import edu.umd.cs.psl.model.atom.AtomManager;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 
 public interface ModelApplication extends ModelEvent.Listener {
+	
+	public AtomManager getAtomManager();
 	
 	public void addGroundKernel(GroundKernel e);
 	
@@ -37,12 +38,6 @@ public interface ModelApplication extends ModelEvent.Listener {
 	public Iterable<GroundCompatibilityKernel> getCompatibilityKernels();
 	
 	public Iterable<GroundKernel> getGroundKernel();
-	
-	public DatabaseAtomStoreQuery getDatabase();
-
-	public AtomManager getAtomManager();	
-	
-	
 	
 	public void close();
 }

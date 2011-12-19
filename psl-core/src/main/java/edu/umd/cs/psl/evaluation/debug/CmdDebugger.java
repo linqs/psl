@@ -128,7 +128,7 @@ public class CmdDebugger implements Debugger {
 	private void queryPredicate(String predicate) {
 		try {
 			Predicate p = predicateFactory.getPredicate(predicate);
-			printAtoms(application.getDatabase().getConsideredAtoms(p));
+			printAtoms(application.getAtomStore().getConsideredAtoms(p));
 		} catch (IllegalArgumentException e) {
 			error(e.getMessage());
 		}
@@ -163,7 +163,7 @@ public class CmdDebugger implements Debugger {
 			}
 			try {
 				Predicate p = predicateFactory.getPredicate(predicate);
-				printAtoms(application.getDatabase().getConsideredAtoms(p, args));
+				printAtoms(application.getAtomStore().getConsideredAtoms(p, args));
 			} catch (IllegalArgumentException e) {
 				error(e.getMessage());
 			}	

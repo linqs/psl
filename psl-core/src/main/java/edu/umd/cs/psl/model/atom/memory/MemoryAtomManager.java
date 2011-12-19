@@ -18,7 +18,9 @@ package edu.umd.cs.psl.model.atom.memory;
 
 import java.util.EnumMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,31 +34,38 @@ import edu.umd.cs.psl.application.GroundingMode;
 import edu.umd.cs.psl.application.ModelApplication;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.EmptyBundle;
+import edu.umd.cs.psl.database.Database;
+import edu.umd.cs.psl.database.ResultList;
 import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.ModelEvent;
+import edu.umd.cs.psl.model.argument.Entity;
 import edu.umd.cs.psl.model.argument.GroundTerm;
+import edu.umd.cs.psl.model.argument.Variable;
+import edu.umd.cs.psl.model.argument.type.ArgumentType;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.AtomEvent;
-import edu.umd.cs.psl.model.atom.AtomEventSets;
-import edu.umd.cs.psl.model.atom.AtomEventFramework;
 import edu.umd.cs.psl.model.atom.AtomEventObserver;
+import edu.umd.cs.psl.model.atom.AtomEventSets;
 import edu.umd.cs.psl.model.atom.AtomJob;
+import edu.umd.cs.psl.model.atom.AtomManager;
 import edu.umd.cs.psl.model.atom.AtomStatus;
-import edu.umd.cs.psl.model.atom.AtomStore;
+import edu.umd.cs.psl.model.atom.VariableAssignment;
+import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.model.kernel.datacertainty.DataCertaintyKernel;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.optimizer.NumericUtilities;
 
-public class MemoryAtomEventFramework implements AtomEventFramework {
+public class MemoryAtomManager implements AtomManager {
 
-	private static final Logger log = LoggerFactory.getLogger(MemoryAtomEventFramework.class);
+	private static final Logger log = LoggerFactory.getLogger(MemoryAtomManager.class);
 	
 	public static final Predicate AllPredicates = null;
 	
-	private final AtomStore store;
+	private final MemoryAtomStore store;
 	private final ModelApplication application;
+	private final Database db;
 
 	private final EnumMap<AtomEvent,SetMultimap<Predicate,AtomEventObserver>> atomObservers;
 	
@@ -67,11 +76,12 @@ public class MemoryAtomEventFramework implements AtomEventFramework {
 
 	private final double activationThreshold;
 	
-	public MemoryAtomEventFramework(ModelApplication application, AtomStore store, ConfigBundle config) {
+	public MemoryAtomManager(ModelApplication application, Database db, ConfigBundle config) {
 		this.application = application;
-		this.store = store;
+		this.db = db;
+		store = new MemoryAtomStore(db);
 		atomjobs= new LinkedList<AtomJob>();
-		activationMode = (ActivationMode) config.getEnum("memoryatomeventframework.activationmode", AtomEventFramework.defaultActivationMode);
+		activationMode = (ActivationMode) config.getEnum("memoryatomeventframework.activationmode", defaultActivationMode);
 		activationThreshold = config.getDouble("memoryatomeventframework.activationthreshold", 0.1);
 		groundingMode = GroundingMode.defaultGroundingMode;
 		atomObservers = new EnumMap<AtomEvent,SetMultimap<Predicate,AtomEventObserver>>(AtomEvent.class);
@@ -81,12 +91,12 @@ public class MemoryAtomEventFramework implements AtomEventFramework {
 		}
 	}
 	
-	public MemoryAtomEventFramework(Model model, ModelApplication application, AtomStore store) {
-		this(model,application,store, new EmptyBundle());
+	public MemoryAtomManager(Model model, ModelApplication application, Database db) {
+		this(model,application, db, new EmptyBundle());
 	}
 	
-	public MemoryAtomEventFramework(Model model, ModelApplication application, AtomStore store, ConfigBundle config) {
-		this(application,store,config);
+	public MemoryAtomManager(Model model, ModelApplication application, Database db, ConfigBundle config) {
+		this(application, db, config);
 		for (Kernel k : model.getKernels()) {
 			addKernel(k);
 		}
@@ -110,11 +120,11 @@ public class MemoryAtomEventFramework implements AtomEventFramework {
 	}
 	
 	private void addKernel(Kernel k) {
-		k.registerForAtomEvents(this,application.getDatabase());
+		k.registerForAtomEvents(this);
 	}
 	
 	private void removeKernel(Kernel k) {
-		k.unregisterForAtomEvents(this,application.getDatabase());
+		k.unregisterForAtomEvents(this);
 	}
 	
 	@Override
@@ -172,7 +182,7 @@ public class MemoryAtomEventFramework implements AtomEventFramework {
 			if (activationMode==ActivationMode.All || isAboveActivationThreshold(atom)) {
 				if (atom.isAtomGroup()) {
 					log.debug("Retrieving entire atom group for: {}",atom);
-					atom.getAtomsInGroup(this, application.getDatabase());
+					atom.getAtomsInGroup(this);
 				} else {
 					atom.activate();
 					addAtomJob(atom,AtomEvent.ActivatedRV);
@@ -447,6 +457,98 @@ public class MemoryAtomEventFramework implements AtomEventFramework {
 	
 	private boolean isAboveActivationThreshold(Atom atom) {
 		return atom.getValue() > activationThreshold;
+	}
+
+	@Override
+	public void changeCertainty(Atom atom, double[] values, double[] confidences) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void persist(Atom atom) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public Atom getConsideredAtom(Predicate p, GroundTerm[] arguments) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Iterable<Atom> getAtoms(AtomStatus status) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Iterable<Atom> getAtoms(Set<AtomStatus> stati) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public List<Atom> getConsideredAtoms(Predicate p) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public List<Atom> getConsideredAtoms(Predicate p, Object... terms) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public int getNumAtoms(Set<AtomStatus> stati) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public ResultList getNonzeroGroundings(Formula f,
+			VariableAssignment partialGrounding, List<Variable> projectTo) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public ResultList getNonzeroGroundings(Formula f,
+			VariableAssignment partialGrounding) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public ResultList getNonzeroGroundings(Formula f, List<Variable> projectTo) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public ResultList getNonzeroGroundings(Formula f) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Entity getEntity(Object entity, ArgumentType type) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Set<Entity> getEntities(ArgumentType type) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public int getNumEntities(ArgumentType type) {
+		// TODO Auto-generated method stub
+		return 0;
 	}
 
 }

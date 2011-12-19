@@ -14,29 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.model.formula.traversal;
+package edu.umd.cs.psl.database.rdbms;
 
-import edu.umd.cs.psl.model.atom.Atom;
-import edu.umd.cs.psl.model.formula.Formula;
-import edu.umd.cs.psl.model.kernel.GroundKernel;
+import edu.umd.cs.psl.model.predicate.Predicate;
 
-public class RegisterEvidence extends FormulaTraverser {
+public interface RDBMSPredicateHandle {
 
-	private final GroundKernel evidence;
+	public Predicate predicate();
 	
-	public RegisterEvidence(GroundKernel e) {
-		evidence = e;
-	}
+	public String tableName();
 	
-	@Override
-	public void visitAtom(Atom atom) {
-		assert atom.isGround() && atom.isDefined();
-		atom.registerGroundKernel(evidence);
-	}
+	public String[] argumentColumns();
 	
-	public static void register(Formula f, GroundKernel e) {
-		//TODO: Do we need this still?
-		FormulaTraverser.traverse(f, new RegisterEvidence(e));
-	}
+	public String partitionColumn();
+	
+	public String valueColumn();
+	
+	public String confidenceColumn();
+	
+	public String pslColumn();
 	
 }

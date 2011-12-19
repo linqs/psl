@@ -22,7 +22,6 @@ import java.util.Set;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
-import edu.umd.cs.psl.database.DatabaseAtomStoreQuery;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.Term;
 import edu.umd.cs.psl.model.argument.Variable;
@@ -162,7 +161,7 @@ public class TemplateAtom implements Atom {
 	
 
 	@Override
-	public Collection<Atom> getAtomsInGroup(AtomManager atommanager, DatabaseAtomStoreQuery db) {
+	public Collection<Atom> getAtomsInGroup(AtomManager atommanager) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -188,7 +187,7 @@ public class TemplateAtom implements Atom {
 		throw new UnsupportedOperationException();	}
 
 	@Override
-	public Collection<GroundKernel> getAllRegisteredGroundKernels() {
+	public Collection<GroundKernel> getRegisteredGroundKernels() {
 		throw new UnsupportedOperationException();
 	}
 

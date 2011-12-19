@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.database.RDBMS;
+package edu.umd.cs.psl.database.rdbms;
 
 import java.util.*;
 
@@ -32,13 +32,13 @@ import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.VariableAssignment;
 import edu.umd.cs.psl.model.formula.*;
-import edu.umd.cs.psl.model.formula.traversal.FormulaTraverser;
+import edu.umd.cs.psl.model.formula.traversal.AbstractFormulaTraverser;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
 import edu.umd.cs.psl.model.predicate.FunctionalPredicate;
 import edu.umd.cs.psl.model.predicate.ExternalFunctionalPredicate;
 import edu.umd.cs.psl.model.predicate.SpecialPredicate;
 
-public class Formula2SQL extends FormulaTraverser {
+public class Formula2SQL extends AbstractFormulaTraverser {
 
 	private static final String tablePrefix = "t";
 	
@@ -178,17 +178,15 @@ public class Formula2SQL extends FormulaTraverser {
 				} else assert arg instanceof Variable;
 			}
 			query.addCondition(new InCondition(new CustomSql(tableDot+ph.partitionColumn()),database.getReadIDs()));
-			if (!ph.isClosed()) {
-				query.addCondition(BinaryCondition.lessThan(new CustomSql(tableDot+ph.pslColumn()), 
-										PSLValue.getNonDefaultUpperBound(), false) );
-			}
+			query.addCondition(BinaryCondition.lessThan(new CustomSql(tableDot+ph.pslColumn()), 
+									PSLValue.getNonDefaultUpperBound(), false) );
 			tableCounter++;
 		}
 	}
 	
 	
 	public String getSQL(Formula f) {
-		FormulaTraverser.traverse(f, this);
+		AbstractFormulaTraverser.traverse(f, this);
 		for (Atom atom : functionalAtoms) visitFunctionalAtom(atom);
 		return query.validate().toString();
 	}

@@ -17,7 +17,6 @@
 package edu.umd.cs.psl.database;
 
 import java.util.List;
-import java.util.Set;
 
 import edu.umd.cs.psl.database.loading.Inserter;
 import edu.umd.cs.psl.database.loading.Updater;
@@ -41,9 +40,8 @@ public interface DataStore {
 	 * 
 	 * @param predicate  the predicate to register
 	 * @param argnames  names of arguments
-	 * @param type  data storage type for the predicate
 	 */
-	public void registerPredicate(Predicate predicate, List<String> argnames, PredicateDBType type);
+	public void registerPredicate(Predicate predicate, List<String> argnames);
 	
 	/**
 	 * Registers a Predicate so that {@link Atom Atoms} of that Predicate can be
@@ -51,10 +49,9 @@ public interface DataStore {
 	 * 
 	 * @param predicate  the predicate to register
 	 * @param argnames  names of arguments
-	 * @param type  data storage type for the predicate
 	 * @param formats  the DataFormats to use for the arguments
 	 */
-	public void registerPredicate(Predicate predicate, List<String> argnames, PredicateDBType type, DataFormat[] formats);
+	public void registerPredicate(Predicate predicate, List<String> argnames, DataFormat[] formats);
 	
 	/**
 	 * Creates a Database that can read from and write to a {@link Partition} and
@@ -66,21 +63,6 @@ public interface DataStore {
 	 */
 	public Database getDatabase(Partition write, Partition... read);
 	
-	/**
-	 * Creates a Database that can read from and write to a {@link Partition} and
-	 * additionally read from a set of additional Partitions.
-	 * 
-	 * Additionally closes a set of Predicates. In other words, the Database will
-	 * assume that {@link Atom Atoms} of those Predicates have their default values
-	 * if they are not in the Database.
-	 * 
-	 * @param write  the Partition to write to and read from
-	 * @param toClose  set of Predicates the Database will treat as closed
-	 * @param read  additional Partitions to read from
-	 * @return a new Database backed by this DataStore
-	 */
-	public Database getDatabase(Partition write, Set<Predicate> toClose, Partition... read);
-
 	/**
 	 * Creates an Inserter for inserting new {@link Atom} information
 	 * into a {@link Partition}.

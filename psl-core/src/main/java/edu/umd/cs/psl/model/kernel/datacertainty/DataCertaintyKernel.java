@@ -21,11 +21,10 @@ import com.google.common.collect.Iterables;
 
 import edu.umd.cs.psl.application.GroundingMode;
 import edu.umd.cs.psl.application.ModelApplication;
-import edu.umd.cs.psl.database.DatabaseAtomStoreQuery;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.AtomEvent;
-import edu.umd.cs.psl.model.atom.AtomEventFramework;
 import edu.umd.cs.psl.model.atom.AtomEventSets;
+import edu.umd.cs.psl.model.atom.AtomManager;
 import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.model.parameters.Parameters;
 
@@ -77,16 +76,14 @@ public class DataCertaintyKernel implements Kernel {
 	}
 
 	@Override
-	public void registerForAtomEvents(AtomEventFramework framework,
-			DatabaseAtomStoreQuery db) {
-		framework.registerAtomEventObserver(AtomEventSets.ReleasedCertainty, this);
+	public void registerForAtomEvents(AtomManager manager) {
+		manager.registerAtomEventObserver(AtomEventSets.ReleasedCertainty, this);
 		
 	}
 
 	@Override
-	public void unregisterForAtomEvents(AtomEventFramework framework,
-			DatabaseAtomStoreQuery db) {
-		framework.unregisterAtomEventObserver(AtomEventSets.ReleasedCertainty, this);
+	public void unregisterForAtomEvents(AtomManager manager) {
+		manager.unregisterAtomEventObserver(AtomEventSets.ReleasedCertainty, this);
 	}
 
 	@Override
