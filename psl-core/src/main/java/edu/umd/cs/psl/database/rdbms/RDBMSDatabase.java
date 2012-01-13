@@ -52,7 +52,6 @@ import edu.umd.cs.psl.database.Partition;
 import edu.umd.cs.psl.database.ResultList;
 import edu.umd.cs.psl.database.UniqueID;
 import edu.umd.cs.psl.model.ConfidenceValues;
-import edu.umd.cs.psl.model.TruthValues;
 import edu.umd.cs.psl.model.argument.ArgumentFactory;
 import edu.umd.cs.psl.model.argument.Attribute;
 import edu.umd.cs.psl.model.argument.Entity;
@@ -176,8 +175,8 @@ public class RDBMSDatabase implements Database {
 	
 	@Override
 	public void persist(Atom atom) {
-		assert atom.isGround();
-		assert atom.isConsidered() || atom.isActive() : atom;
+		if (!atom.isGround() || (!atom.getStatus().isActive() && !atom.getStatus().isConsidered()))
+			throw new IllegalArgumentException("Cannot persist atom.");
 		RDBMSPredicateHandle ph = getHandle(atom.getPredicate());
 
 		
@@ -212,10 +211,9 @@ public class RDBMSDatabase implements Database {
 	
 	private PSLValue getPersistencePSLValue(Atom atom) {
 		switch(atom.getStatus()) {
-		case UnconsideredCertainty:
-		case ConsideredCertainty:
-		case ActiveCertainty:
-			if (TruthValues.isDefault(atom.getValue())) {
+		case UnconsideredFixed:
+		case ConsideredFixed:
+			if (atom.getValue() > 0.0) {
 				return PSLValue.Fact;
 			} else {
 				return PSLValue.DefaultFact;

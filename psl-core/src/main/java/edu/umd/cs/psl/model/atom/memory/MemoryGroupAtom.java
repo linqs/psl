@@ -19,24 +19,27 @@ package edu.umd.cs.psl.model.atom.memory;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 import edu.umd.cs.psl.model.argument.Entity;
 import edu.umd.cs.psl.model.argument.EntitySet;
 import edu.umd.cs.psl.model.argument.GroundTerm;
+import edu.umd.cs.psl.model.atom.AbstractAtom;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.AtomManager;
 import edu.umd.cs.psl.model.atom.AtomStatus;
-import edu.umd.cs.psl.model.atom.StatusAtom;
+import edu.umd.cs.psl.model.kernel.GroundKernel;
+import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.model.predicate.Predicate;
+import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
 
-public class MemoryGroupAtom extends StatusAtom {
+public class MemoryGroupAtom extends AbstractAtom {
 
 	MemoryGroupAtom(Predicate p, GroundTerm[] args) {
 		super(p, args, AtomStatus.UnconsideredRV);
 	}
 
 	public Collection<Atom> getAtomsInGroup(AtomManager atommanager) {
-		assert isConsidered();
 		List<Atom> result = new ArrayList<Atom>();
 		expandAtom(0,new GroundTerm[getArity()],atommanager,result);
 		return result;
@@ -47,7 +50,6 @@ public class MemoryGroupAtom extends StatusAtom {
 			//Create atom
 			GroundTerm[] copy = args.clone();
 			Atom atom = atommanager.getAtom(getPredicate(), copy);
-			assert atom.isConsidered();
 			result.add(atom);
 		} else {
 			GroundTerm t = (GroundTerm)getArguments()[argpos];
@@ -64,27 +66,63 @@ public class MemoryGroupAtom extends StatusAtom {
 	}
 
 	@Override
-	public boolean isAtomGroup() {
+	public boolean isGround() {
 		return true;
 	}
 
 	@Override
-	public void activate() {
+	public boolean isAtomGroup() {
+		return true;
+	}
+	
+	//########## Unsupported Operations ##############
+
+	@Override
+	public boolean unregisterGroundKernel(GroundKernel f) {
+		throw new UnsupportedOperationException();	}
+
+	@Override
+	public Collection<GroundKernel> getRegisteredGroundKernels() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public double getConfidenceValue() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public Set<GroundKernel> getRegisteredGroundKernels(Kernel et) {
 		throw new UnsupportedOperationException();
 	}
 	
 	@Override
-	public void deactivate() {
+	public int getNumRegisteredGroundKernels() {
 		throw new UnsupportedOperationException();
 	}
-	
+
 	@Override
-	public void makeCertain() {
+	public double getValue() {
 		throw new UnsupportedOperationException();
 	}
-	
+
 	@Override
-	public void revokeCertain() {
+	public AtomFunctionVariable getVariable() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public boolean registerGroundKernel(GroundKernel f) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void setConfidenceValue(double val) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void setValue(double value) {
 		throw new UnsupportedOperationException();
 	}
 	

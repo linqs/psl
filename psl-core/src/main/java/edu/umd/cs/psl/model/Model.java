@@ -25,7 +25,6 @@ import java.util.Set;
 
 import edu.umd.cs.psl.application.ModelApplication;
 import edu.umd.cs.psl.model.kernel.Kernel;
-import edu.umd.cs.psl.model.kernel.datacertainty.DataCertaintyKernel;
 
 /**
  * A probabilistic soft logic model.
@@ -47,11 +46,6 @@ public class Model {
 	public Model() {
 		kernels = new HashSet<Kernel>();
 		modelObservers = new ArrayList<ModelEvent.Listener>();
-		addDefaultKernels();
-	}
-	
-	private void addDefaultKernels() {
-		addKernel(DataCertaintyKernel.get());
 	}
 	
 	/**

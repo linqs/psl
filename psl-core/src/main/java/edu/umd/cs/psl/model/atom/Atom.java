@@ -55,6 +55,13 @@ public interface Atom extends Formula {
 	public int getArity();
 	
 	/**
+	 * Returns the arguments associated with this atom.
+	 * 
+	 * @return The arguments associated with this atom
+	 */
+	public Term[] getArguments();
+	
+	/**
 	 * Returns the soft value at a given index.
 	 * 
 	 * @return The soft value at index pos
@@ -122,13 +129,6 @@ public interface Atom extends Formula {
 	public int getNumRegisteredGroundKernels();
 	
 	/**
-	 * Returns the arguments associated with this atom.
-	 * 
-	 * @return The arguments associated with this atom
-	 */
-	public Term[] getArguments();
-	
-	/**
 	 * Returns whether this atom is ground.
 	 * 
 	 * @return TRUE if ground; FALSE otherwise
@@ -142,118 +142,6 @@ public interface Atom extends Formula {
 	 */
 	public AtomStatus getStatus();
 	
-	/**
-	 * Returns whether this atom is a fact atom.
-	 * 
-	 * @return TRUE if fact; FALSE otherwise
-	 */
-	public boolean isFactAtom();
-	
-	/**
-	 * Returns whether this atom is an inference atom.
-	 * 
-	 * @return TRUE if inference; FALSE otherwise
-	 */
-	public boolean isInferenceAtom();
-	
-	/**
-	 * Returns whether this atom is a known atom.
-	 * 
-	 * @return TRUE if known; FALSE otherwise
-	 */
-	public boolean isKnowledge();
-	
-	/**
-	 * Returns whether this atom is a certainty.
-	 * 
-	 * @return TRUE if certainty; FALSE otherwise
-	 */
-	public boolean isCertainty();
-	
-	/**
-	 * Returns whether this atom is a random variable.
-	 * 
-	 * @return TRUE if random variable; FALSE otherwise
-	 */
-	public boolean isRandomVariable();
-	
-	/**
-	 * Returns whether this atom is active.
-	 * 
-	 * @return TRUE if active; FALSE otherwise
-	 */
-	public boolean isActive();
-	
-	/**
-	 * Returns whether this atom is considered.
-	 * 
-	 * @return TRUE if considered; FALSE otherwise
-	 */
-	public boolean isConsidered();
-	
-	/**
-	 * Returns whether this atom is unconsidered.
-	 * 
-	 * @return TRUE if unconsidered; FALSE otherwise
-	 */
-	public boolean isUnconsidered();
-	
-	/**
-	 * Returns whether this atom is defined.
-	 * 
-	 * @return TRUE if defined; FALSE otherwise
-	 */
-	public boolean isDefined();
-	
-	/**
-	 * Returns whether this atom is either considered or active.
-	 * 
-	 * @return TRUE if considered or active; FALSE otherwise
-	 */
-	public boolean isConsideredOrActive();
-	
-	/**
-	 * Deletes this atom.
-	 */
-	void delete();
-
-	/**
-	 * Make this atom considered.
-	 */
-	void consider();
-	
-	/**
-	 * Make this atom unconsidered.
-	 */
-	void unconsider();
-	
-	/**
-	 * Activates this atom.
-	 */
-	void activate();
-	
-	/**
-	 * Deactivates this atom.
-	 */
-	void deactivate();
-	
-	/**
-	 * Makes this atom certain.
-	 */
-	void makeCertain();
-	
-	/**
-	 * Revokes this atom's certainty.
-	 */
-	void revokeCertain();
-
-	/**
-	 * Returns the name.
-	 * 
-	 * @return The name
-	 */
-	public String getName();
-
 	/**
 	 * Returns whether this atom is part of an atom group.
 	 * 

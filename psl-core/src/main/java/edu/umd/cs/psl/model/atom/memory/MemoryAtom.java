@@ -26,9 +26,10 @@ import com.google.common.collect.SetMultimap;
 import edu.umd.cs.psl.model.ConfidenceValues;
 import edu.umd.cs.psl.model.TruthValues;
 import edu.umd.cs.psl.model.argument.GroundTerm;
+import edu.umd.cs.psl.model.atom.AbstractAtom;
 import edu.umd.cs.psl.model.atom.Atom;
+import edu.umd.cs.psl.model.atom.AtomManager;
 import edu.umd.cs.psl.model.atom.AtomStatus;
-import edu.umd.cs.psl.model.atom.StatusAtom;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.model.predicate.Predicate;
@@ -45,7 +46,7 @@ import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
  * @author Matthias Broecheler
  *
  */
-public class MemoryAtom extends StatusAtom {
+public class MemoryAtom extends AbstractAtom {
 	
 	private static final Set<GroundKernel> emptyGroundKernels = ImmutableSet.of();
 
@@ -70,7 +71,11 @@ public class MemoryAtom extends StatusAtom {
 	}
 	
 	void checkAccess() {
-		if (!isDefined()) throw new IllegalStateException("Cannot modify this atom since it is undefined");
+		if (!status.isDefinedAndGround()) throw new IllegalStateException("Cannot modify this atom since it is undefined");
+	}
+	
+	void setStatus(AtomStatus status) {
+		this.status = status;
 	}
 	
 	@Override
@@ -141,11 +146,26 @@ public class MemoryAtom extends StatusAtom {
 		return confidenceValue;
 	}
 
+	@Override
+	public boolean isGround() {
+		return true;
+	}
+
+	@Override
+	public boolean isAtomGroup() {
+		return false;
+	}
+
+	@Override
+	public Collection<Atom> getAtomsInGroup(AtomManager atommanager) {
+		throw new UnsupportedOperationException();
+	}
+
 	private class AtomVariable extends AtomFunctionVariable {
 		
 		@Override
 		public boolean isConstant() {
-			return isKnowledge();
+			return status.isFixed();
 		}
 
 		@Override

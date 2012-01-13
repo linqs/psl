@@ -20,7 +20,7 @@ package edu.umd.cs.psl.model.atom;
  * A status of an {@link Atom}.
  */
 public enum AtomStatus {
-
+	
 	Template {
 		@Override
 		public String toString() {
@@ -35,38 +35,17 @@ public enum AtomStatus {
 		}
 	}, 
 	
-	UnconsideredFact {
+	UnconsideredFixed {
 		@Override
 		public String toString() {
-			return "UnconsideredFact";
+			return "UnconsideredFixed";
 		}
 	}, 
 	
-	ConsideredFact {
+	ConsideredFixed {
 		@Override
 		public String toString() {
-			return "ConsideredFact";
-		}		
-	},
-	
-	UnconsideredCertainty {
-		@Override
-		public String toString() {
-			return "UnconsideredCertainty";
-		}
-	}, 
-	
-	ConsideredCertainty {
-		@Override
-		public String toString() {
-			return "ConsideredCertainty";
-		}		
-	},
-	
-	ActiveCertainty {
-		@Override
-		public String toString() {
-			return "ActiveCertainty";
+			return "ConsideredFixed";
 		}		
 	},
 	
@@ -93,10 +72,8 @@ public enum AtomStatus {
 	
 	public AtomStatus consider() {
 		switch(this) {
-		case UnconsideredCertainty:
-			return ConsideredCertainty;
-		case UnconsideredFact:
-			return ConsideredFact;
+		case UnconsideredFixed:
+			return ConsideredFixed;
 		case UnconsideredRV:
 			return ConsideredRV;
 		default: throw new UnsupportedOperationException("Cannot consider on status: " + this);
@@ -105,23 +82,22 @@ public enum AtomStatus {
 	
 	public AtomStatus unconsider() {
 		switch(this) {
-		case ConsideredCertainty:
-			return UnconsideredCertainty;
-		case ConsideredFact:
-			return UnconsideredFact;
+		case ConsideredFixed:
+			return UnconsideredFixed;
 		case ConsideredRV:
 			return UnconsideredRV;
-		default: throw new UnsupportedOperationException("Cannot unconsider on status: " + this);
+		default:
+			throw new UnsupportedOperationException("Cannot unconsider on status: " + this);
 		}		
 	}
 	
-	public AtomStatus delete() {
+	public AtomStatus release() {
 		switch(this) {
-		case UnconsideredCertainty:
-		case UnconsideredFact:
+		case UnconsideredFixed:
 		case UnconsideredRV:
 			return Undefined;
-		default: throw new UnsupportedOperationException("Cannot delete on status: " + this);		
+		default:
+			throw new UnsupportedOperationException("Cannot release on status: " + this);		
 		}
 	}
 	
@@ -129,9 +105,8 @@ public enum AtomStatus {
 		switch(this) {
 		case ConsideredRV:
 			return ActiveRV;
-		case ConsideredCertainty:
-			return ActiveCertainty;
-		default: throw new UnsupportedOperationException("Cannot activate on status: " + this);
+		default:
+			throw new UnsupportedOperationException("Cannot activate on status: " + this);
 		}
 	}
 	
@@ -139,130 +114,37 @@ public enum AtomStatus {
 		switch(this) {
 		case ActiveRV:
 			return ConsideredRV;
-		case ActiveCertainty:
-			return ConsideredCertainty;
-		default: throw new UnsupportedOperationException("Cannot deactivate on status: " + this);
+		default:
+			throw new UnsupportedOperationException("Cannot deactivate on status: " + this);
 		}
 	}
 
-	public AtomStatus makeCertain() {
-		switch(this) {
-		case UnconsideredRV:
-			return UnconsideredCertainty;
-		case ConsideredRV:
-			return ConsideredCertainty;
-		case ActiveRV:
-			return ActiveCertainty;
-		default: throw new UnsupportedOperationException("Cannot activate on status: " + this);
-		}
+	public boolean isRandomVariable() {
+		return AtomStatusSets.RandomVariable.contains(this);
 	}
 	
-	public AtomStatus revokeCertain() {
-		switch(this) {
-		case UnconsideredCertainty:
-			return UnconsideredRV;
-		case ConsideredCertainty:
-			return ConsideredRV;
-		case ActiveCertainty:
-			return ActiveRV;
-		default: throw new UnsupportedOperationException("Cannot activate on status: " + this);
-		}
+	public boolean isFixed() {
+		return AtomStatusSets.Fixed.contains(this);
 	}
 	
-	public boolean isInference() {
-		switch(this) {
-		case UnconsideredRV:
-		case ConsideredRV:
-		case ActiveRV:
-		case UnconsideredCertainty:
-		case ConsideredCertainty:
-		case ActiveCertainty:
-			return true;
-		default: return false;
-		}
-	}
-	
-	public boolean isUndefined() {
-		switch(this) {
-		case Undefined:
-		case Template:
-			return true;
-		default: return false;
-		}
-	}
-	
-	public boolean isDefined() {
-		return !isUndefined();
-	}
-	
-	public boolean isKnowledge() {
-		switch(this) {
-		case UnconsideredFact:
-		case ConsideredFact:
-		case UnconsideredCertainty:
-		case ConsideredCertainty:
-		case ActiveCertainty:
-			return true;
-		default: return false;
-		}
-	}
-	
-	public boolean isFact() {
-		switch(this) {
-		case UnconsideredFact:
-		case ConsideredFact:
-			return true;
-		default: return false;
-		}
-	}
-	
-	public boolean isRV() {
-		switch(this) {
-		case UnconsideredRV:
-		case ConsideredRV:
-		case ActiveRV:
-			return true;
-		default: return false;
-		}
-	}
-	
-	public boolean isCertainty() {
-		switch(this) {
-		case UnconsideredCertainty:
-		case ConsideredCertainty:
-		case ActiveCertainty:
-			return true;
-		default: return false;
-		}
-	}
-	
-	public boolean isActive() {
-		switch(this) {
-		case ActiveRV:
-		case ActiveCertainty:
-			return true;
-		default: return false;
-		}
+	public boolean isUnconsidered() {
+		return AtomStatusSets.Unconsidered.contains(this);
 	}
 	
 	public boolean isConsidered() {
-		switch(this) {
-		case ConsideredRV:
-		case ConsideredFact:
-		case ConsideredCertainty:
-			return true;
-		default: return false;
-		}
+		return AtomStatusSets.Considered.contains(this);
 	}
 	
-	public boolean isUnonsidered() {
-		switch(this) {
-		case UnconsideredRV:
-		case UnconsideredFact:
-		case UnconsideredCertainty:
-			return true;
-		default: return false;
-		}
+	public boolean isActive() {
+		return AtomStatusSets.Active.contains(this);
+	}
+	
+	public boolean isActiveOrConsidered() {
+		return AtomStatusSets.ActiveOrConsidered.contains(this);
+	}
+	
+	public boolean isDefinedAndGround() {
+		return AtomStatusSets.DefinedAndGround.contains(this);
 	}
 	
 }

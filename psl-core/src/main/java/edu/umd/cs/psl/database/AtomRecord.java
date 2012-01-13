@@ -17,7 +17,7 @@
 package edu.umd.cs.psl.database;
 
 import edu.umd.cs.psl.model.ConfidenceValues;
-import edu.umd.cs.psl.model.TruthValues;
+import edu.umd.cs.psl.model.atom.Atom;
 
 /**
  * A {@link DataStore} record of an {@link Atom}.
@@ -33,7 +33,7 @@ public class AtomRecord {
 	private Status status;
 	
 	public AtomRecord(Status status) {
-		this(TruthValues.getDefault(), ConfidenceValues.getDefault(), status);
+		this(0.0, ConfidenceValues.getDefault(), status);
 	}
 	
 	public AtomRecord(double value, double confidence, Status status) {

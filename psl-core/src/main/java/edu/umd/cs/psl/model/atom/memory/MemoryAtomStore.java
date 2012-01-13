@@ -39,16 +39,15 @@ class MemoryAtomStore {
 	private final Database db;
 
 	
-	private final RetrievalSet<Atom> atomCache;
+	private final RetrievalSet<MemoryAtom> atomCache;
 	
 	MemoryAtomStore(Database _db) {
 		db = _db;
 
-		atomCache = new RetrievalSet<Atom>();
+		atomCache = new RetrievalSet<MemoryAtom>();
 	}
 
 	void store(Atom atom) {
-		assert atom.isInferenceAtom();
 		if (!atom.isAtomGroup()) {
 			db.persist(atom);
 		}
@@ -59,16 +58,16 @@ class MemoryAtomStore {
 	}
 	
 	void free(Atom atom) {
-		Preconditions.checkArgument(atom.isUnconsidered() || !atom.isDefined());
+		Preconditions.checkArgument(atom.isUnconsidered() || !atom.isDefinedAndGround());
 		assert atom.getNumRegisteredGroundKernels()==0;
 		if (!atomCache.remove(atom))
 			throw new IllegalArgumentException("Cannot free non-existant atom: " + atom);
 		atom.delete();
 	}
 
-	Atom getAtom(Predicate p, GroundTerm[] arguments) {
-		Atom atom = new MemoryAtom(p,arguments,AtomStatus.Undefined);
-		Atom oldAtom = atomCache.get(atom);
+	MemoryAtom getAtom(Predicate p, GroundTerm[] arguments) {
+		MemoryAtom atom = new MemoryAtom(p,arguments,AtomStatus.Undefined);
+		MemoryAtom oldAtom = atomCache.get(atom);
 		if (oldAtom!=null) {
 			return oldAtom;
 		} else {
@@ -140,7 +139,7 @@ class MemoryAtomStore {
 			s = AtomStatus.UnconsideredCertainty;
 			break;
 		case FACT:
-			s = AtomStatus.UnconsideredFact;
+			s = AtomStatus.UnconsideredFixed;
 			break;
 		case RV:
 			s = AtomStatus.UnconsideredRV;

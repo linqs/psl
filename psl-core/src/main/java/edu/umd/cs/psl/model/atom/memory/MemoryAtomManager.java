@@ -101,7 +101,32 @@ public class MemoryAtomManager implements AtomManager {
 			addKernel(k);
 		}
 	}
-	
+
+	@Override
+	public Atom getAtom(Predicate p, GroundTerm[] arguments) {
+		MemoryAtom atom = store.getAtom(p, arguments);
+		if (atom.getStatus().isUnconsidered()) {
+			if (atom.getStatus().isFixed()) {
+				atom.setStatus(atom.getStatus().consider());
+			}
+			else if (atom.getStatus().isRandomVariable()) {
+				addAtomJob(atom, AtomEvent.IntroducedRV);
+				atom.setStatus(atom.getStatus().consider());
+			}
+			else
+				throw new IllegalArgumentException("Unknown atom status: " + atom.getStatus());
+		}
+		else if (!atom.getStatus().isActiveOrConsidered())
+			throw new IllegalArgumentException("Unknown atom status: " + atom.getStatus());
+		
+		return atom;
+	}
+
+	@Override
+	public void persist(Atom atom) {
+		// TODO Auto-generated method stub
+		
+	}
 
 	@Override
 	public void notifyModelEvent(ModelEvent event) {
@@ -113,9 +138,10 @@ public class MemoryAtomManager implements AtomManager {
 			removeKernel(event.getKernel());
 			break;
 		case KernelParametersModified:
-			//Do nothing
+			// Do nothing
 			break;
-		default: throw new IllegalArgumentException("Unrecognized model event type: " + event);
+		default:
+			throw new IllegalArgumentException("Unrecognized model event type: " + event);
 		}
 	}
 	
@@ -128,38 +154,32 @@ public class MemoryAtomManager implements AtomManager {
 	}
 	
 	@Override
-	public void setGroundingMode(GroundingMode mode) {
-		groundingMode = mode;
+	public void registerAtomEventObserver(AtomEventSets events, AtomEventObserver listener) {
+		registerAtomEventObserver(events, AllPredicates, listener);	
 	}
 	
 	@Override
-	public void registerAtomEventObserver(AtomEventSets event, AtomEventObserver me) {
-		registerAtomEventObserver(AllPredicates,event,me);	
-	}
-	
-	@Override
-	public void registerAtomEventObserver(Predicate p, AtomEventSets event, AtomEventObserver me) {
-		Preconditions.checkNotNull(event);
-		Preconditions.checkNotNull(me);
-		for (AtomEvent e : event.subsumes()) {
-			atomObservers.get(e).put(p, me);			
+	public void registerAtomEventObserver(AtomEventSets events, Predicate p, AtomEventObserver listener) {
+		Preconditions.checkNotNull(events);
+		Preconditions.checkNotNull(listener);
+		for (AtomEvent e : events.subsumes()) {
+			atomObservers.get(e).put(p, listener);			
 		}	
 	}
 	
 	@Override
-	public void unregisterAtomEventObserver(AtomEventSets event, AtomEventObserver me) {
-		unregisterAtomEventObserver(AllPredicates,event,me);	
+	public void unregisterAtomEventObserver(AtomEventSets events, AtomEventObserver listener) {
+		unregisterAtomEventObserver(events, AllPredicates, listener);
 	}
-	
+
 	@Override
-	public void unregisterAtomEventObserver(Predicate p, AtomEventSets event, AtomEventObserver me) {
-		Preconditions.checkNotNull(event);
-		Preconditions.checkNotNull(me);
-		for (AtomEvent e : event.subsumes()) {
-			atomObservers.get(e).remove(p, me);			
-		}	
+	public void unregisterAtomEventObserver(AtomEventSets events, Predicate p, AtomEventObserver listener) {
+		Preconditions.checkNotNull(events);
+		Preconditions.checkNotNull(listener);
+		for (AtomEvent e : events.subsumes()) {
+			atomObservers.get(e).remove(p, listener);			
+		}
 	}
-	
 
 	@Override
 	public int checkToActivate() {
@@ -171,8 +191,8 @@ public class MemoryAtomManager implements AtomManager {
 	}
 	
 	@Override
-	public void checkToDeactivate(Atom atom) {
-		throw new UnsupportedOperationException("Not yet implemented!");
+	public int checkToDeactivate() {
+		return 0;
 	}
 	
 	@Override
@@ -209,27 +229,6 @@ public class MemoryAtomManager implements AtomManager {
 			throw new IllegalStateException("Improper invocation of activateAtom on "+atom);
 		}
 		return false;
-	}
-
-	@Override
-	public Atom getAtom(Predicate p, GroundTerm[] arguments) {
-		Atom atom = store.getAtom(p, arguments);
-		if (atom.isUnconsidered()) {
-			if (atom.isFactAtom()) {
-				atom.consider();
-			} else if (atom.isCertainty()) {
-				//add special database certainty kernel
-				DataCertaintyKernel.get().addDataCertainty(atom, application, atom.getValue());
-				addAtomJob(atom,AtomEvent.IntroducedCertainty);
-				atom.consider();
-				if (isAboveActivationThreshold(atom)) 
-					atom.activate(); //No need for notification here, since status was known in database before
-			} else if (atom.isRandomVariable()) {
-				addAtomJob(atom,AtomEvent.IntroducedRV);
-				atom.consider();
-			} else throw new IllegalArgumentException("Unknown atom status: "+atom);
-		} else assert atom.isConsideredOrActive();
-		return atom;
 	}
 	
 	@Override
@@ -321,7 +320,7 @@ public class MemoryAtomManager implements AtomManager {
 				if (atom.isUnconsidered()) {
 					handleAtomEvent(atom,event);
 					store.free(atom);
-					assert !atom.isDefined();
+					assert !atom.isDefinedAndGround();
 				}
 				break;
 			case ActivatedCertainty:
@@ -342,7 +341,7 @@ public class MemoryAtomManager implements AtomManager {
 				if (atom.isUnconsidered()) {
 					handleAtomEvent(atom,event);
 					store.free(atom);
-					assert !atom.isDefined();
+					assert !atom.isDefinedAndGround();
 				}
 				break;			
 			case ActivatedRV:
@@ -466,12 +465,6 @@ public class MemoryAtomManager implements AtomManager {
 	}
 
 	@Override
-	public void persist(Atom atom) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
 	public Atom getConsideredAtom(Predicate p, GroundTerm[] arguments) {
 		// TODO Auto-generated method stub
 		return null;
@@ -549,6 +542,69 @@ public class MemoryAtomManager implements AtomManager {
 	public int getNumEntities(ArgumentType type) {
 		// TODO Auto-generated method stub
 		return 0;
+	}
+
+	@Override
+	public ResultList getNonfalseGroundings(Formula f) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public ResultList getNonfalseGroundings(Formula f, List<Variable> projectTo) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public ResultList getNonfalseGroundings(Formula f,
+			VariableAssignment partialGrounding) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public ResultList getNonfalseGroundings(Formula f,
+			VariableAssignment partialGrounding, List<Variable> projectTo) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Iterable<Atom> getAtoms(Set<AtomStatus> stati, Predicate p) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Iterable<Atom> getAtoms(Set<AtomStatus> stati, Predicate p,
+			Object... terms) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public int getNumAtoms(Set<AtomStatus> stati, Predicate p) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public int getNumAtoms(Set<AtomStatus> stati, Predicate p, Object... terms) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public void open(Predicate predicate) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void close(Predicate predicate) {
+		// TODO Auto-generated method stub
+		
 	}
 
 }
