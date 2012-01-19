@@ -409,14 +409,21 @@ public class ConicReasoner implements Reasoner, AtomEventObserver {
 				switch (type) {
 				case linear:
 					featureVar.getCone().delete();
+					featureVar = null;
 					break;
 				case quadratic:
 					innerFeatureCon.delete();
+					innerFeatureCon = null;
 					innerSquaredCon.delete();
+					innerSquaredCon = null;
 					outerSquaredCon.delete();
+					outerSquaredCon = null;
 					featureVar.getCone().delete();
+					featureVar = null;
 					squaredFeatureVar.getCone().delete();
+					squaredFeatureVar = null;
 					outerSquaredVar.getCone().delete();
+					outerSquaredVar = null;
 				default:
 					throw new IllegalArgumentException("Unsupported distance norm.");
 				}
