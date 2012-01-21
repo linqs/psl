@@ -150,7 +150,8 @@ public class MemoryAtomEventFramework implements AtomEventFramework {
 	public int checkToActivate() {
 		int noAffected=0;
 		for (Atom atom : store.getAtoms(ImmutableSet.of(AtomStatus.ConsideredRV,AtomStatus.ActiveRV))) {
-			if (atom.isConsidered() && activateAtom(atom)) noAffected++;
+			if (atom.isConsidered() && activateAtom(atom))
+				noAffected++;
 		}
 		return noAffected;
 	}

@@ -101,8 +101,12 @@ public class ParameterMapper {
 			et.setParameters(para);
 		}
 	}
+	
+	public Map<Kernel, Integer> getOffsets() {
+		return Collections.unmodifiableMap(offset);
+	}
 
-	public double[] getAllParameters() {
+	public double[] getAllParameterValues() {
 		double vals[] = new double[numParameters];
 		for (Kernel et : offset.keySet()) {
 			int off = offset.get(et);
