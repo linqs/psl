@@ -16,52 +16,43 @@
  */
 package edu.umd.cs.psl.sampler;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-
 import edu.umd.cs.psl.evaluation.process.RunningProcess;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
-import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
 
-public class DerivativeSampler extends LinearSampler {
+public class PartitionEstimationSampler extends UniformSampler {
 
-	private transient Map<Kernel, Double> totals;
+	private double total;
 	
-	public DerivativeSampler(RunningProcess p, Collection<Kernel> k) {
-		this(p, k, defaultMaxNoSteps,defaultSignificantDigits);
+	public PartitionEstimationSampler(RunningProcess p) {
+		this(p, defaultMaxNoSteps, defaultSignificantDigits);
 	}
 	
-	public DerivativeSampler(RunningProcess p, Collection<Kernel> k, int maxNoSteps) {
-		this(p, k, maxNoSteps,defaultSignificantDigits);
+	public PartitionEstimationSampler(RunningProcess p,int maxNoSteps) {
+		this(p,maxNoSteps, defaultSignificantDigits);
 	}
  	
-	public DerivativeSampler(RunningProcess p, Collection<Kernel> k, int maxNoSteps, int significantDigits) {
+	public PartitionEstimationSampler(RunningProcess p, int maxNoSteps, int significantDigits) {
 		super(p, maxNoSteps, significantDigits);
-		totals = new HashMap<Kernel, Double>();
-		for (Kernel kernel : k) {
-			totals.put(kernel, 0.0);
-		}
+		total = 0.0;
 	}
 	
-	public double getAverage(Kernel k) {
-		return totals.get(k) / getNoSamples();
+	public double getLogAverageDensity() {
+		return Math.log(total) - Math.log(getNoSamples());
 	}
-
+	
 	@Override
 	protected void processNewDimension(AtomFunctionVariable var, int index) {
-		/* Intentionally blank */
+		/* Intentionally empty */
 	}
-
+	
 	@Override
 	protected void processSampledPoint(Iterable<GroundKernel> groundKernels) {
-		for (GroundKernel gk : groundKernels) {
-    		Kernel k = gk.getKernel();
-    		if (totals.containsKey(k)) {
-    			totals.put(k, totals.get(k) + gk.getIncompatibility());
-    		}
+		double incompatibility = 0.0;
+    	for (GroundKernel gk : groundKernels) {
+    		incompatibility += gk.getIncompatibility();
     	}
+    	total += Math.exp(-1 * incompatibility);
 	}
 	
 }

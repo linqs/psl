@@ -17,8 +17,6 @@
 package edu.umd.cs.psl.sampler;
 
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,49 +25,21 @@ import org.ujmp.core.Matrix;
 import cern.colt.list.tlong.LongArrayList;
 import cern.colt.list.tobject.ObjectArrayList;
 import cern.colt.map.tobject.OpenLongObjectHashMap;
-import de.mathnbits.statistics.DoubleDist;
 import edu.umd.cs.psl.evaluation.process.RunningProcess;
-import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
 
-public class LinearSampler extends AbstractHitAndRunSampler {
+abstract public class LinearSampler extends AbstractHitAndRunSampler {
 
 	private static final Logger log = LoggerFactory.getLogger(LinearSampler.class);
 
-	private static final int defaultMaxNoSteps = 1000000;
-	private static final int defaultSignificantDigits = 2;
-
-	
 	private final double epsilon = 1e-4;
 	
 	private final int alphaPlusSignificantDigits = 3;
 	
 	private final long alphaRoundingScheme;
 	
-	private transient Map<AtomFunctionVariable,DoubleDist> samples;
-	
-	private transient Matrix currentPt;
-	
-	public LinearSampler(RunningProcess p) {
-		this(p,defaultMaxNoSteps,defaultSignificantDigits);
-	}
-	
-	public LinearSampler(RunningProcess p,int maxNoSteps) {
-		this(p,maxNoSteps,defaultSignificantDigits);
-	}
- 	
 	public LinearSampler(RunningProcess p, int maxNoSteps, int significantDigits) {
 		super(p, maxNoSteps, significantDigits);
-		samples = new HashMap<AtomFunctionVariable,DoubleDist>();
-		
 		alphaRoundingScheme= (long)Math.pow(10, significantDigits+alphaPlusSignificantDigits);
-	}
-	
-	public DoubleDist getDistribution(AtomFunctionVariable atomvar) {
-		return samples.get(atomvar);
-	}
-	
-	public Map<AtomFunctionVariable,DoubleDist> getDistributions() {
-		return samples;
 	}
 	
 	@Override

@@ -4,14 +4,10 @@ import static edu.umd.cs.psl.model.DistanceNorm.L1;
 import static edu.umd.cs.psl.model.DistanceNorm.L2;
 
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import de.mathnbits.util.ArrayUtil;
 
 import edu.umd.cs.psl.application.FullInference;
 import edu.umd.cs.psl.application.ModelApplication;
@@ -26,12 +22,10 @@ import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.model.kernel.priorweight.PriorWeightKernel;
 import edu.umd.cs.psl.model.kernel.rule.CompatibilityRuleKernel;
-import edu.umd.cs.psl.model.parameters.Parameters;
 import edu.umd.cs.psl.optimizer.lbfgs.ConvexFunc;
-import edu.umd.cs.psl.optimizer.lbfgs.FunctionEvaluation;
 import edu.umd.cs.psl.optimizer.lbfgs.LBFGSB;
 import edu.umd.cs.psl.sampler.DerivativeSampler;
-import edu.umd.cs.psl.sampler.UniformSampler;
+import edu.umd.cs.psl.sampler.PartitionEstimationSampler;
 
 public class MaxLikelihoodWeightLearning implements WeightLearning, ConvexFunc {
 
@@ -143,7 +137,7 @@ public class MaxLikelihoodWeightLearning implements WeightLearning, ConvexFunc {
 
 		Iterable<Kernel> modelEvidence = model.getKernels();
 		int ii = 0;
-		for (Kernel et : modelEvidence) 
+		for (Kernel et : modelEvidence)
 		{
 			if (et instanceof PriorWeightKernel)   
 			{
@@ -209,25 +203,25 @@ public class MaxLikelihoodWeightLearning implements WeightLearning, ConvexFunc {
 		RunningProcess proc1 = LocalProcessMonitor.get().startProcess();
 		RunningProcess proc2 = LocalProcessMonitor.get().startProcess();
 		
-		UniformSampler uniformSampler = new UniformSampler(proc1, 1000);
-		DerivativeSampler derivativeSampler = new DerivativeSampler(proc2, parameters.getOffsets().keySet(), 1000);
+		PartitionEstimationSampler peSampler = new PartitionEstimationSampler(proc1, 100000);
+		DerivativeSampler derivativeSampler = new DerivativeSampler(proc2, parameters.getOffsets().keySet(), 100000);
 		
 		training.runInference();
 		
-		uniformSampler.sample(training.getGroundKernel(), 1.1, Integer.MAX_VALUE);
+		peSampler.sample(training.getGroundKernel(), 1.1, Integer.MAX_VALUE);
 
 		training.runInference();
 		
 		derivativeSampler.sample(training.getGroundKernel(), 1.1, Integer.MAX_VALUE);
 		
-		double fctValueSample = uniformSampler.getLogAverageDensity();
+		double fctValueSample = peSampler.getLogAverageDensity();
 		double[] gradientSample = new double[parameters.getOffsets().keySet().size()];
 		for (Map.Entry<Kernel, Integer> e: parameters.getOffsets().entrySet())
 			gradientSample[e.getValue()] = derivativeSampler.getAverage(e.getKey());
 		
 		System.out.println(fctValueSample);
 		System.out.println(Arrays.toString(gradientSample));
-		if (true) throw new IllegalStateException();
+		//if (true) throw new IllegalStateException();
 
 		//Finally, add priors on weights
 		double squaredSum = 0.0;
@@ -240,7 +234,8 @@ public class MaxLikelihoodWeightLearning implements WeightLearning, ConvexFunc {
 			//gradient[i] = 2*params[i] *prior ;
 			//gradient[i] = ( 2*params[i] - 1.0/(params[i]*params[i]) )*prior ;
 			squaredSum += (params[i]-means[i]) * (params[i]-means[i]) * prior;
-			gradient[i] = 2 * (params[i]-means[i]) *prior ;
+			//gradient[i] = 2 * (params[i]-means[i]) *prior ;
+			gradient[i] = 0;
 		}
 		log.debug("Prior gradient (start from index 1): {}", Arrays.toString(gradient));
 

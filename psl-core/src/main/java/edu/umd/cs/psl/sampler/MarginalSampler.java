@@ -16,52 +16,50 @@
  */
 package edu.umd.cs.psl.sampler;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import de.mathnbits.statistics.DoubleDist;
 import edu.umd.cs.psl.evaluation.process.RunningProcess;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
-import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
 
-public class DerivativeSampler extends LinearSampler {
+public class MarginalSampler extends LinearSampler {
 
-	private transient Map<Kernel, Double> totals;
+	private transient Map<AtomFunctionVariable,DoubleDist> samples;
 	
-	public DerivativeSampler(RunningProcess p, Collection<Kernel> k) {
-		this(p, k, defaultMaxNoSteps,defaultSignificantDigits);
+	public MarginalSampler(RunningProcess p) {
+		this(p,defaultMaxNoSteps,defaultSignificantDigits);
 	}
 	
-	public DerivativeSampler(RunningProcess p, Collection<Kernel> k, int maxNoSteps) {
-		this(p, k, maxNoSteps,defaultSignificantDigits);
+	public MarginalSampler(RunningProcess p,int maxNoSteps) {
+		this(p,maxNoSteps,defaultSignificantDigits);
 	}
  	
-	public DerivativeSampler(RunningProcess p, Collection<Kernel> k, int maxNoSteps, int significantDigits) {
+	public MarginalSampler(RunningProcess p, int maxNoSteps, int significantDigits) {
 		super(p, maxNoSteps, significantDigits);
-		totals = new HashMap<Kernel, Double>();
-		for (Kernel kernel : k) {
-			totals.put(kernel, 0.0);
-		}
+		samples = new HashMap<AtomFunctionVariable,DoubleDist>();
 	}
 	
-	public double getAverage(Kernel k) {
-		return totals.get(k) / getNoSamples();
+	public DoubleDist getDistribution(AtomFunctionVariable atomvar) {
+		return samples.get(atomvar);
 	}
-
+	
+	public Map<AtomFunctionVariable,DoubleDist> getDistributions() {
+		return samples;
+	}
+	
 	@Override
 	protected void processNewDimension(AtomFunctionVariable var, int index) {
-		/* Intentionally blank */
+		DoubleDist newdist = new DoubleDist();
+		if (getNoSamples()>0) newdist.incBy(0.0, getNoSamples());
+		samples.put(var, newdist);
 	}
-
+	
 	@Override
 	protected void processSampledPoint(Iterable<GroundKernel> groundKernels) {
-		for (GroundKernel gk : groundKernels) {
-    		Kernel k = gk.getKernel();
-    		if (totals.containsKey(k)) {
-    			totals.put(k, totals.get(k) + gk.getIncompatibility());
-    		}
-    	}
+		for (Map.Entry<AtomFunctionVariable, DoubleDist> e : samples.entrySet())
+			e.getValue().inc(e.getKey().getValue());
 	}
 	
 }

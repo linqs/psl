@@ -31,7 +31,6 @@ import org.ujmp.core.Matrix;
 import org.ujmp.core.MatrixFactory;
 import org.ujmp.core.calculation.Calculation;
 
-import de.mathnbits.statistics.DoubleDist;
 import edu.umd.cs.psl.evaluation.process.RunningProcess;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
@@ -58,7 +57,7 @@ abstract public class AbstractHitAndRunSampler implements Sampler {
 	private static final Logger log = LoggerFactory.getLogger(AbstractHitAndRunSampler.class);
 
 	public static final int defaultMaxNoSteps = 1000000;
-	public static final int defaultSignificantDigits = 2;
+	public static final int defaultSignificantDigits = 4;
 	public static final double defaultBurnInStepsPercentage=0.01;
 	
 	private final double epsilon = 1e-4;
@@ -66,17 +65,14 @@ abstract public class AbstractHitAndRunSampler implements Sampler {
 	private final int maxDimension2Display=10;
 	
 	private final int maxActiveConstraints=2;
-	private final int alphaPlusSignificantDigits = 3;
 	
 	private final long roundingScheme;
-	private final long alphaRoundingScheme;
 	private final int maxSteps;
 	
 	private int noSteps;
 	private int noSamples;
 	private int dimensions;
 	
-	private transient Map<AtomFunctionVariable,DoubleDist> samples;
 	private transient Map<AtomFunctionVariable,Integer> atomIndex;
 	
 	protected transient Matrix currentPt;
@@ -94,13 +90,11 @@ abstract public class AbstractHitAndRunSampler implements Sampler {
 	public AbstractHitAndRunSampler(RunningProcess p, int maxNoSteps, int significantDigits) {
 		noSteps=0;
 		noSamples=0;
-		samples = new HashMap<AtomFunctionVariable,DoubleDist>();
 		dimensions=0;
 		atomIndex =new HashMap<AtomFunctionVariable,Integer>();
 		currentPt=null;
 		
 		roundingScheme= (long)Math.pow(10, significantDigits);
-		alphaRoundingScheme= (long)Math.pow(10, significantDigits+alphaPlusSignificantDigits);
 		maxSteps=maxNoSteps;
 		stats = new HitAndRunSamplerStatistics(this,p);
 	}
@@ -113,30 +107,32 @@ abstract public class AbstractHitAndRunSampler implements Sampler {
 		return noSamples;
 	}
 	
-	private int getorSetIndex(AtomFunctionVariable atomvar) {
+	protected int getorSetIndex(AtomFunctionVariable atomvar) {
 		if (atomvar.isConstant()) throw new IllegalArgumentException("Cannot retrieve index for known atom!");
 		Integer index = atomIndex.get(atomvar);
 		if (index==null) {
 			index = dimensions;
 			dimensions++;
 			atomIndex.put(atomvar, index);
-			assert !samples.containsKey(atomvar);
-			DoubleDist newdist = new DoubleDist();
-			if (noSamples>0) newdist.incBy(0.0, noSamples);
-			samples.put(atomvar, newdist);
+			processNewDimension(atomvar, index);
 		}
 		return index.intValue();
 	}
 	
-	private int getIndex(AtomFunctionVariable atomvar) {
+	protected int getIndex(AtomFunctionVariable atomvar) {
 		if (atomvar.isConstant()) throw new IllegalArgumentException("Cannot retrieve index for known atom!");
 		Integer index= atomIndex.get(atomvar);
 		if (index==null) throw new IllegalArgumentException("Atom has not yet been assigned a dimension!");
 		return index;
 	}
 	
-	public Collection<Atom> sample(Iterable<GroundKernel> evidences, 
-						double activationThreshold, int activatorThreshold) {
+	abstract protected void processNewDimension(AtomFunctionVariable var, int index);
+	
+	abstract protected double sampleAlpha(Matrix direction, Matrix Aobj, Matrix objConst, double alphaLow, double alphaHigh);
+	
+	abstract protected void processSampledPoint(Iterable<GroundKernel> groundKernels);
+	
+	public Collection<Atom> sample(Iterable<GroundKernel> evidences, double activationThreshold, int activatorThreshold) {
 		
 		//Check dimensionality and inputs
 		int noEqConstraints = 0;
@@ -297,8 +293,8 @@ abstract public class AbstractHitAndRunSampler implements Sampler {
 	    Random dimGenerator = new Random();
 	    boolean inCorner = false;
 	    do {
-	    	if (noSteps%1000==0) log.debug("Step #{}",noSteps);
-	    	else log.trace("Step #{}",noSteps);
+	    	if ((noSteps+1)%1000==0) log.debug("Starting step #{}",noSteps+1);
+	    	else log.trace("Starting step #{}",noSteps+1);
 	    	//Generate random direction
 		    Matrix direction;
 		    
@@ -426,32 +422,24 @@ abstract public class AbstractHitAndRunSampler implements Sampler {
 		    noSteps++;
 		    //Add sample if we are beyond the burn in phase
 		    if (noSteps>defaultBurnInStepsPercentage*maxNumberSteps) {
-		    	for (Map.Entry<AtomFunctionVariable, DoubleDist> entry  : samples.entrySet()) {
+		    	for (Map.Entry<AtomFunctionVariable, Integer> entry  : atomIndex.entrySet()) {
 		    		AtomFunctionVariable a = entry.getKey();
 		    		double value = ((double)Math.round(currentPt.getAsDouble(getIndex(a),0)*roundingScheme)) / roundingScheme;
-		    		//log.debug("{} -> {}",a,value);
-		    		entry.getValue().inc(value);
-		    		//Activation
-		    		Atom atom = a.getAtom();
 		    		a.setValue(value);
 		    		
+		    		//Activation
+		    		Atom atom = a.getAtom();
 		    		if (atom.isRandomVariable() && !atom.isActive() && atom.hasNonDefaultValues()) {
 		    			activatedAtoms.add(atom);
 		    		}
-		    		
-		    		processCurrentPoint(evidences);
 		    	}
+		    	
+	    		processSampledPoint(evidences);
 		    	noSamples++;
 		    }
 	    } while (noSteps<maxNumberSteps && activatedAtoms.size()<activatorThreshold);
 	    stats.finish(noSamples);
 	    return activatedAtoms;
-	}
-	
-	abstract protected double sampleAlpha(Matrix direction, Matrix Aobj, Matrix objConst, double alphaLow, double alphaHigh);
-	
-	protected void processCurrentPoint(Iterable<GroundKernel> groundKernels) {
-		/* Default implementation deliberately empty */
 	}
 	
 	private double setMatrixRow(Matrix m, int row, FunctionTerm term,boolean negate) {
