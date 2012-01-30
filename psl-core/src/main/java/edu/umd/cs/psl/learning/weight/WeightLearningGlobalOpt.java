@@ -169,7 +169,7 @@ public class WeightLearningGlobalOpt implements FunctionEvaluation, WeightLearni
     int[]     iter   = {0};       //store number of iterations taken by L-BFGS-B
     boolean[] error  = {false};   //indicate whether L-BFGS-B encountered an error
     double[]  params = new double[numParams+1]; //parameters (e.g., wts of formulas) found by L-BFGS-B
-    double[]  paras  = parameters.getAllParameters();
+    double[]  paras  = parameters.getAllParameterValues();
 
     means = new double[numParams+1];
 
@@ -431,7 +431,7 @@ public class WeightLearningGlobalOpt implements FunctionEvaluation, WeightLearni
 	
 	public void learnPerceptron() {
 		initialize();
-		double[] paras = parameters.getAllParameters();
+		double[] paras = parameters.getAllParameterValues();
 		double prior = configuration.getParameterPrior();
 		double[][] weights = new double[configuration.getPerceptronIterations()+1][paras.length];
 		for (int i=0;i<paras.length;i++) weights[0][i]=paras[i];

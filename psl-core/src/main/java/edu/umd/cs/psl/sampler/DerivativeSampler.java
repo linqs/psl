@@ -25,7 +25,7 @@ import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
 
-public class DerivativeSampler extends LinearSampler {
+public class DerivativeSampler extends UniformSampler {
 
 	private transient Map<Kernel, Double> totals;
 	
@@ -56,12 +56,25 @@ public class DerivativeSampler extends LinearSampler {
 
 	@Override
 	protected void processSampledPoint(Iterable<GroundKernel> groundKernels) {
+		Map<Kernel, Double> sampleTotals = new HashMap<Kernel, Double>();
+		for (Kernel k : totals.keySet())
+			sampleTotals.put(k, 0.0);
+		
+		double total = 0.0;
+		double incompatibility;
 		for (GroundKernel gk : groundKernels) {
+			incompatibility = gk.getIncompatibility();
+			total -= incompatibility;
+			
     		Kernel k = gk.getKernel();
-    		if (totals.containsKey(k)) {
-    			totals.put(k, totals.get(k) + gk.getIncompatibility());
+    		if (sampleTotals.containsKey(k)) {
+    			sampleTotals.put(k, sampleTotals.get(k) + incompatibility);
     		}
     	}
+		
+		double density = Math.exp(total);
+		for (Kernel k : sampleTotals.keySet())
+			totals.put(k, totals.get(k) + sampleTotals.get(k) * density);
 	}
 	
 }

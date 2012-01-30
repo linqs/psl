@@ -102,6 +102,18 @@ public class ParameterMapper {
 		}
 	}
 	
+	public void setAllParametersWithOffset(double[] values) {
+		if (values.length!=numParameters+1) throw new IllegalArgumentException("Invalid vector length!");
+		for (Kernel et : offset.keySet()) {
+			int off = offset.get(et);
+			Parameters para = et.getParameters();
+			for (int i=0;i<para.numParameters();i++) {
+				para.setParameter(i, values[off+i+1]);
+			}
+			et.setParameters(para);
+		}
+	}
+	
 	public Map<Kernel, Integer> getOffsets() {
 		return Collections.unmodifiableMap(offset);
 	}

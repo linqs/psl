@@ -37,8 +37,8 @@ public class PartitionEstimationSampler extends UniformSampler {
 		total = 0.0;
 	}
 	
-	public double getLogAverageDensity() {
-		return Math.log(total) - Math.log(getNoSamples());
+	public double getPartitionEstimate() {
+		return total / getNoSamples();
 	}
 	
 	@Override

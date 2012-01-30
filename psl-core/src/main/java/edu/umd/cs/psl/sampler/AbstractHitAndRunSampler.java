@@ -293,7 +293,7 @@ abstract public class AbstractHitAndRunSampler implements Sampler {
 	    Random dimGenerator = new Random();
 	    boolean inCorner = false;
 	    do {
-	    	if ((noSteps+1)%1000==0) log.debug("Starting step #{}",noSteps+1);
+	    	if ((noSteps+1)%10000==0) log.debug("Starting step #{}",noSteps+1);
 	    	else log.trace("Starting step #{}",noSteps+1);
 	    	//Generate random direction
 		    Matrix direction;
