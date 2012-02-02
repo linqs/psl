@@ -95,7 +95,7 @@ public class MOSEK implements ConicProgramSolver {
 			
 			/* Processes NonNegativeOrthantCones */
 			for (NonNegativeOrthantCone cone : program.getNonNegativeOrthantCones()) {
-				int index = program.index(cone.getVariable());
+				int index = program.getIndex(cone.getVariable());
 				task.putbound(Env.accmode.var, index, Env.boundkey.lo, 0.0, Double.POSITIVE_INFINITY);
 			}
 			
@@ -104,7 +104,7 @@ public class MOSEK implements ConicProgramSolver {
 				int[] indices = new int[cone.getN()];
 				int i = 1;
 				for (Variable v : cone.getVariables()) {
-					int index = program.index(v);
+					int index = program.getIndex(v);
 					if (v.equals(cone.getNthVariable())) {
 						indices[0] = index;
 						task.putbound(Env.accmode.var, index, Env.boundkey.lo, 0.0, Double.POSITIVE_INFINITY);
@@ -126,13 +126,13 @@ public class MOSEK implements ConicProgramSolver {
 			int[] indexList;
 			double[] valueList;
 			for (LinearConstraint con : constraints) {
-				constraintIndex = program.index(con);
+				constraintIndex = program.getIndex(con);
 				variables = con.getVariables();
 				indexList = new int[variables.size()];
 				valueList = new double[variables.size()];
 				listIndex = 0;
 				for (Map.Entry<Variable, Double> e : variables.entrySet()) { 
-					indexList[listIndex] = program.index(e.getKey());
+					indexList[listIndex] = program.getIndex(e.getKey());
 					valueList[listIndex++] = e.getValue();
 				}
 				task.putavec(mosek.Env.accmode.con, constraintIndex, indexList, valueList);
