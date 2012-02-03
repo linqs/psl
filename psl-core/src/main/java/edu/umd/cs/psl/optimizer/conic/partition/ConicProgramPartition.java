@@ -308,6 +308,8 @@ public class ConicProgramPartition implements ConicProgramListener {
 						}
 					}	
 				}
+				
+				varsToProcess.clear();
 			}
 			
 			cutConstraintsDirty = false;
