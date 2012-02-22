@@ -354,7 +354,7 @@ public class ConicProgramPartition implements ConicProgramListener {
 		verifyCheckedOut();
 		Vector<SparseDoubleMatrix2D> matrices = new Vector<SparseDoubleMatrix2D>(size());
 		for (int i = 0; i < size(); i++)
-			matrices.add(new SparseDoubleMatrix2D(APart.get(i).columns(), APart.get(i).columns()));
+			matrices.add(new SparseDoubleMatrix2D(APart.get(i).columns(), APart.get(i).columns(), APart.get(i).columns(), 0.2, 0.5));
 		updateSparse2DByVars(m, matrices);
 		return matrices;
 	}

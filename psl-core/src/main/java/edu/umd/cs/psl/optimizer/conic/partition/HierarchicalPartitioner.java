@@ -94,7 +94,7 @@ abstract public class HierarchicalPartitioner extends AbstractCompletePartitione
 		
 		partitions.clear();
 		
-		int numElements = (int) Math.ceil((double) program.getNumLinearConstraints() / 20000);
+		int numElements = (int) Math.ceil((double) program.getNumLinearConstraints() / 5000);
 		
 		List<List<Node>> graphPartition = null;
 		alwaysCutConstraints = new HashSet<LinearConstraint>();

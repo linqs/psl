@@ -54,7 +54,7 @@ abstract public class AbstractCompletePartitioner implements CompletePartitioner
 			throw new IllegalStateException("Unsupported cone type.");
 		
 		doPartition();
-		reorderPartitions();
+		// reorderPartitions();
 	}
 	
 	abstract protected void doPartition();

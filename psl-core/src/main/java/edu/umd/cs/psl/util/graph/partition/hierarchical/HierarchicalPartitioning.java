@@ -47,7 +47,7 @@ public class HierarchicalPartitioning implements Partitioner {
 	protected static final String relType = "connect";
 	protected static final String weightType = "weight";
 	
-	private static final double shrinkingThreshold = 0.25;
+	private static final double shrinkingThreshold = 0.7;
 	private static final int finalMultiple = 8;
 	private static final int initialMultiple = 400;
 	
@@ -243,7 +243,7 @@ public class HierarchicalPartitioning implements Partitioner {
 	}
 	
 	private final double partitionEvaluation(double edgeCut, double balance) {
-		if (balance > 5000)
+		if (edgeCut < 5)
 			return 10e30;
 		else
 			return edgeCut+Math.pow(balance,balanceExponent);

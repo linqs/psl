@@ -18,7 +18,6 @@ package edu.umd.cs.psl.optimizer.conic.ipm;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.Vector;
 
@@ -38,7 +37,6 @@ import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.optimizer.conic.partition.CompletePartitioner;
 import edu.umd.cs.psl.optimizer.conic.partition.ConicProgramPartition;
 import edu.umd.cs.psl.optimizer.conic.partition.ObjectiveCoefficientPartitioner;
-import edu.umd.cs.psl.optimizer.conic.partition.WeightedDistancePartitioner;
 import edu.umd.cs.psl.optimizer.conic.program.Cone;
 import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
 import edu.umd.cs.psl.optimizer.conic.program.Variable;
@@ -47,14 +45,10 @@ public class PartitionedIPM extends IPM {
 
 	private static final Logger log = LoggerFactory.getLogger(PartitionedIPM.class);
 	
-	private boolean selectNextPartitionRandomly;
-	private Random rand;
 	private CompletePartitioner partitioner;
 	
 	public PartitionedIPM(ConfigBundle config) {
 		super(config);
-		selectNextPartitionRandomly = false;
-		rand = new Random();
 //		partitioner = new WeightedDistancePartitioner(config);
 		partitioner = new ObjectiveCoefficientPartitioner(config);
 	}
@@ -68,11 +62,8 @@ public class PartitionedIPM extends IPM {
 	@Override
 	protected void doSolve(ConicProgram program) {
 		
-		int p, oldP;
-		double mu, tau, muInitial, theta, err, weight, epsilon_1;
-		double[] weights;
-		double oldErr = 0.0;
-		double totalWeight = 0.0;
+		int p;
+		double mu, tau, muInitial, theta, err, epsilon_1;
 		boolean inNeighborhood;
 		DenseDoubleAlgebra alg = new DenseDoubleAlgebra();
 		
@@ -100,7 +91,7 @@ public class PartitionedIPM extends IPM {
 		
 		partitioner.checkOutAllMatrices();
 		
-		log.debug("Partitioner: {}", partitioner);
+		// log.debug("Partitioner: {}", partitioner);
 		
 		Vector<Partition> partitions = new Vector<Partition>(partitioner.size());
 		for (int i = 0; i < partitioner.size(); i++) {
@@ -113,9 +104,10 @@ public class PartitionedIPM extends IPM {
 			partition.ds = cpp.get1DViewsByVars(ds);
 			partition.r = cpp.get1DViewsByVars(r);
 			partition.invH = cpp.getSparse2DByVars(invH);
+			partition.primalStepCDs = new Vector<SparseDoubleCholeskyDecomposition>();
+			partition.dualStepCDs = new Vector<SparseDoubleCholeskyDecomposition>();
 			partitions.add(partition);
 		}
-		weights = new double[partitioner.size()];
 		
 		/* Initializes mu */
 		muInitial = alg.mult(x, s) / v;
@@ -132,19 +124,22 @@ public class PartitionedIPM extends IPM {
 				cone.setBarrierHessian(varMap, x, H);
 				cone.setBarrierHessianInv(varMap, x, invH);
 			}
-			for (int i = 0; i < partitions.size(); i++)
+			for (int i = 0; i < partitions.size(); i++) {
 				partitioner.getPartition(i).updateSparse2DByVars(invH, partitions.get(i).invH);
+				partitions.get(i).primalStepCDs.clear();
+				partitions.get(i).dualStepCDs.clear();
+			}
 			
 			if (!inNeighborhood) {
 				r.assign(s).assign(g, DoubleFunctions.plusMultSecond(muInitial));
 				theta = alg.mult(r, alg.mult(invH, r)) / muInitial;
-				log.trace("Theta: {}", theta);
+				log.debug("Theta: {}", theta);
 				if (theta < .1)
 					inNeighborhood = true;
 			}
 			
 			if (inNeighborhood) {
-				tau = .80;
+				tau = 0.85;
 			}
 			else {
 				mu = muInitial;
@@ -157,81 +152,51 @@ public class PartitionedIPM extends IPM {
 			epsilon_1 = 0.01;
 			err = Math.sqrt(alg.mult(r, alg.mult(invH, r))) /(mu * tau * Math.sqrt(v));
 			Partition partition;
+			log.debug("Initial error: {}", err);
 			do {
-				if (selectNextPartitionRandomly) {
-					if (totalWeight == 0.0 || partitioner.size() == 1)
-						p = 0;
-					else {
-						oldP = p;
-						do {
-							double cutoff = rand.nextDouble() * totalWeight;
-							double temp = 0.0;
-							for (p = 0; p < weights.length; p++) {
-								temp += weights[p];
-								if (temp > cutoff)
-									break;
-							}
-						} while (oldP == p);
-					}
-				}
-				else {
-					p = (p+1) % partitions.size();
-				}
+				p = (p+1) % partitions.size();
+				
 				partition = partitions.get(p);
 				log.trace("P = {}", p);
+				
+				if (partition.primalStepCDs.size() == 0 || partition.dualStepCDs.size() == 0) {
+					prepareCDs(partition);
+				}
+				
 				for (int i = 0; i < partition.dx.size(); i++) {
 					log.trace("i = {}", i);
 					log.trace("{} variables and {} constraints", partition.A.get(i).columns(), partition.A.get(i).rows());
 					log.trace("Full space step.");
-					fullSpaceStep(partition.r.get(i), partition.A.get(i), partition.invH.get(i), partition.dx.get(i), mu);
+					fullSpaceStep(partition.primalStepCDs.get(i), partition.r.get(i), partition.A.get(i), partition.invH.get(i), partition.dx.get(i), mu);
 					log.trace("Subspace step.");
-					subspaceStep(partition.r.get(i), partition.innerA.get(i), partition.invH.get(i), partition.ds.get(i), partition.innerDw.get(i));
+					subspaceStep(partition.dualStepCDs.get(i), partition.r.get(i), partition.innerA.get(i), partition.invH.get(i), partition.ds.get(i), partition.innerDw.get(i));
 				}
 				log.trace("Updating r.");
 				r.assign(rInitial).assign(alg.mult(H, dx).assign(DoubleFunctions.mult(mu)).assign(ds, DoubleFunctions.plus) , DoubleFunctions.plus);
 				log.trace("Done updating r.");
 
-				log.trace("Full space step.");
-				if (selectNextPartitionRandomly) {
-					oldErr = err;
-				}
 				err = Math.sqrt(alg.mult(r, alg.mult(invH, r))) /(mu * tau * Math.sqrt(v));
-				if (selectNextPartitionRandomly) {
-					weight = oldErr / err;
-					weights[p] += weight;
-					totalWeight += weight;
-					
-					for (int i = 0; i < weights.length; i++) {
-						weights[i] += 1.05;
-						totalWeight += 1.05;
-					}
-				}
-				log.debug("Err: {}", err);
+				log.trace("Err: {}", err);
 				if (Double.isNaN(err)) {
 					throw new IllegalStateException();
 				}
 			} while (err > epsilon_1);
 			
-			if (!inNeighborhood) {
-				double primalStepSize = 1.0;
-				double dualStepSize = 1.0;
-				for (Cone cone : cones)
-					primalStepSize = Math.min(primalStepSize, cone.getMaxStep(varMap, x, dx));
-				for (Cone cone : cones)
-					dualStepSize = Math.min(primalStepSize, cone.getMaxStep(varMap, s, ds));
+			log.debug("Remaining error: {}", err);
+			
+			double primalStepSize = 1.0;
+			double dualStepSize = 1.0;
+			for (Cone cone : cones) {
+				primalStepSize = Math.min(primalStepSize, cone.getMaxStep(varMap, x, dx));
+				dualStepSize = Math.min(dualStepSize, cone.getMaxStep(varMap, s, ds));
+			}
 
-				log.trace("Primal step size: {} * {}", primalStepSize, alg.norm2(dx));
-				log.trace("Dual step size: {} * {}", dualStepSize, alg.norm2(ds));
-				
-				x.assign(dx, DoubleFunctions.plusMultSecond(primalStepSize));
-				s.assign(ds, DoubleFunctions.plusMultSecond(dualStepSize));
-				w.assign(dw, DoubleFunctions.plusMultSecond(dualStepSize));
-			}
-			else {
-				x.assign(dx, DoubleFunctions.plus);
-				s.assign(ds, DoubleFunctions.plus);
-				w.assign(dw, DoubleFunctions.plus);
-			}
+			log.trace("Primal step size: {} * {}", primalStepSize, alg.norm2(dx));
+			log.trace("Dual step size: {} * {}", dualStepSize, alg.norm2(ds));
+			
+			x.assign(dx, DoubleFunctions.plusMultSecond(primalStepSize));
+			s.assign(ds, DoubleFunctions.plusMultSecond(dualStepSize));
+			w.assign(dw, DoubleFunctions.plusMultSecond(dualStepSize));
 			
 			dx.assign(0);
 			ds.assign(0);
@@ -242,59 +207,54 @@ public class PartitionedIPM extends IPM {
 		partitioner.checkInAllMatrices();
 	}
 
-	private void fullSpaceStep(DoubleMatrix1D r, DoubleMatrix2D A, DoubleMatrix2D Hinv, DoubleMatrix1D dx, double mu) {
+	private void fullSpaceStep(SparseDoubleCholeskyDecomposition cd, DoubleMatrix1D r, DoubleMatrix2D A, DoubleMatrix2D Hinv, DoubleMatrix1D dx, double mu) {
 		DoubleMatrix1D dw, ds;
 		DenseDoubleAlgebra alg = new DenseDoubleAlgebra();
-		SparseDoubleCholeskyDecomposition cd;
-
+		
 		ds = DoubleFactory1D.dense.make(A.columns());
-
-		SparseCCDoubleMatrix2D partial = new SparseCCDoubleMatrix2D(A.rows(), A.columns());
-		SparseCCDoubleMatrix2D coeff = new SparseCCDoubleMatrix2D(A.rows(), A.rows());
 		Hinv = ((SparseDoubleMatrix2D) Hinv).getColumnCompressed(false);
-		
-		A.zMult(Hinv, partial, 1.0, 0.0, false, false);
-		partial.zMult(A, coeff, 1.0, 0.0, false, true);
-		
-		cd = new SparseDoubleCholeskyDecomposition(coeff, 1);
 		dw = alg.mult(A, alg.mult(Hinv, r.copy()));
 		cd.solve(dw);
-		if (dw.copy().assign(DoubleFunctions.compare(Double.NEGATIVE_INFINITY)).cardinality() != dw.size()) {
-			throw new IllegalStateException();
-		}
 		A.zMult(dw, ds, 1.0, 0.0, true);
 		ds.assign(DoubleFunctions.mult(-1.0));
-		if (alg.mult(Hinv, r.copy().assign(ds, DoubleFunctions.plus).assign(DoubleFunctions.mult(-1.0))).assign(DoubleFunctions.div(mu)).assign(DoubleFunctions.compare(Double.NEGATIVE_INFINITY)).cardinality() != ds.size()) {
-			throw new IllegalStateException();
-		}
-		dx.assign(alg.mult(Hinv, r.copy().assign(ds, DoubleFunctions.plus).assign(DoubleFunctions.mult(-1.0))).assign(DoubleFunctions.div(mu)), DoubleFunctions.plus);
+		dx.assign(alg.mult(Hinv, r.copy().assign(ds, DoubleFunctions.plus)).assign(DoubleFunctions.div(-1 * mu)), DoubleFunctions.plus);
 	}
 	
-	private void subspaceStep(DoubleMatrix1D r, DoubleMatrix2D innerA, DoubleMatrix2D Hinv, DoubleMatrix1D ds, DoubleMatrix1D innerDw) {
+	private void subspaceStep(SparseDoubleCholeskyDecomposition cd, DoubleMatrix1D r, DoubleMatrix2D innerA, DoubleMatrix2D Hinv, DoubleMatrix1D ds, DoubleMatrix1D innerDw) {
 		DoubleMatrix1D dw;
 		DenseDoubleAlgebra alg = new DenseDoubleAlgebra();
-		SparseDoubleCholeskyDecomposition cd;
 
-		SparseDoubleMatrix2D HinvNew = new SparseDoubleMatrix2D(Hinv.columns(), Hinv.columns());
-		
-		for (int i = 0; i < Hinv.columns(); i++) {
-			HinvNew.setQuick(i, i, Hinv.getQuick(i, i));
-		}
-		Hinv = HinvNew.getColumnCompressed(false);
-		
+		Hinv = ((SparseDoubleMatrix2D) Hinv).getColumnCompressed(false);
 		DenseDoubleMatrix1D newDs = new DenseDoubleMatrix1D((int) ds.size());
-
-		SparseCCDoubleMatrix2D partial = new SparseCCDoubleMatrix2D(innerA.rows(), innerA.columns());
-		SparseCCDoubleMatrix2D coeff = new SparseCCDoubleMatrix2D(innerA.rows(), innerA.rows());
-		innerA.zMult(Hinv, partial, 1.0, 0.0, false, false);
-		partial.zMult(innerA, coeff, 1.0, 0.0, false, true);
-		cd = new SparseDoubleCholeskyDecomposition(coeff, 1);
 		dw = alg.mult(innerA, alg.mult(Hinv, r.copy()));
 		cd.solve(dw);
 		innerA.zMult(dw, newDs, 1.0, 0.0, true);
-		newDs.assign(DoubleFunctions.mult(-1.0));
-		ds.assign(newDs, DoubleFunctions.plus);
+		ds.assign(newDs, DoubleFunctions.minus);
 		innerDw.assign(dw, DoubleFunctions.plus);
+	}
+	
+	private void prepareCDs(Partition partition) {
+		for (int i = 0; i < partition.dx.size(); i++) {
+			
+			SparseCCDoubleMatrix2D A = partition.A.get(i);
+			SparseCCDoubleMatrix2D innerA = partition.innerA.get(i);
+			DoubleMatrix2D Hinv = partition.invH.get(i);
+			
+			SparseCCDoubleMatrix2D partial = new SparseCCDoubleMatrix2D(A.rows(), A.columns());
+			SparseCCDoubleMatrix2D coeff = new SparseCCDoubleMatrix2D(A.rows(), A.rows());
+			Hinv = ((SparseDoubleMatrix2D) Hinv).getColumnCompressed(false);
+			A.zMult(Hinv, partial, 1.0, 0.0, false, false);
+			partial.zMult(A, coeff, 1.0, 0.0, false, true);
+			
+			partition.primalStepCDs.add(new SparseDoubleCholeskyDecomposition(coeff, 1));
+			
+			partial = new SparseCCDoubleMatrix2D(innerA.rows(), innerA.columns());
+			coeff = new SparseCCDoubleMatrix2D(innerA.rows(), innerA.rows());
+			innerA.zMult(Hinv, partial, 1.0, 0.0, false, false);
+			partial.zMult(innerA, coeff, 1.0, 0.0, false, true);
+			
+			partition.dualStepCDs.add(new SparseDoubleCholeskyDecomposition(coeff, 1));
+		}
 	}
 	
 	private class Partition {
@@ -305,5 +265,7 @@ public class PartitionedIPM extends IPM {
 		private List<DoubleMatrix1D> ds;
 		private List<DoubleMatrix1D> r;
 		private List<SparseDoubleMatrix2D> invH;
+		private List<SparseDoubleCholeskyDecomposition> primalStepCDs;
+		private List<SparseDoubleCholeskyDecomposition> dualStepCDs;
 	}
 }

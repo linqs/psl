@@ -195,6 +195,12 @@ public class IPM implements ConicProgramSolver {
 		
 		doSolve(program);
 		
+		if (program.getDualInfeasibility() > 0.01 || program.getPrimalInfeasibility() > 0.01) {
+			log.warn("Current primal infeasibility: {}.", program.getPrimalInfeasibility());
+			log.warn("Current dual infeasibility: {}.", program.getDualInfeasibility());
+			throw new IllegalStateException();
+		}
+		
 		if (dualized) {
 			program.checkInMatrices();
 			dualizer.checkInProgram();
@@ -226,10 +232,12 @@ public class IPM implements ConicProgramSolver {
 		mu = muInitial;
 		
 		/* Computes initial infeasibility */
-		primalInfeasibility = program.getPrimalInfeasibility();
-		dualInfeasibility = program.getDualInfeasibility();
+//		primalInfeasibility = program.getPrimalInfeasibility();
+//		dualInfeasibility = program.getDualInfeasibility();
+		primalInfeasibility = 0.0;
+		dualInfeasibility = 0.0;
 		
-		log.trace("Itr: Start -- Gap: {} -- P. Inf: {} -- D. Inf: {} -- Obj: {}", new Object[] {mu, primalInfeasibility, dualInfeasibility, alg.mult(program.getC(), x)});
+		log.debug("Itr: Start -- Gap: {} -- P. Inf: {} -- D. Inf: {} -- Obj: {}", new Object[] {mu, primalInfeasibility, dualInfeasibility, alg.mult(program.getC(), x)});
 		
 		/*
 		 * Iterates until the duality gap (mu) is sufficiently small and the
@@ -238,7 +246,7 @@ public class IPM implements ConicProgramSolver {
 		stepNum = 0;
 		inNeighborhood = false;
 		while (mu >= dualityGapThreshold || primalInfeasibility >= infeasibilityThreshold || dualInfeasibility >= infeasibilityThreshold) {
-			program.trimUnrestrictedVariablePairs();
+			//program.trimUnrestrictedVariablePairs();
 			for (Cone cone : cones) {
 				cone.setBarrierGradient(program.getVarMap(), x, g);
 				cone.setBarrierHessianInv(program.getVarMap(), x, Hinv);
@@ -252,7 +260,7 @@ public class IPM implements ConicProgramSolver {
 			}
 			
 			//if (inNeighborhood || !initFeasible) {
-			if (inNeighborhood || (primalInfeasibility < infeasibilityThreshold && dualInfeasibility < infeasibilityThreshold)) {
+			if (inNeighborhood && primalInfeasibility < infeasibilityThreshold && dualInfeasibility < infeasibilityThreshold) {
 				tau = .85;
 			}
 			else {
@@ -265,7 +273,7 @@ public class IPM implements ConicProgramSolver {
 			mu = alg.mult(x, s) / getV(program);
 			primalInfeasibility = program.getPrimalInfeasibility();
 			dualInfeasibility = program.getDualInfeasibility();
-			log.trace("Itr: {} -- Gap: {} -- P. Inf: {} -- D. Inf: {} -- Obj: {}", new Object[] {++stepNum, mu, primalInfeasibility, dualInfeasibility, alg.mult(program.getC(), x)});
+			log.debug("Itr: {} -- Gap: {} -- P. Inf: {} -- D. Inf: {} -- Obj: {}", new Object[] {++stepNum, mu, primalInfeasibility, dualInfeasibility, alg.mult(program.getC(), x)});
 		}
 	}
 

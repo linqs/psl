@@ -53,7 +53,7 @@ import edu.umd.cs.psl.optimizer.conic.program.Variable;
 
 public class FeasiblePointInitializer implements ConicProgramListener {
 	
-	private static final Logger log = LoggerFactory.getLogger(ConicProgram.class);
+	private static final Logger log = LoggerFactory.getLogger(FeasiblePointInitializer.class);
 	
 	private final ConicProgram program;
 	
