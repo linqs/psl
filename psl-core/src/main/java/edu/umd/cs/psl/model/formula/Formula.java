@@ -40,7 +40,8 @@ public interface Formula {
 	public Set<Atom> getAtoms(Set<Atom> atoms);
 	
 	/**
-	 * Adds the {@link Variable Variables} 
+	 * Adds the {@link Variable Variables}
+	 * 
 	 * @param varMap
 	 * @return
 	 */

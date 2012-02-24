@@ -16,70 +16,110 @@
  */
 package edu.umd.cs.psl.model.atom;
 
+import edu.umd.cs.psl.model.argument.GroundTerm;
+import edu.umd.cs.psl.reasoner.Reasoner;
+
 /**
  * A status of an {@link Atom}.
  */
 public enum AtomStatus {
 	
-	Template {
-		@Override
-		public String toString() {
-			return "Template";
-		}
-	}, 
+	/**
+	 * The {@link Atom} is not ground, i.e., not all of its arguments are
+	 * {@link GroundTerm GroundTerms}
+	 **/
+	Template,
 	
-	Undefined {
-		@Override
-		public String toString() {
-			return "Undefined";
-		}
-	}, 
+	/**
+	 * The {@link Atom} is not fully defined. Possible reasons an Atom would be
+	 * assigned this status include: not all of the Atom's arguments are specified,
+	 * it's truth value is not specified, etc.
+	 */
+	Undefined,
 	
-	UnconsideredFixed {
-		@Override
-		public String toString() {
-			return "UnconsideredFixed";
-		}
-	}, 
+	/**
+	 * The {@link Atom} is unconsidered and fixed.
+	 * 
+	 * An unconsidered Atom does not appear in its {@link AtomManager}'s set of explicitly
+	 * represented Atoms.
+	 * 
+	 * A fixed Atom has a known truth value. No other truth value can be assigned and the
+	 * Atom's confidence value is infinity.
+	 */
+	UnconsideredFixed,
 	
-	ConsideredFixed {
-		@Override
-		public String toString() {
-			return "ConsideredFixed";
-		}		
-	},
+	/**
+	 * The {@link Atom} is considered and fixed.
+	 * 
+	 * A considered Atom appears in its {@link AtomManager}'s set of explicitly
+	 * represented Atoms.
+	 * 
+	 * A fixed Atom has a known truth value. No other truth value can be assigned and the
+	 * Atom's confidence value is infinity.
+	 */
+	ConsideredFixed,
 	
-	UnconsideredRV {
-		@Override
-		public String toString() {
-			return "UnconsideredRV";
-		}
-	}, 
+	/**
+	 * The {@link Atom} is unconsidered and its truth value is a random variable.
+	 * 
+	 * An unconsidered Atom does not appear in its {@link AtomManager}'s set of explicitly
+	 * represented Atoms.
+	 * 
+	 * An Atom with an unknown truth value is represented as a random variable.
+	 * Its value will be inferred when using a {@link Reasoner}.
+	 */
+	UnconsideredRV,
 	
-	ConsideredRV {
-		@Override
-		public String toString() {
-			return "ConsideredRV";
-		}
-	}, 
+	/**
+	 * The {@link Atom} is considered and its truth value is a random variable.
+	 * 
+	 * A considered Atom appears in its {@link AtomManager}'s set of explicitly
+	 * represented Atoms.
+	 * 
+	 * An Atom with an unknown truth value is represented as a random variable.
+	 * Its value will be inferred when using a {@link Reasoner}.
+	 */
+	ConsideredRV, 
 	
-	ActiveRV {
-		@Override
-		public String toString() {
-			return "ActiveRV";
-		}		
-	};
+	/**
+	 * The {@link Atom} is considered, its truth value is a random variable,
+	 * and its value under the current interpretation is sufficiently high
+	 * that it should be considered to ground rules which contain it in
+	 * their bodies.
+	 * 
+	 * A considered Atom appears in its {@link AtomManager}'s set of explicitly
+	 * represented Atoms.
+	 * 
+	 * An Atom with an unknown truth value is represented as a random variable.
+	 * Its value will be inferred when using a {@link Reasoner}.
+	 */
+	ActiveRV;
 	
+	/**
+	 * Returns the considered equivalent of this status.
+	 * 
+	 * @return the considered equivalent
+	 * @throws UnsupportedOperationException  if this status does not have a
+	 *             considered equivalent
+	 */
 	public AtomStatus consider() {
 		switch(this) {
 		case UnconsideredFixed:
 			return ConsideredFixed;
 		case UnconsideredRV:
 			return ConsideredRV;
-		default: throw new UnsupportedOperationException("Cannot consider on status: " + this);
+		default:
+			throw new UnsupportedOperationException("Cannot consider on status: " + this);
 		}		
 	}
 	
+	/**
+	 * Returns the unconsidered equivalent of this status.
+	 * 
+	 * @return the unconsidered equivalent
+	 * @throws UnsupportedOperationException  if this status does not have an
+	 *             unconsidered equivalent
+	 */
 	public AtomStatus unconsider() {
 		switch(this) {
 		case ConsideredFixed:
@@ -91,6 +131,12 @@ public enum AtomStatus {
 		}		
 	}
 	
+	/**
+	 * Returns the {@value #Undefined} status
+	 * 
+	 * @return the {@value #Undefined} status
+	 * @throws UnsupportedOperationException  if this status is not unconsidered
+	 */
 	public AtomStatus release() {
 		switch(this) {
 		case UnconsideredFixed:
@@ -101,6 +147,12 @@ public enum AtomStatus {
 		}
 	}
 	
+	/**
+	 * Returns the {@value #ActiveRV} status.
+	 * 
+	 * @return the {@value #ActiveRV} status
+	 * @throws UnsupportedOperationException  if this status is not {@value #ConsideredRV}
+	 */
 	public AtomStatus activate() {
 		switch(this) {
 		case ConsideredRV:
@@ -110,6 +162,12 @@ public enum AtomStatus {
 		}
 	}
 	
+	/**
+	 * Returns the {@value #ConsideredRV} status.
+	 * 
+	 * @return the {@value #ConsideredRV} status
+	 * @throws UnsupportedOperationException  if this status is not {@value #ActiveRV}
+	 */
 	public AtomStatus deactivate() {
 		switch(this) {
 		case ActiveRV:
@@ -119,30 +177,72 @@ public enum AtomStatus {
 		}
 	}
 
+	/**
+	 * Returns whether this status is a random-variable-atom status
+	 * 
+	 * @return true if this status is a random=variable-atom status
+	 * @see AtomStatusSets#RandomVariable
+	 */
 	public boolean isRandomVariable() {
 		return AtomStatusSets.RandomVariable.contains(this);
 	}
 	
+	/**
+	 * Returns whether this status is a fixed-atom status
+	 * 
+	 * @return true if this status is a fixed-atom status
+	 * @see AtomStatusSets#Fixed
+	 */
 	public boolean isFixed() {
 		return AtomStatusSets.Fixed.contains(this);
 	}
 	
+	/**
+	 * Returns whether this status is an unconsidered-atom status
+	 * 
+	 * @return true if this status is an unconsidered-atom status
+	 * @see AtomStatusSets#Unconsidered
+	 */
 	public boolean isUnconsidered() {
 		return AtomStatusSets.Unconsidered.contains(this);
 	}
 	
+	/**
+	 * Returns whether this status is a considered-atom status
+	 * 
+	 * @return true if this status is a considered-atom status
+	 * @see AtomStatusSets#Considered
+	 */
 	public boolean isConsidered() {
 		return AtomStatusSets.Considered.contains(this);
 	}
 	
+	/**
+	 * Returns whether this status is an active-atom status
+	 * 
+	 * @return true if this status is an active-atom status
+	 * @see AtomStatusSets#Active
+	 */
 	public boolean isActive() {
 		return AtomStatusSets.Active.contains(this);
 	}
 	
+	/**
+	 * Returns whether this status is an active or considered-atom status
+	 * 
+	 * @return true if this status is an active or considered-atom status
+	 * @see AtomStatusSets#ActiveOrConsidered
+	 */
 	public boolean isActiveOrConsidered() {
 		return AtomStatusSets.ActiveOrConsidered.contains(this);
 	}
 	
+	/**
+	 * Returns whether this status is neither {@value #Template} nor {@value #Undefined}.
+	 * 
+	 * @return true if this status is neither {@value #Template} nor {@value #Undefined}
+	 * @see AtomStatusSets#DefinedAndGround
+	 */
 	public boolean isDefinedAndGround() {
 		return AtomStatusSets.DefinedAndGround.contains(this);
 	}

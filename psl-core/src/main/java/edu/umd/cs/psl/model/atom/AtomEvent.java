@@ -16,50 +16,25 @@
  */
 package edu.umd.cs.psl.model.atom;
 
-import java.util.Set;
-
-import com.google.common.collect.ImmutableSet;
-
 /**
  * An event related to an {@link Atom}.
  */
 public enum AtomEvent {
 
-	ChangedFactFromDefault,
+	ChangedTruthValueOfFixedAtom,
 	
-	ChangedFactToDefault,
+	ReleasedAtom,
 	
-	ChangedFactNonDefault,
+	ConsideredFixedAtom,
 	
-	ChangedFactInDefault,
+	UnconsideredFixedAtom,
 	
-	IntroducedCertainty,
+	ConsideredRVAtom,
 	
-	ReleasedCertainty,
+	UnconsideredRVAtom,
 	
-	ActivatedCertainty,
+	ActivatedRVAtom,
 	
-	DeactivatedCertainty,
-	
-	IntroducedRV,
-	
-	ReleasedRV,
-	
-	ActivatedRV,
-	
-	DeactivatedRV,
-	
-	MadeCertainty,
-	
-	RevokedCertainty;
-		
-	public Set<AtomEvent> subsumes() {
-		return ImmutableSet.of(this);
-	}
-	
-	public boolean subsumes(AtomEvent e) {
-		if (this==e) return true;
-		else return false;
-	}
+	DeactivatedRVAtom;
 	
 }

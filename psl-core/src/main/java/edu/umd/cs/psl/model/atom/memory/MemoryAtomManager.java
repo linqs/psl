@@ -70,7 +70,6 @@ public class MemoryAtomManager implements AtomManager {
 	private final EnumMap<AtomEvent,SetMultimap<Predicate,AtomEventObserver>> atomObservers;
 	
 	private final Queue<AtomJob> atomjobs;
-	private final ActivationMode activationMode;
 	
 	private GroundingMode groundingMode;
 
@@ -81,7 +80,6 @@ public class MemoryAtomManager implements AtomManager {
 		this.db = db;
 		store = new MemoryAtomStore(db);
 		atomjobs= new LinkedList<AtomJob>();
-		activationMode = (ActivationMode) config.getEnum("memoryatomeventframework.activationmode", defaultActivationMode);
 		activationThreshold = config.getDouble("memoryatomeventframework.activationthreshold", 0.1);
 		groundingMode = GroundingMode.defaultGroundingMode;
 		atomObservers = new EnumMap<AtomEvent,SetMultimap<Predicate,AtomEventObserver>>(AtomEvent.class);
@@ -185,7 +183,7 @@ public class MemoryAtomManager implements AtomManager {
 	public int checkToActivate() {
 		int noAffected=0;
 		for (Atom atom : store.getAtoms(ImmutableSet.of(AtomStatus.ConsideredRV,AtomStatus.ActiveRV))) {
-			if (atom.isConsidered() && activateAtom(atom)) noAffected++;
+			if (atom.getStatus().isConsidered() && activateAtom(atom)) noAffected++;
 		}
 		return noAffected;
 	}
@@ -197,9 +195,9 @@ public class MemoryAtomManager implements AtomManager {
 	
 	@Override
 	public boolean activateAtom(Atom atom) {
-		if (atom.isConsidered() && atom.isRandomVariable()) {
+		if (atom.getStatus().isConsidered() && atom.getStatus().isRandomVariable()) {
 			//Should we activate it?
-			if (activationMode==ActivationMode.All || isAboveActivationThreshold(atom)) {
+			if (isAboveActivationThreshold(atom)) {
 				if (atom.isAtomGroup()) {
 					log.debug("Retrieving entire atom group for: {}",atom);
 					atom.getAtomsInGroup(this);
@@ -209,7 +207,7 @@ public class MemoryAtomManager implements AtomManager {
 				}
 				return true;
 			}
-		} else if (!atom.isActive() && !atom.isCertainty()) {
+		} else if (!atom.getStatus().isActive() && !atom.getStatus().isFixed()) {
 			throw new IllegalStateException("Improper invocation of activateAtom on "+atom);
 		}
 		return false;

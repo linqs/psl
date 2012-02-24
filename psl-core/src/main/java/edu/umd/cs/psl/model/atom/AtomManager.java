@@ -350,9 +350,5 @@ public interface AtomManager extends DatabaseEventObserver, ModelEvent.Listener 
 	public Set<Entity> getEntities(ArgumentType type);
 	
 	public int getNumEntities(ArgumentType type);
-
-//	public void changeCertainty(Atom atom, double value, double confidence);
-//	
-//	public void setGroundingMode(GroundingMode mode);
 	
 }

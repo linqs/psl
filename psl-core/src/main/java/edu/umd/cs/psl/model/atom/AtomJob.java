@@ -16,35 +16,46 @@
  */
 package edu.umd.cs.psl.model.atom;
 
+/**
+ * Encapsulates an {@link Atom} and a related {@link AtomEvent}.
+ * 
+ * AtomJobs are used to keep track of events which must be handled
+ * by an {@link AtomManager}.
+ */
 public class AtomJob {
-
-//	private static final double[] defaultValue = new double[0];
 	
 	private final Atom atom;
 	private final AtomEvent event;
-//	private final double[] values;
 	
+	/**
+	 * Sole constructor.
+	 * 
+	 * Instantiates an AtomJob with an Atom and a related AtomEvent.
+	 * 
+	 * @param a  the Atom to which the AtomEvent relates
+	 * @param j  the related AtomEvent
+	 */
 	public AtomJob(Atom a, AtomEvent j) {
 		event = j;
 		atom = a;
 	}
-	
-//	public AtomJob(Atom a, AtomEvent j, double[] vals) {
-//		event = j;
-//		atom = a;
-//		values = vals;
-//	}
 
+	/**
+	 * Returns the associated Atom.
+	 * 
+	 * @return the associated Atom
+	 */
 	public Atom getAtom() {
 		return atom;
 	}
 
+	/**
+	 * Returns the associated AtomEvent.
+	 * 
+	 * @return the associated AtomEvent
+	 */
 	public AtomEvent getEvent() {
 		return event;
 	}
-	
-//	public double[] getValues() {
-//		return values;
-//	}
 	
 }
