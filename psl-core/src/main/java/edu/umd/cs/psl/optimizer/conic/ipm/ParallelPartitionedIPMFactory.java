@@ -20,11 +20,11 @@ import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.optimizer.conic.ConicProgramSolver;
 import edu.umd.cs.psl.optimizer.conic.ConicProgramSolverFactory;
 
-public class PartitionedIPMFactory implements ConicProgramSolverFactory {
+public class ParallelPartitionedIPMFactory implements ConicProgramSolverFactory {
 
 	@Override
 	public ConicProgramSolver getConicProgramSolver(ConfigBundle config) {
-		return new PartitionedIPM(config);
+		return new ParallelPartitionedIPM(config);
 	}
 
 }

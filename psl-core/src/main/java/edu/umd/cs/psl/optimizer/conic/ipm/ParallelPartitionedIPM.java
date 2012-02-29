@@ -20,6 +20,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,15 +44,22 @@ import edu.umd.cs.psl.optimizer.conic.program.Cone;
 import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
 import edu.umd.cs.psl.optimizer.conic.program.Variable;
 
-public class PartitionedIPM extends IPM {
+public class ParallelPartitionedIPM extends IPM {
 
-	private static final Logger log = LoggerFactory.getLogger(PartitionedIPM.class);
+	private static final Logger log = LoggerFactory.getLogger(ParallelPartitionedIPM.class);
 	
 	private CompletePartitioner partitioner;
 	
-	public PartitionedIPM(ConfigBundle config) {
+	private final int threadPoolSize;
+	
+	public static final String CONFIG_PREFIX = "ppipm";
+	
+	public static final String THREAD_POOL_SIZE_KEY = CONFIG_PREFIX + ".threadpoolsize";
+	public static final int THREAD_POOL_SIZE_DEFAULT = 1;
+	
+	public ParallelPartitionedIPM(ConfigBundle config) {
 		super(config);
-//		partitioner = new WeightedDistancePartitioner(config);
+		threadPoolSize = config.getInt(THREAD_POOL_SIZE_KEY, THREAD_POOL_SIZE_DEFAULT);
 		partitioner = new ObjectiveCoefficientPartitioner(config);
 	}
 	
@@ -66,6 +76,9 @@ public class PartitionedIPM extends IPM {
 		double mu, tau, muInitial, theta, err, epsilon_1;
 		boolean inNeighborhood;
 		DenseDoubleAlgebra alg = new DenseDoubleAlgebra();
+		ExecutorService threadPool;
+		Vector<PrimalStepRunnable> primalStepRunnables = new Vector<ParallelPartitionedIPM.PrimalStepRunnable>();
+		Vector<DualStepRunnable> dualStepRunnables = new Vector<ParallelPartitionedIPM.DualStepRunnable>();
 		
 		int v = getV(program);
 		Set<Cone> cones = program.getCones();
@@ -163,15 +176,40 @@ public class PartitionedIPM extends IPM {
 					prepareCDs(partition);
 				}
 				
+				/* Sets up the thread pool and jobs */
+				threadPool = Executors.newFixedThreadPool(threadPoolSize);
+				primalStepRunnables.clear();
+				dualStepRunnables.clear();
+				
 				for (int i = 0; i < partition.dx.size(); i++) {
-					log.trace("i = {}", i);
-					log.trace("{} variables and {} constraints", partition.A.get(i).columns(), partition.A.get(i).rows());
-					log.trace("Full space step.");
-					fullSpaceStep(partition.primalStepCDs.get(i), partition.r.get(i), partition.A.get(i), partition.invH.get(i), partition.dx.get(i), mu);
-					log.trace("Subspace step.");
-					subspaceStep(partition.dualStepCDs.get(i), partition.r.get(i), partition.innerA.get(i), partition.invH.get(i), partition.ds.get(i), partition.innerDw.get(i));
+					PrimalStepRunnable primal = new PrimalStepRunnable(partition.primalStepCDs.get(i), partition.r.get(i), partition.A.get(i), partition.invH.get(i), mu);
+					threadPool.execute(primal);
+					primalStepRunnables.add(primal);
+					DualStepRunnable dual = new DualStepRunnable(partition.dualStepCDs.get(i), partition.r.get(i), partition.innerA.get(i), partition.invH.get(i));
+					threadPool.execute(dual);
+					dualStepRunnables.add(dual);
 				}
-				log.trace("Updating r.");
+
+				/* Runs the jobs */
+				threadPool.shutdown();
+				
+				/* Waits for the thread pool */
+				try {
+					while (!threadPool.isTerminated()) {
+						threadPool.awaitTermination(5, TimeUnit.MINUTES);
+					}
+				}
+				catch (InterruptedException e) {
+					throw new IllegalStateException(e);
+				}
+				
+				/* Processes the results */
+				for (int i = 0; i < partition.dx.size(); i++) {
+					partition.dx.get(i).assign(primalStepRunnables.get(i).getDx(), DoubleFunctions.plus);
+					partition.innerDw.get(i).assign(dualStepRunnables.get(i).getDw(), DoubleFunctions.plus);
+					partition.ds.get(i).assign(dualStepRunnables.get(i).getDs(), DoubleFunctions.plus);
+				}
+				
 				r.assign(rInitial).assign(alg.mult(H, dx).assign(DoubleFunctions.mult(mu)).assign(ds, DoubleFunctions.plus) , DoubleFunctions.plus);
 				log.trace("Done updating r.");
 
@@ -206,54 +244,174 @@ public class PartitionedIPM extends IPM {
 		
 		partitioner.checkInAllMatrices();
 	}
-
-	private void fullSpaceStep(SparseDoubleCholeskyDecomposition cd, DoubleMatrix1D r, DoubleMatrix2D A, DoubleMatrix2D Hinv, DoubleMatrix1D dx, double mu) {
-		DoubleMatrix1D dw, ds;
-		DenseDoubleAlgebra alg = new DenseDoubleAlgebra();
-		
-		ds = DoubleFactory1D.dense.make(A.columns());
-		Hinv = ((SparseDoubleMatrix2D) Hinv).getColumnCompressed(false);
-		dw = alg.mult(A, alg.mult(Hinv, r.copy()));
-		cd.solve(dw);
-		A.zMult(dw, ds, 1.0, 0.0, true);
-		ds.assign(DoubleFunctions.mult(-1.0));
-		dx.assign(alg.mult(Hinv, r.copy().assign(ds, DoubleFunctions.plus)).assign(DoubleFunctions.div(-1 * mu)), DoubleFunctions.plus);
-	}
-	
-	private void subspaceStep(SparseDoubleCholeskyDecomposition cd, DoubleMatrix1D r, DoubleMatrix2D innerA, DoubleMatrix2D Hinv, DoubleMatrix1D ds, DoubleMatrix1D innerDw) {
-		DoubleMatrix1D dw;
-		DenseDoubleAlgebra alg = new DenseDoubleAlgebra();
-
-		Hinv = ((SparseDoubleMatrix2D) Hinv).getColumnCompressed(false);
-		DenseDoubleMatrix1D newDs = new DenseDoubleMatrix1D((int) ds.size());
-		dw = alg.mult(innerA, alg.mult(Hinv, r.copy()));
-		cd.solve(dw);
-		innerA.zMult(dw, newDs, 1.0, 0.0, true);
-		ds.assign(newDs, DoubleFunctions.minus);
-		innerDw.assign(dw, DoubleFunctions.plus);
-	}
 	
 	private void prepareCDs(Partition partition) {
+		Vector<CholeskyDecompositionRunnable> primalCDs = new Vector<ParallelPartitionedIPM.CholeskyDecompositionRunnable>(partition.dx.size());
+		Vector<CholeskyDecompositionRunnable> dualCDs = new Vector<ParallelPartitionedIPM.CholeskyDecompositionRunnable>(partition.dx.size());
+		
+		ExecutorService threadPool = Executors.newFixedThreadPool(threadPoolSize);
+		
 		for (int i = 0; i < partition.dx.size(); i++) {
-			
 			SparseCCDoubleMatrix2D A = partition.A.get(i);
 			SparseCCDoubleMatrix2D innerA = partition.innerA.get(i);
 			DoubleMatrix2D Hinv = partition.invH.get(i);
 			
-			SparseCCDoubleMatrix2D partial = new SparseCCDoubleMatrix2D(A.rows(), A.columns());
-			SparseCCDoubleMatrix2D coeff = new SparseCCDoubleMatrix2D(A.rows(), A.rows());
-			Hinv = ((SparseDoubleMatrix2D) Hinv).getColumnCompressed(false);
-			A.zMult(Hinv, partial, 1.0, 0.0, false, false);
-			partial.zMult(A, coeff, 1.0, 0.0, false, true);
+			CholeskyDecompositionRunnable primalCDRunnable = new CholeskyDecompositionRunnable((SparseDoubleMatrix2D) Hinv, A);
+			threadPool.execute(primalCDRunnable);
+			primalCDs.add(primalCDRunnable);
 			
-			partition.primalStepCDs.add(new SparseDoubleCholeskyDecomposition(coeff, 1));
-			
-			partial = new SparseCCDoubleMatrix2D(innerA.rows(), innerA.columns());
-			coeff = new SparseCCDoubleMatrix2D(innerA.rows(), innerA.rows());
-			innerA.zMult(Hinv, partial, 1.0, 0.0, false, false);
-			partial.zMult(innerA, coeff, 1.0, 0.0, false, true);
-			
-			partition.dualStepCDs.add(new SparseDoubleCholeskyDecomposition(coeff, 1));
+			CholeskyDecompositionRunnable dualCDRunnable = new CholeskyDecompositionRunnable((SparseDoubleMatrix2D) Hinv, innerA);
+			threadPool.execute(dualCDRunnable);
+			dualCDs.add(dualCDRunnable);
+		}
+		
+		threadPool.shutdown();
+
+		try {
+			while (!threadPool.isTerminated()) {
+				threadPool.awaitTermination(5, TimeUnit.MINUTES);
+			}
+		}
+		catch (InterruptedException e) {
+			throw new IllegalStateException(e);
+		}
+		
+		for (int i = 0; i < partition.dx.size(); i++) {
+			partition.primalStepCDs.add(primalCDs.get(i).getDecomposition());
+			partition.dualStepCDs.add(dualCDs.get(i).getDecomposition());
+		}
+	}
+	
+	private class CholeskyDecompositionRunnable implements Runnable {
+		
+		private final SparseDoubleMatrix2D Hinv;
+		private final SparseCCDoubleMatrix2D A;
+		private SparseDoubleCholeskyDecomposition cd;
+		private boolean run;
+		
+		public CholeskyDecompositionRunnable(SparseDoubleMatrix2D Hinv, SparseCCDoubleMatrix2D A) {
+			this.Hinv = Hinv;
+			this.A = A;
+			run = false;
+		}
+
+		@Override
+		public void run() {
+			if (!run) {
+				SparseCCDoubleMatrix2D Hinv = ((SparseDoubleMatrix2D) this.Hinv).getColumnCompressed(false);
+				SparseCCDoubleMatrix2D partial = new SparseCCDoubleMatrix2D(A.rows(), A.columns());
+				SparseCCDoubleMatrix2D coeff = new SparseCCDoubleMatrix2D(A.rows(), A.rows());
+				A.zMult(Hinv, partial, 1.0, 0.0, false, false);
+				partial.zMult(A, coeff, 1.0, 0.0, false, true);
+				cd = new SparseDoubleCholeskyDecomposition(coeff, 1);
+				run = true;
+			}
+			else
+				throw new IllegalStateException("Runnable already run.");
+		}
+		
+		public SparseDoubleCholeskyDecomposition getDecomposition() {
+			if (run)
+				return cd;
+			else
+				throw new IllegalStateException("Runnable not yet run.");
+		}
+	}
+	
+	private class PrimalStepRunnable implements Runnable {
+		
+		private final SparseDoubleCholeskyDecomposition cd;
+		private final DoubleMatrix1D r;
+		private final SparseCCDoubleMatrix2D A;
+		private final SparseDoubleMatrix2D Hinv;
+		private final double mu;
+		private DenseDoubleMatrix1D dx;
+		private boolean run;
+		
+		PrimalStepRunnable(SparseDoubleCholeskyDecomposition cd, DoubleMatrix1D r, SparseCCDoubleMatrix2D A, SparseDoubleMatrix2D Hinv, double mu) {
+			this.cd = cd;
+			this.r = r;
+			this.A = A;
+			this.Hinv = Hinv;
+			this.mu = mu;
+			run = false;
+		}
+
+		@Override
+		public void run() {
+			if (!run) {
+				DoubleMatrix1D dw, ds;
+				DenseDoubleAlgebra alg = new DenseDoubleAlgebra();
+				
+				ds = DoubleFactory1D.dense.make(A.columns());
+				SparseCCDoubleMatrix2D Hinv = this.Hinv.getColumnCompressed(false);
+				dw = alg.mult(A, alg.mult(Hinv, r.copy()));
+				cd.solve(dw);
+				A.zMult(dw, ds, 1.0, 0.0, true);
+				ds.assign(DoubleFunctions.mult(-1.0));
+				dx = (DenseDoubleMatrix1D) alg.mult(Hinv, r.copy().assign(ds, DoubleFunctions.plus)).assign(DoubleFunctions.div(-1 * mu));
+				
+				run = true;
+			}
+			else
+				throw new IllegalStateException("Runnable already run.");
+		}
+		
+		public DenseDoubleMatrix1D getDx() {
+			if (run)
+				return dx;
+			else
+				throw new IllegalStateException("Runnable not yet run.");
+		}
+	}
+	
+private class DualStepRunnable implements Runnable {
+		
+		private final SparseDoubleCholeskyDecomposition cd;
+		private final DoubleMatrix1D r;
+		private final SparseCCDoubleMatrix2D A;
+		private final SparseDoubleMatrix2D Hinv;
+		private DenseDoubleMatrix1D ds;
+		private DenseDoubleMatrix1D dw;
+		private boolean run;
+		
+		DualStepRunnable(SparseDoubleCholeskyDecomposition cd, DoubleMatrix1D r, SparseCCDoubleMatrix2D A, SparseDoubleMatrix2D Hinv) {
+			this.cd = cd;
+			this.r = r;
+			this.A = A;
+			this.Hinv = Hinv;
+			run = false;
+		}
+
+		@Override
+		public void run() {
+			if (!run) {
+				DenseDoubleAlgebra alg = new DenseDoubleAlgebra();
+
+				SparseCCDoubleMatrix2D Hinv = this.Hinv.getColumnCompressed(false);
+				ds = new DenseDoubleMatrix1D(A.columns());
+				dw = (DenseDoubleMatrix1D) alg.mult(A, alg.mult(Hinv, r.copy()));
+				cd.solve(dw);
+				A.zMult(dw, ds, -1.0, 0.0, true);
+				
+				run = true;
+			}
+			else
+				throw new IllegalStateException("Runnable already run.");
+		}
+		
+		public DenseDoubleMatrix1D getDs() {
+			if (run)
+				return ds;
+			else
+				throw new IllegalStateException("Runnable not yet run.");
+		}
+		
+		public DenseDoubleMatrix1D getDw() {
+			if (run)
+				return dw;
+			else
+				throw new IllegalStateException("Runnable not yet run.");
 		}
 	}
 	

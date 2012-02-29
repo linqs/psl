@@ -232,10 +232,8 @@ public class IPM implements ConicProgramSolver {
 		mu = muInitial;
 		
 		/* Computes initial infeasibility */
-//		primalInfeasibility = program.getPrimalInfeasibility();
-//		dualInfeasibility = program.getDualInfeasibility();
-		primalInfeasibility = 0.0;
-		dualInfeasibility = 0.0;
+		primalInfeasibility = program.getPrimalInfeasibility();
+		dualInfeasibility = program.getDualInfeasibility();
 		
 		log.debug("Itr: Start -- Gap: {} -- P. Inf: {} -- D. Inf: {} -- Obj: {}", new Object[] {mu, primalInfeasibility, dualInfeasibility, alg.mult(program.getC(), x)});
 		
@@ -246,7 +244,6 @@ public class IPM implements ConicProgramSolver {
 		stepNum = 0;
 		inNeighborhood = false;
 		while (mu >= dualityGapThreshold || primalInfeasibility >= infeasibilityThreshold || dualInfeasibility >= infeasibilityThreshold) {
-			//program.trimUnrestrictedVariablePairs();
 			for (Cone cone : cones) {
 				cone.setBarrierGradient(program.getVarMap(), x, g);
 				cone.setBarrierHessianInv(program.getVarMap(), x, Hinv);
@@ -259,7 +256,6 @@ public class IPM implements ConicProgramSolver {
 					inNeighborhood = true;
 			}
 			
-			//if (inNeighborhood || !initFeasible) {
 			if (inNeighborhood && primalInfeasibility < infeasibilityThreshold && dualInfeasibility < infeasibilityThreshold) {
 				tau = .85;
 			}
@@ -334,5 +330,9 @@ public class IPM implements ConicProgramSolver {
 	
 	protected int getV(ConicProgram program) {
 		return program.getNumNNOC() + 2*program.gtNumSOC();
+	}
+	
+	protected void solveSystem(SparseCCDoubleMatrix2D A, DoubleMatrix1D x) {
+		
 	}
 }
