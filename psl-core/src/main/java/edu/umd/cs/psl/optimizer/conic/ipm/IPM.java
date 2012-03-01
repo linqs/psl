@@ -286,7 +286,6 @@ public class IPM implements ConicProgramSolver {
 		
 		ds = DoubleFactory1D.dense.make(A.columns());
 		DenseDoubleAlgebra alg = new DenseDoubleAlgebra();
-		SparseDoubleCholeskyDecomposition cd;
 		
 		SparseCCDoubleMatrix2D ccA = ((SparseDoubleMatrix2D) A).getColumnCompressed(false);
 		SparseCCDoubleMatrix2D ccHinv = ((SparseDoubleMatrix2D) Hinv).getColumnCompressed(false);
@@ -300,10 +299,9 @@ public class IPM implements ConicProgramSolver {
 			.assign(DoubleFunctions.mult(mu))
 			.assign(alg.mult(coeff, w), DoubleFunctions.minus)
 			.assign(alg.mult(partial, c), DoubleFunctions.plus);
-		cd = new SparseDoubleCholeskyDecomposition(coeff, 1);
 		dw = r;
+		solveNormalSystem(coeff, dw, program);
 		
-		cd.solve(dw);
 		ccA.zMult(dw, ds, 1.0, 0.0, true);
 		ds.assign(alg.mult(ccA.getTranspose(), w), DoubleFunctions.plus).assign(s, DoubleFunctions.plus)
 			.assign(c, DoubleFunctions.minus).assign(DoubleFunctions.mult(-1.0));
@@ -332,7 +330,8 @@ public class IPM implements ConicProgramSolver {
 		return program.getNumNNOC() + 2*program.gtNumSOC();
 	}
 	
-	protected void solveSystem(SparseCCDoubleMatrix2D A, DoubleMatrix1D x) {
-		
+	protected void solveNormalSystem(SparseCCDoubleMatrix2D A, DoubleMatrix1D x, ConicProgram program) {
+		SparseDoubleCholeskyDecomposition cd = new SparseDoubleCholeskyDecomposition(A, 1);
+		cd.solve(x);
 	}
 }
