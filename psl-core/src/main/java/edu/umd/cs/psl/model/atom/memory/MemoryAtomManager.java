@@ -44,7 +44,6 @@ import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.argument.type.ArgumentType;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.AtomEvent;
-import edu.umd.cs.psl.model.atom.AtomEventObserver;
 import edu.umd.cs.psl.model.atom.AtomEventSets;
 import edu.umd.cs.psl.model.atom.AtomJob;
 import edu.umd.cs.psl.model.atom.AtomManager;
@@ -53,7 +52,6 @@ import edu.umd.cs.psl.model.atom.VariableAssignment;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
-import edu.umd.cs.psl.model.kernel.datacertainty.DataCertaintyKernel;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.optimizer.NumericUtilities;
 
@@ -67,7 +65,7 @@ public class MemoryAtomManager implements AtomManager {
 	private final ModelApplication application;
 	private final Database db;
 
-	private final EnumMap<AtomEvent,SetMultimap<Predicate,AtomEventObserver>> atomObservers;
+	private final EnumMap<AtomEvent,SetMultimap<Predicate,AtomEvent.Listener>> atomObservers;
 	
 	private final Queue<AtomJob> atomjobs;
 	
@@ -82,9 +80,9 @@ public class MemoryAtomManager implements AtomManager {
 		atomjobs= new LinkedList<AtomJob>();
 		activationThreshold = config.getDouble("memoryatomeventframework.activationthreshold", 0.1);
 		groundingMode = GroundingMode.defaultGroundingMode;
-		atomObservers = new EnumMap<AtomEvent,SetMultimap<Predicate,AtomEventObserver>>(AtomEvent.class);
+		atomObservers = new EnumMap<AtomEvent,SetMultimap<Predicate,AtomEvent.Listener>>(AtomEvent.class);
 		for (AtomEvent ae : AtomEvent.values()) {
-			SetMultimap<Predicate,AtomEventObserver> map = HashMultimap.create();
+			SetMultimap<Predicate,AtomEvent.Listener> map = HashMultimap.create();
 			atomObservers.put(ae,map);
 		}
 	}
@@ -108,14 +106,14 @@ public class MemoryAtomManager implements AtomManager {
 				atom.setStatus(atom.getStatus().consider());
 			}
 			else if (atom.getStatus().isRandomVariable()) {
-				addAtomJob(atom, AtomEvent.IntroducedRV);
+				addAtomJob(atom, AtomEvent.ConsideredRVAtom);
 				atom.setStatus(atom.getStatus().consider());
 			}
 			else
-				throw new IllegalArgumentException("Unknown atom status: " + atom.getStatus());
+				throw new IllegalStateException("Unknown atom status: " + atom.getStatus());
 		}
 		else if (!atom.getStatus().isActiveOrConsidered())
-			throw new IllegalArgumentException("Unknown atom status: " + atom.getStatus());
+			throw new IllegalStateException("Unknown atom status: " + atom.getStatus());
 		
 		return atom;
 	}
@@ -152,12 +150,12 @@ public class MemoryAtomManager implements AtomManager {
 	}
 	
 	@Override
-	public void registerAtomEventObserver(AtomEventSets events, AtomEventObserver listener) {
+	public void registerAtomEventObserver(AtomEventSets events, AtomEvent.Listener listener) {
 		registerAtomEventObserver(events, AllPredicates, listener);	
 	}
 	
 	@Override
-	public void registerAtomEventObserver(AtomEventSets events, Predicate p, AtomEventObserver listener) {
+	public void registerAtomEventObserver(AtomEventSets events, Predicate p, AtomEvent.Listener listener) {
 		Preconditions.checkNotNull(events);
 		Preconditions.checkNotNull(listener);
 		for (AtomEvent e : events.subsumes()) {
@@ -166,12 +164,12 @@ public class MemoryAtomManager implements AtomManager {
 	}
 	
 	@Override
-	public void unregisterAtomEventObserver(AtomEventSets events, AtomEventObserver listener) {
+	public void unregisterAtomEventObserver(AtomEventSets events, AtomEvent.Listener listener) {
 		unregisterAtomEventObserver(events, AllPredicates, listener);
 	}
 
 	@Override
-	public void unregisterAtomEventObserver(AtomEventSets events, Predicate p, AtomEventObserver listener) {
+	public void unregisterAtomEventObserver(AtomEventSets events, Predicate p, AtomEvent.Listener listener) {
 		Preconditions.checkNotNull(events);
 		Preconditions.checkNotNull(listener);
 		for (AtomEvent e : events.subsumes()) {
@@ -182,7 +180,7 @@ public class MemoryAtomManager implements AtomManager {
 	@Override
 	public int checkToActivate() {
 		int noAffected=0;
-		for (Atom atom : store.getAtoms(ImmutableSet.of(AtomStatus.ConsideredRV,AtomStatus.ActiveRV))) {
+		for (Atom atom : store.getAtoms(ImmutableSet.of(AtomStatus.ConsideredRV, AtomStatus.ActiveRV))) {
 			if (atom.getStatus().isConsidered() && activateAtom(atom)) noAffected++;
 		}
 		return noAffected;

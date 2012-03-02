@@ -21,20 +21,61 @@ package edu.umd.cs.psl.model.atom;
  */
 public enum AtomEvent {
 
+	/** The truth value of a fixed Atom was changed */
 	ChangedTruthValueOfFixedAtom,
 	
+	/** An Atom was released */
 	ReleasedAtom,
 	
+	/** A fixed Atom became explicitly represented by an {@link AtomManager} */
 	ConsideredFixedAtom,
 	
+	/** A fixed Atom stopped being explicitly represented by an {@link AtomManager} */
 	UnconsideredFixedAtom,
 	
+	/** A random variable Atom became explicitly represented by an {@link AtomManager} */
 	ConsideredRVAtom,
 	
+	/** A random variable Atom stopped being explicitly represented by an {@link AtomManager} */
 	UnconsideredRVAtom,
 	
+	/** A random variable Atom was activated */
 	ActivatedRVAtom,
 	
+	/** A random variable Atom was deactivated */
 	DeactivatedRVAtom;
 	
+	/** A listener for AtomEvents. */
+	public interface Listener {
+		/**
+		 * Notifies this object of an AtomEvent.
+		 * 
+		 * @param event  event information
+		 */
+		public void notifyAtomEvent(AtomEvent event);
+	}
+	
+	private Atom atom;
+	
+	private AtomEvent() {
+		atom = null;
+	}
+	
+	/**
+	 * @return the associated Atom, or null if no Atom is associated.
+	 */
+	public Atom getAtom() {
+		return atom;
+	}
+	
+	/**
+	 * Associates an Atom with this event.
+	 * 
+	 * @param atom  the Atom to associate
+	 * @return this event, for convenience
+	 */
+	public AtomEvent setAtom(Atom atom) {
+		this.atom = atom;
+		return this;
+	}
 }

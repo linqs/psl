@@ -229,7 +229,7 @@ public interface AtomManager extends DatabaseEventObserver, ModelEvent.Listener 
 	 * @param listener  object to register
 	 * @see AtomEvent
 	 */
-	public void registerAtomEventObserver(AtomEventSets events, AtomEventObserver listener);
+	public void registerAtomEventObserver(AtomEventSets events, AtomEvent.Listener listener);
 	
 	/**
 	 * Registers a listener for any events in a set related to {@link Atom Atoms}
@@ -240,7 +240,7 @@ public interface AtomManager extends DatabaseEventObserver, ModelEvent.Listener 
 	 * @param listener  object to register
 	 * @see AtomEvent
 	 */
-	public void registerAtomEventObserver(AtomEventSets events, Predicate p, AtomEventObserver listener);
+	public void registerAtomEventObserver(AtomEventSets events, Predicate p, AtomEvent.Listener listener);
 	
 	/**
 	 * Unregisters a listener for any events in a set.
@@ -249,7 +249,7 @@ public interface AtomManager extends DatabaseEventObserver, ModelEvent.Listener 
 	 * @param listener  object to unregister
 	 * @see AtomEvent
 	 */
-	public void unregisterAtomEventObserver(AtomEventSets events, AtomEventObserver listener);
+	public void unregisterAtomEventObserver(AtomEventSets events, AtomEvent.Listener listener);
 	
 	/**
 	 * Unregisters a listener for any events in a set related to {@link Atom Atoms}
@@ -260,7 +260,7 @@ public interface AtomManager extends DatabaseEventObserver, ModelEvent.Listener 
 	 * @param listener  object to unregister
 	 * @see AtomEvent
 	 */
-	public void unregisterAtomEventObserver(AtomEventSets events, Predicate p, AtomEventObserver listener);
+	public void unregisterAtomEventObserver(AtomEventSets events, Predicate p, AtomEvent.Listener listener);
 	
 	/**
 	 * Activates all (ground) {@link Atom Atoms} which meet this manager's
