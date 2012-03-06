@@ -183,12 +183,12 @@ public class IPM implements ConicProgramSolver {
 		
 		if (!supportsConeTypes(program.getConeTypes())) {
 			throw new IllegalStateException("Program contains at least one unsupported cone."
-					+ " Supported cones are non-negative orthant cones and second-order cones.");
+					+ " Supported cones are non-negative orthant cones.");
 		}
 
 		DoubleMatrix2D A = program.getA();
 		
-		log.debug("Starting optimzation with {} variables and {} constraints.", A.columns(), A.rows());
+		log.debug("Starting optimization with {} variables and {} constraints.", A.columns(), A.rows());
 		
 		if (program.getDualInfeasibility() > 0.01 || program.getPrimalInfeasibility() > 0.01)
 			throw new IllegalStateException();
