@@ -349,7 +349,7 @@ public class SetDefinitionKernel implements Kernel {
 		for (FormulaEventAnalysis analysis : triggerFormulas) {
 			analysis.registerFormulaForEvents(framework, this, AtomEventSets.DeOrActivationEvent, db);
 		}
-		framework.registerAtomEventObserver(setPredicate, AtomEventSets.DeOrActivationEvent, this);
+		framework.registerAtomEventListener(setPredicate, AtomEventSets.DeOrActivationEvent, this);
 
 	}
 	
@@ -358,7 +358,7 @@ public class SetDefinitionKernel implements Kernel {
 		for (FormulaEventAnalysis analysis : triggerFormulas) {
 			analysis.unregisterFormulaForEvents(framework, this, AtomEventSets.DeOrActivationEvent, db);
 		}
-		framework.unregisterAtomEventObserver(setPredicate, AtomEventSets.DeOrActivationEvent, this);
+		framework.unregisterAtomEventListener(setPredicate, AtomEventSets.DeOrActivationEvent, this);
 	}
 
 	

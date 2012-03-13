@@ -18,26 +18,37 @@ package edu.umd.cs.psl.model.kernel;
 
 import edu.umd.cs.psl.application.ModelApplication;
 import edu.umd.cs.psl.model.atom.Atom;
-import edu.umd.cs.psl.model.atom.AtomEventObserver;
+import edu.umd.cs.psl.model.atom.AtomEvent;
 import edu.umd.cs.psl.model.atom.AtomManager;
 import edu.umd.cs.psl.model.parameters.Parameters;
 
-
 /**
  * A template for a function that either constrains or measures
- * the compatibility of the values of {@link Atom Atoms}
+ * the compatibility of the values of {@link Atom Atoms}.
  * 
- * *upon initial grounding or triggered by changes to individual atoms. Evidence types register new
- * *evidence with the model application and are responsible for communicating changes to atom states
- * *to the model application.
+ * A Kernel is responsible for creating {@link GroundKernel GroundKernels} both
+ * upon initial grounding and when triggered by changes to individual Atoms.
+ * Kernels must register their GroundKernels with the corresponding
+ * {@link ModelApplication ModelApplications}.
  * 
- * @author Matthias Broecheler (mail@knowledgefrominformation.com)
- *
+ * @author Matthias Broecheler <mail@knowledgefrominformation.com>
  */
-public interface Kernel extends AtomEventObserver, Cloneable {
+public interface Kernel extends AtomEvent.Listener, Cloneable {
 
+	/**
+	 * Registers this Kernel to listen for the {@link AtomEvent AtomEvents}
+	 * it needs to create {@link GroundKernel GroundKernels} .
+	 * 
+	 * @param manager  the AtomManager to register with
+	 */
 	public void registerForAtomEvents(AtomManager manager);
 	
+	/**
+	 * Unregisters this Kernel from listening for {@link AtomEvent AtomEvents}
+	 * with an AtomManager
+	 * 
+	 * @param manager  the AtomManager to unregister with
+	 */
 	public void unregisterForAtomEvents(AtomManager manager);
 	
 	public void groundAll(ModelApplication app);

@@ -20,6 +20,9 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * Commonly used combinations of {@link AtomStatus AtomStatuses}.
+ */
 public class AtomStatusSets {
 	
 	public static final Set<AtomStatus> RandomVariable;

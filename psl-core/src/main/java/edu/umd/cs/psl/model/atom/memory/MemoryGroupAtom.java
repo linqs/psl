@@ -117,7 +117,7 @@ public class MemoryGroupAtom extends AbstractAtom {
 	}
 
 	@Override
-	public void setConfidenceValue(double val) {
+	public void setConfidenceValue(double value) {
 		throw new UnsupportedOperationException();
 	}
 

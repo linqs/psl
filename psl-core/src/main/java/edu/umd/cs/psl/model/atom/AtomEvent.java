@@ -21,17 +21,14 @@ package edu.umd.cs.psl.model.atom;
  */
 public enum AtomEvent {
 
-	/** The truth value of a fixed Atom was changed */
-	ChangedTruthValueOfFixedAtom,
-	
-	/** An Atom was released */
-	ReleasedAtom,
-	
 	/** A fixed Atom became explicitly represented by an {@link AtomManager} */
 	ConsideredFixedAtom,
 	
 	/** A fixed Atom stopped being explicitly represented by an {@link AtomManager} */
 	UnconsideredFixedAtom,
+	
+	/** The truth value of a fixed Atom was changed */
+	ChangedTruthValueOfFixedAtom,
 	
 	/** A random variable Atom became explicitly represented by an {@link AtomManager} */
 	ConsideredRVAtom,

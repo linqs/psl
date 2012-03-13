@@ -129,11 +129,11 @@ public class MemoryAtom extends AbstractAtom {
 	}
 
 	@Override
-	public void setConfidenceValue(double val) {
+	public void setConfidenceValue(double value) {
 		checkAccess();
-		if (!ConfidenceValues.isValid(val))
-			throw new IllegalArgumentException("Illegal confidence value: "+ val);
-		confidenceValue = val;
+		if (!ConfidenceValues.isValid(value))
+			throw new IllegalArgumentException("Illegal confidence value: "+ value);
+		confidenceValue = value;
 	}
 
 	@Override

@@ -21,6 +21,10 @@ import edu.umd.cs.psl.model.atom.AtomManager;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 
+/**
+ * A ModelApplication is the central component for combining a {@link Model}
+ * with evidence to perform a task, such as inference or learning.
+ */
 public interface ModelApplication extends ModelEvent.Listener {
 	
 	public AtomManager getAtomManager();

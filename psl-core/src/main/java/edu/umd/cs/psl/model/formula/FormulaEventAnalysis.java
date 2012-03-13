@@ -108,15 +108,15 @@ public class FormulaEventAnalysis {
 	
 	public void registerFormulaForEvents(AtomManager atomManager, Kernel me, AtomEventSets inferenceAtomEvent, DatabaseAtomStoreQuery db) {
 		for (Predicate p : dependence.keySet()) {
-			if (db.isClosed(p)) atomManager.registerAtomEventObserver(p, defaultFactEvent, me);
-			else atomManager.registerAtomEventObserver(p, inferenceAtomEvent, me);
+			if (db.isClosed(p)) atomManager.registerAtomEventListener(p, defaultFactEvent, me);
+			else atomManager.registerAtomEventListener(p, inferenceAtomEvent, me);
 		}
 	}
 	
 	public void unregisterFormulaForEvents(AtomManager atomManager, Kernel me, AtomEventSets inferenceAtomEvent, DatabaseAtomStoreQuery db) {
 		for (Predicate p : dependence.keySet()) {
-			if (db.isClosed(p)) atomManager.unregisterAtomEventObserver(p, defaultFactEvent, me);
-			else atomManager.unregisterAtomEventObserver(p, inferenceAtomEvent, me);
+			if (db.isClosed(p)) atomManager.unregisterAtomEventListener(p, defaultFactEvent, me);
+			else atomManager.unregisterAtomEventListener(p, inferenceAtomEvent, me);
 		}
 	}
 }

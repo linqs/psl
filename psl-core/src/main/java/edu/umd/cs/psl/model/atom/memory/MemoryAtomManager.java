@@ -44,7 +44,6 @@ import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.argument.type.ArgumentType;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.AtomEvent;
-import edu.umd.cs.psl.model.atom.AtomEventSets;
 import edu.umd.cs.psl.model.atom.AtomJob;
 import edu.umd.cs.psl.model.atom.AtomManager;
 import edu.umd.cs.psl.model.atom.AtomStatus;
@@ -150,12 +149,12 @@ public class MemoryAtomManager implements AtomManager {
 	}
 	
 	@Override
-	public void registerAtomEventObserver(AtomEventSets events, AtomEvent.Listener listener) {
-		registerAtomEventObserver(events, AllPredicates, listener);	
+	public void registerAtomEventListener(Set<AtomEvent> events, AtomEvent.Listener listener) {
+		registerAtomEventListener(events, AllPredicates, listener);	
 	}
 	
 	@Override
-	public void registerAtomEventObserver(AtomEventSets events, Predicate p, AtomEvent.Listener listener) {
+	public void registerAtomEventListener(Set<AtomEvent> events, Predicate p, AtomEvent.Listener listener) {
 		Preconditions.checkNotNull(events);
 		Preconditions.checkNotNull(listener);
 		for (AtomEvent e : events.subsumes()) {
@@ -164,12 +163,12 @@ public class MemoryAtomManager implements AtomManager {
 	}
 	
 	@Override
-	public void unregisterAtomEventObserver(AtomEventSets events, AtomEvent.Listener listener) {
-		unregisterAtomEventObserver(events, AllPredicates, listener);
+	public void unregisterAtomEventListener(Set<AtomEvent> events, AtomEvent.Listener listener) {
+		unregisterAtomEventListener(events, AllPredicates, listener);
 	}
 
 	@Override
-	public void unregisterAtomEventObserver(AtomEventSets events, Predicate p, AtomEvent.Listener listener) {
+	public void unregisterAtomEventListener(Set<AtomEvent> events, Predicate p, AtomEvent.Listener listener) {
 		Preconditions.checkNotNull(events);
 		Preconditions.checkNotNull(listener);
 		for (AtomEvent e : events.subsumes()) {

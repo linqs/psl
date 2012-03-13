@@ -29,6 +29,9 @@ import edu.umd.cs.psl.model.argument.type.VariableTypeMap;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.predicate.Predicate;
 
+/**
+ * Partial implementation of {@link Atom}.
+ */
 abstract public class AbstractAtom implements Atom {
 	
 	protected final Predicate predicate;
@@ -56,7 +59,7 @@ abstract public class AbstractAtom implements Atom {
 	 * @throws IllegalArgumentException  if any argument is null
 	 * @throws IllegalArgumentException
 	 *             if any argument is a {@link GroundTerm} and is not a subtype
-	 *             of the perdicate's {@link ArgumentType}.
+	 *             of the Predicate's {@link ArgumentType}.
 	 */
 	private void checkSchema() {
 		if (predicate.getArity()!=arguments.length) {

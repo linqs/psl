@@ -286,17 +286,17 @@ public class ExternalInducerKernel implements Kernel {
 	@Override
 	public void registerForAtomEvents(AtomManager manager) {
 		validatePredicates(db);
-		manager.registerAtomEventObserver(head.getPredicate(), AtomEventSets.DeOrActivationEvent, this);
+		manager.registerAtomEventListener(head.getPredicate(), AtomEventSets.DeOrActivationEvent, this);
 		for (Predicate p : getRetrievalPredicates()) {
-			manager.registerAtomEventObserver(p, AtomEventSets.NonDefaultFactEvent, this);
+			manager.registerAtomEventListener(p, AtomEventSets.NonDefaultFactEvent, this);
 		}
 	}
 	
 	@Override
 	public void unregisterForAtomEvents(AtomManager manager) {
-		manager.unregisterAtomEventObserver(head.getPredicate(), AtomEventSets.DeOrActivationEvent, this);
+		manager.unregisterAtomEventListener(head.getPredicate(), AtomEventSets.DeOrActivationEvent, this);
 		for (Predicate p : getRetrievalPredicates()) {
-			manager.unregisterAtomEventObserver(p, AtomEventSets.NonDefaultFactEvent, this);
+			manager.unregisterAtomEventListener(p, AtomEventSets.NonDefaultFactEvent, this);
 		}
 	}
 	

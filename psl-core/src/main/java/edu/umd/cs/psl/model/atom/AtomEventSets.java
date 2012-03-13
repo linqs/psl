@@ -21,120 +21,50 @@ import java.util.Set;
 import com.google.common.collect.ImmutableSet;
 
 /**
- * Commonly used combinations of various {@link AtomEvent AtomEvents}.
+ * Commonly used combinations of {@link AtomEvent AtomEvents}.
  */
-public enum AtomEventSets {
+public class AtomEventSets {
 
-	ReleasedCertainty {
-		private Set<AtomEvent> entailment = ImmutableSet.of(AtomEvent.ReleasedCertainty);
-		@Override
-		public Set<AtomEvent> subsumes() {
-			return entailment;
-		}	
-	},	
+	public static final Set<AtomEvent> ConsideredGroundAtom;
+	static {
+		ConsideredGroundAtom = ImmutableSet.of(
+				AtomEvent.ConsideredFixedAtom,
+				AtomEvent.ConsideredRVAtom);
+	}
 	
-	MadeRevokedCertainty {
-		private Set<AtomEvent> entailment = ImmutableSet.of(AtomEvent.MadeCertainty,AtomEvent.RevokedCertainty);
-		@Override
-		public Set<AtomEvent> subsumes() {
-			return entailment;
-		}	
-	},
+	public static final Set<AtomEvent> UnconsideredGroundAtom;
+	static {
+		UnconsideredGroundAtom = ImmutableSet.of(
+				AtomEvent.UnconsideredFixedAtom,
+				AtomEvent.UnconsideredRVAtom);
+	}
 	
-	IntroducedInferenceAtom {
-		private Set<AtomEvent> entailment = ImmutableSet.of(AtomEvent.IntroducedCertainty,AtomEvent.IntroducedRV);
-		@Override
-		public Set<AtomEvent> subsumes() {
-			return entailment;
-		}	
-	},
+	public static final Set<AtomEvent> ConsideredUnconsideredGroundAtom;
+	static {
+		ConsideredUnconsideredGroundAtom = ImmutableSet.of(
+				AtomEvent.ConsideredFixedAtom,
+				AtomEvent.ConsideredRVAtom,
+				AtomEvent.UnconsideredFixedAtom,
+				AtomEvent.UnconsideredRVAtom);
+	}
 	
-	ReleasedInferenceAtom {
-		private Set<AtomEvent> entailment = ImmutableSet.of(AtomEvent.ReleasedCertainty,AtomEvent.ReleasedRV);
-		@Override
-		public Set<AtomEvent> subsumes() {
-			return entailment;
-		}	
-	},
+	public static final Set<AtomEvent> ConsideredUnconsideredRVAtom;
+	static {
+		ConsideredUnconsideredRVAtom = ImmutableSet.of(
+				AtomEvent.ConsideredRVAtom,
+				AtomEvent.UnconsideredRVAtom);
+	}
 	
-	NewCertaintyEvent {
-		private Set<AtomEvent> entailment = ImmutableSet.of(AtomEvent.IntroducedCertainty, AtomEvent.MadeCertainty);
-		@Override
-		public Set<AtomEvent> subsumes() {
-			return entailment;
-		}	
-	},
+	public static final Set<AtomEvent> DeOrActivationEvent;
+	static {
+		DeOrActivationEvent = ImmutableSet.of(
+				AtomEvent.ActivatedRVAtom,
+				AtomEvent.DeactivatedRVAtom);
+	}
 	
-	CertaintyEvent {
-		private Set<AtomEvent> entailment = ImmutableSet.of(AtomEvent.IntroducedCertainty, AtomEvent.ReleasedCertainty,AtomEvent.ActivatedCertainty,
-				AtomEvent.DeactivatedCertainty,AtomEvent.RevokedCertainty, AtomEvent.MadeCertainty);
-		@Override
-		public Set<AtomEvent> subsumes() {
-			return entailment;
-		}	
-	},
-	
-	IntroducedReleasedInferenceAtom {
-		private Set<AtomEvent> entailment = ImmutableSet.of(AtomEvent.IntroducedCertainty,AtomEvent.IntroducedRV,AtomEvent.ReleasedCertainty,AtomEvent.ReleasedRV);
-		@Override
-		public Set<AtomEvent> subsumes() {
-			return entailment;
-		}	
-	},
-	
-	AllFactEvent {
-		private Set<AtomEvent> entailment = ImmutableSet.of(AtomEvent.ChangedFactFromDefault,AtomEvent.ChangedFactToDefault,AtomEvent.ChangedFactNonDefault,AtomEvent.ChangedFactInDefault);
-		@Override
-		public Set<AtomEvent> subsumes() {
-			return entailment;
-		}	
-	},
-	
-	NonDefaultFactEvent {
-		private Set<AtomEvent> entailment = ImmutableSet.of(AtomEvent.ChangedFactFromDefault,AtomEvent.ChangedFactToDefault,AtomEvent.ChangedFactNonDefault);
-		@Override
-		public Set<AtomEvent> subsumes() {
-			return entailment;
-		}	
-	},
-	
-	ActivationEvent {
-		private Set<AtomEvent> entailment = ImmutableSet.of(AtomEvent.ActivatedRV,AtomEvent.ActivatedCertainty);
-		@Override
-		public Set<AtomEvent> subsumes() {
-			return entailment;
-		}	
-	},	
-	
-	DeactivationEvent {
-		private Set<AtomEvent> entailment = ImmutableSet.of(AtomEvent.DeactivatedCertainty,AtomEvent.DeactivatedRV);
-		@Override
-		public Set<AtomEvent> subsumes() {
-			return entailment;
-		}	
-	},
-	
-	DeOrActivationEvent {
-		private Set<AtomEvent> entailment = ImmutableSet.of(AtomEvent.DeactivatedCertainty,AtomEvent.DeactivatedRV,AtomEvent.ActivatedRV,AtomEvent.ActivatedCertainty);
-		@Override
-		public Set<AtomEvent> subsumes() {
-			return entailment;
-		}	
-	},
-
-	
-	All {
-		private Set<AtomEvent> entailment = ImmutableSet.copyOf(AtomEvent.values());
-		@Override
-		public Set<AtomEvent> subsumes() {
-			return entailment;
-		}		
-	};
-	
-	public abstract Set<AtomEvent> subsumes();
-	
-	public boolean subsumes(AtomEvent e) {
-		return this.subsumes().contains(e);
+	public static final Set<AtomEvent> All;
+	static {
+		All = ImmutableSet.copyOf(AtomEvent.values());	
 	}
 	
 }

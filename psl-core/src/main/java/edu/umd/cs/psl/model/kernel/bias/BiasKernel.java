@@ -35,8 +35,6 @@ import edu.umd.cs.psl.model.predicate.StandardPredicate;
 
 public class BiasKernel implements Kernel {
 
-
-	
 	private final StandardPredicate predicate;
 	private final Model model;
 	
@@ -47,7 +45,7 @@ public class BiasKernel implements Kernel {
 	public BiasKernel(Model m, StandardPredicate p, double w) {
 		predicate = p;
 		weight = new PositiveWeight(w);
-		model=m;
+		model = m;
 		
 		hashcode = new HashCodeBuilder().append(predicate).toHashCode();
 	}
@@ -93,31 +91,36 @@ public class BiasKernel implements Kernel {
 
 	private void addBias(Atom atom, ModelApplication app) {
 		if (atom.getRegisteredGroundKernels(this).isEmpty()) {
-			GroundBias pw = new GroundBias(this,atom);
-			app.addGroundKernel(pw);
-		} // else it already has such a prior weight defined
+			GroundBias gb = new GroundBias(this, atom);
+			app.addGroundKernel(gb);
+		} // else the ground bias kernel is already defined
 	}
 	
 	@Override
-	public void notifyAtomEvent(AtomEvent event, Atom atom, GroundingMode mode, ModelApplication app) {
-		if (AtomEventSets.IntroducedInferenceAtom.subsumes(event)) {
-			addBias(atom,app);
-		} else if (AtomEventSets.ReleasedInferenceAtom.subsumes(event)) {
-			GroundBias pw = (GroundBias)Iterables.getOnlyElement(atom.getRegisteredGroundKernels(this));
+	public void notifyAtomEvent(AtomEvent event) {
+		/* Creates a ground bias kernel for a newly considered RV atom */
+		if (AtomEvent.ConsideredRVAtom.equals(event)) {
+			addBias(event.getAtom(), app);
+		}
+		/* Removes a ground bias kernel for a newly unconsidered RV atom */
+		else if (AtomEvent.UnconsideredRVAtom.equals(event)) {
+			GroundBias pw = (GroundBias) Iterables.getOnlyElement(event.getAtom().getRegisteredGroundKernels(this));
 			app.removeGroundKernel(pw);
-		} else {
+		}
+		/* No handling for other events */
+		else {
 			throw new UnsupportedOperationException("Unsupported event encountered: " + event);
 		}
 	}
 	
 	@Override
 	public void registerForAtomEvents(AtomManager manager) {
-		manager.registerAtomEventObserver(predicate, AtomEventSets.IntroducedReleasedInferenceAtom, this);
+		manager.registerAtomEventListener(AtomEventSets.ConsideredUnconsideredRVAtom, predicate, this);
 	}
 	
 	@Override
 	public void unregisterForAtomEvents(AtomManager manager) {
-		manager.unregisterAtomEventObserver(predicate, AtomEventSets.IntroducedReleasedInferenceAtom, this);
+		manager.unregisterAtomEventListener(AtomEventSets.ConsideredUnconsideredRVAtom, predicate, this);
 	}
 	
 	@Override

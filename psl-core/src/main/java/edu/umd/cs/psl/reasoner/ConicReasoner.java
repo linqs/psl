@@ -139,7 +139,7 @@ public class ConicReasoner implements Reasoner, AtomEventObserver {
 		gkRepresentation = new HashMap<GroundKernel, ConicProgramProxy>();
 		vars = new HashMap<AtomFunctionVariable, VariableConicProgramProxy>();
 		
-		atomManager.registerAtomEventObserver(AtomEventSets.MadeRevokedCertainty, this);
+		atomManager.registerAtomEventListener(AtomEventSets.MadeRevokedCertainty, this);
 	}
 	
 	@Override
@@ -228,7 +228,7 @@ public class ConicReasoner implements Reasoner, AtomEventObserver {
 	
 	@Override
 	public void close() {
-		atomManager.unregisterAtomEventObserver(AtomEventSets.MadeRevokedCertainty, this);
+		atomManager.unregisterAtomEventListener(AtomEventSets.MadeRevokedCertainty, this);
 	}
 	
 	protected VariableConicProgramProxy getVarProxy(AtomFunctionVariable v) {

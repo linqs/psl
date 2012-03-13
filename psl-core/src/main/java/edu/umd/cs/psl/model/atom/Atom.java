@@ -19,6 +19,7 @@ package edu.umd.cs.psl.model.atom;
 import java.util.Collection;
 import java.util.Set;
 
+import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.Term;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
@@ -26,22 +27,20 @@ import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
 
-
 /**
- * The abstract Atom is the base class for all atoms with a predicate and arguments.
- * It defines most of the standard functionality of predicate atoms with some of it implemented in its
- * two child classes.
+ * A {@link Predicate} combined with the correct number of {@link Term Terms}
+ * as arguments.
  * 
- * FormulaAtom must be constructed through the static create() functions to ensure a unique memory
- * representation.
+ * If all of the arguments are {@link GroundTerm GroundTerms}, then the Atom
+ * is said to be ground and can be assigned a truth value. Ground Atoms
+ * are statements of relationships. 
  * 
  * @author Matthias Broecheler
- *
  */
 public interface Atom extends Formula {
 	
 	/**
-	 * Returns the predicate associated with this atom.
+	 * Returns the predicate associated with this Atom.
 	 * 
 	 * @return A predicate
 	 */
@@ -62,33 +61,38 @@ public interface Atom extends Formula {
 	public Term[] getArguments();
 	
 	/**
-	 * Returns the soft value at a given index.
+	 * Returns the truth value of this Atom.
 	 * 
-	 * @return The soft value at index pos
+	 * @return The truth value in [0,1]
+	 * @throws IllegalStateException  if this Atom is not ground
 	 */
 	public double getValue();
 	
 	/**
-	 * Sets the soft values.
+	 * Sets the truth value of this Atom.
 	 * 
-	 * @param value An array of soft values
+	 * @param value  a truth value in [0,1]
+	 * @throws IllegalArgumentException  if value is not in [0,1]
+	 * @throws IllegalStateException  if this Atom is not ground
 	 */
 	public void setValue(double value);
 	
 	/**
-	 * Returns the confidence values at a given index.
+	 * Returns the confidence value of this Atom.
 	 * 
-	 * @return The confidence value at index pos
+	 * @return The confidence value in [0, +Infinity)
+	 * @throws IllegalStateException  if this Atom is not ground
 	 */
 	public double getConfidenceValue();
 	
 	/**
-	 * Sets the confidence values at a given index.
+	 * Sets the confidence value of this Atom.
 	 * 
-	 * @param pos A zero-based index
-	 * @param val A confidence value
+	 * @param value A confidence value in [0, +Infinity)
+	 * @throws IllegalArgumentException  if value is not in [0, +Infinity)
+	 * @throws IllegalStateException  if this Atom is not ground
 	 */
-	public void setConfidenceValue(double val);
+	public void setConfidenceValue(double value);
 	
 	/**
 	 * Registers a ground kernel to receive update events.
@@ -129,7 +133,7 @@ public interface Atom extends Formula {
 	public int getNumRegisteredGroundKernels();
 	
 	/**
-	 * Returns whether this atom is ground.
+	 * Returns whether this Atom is ground.
 	 * 
 	 * @return TRUE if ground; FALSE otherwise
 	 */
@@ -158,11 +162,6 @@ public interface Atom extends Formula {
 	 */
 	public Collection<Atom> getAtomsInGroup(AtomManager atommanager);
 	
-	/*
-	 * ###### FunctionVariable Interface ##########
-	 */
-	
 	public AtomFunctionVariable getVariable();
-
 	
 }

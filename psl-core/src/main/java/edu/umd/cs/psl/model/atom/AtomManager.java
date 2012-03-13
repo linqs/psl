@@ -33,23 +33,23 @@ import edu.umd.cs.psl.model.predicate.Predicate;
 
 /**
  * Canonical source of all ground {@link Atom Atoms} used by a {@link ModelApplication}.
- * 
+ * <p>
  * Implementations might support initialization with a {@link Database} as a source
  * of fixed Atoms and as a location to persist Atoms.
- * 
+ * <p>
  * An AtomManager is responsible for maintaining the set of ground Atoms being used
  * by a ModelApplication and a single interpretation (assignment of truth values)
  * over those Atoms. An AtomManager also maintains confidence values representing
  * confidence in the assigned truth value of each Atom (to the degree confidence
  * values are used by the particular ModelApplication).
- * 
+ * <p>
  * AtomManagers maintain much of this information implicitly through two conventions.
- * First, upon initialization, any ground Atoms without fixed truth values are initially
- * assigned a truth value of zero. Second, if a {@link Predicate} is closed in an
+ * First, upon manager initialization, any ground Atoms without fixed truth values are initially
+ * (implicitly) assigned a truth value of zero. Second, if a {@link Predicate} is closed in an
  * AtomManager, then any ground Atom of that Predicate which does not have a specified,
  * fixed truth value is fixed at zero. (The method(s) for specifying fixed truth
  * values is implementation specific.) 
- * 
+ * <p>
  * AtomManagers are also responsible for managing the events and status changes related
  * to Atoms.
  * 
@@ -229,7 +229,7 @@ public interface AtomManager extends DatabaseEventObserver, ModelEvent.Listener 
 	 * @param listener  object to register
 	 * @see AtomEvent
 	 */
-	public void registerAtomEventObserver(AtomEventSets events, AtomEvent.Listener listener);
+	public void registerAtomEventListener(Set<AtomEvent> events, AtomEvent.Listener listener);
 	
 	/**
 	 * Registers a listener for any events in a set related to {@link Atom Atoms}
@@ -240,7 +240,7 @@ public interface AtomManager extends DatabaseEventObserver, ModelEvent.Listener 
 	 * @param listener  object to register
 	 * @see AtomEvent
 	 */
-	public void registerAtomEventObserver(AtomEventSets events, Predicate p, AtomEvent.Listener listener);
+	public void registerAtomEventListener(Set<AtomEvent> events, Predicate p, AtomEvent.Listener listener);
 	
 	/**
 	 * Unregisters a listener for any events in a set.
@@ -249,18 +249,20 @@ public interface AtomManager extends DatabaseEventObserver, ModelEvent.Listener 
 	 * @param listener  object to unregister
 	 * @see AtomEvent
 	 */
-	public void unregisterAtomEventObserver(AtomEventSets events, AtomEvent.Listener listener);
+	public void unregisterAtomEventListener(Set<AtomEvent> events, AtomEvent.Listener listener);
 	
 	/**
 	 * Unregisters a listener for any events in a set related to {@link Atom Atoms}
 	 * with a given Predicate.
 	 * 
-	 * @param events  set of events for which to listen
-	 * @param p  Predicate of Atoms for which to listen for events
+	 * @param events  set of events for which to stop listening
+	 * @param p  Predicate of Atoms for which to stop listening
 	 * @param listener  object to unregister
+	 * @throws IllegalArgumentException  if listener is not registered to listen for
+	 *             a subset of AtomEvents in events for Predicate p
 	 * @see AtomEvent
 	 */
-	public void unregisterAtomEventObserver(AtomEventSets events, Predicate p, AtomEvent.Listener listener);
+	public void unregisterAtomEventListener(Set<AtomEvent> events, Predicate p, AtomEvent.Listener listener);
 	
 	/**
 	 * Activates all (ground) {@link Atom Atoms} which meet this manager's

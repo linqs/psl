@@ -161,14 +161,14 @@ public class PredicateConstraintKernel implements Kernel {
 
 	@Override
 	public void registerForAtomEvents(AtomManager manager) {
-		manager.registerAtomEventObserver(predicate,
+		manager.registerAtomEventListener(predicate,
 				AtomEventSets.IntroducedReleasedInferenceAtom, this);
 
 	}
 
 	@Override
 	public void unregisterForAtomEvents(AtomManager manager) {
-		manager.unregisterAtomEventObserver(predicate,
+		manager.unregisterAtomEventListener(predicate,
 				AtomEventSets.IntroducedReleasedInferenceAtom, this);
 
 	}
