@@ -38,15 +38,12 @@ public enum AtomStatus {
 	Undefined,
 	
 	/**
-	 * The {@link Atom} is unconsidered and fixed.
+	 * The {@link Atom} is unconsidered.
 	 * 
 	 * An unconsidered Atom does not appear in its {@link AtomManager}'s set of explicitly
 	 * represented Atoms.
-	 * 
-	 * A fixed Atom has a known truth value. No other truth value can be assigned and the
-	 * Atom's confidence value is infinity.
 	 */
-	UnconsideredFixed,
+	Unconsidered,
 	
 	/**
 	 * The {@link Atom} is considered and fixed.
@@ -58,17 +55,6 @@ public enum AtomStatus {
 	 * Atom's confidence value is infinity.
 	 */
 	ConsideredFixed,
-	
-	/**
-	 * The {@link Atom} is unconsidered and its truth value is a random variable.
-	 * 
-	 * An unconsidered Atom does not appear in its {@link AtomManager}'s set of explicitly
-	 * represented Atoms.
-	 * 
-	 * An Atom with an unknown truth value is represented as a random variable.
-	 * Its value will be inferred when using a {@link Reasoner}.
-	 */
-	UnconsideredRV,
 	
 	/**
 	 * The {@link Atom} is considered and its truth value is a random variable.
@@ -94,58 +80,6 @@ public enum AtomStatus {
 	 * Its value will be inferred when using a {@link Reasoner}.
 	 */
 	ActiveRV;
-	
-	/**
-	 * Returns the considered equivalent of this status.
-	 * 
-	 * @return the considered equivalent
-	 * @throws UnsupportedOperationException  if this status does not have a
-	 *             considered equivalent
-	 */
-	public AtomStatus consider() {
-		switch(this) {
-		case UnconsideredFixed:
-			return ConsideredFixed;
-		case UnconsideredRV:
-			return ConsideredRV;
-		default:
-			throw new UnsupportedOperationException("Cannot consider on status: " + this);
-		}		
-	}
-	
-	/**
-	 * Returns the unconsidered equivalent of this status.
-	 * 
-	 * @return the unconsidered equivalent
-	 * @throws UnsupportedOperationException  if this status does not have an
-	 *             unconsidered equivalent
-	 */
-	public AtomStatus unconsider() {
-		switch(this) {
-		case ConsideredFixed:
-			return UnconsideredFixed;
-		case ConsideredRV:
-			return UnconsideredRV;
-		default:
-			throw new UnsupportedOperationException("Cannot unconsider on status: " + this);
-		}		
-	}
-	
-	/**
-	 * Returns the {@value #Undefined} status
-	 * 
-	 * @return the {@value #Undefined} status
-	 * @throws UnsupportedOperationException  if this status is not unconsidered
-	 */
-	public AtomStatus release() {
-		switch(this) {
-		case UnconsideredFixed:
-		case UnconsideredRV:
-			return Undefined;
-		default:
-			throw new UnsupportedOperationException("Cannot release on status: " + this);		
-		}
-	}
 	
 	/**
 	 * Returns the {@value #ActiveRV} status.

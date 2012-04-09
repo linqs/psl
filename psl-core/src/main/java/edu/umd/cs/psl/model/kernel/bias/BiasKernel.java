@@ -20,19 +20,32 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import com.google.common.collect.Iterables;
 
-import edu.umd.cs.psl.application.GroundingMode;
 import edu.umd.cs.psl.application.ModelApplication;
 import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.AtomEvent;
 import edu.umd.cs.psl.model.atom.AtomEventSets;
 import edu.umd.cs.psl.model.atom.AtomManager;
+import edu.umd.cs.psl.model.atom.AtomStatusSets;
 import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.model.parameters.Parameters;
 import edu.umd.cs.psl.model.parameters.PositiveWeight;
 import edu.umd.cs.psl.model.parameters.Weight;
+import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
 
+/**
+ * Produces {@link GroundBias GroundBiases}.
+ * 
+ * Assigns an incompatibility to each ground {@link Atom} of a particular
+ * {@link Predicate} equal to that Atom's truth value. This is useful for
+ * ensuring that random variable Atoms are inferred to have truth values only
+ * as high as necessary to optimize all other Kernels and no higher.
+ * 
+ * Since GroundBiases are unary potential functions, i.e., only affect a single
+ * Atom each, they will only be created for random variable Atoms, not ones
+ * with fixed truth values.
+ */
 public class BiasKernel implements Kernel {
 
 	private final StandardPredicate predicate;
@@ -75,7 +88,7 @@ public class BiasKernel implements Kernel {
 
 	@Override
 	public void setParameters(Parameters para) {
-		if (!(para instanceof Weight)) throw new IllegalArgumentException("Expected weight parameter!");
+		if (!(para instanceof Weight)) throw new IllegalArgumentException("Expected weight parameter.");
 		PositiveWeight newweight = (PositiveWeight)para;
 		if (!newweight.equals(weight)) {
 			weight = newweight;
@@ -85,7 +98,7 @@ public class BiasKernel implements Kernel {
 
 	@Override
 	public void groundAll(ModelApplication app) {
-		for (Atom atom : app.getAtomManager().getConsideredAtoms(predicate))
+		for (Atom atom : app.getAtomManager().getAtoms(AtomStatusSets.RandomVariable, predicate))
 			addBias(atom, app);
 	}
 
@@ -100,12 +113,12 @@ public class BiasKernel implements Kernel {
 	public void notifyAtomEvent(AtomEvent event) {
 		/* Creates a ground bias kernel for a newly considered RV atom */
 		if (AtomEvent.ConsideredRVAtom.equals(event)) {
-			addBias(event.getAtom(), app);
+			addBias(event.getAtom(), event.getModelApplication());
 		}
 		/* Removes a ground bias kernel for a newly unconsidered RV atom */
 		else if (AtomEvent.UnconsideredRVAtom.equals(event)) {
 			GroundBias pw = (GroundBias) Iterables.getOnlyElement(event.getAtom().getRegisteredGroundKernels(this));
-			app.removeGroundKernel(pw);
+			event.getModelApplication().removeGroundKernel(pw);
 		}
 		/* No handling for other events */
 		else {

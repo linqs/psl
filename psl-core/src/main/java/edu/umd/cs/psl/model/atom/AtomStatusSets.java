@@ -28,7 +28,6 @@ public class AtomStatusSets {
 	public static final Set<AtomStatus> RandomVariable;
 	static {
 		Set<AtomStatus> set = new HashSet<AtomStatus>();
-		set.add(AtomStatus.UnconsideredRV);
 		set.add(AtomStatus.ConsideredRV);
 		set.add(AtomStatus.ActiveRV);
 		RandomVariable = Collections.unmodifiableSet(set);
@@ -37,7 +36,6 @@ public class AtomStatusSets {
 	public static final Set<AtomStatus> Fixed;
 	static {
 		Set<AtomStatus> set = new HashSet<AtomStatus>();
-		set.add(AtomStatus.UnconsideredFixed);
 		set.add(AtomStatus.ConsideredFixed);
 		Fixed = Collections.unmodifiableSet(set);
 	}
@@ -45,8 +43,7 @@ public class AtomStatusSets {
 	public static final Set<AtomStatus> Unconsidered;
 	static {
 		Set<AtomStatus> set = new HashSet<AtomStatus>();
-		set.add(AtomStatus.UnconsideredFixed);
-		set.add(AtomStatus.UnconsideredRV);
+		set.add(AtomStatus.Unconsidered);
 		Unconsidered = Collections.unmodifiableSet(set);
 	}
 

@@ -16,6 +16,8 @@
  */
 package edu.umd.cs.psl.model.atom;
 
+import edu.umd.cs.psl.application.ModelApplication;
+
 /**
  * An event related to an {@link Atom}.
  */
@@ -54,12 +56,15 @@ public enum AtomEvent {
 	
 	private Atom atom;
 	
+	private ModelApplication app;
+	
 	private AtomEvent() {
 		atom = null;
+		app = null;
 	}
 	
 	/**
-	 * @return the associated Atom, or null if no Atom is associated.
+	 * @return the associated Atom, or null if none is associated.
 	 */
 	public Atom getAtom() {
 		return atom;
@@ -73,6 +78,24 @@ public enum AtomEvent {
 	 */
 	public AtomEvent setAtom(Atom atom) {
 		this.atom = atom;
+		return this;
+	}
+	
+	/**
+	 * @return the associated ModelApplication, or null if none is associated.
+	 */
+	public ModelApplication getModelApplication() {
+		return app;
+	}
+	
+	/**
+	 * Associates a ModelApplication with this event.
+	 * 
+	 * @param app  the ModelApplication to associate
+	 * @return this event, for convenience
+	 */
+	public AtomEvent setModelApplication(ModelApplication app) {
+		this.app = app;
 		return this;
 	}
 }

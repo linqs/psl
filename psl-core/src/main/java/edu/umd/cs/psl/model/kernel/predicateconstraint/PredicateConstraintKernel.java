@@ -21,30 +21,27 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
-import edu.umd.cs.psl.application.GroundingMode;
 import edu.umd.cs.psl.application.ModelApplication;
 import edu.umd.cs.psl.database.ResultList;
 import edu.umd.cs.psl.model.argument.Entity;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.Term;
 import edu.umd.cs.psl.model.argument.Variable;
-import edu.umd.cs.psl.model.atom.*;
+import edu.umd.cs.psl.model.atom.Atom;
+import edu.umd.cs.psl.model.atom.AtomEvent;
+import edu.umd.cs.psl.model.atom.AtomEventSets;
+import edu.umd.cs.psl.model.atom.AtomManager;
+import edu.umd.cs.psl.model.atom.TemplateAtom;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.model.parameters.Parameters;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
 
 /**
- * The PredicateConstraintKernel specifies a kernel that measures the adherence
- * of a {@link edu.umd.cs.psl.model.predicate.StandardPredicate
- * StandardPredicate} with a
- * {@link edu.umd.cs.psl.model.kernel.predicateconstraint.PredicateConstraintType
- * PredicateConstraintType}. Currently the kernel only supports single-valued,
- * binary predicates.
+ * Produces {@link GroundPredicateConstraint GroundPredicateConstraints}.
  * 
- * @see edu.umd.cs.psl.model.predicate.StandardPredicate
- * @see edu.umd.cs.psl.model.kernel.predicateconstraint.PredicateConstraintType
- * 
+ * Checks whether sets of {@link Atom Atoms} of a binary {@link StandardPredicate}
+ * adhere to a {@link PredicateConstraintType}.
  */
 public class PredicateConstraintKernel implements Kernel {
 
@@ -57,7 +54,7 @@ public class PredicateConstraintKernel implements Kernel {
 			PredicateConstraintType t) {
 		Preconditions
 				.checkArgument(p.getArity() == 2,
-						"Currently, PredicateConstraints only support binary predicates!");
+						"Currently, PredicateConstraints only support binary predicates.");
 		constraintType = t;
 		predicate = p;
 
@@ -90,46 +87,40 @@ public class PredicateConstraintKernel implements Kernel {
 
 	@Override
 	public void setParameters(Parameters para) {
-		throw new UnsupportedOperationException(
-				"This evidence type does not have parameters!");
+		throw new UnsupportedOperationException("This Kernel does not have parameters.");
 	}
 
 	@Override
 	public void groundAll(ModelApplication app) {
-		// Not needed, triggered only upon insertion
+		/* Not needed, triggered only upon insertion */
 	}
 
-	/**
-	 * notifyAtomEvent will listen for introductions of inference atoms. If
-	 * there are no registered {@link edu.umd.cs.psl.model.kernel.GroundKernel
-	 * GroundKernels} for the atom this method will either update an existing
-	 * {@link edu.umd.cs.psl.model.kernel.predicateconstraint.GroundPredicateConstraint
-	 * GroundPredicateConstraint} in the
-	 * {@link edu.umd.cs.psl.application.ModelApplication ModelApplication} or
-	 * create a new
-	 * {@link edu.umd.cs.psl.model.kernel.predicateconstraint.GroundPredicateConstraint
-	 * GroundPredicateConstraint} to add to the
-	 * {@link edu.umd.cs.psl.application.ModelApplication ModelApplication}
-	 * 
-	 */
 	@Override
-	public void notifyAtomEvent(AtomEvent event, Atom atom, GroundingMode mode,
-			ModelApplication app) {
-		if (AtomEventSets.IntroducedInferenceAtom.subsumes(event)) {
-			if (atom.getRegisteredGroundKernels(this).isEmpty()) {
+	public void notifyAtomEvent(AtomEvent event) {
+		/* When an Atom is considered... */
+		if (AtomEventSets.ConsideredGroundAtom.contains(event)) {
+			/*
+			 * ...checks to see if that Atom has already been added to the
+			 * appropriate ground Kernel. (It shouldn't have.)
+			 */
+			if (event.getAtom().getRegisteredGroundKernels(this).isEmpty()) {
+				/* Constructs the ground Kernel in order to see if it already exists */
+				Atom atom = event.getAtom();
+				ModelApplication app = event.getModelApplication();
 				int pos = constraintType.position();
-				assert atom.getArguments()[pos] instanceof Entity;
-				assert atom.getArity() == 2;
 				Entity anchor = (Entity) atom.getArguments()[pos];
 				GroundTerm other = (GroundTerm) atom.getArguments()[1 - pos];
 				GroundPredicateConstraint con = new GroundPredicateConstraint(
 						this, anchor);
 
 				GroundKernel oldcon = app.getGroundKernel(con);
+				
+				/* If it already exists, adds the considered Atom to it */
 				if (oldcon != null) {
 					((GroundPredicateConstraint) oldcon).addAtom(atom);
 					app.changedGroundKernel(oldcon);
-				} else {
+				}
+				else {
 					con.addAtom(atom);
 					// Check for atoms from database
 					Variable var = new Variable("V");
@@ -139,7 +130,7 @@ public class PredicateConstraintKernel implements Kernel {
 					args[1 - pos] = var;
 					Atom query = new TemplateAtom(predicate, args);
 
-					ResultList res = app.getAtomManager().getNonzeroGroundings(query,
+					ResultList res = app.getAtomManager().getNonfalseGroundings(query,
 							ImmutableList.of(var));
 					for (int i = 0; i < res.size(); i++) {
 						GroundTerm[] terms = new GroundTerm[2];
@@ -152,25 +143,24 @@ public class PredicateConstraintKernel implements Kernel {
 					}
 					app.addGroundKernel(con);
 				}
-			} // else it already has such a constraint defined
-		} else {
-			throw new UnsupportedOperationException(
-					"Currently, only insertions are supported!");
+			} /* else it already has such a constraint defined */
+		} 
+		/* No handling for other events */
+		else {
+			throw new UnsupportedOperationException("Unsupported event encountered: " + event);
 		}
 	}
 
 	@Override
 	public void registerForAtomEvents(AtomManager manager) {
-		manager.registerAtomEventListener(predicate,
-				AtomEventSets.IntroducedReleasedInferenceAtom, this);
-
+		manager.registerAtomEventListener(
+				AtomEventSets.ConsideredUnconsideredGroundAtom, predicate, this);
 	}
 
 	@Override
 	public void unregisterForAtomEvents(AtomManager manager) {
-		manager.unregisterAtomEventListener(predicate,
-				AtomEventSets.IntroducedReleasedInferenceAtom, this);
-
+		manager.registerAtomEventListener(
+				AtomEventSets.ConsideredUnconsideredGroundAtom, predicate, this);
 	}
 
 	@Override

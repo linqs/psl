@@ -30,6 +30,12 @@ import edu.umd.cs.psl.model.parameters.Weight;
 import edu.umd.cs.psl.reasoner.function.FunctionSummand;
 import edu.umd.cs.psl.reasoner.function.FunctionTerm;
 
+/**
+ * {@link GroundCompatibilityKernel} which assigns an incompatibility to a
+ * ground {@link Atom} equal to that Atom's truth value.
+ * 
+ * @see BiasKernel
+ */
 public class GroundBias implements GroundCompatibilityKernel {
 
 	private final BiasKernel kernel;
