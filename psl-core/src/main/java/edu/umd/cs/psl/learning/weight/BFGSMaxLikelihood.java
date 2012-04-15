@@ -17,11 +17,11 @@ import edu.umd.cs.psl.optimizer.lbfgs.LBFGSB;
 import edu.umd.cs.psl.sampler.DerivativeSampler;
 import edu.umd.cs.psl.sampler.PartitionEstimationSampler;
 
-public class BFGSMaxLikelihoodWeightLearning extends AbstractMaxLikelihoodWeightLearning implements ConvexFunc {
+public class BFGSMaxLikelihood extends AbstractMaxLikelihood implements ConvexFunc {
 
-	private static final Logger log = LoggerFactory.getLogger(BFGSMaxLikelihoodWeightLearning.class);
+	private static final Logger log = LoggerFactory.getLogger(BFGSMaxLikelihood.class);
 
-	public BFGSMaxLikelihoodWeightLearning(Model m, Database givenData,
+	public BFGSMaxLikelihood(Model m, Database givenData,
 			Database groundTruth, ConfigBundle config)
 			throws ClassNotFoundException, IllegalAccessException,
 			InstantiationException {

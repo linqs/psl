@@ -44,16 +44,16 @@ import edu.umd.cs.psl.sampler.PartitionEstimationSampler;
  * 
  * Subclasses should use a particular optimization method to search for weights.
  */
-abstract public class AbstractMaxLikelihoodWeightLearning implements WeightLearning {
+abstract public class AbstractMaxLikelihood implements WeightLearning {
 
-	private static final Logger log = LoggerFactory.getLogger(AbstractMaxLikelihoodWeightLearning.class);
+	private static final Logger log = LoggerFactory.getLogger(AbstractMaxLikelihood.class);
 	
 	/**
 	 * Prefix of property keys used by this class.
 	 * 
 	 * @see ConfigManager
 	 */
-	public static final String CONFIG_PREFIX = "maxlikelihoodweightlearner";
+	public static final String CONFIG_PREFIX = "maxlikelihood";
 	
 	/**
 	 * Key for nonnegative integer property. Its value is an upper bound on
@@ -82,7 +82,7 @@ abstract public class AbstractMaxLikelihoodWeightLearning implements WeightLearn
 	protected final double convThresh;
 	protected final DistributionType distribution;
 	
-	public AbstractMaxLikelihoodWeightLearning(Model m, Database givenData, Database groundTruth, ConfigBundle config)
+	public AbstractMaxLikelihood(Model m, Database givenData, Database groundTruth, ConfigBundle config)
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		model = m;
 		this.givenData = new MaintainedMemoryFullInference(model, givenData, config);

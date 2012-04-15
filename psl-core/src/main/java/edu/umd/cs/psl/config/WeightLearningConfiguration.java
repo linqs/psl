@@ -28,20 +28,20 @@ public class WeightLearningConfiguration extends PSLCoreConfiguration {
 	};
 		
 	private static final String configInitialParameter = "initialweight";
-	private static final double defaultInitialParameter = 0.0;
+	private static final double defaultInitialParameter = 10.0;
 	
 	private static final String configLearningType = "learningtype";
 	private static final String defaultLearningType = "perceptron";
 
 	private static final String configParameterPrior = "prior";
-	private static final double defaultParameterPrior = 1.0;
+	private static final double defaultParameterPrior = 0.0;
 	private static final String configMaxOptIterations = "maxiterations";
 	private static final int defaultMaxOptIterations = 100;
 	private static final String configPointMoveConvergenceThres = "movepointthreshold";
 	private static final double defaultPointMoveConvergenceThres = -1.0;
 
 	private static final String configPerceptronIterations = "perceptroniterations";
-	private static final int defaultPerceptronIterations = 3;
+	private static final int defaultPerceptronIterations = 10;
 	private static final String configUpdateFactor = "updatefactor";
 	private static final double defaultUpdateFactor = 1.0;
 
