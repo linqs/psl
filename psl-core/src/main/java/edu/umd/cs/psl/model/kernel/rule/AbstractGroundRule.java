@@ -33,8 +33,6 @@ import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.reasoner.function.ConstantNumber;
 import edu.umd.cs.psl.reasoner.function.FunctionSum;
 import edu.umd.cs.psl.reasoner.function.FunctionSummand;
-import edu.umd.cs.psl.reasoner.function.FunctionTerm;
-import edu.umd.cs.psl.reasoner.function.MaxFunction;
 
 /**
  * Currently, we assume that the body of the rule is a conjunction and the head of the rule is
@@ -49,14 +47,15 @@ abstract public class AbstractGroundRule implements GroundKernel {
 	public static final Tnorm tnorm = Tnorm.LUKASIEWICZ;
 	public static final FormulaEvaluator formulaNorm =FormulaEvaluator.LUKASIEWICZ;
 	
-	protected AbstractRuleKernel kernel;
+	protected final AbstractRuleKernel kernel;
 	protected final Conjunction formula;
 	
 	protected int numGroundings;
 
 	private final int hashcode;
 	
-	public AbstractGroundRule(Formula f) {
+	public AbstractGroundRule(AbstractRuleKernel k, Formula f) {
+		kernel = k;
 		formula = ((Conjunction) f).flatten();
 		numGroundings=1;
 		
@@ -81,7 +80,7 @@ abstract public class AbstractGroundRule implements GroundKernel {
 		return true;
 	}
 	
-	protected FunctionTerm getFunction(double multiplier) {
+	protected FunctionSum getFunction(double multiplier) {
 		Formula f;
 		Atom a;
 		double constant = 0.0;
@@ -106,7 +105,7 @@ abstract public class AbstractGroundRule implements GroundKernel {
 		
 		sum.add(new FunctionSummand(multiplier, new ConstantNumber(1.0 - constant)));
 		
-		return MaxFunction.of(sum,new ConstantNumber(0.0));
+		return sum;
 	}
 	
 	@Override
@@ -120,7 +119,7 @@ abstract public class AbstractGroundRule implements GroundKernel {
 	}
 	
 	public double getTruthValue() {
-		return 1 - getFunction(1.0).getValue();
+		return 1 - Math.max(getFunction(1.0).getValue(), 0);
 	}
 	
 	@Override

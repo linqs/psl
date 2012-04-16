@@ -110,4 +110,112 @@ public class DualizerTest {
 		program.checkOutMatrices();
 		dualizer.checkInProgram();
 	}
+	
+	/**
+	 * Tests that the dualizer can correctly handle deleting a slack variable if
+	 * the corresponding linear constraint has already been deleted.
+	 * 
+	 * Creates a conic program with an inequality constraint, checks out the
+	 * dual program, checks it back in, then deletes first the constraint and
+	 * second the slack variable.
+	 */
+	@Test
+	public void testDeleteConstraintThenSlackVariable() {
+		Variable x1 = program.createNonNegativeOrthantCone().getVariable();
+		Variable x2 = program.createNonNegativeOrthantCone().getVariable();
+		Variable x3 = program.createNonNegativeOrthantCone().getVariable();
+
+		LinearConstraint con1 = program.createConstraint();
+		LinearConstraint con2 = program.createConstraint();
+		
+		con1.setConstrainedValue(2.0);
+		con1.setVariable(x1, 1.0);
+		con1.setVariable(x2, 1.0);
+		con1.setVariable(x3, 1.0);
+		
+		con2.setConstrainedValue(1.0);
+		con2.setVariable(x1, 1.0);
+		con2.setVariable(x2, 1.0);
+		
+		program.checkOutMatrices();
+		dualizer.checkOutProgram();
+		dualizer.checkInProgram();
+		program.checkInMatrices();
+		
+		con1.delete();
+		x3.getCone().delete();
+		
+		program.checkOutMatrices();
+		dualizer.checkOutProgram();
+		dualizer.checkInProgram();
+		program.checkInMatrices();
+	}
+	
+	/**
+	 * Tests deleting an equality constraint, i.e., without a slack variable.
+	 */
+	@Test
+	public void testDeleteEqualityConstaint() {
+		Variable x1 = program.createNonNegativeOrthantCone().getVariable();
+		Variable x2 = program.createNonNegativeOrthantCone().getVariable();
+		Variable x3 = program.createNonNegativeOrthantCone().getVariable();
+
+		LinearConstraint con1 = program.createConstraint();
+		LinearConstraint con2 = program.createConstraint();
+		
+		con1.setConstrainedValue(2.0);
+		con1.setVariable(x1, 1.0);
+		con1.setVariable(x2, 1.0);
+		con1.setVariable(x3, 1.0);
+		
+		con2.setConstrainedValue(1.0);
+		con2.setVariable(x1, 1.0);
+		con2.setVariable(x2, 1.0);
+		
+		program.checkOutMatrices();
+		dualizer.checkOutProgram();
+		dualizer.checkInProgram();
+		program.checkInMatrices();
+		
+		con2.delete();
+		
+		program.checkOutMatrices();
+		dualizer.checkOutProgram();
+		dualizer.checkInProgram();
+		program.checkInMatrices();
+	}
+	
+	/**
+	 * Tests deleting a regular, i.e., non-slack, variable.
+	 */
+	@Test
+	public void testDeleteRegularVariable() {
+		Variable x1 = program.createNonNegativeOrthantCone().getVariable();
+		Variable x2 = program.createNonNegativeOrthantCone().getVariable();
+		Variable x3 = program.createNonNegativeOrthantCone().getVariable();
+
+		LinearConstraint con1 = program.createConstraint();
+		LinearConstraint con2 = program.createConstraint();
+		
+		con1.setConstrainedValue(2.0);
+		con1.setVariable(x1, 1.0);
+		con1.setVariable(x2, 1.0);
+		con1.setVariable(x3, 1.0);
+		
+		con2.setConstrainedValue(1.0);
+		con2.setVariable(x1, 1.0);
+		con2.setVariable(x2, 1.0);
+		
+		program.checkOutMatrices();
+		dualizer.checkOutProgram();
+		dualizer.checkInProgram();
+		program.checkInMatrices();
+		
+		x1.getCone().delete();
+		
+		program.checkOutMatrices();
+		dualizer.checkOutProgram();
+		dualizer.checkInProgram();
+		program.checkInMatrices();
+	}
 }

@@ -21,5 +21,5 @@ public enum ConicProgramEvent {
 	NNOCCreated, NNOCDeleted,
 	SOCCreated, SOCDeleted,
 	ObjCoeffChanged,
-	ConCreated, VarAddedToCon, ConCoeffChanged, VarRemovedFromCon, ConValueChanged, ConDeleted 
+	ConCreated, VarAddedToCon, ConCoeffChanged, VarRemovedFromCon, ConValueChanged, ConDeleted
 }

@@ -25,7 +25,7 @@ import edu.umd.cs.psl.evaluation.process.ProcessView;
 import edu.umd.cs.psl.evaluation.result.FullConfidenceAnalysisResult;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
-import edu.umd.cs.psl.sampler.LinearSamplerStatistics;
+import edu.umd.cs.psl.sampler.HitAndRunSamplerStatistics;
 
 public class UIFullConfidenceAnalysisResult implements FullConfidenceAnalysisResult {
 	
@@ -71,7 +71,7 @@ public class UIFullConfidenceAnalysisResult implements FullConfidenceAnalysisRes
 	}
 	
 	public String printLinearSamplingStatistics() {
-		return LinearSamplerStatistics.print(result.getProcess());
+		return HitAndRunSamplerStatistics.print(result.getProcess());
 	}
 	
 	public String toString(Predicate p, double meanThreshold) {

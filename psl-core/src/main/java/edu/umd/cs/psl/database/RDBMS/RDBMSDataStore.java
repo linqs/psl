@@ -143,8 +143,8 @@ public class RDBMSDataStore implements DataStore {
 			boolean close = toclose.contains(predinfo.predicate);
 			db.registerPredicate(getPredicateHandle(predinfo,close));
 		}
-		if (writePartitionIDs.contains(writeID)) throw new IllegalArgumentException("The specified write partition ID is already used by another database!");
-		if (openDatabases.containsKey(writeID)) throw new IllegalArgumentException("The specified write partition ID is also a read partition!");
+		if (writePartitionIDs.contains(writeID)) throw new IllegalArgumentException("The specified write partition ID is already used by another database: " + writeID);
+		if (openDatabases.containsKey(writeID)) throw new IllegalArgumentException("The specified write partition ID is also a read partition: " + writeID);
 		for (Partition partID : partitionIDs) {
 			assert !openDatabases.containsEntry(partID, db);
 			openDatabases.put(partID, db);

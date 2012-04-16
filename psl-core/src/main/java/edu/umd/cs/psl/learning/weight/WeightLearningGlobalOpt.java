@@ -37,6 +37,7 @@ import edu.umd.cs.psl.model.kernel.Kernel;
 import de.mathnbits.util.ArrayUtil;
 import edu.umd.cs.psl.model.kernel.priorweight.PriorWeightKernel;
 import edu.umd.cs.psl.model.kernel.rule.AbstractRuleKernel;
+import edu.umd.cs.psl.model.kernel.rule.CompatibilityRuleKernel;
 
 
 public class WeightLearningGlobalOpt implements FunctionEvaluation, WeightLearning, ConvexFunc {
@@ -168,7 +169,7 @@ public class WeightLearningGlobalOpt implements FunctionEvaluation, WeightLearni
     int[]     iter   = {0};       //store number of iterations taken by L-BFGS-B
     boolean[] error  = {false};   //indicate whether L-BFGS-B encountered an error
     double[]  params = new double[numParams+1]; //parameters (e.g., wts of formulas) found by L-BFGS-B
-    double[]  paras  = parameters.getAllParameters();
+    double[]  paras  = parameters.getAllParameterValues();
 
     means = new double[numParams+1];
 
@@ -186,7 +187,7 @@ public class WeightLearningGlobalOpt implements FunctionEvaluation, WeightLearni
         means[ii+1]  = configuration.getUnitRuleMean();
         log.debug("initParam+rule: " + params[ii+1] + "  " + et.toString());
       }
-      else if (et instanceof AbstractRuleKernel) 
+      else if (et instanceof CompatibilityRuleKernel) 
       {
         params[ii+1] = configuration.getRuleMean();
         means[ii+1]  = configuration.getRuleMean();
@@ -430,7 +431,7 @@ public class WeightLearningGlobalOpt implements FunctionEvaluation, WeightLearni
 	
 	public void learnPerceptron() {
 		initialize();
-		double[] paras = parameters.getAllParameters();
+		double[] paras = parameters.getAllParameterValues();
 		double prior = configuration.getParameterPrior();
 		double[][] weights = new double[configuration.getPerceptronIterations()+1][paras.length];
 		for (int i=0;i<paras.length;i++) weights[0][i]=paras[i];
@@ -441,7 +442,7 @@ public class WeightLearningGlobalOpt implements FunctionEvaluation, WeightLearni
 			parameters.setAllParameters(currentWeights);
 			
 			//Evalute for ground truth with current weights
-			groundTruth.runInference();
+			//groundTruth.runInference();
 			double[] gradientTruth = new double[parameters.getNumParameters()];
 			double fctValueTruth = evaluateApp(groundTruth,gradientTruth,null);
 			log.debug("Gradient Truth {}",Arrays.toString(gradientTruth));

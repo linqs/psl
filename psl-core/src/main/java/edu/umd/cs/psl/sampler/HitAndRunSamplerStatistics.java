@@ -22,7 +22,7 @@ import org.apache.commons.lang.builder.ToStringStyle;
 import edu.umd.cs.psl.evaluation.process.ProcessView;
 import edu.umd.cs.psl.evaluation.process.RunningProcess;
 
-public class LinearSamplerStatistics {
+public class HitAndRunSamplerStatistics {
 
 	public static final String descriptionKey = "description";
 	public static final String setupTimeKey = "setupTime";
@@ -42,7 +42,7 @@ public class LinearSamplerStatistics {
 	
 	private final RunningProcess process;
 	
-	LinearSamplerStatistics(LinearSampler s, RunningProcess proc) {
+	HitAndRunSamplerStatistics(AbstractHitAndRunSampler s, RunningProcess proc) {
 		process=proc;
 		proc.setString(descriptionKey, ToStringBuilder.reflectionToString(s,ToStringStyle.MULTI_LINE_STYLE));
 		proc.setLong(timeInCornersKey, 0);

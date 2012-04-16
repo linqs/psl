@@ -106,7 +106,7 @@ public class LinearConstraint extends Entity {
 		for (Variable var : originalVars) {
 			setVariable(var, 0.0);
 		}
-		program.notify(ConicProgramEvent.ConDeleted, this);
+		program.notify(ConicProgramEvent.ConDeleted, this, Collections.unmodifiableSet(originalVars));
 		vars = null;
 	}
 }

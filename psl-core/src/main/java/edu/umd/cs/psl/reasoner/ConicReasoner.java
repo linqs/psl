@@ -288,61 +288,87 @@ public class ConicReasoner implements Reasoner, AtomEventObserver {
 		protected Variable squaredFeatureVar, innerFeatureVar, innerSquaredVar, outerSquaredVar;
 		protected LinearConstraint innerFeatureCon, innerSquaredCon, outerSquaredCon;
 		protected Vector<ConstraintConicProgramProxy> constraints;
+		protected boolean initialized = false;
 		
 		FunctionConicProgramProxy(GroundCompatibilityKernel gk) {
-			FunctionTerm fun = gk.getFunctionDefinition();
-			constraints = new Vector<ConstraintConicProgramProxy>(1);
-			
-			switch (type) {
-			case linear:
-				featureVar = program.createNonNegativeOrthantCone().getVariable();
-				featureVar.setObjectiveCoefficient(gk.getWeight().getWeight());
-				break;
-			case quadratic:
-				featureVar = program.createNonNegativeOrthantCone().getVariable();
-				featureVar.setObjectiveCoefficient(0.0);
-				squaredFeatureVar = program.createNonNegativeOrthantCone().getVariable();
-				squaredFeatureVar.setObjectiveCoefficient(gk.getWeight().getWeight());
-				SecondOrderCone soc = program.createSecondOrderCone(3);
-				outerSquaredVar = soc.getNthVariable();
-				for (Variable v : soc.getVariables()) {
-					if (!v.equals(outerSquaredVar))
-						if (innerFeatureVar == null)
-							innerFeatureVar = v;
-						else
-							innerSquaredVar = v;
+			if (gk.getWeight().getWeight() != 0.0) {
+				initialize();
+				addFunctionTerm(gk.getFunctionDefinition());
+				setWeight(gk.getWeight().getWeight());
+			}
+		}
+		
+		protected void initialize() {
+			if (!initialized) {
+				constraints = new Vector<ConstraintConicProgramProxy>(1);
+				
+				switch (type) {
+				case linear:
+					featureVar = program.createNonNegativeOrthantCone().getVariable();
+					break;
+				case quadratic:
+					featureVar = program.createNonNegativeOrthantCone().getVariable();
+					featureVar.setObjectiveCoefficient(0.0);
+					squaredFeatureVar = program.createNonNegativeOrthantCone().getVariable();
+					SecondOrderCone soc = program.createSecondOrderCone(3);
+					outerSquaredVar = soc.getNthVariable();
+					for (Variable v : soc.getVariables()) {
+						if (!v.equals(outerSquaredVar))
+							if (innerFeatureVar == null)
+								innerFeatureVar = v;
+							else
+								innerSquaredVar = v;
+					}
+					
+					innerFeatureCon = program.createConstraint();
+					innerFeatureCon.setVariable(featureVar, 1.0);
+					innerFeatureCon.setVariable(innerFeatureVar, -1.0);
+					innerFeatureCon.setConstrainedValue(0.0);
+					
+					innerSquaredCon = program.createConstraint();
+					innerSquaredCon.setVariable(innerSquaredVar, 1.0);
+					innerSquaredCon.setVariable(squaredFeatureVar, 0.5);
+					innerSquaredCon.setConstrainedValue(0.5);
+					
+					outerSquaredCon = program.createConstraint();
+					outerSquaredCon.setVariable(outerSquaredVar, 1.0);
+					outerSquaredCon.setVariable(squaredFeatureVar, -0.5);
+					outerSquaredCon.setConstrainedValue(0.5);
+					break;
 				}
 				
-				innerFeatureCon = program.createConstraint();
-				innerFeatureCon.setVariable(featureVar, 1.0);
-				innerFeatureCon.setVariable(innerFeatureVar, -1.0);
-				innerFeatureCon.setConstrainedValue(0.0);
-				
-				innerSquaredCon = program.createConstraint();
-				innerSquaredCon.setVariable(innerSquaredVar, 1.0);
-				innerSquaredCon.setVariable(squaredFeatureVar, 0.5);
-				innerSquaredCon.setConstrainedValue(0.5);
-				
-				outerSquaredCon = program.createConstraint();
-				outerSquaredCon.setVariable(outerSquaredVar, 1.0);
-				outerSquaredCon.setVariable(squaredFeatureVar, -0.5);
-				outerSquaredCon.setConstrainedValue(0.5);
-				break;
+				initialized = true;
 			}
-			
-			addFunctionTerm(fun);
+			else {
+				throw new IllegalStateException("ConicProgramProxy has already been initialized.");
+			}
+		}
+		
+		protected void setWeight(double weight) {
+			switch (type) {
+			case linear:
+				featureVar.setObjectiveCoefficient(weight);
+				break;
+			case quadratic:
+				squaredFeatureVar.setObjectiveCoefficient(weight);
+			}
 		}
 		
 		void updateGroundKernel(GroundCompatibilityKernel gk) {
-			deleteConstraints();
-			addFunctionTerm(gk.getFunctionDefinition());
-			switch (type) {
-			case linear:
-				featureVar.setObjectiveCoefficient(gk.getWeight().getWeight());
-				break;
-			case quadratic:
-				squaredFeatureVar.setObjectiveCoefficient(gk.getWeight().getWeight());
-				break;
+			if (gk.getWeight().getWeight() == 0) {
+				if (initialized) {
+					remove();
+				}
+			}
+			else {
+				if (!initialized) {
+					initialize();
+				}
+				else {
+					deleteConstraints();
+				}
+				addFunctionTerm(gk.getFunctionDefinition());
+				setWeight(gk.getWeight().getWeight());
 			}
 		}
 		
@@ -379,20 +405,31 @@ public class ConicReasoner implements Reasoner, AtomEventObserver {
 
 		@Override
 		void remove() {
-			deleteConstraints();
-			switch (type) {
-			case linear:
-				featureVar.getCone().delete();
-				break;
-			case quadratic:
-				innerFeatureCon.delete();
-				innerSquaredCon.delete();
-				outerSquaredCon.delete();
-				featureVar.getCone().delete();
-				squaredFeatureVar.getCone().delete();
-				outerSquaredVar.getCone().delete();
-			default:
-				throw new IllegalArgumentException("Unsupported distance norm.");
+			if (initialized) {
+				deleteConstraints();
+				switch (type) {
+				case linear:
+					featureVar.getCone().delete();
+					featureVar = null;
+					break;
+				case quadratic:
+					innerFeatureCon.delete();
+					innerFeatureCon = null;
+					innerSquaredCon.delete();
+					innerSquaredCon = null;
+					outerSquaredCon.delete();
+					outerSquaredCon = null;
+					featureVar.getCone().delete();
+					featureVar = null;
+					squaredFeatureVar.getCone().delete();
+					squaredFeatureVar = null;
+					outerSquaredVar.getCone().delete();
+					outerSquaredVar = null;
+				default:
+					throw new IllegalArgumentException("Unsupported distance norm.");
+				}
+				
+				initialized = false;
 			}
 		}
 		

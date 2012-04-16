@@ -244,7 +244,11 @@ public class ConicProgram {
 	
 	public int index(Variable v) {
 		verifyCheckedOut();
-		return varMap.get(v);
+		try {
+			return varMap.get(v);
+		} catch(NullPointerException e) {
+			throw e;
+		}
 	}
 	
 	public int index(LinearConstraint lc) {
