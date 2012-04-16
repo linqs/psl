@@ -14,18 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.util.graph;
+package edu.umd.cs.psl.util.graph.partition;
 
-import java.util.Set;
+import edu.umd.cs.psl.config.ConfigBundle;
+import edu.umd.cs.psl.config.Factory;
 
-public interface Graph {
-	public Node createNode();
-	
-	public void createPropertyType(String name, Class<?> type);
-	
-	public void createRelationshipType(String name);
-	
-	public Iterable<? extends Node> getNodeSnapshot();
-	
-	public Set<Node> getNodeSnapshotByAttribute(String propertyType, Object attribute);
+public interface PartitionerFactory extends Factory {
+	public Partitioner getPartitioner(ConfigBundle config);
 }

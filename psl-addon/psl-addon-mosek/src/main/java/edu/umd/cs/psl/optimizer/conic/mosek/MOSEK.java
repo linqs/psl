@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.impl.SparseDoubleMatrix2D;
 import edu.umd.cs.psl.config.ConfigBundle;
+import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.optimizer.conic.ConicProgramSolver;
 import edu.umd.cs.psl.optimizer.conic.program.ConeType;
 import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
@@ -42,7 +43,35 @@ public class MOSEK implements ConicProgramSolver {
 	
 	private static final Logger log = LoggerFactory.getLogger(MOSEK.class);
 	
+	/**
+	 * Prefix of property keys used by this class.
+	 * 
+	 * @see ConfigManager
+	 */
+	public static final String CONFIG_PREFIX = "mosek";
+	
+	/**
+	 * Key for double property. The IPM will iterate until the relative duality gap
+	 * is less than its value. Corresponds to the mosek.Env.dparam.intpnt_tol_rel_gap parameter.
+	 */
+	public static final String DUALITY_GAP_THRESHOLD_KEY = CONFIG_PREFIX + ".dualitygapthreshold";
+	/** Default value for DUALITY_GAP_THRESHOLD_KEY property. */
+	public static final double DUALITY_GAP_THRESHOLD_DEFAULT = 1.0e-8;
+	
+	/**
+	 * Key for integer property. Controls the number of threads employed by the
+	 * interior-point optimizer. If set to a positive number MOSEK will use this
+	 * number of threads. If set to zero, the number of threads used will equal
+	 * the number of cores detected on the machine. Corresponds to the
+	 * mosek.Env.iparam.intpnt_num_threads parameter.
+	 */
+	public static final String NUM_THREADS_KEY = CONFIG_PREFIX + ".numthreads";
+	/** Default value for DUALITY_GAP_THRESHOLD_KEY property. */
+	public static final int NUM_THREADS_DEFAULT = 1;
+	
 	private ConicProgram program;
+	private double dualityGap;
+	private int numThreads;
 	
 	private static final ArrayList<ConeType> supportedCones = new ArrayList<ConeType>(2);
 	static {
@@ -57,6 +86,8 @@ public class MOSEK implements ConicProgramSolver {
 		environment.init();
 		
 		program = null;
+		dualityGap = config.getDouble(DUALITY_GAP_THRESHOLD_KEY, DUALITY_GAP_THRESHOLD_DEFAULT);
+		numThreads = config.getInt(NUM_THREADS_KEY, NUM_THREADS_DEFAULT);
 	}
 
 	@Override
@@ -86,6 +117,8 @@ public class MOSEK implements ConicProgramSolver {
 			task.putcfix(0.0);
 			MsgClass msgobj = new MsgClass();
 			task.set_Stream(mosek.Env.streamtype.log, msgobj);
+			task.putdouparam(mosek.Env.dparam.intpnt_tol_rel_gap, dualityGap);
+			task.putintparam(mosek.Env.iparam.intpnt_num_threads, numThreads);
 			
 			/* Creates the variables and sets the objective coefficients */
 			task.append(mosek.Env.accmode.var, (int) x.size());
@@ -95,7 +128,7 @@ public class MOSEK implements ConicProgramSolver {
 			
 			/* Processes NonNegativeOrthantCones */
 			for (NonNegativeOrthantCone cone : program.getNonNegativeOrthantCones()) {
-				int index = program.index(cone.getVariable());
+				int index = program.getIndex(cone.getVariable());
 				task.putbound(Env.accmode.var, index, Env.boundkey.lo, 0.0, Double.POSITIVE_INFINITY);
 			}
 			
@@ -104,7 +137,7 @@ public class MOSEK implements ConicProgramSolver {
 				int[] indices = new int[cone.getN()];
 				int i = 1;
 				for (Variable v : cone.getVariables()) {
-					int index = program.index(v);
+					int index = program.getIndex(v);
 					if (v.equals(cone.getNthVariable())) {
 						indices[0] = index;
 						task.putbound(Env.accmode.var, index, Env.boundkey.lo, 0.0, Double.POSITIVE_INFINITY);
@@ -126,13 +159,13 @@ public class MOSEK implements ConicProgramSolver {
 			int[] indexList;
 			double[] valueList;
 			for (LinearConstraint con : constraints) {
-				constraintIndex = program.index(con);
+				constraintIndex = program.getIndex(con);
 				variables = con.getVariables();
 				indexList = new int[variables.size()];
 				valueList = new double[variables.size()];
 				listIndex = 0;
 				for (Map.Entry<Variable, Double> e : variables.entrySet()) { 
-					indexList[listIndex] = program.index(e.getKey());
+					indexList[listIndex] = program.getIndex(e.getKey());
 					valueList[listIndex++] = e.getValue();
 				}
 				task.putavec(mosek.Env.accmode.con, constraintIndex, indexList, valueList);

@@ -83,7 +83,7 @@ abstract public class ConicProgramSolverContractTest {
 					solutionMatrix = new DenseDoubleMatrix1D((int) program.getX().size());
 					
 					for (Map.Entry<Variable, Double> e : solution.entrySet()) {
-						solutionMatrix.set(program.index(e.getKey()), e.getValue());
+						solutionMatrix.set(program.getIndex(e.getKey()), e.getValue());
 					}
 					assertTrue(alg.norm2(solutionMatrix.assign(program.getX(), DoubleFunctions.minus)) < SOLUTION_TOLERANCE);
 					program.checkInMatrices();
@@ -191,7 +191,7 @@ abstract public class ConicProgramSolverContractTest {
 			solutionMatrix = new DenseDoubleMatrix1D((int) program.getX().size());
 			
 			for (Map.Entry<Variable, Double> e : solution.entrySet()) {
-				solutionMatrix.set(program.index(e.getKey()), e.getValue());
+				solutionMatrix.set(program.getIndex(e.getKey()), e.getValue());
 			}
 			assertTrue(alg.norm2(solutionMatrix.assign(program.getX(), DoubleFunctions.minus)) < SOLUTION_TOLERANCE);
 			program.checkInMatrices();

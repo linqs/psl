@@ -86,7 +86,7 @@ public class RotatedSecondOrderCone extends Cone {
 		gSel.set(i, gSel.get(i) * -1);
 	}
 	
-	void setBarrierHessian(Map<Variable, Integer> varMap, DoubleMatrix1D x, DoubleMatrix2D H) {
+	public void setBarrierHessian(Map<Variable, Integer> varMap, DoubleMatrix1D x, DoubleMatrix2D H) {
 		DenseDoubleAlgebra alg = new DenseDoubleAlgebra();
 		Set<Variable> vars = getVariables();
 		int[] indices = new int[vars.size()];
@@ -126,14 +126,7 @@ public class RotatedSecondOrderCone extends Cone {
 		for (int j = 0; j < i; j++)
 			HSel.set(j, j, HSel.get(j, j) + coeff);
 		HSel.set(i, i, HSel.get(i,i) - coeff);
-		try{
 		HSel.assign(alg.inverse(HSel));
-		}
-		catch (IllegalArgumentException e) {
-			System.out.println(x.viewSelection(indices));
-		System.out.println(alg.toVerboseString(HSel));
-		throw e;
-		}
 	}
 
 	@Override

@@ -14,18 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.util.graph;
+package edu.umd.cs.psl.optimizer.conic.partition;
 
-import java.util.Set;
+import java.util.Collection;
 
-public interface Graph {
-	public Node createNode();
+import edu.umd.cs.psl.optimizer.conic.program.ConeType;
+import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
+
+public interface CompletePartitioner {
 	
-	public void createPropertyType(String name, Class<?> type);
+	public void setConicProgram(ConicProgram p);
+
+	public void partition();
 	
-	public void createRelationshipType(String name);
+	public ConicProgramPartition getPartition(int i);
 	
-	public Iterable<? extends Node> getNodeSnapshot();
+	public int size();
 	
-	public Set<Node> getNodeSnapshotByAttribute(String propertyType, Object attribute);
+	public void checkOutAllMatrices();
+	
+	public void checkInAllMatrices();
+	
+	public boolean supportsConeTypes(Collection<ConeType> types);
 }

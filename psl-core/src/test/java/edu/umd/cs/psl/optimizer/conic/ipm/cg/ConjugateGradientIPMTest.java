@@ -14,18 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.util.graph;
+package edu.umd.cs.psl.optimizer.conic.ipm.cg;
 
-import java.util.Set;
+import java.util.List;
+import java.util.Vector;
 
-public interface Graph {
-	public Node createNode();
-	
-	public void createPropertyType(String name, Class<?> type);
-	
-	public void createRelationshipType(String name);
-	
-	public Iterable<? extends Node> getNodeSnapshot();
-	
-	public Set<Node> getNodeSnapshotByAttribute(String propertyType, Object attribute);
+import edu.umd.cs.psl.config.EmptyBundle;
+import edu.umd.cs.psl.optimizer.conic.ConicProgramSolver;
+import edu.umd.cs.psl.optimizer.conic.ConicProgramSolverContractTest;
+
+public class ConjugateGradientIPMTest extends ConicProgramSolverContractTest {
+
+	@Override
+	protected List<? extends ConicProgramSolver> getConicProgramSolverImplementations() {
+		Vector<ConjugateGradientIPM> solvers = new Vector<ConjugateGradientIPM>(1);
+		solvers.add(new ConjugateGradientIPM(new EmptyBundle()));
+		return solvers;
+	}
+
 }

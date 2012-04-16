@@ -268,7 +268,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		
 		/* Processes NNOCs */
 		for (NonNegativeOrthantCone cone : program.getNonNegativeOrthantCones()) {
-			int index = program.index(cone.getVariable());
+			int index = program.getIndex(cone.getVariable());
 			vars.d.setQuick(index, 1.0);
 			vars.detD.setQuick(index, 1.0);
 			vars.v.setQuick(index, 1.0);
@@ -373,7 +373,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		
 		/* Processes NNOCs */
 		for (NonNegativeOrthantCone cone : program.getNonNegativeOrthantCones()) {
-			int index = program.index(cone.getVariable());
+			int index = program.getIndex(cone.getVariable());
 			vars.v.setQuick(index, Math.sqrt(x.getQuick(index) * s.getQuick(index)));
 		}
 		
@@ -389,9 +389,9 @@ public class HomogeneousIPM implements ConicProgramSolver {
 			int selectionIndex = 1;
 			for (Variable var : coneVars) {
 				if (nthVariable.equals(var))
-					selection[0] = program.index(var);
+					selection[0] = program.getIndex(var);
 				else
-					selection[selectionIndex++] = program.index(var);
+					selection[selectionIndex++] = program.getIndex(var);
 			}
 			
 			/* Selects the variables */
@@ -464,23 +464,23 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		SparseDoubleMatrix2D A = program.getA();
 		int size = A.columns();
 		
-		pm.k  = program.numCones();
+		pm.k  = program.getNumCones();
 		pm.e  = new DenseDoubleMatrix1D(size);
 		pm.T  = new SparseDoubleMatrix2D(size, size, size*4, 0.2, 0.5);
 		
 		for (NonNegativeOrthantCone cone : program.getNonNegativeOrthantCones()) {
-			int i = program.index(cone.getVariable());
+			int i = program.getIndex(cone.getVariable());
 			pm.e.setQuick(i, 1.0);
 			pm.T.setQuick(i, i, 1.0);
 		}
 		
 		for (SecondOrderCone cone : program.getSecondOrderCones()) {
 			for (Variable var : cone.getVariables()) {
-				int i = program.index(var);
+				int i = program.getIndex(var);
 				pm.e.setQuick(i, 0);
 				pm.T.setQuick(i, i, 1.0);
 			}
-			int i = program.index(cone.getNthVariable());
+			int i = program.getIndex(cone.getNthVariable());
 			pm.e.setQuick(i, 1.0);
 		}
 		
@@ -510,7 +510,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		
 		/* Processes NNOCs */
 		for (NonNegativeOrthantCone cone : program.getNonNegativeOrthantCones()) {
-			int index = program.index(cone.getVariable());
+			int index = program.getIndex(cone.getVariable());
 			double thetaSq = s.getQuick(index) / x.getQuick(index);
 			double theta = Math.sqrt(thetaSq);
 			double invTheta = 1 / theta;
@@ -533,9 +533,9 @@ public class HomogeneousIPM implements ConicProgramSolver {
 			int selectionIndex = 1;
 			for (Variable var : coneVars) {
 				if (nthVariable.equals(var))
-					selection[0] = program.index(var);
+					selection[0] = program.getIndex(var);
 				else
-					selection[selectionIndex++] = program.index(var);
+					selection[selectionIndex++] = program.getIndex(var);
 			}
 			
 			/* Selects the variables */
@@ -711,7 +711,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 			DoubleMatrix2D Dsn = new SparseDoubleMatrix2D(size, size);
 			
 			for (NonNegativeOrthantCone cone : program.getNonNegativeOrthantCones()) {
-				int index = program.index(cone.getVariable());
+				int index = program.getIndex(cone.getVariable());
 				Dxn.setQuick(index, index, dxn.getQuick(index));
 				Dsn.setQuick(index, index, dsn.getQuick(index));
 			}
@@ -727,9 +727,9 @@ public class HomogeneousIPM implements ConicProgramSolver {
 				int selectionIndex = 1;
 				for (Variable var : coneVars) {
 					if (nthVariable.equals(var))
-						selection[0] = program.index(var);
+						selection[0] = program.getIndex(var);
 					else
-						selection[selectionIndex++] = program.index(var);
+						selection[selectionIndex++] = program.getIndex(var);
 				}
 				
 				/* Selects the variables */
@@ -844,7 +844,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		}
 		
 		for (NonNegativeOrthantCone cone : program.getNonNegativeOrthantCones()) {
-			int index = program.index(cone.getVariable());
+			int index = program.getIndex(cone.getVariable());
 			double vX1 = Math.pow(x.getQuick(index), 2);
 			double vX2 = 2 * sd.dx.getQuick(index) * x.getQuick(index);
 			double vX3 = Math.pow(sd.dx.getQuick(index), 2);
@@ -875,9 +875,9 @@ public class HomogeneousIPM implements ConicProgramSolver {
 			int selectionIndex = 1;
 			for (Variable var : coneVars) {
 				if (nthVariable.equals(var))
-					selection[0] = program.index(var);
+					selection[0] = program.getIndex(var);
 				else
-					selection[selectionIndex++] = program.index(var);
+					selection[selectionIndex++] = program.getIndex(var);
 			}
 			
 			/* Selects the variables */

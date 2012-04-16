@@ -51,7 +51,7 @@ public class DualizerTest {
 		con2.setConstrainedValue(1.0);
 		
 		program.checkOutMatrices();
-		program.getX().set(program.index(x1), 2.0);
+		program.getX().set(program.getIndex(x1), 2.0);
 		dualizer.checkOutProgram();
 		dualizer.getDualProgram().checkOutMatrices();
 		dualizer.getDualProgram().getW().set(0, 1.5);

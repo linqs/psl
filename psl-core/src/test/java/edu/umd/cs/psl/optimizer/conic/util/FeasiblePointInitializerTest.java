@@ -43,8 +43,8 @@ public class FeasiblePointInitializerTest {
 		initializer = new FeasiblePointInitializer(program);
 		program.checkOutMatrices();
 		initializer.makeFeasible();
-		assertEquals(0.0, program.primalInfeasibility(), SOLUTION_TOLERANCE);
-		assertEquals(0.0, program.dualInfeasibility(), SOLUTION_TOLERANCE);
+		assertEquals(0.0, program.getPrimalInfeasibility(), SOLUTION_TOLERANCE);
+		assertEquals(0.0, program.getDualInfeasibility(), SOLUTION_TOLERANCE);
 	}
 	
 	private ConicProgram getSOCP() {

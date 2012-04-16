@@ -32,6 +32,8 @@ public class MemoryGraph implements Graph {
 	
 	final private Map<String, Map<Object, Set<Node>>> index;
 	
+	final private Set<Node> nodes;
+	
 	final private BiMap<String, Integer> propertyTypes;
 	final private BiMap<String, Integer> relationshipTypes;
 	
@@ -41,6 +43,7 @@ public class MemoryGraph implements Graph {
 	
 	public MemoryGraph() {
 		index = new HashMap<String, Map<Object,Set<Node>>>();
+		nodes = new HashSet<Node>();
 		propertyTypes = HashBiMap.create();
 		relationshipTypes = HashBiMap.create();
 		propertyClasses = new HashMap<Integer, Class<?>>();
@@ -49,18 +52,21 @@ public class MemoryGraph implements Graph {
 
 	@Override
 	public Node createNode() {
-		return new MemoryNode(this);
+		Node node = new MemoryNode(this);
+		nodes.add(node);
+		return node;
 	}
 
 	@Override
 	public void createPropertyType(String name, Class<?> type) {
-		if (propertyTypes.get(name) == null) {
-			Integer uid = (int) getUID();
+		Integer uid = propertyTypes.get(name);
+		if (uid == null) {
+			uid = (int) getUID();
 			propertyTypes.put(name, uid);
 			propertyClasses.put(uid, type);
 		}
-		else
-			throw new IllegalArgumentException("Property type already exists.");
+		else if (!propertyClasses.get(uid).equals(type))
+			throw new IllegalArgumentException("Property type already exists with different data type: " + propertyClasses.get(uid));
 	}
 
 	@Override
@@ -69,12 +75,15 @@ public class MemoryGraph implements Graph {
 			Integer uid = (int) getUID();
 			relationshipTypes.put(name, uid);
 		}
-		else
-			throw new IllegalArgumentException("Relationship type already exists.");
 	}
 
 	@Override
-	public Set<Node> getNodesByAttribute(String propertyType, Object attribute) {
+	public Iterable<? extends Node> getNodeSnapshot() {
+		return new HashSet<Node>(nodes);
+	}
+
+	@Override
+	public Set<Node> getNodeSnapshotByAttribute(String propertyType, Object attribute) {
 		Integer pt = propertyTypes.get(propertyType);
 		if (pt != null) {
 			if (propertyClasses.get(pt).equals(attribute.getClass())) {
@@ -132,6 +141,10 @@ public class MemoryGraph implements Graph {
 	
 	Class<?> getPropertyClass(Integer pt) {
 		return propertyClasses.get(pt);
+	}
+	
+	void notifyNodeDeleted(MemoryNode n) {
+		nodes.remove(n);
 	}
 	
 	void notifyPropertyCreated(MemoryNode n, MemoryProperty p) {

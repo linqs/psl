@@ -14,18 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.util.graph;
+package edu.umd.cs.psl.util.graph.weight;
 
-import java.util.Set;
+import edu.umd.cs.psl.util.graph.Node;
 
-public interface Graph {
-	public Node createNode();
+public class PropertyNodeWeighter implements NodeWeighter {
 	
-	public void createPropertyType(String name, Class<?> type);
+	private String type;
 	
-	public void createRelationshipType(String name);
-	
-	public Iterable<? extends Node> getNodeSnapshot();
-	
-	public Set<Node> getNodeSnapshotByAttribute(String propertyType, Object attribute);
+	public PropertyNodeWeighter(String propertyType) {
+		type = propertyType;
+	}
+
+	@Override
+	public double getWeight(Node n) {
+		Double weight = n.getAttribute(type, Double.class);
+		if (weight != null)
+			return weight;
+		else
+			return Double.POSITIVE_INFINITY;
+	}
+
 }
