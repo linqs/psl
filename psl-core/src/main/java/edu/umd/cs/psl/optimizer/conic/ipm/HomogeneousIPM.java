@@ -345,10 +345,10 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		/* Computes affine scaling (Newton) direction */
 		HIPMResiduals        res        = getResiduals(program, pm, vars, im, 0.0, null);
 		HIPMSearchDirection  sd         = getSearchDirection(program, pm, vars, res, im);
-		HIPMSearchDirection  descaledSD = descaleSearchDirection(sd, im);
+		HIPMSearchDirection  descaledSD; /* Not needed until direction is corrected */
 		
 		/* Uses affine scaling direction to compute gamma */
-		double  alphaMax = getMaxStepSize(program, vars, descaledSD);
+		double  alphaMax = getMaxStepSize(program, vars, sd);
 		double  gamma    = Math.min(delta, Math.pow(1-alphaMax, 2)) * (1-alphaMax);
 		
 		/* Computes corrected direction */
@@ -357,7 +357,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		descaledSD  = descaleSearchDirection(sd, im);
 		
 		/* Gets step size */
-		        alphaMax = getMaxStepSize(program, vars, descaledSD);
+		        alphaMax = getMaxStepSize(program, vars, sd);
 		double  stepSize = getStepSize(program, vars, im, sd, alphaMax, beta, gamma);
 		
 		/* Updates variables */
@@ -416,6 +416,8 @@ public class HomogeneousIPM implements ConicProgramSolver {
 			double detSBarPlus = (Math.pow(sBarPlus.getQuick(0), 2) - sBarPlus.zDotProduct(sBarPlus, 1, nCone-1)) / 2;
 			double detVPlus = Math.sqrt(detXBarPlus * detSBarPlus);
 			double traceVPlus = Math.sqrt(xBarPlus.zDotProduct(sBarPlus) + 2 * detVPlus);
+			if (traceVPlus == 0.0)
+				throw new IllegalStateException(Double.toString((xBarPlus.zDotProduct(sBarPlus) + 2 * detVPlus)));
 			
 			DoubleMatrix1D chi = Q.zMult(sBarPlus, null);
 			chi.assign(DoubleFunctions.mult(detVPlus/detSBarPlus));
@@ -807,8 +809,8 @@ public class HomogeneousIPM implements ConicProgramSolver {
 			) {
 		double alphaMax = 1.0;
 		
-		DoubleMatrix1D x = program.getX();
-		DoubleMatrix1D s = program.getS();
+		DoubleMatrix1D x = vars.v;
+		DoubleMatrix1D s = vars.v;
 		
 		/* Checks distance to boundaries of cones */
 		for (Cone cone : program.getCones()) {
@@ -831,8 +833,8 @@ public class HomogeneousIPM implements ConicProgramSolver {
 			, HIPMVars vars, HIPMIntermediates im, HIPMSearchDirection sd
 			, double alphaMax, double beta, double gamma
 			) {
-		DoubleMatrix1D x = program.getX();
-		DoubleMatrix1D s = program.getS();
+		DoubleMatrix1D x = vars.v;
+		DoubleMatrix1D s = vars.v;
 		double stepSize = alphaMax;
 		double stepSizeDecrement = alphaMax / 50;
 		

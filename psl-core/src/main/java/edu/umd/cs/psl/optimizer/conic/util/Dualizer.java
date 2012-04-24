@@ -129,7 +129,8 @@ public class Dualizer implements ConicProgramListener {
 					}
 					
 					/*
-					 * Checks whether the linear constraint had a (primal) slack variable.
+					 * Checks whether the linear constraint had a (primal) slack variable
+					 * (marked as such in the current dualization).
 					 * If it did, marks the dual variable corresponding to the slack
 					 * variable for deletion and marks the slack variable as a new
 					 * variable
@@ -158,7 +159,11 @@ public class Dualizer implements ConicProgramListener {
 					if (dualVar != null) {
 						primalCon = primalVar.getLinearConstraints().iterator().next();
 						conesToDelete.add(primalConsToDualVars.get(primalCon).getCone());
+						primalConsToDualVars.remove(primalCon);
 						newConstraints.add(primalCon);
+						
+						primalVarsToDualVars.remove(primalVar);
+						conesToDelete.remove(dualVar);
 					}
 					/* Otherwise, marks the dual constraint and the lower bound on the Lagrange multiplier for deletion */
 					else {
@@ -250,8 +255,10 @@ public class Dualizer implements ConicProgramListener {
 				SOCVariablePair pair = new SOCVariablePair();
 				SecondOrderCone cone = dualProgram.createSecondOrderCone(2);
 				for (Variable v : cone.getVariables()) {
-					if (cone.getNthVariable().equals(v))
+					if (!cone.getNthVariable().equals(v)) {
 						pair.inner = v;
+						break;
+					}
 				}
 				pair.inner.setObjectiveCoefficient(con.getConstrainedValue());
 				varPairs.put(con, pair);
@@ -277,6 +284,9 @@ public class Dualizer implements ConicProgramListener {
 					dualVar.setObjectiveCoefficient(0.0);
 				}
 			}
+			else
+				throw new IllegalStateException("Unsupported cone type." +
+					"Only NonNegativeOrthantCone is supported.");
 		}
 		
 		/* Puts it all together */
@@ -288,7 +298,12 @@ public class Dualizer implements ConicProgramListener {
 			for (Map.Entry<Variable, Double> e : pCon.getVariables().entrySet()) {
 				dualCon = primalVarsToDualCons.get(e.getKey());
 				if (dualCon != null) {
-					dualCon.setVariable(dualVar, e.getValue());
+					try {
+						dualCon.setVariable(dualVar, e.getValue());
+					}
+					catch (NullPointerException exception) {
+						throw exception;
+					}
 				}
 			}
 		}
