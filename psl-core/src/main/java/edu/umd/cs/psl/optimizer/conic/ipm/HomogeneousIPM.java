@@ -709,8 +709,8 @@ public class HomogeneousIPM implements ConicProgramSolver {
 			DoubleMatrix1D dxn = pm.T.zMult(sd.dx, null);
 			DoubleMatrix1D dsn = pm.T.zMult(sd.ds, null);
 			int size = (int) dxn.size();
-			DoubleMatrix2D Dxn = new SparseDoubleMatrix2D(size, size);
-			DoubleMatrix2D Dsn = new SparseDoubleMatrix2D(size, size);
+			DoubleMatrix2D Dxn = new SparseDoubleMatrix2D(size, size, size*4, 0.2, 0.5);;
+			DoubleMatrix2D Dsn = new SparseDoubleMatrix2D(size, size, size*4, 0.2, 0.5);;
 			
 			for (NonNegativeOrthantCone cone : program.getNonNegativeOrthantCones()) {
 				int index = program.getIndex(cone.getVariable());

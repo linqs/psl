@@ -297,14 +297,8 @@ public class Dualizer implements ConicProgramListener {
 			
 			for (Map.Entry<Variable, Double> e : pCon.getVariables().entrySet()) {
 				dualCon = primalVarsToDualCons.get(e.getKey());
-				if (dualCon != null) {
-					try {
-						dualCon.setVariable(dualVar, e.getValue());
-					}
-					catch (NullPointerException exception) {
-						throw exception;
-					}
-				}
+				if (dualCon != null)
+					dualCon.setVariable(dualVar, e.getValue());
 			}
 		}
 		
