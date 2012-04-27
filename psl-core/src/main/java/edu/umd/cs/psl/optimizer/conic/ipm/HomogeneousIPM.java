@@ -26,14 +26,17 @@ import org.slf4j.LoggerFactory;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.algo.DenseDoubleAlgebra;
-import cern.colt.matrix.tdouble.algo.decomposition.SparseDoubleCholeskyDecomposition;
 import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix1D;
 import cern.colt.matrix.tdouble.impl.SparseCCDoubleMatrix2D;
 import cern.colt.matrix.tdouble.impl.SparseDoubleMatrix2D;
 import cern.jet.math.tdouble.DoubleFunctions;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
+import edu.umd.cs.psl.config.Factory;
 import edu.umd.cs.psl.optimizer.conic.ConicProgramSolver;
+import edu.umd.cs.psl.optimizer.conic.ipm.solver.CholeskyFactory;
+import edu.umd.cs.psl.optimizer.conic.ipm.solver.NormalSystemSolver;
+import edu.umd.cs.psl.optimizer.conic.ipm.solver.NormalSystemSolverFactory;
 import edu.umd.cs.psl.optimizer.conic.program.Cone;
 import edu.umd.cs.psl.optimizer.conic.program.ConeType;
 import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
@@ -136,6 +139,20 @@ public class HomogeneousIPM implements ConicProgramSolver {
 	/** Default value for DELTA_KEY property. */
 	public static final double DELTA_DEFAULT = 0.5;
 	
+	/**
+	 * Key for {@link Factory} or String property.
+	 * 
+	 * Should be set to a {@link NormalSystemSolverFactory} or the fully qualified
+	 * name of one. Will be used to instantiate a {@link NormalSystemSolver}.
+	 */
+	public static final String NORMAL_SYS_SOLVER_KEY = CONFIG_PREFIX + ".normalsolver";
+	/**
+	 * Default value for NORMAL_SYS_SOLVER_KEY.
+	 * 
+	 * Value is instance of {@link CholeskyFactory}. 
+	 */
+	public static final NormalSystemSolverFactory NORMAL_SYS_SOLVER_DEFAULT = new CholeskyFactory();
+	
 	private static final ArrayList<ConeType> supportedCones = new ArrayList<ConeType>(2);
 	static {
 		supportedCones.add(ConeType.NonNegativeOrthantCone);
@@ -154,6 +171,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 	private final double muThreshold;
 	private final double beta;
 	private final double delta;
+	private final NormalSystemSolver solver;
 	
 	private int stepNum;
 	
@@ -161,13 +179,17 @@ public class HomogeneousIPM implements ConicProgramSolver {
 	private DoubleMatrix1D baseResD;
 	private double baseResG;
 	
-	public HomogeneousIPM(ConfigBundle config) {
+	public HomogeneousIPM(ConfigBundle config)
+			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		tryDualize = config.getBoolean(DUALIZE_KEY, DUALIZE_DEFAULT);
 		infeasibilityThreshold = config.getDouble(INFEASIBILITY_THRESHOLD_KEY, INFEASIBILITY_THRESHOLD_DEFAULT);
 		gapThreshold = config.getDouble(GAP_THRESHOLD_KEY, GAP_THRESHOLD_DEFAULT);
 		tauThreshold = config.getDouble(TAU_THRESHOLD_KEY, TAU_THRESHOLD_DEFAULT);
 		muThreshold = config.getDouble(MU_THRESHOLD_KEY, MU_THRESHOLD_DEFAULT);
 		beta = config.getDouble(BETA_KEY, BETA_DEFAULT);
+		NormalSystemSolverFactory solverFactory = (NormalSystemSolverFactory) config.getFactory(NORMAL_SYS_SOLVER_KEY, NORMAL_SYS_SOLVER_DEFAULT);
+		solver = solverFactory.getNormalSystemSolver(config);
+		
 		if (beta <= 0 || beta >= 1)
 			throw new IllegalArgumentException("Property " + BETA_KEY + " must be in (0,1).");
 		delta = config.getDouble(DELTA_KEY, DELTA_DEFAULT);
@@ -236,6 +258,8 @@ public class HomogeneousIPM implements ConicProgramSolver {
 	}
 	
 	private void doSolve(ConicProgram program) {
+		solver.setConicProgram(program);
+		
 		DoubleMatrix2D A = program.getA();
 		DoubleMatrix1D x = program.getX();
 		DoubleMatrix1D b = program.getB();
@@ -654,18 +678,16 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		A.getColumnCompressed(false).zMult(invThetaSqInvWSq.getColumnCompressed(false), im.AInvThetaSqInvWSq, 1.0, 0.0, false, false);
 		invThetaSqInvWSq = null;
 		
-		/* Computes M and finds its Cholesky factorization */
+		/* Computes M and gives it to the normal-system solver */
 		SparseCCDoubleMatrix2D M = new SparseCCDoubleMatrix2D(A.rows(), A.rows());
 		im.AInvThetaSqInvWSq.zMult(A.getColumnCompressed(false), M, 1.0, 0.0, false, true);
-		log.trace("Starting decomposition.");
-		im.M = new SparseDoubleCholeskyDecomposition(M, 1);
-		log.trace("Finished decomposition.");
+		solver.setA(M);
 		
 		/* Computes intermediate vectors */
 		
 		/* g2 */
 		im.g2 = im.AInvThetaSqInvWSq.zMult(c, b.copy(), 1.0, 1.0, false);
-		im.M.solve(im.g2);
+		solver.solve(im.g2);
 		
 		/* g1 */
 		im.g1 = im.invThetaInvW.zMult(A.getColumnCompressed(false).zMult(im.g2, null, 1.0, 0.0, true), null);
@@ -785,7 +807,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 				.assign(A.getColumnCompressed(false)
 						.zMult(im.invThetaInvW.zMult(TInvVR4, null), null),
 						DoubleFunctions.minus);
-		im.M.solve(h2);
+		solver.solve(h2);
 		
 		/* h1 */
 		DoubleMatrix1D h1 = TInvVR4.copy();
@@ -1002,7 +1024,6 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		private SparseCCDoubleMatrix2D ThetaW;
 		private SparseCCDoubleMatrix2D invThetaInvW;
 		private SparseCCDoubleMatrix2D AInvThetaSqInvWSq;
-		private SparseDoubleCholeskyDecomposition M;
 		private DoubleMatrix1D g1;
 		private DoubleMatrix1D g2;
 	}

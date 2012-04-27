@@ -14,23 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.optimizer.conic.ipm;
+package edu.umd.cs.psl.optimizer.conic.ipm.solver;
 
-import java.util.List;
-import java.util.Vector;
+import edu.umd.cs.psl.config.ConfigBundle;
 
-import edu.umd.cs.psl.config.EmptyBundle;
-import edu.umd.cs.psl.optimizer.conic.ConicProgramSolver;
-import edu.umd.cs.psl.optimizer.conic.ConicProgramSolverContractTest;
-
-public class HomogeneousIPMTest extends ConicProgramSolverContractTest {
+/**
+ * Factory for {@link Cholesky Cholesky} normal system solver.
+ * 
+ * @author Stephen Bach <bach@cs.umd.edu>
+ */
+public class CholeskyFactory implements NormalSystemSolverFactory {
 
 	@Override
-	protected List<? extends ConicProgramSolver> getConicProgramSolverImplementations()
-			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-		Vector<HomogeneousIPM> solvers = new Vector<HomogeneousIPM>(1);
-		solvers.add(new HomogeneousIPM(new EmptyBundle()));
-		return solvers;
+	public NormalSystemSolver getNormalSystemSolver(ConfigBundle config) {
+		return new Cholesky();
 	}
 
 }

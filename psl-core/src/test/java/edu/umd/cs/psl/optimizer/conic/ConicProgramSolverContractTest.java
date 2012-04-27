@@ -49,13 +49,15 @@ abstract public class ConicProgramSolverContractTest {
 	private Vector<Map<Variable, Double>> solutions;
 	
 	@Before
-	public final void setUp() {
+	public final void setUp()
+			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		solvers = getConicProgramSolverImplementations();
 		programs = new Vector<ConicProgram>();
 		solutions = new Vector<Map<Variable, Double>>();
 	}
 
-	abstract protected List<? extends ConicProgramSolver> getConicProgramSolverImplementations();
+	abstract protected List<? extends ConicProgramSolver> getConicProgramSolverImplementations()
+			throws ClassNotFoundException, IllegalAccessException, InstantiationException;
 	
 	@Test
 	public void testSolve() {

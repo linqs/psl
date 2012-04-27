@@ -20,5 +20,6 @@ import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.Factory;
 
 public interface ConicProgramSolverFactory extends Factory {
-	ConicProgramSolver getConicProgramSolver(ConfigBundle config);
+	ConicProgramSolver getConicProgramSolver(ConfigBundle config)
+			throws ClassNotFoundException, IllegalAccessException, InstantiationException;
 }

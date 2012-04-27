@@ -37,7 +37,8 @@ public class DualizerTest {
 	private ConicProgramSolver solver;
 	
 	@Before
-	public final void setUp() throws ConfigurationException {
+	public final void setUp()
+			throws ConfigurationException, ClassNotFoundException, IllegalAccessException, InstantiationException {
 		program = new ConicProgram();
 		dualizer = new Dualizer(program);
 		

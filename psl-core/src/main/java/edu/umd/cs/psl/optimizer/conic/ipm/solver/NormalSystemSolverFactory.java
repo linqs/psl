@@ -14,18 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.optimizer.conic.ipm;
+package edu.umd.cs.psl.optimizer.conic.ipm.solver;
 
 import edu.umd.cs.psl.config.ConfigBundle;
-import edu.umd.cs.psl.optimizer.conic.ConicProgramSolver;
-import edu.umd.cs.psl.optimizer.conic.ConicProgramSolverFactory;
+import edu.umd.cs.psl.config.Factory;
 
-public class HomogeneousIPMFactory implements ConicProgramSolverFactory {
-
-	@Override
-	public ConicProgramSolver getConicProgramSolver(ConfigBundle config)
-			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-		return new HomogeneousIPM(config);
-	}
-
+/**
+ * Factory for a NormalSystemSolver.
+ * 
+ * @author Stephen Bach <bach@cs.umd.edu>
+ */
+public interface NormalSystemSolverFactory extends Factory {
+	public NormalSystemSolver getNormalSystemSolver(ConfigBundle config);
 }

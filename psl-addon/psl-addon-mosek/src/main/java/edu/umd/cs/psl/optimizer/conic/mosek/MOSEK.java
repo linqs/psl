@@ -56,7 +56,7 @@ public class MOSEK implements ConicProgramSolver {
 	 */
 	public static final String DUALITY_GAP_THRESHOLD_KEY = CONFIG_PREFIX + ".dualitygapthreshold";
 	/** Default value for DUALITY_GAP_THRESHOLD_KEY property. */
-	public static final double DUALITY_GAP_THRESHOLD_DEFAULT = 1.0e-8;
+	public static final double DUALITY_GAP_THRESHOLD_DEFAULT = 10e-8;
 	
 	/**
 	 * Key for integer property. Controls the number of threads employed by the
