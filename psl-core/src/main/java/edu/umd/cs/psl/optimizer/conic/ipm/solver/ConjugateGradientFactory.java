@@ -19,15 +19,15 @@ package edu.umd.cs.psl.optimizer.conic.ipm.solver;
 import edu.umd.cs.psl.config.ConfigBundle;
 
 /**
- * Factory for {@link Cholesky} normal system solver.
+ * Factory for {@link ConjugateGradient} normal system solver.
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-public class CholeskyFactory implements NormalSystemSolverFactory {
+public class ConjugateGradientFactory implements NormalSystemSolverFactory {
 
 	@Override
 	public NormalSystemSolver getNormalSystemSolver(ConfigBundle config) {
-		return new Cholesky();
+		return new ConjugateGradient(config);
 	}
 
 }

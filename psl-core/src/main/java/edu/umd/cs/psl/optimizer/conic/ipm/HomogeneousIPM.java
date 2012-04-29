@@ -175,7 +175,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 	
 	private int stepNum;
 	
-	/* Data structures for measuring relative change in objective, infeasibility, etc. */
+	/* Data structures for computing objective, infeasibility, etc. */
 	private DoubleMatrix1D baseResP;
 	private DoubleMatrix1D baseResD;
 	private double baseResG;
@@ -394,7 +394,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		scratchM1 = new DenseDoubleMatrix1D(m);
 		scratchM2 = new DenseDoubleMatrix1D(m);
 		
-		/* Computes values to measure relative changes in objective, infeasibility, etc. */
+		/* Computes values to measure objective, infeasibility, etc. */
 		baseResP = A.zMult(x, b.copy().assign(DoubleFunctions.mult(tau)), 1.0, -1.0, false);
 		baseResD = A.zMult(w, c.copy().assign(DoubleFunctions.mult(tau)), 1.0, -1.0, true);
 		baseResD.assign(s, DoubleFunctions.plus);
@@ -918,9 +918,11 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		/* h2 */
 		/* Aliases scratchM1 as h2. Don't reuse it! */
 		DoubleMatrix1D h2 = scratchM1.assign(r1);
-		h2.assign(AInvThetaSqInvWSq.zMult(r2, scratchM2), DoubleFunctions.plus);
+		AInvThetaSqInvWSq.zMult(r2, scratchM2);
+		h2.assign(scratchM2, DoubleFunctions.plus);
 		invThetaInvW.zMult(TInvVR4, scratchN2);
-		h2.assign(A.zMult(scratchN2, scratchM2), DoubleFunctions.minus);
+		A.zMult(scratchN2, scratchM2);
+		h2.assign(scratchM2, DoubleFunctions.minus);
 		solver.solve(h2);
 		
 		/* h1 */
@@ -934,13 +936,10 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		/* Computes search direction */
 		dTau = r3 + c.zDotProduct(invThetaInvW.zMult(h1, scratchN3)) - b.zDotProduct(h2) + r5 / tau;
 		dTau /= ((kappa/tau) - c.zDotProduct(invThetaInvW.zMult(g1, scratchN3)) + b.zDotProduct(g2));
-		dx.assign(g1);
-		dx.assign(DoubleFunctions.mult(dTau)).assign(h1, DoubleFunctions.plus);
-		dw.assign(g2);
-		dw.assign(DoubleFunctions.mult(dTau)).assign(h2, DoubleFunctions.plus);
+		dx.assign(g1).assign(h1, DoubleFunctions.plusMultFirst(dTau));
+		dw.assign(g2).assign(h2, DoubleFunctions.plusMultFirst(dTau));
 		dKappa = (r5 - kappa*dTau) / tau;
-		ds.assign(TInvVR4);
-		ds.assign(dx, DoubleFunctions.minus);
+		ds.assign(TInvVR4).assign(dx, DoubleFunctions.minus);
 	}
 	
 	private double getMaxStepSize(ConicProgram program) {
