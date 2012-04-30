@@ -28,7 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
-import cern.colt.matrix.tdouble.impl.SparseDoubleMatrix2D;
+import cern.colt.matrix.tdouble.impl.SparseCCDoubleMatrix2D;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.optimizer.conic.ConicProgramSolver;
@@ -106,7 +106,7 @@ public class MOSEK implements ConicProgramSolver {
 			throw new IllegalStateException("No conic program has been set.");
 		
 		program.checkOutMatrices();
-		SparseDoubleMatrix2D A = program.getA();
+		SparseCCDoubleMatrix2D A = program.getA();
 		DoubleMatrix1D x = program.getX();
 		DoubleMatrix1D b = program.getB();
 		DoubleMatrix1D c = program.getC();

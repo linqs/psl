@@ -47,7 +47,7 @@ public class Presolver {
 		Map<Integer, LinearConstraint> rowMap = invertLCMap(program.getLcMap());
 		List<LinearConstraint> toRemove = new LinkedList<LinearConstraint>();
 		
-		SparseDoubleQRDecomposition qr = new SparseDoubleQRDecomposition(program.getA().getColumnCompressed(false), 0);
+		SparseDoubleQRDecomposition qr = new SparseDoubleQRDecomposition(program.getA(), 0);
 		DoubleMatrix2D R = qr.getR();
 		
 		for (int i = 0; i < program.getNumLinearConstraints(); i++) {

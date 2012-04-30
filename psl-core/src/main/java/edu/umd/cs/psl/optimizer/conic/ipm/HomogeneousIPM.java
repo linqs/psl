@@ -583,7 +583,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 	}
 	
 	private void initializeProgramMatrices(ConicProgram program) {
-		SparseDoubleMatrix2D A = program.getA();
+		SparseCCDoubleMatrix2D A = program.getA();
 		int size = A.columns();
 		
 		k = program.getNumCones();
@@ -622,7 +622,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 	private void getIntermediates(ConicProgram program) {
 		DenseDoubleAlgebra alg = new DenseDoubleAlgebra();
 		
-		SparseDoubleMatrix2D A = program.getA();
+		SparseCCDoubleMatrix2D A = program.getA();
 		DoubleMatrix1D x = program.getX();
 		DoubleMatrix1D b = program.getB();
 		DoubleMatrix1D s = program.getS();
@@ -799,11 +799,11 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		
 		/* Computes more intermediate matrices */
 		AInvThetaSqInvWSq = new SparseCCDoubleMatrix2D(A.rows(), n);
-		A.getColumnCompressed(false).zMult(invThetaSqInvWSq, AInvThetaSqInvWSq, 1.0, 0.0, false, false);
+		A.zMult(invThetaSqInvWSq, AInvThetaSqInvWSq, 1.0, 0.0, false, false);
 		
 		/* Computes M and gives it to the normal-system solver */
 		SparseCCDoubleMatrix2D M = new SparseCCDoubleMatrix2D(A.rows(), A.rows());
-		AInvThetaSqInvWSq.zMult(A.getColumnCompressed(false), M, 1.0, 0.0, false, true);
+		AInvThetaSqInvWSq.zMult(A, M, 1.0, 0.0, false, true);
 		solver.setA(M);
 		
 		/* Computes intermediate vectors */
@@ -814,7 +814,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		solver.solve(g2);
 		
 		/* g1 */
-		A.getColumnCompressed(false).zMult(g2, scratchN1, 1.0, 0.0, true);
+		A.zMult(g2, scratchN1, 1.0, 0.0, true);
 		scratchN1.assign(c, DoubleFunctions.minus);
 		invThetaInvW.zMult(scratchN1, g1, 1.0, 0.0, false);
 	}
@@ -907,7 +907,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 	}
 	
 	private void getSearchDirection(ConicProgram program) {
-		SparseDoubleMatrix2D A = program.getA();
+		SparseCCDoubleMatrix2D A = program.getA();
 		DoubleMatrix1D b = program.getB();
 		DoubleMatrix1D c = program.getC();
 		
@@ -927,7 +927,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		
 		/* h1 */
 		/* Aliases scratchN2 as h1. Don't reuse it! */
-		A.getColumnCompressed(false).zMult(h2, scratchN2, 1.0, 0.0, true);
+		A.zMult(h2, scratchN2, 1.0, 0.0, true);
 		invThetaInvW.zMult(scratchN2, scratchN3);
 		DoubleMatrix1D h1 = scratchN2.assign(TInvVR4);
 		h1.assign(scratchN3, DoubleFunctions.plus);

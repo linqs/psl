@@ -274,7 +274,7 @@ public class IPM implements ConicProgramSolver {
 	}
 
 	protected void step(ConicProgram program, DoubleMatrix1D g, DoubleMatrix2D Hinv, double mu, double tau, boolean inNeighborhood) {
-		DoubleMatrix2D A;
+		SparseCCDoubleMatrix2D A;
 		DoubleMatrix1D x, b, w, s, c, dx, dw, ds, r;
 		
 		A = program.getA();
@@ -287,13 +287,12 @@ public class IPM implements ConicProgramSolver {
 		ds = DoubleFactory1D.dense.make(A.columns());
 		DenseDoubleAlgebra alg = new DenseDoubleAlgebra();
 		
-		SparseCCDoubleMatrix2D ccA = ((SparseDoubleMatrix2D) A).getColumnCompressed(false);
 		SparseCCDoubleMatrix2D ccHinv = ((SparseDoubleMatrix2D) Hinv).getColumnCompressed(false);
 		SparseCCDoubleMatrix2D partial = new SparseCCDoubleMatrix2D(A.rows(), A.columns());
 		SparseCCDoubleMatrix2D coeff = new SparseCCDoubleMatrix2D(A.rows(), A.rows());
 		
-		ccA.zMult(ccHinv, partial, 1.0, 0.0, false, false);
-		partial.zMult(ccA, coeff, 1.0, 0.0, false, true);
+		A.zMult(ccHinv, partial, 1.0, 0.0, false, false);
+		partial.zMult(A, coeff, 1.0, 0.0, false, true);
 		r = b.copy().assign(alg.mult(A, x), DoubleFunctions.minus)
 			.assign(alg.mult(partial, g).assign(DoubleFunctions.mult(tau)), DoubleFunctions.plus)
 			.assign(DoubleFunctions.mult(mu))
@@ -302,8 +301,8 @@ public class IPM implements ConicProgramSolver {
 		dw = r;
 		solveNormalSystem(coeff, dw, program);
 		
-		ccA.zMult(dw, ds, 1.0, 0.0, true);
-		ds.assign(alg.mult(ccA.getTranspose(), w), DoubleFunctions.plus).assign(s, DoubleFunctions.plus)
+		A.zMult(dw, ds, 1.0, 0.0, true);
+		ds.assign(alg.mult(A.getTranspose(), w), DoubleFunctions.plus).assign(s, DoubleFunctions.plus)
 			.assign(c, DoubleFunctions.minus).assign(DoubleFunctions.mult(-1.0));
 		dx = alg.mult(ccHinv, g.copy().assign(DoubleFunctions.mult(-1*tau*mu)).assign(ds, DoubleFunctions.minus).assign(s, DoubleFunctions.minus))
 			.assign(DoubleFunctions.div(mu));

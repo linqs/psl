@@ -24,15 +24,16 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableSet;
-
 import cern.colt.list.tdouble.DoubleArrayList;
 import cern.colt.list.tint.IntArrayList;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.algo.DenseDoubleAlgebra;
 import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix1D;
+import cern.colt.matrix.tdouble.impl.SparseCCDoubleMatrix2D;
 import cern.colt.matrix.tdouble.impl.SparseDoubleMatrix2D;
 import cern.jet.math.tdouble.DoubleFunctions;
+
+import com.google.common.collect.ImmutableSet;
 
 /**
  * Stores information about the primal and dual forms of a conic program.
@@ -53,7 +54,7 @@ public class ConicProgram {
 	
 	private Set<ConicProgramListener> listeners;
 	
-	private SparseDoubleMatrix2D A;
+	private SparseCCDoubleMatrix2D A;
 	private DenseDoubleMatrix1D x;
 	private DenseDoubleMatrix1D b;
 	private DenseDoubleMatrix1D w;
@@ -165,7 +166,7 @@ public class ConicProgram {
 				
 		
 		/* Initializes data matrices */
-		A = new SparseDoubleMatrix2D(lcMap.size(), varMap.size(), lcMap.size()*4, 0.2, 0.5);
+		SparseDoubleMatrix2D Atemp = new SparseDoubleMatrix2D(lcMap.size(), varMap.size(), lcMap.size()*4, 0.2, 0.5);
 		x = new DenseDoubleMatrix1D(varMap.size());
 		b = new DenseDoubleMatrix1D(lcMap.size());
 		w = new DenseDoubleMatrix1D(lcMap.size());
@@ -175,11 +176,16 @@ public class ConicProgram {
 		/* Constructs A, b, and w */
 		for (Map.Entry<LinearConstraint, Integer> lc : lcMap.entrySet()) {
 			for (Entry<Variable, Double> v : lc.getKey().getVariables().entrySet()) {
-				A.set(lc.getValue(), varMap.get(v.getKey()), v.getValue());
+				Atemp.set(lc.getValue(), varMap.get(v.getKey()), v.getValue());
 			}
 			w.set(lc.getValue(), lc.getKey().getLagrange());
 			b.set(lc.getValue(), lc.getKey().getConstrainedValue());
 		}
+		
+		if (Atemp.rows() > 0)
+			A = Atemp.getColumnCompressed(false);
+		else
+			A = new SparseCCDoubleMatrix2D(0, 0);
 		
 		/* Constructs x, s, and c */
 		for (Map.Entry<Variable, Integer> v : varMap.entrySet()) {
@@ -216,7 +222,7 @@ public class ConicProgram {
 		return Collections.unmodifiableMap(lcMap);
 	}
 	
-	public SparseDoubleMatrix2D getA() {
+	public SparseCCDoubleMatrix2D getA() {
 		verifyCheckedOut();
 		return A;
 	}
