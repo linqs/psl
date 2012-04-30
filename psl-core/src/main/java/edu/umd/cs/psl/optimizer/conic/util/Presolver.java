@@ -47,12 +47,13 @@ public class Presolver {
 		Map<Integer, LinearConstraint> rowMap = invertLCMap(program.getLcMap());
 		List<LinearConstraint> toRemove = new LinkedList<LinearConstraint>();
 		
-		SparseDoubleQRDecomposition qr = new SparseDoubleQRDecomposition(program.getA(), 0);
+		SparseDoubleQRDecomposition qr = new SparseDoubleQRDecomposition(program.getA(), 1);
+		int[] q = qr.getSymbolicAnalysis().q; /* Column permutations (since A is transposed) */
 		DoubleMatrix2D R = qr.getR();
 		
 		for (int i = 0; i < program.getNumLinearConstraints(); i++) {
 			if (Math.abs(R.get(i, i)) < tolerance)
-				toRemove.add(rowMap.get(i));
+				toRemove.add(rowMap.get(q[i]));
 		}
 		
 		program.checkInMatrices();
