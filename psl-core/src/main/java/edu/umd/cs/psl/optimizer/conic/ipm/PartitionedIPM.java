@@ -36,7 +36,7 @@ import cern.jet.math.tdouble.DoubleFunctions;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.optimizer.conic.partition.CompletePartitioner;
 import edu.umd.cs.psl.optimizer.conic.partition.ConicProgramPartition;
-import edu.umd.cs.psl.optimizer.conic.partition.ObjectiveCoefficientPartitioner;
+import edu.umd.cs.psl.optimizer.conic.partition.ObjectiveCoefficientCompletePartitioner;
 import edu.umd.cs.psl.optimizer.conic.program.Cone;
 import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
 import edu.umd.cs.psl.optimizer.conic.program.Variable;
@@ -50,7 +50,7 @@ public class PartitionedIPM extends IPM {
 	public PartitionedIPM(ConfigBundle config) {
 		super(config);
 //		partitioner = new WeightedDistancePartitioner(config);
-		partitioner = new ObjectiveCoefficientPartitioner(config);
+		partitioner = new ObjectiveCoefficientCompletePartitioner(config);
 	}
 	
 	@Override

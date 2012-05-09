@@ -51,7 +51,7 @@ public class HierarchicalPartitioning implements Partitioner {
 	private static final int finalMultiple = 8;
 	private static final int initialMultiple = 400;
 	
-	private static final int defaultNoTrials = 20;
+	private static final int defaultNoTrials = 10;
 	private static final int defaultNoPartitions = 2;
 	private static final double defaultBalanceExponent = 1.5;
 	

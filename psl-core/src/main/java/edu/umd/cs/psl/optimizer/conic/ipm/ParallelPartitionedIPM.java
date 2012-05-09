@@ -39,7 +39,7 @@ import cern.jet.math.tdouble.DoubleFunctions;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.optimizer.conic.partition.CompletePartitioner;
 import edu.umd.cs.psl.optimizer.conic.partition.ConicProgramPartition;
-import edu.umd.cs.psl.optimizer.conic.partition.ObjectiveCoefficientPartitioner;
+import edu.umd.cs.psl.optimizer.conic.partition.ObjectiveCoefficientCompletePartitioner;
 import edu.umd.cs.psl.optimizer.conic.program.Cone;
 import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
 import edu.umd.cs.psl.optimizer.conic.program.Variable;
@@ -60,7 +60,7 @@ public class ParallelPartitionedIPM extends IPM {
 	public ParallelPartitionedIPM(ConfigBundle config) {
 		super(config);
 		threadPoolSize = config.getInt(THREAD_POOL_SIZE_KEY, THREAD_POOL_SIZE_DEFAULT);
-		partitioner = new ObjectiveCoefficientPartitioner(config);
+		partitioner = new ObjectiveCoefficientCompletePartitioner(config);
 	}
 	
 	@Override

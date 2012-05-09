@@ -16,10 +16,15 @@
  */
 package edu.umd.cs.psl.optimizer.conic.ipm.solver;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.algo.solver.DefaultDoubleIterationMonitor;
 import cern.colt.matrix.tdouble.algo.solver.DoubleCG;
+import cern.colt.matrix.tdouble.algo.solver.DoubleIterationMonitor;
+import cern.colt.matrix.tdouble.algo.solver.DoubleIterationReporter;
 import cern.colt.matrix.tdouble.algo.solver.IterativeSolverDoubleNotConvergedException;
 import cern.colt.matrix.tdouble.algo.solver.preconditioner.DoubleIdentity;
 import cern.colt.matrix.tdouble.algo.solver.preconditioner.DoublePreconditioner;
@@ -27,6 +32,7 @@ import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix1D;
 import cern.colt.matrix.tdouble.impl.SparseCCDoubleMatrix2D;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
+import edu.umd.cs.psl.optimizer.conic.ipm.solver.preconditioner.BlockPreconditioner;
 import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
 
 /**
@@ -35,6 +41,8 @@ import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
  * @author Stephen Bach <bach@cs.umd.edu>
  */
 public class ConjugateGradient implements NormalSystemSolver {
+	
+	private static final Logger log = LoggerFactory.getLogger(ConjugateGradient.class);
 	
 	/**
 	 * Prefix of property keys used by this class.
@@ -85,6 +93,7 @@ public class ConjugateGradient implements NormalSystemSolver {
 	
 	private DoubleCG cg;
 	private DoublePreconditioner preconditioner;
+	private DoubleIterationMonitor monitor;
 	private DoubleMatrix2D A;
 	private DoubleMatrix1D x;
 	
@@ -93,14 +102,29 @@ public class ConjugateGradient implements NormalSystemSolver {
 		relTol  = config.getDouble(CG_REL_TOL_KEY, CG_REL_TOL_DEFAULT);
 		absTol  = config.getDouble(CG_ABS_TOL_KEY, CG_ABS_TOL_DEFAULT);
 		divTol  = config.getDouble(CG_DIV_TOL_KEY, CG_DIV_TOL_DEFAULT);
+		monitor = new DefaultDoubleIterationMonitor(maxIter, relTol, absTol, divTol);
+		monitor.setIterationReporter(new DoubleIterationReporter() {
+			
+			@Override
+			public void monitor(double r, DoubleMatrix1D x, int i) {
+				monitor(r, i);
+			}
+			
+			@Override
+			public void monitor(double r, int i) {
+				if (i % 50 == 0)
+					log.trace("Res. at itr {}: {}", i, r);
+			}
+		});
 	}
 
 	@Override
 	public void setConicProgram(ConicProgram program) {
 		x = new DenseDoubleMatrix1D(program.getA().rows());
 		cg = new DoubleCG(x);
-		cg.setIterationMonitor(new DefaultDoubleIterationMonitor(maxIter, relTol, absTol, divTol));
+		cg.setIterationMonitor(monitor);
 		preconditioner = new DoubleIdentity();
+//		preconditioner = new BlockPreconditioner(program);
 		cg.setPreconditioner(preconditioner);
 	}
 
@@ -112,6 +136,7 @@ public class ConjugateGradient implements NormalSystemSolver {
 
 	@Override
 	public void solve(DoubleMatrix1D b) {
+		monitor.setFirst();
 		x.assign(0);
 		try {
 			cg.solve(A, b, x);

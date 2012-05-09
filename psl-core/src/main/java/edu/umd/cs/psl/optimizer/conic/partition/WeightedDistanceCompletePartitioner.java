@@ -28,14 +28,14 @@ import edu.umd.cs.psl.optimizer.conic.program.NonNegativeOrthantCone;
 import edu.umd.cs.psl.optimizer.conic.program.SecondOrderCone;
 import edu.umd.cs.psl.optimizer.conic.program.Variable;
 
-public class WeightedDistancePartitioner extends HierarchicalPartitioner {
+public class WeightedDistanceCompletePartitioner extends HierarchicalPartitioner {
 	
 	private double[] weights;
 	
 	private static final int base = 10;
 	private static final int depthLimit = 1;
 
-	public WeightedDistancePartitioner(ConfigBundle config) {
+	public WeightedDistanceCompletePartitioner(ConfigBundle config) {
 		super(config);
 	}
 	
