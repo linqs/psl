@@ -1,0 +1,120 @@
+/*
+ * This file is part of the PSL software.
+ * Copyright 2011 University of Maryland
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package edu.umd.cs.psl.model.kernel.predicateconstraint;
+
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
+import org.apache.commons.lang.builder.HashCodeBuilder;
+
+import edu.umd.cs.psl.model.atom.Atom;
+import edu.umd.cs.psl.model.kernel.BindingMode;
+import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
+import edu.umd.cs.psl.model.kernel.Kernel;
+import edu.umd.cs.psl.optimizer.NumericUtilities;
+import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
+import edu.umd.cs.psl.reasoner.function.FunctionComparator;
+import edu.umd.cs.psl.reasoner.function.FunctionSum;
+import edu.umd.cs.psl.reasoner.function.FunctionSummand;
+
+/**
+ * Constrains two {@link Atom Atoms} of the form p(A,B) and p(B,A) to be equal.
+ */
+public class GroundSymmetricPredicateConstraint implements GroundConstraintKernel {
+
+	private final SymmetricPredicateConstraintKernel kernel;
+	private final Atom atomA;
+	private final Atom atomB;
+	private final Set<Atom> atoms;
+
+	private final int hashcode;
+
+	public GroundSymmetricPredicateConstraint(SymmetricPredicateConstraintKernel k, Atom a, Atom b) {
+		kernel = k;
+		atomA = a;
+		atomB = b;
+		
+		Set<Atom> tempAtoms = new HashSet<Atom>();
+		tempAtoms.add(atomA);
+		tempAtoms.add(atomB);
+		atoms = Collections.unmodifiableSet(tempAtoms);
+				
+		hashcode = new HashCodeBuilder().append(kernel).append(atomA).append(atomB)
+				.toHashCode();
+	}
+
+	@Override
+	public boolean updateParameters() {
+		throw new UnsupportedOperationException();
+	}
+
+	public ConstraintTerm getConstraintDefinition() {
+		FunctionSum sum = new FunctionSum();
+		sum.add(new FunctionSummand(1.0, atomA.getVariable()));
+		sum.add(new FunctionSummand(-1.0, atomB.getVariable()));
+		return new ConstraintTerm(sum, FunctionComparator.Equality, 0.0);
+	}
+
+	@Override
+	public Kernel getKernel() {
+		return kernel;
+	}
+	
+	@Override
+	public BindingMode getBinding(Atom atom) {
+		if (atomA.equals(atom) || atomB.equals(atomB))
+			return BindingMode.WeakRV;
+		else
+			return BindingMode.NoBinding;
+	}
+
+	@Override
+	public double getIncompatibility() {
+		if (NumericUtilities.equals(atomA.getSoftValue(0), atomB.getSoftValue(0))) {
+			return 0.0;
+		} else
+			return Double.POSITIVE_INFINITY;
+	}
+
+	@Override
+	public Set<Atom> getAtoms() {
+		return atoms;
+	}
+
+	@Override
+	public int hashCode() {
+		return hashcode;
+	}
+
+	@Override
+	public boolean equals(Object oth) {
+		if (oth == this)
+			return true;
+		if (oth == null || !(getClass().isInstance(oth)))
+			return false;
+		GroundSymmetricPredicateConstraint con = (GroundSymmetricPredicateConstraint) oth;
+		return (atomA.equals(con.atomA) && atomB.equals(con.atomB)
+				|| atomA.equals(con.atomB) && atomB.equals(con.atomA)); 
+	}
+
+	@Override
+	public String toString() {
+		return "{Symmetry} on " + atomA.toString() + " and " + atomB.toString();
+	}
+
+}

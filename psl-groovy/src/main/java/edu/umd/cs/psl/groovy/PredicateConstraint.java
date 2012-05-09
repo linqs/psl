@@ -16,64 +16,73 @@
  */
 package edu.umd.cs.psl.groovy;
 
+import edu.umd.cs.psl.model.kernel.predicateconstraint.PredicateConstraintType;
+
 public enum PredicateConstraint {
 
 	Functional {
 		@Override
-		public edu.umd.cs.psl.model.kernel.predicateconstraint.PredicateConstraintType getPSLConstraint() {
-			return edu.umd.cs.psl.model.kernel.predicateconstraint.PredicateConstraintType.Functional;
+		public PredicateConstraintType getPSLConstraint() {
+			return PredicateConstraintType.Functional;
 		}
 	},
-	
+
 	InverseFunctional {
 		@Override
-		public edu.umd.cs.psl.model.kernel.predicateconstraint.PredicateConstraintType getPSLConstraint() {
-			return edu.umd.cs.psl.model.kernel.predicateconstraint.PredicateConstraintType.InverseFunctional;
-		}		
+		public PredicateConstraintType getPSLConstraint() {
+			return PredicateConstraintType.InverseFunctional;
+		}
 	},
-	
+
 	PartialFunctional {
 		@Override
-		public edu.umd.cs.psl.model.kernel.predicateconstraint.PredicateConstraintType getPSLConstraint() {
-			return edu.umd.cs.psl.model.kernel.predicateconstraint.PredicateConstraintType.PartialFunctional;
+		public PredicateConstraintType getPSLConstraint() {
+			return PredicateConstraintType.PartialFunctional;
 		}
 	},
-	
+
 	PartialInverseFunctional {
 		@Override
-		public edu.umd.cs.psl.model.kernel.predicateconstraint.PredicateConstraintType getPSLConstraint() {
-			return edu.umd.cs.psl.model.kernel.predicateconstraint.PredicateConstraintType.PartialInverseFunctional;
+		public PredicateConstraintType getPSLConstraint() {
+			return PredicateConstraintType.PartialInverseFunctional;
 		}
 	},
-	
+
 	PIF {
 		@Override
-		public edu.umd.cs.psl.model.kernel.predicateconstraint.PredicateConstraintType getPSLConstraint() {
-			return edu.umd.cs.psl.model.kernel.predicateconstraint.PredicateConstraintType.PartialInverseFunctional;
+		public PredicateConstraintType getPSLConstraint() {
+			return PredicateConstraintType.PartialInverseFunctional;
 		}
 	},
-	
+
 	PF {
 		@Override
-		public edu.umd.cs.psl.model.kernel.predicateconstraint.PredicateConstraintType getPSLConstraint() {
-			return edu.umd.cs.psl.model.kernel.predicateconstraint.PredicateConstraintType.PartialFunctional;
+		public PredicateConstraintType getPSLConstraint() {
+			return PredicateConstraintType.PartialFunctional;
 		}
 	},
-	
+
 	IF {
 		@Override
-		public edu.umd.cs.psl.model.kernel.predicateconstraint.PredicateConstraintType getPSLConstraint() {
-			return edu.umd.cs.psl.model.kernel.predicateconstraint.PredicateConstraintType.InverseFunctional;
+		public PredicateConstraintType getPSLConstraint() {
+			return PredicateConstraintType.InverseFunctional;
 		}
 	},
-	
+
 	F {
 		@Override
-		public edu.umd.cs.psl.model.kernel.predicateconstraint.PredicateConstraintType getPSLConstraint() {
-			return edu.umd.cs.psl.model.kernel.predicateconstraint.PredicateConstraintType.Functional;
+		public PredicateConstraintType getPSLConstraint() {
+			return PredicateConstraintType.Functional;
+		}
+	},
+
+	Symmetric {
+		@Override
+		public PredicateConstraintType getPSLConstraint() {
+			return null;
 		}
 	};
-	
-	public abstract edu.umd.cs.psl.model.kernel.predicateconstraint.PredicateConstraintType getPSLConstraint();
-	
+
+	public abstract PredicateConstraintType getPSLConstraint();
+
 }
