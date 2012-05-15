@@ -25,5 +25,6 @@ import edu.umd.cs.psl.config.Factory;
  * @author Stephen Bach <bach@cs.umd.edu>
  */
 public interface NormalSystemSolverFactory extends Factory {
-	public NormalSystemSolver getNormalSystemSolver(ConfigBundle config);
+	public NormalSystemSolver getNormalSystemSolver(ConfigBundle config)
+			throws ClassNotFoundException, IllegalAccessException, InstantiationException;
 }

@@ -32,7 +32,9 @@ import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix1D;
 import cern.colt.matrix.tdouble.impl.SparseCCDoubleMatrix2D;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
-import edu.umd.cs.psl.optimizer.conic.ipm.solver.preconditioner.BlockPreconditioner;
+import edu.umd.cs.psl.config.Factory;
+import edu.umd.cs.psl.optimizer.conic.ipm.solver.preconditioner.IdentityPreconditionerFactory;
+import edu.umd.cs.psl.optimizer.conic.ipm.solver.preconditioner.PreconditionerFactory;
 import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
 
 /**
@@ -49,10 +51,10 @@ public class ConjugateGradient implements NormalSystemSolver {
 	 * 
 	 * @see ConfigManager
 	 */
-	public static final String CONFIG_PREFIX = "cg";
+	public static final String CONFIG_PREFIX = "cgsolver";
 	
 	/**
-	 * Key for integer property. The ConjugateGradientIPM will throw an
+	 * Key for integer property. The ConjugateGradient solver will throw an
 	 * exception if the conjugate gradient solver completes this many iterations
 	 * without solving the normal system.
 	 */
@@ -61,7 +63,7 @@ public class ConjugateGradient implements NormalSystemSolver {
 	public static final int CG_MAX_ITER_DEFAULT = 1000000;
 	
 	/**
-	 * Key for double property. The conjugate gradient solver will terminate
+	 * Key for double property. The ConjugateGradient solver will terminate
 	 * as converged if the residual is less than this value times the
 	 * initial residual.
 	 */
@@ -70,7 +72,7 @@ public class ConjugateGradient implements NormalSystemSolver {
 	public static final double CG_REL_TOL_DEFAULT = 10e-10;
 	
 	/**
-	 * Key for double property. The conjugate gradient solver will terminate
+	 * Key for double property. The ConjugateGradient solver will terminate
 	 * as converged if the residual is less than this value.
 	 */
 	public static final String CG_ABS_TOL_KEY = CONFIG_PREFIX + ".cgabstol";
@@ -78,7 +80,7 @@ public class ConjugateGradient implements NormalSystemSolver {
 	public static final double CG_ABS_TOL_DEFAULT = 10e-50;
 	
 	/**
-	 * Key for double property. The ConjugateGradientIPM will throw an
+	 * Key for double property. The ConjugateGradient solver will throw an
 	 * exception if the conjugate graident solver reaches an iterate
 	 * whose residual is at least this value times the initial residual.
 	 */
@@ -86,10 +88,25 @@ public class ConjugateGradient implements NormalSystemSolver {
 	/** Default value for CG_DIV_TOL_KEY property */
 	public static final double CG_DIV_TOL_DEFAULT = 10e5;
 	
+	/**
+	 * Key for {@link Factory} or String property.
+	 * 
+	 * Should be set to a {@link PreconditionerFactory} or the fully qualified
+	 * name of one. Will be used to instantiate a {@link DoublePreconditioner}.
+	 */
+	public static final String PRECONDITIONER_KEY = CONFIG_PREFIX + ".preconditioner";
+	/**
+	 * Default value for PRECONDITIONER_KEY.
+	 * 
+	 * Value is instance of {@link DoubleIdentity}. 
+	 */
+	public static final PreconditionerFactory PRECONDITIONER_DEFAULT = new IdentityPreconditionerFactory();
+	
 	private final int maxIter;
 	private final double relTol;
 	private final double absTol;
 	private final double divTol;
+	private final PreconditionerFactory preconditionerFactory;
 	
 	private DoubleCG cg;
 	private DoublePreconditioner preconditioner;
@@ -97,11 +114,15 @@ public class ConjugateGradient implements NormalSystemSolver {
 	private DoubleMatrix2D A;
 	private DoubleMatrix1D x;
 	
-	public ConjugateGradient(ConfigBundle config) {
+	public ConjugateGradient(ConfigBundle config)
+			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		maxIter = config.getInt(CG_MAX_ITER_KEY, CG_MAX_ITER_DEFAULT);
 		relTol  = config.getDouble(CG_REL_TOL_KEY, CG_REL_TOL_DEFAULT);
 		absTol  = config.getDouble(CG_ABS_TOL_KEY, CG_ABS_TOL_DEFAULT);
 		divTol  = config.getDouble(CG_DIV_TOL_KEY, CG_DIV_TOL_DEFAULT);
+		
+		preconditionerFactory = (PreconditionerFactory) config.getFactory(PRECONDITIONER_KEY, PRECONDITIONER_DEFAULT);
+		
 		monitor = new DefaultDoubleIterationMonitor(maxIter, relTol, absTol, divTol);
 		monitor.setIterationReporter(new DoubleIterationReporter() {
 			
@@ -123,8 +144,7 @@ public class ConjugateGradient implements NormalSystemSolver {
 		x = new DenseDoubleMatrix1D(program.getA().rows());
 		cg = new DoubleCG(x);
 		cg.setIterationMonitor(monitor);
-		preconditioner = new DoubleIdentity();
-//		preconditioner = new BlockPreconditioner(program);
+		preconditioner = preconditionerFactory.getPreconditioner(program);
 		cg.setPreconditioner(preconditioner);
 	}
 
@@ -136,7 +156,6 @@ public class ConjugateGradient implements NormalSystemSolver {
 
 	@Override
 	public void solve(DoubleMatrix1D b) {
-		monitor.setFirst();
 		x.assign(0);
 		try {
 			cg.solve(A, b, x);

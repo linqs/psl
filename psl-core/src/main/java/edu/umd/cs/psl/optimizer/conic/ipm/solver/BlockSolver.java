@@ -43,6 +43,12 @@ import edu.umd.cs.psl.optimizer.conic.partition.ObjectiveCoefficientPartitioner;
 import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
 import edu.umd.cs.psl.optimizer.conic.program.LinearConstraint;
 
+/**
+ * Solves normal systems using the Schur's complement method, where the complement
+ * is complementary to a block-diagonal submatrix found by partitioning.
+ *
+ * @author Stephen Bach <bach@cs.umd.edu>
+ */
 public class BlockSolver implements NormalSystemSolver {
 	
 	private static final Logger log = LoggerFactory.getLogger(BlockSolver.class);
@@ -52,10 +58,10 @@ public class BlockSolver implements NormalSystemSolver {
 	 * 
 	 * @see ConfigManager
 	 */
-	public static final String CONFIG_PREFIX = "cg";
+	public static final String CONFIG_PREFIX = "blocksolver";
 	
 	/**
-	 * Key for integer property. The ConjugateGradientIPM will throw an
+	 * Key for integer property. The BlockSolver will throw an
 	 * exception if the conjugate gradient solver completes this many iterations
 	 * without solving the normal system.
 	 */
@@ -81,7 +87,7 @@ public class BlockSolver implements NormalSystemSolver {
 	public static final double CG_ABS_TOL_DEFAULT = 10e-50;
 	
 	/**
-	 * Key for double property. The ConjugateGradientIPM will throw an
+	 * Key for double property. The BlockSolver will throw an
 	 * exception if the conjugate graident solver reaches an iterate
 	 * whose residual is at least this value times the initial residual.
 	 */
@@ -156,107 +162,119 @@ public class BlockSolver implements NormalSystemSolver {
 		x = new DenseDoubleMatrix1D(partition.getCutConstraints().size());
 		cg = new DoubleCG(x);
 		cg.setIterationMonitor(monitor);
+		
+		log.debug("Cut {} constraints out of {}", partition.getCutConstraints().size(), program.getNumLinearConstraints());
 	}
 
 	@Override
 	public void setA(SparseCCDoubleMatrix2D A) {
 		log.trace("Starting to set A.");
 		int numCut = partition.getCutConstraints().size();
-		int numUncut = A.rows() - numCut;
-		
-		B = new SparseDoubleMatrix2D(numUncut, numUncut, numUncut * 4, 0.2, 0.5);
-		C = new SparseDoubleMatrix2D(numUncut, numCut, numUncut * 2, 0.2, 0.5);
-		D = new SparseDoubleMatrix2D(numCut, numCut, numCut * 4, 0.2, 0.5);
-		
-		A.forEachNonZero(new IntIntDoubleFunction() {
+		if (numCut > 0) {
+			int numUncut = A.rows() - numCut;
 			
-			@Override
-			public double apply(int first, int second, double third) {
-				boolean cutFirst = cutRows[first];
-				boolean cutSecond = cutRows[second];
-				/* Entry goes to D */
-				if (cutFirst && cutSecond) {
-					D.setQuick(rowAssignments[first], rowAssignments[second], third);
+			B = new SparseDoubleMatrix2D(numUncut, numUncut, numUncut * 4, 0.2, 0.5);
+			C = new SparseDoubleMatrix2D(numUncut, numCut, numUncut * 2, 0.2, 0.5);
+			D = new SparseDoubleMatrix2D(numCut, numCut, numCut * 4, 0.2, 0.5);
+			
+			A.forEachNonZero(new IntIntDoubleFunction() {
+				
+				@Override
+				public double apply(int first, int second, double third) {
+					boolean cutFirst = cutRows[first];
+					boolean cutSecond = cutRows[second];
+					/* Entry goes to D */
+					if (cutFirst && cutSecond) {
+						D.setQuick(rowAssignments[first], rowAssignments[second], third);
+					}
+					/* Entry goes to C */
+					else if (cutSecond) {
+						C.setQuick(rowAssignments[first], rowAssignments[second], third);
+					}
+					/* Entry goes to B */
+					else if (!cutFirst) {
+						B.setQuick(rowAssignments[first], rowAssignments[second], third);
+					}
+					
+					return third;
 				}
-				/* Entry goes to C */
-				else if (cutSecond) {
-					C.setQuick(rowAssignments[first], rowAssignments[second], third);
-				}
-				/* Entry goes to B */
-				else if (!cutFirst) {
-					B.setQuick(rowAssignments[first], rowAssignments[second], third);
+			});
+			
+			B = ((SparseDoubleMatrix2D) B).getColumnCompressed(false);
+			C = ((SparseDoubleMatrix2D) C).getColumnCompressed(false);
+			D = ((SparseDoubleMatrix2D) D).getColumnCompressed(false);
+			
+			choleskyB = new SparseDoubleCholeskyDecomposition(B, 1);
+			choleskyD = new SparseDoubleCholeskyDecomposition(D, 1);
+			
+			cg.setPreconditioner(new DoublePreconditioner() {
+				
+				@Override
+				public DoubleMatrix1D transApply(DoubleMatrix1D b, DoubleMatrix1D x) {
+					return apply(b, x);
 				}
 				
-				return third;
-			}
-		});
-		
-		B = ((SparseDoubleMatrix2D) B).getColumnCompressed(false);
-		C = ((SparseDoubleMatrix2D) C).getColumnCompressed(false);
-		D = ((SparseDoubleMatrix2D) D).getColumnCompressed(false);
-		
-		choleskyB = new SparseDoubleCholeskyDecomposition(B, 1);
-		choleskyD = new SparseDoubleCholeskyDecomposition(D, 1);
-		
-		cg.setPreconditioner(new DoublePreconditioner() {
-			
-			@Override
-			public DoubleMatrix1D transApply(DoubleMatrix1D b, DoubleMatrix1D x) {
-				return apply(b, x);
-			}
-			
-			@Override
-			public void setMatrix(DoubleMatrix2D A) {
-				/* Intentionally blank */
-			}
-			
-			@Override
-			public DoubleMatrix1D apply(DoubleMatrix1D b, DoubleMatrix1D x) {
-				x.assign(b);
-//				choleskyD.solve(x);
-				return x;
-			}
-		});
+				@Override
+				public void setMatrix(DoubleMatrix2D A) {
+					/* Intentionally blank */
+				}
+				
+				@Override
+				public DoubleMatrix1D apply(DoubleMatrix1D b, DoubleMatrix1D x) {
+					x.assign(b);
+					choleskyD.solve(x);
+					return x;
+				}
+			});
+		}
+		else {
+			choleskyB = new SparseDoubleCholeskyDecomposition(A, 1);
+		}
 		
 		log.trace("Finished setting A.");
 	}
 
 	@Override
 	public void solve(DoubleMatrix1D b) {
-		DoubleMatrix1D b0 = new DenseDoubleMatrix1D(D.rows());
-		DoubleMatrix1D b1 = new DenseDoubleMatrix1D(B.rows());
-		DoubleMatrix1D y0 = new DenseDoubleMatrix1D(D.rows());
-		
-		for (int i = 0; i < b.size(); i++) {
-			if (cutRows[i])
-				b0.set(rowAssignments[i], b.getQuick(i));
-			else
-				b1.set(rowAssignments[i], b.getQuick(i));
+		/* If the matrix was cut */
+		if (partition.getCutConstraints().size() > 0) {
+			DoubleMatrix1D b0 = new DenseDoubleMatrix1D(D.rows());
+			DoubleMatrix1D b1 = new DenseDoubleMatrix1D(B.rows());
+			DoubleMatrix1D y0 = new DenseDoubleMatrix1D(D.rows());
+			
+			for (int i = 0; i < b.size(); i++) {
+				if (cutRows[i])
+					b0.set(rowAssignments[i], b.getQuick(i));
+				else
+					b1.set(rowAssignments[i], b.getQuick(i));
+			}
+			
+			DoubleMatrix1D y1 = b1.copy();
+			
+			DoubleMatrix1D b0Scratch = b0.copy();
+			DoubleMatrix1D b1Scratch = b1.copy();
+			
+			/* Sets b0Scratch to b0 - C' * inv(B) * b1 */
+			choleskyB.solve(b1Scratch);
+			b0Scratch.assign(C.zMult(b1Scratch, null, 1.0, 0.0, true), DoubleFunctions.minus);
+			
+			try {
+				cg.solve(new SchurComplement(), b0Scratch, y0);
+			} catch (IterativeSolverDoubleNotConvergedException e) {
+				throw new IllegalArgumentException(e);
+			}
+			
+			C.zMult(y0, b1Scratch);
+			y1.assign(b1Scratch, DoubleFunctions.minus);
+			choleskyB.solve(y1);
+			
+			/* Puts the results back into b */
+			for (int i = 0; i < rowAssignments.length; i++) {
+				b.setQuick(i, (cutRows[i]) ? y0.getQuick(rowAssignments[i]) : y1.getQuick(rowAssignments[i]));
+			}
 		}
-		
-		DoubleMatrix1D y1 = b1.copy();
-		
-		DoubleMatrix1D b0Scratch = b0.copy();
-		DoubleMatrix1D b1Scratch = b1.copy();
-		
-		/* Sets b0Scratch to b0 - C' * inv(B) * b1 */
-		choleskyB.solve(b1Scratch);
-		b0Scratch.assign(C.zMult(b1Scratch, null, 1.0, 0.0, true), DoubleFunctions.minus);
-		
-		try {
-			monitor.setFirst();
-			cg.solve(new SchurComplement(), b0Scratch, y0);
-		} catch (IterativeSolverDoubleNotConvergedException e) {
-			throw new IllegalArgumentException(e);
-		}
-		
-		C.zMult(y0, b1Scratch);
-		y1.assign(b1Scratch, DoubleFunctions.minus);
-		choleskyB.solve(y1);
-		
-		/* Puts the results back into b */
-		for (int i = 0; i < rowAssignments.length; i++) {
-			b.setQuick(i, (cutRows[i]) ? y0.getQuick(rowAssignments[i]) : y1.getQuick(rowAssignments[i]));
+		else {
+			choleskyB.solve(b);
 		}
 	}
 	

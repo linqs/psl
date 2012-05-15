@@ -14,21 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.optimizer.conic.ipm.solver;
+package edu.umd.cs.psl.optimizer.conic.ipm.solver.preconditioner;
 
-import edu.umd.cs.psl.config.ConfigBundle;
+import cern.colt.matrix.tdouble.algo.solver.preconditioner.DoublePreconditioner;
+import edu.umd.cs.psl.config.Factory;
+import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
 
 /**
- * Factory for {@link ConjugateGradient} normal system solver.
+ * Factory for a preconditioner.
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-public class ConjugateGradientFactory implements NormalSystemSolverFactory {
-
-	@Override
-	public NormalSystemSolver getNormalSystemSolver(ConfigBundle config)
-			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-		return new ConjugateGradient(config);
-	}
-
+public interface PreconditionerFactory extends Factory {
+	public DoublePreconditioner getPreconditioner(ConicProgram program);
 }

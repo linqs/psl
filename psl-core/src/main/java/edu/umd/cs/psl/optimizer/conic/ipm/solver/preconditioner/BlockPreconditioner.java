@@ -88,7 +88,6 @@ public class BlockPreconditioner implements DoublePreconditioner {
 		});
 		
 		cholesky = new SparseDoubleCholeskyDecomposition(localA, 1);
-//		cholesky = new SparseDoubleCholeskyDecomposition(A.copy(), 1);
 		log.trace("Matrix set.");
 	}
 
