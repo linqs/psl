@@ -159,6 +159,7 @@ public class ConjugateGradient implements NormalSystemSolver {
 		x.assign(0);
 		try {
 			cg.solve(A, b, x);
+			log.debug("Solved in {} iterations.", monitor.iterations());
 		}
 		catch (IterativeSolverDoubleNotConvergedException e) {
 			throw new IllegalArgumentException(e);

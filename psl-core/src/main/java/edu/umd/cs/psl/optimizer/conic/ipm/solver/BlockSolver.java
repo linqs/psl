@@ -95,15 +95,28 @@ public class BlockSolver implements NormalSystemSolver {
 	/** Default value for CG_DIV_TOL_KEY property */
 	public static final double CG_DIV_TOL_DEFAULT = 10e5;
 	
+	/**
+	 * Key for non-negative integer property. The BlockSolver preconditions
+	 * the Schur's complement matrix by a truncated series summation. Higher
+	 * values generally result in fewer conjugate gradient iterations, but each
+	 * iteration is more time consuming. 
+	 */
+	public static final String PRECONDITIONER_TERMS_KEY = CONFIG_PREFIX + ".preconditionerterms";
+	/** Default value for PRECONDITIONER_TERMS_KEY property */
+	public static final int PRECONDITIONER_TERMS_DEFAULT = 1;
+	
 	protected final int maxIter;
 	protected final double relTol;
 	protected final double absTol;
 	protected final double divTol;
+	protected final int terms;
 	
 	protected ConicProgram program;
 	protected ConicProgramPartition partition;
 	protected SparseDoubleCholeskyDecomposition choleskyB;
 	protected SparseDoubleCholeskyDecomposition choleskyD;
+	
+	protected DoubleMatrix1D scratch;
 	
 	protected DoubleCG cg;
 	protected DoubleIterationMonitor monitor;
@@ -118,6 +131,11 @@ public class BlockSolver implements NormalSystemSolver {
 		relTol  = config.getDouble(CG_REL_TOL_KEY, CG_REL_TOL_DEFAULT);
 		absTol  = config.getDouble(CG_ABS_TOL_KEY, CG_ABS_TOL_DEFAULT);
 		divTol  = config.getDouble(CG_DIV_TOL_KEY, CG_DIV_TOL_DEFAULT);
+		
+		terms = config.getInt(PRECONDITIONER_TERMS_KEY, PRECONDITIONER_TERMS_DEFAULT);
+		if (terms < 0)
+			throw new IllegalArgumentException("Property " + PRECONDITIONER_TERMS_KEY + " must be non-negative.");
+		
 		monitor = new DefaultDoubleIterationMonitor(maxIter, relTol, absTol, divTol);
 		monitor.setIterationReporter(new DoubleIterationReporter() {
 			
@@ -141,6 +159,9 @@ public class BlockSolver implements NormalSystemSolver {
 		partitioner.setConicProgram(program);
 		partition = partitioner.getPartition();
 		Set<LinearConstraint> cutConstraints = partition.getCutConstraints();
+		
+		/* Initializes the scratch vector used by the preconditioner */
+		scratch = new DenseDoubleMatrix1D(program.getNumLinearConstraints() - cutConstraints.size());
 		
 		rowAssignments = new int[program.getNumLinearConstraints()];
 		cutRows = new boolean[program.getNumLinearConstraints()];
@@ -221,8 +242,22 @@ public class BlockSolver implements NormalSystemSolver {
 				
 				@Override
 				public DoubleMatrix1D apply(DoubleMatrix1D b, DoubleMatrix1D x) {
+					DoubleMatrix1D x1 = null;
 					x.assign(b);
 					choleskyD.solve(x);
+					
+					for (int i = 0; i < terms; i++) {
+						if (i == 0)
+							x1 = x.copy();
+						
+						C.zMult(x1, scratch);
+						choleskyB.solve(scratch);
+						C.zMult(scratch, x1, 1.0, 0.0, true);
+						choleskyD.solve(x1);
+						
+						x.assign(x1, DoubleFunctions.plus);
+					}
+					
 					return x;
 				}
 			});
@@ -260,6 +295,7 @@ public class BlockSolver implements NormalSystemSolver {
 			
 			try {
 				cg.solve(new SchurComplement(), b0Scratch, y0);
+				log.debug("Solved for complement in {} iterations.", monitor.iterations());
 			} catch (IterativeSolverDoubleNotConvergedException e) {
 				throw new IllegalArgumentException(e);
 			}
@@ -281,9 +317,14 @@ public class BlockSolver implements NormalSystemSolver {
 	protected class SchurComplement extends SparseDoubleMatrix2D {
 		
 		private static final long serialVersionUID = 112358132134L;
+		
+		private final DoubleMatrix1D scratch0;
+		private final DoubleMatrix1D scratch1;
 
 		public SchurComplement() {
 			super(D.rows(), D.columns(), 1, 0.2, 0.5);
+			scratch0 = new DenseDoubleMatrix1D(C.columns());
+			scratch1 = new DenseDoubleMatrix1D(C.rows());
 		}
 		
 		@Override
@@ -304,11 +345,7 @@ public class BlockSolver implements NormalSystemSolver {
 		}
 		
 		@Override
-		public DoubleMatrix1D zMult(DoubleMatrix1D y, DoubleMatrix1D z) {
-			DoubleMatrix1D scratch0 = new DenseDoubleMatrix1D((int) z.size());
-			DoubleMatrix1D scratch1 = new DenseDoubleMatrix1D(C.rows());
-			
-			C.zMult(y, scratch1);
+		public DoubleMatrix1D zMult(DoubleMatrix1D y, DoubleMatrix1D z) {C.zMult(y, scratch1);
 			choleskyB.solve(scratch1);
 			C.zMult(scratch1, scratch0, 1.0, 0.0, true);
 			
