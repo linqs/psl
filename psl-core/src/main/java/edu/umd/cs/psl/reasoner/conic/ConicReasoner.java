@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.reasoner;
+package edu.umd.cs.psl.reasoner.conic;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -43,6 +43,7 @@ import edu.umd.cs.psl.optimizer.conic.program.LinearConstraint;
 import edu.umd.cs.psl.optimizer.conic.program.NonNegativeOrthantCone;
 import edu.umd.cs.psl.optimizer.conic.program.SecondOrderCone;
 import edu.umd.cs.psl.optimizer.conic.program.Variable;
+import edu.umd.cs.psl.reasoner.Reasoner;
 import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
 import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
 import edu.umd.cs.psl.reasoner.function.FunctionComparator;

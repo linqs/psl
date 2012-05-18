@@ -34,8 +34,8 @@ import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.optimizer.lbfgs.ConvexFunc;
-import edu.umd.cs.psl.reasoner.ConicReasoner;
-import edu.umd.cs.psl.reasoner.ConicReasoner.DistributionType;
+import edu.umd.cs.psl.reasoner.conic.ConicReasoner;
+import edu.umd.cs.psl.reasoner.conic.ConicReasoner.DistributionType;
 import edu.umd.cs.psl.sampler.DerivativeSampler;
 import edu.umd.cs.psl.sampler.PartitionEstimationSampler;
 
