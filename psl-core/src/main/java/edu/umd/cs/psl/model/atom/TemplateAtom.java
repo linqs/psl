@@ -44,7 +44,7 @@ public class TemplateAtom implements Atom {
 
 	public TemplateAtom(Predicate p, Term[] args) {
 		predicate = p;
-		arguments = args;
+		arguments = Arrays.copyOf(args, args.length);
 		hashcode = new HashCodeBuilder().append(predicate).append(arguments).toHashCode();
 		checkSchema();
 	}
