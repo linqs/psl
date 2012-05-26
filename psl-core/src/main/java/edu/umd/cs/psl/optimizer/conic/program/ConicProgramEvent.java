@@ -20,6 +20,7 @@ public enum ConicProgramEvent {
 	MatricesCheckedIn, MatricesCheckedOut,
 	NNOCCreated, NNOCDeleted,
 	SOCCreated, SOCDeleted,
+	RSOCCreated, RSOCDeleted,
 	ObjCoeffChanged,
 	ConCreated, VarAddedToCon, ConCoeffChanged, VarRemovedFromCon, ConValueChanged, ConDeleted
 }

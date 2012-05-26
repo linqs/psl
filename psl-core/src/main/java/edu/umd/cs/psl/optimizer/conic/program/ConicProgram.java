@@ -115,6 +115,15 @@ public class ConicProgram {
 		return Collections.unmodifiableSet(SOCs);
 	}
 	
+	public RotatedSecondOrderCone createRotatedSecondOrderCone(int n) {
+		verifyCheckedIn();
+		return new RotatedSecondOrderCone(this, n);
+	}
+	
+	public Set<RotatedSecondOrderCone> getRotatedSecondOrderCones() {
+		return Collections.unmodifiableSet(RSOCs);
+	}
+	
 	public Set<Cone> getCones() {
 		return ImmutableSet.<Cone>builder().addAll(NNOCs).addAll(SOCs).addAll(RSOCs).build();
 	}
@@ -461,6 +470,23 @@ public class ConicProgram {
 				case SOCDeleted:
 					SOCs.remove((SecondOrderCone) sender);
 					numVars -= ((SecondOrderCone) sender).getN();
+					break;
+				}
+			}
+			else
+				throw new IllegalArgumentException(UNEXPECTED_SENDER);
+			break;
+		case RSOCCreated:
+		case RSOCDeleted:
+			if (sender instanceof RotatedSecondOrderCone) {
+				switch (e) {
+				case RSOCCreated:
+					RSOCs.add((RotatedSecondOrderCone) sender);
+					numVars += ((RotatedSecondOrderCone) sender).getN();
+					break;
+				case RSOCDeleted:
+					RSOCs.remove((RotatedSecondOrderCone) sender);
+					numVars -= ((RotatedSecondOrderCone) sender).getN();
 					break;
 				}
 			}

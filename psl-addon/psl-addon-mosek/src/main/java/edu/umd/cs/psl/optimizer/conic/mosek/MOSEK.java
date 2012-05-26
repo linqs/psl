@@ -36,6 +36,7 @@ import edu.umd.cs.psl.optimizer.conic.program.ConeType;
 import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
 import edu.umd.cs.psl.optimizer.conic.program.LinearConstraint;
 import edu.umd.cs.psl.optimizer.conic.program.NonNegativeOrthantCone;
+import edu.umd.cs.psl.optimizer.conic.program.RotatedSecondOrderCone;
 import edu.umd.cs.psl.optimizer.conic.program.SecondOrderCone;
 import edu.umd.cs.psl.optimizer.conic.program.Variable;
 
@@ -73,10 +74,11 @@ public class MOSEK implements ConicProgramSolver {
 	private double dualityGap;
 	private int numThreads;
 	
-	private static final ArrayList<ConeType> supportedCones = new ArrayList<ConeType>(2);
+	private static final ArrayList<ConeType> supportedCones = new ArrayList<ConeType>(3);
 	static {
 		supportedCones.add(ConeType.NonNegativeOrthantCone);
 		supportedCones.add(ConeType.SecondOrderCone);
+		supportedCones.add(ConeType.RotatedSecondOrderCone);
 	}
 	
 	private Env environment;
@@ -148,6 +150,28 @@ public class MOSEK implements ConicProgramSolver {
 					}
 				}
 				task.appendcone(Env.conetype.quad, 0.0, indices);
+			}
+			
+			/* Processes RotatedSecondOrderCones */
+			for (RotatedSecondOrderCone cone : program.getRotatedSecondOrderCones()) {
+				int[] indices = new int[cone.getN()];
+				int i = 2;
+				for (Variable v : cone.getVariables()) {
+					int index = program.getIndex(v);
+					if (v.equals(cone.getNthVariable())) {
+						indices[0] = index;
+						task.putbound(Env.accmode.var, index, Env.boundkey.lo, 0.0, Double.POSITIVE_INFINITY);
+					}
+					else if (v.equals(cone.getNMinus1stVariable())) {
+						indices[1] = index;
+						task.putbound(Env.accmode.var, index, Env.boundkey.lo, 0.0, Double.POSITIVE_INFINITY);
+					}
+					else {
+						indices[i++] = index;
+						task.putbound(Env.accmode.var, index, Env.boundkey.fr, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY);
+					}
+				}
+				task.appendcone(Env.conetype.rquad, 0.0, indices);
 			}
 			
 			/* Sets the linear constraints */
