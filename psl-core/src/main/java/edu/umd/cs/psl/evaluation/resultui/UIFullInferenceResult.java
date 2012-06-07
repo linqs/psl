@@ -26,6 +26,7 @@ import edu.umd.cs.psl.evaluation.statistics.ResultComparator;
 import edu.umd.cs.psl.evaluation.statistics.SimpleResultComparator;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.predicate.Predicate;
+import java.util.*;
 
 public class UIFullInferenceResult {
 	
@@ -37,6 +38,10 @@ public class UIFullInferenceResult {
 		statistics = stats;
 	}
 	
+	public Set<Atom> getAtoms(Predicate p) {
+	    return dbproxy.getAtomSet(p);	
+	}
+
 	public void printAtoms(Predicate p) {
 		printAtoms(p,new DefaultAtomPrintStream());
 	}
