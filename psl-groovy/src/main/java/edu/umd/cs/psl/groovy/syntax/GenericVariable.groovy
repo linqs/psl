@@ -64,6 +64,13 @@ class GenericVariable {
 		return new FormulaContainer(new TemplateAtom(SpecialPredicates.NonSymmetric,this.toAtomVariable(),other.toAtomVariable()));
 	}
 	
+	def minus(other) {
+		if (!(other instanceof GenericVariable)) {
+			throw new IllegalArgumentException("Can only compare variables to variables! ${this} compared to ${other}");
+		}
+		assert other instanceof GenericVariable
+		return new FormulaContainer(new TemplateAtom(SpecialPredicates.Unequal,this.toAtomVariable(),other.toAtomVariable()));
+	}
 	
 	def getSetTerm() {
 		return new VariableSetTerm(new Variable(name),ArgumentType.Entity);

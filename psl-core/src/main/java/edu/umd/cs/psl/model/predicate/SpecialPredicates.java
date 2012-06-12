@@ -38,7 +38,7 @@ public enum SpecialPredicates implements FunctionalPredicate {
 
 		@Override
 		public String getName() {
-			return "#NonReflexive";
+			return "#NotEqual";
 		}		
 	},
 	
