@@ -27,13 +27,13 @@ import edu.umd.cs.psl.reasoner.function.FunctionSummand;
 import edu.umd.cs.psl.reasoner.function.FunctionTerm;
 import edu.umd.cs.psl.reasoner.function.MaxFunction;
 
-class ConvexCompatibilityWrapper extends GroundKernelWrapper {
+class PairwiseLinearConvexCompatibilityWrapper extends GroundKernelWrapper {
 	
 	protected final Vector<Double> coeffs;
 	protected double constant;
 	protected final boolean nonNegative;
 	
-	ConvexCompatibilityWrapper(ADMMReasoner reasoner, GroundCompatibilityKernel groundKernel) {
+	PairwiseLinearConvexCompatibilityWrapper(ADMMReasoner reasoner, GroundCompatibilityKernel groundKernel) {
 		super(reasoner, groundKernel);
 		
 		coeffs = new Vector<Double>(x.size());

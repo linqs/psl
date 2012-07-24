@@ -51,6 +51,7 @@ import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.kernel.datacertainty.GroundDataCertainty;
 import edu.umd.cs.psl.model.kernel.rule.AbstractGroundRule;
 import edu.umd.cs.psl.model.kernel.setdefinition.GroundSetDefinition;
+import edu.umd.cs.psl.reasoner.Reasoner.DistributionType;
 
 public class FixpointModelApplication implements ModelApplication, FullInference {
 	
@@ -215,7 +216,7 @@ public class FixpointModelApplication implements ModelApplication, FullInference
 		}
 
 		proc.terminate();
-		return new MemoryFullInferenceResult(proc,groundkernels.getTotalIncompatibility(),
+		return new MemoryFullInferenceResult(proc,groundkernels.getTotalIncompatibility(DistributionType.linear),
 				store.getNumAtoms(ImmutableSet.of(AtomStatus.ConsideredCertainty,AtomStatus.ActiveRV)),
 				groundkernels.size());
 

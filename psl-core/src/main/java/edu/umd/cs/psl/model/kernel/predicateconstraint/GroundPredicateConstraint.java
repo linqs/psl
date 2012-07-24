@@ -125,8 +125,11 @@ public class GroundPredicateConstraint implements GroundConstraintKernel {
 		}
 		if (template.getConstraintType().constraintHolds(sum)) {
 			return 0.0;
-		} else
-			return Double.POSITIVE_INFINITY;
+		} else {
+			System.out.println("Constraint violated. Sum: " + sum);
+			return 0;
+//			return Double.POSITIVE_INFINITY;
+		}
 	}
 
 	@Override

@@ -27,19 +27,21 @@ import edu.umd.cs.psl.reasoner.function.FunctionSum;
 import edu.umd.cs.psl.reasoner.function.FunctionSummand;
 import edu.umd.cs.psl.reasoner.function.FunctionTerm;
 
-class LinearConstraintWrapper extends GroundKernelWrapper {
+class PairwiseLinearConstraintWrapper extends GroundKernelWrapper {
 	
-	LinearConstraintWrapper(ADMMReasoner reasoner, GroundConstraintKernel groundKernel) {
+	private final double value;
+	private final FunctionComparator comparator;
+	
+	PairwiseLinearConstraintWrapper(ADMMReasoner reasoner, GroundConstraintKernel groundKernel) {
 		super(reasoner, groundKernel);
 		
 		ConstraintTerm constraint = groundKernel.getConstraintDefinition();
-		if (!constraint.getComparator().equals(FunctionComparator.SmallerThan))
-			throw new IllegalArgumentException("Comparator must be SmallerThan.");
-		if (constraint.getValue() != 1.0)
-			throw new IllegalArgumentException("Constraint value must be 1.0.");
+		value = constraint.getValue();
+		comparator = constraint.getComparator();
+		
 		FunctionTerm function = constraint.getFunction();
-//		if (!function.isLinear())
-//			throw new IllegalArgumentException("Constraint must be linear.");
+		if (!function.isLinear())
+			throw new IllegalArgumentException("Constraint must be linear.");
 		
 		/* Processes the function */
 		if (function instanceof FunctionSum) {
@@ -69,8 +71,7 @@ class LinearConstraintWrapper extends GroundKernelWrapper {
 		
 		/* First minimizes without regard for any constraints, then projects on to a box */
 		for (int i = 0; i < a.length; i++) {
-			a[i] = y.get(i) - reasoner.stepSize * reasoner.z.get(zIndices.get(i));
-			a[i] /= -1 * reasoner.stepSize;
+			a[i] = reasoner.z.get(zIndices.get(i)) - y.get(i) / reasoner.stepSize;
 			
 			if (a[i] < 0)
 				a[i] = 0;
@@ -78,11 +79,12 @@ class LinearConstraintWrapper extends GroundKernelWrapper {
 				a[i] = 1;
 		}
 		
-		/* If it's not in the simplex, projects it */
+		/* If it doesn't satisfy the constraint, projects it */
 		
 		/* If still outside the simplex, minimizes along the boundary */
 		if (a.length > 1) {
 			if (a[0] + a[1] > 1) {
+				reasoner.linearConstraintSolvedFace++;
 				a[0] = y.get(0) - reasoner.stepSize * reasoner.z.get(zIndices.get(0));
 				a[0] -= y.get(1) - reasoner.stepSize * reasoner.z.get(zIndices.get(1));
 				a[0] -= reasoner.stepSize;
@@ -101,6 +103,8 @@ class LinearConstraintWrapper extends GroundKernelWrapper {
 					a[1] = 1 - a[0];
 				}
 			}
+			else
+				reasoner.linearConstraintSolvedInterior++;
 		}
 		
 		/* Updates the local primal variables */

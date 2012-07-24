@@ -129,7 +129,7 @@ public class GroundPriorWeight implements GroundCompatibilityKernel {
 
 	@Override
 	public double getIncompatibility() {
-		return getWeight().getWeight()*getL1Distance();
+		return getL1Distance();
 	}
 	
 	protected double getL1Distance() {

@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 
 import mosek.Env;
+import mosek.Env.solveform;
 import mosek.Task;
 
 import org.slf4j.Logger;
@@ -57,7 +58,7 @@ public class MOSEK implements ConicProgramSolver {
 	 */
 	public static final String DUALITY_GAP_THRESHOLD_KEY = CONFIG_PREFIX + ".dualitygapthreshold";
 	/** Default value for DUALITY_GAP_THRESHOLD_KEY property. */
-	public static final double DUALITY_GAP_THRESHOLD_DEFAULT = 10e-6;
+	public static final double DUALITY_GAP_THRESHOLD_DEFAULT = 1e-8;
 	
 	/**
 	 * Key for integer property. Controls the number of threads employed by the
@@ -70,9 +71,19 @@ public class MOSEK implements ConicProgramSolver {
 	/** Default value for DUALITY_GAP_THRESHOLD_KEY property. */
 	public static final int NUM_THREADS_DEFAULT = 1;
 	
+	/**
+	 * Key for {@link solveform} property. Controls whether MOSEK will solve
+	 * the problem as given ("primal"), swap the primal and dual ("dual", if supported),
+	 * or be free to choose either ("free").
+	 */
+	public static final String SOLVE_FORM_KEY = CONFIG_PREFIX + ".solveform";
+	/** Default value for SOLVE_FORM_KEY property */
+	public static final solveform SOLVE_FORM_DEFAULT = solveform.free;
+	
 	private ConicProgram program;
-	private double dualityGap;
-	private int numThreads;
+	final private double dualityGap;
+	final private int numThreads;
+	final private solveform solveForm;
 	
 	private static final ArrayList<ConeType> supportedCones = new ArrayList<ConeType>(3);
 	static {
@@ -90,6 +101,7 @@ public class MOSEK implements ConicProgramSolver {
 		program = null;
 		dualityGap = config.getDouble(DUALITY_GAP_THRESHOLD_KEY, DUALITY_GAP_THRESHOLD_DEFAULT);
 		numThreads = config.getInt(NUM_THREADS_KEY, NUM_THREADS_DEFAULT);
+		solveForm = (solveform) config.getEnum(SOLVE_FORM_KEY, SOLVE_FORM_DEFAULT); 
 	}
 
 	@Override
@@ -120,7 +132,9 @@ public class MOSEK implements ConicProgramSolver {
 			MsgClass msgobj = new MsgClass();
 			task.set_Stream(mosek.Env.streamtype.log, msgobj);
 			task.putdouparam(mosek.Env.dparam.intpnt_tol_rel_gap, dualityGap);
+			task.putdouparam(mosek.Env.dparam.intpnt_co_tol_rel_gap, dualityGap);
 			task.putintparam(mosek.Env.iparam.intpnt_num_threads, numThreads);
+			task.putintparam(mosek.Env.iparam.intpnt_solve_form, solveForm.value);
 			
 			/* Creates the variables and sets the objective coefficients */
 			task.append(mosek.Env.accmode.var, (int) x.size());
@@ -238,7 +252,7 @@ public class MOSEK implements ConicProgramSolver {
 			
 		} catch (mosek.MosekException e) {
 			/* Catch both Error and Warning */ 
-			throw new AssertionError(e.getMessage()); 
+			throw new AssertionError(e); 
 		}
 	}
 

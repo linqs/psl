@@ -208,10 +208,14 @@ public class MaintainedMemoryFullInference implements ModelApplication, FullInfe
 			hasChanged=false;
 		}
 		proc.terminate();
-		return new MemoryFullInferenceResult(proc,groundkernels.getTotalIncompatibility(),
+		return new MemoryFullInferenceResult(proc,groundkernels.getTotalIncompatibility(reasoner.getDistributionType()),
 						store.getNumAtoms(ImmutableSet.of(AtomStatus.ConsideredCertainty,AtomStatus.ActiveRV)),
 						groundkernels.size());
 
+	}
+	
+	public double getTotalIncompatibility() {
+		return groundkernels.getTotalIncompatibility(reasoner.getDistributionType());
 	}
 	
 	//####### Interface to other components #####

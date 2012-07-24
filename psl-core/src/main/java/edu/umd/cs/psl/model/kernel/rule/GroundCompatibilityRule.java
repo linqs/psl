@@ -43,7 +43,7 @@ public class GroundCompatibilityRule extends AbstractGroundRule implements
 
 	@Override
 	public double getIncompatibility() {
-		return numGroundings*getWeight().getWeight()*(1.0-getTruthValue());
+		return numGroundings*(1.0-getTruthValue());
 	}
 	
 	@Override
