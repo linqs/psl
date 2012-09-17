@@ -54,11 +54,30 @@ public class MOSEK implements ConicProgramSolver {
 	
 	/**
 	 * Key for double property. The IPM will iterate until the relative duality gap
-	 * is less than its value. Corresponds to the mosek.Env.dparam.intpnt_tol_rel_gap parameter.
+	 * is less than its value. Corresponds to the mosek.Env.dparam.intpnt_tol_rel_gap
+	 * and mosek.Env.dparam.intpnt_co_tol_rel_gap parameters.
 	 */
-	public static final String DUALITY_GAP_THRESHOLD_KEY = CONFIG_PREFIX + ".dualitygapthreshold";
+	public static final String DUALITY_GAP_THRESHOLD_KEY = CONFIG_PREFIX + ".dualitygap";
 	/** Default value for DUALITY_GAP_THRESHOLD_KEY property. */
 	public static final double DUALITY_GAP_THRESHOLD_DEFAULT = 1e-8;
+	
+	/**
+	 * Key for double property. The IPM will iterate until the primal infeasibility
+	 * is less than its value. Corresponds to the mosek.Env.dparam.intpnt_tol_pfeas
+	 * and mosek.Env.dparam.intpnt_co_tol_pfeas parameters.
+	 */
+	public static final String PRIMAL_FEASIBILITY_THRESHOLD_KEY = CONFIG_PREFIX + ".primalfeasibility";
+	/** Default value for PRIMAL_FEASIBILITY_THRESHOLD_KEY property. */
+	public static final double PRIMAL_FEASIBILITY_THRESHOLD_DEFAULT = 1e-8;
+	
+	/**
+	 * Key for double property. The IPM will iterate until the dual infeasibility
+	 * is less than its value. Corresponds to the mosek.Env.dparam.intpnt_tol_dfeas
+	 * and mosek.Env.dparam.intpnt_co_tol_dfeas parameters.
+	 */
+	public static final String DUAL_FEASIBILITY_THRESHOLD_KEY = CONFIG_PREFIX + ".dualfeasibility";
+	/** Default value for DUAL_FEASIBILITY_THRESHOLD_KEY property. */
+	public static final double DUAL_FEASIBILITY_THRESHOLD_DEFAULT = 1e-8;
 	
 	/**
 	 * Key for integer property. Controls the number of threads employed by the
@@ -68,7 +87,7 @@ public class MOSEK implements ConicProgramSolver {
 	 * mosek.Env.iparam.intpnt_num_threads parameter.
 	 */
 	public static final String NUM_THREADS_KEY = CONFIG_PREFIX + ".numthreads";
-	/** Default value for DUALITY_GAP_THRESHOLD_KEY property. */
+	/** Default value for NUM_THREADS_KEY property. */
 	public static final int NUM_THREADS_DEFAULT = 1;
 	
 	/**
@@ -82,6 +101,8 @@ public class MOSEK implements ConicProgramSolver {
 	
 	private ConicProgram program;
 	final private double dualityGap;
+	final private double pFeasTol;
+	final private double dFeasTol;
 	final private int numThreads;
 	final private solveform solveForm;
 	
@@ -100,6 +121,8 @@ public class MOSEK implements ConicProgramSolver {
 		
 		program = null;
 		dualityGap = config.getDouble(DUALITY_GAP_THRESHOLD_KEY, DUALITY_GAP_THRESHOLD_DEFAULT);
+		pFeasTol = config.getDouble(PRIMAL_FEASIBILITY_THRESHOLD_KEY, PRIMAL_FEASIBILITY_THRESHOLD_DEFAULT);
+		dFeasTol = config.getDouble(DUAL_FEASIBILITY_THRESHOLD_KEY, DUAL_FEASIBILITY_THRESHOLD_DEFAULT);
 		numThreads = config.getInt(NUM_THREADS_KEY, NUM_THREADS_DEFAULT);
 		solveForm = (solveform) config.getEnum(SOLVE_FORM_KEY, SOLVE_FORM_DEFAULT); 
 	}
@@ -131,8 +154,14 @@ public class MOSEK implements ConicProgramSolver {
 			task.putcfix(0.0);
 			MsgClass msgobj = new MsgClass();
 			task.set_Stream(mosek.Env.streamtype.log, msgobj);
+			
 			task.putdouparam(mosek.Env.dparam.intpnt_tol_rel_gap, dualityGap);
 			task.putdouparam(mosek.Env.dparam.intpnt_co_tol_rel_gap, dualityGap);
+			task.putdouparam(mosek.Env.dparam.intpnt_tol_pfeas, pFeasTol);
+			task.putdouparam(mosek.Env.dparam.intpnt_co_tol_pfeas, pFeasTol);
+			task.putdouparam(mosek.Env.dparam.intpnt_tol_dfeas, dFeasTol);
+			task.putdouparam(mosek.Env.dparam.intpnt_co_tol_dfeas, dFeasTol);
+			
 			task.putintparam(mosek.Env.iparam.intpnt_num_threads, numThreads);
 			task.putintparam(mosek.Env.iparam.intpnt_solve_form, solveForm.value);
 			
@@ -261,7 +290,7 @@ public class MOSEK implements ConicProgramSolver {
 			super (); 
 		} 
 		public void stream (String msg) {
-			log.trace(msg);
+			log.debug(msg);
 		} 
 	}
 }
