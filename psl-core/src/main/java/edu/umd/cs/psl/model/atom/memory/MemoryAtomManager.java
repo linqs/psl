@@ -177,7 +177,7 @@ public class MemoryAtomManager implements AtomManager {
 	}
 
 	@Override
-	public int checkToActivate() {
+	public int runActivationStrategy() {
 		int noAffected=0;
 		for (Atom atom : store.getAtoms(ImmutableSet.of(AtomStatus.ConsideredRV, AtomStatus.ActiveRV))) {
 			if (atom.getStatus().isConsidered() && activateAtom(atom)) noAffected++;

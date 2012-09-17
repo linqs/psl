@@ -28,16 +28,16 @@ import edu.umd.cs.psl.util.collection.Filters;
 
 public class MemoryGroundKernelStore implements GroundKernelStore {
 
-	protected final KeyedRetrievalSet<Kernel,GroundKernel> evidences;
+	protected final KeyedRetrievalSet<Kernel,GroundKernel> groundKernels;
 	
 	public MemoryGroundKernelStore() {
-		evidences = new KeyedRetrievalSet<Kernel,GroundKernel>();
+		groundKernels = new KeyedRetrievalSet<Kernel,GroundKernel>();
 	}
 	
 	@Override
 	public double getTotalIncompatibility() {
 		double objective = 0.0;
-		for (GroundKernel e : evidences) {
+		for (GroundKernel e : groundKernels) {
 			objective+=e.getIncompatibility();
 		}
 		return objective;
@@ -45,27 +45,27 @@ public class MemoryGroundKernelStore implements GroundKernelStore {
 	
 	@Override
 	public Iterable<GroundCompatibilityKernel> getCompatibilityKernels() {
-		return Iterables.filter(evidences.filterIterable(Filters.ProbabilisticEvidence), GroundCompatibilityKernel.class);
+		return Iterables.filter(groundKernels.filterIterable(Filters.ProbabilisticEvidence), GroundCompatibilityKernel.class);
 	}
 	
 	@Override
 	public int size() {
-		return evidences.size();
+		return groundKernels.size();
 	}
 	
 	@Override
 	public Iterable<GroundKernel> getGroundKernels() {
-		return evidences;
+		return groundKernels;
 	}
 	
 	@Override
 	public Iterable<GroundKernel> getGroundKernels(Kernel et) {
-		return evidences.keyIterable(et);
+		return groundKernels.keyIterable(et);
 	}	
 	
 	@Override
 	public void addGroundKernel(GroundKernel e) {
-		if (!evidences.put(e.getKernel(),e)) throw new IllegalArgumentException("Evidence has already been added: "+e);
+		if (!groundKernels.put(e.getKernel(),e)) throw new IllegalArgumentException("Evidence has already been added: "+e);
 		for (Atom atom : e.getAtoms()) if (!atom.registerGroundKernel(e)) throw new AssertionError("Evidence has already been registered with atom! " + e);
 	}
 	
@@ -78,17 +78,17 @@ public class MemoryGroundKernelStore implements GroundKernelStore {
 	public void removeGroundKernel(GroundKernel e) {
 		//Deregister with atoms and remove from reasoner
 		for (Atom atom : e.getAtoms()) if (!atom.unregisterGroundKernel(e)) throw new AssertionError("Evidence has never been registered with atom!");
-		evidences.remove(e.getKernel(), e);
+		groundKernels.remove(e.getKernel(), e);
 	}
 	
 	@Override
 	public boolean containsGroundKernel(GroundKernel e) {
-		return evidences.contains(e.getKernel(),e);
+		return groundKernels.contains(e.getKernel(),e);
 	}
 	
 	@Override
 	public GroundKernel getGroundKernel(GroundKernel e) {
-		return evidences.get(e.getKernel(),e);
+		return groundKernels.get(e.getKernel(),e);
 	}
 	
 }

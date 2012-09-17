@@ -271,7 +271,7 @@ public interface AtomManager extends DatabaseEventObserver, ModelEvent.Listener 
 	 * @return number of Atoms activated
 	 * @see AtomManager#workOffJobQueue()
 	 */
-	public int checkToActivate();
+	public int runActivationStrategy();
 	
 	/**
 	 * Deactivates all (ground) {@link Atom Atoms} which meet this manager's

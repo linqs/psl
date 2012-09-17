@@ -17,9 +17,15 @@
 package edu.umd.cs.psl.application;
 
 import edu.umd.cs.psl.evaluation.result.FullInferenceResult;
+import edu.umd.cs.psl.model.kernel.GroundKernel;
 
 public interface FullInference extends ModelApplication {
 
+	/**
+	 * Instantiates initial
+	 * set of {@link GroundKernel GroundKernels} to set of those not trivially
+	 * satisfied given the current interpretation.
+	 */
 	public void initialize();
 	
 	public FullInferenceResult runInference();
