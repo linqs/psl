@@ -80,7 +80,7 @@ abstract public class AbstractRuleKernel implements Kernel {
 	@Override
 	public void groundAll(ModelApplication app) {
 		for (Formula query : formulaAnalysis.getQueryFormulas()) {
-			ResultList res = app.getAtomManager().getNonfalseGroundings(query);
+			ResultList res = app.getAtomManager().getActiveGroundings(query);
 			groundFormula(res,app,null);
 		}
 	}
@@ -93,7 +93,7 @@ abstract public class AbstractRuleKernel implements Kernel {
 				if (!vars.isEmpty()) {
 					for (VariableAssignment var : vars) {
 						for (Formula query : formulaAnalysis.getQueryFormulas()) {
-							ResultList res = app.getAtomManager().getNonfalseGroundings(query, var);
+							ResultList res = app.getAtomManager().getActiveGroundings(query, var);
 							groundFormula(res,app,var);
 						}
 					}
@@ -105,7 +105,7 @@ abstract public class AbstractRuleKernel implements Kernel {
 				if (!vars.isEmpty()) {
 					for (VariableAssignment var : vars) {
 						for (Formula query : formulaAnalysis.getQueryFormulas()) {
-							ResultList res = app.getAtomManager().getNonfalseGroundings(query, var);
+							ResultList res = app.getAtomManager().getActiveGroundings(query, var);
 							groundFormula(res,app,var);
 						}
 					}

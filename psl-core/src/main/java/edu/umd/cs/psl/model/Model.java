@@ -30,7 +30,7 @@ import edu.umd.cs.psl.model.kernel.Kernel;
  * A probabilistic soft logic model.
  * 
  * Encapsulates a set of {@link Kernel Kernels}. A {@link ModelApplication}
- * can be used to combine a Model with evidence to perform inference or learn.
+ * can be used to combine a Model with data to perform inference or learn.
  * 
  * Objects which use a Model should register with it to listen
  * for {@link ModelEvent ModelEvents}.

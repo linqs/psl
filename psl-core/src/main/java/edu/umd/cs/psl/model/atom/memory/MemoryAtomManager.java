@@ -179,14 +179,14 @@ public class MemoryAtomManager implements AtomManager {
 	@Override
 	public int runActivationStrategy() {
 		int noAffected=0;
-		for (Atom atom : store.getAtoms(ImmutableSet.of(AtomStatus.ConsideredRV, AtomStatus.ActiveRV))) {
+		for (Atom atom : store.getAtoms(ImmutableSet.of(AtomStatus.ConsideredRV))) {
 			if (atom.getStatus().isConsidered() && activateAtom(atom)) noAffected++;
 		}
 		return noAffected;
 	}
 	
 	@Override
-	public int checkToDeactivate() {
+	public int runDeactivationStrategy() {
 		return 0;
 	}
 	
@@ -540,26 +540,26 @@ public class MemoryAtomManager implements AtomManager {
 	}
 
 	@Override
-	public ResultList getNonfalseGroundings(Formula f) {
+	public ResultList getActiveGroundings(Formula f) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public ResultList getNonfalseGroundings(Formula f, List<Variable> projectTo) {
+	public ResultList getActiveGroundings(Formula f, List<Variable> projectTo) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public ResultList getNonfalseGroundings(Formula f,
+	public ResultList getActiveGroundings(Formula f,
 			VariableAssignment partialGrounding) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public ResultList getNonfalseGroundings(Formula f,
+	public ResultList getActiveGroundings(Formula f,
 			VariableAssignment partialGrounding, List<Variable> projectTo) {
 		// TODO Auto-generated method stub
 		return null;

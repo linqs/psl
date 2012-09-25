@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableSet;
 
 import edu.umd.cs.psl.application.FullInference;
 import edu.umd.cs.psl.application.GroundKernelStore;
-import edu.umd.cs.psl.application.ModelApplication;
 import edu.umd.cs.psl.application.groundkernelstore.MemoryGroundKernelStore;
 import edu.umd.cs.psl.application.util.Grounding;
 import edu.umd.cs.psl.config.ConfigBundle;
@@ -41,7 +40,7 @@ import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.reasoner.ConicReasoner;
 import edu.umd.cs.psl.reasoner.Reasoner;
 
-public class MaintainedMemoryFullInference implements ModelApplication, FullInference {
+public class MaintainedMemoryFullInference implements FullInference {
 	
 	private final Model model;
 	private final Database database;
@@ -57,7 +56,7 @@ public class MaintainedMemoryFullInference implements ModelApplication, FullInfe
 		model = m;
 		database = db;
 		// True flag is to put in lazy mode
-		atomManager = new MemoryAtomManager(this, database, config, true);
+		atomManager = new MemoryAtomManager(this, database, config);
 		groundKernels = new MemoryGroundKernelStore();
 		// TODO: Move to AtomManager implementations?
 		database.registerDatabaseEventObserver(atomManager);
@@ -75,7 +74,7 @@ public class MaintainedMemoryFullInference implements ModelApplication, FullInfe
 		this(m,db, new EmptyBundle());
 	}
 	
-	//####### Evidence Handling #####
+	//####### GroundKernel Handling #####
 	
 	@Override
 	public void addGroundKernel(GroundKernel e) {
@@ -180,7 +179,6 @@ public class MaintainedMemoryFullInference implements ModelApplication, FullInfe
 		return atomManager;
 	}
 
-	
 	@Override
 	public void close() {
 		model.unregisterModelObserver(this);

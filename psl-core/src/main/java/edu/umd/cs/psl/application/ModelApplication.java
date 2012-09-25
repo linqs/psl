@@ -22,8 +22,8 @@ import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 
 /**
- * A ModelApplication is the central component for combining a {@link Model}
- * with evidence to perform a task, such as inference or learning.
+ * The central component for combining a {@link Model}
+ * with data to perform a task, such as inference or learning.
  */
 public interface ModelApplication extends ModelEvent.Listener {
 	

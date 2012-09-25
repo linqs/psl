@@ -130,7 +130,7 @@ public class PredicateConstraintKernel implements Kernel {
 					args[1 - pos] = var;
 					Atom query = new TemplateAtom(predicate, args);
 
-					ResultList res = app.getAtomManager().getNonfalseGroundings(query,
+					ResultList res = app.getAtomManager().getActiveGroundings(query,
 							ImmutableList.of(var));
 					for (int i = 0; i < res.size(); i++) {
 						GroundTerm[] terms = new GroundTerm[2];
