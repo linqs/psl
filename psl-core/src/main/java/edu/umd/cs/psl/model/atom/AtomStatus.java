@@ -17,7 +17,6 @@
 package edu.umd.cs.psl.model.atom;
 
 import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.reasoner.Reasoner;
 
 /**
  * A status of an {@link Atom}.
@@ -46,75 +45,133 @@ public enum AtomStatus {
 	Unconsidered,
 	
 	/**
-	 * The {@link Atom} is considered and fixed.
-	 * 
+	 * The {@link Atom} is considered and observed.
+	 * <p>
 	 * A considered Atom appears in its {@link AtomManager}'s set of explicitly
 	 * represented Atoms.
-	 * 
-	 * A fixed Atom has a known truth value. No other truth value can be assigned and the
-	 * Atom's confidence value is infinity.
+	 * <p>
+	 * An observed Atom has a known truth value. No other truth value can be assigned
+	 * and the Atom's confidence value is infinity.
 	 */
-	ConsideredFixed,
+	ConsideredObserved,
 	
 	/**
-	 * The {@link Atom} is considered and its truth value is a random variable.
+	 * The {@link Atom} is active and observed.
+	 * <p>
+	 * An active Atom appears in its {@link AtomManager}'s set of explicitly
+	 * represented Atoms and, further, is able to be queried.
+	 * <p>
+	 * An observed Atom has a known truth value. No other truth value can be assigned
+	 * and the Atom's confidence value is infinity.
+	 */
+	ActiveObserved,
+	
+	/**
+	 * The {@link Atom} is considered and a random variable.
 	 * 
 	 * A considered Atom appears in its {@link AtomManager}'s set of explicitly
 	 * represented Atoms.
 	 * 
-	 * An Atom with an unknown truth value is represented as a random variable.
-	 * Its value will be inferred when using a {@link Reasoner}.
+	 * A fixed Atom will generate an event whenever its truth value or confidence
+	 * value is changed.
+	 */
+	ConsideredFixed, 
+	
+	/**
+	 * The {@link Atom} is active and a random variable.
+	 * 
+	 * An active Atom appears in its {@link AtomManager}'s set of explicitly
+	 * represented Atoms and, further, is able to be queried.
+	 * 
+	 * A fixed Atom will generate an event whenever its truth value or confidence
+	 * value is changed.
+	 */
+	ActiveFixed,
+	
+	/**
+	 * The {@link Atom} is considered and a random variable.
+	 * 
+	 * A considered Atom appears in its {@link AtomManager}'s set of explicitly
+	 * represented Atoms.
+	 * 
+	 * A random-variable Atom can have its truth value or confidence value
+	 * changed without generating an event.
 	 */
 	ConsideredRV, 
 	
 	/**
-	 * The {@link Atom} is considered, its truth value is a random variable,
-	 * and its value under the current interpretation is sufficiently high
-	 * that it should be considered to ground rules which contain it in
-	 * their bodies.
+	 * The {@link Atom} is active and a random variable.
 	 * 
-	 * A considered Atom appears in its {@link AtomManager}'s set of explicitly
-	 * represented Atoms.
+	 * An active Atom appears in its {@link AtomManager}'s set of explicitly
+	 * represented Atoms and, further, is able to be queried.
 	 * 
-	 * An Atom with an unknown truth value is represented as a random variable.
-	 * Its value will be inferred when using a {@link Reasoner}.
+	 * A random-variable Atom can have its truth value or confidence value
+	 * changed without generating an event.
 	 */
 	ActiveRV;
 	
 	/**
-	 * Returns the {@value #ActiveRV} status.
+	 * Returns the corresponding active status.
 	 * 
-	 * @return the {@value #ActiveRV} status
-	 * @throws UnsupportedOperationException  if this status is not {@value #ConsideredRV}
+	 * @return the status's corresponding active status
+	 * @throws UnsupportedOperationException  if this status is not a considered-type status
 	 */
 	public AtomStatus activate() {
 		switch(this) {
+		case ConsideredObserved:
+			return ActiveObserved;
+		case ConsideredFixed:
+			return ActiveFixed;
 		case ConsideredRV:
 			return ActiveRV;
 		default:
-			throw new UnsupportedOperationException("Cannot activate on status: " + this);
+			throw new UnsupportedOperationException("Cannot activate status: " + this);
 		}
 	}
 	
 	/**
-	 * Returns the {@value #ConsideredRV} status.
+	 * Returns the corresponding considered status.
 	 * 
-	 * @return the {@value #ConsideredRV} status
-	 * @throws UnsupportedOperationException  if this status is not {@value #ActiveRV}
+	 * @return the status's corresponding considered status
+	 * @throws UnsupportedOperationException  if this status is not an active-type status
 	 */
 	public AtomStatus deactivate() {
 		switch(this) {
+		case ActiveObserved:
+			return ConsideredObserved;
+		case ActiveFixed:
+			return ConsideredFixed;
 		case ActiveRV:
 			return ConsideredRV;
 		default:
-			throw new UnsupportedOperationException("Cannot deactivate on status: " + this);
+			throw new UnsupportedOperationException("Cannot deactivate status: " + this);
 		}
+	}
+	
+	/**
+	 * Returns whether this status is an observed-type status
+	 * 
+	 * @return true if this status is an observed-type status
+	 * @see AtomStatusSets#Observed
+	 */
+	public boolean isObserved() {
+		return AtomStatusSets.Observed.contains(this);
+	}
+	
+	/**
+	 * Returns whether this status is a fixed-type status
+	 * 
+	 * @return true if this status is a fixed-type status
+	 * @see AtomStatusSets#Fixed
+	 */
+	public boolean isFixed() {
+		return AtomStatusSets.Fixed.contains(this);
 	}
 
 	/**
-	 * Returns whether this status is a random-variable-atom status
+	 * Returns whether this status is a random-variable-type status
 	 * 
-	 * @return true if this status is a random=variable-atom status
+	 * @return true if this status is a random-variable-type status
 	 * @see AtomStatusSets#RandomVariable
 	 */
 	public boolean isRandomVariable() {
@@ -122,19 +179,9 @@ public enum AtomStatus {
 	}
 	
 	/**
-	 * Returns whether this status is a fixed-atom status
+	 * Returns whether this status is an unconsidered-type status
 	 * 
-	 * @return true if this status is a fixed-atom status
-	 * @see AtomStatusSets#Fixed
-	 */
-	public boolean isFixed() {
-		return AtomStatusSets.Fixed.contains(this);
-	}
-	
-	/**
-	 * Returns whether this status is an unconsidered-atom status
-	 * 
-	 * @return true if this status is an unconsidered-atom status
+	 * @return true if this status is an unconsidered-type status
 	 * @see AtomStatusSets#Unconsidered
 	 */
 	public boolean isUnconsidered() {
@@ -142,9 +189,9 @@ public enum AtomStatus {
 	}
 	
 	/**
-	 * Returns whether this status is a considered-atom status
+	 * Returns whether this status is a considered-type status
 	 * 
-	 * @return true if this status is a considered-atom status
+	 * @return true if this status is a considered-type status
 	 * @see AtomStatusSets#Considered
 	 */
 	public boolean isConsidered() {
@@ -152,9 +199,9 @@ public enum AtomStatus {
 	}
 	
 	/**
-	 * Returns whether this status is an active-atom status
+	 * Returns whether this status is an active-type status
 	 * 
-	 * @return true if this status is an active-atom status
+	 * @return true if this status is an active-type status
 	 * @see AtomStatusSets#Active
 	 */
 	public boolean isActive() {
@@ -162,9 +209,9 @@ public enum AtomStatus {
 	}
 	
 	/**
-	 * Returns whether this status is an active or considered-atom status
+	 * Returns whether this status is an active or considered-type status
 	 * 
-	 * @return true if this status is an active or considered-atom status
+	 * @return true if this status is an active or considered-type status
 	 * @see AtomStatusSets#ActiveOrConsidered
 	 */
 	public boolean isActiveOrConsidered() {

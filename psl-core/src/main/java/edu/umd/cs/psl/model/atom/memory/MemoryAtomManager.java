@@ -30,6 +30,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.SetMultimap;
 
+import edu.umd.cs.psl.application.GroundKernelStore;
 import edu.umd.cs.psl.application.GroundingMode;
 import edu.umd.cs.psl.application.ModelApplication;
 import edu.umd.cs.psl.config.ConfigBundle;
@@ -600,6 +601,12 @@ public class MemoryAtomManager implements AtomManager {
 	public void close(Predicate predicate) {
 		// TODO Auto-generated method stub
 		
+	}
+
+	@Override
+	public GroundKernelStore getGroundKernelStore() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

@@ -25,19 +25,28 @@ import java.util.Set;
  */
 public class AtomStatusSets {
 	
-	public static final Set<AtomStatus> RandomVariable;
+	public static final Set<AtomStatus> Observed;
 	static {
 		Set<AtomStatus> set = new HashSet<AtomStatus>();
-		set.add(AtomStatus.ConsideredRV);
-		set.add(AtomStatus.ActiveRV);
-		RandomVariable = Collections.unmodifiableSet(set);
+		set.add(AtomStatus.ConsideredObserved);
+		set.add(AtomStatus.ActiveObserved);
+		Observed = Collections.unmodifiableSet(set);
 	}
 	
 	public static final Set<AtomStatus> Fixed;
 	static {
 		Set<AtomStatus> set = new HashSet<AtomStatus>();
 		set.add(AtomStatus.ConsideredFixed);
+		set.add(AtomStatus.ActiveFixed);
 		Fixed = Collections.unmodifiableSet(set);
+	}
+	
+	public static final Set<AtomStatus> RandomVariable;
+	static {
+		Set<AtomStatus> set = new HashSet<AtomStatus>();
+		set.add(AtomStatus.ConsideredRV);
+		set.add(AtomStatus.ActiveRV);
+		RandomVariable = Collections.unmodifiableSet(set);
 	}
 	
 	public static final Set<AtomStatus> Unconsidered;
@@ -50,6 +59,7 @@ public class AtomStatusSets {
 	public static final Set<AtomStatus> Considered;
 	static {
 		Set<AtomStatus> set = new HashSet<AtomStatus>();
+		set.add(AtomStatus.ConsideredObserved);
 		set.add(AtomStatus.ConsideredFixed);
 		set.add(AtomStatus.ConsideredRV);
 		Considered = Collections.unmodifiableSet(set);
@@ -58,6 +68,8 @@ public class AtomStatusSets {
 	public static final Set<AtomStatus> Active;
 	static {
 		Set<AtomStatus> set = new HashSet<AtomStatus>();
+		set.add(AtomStatus.ActiveObserved);
+		set.add(AtomStatus.ActiveFixed);
 		set.add(AtomStatus.ActiveRV);
 		Active = Collections.unmodifiableSet(set);
 	}

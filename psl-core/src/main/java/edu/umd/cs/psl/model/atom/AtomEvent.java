@@ -22,6 +22,18 @@ import edu.umd.cs.psl.application.ModelApplication;
  * An event related to an {@link Atom}.
  */
 public enum AtomEvent {
+	
+	/** An observed Atom became explicitly represented by an {@link AtomManager} */
+	ConsideredObservedAtom,
+	
+	/** An observed Atom stopped being explicitly represented by an {@link AtomManager} */
+	UnconsideredObservedAtom,
+	
+	/** An observed Atom was activated */
+	ActivatedObservedAtom,
+	
+	/** An observed Atom was deactivated */
+	DeactivatedObservedAtom,
 
 	/** A fixed Atom became explicitly represented by an {@link AtomManager} */
 	ConsideredFixedAtom,
@@ -29,8 +41,17 @@ public enum AtomEvent {
 	/** A fixed Atom stopped being explicitly represented by an {@link AtomManager} */
 	UnconsideredFixedAtom,
 	
+	/** A fixed Atom was activated */
+	ActivatedFixedAtom,
+	
+	/** A fixed Atom was deactivated */
+	DeactivatedFixedAtom,
+	
 	/** The truth value of a fixed Atom was changed */
 	ChangedTruthValueOfFixedAtom,
+	
+	/** The confidence value of a fixed Atom was changed */
+	ChangedConfidenceValueOfFixedAtom,
 	
 	/** A random variable Atom became explicitly represented by an {@link AtomManager} */
 	ConsideredRVAtom,

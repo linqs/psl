@@ -19,10 +19,13 @@ package edu.umd.cs.psl.model.atom;
 import java.util.List;
 import java.util.Set;
 
+import edu.umd.cs.psl.application.GroundKernelStore;
 import edu.umd.cs.psl.application.ModelApplication;
+import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.database.DatabaseEventObserver;
 import edu.umd.cs.psl.database.ResultList;
+import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.ModelEvent;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.Variable;
@@ -32,30 +35,48 @@ import edu.umd.cs.psl.model.predicate.Predicate;
 /**
  * Canonical source of a set of ground {@link Atom Atoms} used
  * by a {@link ModelApplication}.
- * <p>
- * Implementations might support initialization with a {@link Database} as a source
- * of fixed Atoms and/or as a location to persist Atoms.
- * <p>
+ * 
+ * <h2>Overview</h2>
+ * 
  * An AtomManager is responsible for maintaining a set of ground Atoms being used
  * by a ModelApplication and a single interpretation (assignment of truth values)
  * over those Atoms. An AtomManager also maintains confidence values representing
  * confidence in the assigned truth value of each Atom (to the degree confidence
  * values are used by the particular ModelApplication).
+ * 
+ * <h2>Initialization</h2>
+ * 
+ * Implementations should be initialized with a {@link Model} and a {@link ConfigBundle}.
+ * Additionally, implementations might support initialization with a {@link Database} as a
+ * source of observed Atoms and/or as a location to persist Atoms.
  * <p>
- * AtomManagers maintain much of this information implicitly through two conventions.
- * First, upon manager initialization, any ground Atoms without fixed truth values are initially
- * (implicitly) assigned a truth value of zero. Second, if a {@link Predicate} is closed in an
- * AtomManager, then any ground Atom of that Predicate which does not have a specified,
- * fixed truth value is fixed at zero. (The method(s) for specifying fixed truth
- * values is implementation specific.)
- * <p>
+ * All observed Atoms must be specified at initialization. The interpretation
+ * initially (sometimes implicitly) assigns a truth value of zero to all unobserved Atoms.
+ * 
+ * <h2>Open and Closed Predicates</h2>
+ * 
+ * AtomManagers can treat {@link Predicate Predicates} as either <em>open</em> or
+ * <em>closed</em>. Any unobserved ground Atoms of an open Predicate are random variables.
+ * Any unobserved ground Atoms of a closed Predicate are fixed.
+ * Upon initialization of the AtomManager, all Predicates are open.
+ * 
+ * <h2>Queries and Activation</h2>
+ * 
  * AtomMangers support queries that are in the form of conjunctions of Atoms. To be returned
  * as a query result, each ground Atom in the grounding must be <em>active</em>.
  * Active Atoms are a subset of those managed which have been designated as able to be queried.
- * TODO: What atoms are active by default? What is interplay between being fixed and being active?
- * <p>
+ * Atoms can be activated via {@link #activateAtom(Atom)} or {@link #runActivationStrategy()}.
+ * Which atoms are active upon initialization is implementation specific.
+ * 
+ * <h2>Atom Events</h2>
+ * 
  * AtomManagers are also responsible for managing the events and status changes related
  * to Atoms.
+ * 
+ * <h2>Ground Kernels</h2>
+ * 
+ * An AtomManager contains a {@link GroundKernelStore}. GroundKernels over Atoms from
+ * an AtomManager should be stored in it.
  * 
  * @see AtomEvent
  * @see AtomStatus
@@ -331,9 +352,7 @@ public interface AtomManager extends DatabaseEventObserver, ModelEvent.Listener 
 	 * Opens a Predicate.
 	 * <p>
 	 * If a {@link Predicate} is open, then any ground {@link Atom} of that
-	 * Predicate which does not have a specified, fixed truth value will be
-	 * treated as a random variable. (The method(s) for specifying fixed truth
-	 * values is implementation specific.)
+	 * Predicate which is not observed will be treated as a random variable.
 	 * 
 	 * @param predicate  Predicate to open
 	 * @see AtomManager#workOffJobQueue()
@@ -344,10 +363,7 @@ public interface AtomManager extends DatabaseEventObserver, ModelEvent.Listener 
 	 * Closes a Predicate.
 	 * <p>
 	 * If a {@link Predicate} is closed, then any ground Atom of that Predicate
-	 * which does not have a specified, fixed truth value is fixed at zero.
-	 * (The method(s) for specifying fixed truth values is implementation specific.)
-	 * TODO: Should random variables with non-zero truth values become fixed or
-	 * revert to zero?
+	 * which is not observed is fixed.
 	 * 
 	 * @param predicate  Predicate to close
 	 * @see AtomManager#workOffJobQueue()
@@ -362,5 +378,12 @@ public interface AtomManager extends DatabaseEventObserver, ModelEvent.Listener 
 	 * operation which could change the {@link AtomStatus} of an Atom.
 	 */
 	public void workOffJobQueue();
+	
+	/**
+	 * Gets the associated GroundKernelStore.
+	 * 
+	 * @return the store for all GroundKernels over this AtomManager's Atoms.
+	 */
+	public GroundKernelStore getGroundKernelStore();
 	
 }
