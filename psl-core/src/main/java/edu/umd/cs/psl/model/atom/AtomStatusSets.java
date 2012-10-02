@@ -28,7 +28,6 @@ public class AtomStatusSets {
 	public static final Set<AtomStatus> Observed;
 	static {
 		Set<AtomStatus> set = new HashSet<AtomStatus>();
-		set.add(AtomStatus.ConsideredObserved);
 		set.add(AtomStatus.ActiveObserved);
 		Observed = Collections.unmodifiableSet(set);
 	}
@@ -59,7 +58,6 @@ public class AtomStatusSets {
 	public static final Set<AtomStatus> Considered;
 	static {
 		Set<AtomStatus> set = new HashSet<AtomStatus>();
-		set.add(AtomStatus.ConsideredObserved);
 		set.add(AtomStatus.ConsideredFixed);
 		set.add(AtomStatus.ConsideredRV);
 		Considered = Collections.unmodifiableSet(set);

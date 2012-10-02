@@ -22,9 +22,9 @@ import java.util.Map;
 
 import com.google.common.base.Preconditions;
 
-import edu.umd.cs.psl.application.FullConfidenceAnalysis;
-import edu.umd.cs.psl.application.FullInference;
 import edu.umd.cs.psl.application.ModelApplication;
+import edu.umd.cs.psl.application.inference.FullConfidenceAnalysis;
+import edu.umd.cs.psl.application.inference.FullInference;
 import edu.umd.cs.psl.application.inference.MaintainedMemoryFullInference;
 import edu.umd.cs.psl.application.inference.MemoryFullConfidenceAnalysis;
 import edu.umd.cs.psl.config.ConfigBundle;

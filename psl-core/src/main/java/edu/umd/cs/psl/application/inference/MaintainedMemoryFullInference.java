@@ -18,8 +18,7 @@ package edu.umd.cs.psl.application.inference;
 
 import com.google.common.collect.ImmutableSet;
 
-import edu.umd.cs.psl.application.FullInference;
-import edu.umd.cs.psl.application.GroundKernelStore;
+import edu.umd.cs.psl.application.groundkernelstore.GroundKernelStore;
 import edu.umd.cs.psl.application.groundkernelstore.MemoryGroundKernelStore;
 import edu.umd.cs.psl.application.util.Grounding;
 import edu.umd.cs.psl.config.ConfigBundle;

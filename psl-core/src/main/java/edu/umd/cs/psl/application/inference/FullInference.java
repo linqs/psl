@@ -14,8 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.application;
+package edu.umd.cs.psl.application.inference;
 
-public interface QueryConfidenceAnalysis {
+import edu.umd.cs.psl.application.ModelApplication;
+import edu.umd.cs.psl.evaluation.result.FullInferenceResult;
+import edu.umd.cs.psl.model.kernel.GroundKernel;
 
+public interface FullInference extends ModelApplication {
+
+	/**
+	 * Instantiates initial
+	 * set of {@link GroundKernel GroundKernels} to set of those not trivially
+	 * satisfied given the current interpretation.
+	 */
+	public void initialize();
+	
+	public FullInferenceResult runInference();
+	
 }

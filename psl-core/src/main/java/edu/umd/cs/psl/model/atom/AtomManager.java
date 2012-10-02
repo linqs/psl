@@ -19,8 +19,8 @@ package edu.umd.cs.psl.model.atom;
 import java.util.List;
 import java.util.Set;
 
-import edu.umd.cs.psl.application.GroundKernelStore;
 import edu.umd.cs.psl.application.ModelApplication;
+import edu.umd.cs.psl.application.groundkernelstore.GroundKernelStore;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.database.DatabaseEventObserver;
@@ -66,7 +66,7 @@ import edu.umd.cs.psl.model.predicate.Predicate;
  * as a query result, each ground Atom in the grounding must be <em>active</em>.
  * Active Atoms are a subset of those managed which have been designated as able to be queried.
  * Atoms can be activated via {@link #activateAtom(Atom)} or {@link #runActivationStrategy()}.
- * Which atoms are active upon initialization is implementation specific.
+ * Upon initialization only the observed Atoms are active.
  * 
  * <h2>Atom Events</h2>
  * 

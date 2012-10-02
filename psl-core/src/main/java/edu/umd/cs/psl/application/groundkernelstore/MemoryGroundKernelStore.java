@@ -19,7 +19,6 @@ package edu.umd.cs.psl.application.groundkernelstore;
 import com.google.common.collect.Iterables;
 
 import de.mathnbits.util.KeyedRetrievalSet;
-import edu.umd.cs.psl.application.GroundKernelStore;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;

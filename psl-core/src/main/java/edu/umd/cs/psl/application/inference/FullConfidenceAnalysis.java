@@ -14,8 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.application;
+package edu.umd.cs.psl.application.inference;
 
-public interface QueryInference extends ModelApplication {
+import edu.umd.cs.psl.application.ModelApplication;
+import edu.umd.cs.psl.evaluation.result.FullConfidenceAnalysisResult;
 
+public interface FullConfidenceAnalysis extends ModelApplication {
+
+	public FullConfidenceAnalysisResult runConfidenceAnalysis();
+	
 }

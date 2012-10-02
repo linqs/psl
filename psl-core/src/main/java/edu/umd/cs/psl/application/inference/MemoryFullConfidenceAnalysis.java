@@ -26,10 +26,9 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Preconditions;
 
 import de.mathnbits.statistics.DoubleDist;
-import edu.umd.cs.psl.application.FullConfidenceAnalysis;
-import edu.umd.cs.psl.application.GroundKernelStore;
 import edu.umd.cs.psl.application.GroundingMode;
 import edu.umd.cs.psl.application.ModelApplication;
+import edu.umd.cs.psl.application.groundkernelstore.GroundKernelStore;
 import edu.umd.cs.psl.application.groundkernelstore.MemoryGroundKernelStore;
 import edu.umd.cs.psl.application.util.Grounding;
 import edu.umd.cs.psl.config.EmptyBundle;

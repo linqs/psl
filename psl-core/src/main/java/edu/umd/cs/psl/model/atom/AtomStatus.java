@@ -45,17 +45,6 @@ public enum AtomStatus {
 	Unconsidered,
 	
 	/**
-	 * The {@link Atom} is considered and observed.
-	 * <p>
-	 * A considered Atom appears in its {@link AtomManager}'s set of explicitly
-	 * represented Atoms.
-	 * <p>
-	 * An observed Atom has a known truth value. No other truth value can be assigned
-	 * and the Atom's confidence value is infinity.
-	 */
-	ConsideredObserved,
-	
-	/**
 	 * The {@link Atom} is active and observed.
 	 * <p>
 	 * An active Atom appears in its {@link AtomManager}'s set of explicitly
@@ -63,6 +52,8 @@ public enum AtomStatus {
 	 * <p>
 	 * An observed Atom has a known truth value. No other truth value can be assigned
 	 * and the Atom's confidence value is infinity.
+	 * <p>
+	 * Note that observed Atoms cannot be deactivated.
 	 */
 	ActiveObserved,
 	
@@ -118,8 +109,6 @@ public enum AtomStatus {
 	 */
 	public AtomStatus activate() {
 		switch(this) {
-		case ConsideredObserved:
-			return ActiveObserved;
 		case ConsideredFixed:
 			return ActiveFixed;
 		case ConsideredRV:
@@ -137,8 +126,6 @@ public enum AtomStatus {
 	 */
 	public AtomStatus deactivate() {
 		switch(this) {
-		case ActiveObserved:
-			return ConsideredObserved;
 		case ActiveFixed:
 			return ConsideredFixed;
 		case ActiveRV:

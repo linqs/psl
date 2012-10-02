@@ -30,9 +30,9 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.SetMultimap;
 
-import edu.umd.cs.psl.application.GroundKernelStore;
 import edu.umd.cs.psl.application.GroundingMode;
 import edu.umd.cs.psl.application.ModelApplication;
+import edu.umd.cs.psl.application.groundkernelstore.GroundKernelStore;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.EmptyBundle;
 import edu.umd.cs.psl.database.Database;

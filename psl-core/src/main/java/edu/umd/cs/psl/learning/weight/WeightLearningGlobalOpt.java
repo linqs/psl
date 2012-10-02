@@ -23,8 +23,8 @@ import org.slf4j.LoggerFactory;
 
 //CHANGED
 import edu.umd.cs.psl.optimizer.lbfgs.*;
-import edu.umd.cs.psl.application.FullInference;
 import edu.umd.cs.psl.application.ModelApplication;
+import edu.umd.cs.psl.application.inference.FullInference;
 import edu.umd.cs.psl.application.inference.MaintainedMemoryFullInference;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.EmptyBundle;
