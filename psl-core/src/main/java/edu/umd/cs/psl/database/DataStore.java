@@ -20,20 +20,19 @@ import java.util.List;
 
 import edu.umd.cs.psl.database.loading.Inserter;
 import edu.umd.cs.psl.database.loading.Updater;
-import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.predicate.Predicate;
 
 /**
- * A repository for persisting and querying for {@link Atom Atoms}.
+ * A repository for persisting and querying for {@link AtomRecord AtomRecords}.
  * 
- * A DataStore organizes Atoms into {@link Partition Partitions} and
+ * A DataStore organizes AtomRecords into {@link Partition Partitions} and
  * makes them available via {@link Database Databases}.
  */
 public interface DataStore {
 
 	/**
-	 * Registers a Predicate so that {@link Atom Atoms} of that Predicate can be
-	 * stored in this DataStore.
+	 * Registers a Predicate so that {@link AtomRecord AtomRecords} of that Predicate
+	 * can be stored in this DataStore.
 	 * 
 	 * The {@link DataFormat DataFormats} of the arguments will be determined
 	 * by {@link DataFormat#getDefaultFormat(Predicate, boolean)}.
@@ -44,8 +43,8 @@ public interface DataStore {
 	public void registerPredicate(Predicate predicate, List<String> argnames);
 	
 	/**
-	 * Registers a Predicate so that {@link Atom Atoms} of that Predicate can be
-	 * stored in this DataStore.
+	 * Registers a Predicate so that {@link AtomRecord AtomRecords} of that Predicate
+	 * can be stored in this DataStore.
 	 * 
 	 * @param predicate  the predicate to register
 	 * @param argnames  names of arguments
@@ -64,30 +63,30 @@ public interface DataStore {
 	public Database getDatabase(Partition write, Partition... read);
 	
 	/**
-	 * Creates an Inserter for inserting new {@link Atom} information
+	 * Creates an Inserter for inserting new {@link AtomRecord} information
 	 * into a {@link Partition}.
 	 * 
-	 * @param predicate  the Predicate of the Atoms to be inserted
-	 * @param partition  the Partition into which Atoms will be inserted
+	 * @param predicate  the Predicate of the AtomRecords to be inserted
+	 * @param partition  the Partition into which AtomRecords will be inserted
 	 * @return the Inserter
 	 */
 	public Inserter getInserter(Predicate predicate, Partition partition);
 	
 	/**
-	 * Creates an Updater for updating {@link Atom} information
+	 * Creates an Updater for updating {@link AtomRecord} information
 	 * in a {@link Partition}.
 	 * 
-	 * @param predicate  the Predicate of the Atoms to be updated
-	 * @param partition  the Partition of the Atoms to be updated
+	 * @param predicate  the Predicate of the AtomRecords to be updated
+	 * @param partition  the Partition of the AtomRecords to be updated
 	 * @return the Updater
 	 */
 	public Updater getUpdater(Predicate predicate, Partition partition);
 	
 	/**
-	 * Deletes all {@link Atom Atoms} in a Partition.
+	 * Deletes all {@link AtomRecord AtomRecords} in a Partition.
 	 *  
 	 * @param partition  the partition to delete
-	 * @return the number of Atoms deleted
+	 * @return the number of AtomRecords deleted
 	 */
 	public int deletePartition(Partition partition);
 	

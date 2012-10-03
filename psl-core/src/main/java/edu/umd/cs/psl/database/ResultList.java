@@ -18,15 +18,41 @@ package edu.umd.cs.psl.database;
 
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.Variable;
+import edu.umd.cs.psl.model.formula.Formula;
 
+/**
+ * List of substitutions for {@link Variable Variables} in a {@link Formula}.
+ */
 public interface ResultList {
 
+	/**
+	 * @return the number of sets of substitutions in the list
+	 */
 	public int size();
 	
+	/**
+	 * @return the number of distinct {@link Variable Variables} replaced in
+	 *             each substitution
+	 */
 	public int getArity();
 	
+	/**
+	 * Returns a substitution for a single {@link Variable}
+	 * 
+	 * @param resultNo  the index of the substitution (from 0 to size-1)
+	 * @param var  the Variable that is replaced
+	 * @return  the substituted GroundTerm
+	 * @throws IllegalArgumentException  if resultNo is out of range or var is invalid
+	 */
 	public GroundTerm get(int resultNo, Variable var);
 	
+	/**
+	 * Returns a substitution for all {@link Variable Variables}
+	 * 
+	 * @param resultNo  the index of the substitution (from 0 to size-1)
+	 * @return  the substituted GroundTerms
+	 * @throws IllegalArgumentException  if resultNo is out of range
+	 */
 	public GroundTerm[] get(int resultNo);
 	
 }

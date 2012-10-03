@@ -17,6 +17,7 @@
 package edu.umd.cs.psl.database;
 
 import edu.umd.cs.psl.model.ConfidenceValues;
+import edu.umd.cs.psl.model.TruthValues;
 import edu.umd.cs.psl.model.atom.Atom;
 
 /**
@@ -24,7 +25,7 @@ import edu.umd.cs.psl.model.atom.Atom;
  */
 public class AtomRecord {
 
-	public enum Status { FACT, CERTAINTY, RV }
+	public enum Status { OBSERVED, FIXED, RV }
 		
 	private final double value;
 	
@@ -32,10 +33,24 @@ public class AtomRecord {
 	
 	private Status status;
 	
+	/**
+	 * Constructs an AtomRecord with default truth and confidence values.
+	 * 
+	 * @param status  the status of the AtomRecord
+	 * @see TruthValues#getDefault()
+	 * @see ConfidenceValues#getDefault()
+	 */
 	public AtomRecord(Status status) {
-		this(0.0, ConfidenceValues.getDefault(), status);
+		this(TruthValues.getDefault(), ConfidenceValues.getDefault(), status);
 	}
 	
+	/**
+	 * Constructs an AtomRecord.
+	 * 
+	 * @param value
+	 * @param confidence
+	 * @param status
+	 */
 	public AtomRecord(double value, double confidence, Status status) {
 		this.value = value;
 		this.confidence = confidence;

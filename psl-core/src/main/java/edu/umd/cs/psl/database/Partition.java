@@ -16,10 +16,25 @@
  */
 package edu.umd.cs.psl.database;
 
+/**
+ * A subset of {@link AtomRecord AtomRecords} in a {@link DataStore}.
+ */
 public interface Partition {
 
+	/**
+	 * Gets the Partition's integer ID.
+	 * 
+	 * @return the Partition's ID
+	 */
 	public int getID();
 	
+	/**
+	 * Returns a nickname for the Partition.
+	 * <p>
+	 * Not necessarily unique.
+	 *  
+	 * @return the Partition's nickname
+	 */
 	public String getName();
 	
 }

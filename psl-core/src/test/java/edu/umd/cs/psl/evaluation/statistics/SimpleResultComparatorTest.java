@@ -84,7 +84,7 @@ public class SimpleResultComparatorTest {
 		}
 		
 		@Override
-		public AtomRecord getAtom(Predicate p, GroundTerm[] arguments) {
+		public AtomRecord getAtomRecord(Predicate p, GroundTerm[] arguments) {
 			if (data.containsKey(arguments))
 				return data.get(arguments);
 			return new AtomRecord(p.getDefaultValues(), new double[]{1.0}, Status.FACT);

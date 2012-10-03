@@ -324,7 +324,7 @@ public class RDBMSDatabase implements Database {
 	}
 	
 	@Override
-	public AtomRecord getAtom(Predicate p, GroundTerm[] arguments) {
+	public AtomRecord getAtomRecord(Predicate p, GroundTerm[] arguments) {
 		RDBMSPredicateHandle ph = getHandle(p);
 		boolean notFound = false;
 		if (!isPriorInitialized) notFound=true;

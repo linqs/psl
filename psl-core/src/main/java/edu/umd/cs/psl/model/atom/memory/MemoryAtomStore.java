@@ -75,7 +75,7 @@ class MemoryAtomStore {
 				if (containsEntitySet(arguments)) {
 					return initializeGroupAtom(p,arguments);
 				} else {
-					AtomRecord res = db.getAtom(p,arguments);
+					AtomRecord res = db.getAtomRecord(p,arguments);
 					return this.initializeAtom(p, arguments, res);
 				}
 			} else if (p instanceof FunctionalPredicate){

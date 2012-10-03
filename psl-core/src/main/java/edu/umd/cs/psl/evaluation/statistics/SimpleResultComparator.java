@@ -192,7 +192,7 @@ public class SimpleResultComparator implements ResultComparator {
 				//Missed result
 				double diff = valueCompare.getDifference(baseAtom.getSoftValues(), p.getDefaultValues(), tolerance);
 				if (diff!=0.0) {
-					errors.put(result.getAtom(p, (GroundTerm[])baseAtom.getArguments()), diff);
+					errors.put(result.getAtomRecord(p, (GroundTerm[])baseAtom.getArguments()), diff);
 					fn++;
 				}
 			}
