@@ -54,11 +54,8 @@ public class MaintainedMemoryFullInference implements FullInference {
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		model = m;
 		database = db;
-		// True flag is to put in lazy mode
 		atomManager = new MemoryAtomManager(this, database, config);
 		groundKernels = new MemoryGroundKernelStore();
-		// TODO: Move to AtomManager implementations?
-		database.registerDatabaseEventObserver(atomManager);
 		reasoner = new ConicReasoner(atomManager, config);
 		model.registerModelObserver(this);
 		// TODO: Move to AtomManager implementations?

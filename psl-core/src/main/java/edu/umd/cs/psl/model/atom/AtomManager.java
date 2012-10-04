@@ -23,12 +23,12 @@ import edu.umd.cs.psl.application.ModelApplication;
 import edu.umd.cs.psl.application.groundkernelstore.GroundKernelStore;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.database.Database;
-import edu.umd.cs.psl.database.DatabaseEventObserver;
 import edu.umd.cs.psl.database.ResultList;
 import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.ModelEvent;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.Variable;
+import edu.umd.cs.psl.model.formula.Conjunction;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.predicate.Predicate;
 
@@ -81,7 +81,7 @@ import edu.umd.cs.psl.model.predicate.Predicate;
  * @see AtomEvent
  * @see AtomStatus
  */
-public interface AtomManager extends DatabaseEventObserver, ModelEvent.Listener {
+public interface AtomManager extends ModelEvent.Listener {
 	
 	/**
 	 * Returns the specified ground Atom.

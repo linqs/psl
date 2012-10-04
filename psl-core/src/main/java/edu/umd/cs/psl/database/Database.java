@@ -28,10 +28,13 @@ import edu.umd.cs.psl.model.predicate.Predicate;
 
 /**
  * A data model for accessing the information stored in a {@link DataStore}.
- * 
+ * <p>
  * A Database writes to and reads from one {@link Partition} of a DataStore
  * and can read from additional Partitions. The recommended way to instantiate
  * a Database is with the {@link DataStore#getDatabase} methods of the DataStore.
+ * <p>
+ * The write Partition of a Database may not be a read (or write) Partition of
+ * any other Database.
  */
 public interface Database {
 
@@ -118,9 +121,8 @@ public interface Database {
 	 */
 	public ResultList query(Formula f, VariableAssignment partialGrounding, List<Variable> projectTo);
 	
-	public void registerDatabaseEventObserver(DatabaseEventObserver atomEvents);
-	
-	public void unregisterDatabaseEventObserver(DatabaseEventObserver atomEvents);
-	
+	/**
+	 * Releases the {@link Partition Partitions} used by this Database.
+	 */
 	public void close();
 }

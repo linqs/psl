@@ -26,15 +26,12 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Preconditions;
 
 import de.mathnbits.statistics.DoubleDist;
-import edu.umd.cs.psl.application.GroundingMode;
 import edu.umd.cs.psl.application.ModelApplication;
 import edu.umd.cs.psl.application.groundkernelstore.GroundKernelStore;
 import edu.umd.cs.psl.application.groundkernelstore.MemoryGroundKernelStore;
 import edu.umd.cs.psl.application.util.Grounding;
 import edu.umd.cs.psl.config.EmptyBundle;
-import edu.umd.cs.psl.config.PSLCoreConfiguration;
 import edu.umd.cs.psl.database.Database;
-import edu.umd.cs.psl.database.DatabaseAtomStoreQuery;
 import edu.umd.cs.psl.evaluation.process.RunningProcess;
 import edu.umd.cs.psl.evaluation.process.local.LocalProcessMonitor;
 import edu.umd.cs.psl.evaluation.result.FullConfidenceAnalysisResult;
@@ -42,10 +39,8 @@ import edu.umd.cs.psl.evaluation.result.memory.MemoryFullConfidenceAnalysisResul
 import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.ModelEvent;
 import edu.umd.cs.psl.model.atom.Atom;
-import edu.umd.cs.psl.model.atom.AtomEventFramework;
-import edu.umd.cs.psl.model.atom.AtomStore;
+import edu.umd.cs.psl.model.atom.AtomManager;
 import edu.umd.cs.psl.model.atom.memory.MemoryAtomManager;
-import edu.umd.cs.psl.model.atom.memory.MemoryAtomStore;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.reasoner.ConicReasoner;
@@ -58,11 +53,8 @@ public class MemoryFullConfidenceAnalysis implements ModelApplication, FullConfi
 	private static final Logger log = LoggerFactory.getLogger(MemoryFullConfidenceAnalysis.class);
 
 	private final Database database;
-	private final DatabaseAtomStoreQuery dbProxy;
-	private final AtomEventFramework atomEvents;
-	private final AtomStore store;
+	private final AtomManager atomManager;
 	private final Reasoner reasoner;
-	private final PSLCoreConfiguration config;
 	private final Model model;
 	private final GroundKernelStore groundkernels;
 	
@@ -78,8 +70,8 @@ public class MemoryFullConfidenceAnalysis implements ModelApplication, FullConfi
 		store = new MemoryAtomStore(database);
 		dbProxy = new DatabaseAtomStoreQuery(store);
 		groundkernels = new MemoryGroundKernelStore();
-		atomEvents = new MemoryAtomManager(m,this,store,AtomEventFramework.ActivationMode.All);
-		reasoner = new ConicReasoner(atomEvents, new EmptyBundle());
+		atomManager = new MemoryAtomManager(m,this,store,AtomEventFramework.ActivationMode.All);
+		reasoner = new ConicReasoner(atomManager, new EmptyBundle());
 		
 		isInitialized=false;
 	}
@@ -137,9 +129,9 @@ public class MemoryFullConfidenceAnalysis implements ModelApplication, FullConfi
 	
 	private void initialize() {
 		if (!isInitialized) {
-			atomEvents.setGroundingMode(GroundingMode.ForwardInitial);
+			atomManager.setGroundingMode(GroundingMode.ForwardInitial);
 			Grounding.groundAll(model, this);
-			atomEvents.workOffJobQueue();
+			atomManager.workOffJobQueue();
 			isInitialized=true;
 		}
 	}
@@ -148,7 +140,7 @@ public class MemoryFullConfidenceAnalysis implements ModelApplication, FullConfi
 	public FullConfidenceAnalysisResult runConfidenceAnalysis() {
 		RunningProcess proc = LocalProcessMonitor.get().startProcess();
 		initialize();
-		atomEvents.setGroundingMode(GroundingMode.Forward);
+		atomManager.setGroundingMode(GroundingMode.Forward);
 		reasoner.mapInference();
 		
 		LinearSampler sampler = new LinearSampler(proc,config.getSamplingSteps());
@@ -157,9 +149,9 @@ public class MemoryFullConfidenceAnalysis implements ModelApplication, FullConfi
 			toActivate = sampler.sample(groundkernels.getGroundKernels(), config.getActivationThreshold(), 1);
 			if (!toActivate.isEmpty()) {
 				for (Atom atom : toActivate) {
-					atomEvents.activateAtom(atom);
+					atomManager.activateAtom(atom);
 				}
-				atomEvents.workOffJobQueue();
+				atomManager.workOffJobQueue();
 			}
 		} while (!toActivate.isEmpty());
 
@@ -190,13 +182,8 @@ public class MemoryFullConfidenceAnalysis implements ModelApplication, FullConfi
 	//####### Interface to other components #####
 	
 	@Override
-	public AtomStore getAtomStore() {
-		return dbProxy;
-	}
-	
-	@Override
-	public AtomEventFramework getAtomManager() {
-		return atomEvents;
+	public AtomManager getAtomManager() {
+		return atomManager;
 	}	
 
 	
