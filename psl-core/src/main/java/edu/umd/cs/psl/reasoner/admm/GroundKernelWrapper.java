@@ -16,45 +16,18 @@
  */
 package edu.umd.cs.psl.reasoner.admm;
 
-import java.util.Vector;
-
 import edu.umd.cs.psl.model.kernel.GroundKernel;
-import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
 
-abstract class GroundKernelWrapper {
-	
-	protected final ADMMReasoner reasoner;
-	protected final Vector<Double> x;
-	protected final Vector<Double> y;
-	protected final Vector<Integer> zIndices;
-	
-	protected GroundKernelWrapper(ADMMReasoner reasoner, GroundKernel groundKernel) {
-		this.reasoner = reasoner;
-		
+/**
+ * An {@link ADMMObjectiveTerm} that encapsulates a {@link GroundKernel}.
+ * 
+ * @author Stephen Bach <bach@cs.umd.edu>
+ */
+abstract class GroundKernelWrapper extends ADMMObjectiveTerm {
+
+	GroundKernelWrapper(ADMMReasoner reasoner, GroundKernel groundKernel) {
 		/* Might be an overestimate of variables, because it also counts fixed and functional atoms */
-		int numAtoms = groundKernel.getAtoms().size();
-		
-		x = new Vector<Double>(numAtoms);
-		y = new Vector<Double>(numAtoms);
-		zIndices = new Vector<Integer>(numAtoms);
+		super(reasoner, groundKernel.getAtoms().size());
 	}
 	
-	protected void addVariable(AtomFunctionVariable var) {
-		zIndices.add(reasoner.getConsensusIndex(this, var, x.size()));
-		x.add(reasoner.z.get(zIndices.lastElement()));
-		y.add(0.0);
-	}
-	
-	abstract protected void minimize();
-	
-	/**
-	 * @return this for convenience
-	 */
-	protected GroundKernelWrapper updateLagrange() {
-		for (int i = 0; i < y.size(); i++) {
-			y.set(i, y.get(i) + reasoner.stepSize * (x.get(i) - reasoner.z.get(zIndices.get(i))));
-		}
-		
-		return this;
-	}
 }

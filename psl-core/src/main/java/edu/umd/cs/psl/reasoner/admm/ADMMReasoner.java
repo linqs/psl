@@ -39,11 +39,13 @@ import edu.umd.cs.psl.util.collection.HashList;
 /**
  * Performs probabilistic inference over {@link Atom Atoms} based on a set of
  * {@link GroundKernel GroundKernels}.
- * 
+ * <p>
  * The (unnormalized) probability density function is an exponential model of the
- * following form: P(X) = exp(-sum(w_i * pow(k_i, l))), where w_i is the weight of
+ * following form: P(X) = exp(-sum(w_i * pow(k_i, l_i))), where w_i is the weight of
  * the ith {@link GroundCompatibilityKernel}, k_i is its incompatibility value,
- * and l is an exponent with value 1 (linear model) or 2 (quadratic model).
+ * and l_i is an exponent with value 1 (linear GroundCompatibilityKernel) or
+ * 2 (quadratic GroundCompatibilityKernel).
+ * <p>
  * A state X has zero density if any {@link GroundConstraintKernel} is unsatisfied.
  * 
  * Uses ADMM optimization method to maximize the density.
@@ -160,32 +162,10 @@ public class ADMMReasoner implements Reasoner {
 	/** Lists of local variable locations for updating consensus variables */
 	Vector<Vector<VariableLocation>> varLocations;
 	
-	/* Stats for subproblems */
-	int linearUnarySolvedZero = 0;
-	int linearUnarySolvedFunction = 0;
-	int linearUnarySolvedIntersection = 0;
-	int linearPairwiseSolvedZero = 0;
-	int linearPairwiseSolvedFunction = 0;
-	int linearPairwiseSolvedIntersection = 0;
-	int linearHigherOrderSolvedZero = 0;
-	int linearHigherOrderSolvedFunction = 0;
-	int linearHigherOrderIterative = 0;
-	int quadUnarySolvedZero = 0;
-	int quadUnarySolvedFunction = 0;
-	int quadUnarySolvedIntersection = 0;
-	int quadPairwiseSolvedZero = 0;
-	int quadPairwiseSolvedIterative = 0;
-	int quadHigherOrderSolvedZero = 0;
-	int quadHigherOrderSolvedIterative = 0;
-	int linearConstraintSolvedInterior = 0;
-	int linearConstraintSolvedFace = 0;
-	
-	
 	public ADMMReasoner(AtomEventFramework framework, ConfigBundle config) {
 		atomFramework = framework;
 		maxIter = config.getInt(MAX_ITER_KEY, MAX_ITER_DEFAULT);
 		stepSize = config.getDouble(STEP_SIZE_KEY, STEP_SIZE_DEFAULT);
-//		maxResidual = config.getDouble(MAX_RESIDUAL_KEY, MAX_RESIDUAL_DEFAULT);
 		epsilonAbs = config.getDouble(EPSILON_ABS_KEY, EPSILON_ABS_DEFAULT);
 		if (epsilonAbs <= 0)
 			throw new IllegalArgumentException("Property " + EPSILON_ABS_KEY + " must be positive.");
@@ -283,7 +263,6 @@ public class ADMMReasoner implements Reasoner {
 		double AxNorm = 0.0, BzNorm = 0.0, AyNorm = 0.0;
 		boolean check = false;
 		int iter = 1;
-//		while ((primalRes > maxResidual || dualRes > maxResidual) && iter <= maxIter) {
 		while ((primalRes > epsilonPrimal || dualRes > epsilonDual) && iter <= maxIter) {
 			check = (iter-1) % stopCheck == 0;
 			
@@ -306,10 +285,10 @@ public class ADMMReasoner implements Reasoner {
 				/* First pass computes newZ and dual residual */
 				for (Iterator<VariableLocation> itr = varLocations.get(i).iterator(); itr.hasNext(); ) {
 					location = itr.next();
-					total += location.factor.x.get(location.localIndex);
+					total += location.term.x.get(location.localIndex);
 					if (check) {
-						AxNorm += location.factor.x.get(location.localIndex) * location.factor.x.get(location.localIndex);
-						AyNorm += location.factor.y.get(location.localIndex) * location.factor.y.get(location.localIndex);
+						AxNorm += location.term.x.get(location.localIndex) * location.term.x.get(location.localIndex);
+						AyNorm += location.term.y.get(location.localIndex) * location.term.y.get(location.localIndex);
 					}
 				}
 				newZ = total / varLocations.get(i).size();
@@ -325,7 +304,7 @@ public class ADMMReasoner implements Reasoner {
 				if (check) {
 					for (Iterator<VariableLocation> itr = varLocations.get(i).iterator(); itr.hasNext(); ) {
 						location = itr.next();
-						diff = location.factor.x.get(location.localIndex) - newZ;
+						diff = location.term.x.get(location.localIndex) - newZ;
 						primalRes += diff * diff;
 					}
 				}
@@ -356,7 +335,7 @@ public class ADMMReasoner implements Reasoner {
 			variables.get(i).setValue(z.get(i));
 	}
 	
-	int getConsensusIndex(GroundKernelWrapper factor, AtomFunctionVariable var, int localIndex) {
+	int getConsensusIndex(ADMMObjectiveTerm term, AtomFunctionVariable var, int localIndex) {
 		int consensusIndex = variables.indexOf(var);
 		
 		/* If the variable has not been given a consensus variable yet */
@@ -370,7 +349,7 @@ public class ADMMReasoner implements Reasoner {
 		}
 		
 		/* Adds a new entry to the list of local variable locations */
-		VariableLocation varLocation = new VariableLocation(factor, localIndex);
+		VariableLocation varLocation = new VariableLocation(term, localIndex);
 		varLocations.get(consensusIndex).add(varLocation);
 		
 		/* Increments count of local variables */
@@ -385,38 +364,14 @@ public class ADMMReasoner implements Reasoner {
 		factors = null;
 		variables = null;
 		z = null;
-		System.out.println("Linear unary potential solved at zero: " + linearUnarySolvedZero);
-		System.out.println("Linear unary potential solved at function: " + linearUnarySolvedFunction);
-		System.out.println("Linear unary potential solved at intersection: " + linearUnarySolvedIntersection);
-		System.out.println("Linear pairwise potential solved at zero: " + linearPairwiseSolvedZero);
-		System.out.println("Linear pairwise potential solved at function: " + linearPairwiseSolvedFunction);
-		System.out.println("Linear pairwise potential solved at intersection: " + linearPairwiseSolvedIntersection);
-		System.out.println("Linear higher order potential solved at zero: " + linearHigherOrderSolvedZero);
-		System.out.println("Linear higher order potential solved at function: " + linearHigherOrderSolvedFunction);
-		System.out.println("Linear higher order potential solved iteratively: " + linearHigherOrderIterative);
-		
-		System.out.println();
-		
-		System.out.println("Quad unary potential solved at zero: " + quadUnarySolvedZero);
-		System.out.println("Quad unary potential solved at function: " + quadUnarySolvedFunction);
-		System.out.println("Quad unary potential solved at intersection: " + quadUnarySolvedIntersection);
-		System.out.println("Quad pairwise potential solved at zero: " + quadPairwiseSolvedZero);
-		System.out.println("Quad pairwise potential solved iteratively: " + quadPairwiseSolvedIterative);
-		System.out.println("Quad higher order potential solved at zero: " + quadHigherOrderSolvedZero);
-		System.out.println("Quad higher order potential solved iteratively: " + quadHigherOrderSolvedIterative);
-		
-		System.out.println();
-		
-		System.out.println("Constraint solved in interior of polytope: " + linearConstraintSolvedInterior);
-		System.out.println("Constraint solved on face of polytope: " + linearConstraintSolvedFace);
 	}
 	
 	private class VariableLocation {
-		private final GroundKernelWrapper factor;
+		private final ADMMObjectiveTerm term;
 		private final int localIndex;
 		
-		private VariableLocation(GroundKernelWrapper factor, int localIndex) {
-			this.factor = factor;
+		private VariableLocation(ADMMObjectiveTerm term, int localIndex) {
+			this.term = term;
 			this.localIndex = localIndex;
 		}
 	}

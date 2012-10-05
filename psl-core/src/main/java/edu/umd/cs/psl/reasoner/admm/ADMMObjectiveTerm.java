@@ -1,0 +1,78 @@
+/*
+ * This file is part of the PSL software.
+ * Copyright 2011 University of Maryland
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package edu.umd.cs.psl.reasoner.admm;
+
+import java.util.Vector;
+
+import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
+
+/**
+ * A term in the objective to be optimized by an {@link ADMMReasoner}.
+ * 
+ * @author Stephen Bach <bach@cs.umd.edu>
+ */
+abstract public class ADMMObjectiveTerm {
+	protected final ADMMReasoner reasoner;
+	protected final Vector<Double> x;
+	protected final Vector<Double> y;
+	protected final Vector<Integer> zIndices;
+	protected final Vector<Double> lb;
+	protected final Vector<Double> ub;
+	
+	public ADMMObjectiveTerm(ADMMReasoner reasoner) {
+		this(reasoner, 4);
+	}
+	
+	public ADMMObjectiveTerm(ADMMReasoner reasoner, int initCapacity) {
+		this.reasoner = reasoner;
+		
+		x = new Vector<Double>(initCapacity);
+		y = new Vector<Double>(initCapacity);
+		zIndices = new Vector<Integer>(initCapacity);
+		lb = new Vector<Double>(initCapacity);
+		ub = new Vector<Double>(initCapacity);
+	}
+	
+	protected void addVariable(AtomFunctionVariable var, double lowerBound, double upperBound) {
+		zIndices.add(reasoner.getConsensusIndex(this, var, x.size()));
+		x.add(reasoner.z.get(zIndices.lastElement()));
+		y.add(0.0);
+		lb.add(lowerBound);
+		ub.add(upperBound);
+	}
+	
+	protected void setLowerBound(int index, double lowerBound) {
+		lb.set(index, lowerBound);
+	}
+	
+	protected void setUpperBound(int index, double upperBound) {
+		ub.set(index, upperBound);
+	}
+	
+	abstract protected void minimize();
+	
+	/**
+	 * @return this for convenience
+	 */
+	protected ADMMObjectiveTerm updateLagrange() {
+		for (int i = 0; i < y.size(); i++) {
+			y.set(i, y.get(i) + reasoner.stepSize * (x.get(i) - reasoner.z.get(zIndices.get(i))));
+		}
+		
+		return this;
+	}
+}
