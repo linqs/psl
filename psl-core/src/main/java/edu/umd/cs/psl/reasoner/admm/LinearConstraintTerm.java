@@ -31,13 +31,13 @@ class LinearConstraintTerm extends HyperplaneTerm {
 	
 	@Override
 	protected void minimize() {
-		/* If it's not an equality constraint, immediately solves the knapsack problem */
+		/* If it's not an equality constraint, first tries to minimize without the constraint */
 		if (!comparator.equals(FunctionComparator.Equality)) {
 		
 			/* Initializes scratch data */
 			double a[] = new double[x.length];
 			
-			/* First minimizes without regard for any constraints, then projects on to a box */
+			/* Minimizes without regard for any constraints, then projects on to a box */
 			for (int i = 0; i < a.length; i++) {
 				a[i] = reasoner.z.get(zIndices[i]) - y[i] / reasoner.stepSize;
 				

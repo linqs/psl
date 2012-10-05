@@ -34,6 +34,11 @@ import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.reasoner.Reasoner;
 import edu.umd.cs.psl.reasoner.Reasoner.DistributionType;
 import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
+import edu.umd.cs.psl.reasoner.function.FunctionSingleton;
+import edu.umd.cs.psl.reasoner.function.FunctionSum;
+import edu.umd.cs.psl.reasoner.function.FunctionSummand;
+import edu.umd.cs.psl.reasoner.function.FunctionTerm;
+import edu.umd.cs.psl.reasoner.function.MaxFunction;
 import edu.umd.cs.psl.util.collection.HashList;
 
 /**
@@ -78,14 +83,6 @@ public class ADMMReasoner implements Reasoner {
 	public static final String STEP_SIZE_KEY = CONFIG_PREFIX + ".stepsize";
 	/** Default value for STEP_SIZE_KEY property */
 	public static final double STEP_SIZE_DEFAULT = 1;
-	
-//	/**
-//	 * Key for positive double property. A round of ADMM will terminate
-//	 * when both the primal and dual residuals are less than this threshold.
-//	 */
-//	public static final String MAX_RESIDUAL_KEY = CONFIG_PREFIX + ".maxresidual";
-//	/** Default value for MAX_RESIDUAL_KEY property */
-//	public static final double MAX_RESIDUAL_DEFAULT = 10e-2;
 	
 	/**
 	 * Key for positive double property. Absolute error component of stopping
@@ -215,15 +212,51 @@ public class ADMMReasoner implements Reasoner {
 		n = 0;
 		
 		GroundKernel groundKernel;
+		FunctionTerm function, innerFunction, constantTerm;
 		
 		/* Initializes factors */
 		for (Iterator<GroundKernel> itr = groundKernels.iterator(); itr.hasNext(); ) {
 			groundKernel = itr.next();
 			if (groundKernel instanceof GroundCompatibilityKernel) {
-//				if (DistributionType.linear.equals(getDistributionType()))
-//					factors.add(new PairwiseLinearConvexCompatibilityWrapper(this, (GroundCompatibilityKernel) groundKernel));
-//				else
-//				terms.add(new MOSEKWrapper(this, (GroundCompatibilityKernel) groundKernel, alwaysIterative, pessimistic));
+				function = ((GroundCompatibilityKernel) groundKernel).getFunctionDefinition();
+				/*
+				 * If the FunctionTerm is a MaxFunction, ensures that it has two arguments, a linear
+				 * function and zero, and constructs the objective term
+				 */
+				if (function instanceof MaxFunction) {
+					if (((MaxFunction) function).size() != 2)
+						throw new IllegalArgumentException("Max function must have two arguments.");
+					innerFunction = ((MaxFunction) function).get(0);
+					if (innerFunction.isConstant()) {
+						constantTerm = innerFunction;
+						innerFunction = ((MaxFunction) function).get(1);
+					}
+					else {
+						constantTerm = ((MaxFunction) function).get(1);
+					}
+					
+					if (!constantTerm.isConstant() || constantTerm.getValue() != 0)
+						throw new IllegalArgumentException("Max function must have one linear function and 0.0 as arguments.");
+					
+					function = innerFunction;
+					
+					/* Processes the inner function */
+					if (function instanceof FunctionSum) {
+						for (Iterator<FunctionSummand> itr = ((FunctionSum) function).iterator(); itr.hasNext(); ) {
+							FunctionSummand summand = itr.next();
+							FunctionSingleton term = summand.getTerm();
+							if (term instanceof AtomFunctionVariable && !term.isConstant()) {
+								addVariable((AtomFunctionVariable) term);
+								coeffs.add(summand.getCoefficient());
+							}
+							else if (term.isConstant()) {
+								constant += summand.getValue();
+							}
+							else
+								throw new IllegalArgumentException("Unexpected summand.");
+						}
+					}
+				}
 			}
 			else if (groundKernel instanceof GroundConstraintKernel) {
 //				terms.add(new PairwiseLinearConstraintWrapper(this, (GroundConstraintKernel) groundKernel));

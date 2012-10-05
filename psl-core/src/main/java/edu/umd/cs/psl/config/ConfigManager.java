@@ -103,6 +103,30 @@ public class ConfigManager {
 		}
 		
 		@Override
+		public void addProperty(String key, Object value) {
+			config.addProperty(key, value);
+			log.debug("Added {} to option {}.", value, prefix + "." + key);
+		}
+
+		@Override
+		public void setProperty(String key, Object value) {
+			config.setProperty(key, value);
+			log.debug("Set option {} to {}.", prefix + "." + key, value);
+		}
+
+		@Override
+		public void clearProperty(String key) {
+			config.clearProperty(key);
+			log.debug("Cleared option {}.", prefix + "." + key);
+		}
+
+		@Override
+		public void clear() {
+			config.clear();
+			log.debug("Cleared all options in {} bundle.", prefix);
+		}
+		
+		@Override
 		public Boolean getBoolean(String key, Boolean defaultValue) {
 			logAccess(key, defaultValue);
 			return config.getBoolean(key, defaultValue);

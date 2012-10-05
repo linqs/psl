@@ -37,9 +37,7 @@ public class LinearLossTermTest {
 	@Test
 	public void testMinimize() {
 		reasoner = new ADMMReasoner(null, new EmptyBundle());
-		reasoner.stepSize = 1;
 		reasoner.z = new Vector<Double>();
-		z.add
 	}
 
 }

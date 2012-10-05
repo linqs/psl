@@ -16,49 +16,75 @@
  */
 package edu.umd.cs.psl.reasoner.admm;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.util.Vector;
 
+import org.apache.commons.configuration.ConfigurationException;
 import org.junit.Before;
 import org.junit.Test;
 
-import edu.umd.cs.psl.config.EmptyBundle;
+import edu.umd.cs.psl.config.ConfigBundle;
+import edu.umd.cs.psl.config.ConfigManager;
 
 public class HingeLossTermTest {
 	
-	ADMMReasoner reasoner;
-
+	private ConfigBundle config;
+	
 	@Before
-	public void setUp() throws Exception {
-		
+	public final void setUp() throws ConfigurationException {
+		ConfigManager manager = ConfigManager.getManager();
+		config = manager.getBundle("dummy");
 	}
-
+	
 	@Test
 	public void testMinimize() {
-		reasoner = new ADMMReasoner(null, new EmptyBundle()) {
-			public double stepSize = 1;
-		};
-		//reasoner.stepSize = 1;
-		reasoner.z = new Vector<Double>();
-		reasoner.z.add(0.2);
-		reasoner.z.add(0.5);
 		
-		int[] zIndices = {0, 1};
+		/* Problem 1 */
+		double[] z = {0.2, 0.5};
+		double[] y = {0.0, 0.0};
 		double[] lowerBounds = {0.0, 0.0};
 		double[] upperBounds = {1.0, 1.0};
-		
 		double[] coeffs = {1.0, -1.0};
 		double constant = -0.95;
 		double weight = 1.0;
+		double stepSize = 1.0;
+		double[] expected = {0.0, 0.95};
+		testProblem(z, y, lowerBounds, upperBounds, coeffs, constant, weight, stepSize, expected);
 		
-		HingeLossTerm term = new HingeLossTerm(reasoner, zIndices, lowerBounds, upperBounds, coeffs, constant, weight);
-		term.minimize();
-		assertEquals(0.0, term.x[0], 1e-8);
-		assertEquals(0.95, term.x[1], 1e-8);
+		/* Problem 2 */
+		z = new double[] {0.3, 0.5, 0.1};
+		y = new double[] {0.1, 0.0, -0.05};
+		lowerBounds = new double[] {0.0, 0.0, 0.0};
+		upperBounds = new double[] {1.0, 1.0, 1.0};
+		coeffs = new double[] {1.0, -0.5, 0.4};
+		constant = -0.15;
+		weight = 1.0;
+		stepSize = 0.5;
+		expected = new double[] {0.043257, 0.528361, 0.177309};
+		testProblem(z, y, lowerBounds, upperBounds, coeffs, constant, weight, stepSize, expected);
 	}
 	
-	private void testProblem(double[] y, double[] z, double[] lb, double[] ub
-			, double[] coeffs, double constant)
+	private void testProblem(double[] z, double[] y, double[] lb, double[] ub
+			, double[] coeffs, double constant, double weight, final double stepSize
+			, double[] expected) {
+		config.setProperty("admmreasoner.stepsize", stepSize);
+		ADMMReasoner reasoner = new ADMMReasoner(null, config);
+		reasoner.z = new Vector<Double>(z.length);
+		for (int i = 0; i < z.length; i++)
+			reasoner.z.add(z[i]);
+		
+		int[] zIndices = new int[z.length];
+		for (int i = 0; i < z.length; i++)
+			zIndices[i] = i;
+		
+		HingeLossTerm term = new HingeLossTerm(reasoner, zIndices, lb, ub, coeffs, constant, weight);
+		for (int i = 0; i < z.length; i++)
+			term.y[i] = y[i];
+		term.minimize();
+		
+		for (int i = 0; i < z.length; i++)
+			assertEquals(expected[i], term.x[i], 5e-5);
+	}
 
 }
