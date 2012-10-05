@@ -16,18 +16,20 @@
  */
 package edu.umd.cs.psl.reasoner.admm;
 
-import edu.umd.cs.psl.model.kernel.GroundKernel;
+import static org.junit.Assert.*;
 
-/**
- * An {@link ADMMObjectiveTerm} that encapsulates a {@link GroundKernel}.
- * 
- * @author Stephen Bach <bach@cs.umd.edu>
- */
-abstract class GroundKernelWrapper extends ADMMObjectiveTerm {
+import org.junit.Before;
+import org.junit.Test;
 
-	GroundKernelWrapper(ADMMReasoner reasoner, GroundKernel groundKernel) {
-		/* Might be an overestimate of variables, because it also counts fixed and functional atoms */
-		super(reasoner, groundKernel.getAtoms().size());
+public class LinearLossTermTest {
+
+	@Before
+	public void setUp() throws Exception {
 	}
-	
+
+	@Test
+	public void testMinimize() {
+		fail("Not yet implemented");
+	}
+
 }

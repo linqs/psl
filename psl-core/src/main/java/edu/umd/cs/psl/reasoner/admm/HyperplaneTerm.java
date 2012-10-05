@@ -27,13 +27,13 @@ import java.util.LinkedList;
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-abstract class HyperplaneWrapper extends ADMMObjectiveTerm {
+abstract class HyperplaneTerm extends ADMMObjectiveTerm {
 	
 	protected final double[] coeffs;
 	protected final double constant;
 	
-	HyperplaneWrapper(ADMMReasoner reasoner, int[] zIndices, double[] lowerBounds, double[] upperBounds,
-			double[] coeffs, double constant) {
+	HyperplaneTerm(ADMMReasoner reasoner, int[] zIndices, double[] lowerBounds,
+			double[] upperBounds, double[] coeffs, double constant) {
 		super(reasoner, zIndices, lowerBounds, upperBounds);
 		
 		this.coeffs = coeffs;

@@ -16,10 +16,6 @@
  */
 package edu.umd.cs.psl.reasoner.admm;
 
-import java.util.Vector;
-
-import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
-
 /**
  * A term in the objective to be optimized by an {@link ADMMReasoner}.
  * 
@@ -33,7 +29,8 @@ abstract public class ADMMObjectiveTerm {
 	protected final double[] lb;
 	protected final double[] ub;
 	
-	public ADMMObjectiveTerm(ADMMReasoner reasoner, int[] zIndices, double[] lowerBounds, double[] upperBounds) {
+	public ADMMObjectiveTerm(ADMMReasoner reasoner, int[] zIndices,
+			double[] lowerBounds, double[] upperBounds) {
 		this.reasoner = reasoner;
 		
 		x = new double[zIndices.length];

@@ -16,12 +16,10 @@
  */
 package edu.umd.cs.psl.reasoner.admm;
 
-import edu.umd.cs.psl.reasoner.function.FunctionComparator;
-
-class LinearLossWrapper extends HyperplaneWrapper {
+class LinearLossTerm extends HyperplaneTerm {
 	
-	LinearLossWrapper(ADMMReasoner reasoner, int[] zIndices, double[] lowerBounds, double[] upperBounds,
-			double[] coeffs, double constant, FunctionComparator comparator) {
+	LinearLossTerm(ADMMReasoner reasoner, int[] zIndices, double[] lowerBounds, double[] upperBounds,
+			double[] coeffs, double constant) {
 		super(reasoner, zIndices, lowerBounds, upperBounds, coeffs, constant);
 	}
 	

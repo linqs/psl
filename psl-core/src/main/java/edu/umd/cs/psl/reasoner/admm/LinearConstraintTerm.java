@@ -18,12 +18,13 @@ package edu.umd.cs.psl.reasoner.admm;
 
 import edu.umd.cs.psl.reasoner.function.FunctionComparator;
 
-class LinearConstraintWrapper extends HyperplaneWrapper {
+class LinearConstraintTerm extends HyperplaneTerm {
 	
 	private final FunctionComparator comparator;
 	
-	LinearConstraintWrapper(ADMMReasoner reasoner, int[] zIndices, double[] lowerBounds, double[] upperBounds,
-			double[] coeffs, double constant, FunctionComparator comparator) {
+	LinearConstraintTerm(ADMMReasoner reasoner, int[] zIndices, double[] lowerBounds,
+			double[] upperBounds, double[] coeffs, double constant,
+			FunctionComparator comparator) {
 		super(reasoner, zIndices, lowerBounds, upperBounds, coeffs, constant);
 		this.comparator = comparator;
 	}
