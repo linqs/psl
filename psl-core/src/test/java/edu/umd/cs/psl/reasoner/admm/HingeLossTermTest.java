@@ -25,7 +25,7 @@ import org.junit.Test;
 
 import edu.umd.cs.psl.config.EmptyBundle;
 
-public class LinearLossTermTest {
+public class HingeLossTermTest {
 	
 	ADMMReasoner reasoner;
 
@@ -36,10 +36,29 @@ public class LinearLossTermTest {
 
 	@Test
 	public void testMinimize() {
-		reasoner = new ADMMReasoner(null, new EmptyBundle());
-		reasoner.stepSize = 1;
+		reasoner = new ADMMReasoner(null, new EmptyBundle()) {
+			public double stepSize = 1;
+		};
+		//reasoner.stepSize = 1;
 		reasoner.z = new Vector<Double>();
-		z.add
+		reasoner.z.add(0.2);
+		reasoner.z.add(0.5);
+		
+		int[] zIndices = {0, 1};
+		double[] lowerBounds = {0.0, 0.0};
+		double[] upperBounds = {1.0, 1.0};
+		
+		double[] coeffs = {1.0, -1.0};
+		double constant = -0.95;
+		double weight = 1.0;
+		
+		HingeLossTerm term = new HingeLossTerm(reasoner, zIndices, lowerBounds, upperBounds, coeffs, constant, weight);
+		term.minimize();
+		assertEquals(0.0, term.x[0], 1e-8);
+		assertEquals(0.95, term.x[1], 1e-8);
 	}
+	
+	private void testProblem(double[] y, double[] z, double[] lb, double[] ub
+			, double[] coeffs, double constant)
 
 }

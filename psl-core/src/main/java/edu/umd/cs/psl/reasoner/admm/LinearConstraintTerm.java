@@ -56,9 +56,9 @@ class LinearConstraintTerm extends HyperplaneTerm {
 				total += coeffs[i] * a[i];
 			total += constant;
 			
-			if ( (comparator.equals(FunctionComparator.SmallerThan) && total <= 0.0)
+			if ( (comparator.equals(FunctionComparator.SmallerThan) && total <= constant)
 					||
-				 (comparator.equals(FunctionComparator.LargerThan) && total >= 0.0)
+				 (comparator.equals(FunctionComparator.LargerThan) && total >= constant)
 			   ) {
 				for (int i = 0; i < a.length; i++)
 					x[i] = a[i];

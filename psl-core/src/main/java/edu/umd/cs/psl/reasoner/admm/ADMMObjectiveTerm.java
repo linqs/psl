@@ -39,6 +39,9 @@ abstract public class ADMMObjectiveTerm {
 		this.zIndices = zIndices;
 		lb = lowerBounds;
 		ub = upperBounds;
+		for (int  i = 0; i < x.length; i++)
+			if (lb[i] >= ub[i])
+				throw new IllegalArgumentException("Lower bound must be less than upper bound.");
 	}
 	
 //	protected void addVariable(AtomFunctionVariable var, double lowerBound, double upperBound) {
@@ -50,11 +53,26 @@ abstract public class ADMMObjectiveTerm {
 //	}
 	
 	protected void setLowerBound(int index, double lowerBound) {
-		lb[index] = lowerBound;
+		if (lowerBound < ub[index])
+			lb[index] = lowerBound;
+		else
+			throw new IllegalArgumentException("New lower bound must be less than current upper bound.");
 	}
 	
 	protected void setUpperBound(int index, double upperBound) {
-		ub[index] = upperBound;
+		if (upperBound > lb[index])
+			ub[index] = upperBound;
+		else
+			throw new IllegalArgumentException("New upper bound must be greater than current lower bound.");
+	}
+	
+	protected void setBounds(int index, double lowerBound, double upperBound) {
+		if (lowerBound < upperBound) {
+			lb[index] = lowerBound;
+			ub[index] = upperBound;
+		}
+		else
+			throw new IllegalArgumentException("Lower bound must be less than upper bound.");
 	}
 	
 	abstract protected void minimize();

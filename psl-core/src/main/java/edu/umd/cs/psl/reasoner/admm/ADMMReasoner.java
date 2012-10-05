@@ -111,22 +111,6 @@ public class ADMMReasoner implements Reasoner {
 	/** Default value for STOP_CHECK_KEY property */
 	public static final int STOP_CHECK_DEFAULT = 1;
 	
-	/**
-	 * Key for boolean property. If true, subproblems for compatibility kernels
-	 * will always be solved iteratively.
-	 */
-	public static final String ALWAYS_ITERATIVE_KEY = CONFIG_PREFIX + ".alwaysiterative";
-	/** Default value for ALWAYS_ITERATIVE_KEY property */
-	public static final boolean ALWAYS_ITERATIVE_DEFAULT = false;
-	
-	/**
-	 * Key for boolean property. If true, subproblems will always be solved
-	 * iteratively.
-	 */
-	public static final String PESSIMISTIC_KEY = CONFIG_PREFIX + ".pessimistic";
-	/** Default value for ALWAYS_ITERATIVE_KEY property */
-	public static final boolean PESSIMISTIC_DEFAULT = false;
-	
 	/** Key for {@link DistributionType} property. */
 	public static final String DISTRIBUTION_KEY = CONFIG_PREFIX + ".distribution";
 	/** Default value for DISTRIBUTION_KEY property. */
@@ -143,8 +127,6 @@ public class ADMMReasoner implements Reasoner {
 	final double stepSize;
 //	private final double maxResidual;
 	private final int maxMapRounds;
-	private final boolean alwaysIterative;
-	private final boolean pessimistic;
 	final DistributionType type;
 	
 	private final double epsilonRel, epsilonAbs;
@@ -154,7 +136,7 @@ public class ADMMReasoner implements Reasoner {
 	/** Ground kernels defining the density function */
 	Set<GroundKernel> groundKernels;
 	/** Ground kernels wrapped to be objective functions for ADMM */
-	Vector<GroundKernelWrapper> factors;
+	Vector<ADMMObjectiveTerm> terms;
 	/** Ordered list of variables for looking up indices */
 	HashList<AtomFunctionVariable> variables;
 	/** Consensus vector */
@@ -172,8 +154,6 @@ public class ADMMReasoner implements Reasoner {
 		epsilonRel = config.getDouble(EPSILON_REL_KEY, EPSILON_REL_DEFAULT);
 		if (epsilonRel <= 0)
 			throw new IllegalArgumentException("Property " + EPSILON_REL_KEY + " must be positive.");
-		alwaysIterative = config.getBoolean(ALWAYS_ITERATIVE_KEY, ALWAYS_ITERATIVE_DEFAULT);
-		pessimistic = config.getBoolean(PESSIMISTIC_KEY, PESSIMISTIC_DEFAULT);
 		stopCheck = config.getInt(STOP_CHECK_KEY, STOP_CHECK_DEFAULT);
 		type = (DistributionType) config.getEnum(DISTRIBUTION_KEY, DISTRIBUTION_DEFAULT);
 		maxMapRounds = config.getInt(MAX_ROUNDS_KEY, MAX_ROUNDS_DEFAULT);
@@ -228,7 +208,7 @@ public class ADMMReasoner implements Reasoner {
 	private void inferenceStep() {
 		log.debug("Initializing optimization.");
 		/* Initializes data structures */
-		factors = new Vector<GroundKernelWrapper>(groundKernels.size());
+		terms = new Vector<ADMMObjectiveTerm>(groundKernels.size());
 		variables = new HashList<AtomFunctionVariable>(groundKernels.size() * 2);
 		z = new Vector<Double>(groundKernels.size() * 2);
 		varLocations = new Vector<Vector<VariableLocation>>(groundKernels.size() * 2);
@@ -243,16 +223,16 @@ public class ADMMReasoner implements Reasoner {
 //				if (DistributionType.linear.equals(getDistributionType()))
 //					factors.add(new PairwiseLinearConvexCompatibilityWrapper(this, (GroundCompatibilityKernel) groundKernel));
 //				else
-				factors.add(new MOSEKWrapper(this, (GroundCompatibilityKernel) groundKernel, alwaysIterative, pessimistic));
+//				terms.add(new MOSEKWrapper(this, (GroundCompatibilityKernel) groundKernel, alwaysIterative, pessimistic));
 			}
 			else if (groundKernel instanceof GroundConstraintKernel) {
-				factors.add(new PairwiseLinearConstraintWrapper(this, (GroundConstraintKernel) groundKernel));
+//				terms.add(new PairwiseLinearConstraintWrapper(this, (GroundConstraintKernel) groundKernel));
 			}
 			else
 				throw new IllegalStateException("Unsupported ground kernel: " + groundKernel);
 		}
 		
-		log.debug("Performing optimization with {} variables and {} factors.", z.size(), factors.size());
+		log.debug("Performing optimization with {} variables and {} factors.", z.size(), terms.size());
 		
 		/* Performs inference */
 		double primalRes = Double.POSITIVE_INFINITY;
@@ -267,7 +247,7 @@ public class ADMMReasoner implements Reasoner {
 			check = (iter-1) % stopCheck == 0;
 			
 			/* Solves each local function */
-			for (Iterator<GroundKernelWrapper> itr = factors.iterator(); itr.hasNext(); )
+			for (Iterator<ADMMObjectiveTerm> itr = terms.iterator(); itr.hasNext(); )
 				itr.next().updateLagrange().minimize();
 			
 			/* Updates consensus variables and computes residuals */
@@ -285,10 +265,10 @@ public class ADMMReasoner implements Reasoner {
 				/* First pass computes newZ and dual residual */
 				for (Iterator<VariableLocation> itr = varLocations.get(i).iterator(); itr.hasNext(); ) {
 					location = itr.next();
-					total += location.term.x.get(location.localIndex);
+					total += location.term.x[location.localIndex];
 					if (check) {
-						AxNorm += location.term.x.get(location.localIndex) * location.term.x.get(location.localIndex);
-						AyNorm += location.term.y.get(location.localIndex) * location.term.y.get(location.localIndex);
+						AxNorm += location.term.x[location.localIndex] * location.term.x[location.localIndex];
+						AyNorm += location.term.y[location.localIndex] * location.term.y[location.localIndex];
 					}
 				}
 				newZ = total / varLocations.get(i).size();
@@ -304,7 +284,7 @@ public class ADMMReasoner implements Reasoner {
 				if (check) {
 					for (Iterator<VariableLocation> itr = varLocations.get(i).iterator(); itr.hasNext(); ) {
 						location = itr.next();
-						diff = location.term.x.get(location.localIndex) - newZ;
+						diff = location.term.x[location.localIndex] - newZ;
 						primalRes += diff * diff;
 					}
 				}
@@ -361,7 +341,7 @@ public class ADMMReasoner implements Reasoner {
 	@Override
 	public void close() {
 		groundKernels = null;
-		factors = null;
+		terms = null;
 		variables = null;
 		z = null;
 	}

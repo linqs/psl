@@ -18,69 +18,68 @@ package edu.umd.cs.psl.reasoner.admm;
 
 class HingeLossTerm extends HyperplaneTerm {
 	
+	private final double weight;
+	
 	HingeLossTerm(ADMMReasoner reasoner, int[] zIndices, double[] lowerBounds,
-			double[] upperBounds, double[] coeffs, double constant) {
+			double[] upperBounds, double[] coeffs, double constant, double weight) {
 		super(reasoner, zIndices, lowerBounds, upperBounds, coeffs, constant);
+		this.weight = weight;
 	}
 	
 	@Override
 	protected void minimize() {
-		// TODO: Switch order of checking linear loss and zero
-		
 		/* Initializes scratch data */
 		double a[] = new double[x.length];
-		double min1 = 0.0, min2 = 0.0;
+		double total = 0.0;
 		
-		/* First the linear loss */
+		/*
+		 * Minimizes without the linear loss, i.e., solves
+		 * argmin stepSize/2 * \|x - z + y / stepSize \|_2^2
+		 * such that x is within its box
+		 */
 		for (int i = 0; i < a.length; i++) {
-			a[i] = y[i] - reasoner.stepSize * reasoner.z.get(zIndices[i]);
-			a[i] += coeffs[i];
-			a[i] /= -1 * reasoner.stepSize;
+			a[i] = reasoner.z.get(zIndices[i]) - y[i] / reasoner.stepSize;
 			
-			min1 += reasoner.stepSize / 2 * a[i] * a[i];
-			min1 += a[i] * (y[i] - reasoner.stepSize * reasoner.z.get(zIndices[i]));
+			if (a[i] < lb[i])
+				a[i] = lb[i];
+			else if (a[i] > ub[i])
+				a[i] = ub[i];
+			
+			total += coeffs[i] * a[i];
 		}
 		
-		min2 = min1;
-		
-		for (int i = 0; i < a.length; i++)
-			min1 += coeffs[i] * a[i];
-		min1 += constant;
-		
-		/* Tries without the linear loss */
-		if (min1 < min2) {
-			min1 = 0.0;
-			min2 = 0.0;
-			for (int i = 0; i < a.length; i++) {
-				a[i] = y[i] - reasoner.stepSize * reasoner.z.get(zIndices[i]);
-				a[i] /= -1 * reasoner.stepSize;
-				
-				min1 += reasoner.stepSize / 2 * a[i] * a[i];
-				min1 += a[i] * (y[i] - reasoner.stepSize * reasoner.z.get(zIndices[i]));
-			}
-			
-			min2 = min1;
-			
-			for (int i = 0; i < a.length; i++)
-				min1 += coeffs[i] * a[i];
-			min1 += constant;
-			
-			/* Now tries minimizing along their intersection */
-			if (min2 < min1) {
-				solveKnapsackProblem();
-				return;
-			}
+		/* If the linear loss is NOT active at the computed point, it is the solution... */
+		if (total <= constant) {
+			for (int i = 0; i < x.length; i++)
+				x[i] = a[i];
+			return;
 		}
 		
-		/* Projects on to a box */
-		for (int i = 0; i < x.length; i++)
-			if (a[i] < 0)
-				a[i] = 0;
-			else if (a[i] > 1)
-				a[i] = 1;
+		/*
+		 * Else, minimizes with the linear loss, i.e., solves
+		 * argmin weight * coeffs^T * x + stepSize/2 * \|x - z + y / stepSize \|_2^2
+		 * such that x is within its box 
+		 */
+		for (int i = 0; i < a.length; i++) {
+			a[i] = reasoner.z.get(zIndices[i]) - y[i] / reasoner.stepSize;
+			a[i] -= weight * coeffs[i] / reasoner.stepSize;
+			
+			if (a[i] < lb[i])
+				a[i] = lb[i];
+			else if (a[i] > ub[i])
+				a[i] = ub[i];
+			
+			total += coeffs[i] * a[i];
+		}
 		
-		/* Updates the local primal variables */
-		for (int i = 0; i < a.length; i++)
-			x[i] = a[i];
+		/* If the linear loss IS active at the computed point, it is the solution... */
+		if (total >= constant) {
+			for (int i = 0; i < x.length; i++)
+				x[i] = a[i];
+			return;
+		}
+		
+		/* Else, the solution is on the hyperplane */
+		solveKnapsackProblem();
 	}
 }

@@ -23,7 +23,7 @@ public class SquaredHingeLossTerm extends ADMMObjectiveTerm {
 
 	public SquaredHingeLossTerm(ADMMReasoner reasoner, int[] zIndices,
 			double[] lowerBounds, double[] upperBounds, double[] coeffs,
-			double constant) {
+			double constant, double weight) {
 		super(reasoner, zIndices, lowerBounds, upperBounds);
 		this.coeffs = coeffs;
 		this.constant = constant;

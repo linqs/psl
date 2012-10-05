@@ -56,8 +56,10 @@ abstract class HyperplaneTerm extends ADMMObjectiveTerm {
 	
 	/**
 	 * Solves the continuous quadratic knapsack problem <br />
-	 * arg min \|...\| <br />
-	 * such that coeffs^T x = constant and all x are within their bounds.
+	 * argmin stepSize/2 * \|x - z + y / stepSize \|_2^2 <br />
+	 * such that coeffs^T * x = constant and x is within its box.
+	 * <p>
+	 * It is assumed that the problem is feasible.
 	 * <p>
 	 * Stores the result in x.
 	 * <p>
@@ -66,33 +68,51 @@ abstract class HyperplaneTerm extends ADMMObjectiveTerm {
 	 * knapsack problem." J. Optim. Theory Appl. (2007) 134: 549-554.
 	 */
 	protected void solveKnapsackProblem() {
-		double[] a = new double[x.length];
-		
 		/* If 2 or fewer variables, no need for Kiwiel algorithm... */
-		if (x.length <= 2) {
-			if (x.length == 1) {
-				a[0] = -1 * constant / coeffs[0];
-			}
-			else if (x.length == 2) {
-				a[0] = y[0] - reasoner.stepSize * reasoner.z.get(zIndices[0]);
-				a[0] -= coeffs[0] / coeffs[1] * (y[1] - reasoner.stepSize * reasoner.z.get(zIndices[1]));
-				a[0] += 2 * coeffs[0] * constant / (coeffs[1] * coeffs[1]);
-				a[0] /= -1 * reasoner.stepSize * (1 + coeffs[0] * coeffs[0] / coeffs[1] / coeffs[1]);
-				
-				a[1] = (-1 * coeffs[0] * a[0] - constant) / coeffs[1];
-			}
-			
-			/* Projects on to a box */
-			for (int i = 0; i < x.length; i++)
-				if (a[i] < lb[i])
-					a[i] = lb[i];
-				else if (a[i] > ub[i])
-					a[i] = ub[i];
-			
-			/* Updates the local primal variables */
-			for (int i = 0; i < x.length; i++)
-				x[i] = a[i];
+		if (x.length == 1) {
+			x[0] = constant / coeffs[0];
 		}
+		// TODO: make this work for arbitrary boxes
+//		else if (x.length == 2) {
+//			double[] a = new double[2];
+//			double min = 0.0, max = 1.0;
+//			a[0] = reasoner.stepSize * reasoner.z.get(zIndices[0]) - y[0];
+//			a[0] -= reasoner.stepSize * coeffs[0] / coeffs[1] * (-1 * constant / coeffs[1] + reasoner.z.get(zIndices[1]) - y[1]);
+//			a[0] /= reasoner.stepSize * (1 + coeffs[0] * coeffs[0] / coeffs[1] / coeffs[1]);
+//			
+//			a[1] = constant / coeffs[1];
+//			if (a[1] < 0.0) {
+//				min = constant / coeffs[0];
+//			}
+//			else if (a[1] > 1.0) {
+//				min = (constant - coeffs[1]) / coeffs[0];
+//			}
+//			a[1] = (constant - coeffs[0]) / coeffs[1];
+//			if (a[1] < 0.0) {
+//				max = constant / coeffs[0];
+//			}
+//			else if (a[1] > 1.0) {
+//				max = (constant - coeffs[1]) / coeffs[0];
+//			}
+//			if (min > max) {
+//				double temp = max;
+//				max = min;
+//				min = temp;
+//			}
+//			
+//			if (a[0] < min) {
+//				a[0] = min;
+//			}
+//			else if (a[0] > max) {
+//				a[0] = max;
+//			}
+//			
+//			a[1] = (constant - coeffs[0] * a[0]) / coeffs[1];
+//			
+//			/* Updates the local primal variables */
+//			for (int i = 0; i < x.length; i++)
+//				x[i] = a[i];
+//		}
 		/* Else, uses Kiwiel's algorithm */
 		else {
 			/* Initialization */
@@ -112,6 +132,7 @@ abstract class HyperplaneTerm extends ADMMObjectiveTerm {
 				openDimensions.add(i);
 			
 			/* Initializes a, b, u, and l */
+			double[] a = new double[x.length];
 			double[] b = new double[a.length];
 			double[] u = new double[a.length];
 			double[] l = new double[a.length];
@@ -163,11 +184,11 @@ abstract class HyperplaneTerm extends ADMMObjectiveTerm {
 				 g += p - median * q + s;
 				 
 				 /* Compares g with target value */
-				 if (g > -1 * constant) {
+				 if (g > constant) {
 					lowerBound = median;
 					breakPoints = selector.getGreater();
 				 }
-				 else if (g < -1 * constant) {
+				 else if (g < constant) {
 					upperBound = median;
 					breakPoints = selector.getLess();
 				 }
@@ -224,7 +245,7 @@ abstract class HyperplaneTerm extends ADMMObjectiveTerm {
 				 }
 				 gL += p - lowerBound * q + s;
 				 
-				 optimum = lowerBound - (gL + constant) * (upperBound - lowerBound) / (gU - gL);
+				 optimum = lowerBound - (gL - constant) * (upperBound - lowerBound) / (gU - gL);
 			}
 			
 			/* Finds the projection using the optimal Lagrange multiplier */
@@ -236,6 +257,11 @@ abstract class HyperplaneTerm extends ADMMObjectiveTerm {
 				else
 					x[i] = l[i];
 			}
+			
+			/* Flips back the sign of any component that was flipped earlier */
+			for (int i = 0; i < x.length; i++)
+				if (coeffs[i] < 0)
+					x[i] = -1 * x[i];
 		}
 	}
 }
