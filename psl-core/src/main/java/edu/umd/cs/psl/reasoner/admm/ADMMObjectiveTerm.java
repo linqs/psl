@@ -27,40 +27,37 @@ import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
  */
 abstract public class ADMMObjectiveTerm {
 	protected final ADMMReasoner reasoner;
-	protected final Vector<Double> x;
-	protected final Vector<Double> y;
-	protected final Vector<Integer> zIndices;
-	protected final Vector<Double> lb;
-	protected final Vector<Double> ub;
+	protected final double[] x;
+	protected final double[] y;
+	protected final int[] zIndices;
+	protected final double[] lb;
+	protected final double[] ub;
 	
-	public ADMMObjectiveTerm(ADMMReasoner reasoner) {
-		this(reasoner, 4);
-	}
-	
-	public ADMMObjectiveTerm(ADMMReasoner reasoner, int initCapacity) {
+	public ADMMObjectiveTerm(ADMMReasoner reasoner, int[] zIndices, double[] lowerBounds, double[] upperBounds) {
 		this.reasoner = reasoner;
 		
-		x = new Vector<Double>(initCapacity);
-		y = new Vector<Double>(initCapacity);
-		zIndices = new Vector<Integer>(initCapacity);
-		lb = new Vector<Double>(initCapacity);
-		ub = new Vector<Double>(initCapacity);
+		x = new double[zIndices.length];
+		y = new double[zIndices.length];
+		
+		this.zIndices = zIndices;
+		lb = lowerBounds;
+		ub = upperBounds;
 	}
 	
-	protected void addVariable(AtomFunctionVariable var, double lowerBound, double upperBound) {
-		zIndices.add(reasoner.getConsensusIndex(this, var, x.size()));
-		x.add(reasoner.z.get(zIndices.lastElement()));
-		y.add(0.0);
-		lb.add(lowerBound);
-		ub.add(upperBound);
-	}
+//	protected void addVariable(AtomFunctionVariable var, double lowerBound, double upperBound) {
+//		zIndices.add(reasoner.getConsensusIndex(this, var, x.size()));
+//		x.add(reasoner.z.get(zIndices.lastElement()));
+//		y.add(0.0);
+//		lb.add(lowerBound);
+//		ub.add(upperBound);
+//	}
 	
 	protected void setLowerBound(int index, double lowerBound) {
-		lb.set(index, lowerBound);
+		lb[index] = lowerBound;
 	}
 	
 	protected void setUpperBound(int index, double upperBound) {
-		ub.set(index, upperBound);
+		ub[index] = upperBound;
 	}
 	
 	abstract protected void minimize();
@@ -69,8 +66,8 @@ abstract public class ADMMObjectiveTerm {
 	 * @return this for convenience
 	 */
 	protected ADMMObjectiveTerm updateLagrange() {
-		for (int i = 0; i < y.size(); i++) {
-			y.set(i, y.get(i) + reasoner.stepSize * (x.get(i) - reasoner.z.get(zIndices.get(i))));
+		for (int i = 0; i < y.length; i++) {
+			y[i] = y[i] + reasoner.stepSize * (x[i] - reasoner.z.get(zIndices[i]));
 		}
 		
 		return this;

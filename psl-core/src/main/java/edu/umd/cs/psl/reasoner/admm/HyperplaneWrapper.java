@@ -18,46 +18,40 @@ package edu.umd.cs.psl.reasoner.admm;
 
 import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.Vector;
-
-import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
-import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
-import edu.umd.cs.psl.reasoner.function.FunctionSingleton;
-import edu.umd.cs.psl.reasoner.function.FunctionSum;
-import edu.umd.cs.psl.reasoner.function.FunctionSummand;
 
 /**
  * Objective term for an {@link ADMMReasoner} that is based on a hyperplane in some way.
  * <p>
- * Provides tools for extracting the characterization of the hyperplane and solving continuous
+ * Stores the characterization of the hyperplane and solves continuous
  * quadratic knapsack problems using it.
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  */
 abstract class HyperplaneWrapper extends ADMMObjectiveTerm {
 	
-	protected final Vector<Double> coeffs;
-	protected double constant;
+	protected final double[] coeffs;
+	protected final double constant;
 	
-	HyperplaneWrapper(ADMMReasoner reasoner, FunctionSum hyperplane) {
-		super(reasoner, hyperplane.size());
+	HyperplaneWrapper(ADMMReasoner reasoner, int[] zIndices, double[] lowerBounds, double[] upperBounds,
+			double[] coeffs, double constant) {
+		super(reasoner, zIndices, lowerBounds, upperBounds);
 		
-		coeffs = new Vector<Double>(x.size());
-		constant = 0.0;
+		this.coeffs = coeffs;
+		this.constant = constant;
 		
-		for (Iterator<FunctionSummand> itr = hyperplane.iterator(); itr.hasNext(); ) {
-			FunctionSummand summand = itr.next();
-			FunctionSingleton term = summand.getTerm();
-			if (term instanceof AtomFunctionVariable && !term.isConstant()) {
-				addVariable((AtomFunctionVariable) term, 0, 1);
-				coeffs.add(summand.getCoefficient() * groundKernel.getWeight().getWeight());
-			}
-			else if (term.isConstant()) {
-				constant += summand.getValue() * groundKernel.getWeight().getWeight();
-			}
-			else
-				throw new IllegalArgumentException("Unexpected summand.");
-		}
+//		for (Iterator<FunctionSummand> itr = hyperplane.iterator(); itr.hasNext(); ) {
+//			FunctionSummand summand = itr.next();
+//			FunctionSingleton term = summand.getTerm();
+//			if (term instanceof AtomFunctionVariable && !term.isConstant()) {
+//				addVariable((AtomFunctionVariable) term, 0, 1);
+//				coeffs.add(summand.getCoefficient() * groundKernel.getWeight().getWeight());
+//			}
+//			else if (term.isConstant()) {
+//				constant += summand.getValue() * groundKernel.getWeight().getWeight();
+//			}
+//			else
+//				throw new IllegalArgumentException("Unexpected summand.");
+//		}
 	}
 	
 	/**
@@ -72,12 +66,34 @@ abstract class HyperplaneWrapper extends ADMMObjectiveTerm {
 	 * knapsack problem." J. Optim. Theory Appl. (2007) 134: 549-554.
 	 */
 	protected void solveKnapsackProblem() {
-		if (x.size() == 1) {
+		double[] a = new double[x.length];
+		
+		/* If 2 or fewer variables, no need for Kiwiel algorithm... */
+		if (x.length <= 2) {
+			if (x.length == 1) {
+				a[0] = -1 * constant / coeffs[0];
+			}
+			else if (x.length == 2) {
+				a[0] = y[0] - reasoner.stepSize * reasoner.z.get(zIndices[0]);
+				a[0] -= coeffs[0] / coeffs[1] * (y[1] - reasoner.stepSize * reasoner.z.get(zIndices[1]));
+				a[0] += 2 * coeffs[0] * constant / (coeffs[1] * coeffs[1]);
+				a[0] /= -1 * reasoner.stepSize * (1 + coeffs[0] * coeffs[0] / coeffs[1] / coeffs[1]);
+				
+				a[1] = (-1 * coeffs[0] * a[0] - constant) / coeffs[1];
+			}
 			
-		}
-		else if (x.size() == 2) {
+			/* Projects on to a box */
+			for (int i = 0; i < x.length; i++)
+				if (a[i] < lb[i])
+					a[i] = lb[i];
+				else if (a[i] > ub[i])
+					a[i] = ub[i];
 			
+			/* Updates the local primal variables */
+			for (int i = 0; i < x.length; i++)
+				x[i] = a[i];
 		}
+		/* Else, uses Kiwiel's algorithm */
 		else {
 			/* Initialization */
 			double median, g;
@@ -92,26 +108,25 @@ abstract class HyperplaneWrapper extends ADMMObjectiveTerm {
 			double q = 0;
 			double s = 0;
 			LinkedList<Integer> openDimensions = new LinkedList<Integer>();
-			for (int i = 0; i < x.size(); i++)
+			for (int i = 0; i < x.length; i++)
 				openDimensions.add(i);
 			
-			/* Computes initializes a, b, u, and l */
-			double[] a = new double[x.size()];
+			/* Initializes a, b, u, and l */
 			double[] b = new double[a.length];
 			double[] u = new double[a.length];
 			double[] l = new double[a.length];
 			for (int i = 0; i < a.length; i++) {
-				if (coeffs.get(i) > 0) {
-					a[i] = reasoner.stepSize * reasoner.z.get(zIndices.get(i)) - y.get(i);
-					b[i] = coeffs.get(i);
-					u[i] = ub.get(i);
-					l[i] = lb.get(i);
+				if (coeffs[i] > 0) {
+					a[i] = reasoner.stepSize * reasoner.z.get(zIndices[i]) - y[i];
+					b[i] = coeffs[i];
+					u[i] = ub[i];
+					l[i] = lb[i];
 				}
-				else if (coeffs.get(i) < 0) {
-					a[i] = -1 * (reasoner.stepSize * reasoner.z.get(zIndices.get(i)) - y.get(i));
-					b[i] = -1 * coeffs.get(i);
-					u[i] = -1 * lb.get(i);
-					l[i] = -1 * ub.get(i);
+				else if (coeffs[i] < 0) {
+					a[i] = -1 * (reasoner.stepSize * reasoner.z.get(zIndices[i]) - y[i]);
+					b[i] = -1 * coeffs[i];
+					u[i] = -1 * lb[i];
+					l[i] = -1 * ub[i];
 				}
 				else
 					throw new IllegalStateException();
@@ -215,11 +230,11 @@ abstract class HyperplaneWrapper extends ADMMObjectiveTerm {
 			/* Finds the projection using the optimal Lagrange multiplier */
 			for (int i = 0; i < a.length; i++) {
 				if (optimum < tU[i])
-					x.set(i, u[i]);
+					x[i] = u[i];
 				else if (optimum <= tL[i])
-					x.set(i, (a[i] - optimum * b[i]) / reasoner.stepSize);
+					x[i] = (a[i] - optimum * b[i]) / reasoner.stepSize;
 				else
-					x.set(i, l[i]);
+					x[i] = l[i];
 			}
 		}
 	}

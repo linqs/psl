@@ -16,71 +16,58 @@
  */
 package edu.umd.cs.psl.reasoner.admm;
 
-import java.util.Iterator;
-
-import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
-import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
-import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
 import edu.umd.cs.psl.reasoner.function.FunctionComparator;
-import edu.umd.cs.psl.reasoner.function.FunctionSingleton;
-import edu.umd.cs.psl.reasoner.function.FunctionSum;
-import edu.umd.cs.psl.reasoner.function.FunctionSummand;
-import edu.umd.cs.psl.reasoner.function.FunctionTerm;
 
 class LinearConstraintWrapper extends HyperplaneWrapper {
 	
 	private final FunctionComparator comparator;
 	
-	LinearConstraintWrapper(ADMMReasoner reasoner, FunctionSum hyperplane, FunctionComparator comparator, double value) {
-		super(reasoner, hyperplane);
+	LinearConstraintWrapper(ADMMReasoner reasoner, int[] zIndices, double[] lowerBounds, double[] upperBounds,
+			double[] coeffs, double constant, FunctionComparator comparator) {
+		super(reasoner, zIndices, lowerBounds, upperBounds, coeffs, constant);
 		this.comparator = comparator;
 	}
 	
 	@Override
 	protected void minimize() {
-		/* Initializes scratch data */
-		double a[] = new double[x.size()];
+		/* If it's not an equality constraint, immediately solves the knapsack problem */
+		if (!comparator.equals(FunctionComparator.Equality)) {
 		
-		/* First minimizes without regard for any constraints, then projects on to a box */
-		for (int i = 0; i < a.length; i++) {
-			a[i] = reasoner.z.get(zIndices.get(i)) - y.get(i) / reasoner.stepSize;
+			/* Initializes scratch data */
+			double a[] = new double[x.length];
 			
-			if (a[i] < 0)
-				a[i] = 0;
-			else if (a[i] > 1)
-				a[i] = 1;
-		}
-		
-		/* If it doesn't satisfy the constraint, projects it */
-		
-		/* If still outside the simplex, minimizes along the boundary */
-		if (a.length > 1) {
-			if (a[0] + a[1] > 1) {
-				reasoner.linearConstraintSolvedFace++;
-				a[0] = y.get(0) - reasoner.stepSize * reasoner.z.get(zIndices.get(0));
-				a[0] -= y.get(1) - reasoner.stepSize * reasoner.z.get(zIndices.get(1));
-				a[0] -= reasoner.stepSize;
-				a[0] /= -2 * reasoner.stepSize;
-			
-				/* Checks boundaries and sets a[1] */
-				if (a[0] > 1) {
-					a[0] = 1;
-					a[1] = 0;
-				}
-				else if (a[0] < 0) {
-					a[0] = 0;
-					a[1] = 1;
-				}
-				else {
-					a[1] = 1 - a[0];
-				}
+			/* First minimizes without regard for any constraints, then projects on to a box */
+			for (int i = 0; i < a.length; i++) {
+				a[i] = reasoner.z.get(zIndices[i]) - y[i] / reasoner.stepSize;
+				
+				if (a[i] < lb[i])
+					a[i] = lb[i];
+				else if (a[i] > ub[i])
+					a[i] = ub[i];
 			}
-			else
-				reasoner.linearConstraintSolvedInterior++;
+			
+			/*
+			 * Checks if the new point satisfies the constraint. If so, updates
+			 * the local primal variables.
+			 */
+			double total = 0.0;
+			for (int i = 0; i < a.length; i++)
+				total += coeffs[i] * a[i];
+			total += constant;
+			
+			if ( (comparator.equals(FunctionComparator.SmallerThan) && total <= 0.0)
+					||
+				 (comparator.equals(FunctionComparator.LargerThan) && total >= 0.0)
+			   ) {
+				for (int i = 0; i < a.length; i++)
+					x[i] = a[i];
+			}
 		}
 		
-		/* Updates the local primal variables */
-		for (int i = 0; i < a.length; i++)
-			x.set(i, a[i]);
+		/*
+		 * If the naive minimization didn't work, or if it's an equality constraint,
+		 * solves the knapsack problem
+		 */
+		solveKnapsackProblem();
 	}
 }
