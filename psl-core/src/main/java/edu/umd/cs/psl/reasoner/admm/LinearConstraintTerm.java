@@ -49,7 +49,7 @@ class LinearConstraintTerm extends HyperplaneTerm {
 			
 			/*
 			 * Checks if the new point satisfies the constraint. If so, updates
-			 * the local primal variables.
+			 * the local primal variables and returns.
 			 */
 			double total = 0.0;
 			for (int i = 0; i < a.length; i++)
@@ -62,6 +62,7 @@ class LinearConstraintTerm extends HyperplaneTerm {
 			   ) {
 				for (int i = 0; i < a.length; i++)
 					x[i] = a[i];
+				return;
 			}
 		}
 		

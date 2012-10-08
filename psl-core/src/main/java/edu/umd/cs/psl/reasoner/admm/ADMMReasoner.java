@@ -16,6 +16,7 @@
  */
 package edu.umd.cs.psl.reasoner.admm;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -34,6 +35,7 @@ import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.reasoner.Reasoner;
 import edu.umd.cs.psl.reasoner.Reasoner.DistributionType;
 import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
+import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
 import edu.umd.cs.psl.reasoner.function.FunctionSingleton;
 import edu.umd.cs.psl.reasoner.function.FunctionSum;
 import edu.umd.cs.psl.reasoner.function.FunctionSummand;
@@ -153,6 +155,8 @@ public class ADMMReasoner implements Reasoner {
 			throw new IllegalArgumentException("Property " + EPSILON_REL_KEY + " must be positive.");
 		stopCheck = config.getInt(STOP_CHECK_KEY, STOP_CHECK_DEFAULT);
 		type = (DistributionType) config.getEnum(DISTRIBUTION_KEY, DISTRIBUTION_DEFAULT);
+		if (type.equals(DistributionType.quadratic))
+			throw new IllegalArgumentException("Only linear distribution is currently supported.");
 		maxMapRounds = config.getInt(MAX_ROUNDS_KEY, MAX_ROUNDS_DEFAULT);
 		
 		groundKernels = new HashSet<GroundKernel>();
@@ -213,19 +217,20 @@ public class ADMMReasoner implements Reasoner {
 		
 		GroundKernel groundKernel;
 		FunctionTerm function, innerFunction, constantTerm;
+		ADMMObjectiveTerm term;
 		
-		/* Initializes factors */
+		/* Initializes objective terms from ground kernels */
 		for (Iterator<GroundKernel> itr = groundKernels.iterator(); itr.hasNext(); ) {
 			groundKernel = itr.next();
 			if (groundKernel instanceof GroundCompatibilityKernel) {
 				function = ((GroundCompatibilityKernel) groundKernel).getFunctionDefinition();
 				/*
 				 * If the FunctionTerm is a MaxFunction, ensures that it has two arguments, a linear
-				 * function and zero, and constructs the objective term
+				 * function and zero, and constructs the objective term (a hinge loss)
 				 */
 				if (function instanceof MaxFunction) {
 					if (((MaxFunction) function).size() != 2)
-						throw new IllegalArgumentException("Max function must have two arguments.");
+						throw new IllegalArgumentException("Max function must have one linear function and 0.0 as arguments.");
 					innerFunction = ((MaxFunction) function).get(0);
 					if (innerFunction.isConstant()) {
 						constantTerm = innerFunction;
@@ -238,34 +243,42 @@ public class ADMMReasoner implements Reasoner {
 					if (!constantTerm.isConstant() || constantTerm.getValue() != 0)
 						throw new IllegalArgumentException("Max function must have one linear function and 0.0 as arguments.");
 					
-					function = innerFunction;
-					
-					/* Processes the inner function */
-					if (function instanceof FunctionSum) {
-						for (Iterator<FunctionSummand> itr = ((FunctionSum) function).iterator(); itr.hasNext(); ) {
-							FunctionSummand summand = itr.next();
-							FunctionSingleton term = summand.getTerm();
-							if (term instanceof AtomFunctionVariable && !term.isConstant()) {
-								addVariable((AtomFunctionVariable) term);
-								coeffs.add(summand.getCoefficient());
-							}
-							else if (term.isConstant()) {
-								constant += summand.getValue();
-							}
-							else
-								throw new IllegalArgumentException("Unexpected summand.");
-						}
+					if (innerFunction instanceof FunctionSum) {
+						Hyperplane hp = processHyperplane((FunctionSum) innerFunction);
+						term = new HingeLossTerm(this, hp.zIndices, hp.lowerBounds, hp.upperBounds, hp.coeffs, hp.constant,
+								((GroundCompatibilityKernel) groundKernel).getWeight().getWeight());
 					}
+					else
+						throw new IllegalArgumentException("Max function must have one linear function and 0.0 as arguments.");
 				}
+				/* Else, if it's a FunctionSum, constructs the objective term (a linear loss) */
+				else if (function instanceof FunctionSum) {
+					Hyperplane hp = processHyperplane((FunctionSum) function);
+					term = new LinearLossTerm(this, hp.zIndices, hp.lowerBounds, hp.upperBounds, hp.coeffs,
+							((GroundCompatibilityKernel) groundKernel).getWeight().getWeight());
+				}
+				else
+					throw new IllegalArgumentException("Unrecognized function.");
 			}
 			else if (groundKernel instanceof GroundConstraintKernel) {
-//				terms.add(new PairwiseLinearConstraintWrapper(this, (GroundConstraintKernel) groundKernel));
+				ConstraintTerm constraint = ((GroundConstraintKernel) groundKernel).getConstraintDefinition();
+				function = constraint.getFunction();
+				if (function instanceof FunctionSum) {
+					Hyperplane hp = processHyperplane((FunctionSum) function);
+					term = new LinearConstraintTerm(this, hp.zIndices, hp.lowerBounds, hp.upperBounds, hp.coeffs,
+							constraint.getValue() + hp.constant, constraint.getComparator());
+				}
+				else
+					throw new IllegalArgumentException("Unrecognized function.");
 			}
 			else
 				throw new IllegalStateException("Unsupported ground kernel: " + groundKernel);
+			
+			registerLocalVariableCopies(term);
+			terms.add(term);
 		}
 		
-		log.debug("Performing optimization with {} variables and {} factors.", z.size(), terms.size());
+		log.debug("Performing optimization with {} variables and {} terms.", z.size(), terms.size());
 		
 		/* Performs inference */
 		double primalRes = Double.POSITIVE_INFINITY;
@@ -348,27 +361,11 @@ public class ADMMReasoner implements Reasoner {
 			variables.get(i).setValue(z.get(i));
 	}
 	
-	int getConsensusIndex(ADMMObjectiveTerm term, AtomFunctionVariable var, int localIndex) {
-		int consensusIndex = variables.indexOf(var);
-		
-		/* If the variable has not been given a consensus variable yet */
-		if (consensusIndex == -1) {
-			consensusIndex = variables.size();
-			variables.add(var);
-			z.add(var.getValue());
-			
-			/* Creates a list of local variable locations for the new variable */
-			varLocations.add(new Vector<ADMMReasoner.VariableLocation>());
+	void registerLocalVariableCopies(ADMMObjectiveTerm term) {
+		for (int i = 0; i < term.x.length; i++) {
+			VariableLocation varLocation = new VariableLocation(term, i);
+			varLocations.get(term.zIndices[i]).add(varLocation);
 		}
-		
-		/* Adds a new entry to the list of local variable locations */
-		VariableLocation varLocation = new VariableLocation(term, localIndex);
-		varLocations.get(consensusIndex).add(varLocation);
-		
-		/* Increments count of local variables */
-		n++;
-		
-		return consensusIndex;
 	}
 
 	@Override
@@ -377,6 +374,87 @@ public class ADMMReasoner implements Reasoner {
 		terms = null;
 		variables = null;
 		z = null;
+	}
+	
+	private Hyperplane processHyperplane(FunctionSum sum) {
+		Hyperplane hp = new Hyperplane();
+		HashMap<AtomFunctionVariable, Integer> localVarLocations = new HashMap<AtomFunctionVariable, Integer>();
+		Vector<Integer> tempZIndices = new Vector<Integer>(sum.size());
+		Vector<Double> tempCoeffs = new Vector<Double>(sum.size());
+		
+		for (Iterator<FunctionSummand> sItr = sum.iterator(); sItr.hasNext(); ) {
+			FunctionSummand summand = sItr.next();
+			FunctionSingleton term = summand.getTerm();
+			if (term instanceof AtomFunctionVariable && !term.isConstant()) {
+				int zIndex = variables.indexOf(term);
+				/*
+				 * If this variable has been encountered before in any hyperplane
+				 */
+				if (zIndex != -1) {
+					/*
+					 * Checks if the variable has already been encountered
+					 * in THIS hyperplane
+					 */
+					Integer localIndex = localVarLocations.get(term);
+					/* If it has, just adds the coefficient... */
+					if (localIndex != null) {
+						tempCoeffs.set(localIndex, tempCoeffs.get(localIndex) + summand.getCoefficient());
+					}
+					/* Else, creates a new local variable */
+					else {
+						tempZIndices.add(zIndex);
+						tempCoeffs.add(summand.getCoefficient());
+						localVarLocations.put((AtomFunctionVariable) term, tempZIndices.size()-1);
+						
+						/* Increments count of local variables */
+						n++;
+					}
+				}
+				/* Else, creates a new global variable and a local variable */
+				else {
+					/* Creates the global variable */
+					variables.add((AtomFunctionVariable) term);
+					z.add(term.getValue());
+					
+					/* Creates a list of local variable locations for the new variable */
+					varLocations.add(new Vector<ADMMReasoner.VariableLocation>());
+					
+					/* Creates the local variable */
+					tempZIndices.add(variables.size()-1);
+					tempCoeffs.add(summand.getCoefficient());
+					localVarLocations.put((AtomFunctionVariable) term, tempZIndices.size()-1);
+					
+					/* Increments count of local variables */
+					n++;
+				}
+			}
+			else if (term.isConstant()) {
+				/* Subtracts because hyperplane is stored as coeffs^T * x = constant */
+				hp.constant -= summand.getValue();
+			}
+			else
+				throw new IllegalArgumentException("Unexpected summand.");
+		}
+
+		hp.zIndices = new int[tempZIndices.size()];
+		hp.coeffs = new double[tempCoeffs.size()];
+		hp.lowerBounds = new double[tempCoeffs.size()];
+		hp.upperBounds = new double[tempCoeffs.size()];
+		
+		for (int i = 0; i < tempZIndices.size(); i++) {
+			hp.zIndices[i] = tempZIndices.get(i);
+			hp.coeffs[i] = tempCoeffs.get(i);
+			hp.lowerBounds[i] = 0.0;
+			hp.upperBounds[i] = 1.0;
+		}
+		
+		return hp;
+	}
+	
+	private class Hyperplane {
+		int[] zIndices;
+		double[] lowerBounds, upperBounds, coeffs;
+		double constant;
 	}
 	
 	private class VariableLocation {

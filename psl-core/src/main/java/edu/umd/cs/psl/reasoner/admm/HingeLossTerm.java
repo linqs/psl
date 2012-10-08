@@ -16,6 +16,12 @@
  */
 package edu.umd.cs.psl.reasoner.admm;
 
+/**
+ * {@link ADMMReasoner} objective term of the form <br />
+ * weight * max(coeffs^T * x - constant, 0)
+ * 
+ * @author Stephen Bach <bach@cs.umd.edu>
+ */
 class HingeLossTerm extends HyperplaneTerm {
 	
 	private final double weight;
@@ -60,6 +66,7 @@ class HingeLossTerm extends HyperplaneTerm {
 		 * argmin weight * coeffs^T * x + stepSize/2 * \|x - z + y / stepSize \|_2^2
 		 * such that x is within its box 
 		 */
+		total = 0.0;
 		for (int i = 0; i < a.length; i++) {
 			a[i] = reasoner.z.get(zIndices[i]) - y[i] / reasoner.stepSize;
 			a[i] -= weight * coeffs[i] / reasoner.stepSize;

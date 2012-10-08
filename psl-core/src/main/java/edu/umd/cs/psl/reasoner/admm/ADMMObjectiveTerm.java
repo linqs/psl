@@ -44,14 +44,6 @@ abstract public class ADMMObjectiveTerm {
 				throw new IllegalArgumentException("Lower bound must be less than upper bound.");
 	}
 	
-//	protected void addVariable(AtomFunctionVariable var, double lowerBound, double upperBound) {
-//		zIndices.add(reasoner.getConsensusIndex(this, var, x.size()));
-//		x.add(reasoner.z.get(zIndices.lastElement()));
-//		y.add(0.0);
-//		lb.add(lowerBound);
-//		ub.add(upperBound);
-//	}
-	
 	protected void setLowerBound(int index, double lowerBound) {
 		if (lowerBound < ub[index])
 			lb[index] = lowerBound;
@@ -75,6 +67,11 @@ abstract public class ADMMObjectiveTerm {
 			throw new IllegalArgumentException("Lower bound must be less than upper bound.");
 	}
 	
+	/**
+	 * Updates x to the solution of <br />
+	 * argmin f(x) + stepSize / 2 * \|x - z + y / stepSize \|_2^2 <br />
+	 * for the objective term f(x)
+	 */
 	abstract protected void minimize();
 	
 	/**

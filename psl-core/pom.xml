@@ -30,12 +30,6 @@
 		<version>1.1-SNAPSHOT</version>
 	</parent>
 	<dependencies>
-		<!-- temp MOSEK dependency -->
-		<dependency>
-			<groupId>com.mosek</groupId>
-			<artifactId>mosek</artifactId>
-			<version>6.0</version>
-		</dependency>
 		<!-- linear algebra dependencies -->
 		<dependency>
 			<groupId>edu.emory.mathcs</groupId>

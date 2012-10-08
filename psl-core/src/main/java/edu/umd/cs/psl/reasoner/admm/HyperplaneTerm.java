@@ -38,20 +38,6 @@ abstract class HyperplaneTerm extends ADMMObjectiveTerm {
 		
 		this.coeffs = coeffs;
 		this.constant = constant;
-		
-//		for (Iterator<FunctionSummand> itr = hyperplane.iterator(); itr.hasNext(); ) {
-//			FunctionSummand summand = itr.next();
-//			FunctionSingleton term = summand.getTerm();
-//			if (term instanceof AtomFunctionVariable && !term.isConstant()) {
-//				addVariable((AtomFunctionVariable) term, 0, 1);
-//				coeffs.add(summand.getCoefficient() * groundKernel.getWeight().getWeight());
-//			}
-//			else if (term.isConstant()) {
-//				constant += summand.getValue() * groundKernel.getWeight().getWeight();
-//			}
-//			else
-//				throw new IllegalArgumentException("Unexpected summand.");
-//		}
 	}
 	
 	/**

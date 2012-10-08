@@ -16,11 +16,20 @@
  */
 package edu.umd.cs.psl.reasoner.admm;
 
+/**
+ * {@link ADMMReasoner} objective term of the form <br />
+ * weight * coeffs^T * x
+ * 
+ * @author Stephen Bach <bach@cs.umd.edu>
+ */
 class LinearLossTerm extends HyperplaneTerm {
 	
+	private final double weight;
+	
 	LinearLossTerm(ADMMReasoner reasoner, int[] zIndices, double[] lowerBounds, double[] upperBounds,
-			double[] coeffs, double constant) {
-		super(reasoner, zIndices, lowerBounds, upperBounds, coeffs, constant);
+			double[] coeffs, double weight) {
+		super(reasoner, zIndices, lowerBounds, upperBounds, coeffs, 0.0);
+		this.weight = weight;
 	}
 	
 	@Override
@@ -30,7 +39,7 @@ class LinearLossTerm extends HyperplaneTerm {
 		
 		for (int i = 0; i < a.length; i++) {
 			a[i] = y[i] - reasoner.stepSize * reasoner.z.get(zIndices[i]);
-			a[i] += coeffs[i];
+			a[i] += weight * coeffs[i];
 			a[i] /= reasoner.stepSize / -2;
 		}
 		
