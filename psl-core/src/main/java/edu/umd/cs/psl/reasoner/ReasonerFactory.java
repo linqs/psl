@@ -14,13 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.optimizer.conic.program;
+package edu.umd.cs.psl.reasoner;
 
-public enum ConicProgramEvent {
-	MatricesCheckedIn, MatricesCheckedOut,
-	NNOCCreated, NNOCDeleted,
-	SOCCreated, SOCDeleted,
-	RSOCCreated, RSOCDeleted,
-	ObjCoeffChanged,
-	ConCreated, VarAddedToCon, ConCoeffChanged, VarRemovedFromCon, ConValueChanged, ConDeleted
+import edu.umd.cs.psl.config.ConfigBundle;
+import edu.umd.cs.psl.config.Factory;
+import edu.umd.cs.psl.model.atom.AtomEventFramework;
+
+/**
+ * Factory for a {@link Reasoner}.
+ * 
+ * @author Stephen Bach <bach@cs.umd.edu>
+ */
+public interface ReasonerFactory extends Factory {
+	public Reasoner getReasoner(AtomEventFramework framework, ConfigBundle config)
+			throws ClassNotFoundException, IllegalAccessException, InstantiationException;
 }

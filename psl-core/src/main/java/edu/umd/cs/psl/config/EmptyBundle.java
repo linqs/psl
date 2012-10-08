@@ -7,6 +7,22 @@ import java.util.List;
 public class EmptyBundle implements ConfigBundle {
 
 	@Override
+	public void addProperty(String key, Object value) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void setProperty(String key, Object value) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void clearProperty(String key) { }
+
+	@Override
+	public void clear() { }
+
+	@Override
 	public Boolean getBoolean(String key, Boolean defaultValue) {
 		return defaultValue;
 	}

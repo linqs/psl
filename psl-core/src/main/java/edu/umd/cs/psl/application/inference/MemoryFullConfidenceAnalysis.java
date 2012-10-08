@@ -49,8 +49,8 @@ import edu.umd.cs.psl.model.atom.memory.MemoryAtomEventFramework;
 import edu.umd.cs.psl.model.atom.memory.MemoryAtomStore;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
-import edu.umd.cs.psl.reasoner.ConicReasoner;
 import edu.umd.cs.psl.reasoner.Reasoner;
+import edu.umd.cs.psl.reasoner.conic.ConicReasoner;
 import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
 import edu.umd.cs.psl.sampler.MarginalSampler;
 

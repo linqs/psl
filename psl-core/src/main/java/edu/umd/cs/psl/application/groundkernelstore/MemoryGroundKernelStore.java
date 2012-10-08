@@ -24,6 +24,7 @@ import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
+import edu.umd.cs.psl.reasoner.Reasoner.DistributionType;
 import edu.umd.cs.psl.util.collection.Filters;
 
 public class MemoryGroundKernelStore implements GroundKernelStore {
@@ -35,10 +36,27 @@ public class MemoryGroundKernelStore implements GroundKernelStore {
 	}
 	
 	@Override
-	public double getTotalIncompatibility() {
+	public double getTotalIncompatibility(DistributionType type) {
 		double objective = 0.0;
+		double incompatibility;
+		
 		for (GroundKernel e : evidences) {
-			objective+=e.getIncompatibility();
+			incompatibility = e.getIncompatibility();
+			
+			switch(type) {
+			case linear:
+				break;
+			case quadratic:
+				incompatibility = incompatibility * incompatibility;
+				break;
+			default:
+				throw new IllegalArgumentException("Unknown distribution type: " + type);
+			}
+			
+			if (e instanceof GroundCompatibilityKernel)
+				incompatibility *= ((GroundCompatibilityKernel) e).getWeight().getWeight();
+			
+			objective += incompatibility; 
 		}
 		return objective;
 	}

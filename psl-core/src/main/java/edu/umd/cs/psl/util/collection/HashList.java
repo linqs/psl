@@ -88,7 +88,10 @@ public class HashList<E> implements List<E> {
 
 	@Override
 	public int indexOf(Object o) {
-		return map.get(o);
+		Integer index = map.get(o);
+		if (index == null)
+			index = -1;
+		return index;
 	}
 
 	@Override

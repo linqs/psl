@@ -16,9 +16,6 @@
  */
 package edu.umd.cs.psl.learning.weight;
 
-import java.util.Arrays;
-import java.util.Map;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,16 +25,11 @@ import edu.umd.cs.psl.application.inference.MaintainedMemoryFullInference;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.database.Database;
-import edu.umd.cs.psl.evaluation.process.RunningProcess;
-import edu.umd.cs.psl.evaluation.process.local.LocalProcessMonitor;
 import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
-import edu.umd.cs.psl.optimizer.lbfgs.ConvexFunc;
-import edu.umd.cs.psl.reasoner.ConicReasoner;
-import edu.umd.cs.psl.reasoner.ConicReasoner.DistributionType;
-import edu.umd.cs.psl.sampler.DerivativeSampler;
-import edu.umd.cs.psl.sampler.PartitionEstimationSampler;
+import edu.umd.cs.psl.reasoner.Reasoner.DistributionType;
+import edu.umd.cs.psl.reasoner.conic.ConicReasoner;
 
 /**
  * Weight learning that maximizes the likelihood of the training data.

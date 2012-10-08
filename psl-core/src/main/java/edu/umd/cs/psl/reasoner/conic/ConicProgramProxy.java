@@ -14,13 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.optimizer.conic.program;
+package edu.umd.cs.psl.reasoner.conic;
 
-public enum ConicProgramEvent {
-	MatricesCheckedIn, MatricesCheckedOut,
-	NNOCCreated, NNOCDeleted,
-	SOCCreated, SOCDeleted,
-	RSOCCreated, RSOCDeleted,
-	ObjCoeffChanged,
-	ConCreated, VarAddedToCon, ConCoeffChanged, VarRemovedFromCon, ConValueChanged, ConDeleted
+abstract class ConicProgramProxy {
+	protected final ConicReasoner reasoner;
+	
+	ConicProgramProxy(ConicReasoner reasoner) {
+		this.reasoner = reasoner;
+	}
+	
+	abstract void remove();
 }

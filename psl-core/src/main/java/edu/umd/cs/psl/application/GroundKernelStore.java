@@ -19,6 +19,7 @@ package edu.umd.cs.psl.application;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
+import edu.umd.cs.psl.reasoner.Reasoner.DistributionType;
 
 public interface GroundKernelStore {
 
@@ -40,7 +41,7 @@ public interface GroundKernelStore {
 	public Iterable<GroundKernel> getGroundKernels(Kernel et);
 	
 	
-	public double getTotalIncompatibility();
+	public double getTotalIncompatibility(DistributionType type);
 	
 	public int size();
 	

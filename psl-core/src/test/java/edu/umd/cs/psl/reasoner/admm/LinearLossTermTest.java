@@ -14,13 +14,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.optimizer.conic.program;
+package edu.umd.cs.psl.reasoner.admm;
 
-public enum ConicProgramEvent {
-	MatricesCheckedIn, MatricesCheckedOut,
-	NNOCCreated, NNOCDeleted,
-	SOCCreated, SOCDeleted,
-	RSOCCreated, RSOCDeleted,
-	ObjCoeffChanged,
-	ConCreated, VarAddedToCon, ConCoeffChanged, VarRemovedFromCon, ConValueChanged, ConDeleted
+import static org.junit.Assert.*;
+
+import java.util.Vector;
+
+import org.junit.Before;
+import org.junit.Test;
+
+import edu.umd.cs.psl.config.EmptyBundle;
+
+public class LinearLossTermTest {
+	
+	ADMMReasoner reasoner;
+
+	@Before
+	public void setUp() throws Exception {
+		
+	}
+
+	@Test
+	public void testMinimize() {
+		reasoner = new ADMMReasoner(null, new EmptyBundle());
+		reasoner.z = new Vector<Double>();
+	}
+
 }

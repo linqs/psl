@@ -14,13 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.optimizer.conic.program;
+package edu.umd.cs.psl.reasoner.admm;
 
-public enum ConicProgramEvent {
-	MatricesCheckedIn, MatricesCheckedOut,
-	NNOCCreated, NNOCDeleted,
-	SOCCreated, SOCDeleted,
-	RSOCCreated, RSOCDeleted,
-	ObjCoeffChanged,
-	ConCreated, VarAddedToCon, ConCoeffChanged, VarRemovedFromCon, ConValueChanged, ConDeleted
+public class SquaredHingeLossTerm extends ADMMObjectiveTerm {
+	
+	protected final double[] coeffs;
+	protected final double constant;
+
+	public SquaredHingeLossTerm(ADMMReasoner reasoner, int[] zIndices,
+			double[] lowerBounds, double[] upperBounds, double[] coeffs,
+			double constant, double weight) {
+		super(reasoner, zIndices, lowerBounds, upperBounds);
+		this.coeffs = coeffs;
+		this.constant = constant;
+	}
+
+	@Override
+	protected void minimize() {
+		// TODO Auto-generated method stub
+
+	}
+
 }
