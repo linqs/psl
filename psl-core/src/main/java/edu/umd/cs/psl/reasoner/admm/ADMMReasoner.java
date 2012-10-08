@@ -124,7 +124,6 @@ public class ADMMReasoner implements Reasoner {
 	private final int maxIter;
 	/* Sometimes called rho or eta */
 	final double stepSize;
-//	private final double maxResidual;
 	private final int maxMapRounds;
 	final DistributionType type;
 	
@@ -360,13 +359,6 @@ public class ADMMReasoner implements Reasoner {
 		for (int i = 0; i < variables.size(); i++)
 			variables.get(i).setValue(z.get(i));
 	}
-	
-	void registerLocalVariableCopies(ADMMObjectiveTerm term) {
-		for (int i = 0; i < term.x.length; i++) {
-			VariableLocation varLocation = new VariableLocation(term, i);
-			varLocations.get(term.zIndices[i]).add(varLocation);
-		}
-	}
 
 	@Override
 	public void close() {
@@ -374,6 +366,13 @@ public class ADMMReasoner implements Reasoner {
 		terms = null;
 		variables = null;
 		z = null;
+	}
+	
+	private void registerLocalVariableCopies(ADMMObjectiveTerm term) {
+		for (int i = 0; i < term.x.length; i++) {
+			VariableLocation varLocation = new VariableLocation(term, i);
+			varLocations.get(term.zIndices[i]).add(varLocation);
+		}
 	}
 	
 	private Hyperplane processHyperplane(FunctionSum sum) {
@@ -384,18 +383,18 @@ public class ADMMReasoner implements Reasoner {
 		
 		for (Iterator<FunctionSummand> sItr = sum.iterator(); sItr.hasNext(); ) {
 			FunctionSummand summand = sItr.next();
-			FunctionSingleton term = summand.getTerm();
-			if (term instanceof AtomFunctionVariable && !term.isConstant()) {
-				int zIndex = variables.indexOf(term);
+			FunctionSingleton singleton = summand.getTerm();
+			if (singleton instanceof AtomFunctionVariable && !singleton.isConstant()) {
+				int zIndex = variables.indexOf(singleton);
 				/*
-				 * If this variable has been encountered before in any hyperplane
+				 * If this variable has been encountered before in any hyperplane...
 				 */
 				if (zIndex != -1) {
 					/*
 					 * Checks if the variable has already been encountered
 					 * in THIS hyperplane
 					 */
-					Integer localIndex = localVarLocations.get(term);
+					Integer localIndex = localVarLocations.get(singleton);
 					/* If it has, just adds the coefficient... */
 					if (localIndex != null) {
 						tempCoeffs.set(localIndex, tempCoeffs.get(localIndex) + summand.getCoefficient());
@@ -404,7 +403,7 @@ public class ADMMReasoner implements Reasoner {
 					else {
 						tempZIndices.add(zIndex);
 						tempCoeffs.add(summand.getCoefficient());
-						localVarLocations.put((AtomFunctionVariable) term, tempZIndices.size()-1);
+						localVarLocations.put((AtomFunctionVariable) singleton, tempZIndices.size()-1);
 						
 						/* Increments count of local variables */
 						n++;
@@ -413,22 +412,22 @@ public class ADMMReasoner implements Reasoner {
 				/* Else, creates a new global variable and a local variable */
 				else {
 					/* Creates the global variable */
-					variables.add((AtomFunctionVariable) term);
-					z.add(term.getValue());
+					variables.add((AtomFunctionVariable) singleton);
+					z.add(singleton.getValue());
 					
 					/* Creates a list of local variable locations for the new variable */
 					varLocations.add(new Vector<ADMMReasoner.VariableLocation>());
 					
 					/* Creates the local variable */
-					tempZIndices.add(variables.size()-1);
+					tempZIndices.add(z.size()-1);
 					tempCoeffs.add(summand.getCoefficient());
-					localVarLocations.put((AtomFunctionVariable) term, tempZIndices.size()-1);
+					localVarLocations.put((AtomFunctionVariable) singleton, tempZIndices.size()-1);
 					
 					/* Increments count of local variables */
 					n++;
 				}
 			}
-			else if (term.isConstant()) {
+			else if (singleton.isConstant()) {
 				/* Subtracts because hyperplane is stored as coeffs^T * x = constant */
 				hp.constant -= summand.getValue();
 			}

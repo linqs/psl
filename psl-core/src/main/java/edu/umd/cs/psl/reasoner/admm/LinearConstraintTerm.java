@@ -18,6 +18,14 @@ package edu.umd.cs.psl.reasoner.admm;
 
 import edu.umd.cs.psl.reasoner.function.FunctionComparator;
 
+/**
+ * {@link ADMMReasoner} objective term of the form <br />
+ * 0 if coeffs^T * x [?] constant <br />
+ * infinity otherwise <br />
+ * where [?] is ==, >=, or <=
+ * 
+ * @author Stephen Bach <bach@cs.umd.edu>
+ */
 class LinearConstraintTerm extends HyperplaneTerm {
 	
 	private final FunctionComparator comparator;
@@ -36,8 +44,13 @@ class LinearConstraintTerm extends HyperplaneTerm {
 		
 			/* Initializes scratch data */
 			double a[] = new double[x.length];
+			double total = 0.0;
 			
-			/* Minimizes without regard for any constraints, then projects on to a box */
+			/*
+			 * Minimizes without regard for the constraint, i.e., solves
+			 * argmin stepSize/2 * \|x - z + y / stepSize \|_2^2
+			 * such that x is within its box
+			 */
 			for (int i = 0; i < a.length; i++) {
 				a[i] = reasoner.z.get(zIndices[i]) - y[i] / reasoner.stepSize;
 				
@@ -45,17 +58,14 @@ class LinearConstraintTerm extends HyperplaneTerm {
 					a[i] = lb[i];
 				else if (a[i] > ub[i])
 					a[i] = ub[i];
+				
+				total += coeffs[i] * a[i];
 			}
 			
 			/*
-			 * Checks if the new point satisfies the constraint. If so, updates
+			 * Checks if the solution satisfies the constraint. If so, updates
 			 * the local primal variables and returns.
 			 */
-			double total = 0.0;
-			for (int i = 0; i < a.length; i++)
-				total += coeffs[i] * a[i];
-			total += constant;
-			
 			if ( (comparator.equals(FunctionComparator.SmallerThan) && total <= constant)
 					||
 				 (comparator.equals(FunctionComparator.LargerThan) && total >= constant)

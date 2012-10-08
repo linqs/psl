@@ -59,7 +59,9 @@ public class GroundPriorWeight implements GroundCompatibilityKernel {
 		assert atom.getNumberOfValues()==1;
 		
 		if (atom.getPredicate().getDefaultValues()[0] == 0.0) {
-			return new FunctionSummand(1.0, atom.getVariable());
+			FunctionSum sum = new FunctionSum();
+			sum.add(new FunctionSummand(1.0, atom.getVariable()));
+			return sum;
 		}
 		else {
 			FunctionSum sum1 = new FunctionSum();

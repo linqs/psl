@@ -50,7 +50,7 @@ import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.reasoner.Reasoner;
 import edu.umd.cs.psl.reasoner.ReasonerFactory;
-import edu.umd.cs.psl.reasoner.conic.ConicReasonerFactory;
+import edu.umd.cs.psl.reasoner.admm.ADMMReasonerFactory;
 
 public class MaintainedMemoryFullInference implements ModelApplication, FullInference {
 	
@@ -73,9 +73,9 @@ public class MaintainedMemoryFullInference implements ModelApplication, FullInfe
 	/**
 	 * Default value for REASONER_KEY.
 	 * 
-	 * Value is instance of {@link ConicReasonerFactory}. 
+	 * Value is instance of {@link ADMMReasonerFactory}. 
 	 */
-	public static final ReasonerFactory REASONER_DEFAULT = new ConicReasonerFactory();
+	public static final ReasonerFactory REASONER_DEFAULT = new ADMMReasonerFactory();
 
 	private final Database database;
 	private final DatabaseAtomStoreQuery dbProxy;

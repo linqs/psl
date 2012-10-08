@@ -40,7 +40,11 @@ public class HingeLossTermTest {
 	@Test
 	public void testMinimize() {
 		
-		/* Problem 1 */
+		/*
+		 * Problem 1
+		 * 
+		 * Solution on the hinge
+		 */
 		double[] z = {0.2, 0.5};
 		double[] y = {0.0, 0.0};
 		double[] lowerBounds = {0.0, 0.0};
@@ -52,7 +56,11 @@ public class HingeLossTermTest {
 		double[] expected = {0.0, 0.95};
 		testProblem(z, y, lowerBounds, upperBounds, coeffs, constant, weight, stepSize, expected);
 		
-		/* Problem 2 */
+		/*
+		 * Problem 2
+		 * 
+		 * Solution on the hinge
+		 */
 		z = new double[] {0.3, 0.5, 0.1};
 		y = new double[] {0.1, 0.0, -0.05};
 		lowerBounds = new double[] {0.0, 0.0, 0.0};
@@ -62,6 +70,54 @@ public class HingeLossTermTest {
 		weight = 1.0;
 		stepSize = 0.5;
 		expected = new double[] {0.043257, 0.528361, 0.177309};
+		testProblem(z, y, lowerBounds, upperBounds, coeffs, constant, weight, stepSize, expected);
+		
+		/*
+		 * Problem 3
+		 * 
+		 * Solution on the zero side
+		 */
+		z = new double[] {0.3, 0.5, 0.1};
+		y = new double[] {0.1, 0.0, -0.05};
+		lowerBounds = new double[] {0.0, 0.0, 0.0};
+		upperBounds = new double[] {1.0, 1.0, 1.0};
+		coeffs = new double[] {1.0, -0.5, 0.4};
+		constant = 0.0;
+		weight = 2.0;
+		stepSize = 0.5;
+		expected = new double[] {0.1, 0.5, 0.2};
+		testProblem(z, y, lowerBounds, upperBounds, coeffs, constant, weight, stepSize, expected);
+		
+		/*
+		 * Problem 4
+		 * 
+		 * Solution on the linear side
+		 */
+		z = new double[] {0.1};
+		y = new double[] {0.15};
+		lowerBounds = new double[] {0.0, 0.0, 0.0};
+		upperBounds = new double[] {1.0, 1.0, 1.0};
+		coeffs = new double[] {1.0};
+		constant = 0.0;
+		weight = 2.0;
+		stepSize = 1.0;
+		expected = new double[] {0.0};
+		testProblem(z, y, lowerBounds, upperBounds, coeffs, constant, weight, stepSize, expected);
+		
+		/*
+		 * Problem 5
+		 * 
+		 * Solution on the linear side
+		 */
+		z = new double[] {0.7, .5};
+		y = new double[] {0.0, 0.0};
+		lowerBounds = new double[] {0.0, 0.0, 0.0};
+		upperBounds = new double[] {1.0, 1.0, 1.0};
+		coeffs = new double[] {1.0, -1.0};
+		constant = 0.0;
+		weight = 1.0;
+		stepSize = 1.0;
+		expected = new double[] {0.6, 0.6};
 		testProblem(z, y, lowerBounds, upperBounds, coeffs, constant, weight, stepSize, expected);
 	}
 	

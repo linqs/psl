@@ -42,6 +42,10 @@ abstract public class ADMMObjectiveTerm {
 		for (int  i = 0; i < x.length; i++)
 			if (lb[i] >= ub[i])
 				throw new IllegalArgumentException("Lower bound must be less than upper bound.");
+		
+		/* This loop ensures that the reasoner, when it first computes y, will keep it at 0 */
+		for (int i = 0; i < x.length; i++)
+			x[i] = reasoner.z.get(zIndices[i]);
 	}
 	
 	protected void setLowerBound(int index, double lowerBound) {
