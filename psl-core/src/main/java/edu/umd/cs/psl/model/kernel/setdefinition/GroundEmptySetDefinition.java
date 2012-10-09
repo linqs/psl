@@ -28,6 +28,7 @@ import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.optimizer.NumericUtilities;
 import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
 import edu.umd.cs.psl.reasoner.function.FunctionComparator;
+import edu.umd.cs.psl.reasoner.function.FunctionSum;
 import edu.umd.cs.psl.reasoner.function.FunctionSummand;
 
 public class GroundEmptySetDefinition implements GroundConstraintKernel {
@@ -45,7 +46,9 @@ public class GroundEmptySetDefinition implements GroundConstraintKernel {
 	
 	@Override
 	public ConstraintTerm getConstraintDefinition() {
-		return new ConstraintTerm(new FunctionSummand(1,atom.getVariable()),FunctionComparator.Equality,value);
+		FunctionSum sum = new FunctionSum();
+		sum.add(new FunctionSummand(1,atom.getVariable()));
+		return new ConstraintTerm(sum,FunctionComparator.Equality,value);
 	}
 	
 	@Override
