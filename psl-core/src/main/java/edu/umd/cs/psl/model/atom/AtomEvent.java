@@ -23,29 +23,23 @@ import edu.umd.cs.psl.application.ModelApplication;
  */
 public enum AtomEvent {
 	
-	/** An observed Atom became explicitly represented by an {@link AtomManager} */
-	ConsideredObservedAtom,
-	
-	/** An observed Atom stopped being explicitly represented by an {@link AtomManager} */
-	UnconsideredObservedAtom,
-	
-	/** An observed Atom was activated */
-	ActivatedObservedAtom,
-	
-	/** An observed Atom was deactivated */
-	DeactivatedObservedAtom,
+	/** A new observed Atom was created */
+	IntroducedObservedAtom,
 
 	/** A fixed Atom became explicitly represented by an {@link AtomManager} */
 	ConsideredFixedAtom,
-	
-	/** A fixed Atom stopped being explicitly represented by an {@link AtomManager} */
-	UnconsideredFixedAtom,
 	
 	/** A fixed Atom was activated */
 	ActivatedFixedAtom,
 	
 	/** A fixed Atom was deactivated */
 	DeactivatedFixedAtom,
+	
+	/** A random variable Atom was fixed */
+	FixedAtom,
+	
+	/** A fixed Atom was unfixed (and is now a random variable) */
+	UnfixedAtom,
 	
 	/** The truth value of a fixed Atom was changed */
 	ChangedTruthValueOfFixedAtom,
@@ -55,9 +49,6 @@ public enum AtomEvent {
 	
 	/** A random variable Atom became explicitly represented by an {@link AtomManager} */
 	ConsideredRVAtom,
-	
-	/** A random variable Atom stopped being explicitly represented by an {@link AtomManager} */
-	UnconsideredRVAtom,
 	
 	/** A random variable Atom was activated */
 	ActivatedRVAtom,

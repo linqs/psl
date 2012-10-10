@@ -32,34 +32,28 @@ public class AtomEventSets {
 				AtomEvent.ConsideredRVAtom);
 	}
 	
-	public static final Set<AtomEvent> UnconsideredGroundAtom;
+	public static final Set<AtomEvent> ConsideredRVAtom;
 	static {
-		UnconsideredGroundAtom = ImmutableSet.of(
-				AtomEvent.UnconsideredFixedAtom,
-				AtomEvent.UnconsideredRVAtom);
-	}
-	
-	public static final Set<AtomEvent> ConsideredUnconsideredGroundAtom;
-	static {
-		ConsideredUnconsideredGroundAtom = ImmutableSet.of(
-				AtomEvent.ConsideredFixedAtom,
-				AtomEvent.ConsideredRVAtom,
-				AtomEvent.UnconsideredFixedAtom,
-				AtomEvent.UnconsideredRVAtom);
-	}
-	
-	public static final Set<AtomEvent> ConsideredUnconsideredRVAtom;
-	static {
-		ConsideredUnconsideredRVAtom = ImmutableSet.of(
-				AtomEvent.ConsideredRVAtom,
-				AtomEvent.UnconsideredRVAtom);
+		ConsideredRVAtom = ImmutableSet.of(
+				AtomEvent.ConsideredRVAtom);
 	}
 	
 	public static final Set<AtomEvent> DeOrActivationEvent;
 	static {
 		DeOrActivationEvent = ImmutableSet.of(
+				AtomEvent.ActivatedFixedAtom,
+				AtomEvent.DeactivatedFixedAtom,
 				AtomEvent.ActivatedRVAtom,
 				AtomEvent.DeactivatedRVAtom);
+	}
+	
+	public static final Set<AtomEvent> ModifiedFixedAtom;
+	static {
+		ModifiedFixedAtom = ImmutableSet.of(
+				AtomEvent.FixedAtom,
+				AtomEvent.UnfixedAtom,
+				AtomEvent.ChangedTruthValueOfFixedAtom,
+				AtomEvent.ChangedConfidenceValueOfFixedAtom);
 	}
 	
 	public static final Set<AtomEvent> All;
