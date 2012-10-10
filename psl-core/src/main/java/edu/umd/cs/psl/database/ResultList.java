@@ -47,7 +47,10 @@ public interface ResultList {
 	public GroundTerm get(int resultNo, Variable var);
 	
 	/**
-	 * Returns a substitution for all {@link Variable Variables}
+	 * Returns a substitution for all {@link Variable Variables}.
+	 * <p>
+	 * GroundTerms are ordered according to the left-to-right ordering
+	 * of the Variables in the query that generated this ResultList. 
 	 * 
 	 * @param resultNo  the index of the substitution (from 0 to size-1)
 	 * @return  the substituted GroundTerms

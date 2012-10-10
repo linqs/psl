@@ -16,11 +16,27 @@
  */
 package edu.umd.cs.psl.database;
 
+import edu.umd.cs.psl.model.argument.Entity;
+
+/**
+ * A unique identifier suitable for identifying {@link Entity Entities} in a
+ * {@link DataStore}.
+ */
 public interface UniqueID extends Comparable<UniqueID> {
 
+	/**
+	 * Returns a human-friendly String representation of this UniqueID.
+	 * <p>
+	 * Although it should be unique, this is not required.
+	 * 
+	 * @return a human-friendly identifier
+	 */
 	public String getName();
 	
-	public Object getDBID();
+	/**
+	 * @return the unique identifier used by a {@link DataStore} implementation
+	 */
+	public Object getInternalID();
 	
 	@Override
 	public int hashCode();

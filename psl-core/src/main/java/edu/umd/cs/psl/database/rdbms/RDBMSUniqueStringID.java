@@ -32,7 +32,7 @@ public class RDBMSUniqueStringID implements UniqueID {
 	}
 	
 	@Override
-	public Object getDBID() {
+	public Object getInternalID() {
 		return id;
 	}
 

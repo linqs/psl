@@ -238,7 +238,7 @@ public class RDBMSDatabase implements Database {
 				q.addCustomColumn(ph.argumentColumns()[i], ((Attribute)arguments[i]).getAttribute());
 			} else { //Entity
 				Entity e = (Entity)arguments[i];
-				q.addCustomColumn(ph.argumentColumns()[i], e.getID().getDBID());
+				q.addCustomColumn(ph.argumentColumns()[i], e.getID().getInternalID());
 			}
 		}
 		q.addCustomColumn(ph.partitionColumn(), writeID);
@@ -275,7 +275,7 @@ public class RDBMSDatabase implements Database {
 				q.addCondition(BinaryCondition.equalTo(new CustomSql(ph.argumentColumns()[i]),  ((Attribute)arguments[i]).getAttribute() ));
 			} else { //Entity
 				Entity e = (Entity)arguments[i];
-				q.addCondition(BinaryCondition.equalTo(new CustomSql(ph.argumentColumns()[i]),  e.getID().getDBID() ));
+				q.addCondition(BinaryCondition.equalTo(new CustomSql(ph.argumentColumns()[i]),  e.getID().getInternalID() ));
 			}
 		}
 		q.addCondition(BinaryCondition.equalTo(new CustomSql(ph.partitionColumn()), writeID ));
@@ -317,7 +317,7 @@ public class RDBMSDatabase implements Database {
 				q.addCondition(BinaryCondition.equalTo(new CustomSql(ph.argumentColumns()[i]),  ((Attribute)arguments[i]).getAttribute() ));
 			} else { //Entity
 				Entity e = (Entity)arguments[i];
-				q.addCondition(BinaryCondition.equalTo(new CustomSql(ph.argumentColumns()[i]),  e.getID().getDBID() ));
+				q.addCondition(BinaryCondition.equalTo(new CustomSql(ph.argumentColumns()[i]),  e.getID().getInternalID() ));
 			}
 		}
 		return q;

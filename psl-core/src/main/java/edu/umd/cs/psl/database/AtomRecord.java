@@ -25,7 +25,58 @@ import edu.umd.cs.psl.model.atom.Atom;
  */
 public class AtomRecord {
 
-	public enum Status { OBSERVED, FIXED, RV }
+	public enum Status {
+		
+		ACTIVE_OBSERVED {
+
+			@Override
+			public int getIntValue() {
+				return 0;
+			}
+			
+		},
+		
+		CONSIDERED_FIXED {
+
+			@Override
+			public int getIntValue() {
+				return 30;
+			}
+			
+		},
+		
+		ACTIVE_FIXED {
+
+			@Override
+			public int getIntValue() {
+				return 10;
+			}
+		
+		},
+		
+		CONSIDERED_RV {
+
+			@Override
+			public int getIntValue() {
+				return 40;
+			}
+			
+		},
+		
+		ACTIVE_RV {
+
+			@Override
+			public int getIntValue() {
+				return 20;
+			}
+			
+		};
+	
+		/**
+		 * @return a storage-friendly code for the Status
+		 */
+		public abstract int getIntValue();
+	}
 		
 	private final double value;
 	
@@ -36,7 +87,7 @@ public class AtomRecord {
 	/**
 	 * Constructs an AtomRecord with default truth and confidence values.
 	 * 
-	 * @param status  the status of the AtomRecord
+	 * @param status  the status in the AtomRecord
 	 * @see TruthValues#getDefault()
 	 * @see ConfidenceValues#getDefault()
 	 */
@@ -47,22 +98,18 @@ public class AtomRecord {
 	/**
 	 * Constructs an AtomRecord.
 	 * 
-	 * @param value
-	 * @param confidence
-	 * @param status
+	 * @param value  the truth value in the AtomRecord
+	 * @param confidence  the confidence value in the AtomRecord
+	 * @param status  the status in the AtomRecord
 	 */
 	public AtomRecord(double value, double confidence, Status status) {
 		this.value = value;
 		this.confidence = confidence;
-		setStatus(status);
+		this.status = status;
 	}
 	
 	public Status getStatus() {
 		return status;
-	}
-	
-	public void setStatus(Status status) {
-		this.status=status;		
 	}
 
 	public double getValue() {
@@ -71,6 +118,25 @@ public class AtomRecord {
 
 	public double getConfidence() {
 		return confidence;
+	}
+	
+	public static int getObservedUpperBound() {
+		return 5;
+	}
+	
+	public static int getActiveUpperBound() {
+		return 25;
+	}
+	
+	public static Status parseIntValue(int value) {
+		switch(value) {
+			case 0: return Status.ACTIVE_OBSERVED;
+			case 30: return Status.CONSIDERED_FIXED;
+			case 10: return Status.ACTIVE_FIXED;
+			case 40: return Status.CONSIDERED_RV;
+			case 20: return Status.ACTIVE_RV;
+			default: throw new IllegalArgumentException("Unrecognized value.");
+		}
 	}
 	
 }
