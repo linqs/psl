@@ -35,6 +35,7 @@ import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.reasoner.Reasoner;
 import edu.umd.cs.psl.reasoner.Reasoner.DistributionType;
 import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
+import edu.umd.cs.psl.reasoner.function.ConstantNumber;
 import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
 import edu.umd.cs.psl.reasoner.function.FunctionSingleton;
 import edu.umd.cs.psl.reasoner.function.FunctionSum;
@@ -215,7 +216,7 @@ public class ADMMReasoner implements Reasoner {
 		n = 0;
 		
 		GroundKernel groundKernel;
-		FunctionTerm function, innerFunction, constantTerm;
+		FunctionTerm function, innerFunction, zeroTerm, innerFunctionA, innerFunctionB;
 		ADMMObjectiveTerm term;
 		
 		/* Initializes objective terms from ground kernels */
@@ -230,16 +231,21 @@ public class ADMMReasoner implements Reasoner {
 				if (function instanceof MaxFunction) {
 					if (((MaxFunction) function).size() != 2)
 						throw new IllegalArgumentException("Max function must have one linear function and 0.0 as arguments.");
-					innerFunction = ((MaxFunction) function).get(0);
-					if (innerFunction.isConstant()) {
-						constantTerm = innerFunction;
-						innerFunction = ((MaxFunction) function).get(1);
+					innerFunction = null;
+					zeroTerm = null;
+					innerFunctionA = ((MaxFunction) function).get(0);
+					innerFunctionB = ((MaxFunction) function).get(1);
+					
+					if (innerFunctionA instanceof ConstantNumber && innerFunctionA.getValue() == 0.0) {
+						zeroTerm = innerFunctionA;
+						innerFunction = innerFunctionB;
 					}
-					else {
-						constantTerm = ((MaxFunction) function).get(1);
+					else if (innerFunctionB instanceof ConstantNumber && innerFunctionB.getValue() == 0.0) {
+						zeroTerm = innerFunctionB;
+						innerFunction = innerFunctionA;
 					}
 					
-					if (!constantTerm.isConstant() || constantTerm.getValue() != 0)
+					if (zeroTerm == null)
 						throw new IllegalArgumentException("Max function must have one linear function and 0.0 as arguments.");
 					
 					if (innerFunction instanceof FunctionSum) {

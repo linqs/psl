@@ -127,7 +127,7 @@ public class MemoryAtom extends StatusAtom {
 		
 		@Override
 		public boolean isConstant() {
-			return isKnownAtom();
+			return isFactAtom();
 		}
 
 		@Override
