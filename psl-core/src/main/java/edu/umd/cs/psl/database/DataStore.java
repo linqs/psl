@@ -23,17 +23,15 @@ import edu.umd.cs.psl.database.loading.Updater;
 import edu.umd.cs.psl.model.predicate.Predicate;
 
 /**
- * A repository for persisting and querying for {@link AtomRecord AtomRecords}.
- * 
- * A DataStore organizes AtomRecords into {@link Partition Partitions} and
+ * Organizes Atoms into {@link Partition Partitions} and
  * makes them available via {@link Database Databases}.
  */
 public interface DataStore {
 
 	/**
-	 * Registers a Predicate so that {@link AtomRecord AtomRecords} of that Predicate
+	 * Registers a Predicate so that {@link Atom Atoms} of that Predicate
 	 * can be stored in this DataStore.
-	 * 
+	 * <p>
 	 * The {@link DataFormat DataFormats} of the arguments will be determined
 	 * by {@link DataFormat#getDefaultFormat(Predicate, boolean)}.
 	 * 
@@ -43,7 +41,7 @@ public interface DataStore {
 	public void registerPredicate(Predicate predicate, List<String> argnames);
 	
 	/**
-	 * Registers a Predicate so that {@link AtomRecord AtomRecords} of that Predicate
+	 * Registers a Predicate so that {@link Atom Atoms} of that Predicate
 	 * can be stored in this DataStore.
 	 * 
 	 * @param predicate  the predicate to register
@@ -59,39 +57,45 @@ public interface DataStore {
 	 * @param write  the Partition to write to and read from
 	 * @param read  additional Partitions to read from
 	 * @return a new Database backed by this DataStore
+	 * @throws IllegalArgumentException  if write is in use or if read is the
+	 *                                       write Partition of another Database
 	 */
 	public Database getDatabase(Partition write, Partition... read);
 	
 	/**
-	 * Creates an Inserter for inserting new {@link AtomRecord} information
+	 * Creates an Inserter for inserting new {@link Atom} information
 	 * into a {@link Partition}.
 	 * 
-	 * @param predicate  the Predicate of the AtomRecords to be inserted
-	 * @param partition  the Partition into which AtomRecords will be inserted
+	 * @param predicate  the Predicate of the Atoms to be inserted
+	 * @param partition  the Partition into which Atoms will be inserted
 	 * @return the Inserter
+	 * @throws IllegalArgumentException  if partition is in use
 	 */
 	public Inserter getInserter(Predicate predicate, Partition partition);
 	
 	/**
-	 * Creates an Updater for updating {@link AtomRecord} information
+	 * Creates an Updater for updating {@link Atom} information
 	 * in a {@link Partition}.
 	 * 
-	 * @param predicate  the Predicate of the AtomRecords to be updated
-	 * @param partition  the Partition of the AtomRecords to be updated
+	 * @param predicate  the Predicate of the Atoms to be updated
+	 * @param partition  the Partition of the Atoms to be updated
 	 * @return the Updater
+	 * @throws IllegalArgumentException  if partition is in use
 	 */
 	public Updater getUpdater(Predicate predicate, Partition partition);
 	
 	/**
-	 * Deletes all {@link AtomRecord AtomRecords} in a Partition.
+	 * Deletes all {@link Atom Atoms} in a Partition.
 	 *  
 	 * @param partition  the partition to delete
-	 * @return the number of AtomRecords deleted
+	 * @return the number of Atoms deleted
+	 * @throws IllegalArgumentException  if partition is in use
 	 */
 	public int deletePartition(Partition partition);
 	
 	/**
 	 * Releases all resources and locks obtained by this DataStore.
+	 * @throws IllegalStateException  if any Partitions are in use
 	 */
 	public void close();
 	

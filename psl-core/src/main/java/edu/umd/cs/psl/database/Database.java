@@ -18,26 +18,50 @@ package edu.umd.cs.psl.database;
 
 import java.util.List;
 
+import edu.umd.cs.psl.application.ModelApplication;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.atom.Atom;
+import edu.umd.cs.psl.model.atom.AtomStatus;
 import edu.umd.cs.psl.model.atom.VariableAssignment;
 import edu.umd.cs.psl.model.formula.Conjunction;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.predicate.Predicate;
 
 /**
- * A data model for accessing the information stored in a {@link DataStore}.
+ * A data model for reading and writing {@link Atom Atoms}.
+ * 
+ * <h2>Usage</h2>
+ * 
+ * Databases are instantiated via {@link DataStore#getDatabase} methods.
+ * <p>
+ * A Database is the canonical source for a set of Atoms used by a {@link ModelApplication}.
+ * Atoms should only be instantiated by {@link #getAtom(Predicate, GroundTerm[])}
+ * to ensure there exists only a single object for each Atom from the Database. 
  * <p>
  * A Database writes to and reads from one {@link Partition} of a DataStore
- * and can read from additional Partitions. The recommended way to instantiate
- * a Database is with the {@link DataStore#getDatabase} methods of the DataStore.
+ * and can read from additional Partitions. The write Partition of a Database
+ * may not be a read (or write) Partition of any other Database.
  * <p>
- * The write Partition of a Database may not be a read (or write) Partition of
- * any other Database.
+ * Ground Atoms will only be inserted and/or updated in the Database if
+ * GroundAtom#commitToDB() is called.
+ * 
+ * <h2>Atom Status</h2>
+ * Ground Atoms can have one of three statuses: Observed, Fixed, or RandomVariable.
+ * All Atoms that exist in one of the Database's read Partitions are Observed.
+ * If an Atom does not, then its status depends on its {@link Predicate}.
+ * <p>
+ * Databases treat Predicates as either <em>open</em> or
+ * <em>closed</em>. Any unobserved Atoms of an open Predicate are RandomVariables.
+ * Any unobserved Atoms of a closed Predicate are Fixed.
+ * Upon initialization of the Database, all Predicates are open.
+ * 
+ * @see AtomStatus
  */
 public interface Database {
 
+	public GroundAtom getAtom(Predicate p, GroundTerm[] arguments);
+	
 	/**
 	 * Returns the AtomRecord for the given Predicate and GroundTerms.
 	 * 

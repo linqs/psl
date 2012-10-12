@@ -26,7 +26,7 @@ public class TruthValues {
 		return 0.0;
 	}
 	
-	public static final double getDefaultEvidence() {
+	public static final double getDefaultObserved() {
 		return 1.0;
 	}
 	

@@ -53,13 +53,6 @@ import edu.umd.cs.psl.model.predicate.Predicate;
  * All observed Atoms must be specified at initialization. The interpretation
  * initially (sometimes implicitly) assigns a truth value of zero to all unobserved Atoms.
  * 
- * <h2>Open and Closed Predicates</h2>
- * 
- * AtomManagers can treat {@link Predicate Predicates} as either <em>open</em> or
- * <em>closed</em>. Any unobserved ground Atoms of an open Predicate are random variables.
- * Any unobserved ground Atoms of a closed Predicate are fixed.
- * Upon initialization of the AtomManager, all Predicates are open.
- * 
  * <h2>Queries and Activation</h2>
  * 
  * AtomMangers support queries that are in the form of conjunctions of Atoms. To be returned

@@ -133,7 +133,7 @@ public class RDBMSDataLoader implements DataLoader {
 				throw new AssertionError(e);
 			}
 			
-			defaultEvidenceValue = TruthValues.getDefaultEvidence();
+			defaultEvidenceValue = TruthValues.getDefaultObserved();
 			defaultConfidence = ConfidenceValues.getMax();
 		}
 		
