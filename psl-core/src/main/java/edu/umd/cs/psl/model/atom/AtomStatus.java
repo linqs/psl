@@ -41,10 +41,10 @@ public enum AtomStatus {
 	Fixed,
 	
 	/**
-	 * The {link Atom} can have its truth value or confidence value
+	 * The {@link Atom} can have its truth value or confidence value
 	 * modified without generating an event.
 	 * <p>
-	 * The {@link Atom} has an open {@link Predicate} and is stored in the
+	 * The Atom has an open {@link Predicate} and is stored in the
 	 * write Partition of a {@link Database} (if committed).
 	 */
 	RandomVariable,

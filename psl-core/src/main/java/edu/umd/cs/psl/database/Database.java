@@ -22,6 +22,7 @@ import edu.umd.cs.psl.application.ModelApplication;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.atom.Atom;
+import edu.umd.cs.psl.model.atom.AtomManager;
 import edu.umd.cs.psl.model.atom.AtomStatus;
 import edu.umd.cs.psl.model.atom.VariableAssignment;
 import edu.umd.cs.psl.model.formula.Conjunction;
@@ -36,8 +37,10 @@ import edu.umd.cs.psl.model.predicate.Predicate;
  * Databases are instantiated via {@link DataStore#getDatabase} methods.
  * <p>
  * A Database is the canonical source for a set of Atoms used by a {@link ModelApplication}.
- * Atoms should only be instantiated by {@link #getAtom(Predicate, GroundTerm[])}
- * to ensure there exists only a single object for each Atom from the Database. 
+ * Atoms should only be retrieved via {@link #getAtom(Predicate, GroundTerm[])}
+ * to ensure there exists only a single object for each Atom from the Database. Any Atom
+ * that is not stored in the Database has an implicit truth value of 0.0 and confidence value
+ * of 0.0.
  * <p>
  * A Database writes to and reads from one {@link Partition} of a DataStore
  * and can read from additional Partitions. The write Partition of a Database
@@ -47,6 +50,7 @@ import edu.umd.cs.psl.model.predicate.Predicate;
  * GroundAtom#commitToDB() is called.
  * 
  * <h2>Atom Status</h2>
+ * 
  * Ground Atoms can have one of three statuses: Observed, Fixed, or RandomVariable.
  * All Atoms that exist in one of the Database's read Partitions are Observed.
  * If an Atom does not, then its status depends on its {@link Predicate}.
@@ -144,6 +148,26 @@ public interface Database {
 	 * @throws IllegalArgumentException  if the query Formula is invalid
 	 */
 	public ResultList query(Formula f, VariableAssignment partialGrounding, List<Variable> projectTo);
+	
+	/**
+	 * Opens a Predicate.
+	 * <p>
+	 * If a {@link Predicate} is open, then any ground {@link Atom} of that
+	 * Predicate which is not observed will be treated as a random variable.
+	 * 
+	 * @param predicate  Predicate to open
+	 */
+	public void open(Predicate predicate);
+	
+	/**
+	 * Closes a Predicate.
+	 * <p>
+	 * If a {@link Predicate} is closed, then any ground Atom of that Predicate
+	 * which is not observed is fixed.
+	 * 
+	 * @param predicate  Predicate to close
+	 */
+	public void close(Predicate predicate);
 	
 	/**
 	 * Releases the {@link Partition Partitions} used by this Database.

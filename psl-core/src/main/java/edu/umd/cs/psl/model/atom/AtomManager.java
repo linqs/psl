@@ -93,17 +93,6 @@ public interface AtomManager extends ModelEvent.Listener {
 	 * @see AtomStatus#isActiveOrConsidered()
 	 */
 	public Atom getAtom(Predicate p, GroundTerm[] arguments);
-
-	/**
-	 * Persists an Atom with an underlying storage mechanism (optional operation).
-	 * <p>
-	 * Where the Atom will be persisted is implementation specific. If this
-	 * AtomManager was instantiated with a {@link Database}, then the Atom should
-	 * be persisted there.
-	 * 
-	 * @param atom  the Atom to persist
-	 */
-	public void persist(Atom atom);
 	
 	/**
 	 * Returns all active groundings of a Formula.
@@ -252,73 +241,7 @@ public interface AtomManager extends ModelEvent.Listener {
 	 */
 	public int getNumAtoms(Set<AtomStatus> stati, Predicate p, Object...terms);
 	
-	/**
-	 * Registers a listener for any events in a set.
-	 * 
-	 * @param events  set of events for which to listen
-	 * @param listener  object to register
-	 * @see AtomEvent
-	 */
-	public void registerAtomEventListener(Set<AtomEvent> events, AtomEvent.Listener listener);
 	
-	/**
-	 * Registers a listener for any events in a set related to {@link Atom Atoms}
-	 * with a given Predicate.
-	 * 
-	 * @param events  set of events for which to listen
-	 * @param p  Predicate of Atoms for which to listen for events
-	 * @param listener  object to register
-	 * @see AtomEvent
-	 */
-	public void registerAtomEventListener(Set<AtomEvent> events, Predicate p, AtomEvent.Listener listener);
-	
-	/**
-	 * Unregisters a listener for any events in a set.
-	 * 
-	 * @param events  set of events for which to stop listening
-	 * @param listener  object to unregister
-	 * @see AtomEvent
-	 */
-	public void unregisterAtomEventListener(Set<AtomEvent> events, AtomEvent.Listener listener);
-	
-	/**
-	 * Unregisters a listener for any events in a set related to {@link Atom Atoms}
-	 * with a given Predicate.
-	 * 
-	 * @param events  set of events for which to stop listening
-	 * @param p  Predicate of Atoms for which to stop listening
-	 * @param listener  object to unregister
-	 * @throws IllegalArgumentException  if listener is not registered to listen for
-	 *             a subset of AtomEvents in events for Predicate p
-	 * @see AtomEvent
-	 */
-	public void unregisterAtomEventListener(Set<AtomEvent> events, Predicate p, AtomEvent.Listener listener);
-	
-	/**
-	 * Activates all (ground) {@link Atom Atoms} which meet this manager's
-	 * activation criteria.
-	 * 
-	 * @return number of Atoms activated
-	 * @see AtomManager#workOffJobQueue()
-	 */
-	public int runActivationStrategy();
-	
-	/**
-	 * Deactivates all (ground) {@link Atom Atoms} which meet this manager's
-	 * deactivation criteria.
-	 * 
-	 * @return number of Atoms deactivated
-	 * @see AtomManager#workOffJobQueue()
-	 */
-	public int runDeactivationStrategy();
-	
-	/**
-	 * Activates an Atom.
-	 * 
-	 * @param atom  Atom to activate
-	 * @see AtomManager#workOffJobQueue()
-	 */
-	public void activateAtom(Atom atom);
 	
 	/**
 	 * Deactivates an Atom.
@@ -340,37 +263,6 @@ public interface AtomManager extends ModelEvent.Listener {
 	 * @see AtomManager#workOffJobQueue()
 	 */
 	public boolean release(Atom atom);
-	
-	/**
-	 * Opens a Predicate.
-	 * <p>
-	 * If a {@link Predicate} is open, then any ground {@link Atom} of that
-	 * Predicate which is not observed will be treated as a random variable.
-	 * 
-	 * @param predicate  Predicate to open
-	 * @see AtomManager#workOffJobQueue()
-	 */
-	public void open(Predicate predicate);
-	
-	/**
-	 * Closes a Predicate.
-	 * <p>
-	 * If a {@link Predicate} is closed, then any ground Atom of that Predicate
-	 * which is not observed is fixed.
-	 * 
-	 * @param predicate  Predicate to close
-	 * @see AtomManager#workOffJobQueue()
-	 */
-	public void close(Predicate predicate);
-	
-	/**
-	 * Processes all pending {@link AtomJob AtomJobs}.
-	 * <p>
-	 * This method should be called after changing {@link Atom} values, activating
-	 * Atoms, opening or closing {@link Predicate Predicates}, or any other
-	 * operation which could change the {@link AtomStatus} of an Atom.
-	 */
-	public void workOffJobQueue();
 	
 	/**
 	 * Gets the associated GroundKernelStore.

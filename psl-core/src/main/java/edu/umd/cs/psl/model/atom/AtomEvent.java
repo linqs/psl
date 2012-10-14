@@ -23,38 +23,17 @@ import edu.umd.cs.psl.application.ModelApplication;
  */
 public enum AtomEvent {
 	
-	/** A new observed Atom was created */
-	IntroducedObservedAtom,
+	/** An observed Atom was instantiated in memory */
+	ConsideredObservedAtom,
 
-	/** A fixed Atom became explicitly represented by an {@link AtomManager} */
+	/** A fixed Atom was instantiated in memory */
 	ConsideredFixedAtom,
 	
-	/** A fixed Atom was activated */
-	ActivatedFixedAtom,
-	
-	/** A fixed Atom was deactivated */
-	DeactivatedFixedAtom,
-	
-	/** A random variable Atom was fixed */
-	FixedAtom,
-	
-	/** A fixed Atom was unfixed (and is now a random variable) */
-	UnfixedAtom,
-	
-	/** The truth value of a fixed Atom was changed */
-	ChangedTruthValueOfFixedAtom,
-	
-	/** The confidence value of a fixed Atom was changed */
-	ChangedConfidenceValueOfFixedAtom,
-	
-	/** A random variable Atom became explicitly represented by an {@link AtomManager} */
+	/** A random variable Atom was instantiated in memory */
 	ConsideredRVAtom,
 	
 	/** A random variable Atom was activated */
-	ActivatedRVAtom,
-	
-	/** A random variable Atom was deactivated */
-	DeactivatedRVAtom;
+	ActivatedRVAtom;
 	
 	/** A listener for AtomEvents. */
 	public interface Listener {
