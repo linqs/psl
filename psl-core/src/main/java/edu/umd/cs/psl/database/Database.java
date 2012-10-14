@@ -21,59 +21,70 @@ import java.util.List;
 import edu.umd.cs.psl.application.ModelApplication;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.Variable;
+import edu.umd.cs.psl.model.atom.AggregateAtom;
 import edu.umd.cs.psl.model.atom.Atom;
-import edu.umd.cs.psl.model.atom.AtomManager;
-import edu.umd.cs.psl.model.atom.AtomStatus;
+import edu.umd.cs.psl.model.atom.FunctionalAtom;
+import edu.umd.cs.psl.model.atom.GroundAtom;
+import edu.umd.cs.psl.model.atom.ObservedAtom;
+import edu.umd.cs.psl.model.atom.RandomVariableAtom;
+import edu.umd.cs.psl.model.atom.StandardAtom;
 import edu.umd.cs.psl.model.atom.VariableAssignment;
 import edu.umd.cs.psl.model.formula.Conjunction;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.predicate.Predicate;
 
 /**
- * A data model for reading and writing {@link Atom Atoms}.
+ * A data model for retrieving and storing {@link GroundAtom GroundAtoms}.
  * 
  * <h2>Usage</h2>
  * 
  * Databases are instantiated via {@link DataStore#getDatabase} methods.
  * <p>
- * A Database is the canonical source for a set of Atoms used by a {@link ModelApplication}.
- * Atoms should only be retrieved via {@link #getAtom(Predicate, GroundTerm[])}
- * to ensure there exists only a single object for each Atom from the Database. Any Atom
- * that is not stored in the Database has an implicit truth value of 0.0 and confidence value
- * of 0.0.
+ * A Database is the canonical source for a set of GroundAtoms used by a {@link ModelApplication}.
+ * GroundAtoms should only be retrieved via {@link #getAtom(Predicate, GroundTerm[])}
+ * to ensure there exists only a single object for each GroundAtom from the Database.
  * <p>
  * A Database writes to and reads from one {@link Partition} of a DataStore
  * and can read from additional Partitions. The write Partition of a Database
  * may not be a read (or write) Partition of any other Database.
+ * 
+ * <h2>GroundAtom Types</h2>
+ * 
+ * Of the three basic types of GroundAtoms, {@link StandardAtom}, {@link AggregateAtom},
+ * and {@link FunctionalAtom}, only StandardAtoms are stored in the Database.
+ * Any AggregateAtom or FunctionalAtom is implicitly in the Database.
  * <p>
- * Ground Atoms will only be inserted and/or updated in the Database if
- * GroundAtom#commitToDB() is called.
- * 
- * <h2>Atom Status</h2>
- * 
- * Ground Atoms can have one of three statuses: Observed, Fixed, or RandomVariable.
- * All Atoms that exist in one of the Database's read Partitions are Observed.
- * If an Atom does not, then its status depends on its {@link Predicate}.
+ * All StandardAtoms that exist in one of the Database's read Partitions are
+ * {@link ObservedAtom ObservedAtoms}. If a StandardAtom does not, then it's a
+ * {@link RandomVariableAtom}.
+ * <p>
+ * If a RandomVariableAtom is retrieved from the Database for the first time,
+ * whether it is initially fixed depends on its {@link Predicate}.
  * <p>
  * Databases treat Predicates as either <em>open</em> or
- * <em>closed</em>. Any unobserved Atoms of an open Predicate are RandomVariables.
- * Any unobserved Atoms of a closed Predicate are Fixed.
+ * <em>closed</em>. A RandomVariableAtom with a closed Predicate is initially
+ * fixed. A RandomVariableAtom with an open Predicate is initially not.
  * Upon initialization of the Database, all Predicates are open.
+ * <p>
+ * RandomVariableAtoms will only be inserted and/or updated in the Database if
+ * {@link #commit(RandomVariableAtom)} or {@link RandomVariableAtom#commitToDB()}
+ * is called.
  * 
- * @see AtomStatus
+ * <h2>Conventions</h2>
+ * 
+ * Any RandomVariableAtom that is not stored in the Database has an implicit
+ * truth value of 0.0.
  */
 public interface Database {
 
-	public GroundAtom getAtom(Predicate p, GroundTerm[] arguments);
-	
 	/**
-	 * Returns the AtomRecord for the given Predicate and GroundTerms.
+	 * Returns the Atom for the given Predicate and GroundTerms.
 	 * 
-	 * @param p  the Predicate of the AtomRecord
-	 * @param arguments  the GroundTerms of the AtomRecord
-	 * @return the AtomRecord, or NULL if it does not exist
+	 * @param p  the Predicate of the Atom
+	 * @param arguments  the GroundTerms of the Atom
+	 * @return the Atom
 	 */
-	public AtomRecord getAtomRecord(Predicate p, GroundTerm[] arguments);
+	public GroundAtom getAtom(Predicate p, GroundTerm[] arguments);
 	
 	/**
 	 * Converts a ground Atom to an AtomRecord and stores it in this Database's
@@ -87,7 +98,7 @@ public interface Database {
 	 *                                       in a read-only Partition or if the Atom is
 	 *                                       not ground
 	 */
-	public void persist(Atom atom);
+	public void commit(RandomVariableAtom atom);
 	
 	/**
 	 * Returns all groundings of a Formula that exist as {@link AtomRecord AtomRecords}

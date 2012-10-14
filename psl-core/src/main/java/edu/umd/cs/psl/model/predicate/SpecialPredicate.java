@@ -25,13 +25,13 @@ import edu.umd.cs.psl.model.argument.type.ArgumentTypes;
 
 /**
  * A commonly used FunctionalPredicate.
- * 
+ * <p>
  * A SpecialPredicate should be preferred over a user-made FunctionalPredicate
  * or ExternalFunctionalPredicate because some PSL components can evaluate
  * SpecialPredicates more efficiently. For example, a {@link Database} backed
  * by a relational database with an SQL interface might translate some
  * SpecialPredicates directly to SQL.
- * 
+ * <p>
  * The names of SpecialPredicates begin with '#'.
  */
 public enum SpecialPredicate implements FunctionalPredicate {

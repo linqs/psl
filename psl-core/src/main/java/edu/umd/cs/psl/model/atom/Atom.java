@@ -16,152 +16,118 @@
  */
 package edu.umd.cs.psl.model.atom;
 
-import java.util.Collection;
-import java.util.Set;
+import java.util.Arrays;
+
+import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.Term;
-import edu.umd.cs.psl.model.formula.Formula;
-import edu.umd.cs.psl.model.kernel.GroundKernel;
-import edu.umd.cs.psl.model.kernel.Kernel;
+import edu.umd.cs.psl.model.argument.type.ArgumentType;
 import edu.umd.cs.psl.model.predicate.Predicate;
-import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
 
 /**
  * A {@link Predicate} combined with the correct number of {@link Term Terms}
  * as arguments.
  * 
- * If all of the arguments are {@link GroundTerm GroundTerms}, then the Atom
- * is said to be ground and can be assigned a truth value. Ground Atoms
- * are statements of relationships. 
- * 
  * @author Matthias Broecheler
  */
-public interface Atom extends Formula {
+abstract public class Atom {
+	
+	protected final Predicate predicate;
+	
+	protected final Term[] arguments;
+	
+	protected final int hashcode;
+	
+	protected Atom(Predicate p, Term[] args) {
+		predicate = p;
+		arguments = Arrays.copyOf(args, args.length);
+		hashcode = new HashCodeBuilder().append(predicate).append(arguments).toHashCode();
+		checkSchema();
+	}
 	
 	/**
 	 * Returns the predicate associated with this Atom.
 	 * 
 	 * @return A predicate
 	 */
-	public Predicate getPredicate();
+	public Predicate getPredicate() {
+		return predicate;
+	}
 	
 	/**
 	 * Returns the number of arguments to the associated predicate.
 	 * 
 	 * @return The number of arguments
 	 */
-	public int getArity();
+	public int getArity() {
+		return predicate.getArity();
+	}
 	
 	/**
 	 * Returns the arguments associated with this atom.
 	 * 
 	 * @return The arguments associated with this atom
 	 */
-	public Term[] getArguments();
+	public Term[] getArguments() {
+		return Arrays.copyOf(arguments, arguments.length);
+	}
 	
 	/**
-	 * Returns the truth value of this Atom.
+	 * Checks whether a Predicate is of a valid type for this Atom
 	 * 
-	 * @return The truth value in [0,1]
-	 * @throws IllegalStateException  if this Atom is not ground
+	 * @param predicate  the Predicate to check
+	 * @return TRUE if predicate is valid
 	 */
-	public double getValue();
+	abstract protected boolean isValidPredicate(Predicate predicate);
 	
 	/**
-	 * Sets the truth value of this Atom.
+	 * Verifies that this atom has valid arguments.
 	 * 
-	 * @param value  a truth value in [0,1]
-	 * @throws IllegalArgumentException  if value is not in [0,1]
-	 * @throws IllegalStateException  if this Atom is not ground
+	 * @throws IllegalArgumentException 
+	 *             if the number of arguments doesn't match the number of arguments
+	 *             of the predicate
+	 * @throws IllegalArgumentException  if any argument is null
+	 * @throws IllegalArgumentException
+	 *             if any argument is a {@link GroundTerm} and is not a subtype
+	 *             of the Predicate's {@link ArgumentType}.
 	 */
-	public void setValue(double value);
+	private void checkSchema() {
+		if (predicate.getArity()!=arguments.length) {
+			throw new IllegalArgumentException("Length of Schema does not match the number of arguments.");
+		}
+		for (int i=0;i<arguments.length;i++) {
+			if (arguments[i]==null)
+				throw new IllegalArgumentException("Arguments must not be null!");
+			if ((arguments[i] instanceof GroundTerm) && !((GroundTerm)arguments[i]).getType().isSubTypeOf(predicate.getArgumentType(i)))
+				throw new IllegalArgumentException("Expected type "+predicate.getArgumentType(i)+" at position "+i+" but was given: " + arguments[i] + " for predicate " + predicate);
+		}
+	}
 	
-	/**
-	 * Returns the confidence value of this Atom.
-	 * 
-	 * @return The confidence value in [0, +Infinity)
-	 * @throws IllegalStateException  if this Atom is not ground
-	 */
-	public double getConfidenceValue();
+	@Override 
+	public String toString() {
+		StringBuilder s = new StringBuilder();
+		s.append(predicate.getName()).append("(");
+		String connector = "";
+		for (Term arg : arguments) {
+			s.append(connector).append(arg);
+			connector = ", ";
+		}
+		s.append(")");
+		return s.toString();
+	}
 	
-	/**
-	 * Sets the confidence value of this Atom.
-	 * 
-	 * @param value A confidence value in [0, +Infinity)
-	 * @throws IllegalArgumentException  if value is not in [0, +Infinity)
-	 * @throws IllegalStateException  if this Atom is not ground
-	 */
-	public void setConfidenceValue(double value);
+	@Override
+	public int hashCode() {
+		return hashcode;
+	}
 	
-	/**
-	 * Registers a ground kernel to receive update events.
-	 * 
-	 * @param f A ground kernel
-	 * @return TRUE if successful; FALSE if kernel was already registered 
-	 */
-	public boolean registerGroundKernel(GroundKernel f);
-	
-	/**
-	 * Unregisters a ground kernel, so that it no longer receives update events.
-	 * 
-	 * @param f A ground kernel
-	 * @return TRUE if successful; FALSE if kernel was never registered
-	 */
-	public boolean unregisterGroundKernel(GroundKernel f);
-	
-	/**
-	 * Returns a set of all registered ground kernels that match a given kernel.
-	 * 
-	 * @param f A kernel
-	 * @return A set of all registered ground kernels that match f
-	 */
-	public Set<GroundKernel> getRegisteredGroundKernels(Kernel f);
-	
-	/**
-	 * Returns a set of all registered ground kernels.
-	 * 
-	 * @return A collection of all registered ground kernels
-	 */
-	public Collection<GroundKernel> getRegisteredGroundKernels();
-	
-	/**
-	 * Returns the number of registered ground kernels.
-	 * 
-	 * @return The number of registered ground kernels
-	 */
-	public int getNumRegisteredGroundKernels();
-	
-	/**
-	 * Returns whether this Atom is ground.
-	 * 
-	 * @return TRUE if ground; FALSE otherwise
-	 */
-	public boolean isGround();
-	
-	/**
-	 * Returns the atom status.
-	 * 
-	 * @return The atom status
-	 */
-	public AtomStatus getStatus();
-	
-	/**
-	 * Returns whether this atom is part of an atom group.
-	 * 
-	 * @return TRUE if in group; FALSE otherwise
-	 */
-	public boolean isAtomGroup();
-
-	/**
-	 * Returns the other atoms in this group.
-	 * 
-	 * @param atommanager An atom manager
-	 * @param db A database query
-	 * @return A collection of atoms
-	 */
-	public Collection<Atom> getAtomsInGroup(AtomManager atommanager);
-	
-	public AtomFunctionVariable getVariable();
+	@Override
+	public boolean equals(Object oth) {
+		if (oth==this) return true;
+		if (oth==null || !(getClass().isInstance(oth)) ) return false;
+		Atom other = (Atom) oth;
+		return predicate.equals(other.predicate) && Arrays.deepEquals(arguments, other.arguments);  
+	}
 	
 }

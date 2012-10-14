@@ -23,16 +23,13 @@ import edu.umd.cs.psl.application.ModelApplication;
  */
 public enum AtomEvent {
 	
-	/** An observed Atom was instantiated in memory */
+	/** An {@link ObservedAtom} was instantiated in memory */
 	ConsideredObservedAtom,
 
-	/** A fixed Atom was instantiated in memory */
-	ConsideredFixedAtom,
-	
-	/** A random variable Atom was instantiated in memory */
+	/** A {@link RandomVariableAtom} was instantiated in memory */
 	ConsideredRVAtom,
 	
-	/** A random variable Atom was activated */
+	/** A {@link RandomVariableAtom} was activated */
 	ActivatedRVAtom;
 	
 	/** A listener for AtomEvents. */

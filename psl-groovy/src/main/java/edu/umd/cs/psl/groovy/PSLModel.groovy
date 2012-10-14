@@ -105,7 +105,7 @@ class PSLModel extends ModelUI {
 					}else throw new IllegalArgumentException("The arguments to predicate ${name} must be terms");
 					
 				}
-				return new FormulaContainer(new TemplateAtom(pred,terms));
+				return new FormulaContainer(new FormulaAtom(pred,terms));
 			} else if (setComparisons.containsKey(name)) {
 				def setcomp = setComparisons[name];
 				if (args.length!=2) 
@@ -134,7 +134,7 @@ class PSLModel extends ModelUI {
 				
 				addKernel(new SetDefinitionKernel(auxpred,t1,t2,variables,setcomp['predicate'],setcomp['aggregator']));
 			
-				return new FormulaContainer(new TemplateAtom(auxpred,terms));
+				return new FormulaContainer(new FormulaAtom(auxpred,terms));
 				
 			} else if (name == 'when') {
 				return args[0];

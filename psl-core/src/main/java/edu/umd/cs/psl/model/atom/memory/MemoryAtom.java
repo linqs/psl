@@ -161,58 +161,6 @@ public class MemoryAtom extends AbstractAtom {
 		throw new UnsupportedOperationException();
 	}
 
-	private class AtomVariable extends AtomFunctionVariable {
-		
-		@Override
-		public boolean isConstant() {
-			return status.isFixed();
-		}
-
-		@Override
-		public void setValue(double value) {
-			setValue(value);
-		}
-
-		@Override
-		public double getValue() {
-			return getValue();
-		}
-
-		@Override
-		public double getConfidence() {
-			return getConfidenceValue();
-		}
-
-		@Override
-		public void setConfidence(double val) {
-			setConfidenceValue(val);
-		}
-		
-		@Override
-		public int hashCode() {
-			return MemoryAtom.this.hashCode() + 97;
-		}
-		
-		@Override
-		public Atom getAtom() {
-			return MemoryAtom.this;
-		}
-		
-		@Override
-		public boolean equals(Object oth) {
-			if (oth==this)
-				return true;
-			if (oth==null || !(getClass().isInstance(oth)) )
-				return false;
-			AtomVariable other = (AtomVariable) oth;
-			return getAtom().equals(other.getAtom());
-		}
-		
-		@Override
-		public String toString() {
-			return MemoryAtom.this.toString();
-		}
-
-	}
+	
 
 }
