@@ -41,9 +41,14 @@ import edu.umd.cs.psl.model.predicate.Predicate;
  * {@link #getAtom(Predicate, GroundTerm[])}, then no consideration event can be
  * generated.
  * <p>
- * When an event occurs, an {@link AtomJob} is added to the job queue. Calling
- * {@link #workOffJobQueue()} will cause the appropriate listeners to be notified
- * of all events in the queue.
+ * For each event, an {@link AtomJob} is added to the job queue. Consideration
+ * events are added during {@link #getAtom(Predicate, GroundTerm[])} and activation
+ * events are added during {@link #checkToActivate()} and
+ * {@link #activateAtom(RandomVariableAtom)}.
+ * <p>
+ * Calling {@link #workOffJobQueue()} will cause the appropriate Listeners to be
+ * notified of all events in the queue. Additionally, each activated RandomVariableAtom
+ * will be committed to the Database before any Listeners are notified.
  */
 public class AtomEventFramework implements AtomManager {
 	

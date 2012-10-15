@@ -16,7 +16,6 @@
  */
 package edu.umd.cs.psl.model.atom;
 
-import edu.umd.cs.psl.application.ModelApplication;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.predicate.Predicate;
@@ -26,8 +25,8 @@ import edu.umd.cs.psl.model.predicate.Predicate;
  * that are created from a {@link Database}.
  * <p>
  * By wrapping key methods, such as {@link Database#getAtom(Predicate, GroundTerm[])},
- * an AtomManager gives a {@link ModelApplication} additional control over the
- * GroundAtoms that come from that Database.
+ * an AtomManager gives additional control over the GroundAtoms that come from
+ * that Database.
  * <p>
  * Additionally, AtomManagers can support other functionality that might require
  * coordination by providing a single component to call to carry out tasks.
