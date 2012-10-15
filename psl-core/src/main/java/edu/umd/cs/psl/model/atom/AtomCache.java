@@ -16,6 +16,28 @@
  */
 package edu.umd.cs.psl.model.atom;
 
-public class AtomCache {
+import edu.umd.cs.psl.database.Database;
 
+/**
+ * Storage for {@link GroundAtom GroundAtoms} so that a {@link Database}
+ * always returns the same object for a GroundAtom.
+ * <p>
+ * Also serves as the factory for GroundAtoms for a Database.
+ */
+public class AtomCache {
+	
+	private Database db;
+	
+	/**
+	 * Constructs a new AtomCache for a Database.
+	 * 
+	 * @param db  the Database for which GroundAtoms will be cached
+	 */
+	public AtomCache(Database db) {
+		this.db = db;
+	}
+	
+	public GroundAtom getCachedAtom(FormulaAtom atom) {
+		return null;
+	}
 }

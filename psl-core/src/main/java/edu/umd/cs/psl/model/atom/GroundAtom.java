@@ -19,9 +19,8 @@ package edu.umd.cs.psl.model.atom;
 import java.util.Collection;
 import java.util.Set;
 
+import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.atom.memory.MemoryAtom;
-import edu.umd.cs.psl.model.atom.memory.MemoryAtom.AtomVariable;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.model.predicate.Predicate;
@@ -33,9 +32,15 @@ import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
  * A GroundAtom has a truth value and a confidence value.
  */
 abstract public class GroundAtom extends Atom {
+	
+	protected Database db;
+	
+	protected double value;
 
-	protected GroundAtom(Predicate p, GroundTerm[] args) {
+	protected GroundAtom(Predicate p, GroundTerm[] args, Database db, double value) {
 		super(p, args);
+		this.db = db;
+		this.value = value;
 	}
 
 	/**
@@ -43,7 +48,9 @@ abstract public class GroundAtom extends Atom {
 	 * 
 	 * @return The truth value in [0,1]
 	 */
-	abstract public double getValue();
+	public double getValue() {
+		return value;
+	}
 	
 	/**
 	 * Returns the confidence value of this Atom.
@@ -109,10 +116,11 @@ abstract public class GroundAtom extends Atom {
 		return 0;
 	}
 	
-private class AtomVariable extends AtomFunctionVariable {
+	private class AtomVariable extends AtomFunctionVariable {
 		
 		@Override
 		public boolean isConstant() {
+			if (GroundAtom.this instanceof )
 			return status.isFixed();
 		}
 
@@ -138,12 +146,12 @@ private class AtomVariable extends AtomFunctionVariable {
 		
 		@Override
 		public int hashCode() {
-			return MemoryAtom.this.hashCode() + 97;
+			return GroundAtom.this.hashCode() + 97;
 		}
 		
 		@Override
 		public Atom getAtom() {
-			return MemoryAtom.this;
+			return GroundAtom.this;
 		}
 		
 		@Override
@@ -158,7 +166,7 @@ private class AtomVariable extends AtomFunctionVariable {
 		
 		@Override
 		public String toString() {
-			return MemoryAtom.this.toString();
+			return GroundAtom.this.toString();
 		}
 
 	}

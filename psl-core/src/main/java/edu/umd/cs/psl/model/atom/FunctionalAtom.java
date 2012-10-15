@@ -16,6 +16,7 @@
  */
 package edu.umd.cs.psl.model.atom;
 
+import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.predicate.FunctionalPredicate;
 import edu.umd.cs.psl.model.predicate.Predicate;
@@ -29,15 +30,8 @@ import edu.umd.cs.psl.model.predicate.Predicate;
  */
 public class FunctionalAtom extends GroundAtom {
 
-	protected FunctionalAtom(Predicate p, GroundTerm[] args) {
-		super(p, args);
-		// TODO Auto-generated constructor stub
-	}
-
-	@Override
-	public double getValue() {
-		// TODO Auto-generated method stub
-		return 0;
+	protected FunctionalAtom(Predicate p, GroundTerm[] args, Database db, double value) {
+		super(p, args, db, value);
 	}
 
 	@Override

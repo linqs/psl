@@ -41,7 +41,7 @@ public class RandomVariableAtom extends StandardAtom {
 	}
 	
 	public void commitToDB() {
-		
+		db.commit(this);
 	}
 	
 	public boolean isFixed() {

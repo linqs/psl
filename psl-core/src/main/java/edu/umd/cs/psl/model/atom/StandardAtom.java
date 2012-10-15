@@ -16,6 +16,7 @@
  */
 package edu.umd.cs.psl.model.atom;
 
+import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
@@ -23,25 +24,13 @@ import edu.umd.cs.psl.model.predicate.StandardPredicate;
 /**
  * A GroundAtom with a {@link StandardPredicate}.
  * <p>
- * A StandardAtom has 
+ * A StandardAtom has a truth value that is either observed or inferred, i.e.,
+ * it is not defined by a function.
  */
-public class StandardAtom extends GroundAtom {
+abstract public class StandardAtom extends GroundAtom {
 
-	protected StandardAtom(Predicate p, GroundTerm[] args) {
-		super(p, args);
-		// TODO Auto-generated constructor stub
-	}
-
-	@Override
-	public double getValue() {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public double getConfidenceValue() {
-		// TODO Auto-generated method stub
-		return 0;
+	protected StandardAtom(Predicate p, GroundTerm[] args, Database db, double value) {
+		super(p, args, db, value);
 	}
 
 	@Override

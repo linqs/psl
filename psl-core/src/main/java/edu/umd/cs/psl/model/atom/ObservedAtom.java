@@ -16,14 +16,26 @@
  */
 package edu.umd.cs.psl.model.atom;
 
+import edu.umd.cs.psl.database.Database;
+import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.predicate.Predicate;
 
+/**
+ * A {@link StandardAtom} that exists in one of its {@link Database}'s read
+ * Partitions.
+ * <p>
+ * An ObservedAtom's truth value cannot be modified and its confidence value
+ * is infinity.
+ */
 public class ObservedAtom extends StandardAtom {
 
+	protected ObservedAtom(Predicate p, GroundTerm[] args, Database db, double value) {
+		super(p, args, db, value);
+	}
+
 	@Override
-	protected boolean isValidPredicate(Predicate predicate) {
-		// TODO Auto-generated method stub
-		return false;
+	public double getConfidenceValue() {
+		return Double.POSITIVE_INFINITY;
 	}
 
 }
