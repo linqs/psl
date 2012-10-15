@@ -62,7 +62,7 @@ import edu.umd.cs.psl.model.argument.type.ArgumentType;
 import edu.umd.cs.psl.model.argument.type.ArgumentTypes;
 import edu.umd.cs.psl.model.argument.type.VariableTypeMap;
 import edu.umd.cs.psl.model.atom.Atom;
-import edu.umd.cs.psl.model.atom.FormulaAtom;
+import edu.umd.cs.psl.model.atom.QueryAtom;
 import edu.umd.cs.psl.model.atom.VariableAssignment;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.function.ExternalFunction;
@@ -485,7 +485,7 @@ public class RDBMSDatabase implements Database {
 						args[j]=new Variable("X"+j);
 					}
 					args[i]=queryvar;
-					ResultList res = query(new FormulaAtom(p,args), ImmutableList.of(queryvar));
+					ResultList res = query(new QueryAtom(p,args), ImmutableList.of(queryvar));
 					for (int k=0;k<res.size();k++) {
 						assert res.get(k).length==1;
 						allEntities.put(type, (Entity)res.get(k)[0]);

@@ -18,7 +18,9 @@ package edu.umd.cs.psl.model.atom;
 
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.predicate.Predicate;
+import edu.umd.cs.psl.model.predicate.StandardPredicate;
+import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
+import edu.umd.cs.psl.reasoner.function.ConstantAtomFunctionVariable;
 
 /**
  * A {@link StandardAtom} that exists in one of its {@link Database}'s read
@@ -29,13 +31,18 @@ import edu.umd.cs.psl.model.predicate.Predicate;
  */
 public class ObservedAtom extends StandardAtom {
 
-	protected ObservedAtom(Predicate p, GroundTerm[] args, Database db, double value) {
+	protected ObservedAtom(StandardPredicate p, GroundTerm[] args, Database db, double value) {
 		super(p, args, db, value);
 	}
 
 	@Override
 	public double getConfidenceValue() {
 		return Double.POSITIVE_INFINITY;
+	}
+
+	@Override
+	public AtomFunctionVariable getVariable() {
+		return new ConstantAtomFunctionVariable(this);
 	}
 
 }

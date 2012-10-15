@@ -19,7 +19,8 @@ package edu.umd.cs.psl.model.atom;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.predicate.AggregatePredicate;
-import edu.umd.cs.psl.model.predicate.Predicate;
+import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
+import edu.umd.cs.psl.reasoner.function.ConstantAtomFunctionVariable;
 
 /**
  * A GroundAtom with an {@link AggregatePredicate}.
@@ -29,7 +30,7 @@ import edu.umd.cs.psl.model.predicate.Predicate;
  */
 public class AggregateAtom extends GroundAtom {
 
-	protected AggregateAtom(Predicate p, GroundTerm[] args, Database db, double value) {
+	protected AggregateAtom(AggregatePredicate p, GroundTerm[] args, Database db, double value) {
 		super(p, args, db, value);
 	}
 
@@ -39,8 +40,8 @@ public class AggregateAtom extends GroundAtom {
 	}
 
 	@Override
-	protected boolean isValidPredicate(Predicate predicate) {
-		return (predicate instanceof AggregatePredicate);
+	public AtomFunctionVariable getVariable() {
+		return new ConstantAtomFunctionVariable(this);
 	}
 
 }

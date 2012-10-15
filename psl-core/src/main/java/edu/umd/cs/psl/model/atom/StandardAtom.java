@@ -18,7 +18,6 @@ package edu.umd.cs.psl.model.atom;
 
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
 
 /**
@@ -29,13 +28,8 @@ import edu.umd.cs.psl.model.predicate.StandardPredicate;
  */
 abstract public class StandardAtom extends GroundAtom {
 
-	protected StandardAtom(Predicate p, GroundTerm[] args, Database db, double value) {
+	protected StandardAtom(StandardPredicate p, GroundTerm[] args, Database db, double value) {
 		super(p, args, db, value);
-	}
-
-	@Override
-	protected boolean isValidPredicate(Predicate predicate) {
-		return (predicate instanceof StandardPredicate);
 	}
 
 }

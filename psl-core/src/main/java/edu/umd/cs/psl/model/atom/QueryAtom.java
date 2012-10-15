@@ -16,32 +16,25 @@
  */
 package edu.umd.cs.psl.model.atom;
 
-import java.util.Set;
-
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.Term;
 import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.argument.type.ArgumentType;
 import edu.umd.cs.psl.model.argument.type.VariableTypeMap;
-import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.predicate.Predicate;
 
 /**
- * An Atom that can be used as a {@link Formula} (or part of one).
+ * An Atom that can be used in a query, but does not have a truth value or
+ * confidence value.
  * <p>
- * Arguments to a FormulaAtom can be a mix of {@link Variable Variables} and
+ * Arguments to a QueryAtom can be a mix of {@link Variable Variables} and
  * {@link GroundTerm GroundTerms}. In other words, they are not necessarily
  * ground and can be used for matching GroundAtoms in a query.
  */
-public class FormulaAtom extends Atom implements Formula {
+public class QueryAtom extends Atom {
 
-	public FormulaAtom(Predicate p, Term[] args) {
+	public QueryAtom(Predicate p, Term[] args) {
 		super(p, args);
-	}
-	
-	@Override
-	public Formula getDNF() {
-		return this;
 	}
 	
 	public VariableTypeMap collectVariables(VariableTypeMap varMap) {
@@ -53,15 +46,5 @@ public class FormulaAtom extends Atom implements Formula {
 		}
 		return varMap;
 	}
-
-	@Override
-	public Set<Atom> getAtoms(Set<Atom> atoms) {
-		atoms.add(this);
-		return atoms;
-	}
-
-	@Override
-	protected boolean isValidPredicate(Predicate predicate) {
-		return true;
-	}
+	
 }

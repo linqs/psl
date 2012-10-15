@@ -21,7 +21,7 @@ import edu.umd.cs.psl.model.argument.type.ArgumentType;
 import edu.umd.cs.psl.model.set.term.VariableSetTerm;
 import edu.umd.cs.psl.groovy.PSLModel;
 import edu.umd.cs.psl.model.atom.Atom;
-import edu.umd.cs.psl.model.atom.FormulaAtom;
+import edu.umd.cs.psl.model.atom.QueryAtom;
 import edu.umd.cs.psl.model.predicate.SpecialPredicate;
 
 class GenericVariable {
@@ -61,7 +61,7 @@ class GenericVariable {
 			throw new IllegalArgumentException("Can only compare variables to variables! ${this} compared to ${other}");
 		}
 		assert other instanceof GenericVariable
-		return new FormulaContainer(new FormulaAtom(SpecialPredicate.NonSymmetric,this.toAtomVariable(),other.toAtomVariable()));
+		return new FormulaContainer(new QueryAtom(SpecialPredicate.NonSymmetric,this.toAtomVariable(),other.toAtomVariable()));
 	}
 	
 	

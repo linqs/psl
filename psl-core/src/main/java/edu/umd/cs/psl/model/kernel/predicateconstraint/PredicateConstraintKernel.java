@@ -31,7 +31,7 @@ import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.AtomEvent;
 import edu.umd.cs.psl.model.atom.AtomEventSets;
 import edu.umd.cs.psl.model.atom.AtomManager;
-import edu.umd.cs.psl.model.atom.FormulaAtom;
+import edu.umd.cs.psl.model.atom.QueryAtom;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.model.parameters.Parameters;
@@ -128,7 +128,7 @@ public class PredicateConstraintKernel implements Kernel {
 					Term[] args = new Term[2];
 					args[pos] = anchor;
 					args[1 - pos] = var;
-					Atom query = new FormulaAtom(predicate, args);
+					Atom query = new QueryAtom(predicate, args);
 
 					ResultList res = app.getAtomManager().getActiveGroundings(query,
 							ImmutableList.of(var));

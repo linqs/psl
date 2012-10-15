@@ -139,7 +139,7 @@ public class MaintainedMemoryFullInference implements FullInference {
 	public void initialize() {
 		if (!isInitialized) {
 			Grounding.groundAll(model, this);
-			while (atomManager.runActivationStrategy() > 0)
+			while (atomManager.checkToActivate() > 0)
 				atomManager.workOffJobQueue();
 			isInitialized=true;
 		}

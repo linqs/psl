@@ -17,21 +17,27 @@
 package edu.umd.cs.psl.model.atom;
 
 import java.util.Arrays;
+import java.util.Set;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.Term;
 import edu.umd.cs.psl.model.argument.type.ArgumentType;
+import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.predicate.Predicate;
 
 /**
  * A {@link Predicate} combined with the correct number of {@link Term Terms}
  * as arguments.
+ * <p>
+ * Two Atoms are equal if their Predicate and arguments are equal. Note that this
+ * means that their truth values might not match, or one might even be a
+ * {@link QueryAtom}.
  * 
  * @author Matthias Broecheler
  */
-abstract public class Atom {
+abstract public class Atom implements Formula {
 	
 	protected final Predicate predicate;
 	
@@ -73,13 +79,16 @@ abstract public class Atom {
 		return Arrays.copyOf(arguments, arguments.length);
 	}
 	
-	/**
-	 * Checks whether a Predicate is of a valid type for this Atom
-	 * 
-	 * @param predicate  the Predicate to check
-	 * @return TRUE if predicate is valid
-	 */
-	abstract protected boolean isValidPredicate(Predicate predicate);
+	@Override
+	public Formula getDNF() {
+		return this;
+	}
+
+	@Override
+	public Set<Atom> getAtoms(Set<Atom> atoms) {
+		atoms.add(this);
+		return atoms;
+	}
 	
 	/**
 	 * Verifies that this atom has valid arguments.

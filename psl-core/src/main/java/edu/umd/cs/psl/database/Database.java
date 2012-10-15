@@ -23,6 +23,7 @@ import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.atom.AggregateAtom;
 import edu.umd.cs.psl.model.atom.Atom;
+import edu.umd.cs.psl.model.atom.AtomCache;
 import edu.umd.cs.psl.model.atom.FunctionalAtom;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
@@ -78,7 +79,10 @@ import edu.umd.cs.psl.model.predicate.Predicate;
 public interface Database {
 
 	/**
-	 * Returns the Atom for the given Predicate and GroundTerms.
+	 * Returns the GroundAtom for the given Predicate and GroundTerms.
+	 * <p>
+	 * If the GroundAtom has not been loaded into memory before, it will be stored
+	 * in this Database's {@link AtomCache}.
 	 * 
 	 * @param p  the Predicate of the Atom
 	 * @param arguments  the GroundTerms of the Atom

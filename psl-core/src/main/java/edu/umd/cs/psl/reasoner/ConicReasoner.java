@@ -219,7 +219,7 @@ public class ConicReasoner implements Reasoner, AtomEventObserver {
 			inferenceStep();
 			//Only activate if there is another iteration
 			if (rounds<maxMapRounds) {
-				numActivated = atomManager.runActivationStrategy();
+				numActivated = atomManager.checkToActivate();
 				atomManager.workOffJobQueue();
 			}
 			log.debug("Completed Round {} and activated {} atoms",rounds,numActivated);

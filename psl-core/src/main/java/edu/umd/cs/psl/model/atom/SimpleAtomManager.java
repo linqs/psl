@@ -18,31 +18,31 @@ package edu.umd.cs.psl.model.atom;
 
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.predicate.FunctionalPredicate;
-import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
-import edu.umd.cs.psl.reasoner.function.ConstantAtomFunctionVariable;
+import edu.umd.cs.psl.model.predicate.Predicate;
 
 /**
- * A GroundAtom with a {@link FunctionalPredicate}.
- * <p>
- * A FunctionalAtom has a known truth value defined by its arguments
- * and the {@link ObservedAtom ObservedAtoms} in its {@link Database}.
- * It has an infinite confidence value.
+ * AtomManager that does not provide any functionality beyond passing calls
+ * to underlying components.
  */
-public class FunctionalAtom extends GroundAtom {
+public class SimpleAtomManager implements AtomManager {
+	
+	private final Database db;
+	
+	public SimpleAtomManager(Database db) {
+		this.db = db;
+	}
 
-	protected FunctionalAtom(FunctionalPredicate p, GroundTerm[] args, Database db, double value) {
-		super(p, args, db, value);
+	/**
+	 * Calls {@link Database#getAtom(Predicate, GroundTerm[])}.
+	 */
+	@Override
+	public Atom getAtom(Predicate p, GroundTerm[] arguments) {
+		return db.getAtom(p, arguments);
 	}
 
 	@Override
-	public double getConfidenceValue() {
-		return Double.POSITIVE_INFINITY;
+	public Database getDatabase() {
+		return db;
 	}
-
-	@Override
-	public AtomFunctionVariable getVariable() {
-		return new ConstantAtomFunctionVariable(this);
-	}
-
+	
 }

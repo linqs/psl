@@ -16,10 +16,28 @@
  */
 package edu.umd.cs.psl.model.atom;
 
-import edu.umd.cs.psl.model.predicate.Predicate;
+import edu.umd.cs.psl.database.Database;
+import edu.umd.cs.psl.model.argument.GroundTerm;
+import edu.umd.cs.psl.model.predicate.StandardPredicate;
+import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
+import edu.umd.cs.psl.reasoner.function.MutableAtomFunctionVariable;
 
+/**
+ * A {@link StandardAtom} that does not exist in one of its {@link Database}'s read
+ * Partitions.
+ * <p>
+ * A RandomVariableAtom's truth value and confidence value can be modified if it
+ * is not fixed.
+ * TODO: Generate an event instead?
+ */
 public class RandomVariableAtom extends StandardAtom {
 	
+	protected RandomVariableAtom(StandardPredicate p, GroundTerm[] args,
+			Database db, double value, double confidenceValue, boolean fixed) {
+		super(p, args, db, value);
+		// TODO Auto-generated constructor stub
+	}
+
 	/**
 	 * Sets the truth value of this Atom.
 	 * 
@@ -47,6 +65,18 @@ public class RandomVariableAtom extends StandardAtom {
 	public boolean isFixed() {
 		// TODO
 		return false;
+	}
+
+	@Override
+	public double getConfidenceValue() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public AtomFunctionVariable getVariable() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

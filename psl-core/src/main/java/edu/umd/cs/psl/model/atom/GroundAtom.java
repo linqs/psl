@@ -21,6 +21,7 @@ import java.util.Set;
 
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.argument.GroundTerm;
+import edu.umd.cs.psl.model.argument.type.VariableTypeMap;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.model.predicate.Predicate;
@@ -59,12 +60,17 @@ abstract public class GroundAtom extends Atom {
 	 */
 	abstract public double getConfidenceValue();
 	
-	public AtomFunctionVariable getVariable() {
-		return new AtomVariable();
+	abstract public AtomFunctionVariable getVariable();
+	
+	public VariableTypeMap collectVariables(VariableTypeMap varMap) {
+		/* No Variables in GroundAtoms */
+		return varMap;
 	}
 	
 	/**
 	 * Registers a ground kernel to receive update events.
+	 * <p>
+	 * Any GroundKernel that is a function of this Atom should be registered.
 	 * 
 	 * @param f A ground kernel
 	 * @return TRUE if successful; FALSE if kernel was already registered 
@@ -114,61 +120,6 @@ abstract public class GroundAtom extends Atom {
 	public int getNumRegisteredGroundKernels() {
 		// TODO
 		return 0;
-	}
-	
-	private class AtomVariable extends AtomFunctionVariable {
-		
-		@Override
-		public boolean isConstant() {
-			if (GroundAtom.this instanceof )
-			return status.isFixed();
-		}
-
-		@Override
-		public void setValue(double value) {
-			setValue(value);
-		}
-
-		@Override
-		public double getValue() {
-			return getValue();
-		}
-
-		@Override
-		public double getConfidence() {
-			return getConfidenceValue();
-		}
-
-		@Override
-		public void setConfidence(double val) {
-			setConfidenceValue(val);
-		}
-		
-		@Override
-		public int hashCode() {
-			return GroundAtom.this.hashCode() + 97;
-		}
-		
-		@Override
-		public Atom getAtom() {
-			return GroundAtom.this;
-		}
-		
-		@Override
-		public boolean equals(Object oth) {
-			if (oth==this)
-				return true;
-			if (oth==null || !(getClass().isInstance(oth)) )
-				return false;
-			AtomVariable other = (AtomVariable) oth;
-			return getAtom().equals(other.getAtom());
-		}
-		
-		@Override
-		public String toString() {
-			return GroundAtom.this.toString();
-		}
-
 	}
 
 }

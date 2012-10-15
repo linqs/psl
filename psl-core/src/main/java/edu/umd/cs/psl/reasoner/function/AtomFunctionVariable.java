@@ -18,20 +18,38 @@ package edu.umd.cs.psl.reasoner.function;
 
 import java.util.Map;
 
-import edu.umd.cs.psl.model.atom.Atom;
+import edu.umd.cs.psl.model.atom.GroundAtom;
 
 /**
- * Encapsulates the value of an {@link edu.umd.cs.psl.model.atom.Atom}
+ * Encapsulates the value of a {@link GroundAtom}
  * for use in numeric functions.
  */
 public abstract class AtomFunctionVariable implements FunctionVariable {
+	
+	protected final GroundAtom atom;
+	
+	public AtomFunctionVariable(GroundAtom atom) {
+		this.atom = atom;
+	}
 
 	@Override
 	public boolean isLinear() {
 		return true;
 	}
 	
-	public abstract Atom getAtom();
+	public GroundAtom getAtom() {
+		return atom;
+	}
+
+	@Override
+	public double getConfidence() {
+		return atom.getConfidenceValue();
+	}
+
+	@Override
+	public double getValue() {
+		return atom.getValue();
+	}
 	
 	@Override
 	public double getValue(Map<? extends FunctionVariable,Double> values, boolean assumeDefaultValue) {
@@ -42,6 +60,26 @@ public abstract class AtomFunctionVariable implements FunctionVariable {
 		} else {
 			return val;
 		}
+	}
+	
+	@Override
+	public int hashCode() {
+		return atom.hashCode() + 97;
+	}
+	
+	@Override
+	public boolean equals(Object oth) {
+		if (oth==this)
+			return true;
+		if (oth==null || !(getClass().isInstance(oth)) )
+			return false;
+		AtomFunctionVariable other = (AtomFunctionVariable) oth;
+		return getAtom().equals(other.getAtom());
+	}
+	
+	@Override
+	public String toString() {
+		return atom.toString();
 	}
 	
 }

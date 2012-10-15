@@ -64,8 +64,8 @@ class SetFormulaConstructor extends SetTermConstructor {
 			terms[0] = auxVar;
 			terms[1] = leafVar;
 		}
-		if (formula==null) formula = new FormulaAtom(pred,terms);			
-		else formula = new Conjunction(formula, new FormulaAtom(pred,terms));
+		if (formula==null) formula = new QueryAtom(pred,terms);			
+		else formula = new Conjunction(formula, new QueryAtom(pred,terms));
 		leafVar = auxVar;
 	}
 	

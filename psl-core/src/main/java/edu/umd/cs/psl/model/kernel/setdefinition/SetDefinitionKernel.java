@@ -45,7 +45,7 @@ import edu.umd.cs.psl.model.atom.AtomEvent;
 import edu.umd.cs.psl.model.atom.AtomEventFramework;
 import edu.umd.cs.psl.model.atom.AtomEventSets;
 import edu.umd.cs.psl.model.atom.AtomManager;
-import edu.umd.cs.psl.model.atom.FormulaAtom;
+import edu.umd.cs.psl.model.atom.QueryAtom;
 import edu.umd.cs.psl.model.atom.VariableAssignment;
 import edu.umd.cs.psl.model.formula.Conjunction;
 import edu.umd.cs.psl.model.formula.Formula;
@@ -134,7 +134,7 @@ public class SetDefinitionKernel implements Kernel {
 		for (BasicSetTerm setterm1 : sets.get(0)) {
 			for (BasicSetTerm setterm2 : sets.get(1)) {
 				assert !(setterm1.getLeaf() instanceof Variable) || !(setterm2.getLeaf() instanceof Variable) || !setterm1.getLeaf().equals(setterm2.getLeaf());
-				Atom connect = new FormulaAtom(comparisonPredicate, new Term[]{setterm1.getLeaf(),setterm2.getLeaf()});
+				Atom connect = new QueryAtom(comparisonPredicate, new Term[]{setterm1.getLeaf(),setterm2.getLeaf()});
 				Formula trigger = connect;
 				Formula[] setformulas = new Formula[]{setterm1.getFormula(),setterm2.getFormula()};
 				for (int i=0;i<setformulas.length;i++) {
