@@ -81,7 +81,7 @@ public class AtomEventFramework implements AtomManager {
 	 * not already in the Database's AtomCache. 
 	 */
 	@Override
-	public Atom getAtom(Predicate p, GroundTerm[] arguments) {
+	public GroundAtom getAtom(Predicate p, GroundTerm[] arguments) {
 		// TODO Auto-generated method stub
 		return null;
 	}

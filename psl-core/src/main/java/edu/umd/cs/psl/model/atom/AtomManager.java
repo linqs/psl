@@ -46,7 +46,7 @@ public interface AtomManager {
 	 * @param arguments  the GroundTerms of the Atom
 	 * @return the Atom
 	 */
-	public Atom getAtom(Predicate p, GroundTerm[] arguments);
+	public GroundAtom getAtom(Predicate p, GroundTerm[] arguments);
 	
 	/**
 	 * @return the Database for which GroundAtoms are managed

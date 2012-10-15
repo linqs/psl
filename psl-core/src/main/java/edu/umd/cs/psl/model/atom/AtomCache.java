@@ -93,7 +93,7 @@ public class AtomCache {
 	 * Initializes an AggregateAtom and stores it in this AtomCache.
 	 * <p>
 	 * This method should only be called by this AtomCache's {@link Database}.
-	 * To retrieve an Atom, all others should use {@link Database#getAtom(Predicate, GroundTerm[])}
+	 * To retrieve a GroundAtom, all others should use {@link Database#getAtom(Predicate, GroundTerm[])}
 	 * or {@link AtomManager#getAtom(Predicate, GroundTerm[])}.
 	 * <p>
 	 * Further, this method should only be called after ensuring that the Atom
@@ -115,7 +115,7 @@ public class AtomCache {
 	 * Initializes a FunctionalAtom and stores it in this AtomCache.
 	 * <p>
 	 * This method should only be called by this AtomCache's {@link Database}.
-	 * To retrieve an Atom, all others should use {@link Database#getAtom(Predicate, GroundTerm[])}
+	 * To retrieve a GroundAtom, all others should use {@link Database#getAtom(Predicate, GroundTerm[])}
 	 * or {@link AtomManager#getAtom(Predicate, GroundTerm[])}.
 	 * <p>
 	 * Further, this method should only be called after ensuring that the Atom
@@ -137,7 +137,7 @@ public class AtomCache {
 	 * Initializes an ObservedAtom and stores it in this AtomCache.
 	 * <p>
 	 * This method should only be called by this AtomCache's {@link Database}.
-	 * To retrieve an Atom, all others should use {@link Database#getAtom(Predicate, GroundTerm[])}
+	 * To retrieve a GroundAtom, all others should use {@link Database#getAtom(Predicate, GroundTerm[])}
 	 * or {@link AtomManager#getAtom(Predicate, GroundTerm[])}.
 	 * <p>
 	 * Further, this method should only be called after ensuring that the Atom
@@ -159,7 +159,7 @@ public class AtomCache {
 	 * Initializes a RandomVariableAtom and stores it in this AtomCache.
 	 * <p>
 	 * This method should only be called by this AtomCache's {@link Database}.
-	 * To retrieve an Atom, all others should use {@link Database#getAtom(Predicate, GroundTerm[])}
+	 * To retrieve a GroundAtom, all others should use {@link Database#getAtom(Predicate, GroundTerm[])}
 	 * or {@link AtomManager#getAtom(Predicate, GroundTerm[])}.
 	 * <p>
 	 * Further, this method should only be called after ensuring that the Atom
