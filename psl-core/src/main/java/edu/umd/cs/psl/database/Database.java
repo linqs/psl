@@ -57,16 +57,12 @@ import edu.umd.cs.psl.model.predicate.StandardPredicate;
  * Any AggregateAtom or FunctionalAtom is implicitly in the Database.
  * <p>
  * All StandardAtoms that exist in one of the Database's read Partitions are
- * {@link ObservedAtom ObservedAtoms}. If a StandardAtom does not, then it's a
- * {@link RandomVariableAtom}.
- * <p>
- * If a RandomVariableAtom is retrieved from the Database for the first time,
- * whether it is initially fixed depends on its {@link Predicate}.
+ * {@link ObservedAtom ObservedAtoms}. If a StandardAtom does not, then its
+ * type depends on its {@link Predicate}.
  * <p>
  * Databases treat Predicates as either <em>open</em> or
- * <em>closed</em>. A RandomVariableAtom with a closed Predicate is initially
- * fixed. A RandomVariableAtom with an open Predicate is initially not.
- * Upon initialization of the Database, all Predicates are open.
+ * <em>closed</em>. A StandardAtom with a closed Predicate is an ObservedAtom;
+ * otherwise it is a RandomVariableAtom.
  * <p>
  * RandomVariableAtoms will only be inserted and/or updated in the Database if
  * {@link #commit(RandomVariableAtom)} or {@link RandomVariableAtom#commitToDB()}
@@ -74,7 +70,7 @@ import edu.umd.cs.psl.model.predicate.StandardPredicate;
  * 
  * <h2>Conventions</h2>
  * 
- * Any RandomVariableAtom that is not stored in the Database has an implicit
+ * Any StandardAtom that is not explicitly stored in the Database has an implicit
  * truth value of 0.0.
  */
 public interface Database {
@@ -112,26 +108,6 @@ public interface Database {
 	 * @throws IllegalArgumentException  if the query Formula is invalid
 	 */
 	public ResultList executeQuery(DatabaseQuery query);
-	
-	/**
-	 * Opens a StandardPredicate.
-	 * <p>
-	 * If a StandardPredicate is open, then any {@link RandomVariableAtom}
-	 * of that Predicate will be initially unfixed when instantiated in memory.
-	 * 
-	 * @param predicate  Predicate to open
-	 */
-	public void open(StandardPredicate predicate);
-	
-	/**
-	 * Closes a StandardPredicate.
-	 * <p>
-	 * If a StandardPredicate is closed, then any {@link RandomVariableAtom}
-	 * of that Predicate will be initially fixed when instantiated in memory.
-	 * 
-	 * @param predicate  Predicate to close
-	 */
-	public void close(StandardPredicate predicate);
 	
 	/**
 	 * Returns whether a StandardPredicate is closed in this Database.
