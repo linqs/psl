@@ -37,12 +37,12 @@ public abstract class AbstractKernel implements Kernel {
 	protected abstract void notifyAtomEvent(AtomEvent event, GroundKernelStore gks);
 
 	@Override
-	public void registerForAtomEvents(AtomEventFramework manager,
+	public void registerForAtomEvents(AtomEventFramework eventFramework,
 			GroundKernelStore gks) {
-		if (!frameworks.containsKey(manager)) {
-			frameworks.put(manager, gks);
-			registerForAtomEvents(manager);
-		} else if (!frameworks.put(manager, gks)) {
+		if (!frameworks.containsKey(eventFramework)) {
+			frameworks.put(eventFramework, gks);
+			registerForAtomEvents(eventFramework);
+		} else if (!frameworks.put(eventFramework, gks)) {
 			log.debug("Attempted to register for AtomEventFramework that has" +
 					" already been registered.");
 		}
@@ -59,13 +59,13 @@ public abstract class AbstractKernel implements Kernel {
 	protected abstract void registerForAtomEvents(AtomEventFramework eventFramework);
 
 	@Override
-	public void unregisterForAtomEvents(AtomEventFramework manager,
+	public void unregisterForAtomEvents(AtomEventFramework eventFramework,
 			GroundKernelStore gks) {
-		if (!frameworks.remove(manager, gks))
+		if (!frameworks.remove(eventFramework, gks))
 			log.debug("Attempted to unregister with AtomEventFramework that is" +
 					" not registered.");
-		if (!frameworks.containsKey(manager))
-			unregisterForAtomEvents(manager);
+		else if (!frameworks.containsKey(eventFramework))
+			unregisterForAtomEvents(eventFramework);
 	}
 	
 	
