@@ -22,6 +22,9 @@ import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.HashMultimap;
 
@@ -63,6 +66,8 @@ public class AtomEventFramework implements AtomManager {
 	 */
 	public static final String CONFIG_PREFIX = "atomeventframework";
 	
+	private static final Logger log = LoggerFactory.getLogger(AtomEventFramework.class);
+	
 	/**;
 	 * Key for double property in [0,1]. Activation events will be generated
 	 * for RandomVariableAtoms when they meet or exceed this threshold.
@@ -77,12 +82,14 @@ public class AtomEventFramework implements AtomManager {
 	private final double activationThreshold;
 	private Queue<AtomJob> jobQueue;
 	private EnumMap<AtomEvent,SetMultimap<Predicate,AtomEvent.Listener>> atomListeners;
+	private Set<Atom> activeAtoms;
 	
 	public AtomEventFramework(Database db, ConfigBundle config) {
 		this.db = db;
 		activationThreshold = config.getDouble(ACTIVATION_THRESHOLD_KEY, ACTIVATION_THRESHOLD_DEFAULT);
 		jobQueue = new LinkedList<AtomJob>();
 		atomListeners = new EnumMap<AtomEvent,SetMultimap<Predicate,AtomEvent.Listener>>(AtomEvent.class);
+		activeAtoms = new HashSet<Atom>();
 	}
 	
 	/**
@@ -158,7 +165,8 @@ public class AtomEventFramework implements AtomManager {
 		for (AtomEvent event : events) 
 			if (atomListeners.containsKey(event))
 				atomListeners.get(event).remove(p, listener);		
-		// TODO: write to debug log if atomListeners is missing key
+			else
+				log.debug("Attempted to unregister listener that was not registered: ", listener);
 	}
 	
 	/**
@@ -170,8 +178,14 @@ public class AtomEventFramework implements AtomManager {
 	 * @see AtomManager#workOffJobQueue()
 	 */
 	public int checkToActivate() {
-		//TODO: make this work
-		return 0;
+		int activated = 0;
+		for (RandomVariableAtom atom : db.getAtomCache().getCachedRandomVariableAtoms()) {
+			if (!activeAtoms.contains(atom) && atom.value >= activationThreshold) {
+				activated++;
+				activateAtom(atom);
+			}
+		}
+		return activated;
 	}
 	
 	/**
@@ -186,9 +200,15 @@ public class AtomEventFramework implements AtomManager {
 	 *                                       framework's Database
 	 */
 	public void activateAtom(RandomVariableAtom atom) {
-		// TODO: make this work
+		if (!activeAtoms.contains(atom)) {
+			AtomEvent event = AtomEvent.ActivatedRVAtom;
+			event.setAtom(atom);
+			event.setEventFramework(this);
+			addAtomJob(atom, event);
+			activeAtoms.add(atom);
+		}
 	}
-	
+
 	/**
 	 * Processes all pending {@link AtomJob AtomJobs}.
 	 * <p>
@@ -198,7 +218,7 @@ public class AtomEventFramework implements AtomManager {
 	public void workOffJobQueue() {
 		while (!jobQueue.isEmpty()) {
 			AtomJob job = jobQueue.poll();
-			handleAtomEvent(job);
+			notifyListeners(job);
 		}
 	}
 
@@ -211,7 +231,7 @@ public class AtomEventFramework implements AtomManager {
 		jobQueue.add(new AtomJob(atom, event));
 	}
 	
-	private void handleAtomEvent(AtomJob job) {
+	private void notifyListeners(AtomJob job) {
 		Atom atom = job.getAtom();
 		AtomEvent event = job.getEvent();
 	

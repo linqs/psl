@@ -16,7 +16,6 @@
  */
 package edu.umd.cs.psl.model.atom;
 
-import edu.umd.cs.psl.application.groundkernelstore.GroundKernelStore;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 
 /**
@@ -43,7 +42,7 @@ public enum AtomEvent {
 		 * 
 		 * @param event  event information
 		 */
-		public void notifyAtomEvent(AtomEvent event, GroundKernelStore gks);
+		public void notifyAtomEvent(AtomEvent event);
 	}
 	
 	private Atom atom;
