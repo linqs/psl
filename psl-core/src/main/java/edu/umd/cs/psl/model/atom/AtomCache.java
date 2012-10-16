@@ -16,6 +16,11 @@
  */
 package edu.umd.cs.psl.model.atom;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import com.google.common.collect.Iterables;
+
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.predicate.AggregatePredicate;
@@ -33,6 +38,7 @@ public class AtomCache {
 	
 	private final Database db;
 	
+	private final Map<QueryAtom, GroundAtom> cache;
 	/**
 	 * Constructs a new AtomCache for a Database.
 	 * 
@@ -40,6 +46,7 @@ public class AtomCache {
 	 */
 	public AtomCache(Database db) {
 		this.db = db;
+		this.cache = new HashMap<QueryAtom, GroundAtom>();
 	}
 	
 	/**
@@ -48,45 +55,44 @@ public class AtomCache {
 	 * 
 	 * @param atom  QueryAtom with all {@link GroundTerm GroundTerms}
 	 * @return the requested GroundAtom, or NULL if it is not cached
-	 * @throws IllegalArgumentException  if atom has any Variables as arguments
 	 */
 	public GroundAtom getCachedAtom(QueryAtom atom) {
-		return null;
+		return cache.get(atom);
 	}
 	
 	/**
 	 * @return all GroundAtoms in this AtomCache
 	 */
 	public Iterable<GroundAtom> getCachedAtoms() {
-		return null;
+		return cache.values();
 	}
 	
 	/**
 	 * @return all AggregateAtoms in this AtomCache
 	 */
 	public Iterable<AggregateAtom> getCachedAggregateAtoms() {
-		return null;
+		return Iterables.filter(cache.values(), AggregateAtom.class);
 	}
 	
 	/**
 	 * @return all FunctionalAtoms in this AtomCache
 	 */
 	public Iterable<FunctionalAtom> getCachedFunctionalAtoms() {
-		return null;
+		return Iterables.filter(cache.values(), FunctionalAtom.class);
 	}
 	
 	/**
 	 * @return all ObservedAtoms in this AtomCache
 	 */
 	public Iterable<ObservedAtom> getCachedObservedAtoms() {
-		return null;
+		return Iterables.filter(cache.values(), ObservedAtom.class);
 	}
 	
 	/**
 	 * @return all RandomVariableAtoms in this AtomCache
 	 */
 	public Iterable<RandomVariableAtom> getCachedRandomVariableAtoms() {
-		return null;
+		return Iterables.filter(cache.values(), RandomVariableAtom.class);
 	}
 	
 	/**
@@ -107,7 +113,8 @@ public class AtomCache {
 	public AggregateAtom initializeAggregateAtom(AggregatePredicate p,
 			GroundTerm[] args, double value) {
 		AggregateAtom atom = new AggregateAtom(p, args, db, value);
-		// TODO
+		QueryAtom key = new QueryAtom(p, args);
+		cache.put(key, atom);
 		return atom;
 	}
 	
@@ -129,7 +136,8 @@ public class AtomCache {
 	public FunctionalAtom initializeFunctionalAtom(FunctionalPredicate p,
 			GroundTerm[] args, double value) {
 		FunctionalAtom atom = new FunctionalAtom(p, args, db, value);
-		// TODO
+		QueryAtom key = new QueryAtom(p, args);
+		cache.put(key, atom);
 		return atom;
 	}
 	
@@ -151,7 +159,8 @@ public class AtomCache {
 	public ObservedAtom initializeObservedAtom(StandardPredicate p, GroundTerm[] args,
 			double value) {
 		ObservedAtom atom = new ObservedAtom(p, args, db, value);
-		// TODO
+		QueryAtom key = new QueryAtom(p, args);
+		cache.put(key, atom);
 		return atom;
 	}
 	
@@ -173,7 +182,8 @@ public class AtomCache {
 	public RandomVariableAtom initializeRandomVariableAtom(StandardPredicate p,
 			GroundTerm[] args, double value, double confidence, boolean fixed) {
 		RandomVariableAtom atom = new RandomVariableAtom(p, args, db, value, confidence, fixed);
-		// TODO
+		QueryAtom key = new QueryAtom(p, args);
+		cache.put(key, atom);
 		return atom;
 	}
 }
