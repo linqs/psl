@@ -21,6 +21,7 @@ import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
 import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
 //import edu.umd.cs.psl.reasoner.function.MutableAtomFunctionVariable;
+import edu.umd.cs.psl.reasoner.function.MutableAtomFunctionVariable;
 
 /**
  * A {@link StandardAtom} that does not exist in one of its {@link Database}'s read
@@ -28,14 +29,15 @@ import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
  * <p>
  * A RandomVariableAtom's truth value and confidence value can be modified if it
  * is not fixed.
- * TODO: Generate an event instead?
  */
 public class RandomVariableAtom extends StandardAtom {
 	
+	private double confidence;
+	
 	protected RandomVariableAtom(StandardPredicate p, GroundTerm[] args,
-			Database db, double value, double confidenceValue, boolean fixed) {
+			Database db, double value, double confidenceValue) {
 		super(p, args, db, value);
-		// TODO Auto-generated constructor stub
+		confidence = confidenceValue;
 	}
 
 	/**
@@ -45,7 +47,10 @@ public class RandomVariableAtom extends StandardAtom {
 	 * @throws IllegalArgumentException  if value is not in [0,1]
 	 */
 	public void setValue(double value) {
-		
+		if (0.0 <= value && value <= 1.0) 
+			this.value = value;
+		else
+			throw new IllegalArgumentException();
 	}
 	
 	/**
@@ -55,28 +60,24 @@ public class RandomVariableAtom extends StandardAtom {
 	 * @throws IllegalArgumentException  if value is not in [0, +Infinity)
 	 */
 	public void setConfidenceValue(double value) {
-		
+		if (0.0 <= value && value <= Double.POSITIVE_INFINITY)
+			confidence = value;
+		else
+			throw new IllegalArgumentException();
 	}
 	
 	public void commitToDB() {
 		db.commit(this);
 	}
 	
-	public boolean isFixed() {
-		// TODO
-		return false;
-	}
-
 	@Override
 	public double getConfidenceValue() {
-		// TODO Auto-generated method stub
-		return 0;
+		return confidence;
 	}
 
 	@Override
 	public AtomFunctionVariable getVariable() {
-		// TODO Auto-generated method stub
-		return null;
+		return new MutableAtomFunctionVariable(this);
 	}
 
 }
