@@ -17,8 +17,10 @@
 package edu.umd.cs.psl.model.kernel;
 
 import edu.umd.cs.psl.application.ModelApplication;
+import edu.umd.cs.psl.application.groundkernelstore.GroundKernelStore;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.AtomEvent;
+import edu.umd.cs.psl.model.atom.AtomEventFramework;
 import edu.umd.cs.psl.model.atom.AtomManager;
 import edu.umd.cs.psl.model.parameters.Parameters;
 
@@ -32,6 +34,7 @@ import edu.umd.cs.psl.model.parameters.Parameters;
  * {@link ModelApplication ModelApplications}.
  * 
  * @author Matthias Broecheler <mail@knowledgefrominformation.com>
+ * @author Eric Norris <enorris@cs.umd.edu>
  */
 public interface Kernel extends AtomEvent.Listener, Cloneable {
 
@@ -40,16 +43,18 @@ public interface Kernel extends AtomEvent.Listener, Cloneable {
 	 * it needs to create {@link GroundKernel GroundKernels} .
 	 * 
 	 * @param manager  the AtomManager to register with
+	 * @param gks		the GroundKernelStore to register GroundKernels in
 	 */
-	public void registerForAtomEvents(AtomManager manager);
+	public void registerForAtomEvents(AtomEventFramework manager, GroundKernelStore gks);
 	
 	/**
 	 * Unregisters this Kernel from listening for {@link AtomEvent AtomEvents}
 	 * with an AtomManager
 	 * 
 	 * @param manager  the AtomManager to unregister with
+	 * @param gks		the GroundKernelStore to unregister GroundKernels from
 	 */
-	public void unregisterForAtomEvents(AtomManager manager);
+	public void unregisterForAtomEvents(AtomEventFramework manager, GroundKernelStore gks);
 	
 	public void groundAll(ModelApplication app);
 	

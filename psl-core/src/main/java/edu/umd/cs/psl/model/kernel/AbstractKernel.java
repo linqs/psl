@@ -1,0 +1,85 @@
+package edu.umd.cs.psl.model.kernel;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.SetMultimap;
+
+import edu.umd.cs.psl.application.groundkernelstore.GroundKernelStore;
+import edu.umd.cs.psl.model.atom.AtomEvent;
+import edu.umd.cs.psl.model.atom.AtomEventFramework;
+
+public abstract class AbstractKernel implements Kernel {
+	
+	private static final Logger log = LoggerFactory.getLogger(AbstractKernel.class);
+	
+	protected SetMultimap<AtomEventFramework, GroundKernelStore> frameworks;
+	
+	public AbstractKernel() {
+		this.frameworks = HashMultimap.create();
+	}
+	
+	@Override
+	public void notifyAtomEvent(AtomEvent event) {
+		for (GroundKernelStore gks : frameworks.get(event.getEventFramework()))
+			notifyAtomEvent(event, gks);
+	}
+	
+	/**
+	 * Handles an AtomEvent using the specified GroundKernelStore.
+	 * <p>
+	 * Kernels need to have registered to handle this event with an
+	 * AtomEventFramework.
+	 * @param event		the AtomEvent that occurred
+	 * @param gks		the GroundKernelStore to use
+	 */
+	protected abstract void notifyAtomEvent(AtomEvent event, GroundKernelStore gks);
+
+	@Override
+	public void registerForAtomEvents(AtomEventFramework manager,
+			GroundKernelStore gks) {
+		if (!frameworks.containsKey(manager)) {
+			frameworks.put(manager, gks);
+			registerForAtomEvents(manager);
+		} else if (!frameworks.put(manager, gks)) {
+			log.debug("Attempted to register for AtomEventFramework that has" +
+					" already been registered.");
+		}
+	}
+	
+	/**
+	 * Registers with a specific AtomEventFramework to handle atom events.
+	 * <p>
+	 * Subclasses are expected to register for the same AtomEvents and Predicates
+	 * at all times. Kernels that do not fit this behavior should not extend
+	 * this class.
+	 * @param eventFramework	The event framework to register with
+	 */
+	protected abstract void registerForAtomEvents(AtomEventFramework eventFramework);
+
+	@Override
+	public void unregisterForAtomEvents(AtomEventFramework manager,
+			GroundKernelStore gks) {
+		if (!frameworks.remove(manager, gks))
+			log.debug("Attempted to unregister with AtomEventFramework that is" +
+					" not registered.");
+		if (!frameworks.containsKey(manager))
+			unregisterForAtomEvents(manager);
+	}
+	
+	
+	/**
+	 * Unregisters from a specific AtomEventFrameWork to no longer handle atom events.
+	 * <p>
+	 * Subclasses are expected to have registered for the same AtomEvents and Predicates
+	 * at all times. Kernels that do not fit this behavior should not extend this class.
+	 * @param eventFramework	The event framework to unregister from
+	 */
+	protected abstract void unregisterForAtomEvents(AtomEventFramework eventFramework);
+	
+	@Override
+	public Kernel clone() throws CloneNotSupportedException {
+		throw new CloneNotSupportedException();
+	}
+}
