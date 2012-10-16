@@ -24,7 +24,7 @@ import edu.umd.cs.psl.model.predicate.StandardPredicate;
  * A GroundAtom with a {@link StandardPredicate}.
  * <p>
  * A StandardAtom has a truth value that is either observed or inferred, i.e.,
- * it is not defined by a function.
+ * not defined by a function.
  */
 abstract public class StandardAtom extends GroundAtom {
 

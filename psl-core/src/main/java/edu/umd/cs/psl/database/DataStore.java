@@ -17,23 +17,31 @@
 package edu.umd.cs.psl.database;
 
 import java.util.List;
+import java.util.Set;
 
 import edu.umd.cs.psl.database.loading.Inserter;
 import edu.umd.cs.psl.database.loading.Updater;
+import edu.umd.cs.psl.model.atom.StandardAtom;
 import edu.umd.cs.psl.model.predicate.Predicate;
+import edu.umd.cs.psl.model.predicate.SpecialPredicate;
+import edu.umd.cs.psl.model.predicate.StandardPredicate;
 
 /**
- * Organizes Atoms into {@link Partition Partitions} and
- * makes them available via {@link Database Databases}.
+ * Organizes {@link GroundAtom GroundAtoms} into {@link Partition Partitions}
+ * and makes them available via {@link Database Databases}.
  */
 public interface DataStore {
 
 	/**
-	 * Registers a Predicate so that {@link Atom Atoms} of that Predicate
-	 * can be stored in this DataStore.
+	 * Registers a Predicate so that {@link GroundAtom GroundAtoms} of that
+	 * Predicate can be stored in and/or used by this DataStore.
 	 * <p>
-	 * The {@link DataFormat DataFormats} of the arguments will be determined
+	 * If the Predicate is a {@link StandardPredicate}, then its Atoms will
+	 * be stored in this DataStore. In that case, the
+	 * {@link DataFormat DataFormats} of the arguments will be determined
 	 * by {@link DataFormat#getDefaultFormat(Predicate, boolean)}.
+	 * <p>
+	 * All {@link SpecialPredicate SpecialPredicates} are already registered.
 	 * 
 	 * @param predicate  the predicate to register
 	 * @param argnames  names of arguments
@@ -41,8 +49,8 @@ public interface DataStore {
 	public void registerPredicate(Predicate predicate, List<String> argnames);
 	
 	/**
-	 * Registers a Predicate so that {@link Atom Atoms} of that Predicate
-	 * can be stored in this DataStore.
+	 * Registers a StandardPredicate so that {@link StandardAtom StandardAtoms}
+	 * of that Predicate can be stored in and used by this DataStore.
 	 * 
 	 * @param predicate  the predicate to register
 	 * @param argnames  names of arguments
@@ -63,7 +71,7 @@ public interface DataStore {
 	public Database getDatabase(Partition write, Partition... read);
 	
 	/**
-	 * Creates an Inserter for inserting new {@link Atom} information
+	 * Creates an Inserter for inserting new {@link StandardAtom} information
 	 * into a {@link Partition}.
 	 * 
 	 * @param predicate  the Predicate of the Atoms to be inserted
@@ -71,10 +79,10 @@ public interface DataStore {
 	 * @return the Inserter
 	 * @throws IllegalArgumentException  if partition is in use
 	 */
-	public Inserter getInserter(Predicate predicate, Partition partition);
+	public Inserter getInserter(StandardPredicate predicate, Partition partition);
 	
 	/**
-	 * Creates an Updater for updating {@link Atom} information
+	 * Creates an Updater for updating {@link StandardAtom} information
 	 * in a {@link Partition}.
 	 * 
 	 * @param predicate  the Predicate of the Atoms to be updated
@@ -82,7 +90,12 @@ public interface DataStore {
 	 * @return the Updater
 	 * @throws IllegalArgumentException  if partition is in use
 	 */
-	public Updater getUpdater(Predicate predicate, Partition partition);
+	public Updater getUpdater(StandardPredicate predicate, Partition partition);
+	
+	/**
+	 * @return a set of Predicates registered with this DataStore
+	 */
+	public Set<Predicate> getRegisteredPredicates();
 	
 	/**
 	 * Deletes all {@link Atom Atoms} in a Partition.
@@ -95,6 +108,7 @@ public interface DataStore {
 	
 	/**
 	 * Releases all resources and locks obtained by this DataStore.
+	 * 
 	 * @throws IllegalStateException  if any Partitions are in use
 	 */
 	public void close();

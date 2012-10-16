@@ -37,14 +37,14 @@ import edu.umd.cs.psl.model.predicate.Predicate;
  * {@link AtomEvent.Listener} implementations can register to be notified of these events.
  * Listeners must register with a {@link GroundKernelStore} so that any GroundKernels
  * that result from the event can be added to it. A Listener can register with multiple
- * GroundKernelStores. Note that if a {@link GroundAtom} is not loaded into memory via
- * {@link #getAtom(Predicate, GroundTerm[])}, then no consideration event can be
- * generated.
+ * GroundKernelStores.
  * <p>
  * For each event, an {@link AtomJob} is added to the job queue. Consideration
  * events are added during {@link #getAtom(Predicate, GroundTerm[])} and activation
  * events are added during {@link #checkToActivate()} and
- * {@link #activateAtom(RandomVariableAtom)}.
+ * {@link #activateAtom(RandomVariableAtom)}. Note that if a {@link GroundAtom} is
+ * not loaded into memory via {@link #getAtom(Predicate, GroundTerm[])}, then no
+ * consideration event can be generated.
  * <p>
  * Calling {@link #workOffJobQueue()} will cause the appropriate Listeners to be
  * notified of all events in the queue. Additionally, each activated RandomVariableAtom

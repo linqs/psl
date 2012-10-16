@@ -23,8 +23,8 @@ import edu.umd.cs.psl.model.kernel.GroundKernel;
  * An event related to a {@link GroundAtom}.
  * <p>
  * An AtomEvent provides three pieces of information in addition to the type of
- * event: the {@link GroundAtom} that generated the event, the {@link AtomEventFramework}
- * that handled the event, and the {@link GroundKernelStore} that should be
+ * event: the {@link GroundAtom} that caused the event, the {@link AtomEventFramework}
+ * that created the event, and the {@link GroundKernelStore} that should be
  * used to store any {@link GroundKernel GroundKernels} that are created while
  * responding to the event.
  */
