@@ -180,7 +180,7 @@ public class AtomEventFramework implements AtomManager {
 	public int checkToActivate() {
 		int activated = 0;
 		for (RandomVariableAtom atom : db.getAtomCache().getCachedRandomVariableAtoms()) {
-			if (!activeAtoms.contains(atom) && atom.value >= activationThreshold) {
+			if (!activeAtoms.contains(atom) && atom.getValue() >= activationThreshold) {
 				activated++;
 				activateAtom(atom);
 			}
