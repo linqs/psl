@@ -20,7 +20,7 @@ import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
 import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
-import edu.umd.cs.psl.reasoner.function.MutableAtomFunctionVariable;
+//import edu.umd.cs.psl.reasoner.function.MutableAtomFunctionVariable;
 
 /**
  * A {@link StandardAtom} that does not exist in one of its {@link Database}'s read
