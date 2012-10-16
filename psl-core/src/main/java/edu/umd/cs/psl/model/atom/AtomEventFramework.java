@@ -16,14 +16,21 @@
  */
 package edu.umd.cs.psl.model.atom;
 
+import java.util.EnumMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.Set;
 
-import edu.umd.cs.psl.application.groundkernelstore.GroundKernelStore;
+import com.google.common.collect.SetMultimap;
+import com.google.common.collect.HashMultimap;
+
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.predicate.Predicate;
+
 
 /**
  * AtomManager with support for {@link AtomEvent AtomEvents}. 
@@ -35,9 +42,6 @@ import edu.umd.cs.psl.model.predicate.Predicate;
  * since being loaded into memory (including being initialized above that threshold).
  * <p>
  * {@link AtomEvent.Listener} implementations can register to be notified of these events.
- * Listeners must register with a {@link GroundKernelStore} so that any GroundKernels
- * that result from the event can be added to it. A Listener can register with multiple
- * GroundKernelStores.
  * <p>
  * For each event, an {@link AtomJob} is added to the job queue. Consideration
  * events are added during {@link #getAtom(Predicate, GroundTerm[])} and activation
@@ -67,12 +71,18 @@ public class AtomEventFramework implements AtomManager {
 	/** Default value for ACTIVATION_THRESHOLD_KEY property */
 	public static final double ACTIVATION_THRESHOLD_DEFAULT = 0.01;
 	
+	public static final Predicate AllPredicates = null;
+	
 	private final Database db;
 	private final double activationThreshold;
+	private Queue<AtomJob> jobQueue;
+	private EnumMap<AtomEvent,SetMultimap<Predicate,AtomEvent.Listener>> atomListeners;
 	
 	public AtomEventFramework(Database db, ConfigBundle config) {
 		this.db = db;
 		activationThreshold = config.getDouble(ACTIVATION_THRESHOLD_KEY, ACTIVATION_THRESHOLD_DEFAULT);
+		jobQueue = new LinkedList<AtomJob>();
+		atomListeners = new EnumMap<AtomEvent,SetMultimap<Predicate,AtomEvent.Listener>>(AtomEvent.class);
 	}
 	
 	/**
@@ -82,58 +92,62 @@ public class AtomEventFramework implements AtomManager {
 	 */
 	@Override
 	public GroundAtom getAtom(Predicate p, GroundTerm[] arguments) {
-		// TODO Auto-generated method stub
-		return null;
+		Atom check = db.getAtomCache().getCachedAtom(new QueryAtom(p, arguments));
+		GroundAtom atom = db.getAtom(p,  arguments);
+		if (check == null) {
+			AtomEvent event = AtomEvent.ConsideredGroundAtom;
+			event.setAtom(atom);
+			addAtomJob(atom, event);
+		}
+		return atom;
 	}
 	
 	/**
-	 * Registers a listener and {@link GroundKernelStore} for any events in a set.
+	 * Registers a listener for any events in a set.
 	 * 
 	 * @param events  set of events for which to listen
 	 * @param listener  object to register
-	 * @param gks  where any GroundKernels resulting from such an event will be stored
 	 * @see AtomEvent
 	 */
-	public void registerAtomEventListener(Set<AtomEvent> events, AtomEvent.Listener listener,
-			GroundKernelStore gks) {
-		
+	public void registerAtomEventListener(Set<AtomEvent> events, AtomEvent.Listener listener) {
+		this.registerAtomEventListener(events, AllPredicates, listener);
 	}
 	
 	/**
-	 * Registers a listener and {@link GroundKernelStore} for any events in a set
-	 * related to {@link GroundAtom GroundAtoms} with a given Predicate.
+	 * Registers a listener for any events in a set related to 
+	 * {@link GroundAtom GroundAtoms} with a given Predicate.
 	 * 
 	 * @param events  set of events for which to listen
 	 * @param p  Predicate of Atoms for which to listen for events
 	 * @param listener  object to register
-	 * @param gks  where any GroundKernels resulting from such an event will be stored
 	 * @see AtomEvent
 	 */
-	public void registerAtomEventListener(Set<AtomEvent> events, Predicate p, AtomEvent.Listener listener,
-			GroundKernelStore gks) {
-		
+	public void registerAtomEventListener(Set<AtomEvent> events, Predicate p, AtomEvent.Listener listener) {
+		for (AtomEvent event : events) {
+			if (!atomListeners.containsKey(event)) {
+				SetMultimap<Predicate,AtomEvent.Listener> map = HashMultimap.create();
+				atomListeners.put(event, map);
+			}
+			atomListeners.get(event).put(p, listener);
+		}
 	}
 	
 	/**
 	 * Unregisters a listener for any events in a set.
 	 * <p>
-	 * If the listener has registered using multiple GroundKernelStores, all of
-	 * its registrations will be removed.
 	 * 
 	 * @param events  set of events for which to stop listening
 	 * @param listener  object to unregister
 	 * @see AtomEvent
 	 */
 	public void unregisterAtomEventListener(Set<AtomEvent> events, AtomEvent.Listener listener) {
-		
+		this.unregisterAtomEventListener(events, AllPredicates, listener);
 	}
 	
 	/**
 	 * Unregisters a listener for any events in a set related to {@link GroundAtom GroundAtoms}
 	 * with a given Predicate.
 	 * <p>
-	 * If the listener has registered using multiple GroundKernelStores, all of
-	 * its registrations for the given Predicate will be removed.
 	 * 
 	 * @param events  set of events for which to stop listening
 	 * @param p  Predicate of Atoms for which to stop listening
@@ -141,35 +155,10 @@ public class AtomEventFramework implements AtomManager {
 	 * @see AtomEvent
 	 */
 	public void unregisterAtomEventListener(Set<AtomEvent> events, Predicate p, AtomEvent.Listener listener) {
-		
-	}
-	
-	/**
-	 * Unregisters a listener and GroundKernelStore pair for any events in a set.
-	 * 
-	 * @param events  set of events for which to stop listening
-	 * @param listener  listener to unregister
-	 * @param gks  GroundKernelStore to unregister
-	 * @see AtomEvent
-	 */
-	public void unregisterAtomEventListener(Set<AtomEvent> events, AtomEvent.Listener listener,
-			GroundKernelStore gks) {
-		
-	}
-	
-	/**
-	 * Unregisters a listener and GroundKernelStore pair for any events in a set
-	 * related to {@link GroundAtom GroundAtoms} with a given Predicate.
-	 * 
-	 * @param events  set of events for which to stop listening
-	 * @param p  Predicate of Atoms for which to stop listening
-	 * @param listener  listener to unregister
-	 * @param gks  GroundKernelStore to unregister
-	 * @see AtomEvent
-	 */
-	public void unregisterAtomEventListener(Set<AtomEvent> events, Predicate p, AtomEvent.Listener listener,
-			GroundKernelStore gks) {
-		
+		for (AtomEvent event : events) 
+			if (atomListeners.containsKey(event))
+				atomListeners.get(event).remove(p, listener);		
+		// TODO: write to debug log if atomListeners is missing key
 	}
 	
 	/**
@@ -181,6 +170,7 @@ public class AtomEventFramework implements AtomManager {
 	 * @see AtomManager#workOffJobQueue()
 	 */
 	public int checkToActivate() {
+		//TODO: make this work
 		return 0;
 	}
 	
@@ -196,7 +186,7 @@ public class AtomEventFramework implements AtomManager {
 	 *                                       framework's Database
 	 */
 	public void activateAtom(RandomVariableAtom atom) {
-		
+		// TODO: make this work
 	}
 	
 	/**
@@ -206,11 +196,31 @@ public class AtomEventFramework implements AtomManager {
 	 * so that listeners will be notified.
 	 */
 	public void workOffJobQueue() {
-		
+		while (!jobQueue.isEmpty()) {
+			AtomJob job = jobQueue.poll();
+			handleAtomEvent(job);
+		}
 	}
 
 	@Override
 	public Database getDatabase() {
 		return db;
+	}
+	
+	private void addAtomJob(Atom atom, AtomEvent event) {
+		jobQueue.add(new AtomJob(atom, event));
+	}
+	
+	private void handleAtomEvent(AtomJob job) {
+		Atom atom = job.getAtom();
+		AtomEvent event = job.getEvent();
+	
+		/* notify all listeners registered by predicate */
+		for (AtomEvent.Listener listener: atomListeners.get(event).get(atom.getPredicate())) 
+			listener.notifyAtomEvent(event);
+				
+		/* notify all listeners registered for all predicates */		
+		for (AtomEvent.Listener listener: atomListeners.get(event).get(AllPredicates)) 
+			listener.notifyAtomEvent(event);
 	}
 }
