@@ -45,6 +45,10 @@ import edu.umd.cs.psl.model.predicate.StandardPredicate;
  * A Database writes to and reads from one {@link Partition} of a DataStore
  * and can read from additional Partitions. The write Partition of a Database
  * may not be a read (or write) Partition of any other Database.
+ * <p>
+ * A Database contains an {@link AtomCache} which is used to store GroundAtoms
+ * that have been loaded into memory and ensure these objects are unique.
+ * The AtomCache is accessible via {@link #getAtomCache()}.
  * 
  * <h2>GroundAtom Types</h2>
  * 
@@ -141,6 +145,11 @@ public interface Database {
 	 * @return the DataStore backing this Database
 	 */
 	public DataStore getDataStore();
+	
+	/**
+	 * @return the Database's AtomCache
+	 */
+	public AtomCache getAtomCache();
 	
 	/**
 	 * Releases the {@link Partition Partitions} used by this Database.
