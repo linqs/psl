@@ -180,8 +180,8 @@ public class AtomCache {
 	 * @return the new RandomVariableAtom
 	 */
 	public RandomVariableAtom initializeRandomVariableAtom(StandardPredicate p,
-			GroundTerm[] args, double value, double confidence, boolean fixed) {
-		RandomVariableAtom atom = new RandomVariableAtom(p, args, db, value, confidence, fixed);
+			GroundTerm[] args, double value, double confidence) {
+		RandomVariableAtom atom = new RandomVariableAtom(p, args, db, value, confidence);
 		QueryAtom key = new QueryAtom(p, args);
 		cache.put(key, atom);
 		return atom;
