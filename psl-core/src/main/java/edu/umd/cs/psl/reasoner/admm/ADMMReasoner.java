@@ -77,7 +77,7 @@ public class ADMMReasoner implements Reasoner {
 	 */
 	public static final String MAX_ITER_KEY = CONFIG_PREFIX + ".maxiterations";
 	/** Default value for MAX_ITER_KEY property */
-	public static final int MAX_ITER_DEFAULT = 2000;
+	public static final int MAX_ITER_DEFAULT = 10000;
 	
 	/**
 	 * Key for non-negative double property. Controls step size. Higher

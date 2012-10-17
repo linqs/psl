@@ -16,28 +16,62 @@
  */
 package edu.umd.cs.psl.reasoner.admm;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.util.Vector;
 
+import org.apache.commons.configuration.ConfigurationException;
 import org.junit.Before;
 import org.junit.Test;
 
-import edu.umd.cs.psl.config.EmptyBundle;
+import edu.umd.cs.psl.config.ConfigBundle;
+import edu.umd.cs.psl.config.ConfigManager;
 
 public class LinearLossTermTest {
 	
-	ADMMReasoner reasoner;
-
+	private ConfigBundle config;
+	
 	@Before
-	public void setUp() throws Exception {
-		
+	public final void setUp() throws ConfigurationException {
+		ConfigManager manager = ConfigManager.getManager();
+		config = manager.getBundle("dummy");
 	}
 
 	@Test
 	public void testMinimize() {
-		reasoner = new ADMMReasoner(null, new EmptyBundle());
-		reasoner.z = new Vector<Double>();
+		/*
+		 * Problem 1
+		 */
+		double[] z = {0.4, 0.5};
+		double[] y = {0.0, 0.0};
+		double[] lowerBounds = {0.0, 0.0};
+		double[] upperBounds = {1.0, 1.0};
+		double[] coeffs = {0.3, -1.0};
+		double weight = 1.0;
+		double stepSize = 1.0;
+		double[] expected = {0.1, 1.0};
+		testProblem(z, y, lowerBounds, upperBounds, coeffs, weight, stepSize, expected);
+	}
+	
+	private void testProblem(double[] z, double[] y, double[] lb, double[] ub
+			, double[] coeffs, double weight, final double stepSize
+			, double[] expected) {
+		config.setProperty("admmreasoner.stepsize", stepSize);
+		ADMMReasoner reasoner = new ADMMReasoner(null, config);
+		reasoner.z = new Vector<Double>(z.length);
+		for (int i = 0; i < z.length; i++)
+			reasoner.z.add(z[i]);
+		
+		int[] zIndices = new int[z.length];
+		for (int i = 0; i < z.length; i++)
+			zIndices[i] = i;
+		LinearLossTerm term = new LinearLossTerm(reasoner, zIndices, lb, ub, coeffs, weight);
+		for (int i = 0; i < z.length; i++)
+			term.y[i] = y[i];
+		term.minimize();
+		
+		for (int i = 0; i < z.length; i++)
+			assertEquals(expected[i], term.x[i], 5e-5);
 	}
 
 }

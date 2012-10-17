@@ -72,6 +72,22 @@ public class LinearConstraintTermTest {
 		stepSize = 1.0;
 		expected = new double[] {0.6, 0.4};
 		testProblem(z, y, lowerBounds, upperBounds, coeffs, constant, comparator, stepSize, expected);
+		
+		/*
+		 * Problem 3
+		 * 
+		 * Equality constraint
+		 */
+		z = new double[] {0.7, 0.5};
+		y = new double[] {0.0, 0.0};
+		lowerBounds = new double[] {0.0, 0.0};
+		upperBounds = new double[] {1.0, 1.0};
+		coeffs = new double[] {1.0, -1.0};
+		constant = 0.0;
+		comparator = FunctionComparator.Equality;
+		stepSize = 1.0;
+		expected = new double[] {0.6, 0.6};
+		testProblem(z, y, lowerBounds, upperBounds, coeffs, constant, comparator, stepSize, expected);
 	}
 	
 	private void testProblem(double[] z, double[] y, double[] lb, double[] ub

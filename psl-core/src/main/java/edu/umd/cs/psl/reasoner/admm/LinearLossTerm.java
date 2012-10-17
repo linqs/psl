@@ -38,17 +38,16 @@ class LinearLossTerm extends HyperplaneTerm {
 		double a[] = new double[x.length];
 		
 		for (int i = 0; i < a.length; i++) {
-			a[i] = y[i] - reasoner.stepSize * reasoner.z.get(zIndices[i]);
-			a[i] += weight * coeffs[i];
-			a[i] /= reasoner.stepSize / -2;
+			a[i] = reasoner.z.get(zIndices[i]) - y[i] / reasoner.stepSize;
+			a[i] -= weight * coeffs[i] / reasoner.stepSize;
 		}
 		
 		/* Projects on to a box */
 		for (int i = 0; i < x.length; i++)
-			if (a[i] < 0)
-				a[i] = 0;
-			else if (a[i] > 1)
-				a[i] = 1;
+			if (a[i] < lb[i])
+				a[i] = lb[i];
+			else if (a[i] > ub[i])
+				a[i] = ub[i];
 		
 		/* Updates the local primal variables */
 		for (int i = 0; i < a.length; i++)
