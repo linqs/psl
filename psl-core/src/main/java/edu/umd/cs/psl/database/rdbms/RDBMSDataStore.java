@@ -176,7 +176,7 @@ public class RDBMSDataStore implements DataStore {
 	}
 
 	@Override
-	public Inserter getInserter(Predicate predicate, Partition partitionID) {
+	public Inserter getInserter(StandardPredicate predicate, Partition partitionID) {
 		if (!predicates.containsKey(predicate)) throw new IllegalArgumentException("Unknown predicate specified: " + predicate);
 		if (writePartitionIDs.contains(partitionID) || openDatabases.containsKey(partitionID))
 			throw new IllegalStateException("Partition ["+partitionID+"] is already in use. Can only be modified via Updater!");
@@ -184,7 +184,7 @@ public class RDBMSDataStore implements DataStore {
 	}
 	
 	@Override
-	public Updater getUpdater(Predicate predicate, Partition partitionID) {
+	public Updater getUpdater(StandardPredicate predicate, Partition partitionID) {
 		throw new UnsupportedOperationException("Not yet implemented");
 	}
 	
@@ -316,18 +316,6 @@ public class RDBMSDataStore implements DataStore {
 			throw new AssertionError(e);
 		}
 	
-	}
-
-	@Override
-	public Inserter getInserter(StandardPredicate predicate, Partition partition) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public Updater getUpdater(StandardPredicate predicate, Partition partition) {
-		// TODO Auto-generated method stub
-		return null;
 	}
 
 	@Override

@@ -91,7 +91,7 @@ public class RDBMSDatabase implements Database {
 	/**
 	 * Which predicates are closed in this database.
 	 */
-	protected final Set<Predicate> closedPredicates;
+	protected final Set<StandardPredicate> closedPredicates;
 
 	/**
 	 * The partition ID in which this database instance writes. It is
