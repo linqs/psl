@@ -26,6 +26,8 @@ import edu.umd.cs.psl.model.argument.type.ArgumentTypes;
 /**
  * A commonly used FunctionalPredicate.
  * <p>
+ * All specific subclasses/instances are provided here.
+ * <p>
  * A SpecialPredicate should be preferred over a user-made FunctionalPredicate
  * or ExternalFunctionalPredicate because some PSL components can evaluate
  * SpecialPredicates more efficiently. For example, a {@link Database} backed
@@ -34,73 +36,71 @@ import edu.umd.cs.psl.model.argument.type.ArgumentTypes;
  * <p>
  * The names of SpecialPredicates begin with '#'.
  */
-public enum SpecialPredicate implements FunctionalPredicate {
+abstract public class SpecialPredicate extends FunctionalPredicate {
+	
+	private SpecialPredicate(String name, ArgumentType[] types) {
+		super(name, types);
+	}
 	
 	/** True if arguments are equal. */
-	Equal {
-
+	public static final SpecialPredicate Equal
+		= new SpecialPredicate("Special: Equal", new ArgumentType[] {ArgumentTypes.Entity, ArgumentTypes.Entity}) {
+		
 		@Override
 		public double computeValue(GroundTerm... args) {
-			assert args.length==2;
-			assert args[0] instanceof Entity && args[1] instanceof Entity;
-			return (args[0].equals(args[1])) ? 1.0 : 0.0;
+			if (args.length==2 && args[0] instanceof Entity && args[1] instanceof Entity)
+				return (args[0].equals(args[1])) ? 1.0 : 0.0;
+			else
+				throw new IllegalArgumentException(getName() + " acts on two Entities.");
 		}
 
 		@Override
 		public String getName() {
 			return "#Equal";
 		}
-		
-	},
+	};
 	
 	/** True if arguments are not equal. */
-	Unequal {
+	public static final SpecialPredicate NotEqual
+		= new SpecialPredicate("Special: NotEqual", new ArgumentType[] {ArgumentTypes.Entity, ArgumentTypes.Entity}) {
 
 		@Override
 		public double computeValue(GroundTerm... args) {
-			assert args.length==2;
-			assert args[0] instanceof Entity && args[1] instanceof Entity;
-			return (!args[0].equals(args[1])) ? 1.0 : 0.0;
+			if (args.length==2 && args[0] instanceof Entity && args[1] instanceof Entity)
+				return (!args[0].equals(args[1])) ? 1.0 : 0.0;
+			else
+				throw new IllegalArgumentException(getName() + " acts on two Entities.");
 		}
 
 		@Override
 		public String getName() {
 			return "#NotEqual";
-		}		
-	},
+		}
+	};
 
 	/**
 	 * True if the first argument's {@link UniqueID} is less than the second's.
-	 * 
+	 * <p>
 	 * Used to ground only one of a symmetric pair of ground rules.
 	 */
-	NonSymmetric {
+	public static final SpecialPredicate NonSymmetric
+		= new SpecialPredicate("Special: NonSymmetric", new ArgumentType[] {ArgumentTypes.Entity, ArgumentTypes.Entity}) {
 		
 		@Override
 		public double computeValue(GroundTerm... args) {
-			assert args.length==2;
-			assert args[0] instanceof Entity && args[1] instanceof Entity;
-			UniqueID uid1 = ((Entity)args[0]).getID();
-			UniqueID uid2 = ((Entity)args[1]).getID();
-			return (uid1.compareTo(uid2) < 0) ? 1.0 : 0.0;
+			if (args.length==2 && args[0] instanceof Entity && args[1] instanceof Entity) {
+				UniqueID uid1 = ((Entity)args[0]).getID();
+				UniqueID uid2 = ((Entity)args[1]).getID();
+				return (uid1.compareTo(uid2) < 0) ? 1.0 : 0.0;
+			}
+			else
+				throw new IllegalArgumentException(getName() + " acts on two Entities.");
 		}
 
 		@Override
 		public String getName() {
 			return "#NonSymmetric";
 		}
-		
 	};
-	
-	@Override
-	public ArgumentType getArgumentType(int position) {
-		assert position>=0 && position<2;
-		return ArgumentTypes.Entity;
-	}
-
-	@Override
-	public int getArity() {
-		return 2;
-	}
 	
 }

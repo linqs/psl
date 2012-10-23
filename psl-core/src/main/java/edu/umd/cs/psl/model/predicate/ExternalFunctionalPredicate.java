@@ -25,7 +25,7 @@ import edu.umd.cs.psl.model.function.ExternalFunction;
  * 
  * @author Matthias Broecheler
  */
-public class ExternalFunctionalPredicate extends AbstractPredicate implements FunctionalPredicate {
+public class ExternalFunctionalPredicate extends FunctionalPredicate {
 
 	private final ExternalFunction extFun;
 	

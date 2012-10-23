@@ -18,13 +18,13 @@ package edu.umd.cs.psl.model.predicate;
 
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.argument.type.ArgumentType;
-import edu.umd.cs.psl.model.atom.Atom;
+import edu.umd.cs.psl.model.atom.GroundAtom;
 
 /**
- * Basic Predicate that can be made open and make {@link Atom Atoms}
- * that can be persisted in a {@link Database}.
+ * Predicate of {@link GroundAtom GroundAtoms} that can be persisted in a
+ * {@link Database}.
  */
-public class StandardPredicate extends AbstractPredicate {
+public class StandardPredicate extends Predicate {
 	
 	/**
 	 * Sole constructor.

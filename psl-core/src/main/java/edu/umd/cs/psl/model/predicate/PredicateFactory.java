@@ -26,7 +26,7 @@ import edu.umd.cs.psl.model.function.ExternalFunction;
 
 /**
  * A factory for Predicates.
- * 
+ * <p>
  * PredicateFactories act as namespaces, so a Predicate's name must be unique
  * among those made by a particular factory.
  */

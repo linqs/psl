@@ -17,18 +17,35 @@
 package edu.umd.cs.psl.model.predicate;
 
 import edu.umd.cs.psl.model.argument.GroundTerm;
+import edu.umd.cs.psl.model.argument.type.ArgumentType;
 import edu.umd.cs.psl.model.atom.Atom;
+import edu.umd.cs.psl.model.atom.GroundAtom;
+import edu.umd.cs.psl.model.atom.ObservedAtom;
 
 /**
- * A Predicate with {@link Atom Atoms} that have truth values implicitly defined
- * by a function of their arguments.
- * 
- * Before implementing this interface directly, users should consider using an
- * {@link ExternalFunctionalPredicate} or a {@link SpecialPredicate}.
+ * A Predicate with {@link GroundAtom GroundAtoms} that have truth values defined
+ * by a function of their arguments and the {@link ObservedAtom ObservedAtoms}
+ * of the closed {@link StandardPredicate StandardPredicates} of the GroundAtoms'
+ * Databases.
+ * <p>
+ * Before extending this class, users should consider using a
+ * {@link SpecialPredicate} or an {@link ExternalFunctionalPredicate}.
  * 
  * @author Matthias Broecheler
  */
-public interface FunctionalPredicate extends Predicate {
+abstract public class FunctionalPredicate extends Predicate {
+
+	/**
+	 * Sole constructor.
+	 * 
+	 * @param name  name for this predicate
+	 * @param types  types for each of the predicate's arguments
+	 * @throws IllegalArgumentException  if name begins with '#'
+	 * @see PredicateFactory
+	 */
+	FunctionalPredicate(String name, ArgumentType[] types) {
+		super(name, types);
+	}
 
 	/**
 	 * Computes the truth value of the {@link Atom} of this Predicate
@@ -36,7 +53,8 @@ public interface FunctionalPredicate extends Predicate {
 	 * 
 	 * @param args  the arguments for which the truth value will be computed
 	 * @return the computed truth value
+	 * @throws IllegalArgumentException  if args is not valid
 	 */
-	public double computeValue(GroundTerm... args);
+	abstract public double computeValue(GroundTerm... args);
 	
 }
