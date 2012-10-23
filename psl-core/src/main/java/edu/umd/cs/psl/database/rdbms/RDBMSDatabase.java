@@ -44,10 +44,9 @@ import com.healthmarketscience.sqlbuilder.InsertQuery;
 import com.healthmarketscience.sqlbuilder.SelectQuery;
 import com.healthmarketscience.sqlbuilder.UpdateQuery;
 
-import edu.umd.cs.psl.database.AtomRecord;
+import edu.umd.cs.psl.database.DataStore;
 import edu.umd.cs.psl.database.Database;
-import edu.umd.cs.psl.database.DatabaseEventObserver;
-import edu.umd.cs.psl.database.PSLValue;
+import edu.umd.cs.psl.database.DatabaseQuery;
 import edu.umd.cs.psl.database.Partition;
 import edu.umd.cs.psl.database.ResultList;
 import edu.umd.cs.psl.database.UniqueID;
@@ -62,11 +61,15 @@ import edu.umd.cs.psl.model.argument.type.ArgumentType;
 import edu.umd.cs.psl.model.argument.type.ArgumentTypes;
 import edu.umd.cs.psl.model.argument.type.VariableTypeMap;
 import edu.umd.cs.psl.model.atom.Atom;
+import edu.umd.cs.psl.model.atom.AtomCache;
+import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.QueryAtom;
+import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.atom.VariableAssignment;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.function.ExternalFunction;
 import edu.umd.cs.psl.model.predicate.Predicate;
+import edu.umd.cs.psl.model.predicate.StandardPredicate;
 
 public class RDBMSDatabase implements Database {
 	
@@ -83,7 +86,13 @@ public class RDBMSDatabase implements Database {
 	 * define how to map predicates onto relational tables.
 	 */
 	private final Map<Predicate,RDBMSPredicateHandle> predicateHandles;
+
 	
+	/**
+	 * Which predicates are closed in this database.
+	 */
+	protected final Set<StandardPredicate> closedPredicates;
+
 	/**
 	 * The partition ID in which this database instance writes. It is
 	 * assumed that each database has a unique writeID.
@@ -111,13 +120,7 @@ public class RDBMSDatabase implements Database {
 	 * The parent RDBMSDataStore from which this database instance was derived.
 	 */
 	private final RDBMSDataStore parentDataStore;
-	
-	/**
-	 * An optional AtomEventObserver to which the database relays changes to its data.
-	 * May be NULL.
-	 */
-	private DatabaseEventObserver dbObserver;
-	
+
 	/**
 	 * Set of entities for a given {@link ArgumentType} or null/empty if not yet initialized
 	 * TODO: This data structure needs to be updated when facts in the database are changed and
@@ -127,36 +130,23 @@ public class RDBMSDatabase implements Database {
 	
 	private final ArgumentFactory argFactory;
 	
-	public RDBMSDatabase(RDBMSDataStore parent, Connection con, Partition write, Partition[] reads) {
+	public RDBMSDatabase(RDBMSDataStore parent, Connection con, Partition write, Partition[] reads, Set<StandardPredicate> closedPredicates) {
 		parentDataStore = parent;
 		db = con;
 		writePartition = write;
 		writeID = writePartition.getID();
 		readPartitions = reads;
+		this.closedPredicates = closedPredicates;
 		readIDs = new ArrayList<Integer>(readPartitions.length+1);
 		for (int i=0;i<readPartitions.length;i++) readIDs.add(readPartitions[i].getID());
 		if (!readIDs.contains(writeID)) readIDs.add(writeID);
 		predicateHandles = new HashMap<Predicate,RDBMSPredicateHandle>();
 		argFactory = new ArgumentFactory();
 		allEntities = HashMultimap.create();
-		dbObserver=null;
 		isPriorInitialized = defaultisPriorInitialized;
 		registerFunctionAlias();
 	}
 
-	@Override
-	public void unregisterDatabaseEventObserver(DatabaseEventObserver atomEvents) {
-		if (dbObserver!=atomEvents) throw new IllegalStateException("Specified observer has not been registered for this database!");
-		dbObserver=null;
-	}
-	
-	@Override
-	public void registerDatabaseEventObserver(DatabaseEventObserver atomEvents) {
-		if (dbObserver!=null) throw new IllegalStateException("An observer has already been registered for this database!");
-		dbObserver=atomEvents;
-	}
-
-	
 	public void registerPredicate(RDBMSPredicateHandle ph) {
 		if (predicateHandles.containsKey(ph.predicate())) throw new IllegalArgumentException("Predicate has already been registered!");
 		predicateHandles.put(ph.predicate(), ph);
@@ -526,7 +516,6 @@ public class RDBMSDatabase implements Database {
 	public void close() {
 		parentDataStore.closeDatabase(this,writePartition,readPartitions);
 		allEntities.clear();
-		dbObserver=null;
 	}
 	
 		
@@ -591,6 +580,139 @@ public class RDBMSDatabase implements Database {
 			} else throw new IllegalArgumentException("Unsupported type encountered: " + t);
 		}
 		return extFun.getValue(arguments);
+	}
+
+	@Override
+	public GroundAtom getAtom(Predicate p, GroundTerm[] arguments) {
+		RDBMSPredicateHandle ph = getHandle(p);
+		boolean notFound = false;
+		//if (!isPriorInitialized && !ph.isClosed()) notFound=true;
+		if (!isPriorInitialized && closedPredicates.contains(p)) 
+			notFound=true;
+		GroundAtom atom=null;
+		
+		/*
+		 * Temporary notes:
+		 * 
+		 * We will use a list of predicates to track which ones are open from the perspective of this database.
+		 * 
+		 * When we look up whether a predicate is open, we depend on the equals methods in Predicate classes to determine membership in the set of open predicates.
+		 * 
+		 * Predicates no longer have a list of values; they simply have one value.
+		 * 
+		 *  
+		 */
+		
+		if (!notFound) {
+			SelectQuery q = queryAtom(p,arguments);
+			q.addCondition(new InCondition(new CustomSql(ph.partitionColumn()),readIDs));
+			String query = q.validate().toString();
+			log.trace(query);
+	
+			try {
+				Statement stmt = db.createStatement();
+				try {
+				    ResultSet rs = stmt.executeQuery(query);
+				    try {
+				    	if (rs.next()) { //Exists in database
+				    		notFound=false;
+				    		double[] values = new double[p.getNumberOfValues()];				    		
+				    		double[] confidences = new double[p.getNumberOfValues()];
+				    		for (int i=0;i<ph.valueColumns().length;i++) {
+				    			values[i]=rs.getDouble(ph.valueColumns()[i]);
+				    		}
+				    		for (int i=0;i<ph.confidenceColumns().length;i++) {
+				    			double conf = rs.getDouble(ph.confidenceColumns()[i]);
+				    			if (ConfidenceValues.isValidValue(conf)) 
+				    				confidences[i]=conf;
+				    			else
+				    				confidences[i]=ConfidenceValues.defaultConfidence;
+				    		}
+				    		
+				    		if (ph.isClosed()) {
+				    			if (!ph.hasSoftValues()) {
+				    				values = p.getStandardValues();
+				    			}
+				    			if (!ph.hasConfidenceValues()) {
+				    				confidences = ConfidenceValues.getMaxConfidence(p.getNumberOfValues());
+				    			}
+				    			atom = new GroundAtom(values,confidences,GroundAtom.Status.FACT);
+				    		} else {
+				    			assert ph.hasSoftValues();
+				    			assert ph.hasConfidenceValues();
+				    			PSLValue pslval = PSLValue.parse(rs.getInt(ph.pslColumn()));
+				    			atom = new GroundAtom(values,confidences,GroundAtom.Status.RV);
+				    			switch(pslval) {
+				    			case Fact:
+				    				atom.setStatus(GroundAtom.Status.CERTAINTY);
+				    				break;
+				    			case DefaultFact:
+				    				atom.setStatus(GroundAtom.Status.CERTAINTY);
+				    				break;
+				    			case DefaultRV:
+				    				atom.setStatus(GroundAtom.Status.RV);
+				    				break;
+				    			case ActiveRV:
+				    				atom.setStatus(GroundAtom.Status.RV);
+				    				break;
+				    			default: throw new IllegalArgumentException("Unknown psl value: " + pslval); 
+				    			}
+				    		}
+				    	} else { //Not found
+				    		notFound = true;
+				    	}
+	
+				    } finally {
+				        rs.close();
+				    }
+				} finally {
+				    stmt.close();
+				}
+			} catch(SQLException e) {
+				log.error("SQL error: {}",e.getMessage());
+				throw new AssertionError(e);
+			}
+		}
+		if (notFound) {
+			assert atom==null;
+    		if (ph.isClosed()) {
+    			atom = new GroundAtom(p.getDefaultValues(),ConfidenceValues.getMaxConfidence(p.getNumberOfValues()),GroundAtom.Status.FACT);
+    		} else {
+    			atom = new GroundAtom(GroundAtom.Status.RV);
+    		}
+		}
+		assert atom!=null;
+		return atom;
+	}
+
+	@Override
+	public void commit(RandomVariableAtom atom) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public ResultList executeQuery(DatabaseQuery query) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public boolean isClosed(StandardPredicate predicate) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public DataStore getDataStore() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public AtomCache getAtomCache() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 

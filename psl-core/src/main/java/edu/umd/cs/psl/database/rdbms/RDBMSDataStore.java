@@ -42,6 +42,7 @@ import edu.umd.cs.psl.database.Partition;
 import edu.umd.cs.psl.database.loading.Inserter;
 import edu.umd.cs.psl.database.loading.Updater;
 import edu.umd.cs.psl.model.predicate.Predicate;
+import edu.umd.cs.psl.model.predicate.StandardPredicate;
 
 public class RDBMSDataStore implements DataStore {
 	
@@ -51,7 +52,6 @@ public class RDBMSDataStore implements DataStore {
 	protected static final String defaultConfidenceColumnName = "confidence";
 	protected static final String defaultPSLColumnName = "psl";
 	protected static final String defaultPartitionColumnName = "partition";
-	
 	
 	private final Map<Predicate,RDBMSPredicateInfo> predicates;
 	protected String valueColumnName;
@@ -128,8 +128,15 @@ public class RDBMSDataStore implements DataStore {
 	}
 	
 	@Override
-	public Database getDatabase(Partition writeID, Partition... partitionIDs) {
-		RDBMSDatabase db = new RDBMSDatabase(this,connection, writeID, partitionIDs);
+	public Database getDatabase(Partition write, Partition... read) {
+		return getDatabase(write, new HashSet<StandardPredicate>(), read);
+	}
+	
+	@Override
+	public Database getDatabase(Partition write,
+			Set<StandardPredicate> toClose, Partition... read) {
+		
+		RDBMSDatabase db = new RDBMSDatabase(this,connection, write, read, toClose);
 		for (RDBMSPredicateInfo predinfo : predicates.values()) {
 			db.registerPredicate(getPredicateHandle(predinfo));
 		}
@@ -138,20 +145,20 @@ public class RDBMSDataStore implements DataStore {
 		 * Verifies that no other Database is reading from the specificed write partition
 		 * and no other Database is writing to any of the specified read partitions
 		 */
-		if (writePartitionIDs.contains(writeID))
+		if (writePartitionIDs.contains(write))
 			throw new IllegalArgumentException("The specified write partition ID is already used by another database.");
-		if (openDatabases.containsKey(writeID))
+		if (openDatabases.containsKey(write))
 			throw new IllegalArgumentException("The specified write partition ID is also a read partition.");
-		for (Partition partID : partitionIDs)
+		for (Partition partID : read)
 			if (writePartitionIDs.contains(partID))
 				throw new IllegalArgumentException("Another database is writing to a specified read partition: " + partID);
 		
-		for (Partition partID : partitionIDs)
+		for (Partition partID : read)
 			openDatabases.put(partID, db);
-		writePartitionIDs.add(writeID);
+		writePartitionIDs.add(write);
 		return db;
 	}
-	
+
 	void closeDatabase(RDBMSDatabase db, Partition writeID, Partition[] partitionIDs) {
 		for (Partition partID : partitionIDs) {
 			openDatabases.remove(partID, db);
@@ -169,7 +176,7 @@ public class RDBMSDataStore implements DataStore {
 	}
 
 	@Override
-	public Inserter getInserter(Predicate predicate, Partition partitionID) {
+	public Inserter getInserter(StandardPredicate predicate, Partition partitionID) {
 		if (!predicates.containsKey(predicate)) throw new IllegalArgumentException("Unknown predicate specified: " + predicate);
 		if (writePartitionIDs.contains(partitionID) || openDatabases.containsKey(partitionID))
 			throw new IllegalStateException("Partition ["+partitionID+"] is already in use. Can only be modified via Updater!");
@@ -177,7 +184,7 @@ public class RDBMSDataStore implements DataStore {
 	}
 	
 	@Override
-	public Updater getUpdater(Predicate predicate, Partition partitionID) {
+	public Updater getUpdater(StandardPredicate predicate, Partition partitionID) {
 		throw new UnsupportedOperationException("Not yet implemented");
 	}
 	
@@ -309,6 +316,12 @@ public class RDBMSDataStore implements DataStore {
 			throw new AssertionError(e);
 		}
 	
+	}
+
+	@Override
+	public Set<Predicate> getRegisteredPredicates() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	

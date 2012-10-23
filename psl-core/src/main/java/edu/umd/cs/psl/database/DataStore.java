@@ -71,6 +71,22 @@ public interface DataStore {
 	public Database getDatabase(Partition write, Partition... read);
 	
 	/**
+	 * Creates a Database that can read from and write to a {@link Partition} and
+	 * additionally read from a set of additional Partitions.
+	 * <p>
+	 * Additionally, defines a set of StandardPredicates as closed in the Database,
+	 * meaning that all Atoms of that Predicate are ObservedAtoms.
+	 * 
+	 * @param write  the Partition to write to and read from
+	 * @param toClose  set of StandardPredicates to close
+	 * @param read  additional Partitions to read from
+	 * @return a new Database backed by this DataStore
+	 * @throws IllegalArgumentException  if write is in use or if read is the
+	 *                                       write Partition of another Database
+	 */
+	public Database getDatabase(Partition write, Set<StandardPredicate> toClose, Partition... read);
+	
+	/**
 	 * Creates an Inserter for inserting new {@link StandardAtom} information
 	 * into a {@link Partition}.
 	 * 
