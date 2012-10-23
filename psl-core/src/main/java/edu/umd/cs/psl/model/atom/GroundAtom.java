@@ -37,7 +37,7 @@ import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
  * A GroundAtom has a truth value and a confidence value.
  */
 abstract public class GroundAtom extends Atom {
-	protected Database db;
+	final protected Database db;
 	
 	protected double value;
 	

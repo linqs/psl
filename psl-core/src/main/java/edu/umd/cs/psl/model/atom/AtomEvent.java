@@ -16,21 +16,17 @@
  */
 package edu.umd.cs.psl.model.atom;
 
-import edu.umd.cs.psl.model.kernel.GroundKernel;
-
 /**
- * An event related to a {@link GroundAtom}.
+ * An event related to a {@link RandomVariableAtom}.
  * <p>
- * An AtomEvent provides three pieces of information in addition to the type of
- * event: the {@link GroundAtom} that caused the event, the {@link AtomEventFramework}
- * that created the event, and the {@link GroundKernelStore} that should be
- * used to store any {@link GroundKernel GroundKernels} that are created while
- * responding to the event.
+ * An AtomEvent provides two pieces of information in addition to the type of
+ * event: the {@link RandomVariableAtom} that caused the event and the
+ * {@link AtomEventFramework} that created the event.
  */
 public enum AtomEvent {
 	
-	/** A {@link GroundAtom} was instantiated in memory */
-	ConsideredGroundAtom,
+	/** A {@link RandomVariableAtom} was instantiated in memory */
+	ConsideredRVAtom,
 	
 	/** A {@link RandomVariableAtom} was activated */
 	ActivatedRVAtom;
@@ -45,7 +41,7 @@ public enum AtomEvent {
 		public void notifyAtomEvent(AtomEvent event);
 	}
 	
-	private Atom atom;
+	private RandomVariableAtom atom;
 	
 	private AtomEventFramework eventFramework;
 	
@@ -57,7 +53,7 @@ public enum AtomEvent {
 	/**
 	 * @return the associated Atom, or null if none is associated.
 	 */
-	public Atom getAtom() {
+	public RandomVariableAtom getAtom() {
 		return atom;
 	}
 	
@@ -67,7 +63,7 @@ public enum AtomEvent {
 	 * @param atom  the Atom to associate
 	 * @return this event, for convenience
 	 */
-	public AtomEvent setAtom(Atom atom) {
+	public AtomEvent setAtom(RandomVariableAtom atom) {
 		this.atom = atom;
 		return this;
 	}

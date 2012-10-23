@@ -20,17 +20,19 @@ import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
 import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
-//import edu.umd.cs.psl.reasoner.function.MutableAtomFunctionVariable;
 import edu.umd.cs.psl.reasoner.function.MutableAtomFunctionVariable;
 
 /**
- * A {@link StandardAtom} that does not exist in one of its {@link Database}'s read
- * Partitions.
+ * A {@link GroundAtom} with a truth value and a confidence value which can be modified.
  * <p>
- * A RandomVariableAtom's truth value and confidence value can be modified if it
- * is not fixed.
+ * A GroundAtom is instantiated as a RandomVariableAtom is BOTH of the following
+ * conditions are met:
+ * <ul>
+ *   <li>its {@link StandardPredicate} is open in the Atom's Database</li>
+ *   <li>it is not stored in one of its Database's read-only Partitions</li>
+ * </ul>
  */
-public class RandomVariableAtom extends StandardAtom {
+public class RandomVariableAtom extends GroundAtom {
 	
 	private double confidence;
 	
@@ -66,6 +68,10 @@ public class RandomVariableAtom extends StandardAtom {
 			throw new IllegalArgumentException();
 	}
 	
+	/**
+	 * Calls {@link Database#commit(RandomVariableAtom)} with this Atom
+	 * on the Database that instantiated it.
+	 */
 	public void commitToDB() {
 		db.commit(this);
 	}

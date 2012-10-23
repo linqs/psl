@@ -23,8 +23,6 @@ import com.google.common.collect.Iterables;
 
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.predicate.AggregatePredicate;
-import edu.umd.cs.psl.model.predicate.FunctionalPredicate;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
 
@@ -68,20 +66,6 @@ public class AtomCache {
 	}
 	
 	/**
-	 * @return all AggregateAtoms in this AtomCache
-	 */
-	public Iterable<AggregateAtom> getCachedAggregateAtoms() {
-		return Iterables.filter(cache.values(), AggregateAtom.class);
-	}
-	
-	/**
-	 * @return all FunctionalAtoms in this AtomCache
-	 */
-	public Iterable<FunctionalAtom> getCachedFunctionalAtoms() {
-		return Iterables.filter(cache.values(), FunctionalAtom.class);
-	}
-	
-	/**
 	 * @return all ObservedAtoms in this AtomCache
 	 */
 	public Iterable<ObservedAtom> getCachedObservedAtoms() {
@@ -93,52 +77,6 @@ public class AtomCache {
 	 */
 	public Iterable<RandomVariableAtom> getCachedRandomVariableAtoms() {
 		return Iterables.filter(cache.values(), RandomVariableAtom.class);
-	}
-	
-	/**
-	 * Initializes an AggregateAtom and stores it in this AtomCache.
-	 * <p>
-	 * This method should only be called by this AtomCache's {@link Database}.
-	 * To retrieve a GroundAtom, all others should use {@link Database#getAtom(Predicate, GroundTerm[])}
-	 * or {@link AtomManager#getAtom(Predicate, GroundTerm[])}.
-	 * <p>
-	 * Further, this method should only be called after ensuring that the Atom
-	 * is not already in this AtomCache using {@link #getCachedAtom(QueryAtom)}.
-	 * 
-	 * @param p  the Predicate of the Atom
-	 * @param args  the arguments to this Atom
-	 * @param value  this Atom's truth value
-	 * @return the new AggregateAtom
-	 */
-	public AggregateAtom initializeAggregateAtom(AggregatePredicate p,
-			GroundTerm[] args, double value) {
-		AggregateAtom atom = new AggregateAtom(p, args, db, value);
-		QueryAtom key = new QueryAtom(p, args);
-		cache.put(key, atom);
-		return atom;
-	}
-	
-	/**
-	 * Initializes a FunctionalAtom and stores it in this AtomCache.
-	 * <p>
-	 * This method should only be called by this AtomCache's {@link Database}.
-	 * To retrieve a GroundAtom, all others should use {@link Database#getAtom(Predicate, GroundTerm[])}
-	 * or {@link AtomManager#getAtom(Predicate, GroundTerm[])}.
-	 * <p>
-	 * Further, this method should only be called after ensuring that the Atom
-	 * is not already in this AtomCache using {@link #getCachedAtom(QueryAtom)}.
-	 * 
-	 * @param p  the Predicate of the Atom
-	 * @param args  the arguments to this Atom
-	 * @param value  this Atom's truth value
-	 * @return the new FunctionalAtom
-	 */
-	public FunctionalAtom initializeFunctionalAtom(FunctionalPredicate p,
-			GroundTerm[] args, double value) {
-		FunctionalAtom atom = new FunctionalAtom(p, args, db, value);
-		QueryAtom key = new QueryAtom(p, args);
-		cache.put(key, atom);
-		return atom;
 	}
 	
 	/**
@@ -156,7 +94,7 @@ public class AtomCache {
 	 * @param value  this Atom's truth value
 	 * @return the new ObservedAtom
 	 */
-	public ObservedAtom initializeObservedAtom(StandardPredicate p, GroundTerm[] args,
+	public ObservedAtom initializeObservedAtom(Predicate p, GroundTerm[] args,
 			double value) {
 		ObservedAtom atom = new ObservedAtom(p, args, db, value);
 		QueryAtom key = new QueryAtom(p, args);

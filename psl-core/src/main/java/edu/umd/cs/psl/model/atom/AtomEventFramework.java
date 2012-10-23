@@ -33,27 +33,29 @@ import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.predicate.Predicate;
-
+import edu.umd.cs.psl.model.predicate.StandardPredicate;
 
 /**
  * AtomManager with support for {@link AtomEvent AtomEvents}. 
  * <p>
  * An AtomEventFramework handles two types of events: <em>consideration</em> and
- * <em>activation</em>. Any GroundAtom is considered when it is loaded into memory
- * and added to its {@link Database}'s {@link AtomCache}. Further, a RandomVariableAtom
- * is activated when its truth value is at or above a threshold for the first time
- * since being loaded into memory (including being initialized above that threshold).
+ * <em>activation</em>.
+ * <p>
+ * A RandomVariableAtom is considered when it is loaded into memory
+ * and added to its {@link Database}'s {@link AtomCache} via {@link #getAtom(Predicate, GroundTerm[])}.
+ * <p>
+ * A RandomVariableAtom is activated if it has not already been activated
+ * since being loaded into memory and one of two things occur:
+ * <ol>
+ *   <li>{@link #checkToActivate()} is called and its truth value is at or
+ *   above a threshold</li>
+ *   <li>{@link #activateAtom(RandomVariableAtom)} is called on that Atom</li>
+ * </ol>
  * <p>
  * {@link AtomEvent.Listener} implementations can register to be notified of these events.
  * <p>
- * For each event, an {@link AtomJob} is added to the job queue. Consideration
- * events are added during {@link #getAtom(Predicate, GroundTerm[])} and activation
- * events are added during {@link #checkToActivate()} and
- * {@link #activateAtom(RandomVariableAtom)}. Note that if a {@link GroundAtom} is
- * not loaded into memory via {@link #getAtom(Predicate, GroundTerm[])}, then no
- * consideration event can be generated.
- * <p>
- * Calling {@link #workOffJobQueue()} will cause the appropriate Listeners to be
+ * For each event, an {@link AtomJob} is added to the job queue. Calling
+ * {@link #workOffJobQueue()} will cause the appropriate Listeners to be
  * notified of all events in the queue. Additionally, each activated RandomVariableAtom
  * will be committed to the Database before any Listeners are notified.
  */
@@ -76,34 +78,36 @@ public class AtomEventFramework implements AtomManager {
 	/** Default value for ACTIVATION_THRESHOLD_KEY property */
 	public static final double ACTIVATION_THRESHOLD_DEFAULT = 0.01;
 	
-	public static final Predicate AllPredicates = null;
+	public static final StandardPredicate AllPredicates = null;
 	
 	private final Database db;
 	private final double activationThreshold;
 	private Queue<AtomJob> jobQueue;
-	private EnumMap<AtomEvent,SetMultimap<Predicate,AtomEvent.Listener>> atomListeners;
+	private EnumMap<AtomEvent,SetMultimap<StandardPredicate,AtomEvent.Listener>> atomListeners;
 	private Set<Atom> activeAtoms;
 	
 	public AtomEventFramework(Database db, ConfigBundle config) {
 		this.db = db;
 		activationThreshold = config.getDouble(ACTIVATION_THRESHOLD_KEY, ACTIVATION_THRESHOLD_DEFAULT);
 		jobQueue = new LinkedList<AtomJob>();
-		atomListeners = new EnumMap<AtomEvent,SetMultimap<Predicate,AtomEvent.Listener>>(AtomEvent.class);
+		atomListeners = new EnumMap<AtomEvent,SetMultimap<StandardPredicate,AtomEvent.Listener>>(AtomEvent.class);
 		activeAtoms = new HashSet<Atom>();
 	}
 	
 	/**
-	 * Calls {@link Database#getAtom(Predicate, GroundTerm[])} and generates
-	 * a {@link AtomEvent#ConsideredGroundAtom} event if the GroundAtom is
-	 * not already in the Database's AtomCache. 
+	 * Calls {@link Database#getAtom(Predicate, GroundTerm[])} and adds
+	 * a {@link AtomEvent#ConsideredRVAtom} event to the job queue if the
+	 * GroundAtom is a RandomVariableAtom and not already in the Database's AtomCache. 
+	 * 
+	 * @see #workOffJobQueue()
 	 */
 	@Override
 	public GroundAtom getAtom(Predicate p, GroundTerm[] arguments) {
 		Atom check = db.getAtomCache().getCachedAtom(new QueryAtom(p, arguments));
 		GroundAtom atom = db.getAtom(p,  arguments);
-		if (check == null) {
-			AtomEvent event = AtomEvent.ConsideredGroundAtom;
-			event.setAtom(atom);
+		if (atom instanceof RandomVariableAtom && check == null) {
+			AtomEvent event = AtomEvent.ConsideredRVAtom;
+			event.setAtom((RandomVariableAtom) atom).setEventFramework(this);
 			addAtomJob(atom, event);
 		}
 		return atom;
@@ -122,17 +126,17 @@ public class AtomEventFramework implements AtomManager {
 	
 	/**
 	 * Registers a listener for any events in a set related to 
-	 * {@link GroundAtom GroundAtoms} with a given Predicate.
+	 * {@link RandomVariableAtom RandomVariableAtoms} with a given StandardPredicate.
 	 * 
 	 * @param events  set of events for which to listen
 	 * @param p  Predicate of Atoms for which to listen for events
 	 * @param listener  object to register
 	 * @see AtomEvent
 	 */
-	public void registerAtomEventListener(Set<AtomEvent> events, Predicate p, AtomEvent.Listener listener) {
+	public void registerAtomEventListener(Set<AtomEvent> events, StandardPredicate p, AtomEvent.Listener listener) {
 		for (AtomEvent event : events) {
 			if (!atomListeners.containsKey(event)) {
-				SetMultimap<Predicate,AtomEvent.Listener> map = HashMultimap.create();
+				SetMultimap<StandardPredicate,AtomEvent.Listener> map = HashMultimap.create();
 				atomListeners.put(event, map);
 			}
 			atomListeners.get(event).put(p, listener);
@@ -141,7 +145,6 @@ public class AtomEventFramework implements AtomManager {
 	
 	/**
 	 * Unregisters a listener for any events in a set.
-	 * <p>
 	 * 
 	 * @param events  set of events for which to stop listening
 	 * @param listener  object to unregister
@@ -152,16 +155,15 @@ public class AtomEventFramework implements AtomManager {
 	}
 	
 	/**
-	 * Unregisters a listener for any events in a set related to {@link GroundAtom GroundAtoms}
-	 * with a given Predicate.
-	 * <p>
+	 * Unregisters a listener for any events in a set related to
+	 * {@link RandomVariableAtom RandomVariableAtoms} with a given StandardPredicate.
 	 * 
 	 * @param events  set of events for which to stop listening
 	 * @param p  Predicate of Atoms for which to stop listening
 	 * @param listener  object to unregister
 	 * @see AtomEvent
 	 */
-	public void unregisterAtomEventListener(Set<AtomEvent> events, Predicate p, AtomEvent.Listener listener) {
+	public void unregisterAtomEventListener(Set<AtomEvent> events, StandardPredicate p, AtomEvent.Listener listener) {
 		for (AtomEvent event : events) 
 			if (atomListeners.containsKey(event))
 				atomListeners.get(event).remove(p, listener);		
@@ -170,43 +172,51 @@ public class AtomEventFramework implements AtomManager {
 	}
 	
 	/**
-	 * Activates all RandomVariableAtoms which are at or above
-	 * the activation threshold for the first time since being loaded into memory
-	 * (including being initialized above the threshold).
+	 * Adds a {@link AtomEvent#ActivatedRVAtom} event to the job queue for each
+	 * RandomVariableAtom in the Database's AtomCache which is at or above
+	 * the activation threshold and has not already been activated by this
+	 * AtomEventFramework since being loaded into memory.
 	 * 
 	 * @return number of Atoms activated
-	 * @see AtomManager#workOffJobQueue()
+	 * @see #workOffJobQueue()
 	 */
 	public int checkToActivate() {
 		int activated = 0;
 		for (RandomVariableAtom atom : db.getAtomCache().getCachedRandomVariableAtoms()) {
 			if (!activeAtoms.contains(atom) && atom.getValue() >= activationThreshold) {
 				activated++;
-				activateAtom(atom);
+				doActivateAtom(atom);
 			}
 		}
 		return activated;
 	}
 	
 	/**
-	 * Activates a RandomVariableAtom, regardless of its truth value.
+	 * Adds a {@link AtomEvent#ActivatedRVAtom} event to the job queue for a
+	 * RandomVariableAtom, regardless of its truth value.
 	 * <p>
 	 * No event will be generated if the Atom has already been activated by
 	 * this AtomEventFramework since being loaded into memory.
 	 * 
-	 * @param atom  GroundAtom to activate
-	 * @see AtomManager#workOffJobQueue()
+	 * @param atom  Atom to activate
+	 * @see #workOffJobQueue()
 	 * @throws IllegalArgumentException  if atom does not belong to this
 	 *                                       framework's Database
 	 */
 	public void activateAtom(RandomVariableAtom atom) {
+		if (!db.equals(atom.db))
+			throw new IllegalArgumentException("Atom did not come from Database" +
+					" managed by this AtomEventFramework.");
 		if (!activeAtoms.contains(atom)) {
-			AtomEvent event = AtomEvent.ActivatedRVAtom;
-			event.setAtom(atom);
-			event.setEventFramework(this);
-			addAtomJob(atom, event);
-			activeAtoms.add(atom);
+			doActivateAtom(atom);
 		}
+	}
+	
+	private void doActivateAtom(RandomVariableAtom atom) {
+		AtomEvent event = AtomEvent.ActivatedRVAtom;
+		event.setAtom(atom).setEventFramework(this);
+		addAtomJob(atom, event);
+		activeAtoms.add(atom);
 	}
 
 	/**
@@ -236,7 +246,7 @@ public class AtomEventFramework implements AtomManager {
 		AtomEvent event = job.getEvent();
 	
 		/* notify all listeners registered by predicate */
-		for (AtomEvent.Listener listener: atomListeners.get(event).get(atom.getPredicate())) 
+		for (AtomEvent.Listener listener: atomListeners.get(event).get((StandardPredicate) atom.getPredicate())) 
 			listener.notifyAtomEvent(event);
 				
 		/* notify all listeners registered for all predicates */		

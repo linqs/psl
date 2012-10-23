@@ -18,20 +18,28 @@ package edu.umd.cs.psl.model.atom;
 
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.argument.GroundTerm;
+import edu.umd.cs.psl.model.predicate.FunctionalPredicate;
+import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
 import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
 import edu.umd.cs.psl.reasoner.function.ConstantAtomFunctionVariable;
 
 /**
- * A {@link StandardAtom} that exists in one of its {@link Database}'s read
- * Partitions.
+ * A {@link GroundAtom} with a fixed truth value and a confidence value of infinity.
  * <p>
- * An ObservedAtom's truth value cannot be modified and its confidence value
- * is infinity.
+ * Circumstances that cause a GroundAtom to be instantiated as an ObservedAtom
+ * include
+ * <ul>
+ *   <li>its Predicate is a {@link StandardPredicate} and closed in the Atom's Database</li>
+ *   <li>its Predicate is a {@link FunctionalPredicate}</li>
+ *   <li>its Predicate is a StandardPredicate and it is stored in one of its
+ *   Database's read-only Partitions</li>
+ * </ul>
+ * Other reasons may exist for specific Database implementations.
  */
-public class ObservedAtom extends StandardAtom {
+public class ObservedAtom extends GroundAtom {
 
-	protected ObservedAtom(StandardPredicate p, GroundTerm[] args, Database db, double value) {
+	protected ObservedAtom(Predicate p, GroundTerm[] args, Database db, double value) {
 		super(p, args, db, value);
 	}
 
