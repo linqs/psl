@@ -17,40 +17,32 @@
 package edu.umd.cs.psl.model.argument;
 
 /**
- * A String {@link Attribute}.
+ * An {@link Attribute} that encapsulates an Integer.
  */
-public class TextAttribute implements Attribute {
+public class IntegerAttribute implements Attribute {
 
-	private final String value;
+	private final Integer value;
 	
 	/**
-	 * Constructs a TextAttribute from a String
+	 * Constructs an Integer attribute from an Integer
 	 * 
-	 * @param value  String to encapsulate
+	 * @param value  Integer to encapsulate
 	 */
-	public TextAttribute(String value) {
+	public IntegerAttribute(Integer value) {
 		this.value = value;
 	}
 	
 	/**
-	 * @return the encapsulated String, truncated to 30 characters
+	 * @return the encapsulated Integer as a String in single quotes
 	 */
 	@Override
 	public String toString() {
-		if (value.length() > 30)
-			return "'" + value.substring(0, Math.min(value.length(), 25)) + "...'";
-		else
-			return value;
+		return "'" + value + "'";
 	}
 	
 	@Override
-	public String getValue() {
+	public Integer getValue() {
 		return value;
-	}
-	
-	@Override
-	public ArgumentType getType() {
-		return ArgumentType.Text;
 	}
 	
 	@Override
@@ -59,14 +51,14 @@ public class TextAttribute implements Attribute {
 	}
 	
 	/**
-	 * A TextAttribute is equal to another Object if that Object is a TextAttribute
+	 * An IntegerAttribute is equal to another Object if that Object is an IntegerAttribute
 	 * and their values are equal.
 	 */
 	@Override
 	public boolean equals(Object oth) {
 		if (oth==this) return true;
-		if (oth==null || !(oth instanceof TextAttribute) ) return false;
-		return value.equals(((TextAttribute) oth).getValue());  
+		if (oth==null || !(oth instanceof IntegerAttribute)) return false;
+		return value.equals(((IntegerAttribute)oth).getValue());  
 	}
-	
+
 }

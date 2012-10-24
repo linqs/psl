@@ -25,25 +25,39 @@ package edu.umd.cs.psl.model.argument;
 public enum ArgumentType {
 
 	/**
-	 * A {@link TextAttribute} argument.
+	 * A {@link StringAttribute} argument.
 	 */
-	Text {
+	String {
 		@Override
-		public String getName() { return "Text"; }
+		public String getName() { return "String"; }
 		
 		@Override
 		public boolean isInstance(GroundTerm term) {
-			return (term instanceof TextAttribute);
+			return (term instanceof StringAttribute);
 		}
 	},
 	
 	/**
-	 * A {@link NumberAttribute} argument.
+	 * An {@link IntegerAttribute} argument.
 	 */
-	Number {
+	Integer {
 		
 		@Override
-		public String getName() { return "Number"; }
+		public String getName() { return "Integer"; }
+		
+		@Override
+		public boolean isInstance(GroundTerm term) {
+			return (term instanceof IntegerAttribute);
+		}
+	},
+	
+	/**
+	 * A {@link DoubleAttribute} argument.
+	 */
+	Double {
+		
+		@Override
+		public String getName() { return "Double"; }
 		
 		@Override
 		public boolean isInstance(GroundTerm term) {
@@ -52,16 +66,16 @@ public enum ArgumentType {
 	},
 	
 	/**
-	 * An {@link Entity} argument.
+	 * A {@link edu.umd.cs.psl.database.UniqueID} argument.
 	 */
-	Entity {
+	UniqueID {
 		
 		@Override
-		public String getName() { return "Entity"; }
+		public String getName() { return "UniqueID"; }
 		
 		@Override
 		public boolean isInstance(GroundTerm term) {
-			return (term instanceof Entity);
+			return (term instanceof edu.umd.cs.psl.database.UniqueID);
 		}
 	};
 	

@@ -98,8 +98,8 @@ abstract public class Atom implements Formula {
 	 *             of the predicate
 	 * @throws IllegalArgumentException  if any argument is null
 	 * @throws IllegalArgumentException
-	 *             if any argument is a {@link GroundTerm} and is not a subtype
-	 *             of the Predicate's {@link ArgumentType}.
+	 *             if any argument is a {@link GroundTerm} and does not match
+	 *             the Predicate's {@link ArgumentType}.
 	 */
 	private void checkSchema() {
 		if (predicate.getArity()!=arguments.length) {
@@ -108,7 +108,7 @@ abstract public class Atom implements Formula {
 		for (int i=0;i<arguments.length;i++) {
 			if (arguments[i]==null)
 				throw new IllegalArgumentException("Arguments must not be null!");
-			if ((arguments[i] instanceof GroundTerm) && !((GroundTerm)arguments[i]).getType().isSubTypeOf(predicate.getArgumentType(i)))
+			if ((arguments[i] instanceof GroundTerm) && !(predicate.getArgumentType(i).isInstance((GroundTerm) arguments[i])))
 				throw new IllegalArgumentException("Expected type "+predicate.getArgumentType(i)+" at position "+i+" but was given: " + arguments[i] + " for predicate " + predicate);
 		}
 	}

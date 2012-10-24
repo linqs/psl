@@ -19,8 +19,6 @@ package edu.umd.cs.psl.model.predicate;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.database.UniqueID;
 import edu.umd.cs.psl.model.argument.ArgumentType;
-import edu.umd.cs.psl.model.argument.ArgumentTypes;
-import edu.umd.cs.psl.model.argument.Entity;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 
 /**
@@ -44,37 +42,27 @@ abstract public class SpecialPredicate extends FunctionalPredicate {
 	
 	/** True if arguments are equal. */
 	public static final SpecialPredicate Equal
-		= new SpecialPredicate("Special: Equal", new ArgumentType[] {ArgumentTypes.Entity, ArgumentTypes.Entity}) {
+		= new SpecialPredicate("#Equal", new ArgumentType[] {ArgumentType.UniqueID, ArgumentType.UniqueID}) {
 		
 		@Override
 		public double computeValue(GroundTerm... args) {
-			if (args.length==2 && args[0] instanceof Entity && args[1] instanceof Entity)
+			if (args.length==2 && ArgumentType.UniqueID.isInstance(args[0]) && ArgumentType.UniqueID.isInstance(args[1]))
 				return (args[0].equals(args[1])) ? 1.0 : 0.0;
 			else
 				throw new IllegalArgumentException(getName() + " acts on two Entities.");
-		}
-
-		@Override
-		public String getName() {
-			return "#Equal";
 		}
 	};
 	
 	/** True if arguments are not equal. */
 	public static final SpecialPredicate NotEqual
-		= new SpecialPredicate("Special: NotEqual", new ArgumentType[] {ArgumentTypes.Entity, ArgumentTypes.Entity}) {
+		= new SpecialPredicate("#NotEqual", new ArgumentType[] {ArgumentType.UniqueID, ArgumentType.UniqueID}) {
 
 		@Override
 		public double computeValue(GroundTerm... args) {
-			if (args.length==2 && args[0] instanceof Entity && args[1] instanceof Entity)
+			if (args.length==2 && ArgumentType.UniqueID.isInstance(args[0]) && ArgumentType.UniqueID.isInstance(args[1]))
 				return (!args[0].equals(args[1])) ? 1.0 : 0.0;
 			else
 				throw new IllegalArgumentException(getName() + " acts on two Entities.");
-		}
-
-		@Override
-		public String getName() {
-			return "#NotEqual";
 		}
 	};
 
@@ -84,22 +72,17 @@ abstract public class SpecialPredicate extends FunctionalPredicate {
 	 * Used to ground only one of a symmetric pair of ground rules.
 	 */
 	public static final SpecialPredicate NonSymmetric
-		= new SpecialPredicate("Special: NonSymmetric", new ArgumentType[] {ArgumentTypes.Entity, ArgumentTypes.Entity}) {
+		= new SpecialPredicate("#NonSymmetric", new ArgumentType[] {ArgumentType.UniqueID, ArgumentType.UniqueID}) {
 		
 		@Override
 		public double computeValue(GroundTerm... args) {
-			if (args.length==2 && args[0] instanceof Entity && args[1] instanceof Entity) {
-				UniqueID uid1 = ((Entity)args[0]).getID();
-				UniqueID uid2 = ((Entity)args[1]).getID();
+			if (args.length==2 && ArgumentType.UniqueID.isInstance(args[0]) && ArgumentType.UniqueID.isInstance(args[1])) {
+				UniqueID uid1 = ((UniqueID)args[0]);
+				UniqueID uid2 = ((UniqueID)args[1]);
 				return (uid1.compareTo(uid2) < 0) ? 1.0 : 0.0;
 			}
 			else
 				throw new IllegalArgumentException(getName() + " acts on two Entities.");
-		}
-
-		@Override
-		public String getName() {
-			return "#NonSymmetric";
 		}
 	};
 	

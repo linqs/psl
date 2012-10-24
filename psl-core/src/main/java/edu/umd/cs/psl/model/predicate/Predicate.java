@@ -23,14 +23,9 @@ import edu.umd.cs.psl.model.atom.Atom;
 /**
  * A relation that can be applied to {@link Term Terms} to form {@link Atom Atoms}.
  * <p>
- * A Predicate is defined by its name and its signature, i.e. number and
- * types of its arguments. Predicates should be constructed using a
- * {@link PredicateFactory}. Different PredicateFactories can be used as
- * different namespaces for predicates to avoid name conflicts. Note that two
- * Predicates are only equal if they are the same object.
+ * Predicates must be constructed using the {@link PredicateFactory}.
  * <p>
- * Names starting with '#' are not allowed. That prefix is reserved for
- * {@link SpecialPredicate SpecialPredicates}.
+ * A Predicate is uniquely identified by its name.
  * 
  * @author Matthias Broecheler
  */
@@ -42,15 +37,13 @@ abstract public class Predicate {
 	
 	/**
 	 * Sole constructor.
+	 * <p>
+	 * Should only be called by {@link PredicateFactory}.
 	 * 
 	 * @param name  name for this predicate
 	 * @param types  types for each of the predicate's arguments
-	 * @throws IllegalArgumentException  if name begins with '#'
 	 */
 	Predicate(String name, ArgumentType[] types) {
-		if (name.startsWith("#"))
-			throw new IllegalArgumentException("Predicate name must not begin with '#'." +
-					" That prefix is reserved for SpecialPredicates.");
 		this.types = types;
 		predicateName = name;
 	}
@@ -94,8 +87,7 @@ abstract public class Predicate {
 		s.append(getName()).append("(");
 		for (int i=0;i<types.length;i++) {
 			if (i>0) s.append(", ");
-			if (types[i]!=null) s.append(types[i]);
-			else s.append("?");
+			s.append(types[i]);
 		}
 		return s.append(")").toString();
 	}
@@ -103,16 +95,19 @@ abstract public class Predicate {
 	@Override
 	public int hashCode() {
 		/*
-		 * The predicate factory ensures that names uniquely identify predicates within the same {@link PredicateFactory}.
-		 * Hence, equality of predicates can be determined by identity;
+		 * The PredicateFactory ensures that names and signatures uniquely identify Predicates.
+		 * Hence, equality of Predicates can be determined by identity;
 		 */
 		return super.hashCode();
 	}
 	
 	@Override
 	public boolean equals(Object oth) {
-		if (oth==this) return true;
-		else return false;
+		/*
+		 * The PredicateFactory ensures that names and signatures uniquely identify Predicates.
+		 * Hence, equality of Predicates can be determined by identity;
+		 */
+		return oth == this;
 	}
 	
 }

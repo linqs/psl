@@ -34,7 +34,6 @@ public class ExternalFunctionalPredicate extends FunctionalPredicate {
 	 * 
 	 * @param name  the name of this predicate
 	 * @param extFun  the ExternalFunction to use to compute truth values
-	 * @throws IllegalArgumentException  if name begins with '#'
 	 * @see PredicateFactory
 	 */
 	ExternalFunctionalPredicate(String name, ExternalFunction extFun) {

@@ -31,7 +31,6 @@ public class StandardPredicate extends Predicate {
 	 * 
 	 * @param name  name for this predicate
 	 * @param types  types for each of the predicate's arguments
-	 * @throws IllegalArgumentException  if name begins with '#'
 	 * @see PredicateFactory
 	 */
 	StandardPredicate(String name, ArgumentType[] types) {

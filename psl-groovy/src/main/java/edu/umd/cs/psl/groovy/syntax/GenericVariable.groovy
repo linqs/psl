@@ -66,7 +66,7 @@ class GenericVariable {
 	
 	
 	def getSetTerm() {
-		return new VariableSetTerm(new Variable(name),ArgumentType.Entity);
+		return new VariableSetTerm(new Variable(name),ArgumentType.UniqueID);
 	}
 
 	

@@ -17,31 +17,34 @@
 package edu.umd.cs.psl.model.argument;
 
 /**
- * An {@link Attribute} that encapsulates a Double.
+ * An {@link Attribute} that encapsulates a String.
  */
-public class DoubleAttribute implements Attribute {
+public class StringAttribute implements Attribute {
 
-	private final Double value;
+	private final String value;
 	
 	/**
-	 * Constructs a Double attribute from a Double
+	 * Constructs a StringAttribute from a String
 	 * 
-	 * @param value  Double to encapsulate
+	 * @param value  String to encapsulate
 	 */
-	public DoubleAttribute(Double value) {
+	public StringAttribute(String value) {
 		this.value = value;
 	}
 	
 	/**
-	 * @return the encapsulated Double as a String in single quotes
+	 * @return the encapsulated String in single quotes, truncated to 30 characters
 	 */
 	@Override
 	public String toString() {
-		return "'" + value + "'";
+		if (value.length() > 28)
+			return "'" + value.substring(0, Math.min(value.length(), 25)) + "...'";
+		else
+			return "'" + value + "'";
 	}
 	
 	@Override
-	public Double getValue() {
+	public String getValue() {
 		return value;
 	}
 	
@@ -51,14 +54,14 @@ public class DoubleAttribute implements Attribute {
 	}
 	
 	/**
-	 * A DoubleAttribute is equal to another Object if that Object is a DoubleAttribute
+	 * A StringAttribute is equal to another Object if that Object is a TextAttribute
 	 * and their values are equal.
 	 */
 	@Override
 	public boolean equals(Object oth) {
 		if (oth==this) return true;
-		if (oth==null || !(oth instanceof DoubleAttribute)) return false;
-		return value.equals(((DoubleAttribute)oth).getValue());  
+		if (oth==null || !(oth instanceof StringAttribute) ) return false;
+		return value.equals(((StringAttribute) oth).getValue());  
 	}
-
+	
 }

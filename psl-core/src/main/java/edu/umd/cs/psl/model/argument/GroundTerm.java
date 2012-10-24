@@ -20,12 +20,5 @@ package edu.umd.cs.psl.model.argument;
  * A {@link Term} that is ground, i.e., not a {@link Variable}.
  */
 public interface GroundTerm extends Term {
-
-	/**
-	 * Returns the argument type.
-	 * 
-	 * @return An argument type
-	 */
-	public ArgumentType getType();
 	
 }

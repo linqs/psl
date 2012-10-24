@@ -101,7 +101,7 @@ class PSLModel extends ModelUI {
 					} else if ((args[i] instanceof Term)) {
 						terms[i]=(Term)args[i];
 					} else if (args[i] instanceof String) {
-						terms[i]=new TextAttribute(args[i]);
+						terms[i]=new StringAttribute(args[i]);
 					}else throw new IllegalArgumentException("The arguments to predicate ${name} must be terms");
 					
 				}

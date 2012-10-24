@@ -17,71 +17,56 @@
 package edu.umd.cs.psl.model.argument;
 
 /**
- * This class implements a variable predicate argument which is specified by the variable name.
+ * A variable {@link Term}.
+ * <p>
+ * Variables are wildcards used to match {@link GroundTerm GroundTerms}.
+ * 
  * @author Matthias Broecheler
- *
  */
 public class Variable implements Term {
 
 	private final String identifier;
 	
 	/**
-	 * Constructs a variable, given a string ID.
+	 * Constructs a Variable, given a string ID.
 	 * 
 	 * @param id A string ID
+	 * @throws IllegalArgumentException  if id doesn't match [A-Za-z0-9_]+
 	 */
 	public Variable(String id) {
 		identifier = id;
 	}
 	
 	/**
-	 * Returns the variable ID.
-	 * 
-	 * @return The variable ID
+	 * @return the variable ID
 	 */
 	public String getName() {
 		return identifier;
 	}
 
 	/**
-	 * Returns the variable ID
-	 * 
-	 * @return The variable ID
+	 * @return {@link #getName()}
 	 */
 	@Override
 	public String toString() {
-		return identifier;
+		return getName();
 	}
 	
-	/**
-	 * Returns FALSE, as a variable is not ground.
-	 * 
-	 * @return FALSE
-	 */
-	@Override
-	public boolean isGround() {
-		return false;
-	}
-	
-	/**
-	 * Returns the hash code.
-	 * 
-	 * @return The integer hash code
-	 */
 	@Override
 	public int hashCode() {
 		return identifier.hashCode() * 1163;
 	}
 	
 	/**
-	 * Determines equality with another object.
+	 * Checks equality with another object.
 	 * 
-	 * @return TRUE if equal, FALSE otherwise
+	 * @param oth  Object to check for equality
+	 * @return TRUE if oth is a Variable with the same name
 	 */
 	@Override
 	public boolean equals(Object oth) {
 		if (oth==this) return true;
-		if (oth==null || !(getClass().isInstance(oth)) ) return false;
-		return identifier.equals(((Variable)oth).identifier);  
+		if (oth==null || !(oth instanceof Variable)) return false;
+		return getName().equals(((Variable)oth).getName());  
 	}	
 }

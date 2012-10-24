@@ -18,6 +18,7 @@ package edu.umd.cs.psl.model.predicate;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import com.google.common.collect.Iterables;
 
@@ -25,70 +26,99 @@ import edu.umd.cs.psl.model.argument.ArgumentType;
 import edu.umd.cs.psl.model.function.ExternalFunction;
 
 /**
- * A factory for Predicates.
+ * The factory for Predicates.
  * <p>
- * PredicateFactories act as namespaces, so a Predicate's name must be unique
- * among those made by a particular factory.
+ * Uses the Singleton pattern, i.e., only one instance can exist, so use
+ * {@link #getFactory()}.
+ * <p>
+ * Ensures that a single Predicate object exists for each Predicate name.
  */
 public class PredicateFactory {
+	
+	private static final PredicateFactory instance = new PredicateFactory();
 
 	private final Map<String,Predicate> predicateByName;
 	
-	/** Sole constructor. */
-	public PredicateFactory() {
+	private final Pattern predicateNamePattern;
+	
+	/**
+	 * Sole constructor.
+	 * <p>
+	 * Adds each {@link SpecialPredicate} to the set of existing Predicates.
+	 * 
+	 * @see #getFactory()
+	 */
+	private PredicateFactory() {
 		predicateByName = new HashMap<String,Predicate>();
+		predicateNamePattern = Pattern.compile("\\w+");
+		
+		predicateByName.put(SpecialPredicate.Equal.getName(), SpecialPredicate.Equal);
+		predicateByName.put(SpecialPredicate.NotEqual.getName(), SpecialPredicate.NotEqual);
+		predicateByName.put(SpecialPredicate.NonSymmetric.getName(), SpecialPredicate.NonSymmetric);
+	}
+	
+	public static PredicateFactory getFactory() {
+		return instance;
 	}
 	
 	/**
-	 * Constructs a StandardPredicate and registers it in this factory's namespace.
+	 * Constructs a StandardPredicate.
 	 *
 	 * @param name  name for the new predicate
 	 * @param types  types for each of the predicate's arguments
-	 * @throws IllegalArgumentException
-	 *             if this factory already constructed a predicate with the same name
-	 * @throws IllegalArgumentException  if name begins with '#'
-	 * @return the newly constructed predicate
+	 * @throws IllegalArgumentException  if name is already used, doesn't match \w+,
+	 *                                       or an element of types is NULL
+	 * @return the newly constructed Predicate
 	 */
 	public StandardPredicate createStandardPredicate(String name, ArgumentType[] types) {
+		checkPredicateSignature(name, types);
 		StandardPredicate p = new StandardPredicate(name, types);
 		addPredicate(p,name);
 		return p;
 	}
 	
 	/**
-	 * Constructs an ExternalFunctionalPredicate and registers it in this factory's namespace.
+	 * Constructs an ExternalFunctionalPredicate.
 	 *
 	 * @param name  name for the new predicate
 	 * @param extFun  the ExternalFunction the new predicate will use
-	 * @throws IllegalArgumentException
-	 *             if this factory already constructed a predicate with the same name
-	 * @throws IllegalArgumentException  if name begins with '#'
-	 * @return the newly constructed predicate
+	 * @throws IllegalArgumentException  if name is already used, doesn't match \w+,
+	 *                                       or extFun does not provide valid ArgumentTypes
+	 * @return the newly constructed Predicate
 	 */
 	public ExternalFunctionalPredicate createFunctionalPredicate(String name, ExternalFunction extFun) {
+		checkPredicateSignature(name, extFun.getArgumentTypes());
 		ExternalFunctionalPredicate p = new ExternalFunctionalPredicate(name, extFun);
 		addPredicate(p,name);
 		return p;
 	}
+
+	/**
+	 * @throws IllegalArgumentException  if name is already used, doesn't match \w+,
+	 *                                       or an element of types is NULL
+	 */
+	private void checkPredicateSignature(String name, ArgumentType[] types) {
+		if (!predicateNamePattern.matcher(name).matches())
+			throw new IllegalArgumentException("Name must match \\w+");
+		if (predicateByName.containsKey(name))
+			throw new IllegalArgumentException("Name is already used by another Predicate.");
+		for (int i = 0; i < types.length; i++)
+			if (types[i] == null)
+				throw new IllegalArgumentException("No ArgumentType may be NULL.");
+	}
 	
 	private void addPredicate(Predicate p, String name) {
-		if (predicateByName.containsKey(name))
-			throw new IllegalArgumentException("Predicate '" + name + "' has already been created.");
 		predicateByName.put(name, p);
-
 	}
 	
+	/**
+	 * Gets the Predicate with the given name, if it exists
+	 * 
+	 * @param name  the name to match
+	 * @return the Predicate, or NULL if no Predicate with that name exists
+	 */
 	public Predicate getPredicate(String name) {
-		if (!predicateByName.containsKey(name)) throw new IllegalArgumentException("Predicate '" + name + "' is unknown.");
 		return predicateByName.get(name);
-	}
-	
-	public boolean hasPredicate(String name) {
-		return predicateByName.containsKey(name);
-	}
-	
-	public boolean hasPredicate(Predicate p) {
-		return hasPredicate(p.getName());
 	}
 	
 	public Iterable<FunctionalPredicate> getFunctionalPredicates() {

@@ -23,15 +23,14 @@ import com.google.common.base.Preconditions;
 
 import edu.umd.cs.psl.model.TruthValues;
 import edu.umd.cs.psl.model.argument.ArgumentType;
-import edu.umd.cs.psl.model.argument.ArgumentTypes;
 import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.argument.TextAttribute;
+import edu.umd.cs.psl.model.argument.StringAttribute;
 import edu.umd.cs.psl.model.argument.Variable;
 
 public class AttributeSimFunAdapter implements ExternalFunction, BulkExternalFunction {
 
 	public static final double defaultThreshold = 0.1;
-	private static final ArgumentType[] argumenttypes = new ArgumentType[]{ArgumentTypes.Text,ArgumentTypes.Text};
+	private static final ArgumentType[] argumenttypes = new ArgumentType[]{ArgumentType.String,ArgumentType.String};
 	
 	private final AttributeSimilarityFunction function;
 	
@@ -59,8 +58,8 @@ public class AttributeSimFunAdapter implements ExternalFunction, BulkExternalFun
 		String[] s = new String[2];
 		for (int i=0;i<2;i++) {
 			GroundTerm arg = args[i];
-			if (!(arg instanceof TextAttribute)) throw new IllegalArgumentException("Argument "+i+" is not of type text, but: " + arg);
-			s[i] = ((TextAttribute)arg).getValue();
+			if (!(arg instanceof StringAttribute)) throw new IllegalArgumentException("Argument "+i+" is not of type text, but: " + arg);
+			s[i] = ((StringAttribute)arg).getValue();
 		}
 		return s;
 	}

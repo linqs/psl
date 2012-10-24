@@ -16,13 +16,16 @@
  */
 package edu.umd.cs.psl.database;
 
-import edu.umd.cs.psl.model.argument.Entity;
+import edu.umd.cs.psl.model.argument.GroundTerm;
+import edu.umd.cs.psl.model.atom.Atom;
 
 /**
- * A unique identifier suitable for identifying {@link Entity Entities} in a
+ * A unique identifier for identifying a distinct entity in a
  * {@link DataStore}.
+ * <p>
+ * UniqueIDs can be used as arguments in {@link Atom Atoms}.
  */
-public interface UniqueID extends Comparable<UniqueID> {
+public interface UniqueID extends GroundTerm, Comparable<UniqueID> {
 
 	/**
 	 * Returns a human-friendly String representation of this UniqueID.
