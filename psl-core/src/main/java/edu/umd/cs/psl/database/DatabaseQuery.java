@@ -20,9 +20,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import edu.umd.cs.psl.model.argument.Variable;
-import edu.umd.cs.psl.model.atom.AggregateAtom;
-import edu.umd.cs.psl.model.atom.FunctionalAtom;
-import edu.umd.cs.psl.model.atom.StandardAtom;
+import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.VariableAssignment;
 import edu.umd.cs.psl.model.formula.Conjunction;
 import edu.umd.cs.psl.model.formula.Formula;

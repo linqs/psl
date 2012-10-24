@@ -16,8 +16,10 @@
  */
 package edu.umd.cs.psl.model.argument;
 
+import edu.umd.cs.psl.database.UniqueID;
+
 /**
- * A {@link GroundTerm} that is a value, as opposed to a unique {@link Entity}.
+ * A {@link GroundTerm} that is a value, as opposed to a {@link UniqueID}.
  * 
  * @author Matthias Broecheler
  */

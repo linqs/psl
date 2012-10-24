@@ -70,28 +70,29 @@ import edu.umd.cs.psl.model.predicate.StandardPredicate;
  * 
  * <h2>Conventions</h2>
  * 
- * Any StandardAtom that is not explicitly stored in the Database has an implicit
- * truth value of 0.0.
+ * Any GroundAtom with a StandardPredicate that is not explicitly stored in the
+ * Database has an implicit truth value of 0.0.
  */
 public interface Database {
 
 	/**
 	 * Returns the GroundAtom for the given Predicate and GroundTerms.
 	 * <p>
-	 * If the GroundAtom has not been loaded into memory before, it will be stored
+	 * If the GroundAtom is not in memory, it will be instantiated and stored
 	 * in this Database's {@link AtomCache}.
 	 * 
 	 * @param p  the Predicate of the Atom
 	 * @param arguments  the GroundTerms of the Atom
 	 * @return the Atom
+	 * @throws IllegalStateException  if the Atom exists in multiple read Partitions
 	 */
 	public GroundAtom getAtom(Predicate p, GroundTerm[] arguments);
 	
 	/**
-	 * Converts a ground Atom to an AtomRecord and stores it in this Database's
-	 * write {@link Partition}.
+	 * Persists a RandomVariableAtom in this Database's
+	 * write Partition.
 	 * <p>
-	 * If an AtomRecord for the given Atom already exists in the write Partition,
+	 * If the RandomVariableAtom is already stored in the write Partition,
 	 * it will be updated.
 	 * 
 	 * @param atom  the Atom to persist
