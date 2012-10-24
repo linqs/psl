@@ -39,7 +39,7 @@ import edu.umd.cs.psl.model.ConfidenceValues;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.Term;
 import edu.umd.cs.psl.model.argument.Variable;
-import edu.umd.cs.psl.model.argument.type.VariableTypeMap;
+import edu.umd.cs.psl.model.argument.VariableTypeMap;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.AtomEvent;
 import edu.umd.cs.psl.model.atom.AtomEventFramework;

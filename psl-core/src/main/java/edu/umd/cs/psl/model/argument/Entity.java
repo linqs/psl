@@ -17,8 +17,6 @@
 package edu.umd.cs.psl.model.argument;
 
 import edu.umd.cs.psl.database.UniqueID;
-import edu.umd.cs.psl.model.argument.type.ArgumentType;
-import edu.umd.cs.psl.model.argument.type.ArgumentTypes;
 
 /**
  * This class represents domain objects which are predicate arguments. Domain Object are identified by their

@@ -16,8 +16,8 @@
  */
 package edu.umd.cs.psl.groovy.syntax;
 
+import edu.umd.cs.psl.model.argument.ArgumentType;
 import edu.umd.cs.psl.model.argument.Variable;
-import edu.umd.cs.psl.model.argument.type.ArgumentType;
 import edu.umd.cs.psl.model.set.term.VariableSetTerm;
 import edu.umd.cs.psl.groovy.PSLModel;
 import edu.umd.cs.psl.model.atom.Atom;

@@ -16,8 +16,8 @@
  */
 package edu.umd.cs.psl.model.predicate;
 
+import edu.umd.cs.psl.model.argument.ArgumentType;
 import edu.umd.cs.psl.model.argument.Term;
-import edu.umd.cs.psl.model.argument.type.ArgumentType;
 import edu.umd.cs.psl.model.atom.Atom;
 
 /**

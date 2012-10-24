@@ -22,7 +22,7 @@ import edu.umd.cs.psl.model.predicate.Predicate;
 
 /**
  * Provides centralization and hooks for managing the {@link GroundAtom GroundAtoms}
- * that are created from a {@link Database}.
+ * that are instantiated from a {@link Database}.
  * <p>
  * By wrapping key methods, such as {@link Database#getAtom(Predicate, GroundTerm[])},
  * an AtomManager gives additional control over the GroundAtoms that come from

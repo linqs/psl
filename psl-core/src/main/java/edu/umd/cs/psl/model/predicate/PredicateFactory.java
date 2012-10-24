@@ -21,7 +21,7 @@ import java.util.Map;
 
 import com.google.common.collect.Iterables;
 
-import edu.umd.cs.psl.model.argument.type.ArgumentType;
+import edu.umd.cs.psl.model.argument.ArgumentType;
 import edu.umd.cs.psl.model.function.ExternalFunction;
 
 /**

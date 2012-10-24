@@ -16,8 +16,8 @@
  */
 package edu.umd.cs.psl.model.function;
 
+import edu.umd.cs.psl.model.argument.ArgumentType;
 import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.argument.type.ArgumentType;
 
 public interface ExternalFunction {
 

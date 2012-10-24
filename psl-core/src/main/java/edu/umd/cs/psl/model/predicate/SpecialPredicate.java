@@ -18,10 +18,10 @@ package edu.umd.cs.psl.model.predicate;
 
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.database.UniqueID;
+import edu.umd.cs.psl.model.argument.ArgumentType;
+import edu.umd.cs.psl.model.argument.ArgumentTypes;
 import edu.umd.cs.psl.model.argument.Entity;
 import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.argument.type.ArgumentType;
-import edu.umd.cs.psl.model.argument.type.ArgumentTypes;
 
 /**
  * A commonly used FunctionalPredicate.

@@ -17,18 +17,15 @@
 package edu.umd.cs.psl.model.argument;
 
 /**
- * An interface for domain attributes.
+ * A {@link GroundTerm} that is a value, as opposed to a unique {@link Entity}.
  * 
  * @author Matthias Broecheler
- *
  */
 public interface Attribute extends GroundTerm {
 	
 	/**
-	 * Returns the attribute value.
-	 * 
-	 * @return The attribute value
+	 * @return Java representation of the Attribute's value
 	 */
-	public Object getAttribute();
+	public Object getValue();
 
 }

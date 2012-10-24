@@ -22,11 +22,11 @@ import java.util.Map;
 import com.google.common.base.Preconditions;
 
 import edu.umd.cs.psl.model.TruthValues;
+import edu.umd.cs.psl.model.argument.ArgumentType;
+import edu.umd.cs.psl.model.argument.ArgumentTypes;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.TextAttribute;
 import edu.umd.cs.psl.model.argument.Variable;
-import edu.umd.cs.psl.model.argument.type.ArgumentType;
-import edu.umd.cs.psl.model.argument.type.ArgumentTypes;
 
 public class AttributeSimFunAdapter implements ExternalFunction, BulkExternalFunction {
 
@@ -60,7 +60,7 @@ public class AttributeSimFunAdapter implements ExternalFunction, BulkExternalFun
 		for (int i=0;i<2;i++) {
 			GroundTerm arg = args[i];
 			if (!(arg instanceof TextAttribute)) throw new IllegalArgumentException("Argument "+i+" is not of type text, but: " + arg);
-			s[i] = ((TextAttribute)arg).getAttribute();
+			s[i] = ((TextAttribute)arg).getValue();
 		}
 		return s;
 	}

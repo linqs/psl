@@ -52,14 +52,14 @@ import edu.umd.cs.psl.database.ResultList;
 import edu.umd.cs.psl.database.UniqueID;
 import edu.umd.cs.psl.model.ConfidenceValues;
 import edu.umd.cs.psl.model.argument.ArgumentFactory;
+import edu.umd.cs.psl.model.argument.ArgumentType;
+import edu.umd.cs.psl.model.argument.ArgumentTypes;
 import edu.umd.cs.psl.model.argument.Attribute;
 import edu.umd.cs.psl.model.argument.Entity;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.Term;
 import edu.umd.cs.psl.model.argument.Variable;
-import edu.umd.cs.psl.model.argument.type.ArgumentType;
-import edu.umd.cs.psl.model.argument.type.ArgumentTypes;
-import edu.umd.cs.psl.model.argument.type.VariableTypeMap;
+import edu.umd.cs.psl.model.argument.VariableTypeMap;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.AtomCache;
 import edu.umd.cs.psl.model.atom.GroundAtom;
@@ -225,7 +225,7 @@ public class RDBMSDatabase implements Database {
 		for (int i=0;i<ph.argumentColumns().length;i++) {
 			assert arguments[i] instanceof GroundTerm;
 			if (arguments[i] instanceof Attribute) {
-				q.addCustomColumn(ph.argumentColumns()[i], ((Attribute)arguments[i]).getAttribute());
+				q.addCustomColumn(ph.argumentColumns()[i], ((Attribute)arguments[i]).getValue());
 			} else { //Entity
 				Entity e = (Entity)arguments[i];
 				q.addCustomColumn(ph.argumentColumns()[i], e.getID().getInternalID());
@@ -262,7 +262,7 @@ public class RDBMSDatabase implements Database {
 		for (int i=0;i<ph.argumentColumns().length;i++) {
 			assert arguments[i] instanceof GroundTerm;
 			if (arguments[i] instanceof Attribute) {
-				q.addCondition(BinaryCondition.equalTo(new CustomSql(ph.argumentColumns()[i]),  ((Attribute)arguments[i]).getAttribute() ));
+				q.addCondition(BinaryCondition.equalTo(new CustomSql(ph.argumentColumns()[i]),  ((Attribute)arguments[i]).getValue() ));
 			} else { //Entity
 				Entity e = (Entity)arguments[i];
 				q.addCondition(BinaryCondition.equalTo(new CustomSql(ph.argumentColumns()[i]),  e.getID().getInternalID() ));
@@ -304,7 +304,7 @@ public class RDBMSDatabase implements Database {
 			if (arguments[i]==null) continue;
 			assert arguments[i] instanceof GroundTerm;
 			if (arguments[i] instanceof Attribute) {
-				q.addCondition(BinaryCondition.equalTo(new CustomSql(ph.argumentColumns()[i]),  ((Attribute)arguments[i]).getAttribute() ));
+				q.addCondition(BinaryCondition.equalTo(new CustomSql(ph.argumentColumns()[i]),  ((Attribute)arguments[i]).getValue() ));
 			} else { //Entity
 				Entity e = (Entity)arguments[i];
 				q.addCondition(BinaryCondition.equalTo(new CustomSql(ph.argumentColumns()[i]),  e.getID().getInternalID() ));

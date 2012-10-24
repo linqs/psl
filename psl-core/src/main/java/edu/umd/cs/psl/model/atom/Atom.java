@@ -21,9 +21,9 @@ import java.util.Set;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
+import edu.umd.cs.psl.model.argument.ArgumentType;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.Term;
-import edu.umd.cs.psl.model.argument.type.ArgumentType;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.predicate.Predicate;
 

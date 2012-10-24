@@ -14,11 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.model.argument.type;
+package edu.umd.cs.psl.model.argument;
 
 import java.util.*;
 
-import edu.umd.cs.psl.model.argument.Variable;
 
 /**
  * A hashed storage class for arguments, keyed on their associated variables.

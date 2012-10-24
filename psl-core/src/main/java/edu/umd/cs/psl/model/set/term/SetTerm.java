@@ -18,8 +18,8 @@ package edu.umd.cs.psl.model.set.term;
 
 import java.util.*;
 
-import edu.umd.cs.psl.model.argument.type.ArgumentType;
-import edu.umd.cs.psl.model.argument.type.VariableTypeMap;
+import edu.umd.cs.psl.model.argument.ArgumentType;
+import edu.umd.cs.psl.model.argument.VariableTypeMap;
 
 public interface SetTerm {
 	

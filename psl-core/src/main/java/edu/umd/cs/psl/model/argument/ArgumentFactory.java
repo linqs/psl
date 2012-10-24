@@ -20,7 +20,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import edu.umd.cs.psl.database.UniqueID;
-import edu.umd.cs.psl.model.argument.type.ArgumentType;
 
 /**
  * Factory for arguments to a predicate.
@@ -72,33 +71,33 @@ public class ArgumentFactory {
 	}
 	
 	/**
-	 * Returns a {@link NumberAttribute}, given an integer value.
+	 * Returns a {@link DoubleAttribute}, given an integer value.
 	 * 
 	 * @param i An integer value
 	 * @return A numerical attribute
 	 */
 	public static Attribute getAttribute(int i) {
-		return new NumberAttribute(i);
+		return new DoubleAttribute(i);
 	}
 
 	/**
-	 * Returns a {@link NumberAttribute}, given a double.
+	 * Returns a {@link DoubleAttribute}, given a double.
 	 * 
 	 * @param d A double
 	 * @return A numerical attribute
 	 */
 	public static Attribute getAttribute(double d) {
-		return new NumberAttribute(d);
+		return new DoubleAttribute(d);
 	}
 	
 	/**
-	 * Returns a {@link NumberAttribute}, given a {@link Number}.
+	 * Returns a {@link DoubleAttribute}, given a {@link Number}.
 	 * 
 	 * @param n A number
 	 * @return A numerical attribute
 	 */
 	public static Attribute getAttribute(Number n) {
-		return new NumberAttribute(n.doubleValue());
+		return new DoubleAttribute(n.doubleValue());
 	}
 	
 	/**

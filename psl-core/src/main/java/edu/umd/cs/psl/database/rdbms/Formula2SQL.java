@@ -127,7 +127,7 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 				}
 			}
 			if (arg instanceof Attribute) {
-				convert[i] = ((Attribute)arg).getAttribute();
+				convert[i] = ((Attribute)arg).getValue();
 			} else if (arg instanceof Entity) {
 				Entity e = (Entity)arg;
 				convert[i] = e.getID().getInternalID();
@@ -171,7 +171,7 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 				}
 				
 				if (arg instanceof Attribute) {
-					query.addCondition(BinaryCondition.equalTo(new CustomSql(tableDot+ph.argumentColumns()[i]),  ((Attribute)arg).getAttribute() ));
+					query.addCondition(BinaryCondition.equalTo(new CustomSql(tableDot+ph.argumentColumns()[i]),  ((Attribute)arg).getValue() ));
 				} else if (arg instanceof Entity) { //Entity
 					Entity e = (Entity)arg;
 					query.addCondition(BinaryCondition.equalTo(new CustomSql(tableDot+ph.argumentColumns()[i]),  e.getID().getInternalID() ));

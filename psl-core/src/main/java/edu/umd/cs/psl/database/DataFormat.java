@@ -16,10 +16,10 @@
  */
 package edu.umd.cs.psl.database;
 
+import edu.umd.cs.psl.model.argument.ArgumentType;
+import edu.umd.cs.psl.model.argument.ArgumentTypes;
 import edu.umd.cs.psl.model.argument.Entity;
 import edu.umd.cs.psl.model.argument.Term;
-import edu.umd.cs.psl.model.argument.type.ArgumentType;
-import edu.umd.cs.psl.model.argument.type.ArgumentTypes;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.predicate.Predicate;
 

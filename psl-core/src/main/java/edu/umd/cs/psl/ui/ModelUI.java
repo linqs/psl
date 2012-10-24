@@ -38,7 +38,7 @@ import edu.umd.cs.psl.evaluation.result.FullInferenceResult;
 import edu.umd.cs.psl.evaluation.resultui.UIFullInferenceResult;
 import edu.umd.cs.psl.evaluation.resultui.UIFullConfidenceAnalysisResult;
 import edu.umd.cs.psl.model.Model;
-import edu.umd.cs.psl.model.argument.type.ArgumentType;
+import edu.umd.cs.psl.model.argument.ArgumentType;
 import edu.umd.cs.psl.model.function.AttributeSimilarityFunction;
 import edu.umd.cs.psl.model.function.ExternalFunction;
 import edu.umd.cs.psl.model.kernel.Kernel;

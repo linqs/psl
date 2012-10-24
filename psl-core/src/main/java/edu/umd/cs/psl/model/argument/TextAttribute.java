@@ -16,88 +16,57 @@
  */
 package edu.umd.cs.psl.model.argument;
 
-import edu.umd.cs.psl.model.argument.type.ArgumentType;
-import edu.umd.cs.psl.model.argument.type.ArgumentTypes;
-
 /**
- * A particular domain attribute for strings.
- * 
- * @author
- *
+ * A String {@link Attribute}.
  */
 public class TextAttribute implements Attribute {
 
-	private final String attribute;
+	private final String value;
 	
 	/**
-	 * Constructs a textual attribute, given a string.
+	 * Constructs a TextAttribute from a String
 	 * 
-	 * @param a A string value
+	 * @param value  String to encapsulate
 	 */
-	public TextAttribute(String a) {
-		attribute = a;
+	public TextAttribute(String value) {
+		this.value = value;
 	}
 	
 	/**
-	 * Returns the string value.
-	 * 
-	 * @return The string value, with a maximum length 30
+	 * @return the encapsulated String, truncated to 30 characters
 	 */
 	@Override
 	public String toString() {
-		return "'" + attribute.substring(0, Math.min(attribute.length(), 30)) + "'";
+		if (value.length() > 30)
+			return "'" + value.substring(0, Math.min(value.length(), 25)) + "...'";
+		else
+			return value;
 	}
 	
-	/**
-	 * Returns the string value.
-	 * 
-	 * @return The string value
-	 */
 	@Override
-	public String getAttribute() {
-		return attribute;
+	public String getValue() {
+		return value;
 	}
 	
-	/**
-	 * Returns TRUE, as an the attribute is ground.
-	 * 
-	 * @return TRUE
-	 */
-	@Override
-	public boolean isGround() {
-		return true;
-	}
-	
-	/**
-	 * Returns the argument type.
-	 * 
-	 * @return The argument type
-	 */
 	@Override
 	public ArgumentType getType() {
-		return ArgumentTypes.Text;
+		return ArgumentType.Text;
 	}
 	
-	/**
-	 * Returns the hash code.
-	 * 
-	 * @return The integer hash code
-	 */
 	@Override
 	public int hashCode() {
-		return attribute.hashCode();
+		return value.hashCode();
 	}
 	
 	/**
-	 * Determines equality with another object.
-	 * 
-	 * @return TRUE if equal, FALSE otherwise
+	 * A TextAttribute is equal to another Object if that Object is a TextAttribute
+	 * and their values are equal.
 	 */
 	@Override
 	public boolean equals(Object oth) {
 		if (oth==this) return true;
-		if (oth==null || !(getClass().isInstance(oth)) ) return false;
-		return attribute.equals(((TextAttribute)oth).attribute);  
+		if (oth==null || !(oth instanceof TextAttribute) ) return false;
+		return value.equals(((TextAttribute) oth).getValue());  
 	}
 	
 }

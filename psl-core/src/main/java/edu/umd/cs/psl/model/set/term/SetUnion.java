@@ -22,8 +22,8 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import com.google.common.collect.Sets;
 
-import edu.umd.cs.psl.model.argument.type.ArgumentType;
-import edu.umd.cs.psl.model.argument.type.VariableTypeMap;
+import edu.umd.cs.psl.model.argument.ArgumentType;
+import edu.umd.cs.psl.model.argument.VariableTypeMap;
 
 public class SetUnion implements SetTerm {
 

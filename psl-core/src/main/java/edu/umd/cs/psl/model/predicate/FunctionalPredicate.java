@@ -16,8 +16,8 @@
  */
 package edu.umd.cs.psl.model.predicate;
 
+import edu.umd.cs.psl.model.argument.ArgumentType;
 import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.argument.type.ArgumentType;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.ObservedAtom;

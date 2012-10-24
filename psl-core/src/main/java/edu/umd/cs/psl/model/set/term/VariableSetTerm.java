@@ -20,10 +20,10 @@ import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
 
+import edu.umd.cs.psl.model.argument.ArgumentType;
 import edu.umd.cs.psl.model.argument.Term;
 import edu.umd.cs.psl.model.argument.Variable;
-import edu.umd.cs.psl.model.argument.type.ArgumentType;
-import edu.umd.cs.psl.model.argument.type.VariableTypeMap;
+import edu.umd.cs.psl.model.argument.VariableTypeMap;
 import edu.umd.cs.psl.model.formula.Formula;
 
 public class VariableSetTerm implements BasicSetTerm {

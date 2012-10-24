@@ -20,7 +20,7 @@ import java.util.*;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
-import edu.umd.cs.psl.model.argument.type.VariableTypeMap;
+import edu.umd.cs.psl.model.argument.VariableTypeMap;
 import edu.umd.cs.psl.model.atom.Atom;
 
 /**

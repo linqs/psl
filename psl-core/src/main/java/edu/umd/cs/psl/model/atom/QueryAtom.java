@@ -16,11 +16,11 @@
  */
 package edu.umd.cs.psl.model.atom;
 
+import edu.umd.cs.psl.model.argument.ArgumentType;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.Term;
 import edu.umd.cs.psl.model.argument.Variable;
-import edu.umd.cs.psl.model.argument.type.ArgumentType;
-import edu.umd.cs.psl.model.argument.type.VariableTypeMap;
+import edu.umd.cs.psl.model.argument.VariableTypeMap;
 import edu.umd.cs.psl.model.predicate.Predicate;
 
 /**

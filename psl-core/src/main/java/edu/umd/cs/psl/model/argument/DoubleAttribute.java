@@ -16,16 +16,11 @@
  */
 package edu.umd.cs.psl.model.argument;
 
-import edu.umd.cs.psl.model.argument.type.ArgumentType;
-import edu.umd.cs.psl.model.argument.type.ArgumentTypes;
 
 /**
- * A domain attribute for numerical values.
- * 
- * @author
- *
+ * A Double {@link Attribute}.
  */
-public class NumberAttribute implements Attribute {
+public class DoubleAttribute implements Attribute {
 
 	private final double number;
 	
@@ -34,7 +29,7 @@ public class NumberAttribute implements Attribute {
 	 * 
 	 * @param no A numerical value
 	 */
-	public NumberAttribute(double no) {
+	public DoubleAttribute(double no) {
 		number = no;
 	}
 	
@@ -54,7 +49,7 @@ public class NumberAttribute implements Attribute {
 	 * @return The attribute value
 	 */
 	@Override
-	public Double getAttribute() {
+	public Double getValue() {
 		return number;
 	}
 	
@@ -97,7 +92,7 @@ public class NumberAttribute implements Attribute {
 	public boolean equals(Object oth) {
 		if (oth==this) return true;
 		if (oth==null || !(getClass().isInstance(oth)) ) return false;
-		return number==((NumberAttribute)oth).number;  
+		return number==((DoubleAttribute)oth).number;  
 	}
 
 }

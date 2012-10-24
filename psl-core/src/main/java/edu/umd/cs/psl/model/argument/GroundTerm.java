@@ -16,13 +16,8 @@
  */
 package edu.umd.cs.psl.model.argument;
 
-import edu.umd.cs.psl.model.argument.type.ArgumentType;
-
 /**
- * An interface for ground terms.
- * 
- * @author
- *
+ * A {@link Term} that is ground, i.e., not a {@link Variable}.
  */
 public interface GroundTerm extends Term {
 

@@ -25,7 +25,7 @@ import com.google.common.collect.SetMultimap;
 
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.argument.type.VariableTypeMap;
+import edu.umd.cs.psl.model.argument.VariableTypeMap;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.model.predicate.Predicate;
