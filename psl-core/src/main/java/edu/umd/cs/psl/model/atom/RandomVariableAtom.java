@@ -28,7 +28,7 @@ import edu.umd.cs.psl.reasoner.function.MutableAtomFunctionVariable;
  * A GroundAtom is instantiated as a RandomVariableAtom is BOTH of the following
  * conditions are met:
  * <ul>
- *   <li>its {@link StandardPredicate} is open in the Atom's Database</li>
+ *   <li>it has a {@link StandardPredicate} that is open in the Atom's Database</li>
  *   <li>it is not stored in one of its Database's read-only Partitions</li>
  * </ul>
  */

@@ -20,13 +20,16 @@ import java.util.HashSet;
 import java.util.Set;
 
 import edu.umd.cs.psl.model.argument.Variable;
-import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.VariableAssignment;
 import edu.umd.cs.psl.model.formula.Conjunction;
 import edu.umd.cs.psl.model.formula.Formula;
+import edu.umd.cs.psl.model.predicate.FunctionalPredicate;
+import edu.umd.cs.psl.model.predicate.StandardPredicate;
 
 /**
- * A query to select {@link ResultList ResultLists} from a {@link Database}.
+ * A query to select groundings from a {@link Database}.
+ * <p>
+ * Groundings that match the query are returned in the form of a {@link ResultList}.
  * 
  * <h2>Semantics</h2>
  * 
@@ -35,17 +38,15 @@ import edu.umd.cs.psl.model.formula.Formula;
  * projected.
  * <p>
  * The Formula is given upon initialization and is fixed. It must be
- * a {@link Conjunction} of {@link Atom Atoms} or a single Atom.
- * The query will return any grounding such that each {@link StandardAtom}
- * in the ground Formula is stored in the Database and each {@link FunctionalAtom}
- * in the ground Formula has a non-zero truth value. (Any {@link AggregateAtom}
- * is ignored.)
+ * a {@link Conjunction} of Atoms or a single Atom.
+ * The query will return any grounding such that each GroundAtom
+ * with a {@link StandardPredicate} in the ground Formula is stored in the
+ * Database and each GroundAtom with a {@link FunctionalPredicate}
+ * in the ground Formula has a non-zero truth value.
  * <p>
  * The partial grounding is a {@link VariableAssignment} which all returned
- * groundings must match. Variables in the partial grounding will not be included
- * in the returned substitutions under any circumstances. Use
- * {@link #getPartialGrounding()} to modify the partial grounding. It is
- * initially empty.
+ * groundings must match. Use {@link #getPartialGrounding()} to modify the partial
+ * grounding. It is initially empty.
  * <p>
  * The projection subset is a subset of the Variables in the Formula onto
  * which the returned groundings will be projected. An empty subset is

@@ -16,7 +16,7 @@
  */
 package edu.umd.cs.psl.database.rdbms;
 
-import edu.umd.cs.psl.database.UniqueID;
+import edu.umd.cs.psl.model.argument.UniqueID;
 
 
 public class RDBMSUniqueIntID implements UniqueID {

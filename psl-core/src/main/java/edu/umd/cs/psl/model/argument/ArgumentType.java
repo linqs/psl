@@ -75,7 +75,7 @@ public enum ArgumentType {
 		
 		@Override
 		public boolean isInstance(GroundTerm term) {
-			return (term instanceof edu.umd.cs.psl.database.UniqueID);
+			return (term instanceof edu.umd.cs.psl.model.argument.UniqueID);
 		}
 	};
 	

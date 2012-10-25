@@ -14,16 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.database;
+package edu.umd.cs.psl.model.argument;
 
-import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.atom.Atom;
+import edu.umd.cs.psl.database.DataStore;
+import edu.umd.cs.psl.database.Database;
+import edu.umd.cs.psl.model.atom.GroundAtom;
 
 /**
- * A unique identifier for identifying a distinct entity in a
- * {@link DataStore}.
+ * A unique identifier for a distinct entity.
  * <p>
- * UniqueIDs can be used as arguments in {@link Atom Atoms}.
+ * {@link DataStore DataStores} and {@link Database Databases} use UniqueIDs
+ * to identify distinct entities for performance reasons. They should be used
+ * instead of {@link Attribute Attributes} when the GroundTerm is expected
+ * to appear in multiple {@link GroundAtom GroundAtoms}.
+ * <p>
+ * For example, people in a social network should probably be represented as
+ * UniqueIDs, but their properties, such as names or ages, should probably
+ * be Attributes.
+ * 
+ * @see DataStore#getUniqueID(Object)
+ * @see Database#getUniqueID(Object)
  */
 public interface UniqueID extends GroundTerm, Comparable<UniqueID> {
 
@@ -34,17 +44,12 @@ public interface UniqueID extends GroundTerm, Comparable<UniqueID> {
 	 * 
 	 * @return a human-friendly identifier
 	 */
-	public String getName();
+	@Override
+	public String toString();
 	
 	/**
 	 * @return the unique identifier used by a {@link DataStore} implementation
 	 */
 	public Object getInternalID();
-	
-	@Override
-	public int hashCode();
-	
-	@Override
-	public boolean equals(Object oth);
 	
 }

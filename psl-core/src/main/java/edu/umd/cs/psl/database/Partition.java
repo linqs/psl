@@ -16,25 +16,46 @@
  */
 package edu.umd.cs.psl.database;
 
-/**
- * A subset of {@link AtomRecord AtomRecords} in a {@link DataStore}.
- */
-public interface Partition {
+import com.google.common.base.Preconditions;
 
-	/**
-	 * Gets the Partition's integer ID.
-	 * 
-	 * @return the Partition's ID
-	 */
-	public int getID();
+import edu.umd.cs.psl.model.atom.GroundAtom;
+
+/**
+ * Identifier for a subset of {@link GroundAtom GroundAtoms} in a {@link DataStore}.
+ */
+public class Partition {
+
+	private final int id;
 	
 	/**
-	 * Returns a nickname for the Partition.
-	 * <p>
-	 * Not necessarily unique.
-	 *  
-	 * @return the Partition's nickname
+	 * Sole constructor.
+	 * 
+	 * @param id  non-negative identifier
 	 */
-	public String getName();
+	public Partition(int id) {
+		Preconditions.checkArgument(id>=0);
+		this.id=id;
+	}
+
+	public int getID() {
+		return id;
+	}
+	
+	@Override
+	public String toString() {
+		return "Partition["+id+"]";
+	}
+	
+	@Override
+	public int hashCode() {
+		return id+211;
+	}
+	
+	@Override
+	public boolean equals(Object oth) {
+		if (oth==this) return true;
+		if (oth==null || !(oth instanceof Partition)) return false;
+		return id == ((Partition)oth).id;  
+	}
 	
 }

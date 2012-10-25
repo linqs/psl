@@ -17,15 +17,13 @@
 package edu.umd.cs.psl.database;
 
 import edu.umd.cs.psl.model.argument.GroundTerm;
+import edu.umd.cs.psl.model.argument.UniqueID;
 import edu.umd.cs.psl.model.argument.Variable;
-import edu.umd.cs.psl.model.atom.AggregateAtom;
 import edu.umd.cs.psl.model.atom.AtomCache;
 import edu.umd.cs.psl.model.atom.AtomManager;
-import edu.umd.cs.psl.model.atom.FunctionalAtom;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
-import edu.umd.cs.psl.model.atom.StandardAtom;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
 
@@ -50,33 +48,32 @@ import edu.umd.cs.psl.model.predicate.StandardPredicate;
  * that have been loaded into memory and ensure these objects are unique.
  * The AtomCache is accessible via {@link #getAtomCache()}.
  * 
- * <h2>GroundAtom Types</h2>
+ * <h2>Conventions</h2>
  * 
- * Of the three basic types of GroundAtoms, {@link StandardAtom}, {@link AggregateAtom},
- * and {@link FunctionalAtom}, only StandardAtoms are stored in the Database.
- * Any AggregateAtom or FunctionalAtom is implicitly in the Database.
- * <p>
- * All StandardAtoms that exist in one of the Database's read Partitions are
- * {@link ObservedAtom ObservedAtoms}. If a StandardAtom does not, then its
- * type depends on its {@link Predicate}.
- * <p>
- * Databases treat Predicates as either <em>open</em> or
- * <em>closed</em>. A StandardAtom with a closed Predicate is an ObservedAtom;
- * otherwise it is a RandomVariableAtom.
+ * Databases treat StandardPredicates as either <em>open</em> or
+ * <em>closed</em>. A GroundAtom with a closed StandardPredicate is always an
+ * ObservedAtom; otherwise it may a RandomVariableAtom.
  * <p>
  * RandomVariableAtoms will only be inserted and/or updated in the Database if
  * {@link #commit(RandomVariableAtom)} or {@link RandomVariableAtom#commitToDB()}
  * is called.
- * 
- * <h2>Conventions</h2>
- * 
+ * <p>
  * Any GroundAtom with a StandardPredicate that is not explicitly stored in the
- * Database has an implicit truth value of 0.0.
+ * Database has an implicit default truth value (and default confidence value
+ * if the StandardPredicate is open).
  */
 public interface Database {
 
 	/**
 	 * Returns the GroundAtom for the given Predicate and GroundTerms.
+	 * <p>
+	 * It will be a {@link RandomVariableAtom} if both of the following conditions
+	 * are met:
+	 * <ul>
+	 *   <li>it has a {@link StandardPredicate} that is open</li>
+	 *   <li>it is not stored in a read-only Partition</li>
+	 * 	</ul>
+	 * Otherwise, it will be an {@link ObservedAtom}.
 	 * <p>
 	 * If the GroundAtom is not in memory, it will be instantiated and stored
 	 * in this Database's {@link AtomCache}.
@@ -117,6 +114,13 @@ public interface Database {
 	 * @return TRUE if predicate is closed
 	 */
 	public boolean isClosed(StandardPredicate predicate);
+	
+	/**
+	 * Convenience method.
+	 * <p>
+	 * Calls {@link DataStore#getUniqueID(Object)} on this Database's DataStore.
+	 */
+	public UniqueID getUniqueID(Object key);
 	
 	/**
 	 * @return the DataStore backing this Database

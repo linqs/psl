@@ -20,6 +20,7 @@ import java.util.Set;
 
 import edu.umd.cs.psl.database.loading.Inserter;
 import edu.umd.cs.psl.database.loading.Updater;
+import edu.umd.cs.psl.model.argument.UniqueID;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.SpecialPredicate;
@@ -73,6 +74,20 @@ public interface DataStore {
 	 *                                       write Partition of another Database
 	 */
 	public Database getDatabase(Partition write, Set<StandardPredicate> toClose, Partition... read);
+	
+	/**
+	 * Returns a UniqueID based on the given key.
+	 * <p>
+	 * An Integer must always be a valid key. Other types may be supported by
+	 * implementations and/or configurations.
+	 * <p>
+	 * If two keys are equal, they must map to the same UniqueID.
+	 * 
+	 * @param key  the key to a UniqueID
+	 * @return the UniqueID indicated by key
+	 * @throws IllegalArgumentException  if the key is invalid
+	 */
+	public UniqueID getUniqueID(Object key);
 	
 	/**
 	 * Creates an Inserter for inserting new {@link GroundAtom} information
