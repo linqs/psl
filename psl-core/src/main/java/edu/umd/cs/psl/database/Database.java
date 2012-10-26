@@ -102,7 +102,7 @@ public interface Database {
 	 * @param p  the Predicate of the Atom
 	 * @param arguments  the GroundTerms of the Atom
 	 * @return the Atom
-	 * @throws IllegalArgumentException  if arguments are not valid
+	 * @throws IllegalArgumentException  if p is not registered or arguments are not valid
 	 * @throws IllegalStateException  if the Atom is persisted in multiple read Partitions
 	 */
 	public GroundAtom getAtom(Predicate p, GroundTerm... arguments);
