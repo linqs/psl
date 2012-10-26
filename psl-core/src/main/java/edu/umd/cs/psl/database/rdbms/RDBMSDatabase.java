@@ -163,10 +163,15 @@ public class RDBMSDatabase implements Database {
 		return readIDs;
 	}
 	
+	/*
+	 * Originally 'persist', Database.java's commit seemed like closest match.
+	 * (non-Javadoc)
+	 * @see edu.umd.cs.psl.database.Database#commit(edu.umd.cs.psl.model.atom.RandomVariableAtom)
+	 */
 	@Override
-	public void persist(Atom atom) {
-		if (!atom.isGround() || (!atom.getStatus().isActive() && !atom.getStatus().isConsidered()))
-			throw new IllegalArgumentException("Cannot persist atom.");
+	public void commit(RandomVariableAtom atom) {
+		//if (!atom.isGround() || (!atom.getStatus().isActive() && !atom.getStatus().isConsidered()))
+		//	throw new IllegalArgumentException("Cannot persist atom.");
 		RDBMSPredicateHandle ph = getHandle(atom.getPredicate());
 
 		
@@ -198,7 +203,11 @@ public class RDBMSDatabase implements Database {
 			throw new AssertionError(e);
 		}	
 	}
-	
+	/*
+	 * This appears to be obsolete code-- there's no such concept of PSL values or switching
+	 * over their values on an atom.
+	 */
+	/*
 	private PSLValue getPersistencePSLValue(Atom atom) {
 		switch(atom.getStatus()) {
 		case UnconsideredFixed:
@@ -216,7 +225,7 @@ public class RDBMSDatabase implements Database {
 		default: throw new IllegalStateException("Atom has an illegal status: " + atom);
 		}
 	}
-	
+	*/
 	private void insertAtom(Atom atom) {
 		RDBMSPredicateHandle ph = getHandle(atom.getPredicate());
 		//Build SQL statement
@@ -683,12 +692,6 @@ public class RDBMSDatabase implements Database {
 		}
 		assert atom!=null;
 		return atom;
-	}
-
-	@Override
-	public void commit(RandomVariableAtom atom) {
-		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
