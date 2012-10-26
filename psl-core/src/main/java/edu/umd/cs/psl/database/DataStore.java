@@ -27,11 +27,10 @@ import edu.umd.cs.psl.model.predicate.SpecialPredicate;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
 
 /**
- * Organizes {@link GroundAtom GroundAtoms} into {@link Partition Partitions}
- * and makes them available via {@link Database Databases}.
+ * Makes {@link GroundAtom GroundAtoms} available via {@link Database Databases}.
  * <p>
- * GroundAtoms of {@link StandardPredicate StandardPredicates} can be persisted
- * in a DataStore.
+ * GroundAtoms with {@link StandardPredicate StandardPredicates} can be persisted
+ * in a DataStore's {@link Partition Partitions}.
  */
 public interface DataStore {
 
@@ -49,7 +48,7 @@ public interface DataStore {
 	
 	/**
 	 * Creates a Database that can read from and write to a {@link Partition} and
-	 * additionally read from a set of additional Partitions.
+	 * optionally read from additional Partitions.
 	 * 
 	 * @param write  the Partition to write to and read from
 	 * @param read  additional Partitions to read from
@@ -61,7 +60,7 @@ public interface DataStore {
 	
 	/**
 	 * Creates a Database that can read from and write to a {@link Partition} and
-	 * additionally read from a set of additional Partitions.
+	 * optionally read from additional Partitions.
 	 * <p>
 	 * Additionally, defines a set of StandardPredicates as closed in the Database,
 	 * meaning that all GroundAtoms of that Predicate are ObservedAtoms.
@@ -90,7 +89,7 @@ public interface DataStore {
 	public UniqueID getUniqueID(Object key);
 	
 	/**
-	 * Creates an Inserter for inserting new {@link GroundAtom} information
+	 * Creates an Inserter for inserting new {@link GroundAtom GroundAtoms}
 	 * into a {@link Partition}.
 	 * 
 	 * @param predicate  the Predicate of the Atoms to be inserted
@@ -102,7 +101,7 @@ public interface DataStore {
 	public Inserter getInserter(StandardPredicate predicate, Partition partition);
 	
 	/**
-	 * Creates an Updater for updating {@link GroundAtom} information
+	 * Creates an Updater for updating {@link GroundAtom GroundAtoms}
 	 * in a {@link Partition}.
 	 * 
 	 * @param predicate  the Predicate of the Atoms to be updated

@@ -80,7 +80,7 @@ public class AtomCache {
 	}
 	
 	/**
-	 * Initializes an ObservedAtom and stores it in this AtomCache.
+	 * Instantiates an ObservedAtom and stores it in this AtomCache.
 	 * <p>
 	 * This method should only be called by this AtomCache's {@link Database}.
 	 * To retrieve a GroundAtom, all others should use {@link Database#getAtom(Predicate, GroundTerm[])}
@@ -91,19 +91,20 @@ public class AtomCache {
 	 * 
 	 * @param p  the Predicate of the Atom
 	 * @param args  the arguments to this Atom
-	 * @param value  this Atom's truth value
+	 * @param value  the Atom's truth value
+	 * @param confidence  the Atom's confidence value
 	 * @return the new ObservedAtom
 	 */
-	public ObservedAtom initializeObservedAtom(Predicate p, GroundTerm[] args,
-			double value) {
-		ObservedAtom atom = new ObservedAtom(p, args, db, value);
+	public ObservedAtom instantiateObservedAtom(Predicate p, GroundTerm[] args,
+			double value, double confidence) {
+		ObservedAtom atom = new ObservedAtom(p, args, db, value, confidence);
 		QueryAtom key = new QueryAtom(p, args);
 		cache.put(key, atom);
 		return atom;
 	}
 	
 	/**
-	 * Initializes a RandomVariableAtom and stores it in this AtomCache.
+	 * Instantiates a RandomVariableAtom and stores it in this AtomCache.
 	 * <p>
 	 * This method should only be called by this AtomCache's {@link Database}.
 	 * To retrieve a GroundAtom, all others should use {@link Database#getAtom(Predicate, GroundTerm[])}
@@ -114,10 +115,11 @@ public class AtomCache {
 	 * 
 	 * @param p  the Predicate of the Atom
 	 * @param args  the arguments to this Atom
-	 * @param value  this Atom's truth value
+	 * @param value  the Atom's truth value
+	 * @param confidence  the Atom's confidence value
 	 * @return the new RandomVariableAtom
 	 */
-	public RandomVariableAtom initializeRandomVariableAtom(StandardPredicate p,
+	public RandomVariableAtom instantiateRandomVariableAtom(StandardPredicate p,
 			GroundTerm[] args, double value, double confidence) {
 		RandomVariableAtom atom = new RandomVariableAtom(p, args, db, value, confidence);
 		QueryAtom key = new QueryAtom(p, args);

@@ -67,10 +67,10 @@ public class PredicateFactory {
 	 * @param name  name for the new predicate
 	 * @param types  types for each of the predicate's arguments
 	 * @throws IllegalArgumentException  if name is already used, doesn't match \w+,
-	 *                                       or an element of types is NULL
+	 *                                       types has length zero, or an element of types is NULL
 	 * @return the newly constructed Predicate
 	 */
-	public StandardPredicate createStandardPredicate(String name, ArgumentType[] types) {
+	public StandardPredicate createStandardPredicate(String name, ArgumentType... types) {
 		checkPredicateSignature(name, types);
 		StandardPredicate p = new StandardPredicate(name, types);
 		addPredicate(p,name);
@@ -95,13 +95,15 @@ public class PredicateFactory {
 
 	/**
 	 * @throws IllegalArgumentException  if name is already used, doesn't match \w+,
-	 *                                       or an element of types is NULL
+	 *                                       types has length zero, or an element of types is NULL
 	 */
 	private void checkPredicateSignature(String name, ArgumentType[] types) {
 		if (!predicateNamePattern.matcher(name).matches())
 			throw new IllegalArgumentException("Name must match \\w+");
 		if (predicateByName.containsKey(name))
 			throw new IllegalArgumentException("Name is already used by another Predicate.");
+		if (types.length == 0)
+			throw new IllegalArgumentException("Predicate needs at least one ArgumentType.");
 		for (int i = 0; i < types.length; i++)
 			if (types[i] == null)
 				throw new IllegalArgumentException("No ArgumentType may be NULL.");

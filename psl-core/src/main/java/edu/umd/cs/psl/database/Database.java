@@ -24,72 +24,93 @@ import edu.umd.cs.psl.model.atom.AtomManager;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
+import edu.umd.cs.psl.model.predicate.FunctionalPredicate;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
 
 /**
- * A data model for retrieving and storing {@link GroundAtom GroundAtoms}.
+ * A data model for retrieving and persisting {@link GroundAtom GroundAtoms}.
  * 
- * <h2>Usage</h2>
+ * <h2>Setup</h2>
  * 
  * Databases are instantiated via {@link DataStore#getDatabase} methods.
- * <p>
- * A Database is the canonical source for a set of GroundAtoms.
- * GroundAtoms should only be retrieved via {@link #getAtom(Predicate, GroundTerm[])}
- * to ensure there exists only a single object for each GroundAtom from the Database.
- * (However, a Database might be wrapped in an {@link AtomManager}, which will pass
- * through calls to {@link AtomManager#getAtom(Predicate, GroundTerm[])}.)
  * <p>
  * A Database writes to and reads from one {@link Partition} of a DataStore
  * and can read from additional Partitions. The write Partition of a Database
  * may not be a read (or write) Partition of any other Database.
  * <p>
+ * A Database can be instantiated with a set of {@link StandardPredicate StandardPredicates}
+ * to close. (Any StandardPredicate not closed initially remains open). Whether
+ * a StandardPredicate is open or closed affects the behavior of
+ * {@link #getAtom(Predicate, GroundTerm...)}.
+ * 
+ * <h2>Retrieving GroundAtoms</h2>
+ * 
+ * A Database is the canonical source for a set of GroundAtoms.
+ * GroundAtoms should only be retrieved via {@link #getAtom(Predicate, GroundTerm...)}
+ * to ensure there exists only a single object for each GroundAtom from the Database.
+ * (However, a Database might be wrapped in an {@link AtomManager}, which will pass
+ * through calls to {@link AtomManager#getAtom(Predicate, GroundTerm...)}.)
+ * <p>
  * A Database contains an {@link AtomCache} which is used to store GroundAtoms
- * that have been loaded into memory and ensure these objects are unique.
+ * that have been instantiated in memory and ensure these objects are unique.
  * The AtomCache is accessible via {@link #getAtomCache()}.
  * 
- * <h2>Conventions</h2>
+ * <h2>Persisting RandomVariableAtoms</h2>
  * 
- * Databases treat StandardPredicates as either <em>open</em> or
- * <em>closed</em>. A GroundAtom with a closed StandardPredicate is always an
- * ObservedAtom; otherwise it may a RandomVariableAtom.
- * <p>
- * RandomVariableAtoms will only be inserted and/or updated in the Database if
- * {@link #commit(RandomVariableAtom)} or {@link RandomVariableAtom#commitToDB()}
- * is called.
- * <p>
- * Any GroundAtom with a StandardPredicate that is not explicitly stored in the
- * Database has an implicit default truth value (and default confidence value
- * if the StandardPredicate is open).
+ * A {@link RandomVariableAtom} can be persisted (including updated) in the write
+ * Partition via {@link #commit(RandomVariableAtom)} or
+ * {@link RandomVariableAtom#commitToDB()}.
+ * 
+ * <h2>Querying for Groundings</h2>
+ * 
+ * {@link DatabaseQuery DatabaseQueries} can be run via {@link #executeQuery(DatabaseQuery)}.
+ * Note that queries only act on the GroundAtoms persisted in Partitions and
+ * GroundAtoms with {@link FunctionalPredicate FunctionalPredicates} 
  */
 public interface Database {
 
 	/**
 	 * Returns the GroundAtom for the given Predicate and GroundTerms.
 	 * <p>
-	 * It will be a {@link RandomVariableAtom} if both of the following conditions
-	 * are met:
-	 * <ul>
-	 *   <li>it has a {@link StandardPredicate} that is open</li>
-	 *   <li>it is not stored in a read-only Partition</li>
-	 * 	</ul>
-	 * Otherwise, it will be an {@link ObservedAtom}.
+	 * Any GroundAtom can be retrieved if and only if its Predicate
+	 * was registered with the DataStore at the time of the Database's instantiation.
+	 * This method first checks the {@link AtomCache} to see if the GroundAtom already
+	 * exists in memory. If it does, then that object is returned. (The AtomCache is
+	 * accessible via {@link #getAtomCache()}.)
 	 * <p>
-	 * If the GroundAtom is not in memory, it will be instantiated and stored
-	 * in this Database's {@link AtomCache}.
+	 * If the GroundAtom does not exist in memory, then it will be instantiated and
+	 * stored in the AtomCache before being returned. The subtype and state of the
+	 * instantiated GroundAtom depends on several factors:
+	 * <ul>
+	 *   <li>If the GroundAtom is persisted in a read Partition, then it will be
+	 *   instantiated as an {@link ObservedAtom} with the persisted state.</li>
+	 *   <li>If the GroundAtom is persisted in the write Partition, then it will be
+	 *   instantiated with the persisted state. It will be instantiated as an
+	 *   ObseredAtom if its Predicate is closed and as a {@link RandomVariableAtom}
+	 *   if it is open.</li>
+	 *   <li>If the GroundAtom has a {@link StandardPredicate} but is not persisted
+	 *   in any of the Database's partitions, it will be instantiated with a truth
+	 *   value of 0.0 and a confidence value of NaN. It will be instantiated as an
+	 *   ObseredAtom if its Predicate is closed and as a RandomVariableAtom
+	 *   if it is open.</li>
+	 *   <li>If the GroundAtom has a {@link FunctionalPredicate}, then it will be
+	 *   instantiated as an {@link ObservedAtom} with the functionally defined
+	 *   truth value and a confidence value of NaN.</li>
+	 * </ul>
 	 * 
 	 * @param p  the Predicate of the Atom
 	 * @param arguments  the GroundTerms of the Atom
 	 * @return the Atom
-	 * @throws IllegalStateException  if the Atom exists in multiple read Partitions
+	 * @throws IllegalArgumentException  if arguments are not valid
+	 * @throws IllegalStateException  if the Atom is persisted in multiple read Partitions
 	 */
-	public GroundAtom getAtom(Predicate p, GroundTerm[] arguments);
+	public GroundAtom getAtom(Predicate p, GroundTerm... arguments);
 	
 	/**
-	 * Persists a RandomVariableAtom in this Database's
-	 * write Partition.
+	 * Persists a RandomVariableAtom in this Database's write Partition.
 	 * <p>
-	 * If the RandomVariableAtom is already stored in the write Partition,
+	 * If the RandomVariableAtom has already been persisted in the write Partition,
 	 * it will be updated.
 	 * 
 	 * @param atom  the Atom to persist

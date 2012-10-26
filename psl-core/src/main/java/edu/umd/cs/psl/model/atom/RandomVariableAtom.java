@@ -17,6 +17,7 @@
 package edu.umd.cs.psl.model.atom;
 
 import edu.umd.cs.psl.database.Database;
+import edu.umd.cs.psl.model.ConfidenceValues;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
 import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
@@ -29,17 +30,14 @@ import edu.umd.cs.psl.reasoner.function.MutableAtomFunctionVariable;
  * conditions are met:
  * <ul>
  *   <li>it has a {@link StandardPredicate} that is open in the Atom's Database</li>
- *   <li>it is not stored in one of its Database's read-only Partitions</li>
+ *   <li>it is not persisted in one of its Database's read-only Partitions</li>
  * </ul>
  */
 public class RandomVariableAtom extends GroundAtom {
 	
-	private double confidence;
-	
 	protected RandomVariableAtom(StandardPredicate p, GroundTerm[] args,
 			Database db, double value, double confidenceValue) {
-		super(p, args, db, value);
-		confidence = confidenceValue;
+		super(p, args, db, value, confidenceValue);
 	}
 
 	/**
@@ -58,12 +56,13 @@ public class RandomVariableAtom extends GroundAtom {
 	/**
 	 * Sets the confidence value of this Atom.
 	 * 
-	 * @param value A confidence value in [0, +Infinity)
-	 * @throws IllegalArgumentException  if value is not in [0, +Infinity)
+	 * @param value  the new confidence value
+	 * @throws IllegalArgumentException  if value is invalid
+	 * @see ConfidenceValues#isValid(double);
 	 */
 	public void setConfidenceValue(double value) {
-		if (0.0 <= value && value <= Double.POSITIVE_INFINITY)
-			confidence = value;
+		if (ConfidenceValues.isValid(value))
+			this.confidenceValue = value;
 		else
 			throw new IllegalArgumentException();
 	}
@@ -74,11 +73,6 @@ public class RandomVariableAtom extends GroundAtom {
 	 */
 	public void commitToDB() {
 		db.commit(this);
-	}
-	
-	@Override
-	public double getConfidenceValue() {
-		return confidence;
 	}
 
 	@Override

@@ -336,7 +336,7 @@ public class RDBMSDatabase implements Database {
 				    		double value = rs.getDouble(ph.valueColumn());
 				    		double confidence = rs.getDouble(ph.confidenceColumn());
 			    			if (!ConfidenceValues.isValid(confidence)) 
-			    				confidence = ConfidenceValues.getDefault();
+			    				confidence = ConfidenceValues.getDefaultUnobserved();
 			    			
 			    			PSLValue pslval = PSLValue.parse(rs.getInt(ph.pslColumn()));
 			    			atom = new AtomRecord(value, confidence, AtomRecord.Status.RV);

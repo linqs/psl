@@ -41,13 +41,17 @@ abstract public class GroundAtom extends Atom {
 	
 	protected double value;
 	
+	protected double confidenceValue;
+	
 	private static final Set<GroundKernel> emptyGroundKernels = ImmutableSet.of();
 	protected SetMultimap<Kernel, GroundKernel> registeredGroundKernels;
 
-	protected GroundAtom(Predicate p, GroundTerm[] args, Database db, double value) {
+	protected GroundAtom(Predicate p, GroundTerm[] args, Database db, double value,
+			double confidenceValue) {
 		super(p, args);
 		this.db = db;
 		this.value = value;
+		this.confidenceValue = confidenceValue;
 		
 		/* Until a ground kernel is registered, the empty ground kernels set 
 		 * will be used / returned to indicate an empty set. */
@@ -55,20 +59,18 @@ abstract public class GroundAtom extends Atom {
 	}
 
 	/**
-	 * Returns the truth value of this Atom.
-	 * 
-	 * @return The truth value in [0,1]
+	 * @return The truth value of this Atom
 	 */
 	public double getValue() {
 		return value;
 	}
 	
 	/**
-	 * Returns the confidence value of this Atom.
-	 * 
-	 * @return The confidence value in [0, +Infinity)
+	 * @return The confidence value of this Atom
 	 */
-	abstract public double getConfidenceValue();
+	public double getConfidenceValue() {
+		return confidenceValue;
+	}
 	
 	abstract public AtomFunctionVariable getVariable();
 	

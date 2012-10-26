@@ -40,9 +40,10 @@ import edu.umd.cs.psl.model.predicate.StandardPredicate;
  * The Formula is given upon initialization and is fixed. It must be
  * a {@link Conjunction} of Atoms or a single Atom.
  * The query will return any grounding such that each GroundAtom
- * with a {@link StandardPredicate} in the ground Formula is stored in the
+ * with a {@link StandardPredicate} in the ground Formula is persisted in the
  * Database and each GroundAtom with a {@link FunctionalPredicate}
- * in the ground Formula has a non-zero truth value.
+ * in the ground Formula has a non-zero truth value (regardless of whether
+ * it is instantiated in memory).
  * <p>
  * The partial grounding is a {@link VariableAssignment} which all returned
  * groundings must match. Use {@link #getPartialGrounding()} to modify the partial

@@ -33,10 +33,10 @@ public class SimpleAtomManager implements AtomManager {
 	}
 
 	/**
-	 * Calls {@link Database#getAtom(Predicate, GroundTerm[])}.
+	 * Calls {@link Database#getAtom(Predicate, GroundTerm...)}.
 	 */
 	@Override
-	public GroundAtom getAtom(Predicate p, GroundTerm[] arguments) {
+	public GroundAtom getAtom(Predicate p, GroundTerm... arguments) {
 		return db.getAtom(p, arguments);
 	}
 

@@ -42,7 +42,8 @@ import edu.umd.cs.psl.model.predicate.StandardPredicate;
  * <em>activation</em>.
  * <p>
  * A RandomVariableAtom is considered when it is loaded into memory
- * and added to its {@link Database}'s {@link AtomCache} via {@link #getAtom(Predicate, GroundTerm[])}.
+ * and added to its {@link Database}'s {@link AtomCache} via
+ * {@link #getAtom(Predicate, GroundTerm...)}.
  * <p>
  * A RandomVariableAtom is activated if it has not already been activated
  * since being loaded into memory and one of two things occur:
@@ -95,14 +96,14 @@ public class AtomEventFramework implements AtomManager {
 	}
 	
 	/**
-	 * Calls {@link Database#getAtom(Predicate, GroundTerm[])} and adds
+	 * Calls {@link Database#getAtom(Predicate, GroundTerm...)} and adds
 	 * a {@link AtomEvent#ConsideredRVAtom} event to the job queue if the
 	 * GroundAtom is a RandomVariableAtom and not already in the Database's AtomCache. 
 	 * 
 	 * @see #workOffJobQueue()
 	 */
 	@Override
-	public GroundAtom getAtom(Predicate p, GroundTerm[] arguments) {
+	public GroundAtom getAtom(Predicate p, GroundTerm... arguments) {
 		Atom check = db.getAtomCache().getCachedAtom(new QueryAtom(p, arguments));
 		GroundAtom atom = db.getAtom(p,  arguments);
 		if (atom instanceof RandomVariableAtom && check == null) {

@@ -33,7 +33,7 @@ import edu.umd.cs.psl.model.predicate.Predicate;
  */
 public class QueryAtom extends Atom {
 
-	public QueryAtom(Predicate p, Term[] args) {
+	public QueryAtom(Predicate p, Term... args) {
 		super(p, args);
 	}
 	

@@ -16,26 +16,23 @@
  */
 package edu.umd.cs.psl.model;
 
+/**
+ * Static methods related to valid range of confidence values.
+ */
 public class ConfidenceValues {
-
-	private static final double defaultConfidence = Double.NaN;
-	private static final double minConfidence = 0.0;
-	private static final double maxConfidence = Double.MAX_VALUE;
+	private static final double min = 0.0;
+	private static final double max = Double.MAX_VALUE;
 	
-	public static final double getDefault() {
-		return defaultConfidence;
+	public static final double getMin() {
+		return min;
 	}
 	
 	public static final double getMax() {
-		return maxConfidence;
+		return max;
 	}
 	
 	public static final boolean isValid(double confidenceVal) {
-		return confidenceVal>minConfidence && confidenceVal<=maxConfidence;
-	}
-	
-	public static final boolean isDefault(double confidence) {
-		return Double.isNaN(confidence);
+		return confidenceVal>=getMin() && confidenceVal<=getMax();
 	}
 	
 }

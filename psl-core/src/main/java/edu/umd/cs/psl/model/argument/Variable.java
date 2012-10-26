@@ -25,23 +25,22 @@ package edu.umd.cs.psl.model.argument;
  */
 public class Variable implements Term {
 
-	private final String identifier;
+	private final String name;
 	
 	/**
-	 * Constructs a Variable, given a string ID.
+	 * Constructs a Variable, given a name.
 	 * 
-	 * @param id A string ID
-	 * @throws IllegalArgumentException  if id doesn't match [A-Za-z0-9_]+
+	 * @param name A string ID
 	 */
-	public Variable(String id) {
-		identifier = id;
+	public Variable(String name) {
+		this.name = name;
 	}
 	
 	/**
-	 * @return the variable ID
+	 * @return the Variable's name
 	 */
 	public String getName() {
-		return identifier;
+		return name;
 	}
 
 	/**
@@ -54,7 +53,7 @@ public class Variable implements Term {
 	
 	@Override
 	public int hashCode() {
-		return identifier.hashCode() * 1163;
+		return name.hashCode() * 1163;
 	}
 	
 	/**
