@@ -18,7 +18,6 @@ package edu.umd.cs.psl.database.rdbms;
 
 import com.google.common.base.Preconditions;
 
-import edu.umd.cs.psl.database.DataFormat;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
 
@@ -27,22 +26,18 @@ class RDBMSPredicateInfo {
 	final Predicate predicate;
 	final String[] argCols;
 	final String tableName;
-	final String pslCol;
 	final String valueCol;
 	final String confidenceCol;
-	final DataFormat[] columnTypes;
 	final String partitionCol;
 	
-	RDBMSPredicateInfo(Predicate def, String[] args, String table, String psl, String value, 
-			String confidence, String partition, DataFormat[] coltypes) {
+	RDBMSPredicateInfo(Predicate def, String[] args, String table, String value, 
+			String confidence, String partition) {
 		predicate = def;
 		argCols = args;
 		tableName = table;
-		pslCol = psl;
 		valueCol = value;
 		confidenceCol = confidence;
 		partitionCol = partition;
-		columnTypes = coltypes;
 		
 		Preconditions.checkArgument(predicate instanceof StandardPredicate);
 		Preconditions.checkNotNull(valueCol);
@@ -51,9 +46,7 @@ class RDBMSPredicateInfo {
 		Preconditions.checkNotNull(argCols);
 		Preconditions.checkNotNull(tableName);
 		Preconditions.checkNotNull(partitionCol);
-		Preconditions.checkNotNull(columnTypes);
 		if (argCols.length!=predicate.getArity()) throw new IllegalArgumentException("Number of predicate argument names must match its arity!");
-		if (columnTypes.length!=predicate.getArity())  throw new IllegalArgumentException("Number of predicate argument names must match its arity!");
 	}
 	
 	RDBMSPredicateHandle getPredicateHandle() {
@@ -82,11 +75,6 @@ class RDBMSPredicateInfo {
 		@Override
 		public String partitionColumn() {
 			return partitionCol;
-		}
-
-		@Override
-		public String pslColumn() {
-			return pslCol;
 		}
 
 		@Override

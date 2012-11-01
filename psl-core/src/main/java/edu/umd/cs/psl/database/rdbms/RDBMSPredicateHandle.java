@@ -32,6 +32,4 @@ public interface RDBMSPredicateHandle {
 	
 	public String confidenceColumn();
 	
-	public String pslColumn();
-	
 }

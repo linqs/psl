@@ -42,7 +42,7 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 
 	private static final String tablePrefix = "t";
 	
-	private final List<Variable> projection;
+	private final Set<Variable> projection;
 	private final VariableAssignment partialGrounding;
 	private final RDBMSDatabase database;
 	
@@ -55,7 +55,7 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 	private int tableCounter;
 	
 	
-	public Formula2SQL(VariableAssignment pg, List<Variable> proj, RDBMSDatabase db) {
+	public Formula2SQL(VariableAssignment pg, Set<Variable> proj, RDBMSDatabase db) {
 		partialGrounding = pg;
 		projection = proj;
 		joins = new HashMap<Variable,String>();
