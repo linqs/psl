@@ -19,18 +19,12 @@ package edu.umd.cs.psl.database.rdbms;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import javax.management.Query;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,13 +82,13 @@ public class RDBMSDatabase implements Database {
 	/**
 	 * The partition ID in which this database writes.
 	 */
-	private final Partition writePartition;
+	protected final Partition writePartition;
 	private final int writeID;
 	
 	/**
 	 * The partition IDs that this database reads from.
 	 */
-	private final Partition[] readPartitions;
+	protected final Partition[] readPartitions;
 	private final int[] readIDs;
 	
 	/**
@@ -135,16 +129,24 @@ public class RDBMSDatabase implements Database {
 	 */
 	public RDBMSDatabase(RDBMSDataStore parent, Connection con,
 			Partition write, Partition[] reads, Set<StandardPredicate> closed) {
+		// Store the connection / DataStore information
 		this.parentDataStore = parent;
 		this.dbConnection = con;
+		
+		// Store the partition this class has write access to
 		this.writePartition = write;
 		this.writeID = write.getID();
+		
+		// Store the partitions this class has read access to
 		this.readPartitions = reads;
 		this.readIDs = new int[reads.length];
 		for (int i = 0; i < reads.length; i ++)
 			readIDs[i] = reads[i].getID();
+		
+		// Add the set of predicates to treat as closed
 		this.closedPredicates = new HashSet<StandardPredicate>();
-		this.closedPredicates.addAll(closed);
+		if (closed != null)
+			this.closedPredicates.addAll(closed);
 		
 		// Initialize internal variables
 		this.predicateHandles = new HashMap<Predicate, RDBMSPredicateHandle>();
@@ -250,7 +252,7 @@ public class RDBMSDatabase implements Database {
 	 * @param p	The predicate to lookup
 	 * @return	The handle associated with the predicate
 	 */
-	private RDBMSPredicateHandle getHandle(Predicate p) {
+	protected RDBMSPredicateHandle getHandle(Predicate p) {
 		RDBMSPredicateHandle ph = predicateHandles.get(p);
 		if (ph == null)
 			throw new IllegalArgumentException("Predicate not registered with database.");
@@ -521,7 +523,6 @@ public class RDBMSDatabase implements Database {
 			Statement stmt = dbConnection.createStatement();
 			try {
 				ResultSet rs = stmt.executeQuery(queryString);
-				ResultSetMetaData rsmd = rs.getMetaData();
 				try {
 					while (rs.next()) {
 						GroundTerm[] res = new GroundTerm[projectTo.size()];
@@ -530,7 +531,6 @@ public class RDBMSDatabase implements Database {
 							if (partialGrounding.hasVariable(var)) {
 								res[i] = partialGrounding.getVariable(var);
 							} else {
-								GroundTerm t;
 								ArgumentType type = varTypes.getType(var);
 								switch (type) {
 								case Double:
@@ -591,7 +591,7 @@ public class RDBMSDatabase implements Database {
 	@Override
 	public void close() {
 		executePendingStatements();
-		parentDataStore.closeDatabase(this, writePartition, readPartitions);
+		parentDataStore.releasePartitions(this);
 		
 		// Close all prepared statements
 		try {

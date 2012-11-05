@@ -24,10 +24,9 @@ import com.healthmarketscience.sqlbuilder.FunctionCall;
 import com.healthmarketscience.sqlbuilder.InCondition;
 import com.healthmarketscience.sqlbuilder.SelectQuery;
 
-import edu.umd.cs.psl.database.PSLValue;
 import edu.umd.cs.psl.model.argument.Attribute;
-import edu.umd.cs.psl.model.argument.Entity;
 import edu.umd.cs.psl.model.argument.Term;
+import edu.umd.cs.psl.model.argument.UniqueID;
 import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.VariableAssignment;
@@ -41,103 +40,114 @@ import edu.umd.cs.psl.model.predicate.SpecialPredicate;
 public class Formula2SQL extends AbstractFormulaTraverser {
 
 	private static final String tablePrefix = "t";
-	
+
 	private final Set<Variable> projection;
 	private final VariableAssignment partialGrounding;
 	private final RDBMSDatabase database;
-	
-	private final Map<Variable,String> joins;
-	
+
+	private final Map<Variable, String> joins;
+
 	private final List<Atom> functionalAtoms;
 
 	private final SelectQuery query;
-	
+
 	private int tableCounter;
-	
-	
-	public Formula2SQL(VariableAssignment pg, Set<Variable> proj, RDBMSDatabase db) {
+
+	public Formula2SQL(VariableAssignment pg, Set<Variable> proj,
+			RDBMSDatabase db) {
 		partialGrounding = pg;
 		projection = proj;
-		joins = new HashMap<Variable,String>();
+		joins = new HashMap<Variable, String>();
 		database = db;
 		query = new SelectQuery();
 		query.setIsDistinct(true);
 		functionalAtoms = new ArrayList<Atom>(4);
 		tableCounter = 1;
-		if (projection.isEmpty()) query.addAllColumns(); //query.addAllTableColumns(tablePrefix+tableCounter);
+		if (projection.isEmpty())
+			query.addAllColumns(); // query.addAllTableColumns(tablePrefix+tableCounter);
 	}
-	
+
 	public List<Atom> getFunctionalAtoms() {
 		return functionalAtoms;
 	}
-	
+
 	@Override
 	public void afterConjunction(int noFormulas) {
-		//Supported
+		// Supported
 	}
 
 	@Override
 	public void afterDisjunction(int noFormulas) {
-		throw new AssertionError("Disjunction is currently not supported by database");
+		throw new AssertionError(
+				"Disjunction is currently not supported by database");
 	}
 
 	@Override
 	public void afterNegation() {
-		throw new AssertionError("Negation is currently not supported by database");
+		throw new AssertionError(
+				"Negation is currently not supported by database");
 	}
 
-	
 	private void visitFunctionalAtom(Atom atom) {
 		assert atom.getPredicate() instanceof FunctionalPredicate;
 		Term[] arguments = atom.getArguments();
-		assert arguments.length==2;
+		assert arguments.length == 2;
 		Object[] convert = convertArguments(arguments);
-		
+
 		if (atom.getPredicate() instanceof ExternalFunctionalPredicate) {
-			ExternalFunctionalPredicate predicate = (ExternalFunctionalPredicate)atom.getPredicate();
-			FunctionCall fun = new FunctionCall(RDBMSDatabase.aliasFunctionName);
-			fun.addCustomParams(RDBMSDatabase.getSimilarityFunctionID(predicate.getExternalFunction()));
-			for (int i=0;i<arguments.length;i++) fun.addCustomParams(convert[i]);
+			ExternalFunctionalPredicate predicate = (ExternalFunctionalPredicate) atom
+					.getPredicate();
+			FunctionCall fun = new FunctionCall(
+					RDBMSDataStore.aliasFunctionName);
+			fun.addCustomParams(RDBMSDataStore
+					.getSimilarityFunctionID(predicate.getExternalFunction()));
+			for (int i = 0; i < arguments.length; i++)
+				fun.addCustomParams(convert[i]);
 			query.addCondition(BinaryCondition.greaterThan(fun, 0.0, false));
 		} else {
-			FunctionalPredicate predicate = (FunctionalPredicate)atom.getPredicate();
-			if (predicate==SpecialPredicate.Unequal) {
-				query.addCondition(BinaryCondition.notEqualTo(convert[0], convert[1]));
-			} else if (predicate==SpecialPredicate.Equal) {
-				query.addCondition(BinaryCondition.equalTo(convert[0], convert[1]));
-			} else if (predicate==SpecialPredicate.NonSymmetric) {
-				query.addCondition(BinaryCondition.lessThan(convert[0], convert[1],false));
-			} else throw new UnsupportedOperationException("Unrecognized functional Predicate: " + predicate);
+			FunctionalPredicate predicate = (FunctionalPredicate) atom
+					.getPredicate();
+			if (predicate == SpecialPredicate.NotEqual) {
+				query.addCondition(BinaryCondition.notEqualTo(convert[0],
+						convert[1]));
+			} else if (predicate == SpecialPredicate.Equal) {
+				query.addCondition(BinaryCondition.equalTo(convert[0],
+						convert[1]));
+			} else if (predicate == SpecialPredicate.NonSymmetric) {
+				query.addCondition(BinaryCondition.lessThan(convert[0],
+						convert[1], false));
+			} else
+				throw new UnsupportedOperationException(
+						"Unrecognized functional Predicate: " + predicate);
 		}
-		
-		
+
 	}
-	
+
 	private Object[] convertArguments(Term[] arguments) {
 		Object[] convert = new Object[arguments.length];
-		
-		for (int i=0;i<arguments.length;i++) {
+
+		for (int i = 0; i < arguments.length; i++) {
 			Term arg = arguments[i];
 			if (arg instanceof Variable) {
-				if (partialGrounding.hasVariable((Variable)arg)) {
-					arg = partialGrounding.getVariable((Variable)arg);
+				if (partialGrounding.hasVariable((Variable) arg)) {
+					arg = partialGrounding.getVariable((Variable) arg);
 				} else {
-					assert joins.containsKey((Variable)arg) : arg;
-					convert[i]=new CustomSql(joins.get((Variable)arg));
+					assert joins.containsKey((Variable) arg) : arg;
+					convert[i] = new CustomSql(joins.get((Variable) arg));
 				}
 			}
 			if (arg instanceof Attribute) {
-				convert[i] = ((Attribute)arg).getValue();
-			} else if (arg instanceof Entity) {
-				Entity e = (Entity)arg;
-				convert[i] = e.getID().getInternalID();
-			} else assert arg instanceof Variable;
+				convert[i] = ((Attribute) arg).getValue();
+			} else if (arg instanceof UniqueID) {
+				convert[i] = ((UniqueID) arg).getInternalID();
+			} else {
+				throw new IllegalArgumentException("Unknown argument type: "
+						+ arg.getClass().getName());
+			}
 		}
 		return convert;
 	}
 
-	
-	
 	@Override
 	public void visitAtom(Atom atom) {
 		if (atom.getPredicate() instanceof FunctionalPredicate) {
@@ -145,51 +155,62 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 		} else {
 			assert atom.getPredicate() instanceof StandardPredicate;
 			RDBMSPredicateHandle ph = database.getHandle(atom.getPredicate());
-			
-			String tableName = tablePrefix+tableCounter;
-			String tableDot = tableName+".";
-			query.addCustomFromTable(ph.tableName()+" "+tableName);
+
+			String tableName = tablePrefix + tableCounter;
+			String tableDot = tableName + ".";
+			query.addCustomFromTable(ph.tableName() + " " + tableName);
 			Term[] arguments = atom.getArguments();
-			for (int i=0;i<ph.argumentColumns().length;i++) {
+			for (int i = 0; i < ph.argumentColumns().length; i++) {
 				Term arg = arguments[i];
-	
+
 				if (arg instanceof Variable) {
-					Variable var = (Variable)arg;
+					Variable var = (Variable) arg;
 					if (partialGrounding.hasVariable(var)) {
-						//assert !projection.contains(var);
+						// assert !projection.contains(var);
 						arg = partialGrounding.getVariable(var);
 					} else {
 						if (joins.containsKey(var)) {
-							query.addCondition(BinaryCondition.equalTo(new CustomSql(tableDot+ph.argumentColumns()[i]),  new CustomSql(joins.get(var)) ));
+							query.addCondition(BinaryCondition.equalTo(
+									new CustomSql(tableDot
+											+ ph.argumentColumns()[i]),
+									new CustomSql(joins.get(var))));
 						} else {
 							if (projection.contains(var)) {
-								query.addAliasedColumn(new CustomSql(tableDot+ph.argumentColumns()[i]), var.getName());
+								query.addAliasedColumn(new CustomSql(tableDot
+										+ ph.argumentColumns()[i]),
+										var.getName());
 							}
-							joins.put(var, tableDot+ph.argumentColumns()[i]);
+							joins.put(var, tableDot + ph.argumentColumns()[i]);
 						}
 					}
 				}
-				
+
 				if (arg instanceof Attribute) {
-					query.addCondition(BinaryCondition.equalTo(new CustomSql(tableDot+ph.argumentColumns()[i]),  ((Attribute)arg).getValue() ));
-				} else if (arg instanceof Entity) { //Entity
-					Entity e = (Entity)arg;
-					query.addCondition(BinaryCondition.equalTo(new CustomSql(tableDot+ph.argumentColumns()[i]),  e.getID().getInternalID() ));
-				} else assert arg instanceof Variable;
+					query.addCondition(BinaryCondition.equalTo(new CustomSql(
+							tableDot + ph.argumentColumns()[i]),
+							((Attribute) arg).getValue()));
+				} else if (arg instanceof UniqueID) { // Entity
+					UniqueID u = (UniqueID) arg;
+					query.addCondition(BinaryCondition.equalTo(new CustomSql(
+							tableDot + ph.argumentColumns()[i]), u
+							.getInternalID()));
+				} else
+					assert arg instanceof Variable;
 			}
-			query.addCondition(new InCondition(new CustomSql(tableDot+ph.partitionColumn()),database.getReadIDs()));
-			query.addCondition(BinaryCondition.lessThan(new CustomSql(tableDot+ph.pslColumn()), 
-									PSLValue.getNonDefaultUpperBound(), false) );
+			int partitions[] = new int[database.readPartitions.length];
+			for (int i = 0; i < database.readPartitions.length; i++)
+				partitions[i] = database.readPartitions[i].getID();
+			query.addCondition(new InCondition(new CustomSql(tableDot
+					+ ph.partitionColumn()), partitions));
 			tableCounter++;
 		}
 	}
-	
-	
+
 	public String getSQL(Formula f) {
 		AbstractFormulaTraverser.traverse(f, this);
-		for (Atom atom : functionalAtoms) visitFunctionalAtom(atom);
+		for (Atom atom : functionalAtoms)
+			visitFunctionalAtom(atom);
 		return query.validate().toString();
 	}
-	
-		
+
 }

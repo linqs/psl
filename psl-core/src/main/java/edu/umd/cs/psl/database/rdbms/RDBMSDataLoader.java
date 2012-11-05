@@ -29,10 +29,8 @@ import com.google.common.base.Preconditions;
 import edu.umd.cs.psl.database.loading.DataLoader;
 import edu.umd.cs.psl.database.loading.Inserter;
 import edu.umd.cs.psl.database.loading.OpenInserter;
-import edu.umd.cs.psl.database.partition.PartitionID;
 import edu.umd.cs.psl.database.Partition;
 import edu.umd.cs.psl.model.ConfidenceValues;
-import edu.umd.cs.psl.model.TruthValues;
 import edu.umd.cs.psl.model.predicate.Predicate;
 
 public class RDBMSDataLoader implements DataLoader {
@@ -43,14 +41,13 @@ public class RDBMSDataLoader implements DataLoader {
 	
 	private final Map<Predicate,RDBMSTableInserter> inserts;
 	
-	public RDBMSDataLoader(Connection c, Collection<RDBMSPredicateHandle> predicateHandles) {
+	public RDBMSDataLoader(Connection c) {
 		database = c;
-		inserts = new HashMap<Predicate,RDBMSTableInserter>(predicateHandles.size());
-		
-		for ( RDBMSPredicateHandle entry : predicateHandles) {
-			inserts.put(entry.predicate(), new RDBMSTableInserter(entry));
-
-		}
+		inserts = new HashMap<Predicate,RDBMSTableInserter>();
+	}
+	
+	void registerPredicate(RDBMSPredicateHandle ph) {
+		inserts.put(ph.predicate(), new RDBMSTableInserter(ph));
 	}
 	
 	@Override
@@ -133,8 +130,9 @@ public class RDBMSDataLoader implements DataLoader {
 				throw new AssertionError(e);
 			}
 			
-			defaultEvidenceValue = TruthValues.getDefaultObserved();
-			defaultConfidence = ConfidenceValues.getMax();
+			// TODO Is this the correct assumption? -enorris
+			defaultEvidenceValue = 0.0;
+			defaultConfidence = Double.NaN;
 		}
 		
 		@Override
@@ -153,15 +151,12 @@ public class RDBMSDataLoader implements DataLoader {
 		}
 		
 		private void insertInternal(Partition partition, double value, double confidence, Object[] data) {
-			if (!(partition instanceof PartitionID))
-				throw new IllegalArgumentException("Expected PartitionID object: " + partition);
 			int partitionID = partition.getID();
-			if (partitionID<0)
+			if (partitionID < 0)
 				throw new IllegalArgumentException("Partition IDs must be non-negative.");
-			if (data.length!=argSize)
+			if (data.length != argSize)
 				throw new IllegalArgumentException("Data length does not match: " + data.length + " " + argSize);
-			if (!TruthValues.isValid(value))
-				throw new IllegalArgumentException("Invalid truth value: " + value);
+			// TODO What is the valid range for truth values? Do we care? -enorris
 			if (!ConfidenceValues.isValid(confidence))
 				throw new IllegalArgumentException("Invalid confidence value: " + confidence);
 			

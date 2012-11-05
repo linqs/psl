@@ -35,11 +35,6 @@ public class RDBMSUniqueStringID implements UniqueID {
 	public Object getInternalID() {
 		return id;
 	}
-
-	@Override
-	public String getName() {
-		return id;
-	}
 	
 	@Override
 	public int hashCode() {
