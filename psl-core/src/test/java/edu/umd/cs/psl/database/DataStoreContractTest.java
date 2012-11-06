@@ -46,8 +46,10 @@ import edu.umd.cs.psl.optimizer.conic.ConicProgramSolver;
  */
 abstract public class DataStoreContractTest {
 	
+	private static StandardPredicate p1;
+	private static StandardPredicate p2;
+	
 	private DataStore datastore;
-	private PredicateFactory predicateFactory;
 	
 	/**
 	 * @return the DataStore to be tested, should always be backed by the same
@@ -60,11 +62,16 @@ abstract public class DataStoreContractTest {
 	 * and its persistence mechanism
 	 */
 	abstract public void cleanUp();
+	
+	static {
+		PredicateFactory predicateFactory = PredicateFactory.getFactory();
+		p1 = predicateFactory.createStandardPredicate("P1", ArgumentType.UniqueID, ArgumentType.UniqueID);
+		p2 = predicateFactory.createStandardPredicate("P2", ArgumentType.String, ArgumentType.String);
+	}
 
 	@Before
 	public void setUp() throws Exception {
 		datastore = getDataStore();
-		predicateFactory = PredicateFactory.getFactory();
 	}
 
 	@After
@@ -75,8 +82,6 @@ abstract public class DataStoreContractTest {
 
 	@Test
 	public void testInsertAndGetAtom() {
-		StandardPredicate p1 = predicateFactory.createStandardPredicate("P1", ArgumentType.UniqueID, ArgumentType.UniqueID);
-		
 		datastore.registerPredicate(p1);
 		Inserter inserter = datastore.getInserter(p1, new Partition(0));
 		
@@ -183,8 +188,6 @@ abstract public class DataStoreContractTest {
 	
 	@Test
 	public void testCommit() {
-		StandardPredicate p1 = predicateFactory.createStandardPredicate("P1", ArgumentType.UniqueID, ArgumentType.UniqueID);
-		
 		datastore.registerPredicate(p1);
 		
 		UniqueID a = datastore.getUniqueID(0);
@@ -206,8 +209,6 @@ abstract public class DataStoreContractTest {
 	
 	@Test
 	public void testPredicateRegistration() {
-		StandardPredicate p1 = predicateFactory.createStandardPredicate("P1", ArgumentType.UniqueID, ArgumentType.UniqueID);
-		
 		datastore.registerPredicate(p1);
 		
 		Set<Predicate> registeredPredicates = datastore.getRegisteredPredicates();
@@ -219,25 +220,19 @@ abstract public class DataStoreContractTest {
 	
 	@Test(expected=IllegalArgumentException.class)
 	public void testGetAtomUnregisteredPredicate() {
-		StandardPredicate p1 = predicateFactory.createStandardPredicate("P1", ArgumentType.String, ArgumentType.String);
-		
 		Database db = datastore.getDatabase(new Partition(0));
-		db.getAtom(p1, new StringAttribute("a"), new StringAttribute("b"));
+		db.getAtom(p2, new StringAttribute("a"), new StringAttribute("b"));
 	}
 	
 	@Test(expected=IllegalArgumentException.class)
 	public void testLateRegisteredPredicate() {
-		StandardPredicate p1 = predicateFactory.createStandardPredicate("P1", ArgumentType.String, ArgumentType.String);
-		
 		Database db = datastore.getDatabase(new Partition(0));
 		datastore.registerPredicate(p1);
-		db.getAtom(p1, new StringAttribute("a"), new StringAttribute("b"));
+		db.getAtom(p2, new StringAttribute("a"), new StringAttribute("b"));
 	}
 	
 	@Test(expected=IllegalStateException.class)
 	public void testAtomInReadAndWritePartitions() {
-		StandardPredicate p1 = predicateFactory.createStandardPredicate("P1", ArgumentType.UniqueID, ArgumentType.UniqueID);
-		
 		datastore.registerPredicate(p1);
 		
 		UniqueID a = datastore.getUniqueID(0);
@@ -255,8 +250,6 @@ abstract public class DataStoreContractTest {
 	
 	@Test(expected=IllegalStateException.class)
 	public void testAtomInTwoReadPartitions() {
-		StandardPredicate p1 = predicateFactory.createStandardPredicate("P1", ArgumentType.UniqueID, ArgumentType.UniqueID);
-		
 		datastore.registerPredicate(p1);
 		
 		UniqueID a = datastore.getUniqueID(0);
@@ -274,8 +267,6 @@ abstract public class DataStoreContractTest {
 	
 	@Test
 	public void testSharedReadPartition() {
-		StandardPredicate p1 = predicateFactory.createStandardPredicate("P1", ArgumentType.UniqueID, ArgumentType.UniqueID);
-		
 		datastore.registerPredicate(p1);
 		
 		Inserter inserter = datastore.getInserter(p1, new Partition(0));
@@ -320,28 +311,23 @@ abstract public class DataStoreContractTest {
 	
 	@Test(expected=IllegalArgumentException.class)
 	public void testGetInserterUnregisteredPredicate() {
-		StandardPredicate p1 = predicateFactory.createStandardPredicate("P1", ArgumentType.UniqueID, ArgumentType.UniqueID);
 		datastore.getInserter(p1, new Partition(0));
 	}
 	
 	@Test(expected=IllegalArgumentException.class)
 	public void testGetInserterPartitionInUseWrite() {
-		StandardPredicate p1 = predicateFactory.createStandardPredicate("P1", ArgumentType.UniqueID, ArgumentType.UniqueID);
 		datastore.getDatabase(new Partition(0));
 		datastore.getInserter(p1, new Partition(0));
 	}
 	
 	@Test(expected=IllegalArgumentException.class)
 	public void testGetInserterPartitionInUseRead() {
-		StandardPredicate p1 = predicateFactory.createStandardPredicate("P1", ArgumentType.UniqueID, ArgumentType.UniqueID);
 		datastore.getDatabase(new Partition(1), new Partition(0));
 		datastore.getInserter(p1, new Partition(0));
 	}
 	
 	@Test(expected=IllegalStateException.class)
 	public void testGetAtomAfterClose() {
-		StandardPredicate p1 = predicateFactory.createStandardPredicate("P1", ArgumentType.UniqueID, ArgumentType.UniqueID);
-		
 		datastore.registerPredicate(p1);
 		
 		UniqueID a = datastore.getUniqueID(0);
@@ -354,8 +340,6 @@ abstract public class DataStoreContractTest {
 	
 	@Test(expected=IllegalStateException.class)
 	public void testCommitAfterClose() {
-		StandardPredicate p1 = predicateFactory.createStandardPredicate("P1", ArgumentType.UniqueID, ArgumentType.UniqueID);
-		
 		datastore.registerPredicate(p1);
 		
 		UniqueID a = datastore.getUniqueID(0);
@@ -369,8 +353,6 @@ abstract public class DataStoreContractTest {
 	
 	@Test(expected=IllegalStateException.class)
 	public void testQueryAfterClose() {
-		StandardPredicate p1 = predicateFactory.createStandardPredicate("P1", ArgumentType.UniqueID, ArgumentType.UniqueID);
-		
 		datastore.registerPredicate(p1);
 		
 		Variable X = new Variable("X");
@@ -385,8 +367,6 @@ abstract public class DataStoreContractTest {
 	
 	@Test
 	public void testDeletePartition() {
-		StandardPredicate p1 = predicateFactory.createStandardPredicate("P1", ArgumentType.UniqueID, ArgumentType.UniqueID);
-		
 		datastore.registerPredicate(p1);
 		
 		Inserter inserter = datastore.getInserter(p1, new Partition(0));
@@ -421,9 +401,6 @@ abstract public class DataStoreContractTest {
 	
 	@Test
 	public void testIsClosed() {
-		StandardPredicate p1 = predicateFactory.createStandardPredicate("P1", ArgumentType.UniqueID, ArgumentType.UniqueID);
-		StandardPredicate p2 = predicateFactory.createStandardPredicate("P2", ArgumentType.UniqueID, ArgumentType.UniqueID);
-		
 		datastore.registerPredicate(p1);
 		datastore.registerPredicate(p2);
 		
