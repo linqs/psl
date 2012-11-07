@@ -39,7 +39,6 @@ class RDBMSPredicateInfo {
 		confidenceCol = confidence;
 		partitionCol = partition;
 		
-		Preconditions.checkArgument(predicate instanceof StandardPredicate);
 		Preconditions.checkNotNull(valueCol);
 		Preconditions.checkNotNull(confidenceCol);
 		Preconditions.checkNotNull(predicate);

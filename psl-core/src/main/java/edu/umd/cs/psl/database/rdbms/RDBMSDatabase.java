@@ -21,8 +21,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -89,7 +91,7 @@ public class RDBMSDatabase implements Database {
 	 * The partition IDs that this database reads from.
 	 */
 	protected final Partition[] readPartitions;
-	private final int[] readIDs;
+	private final List<Integer> readIDs;
 	
 	/**
 	 * Predicates that, for the purpose of this database, are closed.
@@ -117,6 +119,11 @@ public class RDBMSDatabase implements Database {
 	 */
 	private final Set<PreparedStatement> pendingStatements;
 	private int pendingOperationCount;
+	
+	/*
+	 * Keeps track of the open / closed status of this database.
+	 */
+	private boolean closed;
 
 	/**
 	 * The constructor for the RDBMSDatabase. Note: This assumes the parent
@@ -139,9 +146,11 @@ public class RDBMSDatabase implements Database {
 		
 		// Store the partitions this class has read access to
 		this.readPartitions = reads;
-		this.readIDs = new int[reads.length];
+		this.readIDs = new ArrayList<Integer>(reads.length);
 		for (int i = 0; i < reads.length; i ++)
-			readIDs[i] = reads[i].getID();
+			this.readIDs.add(reads[i].getID());
+		if (!this.readIDs.contains(writeID))
+			this.readIDs.add(writeID);
 		
 		// Add the set of predicates to treat as closed
 		this.closedPredicates = new HashSet<StandardPredicate>();
@@ -156,6 +165,7 @@ public class RDBMSDatabase implements Database {
 		this.insertStatement = new HashMap<Predicate, PreparedStatement>();
 		this.pendingStatements = new HashSet<PreparedStatement>();
 		this.pendingOperationCount = 0;
+		this.closed = false;
 	}
 	
 	public void registerPredicate(RDBMSPredicateHandle ph) {
@@ -177,8 +187,8 @@ public class RDBMSDatabase implements Database {
 		QueryPreparer.MultiPlaceHolder placeHolder = preparer.getNewMultiPlaceHolder();
 		
 		q.addAllColumns().addCustomFromTable(ph.tableName());
-		q.addCondition(new InCondition(new CustomSql(ph.partitionColumn()),readIDs));
-		for (int i=0; i<ph.argumentColumns().length; i++) {
+		q.addCondition(new InCondition(new CustomSql(ph.partitionColumn()), readIDs));
+		for (int i = 0; i< ph.argumentColumns().length; i++) {
 			q.addCondition(BinaryCondition.equalTo(new CustomSql(ph.argumentColumns()[i]), placeHolder));
 		}
 		
@@ -261,9 +271,24 @@ public class RDBMSDatabase implements Database {
 	
 	private ResultSet queryDBForAtom(QueryAtom a) {
 		PreparedStatement ps = queryStatement.get(a.getPredicate());
+		Term[] arguments = a.getArguments();
 		try {
-			for (int i = 0; i < a.getArguments().length; i++) {
-				ps.setObject(i, a.getArguments()[i]);
+			if (closed)
+				throw new IllegalStateException("Cannot query atom from closed database.");
+			for (int i = 0; i < arguments.length; i++) {
+				int paramIndex = i + 1;
+				Term argument = arguments[i];
+				
+				if (argument instanceof IntegerAttribute)
+					ps.setInt(paramIndex, ((IntegerAttribute)argument).getValue());
+				else if (argument instanceof DoubleAttribute)
+					ps.setDouble(paramIndex, ((DoubleAttribute)argument).getValue());
+				else if (argument instanceof StringAttribute)
+					ps.setString(paramIndex, ((StringAttribute)argument).getValue());
+				else if (argument instanceof RDBMSUniqueIntID)
+					ps.setInt(paramIndex, ((RDBMSUniqueIntID)argument).getID());
+				else if (argument instanceof RDBMSUniqueStringID)
+					ps.setString(paramIndex, ((RDBMSUniqueStringID)argument).getID());
 			}
 			return ps.executeQuery();
 		} catch (SQLException e) {
@@ -404,10 +429,6 @@ public class RDBMSDatabase implements Database {
 				sqlIndex++;
 			}
 			
-			// Next, set partition to write partition id
-			update.setInt(sqlIndex, writeID);
-			sqlIndex ++;
-			
 			// Update the value for the atom
 			update.setDouble(sqlIndex, atom.getValue());
 			sqlIndex ++;
@@ -434,7 +455,6 @@ public class RDBMSDatabase implements Database {
 		int sqlIndex = 1;
 		
 		Term[] arguments = atom.getArguments();
-		assert(arguments.length == ph.argumentColumns().length);
 		try {
 			// First, fill in arguments
 			for (int i = 0; i < ph.argumentColumns().length; i++) {
@@ -447,10 +467,6 @@ public class RDBMSDatabase implements Database {
 				}
 				sqlIndex++;
 			}
-			
-			// Next, set partition to write partition id
-			insert.setInt(sqlIndex, writeID);
-			sqlIndex ++;
 			
 			// Update the value for the atom
 			insert.setDouble(sqlIndex, atom.getValue());
@@ -496,6 +512,8 @@ public class RDBMSDatabase implements Database {
 	
 	@Override
 	public ResultList executeQuery(DatabaseQuery query) {
+		if (closed)
+			throw new IllegalStateException("Cannot perform query on database that was closed.");
 		Formula f = query.getFormula();
 		VariableAssignment partialGrounding = query.getPartialGrounding();
 		Set<Variable> projectTo = query.getProjectionSubset();
@@ -592,6 +610,7 @@ public class RDBMSDatabase implements Database {
 	public void close() {
 		executePendingStatements();
 		parentDataStore.releasePartitions(this);
+		closed = true;
 		
 		// Close all prepared statements
 		try {

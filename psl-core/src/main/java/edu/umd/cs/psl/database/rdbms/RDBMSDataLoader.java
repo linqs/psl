@@ -31,6 +31,7 @@ import edu.umd.cs.psl.database.loading.Inserter;
 import edu.umd.cs.psl.database.loading.OpenInserter;
 import edu.umd.cs.psl.database.Partition;
 import edu.umd.cs.psl.model.ConfidenceValues;
+import edu.umd.cs.psl.model.argument.UniqueID;
 import edu.umd.cs.psl.model.predicate.Predicate;
 
 public class RDBMSDataLoader implements DataLoader {
@@ -131,7 +132,7 @@ public class RDBMSDataLoader implements DataLoader {
 			}
 			
 			// TODO Is this the correct assumption? -enorris
-			defaultEvidenceValue = 0.0;
+			defaultEvidenceValue = 1.0;
 			defaultConfidence = Double.NaN;
 		}
 		
@@ -172,7 +173,11 @@ public class RDBMSDataLoader implements DataLoader {
 						insertStmt.setDouble(noCol, (Double)data[i]);
 					} else if (data[i] instanceof String) {
 						insertStmt.setString(noCol, cleanString((String)data[i]));
-					} else throw new IllegalArgumentException("Unknown data type for :"+data[i]);
+					} else if (data[i] instanceof RDBMSUniqueIntID) {
+						insertStmt.setInt(noCol, ((RDBMSUniqueIntID)data[i]).getID());
+					} else if (data[i] instanceof RDBMSUniqueStringID) {
+						insertStmt.setString(noCol, ((RDBMSUniqueStringID)data[i]).getID());
+					}else throw new IllegalArgumentException("Unknown data type for :"+data[i]);
 				}
 				
 				noCol++;

@@ -32,7 +32,7 @@ public class ConfidenceValues {
 	}
 	
 	public static final boolean isValid(double confidenceVal) {
-		return confidenceVal>=getMin() && confidenceVal<=getMax();
+		return (confidenceVal>=getMin() && confidenceVal<=getMax()) || Double.isNaN(confidenceVal);
 	}
 	
 }

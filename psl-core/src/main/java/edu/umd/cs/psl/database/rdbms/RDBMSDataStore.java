@@ -54,6 +54,7 @@ import edu.umd.cs.psl.model.argument.UniqueID;
 import edu.umd.cs.psl.model.function.ExternalFunction;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.PredicateFactory;
+import edu.umd.cs.psl.model.predicate.SpecialPredicate;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
 
 public class RDBMSDataStore implements DataStore {
@@ -89,7 +90,7 @@ public class RDBMSDataStore implements DataStore {
 	 */
 	private final Map<Predicate, RDBMSPredicateInfo> predicates;
 	
-	private static boolean stringUniqueIDs;
+	private final boolean stringUniqueIDs;
 	
 	public RDBMSDataStore(DatabaseDriver db, DatabaseDriver.Type type,
 			String name, String folder, boolean setup, String valueCol, 
@@ -111,7 +112,13 @@ public class RDBMSDataStore implements DataStore {
 		this.dataloader = new RDBMSDataLoader(connection);
 		
 		// Store the type of unique ID this RDBMS will use
-		RDBMSDataStore.stringUniqueIDs = useStringUniqueIDs;
+		this.stringUniqueIDs = useStringUniqueIDs;
+		
+		// Registers all special predicates
+		registerPredicate(SpecialPredicate.Equal);
+		registerPredicate(SpecialPredicate.NonSymmetric);
+		registerPredicate(SpecialPredicate.NotEqual);
+
 		
 		// Read in any predicates that exist in the database
 		deserializePredicates();
@@ -176,8 +183,16 @@ public class RDBMSDataStore implements DataStore {
 					String columnName = rs.getString("COLUMN_NAME");
 					Matcher m = predicatePattern.matcher(columnName);
 					if (m.find()) {
-						String argumentName = m.group(1);
-						args.add(ArgumentType.valueOf(argumentName));
+						String argumentName = m.group(1).toLowerCase();
+						if (argumentName.equals("string")) {
+							args.add(ArgumentType.String);
+						} else if (argumentName.equals("integer")) {
+							args.add(ArgumentType.Integer);
+						} else if (argumentName.equals("double")) {
+							args.add(ArgumentType.Double);
+						} else if (argumentName.equals("uniqueid")) {
+							args.add(ArgumentType.UniqueID);
+						}
 					} else
 						return false;
 				}
@@ -312,6 +327,12 @@ public class RDBMSDataStore implements DataStore {
 		RDBMSDatabase db = new RDBMSDatabase(this,connection, write, read, toClose);
 		for (RDBMSPredicateInfo predinfo : predicates.values())
 			db.registerPredicate(predinfo.getPredicateHandle());
+		
+		// Register the write and read partitions as being associated with this database
+		for (Partition partID : read) {
+			openDatabases.put(partID, db);
+		}
+		writePartitionIDs.add(write);
 		return db;
 	}
 
@@ -348,6 +369,8 @@ public class RDBMSDataStore implements DataStore {
 	@Override
 	public int deletePartition(Partition partition) {
 		int deletedEntries = 0;
+		if (writePartitionIDs.contains(partition) || openDatabases.containsKey(partition))
+			throw new IllegalArgumentException("Cannot delete partition that is in use.");
 		try {
 			Statement stmt = connection.createStatement();
 			for (RDBMSPredicateInfo pred : predicates.values()) {
@@ -364,7 +387,6 @@ public class RDBMSDataStore implements DataStore {
 	public void close() {
 		if (!openDatabases.isEmpty())
 			throw new IllegalStateException("Cannot close data store when databases are still open!");
-		
 		try {
 			connection.close();
 		} catch (SQLException e) {
@@ -444,11 +466,12 @@ public class RDBMSDataStore implements DataStore {
 				arguments[i] = new StringAttribute(args[i]);
 				break;
 			case UniqueID:
-				// TODO Static access? Technically all DataStores must share the same type
-				if (stringUniqueIDs)
-					arguments[i] = new RDBMSUniqueStringID(args[i]);
-				else
+				// TODO External functions should know what type of UniqueID they use
+				try {
 					arguments[i] = new RDBMSUniqueIntID(Integer.parseInt(args[i]));
+				} catch (NumberFormatException e) {
+					arguments[i] = new RDBMSUniqueStringID(args[i]);
+				}
 				break;
 			default:
 				throw new IllegalArgumentException("Unknown argument type: " + t.getName());
