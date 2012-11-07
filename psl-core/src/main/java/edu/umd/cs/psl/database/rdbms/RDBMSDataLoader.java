@@ -31,7 +31,6 @@ import edu.umd.cs.psl.database.loading.Inserter;
 import edu.umd.cs.psl.database.loading.OpenInserter;
 import edu.umd.cs.psl.database.Partition;
 import edu.umd.cs.psl.model.ConfidenceValues;
-import edu.umd.cs.psl.model.argument.UniqueID;
 import edu.umd.cs.psl.model.predicate.Predicate;
 
 public class RDBMSDataLoader implements DataLoader {

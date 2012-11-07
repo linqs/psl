@@ -19,7 +19,6 @@ package edu.umd.cs.psl.database.rdbms;
 import com.google.common.base.Preconditions;
 
 import edu.umd.cs.psl.model.predicate.Predicate;
-import edu.umd.cs.psl.model.predicate.StandardPredicate;
 
 class RDBMSPredicateInfo {
 	

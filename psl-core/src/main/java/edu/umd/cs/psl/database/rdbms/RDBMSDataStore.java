@@ -45,6 +45,7 @@ import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.database.Partition;
 import edu.umd.cs.psl.database.loading.Inserter;
 import edu.umd.cs.psl.database.loading.Updater;
+import edu.umd.cs.psl.database.rdbms.driver.DatabaseDriver;
 import edu.umd.cs.psl.model.argument.ArgumentType;
 import edu.umd.cs.psl.model.argument.DoubleAttribute;
 import edu.umd.cs.psl.model.argument.GroundTerm;
@@ -92,9 +93,9 @@ public class RDBMSDataStore implements DataStore {
 	
 	private final boolean stringUniqueIDs;
 	
-	public RDBMSDataStore(DatabaseDriver db, DatabaseDriver.Type type,
-			String name, String folder, boolean setup, String valueCol, 
-			String confidenceCol, String partitionCol, boolean useStringUniqueIDs) {
+	public RDBMSDataStore(DatabaseDriver dbDriver, String valueCol,
+			String confidenceCol, String partitionCol,
+			boolean useStringUniqueIDs) {
 		// Set up column names
 		this.valueColumn = valueCol;
 		this.confidenceColumn = confidenceCol;
@@ -106,7 +107,7 @@ public class RDBMSDataStore implements DataStore {
 		this.predicates = new HashMap<Predicate, RDBMSPredicateInfo>();
 		
 		// Connect to the database
-		this.connection = connect(db, type, name, folder, setup);
+		this.connection = dbDriver.getConnection();
 		
 		// Set up the data loader
 		this.dataloader = new RDBMSDataLoader(connection);
@@ -125,24 +126,6 @@ public class RDBMSDataStore implements DataStore {
 		
 		// Register the DataStore class for external functions
 		registerFunctionAlias();
-	}
-	
-	private Connection connect(DatabaseDriver db, DatabaseDriver.Type type, String name, String folder, boolean setup) {
-		Connection con = null;
-		if (name==null) throw new IllegalArgumentException("Need to specify a name for the RDBMS.");
-		switch(type) {
-			case Disk:
-				if (folder==null)
-					throw new IllegalArgumentException("Need to specify path where disk database is to be stored.");
-				con = db.getDatabase(folder,name, setup);
-				break;
-			case Memory: 
-				con = db.getMemoryDatabase(name);
-				break;
-			default:
-				throw new IllegalArgumentException("Type can be one of 'disk' or 'memory', but was given: " + type);
-		}
-		return con;
 	}
 	
 	/**
@@ -423,8 +406,7 @@ public class RDBMSDataStore implements DataStore {
 				stmt.close();
 			}
 		} catch (SQLException e) {
-			log.error("SQL error: {}", e.getMessage());
-			throw new AssertionError(e);
+			throw new RuntimeException("Could not register function alias.", e);
 		}
 	}
 	

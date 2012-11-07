@@ -320,7 +320,6 @@ public class RDBMSDatabase implements Database {
 		 * 		- No, instantiate as ObservedAtom.
 		 */
 		RDBMSPredicateHandle ph = getHandle(p);
-		assert(ph.argumentColumns().length == arguments.length);
 		QueryAtom qAtom = new QueryAtom(p, arguments);
 		GroundAtom result = cache.getCachedAtom(qAtom);
 		if (result != null)
@@ -336,7 +335,6 @@ public class RDBMSDatabase implements Database {
 	    		int partition = rs.getInt(ph.partitionColumn());
 	    		
 	    		if (partition == writeID) {
-	    			assert(p instanceof StandardPredicate);
 	    			// Found in the write partition
 	    			if (isClosed((StandardPredicate) p)) {
 	    				// Predicate is closed, instantiate as ObservedAtom
@@ -373,7 +371,6 @@ public class RDBMSDatabase implements Database {
 			}
 		}
 		
-		assert(result != null);
 		return result;
 	}
 
@@ -391,7 +388,6 @@ public class RDBMSDatabase implements Database {
 				int partition = rs.getInt(ph.partitionColumn());
 				if (partition == writeID)
 					updateAtom(atom);
-				assert(rs.next() == false);
 			}
 			rs.close();
 		} catch (SQLException e) {
@@ -415,7 +411,6 @@ public class RDBMSDatabase implements Database {
 		int sqlIndex = 1;
 		
 		Term[] arguments = atom.getArguments();
-		assert(arguments.length == ph.argumentColumns().length);
 		try {
 			// First, fill in arguments
 			for (int i = 0; i < ph.argumentColumns().length; i++) {
@@ -423,9 +418,8 @@ public class RDBMSDatabase implements Database {
 					update.setObject(sqlIndex, ((Attribute)arguments[i]).getValue());
 				} else if (arguments[i] instanceof UniqueID) {
 					update.setObject(sqlIndex, ((UniqueID)arguments[i]).getInternalID());
-				} else {
-					assert(false);
-				}
+				} else
+					throw new IllegalArgumentException("Unknown argument type: " + arguments[i].getClass());
 				sqlIndex++;
 			}
 			
@@ -462,9 +456,8 @@ public class RDBMSDatabase implements Database {
 					insert.setObject(sqlIndex, ((Attribute)arguments[i]).getValue());
 				} else if (arguments[i] instanceof UniqueID) {
 					insert.setObject(sqlIndex, ((UniqueID)arguments[i]).getInternalID());
-				} else {
-					assert(false);
-				}
+				} else
+					throw new IllegalArgumentException("Unknown argument type: " + arguments[i].getClass());
 				sqlIndex++;
 			}
 			
@@ -564,8 +557,7 @@ public class RDBMSDatabase implements Database {
 									res[i] = (UniqueID)rs.getObject(var.getName());
 									break;
 								default:
-									assert(false);
-									break;
+									throw new IllegalArgumentException("Unknown argument type: " + type);
 								}
 							}
 							i ++;
