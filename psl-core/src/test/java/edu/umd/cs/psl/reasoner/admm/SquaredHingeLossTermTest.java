@@ -27,7 +27,7 @@ import org.junit.Test;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
 
-public class HingeLossTermTest {
+public class SquaredHingeLossTermTest {
 	
 	private ConfigBundle config;
 	
@@ -43,7 +43,7 @@ public class HingeLossTermTest {
 		/*
 		 * Problem 1
 		 * 
-		 * Solution on the hinge
+		 * Solution on the quadratic side
 		 */
 		double[] z = {0.2, 0.5};
 		double[] y = {0.0, 0.0};
@@ -53,13 +53,13 @@ public class HingeLossTermTest {
 		double constant = -0.95;
 		double weight = 1.0;
 		double stepSize = 1.0;
-		double[] expected = {0.0, 0.95};
+		double[] expected = {0.0, 0.8};
 		testProblem(z, y, lowerBounds, upperBounds, coeffs, constant, weight, stepSize, expected);
 		
 		/*
 		 * Problem 2
 		 * 
-		 * Solution on the hinge
+		 * Solution on the quadratic side
 		 */
 		z = new double[] {0.3, 0.5, 0.1};
 		y = new double[] {0.1, 0.0, -0.05};
@@ -69,7 +69,7 @@ public class HingeLossTermTest {
 		constant = -0.15;
 		weight = 1.0;
 		stepSize = 0.5;
-		expected = new double[] {0.043257, 0.528361, 0.177309};
+		expected = new double[] {0.051798, 0.524096, 0.180720};
 		testProblem(z, y, lowerBounds, upperBounds, coeffs, constant, weight, stepSize, expected);
 		
 		/*
@@ -91,23 +91,23 @@ public class HingeLossTermTest {
 		/*
 		 * Problem 4
 		 * 
-		 * Solution on the zero side
+		 * Solution on the quadratic side
 		 */
 		z = new double[] {0.1};
-		y = new double[] {0.15};
+		y = new double[] {-0.15};
 		lowerBounds = new double[] {0.0};
 		upperBounds = new double[] {1.0};
 		coeffs = new double[] {1.0};
 		constant = 0.0;
 		weight = 2.0;
 		stepSize = 1.0;
-		expected = new double[] {0.0};
+		expected = new double[] {0.05};
 		testProblem(z, y, lowerBounds, upperBounds, coeffs, constant, weight, stepSize, expected);
 		
 		/*
 		 * Problem 5
 		 * 
-		 * Solution on the linear side
+		 * Solution on the quadratic side
 		 */
 		z = new double[] {0.7, .5};
 		y = new double[] {0.0, 0.0};
@@ -117,7 +117,23 @@ public class HingeLossTermTest {
 		constant = 0.0;
 		weight = 1.0;
 		stepSize = 1.0;
-		expected = new double[] {0.6, 0.6};
+		expected = new double[] {0.62, 0.58};
+		testProblem(z, y, lowerBounds, upperBounds, coeffs, constant, weight, stepSize, expected);
+		
+		/*
+		 * Problem 6
+		 * 
+		 * Solution on the quadratic side. Two box constraints active.
+		 */
+		z = new double[] {3.7, -.5, .5};
+		y = new double[] {0.0, 0.0, 0.0};
+		lowerBounds = new double[] {0.0, 0.0, 0.0};
+		upperBounds = new double[] {1.0, 1.0, 1.0};
+		coeffs = new double[] {1.0, -1.0, 0.5};
+		constant = -0.5;
+		weight = 1.0;
+		stepSize = 1.0;
+		expected = new double[] {1.0, 0.833333, 0.0};
 		testProblem(z, y, lowerBounds, upperBounds, coeffs, constant, weight, stepSize, expected);
 	}
 	
@@ -134,7 +150,7 @@ public class HingeLossTermTest {
 		for (int i = 0; i < z.length; i++)
 			zIndices[i] = i;
 		
-		HingeLossTerm term = new HingeLossTerm(reasoner, zIndices, lb, ub, coeffs, constant, weight);
+		SquaredHingeLossTerm term = new SquaredHingeLossTerm(reasoner, zIndices, lb, ub, coeffs, constant, weight);
 		for (int i = 0; i < z.length; i++)
 			term.y[i] = y[i];
 		term.minimize();
