@@ -252,6 +252,19 @@ abstract public class DataStoreContractTest {
 	}
 	
 	@Test
+	public void testPredicateSerialization() {
+		datastore.registerPredicate(p1);
+		datastore.registerPredicate(p2);
+		
+		datastore.close();
+		datastore = getDataStore();
+		
+		Set<StandardPredicate> registeredPredicates = datastore.getRegisteredPredicates();
+		assertTrue(registeredPredicates.contains(p1));
+		assertTrue(registeredPredicates.contains(p2));
+	}
+	
+	@Test
 	public void testExternalFunctionalPredicate() {
 		datastore.registerPredicate(p3);
 		Inserter inserter = datastore.getInserter(p3, new Partition(0));

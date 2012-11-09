@@ -77,6 +77,7 @@ public class PredicateFactory {
 	 *                                       or an element of types is NULL
 	 */
 	public StandardPredicate createStandardPredicate(String name, ArgumentType... types) {
+		name = name.toUpperCase();
 		Predicate p = predicateByName.get(name);
 		if (p != null) {
 			boolean samePredicate = true;

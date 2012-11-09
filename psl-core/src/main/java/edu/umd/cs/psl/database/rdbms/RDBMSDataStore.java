@@ -126,20 +126,21 @@ public class RDBMSDataStore implements DataStore {
 	 */
 	private void deserializePredicates() {
 		int numPredicates = 0;
-		Pattern predicatePattern = Pattern.compile("(\\w+)_predicate");
+		Pattern predicatePattern = Pattern.compile("(\\w+)_PREDICATE");
 		try {
 			DatabaseMetaData dbMetaData = connection.getMetaData();
 			ResultSet rs = dbMetaData.getTables(null, null, null, null);
 			try {
 				while (rs.next()) {
-					String predicateName = rs.getString("TABLE_NAME");
+					String tableName = rs.getString("TABLE_NAME");
 					
-					// Make sure the table name fits our serialized predicates pattern
-					if (!predicatePattern.matcher(predicateName).matches())
-						continue;
-					
-					if (createPredicateFromTable(predicateName))
-						numPredicates++;
+					// Extract the predicate name from a matching table name
+					Matcher m = predicatePattern.matcher(tableName);
+					if (m.find()) {
+						String predicateName = m.group(1);
+						if (createPredicateFromTable(tableName, predicateName))
+							numPredicates++;
+					}
 				}
 			} finally {
 				rs.close();
@@ -152,12 +153,12 @@ public class RDBMSDataStore implements DataStore {
 		}
 	}
 	
-	private boolean createPredicateFromTable(String name) {
+	private boolean createPredicateFromTable(String tableName, String name) {
 		PredicateFactory factory = PredicateFactory.getFactory();
 		Pattern argumentPattern = Pattern.compile("(\\w+)_(\\d)");
 		try {
 			DatabaseMetaData dbMetaData = connection.getMetaData();
-			ResultSet rs = dbMetaData.getColumns(null, null, name, null);
+			ResultSet rs = dbMetaData.getColumns(null, null, tableName, null);
 			try {
 				ArrayList<ArgumentType> args = new ArrayList<ArgumentType>();
 				while (rs.next()) {
