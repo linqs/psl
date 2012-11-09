@@ -43,6 +43,7 @@ import com.healthmarketscience.sqlbuilder.CreateTableQuery.ColumnConstraint;
 import edu.umd.cs.psl.database.DataStore;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.database.Partition;
+import edu.umd.cs.psl.database.ReadOnlyDatabase;
 import edu.umd.cs.psl.database.loading.Inserter;
 import edu.umd.cs.psl.database.loading.Updater;
 import edu.umd.cs.psl.database.rdbms.driver.DatabaseDriver;
@@ -411,8 +412,14 @@ public class RDBMSDataStore implements DataStore {
 	}
 	
 	static final String aliasFunctionName = "extFunctionCall";
+	
+	// Map for external function registration
 	private static final BiMap<ExternalFunction, String> externalFunctions = HashBiMap.create();
 	private static int externalFunctionCounter = 0;
+	
+	// Map for database registration
+	private static final BiMap<ReadOnlyDatabase, String> registeredDatabases = HashBiMap.create();
+	private static int databaseCounter = 0;
 	
 	public static final String getSimilarityFunctionID(ExternalFunction extFun) {
 		if (externalFunctions.containsKey(extFun)) {
@@ -424,7 +431,21 @@ public class RDBMSDataStore implements DataStore {
 		}
 	}
 	
-	public static final double registeredExternalFunctionCall(String functionID, String... args) {
+	public static final String getDatabaseID(RDBMSDatabase db) {
+		if (registeredDatabases.containsKey(db)) {
+			return registeredDatabases.get(db);
+		} else {
+			String id = "extFun" + (databaseCounter++);
+			registeredDatabases.put(new ReadOnlyDatabase(db), id);
+			return id;
+		}
+	}
+	
+	public static final double registeredExternalFunctionCall(String databaseID, String functionID, String... args) {
+		ReadOnlyDatabase db = registeredDatabases.inverse().get(databaseID);
+		if (db==null) 
+			throw new IllegalArgumentException("Unknown database alias: " + functionID);
+		
 		ExternalFunction extFun = externalFunctions.inverse().get(functionID);
 		if (extFun==null) 
 			throw new IllegalArgumentException("Unknown external function alias: " + functionID);
@@ -459,6 +480,8 @@ public class RDBMSDataStore implements DataStore {
 				throw new IllegalArgumentException("Unknown argument type: " + t.getName());
 			}
 		}
+		
+		// TODO pass database to external function
 		return extFun.getValue(arguments);
 	}
 }

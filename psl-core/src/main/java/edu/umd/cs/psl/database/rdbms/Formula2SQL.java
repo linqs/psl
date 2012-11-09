@@ -99,6 +99,7 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 					.getPredicate();
 			FunctionCall fun = new FunctionCall(
 					RDBMSDataStore.aliasFunctionName);
+			fun.addCustomParams(RDBMSDataStore.getDatabaseID(database));
 			fun.addCustomParams(RDBMSDataStore
 					.getSimilarityFunctionID(predicate.getExternalFunction()));
 			for (int i = 0; i < arguments.length; i++)
