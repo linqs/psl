@@ -38,7 +38,9 @@ import edu.umd.cs.psl.model.predicate.StandardPredicate;
  * projected.
  * <p>
  * The Formula is given upon initialization and is fixed. It must be
- * a {@link Conjunction} of Atoms or a single Atom.
+ * a {@link Conjunction} of Atoms or a single Atom. Any {@link Variable}
+ * in the Formula must be used in an Atom with a {@link StandardPredicate}.
+ * (Then it can be used in others as well.)
  * The query will return any grounding such that each GroundAtom
  * with a {@link StandardPredicate} in the ground Formula is persisted in the
  * Database and each GroundAtom with a {@link FunctionalPredicate}

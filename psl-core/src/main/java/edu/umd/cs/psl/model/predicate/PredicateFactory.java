@@ -64,7 +64,7 @@ public class PredicateFactory {
 	/**
 	 * Constructs a StandardPredicate.
 	 * <p>
-	 * Returns an existing StandardPredicate if it has the same name and
+	 * Returns an existing StandardPredicate if one has the same name and
 	 * ArgumentTypes.
 	 *
 	 * @param name  name for the new predicate
@@ -77,40 +77,72 @@ public class PredicateFactory {
 	 *                                       or an element of types is NULL
 	 */
 	public StandardPredicate createStandardPredicate(String name, ArgumentType... types) {
-		checkPredicateSignature(name, types);
-		StandardPredicate p = new StandardPredicate(name, types);
-		addPredicate(p,name);
-		return p;
+		Predicate p = predicateByName.get(name);
+		if (p != null) {
+			boolean samePredicate = true;
+			if (p instanceof StandardPredicate && types.length == p.getArity()) {
+				for (int i = 0; i < types.length; i++)
+					if (!p.getArgumentType(i).equals(types[i]))
+						samePredicate = false;
+			}
+			else
+				samePredicate = false;
+			
+			if (samePredicate)
+				return (StandardPredicate) p;
+			else
+				throw new IllegalArgumentException("Name '" + name + "' already" +
+						" used by another Predicate: " + p);
+		}
+		else {
+			checkPredicateSignature(name, types);
+			StandardPredicate sp = new StandardPredicate(name, types);
+			addPredicate(sp,name);
+			return sp;
+		}
 	}
 	
 	/**
 	 * Constructs an ExternalFunctionalPredicate.
 	 * <p>
-	 * May return an existing ExternalFunctionalPredicate if it has the same name
+	 * Returns an existing ExternalFunctionalPredicate if one has the same name
 	 * and ExternalFunction.
 	 *
 	 * @param name  name for the new predicate
 	 * @param extFun  the ExternalFunction the new predicate will use
 	 * @return the newly constructed Predicate
-	 * @throws IllegalArgumentException  if name is already used, doesn't match \w+,
+	 * @throws IllegalArgumentException  if name is already used with different
+	 *                                       ExternalFunction, is already used by
+	 *                                       another type of Predicate, doesn't
+	 *                                       match \w+; types has length zero;
 	 *                                       or extFun does not provide valid ArgumentTypes
 	 */
 	public ExternalFunctionalPredicate createFunctionalPredicate(String name, ExternalFunction extFun) {
-		checkPredicateSignature(name, extFun.getArgumentTypes());
-		ExternalFunctionalPredicate p = new ExternalFunctionalPredicate(name, extFun);
-		addPredicate(p,name);
-		return p;
+		Predicate p = predicateByName.get(name);
+		if (p != null) {
+			if (p instanceof ExternalFunctionalPredicate
+					&& ((ExternalFunctionalPredicate) p).getExternalFunction().equals(extFun)) {
+				return (ExternalFunctionalPredicate) p;
+			}
+			else
+				throw new IllegalArgumentException("Name '" + name + "' already" +
+						" used by another Predicate: " + p);
+		}
+		else {
+			checkPredicateSignature(name, extFun.getArgumentTypes());
+			ExternalFunctionalPredicate efp = new ExternalFunctionalPredicate(name, extFun);
+			addPredicate(efp,name);
+			return efp;
+		}
 	}
 
 	/**
-	 * @throws IllegalArgumentException  if name is already used, doesn't match \w+,
-	 *                                       types has length zero, or an element of types is NULL
+	 * @throws IllegalArgumentException  if name doesn't match \w+, types has length zero,
+	 *                                       or an element of types is NULL
 	 */
 	private void checkPredicateSignature(String name, ArgumentType[] types) {
 		if (!predicateNamePattern.matcher(name).matches())
 			throw new IllegalArgumentException("Name must match \\w+");
-		if (predicateByName.containsKey(name))
-			throw new IllegalArgumentException("Name is already used by another Predicate.");
 		if (types.length == 0)
 			throw new IllegalArgumentException("Predicate needs at least one ArgumentType.");
 		for (int i = 0; i < types.length; i++)

@@ -44,6 +44,7 @@ import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.function.ExternalFunction;
 import edu.umd.cs.psl.model.predicate.FunctionalPredicate;
 import edu.umd.cs.psl.model.predicate.PredicateFactory;
+import edu.umd.cs.psl.model.predicate.SpecialPredicate;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
 import edu.umd.cs.psl.optimizer.conic.ConicProgramSolver;
 
@@ -253,7 +254,6 @@ abstract public class DataStoreContractTest {
 	@Test
 	public void testExternalFunctionalPredicate() {
 		datastore.registerPredicate(p3);
-		//datastore.registerPredicate(fp1);
 		Inserter inserter = datastore.getInserter(p3, new Partition(0));
 		inserter.insert(0.5, 1.0);
 		inserter.insert(0.0, 0.0);
@@ -274,6 +274,83 @@ abstract public class DataStoreContractTest {
 		
 		atom = db.getAtom(fp1, new DoubleAttribute(0.0), new DoubleAttribute(0.0));
 		assertEquals(0.0, atom.getValue(), 0.0);
+		assertTrue(Double.isNaN(atom.getConfidenceValue()));
+	}
+	
+	@Test
+	public void testSpecialPredicates() {
+		datastore.registerPredicate(p1);
+		
+		UniqueID a = datastore.getUniqueID(0);
+		UniqueID b = datastore.getUniqueID(1);
+
+		Inserter inserter = datastore.getInserter(p1, new Partition(0));
+		inserter.insert(a, a);
+		inserter.insert(a, b);
+		
+		Variable X = new Variable("X");
+		Variable Y = new Variable("Y");
+		
+		Database db = datastore.getDatabase(new Partition(0));
+		Formula f;
+		ResultList results;
+		GroundAtom atom;
+		
+		/*
+		 * Tests equality
+		 */
+		f = new Conjunction(
+				new QueryAtom(p1, X, Y),
+				new QueryAtom(SpecialPredicate.Equal, X, Y));
+		results = db.executeQuery(new DatabaseQuery(f));
+		assertEquals(1, results.size());
+		assertEquals(a, results.get(0, X));
+		assertEquals(a, results.get(0, Y));
+		
+		atom = db.getAtom(SpecialPredicate.Equal, a, a);
+		assertEquals(1.0, atom.getValue(), 0.0);
+		assertTrue(Double.isNaN(atom.getConfidenceValue()));
+		
+		atom = db.getAtom(SpecialPredicate.Equal, a, b);
+		assertEquals(0.0, atom.getValue(), 0.0);
+		assertTrue(Double.isNaN(atom.getConfidenceValue()));
+		
+		/*
+		 * Tests inequality
+		 */
+		f = new Conjunction(
+				new QueryAtom(p1, X, Y),
+				new QueryAtom(SpecialPredicate.NotEqual, X, Y));
+		results = db.executeQuery(new DatabaseQuery(f));
+		assertEquals(1, results.size());
+		assertEquals(a, results.get(0, X));
+		assertEquals(b, results.get(0, Y));
+		
+		atom = db.getAtom(SpecialPredicate.NotEqual, a, a);
+		assertEquals(0.0, atom.getValue(), 0.0);
+		assertTrue(Double.isNaN(atom.getConfidenceValue()));
+		
+		atom = db.getAtom(SpecialPredicate.NotEqual, a, b);
+		assertEquals(1.0, atom.getValue(), 0.0);
+		assertTrue(Double.isNaN(atom.getConfidenceValue()));
+		
+		/*
+		 * Tests non-symmetry
+		 */
+		f = new Conjunction(
+				new QueryAtom(p1, X, Y),
+				new QueryAtom(SpecialPredicate.NonSymmetric, X, Y));
+		results = db.executeQuery(new DatabaseQuery(f));
+		assertEquals(1, results.size());
+		assertEquals(a, results.get(0, X));
+		assertEquals(b, results.get(0, Y));
+		
+		atom = db.getAtom(SpecialPredicate.NonSymmetric, b, a);
+		assertEquals(0.0, atom.getValue(), 0.0);
+		assertTrue(Double.isNaN(atom.getConfidenceValue()));
+		
+		atom = db.getAtom(SpecialPredicate.NonSymmetric, a, b);
+		assertEquals(1.0, atom.getValue(), 0.0);
 		assertTrue(Double.isNaN(atom.getConfidenceValue()));
 	}
 	

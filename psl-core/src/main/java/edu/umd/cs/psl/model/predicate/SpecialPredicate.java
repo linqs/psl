@@ -67,7 +67,7 @@ abstract public class SpecialPredicate extends FunctionalPredicate {
 	};
 
 	/**
-	 * True if the first argument's {@link UniqueID} is less than the second's.
+	 * True if the first argument is less than the second.
 	 * <p>
 	 * Used to ground only one of a symmetric pair of ground rules.
 	 */
