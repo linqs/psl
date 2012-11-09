@@ -169,10 +169,10 @@ public class RDBMSDatabase implements Database {
 	}
 	
 	public void registerPredicate(RDBMSPredicateHandle ph) {
-		if (predicateHandles.containsKey(ph.predicate())) 
+		if (predicateHandles.containsKey(ph.predicate()))
 			throw new IllegalArgumentException("Predicate has already been registered!");
 		predicateHandles.put(ph.predicate(), ph);
-		
+
 		// Create PreparedStatement for predicate
 		createQueryStatement(ph);
 		if (!closedPredicates.contains(ph.predicate())) {
@@ -196,8 +196,7 @@ public class RDBMSDatabase implements Database {
 			PreparedStatement ps = dbConnection.prepareStatement(q.toString());
 			queryStatement.put(ph.predicate(), ps);
 		} catch (SQLException e) {
-			log.error("SQL error: {}",e.getMessage());
-			throw new AssertionError(e);
+			throw new RuntimeException("Could not create prepared statement.", e);
 		}
 	}
 	
@@ -224,8 +223,7 @@ public class RDBMSDatabase implements Database {
 			PreparedStatement ps = dbConnection.prepareStatement(q.toString());
 			updateStatement.put(ph.predicate(), ps);
 		} catch (SQLException e) {
-			log.error("SQL error: {}",e.getMessage());
-			throw new AssertionError(e);
+			throw new RuntimeException("Could not create prepared statement.", e);
 		}
 	}
 	
@@ -252,8 +250,7 @@ public class RDBMSDatabase implements Database {
 			PreparedStatement ps = dbConnection.prepareStatement(q.toString());
 			insertStatement.put(ph.predicate(), ps);
 		} catch (SQLException e) {
-			log.error("SQL error: {}",e.getMessage());
-			throw new AssertionError(e);
+			throw new RuntimeException("Could not create prepared statement.", e);
 		}
 	}
 	
@@ -266,6 +263,7 @@ public class RDBMSDatabase implements Database {
 		RDBMSPredicateHandle ph = predicateHandles.get(p);
 		if (ph == null)
 			throw new IllegalArgumentException("Predicate not registered with database.");
+		
 		return ph;
 	}
 	
@@ -292,8 +290,7 @@ public class RDBMSDatabase implements Database {
 			}
 			return ps.executeQuery();
 		} catch (SQLException e) {
-			log.error("SQL error: {}",e.getMessage());
-			throw new AssertionError(e);
+			throw new RuntimeException("Error querying DB for atom.", e);
 		}
 	}
 	
@@ -319,13 +316,21 @@ public class RDBMSDatabase implements Database {
 		 * 			- No, instantiate as RandomVariableAtom
 		 * 		- No, instantiate as ObservedAtom.
 		 */
+		if (p instanceof StandardPredicate)
+			return getAtom((StandardPredicate)p, arguments);
+		else if (p instanceof FunctionalPredicate)
+			return getAtom((FunctionalPredicate)p, arguments);
+		else
+			throw new IllegalArgumentException("Unknown predicate type: " + p.getClass().toString());
+	}
+
+	private GroundAtom getAtom(StandardPredicate p, GroundTerm... arguments) {
 		RDBMSPredicateHandle ph = getHandle(p);
 		QueryAtom qAtom = new QueryAtom(p, arguments);
 		GroundAtom result = cache.getCachedAtom(qAtom);
 		if (result != null)
 			return result;
 		
-		// Search the database
 		executePendingStatements();
 		ResultSet rs = queryDBForAtom(qAtom);
 		try {
@@ -341,7 +346,6 @@ public class RDBMSDatabase implements Database {
 	    				result = cache.instantiateObservedAtom(p, arguments, value, confidence);
 	    			} else {
 	    				// Predicate is open, instantiate as RandomVariableAtom
-	    				
 	    				result = cache.instantiateRandomVariableAtom((StandardPredicate) p, arguments, value, confidence);
 	    			}
 	    		} else {
@@ -353,27 +357,29 @@ public class RDBMSDatabase implements Database {
 			}
 			rs.close();
 		} catch (SQLException e) {
-			log.error("SQL error: {}",e.getMessage());
-			throw new AssertionError(e);
+			throw new RuntimeException("Error analyzing results from atom query.", e);
 		}
 		
 		if (result == null) {
-			// The atom was not found in the database
-			if (p instanceof StandardPredicate) {
-				if (isClosed((StandardPredicate) p))
-					result = cache.instantiateObservedAtom(p, arguments, 0.0, Double.NaN);
-				else
-					result = cache.instantiateRandomVariableAtom((StandardPredicate) p, arguments, 0.0, Double.NaN);
-			} else if (p instanceof FunctionalPredicate) {
-				// Compute value for atom
-				double value = ((FunctionalPredicate)p).computeValue(arguments);
-				result = cache.instantiateObservedAtom(p, arguments, value, Double.NaN);
-			}
+			if (isClosed((StandardPredicate) p))
+				result = cache.instantiateObservedAtom(p, arguments, 0.0, Double.NaN);
+			else
+				result = cache.instantiateRandomVariableAtom((StandardPredicate) p, arguments, 0.0, Double.NaN);
 		}
 		
 		return result;
 	}
-
+	
+	private GroundAtom getAtom(FunctionalPredicate p, GroundTerm... arguments) {
+		QueryAtom qAtom = new QueryAtom(p, arguments);
+		GroundAtom result = cache.getCachedAtom(qAtom);
+		if (result != null)
+			return result;
+		
+		double value = p.computeValue(arguments);
+		return cache.instantiateObservedAtom(p, arguments, value, Double.NaN);
+	}
+	
 	@Override
 	public void commit(RandomVariableAtom atom) {
 		RDBMSPredicateHandle ph = getHandle(atom.getPredicate());
@@ -391,8 +397,7 @@ public class RDBMSDatabase implements Database {
 			}
 			rs.close();
 		} catch (SQLException e) {
-			log.error("SQL error: {}",e.getMessage());
-			throw new AssertionError(e);
+			throw new RuntimeException("Error analyzing results from query.", e);
 		}
 		
 		if (!foundAtom) {
@@ -438,8 +443,7 @@ public class RDBMSDatabase implements Database {
 			if (!pendingStatements.contains(update))
 				pendingStatements.add(update);
 		} catch (SQLException e) {
-			log.error("SQL error: {}", e.getMessage());
-			throw new AssertionError(e);
+			throw new RuntimeException("Error updating atom.", e);
 		}
 	}
 	
@@ -476,8 +480,7 @@ public class RDBMSDatabase implements Database {
 			if (!pendingStatements.contains(insert))
 				pendingStatements.add(insert);
 		} catch (SQLException e) {
-			log.error("SQL error: {}", e.getMessage());
-			throw new AssertionError(e);
+			throw new RuntimeException("Error inserting atom.", e);
 		}
 	}
 
@@ -492,14 +495,13 @@ public class RDBMSDatabase implements Database {
 					success += change;
 			}
 			if (success != pendingOperationCount)
-				throw new AssertionError("Return code indicates that not all " +
+				throw new RuntimeException("Return code indicates that not all " +
 						"statements were executed successfully. [code: " + 
 						success + ", pending: " + pendingOperationCount + "]");
 			pendingOperationCount = 0;
 			pendingStatements.clear();
 		} catch (SQLException e) {
-			log.error("SQL error: {}", e.getMessage());
-			throw new AssertionError(e);
+			throw new RuntimeException("Error when executing batched statements.", e);
 		}
 	}
 	
@@ -507,6 +509,7 @@ public class RDBMSDatabase implements Database {
 	public ResultList executeQuery(DatabaseQuery query) {
 		if (closed)
 			throw new IllegalStateException("Cannot perform query on database that was closed.");
+		
 		Formula f = query.getFormula();
 		VariableAssignment partialGrounding = query.getPartialGrounding();
 		Set<Variable> projectTo = query.getProjectionSubset();
@@ -571,8 +574,7 @@ public class RDBMSDatabase implements Database {
 				stmt.close();
 			}
 		} catch (SQLException e) {
-			log.error("SQL error: {}",e.getMessage());
-			throw new AssertionError(e);
+			throw new RuntimeException("Error executing database query.", e);
 		}
 		log.trace("Number of results: {}",results.size());
 		return results;
@@ -600,6 +602,9 @@ public class RDBMSDatabase implements Database {
 
 	@Override
 	public void close() {
+		if (closed)
+			throw new IllegalStateException("Cannot closed database after it has been closed.");
+		
 		executePendingStatements();
 		parentDataStore.releasePartitions(this);
 		closed = true;
@@ -613,8 +618,7 @@ public class RDBMSDatabase implements Database {
 			for (PreparedStatement ps : insertStatement.values())
 				ps.close();
 		} catch (SQLException e) {
-			log.error("SQL error: {}",e.getMessage());
-			throw new AssertionError(e);
+			throw new RuntimeException("Error closing prepared statements.", e);
 		}
 	}
 }

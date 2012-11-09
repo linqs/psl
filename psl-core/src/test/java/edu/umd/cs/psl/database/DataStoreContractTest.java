@@ -219,11 +219,8 @@ abstract public class DataStoreContractTest {
 	public void testPredicateRegistration() {
 		datastore.registerPredicate(p1);
 		
-		Set<Predicate> registeredPredicates = datastore.getRegisteredPredicates();
+		Set<StandardPredicate> registeredPredicates = datastore.getRegisteredPredicates();
 		assertTrue(registeredPredicates.contains(p1));
-		assertTrue(registeredPredicates.contains(SpecialPredicate.Equal));
-		assertTrue(registeredPredicates.contains(SpecialPredicate.NotEqual));
-		assertTrue(registeredPredicates.contains(SpecialPredicate.NonSymmetric));
 	}
 	
 	@Test(expected=IllegalArgumentException.class)

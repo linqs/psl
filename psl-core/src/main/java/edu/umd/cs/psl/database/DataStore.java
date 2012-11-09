@@ -22,7 +22,6 @@ import edu.umd.cs.psl.database.loading.Inserter;
 import edu.umd.cs.psl.database.loading.Updater;
 import edu.umd.cs.psl.model.argument.UniqueID;
 import edu.umd.cs.psl.model.atom.GroundAtom;
-import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.SpecialPredicate;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
 
@@ -44,7 +43,7 @@ public interface DataStore {
 	 * @param predicate  the predicate to register
 	 * @param argnames  names of arguments
 	 */
-	public void registerPredicate(Predicate predicate);
+	public void registerPredicate(StandardPredicate predicate);
 	
 	/**
 	 * Creates a Database that can read from and write to a {@link Partition} and
@@ -115,7 +114,7 @@ public interface DataStore {
 	/**
 	 * @return the set of Predicates registered with this DataStore
 	 */
-	public Set<Predicate> getRegisteredPredicates();
+	public Set<StandardPredicate> getRegisteredPredicates();
 	
 	/**
 	 * Deletes all {@link GroundAtom GroundAtoms} persisted in a Partition.

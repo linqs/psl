@@ -33,7 +33,7 @@ class RDBMSPredicateInfo {
 			String confidence, String partition) {
 		predicate = def;
 		argCols = args;
-		tableName = table;
+		tableName = table + "_predicate";
 		valueCol = value;
 		confidenceCol = confidence;
 		partitionCol = partition;

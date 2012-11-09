@@ -55,7 +55,6 @@ import edu.umd.cs.psl.model.argument.UniqueID;
 import edu.umd.cs.psl.model.function.ExternalFunction;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.PredicateFactory;
-import edu.umd.cs.psl.model.predicate.SpecialPredicate;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
 
 public class RDBMSDataStore implements DataStore {
@@ -89,7 +88,7 @@ public class RDBMSDataStore implements DataStore {
 	/*
 	 * The predicates registered with this DataStore
 	 */
-	private final Map<Predicate, RDBMSPredicateInfo> predicates;
+	private final Map<StandardPredicate, RDBMSPredicateInfo> predicates;
 	
 	private final boolean stringUniqueIDs;
 	
@@ -104,7 +103,7 @@ public class RDBMSDataStore implements DataStore {
 		// Initialize all private variables
 		this.openDatabases = HashMultimap.create();
 		this.writePartitionIDs = new HashSet<Partition>();
-		this.predicates = new HashMap<Predicate, RDBMSPredicateInfo>();
+		this.predicates = new HashMap<StandardPredicate, RDBMSPredicateInfo>();
 		
 		// Connect to the database
 		this.connection = dbDriver.getConnection();
@@ -114,12 +113,6 @@ public class RDBMSDataStore implements DataStore {
 		
 		// Store the type of unique ID this RDBMS will use
 		this.stringUniqueIDs = useStringUniqueIDs;
-		
-		// Registers all special predicates
-		registerPredicate(SpecialPredicate.Equal);
-		registerPredicate(SpecialPredicate.NonSymmetric);
-		registerPredicate(SpecialPredicate.NotEqual);
-
 		
 		// Read in any predicates that exist in the database
 		deserializePredicates();
@@ -133,12 +126,18 @@ public class RDBMSDataStore implements DataStore {
 	 */
 	private void deserializePredicates() {
 		int numPredicates = 0;
+		Pattern predicatePattern = Pattern.compile("(\\w+)_predicate");
 		try {
 			DatabaseMetaData dbMetaData = connection.getMetaData();
 			ResultSet rs = dbMetaData.getTables(null, null, null, null);
 			try {
 				while (rs.next()) {
 					String predicateName = rs.getString("TABLE_NAME");
+					
+					// Make sure the table name fits our serialized predicates pattern
+					if (!predicatePattern.matcher(predicateName).matches())
+						continue;
+					
 					if (createPredicateFromTable(predicateName))
 						numPredicates++;
 				}
@@ -154,9 +153,8 @@ public class RDBMSDataStore implements DataStore {
 	}
 	
 	private boolean createPredicateFromTable(String name) {
-		// TODO Should this fail silently (like it does now) or generate a runtime exception?
 		PredicateFactory factory = PredicateFactory.getFactory();
-		Pattern predicatePattern = Pattern.compile("(\\w+)_(\\d)");
+		Pattern argumentPattern = Pattern.compile("(\\w+)_(\\d)");
 		try {
 			DatabaseMetaData dbMetaData = connection.getMetaData();
 			ResultSet rs = dbMetaData.getColumns(null, null, name, null);
@@ -164,7 +162,7 @@ public class RDBMSDataStore implements DataStore {
 				ArrayList<ArgumentType> args = new ArrayList<ArgumentType>();
 				while (rs.next()) {
 					String columnName = rs.getString("COLUMN_NAME");
-					Matcher m = predicatePattern.matcher(columnName);
+					Matcher m = argumentPattern.matcher(columnName);
 					if (m.find()) {
 						String argumentName = m.group(1).toLowerCase();
 						if (argumentName.equals("string")) {
@@ -176,10 +174,13 @@ public class RDBMSDataStore implements DataStore {
 						} else if (argumentName.equals("uniqueid")) {
 							args.add(ArgumentType.UniqueID);
 						}
-					} else
-						return false;
+					}
 				}
-				Predicate p = factory.createStandardPredicate(name, args.toArray(new ArgumentType[args.size()]));
+				// Check if any arguments were found at all
+				if (args.size() == 0)
+					return false;
+				
+				StandardPredicate p = factory.createStandardPredicate(name, args.toArray(new ArgumentType[args.size()]));
 				RDBMSPredicateInfo pi = getDefaultPredicateDBInfo(p);
 				predicates.put(p, pi);
 				return true;
@@ -192,20 +193,20 @@ public class RDBMSDataStore implements DataStore {
 	}
 	
 	@Override
-	public void registerPredicate(Predicate predicate) {
-		if (predicates.containsKey(predicate))
-			throw new IllegalArgumentException("Predicate has already been registered: " + predicate);
-		RDBMSPredicateInfo pi = getDefaultPredicateDBInfo(predicate);
-		predicates.put(predicate, pi);
-		
-		/*
-		 * All registered predicates are new predicates, because the database
-		 * reads in any predicates that already existed.
-		 */
-		createTableForPredicate(pi);
-		
-		// Update the data loader with the new predicate
-		dataloader.registerPredicate(pi.getPredicateHandle());
+	public void registerPredicate(StandardPredicate predicate) {
+		if (!predicates.containsKey(predicate)) {
+			RDBMSPredicateInfo pi = getDefaultPredicateDBInfo(predicate);
+			predicates.put(predicate, pi);
+
+			/*
+			 * All registered predicates are new predicates, because the
+			 * database reads in any predicates that already existed.
+			 */
+			createTableForPredicate(pi);
+
+			// Update the data loader with the new predicate
+			dataloader.registerPredicate(pi.getPredicateHandle());
+		}
 	}
 
 	private RDBMSPredicateInfo getDefaultPredicateDBInfo(Predicate predicate) {
@@ -345,7 +346,7 @@ public class RDBMSDataStore implements DataStore {
 	}
 
 	@Override
-	public Set<Predicate> getRegisteredPredicates() {
+	public Set<StandardPredicate> getRegisteredPredicates() {
 		return predicates.keySet();
 	}
 
