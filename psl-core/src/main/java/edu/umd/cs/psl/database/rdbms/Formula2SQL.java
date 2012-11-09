@@ -135,8 +135,7 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 					assert joins.containsKey((Variable) arg) : arg;
 					convert[i] = new CustomSql(joins.get((Variable) arg));
 				}
-			}
-			if (arg instanceof Attribute) {
+			} else if (arg instanceof Attribute) {
 				convert[i] = ((Attribute) arg).getValue();
 			} else if (arg instanceof UniqueID) {
 				convert[i] = ((UniqueID) arg).getInternalID();

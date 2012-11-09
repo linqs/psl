@@ -63,12 +63,18 @@ public class PredicateFactory {
 	
 	/**
 	 * Constructs a StandardPredicate.
+	 * <p>
+	 * Returns an existing StandardPredicate if it has the same name and
+	 * ArgumentTypes.
 	 *
 	 * @param name  name for the new predicate
 	 * @param types  types for each of the predicate's arguments
-	 * @throws IllegalArgumentException  if name is already used, doesn't match \w+,
-	 *                                       types has length zero, or an element of types is NULL
 	 * @return the newly constructed Predicate
+	 * @throws IllegalArgumentException  if name is already used with different
+	 *                                       ArgumentTypes, is already used by
+	 *                                       another type of Predicate, doesn't
+	 *                                       match \w+; types has length zero;
+	 *                                       or an element of types is NULL
 	 */
 	public StandardPredicate createStandardPredicate(String name, ArgumentType... types) {
 		checkPredicateSignature(name, types);
@@ -79,12 +85,15 @@ public class PredicateFactory {
 	
 	/**
 	 * Constructs an ExternalFunctionalPredicate.
+	 * <p>
+	 * May return an existing ExternalFunctionalPredicate if it has the same name
+	 * and ExternalFunction.
 	 *
 	 * @param name  name for the new predicate
 	 * @param extFun  the ExternalFunction the new predicate will use
+	 * @return the newly constructed Predicate
 	 * @throws IllegalArgumentException  if name is already used, doesn't match \w+,
 	 *                                       or extFun does not provide valid ArgumentTypes
-	 * @return the newly constructed Predicate
 	 */
 	public ExternalFunctionalPredicate createFunctionalPredicate(String name, ExternalFunction extFun) {
 		checkPredicateSignature(name, extFun.getArgumentTypes());
@@ -124,14 +133,17 @@ public class PredicateFactory {
 	}
 	
 	public Iterable<FunctionalPredicate> getFunctionalPredicates() {
+		// TODO: make immutable
 		return Iterables.filter(predicateByName.values(), FunctionalPredicate.class);
 	}
 	
 	public Iterable<StandardPredicate> getStandardPredicates() {
+		// TODO: make immutable
 		return Iterables.filter(predicateByName.values(), StandardPredicate.class);
 	}
 	
 	public Iterable<Predicate> getPredicates() {
+		// TODO: make immutable
 		return predicateByName.values();
 	}
 	

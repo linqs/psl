@@ -30,6 +30,8 @@ import org.junit.Test;
 
 import edu.umd.cs.psl.database.loading.Inserter;
 import edu.umd.cs.psl.model.argument.ArgumentType;
+import edu.umd.cs.psl.model.argument.DoubleAttribute;
+import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.StringAttribute;
 import edu.umd.cs.psl.model.argument.UniqueID;
 import edu.umd.cs.psl.model.argument.Variable;
@@ -37,6 +39,10 @@ import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.QueryAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
+import edu.umd.cs.psl.model.formula.Conjunction;
+import edu.umd.cs.psl.model.formula.Formula;
+import edu.umd.cs.psl.model.function.ExternalFunction;
+import edu.umd.cs.psl.model.predicate.FunctionalPredicate;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.PredicateFactory;
 import edu.umd.cs.psl.model.predicate.SpecialPredicate;
@@ -50,6 +56,8 @@ abstract public class DataStoreContractTest {
 	
 	private static StandardPredicate p1;
 	private static StandardPredicate p2;
+	private static StandardPredicate p3;
+	private static FunctionalPredicate fp1;
 	
 	private DataStore datastore;
 	
@@ -71,6 +79,27 @@ abstract public class DataStoreContractTest {
 		PredicateFactory predicateFactory = PredicateFactory.getFactory();
 		p1 = predicateFactory.createStandardPredicate("P1", ArgumentType.UniqueID, ArgumentType.UniqueID);
 		p2 = predicateFactory.createStandardPredicate("P2", ArgumentType.String, ArgumentType.String);
+		p3 = predicateFactory.createStandardPredicate("P3", ArgumentType.Double, ArgumentType.Double);
+		fp1 = predicateFactory.createFunctionalPredicate("FP1", new ExternalFunction() {
+			
+			@Override
+			public double getValue(GroundTerm... args) {
+				double a = ((DoubleAttribute) args[0]).getValue();
+				double b = ((DoubleAttribute) args[1]).getValue();
+				
+				return Math.max(0.0, Math.min(1.0, (a + b) / 2));
+			}
+			
+			@Override
+			public int getArity() {
+				return 2;
+			}
+			
+			@Override
+			public ArgumentType[] getArgumentTypes() {
+				return new ArgumentType[] {ArgumentType.Double, ArgumentType.Double};
+			}
+		});
 	}
 
 	@Before
@@ -221,6 +250,33 @@ abstract public class DataStoreContractTest {
 		
 		Set<StandardPredicate> registeredPredicates = datastore.getRegisteredPredicates();
 		assertTrue(registeredPredicates.contains(p1));
+	}
+	
+	@Test
+	public void testExternalFunctionalPredicate() {
+		datastore.registerPredicate(p3);
+		datastore.registerPredicate(fp1);
+		Inserter inserter = datastore.getInserter(p3, new Partition(0));
+		inserter.insert(0.5, 1.0);
+		inserter.insert(0.0, 0.0);
+		
+		Database db = datastore.getDatabase(new Partition(0));
+		
+		Variable X = new Variable("X");
+		Variable Y = new Variable("Y");
+		Formula f = new Conjunction(new QueryAtom(p3, X, Y), new QueryAtom(fp1, X, Y));
+		ResultList results = db.executeQuery(new DatabaseQuery(f));
+		assertEquals(1, results.size());
+		assertEquals(0.5, ((DoubleAttribute) results.get(0, X)).getValue(), 0.0);
+		assertEquals(1.0, ((DoubleAttribute) results.get(0, Y)).getValue(), 0.0);
+		
+		GroundAtom atom = db.getAtom(fp1, new DoubleAttribute(0.5), new DoubleAttribute(1.0));
+		assertEquals(0.75, atom.getValue(), 0.0);
+		assertTrue(Double.isNaN(atom.getConfidenceValue()));
+		
+		atom = db.getAtom(fp1, new DoubleAttribute(0.0), new DoubleAttribute(0.0));
+		assertEquals(0.0, atom.getValue(), 0.0);
+		assertTrue(Double.isNaN(atom.getConfidenceValue()));
 	}
 	
 	@Test(expected=IllegalArgumentException.class)
