@@ -557,7 +557,7 @@ public class RDBMSDatabase implements Database {
 									res[i] = new StringAttribute(rs.getString(var.getName()));
 									break;
 								case UniqueID:
-									res[i] = (UniqueID)rs.getObject(var.getName());
+									res[i] = getUniqueID(rs.getObject(var.getName()));
 									break;
 								default:
 									throw new IllegalArgumentException("Unknown argument type: " + type);

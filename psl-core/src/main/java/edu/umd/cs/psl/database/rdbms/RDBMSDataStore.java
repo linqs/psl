@@ -322,12 +322,10 @@ public class RDBMSDataStore implements DataStore {
 
 	@Override
 	public UniqueID getUniqueID(Object key) {
-		if (key instanceof String)
-			return new RDBMSUniqueStringID((String)key);
-		else if (key instanceof Integer)
-			return new RDBMSUniqueIntID((Integer)key);
+		if (stringUniqueIDs)
+			return new RDBMSUniqueStringID(key.toString());
 		else
-			throw new IllegalArgumentException("Cannot produce a UniqueID for type: " + key.getClass().getName());
+			return new RDBMSUniqueIntID((Integer) key);
 	}
 
 	@Override
