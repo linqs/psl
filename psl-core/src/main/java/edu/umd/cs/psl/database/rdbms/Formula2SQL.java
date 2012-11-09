@@ -196,11 +196,15 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 				} else
 					assert arg instanceof Variable;
 			}
+			
+			// Query all of the read (and the write) partition(s) belonging to the database
 			ArrayList<Integer> partitions = new ArrayList<Integer>(database.readPartitions.length);
 			for (int i = 0; i < database.readPartitions.length; i++)
 				partitions.add(database.readPartitions[i].getID());
+			partitions.add(database.writePartition.getID());
 			query.addCondition(new InCondition(new CustomSql(tableDot
 					+ ph.partitionColumn()), partitions));
+			
 			tableCounter++;
 		}
 	}

@@ -43,9 +43,7 @@ import edu.umd.cs.psl.model.formula.Conjunction;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.function.ExternalFunction;
 import edu.umd.cs.psl.model.predicate.FunctionalPredicate;
-import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.PredicateFactory;
-import edu.umd.cs.psl.model.predicate.SpecialPredicate;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
 import edu.umd.cs.psl.optimizer.conic.ConicProgramSolver;
 
@@ -255,7 +253,7 @@ abstract public class DataStoreContractTest {
 	@Test
 	public void testExternalFunctionalPredicate() {
 		datastore.registerPredicate(p3);
-		datastore.registerPredicate(fp1);
+		//datastore.registerPredicate(fp1);
 		Inserter inserter = datastore.getInserter(p3, new Partition(0));
 		inserter.insert(0.5, 1.0);
 		inserter.insert(0.0, 0.0);
