@@ -82,7 +82,7 @@ abstract public class DataStoreContractTest {
 		fp1 = predicateFactory.createFunctionalPredicate("FP1", new ExternalFunction() {
 			
 			@Override
-			public double getValue(GroundTerm... args) {
+			public double getValue(ReadOnlyDatabase db, GroundTerm... args) {
 				double a = ((DoubleAttribute) args[0]).getValue();
 				double b = ((DoubleAttribute) args[1]).getValue();
 				

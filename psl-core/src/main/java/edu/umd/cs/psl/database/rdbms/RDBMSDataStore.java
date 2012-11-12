@@ -435,7 +435,7 @@ public class RDBMSDataStore implements DataStore {
 		if (registeredDatabases.containsKey(db)) {
 			return registeredDatabases.get(db);
 		} else {
-			String id = "extFun" + (databaseCounter++);
+			String id = "database" + (databaseCounter++);
 			registeredDatabases.put(new ReadOnlyDatabase(db), id);
 			return id;
 		}
@@ -469,19 +469,13 @@ public class RDBMSDataStore implements DataStore {
 				arguments[i] = new StringAttribute(args[i]);
 				break;
 			case UniqueID:
-				// TODO External functions should know what type of UniqueID they use
-				try {
-					arguments[i] = new RDBMSUniqueIntID(Integer.parseInt(args[i]));
-				} catch (NumberFormatException e) {
-					arguments[i] = new RDBMSUniqueStringID(args[i]);
-				}
+				arguments[i] = db.getUniqueID(args[i]);
 				break;
 			default:
 				throw new IllegalArgumentException("Unknown argument type: " + t.getName());
 			}
 		}
 		
-		// TODO pass database to external function
-		return extFun.getValue(arguments);
+		return extFun.getValue(db, arguments);
 	}
 }

@@ -3,6 +3,7 @@ package edu.umd.cs.psl.database;
 import java.util.HashSet;
 
 import edu.umd.cs.psl.model.argument.GroundTerm;
+import edu.umd.cs.psl.model.argument.UniqueID;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.predicate.FunctionalPredicate;
@@ -47,5 +48,9 @@ public class ReadOnlyDatabase {
 		}
 		
 		return db.executeQuery(query);
+	}
+	
+	public UniqueID getUniqueID(Object key) {
+		return db.getUniqueID(key);
 	}
 }

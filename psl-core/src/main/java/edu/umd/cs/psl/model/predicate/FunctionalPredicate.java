@@ -16,6 +16,7 @@
  */
 package edu.umd.cs.psl.model.predicate;
 
+import edu.umd.cs.psl.database.ReadOnlyDatabase;
 import edu.umd.cs.psl.model.argument.ArgumentType;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.atom.Atom;
@@ -50,10 +51,11 @@ abstract public class FunctionalPredicate extends Predicate {
 	 * Computes the truth value of the {@link Atom} of this Predicate
 	 * with the given arguments.
 	 * 
+	 * @param db	the connection to the database which is running this query
 	 * @param args  the arguments for which the truth value will be computed
 	 * @return the computed truth value
 	 * @throws IllegalArgumentException  if args is not valid
 	 */
-	abstract public double computeValue(GroundTerm... args);
+	abstract public double computeValue(ReadOnlyDatabase db, GroundTerm... args);
 	
 }

@@ -43,6 +43,7 @@ import edu.umd.cs.psl.database.DataStore;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.database.DatabaseQuery;
 import edu.umd.cs.psl.database.Partition;
+import edu.umd.cs.psl.database.ReadOnlyDatabase;
 import edu.umd.cs.psl.database.ResultList;
 import edu.umd.cs.psl.model.argument.ArgumentType;
 import edu.umd.cs.psl.model.argument.Attribute;
@@ -268,11 +269,12 @@ public class RDBMSDatabase implements Database {
 	}
 	
 	private ResultSet queryDBForAtom(QueryAtom a) {
+		if (closed)
+			throw new IllegalStateException("Cannot query atom from closed database.");
+		
 		PreparedStatement ps = queryStatement.get(a.getPredicate());
 		Term[] arguments = a.getArguments();
 		try {
-			if (closed)
-				throw new IllegalStateException("Cannot query atom from closed database.");
 			for (int i = 0; i < arguments.length; i++) {
 				int paramIndex = i + 1;
 				Term argument = arguments[i];
@@ -376,7 +378,8 @@ public class RDBMSDatabase implements Database {
 		if (result != null)
 			return result;
 		
-		double value = p.computeValue(arguments);
+		// TODO should this be computed here? Or should this be a SQL function call?
+		double value = p.computeValue(new ReadOnlyDatabase(this), arguments);
 		return cache.instantiateObservedAtom(p, arguments, value, Double.NaN);
 	}
 	

@@ -17,6 +17,7 @@
 package edu.umd.cs.psl.model.predicate;
 
 import edu.umd.cs.psl.database.Database;
+import edu.umd.cs.psl.database.ReadOnlyDatabase;
 import edu.umd.cs.psl.model.argument.ArgumentType;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.UniqueID;
@@ -45,7 +46,7 @@ abstract public class SpecialPredicate extends FunctionalPredicate {
 		= new SpecialPredicate("#Equal", new ArgumentType[] {ArgumentType.UniqueID, ArgumentType.UniqueID}) {
 		
 		@Override
-		public double computeValue(GroundTerm... args) {
+		public double computeValue(ReadOnlyDatabase db, GroundTerm... args) {
 			if (args.length==2 && ArgumentType.UniqueID.isInstance(args[0]) && ArgumentType.UniqueID.isInstance(args[1]))
 				return (args[0].equals(args[1])) ? 1.0 : 0.0;
 			else
@@ -58,7 +59,7 @@ abstract public class SpecialPredicate extends FunctionalPredicate {
 		= new SpecialPredicate("#NotEqual", new ArgumentType[] {ArgumentType.UniqueID, ArgumentType.UniqueID}) {
 
 		@Override
-		public double computeValue(GroundTerm... args) {
+		public double computeValue(ReadOnlyDatabase db, GroundTerm... args) {
 			if (args.length==2 && ArgumentType.UniqueID.isInstance(args[0]) && ArgumentType.UniqueID.isInstance(args[1]))
 				return (!args[0].equals(args[1])) ? 1.0 : 0.0;
 			else
@@ -75,7 +76,7 @@ abstract public class SpecialPredicate extends FunctionalPredicate {
 		= new SpecialPredicate("#NonSymmetric", new ArgumentType[] {ArgumentType.UniqueID, ArgumentType.UniqueID}) {
 		
 		@Override
-		public double computeValue(GroundTerm... args) {
+		public double computeValue(ReadOnlyDatabase db, GroundTerm... args) {
 			if (args.length==2 && ArgumentType.UniqueID.isInstance(args[0]) && ArgumentType.UniqueID.isInstance(args[1])) {
 				UniqueID uid1 = ((UniqueID)args[0]);
 				UniqueID uid2 = ((UniqueID)args[1]);

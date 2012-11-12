@@ -16,12 +16,13 @@
  */
 package edu.umd.cs.psl.model.function;
 
+import edu.umd.cs.psl.database.ReadOnlyDatabase;
 import edu.umd.cs.psl.model.argument.ArgumentType;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 
 public interface ExternalFunction {
 
-	public double getValue(GroundTerm... args);
+	public double getValue(ReadOnlyDatabase db, GroundTerm... args);
 	
 	public int getArity();
 	
