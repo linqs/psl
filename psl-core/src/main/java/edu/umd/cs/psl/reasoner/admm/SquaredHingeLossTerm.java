@@ -229,19 +229,15 @@ public class SquaredHingeLossTerm extends HyperplaneTerm {
 				VarStatus[] newSub = Arrays.copyOf(sub.value, sub.value.length);
 				for (int i = 0; i < newSub.length; i++) {
 					if (VarStatus.FREE.equals(newSub[i])) {
-						if (x[i] < lb[i]) {
-							newSub[i] = VarStatus.LOWER_BOUND;
-							sol = solveSubproblem(new Subproblem(newSub));
-							if (best == null || sol.value < best.value)
-								best = sol;
-						}
+						newSub[i] = VarStatus.LOWER_BOUND;
+						sol = solveSubproblem(new Subproblem(newSub));
+						if (best == null || sol.value < best.value)
+							best = sol;
 						
-						if (x[i] > ub[i]) {
-							newSub[i] = VarStatus.UPPER_BOUND;
-							sol = solveSubproblem(new Subproblem(newSub));
-							if (best == null || sol.value < best.value)
-								best = sol;
-						}
+						newSub[i] = VarStatus.UPPER_BOUND;
+						sol = solveSubproblem(new Subproblem(newSub));
+						if (best == null || sol.value < best.value)
+							best = sol;
 						
 						newSub[i] = VarStatus.FREE;
 					}

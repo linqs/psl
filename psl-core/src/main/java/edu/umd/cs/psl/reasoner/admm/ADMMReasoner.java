@@ -126,7 +126,7 @@ public class ADMMReasoner implements Reasoner {
 	/* Sometimes called rho or eta */
 	final double stepSize;
 	private final int maxMapRounds;
-	final DistributionType type;
+	private final DistributionType type;
 	
 	private final double epsilonRel, epsilonAbs;
 	private final int stopCheck;
@@ -155,8 +155,6 @@ public class ADMMReasoner implements Reasoner {
 			throw new IllegalArgumentException("Property " + EPSILON_REL_KEY + " must be positive.");
 		stopCheck = config.getInt(STOP_CHECK_KEY, STOP_CHECK_DEFAULT);
 		type = (DistributionType) config.getEnum(DISTRIBUTION_KEY, DISTRIBUTION_DEFAULT);
-		if (type.equals(DistributionType.quadratic))
-			throw new IllegalArgumentException("Only linear distribution is currently supported.");
 		maxMapRounds = config.getInt(MAX_ROUNDS_KEY, MAX_ROUNDS_DEFAULT);
 		
 		groundKernels = new HashSet<GroundKernel>();
@@ -250,8 +248,16 @@ public class ADMMReasoner implements Reasoner {
 					
 					if (innerFunction instanceof FunctionSum) {
 						Hyperplane hp = processHyperplane((FunctionSum) innerFunction);
-						term = new HingeLossTerm(this, hp.zIndices, hp.lowerBounds, hp.upperBounds, hp.coeffs, hp.constant,
-								((GroundCompatibilityKernel) groundKernel).getWeight().getWeight());
+						if (DistributionType.linear.equals(type)) {
+							term = new HingeLossTerm(this, hp.zIndices, hp.lowerBounds, hp.upperBounds, hp.coeffs, hp.constant,
+									((GroundCompatibilityKernel) groundKernel).getWeight().getWeight());
+						}
+						else if (DistributionType.quadratic.equals(type)) {
+							term = new SquaredHingeLossTerm(this, hp.zIndices, hp.lowerBounds, hp.upperBounds, hp.coeffs, hp.constant,
+									((GroundCompatibilityKernel) groundKernel).getWeight().getWeight());
+						}
+						else
+							throw new IllegalStateException("Unrecognized DistributionType: " + type);
 					}
 					else
 						throw new IllegalArgumentException("Max function must have one linear function and 0.0 as arguments.");
