@@ -48,14 +48,12 @@ public class LinearConstraintTermTest {
 		 */
 		double[] z = {0.2, 0.5};
 		double[] y = {0.0, 0.0};
-		double[] lowerBounds = {0.0, 0.0};
-		double[] upperBounds = {1.0, 1.0};
 		double[] coeffs = {1.0, 1.0};
 		double constant = 1.0;
 		FunctionComparator comparator = FunctionComparator.SmallerThan;
 		double stepSize = 1.0;
 		double[] expected = {0.2, 0.5};
-		testProblem(z, y, lowerBounds, upperBounds, coeffs, constant, comparator, stepSize, expected);
+		testProblem(z, y, coeffs, constant, comparator, stepSize, expected);
 		
 		/*
 		 * Problem 2
@@ -64,14 +62,12 @@ public class LinearConstraintTermTest {
 		 */
 		z = new double[] {0.7, 0.5};
 		y = new double[] {0.0, 0.0};
-		lowerBounds = new double[] {0.0, 0.0};
-		upperBounds = new double[] {1.0, 1.0};
 		coeffs = new double[] {1.0, 1.0};
 		constant = 1.0;
 		comparator = FunctionComparator.SmallerThan;
 		stepSize = 1.0;
 		expected = new double[] {0.6, 0.4};
-		testProblem(z, y, lowerBounds, upperBounds, coeffs, constant, comparator, stepSize, expected);
+		testProblem(z, y, coeffs, constant, comparator, stepSize, expected);
 		
 		/*
 		 * Problem 3
@@ -80,19 +76,16 @@ public class LinearConstraintTermTest {
 		 */
 		z = new double[] {0.7, 0.5};
 		y = new double[] {0.0, 0.0};
-		lowerBounds = new double[] {0.0, 0.0};
-		upperBounds = new double[] {1.0, 1.0};
 		coeffs = new double[] {1.0, -1.0};
 		constant = 0.0;
 		comparator = FunctionComparator.Equality;
 		stepSize = 1.0;
 		expected = new double[] {0.6, 0.6};
-		testProblem(z, y, lowerBounds, upperBounds, coeffs, constant, comparator, stepSize, expected);
+		testProblem(z, y, coeffs, constant, comparator, stepSize, expected);
 	}
 	
-	private void testProblem(double[] z, double[] y, double[] lb, double[] ub
-			, double[] coeffs, double constant, FunctionComparator comparator
-			, final double stepSize, double[] expected) {
+	private void testProblem(double[] z, double[] y, double[] coeffs, double constant,
+			FunctionComparator comparator, final double stepSize, double[] expected) {
 		config.setProperty("admmreasoner.stepsize", stepSize);
 		ADMMReasoner reasoner = new ADMMReasoner(null, config);
 		reasoner.z = new Vector<Double>(z.length);
@@ -103,7 +96,7 @@ public class LinearConstraintTermTest {
 		for (int i = 0; i < z.length; i++)
 			zIndices[i] = i;
 		
-		LinearConstraintTerm term = new LinearConstraintTerm(reasoner, zIndices, lb, ub, coeffs, constant, comparator);
+		LinearConstraintTerm term = new LinearConstraintTerm(reasoner, zIndices, coeffs, constant, comparator);
 		for (int i = 0; i < z.length; i++)
 			term.y[i] = y[i];
 		term.minimize();

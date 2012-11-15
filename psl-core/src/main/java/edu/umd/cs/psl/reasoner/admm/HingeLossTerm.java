@@ -19,6 +19,8 @@ package edu.umd.cs.psl.reasoner.admm;
 /**
  * {@link ADMMReasoner} objective term of the form <br />
  * weight * max(coeffs^T * x - constant, 0)
+ * <p>
+ * All coeffs must be non-zero.
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  */
@@ -26,67 +28,48 @@ class HingeLossTerm extends HyperplaneTerm {
 	
 	private final double weight;
 	
-	HingeLossTerm(ADMMReasoner reasoner, int[] zIndices, double[] lowerBounds,
-			double[] upperBounds, double[] coeffs, double constant, double weight) {
-		super(reasoner, zIndices, lowerBounds, upperBounds, coeffs, constant);
+	HingeLossTerm(ADMMReasoner reasoner, int[] zIndices, double[] coeffs,
+			double constant, double weight) {
+		super(reasoner, zIndices, coeffs, constant);
 		this.weight = weight;
 	}
 	
 	@Override
 	protected void minimize() {
 		/* Initializes scratch data */
-		double a[] = new double[x.length];
 		double total = 0.0;
 		
 		/*
 		 * Minimizes without the linear loss, i.e., solves
 		 * argmin stepSize/2 * \|x - z + y / stepSize \|_2^2
-		 * such that x is within its box
 		 */
-		for (int i = 0; i < a.length; i++) {
-			a[i] = reasoner.z.get(zIndices[i]) - y[i] / reasoner.stepSize;
-			
-			if (a[i] < lb[i])
-				a[i] = lb[i];
-			else if (a[i] > ub[i])
-				a[i] = ub[i];
-			
-			total += coeffs[i] * a[i];
+		for (int i = 0; i < x.length; i++) {
+			x[i] = reasoner.z.get(zIndices[i]) - y[i] / reasoner.stepSize;
+			total += coeffs[i] * x[i];
 		}
 		
 		/* If the linear loss is NOT active at the computed point, it is the solution... */
 		if (total <= constant) {
-			for (int i = 0; i < x.length; i++)
-				x[i] = a[i];
 			return;
 		}
 		
 		/*
 		 * Else, minimizes with the linear loss, i.e., solves
 		 * argmin weight * coeffs^T * x + stepSize/2 * \|x - z + y / stepSize \|_2^2
-		 * such that x is within its box 
 		 */
 		total = 0.0;
-		for (int i = 0; i < a.length; i++) {
-			a[i] = reasoner.z.get(zIndices[i]) - y[i] / reasoner.stepSize;
-			a[i] -= weight * coeffs[i] / reasoner.stepSize;
-			
-			if (a[i] < lb[i])
-				a[i] = lb[i];
-			else if (a[i] > ub[i])
-				a[i] = ub[i];
-			
-			total += coeffs[i] * a[i];
+		for (int i = 0; i < x.length; i++) {
+			x[i] = reasoner.z.get(zIndices[i]) - y[i] / reasoner.stepSize;
+			x[i] -= weight * coeffs[i] / reasoner.stepSize;
+			total += coeffs[i] * x[i];
 		}
 		
 		/* If the linear loss IS active at the computed point, it is the solution... */
 		if (total >= constant) {
-			for (int i = 0; i < x.length; i++)
-				x[i] = a[i];
 			return;
 		}
 		
-		/* Else, the solution is on the hyperplane */
-		solveKnapsackProblem();
+		/* Else, the solution is on the hinge */
+		project();
 	}
 }

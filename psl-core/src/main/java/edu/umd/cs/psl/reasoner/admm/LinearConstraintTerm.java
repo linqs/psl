@@ -23,6 +23,8 @@ import edu.umd.cs.psl.reasoner.function.FunctionComparator;
  * 0 if coeffs^T * x [?] constant <br />
  * infinity otherwise <br />
  * where [?] is ==, >=, or <=
+ * <p>
+ * All coeffs must be non-zero.
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  */
@@ -30,10 +32,9 @@ class LinearConstraintTerm extends HyperplaneTerm {
 	
 	private final FunctionComparator comparator;
 	
-	LinearConstraintTerm(ADMMReasoner reasoner, int[] zIndices, double[] lowerBounds,
-			double[] upperBounds, double[] coeffs, double constant,
-			FunctionComparator comparator) {
-		super(reasoner, zIndices, lowerBounds, upperBounds, coeffs, constant);
+	LinearConstraintTerm(ADMMReasoner reasoner, int[] zIndices, double[] coeffs,
+			double constant, FunctionComparator comparator) {
+		super(reasoner, zIndices, coeffs, constant);
 		this.comparator = comparator;
 	}
 	
@@ -43,23 +44,16 @@ class LinearConstraintTerm extends HyperplaneTerm {
 		if (!comparator.equals(FunctionComparator.Equality)) {
 		
 			/* Initializes scratch data */
-			double a[] = new double[x.length];
 			double total = 0.0;
 			
 			/*
 			 * Minimizes without regard for the constraint, i.e., solves
 			 * argmin stepSize/2 * \|x - z + y / stepSize \|_2^2
-			 * such that x is within its box
 			 */
-			for (int i = 0; i < a.length; i++) {
-				a[i] = reasoner.z.get(zIndices[i]) - y[i] / reasoner.stepSize;
+			for (int i = 0; i < x.length; i++) {
+				x[i] = reasoner.z.get(zIndices[i]) - y[i] / reasoner.stepSize;
 				
-				if (a[i] < lb[i])
-					a[i] = lb[i];
-				else if (a[i] > ub[i])
-					a[i] = ub[i];
-				
-				total += coeffs[i] * a[i];
+				total += coeffs[i] * x[i];
 			}
 			
 			/*
@@ -70,16 +64,14 @@ class LinearConstraintTerm extends HyperplaneTerm {
 					||
 				 (comparator.equals(FunctionComparator.LargerThan) && total >= constant)
 			   ) {
-				for (int i = 0; i < a.length; i++)
-					x[i] = a[i];
 				return;
 			}
 		}
 		
 		/*
 		 * If the naive minimization didn't work, or if it's an equality constraint,
-		 * solves the knapsack problem
+		 * projects onto the hyperplane
 		 */
-		solveKnapsackProblem();
+		project();
 	}
 }

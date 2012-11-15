@@ -18,41 +18,19 @@ package edu.umd.cs.psl.reasoner.admm;
 
 /**
  * {@link ADMMReasoner} objective term of the form <br />
- * weight * [max(coeffs^T * x - constant, 0)]^2
+ * weight * (coeffs^T * x - constant)^2
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-class SquaredHingeLossTerm extends SquaredHyperplaneTerm {
+class SquaredLinearLossTerm extends SquaredHyperplaneTerm {
 	
-	public SquaredHingeLossTerm(ADMMReasoner reasoner, int[] zIndices,
-			double[] coeffs, double constant, double weight) {
+	SquaredLinearLossTerm(ADMMReasoner reasoner, int[] zIndices, double[] coeffs,
+			double constant, double weight) {
 		super(reasoner, zIndices, coeffs, constant, weight);
 	}
-
+	
 	@Override
 	protected void minimize() {
-		/* Initializes scratch data */
-		double total = 0.0;
-		
-		/*
-		 * Minimizes without the quadratic loss, i.e., solves
-		 * argmin stepSize/2 * \|x - z + y / stepSize \|_2^2
-		 */
-		for (int i = 0; i < x.length; i++) {
-			x[i] = reasoner.z.get(zIndices[i]) - y[i] / reasoner.stepSize;
-			total += coeffs[i] * x[i];
-		}
-		
-		/* If the quadratic loss is NOT active at the computed point, it is the solution... */
-		if (total <= constant) {
-			return;
-		}
-		
-		/*
-		 * Else, minimizes with the quadratic loss, i.e., solves
-		 * argmin weight * (coeffs^T * x - constant)^2 + stepSize/2 * \|x - z + y / stepSize \|_2^2
-		 */
 		minWeightedSquaredHyperplane();
 	}
-
 }

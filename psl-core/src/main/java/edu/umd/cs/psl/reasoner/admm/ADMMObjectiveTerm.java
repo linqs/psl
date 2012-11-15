@@ -21,54 +21,23 @@ package edu.umd.cs.psl.reasoner.admm;
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-abstract public class ADMMObjectiveTerm {
+abstract class ADMMObjectiveTerm {
 	protected final ADMMReasoner reasoner;
 	protected final double[] x;
 	protected final double[] y;
 	protected final int[] zIndices;
-	protected final double[] lb;
-	protected final double[] ub;
 	
-	public ADMMObjectiveTerm(ADMMReasoner reasoner, int[] zIndices,
-			double[] lowerBounds, double[] upperBounds) {
+	public ADMMObjectiveTerm(ADMMReasoner reasoner, int[] zIndices) {
 		this.reasoner = reasoner;
 		
 		x = new double[zIndices.length];
 		y = new double[zIndices.length];
 		
 		this.zIndices = zIndices;
-		lb = lowerBounds;
-		ub = upperBounds;
-		for (int  i = 0; i < x.length; i++)
-			if (lb[i] >= ub[i])
-				throw new IllegalArgumentException("Lower bound must be less than upper bound.");
 		
 		/* This loop ensures that the reasoner, when it first computes y, will keep it at 0 */
 		for (int i = 0; i < x.length; i++)
 			x[i] = reasoner.z.get(zIndices[i]);
-	}
-	
-	protected void setLowerBound(int index, double lowerBound) {
-		if (lowerBound < ub[index])
-			lb[index] = lowerBound;
-		else
-			throw new IllegalArgumentException("New lower bound must be less than current upper bound.");
-	}
-	
-	protected void setUpperBound(int index, double upperBound) {
-		if (upperBound > lb[index])
-			ub[index] = upperBound;
-		else
-			throw new IllegalArgumentException("New upper bound must be greater than current lower bound.");
-	}
-	
-	protected void setBounds(int index, double lowerBound, double upperBound) {
-		if (lowerBound < upperBound) {
-			lb[index] = lowerBound;
-			ub[index] = upperBound;
-		}
-		else
-			throw new IllegalArgumentException("Lower bound must be less than upper bound.");
 	}
 	
 	/**

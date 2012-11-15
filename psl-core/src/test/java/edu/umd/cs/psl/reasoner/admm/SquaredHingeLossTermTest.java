@@ -47,14 +47,12 @@ public class SquaredHingeLossTermTest {
 		 */
 		double[] z = {0.2, 0.5};
 		double[] y = {0.0, 0.0};
-		double[] lowerBounds = {0.0, 0.0};
-		double[] upperBounds = {1.0, 1.0};
 		double[] coeffs = {1.0, -1.0};
 		double constant = -0.95;
 		double weight = 1.0;
 		double stepSize = 1.0;
-		double[] expected = {0.0, 0.8};
-		testProblem(z, y, lowerBounds, upperBounds, coeffs, constant, weight, stepSize, expected);
+		double[] expected = {-0.06, 0.76};
+		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
 		
 		/*
 		 * Problem 2
@@ -63,14 +61,12 @@ public class SquaredHingeLossTermTest {
 		 */
 		z = new double[] {0.3, 0.5, 0.1};
 		y = new double[] {0.1, 0.0, -0.05};
-		lowerBounds = new double[] {0.0, 0.0, 0.0};
-		upperBounds = new double[] {1.0, 1.0, 1.0};
 		coeffs = new double[] {1.0, -0.5, 0.4};
 		constant = -0.15;
 		weight = 1.0;
 		stepSize = 0.5;
 		expected = new double[] {0.051798, 0.524096, 0.180720};
-		testProblem(z, y, lowerBounds, upperBounds, coeffs, constant, weight, stepSize, expected);
+		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
 		
 		/*
 		 * Problem 3
@@ -79,14 +75,12 @@ public class SquaredHingeLossTermTest {
 		 */
 		z = new double[] {0.3, 0.5, 0.1};
 		y = new double[] {0.1, 0.0, -0.05};
-		lowerBounds = new double[] {0.0, 0.0, 0.0};
-		upperBounds = new double[] {1.0, 1.0, 1.0};
 		coeffs = new double[] {1.0, -0.5, 0.4};
 		constant = 0.0;
 		weight = 2.0;
 		stepSize = 0.5;
 		expected = new double[] {0.1, 0.5, 0.2};
-		testProblem(z, y, lowerBounds, upperBounds, coeffs, constant, weight, stepSize, expected);
+		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
 		
 		/*
 		 * Problem 4
@@ -95,14 +89,12 @@ public class SquaredHingeLossTermTest {
 		 */
 		z = new double[] {0.1};
 		y = new double[] {-0.15};
-		lowerBounds = new double[] {0.0};
-		upperBounds = new double[] {1.0};
 		coeffs = new double[] {1.0};
 		constant = 0.0;
 		weight = 2.0;
 		stepSize = 1.0;
 		expected = new double[] {0.05};
-		testProblem(z, y, lowerBounds, upperBounds, coeffs, constant, weight, stepSize, expected);
+		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
 		
 		/*
 		 * Problem 5
@@ -111,35 +103,30 @@ public class SquaredHingeLossTermTest {
 		 */
 		z = new double[] {0.7, .5};
 		y = new double[] {0.0, 0.0};
-		lowerBounds = new double[] {0.0, 0.0};
-		upperBounds = new double[] {1.0, 1.0};
 		coeffs = new double[] {1.0, -1.0};
 		constant = 0.0;
 		weight = 1.0;
 		stepSize = 1.0;
 		expected = new double[] {0.62, 0.58};
-		testProblem(z, y, lowerBounds, upperBounds, coeffs, constant, weight, stepSize, expected);
+		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
 		
 		/*
 		 * Problem 6
 		 * 
-		 * Solution on the quadratic side. Two box constraints active.
+		 * Solution on the quadratic side
 		 */
 		z = new double[] {3.7, -.5, .5};
 		y = new double[] {0.0, 0.0, 0.0};
-		lowerBounds = new double[] {0.0, 0.0, 0.0};
-		upperBounds = new double[] {1.0, 1.0, 1.0};
 		coeffs = new double[] {1.0, -1.0, 0.5};
 		constant = -0.5;
-		weight = 1.0;
-		stepSize = 1.0;
-		expected = new double[] {1.0, 0.833333, 0.0};
-		testProblem(z, y, lowerBounds, upperBounds, coeffs, constant, weight, stepSize, expected);
+		weight = 2.0;
+		stepSize = 2.0;
+		expected = new double[] {1.9, 1.3, -0.4};
+		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
 	}
 	
-	private void testProblem(double[] z, double[] y, double[] lb, double[] ub
-			, double[] coeffs, double constant, double weight, final double stepSize
-			, double[] expected) {
+	private void testProblem(double[] z, double[] y,double[] coeffs, double constant,
+			double weight, final double stepSize , double[] expected) {
 		config.setProperty("admmreasoner.stepsize", stepSize);
 		ADMMReasoner reasoner = new ADMMReasoner(null, config);
 		reasoner.z = new Vector<Double>(z.length);
@@ -150,7 +137,7 @@ public class SquaredHingeLossTermTest {
 		for (int i = 0; i < z.length; i++)
 			zIndices[i] = i;
 		
-		SquaredHingeLossTerm term = new SquaredHingeLossTerm(reasoner, zIndices, lb, ub, coeffs, constant, weight);
+		SquaredHingeLossTerm term = new SquaredHingeLossTerm(reasoner, zIndices, coeffs, constant, weight);
 		for (int i = 0; i < z.length; i++)
 			term.y[i] = y[i];
 		term.minimize();

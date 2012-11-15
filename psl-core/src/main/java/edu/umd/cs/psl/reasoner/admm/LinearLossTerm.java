@@ -22,35 +22,22 @@ package edu.umd.cs.psl.reasoner.admm;
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-class LinearLossTerm extends HyperplaneTerm {
+class LinearLossTerm extends ADMMObjectiveTerm {
 	
+	private final double[] coeffs;
 	private final double weight;
 	
-	LinearLossTerm(ADMMReasoner reasoner, int[] zIndices, double[] lowerBounds, double[] upperBounds,
-			double[] coeffs, double weight) {
-		super(reasoner, zIndices, lowerBounds, upperBounds, coeffs, 0.0);
+	LinearLossTerm(ADMMReasoner reasoner, int[] zIndices, double[] coeffs, double weight) {
+		super(reasoner, zIndices);
+		this.coeffs = coeffs;
 		this.weight = weight;
 	}
 	
 	@Override
 	protected void minimize() {
-		/* Initializes scratch data */
-		double a[] = new double[x.length];
-		
-		for (int i = 0; i < a.length; i++) {
-			a[i] = reasoner.z.get(zIndices[i]) - y[i] / reasoner.stepSize;
-			a[i] -= weight * coeffs[i] / reasoner.stepSize;
+		for (int i = 0; i < x.length; i++) {
+			x[i] = reasoner.z.get(zIndices[i]) - y[i] / reasoner.stepSize;
+			x[i] -= weight * coeffs[i] / reasoner.stepSize;
 		}
-		
-		/* Projects on to a box */
-		for (int i = 0; i < x.length; i++)
-			if (a[i] < lb[i])
-				a[i] = lb[i];
-			else if (a[i] > ub[i])
-				a[i] = ub[i];
-		
-		/* Updates the local primal variables */
-		for (int i = 0; i < a.length; i++)
-			x[i] = a[i];
 	}
 }

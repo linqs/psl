@@ -55,7 +55,7 @@ import edu.umd.cs.psl.util.collection.HashList;
  * 2 (quadratic GroundCompatibilityKernel).
  * <p>
  * A state X has zero density if any {@link GroundConstraintKernel} is unsatisfied.
- * 
+ * <p>
  * Uses ADMM optimization method to maximize the density.
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
@@ -140,6 +140,10 @@ public class ADMMReasoner implements Reasoner {
 	HashList<AtomFunctionVariable> variables;
 	/** Consensus vector */
 	Vector<Double> z;
+	/** Lower bounds on variables */
+	Vector<Double> lb;
+	/** Upper bounds on variables */
+	Vector<Double> ub;
 	/** Lists of local variable locations for updating consensus variables */
 	Vector<Vector<VariableLocation>> varLocations;
 	
@@ -210,6 +214,8 @@ public class ADMMReasoner implements Reasoner {
 		terms = new Vector<ADMMObjectiveTerm>(groundKernels.size());
 		variables = new HashList<AtomFunctionVariable>(groundKernels.size() * 2);
 		z = new Vector<Double>(groundKernels.size() * 2);
+		lb = new Vector<Double>(groundKernels.size() * 2);
+		ub = new Vector<Double>(groundKernels.size() * 2);
 		varLocations = new Vector<Vector<VariableLocation>>(groundKernels.size() * 2);
 		n = 0;
 		
@@ -249,11 +255,11 @@ public class ADMMReasoner implements Reasoner {
 					if (innerFunction instanceof FunctionSum) {
 						Hyperplane hp = processHyperplane((FunctionSum) innerFunction);
 						if (DistributionType.linear.equals(type)) {
-							term = new HingeLossTerm(this, hp.zIndices, hp.lowerBounds, hp.upperBounds, hp.coeffs, hp.constant,
+							term = new HingeLossTerm(this, hp.zIndices, hp.coeffs, hp.constant,
 									((GroundCompatibilityKernel) groundKernel).getWeight().getWeight());
 						}
 						else if (DistributionType.quadratic.equals(type)) {
-							term = new SquaredHingeLossTerm(this, hp.zIndices, hp.lowerBounds, hp.upperBounds, hp.coeffs, hp.constant,
+							term = new SquaredHingeLossTerm(this, hp.zIndices, hp.coeffs, hp.constant,
 									((GroundCompatibilityKernel) groundKernel).getWeight().getWeight());
 						}
 						else
@@ -265,8 +271,16 @@ public class ADMMReasoner implements Reasoner {
 				/* Else, if it's a FunctionSum, constructs the objective term (a linear loss) */
 				else if (function instanceof FunctionSum) {
 					Hyperplane hp = processHyperplane((FunctionSum) function);
-					term = new LinearLossTerm(this, hp.zIndices, hp.lowerBounds, hp.upperBounds, hp.coeffs,
-							((GroundCompatibilityKernel) groundKernel).getWeight().getWeight());
+					if (DistributionType.linear.equals(type)) {
+						term = new LinearLossTerm(this, hp.zIndices, hp.coeffs,
+								((GroundCompatibilityKernel) groundKernel).getWeight().getWeight());
+					}
+					else if (DistributionType.quadratic.equals(type)) {
+						term = new SquaredLinearLossTerm(this, hp.zIndices, hp.coeffs, 0.0,
+								((GroundCompatibilityKernel) groundKernel).getWeight().getWeight());
+					}
+					else
+						throw new IllegalStateException("Unrecognized DistributionType: " + type);
 				}
 				else
 					throw new IllegalArgumentException("Unrecognized function.");
@@ -276,7 +290,7 @@ public class ADMMReasoner implements Reasoner {
 				function = constraint.getFunction();
 				if (function instanceof FunctionSum) {
 					Hyperplane hp = processHyperplane((FunctionSum) function);
-					term = new LinearConstraintTerm(this, hp.zIndices, hp.lowerBounds, hp.upperBounds, hp.coeffs,
+					term = new LinearConstraintTerm(this, hp.zIndices, hp.coeffs,
 							constraint.getValue() + hp.constant, constraint.getComparator());
 				}
 				else
@@ -322,13 +336,18 @@ public class ADMMReasoner implements Reasoner {
 				/* First pass computes newZ and dual residual */
 				for (Iterator<VariableLocation> itr = varLocations.get(i).iterator(); itr.hasNext(); ) {
 					location = itr.next();
-					total += location.term.x[location.localIndex];
+					total += location.term.x[location.localIndex] + location.term.y[location.localIndex] / stepSize;
 					if (check) {
 						AxNorm += location.term.x[location.localIndex] * location.term.x[location.localIndex];
 						AyNorm += location.term.y[location.localIndex] * location.term.y[location.localIndex];
 					}
 				}
 				newZ = total / varLocations.get(i).size();
+				if (newZ < lb.get(i))
+					newZ = lb.get(i);
+				else if (newZ > ub.get(i))
+					newZ = ub.get(i);
+				
 				if (check) {
 					diff = z.get(i) - newZ;
 					/* Residual is diff^2 * number of local variables mapped to z element */
@@ -426,6 +445,8 @@ public class ADMMReasoner implements Reasoner {
 					/* Creates the global variable */
 					variables.add((AtomFunctionVariable) singleton);
 					z.add(singleton.getValue());
+					lb.add(0.0);
+					ub.add(1.0);
 					
 					/* Creates a list of local variable locations for the new variable */
 					varLocations.add(new Vector<ADMMReasoner.VariableLocation>());
@@ -449,14 +470,10 @@ public class ADMMReasoner implements Reasoner {
 
 		hp.zIndices = new int[tempZIndices.size()];
 		hp.coeffs = new double[tempCoeffs.size()];
-		hp.lowerBounds = new double[tempCoeffs.size()];
-		hp.upperBounds = new double[tempCoeffs.size()];
 		
 		for (int i = 0; i < tempZIndices.size(); i++) {
 			hp.zIndices[i] = tempZIndices.get(i);
 			hp.coeffs[i] = tempCoeffs.get(i);
-			hp.lowerBounds[i] = 0.0;
-			hp.upperBounds[i] = 1.0;
 		}
 		
 		return hp;
@@ -464,7 +481,7 @@ public class ADMMReasoner implements Reasoner {
 	
 	private class Hyperplane {
 		int[] zIndices;
-		double[] lowerBounds, upperBounds, coeffs;
+		double[] coeffs;
 		double constant;
 	}
 	

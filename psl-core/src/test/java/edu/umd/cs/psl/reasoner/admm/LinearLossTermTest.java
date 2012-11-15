@@ -44,18 +44,15 @@ public class LinearLossTermTest {
 		 */
 		double[] z = {0.4, 0.5};
 		double[] y = {0.0, 0.0};
-		double[] lowerBounds = {0.0, 0.0};
-		double[] upperBounds = {1.0, 1.0};
 		double[] coeffs = {0.3, -1.0};
 		double weight = 1.0;
 		double stepSize = 1.0;
-		double[] expected = {0.1, 1.0};
-		testProblem(z, y, lowerBounds, upperBounds, coeffs, weight, stepSize, expected);
+		double[] expected = {0.1, 1.5};
+		testProblem(z, y, coeffs, weight, stepSize, expected);
 	}
 	
-	private void testProblem(double[] z, double[] y, double[] lb, double[] ub
-			, double[] coeffs, double weight, final double stepSize
-			, double[] expected) {
+	private void testProblem(double[] z, double[] y, double[] coeffs, double weight,
+			final double stepSize, double[] expected) {
 		config.setProperty("admmreasoner.stepsize", stepSize);
 		ADMMReasoner reasoner = new ADMMReasoner(null, config);
 		reasoner.z = new Vector<Double>(z.length);
@@ -65,7 +62,7 @@ public class LinearLossTermTest {
 		int[] zIndices = new int[z.length];
 		for (int i = 0; i < z.length; i++)
 			zIndices[i] = i;
-		LinearLossTerm term = new LinearLossTerm(reasoner, zIndices, lb, ub, coeffs, weight);
+		LinearLossTerm term = new LinearLossTerm(reasoner, zIndices, coeffs, weight);
 		for (int i = 0; i < z.length; i++)
 			term.y[i] = y[i];
 		term.minimize();

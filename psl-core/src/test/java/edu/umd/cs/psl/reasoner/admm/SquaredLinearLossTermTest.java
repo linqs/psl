@@ -27,7 +27,7 @@ import org.junit.Test;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
 
-public class HingeLossTermTest {
+public class SquaredLinearLossTermTest {
 	
 	private ConfigBundle config;
 	
@@ -36,78 +36,19 @@ public class HingeLossTermTest {
 		ConfigManager manager = ConfigManager.getManager();
 		config = manager.getBundle("dummy");
 	}
-	
+
 	@Test
 	public void testMinimize() {
-		
 		/*
 		 * Problem 1
-		 * 
-		 * Solution on the hinge
 		 */
-		double[] z = {0.2, 0.5};
-		double[] y = {0.0, 0.0};
-		double[] coeffs = {1.0, -1.0};
-		double constant = -0.95;
-		double weight = 1.0;
-		double stepSize = 1.0;
-		double[] expected = {-.125, 0.825};
-		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
-		
-		/*
-		 * Problem 2
-		 * 
-		 * Solution on the hinge
-		 */
-		z = new double[] {0.3, 0.5, 0.1};
-		y = new double[] {0.1, 0.0, -0.05};
-		coeffs = new double[] {1.0, -0.5, 0.4};
-		constant = -0.15;
-		weight = 1.0;
-		stepSize = 0.5;
-		expected = new double[] {0.043257, 0.528361, 0.177309};
-		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
-		
-		/*
-		 * Problem 3
-		 * 
-		 * Solution on the zero side
-		 */
-		z = new double[] {0.3, 0.5, 0.1};
-		y = new double[] {0.1, 0.0, -0.05};
-		coeffs = new double[] {1.0, -0.5, 0.4};
-		constant = 0.0;
-		weight = 2.0;
-		stepSize = 0.5;
-		expected = new double[] {0.1, 0.5, 0.2};
-		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
-		
-		/*
-		 * Problem 4
-		 * 
-		 * Solution on the zero side
-		 */
-		z = new double[] {0.1};
-		y = new double[] {0.15};
-		coeffs = new double[] {1.0};
-		constant = 0.0;
-		weight = 2.0;
-		stepSize = 1.0;
-		expected = new double[] {-0.05};
-		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
-		
-		/*
-		 * Problem 5
-		 * 
-		 * Solution on the linear side
-		 */
-		z = new double[] {0.7, .5};
-		y = new double[] {0.0, 0.0};
-		coeffs = new double[] {1.0, -1.0};
-		constant = 0.0;
-		weight = 1.0;
-		stepSize = 1.0;
-		expected = new double[] {0.6, 0.6};
+		double[] z = {0.4, 0.5, 0.1};
+		double[] y = {0.0, 0.0, -0.05};
+		double[] coeffs = {0.3, -1.0, 0.4};
+		double constant = -20.0;
+		double weight = 0.5;
+		double stepSize = 2.0;
+		double[] expected = {-1.41569, 6.55231, -2.29593};
 		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
 	}
 	
@@ -122,8 +63,7 @@ public class HingeLossTermTest {
 		int[] zIndices = new int[z.length];
 		for (int i = 0; i < z.length; i++)
 			zIndices[i] = i;
-		
-		HingeLossTerm term = new HingeLossTerm(reasoner, zIndices, coeffs, constant, weight);
+		SquaredLinearLossTerm term = new SquaredLinearLossTerm(reasoner, zIndices, coeffs, constant, weight);
 		for (int i = 0; i < z.length; i++)
 			term.y[i] = y[i];
 		term.minimize();
