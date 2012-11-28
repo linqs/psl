@@ -513,6 +513,8 @@ public class RDBMSDatabase implements Database {
 		if (closed)
 			throw new IllegalStateException("Cannot perform query on database that was closed.");
 		
+		executePendingStatements();
+		
 		Formula f = query.getFormula();
 		VariableAssignment partialGrounding = query.getPartialGrounding();
 		Set<Variable> projectTo = query.getProjectionSubset();
