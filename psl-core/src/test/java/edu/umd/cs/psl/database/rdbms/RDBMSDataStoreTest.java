@@ -18,6 +18,7 @@ package edu.umd.cs.psl.database.rdbms;
 
 import java.io.File;
 
+import edu.umd.cs.psl.config.EmptyBundle;
 import edu.umd.cs.psl.database.DataStore;
 import edu.umd.cs.psl.database.DataStoreContractTest;
 import edu.umd.cs.psl.database.rdbms.driver.DatabaseDriver;
@@ -28,7 +29,7 @@ public class RDBMSDataStoreTest extends DataStoreContractTest {
 	@Override
 	public DataStore getDataStore() {
 		DatabaseDriver driver = new H2DatabaseDriver(H2DatabaseDriver.Type.Disk, "./psldb", false);
-		RDBMSDataStore dataStore = new RDBMSDataStore(driver, "truth", "confidence", "partition", false);
+		RDBMSDataStore dataStore = new RDBMSDataStore(driver, new EmptyBundle());
 		return dataStore;
 	}
 

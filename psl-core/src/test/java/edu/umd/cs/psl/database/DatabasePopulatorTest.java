@@ -27,6 +27,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import edu.umd.cs.psl.config.EmptyBundle;
 import edu.umd.cs.psl.database.rdbms.RDBMSDataStore;
 import edu.umd.cs.psl.database.rdbms.driver.DatabaseDriver;
 import edu.umd.cs.psl.database.rdbms.driver.H2DatabaseDriver;
@@ -57,7 +58,7 @@ public class DatabasePopulatorTest {
 	@Before
 	public void setUp() throws Exception {
 		DatabaseDriver driver = new H2DatabaseDriver(H2DatabaseDriver.Type.Disk, "./psldb", false);
-		datastore = new RDBMSDataStore(driver, "truth", "confidence", "partition", true);
+		datastore = new RDBMSDataStore(driver, new EmptyBundle());
 		datastore.registerPredicate(p1);
 		datastore.registerPredicate(p2);
 	}
@@ -81,10 +82,10 @@ public class DatabasePopulatorTest {
 		Variable x = new Variable("X");
 		Variable y = new Variable("Y");
 		HashSet<GroundTerm> terms = new HashSet<GroundTerm>();
-		terms.add(db.getUniqueID("Bob"));
-		terms.add(db.getUniqueID("Alice"));
-		terms.add(db.getUniqueID("Eve"));
-		terms.add(db.getUniqueID("John"));
+		terms.add(db.getUniqueID(1));
+		terms.add(db.getUniqueID(2));
+		terms.add(db.getUniqueID(3));
+		terms.add(db.getUniqueID(4));
 		HashMap<Variable, Set<GroundTerm>> substitutions = new HashMap<Variable, Set<GroundTerm>>();
 		substitutions.put(x, terms);
 		substitutions.put(y, terms);
@@ -130,8 +131,8 @@ public class DatabasePopulatorTest {
 		Variable x = new Variable("X");
 		Variable y = new Variable("Y");
 		HashSet<GroundTerm> p1terms = new HashSet<GroundTerm>();
-		p1terms.add(db.getUniqueID("Bob"));
-		p1terms.add(db.getUniqueID("Alice"));
+		p1terms.add(db.getUniqueID(1));
+		p1terms.add(db.getUniqueID(2));
 		HashMap<Variable, Set<GroundTerm>> substitutions = new HashMap<Variable, Set<GroundTerm>>();
 		substitutions.put(x, p1terms);
 		substitutions.put(y, p1terms);

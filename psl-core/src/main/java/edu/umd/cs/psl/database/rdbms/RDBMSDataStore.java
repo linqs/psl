@@ -40,6 +40,8 @@ import com.google.common.collect.Multimap;
 import com.healthmarketscience.sqlbuilder.CreateTableQuery;
 import com.healthmarketscience.sqlbuilder.CreateTableQuery.ColumnConstraint;
 
+import edu.umd.cs.psl.config.ConfigBundle;
+import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.database.DataStore;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.database.Partition;
@@ -58,8 +60,52 @@ import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.PredicateFactory;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
 
+/**
+ * The RDMBSDataStore is an RDBMS implementation of the DataStore interface. It
+ * will connect to any RDBMS that has a supporting {@link DatabaseDriver} implementation, and
+ * through the {@link ConfigBundle} can use custom names for its value, confidence, and
+ * partition columns.
+ * <p>
+ * The ConfigBundle can also specify whether or not this RDBMSDatabase should use
+ * {@link RDBMSUniqueStringID} for its UniqueID implementation (as opposed to using
+ * {@link RDBMSUniqueIntID}).
+ * @author Eric Norris <enorris@cs.umd.edu>
+ *
+ */
 public class RDBMSDataStore implements DataStore {
 	private static final Logger log = LoggerFactory.getLogger(RDBMSDataStore.class);
+	
+	
+	/**
+	 * Prefix of property keys used by this class.
+	 * 
+	 * @see ConfigManager
+	 */
+	public static final String CONFIG_PREFIX = "rdbmsdatastore";
+	
+	/** Key for String property for the name of the value column in the database. */
+	public static final String VALUE_COLUMN_KEY = CONFIG_PREFIX + ".valuecolumn";
+	
+	/** Default value for the VALUE_COLUMN_KEY property */
+	public static final String VALUE_COLUMN_DEFAULT = "truth";
+	
+	/** Key for String property for the name of the confidence column in the database. */
+	public static final String CONFIDENCE_COLUMN_KEY = CONFIG_PREFIX + ".confidencecolumn";
+	
+	/** Default value for the CONFIDENCE_COLUMN_KEY property */
+	public static final String CONFIDENCE_COLUMN_DEFAULT = "confidence";
+	
+	/** Key for String property for the name of the partition column in the database. */
+	public static final String PARTITION_COLUMN_KEY = CONFIG_PREFIX + ".partitioncolumn";
+	
+	/** Default value for the PARTITION_COLUMN_KEY property */
+	public static final String PARTITION_COLUMN_DEFAULT = "partition";
+	
+	/** Key for boolean property of whether to use {@link RDBMSUniqueStringID} as a UniqueID. */
+	public static final String USE_STRING_ID_KEY = CONFIG_PREFIX + ".usestringids";
+	
+	/** Default value for the USE_STRING_ID_KEY property */
+	public static final boolean USE_STRING_ID_DEFAULT = false;
 	
 	/*
 	 * The values for the PSL columns.
@@ -93,13 +139,16 @@ public class RDBMSDataStore implements DataStore {
 	
 	private final boolean stringUniqueIDs;
 	
-	public RDBMSDataStore(DatabaseDriver dbDriver, String valueCol,
-			String confidenceCol, String partitionCol,
-			boolean useStringUniqueIDs) {
+	/**
+	 * Returns an RDBMSDataStore that utilizes the connection created by the {@link DatabaseDriver}.
+	 * @param dbDriver	the DatabaseDriver that contains a connection to the backing database.
+	 * @param config	the configuration for this DataStore.
+	 */
+	public RDBMSDataStore(DatabaseDriver dbDriver, ConfigBundle config) {
 		// Set up column names
-		this.valueColumn = valueCol;
-		this.confidenceColumn = confidenceCol;
-		this.partitionColumn = partitionCol;
+		this.valueColumn = config.getString(VALUE_COLUMN_KEY, VALUE_COLUMN_DEFAULT);
+		this.confidenceColumn = config.getString(CONFIDENCE_COLUMN_KEY, CONFIDENCE_COLUMN_DEFAULT);
+		this.partitionColumn = config.getString(PARTITION_COLUMN_KEY, PARTITION_COLUMN_DEFAULT);
 		
 		// Initialize all private variables
 		this.openDatabases = HashMultimap.create();
@@ -113,7 +162,7 @@ public class RDBMSDataStore implements DataStore {
 		this.dataloader = new RDBMSDataLoader(connection);
 		
 		// Store the type of unique ID this RDBMS will use
-		this.stringUniqueIDs = useStringUniqueIDs;
+		this.stringUniqueIDs = config.getBoolean(USE_STRING_ID_KEY, USE_STRING_ID_DEFAULT);
 		
 		// Read in any predicates that exist in the database
 		deserializePredicates();
@@ -154,6 +203,12 @@ public class RDBMSDataStore implements DataStore {
 		}
 	}
 	
+	/**
+	 * Helper method to register a predicate from a given table
+	 * @param tableName		the database table to analyze
+	 * @param name			the name of the predicate in this table
+	 * @return				a boolean indicating the success of deserializing the predicate
+	 */
 	private boolean createPredicateFromTable(String tableName, String name) {
 		PredicateFactory factory = PredicateFactory.getFactory();
 		Pattern argumentPattern = Pattern.compile("(\\w+)_(\\d)");
@@ -167,14 +222,15 @@ public class RDBMSDataStore implements DataStore {
 					Matcher m = argumentPattern.matcher(columnName);
 					if (m.find()) {
 						String argumentName = m.group(1).toLowerCase();
+						int argumentLocation = Integer.parseInt(m.group(2));
 						if (argumentName.equals("string")) {
-							args.add(ArgumentType.String);
+							args.add(argumentLocation, ArgumentType.String);
 						} else if (argumentName.equals("integer")) {
-							args.add(ArgumentType.Integer);
+							args.add(argumentLocation, ArgumentType.Integer);
 						} else if (argumentName.equals("double")) {
-							args.add(ArgumentType.Double);
+							args.add(argumentLocation, ArgumentType.Double);
 						} else if (argumentName.equals("uniqueid")) {
-							args.add(ArgumentType.UniqueID);
+							args.add(argumentLocation, ArgumentType.UniqueID);
 						}
 					}
 				}
@@ -421,6 +477,12 @@ public class RDBMSDataStore implements DataStore {
 	private static final BiMap<ReadOnlyDatabase, String> registeredDatabases = HashBiMap.create();
 	private static int databaseCounter = 0;
 	
+	/**
+	 * Registers and returns an ID for a given ExternalFunction. If this function
+	 * was already registered, returns the same ID that was returned initially.
+	 * @param extFun	the ExternalFunction to register
+	 * @return			the String ID for this function
+	 */
 	public static final String getSimilarityFunctionID(ExternalFunction extFun) {
 		if (externalFunctions.containsKey(extFun)) {
 			return externalFunctions.get(extFun);
@@ -431,6 +493,12 @@ public class RDBMSDataStore implements DataStore {
 		}
 	}
 	
+	/**
+	 * Registers and returns an ID for a given RDBMSDatabase. If this database
+	 * was already registered, returns the same ID that was returned initially.
+	 * @param db	the RDBMSDatabase to register
+	 * @return		the String ID for this database
+	 */
 	public static final String getDatabaseID(RDBMSDatabase db) {
 		if (registeredDatabases.containsKey(db)) {
 			return registeredDatabases.get(db);
@@ -441,6 +509,13 @@ public class RDBMSDataStore implements DataStore {
 		}
 	}
 	
+	/**
+	 * Used by the RDBMS to make an external function call.
+	 * @param databaseID	the ID for the {@link RDBMSDatabase} associated with this function call
+	 * @param functionID	the ID of the {@link ExternalFunction} to execute
+	 * @param args			the arguments for the ExternalFunction
+	 * @return				the result from the ExternalFunction
+	 */
 	public static final double registeredExternalFunctionCall(String databaseID, String functionID, String... args) {
 		ReadOnlyDatabase db = registeredDatabases.inverse().get(databaseID);
 		if (db==null) 
