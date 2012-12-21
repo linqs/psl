@@ -83,8 +83,8 @@ public interface DataStore {
 	public UniqueID getUniqueID(Object key);
 	
 	/**
-	 * Creates an Inserter for inserting new {@link GroundAtom GroundAtoms}
-	 * into a {@link Partition}.
+	 * Creates an Inserter for persisting new {@link GroundAtom GroundAtoms}
+	 * in a {@link Partition}.
 	 * 
 	 * @param predicate  the Predicate of the Atoms to be inserted
 	 * @param partition  the Partition into which Atoms will be inserted
@@ -95,7 +95,7 @@ public interface DataStore {
 	public Inserter getInserter(StandardPredicate predicate, Partition partition);
 	
 	/**
-	 * Creates an Updater for updating {@link GroundAtom GroundAtoms}
+	 * Creates an Updater for updating {@link GroundAtom GroundAtoms} persisted
 	 * in a {@link Partition}.
 	 * 
 	 * @param predicate  the Predicate of the Atoms to be updated

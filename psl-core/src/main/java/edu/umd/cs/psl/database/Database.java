@@ -30,6 +30,13 @@ import edu.umd.cs.psl.model.predicate.StandardPredicate;
 
 /**
  * A data model for retrieving and persisting {@link GroundAtom GroundAtoms}.
+ * <p>
+ * Every GroundAtom retrieved from a Database is either a {@link RandomVariableAtom}
+ * or an {@link ObservedAtom}. The method {@link #getAtom(Predicate, GroundTerm...)}
+ * determines which type a GroundAtom is. In addition, a GroundAtom with a
+ * {@link StandardPredicate} can be persisted in a Database. If a
+ * GroundAtom is persisted, it is persisted in one of the Partitions the
+ * Database can read and is available for querying via {@link #executeQuery(DatabaseQuery)}.
  * 
  * <h2>Setup</h2>
  * 
@@ -39,7 +46,7 @@ import edu.umd.cs.psl.model.predicate.StandardPredicate;
  * and can read from additional Partitions. The write Partition of a Database
  * may not be a read (or write) Partition of any other Database.
  * <p>
- * A Database can be instantiated with a set of {@link StandardPredicate StandardPredicates}
+ * A Database can be instantiated with a set of StandardPredicates
  * to close. (Any StandardPredicate not closed initially remains open). Whether
  * a StandardPredicate is open or closed affects the behavior of
  * {@link #getAtom(Predicate, GroundTerm...)}.
@@ -58,7 +65,7 @@ import edu.umd.cs.psl.model.predicate.StandardPredicate;
  * 
  * <h2>Persisting RandomVariableAtoms</h2>
  * 
- * A {@link RandomVariableAtom} can be persisted (including updated) in the write
+ * A RandomVariableAtom can be persisted (including updated) in the write
  * Partition via {@link #commit(RandomVariableAtom)} or
  * {@link RandomVariableAtom#commitToDB()}.
  * 
@@ -73,8 +80,9 @@ public interface Database {
 	/**
 	 * Returns the GroundAtom for the given Predicate and GroundTerms.
 	 * <p>
-	 * Any GroundAtom can be retrieved if and only if its Predicate
-	 * was registered with the DataStore at the time of the Database's instantiation.
+	 * Any GroundAtom with a {@link StandardPredicate} can be retrieved if and only
+	 * if its Predicate was registered with the DataStore at the time of the Database's
+	 * instantiation. Any GroundAtom with a {@link FunctionalPredicate} can also be retrieved.
 	 * This method first checks the {@link AtomCache} to see if the GroundAtom already
 	 * exists in memory. If it does, then that object is returned. (The AtomCache is
 	 * accessible via {@link #getAtomCache()}.)
@@ -89,13 +97,13 @@ public interface Database {
 	 *   instantiated with the persisted state. It will be instantiated as an
 	 *   ObseredAtom if its Predicate is closed and as a {@link RandomVariableAtom}
 	 *   if it is open.</li>
-	 *   <li>If the GroundAtom has a {@link StandardPredicate} but is not persisted
+	 *   <li>If the GroundAtom has a StandardPredicate but is not persisted
 	 *   in any of the Database's partitions, it will be instantiated with a truth
 	 *   value of 0.0 and a confidence value of NaN. It will be instantiated as an
 	 *   ObservedAtom if its Predicate is closed and as a RandomVariableAtom
 	 *   if it is open.</li>
-	 *   <li>If the GroundAtom has a {@link FunctionalPredicate}, then it will be
-	 *   instantiated as an {@link ObservedAtom} with the functionally defined
+	 *   <li>If the GroundAtom has a FunctionalPredicate, then it will be
+	 *   instantiated as an ObservedAtom with the functionally defined
 	 *   truth value and a confidence value of NaN.</li>
 	 * </ul>
 	 * 

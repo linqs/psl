@@ -19,17 +19,19 @@ package edu.umd.cs.psl.database.rdbms;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 
+import edu.umd.cs.psl.database.Partition;
 import edu.umd.cs.psl.database.loading.DataLoader;
 import edu.umd.cs.psl.database.loading.Inserter;
 import edu.umd.cs.psl.database.loading.OpenInserter;
-import edu.umd.cs.psl.database.Partition;
 import edu.umd.cs.psl.model.ConfidenceValues;
 import edu.umd.cs.psl.model.predicate.Predicate;
 
