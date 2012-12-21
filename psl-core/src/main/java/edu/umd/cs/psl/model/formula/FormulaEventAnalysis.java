@@ -26,21 +26,19 @@ import java.util.Vector;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 
-import edu.umd.cs.psl.database.DatabaseAtomStoreQuery;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.Term;
 import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.atom.Atom;
-import edu.umd.cs.psl.model.atom.AtomEventSets;
-import edu.umd.cs.psl.model.atom.AtomManager;
+import edu.umd.cs.psl.model.atom.AtomEvent;
+import edu.umd.cs.psl.model.atom.AtomEventFramework;
 import edu.umd.cs.psl.model.atom.VariableAssignment;
 import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.model.predicate.Predicate;
+import edu.umd.cs.psl.model.predicate.StandardPredicate;
 
 public class FormulaEventAnalysis {
 
-	private static final AtomEventSets defaultFactEvent = AtomEventSets.NonDefaultFactEvent;
-	
 	private final Multimap<Predicate,Atom> dependence;
 	private final Formula formula;
 	private final Set<Formula> queries;
@@ -106,17 +104,19 @@ public class FormulaEventAnalysis {
 		return vars;
 	}
 	
-	public void registerFormulaForEvents(AtomManager atomManager, Kernel me, AtomEventSets inferenceAtomEvent, DatabaseAtomStoreQuery db) {
+	public void registerFormulaForEvents(AtomEventFramework eventFramework, Kernel k, Set<AtomEvent> events) {
 		for (Predicate p : dependence.keySet()) {
-			if (db.isClosed(p)) atomManager.registerAtomEventListener(p, defaultFactEvent, me);
-			else atomManager.registerAtomEventListener(p, inferenceAtomEvent, me);
+			if (p instanceof StandardPredicate && !eventFramework.getDatabase().isClosed((StandardPredicate) p)) {
+				eventFramework.registerAtomEventListener(events, k);
+			}
 		}
 	}
 	
-	public void unregisterFormulaForEvents(AtomManager atomManager, Kernel me, AtomEventSets inferenceAtomEvent, DatabaseAtomStoreQuery db) {
+	public void unregisterFormulaForEvents(AtomEventFramework eventFramework, Kernel k, Set<AtomEvent> events) {
 		for (Predicate p : dependence.keySet()) {
-			if (db.isClosed(p)) atomManager.unregisterAtomEventListener(p, defaultFactEvent, me);
-			else atomManager.unregisterAtomEventListener(p, inferenceAtomEvent, me);
+			if (p instanceof StandardPredicate && !eventFramework.getDatabase().isClosed((StandardPredicate) p)) {
+				eventFramework.unregisterAtomEventListener(events, k);
+			}
 		}
 	}
 }

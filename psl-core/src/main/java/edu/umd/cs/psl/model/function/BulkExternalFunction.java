@@ -23,6 +23,6 @@ import edu.umd.cs.psl.model.argument.Variable;
 
 public interface BulkExternalFunction extends ExternalFunction {
 
-	public Map<GroundTerm[],double[]> bulkCompute(Map<Variable,int[]> argMap, Map<GroundTerm,GroundTerm[]>... args);
+	public Map<GroundTerm[], Double> bulkCompute(Map<Variable,int[]> argMap, Map<GroundTerm,GroundTerm[]>... args);
 	
 }

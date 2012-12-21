@@ -21,7 +21,6 @@ import java.util.Map;
 
 import com.google.common.base.Preconditions;
 
-import edu.umd.cs.psl.model.TruthValues;
 import edu.umd.cs.psl.model.argument.ArgumentType;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.StringAttribute;
@@ -29,18 +28,12 @@ import edu.umd.cs.psl.model.argument.Variable;
 
 public class AttributeSimFunAdapter implements ExternalFunction, BulkExternalFunction {
 
-	public static final double defaultThreshold = 0.1;
 	private static final ArgumentType[] argumenttypes = new ArgumentType[]{ArgumentType.String,ArgumentType.String};
 	
 	private final AttributeSimilarityFunction function;
 	
-	public AttributeSimFunAdapter(AttributeSimilarityFunction fct, double thres) {
-		function = fct;
-		//threshold = thres;
-	}
-	
 	public AttributeSimFunAdapter(AttributeSimilarityFunction fct) {
-		this(fct,defaultThreshold);
+		function = fct;
 	}
 	
 	@Override
@@ -72,25 +65,25 @@ public class AttributeSimFunAdapter implements ExternalFunction, BulkExternalFun
 
 
 	@Override
-	public Map<GroundTerm[], double[]> bulkCompute(Map<Variable, int[]> argMap,
+	public Map<GroundTerm[], Double> bulkCompute(Map<Variable, int[]> argMap,
 			Map<GroundTerm, GroundTerm[]>... args) {
 		//TODO: this is an EXTREMELY naive implementation of the bulk string similarity function.
 		//This should be re-implemented more intelligently.
 		Preconditions.checkArgument(args.length==2);
-		Map<GroundTerm[], double[]> result = new HashMap<GroundTerm[],double[]>();
+		Map<GroundTerm[], Double> result = new HashMap<GroundTerm[], Double>();
 		for (Map.Entry<GroundTerm, GroundTerm[]> outer : args[0].entrySet()) {
 			assert outer.getValue().length==1;
 			for (Map.Entry<GroundTerm, GroundTerm[]> inner : args[1].entrySet()) {
 				assert inner.getValue().length==1;
 				String[] strs = args2String(outer.getValue()[0],inner.getValue()[0]);
 				double val = function.similarity(strs[0],strs[1]);
-				if (!TruthValues.isDefault(val)) {
-					result.put(new GroundTerm[]{outer.getKey(),inner.getKey()}, new double[]{val});
+				if (val > 0.0) {
+					result.put(new GroundTerm[]{outer.getKey(),inner.getKey()}, val);
 				}
 			}
 		}
 		
-		return null;
+		return result;
 	}
 
 

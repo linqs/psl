@@ -18,10 +18,6 @@ package edu.umd.cs.psl.model.formula;
 
 public class Disjunction extends AbstractBranchFormula {
 
-	public Disjunction(Formula f1, Formula f2) {
-		this(new Formula[]{f1,f2});
-	}
-	
 	public Disjunction(Formula... f) {
 		super(f);
 	}

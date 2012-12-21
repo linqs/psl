@@ -41,12 +41,12 @@ import edu.umd.cs.psl.model.predicate.StandardPredicate;
  * An AtomEventFramework handles two types of events: <em>consideration</em> and
  * <em>activation</em>.
  * <p>
- * A RandomVariableAtom is considered when it is loaded into memory
+ * A RandomVariableAtom is considered when it is instantiated in memory
  * and added to its {@link Database}'s {@link AtomCache} via
  * {@link #getAtom(Predicate, GroundTerm...)}.
  * <p>
  * A RandomVariableAtom is activated if it has not already been activated
- * since being loaded into memory and one of two things occur:
+ * since being instantiated in memory and one of two things occur:
  * <ol>
  *   <li>{@link #checkToActivate()} is called and its truth value is at or
  *   above a threshold</li>

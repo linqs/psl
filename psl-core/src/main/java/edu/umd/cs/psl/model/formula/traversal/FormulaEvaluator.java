@@ -19,6 +19,7 @@ package edu.umd.cs.psl.model.formula.traversal;
 import cern.colt.list.tdouble.AbstractDoubleList;
 import cern.colt.list.tdouble.DoubleArrayList;
 import edu.umd.cs.psl.model.atom.Atom;
+import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.formula.*;
 
 public class FormulaEvaluator extends AbstractFormulaTraverser {
@@ -81,7 +82,10 @@ public class FormulaEvaluator extends AbstractFormulaTraverser {
 	
 	@Override
 	public void visitAtom(Atom atom) {
-		push(atom.getValue());
+		if (atom instanceof GroundAtom)
+			push(((GroundAtom) atom).getValue());
+		else
+			throw new IllegalArgumentException("Atom is not ground.");
 	}
 	
 }

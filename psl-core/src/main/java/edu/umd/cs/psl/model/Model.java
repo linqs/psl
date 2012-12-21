@@ -28,10 +28,10 @@ import edu.umd.cs.psl.model.kernel.Kernel;
 
 /**
  * A probabilistic soft logic model.
- * 
+ * <p>
  * Encapsulates a set of {@link Kernel Kernels}. A {@link ModelApplication}
  * can be used to combine a Model with data to perform inference or learn.
- * 
+ * <p>
  * Objects which use a Model should register with it to listen
  * for {@link ModelEvent ModelEvents}.
  */
@@ -78,7 +78,7 @@ public class Model {
 	
 	/**
 	 * Adds a Kernel to this Model.
-	 * 
+	 * <p>
 	 * All observers of this Model will receive a {@link ModelEvent#KernelAdded} event.
 	 * 
 	 * @param k  Kernel to add
@@ -95,7 +95,7 @@ public class Model {
 	
 	/**
 	 * Removes a Kernel from this Model.
-	 * 
+	 * <p>
 	 * All observers of this Model will receive a {@link ModelEvent#KernelRemoved} event.
 	 * 
 	 * @param k  Kernel to remove
@@ -112,7 +112,7 @@ public class Model {
 	
 	/**
 	 * Notifies this Model that a Kernel's parameters were modified.
-	 * 
+	 * <p>
 	 * All observers of this model will receive a {@link ModelEvent#KernelParametersModified} event.
 	 * 
 	 * @param k  the Kernel that was modified
@@ -126,7 +126,7 @@ public class Model {
 	
 	/**
 	 * Returns a String representation of this Model.
-	 * 
+	 * <p>
 	 * The String will start with "Model:", followed by a newline, then
 	 * the String representations of each Kernel in this Model (each followed
 	 * by a newline). Constraint Kernels will come before compatibility kernels.

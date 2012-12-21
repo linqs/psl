@@ -18,14 +18,14 @@ package edu.umd.cs.psl.model.set.aggregator;
 
 import java.util.Set;
 
-import edu.umd.cs.psl.model.atom.Atom;
+import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.set.membership.TermMembership;
 
 public interface AggregatorFunction {
 	
 	public String getName();
 	
-	public double aggregateValue(TermMembership set1, TermMembership set2, Set<Atom> comparisonAtoms);
+	public double aggregateValue(TermMembership set1, TermMembership set2, Set<GroundAtom> comparisonAtoms);
 
 	
 }

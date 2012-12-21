@@ -66,6 +66,22 @@ public class AtomCache {
 	}
 	
 	/**
+	 * Returns all GroundAtoms in this AtomCache with a given Predicate.
+	 * 
+	 * @param p  the Predicate of Atoms to return
+	 * @return the cached Atoms
+	 */
+	public Iterable<GroundAtom> getCachedAtoms(final Predicate p) {
+		return Iterables.filter(cache.values(), new com.google.common.base.Predicate<GroundAtom>() {
+			@Override
+			public boolean apply(GroundAtom atom) {
+				return atom.getPredicate().equals(p);
+			}
+			
+		});
+	}
+	
+	/**
 	 * @return all ObservedAtoms in this AtomCache
 	 */
 	public Iterable<ObservedAtom> getCachedObservedAtoms() {

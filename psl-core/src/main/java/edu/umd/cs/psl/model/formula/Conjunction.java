@@ -20,10 +20,6 @@ import java.util.Vector;
 
 public class Conjunction extends AbstractBranchFormula {
 
-	public Conjunction(Formula f1, Formula f2) {
-		this(new Formula[]{f1,f2});
-	}
-	
 	public Conjunction(Formula... f) {
 		super(f);
 	}
