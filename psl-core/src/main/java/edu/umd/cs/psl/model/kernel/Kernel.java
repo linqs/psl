@@ -16,52 +16,94 @@
  */
 package edu.umd.cs.psl.model.kernel;
 
-import edu.umd.cs.psl.application.ModelApplication;
 import edu.umd.cs.psl.application.groundkernelstore.GroundKernelStore;
-import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.AtomEvent;
 import edu.umd.cs.psl.model.atom.AtomEventFramework;
 import edu.umd.cs.psl.model.atom.AtomManager;
+import edu.umd.cs.psl.model.atom.GroundAtom;
+import edu.umd.cs.psl.model.atom.ObservedAtom;
+import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.parameters.Parameters;
 
 /**
- * A template for a function that either constrains or measures
- * the compatibility of the values of {@link Atom Atoms}.
- * 
- * A Kernel is responsible for creating {@link GroundKernel GroundKernels} both
- * upon initial grounding and when triggered by changes to individual Atoms.
- * Kernels must register their GroundKernels with the corresponding
- * {@link ModelApplication ModelApplications}.
+ * A template for functions that either constrain or measure the compatibility
+ * of the truth values of {@link GroundAtom GroundAtoms}.
+ * <p>
+ * A Kernel is responsible for instantiating {@link GroundKernel GroundKernels}.
+ * A Kernel must instantiate only {@link GroundCompatibilityKernel}s or only
+ * {@link GroundConstraintKernel}s.
  * 
  * @author Matthias Broecheler <mail@knowledgefrominformation.com>
  * @author Eric Norris <enorris@cs.umd.edu>
+ * @author Stephen Bach <bach@cs.umd.edu>
  */
 public interface Kernel extends AtomEvent.Listener, Cloneable {
 
 	/**
-	 * Registers this Kernel to listen for the {@link AtomEvent AtomEvents}
-	 * it needs to create {@link GroundKernel GroundKernels} .
+	 * Adds all missing, potentially unsatisfied {@link GroundKernel GroundKernels}
+	 * to a {@link GroundKernelStore} based on an {@link AtomManager}.
+	 * <p>
+	 * Specifically, will add any GroundKernel templated by this Kernel
+	 * that satisfies the following conditions:
+	 * <ul>
+	 *   <li>The GroundKernel is unsatisfied (i.e., {@link GroundKernel#getIncompatibility()} > 0.0)
+	 *   for some assignment of truth values to the {@link RandomVariableAtom}s
+	 *   <em>currently persisted</em> in the AtomManager's Database given the truth
+	 *   values of the {@link ObservedAtom}s and assuming that any RandomVariableAtom
+	 *   not persisted has a truth value of 0.0.</li>
+	 *   <li>The GroundKernel is not already in the GroundKernelStore.</li>
+	 * </ul>
+	 * <p>
+	 * Other GroundKernels not already in the GroundKernelStore may be added
+	 * as well.
 	 * 
-	 * @param manager  the AtomManager to register with
-	 * @param gks		the GroundKernelStore to register GroundKernels in
+	 * @param atomManager  AtomManager on which to base the grounding
+	 * @param gks          store for new GroundKernels
 	 */
-	public void registerForAtomEvents(AtomEventFramework manager, GroundKernelStore gks);
+	public void groundAll(AtomManager atomManager, GroundKernelStore gks);
 	
 	/**
-	 * Unregisters this Kernel from listening for {@link AtomEvent AtomEvents}
-	 * with an AtomManager
+	 * Registers this Kernel to listen for the {@link AtomEvent AtomEvents}
+	 * it needs to update a {@link GroundKernelStore}.
+	 * <p>
+	 * Specifically, this Kernel will register for AtomEvents and update the
+	 * GroundKernelStore in response to AtomEvents. In response to an AtomEvent
+	 * on a {@link RandomVariableAtom}, the GroundKernelStore must contain the
+	 * GroundKernels that are functions of it which would have been added via
+	 * {@link #groundAll(AtomManager, GroundKernelStore)} given the current state of
+	 * the AtomEventFramework's Database and assuming that the RandomVariableAtom
+	 * was also persisted in the Database.
 	 * 
-	 * @param manager  the AtomManager to unregister with
-	 * @param gks		the GroundKernelStore to unregister GroundKernels from
+	 * @param eventFramework  AtomEventFramework to register with
+	 * @param gks             GroundKernelStore to update in response to AtomEvents
 	 */
-	public void unregisterForAtomEvents(AtomEventFramework manager, GroundKernelStore gks);
+	public void registerForAtomEvents(AtomEventFramework eventFramework, GroundKernelStore gks);
 	
-	public void groundAll(ModelApplication app);
+	/**
+	 * Stops updating a {@link GroundKernelStore} in response to AtomEvents from
+	 * an {@link AtomEventFramework} and unregisters with that AtomEventFramework
+	 * if it no longer needs to listen for AtomEvents from it.
+	 * 
+	 * @param eventFramework  AtomEventFramework to unregister with
+	 * @param gks             GroundKernelStore to stop updating
+	 */
+	public void unregisterForAtomEvents(AtomEventFramework eventFramework, GroundKernelStore gks);
 	
+	/**
+	 * @return the parameterization of this Kernel
+	 */
 	public Parameters getParameters();
 	
+	/**
+	 * Sets the Parameters of this Kernel.
+	 * 
+	 * @param para  the new parameterization
+	 */
 	public void setParameters(Parameters para);
 	
+	/**
+	 * @return TRUE is this Kernel is a template for {@link GroundCompatibilityKernel}s
+	 */
 	public boolean isCompatibilityKernel();
 	
 	public Kernel clone() throws CloneNotSupportedException;

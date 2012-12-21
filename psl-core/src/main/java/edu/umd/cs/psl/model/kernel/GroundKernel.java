@@ -19,47 +19,49 @@ package edu.umd.cs.psl.model.kernel;
 import java.util.Set;
 
 import edu.umd.cs.psl.model.atom.Atom;
+import edu.umd.cs.psl.model.atom.GroundAtom;
 
 /**
- * 
- * Evidence is responsible for maintenance of the numeric representation, as
- * well as registration with any affected atoms. 
- * 
- * @author matthias
- * 
+ * A function that either constrains or measures the compatibility of the
+ * truth values of {@link GroundAtom GroundAtoms}.
+ * <p>
+ * GroundKernels are templated by a parent {@link Kernel}.
  */
 public interface GroundKernel {
 
 	/**
-	 * This method is called by
-	 * {@link edu.umd.cs.psl.application.ModelApplication ModelApplication}
-	 * after it has been alerted to changes in the parameters of an
-	 * {@link Kernel} on all {@link GroundKernel} instantiations of that type.
+	 * Notifies this GroundKernel that the parameterization of its parent
+	 * {@link Kernel} has changed.
 	 * 
-	 * The method serves two purposes: 1) It allows the ground kernels to update
-	 * their internal parameters if they are cached (for instance, because they
-	 * require non-trivial computation) 2) It allows the
-	 * {@link edu.umd.cs.psl.application.ModelApplication ModelApplication} to
-	 * determine whether the change in the parameters of the kernel effects this
-	 * particular instantiation. If the method returns TRUE, then it does,
-	 * otherwise the ground kernel is unaffected. Note that any call to this
-	 * method implicitly assumes that the kernel of this particular ground
-	 * kernel has changed its parameters. Hence, this method might always return
-	 * true or throw an {@link UnsupportedOperationException} if the parameters
-	 * could not possibly have changed.
-	 * 
-	 * @return Whether or not the change in parameters of the associated Kernel
-	 *         affected this particular instantiation.
-	 * @throws UnsupportedOperationException
-	 *             If there are no parameters to change.
+	 * @return TRUE if this GroundKernel's incompatibility changed
+	 * @see Kernel#getParameters()
+	 * @see #getIncompatibility()
 	 */
 	public boolean updateParameters();
 
+	/**
+	 * @return this GroundKernel's parent {@link Kernel}
+	 */
 	public Kernel getKernel();
 
-	public Set<Atom> getAtoms();
+	/**
+	 * @return set of {@link GroundAtom GroundAtoms} which determine this
+	 *             GroundKernel's incompatibility
+	 */
+	public Set<GroundAtom> getAtoms();
 
+	/**
+	 * Returns the incompatibility incompatibility of the truth values of
+	 * this GroundKernel's {@link GroundAtom GroundAtoms}.
+	 * <p>
+	 * Incompatibility is always non-negative, and is 0 or +Infinity for
+	 * a {@link GroundConstraintKernel}.
+	 */
 	public double getIncompatibility();
 
+	/**
+	 * Something about whether GroundAtoms can be removed from this GroundKernel
+	 * if they have truth value of 0.0...
+	 */
 	public BindingMode getBinding(Atom atom);
 }
