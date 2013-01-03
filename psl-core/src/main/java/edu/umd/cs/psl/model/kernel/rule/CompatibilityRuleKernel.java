@@ -20,12 +20,12 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.formula.Formula;
+import edu.umd.cs.psl.model.kernel.CompatabilityKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
-import edu.umd.cs.psl.model.parameters.Parameters;
 import edu.umd.cs.psl.model.parameters.PositiveWeight;
 import edu.umd.cs.psl.model.parameters.Weight;
 
-public class CompatibilityRuleKernel extends AbstractRuleKernel {
+public class CompatibilityRuleKernel extends AbstractRuleKernel implements CompatabilityKernel {
 	
 	protected PositiveWeight weight;
 	
@@ -48,19 +48,17 @@ public class CompatibilityRuleKernel extends AbstractRuleKernel {
 		return true;
 	}
 	
-	public Weight getWeight() {
-		return weight;
-	}
-
 	@Override
-	public Parameters getParameters() {
+	public Weight getWeight() {
 		return weight.duplicate();
 	}
-
+	
 	@Override
-	public void setParameters(Parameters para) {
-		if (!(para instanceof PositiveWeight)) throw new IllegalArgumentException("Expected PositiveWeight parameter.");
-		PositiveWeight newweight = (PositiveWeight)para;
+	public void setWeight(Weight w) {
+		if (!(w instanceof PositiveWeight)) 
+			throw new IllegalArgumentException("Expected PositiveWeight weight.");
+		
+		PositiveWeight newweight = (PositiveWeight)w;
 		if (!newweight.equals(weight)) {
 			weight = newweight;
 			model.notifyKernelParametersModified(this);

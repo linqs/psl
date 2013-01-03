@@ -16,6 +16,9 @@
  */
 package edu.umd.cs.psl.model.kernel;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,6 +28,7 @@ import com.google.common.collect.SetMultimap;
 import edu.umd.cs.psl.application.groundkernelstore.GroundKernelStore;
 import edu.umd.cs.psl.model.atom.AtomEvent;
 import edu.umd.cs.psl.model.atom.AtomEventFramework;
+import edu.umd.cs.psl.model.parameters.Parameters;
 
 public abstract class AbstractKernel implements Kernel {
 	
@@ -41,16 +45,6 @@ public abstract class AbstractKernel implements Kernel {
 		for (GroundKernelStore gks : frameworks.get(event.getEventFramework()))
 			notifyAtomEvent(event, gks);
 	}
-	
-	/**
-	 * Handles an AtomEvent using the specified GroundKernelStore.
-	 * <p>
-	 * Kernels need to have registered to handle this event with an
-	 * AtomEventFramework.
-	 * @param event		the AtomEvent that occurred
-	 * @param gks		the GroundKernelStore to use
-	 */
-	protected abstract void notifyAtomEvent(AtomEvent event, GroundKernelStore gks);
 
 	@Override
 	public void registerForAtomEvents(AtomEventFramework eventFramework,
@@ -63,16 +57,6 @@ public abstract class AbstractKernel implements Kernel {
 					" already been registered.");
 		}
 	}
-	
-	/**
-	 * Registers with a specific AtomEventFramework to handle atom events.
-	 * <p>
-	 * Subclasses are expected to register for the same AtomEvents and Predicates
-	 * at all times. Kernels that do not fit this behavior should not extend
-	 * this class.
-	 * @param eventFramework	The event framework to register with
-	 */
-	protected abstract void registerForAtomEvents(AtomEventFramework eventFramework);
 
 	@Override
 	public void unregisterForAtomEvents(AtomEventFramework eventFramework,
@@ -85,6 +69,49 @@ public abstract class AbstractKernel implements Kernel {
 	}
 	
 	
+	@Override
+	public Kernel clone() throws CloneNotSupportedException {
+		throw new CloneNotSupportedException();
+	}
+	
+	@Override
+	public Parameters getParameters() {
+		return Parameters.NoParameters;
+	}
+	
+	@Override
+	public void setParameters(Parameters para) {
+		throw new UnsupportedOperationException(this.getClass().getName() + " does not have parameters.");
+	}
+	
+	protected static final Set<AtomEvent> ActivatedEventSet = new HashSet<AtomEvent>(1);
+	protected static final Set<AtomEvent> ConsideredEventSet = new HashSet<AtomEvent>(1);
+	
+	static {
+		ActivatedEventSet.add(AtomEvent.ActivatedRVAtom);
+		ConsideredEventSet.add(AtomEvent.ConsideredRVAtom);
+	}
+	
+	/**
+	 * Handles an AtomEvent using the specified GroundKernelStore.
+	 * <p>
+	 * Kernels need to have registered to handle this event with an
+	 * AtomEventFramework.
+	 * @param event		the AtomEvent that occurred
+	 * @param gks		the GroundKernelStore to use
+	 */
+	protected abstract void notifyAtomEvent(AtomEvent event, GroundKernelStore gks);
+	
+	/**
+	 * Registers with a specific AtomEventFramework to handle atom events.
+	 * <p>
+	 * Subclasses are expected to register for the same AtomEvents and Predicates
+	 * at all times. Kernels that do not fit this behavior should not extend
+	 * this class.
+	 * @param eventFramework	The event framework to register with
+	 */
+	protected abstract void registerForAtomEvents(AtomEventFramework eventFramework);
+	
 	/**
 	 * Unregisters from a specific AtomEventFrameWork to no longer handle atom events.
 	 * <p>
@@ -93,9 +120,4 @@ public abstract class AbstractKernel implements Kernel {
 	 * @param eventFramework	The event framework to unregister from
 	 */
 	protected abstract void unregisterForAtomEvents(AtomEventFramework eventFramework);
-	
-	@Override
-	public Kernel clone() throws CloneNotSupportedException {
-		throw new CloneNotSupportedException();
-	}
 }

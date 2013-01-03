@@ -21,7 +21,6 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
 import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.kernel.Kernel;
-import edu.umd.cs.psl.model.parameters.Parameters;
 
 public class ConstraintRuleKernel extends AbstractRuleKernel {
 	
@@ -30,16 +29,6 @@ public class ConstraintRuleKernel extends AbstractRuleKernel {
 	public ConstraintRuleKernel(Model m, Formula f) {
 		super(m, f);
 		hashcode = new HashCodeBuilder().append(model).append(formula).toHashCode();
-	}
-
-	@Override
-	public Parameters getParameters() {
-		return Parameters.NoParameters;
-	}
-	
-	@Override
-	public void setParameters(Parameters para) {
-		throw new UnsupportedOperationException("Aggregate Predicates have no parameters!");
 	}
 
 	@Override

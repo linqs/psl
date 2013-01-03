@@ -19,7 +19,6 @@ package edu.umd.cs.psl.groovy;
 import java.util.List;
 
 import edu.umd.cs.psl.database.Partition;
-import edu.umd.cs.psl.database.PredicateDBType;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.database.loading.Inserter;

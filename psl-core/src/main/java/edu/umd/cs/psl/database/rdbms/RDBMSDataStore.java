@@ -41,7 +41,6 @@ import com.healthmarketscience.sqlbuilder.CreateTableQuery;
 import com.healthmarketscience.sqlbuilder.CreateTableQuery.ColumnConstraint;
 
 import edu.umd.cs.psl.config.ConfigBundle;
-import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.database.DataStore;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.database.Partition;

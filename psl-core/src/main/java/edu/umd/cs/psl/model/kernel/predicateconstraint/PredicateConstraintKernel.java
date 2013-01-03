@@ -19,22 +19,21 @@ package edu.umd.cs.psl.model.kernel.predicateconstraint;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 
-import edu.umd.cs.psl.application.ModelApplication;
+import edu.umd.cs.psl.application.groundkernelstore.GroundKernelStore;
+import edu.umd.cs.psl.database.DatabaseQuery;
 import edu.umd.cs.psl.database.ResultList;
-import edu.umd.cs.psl.model.argument.Entity;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.Term;
 import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.AtomEvent;
-import edu.umd.cs.psl.model.atom.AtomEventSets;
+import edu.umd.cs.psl.model.atom.AtomEventFramework;
 import edu.umd.cs.psl.model.atom.AtomManager;
 import edu.umd.cs.psl.model.atom.QueryAtom;
+import edu.umd.cs.psl.model.kernel.AbstractKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
-import edu.umd.cs.psl.model.parameters.Parameters;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
 
 /**
@@ -43,7 +42,7 @@ import edu.umd.cs.psl.model.predicate.StandardPredicate;
  * Checks whether sets of {@link Atom Atoms} of a binary {@link StandardPredicate}
  * adhere to a {@link PredicateConstraintType}.
  */
-public class PredicateConstraintKernel implements Kernel {
+public class PredicateConstraintKernel extends AbstractKernel {
 
 	private final StandardPredicate predicate;
 	private final PredicateConstraintType constraintType;
@@ -52,9 +51,8 @@ public class PredicateConstraintKernel implements Kernel {
 
 	public PredicateConstraintKernel(StandardPredicate p,
 			PredicateConstraintType t) {
-		Preconditions
-				.checkArgument(p.getArity() == 2,
-						"Currently, PredicateConstraints only support binary predicates.");
+		Preconditions.checkArgument(p.getArity() == 2, "Currently, " +
+				"PredicateConstraints only support binary predicates.");
 		constraintType = t;
 		predicate = p;
 
@@ -76,29 +74,20 @@ public class PredicateConstraintKernel implements Kernel {
 	}
 
 	@Override
-	public Parameters getParameters() {
-		return Parameters.NoParameters;
-	}
-
-	@Override
 	public boolean isCompatibilityKernel() {
 		return false;
 	}
 
 	@Override
-	public void setParameters(Parameters para) {
-		throw new UnsupportedOperationException("This Kernel does not have parameters.");
-	}
-
-	@Override
-	public void groundAll(ModelApplication app) {
+	public void groundAll(AtomManager atomManager, GroundKernelStore gks) {
 		/* Not needed, triggered only upon insertion */
 	}
-
+	
 	@Override
-	public void notifyAtomEvent(AtomEvent event) {
+	protected void notifyAtomEvent(AtomEvent event, GroundKernelStore gks) {
+		// TODO: I am not sure this if statement is necessary... it will only receive events it registered for...
 		/* When an Atom is considered... */
-		if (AtomEventSets.ConsideredStandardAtom.contains(event)) {
+		if (event == AtomEvent.ConsideredRVAtom) {
 			/*
 			 * ...checks to see if that Atom has already been added to the
 			 * appropriate ground Kernel. (It shouldn't have.)
@@ -106,21 +95,20 @@ public class PredicateConstraintKernel implements Kernel {
 			if (event.getAtom().getRegisteredGroundKernels(this).isEmpty()) {
 				/* Constructs the ground Kernel in order to see if it already exists */
 				Atom atom = event.getAtom();
-				ModelApplication app = event.getModelApplication();
 				int pos = constraintType.position();
-				Entity anchor = (Entity) atom.getArguments()[pos];
+				GroundTerm anchor = (GroundTerm) atom.getArguments()[pos];
 				GroundTerm other = (GroundTerm) atom.getArguments()[1 - pos];
+				// TODO: Fix GroundPredicateConstraint
 				GroundPredicateConstraint con = new GroundPredicateConstraint(
 						this, anchor);
 
-				GroundKernel oldcon = app.getGroundKernel(con);
+				GroundKernel oldcon = gks.getGroundKernel(con);
 				
 				/* If it already exists, adds the considered Atom to it */
 				if (oldcon != null) {
 					((GroundPredicateConstraint) oldcon).addAtom(atom);
-					app.changedGroundKernel(oldcon);
-				}
-				else {
+					gks.changedGroundKernel(oldcon);
+				} else {
 					con.addAtom(atom);
 					// Check for atoms from database
 					Variable var = new Variable("V");
@@ -130,37 +118,34 @@ public class PredicateConstraintKernel implements Kernel {
 					args[1 - pos] = var;
 					Atom query = new QueryAtom(predicate, args);
 
-					ResultList res = app.getAtomManager().getActiveGroundings(query,
-							ImmutableList.of(var));
+					ResultList res = event.getEventFramework().getDatabase().executeQuery(new DatabaseQuery(query));
+					// TODO Fix me: ResultList res = app.getAtomManager().getActiveGroundings(query, ImmutableList.of(var));
 					for (int i = 0; i < res.size(); i++) {
 						GroundTerm[] terms = new GroundTerm[2];
 						terms[pos] = anchor;
 						terms[1 - pos] = res.get(i)[0];
 						if (!terms[1 - pos].equals(other)) {
-							con.addAtom(app.getAtomManager().getAtom(predicate,
+							con.addAtom(event.getEventFramework().getAtom(predicate,
 									terms));
 						}
 					}
-					app.addGroundKernel(con);
+					gks.addGroundKernel(con);
 				}
 			} /* else it already has such a constraint defined */
-		} 
-		/* No handling for other events */
-		else {
+		} else {
+			 /* No handling for other events */
 			throw new UnsupportedOperationException("Unsupported event encountered: " + event);
 		}
 	}
 
 	@Override
-	public void registerForAtomEvents(AtomManager manager) {
-		manager.registerAtomEventListener(
-				AtomEventSets.ConsideredUnconsideredGroundAtom, predicate, this);
+	public void registerForAtomEvents(AtomEventFramework manager) {
+		manager.registerAtomEventListener(ConsideredEventSet, predicate, this);
 	}
 
 	@Override
-	public void unregisterForAtomEvents(AtomManager manager) {
-		manager.registerAtomEventListener(
-				AtomEventSets.ConsideredUnconsideredGroundAtom, predicate, this);
+	public void unregisterForAtomEvents(AtomEventFramework manager) {
+		manager.unregisterAtomEventListener(ConsideredEventSet, predicate, this);
 	}
 
 	@Override

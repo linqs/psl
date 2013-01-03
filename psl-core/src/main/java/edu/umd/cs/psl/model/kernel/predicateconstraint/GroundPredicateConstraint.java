@@ -20,7 +20,7 @@ import java.util.*;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
-import edu.umd.cs.psl.model.argument.Entity;
+import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.kernel.BindingMode;
 import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
@@ -45,13 +45,13 @@ import edu.umd.cs.psl.reasoner.function.FunctionSummand;
 public class GroundPredicateConstraint implements GroundConstraintKernel {
 
 	private final PredicateConstraintKernel template;
-	private final Entity anchor;
+	private final GroundTerm anchor;
 
 	private final Set<Atom> atoms;
 
 	private final int hashcode;
 
-	public GroundPredicateConstraint(PredicateConstraintKernel t, Entity a) {
+	public GroundPredicateConstraint(PredicateConstraintKernel t, GroundTerm a) {
 		template = t;
 		anchor = a;
 		atoms = new HashSet<Atom>();
