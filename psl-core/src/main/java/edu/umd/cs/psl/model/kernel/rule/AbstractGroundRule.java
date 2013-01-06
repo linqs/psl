@@ -22,6 +22,7 @@ import java.util.Set;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import edu.umd.cs.psl.model.atom.Atom;
+import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.formula.Conjunction;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.formula.Negation;
@@ -83,19 +84,19 @@ abstract public class AbstractGroundRule implements GroundKernel {
 	
 	protected FunctionTerm getFunction(double multiplier) {
 		Formula f;
-		Atom a;
+		GroundAtom a;
 		double constant = 0.0;
 		FunctionSum sum = new FunctionSum();
 		
 		for (int i = 0; i < formula.getNoFormulas(); i++) {
 			f = formula.get(i);
-			if (f instanceof Atom) {
-				a = (Atom) f;
+			if (f instanceof GroundAtom) {
+				a = (GroundAtom) f;
 				sum.add(new FunctionSummand(multiplier, a.getVariable()));
 				constant++;
 			}
 			else if (f instanceof Negation) {
-				a = (Atom) ((Negation) f).getFormula();
+				a = (GroundAtom) ((Negation) f).getFormula();
 				sum.add(new FunctionSummand(-1*multiplier, a.getVariable()));
 			}
 			else
@@ -108,8 +109,11 @@ abstract public class AbstractGroundRule implements GroundKernel {
 	}
 	
 	@Override
-	public Set<Atom> getAtoms() {
-		return (Set<Atom>) formula.getAtoms(new HashSet<Atom>());
+	public Set<GroundAtom> getAtoms() {
+		HashSet<GroundAtom> atoms = new HashSet<GroundAtom>();
+		for (Atom atom : formula.getAtoms(new HashSet<Atom>()))
+			atoms.add((GroundAtom) atom);
+		return atoms;
 	}
 
 	@Override

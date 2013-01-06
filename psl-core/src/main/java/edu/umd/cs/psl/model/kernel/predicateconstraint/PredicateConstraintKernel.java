@@ -30,6 +30,7 @@ import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.AtomEvent;
 import edu.umd.cs.psl.model.atom.AtomEventFramework;
 import edu.umd.cs.psl.model.atom.AtomManager;
+import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.QueryAtom;
 import edu.umd.cs.psl.model.kernel.AbstractKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
@@ -94,13 +95,11 @@ public class PredicateConstraintKernel extends AbstractKernel {
 			 */
 			if (event.getAtom().getRegisteredGroundKernels(this).isEmpty()) {
 				/* Constructs the ground Kernel in order to see if it already exists */
-				Atom atom = event.getAtom();
+				GroundAtom atom = event.getAtom();
 				int pos = constraintType.position();
 				GroundTerm anchor = (GroundTerm) atom.getArguments()[pos];
 				GroundTerm other = (GroundTerm) atom.getArguments()[1 - pos];
-				// TODO: Fix GroundPredicateConstraint
-				GroundPredicateConstraint con = new GroundPredicateConstraint(
-						this, anchor);
+				GroundPredicateConstraint con = new GroundPredicateConstraint(this, anchor);
 
 				GroundKernel oldcon = gks.getGroundKernel(con);
 				
@@ -116,9 +115,10 @@ public class PredicateConstraintKernel extends AbstractKernel {
 					Term[] args = new Term[2];
 					args[pos] = anchor;
 					args[1 - pos] = var;
-					Atom query = new QueryAtom(predicate, args);
+					DatabaseQuery query = new DatabaseQuery(new QueryAtom(predicate, args));
+					query.getProjectionSubset().add(var);
 
-					ResultList res = event.getEventFramework().getDatabase().executeQuery(new DatabaseQuery(query));
+					ResultList res = event.getEventFramework().getDatabase().executeQuery(query);
 					// TODO Fix me: ResultList res = app.getAtomManager().getActiveGroundings(query, ImmutableList.of(var));
 					for (int i = 0; i < res.size(); i++) {
 						GroundTerm[] terms = new GroundTerm[2];

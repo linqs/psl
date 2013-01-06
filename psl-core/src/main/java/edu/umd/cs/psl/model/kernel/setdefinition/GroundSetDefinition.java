@@ -21,6 +21,7 @@ import java.util.*;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import edu.umd.cs.psl.model.atom.Atom;
+import edu.umd.cs.psl.model.atom.GroundAtom;
 
 import edu.umd.cs.psl.model.kernel.BindingMode;
 import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
@@ -53,13 +54,13 @@ public class GroundSetDefinition implements GroundConstraintKernel {
 	
 	private final int hashcode;
 	
-	GroundSetDefinition(SetDefinitionKernel s, Atom atom, TermMembership s1, TermMembership s2, Set<Atom> refAtoms) {
+	GroundSetDefinition(SetDefinitionKernel s, Atom atom, TermMembership s1, TermMembership s2, Set<GroundAtom> compAtoms) {
 		assert s!=null;
 		definitionType = s;
 		setAtom = atom;
 		set1 = s1;
 		set2 = s2;
-		referencedAtoms = refAtoms;
+		referencedAtoms = compAtoms;
 		setAtom.setSoftValue(0, getAggregateValue());
 		
 		hashcode = new HashCodeBuilder().append(setAtom).toHashCode();

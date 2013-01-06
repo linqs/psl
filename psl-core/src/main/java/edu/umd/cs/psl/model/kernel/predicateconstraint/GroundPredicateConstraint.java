@@ -16,17 +16,17 @@
  */
 package edu.umd.cs.psl.model.kernel.predicateconstraint;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.atom.Atom;
+import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.kernel.BindingMode;
 import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
-import edu.umd.cs.psl.model.parameters.PositiveWeight;
-import edu.umd.cs.psl.model.parameters.Weight;
 import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
 import edu.umd.cs.psl.reasoner.function.FunctionSum;
 import edu.umd.cs.psl.reasoner.function.FunctionSummand;
@@ -47,14 +47,14 @@ public class GroundPredicateConstraint implements GroundConstraintKernel {
 	private final PredicateConstraintKernel template;
 	private final GroundTerm anchor;
 
-	private final Set<Atom> atoms;
+	private final Set<GroundAtom> atoms;
 
 	private final int hashcode;
 
 	public GroundPredicateConstraint(PredicateConstraintKernel t, GroundTerm a) {
 		template = t;
 		anchor = a;
-		atoms = new HashSet<Atom>();
+		atoms = new HashSet<GroundAtom>();
 		hashcode = new HashCodeBuilder().append(template).append(anchor)
 				.toHashCode();
 	}
@@ -76,7 +76,7 @@ public class GroundPredicateConstraint implements GroundConstraintKernel {
 	 *             {@link edu.umd.cs.psl.model.argument.Entity Entity} provided
 	 *             in the constructor.
 	 */
-	void addAtom(Atom atom) {
+	void addAtom(GroundAtom atom) {
 		if (!atom.getPredicate().equals(template.getPredicate()))
 			throw new IllegalArgumentException(
 					"Added atom has non-matching predicate: " + atom);
@@ -97,7 +97,7 @@ public class GroundPredicateConstraint implements GroundConstraintKernel {
 
 	public ConstraintTerm getConstraintDefinition() {
 		FunctionSum sum = new FunctionSum();
-		for (Atom atom : atoms) {
+		for (GroundAtom atom : atoms) {
 			sum.add(new FunctionSummand(1.0, atom.getVariable()));
 		}
 		return new ConstraintTerm(sum, template.getConstraintType()
@@ -120,7 +120,7 @@ public class GroundPredicateConstraint implements GroundConstraintKernel {
 	@Override
 	public double getIncompatibility() {
 		double sum = 0.0;
-		for (Atom atom : atoms) {
+		for (GroundAtom atom : atoms) {
 			sum += atom.getValue();
 		}
 		if (template.getConstraintType().constraintHolds(sum)) {
@@ -130,7 +130,7 @@ public class GroundPredicateConstraint implements GroundConstraintKernel {
 	}
 
 	@Override
-	public Set<Atom> getAtoms() {
+	public Set<GroundAtom> getAtoms() {
 		return atoms;
 	}
 

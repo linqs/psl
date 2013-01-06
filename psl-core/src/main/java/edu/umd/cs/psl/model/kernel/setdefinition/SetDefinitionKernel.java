@@ -32,8 +32,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
-import edu.umd.cs.psl.application.GroundingMode;
 import edu.umd.cs.psl.application.ModelApplication;
+import edu.umd.cs.psl.application.groundkernelstore.GroundKernelStore;
+import edu.umd.cs.psl.database.DatabaseQuery;
 import edu.umd.cs.psl.database.ResultList;
 import edu.umd.cs.psl.model.ConfidenceValues;
 import edu.umd.cs.psl.model.argument.GroundTerm;
@@ -43,14 +44,16 @@ import edu.umd.cs.psl.model.argument.VariableTypeMap;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.AtomEvent;
 import edu.umd.cs.psl.model.atom.AtomEventFramework;
-import edu.umd.cs.psl.model.atom.AtomEventSets;
 import edu.umd.cs.psl.model.atom.AtomManager;
+import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.QueryAtom;
+import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.atom.VariableAssignment;
 import edu.umd.cs.psl.model.formula.Conjunction;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.formula.FormulaEventAnalysis;
 import edu.umd.cs.psl.model.formula.traversal.FormulaGrounder;
+import edu.umd.cs.psl.model.kernel.AbstractKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.model.kernel.rule.AbstractGroundRule;
 import edu.umd.cs.psl.model.parameters.Parameters;
@@ -77,11 +80,9 @@ import edu.umd.cs.psl.util.dynamicclass.DynamicClassLoader;
  * @author Matthias Broecheler
  *
  */
-public class SetDefinitionKernel implements Kernel {
+public class SetDefinitionKernel extends AbstractKernel {
 
 	private static final Logger log = LoggerFactory.getLogger(SetDefinitionKernel.class);
-
-
 	
 	final SetTerm set1,set2;
 	final Variable[] argumentVariableMap;
@@ -99,10 +100,6 @@ public class SetDefinitionKernel implements Kernel {
 	
 	private final int hashcode;
 	
-
-	
-	
-	@SuppressWarnings("unchecked")
 	public SetDefinitionKernel(StandardPredicate setP, SetTerm s1, SetTerm s2, Variable[] variables, Predicate compareP, EntityAggregatorFunction compare, boolean soft) {
 		if (!(compareP instanceof StandardPredicate) && !(compareP instanceof SpecialPredicate)) throw new IllegalArgumentException("Expected basic predicate for comparison!");
 		
@@ -115,10 +112,11 @@ public class SetDefinitionKernel implements Kernel {
 		
 		isSoftSet = soft;
 		projection = Arrays.asList(argumentVariableMap);
-		sets = Lists.newArrayList(set1.getBasicTerms(),set2.getBasicTerms());
+		sets = Lists.newArrayList();
+		sets.add(set1.getBasicTerms());
+		sets.add(set2.getBasicTerms());
 		triggerFormulas = new ArrayList<FormulaEventAnalysis>(sets.get(0).size()*sets.get(1).size());
 
-		
 		//Verify schema
 		if (setPredicate.getArity()!=variables.length) throw new IllegalArgumentException("Number of variables does not match predicate arity");
 		VariableTypeMap freeVars = s1.getAnchorVariables(new VariableTypeMap());
@@ -209,12 +207,14 @@ public class SetDefinitionKernel implements Kernel {
 	}
 	
 	@Override
-	public void groundAll(ModelApplication app) {
+	public void groundAll(AtomManager atomManager, GroundKernelStore gks) {
 		for (int k=0;k<triggerFormulas.size();k++) {
-			ResultList res = app.getAtomStore().query(triggerFormulas.get(k).getFormula(), projection);
+			DatabaseQuery query = new DatabaseQuery(triggerFormulas.get(k).getFormula());
+			query.getProjectionSubset().addAll(projection);
+			ResultList res = atomManager.getDatabase().executeQuery(query);
 			log.debug("Grounding size {} for formula {}",res.size(),triggerFormulas.get(k).getFormula());
 			for (int i=0;i<res.size();i++) {
-				newSetDefinition(app,res.get(i),true);
+				newSetDefinition(atomManager, gks, res.get(i), true);
 			}
 		}
 		//TODO: Right now, we assume that we have no initial knowledge about setPredicate, i.e.
@@ -222,12 +222,13 @@ public class SetDefinitionKernel implements Kernel {
 	}
 
 	@Override
-	public void notifyAtomEvent(AtomEvent event, Atom atom, GroundingMode mode, ModelApplication app) {
-		
-		if (AtomEventSets.ActivationEvent.subsumes(event)) {
+	public void notifyAtomEvent(AtomEvent event, GroundKernelStore gks) {
+		RandomVariableAtom atom = event.getAtom();
+		AtomManager manager = event.getEventFramework();
+		if (event == AtomEvent.ActivatedRVAtom) {
 			if (atom.getPredicate().equals(setPredicate)) {
 				if (atom.getRegisteredGroundKernels(this).isEmpty()) {
-					newSetDefinition(app,(GroundTerm[])atom.getArguments(),true);
+					newSetDefinition(manager, gks, (GroundTerm[])atom.getArguments(), true);
 				} //Otherwise, setdefinition already exists
 			} else if (atom.getPredicate().equals(comparisonPredicate)) {
 				int numTriggered = 0;
@@ -243,9 +244,14 @@ public class SetDefinitionKernel implements Kernel {
 					
 					for (VariableAssignment var : vars) {
 						log.trace("{}",analysis.getFormula());
-						ResultList res = app.getAtomStore().query(analysis.getFormula(), var, projection);
+						
+						DatabaseQuery query = new DatabaseQuery(analysis.getFormula());
+						query.getPartialGrounding().putAll(var);
+						query.getProjectionSubset().addAll(projection);
+						ResultList res = manager.getDatabase().executeQuery(query);
+						// TODO fix me ResultList res = app.getAtomStore().query(analysis.getFormula(), var, projection);
 						for (int i=0;i<res.size();i++) {
-							newSetDefinition(app,res.get(i),false);
+							newSetDefinition(manager, gks, res.get(i), false);
 						}
 					}
 				}
@@ -256,13 +262,13 @@ public class SetDefinitionKernel implements Kernel {
 		}
 	}
 	
-	private void newSetDefinition(ModelApplication app, GroundTerm[] args, boolean forceCreation) {
-		Atom setAtom = app.getAtomStore().getConsideredAtom(setPredicate, args);
+	private void newSetDefinition(AtomManager manager, GroundKernelStore gks, GroundTerm[] args, boolean forceCreation) {
+		// TODO Fix me Atom setAtom = app.getAtomStore().getConsideredAtom(setPredicate, args);
+		GroundAtom setAtom = manager.getAtom(setPredicate, args);
 		//If the definition already exists, then we can directly return
 		if (setAtom!=null && !setAtom.getRegisteredGroundKernels(this).isEmpty()) return;
 		
 		VariableAssignment ass = new VariableAssignment();
-		assert args.length == argumentVariableMap.length;
 		for (int i=0;i<args.length;i++) {
 			ass.assign(argumentVariableMap[i], args[i]);
 		}
@@ -272,19 +278,20 @@ public class SetDefinitionKernel implements Kernel {
 		for (int i=0;i<2;i++) {
 			members[i]=new SoftTermMembership();
 			for (BasicSetTerm setterm : sets.get(i)) {
-				if (setterm.getFormula()==null) {
+				if (setterm.getFormula() == null) {
 					Term leaf = setterm.getLeaf();
 					if (leaf instanceof GroundTerm) {
 						members[i].addMember((GroundTerm)leaf, 1.0);
 					} else {
-						assert leaf instanceof Variable;
-						members[i].addMember(ass.getVariable((Variable)leaf),1.0);
+						members[i].addMember(ass.getVariable((Variable)leaf), 1.0);
 					}
 				} else {
-					assert setterm.getLeaf() instanceof Variable;
+					DatabaseQuery query = new DatabaseQuery(setterm.getFormula());
+					query.getPartialGrounding().putAll(ass);
 					if (isSoftSet) {
-						ResultList res = app.getAtomStore().query(setterm.getFormula(), ass);
-						FormulaGrounder grounder = new FormulaGrounder(app.getAtomManager(), res, ass);
+						// ResultList res = app.getAtomStore().query(setterm.getFormula(), ass);
+						ResultList res = manager.getDatabase().executeQuery(query);
+						FormulaGrounder grounder = new FormulaGrounder(manager, res, ass);
 						while (grounder.hasNext()) {
 							Formula f = grounder.ground(setterm.getFormula());
 							double truth = AbstractGroundRule.formulaNorm.getTruthValue(f);
@@ -293,22 +300,23 @@ public class SetDefinitionKernel implements Kernel {
 							grounder.next();
 						}
 					} else {
-						ResultList res = app.getAtomStore().query(setterm.getFormula(), ass, ImmutableList.of((Variable)setterm.getLeaf()));
-						for (int j=0;j<res.size();j++)
+						query.getProjectionSubset().add((Variable)setterm.getLeaf());
+						ResultList res = manager.getDatabase().executeQuery(query);
+						// ResultList res = app.getAtomStore().query(setterm.getFormula(), ass, ImmutableList.of((Variable)setterm.getLeaf()));
+						for (int j=0; j<res.size(); j++)
 							members[i].addMember(res.get(j)[0], 1.0);
 					}
 				}
 			}
-			
 		}
-		if (forceCreation || enoughSupport(app,members[0],members[1])) {
-			setAtom = app.getAtomManager().getAtom(setPredicate, args);	
+		if (forceCreation || enoughSupport(manager, members[0], members[1])) {
+			setAtom = manager.getAtom(setPredicate, args);	
 			//log.debug("New set definition: {}",Arrays.toString(args));
-			Set<Atom> compAtoms = new HashSet<Atom>();
+			Set<GroundAtom> compAtoms = new HashSet<GroundAtom>();
 			boolean isEmpty = true;
 			for (GroundTerm s1 : members[0]) {
 				for (GroundTerm s2 : members[1]) {
-					Atom atom = app.getAtomManager().getAtom(comparisonPredicate, new GroundTerm[]{s1,s2});
+					GroundAtom atom = manager.getAtom(comparisonPredicate, new GroundTerm[]{s1,s2});
 					//log.debug("Added atom: {}",atom);
 					compAtoms.add(atom);
 					isEmpty = false; 
@@ -319,23 +327,26 @@ public class SetDefinitionKernel implements Kernel {
 			if (isEmpty) {
 				double truthval = setCompareFct.aggregateValue(members[0], members[1], compAtoms);
 				GroundEmptySetDefinition edef = new GroundEmptySetDefinition(this,setAtom,truthval);
-				app.getAtomManager().changeCertainty(setAtom,new double[]{truthval},new double[]{ConfidenceValues.maxConfidence});
-				app.addGroundKernel(edef);
+				
+				app.getAtomManager().changeCertainty(setAtom,new double[]{truthval},new double[]{Double.POSITIVE_INFINITY});
+				gks.addGroundKernel(edef);
 			} else {
-				GroundSetDefinition sdef = new GroundSetDefinition(this,setAtom,members[0],members[1],compAtoms);
-				app.addGroundKernel(sdef);
+				GroundSetDefinition sdef = new GroundSetDefinition(this, setAtom, members[0], members[1], compAtoms);
+				gks.addGroundKernel(sdef);
 			}
 
 		}
 		
 	}
 	
-	private boolean enoughSupport(ModelApplication app, TermMembership set1, TermMembership set2) {
-		Set<Atom> compAtoms = new HashSet<Atom>();
+	private boolean enoughSupport(AtomManager manager, TermMembership set1, TermMembership set2) {
+		Set<GroundAtom> compAtoms = new HashSet<GroundAtom>();
 		for (GroundTerm s1 : set1) {
 			for (GroundTerm s2 : set2) {
-				Atom atom = app.getAtomStore().getConsideredAtom(comparisonPredicate, new GroundTerm[]{s1,s2});
-				if (atom!=null) compAtoms.add(atom);
+				// Atom atom = app.getConsideredAtom(comparisonPredicate, new GroundTerm[]{s1,s2});
+				GroundAtom atom = manager.getAtom(comparisonPredicate, new GroundTerm[]{s1, s2});
+				if (atom != null)
+					compAtoms.add(atom);
 			}
 		}
 		return setCompareFct.enoughSupport(set1, set2, compAtoms);
@@ -345,20 +356,20 @@ public class SetDefinitionKernel implements Kernel {
 	
 	
 	@Override
-	public void registerForAtomEvents(AtomManager manager) {
+	public void registerForAtomEvents(AtomEventFramework framework) {
 		for (FormulaEventAnalysis analysis : triggerFormulas) {
-			analysis.registerFormulaForEvents(framework, this, AtomEventSets.DeOrActivationEvent, db);
+			analysis.registerFormulaForEvents(framework, this, ActivatedEventSet);
 		}
-		framework.registerAtomEventListener(setPredicate, AtomEventSets.DeOrActivationEvent, this);
+		framework.registerAtomEventListener(ActivatedEventSet, setPredicate, this);
 
 	}
 	
 	@Override
-	public void unregisterForAtomEvents(AtomManager manager) {
+	public void unregisterForAtomEvents(AtomEventFramework framework) {
 		for (FormulaEventAnalysis analysis : triggerFormulas) {
-			analysis.unregisterFormulaForEvents(framework, this, AtomEventSets.DeOrActivationEvent, db);
+			analysis.unregisterFormulaForEvents(framework, this, ActivatedEventSet);
 		}
-		framework.unregisterAtomEventListener(setPredicate, AtomEventSets.DeOrActivationEvent, this);
+		framework.unregisterAtomEventListener(ActivatedEventSet, setPredicate, this);
 	}
 
 	
