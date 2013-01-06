@@ -41,7 +41,6 @@ import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
 
 abstract public class AbstractRuleKernel extends AbstractKernel {
-
 	private static final Logger log = LoggerFactory.getLogger(AbstractRuleKernel.class);
 	
 	protected final Model model;
@@ -49,6 +48,7 @@ abstract public class AbstractRuleKernel extends AbstractKernel {
 	protected final FormulaEventAnalysis formulaAnalysis;
 	
 	public AbstractRuleKernel(Model m, Formula f) {
+		super();
 		Preconditions.checkNotNull(m);
 		model = m;
 		formula = f;
@@ -87,21 +87,18 @@ abstract public class AbstractRuleKernel extends AbstractKernel {
 
 	@Override
 	public void notifyAtomEvent(AtomEvent event, GroundKernelStore gks) {
-		// TODO Not sure this if statement is necessary...
-		if (event == AtomEvent.ActivatedRVAtom) {
-			List<VariableAssignment> vars = formulaAnalysis.traceAtomEvent(event.getAtom());
-			if (!vars.isEmpty()) {
-				for (VariableAssignment var : vars) {
-					for (Formula query : formulaAnalysis.getQueryFormulas()) {
-						// TODO fix me: ResultList res = app.getAtomManager().getActiveGroundings(query, var);
-						DatabaseQuery dbQuery = new DatabaseQuery(query);
-						dbQuery.getPartialGrounding().putAll(var);
-						ResultList res = event.getEventFramework().getDatabase().executeQuery(dbQuery);
-						groundFormula(event.getEventFramework(), gks, res, var);
-					}
+		List<VariableAssignment> vars = formulaAnalysis.traceAtomEvent(event.getAtom());
+		if (!vars.isEmpty()) {
+			for (VariableAssignment var : vars) {
+				for (Formula query : formulaAnalysis.getQueryFormulas()) {
+					// TODO fix me: ResultList res = app.getAtomManager().getActiveGroundings(query, var);
+					DatabaseQuery dbQuery = new DatabaseQuery(query);
+					dbQuery.getPartialGrounding().putAll(var);
+					ResultList res = event.getEventFramework().getDatabase().executeQuery(dbQuery);
+					groundFormula(event.getEventFramework(), gks, res, var);
 				}
 			}
-		} else throw new UnsupportedOperationException("Only handles activation for now!");
+		}
 	}
 	
 	@Override

@@ -28,15 +28,12 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
-import edu.umd.cs.psl.application.ModelApplication;
 import edu.umd.cs.psl.application.groundkernelstore.GroundKernelStore;
 import edu.umd.cs.psl.database.DatabaseQuery;
 import edu.umd.cs.psl.database.ResultList;
-import edu.umd.cs.psl.model.ConfidenceValues;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.Term;
 import edu.umd.cs.psl.model.argument.Variable;
@@ -101,6 +98,7 @@ public class SetDefinitionKernel extends AbstractKernel {
 	private final int hashcode;
 	
 	public SetDefinitionKernel(StandardPredicate setP, SetTerm s1, SetTerm s2, Variable[] variables, Predicate compareP, EntityAggregatorFunction compare, boolean soft) {
+		super();
 		if (!(compareP instanceof StandardPredicate) && !(compareP instanceof SpecialPredicate)) throw new IllegalArgumentException("Expected basic predicate for comparison!");
 		
 		set1 = s1;
@@ -264,7 +262,10 @@ public class SetDefinitionKernel extends AbstractKernel {
 	
 	private void newSetDefinition(AtomManager manager, GroundKernelStore gks, GroundTerm[] args, boolean forceCreation) {
 		// TODO Fix me Atom setAtom = app.getAtomStore().getConsideredAtom(setPredicate, args);
-		GroundAtom setAtom = manager.getAtom(setPredicate, args);
+		GroundAtom atom = manager.getAtom(setPredicate, args);
+		if (!(atom instanceof RandomVariableAtom))
+			throw new RuntimeException("AtomManager did not return RandomVariableAtom for predicate " + setPredicate.toString());
+		RandomVariableAtom setAtom = (RandomVariableAtom)atom;
 		//If the definition already exists, then we can directly return
 		if (setAtom!=null && !setAtom.getRegisteredGroundKernels(this).isEmpty()) return;
 		
@@ -310,13 +311,14 @@ public class SetDefinitionKernel extends AbstractKernel {
 			}
 		}
 		if (forceCreation || enoughSupport(manager, members[0], members[1])) {
-			setAtom = manager.getAtom(setPredicate, args);	
+			// No need to check cast because of previous getAtom call.
+			setAtom = (RandomVariableAtom) manager.getAtom(setPredicate, args);	
 			//log.debug("New set definition: {}",Arrays.toString(args));
 			Set<GroundAtom> compAtoms = new HashSet<GroundAtom>();
 			boolean isEmpty = true;
 			for (GroundTerm s1 : members[0]) {
 				for (GroundTerm s2 : members[1]) {
-					GroundAtom atom = manager.getAtom(comparisonPredicate, new GroundTerm[]{s1,s2});
+					atom = manager.getAtom(comparisonPredicate, new GroundTerm[]{s1,s2});
 					//log.debug("Added atom: {}",atom);
 					compAtoms.add(atom);
 					isEmpty = false; 
@@ -328,7 +330,8 @@ public class SetDefinitionKernel extends AbstractKernel {
 				double truthval = setCompareFct.aggregateValue(members[0], members[1], compAtoms);
 				GroundEmptySetDefinition edef = new GroundEmptySetDefinition(this,setAtom,truthval);
 				
-				app.getAtomManager().changeCertainty(setAtom,new double[]{truthval},new double[]{Double.POSITIVE_INFINITY});
+				setAtom.setValue(truthval);
+				setAtom.setConfidenceValue(Double.NaN);
 				gks.addGroundKernel(edef);
 			} else {
 				GroundSetDefinition sdef = new GroundSetDefinition(this, setAtom, members[0], members[1], compAtoms);
@@ -352,9 +355,6 @@ public class SetDefinitionKernel extends AbstractKernel {
 		return setCompareFct.enoughSupport(set1, set2, compAtoms);
 	}
 	
-
-	
-	
 	@Override
 	public void registerForAtomEvents(AtomEventFramework framework) {
 		for (FormulaEventAnalysis analysis : triggerFormulas) {
@@ -372,14 +372,10 @@ public class SetDefinitionKernel extends AbstractKernel {
 		framework.unregisterAtomEventListener(ActivatedEventSet, setPredicate, this);
 	}
 
-	
-	
 	@Override
 	public int hashCode() {
 		return hashcode;
 	}
-
-
 	
 	//===================== STATIC =====================
 
@@ -420,11 +416,4 @@ public class SetDefinitionKernel extends AbstractKernel {
 		}
 		
 	}
-
-
-
-	
-	
-	
-
 }

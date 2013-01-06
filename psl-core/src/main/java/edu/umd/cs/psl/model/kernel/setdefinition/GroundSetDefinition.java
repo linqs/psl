@@ -22,6 +22,7 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.GroundAtom;
+import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 
 import edu.umd.cs.psl.model.kernel.BindingMode;
 import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
@@ -45,23 +46,23 @@ public class GroundSetDefinition implements GroundConstraintKernel {
 
 	private final SetDefinitionKernel definitionType;
 	
-	private final Atom setAtom;
+	private final RandomVariableAtom setAtom;
 	
 	private final TermMembership set1;
 	private final TermMembership set2;
 	
-	private final Set<Atom> referencedAtoms;
+	private final Set<GroundAtom> referencedAtoms;
 	
 	private final int hashcode;
 	
-	GroundSetDefinition(SetDefinitionKernel s, Atom atom, TermMembership s1, TermMembership s2, Set<GroundAtom> compAtoms) {
+	GroundSetDefinition(SetDefinitionKernel s, RandomVariableAtom atom, TermMembership s1, TermMembership s2, Set<GroundAtom> compAtoms) {
 		assert s!=null;
 		definitionType = s;
 		setAtom = atom;
 		set1 = s1;
 		set2 = s2;
 		referencedAtoms = compAtoms;
-		setAtom.setSoftValue(0, getAggregateValue());
+		setAtom.setValue(getAggregateValue());
 		
 		hashcode = new HashCodeBuilder().append(setAtom).toHashCode();
 	}
@@ -106,8 +107,8 @@ public class GroundSetDefinition implements GroundConstraintKernel {
 	}
 	
 	@Override
-	public Set<Atom> getAtoms() {
-		Set<Atom> result = new HashSet<Atom>(referencedAtoms);
+	public Set<GroundAtom> getAtoms() {
+		Set<GroundAtom> result = new HashSet<GroundAtom>(referencedAtoms);
 		result.add(setAtom);
 		return result;
 	}
@@ -159,7 +160,6 @@ public class GroundSetDefinition implements GroundConstraintKernel {
 
 	@Override
 	public double getIncompatibility() {
-		assert setAtom.getNumberOfValues()==1;
 		if (NumericUtilities.equals(setAtom.getValue(), getAggregateValue())) {
 			return 0.0;
 		} else

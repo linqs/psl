@@ -19,7 +19,7 @@ package edu.umd.cs.psl.application.groundkernelstore;
 import com.google.common.collect.Iterables;
 
 import de.mathnbits.util.KeyedRetrievalSet;
-import edu.umd.cs.psl.model.atom.Atom;
+import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
@@ -65,18 +65,18 @@ public class MemoryGroundKernelStore implements GroundKernelStore {
 	@Override
 	public void addGroundKernel(GroundKernel e) {
 		if (!groundKernels.put(e.getKernel(),e)) throw new IllegalArgumentException("Evidence has already been added: "+e);
-		for (Atom atom : e.getAtoms()) if (!atom.registerGroundKernel(e)) throw new AssertionError("Evidence has already been registered with atom! " + e);
+		for (GroundAtom atom : e.getAtoms()) if (!atom.registerGroundKernel(e)) throw new AssertionError("Evidence has already been registered with atom! " + e);
 	}
 	
 	@Override
 	public void changedGroundKernel(GroundKernel e) {
-		for (Atom atom : e.getAtoms()) atom.registerGroundKernel(e);
+		for (GroundAtom atom : e.getAtoms()) atom.registerGroundKernel(e);
 	}
 	
 	@Override
 	public void removeGroundKernel(GroundKernel e) {
 		//Deregister with atoms and remove from reasoner
-		for (Atom atom : e.getAtoms()) if (!atom.unregisterGroundKernel(e)) throw new AssertionError("Evidence has never been registered with atom!");
+		for (GroundAtom atom : e.getAtoms()) if (!atom.unregisterGroundKernel(e)) throw new AssertionError("Evidence has never been registered with atom!");
 		groundKernels.remove(e.getKernel(), e);
 	}
 	

@@ -21,6 +21,7 @@ import java.util.Map;
 
 import com.google.common.base.Preconditions;
 
+import edu.umd.cs.psl.database.ReadOnlyDatabase;
 import edu.umd.cs.psl.model.argument.ArgumentType;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.StringAttribute;
@@ -58,7 +59,7 @@ public class AttributeSimFunAdapter implements ExternalFunction, BulkExternalFun
 	}
 	
 	@Override
-	public double getValue(GroundTerm... args) {
+	public double getValue(ReadOnlyDatabase db, GroundTerm... args) {
 		String[] strs = args2String(args);
 		return function.similarity(strs[0], strs[1]);
 	}

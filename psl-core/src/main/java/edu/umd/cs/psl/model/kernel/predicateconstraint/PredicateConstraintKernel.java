@@ -52,6 +52,7 @@ public class PredicateConstraintKernel extends AbstractKernel {
 
 	public PredicateConstraintKernel(StandardPredicate p,
 			PredicateConstraintType t) {
+		super();
 		Preconditions.checkArgument(p.getArity() == 2, "Currently, " +
 				"PredicateConstraints only support binary predicates.");
 		constraintType = t;
@@ -83,59 +84,53 @@ public class PredicateConstraintKernel extends AbstractKernel {
 	public void groundAll(AtomManager atomManager, GroundKernelStore gks) {
 		/* Not needed, triggered only upon insertion */
 	}
-	
+
 	@Override
 	protected void notifyAtomEvent(AtomEvent event, GroundKernelStore gks) {
-		// TODO: I am not sure this if statement is necessary... it will only receive events it registered for...
-		/* When an Atom is considered... */
-		if (event == AtomEvent.ConsideredRVAtom) {
-			/*
-			 * ...checks to see if that Atom has already been added to the
-			 * appropriate ground Kernel. (It shouldn't have.)
-			 */
-			if (event.getAtom().getRegisteredGroundKernels(this).isEmpty()) {
-				/* Constructs the ground Kernel in order to see if it already exists */
-				GroundAtom atom = event.getAtom();
-				int pos = constraintType.position();
-				GroundTerm anchor = (GroundTerm) atom.getArguments()[pos];
-				GroundTerm other = (GroundTerm) atom.getArguments()[1 - pos];
-				GroundPredicateConstraint con = new GroundPredicateConstraint(this, anchor);
+		/*
+		 * When an atom is considered, it checks to see if that Atom has
+		 * already been added to the appropriate ground Kernel. (It shouldn't
+		 * have.)
+		 */
+		if (event.getAtom().getRegisteredGroundKernels(this).isEmpty()) {
+			/* Constructs the ground Kernel in order to see if it already exists */
+			GroundAtom atom = event.getAtom();
+			int pos = constraintType.position();
+			GroundTerm anchor = (GroundTerm) atom.getArguments()[pos];
+			GroundTerm other = (GroundTerm) atom.getArguments()[1 - pos];
+			GroundPredicateConstraint con = new GroundPredicateConstraint(this, anchor);
 
-				GroundKernel oldcon = gks.getGroundKernel(con);
+			GroundKernel oldcon = gks.getGroundKernel(con);
+
+			/* If it already exists, adds the considered Atom to it */
+			if (oldcon != null) {
+				((GroundPredicateConstraint) oldcon).addAtom(atom);
+				gks.changedGroundKernel(oldcon);
+			} else {
+				con.addAtom(atom);
 				
-				/* If it already exists, adds the considered Atom to it */
-				if (oldcon != null) {
-					((GroundPredicateConstraint) oldcon).addAtom(atom);
-					gks.changedGroundKernel(oldcon);
-				} else {
-					con.addAtom(atom);
-					// Check for atoms from database
-					Variable var = new Variable("V");
-
-					Term[] args = new Term[2];
-					args[pos] = anchor;
-					args[1 - pos] = var;
-					DatabaseQuery query = new DatabaseQuery(new QueryAtom(predicate, args));
-					query.getProjectionSubset().add(var);
-
-					ResultList res = event.getEventFramework().getDatabase().executeQuery(query);
-					// TODO Fix me: ResultList res = app.getAtomManager().getActiveGroundings(query, ImmutableList.of(var));
-					for (int i = 0; i < res.size(); i++) {
-						GroundTerm[] terms = new GroundTerm[2];
-						terms[pos] = anchor;
-						terms[1 - pos] = res.get(i)[0];
-						if (!terms[1 - pos].equals(other)) {
-							con.addAtom(event.getEventFramework().getAtom(predicate,
-									terms));
-						}
+				// Check for atoms from database
+				Variable var = new Variable("V");
+				Term[] args = new Term[2];
+				args[pos] = anchor;
+				args[1 - pos] = var;
+				
+				// Constructs and executes the DatabaseQuery
+				DatabaseQuery query = new DatabaseQuery(new QueryAtom(predicate, args));
+				query.getProjectionSubset().add(var);
+				ResultList res = event.getEventFramework().getDatabase().executeQuery(query);
+				
+				for (int i = 0; i < res.size(); i++) {
+					GroundTerm[] terms = new GroundTerm[2];
+					terms[pos] = anchor;
+					terms[1 - pos] = res.get(i)[0];
+					if (!terms[1 - pos].equals(other)) {
+						con.addAtom(event.getEventFramework().getAtom(predicate, terms));
 					}
-					gks.addGroundKernel(con);
 				}
-			} /* else it already has such a constraint defined */
-		} else {
-			 /* No handling for other events */
-			throw new UnsupportedOperationException("Unsupported event encountered: " + event);
-		}
+				gks.addGroundKernel(con);
+			}
+		} /* else it already has such a constraint defined */
 	}
 
 	@Override

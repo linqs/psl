@@ -30,13 +30,19 @@ import edu.umd.cs.psl.model.atom.AtomEvent;
 import edu.umd.cs.psl.model.atom.AtomEventFramework;
 import edu.umd.cs.psl.model.parameters.Parameters;
 
+/**
+ * The AbstractKernel allows implementing Kernels to avoid keeping track of
+ * which GroundKernelStore to use when handling AtomEvents.
+ * @author Eric Norris <enorris@cs.umd.edu>
+ *
+ */
 public abstract class AbstractKernel implements Kernel {
 	
 	private static final Logger log = LoggerFactory.getLogger(AbstractKernel.class);
 	
 	protected SetMultimap<AtomEventFramework, GroundKernelStore> frameworks;
 	
-	public AbstractKernel() {
+	protected AbstractKernel() {
 		this.frameworks = HashMultimap.create();
 	}
 	

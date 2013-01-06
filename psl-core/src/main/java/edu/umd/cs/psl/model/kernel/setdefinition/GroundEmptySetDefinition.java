@@ -18,10 +18,11 @@ package edu.umd.cs.psl.model.kernel.setdefinition;
 
 import java.util.Set;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
 import edu.umd.cs.psl.model.atom.Atom;
+import edu.umd.cs.psl.model.atom.GroundAtom;
+import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.kernel.BindingMode;
 import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
@@ -33,11 +34,10 @@ import edu.umd.cs.psl.reasoner.function.FunctionSummand;
 public class GroundEmptySetDefinition implements GroundConstraintKernel {
 
 	private final SetDefinitionKernel kernel;
-	private final Atom atom;
+	private final RandomVariableAtom atom;
 	private double value;
 	
-	public GroundEmptySetDefinition(SetDefinitionKernel k, Atom atom, double val) {
-		Preconditions.checkArgument(atom.getNumberOfValues()==1);
+	public GroundEmptySetDefinition(SetDefinitionKernel k, RandomVariableAtom atom, double val) {
 		this.atom = atom;
 		value = val;
 		kernel = k;
@@ -55,14 +55,14 @@ public class GroundEmptySetDefinition implements GroundConstraintKernel {
 	}
 
 	@Override
-	public Set<Atom> getAtoms() {
-		return ImmutableSet.of(atom);
+	public Set<GroundAtom> getAtoms() {
+		return ImmutableSet.of((GroundAtom)atom);
 	}
 
 	@Override
 	public BindingMode getBinding(Atom atom) {
 		if (atom.equals(this.atom)) {
-			if (atom.getPredicate().isNonDefaultValues(new double[]{value})) return BindingMode.StrongCertainty;
+			if (( atom.getPredicate()).isNonDefaultValues(new double[]{value})) return BindingMode.StrongCertainty;
 			else return BindingMode.WeakCertainty;
 		} else return BindingMode.NoBinding;
 	}
