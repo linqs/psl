@@ -18,19 +18,25 @@ package edu.umd.cs.psl.evaluation.statistics.filter;
 
 import java.util.Iterator;
 
-import edu.umd.cs.psl.model.atom.Atom;
+import edu.umd.cs.psl.model.atom.GroundAtom;
 
+/**
+ * Filters an Iterator over {@link GroundAtom GroundAtoms} according
+ * to some criterion.
+ * <p>
+ * Can be chained together.
+ */
 public interface AtomFilter {
 
 	public static final AtomFilter NoFilter = new AtomFilter() {
 
 		@Override
-		public Iterator<Atom> filter(Iterator<Atom> input) {
+		public Iterator<GroundAtom> filter(Iterator<GroundAtom> input) {
 			return input;
 		}
 		
 	};
 	
-	Iterator<Atom> filter(Iterator<Atom> input);
+	Iterator<GroundAtom> filter(Iterator<GroundAtom> input);
 	
 }

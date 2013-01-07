@@ -16,32 +16,17 @@
  */
 package edu.umd.cs.psl.application;
 
+import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.ModelEvent;
-import edu.umd.cs.psl.model.atom.AtomManager;
-import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
-import edu.umd.cs.psl.model.kernel.GroundKernel;
 
 /**
- * The central component for combining a {@link Model}
+ * Component which combines a {@link Model} (or Models)
  * with data to perform a task, such as inference or learning.
  */
 public interface ModelApplication extends ModelEvent.Listener {
 	
-	public AtomManager getAtomManager();
-	
-	public void addGroundKernel(GroundKernel e);
-	
-	public void changedGroundKernel(GroundKernel e);
-	
-	public void removeGroundKernel(GroundKernel e);
-	
-	public boolean containsGroundKernel(GroundKernel e);
-	
-	public GroundKernel getGroundKernel(GroundKernel e);
-
-	public Iterable<GroundCompatibilityKernel> getCompatibilityKernels();
-	
-	public Iterable<GroundKernel> getGroundKernel();
-	
+	/**
+	 * Releases all resources used by this ModelApplication.
+	 */
 	public void close();
 }

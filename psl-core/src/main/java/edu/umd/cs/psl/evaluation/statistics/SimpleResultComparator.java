@@ -25,19 +25,22 @@ import java.util.Set;
 import de.mathnbits.util.RetrievalSet;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.database.DatabaseAtomStoreQuery;
+import edu.umd.cs.psl.database.DatabaseQuery;
 import edu.umd.cs.psl.evaluation.statistics.filter.AtomFilter;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.AtomStore;
+import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.memory.MemoryAtomStore;
 import edu.umd.cs.psl.model.predicate.Predicate;
+import edu.umd.cs.psl.util.database.Queries;
 
 public class SimpleResultComparator implements ResultComparator {
 
 	public static final double DefaultTolerance = 0.1;
 	
-	private final DatabaseAtomStoreQuery result;
-	private DatabaseAtomStoreQuery baseline;
+	private final Database result;
+	private Database baseline;
 	
 	private AtomFilter resultFilter = AtomFilter.NoFilter;
 	private AtomFilter baselineFilter = AtomFilter.NoFilter;
@@ -45,8 +48,8 @@ public class SimpleResultComparator implements ResultComparator {
 	private ValueComparator valueCompare = ValueComparator.Threshold;
 	private double tolerance = DefaultTolerance;
 	
-	public SimpleResultComparator(DatabaseAtomStoreQuery outcome) {
-		this.result=outcome;
+	public SimpleResultComparator(Database result) {
+		this.result = result;
 		baseline = null;
 	}
 
@@ -56,13 +59,8 @@ public class SimpleResultComparator implements ResultComparator {
 	}
 
 	@Override
-	public void setBaseline(DatabaseAtomStoreQuery baseline) {
-		this.baseline = baseline;
-	}
-	
-	@Override
-	public void setBaseline(Database baseline) {
-		this.baseline = DatabaseAtomStoreQuery.getIndependentInstance(baseline);
+	public void setBaseline(Database db) {
+		this.baseline = db;
 	}
 	
 	@Override
@@ -88,7 +86,7 @@ public class SimpleResultComparator implements ResultComparator {
 	 */
 	public ResultComparison compare(Predicate p) {
 		RetrievalSet<Atom> resultAtoms = new RetrievalSet<Atom>();
-		Iterator<Atom> iter = resultFilter.filter(result.getAtomSet(p).iterator());
+		Iterator<GroundAtom> iter = resultFilter.filter(Queries.getAllAtoms(result, p).iterator());
 		int tp = 0;
 		int fn = 0;
 		int tn = 0;
@@ -100,10 +98,10 @@ public class SimpleResultComparator implements ResultComparator {
 		Map<Atom, Double> errors = new HashMap<Atom, Double>();
 
 		Set<Atom> correctAtoms = new HashSet<Atom>();
-		Iterator<Atom> baselineAtom = baselineFilter.filter(baseline.getAtomSet(p).iterator());
+		Iterator<GroundAtom> baselineAtom = baselineFilter.filter(Queries.getAllAtoms(baseline, p).iterator());
 		while (baselineAtom.hasNext()) {
-			Atom bAtom = baselineAtom.next();
-			Atom resultAtom = resultAtoms.get(bAtom);
+			GroundAtom bAtom = baselineAtom.next();
+			GroundAtom resultAtom = resultAtoms.get(bAtom);
 			double[] compValue = null;
 			if (resultAtom == null) { // baseline atom not present in result
 				compValue = bAtom.getSoftValues();

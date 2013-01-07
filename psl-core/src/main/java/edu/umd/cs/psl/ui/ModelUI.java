@@ -17,8 +17,10 @@
 package edu.umd.cs.psl.ui;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.google.common.base.Preconditions;
 
@@ -51,44 +53,16 @@ import edu.umd.cs.psl.model.predicate.type.PredicateTypes;
 
 public class ModelUI {
 
-	public static final double defaultActivationParameter = 0.1;
-	
 	private final Model model;
-	private final PredicateFactory predicateFactory;
-	protected final Map<String,PredicateInfo> predicates;
-	protected final Map<String,PredicateInfo> aggregatePredicate;
-	protected final Map<String,PredicateInfo> simFunctions;
-	private double activationParameter;
+	private final Set<Predicate> predicates;
 	
 	public ModelUI() {
-		activationParameter = defaultActivationParameter;
 		model=new Model();
-		predicateFactory = new PredicateFactory();
-		predicates = new HashMap<String,PredicateInfo>();
-		aggregatePredicate = new HashMap<String,PredicateInfo>();
-		simFunctions = new HashMap<String,PredicateInfo>();
+		predicates = new HashSet<Predicate>();
 	}
 	
 	public Model getModel() {
 		return model;
-	}
-	
-	public void setDefaultActivationParameter(double para) {
-		Preconditions.checkArgument(para>=0.0 && para<=1.0);
-		activationParameter=para;
-	}
-	
-	public StandardPredicate addBasicPredicate(String name, PredicateType type, ArgumentType[] types, List<String> argNames, boolean open) {
-		if (types.length!=argNames.size()) throw new IllegalArgumentException("Expected equal number of argument types and names!");
-		double[] activeParas = new double[]{activationParameter};
-		if (type==PredicateTypes.BooleanTruth) {
-			activeParas = new double[0];
-		} else if (type==PredicateTypes.Gaussian) {
-			throw new UnsupportedOperationException();
-		}
-		StandardPredicate p = predicateFactory.createStandardPredicate(name, type, types,activeParas);
-		predicates.put(name, new PredicateInfo(p,argNames,(open?PredicateDBType.Open:PredicateDBType.Closed) ));
-		return p;
 	}
 	
 	public StandardPredicate addBasicPredicate(String name, ArgumentType[] types, List<String> argNames, boolean open) {
@@ -101,13 +75,6 @@ public class ModelUI {
 		predicates.put(name, new PredicateInfo(p,argNames,PredicateDBType.Aggregate));
 		return p;
 	}
-
-//	public FunctionalPredicate addFunctionalPredicate(String name, List<String> argNames, AttributeSimilarityFunction simFun) {
-//		if (argNames.size()!=2) throw new IllegalArgumentException("Expected 2 argument names but was given: " + argNames.size());
-//		FunctionalPredicate p = model.getPredicateFactory().createFunctionalPredicate(name, simFun);
-//		simFunctions.put(name, new PredicateInfo(p,argNames));
-//		return p;
-//	}
 	
 	public FunctionalPredicate addFunctionalPredicate(String name, List<String> argNames, ExternalFunction extFun) {
 		if (argNames.size()!=extFun.getArity()) throw new IllegalArgumentException("Arity does not match: " + argNames.size());
@@ -148,35 +115,15 @@ public class ModelUI {
 		return model.toString();
 	}
 	
-	public void registerPredicates(DataStore db) {
-		for (PredicateInfo predinfo : predicates.values()) {
-			db.registerPredicate(predinfo.definition, predinfo.argumentNames, predinfo.type);
-		}
-		for (PredicateInfo predinfo : aggregatePredicate.values()) {
-			db.registerPredicate(predinfo.definition, predinfo.argumentNames, predinfo.type);
-		}
+	public void registerPredicates(DataStore ds) {
+		for (Predicate p : predicates)
+			ds.registerPredicate(p);
 	}
 	
 	public Predicate getPredicate(String predname) {
 		if (predicates.containsKey(predname)) {
 			return predicates.get(predname).definition;
 		} else throw new IllegalArgumentException("Predicate does not exist in model: " + predname);
-	}
-	
-	protected class PredicateInfo {
-		protected Predicate definition;
-		protected List<String> argumentNames;
-		protected PredicateDBType type;
-		
-		public PredicateInfo(Predicate def, List<String> argnames, PredicateDBType t) {
-			definition = def;
-			argumentNames = argnames;
-			type = t;
-		}
-		
-		public PredicateInfo(Predicate def, List<String> argnames) {
-			this(def,argnames,PredicateDBType.Closed);
-		}
 	}
 	
 }

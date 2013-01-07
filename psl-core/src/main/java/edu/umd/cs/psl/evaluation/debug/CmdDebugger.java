@@ -17,6 +17,7 @@
 package edu.umd.cs.psl.evaluation.debug;
 
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -26,12 +27,21 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 
 import de.mathnbits.io.BasicUserInteraction;
-import edu.umd.cs.psl.application.ModelApplication;
+import edu.umd.cs.psl.database.Database;
+import edu.umd.cs.psl.database.DatabaseQuery;
+import edu.umd.cs.psl.database.ResultList;
+import edu.umd.cs.psl.model.argument.Term;
+import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.atom.Atom;
+import edu.umd.cs.psl.model.atom.AtomCache;
+import edu.umd.cs.psl.model.atom.GroundAtom;
+import edu.umd.cs.psl.model.atom.QueryAtom;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.PredicateFactory;
+import edu.umd.cs.psl.model.predicate.StandardPredicate;
+import edu.umd.cs.psl.util.database.Queries;
 
 public class CmdDebugger implements Debugger {
 
@@ -42,15 +52,16 @@ public class CmdDebugger implements Debugger {
 	
 	private static final DecimalFormat valueFormatter = new DecimalFormat("#.##");
 
-
-	private final ModelApplication application;
+	private final Database db;
+	private final AtomCache cache;
 	private final PredicateFactory predicateFactory;
 	
 	private Map<Integer,Atom> atomHandles;
 	
-	public CmdDebugger(ModelApplication app, PredicateFactory pf) {
-		application = app;
-		predicateFactory = pf;
+	public CmdDebugger(Database db) {
+		this.db = db;
+		cache = db.getAtomCache();
+		predicateFactory = PredicateFactory.getFactory();
 	}
 	
 	@Override
@@ -88,7 +99,8 @@ public class CmdDebugger implements Debugger {
 	
 	private void printAtom(Atom atom) {
 		println(AtomPrinter.atomDetails(atom));
-		printGroundKernels(atom.getAllRegisteredGroundKernels());
+		if (atom instanceof GroundAtom)
+			printGroundKernels(((GroundAtom) atom).getRegisteredGroundKernels());
 	}
 	
 	private String printGroundKernels(GroundKernel e) {
@@ -106,7 +118,7 @@ public class CmdDebugger implements Debugger {
 			String str = printGroundKernels(e);
 			StringBuilder dep = new StringBuilder();
 			dep.append("--> Affected Atoms: ");
-			Collection<Atom> atoms = e.getAtoms();
+			Collection<GroundAtom> atoms = e.getAtoms();
 			for (Atom a : atoms) {
 				int atomNr = -1;
 				if (biatomHandles.containsValue(a)) {
@@ -128,13 +140,13 @@ public class CmdDebugger implements Debugger {
 	private void queryPredicate(String predicate) {
 		try {
 			Predicate p = predicateFactory.getPredicate(predicate);
-			printAtoms(application.getAtomStore().getConsideredAtoms(p));
+			printAtoms(getConsideredAtoms(p));
 		} catch (IllegalArgumentException e) {
 			error(e.getMessage());
 		}
 	}
 	
-	private void printAtoms(List<Atom> atoms) {
+	private void printAtoms(List<GroundAtom> atoms) {
 		if (atoms.isEmpty()) println("No atoms found for query");
 		else {
 			atomHandles = new HashMap<Integer,Atom>(atoms.size());
@@ -163,11 +175,31 @@ public class CmdDebugger implements Debugger {
 			}
 			try {
 				Predicate p = predicateFactory.getPredicate(predicate);
-				printAtoms(application.getAtomStore().getConsideredAtoms(p, args));
+				printAtoms(getConsideredAtoms(p, Queries.convertArguments(db, p, args)));
 			} catch (IllegalArgumentException e) {
 				error(e.getMessage());
-			}	
+			}
 		}
+	}
+	
+	private List<GroundAtom> getConsideredAtoms(Predicate p) {
+		Term[] args = new Term[p.getArity()];
+		for (int i = 0; i < args.length; i++) {
+			args[i] = new Variable("Arg_" + i);
+		}
+		return getConsideredAtoms(p, args);
+	}
+	
+	private List<GroundAtom> getConsideredAtoms(Predicate p, Term[] args) {
+		if (!(p instanceof StandardPredicate))
+			throw new IllegalArgumentException("Only StandardPredicates can be retrieved.");
+		ResultList res  = db.executeQuery(new DatabaseQuery(new QueryAtom(p, args)));
+		List<GroundAtom> atoms = new ArrayList<GroundAtom>();
+		for (int i=0;i<res.size();i++) {
+			GroundAtom a = cache.getCachedAtom(new QueryAtom(p,res.get(i)));
+			if (a!=null) atoms.add(a);
+		}
+		return atoms;
 	}
 	
 	private void printHelp() {

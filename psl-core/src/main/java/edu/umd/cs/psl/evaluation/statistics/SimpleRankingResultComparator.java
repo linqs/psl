@@ -25,11 +25,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import edu.umd.cs.psl.database.Database;
-import edu.umd.cs.psl.database.DatabaseAtomStoreQuery;
 import edu.umd.cs.psl.evaluation.statistics.filter.AtomFilter;
 import edu.umd.cs.psl.model.atom.Atom;
-import edu.umd.cs.psl.model.atom.AtomStore;
-import edu.umd.cs.psl.model.atom.memory.MemoryAtomStore;
+import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.util.collection.HashList;
 
@@ -37,16 +35,16 @@ public class SimpleRankingResultComparator implements RankingResultComparator {
 
 	private static final Logger log = LoggerFactory.getLogger(SimpleRankingResultComparator.class);
 	
-	private final DatabaseAtomStoreQuery result;
-	private DatabaseAtomStoreQuery baseline;
+	private final Database result;
+	private Database baseline;
 	
 	private AtomFilter resultFilter = AtomFilter.NoFilter;
 	private AtomFilter baselineFilter = AtomFilter.NoFilter;
 	
 	private RankingComparator rankCompare = RankingComparator.Kendall;
 	
-	public SimpleRankingResultComparator(DatabaseAtomStoreQuery outcome) {
-		this.result=outcome;
+	public SimpleRankingResultComparator(Database result) {
+		this.result=result;
 		baseline = null;
 	}
 
@@ -56,30 +54,9 @@ public class SimpleRankingResultComparator implements RankingResultComparator {
 	}
 
 	@Override
-	public void setBaseline(DatabaseAtomStoreQuery baseline) {
-		this.baseline = baseline;
+	public void setBaseline(Database db) {
+		this.baseline = db;
 	}
-	
-	@Override
-	public void setBaseline(Database baseline) {
-		this.baseline = DatabaseAtomStoreQuery.getIndependentInstance(baseline);
-	}
-
-	
-//	@Override
-//	public void setBaseline(Database baseline, boolean initializeAtomStore) {
-//		AtomStore store = null;
-//		if(!initializeAtomStore) {
-//			try {
-//				store = baseline.getAtomStore();
-//			} catch (IllegalStateException e) {}
-//		}
-//		if (store==null) {
-//			store = new MemoryAtomStore(baseline);
-//			baseline.setAtomStore(store);
-//		}
-//		this.baseline = new DatabaseAtomStoreQuery(baseline);
-//	}
 
 	@Override
 	public void setResultFilter(AtomFilter af) {
@@ -94,7 +71,7 @@ public class SimpleRankingResultComparator implements RankingResultComparator {
 	@Override
 	public double compare(Predicate p) {
 		/* Base atoms */
-		List<Atom> baseAtoms = new HashList<Atom>();
+		List<GroundAtom> baseAtoms = new HashList<GroundAtom>();
 		Iterator<Atom> itr = baselineFilter.filter(baseline.getAtomSet(p).iterator());
 		while (itr.hasNext())
 			baseAtoms.add(itr.next());
@@ -103,7 +80,7 @@ public class SimpleRankingResultComparator implements RankingResultComparator {
 		log.debug("Collected and sorted base atoms. Size: {}", baseAtoms.size());
 		
 		/* Result atoms */
-		List<Atom> resultAtoms = new HashList<Atom>();
+		List<GroundAtom> resultAtoms = new HashList<GroundAtom>();
 		itr = resultFilter.filter(result.getAtomSet(p).iterator());
 		while (itr.hasNext())
 			resultAtoms.add(itr.next());
@@ -115,11 +92,9 @@ public class SimpleRankingResultComparator implements RankingResultComparator {
 		
 	}
 	
-	private class AtomComparator implements Comparator<Atom> {
+	private class AtomComparator implements Comparator<GroundAtom> {
 		@Override
-		public int compare(Atom a1, Atom a2) {
-			assert a1.getNumberOfValues() == 1;
-			assert a2.getNumberOfValues() == 1;
+		public int compare(GroundAtom a1, GroundAtom a2) {
 			
 			if (a1.getValue() > a1.getValue())
 				return 1;

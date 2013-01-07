@@ -16,7 +16,11 @@
  */
 package edu.umd.cs.psl.ui.experiment.report;
 
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Writer;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -24,8 +28,8 @@ import com.google.common.base.Preconditions;
 
 import de.mathnbits.io.DirectoryUtils;
 import de.mathnbits.io.TextFiles;
+import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.model.Model;
-import edu.umd.cs.psl.util.config.PSLConfiguration;
 
 public class ExperimentReport {
 
@@ -120,8 +124,9 @@ public class ExperimentReport {
 	    TextFiles.writeObject2File(directory.getAbsolutePath() + File.separator + modelFilename + id + extension, model);
 	}
 	
-	public void writeConfiguration(PSLConfiguration config, String filename) {
-		TextFiles.writeObject2File(directory.getAbsolutePath() + File.separator + filename + extension, config);
+	public void writeConfiguration(ConfigBundle config, String filename) {
+		// TODO: write out config bundle as properties text file
+		throw new UnsupportedOperationException();
 	}
 	
 	public <O> void writeObject(String filename, O obj) {

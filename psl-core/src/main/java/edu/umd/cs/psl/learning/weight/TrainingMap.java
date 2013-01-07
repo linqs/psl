@@ -35,9 +35,9 @@ import edu.umd.cs.psl.model.predicate.StandardPredicate;
 /**
  * A TrainingMap matches {@link RandomVariableAtom RandomVariableAtoms} in one database
  * to their respective {@link ObservedAtom} in a second database. Any RandomVariableAtoms
- * that do not have a matching ObservedAtom are kept in the set of latent variables. 
+ * that do not have a matching ObservedAtom are kept in the set of latent variables.
+ * 
  * @author Eric Norris
- *
  */
 public class TrainingMap {
 	
@@ -54,8 +54,9 @@ public class TrainingMap {
 	/**
 	 * Initializes the training map of {@link RandomVariableAtom RandomVariableAtoms}
 	 * to {@link ObservedAtom ObservedAtoms}. Any RandomVariableAtom that does not have
-	 * a matching ObservedAtom in the second database are stored in the set of latent
+	 * a matching ObservedAtom in the second Database are stored in the set of latent
 	 * variables.
+	 * 
 	 * @param rvDB			The database containing the RandomVariableAtoms (any other atom types are ignored)
 	 * @param observedDB	The database containing matching ObservedAtoms
 	 */
@@ -97,6 +98,7 @@ public class TrainingMap {
 	
 	/**
 	 * Gets the map created by the constructor.
+	 * 
 	 * @return the training map.
 	 */
 	public Map<RandomVariableAtom, ObservedAtom> getTrainingMap() {
@@ -104,7 +106,8 @@ public class TrainingMap {
 	}
 	
 	/**
-	 * Get the set of latent variables created by the constructor.
+	 * Gets the set of latent variables created by the constructor.
+	 * 
 	 * @return the set of latent variables.
 	 */
 	public Set<RandomVariableAtom> getLatentVariables() {

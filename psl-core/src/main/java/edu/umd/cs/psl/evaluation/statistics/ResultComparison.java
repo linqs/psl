@@ -20,6 +20,9 @@ import java.util.Map;
 
 import edu.umd.cs.psl.model.atom.Atom;
 
+/**
+ * Statistics computed by a {@link ResultComparator}.
+ */
 public interface ResultComparison {
 	
 	public enum BinaryClass {

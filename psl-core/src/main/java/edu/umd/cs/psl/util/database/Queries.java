@@ -37,7 +37,7 @@ import edu.umd.cs.psl.model.atom.QueryAtom;
 import edu.umd.cs.psl.model.predicate.Predicate;
 
 /**
- * Utility methods for common {@link DatabaseQuery} tasks.
+ * Utility methods for common {@link Database} and {@link DatabaseQuery} tasks.
  */
 public class Queries {
 	

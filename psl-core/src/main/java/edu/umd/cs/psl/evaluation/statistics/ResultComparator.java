@@ -17,23 +17,46 @@
 package edu.umd.cs.psl.evaluation.statistics;
 
 import edu.umd.cs.psl.database.Database;
-import edu.umd.cs.psl.database.DatabaseAtomStoreQuery;
 import edu.umd.cs.psl.evaluation.statistics.filter.AtomFilter;
+import edu.umd.cs.psl.model.atom.GroundAtom;
+import edu.umd.cs.psl.model.atom.ObservedAtom;
+import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.predicate.Predicate;
 
+/**
+ * Compares {@link GroundAtom GroundAtoms} in a results {@link Database} with those
+ * in a baseline Database.
+ * <p>
+ * A ResultComparator computes statistics by comparing each {@link RandomVariableAtom}
+ * in the results Database with the corresponding {@link ObservedAtom} in a baseline.
+ * Any GroundAtoms that are not ObservedAtoms in the baseline are not counted towards
+ * the statistics.
+ * <p>
+ * The RandomVariableAtoms in the results Database used for comparison can be filtered
+ * via {@link #setResultFilter(AtomFilter)}. Initially there is no filter.
+ */
 public interface ResultComparator {
 
-	public void setBaseline(DatabaseAtomStoreQuery baseline);
-	
+	/**
+	 * Sets the baseline with which to compare.
+	 * 
+	 * @param db  the baseline Database
+	 */
 	public void setBaseline(Database db);
 	
-	public void setBaselineFilter(AtomFilter af);
-	
+	/**
+	 * Sets a filter on the {@link RandomVariableAtom RandomVariableAtoms}
+	 * in the results Database that will be compared with the baseline.
+	 * 
+	 * @param af  the filter
+	 */
 	public void setResultFilter(AtomFilter af);
 	
-	public void setTolerance(double tolerance);
+//	public void setTolerance(double tolerance);
 	
-	public void setValueComparator(ValueComparator comp);
+//	public void setValueComparator(ValueComparator comp);
+	
+	public ResultComparison compare(Predicate p);
 	
 	public ResultComparison compare(Predicate p, int maxBaseAtoms);
 	

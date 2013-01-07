@@ -18,8 +18,6 @@ package edu.umd.cs.psl.evaluation.result.memory;
 
 import java.util.Map;
 
-import com.google.common.base.Preconditions;
-
 import de.mathnbits.statistics.DoubleDist;
 import edu.umd.cs.psl.evaluation.process.ProcessView;
 import edu.umd.cs.psl.evaluation.result.FullConfidenceAnalysisResult;
@@ -67,13 +65,10 @@ public class MemoryFullConfidenceAnalysisResult implements FullConfidenceAnalysi
 	
 	@Override
 	public double averageKLdivergence(Predicate p, int noBins, FullConfidenceAnalysisResult other) {
-		Preconditions.checkArgument(p.getNumberOfValues()==1);
 		double sumkl = 0.0;
 		int count = 0;
 		for (AtomFunctionVariable atomvar : distributions.keySet()) {
 			Atom atom = atomvar.getAtom();
-			assert atom.getNumberOfValues()==1;
-			assert atom.getVariable().equals(atomvar);
 			if (!atom.getPredicate().equals(p)) continue;
 			sumkl += KLdivergence(atomvar,noBins,other);
 			count++;

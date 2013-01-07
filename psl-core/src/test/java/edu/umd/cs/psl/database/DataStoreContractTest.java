@@ -46,10 +46,9 @@ import edu.umd.cs.psl.model.predicate.FunctionalPredicate;
 import edu.umd.cs.psl.model.predicate.PredicateFactory;
 import edu.umd.cs.psl.model.predicate.SpecialPredicate;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
-import edu.umd.cs.psl.optimizer.conic.ConicProgramSolver;
 
 /**
- * Contract tests for classes that implement {@link ConicProgramSolver}.
+ * Contract tests for classes that implement {@link DataStore}.
  */
 abstract public class DataStoreContractTest {
 	

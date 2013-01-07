@@ -28,10 +28,11 @@ import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.predicate.Predicate;
 
 /**
- * A DatabasePopulator can easily commit a large number of {@link RandomVariableAtom RandomVariableAtoms}
+ * A DatabasePopulator can easily commit a large number of
+ * {@link RandomVariableAtom RandomVariableAtoms}
  * to a database.
+ * 
  * @author Eric Norris
- *
  */
 public class DatabasePopulator {
 	
@@ -49,9 +50,10 @@ public class DatabasePopulator {
 	}
 	
 	/**
-	 * This method substitutes the {@link Variable Variables} from the substitution map into each
+	 * Substitutes the {@link Variable Variables} from the substitution map into each
 	 * {@link QueryAtom} and commits the resulting RandomVariableAtom into the database provided
 	 * to the constructor.
+	 * 
 	 * @param qAtoms			the set of QueryAtoms to perform substitution on
 	 * @param substitutions		the map of Variables to their possible GroundTerm substitutions
 	 */

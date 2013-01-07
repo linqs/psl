@@ -29,13 +29,13 @@ import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
 
 /**
- * Implements the {@link AtomManager} with a twist: this atom manager will only return
- * {@link RandomVariableAtom RandomVariableAtoms} that were persisted in the database 
+ * Implements the {@link AtomManager} with a twist: this AtomManager will only return
+ * {@link RandomVariableAtom RandomVariableAtoms} that were persisted in the Database 
  * at instantiation.
  * <p>
  * All other atoms are returned normally.
+ * 
  * @author Eric Norris <enorris@cs.umd.edu>
- *
  */
 public class PersistedAtomManager implements AtomManager {
 
@@ -53,7 +53,8 @@ public class PersistedAtomManager implements AtomManager {
 	/**
 	 * Returns a PersistedAtomManager with a built-in set of all the database's
 	 * persisted RandomVariableAtoms.
-	 * @param db	the Database to query for all getAtom() calls.
+	 * 
+	 * @param db  the Database to query for all getAtom() calls.
 	 */
 	public PersistedAtomManager(Database db) {
 		this.db = db;
@@ -97,7 +98,7 @@ public class PersistedAtomManager implements AtomManager {
 			if (persistedCache.contains(atom))
 				return atom;
 			else
-				throw new IllegalArgumentException("Can only call getAtom() on persisted atoms using a PersistedAtomManager.");
+				throw new IllegalArgumentException("Can only call getAtom() on persisted RandomVariableAtoms using a PersistedAtomManager.");
 		} else
 			return atom;
 	}

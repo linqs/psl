@@ -21,6 +21,7 @@ import java.util.*;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.Term;
 import edu.umd.cs.psl.model.atom.Atom;
+import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.set.aggregator.EntityAggregatorFunction;
 import edu.umd.cs.psl.model.set.membership.TermMembership;
 import edu.umd.cs.psl.reasoner.function.ConstantNumber;
@@ -88,10 +89,9 @@ public class AggregateSetEquality implements EntityAggregatorFunction {
 	
 	@Override
 	public double aggregateValue(TermMembership set1, TermMembership set2,
-			Set<Atom> comparisonAtoms) {
+			Set<GroundAtom> comparisonAtoms) {
 		double truth = 0.0;
-		for (Atom atom : comparisonAtoms) {
-			assert atom.getNumberOfValues()==1;
+		for (GroundAtom atom : comparisonAtoms) {
 			truth+=getAtomFactor(atom,set1,set2)*atom.getValue();
 		}
 		double sim = constantFactor(set1,set2)*truth;
@@ -107,14 +107,14 @@ public class AggregateSetEquality implements EntityAggregatorFunction {
 	}
 	
 	@Override
-	public ConstraintTerm defineConstraint(Atom setAtom, TermMembership set1,
-			TermMembership set2, Set<Atom> comparisonAtoms) {
+	public ConstraintTerm defineConstraint(GroundAtom setAtom, TermMembership set1,
+			TermMembership set2, Set<GroundAtom> comparisonAtoms) {
 		double coeff = constantFactor(set1,set2);
 		FunctionSum sum = new FunctionSum();		
 		if (comparisonAtoms.isEmpty()) {
 			sum.add(new FunctionSummand(1.0,new ConstantNumber(getDefaultSimilarityforEmptySets())));
 		} else {
-			for (Atom atom : comparisonAtoms) {
+			for (GroundAtom atom : comparisonAtoms) {
 				sum.add(new FunctionSummand(coeff*getAtomFactor(atom,set1,set2),atom.getVariable()));
 			}
 		}
@@ -124,7 +124,7 @@ public class AggregateSetEquality implements EntityAggregatorFunction {
 	
 	@Override
 	public boolean enoughSupport(TermMembership set1,
-			TermMembership set2, Set<Atom> comparisonAtoms) {
+			TermMembership set2, Set<GroundAtom> comparisonAtoms) {
 		if (set1.size()<=0.0 || set2.size()<=0.0) return false;
 		return comparisonAtoms.size()*constantFactor(set1,set2)>=supportThreshold;
 	}

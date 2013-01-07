@@ -16,24 +16,25 @@
  */
 package edu.umd.cs.psl.evaluation.resultui;
 
-import edu.umd.cs.psl.database.DatabaseAtomStoreQuery;
-import edu.umd.cs.psl.database.ResultList;
-import edu.umd.cs.psl.evaluation.debug.AtomPrinter;
+import java.util.Iterator;
+
+import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.evaluation.result.FullInferenceResult;
 import edu.umd.cs.psl.evaluation.resultui.printer.AtomPrintStream;
 import edu.umd.cs.psl.evaluation.resultui.printer.DefaultAtomPrintStream;
 import edu.umd.cs.psl.evaluation.statistics.ResultComparator;
 import edu.umd.cs.psl.evaluation.statistics.SimpleResultComparator;
-import edu.umd.cs.psl.model.atom.Atom;
+import edu.umd.cs.psl.model.atom.AtomCache;
+import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.predicate.Predicate;
 
 public class UIFullInferenceResult {
 	
-	private final DatabaseAtomStoreQuery dbproxy;
+	private final Database db;
 	private final FullInferenceResult statistics;
 	
-	public UIFullInferenceResult(DatabaseAtomStoreQuery db, FullInferenceResult stats) {
-		dbproxy = db;
+	public UIFullInferenceResult(Database db, FullInferenceResult stats) {
+		this.db = db;
 		statistics = stats;
 	}
 	
@@ -41,22 +42,11 @@ public class UIFullInferenceResult {
 		printAtoms(p,new DefaultAtomPrintStream());
 	}
 	
-	public void printAtoms(Predicate p, boolean onlyNonDefault) {
-		printAtoms(p,new DefaultAtomPrintStream(),onlyNonDefault);	
-	}
-	
 	public void printAtoms(Predicate p, AtomPrintStream printer) {
-		printAtoms(p,printer,true);
-	}
-	
-	public void printAtoms(Predicate p, AtomPrintStream printer, boolean onlyNonDefault) {
-		ResultList res = dbproxy.getAtoms(p);
-		for (int i=0;i<res.size();i++) {
-			Atom atom = dbproxy.getConsideredAtom(p, res.get(i));
-			if (atom!=null) {
-				if (!onlyNonDefault || atom.hasNonDefaultValues())
-					printer.printAtom(atom);
-			}
+		AtomCache cache = db.getAtomCache();
+		for (Iterator<GroundAtom> itr = cache.getCachedAtoms(p).iterator(); itr.hasNext();) {
+			GroundAtom atom = itr.next();
+			printer.printAtom(atom);
 		}
 		printer.close();
 	}
@@ -74,7 +64,7 @@ public class UIFullInferenceResult {
 	}
 	
 	public ResultComparator compareResults() {
-		return new SimpleResultComparator(dbproxy);
+		return new SimpleResultComparator(db);
 	}
 	
 }

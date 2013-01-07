@@ -20,7 +20,6 @@ import java.text.DecimalFormat;
 import java.util.Map;
 
 import de.mathnbits.statistics.DoubleDist;
-import edu.umd.cs.psl.database.DatabaseAtomStoreQuery;
 import edu.umd.cs.psl.evaluation.process.ProcessView;
 import edu.umd.cs.psl.evaluation.result.FullConfidenceAnalysisResult;
 import edu.umd.cs.psl.model.predicate.Predicate;
@@ -31,11 +30,9 @@ public class UIFullConfidenceAnalysisResult implements FullConfidenceAnalysisRes
 	
 	private final static double defaultMeanThreshold = 0.1;
 	
-	private final DatabaseAtomStoreQuery dbproxy;
 	private final FullConfidenceAnalysisResult result;	
 	
-	public UIFullConfidenceAnalysisResult(DatabaseAtomStoreQuery db,FullConfidenceAnalysisResult stats) {
-		dbproxy = db;
+	public UIFullConfidenceAnalysisResult(FullConfidenceAnalysisResult stats) {
 		result = stats;
 	}
 	

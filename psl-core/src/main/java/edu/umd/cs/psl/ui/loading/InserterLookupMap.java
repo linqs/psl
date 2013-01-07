@@ -22,6 +22,8 @@ import edu.umd.cs.psl.database.loading.Inserter;
 
 public class InserterLookupMap extends HashMap<String,Inserter> implements InserterLookup {
 
+	private static final long serialVersionUID = 8610693255851713724L;
+
 	@Override
 	public Inserter get(String predicateName) {
 		return super.get(predicateName);

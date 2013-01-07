@@ -23,7 +23,7 @@ import java.util.Map;
 import com.google.common.base.Preconditions;
 
 import edu.umd.cs.psl.model.argument.Term;
-import edu.umd.cs.psl.model.atom.Atom;
+import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.predicate.Predicate;
 
 public class MaxValueFilter implements AtomFilter {
@@ -38,15 +38,14 @@ public class MaxValueFilter implements AtomFilter {
 	
 	
 	@Override
-	public Iterator<Atom> filter(Iterator<Atom> input) {
-		Map<ArgumentWrapper,Atom> argMapper = new HashMap<ArgumentWrapper,Atom>();
+	public Iterator<GroundAtom> filter(Iterator<GroundAtom> input) {
+		Map<ArgumentWrapper,GroundAtom> argMapper = new HashMap<ArgumentWrapper,GroundAtom>();
 		
 		while (input.hasNext()) {
-			Atom atom = input.next();
+			GroundAtom atom = input.next();
 			Preconditions.checkArgument(atom.getPredicate().equals(predicate),"Predicate of atom does not match filter predicate!");
-			Preconditions.checkArgument(atom.getNumberOfValues()==1,"MaxValueFilter works only with single value atoms.");
 			ArgumentWrapper w = new ArgumentWrapper(atom.getArguments());
-			Atom existing = argMapper.get(w);
+			GroundAtom existing = argMapper.get(w);
 			if (existing==null || existing.getValue()<atom.getValue()) {
 				argMapper.put(w, atom);
 			}			

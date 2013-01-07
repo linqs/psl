@@ -18,7 +18,7 @@ package edu.umd.cs.psl.ui.aggregators;
 
 import java.util.Set;
 
-import edu.umd.cs.psl.model.atom.Atom;
+import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.set.membership.TermMembership;
 
 
@@ -50,7 +50,7 @@ public class AggregateSetAverage extends AggregateSetEquality {
 
 	@Override
 	public boolean enoughSupport(TermMembership set1,
-			TermMembership set2, Set<Atom> comparisonAtoms) {
+			TermMembership set2, Set<GroundAtom> comparisonAtoms) {
 		if (set1.size()<=0.0 || set2.size()<=0.0) return false;
 		return comparisonAtoms.size()*constantFactor(set1,set2)>=supportThreshold;
 	}

@@ -20,14 +20,22 @@ import edu.umd.cs.psl.model.kernel.Kernel;
 
 public class Filters {
 
-	public static final com.google.common.base.Predicate<Kernel> ProbabilisticEvidence = new com.google.common.base.Predicate<Kernel>() {
+	public static final com.google.common.base.Predicate<Kernel> CompatibilityKernel = new com.google.common.base.Predicate<Kernel>() {
 
 		@Override
-		public boolean apply(Kernel et) {
-			return et.isCompatibilityKernel();
+		public boolean apply(Kernel k) {
+			return k.isCompatibilityKernel();
 		}
 		
 	};
 	
+	public static final com.google.common.base.Predicate<Kernel> ConstraintKernel = new com.google.common.base.Predicate<Kernel>() {
+
+		@Override
+		public boolean apply(Kernel k) {
+			return !k.isCompatibilityKernel();
+		}
+		
+	};
 	
 }
