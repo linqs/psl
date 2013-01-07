@@ -400,9 +400,9 @@ public class RDBMSDatabase implements Database {
 				else if (argument instanceof Entity) {
 					UniqueID id = ((Entity)argument).getID();
 					if (id instanceof RDBMSUniqueIntID)
-						ps.setInt(paramIndex, ((RDBMSUniqueIntID)argument).getID());
+						ps.setInt(paramIndex, ((RDBMSUniqueIntID)id).getID());
 					else if (id instanceof RDBMSUniqueStringID)
-						ps.setString(paramIndex, ((RDBMSUniqueStringID)argument).getID());
+						ps.setString(paramIndex, ((RDBMSUniqueStringID)id).getID());
 				} else {
 					log.error("Unknown type: " + argument.getClass().getName());
 				}
