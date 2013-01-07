@@ -23,7 +23,7 @@ import edu.umd.cs.psl.evaluation.result.FullInferenceResult;
 import edu.umd.cs.psl.evaluation.resultui.printer.AtomPrintStream;
 import edu.umd.cs.psl.evaluation.resultui.printer.DefaultAtomPrintStream;
 import edu.umd.cs.psl.evaluation.statistics.ResultComparator;
-import edu.umd.cs.psl.evaluation.statistics.SimpleResultComparator;
+import edu.umd.cs.psl.evaluation.statistics.DiscretePredictionComparator;
 import edu.umd.cs.psl.model.atom.AtomCache;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.predicate.Predicate;
@@ -64,7 +64,7 @@ public class UIFullInferenceResult {
 	}
 	
 	public ResultComparator compareResults() {
-		return new SimpleResultComparator(db);
+		return new DiscretePredictionComparator(db);
 	}
 	
 }

@@ -16,12 +16,20 @@
  */
 package edu.umd.cs.psl.evaluation.statistics;
 
+import edu.umd.cs.psl.model.atom.ObservedAtom;
+import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.predicate.Predicate;
 
-public interface RankingResultComparator extends ResultComparator {
+/**
+ * Computes statistics by comparing the truth value of each {@link RandomVariableAtom}
+ * in the results Database with that of the corresponding {@link ObservedAtom} in a baseline.
+ * Any GroundAtoms that are not ObservedAtoms in the baseline are not counted towards
+ * the statistics.
+ */
+public interface PredictionComparator extends ResultComparator {
 
-	public void setRankingComparator(RankingComparator comp);
+	public PredictionStatistics compare(Predicate p);
 	
-	public double compare(Predicate p);
+	public PredictionStatistics compare(Predicate p, int maxBaseAtoms);
 	
 }

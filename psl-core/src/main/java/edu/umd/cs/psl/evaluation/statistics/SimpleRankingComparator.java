@@ -26,31 +26,30 @@ import org.slf4j.LoggerFactory;
 
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.evaluation.statistics.filter.AtomFilter;
-import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.util.collection.HashList;
+import edu.umd.cs.psl.util.database.Queries;
 
-public class SimpleRankingResultComparator implements RankingResultComparator {
+public class SimpleRankingComparator implements RankingComparator {
 
-	private static final Logger log = LoggerFactory.getLogger(SimpleRankingResultComparator.class);
+	private static final Logger log = LoggerFactory.getLogger(SimpleRankingComparator.class);
 	
 	private final Database result;
 	private Database baseline;
-	
 	private AtomFilter resultFilter = AtomFilter.NoFilter;
-	private AtomFilter baselineFilter = AtomFilter.NoFilter;
+	private RankingScore rankScore; 
 	
-	private RankingComparator rankCompare = RankingComparator.Kendall;
-	
-	public SimpleRankingResultComparator(Database result) {
+	public SimpleRankingComparator(Database result) {
 		this.result=result;
 		baseline = null;
+		resultFilter = AtomFilter.NoFilter;
+		rankScore = null;
 	}
 
 	@Override
-	public void setRankingComparator(RankingComparator comp) {
-		rankCompare = comp;
+	public void setRankingScore(RankingScore score) {
+		rankScore = score;
 	}
 
 	@Override
@@ -62,33 +61,28 @@ public class SimpleRankingResultComparator implements RankingResultComparator {
 	public void setResultFilter(AtomFilter af) {
 		resultFilter = af;
 	}
-
-	@Override
-	public void setBaselineFilter(AtomFilter af) {
-		baselineFilter = af;
-	}
 	
 	@Override
 	public double compare(Predicate p) {
-		/* Base atoms */
-		List<GroundAtom> baseAtoms = new HashList<GroundAtom>();
-		Iterator<Atom> itr = baselineFilter.filter(baseline.getAtomSet(p).iterator());
-		while (itr.hasNext())
-			baseAtoms.add(itr.next());
-		Collections.sort(baseAtoms, new AtomComparator());
-		
-		log.debug("Collected and sorted base atoms. Size: {}", baseAtoms.size());
-		
 		/* Result atoms */
 		List<GroundAtom> resultAtoms = new HashList<GroundAtom>();
-		itr = resultFilter.filter(result.getAtomSet(p).iterator());
+		Iterator<GroundAtom> itr = resultFilter.filter(Queries.getAllAtoms(result, p).iterator());
 		while (itr.hasNext())
 			resultAtoms.add(itr.next());
 		Collections.sort(resultAtoms, new AtomComparator());
 		
 		log.debug("Collected and sorted result atoms. Size: {}", resultAtoms.size());
 		
-		return rankCompare.getScore(baseAtoms, resultAtoms);
+		/* Baseline atoms */
+		List<GroundAtom> baselineAtoms = new HashList<GroundAtom>();
+		itr = resultFilter.filter(Queries.getAllAtoms(baseline, p).iterator());
+		while (itr.hasNext())
+			baselineAtoms.add(itr.next());
+		Collections.sort(baselineAtoms, new AtomComparator());
+		
+		log.debug("Collected and sorted base atoms. Size: {}", baselineAtoms.size());
+		
+		return rankScore.getScore(baselineAtoms, resultAtoms);
 		
 	}
 	

@@ -36,7 +36,7 @@ import edu.umd.cs.psl.database.ResultList;
 import edu.umd.cs.psl.database.ResultListValues;
 import edu.umd.cs.psl.database.rdbms.RDBMSResultList;
 import edu.umd.cs.psl.database.rdbms.RDBMSUniqueIntID;
-import edu.umd.cs.psl.evaluation.statistics.ResultComparison.BinaryClass;
+import edu.umd.cs.psl.evaluation.statistics.PredictionStatistics.BinaryClass;
 import edu.umd.cs.psl.model.argument.ArgumentType;
 import edu.umd.cs.psl.model.argument.ArgumentTypes;
 import edu.umd.cs.psl.model.argument.Entity;
@@ -203,7 +203,7 @@ public class SimpleResultComparatorTest {
 		truthQuery = new DatabaseAtomStoreQuery(store);
 		
 		// create result comparison
-		comparator = new SimpleResultComparator(infQuery);
+		comparator = new DiscretePredictionComparator(infQuery);
 		comparator.setBaseline(truthQuery);
 	}
 
@@ -211,7 +211,7 @@ public class SimpleResultComparatorTest {
 	public void testPrecision() {
 		for (double tol = 0.1; tol <= 1.0; tol += 0.1) {
 			comparator.setTolerance(tol);
-			ResultComparison comparison = comparator.compare(predicate, 6*5);
+			PredictionStatistics comparison = comparator.compare(predicate, 6*5);
 			double prec = comparison.getPrecision(BinaryClass.POSITIVE);
 			if (tol <= 0.8)
 				assertTrue(compare(prec, 0.6, 1e-10) == 0.0);
@@ -224,7 +224,7 @@ public class SimpleResultComparatorTest {
 	public void testRecall() {
 		for (double tol = 0.1; tol <= 1.0; tol += 0.1) {
 			comparator.setTolerance(tol);
-			ResultComparison comparison = comparator.compare(predicate, 6*5);
+			PredictionStatistics comparison = comparator.compare(predicate, 6*5);
 			double recall = comparison.getRecall(BinaryClass.POSITIVE);
 			if (tol <= 0.8)
 				assertTrue(compare(recall, 0.75, 1e-10) == 0.0);
@@ -237,7 +237,7 @@ public class SimpleResultComparatorTest {
 	public void testF1() {
 		for (double tol = 0.1; tol <= 1.0; tol += 0.1) {
 			comparator.setTolerance(tol);
-			ResultComparison comparison = comparator.compare(predicate, 6*5);
+			PredictionStatistics comparison = comparator.compare(predicate, 6*5);
 			double f1 = comparison.getF1(BinaryClass.POSITIVE);
 			if (tol <= 0.8)
 				assertTrue(compare(f1, 2.0/3.0, 1e-10) == 0.0);
@@ -250,7 +250,7 @@ public class SimpleResultComparatorTest {
 	public void testAccuracy() {
 		for (double tol = 0.1; tol <= 1.0; tol += 0.1) {
 			comparator.setTolerance(tol);
-			ResultComparison comparison = comparator.compare(predicate, 6*5);
+			PredictionStatistics comparison = comparator.compare(predicate, 6*5);
 			double acc = comparison.getAccuracy();
 			if (tol <= 0.8)
 				assertTrue(compare(acc, 0.9, 1e-10) == 0.0);

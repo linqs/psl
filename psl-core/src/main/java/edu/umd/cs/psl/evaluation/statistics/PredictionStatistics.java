@@ -16,36 +16,13 @@
  */
 package edu.umd.cs.psl.evaluation.statistics;
 
-import java.util.Map;
-
-import edu.umd.cs.psl.model.atom.Atom;
-
 /**
- * Statistics computed by a {@link ResultComparator}.
+ * Statistics computed by a {@link PredictionComparator}.
  */
-public interface ResultComparison {
+public interface PredictionStatistics {
 	
-	public enum BinaryClass {
-		NEGATIVE,
-		POSITIVE
-	}
+	public double getError();
 	
-	public Iterable<Map.Entry<Atom, Double>> getErrors();
-	
-	public Iterable<Atom> getCorrectAtoms();
-	
-	public Iterable<Map.Entry<Atom, Double>> getFalsePositives();
-	
-	public Iterable<Map.Entry<Atom, Double>> getFalseNegatives();
-	
-	public double getPrecision(BinaryClass c);
-	
-	public double getRecall(BinaryClass c);
-	
-	public double getF1(BinaryClass c);
-	
-	public double getAccuracy();
-	
-	public int getNoBaseAtoms();
+	public int getNumAtoms();
 	
 }
