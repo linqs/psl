@@ -17,6 +17,7 @@
 package edu.umd.cs.psl.database.RDBMS;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -42,15 +43,16 @@ import com.healthmarketscience.sqlbuilder.BinaryCondition;
 import com.healthmarketscience.sqlbuilder.CustomSql;
 import com.healthmarketscience.sqlbuilder.InCondition;
 import com.healthmarketscience.sqlbuilder.InsertQuery;
+import com.healthmarketscience.sqlbuilder.QueryPreparer;
 import com.healthmarketscience.sqlbuilder.SelectQuery;
 import com.healthmarketscience.sqlbuilder.UpdateQuery;
 
+import edu.umd.cs.psl.database.AtomRecord;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.database.DatabaseEventObserver;
 import edu.umd.cs.psl.database.PSLValue;
 import edu.umd.cs.psl.database.Partition;
 import edu.umd.cs.psl.database.PredicatePosition;
-import edu.umd.cs.psl.database.AtomRecord;
 import edu.umd.cs.psl.database.ResultList;
 import edu.umd.cs.psl.database.ResultListValues;
 import edu.umd.cs.psl.database.UniqueID;
@@ -59,7 +61,9 @@ import edu.umd.cs.psl.model.argument.ArgumentFactory;
 import edu.umd.cs.psl.model.argument.Attribute;
 import edu.umd.cs.psl.model.argument.Entity;
 import edu.umd.cs.psl.model.argument.GroundTerm;
+import edu.umd.cs.psl.model.argument.NumberAttribute;
 import edu.umd.cs.psl.model.argument.Term;
+import edu.umd.cs.psl.model.argument.TextAttribute;
 import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.argument.type.ArgumentType;
 import edu.umd.cs.psl.model.argument.type.ArgumentTypes;
@@ -135,6 +139,7 @@ public class RDBMSDatabase implements Database {
 	private final SetMultimap<ArgumentType,Entity> allEntities;
 	
 	private final ArgumentFactory argFactory;
+	private HashMap<Predicate, PreparedStatement> queryStatement;
 	
 	public RDBMSDatabase(RDBMSDataStore parent, Connection con, Partition write, Partition[] reads) {
 		parentDataStore = parent;
@@ -152,6 +157,8 @@ public class RDBMSDatabase implements Database {
 		isPriorInitialized = defaultisPriorInitialized;
 		persistDefaultRVValues = defaultPersistDefaultRVValues;
 		registerFunctionAlias();
+		
+		this.queryStatement = new HashMap<Predicate, PreparedStatement>();
 	}
 
 	@Override
@@ -170,8 +177,28 @@ public class RDBMSDatabase implements Database {
 	public void registerPredicate(RDBMSPredicateHandle ph) {
 		if (predicateHandles.containsKey(ph.predicate())) throw new IllegalArgumentException("Predicate has already been registered!");
 		predicateHandles.put(ph.predicate(), ph);
+		
+		createQueryStatement(ph);
 	}
 
+	private void createQueryStatement(RDBMSPredicateHandle ph) {
+		SelectQuery q = new SelectQuery();
+		QueryPreparer preparer = new QueryPreparer();
+		QueryPreparer.MultiPlaceHolder placeHolder = preparer.getNewMultiPlaceHolder();
+
+		q.addAllColumns().addCustomFromTable(ph.tableName());
+		q.addCondition(new InCondition(new CustomSql(ph.partitionColumn()), readIDs));
+		for (int i = 0; i< ph.argumentColumns().length; i++) {
+			q.addCondition(BinaryCondition.equalTo(new CustomSql(ph.argumentColumns()[i]), placeHolder));
+		}
+
+		try {
+			PreparedStatement ps = db.prepareStatement(q.toString());
+			queryStatement.put(ph.predicate(), ps);
+		} catch (SQLException e) {
+			throw new RuntimeException("Could not create prepared statement.", e);
+		}
+	}
 	
 	RDBMSPredicateHandle getHandle(Predicate p) {
 		RDBMSPredicateHandle ph = predicateHandles.get(p);
@@ -358,6 +385,29 @@ public class RDBMSDatabase implements Database {
 		return q;
 	}
 	
+	private ResultSet queryDBForAtom(Atom a) {
+		PreparedStatement ps = queryStatement.get(a.getPredicate());
+		Term[] arguments = a.getArguments();
+		try {
+			for (int i = 0; i < arguments.length; i++) {
+				int paramIndex = i + 1;
+				Term argument = arguments[i];
+
+				if (argument instanceof NumberAttribute)
+					ps.setDouble(paramIndex, ((NumberAttribute)argument).getAttribute());
+				else if (argument instanceof TextAttribute)
+					ps.setString(paramIndex, ((TextAttribute)argument).getAttribute());
+				else if (argument instanceof RDBMSUniqueIntID)
+					ps.setInt(paramIndex, ((RDBMSUniqueIntID)argument).getID());
+				else if (argument instanceof RDBMSUniqueStringID)
+					ps.setString(paramIndex, ((RDBMSUniqueStringID)argument).getID());
+			}
+			return ps.executeQuery();
+		} catch (SQLException e) {
+			throw new RuntimeException("Error querying DB for atom.", e);
+		}
+	}
+	
 	@Override
 	public AtomRecord getAtom(Predicate p, GroundTerm[] arguments) {
 		RDBMSPredicateHandle ph = getHandle(p);
@@ -366,75 +416,61 @@ public class RDBMSDatabase implements Database {
 		AtomRecord atom=null;
 		
 		if (!notFound) {
-			SelectQuery q = queryAtom(p,arguments);
-			q.addCondition(new InCondition(new CustomSql(ph.partitionColumn()),readIDs));
-			String query = q.validate().toString();
-			log.trace(query);
-	
-			try {
-				Statement stmt = db.createStatement();
-				try {
-				    ResultSet rs = stmt.executeQuery(query);
-				    try {
-				    	if (rs.next()) { //Exists in database
-				    		notFound=false;
-				    		double[] values = new double[p.getNumberOfValues()];
-				    		double[] confidences = new double[p.getNumberOfValues()];
-				    		for (int i=0;i<ph.valueColumns().length;i++) {
-				    			values[i]=rs.getDouble(ph.valueColumns()[i]);
-				    		}
-				    		for (int i=0;i<ph.confidenceColumns().length;i++) {
-				    			double conf = rs.getDouble(ph.confidenceColumns()[i]);
-				    			if (ConfidenceValues.isValidValue(conf)) 
-				    				confidences[i]=conf;
-				    			else
-				    				confidences[i]=ConfidenceValues.defaultConfidence;
-				    		}
-				    		
-				    		if (ph.isClosed()) {
-				    			if (!ph.hasSoftValues()) {
-				    				values = p.getStandardValues();
-				    			}
-				    			if (!ph.hasConfidenceValues()) {
-				    				confidences = ConfidenceValues.getMaxConfidence(p.getNumberOfValues());
-				    			}
-				    			atom = new AtomRecord(values,confidences,AtomRecord.Status.FACT);
-				    		} else {
-				    			assert ph.hasSoftValues();
-				    			assert ph.hasConfidenceValues();
-				    			PSLValue pslval = PSLValue.parse(rs.getInt(ph.pslColumn()));
-				    			atom = new AtomRecord(values,confidences,AtomRecord.Status.RV);
-				    			switch(pslval) {
-				    			case Fact:
-				    				atom.setStatus(AtomRecord.Status.CERTAINTY);
-				    				break;
-				    			case DefaultFact:
-				    				atom.setStatus(AtomRecord.Status.CERTAINTY);
-				    				break;
-				    			case DefaultRV:
-				    				atom.setStatus(AtomRecord.Status.RV);
-				    				break;
-				    			case ActiveRV:
-				    				atom.setStatus(AtomRecord.Status.RV);
-				    				break;
-				    			default: throw new IllegalArgumentException("Unknown psl value: " + pslval); 
-				    			}
-				    		}
-				    	} else { //Not found
-				    		notFound = true;
-				    	}
-	
-				    } finally {
-				        rs.close();
-				    }
-				} finally {
-				    stmt.close();
-				}
-			} catch(SQLException e) {
-				log.error("SQL error: {}",e.getMessage());
-				throw new AssertionError(e);
-			}
+		    ResultSet rs = queryDBForAtom(new TemplateAtom(p, arguments));
+		    try {
+		    	if (rs.next()) { //Exists in database
+		    		notFound=false;
+		    		double[] values = new double[p.getNumberOfValues()];
+		    		double[] confidences = new double[p.getNumberOfValues()];
+		    		for (int i=0;i<ph.valueColumns().length;i++) {
+		    			values[i]=rs.getDouble(ph.valueColumns()[i]);
+		    		}
+		    		for (int i=0;i<ph.confidenceColumns().length;i++) {
+		    			double conf = rs.getDouble(ph.confidenceColumns()[i]);
+		    			if (ConfidenceValues.isValidValue(conf)) 
+		    				confidences[i]=conf;
+		    			else
+		    				confidences[i]=ConfidenceValues.defaultConfidence;
+		    		}
+		    		
+		    		if (ph.isClosed()) {
+		    			if (!ph.hasSoftValues()) {
+		    				values = p.getStandardValues();
+		    			}
+		    			if (!ph.hasConfidenceValues()) {
+		    				confidences = ConfidenceValues.getMaxConfidence(p.getNumberOfValues());
+		    			}
+		    			atom = new AtomRecord(values,confidences,AtomRecord.Status.FACT);
+		    		} else {
+		    			assert ph.hasSoftValues();
+		    			assert ph.hasConfidenceValues();
+		    			PSLValue pslval = PSLValue.parse(rs.getInt(ph.pslColumn()));
+		    			atom = new AtomRecord(values,confidences,AtomRecord.Status.RV);
+		    			switch(pslval) {
+		    			case Fact:
+		    				atom.setStatus(AtomRecord.Status.CERTAINTY);
+		    				break;
+		    			case DefaultFact:
+		    				atom.setStatus(AtomRecord.Status.CERTAINTY);
+		    				break;
+		    			case DefaultRV:
+		    				atom.setStatus(AtomRecord.Status.RV);
+		    				break;
+		    			case ActiveRV:
+		    				atom.setStatus(AtomRecord.Status.RV);
+		    				break;
+		    			default: throw new IllegalArgumentException("Unknown psl value: " + pslval); 
+		    			}
+		    		}
+		    	} else { //Not found
+		    		notFound = true;
+		    	}
+
+		    } catch (SQLException ex) {
+		    	throw new RuntimeException(ex);
+		    }
 		}
+		
 		if (notFound) {
 			assert atom==null;
     		if (ph.isClosed()) {
@@ -445,7 +481,6 @@ public class RDBMSDatabase implements Database {
 		}
 		assert atom!=null;
 		return atom;
-
 	}
 	
 	@Override
