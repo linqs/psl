@@ -16,14 +16,14 @@
  */
 package edu.umd.cs.psl.model.kernel.setdefinition;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
-
 import edu.umd.cs.psl.model.kernel.BindingMode;
 import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
@@ -46,7 +46,7 @@ public class GroundSetDefinition implements GroundConstraintKernel {
 
 	private final SetDefinitionKernel definitionType;
 	
-	private final RandomVariableAtom setAtom;
+	private final GroundAtom setAtom;
 	
 	private final TermMembership set1;
 	private final TermMembership set2;
@@ -55,14 +55,16 @@ public class GroundSetDefinition implements GroundConstraintKernel {
 	
 	private final int hashcode;
 	
-	GroundSetDefinition(SetDefinitionKernel s, RandomVariableAtom atom, TermMembership s1, TermMembership s2, Set<GroundAtom> compAtoms) {
+	GroundSetDefinition(SetDefinitionKernel s, GroundAtom atom, TermMembership s1, TermMembership s2, Set<GroundAtom> compAtoms) {
 		assert s!=null;
 		definitionType = s;
 		setAtom = atom;
 		set1 = s1;
 		set2 = s2;
 		referencedAtoms = compAtoms;
-		setAtom.setValue(getAggregateValue());
+		
+		if (atom instanceof RandomVariableAtom)
+			((RandomVariableAtom) setAtom).setValue(getAggregateValue());
 		
 		hashcode = new HashCodeBuilder().append(setAtom).toHashCode();
 	}
@@ -144,7 +146,7 @@ public class GroundSetDefinition implements GroundConstraintKernel {
 	@Override
 	public BindingMode getBinding(Atom atom) {
 		if (referencedAtoms.contains(atom)) {
-			if (setAtom.isActive()) 
+			if (((GroundAtom) atom).getValue() > 0.0)
 				return BindingMode.StrongRV;
 			else return BindingMode.WeakRV;
 		} else if (setAtom.equals(atom)) {

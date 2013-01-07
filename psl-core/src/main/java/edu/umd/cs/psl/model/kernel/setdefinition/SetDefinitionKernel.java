@@ -262,10 +262,7 @@ public class SetDefinitionKernel extends AbstractKernel {
 	
 	private void newSetDefinition(AtomManager manager, GroundKernelStore gks, GroundTerm[] args, boolean forceCreation) {
 		// TODO Fix me Atom setAtom = app.getAtomStore().getConsideredAtom(setPredicate, args);
-		GroundAtom atom = manager.getAtom(setPredicate, args);
-		if (!(atom instanceof RandomVariableAtom))
-			throw new RuntimeException("AtomManager did not return RandomVariableAtom for predicate " + setPredicate.toString());
-		RandomVariableAtom setAtom = (RandomVariableAtom)atom;
+		GroundAtom setAtom = manager.getAtom(setPredicate, args);
 		//If the definition already exists, then we can directly return
 		if (setAtom!=null && !setAtom.getRegisteredGroundKernels(this).isEmpty()) return;
 		
@@ -311,14 +308,12 @@ public class SetDefinitionKernel extends AbstractKernel {
 			}
 		}
 		if (forceCreation || enoughSupport(manager, members[0], members[1])) {
-			// No need to check cast because of previous getAtom call.
-			setAtom = (RandomVariableAtom) manager.getAtom(setPredicate, args);	
 			//log.debug("New set definition: {}",Arrays.toString(args));
 			Set<GroundAtom> compAtoms = new HashSet<GroundAtom>();
 			boolean isEmpty = true;
 			for (GroundTerm s1 : members[0]) {
 				for (GroundTerm s2 : members[1]) {
-					atom = manager.getAtom(comparisonPredicate, new GroundTerm[]{s1,s2});
+					GroundAtom atom = manager.getAtom(comparisonPredicate, new GroundTerm[]{s1,s2});
 					//log.debug("Added atom: {}",atom);
 					compAtoms.add(atom);
 					isEmpty = false; 
@@ -329,9 +324,6 @@ public class SetDefinitionKernel extends AbstractKernel {
 			if (isEmpty) {
 				double truthval = setCompareFct.aggregateValue(members[0], members[1], compAtoms);
 				GroundEmptySetDefinition edef = new GroundEmptySetDefinition(this,setAtom,truthval);
-				
-				setAtom.setValue(truthval);
-				setAtom.setConfidenceValue(Double.NaN);
 				gks.addGroundKernel(edef);
 			} else {
 				GroundSetDefinition sdef = new GroundSetDefinition(this, setAtom, members[0], members[1], compAtoms);

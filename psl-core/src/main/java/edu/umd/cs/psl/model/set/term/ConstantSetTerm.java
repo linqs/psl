@@ -78,7 +78,7 @@ public class ConstantSetTerm implements BasicSetTerm {
 
 	@Override
 	public ArgumentType getLeafType() {
-		return element.getType();
+		return ArgumentType.getType(element);
 	}
 
 	@Override

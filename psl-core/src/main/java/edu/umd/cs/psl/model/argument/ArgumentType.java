@@ -90,6 +90,14 @@ public enum ArgumentType {
 	 * @param term  the term to check
 	 * @return TRUE if term is an instance of the corresponding type
 	 */
-	abstract public boolean isInstance(GroundTerm term); 
+	abstract public boolean isInstance(GroundTerm term);
+	
+	public static ArgumentType getType(GroundTerm term) {
+		for (ArgumentType type : ArgumentType.values())
+			if (type.isInstance(term))
+				return type;
+		
+		throw new IllegalArgumentException("Term is of unknown type : " + term);
+	}
 	
 }

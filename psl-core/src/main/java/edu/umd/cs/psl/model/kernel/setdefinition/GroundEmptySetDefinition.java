@@ -34,13 +34,16 @@ import edu.umd.cs.psl.reasoner.function.FunctionSummand;
 public class GroundEmptySetDefinition implements GroundConstraintKernel {
 
 	private final SetDefinitionKernel kernel;
-	private final RandomVariableAtom atom;
+	private final GroundAtom atom;
 	private double value;
 	
-	public GroundEmptySetDefinition(SetDefinitionKernel k, RandomVariableAtom atom, double val) {
+	public GroundEmptySetDefinition(SetDefinitionKernel k, GroundAtom atom, double val) {
 		this.atom = atom;
 		value = val;
 		kernel = k;
+		
+		if (atom instanceof RandomVariableAtom)
+			((RandomVariableAtom) atom).setValue(value);
 	}
 	
 	@Override
@@ -62,9 +65,12 @@ public class GroundEmptySetDefinition implements GroundConstraintKernel {
 	@Override
 	public BindingMode getBinding(Atom atom) {
 		if (atom.equals(this.atom)) {
-			if (( atom.getPredicate()).isNonDefaultValues(new double[]{value})) return BindingMode.StrongCertainty;
-			else return BindingMode.WeakCertainty;
-		} else return BindingMode.NoBinding;
+			if (((GroundAtom) atom).getValue() > 0.0)
+				return BindingMode.StrongCertainty;
+			else
+				return BindingMode.WeakCertainty;
+		} else
+			return BindingMode.NoBinding;
 	}
 
 	@Override
