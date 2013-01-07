@@ -397,10 +397,15 @@ public class RDBMSDatabase implements Database {
 					ps.setDouble(paramIndex, ((NumberAttribute)argument).getAttribute());
 				else if (argument instanceof TextAttribute)
 					ps.setString(paramIndex, ((TextAttribute)argument).getAttribute());
-				else if (argument instanceof RDBMSUniqueIntID)
-					ps.setInt(paramIndex, ((RDBMSUniqueIntID)argument).getID());
-				else if (argument instanceof RDBMSUniqueStringID)
-					ps.setString(paramIndex, ((RDBMSUniqueStringID)argument).getID());
+				else if (argument instanceof Entity) {
+					UniqueID id = ((Entity)argument).getID();
+					if (id instanceof RDBMSUniqueIntID)
+						ps.setInt(paramIndex, ((RDBMSUniqueIntID)argument).getID());
+					else if (id instanceof RDBMSUniqueStringID)
+						ps.setString(paramIndex, ((RDBMSUniqueStringID)argument).getID());
+				} else {
+					log.error("Unknown type: " + argument.getClass().getName());
+				}
 			}
 			return ps.executeQuery();
 		} catch (SQLException e) {
