@@ -18,24 +18,22 @@ package edu.umd.cs.psl.model.kernel.rule;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
-import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.formula.Formula;
-import edu.umd.cs.psl.model.kernel.CompatabilityKernel;
+import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.model.parameters.PositiveWeight;
 import edu.umd.cs.psl.model.parameters.Weight;
 
-public class CompatibilityRuleKernel extends AbstractRuleKernel implements CompatabilityKernel {
+public class CompatibilityRuleKernel extends AbstractRuleKernel implements CompatibilityKernel {
 	
 	protected PositiveWeight weight;
 	
 	private final int hashcode;
 
-	public CompatibilityRuleKernel(Model m, Formula f, double w) {
-		super(m, f);
+	public CompatibilityRuleKernel(Formula f, double w) {
+		super(f);
 		weight = new PositiveWeight(w);
-		hashcode = new HashCodeBuilder().append(model).append(formula)
-				.append(weight).toHashCode();
+		hashcode = new HashCodeBuilder().append(formula).append(weight).toHashCode();
 	}
 
 	@Override
@@ -58,11 +56,7 @@ public class CompatibilityRuleKernel extends AbstractRuleKernel implements Compa
 		if (!(w instanceof PositiveWeight)) 
 			throw new IllegalArgumentException("Expected PositiveWeight weight.");
 		
-		PositiveWeight newweight = (PositiveWeight)w;
-		if (!newweight.equals(weight)) {
-			weight = newweight;
-			model.notifyKernelParametersModified(this);
-		}
+		weight = (PositiveWeight) w;
 	}
 	
 	@Override
@@ -77,6 +71,6 @@ public class CompatibilityRuleKernel extends AbstractRuleKernel implements Compa
 	
 	@Override
 	public Kernel clone() {
-		return new CompatibilityRuleKernel(model, formula, weight.getWeight());
+		return new CompatibilityRuleKernel(formula, weight.getWeight());
 	}
 }

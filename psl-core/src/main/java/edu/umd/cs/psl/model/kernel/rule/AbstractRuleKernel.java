@@ -21,12 +21,9 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Preconditions;
-
 import edu.umd.cs.psl.application.groundkernelstore.GroundKernelStore;
 import edu.umd.cs.psl.database.DatabaseQuery;
 import edu.umd.cs.psl.database.ResultList;
-import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.atom.AtomEvent;
 import edu.umd.cs.psl.model.atom.AtomEventFramework;
 import edu.umd.cs.psl.model.atom.AtomManager;
@@ -43,14 +40,11 @@ import edu.umd.cs.psl.model.kernel.Kernel;
 abstract public class AbstractRuleKernel extends AbstractKernel {
 	private static final Logger log = LoggerFactory.getLogger(AbstractRuleKernel.class);
 	
-	protected final Model model;
 	protected Formula formula;
 	protected final FormulaEventAnalysis formulaAnalysis;
 	
-	public AbstractRuleKernel(Model m, Formula f) {
+	public AbstractRuleKernel(Formula f) {
 		super();
-		Preconditions.checkNotNull(m);
-		model = m;
 		formula = f;
 		Formula notF = new Negation(f).getDNF();
 		if (notF instanceof Conjunction)

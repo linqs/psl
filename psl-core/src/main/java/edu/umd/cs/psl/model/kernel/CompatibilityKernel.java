@@ -14,24 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.reasoner.admm;
+package edu.umd.cs.psl.model.kernel;
 
-import edu.umd.cs.psl.config.ConfigBundle;
-import edu.umd.cs.psl.reasoner.Reasoner;
-import edu.umd.cs.psl.reasoner.ReasonerFactory;
-import edu.umd.cs.psl.reasoner.conic.ConicReasoner;
+import edu.umd.cs.psl.model.parameters.Weight;
 
-/**
- * Factory for a {@link ConicReasoner}.
- * 
- * @author Stephen Bach <bach@cs.umd.edu>
- */
-public class ADMMReasonerFactory implements ReasonerFactory {
-
-	@Override
-	public Reasoner getReasoner(ConfigBundle config)
-			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-		return new ADMMReasoner(config);
-	}
-
+public interface CompatibilityKernel extends Kernel {
+	public Weight getWeight();
+	
+	public void setWeight(Weight w);
 }

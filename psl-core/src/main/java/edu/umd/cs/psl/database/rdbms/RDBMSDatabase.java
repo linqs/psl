@@ -378,7 +378,6 @@ public class RDBMSDatabase implements Database {
 		if (result != null)
 			return result;
 		
-		// TODO should this be computed here? Or should this be a SQL function call?
 		double value = p.computeValue(new ReadOnlyDatabase(this), arguments);
 		return cache.instantiateObservedAtom(p, arguments, value, Double.NaN);
 	}

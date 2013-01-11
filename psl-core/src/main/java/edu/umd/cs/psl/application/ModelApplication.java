@@ -20,8 +20,8 @@ import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.ModelEvent;
 
 /**
- * Component which combines a {@link Model} (or Models)
- * with data to perform a task, such as inference or learning.
+ * Combines {@link Model Models} with {@link Database Databases}
+ * to perform a task, such as inference or learning.
  */
 public interface ModelApplication extends ModelEvent.Listener {
 	

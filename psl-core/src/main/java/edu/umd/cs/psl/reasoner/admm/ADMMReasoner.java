@@ -16,6 +16,7 @@
  */
 package edu.umd.cs.psl.reasoner.admm;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -25,15 +26,17 @@ import java.util.Vector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.Iterables;
+
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.model.atom.Atom;
-import edu.umd.cs.psl.model.atom.AtomEventFramework;
+import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
+import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.reasoner.Reasoner;
-import edu.umd.cs.psl.reasoner.Reasoner.DistributionType;
 import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
 import edu.umd.cs.psl.reasoner.function.ConstantNumber;
 import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
@@ -116,16 +119,9 @@ public class ADMMReasoner implements Reasoner {
 	/** Default value for DISTRIBUTION_KEY property. */
 	public static final DistributionType DISTRIBUTION_DEFAULT = DistributionType.linear;
 	
-	/** Key for int property for the maximum number of rounds of inference */
-	public static final String MAX_ROUNDS_KEY = CONFIG_PREFIX + ".maxrounds";
-	/** Default value for MAX_ROUNDS_KEY property */
-	public static final int MAX_ROUNDS_DEFAULT = 500;
-	
-	private final AtomEventFramework atomFramework;
 	private final int maxIter;
 	/* Sometimes called rho or eta */
 	final double stepSize;
-	private final int maxMapRounds;
 	private final DistributionType type;
 	
 	private final double epsilonRel, epsilonAbs;
@@ -147,8 +143,7 @@ public class ADMMReasoner implements Reasoner {
 	/** Lists of local variable locations for updating consensus variables */
 	Vector<Vector<VariableLocation>> varLocations;
 	
-	public ADMMReasoner(AtomEventFramework framework, ConfigBundle config) {
-		atomFramework = framework;
+	public ADMMReasoner(ConfigBundle config) {
 		maxIter = config.getInt(MAX_ITER_KEY, MAX_ITER_DEFAULT);
 		stepSize = config.getDouble(STEP_SIZE_KEY, STEP_SIZE_DEFAULT);
 		epsilonAbs = config.getDouble(EPSILON_ABS_KEY, EPSILON_ABS_DEFAULT);
@@ -159,7 +154,6 @@ public class ADMMReasoner implements Reasoner {
 			throw new IllegalArgumentException("Property " + EPSILON_REL_KEY + " must be positive.");
 		stopCheck = config.getInt(STOP_CHECK_KEY, STOP_CHECK_DEFAULT);
 		type = (DistributionType) config.getEnum(DISTRIBUTION_KEY, DISTRIBUTION_DEFAULT);
-		maxMapRounds = config.getInt(MAX_ROUNDS_KEY, MAX_ROUNDS_DEFAULT);
 		
 		groundKernels = new HashSet<GroundKernel>();
 	}
@@ -175,8 +169,18 @@ public class ADMMReasoner implements Reasoner {
 	}
 
 	@Override
-	public void updateGroundKernel(GroundKernel gk) {
+	public void changedGroundKernel(GroundKernel gk) {
 		groundKernels.add(gk);
+	}
+	
+	@Override
+	public GroundKernel getGroundKernel(GroundKernel gk) {
+		// TODO: make this not a terrible solution
+		for (GroundKernel candidate : groundKernels)
+			if (gk.equals(candidate))
+				return candidate;
+		
+		return null;
 	}
 
 	@Override
@@ -190,25 +194,7 @@ public class ADMMReasoner implements Reasoner {
 	}
 
 	@Override
-	public void mapInference() {
-		int rounds = 0;
-		int numActivated = 0;
-		// TODO: Change this loop so it runs if ground kernels are added, not
-		//       just if atoms are activated
-		do {
-			rounds++;
-			log.debug("Starting round {} optimization", rounds);
-			inferenceStep();
-			// Only activate if there is another iteration
-			if (rounds < maxMapRounds) {
-				numActivated = atomFramework.checkToActivate();
-				atomFramework.workOffJobQueue();
-			}
-			log.debug("Completed Round {} and activated {} atoms.", rounds, numActivated);
-		} while (numActivated > 0 && rounds < maxMapRounds);
-	}
-	
-	private void inferenceStep() {
+	public void optimize() {
 		log.debug("Initializing optimization.");
 		/* Initializes data structures */
 		terms = new Vector<ADMMObjectiveTerm>(groundKernels.size());
@@ -389,6 +375,52 @@ public class ADMMReasoner implements Reasoner {
 		/* Updates variables */
 		for (int i = 0; i < variables.size(); i++)
 			variables.get(i).setValue(z.get(i));
+	}
+
+	@Override
+	public Iterable<GroundKernel> getGroundKernels() {
+		return Collections.unmodifiableSet(groundKernels);
+	}
+
+	@Override
+	public Iterable<GroundCompatibilityKernel> getCompatibilityKernels() {
+		return Iterables.filter(groundKernels, GroundCompatibilityKernel.class);
+	}
+	
+	public Iterable<GroundConstraintKernel> getConstraintKernels() {
+		return Iterables.filter(groundKernels, GroundConstraintKernel.class);
+	}
+
+	@Override
+	public Iterable<GroundKernel> getGroundKernels(Kernel k) {
+		return Iterables.filter(groundKernels, new com.google.common.base.Predicate<GroundKernel>() {
+
+			@Override
+			public boolean apply(GroundKernel k) {
+				return k.getKernel().equals(k);
+			}
+			
+		});
+	}
+
+	@Override
+	public double getTotalWeightedIncompatibility() {
+		Kernel k;
+		double weightedIncompatibility;
+		double objective = 0.0;
+		for (GroundKernel gk : groundKernels) {
+			weightedIncompatibility = gk.getIncompatibility();
+			k = gk.getKernel();
+			if (k instanceof CompatibilityKernel)
+				weightedIncompatibility *= ((CompatibilityKernel) k).getWeight().getWeight();
+			objective += weightedIncompatibility;
+		}
+		return objective;
+	}
+
+	@Override
+	public int size() {
+		return groundKernels.size();
 	}
 
 	@Override

@@ -110,7 +110,7 @@ public class MemoryGroundKernelStore implements GroundKernelStore {
 	}	
 	
 	@Override
-	public double getTotalIncompatibility() {
+	public double getTotalWeightedIncompatibility() {
 		double objective = 0.0;
 		for (GroundKernel gk : groundKernels) {
 			objective+=gk.getIncompatibility();

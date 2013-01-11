@@ -18,7 +18,6 @@ package edu.umd.cs.psl.reasoner;
 
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.Factory;
-import edu.umd.cs.psl.model.atom.AtomEventFramework;
 
 /**
  * Factory for a {@link Reasoner}.
@@ -26,6 +25,6 @@ import edu.umd.cs.psl.model.atom.AtomEventFramework;
  * @author Stephen Bach <bach@cs.umd.edu>
  */
 public interface ReasonerFactory extends Factory {
-	public Reasoner getReasoner(AtomEventFramework framework, ConfigBundle config)
+	public Reasoner getReasoner(ConfigBundle config)
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException;
 }

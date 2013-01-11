@@ -28,13 +28,18 @@ import edu.umd.cs.psl.model.predicate.StandardPredicate;
  * Makes {@link GroundAtom GroundAtoms} available via {@link Database Databases}.
  * <p>
  * GroundAtoms with {@link StandardPredicate StandardPredicates} can be persisted
- * in a DataStore's {@link Partition Partitions}.
+ * in a DataStore's {@link Partition Partitions}. If a StandardPredicate has not
+ * been persisted before in a DataStore, it must be registered via
+ * {@link #registerPredicate(StandardPredicate)}.
  */
 public interface DataStore {
 
 	/**
 	 * Registers a StandardPredicate so that {@link GroundAtom GroundAtoms} of that
 	 * StandardPredicate can be persisted in this DataStore.
+	 * <p>
+	 * If GroundAtoms of a StandardPredicate were already persisted in this DataStore
+	 * at initialization, that StandardPredicate is already registered.
 	 * 
 	 * @param predicate  the predicate to register
 	 */

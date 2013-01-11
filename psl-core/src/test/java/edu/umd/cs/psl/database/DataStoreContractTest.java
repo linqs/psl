@@ -233,13 +233,51 @@ abstract public class DataStoreContractTest {
 		atom.setValue(.5);
 		atom.setConfidenceValue(2.0);
 		db.commit(atom);
-		
 		db.close();
+		
 		db = datastore.getDatabase(new Partition(0));
 		atom = (RandomVariableAtom) db.getAtom(p1, a, b);
 		assertEquals(.5, atom.getValue(), 0.0);
 		assertEquals(2.0, atom.getConfidenceValue(), 0.0);
+		atom.setValue(1.0);
+		db.commit(atom);
 		db.close();
+		
+		db = datastore.getDatabase(new Partition(0));
+		atom = (RandomVariableAtom) db.getAtom(p1, a, b);
+		assertEquals(1.0, atom.getValue(), 0.0);
+		db.close();
+	}
+	
+	@Test
+	public void testDoubleCommit() {
+		datastore.registerPredicate(p1);
+		
+		UniqueID a = datastore.getUniqueID(0);
+		UniqueID b = datastore.getUniqueID(1);
+		
+		Database db = datastore.getDatabase(new Partition(0));
+		RandomVariableAtom atom = (RandomVariableAtom) db.getAtom(p1, a, b);
+		atom.setValue(0.25);
+		atom.commitToDB();
+		atom.setValue(0.5);
+		atom.commitToDB();
+		db.close();
+		
+		db = datastore.getDatabase(new Partition(0));
+		atom = (RandomVariableAtom) db.getAtom(p1, a, b);
+		assertEquals(0.5, atom.getValue(), 0.0);
+		atom.setValue(0.75);
+		atom.commitToDB();
+		atom.setValue(1.0);
+		atom.commitToDB();
+		db.close();
+		
+		db = datastore.getDatabase(new Partition(0));
+		atom = (RandomVariableAtom) db.getAtom(p1, a, b);
+		assertEquals(1.0, atom.getValue(), 0.0);
+		db.close();
+		
 	}
 	
 	@Test
@@ -478,6 +516,16 @@ abstract public class DataStoreContractTest {
 	@Test(expected=IllegalArgumentException.class)
 	public void testGetInserterPartitionInUseRead() {
 		dbs.add(datastore.getDatabase(new Partition(1), new Partition(0)));
+		datastore.getInserter(p1, new Partition(0));
+	}
+	
+	@Test
+	public void testGetInserterForDeserializedPredicate() {
+		datastore.registerPredicate(p1);
+		datastore.registerPredicate(p2);
+		
+		datastore.close();
+		datastore = getDataStore();
 		datastore.getInserter(p1, new Partition(0));
 	}
 	

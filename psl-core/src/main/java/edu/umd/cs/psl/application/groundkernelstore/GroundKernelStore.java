@@ -16,6 +16,7 @@
  */
 package edu.umd.cs.psl.application.groundkernelstore;
 
+import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
@@ -99,10 +100,12 @@ public interface GroundKernelStore {
 	public Iterable<GroundKernel> getGroundKernels(Kernel k);
 	
 	/**
-	 * @return the total incompatibility of the GroundKernels in this store.
+	 * @return the total, weighted incompatibility of the GroundKernels
+	 *             in this store.
 	 * @see GroundKernel#getIncompatibility()
+	 * @see CompatibilityKernel#getWeight()
 	 */
-	public double getTotalIncompatibility();
+	public double getTotalWeightedIncompatibility();
 	
 	/**
 	 * @return the number of GroundKernels in this store

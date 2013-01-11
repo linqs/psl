@@ -240,6 +240,8 @@ public class RDBMSDataStore implements DataStore {
 				StandardPredicate p = factory.createStandardPredicate(name, args.toArray(new ArgumentType[args.size()]));
 				RDBMSPredicateInfo pi = getDefaultPredicateDBInfo(p);
 				predicates.put(p, pi);
+				// Update the data loader with the new predicate
+				dataloader.registerPredicate(pi.getPredicateHandle());
 				return true;
 			} finally {
 				rs.close();

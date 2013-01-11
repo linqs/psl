@@ -22,15 +22,10 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import edu.umd.cs.psl.application.GroundingMode;
-import edu.umd.cs.psl.application.ModelApplication;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.model.atom.Atom;
-import edu.umd.cs.psl.model.atom.AtomEvent;
 import edu.umd.cs.psl.model.atom.AtomEventFramework;
-import edu.umd.cs.psl.model.atom.AtomEventObserver;
-import edu.umd.cs.psl.model.atom.AtomEventSets;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
@@ -53,7 +48,7 @@ import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
  * 
  * Uses a {@link ConicProgramSolver} to maximize the density.
  */
-public class ConicReasoner implements Reasoner, AtomEventObserver {
+public class ConicReasoner implements Reasoner {
 
 	private static final Logger log = LoggerFactory.getLogger(ConicReasoner.class);
 	
@@ -118,35 +113,11 @@ public class ConicReasoner implements Reasoner, AtomEventObserver {
 		maxMapRounds = config.getInt(MAX_ROUNDS_KEY, MAX_ROUNDS_DEFAULT);
 		gkRepresentation = new HashMap<GroundKernel, ConicProgramProxy>();
 		vars = new HashMap<AtomFunctionVariable, VariableConicProgramProxy>();
-		
-		atomFramework.registerAtomEventObserver(AtomEventSets.MadeRevokedCertainty, this);
 	}
 	
 	@Override
 	public DistributionType getDistributionType() {
 		return type;
-	}
-	
-	@Override
-	public void notifyAtomEvent(AtomEvent event, Atom atom, GroundingMode mode, ModelApplication app) {
-		/*We only need to listen for atom that were made certain, because only in this case is it possible
-		 * that the atom might have already introduced variables into the program that we should remove
-		 * for efficiency.
-		 * On the other hand, we do not need to listen for revoking certainty, since variables will automatically
-		 * get reintroduced as needed.
-		 */
-		switch(event) {
-		case MadeCertainty:
-			for (int i=0;i<atom.getNumberOfValues();i++) {
-				vars.get(atom.getVariable(i)).remove();
-				vars.remove(atom.getVariable(i));
-			}
-			break;
-		case RevokedCertainty:
-			//Don't have to do anything
-			break;
-		default: throw new IllegalArgumentException("Unsupported event type: " + event);
-		}
 	}
 
 	
@@ -215,7 +186,6 @@ public class ConicReasoner implements Reasoner, AtomEventObserver {
 	
 	@Override
 	public void close() {
-		atomFramework.unregisterAtomEventObserver(AtomEventSets.MadeRevokedCertainty, this);
 		program = null;
 		solver = null;
 	}

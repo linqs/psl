@@ -50,25 +50,22 @@ public class DatabasePopulator {
 	}
 	
 	/**
-	 * Substitutes the {@link Variable Variables} from the substitution map into each
-	 * {@link QueryAtom} and commits the resulting RandomVariableAtom into the database provided
+	 * Substitutes the {@link Variable Variables} from the substitution map into a
+	 * {@link QueryAtom} and commits the resulting RandomVariableAtoms into the Database provided
 	 * to the constructor.
 	 * 
-	 * @param qAtoms			the set of QueryAtoms to perform substitution on
+	 * @param qAtom			the QueryAtom to perform substitution on
 	 * @param substitutions		the map of Variables to their possible GroundTerm substitutions
 	 */
-	public void populate(Set<QueryAtom> qAtoms, Map<Variable, Set<GroundTerm>> substitutions) {
+	public void populate(QueryAtom qAtom, Map<Variable, Set<GroundTerm>> substitutions) {
 		this.substitutions = substitutions;
-		// Iterate over the set of query atoms
-		for (QueryAtom qAtom : qAtoms) {
-			// Set the variables for the recursive traversal
-			rootPredicate = qAtom.getPredicate();
-			rootArguments = qAtom.getArguments();
-			GroundTerm[] groundArguments = new GroundTerm[rootArguments.length];
-			
-			// Perform a recursive depth-first traversal of the arguments and their substitutions
-			groundAndPersistAtom(0, groundArguments);
-		}
+		// Set the variables for the recursive traversal
+		rootPredicate = qAtom.getPredicate();
+		rootArguments = qAtom.getArguments();
+		GroundTerm[] groundArguments = new GroundTerm[rootArguments.length];
+		
+		// Perform a recursive depth-first traversal of the arguments and their substitutions
+		groundAndPersistAtom(0, groundArguments);
 	}
 	
 	/*
@@ -113,7 +110,9 @@ public class DatabasePopulator {
 			GroundAtom atom = db.getAtom(rootPredicate, arguments);
 			if (atom instanceof RandomVariableAtom) {
 				db.commit((RandomVariableAtom) atom);
-			} else {
+			}
+			// TODO: Is this necessary? -SB
+			else {
 				throw new RuntimeException("Database failed to return a RandomVariableAtom. " + atom.toString());
 			}
 		}

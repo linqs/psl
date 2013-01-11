@@ -55,7 +55,7 @@ public class SquaredLinearLossTermTest {
 	private void testProblem(double[] z, double[] y, double[] coeffs, double constant,
 			double weight, final double stepSize, double[] expected) {
 		config.setProperty("admmreasoner.stepsize", stepSize);
-		ADMMReasoner reasoner = new ADMMReasoner(null, config);
+		ADMMReasoner reasoner = new ADMMReasoner(config);
 		reasoner.z = new Vector<Double>(z.length);
 		for (int i = 0; i < z.length; i++)
 			reasoner.z.add(z[i]);

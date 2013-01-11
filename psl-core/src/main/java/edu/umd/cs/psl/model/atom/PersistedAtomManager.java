@@ -16,6 +16,7 @@
  */
 package edu.umd.cs.psl.model.atom;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -33,7 +34,7 @@ import edu.umd.cs.psl.model.predicate.StandardPredicate;
  * {@link RandomVariableAtom RandomVariableAtoms} that were persisted in the Database 
  * at instantiation.
  * <p>
- * All other atoms are returned normally.
+ * All other types of Atoms are returned normally.
  * 
  * @author Eric Norris <enorris@cs.umd.edu>
  */
@@ -74,7 +75,7 @@ public class PersistedAtomManager implements AtomManager {
 			// Construct the query for this predicate
 			Variable vars[] = new Variable[predicate.getArity()];
 			for (int i = 0; i < vars.length; i++)
-				vars[i] = new Variable(String.valueOf(i));
+				vars[i] = new Variable("V" + String.valueOf(i));
 			Formula queryFormula = new QueryAtom(predicate, vars);
 			
 			// Execute the query and interpret the results
@@ -106,6 +107,10 @@ public class PersistedAtomManager implements AtomManager {
 	@Override
 	public Database getDatabase() {
 		return db;
+	}
+	
+	public Iterable<RandomVariableAtom> getPersistedRVAtoms() {
+		return Collections.unmodifiableSet(persistedCache);
 	}
 
 }

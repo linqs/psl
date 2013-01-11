@@ -23,9 +23,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import edu.umd.cs.psl.optimizer.conic.program.Cone;
 import edu.umd.cs.psl.optimizer.conic.program.ConeType;
@@ -39,8 +36,6 @@ import edu.umd.cs.psl.optimizer.conic.program.SecondOrderCone;
 import edu.umd.cs.psl.optimizer.conic.program.Variable;
 
 public class Dualizer implements ConicProgramListener {
-	
-	private static final Logger log = LoggerFactory.getLogger(Dualizer.class);
 	
 	private boolean checkedOut;
 	

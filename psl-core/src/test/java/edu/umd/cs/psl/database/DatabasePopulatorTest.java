@@ -91,11 +91,9 @@ public class DatabasePopulatorTest {
 		substitutions.put(y, terms);
 		
 		QueryAtom qAtom = new QueryAtom(p1, x, y);
-		HashSet<QueryAtom> qAtoms = new HashSet<QueryAtom>();
-		qAtoms.add(qAtom);
 		
 		// Commit the population to the database
-		populator.populate(qAtoms, substitutions);
+		populator.populate(qAtom, substitutions);
 		
 		Formula f = qAtom;
 		ResultList results = db.executeQuery(new DatabaseQuery(f));
@@ -151,12 +149,10 @@ public class DatabasePopulatorTest {
 		
 		QueryAtom qAtomP1 = new QueryAtom(p1, x, y);
 		QueryAtom qAtomP2 = new QueryAtom(p2, a, b);
-		HashSet<QueryAtom> qAtoms = new HashSet<QueryAtom>();
-		qAtoms.add(qAtomP1);
-		qAtoms.add(qAtomP2);
 		
 		// Commit the population to the database
-		populator.populate(qAtoms, substitutions);
+		populator.populate(qAtomP1, substitutions);
+		populator.populate(qAtomP2, substitutions);
 		
 		// Query for P1
 		Formula fP1 = qAtomP1;

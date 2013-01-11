@@ -56,7 +56,7 @@ public class RDBMSDataLoader implements DataLoader {
 	public RDBMSTableInserter getOpenInserter(Predicate p) {
 		RDBMSTableInserter ins = inserts.get(p);
 		if (ins==null) {
-			throw new IllegalArgumentException("Predicate is unkown: "+ p);
+			throw new IllegalArgumentException("Predicate is unknown: "+ p);
 		}
 		return ins;
 	}

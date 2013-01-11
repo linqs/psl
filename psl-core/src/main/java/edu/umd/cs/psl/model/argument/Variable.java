@@ -33,6 +33,8 @@ public class Variable implements Term {
 	 * @param name A string ID
 	 */
 	public Variable(String name) {
+		if (!name.matches("^[a-zA-Z]\\w*"))
+			throw new IllegalArgumentException("Variable name must begin with a-z or A-Z and contain only [a-zA-Z0-9_]. Invalid name: " + name);
 		this.name = name;
 	}
 	

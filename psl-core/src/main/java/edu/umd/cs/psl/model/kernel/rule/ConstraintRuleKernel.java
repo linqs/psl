@@ -18,7 +18,6 @@ package edu.umd.cs.psl.model.kernel.rule;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
-import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.kernel.Kernel;
 
@@ -26,9 +25,9 @@ public class ConstraintRuleKernel extends AbstractRuleKernel {
 	
 	private final int hashcode;
 
-	public ConstraintRuleKernel(Model m, Formula f) {
-		super(m, f);
-		hashcode = new HashCodeBuilder().append(model).append(formula).toHashCode();
+	public ConstraintRuleKernel(Formula f) {
+		super(f);
+		hashcode = new HashCodeBuilder().append(formula).toHashCode();
 	}
 
 	@Override
@@ -53,6 +52,6 @@ public class ConstraintRuleKernel extends AbstractRuleKernel {
 	
 	@Override
 	public Kernel clone() {
-		return new ConstraintRuleKernel(model, formula);
+		return new ConstraintRuleKernel(formula);
 	}
 }
