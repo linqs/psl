@@ -53,7 +53,7 @@ import edu.umd.cs.psl.optimizer.conic.program.Variable;
 
 public class FeasiblePointInitializer implements ConicProgramListener {
 	
-	private static final Logger log = LoggerFactory.getLogger(ConicProgram.class);
+	private static final Logger log = LoggerFactory.getLogger(FeasiblePointInitializer.class);
 	
 	private final ConicProgram program;
 	
@@ -221,7 +221,6 @@ public class FeasiblePointInitializer implements ConicProgramListener {
 
 		int i,j;
 		Iterator<LinearConstraint> itr;
-		DenseDoubleAlgebra alg = new DenseDoubleAlgebra();
 		DoubleMatrix1D x, dp, intDir;
 		SparseDoubleMatrix2D A;
 		DoubleMatrix2D nullity;
@@ -293,30 +292,36 @@ public class FeasiblePointInitializer implements ConicProgramListener {
 					x.set(con.getValue(), con.getKey().getConstrainedValue());
 				}
 				
-				/* Uses decompositions to find general and particular solutions to Ax = b */
-				DenseDoubleQRDecomposition denseQR = new DenseDoubleQRDecomposition(new DenseDoubleMatrix2D(A.rows(), A.columns()).assign(A).viewDice());
-				nullity = denseQR.getQ(false).viewPart(0, A.rows(), A.columns(), A.columns()-A.rows());
-				
+				/* Uses decomposition to find particular solution to Ax = b */
 				SparseDoubleQRDecomposition qr = new SparseDoubleQRDecomposition(A.getColumnCompressed(false), 0);
 				qr.solve(x);
 				
-				lu.decompose(alg.mult(nullity.viewDice(), nullity));
-				intDir = x.copy();
-				
-				
-				// TODO: Add check for getting stuck
-				while (!isInterior(cones, x, varInit)) {
-					for (Cone c : cones) {
-						((Cone) c).setInteriorDirection(varInit, x, intDir);
-					}
-					dp = alg.mult(nullity.viewDice(), intDir);
-					lu.solve(dp);
-					x.assign(alg.mult(nullity, dp), DoubleFunctions.plus);
+				/*
+				 * If the particular solution is not in the interior of the cones, uses a decomposition
+				 * to find the general solution to Ax = b and moves through the solution space until an
+				 * interior point is found
+				 */
+				if (!isInterior(cones, x, varInit)) {
+					DenseDoubleQRDecomposition denseQR = new DenseDoubleQRDecomposition(new DenseDoubleMatrix2D(A.rows(), A.columns()).assign(A).viewDice());
+					nullity = denseQR.getQ(false).viewPart(0, A.rows(), A.columns(), A.columns()-A.rows());
+					
+					lu.decompose(nullity.zMult(nullity, null, 1.0, 0.0, true, false));
+					intDir = x.copy();
+					
+					// TODO: Add check for getting stuck
+					do {
+						for (Cone c : cones) {
+							((Cone) c).setInteriorDirection(varInit, x, intDir);
+						}
+						dp = nullity.zMult(intDir, null, 1.0, 0.0, true);
+						lu.solve(dp);
+						nullity.zMult(dp, x, 1.0, 1.0, false);
+					} while (!isInterior(cones, x, varInit));
 				}
 
-				/* Finalize initialization */
+				/* Finalizes initialization */
 				for (Map.Entry<Variable, Integer> v : varInit.entrySet())
-					program.getX().set(program.index(v.getKey()), x.get(v.getValue()));
+					program.getX().set(program.getIndex(v.getKey()), x.get(v.getValue()));
 			}
 		}
 		
@@ -382,7 +387,7 @@ public class FeasiblePointInitializer implements ConicProgramListener {
 			var = dualInfeasible.iterator().next();
 			iso = getDualIsolatedConstraint(var);
 			if (iso != null) {
-				makeDualFeasible(iso);
+				isoNeedsInit.add(iso);
 				for (Variable v : iso.getVariables().keySet())
 					dualInfeasible.remove(v);
 			}
@@ -486,10 +491,10 @@ public class FeasiblePointInitializer implements ConicProgramListener {
 				
 				/* Finalizes initialization */
 				for (Map.Entry<Variable, Integer> v : varInit.entrySet()) {
-					program.getS().set(program.index(v.getKey()), s.get(v.getValue()));
+					program.getS().set(program.getIndex(v.getKey()), s.get(v.getValue()));
 				}
 				for (Map.Entry<LinearConstraint, Integer> lc : lcInit.entrySet())
-					program.getW().set(program.index(lc.getKey()), w.get(lc.getValue()));
+					program.getW().set(program.getIndex(lc.getKey()), w.get(lc.getValue()));
 			}
 		}
 		
@@ -510,9 +515,9 @@ public class FeasiblePointInitializer implements ConicProgramListener {
 		for (Map.Entry<Variable, Double> e : lc.getVariables().entrySet()) {
 			gap = 0.0;
 			for (LinearConstraint con : e.getKey().getLinearConstraints()) {
-				gap += con.getVariables().get(e.getKey()) * w.get(program.index(con));
+				gap += con.getVariables().get(e.getKey()) * w.get(program.getIndex(con));
 			}
-			gap = gap + s.get(program.index(e.getKey())) + 0.01 - c.get(program.index(e.getKey()));
+			gap = gap + s.get(program.getIndex(e.getKey())) + 0.01 - c.get(program.getIndex(e.getKey()));
 			gap /= Math.abs(e.getValue());
 			if (gap > maxGap)
 				maxGap = gap;
@@ -521,15 +526,15 @@ public class FeasiblePointInitializer implements ConicProgramListener {
 		if (lc.getVariables().values().iterator().next() < 0.0)
 			maxGap *= -1;
 		
-		w.set(program.index(lc), w.get(program.index(lc)) - maxGap);
+		w.set(program.getIndex(lc), w.get(program.getIndex(lc)) - maxGap);
 		
 		for (Map.Entry<Variable, Double> e : lc.getVariables().entrySet()) {
 			gap = 0.0;
 			for (LinearConstraint con : e.getKey().getLinearConstraints()) {
-				gap += con.getVariables().get(e.getKey()) * w.get(program.index(con));
+				gap += con.getVariables().get(e.getKey()) * w.get(program.getIndex(con));
 			}
-			gap = gap + s.get(program.index(e.getKey())) - c.get(program.index(e.getKey()));
-			s.set(program.index(e.getKey()), s.get(program.index(e.getKey())) - gap);
+			gap = gap + s.get(program.getIndex(e.getKey())) - c.get(program.getIndex(e.getKey()));
+			s.set(program.getIndex(e.getKey()), s.get(program.getIndex(e.getKey())) - gap);
 		}
 	}
 
@@ -642,14 +647,16 @@ public class FeasiblePointInitializer implements ConicProgramListener {
 
 			value = 0.0;
 			for (Entry<Variable, Double> e : lc.getVariables().entrySet()) {
-				value += x.get(program.index(e.getKey())) * e.getValue();
+				value += x.get(program.getIndex(e.getKey())) * e.getValue();
 			}
-			diff = lc.getConstrainedValue() - value;
-			if (diff < 0) {
-				x.set(program.index(negativeSlack), negativeSlack.getValue() - diff);
+			diff = value - lc.getConstrainedValue() ;
+			if (diff > 0) {
+				x.set(program.getIndex(negativeSlack), negativeSlack.getValue()
+						- diff / negativeSlack.getLinearConstraints().iterator().next().getVariables().get(negativeSlack));
 			}
 			else {
-				x.set(program.index(positiveSlack), positiveSlack.getValue() - diff);
+				x.set(program.getIndex(positiveSlack), positiveSlack.getValue()
+						- diff / positiveSlack.getLinearConstraints().iterator().next().getVariables().get(positiveSlack));
 			}
 		}
 	}

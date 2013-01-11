@@ -62,6 +62,58 @@ public interface ConfigBundle {
 	ConfigBundle subset(String prefix);
 
 	/**
+	 * Add a property to the configuration. If it already exists then the value
+	 * stated here will be added to the configuration entry. For example, if the
+	 * property:
+	 * 
+	 * <pre>
+	 * resource.loader = file
+	 * </pre>
+	 * 
+	 * is already present in the configuration and you call
+	 * 
+	 * <pre>
+	 * addProperty(&quot;resource.loader&quot;, &quot;classpath&quot;)
+	 * </pre>
+	 * 
+	 * Then you will end up with a List like the following:
+	 * 
+	 * <pre>
+	 * ["file", "classpath"]
+	 * </pre>
+	 * 
+	 * @param key
+	 *            The key to add the property to.
+	 * @param value
+	 *            The value to add.
+	 */
+	void addProperty(String key, Object value);
+
+	/**
+	 * Set a property, this will replace any previously set values. Set values
+	 * is implicitly a call to clearProperty(key), addProperty(key, value).
+	 * 
+	 * @param key
+	 *            The key of the property to change
+	 * @param value
+	 *            The new value
+	 */
+	void setProperty(String key, Object value);
+
+	/**
+	 * Remove a property from the configuration.
+	 * 
+	 * @param key
+	 *            the key to remove along with corresponding value.
+	 */
+	void clearProperty(String key);
+
+	/**
+	 * Remove all properties from the configuration.
+	 */
+	void clear();
+
+	/**
 	 * Get a boolean associated with the given configuration key. If the key
 	 * doesn't map to an existing object, the default value is returned.
 	 * 

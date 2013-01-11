@@ -143,7 +143,8 @@ public class LocalProcess implements RunningProcess {
 		Object o = values.get(key);
 		AtomicLong d = null;
 		if (o==null) {
-			d = (AtomicLong)values.putIfAbsent(key, new AtomicLong());
+			values.putIfAbsent(key, new AtomicLong());
+			d = (AtomicLong) values.get(key);
 		} else d = (AtomicLong)o;
 		return d.addAndGet(inc);	
 	}

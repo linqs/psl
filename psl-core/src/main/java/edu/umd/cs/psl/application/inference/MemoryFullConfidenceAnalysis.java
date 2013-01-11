@@ -43,10 +43,10 @@ import edu.umd.cs.psl.model.atom.AtomManager;
 import edu.umd.cs.psl.model.atom.memory.MemoryAtomManager;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
-import edu.umd.cs.psl.reasoner.ConicReasoner;
 import edu.umd.cs.psl.reasoner.Reasoner;
+import edu.umd.cs.psl.reasoner.conic.ConicReasoner;
 import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
-import edu.umd.cs.psl.sampler.LinearSampler;
+import edu.umd.cs.psl.sampler.MarginalSampler;
 
 public class MemoryFullConfidenceAnalysis implements ModelApplication, FullConfidenceAnalysis {
 	
@@ -143,7 +143,7 @@ public class MemoryFullConfidenceAnalysis implements ModelApplication, FullConfi
 		atomManager.setGroundingMode(GroundingMode.Forward);
 		reasoner.mapInference();
 		
-		LinearSampler sampler = new LinearSampler(proc,config.getSamplingSteps());
+		MarginalSampler sampler = new MarginalSampler(proc,config.getSamplingSteps());
 		Collection<Atom> toActivate;
 		do {
 			toActivate = sampler.sample(groundkernels.getGroundKernels(), config.getActivationThreshold(), 1);

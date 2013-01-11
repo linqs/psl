@@ -48,7 +48,7 @@ public class NonNegativeOrthantCone extends Cone {
 		g.set(i, -1 / x.get(i));
 	}
 	
-	void setBarrierHessian(Map<Variable, Integer> varMap, DoubleMatrix1D x, DoubleMatrix2D H) {
+	public void setBarrierHessian(Map<Variable, Integer> varMap, DoubleMatrix1D x, DoubleMatrix2D H) {
 		int i = varMap.get(getVariable());
 		H.set(i, i, Math.pow(x.get(i), -2));
 	}

@@ -36,6 +36,7 @@ import edu.umd.cs.psl.database.Partition;
 import edu.umd.cs.psl.model.argument.type.*;
 import edu.umd.cs.psl.model.argument.*;
 import edu.umd.cs.psl.model.predicate.*;
+import edu.umd.cs.psl.model.kernel.Kernel
 import edu.umd.cs.psl.model.kernel.rule.AbstractRuleKernel;
 import edu.umd.cs.psl.model.kernel.rule.CompatibilityRuleKernel
 import edu.umd.cs.psl.model.kernel.rule.ConstraintRuleKernel;
@@ -328,7 +329,13 @@ class PSLModel extends ModelUI {
 	
 	def addConstraint(PredicateConstraint type, Map args) {
 		StandardPredicate predicate = getBasicPredicate(args,'on');
-		PredicateConstraintKernel con = new PredicateConstraintKernel(predicate,type.getPSLConstraint())
+		Kernel con;
+		if (PredicateConstraint.Symmetric.equals(type)) {
+			con = new SymmetricPredicateConstraintKernel(predicate);
+		}
+		else {
+			con = new PredicateConstraintKernel(predicate,type.getPSLConstraint())
+		}
 		addKernel(con);
 		return con;
 	}

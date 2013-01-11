@@ -16,6 +16,7 @@
  */
 package edu.umd.cs.psl.reasoner;
 
+import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 
 /**
@@ -28,17 +29,27 @@ import edu.umd.cs.psl.model.kernel.GroundKernel;
 public interface Reasoner {
 	
 	/**
+	 * Distribution types supported by Reasoners.
+	 * 
+	 * A linear distribution does not modify the incompatibility values of
+	 * {@link GroundCompatibilityKernel GroundCompatibilityKernels},
+	 * and a quadratic distribution squares them.
+	 */
+	public static enum DistributionType {linear, quadratic};
+	
+	public DistributionType getDistributionType();
+	
+	/**
 	 * Adds a {@link edu.umd.cs.psl.model.kernel.GroundKernel} to the set used
 	 * for inference.
 	 */
 	public void addGroundKernel(GroundKernel gk);
 	
 	/**
-	 * Updates a {@link edu.umd.cs.psl.model.kernel.GroundKernel} in the
-	 * set used for inference.
+	 * Updates a {@link GroundKernel} in the set used for inference.
 	 *
-	 * This method should be called if a {@link edu.umd.cs.psl.model.kernel.GroundKernel}
-	 * that has already been added is modified.
+	 * This method should be called if a {@link GroundKernel} that has already
+	 * been added is modified.
 	 */
 	public void updateGroundKernel(GroundKernel gk);
 	

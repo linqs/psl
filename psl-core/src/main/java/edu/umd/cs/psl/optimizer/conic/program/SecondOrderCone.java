@@ -86,7 +86,7 @@ public class SecondOrderCone extends Cone {
 		gSel.set(i, gSel.get(i) * -1);
 	}
 	
-	void setBarrierHessian(Map<Variable, Integer> varMap, DoubleMatrix1D x, DoubleMatrix2D H) {
+	public void setBarrierHessian(Map<Variable, Integer> varMap, DoubleMatrix1D x, DoubleMatrix2D H) {
 		DenseDoubleAlgebra alg = new DenseDoubleAlgebra();
 		Set<Variable> vars = getVariables();
 		int[] indices = new int[vars.size()];
@@ -126,14 +126,7 @@ public class SecondOrderCone extends Cone {
 		for (int j = 0; j < i; j++)
 			HSel.set(j, j, HSel.get(j, j) + coeff);
 		HSel.set(i, i, HSel.get(i,i) - coeff);
-		try{
 		HSel.assign(alg.inverse(HSel));
-		}
-		catch (IllegalArgumentException e) {
-			System.out.println(x.viewSelection(indices));
-		System.out.println(alg.toVerboseString(HSel));
-		throw e;
-		}
 	}
 
 	@Override
@@ -173,46 +166,32 @@ public class SecondOrderCone extends Cone {
 	@Override
 	public double getMaxStep(Map<Variable, Integer> varMap, DoubleMatrix1D x,
 			DoubleMatrix1D dx) {
-		Set<Variable> vars = getVariables();
-		int[] indices = new int[vars.size()];
 		Variable varN = getNthVariable();
+		double xN = x.get(varMap.get(varN));
+		double dxN = dx.get(varMap.get(varN));
+
+		Set<Variable> vars = getVariables();
+		int[] indices = new int[vars.size()-1];
 		vars.remove(varN);
 		int i = 0;
 		for (Variable v : vars) {
 			indices[i++] = varMap.get(v);
 		}
-		indices[i] = varMap.get(varN);
-		DoubleMatrix1D xSel = x.viewSelection(indices);
-		DoubleMatrix1D dxSel = dx.viewSelection(indices);
+		DoubleMatrix1D x1NMinus1 = x.viewSelection(indices).copy();
+		DoubleMatrix1D dx1NMinus1 = dx.viewSelection(indices).copy();
 		
-		double a = Math.pow(dxSel.get(i), 2) - dxSel.zDotProduct(dxSel, 0, i);
-		double b = 2*(dxSel.get(i)*xSel.get(i) - dxSel.zDotProduct(xSel, 0, i));
-		double c = Math.pow(xSel.get(i), 2) - xSel.zDotProduct(xSel, 0, i);
+		DoubleMatrix1D current = x1NMinus1.copy();
+		current.assign(dx1NMinus1, DoubleFunctions.plus);
 		
-		double discriminant = Math.pow(b, 2) - 4 * a * c;
-		if (discriminant > 0) {
-			double sol1 = (-1 * b + Math.sqrt(discriminant)) / (2 * a);
-			double sol2 = (-1 * b - Math.sqrt(discriminant)) / (2 * a);
-			
-			if (sol1 > 0 && sol2 > 0)
-				return Math.min(sol1, sol2) * .95;
-			else if (sol1 > 0)
-				return sol1 * .95;
-			else if (sol2 > 0)
-				return sol2 * .95;
-			else
-				return 1.0;
+		double alpha = 1.0;
+		
+		while (xN + dxN <= Math.sqrt(current.zDotProduct(current))) {
+			alpha *= 0.9;
+			dxN *= 0.9;
+			current.assign(x1NMinus1).assign(dx1NMinus1, DoubleFunctions.plusMultSecond(alpha));
 		}
-		else {
-			double stepSize = 1.0;
-			while (a * Math.pow(stepSize, 2) + b * stepSize + c <= 0 && stepSize > 0)
-				stepSize *= 0.5;
-			
-			if (stepSize > 0)
-				return stepSize;
-			else
-				throw new IllegalStateException("Stuck.");
-		}
+		
+		return alpha;
 	}
 }
 

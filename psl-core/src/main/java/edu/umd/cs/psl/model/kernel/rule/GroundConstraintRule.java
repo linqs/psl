@@ -24,11 +24,8 @@ import edu.umd.cs.psl.reasoner.function.FunctionComparator;
 public class GroundConstraintRule extends AbstractGroundRule implements
 		GroundConstraintKernel {
 	
-	protected final ConstraintRuleKernel kernel;
-
 	public GroundConstraintRule(ConstraintRuleKernel k, Formula f) {
-		super(f);
-		kernel = k;
+		super(k, f);
 	}
 	
 	@Override
@@ -38,7 +35,7 @@ public class GroundConstraintRule extends AbstractGroundRule implements
 
 	@Override
 	public ConstraintTerm getConstraintDefinition() {
-		return new ConstraintTerm(getFunction(1.0), FunctionComparator.Equality, 0.0);
+		return new ConstraintTerm(getFunction(1.0), FunctionComparator.SmallerThan, 0.0);
 	}
 	
 	@Override

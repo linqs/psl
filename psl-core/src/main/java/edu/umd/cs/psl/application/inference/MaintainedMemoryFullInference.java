@@ -22,7 +22,12 @@ import edu.umd.cs.psl.application.groundkernelstore.GroundKernelStore;
 import edu.umd.cs.psl.application.groundkernelstore.MemoryGroundKernelStore;
 import edu.umd.cs.psl.application.util.Grounding;
 import edu.umd.cs.psl.config.ConfigBundle;
+import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.config.EmptyBundle;
+<<<<<<< HEAD
+=======
+import edu.umd.cs.psl.config.Factory;
+>>>>>>> develop
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.evaluation.process.RunningProcess;
 import edu.umd.cs.psl.evaluation.process.local.LocalProcessMonitor;
@@ -36,12 +41,35 @@ import edu.umd.cs.psl.model.atom.AtomStatus;
 import edu.umd.cs.psl.model.atom.memory.MemoryAtomManager;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
-import edu.umd.cs.psl.reasoner.ConicReasoner;
 import edu.umd.cs.psl.reasoner.Reasoner;
+import edu.umd.cs.psl.reasoner.ReasonerFactory;
+import edu.umd.cs.psl.reasoner.admm.ADMMReasonerFactory;
 
 public class MaintainedMemoryFullInference implements FullInference {
 	
-	private final Model model;
+	private static final Logger log = LoggerFactory.getLogger(MaintainedMemoryFullInference.class);
+	
+	/**
+	 * Prefix of property keys used by this class.
+	 * 
+	 * @see ConfigManager
+	 */
+	public static final String CONFIG_PREFIX = "inference";
+	
+	/**
+	 * Key for {@link Factory} or String property.
+	 * 
+	 * Should be set to a {@link ReasonerFactory} or the fully qualified
+	 * name of one. Will be used to instantiate a {@link Reasoner}.
+	 */
+	public static final String REASONER_KEY = CONFIG_PREFIX + ".reasoner";
+	/**
+	 * Default value for REASONER_KEY.
+	 * 
+	 * Value is instance of {@link ADMMReasonerFactory}. 
+	 */
+	public static final ReasonerFactory REASONER_DEFAULT = new ADMMReasonerFactory();
+
 	private final Database database;
 	private final AtomManager atomManager;
 	private final Reasoner reasoner;
@@ -54,9 +82,12 @@ public class MaintainedMemoryFullInference implements FullInference {
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		model = m;
 		database = db;
-		atomManager = new MemoryAtomManager(this, database, config);
-		groundKernels = new MemoryGroundKernelStore();
-		reasoner = new ConicReasoner(atomManager, config);
+		store = new MemoryAtomStore(database);
+		dbProxy = new DatabaseAtomStoreQuery(store);
+		groundkernels = new MemoryGroundKernelStore();
+		atomEvents = new MemoryAtomEventFramework(m,this,store);
+		database.registerDatabaseEventObserver(atomEvents);
+		reasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(atomEvents, config);
 		model.registerModelObserver(this);
 		// TODO: Move to AtomManager implementations?
 		model.registerModelObserver(atomManager);
@@ -162,10 +193,14 @@ public class MaintainedMemoryFullInference implements FullInference {
 			hasChanged=false;
 		}
 		proc.terminate();
-		return new MemoryFullInferenceResult(proc,groundKernels.getTotalIncompatibility(),
-						atomManager.getNumAtoms(ImmutableSet.of(AtomStatus.ConsideredFixed,AtomStatus.ActiveRV)),
-						groundKernels.size());
+		return new MemoryFullInferenceResult(proc,groundkernels.getTotalIncompatibility(reasoner.getDistributionType()),
+						store.getNumAtoms(ImmutableSet.of(AtomStatus.ConsideredCertainty,AtomStatus.ActiveRV)),
+						groundkernels.size());
 
+	}
+	
+	public double getTotalIncompatibility() {
+		return groundkernels.getTotalIncompatibility(reasoner.getDistributionType());
 	}
 	
 	//####### Interface to other components #####

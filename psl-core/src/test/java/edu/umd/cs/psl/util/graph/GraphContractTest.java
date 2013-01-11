@@ -92,10 +92,10 @@ abstract public class GraphContractTest {
 		
 		node1.delete();
 		
-		assertTrue(graph.getNodesByAttribute(P2, true).size() == 0);
-		assertTrue(graph.getNodesByAttribute(P2, false).size() == 0);
-		assertTrue(graph.getNodesByAttribute(P3, testEnum.A).size() == 0);
-		assertTrue(graph.getNodesByAttribute(P3, testEnum.B).size() == 0);
+		assertTrue(graph.getNodeSnapshotByAttribute(P2, true).size() == 0);
+		assertTrue(graph.getNodeSnapshotByAttribute(P2, false).size() == 0);
+		assertTrue(graph.getNodeSnapshotByAttribute(P3, testEnum.A).size() == 0);
+		assertTrue(graph.getNodeSnapshotByAttribute(P3, testEnum.B).size() == 0);
 		
 		assertTrue(node2.getNoEdges() == 0);
 		assertTrue(node2.getNoProperties() == 0);
@@ -190,10 +190,10 @@ abstract public class GraphContractTest {
 		createPropertyTypes();
 		node.createProperty(P2, true);
 		
-		assertTrue(graph.getNodesByAttribute(P2, true).size() == 1);
-		assertTrue(graph.getNodesByAttribute(P2, true).iterator().next().equals(node));
+		assertTrue(graph.getNodeSnapshotByAttribute(P2, true).size() == 1);
+		assertTrue(graph.getNodeSnapshotByAttribute(P2, true).iterator().next().equals(node));
 		
-		assertTrue(graph.getNodesByAttribute(P2, false).size() == 0);
+		assertTrue(graph.getNodeSnapshotByAttribute(P2, false).size() == 0);
 	}
 	
 	/** Tests that a boolean property is indexed correctly after deletion. */
@@ -205,8 +205,8 @@ abstract public class GraphContractTest {
 		createPropertyTypes();
 		node.createProperty(P2, true).delete();
 		
-		assertTrue(graph.getNodesByAttribute(P2, true).size() == 0);
-		assertTrue(graph.getNodesByAttribute(P2, false).size() == 0);
+		assertTrue(graph.getNodeSnapshotByAttribute(P2, true).size() == 0);
+		assertTrue(graph.getNodeSnapshotByAttribute(P2, false).size() == 0);
 	}
 	
 	/**
@@ -222,8 +222,8 @@ abstract public class GraphContractTest {
 		node.createProperty(P2, true).delete();
 		node.createProperty(P2, false).delete();
 		
-		assertTrue(graph.getNodesByAttribute(P2, true).size() == 1);
-		assertTrue(graph.getNodesByAttribute(P2, false).size() == 0);
+		assertTrue(graph.getNodeSnapshotByAttribute(P2, true).size() == 1);
+		assertTrue(graph.getNodeSnapshotByAttribute(P2, false).size() == 0);
 	}
 	
 	/**
@@ -251,10 +251,10 @@ abstract public class GraphContractTest {
 		createPropertyTypes();
 		node.createProperty(P3, testEnum.A);
 		
-		assertTrue(graph.getNodesByAttribute(P3, testEnum.A).size() == 1);
-		assertTrue(graph.getNodesByAttribute(P3, testEnum.A).iterator().next().equals(node));
+		assertTrue(graph.getNodeSnapshotByAttribute(P3, testEnum.A).size() == 1);
+		assertTrue(graph.getNodeSnapshotByAttribute(P3, testEnum.A).iterator().next().equals(node));
 		
-		assertTrue(graph.getNodesByAttribute(P3, testEnum.B).size() == 0);
+		assertTrue(graph.getNodeSnapshotByAttribute(P3, testEnum.B).size() == 0);
 	}
 	
 	/** Tests that an enum property is indexed correctly after deletion. */
@@ -266,8 +266,8 @@ abstract public class GraphContractTest {
 		createPropertyTypes();
 		node.createProperty(P3, testEnum.A).delete();
 		
-		assertTrue(graph.getNodesByAttribute(P3, testEnum.A).size() == 0);
-		assertTrue(graph.getNodesByAttribute(P3, testEnum.B).size() == 0);
+		assertTrue(graph.getNodeSnapshotByAttribute(P3, testEnum.A).size() == 0);
+		assertTrue(graph.getNodeSnapshotByAttribute(P3, testEnum.B).size() == 0);
 	}
 	
 	/** Tests creating a relationship. */

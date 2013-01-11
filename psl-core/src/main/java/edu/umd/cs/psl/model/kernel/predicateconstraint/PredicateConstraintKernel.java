@@ -82,7 +82,7 @@ public class PredicateConstraintKernel extends AbstractKernel {
 
 	@Override
 	public void groundAll(AtomManager atomManager, GroundKernelStore gks) {
-		/* Not needed, triggered only upon insertion */
+		// TODO: Implement this
 	}
 
 	@Override

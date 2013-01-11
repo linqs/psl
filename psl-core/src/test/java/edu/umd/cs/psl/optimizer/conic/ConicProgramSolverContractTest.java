@@ -49,13 +49,15 @@ abstract public class ConicProgramSolverContractTest {
 	private Vector<Map<Variable, Double>> solutions;
 	
 	@Before
-	public final void setUp() {
+	public final void setUp()
+			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		solvers = getConicProgramSolverImplementations();
 		programs = new Vector<ConicProgram>();
 		solutions = new Vector<Map<Variable, Double>>();
 	}
 
-	abstract protected List<? extends ConicProgramSolver> getConicProgramSolverImplementations();
+	abstract protected List<? extends ConicProgramSolver> getConicProgramSolverImplementations()
+			throws ClassNotFoundException, IllegalAccessException, InstantiationException;
 	
 	@Test
 	public void testSolve() {
@@ -83,7 +85,7 @@ abstract public class ConicProgramSolverContractTest {
 					solutionMatrix = new DenseDoubleMatrix1D((int) program.getX().size());
 					
 					for (Map.Entry<Variable, Double> e : solution.entrySet()) {
-						solutionMatrix.set(program.index(e.getKey()), e.getValue());
+						solutionMatrix.set(program.getIndex(e.getKey()), e.getValue());
 					}
 					assertTrue(alg.norm2(solutionMatrix.assign(program.getX(), DoubleFunctions.minus)) < SOLUTION_TOLERANCE);
 					program.checkInMatrices();
@@ -191,7 +193,7 @@ abstract public class ConicProgramSolverContractTest {
 			solutionMatrix = new DenseDoubleMatrix1D((int) program.getX().size());
 			
 			for (Map.Entry<Variable, Double> e : solution.entrySet()) {
-				solutionMatrix.set(program.index(e.getKey()), e.getValue());
+				solutionMatrix.set(program.getIndex(e.getKey()), e.getValue());
 			}
 			assertTrue(alg.norm2(solutionMatrix.assign(program.getX(), DoubleFunctions.minus)) < SOLUTION_TOLERANCE);
 			program.checkInMatrices();

@@ -20,7 +20,7 @@ import com.google.common.base.Preconditions;
 
 public class NumericUtilities {
 
-	public static final double relaxedEpsilon = 1e-3;
+	public static final double relaxedEpsilon = 2e-2;
 	public static final double strictEpsilong = 1e-8;
 	
 	public static boolean equals(double val1, double val2) {

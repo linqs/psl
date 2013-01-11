@@ -23,7 +23,8 @@ import edu.umd.cs.psl.optimizer.conic.ConicProgramSolverFactory;
 public class HomogeneousIPMFactory implements ConicProgramSolverFactory {
 
 	@Override
-	public ConicProgramSolver getConicProgramSolver(ConfigBundle config) {
+	public ConicProgramSolver getConicProgramSolver(ConfigBundle config)
+			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		return new HomogeneousIPM(config);
 	}
 
