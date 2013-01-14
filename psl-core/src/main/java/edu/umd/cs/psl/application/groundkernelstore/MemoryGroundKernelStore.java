@@ -111,11 +111,8 @@ public class MemoryGroundKernelStore implements GroundKernelStore {
 	
 	@Override
 	public double getTotalWeightedIncompatibility() {
-		double objective = 0.0;
-		for (GroundKernel gk : groundKernels) {
-			objective+=gk.getIncompatibility();
-		}
-		return objective;
+		// TODO
+		throw new UnsupportedOperationException(); 
 	}
 	
 	@Override

@@ -43,7 +43,9 @@ import edu.umd.cs.psl.model.predicate.StandardPredicate;
  * <p>
  * A RandomVariableAtom is considered when it is instantiated in memory
  * and added to its {@link Database}'s {@link AtomCache} via
- * {@link #getAtom(Predicate, GroundTerm...)}.
+ * {@link #getAtom(Predicate, GroundTerm...)}. Warning: if a RandomVariableAtom
+ * is instantiated in memory other than via a call to {@link #getAtom(Predicate, GroundTerm...)},
+ * then no consideration event will be generated during the life of the Database.
  * <p>
  * A RandomVariableAtom is activated if it has not already been activated
  * since being instantiated in memory and one of two things occur:
