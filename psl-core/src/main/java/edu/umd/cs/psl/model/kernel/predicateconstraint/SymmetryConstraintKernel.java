@@ -29,22 +29,25 @@ import edu.umd.cs.psl.model.atom.AtomManager;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.kernel.AbstractKernel;
+import edu.umd.cs.psl.model.kernel.ConstraintKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.model.parameters.Parameters;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
+import edu.umd.cs.psl.util.database.Queries;
 
 /**
- * Induces {@link GroundSymmetricPredicateConstraint} {@link GroundKernel GroundKernels}
- * to ensure symmetry among {@link Atom Atoms} of a {@link StandardPredicate}.
+ * Induces {@link GroundSymmetryConstraint GroundSymmetryConstraints}
+ * between {@link Atom Atoms} of a binary {@link StandardPredicate} with
+ * symmetric arguments.
  */
-public class SymmetricPredicateConstraintKernel extends AbstractKernel {
+public class SymmetryConstraintKernel extends AbstractKernel implements ConstraintKernel {
 
 	private final StandardPredicate predicate;
 	private final int hashcode;
 
-	public SymmetricPredicateConstraintKernel(StandardPredicate p) {
+	public SymmetryConstraintKernel(StandardPredicate p) {
 		Preconditions
 				.checkArgument(p.getArity() == 2,
 						"Only binary predicates are supported.");
@@ -54,7 +57,7 @@ public class SymmetricPredicateConstraintKernel extends AbstractKernel {
 
 	@Override
 	public Kernel clone() {
-		return new SymmetricPredicateConstraintKernel(predicate);
+		return new SymmetryConstraintKernel(predicate);
 	}
 
 	public StandardPredicate getPredicate() {
@@ -67,38 +70,43 @@ public class SymmetricPredicateConstraintKernel extends AbstractKernel {
 	}
 
 	@Override
-	public boolean isCompatibilityKernel() {
-		return false;
-	}
-
-	@Override
 	public void setParameters(Parameters para) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public void groundAll(AtomManager atomManager, GroundKernelStore gks) {
-		// TODO: Implement this
+		for (GroundAtom atom : Queries.getAllAtoms(atomManager.getDatabase(), predicate))
+			groundConstraint(atom, atomManager, gks);
 	}
 
 	/**
-	 * notifyAtomEvent will listen for the consideration of a {@link RandomVariableAtom}.
+	 * Listens for the consideration of a {@link RandomVariableAtom}.
 	 * If such an Atom p(A,B) of this Kernel's {@link Predicate} is considered, then this
-	 * Kernel will introduce a {@link GroundSymmetricPredicateConstraint}
-	 * between p(A,B) and p(B,A), constraining their truth values to be equal,
-	 * unless this GroundKernel already exists or A == B.
+	 * Kernel will introduce a {@link GroundSymmetryConstraint}
+	 * between p(A,B) and p(B,A).
 	 */
 	@Override
 	public void notifyAtomEvent(AtomEvent event, GroundKernelStore gks) {
 		GroundAtom atom = event.getAtom();
+		groundConstraint(atom, event.getEventFramework(), gks);
+	}
+	
+	
+	/**
+	 * Introduces a {@link GroundSymmetryConstraint} between p(A,B) and p(B,A),
+	 * constraining their truth values to be equal, unless this GroundKernel
+	 * already exists or A == B.
+	 */
+	private void groundConstraint(GroundAtom atom, AtomManager atomManager, GroundKernelStore gks) {
 		GroundTerm[] terms = (GroundTerm[]) atom.getArguments();
 		/* If A != B... */
 		if (!terms[0].equals(terms[1])) {
 			GroundAtom atomA = atom;
 			GroundTerm[] newTerms = {terms[1], terms[0]};
-			GroundAtom atomB = event.getEventFramework().getAtom(predicate, newTerms);
+			GroundAtom atomB = atomManager.getAtom(predicate, newTerms);
 			
-			GroundSymmetricPredicateConstraint con = new GroundSymmetricPredicateConstraint(this, atomA, atomB);
+			GroundSymmetryConstraint con = new GroundSymmetryConstraint(this, atomA, atomB);
 
 			GroundKernel oldcon = gks.getGroundKernel(con);
 			if (oldcon == null) {

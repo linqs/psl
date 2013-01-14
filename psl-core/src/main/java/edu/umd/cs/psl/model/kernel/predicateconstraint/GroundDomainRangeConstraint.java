@@ -33,7 +33,7 @@ import edu.umd.cs.psl.reasoner.function.FunctionSummand;
 
 /**
  * GroundPredicateConstraint uses a
- * {@link edu.umd.cs.psl.model.kernel.predicateconstraint.PredicateConstraintKernel
+ * {@link edu.umd.cs.psl.model.kernel.predicateconstraint.DomainRangeConstraintKernel
  * PredicateConstraintKernel} as a template and operates on an
  * {@link edu.umd.cs.psl.model.argument.Entity Entity} involved in the
  * associated {@link edu.umd.cs.psl.model.predicate.Predicate Predicate},
@@ -42,16 +42,16 @@ import edu.umd.cs.psl.reasoner.function.FunctionSummand;
  * 
  * 
  */
-public class GroundPredicateConstraint implements GroundConstraintKernel {
+public class GroundDomainRangeConstraint implements GroundConstraintKernel {
 
-	private final PredicateConstraintKernel template;
+	private final DomainRangeConstraintKernel template;
 	private final GroundTerm anchor;
 
 	private final Set<GroundAtom> atoms;
 
 	private final int hashcode;
 
-	public GroundPredicateConstraint(PredicateConstraintKernel t, GroundTerm a) {
+	public GroundDomainRangeConstraint(DomainRangeConstraintKernel t, GroundTerm a) {
 		template = t;
 		anchor = a;
 		atoms = new HashSet<GroundAtom>();
@@ -67,11 +67,11 @@ public class GroundPredicateConstraint implements GroundConstraintKernel {
 	 *             {@link edu.umd.cs.psl.model.predicate.Predicate predicate}
 	 *             does not match the
 	 *             {@link edu.umd.cs.psl.model.predicate.Predicate predicate} in
-	 *             the {@link PredicateConstraintKernel} specified in the
+	 *             the {@link DomainRangeConstraintKernel} specified in the
 	 *             constructor, or the argument
 	 *             {@link edu.umd.cs.psl.model.argument.Term Term} in the
 	 *             {@link edu.umd.cs.psl.model.atom.Atom Atom's}
-	 *             {@link PredicateConstraintType constraint}-specified position
+	 *             {@link DomainRangeConstraintType constraint}-specified position
 	 *             doesn't match the
 	 *             {@link edu.umd.cs.psl.model.argument.Entity Entity} provided
 	 *             in the constructor.
@@ -84,9 +84,9 @@ public class GroundPredicateConstraint implements GroundConstraintKernel {
 				.equals(anchor))
 			throw new IllegalArgumentException("Atom does not match anchor: "
 					+ atom);
-		assert !atoms.contains(atom) : "Atom has already been added!";
-
-		atoms.add(atom);
+		
+		if (!atoms.contains(atom))
+			atoms.add(atom);
 	}
 
 	@Override
@@ -148,7 +148,7 @@ public class GroundPredicateConstraint implements GroundConstraintKernel {
 			return true;
 		if (oth == null || !(getClass().isInstance(oth)))
 			return false;
-		GroundPredicateConstraint con = (GroundPredicateConstraint) oth;
+		GroundDomainRangeConstraint con = (GroundDomainRangeConstraint) oth;
 		return template.equals(con.template) && anchor.equals(con.anchor);
 	}
 

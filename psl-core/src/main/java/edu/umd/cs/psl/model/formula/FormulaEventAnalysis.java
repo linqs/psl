@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.Vector;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
@@ -39,38 +38,22 @@ import edu.umd.cs.psl.model.predicate.StandardPredicate;
 
 public class FormulaEventAnalysis {
 
-	private final Multimap<Predicate,Atom> dependence;
-	private final Formula formula;
-	private final Set<Formula> queries;
+	private Multimap<Predicate,Atom> dependence;
+	private Set<Formula> queries;
 	
-	public FormulaEventAnalysis(Formula f) {
-		formula = f;
+	public FormulaEventAnalysis(List<Atom> atoms) {
 		dependence = ArrayListMultimap.create();
-		//AbstractFormulaTraverser.traverse(formula, new FormulaAnalyser());
 		queries = new HashSet<Formula>();
-		Conjunction c = ((Conjunction) formula).flatten();
 		
-		Vector<Formula> necessary = new Vector<Formula>(c.getNoFormulas());
-		Atom a;
-		for (int i = 0; i < c.getNoFormulas(); i++) {
-			/* If the formula is an atom, not a negated atom */
-			if (c.get(i) instanceof Atom) {
-				a = (Atom) c.get(i);
-				necessary.add(a);
-				dependence.put(a.getPredicate(), a);
-			}
-		}
+		for (int i = 0; i < atoms.size(); i++)
+			dependence.put(atoms.get(i).getPredicate(), atoms.get(i));
 		
-		if (necessary.size() == 1) {
-			queries.add(necessary.get(0));
-		}
-		else {
-			queries.add(new Conjunction((Formula[]) necessary.toArray(new Formula[necessary.size()])));
-		}
-	}
-	
-	public Formula getFormula() {
-		return formula;
+		if (atoms.size() == 0)
+			throw new IllegalArgumentException("Must provide at least one Atom.");
+		else if (atoms.size() == 1)
+			queries.add(atoms.get(0));
+		else
+			queries.add(new Conjunction(atoms.toArray(new Formula[atoms.size()])));
 	}
 	
 	public Set<Formula> getQueryFormulas() {

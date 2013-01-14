@@ -16,6 +16,8 @@
  */
 package edu.umd.cs.psl.util.collection;
 
+import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
+import edu.umd.cs.psl.model.kernel.ConstraintKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
 
 public class Filters {
@@ -24,7 +26,7 @@ public class Filters {
 
 		@Override
 		public boolean apply(Kernel k) {
-			return k.isCompatibilityKernel();
+			return k instanceof CompatibilityKernel;
 		}
 		
 	};
@@ -33,7 +35,7 @@ public class Filters {
 
 		@Override
 		public boolean apply(Kernel k) {
-			return !k.isCompatibilityKernel();
+			return k instanceof ConstraintKernel;
 		}
 		
 	};

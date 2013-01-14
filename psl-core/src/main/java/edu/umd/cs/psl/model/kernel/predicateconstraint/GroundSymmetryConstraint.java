@@ -25,6 +25,7 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.kernel.BindingMode;
+import edu.umd.cs.psl.model.kernel.ConstraintKernel;
 import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.optimizer.NumericUtilities;
@@ -34,18 +35,18 @@ import edu.umd.cs.psl.reasoner.function.FunctionSum;
 import edu.umd.cs.psl.reasoner.function.FunctionSummand;
 
 /**
- * Constrains two {@link Atom Atoms} of the form p(A,B) and p(B,A) to be equal.
+ * Constrains two {@link GroundAtom GroundAtoms} to be equal.
  */
-public class GroundSymmetricPredicateConstraint implements GroundConstraintKernel {
+public class GroundSymmetryConstraint implements GroundConstraintKernel {
 
-	private final SymmetricPredicateConstraintKernel kernel;
+	private final ConstraintKernel kernel;
 	private final GroundAtom atomA;
 	private final GroundAtom atomB;
 	private final Set<GroundAtom> atoms;
 
 	private final int hashcode;
 
-	public GroundSymmetricPredicateConstraint(SymmetricPredicateConstraintKernel k, GroundAtom a, GroundAtom b) {
+	public GroundSymmetryConstraint(ConstraintKernel k, GroundAtom a, GroundAtom b) {
 		kernel = k;
 		atomA = a;
 		atomB = b;
@@ -110,7 +111,7 @@ public class GroundSymmetricPredicateConstraint implements GroundConstraintKerne
 			return true;
 		if (oth == null || !(getClass().isInstance(oth)))
 			return false;
-		GroundSymmetricPredicateConstraint con = (GroundSymmetricPredicateConstraint) oth;
+		GroundSymmetryConstraint con = (GroundSymmetryConstraint) oth;
 		return (atomA.equals(con.atomA) && atomB.equals(con.atomB)
 				|| atomA.equals(con.atomB) && atomB.equals(con.atomA)); 
 	}

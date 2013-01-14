@@ -21,11 +21,11 @@ import edu.umd.cs.psl.reasoner.function.FunctionComparator;
 
 /**
  * PredicateConstraintType provides a method of specifying predicate constraints as used by the 
- * {@link PredicateConstraintKernel}. The constraint functions are based on the types supported by 
+ * {@link DomainRangeConstraintKernel}. The constraint functions are based on the types supported by 
  * {@link FunctionComparator} and include equality and non-equality constraints. 
  * PredicateConstraintType provides the ability to determine whether a constraint holds or not.
  */
-public enum PredicateConstraintType {
+public enum DomainRangeConstraintType {
 	Functional {
 
 		@Override
@@ -132,7 +132,7 @@ public enum PredicateConstraintType {
 	abstract FunctionComparator constraint();
 	/**
 	 * 
-	 * @param val the value of the computed function derived from the {@link edu.umd.cs.psl.model.predicate.Predicate Predicate}, eg. from a {@link edu.umd.cs.psl.model.kernel.predicateconstraint.GroundPredicateConstraint GroundPredicateConstraint}
+	 * @param val the value of the computed function derived from the {@link edu.umd.cs.psl.model.predicate.Predicate Predicate}, eg. from a {@link edu.umd.cs.psl.model.kernel.predicateconstraint.GroundDomainRangeConstraint GroundPredicateConstraint}
 	 * @return boolean specifying whther the constraint is met
 	 */
 	boolean constraintHolds(double val) {

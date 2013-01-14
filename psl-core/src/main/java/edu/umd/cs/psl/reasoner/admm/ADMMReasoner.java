@@ -392,12 +392,12 @@ public class ADMMReasoner implements Reasoner {
 	}
 
 	@Override
-	public Iterable<GroundKernel> getGroundKernels(Kernel k) {
+	public Iterable<GroundKernel> getGroundKernels(final Kernel k) {
 		return Iterables.filter(groundKernels, new com.google.common.base.Predicate<GroundKernel>() {
 
 			@Override
-			public boolean apply(GroundKernel k) {
-				return k.getKernel().equals(k);
+			public boolean apply(GroundKernel gk) {
+				return gk.getKernel().equals(k);
 			}
 			
 		});

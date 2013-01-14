@@ -101,11 +101,6 @@ public interface Kernel extends AtomEvent.Listener, Cloneable {
 	 */
 	public void setParameters(Parameters para);
 	
-	/**
-	 * @return TRUE is this Kernel is a template for {@link GroundCompatibilityKernel}s
-	 */
-	public boolean isCompatibilityKernel();
-	
 	public Kernel clone() throws CloneNotSupportedException;
 	
 }

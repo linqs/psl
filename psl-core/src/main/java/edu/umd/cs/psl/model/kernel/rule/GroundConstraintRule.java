@@ -24,7 +24,7 @@ import edu.umd.cs.psl.reasoner.function.FunctionComparator;
 public class GroundConstraintRule extends AbstractGroundRule implements
 		GroundConstraintKernel {
 	
-	public GroundConstraintRule(ConstraintRuleKernel k, Formula f) {
+	GroundConstraintRule(ConstraintRuleKernel k, Formula f) {
 		super(k, f);
 	}
 	

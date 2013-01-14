@@ -16,73 +16,73 @@
  */
 package edu.umd.cs.psl.groovy;
 
-import edu.umd.cs.psl.model.kernel.predicateconstraint.PredicateConstraintType;
+import edu.umd.cs.psl.model.kernel.predicateconstraint.DomainRangeConstraintType;
 
 public enum PredicateConstraint {
 
 	Functional {
 		@Override
-		public PredicateConstraintType getPSLConstraint() {
-			return PredicateConstraintType.Functional;
+		public DomainRangeConstraintType getPSLConstraint() {
+			return DomainRangeConstraintType.Functional;
 		}
 	},
 
 	InverseFunctional {
 		@Override
-		public PredicateConstraintType getPSLConstraint() {
-			return PredicateConstraintType.InverseFunctional;
+		public DomainRangeConstraintType getPSLConstraint() {
+			return DomainRangeConstraintType.InverseFunctional;
 		}
 	},
 
 	PartialFunctional {
 		@Override
-		public PredicateConstraintType getPSLConstraint() {
-			return PredicateConstraintType.PartialFunctional;
+		public DomainRangeConstraintType getPSLConstraint() {
+			return DomainRangeConstraintType.PartialFunctional;
 		}
 	},
 
 	PartialInverseFunctional {
 		@Override
-		public PredicateConstraintType getPSLConstraint() {
-			return PredicateConstraintType.PartialInverseFunctional;
+		public DomainRangeConstraintType getPSLConstraint() {
+			return DomainRangeConstraintType.PartialInverseFunctional;
 		}
 	},
 
 	PIF {
 		@Override
-		public PredicateConstraintType getPSLConstraint() {
-			return PredicateConstraintType.PartialInverseFunctional;
+		public DomainRangeConstraintType getPSLConstraint() {
+			return DomainRangeConstraintType.PartialInverseFunctional;
 		}
 	},
 
 	PF {
 		@Override
-		public PredicateConstraintType getPSLConstraint() {
-			return PredicateConstraintType.PartialFunctional;
+		public DomainRangeConstraintType getPSLConstraint() {
+			return DomainRangeConstraintType.PartialFunctional;
 		}
 	},
 
 	IF {
 		@Override
-		public PredicateConstraintType getPSLConstraint() {
-			return PredicateConstraintType.InverseFunctional;
+		public DomainRangeConstraintType getPSLConstraint() {
+			return DomainRangeConstraintType.InverseFunctional;
 		}
 	},
 
 	F {
 		@Override
-		public PredicateConstraintType getPSLConstraint() {
-			return PredicateConstraintType.Functional;
+		public DomainRangeConstraintType getPSLConstraint() {
+			return DomainRangeConstraintType.Functional;
 		}
 	},
 
 	Symmetric {
 		@Override
-		public PredicateConstraintType getPSLConstraint() {
+		public DomainRangeConstraintType getPSLConstraint() {
 			return null;
 		}
 	};
 
-	public abstract PredicateConstraintType getPSLConstraint();
+	public abstract DomainRangeConstraintType getPSLConstraint();
 
 }

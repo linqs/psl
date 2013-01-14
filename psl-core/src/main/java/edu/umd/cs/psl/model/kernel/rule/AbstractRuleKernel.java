@@ -16,7 +16,10 @@
  */
 package edu.umd.cs.psl.model.kernel.rule;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +27,9 @@ import org.slf4j.LoggerFactory;
 import edu.umd.cs.psl.application.groundkernelstore.GroundKernelStore;
 import edu.umd.cs.psl.database.DatabaseQuery;
 import edu.umd.cs.psl.database.ResultList;
+import edu.umd.cs.psl.model.argument.Term;
+import edu.umd.cs.psl.model.argument.Variable;
+import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.AtomEvent;
 import edu.umd.cs.psl.model.atom.AtomEventFramework;
 import edu.umd.cs.psl.model.atom.AtomManager;
@@ -36,21 +42,92 @@ import edu.umd.cs.psl.model.formula.traversal.FormulaGrounder;
 import edu.umd.cs.psl.model.kernel.AbstractKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
+import edu.umd.cs.psl.model.predicate.StandardPredicate;
 
 abstract public class AbstractRuleKernel extends AbstractKernel {
 	private static final Logger log = LoggerFactory.getLogger(AbstractRuleKernel.class);
 	
 	protected Formula formula;
+	protected final List<Atom> posLiterals, negLiterals;
 	protected final FormulaEventAnalysis formulaAnalysis;
 	
 	public AbstractRuleKernel(Formula f) {
 		super();
 		formula = f;
+		posLiterals = new ArrayList<Atom>(4);
+		negLiterals = new ArrayList<Atom>(4);
 		Formula notF = new Negation(f).getDNF();
-		if (notF instanceof Conjunction)
-			formulaAnalysis = new FormulaEventAnalysis((Conjunction) notF);
-		else
-			throw new IllegalArgumentException("Formula must be a disjunction of literals.");
+		
+		/*
+		 * Extracts the positive and negative Atoms from the negated Formula
+		 */
+		boolean validFormula = true;
+		if (notF instanceof Conjunction) {
+			Conjunction c = ((Conjunction) notF).flatten();
+			for (int i = 0; i < c.getNoFormulas(); i++) {
+				if (c.get(i) instanceof Atom) {
+					posLiterals.add((Atom) c.get(i));
+				}
+				else if (c.get(i) instanceof Negation) {
+					Negation n = (Negation) c.get(i);
+					if (n.getFormula() instanceof Atom) {
+						negLiterals.add((Atom) n.getFormula());
+					}
+					else {
+						validFormula = false;
+					}
+				}
+				else {
+					validFormula = false;
+				}
+			}
+		}
+		else if (notF instanceof Atom) {
+			posLiterals.add((Atom) notF);
+		}
+		else {
+			validFormula = false;
+		}
+		
+		if (!validFormula) {
+			throw new IllegalArgumentException("Formula must be a disjunction of literals (or a negative literal).");
+		}
+		
+		/*
+		 * Checks that all Variables in the negated Formula appear in a positive
+		 * literal with a StandardPredicate.
+		 */
+		Set<Variable> allowedVariables = new HashSet<Variable>();
+		Set<Variable> variablesToCheck = new HashSet<Variable>();
+		Set<Variable> setToAdd;
+		
+		for (Atom atom : posLiterals) {
+			if (atom.getPredicate() instanceof StandardPredicate)
+				setToAdd = allowedVariables;
+			else
+				setToAdd = variablesToCheck;
+			
+			for (Term t : atom.getArguments()) {
+				if (t instanceof Variable)
+					setToAdd.add((Variable) t);
+			}
+		}
+		
+		for (Atom atom : negLiterals) {
+			for (Term t : atom.getArguments()) {
+				if (t instanceof Variable)
+					variablesToCheck.add((Variable) t);
+			}
+		}
+		
+		for (Variable v : variablesToCheck)
+			if (!allowedVariables.contains(v))
+				throw new IllegalArgumentException("All Variables must be used at " +
+						"least once as an argument for a negative literal with a " +
+						"StandardPredicate.");
+		
+		/* Analyzes the positive literals to determine which queries to run */
+		formulaAnalysis = new FormulaEventAnalysis(posLiterals);
 	}
 	
 	protected void groundFormula(AtomManager atomManager, GroundKernelStore gks, ResultList res,  VariableAssignment var) {

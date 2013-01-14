@@ -40,11 +40,6 @@ public class CompatibilityRuleKernel extends AbstractRuleKernel implements Compa
 	protected GroundCompatibilityRule groundFormulaInstance(Formula f) {
 		return new GroundCompatibilityRule(this, f);
 	}
-
-	@Override
-	public boolean isCompatibilityKernel() {
-		return true;
-	}
 	
 	@Override
 	public Weight getWeight() {

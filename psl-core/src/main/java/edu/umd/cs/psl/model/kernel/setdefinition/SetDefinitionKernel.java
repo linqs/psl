@@ -51,6 +51,7 @@ import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.formula.FormulaEventAnalysis;
 import edu.umd.cs.psl.model.formula.traversal.FormulaGrounder;
 import edu.umd.cs.psl.model.kernel.AbstractKernel;
+import edu.umd.cs.psl.model.kernel.ConstraintKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.model.kernel.rule.AbstractGroundRule;
 import edu.umd.cs.psl.model.parameters.Parameters;
@@ -77,7 +78,7 @@ import edu.umd.cs.psl.util.dynamicclass.DynamicClassLoader;
  * @author Matthias Broecheler
  *
  */
-public class SetDefinitionKernel extends AbstractKernel {
+public class SetDefinitionKernel extends AbstractKernel implements ConstraintKernel {
 
 	private static final Logger log = LoggerFactory.getLogger(SetDefinitionKernel.class);
 	
@@ -180,12 +181,6 @@ public class SetDefinitionKernel extends AbstractKernel {
 		s.append(" =: ").append(setPredicate);
 		s.append(isSoftSet?"[soft]":"[]");
 		return s.toString();
-	}
-
-	
-	@Override
-	public boolean isCompatibilityKernel() {
-		return false;
 	}
 	
 	@Override

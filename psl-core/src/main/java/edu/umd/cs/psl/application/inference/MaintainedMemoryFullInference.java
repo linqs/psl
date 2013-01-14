@@ -24,10 +24,7 @@ import edu.umd.cs.psl.application.util.Grounding;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.config.EmptyBundle;
-<<<<<<< HEAD
-=======
 import edu.umd.cs.psl.config.Factory;
->>>>>>> develop
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.evaluation.process.RunningProcess;
 import edu.umd.cs.psl.evaluation.process.local.LocalProcessMonitor;

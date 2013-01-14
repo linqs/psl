@@ -33,28 +33,30 @@ import edu.umd.cs.psl.model.atom.AtomManager;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.QueryAtom;
 import edu.umd.cs.psl.model.kernel.AbstractKernel;
+import edu.umd.cs.psl.model.kernel.ConstraintKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
+import edu.umd.cs.psl.util.database.Queries;
 
 /**
- * Produces {@link GroundPredicateConstraint GroundPredicateConstraints}.
- * 
+ * Produces {@link GroundDomainRangeConstraint GroundPredicateConstraints}.
+ * <p>
  * Checks whether sets of {@link Atom Atoms} of a binary {@link StandardPredicate}
- * adhere to a {@link PredicateConstraintType}.
+ * adhere to a {@link DomainRangeConstraintType}.
  */
-public class PredicateConstraintKernel extends AbstractKernel {
+public class DomainRangeConstraintKernel extends AbstractKernel implements ConstraintKernel {
 
 	private final StandardPredicate predicate;
-	private final PredicateConstraintType constraintType;
+	private final DomainRangeConstraintType constraintType;
 
 	private final int hashcode;
 
-	public PredicateConstraintKernel(StandardPredicate p,
-			PredicateConstraintType t) {
+	public DomainRangeConstraintKernel(StandardPredicate p,
+			DomainRangeConstraintType t) {
 		super();
 		Preconditions.checkArgument(p.getArity() == 2, "Currently, " +
-				"PredicateConstraints only support binary predicates.");
+				"DomainRangeConstraintKernels only support binary predicates.");
 		constraintType = t;
 		predicate = p;
 
@@ -64,10 +66,10 @@ public class PredicateConstraintKernel extends AbstractKernel {
 
 	@Override
 	public Kernel clone() {
-		return new PredicateConstraintKernel(predicate, constraintType);
+		return new DomainRangeConstraintKernel(predicate, constraintType);
 	}
 
-	public PredicateConstraintType getConstraintType() {
+	public DomainRangeConstraintType getConstraintType() {
 		return constraintType;
 	}
 
@@ -76,61 +78,55 @@ public class PredicateConstraintKernel extends AbstractKernel {
 	}
 
 	@Override
-	public boolean isCompatibilityKernel() {
-		return false;
-	}
-
-	@Override
 	public void groundAll(AtomManager atomManager, GroundKernelStore gks) {
-		// TODO: Implement this
+		for (GroundAtom atom : Queries.getAllAtoms(atomManager.getDatabase(), predicate))
+			groundConstraint(atom, atomManager, gks);
 	}
 
 	@Override
 	protected void notifyAtomEvent(AtomEvent event, GroundKernelStore gks) {
-		/*
-		 * When an atom is considered, it checks to see if that Atom has
-		 * already been added to the appropriate ground Kernel. (It shouldn't
-		 * have.)
-		 */
-		if (event.getAtom().getRegisteredGroundKernels(this).isEmpty()) {
-			/* Constructs the ground Kernel in order to see if it already exists */
-			GroundAtom atom = event.getAtom();
-			int pos = constraintType.position();
-			GroundTerm anchor = (GroundTerm) atom.getArguments()[pos];
-			GroundTerm other = (GroundTerm) atom.getArguments()[1 - pos];
-			GroundPredicateConstraint con = new GroundPredicateConstraint(this, anchor);
+		//if (event.getAtom().getRegisteredGroundKernels(this).isEmpty()) {
+		groundConstraint(event.getAtom(), event.getEventFramework(), gks);
+	}
+	
+	private void groundConstraint(GroundAtom atom, AtomManager atomManager, GroundKernelStore gks) {
+		/* Constructs the ground Kernel in order to see if it already exists */
+		int pos = constraintType.position();
+		GroundTerm anchor = (GroundTerm) atom.getArguments()[pos];
+		GroundTerm other = (GroundTerm) atom.getArguments()[1 - pos];
+		GroundDomainRangeConstraint con = new GroundDomainRangeConstraint(this, anchor);
 
-			GroundKernel oldcon = gks.getGroundKernel(con);
+		GroundKernel oldcon = gks.getGroundKernel(con);
 
-			/* If it already exists, adds the considered Atom to it */
-			if (oldcon != null) {
-				((GroundPredicateConstraint) oldcon).addAtom(atom);
-				gks.changedGroundKernel(oldcon);
-			} else {
-				con.addAtom(atom);
-				
-				// Check for atoms from database
-				Variable var = new Variable("V");
-				Term[] args = new Term[2];
-				args[pos] = anchor;
-				args[1 - pos] = var;
-				
-				// Constructs and executes the DatabaseQuery
-				DatabaseQuery query = new DatabaseQuery(new QueryAtom(predicate, args));
-				query.getProjectionSubset().add(var);
-				ResultList res = event.getEventFramework().getDatabase().executeQuery(query);
-				
-				for (int i = 0; i < res.size(); i++) {
-					GroundTerm[] terms = new GroundTerm[2];
-					terms[pos] = anchor;
-					terms[1 - pos] = res.get(i)[0];
-					if (!terms[1 - pos].equals(other)) {
-						con.addAtom(event.getEventFramework().getAtom(predicate, terms));
-					}
+		/* If it already exists, adds the considered Atom to it */
+		if (oldcon != null) {
+			((GroundDomainRangeConstraint) oldcon).addAtom(atom);
+			gks.changedGroundKernel(oldcon);
+		} else {
+			con.addAtom(atom);
+			
+			/* Check for Atoms from database */
+			Variable var = new Variable("V");
+			Term[] args = new Term[2];
+			args[pos] = anchor;
+			args[1 - pos] = var;
+			
+			/* Constructs and executes the DatabaseQuery */
+			DatabaseQuery query = new DatabaseQuery(new QueryAtom(predicate, args));
+			query.getProjectionSubset().add(var);
+			ResultList res = atomManager.getDatabase().executeQuery(query);
+			
+			/* Adds the Atoms to the GroundConstraintKernel */
+			for (int i = 0; i < res.size(); i++) {
+				GroundTerm[] terms = new GroundTerm[2];
+				terms[pos] = anchor;
+				terms[1 - pos] = res.get(i)[0];
+				if (!terms[1 - pos].equals(other)) {
+					con.addAtom(atomManager.getAtom(predicate, terms));
 				}
-				gks.addGroundKernel(con);
 			}
-		} /* else it already has such a constraint defined */
+			gks.addGroundKernel(con);
+		}
 	}
 
 	@Override

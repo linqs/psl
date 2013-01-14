@@ -16,19 +16,20 @@
  */
 package edu.umd.cs.psl.reasoner.conic;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.google.common.collect.Iterables;
 
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.model.atom.Atom;
-import edu.umd.cs.psl.model.atom.AtomEventFramework;
+import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
+import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.optimizer.conic.ConicProgramSolver;
 import edu.umd.cs.psl.optimizer.conic.ConicProgramSolverFactory;
 import edu.umd.cs.psl.optimizer.conic.ipm.HomogeneousIPMFactory;
@@ -50,8 +51,6 @@ import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
  */
 public class ConicReasoner implements Reasoner {
 
-	private static final Logger log = LoggerFactory.getLogger(ConicReasoner.class);
-	
 	/**
 	 * Prefix of property keys used by this class.
 	 * 
@@ -80,37 +79,25 @@ public class ConicReasoner implements Reasoner {
 	public static final String DISTRIBUTION_KEY = CONFIG_PREFIX + ".distribution";
 	/** Default value for DISTRIBUTION_KEY property. */
 	public static final DistributionType DISTRIBUTION_DEFAULT = DistributionType.linear;
-	
-	/** Key for int property for the maximum number of rounds of inference. */
-	public static final String MAX_ROUNDS_KEY = CONFIG_PREFIX + ".maxrounds";
-	
-	/** Default value for MAX_ROUNDS_KEY property */
-	public static final int MAX_ROUNDS_DEFAULT = 500;
 
 	ConicProgram program;
 	ConicProgramSolver solver;
-	private final AtomEventFramework atomFramework;
 	final DistributionType type;
-	private final int maxMapRounds;
 	private final Map<GroundKernel, ConicProgramProxy> gkRepresentation;
 	private final Map<AtomFunctionVariable, VariableConicProgramProxy> vars;
 	
 	/**
 	 * Constructs a ConicReasoner.
 	 * 
-	 * @param framework  the AtomEventFramework that manages the {@link edu.umd.cs.psl.model.atom.Atom Atoms}
-	 *                     being reasoned over
 	 * @param config     configuration for the ConicReasoner
 	 */
-	public ConicReasoner(AtomEventFramework framework, ConfigBundle config)
+	public ConicReasoner(ConfigBundle config)
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-		atomFramework = framework;
 		program = new ConicProgram();
 		ConicProgramSolverFactory cpsFactory = (ConicProgramSolverFactory) config.getFactory(CPS_KEY, CPS_DEFAULT);
 		solver = cpsFactory.getConicProgramSolver(config);
 		solver.setConicProgram(program);
 		type = (DistributionType) config.getEnum(DISTRIBUTION_KEY, DISTRIBUTION_DEFAULT);
-		maxMapRounds = config.getInt(MAX_ROUNDS_KEY, MAX_ROUNDS_DEFAULT);
 		gkRepresentation = new HashMap<GroundKernel, ConicProgramProxy>();
 		vars = new HashMap<AtomFunctionVariable, VariableConicProgramProxy>();
 	}
@@ -139,7 +126,17 @@ public class ConicReasoner implements Reasoner {
 	}
 	
 	@Override
-	public void updateGroundKernel(GroundKernel gk) {
+	public GroundKernel getGroundKernel(GroundKernel gk) {
+		// TODO: make this not a terrible solution
+				for (GroundKernel candidate : gkRepresentation.keySet())
+					if (gk.equals(candidate))
+						return candidate;
+				
+				return null;
+	}
+	
+	@Override
+	public void changedGroundKernel(GroundKernel gk) {
 		if (!gkRepresentation.containsKey(gk)) throw new IllegalArgumentException("Provided evidence has never been added to the reasoner: " + gk);
 		ConicProgramProxy proxy = gkRepresentation.get(gk);
 		if (gk instanceof GroundCompatibilityKernel) {
@@ -159,7 +156,8 @@ public class ConicReasoner implements Reasoner {
 		proxy.remove();
 	}
 	
-	private void inferenceStep() {
+	@Override
+	public void optimize() {
 		solver.solve();
 		
 		for (Map.Entry<AtomFunctionVariable, VariableConicProgramProxy> e : vars.entrySet()) {
@@ -168,20 +166,49 @@ public class ConicReasoner implements Reasoner {
 	}
 	
 	@Override
-	public void mapInference() {
-		int rounds = 0;
-		int numActivated = 0;
-		do {
-			rounds++;
-			log.debug("Starting round {} optimization",rounds);
-			inferenceStep();
-			//Only activate if there is another iteration
-			if (rounds<maxMapRounds) {
-				numActivated = atomFramework.checkToActivate();
-				atomFramework.workOffJobQueue();
+	public Iterable<GroundKernel> getGroundKernels() {
+		return Collections.unmodifiableSet(gkRepresentation.keySet());
+	}
+
+	@Override
+	public Iterable<GroundCompatibilityKernel> getCompatibilityKernels() {
+		return Iterables.filter(gkRepresentation.keySet(), GroundCompatibilityKernel.class);
+	}
+	
+	public Iterable<GroundConstraintKernel> getConstraintKernels() {
+		return Iterables.filter(gkRepresentation.keySet(), GroundConstraintKernel.class);
+	}
+
+	@Override
+	public Iterable<GroundKernel> getGroundKernels(final Kernel k) {
+		return Iterables.filter(gkRepresentation.keySet(), new com.google.common.base.Predicate<GroundKernel>() {
+
+			@Override
+			public boolean apply(GroundKernel gk) {
+				return gk.getKernel().equals(k);
 			}
-			log.debug("Completed Round {} and activated {} atoms",rounds,numActivated);
-		} while (numActivated>0 && rounds<maxMapRounds);
+			
+		});
+	}
+
+	@Override
+	public double getTotalWeightedIncompatibility() {
+		Kernel k;
+		double weightedIncompatibility;
+		double objective = 0.0;
+		for (GroundKernel gk : gkRepresentation.keySet()) {
+			weightedIncompatibility = gk.getIncompatibility();
+			k = gk.getKernel();
+			if (k instanceof CompatibilityKernel)
+				weightedIncompatibility *= ((CompatibilityKernel) k).getWeight().getWeight();
+			objective += weightedIncompatibility;
+		}
+		return objective;
+	}
+
+	@Override
+	public int size() {
+		return gkRepresentation.size();
 	}
 	
 	@Override

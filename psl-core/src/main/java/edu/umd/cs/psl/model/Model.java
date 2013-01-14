@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.Set;
 
 import edu.umd.cs.psl.application.ModelApplication;
+import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
+import edu.umd.cs.psl.model.kernel.ConstraintKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
 
 /**
@@ -139,10 +141,12 @@ public class Model {
 		List<Kernel> constraintKernels = new LinkedList<Kernel>();
 		List<Kernel> compatibilityKernels = new LinkedList<Kernel>();
 		for (Kernel kernel : kernels)
-			if (kernel.isCompatibilityKernel())
+			if (kernel instanceof CompatibilityKernel)
 				compatibilityKernels.add(kernel);
-			else
+			else if (kernel instanceof ConstraintKernel)
 				constraintKernels.add(kernel);
+			else
+				throw new IllegalStateException("Unrecognized kernel: " + kernel);
 
 		StringBuilder s = new StringBuilder();
 		s.append("Model:\n");

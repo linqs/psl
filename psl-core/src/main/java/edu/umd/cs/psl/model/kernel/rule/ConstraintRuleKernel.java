@@ -19,20 +19,16 @@ package edu.umd.cs.psl.model.kernel.rule;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import edu.umd.cs.psl.model.formula.Formula;
+import edu.umd.cs.psl.model.kernel.ConstraintKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
 
-public class ConstraintRuleKernel extends AbstractRuleKernel {
+public class ConstraintRuleKernel extends AbstractRuleKernel implements ConstraintKernel {
 	
 	private final int hashcode;
 
 	public ConstraintRuleKernel(Formula f) {
 		super(f);
 		hashcode = new HashCodeBuilder().append(formula).toHashCode();
-	}
-
-	@Override
-	public boolean isCompatibilityKernel() {
-		return false;
 	}
 
 	@Override

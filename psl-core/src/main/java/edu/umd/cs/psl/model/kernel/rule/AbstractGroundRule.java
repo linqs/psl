@@ -55,7 +55,7 @@ abstract public class AbstractGroundRule implements GroundKernel {
 
 	private final int hashcode;
 	
-	public AbstractGroundRule(AbstractRuleKernel k, Formula f) {
+	AbstractGroundRule(AbstractRuleKernel k, Formula f) {
 		kernel = k;
 		formula = ((Conjunction) f).flatten();
 		numGroundings=1;
