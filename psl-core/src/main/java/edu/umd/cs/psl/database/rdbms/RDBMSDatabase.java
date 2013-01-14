@@ -419,7 +419,15 @@ public class RDBMSDatabase implements Database {
 		
 		Term[] arguments = atom.getArguments();
 		try {
-			// First, fill in arguments
+			// Update the value for the atom
+			update.setDouble(sqlIndex, atom.getValue());
+			sqlIndex ++;
+			
+			// Update the confidence value
+			update.setDouble(sqlIndex, atom.getConfidenceValue());
+			sqlIndex ++;
+			
+			// Next, fill in arguments
 			for (int i = 0; i < ph.argumentColumns().length; i++) {
 				if (arguments[i] instanceof Attribute) {
 					update.setObject(sqlIndex, ((Attribute)arguments[i]).getValue());
@@ -427,23 +435,15 @@ public class RDBMSDatabase implements Database {
 					update.setObject(sqlIndex, ((UniqueID)arguments[i]).getInternalID());
 				} else
 					throw new IllegalArgumentException("Unknown argument type: " + arguments[i].getClass());
-				sqlIndex++;
+				sqlIndex ++;
 			}
-			
-			// Update the value for the atom
-			update.setDouble(sqlIndex, atom.getValue());
-			sqlIndex ++;
-			
-			// Update the confidence value
-			update.setDouble(sqlIndex, atom.getConfidenceValue());
 			
 			// Batch the command for later execution
 			update.addBatch();
 			
 			// Record keeping
 			pendingOperationCount ++;
-			if (!pendingStatements.contains(update))
-				pendingStatements.add(update);
+			pendingStatements.add(update);
 		} catch (SQLException e) {
 			throw new RuntimeException("Error updating atom.", e);
 		}
@@ -464,7 +464,7 @@ public class RDBMSDatabase implements Database {
 					insert.setObject(sqlIndex, ((UniqueID)arguments[i]).getInternalID());
 				} else
 					throw new IllegalArgumentException("Unknown argument type: " + arguments[i].getClass());
-				sqlIndex++;
+				sqlIndex ++;
 			}
 			
 			// Update the value for the atom
@@ -474,13 +474,19 @@ public class RDBMSDatabase implements Database {
 			// Update the confidence value
 			insert.setDouble(sqlIndex, atom.getConfidenceValue());
 			
-			// Batch the command for later execution
-			insert.addBatch();
-			
-			// Record keeping
-			pendingOperationCount ++;
-			if (!pendingStatements.contains(insert))
+			if (pendingStatements.contains(insert)) {
+				executePendingStatements();
+				
+				updateAtom(atom);
+			} else {
+				// Batch the command for later execution
+				insert.addBatch();
+				
+				// Record keeping
+				pendingOperationCount ++;
 				pendingStatements.add(insert);
+			}
+
 		} catch (SQLException e) {
 			throw new RuntimeException("Error inserting atom.", e);
 		}
