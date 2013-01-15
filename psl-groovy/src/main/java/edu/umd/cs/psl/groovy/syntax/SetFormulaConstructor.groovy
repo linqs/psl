@@ -21,8 +21,6 @@ import edu.umd.cs.psl.model.set.term.SetTerm;
 
 import java.util.Set;
 
-import com.google.common.collect.ImmutableSet;
-
 import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.formula.*;
 import edu.umd.cs.psl.model.atom.*;
