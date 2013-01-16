@@ -48,7 +48,8 @@ import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.atom.VariableAssignment;
 import edu.umd.cs.psl.model.formula.Conjunction;
 import edu.umd.cs.psl.model.formula.Formula;
-import edu.umd.cs.psl.model.formula.FormulaEventAnalysis;
+import edu.umd.cs.psl.model.formula.FormulaAnalysis;
+import edu.umd.cs.psl.model.formula.FormulaAnalysis.DNFClause;
 import edu.umd.cs.psl.model.formula.traversal.FormulaGrounder;
 import edu.umd.cs.psl.model.kernel.AbstractKernel;
 import edu.umd.cs.psl.model.kernel.ConstraintKernel;
@@ -90,7 +91,7 @@ public class SetDefinitionKernel extends AbstractKernel implements ConstraintKer
 	
 	final Map<Variable,Integer> variablePosition;
 	
-	private final List<FormulaEventAnalysis> triggerFormulas;
+	private final List<DNFClause> triggerFormulas;
 	private final List<Variable> projection;
 	
 	private final List<Set<BasicSetTerm>> sets;
@@ -114,7 +115,7 @@ public class SetDefinitionKernel extends AbstractKernel implements ConstraintKer
 		sets = Lists.newArrayList();
 		sets.add(set1.getBasicTerms());
 		sets.add(set2.getBasicTerms());
-		triggerFormulas = new ArrayList<FormulaEventAnalysis>(sets.get(0).size()*sets.get(1).size());
+		triggerFormulas = new ArrayList<DNFClause>(sets.get(0).size()*sets.get(1).size());
 
 		//Verify schema
 		if (setPredicate.getArity()!=variables.length) throw new IllegalArgumentException("Number of variables does not match predicate arity");
@@ -139,7 +140,7 @@ public class SetDefinitionKernel extends AbstractKernel implements ConstraintKer
 						trigger  = new Conjunction(setformulas[i],trigger);
 					}
 				}
-				triggerFormulas.add(new FormulaEventAnalysis(trigger));
+				triggerFormulas.add(new FormulaAnalysis(trigger).getDNFClause(0));
 			}
 		}
 		
@@ -202,10 +203,10 @@ public class SetDefinitionKernel extends AbstractKernel implements ConstraintKer
 	@Override
 	public void groundAll(AtomManager atomManager, GroundKernelStore gks) {
 		for (int k=0;k<triggerFormulas.size();k++) {
-			DatabaseQuery query = new DatabaseQuery(triggerFormulas.get(k).getFormula());
+			DatabaseQuery query = new DatabaseQuery(triggerFormulas.get(k).getQueryFormula());
 			query.getProjectionSubset().addAll(projection);
 			ResultList res = atomManager.getDatabase().executeQuery(query);
-			log.debug("Grounding size {} for formula {}",res.size(),triggerFormulas.get(k).getFormula());
+			log.debug("Grounding size {} for formula {}",res.size(),triggerFormulas.get(k).getQueryFormula());
 			for (int i=0;i<res.size();i++) {
 				newSetDefinition(atomManager, gks, res.get(i), true);
 			}
@@ -225,8 +226,8 @@ public class SetDefinitionKernel extends AbstractKernel implements ConstraintKer
 				} //Otherwise, setdefinition already exists
 			} else if (atom.getPredicate().equals(comparisonPredicate)) {
 				int numTriggered = 0;
-				for (FormulaEventAnalysis analysis : triggerFormulas) {
-					List<VariableAssignment> vars = analysis.traceAtomEvent(atom);
+				for (DNFClause clause : triggerFormulas) {
+					List<VariableAssignment> vars = clause.traceAtomEvent(atom);
 					if (vars.isEmpty()) continue;
 					
 					numTriggered+=vars.size();
@@ -236,9 +237,9 @@ public class SetDefinitionKernel extends AbstractKernel implements ConstraintKer
 						throw new UnsupportedOperationException("Second order ativation is not yet supported!");
 					
 					for (VariableAssignment var : vars) {
-						log.trace("{}",analysis.getFormula());
+						log.trace("{}", clause.getQueryFormula());
 						
-						DatabaseQuery query = new DatabaseQuery(analysis.getFormula());
+						DatabaseQuery query = new DatabaseQuery(clause.getQueryFormula());
 						query.getPartialGrounding().putAll(var);
 						query.getProjectionSubset().addAll(projection);
 						ResultList res = manager.getDatabase().executeQuery(query);
@@ -344,8 +345,8 @@ public class SetDefinitionKernel extends AbstractKernel implements ConstraintKer
 	
 	@Override
 	public void registerForAtomEvents(AtomEventFramework framework) {
-		for (FormulaEventAnalysis analysis : triggerFormulas) {
-			analysis.registerFormulaForEvents(framework, this, ActivatedEventSet);
+		for (DNFClause clause : triggerFormulas) {
+			clause.registerFormulaForEvents(framework, this, ActivatedEventSet);
 		}
 		framework.registerAtomEventListener(ActivatedEventSet, setPredicate, this);
 
@@ -353,8 +354,8 @@ public class SetDefinitionKernel extends AbstractKernel implements ConstraintKer
 	
 	@Override
 	public void unregisterForAtomEvents(AtomEventFramework framework) {
-		for (FormulaEventAnalysis analysis : triggerFormulas) {
-			analysis.unregisterFormulaForEvents(framework, this, ActivatedEventSet);
+		for (DNFClause clause : triggerFormulas) {
+			clause.unregisterFormulaForEvents(framework, this, ActivatedEventSet);
 		}
 		framework.unregisterAtomEventListener(ActivatedEventSet, setPredicate, this);
 	}

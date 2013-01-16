@@ -16,7 +16,7 @@
  */
 package edu.umd.cs.psl.model.formula;
 
-import java.util.Vector;
+import java.util.ArrayList;
 
 public class Conjunction extends AbstractBranchFormula {
 
@@ -27,7 +27,7 @@ public class Conjunction extends AbstractBranchFormula {
 	@Override
 	public Formula getDNF() {
 		Formula[] components = new Formula[getNoFormulas()];
-		Vector<Integer> disjunctions = new Vector<Integer>();
+		ArrayList<Integer> disjunctions = new ArrayList<Integer>();
 		int size = 1;
 		for (int i = 0; i < components.length; i++) {
 			components[i] = get(i).getDNF();
@@ -76,8 +76,15 @@ public class Conjunction extends AbstractBranchFormula {
 		return new Disjunction(dnfComponents);
 	}
 	
+	/**
+	 * Collapses nested Conjunctions.
+	 * <p>
+	 * Stops descending where ever a Formula other than a Conjunction is.
+	 * 
+	 * @return the flattened Conjunction
+	 */
 	public Conjunction flatten() {
-		Vector<Formula> conj = new Vector<Formula>(getNoFormulas());
+		ArrayList<Formula> conj = new ArrayList<Formula>(getNoFormulas());
 		for (Formula f : formulas) {
 			if (f instanceof Conjunction) {
 				Formula[] newFormulas = ((Conjunction) f).flatten().formulas;

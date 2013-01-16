@@ -99,7 +99,7 @@ public class PersistedAtomManager implements AtomManager {
 			if (persistedCache.contains(atom))
 				return atom;
 			else
-				throw new IllegalArgumentException("Can only call getAtom() on persisted RandomVariableAtoms using a PersistedAtomManager.");
+				throw new IllegalArgumentException("Can only call getAtom() on persisted RandomVariableAtoms using a PersistedAtomManager. Cannot access " + atom);
 		} else
 			return atom;
 	}

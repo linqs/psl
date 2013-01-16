@@ -16,9 +16,9 @@
  */
 package edu.umd.cs.psl.model.kernel.rule;
 
-import edu.umd.cs.psl.model.atom.Atom;
-import edu.umd.cs.psl.model.formula.Conjunction;
-import edu.umd.cs.psl.model.formula.Formula;
+import java.util.List;
+
+import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.parameters.Weight;
 import edu.umd.cs.psl.reasoner.function.ConstantNumber;
@@ -28,8 +28,8 @@ import edu.umd.cs.psl.reasoner.function.MaxFunction;
 public class GroundCompatibilityRule extends AbstractGroundRule implements
 		GroundCompatibilityKernel {
 	
-	GroundCompatibilityRule(CompatibilityRuleKernel k, Formula f) {
-		super(k, f);
+	GroundCompatibilityRule(CompatibilityRuleKernel k, List<GroundAtom> posLiterals, List<GroundAtom> negLiterals) {
+		super(k, posLiterals, negLiterals);
 	}
 
 	@Override
@@ -39,13 +39,10 @@ public class GroundCompatibilityRule extends AbstractGroundRule implements
 	
 	@Override
 	public FunctionTerm getFunctionDefinition() {
-		assert numGroundings>=0;
-//		if (formula instanceof Conjunction)
+		if (posLiterals.size() + negLiterals.size() == 1)
+			return getFunction(numGroundings);
+		else
 			return MaxFunction.of(getFunction(numGroundings), new ConstantNumber(0.0));
-//		else if (formula instanceof Atom)
-//			return getFunction(numGroundings);
-//		else
-//			throw new IllegalStateException();
 	}
 
 	@Override
@@ -67,6 +64,6 @@ public class GroundCompatibilityRule extends AbstractGroundRule implements
 	
 	@Override
 	public String toString() {
-		return "{" + getWeight().toString() + "} " + formula; 
+		return "{" + getWeight().toString() + "} " + super.toString(); 
 	}
 }

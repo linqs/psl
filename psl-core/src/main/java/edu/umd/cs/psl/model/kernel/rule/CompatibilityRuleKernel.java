@@ -16,8 +16,11 @@
  */
 package edu.umd.cs.psl.model.kernel.rule;
 
+import java.util.List;
+
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
+import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
@@ -37,8 +40,8 @@ public class CompatibilityRuleKernel extends AbstractRuleKernel implements Compa
 	}
 
 	@Override
-	protected GroundCompatibilityRule groundFormulaInstance(Formula f) {
-		return new GroundCompatibilityRule(this, f);
+	protected GroundCompatibilityRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals) {
+		return new GroundCompatibilityRule(this, posLiterals, negLiterals);
 	}
 	
 	@Override

@@ -16,7 +16,9 @@
  */
 package edu.umd.cs.psl.model.kernel.rule;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
@@ -49,18 +51,28 @@ abstract public class AbstractGroundRule implements GroundKernel {
 	public static final FormulaEvaluator formulaNorm =FormulaEvaluator.LUKASIEWICZ;
 	
 	protected final AbstractRuleKernel kernel;
-	protected final Conjunction formula;
+	protected final List<GroundAtom> posLiterals;
+	protected final List<GroundAtom> negLiterals;
 	
 	protected int numGroundings;
 
 	private final int hashcode;
 	
-	AbstractGroundRule(AbstractRuleKernel k, Formula f) {
+	AbstractGroundRule(AbstractRuleKernel k, List<GroundAtom> posLiterals, List<GroundAtom> negLiterals) {
 		kernel = k;
-		formula = ((Conjunction) f).flatten();
+		this.posLiterals = new ArrayList<GroundAtom>(posLiterals);
+		this.negLiterals = new ArrayList<GroundAtom>(negLiterals);
+		
 		numGroundings=1;
 		
-		hashcode = new HashCodeBuilder().append(kernel).append(f).toHashCode();
+		HashCodeBuilder hcb = new HashCodeBuilder();
+		hcb.append(kernel);
+		for (GroundAtom atom : posLiterals)
+			hcb.append(atom);
+		for (GroundAtom atom : negLiterals)
+			hcb.append(atom);
+		
+		hashcode = hcb.toHashCode();
 	}
 	
 	int getNumGroundings() {
@@ -73,7 +85,8 @@ abstract public class AbstractGroundRule implements GroundKernel {
 	
 	void decreaseGroundings() {
 		numGroundings--;
-		assert numGroundings>0;
+		if (numGroundings <= 0)
+			throw new IllegalStateException("Non-positive number of groundings.");
 	}
 	
 	@Override
@@ -82,27 +95,15 @@ abstract public class AbstractGroundRule implements GroundKernel {
 	}
 	
 	protected FunctionSum getFunction(double multiplier) {
-		Formula f;
-		GroundAtom a;
-		double constant = 0.0;
 		FunctionSum sum = new FunctionSum();
 		
-		for (int i = 0; i < formula.getNoFormulas(); i++) {
-			f = formula.get(i);
-			if (f instanceof GroundAtom) {
-				a = (GroundAtom) f;
-				sum.add(new FunctionSummand(multiplier, a.getVariable()));
-				constant++;
-			}
-			else if (f instanceof Negation) {
-				a = (GroundAtom) ((Negation) f).getFormula();
-				sum.add(new FunctionSummand(-1*multiplier, a.getVariable()));
-			}
-			else
-				throw new IllegalStateException();
-		}
+		for (GroundAtom atom : posLiterals)
+			sum.add(new FunctionSummand(multiplier, atom.getVariable()));
 		
-		sum.add(new FunctionSummand(multiplier, new ConstantNumber(1.0 - constant)));
+		for (GroundAtom atom : negLiterals)
+			sum.add(new FunctionSummand(-1*multiplier, atom.getVariable()));
+		
+		sum.add(new FunctionSummand(multiplier, new ConstantNumber(1.0 - posLiterals.size())));
 		
 		return sum;
 	}
@@ -110,8 +111,11 @@ abstract public class AbstractGroundRule implements GroundKernel {
 	@Override
 	public Set<GroundAtom> getAtoms() {
 		HashSet<GroundAtom> atoms = new HashSet<GroundAtom>();
-		for (Atom atom : formula.getAtoms(new HashSet<Atom>()))
-			atoms.add((GroundAtom) atom);
+		for (GroundAtom atom : posLiterals)
+			atoms.add(atom);
+		for (GroundAtom atom : negLiterals)
+			atoms.add(atom);
+		
 		return atoms;
 	}
 
@@ -134,14 +138,33 @@ abstract public class AbstractGroundRule implements GroundKernel {
 	
 	@Override
 	public boolean equals(Object other) {
-		if (other==this) return true;
-		if (other==null || !(other instanceof GroundCompatibilityRule)) return false;
-		GroundCompatibilityRule otherRule = (GroundCompatibilityRule) other;
-		return kernel.equals(otherRule.kernel) && formula.equals(otherRule.formula);
+		if (other==this)
+			return true;
+		if (other==null || !(other instanceof AbstractGroundRule))
+			return false;
+		
+		AbstractGroundRule otherRule = (AbstractGroundRule) other;
+		if (!kernel.equals(otherRule.getKernel()))
+			return false;
+		
+		return posLiterals.equals(otherRule.posLiterals)
+				&& negLiterals.equals(otherRule.negLiterals);
 	}
 	
 	@Override
 	public int hashCode() {
 		return hashcode;
+	}
+	
+	@Override
+	public String toString() {
+		Formula[] literals = new Formula[posLiterals.size() + negLiterals.size()];
+		int i;
+		for (i = 0; i < posLiterals.size(); i++)
+			literals[i] = posLiterals.get(i);
+		for (int j = 0; j < negLiterals.size(); j++)
+			literals[i++] = new Negation(negLiterals.get(j));
+		
+		return new Conjunction(literals).toString();
 	}
 }

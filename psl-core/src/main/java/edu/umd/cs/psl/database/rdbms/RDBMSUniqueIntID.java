@@ -53,4 +53,9 @@ public class RDBMSUniqueIntID implements UniqueID {
 		assert o instanceof RDBMSUniqueIntID;
 		return id - ((RDBMSUniqueIntID)o).id;
 	}
+	
+	@Override
+	public String toString() {
+		return String.valueOf(id);
+	}
 }

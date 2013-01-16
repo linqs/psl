@@ -16,6 +16,8 @@
  */
 package edu.umd.cs.psl.model.formula;
 
+import java.util.ArrayList;
+
 public class Disjunction extends AbstractBranchFormula {
 
 	public Disjunction(Formula... f) {
@@ -33,6 +35,27 @@ public class Disjunction extends AbstractBranchFormula {
 	@Override
 	protected String separatorString() {
 		return "v";
+	}
+	
+	/**
+	 * Collapses nested Disjunctions.
+	 * <p>
+	 * Stops descending where ever a Formula other than a Disjunction is.
+	 * 
+	 * @return the flattened Disjunction
+	 */
+	public Disjunction flatten() {
+		ArrayList<Formula> disj = new ArrayList<Formula>(getNoFormulas());
+		for (Formula f : formulas) {
+			if (f instanceof Disjunction) {
+				Formula[] newFormulas = ((Disjunction) f).flatten().formulas;
+				for (Formula newF : newFormulas)
+					disj.add(newF);
+			}
+			else
+				disj.add(f);
+		}
+		return new Disjunction((Formula[]) disj.toArray(new Formula[disj.size()]));
 	}
 
 }

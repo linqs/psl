@@ -17,9 +17,7 @@
 package edu.umd.cs.psl.model.kernel.rule;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,114 +25,71 @@ import org.slf4j.LoggerFactory;
 import edu.umd.cs.psl.application.groundkernelstore.GroundKernelStore;
 import edu.umd.cs.psl.database.DatabaseQuery;
 import edu.umd.cs.psl.database.ResultList;
+import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.Term;
 import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.AtomEvent;
 import edu.umd.cs.psl.model.atom.AtomEventFramework;
 import edu.umd.cs.psl.model.atom.AtomManager;
+import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.VariableAssignment;
-import edu.umd.cs.psl.model.formula.Conjunction;
 import edu.umd.cs.psl.model.formula.Formula;
-import edu.umd.cs.psl.model.formula.FormulaEventAnalysis;
+import edu.umd.cs.psl.model.formula.FormulaAnalysis;
+import edu.umd.cs.psl.model.formula.FormulaAnalysis.DNFClause;
 import edu.umd.cs.psl.model.formula.Negation;
-import edu.umd.cs.psl.model.formula.traversal.FormulaGrounder;
 import edu.umd.cs.psl.model.kernel.AbstractKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
-import edu.umd.cs.psl.model.predicate.StandardPredicate;
 
 abstract public class AbstractRuleKernel extends AbstractKernel {
 	private static final Logger log = LoggerFactory.getLogger(AbstractRuleKernel.class);
 	
 	protected Formula formula;
-	protected final List<Atom> posLiterals, negLiterals;
-	protected final FormulaEventAnalysis formulaAnalysis;
+	protected final DNFClause clause;
 	
 	public AbstractRuleKernel(Formula f) {
 		super();
 		formula = f;
-		posLiterals = new ArrayList<Atom>(4);
-		negLiterals = new ArrayList<Atom>(4);
-		Formula notF = new Negation(f).getDNF();
+		FormulaAnalysis analysis = new FormulaAnalysis(new Negation(formula));
 		
-		/*
-		 * Extracts the positive and negative Atoms from the negated Formula
-		 */
-		boolean validFormula = true;
-		if (notF instanceof Conjunction) {
-			Conjunction c = ((Conjunction) notF).flatten();
-			for (int i = 0; i < c.getNoFormulas(); i++) {
-				if (c.get(i) instanceof Atom) {
-					posLiterals.add((Atom) c.get(i));
-				}
-				else if (c.get(i) instanceof Negation) {
-					Negation n = (Negation) c.get(i);
-					if (n.getFormula() instanceof Atom) {
-						negLiterals.add((Atom) n.getFormula());
-					}
-					else {
-						validFormula = false;
-					}
-				}
-				else {
-					validFormula = false;
-				}
-			}
-		}
-		else if (notF instanceof Atom) {
-			posLiterals.add((Atom) notF);
-		}
-		else {
-			validFormula = false;
-		}
-		
-		if (!validFormula) {
+		if (analysis.getNumDNFClauses() > 1)
 			throw new IllegalArgumentException("Formula must be a disjunction of literals (or a negative literal).");
-		}
+		else
+			clause = analysis.getDNFClause(0);
 		
-		/*
-		 * Checks that all Variables in the negated Formula appear in a positive
-		 * literal with a StandardPredicate.
-		 */
-		Set<Variable> allowedVariables = new HashSet<Variable>();
-		Set<Variable> variablesToCheck = new HashSet<Variable>();
-		Set<Variable> setToAdd;
+		if (!clause.getAllVariablesBound())
+			throw new IllegalArgumentException("All Variables must be used at " +
+					"least once as an argument for a negative literal with a " +
+					"StandardPredicate.");
 		
-		for (Atom atom : posLiterals) {
-			if (atom.getPredicate() instanceof StandardPredicate)
-				setToAdd = allowedVariables;
-			else
-				setToAdd = variablesToCheck;
-			
-			for (Term t : atom.getArguments()) {
-				if (t instanceof Variable)
-					setToAdd.add((Variable) t);
-			}
-		}
+		if (clause.isGround())
+			throw new IllegalArgumentException("Formula has no Variables.");
 		
-		for (Atom atom : negLiterals) {
-			for (Term t : atom.getArguments()) {
-				if (t instanceof Variable)
-					variablesToCheck.add((Variable) t);
-			}
-		}
-		
-		for (Variable v : variablesToCheck)
-			if (!allowedVariables.contains(v))
-				throw new IllegalArgumentException("All Variables must be used at " +
-						"least once as an argument for a negative literal with a " +
-						"StandardPredicate.");
-		
-		/* Analyzes the positive literals to determine which queries to run */
-		formulaAnalysis = new FormulaEventAnalysis(posLiterals);
+		if (!clause.isQueriable())
+			throw new IllegalArgumentException("Formula is not a valid rule for unknown reason.");
+	}
+	
+	@Override
+	public void groundAll(AtomManager atomManager, GroundKernelStore gks) {
+		ResultList res = atomManager.getDatabase().executeQuery(new DatabaseQuery(clause.getQueryFormula()));
+		groundFormula(atomManager, gks, res, null);
 	}
 	
 	protected void groundFormula(AtomManager atomManager, GroundKernelStore gks, ResultList res,  VariableAssignment var) {
 		log.trace("Grounding {} instances of rule {}", res.size(), formula);
-		FormulaGrounder grounder = new FormulaGrounder(atomManager, res, var);
-		while (grounder.hasNext()) {
-			AbstractGroundRule groundRule = groundFormulaInstance(grounder.ground(formulaAnalysis.getFormula()));
+		
+		List<GroundAtom> posLiterals = new ArrayList<GroundAtom>(4);
+		List<GroundAtom> negLiterals = new ArrayList<GroundAtom>(4);
+		
+		for (int i = 0; i < res.size(); i++) {
+			for (int j = 0; j < posLiterals.size(); j++)
+				posLiterals.add(groundAtom(atomManager, posLiterals.get(j), res, i));
+			
+			for (int j = 0; j < negLiterals.size(); j++)
+				negLiterals.add(groundAtom(atomManager, negLiterals.get(j), res, i));
+			
+			AbstractGroundRule groundRule = groundFormulaInstance(posLiterals, negLiterals);
 			GroundKernel oldrule = gks.getGroundKernel(groundRule);
 			if (oldrule != null) {
 				((AbstractGroundRule)oldrule).increaseGroundings();
@@ -142,44 +97,49 @@ abstract public class AbstractRuleKernel extends AbstractKernel {
 			} else {
 				gks.addGroundKernel(groundRule);
 			}
-			grounder.next();
+			
+			posLiterals.clear();
+			negLiterals.clear();
 		}
 	}
 	
-	abstract protected AbstractGroundRule groundFormulaInstance(Formula f);
-	
-	@Override
-	public void groundAll(AtomManager atomManager, GroundKernelStore gks) {
-		for (Formula query : formulaAnalysis.getQueryFormulas()) {
-			ResultList res = atomManager.getDatabase().executeQuery(new DatabaseQuery(query));
-			groundFormula(atomManager, gks, res, null);
-		}
+	protected GroundAtom groundAtom(AtomManager atomManager, Atom atom, ResultList res, int resultIndex) {
+		Term[] oldArgs = atom.getArguments();
+		GroundTerm[] newArgs = new GroundTerm[atom.getArity()];
+		for (int i = 0; i < oldArgs.length; i++)
+			if (oldArgs[i] instanceof Variable)
+				newArgs[i] = res.get(resultIndex, (Variable) oldArgs[i]);
+			else if (oldArgs[i] instanceof GroundTerm)
+				newArgs[i] = (GroundTerm) oldArgs[i];
+			else
+				throw new IllegalArgumentException("Unrecognized type of Term.");
+		
+		return atomManager.getAtom(atom.getPredicate(), newArgs);
 	}
+	
+	abstract protected AbstractGroundRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals);
 
 	@Override
 	public void notifyAtomEvent(AtomEvent event, GroundKernelStore gks) {
-		List<VariableAssignment> vars = formulaAnalysis.traceAtomEvent(event.getAtom());
+		List<VariableAssignment> vars = clause.traceAtomEvent(event.getAtom());
 		if (!vars.isEmpty()) {
 			for (VariableAssignment var : vars) {
-				for (Formula query : formulaAnalysis.getQueryFormulas()) {
-					// TODO fix me: ResultList res = app.getAtomManager().getActiveGroundings(query, var);
-					DatabaseQuery dbQuery = new DatabaseQuery(query);
-					dbQuery.getPartialGrounding().putAll(var);
-					ResultList res = event.getEventFramework().getDatabase().executeQuery(dbQuery);
-					groundFormula(event.getEventFramework(), gks, res, var);
-				}
+				DatabaseQuery dbQuery = new DatabaseQuery(clause.getQueryFormula());
+				dbQuery.getPartialGrounding().putAll(var);
+				ResultList res = event.getEventFramework().getDatabase().executeQuery(dbQuery);
+				groundFormula(event.getEventFramework(), gks, res, var);
 			}
 		}
 	}
 	
 	@Override
 	public void registerForAtomEvents(AtomEventFramework manager) {
-		formulaAnalysis.registerFormulaForEvents(manager, this, ActivatedEventSet);
+		clause.registerFormulaForEvents(manager, this, ActivatedEventSet);
 	}
 
 	@Override
 	public void unregisterForAtomEvents(AtomEventFramework manager) {
-		formulaAnalysis.unregisterFormulaForEvents(manager, this, ActivatedEventSet);
+		clause.unregisterFormulaForEvents(manager, this, ActivatedEventSet);
 	}
 
 	@Override

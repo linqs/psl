@@ -197,7 +197,7 @@ public class RDBMSDataStore implements DataStore {
 		} catch (SQLException e) {
 			throw new RuntimeException("Error reading database metadata.", e);
 		} finally {
-			log.debug("Registered {} pre-existing predicates from database.",
+			log.debug("Registered {} pre-existing predicates from RDBMS.",
 					numPredicates);
 		}
 	}

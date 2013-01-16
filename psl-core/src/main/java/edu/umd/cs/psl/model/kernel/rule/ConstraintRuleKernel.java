@@ -16,8 +16,11 @@
  */
 package edu.umd.cs.psl.model.kernel.rule;
 
+import java.util.List;
+
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
+import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.kernel.ConstraintKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
@@ -32,8 +35,8 @@ public class ConstraintRuleKernel extends AbstractRuleKernel implements Constrai
 	}
 
 	@Override
-	protected AbstractGroundRule groundFormulaInstance(Formula f) {
-		return new GroundConstraintRule(this, f);
+	protected AbstractGroundRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals) {
+		return new GroundConstraintRule(this, posLiterals, negLiterals);
 	}
 	
 	@Override
