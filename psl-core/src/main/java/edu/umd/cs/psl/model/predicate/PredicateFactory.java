@@ -119,6 +119,7 @@ public class PredicateFactory {
 	 *                                       or extFun does not provide valid ArgumentTypes
 	 */
 	public ExternalFunctionalPredicate createFunctionalPredicate(String name, ExternalFunction extFun) {
+		name = name.toUpperCase();
 		Predicate p = predicateByName.get(name);
 		if (p != null) {
 			if (p instanceof ExternalFunctionalPredicate
@@ -162,7 +163,7 @@ public class PredicateFactory {
 	 * @return the Predicate, or NULL if no Predicate with that name exists
 	 */
 	public Predicate getPredicate(String name) {
-		return predicateByName.get(name);
+		return predicateByName.get(name.toUpperCase());
 	}
 	
 	public Iterable<FunctionalPredicate> getFunctionalPredicates() {

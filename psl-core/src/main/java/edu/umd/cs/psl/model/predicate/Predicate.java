@@ -45,7 +45,7 @@ abstract public class Predicate {
 	 */
 	Predicate(String name, ArgumentType[] types) {
 		this.types = types;
-		predicateName = name;
+		predicateName = name.toUpperCase();
 	}
 
 	/**

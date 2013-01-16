@@ -52,6 +52,8 @@ import edu.umd.cs.psl.model.set.term.SetTerm
  */
 class PSLModel extends Model {
 	// Keys for Groovy syntactic sugar
+	private static final String predicateKey = 'predicate';
+	private static final String predicateArgsKey = 'types';
 	private static final String functionKey = 'function';
 	private static final String ruleKey = 'rule';
 	private static final String setComparisonKey = 'setcomparison';
@@ -70,7 +72,7 @@ class PSLModel extends Model {
 		context.metaClass.propertyMissing = { String name ->
 			return lookupProperty(name);
 		}
-		context.metaClass.methodMissing = { String name, Map args ->
+		context.metaClass.methodMissing = { String name, args ->
 			return createFormulaContainer(name, args);
 		}
 	}
@@ -101,14 +103,16 @@ class PSLModel extends Model {
 	 * @param name		the predicate to use for the Formula
 	 * @return			a FormulaContainer 
 	 */
-	private createFormulaContainer(String name, Map args) {
+	private Object createFormulaContainer(String name, Object[] args) {
 		Predicate pred = pf.getPredicate(name);
 		
 		if (pred != null) {
 			Term[] terms = new Term[args.size()];
 			
 			for (int i = 0; i < terms.length; i ++) {
-				if ((args[i] instanceof Term)) {
+				if (args[i] instanceof GenericVariable) {
+					terms[i]=args[i].toAtomVariable();
+				} else if ((args[i] instanceof Term)) {
 					terms[i] = (Term)args[i];
 				} else if (args[i] instanceof String) {
 					terms[i] = new StringAttribute(args[i]);
@@ -167,7 +171,11 @@ class PSLModel extends Model {
 	 * Allows for syntactic sugar when creating rules, functions, and set comparisons.
 	 */
 	def add(Map args) {
-		if (args.containsKey(functionKey)) {
+		if (args.containsKey(predicateKey)) {
+			String predicatename = args[predicateKey];
+			args.remove predicateKey;
+			return addPredicate(predicatename, args);
+		} else if (args.containsKey(functionKey)) {
 			String functionname = args[functionKey];
 			args.remove functionKey;
 			return addFunction(functionname, args);
@@ -195,6 +203,27 @@ class PSLModel extends Model {
 		addConstraint(type,args)
 	}
 	
+	def addPredicate(String name, Map args) {
+		if (args.containsKey(predicateArgsKey)) {
+			ArgumentType[] predArgs;
+			if (args[predicateArgsKey] instanceof List<?>) {
+				predArgs = ((List<?>) args[predicateArgsKey]).toArray(new ArgumentType[1]);
+			}
+			else if (args[predicateArgsKey] instanceof ArgumentType) {
+				predArgs = new ArgumentType[1];
+				predArgs[0] = args[predicateArgsKey];
+			}
+			else
+				throw new IllegalArgumentException("Must provide at least one ArgumentType. " +
+					"Include multiple arguments as a list wrapped in [...].");
+				
+			pf.createStandardPredicate(name, predArgs);
+		}
+		else
+			throw new IllegalArgumentException("Must provide at least one ArgumentType. " +
+				"Include multiple arguments as a list wrapped in [...].");
+	}
+	
 	def addFunction(String name, Map args) {
 		if (pf.getPredicate(name) != null)
 			throw new IllegalArgumentException("A similarity function with the name [${name}] has already been defined.");
@@ -209,29 +238,11 @@ class PSLModel extends Model {
 			args.remove 'implementation';
 		}
 		
-		List<String> argumentNames = [];
-		int pos=0;
-		args.each { k,v ->
-			assert k instanceof String;
-			if (!(v instanceof ArgumentType)) {
-				throw new IllegalArgumentException("Unrecognized argument type: ${v}");
-			}
-			if (!((ArgumentType)v).isSubTypeOf(implementation.getArgumentTypes()[pos])) {
-				throw new IllegalArgumentException("Argument type does not match external function: ${k}");
-			}
-			argumentNames.add k;
-			pos++;
-		}
-		if (argumentNames.size() != implementation.getArity())
-			throw new IllegalArgumentException("The arity of the external function does not match provided number of arguments.");
-		return addFunctionalPredicate(name,argumentNames,implementation);
+		return addFunctionalPredicate(name, implementation);
 	}
 	
-	public FunctionalPredicate addFunctionalPredicate(String name, List<String> argNames, ExternalFunction extFun) {
-		if (argNames.size() != extFun.getArity())
-			throw new IllegalArgumentException("Arity does not match: " + argNames.size());
-		FunctionalPredicate p = pf.createFunctionalPredicate(name, extFun);
-		return p;
+	public FunctionalPredicate addFunctionalPredicate(String name, ExternalFunction extFun) {
+		return pf.createFunctionalPredicate(name, extFun);
 	}
 	
 	def addSetComparison(String name, Map args) {
@@ -279,9 +290,9 @@ class PSLModel extends Model {
 		
 		AbstractRuleKernel pslrule;
 		if (isFact) {
-			pslrule = new ConstraintRuleKernel(this, ruleformula);
+			pslrule = new ConstraintRuleKernel(ruleformula);
 		} else {
-			pslrule = new CompatibilityRuleKernel(this, ruleformula, weight);
+			pslrule = new CompatibilityRuleKernel(ruleformula, weight);
 		}
 		
 		addKernel(pslrule);

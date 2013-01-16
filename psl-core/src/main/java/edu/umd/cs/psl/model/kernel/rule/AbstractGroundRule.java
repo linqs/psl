@@ -25,7 +25,7 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.GroundAtom;
-import edu.umd.cs.psl.model.formula.Conjunction;
+import edu.umd.cs.psl.model.formula.Disjunction;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.formula.Negation;
 import edu.umd.cs.psl.model.formula.Tnorm;
@@ -158,13 +158,14 @@ abstract public class AbstractGroundRule implements GroundKernel {
 	
 	@Override
 	public String toString() {
+		/* Negates the clause again to show clause to maximize truth of */
 		Formula[] literals = new Formula[posLiterals.size() + negLiterals.size()];
 		int i;
 		for (i = 0; i < posLiterals.size(); i++)
-			literals[i] = posLiterals.get(i);
+			literals[i] = new Negation(posLiterals.get(i));
 		for (int j = 0; j < negLiterals.size(); j++)
-			literals[i++] = new Negation(negLiterals.get(j));
+			literals[i++] = negLiterals.get(j);
 		
-		return new Conjunction(literals).toString();
+		return new Disjunction(literals).toString();
 	}
 }
