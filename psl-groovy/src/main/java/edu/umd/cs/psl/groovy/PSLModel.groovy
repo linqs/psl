@@ -16,6 +16,7 @@
  */
 package edu.umd.cs.psl.groovy
 
+import edu.umd.cs.psl.database.DataStore
 import edu.umd.cs.psl.groovy.syntax.FormulaContainer
 import edu.umd.cs.psl.groovy.syntax.GenericVariable
 import edu.umd.cs.psl.model.Model
@@ -66,9 +67,12 @@ class PSLModel extends Model {
 	
 	// Local PredicateFactory
 	private PredicateFactory pf = PredicateFactory.getFactory();
+	private DataStore ds;
+	
 	
 	// TODO: Documentation
-	public PSLModel(Object context) {
+	public PSLModel(Object context, DataStore ds) {
+		this.ds = ds;
 		context.metaClass.propertyMissing = { String name ->
 			return lookupProperty(name);
 		}
@@ -137,7 +141,6 @@ class PSLModel extends Model {
 			
 			VariableTypeMap vars = t2.getAnchorVariables(t1.getAnchorVariables(new VariableTypeMap()));
 			
-			List<String> argumentNames = [];
 			ArgumentType[] types = new ArgumentType[vars.size()];
 			Variable[] variables = new Variable[vars.size()];
 			Term[] terms = new Term[vars.size()];
@@ -147,10 +150,9 @@ class PSLModel extends Model {
 				variables[i] = var;
 				types[i] = varType;
 				terms[i] = var;
-				argumentNames.add(var.getName() + '_' + varType.toString());
 				i ++;
 			}
-			StandardPredicate auxpred = addAggregatePredicate(predname,types,argumentNames);
+			StandardPredicate auxpred = addAggregatePredicate(predname,types);
 			
 			addKernel(new SetDefinitionKernel(auxpred, t1, t2, variables, setcomp['predicate'], setcomp['aggregator']));
 			return new FormulaContainer(new QueryAtom(auxpred, terms));	
@@ -160,10 +162,9 @@ class PSLModel extends Model {
 			throw new RuntimeException("Unknown method: " + name);
 	}
 	
-	private StandardPredicate addAggregatePredicate(String name, ArgumentType[] types, List<String> argNames) {
-		if (types.length != argNames.size())
-			throw new IllegalArgumentException("Expected equal number of argument types and names!");
+	private StandardPredicate addAggregatePredicate(String name, ArgumentType[] types) {
 		StandardPredicate p = pf.createStandardPredicate(name, types);
+		ds.registerPredicate(p);
 		return p;
 	}
 	
@@ -217,7 +218,8 @@ class PSLModel extends Model {
 				throw new IllegalArgumentException("Must provide at least one ArgumentType. " +
 					"Include multiple arguments as a list wrapped in [...].");
 				
-			pf.createStandardPredicate(name, predArgs);
+			StandardPredicate pred = pf.createStandardPredicate(name, predArgs);
+			ds.registerPredicate(pred);
 		}
 		else
 			throw new IllegalArgumentException("Must provide at least one ArgumentType. " +
