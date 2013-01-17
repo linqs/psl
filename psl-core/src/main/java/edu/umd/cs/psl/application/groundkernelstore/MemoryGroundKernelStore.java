@@ -19,7 +19,7 @@ package edu.umd.cs.psl.application.groundkernelstore;
 import com.google.common.collect.Iterables;
 
 import de.mathnbits.util.KeyedRetrievalSet;
-import edu.umd.cs.psl.model.atom.GroundAtom;
+import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
@@ -40,24 +40,6 @@ public class MemoryGroundKernelStore implements GroundKernelStore {
 		groundKernels = new KeyedRetrievalSet<Kernel,GroundKernel>();
 	}
 	
-//	@Override
-//	public void addGroundKernel(GroundKernel gk) {
-//		if (!groundKernels.put(gk.getKernel(),gk))
-//			throw new IllegalArgumentException("GroundKernel has already been added: "+gk);
-//	}
-//	
-//	@Override
-//	public void changedGroundKernel(GroundKernel gk) {
-//		if (!containsGroundKernel(gk))
-//			throw new IllegalArgumentException("GroundKernel not in store: "+gk);
-//	}
-//	
-//	@Override
-//	public void removeGroundKernel(GroundKernel gk) {
-//		if (!groundKernels.remove(gk.getKernel(),gk))
-//			throw new IllegalArgumentException("GroundKernel not in store: "+gk);
-//	}
-	
 	@Override
 	public boolean containsGroundKernel(GroundKernel gk) {
 		return groundKernels.contains(gk.getKernel(),gk);
@@ -72,22 +54,20 @@ public class MemoryGroundKernelStore implements GroundKernelStore {
 	public void addGroundKernel(GroundKernel gk) {
 		if (!groundKernels.put(gk.getKernel(), gk))
 			throw new IllegalArgumentException("GroundKernel has already been added: " + gk);
-		for (GroundAtom atom : gk.getAtoms())
-			if (!atom.registerGroundKernel(gk))
-				throw new IllegalStateException("GroundKernel has already been registered with Atom: " + gk);
 	}
 	
 	@Override
 	public void changedGroundKernel(GroundKernel gk) {
-		for (GroundAtom atom : gk.getAtoms())
-			atom.registerGroundKernel(gk);
+		/* Intentionally blank */
+	}
+
+	@Override
+	public void changedKernelWeight(CompatibilityKernel k) {
+		/* Intentionally blank */
 	}
 	
 	@Override
 	public void removeGroundKernel(GroundKernel gk) {
-		for (GroundAtom atom : gk.getAtoms())
-			if (!atom.unregisterGroundKernel(gk))
-				throw new IllegalStateException("GroundKernel is not registered with atom: " + gk);
 		groundKernels.remove(gk.getKernel(), gk);
 	}
 	

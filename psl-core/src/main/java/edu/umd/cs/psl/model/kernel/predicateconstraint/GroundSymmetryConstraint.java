@@ -27,7 +27,6 @@ import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.kernel.BindingMode;
 import edu.umd.cs.psl.model.kernel.ConstraintKernel;
 import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
-import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.optimizer.NumericUtilities;
 import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
 import edu.umd.cs.psl.reasoner.function.FunctionComparator;
@@ -75,7 +74,7 @@ public class GroundSymmetryConstraint implements GroundConstraintKernel {
 	}
 
 	@Override
-	public Kernel getKernel() {
+	public ConstraintKernel getKernel() {
 		return kernel;
 	}
 	

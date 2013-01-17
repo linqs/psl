@@ -19,6 +19,9 @@ package edu.umd.cs.psl.model.kernel;
 import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
 
 public interface GroundConstraintKernel extends GroundKernel {
+	
+	@Override
+	public ConstraintKernel getKernel();
 
 	public ConstraintTerm getConstraintDefinition();
 	

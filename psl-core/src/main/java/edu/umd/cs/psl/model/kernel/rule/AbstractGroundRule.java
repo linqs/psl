@@ -32,7 +32,6 @@ import edu.umd.cs.psl.model.formula.Tnorm;
 import edu.umd.cs.psl.model.formula.traversal.FormulaEvaluator;
 import edu.umd.cs.psl.model.kernel.BindingMode;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
-import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.reasoner.function.ConstantNumber;
 import edu.umd.cs.psl.reasoner.function.FunctionSum;
 import edu.umd.cs.psl.reasoner.function.FunctionSummand;
@@ -117,11 +116,6 @@ abstract public class AbstractGroundRule implements GroundKernel {
 			atoms.add(atom);
 		
 		return atoms;
-	}
-
-	@Override
-	public Kernel getKernel() {
-		return kernel;
 	}
 	
 	public double getTruthValue() {

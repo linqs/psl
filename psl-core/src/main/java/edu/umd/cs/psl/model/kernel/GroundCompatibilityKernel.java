@@ -21,6 +21,9 @@ import edu.umd.cs.psl.reasoner.function.FunctionTerm;
 
 public interface GroundCompatibilityKernel extends GroundKernel {
 	
+	@Override
+	public CompatibilityKernel getKernel();
+	
 	public Weight getWeight();
 	
 	public double getIncompatibilityDerivative(int parameterNo);

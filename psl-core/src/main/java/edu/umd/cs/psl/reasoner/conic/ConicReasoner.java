@@ -106,7 +106,6 @@ public class ConicReasoner implements Reasoner {
 	public DistributionType getDistributionType() {
 		return type;
 	}
-
 	
 	@Override
 	public void addGroundKernel(GroundKernel gk) {
@@ -146,6 +145,17 @@ public class ConicReasoner implements Reasoner {
 			assert proxy instanceof ConstraintConicProgramProxy;
 			((ConstraintConicProgramProxy)proxy).updateConstraint(((GroundConstraintKernel)gk).getConstraintDefinition());
 		} else throw new AssertionError("Unrecognized evidence type provided: " + gk);
+	}
+	
+	@Override
+	public void changedKernelWeight(CompatibilityKernel k) {
+		for (GroundKernel gk : getGroundKernels(k)) {
+			ConicProgramProxy proxy = gkRepresentation.get(gk);
+			if (proxy instanceof FunctionConicProgramProxy)
+				((FunctionConicProgramProxy) proxy).updateGroundKernelWeight((GroundCompatibilityKernel) gk);
+			else
+				throw new IllegalStateException("Expected a FunctionConicProgramProxy.");
+		}
 	}
 	
 	@Override

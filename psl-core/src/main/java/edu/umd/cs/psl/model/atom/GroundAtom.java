@@ -16,6 +16,7 @@
  */
 package edu.umd.cs.psl.model.atom;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Set;
 
@@ -56,6 +57,11 @@ abstract public class GroundAtom extends Atom {
 		/* Until a ground kernel is registered, the empty ground kernels set 
 		 * will be used / returned to indicate an empty set. */
 		this.registeredGroundKernels = null;
+	}
+	
+	@Override
+	public GroundTerm[] getArguments() {
+		return Arrays.copyOf((GroundTerm[]) arguments, arguments.length);
 	}
 
 	/**

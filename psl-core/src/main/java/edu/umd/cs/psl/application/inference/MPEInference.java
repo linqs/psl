@@ -28,7 +28,6 @@ import edu.umd.cs.psl.evaluation.process.local.LocalProcessMonitor;
 import edu.umd.cs.psl.evaluation.result.FullInferenceResult;
 import edu.umd.cs.psl.evaluation.result.memory.MemoryFullInferenceResult;
 import edu.umd.cs.psl.model.Model;
-import edu.umd.cs.psl.model.ModelEvent;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.PersistedAtomManager;
@@ -79,8 +78,6 @@ public class MPEInference implements ModelApplication {
 		this.model = model;
 		this.db = db;
 		this.config = config;
-		
-		/* This ModelApplication doesn't need to register for ModelEvents */
 	}
 	
 	/**
@@ -118,13 +115,7 @@ public class MPEInference implements ModelApplication {
 	}
 
 	@Override
-	public void notifyModelEvent(ModelEvent event) {
-		/* Deliberately empty. This ModelApplication does not register for events. */
-	}
-
-	@Override
 	public void close() {
-		/* This ModelApplication never registered for ModelEvents, so no unregistration */
 		model=null;
 		db = null;
 		config = null;

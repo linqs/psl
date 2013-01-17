@@ -19,6 +19,7 @@ package edu.umd.cs.psl.model.kernel.rule;
 import java.util.List;
 
 import edu.umd.cs.psl.model.atom.GroundAtom;
+import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.parameters.Weight;
 import edu.umd.cs.psl.reasoner.function.ConstantNumber;
@@ -30,6 +31,11 @@ public class GroundCompatibilityRule extends AbstractGroundRule implements
 	
 	GroundCompatibilityRule(CompatibilityRuleKernel k, List<GroundAtom> posLiterals, List<GroundAtom> negLiterals) {
 		super(k, posLiterals, negLiterals);
+	}
+
+	@Override
+	public CompatibilityKernel getKernel() {
+		return (CompatibilityKernel) kernel;
 	}
 
 	@Override

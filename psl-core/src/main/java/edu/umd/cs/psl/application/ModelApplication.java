@@ -16,14 +16,14 @@
  */
 package edu.umd.cs.psl.application;
 
+import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.Model;
-import edu.umd.cs.psl.model.ModelEvent;
 
 /**
  * Combines {@link Model Models} with {@link Database Databases}
  * to perform a task, such as inference or learning.
  */
-public interface ModelApplication extends ModelEvent.Listener {
+public interface ModelApplication {
 	
 	/**
 	 * Releases all resources used by this ModelApplication.

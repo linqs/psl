@@ -19,7 +19,9 @@ package edu.umd.cs.psl.model.kernel.rule;
 import java.util.List;
 
 import edu.umd.cs.psl.model.atom.GroundAtom;
+import edu.umd.cs.psl.model.kernel.ConstraintKernel;
 import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
+import edu.umd.cs.psl.optimizer.NumericUtilities;
 import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
 import edu.umd.cs.psl.reasoner.function.FunctionComparator;
 
@@ -29,10 +31,15 @@ public class GroundConstraintRule extends AbstractGroundRule implements
 	GroundConstraintRule(ConstraintRuleKernel k, List<GroundAtom> posLiterals, List<GroundAtom> negLiterals) {
 		super(k, posLiterals, negLiterals);
 	}
+
+	@Override
+	public ConstraintKernel getKernel() {
+		return (ConstraintKernel) kernel;
+	}
 	
 	@Override
 	public double getIncompatibility() {
-		return (getTruthValue() == 1.0) ? 0 : Double.POSITIVE_INFINITY;
+		return (NumericUtilities.equals(getTruthValue(), 1.0)) ? 0 : Double.POSITIVE_INFINITY;
 	}
 
 	@Override

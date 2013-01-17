@@ -142,22 +142,22 @@ class FunctionConicProgramProxy extends ConicProgramProxy {
 		}
 	}
 	
+	void updateGroundKernelWeight(GroundCompatibilityKernel gk) {
+		if (!initialized)
+			updateGroundKernel(gk);
+		else
+			setWeight(gk.getWeight().getWeight());
+	}
+	
 	void updateGroundKernel(GroundCompatibilityKernel gk) {
-		if (gk.getWeight().getWeight() == 0) {
-			if (initialized) {
-				remove();
-			}
+		if (!initialized) {
+			initialize();
 		}
 		else {
-			if (!initialized) {
-				initialize();
-			}
-			else {
-				deleteConstraints();
-			}
-			addFunctionTerm(gk.getFunctionDefinition());
-			setWeight(gk.getWeight().getWeight());
+			deleteConstraints();
 		}
+		addFunctionTerm(gk.getFunctionDefinition());
+		setWeight(gk.getWeight().getWeight());
 	}
 	
 	protected void addFunctionTerm(FunctionTerm fun) {
