@@ -389,18 +389,6 @@ public class HierarchicalPartitioning implements Partitioner {
 		return relWeighter;
 	}
 	
-	private int indexOfMin(double[] values) {
-		int indexOfMin = 0;
-		double min = values[0];
-		for (int i = 0; i < values.length; i++) {
-			if (values[i] < min) {
-				min = values[i];
-				indexOfMin = i;
-			}
-		}
-		return indexOfMin;
-	}
-	
 	private double stdDev(double[] values) {
 		double sum = 0.0;
 		double sumOfSquares = 0.0;
