@@ -18,6 +18,7 @@ package edu.umd.cs.psl.application.learning.weight;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import com.google.common.collect.Iterables;
 
@@ -31,7 +32,7 @@ import edu.umd.cs.psl.database.DatabasePopulator;
 import edu.umd.cs.psl.evaluation.process.RunningProcess;
 import edu.umd.cs.psl.evaluation.process.local.LocalProcessMonitor;
 import edu.umd.cs.psl.model.Model;
-import edu.umd.cs.psl.model.atom.PersistedAtomManager;
+import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
@@ -125,9 +126,7 @@ public class MaxMargin implements ModelApplication {
 		RunningProcess proc = LocalProcessMonitor.get().startProcess();
 		
 		List<CompatibilityKernel> kernels = new ArrayList<CompatibilityKernel>();
-		double[] avgWeights;
-		double[] oldWeights;
-		double[] newWeights;
+		double[] weights;
 		double[] truthIncompatibility;
 		double mpeIncompatibility;
 		
@@ -135,20 +134,21 @@ public class MaxMargin implements ModelApplication {
 		for (CompatibilityKernel k : Iterables.filter(model.getKernels(), CompatibilityKernel.class))
 			kernels.add(k);
 		
-		avgWeights = new double[kernels.size()];
-		oldWeights = new double[kernels.size()];
-		newWeights = new double[kernels.size()];
+		weights = new double[kernels.size()];
 		truthIncompatibility = new double[kernels.size()];
 
 		/* Sets up the ground model */
 		Reasoner reasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
-		PersistedAtomManager atomManager = new PersistedAtomManager(rvDB);
-		Grounding.groundAll(model, atomManager, reasoner);
+		TrainingMap trainingMap = new TrainingMap(rvDB, observedDB);
+		if (trainingMap.getLatentVariables().size() > 0)
+			throw new IllegalArgumentException("All RandomVariableAtoms must have " +
+					"corresponding ObservedAtoms. Latent variables are not supported " +
+					"by VotedPerceptron.");
+		Grounding.groundAll(model, trainingMap, reasoner);
 		
 		/* Computes the observed incompatibility */
-		for (RandomVariableAtom atom : atomManager.getPersistedRVAtoms()) {
-			atom.setValue(observedDB.getAtom(
-					atom.getPredicate(), atom.getArguments()).getValue());
+		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
+			e.getKey().setValue(e.getValue().getValue());
 		}
 		
 		for (int i = 0; i < kernels.size(); i++) {
@@ -157,25 +157,25 @@ public class MaxMargin implements ModelApplication {
 			}
 			
 			/* Initializes the current weights */
-			newWeights[i] = kernels.get(i).getWeight().getWeight();
+			weights[i] = kernels.get(i).getWeight().getWeight();
 		}
 		
 		int iter = 0;
 		double violation = Double.POSITIVE_INFINITY;
 		
 		// init a quadratic program with variables for weights and 1 slack variable
-		QuadraticProgram qp = new QuadraticProgram(kernels.size() + 1);
+		QuadraticProgram qp = new QuadraticProgram(kernels.size() + 1, config);
 		
 		// set up loss augmenting ground kernels
-		for (RandomVariableAtom atom : atomManager.getPersistedRVAtoms()) {
-			reasoner.addGroundKernel(new LossAugmentingGroundKernel(atom, 
-					observedDB.getAtom(atom.getPredicate(), atom.getArguments()).getValue()));
+		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
+			e.getKey().setValue(e.getValue().getValue());
+			reasoner.addGroundKernel(new LossAugmentingGroundKernel(
+					e.getKey(), e.getValue().getValue()));
 		}
-		
 		
 		// add linear objective
 		double [] coefficients = new double[kernels.size() + 1];
-		coefficients[kernels.size()] = 1.0;
+		coefficients[kernels.size()] = slackPenalty;
 		qp.setLinearCoefficients(coefficients);
 
 		// set up positivity constraints
@@ -186,46 +186,53 @@ public class MaxMargin implements ModelApplication {
 		}
 			
 		//qp.setHessianFactor()
-		//TODO: add diagonal Hessian
+		double [] diagonalHessianFactor = new double[kernels.size()+1];
+		for (int i = 0; i < kernels.size(); i++) {
+			diagonalHessianFactor[i] = 1.0;
+		}
+		diagonalHessianFactor[kernels.size()] = 0.0;
+		qp.setDiagonalHessian(diagonalHessianFactor);
 		
 		while (iter < maxIter && violation > tolerance) {
 			reasoner.optimize();
 			
 			double [] constraintCoefficients = new double[kernels.size() + 1];
-			
 			double loss = 0.0;
+		
+			violation = weights[kernels.size()];
 			
 			for (int i = 0; i < kernels.size(); i++) {
 				mpeIncompatibility = 0.0;
 				
-				for (GroundKernel gk : reasoner.getGroundKernels(kernels.get(i))) {
-					mpeIncompatibility += gk.getIncompatibility();
-				}
+				for (GroundKernel gk : reasoner.getGroundKernels(kernels.get(i)))
+					mpeIncompatibility += gk.getIncompatibility();	
 				
 				constraintCoefficients[i] =  mpeIncompatibility - truthIncompatibility[i];
 				
 				loss += Math.abs(constraintCoefficients[i]);
+				violation -= weights[i] * constraintCoefficients[i];
 			}
+			violation += loss;
+			//TODO: check all the signs in these violation computations
 			
 			// slack coefficient
 			constraintCoefficients[kernels.size()] = -1.0;
 			
-			//add linear constraint that weights * mpeIncompatibility + loss < weights * truthIncompatibility
+			// add linear constraint that weights * mpeIncompatibility + loss < weights * truthIncompatibility
 			qp.addInequalityConstraint(constraintCoefficients, loss);
 			
-			//TODO: optimize with constraint set
+			// optimize with constraint set
 			qp.solve();
 			
-			//TODO: update weights with new solution
-			newWeights = qp.getSolution();
+			// update weights with new solution
+			weights = qp.getSolution();
 			/* Sets the weights to the new solution */
 			for (int i = 0; i < kernels.size(); i++)
-				kernels.get(i).setWeight(new PositiveWeight(newWeights[i]));
-			}
+				kernels.get(i).setWeight(new PositiveWeight(weights[i]));
+			reasoner.changedKernelWeights();
 		}
-				
+		
 		proc.terminate();
-
 	}
 
 	@Override
