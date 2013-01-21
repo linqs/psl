@@ -67,6 +67,12 @@ public interface GroundKernelStore {
 	public void changedKernelWeight(CompatibilityKernel k);
 	
 	/**
+	 * Equivalent to calling {@link #changedKernelWeight(CompatibilityKernel)}
+	 * for all CompatibilityKernels.
+	 */
+	public void changedKernelWeights();
+	
+	/**
 	 * Removes a GroundKernel from this store.
 	 * 
 	 * @param gk  the GroundKernel to remove

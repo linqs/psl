@@ -179,6 +179,11 @@ public class ADMMReasoner implements Reasoner {
 	}
 	
 	@Override
+	public void changedKernelWeights() {
+		/* Intentionally blank */
+	}
+	
+	@Override
 	public GroundKernel getGroundKernel(GroundKernel gk) {
 		// TODO: make this not a terrible solution
 		for (GroundKernel candidate : groundKernels)

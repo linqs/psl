@@ -159,6 +159,20 @@ public class ConicReasoner implements Reasoner {
 	}
 	
 	@Override
+	public void changedKernelWeights() {
+		for (Map.Entry<GroundKernel, ConicProgramProxy> e : gkRepresentation.entrySet()) {
+			if (e.getKey() instanceof GroundCompatibilityKernel) {
+				if (e.getValue() instanceof FunctionConicProgramProxy) {
+					((FunctionConicProgramProxy) e.getValue()).updateGroundKernelWeight((GroundCompatibilityKernel) e.getKey());
+				}
+				else {
+					throw new IllegalStateException("Expected a FunctionConicProgramProxy.");
+				}
+			}
+		}
+	}
+	
+	@Override
 	public void removeGroundKernel(GroundKernel gk) {
 		if (!gkRepresentation.containsKey(gk)) throw new IllegalArgumentException("Provided evidence has never been added to the reasoner: " + gk);
 		ConicProgramProxy proxy = gkRepresentation.get(gk);

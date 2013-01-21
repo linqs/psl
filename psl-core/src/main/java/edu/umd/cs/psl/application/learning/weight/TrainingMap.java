@@ -14,8 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.learning.weight;
+package edu.umd.cs.psl.application.learning.weight;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -24,22 +25,35 @@ import java.util.Set;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.database.DatabaseQuery;
 import edu.umd.cs.psl.database.ResultList;
+import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.Variable;
+import edu.umd.cs.psl.model.atom.AtomManager;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.QueryAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.formula.Formula;
+import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
 
 /**
  * A TrainingMap matches {@link RandomVariableAtom RandomVariableAtoms} in one database
  * to their respective {@link ObservedAtom} in a second database. Any RandomVariableAtoms
  * that do not have a matching ObservedAtom are kept in the set of latent variables.
+ * <p>
+ * Also acts as an {@link AtomManager}. Attempting to retrieve any RandomVariableAtom
+ * outside those persisted in the first Database will thrown an exception. All
+ * other Atoms are returned from the first Database normally.
  * 
  * @author Eric Norris
  */
-public class TrainingMap {
+public class TrainingMap implements AtomManager {
+	
+	/**
+	 * The source of the RandomVariableAtoms for constructing the training map,
+	 * and the source of all Atoms for the AtomManager functionality.
+	 */
+	private final Database rvDB;
 	
 	/**
 	 * The mapping between an atom and its observed truth value.
@@ -61,6 +75,7 @@ public class TrainingMap {
 	 * @param observedDB	The database containing matching ObservedAtoms
 	 */
 	public TrainingMap(Database rvDB, Database observedDB) {
+		this.rvDB = rvDB;
 		// Initialize private variables
 		this.trainingMap = new HashMap<RandomVariableAtom, ObservedAtom>();
 		this.latentVariables = new HashSet<RandomVariableAtom>();
@@ -102,7 +117,7 @@ public class TrainingMap {
 	 * @return the training map.
 	 */
 	public Map<RandomVariableAtom, ObservedAtom> getTrainingMap() {
-		return trainingMap;
+		return Collections.unmodifiableMap(trainingMap);
 	}
 	
 	/**
@@ -111,7 +126,25 @@ public class TrainingMap {
 	 * @return the set of latent variables.
 	 */
 	public Set<RandomVariableAtom> getLatentVariables() {
-		return latentVariables;
+		return Collections.unmodifiableSet(latentVariables);
+	}
+
+	@Override
+	public GroundAtom getAtom(Predicate p, GroundTerm... arguments) {
+		GroundAtom atom = rvDB.getAtom(p, arguments);
+		if (atom instanceof RandomVariableAtom) {
+			// Check if this is in our set of persisted RandomVariableAtoms
+			if (trainingMap.containsKey(atom) || latentVariables.contains(atom))
+				return atom;
+			else
+				throw new IllegalArgumentException("Can only call getAtom() on persisted RandomVariableAtoms using a TrainingMap. Cannot access " + atom);
+		} else
+			return atom;
+	}
+
+	@Override
+	public Database getDatabase() {
+		return rvDB;
 	}
 
 }

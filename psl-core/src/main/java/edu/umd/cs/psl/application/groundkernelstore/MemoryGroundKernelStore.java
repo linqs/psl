@@ -65,6 +65,11 @@ public class MemoryGroundKernelStore implements GroundKernelStore {
 	public void changedKernelWeight(CompatibilityKernel k) {
 		/* Intentionally blank */
 	}
+
+	@Override
+	public void changedKernelWeights() {
+		/* Intentionally blank */
+	}
 	
 	@Override
 	public void removeGroundKernel(GroundKernel gk) {

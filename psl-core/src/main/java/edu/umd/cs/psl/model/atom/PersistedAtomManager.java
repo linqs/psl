@@ -52,7 +52,7 @@ public class PersistedAtomManager implements AtomManager {
 	private final Set<RandomVariableAtom> persistedCache;
 	
 	/**
-	 * Returns a PersistedAtomManager with a built-in set of all the database's
+	 * Constructs a PersistedAtomManager with a built-in set of all the database's
 	 * persisted RandomVariableAtoms.
 	 * 
 	 * @param db  the Database to query for all getAtom() calls.

@@ -18,6 +18,7 @@ package edu.umd.cs.psl.application.learning.weight;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import com.google.common.collect.Iterables;
 
@@ -31,7 +32,7 @@ import edu.umd.cs.psl.database.DatabasePopulator;
 import edu.umd.cs.psl.evaluation.process.RunningProcess;
 import edu.umd.cs.psl.evaluation.process.local.LocalProcessMonitor;
 import edu.umd.cs.psl.model.Model;
-import edu.umd.cs.psl.model.atom.PersistedAtomManager;
+import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
@@ -153,13 +154,16 @@ public class VotedPerceptron implements ModelApplication {
 
 		/* Sets up the ground model */
 		Reasoner reasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
-		PersistedAtomManager atomManager = new PersistedAtomManager(rvDB);
-		Grounding.groundAll(model, atomManager, reasoner);
+		TrainingMap trainingMap = new TrainingMap(rvDB, observedDB);
+		if (trainingMap.getLatentVariables().size() > 0)
+			throw new IllegalArgumentException("All RandomVariableAtoms must have " +
+					"corresponing ObservedAtoms. Latent variables are not supported " +
+					"by VotedPerceptron.");
+		Grounding.groundAll(model, trainingMap, reasoner);
 		
 		/* Computes the observed incompatibility */
-		for (RandomVariableAtom atom : atomManager.getPersistedRVAtoms()) {
-			atom.setValue(observedDB.getAtom(
-					atom.getPredicate(), atom.getArguments()).getValue());
+		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
+			e.getKey().setValue(e.getValue().getValue());
 		}
 		
 		for (int i = 0; i < kernels.size(); i++) {
@@ -188,8 +192,8 @@ public class VotedPerceptron implements ModelApplication {
 				avgWeights[i] += newWeights[i];
 				
 				kernels.get(i).setWeight(new PositiveWeight(newWeights[i]));
-				reasoner.changedKernelWeight(kernels.get(i));
 			}
+			reasoner.changedKernelWeights();
 		}
 		
 		/* Sets the weights to their averages */
