@@ -157,7 +157,7 @@ public class VotedPerceptron implements ModelApplication {
 		TrainingMap trainingMap = new TrainingMap(rvDB, observedDB);
 		if (trainingMap.getLatentVariables().size() > 0)
 			throw new IllegalArgumentException("All RandomVariableAtoms must have " +
-					"corresponing ObservedAtoms. Latent variables are not supported " +
+					"corresponding ObservedAtoms. Latent variables are not supported " +
 					"by VotedPerceptron.");
 		Grounding.groundAll(model, trainingMap, reasoner);
 		
