@@ -76,7 +76,7 @@ public class SymmetryConstraintKernel extends AbstractKernel implements Constrai
 
 	@Override
 	public void groundAll(AtomManager atomManager, GroundKernelStore gks) {
-		ResultList results = atomManager.getDatabase().executeQuery(Queries.getQueryForAllAtoms(predicate));
+		ResultList results = atomManager.executeQuery(Queries.getQueryForAllAtoms(predicate));
 		for (int i = 0; i < results.size(); i++)
 			groundConstraint(atomManager.getAtom(predicate, results.get(i)), atomManager, gks);
 	}

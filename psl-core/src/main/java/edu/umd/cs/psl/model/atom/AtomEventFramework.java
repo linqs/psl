@@ -31,6 +31,8 @@ import com.google.common.collect.HashMultimap;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.database.Database;
+import edu.umd.cs.psl.database.DatabaseQuery;
+import edu.umd.cs.psl.database.ResultList;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
@@ -236,8 +238,13 @@ public class AtomEventFramework implements AtomManager {
 	}
 
 	@Override
-	public Database getDatabase() {
-		return db;
+	public ResultList executeQuery(DatabaseQuery query) {
+		return db.executeQuery(query);
+	}
+	
+	@Override
+	public boolean isClosed(StandardPredicate predicate) {
+		return db.isClosed(predicate);
 	}
 	
 	private void addAtomJob(Atom atom, AtomEvent event) {

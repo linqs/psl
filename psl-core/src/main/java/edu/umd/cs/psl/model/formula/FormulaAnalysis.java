@@ -290,7 +290,7 @@ public class FormulaAnalysis {
 		
 		public void registerFormulaForEvents(AtomEventFramework eventFramework, Kernel k, Set<AtomEvent> events) {
 			for (Predicate p : dependence.keySet()) {
-				if (p instanceof StandardPredicate && !eventFramework.getDatabase().isClosed((StandardPredicate) p)) {
+				if (!eventFramework.isClosed((StandardPredicate) p)) {
 					eventFramework.registerAtomEventListener(events, k);
 				}
 			}
@@ -298,7 +298,7 @@ public class FormulaAnalysis {
 		
 		public void unregisterFormulaForEvents(AtomEventFramework eventFramework, Kernel k, Set<AtomEvent> events) {
 			for (Predicate p : dependence.keySet()) {
-				if (p instanceof StandardPredicate && !eventFramework.getDatabase().isClosed((StandardPredicate) p)) {
+				if (!eventFramework.isClosed((StandardPredicate) p)) {
 					eventFramework.unregisterAtomEventListener(events, k);
 				}
 			}

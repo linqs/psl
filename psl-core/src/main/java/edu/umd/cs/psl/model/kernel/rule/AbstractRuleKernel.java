@@ -72,7 +72,7 @@ abstract public class AbstractRuleKernel extends AbstractKernel {
 	
 	@Override
 	public void groundAll(AtomManager atomManager, GroundKernelStore gks) {
-		ResultList res = atomManager.getDatabase().executeQuery(new DatabaseQuery(clause.getQueryFormula()));
+		ResultList res = atomManager.executeQuery(new DatabaseQuery(clause.getQueryFormula()));
 		groundFormula(atomManager, gks, res, null);
 	}
 	
@@ -126,7 +126,7 @@ abstract public class AbstractRuleKernel extends AbstractKernel {
 			for (VariableAssignment var : vars) {
 				DatabaseQuery dbQuery = new DatabaseQuery(clause.getQueryFormula());
 				dbQuery.getPartialGrounding().putAll(var);
-				ResultList res = event.getEventFramework().getDatabase().executeQuery(dbQuery);
+				ResultList res = event.getEventFramework().executeQuery(dbQuery);
 				groundFormula(event.getEventFramework(), gks, res, var);
 			}
 		}

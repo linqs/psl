@@ -17,14 +17,17 @@
 package edu.umd.cs.psl.model.atom;
 
 import edu.umd.cs.psl.database.Database;
+import edu.umd.cs.psl.database.DatabaseQuery;
+import edu.umd.cs.psl.database.ResultList;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.predicate.Predicate;
+import edu.umd.cs.psl.model.predicate.StandardPredicate;
 
 /**
  * Provides centralization and hooks for managing the {@link GroundAtom GroundAtoms}
  * that are instantiated from a {@link Database}.
  * <p>
- * By wrapping key methods, such as {@link Database#getAtom(Predicate, GroundTerm...)},
+ * By wrapping {@link Database#getAtom(Predicate, GroundTerm...)},
  * an AtomManager gives additional control over the GroundAtoms that come from
  * that Database.
  * <p>
@@ -49,8 +52,21 @@ public interface AtomManager {
 	public GroundAtom getAtom(Predicate p, GroundTerm... arguments);
 	
 	/**
-	 * @return the Database for which GroundAtoms are managed
+	 * Calls {@link Database#executeQuery(DatabaseQuery)} on the
+	 * encapsulated Database.
+	 * 
+	 * @param query  the query to execute
+	 * @return the query results exactly as returned by the Database
 	 */
-	public Database getDatabase();
+	public ResultList executeQuery(DatabaseQuery query);
+	
+	/**
+	 * Calls {@link Database#isClosed(StandardPredicate)} on the
+	 * encapsulated Database.
+	 * 
+	 * @param predicate  the predicate to check
+	 * @return TRUE if predicate is closed in the Database
+	 */
+	public boolean isClosed(StandardPredicate predicate);
 	
 }

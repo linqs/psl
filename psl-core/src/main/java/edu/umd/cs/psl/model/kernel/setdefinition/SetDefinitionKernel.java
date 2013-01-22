@@ -205,7 +205,7 @@ public class SetDefinitionKernel extends AbstractKernel implements ConstraintKer
 		for (int k=0;k<triggerFormulas.size();k++) {
 			DatabaseQuery query = new DatabaseQuery(triggerFormulas.get(k).getQueryFormula());
 			query.getProjectionSubset().addAll(projection);
-			ResultList res = atomManager.getDatabase().executeQuery(query);
+			ResultList res = atomManager.executeQuery(query);
 			log.debug("Grounding size {} for formula {}",res.size(),triggerFormulas.get(k).getQueryFormula());
 			for (int i=0;i<res.size();i++) {
 				newSetDefinition(atomManager, gks, res.get(i), true);
@@ -242,7 +242,7 @@ public class SetDefinitionKernel extends AbstractKernel implements ConstraintKer
 						DatabaseQuery query = new DatabaseQuery(clause.getQueryFormula());
 						query.getPartialGrounding().putAll(var);
 						query.getProjectionSubset().addAll(projection);
-						ResultList res = manager.getDatabase().executeQuery(query);
+						ResultList res = manager.executeQuery(query);
 						// TODO fix me ResultList res = app.getAtomStore().query(analysis.getFormula(), var, projection);
 						for (int i=0;i<res.size();i++) {
 							newSetDefinition(manager, gks, res.get(i), false);
@@ -284,7 +284,7 @@ public class SetDefinitionKernel extends AbstractKernel implements ConstraintKer
 					query.getPartialGrounding().putAll(ass);
 					if (isSoftSet) {
 						// ResultList res = app.getAtomStore().query(setterm.getFormula(), ass);
-						ResultList res = manager.getDatabase().executeQuery(query);
+						ResultList res = manager.executeQuery(query);
 						FormulaGrounder grounder = new FormulaGrounder(manager, res, ass);
 						while (grounder.hasNext()) {
 							Formula f = grounder.ground(setterm.getFormula());
@@ -295,7 +295,7 @@ public class SetDefinitionKernel extends AbstractKernel implements ConstraintKer
 						}
 					} else {
 						query.getProjectionSubset().add((Variable)setterm.getLeaf());
-						ResultList res = manager.getDatabase().executeQuery(query);
+						ResultList res = manager.executeQuery(query);
 						// ResultList res = app.getAtomStore().query(setterm.getFormula(), ass, ImmutableList.of((Variable)setterm.getLeaf()));
 						for (int j=0; j<res.size(); j++)
 							members[i].addMember(res.get(j)[0], 1.0);
