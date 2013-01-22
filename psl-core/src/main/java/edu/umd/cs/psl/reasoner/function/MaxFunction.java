@@ -106,5 +106,20 @@ public class MaxFunction implements Iterable<FunctionTerm>, FunctionTerm {
 		return max;
 	}
 	
+	@Override
+	public String toString() {
+		StringBuilder string = new StringBuilder();
+		string.append("Max{");
+		boolean skip = true;
+		for (FunctionTerm term : terms) {
+			if (skip)
+				skip = false;
+			else
+				string.append(",");
+			string.append(" " + term.toString() + " ");
+		}
+		string.append("}");
+		return string.toString();
+	}
 	
 }

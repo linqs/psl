@@ -49,6 +49,9 @@ public class ConstantNumber implements FunctionSingleton {
 		return true;
 	}
 	
-	
+	@Override
+	public String toString() {
+		return String.valueOf(value);
+	}
 	
 }

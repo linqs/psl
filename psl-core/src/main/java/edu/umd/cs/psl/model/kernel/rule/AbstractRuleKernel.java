@@ -83,11 +83,11 @@ abstract public class AbstractRuleKernel extends AbstractKernel {
 		List<GroundAtom> negLiterals = new ArrayList<GroundAtom>(4);
 		
 		for (int i = 0; i < res.size(); i++) {
-			for (int j = 0; j < posLiterals.size(); j++)
-				posLiterals.add(groundAtom(atomManager, posLiterals.get(j), res, i));
+			for (int j = 0; j < clause.getPosLiterals().size(); j++)
+				posLiterals.add(groundAtom(atomManager, clause.getPosLiterals().get(j), res, i));
 			
-			for (int j = 0; j < negLiterals.size(); j++)
-				negLiterals.add(groundAtom(atomManager, negLiterals.get(j), res, i));
+			for (int j = 0; j < clause.getNegLiterals().size(); j++)
+				negLiterals.add(groundAtom(atomManager, clause.getNegLiterals().get(j), res, i));
 			
 			AbstractGroundRule groundRule = groundFormulaInstance(posLiterals, negLiterals);
 			GroundKernel oldrule = gks.getGroundKernel(groundRule);

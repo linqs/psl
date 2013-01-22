@@ -87,4 +87,20 @@ public class FunctionSum implements Iterable<FunctionSummand>, FunctionTerm {
 		return true;
 	}
 	
+	@Override
+	public String toString() {
+		StringBuilder string = new StringBuilder();
+		string.append("(");
+		boolean skip = true;
+		for (FunctionTerm term : sum) {
+			if (skip)
+				skip = false;
+			else
+				string.append("+");
+			string.append(" " + term.toString() + " ");
+		}
+		string.append(")");
+		return string.toString();
+	}
+	
 }
