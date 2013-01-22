@@ -75,8 +75,8 @@ public class VotedPerceptron implements ModelApplication {
 	public static final String CONFIG_PREFIX = "votedperceptron";
 	
 	/**
-	 * Key for double property which will be multiplied with the objective
-	 * gradient to compute a step.
+	 * Key for positive double property which will be multiplied with the
+	 * objective gradient to compute a step.
 	 */
 	public static final String STEP_SIZE_KEY = CONFIG_PREFIX + ".stepsize";
 	/** Default value for STEP_SIZE_KEY */
@@ -118,9 +118,11 @@ public class VotedPerceptron implements ModelApplication {
 		this.config = config;
 		
 		stepSize = config.getDouble(STEP_SIZE_KEY, STEP_SIZE_DEFAULT);
+		if (stepSize <= 0)
+			throw new IllegalArgumentException("Step size must be positive.");
 		numSteps = config.getInt(NUM_STEPS_KEY, NUM_STEPS_DEFAULT);
 		if (numSteps <= 0)
-			throw new IllegalArgumentException("Number of steps must be positive integer.");
+			throw new IllegalArgumentException("Number of steps must be positive.");
 	}
 	
 	/**

@@ -79,8 +79,9 @@ public class DomainRangeConstraintKernel extends AbstractKernel implements Const
 
 	@Override
 	public void groundAll(AtomManager atomManager, GroundKernelStore gks) {
-		for (GroundAtom atom : Queries.getAllAtoms(atomManager.getDatabase(), predicate))
-			groundConstraint(atom, atomManager, gks);
+		ResultList results = atomManager.getDatabase().executeQuery(Queries.getQueryForAllAtoms(predicate));
+		for (int i = 0; i < results.size(); i++)
+			groundConstraint(atomManager.getAtom(predicate, results.get(i)), atomManager, gks);
 	}
 
 	@Override
