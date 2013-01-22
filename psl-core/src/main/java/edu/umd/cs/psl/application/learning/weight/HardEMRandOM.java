@@ -43,22 +43,22 @@ import edu.umd.cs.psl.reasoner.admm.ADMMReasonerFactory;
 
 /**
  * Learns new weights for the {@link CompatibilityKernel CompatibilityKernels}
- * in a {@link Model} using max margin inference.
+ * in a {@link Model} using hard EM RandOM learning.
  * <p>
  * TODO: description
  * 
  * @author Steve Bach <bach@cs.umd.edu>
  * @author Bert Huang <bert@cs.umd.edu>
  */
-public class MaxMargin implements ModelApplication {
-	
+public class HardEMRandOM implements ModelApplication {
+
 	/**
 	 * Prefix of property keys used by this class.
 	 * 
 	 * @see ConfigManager
 	 */
 	public static final String CONFIG_PREFIX = "maxmargin";
-		
+
 	/**
 	 * Key for cutting plane tolerance
 	 */
@@ -79,7 +79,7 @@ public class MaxMargin implements ModelApplication {
 	public static final String MAX_ITER = CONFIG_PREFIX + ".max_iter";
 	/** Default value for MAX_ITER */
 	public static final int MAX_ITER_DEFAULT = 500;
-	
+
 	/**
 	 * Key for {@link Factory} or String property.
 	 * <p>
@@ -93,16 +93,16 @@ public class MaxMargin implements ModelApplication {
 	 * Value is instance of {@link ADMMReasonerFactory}.
 	 */
 	public static final ReasonerFactory REASONER_DEFAULT = new ADMMReasonerFactory();
-	
+
 	private Model model;
 	private Database rvDB, observedDB;
 	private ConfigBundle config;
-	
+
 	private final double tolerance;
 	private final int maxIter;
 	private double slackPenalty;
-	
-	public MaxMargin(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
+
+	public HardEMRandOM(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
 		this.model = model;
 		this.rvDB = rvDB;
 		this.observedDB = observedDB;
@@ -112,7 +112,7 @@ public class MaxMargin implements ModelApplication {
 		maxIter = config.getInt(MAX_ITER, MAX_ITER_DEFAULT);
 		slackPenalty = config.getDouble(SLACK_PENALTY, SLACK_PENALTY_DEFAULT);
 	}
-	
+
 	/**
 	 * Sets slack coefficient for max margin constraints
 	 * @param C
@@ -120,7 +120,7 @@ public class MaxMargin implements ModelApplication {
 	public void setSlackPenalty(double C) {
 		slackPenalty = C;
 	}
-	
+
 	/**
 	 * <p>
 	 * The {@link RandomVariableAtom RandomVariableAtoms} in the distribution are those
@@ -132,16 +132,16 @@ public class MaxMargin implements ModelApplication {
 	public void learn() 
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		RunningProcess proc = LocalProcessMonitor.get().startProcess();
-		
+
 		List<CompatibilityKernel> kernels = new ArrayList<CompatibilityKernel>();
 		double[] weights;
 		double[] truthIncompatibility;
 		double mpeIncompatibility;
-		
+
 		/* Gathers the CompatibilityKernels */
 		for (CompatibilityKernel k : Iterables.filter(model.getKernels(), CompatibilityKernel.class))
 			kernels.add(k);
-		
+
 		weights = new double[kernels.size()];
 		truthIncompatibility = new double[kernels.size()];
 
@@ -153,88 +153,100 @@ public class MaxMargin implements ModelApplication {
 					"corresponding ObservedAtoms. Latent variables are not supported " +
 					"by MaxMargin.");
 		Grounding.groundAll(model, trainingMap, reasoner);
-		
+
 		/* Computes the observed incompatibility */
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
 			e.getKey().setValue(e.getValue().getValue());
 		}
-		
+
 		for (int i = 0; i < kernels.size(); i++) {
 			for (GroundKernel gk : reasoner.getGroundKernels(kernels.get(i))) {
 				truthIncompatibility[i] += gk.getIncompatibility();
 			}
-			
+
 			/* Initializes the current weights */
 			weights[i] = kernels.get(i).getWeight().getWeight();
 		}
-		
-		int iter = 0;
-		double violation = Double.POSITIVE_INFINITY;
-		
-		// init a quadratic program with variables for weights and 1 slack variable
-		PositiveMinNormProgram program = new PositiveMinNormProgram(kernels.size() + 1, config);
-		
-		// set up loss augmenting ground kernels
-		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
-			e.getKey().setValue(e.getValue().getValue());
-			reasoner.addGroundKernel(new LossAugmentingGroundKernel(
-					e.getKey(), e.getValue().getValue()));
-		}
-		
-		// add linear objective
-		double [] coefficients = new double[kernels.size() + 1];
-		coefficients[kernels.size()] = slackPenalty;
-		program.setLinearCoefficients(coefficients);
+
+		boolean converged = false;
+
+		while (!converged) {
+			/*
+			 * Hard EM inner loop
+			 */
 			
-		//qp.setHessianFactor()
-		boolean [] include = new boolean[kernels.size()+1];
-		for (int i = 0; i < kernels.size(); i++) {
-			include[i] = true;
-		}
-		include[kernels.size()] = false;
-		program.setQuadraticTerm(include, new double[kernels.size()]);
-		
-		while (iter < maxIter && violation > tolerance) {
-			reasoner.optimize();
-			
-			double [] constraintCoefficients = new double[kernels.size() + 1];
-			double loss = 0.0;
-		
-			violation = weights[kernels.size()];
-			
-			for (int i = 0; i < kernels.size(); i++) {
-				mpeIncompatibility = 0.0;
-				
-				for (GroundKernel gk : reasoner.getGroundKernels(kernels.get(i)))
-					mpeIncompatibility += gk.getIncompatibility();	
-				
-				constraintCoefficients[i] =  mpeIncompatibility - truthIncompatibility[i];
-				
-				loss += Math.abs(constraintCoefficients[i]);
-				violation -= weights[i] * constraintCoefficients[i];
+			int iter = 0;
+			double violation = Double.POSITIVE_INFINITY;
+
+			// init a quadratic program with variables for weights and 1 slack variable
+			PositiveMinNormProgram program = new PositiveMinNormProgram(kernels.size() + 1, config);
+
+			// set up loss augmenting ground kernels
+			for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
+				e.getKey().setValue(e.getValue().getValue());
+				reasoner.addGroundKernel(new LossAugmentingGroundKernel(
+						e.getKey(), e.getValue().getValue()));
 			}
-			violation += loss;
-			//TODO: check all the signs in these violation computations
+
+			// add linear objective
+			double [] coefficients = new double[kernels.size() + 1];
+			coefficients[kernels.size()] = slackPenalty;
+			program.setLinearCoefficients(coefficients);
+
+			//qp.setHessianFactor()
+			boolean [] include = new boolean[kernels.size()+1];
+			for (int i = 0; i < kernels.size(); i++) {
+				include[i] = true;
+			}
+			include[kernels.size()] = false;
+			program.setQuadraticTerm(include, weights);
+
+			while (iter < maxIter && violation > tolerance) {
+				reasoner.optimize();
+
+				double [] constraintCoefficients = new double[kernels.size() + 1];
+				double loss = 0.0;
+
+				violation = weights[kernels.size()];
+
+				for (int i = 0; i < kernels.size(); i++) {
+					mpeIncompatibility = 0.0;
+
+					for (GroundKernel gk : reasoner.getGroundKernels(kernels.get(i)))
+						mpeIncompatibility += gk.getIncompatibility();	
+
+					constraintCoefficients[i] =  mpeIncompatibility - truthIncompatibility[i];
+
+					loss += Math.abs(constraintCoefficients[i]);
+					violation -= weights[i] * constraintCoefficients[i];
+				}
+				violation += loss;
+				//TODO: check all the signs in these violation computations
+
+				// slack coefficient
+				constraintCoefficients[kernels.size()] = -1.0;
+
+				// add linear constraint that weights * mpeIncompatibility + loss < weights * truthIncompatibility
+				program.addInequalityConstraint(constraintCoefficients, loss);
+
+				// optimize with constraint set
+				program.solve();
+
+				// update weights with new solution
+				weights = program.getSolution();
+				/* Sets the weights to the new solution */
+				for (int i = 0; i < kernels.size(); i++)
+					kernels.get(i).setWeight(new PositiveWeight(weights[i]));
+				reasoner.changedKernelWeights();
+
+				iter++;
+			}
 			
-			// slack coefficient
-			constraintCoefficients[kernels.size()] = -1.0;
+			/*
+			 * convergence check
+			 */
 			
-			// add linear constraint that weights * mpeIncompatibility + loss < weights * truthIncompatibility
-			program.addInequalityConstraint(constraintCoefficients, loss);
-			
-			// optimize with constraint set
-			program.solve();
-			
-			// update weights with new solution
-			weights = program.getSolution();
-			/* Sets the weights to the new solution */
-			for (int i = 0; i < kernels.size(); i++)
-				kernels.get(i).setWeight(new PositiveWeight(weights[i]));
-			reasoner.changedKernelWeights();
-			
-			iter++;
 		}
-		
 		proc.terminate();
 	}
 

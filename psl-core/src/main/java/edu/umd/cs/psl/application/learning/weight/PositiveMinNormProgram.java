@@ -15,14 +15,14 @@ import edu.umd.cs.psl.optimizer.conic.program.Variable;
 
 /**
  * (for now) Solves convex programs of the form
- * min  x'L'Lx + f'x 
- * s.t. Ax < b
+ * min  ||x||^2 + f'x 
+ * s.t. Ax < b, x >= 0
  * by converting problem to a second order cone program
  * 
  * @author Bert Huang <bert@cs.umd.edu>
  *
  */
-public class MinNormProgram {
+public class PositiveMinNormProgram {
 
 	/**
 	 * Prefix of property keys used by this class.
@@ -49,7 +49,7 @@ public class MinNormProgram {
 	public static final ConicProgramSolverFactory CPS_DEFAULT = new HomogeneousIPMFactory();
 
 
-	public MinNormProgram(int size, ConfigBundle config) 
+	public PositiveMinNormProgram(int size, ConfigBundle config) 
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		this.size = size;
 		program = new ConicProgram();
@@ -61,6 +61,8 @@ public class MinNormProgram {
 			NonNegativeOrthantCone cone = program.createNonNegativeOrthantCone();
 			variables[i] = cone.getVariable();
 		}
+		squaredNorm = program.createNonNegativeOrthantCone().getVariable();
+		squaredNorm.setObjectiveCoefficient(0.5);
 	}
 	/**
 	 * Adds a linear inequality constraint
@@ -70,10 +72,14 @@ public class MinNormProgram {
 	public void addInequalityConstraint(double[] coefficients, double value) {
 		assert (coefficients.length == size) : "coefficient and variable vectors must be the same size";
 
-		LinearConstraint con = program.createConstraint();
+		NonNegativeOrthantCone cone = program.createNonNegativeOrthantCone();
+		Variable slack = cone.getVariable();
+		
+		LinearConstraint constraint = program.createConstraint();
 		for (int i = 0; i < coefficients.length; i++)
-			con.setVariable(variables[i], coefficients[i]);
-		con.setConstrainedValue(value);
+			constraint.setVariable(variables[i], coefficients[i]);
+		constraint.setConstrainedValue(value);
+		constraint.setVariable(slack, -1.0);
 	}
 
 	/**
@@ -102,40 +108,41 @@ public class MinNormProgram {
 	}
 
 	/**
-	 * 
-	 * @param includeInNorm boolean vector indicating whether to include variable in squared norm objective
+	 * sets the quadratic term in the norm minimization objective. 
+	 * @param includeInNorm boolean indicator of which variables to include in norm
+	 * @param origin origin of the vector to compute the norm of. Set to all zeros to get traditional max-margin norm minimization
 	 */
-	public void setQuadraticCoefficients(boolean [] includeInNorm) {
+	public void setQuadraticTerm(boolean [] includeInNorm, double [] origin) {
 		int count = 0;
 		for (boolean b : includeInNorm)
 			if (b) count++;
 		
-		quadraticCone = program.createSecondOrderCone(count + 1);
+		quadraticCone = program.createSecondOrderCone(count + 2);
 		
 		Iterator<Variable> coneVars = quadraticCone.getVariables().iterator();
+		
+		Variable leftDummy = coneVars.next();
+		LinearConstraint constraint = program.createConstraint();
+		constraint.setVariable(leftDummy,  1.0);
+		constraint.setVariable(squaredNorm, 0.5);
+		constraint.setConstrainedValue(0.5);
 		
 		for (int i = 0; i < includeInNorm.length; i++)
 			if (includeInNorm[i]) {
 				// create equality constraint between 
 				Variable coneVar = coneVars.next();
-
-				
-				/* 
-				 * TODO: Is this the right way to make an equality constraint?
-				 * It seems like this will wreak havoc on the barrier functions
-				 */
-				LinearConstraint upper = program.createConstraint();
-				upper.setVariable(variables[i], 1.0);
-				upper.setVariable(coneVar, -1.0);
-				upper.setConstrainedValue(0.0);
-
-				LinearConstraint lower = program.createConstraint();
-				lower.setVariable(variables[i], -1.0);
-				lower.setVariable(coneVar, 1.0);
-				lower.setConstrainedValue(0.0);
+				LinearConstraint variableConstraint = program.createConstraint();
+				variableConstraint.setVariable(coneVar, 1.0);
+				variableConstraint.setVariable(variables[i], -1.0);
+				variableConstraint.setConstrainedValue(origin[i]);
 			}
 		
-		quadraticCone.getNthVariable().setObjectiveCoefficient(0.5);
+		Variable rightDummy = quadraticCone.getNthVariable();
+		constraint = program.createConstraint();
+		constraint.setVariable(rightDummy, 1.0);
+		constraint.setVariable(squaredNorm, -0.5);
+		constraint.setConstrainedValue(0.5);
+		
 	}
 	
 	/**
@@ -154,4 +161,5 @@ public class MinNormProgram {
 	private ConicProgramSolver solver;
 	private Variable [] variables;
 	private SecondOrderCone quadraticCone;
+	private Variable squaredNorm;
 }
