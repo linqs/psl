@@ -164,7 +164,7 @@ public class MaxMargin implements ModelApplication {
 		double violation = Double.POSITIVE_INFINITY;
 		
 		// init a quadratic program with variables for weights and 1 slack variable
-		QuadraticProgram qp = new QuadraticProgram(kernels.size() + 1, config);
+		MinNormProgram program = new MinNormProgram(kernels.size() + 1, config);
 		
 		// set up loss augmenting ground kernels
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
@@ -176,22 +176,22 @@ public class MaxMargin implements ModelApplication {
 		// add linear objective
 		double [] coefficients = new double[kernels.size() + 1];
 		coefficients[kernels.size()] = slackPenalty;
-		qp.setLinearCoefficients(coefficients);
+		program.setLinearCoefficients(coefficients);
 
 		// set up positivity constraints
 		for (int i = 0; i < kernels.size(); i++) {
 			coefficients = new double[kernels.size() + 1];
 			coefficients[i] = -1.0;
-			qp.addInequalityConstraint(coefficients, 0.0);
+			program.addInequalityConstraint(coefficients, 0.0);
 		}
 			
 		//qp.setHessianFactor()
-		double [] diagonalHessianFactor = new double[kernels.size()+1];
+		boolean [] include = new boolean[kernels.size()+1];
 		for (int i = 0; i < kernels.size(); i++) {
-			diagonalHessianFactor[i] = 1.0;
+			include[i] = true;
 		}
-		diagonalHessianFactor[kernels.size()] = 0.0;
-		qp.setDiagonalHessian(diagonalHessianFactor);
+		include[kernels.size()] = false;
+		program.setQuadraticCoefficients(include);
 		
 		while (iter < maxIter && violation > tolerance) {
 			reasoner.optimize();
@@ -219,13 +219,13 @@ public class MaxMargin implements ModelApplication {
 			constraintCoefficients[kernels.size()] = -1.0;
 			
 			// add linear constraint that weights * mpeIncompatibility + loss < weights * truthIncompatibility
-			qp.addInequalityConstraint(constraintCoefficients, loss);
+			program.addInequalityConstraint(constraintCoefficients, loss);
 			
 			// optimize with constraint set
-			qp.solve();
+			program.solve();
 			
 			// update weights with new solution
-			weights = qp.getSolution();
+			weights = program.getSolution();
 			/* Sets the weights to the new solution */
 			for (int i = 0; i < kernels.size(); i++)
 				kernels.get(i).setWeight(new PositiveWeight(weights[i]));
