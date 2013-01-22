@@ -137,6 +137,17 @@ public class MinNormProgram {
 		
 		quadraticCone.getNthVariable().setObjectiveCoefficient(0.5);
 	}
+	
+	/**
+	 * detaches all saved references
+	 */
+	public void close() {
+		program = null;
+		solver = null;
+		for (int i = 0; i < size; i++)
+			variables[i] = null;
+		quadraticCone = null;
+	}
 
 	private int size;
 	private ConicProgram program;

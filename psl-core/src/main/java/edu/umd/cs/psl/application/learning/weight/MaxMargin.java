@@ -100,7 +100,7 @@ public class MaxMargin implements ModelApplication {
 	
 	private final double tolerance;
 	private final int maxIter;
-	private final double slackPenalty;
+	private double slackPenalty;
 	
 	public MaxMargin(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
 		this.model = model;
@@ -111,6 +111,14 @@ public class MaxMargin implements ModelApplication {
 		tolerance = config.getDouble(CUTTING_PLANE_TOLERANCE, CUTTING_PLANE_TOLERANCE_DEFAULT);
 		maxIter = config.getInt(MAX_ITER, MAX_ITER_DEFAULT);
 		slackPenalty = config.getDouble(SLACK_PENALTY, SLACK_PENALTY_DEFAULT);
+	}
+	
+	/**
+	 * Sets slack coefficient for max margin constraints
+	 * @param C
+	 */
+	public void setSlackPenalty(double C) {
+		slackPenalty = C;
 	}
 	
 	/**
@@ -230,6 +238,8 @@ public class MaxMargin implements ModelApplication {
 			for (int i = 0; i < kernels.size(); i++)
 				kernels.get(i).setWeight(new PositiveWeight(weights[i]));
 			reasoner.changedKernelWeights();
+			
+			iter++;
 		}
 		
 		proc.terminate();
@@ -237,7 +247,7 @@ public class MaxMargin implements ModelApplication {
 
 	@Override
 	public void close() {
-		model=null;
+		model = null;
 		rvDB = null;
 		config = null;
 	}
