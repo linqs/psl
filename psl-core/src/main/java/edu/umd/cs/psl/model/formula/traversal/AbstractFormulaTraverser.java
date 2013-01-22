@@ -17,15 +17,23 @@
 package edu.umd.cs.psl.model.formula.traversal;
 
 import edu.umd.cs.psl.model.atom.Atom;
-import edu.umd.cs.psl.model.formula.*;
+import edu.umd.cs.psl.model.formula.Conjunction;
+import edu.umd.cs.psl.model.formula.Disjunction;
+import edu.umd.cs.psl.model.formula.Formula;
+import edu.umd.cs.psl.model.formula.Negation;
+
 /**
- * Implements the traversal of a formula, but performs no actions during traversal
- * Derived classes can extend this class to implement desired outcomes from traversal
- *
+ * Implements the depth-first traversal of a formula, but performs no actions
+ * during traversal.
+ * <p>
+ * Derived classes can extend this class to implement desired outcomes from traversal.
+ * <p>
+ * Sub-Formulas contained in a {@link Conjunction} or a {@link Disjunction} are
+ * traversed in order from lowest index to highest.
+ * 
+ * @author Matthias Broecheler
  */
 public abstract class AbstractFormulaTraverser implements FormulaTraverser {
-
-	
 	
 	public static<V extends FormulaTraverser> V traverse(Formula f, V traverser) {
 		recursiveTraverse(f,traverser);		

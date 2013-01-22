@@ -19,12 +19,17 @@ package edu.umd.cs.psl.database;
 import java.util.HashSet;
 import java.util.Set;
 
+import edu.umd.cs.psl.model.argument.Term;
 import edu.umd.cs.psl.model.argument.Variable;
+import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.VariableAssignment;
 import edu.umd.cs.psl.model.formula.Conjunction;
 import edu.umd.cs.psl.model.formula.Formula;
+import edu.umd.cs.psl.model.formula.FormulaAnalysis;
+import edu.umd.cs.psl.model.formula.traversal.AbstractFormulaTraverser;
 import edu.umd.cs.psl.model.predicate.FunctionalPredicate;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
+import edu.umd.cs.psl.util.collection.HashList;
 
 /**
  * A query to select groundings from a {@link Database}.
@@ -53,20 +58,37 @@ import edu.umd.cs.psl.model.predicate.StandardPredicate;
  * <p>
  * The projection subset is a subset of the Variables in the Formula onto
  * which the returned groundings will be projected. An empty subset is
- * the same as including all Variables in the Formula in the subset. Use
- * {@link #getProjectionSubset()} to modify the subset. It is
- * initially empty.
+ * the same as including all Variables in the Formula in the subset except those
+ * with assignments in the partial grounding. Use {@link #getProjectionSubset()}
+ * to modify the subset. It is initially empty.
  */
 public class DatabaseQuery {
 
 	private final Formula formula;
 	private final VariableAssignment partialGrounding;
 	private final Set<Variable> projectTo;
+	private final HashList<Variable> ordering;
 	
 	public DatabaseQuery(Formula formula) {
 		this.formula = formula;
 		partialGrounding = new VariableAssignment();
 		projectTo = new HashSet<Variable>();
+		
+		FormulaAnalysis analysis = new FormulaAnalysis(formula);
+		if (analysis.getNumDNFClauses() > 1 || analysis.getDNFClause(0).getNegLiterals().size() > 0)
+			throw new IllegalArgumentException("Illegal query formula. " +
+					"Must be a conjunction of atoms or a single atom. " +
+					"Formula: " + formula);
+		
+		if (!analysis.getDNFClause(0).getAllVariablesBound())
+			throw new IllegalArgumentException("Illegal query formula. " +
+					"All variables must appear at least once in an atom " +
+					"with a StandardPredicate. " +
+					"Formula: " + formula);
+		
+		ordering = new HashList<Variable>();
+		
+		AbstractFormulaTraverser.traverse(formula, new VariableOrderer());
 	}
 	
 	public Formula getFormula() {
@@ -79,6 +101,49 @@ public class DatabaseQuery {
 	
 	public Set<Variable> getProjectionSubset() {
 		return projectTo;
+	}
+	
+	/**
+	 * @return the number of Variables in this query's Formula
+	 */
+	public int getNumVariables() {
+		return ordering.size();
+	}
+	
+	/**
+	 * Returns the Variable at a given index in this Query's formula according
+	 * to a depth-first, left-to-right traversal (starting with 0).
+	 * 
+	 * @param index  the index of the Variable to return
+	 * @return the Variable with the given index
+	 */
+	public Variable getVariable(int index) {
+		return ordering.get(index);
+	}
+	
+	/**
+	 * Returns the index of a Variable in this Query's formula according to a
+	 * depth-first, left-to-right traversal (starting with 0).
+	 * 
+	 * @param var  the Variable in the formula
+	 * @return the Variable's index, or -1 if it is not in the formula
+	 */
+	public int getVariableIndex(Variable var) {
+		return ordering.indexOf(var);
+	}
+	
+	/**
+	 * Places the Variables in the query Formula in ordering in order
+	 * of their first appearances in a depth-first, left-to-right traversal. 
+	 */
+	private class VariableOrderer extends AbstractFormulaTraverser {
+		@Override
+		public void visitAtom(Atom atom) {
+			for (Term term : atom.getArguments())
+				if (term instanceof Variable)
+					if (!ordering.contains(term))
+						ordering.add((Variable) term);
+		}
 	}
 	
 }

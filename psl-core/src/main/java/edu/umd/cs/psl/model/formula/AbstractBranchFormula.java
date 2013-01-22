@@ -23,9 +23,9 @@ import edu.umd.cs.psl.model.argument.VariableTypeMap;
 import edu.umd.cs.psl.model.atom.Atom;
 
 /**
- * This class represent an abstract branching formula.
+ * An abstract branching formula.
+ * <p>
  * Note, the order in which formulas appear in an AbstractBranchFormula is important!
- *
  */
 abstract class AbstractBranchFormula implements Formula {
 

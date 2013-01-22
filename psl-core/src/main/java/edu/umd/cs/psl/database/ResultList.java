@@ -49,8 +49,9 @@ public interface ResultList {
 	/**
 	 * Returns a substitution for all {@link Variable Variables}.
 	 * <p>
-	 * GroundTerms are ordered according to the left-to-right ordering
-	 * of the Variables in the query that generated this ResultList. 
+	 * GroundTerms are ordered according to the Variables' first appearances in
+	 * a depth-first, left-to-right traversal of the Formula in the DatabaseQuery
+	 * that generated this ResultList. 
 	 * 
 	 * @param resultNo  the index of the substitution (from 0 to size-1)
 	 * @return  the substituted GroundTerms

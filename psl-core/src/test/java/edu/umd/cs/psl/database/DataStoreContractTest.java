@@ -333,6 +333,7 @@ abstract public class DataStoreContractTest {
 	public void testExecuteQuery() {
 		Inserter inserter;
 		Database db;
+		DatabaseQuery query;
 		Formula formula;
 		ResultList results;
 		GroundTerm[] grounding;
@@ -346,8 +347,14 @@ abstract public class DataStoreContractTest {
 		
 		Variable X = new Variable("X");
 		Variable Y = new Variable("Y");
+		Variable Z = new Variable("Z");
 		
 		datastore.registerPredicate(p1);
+		datastore.registerPredicate(p4);
+		
+		/*
+		 * Tests a simple query
+		 */
 		inserter = datastore.getInserter(p1, new Partition(0));
 		inserter.insert(a, b);
 		
@@ -365,7 +372,10 @@ abstract public class DataStoreContractTest {
 		
 		db.close();
 		
-		datastore.registerPredicate(p4);
+		/*
+		 * Tests a simple query with mixed argument types
+		 */
+		inserter.insert(b, a);
 		inserter = datastore.getInserter(p4, new Partition(0));
 		inserter.insert(a, -0.1);
 		
@@ -381,11 +391,11 @@ abstract public class DataStoreContractTest {
 		assertEquals(a, grounding[0]);
 		assertEquals(new DoubleAttribute(-0.1), grounding[1]);
 		
-		formula = new QueryAtom(p4, X, Y);
-		results = db.executeQuery(new DatabaseQuery(formula));
-		
 		db.close();
 		
+		/*
+		 * Tests a simple query with multiple results
+		 */
 		inserter.insert(b, 4.0);
 		inserter.insert(c, 4.0);
 		inserter.insert(d, 4.0);
@@ -400,6 +410,17 @@ abstract public class DataStoreContractTest {
 			assertTrue(results.get(i)[0] instanceof UniqueID);
 		}
 		
+		/*
+		 * Tests a query with multiple Atoms
+		 */
+		formula = new Conjunction(new QueryAtom(p1, Y, X),
+				new QueryAtom(p4, X, Z));
+		results = db.executeQuery(new DatabaseQuery(formula));
+		assertEquals(2, results.size());
+		
+		/*
+		 * Tests a query with a constant specified in the formula 
+		 */
 		formula = new Conjunction(new QueryAtom(p4, X, new DoubleAttribute(4.0)),
 						new QueryAtom(p1, Y, X));
 		results = db.executeQuery(new DatabaseQuery(formula));
@@ -407,12 +428,108 @@ abstract public class DataStoreContractTest {
 		assertEquals(b, results.get(0)[0]);
 		assertEquals(a, results.get(0)[1]);
 		
+		/*
+		 * Tests the same query with a different Variable ordering
+		 */
 		formula = new Conjunction(new QueryAtom(p1, Y, X),
 				new QueryAtom(p4, X, new DoubleAttribute(4.0)));
 		results = db.executeQuery(new DatabaseQuery(formula));
 		assertEquals(1, results.size());
 		assertEquals(a, results.get(0)[0]);
 		assertEquals(b, results.get(0)[1]);
+		
+		/*
+		 * Tests the same query using the partial grounding to specify constants
+		 */
+		formula = new Conjunction(new QueryAtom(p1, Y, X),
+				new QueryAtom(p4, X, Z));
+		query = new DatabaseQuery(formula);
+		query.getPartialGrounding().assign(Z, new DoubleAttribute(4.0));
+		results = db.executeQuery(query);
+		assertEquals(1, results.size());
+		assertEquals(a, results.get(0)[0]);
+		assertEquals(b, results.get(0)[1]);
+		
+		/*
+		 * Tests a multi-atom query with a projection set
+		 */
+		formula = new Conjunction(new QueryAtom(p1, Y, X),
+				new QueryAtom(p4, X, Z));
+		query = new DatabaseQuery(formula);
+		query.getProjectionSubset().add(Y);
+		query.getProjectionSubset().add(Z);
+		results = db.executeQuery(query);
+		assertEquals(2, results.size());
+		grounding = results.get(0);
+		if (grounding[0].equals(a)) {
+			assertEquals(new DoubleAttribute(4.0), grounding[1]);
+			grounding = results.get(1);
+			assertEquals(b, grounding[0]);
+			assertEquals(new DoubleAttribute(-0.1), grounding[1]);
+		}
+		else if (grounding[0].equals(b)){
+			assertEquals(new DoubleAttribute(-0.1), grounding[1]);
+			grounding = results.get(1);
+			assertEquals(a, grounding[0]);
+			assertEquals(new DoubleAttribute(4.0), grounding[1]);
+		}
+		else
+			assertTrue(false);
+		
+		/*
+		 * Tests a query with a projection set that collapses multiple
+		 * groundings to one
+		 */
+		formula = new QueryAtom(p4, X, Z);
+		query = new DatabaseQuery(formula);
+		query.getProjectionSubset().add(Z);
+		results = db.executeQuery(query);
+		assertEquals(2, results.size());
+		grounding = results.get(0);
+		if (grounding[0].equals(new DoubleAttribute(4.0))) {
+			grounding = results.get(1);
+			assertEquals(new DoubleAttribute(-0.1), grounding[0]);
+		}
+		else if (grounding[0].equals(new DoubleAttribute(-0.1))) {
+			grounding = results.get(1);
+			assertEquals(new DoubleAttribute(4.0), grounding[0]);
+		}
+		else
+			assertTrue(false);
+	}
+	
+	@Test(expected=IllegalArgumentException.class)
+	public void testExecuteQueryIllegalProjectionVariable() {
+		Inserter inserter;
+		Database db;
+		DatabaseQuery query;
+		Formula formula;
+		
+		UniqueID a = datastore.getUniqueID(0);
+		UniqueID b = datastore.getUniqueID(1);
+		UniqueID c = datastore.getUniqueID(2);
+		UniqueID d = datastore.getUniqueID(3);
+		UniqueID e = datastore.getUniqueID(4);
+		UniqueID f = datastore.getUniqueID(5);
+		
+		Variable X = new Variable("X");
+		Variable Y = new Variable("Y");
+		Variable Z = new Variable("Z");
+		
+		datastore.registerPredicate(p1);
+		
+		inserter = datastore.getInserter(p1, new Partition(0));
+		inserter.insert(a, b);
+		inserter.insert(c, d);
+		inserter.insert(e, f);
+		
+		db = datastore.getDatabase(new Partition(0));
+		
+		formula = new QueryAtom(p1, X, Y);
+		query = new DatabaseQuery(formula);
+		query.getProjectionSubset().add(X);
+		query.getProjectionSubset().add(Z);
+		db.executeQuery(query);
 	}
 	
 	@Test

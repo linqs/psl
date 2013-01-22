@@ -538,10 +538,9 @@ public class RDBMSDatabase implements Database {
 		// Create and initialize ResultList
 		int i = 0;
 		RDBMSResultList results = new RDBMSResultList(projectTo.size());
-		for (Variable var : projectTo) {
-			results.setVariable(var, i);
-			i ++;
-		}
+		for (int varIndex = 0; varIndex < query.getNumVariables(); varIndex++)
+			if (projectTo.contains(query.getVariable(varIndex)))
+				results.setVariable(query.getVariable(varIndex), i++);
 		
 		try  {
 			Statement stmt = dbConnection.createStatement();
@@ -550,8 +549,8 @@ public class RDBMSDatabase implements Database {
 				try {
 					while (rs.next()) {
 						GroundTerm[] res = new GroundTerm[projectTo.size()];
-						i = 0;
 						for (Variable var : projectTo) {
+							i = results.getPos(var);
 							if (partialGrounding.hasVariable(var)) {
 								res[i] = partialGrounding.getVariable(var);
 							} else {
@@ -573,7 +572,6 @@ public class RDBMSDatabase implements Database {
 									throw new IllegalArgumentException("Unknown argument type: " + type);
 								}
 							}
-							i ++;
 						}
 						results.addResult(res);
 					}
