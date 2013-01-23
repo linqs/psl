@@ -97,8 +97,10 @@ public class AtomEventFrameworkTest {
 		 * Tests activation of a p1 atom
 		 */
 		atom.setValue(1.0);
+		assertEquals(1, framework.checkToActivate());
 		framework.workOffJobQueue();
 		ResultList results = framework.executeQuery(new DatabaseQuery(new QueryAtom(p1, new Variable("X"), new Variable("Y"))));
+		/* Tests that the event framework committed the Atom */
 		assertEquals(1, results.size());
 		assertNull(p1ConsiderationListener.lastEvent);
 		assertEquals(AtomEvent.ActivatedRVAtom, p1ActivationListener.lastEvent);
