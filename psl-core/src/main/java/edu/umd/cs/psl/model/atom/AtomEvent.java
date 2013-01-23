@@ -16,6 +16,9 @@
  */
 package edu.umd.cs.psl.model.atom;
 
+import java.util.HashSet;
+import java.util.Set;
+
 /**
  * An event related to a {@link RandomVariableAtom}.
  * <p>
@@ -30,6 +33,17 @@ public enum AtomEvent {
 	
 	/** A {@link RandomVariableAtom} was activated */
 	ActivatedRVAtom;
+
+	public static final Set<AtomEvent> ConsideredEventSet = new HashSet<AtomEvent>(1);
+	public static final Set<AtomEvent> ActivatedEventSet = new HashSet<AtomEvent>(1);
+	public static final Set<AtomEvent> AllEventsSet = new HashSet<AtomEvent>(2);
+	
+	static {
+		ConsideredEventSet.add(AtomEvent.ConsideredRVAtom);
+		ActivatedEventSet.add(AtomEvent.ActivatedRVAtom);
+		AllEventsSet.add(AtomEvent.ConsideredRVAtom);
+		AllEventsSet.add(AtomEvent.ActivatedRVAtom);
+	}
 	
 	/** A listener for AtomEvents. */
 	public interface Listener {

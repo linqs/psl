@@ -61,8 +61,9 @@ import edu.umd.cs.psl.model.predicate.StandardPredicate;
  * <p>
  * For each event, an {@link AtomJob} is added to the job queue. Calling
  * {@link #workOffJobQueue()} will cause the appropriate Listeners to be
- * notified of all events in the queue. Additionally, each activated RandomVariableAtom
- * will be committed to the Database before any Listeners are notified.
+ * notified of events in the queue until the queue is empty. While processing
+ * the queue, each activated RandomVariableAtom will be committed to the Database
+ * before that Atom's Listeners are notified.
  */
 public class AtomEventFramework implements AtomManager {
 	
@@ -76,7 +77,7 @@ public class AtomEventFramework implements AtomManager {
 	private static final Logger log = LoggerFactory.getLogger(AtomEventFramework.class);
 	
 	/**;
-	 * Key for double property in [0,1]. Activation events will be generated
+	 * Key for double property in (0,1]. Activation events will be generated
 	 * for RandomVariableAtoms when they meet or exceed this threshold.
 	 */
 	public static final String ACTIVATION_THRESHOLD_KEY = CONFIG_PREFIX + ".activation";
@@ -94,6 +95,8 @@ public class AtomEventFramework implements AtomManager {
 	public AtomEventFramework(Database db, ConfigBundle config) {
 		this.db = db;
 		activationThreshold = config.getDouble(ACTIVATION_THRESHOLD_KEY, ACTIVATION_THRESHOLD_DEFAULT);
+		if (activationThreshold <= 0 || activationThreshold > 1)
+			throw new IllegalArgumentException("Activation threshold must be in (0,1].");
 		jobQueue = new LinkedList<AtomJob>();
 		atomListeners = new EnumMap<AtomEvent,SetMultimap<StandardPredicate,AtomEvent.Listener>>(AtomEvent.class);
 		activeAtoms = new HashSet<Atom>();
@@ -233,6 +236,8 @@ public class AtomEventFramework implements AtomManager {
 	public void workOffJobQueue() {
 		while (!jobQueue.isEmpty()) {
 			AtomJob job = jobQueue.poll();
+			if (job.getEvent().equals(AtomEvent.ActivatedRVAtom))
+				((RandomVariableAtom) job.getAtom()).commitToDB();
 			notifyListeners(job);
 		}
 	}

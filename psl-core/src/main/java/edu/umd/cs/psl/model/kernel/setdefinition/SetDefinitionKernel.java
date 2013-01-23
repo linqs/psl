@@ -346,18 +346,18 @@ public class SetDefinitionKernel extends AbstractKernel implements ConstraintKer
 	@Override
 	public void registerForAtomEvents(AtomEventFramework framework) {
 		for (DNFClause clause : triggerFormulas) {
-			clause.registerFormulaForEvents(framework, this, ActivatedEventSet);
+			clause.registerFormulaForEvents(framework, this, AtomEvent.ActivatedEventSet);
 		}
-		framework.registerAtomEventListener(ActivatedEventSet, setPredicate, this);
+		framework.registerAtomEventListener(AtomEvent.ActivatedEventSet, setPredicate, this);
 
 	}
 	
 	@Override
 	public void unregisterForAtomEvents(AtomEventFramework framework) {
 		for (DNFClause clause : triggerFormulas) {
-			clause.unregisterFormulaForEvents(framework, this, ActivatedEventSet);
+			clause.unregisterFormulaForEvents(framework, this, AtomEvent.ActivatedEventSet);
 		}
-		framework.unregisterAtomEventListener(ActivatedEventSet, setPredicate, this);
+		framework.unregisterAtomEventListener(AtomEvent.ActivatedEventSet, setPredicate, this);
 	}
 
 	@Override

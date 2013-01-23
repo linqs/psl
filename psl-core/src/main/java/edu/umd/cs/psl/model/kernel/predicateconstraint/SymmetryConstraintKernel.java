@@ -116,13 +116,13 @@ public class SymmetryConstraintKernel extends AbstractKernel implements Constrai
 
 	@Override
 	public void registerForAtomEvents(AtomEventFramework framework) {
-		framework.registerAtomEventListener(ConsideredEventSet, predicate, this);
+		framework.registerAtomEventListener(AtomEvent.ConsideredEventSet, predicate, this);
 
 	}
 
 	@Override
 	public void unregisterForAtomEvents(AtomEventFramework framework) {
-		framework.unregisterAtomEventListener(ConsideredEventSet, predicate, this);
+		framework.unregisterAtomEventListener(AtomEvent.ConsideredEventSet, predicate, this);
 	}
 
 	@Override
