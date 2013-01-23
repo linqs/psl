@@ -283,7 +283,7 @@ abstract public class DataStoreContractTest {
 	}
 	
 	@Test
-	public void testDoubleInsert() {
+	public void testInsertTwoAtoms() {
 		datastore.registerPredicate(p1);
 		
 		UniqueID a = datastore.getUniqueID(0);
@@ -298,6 +298,10 @@ abstract public class DataStoreContractTest {
 		atom2.setValue(0.75);
 		atom1.commitToDB();
 		atom2.commitToDB();
+		DatabaseQuery query = new DatabaseQuery(new QueryAtom(p1,  new Variable("X"), new Variable("Y")));
+		ResultList results = db.executeQuery(query);
+		assertEquals(2, results.size());
+		
 		db.close();
 	}
 	

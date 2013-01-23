@@ -73,11 +73,11 @@ abstract public class AbstractRuleKernel extends AbstractKernel {
 	@Override
 	public void groundAll(AtomManager atomManager, GroundKernelStore gks) {
 		ResultList res = atomManager.executeQuery(new DatabaseQuery(clause.getQueryFormula()));
+		log.debug("Grounding {} instances of rule {}", res.size(), this);
 		groundFormula(atomManager, gks, res, null);
 	}
 	
 	protected void groundFormula(AtomManager atomManager, GroundKernelStore gks, ResultList res,  VariableAssignment var) {
-		log.trace("Grounding {} instances of rule {}", res.size(), formula);
 		
 		List<GroundAtom> posLiterals = new ArrayList<GroundAtom>(4);
 		List<GroundAtom> negLiterals = new ArrayList<GroundAtom>(4);

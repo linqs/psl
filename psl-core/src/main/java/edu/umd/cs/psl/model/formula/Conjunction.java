@@ -99,7 +99,7 @@ public class Conjunction extends AbstractBranchFormula {
 
 	@Override
 	protected String separatorString() {
-		return "^";
+		return "&";
 	}
 
 }

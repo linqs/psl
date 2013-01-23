@@ -34,7 +34,7 @@ public class Disjunction extends AbstractBranchFormula {
 
 	@Override
 	protected String separatorString() {
-		return "v";
+		return "|";
 	}
 	
 	/**

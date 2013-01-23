@@ -86,7 +86,7 @@ public class Rule implements Formula {
 	
 	@Override
 	public String toString() {
-		return body.toString() + " => " + head.toString();
+		return body.toString() + " >> " + head.toString();
 	}
 
 
