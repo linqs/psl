@@ -88,7 +88,7 @@ public class AtomEventFramework implements AtomManager {
 	
 	private final Database db;
 	private final double activationThreshold;
-	private Queue<AtomJob> jobQueue;
+	private Queue<AtomEvent> jobQueue;
 	private EnumMap<AtomEvent,SetMultimap<StandardPredicate,AtomEvent.Listener>> atomListeners;
 	private Set<Atom> activeAtoms;
 	
@@ -97,7 +97,7 @@ public class AtomEventFramework implements AtomManager {
 		activationThreshold = config.getDouble(ACTIVATION_THRESHOLD_KEY, ACTIVATION_THRESHOLD_DEFAULT);
 		if (activationThreshold <= 0 || activationThreshold > 1)
 			throw new IllegalArgumentException("Activation threshold must be in (0,1].");
-		jobQueue = new LinkedList<AtomJob>();
+		jobQueue = new LinkedList<AtomEvent>();
 		atomListeners = new EnumMap<AtomEvent,SetMultimap<StandardPredicate,AtomEvent.Listener>>(AtomEvent.class);
 		activeAtoms = new HashSet<Atom>();
 	}
@@ -116,7 +116,7 @@ public class AtomEventFramework implements AtomManager {
 		if (atom instanceof RandomVariableAtom && check == null) {
 			AtomEvent event = AtomEvent.ConsideredRVAtom;
 			event.setAtom((RandomVariableAtom) atom).setEventFramework(this);
-			addAtomJob(atom, event);
+			addAtomJob(event);
 		}
 		return atom;
 	}
@@ -223,7 +223,7 @@ public class AtomEventFramework implements AtomManager {
 	private void doActivateAtom(RandomVariableAtom atom) {
 		AtomEvent event = AtomEvent.ActivatedRVAtom;
 		event.setAtom(atom).setEventFramework(this);
-		addAtomJob(atom, event);
+		addAtomJob(event);
 		activeAtoms.add(atom);
 	}
 
@@ -235,10 +235,10 @@ public class AtomEventFramework implements AtomManager {
 	 */
 	public void workOffJobQueue() {
 		while (!jobQueue.isEmpty()) {
-			AtomJob job = jobQueue.poll();
-			if (job.getEvent().equals(AtomEvent.ActivatedRVAtom))
-				((RandomVariableAtom) job.getAtom()).commitToDB();
-			notifyListeners(job);
+			AtomEvent event = jobQueue.poll();
+			if (event.equals(AtomEvent.ActivatedRVAtom))
+				event.getAtom().commitToDB();
+			notifyListeners(event);
 		}
 	}
 
@@ -252,13 +252,12 @@ public class AtomEventFramework implements AtomManager {
 		return db.isClosed(predicate);
 	}
 	
-	private void addAtomJob(Atom atom, AtomEvent event) {
-		jobQueue.add(new AtomJob(atom, event));
+	private void addAtomJob(AtomEvent event) {
+		jobQueue.add(event);
 	}
 	
-	private void notifyListeners(AtomJob job) {
-		Atom atom = job.getAtom();
-		AtomEvent event = job.getEvent();
+	private void notifyListeners(AtomEvent event) {
+		Atom atom = event.getAtom();
 	
 		/* notify all listeners registered by predicate */
 		for (AtomEvent.Listener listener: atomListeners.get(event).get((StandardPredicate) atom.getPredicate())) 
