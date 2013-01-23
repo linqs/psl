@@ -115,11 +115,12 @@ public class RDBMSDatabase implements Database {
 	private final Map<Predicate, PreparedStatement> queryStatement;
 	private final Map<Predicate, PreparedStatement> updateStatement;
 	private final Map<Predicate, PreparedStatement> insertStatement;
+	
 	/**
-	 * The following keeps track of statements in need of execution.
+	 * The following keeps track of bulk atoms to be committed.
 	 */
-	private final Set<PreparedStatement> pendingStatements;
-	private int pendingOperationCount;
+	private final Set<RandomVariableAtom> pendingInserts;
+	private final Set<RandomVariableAtom> pendingUpdates;
 	
 	/*
 	 * Keeps track of the open / closed status of this database.
@@ -164,8 +165,8 @@ public class RDBMSDatabase implements Database {
 		this.queryStatement = new HashMap<Predicate, PreparedStatement>();
 		this.updateStatement = new HashMap<Predicate, PreparedStatement>();
 		this.insertStatement = new HashMap<Predicate, PreparedStatement>();
-		this.pendingStatements = new HashSet<PreparedStatement>();
-		this.pendingOperationCount = 0;
+		this.pendingInserts = new HashSet<RandomVariableAtom>();
+		this.pendingUpdates = new HashSet<RandomVariableAtom>();
 		this.closed = false;
 	}
 	
@@ -395,7 +396,8 @@ public class RDBMSDatabase implements Database {
 				foundAtom = true;
 				int partition = rs.getInt(ph.partitionColumn());
 				if (partition == writeID)
-					updateAtom(atom);
+					// Store it in the list of atoms to be updated
+					pendingUpdates.add(atom);
 			}
 			rs.close();
 		} catch (SQLException e) {
@@ -403,16 +405,16 @@ public class RDBMSDatabase implements Database {
 		}
 		
 		if (!foundAtom) {
-			// Did not find atom, persist it now.
-			insertAtom(atom);
+			// Did not find atom, store it in the list of atoms to be inserted.
+			pendingInserts.add(atom);
 		}
 	}
 	
 	/**
-	 * Helper method to fill in the fields of a PreparedStatement
+	 * Helper method to fill in the fields of a PreparedStatement for an update
 	 * @param atom
 	 */
-	private void updateAtom(RandomVariableAtom atom) {
+	private PreparedStatement updateAtom(RandomVariableAtom atom) {
 		RDBMSPredicateHandle ph = getHandle(atom.getPredicate());
 		PreparedStatement update = updateStatement.get(atom.getPredicate());
 		int sqlIndex = 1;
@@ -441,15 +443,17 @@ public class RDBMSDatabase implements Database {
 			// Batch the command for later execution
 			update.addBatch();
 			
-			// Record keeping
-			pendingOperationCount ++;
-			pendingStatements.add(update);
+			return update;
 		} catch (SQLException e) {
 			throw new RuntimeException("Error updating atom.", e);
 		}
 	}
 	
-	private void insertAtom(RandomVariableAtom atom) {
+	/**
+	 * Helper method to fill in the fields of a PreparedStatement for an insert
+	 * @param atom
+	 */
+	private PreparedStatement insertAtom(RandomVariableAtom atom) {
 		RDBMSPredicateHandle ph = getHandle(atom.getPredicate());
 		PreparedStatement insert = insertStatement.get(atom.getPredicate());
 		int sqlIndex = 1;
@@ -474,25 +478,27 @@ public class RDBMSDatabase implements Database {
 			// Update the confidence value
 			insert.setDouble(sqlIndex, atom.getConfidenceValue());
 			
-			if (pendingStatements.contains(insert)) {
-				executePendingStatements();
-				
-				updateAtom(atom);
-			} else {
-				// Batch the command for later execution
-				insert.addBatch();
-				
-				// Record keeping
-				pendingOperationCount ++;
-				pendingStatements.add(insert);
-			}
-
+			// Batch the command for later execution
+			insert.addBatch();
+			
+			return insert;
 		} catch (SQLException e) {
 			throw new RuntimeException("Error inserting atom.", e);
 		}
 	}
 
 	private void executePendingStatements() {
+		int pendingOperationCount = pendingInserts.size() + pendingUpdates.size();
+		if (pendingOperationCount == 0)
+			return;
+		
+		// Store all of the PendingStatements that need to be executed
+		Set<PreparedStatement> pendingStatements = new HashSet<PreparedStatement>();
+		for (RandomVariableAtom atom : pendingInserts)
+			pendingStatements.add(insertAtom(atom));
+		for (RandomVariableAtom atom : pendingUpdates)
+			pendingStatements.add(updateAtom(atom));
+		
 		log.trace("Executing a batch of {} statements.", pendingOperationCount);
 		int success = 0;
 
@@ -506,8 +512,10 @@ public class RDBMSDatabase implements Database {
 				throw new RuntimeException("Return code indicates that not all " +
 						"statements were executed successfully. [code: " + 
 						success + ", pending: " + pendingOperationCount + "]");
-			pendingOperationCount = 0;
-			pendingStatements.clear();
+			
+			// Reset all of the pending commits
+			pendingInserts.clear();
+			pendingUpdates.clear();
 		} catch (SQLException e) {
 			throw new RuntimeException("Error when executing batched statements.", e);
 		}

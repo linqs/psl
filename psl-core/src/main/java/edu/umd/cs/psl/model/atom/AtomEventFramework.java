@@ -59,7 +59,7 @@ import edu.umd.cs.psl.model.predicate.StandardPredicate;
  * <p>
  * {@link AtomEvent.Listener} implementations can register to be notified of these events.
  * <p>
- * For each event, an {@link AtomJob} is added to the job queue. Calling
+ * For each event, an {@link AtomEvent} is added to the job queue. Calling
  * {@link #workOffJobQueue()} will cause the appropriate Listeners to be
  * notified of events in the queue until the queue is empty. While processing
  * the queue, each activated RandomVariableAtom will be committed to the Database

@@ -283,6 +283,25 @@ abstract public class DataStoreContractTest {
 	}
 	
 	@Test
+	public void testDoubleInsert() {
+		datastore.registerPredicate(p1);
+		
+		UniqueID a = datastore.getUniqueID(0);
+		UniqueID b = datastore.getUniqueID(1);
+		UniqueID c = datastore.getUniqueID(2);
+		UniqueID d = datastore.getUniqueID(3);
+		
+		Database db = datastore.getDatabase(new Partition(0));
+		RandomVariableAtom atom1 = (RandomVariableAtom) db.getAtom(p1, a, b);
+		RandomVariableAtom atom2 = (RandomVariableAtom) db.getAtom(p1, c, d);
+		atom1.setValue(0.25);
+		atom2.setValue(0.75);
+		atom1.commitToDB();
+		atom2.commitToDB();
+		db.close();
+	}
+	
+	@Test
 	public void testPredicateRegistration() {
 		datastore.registerPredicate(p1);
 		
