@@ -139,12 +139,12 @@ abstract public class AbstractRuleKernel extends AbstractKernel {
 	
 	@Override
 	public void registerForAtomEvents(AtomEventFramework manager) {
-		clause.registerFormulaForEvents(manager, this, AtomEvent.ActivatedEventSet);
+		clause.registerClauseForEvents(manager, AtomEvent.ActivatedEventTypeSet, this);
 	}
 
 	@Override
 	public void unregisterForAtomEvents(AtomEventFramework manager) {
-		clause.unregisterFormulaForEvents(manager, this, AtomEvent.ActivatedEventSet);
+		clause.unregisterClauseForEvents(manager, AtomEvent.ActivatedEventTypeSet, this);
 	}
 
 	@Override

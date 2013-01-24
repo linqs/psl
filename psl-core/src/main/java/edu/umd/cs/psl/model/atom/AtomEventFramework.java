@@ -89,7 +89,7 @@ public class AtomEventFramework implements AtomManager {
 	private final Database db;
 	private final double activationThreshold;
 	private Queue<AtomEvent> jobQueue;
-	private EnumMap<AtomEvent,SetMultimap<StandardPredicate,AtomEvent.Listener>> atomListeners;
+	private EnumMap<AtomEvent.Type,SetMultimap<StandardPredicate,AtomEvent.Listener>> atomListeners;
 	private Set<Atom> activeAtoms;
 	
 	public AtomEventFramework(Database db, ConfigBundle config) {
@@ -98,7 +98,7 @@ public class AtomEventFramework implements AtomManager {
 		if (activationThreshold <= 0 || activationThreshold > 1)
 			throw new IllegalArgumentException("Activation threshold must be in (0,1].");
 		jobQueue = new LinkedList<AtomEvent>();
-		atomListeners = new EnumMap<AtomEvent,SetMultimap<StandardPredicate,AtomEvent.Listener>>(AtomEvent.class);
+		atomListeners = new EnumMap<AtomEvent.Type,SetMultimap<StandardPredicate,AtomEvent.Listener>>(AtomEvent.Type.class);
 		activeAtoms = new HashSet<Atom>();
 	}
 	
@@ -114,67 +114,67 @@ public class AtomEventFramework implements AtomManager {
 		Atom check = db.getAtomCache().getCachedAtom(new QueryAtom(p, arguments));
 		GroundAtom atom = db.getAtom(p,  arguments);
 		if (atom instanceof RandomVariableAtom && check == null) {
-			AtomEvent event = AtomEvent.ConsideredRVAtom;
-			event.setAtom((RandomVariableAtom) atom).setEventFramework(this);
+			AtomEvent event = new AtomEvent(AtomEvent.Type.ConsideredRVAtom,
+					(RandomVariableAtom) atom, this);
 			addAtomJob(event);
 		}
 		return atom;
 	}
 	
 	/**
-	 * Registers a listener for any events in a set.
+	 * Registers a listener for any event types in a set.
 	 * 
-	 * @param events  set of events for which to listen
+	 * @param eventTypes  set of event types for which to listen
 	 * @param listener  object to register
 	 * @see AtomEvent
 	 */
-	public void registerAtomEventListener(Set<AtomEvent> events, AtomEvent.Listener listener) {
-		this.registerAtomEventListener(events, AllPredicates, listener);
+	public void registerAtomEventListener(Set<AtomEvent.Type> eventTypes, AtomEvent.Listener listener) {
+		this.registerAtomEventListener(eventTypes, AllPredicates, listener);
 	}
 	
 	/**
-	 * Registers a listener for any events in a set related to 
+	 * Registers a listener for any event types in a set related to 
 	 * {@link RandomVariableAtom RandomVariableAtoms} with a given StandardPredicate.
 	 * 
-	 * @param events  set of events for which to listen
+	 * @param eventTypes  set of event types for which to listen
 	 * @param p  Predicate of Atoms for which to listen for events
 	 * @param listener  object to register
 	 * @see AtomEvent
 	 */
-	public void registerAtomEventListener(Set<AtomEvent> events, StandardPredicate p, AtomEvent.Listener listener) {
-		for (AtomEvent event : events) {
-			if (!atomListeners.containsKey(event)) {
+	public void registerAtomEventListener(Set<AtomEvent.Type> eventTypes, StandardPredicate p, AtomEvent.Listener listener) {
+		for (AtomEvent.Type type : eventTypes) {
+			if (!atomListeners.containsKey(type)) {
 				SetMultimap<StandardPredicate,AtomEvent.Listener> map = HashMultimap.create();
-				atomListeners.put(event, map);
+				atomListeners.put(type, map);
 			}
-			atomListeners.get(event).put(p, listener);
+			atomListeners.get(type).put(p, listener);
 		}
 	}
 	
 	/**
-	 * Unregisters a listener for any events in a set.
+	 * Unregisters a listener for any event types in a set.
 	 * 
-	 * @param events  set of events for which to stop listening
+	 * @param eventTypes  set of event types for which to stop listening
 	 * @param listener  object to unregister
 	 * @see AtomEvent
 	 */
-	public void unregisterAtomEventListener(Set<AtomEvent> events, AtomEvent.Listener listener) {
-		this.unregisterAtomEventListener(events, AllPredicates, listener);
+	public void unregisterAtomEventListener(Set<AtomEvent.Type> eventTypes, AtomEvent.Listener listener) {
+		this.unregisterAtomEventListener(eventTypes, AllPredicates, listener);
 	}
 	
 	/**
-	 * Unregisters a listener for any events in a set related to
+	 * Unregisters a listener for any event types in a set related to
 	 * {@link RandomVariableAtom RandomVariableAtoms} with a given StandardPredicate.
 	 * 
-	 * @param events  set of events for which to stop listening
+	 * @param eventTypes  set of event types for which to stop listening
 	 * @param p  Predicate of Atoms for which to stop listening
 	 * @param listener  object to unregister
 	 * @see AtomEvent
 	 */
-	public void unregisterAtomEventListener(Set<AtomEvent> events, StandardPredicate p, AtomEvent.Listener listener) {
-		for (AtomEvent event : events) 
-			if (atomListeners.containsKey(event))
-				atomListeners.get(event).remove(p, listener);		
+	public void unregisterAtomEventListener(Set<AtomEvent.Type> eventTypes, StandardPredicate p, AtomEvent.Listener listener) {
+		for (AtomEvent.Type type : eventTypes) 
+			if (atomListeners.containsKey(type))
+				atomListeners.get(type).remove(p, listener);		
 			else
 				log.debug("Attempted to unregister listener that was not registered: ", listener);
 	}
@@ -221,8 +221,8 @@ public class AtomEventFramework implements AtomManager {
 	}
 	
 	private void doActivateAtom(RandomVariableAtom atom) {
-		AtomEvent event = AtomEvent.ActivatedRVAtom;
-		event.setAtom(atom).setEventFramework(this);
+		AtomEvent event = new AtomEvent(AtomEvent.Type.ActivatedRVAtom,
+				(RandomVariableAtom) atom, this);
 		addAtomJob(event);
 		activeAtoms.add(atom);
 	}
@@ -236,7 +236,7 @@ public class AtomEventFramework implements AtomManager {
 	public void workOffJobQueue() {
 		while (!jobQueue.isEmpty()) {
 			AtomEvent event = jobQueue.poll();
-			if (event.equals(AtomEvent.ActivatedRVAtom))
+			if (event.getType().equals(AtomEvent.Type.ActivatedRVAtom))
 				event.getAtom().commitToDB();
 			notifyListeners(event);
 		}
@@ -260,11 +260,11 @@ public class AtomEventFramework implements AtomManager {
 		Atom atom = event.getAtom();
 	
 		/* notify all listeners registered by predicate */
-		for (AtomEvent.Listener listener: atomListeners.get(event).get((StandardPredicate) atom.getPredicate())) 
+		for (AtomEvent.Listener listener: atomListeners.get(event.getType()).get((StandardPredicate) atom.getPredicate())) 
 			listener.notifyAtomEvent(event);
 				
 		/* notify all listeners registered for all predicates */		
-		for (AtomEvent.Listener listener: atomListeners.get(event).get(AllPredicates)) 
+		for (AtomEvent.Listener listener: atomListeners.get(event.getType()).get(AllPredicates)) 
 			listener.notifyAtomEvent(event);
 	}
 }

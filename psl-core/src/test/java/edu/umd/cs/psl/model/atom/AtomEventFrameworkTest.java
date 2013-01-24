@@ -61,36 +61,36 @@ public class AtomEventFrameworkTest {
 	@Test
 	public void testRegisterAndWorkOffJobQueue() {
 		DummyListener p1ConsiderationListener = new DummyListener();
-		framework.registerAtomEventListener(AtomEvent.ConsideredEventSet, p1, p1ConsiderationListener);
+		framework.registerAtomEventListener(AtomEvent.ConsideredEventTypeSet, p1, p1ConsiderationListener);
 		
 		DummyListener p1ActivationListener = new DummyListener();
-		framework.registerAtomEventListener(AtomEvent.ActivatedEventSet, p1, p1ActivationListener);
+		framework.registerAtomEventListener(AtomEvent.ActivatedEventTypeSet, p1, p1ActivationListener);
 		
 		DummyListener p2AllEventsListener = new DummyListener();
-		framework.registerAtomEventListener(AtomEvent.AllEventsSet, p2, p2AllEventsListener);
+		framework.registerAtomEventListener(AtomEvent.AllEventTypesSet, p2, p2AllEventsListener);
 		
 		DummyListener allPredicatesConsiderationListener = new DummyListener();
-		framework.registerAtomEventListener(AtomEvent.ConsideredEventSet, allPredicatesConsiderationListener);
+		framework.registerAtomEventListener(AtomEvent.ConsideredEventTypeSet, allPredicatesConsiderationListener);
 		
 		DummyListener allPredicatesActivationListener = new DummyListener();
-		framework.registerAtomEventListener(AtomEvent.ActivatedEventSet, allPredicatesActivationListener);
+		framework.registerAtomEventListener(AtomEvent.ActivatedEventTypeSet, allPredicatesActivationListener);
 		
 		DummyListener allPredicatesAllEventsListener = new DummyListener();
-		framework.registerAtomEventListener(AtomEvent.AllEventsSet, allPredicatesAllEventsListener);
+		framework.registerAtomEventListener(AtomEvent.AllEventTypesSet, allPredicatesAllEventsListener);
 		
 		/*
 		 * Tests consideration of a p1 atom
 		 */
 		RandomVariableAtom atom = (RandomVariableAtom) framework.getAtom(p1, a, b);
 		framework.workOffJobQueue();
-		assertEquals(AtomEvent.ConsideredRVAtom, p1ConsiderationListener.lastEvent);
+		assertEquals(AtomEvent.Type.ConsideredRVAtom, p1ConsiderationListener.lastEvent.getType());
 		p1ConsiderationListener.lastEvent = null;
 		assertNull(p1ActivationListener.lastEvent);
 		assertNull(p2AllEventsListener.lastEvent);
-		assertEquals(AtomEvent.ConsideredRVAtom, allPredicatesConsiderationListener.lastEvent);
+		assertEquals(AtomEvent.Type.ConsideredRVAtom, allPredicatesConsiderationListener.lastEvent.getType());
 		allPredicatesConsiderationListener.lastEvent = null;
 		assertNull(allPredicatesActivationListener.lastEvent);
-		assertEquals(AtomEvent.ConsideredRVAtom, allPredicatesAllEventsListener.lastEvent);
+		assertEquals(AtomEvent.Type.ConsideredRVAtom, allPredicatesAllEventsListener.lastEvent.getType());
 		allPredicatesAllEventsListener.lastEvent = null;
 		
 		/*
@@ -103,13 +103,13 @@ public class AtomEventFrameworkTest {
 		/* Tests that the event framework committed the Atom */
 		assertEquals(1, results.size());
 		assertNull(p1ConsiderationListener.lastEvent);
-		assertEquals(AtomEvent.ActivatedRVAtom, p1ActivationListener.lastEvent);
+		assertEquals(AtomEvent.Type.ActivatedRVAtom, p1ActivationListener.lastEvent.getType());
 		p1ActivationListener.lastEvent = null;
 		assertNull(p2AllEventsListener.lastEvent);
 		assertNull(allPredicatesConsiderationListener.lastEvent);
-		assertEquals(AtomEvent.ActivatedRVAtom, allPredicatesActivationListener.lastEvent);
+		assertEquals(AtomEvent.Type.ActivatedRVAtom, allPredicatesActivationListener.lastEvent.getType());
 		allPredicatesActivationListener.lastEvent = null;
-		assertEquals(AtomEvent.ActivatedRVAtom, allPredicatesAllEventsListener.lastEvent);
+		assertEquals(AtomEvent.Type.ActivatedRVAtom, allPredicatesAllEventsListener.lastEvent.getType());
 		allPredicatesAllEventsListener.lastEvent = null;
 	}
 	

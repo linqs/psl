@@ -132,12 +132,12 @@ public class DomainRangeConstraintKernel extends AbstractKernel implements Const
 
 	@Override
 	public void registerForAtomEvents(AtomEventFramework manager) {
-		manager.registerAtomEventListener(AtomEvent.ConsideredEventSet, predicate, this);
+		manager.registerAtomEventListener(AtomEvent.ConsideredEventTypeSet, predicate, this);
 	}
 
 	@Override
 	public void unregisterForAtomEvents(AtomEventFramework manager) {
-		manager.unregisterAtomEventListener(AtomEvent.ConsideredEventSet, predicate, this);
+		manager.unregisterAtomEventListener(AtomEvent.ConsideredEventTypeSet, predicate, this);
 	}
 
 	@Override

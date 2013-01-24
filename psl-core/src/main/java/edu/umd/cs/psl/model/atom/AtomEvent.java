@@ -26,23 +26,29 @@ import java.util.Set;
  * event: the {@link RandomVariableAtom} that caused the event and the
  * {@link AtomEventFramework} that created the event.
  */
-public enum AtomEvent {
+public class AtomEvent {
 	
-	/** A {@link RandomVariableAtom} was instantiated in memory */
-	ConsideredRVAtom,
-	
-	/** A {@link RandomVariableAtom} was activated */
-	ActivatedRVAtom;
+	/** Types of AtomEvents */
+	public enum Type {
+		/** A {@link RandomVariableAtom} was instantiated in memory */
+		ConsideredRVAtom,
+		
+		/** A {@link RandomVariableAtom} was activated */
+		ActivatedRVAtom;
+	}
 
-	public static final Set<AtomEvent> ConsideredEventSet = new HashSet<AtomEvent>(1);
-	public static final Set<AtomEvent> ActivatedEventSet = new HashSet<AtomEvent>(1);
-	public static final Set<AtomEvent> AllEventsSet = new HashSet<AtomEvent>(2);
+	/** Set containing {@link Type#ConsideredRVAtom}. */
+	public static final Set<Type> ConsideredEventTypeSet = new HashSet<Type>(1);
+	/** Set containing {@link Type#ActivatedRVAtom}. */
+	public static final Set<Type> ActivatedEventTypeSet = new HashSet<Type>(1);
+	/** Set containing {@link Type#ConsideredRVAtom} and {@link Type#ActivatedRVAtom}. */
+	public static final Set<Type> AllEventTypesSet = new HashSet<Type>(2);
 	
 	static {
-		ConsideredEventSet.add(AtomEvent.ConsideredRVAtom);
-		ActivatedEventSet.add(AtomEvent.ActivatedRVAtom);
-		AllEventsSet.add(AtomEvent.ConsideredRVAtom);
-		AllEventsSet.add(AtomEvent.ActivatedRVAtom);
+		ConsideredEventTypeSet.add(Type.ConsideredRVAtom);
+		ActivatedEventTypeSet.add(Type.ActivatedRVAtom);
+		AllEventTypesSet.add(Type.ConsideredRVAtom);
+		AllEventTypesSet.add(Type.ActivatedRVAtom);
 	}
 	
 	/** A listener for AtomEvents. */
@@ -55,49 +61,42 @@ public enum AtomEvent {
 		public void notifyAtomEvent(AtomEvent event);
 	}
 	
-	private RandomVariableAtom atom;
+	private final Type type;
+	private final RandomVariableAtom atom;
+	private final AtomEventFramework eventFramework;
 	
-	private AtomEventFramework eventFramework;
-	
-	private AtomEvent() {
-		atom = null;
-		eventFramework = null;
+	/**
+	 * Constructs a new AtomEvent with associated properties
+	 * 
+	 * @param type  the Type of the new event
+	 * @param atom  the RandomVariableAtom for which the event occurred
+	 * @param eventFramework  the AtomEventFramework managing this AtomEvent
+	 */
+	public AtomEvent(Type type, RandomVariableAtom atom, AtomEventFramework eventFramework) {
+		this.type = type;
+		this.atom = atom;
+		this.eventFramework = eventFramework;
 	}
 	
 	/**
-	 * @return the associated Atom, or null if none is associated.
+	 * @return the associated AtomEvent.Type
+	 */
+	public Type getType() {
+		return type;
+	}
+	
+	/**
+	 * @return the associated RandomVariableAtom
 	 */
 	public RandomVariableAtom getAtom() {
 		return atom;
 	}
 	
 	/**
-	 * Associates an Atom with this event.
-	 * 
-	 * @param atom  the Atom to associate
-	 * @return this event, for convenience
-	 */
-	public AtomEvent setAtom(RandomVariableAtom atom) {
-		this.atom = atom;
-		return this;
-	}
-	
-	/**
-	 * @return the associated AtomEventFramework, or null if none is associated.
+	 * @return the associated AtomEventFramework
 	 */
 	public AtomEventFramework getEventFramework() {
 		return eventFramework;
-	}
-	
-	/**
-	 * Associates an AtomEventFramework with this event.
-	 * 
-	 * @param app  the AtomEventFramework to associate
-	 * @return this event, for convenience
-	 */
-	public AtomEvent setEventFramework(AtomEventFramework eventFramework) {
-		this.eventFramework = eventFramework;
-		return this;
 	}
 	
 }

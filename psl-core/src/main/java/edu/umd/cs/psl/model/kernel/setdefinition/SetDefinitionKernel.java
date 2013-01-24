@@ -219,7 +219,7 @@ public class SetDefinitionKernel extends AbstractKernel implements ConstraintKer
 	public void notifyAtomEvent(AtomEvent event, GroundKernelStore gks) {
 		RandomVariableAtom atom = event.getAtom();
 		AtomManager manager = event.getEventFramework();
-		if (event == AtomEvent.ActivatedRVAtom) {
+		if (event.getType().equals(AtomEvent.Type.ActivatedRVAtom)) {
 			if (atom.getPredicate().equals(setPredicate)) {
 				if (atom.getRegisteredGroundKernels(this).isEmpty()) {
 					newSetDefinition(manager, gks, (GroundTerm[])atom.getArguments(), true);
@@ -346,18 +346,18 @@ public class SetDefinitionKernel extends AbstractKernel implements ConstraintKer
 	@Override
 	public void registerForAtomEvents(AtomEventFramework framework) {
 		for (DNFClause clause : triggerFormulas) {
-			clause.registerFormulaForEvents(framework, this, AtomEvent.ActivatedEventSet);
+			clause.registerClauseForEvents(framework, AtomEvent.ActivatedEventTypeSet, this);
 		}
-		framework.registerAtomEventListener(AtomEvent.ActivatedEventSet, setPredicate, this);
+		framework.registerAtomEventListener(AtomEvent.ActivatedEventTypeSet, setPredicate, this);
 
 	}
 	
 	@Override
 	public void unregisterForAtomEvents(AtomEventFramework framework) {
 		for (DNFClause clause : triggerFormulas) {
-			clause.unregisterFormulaForEvents(framework, this, AtomEvent.ActivatedEventSet);
+			clause.unregisterClauseForEvents(framework, AtomEvent.ActivatedEventTypeSet, this);
 		}
-		framework.unregisterAtomEventListener(AtomEvent.ActivatedEventSet, setPredicate, this);
+		framework.unregisterAtomEventListener(AtomEvent.ActivatedEventTypeSet, setPredicate, this);
 	}
 
 	@Override
