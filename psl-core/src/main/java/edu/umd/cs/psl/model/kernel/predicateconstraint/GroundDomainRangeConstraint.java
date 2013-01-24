@@ -85,8 +85,10 @@ public class GroundDomainRangeConstraint implements GroundConstraintKernel {
 			throw new IllegalArgumentException("Atom does not match anchor: "
 					+ atom);
 		
-		if (!atoms.contains(atom))
+		if (!atoms.contains(atom)) {
 			atoms.add(atom);
+			atom.registerGroundKernel(this);
+		}
 	}
 
 	@Override

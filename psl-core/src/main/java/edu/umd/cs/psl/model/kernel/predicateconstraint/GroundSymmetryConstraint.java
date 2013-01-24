@@ -59,6 +59,10 @@ public class GroundSymmetryConstraint implements GroundConstraintKernel {
 				.toHashCode()
 				+ new HashCodeBuilder().append(kernel).append(atomB).append(atomA)
 				.toHashCode();
+		
+		/* Must register after all the members (like the hashcode!) are set */
+		atomA.registerGroundKernel(this);
+		atomB.registerGroundKernel(this);
 	}
 
 	@Override

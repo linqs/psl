@@ -66,7 +66,12 @@ public class GroundSetDefinition implements GroundConstraintKernel {
 		if (atom instanceof RandomVariableAtom)
 			((RandomVariableAtom) setAtom).setValue(getAggregateValue());
 		
-		hashcode = new HashCodeBuilder().append(setAtom).toHashCode();
+		hashcode = new HashCodeBuilder().append(definitionType).append(setAtom).toHashCode();
+		
+		/* Must register after all the members (like the hashcode!) are set */
+		setAtom.registerGroundKernel(this);
+		for (GroundAtom refAtom : referencedAtoms)
+			refAtom.registerGroundKernel(this);
 	}
 	
 	
@@ -139,7 +144,7 @@ public class GroundSetDefinition implements GroundConstraintKernel {
 		if (oth==this) return true;
 		if (oth==null || !(getClass().isInstance(oth)) ) return false;
 		GroundSetDefinition p = (GroundSetDefinition)oth;
-		return setAtom.equals(p.setAtom);
+		return definitionType.equals(p.definitionType) && setAtom.equals(p.setAtom);
 	}
 
 
