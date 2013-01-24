@@ -16,17 +16,16 @@
  */
 package edu.umd.cs.psl.reasoner.admm;
 
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Set;
 import java.util.Vector;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Iterables;
+
+import de.mathnbits.util.KeyedRetrievalSet;
 
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
@@ -129,7 +128,8 @@ public class ADMMReasoner implements Reasoner {
 	private int n;
 	
 	/** Ground kernels defining the density function */
-	Set<GroundKernel> groundKernels;
+	//Set<GroundKernel> groundKernels;
+	KeyedRetrievalSet<Kernel, GroundKernel> groundKernels;
 	/** Ground kernels wrapped to be objective functions for ADMM */
 	Vector<ADMMObjectiveTerm> terms;
 	/** Ordered list of variables for looking up indices */
@@ -155,7 +155,8 @@ public class ADMMReasoner implements Reasoner {
 		stopCheck = config.getInt(STOP_CHECK_KEY, STOP_CHECK_DEFAULT);
 		type = (DistributionType) config.getEnum(DISTRIBUTION_KEY, DISTRIBUTION_DEFAULT);
 		
-		groundKernels = new HashSet<GroundKernel>();
+		//groundKernels = new HashSet<GroundKernel>();
+		groundKernels = new KeyedRetrievalSet<Kernel, GroundKernel>();
 	}
 	
 	@Override
@@ -165,7 +166,7 @@ public class ADMMReasoner implements Reasoner {
 
 	@Override
 	public void addGroundKernel(GroundKernel gk) {
-		groundKernels.add(gk);
+		groundKernels.put(gk.getKernel(), gk);
 	}
 
 	@Override
@@ -195,12 +196,12 @@ public class ADMMReasoner implements Reasoner {
 
 	@Override
 	public void removeGroundKernel(GroundKernel gk) {
-		groundKernels.remove(gk);
+		groundKernels.remove(gk.getKernel(), gk);
 	}
 
 	@Override
 	public boolean containsGroundKernel(GroundKernel gk) {
-		return groundKernels.contains(gk);
+		return groundKernels.contains(gk.getKernel(), gk);
 	}
 
 	@Override
@@ -389,7 +390,7 @@ public class ADMMReasoner implements Reasoner {
 
 	@Override
 	public Iterable<GroundKernel> getGroundKernels() {
-		return Collections.unmodifiableSet(groundKernels);
+		return groundKernels;
 	}
 
 	@Override

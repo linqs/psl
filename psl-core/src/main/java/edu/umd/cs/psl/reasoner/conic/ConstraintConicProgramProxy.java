@@ -16,6 +16,7 @@
  */
 package edu.umd.cs.psl.reasoner.conic;
 
+import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.optimizer.conic.program.LinearConstraint;
 import edu.umd.cs.psl.optimizer.conic.program.Variable;
 import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
@@ -30,8 +31,8 @@ class ConstraintConicProgramProxy extends ConicProgramProxy {
 	protected LinearConstraint lc = null;
 	protected Variable slackVar = null;
 	
-	ConstraintConicProgramProxy(ConicReasoner reasoner, ConstraintTerm con) {
-		super(reasoner);
+	ConstraintConicProgramProxy(ConicReasoner reasoner, ConstraintTerm con, GroundKernel gk) {
+		super(reasoner, gk);
 		updateConstraint(con);
 	}
 
