@@ -186,12 +186,7 @@ public class ADMMReasoner implements Reasoner {
 	
 	@Override
 	public GroundKernel getGroundKernel(GroundKernel gk) {
-		// TODO: make this not a terrible solution
-		for (GroundKernel candidate : groundKernels)
-			if (gk.equals(candidate))
-				return candidate;
-		
-		return null;
+		return groundKernels.get(gk.getKernel(), gk);
 	}
 
 	@Override
