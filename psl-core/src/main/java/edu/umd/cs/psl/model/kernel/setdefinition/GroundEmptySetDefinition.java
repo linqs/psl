@@ -20,13 +20,13 @@ import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
 
+import edu.umd.cs.psl.model.NumericUtilities;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.kernel.BindingMode;
 import edu.umd.cs.psl.model.kernel.ConstraintKernel;
 import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
-import edu.umd.cs.psl.optimizer.NumericUtilities;
 import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
 import edu.umd.cs.psl.reasoner.function.FunctionComparator;
 import edu.umd.cs.psl.reasoner.function.FunctionSum;
@@ -56,7 +56,7 @@ public class GroundEmptySetDefinition implements GroundConstraintKernel {
 	
 	@Override
 	public double getIncompatibility() {
-		if (NumericUtilities.equals(atom.getValue(), value)) return 0;
+		if (NumericUtilities.equalsRelaxed(atom.getValue(), value)) return 0;
 		else return Double.POSITIVE_INFINITY;
 	}
 

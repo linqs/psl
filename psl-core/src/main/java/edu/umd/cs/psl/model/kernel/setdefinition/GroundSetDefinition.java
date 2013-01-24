@@ -21,6 +21,7 @@ import java.util.Set;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
+import edu.umd.cs.psl.model.NumericUtilities;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
@@ -28,7 +29,6 @@ import edu.umd.cs.psl.model.kernel.BindingMode;
 import edu.umd.cs.psl.model.kernel.ConstraintKernel;
 import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
 import edu.umd.cs.psl.model.set.membership.TermMembership;
-import edu.umd.cs.psl.optimizer.NumericUtilities;
 import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
 
 
@@ -167,7 +167,7 @@ public class GroundSetDefinition implements GroundConstraintKernel {
 
 	@Override
 	public double getIncompatibility() {
-		if (NumericUtilities.equals(setAtom.getValue(), getAggregateValue())) {
+		if (NumericUtilities.equalsRelaxed(setAtom.getValue(), getAggregateValue())) {
 			return 0.0;
 		} else
 			return Double.POSITIVE_INFINITY;

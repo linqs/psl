@@ -243,7 +243,6 @@ public class SetDefinitionKernel extends AbstractKernel implements ConstraintKer
 						query.getPartialGrounding().putAll(var);
 						query.getProjectionSubset().addAll(projection);
 						ResultList res = manager.executeQuery(query);
-						// TODO fix me ResultList res = app.getAtomStore().query(analysis.getFormula(), var, projection);
 						for (int i=0;i<res.size();i++) {
 							newSetDefinition(manager, gks, res.get(i), false);
 						}
@@ -257,10 +256,10 @@ public class SetDefinitionKernel extends AbstractKernel implements ConstraintKer
 	}
 	
 	private void newSetDefinition(AtomManager manager, GroundKernelStore gks, GroundTerm[] args, boolean forceCreation) {
-		// TODO Fix me Atom setAtom = app.getAtomStore().getConsideredAtom(setPredicate, args);
 		GroundAtom setAtom = manager.getAtom(setPredicate, args);
 		//If the definition already exists, then we can directly return
-		if (setAtom!=null && !setAtom.getRegisteredGroundKernels(this).isEmpty()) return;
+		if (!setAtom.getRegisteredGroundKernels(this).isEmpty())
+			return;
 		
 		VariableAssignment ass = new VariableAssignment();
 		for (int i=0;i<args.length;i++) {
@@ -283,20 +282,17 @@ public class SetDefinitionKernel extends AbstractKernel implements ConstraintKer
 					DatabaseQuery query = new DatabaseQuery(setterm.getFormula());
 					query.getPartialGrounding().putAll(ass);
 					if (isSoftSet) {
-						// ResultList res = app.getAtomStore().query(setterm.getFormula(), ass);
 						ResultList res = manager.executeQuery(query);
 						FormulaGrounder grounder = new FormulaGrounder(manager, res, ass);
 						while (grounder.hasNext()) {
 							Formula f = grounder.ground(setterm.getFormula());
 							double truth = AbstractGroundRule.formulaNorm.getTruthValue(f);
-							//if (truth<=0.0) log.debug("Untrue formula: {}",f);
 							members[i].addMember(grounder.getResultVariable((Variable)setterm.getLeaf()), truth);
 							grounder.next();
 						}
 					} else {
 						query.getProjectionSubset().add((Variable)setterm.getLeaf());
 						ResultList res = manager.executeQuery(query);
-						// ResultList res = app.getAtomStore().query(setterm.getFormula(), ass, ImmutableList.of((Variable)setterm.getLeaf()));
 						for (int j=0; j<res.size(); j++)
 							members[i].addMember(res.get(j)[0], 1.0);
 					}
@@ -364,28 +360,6 @@ public class SetDefinitionKernel extends AbstractKernel implements ConstraintKer
 	public int hashCode() {
 		return hashcode;
 	}
-	
-	//===================== STATIC =====================
-
-//	static final AggregatePredicate create(SetTerm s1, SetTerm s2, AggregatorFunction compare, SimplePredicate p) {
-//		VariableTypeMap freeVars = s1.getAnchorVariables(new VariableTypeMap());
-//		s2.getAnchorVariables(freeVars);
-//		
-//		Variable[] vars = new Variable[freeVars.size()];
-//		ArgumentType[] varTypes = new ArgumentType[vars.length];
-//		int i=0;
-//		for (Map.Entry<Variable, ArgumentType> entry : freeVars.entrySet()) {
-//			vars[i]=entry.getKey();
-//			varTypes[i]=entry.getValue();
-//			i++;
-//		}
-//		if (compare instanceof AttributeAggregatorFunction) {
-//			return new AggregateAttributePredicate(s1,s2,vars,varTypes,(AttributeAggregatorFunction)compare,p);
-//		} else {
-//			return new AggregateEntityPredicate(s1,s2,vars,varTypes,(EntityAggregatorFunction)compare,p);
-//		}
-//		
-//	}
 	
 	static final Map<String,Class<? extends EntityAggregatorFunction>> definedSetComparatorFun = 
 		new ImmutableMap.Builder<String,Class<? extends EntityAggregatorFunction>>()

@@ -166,6 +166,6 @@ abstract public class AbstractGroundRule implements GroundKernel {
 		for (int j = 0; j < negLiterals.size(); j++)
 			literals[i++] = negLiterals.get(j);
 		
-		return new Disjunction(literals).toString();
+		return (literals.length > 1) ? new Disjunction(literals).toString() : literals[0].toString();
 	}
 }

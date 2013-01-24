@@ -39,7 +39,6 @@ import edu.umd.cs.psl.model.formula.FormulaAnalysis;
 import edu.umd.cs.psl.model.formula.FormulaAnalysis.DNFClause;
 import edu.umd.cs.psl.model.formula.Negation;
 import edu.umd.cs.psl.model.kernel.AbstractKernel;
-import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
 
 abstract public class AbstractRuleKernel extends AbstractKernel {
@@ -90,13 +89,8 @@ abstract public class AbstractRuleKernel extends AbstractKernel {
 				negLiterals.add(groundAtom(atomManager, clause.getNegLiterals().get(j), res, i, var));
 			
 			AbstractGroundRule groundRule = groundFormulaInstance(posLiterals, negLiterals);
-			GroundKernel oldrule = gks.getGroundKernel(groundRule);
-			if (oldrule != null) {
-				((AbstractGroundRule)oldrule).increaseGroundings();
-				gks.changedGroundKernel(oldrule);
-			} else {
+			if (!gks.containsGroundKernel(groundRule))
 				gks.addGroundKernel(groundRule);
-			}
 			
 			posLiterals.clear();
 			negLiterals.clear();
