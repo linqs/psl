@@ -20,7 +20,6 @@ import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.ConfidenceValues;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
-import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
 import edu.umd.cs.psl.reasoner.function.MutableAtomFunctionVariable;
 
 /**
@@ -38,6 +37,11 @@ public class RandomVariableAtom extends GroundAtom {
 	protected RandomVariableAtom(StandardPredicate p, GroundTerm[] args,
 			Database db, double value, double confidenceValue) {
 		super(p, args, db, value, confidenceValue);
+	}
+	
+	@Override
+	public StandardPredicate getPredicate() {
+		return (StandardPredicate) predicate;
 	}
 
 	/**
@@ -76,7 +80,7 @@ public class RandomVariableAtom extends GroundAtom {
 	}
 
 	@Override
-	public AtomFunctionVariable getVariable() {
+	public MutableAtomFunctionVariable getVariable() {
 		return new MutableAtomFunctionVariable(this);
 	}
 

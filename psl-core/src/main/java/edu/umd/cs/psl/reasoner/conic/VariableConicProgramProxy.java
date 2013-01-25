@@ -18,6 +18,7 @@ package edu.umd.cs.psl.reasoner.conic;
 
 import java.util.Map;
 
+import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.optimizer.conic.program.LinearConstraint;
 import edu.umd.cs.psl.optimizer.conic.program.Variable;
 import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
@@ -28,12 +29,12 @@ class VariableConicProgramProxy extends ConicProgramProxy {
 	protected Variable v;
 	protected ConstraintConicProgramProxy upperBound;
 	
-	VariableConicProgramProxy(ConicReasoner reasoner) {
-		super(reasoner);
+	VariableConicProgramProxy(ConicReasoner reasoner, GroundKernel gk) {
+		super(reasoner, gk);
 		v = reasoner.program.createNonNegativeOrthantCone().getVariable();
 		FunctionSummand summand = new FunctionSummand(1.0, new ConicReasonerSingleton(v));
 		ConstraintTerm con = new ConstraintTerm(summand, FunctionComparator.SmallerThan, 1.0);
-		upperBound = new ConstraintConicProgramProxy(reasoner, con);
+		upperBound = new ConstraintConicProgramProxy(reasoner, con, gk);
 	}
 	
 	Variable getVariable() {

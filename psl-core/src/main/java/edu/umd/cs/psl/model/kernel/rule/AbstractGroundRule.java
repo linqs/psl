@@ -72,6 +72,12 @@ abstract public class AbstractGroundRule implements GroundKernel {
 			hcb.append(atom);
 		
 		hashcode = hcb.toHashCode();
+		
+		/* Must register after all the members (like the hashcode!) are set */
+		for (GroundAtom atom : posLiterals)
+			atom.registerGroundKernel(this);
+		for (GroundAtom atom : negLiterals)
+			atom.registerGroundKernel(this);
 	}
 	
 	int getNumGroundings() {
@@ -160,6 +166,6 @@ abstract public class AbstractGroundRule implements GroundKernel {
 		for (int j = 0; j < negLiterals.size(); j++)
 			literals[i++] = negLiterals.get(j);
 		
-		return new Disjunction(literals).toString();
+		return (literals.length > 1) ? new Disjunction(literals).toString() : literals[0].toString();
 	}
 }

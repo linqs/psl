@@ -91,7 +91,7 @@ public class Model {
 			throw new IllegalArgumentException("Kernel already added to this model.");
 		else {
 			kernels.add(k);
-			broadcastModelEvent(ModelEvent.KernelAdded.setModel(this).setKernel(k));
+			broadcastModelEvent(new ModelEvent(ModelEvent.Type.KernelAdded, this, k));
 		}
 	}
 	
@@ -108,7 +108,7 @@ public class Model {
 			throw new IllegalArgumentException("Kernel not in this model.");
 		else {
 			kernels.remove(k);
-			broadcastModelEvent(ModelEvent.KernelRemoved.setModel(this).setKernel(k));
+			broadcastModelEvent(new ModelEvent(ModelEvent.Type.KernelRemoved, this, k));
 		}
 	}
 	
@@ -123,7 +123,7 @@ public class Model {
 	public void notifyKernelParametersModified(Kernel k) {
 		if (!kernels.contains(k))
 			throw new IllegalArgumentException("Kernel not in this model.");
-		broadcastModelEvent(ModelEvent.KernelParametersModified.setModel(this).setKernel(k));
+		broadcastModelEvent(new ModelEvent(ModelEvent.Type.KernelParametersModified, this, k));
 	}
 	
 	/**

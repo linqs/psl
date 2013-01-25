@@ -73,7 +73,7 @@ import edu.umd.cs.psl.model.predicate.StandardPredicate;
  * 
  * {@link DatabaseQuery DatabaseQueries} can be run via {@link #executeQuery(DatabaseQuery)}.
  * Note that queries only act on the GroundAtoms persisted in Partitions and
- * GroundAtoms with {@link FunctionalPredicate FunctionalPredicates} 
+ * GroundAtoms with {@link FunctionalPredicate FunctionalPredicates}.
  */
 public interface Database {
 

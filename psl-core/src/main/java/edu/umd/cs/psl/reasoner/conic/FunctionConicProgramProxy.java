@@ -55,7 +55,7 @@ class FunctionConicProgramProxy extends ConicProgramProxy {
 	}
 	
 	FunctionConicProgramProxy(ConicReasoner reasoner, GroundCompatibilityKernel gk) {
-		super(reasoner);
+		super(reasoner, gk);
 		if (gk.getWeight().getWeight() != 0.0) {
 			initialize();
 			addFunctionTerm(gk.getFunctionDefinition());
@@ -199,7 +199,7 @@ class FunctionConicProgramProxy extends ConicProgramProxy {
 			else
 				throw new IllegalArgumentException("Unsupported FunctionTerm: " + fun);
 			
-			constraints.add(new ConstraintConicProgramProxy(reasoner, con));
+			constraints.add(new ConstraintConicProgramProxy(reasoner, con, kernel));
 		}
 	}
 

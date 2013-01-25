@@ -22,12 +22,12 @@ import java.util.Set;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
+import edu.umd.cs.psl.model.NumericUtilities;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.kernel.BindingMode;
 import edu.umd.cs.psl.model.kernel.ConstraintKernel;
 import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
-import edu.umd.cs.psl.optimizer.NumericUtilities;
 import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
 import edu.umd.cs.psl.reasoner.function.FunctionComparator;
 import edu.umd.cs.psl.reasoner.function.FunctionSum;
@@ -59,6 +59,10 @@ public class GroundSymmetryConstraint implements GroundConstraintKernel {
 				.toHashCode()
 				+ new HashCodeBuilder().append(kernel).append(atomB).append(atomA)
 				.toHashCode();
+		
+		/* Must register after all the members (like the hashcode!) are set */
+		atomA.registerGroundKernel(this);
+		atomB.registerGroundKernel(this);
 	}
 
 	@Override
@@ -88,7 +92,7 @@ public class GroundSymmetryConstraint implements GroundConstraintKernel {
 
 	@Override
 	public double getIncompatibility() {
-		if (NumericUtilities.equals(atomA.getValue(), atomB.getValue())) {
+		if (NumericUtilities.equalsRelaxed(atomA.getValue(), atomB.getValue())) {
 			return 0.0;
 		} else
 			return Double.POSITIVE_INFINITY;

@@ -39,7 +39,6 @@ import edu.umd.cs.psl.model.formula.FormulaAnalysis;
 import edu.umd.cs.psl.model.formula.FormulaAnalysis.DNFClause;
 import edu.umd.cs.psl.model.formula.Negation;
 import edu.umd.cs.psl.model.kernel.AbstractKernel;
-import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
 
 abstract public class AbstractRuleKernel extends AbstractKernel {
@@ -73,42 +72,42 @@ abstract public class AbstractRuleKernel extends AbstractKernel {
 	@Override
 	public void groundAll(AtomManager atomManager, GroundKernelStore gks) {
 		ResultList res = atomManager.executeQuery(new DatabaseQuery(clause.getQueryFormula()));
+		log.debug("Grounding {} instances of rule {}", res.size(), this);
 		groundFormula(atomManager, gks, res, null);
 	}
 	
 	protected void groundFormula(AtomManager atomManager, GroundKernelStore gks, ResultList res,  VariableAssignment var) {
-		log.trace("Grounding {} instances of rule {}", res.size(), formula);
 		
 		List<GroundAtom> posLiterals = new ArrayList<GroundAtom>(4);
 		List<GroundAtom> negLiterals = new ArrayList<GroundAtom>(4);
 		
 		for (int i = 0; i < res.size(); i++) {
 			for (int j = 0; j < clause.getPosLiterals().size(); j++)
-				posLiterals.add(groundAtom(atomManager, clause.getPosLiterals().get(j), res, i));
+				posLiterals.add(groundAtom(atomManager, clause.getPosLiterals().get(j), res, i, var));
 			
 			for (int j = 0; j < clause.getNegLiterals().size(); j++)
-				negLiterals.add(groundAtom(atomManager, clause.getNegLiterals().get(j), res, i));
+				negLiterals.add(groundAtom(atomManager, clause.getNegLiterals().get(j), res, i, var));
 			
 			AbstractGroundRule groundRule = groundFormulaInstance(posLiterals, negLiterals);
-			GroundKernel oldrule = gks.getGroundKernel(groundRule);
-			if (oldrule != null) {
-				((AbstractGroundRule)oldrule).increaseGroundings();
-				gks.changedGroundKernel(oldrule);
-			} else {
+			if (!gks.containsGroundKernel(groundRule))
 				gks.addGroundKernel(groundRule);
-			}
 			
 			posLiterals.clear();
 			negLiterals.clear();
 		}
 	}
 	
-	protected GroundAtom groundAtom(AtomManager atomManager, Atom atom, ResultList res, int resultIndex) {
+	protected GroundAtom groundAtom(AtomManager atomManager, Atom atom, ResultList res, int resultIndex, VariableAssignment var) {
 		Term[] oldArgs = atom.getArguments();
 		GroundTerm[] newArgs = new GroundTerm[atom.getArity()];
 		for (int i = 0; i < oldArgs.length; i++)
-			if (oldArgs[i] instanceof Variable)
-				newArgs[i] = res.get(resultIndex, (Variable) oldArgs[i]);
+			if (oldArgs[i] instanceof Variable) {
+				Variable v = (Variable) oldArgs[i];
+				if (var != null && var.hasVariable(v))
+					newArgs[i] = var.getVariable(v);
+				else
+					newArgs[i] = res.get(resultIndex, (Variable) oldArgs[i]);
+			}
 			else if (oldArgs[i] instanceof GroundTerm)
 				newArgs[i] = (GroundTerm) oldArgs[i];
 			else
@@ -134,12 +133,12 @@ abstract public class AbstractRuleKernel extends AbstractKernel {
 	
 	@Override
 	public void registerForAtomEvents(AtomEventFramework manager) {
-		clause.registerFormulaForEvents(manager, this, ActivatedEventSet);
+		clause.registerClauseForEvents(manager, AtomEvent.ActivatedEventTypeSet, this);
 	}
 
 	@Override
 	public void unregisterForAtomEvents(AtomEventFramework manager) {
-		clause.unregisterFormulaForEvents(manager, this, ActivatedEventSet);
+		clause.unregisterClauseForEvents(manager, AtomEvent.ActivatedEventTypeSet, this);
 	}
 
 	@Override

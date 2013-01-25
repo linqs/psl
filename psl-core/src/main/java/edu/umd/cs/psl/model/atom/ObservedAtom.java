@@ -21,7 +21,6 @@ import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.predicate.FunctionalPredicate;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
-import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
 import edu.umd.cs.psl.reasoner.function.ConstantAtomFunctionVariable;
 
 /**
@@ -45,7 +44,7 @@ public class ObservedAtom extends GroundAtom {
 	}
 
 	@Override
-	public AtomFunctionVariable getVariable() {
+	public ConstantAtomFunctionVariable getVariable() {
 		return new ConstantAtomFunctionVariable(this);
 	}
 

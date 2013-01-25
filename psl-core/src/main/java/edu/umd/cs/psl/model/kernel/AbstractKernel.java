@@ -16,9 +16,6 @@
  */
 package edu.umd.cs.psl.model.kernel;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,14 +85,6 @@ public abstract class AbstractKernel implements Kernel {
 	@Override
 	public void setParameters(Parameters para) {
 		throw new UnsupportedOperationException(this.getClass().getName() + " does not have parameters.");
-	}
-	
-	protected static final Set<AtomEvent> ActivatedEventSet = new HashSet<AtomEvent>(1);
-	protected static final Set<AtomEvent> ConsideredEventSet = new HashSet<AtomEvent>(1);
-	
-	static {
-		ActivatedEventSet.add(AtomEvent.ActivatedRVAtom);
-		ConsideredEventSet.add(AtomEvent.ConsideredRVAtom);
 	}
 	
 	/**
