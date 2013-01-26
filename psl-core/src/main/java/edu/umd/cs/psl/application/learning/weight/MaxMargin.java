@@ -48,7 +48,13 @@ import edu.umd.cs.psl.reasoner.admm.ADMMReasonerFactory;
  * Learns new weights for the {@link CompatibilityKernel CompatibilityKernels}
  * in a {@link Model} using max margin inference.
  * <p>
- * TODO: description
+ * The algorithm is based on structural SVM with cutting plane optimization
+ * The objective is to find a weight vector that minimizes an L2 regularizer 
+ * subject to the constraint that the ground truth score is better than any 
+ * other solution.
+ * 
+ * min ||w||^2 + C \xi
+ * s.t. w * f(y) < min_x (w * f(x) - || x - y ||_1) + \xi
  * 
  * @author Steve Bach <bach@cs.umd.edu>
  * @author Bert Huang <bert@cs.umd.edu>
@@ -211,6 +217,14 @@ public class MaxMargin implements ModelApplication {
 		
 			violation = 0.0;
 			
+			/* The next loop computes constraint coefficients for max margin constraints:
+			 * w * f(y) < min_x w * f(x) - ||x-y|| + \xi
+			 * For current x from separation oracle, this translates to
+			 * w * (f(y) - f(x)) - \xi < -|| x - y ||
+			 * 
+			 * loss = ||x - y||
+			 * constraintCoefficients = f(y) - f(x)
+			 */
 			for (int i = 0; i < kernels.size(); i++) {
 				mpeIncompatibility = 0.0;
 				
@@ -223,12 +237,11 @@ public class MaxMargin implements ModelApplication {
 			}
 			violation -= weights[kernels.size()];
 			violation += loss;
-			//TODO: check all the signs in these violation computations
 			
 			// slack coefficient
 			constraintCoefficients[kernels.size()] = -1.0;
 			
-			// add linear constraint that weights * mpeIncompatibility + loss < weights * truthIncompatibility
+			// add linear constraint weights * truthIncompatility < weights * mpeIncompatibility - loss + \xi
 			program.addInequalityConstraint(constraintCoefficients, -1 * loss);
 			
 			// optimize with constraint set
