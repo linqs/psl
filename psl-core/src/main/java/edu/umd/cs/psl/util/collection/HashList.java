@@ -16,13 +16,13 @@
  */
 package edu.umd.cs.psl.util.collection;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
-import java.util.Vector;
 
 public class HashList<E> implements List<E> {
 	
@@ -34,7 +34,7 @@ public class HashList<E> implements List<E> {
 	}
 	
 	public HashList(int initialSize) {
-		list = new Vector<E>(initialSize);
+		list = new ArrayList<E>(initialSize);
 		map = new HashMap<E, Integer>(initialSize);
 	}
 

@@ -20,8 +20,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.atom.Atom;
@@ -45,8 +43,6 @@ import edu.umd.cs.psl.reasoner.function.FunctionSummand;
  * 
  */
 public class GroundDomainRangeConstraint implements GroundConstraintKernel {
-	
-	private static final Logger log = LoggerFactory.getLogger(GroundDomainRangeConstraint.class);
 
 	private final DomainRangeConstraintKernel template;
 	private final GroundTerm anchor;
@@ -132,9 +128,7 @@ public class GroundDomainRangeConstraint implements GroundConstraintKernel {
 		if (template.getConstraintType().constraintHolds(sum)) {
 			return 0.0;
 		} else {
-			log.warn("Constraint violated. Sum: {}", sum);
-			return 0;
-//			return Double.POSITIVE_INFINITY;
+			return Double.POSITIVE_INFINITY;
 		}
 	}
 

@@ -20,6 +20,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.collect.Iterables;
 
 import edu.umd.cs.psl.application.ModelApplication;
@@ -66,6 +69,8 @@ import edu.umd.cs.psl.reasoner.admm.ADMMReasonerFactory;
  * @author Stephen Bach <bach@cs.umd.edu>
  */
 public class VotedPerceptron implements ModelApplication {
+	
+	private static final Logger log = LoggerFactory.getLogger(VotedPerceptron.class);
 	
 	/**
 	 * Prefix of property keys used by this class.
@@ -139,6 +144,7 @@ public class VotedPerceptron implements ModelApplication {
 		RunningProcess proc = LocalProcessMonitor.get().startProcess();
 		
 		List<CompatibilityKernel> kernels = new ArrayList<CompatibilityKernel>();
+		int[] numGroundings;
 		double[] avgWeights;
 		double[] oldWeights;
 		double[] newWeights;
@@ -149,6 +155,7 @@ public class VotedPerceptron implements ModelApplication {
 		for (CompatibilityKernel k : Iterables.filter(model.getKernels(), CompatibilityKernel.class))
 			kernels.add(k);
 		
+		numGroundings = new int[kernels.size()];
 		avgWeights = new double[kernels.size()];
 		oldWeights = new double[kernels.size()];
 		newWeights = new double[kernels.size()];
@@ -160,7 +167,7 @@ public class VotedPerceptron implements ModelApplication {
 		if (trainingMap.getLatentVariables().size() > 0)
 			throw new IllegalArgumentException("All RandomVariableAtoms must have " +
 					"corresponding ObservedAtoms. Latent variables are not supported " +
-					"by VotedPerceptron.");
+					"by VotedPerceptron. Example latent variable: " + trainingMap.getLatentVariables().iterator().next());
 		Grounding.groundAll(model, trainingMap, reasoner);
 		
 		/* Computes the observed incompatibility */
@@ -171,6 +178,7 @@ public class VotedPerceptron implements ModelApplication {
 		for (int i = 0; i < kernels.size(); i++) {
 			for (GroundKernel gk : reasoner.getGroundKernels(kernels.get(i))) {
 				truthIncompatibility[i] += gk.getIncompatibility();
+				numGroundings[i]++;
 			}
 			
 			/* Initializes the current weights */
@@ -189,7 +197,9 @@ public class VotedPerceptron implements ModelApplication {
 					mpeIncompatibility += gk.getIncompatibility();
 				}
 				
-				newWeights[i] = oldWeights[i] + stepSize * (truthIncompatibility[i] - mpeIncompatibility);
+				newWeights[i] = oldWeights[i] + stepSize / numGroundings[i] * (mpeIncompatibility - truthIncompatibility[i]);
+				log.debug("Step of {} for kernel {}", stepSize / numGroundings[i] * (mpeIncompatibility - truthIncompatibility[i]), kernels.get(i));
+				log.debug(" --- MPE incomp.: {}, Truth incomp.: {}", mpeIncompatibility, truthIncompatibility[i]);
 				newWeights[i] = Math.max(newWeights[i], 0.0);
 				avgWeights[i] += newWeights[i];
 				

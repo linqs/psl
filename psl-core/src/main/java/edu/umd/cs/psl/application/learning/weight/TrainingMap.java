@@ -90,7 +90,7 @@ public class TrainingMap implements AtomManager {
 			// Construct the query for this predicate
 			Variable vars[] = new Variable[predicate.getArity()];
 			for (int i = 0; i < vars.length; i++)
-				vars[i] = new Variable(String.valueOf(i));
+				vars[i] = new Variable("V" + String.valueOf(i));
 			Formula queryFormula = new QueryAtom(predicate, vars);
 			
 			// Execute the query and interpret the results

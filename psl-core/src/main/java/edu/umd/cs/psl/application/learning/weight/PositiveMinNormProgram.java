@@ -79,7 +79,7 @@ public class PositiveMinNormProgram {
 		for (int i = 0; i < coefficients.length; i++)
 			constraint.setVariable(variables[i], coefficients[i]);
 		constraint.setConstrainedValue(value);
-		constraint.setVariable(slack, -1.0);
+		constraint.setVariable(slack, 1.0);
 	}
 
 	/**
@@ -119,7 +119,7 @@ public class PositiveMinNormProgram {
 		
 		quadraticCone = program.createSecondOrderCone(count + 2);
 		
-		Iterator<Variable> coneVars = quadraticCone.getVariables().iterator();
+		Iterator<Variable> coneVars = quadraticCone.getInnerVariables().iterator();
 		
 		Variable leftDummy = coneVars.next();
 		LinearConstraint constraint = program.createConstraint();

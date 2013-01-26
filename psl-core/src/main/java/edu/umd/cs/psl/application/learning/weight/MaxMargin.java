@@ -20,6 +20,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.collect.Iterables;
 
 import edu.umd.cs.psl.application.ModelApplication;
@@ -52,6 +55,8 @@ import edu.umd.cs.psl.reasoner.admm.ADMMReasonerFactory;
  */
 public class MaxMargin implements ModelApplication {
 	
+	private static final Logger log = LoggerFactory.getLogger(MaxMargin.class);
+	
 	/**
 	 * Prefix of property keys used by this class.
 	 * 
@@ -71,7 +76,7 @@ public class MaxMargin implements ModelApplication {
 	 */
 	public static final String SLACK_PENALTY = CONFIG_PREFIX + ".slack_penalty";
 	/** Default value for SLACK_PENALTY */
-	public static final double SLACK_PENALTY_DEFAULT = 1.0;
+	public static final double SLACK_PENALTY_DEFAULT = 10;
 
 	/**
 	 * Key for maximum iterations
@@ -142,7 +147,7 @@ public class MaxMargin implements ModelApplication {
 		for (CompatibilityKernel k : Iterables.filter(model.getKernels(), CompatibilityKernel.class))
 			kernels.add(k);
 		
-		weights = new double[kernels.size()];
+		weights = new double[kernels.size()+1];
 		truthIncompatibility = new double[kernels.size()];
 
 		/* Sets up the ground model */
@@ -198,9 +203,13 @@ public class MaxMargin implements ModelApplication {
 			reasoner.optimize();
 			
 			double [] constraintCoefficients = new double[kernels.size() + 1];
+			
+			/* Computes distance between ground truth and output of separation oracle */
 			double loss = 0.0;
+			for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet())
+				loss += Math.abs(e.getKey().getValue() - e.getValue().getValue());
 		
-			violation = weights[kernels.size()];
+			violation = 0.0;
 			
 			for (int i = 0; i < kernels.size(); i++) {
 				mpeIncompatibility = 0.0;
@@ -208,11 +217,11 @@ public class MaxMargin implements ModelApplication {
 				for (GroundKernel gk : reasoner.getGroundKernels(kernels.get(i)))
 					mpeIncompatibility += gk.getIncompatibility();	
 				
-				constraintCoefficients[i] =  mpeIncompatibility - truthIncompatibility[i];
+				constraintCoefficients[i] =  truthIncompatibility[i] - mpeIncompatibility;
 				
-				loss += Math.abs(constraintCoefficients[i]);
-				violation -= weights[i] * constraintCoefficients[i];
+				violation += weights[i] * constraintCoefficients[i];
 			}
+			violation -= weights[kernels.size()];
 			violation += loss;
 			//TODO: check all the signs in these violation computations
 			
@@ -220,7 +229,7 @@ public class MaxMargin implements ModelApplication {
 			constraintCoefficients[kernels.size()] = -1.0;
 			
 			// add linear constraint that weights * mpeIncompatibility + loss < weights * truthIncompatibility
-			program.addInequalityConstraint(constraintCoefficients, loss);
+			program.addInequalityConstraint(constraintCoefficients, -1 * loss);
 			
 			// optimize with constraint set
 			program.solve();
@@ -233,6 +242,9 @@ public class MaxMargin implements ModelApplication {
 			reasoner.changedKernelWeights();
 			
 			iter++;
+			log.debug("Violation: {}" , violation);
+			log.debug("Slack: {}", weights[kernels.size()]);
+			log.debug("Model: {}", model);
 		}
 		
 		proc.terminate();

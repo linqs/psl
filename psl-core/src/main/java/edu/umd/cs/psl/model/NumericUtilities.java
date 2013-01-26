@@ -18,7 +18,7 @@ package edu.umd.cs.psl.model;
 
 public class NumericUtilities {
 
-	public static final double relaxedEpsilon = 2e-2;
+	public static final double relaxedEpsilon = 5e-2;
 	public static final double strictEpsilon = 1e-8;
 	
 	public static boolean equalsRelaxed(double val1, double val2) {

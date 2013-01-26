@@ -58,6 +58,12 @@ public class SecondOrderCone extends Cone {
 		return varN;
 	}
 	
+	public Set<Variable> getInnerVariables() {
+		Set<Variable> set = new HashSet<Variable>(vars);
+		set.remove(varN);
+		return set;
+	}
+	
 	@Override
 	public final void delete() {
 		program.verifyCheckedIn();
