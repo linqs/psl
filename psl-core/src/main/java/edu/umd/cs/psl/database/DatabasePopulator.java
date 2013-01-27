@@ -111,10 +111,6 @@ public class DatabasePopulator {
 			if (atom instanceof RandomVariableAtom) {
 				db.commit((RandomVariableAtom) atom);
 			}
-			// TODO: Is this necessary? -SB
-			else {
-				throw new RuntimeException("Database failed to return a RandomVariableAtom. " + atom.toString());
-			}
 		}
 	}
 }
