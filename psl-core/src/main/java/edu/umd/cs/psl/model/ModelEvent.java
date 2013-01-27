@@ -21,14 +21,17 @@ import edu.umd.cs.psl.model.kernel.Kernel;
 /**
  * An event related to a {@link Model}.
  */
-public enum ModelEvent {
+public class ModelEvent {
 	
-	/** A kernel was added to a model */
-	KernelAdded,
-	/** A kernel was removed from a model */
-	KernelRemoved,
-	/** A kernel's parameters were modified */
-	KernelParametersModified;
+	/** Types of ModelEvents */
+	enum Type {
+		/** A Kernel was added to a model */
+		KernelAdded,
+		/** A Kernel was removed from a model */
+		KernelRemoved,
+		/** A Kernel's parameters were modified */
+		KernelParametersModified;
+	}
 	
 	/** A listener for ModelEvents. */
 	public interface Listener {
@@ -40,30 +43,35 @@ public enum ModelEvent {
 		public void notifyModelEvent(ModelEvent event);
 	}
 	
-	private Model model;
-	private Kernel kernel;
+	private final Type type;
+	private final Model model;
+	private final Kernel kernel;
 	
-	private ModelEvent() {
-		model = null;
-		kernel = null;
+	/**
+	 * Constructs a new ModelEvent with associated properties.
+	 * 
+	 * @param type  the Type of the new event
+	 * @param model  the Model for which the event occurred
+	 * @param kernel  the Kernel related to the event
+	 */
+	public ModelEvent(Type type, Model model, Kernel kernel) {
+		this.type = type;
+		this.model = model;
+		this.kernel = kernel;
+	}
+	
+	/**
+	 * @return the associated ModelEvent.Type
+	 */
+	public Type getType() {
+		return type;
 	}
 
 	/**
-	 * @return the associated Model, or null if no Model is associated
+	 * @return the associated Model
 	 */
 	public Model getModel() {
 		return model;
-	}
-
-	/**
-	 * Associates a Model with this event.
-	 * 
-	 * @param model  the Model to associate
-	 * @return this event, for convenience
-	 */
-	public ModelEvent setModel(Model model) {
-		this.model = model;
-		return this;
 	}
 
 	/**
@@ -71,17 +79,6 @@ public enum ModelEvent {
 	 */
 	public Kernel getKernel() {
 		return kernel;
-	}
-
-	/**
-	 * Associates a Kernel with this event.
-	 * 
-	 * @param kernel  the Kernel to associate
-	 * @return this event, for convenience
-	 */
-	public ModelEvent setKernel(Kernel kernel) {
-		this.kernel = kernel;
-		return this;
 	}
 	
 }

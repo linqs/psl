@@ -79,8 +79,9 @@ public class DomainRangeConstraintKernel extends AbstractKernel implements Const
 
 	@Override
 	public void groundAll(AtomManager atomManager, GroundKernelStore gks) {
-		for (GroundAtom atom : Queries.getAllAtoms(atomManager.getDatabase(), predicate))
-			groundConstraint(atom, atomManager, gks);
+		ResultList results = atomManager.executeQuery(Queries.getQueryForAllAtoms(predicate));
+		for (int i = 0; i < results.size(); i++)
+			groundConstraint(atomManager.getAtom(predicate, results.get(i)), atomManager, gks);
 	}
 
 	@Override
@@ -114,7 +115,7 @@ public class DomainRangeConstraintKernel extends AbstractKernel implements Const
 			/* Constructs and executes the DatabaseQuery */
 			DatabaseQuery query = new DatabaseQuery(new QueryAtom(predicate, args));
 			query.getProjectionSubset().add(var);
-			ResultList res = atomManager.getDatabase().executeQuery(query);
+			ResultList res = atomManager.executeQuery(query);
 			
 			/* Adds the Atoms to the GroundConstraintKernel */
 			for (int i = 0; i < res.size(); i++) {
@@ -131,12 +132,12 @@ public class DomainRangeConstraintKernel extends AbstractKernel implements Const
 
 	@Override
 	public void registerForAtomEvents(AtomEventFramework manager) {
-		manager.registerAtomEventListener(ConsideredEventSet, predicate, this);
+		manager.registerAtomEventListener(AtomEvent.ConsideredEventTypeSet, predicate, this);
 	}
 
 	@Override
 	public void unregisterForAtomEvents(AtomEventFramework manager) {
-		manager.unregisterAtomEventListener(ConsideredEventSet, predicate, this);
+		manager.unregisterAtomEventListener(AtomEvent.ConsideredEventTypeSet, predicate, this);
 	}
 
 	@Override

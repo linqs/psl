@@ -10,6 +10,8 @@ import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.parameters.PositiveWeight;
 import edu.umd.cs.psl.model.parameters.Weight;
+import edu.umd.cs.psl.reasoner.function.FunctionSum;
+import edu.umd.cs.psl.reasoner.function.FunctionSummand;
 import edu.umd.cs.psl.reasoner.function.FunctionTerm;
 
 /**
@@ -49,7 +51,7 @@ public class LossAugmentingGroundKernel implements GroundCompatibilityKernel {
 
 	@Override
 	public double getIncompatibility() {
-		return Math.abs(atom.getValue() - this.groundTruth);
+		return 1 - Math.abs(atom.getValue() - this.groundTruth);
 	}
 
 	@Override
@@ -75,7 +77,19 @@ public class LossAugmentingGroundKernel implements GroundCompatibilityKernel {
 
 	@Override
 	public FunctionTerm getFunctionDefinition() {
-		return null;
+		FunctionSum sum = new FunctionSum();
+		if (groundTruth == 1.0) {
+			sum.add(new FunctionSummand(1.0, atom.getVariable()));
+		}
+		else if (groundTruth == 0.0) {
+			sum.add(new FunctionSummand(-1.0, atom.getVariable()));
+		}
+		else {
+//			throw new IllegalStateException("Ground truth is not 0 or 1.");
+			sum.add(new FunctionSummand(1.0, atom.getVariable()));
+		}
+		
+		return sum;
 	}
 
 	

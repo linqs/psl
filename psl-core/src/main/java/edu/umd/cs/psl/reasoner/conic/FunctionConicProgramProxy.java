@@ -55,7 +55,7 @@ class FunctionConicProgramProxy extends ConicProgramProxy {
 	}
 	
 	FunctionConicProgramProxy(ConicReasoner reasoner, GroundCompatibilityKernel gk) {
-		super(reasoner);
+		super(reasoner, gk);
 		if (gk.getWeight().getWeight() != 0.0) {
 			initialize();
 			addFunctionTerm(gk.getFunctionDefinition());
@@ -143,21 +143,33 @@ class FunctionConicProgramProxy extends ConicProgramProxy {
 	}
 	
 	void updateGroundKernelWeight(GroundCompatibilityKernel gk) {
-		if (!initialized)
-			updateGroundKernel(gk);
-		else
+		if (gk.getWeight().getWeight() == 0) {
+			if (initialized)
+				remove();
+		}
+		else {
+			if (!initialized) {
+				initialize();
+			}
 			setWeight(gk.getWeight().getWeight());
+		}
 	}
 	
 	void updateGroundKernel(GroundCompatibilityKernel gk) {
-		if (!initialized) {
-			initialize();
+		if (gk.getWeight().getWeight() == 0) {
+			if (initialized)
+				remove();
 		}
 		else {
-			deleteConstraints();
+			if (!initialized) {
+				initialize();
+			}
+			else {
+				deleteConstraints();
+			}
+			addFunctionTerm(gk.getFunctionDefinition());
+			setWeight(gk.getWeight().getWeight());
 		}
-		addFunctionTerm(gk.getFunctionDefinition());
-		setWeight(gk.getWeight().getWeight());
 	}
 	
 	protected void addFunctionTerm(FunctionTerm fun) {
@@ -187,7 +199,7 @@ class FunctionConicProgramProxy extends ConicProgramProxy {
 			else
 				throw new IllegalArgumentException("Unsupported FunctionTerm: " + fun);
 			
-			constraints.add(new ConstraintConicProgramProxy(reasoner, con));
+			constraints.add(new ConstraintConicProgramProxy(reasoner, con, kernel));
 		}
 	}
 

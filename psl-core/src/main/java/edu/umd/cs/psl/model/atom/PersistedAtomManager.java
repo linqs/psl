@@ -105,8 +105,13 @@ public class PersistedAtomManager implements AtomManager {
 	}
 
 	@Override
-	public Database getDatabase() {
-		return db;
+	public ResultList executeQuery(DatabaseQuery query) {
+		return db.executeQuery(query);
+	}
+	
+	@Override
+	public boolean isClosed(StandardPredicate predicate) {
+		return db.isClosed(predicate);
 	}
 	
 	public Iterable<RandomVariableAtom> getPersistedRVAtoms() {

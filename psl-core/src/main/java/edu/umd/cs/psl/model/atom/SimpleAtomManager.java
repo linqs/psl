@@ -17,8 +17,11 @@
 package edu.umd.cs.psl.model.atom;
 
 import edu.umd.cs.psl.database.Database;
+import edu.umd.cs.psl.database.DatabaseQuery;
+import edu.umd.cs.psl.database.ResultList;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.predicate.Predicate;
+import edu.umd.cs.psl.model.predicate.StandardPredicate;
 
 /**
  * AtomManager that does not provide any functionality beyond passing calls
@@ -41,8 +44,13 @@ public class SimpleAtomManager implements AtomManager {
 	}
 
 	@Override
-	public Database getDatabase() {
-		return db;
+	public ResultList executeQuery(DatabaseQuery query) {
+		return db.executeQuery(query);
+	}
+	
+	@Override
+	public boolean isClosed(StandardPredicate predicate) {
+		return db.isClosed(predicate);
 	}
 	
 }

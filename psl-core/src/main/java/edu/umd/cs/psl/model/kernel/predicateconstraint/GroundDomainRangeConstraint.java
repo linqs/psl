@@ -85,8 +85,10 @@ public class GroundDomainRangeConstraint implements GroundConstraintKernel {
 			throw new IllegalArgumentException("Atom does not match anchor: "
 					+ atom);
 		
-		if (!atoms.contains(atom))
+		if (!atoms.contains(atom)) {
 			atoms.add(atom);
+			atom.registerGroundKernel(this);
+		}
 	}
 
 	@Override
@@ -126,9 +128,7 @@ public class GroundDomainRangeConstraint implements GroundConstraintKernel {
 		if (template.getConstraintType().constraintHolds(sum)) {
 			return 0.0;
 		} else {
-			System.out.println("Constraint violated. Sum: " + sum);
-			return 0;
-//			return Double.POSITIVE_INFINITY;
+			return Double.POSITIVE_INFINITY;
 		}
 	}
 

@@ -41,9 +41,10 @@ import edu.umd.cs.psl.model.predicate.StandardPredicate;
  * to their respective {@link ObservedAtom} in a second database. Any RandomVariableAtoms
  * that do not have a matching ObservedAtom are kept in the set of latent variables.
  * <p>
- * Also acts as an {@link AtomManager}. Attempting to retrieve any RandomVariableAtom
- * outside those persisted in the first Database will thrown an exception. All
- * other Atoms are returned from the first Database normally.
+ * Also acts as an {@link AtomManager} for the first Database. Attempting to
+ * retrieve any RandomVariableAtom outside those persisted in the first Database
+ * will throw an exception. All other Atoms are returned from the first Database
+ * normally.
  * 
  * @author Eric Norris
  */
@@ -89,7 +90,7 @@ public class TrainingMap implements AtomManager {
 			// Construct the query for this predicate
 			Variable vars[] = new Variable[predicate.getArity()];
 			for (int i = 0; i < vars.length; i++)
-				vars[i] = new Variable(String.valueOf(i));
+				vars[i] = new Variable("V" + String.valueOf(i));
 			Formula queryFormula = new QueryAtom(predicate, vars);
 			
 			// Execute the query and interpret the results
@@ -143,8 +144,13 @@ public class TrainingMap implements AtomManager {
 	}
 
 	@Override
-	public Database getDatabase() {
-		return rvDB;
+	public ResultList executeQuery(DatabaseQuery query) {
+		return rvDB.executeQuery(query);
+	}
+	
+	@Override
+	public boolean isClosed(StandardPredicate predicate) {
+		return rvDB.isClosed(predicate);
 	}
 
 }

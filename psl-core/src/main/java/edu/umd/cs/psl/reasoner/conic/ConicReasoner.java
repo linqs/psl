@@ -114,7 +114,7 @@ public class ConicReasoner implements Reasoner {
 		if (gk instanceof GroundCompatibilityKernel) {
 			proxy = new FunctionConicProgramProxy(this, (GroundCompatibilityKernel) gk);
 		} else if (gk instanceof GroundConstraintKernel) {
-			proxy = new ConstraintConicProgramProxy(this, ((GroundConstraintKernel)gk).getConstraintDefinition());
+			proxy = new ConstraintConicProgramProxy(this, ((GroundConstraintKernel)gk).getConstraintDefinition(), gk);
 		} else throw new AssertionError("Unrecognized evidence type provided: " + gk);
 		gkRepresentation.put(gk, proxy);
 	}
@@ -126,12 +126,7 @@ public class ConicReasoner implements Reasoner {
 	
 	@Override
 	public GroundKernel getGroundKernel(GroundKernel gk) {
-		// TODO: make this not a terrible solution
-				for (GroundKernel candidate : gkRepresentation.keySet())
-					if (gk.equals(candidate))
-						return candidate;
-				
-				return null;
+		return gkRepresentation.get(gk).getGroundKernel();
 	}
 	
 	@Override
@@ -244,7 +239,7 @@ public class ConicReasoner implements Reasoner {
 	protected VariableConicProgramProxy getVarProxy(AtomFunctionVariable v) {
 		VariableConicProgramProxy p = vars.get(v);
 		if (p == null) {
-			p = new VariableConicProgramProxy(this);
+			p = new VariableConicProgramProxy(this, null);
 			vars.put(v, p);
 		}
 		return p;

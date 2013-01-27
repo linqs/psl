@@ -21,6 +21,7 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
 import com.google.common.base.Preconditions;
 
 import edu.umd.cs.psl.application.groundkernelstore.GroundKernelStore;
+import edu.umd.cs.psl.database.ResultList;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.AtomEvent;
@@ -30,7 +31,6 @@ import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.kernel.AbstractKernel;
 import edu.umd.cs.psl.model.kernel.ConstraintKernel;
-import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.model.parameters.Parameters;
 import edu.umd.cs.psl.model.predicate.Predicate;
@@ -76,8 +76,9 @@ public class SymmetryConstraintKernel extends AbstractKernel implements Constrai
 
 	@Override
 	public void groundAll(AtomManager atomManager, GroundKernelStore gks) {
-		for (GroundAtom atom : Queries.getAllAtoms(atomManager.getDatabase(), predicate))
-			groundConstraint(atom, atomManager, gks);
+		ResultList results = atomManager.executeQuery(Queries.getQueryForAllAtoms(predicate));
+		for (int i = 0; i < results.size(); i++)
+			groundConstraint(atomManager.getAtom(predicate, results.get(i)), atomManager, gks);
 	}
 
 	/**
@@ -107,9 +108,7 @@ public class SymmetryConstraintKernel extends AbstractKernel implements Constrai
 			GroundAtom atomB = atomManager.getAtom(predicate, newTerms);
 			
 			GroundSymmetryConstraint con = new GroundSymmetryConstraint(this, atomA, atomB);
-
-			GroundKernel oldcon = gks.getGroundKernel(con);
-			if (oldcon == null) {
+			if(!gks.containsGroundKernel(con)) {
 				gks.addGroundKernel(con);
 			}
 		}
@@ -117,13 +116,13 @@ public class SymmetryConstraintKernel extends AbstractKernel implements Constrai
 
 	@Override
 	public void registerForAtomEvents(AtomEventFramework framework) {
-		framework.registerAtomEventListener(ConsideredEventSet, predicate, this);
+		framework.registerAtomEventListener(AtomEvent.ConsideredEventTypeSet, predicate, this);
 
 	}
 
 	@Override
 	public void unregisterForAtomEvents(AtomEventFramework framework) {
-		framework.unregisterAtomEventListener(ConsideredEventSet, predicate, this);
+		framework.unregisterAtomEventListener(AtomEvent.ConsideredEventTypeSet, predicate, this);
 	}
 
 	@Override

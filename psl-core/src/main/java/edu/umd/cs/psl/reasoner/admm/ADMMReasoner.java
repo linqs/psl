@@ -16,17 +16,17 @@
  */
 package edu.umd.cs.psl.reasoner.admm;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Set;
-import java.util.Vector;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Iterables;
+
+import de.mathnbits.util.KeyedRetrievalSet;
 
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
@@ -80,7 +80,7 @@ public class ADMMReasoner implements Reasoner {
 	 */
 	public static final String MAX_ITER_KEY = CONFIG_PREFIX + ".maxiterations";
 	/** Default value for MAX_ITER_KEY property */
-	public static final int MAX_ITER_DEFAULT = 10000;
+	public static final int MAX_ITER_DEFAULT = 25000;
 	
 	/**
 	 * Key for non-negative double property. Controls step size. Higher
@@ -104,7 +104,7 @@ public class ADMMReasoner implements Reasoner {
 	 */
 	public static final String EPSILON_REL_KEY = CONFIG_PREFIX + ".epsilonrel";
 	/** Default value for EPSILON_ABS_KEY property */
-	public static final double EPSILON_REL_DEFAULT = 1e-3;
+	public static final double EPSILON_REL_DEFAULT = 5e-4;
 	
 	/**
 	 * Key for positive integer. The number of ADMM iterations after which the
@@ -129,19 +129,20 @@ public class ADMMReasoner implements Reasoner {
 	private int n;
 	
 	/** Ground kernels defining the density function */
-	Set<GroundKernel> groundKernels;
+	//Set<GroundKernel> groundKernels;
+	KeyedRetrievalSet<Kernel, GroundKernel> groundKernels;
 	/** Ground kernels wrapped to be objective functions for ADMM */
-	Vector<ADMMObjectiveTerm> terms;
+	List<ADMMObjectiveTerm> terms;
 	/** Ordered list of variables for looking up indices */
 	HashList<AtomFunctionVariable> variables;
 	/** Consensus vector */
-	Vector<Double> z;
+	List<Double> z;
 	/** Lower bounds on variables */
-	Vector<Double> lb;
+	List<Double> lb;
 	/** Upper bounds on variables */
-	Vector<Double> ub;
+	List<Double> ub;
 	/** Lists of local variable locations for updating consensus variables */
-	Vector<Vector<VariableLocation>> varLocations;
+	List<List<VariableLocation>> varLocations;
 	
 	public ADMMReasoner(ConfigBundle config) {
 		maxIter = config.getInt(MAX_ITER_KEY, MAX_ITER_DEFAULT);
@@ -155,7 +156,8 @@ public class ADMMReasoner implements Reasoner {
 		stopCheck = config.getInt(STOP_CHECK_KEY, STOP_CHECK_DEFAULT);
 		type = (DistributionType) config.getEnum(DISTRIBUTION_KEY, DISTRIBUTION_DEFAULT);
 		
-		groundKernels = new HashSet<GroundKernel>();
+		//groundKernels = new HashSet<GroundKernel>();
+		groundKernels = new KeyedRetrievalSet<Kernel, GroundKernel>();
 	}
 	
 	@Override
@@ -165,7 +167,7 @@ public class ADMMReasoner implements Reasoner {
 
 	@Override
 	public void addGroundKernel(GroundKernel gk) {
-		groundKernels.add(gk);
+		groundKernels.put(gk.getKernel(), gk);
 	}
 
 	@Override
@@ -185,34 +187,29 @@ public class ADMMReasoner implements Reasoner {
 	
 	@Override
 	public GroundKernel getGroundKernel(GroundKernel gk) {
-		// TODO: make this not a terrible solution
-		for (GroundKernel candidate : groundKernels)
-			if (gk.equals(candidate))
-				return candidate;
-		
-		return null;
+		return groundKernels.get(gk.getKernel(), gk);
 	}
 
 	@Override
 	public void removeGroundKernel(GroundKernel gk) {
-		groundKernels.remove(gk);
+		groundKernels.remove(gk.getKernel(), gk);
 	}
 
 	@Override
 	public boolean containsGroundKernel(GroundKernel gk) {
-		return groundKernels.contains(gk);
+		return groundKernels.contains(gk.getKernel(), gk);
 	}
 
 	@Override
 	public void optimize() {
 		log.debug("Initializing optimization.");
 		/* Initializes data structures */
-		terms = new Vector<ADMMObjectiveTerm>(groundKernels.size());
+		terms = new ArrayList<ADMMObjectiveTerm>(groundKernels.size());
 		variables = new HashList<AtomFunctionVariable>(groundKernels.size() * 2);
-		z = new Vector<Double>(groundKernels.size() * 2);
-		lb = new Vector<Double>(groundKernels.size() * 2);
-		ub = new Vector<Double>(groundKernels.size() * 2);
-		varLocations = new Vector<Vector<VariableLocation>>(groundKernels.size() * 2);
+		z = new ArrayList<Double>(groundKernels.size() * 2);
+		lb = new ArrayList<Double>(groundKernels.size() * 2);
+		ub = new ArrayList<Double>(groundKernels.size() * 2);
+		varLocations = new ArrayList<List<VariableLocation>>(groundKernels.size() * 2);
 		n = 0;
 		
 		GroundKernel groundKernel;
@@ -295,8 +292,10 @@ public class ADMMReasoner implements Reasoner {
 			else
 				throw new IllegalStateException("Unsupported ground kernel: " + groundKernel);
 			
-			registerLocalVariableCopies(term);
-			terms.add(term);
+			if (term.x.length > 0) {
+				registerLocalVariableCopies(term);
+				terms.add(term);
+			}
 		}
 		
 		log.debug("Performing optimization with {} variables and {} terms.", z.size(), terms.size());
@@ -371,9 +370,9 @@ public class ADMMReasoner implements Reasoner {
 				epsilonDual = epsilonAbsTerm + epsilonRel * Math.sqrt(AyNorm);
 			}
 				
-			if ((iter - 1) % 20 == 0) {
+			if ((iter - 1) % (50 * stopCheck) == 0) {
 				log.debug("Residuals at iter {} -- Primal: {} -- Dual: {}", new Object[] {iter, primalRes, dualRes});
-				log.debug("--------- Epsilon primal: {} -- Epsilon dual: {}", epsilonPrimal, epsilonDual);
+				log.trace("--------- Epsilon primal: {} -- Epsilon dual: {}", epsilonPrimal, epsilonDual);
 			}
 			
 			iter++;
@@ -389,7 +388,7 @@ public class ADMMReasoner implements Reasoner {
 
 	@Override
 	public Iterable<GroundKernel> getGroundKernels() {
-		return Collections.unmodifiableSet(groundKernels);
+		return groundKernels;
 	}
 
 	@Override
@@ -402,15 +401,8 @@ public class ADMMReasoner implements Reasoner {
 	}
 
 	@Override
-	public Iterable<GroundKernel> getGroundKernels(final Kernel k) {
-		return Iterables.filter(groundKernels, new com.google.common.base.Predicate<GroundKernel>() {
-
-			@Override
-			public boolean apply(GroundKernel gk) {
-				return gk.getKernel().equals(k);
-			}
-			
-		});
+	public Iterable<GroundKernel> getGroundKernels(Kernel k) {
+		return groundKernels.keyIterable(k);
 	}
 
 	@Override
@@ -451,8 +443,8 @@ public class ADMMReasoner implements Reasoner {
 	private Hyperplane processHyperplane(FunctionSum sum) {
 		Hyperplane hp = new Hyperplane();
 		HashMap<AtomFunctionVariable, Integer> localVarLocations = new HashMap<AtomFunctionVariable, Integer>();
-		Vector<Integer> tempZIndices = new Vector<Integer>(sum.size());
-		Vector<Double> tempCoeffs = new Vector<Double>(sum.size());
+		ArrayList<Integer> tempZIndices = new ArrayList<Integer>(sum.size());
+		ArrayList<Double> tempCoeffs = new ArrayList<Double>(sum.size());
 		
 		for (Iterator<FunctionSummand> sItr = sum.iterator(); sItr.hasNext(); ) {
 			FunctionSummand summand = sItr.next();
@@ -491,7 +483,7 @@ public class ADMMReasoner implements Reasoner {
 					ub.add(1.0);
 					
 					/* Creates a list of local variable locations for the new variable */
-					varLocations.add(new Vector<ADMMReasoner.VariableLocation>());
+					varLocations.add(new ArrayList<ADMMReasoner.VariableLocation>());
 					
 					/* Creates the local variable */
 					tempZIndices.add(z.size()-1);

@@ -45,6 +45,11 @@ class FormulaContainer {
 		return new FormulaContainer(new Conjunction(formula,f2.formula));
 	}
 	
+	def or(f2) {
+		checkFormula(f2);
+		return new FormulaContainer(new Disjunction(formula,f2.formula));
+	}
+	
 	def rightShift(FormulaContainer f2) {
 		then(f2);
 	}

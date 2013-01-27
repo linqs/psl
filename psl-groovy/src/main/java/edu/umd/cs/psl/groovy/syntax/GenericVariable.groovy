@@ -67,8 +67,7 @@ class GenericVariable {
 		if (!(other instanceof GenericVariable)) {
 			throw new IllegalArgumentException("Can only compare variables to variables! ${this} compared to ${other}");
 		}
-		assert other instanceof GenericVariable
-		return new FormulaContainer(new QueryAtom(SpecialPredicates.Unequal, this.toAtomVariable(), other.toAtomVariable()));
+		return new FormulaContainer(new QueryAtom(SpecialPredicate.NotEqual, this.toAtomVariable(), other.toAtomVariable()));
 	}
 	
 	def getSetTerm() {

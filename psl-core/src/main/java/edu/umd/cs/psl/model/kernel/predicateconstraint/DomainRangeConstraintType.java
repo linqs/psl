@@ -16,7 +16,7 @@
  */
 package edu.umd.cs.psl.model.kernel.predicateconstraint;
 
-import edu.umd.cs.psl.optimizer.NumericUtilities;
+import edu.umd.cs.psl.model.NumericUtilities;
 import edu.umd.cs.psl.reasoner.function.FunctionComparator;
 
 /**
@@ -140,7 +140,7 @@ public enum DomainRangeConstraintType {
 		case SmallerThan:
 			return val<=1+NumericUtilities.relaxedEpsilon;
 		case Equality:
-			return NumericUtilities.equals(val, 1.0);
+			return NumericUtilities.equalsRelaxed(val, 1.0);
 		default: throw new IllegalArgumentException("Unrecognized comparator: " + this.constraint());
 		}
 	}

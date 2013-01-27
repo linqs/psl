@@ -74,7 +74,7 @@ public class Negation implements Formula {
 
 	@Override
 	public String toString() {
-		return "!( " + body + " )";
+		return "~( " + body + " )";
 	}
 	
 	@Override

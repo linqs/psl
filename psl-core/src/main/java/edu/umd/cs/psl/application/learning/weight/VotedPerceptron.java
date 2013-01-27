@@ -20,10 +20,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.collect.Iterables;
 
 import edu.umd.cs.psl.application.ModelApplication;
-import edu.umd.cs.psl.application.groundkernelstore.GroundKernelStore;
 import edu.umd.cs.psl.application.util.Grounding;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
@@ -33,7 +35,6 @@ import edu.umd.cs.psl.database.DatabasePopulator;
 import edu.umd.cs.psl.evaluation.process.RunningProcess;
 import edu.umd.cs.psl.evaluation.process.local.LocalProcessMonitor;
 import edu.umd.cs.psl.model.Model;
-import edu.umd.cs.psl.model.atom.AtomManager;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
@@ -69,6 +70,8 @@ import edu.umd.cs.psl.reasoner.admm.ADMMReasonerFactory;
  */
 public abstract class VotedPerceptron implements ModelApplication {
 	
+	private static final Logger log = LoggerFactory.getLogger(VotedPerceptron.class);
+	
 	/**
 	 * Prefix of property keys used by this class.
 	 * 
@@ -77,8 +80,8 @@ public abstract class VotedPerceptron implements ModelApplication {
 	public static final String CONFIG_PREFIX = "votedperceptron";
 	
 	/**
-	 * Key for double property which will be multiplied with the objective
-	 * gradient to compute a step.
+	 * Key for positive double property which will be multiplied with the
+	 * objective gradient to compute a step.
 	 */
 	public static final String STEP_SIZE_KEY = CONFIG_PREFIX + ".stepsize";
 	/** Default value for STEP_SIZE_KEY */
@@ -120,9 +123,11 @@ public abstract class VotedPerceptron implements ModelApplication {
 		this.config = config;
 		
 		stepSize = config.getDouble(STEP_SIZE_KEY, STEP_SIZE_DEFAULT);
+		if (stepSize <= 0)
+			throw new IllegalArgumentException("Step size must be positive.");
 		numSteps = config.getInt(NUM_STEPS_KEY, NUM_STEPS_DEFAULT);
 		if (numSteps <= 0)
-			throw new IllegalArgumentException("Number of steps must be positive integer.");
+			throw new IllegalArgumentException("Number of steps must be positive.");
 	}
 	
 	/**
@@ -141,6 +146,7 @@ public abstract class VotedPerceptron implements ModelApplication {
 		List<CompatibilityKernel> kernels = new ArrayList<CompatibilityKernel>();
 		double[] weights;
 		double[] avgWeights;
+		int[] numGroundings;
 		double[] truthIncompatibility;
 		double[] marginals;
 		
@@ -150,6 +156,7 @@ public abstract class VotedPerceptron implements ModelApplication {
 		
 		weights = new double[kernels.size()];
 		avgWeights = new double[kernels.size()];
+		numGroundings = new int[kernels.size()];
 		truthIncompatibility = new double[kernels.size()];
 		marginals = new double[kernels.size()];
 
@@ -166,6 +173,7 @@ public abstract class VotedPerceptron implements ModelApplication {
 		for (int i = 0; i < kernels.size(); i++) {
 			for (GroundKernel gk : reasoner.getGroundKernels(kernels.get(i))) {
 				truthIncompatibility[i] += gk.getIncompatibility();
+				numGroundings[i]++;
 			}
 			
 			/* Initializes the current weights */
@@ -179,10 +187,13 @@ public abstract class VotedPerceptron implements ModelApplication {
 
 			/* Update weights */
 			for (int i = 0; i < kernels.size(); i++) {
-				weights[i] = weights[i] + stepSize * (truthIncompatibility[i] - marginals[i]);
+				double curStep = stepSize / numGroundings[i] * (truthIncompatibility[i] - marginals[i]);
+				log.debug("Step of {} for kernel {}", curStep, kernels.get(i));
+				log.debug(" --- Truth: {}, Marginals: {}", truthIncompatibility[i], marginals[i]);
+				weights[i] = weights[i] + curStep;
 				weights[i] = Math.max(weights[i], 0.0);
 				avgWeights[i] += weights[i];
-				kernels.get(i).setWeight(new PositiveWeight(weights[i]));				
+				kernels.get(i).setWeight(new PositiveWeight(weights[i]));	
 			}
 			reasoner.changedKernelWeights();
 			
@@ -197,7 +208,9 @@ public abstract class VotedPerceptron implements ModelApplication {
 //					mpeIncompatibility += gk.getIncompatibility();
 //				}
 //				
-//				newWeights[i] = oldWeights[i] + stepSize * (truthIncompatibility[i] - mpeIncompatibility);
+//				newWeights[i] = oldWeights[i] + stepSize / numGroundings[i] * (mpeIncompatibility - truthIncompatibility[i]);
+//				log.debug("Step of {} for kernel {}", stepSize / numGroundings[i] * (mpeIncompatibility - truthIncompatibility[i]), kernels.get(i));
+//				log.debug(" --- MPE incomp.: {}, Truth incomp.: {}", mpeIncompatibility, truthIncompatibility[i]);
 //				newWeights[i] = Math.max(newWeights[i], 0.0);
 //				avgWeights[i] += newWeights[i];
 //				
@@ -218,7 +231,7 @@ public abstract class VotedPerceptron implements ModelApplication {
 		if (tMap.getLatentVariables().size() > 0)
 			throw new IllegalArgumentException("All RandomVariableAtoms must have " +
 					"corresponding ObservedAtoms. Latent variables are not supported " +
-					"by VotedPerceptron.");
+					"by VotedPerceptron. Example latent variable: " + tMap.getLatentVariables().iterator().next());
 		Grounding.groundAll(model, tMap, reasoner);
 	}
 	

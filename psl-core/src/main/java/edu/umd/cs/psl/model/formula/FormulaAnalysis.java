@@ -33,6 +33,7 @@ import edu.umd.cs.psl.model.argument.Term;
 import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.AtomEvent;
+import edu.umd.cs.psl.model.atom.AtomEvent.Type;
 import edu.umd.cs.psl.model.atom.AtomEventFramework;
 import edu.umd.cs.psl.model.atom.VariableAssignment;
 import edu.umd.cs.psl.model.kernel.Kernel;
@@ -288,18 +289,18 @@ public class FormulaAnalysis {
 			return vars;
 		}
 		
-		public void registerFormulaForEvents(AtomEventFramework eventFramework, Kernel k, Set<AtomEvent> events) {
+		public void registerClauseForEvents(AtomEventFramework eventFramework, Set<Type> eventTypes, Kernel k) {
 			for (Predicate p : dependence.keySet()) {
-				if (p instanceof StandardPredicate && !eventFramework.getDatabase().isClosed((StandardPredicate) p)) {
-					eventFramework.registerAtomEventListener(events, k);
+				if (!eventFramework.isClosed((StandardPredicate) p)) {
+					eventFramework.registerAtomEventListener(eventTypes, (StandardPredicate) p, k);
 				}
 			}
 		}
 		
-		public void unregisterFormulaForEvents(AtomEventFramework eventFramework, Kernel k, Set<AtomEvent> events) {
+		public void unregisterClauseForEvents(AtomEventFramework eventFramework, Set<Type> eventTypes, Kernel k) {
 			for (Predicate p : dependence.keySet()) {
-				if (p instanceof StandardPredicate && !eventFramework.getDatabase().isClosed((StandardPredicate) p)) {
-					eventFramework.unregisterAtomEventListener(events, k);
+				if (!eventFramework.isClosed((StandardPredicate) p)) {
+					eventFramework.unregisterAtomEventListener(eventTypes, (StandardPredicate) p, k);
 				}
 			}
 		}
