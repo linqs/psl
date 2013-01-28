@@ -1,7 +1,22 @@
+/*
+ * This file is part of the PSL software.
+ * Copyright 2011 University of Maryland
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package edu.umd.cs.psl.application.learning.weight;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
@@ -15,10 +30,15 @@ import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
-import edu.umd.cs.psl.reasoner.Reasoner;
 import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
 import edu.umd.cs.psl.reasoner.function.FunctionVariable;
 
+/**
+ * Learns weights by optimizing the pseudo-log-likelihood of the data using
+ * the voted perceptron algorithm.
+ * 
+ * @author Ben London <blondon@cs.umd.edu>
+ */
 public class MaxPseudoLikelihood extends VotedPerceptron {
 
 	/**
@@ -31,8 +51,7 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 	public static final int NUM_SAMPLES_DEFAULT = 10;
 	
 	private HashMap<GroundAtom,double[]> bounds;
-	private TrainingMap tMap;
-	private int numSamples;
+	private final int numSamples;
 	
 	public MaxPseudoLikelihood(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
 		super(model, rvDB, observedDB, config);
@@ -43,14 +62,13 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 	}
 	
 	@Override
-	public void initGroundModel(Model m, TrainingMap tMap, Reasoner reasoner) {
+	public void initGroundModel() {
 		/* Invoke method in the parent class to setup ground model */
-		super.initGroundModel(m, tMap, reasoner);
-		this.tMap = tMap;
+		super.initGroundModel();
 		
 		/* Determine the bounds of integration */
 		bounds = new HashMap<GroundAtom,double[]>();
-		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : tMap.getTrainingMap().entrySet()) {
+		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
 			RandomVariableAtom atom = e.getKey();
 			double min = 0.0;
 			double max = 1.0;
@@ -90,15 +108,13 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 	}
 	
 	@Override
-	protected void computeMarginals(List<CompatibilityKernel> kernels, double[] marginals) {
-		/* Zero-out the marginals (just in case) */
-		for (int i = 0; i < kernels.size(); i++) {
-			marginals[i] = 0.0;
-		}		
+	protected double[] computeExpectedIncomp() {
+		double[] expIncomp = new double[kernels.size()];
+		
 		/* Let's create/seed the random number generator */
 		Random rand = new Random();
 		/* Accumulate the marginals over all atoms */
-		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : tMap.getTrainingMap().entrySet()) {
+		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
 			RandomVariableAtom atom = e.getKey();
 			/* Check the range of the variable to see if we can integrate it */
 			double range = bounds.get(atom)[1] - bounds.get(atom)[0];
@@ -152,10 +168,12 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 				//Z *= bounds.get(atom)[1] - bounds.get(atom)[0] / numSamples;
 				/* Finally, we add to the marginals for each kernel */ 
 				for (int i = 0; i < kernels.size(); i++) {
-					marginals[i] += marg.get(kernels.get(i)) / Z;
+					expIncomp[i] += marg.get(kernels.get(i)) / Z;
 				}
 			}
 		}
+		
+		return expIncomp;
 	}
 
 }

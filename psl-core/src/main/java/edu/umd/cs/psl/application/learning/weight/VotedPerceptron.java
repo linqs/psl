@@ -38,6 +38,7 @@ import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
+import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.parameters.PositiveWeight;
 import edu.umd.cs.psl.reasoner.Reasoner;
@@ -60,11 +61,12 @@ import edu.umd.cs.psl.reasoner.admm.ADMMReasonerFactory;
  * The voted perceptron algorithm starts at the current weights and at each step
  * computes the gradient of the objective, takes that step multiplied by a step size
  * (possibly truncated to stay in the region of feasible weights), and
- * saves the new weights. The learned weights are the averages of the saved weights.
+ * saves the new weights. The components of the gradient are each divided by the
+ * number of GroundCompatibilityKernels from that Kernel. The learned weights
+ * are the averages of the saved weights.
  * <p>
- * In the gradient of the objective, the expected total incompatibility is
- * approximated by the total incompatibility at the most-probable assignment
- * to the random variables given the current weights.  
+ * For the gradient of the objective, the expected total incompatibility is
+ * computed by subclasses in {@link #computeExpectedIncomp(List, double[])}.
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  */
@@ -113,6 +115,10 @@ public abstract class VotedPerceptron implements ModelApplication {
 	protected Database rvDB, observedDB;
 	protected ConfigBundle config;
 	
+	protected final List<CompatibilityKernel> kernels;
+	protected TrainingMap trainingMap;
+	protected Reasoner reasoner;
+	
 	private final double stepSize;
 	private final int numSteps;
 	
@@ -128,14 +134,18 @@ public abstract class VotedPerceptron implements ModelApplication {
 		numSteps = config.getInt(NUM_STEPS_KEY, NUM_STEPS_DEFAULT);
 		if (numSteps <= 0)
 			throw new IllegalArgumentException("Number of steps must be positive.");
+		kernels = new ArrayList<CompatibilityKernel>();
 	}
 	
 	/**
-	 * TODO
+	 * Learns new weights.
 	 * <p>
 	 * The {@link RandomVariableAtom RandomVariableAtoms} in the distribution are those
-	 * persisted in the Database when this method is called. All RandomVariableAtoms
-	 * which the Model might access must be persisted in the Database.
+	 * persisted in the random variable Database when this method is called. All
+	 * RandomVariableAtoms which the Model might access must be persisted in the Database.
+	 * <p>
+	 * Each such RandomVariableAtom should have a corresponding {@link ObservedAtom}
+	 * in the observed Database.
 	 * 
 	 * @see DatabasePopulator
 	 */
@@ -143,12 +153,11 @@ public abstract class VotedPerceptron implements ModelApplication {
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		RunningProcess proc = LocalProcessMonitor.get().startProcess();
 		
-		List<CompatibilityKernel> kernels = new ArrayList<CompatibilityKernel>();
 		double[] weights;
 		double[] avgWeights;
 		int[] numGroundings;
 		double[] truthIncompatibility;
-		double[] marginals;
+		double[] expectedIncompatibility;
 		
 		/* Gathers the CompatibilityKernels */
 		for (CompatibilityKernel k : Iterables.filter(model.getKernels(), CompatibilityKernel.class))
@@ -158,14 +167,13 @@ public abstract class VotedPerceptron implements ModelApplication {
 		avgWeights = new double[kernels.size()];
 		numGroundings = new int[kernels.size()];
 		truthIncompatibility = new double[kernels.size()];
-		marginals = new double[kernels.size()];
 
 		/* Sets up the ground model */
-		TrainingMap trainingMap = new TrainingMap(rvDB, observedDB);
-		Reasoner reasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
-		initGroundModel(model, trainingMap, reasoner);
+		trainingMap = new TrainingMap(rvDB, observedDB);
+		reasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
+		initGroundModel();
 		
-		/* Computes the observed incompatibility */
+		/* Computes the observed incompatibilities and numbers of groundings */
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
 			e.getKey().setValue(e.getValue().getValue());
 		}
@@ -182,41 +190,20 @@ public abstract class VotedPerceptron implements ModelApplication {
 		
 		/* Computes the Perceptron steps */
 		for (int step = 0; step < numSteps; step++) {
-			/* Compute the marginals */
-			computeMarginals(kernels, marginals);
+			/* Computes the expected total incompatibility for each CompatibilityKernel */
+			expectedIncompatibility = computeExpectedIncomp();
 
-			/* Update weights */
+			/* Updates weights */
 			for (int i = 0; i < kernels.size(); i++) {
-				double curStep = stepSize / numGroundings[i] * (marginals[i] - truthIncompatibility[i]);
-				log.debug("Step of {} for kernel {}", curStep, kernels.get(i));
-				log.debug(" --- Truth: {}, Marginals: {}", truthIncompatibility[i], marginals[i]);
-				weights[i] = weights[i] + curStep;
+				double currentStep = stepSize / numGroundings[i] * (expectedIncompatibility[i] - truthIncompatibility[i]);
+				log.debug("Step of {} for kernel {}", currentStep, kernels.get(i));
+				log.debug(" --- Expected incomp.: {}, Truth incomp.: {}", expectedIncompatibility[i], truthIncompatibility[i]);
+				weights[i] += currentStep;
 				weights[i] = Math.max(weights[i], 0.0);
 				avgWeights[i] += weights[i];
 				kernels.get(i).setWeight(new PositiveWeight(weights[i]));	
 			}
 			reasoner.changedKernelWeights();
-			
-			// OLD STUFF. Keep it around for the time being.
-//			reasoner.optimize();
-//			
-//			for (int i = 0; i < kernels.size(); i++) {
-//				oldWeights[i] = newWeights[i];
-//				mpeIncompatibility = 0.0;
-//				
-//				for (GroundKernel gk : reasoner.getGroundKernels(kernels.get(i))) {
-//					mpeIncompatibility += gk.getIncompatibility();
-//				}
-//				
-//				newWeights[i] = oldWeights[i] + stepSize / numGroundings[i] * (mpeIncompatibility - truthIncompatibility[i]);
-//				log.debug("Step of {} for kernel {}", stepSize / numGroundings[i] * (mpeIncompatibility - truthIncompatibility[i]), kernels.get(i));
-//				log.debug(" --- MPE incomp.: {}, Truth incomp.: {}", mpeIncompatibility, truthIncompatibility[i]);
-//				newWeights[i] = Math.max(newWeights[i], 0.0);
-//				avgWeights[i] += newWeights[i];
-//				
-//				kernels.get(i).setWeight(new PositiveWeight(newWeights[i]));
-//			}
-//			reasoner.changedKernelWeights();
 		}
 		
 		/* Sets the weights to their averages */
@@ -225,17 +212,31 @@ public abstract class VotedPerceptron implements ModelApplication {
 		}
 		
 		proc.terminate();
+		kernels.clear();
+		trainingMap = null;
+		reasoner = null;
 	}
 	
-	protected void initGroundModel(Model m, TrainingMap tMap, Reasoner reasoner) {
-		if (tMap.getLatentVariables().size() > 0)
+	/**
+	 * Constructs a ground model using model and trainingMap, and stores the
+	 * resulting GroundKernels in reasoner.
+	 */
+	protected void initGroundModel() {
+		if (trainingMap.getLatentVariables().size() > 0)
 			throw new IllegalArgumentException("All RandomVariableAtoms must have " +
 					"corresponding ObservedAtoms. Latent variables are not supported " +
-					"by VotedPerceptron. Example latent variable: " + tMap.getLatentVariables().iterator().next());
-		Grounding.groundAll(model, tMap, reasoner);
+					"by VotedPerceptron. Example latent variable: " + trainingMap.getLatentVariables().iterator().next());
+		Grounding.groundAll(model, trainingMap, reasoner);
 	}
 	
-	protected abstract void computeMarginals(List<CompatibilityKernel> kernels, double[] marginals);
+	/**
+	 * Computes the expected (unweighted) total incompatibility of the
+	 * {@link GroundCompatibilityKernel GroundCompatibilityKernels} in reasoner
+	 * for each {@link CompatibilityKernel}.
+	 * 
+	 * @return expected incompatibilities, ordered according to kernels
+	 */
+	protected abstract double[] computeExpectedIncomp();
 
 	@Override
 	public void close() {
