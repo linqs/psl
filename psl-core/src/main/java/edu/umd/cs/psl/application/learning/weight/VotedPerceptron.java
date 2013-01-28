@@ -187,7 +187,7 @@ public abstract class VotedPerceptron implements ModelApplication {
 
 			/* Update weights */
 			for (int i = 0; i < kernels.size(); i++) {
-				double curStep = stepSize / numGroundings[i] * (truthIncompatibility[i] - marginals[i]);
+				double curStep = stepSize / numGroundings[i] * (marginals[i] - truthIncompatibility[i]);
 				log.debug("Step of {} for kernel {}", curStep, kernels.get(i));
 				log.debug(" --- Truth: {}, Marginals: {}", truthIncompatibility[i], marginals[i]);
 				weights[i] = weights[i] + curStep;
