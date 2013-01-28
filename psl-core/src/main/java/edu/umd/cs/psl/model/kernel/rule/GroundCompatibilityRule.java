@@ -44,6 +44,11 @@ public class GroundCompatibilityRule extends AbstractGroundRule implements
 	}
 	
 	@Override
+	public void setWeight(Weight w) {
+		((CompatibilityRuleKernel) kernel).setWeight(w);
+	}
+	
+	@Override
 	public FunctionTerm getFunctionDefinition() {
 		if (posLiterals.size() + negLiterals.size() == 1)
 			return getFunction(numGroundings);

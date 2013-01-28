@@ -26,6 +26,8 @@ public interface GroundCompatibilityKernel extends GroundKernel {
 	
 	public Weight getWeight();
 	
+	public void setWeight(Weight w);
+	
 	public double getIncompatibilityDerivative(int parameterNo);
 	
 	public double getIncompatibilityHessian(int parameterNo1, int parameterNo2);
