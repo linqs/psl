@@ -120,7 +120,7 @@ public class DiscretePredictionStatistics implements PredictionStatistics {
 			double p = tp + fn;
 			if (p == 0.0)
 				return 0.0;
-			return tp/(tp+fn);
+			return tp/(p);
 		}
 	}
 	
@@ -137,7 +137,7 @@ public class DiscretePredictionStatistics implements PredictionStatistics {
 		int numAtoms = getNumAtoms();
 		if (numAtoms == 0)
 			return 0;
-		return (tp + tn) / getNumAtoms();
+		return (tp + tn) / (double)getNumAtoms();
 	}
 
 	@Override

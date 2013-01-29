@@ -133,8 +133,8 @@ abstract public class Atom implements Formula {
 	
 	@Override
 	public boolean equals(Object oth) {
-		if (oth==this) return true;
-		if (oth==null || !(getClass().isInstance(oth)) ) return false;
+		if (oth == this) return true;
+		if (oth == null) return false;
 		Atom other = (Atom) oth;
 		return predicate.equals(other.predicate) && Arrays.deepEquals(arguments, other.arguments);  
 	}
