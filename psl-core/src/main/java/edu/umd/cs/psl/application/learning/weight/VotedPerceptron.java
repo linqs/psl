@@ -17,7 +17,6 @@
 package edu.umd.cs.psl.application.learning.weight;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -180,7 +179,6 @@ public abstract class VotedPerceptron implements ModelApplication {
 			/* Computes the expected total incompatibility for each CompatibilityKernel */
 			expectedIncompatibility = computeExpectedIncomp();
 			scalingFactor  = computeScalingFactor();
-			log.debug("{}", Arrays.toString(scalingFactor));
 
 			/* Updates weights */
 			for (int i = 0; i < kernels.size(); i++) {
