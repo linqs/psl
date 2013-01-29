@@ -20,7 +20,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.database.Database;
@@ -32,7 +31,6 @@ import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
-import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
 import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
 import edu.umd.cs.psl.reasoner.function.FunctionSum;
 import edu.umd.cs.psl.reasoner.function.FunctionSummand;
@@ -80,7 +78,8 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 	}
 	
 	@Override
-	public void initGroundModel() {
+	public void initGroundModel()
+			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		/* Invoke method in the parent class to setup ground model */
 		super.initGroundModel();
 		
