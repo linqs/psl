@@ -20,6 +20,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.collect.Iterables;
 
 import edu.umd.cs.psl.application.ModelApplication;
@@ -35,7 +38,7 @@ import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
-import edu.umd.cs.psl.model.kernel.GroundKernel;
+import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.parameters.PositiveWeight;
 import edu.umd.cs.psl.reasoner.Reasoner;
 import edu.umd.cs.psl.reasoner.ReasonerFactory;
@@ -52,6 +55,8 @@ import edu.umd.cs.psl.reasoner.admm.ADMMReasonerFactory;
  */
 public class HardEMRandOM implements ModelApplication {
 
+	private static final Logger log = LoggerFactory.getLogger(HardEMRandOM.class);
+	
 	/**
 	 * Prefix of property keys used by this class.
 	 * 
@@ -76,9 +81,24 @@ public class HardEMRandOM implements ModelApplication {
 	/**
 	 * Key for maximum iterations
 	 */
-	public static final String MAX_ITER = CONFIG_PREFIX + ".max_iter";
-	/** Default value for MAX_ITER */
-	public static final int MAX_ITER_DEFAULT = 500;
+	public static final String MAX_INNER_ITER = CONFIG_PREFIX + ".max_inner_iter";
+	/** Default value for MAX_INNER_ITER */
+	public static final int MAX_INNER_ITER_DEFAULT = 500;
+	
+	/**
+	 * Key for maximum iterations
+	 */
+	public static final String MAX_OUTER_ITER = CONFIG_PREFIX + ".max_outer_iter";
+	/** Default value for MAX_OUTER_ITER */
+	public static final int MAX_OUTER_ITER_DEFAULT = 500;
+	
+	/**
+	 * Key for maximum iterations
+	 */
+	public static final String CHANGE_THRESHOLD = CONFIG_PREFIX + ".change_threshold";
+	/** Default value for CHANGE_THRESHOLD */
+	public static final double CHANGE_THRESHOLD_DEFAULT = 1e-3;
+	
 
 	/**
 	 * Key for {@link Factory} or String property.
@@ -99,8 +119,10 @@ public class HardEMRandOM implements ModelApplication {
 	private ConfigBundle config;
 
 	private final double tolerance;
-	private final int maxIter;
+	private final int maxInnerIter;
+	private final int maxOuterIter;
 	private double slackPenalty;
+	private double changeThreshold;
 
 	public HardEMRandOM(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
 		this.model = model;
@@ -109,8 +131,10 @@ public class HardEMRandOM implements ModelApplication {
 		this.config = config;
 
 		tolerance = config.getDouble(CUTTING_PLANE_TOLERANCE, CUTTING_PLANE_TOLERANCE_DEFAULT);
-		maxIter = config.getInt(MAX_ITER, MAX_ITER_DEFAULT);
+		maxInnerIter = config.getInt(MAX_INNER_ITER, MAX_INNER_ITER_DEFAULT);
+		maxOuterIter = config.getInt(MAX_OUTER_ITER, MAX_OUTER_ITER_DEFAULT);
 		slackPenalty = config.getDouble(SLACK_PENALTY, SLACK_PENALTY_DEFAULT);
+		changeThreshold = config.getDouble(CHANGE_THRESHOLD, CHANGE_THRESHOLD_DEFAULT);
 	}
 
 	/**
@@ -133,17 +157,9 @@ public class HardEMRandOM implements ModelApplication {
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		RunningProcess proc = LocalProcessMonitor.get().startProcess();
 
-		List<CompatibilityKernel> kernels = new ArrayList<CompatibilityKernel>();
 		double[] weights;
 		double[] truthIncompatibility;
 		double mpeIncompatibility;
-
-		/* Gathers the CompatibilityKernels */
-		for (CompatibilityKernel k : Iterables.filter(model.getKernels(), CompatibilityKernel.class))
-			kernels.add(k);
-
-		weights = new double[kernels.size()];
-		truthIncompatibility = new double[kernels.size()];
 
 		/* Sets up the ground model */
 		Reasoner reasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
@@ -154,80 +170,90 @@ public class HardEMRandOM implements ModelApplication {
 					"by MaxMargin.");
 		Grounding.groundAll(model, trainingMap, reasoner);
 
+		List<GroundCompatibilityKernel> groundKernels = new ArrayList<GroundCompatibilityKernel>();
+		for (GroundCompatibilityKernel k : Iterables.filter(reasoner.getGroundKernels(), GroundCompatibilityKernel.class))
+			groundKernels.add(k);
+
+		weights = new double[groundKernels.size()];
+		truthIncompatibility = new double[groundKernels.size()];
+
+
 		/* Computes the observed incompatibility */
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
 			e.getKey().setValue(e.getValue().getValue());
 		}
 
-		for (int i = 0; i < kernels.size(); i++) {
-			for (GroundKernel gk : reasoner.getGroundKernels(kernels.get(i))) {
-				truthIncompatibility[i] += gk.getIncompatibility();
-			}
+		for (int i = 0; i < groundKernels.size(); i++) {
+			GroundCompatibilityKernel gk = groundKernels.get(i);
+			truthIncompatibility[i] += gk.getIncompatibility();
 
 			/* Initializes the current weights */
-			weights[i] = kernels.get(i).getWeight().getWeight();
+			weights[i] = gk.getWeight().getWeight();
 		}
 
 		boolean converged = false;
 
+		// set up loss augmenting ground kernels
+		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
+			e.getKey().setValue(e.getValue().getValue());
+			reasoner.addGroundKernel(new LossAugmentingGroundKernel(
+					e.getKey(), e.getValue().getValue()));
+		}
+		
+		int outerIter = 0;
+		
 		while (!converged) {
-			/*
-			 * Hard EM inner loop
-			 */
-			
+
 			int iter = 0;
 			double violation = Double.POSITIVE_INFINITY;
 
 			// init a quadratic program with variables for weights and 1 slack variable
-			PositiveMinNormProgram program = new PositiveMinNormProgram(kernels.size() + 1, config);
-
-			// set up loss augmenting ground kernels
-			for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
-				e.getKey().setValue(e.getValue().getValue());
-				reasoner.addGroundKernel(new LossAugmentingGroundKernel(
-						e.getKey(), e.getValue().getValue()));
-			}
+			PositiveMinNormProgram program = new PositiveMinNormProgram(groundKernels.size() + 1, config);
+			
 
 			// add linear objective
-			double [] coefficients = new double[kernels.size() + 1];
-			coefficients[kernels.size()] = slackPenalty;
+			double [] coefficients = new double[groundKernels.size() + 1];
+			coefficients[groundKernels.size()] = slackPenalty;
 			program.setLinearCoefficients(coefficients);
 
 			//qp.setHessianFactor()
-			boolean [] include = new boolean[kernels.size()+1];
-			for (int i = 0; i < kernels.size(); i++) {
+			boolean [] include = new boolean[groundKernels.size()+1];
+			for (int i = 0; i < groundKernels.size(); i++) {
 				include[i] = true;
 			}
-			include[kernels.size()] = false;
-			program.setQuadraticTerm(include, weights);
+			include[groundKernels.size()] = false;
+			program.setQuadraticTerm(include, getOrigin(groundKernels));
 
-			while (iter < maxIter && violation > tolerance) {
+			while (iter < maxInnerIter && violation > tolerance) {
 				reasoner.optimize();
 
-				double [] constraintCoefficients = new double[kernels.size() + 1];
+				double [] constraintCoefficients = new double[groundKernels.size() + 1];
+			
+				/* Computes distance between ground truth and output of separation oracle */
 				double loss = 0.0;
-
-				violation = weights[kernels.size()];
-
-				for (int i = 0; i < kernels.size(); i++) {
+				for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet())
+					loss += Math.abs(e.getKey().getValue() - e.getValue().getValue());
+			
+				violation = 0.0;
+				
+				for (int i = 0; i < groundKernels.size(); i++) {
 					mpeIncompatibility = 0.0;
 
-					for (GroundKernel gk : reasoner.getGroundKernels(kernels.get(i)))
-						mpeIncompatibility += gk.getIncompatibility();	
+					GroundCompatibilityKernel gk = groundKernels.get(i);
+					mpeIncompatibility = gk.getIncompatibility();	
 
-					constraintCoefficients[i] =  mpeIncompatibility - truthIncompatibility[i];
+					constraintCoefficients[i] =  truthIncompatibility[i] - mpeIncompatibility;
 
-					loss += Math.abs(constraintCoefficients[i]);
-					violation -= weights[i] * constraintCoefficients[i];
+					violation += weights[i] * constraintCoefficients[i];
 				}
+				violation -= weights[groundKernels.size()];
 				violation += loss;
-				//TODO: check all the signs in these violation computations
 
 				// slack coefficient
-				constraintCoefficients[kernels.size()] = -1.0;
+				constraintCoefficients[groundKernels.size()] = -1.0;
 
-				// add linear constraint that weights * mpeIncompatibility + loss < weights * truthIncompatibility
-				program.addInequalityConstraint(constraintCoefficients, loss);
+				// add linear constraint weights * truthIncompatility < weights * mpeIncompatibility - loss + \xi
+				program.addInequalityConstraint(constraintCoefficients, -1 * loss);
 
 				// optimize with constraint set
 				program.solve();
@@ -235,19 +261,54 @@ public class HardEMRandOM implements ModelApplication {
 				// update weights with new solution
 				weights = program.getSolution();
 				/* Sets the weights to the new solution */
-				for (int i = 0; i < kernels.size(); i++)
-					kernels.get(i).setWeight(new PositiveWeight(weights[i]));
+				for (int i = 0; i < groundKernels.size(); i++)
+					groundKernels.get(i).setWeight(new PositiveWeight(weights[i]));
 				reasoner.changedKernelWeights();
 
 				iter++;
+				log.debug("Violation: {}" , violation);
+				log.debug("Slack: {}", weights[groundKernels.size()]);
+				log.debug("Model: {}", model);
+				
 			}
+
 			
 			/*
-			 * convergence check
+			 * set kernel weights to average groundKernel weight
+			 * TODO: if we really want to make PSL a RandOM, we could also learn variances here
 			 */
+			double totalChange = 0;
+			for (CompatibilityKernel k : Iterables.filter(model.getKernels(), CompatibilityKernel.class)) {
+				double avgWeight = 0.0;
+				int count = 0;
+				for (GroundCompatibilityKernel gk : Iterables.filter(
+						reasoner.getGroundKernels(k), GroundCompatibilityKernel.class)) {
+					avgWeight += gk.getWeight().getWeight();
+					count++;
+				}
+				avgWeight = avgWeight / (double) count;
+				totalChange += Math.abs(avgWeight - k.getWeight().getWeight());
+				k.setWeight(new PositiveWeight(avgWeight));
+			}
 			
+			
+			outerIter++;
+			
+			/*
+			 * Convergence check
+			 */
+			if (totalChange < changeThreshold || outerIter > maxOuterIter)
+				converged = true;
+
 		}
 		proc.terminate();
+	}
+
+	private double[] getOrigin(List<GroundCompatibilityKernel> groundKernels) {
+		double [] origin = new double[groundKernels.size() + 1];
+		for (int i = 0; i < groundKernels.size(); i++) 
+			origin[i] = groundKernels.get(i).getKernel().getWeight().getWeight();
+		return origin;
 	}
 
 	@Override

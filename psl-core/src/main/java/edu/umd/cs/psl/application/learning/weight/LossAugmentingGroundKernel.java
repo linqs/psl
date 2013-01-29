@@ -19,6 +19,9 @@ package edu.umd.cs.psl.application.learning.weight;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.kernel.BindingMode;
@@ -36,6 +39,8 @@ import edu.umd.cs.psl.reasoner.function.FunctionTerm;
  * @author Bert Huang <bert@cs.umd.edu>
  */
 public class LossAugmentingGroundKernel implements GroundCompatibilityKernel {
+
+	private static final Logger log = LoggerFactory.getLogger(LossAugmentingGroundKernel.class);
 	
 	/**
 	 * 
@@ -49,7 +54,7 @@ public class LossAugmentingGroundKernel implements GroundCompatibilityKernel {
 
 	@Override
 	public boolean updateParameters() {
-		// TODO Auto-generated method stub
+		log.debug("Called unsupported function on LossAugmentedGroundKernel");
 		return false;
 	}
 
@@ -72,7 +77,6 @@ public class LossAugmentingGroundKernel implements GroundCompatibilityKernel {
 
 	@Override
 	public BindingMode getBinding(Atom atom) {
-		// TODO Auto-generated method stub (uh what?)
 		return null;
 	}
 
@@ -91,6 +95,11 @@ public class LossAugmentingGroundKernel implements GroundCompatibilityKernel {
 		return 0.0;
 	}
 
+	@Override
+	public void setWeight(Weight w) {
+		log.debug("Called unsupported function on LossAugmentedGroundKernel");
+	}
+	
 	@Override
 	public FunctionTerm getFunctionDefinition() {
 		FunctionSum sum = new FunctionSum();
