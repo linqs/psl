@@ -17,8 +17,10 @@
 package edu.umd.cs.psl.application.learning.weight;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.database.Database;
@@ -30,7 +32,11 @@ import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
+import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
 import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
+import edu.umd.cs.psl.reasoner.function.FunctionSum;
+import edu.umd.cs.psl.reasoner.function.FunctionSummand;
+import edu.umd.cs.psl.reasoner.function.FunctionTerm;
 import edu.umd.cs.psl.reasoner.function.FunctionVariable;
 
 /**
@@ -50,8 +56,17 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 	/** Default value for NUM_SAMPLES_KEY */
 	public static final int NUM_SAMPLES_DEFAULT = 10;
 	
+	/**
+	 * Key for positive double property.
+	 * Used as minimum width for bounds of integration.
+	 */
+	public static final String MIN_WIDTH_KEY = CONFIG_PREFIX + ".minwidth";
+	/** Default value for MIN_WIDTH_KEY */
+	public static final double MIN_WIDTH_DEFAULT = 1e-2;
+	
 	private HashMap<GroundAtom,double[]> bounds;
 	private final int numSamples;
+	private final double minWidth;
 	
 	public MaxPseudoLikelihood(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
 		super(model, rvDB, observedDB, config);
@@ -59,6 +74,9 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 		numSamples = config.getInt(NUM_SAMPLES_KEY, NUM_SAMPLES_DEFAULT);
 		if (numSamples <= 0)
 			throw new IllegalArgumentException("Number of samples must be positive integer.");
+		minWidth = config.getDouble(MIN_WIDTH_KEY, MIN_WIDTH_DEFAULT);
+		if (minWidth <= 0)
+			throw new IllegalArgumentException("Minimum width must be positive double.");
 	}
 	
 	@Override
@@ -73,36 +91,101 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 			double min = 0.0;
 			double max = 1.0;
 			for (GroundKernel gk : atom.getRegisteredGroundKernels()) {
-				if (gk instanceof GroundConstraintKernel) {
-					ConstraintTerm ct = ((GroundConstraintKernel) gk).getConstraintDefinition();
-					/* Create a map containing the Markov blanket and associated values */
-					HashMap<FunctionVariable,Double> mb = new HashMap<FunctionVariable,Double>();
-					for (GroundAtom a : gk.getAtoms()) {
-						if (a != atom)
-							mb.put(a.getVariable(), a.getValue());
+				if (!(gk instanceof GroundConstraintKernel)) {
+					continue;
+				}
+				ConstraintTerm ct = ((GroundConstraintKernel) gk).getConstraintDefinition();
+				FunctionTerm ft = ct.getFunction();
+				if (!(ft instanceof FunctionSum)) {
+					throw new IllegalStateException("Can only have FunctionSum constraints in MPLE");
+				}
+				/* Create a map containing the Markov blanket and associated values */
+				HashMap<FunctionVariable,Double> mb = new HashMap<FunctionVariable,Double>();
+				for (GroundAtom a : gk.getAtoms()) {
+					if (!a.equals(atom)) {
+						FunctionVariable var = a.getVariable();
+						double val = trainingMap.getTrainingMap().get(a).getValue();
+						mb.put(var, val);
 					}
-					/* Compute bounds of integration */
-					double rhs = ct.getValue() - ct.getFunction().getValue(mb, false);
-					switch(ct.getComparator()) {
-						case Equality:
-							min = rhs;
-							max = rhs;
-							break;
-						case SmallerThan:
-							if (max > rhs)
-								max = rhs;
-							if (min > max)
-								min = max;
-							break;
-						case LargerThan:
+				}
+				/* Compute the RHS of the (in)equality */
+				double rhs = ct.getValue();
+				//System.out.println("RHS before: " + rhs);
+				double coef = 0.0;
+				StringBuilder constStr = new StringBuilder(rhs + " - (");
+				for (Iterator<FunctionSummand> iter = ((FunctionSum) ft).iterator(); iter.hasNext();) {
+					FunctionSummand term = iter.next();
+					FunctionVariable var = (FunctionVariable) term.getTerm();
+					if (atom.getVariable().equals(var)) {
+						coef = term.getCoefficient();
+						//System.out.println(term.toString() + " coef: " + term.getCoefficient());
+					}
+					else {
+						//System.out.println(term.toString() + " value: " + mb.get(var).toString() + ", coef: " + term.getCoefficient());
+						rhs -= mb.get(var) * term.getCoefficient();
+						constStr.append(" +" + term.getCoefficient() + "*" + mb.get(var));
+					}
+				}
+				constStr.append(" ) / " + coef);
+				rhs /= coef;
+				//System.out.println("RHS after: " + rhs);
+				/* Update the bounds of integration */
+				switch(ct.getComparator()) {
+					case Equality:
+						if (rhs < 0.0) {
+							throw new IllegalStateException("There are negative equality constraints in the ground data. RHS=" + rhs);
+//							System.out.println("neg eq constraint in " + atom.toString() + " : " + rhs + " = " + constStr);
+//							System.out.println("Function sum = " + ct.getFunction());
+						}
+						min = rhs;
+						max = rhs;
+						break;
+					case SmallerThan:
+						if (coef < 0) {
 							if (min < rhs)
 								min = rhs;
 							if (max < min)
-								max = min;
-							break;
-					}
+								throw new IllegalStateException("Infeasible constraints; max is less than min.");
+						}
+						else {
+							if (max > rhs)
+								max = rhs;
+							if (min > max)
+								throw new IllegalStateException("Infeasible constraints; min is greater than max.");
+						}
+						break;
+					case LargerThan:
+						if (coef < 0) {
+							if (max > rhs)
+								max = rhs;
+							if (min > max)
+								throw new IllegalStateException("Infeasible constraints; min is greater than max.");
+						}
+						else {
+							if (min < rhs)
+								min = rhs;
+							if (max < min)
+								throw new IllegalStateException("Infeasible constraints; max is less than min.");
+						}
+						break;
 				}
 			}
+			/* Ensure a minimum width */
+			if (max - min < minWidth) {
+				if (min - minWidth/2 < 0.0) {
+					min = 0.0;
+					max = minWidth;
+				}
+				else if (max + minWidth/2 > 1.0) {
+					min = 1.0 - minWidth;
+					max = 1.0;
+				}
+				else {
+					min -= minWidth/2;
+					max += minWidth/2;
+				}
+			}
+			//System.out.println(atom.toString() + " min: " + min + " max: " + max);
 			bounds.put(atom, new double[]{min,max});
 		}
 	}
@@ -168,7 +251,9 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 				//Z *= bounds.get(atom)[1] - bounds.get(atom)[0] / numSamples;
 				/* Finally, we add to the marginals for each kernel */ 
 				for (int i = 0; i < kernels.size(); i++) {
-					expIncomp[i] += marg.get(kernels.get(i)) / Z;
+					CompatibilityKernel k = kernels.get(i);
+					if (marg.containsKey(k))
+						expIncomp[i] += marg.get(k) / Z;
 				}
 			}
 		}
