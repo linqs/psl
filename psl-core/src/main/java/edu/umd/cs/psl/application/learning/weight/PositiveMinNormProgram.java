@@ -70,6 +70,9 @@ public class PositiveMinNormProgram {
 		this.size = size;
 		program = new ConicProgram();
 		ConicProgramSolverFactory cpsFactory = (ConicProgramSolverFactory) config.getFactory(CPS_KEY, CPS_DEFAULT);
+		// make sure config disallows dualizing
+		config.addProperty("hipm.dualize", false);
+		
 		solver = cpsFactory.getConicProgramSolver(config);
 		solver.setConicProgram(program);
 		variables = new Variable[size];

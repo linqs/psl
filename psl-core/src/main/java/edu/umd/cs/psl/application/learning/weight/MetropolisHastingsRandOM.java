@@ -203,6 +203,7 @@ public class MetropolisHastingsRandOM implements ModelApplication {
 				if (accept) {
 					previous = current;
 					weightSamples.add(count, current);
+					previousLikelihood = newLikelihood;
 					count++;
 				}
 			}
