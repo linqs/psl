@@ -183,6 +183,7 @@ public class MetropolisHastingsRandOM implements ModelApplication {
 			}
 			
 			// sample a chain of ground kernel weights
+			// TODO: repeat samples that are not replaced
 			int count = 0;
 			while (count < numSamples) {
 				double [] current = generateNextSample(previous);
