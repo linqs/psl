@@ -29,8 +29,11 @@ import edu.umd.cs.psl.reasoner.function.MaxFunction;
 public class GroundCompatibilityRule extends AbstractGroundRule implements
 		GroundCompatibilityKernel {
 	
+	private Weight weight;
+	
 	GroundCompatibilityRule(CompatibilityRuleKernel k, List<GroundAtom> posLiterals, List<GroundAtom> negLiterals) {
 		super(k, posLiterals, negLiterals);
+		weight = ((CompatibilityKernel) kernel).getWeight();
 	}
 
 	@Override
@@ -40,12 +43,12 @@ public class GroundCompatibilityRule extends AbstractGroundRule implements
 
 	@Override
 	public Weight getWeight() {
-		return ((CompatibilityRuleKernel) kernel).getWeight();
+		return weight;
 	}
 	
 	@Override
 	public void setWeight(Weight w) {
-		((CompatibilityRuleKernel) kernel).setWeight(w);
+		weight = w;
 	}
 	
 	@Override

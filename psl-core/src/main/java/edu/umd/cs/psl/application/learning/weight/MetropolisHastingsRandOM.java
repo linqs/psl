@@ -125,7 +125,7 @@ public class MetropolisHastingsRandOM implements ModelApplication {
 		numSamples = config.getInt(NUM_SAMPLES, NUM_SAMPLES_DEFAULT);
 		burnIn = config.getInt(BURN_IN, BURN_IN_DEFAULT);
 
-		proposalVariance = 1.0; // TODO: make this configurable
+		proposalVariance = .05; // TODO: make this configurable
 	}
 
 	/**
@@ -190,7 +190,9 @@ public class MetropolisHastingsRandOM implements ModelApplication {
 				// set weights to new sample
 				for (int i = 0; i < groundKernels.size(); i++) {
 					GroundCompatibilityKernel gk = groundKernels.get(i);
+					//log.debug(gk.toString() + "Previous weight: " + previous[i] + ", new " + current[i]);
 					gk.setWeight(new PositiveWeight(Math.max(0, current[i])));
+					//log.debug("Now weight is " + gk.getWeight());
 				}
 				reasoner.changedKernelWeights();
 				reasoner.optimize();
@@ -199,13 +201,16 @@ public class MetropolisHastingsRandOM implements ModelApplication {
 				double newLikelihood = getLikelihood(trainingMap, groundKernels);
 
 				boolean accept = rand.nextDouble() < Math.exp(newLikelihood - previousLikelihood);
-
+				log.debug("Acceptance probability " + Math.exp(newLikelihood - previousLikelihood));
+				
 				if (accept) {
 					previous = current;
 					weightSamples.add(count, current);
 					previousLikelihood = newLikelihood;
 					count++;
-				}
+					log.debug("Accepted new weight vector");
+				} else
+					log.debug("Rejected new weight vector");
 			}
 
 			/* set weights to mean of ground kernels */
@@ -253,16 +258,20 @@ public class MetropolisHastingsRandOM implements ModelApplication {
 		double likelihood = 0.0;
 		/* Compute the likelihood of y */
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
-			//likelihood -= Math.abs(e.getKey().getValue() - e.getValue().getValue()); 
-			likelihood -= Math.pow(e.getKey().getValue() - e.getValue().getValue(), 2); 
+			likelihood -= Math.abs(e.getKey().getValue() - e.getValue().getValue()); 
+			//likelihood -= Math.pow(e.getKey().getValue() - e.getValue().getValue(), 2); 
 		}
 
+		log.debug("log P(y | mu) " + likelihood);
+		
 		/* Compute the likelihood of ground weights */
 		for (GroundCompatibilityKernel gk : groundKernels) {
 			likelihood -= Math.pow(gk.getWeight().getWeight() - gk.getKernel().getWeight().getWeight(), 2);
+			//log.debug("gk weight " + gk.getWeight() + ", k weight " + gk.getKernel().getWeight());
 		}
 		//TODO: add variance into calculation of ground weight likelihoods
 
+		log.debug("New log likelihood " + likelihood);
 		return likelihood;
 	}
 
@@ -274,8 +283,12 @@ public class MetropolisHastingsRandOM implements ModelApplication {
 	private double[] generateNextSample(double[] mean) {
 		double [] sample = new double[mean.length];
 
-		for (int i = 0; i < mean.length; i++) 
+		for (int i = 0; i < mean.length; i++) {
 			sample[i] = sampleFromGaussian(mean[i], proposalVariance);
+		}
+		
+		if (mean.length >= 3)
+			log.debug("1st 3 dims of new sample " + sample[0] + ", " + sample[1] + ", " + sample[2]);
 		return sample;
 	}
 
