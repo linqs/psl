@@ -334,7 +334,9 @@ public class RDBMSDatabase implements Database {
 		if (result != null)
 			return result;
 		
-		executePendingStatements();
+		if (pendingInserts.contains(qAtom) || pendingUpdates.contains(qAtom))
+			executePendingStatements();
+		
 		ResultSet rs = queryDBForAtom(qAtom);
 		try {
 			if (rs.next()) {
