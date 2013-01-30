@@ -99,6 +99,10 @@ public class AtomEventFramework implements AtomManager {
 			throw new IllegalArgumentException("Activation threshold must be in (0,1].");
 		jobQueue = new LinkedList<AtomEvent>();
 		atomListeners = new EnumMap<AtomEvent.Type,SetMultimap<StandardPredicate,AtomEvent.Listener>>(AtomEvent.Type.class);
+		for (AtomEvent.Type type : AtomEvent.Type.values()) {
+			SetMultimap<StandardPredicate,AtomEvent.Listener> map = HashMultimap.create();
+			atomListeners.put(type, map);
+		}
 		activeAtoms = new HashSet<Atom>();
 	}
 	
@@ -142,13 +146,8 @@ public class AtomEventFramework implements AtomManager {
 	 * @see AtomEvent
 	 */
 	public void registerAtomEventListener(Set<AtomEvent.Type> eventTypes, StandardPredicate p, AtomEvent.Listener listener) {
-		for (AtomEvent.Type type : eventTypes) {
-			if (!atomListeners.containsKey(type)) {
-				SetMultimap<StandardPredicate,AtomEvent.Listener> map = HashMultimap.create();
-				atomListeners.put(type, map);
-			}
+		for (AtomEvent.Type type : eventTypes)
 			atomListeners.get(type).put(p, listener);
-		}
 	}
 	
 	/**
