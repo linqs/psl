@@ -18,6 +18,10 @@ package edu.umd.cs.psl.application.learning.weight;
 
 import java.util.Iterator;
 
+import org.apache.commons.configuration.ConfigurationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.optimizer.conic.ConicProgramSolver;
@@ -39,6 +43,7 @@ import edu.umd.cs.psl.optimizer.conic.program.Variable;
  *
  */
 public class PositiveMinNormProgram {
+	Logger log = LoggerFactory.getLogger(PositiveMinNormProgram.class);
 
 	/**
 	 * Prefix of property keys used by this class.
@@ -70,11 +75,8 @@ public class PositiveMinNormProgram {
 		this.size = size;
 		program = new ConicProgram();
 		ConicProgramSolverFactory cpsFactory = (ConicProgramSolverFactory) config.getFactory(CPS_KEY, CPS_DEFAULT);
-		// make sure config disallows dualizing
-		config.addProperty("hipm.dualize", false);
 		
 		solver = cpsFactory.getConicProgramSolver(config);
-		solver.setConicProgram(program);
 		variables = new Variable[size];
 		for (int i = 0; i < size; i++) {
 			NonNegativeOrthantCone cone = program.createNonNegativeOrthantCone();
@@ -89,7 +91,7 @@ public class PositiveMinNormProgram {
 	 * @param loss
 	 */
 	public void addInequalityConstraint(double[] coefficients, double value) {
-		assert (coefficients.length == size) : "coefficient and variable vectors must be the same size";
+		//assert (coefficients.length == size) : "coefficient and variable vectors must be the same size";
 
 		NonNegativeOrthantCone cone = program.createNonNegativeOrthantCone();
 		Variable slack = cone.getVariable();
@@ -102,9 +104,12 @@ public class PositiveMinNormProgram {
 	}
 
 	/**
-	 * solve
+	 * solves current conic program
 	 */
 	public void solve() {
+		normalizeCoefficients();
+		
+		solver.setConicProgram(program);
 		solver.solve();
 	}
 
@@ -120,8 +125,7 @@ public class PositiveMinNormProgram {
 	 * @param coefficients
 	 */
 	public void setLinearCoefficients(double[] coefficients) {
-		assert (coefficients.length == size) : "coefficient and variable vectors must be the same size";
-
+		//assert (coefficients.length == size) : "coefficient and variable vectors must be the same size";
 		for (int i = 0; i < size; i++) 
 			variables[i].setObjectiveCoefficient(coefficients[i]);
 	}
@@ -148,7 +152,7 @@ public class PositiveMinNormProgram {
 		
 		for (int i = 0; i < includeInNorm.length; i++)
 			if (includeInNorm[i]) {
-				// create equality constraint between 
+				// create equality constraint
 				Variable coneVar = coneVars.next();
 				LinearConstraint variableConstraint = program.createConstraint();
 				variableConstraint.setVariable(coneVar, 1.0);
@@ -175,6 +179,21 @@ public class PositiveMinNormProgram {
 		quadraticCone = null;
 	}
 
+	/**
+	 * scales all objective coefficients to try to improve numerical stability
+	 */
+	private void normalizeCoefficients() {
+		double max = 0.0;
+		for (int i = 0; i < size; i++)
+			max = Math.max(max, variables[i].getObjectiveCoefficient());
+		max = Math.max(max, squaredNorm.getObjectiveCoefficient());
+		
+		// normalize
+		squaredNorm.setObjectiveCoefficient(squaredNorm.getObjectiveCoefficient() / max);
+		for (int i = 0; i < size; i++) 
+			variables[i].setObjectiveCoefficient(variables[i].getObjectiveCoefficient() / max);
+	}
+	
 	private int size;
 	private ConicProgram program;
 	private ConicProgramSolver solver;

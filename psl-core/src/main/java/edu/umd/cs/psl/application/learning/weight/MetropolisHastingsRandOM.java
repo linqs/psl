@@ -109,6 +109,7 @@ public class MetropolisHastingsRandOM implements ModelApplication {
 	private final int maxIter;
 	private final int burnIn;
 	private final int numSamples;
+	private final double growthRate;
 	private Random rand;
 	private double proposalVariance;
 	private double targetAcceptRate;
@@ -129,7 +130,8 @@ public class MetropolisHastingsRandOM implements ModelApplication {
 		burnIn = config.getInt(BURN_IN, BURN_IN_DEFAULT);
 
 		proposalVariance = .01; // TODO: make this configurable
-		targetAcceptRate= .25; // TODO: make this configurable
+		targetAcceptRate= .25; // heuristics to move rate toward this during burnin phase
+		growthRate = 1.01;
 		
 		weightMeans = new HashMap<CompatibilityKernel, Double>();
 	}
@@ -189,11 +191,15 @@ public class MetropolisHastingsRandOM implements ModelApplication {
 
 			double [] previous = new double[groundKernels.size()];
 			double previousLikelihood = Double.NEGATIVE_INFINITY;
-
+			
+			log.debug("Starting outer iteration " + outerIter);
+			
 			for (int i = 0; i < groundKernels.size(); i++) {
 				GroundCompatibilityKernel gk = groundKernels.get(i);
-				previous[i] = gk.getWeight().getWeight();
+				previous[i] = weightMeans.get(gk.getKernel());
 			}
+			
+			int acceptCount = 0;
 			
 			int count;
 			// sample a chain of ground kernel weights
@@ -216,15 +222,23 @@ public class MetropolisHastingsRandOM implements ModelApplication {
 
 				if (count >= burnIn) {
 					weightSamples.add(current);
+				} else {
+					if ((double) acceptCount / (double) (count + 1) > targetAcceptRate)
+						proposalVariance *= growthRate;
+					else
+						proposalVariance /= growthRate;
+					log.debug("Setting proposal variance to {}", proposalVariance);
 				}
 				
 				if (accept) {
 					previous = current;
 					previousLikelihood = newLikelihood;
-					log.debug("Accepted new weight vector");
+					acceptCount++;
+					log.debug("Accepted new weight vector. Sample {} of {}", count, numSamples);
 				} else {
-					log.debug("Rejected new weight vector");
+					log.debug("Rejected new weight vector. Sample {} of {}", count, numSamples);
 				}
+				log.debug("Acceptance rate: {}", (double) acceptCount / (double) (count + 1));
 			}
 
 			/* set weights to mean of ground kernels */
@@ -245,7 +259,7 @@ public class MetropolisHastingsRandOM implements ModelApplication {
 			 * Convergence check
 			 * TODO: what is a good stopping criterion?
 			 */
-			if (outerIter > maxIter)
+			if (outerIter >= maxIter)
 				converged = true;
 
 		}
@@ -275,7 +289,7 @@ public class MetropolisHastingsRandOM implements ModelApplication {
 			//likelihood -= Math.pow(e.getKey().getValue() - e.getValue().getValue(), 2); 
 		}
 
-		log.debug("log P(y | mu) " + likelihood);
+		//log.debug("log P(y | mu) " + likelihood);
 		
 		/* Compute the likelihood of ground weights */
 		for (GroundCompatibilityKernel gk : groundKernels) {
@@ -283,7 +297,7 @@ public class MetropolisHastingsRandOM implements ModelApplication {
 		}
 		//TODO: add variance into calculation of ground weight likelihoods
 
-		log.debug("New log likelihood " + likelihood);
+		//log.debug("New log likelihood " + likelihood);
 		return likelihood;
 	}
 
@@ -299,8 +313,8 @@ public class MetropolisHastingsRandOM implements ModelApplication {
 			sample[i] = sampleFromGaussian(mean[i], proposalVariance);
 		}
 		
-		if (mean.length >= 3)
-			log.debug("1st 3 dims of new sample " + sample[0] + ", " + sample[1] + ", " + sample[2]);
+		//if (mean.length >= 3)
+		//	log.debug("1st 3 dims of new sample " + sample[0] + ", " + sample[1] + ", " + sample[2]);
 		return sample;
 	}
 
