@@ -71,7 +71,7 @@ public class MetropolisHastingsRandOM implements ModelApplication {
 	 */
 	public static final String MAX_ITER = CONFIG_PREFIX + ".max_iter";
 	/** Default value for MAX_ITER */
-	public static final int MAX_ITER_DEFAULT = 500;
+	public static final int MAX_ITER_DEFAULT = 10;
 
 
 	/**
@@ -79,14 +79,14 @@ public class MetropolisHastingsRandOM implements ModelApplication {
 	 */
 	public static final String NUM_SAMPLES = CONFIG_PREFIX + ".num_samples";
 	/** Default value for NUM_SAMPLES */
-	public static final int NUM_SAMPLES_DEFAULT = 500;
+	public static final int NUM_SAMPLES_DEFAULT = 100;
 
 	/**
 	 * Number of burn-in samples
 	 */
 	public static final String BURN_IN = CONFIG_PREFIX + ".burn_in";
 	/** Default value for BURN_IN */
-	public static final int BURN_IN_DEFAULT = 100;
+	public static final int BURN_IN_DEFAULT = 20;
 
 	/**
 	 * Key for {@link Factory} or String property.
@@ -111,6 +111,9 @@ public class MetropolisHastingsRandOM implements ModelApplication {
 	private final int numSamples;
 	private Random rand;
 	private double proposalVariance;
+	private double targetAcceptRate;
+	
+	private Map<CompatibilityKernel, Double> weightMeans;
 
 
 	public MetropolisHastingsRandOM(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
@@ -125,7 +128,10 @@ public class MetropolisHastingsRandOM implements ModelApplication {
 		numSamples = config.getInt(NUM_SAMPLES, NUM_SAMPLES_DEFAULT);
 		burnIn = config.getInt(BURN_IN, BURN_IN_DEFAULT);
 
-		proposalVariance = .05; // TODO: make this configurable
+		proposalVariance = .01; // TODO: make this configurable
+		targetAcceptRate= .25; // TODO: make this configurable
+		
+		weightMeans = new HashMap<CompatibilityKernel, Double>();
 	}
 
 	/**
@@ -164,7 +170,14 @@ public class MetropolisHastingsRandOM implements ModelApplication {
 			List<Integer> groundKernelIndices = (kernelIndex.containsKey(k)) ? 
 					kernelIndex.get(k) : new ArrayList<Integer>();
 			groundKernelIndices.add(i);
+			kernelIndex.put(k, groundKernelIndices);
 		}
+		
+		/*
+		 * load current weight means
+		 */
+		for (CompatibilityKernel k : Iterables.filter(model.getKernels(), CompatibilityKernel.class))
+			weightMeans.put(k, k.getWeight().getWeight());
 		
 		
 		int outerIter = 0;	
@@ -172,7 +185,7 @@ public class MetropolisHastingsRandOM implements ModelApplication {
 
 		while (!converged) {
 			// create data structure to store sampled ground weights
-			ArrayList<double []> weightSamples = new ArrayList<double []>();
+			StatCounter weightSamples = new StatCounter(groundKernels.size());
 
 			double [] previous = new double[groundKernels.size()];
 			double previousLikelihood = Double.NEGATIVE_INFINITY;
@@ -182,18 +195,15 @@ public class MetropolisHastingsRandOM implements ModelApplication {
 				previous[i] = gk.getWeight().getWeight();
 			}
 			
+			int count;
 			// sample a chain of ground kernel weights
-			// TODO: repeat samples that are not replaced
-			int count = 0;
-			while (count < numSamples) {
+			for (count = 0; count < numSamples; count++) {
 				double [] current = generateNextSample(previous);
 
 				// set weights to new sample
 				for (int i = 0; i < groundKernels.size(); i++) {
 					GroundCompatibilityKernel gk = groundKernels.get(i);
-					//log.debug(gk.toString() + "Previous weight: " + previous[i] + ", new " + current[i]);
 					gk.setWeight(new PositiveWeight(Math.max(0, current[i])));
-					//log.debug("Now weight is " + gk.getWeight());
 				}
 				reasoner.changedGroundKernelWeights();
 				reasoner.optimize();
@@ -203,37 +213,31 @@ public class MetropolisHastingsRandOM implements ModelApplication {
 
 				boolean accept = rand.nextDouble() < Math.exp(newLikelihood - previousLikelihood);
 				log.debug("Acceptance probability " + Math.exp(newLikelihood - previousLikelihood));
+
+				if (count >= burnIn) {
+					weightSamples.add(current);
+				}
 				
 				if (accept) {
 					previous = current;
-					weightSamples.add(count, current);
 					previousLikelihood = newLikelihood;
-					count++;
 					log.debug("Accepted new weight vector");
-				} else
+				} else {
 					log.debug("Rejected new weight vector");
+				}
 			}
 
 			/* set weights to mean of ground kernels */
 			for (CompatibilityKernel k : kernelIndex.keySet()) {
-				double sum = 0.0;
-				int total = 0;
 				List<Integer> gkIndices = kernelIndex.get(k);
-				// for each sample after burnIn
-				for (int i = burnIn; i < count; i++) {
-					// for each ground kernel of k
-					for (Integer j : gkIndices) {
-						sum += weightSamples.get(i)[j];
-						total++;
-					}
-				}
-				/* TODO: how do we allow negative weights? Especially during EM 
-				 * training these should be allowed to be negative
-				 * clip to positive
-				 */
-				sum = Math.max(sum,  0);
-				k.setWeight(new PositiveWeight(sum / (double) total));
-			}
+				int total = count * gkIndices.size();
+				double sum = 0.0;
+				for (Integer i : gkIndices) 
+					sum += weightSamples.getTotal(i);
+				
+				weightMeans.put(k, sum / (double) total);
+				log.debug("Weight sum for " + k + ": " + weightMeans.get(k));
+			}			
 			
 			outerIter++;
 
@@ -245,6 +249,14 @@ public class MetropolisHastingsRandOM implements ModelApplication {
 				converged = true;
 
 		}
+		
+		
+		/*
+		 * set final learned weights
+		 */
+		for (CompatibilityKernel k : kernelIndex.keySet())
+			k.setWeight(new PositiveWeight(Math.max(0, weightMeans.get(k))));
+		
 		proc.terminate();
 	}
 
@@ -267,8 +279,7 @@ public class MetropolisHastingsRandOM implements ModelApplication {
 		
 		/* Compute the likelihood of ground weights */
 		for (GroundCompatibilityKernel gk : groundKernels) {
-			likelihood -= Math.pow(gk.getWeight().getWeight() - gk.getKernel().getWeight().getWeight(), 2);
-			//log.debug("gk weight " + gk.getWeight() + ", k weight " + gk.getKernel().getWeight());
+			likelihood -= Math.pow(gk.getWeight().getWeight() - weightMeans.get(gk.getKernel()), 2);
 		}
 		//TODO: add variance into calculation of ground weight likelihoods
 
@@ -310,6 +321,29 @@ public class MetropolisHastingsRandOM implements ModelApplication {
 		model = null;
 		rvDB = null;
 		config = null;
+	}
+	
+	/**
+	 * Stores sufficient statistics for weight vector sample distribution
+	 *
+	 */
+	private class StatCounter {
+		public StatCounter(int dimensions) {
+			this.dimensions = dimensions;
+			totals = new double[dimensions];
+		}
+		
+		public double getTotal(Integer i) {
+			return totals[i];
+		}
+
+		public void add(double [] x) {
+			for (int i = 0; i < dimensions; i++)
+				totals[i] += x[i];
+		}
+		
+		double [] totals;
+		int dimensions;
 	}
 
 }

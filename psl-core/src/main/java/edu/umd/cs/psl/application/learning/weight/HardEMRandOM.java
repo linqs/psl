@@ -174,7 +174,7 @@ public class HardEMRandOM implements ModelApplication {
 		for (GroundCompatibilityKernel k : Iterables.filter(reasoner.getGroundKernels(), GroundCompatibilityKernel.class))
 			groundKernels.add(k);
 
-		weights = new double[groundKernels.size()];
+		weights = new double[groundKernels.size()+1];
 		truthIncompatibility = new double[groundKernels.size()];
 
 

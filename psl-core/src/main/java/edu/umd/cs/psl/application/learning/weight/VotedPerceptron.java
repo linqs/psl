@@ -245,8 +245,18 @@ public abstract class VotedPerceptron implements ModelApplication {
 	 */
 	protected abstract double[] computeExpectedIncomp();
 	
+	/**
+	 * Computes the amount to scale gradient for each rule
+	 * Scales by the number of groundings of each rule
+	 * unless the rule is not grounded in the training set, in which case 
+	 * scales by 1.0
+	 * @return
+	 */
 	protected double[] computeScalingFactor() {
-		return numGroundings;
+		double [] factor = new double[numGroundings.length];
+		for (int i = 0; i < numGroundings.length; i++) 
+			factor[i] = (numGroundings[i] > 0) ? numGroundings[i] : 1.0;
+		return factor;
 	}
 	
 	protected void cleanUpGroundModel() {
