@@ -252,7 +252,7 @@ public class MaxMargin implements ModelApplication {
 			/* Sets the weights to the new solution */
 			for (int i = 0; i < kernels.size(); i++)
 				kernels.get(i).setWeight(new PositiveWeight(weights[i]));
-			reasoner.changedKernelWeights();
+			reasoner.changedGroundKernelWeights();
 			
 			iter++;
 			log.debug("Violation: {}" , violation);

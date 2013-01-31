@@ -24,13 +24,24 @@ public interface GroundCompatibilityKernel extends GroundKernel {
 	@Override
 	public CompatibilityKernel getKernel();
 	
+	/**
+	 * Returns the Weight of this GroundCompatibilityKernel.
+	 * <p>
+	 * Until {@link #setWeight(Weight)} is called, this GroundKernel's weight
+	 * is the current weight of its parent Kernel. After it is called, it remains
+	 * the most recent Weight set by {@link #setWeight(Weight)}.
+	 * 
+	 * @return this GroundKernel's Weight
+	 * @see CompatibilityKernel#getWeight()
+	 */
 	public Weight getWeight();
 	
+	/**
+	 * Sets a weight for this GroundCompatibilityKernel.
+	 * 
+	 * @param w  new weight
+	 */
 	public void setWeight(Weight w);
-	
-	public double getIncompatibilityDerivative(int parameterNo);
-	
-	public double getIncompatibilityHessian(int parameterNo1, int parameterNo2);
 	
 	public FunctionTerm getFunctionDefinition();
 	

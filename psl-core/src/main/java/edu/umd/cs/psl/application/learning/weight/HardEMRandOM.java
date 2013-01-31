@@ -72,7 +72,7 @@ public class HardEMRandOM implements ModelApplication {
 	public static final double CUTTING_PLANE_TOLERANCE_DEFAULT = 1e-5;
 
 	/**
-	 * Key for slack penalty C, where objective is ||w|| + C (slack)
+	 * Key for slack penalty C, where objective is ||w|| + C * slack
 	 */
 	public static final String SLACK_PENALTY = CONFIG_PREFIX + ".slack_penalty";
 	/** Default value for SLACK_PENALTY */
@@ -263,7 +263,7 @@ public class HardEMRandOM implements ModelApplication {
 				/* Sets the weights to the new solution */
 				for (int i = 0; i < groundKernels.size(); i++)
 					groundKernels.get(i).setWeight(new PositiveWeight(weights[i]));
-				reasoner.changedKernelWeights();
+				reasoner.changedGroundKernelWeights();
 
 				iter++;
 				log.debug("Violation: {}" , violation);

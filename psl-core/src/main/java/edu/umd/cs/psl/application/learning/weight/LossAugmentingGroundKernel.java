@@ -42,14 +42,14 @@ public class LossAugmentingGroundKernel implements GroundCompatibilityKernel {
 
 	private static final Logger log = LoggerFactory.getLogger(LossAugmentingGroundKernel.class);
 	
-	/**
-	 * 
-	 * @param atom 
-	 * @param truthValue
-	 */
+	private Weight weight;
+	
 	public LossAugmentingGroundKernel(GroundAtom atom, double truthValue) {
 		this.atom = atom;
 		this.groundTruth = truthValue;
+		if (!(groundTruth == 1.0 || groundTruth == 0.0))
+			throw new IllegalArgumentException("Truth value must be 1.0 or 0.0.");
+		weight = new PositiveWeight(1.0);
 	}
 
 	@Override
@@ -82,22 +82,12 @@ public class LossAugmentingGroundKernel implements GroundCompatibilityKernel {
 
 	@Override
 	public Weight getWeight() {
-		return new PositiveWeight(1.0);
-	}
-
-	@Override
-	public double getIncompatibilityDerivative(int parameterNo) {
-		return 1.0;
-	}
-
-	@Override
-	public double getIncompatibilityHessian(int parameterNo1, int parameterNo2) {
-		return 0.0;
+		return weight;
 	}
 
 	@Override
 	public void setWeight(Weight w) {
-		log.debug("Called unsupported function on LossAugmentedGroundKernel");
+		weight = w;
 	}
 	
 	@Override
@@ -110,8 +100,7 @@ public class LossAugmentingGroundKernel implements GroundCompatibilityKernel {
 			sum.add(new FunctionSummand(-1.0, atom.getVariable()));
 		}
 		else {
-//			throw new IllegalStateException("Ground truth is not 0 or 1.");
-			sum.add(new FunctionSummand(1.0, atom.getVariable()));
+			throw new IllegalStateException("Ground truth is not 0 or 1.");
 		}
 		
 		return sum;

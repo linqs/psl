@@ -190,7 +190,7 @@ public abstract class VotedPerceptron implements ModelApplication {
 				avgWeights[i] += weight;
 				kernels.get(i).setWeight(new PositiveWeight(weight));	
 			}
-			reasoner.changedKernelWeights();
+			reasoner.changedGroundKernelWeights();
 		}
 		
 		/* Sets the weights to their averages */

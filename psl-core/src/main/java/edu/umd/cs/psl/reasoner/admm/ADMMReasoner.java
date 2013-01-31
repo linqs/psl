@@ -176,12 +176,12 @@ public class ADMMReasoner implements Reasoner {
 	}
 
 	@Override
-	public void changedKernelWeight(CompatibilityKernel k) {
+	public void changedGroundKernelWeight(GroundCompatibilityKernel gk) {
 		/* Intentionally blank */
 	}
 	
 	@Override
-	public void changedKernelWeights() {
+	public void changedGroundKernelWeights() {
 		/* Intentionally blank */
 	}
 	

@@ -195,7 +195,7 @@ public class MetropolisHastingsRandOM implements ModelApplication {
 					gk.setWeight(new PositiveWeight(Math.max(0, current[i])));
 					//log.debug("Now weight is " + gk.getWeight());
 				}
-				reasoner.changedKernelWeights();
+				reasoner.changedGroundKernelWeights();
 				reasoner.optimize();
 
 				// measure log likelihood

@@ -24,7 +24,6 @@ import com.google.common.collect.Iterables;
 
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
-import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
@@ -38,16 +37,8 @@ import edu.umd.cs.psl.reasoner.Reasoner;
 import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
 
 /**
- * Performs probabilistic inference over {@link Atom Atoms} based on a set of
- * {@link GroundKernel GroundKernels}.
- * 
- * The (unnormalized) probability density function is an exponential model of the
- * following form: P(X) = exp(-sum(w_i * pow(k_i, l))), where w_i is the weight of
- * the ith {@link GroundCompatibilityKernel}, k_i is its incompatibility value,
- * and l is an exponent with value 1 (linear model) or 2 (quadratic model).
- * A state X has zero density if any {@link GroundConstraintKernel} is unsatisfied.
- * 
- * Uses a {@link ConicProgramSolver} to maximize the density.
+ * Reasoner that uses a {@link ConicProgramSolver} to minimize the total weighted
+ * incompatibility.
  */
 public class ConicReasoner implements Reasoner {
 
@@ -143,18 +134,16 @@ public class ConicReasoner implements Reasoner {
 	}
 	
 	@Override
-	public void changedKernelWeight(CompatibilityKernel k) {
-		for (GroundKernel gk : getGroundKernels(k)) {
-			ConicProgramProxy proxy = gkRepresentation.get(gk);
-			if (proxy instanceof FunctionConicProgramProxy)
-				((FunctionConicProgramProxy) proxy).updateGroundKernelWeight((GroundCompatibilityKernel) gk);
-			else
-				throw new IllegalStateException("Expected a FunctionConicProgramProxy.");
-		}
+	public void changedGroundKernelWeight(GroundCompatibilityKernel gk) {
+		ConicProgramProxy proxy = gkRepresentation.get(gk);
+		if (proxy instanceof FunctionConicProgramProxy)
+			((FunctionConicProgramProxy) proxy).updateGroundKernelWeight((GroundCompatibilityKernel) gk);
+		else
+			throw new IllegalStateException("Expected a FunctionConicProgramProxy.");
 	}
 	
 	@Override
-	public void changedKernelWeights() {
+	public void changedGroundKernelWeights() {
 		for (Map.Entry<GroundKernel, ConicProgramProxy> e : gkRepresentation.entrySet()) {
 			if (e.getKey() instanceof GroundCompatibilityKernel) {
 				if (e.getValue() instanceof FunctionConicProgramProxy) {

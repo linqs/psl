@@ -26,7 +26,6 @@ import edu.umd.cs.psl.reasoner.function.ConstantNumber;
 import edu.umd.cs.psl.reasoner.function.FunctionTerm;
 import edu.umd.cs.psl.reasoner.function.MaxFunction;
 
-//TODO: document or improve weight setting
 public class GroundCompatibilityRule extends AbstractGroundRule implements
 		GroundCompatibilityKernel {
 	
@@ -64,18 +63,6 @@ public class GroundCompatibilityRule extends AbstractGroundRule implements
 
 	@Override
 	public double getIncompatibility() {
-		return numGroundings*(1.0-getTruthValue());
-	}
-	
-	@Override
-	public double getIncompatibilityHessian(int parameterNo1, int parameterNo2) {
-		assert parameterNo1==0 && parameterNo2==0;
-		return 0;
-	}
-
-	@Override
-	public double getIncompatibilityDerivative(int parameterNo) {
-		assert parameterNo==0;
 		return numGroundings*(1.0-getTruthValue());
 	}
 	

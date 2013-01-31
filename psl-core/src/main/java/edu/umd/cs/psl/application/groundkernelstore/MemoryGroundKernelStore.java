@@ -19,7 +19,6 @@ package edu.umd.cs.psl.application.groundkernelstore;
 import com.google.common.collect.Iterables;
 
 import de.mathnbits.util.KeyedRetrievalSet;
-import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
@@ -62,12 +61,12 @@ public class MemoryGroundKernelStore implements GroundKernelStore {
 	}
 
 	@Override
-	public void changedKernelWeight(CompatibilityKernel k) {
+	public void changedGroundKernelWeight(GroundCompatibilityKernel k) {
 		/* Intentionally blank */
 	}
 
 	@Override
-	public void changedKernelWeights() {
+	public void changedGroundKernelWeights() {
 		/* Intentionally blank */
 	}
 	

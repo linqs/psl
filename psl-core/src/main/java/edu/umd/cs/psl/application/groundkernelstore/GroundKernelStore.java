@@ -52,25 +52,25 @@ public interface GroundKernelStore {
 	public void changedGroundKernel(GroundKernel gk);
 	
 	/**
-	 * Notifies this store that a {@link CompatibilityKernel}'s weight
-	 * (and therefore the weights of all the GroundKernels templated
-	 * by that a Kernel) was changed.
+	 * Notifies this store that a {@link GroundCompatibilityKernel}'s weight
+	 * was changed.
 	 * <p>
-	 * This method should be called whenever the weight of a Kernel with
-	 * GroundKernels in this GroundKernelStore is changed.
+	 * This method should be called whenever the weight of a GroundCompatibilityKernel
+	 * in this store is changed, or the weight of its parent {@link CompatibilityKernel}
+	 * is changed (and the GroundCompatibilityKernel's weight is still tied to it).
 	 * <p>
 	 * It is not necessary to also call {@link #changedGroundKernel(GroundKernel)}
-	 * on the Kernel's GroundKernels if only the weight was changed.
+	 * if only the weight was changed.
 	 * 
-	 * @param k  the Kernel with a changed weight
+	 * @param gk  the ground kernel with a changed weight
 	 */
-	public void changedKernelWeight(CompatibilityKernel k);
+	public void changedGroundKernelWeight(GroundCompatibilityKernel gk);
 	
 	/**
-	 * Equivalent to calling {@link #changedKernelWeight(CompatibilityKernel)}
-	 * for all CompatibilityKernels.
+	 * Equivalent to calling {@link #changedGroundKernelWeight(GroundCompatibilityKernel)}
+	 * for all GroundCompatibilityKernels.
 	 */
-	public void changedKernelWeights();
+	public void changedGroundKernelWeights();
 	
 	/**
 	 * Removes a GroundKernel from this store.
