@@ -182,10 +182,56 @@ public class Dualizer implements ConicProgramListener {
 					}
 				}
 				else {
+					if (primalVarsToDualCons.get(((NonNegativeOrthantCone) entity).getVariable()) != null) {
+						throw new IllegalStateException();
+					}
+				}
+				break;
+			case ObjCoeffChanged:
+				primalVar = (Variable) entity;
+				if (!newCones.remove(primalVar.getCone())) {
+					dualVar = primalVarsToDualVars.get(primalVar);
+					
+					/*
+					 * If it's a slack variable, needs to ensure that the corresponding
+					 * primal constraint will be reprocessed on next check out
+					 */
+					if (dualVar != null) {
+						primalCon = primalVar.getLinearConstraints().iterator().next();
+						conesToDelete.add(primalConsToDualVars.get(primalCon).getCone());
+						primalConsToDualVars.remove(primalCon);
+						newConstraints.add(primalCon);
+						
+						primalVarsToDualVars.remove(primalVar);
+						conesToDelete.remove(dualVar);
+					}
+					/* Otherwise, marks the dual constraint and the lower bound on the Lagrange multiplier for deletion */
+					else {
+						dualCon = primalVarsToDualCons.get(primalVar);
+						for (Variable var : dualCon.getVariables().keySet()) {
+							boolean mappedTo = false;
+							for (LinearConstraint con : primalVar.getLinearConstraints()) {
+								socPair = varPairs.get(con);
+								if (var.equals(primalConsToDualVars.get(con)) || (socPair != null && var.equals(socPair.inner))) {
+									mappedTo = true;
+									break;
+								}
+							}
+							
+							if (!mappedTo) {
+								conesToDelete.add(var.getCone());
+							}
+						}
+						constraintsToDelete.add(dualCon);
+						primalVarsToDualCons.remove(primalVar);
+					}
+				}
+				else {
 					if (primalVarsToDualCons.get(entity) != null) {
 						throw new IllegalStateException();
 					}
 				}
+				newCones.add(primalVar.getCone());
 				break;
 			}
 		}
