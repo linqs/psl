@@ -67,6 +67,34 @@ public class MetropolisHastingsRandOM implements ModelApplication {
 	public static final String CONFIG_PREFIX = "random";
 
 	/**
+	 * Key for mean change threshold
+	 */
+	public static final String CHANGE_THRESHOLD = CONFIG_PREFIX + ".changethreshold";
+	/** Default value for CHANGE_THRESHOLD */
+	public static final double CHANGE_THRESHOLD_DEFAULT = 1e-3;
+	
+	/**
+	 * Key for target sample accept rate
+	 */
+	public static final String TARGET_ACCEPT_RATE = CONFIG_PREFIX + ".targetacceptrate";
+	/** Default value for TARGET_ACCEPT_RATE */
+	public static final double TARGET_ACCEPT_RATE_DEFAULT = 0.25;
+
+	/**
+	 * Key for growth rate for adjusting proposal variance
+	 */
+	public static final String GROWTH_RATE = CONFIG_PREFIX + ".growthrate";
+	/** Default value for GROWTH_RATE */
+	public static final double GROWTH_RATE_DEFAULT = 1.5;
+
+	/**
+	 * Key for initial proposal variance
+	 */
+	public static final String PROPOSAL_VARIANCE = CONFIG_PREFIX + ".proposalvariance";
+	/** Default value for PROPOSAL_VARIANCE */
+	public static final double PROPOSAL_VARIANCE_DEFAULT = 0.001;
+	
+	/**
 	 * Key for maximum iterations
 	 */
 	public static final String MAX_ITER = CONFIG_PREFIX + ".max_iter";
@@ -79,14 +107,14 @@ public class MetropolisHastingsRandOM implements ModelApplication {
 	 */
 	public static final String NUM_SAMPLES = CONFIG_PREFIX + ".num_samples";
 	/** Default value for NUM_SAMPLES */
-	public static final int NUM_SAMPLES_DEFAULT = 100;
+	public static final int NUM_SAMPLES_DEFAULT = 1000;
 
 	/**
 	 * Number of burn-in samples
 	 */
 	public static final String BURN_IN = CONFIG_PREFIX + ".burn_in";
 	/** Default value for BURN_IN */
-	public static final int BURN_IN_DEFAULT = 20;
+	public static final int BURN_IN_DEFAULT = 100;
 
 	/**
 	 * Key for {@link Factory} or String property.
@@ -110,6 +138,7 @@ public class MetropolisHastingsRandOM implements ModelApplication {
 	private final int burnIn;
 	private final int numSamples;
 	private final double growthRate;
+	private final double changeThreshold;
 	private Random rand;
 	private double proposalVariance;
 	private double targetAcceptRate;
@@ -128,10 +157,11 @@ public class MetropolisHastingsRandOM implements ModelApplication {
 		maxIter = config.getInt(MAX_ITER, MAX_ITER_DEFAULT);
 		numSamples = config.getInt(NUM_SAMPLES, NUM_SAMPLES_DEFAULT);
 		burnIn = config.getInt(BURN_IN, BURN_IN_DEFAULT);
+		changeThreshold = config.getDouble(CHANGE_THRESHOLD, CHANGE_THRESHOLD_DEFAULT);
 
-		proposalVariance = .01; // TODO: make this configurable
-		targetAcceptRate= .25; // heuristics to move rate toward this during burnin phase
-		growthRate = 1.01;
+		proposalVariance = config.getDouble(PROPOSAL_VARIANCE, PROPOSAL_VARIANCE_DEFAULT);
+		targetAcceptRate = config.getDouble(TARGET_ACCEPT_RATE, TARGET_ACCEPT_RATE_DEFAULT);
+		growthRate = config.getDouble(GROWTH_RATE, GROWTH_RATE_DEFAULT);
 		
 		weightMeans = new HashMap<CompatibilityKernel, Double>();
 	}
@@ -223,11 +253,17 @@ public class MetropolisHastingsRandOM implements ModelApplication {
 				if (count >= burnIn) {
 					weightSamples.add(current);
 				} else {
-					if ((double) acceptCount / (double) (count + 1) > targetAcceptRate)
-						proposalVariance *= growthRate;
-					else
-						proposalVariance /= growthRate;
-					log.debug("Setting proposal variance to {}", proposalVariance);
+					if (count > 0 && count % 10 == 0) {
+						double acceptRate = (double) acceptCount / (double) (count + 1);
+						// update proposal variance to try to get acceptRate closer to targetAcceptRate
+						
+						if (acceptRate < targetAcceptRate)
+							proposalVariance /= growthRate;
+						else
+							proposalVariance *= growthRate;
+						
+						log.debug("Setting proposal variance to {}", proposalVariance);
+					}
 				}
 				
 				if (accept) {
@@ -241,16 +277,19 @@ public class MetropolisHastingsRandOM implements ModelApplication {
 				log.debug("Acceptance rate: {}", (double) acceptCount / (double) (count + 1));
 			}
 
+			double change = 0.0;
 			/* set weights to mean of ground kernels */
 			for (CompatibilityKernel k : kernelIndex.keySet()) {
 				List<Integer> gkIndices = kernelIndex.get(k);
-				int total = count * gkIndices.size();
+				int total = (count - burnIn) * gkIndices.size();
 				double sum = 0.0;
 				for (Integer i : gkIndices) 
 					sum += weightSamples.getTotal(i);
-				
-				weightMeans.put(k, sum / (double) total);
-				log.debug("Weight sum for " + k + ": " + weightMeans.get(k));
+				double newWeight = sum / (double) total;
+				change += Math.abs(newWeight - weightMeans.get(k));
+				weightMeans.put(k, newWeight);
+				//log.debug("Weight sum for " + k + ": " + sum + ", denom " + total + " count " + count + " gkIndices.size() " + gkIndices.size());
+				log.debug("Weight avg for " + k + ": " + weightMeans.get(k));
 			}			
 			
 			outerIter++;
@@ -259,9 +298,8 @@ public class MetropolisHastingsRandOM implements ModelApplication {
 			 * Convergence check
 			 * TODO: what is a good stopping criterion?
 			 */
-			if (outerIter >= maxIter)
+			if (outerIter >= maxIter || change < changeThreshold)
 				converged = true;
-
 		}
 		
 		

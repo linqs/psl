@@ -183,15 +183,15 @@ public class MaxMargin implements ModelApplication {
 		int iter = 0;
 		double violation = Double.POSITIVE_INFINITY;
 		
-		// init a quadratic program with variables for weights and 1 slack variable
-		PositiveMinNormProgram program = new PositiveMinNormProgram(kernels.size() + 1, config);
-		
 		// set up loss augmenting ground kernels
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
 			e.getKey().setValue(e.getValue().getValue());
 			reasoner.addGroundKernel(new LossAugmentingGroundKernel(
 					e.getKey(), e.getValue().getValue()));
 		}
+
+		// init a quadratic program with variables for weights and 1 slack variable
+		PositiveMinNormProgram program = new PositiveMinNormProgram(kernels.size() + 1, config);
 		
 		// add linear objective
 		double [] coefficients = new double[kernels.size() + 1];
@@ -206,18 +206,18 @@ public class MaxMargin implements ModelApplication {
 		include[kernels.size()] = false;
 		program.setQuadraticTerm(include, new double[kernels.size()]);
 		
+		List<double []> allConstraints = new ArrayList<double[]>();
+		List<Double> allLosses = new ArrayList<Double>();
+		
 		while (iter < maxIter && violation > tolerance) {
 			reasoner.optimize();
-			
-			double [] constraintCoefficients = new double[kernels.size() + 1];
-			
+						
 			/* Computes distance between ground truth and output of separation oracle */
 			double loss = 0.0;
+			double slack = weights[kernels.size()];
 			for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet())
 				loss += Math.abs(e.getKey().getValue() - e.getValue().getValue());
-		
-			violation = 0.0;
-			
+					
 			/* The next loop computes constraint coefficients for max margin constraints:
 			 * w * f(y) < min_x w * f(x) - ||x-y|| + \xi
 			 * For current x from separation oracle, this translates to
@@ -226,6 +226,8 @@ public class MaxMargin implements ModelApplication {
 			 * loss = ||x - y||
 			 * constraintCoefficients = f(y) - f(x)
 			 */
+			double [] constraintCoefficients = new double[kernels.size() + 1];
+			violation = 0.0;
 			for (int i = 0; i < kernels.size(); i++) {
 				mpeIncompatibility = 0.0;
 				
@@ -236,7 +238,7 @@ public class MaxMargin implements ModelApplication {
 				
 				violation += weights[i] * constraintCoefficients[i];
 			}
-			violation -= weights[kernels.size()];
+			violation -= slack;
 			violation += loss;
 			
 			// slack coefficient
@@ -244,6 +246,14 @@ public class MaxMargin implements ModelApplication {
 			
 			// add linear constraint weights * truthIncompatility < weights * mpeIncompatibility - loss + \xi
 			program.addInequalityConstraint(constraintCoefficients, -1 * loss);
+			
+			allLosses.add(loss);
+			allConstraints.add(constraintCoefficients);
+			
+			log.debug("Violation of most recent constraint: {}", violation);
+			log.debug("Distance from ground truth: {}", loss);
+			log.debug("Slack: {}", slack);
+			
 			
 			// optimize with constraint set
 			program.solve();
@@ -254,13 +264,27 @@ public class MaxMargin implements ModelApplication {
 			for (int i = 0; i < kernels.size(); i++)
 				kernels.get(i).setWeight(new PositiveWeight(weights[i]));
 			reasoner.changedGroundKernelWeights();
+
+			log.debug("Current model: {}", model);
 			
 			iter++;
-			log.debug("Violation: {}" , violation);
-			log.debug("Slack: {}", weights[kernels.size()]);
-			log.debug("Model: {}", model);
+			
+			
+			/* TODO: temporary debug code */
+			for (int j = 0; j < allConstraints.size(); j++) {
+				double [] cons = allConstraints.get(j);
+				StringBuilder sb = new StringBuilder();
+				double product = 0.0;
+				for (int i = 0; i < kernels.size(); i++) {			
+					product += weights[i] * cons[i];
+					sb.append("" + cons[i] + ", ");
+				}
+				log.debug("Constraint {}: " + sb.toString(), j);
+				log.debug("Loss {}", allLosses.get(j));
+				log.debug("Violation of included constraint {}: {}", j, product - weights[kernels.size()] + allLosses.get(j));
+			}
+			//TODO: end temp debug code
 		}
-		
 		proc.terminate();
 	}
 
