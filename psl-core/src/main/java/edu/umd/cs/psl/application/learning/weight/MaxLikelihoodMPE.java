@@ -19,6 +19,7 @@ package edu.umd.cs.psl.application.learning.weight;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.Model;
+import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 
 /**
@@ -46,7 +47,7 @@ public class MaxLikelihoodMPE extends VotedPerceptron {
 		/* Computes incompatibility */
 		for (int i = 0; i < kernels.size(); i++) {
 			for (GroundKernel gk : reasoner.getGroundKernels(kernels.get(i))) {
-				expIncomp[i] += gk.getIncompatibility();
+				expIncomp[i] += ((GroundCompatibilityKernel) gk).getIncompatibility();
 			}
 		}
 		

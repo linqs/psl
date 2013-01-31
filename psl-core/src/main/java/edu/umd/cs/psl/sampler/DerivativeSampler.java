@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import edu.umd.cs.psl.evaluation.process.RunningProcess;
+import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
@@ -63,13 +64,15 @@ public class DerivativeSampler extends UniformSampler {
 		double total = 0.0;
 		double incompatibility;
 		for (GroundKernel gk : groundKernels) {
-			incompatibility = gk.getIncompatibility();
-			total -= incompatibility;
-			
-    		Kernel k = gk.getKernel();
-    		if (sampleTotals.containsKey(k)) {
-    			sampleTotals.put(k, sampleTotals.get(k) + incompatibility);
-    		}
+			if (gk instanceof GroundCompatibilityKernel) {
+				incompatibility = ((GroundCompatibilityKernel) gk).getIncompatibility();
+				total -= incompatibility;
+				
+	    		Kernel k = gk.getKernel();
+	    		if (sampleTotals.containsKey(k)) {
+	    			sampleTotals.put(k, sampleTotals.get(k) + incompatibility);
+	    		}
+			}
     	}
 		
 		double density = Math.exp(total);

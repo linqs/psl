@@ -25,15 +25,19 @@ import edu.umd.cs.psl.model.parameters.Weight;
 import edu.umd.cs.psl.reasoner.function.ConstantNumber;
 import edu.umd.cs.psl.reasoner.function.FunctionTerm;
 import edu.umd.cs.psl.reasoner.function.MaxFunction;
+import edu.umd.cs.psl.reasoner.function.PowerOfTwo;
 
 public class GroundCompatibilityRule extends AbstractGroundRule implements
 		GroundCompatibilityKernel {
 	
 	private Weight weight;
+	private final boolean squared;
 	
-	GroundCompatibilityRule(CompatibilityRuleKernel k, List<GroundAtom> posLiterals, List<GroundAtom> negLiterals) {
+	GroundCompatibilityRule(CompatibilityRuleKernel k, List<GroundAtom> posLiterals,
+			List<GroundAtom> negLiterals, boolean squared) {
 		super(k, posLiterals, negLiterals);
-		weight = null; 
+		weight = null;
+		this.squared = squared;
 	}
 
 	@Override
@@ -56,18 +60,21 @@ public class GroundCompatibilityRule extends AbstractGroundRule implements
 	@Override
 	public FunctionTerm getFunctionDefinition() {
 		if (posLiterals.size() + negLiterals.size() == 1)
-			return getFunction(numGroundings);
+			return (squared) ? new PowerOfTwo(getFunction()) : getFunction();
 		else
-			return MaxFunction.of(getFunction(numGroundings), new ConstantNumber(0.0));
+			return (squared) ? new PowerOfTwo(MaxFunction.of(getFunction(), new ConstantNumber(0.0)))
+					: MaxFunction.of(getFunction(), new ConstantNumber(0.0));
 	}
 
 	@Override
 	public double getIncompatibility() {
-		return numGroundings*(1.0-getTruthValue());
+		double inc = 1.0 - getTruthValue();
+		return (squared) ? inc * inc : inc;
 	}
 	
 	@Override
 	public String toString() {
-		return "{" + getWeight().toString() + "} " + super.toString(); 
+		return "{" + getWeight().toString() + "} " + super.toString()
+				+ ((squared) ? " {squared}" : "");
 	}
 }

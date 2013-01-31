@@ -22,19 +22,27 @@ import edu.umd.cs.psl.evaluation.result.FullInferenceResult;
 public class MemoryFullInferenceResult implements FullInferenceResult {
 
 	private final double totalIncompatibility;
+	private final double infeasibilityNorm;
 	private final int numGroundAtoms;
 	private final int numGroundEvidence;
 	private final ProcessView process;
 	
-	public MemoryFullInferenceResult(ProcessView proc, double incomp, int noAtoms, int numGevidence) {
+	public MemoryFullInferenceResult(ProcessView proc, double incomp, double infNorm, int noAtoms, int numGevidence) {
 		totalIncompatibility=incomp;
+		infeasibilityNorm = infNorm;
 		numGroundAtoms=noAtoms;
 		numGroundEvidence=numGevidence;
 		process = proc;
 	}
 
-	public double getTotalIncompatibility() {
+	@Override
+	public double getTotalWeightedIncompatibility() {
 		return totalIncompatibility;
+	}
+	
+	@Override
+	public double getInfeasibilityNorm() {
+		return infeasibilityNorm;
 	}
 
 	public int getNumGroundAtoms() {

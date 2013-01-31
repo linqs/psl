@@ -17,6 +17,7 @@
 package edu.umd.cs.psl.application.inference;
 
 import edu.umd.cs.psl.application.ModelApplication;
+import edu.umd.cs.psl.application.util.GroundKernels;
 import edu.umd.cs.psl.application.util.Grounding;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
@@ -110,7 +111,9 @@ public class MPEInference implements ModelApplication {
 		}
 		
 		proc.terminate();
-		return new MemoryFullInferenceResult(proc, reasoner.getTotalWeightedIncompatibility(), count, reasoner.size());
+		double incompatibility = GroundKernels.getTotalWeightedIncompatibility(reasoner.getCompatibilityKernels());
+		double infeasibility = GroundKernels.getInfeasibilityNorm(reasoner.getConstraintKernels());
+		return new MemoryFullInferenceResult(proc, incompatibility, infeasibility, count, reasoner.size());
 
 	}
 

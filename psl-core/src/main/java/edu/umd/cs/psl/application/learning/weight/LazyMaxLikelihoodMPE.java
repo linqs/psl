@@ -23,6 +23,7 @@ import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.atom.AtomEventFramework;
+import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.reasoner.Reasoner;
@@ -94,7 +95,7 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 		/* Computes the observed incompatibilities */
 		for (int i = 0; i < kernels.size(); i++) {
 			for (GroundKernel gk : obsReasoner.getGroundKernels(kernels.get(i))) {
-				truthIncompatibility[i] += gk.getIncompatibility();
+				truthIncompatibility[i] += ((GroundCompatibilityKernel) gk).getIncompatibility();
 			}
 		}
 		
@@ -115,7 +116,7 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 		/* Computes incompatibility */
 		for (int i = 0; i < kernels.size(); i++) {
 			for (GroundKernel gk : reasoner.getGroundKernels(kernels.get(i))) {
-				expIncomp[i] += gk.getIncompatibility();
+				expIncomp[i] += ((GroundCompatibilityKernel) gk).getIncompatibility();
 			}
 		}
 		

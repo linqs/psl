@@ -16,7 +16,6 @@
  */
 package edu.umd.cs.psl.model.kernel.predicateconstraint;
 
-import edu.umd.cs.psl.model.NumericUtilities;
 import edu.umd.cs.psl.reasoner.function.FunctionComparator;
 
 /**
@@ -120,28 +119,30 @@ public enum DomainRangeConstraintType {
 	 * @return integer position of constrained element in predicate arguments
 	 */
 	abstract int position();
+	
 	/**
 	 * Determines whether this is an equality constraint or not
 	 * @return boolean true if the constraint is an equality constraint, false otherwise
 	 */
 	abstract boolean equality();
+	
 	/**
 	 * The constraint type (eg. SmallerThan, Equality) as one of the types in {@link FunctionComparator}. 
 	 * @return Enumerated type from {@link FunctionComparator}
 	 */
 	abstract FunctionComparator constraint();
+	
 	/**
-	 * 
-	 * @param val the value of the computed function derived from the {@link edu.umd.cs.psl.model.predicate.Predicate Predicate}, eg. from a {@link edu.umd.cs.psl.model.kernel.predicateconstraint.GroundDomainRangeConstraint GroundPredicateConstraint}
-	 * @return boolean specifying whther the constraint is met
+	 * @return the distance between a value and this constraint's nearest feasible value
 	 */
-	boolean constraintHolds(double val) {
+	double getInfeasibility(double val) {
 		switch(this.constraint()) {
 		case SmallerThan:
-			return val<=1+NumericUtilities.relaxedEpsilon;
+			return (val > 1.0) ? val - 1.0 : 0.0;
 		case Equality:
-			return NumericUtilities.equalsRelaxed(val, 1.0);
-		default: throw new IllegalArgumentException("Unrecognized comparator: " + this.constraint());
+			return Math.abs(val - 1.0);
+		default:
+			throw new IllegalArgumentException("Unrecognized comparator: " + this.constraint());
 		}
 	}
 }

@@ -46,18 +46,9 @@ public interface GroundKernel {
 
 	/**
 	 * @return set of {@link GroundAtom GroundAtoms} which determine this
-	 *             GroundKernel's incompatibility
+	 *             GroundKernel's incompatibility or infeasibility
 	 */
 	public Set<GroundAtom> getAtoms();
-
-	/**
-	 * Returns the incompatibility incompatibility of the truth values of
-	 * this GroundKernel's {@link GroundAtom GroundAtoms}.
-	 * <p>
-	 * Incompatibility is always non-negative, and is 0 or +Infinity for
-	 * a {@link GroundConstraintKernel}.
-	 */
-	public double getIncompatibility();
 
 	/**
 	 * Something about whether GroundAtoms can be removed from this GroundKernel

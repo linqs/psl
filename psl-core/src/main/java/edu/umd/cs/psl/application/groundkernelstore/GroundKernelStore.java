@@ -121,14 +121,6 @@ public interface GroundKernelStore {
 	public Iterable<GroundKernel> getGroundKernels(Kernel k);
 	
 	/**
-	 * @return the total, weighted incompatibility of the GroundKernels
-	 *             in this store.
-	 * @see GroundKernel#getIncompatibility()
-	 * @see GroundCompatibilityKernel#getWeight()
-	 */
-	public double getTotalWeightedIncompatibility();
-	
-	/**
 	 * @return the number of GroundKernels in this store
 	 */
 	public int size();

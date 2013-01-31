@@ -64,15 +64,9 @@ public class ConicReasoner implements Reasoner {
 	 * Value is instance of {@link edu.umd.cs.psl.optimizer.conic.ipm.HomogeneousIPMFactory}.
 	 */
 	public static final ConicProgramSolverFactory CPS_DEFAULT = new HomogeneousIPMFactory();
-	
-	/** Key for {@link DistributionType} property. */
-	public static final String DISTRIBUTION_KEY = CONFIG_PREFIX + ".distribution";
-	/** Default value for DISTRIBUTION_KEY property. */
-	public static final DistributionType DISTRIBUTION_DEFAULT = DistributionType.linear;
 
 	ConicProgram program;
 	ConicProgramSolver solver;
-	final DistributionType type;
 	private final Map<GroundKernel, ConicProgramProxy> gkRepresentation;
 	private final Map<AtomFunctionVariable, VariableConicProgramProxy> vars;
 	
@@ -87,14 +81,8 @@ public class ConicReasoner implements Reasoner {
 		ConicProgramSolverFactory cpsFactory = (ConicProgramSolverFactory) config.getFactory(CPS_KEY, CPS_DEFAULT);
 		solver = cpsFactory.getConicProgramSolver(config);
 		solver.setConicProgram(program);
-		type = (DistributionType) config.getEnum(DISTRIBUTION_KEY, DISTRIBUTION_DEFAULT);
 		gkRepresentation = new HashMap<GroundKernel, ConicProgramProxy>();
 		vars = new HashMap<AtomFunctionVariable, VariableConicProgramProxy>();
-	}
-	
-	@Override
-	public DistributionType getDistributionType() {
-		return type;
 	}
 	
 	@Override
@@ -197,24 +185,6 @@ public class ConicReasoner implements Reasoner {
 			}
 			
 		});
-	}
-
-	@Override
-	public double getTotalWeightedIncompatibility() {
-		double weightedIncompatibility;
-		double objective = 0.0;
-		for (GroundKernel gk : gkRepresentation.keySet()) {
-			weightedIncompatibility = gk.getIncompatibility();
-			if (gk instanceof GroundCompatibilityKernel) {
-				if (type.equals(DistributionType.quadratic))
-					weightedIncompatibility *= weightedIncompatibility;
-				else if (!type.equals(DistributionType.linear))
-					throw new IllegalStateException("Unrecognized distribution type: " + type);
-				weightedIncompatibility *= ((GroundCompatibilityKernel) gk).getWeight().getWeight();
-			}
-			objective += weightedIncompatibility;
-		}
-		return objective;
 	}
 
 	@Override

@@ -52,8 +52,6 @@ abstract public class AbstractGroundRule implements GroundKernel {
 	protected final AbstractRuleKernel kernel;
 	protected final List<GroundAtom> posLiterals;
 	protected final List<GroundAtom> negLiterals;
-	
-	protected int numGroundings;
 
 	private final int hashcode;
 	
@@ -61,8 +59,6 @@ abstract public class AbstractGroundRule implements GroundKernel {
 		kernel = k;
 		this.posLiterals = new ArrayList<GroundAtom>(posLiterals);
 		this.negLiterals = new ArrayList<GroundAtom>(negLiterals);
-		
-		numGroundings=1;
 		
 		HashCodeBuilder hcb = new HashCodeBuilder();
 		hcb.append(kernel);
@@ -80,35 +76,21 @@ abstract public class AbstractGroundRule implements GroundKernel {
 			atom.registerGroundKernel(this);
 	}
 	
-	int getNumGroundings() {
-		return numGroundings;
-	}
-	
-	void increaseGroundings() {
-		numGroundings++;
-	}
-	
-	void decreaseGroundings() {
-		numGroundings--;
-		if (numGroundings <= 0)
-			throw new IllegalStateException("Non-positive number of groundings.");
-	}
-	
 	@Override
 	public boolean updateParameters() {
 		return true;
 	}
 	
-	protected FunctionSum getFunction(double multiplier) {
+	protected FunctionSum getFunction() {
 		FunctionSum sum = new FunctionSum();
 		
 		for (GroundAtom atom : posLiterals)
-			sum.add(new FunctionSummand(multiplier, atom.getVariable()));
+			sum.add(new FunctionSummand(1.0, atom.getVariable()));
 		
 		for (GroundAtom atom : negLiterals)
-			sum.add(new FunctionSummand(-1*multiplier, atom.getVariable()));
+			sum.add(new FunctionSummand(-1.0, atom.getVariable()));
 		
-		sum.add(new FunctionSummand(multiplier, new ConstantNumber(1.0 - posLiterals.size())));
+		sum.add(new FunctionSummand(1.0, new ConstantNumber(1.0 - posLiterals.size())));
 		
 		return sum;
 	}
@@ -125,7 +107,7 @@ abstract public class AbstractGroundRule implements GroundKernel {
 	}
 	
 	public double getTruthValue() {
-		return 1 - Math.max(getFunction(1.0).getValue(), 0);
+		return 1 - Math.max(getFunction().getValue(), 0);
 	}
 	
 	@Override

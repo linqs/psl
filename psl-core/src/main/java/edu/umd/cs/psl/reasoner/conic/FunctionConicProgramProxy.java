@@ -32,6 +32,7 @@ import edu.umd.cs.psl.reasoner.function.FunctionSum;
 import edu.umd.cs.psl.reasoner.function.FunctionSummand;
 import edu.umd.cs.psl.reasoner.function.FunctionTerm;
 import edu.umd.cs.psl.reasoner.function.MaxFunction;
+import edu.umd.cs.psl.reasoner.function.PowerOfTwo;
 
 class FunctionConicProgramProxy extends ConicProgramProxy {
 
@@ -47,6 +48,7 @@ class FunctionConicProgramProxy extends ConicProgramProxy {
 	protected LinearConstraint holdOtherOuterVar;
 	protected Vector<ConstraintConicProgramProxy> constraints;
 	protected boolean initialized = false;
+	protected boolean squared;
 	
 	protected static final Set<ConeType> RSOCType;
 	static {
@@ -56,22 +58,14 @@ class FunctionConicProgramProxy extends ConicProgramProxy {
 	
 	FunctionConicProgramProxy(ConicReasoner reasoner, GroundCompatibilityKernel gk) {
 		super(reasoner, gk);
-		if (gk.getWeight().getWeight() != 0.0) {
-			initialize();
-			addFunctionTerm(gk.getFunctionDefinition());
-			setWeight(gk.getWeight().getWeight());
-		}
+		updateGroundKernel(gk);
 	}
 	
 	protected void initialize() {
 		if (!initialized) {
 			constraints = new Vector<ConstraintConicProgramProxy>(1);
 			
-			switch (reasoner.type) {
-			case linear:
-				featureVar = reasoner.program.createNonNegativeOrthantCone().getVariable();
-				break;
-			case quadratic:
+			if (squared) {
 				/* If the solver supports rotated second-order cones, uses them... */
 				if (reasoner.solver.supportsConeTypes(RSOCType)) {
 					RotatedSecondOrderCone rsoc = reasoner.program.createRotatedSecondOrderCone(3);
@@ -118,9 +112,10 @@ class FunctionConicProgramProxy extends ConicProgramProxy {
 					outerSquaredCon.setVariable(outerSquaredVar, 1.0);
 					outerSquaredCon.setVariable(squaredFeatureVar, -0.5);
 					outerSquaredCon.setConstrainedValue(0.5);
-					break;
 				}
 			}
+			else
+				featureVar = reasoner.program.createNonNegativeOrthantCone().getVariable();
 			
 			initialized = true;
 		}
@@ -130,16 +125,14 @@ class FunctionConicProgramProxy extends ConicProgramProxy {
 	}
 	
 	protected void setWeight(double weight) {
-		switch (reasoner.type) {
-		case linear:
-			featureVar.setObjectiveCoefficient(weight);
-			break;
-		case quadratic:
+		if (squared) {
 			if (reasoner.solver.supportsConeTypes(RSOCType))
 				rotSquaredFeatureVar.setObjectiveCoefficient(weight);
 			else
 				squaredFeatureVar.setObjectiveCoefficient(weight);
 		}
+		else
+			featureVar.setObjectiveCoefficient(weight);
 	}
 	
 	void updateGroundKernelWeight(GroundCompatibilityKernel gk) {
@@ -148,10 +141,10 @@ class FunctionConicProgramProxy extends ConicProgramProxy {
 				remove();
 		}
 		else {
-			if (!initialized) {
-				initialize();
-			}
-			setWeight(gk.getWeight().getWeight());
+			if (!initialized)
+				updateGroundKernel(gk);
+			else
+				setWeight(gk.getWeight().getWeight());
 		}
 	}
 	
@@ -161,13 +154,27 @@ class FunctionConicProgramProxy extends ConicProgramProxy {
 				remove();
 		}
 		else {
+			FunctionTerm function = gk.getFunctionDefinition();
+			boolean nowSquared;
+			if (function instanceof PowerOfTwo) {
+				nowSquared = true;
+				function = ((PowerOfTwo) function).getInnerFunction();
+			}
+			else
+				nowSquared = false;
+			
+			if (squared != nowSquared)
+				remove();
+			
+			squared = nowSquared;
+			
 			if (!initialized) {
 				initialize();
 			}
 			else {
 				deleteConstraints();
 			}
-			addFunctionTerm(gk.getFunctionDefinition());
+			addFunctionTerm(function);
 			setWeight(gk.getWeight().getWeight());
 		}
 	}
@@ -207,12 +214,7 @@ class FunctionConicProgramProxy extends ConicProgramProxy {
 	void remove() {
 		if (initialized) {
 			deleteConstraints();
-			switch (reasoner.type) {
-			case linear:
-				featureVar.getCone().delete();
-				featureVar = null;
-				break;
-			case quadratic:
+			if (squared) {
 				if (reasoner.solver.supportsConeTypes(RSOCType)) {
 					holdOtherOuterVar.delete();
 					rotSquaredFeatureVar.getCone().delete();
@@ -234,9 +236,10 @@ class FunctionConicProgramProxy extends ConicProgramProxy {
 					outerSquaredVar.getCone().delete();
 					outerSquaredVar = null;
 				}
-				break;
-			default:
-				throw new IllegalArgumentException("Unsupported distance norm.");
+			}
+			else {
+				featureVar.getCone().delete();
+				featureVar = null;
 			}
 			
 			initialized = false;

@@ -18,7 +18,9 @@ package edu.umd.cs.psl.evaluation.result;
 
 public interface FullInferenceResult extends InferenceResult {
 
-	public double getTotalIncompatibility();
+	public double getTotalWeightedIncompatibility();
+	
+	public double getInfeasibilityNorm();
 
 	public int getNumGroundAtoms();
 

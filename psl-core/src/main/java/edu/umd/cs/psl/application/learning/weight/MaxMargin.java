@@ -38,6 +38,7 @@ import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
+import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.parameters.PositiveWeight;
 import edu.umd.cs.psl.reasoner.Reasoner;
@@ -172,7 +173,7 @@ public class MaxMargin implements ModelApplication {
 		
 		for (int i = 0; i < kernels.size(); i++) {
 			for (GroundKernel gk : reasoner.getGroundKernels(kernels.get(i))) {
-				truthIncompatibility[i] += gk.getIncompatibility();
+				truthIncompatibility[i] += ((GroundCompatibilityKernel) gk).getIncompatibility();
 			}
 			
 			/* Initializes the current weights */
@@ -229,7 +230,7 @@ public class MaxMargin implements ModelApplication {
 				mpeIncompatibility = 0.0;
 				
 				for (GroundKernel gk : reasoner.getGroundKernels(kernels.get(i)))
-					mpeIncompatibility += gk.getIncompatibility();	
+					mpeIncompatibility += ((GroundCompatibilityKernel) gk).getIncompatibility();	
 				
 				constraintCoefficients[i] =  truthIncompatibility[i] - mpeIncompatibility;
 				

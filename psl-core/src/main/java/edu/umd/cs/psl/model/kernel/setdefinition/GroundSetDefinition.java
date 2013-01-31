@@ -21,7 +21,6 @@ import java.util.Set;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
-import edu.umd.cs.psl.model.NumericUtilities;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
@@ -166,11 +165,8 @@ public class GroundSetDefinition implements GroundConstraintKernel {
 	}
 
 	@Override
-	public double getIncompatibility() {
-		if (NumericUtilities.equalsRelaxed(setAtom.getValue(), getAggregateValue())) {
-			return 0.0;
-		} else
-			return Double.POSITIVE_INFINITY;
+	public double getInfeasibility() {
+		return Math.abs(setAtom.getValue() - getAggregateValue());
 	}
 	
 }

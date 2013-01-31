@@ -271,9 +271,16 @@ class PSLModel extends Model {
 	
 	def addRule(FormulaContainer rule, Map args) {
 		boolean isFact = false;
+		boolean isSquared = false;
 		if (args.containsKey('constraint')) {
 			if (!(args['constraint'] instanceof Boolean)) throw new IllegalArgumentException("The parameter [constraint] for a rule must be either TRUE or FALSE");
 			isFact = args['constraint'];
+		}
+		
+		if (args.containsKey('squared')) {
+			if (isFact) throw new IllegalArgumentException("Cannot set squared on a fact rule.");
+			if (!(args['squared'] instanceof Boolean)) throw new IllegalArgumentException("The parameter [squared] for a rule must be either TRUE or FALSE");
+			isSquared = args['squared'];
 		}
 		
 		double weight = Double.NaN;
@@ -294,7 +301,7 @@ class PSLModel extends Model {
 		if (isFact) {
 			pslrule = new ConstraintRuleKernel(ruleformula);
 		} else {
-			pslrule = new CompatibilityRuleKernel(ruleformula, weight);
+			pslrule = new CompatibilityRuleKernel(ruleformula, weight, isSquared);
 		}
 		
 		addKernel(pslrule);

@@ -267,7 +267,6 @@ public class HomogeneousIPM implements ConicProgramSolver {
 	public void setConicProgram(ConicProgram p) {
 		currentProgram = p;
 		if (tryDualize && Dualizer.supportsConeTypes(currentProgram.getConeTypes())) {
-			log.debug("Dualizing conic program.");
 			dualized = true;
 			dualizer = new Dualizer(currentProgram);
 		}
@@ -282,13 +281,16 @@ public class HomogeneousIPM implements ConicProgramSolver {
 			throw new IllegalStateException("No conic program has been set.");
 		
 		ConicProgram program;
+		boolean checkedOutDualProgram = false;
 
 		currentProgram.checkOutMatrices();
 		
-		if (dualized) {
+		if (dualized && Dualizer.supportsConeTypes(currentProgram.getConeTypes())) {
+			log.debug("Dualizing conic program.");
 			dualizer.checkOutProgram();
 			program = dualizer.getDualProgram();
 			program.checkOutMatrices();
+			checkedOutDualProgram = true;
 		}
 		else {
 			program = currentProgram;
@@ -305,7 +307,7 @@ public class HomogeneousIPM implements ConicProgramSolver {
 		
 		doSolve(program);
 		
-		if (dualized) {
+		if (checkedOutDualProgram) {
 			program.checkInMatrices();
 			dualizer.checkInProgram();
 		}

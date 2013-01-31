@@ -17,30 +17,19 @@
 package edu.umd.cs.psl.reasoner;
 
 import edu.umd.cs.psl.application.groundkernelstore.GroundKernelStore;
-import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 
 /**
  * A GroundKernelStore that can minimize the total weighted incompatibility
- * of its GroundKernels by optimizing the RandomVariableAtoms.
+ * of its GroundCompatibilityKernels such that the infeasibility of its
+ * GroundConstraintKernels is (close to) zero by optimizing the RandomVariableAtoms.
  */
 public interface Reasoner extends GroundKernelStore {
 	
 	/**
-	 * Distribution types supported by Reasoners.
-	 * 
-	 * A linear distribution does not modify the incompatibility values of
-	 * {@link GroundCompatibilityKernel GroundCompatibilityKernels},
-	 * and a quadratic distribution squares them.
-	 */
-	public static enum DistributionType {linear, quadratic};
-	
-	public DistributionType getDistributionType();
-	
-	/**
 	 * Minimizes the total weighted incompatibility of the this Reasoner's
-	 * GroundKernels by optimizing the truth values of the RandomVariableAtoms.
-	 * 
-	 * @see #getTotalWeightedIncompatibility()
+	 * GroundCompatibilityKernels such that the infeasibility of its
+	 * GroundConstraintKernels is (close to) zero by optimizing the
+	 * RandomVariableAtoms.
 	 */
 	public void optimize();
 	

@@ -217,7 +217,7 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 						double[] inc = incompatibilities.get(k);
 						for (int j = 0; j < numSamples; j++) {
 							atom.setValue(s[j]);
-							inc[j] += gk.getIncompatibility();
+							inc[j] += ((GroundCompatibilityKernel) gk).getIncompatibility();
 						}
 					}
 				}

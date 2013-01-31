@@ -43,6 +43,7 @@ import edu.umd.cs.psl.reasoner.function.FunctionSum;
 import edu.umd.cs.psl.reasoner.function.FunctionSummand;
 import edu.umd.cs.psl.reasoner.function.FunctionTerm;
 import edu.umd.cs.psl.reasoner.function.MaxFunction;
+import edu.umd.cs.psl.reasoner.function.PowerOfTwo;
 import edu.umd.cs.psl.util.collection.HashList;
 
 /**
@@ -102,7 +103,7 @@ public class ADMMReasoner implements Reasoner {
 	 */
 	public static final String EPSILON_REL_KEY = CONFIG_PREFIX + ".epsilonrel";
 	/** Default value for EPSILON_ABS_KEY property */
-	public static final double EPSILON_REL_DEFAULT = 5e-4;
+	public static final double EPSILON_REL_DEFAULT = 1e-3;
 	
 	/**
 	 * Key for positive integer. The number of ADMM iterations after which the
@@ -112,15 +113,9 @@ public class ADMMReasoner implements Reasoner {
 	/** Default value for STOP_CHECK_KEY property */
 	public static final int STOP_CHECK_DEFAULT = 1;
 	
-	/** Key for {@link DistributionType} property. */
-	public static final String DISTRIBUTION_KEY = CONFIG_PREFIX + ".distribution";
-	/** Default value for DISTRIBUTION_KEY property. */
-	public static final DistributionType DISTRIBUTION_DEFAULT = DistributionType.linear;
-	
 	private final int maxIter;
 	/* Sometimes called rho or eta */
 	final double stepSize;
-	private final DistributionType type;
 	
 	private final double epsilonRel, epsilonAbs;
 	private final int stopCheck;
@@ -152,15 +147,9 @@ public class ADMMReasoner implements Reasoner {
 		if (epsilonRel <= 0)
 			throw new IllegalArgumentException("Property " + EPSILON_REL_KEY + " must be positive.");
 		stopCheck = config.getInt(STOP_CHECK_KEY, STOP_CHECK_DEFAULT);
-		type = (DistributionType) config.getEnum(DISTRIBUTION_KEY, DISTRIBUTION_DEFAULT);
 		
 		//groundKernels = new HashSet<GroundKernel>();
 		groundKernels = new KeyedRetrievalSet<Kernel, GroundKernel>();
-	}
-	
-	@Override
-	public DistributionType getDistributionType() {
-		return type;
 	}
 
 	@Override
@@ -211,6 +200,7 @@ public class ADMMReasoner implements Reasoner {
 		n = 0;
 		
 		GroundKernel groundKernel;
+		boolean squared;
 		FunctionTerm function, innerFunction, zeroTerm, innerFunctionA, innerFunctionB;
 		ADMMObjectiveTerm term;
 		
@@ -219,6 +209,15 @@ public class ADMMReasoner implements Reasoner {
 			groundKernel = itr.next();
 			if (groundKernel instanceof GroundCompatibilityKernel) {
 				function = ((GroundCompatibilityKernel) groundKernel).getFunctionDefinition();
+				
+				/* Checks if the function is wrapped in a PowerOfTwo */
+				if (function instanceof PowerOfTwo) {
+					squared = true;
+					function = ((PowerOfTwo) function).getInnerFunction();
+				}
+				else
+					squared = false;
+				
 				/*
 				 * If the FunctionTerm is a MaxFunction, ensures that it has two arguments, a linear
 				 * function and zero, and constructs the objective term (a hinge loss)
@@ -245,16 +244,14 @@ public class ADMMReasoner implements Reasoner {
 					
 					if (innerFunction instanceof FunctionSum) {
 						Hyperplane hp = processHyperplane((FunctionSum) innerFunction);
-						if (DistributionType.linear.equals(type)) {
-							term = new HingeLossTerm(this, hp.zIndices, hp.coeffs, hp.constant,
-									((GroundCompatibilityKernel) groundKernel).getWeight().getWeight());
-						}
-						else if (DistributionType.quadratic.equals(type)) {
+						if (squared) {
 							term = new SquaredHingeLossTerm(this, hp.zIndices, hp.coeffs, hp.constant,
 									((GroundCompatibilityKernel) groundKernel).getWeight().getWeight());
 						}
-						else
-							throw new IllegalStateException("Unrecognized DistributionType: " + type);
+						else {
+							term = new HingeLossTerm(this, hp.zIndices, hp.coeffs, hp.constant,
+									((GroundCompatibilityKernel) groundKernel).getWeight().getWeight());
+						}
 					}
 					else
 						throw new IllegalArgumentException("Max function must have one linear function and 0.0 as arguments.");
@@ -262,16 +259,14 @@ public class ADMMReasoner implements Reasoner {
 				/* Else, if it's a FunctionSum, constructs the objective term (a linear loss) */
 				else if (function instanceof FunctionSum) {
 					Hyperplane hp = processHyperplane((FunctionSum) function);
-					if (DistributionType.linear.equals(type)) {
-						term = new LinearLossTerm(this, hp.zIndices, hp.coeffs,
-								((GroundCompatibilityKernel) groundKernel).getWeight().getWeight());
-					}
-					else if (DistributionType.quadratic.equals(type)) {
+					if (squared) {
 						term = new SquaredLinearLossTerm(this, hp.zIndices, hp.coeffs, 0.0,
 								((GroundCompatibilityKernel) groundKernel).getWeight().getWeight());
 					}
-					else
-						throw new IllegalStateException("Unrecognized DistributionType: " + type);
+					else {
+						term = new LinearLossTerm(this, hp.zIndices, hp.coeffs,
+								((GroundCompatibilityKernel) groundKernel).getWeight().getWeight());
+					}
 				}
 				else
 					throw new IllegalArgumentException("Unrecognized function.");
@@ -401,24 +396,6 @@ public class ADMMReasoner implements Reasoner {
 	@Override
 	public Iterable<GroundKernel> getGroundKernels(Kernel k) {
 		return groundKernels.keyIterable(k);
-	}
-
-	@Override
-	public double getTotalWeightedIncompatibility() {
-		double weightedIncompatibility;
-		double objective = 0.0;
-		for (GroundKernel gk : groundKernels) {
-			weightedIncompatibility = gk.getIncompatibility();
-			if (gk instanceof GroundCompatibilityKernel) {
-				if (type.equals(DistributionType.quadratic))
-					weightedIncompatibility *= weightedIncompatibility;
-				else if (!type.equals(DistributionType.linear))
-					throw new IllegalStateException("Unrecognized distribution type: " + type);
-				weightedIncompatibility *= ((GroundCompatibilityKernel) gk).getWeight().getWeight();
-			}
-			objective += weightedIncompatibility;
-		}
-		return objective;
 	}
 
 	@Override

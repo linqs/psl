@@ -91,12 +91,6 @@ public class MemoryGroundKernelStore implements GroundKernelStore {
 	@Override
 	public Iterable<GroundKernel> getGroundKernels(Kernel k) {
 		return groundKernels.keyIterable(k);
-	}	
-	
-	@Override
-	public double getTotalWeightedIncompatibility() {
-		// TODO
-		throw new UnsupportedOperationException(); 
 	}
 	
 	@Override

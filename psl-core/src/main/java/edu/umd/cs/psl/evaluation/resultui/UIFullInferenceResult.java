@@ -52,7 +52,11 @@ public class UIFullInferenceResult {
 	}
 	
 	public double getLogProbability() {
-		return statistics.getTotalIncompatibility();
+		return statistics.getTotalWeightedIncompatibility();
+	}
+	
+	public double getInfeasibilityNorm() {
+		return statistics.getInfeasibilityNorm();
 	}
 
 	public int getNumGroundAtoms() {

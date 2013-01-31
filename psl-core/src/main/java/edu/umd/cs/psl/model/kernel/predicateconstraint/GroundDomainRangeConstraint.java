@@ -120,16 +120,13 @@ public class GroundDomainRangeConstraint implements GroundConstraintKernel {
 	}
 
 	@Override
-	public double getIncompatibility() {
+	public double getInfeasibility() {
 		double sum = 0.0;
 		for (GroundAtom atom : atoms) {
 			sum += atom.getValue();
 		}
-		if (template.getConstraintType().constraintHolds(sum)) {
-			return 0.0;
-		} else {
-			return Double.POSITIVE_INFINITY;
-		}
+		
+		return template.getConstraintType().getInfeasibility(sum);
 	}
 
 	@Override

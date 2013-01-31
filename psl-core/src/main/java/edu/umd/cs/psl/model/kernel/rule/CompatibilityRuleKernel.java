@@ -18,8 +18,6 @@ package edu.umd.cs.psl.model.kernel.rule;
 
 import java.util.List;
 
-import org.apache.commons.lang.builder.HashCodeBuilder;
-
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
@@ -30,18 +28,17 @@ import edu.umd.cs.psl.model.parameters.Weight;
 public class CompatibilityRuleKernel extends AbstractRuleKernel implements CompatibilityKernel {
 	
 	protected PositiveWeight weight;
-	
-	private final int hashcode;
+	protected boolean squared;
 
-	public CompatibilityRuleKernel(Formula f, double w) {
+	public CompatibilityRuleKernel(Formula f, double w, boolean squared) {
 		super(f);
 		weight = new PositiveWeight(w);
-		hashcode = new HashCodeBuilder().append(formula).append(weight).toHashCode();
+		this.squared = squared;
 	}
 
 	@Override
 	protected GroundCompatibilityRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals) {
-		return new GroundCompatibilityRule(this, posLiterals, negLiterals);
+		return new GroundCompatibilityRule(this, posLiterals, negLiterals, squared);
 	}
 	
 	@Override
@@ -59,16 +56,12 @@ public class CompatibilityRuleKernel extends AbstractRuleKernel implements Compa
 	
 	@Override
 	public String toString() {
-		return "{" + weight.getWeight() + "} " + formula;
-	}
-	
-	@Override
-	public int hashCode() {
-		return hashcode;
+		return "{" + weight.getWeight() + "} " + formula
+				+ ((squared) ? " {squared}" : "");
 	}
 	
 	@Override
 	public Kernel clone() {
-		return new CompatibilityRuleKernel(formula, weight.getWeight());
+		return new CompatibilityRuleKernel(formula, weight.getWeight(), squared);
 	}
 }

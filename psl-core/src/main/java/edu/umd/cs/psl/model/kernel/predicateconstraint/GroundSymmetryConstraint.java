@@ -22,7 +22,6 @@ import java.util.Set;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
-import edu.umd.cs.psl.model.NumericUtilities;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.kernel.BindingMode;
@@ -91,11 +90,8 @@ public class GroundSymmetryConstraint implements GroundConstraintKernel {
 	}
 
 	@Override
-	public double getIncompatibility() {
-		if (NumericUtilities.equalsRelaxed(atomA.getValue(), atomB.getValue())) {
-			return 0.0;
-		} else
-			return Double.POSITIVE_INFINITY;
+	public double getInfeasibility() {
+		return Math.abs(atomA.getValue() - atomB.getValue());
 	}
 
 	@Override

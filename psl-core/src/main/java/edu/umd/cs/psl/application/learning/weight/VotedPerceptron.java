@@ -228,7 +228,7 @@ public abstract class VotedPerceptron implements ModelApplication {
 		
 		for (int i = 0; i < kernels.size(); i++) {
 			for (GroundKernel gk : reasoner.getGroundKernels(kernels.get(i))) {
-				truthIncompatibility[i] += gk.getIncompatibility();
+				truthIncompatibility[i] += ((GroundCompatibilityKernel) gk).getIncompatibility();
 				numGroundings[i]++;
 			}
 		}
