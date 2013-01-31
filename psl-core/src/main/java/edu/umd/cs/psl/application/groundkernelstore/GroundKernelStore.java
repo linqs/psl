@@ -124,7 +124,7 @@ public interface GroundKernelStore {
 	 * @return the total, weighted incompatibility of the GroundKernels
 	 *             in this store.
 	 * @see GroundKernel#getIncompatibility()
-	 * @see CompatibilityKernel#getWeight()
+	 * @see GroundCompatibilityKernel#getWeight()
 	 */
 	public double getTotalWeightedIncompatibility();
 	

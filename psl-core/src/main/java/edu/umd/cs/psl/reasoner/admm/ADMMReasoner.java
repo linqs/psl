@@ -27,11 +27,9 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.Iterables;
 
 import de.mathnbits.util.KeyedRetrievalSet;
-
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.model.atom.Atom;
-import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
@@ -407,14 +405,17 @@ public class ADMMReasoner implements Reasoner {
 
 	@Override
 	public double getTotalWeightedIncompatibility() {
-		Kernel k;
 		double weightedIncompatibility;
 		double objective = 0.0;
 		for (GroundKernel gk : groundKernels) {
 			weightedIncompatibility = gk.getIncompatibility();
-			k = gk.getKernel();
-			if (k instanceof CompatibilityKernel)
-				weightedIncompatibility *= ((CompatibilityKernel) k).getWeight().getWeight();
+			if (gk instanceof GroundCompatibilityKernel) {
+				if (type.equals(DistributionType.quadratic))
+					weightedIncompatibility *= weightedIncompatibility;
+				else if (!type.equals(DistributionType.linear))
+					throw new IllegalStateException("Unrecognized distribution type: " + type);
+				weightedIncompatibility *= ((GroundCompatibilityKernel) gk).getWeight().getWeight();
+			}
 			objective += weightedIncompatibility;
 		}
 		return objective;
