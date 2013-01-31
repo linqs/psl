@@ -21,9 +21,13 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.Model;
+import edu.umd.cs.psl.model.NumericUtilities;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
@@ -45,6 +49,8 @@ import edu.umd.cs.psl.reasoner.function.FunctionVariable;
  */
 public class MaxPseudoLikelihood extends VotedPerceptron {
 
+	private static final Logger log = LoggerFactory.getLogger(MaxPseudoLikelihood.class);
+	
 	/**
 	 * Key for positive integer property.
 	 * MaxPseudoLikelihood will sample this many values to approximate
@@ -66,6 +72,13 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 	private final int numSamples;
 	private final double minWidth;
 	
+	/**
+	 * Constructor
+	 * @param model
+	 * @param rvDB
+	 * @param observedDB
+	 * @param config
+	 */
 	public MaxPseudoLikelihood(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
 		super(model, rvDB, observedDB, config);
 
@@ -77,6 +90,10 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 			throw new IllegalArgumentException("Minimum width must be positive double.");
 	}
 	
+	/**
+	 * Initializes the domain of integration for each ground atom.
+	 * Note: calls super.initGroundModel() first, in order to ground model. 
+	 */
 	@Override
 	public void initGroundModel()
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
@@ -189,12 +206,17 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 		}
 	}
 	
+	/**
+	 * Computes the expected incompatibility using the pseudolikelihood.
+	 * Uses Monte Carlo integration to approximate definite integrals,
+	 * since they do not admit a closed-form antiderivative.
+	 */
 	@Override
 	protected double[] computeExpectedIncomp() {
 		double[] expIncomp = new double[kernels.size()];
 		
 		/* Let's create/seed the random number generator */
-		Random rand = new Random();
+		Random rand = new Random(1);
 		/* Accumulate the marginals over all atoms */
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
 			RandomVariableAtom atom = e.getKey();
@@ -243,11 +265,10 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 						if (!marg.containsKey(k))
 							marg.put(k, 0.0);
 						double val = marg.get(k).doubleValue();
-						marg.put(k, val + exp * incompatibilities.get(k)[j]);
+						val += exp * incompatibilities.get(k)[j];
+						marg.put(k, val);
 					}
 				}
-				/* Do we need to normalize by the (range / numSamples) ? */
-				//Z *= bounds.get(atom)[1] - bounds.get(atom)[0] / numSamples;
 				/* Finally, we add to the marginals for each kernel */ 
 				for (int i = 0; i < kernels.size(); i++) {
 					CompatibilityKernel k = kernels.get(i);
@@ -259,5 +280,72 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 		
 		return expIncomp;
 	}
-
+	
+//	private double[] getExpectedInc2() {
+//		double[] expIncomp = new double[kernels.size()];
+//		
+//		/* Let's create/seed the random number generator */
+//		Random rand = new Random(1);
+//		/* Accumulate the marginals over all atoms */
+//		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
+//			RandomVariableAtom atom = e.getKey();
+//			/* Check the range of the variable to see if we can integrate it */
+//			double range = bounds.get(atom)[1] - bounds.get(atom)[0];
+//			if (range != 0.0) {
+//				/* Sample numSamples random numbers in the range of integration */
+//				//double[] s = new double[numSamples];
+//				HashMap<CompatibilityKernel,Double> marg = new HashMap<CompatibilityKernel,Double>();
+//				double Z = 0.0;
+//				double originalValue = atom.getValue();
+//				for (int j = 0; j < numSamples; j++) {
+//					HashMap<CompatibilityKernel,Double> incompatibilities = new HashMap<CompatibilityKernel,Double>();
+//					double s = rand.nextDouble() * range + bounds.get(atom)[0];
+//					atom.setValue(s);
+//					/* Compute the incompatibility of each sample for each kernel */
+//					for (GroundKernel gk : atom.getRegisteredGroundKernels()) {
+//						if (gk instanceof GroundCompatibilityKernel) {
+//							CompatibilityKernel k = (CompatibilityKernel) gk.getKernel();
+//							if (!incompatibilities.containsKey(k))
+//								incompatibilities.put(k, 0.0);
+//							double inc = incompatibilities.get(k);
+//							inc += ((GroundCompatibilityKernel) gk).getIncompatibility();
+//							incompatibilities.put(k, inc);
+//						}
+//					}
+//					/* Compute the exponent */
+//					double sum = 0.0;
+//					for (Map.Entry<CompatibilityKernel,Double> e2 : incompatibilities.entrySet()) {
+//						CompatibilityKernel k = e2.getKey();
+//						double inc = e2.getValue();
+//						sum -= k.getWeight().getWeight() * inc;
+//					}
+//					double exp = Math.exp(sum);
+//					/* Add to partition */
+//					Z += exp;
+//					/* Compute the marginals for current atom */
+//					for (Map.Entry<CompatibilityKernel,Double> e2 : incompatibilities.entrySet()) {
+//						CompatibilityKernel k = e2.getKey();
+//						if (!marg.containsKey(k))
+//							marg.put(k, 0.0);
+//						double val = marg.get(k);
+//						val += exp * incompatibilities.get(k);
+//						marg.put(k, val);
+//					}
+//				}
+//				/* Remember to return the atom to its original state! */
+//				atom.setValue(originalValue);
+//				/* Compute the unnormalized marginals and accumulate the partition for the current atom. */
+//				for (int j = 0; j < numSamples; j++) {
+//				}
+//				/* Finally, we add to the marginals for each kernel */ 
+//				for (int i = 0; i < kernels.size(); i++) {
+//					CompatibilityKernel k = kernels.get(i);
+//					if (marg.containsKey(k))
+//						expIncomp[i] += marg.get(k) / Z;
+//				}
+//			}
+//		}
+//		
+//		return expIncomp;
+//	}
 }
