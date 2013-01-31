@@ -116,7 +116,8 @@ public class ConicReasoner implements Reasoner {
 	
 	@Override
 	public GroundKernel getGroundKernel(GroundKernel gk) {
-		return gkRepresentation.get(gk).getGroundKernel();
+		ConicProgramProxy proxy = gkRepresentation.get(gk);
+		return (proxy != null) ? proxy.getGroundKernel() : null;
 	}
 	
 	@Override
