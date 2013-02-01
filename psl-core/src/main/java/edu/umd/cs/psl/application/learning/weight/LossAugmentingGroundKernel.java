@@ -44,12 +44,12 @@ public class LossAugmentingGroundKernel implements GroundCompatibilityKernel {
 	
 	private Weight weight;
 	
-	public LossAugmentingGroundKernel(GroundAtom atom, double truthValue) {
+	public LossAugmentingGroundKernel(GroundAtom atom, double truthValue, double weight) {
 		this.atom = atom;
 		this.groundTruth = truthValue;
 		if (!(groundTruth == 1.0 || groundTruth == 0.0))
 			throw new IllegalArgumentException("Truth value must be 1.0 or 0.0.");
-		weight = new PositiveWeight(1.0);
+		this.weight = new PositiveWeight(weight);
 	}
 
 	@Override

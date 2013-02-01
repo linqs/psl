@@ -197,7 +197,7 @@ public class HardEMRandOM implements ModelApplication {
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
 			e.getKey().setValue(e.getValue().getValue());
 			reasoner.addGroundKernel(new LossAugmentingGroundKernel(
-					e.getKey(), e.getValue().getValue()));
+					e.getKey(), e.getValue().getValue(), 1.0));
 		}
 		
 		int outerIter = 0;

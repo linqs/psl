@@ -183,11 +183,23 @@ public class MaxMargin implements ModelApplication {
 		int iter = 0;
 		double violation = Double.POSITIVE_INFINITY;
 		
+		// count positive vs negative ground truth atoms
+		int posAtoms = 0;
+		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet())
+			if (e.getValue().getValue() == 1.0)
+				posAtoms++;
+		double posRatio = (double) posAtoms / (double) trainingMap.getTrainingMap().size();
+		log.debug("Weighting loss of positive (1.0) examples by {} and negative examples by {}", 1 - posRatio, posRatio);
+		
 		// set up loss augmenting ground kernels
+		List<LossAugmentingGroundKernel> lossKernels = new ArrayList<LossAugmentingGroundKernel>(trainingMap.getTrainingMap().size());
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
-			e.getKey().setValue(e.getValue().getValue());
-			reasoner.addGroundKernel(new LossAugmentingGroundKernel(
-					e.getKey(), e.getValue().getValue()));
+			double truth = e.getValue().getValue();
+			double weight = (truth == 1.0) ? (1 - posRatio) : posRatio;
+			LossAugmentingGroundKernel gk = 
+					new LossAugmentingGroundKernel(e.getKey(), truth, weight);
+			reasoner.addGroundKernel(gk);
+			lossKernels.add(gk);
 		}
 
 		// init a quadratic program with variables for weights and 1 slack variable
@@ -212,11 +224,12 @@ public class MaxMargin implements ModelApplication {
 		while (iter < maxIter && violation > tolerance) {
 			reasoner.optimize();
 						
+			double slack = weights[kernels.size()];
+
 			/* Computes distance between ground truth and output of separation oracle */
 			double loss = 0.0;
-			double slack = weights[kernels.size()];
-			for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet())
-				loss += Math.abs(e.getKey().getValue() - e.getValue().getValue());
+			for (LossAugmentingGroundKernel gk : lossKernels)
+				loss += gk.getWeight().getWeight() * gk.getIncompatibility();
 					
 			/* The next loop computes constraint coefficients for max margin constraints:
 			 * w * f(y) < min_x w * f(x) - ||x-y|| + \xi
