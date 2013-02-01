@@ -29,7 +29,6 @@ import com.google.common.collect.Iterables;
 import de.mathnbits.util.KeyedRetrievalSet;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
-import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
@@ -47,18 +46,7 @@ import edu.umd.cs.psl.reasoner.function.PowerOfTwo;
 import edu.umd.cs.psl.util.collection.HashList;
 
 /**
- * Performs probabilistic inference over {@link Atom Atoms} based on a set of
- * {@link GroundKernel GroundKernels}.
- * <p>
- * The (unnormalized) probability density function is an exponential model of the
- * following form: P(X) = exp(-sum(w_i * pow(k_i, l_i))), where w_i is the weight of
- * the ith {@link GroundCompatibilityKernel}, k_i is its incompatibility value,
- * and l_i is an exponent with value 1 (linear GroundCompatibilityKernel) or
- * 2 (quadratic GroundCompatibilityKernel).
- * <p>
- * A state X has zero density if any {@link GroundConstraintKernel} is unsatisfied.
- * <p>
- * Uses ADMM optimization method to maximize the density.
+ * Uses an ADMM optimization method to optimize its GroundKernels.
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  */
@@ -269,7 +257,7 @@ public class ADMMReasoner implements Reasoner {
 					}
 				}
 				else
-					throw new IllegalArgumentException("Unrecognized function.");
+					throw new IllegalArgumentException("Unrecognized function: " + ((GroundCompatibilityKernel) groundKernel).getFunctionDefinition());
 			}
 			else if (groundKernel instanceof GroundConstraintKernel) {
 				ConstraintTerm constraint = ((GroundConstraintKernel) groundKernel).getConstraintDefinition();
@@ -280,7 +268,7 @@ public class ADMMReasoner implements Reasoner {
 							constraint.getValue() + hp.constant, constraint.getComparator());
 				}
 				else
-					throw new IllegalArgumentException("Unrecognized function.");
+					throw new IllegalArgumentException("Unrecognized constraint: " + constraint);
 			}
 			else
 				throw new IllegalStateException("Unsupported ground kernel: " + groundKernel);

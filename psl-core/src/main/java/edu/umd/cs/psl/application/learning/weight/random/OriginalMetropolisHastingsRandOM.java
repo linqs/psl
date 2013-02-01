@@ -408,7 +408,7 @@ public class OriginalMetropolisHastingsRandOM implements ModelApplication {
 	 * @return
 	 */
 	private double sampleFromGaussian(double mean, double variance) {
-		return variance * rand.nextGaussian() + mean; 
+		return Math.sqrt(variance) * rand.nextGaussian() + mean; 
 		// TODO: check if this is correct for variance or std deviation or neither
 	}
 	
