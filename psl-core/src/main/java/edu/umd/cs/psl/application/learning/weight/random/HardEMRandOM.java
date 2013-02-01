@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.application.learning.weight;
+package edu.umd.cs.psl.application.learning.weight.random;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +26,9 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.Iterables;
 
 import edu.umd.cs.psl.application.ModelApplication;
+import edu.umd.cs.psl.application.learning.weight.TrainingMap;
+import edu.umd.cs.psl.application.learning.weight.maxmargin.LossAugmentingGroundKernel;
+import edu.umd.cs.psl.application.learning.weight.maxmargin.PositiveMinNormProgram;
 import edu.umd.cs.psl.application.util.Grounding;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;

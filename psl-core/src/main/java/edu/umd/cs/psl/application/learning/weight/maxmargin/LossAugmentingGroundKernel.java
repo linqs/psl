@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.application.learning.weight;
+package edu.umd.cs.psl.application.learning.weight.maxmargin;
 
 import java.util.HashSet;
 import java.util.Set;

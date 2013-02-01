@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.application.learning.weight;
+package edu.umd.cs.psl.application.learning.weight.random;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.Iterables;
 
 import edu.umd.cs.psl.application.ModelApplication;
+import edu.umd.cs.psl.application.learning.weight.TrainingMap;
 import edu.umd.cs.psl.application.util.Grounding;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
@@ -55,9 +56,9 @@ import edu.umd.cs.psl.reasoner.admm.ADMMReasonerFactory;
  * @author Steve Bach <bach@cs.umd.edu>
  * @author Bert Huang <bert@cs.umd.edu>
  */
-public class MetropolisHastingsRandOM implements ModelApplication {
+public class OriginalMetropolisHastingsRandOM implements ModelApplication {
 
-	private static final Logger log = LoggerFactory.getLogger(MetropolisHastingsRandOM.class);
+	private static final Logger log = LoggerFactory.getLogger(OriginalMetropolisHastingsRandOM.class);
 
 	/**
 	 * Prefix of property keys used by this class.
@@ -92,14 +93,14 @@ public class MetropolisHastingsRandOM implements ModelApplication {
 	 */
 	public static final String PROPOSAL_VARIANCE = CONFIG_PREFIX + ".proposalvariance";
 	/** Default value for PROPOSAL_VARIANCE */
-	public static final double PROPOSAL_VARIANCE_DEFAULT = 0.001;
+	public static final double PROPOSAL_VARIANCE_DEFAULT = 1;
 	
 	/**
 	 * Key for maximum iterations
 	 */
 	public static final String MAX_ITER = CONFIG_PREFIX + ".max_iter";
 	/** Default value for MAX_ITER */
-	public static final int MAX_ITER_DEFAULT = 10;
+	public static final int MAX_ITER_DEFAULT = 30;
 
 
 	/**
@@ -107,14 +108,14 @@ public class MetropolisHastingsRandOM implements ModelApplication {
 	 */
 	public static final String NUM_SAMPLES = CONFIG_PREFIX + ".num_samples";
 	/** Default value for NUM_SAMPLES */
-	public static final int NUM_SAMPLES_DEFAULT = 1000;
+	public static final int NUM_SAMPLES_DEFAULT = 100;
 
 	/**
 	 * Number of burn-in samples
 	 */
 	public static final String BURN_IN = CONFIG_PREFIX + ".burn_in";
 	/** Default value for BURN_IN */
-	public static final int BURN_IN_DEFAULT = 100;
+	public static final int BURN_IN_DEFAULT = 20;
 
 	/**
 	 * Key for {@link Factory} or String property.
@@ -146,7 +147,7 @@ public class MetropolisHastingsRandOM implements ModelApplication {
 	private Map<CompatibilityKernel, Double> weightMeans;
 
 
-	public MetropolisHastingsRandOM(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
+	public OriginalMetropolisHastingsRandOM(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
 		this.model = model;
 		this.rvDB = rvDB;
 		this.observedDB = observedDB;
@@ -229,68 +230,108 @@ public class MetropolisHastingsRandOM implements ModelApplication {
 				previous[i] = weightMeans.get(gk.getKernel());
 			}
 			
+			Map<CompatibilityKernel, Double> prevKernelWeights = new HashMap<CompatibilityKernel, Double>();
+			for (CompatibilityKernel k : weightMeans.keySet())
+				prevKernelWeights.put(k, k.getWeight().getWeight());
+			
+			Map<CompatibilityKernel, Double> weightTotals = new HashMap<CompatibilityKernel, Double>();
+			for (CompatibilityKernel k : weightMeans.keySet())
+				weightTotals.put(k, 0.0);
+			
 			int acceptCount = 0;
 			
 			int count;
 			// sample a chain of ground kernel weights
 			for (count = 0; count < numSamples; count++) {
-				double [] current = generateNextSample(previous);
+				double[] current = new double[groundKernels.size()];
+				Map<CompatibilityKernel, Double> currentKernelWeights = new HashMap<CompatibilityKernel, Double>();
+//				double [] current = generateNextSample(previous);
+				for (CompatibilityKernel k : weightMeans.keySet()) {
+					double sample = sampleFromGaussian(prevKernelWeights.get(k), proposalVariance);
+					currentKernelWeights.put(k, sample);
+					k.setWeight(new PositiveWeight(Math.max(0, sample)));
+//					for (Integer i : kernelIndex.get(k))
+//						current[i] = sample;
+					log.debug("Weight {} for kernel {}   (" + prevKernelWeights.get(k) + ")", sample, k);
+				}
 
 				// set weights to new sample
-				for (int i = 0; i < groundKernels.size(); i++) {
-					GroundCompatibilityKernel gk = groundKernels.get(i);
-					gk.setWeight(new PositiveWeight(Math.max(0, current[i])));
-				}
+//				for (int i = 0; i < groundKernels.size(); i++) {
+//					GroundCompatibilityKernel gk = groundKernels.get(i);
+//					gk.setWeight(new PositiveWeight(Math.max(0, current[i])));
+//				}
 				reasoner.changedGroundKernelWeights();
 				reasoner.optimize();
 
 				// measure log likelihood
-				double newLikelihood = getLikelihood(trainingMap, groundKernels);
+				double newLikelihood = getLikelihood(trainingMap, currentKernelWeights);
 
 				boolean accept = rand.nextDouble() < Math.exp(newLikelihood - previousLikelihood);
 				log.debug("Acceptance probability " + Math.exp(newLikelihood - previousLikelihood));
 
-				if (count >= burnIn) {
-					weightSamples.add(current);
-				} else {
-					if (count > 0 && count % 10 == 0) {
-						double acceptRate = (double) acceptCount / (double) (count + 1);
+//				if (count >= burnIn) {
+//					weightSamples.add(current);
+//				} else {
+//					if (count > 0 && count % 10 == 0) {
+//						double acceptRate = (double) acceptCount / (double) (count + 1);
 						// update proposal variance to try to get acceptRate closer to targetAcceptRate
 						
-						if (acceptRate < targetAcceptRate)
-							proposalVariance /= growthRate;
-						else
-							proposalVariance *= growthRate;
+//						if (acceptRate < targetAcceptRate)
+//							proposalVariance /= growthRate;
+//						else
+//							proposalVariance *= growthRate;
 						
-						log.debug("Setting proposal variance to {}", proposalVariance);
-					}
-				}
+//						log.debug("Setting proposal variance to {}", proposalVariance);
+//					}
+//				}
 				
 				if (accept) {
+					if (count >= burnIn) {
+						addTotals(currentKernelWeights, weightTotals);
+						weightSamples.add(current);
+					}
 					previous = current;
+					prevKernelWeights = currentKernelWeights;
 					previousLikelihood = newLikelihood;
 					acceptCount++;
 					log.debug("Accepted new weight vector. Sample {} of {}", count, numSamples);
 				} else {
+					if (count >= burnIn) {
+						addTotals(prevKernelWeights, weightTotals);
+						weightSamples.add(previous);
+					}
 					log.debug("Rejected new weight vector. Sample {} of {}", count, numSamples);
 				}
 				log.debug("Acceptance rate: {}", (double) acceptCount / (double) (count + 1));
 			}
+			log.warn("Acceptance rate: {}", (double) acceptCount / (double) (count + 1));
 
 			double change = 0.0;
 			/* set weights to mean of ground kernels */
+//			for (CompatibilityKernel k : kernelIndex.keySet()) {
+//				List<Integer> gkIndices = kernelIndex.get(k);
+//				int total = (count - burnIn) * gkIndices.size();
+//				double sum = 0.0;
+//				for (Integer i : gkIndices) 
+//					sum += weightSamples.getTotal(i);
+//				double newWeight = sum / (double) total;
+//				change += Math.abs(newWeight - weightMeans.get(k));
+//				weightMeans.put(k, newWeight);
+//				//log.debug("Weight sum for " + k + ": " + sum + ", denom " + total + " count " + count + " gkIndices.size() " + gkIndices.size());
+//				log.warn("Weight avg for " + k + ": " + weightMeans.get(k));
+//			}			
+			
 			for (CompatibilityKernel k : kernelIndex.keySet()) {
-				List<Integer> gkIndices = kernelIndex.get(k);
-				int total = (count - burnIn) * gkIndices.size();
-				double sum = 0.0;
-				for (Integer i : gkIndices) 
-					sum += weightSamples.getTotal(i);
-				double newWeight = sum / (double) total;
-				change += Math.abs(newWeight - weightMeans.get(k));
+				int totalSamples = (count - burnIn);
+				double newWeight = weightTotals.get(k) / totalSamples;
+				double diff = weightMeans.get(k) - newWeight;
+				change += diff * diff;
 				weightMeans.put(k, newWeight);
 				//log.debug("Weight sum for " + k + ": " + sum + ", denom " + total + " count " + count + " gkIndices.size() " + gkIndices.size());
-				log.debug("Weight avg for " + k + ": " + weightMeans.get(k));
-			}			
+				log.warn("Weight avg for " + k + ": " + weightMeans.get(k));
+			}
+			
+			change = Math.sqrt(change);
 			
 			outerIter++;
 
@@ -299,6 +340,7 @@ public class MetropolisHastingsRandOM implements ModelApplication {
 			 * TODO: what is a good stopping criterion?
 			 */
 			if (outerIter >= maxIter || change < changeThreshold)
+//			if (outerIter >= maxIter)
 				converged = true;
 		}
 		
@@ -318,24 +360,26 @@ public class MetropolisHastingsRandOM implements ModelApplication {
 	 * @param reasoner
 	 * @return
 	 */
-	private double getLikelihood(TrainingMap trainingMap, List<GroundCompatibilityKernel> groundKernels) {
+//	private double getLikelihood(TrainingMap trainingMap, List<GroundCompatibilityKernel> groundKernels) {
+	private double getLikelihood(TrainingMap trainingMap, Map<CompatibilityKernel, Double> kernelWeights) {
 
 		double likelihood = 0.0;
 		/* Compute the likelihood of y */
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
-			likelihood -= Math.abs(e.getKey().getValue() - e.getValue().getValue()); 
-			//likelihood -= Math.pow(e.getKey().getValue() - e.getValue().getValue(), 2); 
+//			likelihood -= Math.abs(e.getKey().getValue() - e.getValue().getValue());
+			likelihood -= Math.abs(e.getKey().getValue() - e.getValue().getValue()) / (0.25 + 3 * e.getKey().getValue());
+//			likelihood -= Math.pow(e.getKey().getValue() - e.getValue().getValue(), 2); 
 		}
 
-		//log.debug("log P(y | mu) " + likelihood);
+		log.debug("log P(y | mu) " + likelihood);
 		
 		/* Compute the likelihood of ground weights */
-		for (GroundCompatibilityKernel gk : groundKernels) {
-			likelihood -= Math.pow(gk.getWeight().getWeight() - weightMeans.get(gk.getKernel()), 2);
+		for (Map.Entry<CompatibilityKernel, Double> k : kernelWeights.entrySet()) {
+			likelihood -= Math.pow(k.getValue() - weightMeans.get(k.getKey()), 2);
 		}
 		//TODO: add variance into calculation of ground weight likelihoods
 
-		//log.debug("New log likelihood " + likelihood);
+		log.debug("New log likelihood " + likelihood);
 		return likelihood;
 	}
 
@@ -366,6 +410,11 @@ public class MetropolisHastingsRandOM implements ModelApplication {
 	private double sampleFromGaussian(double mean, double variance) {
 		return variance * rand.nextGaussian() + mean; 
 		// TODO: check if this is correct for variance or std deviation or neither
+	}
+	
+	private void addTotals(Map<CompatibilityKernel, Double> sampleWeights, Map<CompatibilityKernel, Double> weightTotals) {
+		for (Map.Entry<CompatibilityKernel, Double> e : sampleWeights.entrySet())
+			weightTotals.put(e.getKey(), e.getValue() + weightTotals.get(e.getKey()));
 	}
 
 	@Override
