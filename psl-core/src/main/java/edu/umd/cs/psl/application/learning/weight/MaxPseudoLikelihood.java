@@ -17,6 +17,7 @@
 package edu.umd.cs.psl.application.learning.weight;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
@@ -216,7 +217,7 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 		double[] expIncomp = new double[kernels.size()];
 		
 		/* Let's create/seed the random number generator */
-		Random rand = new Random(1);
+		Random rand = new Random();
 		/* Accumulate the marginals over all atoms */
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
 			RandomVariableAtom atom = e.getKey();
@@ -277,7 +278,7 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 				}
 			}
 		}
-		
+	
 		return expIncomp;
 	}
 	
@@ -285,7 +286,7 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 //		double[] expIncomp = new double[kernels.size()];
 //		
 //		/* Let's create/seed the random number generator */
-//		Random rand = new Random(1);
+//		Random rand = new Random();
 //		/* Accumulate the marginals over all atoms */
 //		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
 //			RandomVariableAtom atom = e.getKey();
