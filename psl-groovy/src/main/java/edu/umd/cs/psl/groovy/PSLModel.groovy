@@ -295,7 +295,6 @@ class PSLModel extends Model {
 			throw new IllegalArgumentException("A rule cannot be a constraint and have a weight.");
 
 		Formula ruleformula = rule.getFormula();
-		if (!(ruleformula instanceof Rule)) throw new IllegalArgumentException("Expected a rule definition but got: ${ruleformula}");
 		
 		AbstractRuleKernel pslrule;
 		if (isFact) {
