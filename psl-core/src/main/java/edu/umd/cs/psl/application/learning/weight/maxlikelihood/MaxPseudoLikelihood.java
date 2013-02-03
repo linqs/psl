@@ -119,7 +119,7 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 				/* Create a map containing the Markov blanket and associated values */
 				HashMap<FunctionVariable,Double> mb = new HashMap<FunctionVariable,Double>();
 				for (GroundAtom a : gk.getAtoms()) {
-					if (!a.equals(atom)) {
+					if (!a.equals(atom) && trainingMap.getTrainingMap().containsKey(a)) {
 						FunctionVariable var = a.getVariable();
 						double val = trainingMap.getTrainingMap().get(a).getValue();
 						mb.put(var, val);
@@ -137,7 +137,7 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 						coef = term.getCoefficient();
 						//System.out.println(term.toString() + " coef: " + term.getCoefficient());
 					}
-					else {
+					else if (mb.containsKey(var)) {
 						//System.out.println(term.toString() + " value: " + mb.get(var).toString() + ", coef: " + term.getCoefficient());
 						rhs -= mb.get(var) * term.getCoefficient();
 						constStr.append(" +" + term.getCoefficient() + "*" + mb.get(var));

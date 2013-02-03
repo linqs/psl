@@ -27,7 +27,6 @@ import edu.umd.cs.psl.evaluation.statistics.filter.AtomFilter;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
-import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.util.database.Queries;
 
@@ -39,6 +38,15 @@ public class DiscretePredictionComparator implements PredictionComparator {
 	private Database baseline;
 	private AtomFilter resultFilter;
 	private double threshold;
+	
+	int tp;
+	int fn;
+	int tn;
+	int fp;
+	
+	Map<GroundAtom, Double> errors;
+	Set<GroundAtom> correctAtoms;
+
 	
 	public DiscretePredictionComparator(Database result) {
 		this.result = result;
@@ -61,19 +69,67 @@ public class DiscretePredictionComparator implements PredictionComparator {
 		resultFilter = af;
 	}
 
+	/**
+	 * Compares the baseline with te inferred result for a given predicate
+	 * DOES NOT check the baseline database for atoms. Only use this if all 
+	 * possible predicted atoms are active and unfiltered
+	 */
 	@Override
 	public DiscretePredictionStatistics compare(Predicate p) {
-		int tp = 0;
-		int fn = 0;
-		int tn = 0;
-		int fp = 0;
-		Map<GroundAtom, Double> errors = new HashMap<GroundAtom, Double>();
-		Set<GroundAtom> correctAtoms = new HashSet<GroundAtom>();
+		countResultDBStats(p);
+		System.out.println("tp " + tp + " fp " + fp + " tn " + tn + " fn " + fn);
+		return new DiscretePredictionStatistics(tp, fp, tn, fn, threshold, errors, correctAtoms);
+	}
+	
+	/**
+	 * Compares the baseline with the inferred result for a given predicate. 
+	 * Checks the baseline database for atoms
+	 * 
+	 * @param Predicate p : The predicate to compare
+	 * @param int maxAtoms : Defines the maximum number of base atoms that can be found for the given predicate. (This will vary, depending on the predicate and the problem.)
+	 */
+	@Override
+	public DiscretePredictionStatistics compare(Predicate p, int maxBaseAtoms) {
+		countResultDBStats(p);
+		
+		Iterator<GroundAtom> res = resultFilter.filter(Queries.getAllAtoms(baseline, p).iterator());
+		double expected;
+		while (res.hasNext()) {
+			GroundAtom baselineAtom = res.next();
+
+			if (!errors.containsKey(baselineAtom) && !correctAtoms.contains(baselineAtom)) {
+				//Missed result
+				expected = (baselineAtom.getValue() >= threshold) ? 1.0 : 0.0;
+
+				if (expected != 0.0) {
+					errors.put(result.getAtom(baselineAtom.getPredicate(), baselineAtom.getArguments()), expected);
+					fn++;
+				}
+			}
+		}
+		
+		tn = maxBaseAtoms - tp - fp - fn;
+		return new DiscretePredictionStatistics(tp, fp, tn, fn, threshold, errors, correctAtoms);
+	}
+	
+	/**
+	 * Subroutine used by both compare methods for counting statistics from atoms
+	 * stored in result database
+	 * @param p Predicate to compare against baseline database
+	 */
+	private void countResultDBStats(Predicate p) {
+		tp = 0;
+		fn = 0;
+		tn = 0;
+		fp = 0;
+		
+		errors = new HashMap<GroundAtom,Double>();
+		correctAtoms = new HashSet<GroundAtom>();
 		
 		GroundAtom resultAtom, baselineAtom;
 		GroundTerm[] args;
-		double actual, expected, diff;
-		
+		boolean actual, expected;
+
 		Iterator<GroundAtom> iter = resultFilter.filter(Queries.getAllAtoms(result, p).iterator());
 		
 		while (iter.hasNext()) {
@@ -84,12 +140,11 @@ public class DiscretePredictionComparator implements PredictionComparator {
 			baselineAtom = baseline.getAtom(resultAtom.getPredicate(), args);
 			
 			if (baselineAtom instanceof ObservedAtom) {
-				actual = (resultAtom.getValue() >= threshold) ? 1.0 : 0.0;
-				expected = (baselineAtom.getValue() >= threshold) ? 1.0 : 0.0;
-				diff = actual - expected;
-				if (diff == 0.0) {
+				actual = (resultAtom.getValue() >= threshold);
+				expected = (baselineAtom.getValue() >= threshold);
+				if (actual && expected || !actual && !expected) {
 					// True negative
-					if (actual == 0.0)
+					if (!actual)
 						tn++;
 					// True positive
 					else
@@ -97,141 +152,17 @@ public class DiscretePredictionComparator implements PredictionComparator {
 					correctAtoms.add(resultAtom);
 				}
 				// False negative
-				else if (diff == -1.0) {
+				else if (!actual) {
 					fn++;
-					errors.put(resultAtom, diff);
+					errors.put(resultAtom, -1.0);
 				}
 				// False positive
 				else {
 					fp++;
-					errors.put(resultAtom, diff);
+					errors.put(resultAtom, 1.0);
 				}
 			}
 		}
-		
-		return new DiscretePredictionStatistics(tp, fp, tn, fn, threshold, errors, correctAtoms);
-	}
-	
-	/**
-	 * Compares the baseline with the inferred result for a given predicate.
-	 * 
-	 * @param Predicate p : The predicate to compare
-	 * @param int maxAtoms : Defines the maximum number of base atoms that can be found for the given predicate. (This will vary, depending on the predicate and the problem.)
-	 */
-	@Override
-	public DiscretePredictionStatistics compare(Predicate p, int maxBaseAtoms) {
-		int tp = 0;
-		int fn = 0;
-		int tn = 0;
-		int fp = 0;
-		
-		Map<GroundAtom, Double> errors = new HashMap<GroundAtom,Double>();
-		Set<GroundAtom> correctAtoms = new HashSet<GroundAtom>();
-		
-		double actual, expected, diff;
-		Iterator<GroundAtom> res = resultFilter.filter(Queries.getAllAtoms(result, p).iterator());
-		while (res.hasNext()) {
-			GroundAtom resultAtom = (RandomVariableAtom) res.next();
-			
-			GroundAtom baselineAtom = baseline.getAtom(resultAtom.getPredicate(), resultAtom.getArguments());
-			
-			if (baselineAtom instanceof ObservedAtom) {
-				actual = (resultAtom.getValue() >= threshold) ? 1.0 : 0.0;
-				expected = (baselineAtom.getValue() >= threshold) ? 1.0 : 0.0;
-				diff = actual - expected;
-				if (diff == 0.0) {
-					// True negative
-					if (actual == 0.0)
-						tn++;
-					// True positive
-					else
-						tp++;
-					correctAtoms.add(resultAtom);
-				}
-				// False negative
-				else if (diff == -1.0) {
-					fn++;
-					errors.put(resultAtom, diff);
-				}
-				// False positive
-				else {
-					fp++;
-					errors.put(resultAtom, diff);
-				}
-			}
-		}
-		
-		res = resultFilter.filter(Queries.getAllAtoms(baseline, p).iterator());
-		while (res.hasNext()) {
-			GroundAtom baselineAtom = res.next();
-			
-			if (!errors.containsKey(baselineAtom) && !correctAtoms.contains(baselineAtom)) {
-				//Missed result
-				expected = (baselineAtom.getValue() >= threshold) ? 1.0 : 0.0;
-				
-				if (expected != 0.0) {
-					errors.put(result.getAtom(baselineAtom.getPredicate(), baselineAtom.getArguments()), expected);
-					fn++;
-				}
-			}
-		}
-		
-		tn = maxBaseAtoms - tp - fp - fn;
-		return new DiscretePredictionStatistics(tp, fp, tn, fn, threshold, errors, correctAtoms);
-		
-		/*
-		RetrievalSet<Atom> baseAtoms = new RetrievalSet<Atom>();
-		Iterator<Atom> iter = baselineFilter.filter(baseline.getAtomSet(p).iterator());
-		int noBaseAtoms = 0;
-		int tp = 0;
-		int fn = 0;
-		int tn = 0;
-		int fp = 0;
-		while (iter.hasNext()) {
-			noBaseAtoms++;
-			baseAtoms.add(iter.next());
-		}
-		
-		Map<Atom,Double> errors = new HashMap<Atom,Double>();
-		
-		int noResultAtoms = 0;
-		Set<Atom> correctAtoms = new HashSet<Atom>();
-		Iterator<Atom> res = resultFilter.filter(result.getAtomSet(p).iterator());
-		while(res.hasNext()) {
-			Atom resultAtom = res.next();
-			noResultAtoms++;
-			Atom baseAtom=baseAtoms.get(resultAtom);
-			double[] compValue = null;
-			if (baseAtom==null) {
-				//Default value
-				compValue = p.getDefaultValues();
-			}  else {
-				compValue = baseAtom.getSoftValues();
-			}
-			double diff = valueCompare.getDifference(compValue, resultAtom.getSoftValues(), tolerance);
-			if (diff!=0.0) {
-				assert !errors.containsKey(resultAtom);
-				errors.put(resultAtom, diff);
-				fp++;
-			} else {
-				correctAtoms.add(resultAtom);
-				tp++;
-			}
-		}
-		for (Atom baseAtom : baseAtoms) {
-			if (!errors.containsKey(baseAtom) && !correctAtoms.contains(baseAtom)) {
-				//Missed result
-				double diff = valueCompare.getDifference(baseAtom.getSoftValues(), p.getDefaultValues(), tolerance);
-				if (diff!=0.0) {
-					errors.put(result.getAtomRecord(p, (GroundTerm[])baseAtom.getArguments()), diff);
-					fn++;
-				}
-			}
-		}
-		// compute true negatives
-		tn = maxBaseAtoms - tp - fp - fn;
-		return new SimplePredictionStatistics(errors,correctAtoms,tp,fp,tn,fn,noBaseAtoms);
-		*/
 	}
 	
 }
