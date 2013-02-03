@@ -274,7 +274,8 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 				for (int i = 0; i < kernels.size(); i++) {
 					CompatibilityKernel k = kernels.get(i);
 					if (marg.containsKey(k))
-						expIncomp[i] += marg.get(k) / Z;
+						if (marg.get(k) > 0.0) 
+							expIncomp[i] += marg.get(k) / Z;
 				}
 			}
 		}
