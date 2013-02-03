@@ -54,7 +54,7 @@ public class RandomVariableAtom extends GroundAtom {
 		if (0.0 <= value && value <= 1.0) 
 			this.value = value;
 		else
-			throw new IllegalArgumentException();
+			throw new IllegalArgumentException("Value should be in [0,1] but is " + value);
 	}
 	
 	/**
