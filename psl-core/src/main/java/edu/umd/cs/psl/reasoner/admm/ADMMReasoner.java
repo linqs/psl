@@ -20,6 +20,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -101,6 +107,13 @@ public class ADMMReasoner implements Reasoner {
 	/** Default value for STOP_CHECK_KEY property */
 	public static final int STOP_CHECK_DEFAULT = 1;
 	
+	/**
+	 * Key for positive integer. Number of threads to run the optimization in.
+	 */
+	public static final String NUM_THREADS_KEY = CONFIG_PREFIX + ".numthreads";
+	/** Default value for STOP_CHECK_KEY property */
+	public static final int NUM_THREADS_DEFAULT = 1;
+	
 	private final int maxIter;
 	/* Sometimes called rho or eta */
 	final double stepSize;
@@ -125,6 +138,10 @@ public class ADMMReasoner implements Reasoner {
 	/** Lists of local variable locations for updating consensus variables */
 	List<List<VariableLocation>> varLocations;
 	
+	/** Multithreading variables */
+	private ExecutorService threadPool;
+	private final int numThreads;
+	
 	public ADMMReasoner(ConfigBundle config) {
 		maxIter = config.getInt(MAX_ITER_KEY, MAX_ITER_DEFAULT);
 		stepSize = config.getDouble(STEP_SIZE_KEY, STEP_SIZE_DEFAULT);
@@ -138,6 +155,11 @@ public class ADMMReasoner implements Reasoner {
 		
 		//groundKernels = new HashSet<GroundKernel>();
 		groundKernels = new KeyedRetrievalSet<Kernel, GroundKernel>();
+		
+		// Multithreading
+		numThreads = config.getInt(NUM_THREADS_KEY, NUM_THREADS_DEFAULT);
+		if (numThreads <= 0)
+			throw new IllegalArgumentException("Property " + NUM_THREADS_KEY + " must be positive.");
 	}
 
 	@Override
@@ -175,6 +197,117 @@ public class ADMMReasoner implements Reasoner {
 		return groundKernels.contains(gk.getKernel(), gk);
 	}
 
+	private class ADMMTask implements Runnable {
+		public boolean flag;
+		private final int termStart, termEnd;
+		private final int zStart, zEnd;
+		private final CyclicBarrier workerBarrier, checkBarrier;
+		private final Semaphore notification;
+		
+		public ADMMTask(int index, CyclicBarrier wBarrier, CyclicBarrier cBarrier, Semaphore notification) {
+			this.workerBarrier = wBarrier;
+			this.checkBarrier = cBarrier;
+			this.notification = notification;
+			this.flag = true;
+			
+			
+			// Determine the section of the terms this thread will look at
+			int tIncrement = (int)(Math.ceil((double)terms.size() / (double)numThreads));
+			this.termStart = tIncrement * index;
+			this.termEnd = Math.min(termStart + tIncrement, terms.size());
+			
+			// Determine the section of the z vector this thread will look at
+			int zIncrement = (int)(Math.ceil((double)z.size() / (double)numThreads));
+			this.zStart = zIncrement * index;
+			this.zEnd = Math.min(zStart + zIncrement, z.size());
+		}
+		
+		public double primalResInc = 0.0;
+		public double dualResInc = 0.0;
+		public double AxNormInc = 0.0;
+		public double BzNormInc = 0.0;
+		public double AyNormInc = 0.0;
+		
+		private void awaitUninterruptibly(CyclicBarrier b) {
+			try {
+				b.await();
+			} catch (InterruptedException e) {
+				throw new RuntimeException(e);
+			} catch (BrokenBarrierException e) {
+				throw new RuntimeException(e);
+			}
+		}
+		
+		@Override
+		public void run() {
+			log.debug("{} spinning up...", Thread.currentThread().getName());
+			awaitUninterruptibly(checkBarrier);
+			
+			int iter = 1;
+			while (flag) {
+				boolean check = (iter-1) % stopCheck == 0;
+				
+				/* Solves each local function */
+				for (int i = termStart; i < termEnd; i ++)
+					terms.get(i).updateLagrange().minimize();
+				
+				// Ensures all threads are at the same point
+				awaitUninterruptibly(workerBarrier);
+				
+				if (check) {
+					primalResInc = 0.0;
+					dualResInc = 0.0;
+					AxNormInc = 0.0;
+					BzNormInc = 0.0;
+					AyNormInc = 0.0;
+				}
+				
+				for (int i = zStart; i < zEnd; i++) {
+					double total = 0.0;
+					/* First pass computes newZ and dual residual */
+					for (Iterator<VariableLocation> itr = varLocations.get(i).iterator(); itr.hasNext(); ) {
+						VariableLocation location = itr.next();
+						total += location.term.x[location.localIndex] + location.term.y[location.localIndex] / stepSize;
+						if (check) {
+							AxNormInc += location.term.x[location.localIndex] * location.term.x[location.localIndex];
+							AyNormInc += location.term.y[location.localIndex] * location.term.y[location.localIndex];
+						}
+					}
+					double newZ = total / varLocations.get(i).size();
+					if (newZ < lb.get(i))
+						newZ = lb.get(i);
+					else if (newZ > ub.get(i))
+						newZ = ub.get(i);
+					
+					if (check) {
+						double diff = z.get(i) - newZ;
+						/* Residual is diff^2 * number of local variables mapped to z element */
+						dualResInc += diff * diff * varLocations.get(i).size();
+						BzNormInc += newZ * newZ * varLocations.get(i).size();
+					}
+					z.set(i, newZ);
+					
+					/* Second pass computes primal residuals */
+					if (check) {
+						for (Iterator<VariableLocation> itr = varLocations.get(i).iterator(); itr.hasNext(); ) {
+							VariableLocation location = itr.next();
+							double diff = location.term.x[location.localIndex] - newZ;
+							primalResInc += diff * diff;
+						}
+					}
+				}
+				
+				if (check)
+					notification.release();
+				
+				// Waits for main thread
+				awaitUninterruptibly(checkBarrier);
+			}
+			log.debug("{} shutting down.", Thread.currentThread().getName());
+		}
+		
+	}
+	
 	@Override
 	public void optimize() {
 		log.debug("Initializing optimization.");
@@ -281,6 +414,17 @@ public class ADMMReasoner implements Reasoner {
 		
 		log.debug("Performing optimization with {} variables and {} terms.", z.size(), terms.size());
 		
+		// Starts up the computation threads
+		threadPool = Executors.newFixedThreadPool(numThreads);
+		ADMMTask[] tasks = new ADMMTask[numThreads];
+		CyclicBarrier workerBarrier = new CyclicBarrier(numThreads);
+		CyclicBarrier checkBarrier = new CyclicBarrier(numThreads + 1);
+		Semaphore notifySem = new Semaphore(0);
+		for (int i = 0; i < numThreads; i ++) {
+			tasks[i] = new ADMMTask(i, workerBarrier, checkBarrier, notifySem);
+			threadPool.submit(tasks[i]);
+		}
+		
 		/* Performs inference */
 		double primalRes = Double.POSITIVE_INFINITY;
 		double dualRes = Double.POSITIVE_INFINITY;
@@ -293,57 +437,34 @@ public class ADMMReasoner implements Reasoner {
 		while ((primalRes > epsilonPrimal || dualRes > epsilonDual) && iter <= maxIter) {
 			check = (iter-1) % stopCheck == 0;
 			
-			/* Solves each local function */
-			for (Iterator<ADMMObjectiveTerm> itr = terms.iterator(); itr.hasNext(); )
-				itr.next().updateLagrange().minimize();
+			// Await check barrier
+			try {
+				checkBarrier.await();
+			} catch (InterruptedException e) {
+				throw new RuntimeException(e);
+			} catch (BrokenBarrierException e) {
+				throw new RuntimeException(e);
+			}
 			
-			/* Updates consensus variables and computes residuals */
-			double total, newZ, diff;
-			VariableLocation location;
 			if (check) {
+				// Acquire semaphore
+				notifySem.acquireUninterruptibly(numThreads);
+				
 				primalRes = 0.0;
 				dualRes = 0.0;
 				AxNorm = 0.0;
 				BzNorm = 0.0;
 				AyNorm = 0.0;
-			}
-			for (int i = 0; i < z.size(); i++) {
-				total = 0.0;
-				/* First pass computes newZ and dual residual */
-				for (Iterator<VariableLocation> itr = varLocations.get(i).iterator(); itr.hasNext(); ) {
-					location = itr.next();
-					total += location.term.x[location.localIndex] + location.term.y[location.localIndex] / stepSize;
-					if (check) {
-						AxNorm += location.term.x[location.localIndex] * location.term.x[location.localIndex];
-						AyNorm += location.term.y[location.localIndex] * location.term.y[location.localIndex];
-					}
-				}
-				newZ = total / varLocations.get(i).size();
-				if (newZ < lb.get(i))
-					newZ = lb.get(i);
-				else if (newZ > ub.get(i))
-					newZ = ub.get(i);
 				
-				if (check) {
-					diff = z.get(i) - newZ;
-					/* Residual is diff^2 * number of local variables mapped to z element */
-					dualRes += diff * diff * varLocations.get(i).size();
-					BzNorm += newZ * newZ * varLocations.get(i).size();
+				// Total values from threads
+				for (ADMMTask task : tasks) {
+					primalRes += task.primalResInc;
+					dualRes += task.dualResInc;
+					AxNorm += task.AxNormInc;
+					BzNorm += task.BzNormInc;
+					AyNorm += task.AyNormInc;
 				}
-				z.set(i, newZ);
 				
-				/* Second pass computes primal residuals */
-				if (check) {
-					for (Iterator<VariableLocation> itr = varLocations.get(i).iterator(); itr.hasNext(); ) {
-						location = itr.next();
-						diff = location.term.x[location.localIndex] - newZ;
-						primalRes += diff * diff;
-					}
-				}
-			}
-
-			/* Finishes computing the residuals */
-			if (check) {
 				primalRes = Math.sqrt(primalRes);
 				dualRes = stepSize * Math.sqrt(dualRes);
 				
@@ -357,6 +478,20 @@ public class ADMMReasoner implements Reasoner {
 			}
 			
 			iter++;
+		}
+		
+		// Notify threads the optimization is complete
+		for (ADMMTask task : tasks)
+			task.flag = false;
+		
+		try {
+			checkBarrier.await();
+			threadPool.shutdownNow();
+			threadPool.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
+		} catch (InterruptedException e) {
+			throw new RuntimeException(e);
+		} catch (BrokenBarrierException e) {
+			throw new RuntimeException(e);
 		}
 		
 		log.debug("Optimization complete.");
@@ -397,6 +532,7 @@ public class ADMMReasoner implements Reasoner {
 		terms = null;
 		variables = null;
 		z = null;
+		threadPool.shutdownNow();
 	}
 	
 	private void registerLocalVariableCopies(ADMMObjectiveTerm term) {

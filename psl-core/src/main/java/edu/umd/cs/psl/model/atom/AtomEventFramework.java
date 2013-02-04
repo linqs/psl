@@ -233,10 +233,13 @@ public class AtomEventFramework implements AtomManager {
 	 * so that listeners will be notified.
 	 */
 	public void workOffJobQueue() {
-		while (!jobQueue.isEmpty()) {
-			AtomEvent event = jobQueue.poll();
+		// First make all necessary commits
+		for (AtomEvent event : jobQueue)
 			if (event.getType().equals(AtomEvent.Type.ActivatedRVAtom))
 				event.getAtom().commitToDB();
+		
+		while (!jobQueue.isEmpty()) {
+			AtomEvent event = jobQueue.poll();
 			notifyListeners(event);
 		}
 	}
