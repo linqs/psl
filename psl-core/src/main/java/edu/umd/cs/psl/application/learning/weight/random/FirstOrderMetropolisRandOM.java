@@ -21,6 +21,7 @@ import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.parameters.PositiveWeight;
 
 /**
  * A {@link MetropolisRandOM} learning algorithm that samples one weight for
@@ -30,45 +31,82 @@ import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
  * @author Stephen Bach <bach@cs.umd.edu>
  */
 public class FirstOrderMetropolisRandOM extends MetropolisRandOM {
+	
+	protected double[] currentWeights, previousWeights, sum, sumSq;
 
 	public FirstOrderMetropolisRandOM(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
 		super(model, rvDB, observedDB, config);
 	}
+	
+	@Override
+	protected void doLearn() {
+		currentWeights = new double[kernels.size()];
+		previousWeights = new double[kernels.size()];
+		for (int i = 0; i < previousWeights.length; i++)
+			previousWeights[i] = kernels.get(i).getWeight().getWeight();
+		
+		sum = new double[kernels.size()];
+		sumSq = new double[kernels.size()];
+		
+		super.doLearn();
+	}
 
 	@Override
 	protected void prepareForRound() {
-		// TODO Auto-generated method stub
-
+		for (int i = 0; i < kernels.size(); i++) {
+			sum[i] = 0.0;
+			sumSq[i] = 0.0;
+		}
 	}
 
 	@Override
 	protected void sampleAndSetWeights() {
-		// TODO Auto-generated method stub
-
+		for (int i = 0; i < kernels.size(); i++) {
+//			currentWeights[i] = sampleFromGaussian(previousWeights[i], kernelVariances[i]);
+//			currentWeights[i] = sampleFromGaussian(previousWeights[i], Math.min(kernelVariances[i], 0.1));
+			currentWeights[i] = sampleFromGaussian(previousWeights[i], 0.1);
+			kernels.get(i).setWeight(new PositiveWeight(Math.max(0.0, currentWeights[i])));
+		}
 	}
 
 	@Override
 	protected double getLogLikelihoodSampledWeights() {
-		// TODO Auto-generated method stub
-		return 0;
+		double likelihood = 0.0;
+		for (int i = 0; i < kernels.size(); i++)
+			likelihood -= Math.pow(currentWeights[i] - kernelMeans[i], 2) / (2 * kernelVariances[i]);
+		return likelihood;
 	}
 
 	@Override
 	protected void acceptSample(boolean burnIn) {
-		// TODO Auto-generated method stub
-
+//		if (!burnIn) System.out.println("ACCEPTED: " + model);
+		for (int i = 0; i < kernels.size(); i++) {
+			previousWeights[i] = currentWeights[i];
+			if (!burnIn) {
+				sum[i] += currentWeights[i];
+				sumSq[i] += currentWeights[i] * currentWeights[i];
+			}
+		}
 	}
 
 	@Override
 	protected void rejectSample(boolean burnIn) {
-		// TODO Auto-generated method stub
-
+//		if (!burnIn) System.out.println("REJECTED: " + model);
+		for (int i = 0; i < kernels.size(); i++) {
+			if (!burnIn) {
+				sum[i] += previousWeights[i];
+				sumSq[i] += previousWeights[i] * previousWeights[i];
+			}
+		}
 	}
 
 	@Override
 	protected void finishRound() {
-		// TODO Auto-generated method stub
-
+		for (int i = 0; i < kernels.size(); i++) {
+			kernelMeans[i] = sum[i] / (numSamples - burnIn);
+			kernelVariances[i] = sumSq[i] / (numSamples - burnIn) - kernelMeans[i] * kernelMeans[i];
+			System.out.println("Variance of " + kernelVariances[i] + " for kernel " + kernels.get(i)); 
+		}
 	}
 
 }
