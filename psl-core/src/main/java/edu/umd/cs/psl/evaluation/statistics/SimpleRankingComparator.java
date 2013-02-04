@@ -16,6 +16,7 @@
  */
 package edu.umd.cs.psl.evaluation.statistics;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -65,16 +66,16 @@ public class SimpleRankingComparator implements RankingComparator {
 	@Override
 	public double compare(Predicate p) {
 		/* Result atoms */
-		List<GroundAtom> resultAtoms = new HashList<GroundAtom>();
+		List<GroundAtom> resultAtoms = new ArrayList<GroundAtom>();
 		Iterator<GroundAtom> itr = resultFilter.filter(Queries.getAllAtoms(result, p).iterator());
 		while (itr.hasNext())
 			resultAtoms.add(itr.next());
 		Collections.sort(resultAtoms, new AtomComparator());
-		
+
 		log.debug("Collected and sorted result atoms. Size: {}", resultAtoms.size());
 		
 		/* Baseline atoms */
-		List<GroundAtom> baselineAtoms = new HashList<GroundAtom>();
+		List<GroundAtom> baselineAtoms = new ArrayList<GroundAtom>();
 		itr = resultFilter.filter(Queries.getAllAtoms(baseline, p).iterator());
 		while (itr.hasNext())
 			baselineAtoms.add(itr.next());
@@ -82,15 +83,21 @@ public class SimpleRankingComparator implements RankingComparator {
 		
 		log.debug("Collected and sorted base atoms. Size: {}", baselineAtoms.size());
 		
-		return rankScore.getScore(baselineAtoms, resultAtoms);
 		
+		HashList<GroundAtom> baselineHashList = new HashList<GroundAtom>(baselineAtoms.size());
+		for (GroundAtom atom : baselineAtoms)
+			baselineHashList.add(atom);	
+		HashList<GroundAtom> resultHashList = new HashList<GroundAtom>(resultAtoms.size());
+		for (GroundAtom atom : resultAtoms)
+			resultHashList.add(atom);	
+		
+		return rankScore.getScore(baselineHashList, resultHashList);
 	}
 	
 	private class AtomComparator implements Comparator<GroundAtom> {
 		@Override
 		public int compare(GroundAtom a1, GroundAtom a2) {
-			
-			if (a1.getValue() > a1.getValue())
+			if (a1.getValue() > a2.getValue())
 				return 1;
 			else if (a1.getValue() == a2.getValue())
 				return 0;

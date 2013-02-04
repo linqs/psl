@@ -37,7 +37,7 @@ public enum RankingScore {
 			int i, j;
 			Iterator<GroundAtom> baseItrI, baseItrJ;
 			GroundAtom baseAtomI, baseAtomJ;
-			
+
 			baseItrI = expected.iterator();
 			baseItrI.next();
 			i = 1;
@@ -55,8 +55,171 @@ public enum RankingScore {
 			}
 			return 0.5 + (1 - 4 * score / (expected.size() * (expected.size() - 1))) / 2;
 		}
-	};
+	},
+
+	/**
+	 * Assumes actual GroundAtoms are hard truth values
+	 * Returns area under the precision recall curve
+	 */
+	AUPRC {
+		private final double threshold = 0.5;
+
+		@Override
+		public double getScore(List<GroundAtom> expected, List<GroundAtom> actual) {
+			// both lists are sorted
+			int totalPositives = 0;
+			for (GroundAtom atom : expected)
+				if (atom.getValue() > threshold)
+					totalPositives++;
+			
+			double area = 0.0;
+			int tp = 0;
+			int fp = 0;
+			int fn = totalPositives;
+			int tn = expected.size() - totalPositives;
+			GroundAtom last = actual.get(actual.size() - 1);
+			boolean label = actual.get(actual.indexOf(last)).getValue() > threshold;
+			if (label) {
+				tp++;
+				fn--;
+			} else {
+				fp++;
+				tn--;
+			}
+			
+			double prevPrecision = (double) tp / (double) (tp + fp);
+			double prevRecall = (double) tp / (double) totalPositives;
+ 			double newPrecision, newRecall;	
+			for (int i = actual.size() - 2; i >= 0; i--) {
+				GroundAtom next = actual.get(i);
+				label = expected.get(expected.indexOf(next)).getValue() > threshold;
+				if (label) {
+					tp++;
+					fn--;
+				} else {
+					fp++;
+					tn--;
+				}
+				newPrecision = (double) tp / (double) (tp + fp);
+				newRecall = (double) tp / (double) totalPositives;
+				
+				if (tp == 0)
+					newPrecision = 0.0;
+	 			
+				area += 0.5 * (newRecall - prevRecall) * (prevPrecision + newPrecision);
+				prevPrecision = newPrecision;
+				prevRecall = newRecall;
+			}
+
+			// add final trapezoid
+			newPrecision = (double) totalPositives / (double) actual.size();
+			newRecall = 1.0;
+			area += 0.5 * (newRecall - prevRecall) * (prevPrecision + newPrecision);
+			return area;
+		}
+	},
 	
+	/**
+	 * Assumes actual GroundAtoms are hard truth values
+	 * Returns area under the precision recall curve for the negative class
+	 */
+	NegAUPRC {
+		private final double threshold = 0.5;
+
+		@Override
+		public double getScore(List<GroundAtom> expected, List<GroundAtom> actual) {
+			// both lists are sorted
+			int totalPositives = 0;
+			for (GroundAtom atom : expected)
+				if (atom.getValue() > threshold)
+					totalPositives++;
+			
+			int totalNegatives = actual.size() - totalPositives;
+			
+			double area = 0.0;
+			int tp = 0;
+			int fp = 0;
+			int fn = totalPositives;
+			int tn = totalNegatives;
+			
+			double prevPrecision = (double) tn / (double) (tn + fn);
+			double prevRecall = (double) tn / (double) totalNegatives;
+ 			double newPrecision, newRecall;	
+			for (int i = actual.size() - 1; i >= 0; i--) {
+				GroundAtom next = actual.get(i);
+				boolean label = expected.get(expected.indexOf(next)).getValue() > threshold;
+				if (label) { // we predict positive, true label is positive
+					tp++;
+					fn--;
+				} else { // we predict positive, true label is negative
+					fp++;
+					tn--;
+				}
+				newPrecision = (double) tn / (double) (tn + fn);
+				newRecall = (double) tn / (double) totalNegatives;
+
+				//System.out.println(next.getValue() + "\t" + expected.get(expected.indexOf(next)).getValue() + " prec " + newPrecision + " rec " + newRecall);
+				
+				if (tn == 0)
+					newPrecision = 0.0;
+	 			
+				area += 0.5 * (prevRecall - newRecall) * (prevPrecision + newPrecision);
+				prevPrecision = newPrecision;
+				prevRecall = newRecall;
+			}
+			return area;
+		}
+	}, 
+	
+	/**
+	 * Assumes actual GroundAtoms are hard truth values
+	 * Returns area under ROC curve
+	 */
+	AreaROC {
+		private final double threshold = 0.5;
+
+		@Override
+		public double getScore(List<GroundAtom> expected, List<GroundAtom> actual) {
+			// both lists are sorted
+			int totalPositives = 0;
+			for (GroundAtom atom : expected)
+				if (atom.getValue() > threshold)
+					totalPositives++;
+			
+			int totalNegatives = actual.size() - totalPositives;
+			
+			double area = 0.0;
+			int tp = 0;
+			int fp = 0;
+			int fn = totalPositives;
+			int tn = totalNegatives;
+			
+			double prevY = (double) tp / (double) totalPositives;
+			double prevX = (double) fp / (double) totalNegatives;
+ 			double newX, newY;	
+			for (int i = actual.size() - 1; i >= 0; i--) {
+				GroundAtom next = actual.get(i);
+				boolean label = expected.get(expected.indexOf(next)).getValue() > threshold;
+				if (label) { // we predict positive, true label is positive
+					tp++;
+					fn--;
+				} else { // we predict positive, true label is negative
+					fp++;
+					tn--;
+				}
+				newY = (double) tp / (double) totalPositives;
+				newX = (double) fp / (double) totalNegatives;
+						
+				area += 0.5 * (newX - prevX) * (newY + prevY);
+				prevY = newY;
+				prevX = newX;
+			}
+			return area;
+		}
+	};
+
+
+
 	/**
 	 * Scores a ranking of Atoms given an expected ranking
 	 * 
@@ -65,5 +228,5 @@ public enum RankingScore {
 	 * @return the actual ranking's score relative to the expected ranking
 	 */
 	public abstract double getScore(List<GroundAtom> expected, List<GroundAtom> actual);
-	
+
 }
