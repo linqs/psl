@@ -24,13 +24,18 @@ package edu.umd.cs.psl.reasoner.admm;
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-class HingeLossTerm extends HyperplaneTerm {
+class HingeLossTerm extends HyperplaneTerm implements WeightedObjectiveTerm {
 	
-	private final double weight;
+	private double weight;
 	
 	HingeLossTerm(ADMMReasoner reasoner, int[] zIndices, double[] coeffs,
 			double constant, double weight) {
 		super(reasoner, zIndices, coeffs, constant);
+		setWeight(weight);
+	}
+
+	@Override
+	public void setWeight(double weight) {
 		this.weight = weight;
 	}
 	

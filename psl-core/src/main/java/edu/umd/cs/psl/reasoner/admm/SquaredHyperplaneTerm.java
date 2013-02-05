@@ -29,11 +29,11 @@ import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm {
+abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements WeightedObjectiveTerm {
 	
 	protected final double[] coeffs;
 	protected final double constant;
-	protected final double weight;
+	protected double weight;
 	private final DoubleMatrix2D L;
 	
 	SquaredHyperplaneTerm(ADMMReasoner reasoner, int[] zIndices, double[] coeffs,
@@ -42,7 +42,7 @@ abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm {
 		
 		this.coeffs = coeffs;
 		this.constant = constant;
-		this.weight = weight;
+		setWeight(weight);
 		
 		if (x.length >= 3) {
 			double coeff;
@@ -65,6 +65,11 @@ abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm {
 		}
 		else
 			L = null;
+	}
+	
+	@Override
+	public void setWeight(double weight) {
+		this.weight = weight;
 	}
 	
 	/**

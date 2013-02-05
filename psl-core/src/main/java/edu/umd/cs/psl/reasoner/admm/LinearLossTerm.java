@@ -22,14 +22,19 @@ package edu.umd.cs.psl.reasoner.admm;
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-class LinearLossTerm extends ADMMObjectiveTerm {
+class LinearLossTerm extends ADMMObjectiveTerm implements WeightedObjectiveTerm {
 	
 	private final double[] coeffs;
-	private final double weight;
+	private double weight;
 	
 	LinearLossTerm(ADMMReasoner reasoner, int[] zIndices, double[] coeffs, double weight) {
 		super(reasoner, zIndices);
 		this.coeffs = coeffs;
+		setWeight(weight);
+	}
+
+	@Override
+	public void setWeight(double weight) {
 		this.weight = weight;
 	}
 	
