@@ -34,12 +34,11 @@ import edu.umd.cs.psl.optimizer.conic.program.Variable;
 
 /**
  * (for now) Solves convex programs of the form
- * min  ||x||^2 + f'x 
+ * min  ||weights .* x - origin||^2 + f'x 
  * s.t. Ax < b, x >= 0
  * by converting problem to a second order cone program
  * 
  * @author Bert Huang <bert@cs.umd.edu>
- *
  */
 public class PositiveMinNormProgram {
 	Logger log = LoggerFactory.getLogger(PositiveMinNormProgram.class);
@@ -130,15 +129,30 @@ public class PositiveMinNormProgram {
 	}
 
 	/**
-	 * sets the quadratic term in the norm minimization objective. 
-	 * @param includeInNorm boolean indicator of which variables to include in norm
-	 * @param origin origin of the vector to compute the norm of. Set to all zeros to get traditional max-margin norm minimization
+	 * Sets the quadratic term in the norm minimization objective to be
+	 * ||weight .* x - origin||^2
+	 * 
+	 * @param weights  positive weights to be multiplied element-wise with x
+	 * @param origin  origin of the vector to compute the norm of.
+	 *                    Set to all zeros to get traditional norm minimization
 	 */
-	public void setQuadraticTerm(boolean [] includeInNorm, double [] origin) {
+	public void setQuadraticTerm(double[] weights, double [] origin) {
 		int count = 0;
-		for (boolean b : includeInNorm)
-			if (b) count++;
+		for (double w : weights)
+			if (w > 0.0)
+				count++;
+			else if (w < 0.0)
+				throw new IllegalArgumentException("Weights must be non-negative.");
 		
+		/* Clears quadratic cone if it already exists */
+		if (quadraticCone != null) {
+			for (Variable v : quadraticCone.getVariables())
+				for (LinearConstraint c : v.getLinearConstraints())
+					c.delete();
+			quadraticCone.delete();
+		}
+		
+		/* Constructs new quadratic cone */
 		quadraticCone = program.createSecondOrderCone(count + 2);
 		
 		Iterator<Variable> coneVars = quadraticCone.getInnerVariables().iterator();
@@ -149,14 +163,16 @@ public class PositiveMinNormProgram {
 		constraint.setVariable(squaredNorm, 0.5);
 		constraint.setConstrainedValue(0.5);
 		
-		for (int i = 0; i < includeInNorm.length; i++)
-			if (includeInNorm[i]) {
+		for (int i = 0; i < weights.length; i++)
+			if (weights[i] != 0.0) {
 				// create equality constraint
 				Variable coneVar = coneVars.next();
 				LinearConstraint variableConstraint = program.createConstraint();
-				variableConstraint.setVariable(coneVar, 1.0);
-				variableConstraint.setVariable(variables[i], -1.0);
-				variableConstraint.setConstrainedValue(origin[i]);
+				variableConstraint.setVariable(coneVar, -1.0);
+				variableConstraint.setVariable(variables[i], weights[i]);
+				variableConstraint.setConstrainedValue(weights[i] * origin[i]);
+//				variableConstraint.setVariable(variables[i], Math.sqrt(weights[i]));
+//				variableConstraint.setConstrainedValue(Math.sqrt(weights[i]) * origin[i]);
 			}
 		
 		Variable rightDummy = quadraticCone.getNthVariable();

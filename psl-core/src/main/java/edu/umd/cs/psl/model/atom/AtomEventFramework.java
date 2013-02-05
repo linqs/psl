@@ -61,9 +61,9 @@ import edu.umd.cs.psl.model.predicate.StandardPredicate;
  * <p>
  * For each event, an {@link AtomEvent} is added to the job queue. Calling
  * {@link #workOffJobQueue()} will cause the appropriate Listeners to be
- * notified of events in the queue until the queue is empty. While processing
- * the queue, each activated RandomVariableAtom will be committed to the Database
- * before that Atom's Listeners are notified.
+ * notified of events in the queue until the queue is empty. Before any Listeners
+ * are notified, all activated RandomVariableAtoms in the queue will be committed
+ * to the Database.
  */
 public class AtomEventFramework implements AtomManager {
 	
@@ -233,6 +233,7 @@ public class AtomEventFramework implements AtomManager {
 	 * so that listeners will be notified.
 	 */
 	public void workOffJobQueue() {
+		// TODO: Lock queue so no activation events can be added while working off, so no commits are missed (or move commit to doActivateAtom()?)
 		// First make all necessary commits
 		for (AtomEvent event : jobQueue)
 			if (event.getType().equals(AtomEvent.Type.ActivatedRVAtom))

@@ -55,6 +55,7 @@ import edu.umd.cs.psl.util.collection.HashList;
  * Uses an ADMM optimization method to optimize its GroundKernels.
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
+ * @author Eric Norris
  */
 public class ADMMReasoner implements Reasoner {
 	

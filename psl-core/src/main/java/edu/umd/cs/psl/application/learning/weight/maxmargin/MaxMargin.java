@@ -17,6 +17,7 @@
 package edu.umd.cs.psl.application.learning.weight.maxmargin;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -62,29 +63,49 @@ public class MaxMargin extends WeightLearningApplication {
 	public static final String CONFIG_PREFIX = "maxmargin";
 		
 	/**
-	 * Key for cutting plane tolerance
+	 * Key for double property, cutting plane tolerance
 	 */
 	public static final String CUTTING_PLANE_TOLERANCE = CONFIG_PREFIX + ".tolerance";
 	/** Default value for CUTTING_PLANE_TOLERANCE */
 	public static final double CUTTING_PLANE_TOLERANCE_DEFAULT = 1e-5;
 
 	/**
-	 * Key for slack penalty C, where objective is ||w|| + C (slack)
+	 * Key for double property, slack penalty C, where objective is ||w|| + C (slack)
 	 */
 	public static final String SLACK_PENALTY = CONFIG_PREFIX + ".slack_penalty";
 	/** Default value for SLACK_PENALTY */
 	public static final double SLACK_PENALTY_DEFAULT = 10;
 
 	/**
-	 * Key for maximum iterations
+	 * Key for positive integer, maximum iterations
 	 */
 	public static final String MAX_ITER = CONFIG_PREFIX + ".max_iter";
 	/** Default value for MAX_ITER */
 	public static final int MAX_ITER_DEFAULT = 500;
 	
+	/**
+	 * Key for boolean property. If true, loss augmenting ground kernels will
+	 * be weighted using ratio of true to false atoms in observedDB. If false,
+	 * they will all have weight 0.5.
+	 */
+	public static final String BALANCE_LOSS = CONFIG_PREFIX + ".balanceloss";
+	/** Default value for BALANCE_LOSS */
+	public static final boolean BALANCE_LOSS_DEFAULT = true;
+	
+	/**
+	 * Key for boolean property. If true, the i-th component of weights in the
+	 * objective will be scaled by 1 over the number of GroundCompatibilityKernels
+	 * with that weight. If false, they will not be scaled. 
+	 */
+	public static final String SCALE_NORM = CONFIG_PREFIX + ".scalenorm";
+	/** Default value for SCALE_NORM */
+	public static final boolean SCALE_NORM_DEFAULT = true;
+	
 	protected final double tolerance;
 	protected final int maxIter;
 	protected double slackPenalty;
+	protected final boolean balanceLoss;
+	protected final boolean scaleNorm;
 	
 	protected PositiveMinNormProgram normProgram;
 	
@@ -93,6 +114,8 @@ public class MaxMargin extends WeightLearningApplication {
 		tolerance = config.getDouble(CUTTING_PLANE_TOLERANCE, CUTTING_PLANE_TOLERANCE_DEFAULT);
 		maxIter = config.getInt(MAX_ITER, MAX_ITER_DEFAULT);
 		slackPenalty = config.getDouble(SLACK_PENALTY, SLACK_PENALTY_DEFAULT);
+		balanceLoss = config.getBoolean(BALANCE_LOSS, BALANCE_LOSS_DEFAULT);
+		scaleNorm = config.getBoolean(SCALE_NORM, SCALE_NORM_DEFAULT);
 	}
 	
 	/**
@@ -116,13 +139,31 @@ public class MaxMargin extends WeightLearningApplication {
 		coefficients[kernels.size()] = slackPenalty;
 		normProgram.setLinearCoefficients(coefficients);
 		
-		/* Sets quadratic objective term */
-		boolean [] include = new boolean[kernels.size()+1];
-		for (int i = 0; i < kernels.size(); i++) {
-			include[i] = true;
+		/* Determines coefficients for the quadratic objective term */
+		double [] quadCoeffs = new double[kernels.size()+1];
+		if (scaleNorm) {
+			/* Counts numbers of groundings to scale norm */
+			for (int i = 0; i < kernels.size(); i++) {
+				Iterator<GroundKernel> itr = reasoner.getGroundKernels(kernels.get(i)).iterator();
+				while(itr.hasNext()) {
+					itr.next();
+					quadCoeffs[i]++;
+				}
+				
+				if (quadCoeffs[i] == 0.0)
+					quadCoeffs[i]++;
+				
+				quadCoeffs[i] = 1 / quadCoeffs[i];
+			}
 		}
-		include[kernels.size()] = false;
-		normProgram.setQuadraticTerm(include, new double[kernels.size()]);
+		else {
+			for (int i = 0; i < kernels.size(); i++)
+				quadCoeffs[i] = 1.0;
+		}
+		
+		/* Sets quadratic objective term */
+		quadCoeffs[kernels.size()] = 0.0;
+		normProgram.setQuadraticTerm(quadCoeffs, new double[kernels.size()]);
 	}
 	
 	@Override
@@ -147,13 +188,24 @@ public class MaxMargin extends WeightLearningApplication {
 			}
 		}
 		
-		/* Counts positive vs negative ground truth atoms in order to weight loss augmenting ground kernels */
-		int posAtoms = 0;
-		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet())
-			if (e.getValue().getValue() == 1.0)
-				posAtoms++;
-		double posRatio = (double) posAtoms / (double) trainingMap.getTrainingMap().size();
-		log.debug("Weighting loss of positive (1.0) examples by {} and negative examples by {}", 1 - posRatio, posRatio);
+		/* Determines weights of loss augmenting ground kernels */
+		double posRatio;
+		if (balanceLoss) {
+			/*
+			 * Counts positive vs negative ground truth atoms in order to weight
+			 * loss augmenting ground kernels
+			 */
+			int posAtoms = 0;
+			for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet())
+				if (e.getValue().getValue() == 1.0)
+					posAtoms++;
+			posRatio = (double) posAtoms / (double) trainingMap.getTrainingMap().size();
+			log.debug("Weighting loss of positive (value = 1.0) examples by {} " +
+					"and negative examples by {}", 1 - posRatio, posRatio);
+		}
+		else {
+			posRatio = 0.5;
+		}
 		
 		/* Sets up loss augmenting ground kernels */
 		List<LossAugmentingGroundKernel> lossKernels = new ArrayList<LossAugmentingGroundKernel>(trainingMap.getTrainingMap().size());

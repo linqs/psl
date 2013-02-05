@@ -220,12 +220,12 @@ public class HardEMRandOM implements ModelApplication {
 			program.setLinearCoefficients(coefficients);
 
 			//qp.setHessianFactor()
-			boolean [] include = new boolean[groundKernels.size()+1];
+			double [] quadCoeffs = new double[groundKernels.size()+1];
 			for (int i = 0; i < groundKernels.size(); i++) {
-				include[i] = true;
+				quadCoeffs[i] = 1.0;
 			}
-			include[groundKernels.size()] = false;
-			program.setQuadraticTerm(include, getOrigin(groundKernels));
+			quadCoeffs[groundKernels.size()] = 0.0;
+			program.setQuadraticTerm(quadCoeffs, getOrigin(groundKernels));
 
 			while (iter < maxInnerIter && violation > tolerance) {
 				reasoner.optimize();
