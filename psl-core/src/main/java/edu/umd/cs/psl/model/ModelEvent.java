@@ -24,7 +24,7 @@ import edu.umd.cs.psl.model.kernel.Kernel;
 public class ModelEvent {
 	
 	/** Types of ModelEvents */
-	enum Type {
+	public enum Type {
 		/** A Kernel was added to a model */
 		KernelAdded,
 		/** A Kernel was removed from a model */

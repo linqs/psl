@@ -47,7 +47,7 @@ public class ConfigManager {
 			loadResource("psl.properties");
 		}
 		catch (FileNotFoundException e) {
-			log.debug("PSL configuration file 'psl.properties' not found on classpath. " +
+			log.info("PSL configuration file 'psl.properties' not found on classpath. " +
 					"Only default values will be used unless additional properties are " +
 					"specified.");
 		}
@@ -95,10 +95,10 @@ public class ConfigManager {
 			String scopedKey = prefix + "." + key;
 			if (config.containsKey(key)) {
 				Object value = config.getProperty(key);
-				log.debug("Found value {} for option {}.", value, scopedKey);
+				log.info("Found value {} for option {}.", value, scopedKey);
 			}
 			else {
-				log.debug("No value found for option {}. Returning default of {}.", scopedKey, defaultValue);
+				log.info("No value found for option {}. Returning default of {}.", scopedKey, defaultValue);
 			}
 		}
 		

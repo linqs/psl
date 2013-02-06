@@ -75,7 +75,7 @@ public class MaxMargin extends WeightLearningApplication {
 	 */
 	public static final String SLACK_PENALTY = CONFIG_PREFIX + ".slack_penalty";
 	/** Default value for SLACK_PENALTY */
-	public static final double SLACK_PENALTY_DEFAULT = 10;
+	public static final double SLACK_PENALTY_DEFAULT = 1;
 
 	/**
 	 * Key for positive integer, maximum iterations
@@ -85,28 +85,60 @@ public class MaxMargin extends WeightLearningApplication {
 	public static final int MAX_ITER_DEFAULT = 500;
 	
 	/**
-	 * Key for boolean property. If true, loss augmenting ground kernels will
-	 * be weighted using ratio of true to false atoms in observedDB. If false,
-	 * they will all have weight 0.5.
+	 * Key for LossBalancingType enum property. Determines the type of loss
+	 * balancing MaxMargin will use.
+	 * 
+	 * @see LossBalancingType
 	 */
 	public static final String BALANCE_LOSS = CONFIG_PREFIX + ".balanceloss";
 	/** Default value for BALANCE_LOSS */
-	public static final boolean BALANCE_LOSS_DEFAULT = true;
+	public static final LossBalancingType BALANCE_LOSS_DEFAULT = LossBalancingType.NONE;
 	
 	/**
-	 * Key for boolean property. If true, the i-th component of weights in the
-	 * objective will be scaled by 1 over the number of GroundCompatibilityKernels
-	 * with that weight. If false, they will not be scaled. 
+	 * Key for NormScalingType enum property. Determines type of norm scaling
+	 * MaxMargin will use in its objective.
 	 */
 	public static final String SCALE_NORM = CONFIG_PREFIX + ".scalenorm";
 	/** Default value for SCALE_NORM */
-	public static final boolean SCALE_NORM_DEFAULT = true;
+	public static final NormScalingType SCALE_NORM_DEFAULT = NormScalingType.NONE;
+	
+	/** Types of loss balancing MaxMargin can use during learning */
+	public enum LossBalancingType {
+		/** No loss balancing. All LossAugmentingGroundKernels weighted as -0.5. */
+		NONE,
+		/**
+		 * Weights of LossAugmentingGroundKernels for true (false) ObservedAtoms
+		 * are -1 * number of true (false) ObservedAtoms / total ObservedAtoms.
+		 */
+		CLASS_WEIGHTS,
+		/**
+		 * Weights of LossAugmentingGroundKernels for true (false) ObservedAtoms
+		 * are -1 * number of false (true) ObservedAtoms / total ObservedAtoms.
+		 */
+		INVERSE_CLASS_WEIGHTS;
+	}
+	
+	/** Types of norm scaling MaxMargin can use during learning */
+	public enum NormScalingType {
+		/** No norm scaling */
+		NONE,
+		/**
+		 * Each weight is multiplied inside the objective norm by
+		 * the number of GroundKernels sharing that weight 
+		 */
+		NUM_GROUNDINGS,
+		/**
+		 * Each weight is multiplied inside the objective norm by
+		 * 1 / number of GroundKernels sharing that weight 
+		 */
+		INVERSE_NUM_GROUNDINGS;
+	}
 	
 	protected final double tolerance;
 	protected final int maxIter;
 	protected double slackPenalty;
-	protected final boolean balanceLoss;
-	protected final boolean scaleNorm;
+	protected final LossBalancingType balanceLoss;
+	protected final NormScalingType scaleNorm;
 	
 	protected PositiveMinNormProgram normProgram;
 	
@@ -115,16 +147,8 @@ public class MaxMargin extends WeightLearningApplication {
 		tolerance = config.getDouble(CUTTING_PLANE_TOLERANCE, CUTTING_PLANE_TOLERANCE_DEFAULT);
 		maxIter = config.getInt(MAX_ITER, MAX_ITER_DEFAULT);
 		slackPenalty = config.getDouble(SLACK_PENALTY, SLACK_PENALTY_DEFAULT);
-		balanceLoss = config.getBoolean(BALANCE_LOSS, BALANCE_LOSS_DEFAULT);
-		scaleNorm = config.getBoolean(SCALE_NORM, SCALE_NORM_DEFAULT);
-	}
-	
-	/**
-	 * Sets slack coefficient for max margin constraints
-	 * @param C
-	 */
-	public void setSlackPenalty(double C) {
-		slackPenalty = C;
+		balanceLoss = (LossBalancingType) config.getEnum(BALANCE_LOSS, BALANCE_LOSS_DEFAULT);
+		scaleNorm = (NormScalingType) config.getEnum(SCALE_NORM, SCALE_NORM_DEFAULT);
 	}
 	
 	@Override
@@ -142,24 +166,31 @@ public class MaxMargin extends WeightLearningApplication {
 		
 		/* Determines coefficients for the quadratic objective term */
 		double [] quadCoeffs = new double[kernels.size()+1];
-		if (scaleNorm) {
+		if (NormScalingType.NONE.equals(scaleNorm)) {
+			for (int i = 0; i < kernels.size(); i++)
+				quadCoeffs[i] = 1.0;
+		}
+		else {
 			/* Counts numbers of groundings to scale norm */
+			int[] numGroundings = new int[kernels.size()];
 			for (int i = 0; i < kernels.size(); i++) {
 				Iterator<GroundKernel> itr = reasoner.getGroundKernels(kernels.get(i)).iterator();
 				while(itr.hasNext()) {
 					itr.next();
-					quadCoeffs[i]++;
+					numGroundings[i]++;
 				}
-				
-				if (quadCoeffs[i] == 0.0)
-					quadCoeffs[i]++;
-				
-				quadCoeffs[i] = 1 / quadCoeffs[i];
 			}
-		}
-		else {
-			for (int i = 0; i < kernels.size(); i++)
-				quadCoeffs[i] = 1.0;
+			
+			if (NormScalingType.NUM_GROUNDINGS.equals(scaleNorm)) {
+				for (int i = 0; i < kernels.size(); i++)
+					quadCoeffs[i] = numGroundings[i];
+			}
+			else if (NormScalingType.INVERSE_NUM_GROUNDINGS.equals(scaleNorm)) {
+				for (int i = 0; i < kernels.size(); i++)
+					quadCoeffs[i] = (numGroundings[i] > 0.0) ? 1 / numGroundings[i] : 0.0;
+			}
+			else
+				throw new IllegalStateException("Unrecognized NormScalingType.");
 		}
 		
 		/* Sets quadratic objective term */
@@ -189,32 +220,44 @@ public class MaxMargin extends WeightLearningApplication {
 			}
 		}
 		
-		/* Determines weights of loss augmenting ground kernels */
-		double posRatio;
-		if (balanceLoss) {
+		/* Determines weights of LossAugmentingGroundKernels */
+		double obsvTrueWeight, obsvFalseWeight;
+		if (LossBalancingType.NONE.equals(balanceLoss)) {
+			obsvTrueWeight = -0.5;
+			obsvFalseWeight = -0.5;
+		}
+		else {
 			/*
 			 * Counts positive vs negative ground truth atoms in order to weight
-			 * loss augmenting ground kernels
+			 * LossAugmentingGroundKernels
 			 */
 			int posAtoms = 0;
 			for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet())
 				if (e.getValue().getValue() == 1.0)
 					posAtoms++;
-			posRatio = (double) -1 * posAtoms / (double) trainingMap.getTrainingMap().size();
+			double posRatio = (double) posAtoms / (double) trainingMap.getTrainingMap().size();
+			
+			if (LossBalancingType.CLASS_WEIGHTS.equals(balanceLoss)) {
+				obsvTrueWeight = -1 * posRatio;
+				obsvFalseWeight = -1 - obsvTrueWeight;
+			}
+			else if (LossBalancingType.INVERSE_CLASS_WEIGHTS.equals(balanceLoss)) {
+				obsvFalseWeight = -1 * posRatio;
+				obsvTrueWeight = -1 - obsvFalseWeight;
+			}
+			else
+				throw new IllegalStateException("Unrecognized LossBalancingType.");
 		}
-		else {
-			posRatio = -0.5;
-		}
-		log.debug("Weighting loss of positive (value = 1.0) examples by {} " +
-				"and negative examples by {}", -1 - posRatio, posRatio);
 		
 		/* Sets up loss augmenting ground kernels */
+		log.info("Weighting loss of positive (value = 1.0) examples by {} " +
+				"and negative examples by {}", obsvTrueWeight, obsvFalseWeight);
 		List<LossAugmentingGroundKernel> lossKernels = new ArrayList<LossAugmentingGroundKernel>(trainingMap.getTrainingMap().size());
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
 			double truth = e.getValue().getValue();
-			double weight = (truth == 1.0) ? (-1 - posRatio) : posRatio;
+			NegativeWeight weight = new NegativeWeight((truth == 1.0) ? obsvTrueWeight : obsvFalseWeight);
 			LossAugmentingGroundKernel gk = 
-					new LossAugmentingGroundKernel(e.getKey(), truth, new NegativeWeight(weight));
+					new LossAugmentingGroundKernel(e.getKey(), truth, weight);
 			reasoner.addGroundKernel(gk);
 			lossKernels.add(gk);
 		}

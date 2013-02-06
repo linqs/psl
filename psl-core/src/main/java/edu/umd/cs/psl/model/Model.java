@@ -16,7 +16,6 @@
  */
 package edu.umd.cs.psl.model;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -39,15 +38,18 @@ import edu.umd.cs.psl.model.kernel.Kernel;
  */
 public class Model {
 
-	protected final Set<Kernel> kernels;
-	protected final List<ModelEvent.Listener> modelObservers;
+	protected final List<Kernel> kernels;
+	/** Redundant set for fast membership checks */
+	protected final Set<Kernel> kernelSet;
+	protected final Set<ModelEvent.Listener> modelObservers;
 	
 	/**
 	 * Sole constructor.
 	 */
 	public Model() {
-		kernels = new HashSet<Kernel>();
-		modelObservers = new ArrayList<ModelEvent.Listener>();
+		kernels = new LinkedList<Kernel>();
+		kernelSet = new HashSet<Kernel>();
+		modelObservers = new HashSet<ModelEvent.Listener>();
 	}
 	
 	/**
@@ -75,7 +77,7 @@ public class Model {
 	 * @return the {@link Kernel Kernels} contained in this model
 	 */
 	public Iterable<Kernel> getKernels() {
-		return Collections.unmodifiableSet(kernels);
+		return Collections.unmodifiableList(kernels);
 	}
 	
 	/**
@@ -87,10 +89,11 @@ public class Model {
 	 * @throws IllegalArgumentException  if the Kernel is already in this Model
 	 */
 	public void addKernel(Kernel k) {
-		if (kernels.contains(k))
+		if (kernelSet.contains(k))
 			throw new IllegalArgumentException("Kernel already added to this model.");
 		else {
 			kernels.add(k);
+			kernelSet.add(k);
 			broadcastModelEvent(new ModelEvent(ModelEvent.Type.KernelAdded, this, k));
 		}
 	}
@@ -104,10 +107,12 @@ public class Model {
 	 * @throws IllegalArgumentException  if the Kernel is not in this Model
 	 */
 	public void removeKernel(Kernel k) {
-		if (!kernels.contains(k))
+		if (!kernelSet.contains(k))
 			throw new IllegalArgumentException("Kernel not in this model.");
 		else {
 			kernels.remove(k);
+			kernelSet.remove(k);
+			
 			broadcastModelEvent(new ModelEvent(ModelEvent.Type.KernelRemoved, this, k));
 		}
 	}
@@ -121,7 +126,7 @@ public class Model {
 	 * @throws IllegalArgumentException  if the Kernel is not in this Model
 	 */
 	public void notifyKernelParametersModified(Kernel k) {
-		if (!kernels.contains(k))
+		if (!kernelSet.contains(k))
 			throw new IllegalArgumentException("Kernel not in this model.");
 		broadcastModelEvent(new ModelEvent(ModelEvent.Type.KernelParametersModified, this, k));
 	}
