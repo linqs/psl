@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import edu.umd.cs.psl.application.learning.weight.WeightLearningApplication;
 import edu.umd.cs.psl.config.ConfigBundle;
+import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
@@ -61,6 +62,13 @@ import edu.umd.cs.psl.model.parameters.PositiveWeight;
 public abstract class VotedPerceptron extends WeightLearningApplication {
 	
 	private static final Logger log = LoggerFactory.getLogger(VotedPerceptron.class);
+	
+	/**
+	 * Prefix of property keys used by this class.
+	 * 
+	 * @see ConfigManager
+	 */
+	public static final String CONFIG_PREFIX = "votedperceptron";
 	
 	/**
 	 * Key for positive double property which will be multiplied with the

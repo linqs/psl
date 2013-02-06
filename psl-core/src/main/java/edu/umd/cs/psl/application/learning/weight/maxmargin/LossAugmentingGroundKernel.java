@@ -27,34 +27,37 @@ import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.kernel.BindingMode;
 import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
-import edu.umd.cs.psl.model.parameters.PositiveWeight;
+import edu.umd.cs.psl.model.parameters.NegativeWeight;
 import edu.umd.cs.psl.model.parameters.Weight;
+import edu.umd.cs.psl.reasoner.function.ConstantNumber;
 import edu.umd.cs.psl.reasoner.function.FunctionSum;
 import edu.umd.cs.psl.reasoner.function.FunctionSummand;
 import edu.umd.cs.psl.reasoner.function.FunctionTerm;
 
 /**
- * Special ground kernel that penalizes being close to a fixed value
+ * Special ground kernel that penalizes being close to a fixed value of 1.0 or 0.0.
  * 
  * @author Bert Huang <bert@cs.umd.edu>
  */
 public class LossAugmentingGroundKernel implements GroundCompatibilityKernel {
 
 	private static final Logger log = LoggerFactory.getLogger(LossAugmentingGroundKernel.class);
+
+	private GroundAtom atom;
+	private double groundTruth;	
+	private NegativeWeight weight;
 	
-	private Weight weight;
-	
-	public LossAugmentingGroundKernel(GroundAtom atom, double truthValue, double weight) {
+	public LossAugmentingGroundKernel(GroundAtom atom, double truthValue, NegativeWeight weight) {
 		this.atom = atom;
 		this.groundTruth = truthValue;
 		if (!(groundTruth == 1.0 || groundTruth == 0.0))
 			throw new IllegalArgumentException("Truth value must be 1.0 or 0.0.");
-		this.weight = new PositiveWeight(weight);
+		this.weight = weight;
 	}
 
 	@Override
 	public boolean updateParameters() {
-		log.debug("Called unsupported function on LossAugmentedGroundKernel");
+		log.warn("Called unsupported function on LossAugmentedGroundKernel");
 		return false;
 	}
 
@@ -81,23 +84,27 @@ public class LossAugmentingGroundKernel implements GroundCompatibilityKernel {
 	}
 
 	@Override
-	public Weight getWeight() {
+	public NegativeWeight getWeight() {
 		return weight;
 	}
 
 	@Override
 	public void setWeight(Weight w) {
-		weight = w;
+		if (w instanceof NegativeWeight)
+			this.weight = (NegativeWeight) w;
+		else
+			throw new IllegalArgumentException("Weight must be instance of NegativeWeight.");
 	}
 	
 	@Override
 	public FunctionTerm getFunctionDefinition() {
 		FunctionSum sum = new FunctionSum();
 		if (groundTruth == 1.0) {
-			sum.add(new FunctionSummand(1.0, atom.getVariable()));
+			sum.add(new FunctionSummand(1.0, new ConstantNumber(1.0)));
+			sum.add(new FunctionSummand(-1.0, atom.getVariable()));
 		}
 		else if (groundTruth == 0.0) {
-			sum.add(new FunctionSummand(-1.0, atom.getVariable()));
+			sum.add(new FunctionSummand(1.0, atom.getVariable()));
 		}
 		else {
 			throw new IllegalStateException("Ground truth is not 0 or 1.");
@@ -105,8 +112,5 @@ public class LossAugmentingGroundKernel implements GroundCompatibilityKernel {
 		
 		return sum;
 	}
-
 	
-	private GroundAtom atom;
-	private double groundTruth;
 }

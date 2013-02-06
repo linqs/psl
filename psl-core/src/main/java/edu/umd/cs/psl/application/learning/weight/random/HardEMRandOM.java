@@ -42,6 +42,7 @@ import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.parameters.NegativeWeight;
 import edu.umd.cs.psl.model.parameters.PositiveWeight;
 import edu.umd.cs.psl.reasoner.Reasoner;
 import edu.umd.cs.psl.reasoner.ReasonerFactory;
@@ -200,7 +201,7 @@ public class HardEMRandOM implements ModelApplication {
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
 			e.getKey().setValue(e.getValue().getValue());
 			reasoner.addGroundKernel(new LossAugmentingGroundKernel(
-					e.getKey(), e.getValue().getValue(), 1.0));
+					e.getKey(), e.getValue().getValue(), new NegativeWeight(-1.0)));
 		}
 		
 		int outerIter = 0;
