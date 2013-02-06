@@ -112,8 +112,9 @@ public class ADMMReasoner implements Reasoner {
 	 * Key for positive integer. Number of threads to run the optimization in.
 	 */
 	public static final String NUM_THREADS_KEY = CONFIG_PREFIX + ".numthreads";
-	/** Default value for STOP_CHECK_KEY property */
-	public static final int NUM_THREADS_DEFAULT = 1;
+	/** Default value for STOP_CHECK_KEY property 
+	 * (by default uses the number of processors in the system) */
+	public static final int NUM_THREADS_DEFAULT = Runtime.getRuntime().availableProcessors();
 	
 	private final int maxIter;
 	/* Sometimes called rho or eta */
