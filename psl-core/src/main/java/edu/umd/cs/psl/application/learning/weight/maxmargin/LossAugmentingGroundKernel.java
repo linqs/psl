@@ -72,7 +72,7 @@ public class LossAugmentingGroundKernel implements GroundCompatibilityKernel {
 
 	@Override
 	public double getIncompatibility() {
-		return 1 - Math.abs(atom.getValue() - this.groundTruth);
+		return Math.abs(atom.getValue() - this.groundTruth);
 	}
 
 	@Override
