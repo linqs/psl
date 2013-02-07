@@ -16,7 +16,7 @@
  */
 package edu.umd.cs.psl.evaluation.statistics;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -42,20 +42,12 @@ public class DiscretePredictionComparatorTest {
 	private StandardPredicate predicate;
 	private DiscretePredictionComparator comparator;
 	
-	
-	private static double compare(double v1, double v2, double tol) {
-		double diff = Math.abs(v1 - v2);
-		if (diff <= tol)
-			return 0.0;
-		return diff;
-	}
-	
 	@Before
 	public void setUp() throws Exception {
 		// create a predicate
 		PredicateFactory factory = PredicateFactory.getFactory();
 		predicate = factory.createStandardPredicate(
-				"same"
+				"DiscretePredictionComparatorTest_same"
 				, new ArgumentType[]{ArgumentType.UniqueID, ArgumentType.UniqueID}
 			);
 		
@@ -100,88 +92,57 @@ public class DiscretePredictionComparatorTest {
 		
 		comparator = new DiscretePredictionComparator(results);
 		comparator.setBaseline(baseline);
-		
-		/*
-		int[][] terms = new int[5][];
-		terms[0] = new int[]{ 1, 2 };
-		terms[1] = new int[]{ 2, 1 };
-		terms[2] = new int[]{ 3, 4 };
-		terms[3] = new int[]{ 5, 6 };			
-		terms[4] = new int[]{ 6, 5 };
-		double[] atoms = new double[] { 0.8, 0.8, 0.8, 0.8, 0.8 };
-		Database db = new FakeDatabase(predicate, terms, atoms);
-		AtomStore store = new MemoryAtomStore(db);
-		infQuery = new DatabaseAtomStoreQuery(store);
-		
-		// create some ground truth atoms
-		terms = new int[4][];
-		terms[0] = new int[]{ 1, 2 };
-		terms[1] = new int[]{ 2, 1 };
-		terms[2] = new int[]{ 3, 4 };
-		terms[3] = new int[]{ 4, 3 };
-		atoms = new double[] { 1.0, 1.0, 1.0, 1.0 };
-		db = new FakeDatabase(predicate, terms, atoms);
-		store = new MemoryAtomStore(db);
-		truthQuery = new DatabaseAtomStoreQuery(store);
-		
-		// create result comparison
-		comparator = new DiscretePredictionComparator(infQuery);
-		comparator.setBaseline(truthQuery);
-		*/
 	}
 
 	@Test
 	public void testPrecision() {
-		for (double tol = 0.1; tol <= 1.0; tol += 0.1) {
-			comparator.setThreshold(tol);
+		for (double thresh = 0.1; thresh <= 1.0; thresh += 0.1) {
+			comparator.setThreshold(thresh);
 			DiscretePredictionStatistics comparison = comparator.compare(predicate, 6*5);
 			double prec = comparison.getPrecision(BinaryClass.POSITIVE);
-			if (tol <= 0.8)
-				assertTrue(compare(prec, 0.6, 1e-10) == 0.0);
+			if (thresh <= 0.8)
+				assertEquals(0.6, prec, 1e-10);
 			else
-				//assertTrue(compare(prec, 0.4, 1e-10) == 0.0);
-				assertTrue(compare(prec, 0.0, 1e-10) == 0.0);
+				assertEquals(0.0, prec, 1e-10);
 		}
 	}
 	
 	@Test
 	public void testRecall() {
-		for (double tol = 0.1; tol <= 1.0; tol += 0.1) {
-			comparator.setThreshold(tol);
+		for (double thresh = 0.1; thresh <= 1.0; thresh += 0.1) {
+			comparator.setThreshold(thresh);
 			DiscretePredictionStatistics comparison = comparator.compare(predicate, 6*5);
 			double recall = comparison.getRecall(BinaryClass.POSITIVE);
-			if (tol <= 0.8)
-				assertTrue(compare(recall, 0.75, 1e-10) == 0.0);
+			if (thresh <= 0.8)
+				assertEquals(0.75, recall, 1e-10);
 			else
-				//assertTrue(compare(recall, 2.0/3.0, 1e-10) == 0.0);
-				assertTrue(compare(recall, 0.0, 1e-10) == 0.0);
+				assertEquals(0.0, recall, 1e-10);
 		}		
 	}
 	
 	@Test
 	public void testF1() {
-		for (double tol = 0.1; tol <= 1.0; tol += 0.1) {
-			comparator.setThreshold(tol);
+		for (double thresh = 0.1; thresh <= 1.0; thresh += 0.1) {
+			comparator.setThreshold(thresh);
 			DiscretePredictionStatistics comparison = comparator.compare(predicate, 6*5);
 			double f1 = comparison.getF1(BinaryClass.POSITIVE);
-			if (tol <= 0.8)
-				assertTrue(compare(f1, 2.0/3.0, 1e-10) == 0.0);
+			if (thresh <= 0.8)
+				assertEquals(2.0/3.0, f1, 1e-10);
 			else
-				//assertTrue(compare(f1, 0.5, 1e-10) == 0.0);
-				assertTrue(compare(f1, 0.0, 1e-10) == 0.0);
+				assertEquals(0.0, f1, 1e-10);
 		}		
 	}
 	
 	@Test
 	public void testAccuracy() {
-		for (double tol = 0.1; tol <= 1.0; tol += 0.1) {
-			comparator.setThreshold(tol);
+		for (double thresh = 0.1; thresh <= 1.0; thresh += 0.1) {
+			comparator.setThreshold(thresh);
 			DiscretePredictionStatistics comparison = comparator.compare(predicate, 6*5);
 			double acc = comparison.getAccuracy();
-			if (tol <= 0.8)
-				assertTrue(compare(acc, 0.9, 1e-10) == 0.0);
+			if (thresh <= 0.8)
+				assertEquals(0.9, acc, 1e-10);
 			else
-				assertTrue(compare(acc, 26.0/30.0, 1e-10) == 0.0);
+				assertEquals(26.0/30.0, acc, 1e-10);
 		}		
 	}
 }

@@ -46,8 +46,8 @@ public class AtomEventFrameworkTest {
 	@Before
 	public final void setUp() throws ConfigurationException {
 		PredicateFactory pf = PredicateFactory.getFactory();
-		p1 = pf.createStandardPredicate("P1", ArgumentType.UniqueID, ArgumentType.UniqueID);
-		p2 = pf.createStandardPredicate("P2", ArgumentType.UniqueID, ArgumentType.UniqueID);
+		p1 = pf.createStandardPredicate("AtomEventFrameworkTest_P1", ArgumentType.UniqueID, ArgumentType.UniqueID);
+		p2 = pf.createStandardPredicate("AtomEventFrameworkTest_P2", ArgumentType.UniqueID, ArgumentType.UniqueID);
 		
 		DataStore dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Memory, null, true), new EmptyBundle());
 		dataStore.registerPredicate(p1);

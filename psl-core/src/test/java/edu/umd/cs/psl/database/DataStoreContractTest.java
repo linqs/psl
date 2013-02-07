@@ -76,11 +76,11 @@ abstract public class DataStoreContractTest {
 	
 	static {
 		PredicateFactory predicateFactory = PredicateFactory.getFactory();
-		p1 = predicateFactory.createStandardPredicate("P1", ArgumentType.UniqueID, ArgumentType.UniqueID);
-		p2 = predicateFactory.createStandardPredicate("P2", ArgumentType.String, ArgumentType.String);
-		p3 = predicateFactory.createStandardPredicate("P3", ArgumentType.Double, ArgumentType.Double);
-		p4 = predicateFactory.createStandardPredicate("P4", ArgumentType.UniqueID, ArgumentType.Double);
-		fp1 = predicateFactory.createFunctionalPredicate("FP1", new ExternalFunction() {
+		p1 = predicateFactory.createStandardPredicate("DataStoreContractTest_P1", ArgumentType.UniqueID, ArgumentType.UniqueID);
+		p2 = predicateFactory.createStandardPredicate("DataStoreContractTest_P2", ArgumentType.String, ArgumentType.String);
+		p3 = predicateFactory.createStandardPredicate("DataStoreContractTest_P3", ArgumentType.Double, ArgumentType.Double);
+		p4 = predicateFactory.createStandardPredicate("DataStoreContractTest_P4", ArgumentType.UniqueID, ArgumentType.Double);
+		fp1 = predicateFactory.createFunctionalPredicate("DataStoreContractTest_FP1", new ExternalFunction() {
 			
 			@Override
 			public double getValue(ReadOnlyDatabase db, GroundTerm... args) {

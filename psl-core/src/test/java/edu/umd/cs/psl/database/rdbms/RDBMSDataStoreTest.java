@@ -25,10 +25,15 @@ import edu.umd.cs.psl.database.rdbms.driver.DatabaseDriver;
 import edu.umd.cs.psl.database.rdbms.driver.H2DatabaseDriver;
 
 public class RDBMSDataStoreTest extends DataStoreContractTest {
+	
+	private String dbPath;
+	private String dbName;
 
 	@Override
 	public DataStore getDataStore() {
-		DatabaseDriver driver = new H2DatabaseDriver(H2DatabaseDriver.Type.Disk, "./psldb", false);
+		dbPath = System.getProperty("java.io.tmpdir") + "/";
+		dbName = "rdbmsDataStoreTest";
+		DatabaseDriver driver = new H2DatabaseDriver(H2DatabaseDriver.Type.Disk, dbPath + dbName, false);
 		RDBMSDataStore dataStore = new RDBMSDataStore(driver, new EmptyBundle());
 		return dataStore;
 	}
@@ -36,9 +41,9 @@ public class RDBMSDataStoreTest extends DataStoreContractTest {
 	@Override
 	public void cleanUp() {
 		File file;
-		file = new File("./psldb.h2.db");
+		file = new File(dbPath + dbName + ".h2.db");
 		file.delete();
-		file = new File("./psldb.trace.db");
+		file = new File(dbPath + dbName + ".trace.db");
 		file.delete();
 	}
 

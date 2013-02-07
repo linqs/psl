@@ -48,16 +48,20 @@ public class DatabasePopulatorTest {
 	private static StandardPredicate p2;
 	
 	private DataStore datastore;
+	private String dbPath;
+	private String dbName;
 	
 	static {
 		PredicateFactory predicateFactory = PredicateFactory.getFactory();
-		p1 = predicateFactory.createStandardPredicate("P1", ArgumentType.UniqueID, ArgumentType.UniqueID);
-		p2 = predicateFactory.createStandardPredicate("P2", ArgumentType.String, ArgumentType.Double);
+		p1 = predicateFactory.createStandardPredicate("DatabasePopulatorTest_P1", ArgumentType.UniqueID, ArgumentType.UniqueID);
+		p2 = predicateFactory.createStandardPredicate("DatabasePopulatorTest_P2", ArgumentType.String, ArgumentType.Double);
 	}
 	
 	@Before
 	public void setUp() throws Exception {
-		DatabaseDriver driver = new H2DatabaseDriver(H2DatabaseDriver.Type.Disk, "./psldb", false);
+		dbPath = System.getProperty("java.io.tmpdir") + "/";
+		dbName = "databasePopulatorTest";
+		DatabaseDriver driver = new H2DatabaseDriver(H2DatabaseDriver.Type.Disk, dbPath + dbName, false);
 		datastore = new RDBMSDataStore(driver, new EmptyBundle());
 		datastore.registerPredicate(p1);
 		datastore.registerPredicate(p2);
@@ -67,9 +71,9 @@ public class DatabasePopulatorTest {
 	public void tearDown() throws Exception {
 		datastore.close();
 		File file;
-		file = new File("./psldb.h2.db");
+		file = new File(dbPath + dbName + ".h2.db");
 		file.delete();
-		file = new File("./psldb.trace.db");
+		file = new File(dbPath + dbName + ".trace.db");
 		file.delete();
 	}
 	
