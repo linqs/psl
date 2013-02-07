@@ -35,7 +35,7 @@ import edu.umd.cs.psl.model.atom.GroundAtom;
  * @see DataStore#getUniqueID(Object)
  * @see Database#getUniqueID(Object)
  */
-public interface UniqueID extends GroundTerm, Comparable<UniqueID> {
+public interface UniqueID extends GroundTerm {
 
 	/**
 	 * Returns a human-friendly String representation of this UniqueID.

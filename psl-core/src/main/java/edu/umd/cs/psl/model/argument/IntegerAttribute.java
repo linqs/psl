@@ -61,4 +61,12 @@ public class IntegerAttribute implements Attribute {
 		return value.equals(((IntegerAttribute)oth).getValue());  
 	}
 
+	@Override
+	public int compareTo(GroundTerm o) {
+		if (o instanceof IntegerAttribute)
+			return value - ((IntegerAttribute) o).value;
+		else
+			return this.getClass().getSimpleName().compareTo(o.getClass().getSimpleName());
+	}
+
 }

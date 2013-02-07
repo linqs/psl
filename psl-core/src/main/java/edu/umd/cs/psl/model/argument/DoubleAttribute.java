@@ -61,4 +61,12 @@ public class DoubleAttribute implements Attribute {
 		return value.equals(((DoubleAttribute)oth).getValue());  
 	}
 
+	@Override
+	public int compareTo(GroundTerm o) {
+		if (o instanceof DoubleAttribute)
+			return value.compareTo(((DoubleAttribute) o).value);
+		else
+			return this.getClass().getSimpleName().compareTo(o.getClass().getSimpleName());
+	}
+
 }

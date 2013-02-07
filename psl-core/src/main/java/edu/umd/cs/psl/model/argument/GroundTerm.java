@@ -19,6 +19,16 @@ package edu.umd.cs.psl.model.argument;
 /**
  * A {@link Term} that is ground, i.e., not a {@link Variable}.
  */
-public interface GroundTerm extends Term {
+public interface GroundTerm extends Term, Comparable<GroundTerm> {
 	
+	/**
+	 * Inherited from {@link Comparable#compareTo(Object)}.
+	 * <p>
+	 * Implementations should compare to GroundTerms without a parent implementation
+	 * in common using
+	 * <p>
+	 * this.getClass().getSimpleName().compareTo(o.getClass().getSimpleName()); 
+	 */
+	@Override
+	public int compareTo(GroundTerm o);
 }

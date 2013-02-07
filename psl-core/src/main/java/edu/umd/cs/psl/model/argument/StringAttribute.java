@@ -63,5 +63,13 @@ public class StringAttribute implements Attribute {
 		if (oth==null || !(oth instanceof StringAttribute) ) return false;
 		return value.equals(((StringAttribute) oth).getValue());  
 	}
+
+	@Override
+	public int compareTo(GroundTerm o) {
+		if (o instanceof StringAttribute)
+			return value.compareTo(((StringAttribute) o).value);
+		else
+			return this.getClass().getSimpleName().compareTo(o.getClass().getSimpleName());
+	}
 	
 }
