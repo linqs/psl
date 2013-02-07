@@ -66,22 +66,22 @@ public class MaxMargin extends WeightLearningApplication {
 	/**
 	 * Key for double property, cutting plane tolerance
 	 */
-	public static final String CUTTING_PLANE_TOLERANCE = CONFIG_PREFIX + ".tolerance";
-	/** Default value for CUTTING_PLANE_TOLERANCE */
+	public static final String CUTTING_PLANE_TOLERANCE_KEY = CONFIG_PREFIX + ".tolerance";
+	/** Default value for CUTTING_PLANE_TOLERANCE_KEY */
 	public static final double CUTTING_PLANE_TOLERANCE_DEFAULT = 1e-5;
 
 	/**
 	 * Key for double property, slack penalty C, where objective is ||w|| + C (slack)
 	 */
-	public static final String SLACK_PENALTY = CONFIG_PREFIX + ".slack_penalty";
-	/** Default value for SLACK_PENALTY */
+	public static final String SLACK_PENALTY_KEY = CONFIG_PREFIX + ".slackpenalty";
+	/** Default value for SLACK_PENALTY_KEY */
 	public static final double SLACK_PENALTY_DEFAULT = 1;
 
 	/**
 	 * Key for positive integer, maximum iterations
 	 */
-	public static final String MAX_ITER = CONFIG_PREFIX + ".max_iter";
-	/** Default value for MAX_ITER */
+	public static final String MAX_ITER_KEY = CONFIG_PREFIX + ".maxiter";
+	/** Default value for MAX_ITER_KEY */
 	public static final int MAX_ITER_DEFAULT = 500;
 	
 	/**
@@ -90,16 +90,16 @@ public class MaxMargin extends WeightLearningApplication {
 	 * 
 	 * @see LossBalancingType
 	 */
-	public static final String BALANCE_LOSS = CONFIG_PREFIX + ".balanceloss";
-	/** Default value for BALANCE_LOSS */
+	public static final String BALANCE_LOSS_KEY = CONFIG_PREFIX + ".balanceloss";
+	/** Default value for BALANCE_LOSS_KEY */
 	public static final LossBalancingType BALANCE_LOSS_DEFAULT = LossBalancingType.NONE;
 	
 	/**
 	 * Key for NormScalingType enum property. Determines type of norm scaling
 	 * MaxMargin will use in its objective.
 	 */
-	public static final String SCALE_NORM = CONFIG_PREFIX + ".scalenorm";
-	/** Default value for SCALE_NORM */
+	public static final String SCALE_NORM_KEY = CONFIG_PREFIX + ".scalenorm";
+	/** Default value for SCALE_NORM_KEY */
 	public static final NormScalingType SCALE_NORM_DEFAULT = NormScalingType.NONE;
 	
 	/** Types of loss balancing MaxMargin can use during learning */
@@ -144,11 +144,11 @@ public class MaxMargin extends WeightLearningApplication {
 	
 	public MaxMargin(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
 		super(model, rvDB, observedDB, config);
-		tolerance = config.getDouble(CUTTING_PLANE_TOLERANCE, CUTTING_PLANE_TOLERANCE_DEFAULT);
-		maxIter = config.getInt(MAX_ITER, MAX_ITER_DEFAULT);
-		slackPenalty = config.getDouble(SLACK_PENALTY, SLACK_PENALTY_DEFAULT);
-		balanceLoss = (LossBalancingType) config.getEnum(BALANCE_LOSS, BALANCE_LOSS_DEFAULT);
-		scaleNorm = (NormScalingType) config.getEnum(SCALE_NORM, SCALE_NORM_DEFAULT);
+		tolerance = config.getDouble(CUTTING_PLANE_TOLERANCE_KEY, CUTTING_PLANE_TOLERANCE_DEFAULT);
+		maxIter = config.getInt(MAX_ITER_KEY, MAX_ITER_DEFAULT);
+		slackPenalty = config.getDouble(SLACK_PENALTY_KEY, SLACK_PENALTY_DEFAULT);
+		balanceLoss = (LossBalancingType) config.getEnum(BALANCE_LOSS_KEY, BALANCE_LOSS_DEFAULT);
+		scaleNorm = (NormScalingType) config.getEnum(SCALE_NORM_KEY, SCALE_NORM_DEFAULT);
 	}
 	
 	@Override

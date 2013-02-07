@@ -90,7 +90,7 @@ public class ADMMReasoner implements Reasoner {
 	 */
 	public static final String EPSILON_ABS_KEY = CONFIG_PREFIX + ".epsilonabs";
 	/** Default value for EPSILON_ABS_KEY property */
-	public static final double EPSILON_ABS_DEFAULT = 1e-8;
+	public static final double EPSILON_ABS_DEFAULT = 1e-5;
 	
 	/**
 	 * Key for positive double property. Relative error component of stopping

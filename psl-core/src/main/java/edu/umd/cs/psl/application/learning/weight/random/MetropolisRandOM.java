@@ -55,37 +55,37 @@ public abstract class MetropolisRandOM extends WeightLearningApplication {
 	/**
 	 * Key for maximum iterations of Monte Carlo EM
 	 */
-	public static final String MAX_ITER = CONFIG_PREFIX + ".maxiter";
-	/** Default value for MAX_ITER */
+	public static final String MAX_ITER_KEY = CONFIG_PREFIX + ".maxiter";
+	/** Default value for MAX_ITER_KEY */
 	public static final int MAX_ITER_DEFAULT = 30;
 
 	/**
 	 * Key for length of Markov chain
 	 */
-	public static final String NUM_SAMPLES = CONFIG_PREFIX + ".numsamples";
-	/** Default value for NUM_SAMPLES */
+	public static final String NUM_SAMPLES_KEY = CONFIG_PREFIX + ".numsamples";
+	/** Default value for NUM_SAMPLES_KEY */
 	public static final int NUM_SAMPLES_DEFAULT = 100;
 
 	/**
 	 * Number of burn-in samples
 	 */
-	public static final String BURN_IN = CONFIG_PREFIX + ".burnin";
-	/** Default value for BURN_IN */
+	public static final String BURN_IN_KEY = CONFIG_PREFIX + ".burnin";
+	/** Default value for BURN_IN_KEY */
 	public static final int BURN_IN_DEFAULT = 20;
 	
 	/**
 	 * Key for positive double to be used as the initial variance for each
 	 * Kernel's weight
 	 */
-	public static final String INITIAL_VARIANCE = CONFIG_PREFIX + ".initialvariance";
-	/** Default value for INITIAL_VARIANCE */
+	public static final String INITIAL_VARIANCE_KEY = CONFIG_PREFIX + ".initialvariance";
+	/** Default value for INITIAL_VARIANCE_KEY */
 	public static final double INITIAL_VARIANCE_DEFAULT = 1;
 
 	/**
 	 * Key for mean change stopping criterion
 	 */
-	public static final String CHANGE_THRESHOLD = CONFIG_PREFIX + ".changethreshold";
-	/** Default value for CHANGE_THRESHOLD */
+	public static final String CHANGE_THRESHOLD_KEY = CONFIG_PREFIX + ".changethreshold";
+	/** Default value for CHANGE_THRESHOLD_KEY */
 	public static final double CHANGE_THRESHOLD_DEFAULT = 0.1;
 
 	protected final Random rand;
@@ -102,13 +102,13 @@ public abstract class MetropolisRandOM extends WeightLearningApplication {
 
 		rand = new Random();
 
-		maxIter = config.getInt(MAX_ITER, MAX_ITER_DEFAULT);
-		numSamples = config.getInt(NUM_SAMPLES, NUM_SAMPLES_DEFAULT);
-		burnIn = config.getInt(BURN_IN, BURN_IN_DEFAULT);
-		initialVariance = config.getDouble(INITIAL_VARIANCE, INITIAL_VARIANCE_DEFAULT);
+		maxIter = config.getInt(MAX_ITER_KEY, MAX_ITER_DEFAULT);
+		numSamples = config.getInt(NUM_SAMPLES_KEY, NUM_SAMPLES_DEFAULT);
+		burnIn = config.getInt(BURN_IN_KEY, BURN_IN_DEFAULT);
+		initialVariance = config.getDouble(INITIAL_VARIANCE_KEY, INITIAL_VARIANCE_DEFAULT);
 		if (initialVariance <= 0.0)
 			throw new IllegalArgumentException("Initial variance must be positive.");
-		changeThreshold = config.getDouble(CHANGE_THRESHOLD, CHANGE_THRESHOLD_DEFAULT);
+		changeThreshold = config.getDouble(CHANGE_THRESHOLD_KEY, CHANGE_THRESHOLD_DEFAULT);
 	}
 
 	@Override

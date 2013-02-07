@@ -22,6 +22,7 @@ import java.math.BigInteger;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import org.apache.commons.configuration.BaseConfiguration;
@@ -88,7 +89,8 @@ public class ConfigManager {
 		
 		private ManagedBundle(SubsetConfiguration bundleConfig) {
 			prefix = bundleConfig.getPrefix();
-			config = new DataConfiguration(bundleConfig);
+			config = new DataConfiguration(new BaseConfiguration());
+			config.copy(bundleConfig);
 		}
 		
 		private void logAccess(String key, Object defaultValue) {
@@ -263,6 +265,17 @@ public class ConfigManager {
 		public Enum<?> getEnum(String key, Enum<?> defaultValue) {
 			logAccess(key, defaultValue);
 			return (Enum<?>) config.get(defaultValue.getDeclaringClass(), key, defaultValue);
+		}
+		
+		@Override
+		public String toString() {
+			StringBuilder string = new StringBuilder();
+			for (@SuppressWarnings("unchecked")
+			Iterator<String> itr = (Iterator<String>) config.getKeys(); itr.hasNext();) {
+				String key = itr.next();
+				string.append(prefix + "." + key + ": " + config.getProperty(key) + "\n");
+			}
+			return string.toString();
 		}
 	}
 }
