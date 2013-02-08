@@ -383,8 +383,27 @@ public class RDBMSDataStore implements DataStore {
 	public UniqueID getUniqueID(Object key) {
 		if (stringUniqueIDs)
 			return new RDBMSUniqueStringID(key.toString());
-		else
-			return new RDBMSUniqueIntID((Integer) key);
+		else {
+			Integer intKey;
+			
+			if (key instanceof String) {
+				try {
+					intKey = Integer.parseInt((String) key);
+				}
+				catch (NumberFormatException e) {
+					throw new IllegalArgumentException("Key for UniqueID is a string that could not be parsed as an integer, " +
+							"but this DataStore is set to use integer UniqueIDs.");
+				}
+			}
+			else if (key instanceof Integer) {
+				intKey = (Integer) key;
+			}
+			else
+				throw new IllegalArgumentException("Key for UniqueID is not an integer or a string representation of an integer, " +
+						"but this DataStore is set to use integer UniqueIDs.");
+			
+			return new RDBMSUniqueIntID(intKey);
+		}
 	}
 
 	@Override
