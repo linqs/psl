@@ -51,7 +51,7 @@ public class RDBMSUniqueIntID implements UniqueID {
 
 	@Override
 	public int compareTo(GroundTerm o) {
-		if (o instanceof RDBMSUniqueStringID)
+		if (o instanceof RDBMSUniqueIntID)
 			return id - ((RDBMSUniqueIntID)o).id;
 		else
 			return this.getClass().getSimpleName().compareTo(o.getClass().getSimpleName());
