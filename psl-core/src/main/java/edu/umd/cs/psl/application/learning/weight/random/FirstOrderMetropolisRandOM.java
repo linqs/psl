@@ -16,6 +16,9 @@
  */
 package edu.umd.cs.psl.application.learning.weight.random;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.Model;
@@ -31,11 +34,15 @@ import edu.umd.cs.psl.model.parameters.PositiveWeight;
  * @author Stephen Bach <bach@cs.umd.edu>
  */
 public class FirstOrderMetropolisRandOM extends MetropolisRandOM {
+
+	private static final Logger log = LoggerFactory.getLogger(FirstOrderMetropolisRandOM.class);
 	
 	protected double[] currentWeights, previousWeights, sum, sumSq;
+	protected double variance;
 
 	public FirstOrderMetropolisRandOM(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
 		super(model, rvDB, observedDB, config);
+		variance = initialVariance;
 	}
 	
 	@Override
@@ -62,6 +69,7 @@ public class FirstOrderMetropolisRandOM extends MetropolisRandOM {
 	@Override
 	protected void sampleAndSetWeights() {
 		for (int i = 0; i < kernels.size(); i++) {
+//			currentWeights[i] = sampleFromGaussian(previousWeights[i], variance);
 //			currentWeights[i] = sampleFromGaussian(previousWeights[i], kernelVariances[i]);
 //			currentWeights[i] = sampleFromGaussian(previousWeights[i], Math.min(kernelVariances[i], 0.1));
 			currentWeights[i] = sampleFromGaussian(previousWeights[i], 0.1);
@@ -73,13 +81,14 @@ public class FirstOrderMetropolisRandOM extends MetropolisRandOM {
 	protected double getLogLikelihoodSampledWeights() {
 		double likelihood = 0.0;
 		for (int i = 0; i < kernels.size(); i++)
-			likelihood -= Math.pow(currentWeights[i] - kernelMeans[i], 2) / (2 * kernelVariances[i]);
+			likelihood -= Math.pow(currentWeights[i] - kernelMeans[i], 2) / (2 * variance);
+//			likelihood -= Math.pow(currentWeights[i] - kernelMeans[i], 2) / (2 * kernelVariances[i]);
 		return likelihood;
 	}
 
 	@Override
 	protected void acceptSample(boolean burnIn) {
-//		if (!burnIn) System.out.println("ACCEPTED: " + model);
+//		log.debug("ACCEPTED: {}", model);
 		for (int i = 0; i < kernels.size(); i++) {
 			previousWeights[i] = currentWeights[i];
 			if (!burnIn) {
@@ -91,7 +100,7 @@ public class FirstOrderMetropolisRandOM extends MetropolisRandOM {
 
 	@Override
 	protected void rejectSample(boolean burnIn) {
-//		if (!burnIn) System.out.println("REJECTED: " + model);
+//		log.debug("REJECTED: {}", model);
 		for (int i = 0; i < kernels.size(); i++) {
 			if (!burnIn) {
 				sum[i] += previousWeights[i];
@@ -102,11 +111,16 @@ public class FirstOrderMetropolisRandOM extends MetropolisRandOM {
 
 	@Override
 	protected void finishRound() {
+		variance = 0;
 		for (int i = 0; i < kernels.size(); i++) {
 			kernelMeans[i] = sum[i] / (numSamples - burnIn);
-			kernelVariances[i] = sumSq[i] / (numSamples - burnIn) - kernelMeans[i] * kernelMeans[i];
-			System.out.println("Variance of " + kernelVariances[i] + " for kernel " + kernels.get(i)); 
+			kernelVariances[i] = (sumSq[i]  - (sum[i] * sum[i] / (numSamples - burnIn))) / (numSamples - burnIn - 1);
+			variance += kernelVariances[i];
+			log.warn("Variance of {} for kernel {}", kernelVariances[i], kernels.get(i)); 
 		}
+		variance /= kernels.size();
+		variance = Math.max(variance, 1e-3);
+		log.warn("Variance: {}", variance);
 	}
 
 }

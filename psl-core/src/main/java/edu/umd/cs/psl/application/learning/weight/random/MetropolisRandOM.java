@@ -82,11 +82,12 @@ public abstract class MetropolisRandOM extends WeightLearningApplication {
 	public static final double INITIAL_VARIANCE_DEFAULT = 1;
 
 	/**
-	 * Key for mean change stopping criterion
+	 * Key for double property to be multiplied with square root of number of
+	 * CompatibilityKernels to form mean change stopping criterion
 	 */
 	public static final String CHANGE_THRESHOLD_KEY = CONFIG_PREFIX + ".changethreshold";
 	/** Default value for CHANGE_THRESHOLD_KEY */
-	public static final double CHANGE_THRESHOLD_DEFAULT = 0.1;
+	public static final double CHANGE_THRESHOLD_DEFAULT = 0.05;
 
 	protected final Random rand;
 	protected double[] kernelMeans, kernelVariances;
@@ -95,7 +96,7 @@ public abstract class MetropolisRandOM extends WeightLearningApplication {
 	protected final int numSamples;
 	protected final int burnIn;
 	protected final double initialVariance;
-	protected final double changeThreshold;
+	protected final double changeThresholdFactor;
 
 	public MetropolisRandOM(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
 		super(model, rvDB, observedDB, config);
@@ -108,7 +109,7 @@ public abstract class MetropolisRandOM extends WeightLearningApplication {
 		initialVariance = config.getDouble(INITIAL_VARIANCE_KEY, INITIAL_VARIANCE_DEFAULT);
 		if (initialVariance <= 0.0)
 			throw new IllegalArgumentException("Initial variance must be positive.");
-		changeThreshold = config.getDouble(CHANGE_THRESHOLD_KEY, CHANGE_THRESHOLD_DEFAULT);
+		changeThresholdFactor = config.getDouble(CHANGE_THRESHOLD_KEY, CHANGE_THRESHOLD_DEFAULT);
 	}
 
 	@Override
@@ -128,7 +129,7 @@ public abstract class MetropolisRandOM extends WeightLearningApplication {
 		int mcemIter = 1;
 		double changeInWeightMeans;
 		do {
-			log.warn("Starting Monte Carlo EM round " + mcemIter + ".");
+			log.info("Starting Monte Carlo EM round " + mcemIter + ".");
 			prepareForRound();
 			double previousLikelihood = getLogLikelihoodObservations() + getLogLikelihoodSampledWeights();
 			int acceptCount = 0;
@@ -153,24 +154,24 @@ public abstract class MetropolisRandOM extends WeightLearningApplication {
 			
 			finishRound();
 			
-			log.warn("Sample acceptance rate: {}", (double) acceptCount / numSamples);
+			log.info("Sample acceptance rate: {}", (double) acceptCount / numSamples);
 			
 			changeInWeightMeans = 0.0;
 			for (int i = 0; i < kernels.size(); i++) {
 				double diff = kernelMeans[i] - oldKernelMeans[i];
 				changeInWeightMeans += diff * diff;
 				oldKernelMeans[i] = kernelMeans[i];
-				log.warn("Mean of {} for kernel {}, ", kernelMeans[i], kernels.get(i));
+				log.info("Mean of {} for kernel {}, ", kernelMeans[i], kernels.get(i));
 			}
 			
 			changeInWeightMeans = Math.sqrt(changeInWeightMeans);
-			log.warn("Change in weight means: {}", changeInWeightMeans);
+			log.info("Change in weight means: {}", changeInWeightMeans);
 			mcemIter++;
 		}
-		while (mcemIter <= maxIter && changeInWeightMeans > changeThreshold);
+		while (mcemIter <= maxIter && changeInWeightMeans > changeThresholdFactor * Math.sqrt(kernels.size()));
 		
 		
-		/* Set final learned weights */
+		/* Sets final learned weights */
 		for (int i = 0; i < kernels.size(); i++)
 			kernels.get(i).setWeight(new PositiveWeight(Math.max(0, kernelMeans[i])));
 	}
