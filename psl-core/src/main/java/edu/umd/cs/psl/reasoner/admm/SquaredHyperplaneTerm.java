@@ -34,7 +34,7 @@ abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements Weight
 	protected final double[] coeffs;
 	protected final double constant;
 	protected double weight;
-	private final DoubleMatrix2D L;
+	private DoubleMatrix2D L;
 	
 	SquaredHyperplaneTerm(ADMMReasoner reasoner, int[] zIndices, double[] coeffs,
 			double constant, double weight) {
@@ -45,31 +45,37 @@ abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements Weight
 		setWeight(weight);
 		
 		if (x.length >= 3) {
-			double coeff;
-			DoubleMatrix2D matrix = new DenseDoubleMatrix2D(x.length, x.length);
-			for (int i = 0; i < x.length; i++) {
-				for (int j = 0; j < x.length; j++) {
-					if (i == j) {
-						coeff = 2 * weight * coeffs[i] * coeffs[i] + reasoner.stepSize;
-						matrix.setQuick(i, i, coeff);
-					}
-					else {
-						coeff = 2 * weight * coeffs[i] * coeffs[j];
-						matrix.setQuick(i, j, coeff);
-						matrix.setQuick(j, i, coeff);
-					}
-				}
-			}
-			
-			L = new DenseDoubleCholeskyDecomposition(matrix).getL();
+			computeL();
 		}
 		else
 			L = null;
 	}
 	
+	private void computeL() {
+		double coeff;
+		DoubleMatrix2D matrix = new DenseDoubleMatrix2D(x.length, x.length);
+		for (int i = 0; i < x.length; i++) {
+			for (int j = 0; j < x.length; j++) {
+				if (i == j) {
+					coeff = 2 * weight * coeffs[i] * coeffs[i] + reasoner.stepSize;
+					matrix.setQuick(i, i, coeff);
+				}
+				else {
+					coeff = 2 * weight * coeffs[i] * coeffs[j];
+					matrix.setQuick(i, j, coeff);
+					matrix.setQuick(j, i, coeff);
+				}
+			}
+		}
+		
+		L = new DenseDoubleCholeskyDecomposition(matrix).getL();
+	}
+	
 	@Override
 	public void setWeight(double weight) {
 		this.weight = weight;
+		if (x.length >= 3)
+			computeL();
 	}
 	
 	/**
