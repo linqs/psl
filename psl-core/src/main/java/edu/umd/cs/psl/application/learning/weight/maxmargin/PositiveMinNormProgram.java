@@ -171,8 +171,6 @@ public class PositiveMinNormProgram {
 				variableConstraint.setVariable(coneVar, -1.0);
 				variableConstraint.setVariable(variables[i], weights[i]);
 				variableConstraint.setConstrainedValue(weights[i] * origin[i]);
-//				variableConstraint.setVariable(variables[i], Math.sqrt(weights[i]));
-//				variableConstraint.setConstrainedValue(Math.sqrt(weights[i]) * origin[i]);
 			}
 		
 		Variable rightDummy = quadraticCone.getNthVariable();

@@ -40,7 +40,7 @@ import edu.umd.cs.psl.model.predicate.StandardPredicate;
 import edu.umd.cs.psl.util.database.Queries;
 
 /**
- * Produces {@link GroundDomainRangeConstraint GroundPredicateConstraints}.
+ * Produces {@link GroundDomainRangeConstraint GroundDomainRangeConstraints}.
  * <p>
  * Checks whether sets of {@link Atom Atoms} of a binary {@link StandardPredicate}
  * adhere to a {@link DomainRangeConstraintType}.

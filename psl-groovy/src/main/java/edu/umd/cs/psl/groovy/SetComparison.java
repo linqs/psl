@@ -19,6 +19,7 @@ import edu.umd.cs.psl.model.set.aggregator.AggregatorFunction;
 import edu.umd.cs.psl.ui.aggregators.AggregateSetAverage;
 import edu.umd.cs.psl.ui.aggregators.AggregateSetCrossEquality;
 import edu.umd.cs.psl.ui.aggregators.AggregateSetEquality;
+import edu.umd.cs.psl.ui.aggregators.AggregateSetInverseAverage;
 
 public enum SetComparison {
 
@@ -38,10 +39,19 @@ public enum SetComparison {
 		}
 	},
 	
+	/** Average over first argument */
 	Average {
 		@Override
 		public AggregatorFunction getAggregator() {
 			return new AggregateSetAverage();
+		}
+	},
+	
+	/** Average over second argument */
+	InverseAverage {
+		@Override
+		public AggregatorFunction getAggregator() {
+			return new AggregateSetInverseAverage();
 		}
 	};
 	
