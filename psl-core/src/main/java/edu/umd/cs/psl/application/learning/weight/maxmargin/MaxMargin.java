@@ -69,7 +69,7 @@ public class MaxMargin extends WeightLearningApplication {
 	 */
 	public static final String CUTTING_PLANE_TOLERANCE_KEY = CONFIG_PREFIX + ".tolerance";
 	/** Default value for CUTTING_PLANE_TOLERANCE_KEY */
-	public static final double CUTTING_PLANE_TOLERANCE_DEFAULT = 1e-5;
+	public static final double CUTTING_PLANE_TOLERANCE_DEFAULT = 1e-3;
 
 	/**
 	 * Key for double property, slack penalty C, where objective is ||w|| + C (slack)
@@ -192,7 +192,7 @@ public class MaxMargin extends WeightLearningApplication {
 			}
 			else if (NormScalingType.INVERSE_NUM_GROUNDINGS.equals(scaleNorm)) {
 				for (int i = 0; i < kernels.size(); i++)
-					quadCoeffs[i] = (numGroundings[i] > 0.0) ? 1 / numGroundings[i] : 0.0;
+					quadCoeffs[i] = (numGroundings[i] > 0.0) ? 1.0 / numGroundings[i] : 0.0;
 			}
 			else
 				throw new IllegalStateException("Unrecognized NormScalingType.");
