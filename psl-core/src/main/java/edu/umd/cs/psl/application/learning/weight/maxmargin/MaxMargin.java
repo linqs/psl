@@ -17,6 +17,7 @@
 package edu.umd.cs.psl.application.learning.weight.maxmargin;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -104,18 +105,18 @@ public class MaxMargin extends WeightLearningApplication {
 	
 	/** Types of loss balancing MaxMargin can use during learning */
 	public enum LossBalancingType {
-		/** No loss balancing. All LossAugmentingGroundKernels weighted as -0.5. */
+		/** No loss balancing. All LossAugmentingGroundKernels weighted as -1.0. */
 		NONE,
 		/**
 		 * Weights of LossAugmentingGroundKernels for true (false) ObservedAtoms
-		 * are -1 * number of true (false) ObservedAtoms / total ObservedAtoms.
+		 * are -2 * number of true (false) ObservedAtoms / total ObservedAtoms.
 		 */
 		CLASS_WEIGHTS,
 		/**
 		 * Weights of LossAugmentingGroundKernels for true (false) ObservedAtoms
-		 * are -1 * number of false (true) ObservedAtoms / total ObservedAtoms.
+		 * are -2 * number of false (true) ObservedAtoms / total ObservedAtoms.
 		 */
-		INVERSE_CLASS_WEIGHTS;
+		REVERSE_CLASS_WEIGHTS;
 	}
 	
 	/** Types of norm scaling MaxMargin can use during learning */
@@ -124,12 +125,16 @@ public class MaxMargin extends WeightLearningApplication {
 		NONE,
 		/**
 		 * Each weight is multiplied inside the objective norm by
-		 * the number of GroundKernels sharing that weight 
+		 * the number of GroundKernels sharing that weight (and a constant
+		 * rescaling factor so that the norm has the same value as no scaling
+		 * when all weights are 1.0)
 		 */
 		NUM_GROUNDINGS,
 		/**
 		 * Each weight is multiplied inside the objective norm by
-		 * 1 / number of GroundKernels sharing that weight 
+		 * 1 / number of GroundKernels sharing that weight  (and a constant
+		 * rescaling factor so that the norm has the same value as no scaling
+		 * when all weights are 1.0)
 		 */
 		INVERSE_NUM_GROUNDINGS;
 	}
@@ -191,9 +196,22 @@ public class MaxMargin extends WeightLearningApplication {
 			}
 			else
 				throw new IllegalStateException("Unrecognized NormScalingType.");
+			
+			/* 
+			 * Rescales the coefficients so that the norm has the same value as no
+			 * scaling when all weights are 1.0
+			 */
+			double coeffNorm = 0.0;
+			for (double coeff : quadCoeffs)
+				coeffNorm += coeff * coeff;
+			coeffNorm = Math.sqrt(coeffNorm);
+			double scalar = Math.sqrt(kernels.size()) / coeffNorm;
+			for (int i = 0; i < kernels.size(); i++)
+				quadCoeffs[i] *= scalar;
 		}
 		
 		/* Sets quadratic objective term */
+		log.debug("Quad coeffs: {}", Arrays.toString(quadCoeffs));
 		quadCoeffs[kernels.size()] = 0.0;
 		normProgram.setQuadraticTerm(quadCoeffs, new double[kernels.size()]);
 	}
@@ -223,8 +241,8 @@ public class MaxMargin extends WeightLearningApplication {
 		/* Determines weights of LossAugmentingGroundKernels */
 		double obsvTrueWeight, obsvFalseWeight;
 		if (LossBalancingType.NONE.equals(balanceLoss)) {
-			obsvTrueWeight = -0.5;
-			obsvFalseWeight = -0.5;
+			obsvTrueWeight = -1.0;
+			obsvFalseWeight = -1.0;
 		}
 		else {
 			/*
@@ -238,12 +256,12 @@ public class MaxMargin extends WeightLearningApplication {
 			double posRatio = (double) posAtoms / (double) trainingMap.getTrainingMap().size();
 			
 			if (LossBalancingType.CLASS_WEIGHTS.equals(balanceLoss)) {
-				obsvTrueWeight = -1 * posRatio;
-				obsvFalseWeight = -1 - obsvTrueWeight;
+				obsvTrueWeight = -2 * posRatio;
+				obsvFalseWeight = -2 - 2 * obsvTrueWeight;
 			}
-			else if (LossBalancingType.INVERSE_CLASS_WEIGHTS.equals(balanceLoss)) {
-				obsvFalseWeight = -1 * posRatio;
-				obsvTrueWeight = -1 - obsvFalseWeight;
+			else if (LossBalancingType.REVERSE_CLASS_WEIGHTS.equals(balanceLoss)) {
+				obsvFalseWeight = -2 * posRatio;
+				obsvTrueWeight = -2 - 2 * obsvFalseWeight;
 			}
 			else
 				throw new IllegalStateException("Unrecognized LossBalancingType.");
@@ -318,7 +336,13 @@ public class MaxMargin extends WeightLearningApplication {
 			
 			
 			// optimize with constraint set
-			normProgram.solve();
+			try {
+				normProgram.solve();
+			}
+			catch (IllegalArgumentException e) {
+				log.error("Norm minimization program failed. Returning early.");
+				return;
+			}
 			
 			// update weights with new solution
 			weights = normProgram.getSolution();
