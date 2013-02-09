@@ -35,7 +35,7 @@ public class ConstantNumber implements FunctionSingleton {
 	
 	
 	@Override
-	public double getValue(Map<? extends FunctionVariable,Double> values, boolean assumeDefaultValue) {
+	public double getValue(Map<? extends FunctionVariable,Double> values, boolean useCurrentValues) {
 		return getValue();
 	}
 

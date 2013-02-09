@@ -52,10 +52,10 @@ public abstract class AtomFunctionVariable implements FunctionVariable {
 	}
 	
 	@Override
-	public double getValue(Map<? extends FunctionVariable,Double> values, boolean assumeDefaultValue) {
+	public double getValue(Map<? extends FunctionVariable,Double> values, boolean useCurrentValues) {
 		Double val = values.get(this);
 		if (val==null) {
-			if (assumeDefaultValue) return getValue();
+			if (useCurrentValues) return getValue();
 			else throw new IllegalArgumentException("Given map does not contain a value for the variable: " + this);
 		} else {
 			return val;

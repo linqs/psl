@@ -17,7 +17,9 @@
 package edu.umd.cs.psl.model.kernel.rule;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import edu.umd.cs.psl.application.groundkernelstore.GroundKernelStore;
 import edu.umd.cs.psl.database.DatabaseQuery;
 import edu.umd.cs.psl.database.ResultList;
+import edu.umd.cs.psl.model.NumericUtilities;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.Term;
 import edu.umd.cs.psl.model.argument.Variable;
@@ -33,13 +36,17 @@ import edu.umd.cs.psl.model.atom.AtomEvent;
 import edu.umd.cs.psl.model.atom.AtomEventFramework;
 import edu.umd.cs.psl.model.atom.AtomManager;
 import edu.umd.cs.psl.model.atom.GroundAtom;
+import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.atom.VariableAssignment;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.formula.FormulaAnalysis;
 import edu.umd.cs.psl.model.formula.FormulaAnalysis.DNFClause;
 import edu.umd.cs.psl.model.formula.Negation;
 import edu.umd.cs.psl.model.kernel.AbstractKernel;
+import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
+import edu.umd.cs.psl.reasoner.function.FunctionTerm;
+import edu.umd.cs.psl.reasoner.function.FunctionVariable;
 
 abstract public class AbstractRuleKernel extends AbstractKernel {
 	private static final Logger log = LoggerFactory.getLogger(AbstractRuleKernel.class);
@@ -72,29 +79,56 @@ abstract public class AbstractRuleKernel extends AbstractKernel {
 	@Override
 	public void groundAll(AtomManager atomManager, GroundKernelStore gks) {
 		ResultList res = atomManager.executeQuery(new DatabaseQuery(clause.getQueryFormula()));
-		log.debug("Grounding {} instances of rule {}", res.size(), this);
-		groundFormula(atomManager, gks, res, null);
+		int numGrounded = groundFormula(atomManager, gks, res, null);
+		log.debug("Grounded {} instances of rule {}", numGrounded, this);
 	}
 	
-	protected void groundFormula(AtomManager atomManager, GroundKernelStore gks, ResultList res,  VariableAssignment var) {
-		
+	protected int groundFormula(AtomManager atomManager, GroundKernelStore gks, ResultList res,  VariableAssignment var) {
+		int numGroundingsAdded = 0;
 		List<GroundAtom> posLiterals = new ArrayList<GroundAtom>(4);
 		List<GroundAtom> negLiterals = new ArrayList<GroundAtom>(4);
 		
+		/* Uses these to check worst-case truth value */
+		Map<FunctionVariable, Double> worstCaseValues = new HashMap<FunctionVariable, Double>(8);
+		double worstCaseValue;
+
+		GroundAtom atom;
 		for (int i = 0; i < res.size(); i++) {
-			for (int j = 0; j < clause.getPosLiterals().size(); j++)
-				posLiterals.add(groundAtom(atomManager, clause.getPosLiterals().get(j), res, i, var));
 			
-			for (int j = 0; j < clause.getNegLiterals().size(); j++)
-				negLiterals.add(groundAtom(atomManager, clause.getNegLiterals().get(j), res, i, var));
+			for (int j = 0; j < clause.getPosLiterals().size(); j++) {
+				atom = groundAtom(atomManager, clause.getPosLiterals().get(j), res, i, var);
+				if (atom instanceof RandomVariableAtom)
+					worstCaseValues.put(atom.getVariable(), 1.0);
+				else
+					worstCaseValues.put(atom.getVariable(), atom.getValue());
+				posLiterals.add(atom);
+			}
+			
+			for (int j = 0; j < clause.getNegLiterals().size(); j++) {
+				atom = groundAtom(atomManager, clause.getNegLiterals().get(j), res, i, var);
+				if (atom instanceof RandomVariableAtom)
+					worstCaseValues.put(atom.getVariable(), 0.0);
+				else
+					worstCaseValues.put(atom.getVariable(), atom.getValue());
+				negLiterals.add(atom);
+			}
 			
 			AbstractGroundRule groundRule = groundFormulaInstance(posLiterals, negLiterals);
-			if (!gks.containsGroundKernel(groundRule))
+			FunctionTerm function = groundRule.getFunction();
+			worstCaseValue = function.getValue(worstCaseValues, false);
+			if (worstCaseValue > NumericUtilities.strictEpsilon
+					&& (!function.isConstant() || !(groundRule instanceof GroundCompatibilityKernel))
+					&& !gks.containsGroundKernel(groundRule)) {
 				gks.addGroundKernel(groundRule);
+				numGroundingsAdded++;
+			}
 			
 			posLiterals.clear();
 			negLiterals.clear();
+			worstCaseValues.clear();
 		}
+		
+		return numGroundingsAdded;
 	}
 	
 	protected GroundAtom groundAtom(AtomManager atomManager, Atom atom, ResultList res, int resultIndex, VariableAssignment var) {

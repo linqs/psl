@@ -17,6 +17,7 @@
 package edu.umd.cs.psl.model.kernel;
 
 import edu.umd.cs.psl.application.groundkernelstore.GroundKernelStore;
+import edu.umd.cs.psl.model.NumericUtilities;
 import edu.umd.cs.psl.model.atom.AtomEvent;
 import edu.umd.cs.psl.model.atom.AtomEventFramework;
 import edu.umd.cs.psl.model.atom.AtomManager;
@@ -44,21 +45,28 @@ public interface Kernel extends AtomEvent.Listener, Cloneable {
 	 * to a {@link GroundKernelStore} based on an {@link AtomManager}.
 	 * <p>
 	 * Specifically, will add any GroundKernel templated by this Kernel
-	 * that satisfies the following conditions:
+	 * that satisfies all the following conditions:
 	 * <ul>
-	 *   <li>The GroundKernel is unsatisfied (i.e., {@link GroundKernel#getIncompatibility()} > 0.0)
+	 *   <li>The GroundKernel has incompatibility or infeasibility
+	 *   greater than {@link NumericUtilities#strictEpsilon}
 	 *   for some assignment of truth values to the {@link RandomVariableAtom}s
 	 *   <em>currently persisted</em> in the AtomManager's Database given the truth
 	 *   values of the {@link ObservedAtom}s and assuming that any RandomVariableAtom
 	 *   not persisted has a truth value of 0.0.</li>
 	 *   <li>The GroundKernel is not already in the GroundKernelStore.</li>
+	 *   <li>If the Ground Kernel is a {@link GroundCompatibilityKernel}, its
+	 *       incompatibility is not constant with respect to the truth values
+	 *       of RandomVariableAtoms (including those not persisted in the
+	 *       AtomManager's Database).
+	 *   </li>
 	 * </ul>
 	 * <p>
-	 * Other GroundKernels not already in the GroundKernelStore may be added
-	 * as well.
+	 * Only GroundKernels which satisfy these conditions should be added.
 	 * 
 	 * @param atomManager  AtomManager on which to base the grounding
 	 * @param gks          store for new GroundKernels
+	 * @see GroundCompatibilityKernel#getIncompatibility()
+	 * @see GroundConstraintKernel#getInfeasibility()
 	 */
 	public void groundAll(AtomManager atomManager, GroundKernelStore gks);
 	

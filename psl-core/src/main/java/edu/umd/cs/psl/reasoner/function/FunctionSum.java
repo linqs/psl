@@ -65,9 +65,9 @@ public class FunctionSum implements Iterable<FunctionSummand>, FunctionTerm {
 	
 	
 	@Override
-	public double getValue(Map<? extends FunctionVariable,Double> values, boolean assumeDefaultValue) {
+	public double getValue(Map<? extends FunctionVariable,Double> values, boolean useCurrentValues) {
 		double val = 0.0;
-		for (FunctionSummand s : sum) val+=s.getValue(values,assumeDefaultValue);
+		for (FunctionSummand s : sum) val+=s.getValue(values,useCurrentValues);
 		return val;
 	}
 

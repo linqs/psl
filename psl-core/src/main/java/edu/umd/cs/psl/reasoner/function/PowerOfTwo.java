@@ -40,8 +40,8 @@ public class PowerOfTwo implements FunctionTerm {
 	}
 	
 	@Override
-	public double getValue(Map<? extends FunctionVariable,Double> values, boolean assumeDefaultValue) {
-		double val = innerFunction.getValue(values, assumeDefaultValue);
+	public double getValue(Map<? extends FunctionVariable,Double> values, boolean useCurrentValues) {
+		double val = innerFunction.getValue(values, useCurrentValues);
 		return val * val;
 	}
 	
