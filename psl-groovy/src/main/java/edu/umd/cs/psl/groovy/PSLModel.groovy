@@ -145,13 +145,21 @@ class PSLModel extends Model {
 			Variable[] variables = new Variable[vars.size()];
 			Term[] terms = new Term[vars.size()];
 			String predname = name + auxPredicateSeparator + (++ auxPredicateCounter);
-			int i=0;
-			vars.each { var , varType ->
-				variables[i] = var;
-				types[i] = varType;
-				terms[i] = var;
-				i ++;
+			
+			/* Sorts Variables used to define sets to also use as arguments to new aux Predicate */
+			List<Map.Entry<Variable, ArgumentType>> sortedVars = new ArrayList<Map.Entry<Variable, ArgumentType>>(vars.entrySet());
+			Collections.sort(sortedVars, new Comparator<Map.Entry<Variable, ArgumentType>>() {
+				public int compare(Map.Entry<Variable, ArgumentType> a, Map.Entry<Variable, ArgumentType> b) {
+					return a.getKey().getName().compareTo(b.getKey().getName());
+				}
+			});
+		
+			for (int i = 0; i < sortedVars.size(); i++) {
+				variables[i] = sortedVars.get(i).getKey();
+				types[i] = sortedVars.get(i).getValue();
+				terms[i] = sortedVars.get(i).getKey();
 			}
+			
 			StandardPredicate auxpred = addAggregatePredicate(predname,types);
 			
 			addKernel(new SetDefinitionKernel(auxpred, t1, t2, variables, setcomp['predicate'], setcomp['aggregator']));
