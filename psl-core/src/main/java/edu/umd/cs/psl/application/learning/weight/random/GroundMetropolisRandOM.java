@@ -18,6 +18,9 @@ package edu.umd.cs.psl.application.learning.weight.random;
 
 import java.util.ArrayList;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.database.Database;
@@ -36,6 +39,8 @@ import edu.umd.cs.psl.model.parameters.PositiveWeight;
  */
 public class GroundMetropolisRandOM extends MetropolisRandOM {
 	
+	private static final Logger log = LoggerFactory.getLogger(GroundMetropolisRandOM.class);
+	
 	/**
 	 * Prefix of property keys used by this class.
 	 * 
@@ -48,7 +53,7 @@ public class GroundMetropolisRandOM extends MetropolisRandOM {
 	 */
 	public static final String PROPOSAL_VARIANCE = CONFIG_PREFIX + ".proposalvariance";
 	/** Default value for PROPOSAL_VARIANCE */
-	public static final double PROPOSAL_VARIANCE_DEFAULT = .01;
+	public static final double PROPOSAL_VARIANCE_DEFAULT = .25;
 	
 	protected GroundCompatibilityKernel[] gks;
 	protected int[] cumulativeGroundings;
@@ -104,6 +109,7 @@ public class GroundMetropolisRandOM extends MetropolisRandOM {
 			while (i >= cumulativeGroundings[currentKernelIndex])
 				currentKernelIndex++;
 			currentWeights[i] = sampleFromGaussian(previousWeights[i], proposalVariance);
+//			currentWeights[i] = sampleFromGaussian(previousWeights[i], Math.min(proposalVariance, kernelVariances[currentKernelIndex]));
 			gks[i].setWeight(new PositiveWeight(Math.max(0.0, currentWeights[i])));
 		}
 	}
@@ -116,6 +122,7 @@ public class GroundMetropolisRandOM extends MetropolisRandOM {
 			while (i >= cumulativeGroundings[currentKernelIndex])
 				currentKernelIndex++;
 			likelihood -= Math.pow(currentWeights[i] - kernelMeans[currentKernelIndex], 2) / (2 * kernelVariances[currentKernelIndex]);
+			
 		}
 		return likelihood;
 	}
@@ -153,7 +160,8 @@ public class GroundMetropolisRandOM extends MetropolisRandOM {
 			int numGroundings = (i == 0) ? cumulativeGroundings[0] : cumulativeGroundings[i] - cumulativeGroundings[i-1];
 			kernelMeans[i] = sum[i] / ((numSamples - burnIn) * numGroundings);
 			kernelVariances[i] = sumSq[i] / ((numSamples - burnIn) * numGroundings) - kernelMeans[i] * kernelMeans[i];
-			System.out.println("Variance of " + kernelVariances[i] + " for kernel " + kernels.get(i)); 
+			kernelVariances[i] = Math.max(kernelVariances[i], 1e-3);
+			log.info("Variance of {} for kernel {}", kernelVariances[i], kernels.get(i)); 
 		}
 	}
 

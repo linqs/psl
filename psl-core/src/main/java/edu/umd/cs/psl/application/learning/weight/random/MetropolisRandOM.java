@@ -80,6 +80,15 @@ public abstract class MetropolisRandOM extends WeightLearningApplication {
 	public static final String INITIAL_VARIANCE_KEY = CONFIG_PREFIX + ".initialvariance";
 	/** Default value for INITIAL_VARIANCE_KEY */
 	public static final double INITIAL_VARIANCE_DEFAULT = 1;
+	
+	/**
+	 * Key for positive double property to divide the unnormalized
+	 * log likelihood of observations (unless this behavior is overridden by
+	 * an implementation). 
+	 */
+	public static final String OBSERVATION_DENSITY_SCALE_KEY = CONFIG_PREFIX + ".observationscale";
+	/** Default value for OBSERVATION_DENSITY_SCALE_KEY */
+	public static final double OBSERVATION_DENSITY_SCALE_DEFAULT = 0.1;
 
 	/**
 	 * Key for double property to be multiplied with square root of number of
@@ -96,6 +105,7 @@ public abstract class MetropolisRandOM extends WeightLearningApplication {
 	protected final int numSamples;
 	protected final int burnIn;
 	protected final double initialVariance;
+	protected final double observationScale;
 	protected final double changeThresholdFactor;
 
 	public MetropolisRandOM(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
@@ -109,6 +119,9 @@ public abstract class MetropolisRandOM extends WeightLearningApplication {
 		initialVariance = config.getDouble(INITIAL_VARIANCE_KEY, INITIAL_VARIANCE_DEFAULT);
 		if (initialVariance <= 0.0)
 			throw new IllegalArgumentException("Initial variance must be positive.");
+		observationScale = config.getDouble(OBSERVATION_DENSITY_SCALE_KEY, OBSERVATION_DENSITY_SCALE_DEFAULT);
+		if (observationScale <= 0.0)
+			throw new IllegalArgumentException("Observation density scale must be positive.");
 		changeThresholdFactor = config.getDouble(CHANGE_THRESHOLD_KEY, CHANGE_THRESHOLD_DEFAULT);
 	}
 
@@ -141,6 +154,12 @@ public abstract class MetropolisRandOM extends WeightLearningApplication {
 				optimizeEnergyFunction();
 				double newLikelihood = getLogLikelihoodObservations() + getLogLikelihoodSampledWeights();
 				boolean accept = rand.nextDouble() < Math.exp(newLikelihood - previousLikelihood);
+				
+				log.info("Likelihood of observations {}", getLogLikelihoodObservations());
+				log.info("Likelihood of weights {}", getLogLikelihoodSampledWeights());
+				log.info("New likelihood {}", newLikelihood);
+				log.info("Previous likelihood {}", previousLikelihood);
+				log.info((accept) ? "Accepted" : "Rejected"); 
 				
 				if (accept) {
 					acceptSample(count < burnIn);
@@ -194,7 +213,7 @@ public abstract class MetropolisRandOM extends WeightLearningApplication {
 		double likelihood = 0.0;
 		
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
-			likelihood -= Math.abs(e.getKey().getValue() - e.getValue().getValue());
+			likelihood -= Math.abs(e.getKey().getValue() - e.getValue().getValue()) / observationScale;
 //			likelihood -= Math.abs(e.getKey().getValue() - e.getValue().getValue()) / (0.25 + 3 * e.getKey().getValue());
 //			likelihood -= Math.pow(e.getKey().getValue() - e.getValue().getValue(), 2);
 //			likelihood -= Math.pow(e.getKey().getValue() - e.getValue().getValue(), 2) / (0.25 + 3 * e.getKey().getValue());
