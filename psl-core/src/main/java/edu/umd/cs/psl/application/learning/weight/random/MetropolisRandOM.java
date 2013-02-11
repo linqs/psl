@@ -144,6 +144,7 @@ public abstract class MetropolisRandOM extends WeightLearningApplication {
 		do {
 			log.info("Starting Monte Carlo EM round " + mcemIter + ".");
 			prepareForRound();
+			reasoner.optimize();
 			double previousLikelihood = getLogLikelihoodObservations() + getLogLikelihoodSampledWeights();
 			int acceptCount = 0;
 			
@@ -212,12 +213,30 @@ public abstract class MetropolisRandOM extends WeightLearningApplication {
 	protected double getLogLikelihoodObservations() {
 		double likelihood = 0.0;
 		
+		boolean printInfo = true;
+		
+		int numInteresting = 0;
+		
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
+			if (printInfo && e.getKey().getRegisteredGroundKernels().size() > 2 && e.getValue().getValue() == 0.0) {
+//				log.info("Atom {}, current value {}", e.getKey(), e.getKey().getValue());
+//				log.info("Observed value {}", e.getValue().getValue());
+//				log.info("Log likelihood {}", -1 * Math.pow(e.getKey().getValue() - e.getValue().getValue(), 2));
+//				log.info("Num registered ground kernels: {}", e.getKey().getRegisteredGroundKernels().size());
+//				printInfo = false;
+			}
+			if (e.getKey().getRegisteredGroundKernels().size() > 2 && e.getValue().getValue() == 0.0) numInteresting++;
 			likelihood -= Math.abs(e.getKey().getValue() - e.getValue().getValue()) / observationScale;
 //			likelihood -= Math.abs(e.getKey().getValue() - e.getValue().getValue()) / (0.25 + 3 * e.getKey().getValue());
-//			likelihood -= Math.pow(e.getKey().getValue() - e.getValue().getValue(), 2);
+//			likelihood -= Math.pow(e.getKey().getValue() - e.getValue().getValue(), 2) / observationScale;
 //			likelihood -= Math.pow(e.getKey().getValue() - e.getValue().getValue(), 2) / (0.25 + 3 * e.getKey().getValue());
+			
+//			if (e.getKey().getValue() == 0.0)
+//				likelihood -= Math.abs(e.getKey().getValue() - e.getValue().getValue()) / 0.09;
+//			else
+//				likelihood -= Math.abs(e.getKey().getValue() - e.getValue().getValue()) / 0.91;
 		}
+//		log.info("Num interesting atoms: {}", numInteresting);
 		
 		return likelihood;
 	}

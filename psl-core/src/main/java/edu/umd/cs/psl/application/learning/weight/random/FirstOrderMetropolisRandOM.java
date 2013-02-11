@@ -39,6 +39,7 @@ public class FirstOrderMetropolisRandOM extends MetropolisRandOM {
 	
 	protected double[] currentWeights, previousWeights, sum, sumSq;
 	protected double variance;
+	protected int nextKernel;
 
 	public FirstOrderMetropolisRandOM(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
 		super(model, rvDB, observedDB, config);
@@ -49,8 +50,10 @@ public class FirstOrderMetropolisRandOM extends MetropolisRandOM {
 	protected void doLearn() {
 		currentWeights = new double[kernels.size()];
 		previousWeights = new double[kernels.size()];
-		for (int i = 0; i < previousWeights.length; i++)
+		for (int i = 0; i < previousWeights.length; i++) {
+			currentWeights[i] = kernels.get(i).getWeight().getWeight();
 			previousWeights[i] = kernels.get(i).getWeight().getWeight();
+		}
 		
 		sum = new double[kernels.size()];
 		sumSq = new double[kernels.size()];
@@ -64,24 +67,32 @@ public class FirstOrderMetropolisRandOM extends MetropolisRandOM {
 			sum[i] = 0.0;
 			sumSq[i] = 0.0;
 		}
+		nextKernel = 0;
 	}
 
 	@Override
 	protected void sampleAndSetWeights() {
-		for (int i = 0; i < kernels.size(); i++) {
+		int i = nextKernel;
+//		for (int i = 0; i < kernels.size(); i++) {
 //			currentWeights[i] = sampleFromGaussian(previousWeights[i], variance);
 //			currentWeights[i] = sampleFromGaussian(previousWeights[i], kernelVariances[i]);
 //			currentWeights[i] = sampleFromGaussian(previousWeights[i], Math.min(kernelVariances[i], 0.1));
-			currentWeights[i] = sampleFromGaussian(previousWeights[i], 0.1);
+			currentWeights[i] = sampleFromGaussian(previousWeights[i], 0.25);
 			kernels.get(i).setWeight(new PositiveWeight(Math.max(0.0, currentWeights[i])));
-		}
+			nextKernel++;
+			if (nextKernel == kernels.size())
+				nextKernel = 0;
+//		}
 	}
 
 	@Override
 	protected double getLogLikelihoodSampledWeights() {
 		double likelihood = 0.0;
-		for (int i = 0; i < kernels.size(); i++)
-			likelihood -= Math.pow(currentWeights[i] - kernelMeans[i], 2) / (2 * variance);
+		for (int i = 0; i < kernels.size(); i++) {
+			likelihood -= Math.pow(currentWeights[i] - kernelMeans[i], 2) / (2 * initialVariance);
+			log.info("Current weight : {}, mean : {}", currentWeights[i], kernelMeans[i]);
+		}
+//			likelihood -= Math.pow(currentWeights[i] - kernelMeans[i], 2) / (2 * variance);
 //			likelihood -= Math.pow(currentWeights[i] - kernelMeans[i], 2) / (2 * kernelVariances[i]);
 		return likelihood;
 	}

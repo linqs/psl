@@ -70,6 +70,7 @@ public class GroundMetropolisRandOM extends MetropolisRandOM {
 	
 	@Override
 	protected void doLearn() {
+		
 		/* Collects the GroundCompatibilityKernels */
 		cumulativeGroundings = new int[kernels.size()];
 		ArrayList<GroundCompatibilityKernel> tempGroundKernels = new ArrayList<GroundCompatibilityKernel>(reasoner.size());
@@ -79,6 +80,7 @@ public class GroundMetropolisRandOM extends MetropolisRandOM {
 			cumulativeGroundings[i] = tempGroundKernels.size();
 		}
 		gks = tempGroundKernels.toArray(new GroundCompatibilityKernel[tempGroundKernels.size()]);
+		log.info("Learning with {} ground kernels.", gks.length);
 		
 		/* Initializes weights */
 		currentWeights = new double[gks.length];
@@ -100,6 +102,15 @@ public class GroundMetropolisRandOM extends MetropolisRandOM {
 			sum[i] = 0.0;
 			sumSq[i] = 0.0;
 		}
+		
+		/* Resets the weights to the new means */
+		int currentKernelIndex = 0;
+		for (int i = 0; i < gks.length; i++) {
+			while (i >= cumulativeGroundings[currentKernelIndex])
+				currentKernelIndex++;
+			gks[i].setWeight(new PositiveWeight(Math.max(0.0, kernelMeans[currentKernelIndex])));
+		}
+		reasoner.changedGroundKernelWeights();
 	}
 
 	@Override
@@ -121,7 +132,9 @@ public class GroundMetropolisRandOM extends MetropolisRandOM {
 		for (int i = 0; i < gks.length; i++) {
 			while (i >= cumulativeGroundings[currentKernelIndex])
 				currentKernelIndex++;
-			likelihood -= Math.pow(currentWeights[i] - kernelMeans[currentKernelIndex], 2) / (2 * kernelVariances[currentKernelIndex]);
+//			likelihood -= Math.pow(currentWeights[i] - kernelMeans[currentKernelIndex], 2) / (2 * kernelVariances[currentKernelIndex]);
+			likelihood -= Math.pow(currentWeights[i] - kernelMeans[currentKernelIndex], 2) / (2 * initialVariance);
+//			likelihood -= Math.abs(currentWeights[i] - kernelMeans[currentKernelIndex]) / (2 * initialVariance);
 			
 		}
 		return likelihood;

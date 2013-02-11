@@ -457,9 +457,9 @@ public class ADMMReasoner implements Reasoner {
 		double epsilonAbsTerm = Math.sqrt(n) * epsilonAbs;
 		double AxNorm = 0.0, BzNorm = 0.0, AyNorm = 0.0;
 		boolean check = false;
-		int iter = 1;
-		while ((primalRes > epsilonPrimal || dualRes > epsilonDual) && iter <= maxIter) {
-			check = (iter-1) % stopCheck == 0;
+		int iter = 0;
+		while ((primalRes > epsilonPrimal || dualRes > epsilonDual) && iter < maxIter) {
+			check = iter % stopCheck == 0;
 			
 			// Await check barrier
 			try {
@@ -496,7 +496,7 @@ public class ADMMReasoner implements Reasoner {
 				epsilonDual = epsilonAbsTerm + epsilonRel * Math.sqrt(AyNorm);
 			}
 				
-			if ((iter - 1) % (50 * stopCheck) == 0) {
+			if (iter % (50 * stopCheck) == 0) {
 				log.debug("Residuals at iter {} -- Primal: {} -- Dual: {}", new Object[] {iter, primalRes, dualRes});
 				log.trace("--------- Epsilon primal: {} -- Epsilon dual: {}", epsilonPrimal, epsilonDual);
 			}
@@ -518,8 +518,7 @@ public class ADMMReasoner implements Reasoner {
 			throw new RuntimeException(e);
 		}
 		
-		log.debug("Optimization complete.");
-		log.debug("Optimization took {} iterations.", iter);
+		log.info("Optimization completed in  {} iterations.", iter);
 		
 		/* Updates variables */
 		for (int i = 0; i < variables.size(); i++)
