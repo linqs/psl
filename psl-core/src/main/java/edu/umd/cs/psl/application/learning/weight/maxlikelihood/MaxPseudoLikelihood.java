@@ -62,6 +62,13 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 	public static final int NUM_SAMPLES_DEFAULT = 10;
 	
 	/**
+	 * Key for constraint violation tolerance
+	 */
+	public static final String CONSTRAINT_TOLERANCE_KEY = CONFIG_PREFIX + ".constrainttolerance";
+	/** Default value for CONSTRAINT_TOLERANCE **/
+	public static final double CONSTRAINT_TOLERANCE_DEFAULT = 0;
+	
+	/**
 	 * Key for positive double property.
 	 * Used as minimum width for bounds of integration.
 	 */
@@ -72,6 +79,7 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 	private HashMap<GroundAtom,double[]> bounds;
 	private final int numSamples;
 	private final double minWidth;
+	private final double constraintTol;
 	
 	/**
 	 * Constructor
@@ -88,6 +96,9 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 			throw new IllegalArgumentException("Number of samples must be positive integer.");
 		minWidth = config.getDouble(MIN_WIDTH_KEY, MIN_WIDTH_DEFAULT);
 		if (minWidth <= 0)
+			throw new IllegalArgumentException("Minimum width must be positive double.");
+		constraintTol = config.getDouble(CONSTRAINT_TOLERANCE_KEY, CONSTRAINT_TOLERANCE_DEFAULT);
+		if (constraintTol <= 0)
 			throw new IllegalArgumentException("Minimum width must be positive double.");
 	}
 	
@@ -149,7 +160,7 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 				/* Update the bounds of integration */
 				switch(ct.getComparator()) {
 					case Equality:
-						if (rhs < 0.0) {
+						if (rhs < -constraintTol) {
 							throw new IllegalStateException("There are negative equality constraints in the ground data. RHS=" + rhs);
 //							System.out.println("neg eq constraint in " + atom.toString() + " : " + rhs + " = " + constStr);
 //							System.out.println("Function sum = " + ct.getFunction());
@@ -167,21 +178,21 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 						else {
 							if (max > rhs)
 								max = rhs;
-							if (min > max)
-								throw new IllegalStateException("Infeasible constraints; min is greater than max.");
+							if (min - max > constraintTol)
+								throw new IllegalStateException("Infeasible constraints; min is greater than max; min - max = " + (min-max));
 						}
 						break;
 					case LargerThan:
 						if (coef < 0) {
 							if (max > rhs)
 								max = rhs;
-							if (min > max)
+							if (min - max > constraintTol)
 								throw new IllegalStateException("Infeasible constraints; min is greater than max.");
 						}
 						else {
 							if (min < rhs)
 								min = rhs;
-							if (max < min)
+							if (min - max > constraintTol)
 								throw new IllegalStateException("Infeasible constraints; max is less than min.");
 						}
 						break;

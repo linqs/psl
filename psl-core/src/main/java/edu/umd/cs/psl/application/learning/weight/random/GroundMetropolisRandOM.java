@@ -59,7 +59,7 @@ public class GroundMetropolisRandOM extends MetropolisRandOM {
 	protected int[] cumulativeGroundings;
 	protected double[] currentWeights, previousWeights, sum, sumSq;
 	
-	protected final double proposalVariance;
+	protected double proposalVariance;
 
 	public GroundMetropolisRandOM(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
 		super(model, rvDB, observedDB, config);
@@ -175,6 +175,14 @@ public class GroundMetropolisRandOM extends MetropolisRandOM {
 			kernelVariances[i] = sumSq[i] / ((numSamples - burnIn) * numGroundings) - kernelMeans[i] * kernelMeans[i];
 			kernelVariances[i] = Math.max(kernelVariances[i], 1e-3);
 			log.info("Variance of {} for kernel {}", kernelVariances[i], kernels.get(i)); 
+		}
+	}
+
+	@Override
+	protected void updateProposalVariance(int accepted, int count) {
+		if (count > 0 && count % 5 == 0) {
+			proposalVariance *= ((double) accepted / count) / 0.5;
+			log.info("Acceptance rate is {}. Updated variance to {}", (double) accepted / count, proposalVariance);
 		}
 	}
 

@@ -170,6 +170,9 @@ public abstract class MetropolisRandOM extends WeightLearningApplication {
 				else {
 					rejectSample(count < burnIn);
 				}
+				
+//				if (count < burnIn)
+				updateProposalVariance(acceptCount, count);
 			}
 			
 			finishRound();
@@ -240,6 +243,8 @@ public abstract class MetropolisRandOM extends WeightLearningApplication {
 		
 		return likelihood;
 	}
+	
+	protected abstract void updateProposalVariance(int accepted, int count);
 	
 	protected abstract double getLogLikelihoodSampledWeights();
 	

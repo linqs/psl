@@ -36,7 +36,7 @@ import edu.umd.cs.psl.model.parameters.PositiveWeight;
 public class FirstOrderMetropolisRandOM extends MetropolisRandOM {
 
 	private static final Logger log = LoggerFactory.getLogger(FirstOrderMetropolisRandOM.class);
-	
+
 	protected double[] currentWeights, previousWeights, sum, sumSq;
 	protected double variance;
 	protected int nextKernel;
@@ -45,7 +45,7 @@ public class FirstOrderMetropolisRandOM extends MetropolisRandOM {
 		super(model, rvDB, observedDB, config);
 		variance = initialVariance;
 	}
-	
+
 	@Override
 	protected void doLearn() {
 		currentWeights = new double[kernels.size()];
@@ -54,10 +54,10 @@ public class FirstOrderMetropolisRandOM extends MetropolisRandOM {
 			currentWeights[i] = kernels.get(i).getWeight().getWeight();
 			previousWeights[i] = kernels.get(i).getWeight().getWeight();
 		}
-		
+
 		sum = new double[kernels.size()];
 		sumSq = new double[kernels.size()];
-		
+
 		super.doLearn();
 	}
 
@@ -72,17 +72,13 @@ public class FirstOrderMetropolisRandOM extends MetropolisRandOM {
 
 	@Override
 	protected void sampleAndSetWeights() {
-		int i = nextKernel;
-//		for (int i = 0; i < kernels.size(); i++) {
-//			currentWeights[i] = sampleFromGaussian(previousWeights[i], variance);
-//			currentWeights[i] = sampleFromGaussian(previousWeights[i], kernelVariances[i]);
-//			currentWeights[i] = sampleFromGaussian(previousWeights[i], Math.min(kernelVariances[i], 0.1));
-			currentWeights[i] = sampleFromGaussian(previousWeights[i], 0.25);
+		//		int i = nextKernel;
+		//			currentWeights[nextKernel] = sampleFromGaussian(previousWeights[nextKernel], variance);
+		//			currentWeights[nextKernel] = sampleFromGaussian(previousWeights[nextKernel], kernelVariances[nextKernel]);
+		//			currentWeights[nextKernel] = sampleFromGaussian(previousWeights[nextKernel], Math.min(kernelVariances[nextKernel], 0.1));
+		currentWeights[nextKernel] = sampleFromGaussian(previousWeights[nextKernel], variance); 
+		for (int i = 0; i < kernels.size(); i++)
 			kernels.get(i).setWeight(new PositiveWeight(Math.max(0.0, currentWeights[i])));
-			nextKernel++;
-			if (nextKernel == kernels.size())
-				nextKernel = 0;
-//		}
 	}
 
 	@Override
@@ -90,16 +86,16 @@ public class FirstOrderMetropolisRandOM extends MetropolisRandOM {
 		double likelihood = 0.0;
 		for (int i = 0; i < kernels.size(); i++) {
 			likelihood -= Math.pow(currentWeights[i] - kernelMeans[i], 2) / (2 * initialVariance);
-			log.info("Current weight : {}, mean : {}", currentWeights[i], kernelMeans[i]);
+			//log.info("Current weight : {}, mean : {}", currentWeights[i], kernelMeans[i]);
 		}
-//			likelihood -= Math.pow(currentWeights[i] - kernelMeans[i], 2) / (2 * variance);
-//			likelihood -= Math.pow(currentWeights[i] - kernelMeans[i], 2) / (2 * kernelVariances[i]);
+		//			likelihood -= Math.pow(currentWeights[i] - kernelMeans[i], 2) / (2 * variance);
+		//			likelihood -= Math.pow(currentWeights[i] - kernelMeans[i], 2) / (2 * kernelVariances[i]);
 		return likelihood;
 	}
 
 	@Override
 	protected void acceptSample(boolean burnIn) {
-//		log.debug("ACCEPTED: {}", model);
+		//		log.debug("ACCEPTED: {}", model);
 		for (int i = 0; i < kernels.size(); i++) {
 			previousWeights[i] = currentWeights[i];
 			if (!burnIn) {
@@ -107,17 +103,24 @@ public class FirstOrderMetropolisRandOM extends MetropolisRandOM {
 				sumSq[i] += currentWeights[i] * currentWeights[i];
 			}
 		}
+		nextKernel++;
+		if (nextKernel == kernels.size())
+			nextKernel = 0;
 	}
 
 	@Override
 	protected void rejectSample(boolean burnIn) {
-//		log.debug("REJECTED: {}", model);
+		//		log.debug("REJECTED: {}", model);
 		for (int i = 0; i < kernels.size(); i++) {
 			if (!burnIn) {
 				sum[i] += previousWeights[i];
 				sumSq[i] += previousWeights[i] * previousWeights[i];
 			}
 		}
+		currentWeights[nextKernel] = previousWeights[nextKernel];
+		nextKernel++;
+		if (nextKernel == kernels.size())
+			nextKernel = 0;
 	}
 
 	@Override
@@ -134,4 +137,14 @@ public class FirstOrderMetropolisRandOM extends MetropolisRandOM {
 		log.warn("Variance: {}", variance);
 	}
 
+	@Override
+	protected void updateProposalVariance(int accepted, int count) {
+		double rate = (double) accepted / (count + 1);
+		if (count > 0 && count % 5 == 0) { // && count < burnIn) {
+			variance *= rate / 0.5;
+		}
+		log.info("Acceptance rate is {}.", rate);
+		log.info("Current proposal variance: {}", variance);
+	}
+	
 }
