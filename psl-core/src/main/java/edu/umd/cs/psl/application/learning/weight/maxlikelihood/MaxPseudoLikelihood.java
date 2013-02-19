@@ -66,7 +66,7 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 	 */
 	public static final String CONSTRAINT_TOLERANCE_KEY = CONFIG_PREFIX + ".constrainttolerance";
 	/** Default value for CONSTRAINT_TOLERANCE **/
-	public static final double CONSTRAINT_TOLERANCE_DEFAULT = 0;
+	public static final double CONSTRAINT_TOLERANCE_DEFAULT = 1e-5;
 	
 	/**
 	 * Key for positive double property.
