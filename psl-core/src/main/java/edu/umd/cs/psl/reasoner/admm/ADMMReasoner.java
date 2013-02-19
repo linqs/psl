@@ -25,6 +25,7 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -165,8 +166,26 @@ public class ADMMReasoner implements Reasoner {
 		numThreads = config.getInt(NUM_THREADS_KEY, NUM_THREADS_DEFAULT);
 		if (numThreads <= 0)
 			throw new IllegalArgumentException("Property " + NUM_THREADS_KEY + " must be positive.");
+		threadPool = Executors.newFixedThreadPool(numThreads, new DaemonThreadFactory());
 	}
 
+	private class DaemonThreadFactory implements ThreadFactory {
+
+		private ThreadFactory defaultThreadFactory;
+		
+		public DaemonThreadFactory() {
+			this.defaultThreadFactory = Executors.defaultThreadFactory();
+		}
+		
+		@Override
+		public Thread newThread(Runnable r) {
+			Thread thread = defaultThreadFactory.newThread(r);
+			thread.setDaemon(true);
+			return thread;
+		}
+		
+	}
+	
 	@Override
 	public void addGroundKernel(GroundKernel gk) {
 		groundKernels.put(gk.getKernel(), gk);
@@ -426,7 +445,8 @@ public class ADMMReasoner implements Reasoner {
 				// Waits for main thread
 				awaitUninterruptibly(checkBarrier);
 			}
-			log.debug("{} shutting down.", Thread.currentThread().getName());
+			log.debug("{} spinning down...", Thread.currentThread().getName());
+			awaitUninterruptibly(checkBarrier);
 		}
 		
 	}
@@ -439,7 +459,6 @@ public class ADMMReasoner implements Reasoner {
 		log.debug("Performing optimization with {} variables and {} terms.", z.size(), terms.size());
 		
 		// Starts up the computation threads
-		threadPool = Executors.newFixedThreadPool(numThreads);
 		ADMMTask[] tasks = new ADMMTask[numThreads];
 		CyclicBarrier workerBarrier = new CyclicBarrier(numThreads);
 		CyclicBarrier checkBarrier = new CyclicBarrier(numThreads + 1);
@@ -509,9 +528,11 @@ public class ADMMReasoner implements Reasoner {
 			task.flag = false;
 		
 		try {
+			// First wake all threads
 			checkBarrier.await();
-			threadPool.shutdownNow();
-			threadPool.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
+			
+			// Now wait for all threads to print shutting down msg
+			checkBarrier.await();
 		} catch (InterruptedException e) {
 			throw new RuntimeException(e);
 		} catch (BrokenBarrierException e) {
@@ -555,7 +576,14 @@ public class ADMMReasoner implements Reasoner {
 		terms = null;
 		variables = null;
 		z = null;
-		threadPool.shutdownNow();
+		
+		try {
+			log.debug("Shutting down thread pool.");
+			threadPool.shutdownNow();
+			threadPool.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
+		} catch (InterruptedException e) {
+			throw new RuntimeException(e);
+		}
 	}
 	
 	private void registerLocalVariableCopies(ADMMObjectiveTerm term) {
