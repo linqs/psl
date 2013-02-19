@@ -27,7 +27,6 @@ import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.kernel.BindingMode;
 import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
-import edu.umd.cs.psl.model.parameters.NegativeWeight;
 import edu.umd.cs.psl.model.parameters.Weight;
 import edu.umd.cs.psl.reasoner.function.ConstantNumber;
 import edu.umd.cs.psl.reasoner.function.FunctionSum;
@@ -45,9 +44,9 @@ public class LossAugmentingGroundKernel implements GroundCompatibilityKernel {
 
 	private GroundAtom atom;
 	private double groundTruth;	
-	private NegativeWeight weight;
+	private Weight weight;
 	
-	public LossAugmentingGroundKernel(GroundAtom atom, double truthValue, NegativeWeight weight) {
+	public LossAugmentingGroundKernel(GroundAtom atom, double truthValue, Weight weight) {
 		this.atom = atom;
 		this.groundTruth = truthValue;
 		if (!(groundTruth == 1.0 || groundTruth == 0.0))
@@ -84,16 +83,13 @@ public class LossAugmentingGroundKernel implements GroundCompatibilityKernel {
 	}
 
 	@Override
-	public NegativeWeight getWeight() {
+	public Weight getWeight() {
 		return weight;
 	}
 
 	@Override
 	public void setWeight(Weight w) {
-		if (w instanceof NegativeWeight)
-			this.weight = (NegativeWeight) w;
-		else
-			throw new IllegalArgumentException("Weight must be instance of NegativeWeight.");
+		this.weight = w;
 	}
 	
 	@Override
@@ -111,6 +107,10 @@ public class LossAugmentingGroundKernel implements GroundCompatibilityKernel {
 		}
 		
 		return sum;
+	}
+	
+	public GroundAtom getAtom() {
+		return atom;
 	}
 	
 }

@@ -253,6 +253,9 @@ public class MaxMargin extends WeightLearningApplication {
 			for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet())
 				if (e.getValue().getValue() == 1.0)
 					posAtoms++;
+				else if (e.getValue().getValue() != 0.0)
+					throw new IllegalStateException("Cannot perform loss balancing " +
+							"when some ground truth atoms have value other than 1.0 or 0.0.");
 			double posRatio = (double) posAtoms / (double) trainingMap.getTrainingMap().size();
 			
 			if (LossBalancingType.CLASS_WEIGHTS.equals(balanceLoss)) {
@@ -271,11 +274,26 @@ public class MaxMargin extends WeightLearningApplication {
 		log.info("Weighting loss of positive (value = 1.0) examples by {} " +
 				"and negative examples by {}", obsvTrueWeight, obsvFalseWeight);
 		List<LossAugmentingGroundKernel> lossKernels = new ArrayList<LossAugmentingGroundKernel>(trainingMap.getTrainingMap().size());
+		List<LossAugmentingGroundKernel> nonExtremeLossKernels = new ArrayList<LossAugmentingGroundKernel>();
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
 			double truth = e.getValue().getValue();
-			NegativeWeight weight = new NegativeWeight((truth == 1.0) ? obsvTrueWeight : obsvFalseWeight);
-			LossAugmentingGroundKernel gk = 
-					new LossAugmentingGroundKernel(e.getKey(), truth, weight);
+			LossAugmentingGroundKernel gk;
+			
+			/* If ground truth is at 1.0 or 0.0, sets up ground kernel without planning to change it */
+			if (truth == 1.0 || truth == 0.0) {
+				NegativeWeight weight = new NegativeWeight((truth == 1.0) ? obsvTrueWeight : obsvFalseWeight);
+				gk = new LossAugmentingGroundKernel(e.getKey(), truth, weight);
+			}
+			/* Else, does a little more to check it and change it later */
+			else {
+				if (truth >= 0.5)
+					gk = new LossAugmentingGroundKernel(e.getKey(), 1.0, new NegativeWeight(obsvTrueWeight));
+				else
+					gk = new LossAugmentingGroundKernel(e.getKey(), 1.0, new PositiveWeight(-1 * obsvTrueWeight));
+				
+				nonExtremeLossKernels.add(gk);
+			}
+			
 			reasoner.addGroundKernel(gk);
 			lossKernels.add(gk);
 		}
@@ -288,15 +306,44 @@ public class MaxMargin extends WeightLearningApplication {
 		
 		/* Loops to identify separating hyperplane and reoptimize weights */
 		while (iter < maxIter && violation > tolerance) {
+			
 			/* Runs separation oracle */
-			reasoner.optimize();
+			int optimizationCount = 0;
+			boolean rerunOptimization = true;
+			while (rerunOptimization) {
+				reasoner.optimize();
+				
+				rerunOptimization = false;
+				for (LossAugmentingGroundKernel gk : nonExtremeLossKernels) {
+					double currentValue = gk.getAtom().getValue();
+					double truth = trainingMap.getTrainingMap().get(gk.getAtom()).getValue();
+					if (currentValue > truth && gk.getWeight() instanceof PositiveWeight) {
+						gk.setWeight(new NegativeWeight(obsvTrueWeight));
+						rerunOptimization = true;
+					}
+					else if (currentValue < truth && gk.getWeight() instanceof NegativeWeight) {
+						gk.setWeight(new PositiveWeight(-1 * obsvTrueWeight));
+						rerunOptimization = true;
+					}
+				}
+				
+				optimizationCount++;
+			}
+			
+			log.debug("Separation oracle performed {} optimizations.", optimizationCount);
 						
 			double slack = weights[kernels.size()];
 
 			/* Computes distance between ground truth and output of separation oracle */
-			double negativeLoss = 0.0;
-			for (LossAugmentingGroundKernel gk : lossKernels)
-				negativeLoss += gk.getWeight().getWeight() * gk.getIncompatibility();
+			double loss = 0.0;
+			for (LossAugmentingGroundKernel gk : lossKernels) {
+				double currentValue = gk.getAtom().getValue();
+				double truth = trainingMap.getTrainingMap().get(gk.getAtom()).getValue();
+				double lossTerm = gk.getWeight().getWeight() * Math.abs(truth - currentValue);
+				if (lossTerm <= 0)
+					lossTerm *= -1;
+				loss += lossTerm;
+			}
 					
 			/* The next loop computes constraint coefficients for max margin constraints:
 			 * w * f(y) < min_x w * f(x) - ||x-y|| + \xi
@@ -319,19 +366,19 @@ public class MaxMargin extends WeightLearningApplication {
 				violation += weights[i] * constraintCoefficients[i];
 			}
 			violation -= slack;
-			violation -= negativeLoss;
+			violation += loss;
 			
 			// slack coefficient
 			constraintCoefficients[kernels.size()] = -1.0;
 			
 			// add linear constraint weights * truthIncompatility < weights * mpeIncompatibility - loss + \xi
-			normProgram.addInequalityConstraint(constraintCoefficients, negativeLoss);
+			normProgram.addInequalityConstraint(constraintCoefficients, -1 * loss);
 			
-			allLosses.add(-1 * negativeLoss);
+			allLosses.add(loss);
 			allConstraints.add(constraintCoefficients);
 			
 			log.debug("Violation of most recent constraint: {}", violation);
-			log.debug("Distance from ground truth: {}", -1 * negativeLoss);
+			log.debug("Distance from ground truth: {}", loss);
 			log.debug("Slack: {}", slack);
 			
 			
