@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import edu.umd.cs.psl.config.ConfigBundle;
+import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.NumericUtilities;
@@ -51,6 +52,13 @@ import edu.umd.cs.psl.reasoner.function.FunctionVariable;
 public class MaxPseudoLikelihood extends VotedPerceptron {
 
 	private static final Logger log = LoggerFactory.getLogger(MaxPseudoLikelihood.class);
+	
+	/**
+	 * Prefix of property keys used by this class.
+	 * 
+	 * @see ConfigManager
+	 */
+	public static final String CONFIG_PREFIX = "maxspeudolikelihood";
 	
 	/**
 	 * Key for positive integer property.
@@ -160,40 +168,42 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 				/* Update the bounds of integration */
 				switch(ct.getComparator()) {
 					case Equality:
-						if (rhs < -constraintTol) {
-							throw new IllegalStateException("There are negative equality constraints in the ground data. RHS=" + rhs);
-//							System.out.println("neg eq constraint in " + atom.toString() + " : " + rhs + " = " + constStr);
-//							System.out.println("Function sum = " + ct.getFunction());
+						if (rhs < -constraintTol || rhs > (1+constraintTol)) {
+							throw new IllegalStateException("Infeasible Equality constraint: RHS=" + rhs);
 						}
-						min = rhs;
-						max = rhs;
+						min = Math.min(1.0, Math.max(0.0, rhs));
+						max = Math.min(1.0, Math.max(0.0, rhs));
 						break;
 					case SmallerThan:
 						if (coef < 0) {
 							if (min < rhs)
 								min = rhs;
-							if (max < min)
-								throw new IllegalStateException("Infeasible constraints; max is less than min.");
+							if (max < min - constraintTol)
+								throw new IllegalStateException("Infeasible LessThan constraint: max < min - tol.");
+							max = Math.max(min, max);
 						}
 						else {
 							if (max > rhs)
 								max = rhs;
-							if (min - max > constraintTol)
-								throw new IllegalStateException("Infeasible constraints; min is greater than max; min - max = " + (min-max));
+							if (min > max + constraintTol)
+								throw new IllegalStateException("Infeasible LessThan constraint: min > max + tol");
+							min = Math.min(min, max);
 						}
 						break;
 					case LargerThan:
 						if (coef < 0) {
 							if (max > rhs)
 								max = rhs;
-							if (min - max > constraintTol)
-								throw new IllegalStateException("Infeasible constraints; min is greater than max.");
+							if (min > max + constraintTol)
+								throw new IllegalStateException("Infeasible LargerThan constraint: min > max + tol");
+							min = Math.min(min, max);
 						}
 						else {
 							if (min < rhs)
 								min = rhs;
-							if (min - max > constraintTol)
-								throw new IllegalStateException("Infeasible constraints; max is less than min.");
+							if (max < min - constraintTol)
+								throw new IllegalStateException("Infeasible LargerThan constraint: max < min - tol.");
+							max = Math.max(min, max);
 						}
 						break;
 				}
