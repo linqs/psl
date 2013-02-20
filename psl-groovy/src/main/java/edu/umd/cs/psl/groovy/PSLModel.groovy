@@ -107,7 +107,7 @@ class PSLModel extends Model {
 	 * @param name		the predicate to use for the Formula
 	 * @return			a FormulaContainer 
 	 */
-	private Object createFormulaContainer(String name, Object[] args) {
+	public Object createFormulaContainer(String name, Object[] args) {
 		Predicate pred = pf.getPredicate(name);
 		
 		if (pred != null) {
