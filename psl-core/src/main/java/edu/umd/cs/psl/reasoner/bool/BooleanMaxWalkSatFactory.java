@@ -14,23 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.reasoner.admm;
+package edu.umd.cs.psl.reasoner.bool;
 
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.reasoner.Reasoner;
 import edu.umd.cs.psl.reasoner.ReasonerFactory;
 
 /**
- * Factory for a {@link ADMMReasoner}.
+ * Factory for a {@link BooleanMaxWalkSat}.
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-public class ADMMReasonerFactory implements ReasonerFactory {
+public class BooleanMaxWalkSatFactory implements ReasonerFactory {
 
 	@Override
 	public Reasoner getReasoner(ConfigBundle config)
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-		return new ADMMReasoner(config);
+		return new BooleanMaxWalkSat(config);
 	}
 
 }
