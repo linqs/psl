@@ -103,6 +103,14 @@ public class MaxMargin extends WeightLearningApplication {
 	/** Default value for SCALE_NORM_KEY */
 	public static final NormScalingType SCALE_NORM_DEFAULT = NormScalingType.NONE;
 	
+	/**
+	 * Key for SquareSlack boolean property. Determines whether to penalize 
+	 * slack linearly or quadratically.
+	 */
+	public static final String SQUARE_SLACK_KEY= CONFIG_PREFIX + ".squareslack";
+	/** Default value for SQUARE_SLACK KEY*/
+	public static final boolean SQUARE_SLACK_DEFAULT = false;
+	
 	/** Types of loss balancing MaxMargin can use during learning */
 	public enum LossBalancingType {
 		/** No loss balancing. All LossAugmentingGroundKernels weighted as -1.0. */
@@ -144,6 +152,7 @@ public class MaxMargin extends WeightLearningApplication {
 	protected double slackPenalty;
 	protected final LossBalancingType balanceLoss;
 	protected final NormScalingType scaleNorm;
+	protected final boolean squareSlack;
 	
 	protected PositiveMinNormProgram normProgram;
 	
@@ -154,6 +163,7 @@ public class MaxMargin extends WeightLearningApplication {
 		slackPenalty = config.getDouble(SLACK_PENALTY_KEY, SLACK_PENALTY_DEFAULT);
 		balanceLoss = (LossBalancingType) config.getEnum(BALANCE_LOSS_KEY, BALANCE_LOSS_DEFAULT);
 		scaleNorm = (NormScalingType) config.getEnum(SCALE_NORM_KEY, SCALE_NORM_DEFAULT);
+		squareSlack = config.getBoolean(SQUARE_SLACK_KEY, SQUARE_SLACK_DEFAULT);
 	}
 	
 	@Override
@@ -166,7 +176,7 @@ public class MaxMargin extends WeightLearningApplication {
 		
 		/* Sets linear objective term */
 		double [] coefficients = new double[kernels.size() + 1];
-		coefficients[kernels.size()] = slackPenalty;
+		coefficients[kernels.size()] = (squareSlack)? 0.0 : slackPenalty;
 		normProgram.setLinearCoefficients(coefficients);
 		
 		/* Determines coefficients for the quadratic objective term */
@@ -212,8 +222,8 @@ public class MaxMargin extends WeightLearningApplication {
 		
 		/* Sets quadratic objective term */
 		log.debug("Quad coeffs: {}", Arrays.toString(quadCoeffs));
-		quadCoeffs[kernels.size()] = 0.0;
-		normProgram.setQuadraticTerm(quadCoeffs, new double[kernels.size()]);
+		quadCoeffs[kernels.size()] = (squareSlack) ? slackPenalty : 0.0;
+		normProgram.setQuadraticTerm(quadCoeffs, new double[kernels.size() + 1]);
 	}
 	
 	@Override
@@ -310,7 +320,7 @@ public class MaxMargin extends WeightLearningApplication {
 			/* Runs separation oracle */
 			int optimizationCount = 0;
 			boolean rerunOptimization = true;
-			while (rerunOptimization) {
+			while (rerunOptimization && optimizationCount < maxIter) {
 				reasoner.optimize();
 				
 				rerunOptimization = false;
