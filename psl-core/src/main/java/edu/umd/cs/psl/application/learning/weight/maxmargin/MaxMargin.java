@@ -311,8 +311,6 @@ public class MaxMargin extends WeightLearningApplication {
 		/* Prepares to begin optimization loop */
 		int iter = 0;
 		double violation = Double.POSITIVE_INFINITY;
-		List<double []> allConstraints = new ArrayList<double[]>();
-		List<Double> allLosses = new ArrayList<Double>();
 		
 		/* Loops to identify separating hyperplane and reoptimize weights */
 		while (iter < maxIter && violation > tolerance) {
@@ -384,9 +382,6 @@ public class MaxMargin extends WeightLearningApplication {
 			// add linear constraint weights * truthIncompatility < weights * mpeIncompatibility - loss + \xi
 			normProgram.addInequalityConstraint(constraintCoefficients, -1 * loss);
 			
-			allLosses.add(loss);
-			allConstraints.add(constraintCoefficients);
-			
 			log.debug("Violation of most recent constraint: {}", violation);
 			log.debug("Distance from ground truth: {}", loss);
 			log.debug("Slack: {}", slack);
@@ -411,22 +406,6 @@ public class MaxMargin extends WeightLearningApplication {
 			log.debug("Current model: {}", model);
 			
 			iter++;
-			
-			
-			/* TODO: temporary debug code */
-			for (int j = 0; j < allConstraints.size(); j++) {
-				double [] cons = allConstraints.get(j);
-				StringBuilder sb = new StringBuilder();
-				double product = 0.0;
-				for (int i = 0; i < kernels.size(); i++) {			
-					product += weights[i] * cons[i];
-					sb.append("" + cons[i] + ", ");
-				}
-				log.debug("Constraint {}: " + sb.toString(), j);
-				log.debug("Loss {}", allLosses.get(j));
-				log.debug("Violation of included constraint {}: {}", j, product - weights[kernels.size()] + allLosses.get(j));
-			}
-			//TODO: end temp debug code
 		}
 	}
 
