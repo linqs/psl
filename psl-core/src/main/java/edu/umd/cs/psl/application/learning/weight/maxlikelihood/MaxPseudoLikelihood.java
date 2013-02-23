@@ -17,19 +17,14 @@
 package edu.umd.cs.psl.application.learning.weight.maxlikelihood;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.Model;
-import edu.umd.cs.psl.model.NumericUtilities;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
@@ -51,14 +46,20 @@ import edu.umd.cs.psl.reasoner.function.FunctionVariable;
  */
 public class MaxPseudoLikelihood extends VotedPerceptron {
 
-	private static final Logger log = LoggerFactory.getLogger(MaxPseudoLikelihood.class);
-	
 	/**
 	 * Prefix of property keys used by this class.
 	 * 
 	 * @see ConfigManager
 	 */
 	public static final String CONFIG_PREFIX = "maxspeudolikelihood";
+	
+	/**
+	 * Boolean property. If true, MaxPseudoLikelihood will treat RandomVariableAtoms
+	 * as boolean valued. Note that this restricts the types of contraints supported.
+	 */
+	public static final String BOOLEAN_KEY = CONFIG_PREFIX + ".bool";
+	/** Default value for BOOLEAN_KEY */
+	public static final boolean BOOLEAN_DEFAULT = false;
 	
 	/**
 	 * Key for positive integer property.
@@ -85,6 +86,7 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 	public static final double MIN_WIDTH_DEFAULT = 1e-2;
 	
 	private HashMap<GroundAtom,double[]> bounds;
+	private final boolean bool;
 	private final int numSamples;
 	private final double minWidth;
 	private final double constraintTol;
@@ -98,7 +100,7 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 	 */
 	public MaxPseudoLikelihood(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
 		super(model, rvDB, observedDB, config);
-
+		bool = config.getBoolean(BOOLEAN_KEY, BOOLEAN_DEFAULT);
 		numSamples = config.getInt(NUM_SAMPLES_KEY, NUM_SAMPLES_DEFAULT);
 		if (numSamples <= 0)
 			throw new IllegalArgumentException("Number of samples must be positive integer.");
@@ -242,10 +244,17 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 			double range = bounds.get(atom)[1] - bounds.get(atom)[0];
 			if (range != 0.0) {
 				/* Sample numSamples random numbers in the range of integration */
-				double[] s = new double[numSamples];
-				for (int j = 0; j < numSamples; j++) {
-					s[j] = rand.nextDouble() * range + bounds.get(atom)[0];
+				double[] s;
+				if (!bool) {
+					s = new double[numSamples];
+					for (int j = 0; j < numSamples; j++) {
+						s[j] = rand.nextDouble() * range + bounds.get(atom)[0];
+					}
 				}
+				else {
+					s = new double[] {0, 1};
+				}
+					
 				/* Compute the incompatibility of each sample for each kernel */
 				HashMap<CompatibilityKernel,double[]> incompatibilities = new HashMap<CompatibilityKernel,double[]>();
 				double originalValue = atom.getValue();

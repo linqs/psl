@@ -71,7 +71,7 @@ public class BooleanMaxWalkSat extends MemoryGroundKernelStore implements Reason
 	 */
 	public static final String NOISE_KEY = CONFIG_PREFIX + ".noise";
 	/** Default value for NOISE_KEY */
-	public static final double NOISE_DEFAULT = (double) 1 / 20;
+	public static final double NOISE_DEFAULT = (double) 1 / 100;
 	
 	private Random rand;
 	private final int maxFlips;

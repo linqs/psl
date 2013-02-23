@@ -20,9 +20,6 @@ import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import edu.umd.cs.psl.application.groundkernelstore.MemoryGroundKernelStore;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
@@ -42,8 +39,6 @@ import edu.umd.cs.psl.reasoner.Reasoner;
  */
 public class BooleanMCSat extends MemoryGroundKernelStore implements Reasoner {
 	
-	private static final Logger log = LoggerFactory.getLogger(BooleanMCSat.class);
-	
 	/**
 	 * Prefix of property keys used by this class.
 	 * 
@@ -56,7 +51,7 @@ public class BooleanMCSat extends MemoryGroundKernelStore implements Reasoner {
 	 */
 	public static final String NUM_SAMPLES_KEY = CONFIG_PREFIX + ".numsamples";
 	/** Default value for NUM_SAMPLES_KEY */
-	public static final int NUM_SAMPLES_DEFAULT = 2000;
+	public static final int NUM_SAMPLES_DEFAULT = 5000;
 	
 	/**
 	 * Number of burn-in samples
