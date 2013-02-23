@@ -146,9 +146,9 @@ public class BooleanMaxWalkSat extends MemoryGroundKernelStore implements Reason
 					currentIncompatibility = 0.0;
 					for (GroundKernel incidentGK : candidateAtom.getRegisteredGroundKernels()) {
 						if (!unsatGKs.contains(incidentGK)) {
-							if (gk instanceof GroundCompatibilityKernel && ((GroundCompatibilityKernel) gk).getIncompatibility() > 0.0)
-								currentIncompatibility += ((GroundCompatibilityKernel) incidentGK).getWeight().getWeight() * ((GroundCompatibilityKernel) gk).getIncompatibility();
-							else if (gk instanceof GroundConstraintKernel && ((GroundConstraintKernel) gk).getInfeasibility() > 0.0)
+							if (incidentGK instanceof GroundCompatibilityKernel && ((GroundCompatibilityKernel) incidentGK).getIncompatibility() > 0.0)
+								currentIncompatibility += ((GroundCompatibilityKernel) incidentGK).getWeight().getWeight() * ((GroundCompatibilityKernel) incidentGK).getIncompatibility();
+							else if (incidentGK instanceof GroundConstraintKernel && ((GroundConstraintKernel) incidentGK).getInfeasibility() > 0.0)
 								currentIncompatibility += Double.POSITIVE_INFINITY;
 						}
 					}
@@ -185,7 +185,7 @@ public class BooleanMaxWalkSat extends MemoryGroundKernelStore implements Reason
 			if (unsatGKs.size() == 0)
 				return;
 			
-			if (flip % 50000 == 0) {
+			if (flip == 0 || (flip+1) % 50000 == 0) {
 				int numUnsatConKernels = 0;
 				int numUnsatIncompKernels = 0;
 				for (GroundKernel unsatGK : unsatGKs)
