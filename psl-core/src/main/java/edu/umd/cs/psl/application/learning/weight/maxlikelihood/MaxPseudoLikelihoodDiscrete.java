@@ -49,9 +49,9 @@ import edu.umd.cs.psl.reasoner.function.FunctionVariable;
  * 
  * @author Ben London <blondon@cs.umd.edu>
  */
-public class MaxPseudoLikelihood extends VotedPerceptron {
+public class MaxPseudoLikelihoodDiscrete extends VotedPerceptron {
 
-	private static final Logger log = LoggerFactory.getLogger(MaxPseudoLikelihood.class);
+	private static final Logger log = LoggerFactory.getLogger(MaxPseudoLikelihoodDiscrete.class);
 	
 	/**
 	 * Prefix of property keys used by this class.
@@ -59,15 +59,6 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 	 * @see ConfigManager
 	 */
 	public static final String CONFIG_PREFIX = "maxspeudolikelihood";
-	
-	/**
-	 * Key for positive integer property.
-	 * MaxPseudoLikelihood will sample this many values to approximate
-	 * the integrals in the marginal computation.
-	 */
-	public static final String NUM_SAMPLES_KEY = CONFIG_PREFIX + ".numsamples";
-	/** Default value for NUM_SAMPLES_KEY */
-	public static final int NUM_SAMPLES_DEFAULT = 10;
 	
 	/**
 	 * Key for constraint violation tolerance
@@ -84,8 +75,7 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 	/** Default value for MIN_WIDTH_KEY */
 	public static final double MIN_WIDTH_DEFAULT = 1e-2;
 	
-	private HashMap<GroundAtom,double[]> bounds;
-	private final int numSamples;
+	private HashMap<GroundAtom,double[]> constraints;
 	private final double minWidth;
 	private final double constraintTol;
 	
@@ -96,12 +86,9 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 	 * @param observedDB
 	 * @param config
 	 */
-	public MaxPseudoLikelihood(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
+	public MaxPseudoLikelihoodDiscrete(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
 		super(model, rvDB, observedDB, config);
 
-		numSamples = config.getInt(NUM_SAMPLES_KEY, NUM_SAMPLES_DEFAULT);
-		if (numSamples <= 0)
-			throw new IllegalArgumentException("Number of samples must be positive integer.");
 		minWidth = config.getDouble(MIN_WIDTH_KEY, MIN_WIDTH_DEFAULT);
 		if (minWidth <= 0)
 			throw new IllegalArgumentException("Minimum width must be positive double.");
@@ -121,7 +108,7 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 		super.initGroundModel();
 		
 		/* Determine the bounds of integration */
-		bounds = new HashMap<GroundAtom,double[]>();
+		constraints = new HashMap<GroundAtom,double[]>();
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
 			RandomVariableAtom atom = e.getKey();
 			double min = 0.0;
@@ -161,7 +148,6 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 				}
 				//constStr.append(" ) / " + coef);
 				rhs /= coef;
-				//System.out.println("RHS after: " + rhs);
 				/* Update the bounds of integration */
 				switch(ct.getComparator()) {
 					case Equality:
@@ -204,96 +190,81 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 						break;
 				}
 			}
-			/* Ensure a minimum width */
-			if (max - min < minWidth) {
-				if (min - minWidth/2 < 0.0) {
-					min = 0.0;
-					max = minWidth;
-				}
-				else if (max + minWidth/2 > 1.0) {
-					min = 1.0 - minWidth;
-					max = 1.0;
-				}
-				else {
-					min -= minWidth/2;
-					max += minWidth/2;
-				}
-			}
 			//System.out.println(atom.toString() + " min: " + min + " max: " + max);
-			bounds.put(atom, new double[]{min,max});
+			constraints.put(atom, new double[]{1,1});
 		}
 	}
 	
 	/**
 	 * Computes the expected incompatibility using the pseudolikelihood.
-	 * Uses Monte Carlo integration to approximate definite integrals,
-	 * since they do not admit a closed-form antiderivative.
+	 * Since the values are assumed to be discrete, we can compute the
+	 * expectation exactly.
 	 */
 	@Override
 	protected double[] computeExpectedIncomp() {
 		double[] expInc = new double[kernels.size()];
 		
-		/* Let's create/seed the random number generator */
-		Random rand = new Random();
 		/* Accumulate the marginals over all atoms */
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
 			RandomVariableAtom atom = e.getKey();
-			/* Check the range of the variable to see if we can integrate it */
-			double range = bounds.get(atom)[1] - bounds.get(atom)[0];
-			if (range != 0.0) {
-				/* Sample numSamples random numbers in the range of integration */
-				double[] s = new double[numSamples];
-				for (int j = 0; j < numSamples; j++) {
-					s[j] = rand.nextDouble() * range + bounds.get(atom)[0];
-				}
-				/* Compute the incompatibility of each sample for each kernel */
-				HashMap<CompatibilityKernel,double[]> incompatibilities = new HashMap<CompatibilityKernel,double[]>();
-				double originalValue = atom.getValue();
-				for (GroundKernel gk : atom.getRegisteredGroundKernels()) {
-					if (gk instanceof GroundCompatibilityKernel) {
-						CompatibilityKernel k = (CompatibilityKernel) gk.getKernel();
-						if (!incompatibilities.containsKey(k))
-							incompatibilities.put(k, new double[numSamples]);
-						double[] inc = incompatibilities.get(k);
-						for (int j = 0; j < numSamples; j++) {
-							atom.setValue(s[j]);
-							inc[j] += ((GroundCompatibilityKernel) gk).getIncompatibility();
-						}
+			/* Save original atom state */
+			double originalValue = atom.getValue();
+			/* Compute the incompatibility for each kernel containing atom */
+			HashMap<CompatibilityKernel,double[]> incompatibilities = new HashMap<CompatibilityKernel,double[]>();
+			for (GroundKernel gk : atom.getRegisteredGroundKernels()) {
+				/* Only care about compatibility kernels */
+				if (gk instanceof GroundCompatibilityKernel) {
+					CompatibilityKernel k = (CompatibilityKernel) gk.getKernel();
+					if (!incompatibilities.containsKey(k))
+						incompatibilities.put(k, new double[2]);
+					double[] inc = incompatibilities.get(k);
+					/* False groundings */
+					if (constraints.get(atom)[0] == 1) {
+						atom.setValue(0.0);
+						inc[0] += ((GroundCompatibilityKernel) gk).getIncompatibility();
+					}
+					/* True groundings */
+					if (constraints.get(atom)[1] == 1) {
+						atom.setValue(1.0);
+						inc[1] += ((GroundCompatibilityKernel) gk).getIncompatibility();
 					}
 				}
-				/* Remember to return the atom to its original state! */
-				atom.setValue(originalValue);
-				/* Compute the exp incomp and accumulate the partition for the current atom. */
-				HashMap<CompatibilityKernel,Double> expIncAtom = new HashMap<CompatibilityKernel,Double>();
-				double Z = 0.0;
-				for (int j = 0; j < numSamples; j++) {
-					/* Compute the exponent */
-					double sum = 0.0;
-					for (Map.Entry<CompatibilityKernel,double[]> e2 : incompatibilities.entrySet()) {
-						CompatibilityKernel k = e2.getKey();
-						double[] inc = e2.getValue();
-						sum -= k.getWeight().getWeight() * inc[j];
-					}
-					double exp = Math.exp(sum);
-					/* Add to partition */
-					Z += exp;
-					/* Compute the exp incomp for current atom */
-					for (Map.Entry<CompatibilityKernel,double[]> e2 : incompatibilities.entrySet()) {
-						CompatibilityKernel k = e2.getKey();
-						if (!expIncAtom.containsKey(k))
-							expIncAtom.put(k, 0.0);
-						double val = expIncAtom.get(k).doubleValue();
-						val += exp * incompatibilities.get(k)[j];
-						expIncAtom.put(k, val);
-					}
+			}
+			/* Remember to return the atom to its original state! */
+			atom.setValue(originalValue);
+			/* Compute the exp incomp and accumulate the partition for the current atom. */
+			HashMap<CompatibilityKernel,Double> expIncAtom = new HashMap<CompatibilityKernel,Double>();
+			double Z = 0.0;
+			for (int j = 0; j < 2; j++) {
+				/* Check constraints */
+				if (constraints.get(atom)[j] == 0)
+					continue;
+				/* Compute the exponent */
+				double sum = 0.0;
+				for (Map.Entry<CompatibilityKernel,double[]> e2 : incompatibilities.entrySet()) {
+					CompatibilityKernel k = e2.getKey();
+					double[] inc = e2.getValue();
+					sum -= k.getWeight().getWeight() * inc[j];
 				}
-				/* Finally, we add to the exp incomp for each kernel */ 
-				for (int i = 0; i < kernels.size(); i++) {
-					CompatibilityKernel k = kernels.get(i);
-					if (expIncAtom.containsKey(k))
-						if (expIncAtom.get(k) > 0.0) 
-							expInc[i] += expIncAtom.get(k) / Z;
+				double exp = Math.exp(sum);
+				/* Add to partition */
+				Z += exp;
+				/* Compute the exp incomp for current atom */
+				for (Map.Entry<CompatibilityKernel,double[]> e2 : incompatibilities.entrySet()) {
+					CompatibilityKernel k = e2.getKey();
+					if (!expIncAtom.containsKey(k))
+						expIncAtom.put(k, 0.0);
+					double val = expIncAtom.get(k).doubleValue();
+					val += exp * incompatibilities.get(k)[j];
+					expIncAtom.put(k, val);
 				}
+			}
+			/* Finally, we add to the exp incomp for each kernel */ 
+			for (int i = 0; i < kernels.size(); i++) {
+				CompatibilityKernel k = kernels.get(i);
+				if (expIncAtom.containsKey(k))
+					if (expIncAtom.get(k) > 0.0) 
+						expInc[i] += expIncAtom.get(k) / Z;
 			}
 		}
 	
