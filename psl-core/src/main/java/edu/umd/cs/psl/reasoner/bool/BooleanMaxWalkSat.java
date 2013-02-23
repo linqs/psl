@@ -17,8 +17,11 @@
 package edu.umd.cs.psl.reasoner.bool;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,9 +32,9 @@ import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.reasoner.Reasoner;
-import edu.umd.cs.psl.reasoner.admm.ADMMReasoner;
 
 /**
  * Implementation of MaxWalkSat, which searches for a good Boolean assignment
@@ -45,7 +48,7 @@ import edu.umd.cs.psl.reasoner.admm.ADMMReasoner;
  */
 public class BooleanMaxWalkSat extends MemoryGroundKernelStore implements Reasoner {
 	
-	private static final Logger log = LoggerFactory.getLogger(ADMMReasoner.class);
+	private static final Logger log = LoggerFactory.getLogger(BooleanMaxWalkSat.class);
 	
 	/**
 	 * Prefix of property keys used by this class.
@@ -68,7 +71,7 @@ public class BooleanMaxWalkSat extends MemoryGroundKernelStore implements Reason
 	 */
 	public static final String NOISE_KEY = CONFIG_PREFIX + ".noise";
 	/** Default value for NOISE_KEY */
-	public static final double NOISE_DEFAULT = 0.1;
+	public static final double NOISE_DEFAULT = (double) 1 / 20;
 	
 	private Random rand;
 	private final int maxFlips;
@@ -87,31 +90,47 @@ public class BooleanMaxWalkSat extends MemoryGroundKernelStore implements Reason
 	
 	@Override
 	public void optimize() {
-		List<GroundCompatibilityKernel> unsatGKs = new ArrayList<GroundCompatibilityKernel>();
+		for (GroundKernel gk : getGroundKernels())
+			for (GroundAtom atom : gk.getAtoms())
+				if (atom instanceof RandomVariableAtom)
+					((RandomVariableAtom) atom).setValue(0.0);
+		
+		log.info("{}", noise);
+		Set<GroundKernel> unsatGKs = new HashSet<GroundKernel>();
 		List<RandomVariableAtom> rvAtoms = new ArrayList<RandomVariableAtom>();
 		RandomVariableAtom atomToFlip;
-		double currentTruthValue, newTruthValue;
 		double currentIncompatibility, newIncompatibility;
 		double bestIncompatibility;
 		
-		/* Finds initially unsatisfied GroundCompatibilityKernels */
-		for (GroundCompatibilityKernel gk : getCompatibilityKernels())
-			if (gk.getIncompatibility() > 0.0)
+		/* Finds initially unsatisfied GroundKernels */
+		for (GroundKernel gk : getGroundKernels())
+			/* This is a grand experiment in non-standard line breaking for long boolean conditions */
+			if ((
+						gk instanceof GroundCompatibilityKernel
+						&&
+						((GroundCompatibilityKernel) gk).getIncompatibility() > 0.0
+					)
+					||
+					(
+						gk instanceof GroundConstraintKernel
+						&&
+						((GroundConstraintKernel) gk).getInfeasibility() > 0.0
+					))
 				unsatGKs.add(gk);
 		
 		/* Flips some variables */
 		for (int flip = 0; flip < maxFlips; flip++) {
-			GroundCompatibilityKernel gck = unsatGKs.get(rand.nextInt(unsatGKs.size()));
+			GroundKernel gk = (GroundKernel) selectAtRandom(unsatGKs);
 			
 			/* Collects the RandomVariableAtoms in gk */
 			rvAtoms.clear();
-			for (GroundAtom atom : gck.getAtoms())
+			for (GroundAtom atom : gk.getAtoms())
 				if (atom instanceof RandomVariableAtom)
 					rvAtoms.add((RandomVariableAtom) atom);
 			
 			/* With probability noise, flips a variable in gk at random */
 			if (rand.nextDouble() <= noise) {
-				atomToFlip = rvAtoms.get(rand.nextInt(rvAtoms.size()));
+				atomToFlip = (RandomVariableAtom) selectAtRandom(rvAtoms);
 			}
 			/* With probability 1 - noise, makes the best flip of a variable in gk */
 			else {
@@ -121,35 +140,43 @@ public class BooleanMaxWalkSat extends MemoryGroundKernelStore implements Reason
 				/* Considers each candidate for flipping */
 				for (RandomVariableAtom candidateAtom : rvAtoms) {
 					/*
-					 * Evaluates the incompatibility of currently satisfied GCKs under a hypothetical flip
+					 * Evaluates the currently satisfied GKs under a hypothetical flip
 					 */
 					flipAtom(candidateAtom);
 					currentIncompatibility = 0.0;
-					for (GroundKernel gk : candidateAtom.getRegisteredGroundKernels()) {
-						if (unsatGKs.contains(gk) && ((GroundCompatibilityKernel) gk).getIncompatibility() > 0.0) {
-							currentIncompatibility += ((GroundCompatibilityKernel) gk).getWeight().getWeight();
+					for (GroundKernel incidentGK : candidateAtom.getRegisteredGroundKernels()) {
+						if (!unsatGKs.contains(incidentGK)) {
+							if (gk instanceof GroundCompatibilityKernel && ((GroundCompatibilityKernel) gk).getIncompatibility() > 0.0)
+								currentIncompatibility += ((GroundCompatibilityKernel) incidentGK).getWeight().getWeight() * ((GroundCompatibilityKernel) gk).getIncompatibility();
+							else if (gk instanceof GroundConstraintKernel && ((GroundConstraintKernel) gk).getInfeasibility() > 0.0)
+								currentIncompatibility += Double.POSITIVE_INFINITY;
 						}
 					}
 					flipAtom(candidateAtom);
 					
 					if (currentIncompatibility < bestIncompatibility)
 						atomToFlip = candidateAtom;
+					else if (currentIncompatibility == bestIncompatibility)
+						if (atomToFlip == null || rand.nextDouble() <= 0.5)
+							atomToFlip = candidateAtom;
 				}
 			}
 			
 			/* Computes change to set of unsatisfied GroundCompatibilityKernels */
-			for (GroundKernel gk : atomToFlip.getRegisteredGroundKernels()) {
-				if (gk instanceof GroundCompatibilityKernel) {
-					currentIncompatibility = ((GroundCompatibilityKernel) gk).getIncompatibility();
-					flipAtom(atomToFlip);
-					newIncompatibility = ((GroundCompatibilityKernel) gk).getIncompatibility();
-					flipAtom(atomToFlip);
-					
-					if (currentIncompatibility == 0.0 && newIncompatibility > 0.0)
-						unsatGKs.add((GroundCompatibilityKernel) gk);
-					else if (currentIncompatibility > 0.0 && newIncompatibility == 0.0)
-						unsatGKs.remove(gk);
-				}
+			for (GroundKernel incidentGK : atomToFlip.getRegisteredGroundKernels()) {
+				flipAtom(atomToFlip);
+				if (incidentGK instanceof GroundCompatibilityKernel)
+					newIncompatibility = ((GroundCompatibilityKernel) incidentGK).getIncompatibility();
+				else if (incidentGK instanceof GroundConstraintKernel)
+					newIncompatibility = ((GroundConstraintKernel) incidentGK).getInfeasibility();
+				else
+					throw new IllegalStateException("Ground kernel of unknown type: " + incidentGK);
+				flipAtom(atomToFlip);
+				
+				if (newIncompatibility > 0.0)
+					unsatGKs.add(incidentGK);
+				else
+					unsatGKs.remove(incidentGK);
 			}
 			
 			flipAtom(atomToFlip);
@@ -157,11 +184,32 @@ public class BooleanMaxWalkSat extends MemoryGroundKernelStore implements Reason
 			/* Just in case... */
 			if (unsatGKs.size() == 0)
 				return;
+			
+			if (flip % 50000 == 0) {
+				int numUnsatConKernels = 0;
+				int numUnsatIncompKernels = 0;
+				for (GroundKernel unsatGK : unsatGKs)
+					if (unsatGK instanceof GroundConstraintKernel)
+						numUnsatConKernels++;
+					else
+						numUnsatIncompKernels++;
+				log.info("{} GroundConstraintKernels, {} GroundIncompatibilityKernels.", numUnsatConKernels, numUnsatIncompKernels);
+			}
 		}
 	}
 	
 	private void flipAtom(RandomVariableAtom atom) {
 		atom.setValue((atom.getValue() == 1.0) ? 0.0 : 1.0);
+	}
+	
+	private Object selectAtRandom(Collection<? extends Object> collection) {
+		int i = 0;
+		int selection = rand.nextInt(collection.size());
+		for (Object o : collection)
+			if (i++ == selection)
+				return o;
+		
+		return null;
 	}
 
 	@Override
