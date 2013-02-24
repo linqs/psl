@@ -139,6 +139,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
 	
 	protected void cleanUpGroundModel() {
 		trainingMap = null;
+		reasoner.close();
 		reasoner = null;
 	}
 

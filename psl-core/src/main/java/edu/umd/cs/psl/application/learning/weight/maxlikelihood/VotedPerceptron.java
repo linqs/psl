@@ -136,6 +136,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 		for (int i = 0; i < kernels.size(); i++) {
 			kernels.get(i).setWeight(new PositiveWeight(avgWeights[i] / numSteps));
 		}
+		
 	}
 	
 	protected double[] computeObservedIncomp() {
@@ -178,5 +179,5 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 			factor[i] = (numGroundings[i] > 0) ? numGroundings[i] : 1.0;
 		return factor;
 	}
-
+	
 }

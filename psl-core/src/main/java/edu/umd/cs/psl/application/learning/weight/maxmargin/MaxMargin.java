@@ -338,7 +338,7 @@ public class MaxMargin extends WeightLearningApplication {
 				optimizationCount++;
 			}
 			
-			log.debug("Separation oracle performed {} optimizations.", optimizationCount);
+			log.info("Separation oracle performed {} optimizations.", optimizationCount);
 						
 			double slack = weights[kernels.size()];
 
@@ -393,6 +393,11 @@ public class MaxMargin extends WeightLearningApplication {
 			}
 			catch (IllegalArgumentException e) {
 				log.error("Norm minimization program failed. Returning early.");
+				return;
+			} 
+			catch (IllegalStateException e) {
+				log.error("Norm minimization program failed. Returning early.");
+				e.printStackTrace();
 				return;
 			}
 			
