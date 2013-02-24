@@ -262,9 +262,9 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 					if (gk instanceof GroundCompatibilityKernel) {
 						CompatibilityKernel k = (CompatibilityKernel) gk.getKernel();
 						if (!incompatibilities.containsKey(k))
-							incompatibilities.put(k, new double[numSamples]);
+							incompatibilities.put(k, new double[s.length]);
 						double[] inc = incompatibilities.get(k);
-						for (int j = 0; j < numSamples; j++) {
+						for (int j = 0; j < s.length; j++) {
 							atom.setValue(s[j]);
 							inc[j] += ((GroundCompatibilityKernel) gk).getIncompatibility();
 						}
@@ -275,7 +275,7 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 				/* Compute the exp incomp and accumulate the partition for the current atom. */
 				HashMap<CompatibilityKernel,Double> expIncAtom = new HashMap<CompatibilityKernel,Double>();
 				double Z = 0.0;
-				for (int j = 0; j < numSamples; j++) {
+				for (int j = 0; j < s.length; j++) {
 					/* Compute the exponent */
 					double sum = 0.0;
 					for (Map.Entry<CompatibilityKernel,double[]> e2 : incompatibilities.entrySet()) {
