@@ -29,18 +29,18 @@ import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 
 /**
- * A {@link FirstOrderMetropolisRandOM} learning algorithm which scores the likelihood
+ * A {@link FirstOrderSliceRandOM} learning algorithm which scores the likelihood
  * of a sample using the distance in total (unweighted) incompatibility space grouped
  * by {@link CompatibilityKernel} between the sample and the observations.
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-public class IncompatibilityMetropolisRandOM extends FirstOrderMetropolisRandOM {
+public class IncompatibilitySliceRandOM extends FirstOrderSliceRandOM {
 	
 	protected double[] obsvIncompatibilities;
 	protected int[] numGroundings;
 
-	public IncompatibilityMetropolisRandOM(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
+	public IncompatibilitySliceRandOM(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
 		super(model, rvDB, observedDB, config);
 	}
 	
@@ -75,8 +75,9 @@ public class IncompatibilityMetropolisRandOM extends FirstOrderMetropolisRandOM 
 		double[] sampleIncompatibilities = computeIncompatibilities();
 		for (int i = 0; i < kernels.size(); i++)
 //			likelihood -= Math.abs((sampleIncompatibilities[i] - obsvIncompatibilities[i])) / observationScale;
-			likelihood -= Math.pow((sampleIncompatibilities[i] - obsvIncompatibilities[i]), 2);
+//			likelihood -= Math.pow((sampleIncompatibilities[i] - obsvIncompatibilities[i]), 2) / (2 * observationScale);
 //			likelihood -= Math.abs((sampleIncompatibilities[i] - obsvIncompatibilities[i])) / (numGroundings[i] * observationScale);
+			likelihood -= Math.pow((sampleIncompatibilities[i] - obsvIncompatibilities[i]), 2) / (2 * numGroundings[i] * observationScale);
 		return likelihood;
 	}
 	

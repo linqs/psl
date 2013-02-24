@@ -29,18 +29,18 @@ import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 
 /**
- * A {@link FirstOrderMetropolisRandOM} learning algorithm which scores the likelihood
+ * A {@link GroundMetropolisRandOM} learning algorithm which scores the likelihood
  * of a sample using the distance in total (unweighted) incompatibility space grouped
  * by {@link CompatibilityKernel} between the sample and the observations.
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-public class IncompatibilityMetropolisRandOM extends FirstOrderMetropolisRandOM {
+public class GroundIncompatibilityMetropolisRandOM extends GroundMetropolisRandOM {
 	
 	protected double[] obsvIncompatibilities;
 	protected int[] numGroundings;
 
-	public IncompatibilityMetropolisRandOM(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
+	public GroundIncompatibilityMetropolisRandOM(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
 		super(model, rvDB, observedDB, config);
 	}
 	
@@ -65,6 +65,10 @@ public class IncompatibilityMetropolisRandOM extends FirstOrderMetropolisRandOM 
 				numGroundings[i]++;
 		}
 		
+		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
+			e.getKey().setValue(0.5);
+		}
+		
 		/* Begins learning */
 		super.doLearn();
 	}
@@ -73,9 +77,9 @@ public class IncompatibilityMetropolisRandOM extends FirstOrderMetropolisRandOM 
 	public double getLogLikelihoodObservations() {
 		double likelihood = 0.0;
 		double[] sampleIncompatibilities = computeIncompatibilities();
-		for (int i = 0; i < kernels.size(); i++)
+//		for (int i = 0; i < kernels.size(); i++)
 //			likelihood -= Math.abs((sampleIncompatibilities[i] - obsvIncompatibilities[i])) / observationScale;
-			likelihood -= Math.pow((sampleIncompatibilities[i] - obsvIncompatibilities[i]), 2);
+//			likelihood -= Math.pow((sampleIncompatibilities[i] - obsvIncompatibilities[i]), 2);
 //			likelihood -= Math.abs((sampleIncompatibilities[i] - obsvIncompatibilities[i])) / (numGroundings[i] * observationScale);
 		return likelihood;
 	}
