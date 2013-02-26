@@ -2,7 +2,12 @@ package edu.umd.cs.psl.application.learning.weight.maxlikelihood;
 
 import java.util.Random;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class SimplexSampler {
+
+	Logger log = LoggerFactory.getLogger(SimplexSampler.class);
 
 	private final Random rand;
 
@@ -30,8 +35,25 @@ public class SimplexSampler {
 			sum += x[i];
 		}
 
-		for (int i = 0; i < d; i++) 
-			x[i] /= sum;
+		if (sum == Double.POSITIVE_INFINITY) {
+			log.debug("Found infinity in gamma sample");
+			sum = 0.0;
+			for (int i = 0; i < d; i++) 
+				if (x[i] == Double.POSITIVE_INFINITY) {
+					x[i] = 1.0;
+					sum += 1.0;
+				} else
+					x[i] = 0.0;
+			StringBuilder sb = new StringBuilder();
+			for (int i = 0; i < d; i++) {
+				x[i] /= sum;
+				sb.append("" + x[i] + ", ");
+			}
+			log.debug(sb.toString());
+		} else {
+			for (int i = 0; i < d; i++)
+				x[i] /= sum;
+		}
 
 		return x;
 	}
@@ -48,6 +70,10 @@ public class SimplexSampler {
 				}
 				System.out.println();
 			}
+		}
+
+		for (int i = 0; i < 1000000000; i++) {
+			double [] x = sampler.getNext(100);
 		}
 	}	
 
