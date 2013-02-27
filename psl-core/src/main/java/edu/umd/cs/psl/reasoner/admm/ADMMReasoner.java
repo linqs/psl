@@ -456,7 +456,7 @@ public class ADMMReasoner implements Reasoner {
 		if (rebuildModel)
 			buildGroundModel();
 		
-		log.debug("Performing optimization with {} variables and {} terms.", z.size(), terms.size());
+		log.info("Performing optimization with {} variables and {} terms.", z.size(), terms.size());
 		
 		// Starts up the computation threads
 		ADMMTask[] tasks = new ADMMTask[numThreads];

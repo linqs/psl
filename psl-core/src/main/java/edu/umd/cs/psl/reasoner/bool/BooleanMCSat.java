@@ -16,22 +16,19 @@
  */
 package edu.umd.cs.psl.reasoner.bool;
 
-import java.util.HashSet;
 import java.util.Random;
-import java.util.Set;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import edu.umd.cs.psl.application.groundkernelstore.MemoryGroundKernelStore;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
-import edu.umd.cs.psl.model.atom.GroundAtom;
-import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
-import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
-import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.kernel.predicateconstraint.GroundDomainRangeConstraint;
 import edu.umd.cs.psl.reasoner.Reasoner;
-import edu.umd.cs.psl.reasoner.function.FunctionComparator;
+import edu.umd.cs.psl.util.model.ConstraintBlocker;
 
 /**
  * Implementation of MC-Sat, which approximates the marginal probability that each
@@ -48,6 +45,8 @@ import edu.umd.cs.psl.reasoner.function.FunctionComparator;
  */
 public class BooleanMCSat extends MemoryGroundKernelStore implements Reasoner {
 	
+	private static final Logger log = LoggerFactory.getLogger(BooleanMCSat.class);
+	
 	/**
 	 * Prefix of property keys used by this class.
 	 * 
@@ -60,7 +59,7 @@ public class BooleanMCSat extends MemoryGroundKernelStore implements Reasoner {
 	 */
 	public static final String NUM_SAMPLES_KEY = CONFIG_PREFIX + ".numsamples";
 	/** Default value for NUM_SAMPLES_KEY */
-	public static final int NUM_SAMPLES_DEFAULT = 5000;
+	public static final int NUM_SAMPLES_DEFAULT = 2500;
 	
 	/**
 	 * Number of burn-in samples
@@ -88,104 +87,26 @@ public class BooleanMCSat extends MemoryGroundKernelStore implements Reasoner {
 	
 	@Override
 	public void optimize() {
-		/* Collects GroundDomainRangeConstraints */
-		Set<GroundDomainRangeConstraint> constraintSet = new HashSet<GroundDomainRangeConstraint>();
-		for (GroundConstraintKernel gk : getConstraintKernels()) {
-			if (gk instanceof GroundDomainRangeConstraint)
-				constraintSet.add((GroundDomainRangeConstraint) gk);
-			else
-				throw new IllegalStateException("The only supported ConstraintKernels are DomainRangeConstraintKernels.");
-		}
-		
-		/* Collects the free RandomVariableAtoms that remain */
-		Set<RandomVariableAtom> freeRVSet = new HashSet<RandomVariableAtom>();
-		for (GroundKernel gk : getGroundKernels()) {
-			for (GroundAtom atom : gk.getAtoms()) {
-				if (atom instanceof RandomVariableAtom) {
-					int numConstraints = 0;
-					for (GroundKernel incidentGK : atom.getRegisteredGroundKernels())
-						if (incidentGK instanceof GroundConstraintKernel)
-							numConstraints++;
-					if (numConstraints == 0)
-						freeRVSet.add(((RandomVariableAtom) atom));
-					else if (numConstraints >= 2)
-						throw new IllegalStateException("RandomVariableAtoms may only participate in one GroundDomainRangeConstraint.");
-				}
-			}
-		}
-		
-		int i;
+		ConstraintBlocker blocker = new ConstraintBlocker(this);
+		blocker.prepareBlocks(false);
 		
 		/* Puts RandomVariableAtoms in 2d array by block */
-		RandomVariableAtom[][] rvBlocks = new RandomVariableAtom[constraintSet.size() + freeRVSet.size()][];
+		RandomVariableAtom[][] rvBlocks = blocker.getRVBlocks();
 		/* If true, exactly one Atom in the RV block must be 1.0. If false, at most one can. */
-		boolean[] exactlyOne = new boolean[rvBlocks.length];
-		
-		/* Processes constrained RVs first */
-		Set<RandomVariableAtom> constrainedRVSet = new HashSet<RandomVariableAtom>();
-		boolean varsAreFree; /* False means that an ObservedAtom is 1.0, forcing others to 0.0 */
-		i = 0;
-		for (GroundDomainRangeConstraint con : constraintSet) {
-			constrainedRVSet.clear();
-			varsAreFree = true;
-			for (GroundAtom atom : con.getAtoms())
-				if (atom instanceof ObservedAtom && atom.getValue() != 0.0)
-					varsAreFree = false;
-				else if (atom instanceof RandomVariableAtom)
-					constrainedRVSet.add((RandomVariableAtom) atom);
-			
-			if (varsAreFree) {
-				rvBlocks[i] = new RandomVariableAtom[constrainedRVSet.size()];
-				int j = 0;
-				for (RandomVariableAtom atom : constrainedRVSet)
-					rvBlocks[i][j++] = atom;
-				
-				exactlyOne[i] = con.getConstraintDefinition().getComparator().equals(FunctionComparator.Equality);
-			}
-			else {
-				rvBlocks[i] = new RandomVariableAtom[0];
-				/*
-				 * Sets to true regardless of constraint type to avoid extra steps
-				 * that would not work on empty blocks 
-				 */
-				exactlyOne[i] = true;
-			}
-			
-			i++;
-		}
-		
-		/* Processes free RVs second */
-		for (RandomVariableAtom atom : freeRVSet) {
-			rvBlocks[i] = new RandomVariableAtom[] {atom};
-			exactlyOne[i] = false;
-			i++;
-		}
-		
+		boolean[] exactlyOne = blocker.getExactlyOne();
 		/* Collects GroundCompatibilityKernels incident on each block of RandomVariableAtoms */
-		GroundCompatibilityKernel[][] incidentGKs = new GroundCompatibilityKernel[rvBlocks.length][];
-		Set<GroundCompatibilityKernel> incidentGKSet = new HashSet<GroundCompatibilityKernel>();
-		for (i = 0; i < rvBlocks.length; i++) {
-			incidentGKSet.clear();
-			for (RandomVariableAtom atom : rvBlocks[i])
-				for (GroundKernel incidentGK : atom.getRegisteredGroundKernels())
-					if (incidentGK instanceof GroundCompatibilityKernel)
-						incidentGKSet.add((GroundCompatibilityKernel) incidentGK);
-			
-			incidentGKs[i] = new GroundCompatibilityKernel[incidentGKSet.size()];
-			int j = 0;
-			for (GroundCompatibilityKernel incidentGK : incidentGKSet)
-				incidentGKs[i][j++] = incidentGK;
-		}
-		
+		GroundCompatibilityKernel[][] incidentGKs = blocker.getIncidentGKs();
 		/* Initializes arrays for totaling samples */
-		double[][] totals = new double[rvBlocks.length][];
-		for (i = 0; i < rvBlocks.length; i++)
-			totals[i] = new double[rvBlocks[i].length];
+		double[][] totals = blocker.getEmptyDouble2DArray();
+		
+		/* Randomly initializes the RVs to a feasible state */
+		blocker.randomlyInitializeRVs();
 		
 		/* Samples RV assignments */
+		log.info("Beginning inference.");
 		double[] p;
 		for (int sampleIndex = 0; sampleIndex < numSamples; sampleIndex++) {
-			for (i = 0; i < rvBlocks.length; i++) {
+			for (int i = 0; i < rvBlocks.length; i++) {
 				p = new double[(exactlyOne[i]) ? rvBlocks[i].length : (rvBlocks[i].length + 1)];
 				
 				/* Computes probability for assignment of 1.0 to each RV */
@@ -219,8 +140,10 @@ public class BooleanMCSat extends MemoryGroundKernelStore implements Reasoner {
 			}
 		}
 		
+		log.info("Inference complete.");
+		
 		/* Sets truth values of RandomVariableAtoms to marginal probabilities */
-		for (i = 0; i < rvBlocks.length; i++)
+		for (int i = 0; i < rvBlocks.length; i++)
 			for (int j = 0; j < rvBlocks[i].length; j++)
 				rvBlocks[i][j].setValue(totals[i][j] / (numSamples - numBurnIn));
 	}
