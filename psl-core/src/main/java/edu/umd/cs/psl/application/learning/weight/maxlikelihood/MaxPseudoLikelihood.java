@@ -17,26 +17,17 @@
 package edu.umd.cs.psl.application.learning.weight.maxlikelihood;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.Random;
 
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.Model;
-import edu.umd.cs.psl.model.atom.GroundAtom;
-import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
-import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
-import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
-import edu.umd.cs.psl.reasoner.function.FunctionSum;
-import edu.umd.cs.psl.reasoner.function.FunctionSummand;
-import edu.umd.cs.psl.reasoner.function.FunctionTerm;
-import edu.umd.cs.psl.reasoner.function.FunctionVariable;
+import edu.umd.cs.psl.util.model.ConstraintBlocker;
 
 /**
  * Learns weights by optimizing the pseudo-log-likelihood of the data using
@@ -85,7 +76,7 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 	/** Default value for MIN_WIDTH_KEY */
 	public static final double MIN_WIDTH_DEFAULT = 1e-2;
 	
-	private HashMap<GroundAtom,double[]> bounds;
+	private ConstraintBlocker blocker;
 	private final boolean bool;
 	private final int numSamples;
 	private final double minWidth;
@@ -113,7 +104,6 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 	}
 	
 	/**
-	 * Initializes the domain of integration for each ground atom.
 	 * Note: calls super.initGroundModel() first, in order to ground model. 
 	 */
 	@Override
@@ -121,109 +111,8 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		/* Invoke method in the parent class to setup ground model */
 		super.initGroundModel();
-		
-		/* Determine the bounds of integration */
-		bounds = new HashMap<GroundAtom,double[]>();
-		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
-			RandomVariableAtom atom = e.getKey();
-			double min = 0.0;
-			double max = 1.0;
-			for (GroundKernel gk : atom.getRegisteredGroundKernels()) {
-				if (!(gk instanceof GroundConstraintKernel)) {
-					continue;
-				}
-				ConstraintTerm ct = ((GroundConstraintKernel) gk).getConstraintDefinition();
-				FunctionTerm ft = ct.getFunction();
-				if (!(ft instanceof FunctionSum)) {
-					throw new IllegalStateException("Can only have FunctionSum constraints in MPLE");
-				}
-				/* Create a map containing the Markov blanket and associated values */
-				HashMap<FunctionVariable,Double> mb = new HashMap<FunctionVariable,Double>();
-				for (GroundAtom a : gk.getAtoms()) {
-					if (!a.equals(atom) && trainingMap.getTrainingMap().containsKey(a)) {
-						FunctionVariable var = a.getVariable();
-						double val = trainingMap.getTrainingMap().get(a).getValue();
-						mb.put(var, val);
-					}
-				}
-				/* Compute the RHS of the (in)equality */
-				double rhs = ct.getValue();
-				double coef = 0.0;
-				//StringBuilder constStr = new StringBuilder(rhs + " - (");
-				for (Iterator<FunctionSummand> iter = ((FunctionSum) ft).iterator(); iter.hasNext();) {
-					FunctionSummand term = iter.next();
-					FunctionVariable var = (FunctionVariable) term.getTerm();
-					if (atom.getVariable().equals(var)) {
-						coef = term.getCoefficient();
-					}
-					else if (mb.containsKey(var)) {
-						rhs -= mb.get(var) * term.getCoefficient();
-						//constStr.append(" +" + term.getCoefficient() + "*" + mb.get(var));
-					}
-				}
-				//constStr.append(" ) / " + coef);
-				rhs /= coef;
-				//System.out.println("RHS after: " + rhs);
-				/* Update the bounds of integration */
-				switch(ct.getComparator()) {
-					case Equality:
-						if (rhs < -constraintTol || rhs > (1+constraintTol))
-							throw new IllegalStateException("Infeasible Equality constraint: RHS=" + rhs);
-						min = Math.min(1.0, Math.max(0.0, rhs));
-						max = Math.min(1.0, Math.max(0.0, rhs));
-						break;
-					case SmallerThan:
-						if (coef < 0) {
-							if (min < rhs)
-								min = rhs;
-							if (max < min - constraintTol)
-								throw new IllegalStateException("Infeasible LessThan constraint: max < min - tol.");
-							max = Math.max(min, max);
-						}
-						else {
-							if (max > rhs)
-								max = rhs;
-							if (min > max + constraintTol)
-								throw new IllegalStateException("Infeasible LessThan constraint: min > max + tol");
-							min = Math.min(min, max);
-						}
-						break;
-					case LargerThan:
-						if (coef < 0) {
-							if (max > rhs)
-								max = rhs;
-							if (min > max + constraintTol)
-								throw new IllegalStateException("Infeasible LargerThan constraint: min > max + tol");
-							min = Math.min(min, max);
-						}
-						else {
-							if (min < rhs)
-								min = rhs;
-							if (max < min - constraintTol)
-								throw new IllegalStateException("Infeasible LargerThan constraint: max < min - tol.");
-							max = Math.max(min, max);
-						}
-						break;
-				}
-			}
-			/* Ensure a minimum width */
-			if (max - min < minWidth) {
-				if (min - minWidth/2 < 0.0) {
-					min = 0.0;
-					max = minWidth;
-				}
-				else if (max + minWidth/2 > 1.0) {
-					min = 1.0 - minWidth;
-					max = 1.0;
-				}
-				else {
-					min -= minWidth/2;
-					max += minWidth/2;
-				}
-			}
-			//System.out.println(atom.toString() + " min: " + min + " max: " + max);
-			bounds.put(atom, new double[]{min,max});
-		}
+		blocker = new ConstraintBlocker(reasoner);
+		blocker.prepareBlocks(true);
 	}
 	
 	/**
@@ -233,76 +122,100 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 	 */
 	@Override
 	protected double[] computeExpectedIncomp() {
+		/* Puts RandomVariableAtoms in 2d array by block */
+		RandomVariableAtom[][] rvBlocks = blocker.getRVBlocks();
+		/* If true, exactly one Atom in the RV block must be 1.0. If false, at most one can. */
+		boolean[] exactlyOne = blocker.getExactlyOne();
+		/* Collects GroundCompatibilityKernels incident on each block of RandomVariableAtoms */
+		GroundCompatibilityKernel[][] incidentGKs = blocker.getIncidentGKs();
+		
 		double[] expInc = new double[kernels.size()];
 		
-		/* Let's create/seed the random number generator */
-		Random rand = new Random();
-		/* Accumulate the marginals over all atoms */
-		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
-			RandomVariableAtom atom = e.getKey();
-			/* Check the range of the variable to see if we can integrate it */
-			double range = bounds.get(atom)[1] - bounds.get(atom)[0];
-			if (range != 0.0) {
-				/* Sample numSamples random numbers in the range of integration */
-				double[] s;
-				if (!bool) {
-					s = new double[numSamples];
-					for (int j = 0; j < numSamples; j++) {
-						s[j] = rand.nextDouble() * range + bounds.get(atom)[0];
+		/* Accumulate the expected incompatibility over all atoms */
+		for (int iBlock = 0; iBlock < rvBlocks.length; iBlock++) {
+			
+			if (rvBlocks[iBlock].length == 0)
+				// TODO: Is this correct?
+				continue;
+			
+			/* Sample numSamples random numbers in the range of integration */
+			double[][] s;
+			if (!bool) {
+				s = new double[numSamples * rvBlocks[iBlock].length][];
+				SimplexSampler simplexSampler = new SimplexSampler();
+				for (int iSample = 0; iSample < s.length; iSample++) {
+					s[iSample] = simplexSampler.getNext(s.length);
+				}
+			}
+			else {
+				s = new double[(exactlyOne[iBlock]) ? rvBlocks[iBlock].length : rvBlocks[iBlock].length+1][];
+				for (int iRV = 0; iRV < s.length; iRV++) {
+					s[iRV] = new double[rvBlocks[iBlock].length];
+					s[iRV][iRV] = 1.0;
+				}
+				if (!exactlyOne[iBlock])
+					s[s.length-1] = new double[rvBlocks[iBlock].length];
+			}
+				
+			/* Compute the incompatibility of each sample for each kernel */
+			HashMap<CompatibilityKernel,double[]> incompatibilities = new HashMap<CompatibilityKernel,double[]>();
+			
+			/* Saves original state */
+			double[] originalState = new double[rvBlocks[iBlock].length];
+			for (int iSave = 0; iSave < rvBlocks[iBlock].length; iSave++)
+				originalState[iSave] = rvBlocks[iBlock][iSave].getValue();
+			
+			/* Computes the probability */
+			for (GroundKernel gk : incidentGKs[iBlock]) {
+				if (gk instanceof GroundCompatibilityKernel) {
+					CompatibilityKernel k = (CompatibilityKernel) gk.getKernel();
+					if (!incompatibilities.containsKey(k))
+						incompatibilities.put(k, new double[s.length]);
+					double[] inc = incompatibilities.get(k);
+					for (int iSample = 0; iSample < s.length; iSample++) {
+						/* Changes the state of the block to the next point */
+						for (int iChange = 0; iChange < rvBlocks[iBlock].length; iChange++)
+							rvBlocks[iBlock][iChange].setValue(s[iSample][iChange]);
+						
+						inc[iSample] += ((GroundCompatibilityKernel) gk).getIncompatibility();
 					}
 				}
-				else {
-					s = new double[] {0, 1};
+			}
+			
+			/* Remember to return the block to its original state! */
+			for (int iChange = 0; iChange < rvBlocks[iBlock].length; iChange++)
+				rvBlocks[iBlock][iChange].setValue(originalState[iChange]);
+			
+			/* Compute the exp incomp and accumulate the partition for the current atom. */
+			HashMap<CompatibilityKernel,Double> expIncAtom = new HashMap<CompatibilityKernel,Double>();
+			double Z = 0.0;
+			for (int j = 0; j < s.length; j++) {
+				/* Compute the exponent */
+				double sum = 0.0;
+				for (Map.Entry<CompatibilityKernel,double[]> e2 : incompatibilities.entrySet()) {
+					CompatibilityKernel k = e2.getKey();
+					double[] inc = e2.getValue();
+					sum -= k.getWeight().getWeight() * inc[j];
 				}
-					
-				/* Compute the incompatibility of each sample for each kernel */
-				HashMap<CompatibilityKernel,double[]> incompatibilities = new HashMap<CompatibilityKernel,double[]>();
-				double originalValue = atom.getValue();
-				for (GroundKernel gk : atom.getRegisteredGroundKernels()) {
-					if (gk instanceof GroundCompatibilityKernel) {
-						CompatibilityKernel k = (CompatibilityKernel) gk.getKernel();
-						if (!incompatibilities.containsKey(k))
-							incompatibilities.put(k, new double[s.length]);
-						double[] inc = incompatibilities.get(k);
-						for (int j = 0; j < s.length; j++) {
-							atom.setValue(s[j]);
-							inc[j] += ((GroundCompatibilityKernel) gk).getIncompatibility();
-						}
-					}
+				double exp = Math.exp(sum);
+				/* Add to partition */
+				Z += exp;
+				/* Compute the exp incomp for current atom */
+				for (Map.Entry<CompatibilityKernel,double[]> e2 : incompatibilities.entrySet()) {
+					CompatibilityKernel k = e2.getKey();
+					if (!expIncAtom.containsKey(k))
+						expIncAtom.put(k, 0.0);
+					double val = expIncAtom.get(k).doubleValue();
+					val += exp * incompatibilities.get(k)[j];
+					expIncAtom.put(k, val);
 				}
-				/* Remember to return the atom to its original state! */
-				atom.setValue(originalValue);
-				/* Compute the exp incomp and accumulate the partition for the current atom. */
-				HashMap<CompatibilityKernel,Double> expIncAtom = new HashMap<CompatibilityKernel,Double>();
-				double Z = 0.0;
-				for (int j = 0; j < s.length; j++) {
-					/* Compute the exponent */
-					double sum = 0.0;
-					for (Map.Entry<CompatibilityKernel,double[]> e2 : incompatibilities.entrySet()) {
-						CompatibilityKernel k = e2.getKey();
-						double[] inc = e2.getValue();
-						sum -= k.getWeight().getWeight() * inc[j];
-					}
-					double exp = Math.exp(sum);
-					/* Add to partition */
-					Z += exp;
-					/* Compute the exp incomp for current atom */
-					for (Map.Entry<CompatibilityKernel,double[]> e2 : incompatibilities.entrySet()) {
-						CompatibilityKernel k = e2.getKey();
-						if (!expIncAtom.containsKey(k))
-							expIncAtom.put(k, 0.0);
-						double val = expIncAtom.get(k).doubleValue();
-						val += exp * incompatibilities.get(k)[j];
-						expIncAtom.put(k, val);
-					}
-				}
-				/* Finally, we add to the exp incomp for each kernel */ 
-				for (int i = 0; i < kernels.size(); i++) {
-					CompatibilityKernel k = kernels.get(i);
-					if (expIncAtom.containsKey(k))
-						if (expIncAtom.get(k) > 0.0) 
-							expInc[i] += expIncAtom.get(k) / Z;
-				}
+			}
+			/* Finally, we add to the exp incomp for each kernel */ 
+			for (int i = 0; i < kernels.size(); i++) {
+				CompatibilityKernel k = kernels.get(i);
+				if (expIncAtom.containsKey(k))
+					if (expIncAtom.get(k) > 0.0) 
+						expInc[i] += expIncAtom.get(k) / Z;
 			}
 		}
 	

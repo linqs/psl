@@ -107,6 +107,9 @@ public class BooleanMCSat extends MemoryGroundKernelStore implements Reasoner {
 		double[] p;
 		for (int sampleIndex = 0; sampleIndex < numSamples; sampleIndex++) {
 			for (int i = 0; i < rvBlocks.length; i++) {
+				if (rvBlocks.length == 0)
+					continue;
+				
 				p = new double[(exactlyOne[i]) ? rvBlocks[i].length : (rvBlocks[i].length + 1)];
 				
 				/* Computes probability for assignment of 1.0 to each RV */
@@ -150,10 +153,11 @@ public class BooleanMCSat extends MemoryGroundKernelStore implements Reasoner {
 	
 	private double computeProbability(GroundCompatibilityKernel incidentGKs[]) {
 		double probability = 0.0;
-		for (GroundCompatibilityKernel gk : incidentGKs)
+		for (GroundCompatibilityKernel gk : incidentGKs) {
 			probability += ((GroundCompatibilityKernel) gk).getWeight().getWeight()
-			* ((GroundCompatibilityKernel) gk).getIncompatibility();
-		return probability;
+					* ((GroundCompatibilityKernel) gk).getIncompatibility();
+		}
+		return Math.exp(-1 * probability);
 	}
 	
 	private double[] sampleWithProbability(double[] distribution) {

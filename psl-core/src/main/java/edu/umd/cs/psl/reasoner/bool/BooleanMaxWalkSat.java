@@ -169,7 +169,7 @@ public class BooleanMaxWalkSat extends MemoryGroundKernelStore implements Reason
 				do {
 					newBlockSetting = rand.nextInt(blockSize);
 				}
-				while (!candidateExactlyOne[changeBlock] || candidateRVBlocks[changeBlock][newBlockSetting].getValue() == 1.0);
+				while (candidateExactlyOne[changeBlock] && candidateRVBlocks[changeBlock][newBlockSetting].getValue() == 1.0);
 				
 				/* 
 				 * If the random setting is the current setting, but all 0.0 is also valid,
@@ -218,7 +218,6 @@ public class BooleanMaxWalkSat extends MemoryGroundKernelStore implements Reason
 							}
 							
 							if (currentIncompatibility < bestIncompatibility) {
-//								System.out.println("New best incompatibility: " + currentIncompatibility);
 								bestIncompatibility = currentIncompatibility;
 								changeBlock = iBlock;
 								newBlockSetting = iSetRV;
@@ -232,7 +231,6 @@ public class BooleanMaxWalkSat extends MemoryGroundKernelStore implements Reason
 				}
 			}
 			
-//			System.out.println("Setting block " + changeBlock + " to " + newBlockSetting);
 			/* Changes assignment to RV block */
 			for (int iChangeRV = 0; iChangeRV < candidateRVBlocks[changeBlock].length; iChangeRV++)
 				candidateRVBlocks[changeBlock][iChangeRV].setValue((iChangeRV == newBlockSetting) ? 1.0 : 0.0);
