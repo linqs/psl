@@ -150,8 +150,11 @@ public class LazyMPEInference implements ModelApplication {
 		proc.terminate();
 		double incompatibility = GroundKernels.getTotalWeightedIncompatibility(reasoner.getCompatibilityKernels());
 		double infeasibility = GroundKernels.getInfeasibilityNorm(reasoner.getConstraintKernels());
-		return new MemoryFullInferenceResult(proc, incompatibility, infeasibility, count, reasoner.size());
-
+		
+		int size = reasoner.size();
+		reasoner.close();
+		
+		return new MemoryFullInferenceResult(proc, incompatibility, infeasibility, count, size);
 	}
 
 	@Override
