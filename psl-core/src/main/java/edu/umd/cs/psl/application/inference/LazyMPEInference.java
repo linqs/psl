@@ -16,6 +16,8 @@
  */
 package edu.umd.cs.psl.application.inference;
 
+import java.util.Observable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +54,7 @@ import edu.umd.cs.psl.reasoner.admm.ADMMReasonerFactory;
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-public class LazyMPEInference implements ModelApplication {
+public class LazyMPEInference extends Observable implements ModelApplication {
 	
 	private static final Logger log = LoggerFactory.getLogger(LazyMPEInference.class);
 	
@@ -87,6 +89,9 @@ public class LazyMPEInference implements ModelApplication {
 	private Database db;
 	private ConfigBundle config;
 	private final int maxRounds;
+	
+	/** stop flag to quit the loop. */
+	public boolean toStop = false;
 	
 	public LazyMPEInference(Model model, Database db, ConfigBundle config) {
 		this.model = model;
@@ -136,7 +141,10 @@ public class LazyMPEInference implements ModelApplication {
 				eventFramework.workOffJobQueue();
 			}
 			log.debug("Completed round {} and activated {} atoms.", rounds, numActivated);
-		} while (numActivated > 0 && rounds < maxRounds);
+			// notify registered observers
+			setChanged();
+			notifyObservers(new IntermidateState(rounds, numActivated, maxRounds));
+		} while (numActivated > 0 && rounds < maxRounds && !toStop);
 
 		// TODO: Check for consideration events when deciding to terminate?
 		
@@ -156,12 +164,38 @@ public class LazyMPEInference implements ModelApplication {
 		
 		return new MemoryFullInferenceResult(proc, incompatibility, infeasibility, count, size);
 	}
+	
+	/**
+	 * notify the inference to stop 
+	 * it will exit the loop before next 
+	 * iteration
+	 */
+	public void stop() {
+		toStop = true;
+	}
 
 	@Override
 	public void close() {
 		model=null;
 		db = null;
 		config = null;
+	}
+	
+	/**
+	 * Intermediate state object to 
+	 * notify the registered observers.
+	 *
+	 */
+	public class IntermidateState {
+		public final int rounds;
+		public final int numActivated;
+		public final int maxRounds; 
+		
+		public IntermidateState(int currRounds, int currNumActivated, int confMaxRounds) {
+			this.rounds = currRounds;
+			this.numActivated = currNumActivated;
+			this.maxRounds = confMaxRounds;
+		}
 	}
 
 }
