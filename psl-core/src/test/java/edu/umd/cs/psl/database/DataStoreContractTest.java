@@ -306,6 +306,14 @@ abstract public class DataStoreContractTest {
 	}
 	
 	@Test
+	public void testStringEscaping() {
+		datastore.registerPredicate(p2);
+		Database db = datastore.getDatabase(new Partition(0));
+		DatabaseQuery query = new DatabaseQuery(new QueryAtom(p2, new StringAttribute("a"), new StringAttribute("jk'a")));
+		db.executeQuery(query);
+	}
+	
+	@Test
 	public void testPredicateRegistration() {
 		datastore.registerPredicate(p1);
 		

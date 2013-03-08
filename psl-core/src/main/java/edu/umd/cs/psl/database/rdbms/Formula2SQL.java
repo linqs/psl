@@ -16,7 +16,11 @@
  */
 package edu.umd.cs.psl.database.rdbms;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import com.healthmarketscience.sqlbuilder.BinaryCondition;
 import com.healthmarketscience.sqlbuilder.CustomSql;
@@ -30,12 +34,12 @@ import edu.umd.cs.psl.model.argument.UniqueID;
 import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.VariableAssignment;
-import edu.umd.cs.psl.model.formula.*;
+import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.formula.traversal.AbstractFormulaTraverser;
-import edu.umd.cs.psl.model.predicate.StandardPredicate;
-import edu.umd.cs.psl.model.predicate.FunctionalPredicate;
 import edu.umd.cs.psl.model.predicate.ExternalFunctionalPredicate;
+import edu.umd.cs.psl.model.predicate.FunctionalPredicate;
 import edu.umd.cs.psl.model.predicate.SpecialPredicate;
+import edu.umd.cs.psl.model.predicate.StandardPredicate;
 
 public class Formula2SQL extends AbstractFormulaTraverser {
 
@@ -188,14 +192,17 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 				}
 
 				if (arg instanceof Attribute) {
+					Object value = ((Attribute) arg).getValue();
+					if (value instanceof String)
+						value = escapeSingleQuotes((String) value);
 					query.addCondition(BinaryCondition.equalTo(new CustomSql(
-							tableDot + ph.argumentColumns()[i]),
-							((Attribute) arg).getValue()));
+							tableDot + ph.argumentColumns()[i]), value));
 				} else if (arg instanceof UniqueID) { // Entity
-					UniqueID u = (UniqueID) arg;
+					Object value = ((UniqueID) arg).getInternalID();
+					if (value instanceof String)
+						value = escapeSingleQuotes((String) value);
 					query.addCondition(BinaryCondition.equalTo(new CustomSql(
-							tableDot + ph.argumentColumns()[i]), u
-							.getInternalID()));
+							tableDot + ph.argumentColumns()[i]), value));
 				} else
 					assert arg instanceof Variable;
 			}
@@ -217,6 +224,10 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 		for (Atom atom : functionalAtoms)
 			visitFunctionalAtom(atom);
 		return query.validate().toString();
+	}
+	
+	public String escapeSingleQuotes(String s) {
+		return s.replaceAll("'", "''");
 	}
 
 }
