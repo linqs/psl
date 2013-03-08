@@ -144,6 +144,8 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 	@Override
 	protected void cleanUpGroundModel() {
 		super.cleanUpGroundModel();
+		obsReasoner.close();
+		obsReasoner = null;
 		
 		/* Unregisters the Model's Kernels with the AtomEventFramework */
 		for (Kernel k : model.getKernels())
