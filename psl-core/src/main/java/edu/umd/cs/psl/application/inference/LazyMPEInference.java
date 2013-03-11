@@ -162,7 +162,7 @@ public class LazyMPEInference extends Observable implements ModelApplication {
 		int size = reasoner.size();
 		reasoner.close();
 		
-		/* Registers the Model's Kernels with the AtomEventFramework */
+		/* Unregisters the Model's Kernels with the AtomEventFramework */
 		for (Kernel k : model.getKernels())
 			k.unregisterForAtomEvents(eventFramework, reasoner);
 		

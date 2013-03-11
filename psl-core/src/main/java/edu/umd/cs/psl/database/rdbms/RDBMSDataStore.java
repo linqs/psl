@@ -318,6 +318,7 @@ public class RDBMSDataStore implements DataStore {
 		
 		// Add a column for partitioning
 		keyColumns.append(pi.partitionCol);
+		hashIndexes.add(pi.partitionCol);
 		q.addCustomColumn(pi.partitionCol + " INT DEFAULT 0", ColumnConstraint.NOT_NULL);
 		
 		// Add columns for value and confidence

@@ -155,7 +155,6 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 		/* Unregisters the Model's Kernels with the observations AtomEventFramework */
 		for (Kernel k : model.getKernels())
 			k.unregisterForAtomEvents(obsEventFramework, obsReasoner);
-		obsReasoner = null;
 		obsEventFramework = null;
 	}
 
