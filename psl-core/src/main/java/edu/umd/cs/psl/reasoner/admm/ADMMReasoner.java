@@ -441,7 +441,7 @@ public class ADMMReasoner implements Reasoner {
 		CyclicBarrier workerBarrier = new CyclicBarrier(numThreads);
 		CyclicBarrier checkBarrier = new CyclicBarrier(numThreads + 1);
 		Semaphore notifySem = new Semaphore(0);
-		ThreadPool threadPool = ThreadPool.getPool(-1341234);
+		ThreadPool threadPool = ThreadPool.getPool();
 		for (int i = 0; i < numThreads; i ++) {
 			tasks[i] = new ADMMTask(i, workerBarrier, checkBarrier, notifySem);
 			threadPool.submit(tasks[i]);

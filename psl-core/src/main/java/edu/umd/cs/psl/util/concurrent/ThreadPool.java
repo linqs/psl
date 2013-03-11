@@ -31,7 +31,7 @@ public class ThreadPool {
 		this.pool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors(), new DaemonThreadFactory());
 	}
 	
-	public static ThreadPool getPool(int numThreads) {
+	public static ThreadPool getPool() {
 		if (instance == null)
 			instance = new ThreadPool();
 		
