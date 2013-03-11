@@ -51,6 +51,7 @@ import edu.umd.cs.psl.reasoner.function.FunctionTerm;
 import edu.umd.cs.psl.reasoner.function.MaxFunction;
 import edu.umd.cs.psl.reasoner.function.PowerOfTwo;
 import edu.umd.cs.psl.util.collection.HashList;
+import edu.umd.cs.psl.util.concurrent.ThreadPool;
 
 /**
  * Uses an ADMM optimization method to optimize its GroundKernels.
@@ -144,7 +145,7 @@ public class ADMMReasoner implements Reasoner {
 	List<List<VariableLocation>> varLocations;
 	
 	/* Multithreading variables */
-	private ExecutorService threadPool;
+//	private ExecutorService threadPool;
 	private final int numThreads;
 	
 	public ADMMReasoner(ConfigBundle config) {
@@ -166,7 +167,7 @@ public class ADMMReasoner implements Reasoner {
 		numThreads = config.getInt(NUM_THREADS_KEY, NUM_THREADS_DEFAULT);
 		if (numThreads <= 0)
 			throw new IllegalArgumentException("Property " + NUM_THREADS_KEY + " must be positive.");
-		threadPool = Executors.newFixedThreadPool(numThreads, new DaemonThreadFactory());
+//		threadPool = Executors.newFixedThreadPool(numThreads, new DaemonThreadFactory());
 	}
 
 	private class DaemonThreadFactory implements ThreadFactory {
@@ -463,6 +464,7 @@ public class ADMMReasoner implements Reasoner {
 		CyclicBarrier workerBarrier = new CyclicBarrier(numThreads);
 		CyclicBarrier checkBarrier = new CyclicBarrier(numThreads + 1);
 		Semaphore notifySem = new Semaphore(0);
+		ThreadPool threadPool = ThreadPool.getPool(-1341234);
 		for (int i = 0; i < numThreads; i ++) {
 			tasks[i] = new ADMMTask(i, workerBarrier, checkBarrier, notifySem);
 			threadPool.submit(tasks[i]);
@@ -577,13 +579,13 @@ public class ADMMReasoner implements Reasoner {
 		variables = null;
 		z = null;
 		
-		try {
-			log.debug("Shutting down thread pool.");
-			threadPool.shutdownNow();
-			threadPool.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
-		} catch (InterruptedException e) {
-			throw new RuntimeException(e);
-		}
+//		try {
+//			log.debug("Shutting down thread pool.");
+//			threadPool.shutdownNow();
+//			threadPool.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
+//		} catch (InterruptedException e) {
+//			throw new RuntimeException(e);
+//		}
 	}
 	
 	private void registerLocalVariableCopies(ADMMObjectiveTerm term) {

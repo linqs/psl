@@ -159,12 +159,12 @@ public class LazyMPEInference extends Observable implements ModelApplication {
 		double incompatibility = GroundKernels.getTotalWeightedIncompatibility(reasoner.getCompatibilityKernels());
 		double infeasibility = GroundKernels.getInfeasibilityNorm(reasoner.getConstraintKernels());
 		
-		int size = reasoner.size();
-		reasoner.close();
-		
 		/* Unregisters the Model's Kernels with the AtomEventFramework */
 		for (Kernel k : model.getKernels())
 			k.unregisterForAtomEvents(eventFramework, reasoner);
+		
+		int size = reasoner.size();
+		reasoner.close();
 		
 		return new MemoryFullInferenceResult(proc, incompatibility, infeasibility, count, size);
 	}
