@@ -170,9 +170,7 @@ public class LazyMPEInference extends Observable implements ModelApplication {
 	}
 	
 	/**
-	 * notify the inference to stop 
-	 * it will exit the loop before next 
-	 * iteration
+	 * Notifies LazyMPEInference to stop inference at the end of the current round
 	 */
 	public void stop() {
 		toStop = true;

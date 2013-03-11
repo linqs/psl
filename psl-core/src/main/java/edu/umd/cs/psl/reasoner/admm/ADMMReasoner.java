@@ -22,11 +22,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -145,7 +141,6 @@ public class ADMMReasoner implements Reasoner {
 	List<List<VariableLocation>> varLocations;
 	
 	/* Multithreading variables */
-//	private ExecutorService threadPool;
 	private final int numThreads;
 	
 	public ADMMReasoner(ConfigBundle config) {
@@ -167,24 +162,6 @@ public class ADMMReasoner implements Reasoner {
 		numThreads = config.getInt(NUM_THREADS_KEY, NUM_THREADS_DEFAULT);
 		if (numThreads <= 0)
 			throw new IllegalArgumentException("Property " + NUM_THREADS_KEY + " must be positive.");
-//		threadPool = Executors.newFixedThreadPool(numThreads, new DaemonThreadFactory());
-	}
-
-	private class DaemonThreadFactory implements ThreadFactory {
-
-		private ThreadFactory defaultThreadFactory;
-		
-		public DaemonThreadFactory() {
-			this.defaultThreadFactory = Executors.defaultThreadFactory();
-		}
-		
-		@Override
-		public Thread newThread(Runnable r) {
-			Thread thread = defaultThreadFactory.newThread(r);
-			thread.setDaemon(true);
-			return thread;
-		}
-		
 	}
 	
 	@Override
