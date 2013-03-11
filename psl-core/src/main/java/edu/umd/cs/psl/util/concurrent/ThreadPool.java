@@ -19,7 +19,10 @@ package edu.umd.cs.psl.util.concurrent;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 public class ThreadPool {
 
@@ -28,7 +31,8 @@ public class ThreadPool {
 	private final ExecutorService pool;
 	
 	private ThreadPool() {
-		this.pool = Executors.newCachedThreadPool(new DaemonThreadFactory());
+		this.pool = new ThreadPoolExecutor(0, Runtime.getRuntime().availableProcessors(),
+				30L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(), new DaemonThreadFactory());
 	}
 	
 	public static ThreadPool getPool(int numThreads) {
