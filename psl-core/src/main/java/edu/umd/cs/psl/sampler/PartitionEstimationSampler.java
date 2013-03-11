@@ -16,7 +16,6 @@
  */
 package edu.umd.cs.psl.sampler;
 
-import edu.umd.cs.psl.evaluation.process.RunningProcess;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
@@ -25,16 +24,16 @@ public class PartitionEstimationSampler extends UniformSampler {
 
 	private double total;
 	
-	public PartitionEstimationSampler(RunningProcess p) {
-		this(p, defaultMaxNoSteps, defaultSignificantDigits);
+	public PartitionEstimationSampler() {
+		this(defaultMaxNoSteps, defaultSignificantDigits);
 	}
 	
-	public PartitionEstimationSampler(RunningProcess p,int maxNoSteps) {
-		this(p,maxNoSteps, defaultSignificantDigits);
+	public PartitionEstimationSampler(int maxNoSteps) {
+		this(maxNoSteps, defaultSignificantDigits);
 	}
  	
-	public PartitionEstimationSampler(RunningProcess p, int maxNoSteps, int significantDigits) {
-		super(p, maxNoSteps, significantDigits);
+	public PartitionEstimationSampler(int maxNoSteps, int significantDigits) {
+		super(maxNoSteps, significantDigits);
 		total = 0.0;
 	}
 	

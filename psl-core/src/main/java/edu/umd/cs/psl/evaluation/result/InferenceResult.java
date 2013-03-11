@@ -16,10 +16,6 @@
  */
 package edu.umd.cs.psl.evaluation.result;
 
-import edu.umd.cs.psl.evaluation.process.ProcessView;
-
 public interface InferenceResult {
-
-	public ProcessView getProcess();
 	
 }

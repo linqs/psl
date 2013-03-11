@@ -19,7 +19,6 @@ package edu.umd.cs.psl.evaluation.result.memory;
 import java.util.Map;
 
 import de.mathnbits.statistics.DoubleDist;
-import edu.umd.cs.psl.evaluation.process.ProcessView;
 import edu.umd.cs.psl.evaluation.result.FullConfidenceAnalysisResult;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.predicate.Predicate;
@@ -28,23 +27,15 @@ import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
 public class MemoryFullConfidenceAnalysisResult implements FullConfidenceAnalysisResult {
 	
 	private final Map<AtomFunctionVariable,DoubleDist> distributions;
-	private final ProcessView process;
 
 	
-	public MemoryFullConfidenceAnalysisResult(ProcessView proc, Map<AtomFunctionVariable,DoubleDist> dists) {
+	public MemoryFullConfidenceAnalysisResult(Map<AtomFunctionVariable,DoubleDist> dists) {
 		distributions=dists;
-		process = proc;
 	}
 	
 	@Override
 	public Map<AtomFunctionVariable,DoubleDist> getDistribution() {
 		return distributions;
-	}
-
-
-	@Override
-	public ProcessView getProcess() {
-		return process;
 	}
 	
 	@Override

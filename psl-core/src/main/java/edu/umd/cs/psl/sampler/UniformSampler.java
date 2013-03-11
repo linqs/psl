@@ -20,14 +20,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.ujmp.core.Matrix;
 
-import edu.umd.cs.psl.evaluation.process.RunningProcess;
-
 abstract public class UniformSampler extends AbstractHitAndRunSampler {
 
 	private static final Logger log = LoggerFactory.getLogger(UniformSampler.class);
 	
-	public UniformSampler(RunningProcess p, int maxNoSteps, int significantDigits) {
-		super(p, maxNoSteps, significantDigits);
+	public UniformSampler(int maxNoSteps, int significantDigits) {
+		super(maxNoSteps, significantDigits);
 	}
 	
 	@Override

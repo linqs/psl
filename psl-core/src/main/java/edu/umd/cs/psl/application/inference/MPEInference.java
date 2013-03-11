@@ -24,8 +24,6 @@ import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.config.Factory;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.database.DatabasePopulator;
-import edu.umd.cs.psl.evaluation.process.RunningProcess;
-import edu.umd.cs.psl.evaluation.process.local.LocalProcessMonitor;
 import edu.umd.cs.psl.evaluation.result.FullInferenceResult;
 import edu.umd.cs.psl.evaluation.result.memory.MemoryFullInferenceResult;
 import edu.umd.cs.psl.model.Model;
@@ -95,7 +93,6 @@ public class MPEInference implements ModelApplication {
 	 */
 	public FullInferenceResult mpeInference() 
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-		RunningProcess proc = LocalProcessMonitor.get().startProcess();
 
 		Reasoner reasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
 		PersistedAtomManager atomManager = new PersistedAtomManager(db);
@@ -110,12 +107,11 @@ public class MPEInference implements ModelApplication {
 			count++;
 		}
 		
-		proc.terminate();
 		double incompatibility = GroundKernels.getTotalWeightedIncompatibility(reasoner.getCompatibilityKernels());
 		double infeasibility = GroundKernels.getInfeasibilityNorm(reasoner.getConstraintKernels());
 		int size = reasoner.size();
 		reasoner.close();
-		return new MemoryFullInferenceResult(proc, incompatibility, infeasibility, count, size);
+		return new MemoryFullInferenceResult(incompatibility, infeasibility, count, size);
 	}
 
 	@Override

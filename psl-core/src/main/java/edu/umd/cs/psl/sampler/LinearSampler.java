@@ -25,7 +25,6 @@ import org.ujmp.core.Matrix;
 import cern.colt.list.tlong.LongArrayList;
 import cern.colt.list.tobject.ObjectArrayList;
 import cern.colt.map.tobject.OpenLongObjectHashMap;
-import edu.umd.cs.psl.evaluation.process.RunningProcess;
 
 abstract public class LinearSampler extends AbstractHitAndRunSampler {
 
@@ -37,8 +36,8 @@ abstract public class LinearSampler extends AbstractHitAndRunSampler {
 	
 	private final long alphaRoundingScheme;
 	
-	public LinearSampler(RunningProcess p, int maxNoSteps, int significantDigits) {
-		super(p, maxNoSteps, significantDigits);
+	public LinearSampler(int maxNoSteps, int significantDigits) {
+		super(maxNoSteps, significantDigits);
 		alphaRoundingScheme= (long)Math.pow(10, significantDigits+alphaPlusSignificantDigits);
 	}
 	

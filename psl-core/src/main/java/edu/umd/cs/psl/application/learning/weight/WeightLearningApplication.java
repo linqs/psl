@@ -28,8 +28,6 @@ import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.config.Factory;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.database.DatabasePopulator;
-import edu.umd.cs.psl.evaluation.process.RunningProcess;
-import edu.umd.cs.psl.evaluation.process.local.LocalProcessMonitor;
 import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
@@ -102,8 +100,6 @@ public abstract class WeightLearningApplication implements ModelApplication {
 	 */
 	public void learn()
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-		RunningProcess proc = LocalProcessMonitor.get().startProcess();
-		
 		/* Gathers the CompatibilityKernels */
 		for (CompatibilityKernel k : Iterables.filter(model.getKernels(), CompatibilityKernel.class))
 			kernels.add(k);
@@ -114,7 +110,6 @@ public abstract class WeightLearningApplication implements ModelApplication {
 		/* Learns new weights */
 		doLearn();
 		
-		proc.terminate();
 		kernels.clear();
 		cleanUpGroundModel();
 	}

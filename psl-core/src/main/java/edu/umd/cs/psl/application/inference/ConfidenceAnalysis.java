@@ -24,8 +24,6 @@ import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.config.Factory;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.database.DatabasePopulator;
-import edu.umd.cs.psl.evaluation.process.RunningProcess;
-import edu.umd.cs.psl.evaluation.process.local.LocalProcessMonitor;
 import edu.umd.cs.psl.evaluation.result.FullConfidenceAnalysisResult;
 import edu.umd.cs.psl.evaluation.result.memory.MemoryFullConfidenceAnalysisResult;
 import edu.umd.cs.psl.model.ConfidenceValues;
@@ -111,8 +109,6 @@ public class ConfidenceAnalysis implements ModelApplication {
 	 */
 	public FullConfidenceAnalysisResult runConfidenceAnalysis() 
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-		RunningProcess proc = LocalProcessMonitor.get().startProcess();
-
 		Reasoner reasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
 		PersistedAtomManager atomManager = new PersistedAtomManager(db);
 		
@@ -123,7 +119,7 @@ public class ConfidenceAnalysis implements ModelApplication {
 		reasoner.optimize();
 		
 		/* Performs sampling */
-		MarginalSampler sampler = new MarginalSampler(proc, numSamples);
+		MarginalSampler sampler = new MarginalSampler(numSamples);
 		sampler.sample(reasoner.getGroundKernels(), 1.0, 1);
 		
 		/*
@@ -141,8 +137,7 @@ public class ConfidenceAnalysis implements ModelApplication {
 			atom.commitToDB();
 		}
 		
-		proc.terminate();
-		return new MemoryFullConfidenceAnalysisResult(proc, sampler.getDistributions());
+		return new MemoryFullConfidenceAnalysisResult(sampler.getDistributions());
 
 	}
 

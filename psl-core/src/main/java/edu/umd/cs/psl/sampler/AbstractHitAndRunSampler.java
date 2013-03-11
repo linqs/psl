@@ -30,7 +30,6 @@ import org.ujmp.core.Matrix;
 import org.ujmp.core.MatrixFactory;
 import org.ujmp.core.calculation.Calculation;
 
-import edu.umd.cs.psl.evaluation.process.RunningProcess;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
@@ -80,15 +79,15 @@ abstract public class AbstractHitAndRunSampler implements Sampler {
 	
 	private final transient HitAndRunSamplerStatistics stats;
 	
-	public AbstractHitAndRunSampler(RunningProcess p) {
-		this(p,defaultMaxNoSteps,defaultSignificantDigits);
+	public AbstractHitAndRunSampler() {
+		this(defaultSignificantDigits);
 	}
 	
-	public AbstractHitAndRunSampler(RunningProcess p,int maxNoSteps) {
-		this(p,maxNoSteps,defaultSignificantDigits);
+	public AbstractHitAndRunSampler( int maxNoSteps) {
+		this(maxNoSteps, defaultSignificantDigits);
 	}
  	
-	public AbstractHitAndRunSampler(RunningProcess p, int maxNoSteps, int significantDigits) {
+	public AbstractHitAndRunSampler(int maxNoSteps, int significantDigits) {
 		noSteps=0;
 		noSamples=0;
 		dimensions=0;
@@ -97,7 +96,7 @@ abstract public class AbstractHitAndRunSampler implements Sampler {
 		
 		roundingScheme= (long)Math.pow(10, significantDigits);
 		maxSteps=maxNoSteps;
-		stats = new HitAndRunSamplerStatistics(this,p);
+		stats = new HitAndRunSamplerStatistics(this);
 	}
 	
 	public HitAndRunSamplerStatistics getStatistics() {

@@ -20,11 +20,9 @@ import java.text.DecimalFormat;
 import java.util.Map;
 
 import de.mathnbits.statistics.DoubleDist;
-import edu.umd.cs.psl.evaluation.process.ProcessView;
 import edu.umd.cs.psl.evaluation.result.FullConfidenceAnalysisResult;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
-import edu.umd.cs.psl.sampler.HitAndRunSamplerStatistics;
 
 public class UIFullConfidenceAnalysisResult implements FullConfidenceAnalysisResult {
 	
@@ -59,16 +57,6 @@ public class UIFullConfidenceAnalysisResult implements FullConfidenceAnalysisRes
 	@Override
 	public double[] getHistogram(AtomFunctionVariable atomvar, int noBins) {
 		return result.getHistogram(atomvar, noBins);
-	}
-
-
-	@Override
-	public ProcessView getProcess() {
-		return result.getProcess();
-	}
-	
-	public String printLinearSamplingStatistics() {
-		return HitAndRunSamplerStatistics.print(result.getProcess());
 	}
 	
 	public String toString(Predicate p, double meanThreshold) {

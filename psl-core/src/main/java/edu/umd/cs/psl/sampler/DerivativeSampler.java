@@ -20,7 +20,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import edu.umd.cs.psl.evaluation.process.RunningProcess;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
@@ -30,16 +29,16 @@ public class DerivativeSampler extends UniformSampler {
 
 	private transient Map<Kernel, Double> totals;
 	
-	public DerivativeSampler(RunningProcess p, Collection<Kernel> k) {
-		this(p, k, defaultMaxNoSteps,defaultSignificantDigits);
+	public DerivativeSampler(Collection<Kernel> k) {
+		this(k, defaultMaxNoSteps,defaultSignificantDigits);
 	}
 	
-	public DerivativeSampler(RunningProcess p, Collection<Kernel> k, int maxNoSteps) {
-		this(p, k, maxNoSteps,defaultSignificantDigits);
+	public DerivativeSampler(Collection<Kernel> k, int maxNoSteps) {
+		this(k, maxNoSteps,defaultSignificantDigits);
 	}
  	
-	public DerivativeSampler(RunningProcess p, Collection<Kernel> k, int maxNoSteps, int significantDigits) {
-		super(p, maxNoSteps, significantDigits);
+	public DerivativeSampler(Collection<Kernel> k, int maxNoSteps, int significantDigits) {
+		super(maxNoSteps, significantDigits);
 		totals = new HashMap<Kernel, Double>();
 		for (Kernel kernel : k) {
 			totals.put(kernel, 0.0);
