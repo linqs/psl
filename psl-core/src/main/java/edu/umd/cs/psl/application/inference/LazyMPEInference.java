@@ -89,7 +89,7 @@ public class LazyMPEInference extends Observable implements ModelApplication {
 	private final int maxRounds;
 	
 	/** stop flag to quit the loop. */
-	public boolean toStop = false;
+	private boolean toStop = false;
 	
 	public LazyMPEInference(Model model, Database db, ConfigBundle config) {
 		this.model = model;

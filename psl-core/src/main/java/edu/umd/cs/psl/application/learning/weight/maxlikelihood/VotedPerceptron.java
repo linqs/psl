@@ -90,6 +90,10 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	private final double stepSize;
 	private final int numSteps;
 	
+
+	/** stop flag to quit the loop. */
+	protected boolean toStop = false;
+	
 	public VotedPerceptron(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
 		super(model, rvDB, observedDB, config);
 		stepSize = config.getDouble(STEP_SIZE_KEY, STEP_SIZE_DEFAULT);
@@ -130,6 +134,13 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 				kernels.get(i).setWeight(new PositiveWeight(weight));	
 			}
 			reasoner.changedGroundKernelWeights();
+			// notify the registered observers
+			setChanged();
+			notifyObservers(new IntermidateState(step, numSteps));
+			// if stop() has been called, exit the loop early
+			if (toStop) {
+				break;
+			}
 		}
 		
 		/* Sets the weights to their averages */
@@ -180,4 +191,26 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 		return factor;
 	}
 	
+	/**
+	* Notifies VotedPerceptron to exit after the current step
+	*/
+	public void stop() {
+		toStop = true;
+	}
+
+
+	/**
+	 * Intermediate state object to 
+	 * notify the registered observers.
+	 *
+	 */
+	public class IntermidateState {
+		public final int step;
+		public final int maxStep;
+		
+		public IntermidateState(int currStep, int numSteps) {
+			this.step = currStep;
+			this.maxStep = numSteps;
+		}
+	}
 }

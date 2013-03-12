@@ -18,6 +18,7 @@ package edu.umd.cs.psl.application.learning.weight;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Observable;
 
 import com.google.common.collect.Iterables;
 
@@ -43,7 +44,7 @@ import edu.umd.cs.psl.reasoner.admm.ADMMReasonerFactory;
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-public abstract class WeightLearningApplication implements ModelApplication {
+public abstract class WeightLearningApplication extends Observable implements ModelApplication {
 	
 	/**
 	 * Prefix of property keys used by this class.
