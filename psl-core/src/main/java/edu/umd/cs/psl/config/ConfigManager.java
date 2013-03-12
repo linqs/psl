@@ -31,6 +31,7 @@ import org.apache.commons.configuration.DataConfiguration;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.configuration.SubsetConfiguration;
 import org.apache.log4j.helpers.Loader;
+import org.apache.log4j.helpers.OptionConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,11 +45,12 @@ public class ConfigManager {
 	
 	private ConfigManager() throws ConfigurationException {
 		masterConfig = new DataConfiguration(new BaseConfiguration());
+		String pslConfigFile = OptionConverter.getSystemProperty("psl.configuration", "psl.properties");
 		try {
-			loadResource("psl.properties");
+			loadResource(pslConfigFile);
 		}
 		catch (FileNotFoundException e) {
-			log.info("PSL configuration file 'psl.properties' not found on classpath. " +
+			log.info("PSL configuration file '" + pslConfigFile + "' not found. " +
 					"Only default values will be used unless additional properties are " +
 					"specified.");
 		}
