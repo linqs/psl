@@ -27,8 +27,10 @@ public class DBDefinition {
 	public Partition[] read;
 	public Set<Predicate> toClose; 
 	
-	public DBDefinition(Partition write, Partition[] read, Set<Partition> toClose) {
-	    // TODO Auto-generated constructor stub 	
+	public DBDefinition(Partition write, Set<Predicate> toClose, Partition[] read) {
+	    this.write=write;
+	    this.toClose=toClose;
+	    this.read=read;
 	}
 	
 }
