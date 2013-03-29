@@ -6,5 +6,5 @@ import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.database.Partition;
 
 public interface BuildDBStep {
-	List<DBDefinition> getDatabases(Database inputDB, List<Collection<Partition>> partitionList );
+	List<DBDefinition> getDatabaseDefinitions(Database inputDB, List<Collection<Partition>> partitionList );
 }
