@@ -1,4 +1,4 @@
-package edu.umd.cs.psl.util.datasplitter;
+package edu.umd.cs.psl.util.datasplitter.splitstep;
 
 import java.util.Collection;
 import java.util.List;

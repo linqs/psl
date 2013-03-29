@@ -1,5 +1,7 @@
 package edu.umd.cs.psl.util.datasplitter.splitstep;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -10,9 +12,9 @@ import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
 
-public class PredicateRoundRobinSplitStep extends PredicateSplitStep {
+public class PredicateUniformSplitStep extends PredicateSplitStep {
 
-	public PredicateRoundRobinSplitStep(StandardPredicate target, int numFolds,
+	public PredicateUniformSplitStep(StandardPredicate target, int numFolds,
 			int groupBy) {
 		super(target, numFolds, groupBy);
 	}
@@ -20,10 +22,13 @@ public class PredicateRoundRobinSplitStep extends PredicateSplitStep {
 	@Override
 	protected void insertIntoPartitions(
 			Map<GroundTerm, Set<GroundAtom>> groups, List<Inserter> inserters, Random random) {
-		// insert nodes into partitions
+		
+		ArrayList<Set<GroundAtom>> groupList = new ArrayList<Set<GroundAtom>>(groups.size());
+		Collections.shuffle(groupList, random);
+		
 		int j = 0;
-		for (GroundTerm node : groups.keySet()) {
-			for (GroundAtom atom : groups.get(node))
+		for (Set<GroundAtom> group : groupList) {
+			for (GroundAtom atom : group)
 				inserters.get(j % numFolds).insertValue(atom.getValue(), (Object []) atom.getArguments());
 			j++;
 		}
