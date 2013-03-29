@@ -131,5 +131,12 @@ public interface DataStore {
 	 * @throws IllegalStateException  if any Partitions are in use
 	 */
 	public void close();
+
+	/**
+	 * Get the next available partition 
+	 * 
+	 * @return the next available partition 
+	 */
+	Partition getNextPartition();
 	
 }
