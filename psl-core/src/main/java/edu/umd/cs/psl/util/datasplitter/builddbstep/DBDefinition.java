@@ -18,16 +18,17 @@
 package edu.umd.cs.psl.util.datasplitter.builddbstep;
 
 import java.util.Set;
+
 import edu.umd.cs.psl.database.Partition;
-import edu.umd.cs.psl.model.predicate.Predicate;
+import edu.umd.cs.psl.model.predicate.StandardPredicate;
 
 public class DBDefinition {
 
 	public Partition write;
 	public Partition[] read;
-	public Set<Predicate> toClose; 
+	public Set<StandardPredicate> toClose; 
 	
-	public DBDefinition(Partition write, Set<Predicate> toClose, Partition[] read) {
+	public DBDefinition(Partition write, Set<StandardPredicate> toClose, Partition[] read) {
 	    this.write=write;
 	    this.toClose=toClose;
 	    this.read=read;
