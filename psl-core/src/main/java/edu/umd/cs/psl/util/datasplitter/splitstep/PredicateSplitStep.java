@@ -91,7 +91,7 @@ public abstract class PredicateSplitStep implements SplitStep {
 			splits.add(partitions);
 		}
 
-		return null;
+		return splits;
 	}
 
 	protected abstract void insertIntoPartitions(Collection<Set<GroundAtom>> groups,
