@@ -32,6 +32,6 @@ import edu.umd.cs.psl.database.Partition;
  */
 public interface ClosureStep {
 	
-	void closureStep(Database inputDB, List<Collection<Partition>> partitionList);
+	void doClosure(Database inputDB, List<Collection<Partition>> partitionList);
 	
 }
