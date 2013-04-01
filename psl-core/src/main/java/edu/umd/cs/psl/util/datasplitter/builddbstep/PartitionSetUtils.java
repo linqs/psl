@@ -11,7 +11,7 @@ import edu.umd.cs.psl.database.Partition;
 public class PartitionSetUtils {
 	
 	public static List<Partition> invertPartitions(Collection<Partition> partitions, Set<Partition> allPartitions){
-		List<Partition> invertedPartition = new ArrayList();
+		List<Partition> invertedPartition = new ArrayList<Partition>();
 		for(Partition p: allPartitions){
 			if(!partitions.contains(p)){
 				invertedPartition.add(p);
@@ -22,7 +22,7 @@ public class PartitionSetUtils {
 		
 	
 	public static Set<Partition> collectSets(List<Collection<Partition>> partitionList){
-		Set<Partition> allPartitions = new HashSet();
+		Set<Partition> allPartitions = new HashSet<Partition>();
 		for(Collection<Partition> pL : partitionList){
 			allPartitions.addAll(pL);
 		}
