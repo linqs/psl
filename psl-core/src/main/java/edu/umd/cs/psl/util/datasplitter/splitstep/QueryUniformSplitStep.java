@@ -83,7 +83,7 @@ public class QueryUniformSplitStep implements SplitStep {
 			inserters.put(query.getPredicate(), predicateInserters);	
 		}
 
-		insertIntoPartitions(groups, inserters, random);
+		insertIntoPartitions(groups, inserters, random); 
 
 		for (int i = 0; i < numFolds; i++) {
 			Set<Partition> partitions = new TreeSet<Partition>();
