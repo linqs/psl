@@ -67,7 +67,6 @@ public class LinkClosure implements ClosureStep {
 			for (Partition part : partSet) {
 				/* Get all of the atoms associated with the node predicate. */
 				Set<GroundAtom> nodes = Queries.getAllAtoms(inputDB, nodePred);
-
 				/* Get all the link atoms involved with the nodes, with 1 or 2 endpoints in this partition. */
 				List<GroundAtom> links = new ArrayList<GroundAtom>();
 				if (internal) {
