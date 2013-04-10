@@ -114,6 +114,8 @@ public class SquaredHingeLossTermTest {
 		 * Problem 6
 		 * 
 		 * Solution on the quadratic side
+		 * 
+		 * Tests factorization caching by repeating the test three times
 		 */
 		z = new double[] {3.7, -.5, .5};
 		y = new double[] {0.0, 0.0, 0.0};
@@ -122,6 +124,8 @@ public class SquaredHingeLossTermTest {
 		weight = 2.0;
 		stepSize = 2.0;
 		expected = new double[] {1.9, 1.3, -0.4};
+		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
+		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
 		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
 	}
 	

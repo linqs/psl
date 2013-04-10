@@ -16,6 +16,9 @@
  */
 package edu.umd.cs.psl.reasoner.admm;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.algo.decomposition.DenseDoubleCholeskyDecomposition;
 import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
@@ -35,6 +38,8 @@ abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements Weight
 	protected final double constant;
 	protected double weight;
 	private DoubleMatrix2D L;
+	
+	static Map<DoubleMatrix2D, DoubleMatrix2D> lCache = new HashMap<DoubleMatrix2D, DoubleMatrix2D>();
 	
 	SquaredHyperplaneTerm(ADMMReasoner reasoner, int[] zIndices, double[] coeffs,
 			double constant, double weight) {
@@ -68,7 +73,11 @@ abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements Weight
 			}
 		}
 		
-		L = new DenseDoubleCholeskyDecomposition(matrix).getL();
+		L = lCache.get(matrix);
+		if (L == null) {
+			L = new DenseDoubleCholeskyDecomposition(matrix).getL();
+			lCache.put(matrix, L);
+		}
 	}
 	
 	@Override
