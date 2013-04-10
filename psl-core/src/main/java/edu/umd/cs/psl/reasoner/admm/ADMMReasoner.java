@@ -220,13 +220,14 @@ public class ADMMReasoner implements Reasoner {
 		ub = new ArrayList<Double>(groundKernels.size() * 2);
 		varLocations = new ArrayList<List<VariableLocation>>(groundKernels.size() * 2);
 		n = 0;
-		
+				
 		GroundKernel groundKernel;
 		boolean squared;
 		FunctionTerm function, innerFunction, zeroTerm, innerFunctionA, innerFunctionB;
 		ADMMObjectiveTerm term;
 		
 		/* Initializes objective terms from ground kernels */
+		log.debug("Initializing objective terms for {} ground kernels", groundKernels.size());
 		for (Iterator<GroundKernel> itr = groundKernels.iterator(); itr.hasNext(); ) {
 			groundKernel = itr.next();
 			if (groundKernel instanceof GroundCompatibilityKernel) {
