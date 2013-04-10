@@ -19,6 +19,8 @@ package edu.umd.cs.psl.reasoner.admm;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.commons.lang.builder.HashCodeBuilder;
+
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.algo.decomposition.DenseDoubleCholeskyDecomposition;
 import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
@@ -39,7 +41,7 @@ abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements Weight
 	protected double weight;
 	private DoubleMatrix2D L;
 	
-	static Map<DoubleMatrix2D, DoubleMatrix2D> lCache = new HashMap<DoubleMatrix2D, DoubleMatrix2D>();
+	static Map<DenseDoubleMatrix2DWithHashcode, DoubleMatrix2D> lCache = new HashMap<DenseDoubleMatrix2DWithHashcode, DoubleMatrix2D>();
 	
 	SquaredHyperplaneTerm(ADMMReasoner reasoner, int[] zIndices, double[] coeffs,
 			double constant, double weight) {
@@ -58,7 +60,7 @@ abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements Weight
 	
 	private void computeL() {
 		double coeff;
-		DoubleMatrix2D matrix = new DenseDoubleMatrix2D(x.length, x.length);
+		DenseDoubleMatrix2DWithHashcode matrix = new DenseDoubleMatrix2DWithHashcode(x.length, x.length);
 		for (int i = 0; i < x.length; i++) {
 			for (int j = 0; j < x.length; j++) {
 				if (i == j) {
@@ -129,6 +131,38 @@ abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements Weight
 				}
 				x[i] /= L.getQuick(i, i);
 			}
+		}
+	}
+	
+	private class DenseDoubleMatrix2DWithHashcode extends DenseDoubleMatrix2D {
+		
+		private static final long serialVersionUID = -8102931034927566306L;
+		private boolean needsNewHashcode;
+		private int hashcode = 0;
+
+		public DenseDoubleMatrix2DWithHashcode(int rows, int columns) {
+			super(rows, columns);
+			needsNewHashcode = true;
+		}
+		
+		@Override
+		public void setQuick(int row, int column, double value) {
+			needsNewHashcode = true;
+			super.setQuick(row, column, value);
+		}
+		
+		@Override
+		public int hashCode() {
+			if (needsNewHashcode) {
+				HashCodeBuilder builder = new HashCodeBuilder();
+				for (int i = 0; i < rows(); i++)
+					for (int j = 0; j < columns(); j++)
+						builder.append(getQuick(i, j));
+				
+				hashcode = builder.toHashCode();
+				needsNewHashcode = false;
+			}
+			return hashcode;
 		}
 	}
 }
