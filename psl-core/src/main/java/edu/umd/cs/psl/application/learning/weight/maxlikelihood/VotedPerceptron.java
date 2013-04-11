@@ -119,6 +119,8 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 		
 		/* Computes the Perceptron steps */
 		for (int step = 0; step < numSteps; step++) {
+			log.debug("Starting iter {}", step+1);
+			
 			/* Computes the expected total incompatibility for each CompatibilityKernel */
 			expectedIncompatibility = computeExpectedIncomp();
 			scalingFactor  = computeScalingFactor();
