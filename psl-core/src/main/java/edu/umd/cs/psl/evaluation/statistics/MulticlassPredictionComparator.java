@@ -100,7 +100,7 @@ public class MulticlassPredictionComparator implements ResultComparator {
 			++cm[trueLabel][predLabel];
 		}
 		
-		return new MulticlassPredictionStatistics(cm);
+		return new MulticlassPredictionStatistics(new ConfusionMatrix(cm));
 	}
 	
 	/**
