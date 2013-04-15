@@ -173,7 +173,7 @@ public class RDBMSDataLoader implements DataLoader {
 					} else if (data[i] instanceof Double) {
 						insertStmt.setDouble(noCol, (Double)data[i]);
 					} else if (data[i] instanceof String) {
-						insertStmt.setString(noCol, cleanString((String)data[i]));
+						insertStmt.setString(noCol, escapeSingleQuotes((String)data[i]));
 					} else if (data[i] instanceof RDBMSUniqueIntID) {
 						insertStmt.setInt(noCol, ((RDBMSUniqueIntID)data[i]).getID());
 					} else if (data[i] instanceof RDBMSUniqueStringID) {
@@ -194,8 +194,8 @@ public class RDBMSDataLoader implements DataLoader {
 			}
 		}
 		
-		private String cleanString(String s) {
-			return s.replace("'", " ");
+		private String escapeSingleQuotes(String s) {
+			return s.replaceAll("'", "''");
 		}
 		
 	}
