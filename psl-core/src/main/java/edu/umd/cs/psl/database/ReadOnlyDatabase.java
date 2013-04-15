@@ -69,4 +69,17 @@ public class ReadOnlyDatabase {
 	public UniqueID getUniqueID(Object key) {
 		return db.getUniqueID(key);
 	}
+	
+	@Override
+	public boolean equals(Object o) {
+		if (o instanceof ReadOnlyDatabase)
+			return db.equals(((ReadOnlyDatabase) o).db);
+		else
+			return false;
+	}
+	
+	@Override
+	public int hashCode() {
+		return db.hashCode();
+	}
 }
