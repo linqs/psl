@@ -488,6 +488,8 @@ public class RDBMSDataStore implements DataStore {
 		
 		// Release the write partition in use by this database
 		writePartitionIDs.remove(db.writePartition);
+		
+		registeredDatabases.remove(new ReadOnlyDatabase(db));
 	}
 	
 	/*
