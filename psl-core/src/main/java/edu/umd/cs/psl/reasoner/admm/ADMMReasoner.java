@@ -553,9 +553,13 @@ public class ADMMReasoner implements Reasoner {
 	@Override
 	public void close() {
 		groundKernels = null;
+		orderedGroundKernels = null;
 		terms = null;
 		variables = null;
 		z = null;
+		lb = null;
+		ub = null;
+		varLocations = null;
 		
 //		try {
 //			log.debug("Shutting down thread pool.");

@@ -77,7 +77,7 @@ public class DiscretePredictionComparator implements PredictionComparator {
 	@Override
 	public DiscretePredictionStatistics compare(Predicate p) {
 		countResultDBStats(p);
-		System.out.println("tp " + tp + " fp " + fp + " tn " + tn + " fn " + fn);
+		//System.out.println("tp " + tp + " fp " + fp + " tn " + tn + " fn " + fn);
 		return new DiscretePredictionStatistics(tp, fp, tn, fn, threshold, errors, correctAtoms);
 	}
 	

@@ -98,13 +98,13 @@ public class DiscretePredictionStatistics implements PredictionStatistics {
 		if (c == BinaryClass.NEGATIVE) {
 			double n = tn + fn;
 			if (n == 0.0)
-				return 0.0;
+				return 1.0;
 			return tn/n;
 		}
 		else {
 			double p = tp + fp;
 			if (p == 0.0)
-				return 0.0;
+				return 1.0;
 			return tp/p;
 		}
 	}
@@ -113,13 +113,13 @@ public class DiscretePredictionStatistics implements PredictionStatistics {
 		if (c == BinaryClass.NEGATIVE) {
 			double n = tn + fp;
 			if (n == 0.0)
-				return 0.0;
+				return 1.0;
 			return tn/(tn+fp);
 		}
 		else {
 			double p = tp + fn;
 			if (p == 0.0)
-				return 0.0;
+				return 1.0;
 			return tp/(p);
 		}
 	}

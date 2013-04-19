@@ -16,6 +16,7 @@
  */
 package edu.umd.cs.psl.evaluation.statistics;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Iterator;
 
@@ -28,8 +29,13 @@ import cern.colt.matrix.tint.impl.DenseIntMatrix2D;
  * @author blondon
  *
  */
-public class ConfusionMatrix extends DenseIntMatrix2D {
-	
+public class ConfusionMatrix extends DenseIntMatrix2D implements Serializable {
+
+	/**
+	 * NOTE: I just picked a number; hope it doesn't clash with something else...
+	 */
+	private static final long serialVersionUID = 42L;
+
 	/**
 	 * Initializes an empty confusion matrix of size numClasses.
 	 * 
