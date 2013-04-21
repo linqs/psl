@@ -103,7 +103,7 @@ public class DiscretePredictionComparatorTest {
 			if (thresh <= 0.8)
 				assertEquals(0.6, prec, 1e-10);
 			else
-				assertEquals(0.0, prec, 1e-10);
+				assertEquals(1.0, prec, 1e-10);
 		}
 	}
 	
