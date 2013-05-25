@@ -78,7 +78,8 @@ public enum RankingScore {
 			int fn = totalPositives;
 			int tn = expected.size() - totalPositives;
 			GroundAtom last = actual.get(actual.size() - 1);
-			boolean label = actual.get(actual.indexOf(last)).getValue() > threshold;
+			// boolean label = actual.get(actual.indexOf(last)).getValue() > threshold;
+			boolean label = getLabel(actual, last, threshold);
 			if (label) {
 				tp++;
 				fn--;
@@ -92,7 +93,8 @@ public enum RankingScore {
  			double newPrecision, newRecall;	
 			for (int i = actual.size() - 2; i >= 0; i--) {
 				GroundAtom next = actual.get(i);
-				label = expected.get(expected.indexOf(next)).getValue() > threshold;
+				// label = expected.get(expected.indexOf(next)).getValue() > threshold;
+				label = getLabel(expected, next, threshold);
 				if (label) {
 					tp++;
 					fn--;
@@ -147,7 +149,8 @@ public enum RankingScore {
  			double newPrecision, newRecall;	
 			for (int i = actual.size() - 1; i >= 0; i--) {
 				GroundAtom next = actual.get(i);
-				boolean label = expected.get(expected.indexOf(next)).getValue() > threshold;
+				// boolean label = expected.get(expected.indexOf(next)).getValue() > threshold;
+				boolean label = getLabel(expected, next, threshold);
 				if (label) { // we predict positive, true label is positive
 					tp++;
 					fn--;
@@ -199,7 +202,8 @@ public enum RankingScore {
  			double newX, newY;	
 			for (int i = actual.size() - 1; i >= 0; i--) {
 				GroundAtom next = actual.get(i);
-				boolean label = expected.get(expected.indexOf(next)).getValue() > threshold;
+				// boolean label = expected.get(expected.indexOf(next)).getValue() > threshold;
+				boolean label = getLabel(expected, next, threshold);
 				if (label) { // we predict positive, true label is positive
 					tp++;
 					fn--;
@@ -217,8 +221,21 @@ public enum RankingScore {
 			return area;
 		}
 	};
-
-
+	
+	/**
+	 * Just looks up and rounds the ground truth to true or false, and returns
+	 * the default false if the atom is not in the list. 
+	 */
+	private static boolean getLabel(List<GroundAtom> expected, GroundAtom next, double threshold) {
+		boolean label;
+		int index = expected.indexOf(next);
+		if (index == -1)
+			label = false;
+		else
+			label = expected.get(index).getValue() > threshold;
+		
+		return label;
+	}
 
 	/**
 	 * Scores a ranking of Atoms given an expected ranking
