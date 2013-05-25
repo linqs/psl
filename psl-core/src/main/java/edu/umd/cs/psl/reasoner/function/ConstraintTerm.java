@@ -47,4 +47,9 @@ public class ConstraintTerm {
 		return value;
 	}
 	
+	@Override
+	public String toString() {
+		return function.toString() + " " + comparator.toString() + " " + value;
+	}
+	
 }
