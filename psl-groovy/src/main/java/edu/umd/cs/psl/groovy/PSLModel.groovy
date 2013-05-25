@@ -29,7 +29,6 @@ import edu.umd.cs.psl.model.argument.Variable
 import edu.umd.cs.psl.model.argument.VariableTypeMap
 import edu.umd.cs.psl.model.atom.QueryAtom
 import edu.umd.cs.psl.model.formula.Formula
-import edu.umd.cs.psl.model.formula.Rule
 import edu.umd.cs.psl.model.function.AttributeSimFunAdapter
 import edu.umd.cs.psl.model.function.AttributeSimilarityFunction
 import edu.umd.cs.psl.model.function.ExternalFunction
@@ -324,8 +323,11 @@ class PSLModel extends Model {
 		Kernel con;
 		if (PredicateConstraint.Symmetric.equals(type)) {
 			con = new SymmetryConstraintKernel(predicate);
-		} else {
-			con = new DomainRangeConstraintKernel(predicate, type.getPSLConstraint())
+		} else if (args.containsKey("valueMap")) {
+			con = new DomainRangeConstraintKernel(predicate, type.getPSLConstraint(), args.get("valueMap"));
+		}
+		else {
+			con = new DomainRangeConstraintKernel(predicate, type.getPSLConstraint());
 		}
 		addKernel(con);
 		return con;

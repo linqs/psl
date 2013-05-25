@@ -46,14 +46,16 @@ public class GroundDomainRangeConstraint implements GroundConstraintKernel {
 
 	private final DomainRangeConstraintKernel template;
 	private final GroundTerm anchor;
+	private final double value;
 
 	private final Set<GroundAtom> atoms;
 
 	private final int hashcode;
 
-	public GroundDomainRangeConstraint(DomainRangeConstraintKernel t, GroundTerm a) {
+	public GroundDomainRangeConstraint(DomainRangeConstraintKernel t, GroundTerm a, double v) {
 		template = t;
 		anchor = a;
+		value = v;
 		atoms = new HashSet<GroundAtom>();
 		hashcode = new HashCodeBuilder().append(template).append(anchor)
 				.toHashCode();
@@ -103,7 +105,7 @@ public class GroundDomainRangeConstraint implements GroundConstraintKernel {
 			sum.add(new FunctionSummand(1.0, atom.getVariable()));
 		}
 		return new ConstraintTerm(sum, template.getConstraintType()
-				.constraint(), 1);
+				.constraint(), value);
 	}
 
 	@Override

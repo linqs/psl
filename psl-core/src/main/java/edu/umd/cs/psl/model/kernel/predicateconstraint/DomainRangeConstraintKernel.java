@@ -16,6 +16,9 @@
  */
 package edu.umd.cs.psl.model.kernel.predicateconstraint;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import com.google.common.base.Preconditions;
@@ -49,16 +52,23 @@ public class DomainRangeConstraintKernel extends AbstractKernel implements Const
 
 	private final StandardPredicate predicate;
 	private final DomainRangeConstraintType constraintType;
+	private final Map<GroundTerm, Double> valueMap;
 
 	private final int hashcode;
-
+	
 	public DomainRangeConstraintKernel(StandardPredicate p,
 			DomainRangeConstraintType t) {
+		this(p, t, new HashMap<GroundTerm, Double>());
+	}
+
+	public DomainRangeConstraintKernel(StandardPredicate p,
+			DomainRangeConstraintType t, Map<GroundTerm, Double> constrainedValueMap) {
 		super();
 		Preconditions.checkArgument(p.getArity() == 2, "Currently, " +
 				"DomainRangeConstraintKernels only support binary predicates.");
 		constraintType = t;
 		predicate = p;
+		valueMap = constrainedValueMap;
 
 		hashcode = new HashCodeBuilder().append(predicate)
 				.append(constraintType).toHashCode();
@@ -66,7 +76,7 @@ public class DomainRangeConstraintKernel extends AbstractKernel implements Const
 
 	@Override
 	public Kernel clone() {
-		return new DomainRangeConstraintKernel(predicate, constraintType);
+		return new DomainRangeConstraintKernel(predicate, constraintType, new HashMap<GroundTerm, Double>(valueMap));
 	}
 
 	public DomainRangeConstraintType getConstraintType() {
@@ -95,7 +105,11 @@ public class DomainRangeConstraintKernel extends AbstractKernel implements Const
 		int pos = constraintType.position();
 		GroundTerm anchor = (GroundTerm) atom.getArguments()[pos];
 		GroundTerm other = (GroundTerm) atom.getArguments()[1 - pos];
-		GroundDomainRangeConstraint con = new GroundDomainRangeConstraint(this, anchor);
+		Double value = valueMap.get(anchor);
+		if (value == null) {
+			value = 1.0;
+		}
+		GroundDomainRangeConstraint con = new GroundDomainRangeConstraint(this, anchor, value);
 
 		GroundKernel oldcon = gks.getGroundKernel(con);
 
