@@ -69,7 +69,7 @@ abstract class HyperplaneTerm extends ADMMObjectiveTerm {
 		}
 		else if (x.length == 2) {
 			x[0] = reasoner.stepSize * reasoner.z.get(zIndices[0]) - y[0];
-			x[0] -= reasoner.stepSize * coeffs[0] / coeffs[1] * (-1 * constant / coeffs[1] + reasoner.z.get(zIndices[1]) - y[1]);
+			x[0] -= reasoner.stepSize * coeffs[0] / coeffs[1] * (-1 * constant / coeffs[1] + reasoner.z.get(zIndices[1]) - y[1]/reasoner.stepSize);
 			x[0] /= reasoner.stepSize * (1 + coeffs[0] * coeffs[0] / coeffs[1] / coeffs[1]);
 			
 			x[1] = (constant - coeffs[0] * x[0]) / coeffs[1];

@@ -68,6 +68,8 @@ public class HingeLossTermTest {
 		expected = new double[] {0.043257, 0.528361, 0.177309};
 		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
 		
+		
+		
 		/*
 		 * Problem 3
 		 * 
@@ -108,6 +110,21 @@ public class HingeLossTermTest {
 		weight = 1.0;
 		stepSize = 1.0;
 		expected = new double[] {0.6, 0.6};
+		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
+		
+		/*
+		 * Problem 6
+		 * 
+		 * Solution on the hinge, two variables, non-1.0 stepsize and non-0.0 dual
+		 * variables
+		 */
+		z = new double[] {0.7, 0.5};
+		y = new double[] {0.05, 1.0};
+		coeffs = new double[] {1.0, -1.0};
+		constant = -0.5;
+		weight = 2.0;
+		stepSize = 2.0;
+		expected = new double[] {0.0875, 0.5875};
 		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
 	}
 	
