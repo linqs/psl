@@ -167,6 +167,10 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 			}
 		}
 		
+		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
+			e.getKey().setValue(0.0);
+		}
+		
 		return truthIncompatibility;
 	}
 	
