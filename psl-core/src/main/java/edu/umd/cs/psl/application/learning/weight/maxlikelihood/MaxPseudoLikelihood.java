@@ -149,7 +149,7 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 			}
 			else {
 				s = new double[(exactlyOne[iBlock]) ? rvBlocks[iBlock].length : rvBlocks[iBlock].length+1][];
-				for (int iRV = 0; iRV < s.length; iRV++) {
+				for (int iRV = 0; iRV < ((exactlyOne[iBlock]) ? s.length : s.length - 1); iRV++) {
 					s[iRV] = new double[rvBlocks[iBlock].length];
 					s[iRV][iRV] = 1.0;
 				}
