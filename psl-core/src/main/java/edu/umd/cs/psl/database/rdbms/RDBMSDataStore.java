@@ -41,6 +41,7 @@ import com.healthmarketscience.sqlbuilder.CreateTableQuery;
 import com.healthmarketscience.sqlbuilder.CreateTableQuery.ColumnConstraint;
 
 import edu.umd.cs.psl.config.ConfigBundle;
+import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.database.DataStore;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.database.Partition;
@@ -438,11 +439,32 @@ public class RDBMSDataStore implements DataStore {
 				String sql = "DELETE FROM " + pred.tableName + " WHERE " + pred.partitionCol + " = " + partition.getID();
 				deletedEntries+= stmt.executeUpdate(sql);
 			}
+			stmt.close();
 		} catch(SQLException e) {
 			throw new RuntimeException(e);
 		}
 		return deletedEntries;
 	}
+	
+	@Override
+	public Partition getNextPartition() {
+		int maxPartition = 0;
+		try {
+			Statement stmt = connection.createStatement();
+			for (RDBMSPredicateInfo pred : predicates.values()) {
+				String sql = "SELECT MAX(" + pred.partitionCol + ") FROM " + pred.tableName;
+				ResultSet result = stmt.executeQuery(sql);
+				while(result.next()) {
+					maxPartition = Math.max(maxPartition, result.getInt(1));
+				}
+			}
+			stmt.close();
+		} catch(SQLException e) {
+			throw new RuntimeException(e);
+		}
+		return new Partition(maxPartition + 1);
+	}
+
 
 	@Override
 	public void close() {
