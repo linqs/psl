@@ -16,6 +16,93 @@
  */
 package edu.umd.cs.psl.util.datasplitter;
 
-public class DataSplitter {
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
 
+import edu.umd.cs.psl.database.DataStore;
+import edu.umd.cs.psl.database.Database;
+import edu.umd.cs.psl.database.Partition;
+import edu.umd.cs.psl.model.predicate.StandardPredicate;
+import edu.umd.cs.psl.util.datasplitter.builddbstep.BuildDBStep;
+import edu.umd.cs.psl.util.datasplitter.closurestep.ClosureStep;
+
+/**
+ * Utility for splitting data sets.
+ * <p>
+ * Can be parameterized with strategies.
+ * 
+ * @author Stephen Bach <bach@cs.umd.edu>
+ */
+public class DataSplitter {
+	private final Random rand;
+	private SplitStep splitStep;
+	private List<ClosureStep> closureSteps;
+	private BuildDBStep buildDBStep;
+	private DataSplitter subsplitter;
+	
+	public DataSplitter(long seed) {
+		rand = new Random(seed);
+		splitStep = null;
+		closureSteps = new ArrayList<ClosureStep>();
+		buildDBStep = null;
+		subsplitter = null;
+	}
+	
+	public void setSplitStep(SplitStep splitStep) {
+		this.splitStep = splitStep;
+	}
+	
+	public void addClosureStep(ClosureStep closureStep) {
+		closureSteps.add(closureStep);
+	}
+	
+	public void clearClosureSteps() {
+		closureSteps.clear();
+	}
+	
+	public void setBuildDBStep() {
+		this.buildDBStep = buildDBStep;
+	}
+	
+	public void setSubsplitter(DataSplitter subsplitter) {
+		this.subsplitter = subsplitter;
+	}
+	
+	public ExperimentTree split(Database db) {
+		if (splitStep == null)
+			throw new IllegalStateException("No SplitStep has been set.");
+		if (closureStep == null)
+			throw new IllegalStateException("No ClosureStep has been set.");
+		if (buildDBStep == null)
+			throw new IllegalStateException("No BuildDBStep has been set.");
+		
+		List<Collection<Partition>> partitionGroups = splitStep.getSplits(db, rand);
+		for (ClosureStep closureStep : closureSteps)
+			closureStep.getClosure(db, partitionGroups);
+		List<DBDefinition> dbDefs = buildDBStep.getDBs(db, partitionGroups);
+		
+		ExperimentTree tree = new ExperimentTree();
+		
+		if (subsplitter != null) {
+			DataStore ds = db.getDataStore();
+			for (DBDefinition dbDef : dbDefs) {
+				Database subDB = ds.getDatabase(dbDef.write, dbDef.toClose, dbDef.read);
+				tree.addChild(subsplitter.split(subDB));
+				subDB.close();
+			}
+		}
+		else {
+			for (DBDefinition dbDef : dbDefs)
+				tree.addChild(new ExperimentTree(dbDef));
+		}
+	}
+	
+	private class DBDefinition {
+		public Partition write;
+		public Partition[] read;
+		public Set<StandardPredicate> toClose;
+	}
 }
