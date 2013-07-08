@@ -5,13 +5,15 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+import edu.umd.cs.psl.util.datasplitter.builddbstep.DBDefinition;
+
 /**
  * Tree of experimental setups, such as folds and train/test splits.
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  */
 public class ExperimentTree implements Iterable<ExperimentTree> {
-	private final DBDefiniton dbDef;
+	private final DBDefinition dbDef;
 	private final List<ExperimentTree> children;
 	
 	public ExperimentTree() {
