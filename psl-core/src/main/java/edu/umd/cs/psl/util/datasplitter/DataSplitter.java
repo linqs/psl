@@ -26,6 +26,8 @@ import edu.umd.cs.psl.database.DataStore;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.database.Partition;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
+import edu.umd.cs.psl.util.datasplitter.builddbstep.BuildDBStep;
+import edu.umd.cs.psl.util.datasplitter.closurestep.ClosureStep;
 
 /**
  * Utility for splitting data sets.
