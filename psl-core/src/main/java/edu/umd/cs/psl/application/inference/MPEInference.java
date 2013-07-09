@@ -16,6 +16,9 @@
  */
 package edu.umd.cs.psl.application.inference;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import edu.umd.cs.psl.application.ModelApplication;
 import edu.umd.cs.psl.application.util.GroundKernels;
 import edu.umd.cs.psl.application.util.Grounding;
@@ -47,6 +50,8 @@ import edu.umd.cs.psl.reasoner.admm.ADMMReasonerFactory;
  * @author Stephen Bach <bach@cs.umd.edu>
  */
 public class MPEInference implements ModelApplication {
+	
+	private static final Logger log = LoggerFactory.getLogger(MPEInference.class);
 	
 	/**
 	 * Prefix of property keys used by this class.
@@ -97,8 +102,11 @@ public class MPEInference implements ModelApplication {
 		Reasoner reasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
 		PersistedAtomManager atomManager = new PersistedAtomManager(db);
 		
+		log.info("Grounding out model.");
 		Grounding.groundAll(model, atomManager, reasoner);
+		log.info("Beginning inference.");
 		reasoner.optimize();
+		log.info("Inference complete. Writing results to Database.");
 		
 		/* Commits the RandomVariableAtoms back to the Database */
 		int count = 0;

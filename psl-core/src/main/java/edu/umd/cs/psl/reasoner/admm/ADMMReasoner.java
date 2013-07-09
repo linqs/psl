@@ -435,7 +435,7 @@ public class ADMMReasoner implements Reasoner {
 		if (rebuildModel)
 			buildGroundModel();
 		
-		log.info("Performing optimization with {} variables and {} terms.", z.size(), terms.size());
+		log.debug("Performing optimization with {} variables and {} terms.", z.size(), terms.size());
 		
 		// Starts up the computation threads
 		ADMMTask[] tasks = new ADMMTask[numThreads];
@@ -519,7 +519,7 @@ public class ADMMReasoner implements Reasoner {
 			throw new RuntimeException(e);
 		}
 		
-		log.info("Optimization completed in  {} iterations.", iter);
+		log.debug("Optimization completed in  {} iterations.", iter);
 		
 		/* Updates variables */
 		for (int i = 0; i < variables.size(); i++)
