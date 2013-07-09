@@ -116,6 +116,11 @@
 			<artifactId>collections-generic</artifactId>
 			<version>4.01</version>
 		</dependency>
+		<dependency>
+			<groupId>com.wcohen</groupId>
+			<artifactId>secondstring</artifactId>
+			<version>20120620</version>
+		</dependency>
 
 		<!-- testing dependencies -->
 		<dependency>

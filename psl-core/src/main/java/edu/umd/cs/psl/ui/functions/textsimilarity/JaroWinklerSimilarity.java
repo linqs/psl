@@ -16,13 +16,30 @@
  */
 package edu.umd.cs.psl.ui.functions.textsimilarity;
 
+import com.wcohen.ss.BasicStringWrapper;
+import com.wcohen.ss.JaroWinkler;
+
 import edu.umd.cs.psl.database.ReadOnlyDatabase;
 import edu.umd.cs.psl.model.argument.ArgumentType;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.function.ExternalFunction;
 
-public class SubStringSimilarity implements ExternalFunction {
+/**
+ * Wraps the Jaro-Winkler string similarity from the Second String library.
+ * If the similarity is below a threshold (default=0.5) it returns 0.
+ */
+class JaroWinklerSimilarity implements ExternalFunction {
+	// similarity threshold (default=0.5)
+	private double simThresh;
 
+	// constructors
+	public JaroWinklerSimilarity() {
+		this.simThresh = 0.5;
+	}
+	public JaroWinklerSimilarity(double simThresh) {
+		this.simThresh = simThresh;
+	}
+	
 	@Override
 	public int getArity() {
 		return 2;
@@ -30,26 +47,21 @@ public class SubStringSimilarity implements ExternalFunction {
 
 	@Override
 	public ArgumentType[] getArgumentTypes() {
-		return new ArgumentType[] {ArgumentType.String, ArgumentType.String};
+		return new ArgumentType[] { ArgumentType.String, ArgumentType.String };
 	}
 	
 	@Override
 	public double getValue(ReadOnlyDatabase db, GroundTerm... args) {
-		String a = args[0].toString();
-		String b = args[1].toString();
-		String s1,s2;
-		if (a.length()<b.length()) {
-			s1 = a; s2 = b;
-		} else {
-			s1 = b; s2 = a;
-		}
-		s1 = s1.toLowerCase(); s2 = s2.toLowerCase();
-		int index = s2.indexOf(s1, 0);
-		if (index<0) return 0.0;
-		else {
-			return s1.length()*1.0/s2.length();
-		}
-	}
-
-	
+		double sim = 0.0;
+		BasicStringWrapper aWrapped = new BasicStringWrapper(args[0].toString());
+		BasicStringWrapper bWrapped = new BasicStringWrapper(args[1].toString());
+		
+		JaroWinkler jaroW = new JaroWinkler();
+		sim = jaroW.score(aWrapped, bWrapped);
+		
+		if (sim < simThresh) 
+			return 0.0;
+		else 
+			return sim;
+    }
 }

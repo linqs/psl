@@ -21,8 +21,13 @@ import edu.umd.cs.psl.model.argument.ArgumentType;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.function.ExternalFunction;
 
-public class SubStringSimilarity implements ExternalFunction {
-
+/**
+ * Returns 1 if the
+ * input strings contain the same number of tokens,
+ * and 0 otherwise.
+ */
+class SameNumTokens implements ExternalFunction {
+	
 	@Override
 	public int getArity() {
 		return 2;
@@ -30,26 +35,15 @@ public class SubStringSimilarity implements ExternalFunction {
 
 	@Override
 	public ArgumentType[] getArgumentTypes() {
-		return new ArgumentType[] {ArgumentType.String, ArgumentType.String};
+		return new ArgumentType[] { ArgumentType.String, ArgumentType.String };
 	}
 	
 	@Override
 	public double getValue(ReadOnlyDatabase db, GroundTerm... args) {
-		String a = args[0].toString();
-		String b = args[1].toString();
-		String s1,s2;
-		if (a.length()<b.length()) {
-			s1 = a; s2 = b;
-		} else {
-			s1 = b; s2 = a;
-		}
-		s1 = s1.toLowerCase(); s2 = s2.toLowerCase();
-		int index = s2.indexOf(s1, 0);
-		if (index<0) return 0.0;
-		else {
-			return s1.length()*1.0/s2.length();
-		}
-	}
-
-	
+		String[] tokens0 = args[0].toString().split("\\s+");
+		String[] tokens1 = args[1].toString().split("\\s+");
+		if (tokens0.length != tokens1.length)
+			return 0.0;
+		return 1.0;
+    }
 }

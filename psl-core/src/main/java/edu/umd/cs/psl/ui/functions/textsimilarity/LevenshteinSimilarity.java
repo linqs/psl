@@ -18,9 +18,12 @@ package edu.umd.cs.psl.ui.functions.textsimilarity;
 
 import org.apache.commons.lang.StringUtils;
 
-import edu.umd.cs.psl.model.function.AttributeSimilarityFunction;
+import edu.umd.cs.psl.database.ReadOnlyDatabase;
+import edu.umd.cs.psl.model.argument.ArgumentType;
+import edu.umd.cs.psl.model.argument.GroundTerm;
+import edu.umd.cs.psl.model.function.ExternalFunction;
 
-public class LevenshteinStringSimilarity implements AttributeSimilarityFunction {
+public class LevenshteinSimilarity implements ExternalFunction {
 
 	/**
 	 * String for which the similarity computed by the metrics is below this
@@ -31,22 +34,32 @@ public class LevenshteinStringSimilarity implements AttributeSimilarityFunction 
 
 	private final double similarityThreshold;
 
-	public LevenshteinStringSimilarity() {
+	public LevenshteinSimilarity() {
 		this(defaultSimilarityThreshold);
 	}
 
-	public LevenshteinStringSimilarity(double threshold) {
+	public LevenshteinSimilarity(double threshold) {
 		similarityThreshold = threshold;
 	}
 
 	@Override
-	public double similarity(String s1, String s2) {
+	public int getArity() {
+		return 2;
+	}
 
-		int maxLen = Math.max(s1.length(), s2.length());
+	@Override
+	public ArgumentType[] getArgumentTypes() {
+		return new ArgumentType[] {ArgumentType.String, ArgumentType.String};
+	}
+
+	@Override
+	public double getValue(ReadOnlyDatabase db, GroundTerm... args) {
+
+		int maxLen = Math.max(args[0].toString().length(), args[1].toString().length());
 		if (maxLen == 0)
 			return 1.0;
 
-		double ldist = StringUtils.getLevenshteinDistance(s1, s2);
+		double ldist = StringUtils.getLevenshteinDistance(args[0].toString(), args[1].toString());
 		double sim = 1.0 - (ldist / maxLen);
 
 		if (sim > similarityThreshold)

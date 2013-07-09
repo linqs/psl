@@ -21,8 +21,12 @@ import edu.umd.cs.psl.model.argument.ArgumentType;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.function.ExternalFunction;
 
-public class SubStringSimilarity implements ExternalFunction {
-
+/**
+ * Returns 1 if the input names have the same initials
+ * (ignoring case and order), and 0 otherwise.
+ */
+class SameInitials implements ExternalFunction
+{
 	@Override
 	public int getArity() {
 		return 2;
@@ -30,26 +34,36 @@ public class SubStringSimilarity implements ExternalFunction {
 
 	@Override
 	public ArgumentType[] getArgumentTypes() {
-		return new ArgumentType[] {ArgumentType.String, ArgumentType.String};
+		return new ArgumentType[] { ArgumentType.String, ArgumentType.String };
 	}
 	
 	@Override
 	public double getValue(ReadOnlyDatabase db, GroundTerm... args) {
-		String a = args[0].toString();
-		String b = args[1].toString();
-		String s1,s2;
-		if (a.length()<b.length()) {
-			s1 = a; s2 = b;
-		} else {
-			s1 = b; s2 = a;
+		String[] tokens0 = args[0].toString().split("\\s+");
+		String[] tokens1 = args[1].toString().split("\\s+");
+		if (tokens0.length != tokens1.length)
+			return 0.0;
+		
+		int[] initialsHistogram0 = new int[27];
+		int[] initialsHistogram1 = new int[27];
+		
+		for (int i = 0; i < tokens0.length; i++) {
+			updateHistogram(tokens0[i].toLowerCase().charAt(0), initialsHistogram0);
+			updateHistogram(tokens1[i].toLowerCase().charAt(0), initialsHistogram1);
 		}
-		s1 = s1.toLowerCase(); s2 = s2.toLowerCase();
-		int index = s2.indexOf(s1, 0);
-		if (index<0) return 0.0;
-		else {
-			return s1.length()*1.0/s2.length();
-		}
-	}
-
-	
+		
+		for (int i = 0; i < initialsHistogram0.length; i++)
+			if (initialsHistogram0[i] != initialsHistogram1[i])
+				return 0.0;
+		
+		return 1.0;
+    }
+    
+    static void updateHistogram(char initial, int[] histogram) {
+    	int code = (int) initial - 97;
+    	if (code < 0 || code > 25)
+    		code = 26;
+    	
+    	histogram[code]++;
+    }
 }
