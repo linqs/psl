@@ -19,30 +19,46 @@
  */
 package ${package};
 
-//Imports the standard groovy interface to PSL, the attribute similarity function interface and the database drivers
-import edu.umd.cs.psl.groovy.*;
-import edu.umd.cs.psl.database.RDBMS.DatabaseDriver;
-import edu.umd.cs.psl.model.function.AttributeSimilarityFunction;
-import edu.umd.cs.psl.config.*;
+import edu.umd.cs.psl.config.*
+import edu.umd.cs.psl.database.DataStore
+import edu.umd.cs.psl.database.rdbms.RDBMSDataStore
+import edu.umd.cs.psl.database.rdbms.driver.H2DatabaseDriver
+import edu.umd.cs.psl.database.rdbms.driver.H2DatabaseDriver.Type
+import edu.umd.cs.psl.groovy.PSLModel;
+import edu.umd.cs.psl.model.argument.ArgumentType;
+import edu.umd.cs.psl.ui.functions.textsimilarity.*
 
-//Import this package if you want to use attribute similarity functions that come with PSL
-import edu.umd.cs.psl.ui.functions.textsimilarity.*;
-
-/* The first thing we need to do, is initialize a PSLModel which is the core component of PSL.
- * The constructor argument is the context in which the PSLModel is defined. Predicates defined
- * in the PSLModel are also automatically defined in the context.
+/* 
+ * The first thing we need to do is initialize a ConfigBundle and a DataStore
  */
-PSLModel m = new PSLModel(this);
+ConfigManager cm = ConfigManager.getManager()
+ConfigBundle cb = cm.getBundle("basic-example")
 
-/* We create two predicates in the model, giving their names and list of arguments. Each argument has a specified type which
- * is either Entity or Attribute.
+/* Uses H2 as a DataStore and stores it in a temp. directory by default */
+def defaultPath = System.getProperty("java.io.tmpdir")
+String dbpath = cb.getString("dbpath", defaultPath + File.separator + "basic-example")
+DataStore data = new RDBMSDataStore(new H2DatabaseDriver(Type.Disk, dbpath, true), cb)
+
+/*
+ * Now we can initialize a PSLModel, which is the core component of PSL.
+ * The first constructor argument is the context in which the PSLModel is defined.
+ * The second argument is the DataStore we will be using.
  */
-m.add predicate: "name" , person: Entity, string : Text
-m.add predicate: "knows" , person1: Entity, person2 : Entity
-// This additional predicate is declared as open, which means we will infer its truth values. By default, predicates are closed.
-m.add predicate: "samePerson", person1: Entity, person2: Entity, open: true
-// Now, we define a string similarity function bound to a predicate. Note that we can use any implementation of AttributeSimilarityFunction here!
-m.add function: "sameName" , name1: Text, name2: Text, implementation: new LevenshteinStringSimilarity() // also, try: new MyStringSimilarity(), see end of file
+PSLModel m = new PSLModel(this, data)
+
+/* 
+ * We create three predicates in the model, giving their names and list of argument types
+ */
+m.add predicate: "name" , [ArgumentType.UniqueID, ArgumentType.String]
+m.add predicate: "knows" , [ArgumentType.UniqueID, ArgumentType.UniqueID]
+m.add predicate: "samePerson", [ArgumentType.UniqueID, ArgumentType.UniqueID]
+
+/*
+ * Now, we define a string similarity function bound to a predicate.
+ * Note that we can use any implementation of ExternalFunction that acts on two strings!
+ */
+m.add function: "sameName" , implementation: new LevenshteinSimilarity()
+// also, try: new MyStringSimilarity(), see end of file
 
 /* Having added all the predicates we need to represent our problem, we finally insert some rules into the model.
  * Rules are defined using a logical syntax. Uppercase letters are variables and the predicates used in the rules below
@@ -81,14 +97,6 @@ m.add Prior.Simple, on : samePerson, weight: 1
 
 //Let's see what our model looks like.
 println m;
-
-/* To apply our model to some dataset, we need to be able to load this dataset. PSL provides a range of convenience methods
- * for data loading and, in particular, can interact with any relational database that implements the JDBC interface.
- * So, we first setup a relational database to host the data and to store the results of the inference.
- * 
- * The DataAccess object manages all access to data.
- */
-DataStore data = new RelationalDataStore(m)
 
 // Setting up the database. Here we use the Java database H2 (www.h2database.com)
 data.setup db : DatabaseDriver.H2
