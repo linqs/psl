@@ -18,7 +18,6 @@ package edu.umd.cs.psl.util.datasplitter.builddbstep;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -48,7 +47,7 @@ public class SimpleBuildDBStep implements BuildDBStep {
 	 **/
 	public List<DBDefinition> getDatabaseDefinitions(Database inputDB,
 			List<Collection<Partition>> partitionList) {
-		List<DBDefinition> dbDefs = new ArrayList();
+		List<DBDefinition> dbDefs = new ArrayList<DBDefinition>();
 		for(Collection<Partition> pL : partitionList){
 			Partition wrPartition = inputDB.getDataStore().getNextPartition();
 			dbDefs.add(new DBDefinition(wrPartition, toClose, (Partition[]) pL.toArray()));

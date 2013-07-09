@@ -18,15 +18,12 @@ package edu.umd.cs.psl.util.datasplitter.closurestep;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
 import edu.umd.cs.psl.database.DataStore;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.database.Partition;
-import edu.umd.cs.psl.database.ResultList;
-import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.util.database.Queries;
