@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2013 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,8 +29,6 @@ import edu.umd.cs.psl.model.argument.Variable
 import edu.umd.cs.psl.model.argument.VariableTypeMap
 import edu.umd.cs.psl.model.atom.QueryAtom
 import edu.umd.cs.psl.model.formula.Formula
-import edu.umd.cs.psl.model.function.AttributeSimFunAdapter
-import edu.umd.cs.psl.model.function.AttributeSimilarityFunction
 import edu.umd.cs.psl.model.function.ExternalFunction
 import edu.umd.cs.psl.model.kernel.Kernel
 import edu.umd.cs.psl.model.kernel.predicateconstraint.DomainRangeConstraintKernel
@@ -47,8 +45,9 @@ import edu.umd.cs.psl.model.set.term.SetTerm
 
 /**
  * Groovy class representing a PSL model.
+ * 
+ * @author Matthias Broecheler
  * @author Eric Norris <enorris@cs.umd.edu>
- *
  */
 class PSLModel extends Model {
 	// Keys for Groovy syntactic sugar
@@ -239,11 +238,9 @@ class PSLModel extends Model {
 		
 		ExternalFunction implementation = null;
 		if (args.containsKey('implementation')) {
-			if (args['implementation'] instanceof AttributeSimilarityFunction)
-				implementation = new AttributeSimFunAdapter(args['implementation']);
-			else if (args['implementation'] instanceof ExternalFunction)
+			if (args['implementation'] instanceof ExternalFunction)
 				implementation = args['implementation'];
-			else throw new IllegalArgumentException("The implementation of an external function must implement the respective interface");
+			else throw new IllegalArgumentException("The implementation of an external function must implement the ExternalFunction interface");
 			args.remove 'implementation';
 		}
 		
