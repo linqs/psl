@@ -275,7 +275,7 @@ class PSLModel extends Model {
 	
 	def addRule(FormulaContainer rule, Map args) {
 		boolean isFact = false;
-		boolean isSquared = false;
+		boolean isSquared = true;
 		if (args.containsKey('constraint')) {
 			if (!(args['constraint'] instanceof Boolean)) throw new IllegalArgumentException("The parameter [constraint] for a rule must be either TRUE or FALSE");
 			isFact = args['constraint'];
