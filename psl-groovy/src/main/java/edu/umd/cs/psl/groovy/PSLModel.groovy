@@ -87,7 +87,12 @@ class PSLModel extends Model {
 	 * @return  	an Object corresponding to the name
 	 */
 	private Object lookupProperty(String name) {
+		/* Hacky fix for broken println */
+		if (name.equals("out"))
+			return System.out;
+		
 		Predicate predicate = pf.getPredicate(name);
+		
 		if (predicate != null)
 			return predicate;
 		
