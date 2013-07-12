@@ -21,13 +21,13 @@
 	<groupId>edu.umd.cs</groupId>
 	<artifactId>psl-core</artifactId>
 	<name>psl-core</name>
-	<version>1.1-SNAPSHOT</version>
+	<version>1.1</version>
 	<packaging>jar</packaging>
 	<description>Core module of the PSL software from the University of Maryland.</description>
 	<parent>
 		<groupId>edu.umd.cs</groupId>
 		<artifactId>psl</artifactId>
-		<version>1.1-SNAPSHOT</version>
+		<version>1.1</version>
 	</parent>
 	<dependencies>
 		<!-- linear algebra dependencies -->
