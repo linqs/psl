@@ -361,7 +361,6 @@ public class ADMMReasoner implements Reasoner {
 		
 		@Override
 		public void run() {
-			log.debug("{} spinning up...", Thread.currentThread().getName());
 			awaitUninterruptibly(checkBarrier);
 			
 			int iter = 1;
@@ -424,7 +423,6 @@ public class ADMMReasoner implements Reasoner {
 				// Waits for main thread
 				awaitUninterruptibly(checkBarrier);
 			}
-			log.debug("{} spinning down...", Thread.currentThread().getName());
 			awaitUninterruptibly(checkBarrier);
 		}
 		
