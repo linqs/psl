@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,8 +49,8 @@ public class FunctionSummand implements FunctionTerm {
 	}
 	
 	@Override
-	public double getValue(Map<? extends FunctionVariable,Double> values, boolean assumeDefaultValue) {
-		return coeff*term.getValue(values,assumeDefaultValue);
+	public double getValue(Map<? extends FunctionVariable,Double> values, boolean useCurrentValues) {
+		return coeff*term.getValue(values,useCurrentValues);
 	}
 	
 	public double getCoefficient() {
@@ -69,6 +69,11 @@ public class FunctionSummand implements FunctionTerm {
 	@Override
 	public boolean isConstant() {
 		return term.isConstant();
+	}
+	
+	@Override
+	public String toString() {
+		return coeff + " * " + term.toString();
 	}
 	
 }

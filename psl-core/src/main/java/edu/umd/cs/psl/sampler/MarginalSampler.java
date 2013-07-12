@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import de.mathnbits.statistics.DoubleDist;
-import edu.umd.cs.psl.evaluation.process.RunningProcess;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
 
@@ -28,16 +27,16 @@ public class MarginalSampler extends LinearSampler {
 
 	private transient Map<AtomFunctionVariable,DoubleDist> samples;
 	
-	public MarginalSampler(RunningProcess p) {
-		this(p,defaultMaxNoSteps,defaultSignificantDigits);
+	public MarginalSampler() {
+		this(defaultMaxNoSteps,defaultSignificantDigits);
 	}
 	
-	public MarginalSampler(RunningProcess p,int maxNoSteps) {
-		this(p,maxNoSteps,defaultSignificantDigits);
+	public MarginalSampler(int maxNoSteps) {
+		this(maxNoSteps,defaultSignificantDigits);
 	}
  	
-	public MarginalSampler(RunningProcess p, int maxNoSteps, int significantDigits) {
-		super(p, maxNoSteps, significantDigits);
+	public MarginalSampler(int maxNoSteps, int significantDigits) {
+		super(maxNoSteps, significantDigits);
 		samples = new HashMap<AtomFunctionVariable,DoubleDist>();
 	}
 	

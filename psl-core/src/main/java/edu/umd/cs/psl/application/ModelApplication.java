@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,33 +16,17 @@
  */
 package edu.umd.cs.psl.application;
 
-import edu.umd.cs.psl.database.DatabaseAtomStoreQuery;
-import edu.umd.cs.psl.model.ModelEvent;
-import edu.umd.cs.psl.model.atom.AtomManager;
-import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
-import edu.umd.cs.psl.model.kernel.GroundKernel;
+import edu.umd.cs.psl.database.Database;
+import edu.umd.cs.psl.model.Model;
 
-public interface ModelApplication extends ModelEvent.Listener {
+/**
+ * Combines {@link Model Models} with {@link Database Databases}
+ * to perform a task, such as inference or learning.
+ */
+public interface ModelApplication {
 	
-	public void addGroundKernel(GroundKernel e);
-	
-	public void changedGroundKernel(GroundKernel e);
-	
-	public void removeGroundKernel(GroundKernel e);
-	
-	public boolean containsGroundKernel(GroundKernel e);
-	
-	public GroundKernel getGroundKernel(GroundKernel e);
-
-	public Iterable<GroundCompatibilityKernel> getCompatibilityKernels();
-	
-	public Iterable<GroundKernel> getGroundKernel();
-	
-	public DatabaseAtomStoreQuery getDatabase();
-
-	public AtomManager getAtomManager();	
-	
-	
-	
+	/**
+	 * Releases all resources used by this ModelApplication.
+	 */
 	public void close();
 }

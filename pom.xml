@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
   - This file is part of the PSL software.
-  - Copyright 2011 University of Maryland
+  - Copyright 2011-2013 University of Maryland
   -
   - Licensed under the Apache License, Version 2.0 (the "License");
   - you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@
 	<groupId>edu.umd.cs</groupId>
 	<artifactId>psl</artifactId>
 	<name>psl</name>
-	<version>1.0.3</version>
+	<version>1.1-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<description>The PSL software from the University of Maryland.</description>
 	<licenses>

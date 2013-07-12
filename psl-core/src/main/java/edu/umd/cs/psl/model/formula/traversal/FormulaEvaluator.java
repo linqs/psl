@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,10 @@ package edu.umd.cs.psl.model.formula.traversal;
 import cern.colt.list.tdouble.AbstractDoubleList;
 import cern.colt.list.tdouble.DoubleArrayList;
 import edu.umd.cs.psl.model.atom.Atom;
+import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.formula.*;
 
-public class FormulaEvaluator extends FormulaTraverser {
+public class FormulaEvaluator extends AbstractFormulaTraverser {
 	
 	public final static FormulaEvaluator LUKASIEWICZ = new FormulaEvaluator(Tnorm.LUKASIEWICZ);
 	public final static FormulaEvaluator GOEDEL = new FormulaEvaluator(Tnorm.GOEDEL);
@@ -37,7 +38,7 @@ public class FormulaEvaluator extends FormulaTraverser {
 	
 	public double getTruthValue(Formula f) {
 		reset();
-		FormulaTraverser.traverse(f, this);
+		AbstractFormulaTraverser.traverse(f, this);
 		return pop();
 	}
 	
@@ -81,8 +82,10 @@ public class FormulaEvaluator extends FormulaTraverser {
 	
 	@Override
 	public void visitAtom(Atom atom) {
-		assert atom.getNumberOfValues()==1;
-		push(atom.getSoftValue(0));
+		if (atom instanceof GroundAtom)
+			push(((GroundAtom) atom).getValue());
+		else
+			throw new IllegalArgumentException("Atom is not ground.");
 	}
 	
 }

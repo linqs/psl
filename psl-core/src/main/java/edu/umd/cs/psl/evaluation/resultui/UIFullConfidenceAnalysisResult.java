@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,22 +20,17 @@ import java.text.DecimalFormat;
 import java.util.Map;
 
 import de.mathnbits.statistics.DoubleDist;
-import edu.umd.cs.psl.database.DatabaseAtomStoreQuery;
-import edu.umd.cs.psl.evaluation.process.ProcessView;
 import edu.umd.cs.psl.evaluation.result.FullConfidenceAnalysisResult;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
-import edu.umd.cs.psl.sampler.HitAndRunSamplerStatistics;
 
 public class UIFullConfidenceAnalysisResult implements FullConfidenceAnalysisResult {
 	
 	private final static double defaultMeanThreshold = 0.1;
 	
-	private final DatabaseAtomStoreQuery dbproxy;
 	private final FullConfidenceAnalysisResult result;	
 	
-	public UIFullConfidenceAnalysisResult(DatabaseAtomStoreQuery db,FullConfidenceAnalysisResult stats) {
-		dbproxy = db;
+	public UIFullConfidenceAnalysisResult(FullConfidenceAnalysisResult stats) {
 		result = stats;
 	}
 	
@@ -62,16 +57,6 @@ public class UIFullConfidenceAnalysisResult implements FullConfidenceAnalysisRes
 	@Override
 	public double[] getHistogram(AtomFunctionVariable atomvar, int noBins) {
 		return result.getHistogram(atomvar, noBins);
-	}
-
-
-	@Override
-	public ProcessView getProcess() {
-		return result.getProcess();
-	}
-	
-	public String printLinearSamplingStatistics() {
-		return HitAndRunSamplerStatistics.print(result.getProcess());
 	}
 	
 	public String toString(Predicate p, double meanThreshold) {

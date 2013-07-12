@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,16 @@
  */
 package edu.umd.cs.psl.sampler;
 
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
 
-import edu.umd.cs.psl.evaluation.process.ProcessView;
-import edu.umd.cs.psl.evaluation.process.RunningProcess;
+import com.google.common.base.Preconditions;
+
+import edu.umd.cs.psl.util.concurrent.AtomicDouble;
 
 public class HitAndRunSamplerStatistics {
 
@@ -40,13 +45,13 @@ public class HitAndRunSamplerStatistics {
 	private long startInCorner=0;
 	private boolean setupComplete=false;
 	
-	private final RunningProcess process;
+	private final LocalProcess process;
 	
-	HitAndRunSamplerStatistics(AbstractHitAndRunSampler s, RunningProcess proc) {
-		process=proc;
-		proc.setString(descriptionKey, ToStringBuilder.reflectionToString(s,ToStringStyle.MULTI_LINE_STYLE));
-		proc.setLong(timeInCornersKey, 0);
-		proc.setLong(noCallBacksKey, 0);
+	HitAndRunSamplerStatistics(AbstractHitAndRunSampler s) {
+		process= new LocalProcess(0, true);
+		process.setString(descriptionKey, ToStringBuilder.reflectionToString(s,ToStringStyle.MULTI_LINE_STYLE));
+		process.setLong(timeInCornersKey, 0);
+		process.setLong(noCallBacksKey, 0);
 		startTime = System.currentTimeMillis();
 	}
 	
@@ -79,21 +84,120 @@ public class HitAndRunSamplerStatistics {
 		
 	}
 	
-	public static String print(ProcessView p) {
-		StringBuilder s = new StringBuilder();
-		s.append("Linear Sampler Statistics: \n");
-		s.append("Dimensions: ").append(p.getLong(noDimensionsKey)).append(" [").append(p.getLong(noreducedDimKey)).append("] \n");
-		s.append("EqCons: ").append(p.getLong(noEqConsKey)).append("| IneqCons: ").append(p.getLong(noIneqConsKey)).append("| ObjFun: ").append(p.getLong(noObjFunKey)).append("\n");
-		s.append("Number of Samples: ").append(p.getLong(noSamplesKey)).append("\n");
-		s.append("Total Time: ").append(p.getTotalRuntimeMilis()).append("\n");
-		s.append("Setup Time: ").append(p.getLong(setupTimeKey)).append("\n");
-		s.append("Time in Corners: ").append(p.getLong(timeInCornersKey)).append("\n");
-		s.append("Number of times in Corners: ").append(p.getLong(noTimesInCornerKey)).append("\n");
-		s.append("Number of call backs: ").append(p.getLong(noCallBacksKey)).append("\n");
-		s.append("Linear Sampler Configuration: \n");
-		s.append(p.getString(descriptionKey));
+	private class LocalProcess {
+
+		private final int id;
+		private long startTime;
+		private long endTime;
 		
-		return s.toString();
+		private final ConcurrentMap<String,Object> values;
+		
+		private LocalProcess(int id, boolean start) {
+			this.id=id;
+			startTime=-1;
+			endTime=-1;
+			values = new ConcurrentHashMap<String,Object>();
+			if (start) start();
+		}
+		
+		private LocalProcess(int id) {
+			this(id,false);
+		}
+		
+		public int getID() {
+			return id;
+		}
+
+
+		public void start() {
+			Preconditions.checkArgument(startTime==-1,"Process has already been started!");	
+			startTime=System.currentTimeMillis();
+		}
+		
+		public void terminate() {
+			Preconditions.checkArgument(startTime>=0,"Process has not yet been started!");
+			Preconditions.checkArgument(endTime==-1,"Process has alreayd been terminated!");	
+			endTime=System.currentTimeMillis();	
+		}
+
+		public long getCurrentRuntimeMilis() {
+			Preconditions.checkArgument(startTime>=0,"Process has not yet been started!");
+			Preconditions.checkArgument(endTime==-1,"Process has alreayd been terminated!");	
+			return System.currentTimeMillis()-startTime;	
+		}
+
+		public long getTotalRuntimeMilis() {
+			return endTime-startTime;
+		}
+		
+		public boolean isTerminated() {
+			return endTime!=-1;
+		}
+
+		public double incrementDouble(String key, double inc) {
+			Object o = values.get(key);
+			AtomicDouble d = null;
+			if (o==null) {
+				d = (AtomicDouble)values.putIfAbsent(key, new AtomicDouble());
+			} else d = (AtomicDouble)o;
+			return d.increment(inc);
+		}
+
+		public long incrementLong(String key, long inc) {
+			Object o = values.get(key);
+			AtomicLong d = null;
+			if (o==null) {
+				values.putIfAbsent(key, new AtomicLong());
+				d = (AtomicLong) values.get(key);
+			} else d = (AtomicLong)o;
+			return d.addAndGet(inc);	
+		}
+
+
+		public void setDouble(String key, double val) {
+			values.put(key, new AtomicDouble(val));
+		}
+
+		public void setLong(String key, long val) {
+			values.put(key, new AtomicLong(val));	
+		}
+
+		public void setObject(String key, Object val) {
+			values.put(key, val);
+		}
+
+		public void setString(String key, String val) {
+			values.put(key, val);
+		}
+
+		public double getDouble(String key) {
+			Object o = values.get(key);
+			if (o==null) return 0.0;
+			else {
+				return ((AtomicDouble)o).get();
+			}
+		}
+
+		public long getLong(String key) {
+			Object o = values.get(key);
+			if (o==null) return 0;
+			else {
+				return ((AtomicLong)o).get();
+			}
+		}
+
+		public Object getObject(String key) {
+			return values.get(key);
+		}
+
+
+		public String getString(String key) {
+			Object o = values.get(key);
+			if (o==null) return null;
+			else {
+				return (String)o;
+			}
+		}
 	}
 	
 }

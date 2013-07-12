@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,57 +18,64 @@ package edu.umd.cs.psl.model.kernel.setdefinition;
 
 import java.util.Set;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
 import edu.umd.cs.psl.model.atom.Atom;
+import edu.umd.cs.psl.model.atom.GroundAtom;
+import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.kernel.BindingMode;
+import edu.umd.cs.psl.model.kernel.ConstraintKernel;
 import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
-import edu.umd.cs.psl.model.kernel.Kernel;
-import edu.umd.cs.psl.optimizer.NumericUtilities;
 import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
 import edu.umd.cs.psl.reasoner.function.FunctionComparator;
+import edu.umd.cs.psl.reasoner.function.FunctionSum;
 import edu.umd.cs.psl.reasoner.function.FunctionSummand;
 
 public class GroundEmptySetDefinition implements GroundConstraintKernel {
 
 	private final SetDefinitionKernel kernel;
-	private final Atom atom;
+	private final GroundAtom atom;
 	private double value;
 	
-	public GroundEmptySetDefinition(SetDefinitionKernel k, Atom atom, double val) {
-		Preconditions.checkArgument(atom.getNumberOfValues()==1);
+	public GroundEmptySetDefinition(SetDefinitionKernel k, GroundAtom atom, double val) {
 		this.atom = atom;
 		value = val;
 		kernel = k;
+		
+		if (atom instanceof RandomVariableAtom)
+			((RandomVariableAtom) atom).setValue(value);
 	}
 	
 	@Override
 	public ConstraintTerm getConstraintDefinition() {
-		return new ConstraintTerm(new FunctionSummand(1,atom.getVariable()),FunctionComparator.Equality,value);
+		FunctionSum sum = new FunctionSum();
+		sum.add(new FunctionSummand(1,atom.getVariable()));
+		return new ConstraintTerm(sum,FunctionComparator.Equality,value);
 	}
 	
 	@Override
-	public double getIncompatibility() {
-		if (NumericUtilities.equals(atom.getSoftValue(0), value)) return 0;
-		else return Double.POSITIVE_INFINITY;
+	public double getInfeasibility() {
+		return Math.abs(atom.getValue() - value);
 	}
 
 	@Override
-	public Set<Atom> getAtoms() {
-		return ImmutableSet.of(atom);
+	public Set<GroundAtom> getAtoms() {
+		return ImmutableSet.of((GroundAtom)atom);
 	}
 
 	@Override
 	public BindingMode getBinding(Atom atom) {
 		if (atom.equals(this.atom)) {
-			if (atom.getPredicate().isNonDefaultValues(new double[]{value})) return BindingMode.StrongCertainty;
-			else return BindingMode.WeakCertainty;
-		} else return BindingMode.NoBinding;
+			if (((GroundAtom) atom).getValue() > 0.0)
+				return BindingMode.StrongCertainty;
+			else
+				return BindingMode.WeakCertainty;
+		} else
+			return BindingMode.NoBinding;
 	}
 
 	@Override
-	public Kernel getKernel() {
+	public ConstraintKernel getKernel() {
 		return kernel;
 	}
 

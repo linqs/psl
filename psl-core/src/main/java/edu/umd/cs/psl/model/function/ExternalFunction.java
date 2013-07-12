@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,20 +16,16 @@
  */
 package edu.umd.cs.psl.model.function;
 
+import edu.umd.cs.psl.database.ReadOnlyDatabase;
+import edu.umd.cs.psl.model.argument.ArgumentType;
 import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.argument.type.ArgumentType;
-import edu.umd.cs.psl.model.predicate.type.PredicateType;
 
 public interface ExternalFunction {
 
-	public double[] getValue(GroundTerm... args);
+	public double getValue(ReadOnlyDatabase db, GroundTerm... args);
 	
 	public int getArity();
 	
 	public ArgumentType[] getArgumentTypes();
-	
-	public PredicateType getPredicateType();
-	
-	
 	
 }

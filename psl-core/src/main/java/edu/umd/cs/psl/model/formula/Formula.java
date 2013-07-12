@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,40 +18,33 @@ package edu.umd.cs.psl.model.formula;
 
 import java.util.*;
 
-import edu.umd.cs.psl.model.argument.type.VariableTypeMap;
+import edu.umd.cs.psl.model.argument.Variable;
+import edu.umd.cs.psl.model.argument.VariableTypeMap;
 import edu.umd.cs.psl.model.atom.Atom;
 
-
-
 /**
- * This is the top most interface for fuzzy formulas and defines the standard methods that
- * every fuzzy formula must provide
+ * A logical formula composed of {@link Atom Atoms} and logical operators.
  * 
  * @author Matthias Broecheler
- *
  */
-
 public interface Formula {
 	
 	/**
-	 * Returns a logically equivalent formula in disjunctive normal form
+	 * @return a logically equivalent Formula in disjunctive normal form
 	 */
-	public Formula dnf();
+	public Formula getDNF();
 	
 	/**
-	 * Returns a list of all non constant atoms contained in the formula
-	 * @return list of all atoms contained in the formula
+	 * @return Atoms in the Formula
 	 */
-	public Collection<Atom> getAtoms(Collection<Atom> atoms);
+	public Set<Atom> getAtoms(Set<Atom> atoms);
 	
-	
-	public VariableTypeMap getVariables(VariableTypeMap varMap);
-	
-	
-	/** A standard set of methods that need to be overriden
+	/**
+	 * Adds the {@link Variable Variables}
+	 * 
+	 * @param varMap
+	 * @return
 	 */
-	public String toString();
-	public int hashCode();
-	public boolean equals(Object oth);
+	public VariableTypeMap collectVariables(VariableTypeMap varMap);
 	
 }

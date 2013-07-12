@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
   - This file is part of the PSL software.
-  - Copyright 2011 University of Maryland
+  - Copyright 2011-2013 University of Maryland
   -
   - Licensed under the Apache License, Version 2.0 (the "License");
   - you may not use this file except in compliance with the License.
@@ -21,13 +21,13 @@
 	<groupId>edu.umd.cs</groupId>
 	<artifactId>psl-core</artifactId>
 	<name>psl-core</name>
-	<version>1.0.3</version>
+	<version>1.1-SNAPSHOT</version>
 	<packaging>jar</packaging>
 	<description>Core module of the PSL software from the University of Maryland.</description>
 	<parent>
 		<groupId>edu.umd.cs</groupId>
 		<artifactId>psl</artifactId>
-		<version>1.0.3</version>
+		<version>1.1-SNAPSHOT</version>
 	</parent>
 	<dependencies>
 		<!-- linear algebra dependencies -->
@@ -115,6 +115,11 @@
 			<groupId>net.sourceforge.collections</groupId>
 			<artifactId>collections-generic</artifactId>
 			<version>4.01</version>
+		</dependency>
+		<dependency>
+			<groupId>com.wcohen</groupId>
+			<artifactId>secondstring</artifactId>
+			<version>20120620</version>
 		</dependency>
 
 		<!-- testing dependencies -->

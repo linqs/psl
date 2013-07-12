@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,32 +16,25 @@
  */
 package edu.umd.cs.psl.model.predicate;
 
-import edu.umd.cs.psl.model.argument.type.ArgumentType;
-import edu.umd.cs.psl.model.predicate.type.PredicateType;
-
+import edu.umd.cs.psl.database.Database;
+import edu.umd.cs.psl.model.argument.ArgumentType;
+import edu.umd.cs.psl.model.atom.GroundAtom;
 
 /**
- * This class implements a boolean predicate which is defined by its name and type signature.
- * Boolean Predicates cannot be directly constructed but must be constructed through the static
- * create() methods in Predicate.java
- * 
- * @author Matthias Broecheler
- *
+ * Predicate of {@link GroundAtom GroundAtoms} that can be persisted in a
+ * {@link Database}.
  */
-public class StandardPredicate extends AbstractPredicate {
-
-	private final double[] defaultParameters;
+public class StandardPredicate extends Predicate {
 	
-	StandardPredicate(String name, PredicateType type, ArgumentType[] types, double[] defaultParas) {
-		super(name, type, types);
-		if (defaultParas.length!=type.getNumberOfActivationParameters()) throw new IllegalArgumentException();
-		defaultParameters=defaultParas;
+	/**
+	 * Sole constructor.
+	 * 
+	 * @param name  name for this predicate
+	 * @param types  types for each of the predicate's arguments
+	 * @see PredicateFactory
+	 */
+	StandardPredicate(String name, ArgumentType[] types) {
+		super(name, types);
 	}
-	
-	@Override
-	public boolean isNonDefaultValues(double[] values) {
-		return type.isNonDefaultValues(values, defaultParameters);
-	}
-
 	
 }

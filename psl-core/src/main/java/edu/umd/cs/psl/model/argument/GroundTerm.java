@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,21 +16,19 @@
  */
 package edu.umd.cs.psl.model.argument;
 
-import edu.umd.cs.psl.model.argument.type.ArgumentType;
-
 /**
- * An interface for ground terms.
- * 
- * @author
- *
+ * A {@link Term} that is ground, i.e., not a {@link Variable}.
  */
-public interface GroundTerm extends Term {
-
-	/**
-	 * Returns the argument type.
-	 * 
-	 * @return An argument type
-	 */
-	public ArgumentType getType();
+public interface GroundTerm extends Term, Comparable<GroundTerm> {
 	
+	/**
+	 * Inherited from {@link Comparable#compareTo(Object)}.
+	 * <p>
+	 * Implementations should compare to GroundTerms without a parent implementation
+	 * in common using
+	 * <p>
+	 * this.getClass().getSimpleName().compareTo(o.getClass().getSimpleName()); 
+	 */
+	@Override
+	public int compareTo(GroundTerm o);
 }

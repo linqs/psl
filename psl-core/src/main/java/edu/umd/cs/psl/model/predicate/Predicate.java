@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,32 +16,98 @@
  */
 package edu.umd.cs.psl.model.predicate;
 
-import edu.umd.cs.psl.model.argument.type.ArgumentType;
-import edu.umd.cs.psl.model.predicate.type.PredicateType;
+import edu.umd.cs.psl.model.argument.ArgumentType;
+import edu.umd.cs.psl.model.argument.Term;
+import edu.umd.cs.psl.model.atom.Atom;
 
-public interface Predicate {
+/**
+ * A relation that can be applied to {@link Term Terms} to form {@link Atom Atoms}.
+ * <p>
+ * Predicates must be constructed using the {@link PredicateFactory}.
+ * <p>
+ * A Predicate is uniquely identified by its name.
+ * 
+ * @author Matthias Broecheler
+ */
+abstract public class Predicate {
+	
+	private final String predicateName;
+	
+	private final ArgumentType[] types;
+	
+	/**
+	 * Sole constructor.
+	 * <p>
+	 * Should only be called by {@link PredicateFactory}.
+	 * 
+	 * @param name  name for this predicate
+	 * @param types  types for each of the predicate's arguments
+	 */
+	Predicate(String name, ArgumentType[] types) {
+		this.types = types;
+		predicateName = name.toUpperCase();
+	}
 
-	public String getName();
+	/**
+	 * Returns the name of this Predicate.
+	 * 
+	 * @return a string identifier for this Predicate
+	 */
+	public String getName() {
+		return predicateName;
+	}
 	
-	public PredicateType getType();
-
-	public int getArity();
+	/**
+	 * Returns the number of {@link Term Terms} that are related when using
+	 * this Predicate.
+	 * <p>
+	 * In other words, the arity of a Predicate is the number of arguments it
+	 * accepts. For example, the Predicate Related(A,B) has an arity of 2.
+	 * 
+	 * @return the arity of this Predicate
+	 */
+	public int getArity() {
+		return types.length;
+	}
 	
-	public ArgumentType getArgumentType(int position);
+	/**
+	 * Returns the ArgumentType which a {@link Term} must have to be a valid
+	 * argument for a particular argument position of this Predicate.
+	 * 
+	 * @param position  the argument position
+	 * @return the type of argument accepted for the given position
+	 */
+	public ArgumentType getArgumentType(int position) {
+		return types[position];
+	}
 	
-	public int getNumberOfValues();
+	@Override
+	public String toString() {
+		StringBuilder s = new StringBuilder();
+		s.append(getName()).append("(");
+		for (int i=0;i<types.length;i++) {
+			if (i>0) s.append(", ");
+			s.append(types[i]);
+		}
+		return s.append(")").toString();
+	}
 	
-	public String getValueName(int pos);
+	@Override
+	public int hashCode() {
+		/*
+		 * The PredicateFactory ensures that names and signatures uniquely identify Predicates.
+		 * Hence, equality of Predicates can be determined by identity;
+		 */
+		return super.hashCode();
+	}
 	
-	public double[] getDefaultValues();
+	@Override
+	public boolean equals(Object oth) {
+		/*
+		 * The PredicateFactory ensures that names and signatures uniquely identify Predicates.
+		 * Hence, equality of Predicates can be determined by identity;
+		 */
+		return oth == this;
+	}
 	
-	public double[] getStandardValues();
-	
-	public boolean isNonDefaultValues(double[] values);
-	
-	public boolean validValue(int pos, double value);
-	
-	public boolean validValues(double[] values);
-
-
 }

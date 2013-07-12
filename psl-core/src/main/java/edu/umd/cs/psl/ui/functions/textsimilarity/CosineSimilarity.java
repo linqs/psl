@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,18 @@
  */
 package edu.umd.cs.psl.ui.functions.textsimilarity;
 
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import cern.colt.list.tint.IntArrayList;
 import cern.colt.map.tdouble.AbstractIntDoubleMap;
 import cern.colt.map.tdouble.OpenIntDoubleHashMap;
-import edu.umd.cs.psl.model.function.AttributeSimilarityFunction;
+import edu.umd.cs.psl.database.ReadOnlyDatabase;
+import edu.umd.cs.psl.model.argument.ArgumentType;
+import edu.umd.cs.psl.model.argument.GroundTerm;
+import edu.umd.cs.psl.model.function.ExternalFunction;
 
-public class CosineSimilarity implements AttributeSimilarityFunction {
+public class CosineSimilarity implements ExternalFunction {
 
 	private static final Logger log = LoggerFactory.getLogger(CosineSimilarity.class);
 	private static final double epsilon = 1e-5;
@@ -44,15 +46,21 @@ public class CosineSimilarity implements AttributeSimilarityFunction {
 		similarityThreshold=threshold;
 	}
 	
+	@Override
+	public int getArity() {
+		return 2;
+	}
 
+	@Override
+	public ArgumentType[] getArgumentTypes() {
+		return new ArgumentType[] { ArgumentType.String, ArgumentType.String };
+	}
 	
 	@Override
-	public double similarity(String s1, String s2) {
-		//log.debug("{}",s1);
-		//log.debug("{}",s2);
+	public double getValue(ReadOnlyDatabase db, GroundTerm... args) {
 		WordVector vec1, vec2;
-		vec1 = getVector(s1);
-		vec2 = getVector(s2);
+		vec1 = getVector(args[0].toString());
+		vec2 = getVector(args[1].toString());
 		double result = cosineSimilarity(vec1,vec2);
 		numComputed++;
 		if (numComputed%10000==0) log.debug("Num computed{} | Similarity {}",numComputed,result);

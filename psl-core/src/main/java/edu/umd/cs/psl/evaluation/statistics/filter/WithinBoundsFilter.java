@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
 
-import edu.umd.cs.psl.model.atom.Atom;
+import edu.umd.cs.psl.model.atom.GroundAtom;
 
 public class WithinBoundsFilter implements AtomFilter {
 
@@ -35,13 +35,13 @@ public class WithinBoundsFilter implements AtomFilter {
 	
 	
 	@Override
-	public Iterator<Atom> filter(Iterator<Atom> input) {
-		return Iterators.filter(input, new Predicate<Atom>() {
+	public Iterator<GroundAtom> filter(Iterator<GroundAtom> input) {
+		return Iterators.filter(input, new Predicate<GroundAtom>() {
 
 			@Override
-			public boolean apply(Atom atom) {
+			public boolean apply(GroundAtom atom) {
 				for (int i=0;i<atom.getArity();i++) {
-					double val = atom.getSoftValue(i);
+					double val = atom.getValue();
 					if (val<bounds[0] || val>bounds[1]) return false;
 				}
 				return true;

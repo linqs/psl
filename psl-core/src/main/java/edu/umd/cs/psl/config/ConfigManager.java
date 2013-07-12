@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.math.BigInteger;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import org.apache.commons.configuration.BaseConfiguration;
@@ -30,6 +31,7 @@ import org.apache.commons.configuration.DataConfiguration;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.configuration.SubsetConfiguration;
 import org.apache.log4j.helpers.Loader;
+import org.apache.log4j.helpers.OptionConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,11 +45,12 @@ public class ConfigManager {
 	
 	private ConfigManager() throws ConfigurationException {
 		masterConfig = new DataConfiguration(new BaseConfiguration());
+		String pslConfigFile = OptionConverter.getSystemProperty("psl.configuration", "psl.properties");
 		try {
-			loadResource("psl.properties");
+			loadResource(pslConfigFile);
 		}
 		catch (FileNotFoundException e) {
-			log.debug("PSL configuration file 'psl.properties' not found on classpath. " +
+			log.info("PSL configuration file '" + pslConfigFile + "' not found. " +
 					"Only default values will be used unless additional properties are " +
 					"specified.");
 		}
@@ -88,18 +91,43 @@ public class ConfigManager {
 		
 		private ManagedBundle(SubsetConfiguration bundleConfig) {
 			prefix = bundleConfig.getPrefix();
-			config = new DataConfiguration(bundleConfig);
+			config = new DataConfiguration(new BaseConfiguration());
+			config.copy(bundleConfig);
 		}
 		
 		private void logAccess(String key, Object defaultValue) {
 			String scopedKey = prefix + "." + key;
 			if (config.containsKey(key)) {
 				Object value = config.getProperty(key);
-				log.debug("Found value {} for option {}.", value, scopedKey);
+				log.info("Found value {} for option {}.", value, scopedKey);
 			}
 			else {
-				log.debug("No value found for option {}. Returning default of {}.", scopedKey, defaultValue);
+				log.info("No value found for option {}. Returning default of {}.", scopedKey, defaultValue);
 			}
+		}
+		
+		@Override
+		public void addProperty(String key, Object value) {
+			config.addProperty(key, value);
+			log.debug("Added {} to option {}.", value, prefix + "." + key);
+		}
+
+		@Override
+		public void setProperty(String key, Object value) {
+			config.setProperty(key, value);
+			log.debug("Set option {} to {}.", prefix + "." + key, value);
+		}
+
+		@Override
+		public void clearProperty(String key) {
+			config.clearProperty(key);
+			log.debug("Cleared option {}.", prefix + "." + key);
+		}
+
+		@Override
+		public void clear() {
+			config.clear();
+			log.debug("Cleared all options in {} bundle.", prefix);
 		}
 		
 		@Override
@@ -239,6 +267,17 @@ public class ConfigManager {
 		public Enum<?> getEnum(String key, Enum<?> defaultValue) {
 			logAccess(key, defaultValue);
 			return (Enum<?>) config.get(defaultValue.getDeclaringClass(), key, defaultValue);
+		}
+		
+		@Override
+		public String toString() {
+			StringBuilder string = new StringBuilder();
+			for (@SuppressWarnings("unchecked")
+			Iterator<String> itr = (Iterator<String>) config.getKeys(); itr.hasNext();) {
+				String key = itr.next();
+				string.append(prefix + "." + key + ": " + config.getProperty(key) + "\n");
+			}
+			return string.toString();
 		}
 	}
 }

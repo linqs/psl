@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,20 +16,22 @@
  */
 package edu.umd.cs.psl.model.kernel.rule;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import edu.umd.cs.psl.model.atom.Atom;
-import edu.umd.cs.psl.model.formula.Conjunction;
+import edu.umd.cs.psl.model.atom.GroundAtom;
+import edu.umd.cs.psl.model.formula.Disjunction;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.formula.Negation;
 import edu.umd.cs.psl.model.formula.Tnorm;
 import edu.umd.cs.psl.model.formula.traversal.FormulaEvaluator;
 import edu.umd.cs.psl.model.kernel.BindingMode;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
-import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.reasoner.function.ConstantNumber;
 import edu.umd.cs.psl.reasoner.function.FunctionSum;
 import edu.umd.cs.psl.reasoner.function.FunctionSummand;
@@ -48,31 +50,30 @@ abstract public class AbstractGroundRule implements GroundKernel {
 	public static final FormulaEvaluator formulaNorm =FormulaEvaluator.LUKASIEWICZ;
 	
 	protected final AbstractRuleKernel kernel;
-	protected final Conjunction formula;
-	
-	protected int numGroundings;
+	protected final List<GroundAtom> posLiterals;
+	protected final List<GroundAtom> negLiterals;
 
 	private final int hashcode;
 	
-	public AbstractGroundRule(AbstractRuleKernel k, Formula f) {
+	AbstractGroundRule(AbstractRuleKernel k, List<GroundAtom> posLiterals, List<GroundAtom> negLiterals) {
 		kernel = k;
-		formula = ((Conjunction) f).flatten();
-		numGroundings=1;
+		this.posLiterals = new ArrayList<GroundAtom>(posLiterals);
+		this.negLiterals = new ArrayList<GroundAtom>(negLiterals);
 		
-		hashcode = new HashCodeBuilder().append(kernel).append(f).toHashCode();
-	}
-	
-	int getNumGroundings() {
-		return numGroundings;
-	}
-	
-	void increaseGroundings() {
-		numGroundings++;
-	}
-	
-	void decreaseGroundings() {
-		numGroundings--;
-		assert numGroundings>0;
+		HashCodeBuilder hcb = new HashCodeBuilder();
+		hcb.append(kernel);
+		for (GroundAtom atom : posLiterals)
+			hcb.append(atom);
+		for (GroundAtom atom : negLiterals)
+			hcb.append(atom);
+		
+		hashcode = hcb.toHashCode();
+		
+		/* Must register after all the members (like the hashcode!) are set */
+		for (GroundAtom atom : posLiterals)
+			atom.registerGroundKernel(this);
+		for (GroundAtom atom : negLiterals)
+			atom.registerGroundKernel(this);
 	}
 	
 	@Override
@@ -80,46 +81,33 @@ abstract public class AbstractGroundRule implements GroundKernel {
 		return true;
 	}
 	
-	protected FunctionSum getFunction(double multiplier) {
-		Formula f;
-		Atom a;
-		double constant = 0.0;
+	protected FunctionSum getFunction() {
 		FunctionSum sum = new FunctionSum();
 		
-		for (int i = 0; i < formula.getNoFormulas(); i++) {
-			f = formula.get(i);
-			if (f instanceof Atom) {
-				a = (Atom) f;
-				assert a.getNumberOfValues() == 1;
-				sum.add(new FunctionSummand(multiplier, a.getVariable()));
-				constant++;
-			}
-			else if (f instanceof Negation) {
-				a = (Atom) ((Negation) f).getFormula();
-				assert a.getNumberOfValues() == 1;
-				sum.add(new FunctionSummand(-1*multiplier, a.getVariable()));
-			}
-			else
-				throw new IllegalStateException();
-		}
+		for (GroundAtom atom : posLiterals)
+			sum.add(new FunctionSummand(1.0, atom.getVariable()));
 		
-		sum.add(new FunctionSummand(multiplier, new ConstantNumber(1.0 - constant)));
+		for (GroundAtom atom : negLiterals)
+			sum.add(new FunctionSummand(-1.0, atom.getVariable()));
+		
+		sum.add(new FunctionSummand(1.0, new ConstantNumber(1.0 - posLiterals.size())));
 		
 		return sum;
 	}
 	
 	@Override
-	public Set<Atom> getAtoms() {
-		return (Set<Atom>) formula.getAtoms(new HashSet<Atom>());
-	}
-
-	@Override
-	public Kernel getKernel() {
-		return kernel;
+	public Set<GroundAtom> getAtoms() {
+		HashSet<GroundAtom> atoms = new HashSet<GroundAtom>();
+		for (GroundAtom atom : posLiterals)
+			atoms.add(atom);
+		for (GroundAtom atom : negLiterals)
+			atoms.add(atom);
+		
+		return atoms;
 	}
 	
 	public double getTruthValue() {
-		return 1 - Math.max(getFunction(1.0).getValue(), 0);
+		return 1 - Math.max(getFunction().getValue(), 0);
 	}
 	
 	@Override
@@ -132,14 +120,34 @@ abstract public class AbstractGroundRule implements GroundKernel {
 	
 	@Override
 	public boolean equals(Object other) {
-		if (other==this) return true;
-		if (other==null || !(other instanceof GroundCompatibilityRule)) return false;
-		GroundCompatibilityRule otherRule = (GroundCompatibilityRule) other;
-		return kernel.equals(otherRule.kernel) && formula.equals(otherRule.formula);
+		if (other==this)
+			return true;
+		if (other==null || !(other instanceof AbstractGroundRule))
+			return false;
+		
+		AbstractGroundRule otherRule = (AbstractGroundRule) other;
+		if (!kernel.equals(otherRule.getKernel()))
+			return false;
+		
+		return posLiterals.equals(otherRule.posLiterals)
+				&& negLiterals.equals(otherRule.negLiterals);
 	}
 	
 	@Override
 	public int hashCode() {
 		return hashcode;
+	}
+	
+	@Override
+	public String toString() {
+		/* Negates the clause again to show clause to maximize truth of */
+		Formula[] literals = new Formula[posLiterals.size() + negLiterals.size()];
+		int i;
+		for (i = 0; i < posLiterals.size(); i++)
+			literals[i] = new Negation(posLiterals.get(i));
+		for (int j = 0; j < negLiterals.size(); j++)
+			literals[i++] = negLiterals.get(j);
+		
+		return (literals.length > 1) ? new Disjunction(literals).toString() : literals[0].toString();
 	}
 }

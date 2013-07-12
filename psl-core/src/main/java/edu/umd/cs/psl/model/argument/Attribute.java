@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,18 +17,15 @@
 package edu.umd.cs.psl.model.argument;
 
 /**
- * An interface for domain attributes.
+ * A {@link GroundTerm} that is a value, as opposed to a {@link UniqueID}.
  * 
  * @author Matthias Broecheler
- *
  */
 public interface Attribute extends GroundTerm {
 	
 	/**
-	 * Returns the attribute value.
-	 * 
-	 * @return The attribute value
+	 * @return Java representation of the Attribute's value
 	 */
-	public Object getAttribute();
+	public Object getValue();
 
 }

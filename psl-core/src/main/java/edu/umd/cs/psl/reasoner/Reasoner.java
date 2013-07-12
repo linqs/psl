@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,59 +16,25 @@
  */
 package edu.umd.cs.psl.reasoner;
 
-import edu.umd.cs.psl.model.kernel.GroundKernel;
+import edu.umd.cs.psl.application.groundkernelstore.GroundKernelStore;
 
 /**
- * Performs probablistic inference over {@link edu.umd.cs.psl.model.atom.Atom Atoms}
- * based on a set of {@link edu.umd.cs.psl.model.kernel.GroundKernel GroundKernels}.
- * 
- * A Reasoner infers the most probable values of atoms. The form of the probability
- * density function that is used is implementation specific.
+ * A GroundKernelStore that can minimize the total weighted incompatibility
+ * of its GroundCompatibilityKernels such that the infeasibility of its
+ * GroundConstraintKernels is (close to) zero by optimizing the RandomVariableAtoms.
  */
-public interface Reasoner {
+public interface Reasoner extends GroundKernelStore {
 	
 	/**
-	 * Adds a {@link edu.umd.cs.psl.model.kernel.GroundKernel} to the set used
-	 * for inference.
+	 * Minimizes the total weighted incompatibility of the this Reasoner's
+	 * GroundCompatibilityKernels such that the infeasibility of its
+	 * GroundConstraintKernels is (close to) zero by optimizing the
+	 * RandomVariableAtoms.
 	 */
-	public void addGroundKernel(GroundKernel gk);
+	public void optimize();
 	
 	/**
-	 * Updates a {@link edu.umd.cs.psl.model.kernel.GroundKernel} in the
-	 * set used for inference.
-	 *
-	 * This method should be called if a {@link edu.umd.cs.psl.model.kernel.GroundKernel}
-	 * that has already been added is modified.
-	 */
-	public void updateGroundKernel(GroundKernel gk);
-	
-	/**
-	 * Removes a {@link edu.umd.cs.psl.model.kernel.GroundKernel} from the set used
-	 * for inference.
-	 */
-	public void removeGroundKernel(GroundKernel gk);
-	
-	/**
-	 * Checks whether a {@link edu.umd.cs.psl.model.kernel.GroundKernel} is in the set
-	 * used for inference.
-	 */
-	public boolean containsGroundKernel(GroundKernel gk);
-	
-	/**
-	 * Infers the most probable values of atoms according to a probability distribution
-	 * constructed from the set of {@link edu.umd.cs.psl.model.kernel.GroundKernel GroundKernels}.
-	 *
-	 * The form of the probability density function is implementation specific.
-	 */
-	public void mapInference();
-	
-	/**
-	 * Stops any listening for {@link edu.umd.cs.psl.model.atom.Atom} lifecycle events
-	 * and releases any resources that have been accquired.
-	 *
-	 * This method allows the Reasoner to stop maintaining an accurate probability distribution
-	 * relative to the current states of Atoms and should only be called when the Reasoner
-	 * will no longer be used.
+	 * Releases all resources acquired by this Reasoner.
 	 */
 	public void close();
 }

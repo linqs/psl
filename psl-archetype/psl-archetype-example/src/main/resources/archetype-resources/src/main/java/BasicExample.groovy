@@ -3,7 +3,7 @@
 #set( $symbol_escape = '\' )
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,32 +19,66 @@
  */
 package ${package};
 
-//Imports the standard groovy interface to PSL, the attribute similarity function interface and the database drivers
-import edu.umd.cs.psl.groovy.*;
-import edu.umd.cs.psl.database.RDBMS.DatabaseDriver;
-import edu.umd.cs.psl.model.function.AttributeSimilarityFunction;
-import edu.umd.cs.psl.config.*;
+import edu.umd.cs.psl.application.inference.LazyMPEInference;
+import edu.umd.cs.psl.application.learning.weight.maxlikelihood.LazyMaxLikelihoodMPE;
+import edu.umd.cs.psl.config.*
+import edu.umd.cs.psl.database.DataStore
+import edu.umd.cs.psl.database.Database;
+import edu.umd.cs.psl.database.Partition;
+import edu.umd.cs.psl.database.ReadOnlyDatabase;
+import edu.umd.cs.psl.database.rdbms.RDBMSDataStore
+import edu.umd.cs.psl.database.rdbms.driver.H2DatabaseDriver
+import edu.umd.cs.psl.database.rdbms.driver.H2DatabaseDriver.Type
+import edu.umd.cs.psl.groovy.PSLModel;
+import edu.umd.cs.psl.groovy.PredicateConstraint;
+import edu.umd.cs.psl.groovy.SetComparison;
+import edu.umd.cs.psl.model.argument.ArgumentType;
+import edu.umd.cs.psl.model.argument.GroundTerm;
+import edu.umd.cs.psl.model.atom.GroundAtom;
+import edu.umd.cs.psl.model.function.ExternalFunction;
+import edu.umd.cs.psl.ui.functions.textsimilarity.*
+import edu.umd.cs.psl.ui.loading.InserterUtils;
+import edu.umd.cs.psl.util.database.Queries;
 
-//Import this package if you want to use attribute similarity functions that come with PSL
-import edu.umd.cs.psl.ui.functions.textsimilarity.*;
-
-/* The first thing we need to do, is initialize a PSLModel which is the core component of PSL.
- * The constructor argument is the context in which the PSLModel is defined. Predicates defined
- * in the PSLModel are also automatically defined in the context.
+/* 
+ * The first thing we need to do is initialize a ConfigBundle and a DataStore
  */
-PSLModel m = new PSLModel(this);
 
-/* We create two predicates in the model, giving their names and list of arguments. Each argument has a specified type which
- * is either Entity or Attribute.
+/*
+ * A ConfigBundle is a set of key-value pairs containing configuration options. One place these
+ * can be defined is in ${artifactId}/src/main/resources/psl.properties
  */
-m.add predicate: "name" , person: Entity, string : Text
-m.add predicate: "knows" , person1: Entity, person2 : Entity
-// This additional predicate is declared as open, which means we will infer its truth values. By default, predicates are closed.
-m.add predicate: "samePerson", person1: Entity, person2: Entity, open: true
-// Now, we define a string similarity function bound to a predicate. Note that we can use any implementation of AttributeSimilarityFunction here!
-m.add function: "sameName" , name1: Text, name2: Text, implementation: new LevenshteinStringSimilarity() // also, try: new MyStringSimilarity(), see end of file
+ConfigManager cm = ConfigManager.getManager()
+ConfigBundle config = cm.getBundle("basic-example")
 
-/* Having added all the predicates we need to represent our problem, we finally insert some rules into the model.
+/* Uses H2 as a DataStore and stores it in a temp. directory by default */
+def defaultPath = System.getProperty("java.io.tmpdir")
+String dbpath = config.getString("dbpath", defaultPath + File.separator + "basic-example")
+DataStore data = new RDBMSDataStore(new H2DatabaseDriver(Type.Disk, dbpath, true), config)
+
+/*
+ * Now we can initialize a PSLModel, which is the core component of PSL.
+ * The first constructor argument is the context in which the PSLModel is defined.
+ * The second argument is the DataStore we will be using.
+ */
+PSLModel m = new PSLModel(this, data)
+
+/* 
+ * We create three predicates in the model, giving their names and list of argument types
+ */
+m.add predicate: "name" , types: [ArgumentType.UniqueID, ArgumentType.String]
+m.add predicate: "knows" , types: [ArgumentType.UniqueID, ArgumentType.UniqueID]
+m.add predicate: "samePerson", types: [ArgumentType.UniqueID, ArgumentType.UniqueID]
+
+/*
+ * Now, we define a string similarity function bound to a predicate.
+ * Note that we can use any implementation of ExternalFunction that acts on two strings!
+ */
+m.add function: "sameName" , implementation: new LevenshteinSimilarity()
+/* Also, try: new MyStringSimilarity(), see end of file */
+
+/* 
+ * Having added all the predicates we need to represent our problem, we finally insert some rules into the model.
  * Rules are defined using a logical syntax. Uppercase letters are variables and the predicates used in the rules below
  * are those defined above. The character '&' denotes a conjunction wheres '>>' denotes a conclusion.
  * Each rule can be given a user defined weight or no weight is specified if it is learned.
@@ -71,33 +105,32 @@ m.add rule :  (samePerson(A,B) & (A ^ B )) >> sameFriends( {A.knows + A.knows(in
 
 /* Next, we define some constraints for our model. In this case, we restrict that each person can be aligned to at most one other person
  * in the other social network. To do so, we define two partial functional constraints where the latter is on the inverse.
+ * We also say that samePerson must be symmetric, i.e., samePerson(p1, p2) == samePerson(p2, p1).
  */
 m.add PredicateConstraint.PartialFunctional , on : samePerson
 m.add PredicateConstraint.PartialInverseFunctional , on : samePerson
+m.add PredicateConstraint.Symmetric, on : samePerson
 
-/* Finally, we define a prior on the inference predicate samePerson.
+/*
+ * Finally, we define a prior on the inference predicate samePerson. It says that we should assume two
+ * people are not the samePerson with a little bit of weight. This can be overridden with evidence as defined
+ * in the previous rules.
  */
-m.add Prior.Simple, on : samePerson, weight: 1
+m.add rule: ~samePerson(A,B), weight: 1
 
-//Let's see what our model looks like.
+/*
+ * Let's see what our model looks like.
+ */
 println m;
 
-/* To apply our model to some dataset, we need to be able to load this dataset. PSL provides a range of convenience methods
- * for data loading and, in particular, can interact with any relational database that implements the JDBC interface.
- * So, we first setup a relational database to host the data and to store the results of the inference.
+/* 
+ * We now insert data into our DataStore. All data is stored in a partition.
  * 
- * The DataAccess object manages all access to data.
+ * We can use insertion helpers for a specified predicate. Here we show how one can manually insert data
+ * or use the insertion helpers to easily implement custom data loaders.
  */
-DataStore data = new RelationalDataStore(m)
-
-// Setting up the database. Here we use the Java database H2 (www.h2database.com)
-data.setup db : DatabaseDriver.H2
-
-/* To insert data into the database, we can use insertion helpers for a specified predicate.
- * Here we show how one can manually insert data or use the insertion helpers to easily implement
- * custom data loaders.
- */
-def insert = data.getInserter(name)
+def partition = new Partition(0);
+def insert = data.getInserter(name, partition);
 
 insert.insert(1, "John Braker");
 insert.insert(2, "Mr. Jack Ressing");
@@ -115,84 +148,107 @@ insert.insert(15, "J. Panelo");
 insert.insert(16, "Gustav Heinrich Gans");
 insert.insert(17, "Otto v. Lautern");
 
-
-// Of course, we can also load data directly from tab delimited data files.
-insert = data.getInserter(knows)
+/*
+ * Of course, we can also load data directly from tab delimited data files.
+ */
+insert = data.getInserter(knows, partition)
 def dir = 'data'+java.io.File.separator+'sn'+java.io.File.separator;
-insert.loadFromFile(dir+"sn_knows.txt");
-
-/* After having loaded the data, we are ready to run some inference and see what kind of
- * alignment our model produces. Note that for now, we are using the predefined weights.
- */
-def result = m.mapInference(data.getDatabase())
-
-// This prints out the results for our inference predicate
-result.printAtoms(samePerson)
-
-/* Next, we want to learn the weights from data. For that, we need to have some evidence
- * data from which we can learn. In our example, that means we need to specify the 'true'
- * alignment, which we now load.
- * 
- * Note, that this time we also specified a number of the insertion helper in addition to the
- * predicate. In PSL a database can be divided into partitions. By default, data is loaded
- * into the 1st partition (i.e. partition 1), but in order to distinguish different data
- * fragment, we can explicitly specify in which partition to load the data. In this case,y
- * we need to differentiate between the evidence data that will be available to PSL during
- * inference (loaded into partition 1 above), and the data that we would like to infer (loaded
- * into partition 2 below)
- */
-insert = data.getInserter(samePerson,2)
-insert.loadFromFileWithTruth(dir+"sn_align.txt","${symbol_escape}t");
+InserterUtils.loadDelimitedData(insert, dir+"sn_knows.txt");
 
 /*
- * We'll use the ConfigManager to access configurable properties. One place these
- * can be defined is in ${artifactId}/src/main/resources/psl.properties
+ * After having loaded the data, we are ready to run some inference and see what kind of
+ * alignment our model produces. Note that for now, we are using the predefined weights.
+ * 
+ * We first open up Partition 0 as a Database from the DataStore. We close the predicates
+ * Name and Knows since we want to treat those atoms as observed, and leave the predicate
+ * SamePerson open to infer its atoms' values.
  */
-ConfigManager cm = ConfigManager.getManager();
-ConfigBundle exampleBundle = cm.getBundle("example");
+Database db = data.getDatabase(partition, [Name, Knows] as Set);
+LazyMPEInference inferenceApp = new LazyMPEInference(m, db, config);
+inferenceApp.mpeInference();
+inferenceApp.close();
 
-/* Now, we can learn the weight, by specifying where the respective data fragments are stored
+/*
+ * Let's see the results
+ */
+println "Inference results with hand-defined weights:"
+for (GroundAtom atom : Queries.getAllAtoms(db, SamePerson))
+	println atom.toString() + "${symbol_escape}t" + atom.getValue();
+
+/* 
+ * Next, we want to learn the weights from data. For that, we need to have some evidence
+ * data from which we can learn. In our example, that means we need to specify the 'true'
+ * alignment, which we now load into a second partition.
+ */
+Partition trueDataPartition = new Partition(1);
+insert = data.getInserter(samePerson, trueDataPartition)
+InserterUtils.loadDelimitedDataTruth(insert, dir + "sn_align.txt");
+
+/* 
+ * Now, we can learn the weight, by specifying where the respective data fragments are stored
  * in the database (see above). In addition, we need to specify, which predicate we would like to
  * infer, i.e. learn on, which in our case is 'samePerson'.
  */
-WeightLearningConfiguration config = new WeightLearningConfiguration();
-config.setLearningType(WeightLearningConfiguration.Type.LBFGSB);
-config.setInitialParameter(1.0);
+Database trueDataDB = data.getDatabase(trueDataPartition, [samePerson] as Set);
+LazyMaxLikelihoodMPE weightLearning = new LazyMaxLikelihoodMPE(m, db, trueDataDB, config);
+weightLearning.learn();
+weightLearning.close();
 
-m.learn data, evidence : 1, infered: 2, close : samePerson, configuration: config, config: exampleBundle
-
-//Let's have a look at the newly learned weights.
+/*
+ * Let's have a look at the newly learned weights.
+ */
+println "Learned model:"
 println m
 
-/* Now, we apply the learned model to a different social network alignment dataset. We load the 
- * dataset as before (this time into partition 5) and run inference. Finally we print the results.
- * This time, we only print those atoms with truth value greater than or equal to 0.5
+/*
+ * Now, we apply the learned model to a different social network alignment dataset. We load the 
+ * dataset as before (this time into partition 2) and run inference. Finally we print the results.
  */
+Partition sn2 = new Partition(2);
+insert = data.getInserter(name, sn2);
+InserterUtils.loadDelimitedData(insert, dir+"sn2_names.txt");
+insert = data.getInserter(knows, sn2);
+InserterUtils.loadDelimitedData(insert, dir+"sn2_knows.txt");
 
-insert = data.getInserter(name,5);
-insert.loadFromFile(dir+"sn2_names.txt");
-insert = data.getInserter(knows,5);
-insert.loadFromFile(dir+"sn2_knows.txt");
+Database db2 = data.getDatabase(sn2, [Name, Knows] as Set);
+inferenceApp = new LazyMPEInference(m, db2, config);
+result = inferenceApp.mpeInference();
+inferenceApp.close();
 
-result = m.mapInference(data.getDatabase(parts: 5));
-result.printAtoms(samePerson,true);
+println "Inference results on second social network with learned weights:"
+for (GroundAtom atom : Queries.getAllAtoms(db2, SamePerson))
+	println atom.toString() + "${symbol_escape}t" + atom.getValue();
+	
+/* We close the Databases to flush writes */
+db.close();
+trueDataDB.close();
+db2.close();
 
 /**
- * This class implements the AttributeSimilarityFunction interface so that it can be used
- * as an attribute similarity function within PSL. Implementing the interface requires implementing
- * only one method which returns a number between 0 and 1 for a given pair of strings.
+ * This class implements the ExternalFunction interface so that it can be used
+ * as an attribute similarity function within PSL.
  *
  * This simple implementation checks whether two strings are identical, in which case it returns 1.0
  * or different (returning 0.0).
  *
- * The package edu.umd.cs.psl.model.similarityfunction.attribute contains additional and more sophisticated
- * string similarity functions of which BasicStringSimilarity is probably the most general.
+ * The package edu.umd.cs.psl.ui.functions.textsimilarity contains additional and
+ * more sophisticated string similarity functions.
  */
-class MyStringSimilarity implements AttributeSimilarityFunction {
+class MyStringSimilarity implements ExternalFunction {
 	
 	@Override
-	public double similarity(String a, String b) {
-		return a.equals(b)?1.0:0.0;
+	public int getArity() {
+		return 2;
+	}
+
+	@Override
+	public ArgumentType[] getArgumentTypes() {
+		return [ArgumentType.String, ArgumentType.String].toArray();
+	}
+	
+	@Override
+	public double getValue(ReadOnlyDatabase db, GroundTerm... args) {
+		return args[0].toString().equals(args[1].toString()) ? 1.0 : 0.0;
 	}
 	
 }

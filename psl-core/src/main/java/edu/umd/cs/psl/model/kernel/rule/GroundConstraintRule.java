@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,10 @@
  */
 package edu.umd.cs.psl.model.kernel.rule;
 
-import edu.umd.cs.psl.model.formula.Formula;
+import java.util.List;
+
+import edu.umd.cs.psl.model.atom.GroundAtom;
+import edu.umd.cs.psl.model.kernel.ConstraintKernel;
 import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
 import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
 import edu.umd.cs.psl.reasoner.function.FunctionComparator;
@@ -24,22 +27,27 @@ import edu.umd.cs.psl.reasoner.function.FunctionComparator;
 public class GroundConstraintRule extends AbstractGroundRule implements
 		GroundConstraintKernel {
 	
-	public GroundConstraintRule(ConstraintRuleKernel k, Formula f) {
-		super(k, f);
+	GroundConstraintRule(ConstraintRuleKernel k, List<GroundAtom> posLiterals, List<GroundAtom> negLiterals) {
+		super(k, posLiterals, negLiterals);
+	}
+
+	@Override
+	public ConstraintKernel getKernel() {
+		return (ConstraintKernel) kernel;
 	}
 	
 	@Override
-	public double getIncompatibility() {
-		return (getTruthValue() == 1.0) ? 0 : Double.POSITIVE_INFINITY;
+	public double getInfeasibility() {
+		return Math.abs(getTruthValue() - 1);
 	}
 
 	@Override
 	public ConstraintTerm getConstraintDefinition() {
-		return new ConstraintTerm(getFunction(1.0), FunctionComparator.SmallerThan, 0.0);
+		return new ConstraintTerm(getFunction(), FunctionComparator.SmallerThan, 0.0);
 	}
 	
 	@Override
 	public String toString() {
-		return "{constraint} " + formula; 
+		return "{constraint} " + super.toString(); 
 	}
 }

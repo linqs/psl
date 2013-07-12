@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,101 +16,134 @@
  */
 package edu.umd.cs.psl.database;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.HashSet;
 import java.util.Set;
 
-import com.google.common.base.Preconditions;
-
-import edu.umd.cs.psl.model.argument.ArgumentFactory;
-import edu.umd.cs.psl.model.argument.Entity;
-import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.Term;
 import edu.umd.cs.psl.model.argument.Variable;
-import edu.umd.cs.psl.model.argument.type.ArgumentType;
-import edu.umd.cs.psl.model.argument.type.ArgumentTypes;
 import edu.umd.cs.psl.model.atom.Atom;
-import edu.umd.cs.psl.model.atom.TemplateAtom;
 import edu.umd.cs.psl.model.atom.VariableAssignment;
+import edu.umd.cs.psl.model.formula.Conjunction;
 import edu.umd.cs.psl.model.formula.Formula;
+import edu.umd.cs.psl.model.formula.FormulaAnalysis;
+import edu.umd.cs.psl.model.formula.traversal.AbstractFormulaTraverser;
 import edu.umd.cs.psl.model.predicate.FunctionalPredicate;
-import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
+import edu.umd.cs.psl.util.collection.HashList;
 
+/**
+ * A query to select groundings from a {@link Database}.
+ * <p>
+ * Groundings that match the query are returned in the form of a {@link ResultList}.
+ * 
+ * <h2>Semantics</h2>
+ * 
+ * A DatabaseQuery has three components: a Formula, a partial grounding,
+ * and a set of {@link Variable Variables} onto which the results will be
+ * projected.
+ * <p>
+ * The Formula is given upon initialization and is fixed. It must be
+ * a {@link Conjunction} of Atoms or a single Atom. Any {@link Variable}
+ * in the Formula must be used in an Atom with a {@link StandardPredicate}.
+ * (Then it can be used in others as well.)
+ * The query will return any grounding such that each GroundAtom
+ * with a {@link StandardPredicate} in the ground Formula is persisted in the
+ * Database and each GroundAtom with a {@link FunctionalPredicate}
+ * in the ground Formula has a non-zero truth value (regardless of whether
+ * it is instantiated in memory).
+ * <p>
+ * The partial grounding is a {@link VariableAssignment} which all returned
+ * groundings must match. Use {@link #getPartialGrounding()} to modify the partial
+ * grounding. It is initially empty.
+ * <p>
+ * The projection subset is a subset of the Variables in the Formula onto
+ * which the returned groundings will be projected. An empty subset is
+ * the same as including all Variables in the Formula in the subset except those
+ * with assignments in the partial grounding. Use {@link #getProjectionSubset()}
+ * to modify the subset. It is initially empty.
+ */
 public class DatabaseQuery {
 
-	protected final Database database;;
+	private final Formula formula;
+	private final VariableAssignment partialGrounding;
+	private final Set<Variable> projectTo;
+	private final HashList<Variable> ordering;
 	
-	public DatabaseQuery(Database db) {
-		database = db;
+	public DatabaseQuery(Formula formula) {
+		this.formula = formula;
+		partialGrounding = new VariableAssignment();
+		projectTo = new HashSet<Variable>();
+		
+		FormulaAnalysis analysis = new FormulaAnalysis(formula);
+		if (analysis.getNumDNFClauses() > 1 || analysis.getDNFClause(0).getNegLiterals().size() > 0)
+			throw new IllegalArgumentException("Illegal query formula. " +
+					"Must be a conjunction of atoms or a single atom. " +
+					"Formula: " + formula);
+		
+		if (!analysis.getDNFClause(0).getAllVariablesBound())
+			throw new IllegalArgumentException("Illegal query formula. " +
+					"All variables must appear at least once in an atom " +
+					"with a StandardPredicate. " +
+					"Formula: " + formula);
+		
+		ordering = new HashList<Variable>();
+		
+		AbstractFormulaTraverser.traverse(formula, new VariableOrderer());
 	}
 	
-	public ResultList query(Formula f, VariableAssignment partialGrounding, List<Variable> projectTo) {
-		return database.query(f, partialGrounding, projectTo);
+	public Formula getFormula() {
+		return formula;
 	}
 	
-	public ResultList query(Formula f, VariableAssignment partialGrounding) {
-		return database.query(f, partialGrounding);
+	public VariableAssignment getPartialGrounding() {
+		return partialGrounding;
 	}
 	
-	public ResultList query(Formula f, List<Variable> projectTo) {
-		return database.query(f, projectTo);
+	public Set<Variable> getProjectionSubset() {
+		return projectTo;
 	}
 	
-	public ResultList query(Formula f) {
-		return database.query(f);
+	/**
+	 * @return the number of Variables in this query's Formula
+	 */
+	public int getNumVariables() {
+		return ordering.size();
 	}
 	
-	public ResultListValues getFacts(Predicate p, Term[] arguments) {
-		return database.getFacts(p, arguments);
+	/**
+	 * Returns the Variable at a given index in this Query's formula according
+	 * to a depth-first, left-to-right traversal (starting with 0).
+	 * 
+	 * @param index  the index of the Variable to return
+	 * @return the Variable with the given index
+	 */
+	public Variable getVariable(int index) {
+		return ordering.get(index);
 	}
 	
-	public Map<PredicatePosition,ResultListValues> getAllFactsWith(GroundTerm e) {
-		return database.getAllFactsWith(e);
-	}
-
-	public Set<Entity> getEntities(ArgumentType type) {
-		return database.getEntities(type);
-	}
-	
-	
-	public ResultList getAtoms(Predicate p) {
-		if (!(p instanceof StandardPredicate)) throw new IllegalArgumentException("Only standard predicates can be retrieved!");
-		Variable[] args = new Variable[p.getArity()];
-		for (int i=0;i<p.getArity();i++) args[i]=new Variable("V"+i);
-		Atom query = new TemplateAtom(p,args);
-		return database.query(query,Arrays.asList(args));
+	/**
+	 * Returns the index of a Variable in this Query's formula according to a
+	 * depth-first, left-to-right traversal (starting with 0).
+	 * 
+	 * @param var  the Variable in the formula
+	 * @return the Variable's index, or -1 if it is not in the formula
+	 */
+	public int getVariableIndex(Variable var) {
+		return ordering.indexOf(var);
 	}
 	
-	public boolean isClosed(Predicate p) {
-		if (p instanceof FunctionalPredicate) return true;
-		return database.isClosed(p);
-	}
-	
-	public static Atom getQueryAtom(Database db, Predicate p, Object...terms) {
-		Preconditions.checkArgument(p.getArity()==terms.length);
-		Term[] args = new Term[terms.length];
-		for (int i=0;i<terms.length;i++) {
-			if (terms[i] instanceof String) {
-				String term = (String)terms[i];
-				if (term.equals(term.toUpperCase())) {
-					args[i] =  new Variable(term);
-				} else {
-					if (p.getArgumentType(i)==ArgumentTypes.Text) {
-						args[i] = ArgumentFactory.getAttribute(term);
-					} else {
-						assert p.getArgumentType(i).isEntity();
-						args[i] = db.getEntity(term,p.getArgumentType(i));
-					}
-				}
-			} else if (terms[i] instanceof Number) {
-				args[i] = ArgumentFactory.getAttribute(((Number)terms[i]).doubleValue());
-			} else if (p.getArgumentType(i).isEntity()) {
-				args[i] = db.getEntity(terms[i],p.getArgumentType(i));
-			} else throw new IllegalArgumentException("Argument type not supported: " + terms[i]);
+	/**
+	 * Places the Variables in the query Formula in ordering in order
+	 * of their first appearances in a depth-first, left-to-right traversal. 
+	 */
+	private class VariableOrderer extends AbstractFormulaTraverser {
+		@Override
+		public void visitAtom(Atom atom) {
+			for (Term term : atom.getArguments())
+				if (term instanceof Variable)
+					if (!ordering.contains(term))
+						ordering.add((Variable) term);
 		}
-		return new TemplateAtom(p,args);
 	}
 	
 }

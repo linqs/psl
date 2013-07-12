@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,9 @@ package edu.umd.cs.psl.evaluation.debug;
 import java.text.DecimalFormat;
 
 import edu.umd.cs.psl.model.atom.Atom;
+import edu.umd.cs.psl.model.atom.GroundAtom;
+import edu.umd.cs.psl.model.atom.ObservedAtom;
+import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 
 public class AtomPrinter {
 	
@@ -28,25 +31,29 @@ public class AtomPrinter {
 		return atomDetails(atom,true,true);
 	}
 	
-	public static final String atomDetails(Atom atom, boolean printStatus, boolean printConfidence) {
+	public static final String atomDetails(Atom atom, boolean printType, boolean printConfidence) {
 		StringBuilder s = new StringBuilder();
 		s.append(atom.toString());
-		s.append(" V=[");
-		for (int i=0;i<atom.getNumberOfValues();i++) {
-			s.append(valueFormatter.format(atom.getSoftValue(i)));
-			if (i>0) s.append(", ");
-		}
-		s.append("]");
-		if (printStatus) {
-			s.append(" S=").append(atom.getStatus().toString());
-		}
-		if (printConfidence) {
-			s.append(" C=[");
-			for (int i=0;i<atom.getNumberOfValues();i++) {
-				s.append(valueFormatter.format(atom.getConfidenceValue(i)));
-				if (i>0) s.append(", ");
-			}
+		if (atom instanceof GroundAtom) {
+			GroundAtom groundAtom = (GroundAtom) atom;
+			s.append(" Truth=[");
+			s.append(valueFormatter.format(groundAtom.getValue()));
 			s.append("]");
+			if (printType) {
+				String type;
+				if (groundAtom instanceof ObservedAtom)
+					type = "Observed";
+				else if (groundAtom instanceof RandomVariableAtom)
+					type = "RV";
+				else
+					throw new IllegalArgumentException("Cannot print type of GroundAtom: " + groundAtom);
+				s.append(" Type=").append(type);
+			}
+			if (printConfidence) {
+				s.append(" Conf.=[");
+				s.append(valueFormatter.format(groundAtom.getConfidenceValue()));
+				s.append("]");
+			}
 		}
 		return s.toString();
 	}

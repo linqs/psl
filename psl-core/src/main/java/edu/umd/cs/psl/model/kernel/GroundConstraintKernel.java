@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,27 @@
  */
 package edu.umd.cs.psl.model.kernel;
 
+import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
 
 public interface GroundConstraintKernel extends GroundKernel {
+	
+	@Override
+	public ConstraintKernel getKernel();
 
 	public ConstraintTerm getConstraintDefinition();
+	
+	/**
+	 * Returns the infeasibility of the truth values of this GroundKernel's
+	 * {@link GroundAtom GroundAtoms}.
+	 * <p>
+	 * Specifically, returns the distance between the value of the constraint's
+	 * functional definition and that function's nearest feasible value.
+	 * <p>
+	 * Infeasibility is always non-negative.
+	 * 
+	 * @return the infeasibility of the current truth values
+	 */
+	public double getInfeasibility();
 	
 }

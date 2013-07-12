@@ -3,7 +3,7 @@
 #set( $symbol_escape = '\' )
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,34 +20,51 @@
 package ${package};
 
 import edu.umd.cs.psl.groovy.*;
-import edu.umd.cs.psl.database.RDBMS.DatabaseDriver;
 import edu.umd.cs.psl.ui.functions.textsimilarity.*;
-import edu.umd.cs.psl.model.function.AttributeSimilarityFunction;
+import edu.umd.cs.psl.ui.loading.InserterUtils;
+import edu.umd.cs.psl.util.database.Queries;
+import edu.umd.cs.psl.model.argument.ArgumentType;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.argument.type.*;
+import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.predicate.type.*;
+import edu.umd.cs.psl.application.inference.LazyMPEInference;
+import edu.umd.cs.psl.application.learning.weight.maxlikelihood.LazyMaxLikelihoodMPE;
 import edu.umd.cs.psl.config.*;
+import edu.umd.cs.psl.database.DataStore;
+import edu.umd.cs.psl.database.Database;
+import edu.umd.cs.psl.database.Partition;
+import edu.umd.cs.psl.database.rdbms.RDBMSDataStore;
+import edu.umd.cs.psl.database.rdbms.driver.H2DatabaseDriver;
+import edu.umd.cs.psl.database.rdbms.driver.H2DatabaseDriver.Type;
 
-PSLModel m = new PSLModel(this);
+////////////////////////// initial setup ////////////////////////
+ConfigManager cm = ConfigManager.getManager()
+ConfigBundle config = cm.getBundle("ontology-alignment")
+
+def defaultPath = System.getProperty("java.io.tmpdir")
+String dbpath = config.getString("dbpath", defaultPath + File.separator + "ontology-alignment")
+DataStore data = new RDBMSDataStore(new H2DatabaseDriver(Type.Disk, dbpath, true), config)
+PSLModel m = new PSLModel(this, data);
 
 ////////////////////////// predicate declaration ////////////////////////
-println "${symbol_escape}t${symbol_escape}tDECLARING PREDICATES...${symbol_escape}n";
+println "\t\tDECLARING PREDICATES";
 
-m.add predicate: "name"        , person    : Entity,  string   : Text   ,  type: PredicateTypes.BooleanTruth;
-m.add predicate: "subclass"    , class1    : Entity,  class2   : Entity ,  type: PredicateTypes.BooleanTruth;
-m.add predicate: "fromOntology", entity    : Entity,  ontology : Entity ,  type: PredicateTypes.BooleanTruth;
-m.add predicate: "domainOf"    , property1 : Entity,  class1   : Entity ,  type: PredicateTypes.BooleanTruth;
-m.add predicate: "rangeOf"     , property1 : Entity,  class1   : Entity ,  type: PredicateTypes.BooleanTruth;
-m.add predicate: "hasType"     , entity    : Entity,  type1    : Text   ,  type: PredicateTypes.BooleanTruth;
+m.add predicate: "name"        , types: [ArgumentType.UniqueID, ArgumentType.String]
+m.add predicate: "subclass"    , types: [ArgumentType.UniqueID, ArgumentType.UniqueID]
+m.add predicate: "fromOntology", types: [ArgumentType.UniqueID, ArgumentType.UniqueID]
+m.add predicate: "domainOf"    , types: [ArgumentType.UniqueID, ArgumentType.UniqueID]
+m.add predicate: "rangeOf"     , types: [ArgumentType.UniqueID, ArgumentType.UniqueID]
+m.add predicate: "hasType"     , types: [ArgumentType.UniqueID, ArgumentType.UniqueID]
 
 //target predicate
-m.add predicate: "similar"     , entity1   : Entity,  entity2  : Entity ,  open: true, type: PredicateTypes.SoftTruth;
+m.add predicate: "similar"     , types: [ArgumentType.UniqueID, ArgumentType.UniqueID]
 
-m.add function: "similarName" , name1: Text, name2: Text, implementation: new LevenshteinStringSimilarity();
+m.add function: "similarName" , implementation: new LevenshteinSimilarity();
 
 
 ///////////////////////////// rules ////////////////////////////////////
-println "${symbol_escape}t${symbol_escape}tREADING RULES...${symbol_escape}n";
+println "${symbol_escape}t${symbol_escape}tDECLARING RULES";
 
 m.add rule : ( name(A,X) & name(B,Y) & (A ^ B) & similarName(X,Y) & hasType(A,T) & hasType(B,T) 
              & fromOntology(A,O) & fromOntology(B,Q) & (O ^ Q) ) >> similar(A,B),  weight : 8;
@@ -59,73 +76,69 @@ m.add rule : (rangeOf(R,A)  & rangeOf(T,B)  & similar(A,B) & (R ^ T)) >> similar
 m.add rule : (domainOf(R,A) & domainOf(T,B) & similar(R,T) & (A ^ B)) >> similar(A,B) , weight : 2;
 m.add rule : (rangeOf(R,A)  & rangeOf(T,B)  & similar(R,T) & (A ^ B)) >> similar(A,B) , weight : 2;
 
-//define set comparison
+// define set comparison
 m.add setcomparison: "similarChildren" , using: SetComparison.Equality, on : similar;
-m.add rule :  (similar(A,B) & hasType(A,"class") & hasType(B,"class") & (A ^ B )) >> 
+def classID = data.getUniqueID("class");
+m.add rule :  (similar(A,B) & hasType(A, classID) & hasType(B, classID) & (A ^ B )) >> 
               similarChildren( {A.subclass } , {B.subclass } ) , weight : 3;
 
-//constraints
+// constraints
 m.add PredicateConstraint.PartialFunctional , on : similar;
 m.add PredicateConstraint.PartialInverseFunctional , on : similar;
+m.add PredicateConstraint.Symmetric , on : similar;
 
+// prior
+m.add rule : ~similar(A,B), weight: 1;
 
-//prior
-m.add Prior.Simple, on : similar, weight: 1;
-
-///////////////////////////// database /////////////////////////////////
-println "${symbol_escape}t${symbol_escape}tCREATING DATABASE...${symbol_escape}n";
-
-DataStore data = new RelationalDataStore(m, entityid : 'string')
-data.setup db : DatabaseDriver.H2
-println "${symbol_escape}t${symbol_escape}t${symbol_escape}tDONE NEWING DATABASE...${symbol_escape}n";
-
-
-
-//load data
+// load data
 def dir = 'data'+java.io.File.separator+'ontology'+java.io.File.separator;
 def trainDir = dir+'train'+java.io.File.separator;
+
+Partition trainPart = new Partition(0);
+Partition truthPart = new Partition(1);
+
 for (Predicate p : [domainOf,fromOntology,name,hasType,rangeOf,subclass])
 {
         println "${symbol_escape}t${symbol_escape}t${symbol_escape}tREADING " + p.getName() +" ...";
-	insert = data.getInserter(p)
-	insert.loadFromFile(trainDir+p.getName()+".txt");
+	insert = data.getInserter(p, trainPart)
+	InserterUtils.loadDelimitedData(insert, trainDir+p.getName()+".txt");
 }
 
-println "${symbol_escape}t${symbol_escape}t${symbol_escape}tREADING target predicate file ...${symbol_escape}n";
-insert = data.getInserter(similar,2)
-insert.loadFromFileWithTruth(trainDir+"similar.txt","${symbol_escape}t");
-
-ConfigManager cm = ConfigManager.getManager();
-ConfigBundle exampleBundle = cm.getBundle("example");
+println "${symbol_escape}t${symbol_escape}t${symbol_escape}tREADING SIMILAR ...";
+insert = data.getInserter(similar, truthPart)
+InserterUtils.loadDelimitedDataTruth(insert, trainDir+"SIMILAR.txt");
 
 //////////////////////////// weight learning ///////////////////////////
 println "${symbol_escape}t${symbol_escape}tLEARNING WEIGHTS...";
 
-WeightLearningConfiguration configuration = new WeightLearningConfiguration();
-configuration.setLearningType(WeightLearningConfiguration.Type.LBFGSB);
-configuration.setInitialParameter(0.0);
-m.learn data, evidence : 1, infered: 2, close : similar, configuration: configuration, config: exampleBundle
-println m
+Database trainDB = data.getDatabase(trainPart, [name, subclass, fromOntology, domainOf, rangeOf, hasType] as Set);
+Database truthDB = data.getDatabase(truthPart, [similar] as Set);
+
+LazyMaxLikelihoodMPE weightLearning = new LazyMaxLikelihoodMPE(m, trainDB, truthDB, config);
+weightLearning.learn();
+weightLearning.close();
 
 println "${symbol_escape}t${symbol_escape}tLEARNING WEIGHTS DONE";
 
+println m
 
-
-/////////////////////////// inference //////////////////////////////////
+/////////////////////////// test inference //////////////////////////////////
 println "${symbol_escape}t${symbol_escape}tINFERRING...";
 
 def testDir = dir+'test'+java.io.File.separator;
+Partition testPart = new Partition(2);
 for (Predicate p : [domainOf,fromOntology,name,hasType,rangeOf,subclass]) 
 {
-	insert = data.getInserter(p,5)
-	insert.loadFromFile(testDir+p.getName()+".txt");
+	insert = data.getInserter(p, testPart);
+	InserterUtils.loadDelimitedData(insert, testDir+p.getName()+".txt");
 }
 
-result = m.mapInference(data.getDatabase(write: 1004, read : 5), exampleBundle);
+Database testDB = data.getDatabase(testPart, [name, subclass, fromOntology, domainOf, rangeOf, hasType] as Set);
+LazyMPEInference inference = new LazyMPEInference(m, testDB, config);
+inference.mpeInference();
+inference.close();
 
 println "${symbol_escape}t${symbol_escape}tINFERENCE DONE";
 
-
-
-println "${symbol_escape}t${symbol_escape}tRESULTS"
-result.printAtoms(similar,true);
+for (GroundAtom atom : Queries.getAllAtoms(testDB, similar))
+	println atom.toString() + "${symbol_escape}t" + atom.getValue();

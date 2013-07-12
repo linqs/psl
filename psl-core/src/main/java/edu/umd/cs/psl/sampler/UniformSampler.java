@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,14 +20,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.ujmp.core.Matrix;
 
-import edu.umd.cs.psl.evaluation.process.RunningProcess;
-
 abstract public class UniformSampler extends AbstractHitAndRunSampler {
 
 	private static final Logger log = LoggerFactory.getLogger(UniformSampler.class);
 	
-	public UniformSampler(RunningProcess p, int maxNoSteps, int significantDigits) {
-		super(p, maxNoSteps, significantDigits);
+	public UniformSampler(int maxNoSteps, int significantDigits) {
+		super(maxNoSteps, significantDigits);
 	}
 	
 	@Override

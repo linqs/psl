@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,38 +16,23 @@
  */
 package edu.umd.cs.psl.model;
 
-import java.util.Arrays;
-
+/**
+ * Static methods related to valid range of confidence values.
+ */
 public class ConfidenceValues {
-
-	public static final double defaultConfidence = Double.NaN;
-	public static final double minConfidence = 0.0;
-	public static final double maxConfidence = Double.MAX_VALUE;
+	private static final double min = 0.0;
+	private static final double max = Double.MAX_VALUE;
 	
-	public static final double[] getDefaultConfidence(int noValues) {
-		double[] res = new double[noValues];
-		Arrays.fill(res, defaultConfidence);
-		return res;
+	public static final double getMin() {
+		return min;
 	}
 	
-	public static final double[] getMaxConfidence(int noValues) {
-		double[] res = new double[noValues];
-		Arrays.fill(res, maxConfidence);
-		return res;
+	public static final double getMax() {
+		return max;
 	}
 	
-	public static final boolean isValidValue(double confidenceVal) {
-		return confidenceVal>minConfidence && confidenceVal<=maxConfidence;
-	}
-	
-	public static final boolean isValidValues(double[] confidenceVal) {
-		for (int i=0;i<confidenceVal.length;i++)
-			if (!isValidValue(confidenceVal[i])) return false;
-		return true;
-	}
-	
-	public static final boolean isDefaultConfidence(double confidence) {
-		return Double.isNaN(confidence);
+	public static final boolean isValid(double confidenceVal) {
+		return (confidenceVal>=getMin() && confidenceVal<=getMax()) || Double.isNaN(confidenceVal);
 	}
 	
 }

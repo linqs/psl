@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,69 +16,52 @@
  */
 package edu.umd.cs.psl.model.kernel.rule;
 
-import org.apache.commons.lang.builder.HashCodeBuilder;
+import java.util.List;
 
-import edu.umd.cs.psl.model.Model;
+import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.formula.Formula;
+import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
-import edu.umd.cs.psl.model.parameters.Parameters;
 import edu.umd.cs.psl.model.parameters.PositiveWeight;
 import edu.umd.cs.psl.model.parameters.Weight;
 
-public class CompatibilityRuleKernel extends AbstractRuleKernel {
+public class CompatibilityRuleKernel extends AbstractRuleKernel implements CompatibilityKernel {
 	
 	protected PositiveWeight weight;
-	
-	private final int hashcode;
+	protected boolean squared;
 
-	public CompatibilityRuleKernel(Model m, Formula f, double w) {
-		super(m, f);
+	public CompatibilityRuleKernel(Formula f, double w, boolean squared) {
+		super(f);
 		weight = new PositiveWeight(w);
-		hashcode = new HashCodeBuilder().append(model).append(formula)
-				.append(weight).toHashCode();
+		this.squared = squared;
 	}
 
 	@Override
-	protected GroundCompatibilityRule groundFormulaInstance(Formula f) {
-		return new GroundCompatibilityRule(this, f);
-	}
-
-	@Override
-	public boolean isCompatibilityKernel() {
-		return true;
+	protected GroundCompatibilityRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals) {
+		return new GroundCompatibilityRule(this, posLiterals, negLiterals, squared);
 	}
 	
-	public Weight getWeight() {
-		return weight;
-	}
-
 	@Override
-	public Parameters getParameters() {
+	public Weight getWeight() {
 		return weight.duplicate();
 	}
-
+	
 	@Override
-	public void setParameters(Parameters para) {
-		if (!(para instanceof PositiveWeight)) throw new IllegalArgumentException("Expected PositiveWeight parameter.");
-		PositiveWeight newweight = (PositiveWeight)para;
-		if (!newweight.equals(weight)) {
-			weight = newweight;
-			model.notifyKernelParametersModified(this);
-		}
+	public void setWeight(Weight w) {
+		if (!(w instanceof PositiveWeight)) 
+			throw new IllegalArgumentException("Expected PositiveWeight weight.");
+		
+		weight = (PositiveWeight) w;
 	}
 	
 	@Override
 	public String toString() {
-		return "{" + weight.getWeight() + "} " + formula;
-	}
-	
-	@Override
-	public int hashCode() {
-		return hashcode;
+		return "{" + weight.getWeight() + "} " + formula
+				+ ((squared) ? " {squared}" : "");
 	}
 	
 	@Override
 	public Kernel clone() {
-		return new CompatibilityRuleKernel(model, formula, weight.getWeight());
+		return new CompatibilityRuleKernel(formula, weight.getWeight(), squared);
 	}
 }

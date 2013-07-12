@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,11 @@ class FormulaContainer {
 	def and(f2) {
 		checkFormula(f2);
 		return new FormulaContainer(new Conjunction(formula,f2.formula));
+	}
+	
+	def or(f2) {
+		checkFormula(f2);
+		return new FormulaContainer(new Disjunction(formula,f2.formula));
 	}
 	
 	def rightShift(FormulaContainer f2) {

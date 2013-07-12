@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package edu.umd.cs.psl.sampler;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -31,8 +30,9 @@ import org.ujmp.core.Matrix;
 import org.ujmp.core.MatrixFactory;
 import org.ujmp.core.calculation.Calculation;
 
-import edu.umd.cs.psl.evaluation.process.RunningProcess;
 import edu.umd.cs.psl.model.atom.Atom;
+import edu.umd.cs.psl.model.atom.GroundAtom;
+import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
@@ -79,15 +79,15 @@ abstract public class AbstractHitAndRunSampler implements Sampler {
 	
 	private final transient HitAndRunSamplerStatistics stats;
 	
-	public AbstractHitAndRunSampler(RunningProcess p) {
-		this(p,defaultMaxNoSteps,defaultSignificantDigits);
+	public AbstractHitAndRunSampler() {
+		this(defaultSignificantDigits);
 	}
 	
-	public AbstractHitAndRunSampler(RunningProcess p,int maxNoSteps) {
-		this(p,maxNoSteps,defaultSignificantDigits);
+	public AbstractHitAndRunSampler( int maxNoSteps) {
+		this(maxNoSteps, defaultSignificantDigits);
 	}
  	
-	public AbstractHitAndRunSampler(RunningProcess p, int maxNoSteps, int significantDigits) {
+	public AbstractHitAndRunSampler(int maxNoSteps, int significantDigits) {
 		noSteps=0;
 		noSamples=0;
 		dimensions=0;
@@ -96,7 +96,7 @@ abstract public class AbstractHitAndRunSampler implements Sampler {
 		
 		roundingScheme= (long)Math.pow(10, significantDigits);
 		maxSteps=maxNoSteps;
-		stats = new HitAndRunSamplerStatistics(this,p);
+		stats = new HitAndRunSamplerStatistics(this);
 	}
 	
 	public HitAndRunSamplerStatistics getStatistics() {
@@ -132,7 +132,7 @@ abstract public class AbstractHitAndRunSampler implements Sampler {
 	
 	abstract protected void processSampledPoint(Iterable<GroundKernel> groundKernels);
 	
-	public Collection<Atom> sample(Iterable<GroundKernel> evidences, double activationThreshold, int activatorThreshold) {
+	public void sample(Iterable<GroundKernel> evidences, double activationThreshold, int activatorThreshold) {
 		
 		//Check dimensionality and inputs
 		int noEqConstraints = 0;
@@ -156,11 +156,9 @@ abstract public class AbstractHitAndRunSampler implements Sampler {
 				}				
 			} else throw new AssertionError("Unknown evidence type: "  +e);
 			//Determine dimensionality
-			for (Atom a : e.getAtoms()) {
-				if (a.isRandomVariable()) {
-					for (int i=0;i<a.getNumberOfValues();i++)
-						getorSetIndex(a.getVariable(i));	
-				}
+			for (GroundAtom a : e.getAtoms()) {
+				if (a instanceof RandomVariableAtom)
+					getorSetIndex(a.getVariable());
 			}
 		}
 		log.debug("Dimesions: {}",dimensions);
@@ -428,10 +426,10 @@ abstract public class AbstractHitAndRunSampler implements Sampler {
 		    		a.setValue(value);
 		    		
 		    		//Activation
-		    		Atom atom = a.getAtom();
-		    		if (atom.isRandomVariable() && !atom.isActive() && atom.hasNonDefaultValues()) {
-		    			activatedAtoms.add(atom);
-		    		}
+//		    		GroundAtom atom = a.getAtom();
+//		    		if (atom.isRandomVariable() && !atom.isActive() && atom.hasNonDefaultValues()) {
+//		    			activatedAtoms.add(atom);
+//		    		}
 		    	}
 		    	
 	    		processSampledPoint(evidences);
@@ -439,7 +437,7 @@ abstract public class AbstractHitAndRunSampler implements Sampler {
 		    }
 	    } while (noSteps<maxNumberSteps && activatedAtoms.size()<activatorThreshold);
 	    stats.finish(noSamples);
-	    return activatedAtoms;
+//	    return activatedAtoms;
 	}
 	
 	private double setMatrixRow(Matrix m, int row, FunctionTerm term,boolean negate) {

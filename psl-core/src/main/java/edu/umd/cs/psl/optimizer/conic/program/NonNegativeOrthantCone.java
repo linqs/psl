@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ public class NonNegativeOrthantCone extends Cone {
 		g.set(i, -1 / x.get(i));
 	}
 	
-	void setBarrierHessian(Map<Variable, Integer> varMap, DoubleMatrix1D x, DoubleMatrix2D H) {
+	public void setBarrierHessian(Map<Variable, Integer> varMap, DoubleMatrix1D x, DoubleMatrix2D H) {
 		int i = varMap.get(getVariable());
 		H.set(i, i, Math.pow(x.get(i), -2));
 	}
@@ -59,13 +59,13 @@ public class NonNegativeOrthantCone extends Cone {
 	}
 
 	@Override
-	boolean isInterior(Map<Variable, Integer> varMap, DoubleMatrix1D x) {
+	public boolean isInterior(Map<Variable, Integer> varMap, DoubleMatrix1D x) {
 		int i = varMap.get(getVariable());
 		return x.get(i) > 0.05;
 	}
 
 	@Override
-	void setInteriorDirection(Map<Variable, Integer> varMap, DoubleMatrix1D x,
+	public void setInteriorDirection(Map<Variable, Integer> varMap, DoubleMatrix1D x,
 			DoubleMatrix1D d) {
 		int i = varMap.get(getVariable());
 		if (x.get(i) <= .05)
@@ -75,8 +75,7 @@ public class NonNegativeOrthantCone extends Cone {
 	}
 
 	@Override
-	public
-	double getMaxStep(Map<Variable, Integer> varMap, DoubleMatrix1D x,
+	public double getMaxStep(Map<Variable, Integer> varMap, DoubleMatrix1D x,
 			DoubleMatrix1D dx) {
 		int i = varMap.get(getVariable());
 		if (dx.get(i) >= 0)

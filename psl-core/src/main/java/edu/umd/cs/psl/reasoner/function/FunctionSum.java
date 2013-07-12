@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,9 +65,9 @@ public class FunctionSum implements Iterable<FunctionSummand>, FunctionTerm {
 	
 	
 	@Override
-	public double getValue(Map<? extends FunctionVariable,Double> values, boolean assumeDefaultValue) {
+	public double getValue(Map<? extends FunctionVariable,Double> values, boolean useCurrentValues) {
 		double val = 0.0;
-		for (FunctionSummand s : sum) val+=s.getValue(values,assumeDefaultValue);
+		for (FunctionSummand s : sum) val+=s.getValue(values,useCurrentValues);
 		return val;
 	}
 
@@ -85,6 +85,22 @@ public class FunctionSum implements Iterable<FunctionSummand>, FunctionTerm {
 			if (!s.isConstant()) return false;
 		}
 		return true;
+	}
+	
+	@Override
+	public String toString() {
+		StringBuilder string = new StringBuilder();
+		string.append("(");
+		boolean skip = true;
+		for (FunctionTerm term : sum) {
+			if (skip)
+				skip = false;
+			else
+				string.append("+");
+			string.append(" " + term.toString() + " ");
+		}
+		string.append(")");
+		return string.toString();
 	}
 	
 }

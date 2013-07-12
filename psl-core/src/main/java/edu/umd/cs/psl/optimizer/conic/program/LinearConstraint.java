@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,23 +39,25 @@ public class LinearConstraint extends Entity {
 		program.notify(ConicProgramEvent.ConCreated, this);
 	}
 	
-	public void addVariable(Variable v, Double coefficient) {
+	public void setVariable(Variable v, Double coefficient) {
 		program.verifyCheckedIn();
 		Double currentCoefficient = vars.get(v);
 		if (currentCoefficient != null) {
-			removeVariable(v);
-			coefficient += currentCoefficient;
+			if (coefficient == 0.0) {
+				vars.remove(v);
+				v.notifyRemovedFromLinearConstraint(this);
+				program.notify(ConicProgramEvent.VarRemovedFromCon, this, v);
+			}
+			else if (coefficient != currentCoefficient) {
+				vars.put(v, coefficient);
+				program.notify(ConicProgramEvent.ConCoeffChanged, this, new Object[] {v, currentCoefficient});
+			}
 		}
-		vars.put(v, coefficient);
-		v.notifyAddedToLinearConstraint(this);
-		program.notify(ConicProgramEvent.VarAddedToCon, this, v);
-	}
-
-	public void removeVariable(Variable v) {
-		program.verifyCheckedIn();
-		vars.remove(v);
-		v.notifyRemovedFromLinearConstraint(this);
-		program.notify(ConicProgramEvent.VarRemovedFromCon, this, v);
+		else if (coefficient != 0.0) {
+			vars.put(v, coefficient);
+			v.notifyAddedToLinearConstraint(this);
+			program.notify(ConicProgramEvent.VarAddedToCon, this, v);
+		}
 	}
 
 	public Map<Variable, Double> getVariables() {
@@ -102,9 +104,9 @@ public class LinearConstraint extends Entity {
 		program.verifyCheckedIn();
 		Set<Variable> originalVars = new HashSet<Variable>(getVariables().keySet());
 		for (Variable var : originalVars) {
-			removeVariable(var);
+			setVariable(var, 0.0);
 		}
-		program.notify(ConicProgramEvent.ConDeleted, this);
+		program.notify(ConicProgramEvent.ConDeleted, this, Collections.unmodifiableSet(originalVars));
 		vars = null;
 	}
 }

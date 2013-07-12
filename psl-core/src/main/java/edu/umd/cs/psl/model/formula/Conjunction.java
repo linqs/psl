@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,25 +16,21 @@
  */
 package edu.umd.cs.psl.model.formula;
 
-import java.util.Vector;
+import java.util.ArrayList;
 
 public class Conjunction extends AbstractBranchFormula {
 
-	public Conjunction(Formula f1, Formula f2) {
-		this(new Formula[]{f1,f2});
-	}
-	
 	public Conjunction(Formula... f) {
 		super(f);
 	}
 	
 	@Override
-	public Formula dnf() {
+	public Formula getDNF() {
 		Formula[] components = new Formula[getNoFormulas()];
-		Vector<Integer> disjunctions = new Vector<Integer>();
+		ArrayList<Integer> disjunctions = new ArrayList<Integer>();
 		int size = 1;
 		for (int i = 0; i < components.length; i++) {
-			components[i] = get(i).dnf();
+			components[i] = get(i).getDNF();
 			if (components[i] instanceof Disjunction) {
 				size *= ((Disjunction) components[i]).getNoFormulas();
 				disjunctions.add(i);
@@ -74,14 +70,21 @@ public class Conjunction extends AbstractBranchFormula {
 					conjunctionComponents[j] = components[j];
 			}
 			
-			dnfComponents[i] = new Conjunction(conjunctionComponents).dnf();
+			dnfComponents[i] = new Conjunction(conjunctionComponents).getDNF();
 		}
 		
 		return new Disjunction(dnfComponents);
 	}
 	
+	/**
+	 * Collapses nested Conjunctions.
+	 * <p>
+	 * Stops descending where ever a Formula other than a Conjunction is.
+	 * 
+	 * @return the flattened Conjunction
+	 */
 	public Conjunction flatten() {
-		Vector<Formula> conj = new Vector<Formula>(getNoFormulas());
+		ArrayList<Formula> conj = new ArrayList<Formula>(getNoFormulas());
 		for (Formula f : formulas) {
 			if (f instanceof Conjunction) {
 				Formula[] newFormulas = ((Conjunction) f).flatten().formulas;
@@ -96,7 +99,7 @@ public class Conjunction extends AbstractBranchFormula {
 
 	@Override
 	protected String separatorString() {
-		return "^";
+		return "&";
 	}
 
 }

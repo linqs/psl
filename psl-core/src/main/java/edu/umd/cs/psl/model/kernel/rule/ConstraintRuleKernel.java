@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,40 +16,22 @@
  */
 package edu.umd.cs.psl.model.kernel.rule;
 
-import org.apache.commons.lang.builder.HashCodeBuilder;
+import java.util.List;
 
-import edu.umd.cs.psl.model.Model;
+import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.formula.Formula;
+import edu.umd.cs.psl.model.kernel.ConstraintKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
-import edu.umd.cs.psl.model.parameters.Parameters;
 
-public class ConstraintRuleKernel extends AbstractRuleKernel {
+public class ConstraintRuleKernel extends AbstractRuleKernel implements ConstraintKernel {
 	
-	private final int hashcode;
-
-	public ConstraintRuleKernel(Model m, Formula f) {
-		super(m, f);
-		hashcode = new HashCodeBuilder().append(model).append(formula).toHashCode();
+	public ConstraintRuleKernel(Formula f) {
+		super(f);
 	}
 
 	@Override
-	public Parameters getParameters() {
-		return Parameters.NoParameters;
-	}
-	
-	@Override
-	public void setParameters(Parameters para) {
-		throw new UnsupportedOperationException("Aggregate Predicates have no parameters!");
-	}
-
-	@Override
-	public boolean isCompatibilityKernel() {
-		return false;
-	}
-
-	@Override
-	protected AbstractGroundRule groundFormulaInstance(Formula f) {
-		return new GroundConstraintRule(this, f);
+	protected AbstractGroundRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals) {
+		return new GroundConstraintRule(this, posLiterals, negLiterals);
 	}
 	
 	@Override
@@ -58,12 +40,7 @@ public class ConstraintRuleKernel extends AbstractRuleKernel {
 	}
 	
 	@Override
-	public int hashCode() {
-		return hashcode;
-	}
-	
-	@Override
 	public Kernel clone() {
-		return new ConstraintRuleKernel(model, formula);
+		return new ConstraintRuleKernel(formula);
 	}
 }

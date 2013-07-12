@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,52 +16,153 @@
  */
 package edu.umd.cs.psl.database;
 
-import java.util.*;
-
-import edu.umd.cs.psl.model.argument.ArgumentFactory;
-import edu.umd.cs.psl.model.argument.Entity;
-import edu.umd.cs.psl.model.argument.*;
+import edu.umd.cs.psl.model.argument.GroundTerm;
+import edu.umd.cs.psl.model.argument.UniqueID;
 import edu.umd.cs.psl.model.argument.Variable;
-import edu.umd.cs.psl.model.argument.type.ArgumentType;
-import edu.umd.cs.psl.model.atom.Atom;
-import edu.umd.cs.psl.model.atom.AtomStore;
-import edu.umd.cs.psl.model.atom.VariableAssignment;
-import edu.umd.cs.psl.model.formula.Formula;
+import edu.umd.cs.psl.model.atom.AtomCache;
+import edu.umd.cs.psl.model.atom.AtomManager;
+import edu.umd.cs.psl.model.atom.GroundAtom;
+import edu.umd.cs.psl.model.atom.ObservedAtom;
+import edu.umd.cs.psl.model.atom.RandomVariableAtom;
+import edu.umd.cs.psl.model.predicate.FunctionalPredicate;
 import edu.umd.cs.psl.model.predicate.Predicate;
+import edu.umd.cs.psl.model.predicate.StandardPredicate;
 
+/**
+ * A data model for retrieving and persisting {@link GroundAtom GroundAtoms}.
+ * <p>
+ * Every GroundAtom retrieved from a Database is either a {@link RandomVariableAtom}
+ * or an {@link ObservedAtom}. The method {@link #getAtom(Predicate, GroundTerm...)}
+ * determines which type a GroundAtom is. In addition, a GroundAtom with a
+ * {@link StandardPredicate} can be persisted in a Database. If a
+ * GroundAtom is persisted, it is persisted in one of the Partitions the
+ * Database can read and is available for querying via {@link #executeQuery(DatabaseQuery)}.
+ * 
+ * <h2>Setup</h2>
+ * 
+ * Databases are instantiated via {@link DataStore#getDatabase} methods.
+ * <p>
+ * A Database writes to and reads from one {@link Partition} of a DataStore
+ * and can read from additional Partitions. The write Partition of a Database
+ * may not be a read (or write) Partition of any other Database.
+ * <p>
+ * A Database can be instantiated with a set of StandardPredicates
+ * to close. (Any StandardPredicate not closed initially remains open). Whether
+ * a StandardPredicate is open or closed affects the behavior of
+ * {@link #getAtom(Predicate, GroundTerm...)}.
+ * 
+ * <h2>Retrieving GroundAtoms</h2>
+ * 
+ * A Database is the canonical source for a set of GroundAtoms.
+ * GroundAtoms should only be retrieved via {@link #getAtom(Predicate, GroundTerm...)}
+ * to ensure there exists only a single object for each GroundAtom from the Database.
+ * (However, a Database might be wrapped in an {@link AtomManager}, which will pass
+ * through calls to {@link AtomManager#getAtom(Predicate, GroundTerm...)}.)
+ * <p>
+ * A Database contains an {@link AtomCache} which is used to store GroundAtoms
+ * that have been instantiated in memory and ensure these objects are unique.
+ * The AtomCache is accessible via {@link #getAtomCache()}.
+ * 
+ * <h2>Persisting RandomVariableAtoms</h2>
+ * 
+ * A RandomVariableAtom can be persisted (including updated) in the write
+ * Partition via {@link #commit(RandomVariableAtom)} or
+ * {@link RandomVariableAtom#commitToDB()}.
+ * 
+ * <h2>Querying for Groundings</h2>
+ * 
+ * {@link DatabaseQuery DatabaseQueries} can be run via {@link #executeQuery(DatabaseQuery)}.
+ * Note that queries only act on the GroundAtoms persisted in Partitions and
+ * GroundAtoms with {@link FunctionalPredicate FunctionalPredicates}.
+ */
 public interface Database {
 
-	public ResultAtom getAtom(Predicate p, GroundTerm[] arguments);
+	/**
+	 * Returns the GroundAtom for the given Predicate and GroundTerms.
+	 * <p>
+	 * Any GroundAtom with a {@link StandardPredicate} can be retrieved if and only
+	 * if its Predicate was registered with the DataStore at the time of the Database's
+	 * instantiation. Any GroundAtom with a {@link FunctionalPredicate} can also be retrieved.
+	 * This method first checks the {@link AtomCache} to see if the GroundAtom already
+	 * exists in memory. If it does, then that object is returned. (The AtomCache is
+	 * accessible via {@link #getAtomCache()}.)
+	 * <p>
+	 * If the GroundAtom does not exist in memory, then it will be instantiated and
+	 * stored in the AtomCache before being returned. The subtype and state of the
+	 * instantiated GroundAtom depends on several factors:
+	 * <ul>
+	 *   <li>If the GroundAtom is persisted in a read Partition, then it will be
+	 *   instantiated as an {@link ObservedAtom} with the persisted state.</li>
+	 *   <li>If the GroundAtom is persisted in the write Partition, then it will be
+	 *   instantiated with the persisted state. It will be instantiated as an
+	 *   ObseredAtom if its Predicate is closed and as a {@link RandomVariableAtom}
+	 *   if it is open.</li>
+	 *   <li>If the GroundAtom has a StandardPredicate but is not persisted
+	 *   in any of the Database's partitions, it will be instantiated with a truth
+	 *   value of 0.0 and a confidence value of NaN. It will be instantiated as an
+	 *   ObservedAtom if its Predicate is closed and as a RandomVariableAtom
+	 *   if it is open.</li>
+	 *   <li>If the GroundAtom has a FunctionalPredicate, then it will be
+	 *   instantiated as an ObservedAtom with the functionally defined
+	 *   truth value and a confidence value of NaN.</li>
+	 * </ul>
+	 * 
+	 * @param p  the Predicate of the Atom
+	 * @param arguments  the GroundTerms of the Atom
+	 * @return the Atom
+	 * @throws IllegalArgumentException  if p is not registered or arguments are not valid
+	 * @throws IllegalStateException  if the Atom is persisted in multiple read Partitions
+	 */
+	public GroundAtom getAtom(Predicate p, GroundTerm... arguments);
 	
-	public ResultListValues getFacts(Predicate p, Term[] arguments);
+	/**
+	 * Persists a RandomVariableAtom in this Database's write Partition.
+	 * <p>
+	 * If the RandomVariableAtom has already been persisted in the write Partition,
+	 * it will be updated.
+	 * 
+	 * @param atom  the Atom to persist
+	 * @throws IllegalArgumentException  if atom does not belong to this Database
+	 */
+	public void commit(RandomVariableAtom atom);
 	
-	public Map<PredicatePosition,ResultListValues> getAllFactsWith(GroundTerm e);
+	/**
+	 * Returns all groundings of a Formula that match a DatabaseQuery.
+	 * 
+	 * @param query  the query to match
+	 * @return a list of lists of substitutions of {@link GroundTerm GroundTerms}
+	 *             for {@link Variable Variables}
+	 * @throws IllegalArgumentException  if the query Formula is invalid
+	 */
+	public ResultList executeQuery(DatabaseQuery query);
 	
-	public void persist(Atom atom);
+	/**
+	 * Returns whether a StandardPredicate is closed in this Database.
+	 * 
+	 * @param predicate  the Predicate to check
+	 * @return TRUE if predicate is closed
+	 */
+	public boolean isClosed(StandardPredicate predicate);
 	
-	public ResultList query(Formula f, VariableAssignment partialGrounding, List<Variable> projectTo);
+	/**
+	 * Convenience method.
+	 * <p>
+	 * Calls {@link DataStore#getUniqueID(Object)} on this Database's DataStore.
+	 */
+	public UniqueID getUniqueID(Object key);
 	
-	public ResultList query(Formula f, VariableAssignment partialGrounding);
+	/**
+	 * @return the DataStore backing this Database
+	 */
+	public DataStore getDataStore();
 	
-	public ResultList query(Formula f, List<Variable> projectTo);
+	/**
+	 * @return the Database's AtomCache
+	 */
+	public AtomCache getAtomCache();
 	
-	public ResultList query(Formula f);
-	
-	public void registerDatabaseEventObserver(DatabaseEventObserver atomEvents);
-	
-	public void deregisterDatabaseEventObserver(DatabaseEventObserver atomEvents);
-	
-//	public void setAtomStore(AtomStore store);
-//	
-//	public AtomStore getAtomStore();
-	
-	public Entity getEntity(Object entity, ArgumentType type);
-	
-	public Set<Entity> getEntities(ArgumentType type);
-	
-	public int getNumEntities(ArgumentType type);
-	
-	public boolean isClosed(Predicate p);
-	
+	/**
+	 * Releases the {@link Partition Partitions} used by this Database.
+	 */
 	public void close();
 }

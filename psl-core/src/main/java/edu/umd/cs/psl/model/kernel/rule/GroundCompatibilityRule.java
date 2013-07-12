@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,50 +16,65 @@
  */
 package edu.umd.cs.psl.model.kernel.rule;
 
-import edu.umd.cs.psl.model.formula.Formula;
+import java.util.List;
+
+import edu.umd.cs.psl.model.atom.GroundAtom;
+import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.parameters.Weight;
 import edu.umd.cs.psl.reasoner.function.ConstantNumber;
 import edu.umd.cs.psl.reasoner.function.FunctionTerm;
 import edu.umd.cs.psl.reasoner.function.MaxFunction;
+import edu.umd.cs.psl.reasoner.function.PowerOfTwo;
 
 public class GroundCompatibilityRule extends AbstractGroundRule implements
 		GroundCompatibilityKernel {
 	
-	public GroundCompatibilityRule(CompatibilityRuleKernel k, Formula f) {
-		super(k, f);
+	private Weight weight;
+	private final boolean squared;
+	
+	GroundCompatibilityRule(CompatibilityRuleKernel k, List<GroundAtom> posLiterals,
+			List<GroundAtom> negLiterals, boolean squared) {
+		super(k, posLiterals, negLiterals);
+		weight = null;
+		this.squared = squared;
+	}
+
+	@Override
+	public CompatibilityKernel getKernel() {
+		return (CompatibilityKernel) kernel;
 	}
 
 	@Override
 	public Weight getWeight() {
-		return ((CompatibilityRuleKernel) kernel).getWeight();
+		if (weight == null) 
+			return getKernel().getWeight();
+		return weight;
+	}
+	
+	@Override
+	public void setWeight(Weight w) {
+		weight = w;
 	}
 	
 	@Override
 	public FunctionTerm getFunctionDefinition() {
-		assert numGroundings>=0;
-		return MaxFunction.of(getFunction(numGroundings), new ConstantNumber(0.0));
+		if (posLiterals.size() + negLiterals.size() == 1)
+			return (squared) ? new PowerOfTwo(getFunction()) : getFunction();
+		else
+			return (squared) ? new PowerOfTwo(MaxFunction.of(getFunction(), new ConstantNumber(0.0)))
+					: MaxFunction.of(getFunction(), new ConstantNumber(0.0));
 	}
 
 	@Override
 	public double getIncompatibility() {
-		return numGroundings*getWeight().getWeight()*(1.0-getTruthValue());
-	}
-	
-	@Override
-	public double getIncompatibilityHessian(int parameterNo1, int parameterNo2) {
-		assert parameterNo1==0 && parameterNo2==0;
-		return 0;
-	}
-
-	@Override
-	public double getIncompatibilityDerivative(int parameterNo) {
-		assert parameterNo==0;
-		return numGroundings*(1.0-getTruthValue());
+		double inc = 1.0 - getTruthValue();
+		return (squared) ? inc * inc : inc;
 	}
 	
 	@Override
 	public String toString() {
-		return "{" + getWeight().toString() + "} " + formula; 
+		return "{" + getWeight().toString() + "} " + super.toString()
+				+ ((squared) ? " {squared}" : "");
 	}
 }

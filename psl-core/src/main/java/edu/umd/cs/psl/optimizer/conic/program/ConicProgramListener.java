@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,5 +17,5 @@
 package edu.umd.cs.psl.optimizer.conic.program;
 
 public interface ConicProgramListener {
-	public void notify(ConicProgramEvent e, Entity sender, Object... data);
+	public void notify(ConicProgram sender, ConicProgramEvent event, Entity entity, Object... data);
 }

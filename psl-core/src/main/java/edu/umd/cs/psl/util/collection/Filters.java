@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,18 +16,28 @@
  */
 package edu.umd.cs.psl.util.collection;
 
+import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
+import edu.umd.cs.psl.model.kernel.ConstraintKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
 
 public class Filters {
 
-	public static final com.google.common.base.Predicate<Kernel> ProbabilisticEvidence = new com.google.common.base.Predicate<Kernel>() {
+	public static final com.google.common.base.Predicate<Kernel> CompatibilityKernel = new com.google.common.base.Predicate<Kernel>() {
 
 		@Override
-		public boolean apply(Kernel et) {
-			return et.isCompatibilityKernel();
+		public boolean apply(Kernel k) {
+			return k instanceof CompatibilityKernel;
 		}
 		
 	};
 	
+	public static final com.google.common.base.Predicate<Kernel> ConstraintKernel = new com.google.common.base.Predicate<Kernel>() {
+
+		@Override
+		public boolean apply(Kernel k) {
+			return k instanceof ConstraintKernel;
+		}
+		
+	};
 	
 }

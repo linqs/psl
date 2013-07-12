@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
   - This file is part of the PSL software.
-  - Copyright 2011 University of Maryland
+  - Copyright 2011-2013 University of Maryland
   -
   - Licensed under the Apache License, Version 2.0 (the "License");
   - you may not use this file except in compliance with the License.
@@ -19,13 +19,13 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>edu.umd.cs</groupId>
 	<artifactId>psl-archetype-example</artifactId>
-	<version>1.0.3</version>
+	<version>1.1-SNAPSHOT</version>
 	<name>psl-archetype-example</name>
 	<packaging>maven-archetype</packaging>
 	<description>Examples of using the PSL software from the University of Maryland.</description>
 	<parent>
 		<artifactId>psl-archetype</artifactId>
 		<groupId>edu.umd.cs</groupId>
-		<version>1.0.3</version>
+		<version>1.1-SNAPSHOT</version>
 	</parent>
 </project>

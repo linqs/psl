@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import edu.umd.cs.psl.evaluation.process.RunningProcess;
+import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
@@ -29,16 +29,16 @@ public class DerivativeSampler extends UniformSampler {
 
 	private transient Map<Kernel, Double> totals;
 	
-	public DerivativeSampler(RunningProcess p, Collection<Kernel> k) {
-		this(p, k, defaultMaxNoSteps,defaultSignificantDigits);
+	public DerivativeSampler(Collection<Kernel> k) {
+		this(k, defaultMaxNoSteps,defaultSignificantDigits);
 	}
 	
-	public DerivativeSampler(RunningProcess p, Collection<Kernel> k, int maxNoSteps) {
-		this(p, k, maxNoSteps,defaultSignificantDigits);
+	public DerivativeSampler(Collection<Kernel> k, int maxNoSteps) {
+		this(k, maxNoSteps,defaultSignificantDigits);
 	}
  	
-	public DerivativeSampler(RunningProcess p, Collection<Kernel> k, int maxNoSteps, int significantDigits) {
-		super(p, maxNoSteps, significantDigits);
+	public DerivativeSampler(Collection<Kernel> k, int maxNoSteps, int significantDigits) {
+		super(maxNoSteps, significantDigits);
 		totals = new HashMap<Kernel, Double>();
 		for (Kernel kernel : k) {
 			totals.put(kernel, 0.0);
@@ -63,13 +63,15 @@ public class DerivativeSampler extends UniformSampler {
 		double total = 0.0;
 		double incompatibility;
 		for (GroundKernel gk : groundKernels) {
-			incompatibility = gk.getIncompatibility();
-			total -= incompatibility;
-			
-    		Kernel k = gk.getKernel();
-    		if (sampleTotals.containsKey(k)) {
-    			sampleTotals.put(k, sampleTotals.get(k) + incompatibility);
-    		}
+			if (gk instanceof GroundCompatibilityKernel) {
+				incompatibility = ((GroundCompatibilityKernel) gk).getIncompatibility();
+				total -= incompatibility;
+				
+	    		Kernel k = gk.getKernel();
+	    		if (sampleTotals.containsKey(k)) {
+	    			sampleTotals.put(k, sampleTotals.get(k) + incompatibility);
+	    		}
+			}
     	}
 		
 		double density = Math.exp(total);

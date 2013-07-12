@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,27 +16,46 @@
  */
 package edu.umd.cs.psl.model.formula;
 
+import java.util.ArrayList;
+
 public class Disjunction extends AbstractBranchFormula {
 
-	public Disjunction(Formula f1, Formula f2) {
-		this(new Formula[]{f1,f2});
-	}
-	
 	public Disjunction(Formula... f) {
 		super(f);
 	}
 	
 	@Override
-	public Formula dnf() {
+	public Formula getDNF() {
 		Formula[] components = new Formula[getNoFormulas()];
 		for (int i = 0; i < components.length; i++)
-			components[i] = get(i).dnf();
+			components[i] = get(i).getDNF();
 		return new Disjunction(components);
 	}
 
 	@Override
 	protected String separatorString() {
-		return "v";
+		return "|";
+	}
+	
+	/**
+	 * Collapses nested Disjunctions.
+	 * <p>
+	 * Stops descending where ever a Formula other than a Disjunction is.
+	 * 
+	 * @return the flattened Disjunction
+	 */
+	public Disjunction flatten() {
+		ArrayList<Formula> disj = new ArrayList<Formula>(getNoFormulas());
+		for (Formula f : formulas) {
+			if (f instanceof Disjunction) {
+				Formula[] newFormulas = ((Disjunction) f).flatten().formulas;
+				for (Formula newF : newFormulas)
+					disj.add(newF);
+			}
+			else
+				disj.add(f);
+		}
+		return new Disjunction((Formula[]) disj.toArray(new Formula[disj.size()]));
 	}
 
 }

@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,76 +19,83 @@ package edu.umd.cs.psl.application.groundkernelstore;
 import com.google.common.collect.Iterables;
 
 import de.mathnbits.util.KeyedRetrievalSet;
-import edu.umd.cs.psl.application.GroundKernelStore;
-import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.util.collection.Filters;
 
+/**
+ * A simple {@link GroundKernelStore} that just stores each {@link GroundKernel}
+ * in memory.
+ * <p>
+ * No action is taken by {@link #changedGroundKernel(GroundKernel)}.
+ */
 public class MemoryGroundKernelStore implements GroundKernelStore {
 
-	protected final KeyedRetrievalSet<Kernel,GroundKernel> evidences;
+	protected final KeyedRetrievalSet<Kernel,GroundKernel> groundKernels;
 	
 	public MemoryGroundKernelStore() {
-		evidences = new KeyedRetrievalSet<Kernel,GroundKernel>();
+		groundKernels = new KeyedRetrievalSet<Kernel,GroundKernel>();
 	}
 	
 	@Override
-	public double getTotalIncompatibility() {
-		double objective = 0.0;
-		for (GroundKernel e : evidences) {
-			objective+=e.getIncompatibility();
-		}
-		return objective;
+	public boolean containsGroundKernel(GroundKernel gk) {
+		return groundKernels.contains(gk.getKernel(),gk);
+	}
+	
+	@Override
+	public GroundKernel getGroundKernel(GroundKernel gk) {
+		return groundKernels.get(gk.getKernel(),gk);
+	}
+	
+	@Override
+	public void addGroundKernel(GroundKernel gk) {
+		if (!groundKernels.put(gk.getKernel(), gk))
+			throw new IllegalArgumentException("GroundKernel has already been added: " + gk);
+	}
+	
+	@Override
+	public void changedGroundKernel(GroundKernel gk) {
+		/* Intentionally blank */
+	}
+
+	@Override
+	public void changedGroundKernelWeight(GroundCompatibilityKernel k) {
+		/* Intentionally blank */
+	}
+
+	@Override
+	public void changedGroundKernelWeights() {
+		/* Intentionally blank */
+	}
+	
+	@Override
+	public void removeGroundKernel(GroundKernel gk) {
+		groundKernels.remove(gk.getKernel(), gk);
+	}
+	
+	public Iterable<GroundKernel> getGroundKernels() {
+		return groundKernels;
 	}
 	
 	@Override
 	public Iterable<GroundCompatibilityKernel> getCompatibilityKernels() {
-		return Iterables.filter(evidences.filterIterable(Filters.ProbabilisticEvidence), GroundCompatibilityKernel.class);
+		return Iterables.filter(groundKernels.filterIterable(Filters.CompatibilityKernel), GroundCompatibilityKernel.class);
+	}
+	
+	public Iterable<GroundConstraintKernel> getConstraintKernels() {
+		return Iterables.filter(groundKernels.filterIterable(Filters.ConstraintKernel), GroundConstraintKernel.class);
+	}
+	
+	@Override
+	public Iterable<GroundKernel> getGroundKernels(Kernel k) {
+		return groundKernels.keyIterable(k);
 	}
 	
 	@Override
 	public int size() {
-		return evidences.size();
-	}
-	
-	@Override
-	public Iterable<GroundKernel> getGroundKernels() {
-		return evidences;
-	}
-	
-	@Override
-	public Iterable<GroundKernel> getGroundKernels(Kernel et) {
-		return evidences.keyIterable(et);
-	}	
-	
-	@Override
-	public void addGroundKernel(GroundKernel e) {
-		if (!evidences.put(e.getKernel(),e)) throw new IllegalArgumentException("Evidence has already been added: "+e);
-		for (Atom atom : e.getAtoms()) if (!atom.registerGroundKernel(e)) throw new AssertionError("Evidence has already been registered with atom! " + e);
-	}
-	
-	@Override
-	public void changedGroundKernel(GroundKernel e) {
-		for (Atom atom : e.getAtoms()) atom.registerGroundKernel(e);
-	}
-	
-	@Override
-	public void removeGroundKernel(GroundKernel e) {
-		//Deregister with atoms and remove from reasoner
-		for (Atom atom : e.getAtoms()) if (!atom.deregisterGroundKernel(e)) throw new AssertionError("Evidence has never been registered with atom!");
-		evidences.remove(e.getKernel(), e);
-	}
-	
-	@Override
-	public boolean containsGroundKernel(GroundKernel e) {
-		return evidences.contains(e.getKernel(),e);
-	}
-	
-	@Override
-	public GroundKernel getGroundKernel(GroundKernel e) {
-		return evidences.get(e.getKernel(),e);
+		return groundKernels.size();
 	}
 	
 }

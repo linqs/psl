@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,13 @@
  */
 package edu.umd.cs.psl.util.collection;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
-import java.util.Vector;
 
 public class HashList<E> implements List<E> {
 	
@@ -34,7 +34,7 @@ public class HashList<E> implements List<E> {
 	}
 	
 	public HashList(int initialSize) {
-		list = new Vector<E>(initialSize);
+		list = new ArrayList<E>(initialSize);
 		map = new HashMap<E, Integer>(initialSize);
 	}
 
@@ -88,7 +88,10 @@ public class HashList<E> implements List<E> {
 
 	@Override
 	public int indexOf(Object o) {
-		return map.get(o);
+		Integer index = map.get(o);
+		if (index == null)
+			index = -1;
+		return index;
 	}
 
 	@Override

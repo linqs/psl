@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,11 @@
  */
 package edu.umd.cs.psl.ui.aggregators;
 
-import java.util.*;
+import java.util.Set;
 
-import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.Term;
 import edu.umd.cs.psl.model.atom.Atom;
+import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.set.aggregator.EntityAggregatorFunction;
 import edu.umd.cs.psl.model.set.membership.TermMembership;
 import edu.umd.cs.psl.reasoner.function.ConstantNumber;
@@ -99,12 +99,11 @@ public class SetMin implements EntityAggregatorFunction {
 	
 	@Override
 	public double aggregateValue(TermMembership set1, TermMembership set2,
-			Set<Atom> comparisonAtoms) {
+			Set<GroundAtom> comparisonAtoms) {
     //System.out.println("------aggregateValue");
 		double truth = 0.0;
-		for (Atom atom : comparisonAtoms) {
-			assert atom.getNumberOfValues()==1;
-			truth+=getAtomFactor(atom,set1,set2)*atom.getSoftValue(0);     
+		for (GroundAtom atom : comparisonAtoms) {
+			truth+=getAtomFactor(atom,set1,set2)*atom.getValue();     
       //System.out.println("\tatom: " + atom.toString() + " = " + atom.getSoftValue(0));
 		}
 
@@ -131,8 +130,8 @@ public class SetMin implements EntityAggregatorFunction {
 	}
 	
 	@Override
-	public ConstraintTerm defineConstraint(Atom setAtom, TermMembership set1,
-			TermMembership set2, Set<Atom> comparisonAtoms) {
+	public ConstraintTerm defineConstraint(GroundAtom setAtom, TermMembership set1,
+			TermMembership set2, Set<GroundAtom> comparisonAtoms) {
     //System.out.println("------defineConstraint");
 		double coeff = constantFactor(set1,set2);
 		FunctionSum sum = new FunctionSum();		
@@ -151,7 +150,7 @@ public class SetMin implements EntityAggregatorFunction {
 
       double tmpVal = coeff;
 
-			for (Atom atom : comparisonAtoms) {
+			for (GroundAtom atom : comparisonAtoms) {
 
         //double tmpVal = coeff*getAtomFactor(atom,set1,set2);
         //System.out.println("\ttmpVal = " + tmpVal);
@@ -171,7 +170,7 @@ public class SetMin implements EntityAggregatorFunction {
 	
 	@Override
 	public boolean enoughSupport(TermMembership set1,
-			TermMembership set2, Set<Atom> comparisonAtoms) {
+			TermMembership set2, Set<GroundAtom> comparisonAtoms) {
     //System.out.println("-------enoughSupport");
 		if (set1.size()<=0.0 || set2.size()<=0.0) return false;
     return true;

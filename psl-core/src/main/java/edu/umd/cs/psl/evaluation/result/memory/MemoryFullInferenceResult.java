@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,25 +16,30 @@
  */
 package edu.umd.cs.psl.evaluation.result.memory;
 
-import edu.umd.cs.psl.evaluation.process.ProcessView;
 import edu.umd.cs.psl.evaluation.result.FullInferenceResult;
 
 public class MemoryFullInferenceResult implements FullInferenceResult {
 
 	private final double totalIncompatibility;
+	private final double infeasibilityNorm;
 	private final int numGroundAtoms;
 	private final int numGroundEvidence;
-	private final ProcessView process;
 	
-	public MemoryFullInferenceResult(ProcessView proc, double incomp, int noAtoms, int numGevidence) {
+	public MemoryFullInferenceResult(double incomp, double infNorm, int noAtoms, int numGevidence) {
 		totalIncompatibility=incomp;
+		infeasibilityNorm = infNorm;
 		numGroundAtoms=noAtoms;
 		numGroundEvidence=numGevidence;
-		process = proc;
 	}
 
-	public double getTotalIncompatibility() {
+	@Override
+	public double getTotalWeightedIncompatibility() {
 		return totalIncompatibility;
+	}
+	
+	@Override
+	public double getInfeasibilityNorm() {
+		return infeasibilityNorm;
 	}
 
 	public int getNumGroundAtoms() {
@@ -44,12 +49,4 @@ public class MemoryFullInferenceResult implements FullInferenceResult {
 	public int getNumGroundEvidence() {
 		return numGroundEvidence;
 	}
-
-	@Override
-	public ProcessView getProcess() {
-		return process;
-	}
-	
-	
-	
 }

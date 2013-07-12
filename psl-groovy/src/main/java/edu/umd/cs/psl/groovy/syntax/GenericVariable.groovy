@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,12 @@
  */
 package edu.umd.cs.psl.groovy.syntax;
 
-import edu.umd.cs.psl.model.argument.Variable;
-import edu.umd.cs.psl.model.argument.type.ArgumentType;
-import edu.umd.cs.psl.model.set.term.VariableSetTerm;
-import edu.umd.cs.psl.groovy.PSLModel;
-import edu.umd.cs.psl.model.atom.Atom;
-import edu.umd.cs.psl.model.atom.TemplateAtom;
-import edu.umd.cs.psl.model.predicate.SpecialPredicates;
+import edu.umd.cs.psl.groovy.PSLModel
+import edu.umd.cs.psl.model.argument.ArgumentType
+import edu.umd.cs.psl.model.argument.Variable
+import edu.umd.cs.psl.model.atom.QueryAtom
+import edu.umd.cs.psl.model.predicate.SpecialPredicate
+import edu.umd.cs.psl.model.set.term.VariableSetTerm
 
 class GenericVariable {
 	
@@ -61,12 +60,18 @@ class GenericVariable {
 			throw new IllegalArgumentException("Can only compare variables to variables! ${this} compared to ${other}");
 		}
 		assert other instanceof GenericVariable
-		return new FormulaContainer(new TemplateAtom(SpecialPredicates.NonSymmetric,this.toAtomVariable(),other.toAtomVariable()));
+		return new FormulaContainer(new QueryAtom(SpecialPredicate.NonSymmetric, this.toAtomVariable(), other.toAtomVariable()));
 	}
 	
+	def minus(other) {
+		if (!(other instanceof GenericVariable)) {
+			throw new IllegalArgumentException("Can only compare variables to variables! ${this} compared to ${other}");
+		}
+		return new FormulaContainer(new QueryAtom(SpecialPredicate.NotEqual, this.toAtomVariable(), other.toAtomVariable()));
+	}
 	
 	def getSetTerm() {
-		return new VariableSetTerm(new Variable(name),ArgumentType.Entity);
+		return new VariableSetTerm(new Variable(name),ArgumentType.UniqueID);
 	}
 
 	

@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,7 @@ package edu.umd.cs.psl.evaluation.result.memory;
 
 import java.util.Map;
 
-import com.google.common.base.Preconditions;
-
 import de.mathnbits.statistics.DoubleDist;
-import edu.umd.cs.psl.evaluation.process.ProcessView;
 import edu.umd.cs.psl.evaluation.result.FullConfidenceAnalysisResult;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.predicate.Predicate;
@@ -30,23 +27,15 @@ import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
 public class MemoryFullConfidenceAnalysisResult implements FullConfidenceAnalysisResult {
 	
 	private final Map<AtomFunctionVariable,DoubleDist> distributions;
-	private final ProcessView process;
 
 	
-	public MemoryFullConfidenceAnalysisResult(ProcessView proc, Map<AtomFunctionVariable,DoubleDist> dists) {
+	public MemoryFullConfidenceAnalysisResult(Map<AtomFunctionVariable,DoubleDist> dists) {
 		distributions=dists;
-		process = proc;
 	}
 	
 	@Override
 	public Map<AtomFunctionVariable,DoubleDist> getDistribution() {
 		return distributions;
-	}
-
-
-	@Override
-	public ProcessView getProcess() {
-		return process;
 	}
 	
 	@Override
@@ -67,13 +56,10 @@ public class MemoryFullConfidenceAnalysisResult implements FullConfidenceAnalysi
 	
 	@Override
 	public double averageKLdivergence(Predicate p, int noBins, FullConfidenceAnalysisResult other) {
-		Preconditions.checkArgument(p.getNumberOfValues()==1);
 		double sumkl = 0.0;
 		int count = 0;
 		for (AtomFunctionVariable atomvar : distributions.keySet()) {
 			Atom atom = atomvar.getAtom();
-			assert atom.getNumberOfValues()==1;
-			assert atom.getVariable().equals(atomvar);
 			if (!atom.getPredicate().equals(p)) continue;
 			sumkl += KLdivergence(atomvar,noBins,other);
 			count++;

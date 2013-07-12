@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,19 +21,19 @@ import java.util.*;
 import edu.umd.cs.psl.database.DataStore;
 import edu.umd.cs.psl.database.Partition;
 import edu.umd.cs.psl.database.loading.Inserter;
+import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.PredicateFactory;
+import edu.umd.cs.psl.model.predicate.StandardPredicate;
 
 public class DataStoreInserterLookup implements InserterLookup {
 
 	private final DataStore store;
-	private final PredicateFactory predicates;
 	private final Partition partitionID;
 	
 	private Map<String,Inserter> buffer;
 	
-	public DataStoreInserterLookup(DataStore store, PredicateFactory predicates, Partition pid) {
+	public DataStoreInserterLookup(DataStore store, Partition pid) {
 		this.store=store;
-		this.predicates=predicates;
 		this.partitionID=pid;
 		buffer = new HashMap<String,Inserter>();
 	}
@@ -42,8 +42,18 @@ public class DataStoreInserterLookup implements InserterLookup {
 	public Inserter get(String predicateName) {
 		Inserter ins = buffer.get(predicateName);
 		if (ins==null) {
-			ins = store.getInserter(predicates.getPredicate(predicateName), partitionID);
-			buffer.put(predicateName, ins);
+			PredicateFactory pf = PredicateFactory.getFactory();
+			Predicate p = pf.getPredicate(predicateName);
+			if (p != null) {
+				if (p instanceof StandardPredicate) {
+					ins = store.getInserter((StandardPredicate) p, partitionID);
+					buffer.put(predicateName, ins);
+				}
+				else
+					throw new IllegalStateException("Predicate '" + predicateName + "' is not a StandardPredicate.");
+			}
+			else
+				throw new IllegalStateException("No predicate with name '" + predicateName + "' has been created.");
 		}
 		return ins;
 	}

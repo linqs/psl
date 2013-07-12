@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,24 +54,24 @@ public class ConicProgramTest {
 		Variable x9 = program.createNonNegativeOrthantCone().getVariable();
 		Variable x10 = program.createNonNegativeOrthantCone().getVariable();
 		
-		phi1.addVariable(x1, 1.0);
-		phi1.addVariable(x3, 1.0);
-		phi1.addVariable(x4, -1.0);
+		phi1.setVariable(x1, 1.0);
+		phi1.setVariable(x3, 1.0);
+		phi1.setVariable(x4, -1.0);
 		
-		phi2.addVariable(x1, -1.0);
-		phi2.addVariable(x2, 1.0);
-		phi2.addVariable(x5, 1.0);
-		phi2.addVariable(x6, -1.0);
+		phi2.setVariable(x1, -1.0);
+		phi2.setVariable(x2, 1.0);
+		phi2.setVariable(x5, 1.0);
+		phi2.setVariable(x6, -1.0);
 
-		phi3.addVariable(x2, -1.0);
-		phi3.addVariable(x7, 1.0);
-		phi3.addVariable(x8, -1.0);
+		phi3.setVariable(x2, -1.0);
+		phi3.setVariable(x7, 1.0);
+		phi3.setVariable(x8, -1.0);
 		
-		c1.addVariable(x1, 1.0);
-		c1.addVariable(x9, 1.0);
+		c1.setVariable(x1, 1.0);
+		c1.setVariable(x9, 1.0);
 		
-		c2.addVariable(x2, 1.0);
-		c2.addVariable(x10, 1.0);
+		c2.setVariable(x2, 1.0);
+		c2.setVariable(x10, 1.0);
 		
 		phi1.setConstrainedValue(0.7);
 		phi2.setConstrainedValue(0.0);
@@ -94,18 +94,18 @@ public class ConicProgramTest {
 		}
 		
 		LinearConstraint phi1InnerFeatureCon = program.createConstraint();
-		phi1InnerFeatureCon.addVariable(x3, 1.0);
-		phi1InnerFeatureCon.addVariable(phi1InnerFeatureVar, -1.0);
+		phi1InnerFeatureCon.setVariable(x3, 1.0);
+		phi1InnerFeatureCon.setVariable(phi1InnerFeatureVar, -1.0);
 		phi1InnerFeatureCon.setConstrainedValue(0.0);
 		
 		LinearConstraint phi1InnerSquaredCon = program.createConstraint();
-		phi1InnerSquaredCon.addVariable(phi1InnerSquaredVar, 1.0);
-		phi1InnerSquaredCon.addVariable(x3Sq, 0.5);
+		phi1InnerSquaredCon.setVariable(phi1InnerSquaredVar, 1.0);
+		phi1InnerSquaredCon.setVariable(x3Sq, 0.5);
 		phi1InnerSquaredCon.setConstrainedValue(0.5);
 		
 		LinearConstraint phi1OuterSquaredCon = program.createConstraint();
-		phi1OuterSquaredCon.addVariable(phi1OuterSquaredVar, 1.0);
-		phi1OuterSquaredCon.addVariable(x3Sq, -0.5);
+		phi1OuterSquaredCon.setVariable(phi1OuterSquaredVar, 1.0);
+		phi1OuterSquaredCon.setVariable(x3Sq, -0.5);
 		phi1OuterSquaredCon.setConstrainedValue(0.5);
 		
 		/* Squares the variable x5 in the phi2 constraint */
@@ -123,18 +123,18 @@ public class ConicProgramTest {
 		}
 		
 		LinearConstraint phi2InnerFeatureCon = program.createConstraint();
-		phi2InnerFeatureCon.addVariable(x5, 1.0);
-		phi2InnerFeatureCon.addVariable(phi2InnerFeatureVar, -1.0);
+		phi2InnerFeatureCon.setVariable(x5, 1.0);
+		phi2InnerFeatureCon.setVariable(phi2InnerFeatureVar, -1.0);
 		phi2InnerFeatureCon.setConstrainedValue(0.0);
 		
 		LinearConstraint phi2InnerSquaredCon = program.createConstraint();
-		phi2InnerSquaredCon.addVariable(phi2InnerSquaredVar, 1.0);
-		phi2InnerSquaredCon.addVariable(x5Sq, 0.5);
+		phi2InnerSquaredCon.setVariable(phi2InnerSquaredVar, 1.0);
+		phi2InnerSquaredCon.setVariable(x5Sq, 0.5);
 		phi2InnerSquaredCon.setConstrainedValue(0.5);
 		
 		LinearConstraint phi2OuterSquaredCon = program.createConstraint();
-		phi2OuterSquaredCon.addVariable(phi2OuterSquaredVar, 1.0);
-		phi2OuterSquaredCon.addVariable(x5Sq, -0.5);
+		phi2OuterSquaredCon.setVariable(phi2OuterSquaredVar, 1.0);
+		phi2OuterSquaredCon.setVariable(x5Sq, -0.5);
 		phi2OuterSquaredCon.setConstrainedValue(0.5);
 		
 		/* Squares the variable x7 in the phi3 constraint */
@@ -152,18 +152,18 @@ public class ConicProgramTest {
 		}
 		
 		LinearConstraint phi3InnerFeatureCon = program.createConstraint();
-		phi3InnerFeatureCon.addVariable(x7, 1.0);
-		phi3InnerFeatureCon.addVariable(phi3InnerFeatureVar, -1.0);
+		phi3InnerFeatureCon.setVariable(x7, 1.0);
+		phi3InnerFeatureCon.setVariable(phi3InnerFeatureVar, -1.0);
 		phi3InnerFeatureCon.setConstrainedValue(0.0);
 		
 		LinearConstraint phi3InnerSquaredCon = program.createConstraint();
-		phi3InnerSquaredCon.addVariable(phi3InnerSquaredVar, 1.0);
-		phi3InnerSquaredCon.addVariable(x7Sq, 0.5);
+		phi3InnerSquaredCon.setVariable(phi3InnerSquaredVar, 1.0);
+		phi3InnerSquaredCon.setVariable(x7Sq, 0.5);
 		phi3InnerSquaredCon.setConstrainedValue(0.5);
 		
 		LinearConstraint phi3OuterSquaredCon = program.createConstraint();
-		phi3OuterSquaredCon.addVariable(phi3OuterSquaredVar, 1.0);
-		phi3OuterSquaredCon.addVariable(x7Sq, -0.5);
+		phi3OuterSquaredCon.setVariable(phi3OuterSquaredVar, 1.0);
+		phi3OuterSquaredCon.setVariable(x7Sq, -0.5);
 		phi3OuterSquaredCon.setConstrainedValue(0.5);
 		
 		x1.setObjectiveCoefficient(0.0);
@@ -187,9 +187,9 @@ public class ConicProgramTest {
 	public void testCreateSOCP() {
 		defineSOCP();
 
-		assertTrue(program.numNNOC() == 13);
-		assertTrue(program.numSOC() == 3);
-		assertTrue(program.numRSOC() == 0);
+		assertTrue(program.getNumNNOC() == 13);
+		assertTrue(program.gtNumSOC() == 3);
+		assertTrue(program.getNumRSOC() == 0);
 		
 		assertTrue(program.getNonNegativeOrthantCones().size() == 13);
 		assertTrue(program.getSecondOrderCones().size() == 3);
@@ -227,8 +227,8 @@ public class ConicProgramTest {
 		double newDualValue2 = x2.getDualValue() + 2.0;
 		
 		program.checkOutMatrices();
-		int index1 = program.index(x1);
-		int index2 = program.index(x2);
+		int index1 = program.getIndex(x1);
+		int index2 = program.getIndex(x2);
 		DoubleMatrix1D x = program.getX();
 		x.set(index1, newPrimalValue1);
 		x.set(index2, newPrimalValue2);
@@ -272,9 +272,9 @@ public class ConicProgramTest {
 		for (LinearConstraint lc : program.getConstraints())
 			lc.delete();
 				
-		assertTrue(program.numNNOC() == 0);
-		assertTrue(program.numSOC() == 0);
-		assertTrue(program.numRSOC() == 0);
+		assertTrue(program.getNumNNOC() == 0);
+		assertTrue(program.gtNumSOC() == 0);
+		assertTrue(program.getNumRSOC() == 0);
 		
 		assertTrue(program.getNonNegativeOrthantCones().size() == 0);
 		assertTrue(program.getSecondOrderCones().size() == 0);
@@ -296,9 +296,9 @@ public class ConicProgramTest {
 				
 		defineSOCP();
 				
-		assertTrue(program.numNNOC() == 13);
-		assertTrue(program.numSOC() == 3);
-		assertTrue(program.numRSOC() == 0);
+		assertTrue(program.getNumNNOC() == 13);
+		assertTrue(program.gtNumSOC() == 3);
+		assertTrue(program.getNumRSOC() == 0);
 		
 		assertTrue(program.getNonNegativeOrthantCones().size() == 13);
 		assertTrue(program.getSecondOrderCones().size() == 3);
@@ -327,9 +327,9 @@ public class ConicProgramTest {
 		program.checkOutMatrices();
 		program.checkInMatrices();
 		
-		assertTrue(program.numNNOC() == 13);
-		assertTrue(program.numSOC() == 3);
-		assertTrue(program.numRSOC() == 0);
+		assertTrue(program.getNumNNOC() == 13);
+		assertTrue(program.gtNumSOC() == 3);
+		assertTrue(program.getNumRSOC() == 0);
 		
 		program.createNonNegativeOrthantCone();
 		program.createNonNegativeOrthantCone();
@@ -349,11 +349,11 @@ public class ConicProgramTest {
 		program.checkOutMatrices();
 		program.checkInMatrices();
 		
-		assertTrue(program.numNNOC() == 13);
-		assertTrue(program.numSOC() == 3);
-		assertTrue(program.numRSOC() == 0);
+		assertTrue(program.getNumNNOC() == 13);
+		assertTrue(program.gtNumSOC() == 3);
+		assertTrue(program.getNumRSOC() == 0);
 		
-		program.createConstraint().addVariable(x1, 1.0);
+		program.createConstraint().setVariable(x1, 1.0);
 		program.createConstraint();
 		
 		assertTrue(program.getNonNegativeOrthantCones().size() == 13);
@@ -374,8 +374,8 @@ public class ConicProgramTest {
 		program.createNonNegativeOrthantCone();
 		program.createNonNegativeOrthantCone();
 		
-		program.createConstraint().addVariable(x1, 1.0);
-		program.createConstraint().addVariable(x2, 1.0);
+		program.createConstraint().setVariable(x1, 1.0);
+		program.createConstraint().setVariable(x2, 1.0);
 		
 		program.checkOutMatrices();
 		
@@ -396,11 +396,11 @@ public class ConicProgramTest {
 		Variable x = program.createNonNegativeOrthantCone().getVariable();
 		LinearConstraint lc = program.createConstraint();
 		
-		lc.addVariable(x, 1.0);
-		lc.addVariable(x, -1.0);
+		lc.setVariable(x, 1.0);
+		lc.setVariable(x, -1.0);
 		
 		assertTrue(lc.getVariables().size() == 1);
-		assertTrue(lc.getVariables().get(x) == 0.0);
+		assertTrue(lc.getVariables().get(x) == -1.0);
 	}
 }
 

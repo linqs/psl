@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,15 +20,15 @@ import java.util.*;
 
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.Variable;
+import edu.umd.cs.psl.model.formula.Formula;
 
 /**
- * The VariableAssignment is used in the grounding of formulas as it maintains a mapping from encountered
- * variables to ground objects, i.e. it maintains the current substitution.
+ * Maintains a mapping from {@link Variable Variables} to {@link GroundTerm GroundTerms},
+ * i.e. a variable substitution.
  * 
- * Furthermore, the variable assignment stores the current grounding of the formula.
+ * Used to maintain a grounding of a {@link Formula}.
  * 
  * @author Matthias Broecheler
- *
  */
 public class VariableAssignment extends HashMap<Variable, GroundTerm> {
 
@@ -64,8 +64,6 @@ public class VariableAssignment extends HashMap<Variable, GroundTerm> {
 	 * @param arg assigned ground argument
 	 */
 	public void assign(Variable var, GroundTerm arg) {
-//		if (assignment.containsKey(var))
-//			throw new AssertionError("Cannot reassign variable: "+ var);
 		put(var, arg);
 	}
 	
@@ -125,7 +123,7 @@ public class VariableAssignment extends HashMap<Variable, GroundTerm> {
 	
 	/**
 	 * Returns a shallow copy.
-	 * @return A shollow copy of this variable assignment
+	 * @return A shallow copy of this variable assignment
 	 */
 	public VariableAssignment copy() {
 		return new VariableAssignment(this);

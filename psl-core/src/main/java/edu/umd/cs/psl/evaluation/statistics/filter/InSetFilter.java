@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,21 +22,21 @@ import java.util.Set;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
 
-import edu.umd.cs.psl.model.atom.Atom;
+import edu.umd.cs.psl.model.atom.GroundAtom;
 
 public class InSetFilter implements AtomFilter {
 	
-	private final Set<Atom> atoms;
+	private final Set<GroundAtom> atoms;
 	
-	public InSetFilter(Set<Atom> atomSet) {
+	public InSetFilter(Set<GroundAtom> atomSet) {
 		atoms = atomSet;
 	}
 
 	@Override
-	public Iterator<Atom> filter(Iterator<Atom> input) {
-		return Iterators.filter(input, new Predicate<Atom>() {
+	public Iterator<GroundAtom> filter(Iterator<GroundAtom> input) {
+		return Iterators.filter(input, new Predicate<GroundAtom>() {
 			@Override
-			public boolean apply(Atom atom) {
+			public boolean apply(GroundAtom atom) {
 				return atoms.contains(atom);
 			}
 			

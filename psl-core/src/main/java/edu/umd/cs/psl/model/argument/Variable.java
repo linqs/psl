@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,71 +17,57 @@
 package edu.umd.cs.psl.model.argument;
 
 /**
- * This class implements a variable predicate argument which is specified by the variable name.
+ * A variable {@link Term}.
+ * <p>
+ * Variables are wildcards used to match {@link GroundTerm GroundTerms}.
+ * 
  * @author Matthias Broecheler
- *
  */
 public class Variable implements Term {
 
-	private final String identifier;
+	private final String name;
 	
 	/**
-	 * Constructs a variable, given a string ID.
+	 * Constructs a Variable, given a name.
 	 * 
-	 * @param id A string ID
+	 * @param name A string ID
 	 */
-	public Variable(String id) {
-		identifier = id;
+	public Variable(String name) {
+		if (!name.matches("^[a-zA-Z]\\w*"))
+			throw new IllegalArgumentException("Variable name must begin with a-z or A-Z and contain only [a-zA-Z0-9_]. Invalid name: " + name);
+		this.name = name;
 	}
 	
 	/**
-	 * Returns the variable ID.
-	 * 
-	 * @return The variable ID
+	 * @return the Variable's name
 	 */
 	public String getName() {
-		return identifier;
+		return name;
 	}
 
 	/**
-	 * Returns the variable ID
-	 * 
-	 * @return The variable ID
+	 * @return {@link #getName()}
 	 */
 	@Override
 	public String toString() {
-		return identifier;
+		return getName();
 	}
 	
-	/**
-	 * Returns FALSE, as a variable is not ground.
-	 * 
-	 * @return FALSE
-	 */
-	@Override
-	public boolean isGround() {
-		return false;
-	}
-	
-	/**
-	 * Returns the hash code.
-	 * 
-	 * @return The integer hash code
-	 */
 	@Override
 	public int hashCode() {
-		return identifier.hashCode() * 1163;
+		return name.hashCode() * 1163;
 	}
 	
 	/**
-	 * Determines equality with another object.
+	 * Checks equality with another object.
 	 * 
-	 * @return TRUE if equal, FALSE otherwise
+	 * @param oth  Object to check for equality
+	 * @return TRUE if oth is a Variable with the same name
 	 */
 	@Override
 	public boolean equals(Object oth) {
 		if (oth==this) return true;
-		if (oth==null || !(getClass().isInstance(oth)) ) return false;
-		return identifier.equals(((Variable)oth).identifier);  
+		if (oth==null || !(oth instanceof Variable)) return false;
+		return getName().equals(((Variable)oth).getName());  
 	}	
 }

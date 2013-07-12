@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,10 +69,10 @@ public class MaxFunction implements Iterable<FunctionTerm>, FunctionTerm {
 	}
 	
 	@Override
-	public double getValue(Map<? extends FunctionVariable,Double> values, boolean assumeDefaultValue) {
+	public double getValue(Map<? extends FunctionVariable,Double> values, boolean useCurrentValues) {
 		if (terms.isEmpty()) throw new AssertionError("Undefined max value for zero terms!");
 		double val = Double.NEGATIVE_INFINITY;
-		for (FunctionTerm t : terms) val = Math.max(val, t.getValue(values,assumeDefaultValue));
+		for (FunctionTerm t : terms) val = Math.max(val, t.getValue(values,useCurrentValues));
 		return val;
 	}
 
@@ -106,5 +106,20 @@ public class MaxFunction implements Iterable<FunctionTerm>, FunctionTerm {
 		return max;
 	}
 	
+	@Override
+	public String toString() {
+		StringBuilder string = new StringBuilder();
+		string.append("Max{");
+		boolean skip = true;
+		for (FunctionTerm term : terms) {
+			if (skip)
+				skip = false;
+			else
+				string.append(",");
+			string.append(" " + term.toString() + " ");
+		}
+		string.append("}");
+		return string.toString();
+	}
 	
 }

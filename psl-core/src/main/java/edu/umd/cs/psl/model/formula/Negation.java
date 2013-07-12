@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import java.util.*;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
-import edu.umd.cs.psl.model.argument.type.VariableTypeMap;
+import edu.umd.cs.psl.model.argument.VariableTypeMap;
 import edu.umd.cs.psl.model.atom.Atom;
 
 /**
@@ -49,32 +49,32 @@ public class Negation implements Formula {
 	}
 	
 	@Override
-	public Formula dnf() {
+	public Formula getDNF() {
 		if (body instanceof Atom)
 			return this;
 		else if (body instanceof Negation)
-			return ((Negation) body).body.dnf();
+			return ((Negation) body).body.getDNF();
 		else if (body instanceof Conjunction) {
 			Formula[] components = new Formula[((Conjunction) body).getNoFormulas()];
 			for (int i = 0; i < components.length; i++)
 				components[i] = new Negation(((Conjunction) body).get(i));
-			return new Disjunction(components).dnf();
+			return new Disjunction(components).getDNF();
 		}
 		else if (body instanceof Disjunction) {
 			Formula[] components = new Formula[((Disjunction) body).getNoFormulas()];
 			for (int i = 0; i < components.length; i++)
 				components[i] = new Negation(((Disjunction) body).get(i));
-			return new Conjunction(components).dnf();
+			return new Conjunction(components).getDNF();
 		}
 		else if (body instanceof Rule)
-			return new Negation(body.dnf()).dnf();
+			return new Negation(body.getDNF()).getDNF();
 		else
 			throw new IllegalStateException("Body of negation is unrecognized type.");
 	}
 
 	@Override
 	public String toString() {
-		return "!( " + body + " )";
+		return "~( " + body + " )";
 	}
 	
 	@Override
@@ -90,15 +90,15 @@ public class Negation implements Formula {
 	}
 
 	@Override
-	public Collection<Atom> getAtoms(Collection<Atom> list) {
+	public Set<Atom> getAtoms(Set<Atom> list) {
 		body.getAtoms(list);
 		return list;
 	}
 
 
 	@Override
-	public VariableTypeMap getVariables(VariableTypeMap varMap) {
-		body.getVariables(varMap);
+	public VariableTypeMap collectVariables(VariableTypeMap varMap) {
+		body.collectVariables(varMap);
 		return varMap;
 	}
 

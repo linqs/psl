@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,34 +16,31 @@
  */
 package edu.umd.cs.psl.model.argument;
 
+import edu.umd.cs.psl.model.predicate.Predicate;
+
 /**
- * The standard interface for predicate arguments
+ * An argument to a {@link Predicate}.
+ * 
  * @author Matthias Broecheler
- *
  */
 public interface Term {
 	
 	/**
-	 * The standard toString function
-	 * @return A string representing the predicate argument
+	 * @return a human-friendly String identifier
 	 */
 	public String toString();
 	
 	/**
-	 * Whether the predicate argument is ground, i.e not a variable
-	 * @return
-	 */
-	public boolean isGround();
-	
-	/**
-	 * Standard Hashcode
-	 * @return hashcode
+	 * @return hash code
 	 */
 	public int hashCode();
 	
 	/**
-	 * Standard equals
-	 * @param oth Object to compare to
+	 * Checks equality with an Object.
+	 * <p>
+	 * Equality semantics are implementation specific.
+	 * 
+	 * @param oth  Object to compare to
 	 * @return TRUE if equal, FALSE otherwise
 	 */
 	public boolean equals(Object oth);

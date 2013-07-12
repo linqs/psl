@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,20 +18,23 @@ package edu.umd.cs.psl.ui.loading;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import cern.colt.Arrays;
-
 import edu.umd.cs.psl.database.DataStore;
 import edu.umd.cs.psl.database.Partition;
 import edu.umd.cs.psl.database.loading.Inserter;
+import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.PredicateFactory;
-import edu.umd.cs.psl.ui.data.file.util.*;
+import edu.umd.cs.psl.model.predicate.StandardPredicate;
+import edu.umd.cs.psl.ui.data.file.util.DelimitedObjectConstructor;
+import edu.umd.cs.psl.ui.data.file.util.LoadDelimitedData;
 
-
+/**
+ * Utility methods for common data-loading tasks.
+ */
 public class InserterUtils {
 	
 	private static final Logger log = LoggerFactory.getLogger(InserterUtils.class);
@@ -133,28 +136,27 @@ public class InserterUtils {
 	 * Calls {{@link #loadFactTable(PredicateFactory, DataStore, String, Partition, String)} with
 	 * default delimiter.
 	 * 
-	 * @param pf        predicate factory to create/access predicates
-	 * @param data      data store from which to create inserters
+	 * @param data      DataStore from which to create inserters
 	 * @param file	    path to table file
 	 * @param partition partition into which data will be inserted
 	 */
-	public static void loadFactTable(final PredicateFactory pf, final DataStore data, String file,
-			Partition partition) {
-		loadFactTable(pf, data, file, partition, LoadDelimitedData.defaultDelimiter);
+	public static void loadFactTable(final DataStore data, String file, Partition partition) {
+		loadFactTable(data, file, partition, LoadDelimitedData.defaultDelimiter);
 	}
 	
 	/**
 	 * Loads a table of facts. Each column in the table should be a column of entities.
-	 * The first row should should be predicate names. Cell (1,1) should be empty.
+	 * The first row should be predicate names. Cell (1,1) should be empty.
 	 * 
-	 * @param pf        predicate factory to create/access predicates
-	 * @param data      data store from which to create inserters
+	 * @param data      DataStore from which to create inserters
 	 * @param file	    path to table file
 	 * @param partition partition into which data will be inserted
 	 * @param delimiter delimiter between columns in a row
 	 */
-	public static void loadFactTable(final PredicateFactory pf, final DataStore data, String file,
-			Partition partition, String delimiter) {
+	public static void loadFactTable(final DataStore data, String file, Partition partition,
+			String delimiter) {
+		Predicate p;
+		PredicateFactory pf = PredicateFactory.getFactory();
 		List<String[]> table = LoadDelimitedData.loadTabData(file, new DelimitedObjectConstructor<String[]>(){
 			
 			@Override
@@ -172,7 +174,16 @@ public class InserterUtils {
 		String[] row = table.get(0);
 		Inserter[] inserters = new Inserter[row.length-1];
 		for (int i = 1; i < row.length; i++) {
-			inserters[i-1] = data.getInserter(pf.getPredicate(row[i]), partition);
+			p = pf.getPredicate(row[i]);
+			if (p != null) {
+				if (p instanceof StandardPredicate) {
+					inserters[i-1] = data.getInserter((StandardPredicate) p, partition);
+				}
+				else
+					throw new IllegalStateException("Predicate '" + row[i] + "' is not a StandardPredicate.");
+			}
+			else
+				throw new IllegalStateException("No predicate with name '" + row[i] + "' has been created.");
 		}
 		
 		Iterator<String[]> itr = table.iterator();

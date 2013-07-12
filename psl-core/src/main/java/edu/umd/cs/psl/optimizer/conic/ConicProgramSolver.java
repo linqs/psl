@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,9 @@ import edu.umd.cs.psl.optimizer.conic.program.ConeType;
 import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
 
 public interface ConicProgramSolver {
-	public Double solve(ConicProgram program);
+	public void setConicProgram(ConicProgram p);
+	
+	public void solve();
 	
 	public boolean supportsConeTypes(Collection<ConeType> types);
 }

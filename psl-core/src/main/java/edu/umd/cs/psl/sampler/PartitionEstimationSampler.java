@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
  */
 package edu.umd.cs.psl.sampler;
 
-import edu.umd.cs.psl.evaluation.process.RunningProcess;
+import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
 
@@ -24,16 +24,16 @@ public class PartitionEstimationSampler extends UniformSampler {
 
 	private double total;
 	
-	public PartitionEstimationSampler(RunningProcess p) {
-		this(p, defaultMaxNoSteps, defaultSignificantDigits);
+	public PartitionEstimationSampler() {
+		this(defaultMaxNoSteps, defaultSignificantDigits);
 	}
 	
-	public PartitionEstimationSampler(RunningProcess p,int maxNoSteps) {
-		this(p,maxNoSteps, defaultSignificantDigits);
+	public PartitionEstimationSampler(int maxNoSteps) {
+		this(maxNoSteps, defaultSignificantDigits);
 	}
  	
-	public PartitionEstimationSampler(RunningProcess p, int maxNoSteps, int significantDigits) {
-		super(p, maxNoSteps, significantDigits);
+	public PartitionEstimationSampler(int maxNoSteps, int significantDigits) {
+		super(maxNoSteps, significantDigits);
 		total = 0.0;
 	}
 	
@@ -50,7 +50,9 @@ public class PartitionEstimationSampler extends UniformSampler {
 	protected void processSampledPoint(Iterable<GroundKernel> groundKernels) {
 		double incompatibility = 0.0;
     	for (GroundKernel gk : groundKernels) {
-    		incompatibility += gk.getIncompatibility();
+    		if (gk instanceof GroundCompatibilityKernel) {
+    			incompatibility += ((GroundCompatibilityKernel) gk).getIncompatibility();
+    		}
     	}
     	total += Math.exp(-1 * incompatibility);
 	}

@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,46 @@
  */
 package edu.umd.cs.psl.database;
 
-public interface Partition {
+import com.google.common.base.Preconditions;
 
-	public int getID();
+import edu.umd.cs.psl.model.atom.GroundAtom;
+
+/**
+ * Identifier for a subset of {@link GroundAtom GroundAtoms} in a {@link DataStore}.
+ */
+public class Partition {
+
+	private final int id;
 	
-	public String getName();
+	/**
+	 * Sole constructor.
+	 * 
+	 * @param id  non-negative identifier
+	 */
+	public Partition(int id) {
+		Preconditions.checkArgument(id>=0);
+		this.id=id;
+	}
+
+	public int getID() {
+		return id;
+	}
+	
+	@Override
+	public String toString() {
+		return "Partition["+id+"]";
+	}
+	
+	@Override
+	public int hashCode() {
+		return id+211;
+	}
+	
+	@Override
+	public boolean equals(Object oth) {
+		if (oth==this) return true;
+		if (oth==null || !(oth instanceof Partition)) return false;
+		return id == ((Partition)oth).id;  
+	}
 	
 }

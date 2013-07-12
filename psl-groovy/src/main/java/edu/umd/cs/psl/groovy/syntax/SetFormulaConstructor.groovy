@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,6 @@ import edu.umd.cs.psl.model.set.term.FormulaSetTerm;
 import edu.umd.cs.psl.model.set.term.SetTerm;
 
 import java.util.Set;
-
-import com.google.common.collect.ImmutableSet;
 
 import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.formula.*;
@@ -64,8 +62,8 @@ class SetFormulaConstructor extends SetTermConstructor {
 			terms[0] = auxVar;
 			terms[1] = leafVar;
 		}
-		if (formula==null) formula = new TemplateAtom(pred,terms);			
-		else formula = new Conjunction(formula, new TemplateAtom(pred,terms));
+		if (formula==null) formula = new QueryAtom(pred,terms);			
+		else formula = new Conjunction(formula, new QueryAtom(pred,terms));
 		leafVar = auxVar;
 	}
 	

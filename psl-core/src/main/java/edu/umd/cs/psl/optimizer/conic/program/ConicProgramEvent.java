@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ public enum ConicProgramEvent {
 	MatricesCheckedIn, MatricesCheckedOut,
 	NNOCCreated, NNOCDeleted,
 	SOCCreated, SOCDeleted,
+	RSOCCreated, RSOCDeleted,
 	ObjCoeffChanged,
-	ConCreated, VarAddedToCon, VarRemovedFromCon, ConValueChanged, ConDeleted 
+	ConCreated, VarAddedToCon, ConCoeffChanged, VarRemovedFromCon, ConValueChanged, ConDeleted
 }

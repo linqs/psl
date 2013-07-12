@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ import java.util.HashMap;
 import edu.umd.cs.psl.database.loading.Inserter;
 
 public class InserterLookupMap extends HashMap<String,Inserter> implements InserterLookup {
+
+	private static final long serialVersionUID = 8610693255851713724L;
 
 	@Override
 	public Inserter get(String predicateName) {

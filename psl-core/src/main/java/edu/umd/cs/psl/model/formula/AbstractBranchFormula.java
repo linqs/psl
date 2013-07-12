@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,15 +17,15 @@
 package edu.umd.cs.psl.model.formula;
 
 import java.util.Arrays;
-import java.util.Collection;
+import java.util.Set;
 
-import edu.umd.cs.psl.model.argument.type.VariableTypeMap;
+import edu.umd.cs.psl.model.argument.VariableTypeMap;
 import edu.umd.cs.psl.model.atom.Atom;
 
 /**
- * This class represent an abstract branching formula.
+ * An abstract branching formula.
+ * <p>
  * Note, the order in which formulas appear in an AbstractBranchFormula is important!
- *
  */
 abstract class AbstractBranchFormula implements Formula {
 
@@ -49,15 +49,15 @@ abstract class AbstractBranchFormula implements Formula {
 	}
 	
 	@Override
-	public VariableTypeMap getVariables(VariableTypeMap varMap) {
+	public VariableTypeMap collectVariables(VariableTypeMap varMap) {
 		for (int i=0;i<formulas.length;i++) {
-			formulas[i].getVariables(varMap);
+			formulas[i].collectVariables(varMap);
 		}
 		return varMap;
 	}
 	
 	@Override
-	public Collection<Atom> getAtoms(Collection<Atom> atoms) {
+	public Set<Atom> getAtoms(Set<Atom> atoms) {
 		for (int i=0;i<formulas.length;i++) {
 			formulas[i].getAtoms(atoms);
 		}

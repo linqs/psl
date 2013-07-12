@@ -1,6 +1,6 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011 University of Maryland
+ * Copyright 2011-2013 University of Maryland
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,10 +22,10 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import com.google.common.collect.ImmutableSet;
 
+import edu.umd.cs.psl.model.argument.ArgumentType;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.Term;
-import edu.umd.cs.psl.model.argument.type.ArgumentType;
-import edu.umd.cs.psl.model.argument.type.VariableTypeMap;
+import edu.umd.cs.psl.model.argument.VariableTypeMap;
 import edu.umd.cs.psl.model.formula.Formula;
 
 public class ConstantSetTerm implements BasicSetTerm {
@@ -78,7 +78,7 @@ public class ConstantSetTerm implements BasicSetTerm {
 
 	@Override
 	public ArgumentType getLeafType() {
-		return element.getType();
+		return ArgumentType.getType(element);
 	}
 
 	@Override
