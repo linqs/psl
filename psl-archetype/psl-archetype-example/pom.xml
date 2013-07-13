@@ -19,13 +19,13 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>edu.umd.cs</groupId>
 	<artifactId>psl-archetype-example</artifactId>
-	<version>1.1</version>
+	<version>1.2-SNAPSHOT</version>
 	<name>psl-archetype-example</name>
 	<packaging>maven-archetype</packaging>
 	<description>Examples of using the PSL software from the University of Maryland.</description>
 	<parent>
 		<artifactId>psl-archetype</artifactId>
 		<groupId>edu.umd.cs</groupId>
-		<version>1.1</version>
+		<version>1.2-SNAPSHOT</version>
 	</parent>
 </project>
