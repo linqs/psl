@@ -79,7 +79,7 @@ public class DatabasePopulatorTest {
 	
 	@Test
 	public void testSimplePopulateDatabase() {
-		Database db = datastore.getDatabase(new Partition(0));
+		Database db = datastore.getDatabase(datastore.getPartition("0"));
 		DatabasePopulator populator = new DatabasePopulator(db);
 		
 		// Generate the population
@@ -126,7 +126,7 @@ public class DatabasePopulatorTest {
 	
 	@Test
 	public void testComplexPopulateDatabase() {
-		Database db = datastore.getDatabase(new Partition(0));
+		Database db = datastore.getDatabase(datastore.getPartition("0"));
 		DatabasePopulator populator = new DatabasePopulator(db);
 		
 		// Generate the population for p1

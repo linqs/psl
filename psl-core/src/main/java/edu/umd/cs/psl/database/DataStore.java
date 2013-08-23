@@ -46,6 +46,14 @@ public interface DataStore {
 	public void registerPredicate(StandardPredicate predicate);
 	
 	/**
+	 * Gets a new {@link Partition} of the DataStore with the given name.
+	 * If the partition doesn't exist, a new one will be created and added to the DataStore
+	 * metadata.
+	 * @param partitionName a human-readable name for the partition
+	 */
+	public Partition getPartition(String partitionName);
+	
+	/**
 	 * Creates a Database that can read from and write to a {@link Partition} and
 	 * optionally read from additional Partitions.
 	 * 
@@ -117,6 +125,11 @@ public interface DataStore {
 	public Set<StandardPredicate> getRegisteredPredicates();
 	
 	/**
+	 * @return a set containing all {@link Partition Partitions} of this DataStore 
+	 */
+	public Set<Partition> getPartitions();
+	
+	/**
 	 * Deletes all {@link GroundAtom GroundAtoms} persisted in a Partition.
 	 *  
 	 * @param partition  the partition to delete
@@ -132,11 +145,4 @@ public interface DataStore {
 	 */
 	public void close();
 
-	/**
-	 * Get the next available partition 
-	 * 
-	 * @return the next available partition 
-	 */
-	Partition getNextPartition();
-	
 }

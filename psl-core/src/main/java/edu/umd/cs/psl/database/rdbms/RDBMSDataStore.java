@@ -83,6 +83,9 @@ public class RDBMSDataStore implements DataStore {
 	 */
 	public static final String CONFIG_PREFIX = "rdbmsdatastore";
 	
+	/** Name of metadata table **/
+	public static final String METADATA_TABLENAME = CONFIG_PREFIX + "_metadata";
+	
 	/** Key for String property for the name of the value column in the database. */
 	public static final String VALUE_COLUMN_KEY = CONFIG_PREFIX + ".valuecolumn";
 	
@@ -120,6 +123,11 @@ public class RDBMSDataStore implements DataStore {
 	 */
 	private final Connection connection;
 	private final RDBMSDataLoader dataloader;
+	
+	/*
+	 * Metadata
+	 */
+	private final RDBMSDataStoreMetadata metadata;
 	
 	/*
 	 * TODO DataStore's should have a static collection of all the RDBMSs they are connected to, in order to prevent multiple connections to the same RDBMS.
@@ -161,14 +169,26 @@ public class RDBMSDataStore implements DataStore {
 		// Set up the data loader
 		this.dataloader = new RDBMSDataLoader(connection);
 		
+		//Initialize metadata
+		this.metadata = new RDBMSDataStoreMetadata(connection, METADATA_TABLENAME);
+		initializeMetadata(metadata);
+		
 		// Store the type of unique ID this RDBMS will use
 		this.stringUniqueIDs = config.getBoolean(USE_STRING_ID_KEY, USE_STRING_ID_DEFAULT);
+		
 		
 		// Read in any predicates that exist in the database
 		deserializePredicates();
 		
 		// Register the DataStore class for external functions
 		registerFunctionAlias();
+	}
+	
+	/**
+	 * Helper method to read from metadata table and store results into metadata object
+	 */
+	private void initializeMetadata(RDBMSDataStoreMetadata metadata){
+		
 	}
 	
 	/**
@@ -445,25 +465,6 @@ public class RDBMSDataStore implements DataStore {
 		}
 		return deletedEntries;
 	}
-	
-	@Override
-	public Partition getNextPartition() {
-		int maxPartition = 0;
-		try {
-			Statement stmt = connection.createStatement();
-			for (RDBMSPredicateInfo pred : predicates.values()) {
-				String sql = "SELECT MAX(" + pred.partitionCol + ") FROM " + pred.tableName;
-				ResultSet result = stmt.executeQuery(sql);
-				while(result.next()) {
-					maxPartition = Math.max(maxPartition, result.getInt(1));
-				}
-			}
-			stmt.close();
-		} catch(SQLException e) {
-			throw new RuntimeException(e);
-		}
-		return new Partition(maxPartition + 1);
-	}
 
 
 	@Override
@@ -597,5 +598,41 @@ public class RDBMSDataStore implements DataStore {
 		}
 		
 		return extFun.getValue(db, arguments);
+	}
+
+	
+	private int getNextPartition() {
+		int maxPartition = 0;
+		maxPartition = metadata.getMaxPartition();
+		return maxPartition+1;
+		/*try {
+			Statement stmt = connection.createStatement();
+			for (RDBMSPredicateInfo pred : predicates.values()) {
+				String sql = "SELECT MAX(" + pred.partitionCol + ") FROM " + pred.tableName;
+				ResultSet result = stmt.executeQuery(sql);
+				while(result.next()) {
+					maxPartition = Math.max(maxPartition, result.getInt(1));
+				}
+			}
+			stmt.close();
+		} catch(SQLException e) {
+			throw new RuntimeException(e);
+		}
+		return maxPartition + 1; */
+	}
+	
+	@Override
+	public Partition getPartition(String partitionName) {
+		Partition p = metadata.getPartitionByName(partitionName);
+		if(p == null){
+			p = new Partition(getNextPartition(), partitionName);
+			metadata.addPartition(p);
+		}		
+		return p;
+	}
+
+	@Override
+	public Set<Partition> getPartitions() {
+		return metadata.getAllPartitions();		
 	}
 }

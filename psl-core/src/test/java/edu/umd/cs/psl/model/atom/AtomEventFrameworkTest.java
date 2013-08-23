@@ -55,7 +55,7 @@ public class AtomEventFrameworkTest {
 		a = dataStore.getUniqueID(0);
 		b = dataStore.getUniqueID(1);
 		
-		framework = new AtomEventFramework(dataStore.getDatabase(new Partition(0)), new EmptyBundle());
+		framework = new AtomEventFramework(dataStore.getDatabase(dataStore.getPartition("0")), new EmptyBundle());
 	}
 	
 	@Test

@@ -54,8 +54,8 @@ public class DiscretePredictionComparatorTest {
 		// Instantiate an in-memory database
 		DataStore ds = new RDBMSDataStore(new H2DatabaseDriver(H2DatabaseDriver.Type.Memory, "./comparator", false), new EmptyBundle());
 		ds.registerPredicate(predicate);
-		Database results = ds.getDatabase(new Partition(1), new Partition(1));
-		Database baseline = ds.getDatabase(new Partition(2), new Partition(2));
+		Database results = ds.getDatabase(ds.getPartition("1"), ds.getPartition("1"));
+		Database baseline = ds.getDatabase(ds.getPartition("2"), ds.getPartition("2"));
 		
 		// create some canned ground inference atoms
 		GroundTerm[][] cannedTerms = new GroundTerm[5][];
@@ -88,7 +88,7 @@ public class DiscretePredictionComparatorTest {
 		baseline.close();
 		Set<StandardPredicate> closed = new HashSet<StandardPredicate>();
 		closed.add(predicate);
-		baseline = ds.getDatabase(new Partition(0), closed, new Partition(2));
+		baseline = ds.getDatabase(ds.getPartition("0"), closed, ds.getPartition("2"));
 		
 		comparator = new DiscretePredictionComparator(results);
 		comparator.setBaseline(baseline);

@@ -26,24 +26,30 @@ import edu.umd.cs.psl.model.atom.GroundAtom;
 public class Partition {
 
 	private final int id;
+	private final String name;
 	
 	/**
 	 * Sole constructor.
 	 * 
 	 * @param id  non-negative identifier
 	 */
-	public Partition(int id) {
+	public Partition(int id, String name) {
 		Preconditions.checkArgument(id>=0);
 		this.id=id;
+		this.name = name;
 	}
-
+	
 	public int getID() {
 		return id;
 	}
 	
+	public String getName(){
+		return name;
+	}
+	
 	@Override
 	public String toString() {
-		return "Partition["+id+"]";
+		return "Partition["+name+"]";
 	}
 	
 	@Override
