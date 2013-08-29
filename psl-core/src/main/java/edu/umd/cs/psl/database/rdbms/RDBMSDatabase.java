@@ -133,11 +133,11 @@ public class RDBMSDatabase implements Database {
 	 * @param parent
 	 * @param con
 	 * @param write
-	 * @param reads
+	 * @param read
 	 * @param closed
 	 */
 	public RDBMSDatabase(RDBMSDataStore parent, Connection con,
-			Partition write, Partition[] reads, Set<StandardPredicate> closed) {
+			Partition write, Partition[] read, Set<StandardPredicate> closed) {
 		// Store the connection / DataStore information
 		this.parentDataStore = parent;
 		this.dbConnection = con;
@@ -147,10 +147,10 @@ public class RDBMSDatabase implements Database {
 		this.writeID = write.getID();
 		
 		// Store the partitions this class has read access to
-		this.readPartitions = reads;
-		this.readIDs = new ArrayList<Integer>(reads.length);
-		for (int i = 0; i < reads.length; i ++)
-			this.readIDs.add(reads[i].getID());
+		this.readPartitions = read;
+		this.readIDs = new ArrayList<Integer>(read.length);
+		for (int i = 0; i < read.length; i ++)
+			this.readIDs.add(read[i].getID());
 		if (!this.readIDs.contains(writeID))
 			this.readIDs.add(writeID);
 		

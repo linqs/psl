@@ -58,7 +58,7 @@ public class LinkClosure implements ClosureStep {
 		for (Collection<Partition> partSet : partitionList) {
 			/* Create a new DB for the given partition. */
 			DataStore data = inputDB.getDataStore();
-			Partition writePart = data.getNextPartition();
+			Partition writePart = data.getNewPartition();
 			Partition[] readParts = (Partition[]) partSet.toArray();
 			Database writeDB = data.getDatabase(writePart, readParts); 
 			for (Partition part : partSet) {

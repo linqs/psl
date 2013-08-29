@@ -115,8 +115,8 @@ public class QueryAtomsBuildDBStep implements BuildDBStep {
 			List<Partition> inversePartitions = PartitionSetUtils.invertPartitions(pL, allPartitions);
 
 			//prepare databases for the truth data and the task data 
-			Partition truthWrPartition = dStore.getNextPartition();
-			Partition taskWrPartition = dStore.getNextPartition();
+			Partition truthWrPartition = dStore.getNewPartition();
+			Partition taskWrPartition = dStore.getNewPartition();
 			Database truthDB = dStore.getDatabase(truthWrPartition,
 					(Partition[]) inversePartitions.toArray());
 			Database taskDB = dStore.getDatabase(taskWrPartition, toClose,

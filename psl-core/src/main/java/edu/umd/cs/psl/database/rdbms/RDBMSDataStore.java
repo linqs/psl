@@ -113,9 +113,11 @@ public class RDBMSDataStore implements DataStore {
 	/*
 	 * The values for the PSL columns.
 	 */
-	private final String valueColumn;
-	private final String confidenceColumn;
-	private final String partitionColumn;
+	protected final String valueColumn;
+	protected final String confidenceColumn;
+	protected final String partitionColumn;
+	
+	protected Pattern predicatePattern; 
 	
 	/*
 	 * This DataStore's connection to the RDBMS + the data loader associated
@@ -127,7 +129,7 @@ public class RDBMSDataStore implements DataStore {
 	/*
 	 * Metadata
 	 */
-	private final RDBMSDataStoreMetadata metadata;
+	protected final RDBMSDataStoreMetadata metadata;
 	
 	/*
 	 * TODO DataStore's should have a static collection of all the RDBMSs they are connected to, in order to prevent multiple connections to the same RDBMS.
@@ -157,6 +159,7 @@ public class RDBMSDataStore implements DataStore {
 		this.valueColumn = config.getString(VALUE_COLUMN_KEY, VALUE_COLUMN_DEFAULT);
 		this.confidenceColumn = config.getString(CONFIDENCE_COLUMN_KEY, CONFIDENCE_COLUMN_DEFAULT);
 		this.partitionColumn = config.getString(PARTITION_COLUMN_KEY, PARTITION_COLUMN_DEFAULT);
+		this.predicatePattern = getPredicateTablePattern();
 		
 		// Initialize all private variables
 		this.openDatabases = HashMultimap.create();
@@ -188,15 +191,17 @@ public class RDBMSDataStore implements DataStore {
 	 * Helper method to read from metadata table and store results into metadata object
 	 */
 	private void initializeMetadata(RDBMSDataStoreMetadata metadata){
-		
+		metadata.createMetadataTable();
 	}
+	
+	protected Pattern getPredicateTablePattern() {return Pattern.compile("(\\w+)_PREDICATE"); }
 	
 	/**
 	 * Helper method to register all existing predicates from the RDBMS.
 	 */
 	private void deserializePredicates() {
 		int numPredicates = 0;
-		Pattern predicatePattern = Pattern.compile("(\\w+)_PREDICATE");
+		
 		try {
 			DatabaseMetaData dbMetaData = connection.getMetaData();
 			ResultSet rs = dbMetaData.getTables(null, null, null, null);
@@ -229,7 +234,7 @@ public class RDBMSDataStore implements DataStore {
 	 * @param name			the name of the predicate in this table
 	 * @return				a boolean indicating the success of deserializing the predicate
 	 */
-	private boolean createPredicateFromTable(String tableName, String name) {
+	protected boolean createPredicateFromTable(String tableName, String name) {
 		PredicateFactory factory = PredicateFactory.getFactory();
 		Pattern argumentPattern = Pattern.compile("(\\w+)_(\\d)");
 		try {
@@ -289,7 +294,7 @@ public class RDBMSDataStore implements DataStore {
 		}
 	}
 
-	private RDBMSPredicateInfo getDefaultPredicateDBInfo(Predicate predicate) {
+	protected RDBMSPredicateInfo getDefaultPredicateDBInfo(Predicate predicate) {
 		// Construct argnames from Predicate argument types
 		String[] argNames = new String[predicate.getArity()];
 		for (int i = 0; i < argNames.length; i ++)
@@ -600,6 +605,9 @@ public class RDBMSDataStore implements DataStore {
 		return extFun.getValue(db, arguments);
 	}
 
+	public Partition getNewPartition(){
+		return new RDBMSPartition(getNextPartition(),"test");
+	}
 	
 	private int getNextPartition() {
 		int maxPartition = 0;
@@ -625,7 +633,7 @@ public class RDBMSDataStore implements DataStore {
 	public Partition getPartition(String partitionName) {
 		Partition p = metadata.getPartitionByName(partitionName);
 		if(p == null){
-			p = new Partition(getNextPartition(), partitionName);
+			p = new RDBMSPartition(getNextPartition(), partitionName);
 			metadata.addPartition(p);
 		}		
 		return p;

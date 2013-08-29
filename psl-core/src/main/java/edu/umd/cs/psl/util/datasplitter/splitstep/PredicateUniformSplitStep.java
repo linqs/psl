@@ -12,8 +12,8 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import edu.umd.cs.psl.database.Database;
-import edu.umd.cs.psl.database.Partition;
 import edu.umd.cs.psl.database.loading.Inserter;
+import edu.umd.cs.psl.database.Partition;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
@@ -78,7 +78,7 @@ public class PredicateUniformSplitStep implements SplitStep {
 		List<Partition> allPartitions = new ArrayList<Partition>();
 		List<Inserter> inserters = new ArrayList<Inserter>();
 		for (int i = 0; i < numFolds; i++) {
-			Partition nextPartition = inputDB.getDataStore().getNextPartition(); 
+			Partition nextPartition = inputDB.getDataStore().getNewPartition(); 
 			allPartitions.add(nextPartition);
 			inserters.add(inputDB.getDataStore().getInserter(target, nextPartition));
 		}

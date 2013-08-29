@@ -27,7 +27,7 @@ import org.junit.Test;
 import edu.umd.cs.psl.config.EmptyBundle;
 import edu.umd.cs.psl.database.DataStore;
 import edu.umd.cs.psl.database.Database;
-import edu.umd.cs.psl.database.Partition;
+import edu.umd.cs.psl.database.rdbms.RDBMSPartition;
 import edu.umd.cs.psl.database.rdbms.RDBMSDataStore;
 import edu.umd.cs.psl.database.rdbms.driver.H2DatabaseDriver;
 import edu.umd.cs.psl.evaluation.statistics.DiscretePredictionStatistics.BinaryClass;

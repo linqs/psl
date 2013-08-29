@@ -24,8 +24,8 @@ import org.slf4j.LoggerFactory;
 
 import cern.colt.Arrays;
 import edu.umd.cs.psl.database.DataStore;
-import edu.umd.cs.psl.database.Partition;
 import edu.umd.cs.psl.database.loading.Inserter;
+import edu.umd.cs.psl.database.Partition;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.PredicateFactory;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;

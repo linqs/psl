@@ -49,7 +49,7 @@ public class SimpleBuildDBStep implements BuildDBStep {
 			List<Collection<Partition>> partitionList) {
 		List<DBDefinition> dbDefs = new ArrayList<DBDefinition>();
 		for(Collection<Partition> pL : partitionList){
-			Partition wrPartition = inputDB.getDataStore().getNextPartition();
+			Partition wrPartition = inputDB.getDataStore().getNewPartition();
 			dbDefs.add(new DBDefinition(wrPartition, toClose, (Partition[]) pL.toArray()));
 		}
 		return dbDefs;

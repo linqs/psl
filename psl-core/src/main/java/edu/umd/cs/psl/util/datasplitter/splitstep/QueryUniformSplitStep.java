@@ -12,9 +12,9 @@ import java.util.TreeSet;
 
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.database.DatabaseQuery;
-import edu.umd.cs.psl.database.Partition;
 import edu.umd.cs.psl.database.ResultList;
 import edu.umd.cs.psl.database.loading.Inserter;
+import edu.umd.cs.psl.database.Partition;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.atom.GroundAtom;
@@ -68,7 +68,7 @@ public class QueryUniformSplitStep implements SplitStep {
 
 		List<Partition> allPartitions = new ArrayList<Partition>();
 		for (int i = 0; i < numFolds; i++) {
-			Partition nextPartition = inputDB.getDataStore().getNextPartition(); 
+			Partition nextPartition = inputDB.getDataStore().getNewPartition(); 
 			allPartitions.add(nextPartition);
 		}
 

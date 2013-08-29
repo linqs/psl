@@ -16,6 +16,7 @@
  */
 package edu.umd.cs.psl.database;
 
+import edu.umd.cs.psl.database.Partition;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.UniqueID;
 import edu.umd.cs.psl.model.argument.Variable;

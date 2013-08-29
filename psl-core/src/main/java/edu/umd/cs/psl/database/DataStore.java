@@ -20,6 +20,7 @@ import java.util.Set;
 
 import edu.umd.cs.psl.database.loading.Inserter;
 import edu.umd.cs.psl.database.loading.Updater;
+import edu.umd.cs.psl.database.Partition;
 import edu.umd.cs.psl.model.argument.UniqueID;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
@@ -137,6 +138,8 @@ public interface DataStore {
 	 * @throws IllegalArgumentException  if partition is in use
 	 */
 	public int deletePartition(Partition partition);
+	
+	public Partition getNewPartition();
 	
 	/**
 	 * Releases all resources and locks obtained by this DataStore.
