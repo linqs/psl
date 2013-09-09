@@ -42,9 +42,9 @@ public class RDBMSDataStoreTest extends DataStoreContractTest {
 	public void cleanUp() {
 		File file;
 		file = new File(dbPath + dbName + ".h2.db");
-		file.delete();
+		//file.delete();
 		file = new File(dbPath + dbName + ".trace.db");
-		file.delete();
+		//file.delete();
 	}
 
 }
