@@ -67,8 +67,7 @@ public class RDBMSDataStoreMetadata implements DataStoreMetdata {
 		if(checkIfMetadataTableExists())
 			return;
 		try {
-			PreparedStatement stmt = conn.prepareStatement("CREATE TABLE ? (namespace VARCHAR(20), keytype VARCHAR(20), key VARCHAR(255), value VARCHAR(255), PRIMARY KEY(namespace,keytype,key)");
-			stmt.setString(1, mdTableName);
+			PreparedStatement stmt = conn.prepareStatement("CREATE TABLE "+mdTableName+" (namespace VARCHAR(20), keytype VARCHAR(20), key VARCHAR(255), value VARCHAR(255), PRIMARY KEY(namespace,keytype,key))");
 			stmt.execute();
 		} catch (Exception e) { 
 			log.error(e.getMessage());
@@ -80,12 +79,11 @@ public class RDBMSDataStoreMetadata implements DataStoreMetdata {
 	/**** Database Helper functions ****/
 	private boolean addRow(String space, String type, String key, String val){
 		try{
-			PreparedStatement stmt = conn.prepareStatement("INSERT INTO ? VALUES(?, ?, ?, ?)");
-			stmt.setString(1, mdTableName);
-			stmt.setString(2, space);
-			stmt.setString(3, type);
-			stmt.setString(4, key);
-			stmt.setString(5, val);
+			PreparedStatement stmt = conn.prepareStatement("INSERT INTO "+mdTableName+" VALUES(?, ?, ?, ?)");
+			stmt.setString(1, space);
+			stmt.setString(2, type);
+			stmt.setString(3, key);
+			stmt.setString(4, val);
 			stmt.execute();						
 		} catch (Exception e) {
 			log.error(e.getMessage());
@@ -96,11 +94,10 @@ public class RDBMSDataStoreMetadata implements DataStoreMetdata {
 
 	public String getValue(String space, String type, String key){
 		try{
-			PreparedStatement stmt = conn.prepareStatement("SELECT value from ? WHERE namespace = ? AND keytype = ? AND key = ?");
-			stmt.setString(1, mdTableName);
-			stmt.setString(2, space);
-			stmt.setString(3, type);
-			stmt.setString(4, key);
+			PreparedStatement stmt = conn.prepareStatement("SELECT value from "+mdTableName+" WHERE namespace = ? AND keytype = ? AND key = ?");
+			stmt.setString(1, space);
+			stmt.setString(2, type);
+			stmt.setString(3, key);
 			stmt.execute();
 			ResultSet rs = stmt.getResultSet();
 			if(rs.next()){
@@ -116,11 +113,10 @@ public class RDBMSDataStoreMetadata implements DataStoreMetdata {
 	
 	public boolean removeRow(String space, String type, String key) {
 		try{
-			PreparedStatement stmt = conn.prepareStatement("DELETE FROM ? WHERE namespace = ? AND keytype = ? AND key = ?");
-			stmt.setString(1, mdTableName);
-			stmt.setString(2, space);
-			stmt.setString(3, type);
-			stmt.setString(4, key);
+			PreparedStatement stmt = conn.prepareStatement("DELETE FROM "+mdTableName+" WHERE namespace = ? AND keytype = ? AND key = ?");
+			stmt.setString(1, space);
+			stmt.setString(2, type);
+			stmt.setString(3, key);
 			stmt.execute();						
 		} catch (Exception e) {
 			log.error(e.getMessage());
@@ -132,10 +128,9 @@ public class RDBMSDataStoreMetadata implements DataStoreMetdata {
 	public Map<String,String> getAllValuesByType(String space, String type){
 		Map<String, String> vals = null;
 		try{
-			PreparedStatement stmt = conn.prepareStatement("SELECT (key,value) from ? WHERE namespace = ? AND keytype = ?");
-			stmt.setString(1, mdTableName);
-			stmt.setString(2, space);
-			stmt.setString(3, type);
+			PreparedStatement stmt = conn.prepareStatement("SELECT (key,value) from "+mdTableName+" WHERE namespace = ? AND keytype = ?");
+			stmt.setString(1, space);
+			stmt.setString(2, type);
 			stmt.execute();
 			ResultSet rs = stmt.getResultSet();
 			vals = new HashMap<String,String>();
@@ -241,8 +236,7 @@ public class RDBMSDataStoreMetadata implements DataStoreMetdata {
 	public int getMaxPartition(){
 		int max = 0;
 		try{
-			PreparedStatement stmt = conn.prepareStatement("SELECT MAX((CAST value AS UNSIGNED) from ? WHERE namespace = 'Partition' AND keytype = 'name'");
-			stmt.setString(1, mdTableName);
+			PreparedStatement stmt = conn.prepareStatement("SELECT CAST (MAX(value) as INT) from "+mdTableName+" WHERE namespace = 'Partition' AND keytype = 'name'");
 			stmt.execute();
 			ResultSet rs = stmt.getResultSet();
 			if(rs.next()){

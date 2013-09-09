@@ -34,6 +34,7 @@ public class RDBMSDataStoreTest extends DataStoreContractTest {
 		dbPath = System.getProperty("java.io.tmpdir") + "/";
 		dbName = "rdbmsDataStoreTest";
 		DatabaseDriver driver = new H2DatabaseDriver(H2DatabaseDriver.Type.Disk, dbPath + dbName, false);
+		//System.err.println("New database at "+dbPath+dbName);
 		RDBMSDataStore dataStore = new RDBMSDataStore(driver, new EmptyBundle());
 		return dataStore;
 	}
@@ -42,9 +43,9 @@ public class RDBMSDataStoreTest extends DataStoreContractTest {
 	public void cleanUp() {
 		File file;
 		file = new File(dbPath + dbName + ".h2.db");
-		//file.delete();
+		file.delete();
 		file = new File(dbPath + dbName + ".trace.db");
-		//file.delete();
+		file.delete();
 	}
 
 }
