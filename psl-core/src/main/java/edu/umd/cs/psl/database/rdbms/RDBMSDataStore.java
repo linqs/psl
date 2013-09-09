@@ -606,7 +606,8 @@ public class RDBMSDataStore implements DataStore {
 	}
 
 	public Partition getNewPartition(){
-		return new RDBMSPartition(getNextPartition(),"test");
+		int partnum = getNextPartition();
+		return new RDBMSPartition(partnum,"AnonymousPartition_"+Integer.toString(partnum));
 	}
 	
 	private int getNextPartition() {
