@@ -40,7 +40,7 @@ import edu.umd.cs.psl.reasoner.admm.ADMMReasonerFactory;
 /**
  * Abstract class for learning the weights of
  * {@link CompatibilityKernel CompatibilityKernels} in a {@link Model}
- * from observed data.
+ * from data.
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  */
@@ -95,7 +95,8 @@ public abstract class WeightLearningApplication extends Observable implements Mo
 	 * RandomVariableAtoms which the Model might access must be persisted in the Database.
 	 * <p>
 	 * Each such RandomVariableAtom should have a corresponding {@link ObservedAtom}
-	 * in the observed Database.
+	 * in the observed Database, unless the subclass implementation supports latent
+	 * variables.
 	 * 
 	 * @see DatabasePopulator
 	 */

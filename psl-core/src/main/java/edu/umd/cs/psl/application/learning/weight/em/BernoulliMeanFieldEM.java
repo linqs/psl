@@ -1,0 +1,214 @@
+/*
+ * This file is part of the PSL software.
+ * Copyright 2011-2013 University of Maryland
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package edu.umd.cs.psl.application.learning.weight.em;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
+import java.util.Vector;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import edu.umd.cs.psl.config.ConfigBundle;
+import edu.umd.cs.psl.database.Database;
+import edu.umd.cs.psl.model.Model;
+import edu.umd.cs.psl.model.atom.GroundAtom;
+import edu.umd.cs.psl.model.atom.ObservedAtom;
+import edu.umd.cs.psl.model.atom.RandomVariableAtom;
+import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.kernel.GroundKernel;
+
+/**
+ * EM algorithm which fits a Bernoulli mean field (product of independent Bernoulli
+ * distributions) during the E-step.
+ * <p>
+ * During the E-step, the mean field is fit via block coordinate descent.
+ * <p>
+ * During the M-step, the likelihood is maximized using the voted perceptron
+ * algorithm with the expectation of the potential functions estimated using the
+ * MPE state.
+ * <p>
+ * The behavior of this algorithm is undefined for models with constraints.
+ * 
+ * @author Stephen Bach <bach@cs.umd.edu>
+ */
+public class BernoulliMeanFieldEM extends ExpectationMaximization {
+
+	private static final Logger log = LoggerFactory.getLogger(BernoulliMeanFieldEM.class);
+	
+	protected Map<RandomVariableAtom, Double> means;
+
+	public BernoulliMeanFieldEM(Model model, Database rvDB, Database observedDB,
+			ConfigBundle config) {
+		super(model, rvDB, observedDB, config);
+	}
+
+	@Override
+	protected void doLearn() {
+		for (int i = 0; i < iterations; i++) {
+			log.debug("Beginning EM round {} of {}", i+1, iterations);
+			minimizeKLDivergence();
+			maximizeExpectedLikelihood();
+		}
+	}
+	
+	protected void minimizeKLDivergence() {
+		setLabeledRandomVariables();
+		log.debug("Starting KL divergence: {}", getKLDivergence());
+		Vector<RandomVariableAtom> incidentLatentRVs = new Vector<RandomVariableAtom>();
+		/* Iteratively minimizes the KL divergence */
+		for (int round = 0; round < 10; round++) {
+			/* 
+			 * Iterates over each latent random variable and minimizes with respect
+			 * to the corresponding mean in the mean field 
+			 */
+			for (RandomVariableAtom latentRV : trainingMap.getLatentVariables()) {
+				double c = 0.0;
+				/*
+				 * Iterates over each potential which is a function of the current
+				 * latent random variable
+				 */
+				for(GroundKernel gk : latentRV.getRegisteredGroundKernels()) {
+					if (gk instanceof GroundCompatibilityKernel && reasoner.containsGroundKernel(gk)) {
+						GroundCompatibilityKernel gck = (GroundCompatibilityKernel) gk;
+						incidentLatentRVs.clear();
+						
+						/* Collects latent variables incident on this potential */
+						for (GroundAtom atom : gck.getAtoms())
+							if (trainingMap.getLatentVariables().contains(atom))
+								incidentLatentRVs.add((RandomVariableAtom) atom);
+						
+						/* Iterates over joint settings of latent variables */
+						if (incidentLatentRVs.size() > 0) {
+							for (int i = 0; i < Math.pow(2, incidentLatentRVs.size()); i++) {
+								double meanFieldProb = 1.0;
+								double sign = 1.0;
+								
+								for (int j = 0; j < incidentLatentRVs.size(); j++) {
+									double mean = means.get(incidentLatentRVs.get(j));
+									/* If the jth variable is 1 in the current setting... */
+									if ((i & 1 << j) == 1) {
+										if (!latentRV.equals(incidentLatentRVs.get(j)))
+											meanFieldProb *= mean;
+										incidentLatentRVs.get(j).setValue(1.0);
+									}
+									/* Else, if it is 0 */
+									else {
+										if (!latentRV.equals(incidentLatentRVs.get(j)))
+											meanFieldProb *= (1 - mean);
+										else
+											sign = -1.0;
+										incidentLatentRVs.get(j).setValue(0.0);
+									}
+								}
+								
+								c += gck.getWeight().getWeight() * gck.getIncompatibility() * meanFieldProb * sign; 
+							}
+						}
+					}
+					else
+						log.warn("Ground kernel {} registered to atom {} is either " +
+								"a constraint kernel or not is the current distribution.", gk, latentRV);
+				}
+				means.put(latentRV, 1 / (1 + Math.exp(c)));
+			}
+			
+			log.debug("KL divergence after round {}: {}", round+1, getKLDivergence());
+		}
+	}
+	
+	protected void maximizeExpectedLikelihood() {
+		
+	}
+	
+	@Override
+	protected void initGroundModel()
+			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
+		super.initGroundModel();
+		
+		/* Initializes mean field */
+		Random rand = new Random(24601);
+		means = new HashMap<RandomVariableAtom, Double>(trainingMap.getLatentVariables().size());
+		for (RandomVariableAtom latentRV : trainingMap.getLatentVariables())
+			means.put(latentRV, rand.nextDouble());
+	}
+	
+	/**
+	 * Computes the KL divergence from the mean field to the distribution p(Z|X,Y),
+	 * minus a constant (the log partition function plus some potentials that
+	 * are constant with respect to Z).
+	 * 
+	 * @return the KL divergence
+	 */
+	protected double getKLDivergence() {
+		double kl = 0.0;
+		
+		/* First computes negative entropy of the mean field */
+		for (Double mean : means.values())
+			kl += mean * Math.log(mean) + (1 - mean) * Math.log(1 - mean);
+		
+		/*
+		 * Then computes the cross entropy from the mean field to the (unnormalized)
+		 * distribution p(Z|X,Y) 
+		 */
+		setLabeledRandomVariables();
+		Vector<RandomVariableAtom> incidentLatentRVs = new Vector<RandomVariableAtom>();
+		for (GroundCompatibilityKernel gck : reasoner.getCompatibilityKernels()) {
+			incidentLatentRVs.clear();
+			
+			/* Collects latent variables incident on this potential */
+			for (GroundAtom atom : gck.getAtoms())
+				if (trainingMap.getLatentVariables().contains(atom))
+					incidentLatentRVs.add((RandomVariableAtom) atom);
+			
+			/* Iterates over joint settings of latent variables */
+			if (incidentLatentRVs.size() > 0) {
+				for (int i = 0; i < Math.pow(2, incidentLatentRVs.size()); i++) {
+					double meanFieldProb = 1.0;
+					
+					for (int j = 0; j < incidentLatentRVs.size(); j++) {
+						double mean = means.get(incidentLatentRVs.get(j));
+						/* If the jth variable is 1 in the current setting... */
+						if ((i & 1 << j) == 1) {
+							meanFieldProb *= mean;
+							incidentLatentRVs.get(j).setValue(1.0);
+						}
+						/* Else, if it is 0 */
+						else {
+							meanFieldProb *= (1 - mean);
+							incidentLatentRVs.get(j).setValue(0.0);
+						}
+					}
+					
+					kl += gck.getWeight().getWeight() * gck.getIncompatibility() * meanFieldProb; 
+				}
+			}
+		}
+		
+		return kl;
+	}
+	
+	/**
+	 * Sets RandomVariableAtoms with training labels to their observed values.
+	 */
+	protected void setLabeledRandomVariables() {
+		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
+			e.getKey().setValue(e.getValue().getValue());
+		}
+	}
+}
