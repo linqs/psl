@@ -112,10 +112,15 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 		double[] scalingFactor;
 		
 		avgWeights = new double[kernels.size()];
-		numGroundings = new double[kernels.size()];
 		
 		/* Computes the observed incompatibilities */
 		truthIncompatibility = computeObservedIncomp();
+		
+		/* Resets random variables to default values for computing expected incompatibility */
+		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet())
+			e.getKey().setValue(0.0);
+		for (RandomVariableAtom atom : trainingMap.getLatentVariables())
+			atom.setValue(0.0);
 		
 		/* Computes the Perceptron steps */
 		for (int step = 0; step < numSteps; step++) {
@@ -153,22 +158,16 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	}
 	
 	protected double[] computeObservedIncomp() {
+		numGroundings = new double[kernels.size()];
 		double[] truthIncompatibility = new double[kernels.size()];
+		setLabeledRandomVariables();
 		
 		/* Computes the observed incompatibilities and numbers of groundings */
-		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
-			e.getKey().setValue(e.getValue().getValue());
-		}
-		
 		for (int i = 0; i < kernels.size(); i++) {
 			for (GroundKernel gk : reasoner.getGroundKernels(kernels.get(i))) {
 				truthIncompatibility[i] += ((GroundCompatibilityKernel) gk).getIncompatibility();
 				numGroundings[i]++;
 			}
-		}
-		
-		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
-			e.getKey().setValue(0.0);
 		}
 		
 		return truthIncompatibility;

@@ -28,7 +28,6 @@ import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.atom.GroundAtom;
-import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
@@ -43,7 +42,7 @@ import edu.umd.cs.psl.model.kernel.GroundKernel;
  * algorithm with the expectation of the potential functions estimated using the
  * MPE state.
  * <p>
- * The behavior of this algorithm is undefined for models with constraints.
+ * This algorithm does not support models with constraints.
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  */
@@ -57,16 +56,8 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 			ConfigBundle config) {
 		super(model, rvDB, observedDB, config);
 	}
-
-	@Override
-	protected void doLearn() {
-		for (int i = 0; i < iterations; i++) {
-			log.debug("Beginning EM round {} of {}", i+1, iterations);
-			minimizeKLDivergence();
-			maximizeExpectedLikelihood();
-		}
-	}
 	
+	@Override
 	protected void minimizeKLDivergence() {
 		setLabeledRandomVariables();
 		log.debug("Starting KL divergence: {}", getKLDivergence());
@@ -84,46 +75,50 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 				 * latent random variable
 				 */
 				for(GroundKernel gk : latentRV.getRegisteredGroundKernels()) {
-					if (gk instanceof GroundCompatibilityKernel && reasoner.containsGroundKernel(gk)) {
-						GroundCompatibilityKernel gck = (GroundCompatibilityKernel) gk;
-						incidentLatentRVs.clear();
-						
-						/* Collects latent variables incident on this potential */
-						for (GroundAtom atom : gck.getAtoms())
-							if (trainingMap.getLatentVariables().contains(atom))
-								incidentLatentRVs.add((RandomVariableAtom) atom);
-						
-						/* Iterates over joint settings of latent variables */
-						if (incidentLatentRVs.size() > 0) {
-							for (int i = 0; i < Math.pow(2, incidentLatentRVs.size()); i++) {
-								double meanFieldProb = 1.0;
-								double sign = 1.0;
-								
-								for (int j = 0; j < incidentLatentRVs.size(); j++) {
-									double mean = means.get(incidentLatentRVs.get(j));
-									/* If the jth variable is 1 in the current setting... */
-									if ((i & 1 << j) == 1) {
-										if (!latentRV.equals(incidentLatentRVs.get(j)))
-											meanFieldProb *= mean;
-										incidentLatentRVs.get(j).setValue(1.0);
+					if (gk instanceof GroundCompatibilityKernel) {
+						if (reasoner.containsGroundKernel(gk)) {
+							GroundCompatibilityKernel gck = (GroundCompatibilityKernel) gk;
+							incidentLatentRVs.clear();
+							
+							/* Collects latent variables incident on this potential */
+							for (GroundAtom atom : gck.getAtoms())
+								if (trainingMap.getLatentVariables().contains(atom))
+									incidentLatentRVs.add((RandomVariableAtom) atom);
+							
+							/* Iterates over joint settings of latent variables */
+							if (incidentLatentRVs.size() > 0) {
+								for (int i = 0; i < Math.pow(2, incidentLatentRVs.size()); i++) {
+									double meanFieldProb = 1.0;
+									double sign = 1.0;
+									
+									for (int j = 0; j < incidentLatentRVs.size(); j++) {
+										double mean = means.get(incidentLatentRVs.get(j));
+										/* If the jth variable is 1 in the current setting... */
+										if ((i & 1 << j) == 1) {
+											if (!latentRV.equals(incidentLatentRVs.get(j)))
+												meanFieldProb *= mean;
+											incidentLatentRVs.get(j).setValue(1.0);
+										}
+										/* Else, if it is 0 */
+										else {
+											if (!latentRV.equals(incidentLatentRVs.get(j)))
+												meanFieldProb *= (1 - mean);
+											else
+												sign = -1.0;
+											incidentLatentRVs.get(j).setValue(0.0);
+										}
 									}
-									/* Else, if it is 0 */
-									else {
-										if (!latentRV.equals(incidentLatentRVs.get(j)))
-											meanFieldProb *= (1 - mean);
-										else
-											sign = -1.0;
-										incidentLatentRVs.get(j).setValue(0.0);
-									}
+									
+									c += gck.getWeight().getWeight() * gck.getIncompatibility() * meanFieldProb * sign; 
 								}
-								
-								c += gck.getWeight().getWeight() * gck.getIncompatibility() * meanFieldProb * sign; 
 							}
 						}
+						else
+							log.warn("Ground kernel {} registered to atom {} is not in " +
+									"the current distribution. Skipping.", gk, latentRV);
 					}
 					else
-						log.warn("Ground kernel {} registered to atom {} is either " +
-								"a constraint kernel or not is the current distribution.", gk, latentRV);
+						throw new IllegalStateException("Model contains a constraint: " + gk);
 				}
 				means.put(latentRV, 1 / (1 + Math.exp(c)));
 			}
@@ -132,8 +127,73 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 		}
 	}
 	
-	protected void maximizeExpectedLikelihood() {
+	/**
+	 * Computes the expected ground truth incompatibility with respect to the mean field.
+	 * <p>
+	 * Also counts the numbers of groundings.
+	 */
+	@Override
+	protected double[] computeObservedIncomp() {
+		numGroundings = new double[kernels.size()];
+		double[] truthIncompatibility = new double[kernels.size()];
+		setLabeledRandomVariables();
 		
+		/* Computes the expected observed incompatibilities and numbers of groundings */
+		Vector<RandomVariableAtom> incidentLatentRVs = new Vector<RandomVariableAtom>();
+		for (int iKernel = 0; iKernel < kernels.size(); iKernel++) {
+			for (GroundKernel gk : reasoner.getGroundKernels(kernels.get(iKernel))) {
+				GroundCompatibilityKernel gck = (GroundCompatibilityKernel) gk;
+				incidentLatentRVs.clear();
+				
+				/* Collects latent variables incident on this potential */
+				for (GroundAtom atom : gck.getAtoms())
+					if (trainingMap.getLatentVariables().contains(atom))
+						incidentLatentRVs.add((RandomVariableAtom) atom);
+				
+				/* Iterates over joint settings of latent variables */
+				if (incidentLatentRVs.size() > 0) {
+					for (int i = 0; i < Math.pow(2, incidentLatentRVs.size()); i++) {
+						double meanFieldProb = 1.0;
+						
+						for (int j = 0; j < incidentLatentRVs.size(); j++) {
+							double mean = means.get(incidentLatentRVs.get(j));
+							/* If the jth variable is 1 in the current setting... */
+							if ((i & 1 << j) == 1) {
+								meanFieldProb *= mean;
+								incidentLatentRVs.get(j).setValue(1.0);
+							}
+							/* Else, if it is 0 */
+							else {
+								meanFieldProb *= (1 - mean);
+								incidentLatentRVs.get(j).setValue(0.0);
+							}
+						}
+						
+						truthIncompatibility[iKernel] += gck.getWeight().getWeight() * gck.getIncompatibility() * meanFieldProb; 
+					}
+				}
+			}
+			numGroundings[iKernel]++;
+		}
+		
+		return truthIncompatibility;
+	}
+
+	@Override
+	protected double[] computeExpectedIncomp() {
+		double[] expIncomp = new double[kernels.size()];
+		
+		/* Computes the MPE state */
+		reasoner.optimize();
+		
+		/* Computes incompatibility */
+		for (int i = 0; i < kernels.size(); i++) {
+			for (GroundKernel gk : reasoner.getGroundKernels(kernels.get(i))) {
+				expIncomp[i] += ((GroundCompatibilityKernel) gk).getIncompatibility();
+			}
+		}
+		
+		return expIncomp;
 	}
 	
 	@Override
@@ -201,14 +261,5 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 		}
 		
 		return kl;
-	}
-	
-	/**
-	 * Sets RandomVariableAtoms with training labels to their observed values.
-	 */
-	protected void setLabeledRandomVariables() {
-		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
-			e.getKey().setValue(e.getValue().getValue());
-		}
 	}
 }

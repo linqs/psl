@@ -29,6 +29,7 @@ import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
+import edu.umd.cs.psl.model.kernel.linearconstraint.GroundValueConstraint;
 import edu.umd.cs.psl.model.kernel.predicateconstraint.GroundDomainRangeConstraint;
 import edu.umd.cs.psl.reasoner.function.FunctionComparator;
 
@@ -61,10 +62,11 @@ public class ConstraintBlocker {
 		/* Collects GroundDomainRangeConstraints */
 		Set<GroundDomainRangeConstraint> constraintSet = new HashSet<GroundDomainRangeConstraint>();
 		for (GroundConstraintKernel gk : store.getConstraintKernels()) {
-			if (gk instanceof GroundDomainRangeConstraint)
+			if (gk instanceof GroundDomainRangeConstraint || gk instanceof GroundValueConstraint)
 				constraintSet.add((GroundDomainRangeConstraint) gk);
 			else
-				throw new IllegalStateException("The only supported ConstraintKernels are DomainRangeConstraintKernels.");
+				throw new IllegalStateException("The only supported constraints are domain-range " +
+						"constraints and value constraints.");
 		}
 		
 		/* Collects the free RandomVariableAtoms that remain */
@@ -96,6 +98,7 @@ public class ConstraintBlocker {
 		boolean varsAreFree; /* False means that an ObservedAtom is 1.0, forcing others to 0.0 */
 		i = 0;
 		for (GroundDomainRangeConstraint con : constraintSet) {
+			// TODO: Add processing of GroundValueConstraints. Right now, this is broken
 			constrainedRVSet.clear();
 			varsAreFree = true;
 			for (GroundAtom atom : con.getAtoms())
@@ -118,7 +121,7 @@ public class ConstraintBlocker {
 			else {
 				rvBlocks[i] = new RandomVariableAtom[0];
 				/*
-				 * Sets to true regardless of constraint type to avoid extra steps
+				 * Sets to true regardless of constraint type to avoid extra processing steps
 				 * that would not work on empty blocks 
 				 */
 				exactlyOne[i] = true;

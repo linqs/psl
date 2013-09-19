@@ -16,9 +16,22 @@
  */
 package edu.umd.cs.psl.application.learning.weight.em;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import edu.umd.cs.psl.application.learning.weight.maxlikelihood.VotedPerceptron;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.Model;
+import edu.umd.cs.psl.model.atom.ObservedAtom;
+import edu.umd.cs.psl.model.atom.RandomVariableAtom;
+import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.kernel.GroundKernel;
+import edu.umd.cs.psl.model.kernel.linearconstraint.GroundValueConstraint;
 
 /**
  * EM algorithm which fits a point distribution to the single most probable
@@ -27,17 +40,64 @@ import edu.umd.cs.psl.model.Model;
  * @author Stephen Bach <bach@cs.umd.edu>
  */
 public class HardEM extends ExpectationMaximization {
+	
+	private static final Logger log = LoggerFactory.getLogger(HardEM.class);
+	
+	protected List<GroundValueConstraint> labelConstraints;
 
 	public HardEM(Model model, Database rvDB, Database observedDB,
 			ConfigBundle config) {
 		super(model, rvDB, observedDB, config);
-		// TODO Auto-generated constructor stub
+	}
+
+	/**
+	 * Minimizes the KL divergence by setting the latent variables to their
+	 * most probable state conditioned on the evidence and the labeled
+	 * random variables.
+	 * <p>
+	 * This method assumes that the inferred truth values will be used
+	 * immediately by {@link VotedPerceptron#computeObservedIncomp()}.
+	 */
+	@Override
+	protected void minimizeKLDivergence() {
+		/* Adds constraints to fix values of labeled random variables */
+		for (GroundValueConstraint con : labelConstraints)
+			reasoner.addGroundKernel(con);
+		
+		/* Infers most probable assignment latent variables */
+		reasoner.optimize();
+		
+		/* Removes constraints */
+		for (GroundValueConstraint con : labelConstraints)
+			reasoner.removeGroundKernel(con);
+	}
+	
+	@Override
+	protected void initGroundModel()
+			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
+		super.initGroundModel();
+		
+		/* Creates constraints to fix labeled random variables to their true values */
+		labelConstraints = new ArrayList<GroundValueConstraint>();
+		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet())
+			labelConstraints.add(new GroundValueConstraint(e.getKey(), e.getValue().getValue()));
 	}
 
 	@Override
-	protected void doLearn() {
-		// TODO Auto-generated method stub
+	protected double[] computeExpectedIncomp() {
+		double[] expIncomp = new double[kernels.size()];
 		
+		/* Computes the MPE state */
+		reasoner.optimize();
+		
+		/* Computes incompatibility */
+		for (int i = 0; i < kernels.size(); i++) {
+			for (GroundKernel gk : reasoner.getGroundKernels(kernels.get(i))) {
+				expIncomp[i] += ((GroundCompatibilityKernel) gk).getIncompatibility();
+			}
+		}
+		
+		return expIncomp;
 	}
 
 }

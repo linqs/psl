@@ -16,8 +16,11 @@
  */
 package edu.umd.cs.psl.application.learning.weight.em;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import edu.umd.cs.psl.application.learning.weight.TrainingMap;
-import edu.umd.cs.psl.application.learning.weight.WeightLearningApplication;
+import edu.umd.cs.psl.application.learning.weight.maxlikelihood.VotedPerceptron;
 import edu.umd.cs.psl.application.util.Grounding;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
@@ -28,10 +31,15 @@ import edu.umd.cs.psl.reasoner.ReasonerFactory;
 /**
  * Abstract superclass for implementations of the expectation-maximization
  * algorithm for learning with latent variables.
+ * <p>
+ * This class extends {@link VotedPerceptron}, which is used during the M-step
+ * to update the weights.
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-abstract public class ExpectationMaximization extends WeightLearningApplication {
+abstract public class ExpectationMaximization extends VotedPerceptron {
+
+	private static final Logger log = LoggerFactory.getLogger(ExpectationMaximization.class);
 	
 	/**
 	 * Prefix of property keys used by this class.
@@ -56,7 +64,20 @@ abstract public class ExpectationMaximization extends WeightLearningApplication 
 		
 		iterations = config.getInt(ITER_KEY, ITER_DEFAULT);
 	}
-	
+
+	@Override
+	protected void doLearn() {
+		for (int round = 0; round < iterations; round++) {
+			log.debug("Beginning EM round {} of {}", round+1, iterations);
+			/* E-step */
+			minimizeKLDivergence();
+			/* M-step */
+			super.doLearn();
+		}
+	}
+
+	abstract protected void minimizeKLDivergence();
+
 	@Override
 	protected void initGroundModel()
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {

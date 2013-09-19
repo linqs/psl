@@ -18,6 +18,7 @@ package edu.umd.cs.psl.application.learning.weight;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Observable;
 
 import com.google.common.collect.Iterables;
@@ -145,6 +146,15 @@ public abstract class WeightLearningApplication extends Observable implements Mo
 		model = null;
 		rvDB = null;
 		config = null;
+	}
+	
+	/**
+	 * Sets RandomVariableAtoms with training labels to their observed values.
+	 */
+	protected void setLabeledRandomVariables() {
+		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
+			e.getKey().setValue(e.getValue().getValue());
+		}
 	}
 
 }
