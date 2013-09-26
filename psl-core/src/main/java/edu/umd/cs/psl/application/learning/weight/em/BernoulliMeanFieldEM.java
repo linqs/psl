@@ -16,9 +16,10 @@
  */
 package edu.umd.cs.psl.application.learning.weight.em;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Vector;
 
 import org.slf4j.Logger;
@@ -28,9 +29,11 @@ import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.atom.GroundAtom;
+import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
+import edu.umd.cs.psl.model.kernel.linearconstraint.GroundValueConstraint;
 
 /**
  * EM algorithm which fits a Bernoulli mean field (product of independent Bernoulli
@@ -55,6 +58,13 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 	public BernoulliMeanFieldEM(Model model, Database rvDB, Database observedDB,
 			ConfigBundle config) {
 		super(model, rvDB, observedDB, config);
+	}
+	
+	@Override
+	protected void doLearn() {
+		super.doLearn();
+		for (Map.Entry<RandomVariableAtom, Double> e : means.entrySet())
+			log.debug("Mean for {}: {}", e.getKey(), e.getValue());
 	}
 	
 	@Override
@@ -85,7 +95,9 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 								if (trainingMap.getLatentVariables().contains(atom))
 									incidentLatentRVs.add((RandomVariableAtom) atom);
 							
-							/* Iterates over joint settings of latent variables */
+							/*
+							 * Iterates over joint settings of latent variables
+							 */
 							if (incidentLatentRVs.size() > 0) {
 								for (int i = 0; i < Math.pow(2, incidentLatentRVs.size()); i++) {
 									double meanFieldProb = 1.0;
@@ -94,7 +106,7 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 									for (int j = 0; j < incidentLatentRVs.size(); j++) {
 										double mean = means.get(incidentLatentRVs.get(j));
 										/* If the jth variable is 1 in the current setting... */
-										if ((i & 1 << j) == 1) {
+										if ((i >> j & 1) == 1) {
 											if (!latentRV.equals(incidentLatentRVs.get(j)))
 												meanFieldProb *= mean;
 											incidentLatentRVs.get(j).setValue(1.0);
@@ -120,7 +132,17 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 					else
 						throw new IllegalStateException("Model contains a constraint: " + gk);
 				}
-				means.put(latentRV, 1 / (1 + Math.exp(c)));
+//				System.out.println("C: " + c);
+//				c /= 20;
+				double newMean = 1 / (1 + Math.exp(c));
+				if (newMean == 0.0)
+					newMean = 0.0001;
+				else if (newMean == 1.0)
+					newMean = 0.9999;
+				means.put(latentRV, newMean);
+//				System.out.println("New mean: " + newMean);
+//				System.out.println("New KL divergence: " + getKLDivergence());
+//				System.out.println();
 			}
 			
 			log.debug("KL divergence after round {}: {}", round+1, getKLDivergence());
@@ -150,7 +172,9 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 					if (trainingMap.getLatentVariables().contains(atom))
 						incidentLatentRVs.add((RandomVariableAtom) atom);
 				
-				/* Iterates over joint settings of latent variables */
+				/*
+				 * Iterates over joint settings of latent variables
+				 */
 				if (incidentLatentRVs.size() > 0) {
 					for (int i = 0; i < Math.pow(2, incidentLatentRVs.size()); i++) {
 						double meanFieldProb = 1.0;
@@ -158,7 +182,7 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 						for (int j = 0; j < incidentLatentRVs.size(); j++) {
 							double mean = means.get(incidentLatentRVs.get(j));
 							/* If the jth variable is 1 in the current setting... */
-							if ((i & 1 << j) == 1) {
+							if ((i >> j & 1) == 1) {
 								meanFieldProb *= mean;
 								incidentLatentRVs.get(j).setValue(1.0);
 							}
@@ -172,8 +196,8 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 						truthIncompatibility[iKernel] += gck.getWeight().getWeight() * gck.getIncompatibility() * meanFieldProb; 
 					}
 				}
+				numGroundings[iKernel]++;
 			}
-			numGroundings[iKernel]++;
 		}
 		
 		return truthIncompatibility;
@@ -201,11 +225,25 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		super.initGroundModel();
 		
+		/* Runs hard EM to initialize mean field */
+		log.debug("Running hard EM to initialize mean field.");
+		
+		/* Creates constraints to fix labeled random variables to their true values */
+		List<GroundValueConstraint> labelConstraints = new ArrayList<GroundValueConstraint>();
+		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet())
+			labelConstraints.add(new GroundValueConstraint(e.getKey(), e.getValue().getValue()));
+		
+		/* Infers most probable assignment latent variables */
+		reasoner.optimize();
+		
+		/* Removes constraints */
+		for (GroundValueConstraint con : labelConstraints)
+			reasoner.removeGroundKernel(con);
+		
 		/* Initializes mean field */
-		Random rand = new Random(24601);
 		means = new HashMap<RandomVariableAtom, Double>(trainingMap.getLatentVariables().size());
 		for (RandomVariableAtom latentRV : trainingMap.getLatentVariables())
-			means.put(latentRV, rand.nextDouble());
+			means.put(latentRV, latentRV.getValue());
 	}
 	
 	/**
@@ -236,7 +274,9 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 				if (trainingMap.getLatentVariables().contains(atom))
 					incidentLatentRVs.add((RandomVariableAtom) atom);
 			
-			/* Iterates over joint settings of latent variables */
+			/*
+			 * Iterates over joint settings of latent variables
+			 */
 			if (incidentLatentRVs.size() > 0) {
 				for (int i = 0; i < Math.pow(2, incidentLatentRVs.size()); i++) {
 					double meanFieldProb = 1.0;
@@ -244,7 +284,7 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 					for (int j = 0; j < incidentLatentRVs.size(); j++) {
 						double mean = means.get(incidentLatentRVs.get(j));
 						/* If the jth variable is 1 in the current setting... */
-						if ((i & 1 << j) == 1) {
+						if ((i >> j & 1) == 1) {
 							meanFieldProb *= mean;
 							incidentLatentRVs.get(j).setValue(1.0);
 						}

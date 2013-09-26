@@ -54,7 +54,7 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 	 */
 	public static final String ITER_KEY = CONFIG_PREFIX + ".iterations";
 	/** Default value for ITER_KEY property */
-	public static final int ITER_DEFAULT = 1;
+	public static final int ITER_DEFAULT = 10;
 	
 	protected final int iterations;
 	
