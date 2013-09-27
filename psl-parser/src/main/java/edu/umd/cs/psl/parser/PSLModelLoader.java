@@ -155,7 +155,7 @@ public class PSLModelLoader extends PSLBaseVisitor<Formula> {
 				}
 				i++;
 			}
-
+			
 			return new QueryAtom(p, arguments);
 
 		} else if (ctx.AND() != null) {
@@ -176,7 +176,9 @@ public class PSLModelLoader extends PSLBaseVisitor<Formula> {
 					getVariable(ctx.argument(0).getText()), getVariable(ctx.argument(1).getText()));
 		}
 		
-		return visitChildren(ctx); 
+		System.out.println("Fell through with " + ctx.getText());
+	
+		return visit(ctx.expression(0));
 	}
 
 	/**
@@ -199,6 +201,7 @@ public class PSLModelLoader extends PSLBaseVisitor<Formula> {
 		PSLParser.WeightContext weight = ctx.weight();
 
 		Formula f = visit(ctx.expression());
+		System.out.println(f);
 		
 		if (weight.CONSTRAINT() == null) {
 			// create compatibility kernel
