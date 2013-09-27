@@ -175,9 +175,7 @@ public class PSLModelLoader extends PSLBaseVisitor<Formula> {
 			return new QueryAtom(SpecialPredicate.NotEqual, 
 					getVariable(ctx.argument(0).getText()), getVariable(ctx.argument(1).getText()));
 		}
-		
-		System.out.println("Fell through with " + ctx.getText());
-	
+			
 		return visit(ctx.expression(0));
 	}
 
@@ -201,7 +199,6 @@ public class PSLModelLoader extends PSLBaseVisitor<Formula> {
 		PSLParser.WeightContext weight = ctx.weight();
 
 		Formula f = visit(ctx.expression());
-		System.out.println(f);
 		
 		if (weight.CONSTRAINT() == null) {
 			// create compatibility kernel
