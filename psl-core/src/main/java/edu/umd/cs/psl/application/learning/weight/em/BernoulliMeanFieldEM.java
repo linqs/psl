@@ -124,6 +124,8 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 									c += gck.getWeight().getWeight() * gck.getIncompatibility() * meanFieldProb * sign; 
 								}
 							}
+							else
+								throw new IllegalStateException("Expected there to be at least one incident latent RV.");
 						}
 						else
 							log.warn("Ground kernel {} registered to atom {} is not in " +
@@ -132,17 +134,12 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 					else
 						throw new IllegalStateException("Model contains a constraint: " + gk);
 				}
-//				System.out.println("C: " + c);
-//				c /= 20;
 				double newMean = 1 / (1 + Math.exp(c));
 				if (newMean == 0.0)
 					newMean = 0.0001;
 				else if (newMean == 1.0)
 					newMean = 0.9999;
 				means.put(latentRV, newMean);
-//				System.out.println("New mean: " + newMean);
-//				System.out.println("New KL divergence: " + getKLDivergence());
-//				System.out.println();
 			}
 			
 			log.debug("KL divergence after round {}: {}", round+1, getKLDivergence());
@@ -173,28 +170,27 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 						incidentLatentRVs.add((RandomVariableAtom) atom);
 				
 				/*
-				 * Iterates over joint settings of latent variables
+				 * Iterates over joint settings of latent variables. If there are
+				 * no incident latent variables, just adds the value of the potential
 				 */
-				if (incidentLatentRVs.size() > 0) {
-					for (int i = 0; i < Math.pow(2, incidentLatentRVs.size()); i++) {
-						double meanFieldProb = 1.0;
-						
-						for (int j = 0; j < incidentLatentRVs.size(); j++) {
-							double mean = means.get(incidentLatentRVs.get(j));
-							/* If the jth variable is 1 in the current setting... */
-							if ((i >> j & 1) == 1) {
-								meanFieldProb *= mean;
-								incidentLatentRVs.get(j).setValue(1.0);
-							}
-							/* Else, if it is 0 */
-							else {
-								meanFieldProb *= (1 - mean);
-								incidentLatentRVs.get(j).setValue(0.0);
-							}
+				for (int i = 0; i < Math.pow(2, incidentLatentRVs.size()); i++) {
+					double meanFieldProb = 1.0;
+					
+					for (int j = 0; j < incidentLatentRVs.size(); j++) {
+						double mean = means.get(incidentLatentRVs.get(j));
+						/* If the jth variable is 1 in the current setting... */
+						if ((i >> j & 1) == 1) {
+							meanFieldProb *= mean;
+							incidentLatentRVs.get(j).setValue(1.0);
 						}
-						
-						truthIncompatibility[iKernel] += gck.getWeight().getWeight() * gck.getIncompatibility() * meanFieldProb; 
+						/* Else, if it is 0 */
+						else {
+							meanFieldProb *= (1 - mean);
+							incidentLatentRVs.get(j).setValue(0.0);
+						}
 					}
+					
+					truthIncompatibility[iKernel] += gck.getIncompatibility() * meanFieldProb;
 				}
 				numGroundings[iKernel]++;
 			}
@@ -248,8 +244,7 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 	
 	/**
 	 * Computes the KL divergence from the mean field to the distribution p(Z|X,Y),
-	 * minus a constant (the log partition function plus some potentials that
-	 * are constant with respect to Z).
+	 * minus a constant (the log partition function plus some constant potentials).
 	 * 
 	 * @return the KL divergence
 	 */
@@ -275,28 +270,28 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 					incidentLatentRVs.add((RandomVariableAtom) atom);
 			
 			/*
-			 * Iterates over joint settings of latent variables
+			 * Iterates over joint settings of latent variables. If there are
+			 * no incident latent variables, just adds the weighted value of
+			 * the potential
 			 */
-			if (incidentLatentRVs.size() > 0) {
-				for (int i = 0; i < Math.pow(2, incidentLatentRVs.size()); i++) {
-					double meanFieldProb = 1.0;
-					
-					for (int j = 0; j < incidentLatentRVs.size(); j++) {
-						double mean = means.get(incidentLatentRVs.get(j));
-						/* If the jth variable is 1 in the current setting... */
-						if ((i >> j & 1) == 1) {
-							meanFieldProb *= mean;
-							incidentLatentRVs.get(j).setValue(1.0);
-						}
-						/* Else, if it is 0 */
-						else {
-							meanFieldProb *= (1 - mean);
-							incidentLatentRVs.get(j).setValue(0.0);
-						}
+			for (int i = 0; i < Math.pow(2, incidentLatentRVs.size()); i++) {
+				double meanFieldProb = 1.0;
+				
+				for (int j = 0; j < incidentLatentRVs.size(); j++) {
+					double mean = means.get(incidentLatentRVs.get(j));
+					/* If the jth variable is 1 in the current setting... */
+					if ((i >> j & 1) == 1) {
+						meanFieldProb *= mean;
+						incidentLatentRVs.get(j).setValue(1.0);
 					}
-					
-					kl += gck.getWeight().getWeight() * gck.getIncompatibility() * meanFieldProb; 
+					/* Else, if it is 0 */
+					else {
+						meanFieldProb *= (1 - mean);
+						incidentLatentRVs.get(j).setValue(0.0);
+					}
 				}
+				
+				kl += gck.getWeight().getWeight() * gck.getIncompatibility() * meanFieldProb; 
 			}
 		}
 		

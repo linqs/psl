@@ -122,6 +122,10 @@ abstract public class AbstractRuleKernel extends AbstractKernel {
 				gks.addGroundKernel(groundRule);
 				numGroundingsAdded++;
 			}
+			/* If the ground kernel is not actually added, unregisters it from atoms */
+			else
+				for (GroundAtom incidentAtom : groundRule.getAtoms())
+					incidentAtom.unregisterGroundKernel(groundRule);
 			
 			posLiterals.clear();
 			negLiterals.clear();
