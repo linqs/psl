@@ -48,27 +48,33 @@ public class RandomVariableAtom extends GroundAtom {
 	 * Sets the truth value of this Atom.
 	 * 
 	 * @param value  a truth value in [0,1]
+	 * @return this for convenience
 	 * @throws IllegalArgumentException  if value is not in [0,1]
 	 */
-	public void setValue(double value) {
+	public RandomVariableAtom setValue(double value) {
 		if (0.0 <= value && value <= 1.0) 
 			this.value = value;
 		else
 			throw new IllegalArgumentException("Value should be in [0,1] but is " + value);
+		
+		return this;
 	}
 	
 	/**
 	 * Sets the confidence value of this Atom.
 	 * 
 	 * @param value  the new confidence value
+	 * @return this for convenience
 	 * @throws IllegalArgumentException  if value is invalid
 	 * @see ConfidenceValues#isValid(double);
 	 */
-	public void setConfidenceValue(double value) {
+	public RandomVariableAtom setConfidenceValue(double value) {
 		if (ConfidenceValues.isValid(value))
 			this.confidenceValue = value;
 		else
 			throw new IllegalArgumentException();
+		
+		return this;
 	}
 	
 	/**

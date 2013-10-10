@@ -29,6 +29,7 @@ import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
+import edu.umd.cs.psl.model.kernel.linearconstraint.GroundValueConstraint;
 import edu.umd.cs.psl.model.kernel.predicateconstraint.GroundDomainRangeConstraint;
 import edu.umd.cs.psl.reasoner.function.FunctionComparator;
 
@@ -36,9 +37,10 @@ import edu.umd.cs.psl.reasoner.function.FunctionComparator;
  * This class blocks free {@link RandomVariableAtom RandomVariableAtoms}
  * and RandomVariableAtoms that are each constrained by a single
  * {@link GroundDomainRangeConstraint} into logically individual categorical variables.
+ * {@link GroundValueConstraint GroundValueConstraints} are also supported.
  * <p>
- * It also assumes that all ObservedAtoms have values in {0.0, 1.0}.
- * Its behavior is not defined otherwise.
+ * It also assumes that all ObservedAtoms and value-constrained atoms have
+ * values in {0.0, 1.0}. Its behavior is not defined otherwise.
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  */
@@ -58,13 +60,17 @@ public class ConstraintBlocker {
 	public void prepareBlocks(boolean prepareRVMap) {
 		rvMap = (prepareRVMap) ? new HashMap<RandomVariableAtom, Integer>() : null;
 		
-		/* Collects GroundDomainRangeConstraints */
-		Set<GroundDomainRangeConstraint> constraintSet = new HashSet<GroundDomainRangeConstraint>();
+		/* Collects constraints */
+		Set<GroundDomainRangeConstraint> drConstraintSet = new HashSet<GroundDomainRangeConstraint>();
+		Map<RandomVariableAtom, GroundValueConstraint> valueConstraintMap = new HashMap<RandomVariableAtom, GroundValueConstraint>();
 		for (GroundConstraintKernel gk : store.getConstraintKernels()) {
 			if (gk instanceof GroundDomainRangeConstraint)
-				constraintSet.add((GroundDomainRangeConstraint) gk);
+				drConstraintSet.add((GroundDomainRangeConstraint) gk);
+			else if (gk instanceof GroundValueConstraint)
+				valueConstraintMap.put((RandomVariableAtom) gk.getAtoms().iterator().next(), (GroundValueConstraint) gk);
 			else
-				throw new IllegalStateException("The only supported ConstraintKernels are DomainRangeConstraintKernels.");
+				throw new IllegalStateException("The only supported constraints are domain-range " +
+						"constraints and value constraints.");
 		}
 		
 		/* Collects the free RandomVariableAtoms that remain */
@@ -72,14 +78,19 @@ public class ConstraintBlocker {
 		for (GroundKernel gk : store.getGroundKernels()) {
 			for (GroundAtom atom : gk.getAtoms()) {
 				if (atom instanceof RandomVariableAtom) {
-					int numConstraints = 0;
+					int numDRConstraints = 0;
+					int numValueConstraints = 0;
 					for (GroundKernel incidentGK : atom.getRegisteredGroundKernels())
-						if (incidentGK instanceof GroundConstraintKernel)
-							numConstraints++;
-					if (numConstraints == 0)
+						if (incidentGK instanceof GroundDomainRangeConstraint)
+							numDRConstraints++;
+						else if (incidentGK instanceof GroundValueConstraint)
+							numValueConstraints++;
+					if (numDRConstraints == 0 && numValueConstraints == 0)
 						freeRVSet.add(((RandomVariableAtom) atom));
-					else if (numConstraints >= 2)
-						throw new IllegalStateException("RandomVariableAtoms may only participate in one GroundDomainRangeConstraint.");
+					else if (numDRConstraints >= 2 || numValueConstraints >= 2)
+						throw new IllegalStateException("RandomVariableAtoms may " +
+								"only participate in one GroundDomainRangeConstraint " +
+								"and/or GroundValueConstraint.");
 				}
 			}
 		}
@@ -87,22 +98,34 @@ public class ConstraintBlocker {
 		int i;
 		
 		/* Puts RandomVariableAtoms in 2d array by block */
-		rvBlocks = new RandomVariableAtom[constraintSet.size() + freeRVSet.size()][];
+		rvBlocks = new RandomVariableAtom[drConstraintSet.size() + freeRVSet.size()][];
 		/* If true, exactly one Atom in the RV block must be 1.0. If false, at most one can. */
 		exactlyOne = new boolean[rvBlocks.length];
 		
 		/* Processes constrained RVs first */
 		Set<RandomVariableAtom> constrainedRVSet = new HashSet<RandomVariableAtom>();
-		boolean varsAreFree; /* False means that an ObservedAtom is 1.0, forcing others to 0.0 */
+		/*
+		 * False means that an ObservedAtom or constrained RandomVariableAtom
+		 * is 1.0, forcing others to 0.0
+		 */
+		boolean varsAreFree;
 		i = 0;
-		for (GroundDomainRangeConstraint con : constraintSet) {
+		for (GroundDomainRangeConstraint con : drConstraintSet) {
 			constrainedRVSet.clear();
 			varsAreFree = true;
-			for (GroundAtom atom : con.getAtoms())
+			for (GroundAtom atom : con.getAtoms()) {
 				if (atom instanceof ObservedAtom && atom.getValue() != 0.0)
 					varsAreFree = false;
-				else if (atom instanceof RandomVariableAtom)
-					constrainedRVSet.add((RandomVariableAtom) atom);
+				else if (atom instanceof RandomVariableAtom) {
+					GroundValueConstraint valueCon = valueConstraintMap.get(atom);
+					if (valueCon != null) {
+						if (valueCon.getConstraintDefinition().getValue() != 0.0)
+							varsAreFree = false;
+					}
+					else
+						constrainedRVSet.add((RandomVariableAtom) atom);
+				}
+			}
 			
 			if (varsAreFree) {
 				rvBlocks[i] = new RandomVariableAtom[constrainedRVSet.size()];
@@ -113,12 +136,12 @@ public class ConstraintBlocker {
 						rvMap.put(atom, i);
 				}
 				
-				exactlyOne[i] = con.getConstraintDefinition().getComparator().equals(FunctionComparator.Equality);
+				exactlyOne[i] = con.getConstraintDefinition().getComparator().equals(FunctionComparator.Equality) || constrainedRVSet.size() == 0;
 			}
 			else {
 				rvBlocks[i] = new RandomVariableAtom[0];
 				/*
-				 * Sets to true regardless of constraint type to avoid extra steps
+				 * Sets to true regardless of constraint type to avoid extra processing steps
 				 * that would not work on empty blocks 
 				 */
 				exactlyOne[i] = true;
@@ -151,6 +174,10 @@ public class ConstraintBlocker {
 			for (GroundCompatibilityKernel incidentGK : incidentGKSet)
 				incidentGKs[i][j++] = incidentGK;
 		}
+		
+		/* Sets all value-constrained atoms */
+		for (Map.Entry<RandomVariableAtom, GroundValueConstraint> e : valueConstraintMap.entrySet())
+			e.getKey().setValue(e.getValue().getConstraintDefinition().getValue());
 	}
 	
 	public RandomVariableAtom[][] getRVBlocks() {

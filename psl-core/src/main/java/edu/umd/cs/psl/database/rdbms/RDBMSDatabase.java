@@ -621,7 +621,7 @@ public class RDBMSDatabase implements Database {
 	@Override
 	public void close() {
 		if (closed)
-			throw new IllegalStateException("Cannot closed database after it has been closed.");
+			throw new IllegalStateException("Cannot close database after it has been closed.");
 		
 		executePendingStatements();
 		parentDataStore.releasePartitions(this);

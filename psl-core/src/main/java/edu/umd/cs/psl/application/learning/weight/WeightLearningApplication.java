@@ -18,6 +18,7 @@ package edu.umd.cs.psl.application.learning.weight;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Observable;
 
 import com.google.common.collect.Iterables;
@@ -40,7 +41,7 @@ import edu.umd.cs.psl.reasoner.admm.ADMMReasonerFactory;
 /**
  * Abstract class for learning the weights of
  * {@link CompatibilityKernel CompatibilityKernels} in a {@link Model}
- * from observed data.
+ * from data.
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  */
@@ -95,7 +96,8 @@ public abstract class WeightLearningApplication extends Observable implements Mo
 	 * RandomVariableAtoms which the Model might access must be persisted in the Database.
 	 * <p>
 	 * Each such RandomVariableAtom should have a corresponding {@link ObservedAtom}
-	 * in the observed Database.
+	 * in the observed Database, unless the subclass implementation supports latent
+	 * variables.
 	 * 
 	 * @see DatabasePopulator
 	 */
@@ -144,6 +146,15 @@ public abstract class WeightLearningApplication extends Observable implements Mo
 		model = null;
 		rvDB = null;
 		config = null;
+	}
+	
+	/**
+	 * Sets RandomVariableAtoms with training labels to their observed values.
+	 */
+	protected void setLabeledRandomVariables() {
+		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
+			e.getKey().setValue(e.getValue().getValue());
+		}
 	}
 
 }
