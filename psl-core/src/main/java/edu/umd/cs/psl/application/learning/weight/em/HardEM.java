@@ -20,9 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import edu.umd.cs.psl.application.learning.weight.maxlikelihood.VotedPerceptron;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.database.Database;
@@ -40,8 +37,6 @@ import edu.umd.cs.psl.model.kernel.linearconstraint.GroundValueConstraint;
  * @author Stephen Bach <bach@cs.umd.edu>
  */
 public class HardEM extends ExpectationMaximization {
-	
-	private static final Logger log = LoggerFactory.getLogger(HardEM.class);
 	
 	protected List<GroundValueConstraint> labelConstraints;
 

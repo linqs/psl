@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import edu.umd.cs.psl.config.ConfigBundle;
+import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.atom.GroundAtom;
@@ -53,11 +54,30 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 
 	private static final Logger log = LoggerFactory.getLogger(BernoulliMeanFieldEM.class);
 	
-	protected Map<RandomVariableAtom, Double> means;
+	/**
+	 * Prefix of property keys used by this class.
+	 * 
+	 * @see ConfigManager
+	 */
+	public static final String CONFIG_PREFIX = "bernoullimeanfieldem";
+	
+	/**
+	 * Key for Boolean property. If true, the mean field will be reinitialized
+	 * via MPE inference at each round. If false, each mean will be initialized
+	 * to 0.5 before the first round. 
+	 */
+	public static final String MPE_INITIALIZATION_KEY = CONFIG_PREFIX + ".mpeinit";
+	/** Default value for MPE_INITIALIZATION_KEY property */
+	public static final boolean MPE_INITIALIZATION_DEFAULT = true;
+	
+	protected final Map<RandomVariableAtom, Double> means;
+	protected final boolean mpeInit;
 
 	public BernoulliMeanFieldEM(Model model, Database rvDB, Database observedDB,
 			ConfigBundle config) {
 		super(model, rvDB, observedDB, config);
+		means = new HashMap<RandomVariableAtom, Double>();
+		mpeInit = config.getBoolean(MPE_INITIALIZATION_KEY, MPE_INITIALIZATION_DEFAULT);
 	}
 	
 	@Override
@@ -69,6 +89,8 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 	
 	@Override
 	protected void minimizeKLDivergence() {
+		if (mpeInit)
+			setMeansToMPE();
 		setLabeledRandomVariables();
 		log.debug("Starting KL divergence: {}", getKLDivergence());
 		Vector<RandomVariableAtom> incidentLatentRVs = new Vector<RandomVariableAtom>();
@@ -221,8 +243,17 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		super.initGroundModel();
 		
-		/* Runs hard EM to initialize mean field */
-		log.debug("Running hard EM to initialize mean field.");
+		/* Sets all means to 0.5 if MPE_INITIALIZATION_KEY is false */
+		if (!mpeInit) {
+			means.clear();
+			for (RandomVariableAtom latentRV : trainingMap.getLatentVariables())
+				means.put(latentRV, 0.5);
+		}
+	}
+	
+	protected void setMeansToMPE() {
+		/* Runs MPE inference in p(Z|X,Y) to set mean field */
+		log.debug("Running MPE inference to initialize mean field.");
 		
 		/* Creates constraints to fix labeled random variables to their true values */
 		List<GroundValueConstraint> labelConstraints = new ArrayList<GroundValueConstraint>();
@@ -236,8 +267,8 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 		for (GroundValueConstraint con : labelConstraints)
 			reasoner.removeGroundKernel(con);
 		
-		/* Initializes mean field */
-		means = new HashMap<RandomVariableAtom, Double>(trainingMap.getLatentVariables().size());
+		/* Sets mean field */
+		means.clear();
 		for (RandomVariableAtom latentRV : trainingMap.getLatentVariables())
 			means.put(latentRV, latentRV.getValue());
 	}
