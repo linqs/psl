@@ -100,7 +100,7 @@ public class SimpleRankingComparator implements RankingComparator {
 			if (a1.getValue() > a2.getValue())
 				return 1;
 			else if (a1.getValue() == a2.getValue())
-				return 0;
+				return a1.toString().compareTo(a2.toString());
 			else
 				return -1;
 		}
