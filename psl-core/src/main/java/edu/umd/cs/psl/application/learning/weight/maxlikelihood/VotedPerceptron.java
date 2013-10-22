@@ -36,7 +36,6 @@ import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
-import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.model.parameters.NegativeWeight;
 import edu.umd.cs.psl.model.parameters.PositiveWeight;
 
@@ -265,10 +264,11 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 		
 		if (augmentLoss) {
 			List<LossAugmentingGroundKernel> lossKernels = new ArrayList<LossAugmentingGroundKernel>();
-			for (LossAugmentingGroundKernel k : Iterables.filter(model.getKernels(), LossAugmentingGroundKernel.class))
+			for (LossAugmentingGroundKernel k : Iterables.filter(reasoner.getGroundKernels(), LossAugmentingGroundKernel.class))
 				lossKernels.add(k);
 			for (LossAugmentingGroundKernel k : lossKernels)
-				model.removeKernel((Kernel) k);
+				reasoner.removeGroundKernel(k);
+			lossKernels = new ArrayList<LossAugmentingGroundKernel>();
 		}
 	}
 	
