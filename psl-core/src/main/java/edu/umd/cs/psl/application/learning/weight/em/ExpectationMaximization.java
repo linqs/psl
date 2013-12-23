@@ -16,6 +16,10 @@
  */
 package edu.umd.cs.psl.application.learning.weight.em;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +30,9 @@ import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.Model;
+import edu.umd.cs.psl.model.atom.ObservedAtom;
+import edu.umd.cs.psl.model.atom.RandomVariableAtom;
+import edu.umd.cs.psl.model.kernel.linearconstraint.GroundValueConstraint;
 import edu.umd.cs.psl.reasoner.ReasonerFactory;
 
 /**
@@ -58,6 +65,8 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 	
 	protected final int iterations;
 	
+	protected List<GroundValueConstraint> labelConstraints;
+	
 	public ExpectationMaximization(Model model, Database rvDB,
 			Database observedDB, ConfigBundle config) {
 		super(model, rvDB, observedDB, config);
@@ -84,6 +93,24 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 		trainingMap = new TrainingMap(rvDB, observedDB);
 		reasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
 		Grounding.groundAll(model, trainingMap, reasoner);
+		
+		/* Creates constraints to fix labeled random variables to their true values */
+		labelConstraints = new ArrayList<GroundValueConstraint>();
+		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet())
+			labelConstraints.add(new GroundValueConstraint(e.getKey(), e.getValue().getValue()));
+	}
+	
+	public void inferLatentVariables() {
+		/* Adds constraints to fix values of labeled random variables */
+		for (GroundValueConstraint con : labelConstraints)
+			reasoner.addGroundKernel(con);
+		
+		/* Infers most probable assignment latent variables */
+		reasoner.optimize();
+		
+		/* Removes constraints */
+		for (GroundValueConstraint con : labelConstraints)
+			reasoner.removeGroundKernel(con);
 	}
 
 }

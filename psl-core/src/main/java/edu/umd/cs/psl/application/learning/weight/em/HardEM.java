@@ -16,19 +16,12 @@
  */
 package edu.umd.cs.psl.application.learning.weight.em;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import edu.umd.cs.psl.application.learning.weight.maxlikelihood.VotedPerceptron;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.Model;
-import edu.umd.cs.psl.model.atom.ObservedAtom;
-import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
-import edu.umd.cs.psl.model.kernel.linearconstraint.GroundValueConstraint;
 
 /**
  * EM algorithm which fits a point distribution to the single most probable
@@ -37,8 +30,6 @@ import edu.umd.cs.psl.model.kernel.linearconstraint.GroundValueConstraint;
  * @author Stephen Bach <bach@cs.umd.edu>
  */
 public class HardEM extends ExpectationMaximization {
-	
-	protected List<GroundValueConstraint> labelConstraints;
 
 	public HardEM(Model model, Database rvDB, Database observedDB,
 			ConfigBundle config) {
@@ -55,27 +46,7 @@ public class HardEM extends ExpectationMaximization {
 	 */
 	@Override
 	protected void minimizeKLDivergence() {
-		/* Adds constraints to fix values of labeled random variables */
-		for (GroundValueConstraint con : labelConstraints)
-			reasoner.addGroundKernel(con);
-		
-		/* Infers most probable assignment latent variables */
-		reasoner.optimize();
-		
-		/* Removes constraints */
-		for (GroundValueConstraint con : labelConstraints)
-			reasoner.removeGroundKernel(con);
-	}
-	
-	@Override
-	protected void initGroundModel()
-			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-		super.initGroundModel();
-		
-		/* Creates constraints to fix labeled random variables to their true values */
-		labelConstraints = new ArrayList<GroundValueConstraint>();
-		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet())
-			labelConstraints.add(new GroundValueConstraint(e.getKey(), e.getValue().getValue()));
+		inferLatentVariables();
 	}
 
 	@Override
