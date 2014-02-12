@@ -114,7 +114,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	 */
 	public static final String STEP_SCHEDULE_KEY = CONFIG_PREFIX + ".schedule";
 	/** Default value for STEP_SCHEDULE_KEY */
-	public static final boolean STEP_SCHEDULE_DEFAULT = false;
+	public static final boolean STEP_SCHEDULE_DEFAULT = true;
 
 	/**
 	 * Key for Boolean property that indicates whether to scale gradient by 
@@ -122,9 +122,16 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	 */
 	public static final String SCALE_GRADIENT_KEY = CONFIG_PREFIX + ".scalegradient";
 	/** Default value for SCALE_GRADIENT_KEY */
-	public static final boolean SCALE_GRADIENT_DEFAULT = true;
-
+	public static final boolean SCALE_GRADIENT_DEFAULT = false;
 	
+	/**
+	 * Key for Boolean property that indicates whether to average all visited
+	 * weights together for final output.
+	 */
+	public static final String AVERAGE_STEPS_KEY = CONFIG_PREFIX + ".averagesteps";
+	/** Default value for AVERAGE_STEPS_KEY */
+	public static final boolean AVERAGE_STEPS_DEFAULT = true;
+
 	/**
 	 * Key for positive integer property. VotedPerceptron will take this many
 	 * steps to learn weights.
@@ -141,6 +148,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	private final boolean augmentLoss;
 	private final boolean scheduleStepSize;
 	private final boolean scaleGradient;
+	private final boolean averageSteps;
 	
 	/** stop flag to quit the loop. */
 	protected boolean toStop = false;
@@ -162,6 +170,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 		augmentLoss = config.getBoolean(AUGMENT_LOSS_KEY, AUGMENT_LOSS_DEFAULT);
 		scheduleStepSize = config.getBoolean(STEP_SCHEDULE_KEY, STEP_SCHEDULE_DEFAULT);
 		scaleGradient = config.getBoolean(SCALE_GRADIENT_KEY, SCALE_GRADIENT_DEFAULT);
+		averageSteps = config.getBoolean(AVERAGE_STEPS_KEY, AVERAGE_STEPS_DEFAULT);
 	}
 	
 	private void addLossAugmentedKernels() {
@@ -245,8 +254,9 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 				double weight = kernels.get(i).getWeight().getWeight() + currentStep;
 				weight = Math.max(weight, 0.0);
 				avgWeights[i] += weight;
-				kernels.get(i).setWeight(new PositiveWeight(weight));	
+				kernels.get(i).setWeight(new PositiveWeight(weight));
 			}
+			
 			reasoner.changedGroundKernelWeights();
 			// notify the registered observers
 			setChanged();
@@ -258,8 +268,10 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 		}
 		
 		/* Sets the weights to their averages */
-		for (int i = 0; i < kernels.size(); i++) {
-			kernels.get(i).setWeight(new PositiveWeight(avgWeights[i] / numSteps));
+		if (averageSteps) {
+			for (int i = 0; i < kernels.size(); i++) {
+				kernels.get(i).setWeight(new PositiveWeight(avgWeights[i] / numSteps));
+			}
 		}
 		
 		if (augmentLoss) {
