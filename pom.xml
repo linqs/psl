@@ -21,7 +21,7 @@
 	<groupId>edu.umd.cs</groupId>
 	<artifactId>psl</artifactId>
 	<name>psl</name>
-	<version>2.0.0-TEST</version>
+	<version>1.3</version>
 	<packaging>pom</packaging>
 	<description>The PSL software from the University of Maryland.</description>
 	<licenses>
