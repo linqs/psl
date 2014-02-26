@@ -26,6 +26,7 @@ import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.QueryAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.predicate.Predicate;
+import edu.umd.cs.psl.util.database.Queries;
 
 /**
  * A DatabasePopulator can easily commit a large number of
@@ -66,6 +67,22 @@ public class DatabasePopulator {
 		
 		// Perform a recursive depth-first traversal of the arguments and their substitutions
 		groundAndPersistAtom(0, groundArguments);
+	}
+	
+	/**
+	 * Populates the {@link Predicate} p using all of the groudings of p in 
+	 * the source {@link Database} sourceDB.
+	 * @param sourceDB	{@link Database} containing groundings of p
+	 * @param p			{@link Predicate} to be populated
+	 */
+	public void populateFromDB(Database sourceDB, Predicate p) {
+		Set<GroundAtom> groundings = Queries.getAllAtoms(sourceDB, p);
+		for (GroundAtom ga : groundings) {
+			GroundTerm[] arguments = ga.getArguments();
+			GroundAtom rv = db.getAtom(p, arguments);
+			if (rv instanceof RandomVariableAtom)
+				db.commit((RandomVariableAtom)rv);
+		}
 	}
 	
 	/*
