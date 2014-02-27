@@ -236,7 +236,7 @@ public class RDBMSDataStoreMetadata implements DataStoreMetdata {
 	public int getMaxPartition(){
 		int max = 0;
 		try{
-			PreparedStatement stmt = conn.prepareStatement("SELECT CAST (MAX(value) as INT) from "+mdTableName+" WHERE namespace = 'Partition' AND keytype = 'name'");
+			PreparedStatement stmt = conn.prepareStatement("SELECT MAX(CAST(value as INT)) from "+mdTableName+" WHERE namespace = 'Partition' AND keytype = 'name'");
 			stmt.execute();
 			ResultSet rs = stmt.getResultSet();
 			if(rs.next()){

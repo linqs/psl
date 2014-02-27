@@ -465,6 +465,7 @@ public class RDBMSDataStore implements DataStore {
 				deletedEntries+= stmt.executeUpdate(sql);
 			}
 			stmt.close();
+			metadata.removePartition(partition);
 		} catch(SQLException e) {
 			throw new RuntimeException(e);
 		}
