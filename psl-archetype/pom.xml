@@ -20,13 +20,13 @@
 	<groupId>edu.umd.cs</groupId>
 	<artifactId>psl-archetype</artifactId>
 	<name>psl-archetype</name>
-	<version>1.3</version>
+	<version>1.3-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<description>Collection of Maven archetypes for the PSL software from the University of Maryland.</description>
 	<parent>
 		<groupId>edu.umd.cs</groupId>
 		<artifactId>psl</artifactId>
-		<version>1.3</version>
+		<version>1.3-SNAPSHOT</version>
 	</parent>
 	<modules>
 		<module>psl-archetype-example</module>
