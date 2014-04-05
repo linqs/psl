@@ -66,6 +66,7 @@ public class H2DatabaseDriver implements DatabaseDriver {
 	public Connection getDiskDatabase(String path) {
 		try {
 			return DriverManager.getConnection("jdbc:h2:" + path + ";AUTO_SERVER=TRUE");
+			//return DriverManager.getConnection("jdbc:h2:" + path);
 		} catch (SQLException e) {
 			throw new RuntimeException(
 					"Could not connect to database: " + path, e);

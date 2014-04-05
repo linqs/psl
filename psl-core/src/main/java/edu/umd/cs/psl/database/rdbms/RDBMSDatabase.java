@@ -38,6 +38,7 @@ import com.healthmarketscience.sqlbuilder.InsertQuery;
 import com.healthmarketscience.sqlbuilder.QueryPreparer;
 import com.healthmarketscience.sqlbuilder.SelectQuery;
 import com.healthmarketscience.sqlbuilder.UpdateQuery;
+import com.healthmarketscience.sqlbuilder.DeleteQuery;
 
 import edu.umd.cs.psl.database.DataStore;
 import edu.umd.cs.psl.database.Database;
@@ -115,6 +116,8 @@ public class RDBMSDatabase implements Database {
 	private final Map<Predicate, PreparedStatement> queryStatement;
 	private final Map<Predicate, PreparedStatement> updateStatement;
 	private final Map<Predicate, PreparedStatement> insertStatement;
+	private final Map<Predicate, PreparedStatement> deleteStatement;
+	
 	
 	/**
 	 * The following keeps track of bulk atoms to be committed.
@@ -165,6 +168,7 @@ public class RDBMSDatabase implements Database {
 		this.queryStatement = new HashMap<Predicate, PreparedStatement>();
 		this.updateStatement = new HashMap<Predicate, PreparedStatement>();
 		this.insertStatement = new HashMap<Predicate, PreparedStatement>();
+		this.deleteStatement = new HashMap<Predicate, PreparedStatement>();
 		this.pendingInserts = new HashSet<RandomVariableAtom>();
 		this.pendingUpdates = new HashSet<RandomVariableAtom>();
 		this.closed = false;
@@ -180,6 +184,7 @@ public class RDBMSDatabase implements Database {
 		if (!closedPredicates.contains(ph.predicate())) {
 			createUpdateStatement(ph);
 			createInsertStatement(ph);
+			createDeleteStatement(ph);
 		}
 	}
 	
@@ -256,6 +261,23 @@ public class RDBMSDatabase implements Database {
 		}
 	}
 	
+	private void createDeleteStatement(RDBMSPredicateHandle ph){
+		DeleteQuery q = new DeleteQuery(ph.tableName());
+		QueryPreparer preparer = new QueryPreparer();
+		QueryPreparer.MultiPlaceHolder placeHolder = preparer.getNewMultiPlaceHolder();
+		// First set placeholders for the arguments
+		for (int i=0; i<ph.argumentColumns().length; i++) {
+			q.addCondition(BinaryCondition.equalTo(new CustomSql(ph.argumentColumns()[i]), placeHolder));
+		}
+		
+		try {
+			PreparedStatement ps = dbConnection.prepareStatement(q.toString());
+			deleteStatement.put(ph.predicate(), ps);
+		} catch (SQLException e) {
+			throw new RuntimeException("Could not create prepared statement.", e);
+		}
+	}
+	
 	/**
 	 * Helper method for getting a predicate handle
 	 * @param p	The predicate to lookup
@@ -325,6 +347,39 @@ public class RDBMSDatabase implements Database {
 			return getAtom((FunctionalPredicate)p, arguments);
 		else
 			throw new IllegalArgumentException("Unknown predicate type: " + p.getClass().toString());
+	}
+	
+	@Override
+	public boolean deleteAtom(GroundAtom a) {
+		boolean deleted = false;
+		QueryAtom qAtom = new QueryAtom(a.getPredicate(),a.getArguments());
+		if (pendingInserts.contains(qAtom) || pendingUpdates.contains(qAtom))
+			executePendingStatements();
+		if(cache.getCachedAtom(qAtom)!=null){
+			cache.removeCachedAtom(qAtom);
+		}
+
+		RDBMSPredicateHandle ph = getHandle(a.getPredicate());
+		PreparedStatement stmt = deleteStatement.get(a.getPredicate());
+		Term[] arguments = a.getArguments();
+		int argIdx=1;
+		try {
+			// First, fill in arguments
+			for (int i = 0; i < ph.argumentColumns().length; i++) {
+				if (arguments[i] instanceof Attribute) {
+					stmt.setObject(argIdx, ((Attribute)arguments[i]).getValue());
+				} else if (arguments[i] instanceof UniqueID) {
+					stmt.setObject(argIdx, ((UniqueID)arguments[i]).getInternalID());
+				} else
+					throw new IllegalArgumentException("Unknown argument type: " + arguments[i].getClass());
+				argIdx++;
+			}
+			int changed = stmt.executeUpdate();
+			if(changed > 0){ deleted = true; }
+		} catch (SQLException e) {
+			throw new RuntimeException("Error deleting atom.", e);
+		}
+		return deleted;		
 	}
 
 	private GroundAtom getAtom(StandardPredicate p, GroundTerm... arguments) {

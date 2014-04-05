@@ -80,6 +80,18 @@ public class AtomCache {
 			
 		});
 	}
+	/**
+	 * Removes an atom from the AtomCache
+	 * @param qAtom  the Atom to remove
+	 * @return whether an atom was removed from the cache
+	 */
+	public boolean removeCachedAtom(QueryAtom qAtom) {
+		if(cache.containsKey(qAtom)){
+			cache.remove(qAtom);
+			return true;
+		}
+		return false;
+	}
 	
 	/**
 	 * @return all ObservedAtoms in this AtomCache
@@ -142,4 +154,6 @@ public class AtomCache {
 		cache.put(key, atom);
 		return atom;
 	}
+
+
 }

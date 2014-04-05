@@ -96,7 +96,7 @@ public interface Database {
 	 *   instantiated as an {@link ObservedAtom} with the persisted state.</li>
 	 *   <li>If the GroundAtom is persisted in the write Partition, then it will be
 	 *   instantiated with the persisted state. It will be instantiated as an
-	 *   ObseredAtom if its Predicate is closed and as a {@link RandomVariableAtom}
+	 *   ObservedAtom if its Predicate is closed and as a {@link RandomVariableAtom}
 	 *   if it is open.</li>
 	 *   <li>If the GroundAtom has a StandardPredicate but is not persisted
 	 *   in any of the Database's partitions, it will be instantiated with a truth
@@ -115,6 +115,17 @@ public interface Database {
 	 * @throws IllegalStateException  if the Atom is persisted in multiple read Partitions
 	 */
 	public GroundAtom getAtom(Predicate p, GroundTerm... arguments);
+	
+	/**
+	 * Removes the GroundAtom from the Database, if it exists.
+	 *
+	 * 
+	 * @param a the GroundAtom to delete
+	 * @return If an atom was removed
+	 * @throws IllegalArgumentException  if p is not registered or arguments are not valid
+	 */
+	public boolean deleteAtom(GroundAtom a);
+	
 	
 	/**
 	 * Persists a RandomVariableAtom in this Database's write Partition.
