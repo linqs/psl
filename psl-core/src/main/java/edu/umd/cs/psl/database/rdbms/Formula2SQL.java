@@ -28,6 +28,7 @@ import com.healthmarketscience.sqlbuilder.FunctionCall;
 import com.healthmarketscience.sqlbuilder.InCondition;
 import com.healthmarketscience.sqlbuilder.SelectQuery;
 
+import edu.umd.cs.psl.database.StreamingDatabase;
 import edu.umd.cs.psl.model.argument.Attribute;
 import edu.umd.cs.psl.model.argument.Term;
 import edu.umd.cs.psl.model.argument.UniqueID;
@@ -36,10 +37,7 @@ import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.VariableAssignment;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.formula.traversal.AbstractFormulaTraverser;
-import edu.umd.cs.psl.model.predicate.ExternalFunctionalPredicate;
-import edu.umd.cs.psl.model.predicate.FunctionalPredicate;
-import edu.umd.cs.psl.model.predicate.SpecialPredicate;
-import edu.umd.cs.psl.model.predicate.StandardPredicate;
+import edu.umd.cs.psl.model.predicate.*;
 
 public class Formula2SQL extends AbstractFormulaTraverser {
 
@@ -207,8 +205,17 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 					assert arg instanceof Variable;
 			}
 			
+			ArrayList<Integer> partitions;
+			if(database instanceof StreamingDatabase && atom.getPredicate() instanceof IngestPredicate){
+				
+				partitions = null;
+			} else if(database instanceof StreamingDatabase && atom.getPredicate() instanceof ExistingPredicate){
+				partitions = null;
+			} else {
+				partitions = new ArrayList<Integer>(database.readPartitions.length);
+			}
 			// Query all of the read (and the write) partition(s) belonging to the database
-			ArrayList<Integer> partitions = new ArrayList<Integer>(database.readPartitions.length);
+			
 			for (int i = 0; i < database.readPartitions.length; i++)
 				partitions.add(database.readPartitions[i].getID());
 			partitions.add(database.writePartition.getID());

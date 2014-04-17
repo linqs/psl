@@ -139,6 +139,13 @@ public interface DataStore {
 	 */
 	public int deletePartition(Partition partition);
 	
+	/**
+	 * Requests a new {@link Partition} that is assigned an auto-generated name
+	 * and the next unused ID. This partition will remain in the datastore
+	 * metadata unless explicitly deleted.
+	 * 
+	 * @return new, unused partition
+	 */
 	public Partition getNewPartition();
 	
 	/**

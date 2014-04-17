@@ -19,6 +19,9 @@ package edu.umd.cs.psl.database.rdbms;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -26,10 +29,13 @@ import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.Transformer;
 
+import edu.umd.cs.psl.database.DataStore;
 import edu.umd.cs.psl.database.DataStoreMetdata;
 import edu.umd.cs.psl.database.Partition;
-
 import edu.umd.cs.psl.database.rdbms.RDBMSPartition;
 
 /**
@@ -92,7 +98,7 @@ public class RDBMSDataStoreMetadata implements DataStoreMetdata {
 		return true;
 	}
 
-	public String getValue(String space, String type, String key){
+	protected String getValue(String space, String type, String key){
 		try{
 			PreparedStatement stmt = conn.prepareStatement("SELECT value from "+mdTableName+" WHERE namespace = ? AND keytype = ? AND key = ?");
 			stmt.setString(1, space);
@@ -111,7 +117,7 @@ public class RDBMSDataStoreMetadata implements DataStoreMetdata {
 	}
 	
 	
-	public boolean removeRow(String space, String type, String key) {
+	protected boolean removeRow(String space, String type, String key) {
 		try{
 			PreparedStatement stmt = conn.prepareStatement("DELETE FROM "+mdTableName+" WHERE namespace = ? AND keytype = ? AND key = ?");
 			stmt.setString(1, space);
@@ -189,7 +195,42 @@ public class RDBMSDataStoreMetadata implements DataStoreMetdata {
 		return success;
 	}
 	
+	public boolean addStreamPartition(RDBMSStream s, Partition partition){
+		boolean success = false;
+		String streamPartitionName = s.getName()+"."+partition.getName();
+		addPartition();
+		return success;
+	}
 
+	private class PartitionToStringTransformer implements Transformer {
+		private PartitionToStringTransformer() {}
+		public Object transform(Object p){
+			return Integer.toString(((Partition) p).getID());
+		}
+	}
+
+	private class StringToPartitionTransformer implements Transformer {
+		private RDBMSDataStoreMetadata md;
+		private StringToPartitionTransformer(RDBMSDataStoreMetadata md) {
+			this.md = md;
+		}
+		public Object transform(Object s){
+			return md.getPartitionByName((String) s);
+		}
+	}
+	
+	protected String serializePartitions(Collection<Partition> partitions){
+		String ret = "";
+		ret = StringUtils.join((Collection<String>) CollectionUtils.collect(partitions, new PartitionToStringTransformer()), ',');
+		return ret;
+	}
+	
+	protected Collection<Partition> deserializePartitions(String partitionString){
+		//return CollectionUtils.collect(new HashSet<String>(Arrays.asList(StringUtils.split(partitionString, ','))), new StringToPartitionTransformer(this));
+	}
+
+	
+	
 	public boolean removeStream(RDBMSStream s){
 		boolean success = false;
 		success = removeRow("Stream","name",s.getName());
