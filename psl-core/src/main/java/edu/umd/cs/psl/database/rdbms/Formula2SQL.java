@@ -28,7 +28,10 @@ import com.healthmarketscience.sqlbuilder.FunctionCall;
 import com.healthmarketscience.sqlbuilder.InCondition;
 import com.healthmarketscience.sqlbuilder.SelectQuery;
 
+import edu.umd.cs.psl.database.Partition;
+import edu.umd.cs.psl.database.Stream;
 import edu.umd.cs.psl.database.StreamingDatabase;
+import edu.umd.cs.psl.database.StreamingDataStore;
 import edu.umd.cs.psl.model.argument.Attribute;
 import edu.umd.cs.psl.model.argument.Term;
 import edu.umd.cs.psl.model.argument.UniqueID;
@@ -206,22 +209,21 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 			}
 			
 			ArrayList<Integer> partitions;
-			if(database instanceof StreamingDatabase && atom.getPredicate() instanceof IngestPredicate){
-				
-				partitions = null;
-			} else if(database instanceof StreamingDatabase && atom.getPredicate() instanceof ExistingPredicate){
-				partitions = null;
+			if(atom.getPredicate() instanceof StreamingPredicate){
+				Stream s = ((StreamingPredicate) atom.getPredicate()).getStream();
+				partitions = new ArrayList<Integer>();
+				for(Partition p : s.getPartitions()){
+					partitions.add(p.getID());
+				}
 			} else {
 				partitions = new ArrayList<Integer>(database.readPartitions.length);
+				// Query all of the read (and the write) partition(s) belonging to the database
+				for (int i = 0; i < database.readPartitions.length; i++)
+					partitions.add(database.readPartitions[i].getID());
+				partitions.add(database.writePartition.getID());
 			}
-			// Query all of the read (and the write) partition(s) belonging to the database
-			
-			for (int i = 0; i < database.readPartitions.length; i++)
-				partitions.add(database.readPartitions[i].getID());
-			partitions.add(database.writePartition.getID());
 			query.addCondition(new InCondition(new CustomSql(tableDot
 					+ ph.partitionColumn()), partitions));
-			
 			tableCounter++;
 		}
 	}

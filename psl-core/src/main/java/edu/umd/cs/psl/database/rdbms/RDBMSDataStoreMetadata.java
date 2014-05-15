@@ -47,14 +47,19 @@ public class RDBMSDataStoreMetadata implements DataStoreMetdata {
 	private String mdTableName;
 	private Connection conn;
 	private HashMap<String,Integer> partitionNames;
-	private HashMap<String,Integer> streamNames;
 	
 	public RDBMSDataStoreMetadata(Connection conn, String mdTableName){
 		this.mdTableName = mdTableName;
 		this.conn = conn;
-		partitionNames = new HashMap<String, Integer>();
-		streamNames = new HashMap<String, Integer>();
-		
+		partitionNames = new HashMap<String, Integer>();	
+	}
+	
+	protected Connection getConnection(){
+		return conn;
+	}
+	
+	protected String getMetadataTableName() {
+		return mdTableName;
 	}
 	
 	public boolean checkIfMetadataTableExists(){
@@ -83,7 +88,7 @@ public class RDBMSDataStoreMetadata implements DataStoreMetdata {
 	
 	
 	/**** Database Helper functions ****/
-	private boolean addRow(String space, String type, String key, String val){
+	protected boolean addRow(String mdTableName, String space, String type, String key, String val){
 		try{
 			PreparedStatement stmt = conn.prepareStatement("INSERT INTO "+mdTableName+" VALUES(?, ?, ?, ?)");
 			stmt.setString(1, space);
@@ -92,13 +97,13 @@ public class RDBMSDataStoreMetadata implements DataStoreMetdata {
 			stmt.setString(4, val);
 			stmt.execute();						
 		} catch (Exception e) {
-			log.error(e.getMessage());
+			log.info(e.getMessage());
 			return false;
 		}
 		return true;
 	}
 
-	protected String getValue(String space, String type, String key){
+	protected String getValue(String mdTableName, String space, String type, String key){
 		try{
 			PreparedStatement stmt = conn.prepareStatement("SELECT value from "+mdTableName+" WHERE namespace = ? AND keytype = ? AND key = ?");
 			stmt.setString(1, space);
@@ -110,14 +115,14 @@ public class RDBMSDataStoreMetadata implements DataStoreMetdata {
 				return rs.getString(1);
 			}
 		} catch (Exception e) {
-			log.error(e.getMessage());
+			log.info(e.getMessage());
 			return null;
 		}
 		return null;
 	}
 	
 	
-	protected boolean removeRow(String space, String type, String key) {
+	protected boolean removeRow(String mdTableName, String space, String type, String key) {
 		try{
 			PreparedStatement stmt = conn.prepareStatement("DELETE FROM "+mdTableName+" WHERE namespace = ? AND keytype = ? AND key = ?");
 			stmt.setString(1, space);
@@ -125,13 +130,13 @@ public class RDBMSDataStoreMetadata implements DataStoreMetdata {
 			stmt.setString(3, key);
 			stmt.execute();						
 		} catch (Exception e) {
-			log.error(e.getMessage());
+			log.info(e.getMessage());
 			return false;
 		}
 		return true;	
 	}
 
-	public Map<String,String> getAllValuesByType(String space, String type){
+	public Map<String,String> getAllValuesByType(String mdTableName, String space, String type){
 		Map<String, String> vals = null;
 		try{
 			PreparedStatement stmt = conn.prepareStatement("SELECT (key,value) from "+mdTableName+" WHERE namespace = ? AND keytype = ?");
@@ -149,101 +154,13 @@ public class RDBMSDataStoreMetadata implements DataStoreMetdata {
 		return vals;
 	}
 	
-	/**** Stream-related functions ****/
-	public RDBMSStream getStreamByName(String name){
-		RDBMSStream s = null;
-		String idStr = getValue("Stream","name",name);
-		if(idStr != null){
-			s = new RDBMSStream(Integer.parseInt(idStr),name);
-		}
-		return s;
-	}
 	
-	public String getStreamTable(RDBMSStream s){
-		return getValue("Stream","table",s.getName());
-	}
-
-	public void loadStreamNames(){
-		Map<String,String> vals = getAllValuesByType("Stream","name");
-		if(vals!=null){
-			for(String name : vals.keySet()){
-				streamNames.put(name,Integer.parseInt(vals.get(name)));
-			}
-		}
-	}
-	
-	public int getMaxStream(){
-		return 0;
-	}
-	
-	public boolean addStream(RDBMSStream s){
-		boolean success = false;
-		if(getStreamByName(s.getName())!=null){
-			log.error("Stream named"+s.getName()+" already exists");
-		} else {
-			success = addRow("Stream","name",s.getName(),Integer.toString(s.getID()));
-			streamNames.put(s.getName(), s.getID());			
-		}
-		return success;
-	}
-
-	public boolean addStreamTable(RDBMSStream s, String tableName){
-		boolean success = false;
-		if(getStreamTable(s)==null){
-			success = addRow("Stream","table",s.getName(),tableName);
-		}
-		return success;
-	}
-	
-	public boolean addStreamPartition(RDBMSStream s, Partition partition){
-		boolean success = false;
-		String streamPartitionName = s.getName()+"."+partition.getName();
-		addPartition();
-		return success;
-	}
-
-	private class PartitionToStringTransformer implements Transformer {
-		private PartitionToStringTransformer() {}
-		public Object transform(Object p){
-			return Integer.toString(((Partition) p).getID());
-		}
-	}
-
-	private class StringToPartitionTransformer implements Transformer {
-		private RDBMSDataStoreMetadata md;
-		private StringToPartitionTransformer(RDBMSDataStoreMetadata md) {
-			this.md = md;
-		}
-		public Object transform(Object s){
-			return md.getPartitionByName((String) s);
-		}
-	}
-	
-	protected String serializePartitions(Collection<Partition> partitions){
-		String ret = "";
-		ret = StringUtils.join((Collection<String>) CollectionUtils.collect(partitions, new PartitionToStringTransformer()), ',');
-		return ret;
-	}
-	
-	protected Collection<Partition> deserializePartitions(String partitionString){
-		//return CollectionUtils.collect(new HashSet<String>(Arrays.asList(StringUtils.split(partitionString, ','))), new StringToPartitionTransformer(this));
-	}
-
-	
-	
-	public boolean removeStream(RDBMSStream s){
-		boolean success = false;
-		success = removeRow("Stream","name",s.getName());
-		if(success)
-			streamNames.remove(s.getName());
-		return success;	
-	}
 	
 
 	
 	/**** Partition-related functions ****/
 	public void loadPartitionNames(){
-		Map<String,String> vals = getAllValuesByType("Partition","name");
+		Map<String,String> vals = getAllValuesByType(mdTableName,"Partition","name");
 		if(vals != null){
 			for(String name : vals.keySet()){
 				int id = Integer.parseInt(vals.get(name));				
@@ -254,7 +171,7 @@ public class RDBMSDataStoreMetadata implements DataStoreMetdata {
 	
 	public Partition getPartitionByName(String name){
 		Partition p = null;
-		String idStr = getValue("Partition","name",name);
+		String idStr = getValue(mdTableName,"Partition","name",name);
 		if(idStr != null){
 			p = new RDBMSPartition(Integer.parseInt(idStr),name);
 		}
@@ -263,7 +180,7 @@ public class RDBMSDataStoreMetadata implements DataStoreMetdata {
 	
 	public Set<Partition> getAllPartitions(){
 		Set<Partition> partitions = null; 
-		Map<String,String> vals = getAllValuesByType("Partition","name");
+		Map<String,String> vals = getAllValuesByType(mdTableName,"Partition","name");
 		if(vals != null){
 			partitions = new HashSet<Partition>();
 			for(String name : vals.keySet()){
@@ -298,7 +215,7 @@ public class RDBMSDataStoreMetadata implements DataStoreMetdata {
 		if(getPartitionByName(p.getName())!=null){
 			log.error("Partition named"+p.getName()+" already exists");
 		} else {
-			success = addRow("Partition","name",p.getName(),Integer.toString(p.getID()));
+			success = addRow(mdTableName,"Partition","name",p.getName(),Integer.toString(p.getID()));
 			if(success)
 					partitionNames.put(p.getName(), p.getID());
 		}
@@ -309,7 +226,7 @@ public class RDBMSDataStoreMetadata implements DataStoreMetdata {
 	@Override
 	public boolean removePartition(Partition p) {
 		boolean success = false;
-		success = removeRow("Partition","name",p.getName());
+		success = removeRow(mdTableName,"Partition","name",p.getName());
 		if(success)
 			partitionNames.remove(p.getName());
 		return success;

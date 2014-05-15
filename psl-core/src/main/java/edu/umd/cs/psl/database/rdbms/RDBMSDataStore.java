@@ -129,7 +129,7 @@ public class RDBMSDataStore implements DataStore {
 	/*
 	 * Metadata
 	 */
-	protected final RDBMSDataStoreMetadata metadata;
+	private RDBMSDataStoreMetadata metadata;
 	
 	/*
 	 * TODO DataStore's should have a static collection of all the RDBMSs they are connected to, in order to prevent multiple connections to the same RDBMS.
@@ -173,8 +173,7 @@ public class RDBMSDataStore implements DataStore {
 		this.dataloader = new RDBMSDataLoader(connection);
 		
 		//Initialize metadata
-		this.metadata = new RDBMSDataStoreMetadata(connection, METADATA_TABLENAME);
-		initializeMetadata(metadata);
+		initializeMetadata(connection, METADATA_TABLENAME);
 		
 		// Store the type of unique ID this RDBMS will use
 		this.stringUniqueIDs = config.getBoolean(USE_STRING_ID_KEY, USE_STRING_ID_DEFAULT);
@@ -190,7 +189,8 @@ public class RDBMSDataStore implements DataStore {
 	/**
 	 * Helper method to read from metadata table and store results into metadata object
 	 */
-	private void initializeMetadata(RDBMSDataStoreMetadata metadata){
+	protected void initializeMetadata(Connection conn, String tblName){
+		this.metadata = new RDBMSDataStoreMetadata(conn, tblName);
 		metadata.createMetadataTable();
 	}
 	

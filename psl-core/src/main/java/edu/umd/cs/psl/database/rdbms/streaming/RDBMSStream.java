@@ -1,4 +1,4 @@
-package edu.umd.cs.psl.database.rdbms;
+package edu.umd.cs.psl.database.rdbms.streaming;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -11,15 +11,18 @@ import edu.umd.cs.psl.database.Stream;
 public class RDBMSStream implements Stream {
 		private final int id;
 		private final String name;
+		private final RDBMSStreamingDataStore ds;
 		private final HashSet<Partition> partitions;
 		//private final String tablePrefix;
 		
-		public RDBMSStream(int id, String name) {
+		public RDBMSStream(int id, String name, RDBMSStreamingDataStore ds) {
 			Preconditions.checkArgument(id>=0);
 			this.id=id;
 			this.name = name;
+			this.ds = ds;
 			this.partitions = new HashSet<Partition>();
 		}
+		
 		
 		public int getID() {
 			return id;
@@ -46,16 +49,25 @@ public class RDBMSStream implements Stream {
 			return id == ((RDBMSStream)oth).id;  
 		}
 
-		public void addPartition(Partition p){
-			partitions.add(p);
+		public boolean addPartition(Partition p){
+			boolean success = ds.addPartitionToStream(this, p);
+			if(success) { partitions.add(p); }
+			return true;
 		}
 		
-		public void addPartitions(Set<Partition> pSet){
-			partitions.addAll(pSet);
+		public boolean addPartitions(Set<Partition> pSet){
+			boolean success = true;
+			for (Partition p : pSet){
+				success &= ds.addPartitionToStream(this, p);
+				if(!success){ break; }
+				else { partitions.add(p); }
+			}
+			return success;
 		}
+		
 		@Override
 		public Set<Partition> getPartitions() {
-			return partitions;
+			return ds.getPartitions(this);
 		}
 		
 	}
