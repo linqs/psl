@@ -55,19 +55,6 @@ public class RDBMSStreamingDataStore  extends RDBMSDataStore implements
 		metadata.createMetadataTable();
 	}
 
-	public Stream getNewStream(){
-		int streamnum = getNextStream();
-		Stream s = new RDBMSStream(streamnum,"AnonymousStream"+Integer.toString(streamnum), this);
-		openStreams.add((RDBMSStream)s);
-		return s;
-	}
-	
-	private int getNextStream() {
-		int maxStream = 0;
-		maxStream = metadata.getMaxStream();
-		return maxStream+1;
-	}
-	
 	public Stream getStream(String streamName) {
 		String idStr = metadata.getStreamIDByName(streamName);
 		RDBMSStream s = null;
@@ -79,6 +66,19 @@ public class RDBMSStreamingDataStore  extends RDBMSDataStore implements
 		}
 		openStreams.add(s);
 		return s;
+	}
+	
+	public Stream getNewStream(){
+		int streamnum = getNextStream();
+		Stream s = new RDBMSStream(streamnum,"AnonymousStream"+Integer.toString(streamnum), this);
+		openStreams.add((RDBMSStream)s);
+		return s;
+	}
+	
+	private int getNextStream() {
+		int maxStream = 0;
+		maxStream = metadata.getMaxStream();
+		return maxStream+1;
 	}
 	
 	public void close() {

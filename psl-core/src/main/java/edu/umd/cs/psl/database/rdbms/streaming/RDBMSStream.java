@@ -70,4 +70,9 @@ public class RDBMSStream implements Stream {
 			return ds.getPartitions(this);
 		}
 		
+		public void close(){
+			ds.closeStream(this);
+		}
+		
+		
 	}

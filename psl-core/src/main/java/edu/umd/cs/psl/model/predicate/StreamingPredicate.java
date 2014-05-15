@@ -6,9 +6,6 @@ import edu.umd.cs.psl.model.argument.ArgumentType;
 public class StreamingPredicate extends StandardPredicate {
 
 	private Stream s;
-	public StreamingPredicate(String name, ArgumentType[] types) {
-		super(name, types);
-	}
 
 	public StreamingPredicate(String name, ArgumentType[] types, Stream s) {
 		super(name, types);
