@@ -52,9 +52,10 @@ public class LoadDelimitedData {
 				if (obj!=null) result.add(obj);
 
 			}
+			in.close();
 		} catch (IOException e) {
 			throw new AssertionError(e);
-		}
+		} 
 		return result;
 	}
 	
