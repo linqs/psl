@@ -101,12 +101,12 @@ for (Predicate p : [domainOf,fromOntology,name,hasType,rangeOf,subclass])
 {
         println "${symbol_escape}t${symbol_escape}t${symbol_escape}tREADING " + p.getName() +" ...";
 	insert = data.getInserter(p, trainPart)
-	InserterUtils.loadDelimitedData(insert, trainDir+p.getName()+".txt");
+	InserterUtils.loadDelimitedData(insert, trainDir+p.getName().toLowerCase()+".txt");
 }
 
 println "${symbol_escape}t${symbol_escape}t${symbol_escape}tREADING SIMILAR ...";
 insert = data.getInserter(similar, truthPart)
-InserterUtils.loadDelimitedDataTruth(insert, trainDir+"SIMILAR.txt");
+InserterUtils.loadDelimitedDataTruth(insert, trainDir+"similar.txt");
 
 //////////////////////////// weight learning ///////////////////////////
 println "${symbol_escape}t${symbol_escape}tLEARNING WEIGHTS...";
@@ -130,7 +130,7 @@ Partition testPart = new Partition(2);
 for (Predicate p : [domainOf,fromOntology,name,hasType,rangeOf,subclass]) 
 {
 	insert = data.getInserter(p, testPart);
-	InserterUtils.loadDelimitedData(insert, testDir+p.getName()+".txt");
+	InserterUtils.loadDelimitedData(insert, testDir+p.getName().toLowerCase()+".txt");
 }
 
 Database testDB = data.getDatabase(testPart, [name, subclass, fromOntology, domainOf, rangeOf, hasType] as Set);
