@@ -327,6 +327,7 @@ public class MaxMargin extends WeightLearningApplication {
 					double truth = trainingMap.getTrainingMap().get(gk.getAtom()).getValue();
 					if (currentValue > truth && gk.getWeight() instanceof PositiveWeight) {
 						gk.setWeight(new NegativeWeight(obsvTrueWeight));
+						reasoner.changedGroundKernel(gk);
 						rerunOptimization = true;
 					}
 					else if (currentValue < truth && gk.getWeight() instanceof NegativeWeight) {
