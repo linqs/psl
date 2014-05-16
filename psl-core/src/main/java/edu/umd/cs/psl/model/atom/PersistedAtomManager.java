@@ -65,9 +65,8 @@ public class PersistedAtomManager implements AtomManager {
 	}
 	
 	private void buildPersistedAtomCache() {
-		//TODO Isn't it possible to query for a predicate that is not registered with this database?
 		// Iterate through all of the registered predicates in this database
-		for (StandardPredicate predicate : db.getDataStore().getRegisteredPredicates()) {
+		for (StandardPredicate predicate : db.getRegisteredPredicates()) {
 			// Ignore any closed predicates, they will not return RandomVariableAtoms
 			if (db.isClosed(predicate))
 				continue;

@@ -170,7 +170,15 @@ public class RDBMSDatabase implements Database {
 		this.closed = false;
 	}
 	
-	public void registerPredicate(RDBMSPredicateHandle ph) {
+	/**
+	 * Adds a RDBMSPredicateHandle to this Database. Expected to be called only
+	 * immediately after construction by parent DataStore, in order to preserve
+	 * contract that only predicates registered with the DataStore at time of
+	 * construction are registered with this Database.
+	 * 
+	 * @param ph predicate to register
+	 */
+	void registerPredicate(RDBMSPredicateHandle ph) {
 		if (predicateHandles.containsKey(ph.predicate()))
 			throw new IllegalArgumentException("Predicate has already been registered!");
 		predicateHandles.put(ph.predicate(), ph);
@@ -181,6 +189,15 @@ public class RDBMSDatabase implements Database {
 			createUpdateStatement(ph);
 			createInsertStatement(ph);
 		}
+	}
+	
+	@Override
+	public Set<StandardPredicate> getRegisteredPredicates() {
+		Set<StandardPredicate> predicates = new HashSet<StandardPredicate>();
+		for (Predicate p : predicateHandles.keySet())
+			if (p instanceof StandardPredicate)
+				predicates.add((StandardPredicate) p);
+		return predicates;
 	}
 	
 	private void createQueryStatement(RDBMSPredicateHandle ph) {

@@ -82,7 +82,7 @@ public class TrainingMap implements AtomManager {
 		this.latentVariables = new HashSet<RandomVariableAtom>();
 		
 		// Iterate through all of the registered predicates in the RandomVariableAtom database
-		for (StandardPredicate predicate : rvDB.getDataStore().getRegisteredPredicates()) {
+		for (StandardPredicate predicate : rvDB.getRegisteredPredicates()) {
 			// Ignore any closed predicates, they will not return RandomVariableAtoms
 			if (rvDB.isClosed(predicate))
 				continue;

@@ -112,6 +112,12 @@ public interface DataStore {
 	public Updater getUpdater(StandardPredicate predicate, Partition partition);
 	
 	/**
+	 * Returns the set of StandardPredicates registered with this DataStore.
+	 * Note that the result can differ from calling
+	 * {@link Database#getRegisteredPredicates()} on an associated Database,
+	 * since additional predicates might have been registered since that Database
+	 * was created.
+	 * 
 	 * @return the set of StandardPredicates registered with this DataStore
 	 */
 	public Set<StandardPredicate> getRegisteredPredicates();
