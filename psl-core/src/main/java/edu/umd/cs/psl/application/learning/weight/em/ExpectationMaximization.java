@@ -23,6 +23,8 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.Iterables;
+
 import edu.umd.cs.psl.application.learning.weight.TrainingMap;
 import edu.umd.cs.psl.application.learning.weight.maxlikelihood.VotedPerceptron;
 import edu.umd.cs.psl.application.util.Grounding;
@@ -32,6 +34,7 @@ import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
+import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.linearconstraint.GroundValueConstraint;
 import edu.umd.cs.psl.reasoner.ReasonerFactory;
 
@@ -63,15 +66,37 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 	/** Default value for ITER_KEY property */
 	public static final int ITER_DEFAULT = 10;
 	
+	/**
+	 * Key for positive double property for the minimum absolute change in weights
+	 * such that EM is considered converged
+	 */
+	public static final String TOLERANCE_KEY = CONFIG_PREFIX + ".tolerance";
+	/** Default value for TOLERANCE_KEY property */
+	public static final double TOLERANCE_DEFAULT = 1e-3;
+	
 	protected final int iterations;
+	protected final double tolerance;
 	
 	protected List<GroundValueConstraint> labelConstraints;
+	
+	protected List<CompatibilityKernel> kernels;
+	protected double [] weights;
 	
 	public ExpectationMaximization(Model model, Database rvDB,
 			Database observedDB, ConfigBundle config) {
 		super(model, rvDB, observedDB, config);
-		
+
 		iterations = config.getInt(ITER_KEY, ITER_DEFAULT);
+
+		tolerance = config.getDouble(TOLERANCE_KEY, TOLERANCE_DEFAULT);
+		
+		kernels = new ArrayList<CompatibilityKernel>();
+		
+		for (CompatibilityKernel k : Iterables.filter(model.getKernels(), CompatibilityKernel.class))
+			kernels.add(k);
+		weights = new double[kernels.size()];
+		for (int i = 0; i < weights.length; i++)
+			weights[i] = Double.POSITIVE_INFINITY;
 	}
 
 	@Override
@@ -82,6 +107,19 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 			minimizeKLDivergence();
 			/* M-step */
 			super.doLearn();
+			
+			double change = 0;
+			for (int i = 0; i < kernels.size(); i++) {
+				change += Math.abs(weights[i] - kernels.get(i).getWeight().getWeight());
+				weights[i] = kernels.get(i).getWeight().getWeight();
+			}
+			
+			if (change <= tolerance) {
+				log.info("EM converged with absolute weight change {} in {} rounds", change, round);
+				break;
+			} else
+				log.info("EM finished round {} with weight change {}", round, change);
+			
 		}
 	}
 
