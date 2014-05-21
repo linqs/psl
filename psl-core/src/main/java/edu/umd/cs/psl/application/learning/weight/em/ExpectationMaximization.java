@@ -78,6 +78,8 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 	protected final int iterations;
 	protected final double tolerance;
 	
+	private int round;
+	
 	/**
 	 * A reasoner for inferring the latent variables conditioned on
 	 * the observations and labels
@@ -108,7 +110,8 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 
 	@Override
 	protected void doLearn() {
-		for (int round = 1; round <= iterations; round++) {
+		round = 0;
+		while (++round < iterations) {
 			log.debug("Beginning EM round {} of {}", round, iterations);
 			/* E-step */
 			minimizeKLDivergence();
@@ -121,12 +124,13 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 				weights[i] = kernels.get(i).getWeight().getWeight();
 			}
 			
+			double loss = getLoss();
+			
 			if (change <= tolerance) {
-				log.info("EM converged with absolute weight change {} in {} rounds", change, round);
+				log.info("EM converged with absolute weight change {} in {} rounds. Perceptron loss: " + loss, change, round);
 				break;
 			} else
-				log.info("EM finished round {} with weight change {}", round, change);
-			
+				log.info("Finished EM round {} with change {}. Perceptron loss: " + loss, round, change);
 		}
 	}
 

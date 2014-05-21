@@ -140,6 +140,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	/** Default value for NUM_STEPS_KEY */
 	public static final int NUM_STEPS_DEFAULT = 25;
 	protected double[] numGroundings;
+	private double loss;
 	
 	private final double stepSize;
 	private final int numSteps;
@@ -171,6 +172,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 		scheduleStepSize = config.getBoolean(STEP_SCHEDULE_KEY, STEP_SCHEDULE_DEFAULT);
 		scaleGradient = config.getBoolean(SCALE_GRADIENT_KEY, SCALE_GRADIENT_DEFAULT);
 		averageSteps = config.getBoolean(AVERAGE_STEPS_KEY, AVERAGE_STEPS_DEFAULT);
+		loss = Double.POSITIVE_INFINITY;
 	}
 	
 	private void addLossAugmentedKernels() {
@@ -243,11 +245,13 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 			expectedIncompatibility = computeExpectedIncomp();
 			scalingFactor  = computeScalingFactor();
 
+			loss = 0;
 			/* Updates weights */
 			for (int i = 0; i < kernels.size(); i++) {
 				double currentStep = (expectedIncompatibility[i] - truthIncompatibility[i]
 						- l2Regularization * kernels.get(i).getWeight().getWeight()
 						- l1Regularization) / scalingFactor[i];
+				loss += kernels.get(i).getWeight().getWeight() * (expectedIncompatibility[i] - truthIncompatibility[i]); 
 				currentStep *= getStepSize(step);
 				log.debug("Step of {} for kernel {}", currentStep, kernels.get(i));
 				log.debug(" --- Expected incomp.: {}, Truth incomp.: {}", expectedIncompatibility[i], truthIncompatibility[i]);
@@ -329,7 +333,10 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	public void stop() {
 		toStop = true;
 	}
-
+	
+	public double getLoss() {
+		return loss;
+	}
 
 	/**
 	 * Intermediate state object to 
