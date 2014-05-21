@@ -251,7 +251,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 				double currentStep = (expectedIncompatibility[i] - truthIncompatibility[i]
 						- l2Regularization * kernels.get(i).getWeight().getWeight()
 						- l1Regularization) / scalingFactor[i];
-				loss += kernels.get(i).getWeight().getWeight() * (expectedIncompatibility[i] - truthIncompatibility[i]); 
+				loss += kernels.get(i).getWeight().getWeight() * (truthIncompatibility[i] - expectedIncompatibility[i]); 
 				currentStep *= getStepSize(step);
 				log.debug("Step of {} for kernel {}", currentStep, kernels.get(i));
 				log.debug(" --- Expected incomp.: {}, Truth incomp.: {}", expectedIncompatibility[i], truthIncompatibility[i]);

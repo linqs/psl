@@ -111,7 +111,7 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 	@Override
 	protected void doLearn() {
 		round = 0;
-		while (++round < iterations) {
+		while (round++ < iterations) {
 			log.debug("Beginning EM round {} of {}", round, iterations);
 			/* E-step */
 			minimizeKLDivergence();
@@ -120,12 +120,13 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 			
 			double change = 0;
 			for (int i = 0; i < kernels.size(); i++) {
-				change += Math.abs(weights[i] - kernels.get(i).getWeight().getWeight());
+				change += Math.pow(weights[i] - kernels.get(i).getWeight().getWeight(), 2);
 				weights[i] = kernels.get(i).getWeight().getWeight();
 			}
 			
 			double loss = getLoss();
 			
+			change = Math.sqrt(change);
 			if (change <= tolerance) {
 				log.info("EM converged with absolute weight change {} in {} rounds. Perceptron loss: " + loss, change, round);
 				break;
