@@ -36,6 +36,7 @@ import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.linearconstraint.GroundValueConstraint;
+import edu.umd.cs.psl.reasoner.Reasoner;
 import edu.umd.cs.psl.reasoner.ReasonerFactory;
 
 /**
@@ -77,7 +78,11 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 	protected final int iterations;
 	protected final double tolerance;
 	
-	protected List<GroundValueConstraint> labelConstraints;
+	/**
+	 * A reasoner for inferring the latent variables conditioned on
+	 * the observations and labels
+	 */
+	protected Reasoner latentVariableReasoner;
 	
 	protected List<CompatibilityKernel> kernels;
 	protected double [] weights;
@@ -97,6 +102,8 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 		weights = new double[kernels.size()];
 		for (int i = 0; i < weights.length; i++)
 			weights[i] = Double.POSITIVE_INFINITY;
+		
+		latentVariableReasoner = null;
 	}
 
 	@Override
@@ -129,26 +136,54 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 	protected void initGroundModel()
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		trainingMap = new TrainingMap(rvDB, observedDB);
+		
 		reasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
 		Grounding.groundAll(model, trainingMap, reasoner);
 		
-		/* Creates constraints to fix labeled random variables to their true values */
-		labelConstraints = new ArrayList<GroundValueConstraint>();
+		/* 
+		 * The latentVariableReasoner should be cleaned up in close(), not
+		 * cleanUpGroundModel(), so that calls to inferLatentVariables() still
+		 * work
+		 */
+		if (latentVariableReasoner != null)
+			latentVariableReasoner.close();
+		latentVariableReasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
+		Grounding.groundAll(model, trainingMap, latentVariableReasoner);
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet())
-			labelConstraints.add(new GroundValueConstraint(e.getKey(), e.getValue().getValue()));
+			latentVariableReasoner.addGroundKernel(new GroundValueConstraint(e.getKey(), e.getValue().getValue()));
 	}
 	
+	/**
+	 * Infers the most probable assignment to the latent variables conditioned
+	 * on the observations and labeled unknowns using the most recently learned
+	 * model.
+	 * 
+	 * The atoms with corresponding labels will be set to their label values.
+	 * 
+	 * @throws IllegalStateException  if no model has been learned
+	 */
 	public void inferLatentVariables() {
-		/* Adds constraints to fix values of labeled random variables */
-		for (GroundValueConstraint con : labelConstraints)
-			reasoner.addGroundKernel(con);
+		if (latentVariableReasoner == null)
+			throw new IllegalStateException("A model must have been learned " +
+					"before latent variables can be inferred.");
 		
-		/* Infers most probable assignment latent variables */
-		reasoner.optimize();
-		
-		/* Removes constraints */
-		for (GroundValueConstraint con : labelConstraints)
-			reasoner.removeGroundKernel(con);
+		/* 
+		 * Infers most probable assignment latent variables
+		 * 
+		 * (Called changedGroundKernelWeights() might be unnecessary, but this is
+		 * the easiest way to be sure latentVariableReasoner is updated.)
+		 */
+		latentVariableReasoner.changedGroundKernelWeights();
+		latentVariableReasoner.optimize();
+	}
+	
+	@Override
+	public void close() {
+		super.close();
+		if (latentVariableReasoner != null) {
+			latentVariableReasoner.close();
+			latentVariableReasoner = null;
+		}
 	}
 
 }
