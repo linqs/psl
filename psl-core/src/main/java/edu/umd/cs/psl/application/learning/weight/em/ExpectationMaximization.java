@@ -108,8 +108,8 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 
 	@Override
 	protected void doLearn() {
-		for (int round = 0; round < iterations; round++) {
-			log.debug("Beginning EM round {} of {}", round+1, iterations);
+		for (int round = 1; round <= iterations; round++) {
+			log.debug("Beginning EM round {} of {}", round, iterations);
 			/* E-step */
 			minimizeKLDivergence();
 			/* M-step */
