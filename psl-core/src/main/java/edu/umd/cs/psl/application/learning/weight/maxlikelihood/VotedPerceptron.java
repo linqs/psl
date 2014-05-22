@@ -150,8 +150,11 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	private final boolean scaleGradient;
 	private final boolean averageSteps;
 	
-	/** stop flag to quit the loop. */
+	/** Stop flag to quit the loop. */
 	protected boolean toStop = false;
+	
+	/** Learning loss at current point */
+	private double loss = Double.POSITIVE_INFINITY;
 	
 	public VotedPerceptron(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
 		super(model, rvDB, observedDB, config);
@@ -242,6 +245,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 			/* Computes the expected total incompatibility for each CompatibilityKernel */
 			expectedIncompatibility = computeExpectedIncomp();
 			scalingFactor  = computeScalingFactor();
+			loss = computeLoss();
 
 			/* Updates weights */
 			for (int i = 0; i < kernels.size(); i++) {
@@ -310,8 +314,20 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	 */
 	protected abstract double[] computeExpectedIncomp();
 	
+	/**
+	 * Internal method for computing the loss at the current point
+	 * before taking a step.
+	 * 
+	 * Returns 0.0 if not overridden by a subclass
+	 * 
+	 * @return current learning loss
+	 */
+	protected double computeLoss() {
+		return Double.POSITIVE_INFINITY;
+	}
+	
 	public double getLoss() {
-		throw new UnsupportedOperationException();
+		return loss;
 	}
 	
 	/**

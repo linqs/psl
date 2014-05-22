@@ -98,7 +98,7 @@ public class HardEM extends ExpectationMaximization {
 	}
 	
 	@Override
-	public double getLoss() {
+	protected double computeLoss() {
 		double loss = 0.0;
 		for (int i = 0; i < kernels.size(); i++)
 			loss += kernels.get(i).getWeight().getWeight() * (fullObservedIncompatibility[i] - fullExpectedIncompatibility[i]);
