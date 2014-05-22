@@ -23,4 +23,8 @@ public interface CompatibilityKernel extends Kernel {
 	public Weight getWeight();
 	
 	public void setWeight(Weight w);
+	
+	public boolean isWeightMutable();
+	
+	public void setWeightMutable(boolean mutable);
 }

@@ -105,7 +105,8 @@ public abstract class WeightLearningApplication extends Observable implements Mo
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		/* Gathers the CompatibilityKernels */
 		for (CompatibilityKernel k : Iterables.filter(model.getKernels(), CompatibilityKernel.class))
-			kernels.add(k);
+			if (k.isWeightMutable())
+				kernels.add(k);
 		
 		/* Sets up the ground model */
 		initGroundModel();
