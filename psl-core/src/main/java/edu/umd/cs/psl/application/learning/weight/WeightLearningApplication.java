@@ -76,6 +76,7 @@ public abstract class WeightLearningApplication extends Observable implements Mo
 	protected ConfigBundle config;
 	
 	protected final List<CompatibilityKernel> kernels;
+	protected final List<CompatibilityKernel> immutableKernels;
 	protected TrainingMap trainingMap;
 	protected Reasoner reasoner;
 	
@@ -86,6 +87,7 @@ public abstract class WeightLearningApplication extends Observable implements Mo
 		this.config = config;
 
 		kernels = new ArrayList<CompatibilityKernel>();
+		immutableKernels = new ArrayList<CompatibilityKernel>();
 	}
 	
 	/**
@@ -107,6 +109,8 @@ public abstract class WeightLearningApplication extends Observable implements Mo
 		for (CompatibilityKernel k : Iterables.filter(model.getKernels(), CompatibilityKernel.class))
 			if (k.isWeightMutable())
 				kernels.add(k);
+			else
+				immutableKernels.add(k);
 		
 		/* Sets up the ground model */
 		initGroundModel();

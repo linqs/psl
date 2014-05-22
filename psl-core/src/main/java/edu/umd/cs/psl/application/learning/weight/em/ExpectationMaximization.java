@@ -128,10 +128,10 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 			
 			change = Math.sqrt(change);
 			if (change <= tolerance) {
-				log.info("EM converged with absolute weight change {} in {} rounds. Perceptron loss: " + loss, change, round);
+				log.info("EM converged with absolute weight change {} in {} rounds. Loss: " + loss, change, round);
 				break;
 			} else
-				log.info("Finished EM round {} with change {}. Perceptron loss: " + loss, round, change);
+				log.info("Finished EM round {} with change {}. Loss: " + loss, round, change);
 		}
 	}
 
