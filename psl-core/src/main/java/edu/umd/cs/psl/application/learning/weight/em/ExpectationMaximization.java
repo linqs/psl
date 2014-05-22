@@ -16,14 +16,10 @@
  */
 package edu.umd.cs.psl.application.learning.weight.em;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.Iterables;
 
 import edu.umd.cs.psl.application.learning.weight.TrainingMap;
 import edu.umd.cs.psl.application.learning.weight.maxlikelihood.VotedPerceptron;
@@ -34,7 +30,6 @@ import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
-import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.linearconstraint.GroundValueConstraint;
 import edu.umd.cs.psl.reasoner.Reasoner;
 import edu.umd.cs.psl.reasoner.ReasonerFactory;
@@ -86,9 +81,6 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 	 */
 	protected Reasoner latentVariableReasoner;
 	
-	protected List<CompatibilityKernel> kernels;
-	protected double [] weights;
-	
 	public ExpectationMaximization(Model model, Database rvDB,
 			Database observedDB, ConfigBundle config) {
 		super(model, rvDB, observedDB, config);
@@ -97,19 +89,15 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 
 		tolerance = config.getDouble(TOLERANCE_KEY, TOLERANCE_DEFAULT);
 		
-		kernels = new ArrayList<CompatibilityKernel>();
-		
-		for (CompatibilityKernel k : Iterables.filter(model.getKernels(), CompatibilityKernel.class))
-			kernels.add(k);
-		weights = new double[kernels.size()];
-		for (int i = 0; i < weights.length; i++)
-			weights[i] = Double.POSITIVE_INFINITY;
-		
 		latentVariableReasoner = null;
 	}
 
 	@Override
 	protected void doLearn() {
+		double[] weights = new double[kernels.size()];
+		for (int i = 0; i < weights.length; i++)
+			weights[i] = Double.POSITIVE_INFINITY;
+		
 		round = 0;
 		while (round++ < iterations) {
 			log.debug("Beginning EM round {} of {}", round, iterations);
