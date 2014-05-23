@@ -517,7 +517,8 @@ public class ADMMReasoner implements Reasoner {
 			throw new RuntimeException(e);
 		}
 		
-		log.debug("Optimization completed in  {} iterations.", iter);
+		log.info("Optimization completed in  {} iterations. " +
+				"Primal res.: {}, Dual res.: {}", new Object[] {iter, primalRes, dualRes});
 		
 		/* Updates variables */
 		for (int i = 0; i < variables.size(); i++)
