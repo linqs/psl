@@ -96,7 +96,7 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 	protected void doLearn() {
 		double[] weights = new double[kernels.size()];
 		for (int i = 0; i < weights.length; i++)
-			weights[i] = Double.POSITIVE_INFINITY;
+			weights[i] = kernels.get(i).getWeight().getWeight();
 		
 		round = 0;
 		while (round++ < iterations) {
@@ -113,13 +113,15 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 			}
 			
 			double loss = getLoss();
-			
+			double regularizer = computeRegularizer();
+			double objective = loss + regularizer;
+		
 			change = Math.sqrt(change);
 			if (change <= tolerance) {
-				log.info("EM converged with absolute weight change {} in {} rounds. Loss: " + loss, change, round);
+				log.info("EM converged with m-step norm {} in {} rounds. Loss: " + loss, change, round);
 				break;
 			} else
-				log.info("Finished EM round {} with change {}. Loss: " + loss, round, change);
+				log.info("Finished EM round {} with m-step norm {}. Loss: " + loss + ", regularizer: " + regularizer + ", objective: " + objective, round, change);
 		}
 	}
 

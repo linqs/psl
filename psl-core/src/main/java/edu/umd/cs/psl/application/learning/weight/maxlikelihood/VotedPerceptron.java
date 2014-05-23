@@ -141,7 +141,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	public static final int NUM_STEPS_DEFAULT = 25;
 	protected double[] numGroundings;
 	
-	private final double stepSize;
+	protected final double stepSize;
 	private final int numSteps;
 	private final double l2Regularization;
 	private final double l1Regularization;
@@ -313,6 +313,16 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	 * @return expected incompatibilities, ordered according to kernels
 	 */
 	protected abstract double[] computeExpectedIncomp();
+	
+	protected double computeRegularizer() {
+		double l2 = 0;
+		double l1 = 0;
+		for (int i = 0; i < kernels.size(); i++) {
+			l2 += Math.pow(kernels.get(i).getWeight().getWeight(), 2);
+			l1 += Math.abs(kernels.get(i).getWeight().getWeight());
+		}
+		return 0.5 * l2Regularization * l2 + l1Regularization * l1;
+	}
 	
 	/**
 	 * Internal method for computing the loss at the current point
