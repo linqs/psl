@@ -28,7 +28,7 @@ import java.io.*;
 
 public class LBFGSB
 {
-  private final int LBFGSB_PRINT = -1; //-1: no output; 1: output for every iteration
+  private final int LBFGSB_PRINT = 1; //-1: no output; 1: output for every iteration
   private final int MMAX = 17;
   private final int M    =  5; //max number of limited memory corrections
 
@@ -186,7 +186,7 @@ public class LBFGSB
 
     if (matchPrefix(task_[0],"CONV"))
     {
-      //cout << "LBFGSB converged!" << endl;
+        if (iprint >= 1) System.out.println("LBFGSB converged");
     }
 
     return f[0];
@@ -2071,7 +2071,7 @@ public class LBFGSB
     {
       if (iprint >= 0)
       {
-        System.out.println("           * * *"
+        System.out.println("           * * *\n"
                            + "Tit   = total number of iterations\n"
                            + "Tnf   = total number of function evaluations\n"
                            + "Tnint = total number of segments explored during"

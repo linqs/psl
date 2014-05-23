@@ -143,8 +143,8 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	
 	protected final double stepSize;
 	private final int numSteps;
-	private final double l2Regularization;
-	private final double l1Regularization;
+	protected final double l2Regularization;
+	protected final double l1Regularization;
 	private final boolean augmentLoss;
 	private final boolean scheduleStepSize;
 	private final boolean scaleGradient;
@@ -210,7 +210,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 		}
 	}
 
-	private double getStepSize(int iter) {
+	protected double getStepSize(int iter) {
 		if (scheduleStepSize)
 			return stepSize / (double) (iter + 1);
 		else
@@ -246,16 +246,17 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 			expectedIncompatibility = computeExpectedIncomp();
 			scalingFactor  = computeScalingFactor();
 			loss = computeLoss();
-
+			
 			/* Updates weights */
 			for (int i = 0; i < kernels.size(); i++) {
+				double weight = kernels.get(i).getWeight().getWeight();
 				double currentStep = (expectedIncompatibility[i] - truthIncompatibility[i]
-						- l2Regularization * kernels.get(i).getWeight().getWeight()
+						- l2Regularization * weight
 						- l1Regularization) / scalingFactor[i];
 				currentStep *= getStepSize(step);
 				log.debug("Step of {} for kernel {}", currentStep, kernels.get(i));
 				log.debug(" --- Expected incomp.: {}, Truth incomp.: {}", expectedIncompatibility[i], truthIncompatibility[i]);
-				double weight = kernels.get(i).getWeight().getWeight() + currentStep;
+				weight += currentStep;
 				weight = Math.max(weight, 0.0);
 				avgWeights[i] += weight;
 				kernels.get(i).setWeight(new PositiveWeight(weight));
