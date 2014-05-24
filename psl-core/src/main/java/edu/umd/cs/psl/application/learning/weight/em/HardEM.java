@@ -16,6 +16,7 @@
  */
 package edu.umd.cs.psl.application.learning.weight.em;
 
+import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -158,6 +159,8 @@ public class HardEM extends ExpectationMaximization implements ConvexFunc {
 			for (int i = 0; i < kernels.size(); i++)
 				weights[i] = kernels.get(i).getWeight().getWeight();
 			
+			double [] avgWeights = new double[kernels.size()];
+			
 			double [] gradient = new double[kernels.size()];
 			double [] scale = new double[kernels.size()];
 			double objective = 0;
@@ -171,11 +174,14 @@ public class HardEM extends ExpectationMaximization implements ConvexFunc {
 					weights[i] = Math.max(0, weights[i] - coeff * gradient[i]);
 					gradNorm += gradient[i] * gradient[i];
 					change += Math.pow(weights[i] - kernels.get(i).getWeight().getWeight(), 2);
+					
+					avgWeights[i] = (1 - (1.0 / (double) (step + 1.0))) * avgWeights[i] + (1.0 / (double) (step + 1.0)) * weights[i];
 				}
 				
 				gradNorm = Math.sqrt(gradNorm);
 				change = Math.sqrt(change);
-				log.info("Iter {}, obj: {}, norm grad: " + gradNorm + ", change: " + change, step, objective);
+				DecimalFormat df = new DecimalFormat("0.0000E00");
+				log.info("Iter {}, obj: {}, norm grad: " + df.format(gradNorm) + ", change: " + df.format(change), step, df.format(objective));
 				
 				if (change < tolerance) {
 					log.info("Change in w ({}) is less than tolerance. Finishing adagrad.", change);
@@ -185,7 +191,7 @@ public class HardEM extends ExpectationMaximization implements ConvexFunc {
 
 			log.info("Adagrad learning finished with final objective value {}", objective);
 			
-			checkGradient(weights, 0.1);
+//			checkGradient(weights, 0.1);
 			
 			for (int i = 0; i < kernels.size(); i++) 
 				kernels.get(i).setWeight(new PositiveWeight(weights[i]));
