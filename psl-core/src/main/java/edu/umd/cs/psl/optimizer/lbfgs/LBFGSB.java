@@ -28,7 +28,7 @@ import java.io.*;
 
 public class LBFGSB
 {
-  private final int LBFGSB_PRINT = 1; //-1: no output; 1: output for every iteration
+  private final int LBFGSB_PRINT = 99; //-1: no output; 1: output for every iteration
   private final int MMAX = 17;
   private final int M    =  5; //max number of limited memory corrections
 
@@ -100,7 +100,7 @@ public class LBFGSB
  }
 
   public void setMaxIter(final int iter) { maxIter_ = iter; }
-  public void setFtol(final int tol)     { ftol_ = tol;     }
+  public void setFtol(final double tol)     { ftol_ = tol;     }
 
   public void setLowerBound(final int idx, final double bnd) { l_[idx] = bnd;    }
   public void setUpperBound(final int idx, final double bnd) { u_[idx] = bnd;    }
@@ -124,8 +124,8 @@ public class LBFGSB
     int iprint = LBFGSB_PRINT;
     if (iprint >= 1)
     {
-      try { itfile = new BufferedWriter(new FileWriter("iterate.dat")); }
-      catch (IOException e) { System.err.println("failed to open iterate.dat"); System.exit(-1); }
+//      try { itfile = new BufferedWriter(new FileWriter("iterate.dat")); }
+//      catch (IOException e) { System.err.println("failed to open iterate.dat"); System.exit(-1); }
     }
 
     iter[0] = 0;
@@ -142,6 +142,7 @@ public class LBFGSB
     //while routine returns "FG" or "NEW_X" in task, keep calling it
     while (matchPrefix(task_[0],"FG") || matchPrefix(task_[0],"NEW_X"))
     {
+
       if (matchPrefix(task_[0],"FG"))
       {
         f[0] = getValueAndGradient(g_, wts);
@@ -172,14 +173,14 @@ public class LBFGSB
 
     if (matchPrefix(task_[0],"ABNO"))
     {
-      System.err.println("ERROR: LBFGSB failed. Returned ABNO");
+      System.out.println("ERROR: LBFGSB failed. Returned ABNO");
       error[0] = true;
       return initialValue;
     }
 
     if (matchPrefix(task_[0],"ERROR"))
     {
-      System.err.println("ERROR: LBFGSB failed. Returned ERROR");
+      System.out.println("ERROR: LBFGSB failed. Returned ERROR");
       error[0] = true;
       return initialValue;
     }
@@ -464,7 +465,7 @@ public class LBFGSB
 
         if (iprint >= 1)
         {
-          System.err.println(sbgnrm + "At iterate " + iter + ": f=" + f[0] + ",  |proj g|=");
+          System.out.println(sbgnrm + "At iterate " + iter + ": f=" + f[0] + ",  |proj g|=");
           write(itfile, "At iterate " + iter + ": nfgv=" + nfgv[0] + ", sbgnrm=" + sbgnrm + ", f=" + f[0] + "\n");
         }
 
@@ -841,8 +842,8 @@ public class LBFGSB
 
   private void write(Writer itfile, String str)
   {
-    try { itfile.write(str); }
-    catch(IOException e) { System.out.println("Failed to write itfile: " + str); System.exit(-1); }
+//    try { itfile.write(str); }
+//    catch(IOException e) { System.out.println("Failed to write itfile: " + str); System.exit(-1); }
   }
 
   private void active(final int n, final double[] l, final double[] u, final int[] nbd, double[] x, int[] iwhere,
