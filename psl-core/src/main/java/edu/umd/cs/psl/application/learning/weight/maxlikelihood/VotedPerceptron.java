@@ -176,7 +176,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 		averageSteps = config.getBoolean(AVERAGE_STEPS_KEY, AVERAGE_STEPS_DEFAULT);
 	}
 	
-	private void addLossAugmentedKernels() {
+	protected void addLossAugmentedKernels() {
 		double obsvTrueWeight, obsvFalseWeight;
 		obsvTrueWeight = -1.0;
 		obsvFalseWeight = -1.0;
@@ -208,6 +208,15 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 			reasoner.addGroundKernel(gk);
 			lossKernels.add(gk);
 		}
+	}
+	
+	protected void removeLossAugmentedKernels() {
+		List<LossAugmentingGroundKernel> lossKernels = new ArrayList<LossAugmentingGroundKernel>();
+		for (LossAugmentingGroundKernel k : Iterables.filter(reasoner.getGroundKernels(), LossAugmentingGroundKernel.class))
+			lossKernels.add(k);
+		for (LossAugmentingGroundKernel k : lossKernels)
+			reasoner.removeGroundKernel(k);
+		lossKernels = new ArrayList<LossAugmentingGroundKernel>();
 	}
 
 	protected double getStepSize(int iter) {
@@ -280,14 +289,8 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 			reasoner.changedGroundKernelWeights();
 		}
 		
-		if (augmentLoss) {
-			List<LossAugmentingGroundKernel> lossKernels = new ArrayList<LossAugmentingGroundKernel>();
-			for (LossAugmentingGroundKernel k : Iterables.filter(reasoner.getGroundKernels(), LossAugmentingGroundKernel.class))
-				lossKernels.add(k);
-			for (LossAugmentingGroundKernel k : lossKernels)
-				reasoner.removeGroundKernel(k);
-			lossKernels = new ArrayList<LossAugmentingGroundKernel>();
-		}
+		if (augmentLoss)
+			removeLossAugmentedKernels();
 	}
 	
 	protected double[] computeObservedIncomp() {

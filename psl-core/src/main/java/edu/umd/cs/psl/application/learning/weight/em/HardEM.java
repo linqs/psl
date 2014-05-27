@@ -126,6 +126,7 @@ public class HardEM extends ExpectationMaximization implements ConvexFunc {
 
 	@Override
 	protected void doLearn() {
+//		addLossAugmentedKernels();
 		if (useLBFGS) {
 			LBFGSB optimizer = new LBFGSB(iterations, tolerance, kernels.size()-1, this);
 
@@ -204,6 +205,7 @@ public class HardEM extends ExpectationMaximization implements ConvexFunc {
 				weights[i] = kernels.get(i).getWeight().getWeight();
 			checkGradient(weights, 1.0);
 		}
+//		removeLossAugmentedKernels();
 	}
 	
 	/**
