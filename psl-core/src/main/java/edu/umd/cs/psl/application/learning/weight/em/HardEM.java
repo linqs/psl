@@ -46,6 +46,7 @@ public class HardEM extends ExpectationMaximization implements ConvexFunc {
 	//TODO make these actual config options (and probably hide LBFGS since it's not working)
 	private static boolean useLBFGS = false;
 	private static boolean useAdagrad = true;
+	private static boolean augmentLoss = false;
 	
 	double[] scalingFactor;
 	double[] fullObservedIncompatibility, fullExpectedIncompatibility;
@@ -126,7 +127,8 @@ public class HardEM extends ExpectationMaximization implements ConvexFunc {
 
 	@Override
 	protected void doLearn() {
-//		addLossAugmentedKernels();
+		if (augmentLoss)
+			addLossAugmentedKernels();
 		if (useLBFGS) {
 			LBFGSB optimizer = new LBFGSB(iterations, tolerance, kernels.size()-1, this);
 
@@ -205,7 +207,8 @@ public class HardEM extends ExpectationMaximization implements ConvexFunc {
 				weights[i] = kernels.get(i).getWeight().getWeight();
 			checkGradient(weights, 1.0);
 		}
-//		removeLossAugmentedKernels();
+		if (augmentLoss)
+			removeLossAugmentedKernels();
 	}
 	
 	/**
