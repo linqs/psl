@@ -202,7 +202,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 					gk = new LossAugmentingGroundKernel(e.getKey(), 1.0, new PositiveWeight(-1 * obsvTrueWeight));
 
 				nonExtremeLossKernels.add(gk);
-				log.error("Non extreme ground truth found at atom {}. This is not properly supported yet in online max-margin learning.", e.getValue());
+				// log.error("Non extreme ground truth found at atom {}. This is not properly supported yet in online max-margin learning.", e.getValue());
 			}
 
 			reasoner.addGroundKernel(gk);

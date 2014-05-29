@@ -116,6 +116,11 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 			double regularizer = computeRegularizer();
 			double objective = loss + regularizer;
 		
+			if (loss < 0.0) {
+				log.info("Loss was negative!");
+				throw new IllegalStateException();
+			}
+			
 			change = Math.sqrt(change);
 			if (change <= tolerance) {
 				log.info("EM converged with m-step norm {} in {} rounds. Loss: " + loss, change, round);

@@ -28,7 +28,7 @@ import java.io.*;
 
 public class LBFGSB
 {
-  private final int LBFGSB_PRINT = 99; //-1: no output; 1: output for every iteration
+  private final int LBFGSB_PRINT = 1; //-1: no output; 1: output for every iteration
   private final int MMAX = 17;
   private final int M    =  5; //max number of limited memory corrections
 

@@ -46,7 +46,7 @@ public class HardEM extends ExpectationMaximization implements ConvexFunc {
 	//TODO make these actual config options (and probably hide LBFGS since it's not working)
 	private static boolean useLBFGS = false;
 	private static boolean useAdagrad = true;
-	private static boolean augmentLoss = false;
+	private static boolean augmentLoss = true;
 	
 	double[] scalingFactor;
 	double[] fullObservedIncompatibility, fullExpectedIncompatibility;
@@ -124,88 +124,92 @@ public class HardEM extends ExpectationMaximization implements ConvexFunc {
 		return loss;
 	}
 
+	private void lbfgs() {
+		LBFGSB optimizer = new LBFGSB(iterations, tolerance, kernels.size()-1, this);
 
+		for (int i = 0; i < kernels.size(); i++) {
+			optimizer.setLowerBound(i, 0.0);
+			optimizer.setBoundSpec(i, 1);
+		}
+
+		double [] weights = new double[kernels.size()];
+		for (int i = 0; i < kernels.size(); i++)
+			weights[i] = kernels.get(i).getWeight().getWeight();
+		int [] iter = new int[1];	
+		boolean [] error = new boolean[1];	
+
+		
+		double objective = optimizer.minimize(weights, iter, error);
+
+		log.info("LBFGS learning finished with final objective value {}", objective);
+		
+		checkGradient(weights, 0.1);
+		
+		for (int i = 0; i < kernels.size(); i++) 
+			kernels.get(i).setWeight(new PositiveWeight(weights[i]));
+	}
+	
+	private void adagrad() {
+		/*
+		 * Quick implementation of adaptive subgradient algorithm
+		 * of John Duchi, Elad Hazan, Yoram Singer (JMLR 2010)
+		 */
+		double [] weights = new double[kernels.size()];
+		for (int i = 0; i < kernels.size(); i++)
+			weights[i] = kernels.get(i).getWeight().getWeight();
+		
+		double [] avgWeights = new double[kernels.size()];
+		
+		double [] gradient = new double[kernels.size()];
+		double [] scale = new double[kernels.size()];
+		double objective = 0;
+		for (int step = 0; step < iterations; step++) {
+			objective = getValueAndGradient(gradient, weights);
+			double gradNorm = 0;
+			double change = 0;
+			for (int i = 0; i < kernels.size(); i++) {
+				scale[i] += gradient[i] * gradient[i];
+				double coeff = stepSize / Math.sqrt(scale[i]);
+				weights[i] = Math.max(0, weights[i] - coeff * gradient[i]);
+				gradNorm += gradient[i] * gradient[i];
+				change += Math.pow(weights[i] - kernels.get(i).getWeight().getWeight(), 2);
+				
+				avgWeights[i] = (1 - (1.0 / (double) (step + 1.0))) * avgWeights[i] + (1.0 / (double) (step + 1.0)) * weights[i];
+			}
+			
+			gradNorm = Math.sqrt(gradNorm);
+			change = Math.sqrt(change);
+			DecimalFormat df = new DecimalFormat("0.0000E00");
+			log.info("Iter {}, obj: {}, norm grad: " + df.format(gradNorm) + ", change: " + df.format(change), step, df.format(objective));
+			
+			if (change < tolerance) {
+				log.info("Change in w ({}) is less than tolerance. Finishing adagrad.", change);
+				break;
+			}
+		}
+
+		log.info("Adagrad learning finished with final objective value {}", objective);
+		
+//		checkGradient(weights, 0.1);
+		
+		for (int i = 0; i < kernels.size(); i++) 
+			kernels.get(i).setWeight(new PositiveWeight(weights[i]));
+	}
+	
 	@Override
 	protected void doLearn() {
 		if (augmentLoss)
 			addLossAugmentedKernels();
 		if (useLBFGS) {
-			LBFGSB optimizer = new LBFGSB(iterations, tolerance, kernels.size()-1, this);
-
-			for (int i = 0; i < kernels.size(); i++) {
-				optimizer.setLowerBound(i, 0.0);
-				optimizer.setBoundSpec(i, 1);
-			}
-
-			double [] weights = new double[kernels.size()];
-			for (int i = 0; i < kernels.size(); i++)
-				weights[i] = kernels.get(i).getWeight().getWeight();
-			int [] iter = new int[1];	
-			boolean [] error = new boolean[1];	
-
-			
-			double objective = optimizer.minimize(weights, iter, error);
-
-			log.info("LBFGS learning finished with final objective value {}", objective);
-			
-			checkGradient(weights, 0.1);
-			
-			for (int i = 0; i < kernels.size(); i++) 
-				kernels.get(i).setWeight(new PositiveWeight(weights[i]));
-			
+			lbfgs();
 		} else if (useAdagrad) {
-			/*
-			 * Quick implementation of adaptive subgradient algorithm
-			 * of John Duchi, Elad Hazan, Yoram Singer (JMLR 2010)
-			 */
-			double [] weights = new double[kernels.size()];
-			for (int i = 0; i < kernels.size(); i++)
-				weights[i] = kernels.get(i).getWeight().getWeight();
-			
-			double [] avgWeights = new double[kernels.size()];
-			
-			double [] gradient = new double[kernels.size()];
-			double [] scale = new double[kernels.size()];
-			double objective = 0;
-			for (int step = 0; step < iterations; step++) {
-				objective = getValueAndGradient(gradient, weights);
-				double gradNorm = 0;
-				double change = 0;
-				for (int i = 0; i < kernels.size(); i++) {
-					scale[i] += gradient[i] * gradient[i];
-					double coeff = stepSize / Math.sqrt(scale[i]);
-					weights[i] = Math.max(0, weights[i] - coeff * gradient[i]);
-					gradNorm += gradient[i] * gradient[i];
-					change += Math.pow(weights[i] - kernels.get(i).getWeight().getWeight(), 2);
-					
-					avgWeights[i] = (1 - (1.0 / (double) (step + 1.0))) * avgWeights[i] + (1.0 / (double) (step + 1.0)) * weights[i];
-				}
-				
-				gradNorm = Math.sqrt(gradNorm);
-				change = Math.sqrt(change);
-				DecimalFormat df = new DecimalFormat("0.0000E00");
-				log.info("Iter {}, obj: {}, norm grad: " + df.format(gradNorm) + ", change: " + df.format(change), step, df.format(objective));
-				
-				if (change < tolerance) {
-					log.info("Change in w ({}) is less than tolerance. Finishing adagrad.", change);
-					break;
-				}
-			}
-
-			log.info("Adagrad learning finished with final objective value {}", objective);
-			
-//			checkGradient(weights, 0.1);
-			
-			for (int i = 0; i < kernels.size(); i++) 
-				kernels.get(i).setWeight(new PositiveWeight(weights[i]));
-			
-			
+			adagrad();
 		} else {
 			super.doLearn();
 			double [] weights = new double[kernels.size()];
 			for (int i = 0; i < kernels.size(); i++)
 				weights[i] = kernels.get(i).getWeight().getWeight();
-			checkGradient(weights, 1.0);
+//			checkGradient(weights, 1.0);
 		}
 		if (augmentLoss)
 			removeLossAugmentedKernels();

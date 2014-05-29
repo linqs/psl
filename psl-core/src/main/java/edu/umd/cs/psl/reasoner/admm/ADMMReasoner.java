@@ -57,6 +57,22 @@ import edu.umd.cs.psl.util.concurrent.ThreadPool;
  */
 public class ADMMReasoner implements Reasoner {
 	
+	public double getEpsilonRel() {
+		return epsilonRel;
+	}
+
+	public void setEpsilonRel(double epsilonRel) {
+		this.epsilonRel = epsilonRel;
+	}
+
+	public double getEpsilonAbs() {
+		return epsilonAbs;
+	}
+
+	public void setEpsilonAbs(double epsilonAbs) {
+		this.epsilonAbs = epsilonAbs;
+	}
+
 	private static final Logger log = LoggerFactory.getLogger(ADMMReasoner.class);
 	
 	/**
@@ -118,7 +134,7 @@ public class ADMMReasoner implements Reasoner {
 	/* Sometimes called rho or eta */
 	final double stepSize;
 	
-	private final double epsilonRel, epsilonAbs;
+	private double epsilonRel, epsilonAbs;
 	private final int stopCheck;
 	private int n;
 	private boolean rebuildModel;
@@ -210,6 +226,7 @@ public class ADMMReasoner implements Reasoner {
 	
 	protected void buildGroundModel() {
 		log.debug("Initializing optimization.");
+		log.info("Rebuilding reasoner data structures");
 		
 		/* Initializes data structures */
 		orderedGroundKernels = new HashList<GroundKernel>(groundKernels.size() * 2);
