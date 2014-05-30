@@ -48,7 +48,7 @@ public class HardEM extends ExpectationMaximization implements ConvexFunc {
 	private static boolean useLBFGS = false;
 	private static boolean useAdagrad = true;
 	private static boolean augmentLoss = false;
-	
+
 	double[] scalingFactor;
 	double[] fullObservedIncompatibility, fullExpectedIncompatibility, dualExpectedIncompatibility;
 
@@ -80,13 +80,13 @@ public class HardEM extends ExpectationMaximization implements ConvexFunc {
 		reasoner.optimize();
 
 		ADMMReasoner admm = (ADMMReasoner) reasoner;
-		
+
 		/* Computes incompatibility */
-		for (int i = 0; i < kernels.size(); i++) {
-			for (GroundKernel gk : reasoner.getGroundKernels(kernels.get(i))) {
-				fullExpectedIncompatibility[i] += ((GroundCompatibilityKernel) gk).getIncompatibility();
-			}
-		}
+//		for (int i = 0; i < kernels.size(); i++) {
+//			for (GroundKernel gk : reasoner.getGroundKernels(kernels.get(i))) {
+//				fullExpectedIncompatibility[i] += ((GroundCompatibilityKernel) gk).getIncompatibility();
+//			}
+//		}
 		for (int i = 0; i < immutableKernels.size(); i++) {
 			for (GroundKernel gk : reasoner.getGroundKernels(immutableKernels.get(i))) {
 				fullExpectedIncompatibility[kernels.size() + i] += ((GroundCompatibilityKernel) gk).getIncompatibility();
@@ -99,8 +99,8 @@ public class HardEM extends ExpectationMaximization implements ConvexFunc {
 				dualExpectedIncompatibility[i] += admm.getDualIncompatibility(gk);
 			}
 		}
-		
-//		return Arrays.copyOf(fullExpectedIncompatibility, kernels.size());
+
+		//		return Arrays.copyOf(fullExpectedIncompatibility, kernels.size());
 		return Arrays.copyOf(dualExpectedIncompatibility, kernels.size());
 	}
 
@@ -155,8 +155,6 @@ public class HardEM extends ExpectationMaximization implements ConvexFunc {
 
 		log.info("LBFGS learning finished with final objective value {}", objective);
 
-		checkGradient(weights, 0.1);
-
 		for (int i = 0; i < kernels.size(); i++) 
 			kernels.get(i).setWeight(new PositiveWeight(weights[i]));
 	}
@@ -195,7 +193,7 @@ public class HardEM extends ExpectationMaximization implements ConvexFunc {
 			DecimalFormat df = new DecimalFormat("0.0000E00");
 			if (step % 10 == 0)
 				log.info("Iter {}, obj: {}, norm grad: " + df.format(gradNorm) + ", change: " + df.format(change), step, df.format(objective));
-			
+
 			if (change < tolerance) {
 				log.info("Change in w ({}) is less than tolerance. Finishing adagrad.", change);
 				break;
@@ -204,23 +202,24 @@ public class HardEM extends ExpectationMaximization implements ConvexFunc {
 
 		log.info("Adagrad learning finished with final objective value {}", objective);
 
-		//		checkGradient(weights, 0.1);
-
-		for (int i = 0; i < kernels.size(); i++) 
+		for (int i = 0; i < kernels.size(); i++) {
 			kernels.get(i).setWeight(new PositiveWeight(weights[i]));
+		}
 	}
 
 	@Override
 	protected void doLearn() {
 		int maxIter = ((ADMMReasoner) reasoner).getMaxIter();
-		((ADMMReasoner) reasoner).setMaxIter(4);
-		((ADMMReasoner) latentVariableReasoner).setMaxIter(4);
+		int admmIterations = 10;
+		((ADMMReasoner) reasoner).setMaxIter(admmIterations);
+		((ADMMReasoner) latentVariableReasoner).setMaxIter(admmIterations);
 		if (augmentLoss)
 			addLossAugmentedKernels();
 		if (useLBFGS) {
 			lbfgs();
 		} else if (useAdagrad) {
 			adagrad();
+			lbfgs();
 		} else {
 			super.doLearn();
 			double [] weights = new double[kernels.size()];
@@ -230,7 +229,7 @@ public class HardEM extends ExpectationMaximization implements ConvexFunc {
 		}
 		if (augmentLoss)
 			removeLossAugmentedKernels();
-		
+
 		((ADMMReasoner) reasoner).setMaxIter(maxIter);
 		((ADMMReasoner) latentVariableReasoner).setMaxIter(maxIter);
 
@@ -297,7 +296,7 @@ public class HardEM extends ExpectationMaximization implements ConvexFunc {
 
 		double loss = 0.0;
 		for (int i = 0; i < kernels.size(); i++)
-//			loss += weights[i] * (fullObservedIncompatibility[i] - fullExpectedIncompatibility[i]);
+			// loss += weights[i] * (fullObservedIncompatibility[i] - fullExpectedIncompatibility[i]);
 			loss += weights[i] * (fullObservedIncompatibility[i] - dualExpectedIncompatibility[i]);
 		for (int i = 0; i < immutableKernels.size(); i++)
 			loss += immutableKernels.get(i).getWeight().getWeight() * (fullObservedIncompatibility[kernels.size() + i] - fullExpectedIncompatibility[kernels.size() + i]);
@@ -306,7 +305,7 @@ public class HardEM extends ExpectationMaximization implements ConvexFunc {
 
 		if (null != gradient) 
 			for (int i = 0; i < kernels.size(); i++) 
-				gradient[i] = (fullObservedIncompatibility[i] - fullExpectedIncompatibility[i]) + l2Regularization * weights[i] + l1Regularization;
+				gradient[i] = (fullObservedIncompatibility[i] - dualExpectedIncompatibility[i]) + l2Regularization * weights[i] + l1Regularization;
 
 		return loss + regularizer;
 	}
