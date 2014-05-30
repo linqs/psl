@@ -57,6 +57,14 @@ import edu.umd.cs.psl.util.concurrent.ThreadPool;
  */
 public class ADMMReasoner implements Reasoner {
 	
+	public int getMaxIter() {
+		return maxIter;
+	}
+
+	public void setMaxIter(int maxIter) {
+		this.maxIter = maxIter;
+	}
+
 	public double getEpsilonRel() {
 		return epsilonRel;
 	}
@@ -130,7 +138,7 @@ public class ADMMReasoner implements Reasoner {
 	 * (by default uses the number of processors in the system) */
 	public static final int NUM_THREADS_DEFAULT = Runtime.getRuntime().availableProcessors();
 	
-	private final int maxIter;
+	private int maxIter;
 	/* Sometimes called rho or eta */
 	final double stepSize;
 	
@@ -335,6 +343,28 @@ public class ADMMReasoner implements Reasoner {
 		rebuildModel = false;
 	}
 
+	/**
+	 * Computes the incompatibility of the local variable copies corresponding to
+	 * GroundKernel gk
+	 * @param gk
+	 * @return local (dual) incompatibility
+	 */
+	public double getDualIncompatibility(GroundKernel gk) {
+		int index = orderedGroundKernels.indexOf(gk);
+		ADMMObjectiveTerm term = terms.get(index);
+//		double [] currentValues = new double[terms.size()];
+		for (int i = 0; i < term.zIndices.length; i++) {
+			int zIndex = term.zIndices[i];
+//			currentValues[i] = variables.get(zIndex).getValue();
+			variables.get(zIndex).setValue(term.x[i]);
+		}
+		double incompatibility = ((GroundCompatibilityKernel) gk).getIncompatibility();
+//		for (int i = 0; i < term.zIndices.length; i++) {
+//			variables.get(term.zIndices[i]).setValue(currentValues[i]);
+//		}
+		return incompatibility;
+	}
+	
 	private class ADMMTask implements Runnable {
 		public boolean flag;
 		private final int termStart, termEnd;
@@ -450,7 +480,7 @@ public class ADMMReasoner implements Reasoner {
 		if (rebuildModel)
 			buildGroundModel();
 		
-		log.info("Performing optimization with {} variables and {} terms.", z.size(), terms.size());
+//		log.info("Performing optimization with {} variables and {} terms.", z.size(), terms.size());
 		
 		// Starts up the computation threads
 		ADMMTask[] tasks = new ADMMTask[numThreads];
@@ -534,8 +564,8 @@ public class ADMMReasoner implements Reasoner {
 			throw new RuntimeException(e);
 		}
 		
-		log.info("Optimization completed in  {} iterations. " +
-				"Primal res.: {}, Dual res.: {}", new Object[] {iter, primalRes, dualRes});
+//		log.info("Optimization completed in  {} iterations. " +
+//				"Primal res.: {}, Dual res.: {}", new Object[] {iter, primalRes, dualRes});
 		
 		/* Updates variables */
 		for (int i = 0; i < variables.size(); i++)
