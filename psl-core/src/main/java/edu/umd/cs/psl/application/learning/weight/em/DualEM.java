@@ -47,7 +47,7 @@ public class DualEM extends ExpectationMaximization implements ConvexFunc {
 	//TODO make these actual config options (and probably hide LBFGS since it's not working)
 	private static boolean useLBFGS = false;
 	private static boolean useAdagrad = true;
-	private static boolean augmentLoss = false;
+	private static boolean augmentLoss = true;
 
 	double[] scalingFactor;
 	double[] fullObservedIncompatibility, fullExpectedIncompatibility, dualExpectedIncompatibility;
@@ -224,7 +224,7 @@ public class DualEM extends ExpectationMaximization implements ConvexFunc {
 		int maxIter = ((ADMMReasoner) reasoner).getMaxIter();
 		int admmIterations = 2;
 		((ADMMReasoner) reasoner).setMaxIter(admmIterations);
-//		((ADMMReasoner) latentVariableReasoner).setMaxIter(admmIterations);
+		((ADMMReasoner) latentVariableReasoner).setMaxIter(admmIterations);
 		if (augmentLoss)
 			addLossAugmentedKernels();
 		if (useLBFGS) {
