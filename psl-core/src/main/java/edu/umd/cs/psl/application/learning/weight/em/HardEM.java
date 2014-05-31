@@ -74,7 +74,7 @@ public class HardEM extends ExpectationMaximization implements ConvexFunc {
 	@Override
 	protected double[] computeExpectedIncomp() {
 		fullExpectedIncompatibility = new double[kernels.size() + immutableKernels.size()];
-		dualExpectedIncompatibility = new double[kernels.size()];
+		dualExpectedIncompatibility = new double[kernels.size() + immutableKernels.size()];
 
 		/* Computes the MPE state */
 		reasoner.optimize();
@@ -87,16 +87,22 @@ public class HardEM extends ExpectationMaximization implements ConvexFunc {
 //				fullExpectedIncompatibility[i] += ((GroundCompatibilityKernel) gk).getIncompatibility();
 //			}
 //		}
-		for (int i = 0; i < immutableKernels.size(); i++) {
-			for (GroundKernel gk : reasoner.getGroundKernels(immutableKernels.get(i))) {
-				fullExpectedIncompatibility[kernels.size() + i] += ((GroundCompatibilityKernel) gk).getIncompatibility();
-			}
-		}
+//		for (int i = 0; i < immutableKernels.size(); i++) {
+//			for (GroundKernel gk : reasoner.getGroundKernels(immutableKernels.get(i))) {
+//				fullExpectedIncompatibility[kernels.size() + i] += ((GroundCompatibilityKernel) gk).getIncompatibility();
+//			}
+//		}
 
 		// Compute the dual incompatbility for each ADMM subproblem
 		for (int i = 0; i < kernels.size(); i++) {
 			for (GroundKernel gk : reasoner.getGroundKernels(kernels.get(i))) {
 				dualExpectedIncompatibility[i] += admm.getDualIncompatibility(gk);
+			}
+		}
+
+		for (int i = 0; i < immutableKernels.size(); i++) {
+			for (GroundKernel gk : reasoner.getGroundKernels(immutableKernels.get(i))) {
+				dualExpectedIncompatibility[kernels.size() + i] += admm.getDualIncompatibility(gk);
 			}
 		}
 
@@ -161,9 +167,10 @@ public class HardEM extends ExpectationMaximization implements ConvexFunc {
 
 	private void adagrad() {
 		/*
-		 * Quick implementation of adaptive subgradient algorithm
+		 * adaptive subgradient algorithm
 		 * of John Duchi, Elad Hazan, Yoram Singer (JMLR 2010)
 		 */
+		log.info("Starting adagrad");
 		double [] weights = new double[kernels.size()];
 		for (int i = 0; i < kernels.size(); i++)
 			weights[i] = kernels.get(i).getWeight().getWeight();
@@ -179,10 +186,12 @@ public class HardEM extends ExpectationMaximization implements ConvexFunc {
 			double change = 0;
 			for (int i = 0; i < kernels.size(); i++) {
 				scale[i] += gradient[i] * gradient[i];
+				
+				gradNorm += Math.pow(weights[i] - Math.max(0, weights[i] - gradient[i]), 2);
+				
 				if (scale[i] > 0.0) {
 					double coeff = stepSize / Math.sqrt(scale[i]);
 					weights[i] = Math.max(0, weights[i] - coeff * gradient[i]);
-					gradNorm += gradient[i] * gradient[i];
 					change += Math.pow(weights[i] - kernels.get(i).getWeight().getWeight(), 2);
 				}
 				avgWeights[i] = (1 - (1.0 / (double) (step + 1.0))) * avgWeights[i] + (1.0 / (double) (step + 1.0)) * weights[i];
@@ -191,7 +200,7 @@ public class HardEM extends ExpectationMaximization implements ConvexFunc {
 			gradNorm = Math.sqrt(gradNorm);
 			change = Math.sqrt(change);
 			DecimalFormat df = new DecimalFormat("0.0000E00");
-			if (step % 10 == 0)
+			if (step % 1 == 0)
 				log.info("Iter {}, obj: {}, norm grad: " + df.format(gradNorm) + ", change: " + df.format(change), step, df.format(objective));
 
 			if (change < tolerance) {
@@ -209,8 +218,11 @@ public class HardEM extends ExpectationMaximization implements ConvexFunc {
 
 	@Override
 	protected void doLearn() {
+//		computeExpectedIncomp();
+//		minimizeKLDivergence();
+		
 		int maxIter = ((ADMMReasoner) reasoner).getMaxIter();
-		int admmIterations = 10;
+		int admmIterations = 2;
 		((ADMMReasoner) reasoner).setMaxIter(admmIterations);
 		((ADMMReasoner) latentVariableReasoner).setMaxIter(admmIterations);
 		if (augmentLoss)
@@ -219,7 +231,6 @@ public class HardEM extends ExpectationMaximization implements ConvexFunc {
 			lbfgs();
 		} else if (useAdagrad) {
 			adagrad();
-			lbfgs();
 		} else {
 			super.doLearn();
 			double [] weights = new double[kernels.size()];
@@ -299,8 +310,10 @@ public class HardEM extends ExpectationMaximization implements ConvexFunc {
 			// loss += weights[i] * (fullObservedIncompatibility[i] - fullExpectedIncompatibility[i]);
 			loss += weights[i] * (fullObservedIncompatibility[i] - dualExpectedIncompatibility[i]);
 		for (int i = 0; i < immutableKernels.size(); i++)
-			loss += immutableKernels.get(i).getWeight().getWeight() * (fullObservedIncompatibility[kernels.size() + i] - fullExpectedIncompatibility[kernels.size() + i]);
+			loss += immutableKernels.get(i).getWeight().getWeight() * (fullObservedIncompatibility[kernels.size() + i] - dualExpectedIncompatibility[kernels.size() + i]);
+		loss -= ((ADMMReasoner) reasoner).getLagrangianPenalty();
 
+		
 		double regularizer = computeRegularizer();
 
 		if (null != gradient) 

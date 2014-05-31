@@ -26,6 +26,7 @@ import java.util.concurrent.Semaphore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.ujmp.gui.plot.YAxis;
 
 import com.google.common.collect.Iterables;
 
@@ -79,6 +80,10 @@ public class ADMMReasoner implements Reasoner {
 
 	public void setEpsilonAbs(double epsilonAbs) {
 		this.epsilonAbs = epsilonAbs;
+	}
+	
+	public double getLagrangianPenalty() {
+		return this.dualPenalty;
 	}
 
 	private static final Logger log = LoggerFactory.getLogger(ADMMReasoner.class);
@@ -146,6 +151,7 @@ public class ADMMReasoner implements Reasoner {
 	private final int stopCheck;
 	private int n;
 	private boolean rebuildModel;
+	private double dualPenalty;
 	
 	/** Ground kernels defining the objective function */
 	KeyedRetrievalSet<Kernel, GroundKernel> groundKernels;
@@ -352,17 +358,11 @@ public class ADMMReasoner implements Reasoner {
 	public double getDualIncompatibility(GroundKernel gk) {
 		int index = orderedGroundKernels.indexOf(gk);
 		ADMMObjectiveTerm term = terms.get(index);
-//		double [] currentValues = new double[terms.size()];
-		for (int i = 0; i < term.zIndices.length; i++) {
+		for (int i = 0; i < term.zIndices.length; i++) {					
 			int zIndex = term.zIndices[i];
-//			currentValues[i] = variables.get(zIndex).getValue();
-			variables.get(zIndex).setValue(term.x[i]);
+			variables.get(zIndex).setValue(term.x[i]);			
 		}
-		double incompatibility = ((GroundCompatibilityKernel) gk).getIncompatibility();
-//		for (int i = 0; i < term.zIndices.length; i++) {
-//			variables.get(term.zIndices[i]).setValue(currentValues[i]);
-//		}
-		return incompatibility;
+		return ((GroundCompatibilityKernel) gk).getIncompatibility();
 	}
 	
 	private class ADMMTask implements Runnable {
@@ -395,6 +395,7 @@ public class ADMMReasoner implements Reasoner {
 		public double AxNormInc = 0.0;
 		public double BzNormInc = 0.0;
 		public double AyNormInc = 0.0;
+		public double augmentedLagrangePenalty = 0.0;
 		
 		private void awaitUninterruptibly(CyclicBarrier b) {
 			try {
@@ -427,6 +428,7 @@ public class ADMMReasoner implements Reasoner {
 					AxNormInc = 0.0;
 					BzNormInc = 0.0;
 					AyNormInc = 0.0;
+					augmentedLagrangePenalty = 0.0;
 				}
 				
 				for (int i = zStart; i < zEnd; i++) {
@@ -460,6 +462,9 @@ public class ADMMReasoner implements Reasoner {
 							VariableLocation location = itr.next();
 							double diff = location.term.x[location.localIndex] - newZ;
 							primalResInc += diff * diff;
+							// computes augmented Lagrangian penalty
+							augmentedLagrangePenalty += location.term.y[location.localIndex] * (location.term.x[location.localIndex] - z.get(i)) + 
+									0.5 * stepSize * Math.pow(location.term.x[location.localIndex]-z.get(i), 2);
 						}
 					}
 				}
@@ -523,6 +528,7 @@ public class ADMMReasoner implements Reasoner {
 				AxNorm = 0.0;
 				BzNorm = 0.0;
 				AyNorm = 0.0;
+				dualPenalty = 0.0;
 				
 				// Total values from threads
 				for (ADMMTask task : tasks) {
@@ -531,6 +537,7 @@ public class ADMMReasoner implements Reasoner {
 					AxNorm += task.AxNormInc;
 					BzNorm += task.BzNormInc;
 					AyNorm += task.AyNormInc;
+					dualPenalty += task.augmentedLagrangePenalty;
 				}
 				
 				primalRes = Math.sqrt(primalRes);
