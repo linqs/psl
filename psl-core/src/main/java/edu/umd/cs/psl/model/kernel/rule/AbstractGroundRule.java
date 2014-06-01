@@ -110,7 +110,7 @@ abstract public class AbstractGroundRule implements GroundKernel {
 	}
 	
 	public double getTruthValue() {
-		return 1 - Math.max(getFunction().getValue(), 0);
+		return 1 - getFunction().getValue();
 	}
 	
 	@Override
