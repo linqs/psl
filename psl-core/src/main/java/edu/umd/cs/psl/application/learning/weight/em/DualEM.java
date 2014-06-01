@@ -27,7 +27,6 @@ import edu.umd.cs.psl.application.learning.weight.maxlikelihood.VotedPerceptron;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.Model;
-import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.parameters.PositiveWeight;
 import edu.umd.cs.psl.optimizer.lbfgs.ConvexFunc;
@@ -300,7 +299,14 @@ public class DualEM extends ExpectationMaximization implements ConvexFunc {
 			loss += weights[i] * (dualObservedIncompatibility[i] - dualExpectedIncompatibility[i]);
 		for (int i = 0; i < immutableKernels.size(); i++)
 			loss += immutableKernels.get(i).getWeight().getWeight() * (dualObservedIncompatibility[kernels.size() + i] - dualExpectedIncompatibility[kernels.size() + i]);
-		loss += ((ADMMReasoner) latentVariableReasoner).getLagrangianPenalty() - ((ADMMReasoner) reasoner).getLagrangianPenalty();
+		double eStepLagrangianPenalty = ((ADMMReasoner) latentVariableReasoner).getLagrangianPenalty();
+		double eStepAugLagrangianPenalty = ((ADMMReasoner) latentVariableReasoner).getAugmentedLagrangianPenalty();
+		double mStepLagrangianPenalty = ((ADMMReasoner) reasoner).getLagrangianPenalty();
+		double mStepAugLagrangianPenalty = ((ADMMReasoner) reasoner).getAugmentedLagrangianPenalty();
+		loss += eStepLagrangianPenalty + eStepAugLagrangianPenalty - mStepLagrangianPenalty - mStepAugLagrangianPenalty;
+		
+		log.info("E Penalty: {}, E Aug Penalty: {}, M Penalty: {}, M Aug Penalty: {}",
+				new Double[] {eStepLagrangianPenalty, eStepAugLagrangianPenalty, mStepLagrangianPenalty, mStepAugLagrangianPenalty});
 
 		
 		double regularizer = computeRegularizer();

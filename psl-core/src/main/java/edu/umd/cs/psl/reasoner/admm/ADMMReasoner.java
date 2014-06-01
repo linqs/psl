@@ -26,7 +26,6 @@ import java.util.concurrent.Semaphore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.ujmp.gui.plot.YAxis;
 
 import com.google.common.collect.Iterables;
 
@@ -57,34 +56,6 @@ import edu.umd.cs.psl.util.concurrent.ThreadPool;
  * @author Eric Norris
  */
 public class ADMMReasoner implements Reasoner {
-	
-	public int getMaxIter() {
-		return maxIter;
-	}
-
-	public void setMaxIter(int maxIter) {
-		this.maxIter = maxIter;
-	}
-
-	public double getEpsilonRel() {
-		return epsilonRel;
-	}
-
-	public void setEpsilonRel(double epsilonRel) {
-		this.epsilonRel = epsilonRel;
-	}
-
-	public double getEpsilonAbs() {
-		return epsilonAbs;
-	}
-
-	public void setEpsilonAbs(double epsilonAbs) {
-		this.epsilonAbs = epsilonAbs;
-	}
-	
-	public double getLagrangianPenalty() {
-		return this.dualPenalty;
-	}
 
 	private static final Logger log = LoggerFactory.getLogger(ADMMReasoner.class);
 	
@@ -151,7 +122,7 @@ public class ADMMReasoner implements Reasoner {
 	private final int stopCheck;
 	private int n;
 	private boolean rebuildModel;
-	private double dualPenalty;
+	private double lagrangePenalty, augmentedLagrangePenalty;
 	
 	/** Ground kernels defining the objective function */
 	KeyedRetrievalSet<Kernel, GroundKernel> groundKernels;
@@ -192,6 +163,38 @@ public class ADMMReasoner implements Reasoner {
 		numThreads = config.getInt(NUM_THREADS_KEY, NUM_THREADS_DEFAULT);
 		if (numThreads <= 0)
 			throw new IllegalArgumentException("Property " + NUM_THREADS_KEY + " must be positive.");
+	}
+	
+	public int getMaxIter() {
+		return maxIter;
+	}
+
+	public void setMaxIter(int maxIter) {
+		this.maxIter = maxIter;
+	}
+
+	public double getEpsilonRel() {
+		return epsilonRel;
+	}
+
+	public void setEpsilonRel(double epsilonRel) {
+		this.epsilonRel = epsilonRel;
+	}
+
+	public double getEpsilonAbs() {
+		return epsilonAbs;
+	}
+
+	public void setEpsilonAbs(double epsilonAbs) {
+		this.epsilonAbs = epsilonAbs;
+	}
+	
+	public double getLagrangianPenalty() {
+		return this.lagrangePenalty;
+	}
+	
+	public double getAugmentedLagrangianPenalty() {
+		return this.augmentedLagrangePenalty;
 	}
 	
 	@Override
@@ -395,7 +398,8 @@ public class ADMMReasoner implements Reasoner {
 		public double AxNormInc = 0.0;
 		public double BzNormInc = 0.0;
 		public double AyNormInc = 0.0;
-		public double augmentedLagrangePenalty = 0.0;
+		protected double lagrangePenalty = 0.0;
+		protected double augmentedLagrangePenalty = 0.0;
 		
 		private void awaitUninterruptibly(CyclicBarrier b) {
 			try {
@@ -428,6 +432,7 @@ public class ADMMReasoner implements Reasoner {
 					AxNormInc = 0.0;
 					BzNormInc = 0.0;
 					AyNormInc = 0.0;
+					lagrangePenalty = 0.0;
 					augmentedLagrangePenalty = 0.0;
 				}
 				
@@ -462,9 +467,9 @@ public class ADMMReasoner implements Reasoner {
 							VariableLocation location = itr.next();
 							double diff = location.term.x[location.localIndex] - newZ;
 							primalResInc += diff * diff;
-							// computes augmented Lagrangian penalty
-							augmentedLagrangePenalty += location.term.y[location.localIndex] * (location.term.x[location.localIndex] - z.get(i)) + 
-									0.5 * stepSize * Math.pow(location.term.x[location.localIndex]-z.get(i), 2);
+							// computes Lagrangian penalties
+							lagrangePenalty += location.term.y[location.localIndex] * (location.term.x[location.localIndex] - z.get(i));
+							augmentedLagrangePenalty += 0.5 * stepSize * Math.pow(location.term.x[location.localIndex]-z.get(i), 2);
 						}
 					}
 				}
@@ -528,7 +533,8 @@ public class ADMMReasoner implements Reasoner {
 				AxNorm = 0.0;
 				BzNorm = 0.0;
 				AyNorm = 0.0;
-				dualPenalty = 0.0;
+				lagrangePenalty = 0.0;
+				augmentedLagrangePenalty = 0.0;
 				
 				// Total values from threads
 				for (ADMMTask task : tasks) {
@@ -537,7 +543,8 @@ public class ADMMReasoner implements Reasoner {
 					AxNorm += task.AxNormInc;
 					BzNorm += task.BzNormInc;
 					AyNorm += task.AyNormInc;
-					dualPenalty += task.augmentedLagrangePenalty;
+					lagrangePenalty += task.lagrangePenalty;
+					augmentedLagrangePenalty += task.augmentedLagrangePenalty;
 				}
 				
 				primalRes = Math.sqrt(primalRes);
