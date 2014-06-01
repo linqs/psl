@@ -47,10 +47,10 @@ public class DualEM extends ExpectationMaximization implements ConvexFunc {
 	//TODO make these actual config options (and probably hide LBFGS since it's not working)
 	private static boolean useLBFGS = false;
 	private static boolean useAdagrad = true;
-	private static boolean augmentLoss = true;
+	private static boolean augmentLoss = false;
 
 	double[] scalingFactor;
-	double[] fullObservedIncompatibility, fullExpectedIncompatibility, dualExpectedIncompatibility;
+	double[] dualObservedIncompatibility, dualExpectedIncompatibility;
 
 	public DualEM(Model model, Database rvDB, Database observedDB,
 			ConfigBundle config) {
@@ -73,25 +73,12 @@ public class DualEM extends ExpectationMaximization implements ConvexFunc {
 
 	@Override
 	protected double[] computeExpectedIncomp() {
-		fullExpectedIncompatibility = new double[kernels.size() + immutableKernels.size()];
 		dualExpectedIncompatibility = new double[kernels.size() + immutableKernels.size()];
 
 		/* Computes the MPE state */
 		reasoner.optimize();
 
 		ADMMReasoner admm = (ADMMReasoner) reasoner;
-
-		/* Computes incompatibility */
-//		for (int i = 0; i < kernels.size(); i++) {
-//			for (GroundKernel gk : reasoner.getGroundKernels(kernels.get(i))) {
-//				fullExpectedIncompatibility[i] += ((GroundCompatibilityKernel) gk).getIncompatibility();
-//			}
-//		}
-//		for (int i = 0; i < immutableKernels.size(); i++) {
-//			for (GroundKernel gk : reasoner.getGroundKernels(immutableKernels.get(i))) {
-//				fullExpectedIncompatibility[kernels.size() + i] += ((GroundCompatibilityKernel) gk).getIncompatibility();
-//			}
-//		}
 
 		// Compute the dual incompatbility for each ADMM subproblem
 		for (int i = 0; i < kernels.size(); i++) {
@@ -106,39 +93,40 @@ public class DualEM extends ExpectationMaximization implements ConvexFunc {
 			}
 		}
 
-		//		return Arrays.copyOf(fullExpectedIncompatibility, kernels.size());
 		return Arrays.copyOf(dualExpectedIncompatibility, kernels.size());
 	}
 
 	@Override
 	protected double[] computeObservedIncomp() {
 		numGroundings = new double[kernels.size()];
-		fullObservedIncompatibility = new double[kernels.size() + immutableKernels.size()];
+		dualObservedIncompatibility = new double[kernels.size() + immutableKernels.size()];
 		setLabeledRandomVariables();
 
+		ADMMReasoner admm = (ADMMReasoner) latentVariableReasoner;
+		
 		/* Computes the observed incompatibilities and numbers of groundings */
 		for (int i = 0; i < kernels.size(); i++) {
-			for (GroundKernel gk : reasoner.getGroundKernels(kernels.get(i))) {
-				fullObservedIncompatibility[i] += ((GroundCompatibilityKernel) gk).getIncompatibility();
+			for (GroundKernel gk : latentVariableReasoner.getGroundKernels(kernels.get(i))) {
+				dualObservedIncompatibility[i] += admm.getDualIncompatibility(gk);
 				numGroundings[i]++;
 			}
 		}
 		for (int i = 0; i < immutableKernels.size(); i++) {
-			for (GroundKernel gk : reasoner.getGroundKernels(immutableKernels.get(i))) {
-				fullObservedIncompatibility[kernels.size() + i] += ((GroundCompatibilityKernel) gk).getIncompatibility();
+			for (GroundKernel gk : latentVariableReasoner.getGroundKernels(immutableKernels.get(i))) {
+				dualObservedIncompatibility[kernels.size() + i] += admm.getDualIncompatibility(gk);
 			}
 		}
 
-		return Arrays.copyOf(fullObservedIncompatibility, kernels.size());
+		return Arrays.copyOf(dualObservedIncompatibility, kernels.size());
 	}
 
 	@Override
 	protected double computeLoss() {
 		double loss = 0.0;
 		for (int i = 0; i < kernels.size(); i++)
-			loss += kernels.get(i).getWeight().getWeight() * (fullObservedIncompatibility[i] - fullExpectedIncompatibility[i]);
+			loss += kernels.get(i).getWeight().getWeight() * (dualObservedIncompatibility[i] - dualExpectedIncompatibility[i]);
 		for (int i = 0; i < immutableKernels.size(); i++)
-			loss += immutableKernels.get(i).getWeight().getWeight() * (fullObservedIncompatibility[kernels.size() + i] - fullExpectedIncompatibility[kernels.size() + i]);
+			loss += immutableKernels.get(i).getWeight().getWeight() * (dualObservedIncompatibility[kernels.size() + i] - dualExpectedIncompatibility[kernels.size() + i]);
 		return loss;
 	}
 
@@ -186,6 +174,8 @@ public class DualEM extends ExpectationMaximization implements ConvexFunc {
 			double change = 0;
 			for (int i = 0; i < kernels.size(); i++) {
 				scale[i] += gradient[i] * gradient[i];
+//				scale[i] += Math.pow((double) (step + 1), 2);
+//				scale[i] += 1.0;
 				
 				gradNorm += Math.pow(weights[i] - Math.max(0, weights[i] - gradient[i]), 2);
 				
@@ -222,7 +212,7 @@ public class DualEM extends ExpectationMaximization implements ConvexFunc {
 //		minimizeKLDivergence();
 		
 		int maxIter = ((ADMMReasoner) reasoner).getMaxIter();
-		int admmIterations = 2;
+		int admmIterations = 10;
 		((ADMMReasoner) reasoner).setMaxIter(admmIterations);
 		((ADMMReasoner) latentVariableReasoner).setMaxIter(admmIterations);
 		if (augmentLoss)
@@ -307,18 +297,17 @@ public class DualEM extends ExpectationMaximization implements ConvexFunc {
 
 		double loss = 0.0;
 		for (int i = 0; i < kernels.size(); i++)
-			// loss += weights[i] * (fullObservedIncompatibility[i] - fullExpectedIncompatibility[i]);
-			loss += weights[i] * (fullObservedIncompatibility[i] - dualExpectedIncompatibility[i]);
+			loss += weights[i] * (dualObservedIncompatibility[i] - dualExpectedIncompatibility[i]);
 		for (int i = 0; i < immutableKernels.size(); i++)
-			loss += immutableKernels.get(i).getWeight().getWeight() * (fullObservedIncompatibility[kernels.size() + i] - dualExpectedIncompatibility[kernels.size() + i]);
-		loss -= ((ADMMReasoner) reasoner).getLagrangianPenalty();
+			loss += immutableKernels.get(i).getWeight().getWeight() * (dualObservedIncompatibility[kernels.size() + i] - dualExpectedIncompatibility[kernels.size() + i]);
+		loss += ((ADMMReasoner) latentVariableReasoner).getLagrangianPenalty() - ((ADMMReasoner) reasoner).getLagrangianPenalty();
 
 		
 		double regularizer = computeRegularizer();
 
 		if (null != gradient) 
 			for (int i = 0; i < kernels.size(); i++) 
-				gradient[i] = (fullObservedIncompatibility[i] - dualExpectedIncompatibility[i]) + l2Regularization * weights[i] + l1Regularization;
+				gradient[i] = (dualObservedIncompatibility[i] - dualExpectedIncompatibility[i]) + l2Regularization * weights[i] + l1Regularization;
 
 		return loss + regularizer;
 	}
