@@ -145,7 +145,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	private final int numSteps;
 	protected final double l2Regularization;
 	protected final double l1Regularization;
-	private final boolean augmentLoss;
+	protected final boolean augmentLoss;
 	private final boolean scheduleStepSize;
 	private final boolean scaleGradient;
 	private final boolean averageSteps;
