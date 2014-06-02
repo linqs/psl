@@ -54,7 +54,7 @@ public class DualEM extends ExpectationMaximization implements ConvexFunc {
 	 * scaling, the adaptive subgradient algorithm of
 	 * John Duchi, Elad Hazan, Yoram Singer (JMLR 2010).
 	 * 
-	 * If TRUE, will override other step scheduling and scaling options.
+	 * If TRUE, will override other step scheduling options (but not scaling).
 	 */
 	public static final String ADAGRAD_KEY = CONFIG_PREFIX + ".adagrad";
 	/** Default value for ADAGRAD_KEY */
@@ -169,7 +169,7 @@ public class DualEM extends ExpectationMaximization implements ConvexFunc {
 				gradNorm += Math.pow(weights[i] - Math.max(0, weights[i] - gradient[i]), 2);
 				
 				if (scale[i] > 0.0) {
-					double coeff = stepSize / scale[i];
+					double coeff = stepSize / Math.sqrt(scale[i]);
 					weights[i] = Math.max(0, weights[i] - coeff * gradient[i]);
 					change += Math.pow(weights[i] - kernels.get(i).getWeight().getWeight(), 2);
 				}
@@ -243,7 +243,7 @@ public class DualEM extends ExpectationMaximization implements ConvexFunc {
 		if (null != gradient) 
 			for (int i = 0; i < kernels.size(); i++) {
 				gradient[i] = dualObservedIncompatibility[i] - dualExpectedIncompatibility[i];
-				if (!useAdaGrad && scaleGradient)
+				if (scaleGradient)
 					gradient[i] /= numGroundings[i];
 				gradient[i] += l2Regularization * weights[i] + l1Regularization;
 			}

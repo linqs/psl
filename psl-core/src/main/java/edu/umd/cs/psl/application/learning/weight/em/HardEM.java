@@ -170,7 +170,7 @@ public class HardEM extends ExpectationMaximization implements ConvexFunc {
 				scale[i] += gradient[i] * gradient[i];
 //				scale[i] = Math.pow((double) (step + 1), 2);
 				if (scale[i] > 0) {
-					double coeff = stepSize / scale[i];
+					double coeff = stepSize / Math.sqrt(scale[i]);
 					weights[i] = Math.max(0, weights[i] - coeff * gradient[i]);
 					gradNorm += gradient[i] * gradient[i];
 					change += Math.pow(weights[i] - kernels.get(i).getWeight().getWeight(), 2);
