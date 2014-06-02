@@ -122,7 +122,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	 */
 	public static final String SCALE_GRADIENT_KEY = CONFIG_PREFIX + ".scalegradient";
 	/** Default value for SCALE_GRADIENT_KEY */
-	public static final boolean SCALE_GRADIENT_DEFAULT = false;
+	public static final boolean SCALE_GRADIENT_DEFAULT = true;
 	
 	/**
 	 * Key for Boolean property that indicates whether to average all visited
@@ -142,13 +142,13 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	protected double[] numGroundings;
 	
 	protected final double stepSize;
-	private final int numSteps;
+	protected final int numSteps;
 	protected final double l2Regularization;
 	protected final double l1Regularization;
 	protected final boolean augmentLoss;
-	private final boolean scheduleStepSize;
-	private final boolean scaleGradient;
-	private final boolean averageSteps;
+	protected final boolean scheduleStepSize;
+	protected final boolean scaleGradient;
+	protected final boolean averageSteps;
 	
 	/** Stop flag to quit the loop. */
 	protected boolean toStop = false;
@@ -259,9 +259,9 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 			/* Updates weights */
 			for (int i = 0; i < kernels.size(); i++) {
 				double weight = kernels.get(i).getWeight().getWeight();
-				double currentStep = (expectedIncompatibility[i] - truthIncompatibility[i]
+				double currentStep = (expectedIncompatibility[i] - truthIncompatibility[i]) / scalingFactor[i]
 						- l2Regularization * weight
-						- l1Regularization) / scalingFactor[i];
+						- l1Regularization;
 				currentStep *= getStepSize(step);
 				log.debug("Step of {} for kernel {}", currentStep, kernels.get(i));
 				log.debug(" --- Expected incomp.: {}, Truth incomp.: {}", expectedIncompatibility[i], truthIncompatibility[i]);
