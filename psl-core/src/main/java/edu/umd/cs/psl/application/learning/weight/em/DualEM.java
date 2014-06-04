@@ -16,8 +16,13 @@
  */
 package edu.umd.cs.psl.application.learning.weight.em;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.Arrays;
+import java.util.Random;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +34,8 @@ import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.parameters.PositiveWeight;
+import edu.umd.cs.psl.model.predicate.Predicate;
+import edu.umd.cs.psl.model.predicate.PredicateFactory;
 import edu.umd.cs.psl.optimizer.lbfgs.ConvexFunc;
 import edu.umd.cs.psl.reasoner.admm.ADMMReasoner;
 
@@ -59,16 +66,33 @@ public class DualEM extends ExpectationMaximization implements ConvexFunc {
 	public static final String ADAGRAD_KEY = CONFIG_PREFIX + ".adagrad";
 	/** Default value for ADAGRAD_KEY */
 	public static final boolean ADAGRAD_DEFAULT = false;
+	
+	/**
+	 * Key for Integer property that indicates how many steps of ADMM to run 
+	 * before each gradient step
+	 */
+	public static final String ADMM_STEPS_KEY = CONFIG_PREFIX + ".admmsteps";
+	/** Default value for ADMM_STEPS_KEY */
+	public static final int ADMM_STEPS_DEFAULT = 10;
 
 	double[] scalingFactor;
 	double[] dualObservedIncompatibility, dualExpectedIncompatibility;
 	private final boolean useAdaGrad;
+	private int admmIterations;
+	Model model;
+	String outputPrefix;
 
 	public DualEM(Model model, Database rvDB, Database observedDB,
 			ConfigBundle config) {
 		super(model, rvDB, observedDB, config);
 		scalingFactor = new double[kernels.size()];
 		useAdaGrad = config.getBoolean(ADAGRAD_KEY, ADAGRAD_DEFAULT);
+		admmIterations = config.getInteger(ADMM_STEPS_KEY, ADMM_STEPS_DEFAULT);
+	}
+	
+	public void setModel(Model m, String s) {
+		model = m;
+		outputPrefix = s;
 	}
 
 	/**
@@ -143,8 +167,10 @@ public class DualEM extends ExpectationMaximization implements ConvexFunc {
 		return loss;
 	}
 
+	Random random = new Random();
+	
 	private void subgrad() {
-		log.info("Starting adagrad");
+		log.info("Starting optimization");
 		double [] weights = new double[kernels.size()];
 		for (int i = 0; i < kernels.size(); i++)
 			weights[i] = kernels.get(i).getWeight().getWeight();
@@ -173,7 +199,7 @@ public class DualEM extends ExpectationMaximization implements ConvexFunc {
 					weights[i] = Math.max(0, weights[i] - coeff * gradient[i]);
 					change += Math.pow(weights[i] - kernels.get(i).getWeight().getWeight(), 2);
 				}
-				avgWeights[i] = (1 - (1.0 / (double) (step + 1.0))) * avgWeights[i] + (1.0 / (double) (step + 1.0)) * weights[i];
+				avgWeights[i] = (1 - (1.0 / (double) (step + 1.0))) * avgWeights[i] + (1.0 / (double) (step + 1.0)) * weights[i];				
 			}
 
 			gradNorm = Math.sqrt(gradNorm);
@@ -182,23 +208,49 @@ public class DualEM extends ExpectationMaximization implements ConvexFunc {
 			if (step % 1 == 0)
 				log.info("Iter {}, obj: {}, norm grad: " + df.format(gradNorm) + ", change: " + df.format(change), step, df.format(objective));
 
+			if (step % 50 == 0)
+				outputModel(step);
+			
 			if (change < tolerance) {
 				log.info("Change in w ({}) is less than tolerance. Finishing adagrad.", change);
 				break;
 			}
 		}
+		outputModel(iterations);
 
-		log.info("Adagrad learning finished with final objective value {}", objective);
+		log.info("Learning finished with final objective value {}", objective);
 
 		for (int i = 0; i < kernels.size(); i++) {
+			if (averageSteps)
+				weights[i] = avgWeights[i];
 			kernels.get(i).setWeight(new PositiveWeight(weights[i]));
+		}
+	}
+
+	private void outputModel(int step) {
+		if (model == null)
+			return;
+		String filename = outputPrefix + "model" + step + ".txt";
+		try {
+			File file = new File(filename);
+			if (file.getParentFile() != null)
+				file.getParentFile().mkdirs();
+			FileWriter fw = new FileWriter(file);
+			BufferedWriter bw = new BufferedWriter(fw);
+			for (Predicate predicate : PredicateFactory.getFactory().getPredicates())
+				bw.write(predicate.toString() + "\n");
+			bw.write(model.toString());
+
+			bw.close();
+			fw.close();
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 
 	@Override
 	protected void doLearn() {
 		int maxIter = ((ADMMReasoner) reasoner).getMaxIter();
-		int admmIterations = 10;
 		((ADMMReasoner) reasoner).setMaxIter(admmIterations);
 		((ADMMReasoner) latentVariableReasoner).setMaxIter(admmIterations);
 		if (augmentLoss)
@@ -234,6 +286,10 @@ public class DualEM extends ExpectationMaximization implements ConvexFunc {
 		double mStepAugLagrangianPenalty = ((ADMMReasoner) reasoner).getAugmentedLagrangianPenalty();
 		loss += eStepLagrangianPenalty + eStepAugLagrangianPenalty - mStepLagrangianPenalty - mStepAugLagrangianPenalty;
 		
+		for (int i = 0; i < kernels.size(); i++) {
+			log.debug("Incompatibility for kernel {}", kernels.get(i));
+			log.debug("Truth incompatbility {}, expected incompatibility {}", dualObservedIncompatibility[i], dualExpectedIncompatibility[i]);
+		}
 		log.info("E Penalty: {}, E Aug Penalty: {}, M Penalty: {}, M Aug Penalty: {}",
 				new Double[] {eStepLagrangianPenalty, eStepAugLagrangianPenalty, mStepLagrangianPenalty, mStepAugLagrangianPenalty});
 
@@ -243,7 +299,7 @@ public class DualEM extends ExpectationMaximization implements ConvexFunc {
 		if (null != gradient) 
 			for (int i = 0; i < kernels.size(); i++) {
 				gradient[i] = dualObservedIncompatibility[i] - dualExpectedIncompatibility[i];
-				if (scaleGradient)
+				if (scaleGradient && numGroundings[i] > 0.0)
 					gradient[i] /= numGroundings[i];
 				gradient[i] += l2Regularization * weights[i] + l1Regularization;
 			}

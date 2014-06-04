@@ -45,7 +45,7 @@ public class HardEM extends ExpectationMaximization implements ConvexFunc {
 
 	//TODO make these actual config options (and probably hide LBFGS since it's not working)
 	private static boolean useLBFGS = false;
-	private static boolean useAdagrad = true;
+	private static boolean useAdagrad = false;
 
 	double[] scalingFactor;
 	double[] fullObservedIncompatibility, fullExpectedIncompatibility;
