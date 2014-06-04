@@ -31,6 +31,7 @@ import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.kernel.linearconstraint.GroundValueConstraint;
+import edu.umd.cs.psl.model.parameters.PositiveWeight;
 import edu.umd.cs.psl.reasoner.Reasoner;
 import edu.umd.cs.psl.reasoner.ReasonerFactory;
 
@@ -97,6 +98,7 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 		double[] weights = new double[kernels.size()];
 		for (int i = 0; i < weights.length; i++)
 			weights[i] = kernels.get(i).getWeight().getWeight();
+		double [] avgWeights = new double[kernels.size()];
 		
 		round = 0;
 		while (round++ < iterations) {
@@ -110,6 +112,8 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 			for (int i = 0; i < kernels.size(); i++) {
 				change += Math.pow(weights[i] - kernels.get(i).getWeight().getWeight(), 2);
 				weights[i] = kernels.get(i).getWeight().getWeight();
+
+				avgWeights[i] = (1 - (1.0 / (double) (round + 1.0))) * avgWeights[i] + (1.0 / (double) (round + 1.0)) * weights[i];		
 			}
 			
 			double loss = getLoss();
@@ -123,6 +127,10 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 			} else
 				log.info("Finished EM round {} with m-step norm {}. Loss: " + loss + ", regularizer: " + regularizer + ", objective: " + objective, round, change);
 		}
+		
+		if (averageSteps) 
+			for (int i = 0; i < kernels.size(); i++)
+				kernels.get(i).setWeight(new PositiveWeight(avgWeights[i]));
 	}
 
 	abstract protected void minimizeKLDivergence();
