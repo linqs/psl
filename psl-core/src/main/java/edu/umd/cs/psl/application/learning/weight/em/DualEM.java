@@ -212,7 +212,7 @@ public class DualEM extends ExpectationMaximization implements ConvexFunc {
 				outputModel(step);
 			
 			if (change < tolerance) {
-				log.info("Change in w ({}) is less than tolerance. Finishing adagrad.", change);
+				log.info("Change in w ({}) is less than tolerance. Finishing subgrad.", change);
 				break;
 			}
 		}
