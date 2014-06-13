@@ -28,7 +28,7 @@ import com.google.common.collect.Iterables;
 import edu.umd.cs.psl.application.ModelApplication;
 import edu.umd.cs.psl.application.learning.weight.TrainingMap;
 import edu.umd.cs.psl.application.learning.weight.maxmargin.LossAugmentingGroundKernel;
-import edu.umd.cs.psl.application.learning.weight.maxmargin.PositiveMinNormProgram;
+import edu.umd.cs.psl.application.learning.weight.maxmargin.MinNormProgram;
 import edu.umd.cs.psl.application.util.Grounding;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
@@ -209,7 +209,7 @@ public class HardEMRandOM implements ModelApplication {
 			double violation = Double.POSITIVE_INFINITY;
 
 			// init a quadratic program with variables for weights and 1 slack variable
-			PositiveMinNormProgram program = new PositiveMinNormProgram(groundKernels.size() + 1, config);
+			MinNormProgram program = new MinNormProgram(groundKernels.size() + 1, true, config);
 			
 
 			// add linear objective

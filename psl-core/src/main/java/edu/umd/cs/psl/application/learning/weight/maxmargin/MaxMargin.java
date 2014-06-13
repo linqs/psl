@@ -86,6 +86,13 @@ public class MaxMargin extends WeightLearningApplication {
 	public static final int MAX_ITER_DEFAULT = 500;
 	
 	/**
+	 * Key for boolean property. If true, only non-negative weights will be learned. 
+	 */
+	public static final String NONNEGATIVE_WEIGHTS_KEY = CONFIG_PREFIX + ".nonnegativeweights";
+	/** Default value for NONNEGATIVE_WEIGHTS_KEY */
+	public static final boolean NONNEGATIVE_WEIGHTS_DEFAULT = true;
+	
+	/**
 	 * Key for LossBalancingType enum property. Determines the type of loss
 	 * balancing MaxMargin will use.
 	 * 
@@ -149,17 +156,19 @@ public class MaxMargin extends WeightLearningApplication {
 	
 	protected final double tolerance;
 	protected final int maxIter;
+	protected final boolean nonnegativeWeights;
 	protected double slackPenalty;
 	protected final LossBalancingType balanceLoss;
 	protected final NormScalingType scaleNorm;
 	protected final boolean squareSlack;
 	
-	protected PositiveMinNormProgram normProgram;
+	protected MinNormProgram normProgram;
 	
 	public MaxMargin(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
 		super(model, rvDB, observedDB, config);
 		tolerance = config.getDouble(CUTTING_PLANE_TOLERANCE_KEY, CUTTING_PLANE_TOLERANCE_DEFAULT);
 		maxIter = config.getInt(MAX_ITER_KEY, MAX_ITER_DEFAULT);
+		nonnegativeWeights = config.getBoolean(NONNEGATIVE_WEIGHTS_KEY, NONNEGATIVE_WEIGHTS_DEFAULT);
 		slackPenalty = config.getDouble(SLACK_PENALTY_KEY, SLACK_PENALTY_DEFAULT);
 		balanceLoss = (LossBalancingType) config.getEnum(BALANCE_LOSS_KEY, BALANCE_LOSS_DEFAULT);
 		scaleNorm = (NormScalingType) config.getEnum(SCALE_NORM_KEY, SCALE_NORM_DEFAULT);
@@ -172,7 +181,7 @@ public class MaxMargin extends WeightLearningApplication {
 		super.initGroundModel();
 		
 		/* Sets up the PositiveMinNormProgram (in this method for appropriate throws declarations) */
-		normProgram = new PositiveMinNormProgram(kernels.size() + 1, config);
+		normProgram = new MinNormProgram(kernels.size() + 1, nonnegativeWeights, config);
 		
 		/* Sets linear objective term */
 		double [] coefficients = new double[kernels.size() + 1];
@@ -407,7 +416,10 @@ public class MaxMargin extends WeightLearningApplication {
 			weights = normProgram.getSolution();
 			/* Sets the weights to the new solution */
 			for (int i = 0; i < kernels.size(); i++)
-				kernels.get(i).setWeight(new PositiveWeight(weights[i]));
+				if (nonnegativeWeights && weights[i] < 0.0)
+					kernels.get(i).setWeight(new NegativeWeight(weights[i]));
+				else 
+					kernels.get(i).setWeight(new PositiveWeight(weights[i]));
 			reasoner.changedGroundKernelWeights();
 
 			log.debug("Current model: {}", model);
