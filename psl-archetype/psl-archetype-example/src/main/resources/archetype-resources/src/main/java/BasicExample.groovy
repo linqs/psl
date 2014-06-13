@@ -83,8 +83,9 @@ m.add function: "sameName" , implementation: new LevenshteinSimilarity()
  * are those defined above. The character '&' denotes a conjunction wheres '>>' denotes a conclusion.
  * Each rule can be given a user defined weight or no weight is specified if it is learned.
  * 
- * 'A ^ B' is a shorthand syntax for nonsymmetric(A,B), which means that in the grounding of the rule,
- * PSL does not ground the symmetric case.
+ * 'A ^ B' is a shorthand syntax for nonsymmetric(A,B), which means A < B, i.e., A less than B according
+ * to the appropriate ordering, e.g., numeric, string, etc. If the rule is symmetric
+ * with respect to A and B, then this can be used to make PSL avoid grounding the symmetric case.
  */
 m.add rule : ( name(A,X) & name(B,Y) & (A ^ B) & sameName(X,Y) ) >> samePerson(A,B),  weight : 5
 
@@ -129,8 +130,8 @@ println m;
  * We can use insertion helpers for a specified predicate. Here we show how one can manually insert data
  * or use the insertion helpers to easily implement custom data loaders.
  */
-def partition = new Partition(0);
-def insert = data.getInserter(name, partition);
+def observations = new Partition(0);
+def insert = data.getInserter(name, observations);
 
 insert.insert(1, "John Braker");
 insert.insert(2, "Mr. Jack Ressing");
@@ -151,7 +152,7 @@ insert.insert(17, "Otto v. Lautern");
 /*
  * Of course, we can also load data directly from tab delimited data files.
  */
-insert = data.getInserter(knows, partition)
+insert = data.getInserter(knows, observations)
 def dir = 'data'+java.io.File.separator+'sn'+java.io.File.separator;
 InserterUtils.loadDelimitedData(insert, dir+"sn_knows.txt");
 
@@ -163,7 +164,8 @@ InserterUtils.loadDelimitedData(insert, dir+"sn_knows.txt");
  * Name and Knows since we want to treat those atoms as observed, and leave the predicate
  * SamePerson open to infer its atoms' values.
  */
-Database db = data.getDatabase(partition, [Name, Knows] as Set);
+def results = new Partition(1);
+Database db = data.getDatabase(results, [Name, Knows] as Set, observations);
 LazyMPEInference inferenceApp = new LazyMPEInference(m, db, config);
 inferenceApp.mpeInference();
 inferenceApp.close();
@@ -180,7 +182,7 @@ for (GroundAtom atom : Queries.getAllAtoms(db, SamePerson))
  * data from which we can learn. In our example, that means we need to specify the 'true'
  * alignment, which we now load into a second partition.
  */
-Partition trueDataPartition = new Partition(1);
+Partition trueDataPartition = new Partition(2);
 insert = data.getInserter(samePerson, trueDataPartition)
 InserterUtils.loadDelimitedDataTruth(insert, dir + "sn_align.txt");
 
@@ -202,15 +204,16 @@ println m
 
 /*
  * Now, we apply the learned model to a different social network alignment dataset. We load the 
- * dataset as before (this time into partition 2) and run inference. Finally we print the results.
+ * dataset as before (this time into partition 3) and run inference. Finally we print the results.
  */
-Partition sn2 = new Partition(2);
-insert = data.getInserter(name, sn2);
+Partition observations2 = new Partition(3);
+insert = data.getInserter(name, observations2);
 InserterUtils.loadDelimitedData(insert, dir+"sn2_names.txt");
-insert = data.getInserter(knows, sn2);
+insert = data.getInserter(knows, observations2);
 InserterUtils.loadDelimitedData(insert, dir+"sn2_knows.txt");
 
-Database db2 = data.getDatabase(sn2, [Name, Knows] as Set);
+Partition results2 = new Partition(4);
+Database db2 = data.getDatabase(results2, [Name, Knows] as Set, observations2);
 inferenceApp = new LazyMPEInference(m, db2, config);
 result = inferenceApp.mpeInference();
 inferenceApp.close();

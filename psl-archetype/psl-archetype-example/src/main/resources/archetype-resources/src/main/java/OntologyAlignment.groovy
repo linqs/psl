@@ -94,25 +94,26 @@ m.add rule : ~similar(A,B), weight: 1;
 def dir = 'data'+java.io.File.separator+'ontology'+java.io.File.separator;
 def trainDir = dir+'train'+java.io.File.separator;
 
-Partition trainPart = new Partition(0);
-Partition truthPart = new Partition(1);
+Partition trainObservations = new Partition(0);
+Partition trainPredictions = new Partition(1);
+Partition truth = new Partition(2);
 
 for (Predicate p : [domainOf,fromOntology,name,hasType,rangeOf,subclass])
 {
         println "${symbol_escape}t${symbol_escape}t${symbol_escape}tREADING " + p.getName() +" ...";
-	insert = data.getInserter(p, trainPart)
+	insert = data.getInserter(p, trainObservations)
 	InserterUtils.loadDelimitedData(insert, trainDir+p.getName().toLowerCase()+".txt");
 }
 
 println "${symbol_escape}t${symbol_escape}t${symbol_escape}tREADING SIMILAR ...";
-insert = data.getInserter(similar, truthPart)
+insert = data.getInserter(similar, truth)
 InserterUtils.loadDelimitedDataTruth(insert, trainDir+"similar.txt");
 
 //////////////////////////// weight learning ///////////////////////////
 println "${symbol_escape}t${symbol_escape}tLEARNING WEIGHTS...";
 
-Database trainDB = data.getDatabase(trainPart, [name, subclass, fromOntology, domainOf, rangeOf, hasType] as Set);
-Database truthDB = data.getDatabase(truthPart, [similar] as Set);
+Database trainDB = data.getDatabase(trainPredictions, [name, subclass, fromOntology, domainOf, rangeOf, hasType] as Set, trainObservations);
+Database truthDB = data.getDatabase(truth, [similar] as Set);
 
 LazyMaxLikelihoodMPE weightLearning = new LazyMaxLikelihoodMPE(m, trainDB, truthDB, config);
 weightLearning.learn();
@@ -126,14 +127,15 @@ println m
 println "${symbol_escape}t${symbol_escape}tINFERRING...";
 
 def testDir = dir+'test'+java.io.File.separator;
-Partition testPart = new Partition(2);
+Partition testObservations = new Partition(3);
+Partition testPredictions = new Partition(4);
 for (Predicate p : [domainOf,fromOntology,name,hasType,rangeOf,subclass]) 
 {
-	insert = data.getInserter(p, testPart);
+	insert = data.getInserter(p, testObservations);
 	InserterUtils.loadDelimitedData(insert, testDir+p.getName().toLowerCase()+".txt");
 }
 
-Database testDB = data.getDatabase(testPart, [name, subclass, fromOntology, domainOf, rangeOf, hasType] as Set);
+Database testDB = data.getDatabase(testPredictions, [name, subclass, fromOntology, domainOf, rangeOf, hasType] as Set, testObservations);
 LazyMPEInference inference = new LazyMPEInference(m, testDB, config);
 inference.mpeInference();
 inference.close();
