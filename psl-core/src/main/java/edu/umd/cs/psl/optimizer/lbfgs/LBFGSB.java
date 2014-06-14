@@ -28,7 +28,7 @@ import java.io.*;
 
 public class LBFGSB
 {
-  private final int LBFGSB_PRINT = 1; //-1: no output; 1: output for every iteration
+  private final int LBFGSB_PRINT = -1; //-1: no output; 1: output for every iteration
   private final int MMAX = 17;
   private final int M    =  5; //max number of limited memory corrections
 
@@ -124,8 +124,8 @@ public class LBFGSB
     int iprint = LBFGSB_PRINT;
     if (iprint >= 1)
     {
-//      try { itfile = new BufferedWriter(new FileWriter("iterate.dat")); }
-//      catch (IOException e) { System.err.println("failed to open iterate.dat"); System.exit(-1); }
+      try { itfile = new BufferedWriter(new FileWriter("iterate.dat")); }
+      catch (IOException e) { System.err.println("failed to open iterate.dat"); System.exit(-1); }
     }
 
     iter[0] = 0;
@@ -842,8 +842,8 @@ public class LBFGSB
 
   private void write(Writer itfile, String str)
   {
-//    try { itfile.write(str); }
-//    catch(IOException e) { System.out.println("Failed to write itfile: " + str); System.exit(-1); }
+    try { itfile.write(str); }
+    catch(IOException e) { System.out.println("Failed to write itfile: " + str); System.exit(-1); }
   }
 
   private void active(final int n, final double[] l, final double[] u, final int[] nbd, double[] x, int[] iwhere,
