@@ -29,7 +29,7 @@ public abstract class Weight implements Parameters {
 	}
 	
 	public Weight(double w) {
-		// checkWeight(w);
+		checkWeight(w);
 		weight = w;
 	}
 	
