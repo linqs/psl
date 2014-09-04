@@ -20,7 +20,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import edu.umd.cs.psl.application.ModelApplication;
-import edu.umd.cs.psl.application.activation.Activator;
 import edu.umd.cs.psl.application.util.GroundKernels;
 import edu.umd.cs.psl.application.util.Grounding;
 import edu.umd.cs.psl.config.ConfigBundle;
@@ -78,7 +77,6 @@ public class MPEInference implements ModelApplication {
 	private Model model;
 	private Database db;
 	private ConfigBundle config;
-	private Activator activator;
 	
 	public MPEInference(Model model, Database db, ConfigBundle config) {
 		this.model = model;
