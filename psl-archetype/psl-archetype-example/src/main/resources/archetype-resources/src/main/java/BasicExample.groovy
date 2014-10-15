@@ -109,12 +109,14 @@ GroundTerm snB = data.getUniqueID(2);
 /*
  * Our first rule says that users with similar names are likely the same person
  */
-m.add rule : ( Network(A, snA) & Network(B, snB) & Name(A,X) & Name(B,Y) & SameName(X,Y) ) >> SamePerson(A,B),  weight : 5
+m.add rule : ( Network(A, snA) & Network(B, snB) & Name(A,X) & Name(B,Y)
+	& SameName(X,Y) ) >> SamePerson(A,B),  weight : 5
 
 /* 
  * In this rule, we use the social network to propagate SamePerson information.
  */
-m.add rule : ( Network(A, snA) & Network(B, snB) & SamePerson(A,B) & Knows(A, Friend1) & Knows(B, Friend2) ) >> SamePerson(Friend1, Friend2) , weight : 3.2
+m.add rule : ( Network(A, snA) & Network(B, snB) & SamePerson(A,B) & Knows(A, Friend1)
+	& Knows(B, Friend2) ) >> SamePerson(Friend1, Friend2) , weight : 3.2
 
 /* 
  * Next, we define some constraints for our model. In this case, we restrict that
