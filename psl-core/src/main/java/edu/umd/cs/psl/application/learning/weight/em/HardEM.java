@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import edu.umd.cs.psl.application.learning.weight.maxlikelihood.VotedPerceptron;
 import edu.umd.cs.psl.config.ConfigBundle;
+import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
@@ -43,9 +44,29 @@ public class HardEM extends ExpectationMaximization implements ConvexFunc {
 
 	private static final Logger log = LoggerFactory.getLogger(HardEM.class);
 
+	/**
+	 * Prefix of property keys used by this class.
+	 * 
+	 * @see ConfigManager
+	 */
+	public static final String CONFIG_PREFIX = "hardem";
+
+	
 	//TODO make these actual config options (and probably hide LBFGS since it's not working)
 	private static boolean useLBFGS = false;
-	private static boolean useAdagrad = false;
+
+	/**
+	 * Key for Boolean property that indicates whether to use AdaGrad subgradient
+	 * scaling, the adaptive subgradient algorithm of
+	 * John Duchi, Elad Hazan, Yoram Singer (JMLR 2010).
+	 * 
+	 * If TRUE, will override other step scheduling options (but not scaling).
+	 */
+	public static final String ADAGRAD_KEY = CONFIG_PREFIX + ".adagrad";
+	/** Default value for ADAGRAD_KEY */
+	public static final boolean ADAGRAD_DEFAULT = false;
+
+	private final boolean useAdaGrad;
 
 	double[] scalingFactor;
 	double[] fullObservedIncompatibility, fullExpectedIncompatibility;
@@ -54,6 +75,7 @@ public class HardEM extends ExpectationMaximization implements ConvexFunc {
 			ConfigBundle config) {
 		super(model, rvDB, observedDB, config);
 		scalingFactor = new double[kernels.size()];
+		useAdaGrad = config.getBoolean(ADAGRAD_KEY, ADAGRAD_DEFAULT);
 	}
 
 	/**
@@ -203,7 +225,7 @@ public class HardEM extends ExpectationMaximization implements ConvexFunc {
 			addLossAugmentedKernels();
 		if (useLBFGS) {
 			lbfgs();
-		} else if (useAdagrad) {
+		} else if (useAdaGrad) {
 			adagrad();
 		} else {
 			super.doLearn();
