@@ -242,8 +242,7 @@ public class ADMMReasoner implements Reasoner {
 	}
 	
 	protected void buildGroundModel() {
-		log.debug("Initializing optimization.");
-		log.info("Rebuilding reasoner data structures");
+		log.debug("(Re)building reasoner data structures");
 		
 		/* Initializes data structures */
 		orderedGroundKernels = new HashList<GroundKernel>(groundKernels.size() * 2);
@@ -490,7 +489,7 @@ public class ADMMReasoner implements Reasoner {
 		if (rebuildModel)
 			buildGroundModel();
 		
-		log.info("Performing optimization with {} variables and {} terms.", z.size(), terms.size());
+		log.debug("Performing optimization with {} variables and {} terms.", z.size(), terms.size());
 		
 		// Starts up the computation threads
 		ADMMTask[] tasks = new ADMMTask[numThreads];
@@ -555,7 +554,7 @@ public class ADMMReasoner implements Reasoner {
 			}
 				
 			if (iter % (50 * stopCheck) == 0) {
-				log.debug("Residuals at iter {} -- Primal: {} -- Dual: {}", new Object[] {iter, primalRes, dualRes});
+				log.trace("Residuals at iter {} -- Primal: {} -- Dual: {}", new Object[] {iter, primalRes, dualRes});
 				log.trace("--------- Epsilon primal: {} -- Epsilon dual: {}", epsilonPrimal, epsilonDual);
 			}
 			
@@ -578,7 +577,7 @@ public class ADMMReasoner implements Reasoner {
 			throw new RuntimeException(e);
 		}
 		
-		log.info("Optimization completed in  {} iterations. " +
+		log.debug("Optimization completed in  {} iterations. " +
 				"Primal res.: {}, Dual res.: {}", new Object[] {iter, primalRes, dualRes});
 		
 		/* Updates variables */
