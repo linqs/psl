@@ -17,7 +17,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.example;
+package ${package};
 
 import java.text.DecimalFormat;
 
@@ -51,7 +51,7 @@ import edu.umd.cs.psl.util.database.Queries;
 
 /*
  * A ConfigBundle is a set of key-value pairs containing configuration options.
- * One place these can be defined is in psl-example/src/main/resources/psl.properties
+ * One place these can be defined is in ${artifactId}/src/main/resources/psl.properties
  */
 ConfigManager cm = ConfigManager.getManager()
 ConfigBundle config = cm.getBundle("basic-example")
