@@ -21,17 +21,23 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.sun.tools.javac.util.List;
 
 import edu.umd.cs.psl.application.learning.weight.maxlikelihood.VotedPerceptron;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.Model;
+import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.parameters.PositiveWeight;
 import edu.umd.cs.psl.model.predicate.Predicate;
@@ -68,6 +74,13 @@ public class DualEM extends ExpectationMaximization implements ConvexFunc {
 	public static final boolean ADAGRAD_DEFAULT = false;
 	
 	/**
+	 * Key for Boolean property that indicates whether to store weights along entire optimization path
+	 */
+	public static final String STORE_WEIGHTS_KEY = CONFIG_PREFIX + ".storeweights";
+	/** Default value for STORE_WEIGHTS_KEY */
+	public static final boolean STORE_WEIGHTS_DEFAULT = false;
+
+	/**
 	 * Key for Integer property that indicates how many steps of ADMM to run 
 	 * before each gradient step
 	 */
@@ -79,8 +92,10 @@ public class DualEM extends ExpectationMaximization implements ConvexFunc {
 	double[] dualObservedIncompatibility, dualExpectedIncompatibility;
 	private final boolean useAdaGrad;
 	private int admmIterations;
+	private final boolean storeWeights;
 	Model model;
 	String outputPrefix;
+	private ArrayList<Map<CompatibilityKernel, Double>> storedWeights;
 
 	public DualEM(Model model, Database rvDB, Database observedDB,
 			ConfigBundle config) {
@@ -88,6 +103,9 @@ public class DualEM extends ExpectationMaximization implements ConvexFunc {
 		scalingFactor = new double[kernels.size()];
 		useAdaGrad = config.getBoolean(ADAGRAD_KEY, ADAGRAD_DEFAULT);
 		admmIterations = config.getInteger(ADMM_STEPS_KEY, ADMM_STEPS_DEFAULT);
+		storeWeights = config.getBoolean(STORE_WEIGHTS_KEY, STORE_WEIGHTS_DEFAULT);
+		if (storeWeights) 
+			storedWeights = new ArrayList<Map<CompatibilityKernel, Double>>();
 	}
 	
 	public void setModel(Model m, String s) {
@@ -140,7 +158,7 @@ public class DualEM extends ExpectationMaximization implements ConvexFunc {
 		setLabeledRandomVariables();
 
 		ADMMReasoner admm = (ADMMReasoner) latentVariableReasoner;
-		
+
 		/* Computes the observed incompatibilities and numbers of groundings */
 		for (int i = 0; i < kernels.size(); i++) {
 			for (GroundKernel gk : latentVariableReasoner.getGroundKernels(kernels.get(i))) {
@@ -191,16 +209,21 @@ public class DualEM extends ExpectationMaximization implements ConvexFunc {
 					scale[i] = Math.pow((double) (step + 1), 2);
 				else
 					scale[i] = 1.0;
-				
+
 				gradNorm += Math.pow(weights[i] - Math.max(0, weights[i] - gradient[i]), 2);
-				
+
 				if (scale[i] > 0.0) {
 					double coeff = stepSize / Math.sqrt(scale[i]);
 					weights[i] = Math.max(0, weights[i] - coeff * gradient[i]);
 					change += Math.pow(weights[i] - kernels.get(i).getWeight().getWeight(), 2);
 				}
-				avgWeights[i] = (1 - (1.0 / (double) (step + 1.0))) * avgWeights[i] + (1.0 / (double) (step + 1.0)) * weights[i];				
+				avgWeights[i] = (1 - (1.0 / (double) (step + 1.0))) * avgWeights[i] + (1.0 / (double) (step + 1.0)) * weights[i];		
 			}
+
+			Map<CompatibilityKernel,Double> weightMap = new HashMap<CompatibilityKernel, Double>();
+			for (int i = 0; i < kernels.size(); i++)
+				weightMap.put(kernels.get(i), (averageSteps)? avgWeights[i] : weights[i]);
+			storedWeights.add(weightMap);
 
 			gradNorm = Math.sqrt(gradNorm);
 			change = Math.sqrt(change);
@@ -227,6 +250,10 @@ public class DualEM extends ExpectationMaximization implements ConvexFunc {
 		}
 	}
 
+	public ArrayList<Map<CompatibilityKernel, Double>> getStoredWeights() {
+		return (storeWeights)? storedWeights : null;
+	}
+	
 	private void outputModel(int step) {
 		if (model == null)
 			return;

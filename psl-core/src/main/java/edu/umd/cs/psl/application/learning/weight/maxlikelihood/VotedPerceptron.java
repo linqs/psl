@@ -149,6 +149,9 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	protected final boolean scheduleStepSize;
 	protected final boolean scaleGradient;
 	protected final boolean averageSteps;
+	protected double[] truthIncompatibility;
+	protected double[] expectedIncompatibility;
+
 	
 	/** Stop flag to quit the loop. */
 	protected boolean toStop = false;
@@ -229,8 +232,6 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	@Override
 	protected void doLearn() {
 		double[] avgWeights;
-		double[] truthIncompatibility;
-		double[] expectedIncompatibility;
 		double[] scalingFactor;
 		
 		avgWeights = new double[kernels.size()];
