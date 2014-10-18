@@ -220,11 +220,13 @@ public class DualEM extends ExpectationMaximization implements ConvexFunc {
 				avgWeights[i] = (1 - (1.0 / (double) (step + 1.0))) * avgWeights[i] + (1.0 / (double) (step + 1.0)) * weights[i];		
 			}
 
-			Map<CompatibilityKernel,Double> weightMap = new HashMap<CompatibilityKernel, Double>();
-			for (int i = 0; i < kernels.size(); i++)
-				weightMap.put(kernels.get(i), (averageSteps)? avgWeights[i] : weights[i]);
-			storedWeights.add(weightMap);
-
+			if (storeWeights) {
+				Map<CompatibilityKernel,Double> weightMap = new HashMap<CompatibilityKernel, Double>();
+				for (int i = 0; i < kernels.size(); i++)
+					weightMap.put(kernels.get(i), (averageSteps)? avgWeights[i] : weights[i]);
+				storedWeights.add(weightMap);
+			}
+			
 			gradNorm = Math.sqrt(gradNorm);
 			change = Math.sqrt(change);
 			DecimalFormat df = new DecimalFormat("0.0000E00");

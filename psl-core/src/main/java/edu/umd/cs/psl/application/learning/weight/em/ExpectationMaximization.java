@@ -16,6 +16,8 @@
  */
 package edu.umd.cs.psl.application.learning.weight.em;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -30,6 +32,7 @@ import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
+import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.linearconstraint.GroundValueConstraint;
 import edu.umd.cs.psl.model.parameters.PositiveWeight;
 import edu.umd.cs.psl.reasoner.Reasoner;
@@ -64,6 +67,14 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 	public static final int ITER_DEFAULT = 10;
 	
 	/**
+	 * Key for Boolean property that indicates whether to store weights along entire optimization path
+	 */
+	public static final String STORE_WEIGHTS_KEY = CONFIG_PREFIX + ".storeweights";
+	/** Default value for STORE_WEIGHTS_KEY */
+	public static final boolean STORE_WEIGHTS_DEFAULT = false;
+	
+	
+	/**
 	 * Key for positive double property for the minimum absolute change in weights
 	 * such that EM is considered converged
 	 */
@@ -75,6 +86,10 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 	protected final double tolerance;
 	
 	private int round;
+	
+	private final boolean storeWeights;
+	private ArrayList<Map<CompatibilityKernel, Double>> storedWeights;
+
 	
 	/**
 	 * A reasoner for inferring the latent variables conditioned on
@@ -91,6 +106,10 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 		tolerance = config.getDouble(TOLERANCE_KEY, TOLERANCE_DEFAULT);
 		
 		latentVariableReasoner = null;
+		
+		storeWeights = config.getBoolean(STORE_WEIGHTS_KEY, STORE_WEIGHTS_DEFAULT);
+		if (storeWeights) 
+			storedWeights = new ArrayList<Map<CompatibilityKernel, Double>>();
 	}
 
 	@Override
@@ -116,6 +135,13 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 				avgWeights[i] = (1 - (1.0 / (double) (round + 1.0))) * avgWeights[i] + (1.0 / (double) (round + 1.0)) * weights[i];		
 			}
 			
+			if (storeWeights) {
+				Map<CompatibilityKernel,Double> weightMap = new HashMap<CompatibilityKernel, Double>();
+				for (int i = 0; i < kernels.size(); i++)
+					weightMap.put(kernels.get(i), (averageSteps)? avgWeights[i] : weights[i]);
+				storedWeights.add(weightMap);
+			}
+
 			double loss = getLoss();
 			double regularizer = computeRegularizer();
 			double objective = loss + regularizer;
@@ -178,6 +204,10 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 		 */
 		latentVariableReasoner.changedGroundKernelWeights();
 		latentVariableReasoner.optimize();
+	}
+	
+	public ArrayList<Map<CompatibilityKernel, Double>> getStoredWeights() {
+		return (storeWeights)? storedWeights : null;
 	}
 	
 	@Override
