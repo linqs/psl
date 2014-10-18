@@ -30,8 +30,6 @@ import java.util.Random;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.sun.tools.javac.util.List;
-
 import edu.umd.cs.psl.application.learning.weight.maxlikelihood.VotedPerceptron;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
