@@ -67,12 +67,23 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 	public static final int ITER_DEFAULT = 10;
 	
 	/**
+	 * Key for Boolean property that indicates whether to reset step-size schedule
+	 * for each EM round. If TRUE, schedule will be {@link VotedPerceptron#STEP_SIZE_KEY}
+	 * at start of each round. If FALSE, schedule will smoothly decrease across rounds,
+	 * i.e., the schedule will be 1/(round number * step number).
+	 * 
+	 * This property has no effect if {@link VotedPerceptron#STEP_SCHEDULE_KEY} is false.
+	 */
+	public static final String RESET_SCHEDULE_KEY = CONFIG_PREFIX + ".resetschedule";
+	/** Default value for STORE_WEIGHTS_KEY */
+	public static final boolean RESET_SCHEDULE_DEFAULT = true;
+	
+	/**
 	 * Key for Boolean property that indicates whether to store weights along entire optimization path
 	 */
 	public static final String STORE_WEIGHTS_KEY = CONFIG_PREFIX + ".storeweights";
 	/** Default value for STORE_WEIGHTS_KEY */
 	public static final boolean STORE_WEIGHTS_DEFAULT = false;
-	
 	
 	/**
 	 * Key for positive double property for the minimum absolute change in weights
@@ -84,6 +95,7 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 	
 	protected final int iterations;
 	protected final double tolerance;
+	protected final boolean resetSchedule;
 	
 	private int round;
 	
@@ -104,6 +116,8 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 		iterations = config.getInt(ITER_KEY, ITER_DEFAULT);
 
 		tolerance = config.getDouble(TOLERANCE_KEY, TOLERANCE_DEFAULT);
+		
+		resetSchedule = config.getBoolean(RESET_SCHEDULE_KEY, RESET_SCHEDULE_DEFAULT);
 		
 		latentVariableReasoner = null;
 		
@@ -132,7 +146,7 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 				change += Math.pow(weights[i] - kernels.get(i).getWeight().getWeight(), 2);
 				weights[i] = kernels.get(i).getWeight().getWeight();
 
-				avgWeights[i] = (1 - (1.0 / (double) (round + 1.0))) * avgWeights[i] + (1.0 / (double) (round + 1.0)) * weights[i];		
+				avgWeights[i] = (1 - (1.0 / (double) round)) * avgWeights[i] + (1.0 / (double) round) * weights[i];		
 			}
 			
 			if (storeWeights) {
@@ -204,6 +218,15 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 		 */
 		latentVariableReasoner.changedGroundKernelWeights();
 		latentVariableReasoner.optimize();
+	}
+	
+	@Override
+	protected double getStepSize(int iter) {
+		if (scheduleStepSize && resetSchedule) {
+			return stepSize / (double) (round * (iter + 1));
+		}
+		else
+			return super.getStepSize(iter);
 	}
 	
 	public ArrayList<Map<CompatibilityKernel, Double>> getStoredWeights() {
