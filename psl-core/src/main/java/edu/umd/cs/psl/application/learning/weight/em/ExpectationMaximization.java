@@ -70,7 +70,7 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 	 * Key for Boolean property that indicates whether to reset step-size schedule
 	 * for each EM round. If TRUE, schedule will be {@link VotedPerceptron#STEP_SIZE_KEY}
 	 * at start of each round. If FALSE, schedule will smoothly decrease across rounds,
-	 * i.e., the schedule will be 1/(round number * step number).
+	 * i.e., the schedule will be 1/ (round number * num steps + step number).
 	 * 
 	 * This property has no effect if {@link VotedPerceptron#STEP_SCHEDULE_KEY} is false.
 	 */
@@ -223,7 +223,7 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 	@Override
 	protected double getStepSize(int iter) {
 		if (scheduleStepSize && resetSchedule) {
-			return stepSize / (double) (round * (iter + 1));
+			return stepSize / (double) ((round-1) * numSteps + iter + 1);
 		}
 		else
 			return super.getStepSize(iter);
