@@ -222,7 +222,7 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 	
 	@Override
 	protected double getStepSize(int iter) {
-		if (scheduleStepSize && resetSchedule) {
+		if (scheduleStepSize && !resetSchedule) {
 			return stepSize / (double) ((round-1) * numSteps + iter + 1);
 		}
 		else
