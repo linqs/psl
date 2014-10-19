@@ -71,12 +71,6 @@ public class DualEM extends ExpectationMaximization implements ConvexFunc {
 	/** Default value for ADAGRAD_KEY */
 	public static final boolean ADAGRAD_DEFAULT = false;
 	
-	/**
-	 * Key for Boolean property that indicates whether to store weights along entire optimization path
-	 */
-	public static final String STORE_WEIGHTS_KEY = CONFIG_PREFIX + ".storeweights";
-	/** Default value for STORE_WEIGHTS_KEY */
-	public static final boolean STORE_WEIGHTS_DEFAULT = false;
 
 	/**
 	 * Key for Integer property that indicates how many steps of ADMM to run 
@@ -90,10 +84,8 @@ public class DualEM extends ExpectationMaximization implements ConvexFunc {
 	double[] dualObservedIncompatibility, dualExpectedIncompatibility;
 	private final boolean useAdaGrad;
 	private int admmIterations;
-	private final boolean storeWeights;
 	Model model;
 	String outputPrefix;
-	private ArrayList<Map<CompatibilityKernel, Double>> storedWeights;
 
 	public DualEM(Model model, Database rvDB, Database observedDB,
 			ConfigBundle config) {
@@ -101,9 +93,6 @@ public class DualEM extends ExpectationMaximization implements ConvexFunc {
 		scalingFactor = new double[kernels.size()];
 		useAdaGrad = config.getBoolean(ADAGRAD_KEY, ADAGRAD_DEFAULT);
 		admmIterations = config.getInteger(ADMM_STEPS_KEY, ADMM_STEPS_DEFAULT);
-		storeWeights = config.getBoolean(STORE_WEIGHTS_KEY, STORE_WEIGHTS_DEFAULT);
-		if (storeWeights) 
-			storedWeights = new ArrayList<Map<CompatibilityKernel, Double>>();
 	}
 	
 	public void setModel(Model m, String s) {
@@ -218,11 +207,11 @@ public class DualEM extends ExpectationMaximization implements ConvexFunc {
 				avgWeights[i] = (1 - (1.0 / (double) (step + 1.0))) * avgWeights[i] + (1.0 / (double) (step + 1.0)) * weights[i];		
 			}
 
-			if (storeWeights) {
+			if (super.storeWeights) {
 				Map<CompatibilityKernel,Double> weightMap = new HashMap<CompatibilityKernel, Double>();
 				for (int i = 0; i < kernels.size(); i++)
 					weightMap.put(kernels.get(i), (averageSteps)? avgWeights[i] : weights[i]);
-				storedWeights.add(weightMap);
+				super.storedWeights.add(weightMap);
 			}
 			
 			gradNorm = Math.sqrt(gradNorm);
@@ -248,10 +237,6 @@ public class DualEM extends ExpectationMaximization implements ConvexFunc {
 				weights[i] = avgWeights[i];
 			kernels.get(i).setWeight(new PositiveWeight(weights[i]));
 		}
-	}
-
-	public ArrayList<Map<CompatibilityKernel, Double>> getStoredWeights() {
-		return (storeWeights)? storedWeights : null;
 	}
 	
 	private void outputModel(int step) {

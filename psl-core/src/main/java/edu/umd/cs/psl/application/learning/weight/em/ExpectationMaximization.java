@@ -99,8 +99,8 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 	
 	private int round;
 	
-	private final boolean storeWeights;
-	private ArrayList<Map<CompatibilityKernel, Double>> storedWeights;
+	protected final boolean storeWeights;
+	protected ArrayList<Map<CompatibilityKernel, Double>> storedWeights;
 
 	
 	/**
