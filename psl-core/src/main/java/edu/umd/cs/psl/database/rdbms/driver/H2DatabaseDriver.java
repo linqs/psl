@@ -95,4 +95,23 @@ public class H2DatabaseDriver implements DatabaseDriver {
 		return dbConnection;
 	}
 
+  @Override
+  public boolean isSupportExternalFunction() {
+    return true;
+  }
+
+  @Override
+  public String createHashIndex(String index_name, String table_name, String column_name) {
+  	return "CREATE HASH INDEX " + index_name + " ON " + table_name + " (" + column_name + " ) ";
+  }
+
+  @Override
+  public String castStringWithModifiersForIndexing(String column_name) {
+  	return column_name;
+  }
+
+  @Override
+  public String createPrimaryKey(String table_name, String columns) {
+  	return "CREATE PRIMARY KEY HASH ON " + table_name + " (" + columns + " ) ";	
+  }
 }

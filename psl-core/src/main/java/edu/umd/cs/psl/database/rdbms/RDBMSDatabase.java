@@ -340,10 +340,13 @@ public class RDBMSDatabase implements Database {
 		ResultSet rs = queryDBForAtom(qAtom);
 		try {
 			if (rs.next()) {
-				double value = rs.getDouble(ph.valueColumn());
+					double value = rs.getDouble(ph.valueColumn());
+					// need to check whether the previous double is null, if so set it specifically to NaN
+					if (rs.wasNull()) value = Double.NaN;
 	    		double confidence = rs.getDouble(ph.confidenceColumn());
+	    		if (rs.wasNull()) confidence = Double.NaN;
+
 	    		int partition = rs.getInt(ph.partitionColumn());
-	    		
 	    		if (partition == writeID) {
 	    			// Found in the write partition
 	    			if (isClosed((StandardPredicate) p)) {
@@ -428,7 +431,12 @@ public class RDBMSDatabase implements Database {
 			sqlIndex ++;
 			
 			// Update the confidence value
-			update.setDouble(sqlIndex, atom.getConfidenceValue());
+			if (Double.isNaN(atom.getConfidenceValue())) {
+				update.setNull(sqlIndex, java.sql.Types.DOUBLE); 
+			} else {
+				update.setDouble(sqlIndex, atom.getConfidenceValue());
+			}
+
 			sqlIndex ++;
 			
 			// Next, fill in arguments
@@ -478,8 +486,11 @@ public class RDBMSDatabase implements Database {
 			sqlIndex ++;
 			
 			// Update the confidence value
-			insert.setDouble(sqlIndex, atom.getConfidenceValue());
-			
+			if (Double.isNaN(atom.getConfidenceValue())) {
+				insert.setNull(sqlIndex, java.sql.Types.DOUBLE); 
+			} else {
+				insert.setDouble(sqlIndex, atom.getConfidenceValue());
+			}
 			// Batch the command for later execution
 			insert.addBatch();
 			

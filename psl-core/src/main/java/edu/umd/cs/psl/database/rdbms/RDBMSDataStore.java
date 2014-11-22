@@ -120,6 +120,11 @@ public class RDBMSDataStore implements DataStore {
 	 */
 	private final Connection connection;
 	private final RDBMSDataLoader dataloader;
+
+	/*
+	 * This Database Driver associated to the datastore.
+	 */
+	private final DatabaseDriver dbDriver;
 	
 	/*
 	 * TODO DataStore's should have a static collection of all the RDBMSs they are connected to, in order to prevent multiple connections to the same RDBMS.
@@ -154,10 +159,13 @@ public class RDBMSDataStore implements DataStore {
 		this.openDatabases = HashMultimap.create();
 		this.writePartitionIDs = new HashSet<Partition>();
 		this.predicates = new HashMap<StandardPredicate, RDBMSPredicateInfo>();
-		
+
+		// Keep database driver locally for generating different query dialets
+		this.dbDriver = dbDriver;
+
 		// Connect to the database
 		this.connection = dbDriver.getConnection();
-		
+
 		// Set up the data loader
 		this.dataloader = new RDBMSDataLoader(connection);
 		
@@ -168,7 +176,9 @@ public class RDBMSDataStore implements DataStore {
 		deserializePredicates();
 		
 		// Register the DataStore class for external functions
-		registerFunctionAlias();
+		if (dbDriver.isSupportExternalFunction()) {
+			registerFunctionAlias();
+		}
 	}
 	
 	/**
@@ -301,6 +311,7 @@ public class RDBMSDataStore implements DataStore {
 				break;
 			case String:
 				typeName = "MEDIUMTEXT";
+				colName = dbDriver.castStringWithModifiersForIndexing(colName);
 				break;
 			case UniqueID:
 				hashIndexes.add(colName);
@@ -314,7 +325,7 @@ public class RDBMSDataStore implements DataStore {
 			}
 			
 			keyColumns.append(colName).append(", ");
-			q.addCustomColumn(colName + " " + typeName, ColumnConstraint.NOT_NULL);
+			q.addCustomColumn(pi.argCols[i] + " " + typeName, ColumnConstraint.NOT_NULL);
 		}
 		
 		// Add a column for partitioning
@@ -331,13 +342,22 @@ public class RDBMSDataStore implements DataStore {
 
 			try {
 				// Create the table
-			    stmt.executeUpdate(q.validate().toString());
+		    stmt.executeUpdate(q.validate().toString());
 
-			    // Create indexes for the table
+		    // Create indexes for the table, only for UniqueID types
 				for (String hashcol : hashIndexes) {
-					stmt.executeUpdate("CREATE HASH INDEX " + pi.tableName + hashcol + "hashidx ON " + pi.tableName + " (" + hashcol + " ) ");
+
+					/* to support multiple databases, need to abstract index creation */
+					String index_name = pi.tableName + hashcol + "hashidx";
+					String indexQuery = dbDriver.createHashIndex(index_name, pi.tableName, hashcol);
+					stmt.executeUpdate(indexQuery);
+					//stmt.executeUpdate("CREATE HASH INDEX " + pi.tableName + hashcol + "hashidx ON " + pi.tableName + " (" + hashcol + " ) ");
 				}
-				stmt.executeUpdate("CREATE PRIMARY KEY HASH ON " + pi.tableName + " (" + keyColumns.toString() + " ) ");
+
+				// whole columns as index
+				String primaryKeyQuery = dbDriver.createPrimaryKey(pi.tableName, keyColumns.toString());
+				stmt.executeUpdate(primaryKeyQuery);
+				//stmt.executeUpdate("CREATE PRIMARY KEY HASH ON " + pi.tableName + " (" + keyColumns.toString() + " ) ");
 			} finally {
 			    stmt.close();
 			}
