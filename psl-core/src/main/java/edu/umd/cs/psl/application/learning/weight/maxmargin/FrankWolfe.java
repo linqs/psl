@@ -35,7 +35,7 @@ import edu.umd.cs.psl.model.parameters.PositiveWeight;
  */
 public class FrankWolfe extends WeightLearningApplication {
 
-	private static final Logger log = LoggerFactory.getLogger(MaxMargin.class);
+	private static final Logger log = LoggerFactory.getLogger(FrankWolfe.class);
 	
 	/**
 	 * Prefix of property keys used by this class.
@@ -52,13 +52,6 @@ public class FrankWolfe extends WeightLearningApplication {
 	public static final double CONVERGENCE_TOLERANCE_DEFAULT = 1e-5;
 
 	/**
-	 * Key for double property, regularization parameter \lambda, where objective is \lambda*||w|| + (slack)
-	 */
-	public static final String REG_PARAM_KEY = CONFIG_PREFIX + ".regparam";
-	/** Default value for REG_PARAM_KEY */
-	public static final double REG_PARAM_DEFAULT = 1;
-
-	/**
 	 * Key for positive integer, maximum iterations
 	 */
 	public static final String MAX_ITER_KEY = CONFIG_PREFIX + ".maxiter";
@@ -71,6 +64,20 @@ public class FrankWolfe extends WeightLearningApplication {
 	public static final String NONNEGATIVE_WEIGHTS_KEY = CONFIG_PREFIX + ".nonnegativeweights";
 	/** Default value for NONNEGATIVE_WEIGHTS_KEY */
 	public static final boolean NONNEGATIVE_WEIGHTS_DEFAULT = true;
+	
+	/**
+	 * Key for boolean property. If true, loss and gradient will be normalized by number of labels. 
+	 */
+	public static final String NORMALIZE_KEY = CONFIG_PREFIX + ".normalize";
+	/** Default value for NORMALIZE_KEY */
+	public static final boolean NORMALIZE_DEFAULT = false;
+
+	/**
+	 * Key for double property, regularization parameter \lambda, where objective is \lambda*||w|| + (slack)
+	 */
+	public static final String REG_PARAM_KEY = CONFIG_PREFIX + ".regparam";
+	/** Default value for REG_PARAM_KEY */
+	public static final double REG_PARAM_DEFAULT = 1;
 
 	/**
 	 * Variables
@@ -78,6 +85,7 @@ public class FrankWolfe extends WeightLearningApplication {
 	protected final double tolerance;
 	protected final int maxIter;
 	protected final boolean nonnegativeWeights;
+	protected final boolean normalize;
 	protected double regParam;
 	
 	/**
@@ -92,6 +100,7 @@ public class FrankWolfe extends WeightLearningApplication {
 		tolerance = config.getDouble(CONVERGENCE_TOLERANCE_KEY, CONVERGENCE_TOLERANCE_DEFAULT);
 		maxIter = config.getInt(MAX_ITER_KEY, MAX_ITER_DEFAULT);
 		nonnegativeWeights = config.getBoolean(NONNEGATIVE_WEIGHTS_KEY, NONNEGATIVE_WEIGHTS_DEFAULT);
+		normalize = config.getBoolean(NORMALIZE_KEY, NORMALIZE_DEFAULT);
 		regParam = config.getDouble(REG_PARAM_KEY, REG_PARAM_DEFAULT);
 	}
 	
@@ -129,6 +138,9 @@ public class FrankWolfe extends WeightLearningApplication {
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
 			e.getKey().setValue(0.0);
 		}
+		
+		/* Compute (approximate?) number of labels, for normalizing loss, gradient. */
+		int numLabels = trainingMap.getTrainingMap().entrySet().size();
 
 		/* Sets up loss augmenting ground kernels */
 		double obsvTrueWeight = -1.0;
@@ -162,7 +174,6 @@ public class FrankWolfe extends WeightLearningApplication {
 				double lossaugValue = gk.getAtom().getValue();
 				l1Distance += Math.abs(truth - lossaugValue);
 			}
-			log.debug("Iter {}: L1 distance of worst violator: {}", iter, l1Distance);
 
 			/* Computes loss-augmented incompatibilities. */
 			double[] lossaugIncompatibility = new double[kernels.size()];
@@ -175,11 +186,21 @@ public class FrankWolfe extends WeightLearningApplication {
 			}
 			
 			/* Computes gradient of weights, where:
-			 *   gradient = (1 / regParam) * (truthIncompatibilities - lossaugIncompatibilities) 
+			 *   gradient = (-1 / regParam) * (truthIncompatibilities - lossaugIncompatibilities)
+			 * Note: this is the negative of the formula in the paper, because
+			 * these are incompatibilities, not compatibilities. 
 			 */
 			double[] gradient = new double[weights.length];
 			for (int i = 0; i < weights.length; ++i) {
-				gradient[i] = (1.0 / regParam) * (truthIncompatibility[i] - lossaugIncompatibility[i]); 
+				gradient[i] = (-1.0 / regParam) * (truthIncompatibility[i] - lossaugIncompatibility[i]);
+			}
+			
+			/* Normalizes L1 distance and gradient by numLabels. */
+			if (normalize) {
+				l1Distance /= (double)numLabels;
+				for (int i = 0; i < weights.length; ++i) {
+					gradient[i] /= (double)numLabels;
+				}
 			}
 			
 			/* Computes step size. */
@@ -203,9 +224,7 @@ public class FrankWolfe extends WeightLearningApplication {
 				stepSize = 1.0;
 			else
 				stepSize = 0.0;
-			log.debug("Iter {}: numerator: {}", iter, numerator);
-			log.debug("Iter {}: denominator: {}", iter, denominator);
-			log.debug("Iter {}: stepSize: {}", iter, stepSize);
+
 			
 			/* Takes step. */
 			for (int i = 0; i < weights.length; ++i) {
@@ -226,10 +245,19 @@ public class FrankWolfe extends WeightLearningApplication {
 			
 			/* Compute duality gap. */
 			double gap = regParam * numerator;
-			log.info("Iter {}: duality gap: {}", iter, gap);
 			if (gap < tolerance) {
 				converged = true;
 				break;
+			}
+			
+			/* Log */
+			log.info("Iter {}: L1 distance of worst violator: {}", iter, l1Distance);
+			log.info("Iter {}: numerator: {}", iter, numerator);
+			log.info("Iter {}: denominator: {}", iter, denominator);
+			log.info("Iter {}: stepSize: {}", iter, stepSize);
+			log.info("Iter {}: duality gap: {}", iter, gap);
+			for (int i = 0; i < weights.length; ++i) {
+				log.info(String.format("Iter %d: i=%d: w_i=%f, g_i=%f", iter, i, weights[i], gradient[i]));
 			}
 		}
 		
