@@ -86,9 +86,17 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	/** Default value for NUM_STEPS_KEY */
 	public static final int NUM_STEPS_DEFAULT = 25;
 	protected double[] numGroundings;
+
+	/**
+	 * Key for double property, regularization parameter \lambda, where objective is \lambda*||w|| + NLL
+	 */
+	public static final String REG_PARAM_KEY = CONFIG_PREFIX + ".regparam";
+	/** Default value for REG_PARAM_KEY */
+	public static final double REG_PARAM_DEFAULT = 0;
 	
 	private final double stepSize;
 	private final int numSteps;
+	protected double regParam;
 	
 
 	/** stop flag to quit the loop. */
@@ -102,6 +110,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 		numSteps = config.getInt(NUM_STEPS_KEY, NUM_STEPS_DEFAULT);
 		if (numSteps <= 0)
 			throw new IllegalArgumentException("Number of steps must be positive.");
+		regParam = config.getDouble(REG_PARAM_KEY, REG_PARAM_DEFAULT);
 	}
 	
 	@Override
@@ -127,7 +136,8 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 
 			/* Updates weights */
 			for (int i = 0; i < kernels.size(); i++) {
-				double currentStep = stepSize / scalingFactor[i] * (expectedIncompatibility[i] - truthIncompatibility[i]);
+				double currentStep = stepSize / scalingFactor[i] * (expectedIncompatibility[i] - truthIncompatibility[i])
+								   - stepSize * regParam * kernels.get(i).getWeight().getWeight();
 				log.debug("Step of {} for kernel {}", currentStep, kernels.get(i));
 				log.debug(" --- Expected incomp.: {}, Truth incomp.: {}", expectedIncompatibility[i], truthIncompatibility[i]);
 				double weight = kernels.get(i).getWeight().getWeight() + currentStep;

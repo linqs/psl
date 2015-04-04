@@ -70,7 +70,7 @@ public class FrankWolfe extends WeightLearningApplication {
 	 */
 	public static final String NORMALIZE_KEY = CONFIG_PREFIX + ".normalize";
 	/** Default value for NORMALIZE_KEY */
-	public static final boolean NORMALIZE_DEFAULT = false;
+	public static final boolean NORMALIZE_DEFAULT = true;
 
 	/**
 	 * Key for double property, regularization parameter \lambda, where objective is \lambda*||w|| + (slack)
@@ -162,7 +162,8 @@ public class FrankWolfe extends WeightLearningApplication {
 		 */
 		
 		boolean converged = false;
-		for (int iter = 0; iter < maxIter; ++iter) {
+		int iter = 0;
+		while (!converged && iter++ < maxIter) {
 			
 			/* Runs loss-augmented inference with current weights. */
 			reasoner.optimize();
@@ -247,17 +248,16 @@ public class FrankWolfe extends WeightLearningApplication {
 			double gap = regParam * numerator;
 			if (gap < tolerance) {
 				converged = true;
-				break;
 			}
 			
 			/* Log */
-			log.info("Iter {}: L1 distance of worst violator: {}", iter, l1Distance);
-			log.info("Iter {}: numerator: {}", iter, numerator);
-			log.info("Iter {}: denominator: {}", iter, denominator);
-			log.info("Iter {}: stepSize: {}", iter, stepSize);
-			log.info("Iter {}: duality gap: {}", iter, gap);
+			log.debug("Iter {}: L1 distance of worst violator: {}", iter, l1Distance);
+			log.debug("Iter {}: numerator: {}", iter, numerator);
+			log.debug("Iter {}: denominator: {}", iter, denominator);
+			log.debug("Iter {}: stepSize: {}", iter, stepSize);
+			log.debug("Iter {}: duality gap: {}", iter, gap);
 			for (int i = 0; i < weights.length; ++i) {
-				log.info(String.format("Iter %d: i=%d: w_i=%f, g_i=%f", iter, i, weights[i], gradient[i]));
+				log.debug(String.format("Iter %d: i=%d: w_i=%f, g_i=%f", iter, i, weights[i], gradient[i]));
 			}
 		}
 		
@@ -267,7 +267,7 @@ public class FrankWolfe extends WeightLearningApplication {
 		
 		/* If not converged, use average weights. */
 		if (!converged) {
-			log.info("Learning did not converge; using average weights");
+			log.info("Learning did not converge after {} iterations; using average weights", maxIter);
 			for (int i = 0; i < avgWeights.length; ++i) {
 				if (avgWeights[i] >= 0.0)
 					kernels.get(i).setWeight(new PositiveWeight(avgWeights[i]));
@@ -277,7 +277,7 @@ public class FrankWolfe extends WeightLearningApplication {
 			reasoner.changedGroundKernelWeights();
 		}
 		else
-			log.info("Learning converged");
+			log.info("Learning converged after {} iterations", iter);
 		
 	}
 
