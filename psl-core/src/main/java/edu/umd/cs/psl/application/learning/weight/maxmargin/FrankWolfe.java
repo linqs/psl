@@ -21,7 +21,7 @@ import edu.umd.cs.psl.model.parameters.PositiveWeight;
 
 /**
  * Implements the batch Frank-Wolfe algorithm for StructSVM
- * (Lacoste-Julian et al., 2012).
+ * (Lacoste-Julian et al., 2013).
  * 
  * This application of the algorithm diverges from the original
  * in that loss-augmented inference returns a real-valued solution,
@@ -59,6 +59,14 @@ public class FrankWolfe extends WeightLearningApplication {
 	public static final int MAX_ITER_DEFAULT = 500;
 	
 	/**
+	 * Key for boolean property. If true, algorithm will output average weights when
+	 * learning exceeds maximum number of iterations. 
+	 */
+	public static final String AVERAGE_WEIGHTS_KEY = CONFIG_PREFIX + ".averageweights";
+	/** Default value for AVERAGE_WEIGHTS_KEY */
+	public static final boolean AVERAGE_WEIGHTS_DEFAULT = false;
+	
+	/**
 	 * Key for boolean property. If true, only non-negative weights will be learned. 
 	 */
 	public static final String NONNEGATIVE_WEIGHTS_KEY = CONFIG_PREFIX + ".nonnegativeweights";
@@ -84,6 +92,7 @@ public class FrankWolfe extends WeightLearningApplication {
 	 */
 	protected final double tolerance;
 	protected final int maxIter;
+	protected final boolean averageWeights;
 	protected final boolean nonnegativeWeights;
 	protected final boolean normalize;
 	protected double regParam;
@@ -99,6 +108,7 @@ public class FrankWolfe extends WeightLearningApplication {
 		super(model, rvDB, observedDB, config);
 		tolerance = config.getDouble(CONVERGENCE_TOLERANCE_KEY, CONVERGENCE_TOLERANCE_DEFAULT);
 		maxIter = config.getInt(MAX_ITER_KEY, MAX_ITER_DEFAULT);
+		averageWeights = config.getBoolean(AVERAGE_WEIGHTS_KEY, AVERAGE_WEIGHTS_DEFAULT);
 		nonnegativeWeights = config.getBoolean(NONNEGATIVE_WEIGHTS_KEY, NONNEGATIVE_WEIGHTS_DEFAULT);
 		normalize = config.getBoolean(NORMALIZE_KEY, NORMALIZE_DEFAULT);
 		regParam = config.getDouble(REG_PARAM_KEY, REG_PARAM_DEFAULT);
@@ -267,14 +277,17 @@ public class FrankWolfe extends WeightLearningApplication {
 		
 		/* If not converged, use average weights. */
 		if (!converged) {
-			log.info("Learning did not converge after {} iterations; using average weights", maxIter);
-			for (int i = 0; i < avgWeights.length; ++i) {
-				if (avgWeights[i] >= 0.0)
-					kernels.get(i).setWeight(new PositiveWeight(avgWeights[i]));
-				else
-					kernels.get(i).setWeight(new NegativeWeight(avgWeights[i]));
+			log.info("Learning did not converge after {} iterations", maxIter);
+			if (averageWeights) {
+				log.info("Using average weights");
+				for (int i = 0; i < avgWeights.length; ++i) {
+					if (avgWeights[i] >= 0.0)
+						kernels.get(i).setWeight(new PositiveWeight(avgWeights[i]));
+					else
+						kernels.get(i).setWeight(new NegativeWeight(avgWeights[i]));
+				}
+				reasoner.changedGroundKernelWeights();
 			}
-			reasoner.changedGroundKernelWeights();
 		}
 		else
 			log.info("Learning converged after {} iterations", iter);
