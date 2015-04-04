@@ -145,8 +145,8 @@ public class FrankWolfe extends WeightLearningApplication {
 		/* Sets up loss augmenting ground kernels */
 		double obsvTrueWeight = -1.0;
 		double obsvFalseWeight = -1.0;
-		log.info("Weighting loss of positive (value = 1.0) examples by {} " +
-				 "and negative examples by {}", obsvTrueWeight, obsvFalseWeight);
+		log.debug("Weighting loss of positive (value = 1.0) examples by {} " +
+				  "and negative examples by {}", obsvTrueWeight, obsvFalseWeight);
 		List<LossAugmentingGroundKernel> lossKernels = new ArrayList<LossAugmentingGroundKernel>(trainingMap.getTrainingMap().size());
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
 			double truth = e.getValue().getValue();
