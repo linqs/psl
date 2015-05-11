@@ -27,10 +27,6 @@ public class PositiveWeight extends Weight {
 		super(w);
 	}
 	
-	private PositiveWeight(double w, boolean noCheck) {
-		super(w, noCheck);
-	}
-	
 	boolean isValidWeight(double w) {
 		return Double.isNaN(w) || w>=0;
 	}
@@ -43,7 +39,7 @@ public class PositiveWeight extends Weight {
 
 	@Override
 	public Weight duplicate() {
-		return new PositiveWeight(getWeight(), true);
+		return new PositiveWeight(getWeight());
 	}
 
 	
