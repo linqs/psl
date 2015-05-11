@@ -183,6 +183,12 @@ public class DualEM extends ExpectationMaximization implements ConvexFunc {
 		double [] avgWeights = new double[kernels.size()];
 
 		double [] gradient = new double[kernels.size()];
+		
+		for (int i = 0; i < kernels.size(); i++)
+			gradient[i] = 1.0;
+		
+		int interval = (int) Math.max(Math.floor(storedWeights.size() / 20), 1);
+		
 		double [] scale = new double[kernels.size()];
 		double objective = 0;
 		for (int step = 0; step < iterations; step++) {
@@ -201,17 +207,30 @@ public class DualEM extends ExpectationMaximization implements ConvexFunc {
 
 				if (scale[i] > 0.0) {
 					double coeff = stepSize / Math.sqrt(scale[i]);
-					weights[i] = Math.max(0, weights[i] - coeff * gradient[i]);
-					change += Math.pow(weights[i] - kernels.get(i).getWeight().getWeight(), 2);
+					double delta = Math.max(-weights[i], - coeff * gradient[i]);
+					weights[i] += delta;
+					// use gradient array to store change
+					gradient[i] = delta;
+					change += Math.pow(delta, 2);
 				}
 				avgWeights[i] = (1 - (1.0 / (double) (step + 1.0))) * avgWeights[i] + (1.0 / (double) (step + 1.0)) * weights[i];		
 			}
 
 			if (super.storeWeights) {
-				Map<CompatibilityKernel,Double> weightMap = new HashMap<CompatibilityKernel, Double>();
-				for (int i = 0; i < kernels.size(); i++)
-					weightMap.put(kernels.get(i), (averageSteps)? avgWeights[i] : weights[i]);
-				super.storedWeights.add(weightMap);
+				if (step % interval == 0 || step == iterations-1) {
+					Map<CompatibilityKernel,Double> weightMap = new HashMap<CompatibilityKernel, Double>();
+					for (int i = 0; i < kernels.size(); i++) {
+						double weight = (averageSteps)? avgWeights[i] : weights[i];
+						if (weight > 0.0)
+							weightMap.put(kernels.get(i), weight);
+					}
+
+					log.info("Stored {} weights", weightMap.size());
+					super.storedWeights.add(weightMap);
+				} else {
+					log.info("Skipping weight storing");
+					super.storedWeights.add(null);
+				}
 			}
 			
 			gradNorm = Math.sqrt(gradNorm);
@@ -263,6 +282,15 @@ public class DualEM extends ExpectationMaximization implements ConvexFunc {
 	@Override
 	protected void doLearn() {
 		int maxIter = ((ADMMReasoner) reasoner).getMaxIter();
+		// temporary hard coded warmup 
+		// TODO make config option
+		if (admmIterations == 1) {
+			log.info("Kickstarting optimizers with 10 iterations");
+			((ADMMReasoner) reasoner).setMaxIter(10);
+			((ADMMReasoner) latentVariableReasoner).setMaxIter(10);
+			reasoner.optimize();
+			latentVariableReasoner.optimize();
+		}
 		((ADMMReasoner) reasoner).setMaxIter(admmIterations);
 		((ADMMReasoner) latentVariableReasoner).setMaxIter(admmIterations);
 		if (augmentLoss)
@@ -279,7 +307,8 @@ public class DualEM extends ExpectationMaximization implements ConvexFunc {
 	@Override
 	public double getValueAndGradient(double[] gradient, double[] weights) {
 		for (int i = 0; i < kernels.size(); i++) {
-			kernels.get(i).setWeight(new PositiveWeight(weights[i]));
+			if (gradient[i] != 0.0)
+				kernels.get(i).setWeight(new PositiveWeight(weights[i]));
 		}
 		minimizeKLDivergence();
 		computeObservedIncomp();

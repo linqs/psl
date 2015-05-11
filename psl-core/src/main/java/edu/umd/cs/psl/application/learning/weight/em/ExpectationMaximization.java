@@ -151,8 +151,11 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 			
 			if (storeWeights) {
 				Map<CompatibilityKernel,Double> weightMap = new HashMap<CompatibilityKernel, Double>();
-				for (int i = 0; i < kernels.size(); i++)
-					weightMap.put(kernels.get(i), (averageSteps)? avgWeights[i] : weights[i]);
+				for (int i = 0; i < kernels.size(); i++) {
+					double weight = (averageSteps)? avgWeights[i] : weights[i];
+					if (weight > 0.0)
+						weightMap.put(kernels.get(i), weight);
+				}
 				storedWeights.add(weightMap);
 			}
 
