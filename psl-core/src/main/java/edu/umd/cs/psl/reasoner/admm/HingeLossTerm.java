@@ -31,6 +31,8 @@ class HingeLossTerm extends HyperplaneTerm implements WeightedObjectiveTerm {
 	HingeLossTerm(ADMMReasoner reasoner, int[] zIndices, double[] coeffs,
 			double constant, double weight) {
 		super(reasoner, zIndices, coeffs, constant);
+		if (weight < 0.0)
+			throw new IllegalArgumentException("Only non-negative weights are supported.");
 		setWeight(weight);
 	}
 

@@ -40,24 +40,22 @@ import edu.umd.cs.psl.optimizer.conic.program.Variable;
  * 
  * @author Bert Huang <bert@cs.umd.edu>
  */
-public class PositiveMinNormProgram {
-	Logger log = LoggerFactory.getLogger(PositiveMinNormProgram.class);
+public class MinNormProgram {
+	Logger log = LoggerFactory.getLogger(MinNormProgram.class);
 
 	/**
 	 * Prefix of property keys used by this class.
 	 * 
 	 * @see ConfigManager
 	 */
-	public static final String CONFIG_PREFIX = "quadprog";
+	public static final String CONFIG_PREFIX = "minnormprog";
 
 	/**
-	 * Key for {@link edu.umd.cs.psl.config.Factory} or String property.
+	 * Key for {@link ConicProgramSolverFactory} or String property.
 	 * 
-	 * Should be set to a {@link edu.umd.cs.psl.optimizer.conic.ConicProgramSolverFactory}
+	 * Should be set to a {@link ConicProgramSolverFactory}
 	 * (or the binary name of one). The ConicReasoner will use this
-	 * {@link edu.umd.cs.psl.optimizer.conic.ConicProgramSolverFactory} to
-	 * instantiate a {@link edu.umd.cs.psl.optimizer.conic.ConicProgramSolver},
-	 * which will then be used for inference.
+	 * {@link ConicProgramSolverFactory} to instantiate a {@link ConicProgramSolver}.
 	 */
 	public static final String CPS_KEY = CONFIG_PREFIX + ".conicprogramsolver";
 	/**
@@ -68,7 +66,7 @@ public class PositiveMinNormProgram {
 	public static final ConicProgramSolverFactory CPS_DEFAULT = new HomogeneousIPMFactory();
 
 
-	public PositiveMinNormProgram(int size, ConfigBundle config) 
+	public MinNormProgram(int size, boolean nonnegative, ConfigBundle config) 
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		this.size = size;
 		program = new ConicProgram();
@@ -77,8 +75,14 @@ public class PositiveMinNormProgram {
 		solver = cpsFactory.getConicProgramSolver(config);
 		variables = new Variable[size];
 		for (int i = 0; i < size; i++) {
-			NonNegativeOrthantCone cone = program.createNonNegativeOrthantCone();
-			variables[i] = cone.getVariable();
+			if (nonnegative) {
+				NonNegativeOrthantCone cone = program.createNonNegativeOrthantCone();
+				variables[i] = cone.getVariable();
+			}
+			else {
+				SecondOrderCone cone = program.createSecondOrderCone(2);
+				variables[i] = cone.getNthVariable();
+			}
 		}
 		squaredNorm = program.createNonNegativeOrthantCone().getVariable();
 		squaredNorm.setObjectiveCoefficient(0.5);

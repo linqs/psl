@@ -19,17 +19,21 @@
  */
 package ${package};
 
+import java.text.DecimalFormat;
+
 import edu.umd.cs.psl.groovy.*;
 import edu.umd.cs.psl.ui.functions.textsimilarity.*;
 import edu.umd.cs.psl.ui.loading.InserterUtils;
 import edu.umd.cs.psl.util.database.Queries;
 import edu.umd.cs.psl.model.argument.ArgumentType;
+import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.argument.type.*;
 import edu.umd.cs.psl.model.atom.GroundAtom;
+import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.predicate.type.*;
-import edu.umd.cs.psl.application.inference.LazyMPEInference;
-import edu.umd.cs.psl.application.learning.weight.maxlikelihood.LazyMaxLikelihoodMPE;
+import edu.umd.cs.psl.application.inference.MPEInference;
+import edu.umd.cs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
 import edu.umd.cs.psl.config.*;
 import edu.umd.cs.psl.database.DataStore;
 import edu.umd.cs.psl.database.Database;
@@ -48,7 +52,6 @@ DataStore data = new RDBMSDataStore(new H2DatabaseDriver(Type.Disk, dbpath, true
 PSLModel m = new PSLModel(this, data);
 
 ////////////////////////// predicate declaration ////////////////////////
-println "\t\tDECLARING PREDICATES";
 
 m.add predicate: "name"        , types: [ArgumentType.UniqueID, ArgumentType.String]
 m.add predicate: "subclass"    , types: [ArgumentType.UniqueID, ArgumentType.UniqueID]
@@ -60,27 +63,35 @@ m.add predicate: "hasType"     , types: [ArgumentType.UniqueID, ArgumentType.Uni
 //target predicate
 m.add predicate: "similar"     , types: [ArgumentType.UniqueID, ArgumentType.UniqueID]
 
-m.add function: "similarName" , implementation: new LevenshteinSimilarity();
+m.add function: "similarName"  , implementation: new LevenshteinSimilarity();
 
 
 ///////////////////////////// rules ////////////////////////////////////
-println "${symbol_escape}t${symbol_escape}tDECLARING RULES";
 
-m.add rule : ( name(A,X) & name(B,Y) & (A ^ B) & similarName(X,Y) & hasType(A,T) & hasType(B,T) 
-             & fromOntology(A,O) & fromOntology(B,Q) & (O ^ Q) ) >> similar(A,B),  weight : 8;
+/* (O1-O2) means that O1 and O2 are not equal */
 
-m.add rule : ( similar(A,B) & name(A,X) & name(B,Y) ) >> similarName(X,Y),  weight : 1;
+m.add rule : ( name(A,X) & name(B,Y) & similarName(X,Y) & hasType(A,T) & hasType(B,T) 
+	& fromOntology(A,O1) & fromOntology(B,O2) & (O1-O2)) >> similar(A,B), weight : 8;
 
-m.add rule : (domainOf(R,A) & domainOf(T,B) & similar(A,B) & (R ^ T)) >> similar(R,T) , weight : 2;
-m.add rule : (rangeOf(R,A)  & rangeOf(T,B)  & similar(A,B) & (R ^ T)) >> similar(R,T) , weight : 2;
-m.add rule : (domainOf(R,A) & domainOf(T,B) & similar(R,T) & (A ^ B)) >> similar(A,B) , weight : 2;
-m.add rule : (rangeOf(R,A)  & rangeOf(T,B)  & similar(R,T) & (A ^ B)) >> similar(A,B) , weight : 2;
+m.add rule : ( similar(A,B) & name(A,X) & name(B,Y)
+	& fromOntology(A,O1) & fromOntology(B,O2) & (O1-O2)) >> similarName(X,Y), weight : 1;
 
-// define set comparison
-m.add setcomparison: "similarChildren" , using: SetComparison.Equality, on : similar;
-def classID = data.getUniqueID("class");
-m.add rule :  (similar(A,B) & hasType(A, classID) & hasType(B, classID) & (A ^ B )) >> 
-              similarChildren( {A.subclass } , {B.subclass } ) , weight : 3;
+m.add rule : (domainOf(R,A) & domainOf(T,B) & similar(A,B)
+	& fromOntology(A,O1) & fromOntology(B,O2) & (O1-O2)) >> similar(R,T), weight : 2;
+
+m.add rule : (rangeOf(R,A)  & rangeOf(T,B)  & similar(A,B)
+	& fromOntology(A,O1) & fromOntology(B,O2) & (O1-O2)) >> similar(R,T), weight : 2;
+
+m.add rule : (domainOf(R,A) & domainOf(T,B) & similar(R,T)
+	& fromOntology(A,O1) & fromOntology(B,O2) & (O1-O2)) >> similar(A,B), weight : 2;
+
+m.add rule : (rangeOf(R,A)  & rangeOf(T,B)  & similar(R,T)
+	& fromOntology(A,O1) & fromOntology(B,O2) & (O1-O2)) >> similar(A,B), weight : 2;
+
+GroundTerm classID = data.getUniqueID("class");
+m.add rule : (similar(A,B) & hasType(A, classID) & hasType(B, classID)
+	& subclass(A, S1) & subclass(B, S2)
+	& fromOntology(A,O1) & fromOntology(B,O2) & (O1-O2)) >> similar(S1, S2), weight: 3;
 
 // constraints
 m.add PredicateConstraint.PartialFunctional , on : similar;
@@ -90,55 +101,92 @@ m.add PredicateConstraint.Symmetric , on : similar;
 // prior
 m.add rule : ~similar(A,B), weight: 1;
 
-// load data
+//////////////////////////// data setup ///////////////////////////
+
+/* Loads data */
 def dir = 'data'+java.io.File.separator+'ontology'+java.io.File.separator;
 def trainDir = dir+'train'+java.io.File.separator;
 
-Partition trainPart = new Partition(0);
-Partition truthPart = new Partition(1);
+Partition trainObservations = new Partition(0);
+Partition trainPredictions = new Partition(1);
+Partition truth = new Partition(2);
 
 for (Predicate p : [domainOf,fromOntology,name,hasType,rangeOf,subclass])
 {
-        println "${symbol_escape}t${symbol_escape}t${symbol_escape}tREADING " + p.getName() +" ...";
-	insert = data.getInserter(p, trainPart)
-	InserterUtils.loadDelimitedData(insert, trainDir+p.getName()+".txt");
+    insert = data.getInserter(p, trainObservations)
+	InserterUtils.loadDelimitedData(insert, trainDir+p.getName().toLowerCase()+".txt");
 }
 
-println "${symbol_escape}t${symbol_escape}t${symbol_escape}tREADING SIMILAR ...";
-insert = data.getInserter(similar, truthPart)
-InserterUtils.loadDelimitedDataTruth(insert, trainDir+"SIMILAR.txt");
+insert = data.getInserter(similar, truth)
+InserterUtils.loadDelimitedDataTruth(insert, trainDir+"similar.txt");
+
+Database trainDB = data.getDatabase(trainPredictions, [name, subclass, fromOntology, domainOf, rangeOf, hasType] as Set, trainObservations);
+populateSimilar(trainDB);
+
+Database truthDB = data.getDatabase(truth, [similar] as Set);
 
 //////////////////////////// weight learning ///////////////////////////
-println "${symbol_escape}t${symbol_escape}tLEARNING WEIGHTS...";
+println "LEARNING WEIGHTS...";
 
-Database trainDB = data.getDatabase(trainPart, [name, subclass, fromOntology, domainOf, rangeOf, hasType] as Set);
-Database truthDB = data.getDatabase(truthPart, [similar] as Set);
-
-LazyMaxLikelihoodMPE weightLearning = new LazyMaxLikelihoodMPE(m, trainDB, truthDB, config);
+MaxLikelihoodMPE weightLearning = new MaxLikelihoodMPE(m, trainDB, truthDB, config);
 weightLearning.learn();
 weightLearning.close();
 
-println "${symbol_escape}t${symbol_escape}tLEARNING WEIGHTS DONE";
+println "LEARNING WEIGHTS DONE";
 
 println m
 
-/////////////////////////// test inference //////////////////////////////////
-println "${symbol_escape}t${symbol_escape}tINFERRING...";
+/////////////////////////// test setup //////////////////////////////////
 
 def testDir = dir+'test'+java.io.File.separator;
-Partition testPart = new Partition(2);
+Partition testObservations = new Partition(3);
+Partition testPredictions = new Partition(4);
 for (Predicate p : [domainOf,fromOntology,name,hasType,rangeOf,subclass]) 
 {
-	insert = data.getInserter(p, testPart);
-	InserterUtils.loadDelimitedData(insert, testDir+p.getName()+".txt");
+	insert = data.getInserter(p, testObservations);
+	InserterUtils.loadDelimitedData(insert, testDir+p.getName().toLowerCase()+".txt");
 }
 
-Database testDB = data.getDatabase(testPart, [name, subclass, fromOntology, domainOf, rangeOf, hasType] as Set);
-LazyMPEInference inference = new LazyMPEInference(m, testDB, config);
+Database testDB = data.getDatabase(testPredictions, [name, subclass, fromOntology, domainOf, rangeOf, hasType] as Set, testObservations);
+populateSimilar(testDB);
+
+/////////////////////////// test inference //////////////////////////////////
+println "INFERRING...";
+
+MPEInference inference = new MPEInference(m, testDB, config);
 inference.mpeInference();
 inference.close();
 
-println "${symbol_escape}t${symbol_escape}tINFERENCE DONE";
+println "INFERENCE DONE";
 
+DecimalFormat formatter = new DecimalFormat("${symbol_pound}.${symbol_pound}${symbol_pound}");
 for (GroundAtom atom : Queries.getAllAtoms(testDB, similar))
-	println atom.toString() + "${symbol_escape}t" + atom.getValue();
+	println atom.toString() + ": " + formatter.format(atom.getValue());
+
+/**
+ * Populates all the similiar atoms between the concepts of two ontologies using
+ * the fromOntology predicate.
+ * 
+ * @param db  The database to populate. It should contain the fromOntology atoms
+ */
+void populateSimilar(Database db) {
+	/* Collects the ontology concepts */
+	Set<GroundAtom> concepts = Queries.getAllAtoms(db, fromOntology);
+	Set<GroundTerm> o1 = new HashSet<GroundTerm>();
+	Set<GroundTerm> o2 = new HashSet<GroundTerm>();
+	for (GroundAtom atom : concepts) {
+		if (atom.getArguments()[1].toString().equals("o1"))
+			o1.add(atom.getArguments()[0]);
+		else
+			o2.add(atom.getArguments()[0]);
+	}
+	
+	/* Populates manually (as opposed to using DatabasePopulator) */
+	for (GroundTerm o1Concept : o1) {
+		for (GroundTerm o2Concept : o2) {
+			((RandomVariableAtom) db.getAtom(similar, o1Concept, o2Concept)).commitToDB();
+			((RandomVariableAtom) db.getAtom(similar, o2Concept, o1Concept)).commitToDB();
+		}
+	}
+}
+

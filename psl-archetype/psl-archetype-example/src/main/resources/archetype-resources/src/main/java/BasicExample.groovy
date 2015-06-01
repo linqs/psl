@@ -19,11 +19,14 @@
  */
 package ${package};
 
-import edu.umd.cs.psl.application.inference.LazyMPEInference;
-import edu.umd.cs.psl.application.learning.weight.maxlikelihood.LazyMaxLikelihoodMPE;
+import java.text.DecimalFormat;
+
+import edu.umd.cs.psl.application.inference.MPEInference;
+import edu.umd.cs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
 import edu.umd.cs.psl.config.*
 import edu.umd.cs.psl.database.DataStore
 import edu.umd.cs.psl.database.Database;
+import edu.umd.cs.psl.database.DatabasePopulator;
 import edu.umd.cs.psl.database.Partition;
 import edu.umd.cs.psl.database.ReadOnlyDatabase;
 import edu.umd.cs.psl.database.rdbms.RDBMSDataStore
@@ -34,6 +37,8 @@ import edu.umd.cs.psl.groovy.PredicateConstraint;
 import edu.umd.cs.psl.groovy.SetComparison;
 import edu.umd.cs.psl.model.argument.ArgumentType;
 import edu.umd.cs.psl.model.argument.GroundTerm;
+import edu.umd.cs.psl.model.argument.UniqueID;
+import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.function.ExternalFunction;
 import edu.umd.cs.psl.ui.functions.textsimilarity.*
@@ -45,8 +50,8 @@ import edu.umd.cs.psl.util.database.Queries;
  */
 
 /*
- * A ConfigBundle is a set of key-value pairs containing configuration options. One place these
- * can be defined is in ${artifactId}/src/main/resources/psl.properties
+ * A ConfigBundle is a set of key-value pairs containing configuration options.
+ * One place these can be defined is in ${artifactId}/src/main/resources/psl.properties
  */
 ConfigManager cm = ConfigManager.getManager()
 ConfigBundle config = cm.getBundle("basic-example")
@@ -63,60 +68,73 @@ DataStore data = new RDBMSDataStore(new H2DatabaseDriver(Type.Disk, dbpath, true
  */
 PSLModel m = new PSLModel(this, data)
 
-/* 
- * We create three predicates in the model, giving their names and list of argument types
+/*
+ * In this example program, the task is to align two social networks, by
+ * identifying which pairs of users are the same across networks.
  */
-m.add predicate: "name" , types: [ArgumentType.UniqueID, ArgumentType.String]
-m.add predicate: "knows" , types: [ArgumentType.UniqueID, ArgumentType.UniqueID]
-m.add predicate: "samePerson", types: [ArgumentType.UniqueID, ArgumentType.UniqueID]
+
+/* 
+ * We create four predicates in the model, giving their names and list of argument types
+ */
+m.add predicate: "Network",    types: [ArgumentType.UniqueID, ArgumentType.UniqueID]
+m.add predicate: "Name",       types: [ArgumentType.UniqueID, ArgumentType.String]
+m.add predicate: "Knows",      types: [ArgumentType.UniqueID, ArgumentType.UniqueID]
+m.add predicate: "SamePerson", types: [ArgumentType.UniqueID, ArgumentType.UniqueID]
 
 /*
  * Now, we define a string similarity function bound to a predicate.
  * Note that we can use any implementation of ExternalFunction that acts on two strings!
  */
-m.add function: "sameName" , implementation: new LevenshteinSimilarity()
+m.add function: "SameName" , implementation: new LevenshteinSimilarity()
 /* Also, try: new MyStringSimilarity(), see end of file */
 
 /* 
- * Having added all the predicates we need to represent our problem, we finally insert some rules into the model.
- * Rules are defined using a logical syntax. Uppercase letters are variables and the predicates used in the rules below
- * are those defined above. The character '&' denotes a conjunction wheres '>>' denotes a conclusion.
- * Each rule can be given a user defined weight or no weight is specified if it is learned.
+ * Having added all the predicates we need to represent our problem, we finally
+ * add some rules into the model. Rules are defined using a logical syntax.
  * 
- * 'A ^ B' is a shorthand syntax for nonsymmetric(A,B), which means that in the grounding of the rule,
- * PSL does not ground the symmetric case.
+ * Uppercase letters are variables and the predicates used in the rules below
+ * are those defined above. The character '&' denotes a conjunction where '>>'
+ * denotes an implication.
+ * 
+ * Each rule is given a weight that is either the weight used for inference or
+ * an initial guess for the starting point of weight learning.
  */
-m.add rule : ( name(A,X) & name(B,Y) & (A ^ B) & sameName(X,Y) ) >> samePerson(A,B),  weight : 5
-
-/* Now, we move on to defining rules with sets. Before we can use sets in rules, we have to define how we would like those sets
- * to be compared. For this we define the set comparison predicate 'sameFriends' which compares two sets of friends. For each
- * set comparison predicate, we need to specify the type of aggregator function to use, in this case its the Jaccard equality,
- * and the predicate which is used for comparison (which must be binary). Note that you can also define your own aggregator functions.
- */
-m.add setcomparison: "sameFriends" , using: SetComparison.Equality, on : samePerson
-
-/* Having defined a set comparison predicate, we can apply it in a rule. The body of the following rule is as above. However,
- * in the head, we use the 'sameFriends' set comparison to compare two sets defined using curly braces. To identify the elements
- * that are contained in the set, we can use object oriented syntax, where A.knows, denotes all those entities that are related to A
- * via the 'knows' relation, i.e the set { X | knows(A,X) }. The '+' operator denotes set union. We can also qualify a relation with
- * the 'inv' or 'inverse' keyword to denote its inverse.
- */
-m.add rule :  (samePerson(A,B) & (A ^ B )) >> sameFriends( {A.knows + A.knows(inv) } , {B.knows + B.knows(inv) } ) , weight : 3.2
-
-/* Next, we define some constraints for our model. In this case, we restrict that each person can be aligned to at most one other person
- * in the other social network. To do so, we define two partial functional constraints where the latter is on the inverse.
- * We also say that samePerson must be symmetric, i.e., samePerson(p1, p2) == samePerson(p2, p1).
- */
-m.add PredicateConstraint.PartialFunctional , on : samePerson
-m.add PredicateConstraint.PartialInverseFunctional , on : samePerson
-m.add PredicateConstraint.Symmetric, on : samePerson
 
 /*
- * Finally, we define a prior on the inference predicate samePerson. It says that we should assume two
- * people are not the samePerson with a little bit of weight. This can be overridden with evidence as defined
- * in the previous rules.
+ * We also create constants to refer to each social network.
  */
-m.add rule: ~samePerson(A,B), weight: 1
+GroundTerm snA = data.getUniqueID(1);
+GroundTerm snB = data.getUniqueID(2);
+
+/*
+ * Our first rule says that users with similar names are likely the same person
+ */
+m.add rule : ( Network(A, snA) & Network(B, snB) & Name(A,X) & Name(B,Y)
+	& SameName(X,Y) ) >> SamePerson(A,B),  weight : 5
+
+/* 
+ * In this rule, we use the social network to propagate SamePerson information.
+ */
+m.add rule : ( Network(A, snA) & Network(B, snB) & SamePerson(A,B) & Knows(A, Friend1)
+	& Knows(B, Friend2) ) >> SamePerson(Friend1, Friend2) , weight : 3.2
+
+/* 
+ * Next, we define some constraints for our model. In this case, we restrict that
+ * each person can be aligned to at most one other person in the other social network.
+ * To do so, we define two partial functional constraints where the latter is on
+ * the inverse. We also say that samePerson must be symmetric,
+ * i.e., samePerson(p1, p2) == samePerson(p2, p1).
+ */
+m.add PredicateConstraint.PartialFunctional, on : SamePerson
+m.add PredicateConstraint.PartialInverseFunctional, on : SamePerson
+m.add PredicateConstraint.Symmetric, on : SamePerson
+
+/*
+ * Finally, we define a prior on the inference predicate samePerson. It says that
+ * we should assume two people are not the samePerson with some weight. This can
+ * be overridden with evidence as defined in the previous rules.
+ */
+m.add rule: ~SamePerson(A,B), weight: 1
 
 /*
  * Let's see what our model looks like.
@@ -125,21 +143,25 @@ println m;
 
 /* 
  * We now insert data into our DataStore. All data is stored in a partition.
+ * We put all the observations into their own partition.
  * 
- * We can use insertion helpers for a specified predicate. Here we show how one can manually insert data
- * or use the insertion helpers to easily implement custom data loaders.
+ * We can use insertion helpers for a specified predicate. Here we show how one
+ * can manually insert data or use the insertion helpers to easily implement
+ * custom data loaders.
  */
-def partition = new Partition(0);
-def insert = data.getInserter(name, partition);
+def evidencePartition = new Partition(0);
+def insert = data.getInserter(name, evidencePartition);
 
+/* Social Network A */
 insert.insert(1, "John Braker");
 insert.insert(2, "Mr. Jack Ressing");
 insert.insert(3, "Peter Larry Smith");
 insert.insert(4, "Tim Barosso");
 insert.insert(5, "Jessica Pannillo");
-insert.insert(8, "Peter Smithsonian");
-insert.insert(9, "Miranda Parker");
+insert.insert(6, "Peter Smithsonian");
+insert.insert(7, "Miranda Parker");
 
+/* Social Network B */
 insert.insert(11, "Johny Braker");
 insert.insert(12, "Jack Ressing");
 insert.insert(13, "PL S.");
@@ -151,20 +173,58 @@ insert.insert(17, "Otto v. Lautern");
 /*
  * Of course, we can also load data directly from tab delimited data files.
  */
-insert = data.getInserter(knows, partition)
 def dir = 'data'+java.io.File.separator+'sn'+java.io.File.separator;
+
+insert = data.getInserter(Network, evidencePartition)
+InserterUtils.loadDelimitedData(insert, dir+"sn_network.txt");
+
+insert = data.getInserter(Knows, evidencePartition)
 InserterUtils.loadDelimitedData(insert, dir+"sn_knows.txt");
 
 /*
- * After having loaded the data, we are ready to run some inference and see what kind of
- * alignment our model produces. Note that for now, we are using the predefined weights.
+ * After having loaded the data, we are ready to run some inference and see what
+ * kind of alignment our model produces. Note that for now, we are using the
+ * predefined weights.
  * 
- * We first open up Partition 0 as a Database from the DataStore. We close the predicates
- * Name and Knows since we want to treat those atoms as observed, and leave the predicate
+ * We first create a second partition and open it as the write partition of
+ * a Database from the DataStore. We also include the evidence partition as a
+ * read partition.
+ * 
+ * We close the predicates Name and Knows since we want to treat those atoms as
+ * observed, and leave the predicate
  * SamePerson open to infer its atoms' values.
  */
-Database db = data.getDatabase(partition, [Name, Knows] as Set);
-LazyMPEInference inferenceApp = new LazyMPEInference(m, db, config);
+def targetPartition = new Partition(1);
+Database db = data.getDatabase(targetPartition, [Network, Name, Knows] as Set, evidencePartition);
+
+/*
+ * Before running inference, we have to add the target atoms to the database.
+ * If inference (or learning) attempts to access an atom that is not in the database,
+ * it will throw an exception.
+ * 
+ * The below code builds a set of all users, then uses a utility class
+ * (DatabasePopulator) to create all possible SamePerson atoms between users of
+ * each network.
+ */
+Set<GroundTerm> usersA = new HashSet<GroundTerm>();
+Set<GroundTerm> usersB = new HashSet<GroundTerm>();
+for (int i = 1; i < 8; i++)
+	usersA.add(data.getUniqueID(i));
+for (int i = 11; i < 18; i++)
+	usersB.add(data.getUniqueID(i));
+
+Map<Variable, Set<GroundTerm>> popMap = new HashMap<Variable, Set<GroundTerm>>();
+popMap.put(new Variable("UserA"), usersA)
+popMap.put(new Variable("UserB"), usersB)
+
+DatabasePopulator dbPop = new DatabasePopulator(db);
+dbPop.populate((SamePerson(UserA, UserB)).getFormula(), popMap);
+dbPop.populate((SamePerson(UserB, UserA)).getFormula(), popMap);
+
+/*
+ * Now we can run inference
+ */
+MPEInference inferenceApp = new MPEInference(m, db, config);
 inferenceApp.mpeInference();
 inferenceApp.close();
 
@@ -172,54 +232,88 @@ inferenceApp.close();
  * Let's see the results
  */
 println "Inference results with hand-defined weights:"
+DecimalFormat formatter = new DecimalFormat("${symbol_pound}.${symbol_pound}${symbol_pound}");
 for (GroundAtom atom : Queries.getAllAtoms(db, SamePerson))
-	println atom.toString() + "${symbol_escape}t" + atom.getValue();
+	println atom.toString() + "${symbol_escape}t" + formatter.format(atom.getValue());
 
 /* 
- * Next, we want to learn the weights from data. For that, we need to have some evidence
- * data from which we can learn. In our example, that means we need to specify the 'true'
- * alignment, which we now load into a second partition.
+ * Next, we want to learn the weights from data. For that, we need to have some
+ * evidence data from which we can learn. In our example, that means we need to
+ * specify the 'true' alignment, which we now load into another partition.
  */
-Partition trueDataPartition = new Partition(1);
-insert = data.getInserter(samePerson, trueDataPartition)
+Partition trueDataPartition = new Partition(2);
+insert = data.getInserter(SamePerson, trueDataPartition)
 InserterUtils.loadDelimitedDataTruth(insert, dir + "sn_align.txt");
 
 /* 
- * Now, we can learn the weight, by specifying where the respective data fragments are stored
- * in the database (see above). In addition, we need to specify, which predicate we would like to
- * infer, i.e. learn on, which in our case is 'samePerson'.
+ * Now, we can learn the weights.
+ * 
+ * We first open a database which contains all the target atoms as observations.
+ * We then combine this database with the original database to learn.
  */
 Database trueDataDB = data.getDatabase(trueDataPartition, [samePerson] as Set);
-LazyMaxLikelihoodMPE weightLearning = new LazyMaxLikelihoodMPE(m, db, trueDataDB, config);
+MaxLikelihoodMPE weightLearning = new MaxLikelihoodMPE(m, db, trueDataDB, config);
 weightLearning.learn();
 weightLearning.close();
 
 /*
  * Let's have a look at the newly learned weights.
  */
+println ""
 println "Learned model:"
 println m
 
 /*
- * Now, we apply the learned model to a different social network alignment dataset. We load the 
- * dataset as before (this time into partition 2) and run inference. Finally we print the results.
+ * Now, we apply the learned model to a different social network alignment data set.
+ * We load the data set as before (into new partitions) and run inference.
+ * Finally, we print the results.
  */
-Partition sn2 = new Partition(2);
-insert = data.getInserter(name, sn2);
+
+/*
+ * Loads evidence
+ */
+Partition evidencePartition2 = new Partition(3);
+
+insert = data.getInserter(Network, evidencePartition2)
+InserterUtils.loadDelimitedData(insert, dir+"sn2_network.txt");
+
+insert = data.getInserter(Name, evidencePartition2);
 InserterUtils.loadDelimitedData(insert, dir+"sn2_names.txt");
-insert = data.getInserter(knows, sn2);
+
+insert = data.getInserter(Knows, evidencePartition2);
 InserterUtils.loadDelimitedData(insert, dir+"sn2_knows.txt");
 
-Database db2 = data.getDatabase(sn2, [Name, Knows] as Set);
-inferenceApp = new LazyMPEInference(m, db2, config);
+/*
+ * Populates targets
+ */
+def targetPartition2 = new Partition(4);
+Database db2 = data.getDatabase(targetPartition2, [Network, Name, Knows] as Set, evidencePartition2);
+
+usersA.clear();
+for (int i = 21; i < 28; i++)
+	usersA.add(data.getUniqueID(i));
+usersB.clear();
+for (int i = 31; i < 38; i++)
+	usersB.add(data.getUniqueID(i));
+
+dbPop = new DatabasePopulator(db2);
+dbPop.populate((SamePerson(UserA, UserB)).getFormula(), popMap);
+dbPop.populate((SamePerson(UserB, UserA)).getFormula(), popMap);
+
+/*
+ * Performs inference
+ */
+inferenceApp = new MPEInference(m, db2, config);
 result = inferenceApp.mpeInference();
 inferenceApp.close();
 
 println "Inference results on second social network with learned weights:"
 for (GroundAtom atom : Queries.getAllAtoms(db2, SamePerson))
-	println atom.toString() + "${symbol_escape}t" + atom.getValue();
+	println atom.toString() + "${symbol_escape}t" + formatter.format(atom.getValue());
 	
-/* We close the Databases to flush writes */
+/*
+ * We close the Databases to flush writes
+ */
 db.close();
 trueDataDB.close();
 db2.close();

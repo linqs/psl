@@ -2,21 +2,38 @@
 #set( $symbol_dollar = '$' )
 #set( $symbol_escape = '\' )
 o1offers	o2develop	1.0
+o2develop	o1offers	1.0
 o1purchases	o2purchases	1.0
+o2purchases	o1purchases	1.0
 o1workfor	o2worksfor	1.0
+o2worksfor	o1workfor	1.0
 o1interacts	o2interactswith	1.0
+o2interactswith	o1interacts	1.0
 o1helps	o2helps	1.0
+o2helps	o1helps	1.0
 o1sellsto	o2sells	1.0
+o2sells	o1sellsto	1.0
 	
 o1org	o2enterprise	1.0
+o2enterprise	o1org	1.0
 o1clients	o2client	1.0
+o2client	o1clients	1.0
 o1service&products	02products&services	1.0
+02products&services	o1service&products	1.0
 o1customers	o2customer	1.0
+o2customer	o1customers	1.0
 o1employees	o2employee	1.0
+o2employee	o1employees	1.0
 o1software	o2softwaredev	1.0
+o2softwaredev	o1software	1.0
 o1hardware	o2hardware	1.0
+o2hardware	o1hardware	1.0
 o1developer	o2technician	1.0
+o2technician	o1developer	1.0
 o1salesperson	o2sales	1.0
+o2sales	o1salesperson	1.0
 
 o1itservices	o1itconsulting	1.0
+o1itconsulting	o1itservices	1.0
 o1finance	o1accountant	1.0
+o1accountant	o1finance	1.0

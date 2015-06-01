@@ -16,6 +16,8 @@
  */
 package edu.umd.cs.psl.database;
 
+import java.util.Set;
+
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.UniqueID;
 import edu.umd.cs.psl.model.argument.Variable;
@@ -143,6 +145,17 @@ public interface Database {
 	 * @return TRUE if predicate is closed
 	 */
 	public boolean isClosed(StandardPredicate predicate);
+	
+	/**
+	 * Returns the set of StandardPredicates registered with this Database.
+	 * Note that the result can differ from calling
+	 * {@link DataStore#getRegisteredPredicates()} on this Database's backing
+	 * DataStore, since additional predicates might have been registered since
+	 * this Database was created.
+	 * 
+	 * @return the set of StandardPredicates registered with this Database
+	 */
+	public Set<StandardPredicate> getRegisteredPredicates();
 	
 	/**
 	 * Convenience method.

@@ -74,7 +74,7 @@
 			<uniqueVersion>false</uniqueVersion>
 			<id>psl-releases</id>
 			<name>PSL Releases</name>
-			<url>https://scm.umiacs.umd.edu/maven/lccd/content/repositories/psl-releases/</url>
+			<url>file:///fs/www-linqs/www/maven/lccd/content/repositories/psl-releases/</url>
 			<layout>default</layout>
 		</repository>
 	</distributionManagement>

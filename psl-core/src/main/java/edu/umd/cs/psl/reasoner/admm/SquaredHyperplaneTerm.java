@@ -49,6 +49,8 @@ abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements Weight
 		
 		this.coeffs = coeffs;
 		this.constant = constant;
+		if (weight < 0.0)
+			throw new IllegalArgumentException("Only non-negative weights are supported.");
 		setWeight(weight);
 		
 		if (x.length >= 3) {

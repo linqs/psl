@@ -38,6 +38,7 @@ import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.parameters.NegativeWeight;
 import edu.umd.cs.psl.model.parameters.PositiveWeight;
+import edu.umd.cs.psl.model.parameters.Weight;
 
 /**
  * TODO: rewrite class documentation to describe general gradient-based learning algorithms
@@ -139,6 +140,14 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	public static final String NUM_STEPS_KEY = CONFIG_PREFIX + ".numsteps";
 	/** Default value for NUM_STEPS_KEY */
 	public static final int NUM_STEPS_DEFAULT = 25;
+	
+	/**
+	 * Key for boolean property. If true, only non-negative weights will be learned. 
+	 */
+	public static final String NONNEGATIVE_WEIGHTS_KEY = CONFIG_PREFIX + ".nonnegativeweights";
+	/** Default value for NONNEGATIVE_WEIGHTS_KEY */
+	public static final boolean NONNEGATIVE_WEIGHTS_DEFAULT = true;
+	
 	protected double[] numGroundings;
 	
 	private final double stepSize;
@@ -149,6 +158,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	private final boolean scheduleStepSize;
 	private final boolean scaleGradient;
 	private final boolean averageSteps;
+	private final boolean nonnegativeWeights;
 	
 	/** stop flag to quit the loop. */
 	protected boolean toStop = false;
@@ -171,6 +181,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 		scheduleStepSize = config.getBoolean(STEP_SCHEDULE_KEY, STEP_SCHEDULE_DEFAULT);
 		scaleGradient = config.getBoolean(SCALE_GRADIENT_KEY, SCALE_GRADIENT_DEFAULT);
 		averageSteps = config.getBoolean(AVERAGE_STEPS_KEY, AVERAGE_STEPS_DEFAULT);
+		nonnegativeWeights = config.getBoolean(NONNEGATIVE_WEIGHTS_KEY, NONNEGATIVE_WEIGHTS_DEFAULT);
 	}
 	
 	private void addLossAugmentedKernels() {
@@ -252,9 +263,11 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 				log.debug("Step of {} for kernel {}", currentStep, kernels.get(i));
 				log.debug(" --- Expected incomp.: {}, Truth incomp.: {}", expectedIncompatibility[i], truthIncompatibility[i]);
 				double weight = kernels.get(i).getWeight().getWeight() + currentStep;
-				weight = Math.max(weight, 0.0);
+				if (nonnegativeWeights)
+					weight = Math.max(weight, 0.0);
 				avgWeights[i] += weight;
-				kernels.get(i).setWeight(new PositiveWeight(weight));
+				Weight newWeight = (weight >= 0.0) ? new PositiveWeight(weight) : new NegativeWeight(weight); 
+				kernels.get(i).setWeight(newWeight);
 			}
 			
 			reasoner.changedGroundKernelWeights();
@@ -270,7 +283,8 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 		/* Sets the weights to their averages */
 		if (averageSteps) {
 			for (int i = 0; i < kernels.size(); i++) {
-				kernels.get(i).setWeight(new PositiveWeight(avgWeights[i] / numSteps));
+				double avgWeight = avgWeights[i] / numSteps;
+				kernels.get(i).setWeight((avgWeight >= 0.0) ? new PositiveWeight(avgWeight) : new NegativeWeight(avgWeight));
 			}
 		}
 		
