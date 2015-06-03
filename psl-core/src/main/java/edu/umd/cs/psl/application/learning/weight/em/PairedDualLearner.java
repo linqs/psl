@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -44,55 +43,71 @@ import edu.umd.cs.psl.optimizer.lbfgs.ConvexFunc;
 import edu.umd.cs.psl.reasoner.admm.ADMMReasoner;
 
 /**
- * EM algorithm which fits a point distribution to the single most probable
- * assignment of truth values to the latent variables during the E-step. 
+ * Learns the parameters of a HL-MRF with latent variables, using a maximum-likelihood
+ * technique that interleaves updates of the parameters and inference steps for
+ * fast training. See
+ * 
+ * "Paired-Dual Learning for Fast Training of Latent Variable Hinge-Loss MRFs"
+ * Stephen H. Bach, Bert Huang, Jordan Boyd-Graber, and Lise Getoor
+ * International Conference on Machine Learning (ICML) 2015
+ * for details.
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
+ * @author Bert Huang <bhuang@vt.edu>
  */
-public class DualEM extends ExpectationMaximization implements ConvexFunc {
+public class PairedDualLearner extends ExpectationMaximization implements ConvexFunc {
 
-	private static final Logger log = LoggerFactory.getLogger(DualEM.class);
+	private static final Logger log = LoggerFactory.getLogger(PairedDualLearner.class);
 	
 	/**
 	 * Prefix of property keys used by this class.
 	 * 
 	 * @see ConfigManager
 	 */
-	public static final String CONFIG_PREFIX = "dualem";
-	
-	/**
-	 * Key for Boolean property that indicates whether to use AdaGrad subgradient
-	 * scaling, the adaptive subgradient algorithm of
-	 * John Duchi, Elad Hazan, Yoram Singer (JMLR 2010).
-	 * 
-	 * If TRUE, will override other step scheduling options (but not scaling).
-	 */
-	public static final String ADAGRAD_KEY = CONFIG_PREFIX + ".adagrad";
-	/** Default value for ADAGRAD_KEY */
-	public static final boolean ADAGRAD_DEFAULT = false;
-	
+	public static final String CONFIG_PREFIX = "pairedduallearner";
 
 	/**
-	 * Key for Integer property that indicates how many steps of ADMM to run 
-	 * before each gradient step
+	 * Key for Integer property that indicates how many rounds of ADMM to run 
+	 * before each gradient step (parameter K in the ICML paper)
+	 * TODO: Describe this correctly
+	 */
+	public static final String WARMUP_ROUNDS_KEY = CONFIG_PREFIX + ".warmuprounds";
+	/** Default value for WARMUP_ROUNDS_KEY */
+	public static final int WARMUP_ROUNDS_DEFAULT = 0;
+	
+	/**
+	 * Key for Integer property that indicates how many steps of ADMM to run
+	 * for each inner objective before each gradient step (parameter N in the ICML paper)
 	 */
 	public static final String ADMM_STEPS_KEY = CONFIG_PREFIX + ".admmsteps";
 	/** Default value for ADMM_STEPS_KEY */
-	public static final int ADMM_STEPS_DEFAULT = 10;
+	public static final int ADMM_STEPS_DEFAULT = 1;
 
 	double[] scalingFactor;
 	double[] dualObservedIncompatibility, dualExpectedIncompatibility;
-	private final boolean useAdaGrad;
-	private int admmIterations;
+	private final int warmupRounds;
+	private final int admmIterations;
 	Model model;
 	String outputPrefix;
 
-	public DualEM(Model model, Database rvDB, Database observedDB,
+	public PairedDualLearner(Model model, Database rvDB, Database observedDB,
 			ConfigBundle config) {
 		super(model, rvDB, observedDB, config);
 		scalingFactor = new double[kernels.size()];
-		useAdaGrad = config.getBoolean(ADAGRAD_KEY, ADAGRAD_DEFAULT);
-		admmIterations = config.getInteger(ADMM_STEPS_KEY, ADMM_STEPS_DEFAULT);
+		warmupRounds = config.getInt(WARMUP_ROUNDS_KEY, WARMUP_ROUNDS_DEFAULT);
+		if (warmupRounds < 0) {
+			throw new IllegalArgumentException(CONFIG_PREFIX + "." + WARMUP_ROUNDS_KEY
+					+ " must be a nonnegative integer.");
+		}
+		admmIterations = config.getInt(ADMM_STEPS_KEY, ADMM_STEPS_DEFAULT);
+		if (admmIterations < 1) {
+			throw new IllegalArgumentException(CONFIG_PREFIX + "." + ADMM_STEPS_KEY
+					+ " must be a positive integer.");
+		}
+		if (!(reasoner instanceof ADMMReasoner)) {
+			throw new IllegalArgumentException("PairedDualLearning can only be"
+					+ " used with ADMMReasoner.");
+		}
 	}
 	
 	public void setModel(Model m, String s) {
@@ -175,7 +190,7 @@ public class DualEM extends ExpectationMaximization implements ConvexFunc {
 	Random random = new Random();
 	
 	private void subgrad() {
-		log.info("Starting optimization");
+		log.debug("Starting optimization");
 		double [] weights = new double[kernels.size()];
 		for (int i = 0; i < kernels.size(); i++)
 			weights[i] = kernels.get(i).getWeight().getWeight();
@@ -196,9 +211,7 @@ public class DualEM extends ExpectationMaximization implements ConvexFunc {
 			double gradNorm = 0;
 			double change = 0;
 			for (int i = 0; i < kernels.size(); i++) {
-				if (useAdaGrad)
-					scale[i] += gradient[i] * gradient[i];
-				else if (scheduleStepSize)
+				if (scheduleStepSize)
 					scale[i] = Math.pow((double) (step + 1), 2);
 				else
 					scale[i] = 1.0;
@@ -225,10 +238,10 @@ public class DualEM extends ExpectationMaximization implements ConvexFunc {
 							weightMap.put(kernels.get(i), weight);
 					}
 
-					log.info("Stored {} weights", weightMap.size());
+					log.debug("Stored {} weights", weightMap.size());
 					super.storedWeights.add(weightMap);
 				} else {
-					log.info("Skipping weight storing");
+					log.debug("Skipping weight storing");
 					super.storedWeights.add(null);
 				}
 			}
@@ -237,19 +250,19 @@ public class DualEM extends ExpectationMaximization implements ConvexFunc {
 			change = Math.sqrt(change);
 			DecimalFormat df = new DecimalFormat("0.0000E00");
 			if (step % 1 == 0)
-				log.info("Iter {}, obj: {}, norm grad: " + df.format(gradNorm) + ", change: " + df.format(change), step, df.format(objective));
+				log.debug("Iter {}, obj: {}, norm grad: " + df.format(gradNorm) + ", change: " + df.format(change), step, df.format(objective));
 
 			if (step % 50 == 0)
 				outputModel(step);
 			
 			if (change < tolerance) {
-				log.info("Change in w ({}) is less than tolerance. Finishing subgrad.", change);
+				log.debug("Change in w ({}) is less than tolerance. Finishing subgrad.", change);
 				break;
 			}
 		}
 		outputModel(iterations);
 
-		log.info("Learning finished with final objective value {}", objective);
+		log.debug("Learning finished with final objective value {}", objective);
 
 		for (int i = 0; i < kernels.size(); i++) {
 			if (averageSteps)
@@ -282,20 +295,23 @@ public class DualEM extends ExpectationMaximization implements ConvexFunc {
 	@Override
 	protected void doLearn() {
 		int maxIter = ((ADMMReasoner) reasoner).getMaxIter();
-		// temporary hard coded warmup 
-		// TODO make config option
-		if (admmIterations == 1) {
-			log.info("Kickstarting optimizers with 10 iterations");
-			((ADMMReasoner) reasoner).setMaxIter(10);
-			((ADMMReasoner) latentVariableReasoner).setMaxIter(10);
-			reasoner.optimize();
-			latentVariableReasoner.optimize();
-		}
+		
 		((ADMMReasoner) reasoner).setMaxIter(admmIterations);
 		((ADMMReasoner) latentVariableReasoner).setMaxIter(admmIterations);
+		
 		if (augmentLoss)
 			addLossAugmentedKernels();
+		
+		if (warmupRounds > 0) {
+			log.debug("Warming up optimizers with {} iterations each.", warmupRounds * admmIterations);
+			for (int i = 0; i < warmupRounds; i++) {
+				reasoner.optimize();
+				latentVariableReasoner.optimize();
+			}
+		}
+		
 		subgrad();
+		
 		if (augmentLoss)
 			removeLossAugmentedKernels();
 
@@ -331,7 +347,7 @@ public class DualEM extends ExpectationMaximization implements ConvexFunc {
 			log.debug("Incompatibility for kernel {}", kernels.get(i));
 			log.debug("Truth incompatbility {}, expected incompatibility {}", dualObservedIncompatibility[i], dualExpectedIncompatibility[i]);
 		}
-		log.info("E Penalty: {}, E Aug Penalty: {}, M Penalty: {}, M Aug Penalty: {}",
+		log.debug("E Penalty: {}, E Aug Penalty: {}, M Penalty: {}, M Aug Penalty: {}",
 				new Double[] {eStepLagrangianPenalty, eStepAugLagrangianPenalty, mStepLagrangianPenalty, mStepAugLagrangianPenalty});
 
 		
