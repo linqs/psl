@@ -39,7 +39,6 @@ import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.parameters.PositiveWeight;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.PredicateFactory;
-import edu.umd.cs.psl.optimizer.lbfgs.ConvexFunc;
 import edu.umd.cs.psl.reasoner.admm.ADMMReasoner;
 
 /**
@@ -50,12 +49,13 @@ import edu.umd.cs.psl.reasoner.admm.ADMMReasoner;
  * "Paired-Dual Learning for Fast Training of Latent Variable Hinge-Loss MRFs"
  * Stephen H. Bach, Bert Huang, Jordan Boyd-Graber, and Lise Getoor
  * International Conference on Machine Learning (ICML) 2015
+ * 
  * for details.
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  * @author Bert Huang <bhuang@vt.edu>
  */
-public class PairedDualLearner extends ExpectationMaximization implements ConvexFunc {
+public class PairedDualLearner extends ExpectationMaximization {
 
 	private static final Logger log = LoggerFactory.getLogger(PairedDualLearner.class);
 	
@@ -67,9 +67,9 @@ public class PairedDualLearner extends ExpectationMaximization implements Convex
 	public static final String CONFIG_PREFIX = "pairedduallearner";
 
 	/**
-	 * Key for Integer property that indicates how many rounds of ADMM to run 
-	 * before each gradient step (parameter K in the ICML paper)
-	 * TODO: Describe this correctly
+	 * Key for Integer property that indicates how many rounds of paired-dual
+	 * learning to run before beginning to update the weights (parameter K in
+	 * the ICML paper)
 	 */
 	public static final String WARMUP_ROUNDS_KEY = CONFIG_PREFIX + ".warmuprounds";
 	/** Default value for WARMUP_ROUNDS_KEY */
@@ -104,6 +104,11 @@ public class PairedDualLearner extends ExpectationMaximization implements Convex
 			throw new IllegalArgumentException(CONFIG_PREFIX + "." + ADMM_STEPS_KEY
 					+ " must be a positive integer.");
 		}
+	}
+	
+	@Override
+	protected void initGroundModel() throws ClassNotFoundException, IllegalAccessException, InstantiationException {
+		super.initGroundModel();
 		if (!(reasoner instanceof ADMMReasoner)) {
 			throw new IllegalArgumentException("PairedDualLearning can only be"
 					+ " used with ADMMReasoner.");
@@ -202,8 +207,6 @@ public class PairedDualLearner extends ExpectationMaximization implements Convex
 		for (int i = 0; i < kernels.size(); i++)
 			gradient[i] = 1.0;
 		
-		int interval = (int) Math.max(Math.floor(storedWeights.size() / 20), 1);
-		
 		double [] scale = new double[kernels.size()];
 		double objective = 0;
 		for (int step = 0; step < iterations; step++) {
@@ -229,7 +232,8 @@ public class PairedDualLearner extends ExpectationMaximization implements Convex
 				avgWeights[i] = (1 - (1.0 / (double) (step + 1.0))) * avgWeights[i] + (1.0 / (double) (step + 1.0)) * weights[i];		
 			}
 
-			if (super.storeWeights) {
+			if (storeWeights) {
+				int interval = (int) Math.max(Math.floor(storedWeights.size() / 20), 1);
 				if (step % interval == 0 || step == iterations-1) {
 					Map<CompatibilityKernel,Double> weightMap = new HashMap<CompatibilityKernel, Double>();
 					for (int i = 0; i < kernels.size(); i++) {
@@ -239,10 +243,10 @@ public class PairedDualLearner extends ExpectationMaximization implements Convex
 					}
 
 					log.debug("Stored {} weights", weightMap.size());
-					super.storedWeights.add(weightMap);
+					storedWeights.add(weightMap);
 				} else {
 					log.debug("Skipping weight storing");
-					super.storedWeights.add(null);
+					storedWeights.add(null);
 				}
 			}
 			
@@ -320,8 +324,7 @@ public class PairedDualLearner extends ExpectationMaximization implements Convex
 
 	}
 
-	@Override
-	public double getValueAndGradient(double[] gradient, double[] weights) {
+	private double getValueAndGradient(double[] gradient, double[] weights) {
 		for (int i = 0; i < kernels.size(); i++) {
 			if (gradient[i] != 0.0)
 				kernels.get(i).setWeight(new PositiveWeight(weights[i]));

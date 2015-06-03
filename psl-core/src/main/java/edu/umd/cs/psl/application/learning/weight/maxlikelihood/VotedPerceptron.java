@@ -287,7 +287,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 			reasoner.changedGroundKernelWeights();
 			// notify the registered observers
 			setChanged();
-			notifyObservers(new IntermidateState(step, numSteps));
+			notifyObservers(new IntermediateState(step, numSteps));
 			// if stop() has been called, exit the loop early
 			if (toStop) {
 				break;
@@ -380,15 +380,13 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	}
 
 	/**
-	 * Intermediate state object to 
-	 * notify the registered observers.
-	 *
+	 * Intermediate state object to notify the registered observers.
 	 */
-	public class IntermidateState {
+	public class IntermediateState {
 		public final int step;
 		public final int maxStep;
 		
-		public IntermidateState(int currStep, int numSteps) {
+		public IntermediateState(int currStep, int numSteps) {
 			this.step = currStep;
 			this.maxStep = numSteps;
 		}
