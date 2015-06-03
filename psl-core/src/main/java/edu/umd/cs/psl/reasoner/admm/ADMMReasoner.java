@@ -56,7 +56,7 @@ import edu.umd.cs.psl.util.concurrent.ThreadPool;
  * @author Eric Norris
  */
 public class ADMMReasoner implements Reasoner {
-	
+
 	private static final Logger log = LoggerFactory.getLogger(ADMMReasoner.class);
 	
 	/**
@@ -114,14 +114,15 @@ public class ADMMReasoner implements Reasoner {
 	 * (by default uses the number of processors in the system) */
 	public static final int NUM_THREADS_DEFAULT = Runtime.getRuntime().availableProcessors();
 	
-	private final int maxIter;
+	private int maxIter;
 	/* Sometimes called rho or eta */
 	final double stepSize;
 	
-	private final double epsilonRel, epsilonAbs;
+	private double epsilonRel, epsilonAbs;
 	private final int stopCheck;
 	private int n;
 	private boolean rebuildModel;
+	private double lagrangePenalty, augmentedLagrangePenalty;
 	
 	/** Ground kernels defining the objective function */
 	KeyedRetrievalSet<Kernel, GroundKernel> groundKernels;
@@ -162,6 +163,38 @@ public class ADMMReasoner implements Reasoner {
 		numThreads = config.getInt(NUM_THREADS_KEY, NUM_THREADS_DEFAULT);
 		if (numThreads <= 0)
 			throw new IllegalArgumentException("Property " + NUM_THREADS_KEY + " must be positive.");
+	}
+	
+	public int getMaxIter() {
+		return maxIter;
+	}
+
+	public void setMaxIter(int maxIter) {
+		this.maxIter = maxIter;
+	}
+
+	public double getEpsilonRel() {
+		return epsilonRel;
+	}
+
+	public void setEpsilonRel(double epsilonRel) {
+		this.epsilonRel = epsilonRel;
+	}
+
+	public double getEpsilonAbs() {
+		return epsilonAbs;
+	}
+
+	public void setEpsilonAbs(double epsilonAbs) {
+		this.epsilonAbs = epsilonAbs;
+	}
+	
+	public double getLagrangianPenalty() {
+		return this.lagrangePenalty;
+	}
+	
+	public double getAugmentedLagrangianPenalty() {
+		return this.augmentedLagrangePenalty;
 	}
 	
 	@Override
@@ -209,7 +242,7 @@ public class ADMMReasoner implements Reasoner {
 	}
 	
 	protected void buildGroundModel() {
-		log.debug("Initializing optimization.");
+		log.debug("(Re)building reasoner data structures");
 		
 		/* Initializes data structures */
 		orderedGroundKernels = new HashList<GroundKernel>(groundKernels.size() * 2);
@@ -318,6 +351,22 @@ public class ADMMReasoner implements Reasoner {
 		rebuildModel = false;
 	}
 
+	/**
+	 * Computes the incompatibility of the local variable copies corresponding to
+	 * GroundKernel gk
+	 * @param gk
+	 * @return local (dual) incompatibility
+	 */
+	public double getDualIncompatibility(GroundKernel gk) {
+		int index = orderedGroundKernels.indexOf(gk);
+		ADMMObjectiveTerm term = terms.get(index);
+		for (int i = 0; i < term.zIndices.length; i++) {					
+			int zIndex = term.zIndices[i];
+			variables.get(zIndex).setValue(term.x[i]);			
+		}
+		return ((GroundCompatibilityKernel) gk).getIncompatibility();
+	}
+	
 	private class ADMMTask implements Runnable {
 		public boolean flag;
 		private final int termStart, termEnd;
@@ -348,6 +397,8 @@ public class ADMMReasoner implements Reasoner {
 		public double AxNormInc = 0.0;
 		public double BzNormInc = 0.0;
 		public double AyNormInc = 0.0;
+		protected double lagrangePenalty = 0.0;
+		protected double augmentedLagrangePenalty = 0.0;
 		
 		private void awaitUninterruptibly(CyclicBarrier b) {
 			try {
@@ -380,6 +431,8 @@ public class ADMMReasoner implements Reasoner {
 					AxNormInc = 0.0;
 					BzNormInc = 0.0;
 					AyNormInc = 0.0;
+					lagrangePenalty = 0.0;
+					augmentedLagrangePenalty = 0.0;
 				}
 				
 				for (int i = zStart; i < zEnd; i++) {
@@ -413,6 +466,9 @@ public class ADMMReasoner implements Reasoner {
 							VariableLocation location = itr.next();
 							double diff = location.term.x[location.localIndex] - newZ;
 							primalResInc += diff * diff;
+							// computes Lagrangian penalties
+							lagrangePenalty += location.term.y[location.localIndex] * (location.term.x[location.localIndex] - z.get(i));
+							augmentedLagrangePenalty += 0.5 * stepSize * Math.pow(location.term.x[location.localIndex]-z.get(i), 2);
 						}
 					}
 				}
@@ -476,6 +532,8 @@ public class ADMMReasoner implements Reasoner {
 				AxNorm = 0.0;
 				BzNorm = 0.0;
 				AyNorm = 0.0;
+				lagrangePenalty = 0.0;
+				augmentedLagrangePenalty = 0.0;
 				
 				// Total values from threads
 				for (ADMMTask task : tasks) {
@@ -484,6 +542,8 @@ public class ADMMReasoner implements Reasoner {
 					AxNorm += task.AxNormInc;
 					BzNorm += task.BzNormInc;
 					AyNorm += task.AyNormInc;
+					lagrangePenalty += task.lagrangePenalty;
+					augmentedLagrangePenalty += task.augmentedLagrangePenalty;
 				}
 				
 				primalRes = Math.sqrt(primalRes);
@@ -494,7 +554,7 @@ public class ADMMReasoner implements Reasoner {
 			}
 				
 			if (iter % (50 * stopCheck) == 0) {
-				log.debug("Residuals at iter {} -- Primal: {} -- Dual: {}", new Object[] {iter, primalRes, dualRes});
+				log.trace("Residuals at iter {} -- Primal: {} -- Dual: {}", new Object[] {iter, primalRes, dualRes});
 				log.trace("--------- Epsilon primal: {} -- Epsilon dual: {}", epsilonPrimal, epsilonDual);
 			}
 			
@@ -517,7 +577,8 @@ public class ADMMReasoner implements Reasoner {
 			throw new RuntimeException(e);
 		}
 		
-		log.debug("Optimization completed in  {} iterations.", iter);
+		log.info("Optimization completed in  {} iterations. " +
+				"Primal res.: {}, Dual res.: {}", new Object[] {iter, primalRes, dualRes});
 		
 		/* Updates variables */
 		for (int i = 0; i < variables.size(); i++)

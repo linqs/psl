@@ -52,6 +52,7 @@ abstract public class AbstractGroundRule implements GroundKernel {
 	protected final AbstractRuleKernel kernel;
 	protected final List<GroundAtom> posLiterals;
 	protected final List<GroundAtom> negLiterals;
+	protected final FunctionSum function;
 
 	private final int hashcode;
 	
@@ -60,6 +61,18 @@ abstract public class AbstractGroundRule implements GroundKernel {
 		this.posLiterals = new ArrayList<GroundAtom>(posLiterals);
 		this.negLiterals = new ArrayList<GroundAtom>(negLiterals);
 		
+		/* Constructs function definition */
+		function= new FunctionSum();
+		
+		for (GroundAtom atom : posLiterals)
+			function.add(new FunctionSummand(1.0, atom.getVariable()));
+		
+		for (GroundAtom atom : negLiterals)
+			function.add(new FunctionSummand(-1.0, atom.getVariable()));
+		
+		function.add(new FunctionSummand(1.0, new ConstantNumber(1.0 - posLiterals.size())));
+		
+		/* Constructs hash code */
 		HashCodeBuilder hcb = new HashCodeBuilder();
 		hcb.append(kernel);
 		for (GroundAtom atom : posLiterals)
@@ -82,17 +95,7 @@ abstract public class AbstractGroundRule implements GroundKernel {
 	}
 	
 	protected FunctionSum getFunction() {
-		FunctionSum sum = new FunctionSum();
-		
-		for (GroundAtom atom : posLiterals)
-			sum.add(new FunctionSummand(1.0, atom.getVariable()));
-		
-		for (GroundAtom atom : negLiterals)
-			sum.add(new FunctionSummand(-1.0, atom.getVariable()));
-		
-		sum.add(new FunctionSummand(1.0, new ConstantNumber(1.0 - posLiterals.size())));
-		
-		return sum;
+		return function;
 	}
 	
 	@Override
@@ -107,7 +110,7 @@ abstract public class AbstractGroundRule implements GroundKernel {
 	}
 	
 	public double getTruthValue() {
-		return 1 - Math.max(getFunction().getValue(), 0);
+		return 1 - Math.max(getFunction().getValue(), 0.0);
 	}
 	
 	@Override

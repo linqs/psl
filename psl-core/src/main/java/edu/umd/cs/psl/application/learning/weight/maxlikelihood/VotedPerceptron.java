@@ -123,7 +123,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	 */
 	public static final String SCALE_GRADIENT_KEY = CONFIG_PREFIX + ".scalegradient";
 	/** Default value for SCALE_GRADIENT_KEY */
-	public static final boolean SCALE_GRADIENT_DEFAULT = false;
+	public static final boolean SCALE_GRADIENT_DEFAULT = true;
 	
 	/**
 	 * Key for Boolean property that indicates whether to average all visited
@@ -150,18 +150,23 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	
 	protected double[] numGroundings;
 	
-	private final double stepSize;
-	private final int numSteps;
-	private final double l2Regularization;
-	private final double l1Regularization;
-	private final boolean augmentLoss;
-	private final boolean scheduleStepSize;
-	private final boolean scaleGradient;
-	private final boolean averageSteps;
-	private final boolean nonnegativeWeights;
+	protected final double stepSize;
+	protected final int numSteps;
+	protected final double l2Regularization;
+	protected final double l1Regularization;
+	protected final boolean augmentLoss;
+	protected final boolean scheduleStepSize;
+	protected final boolean scaleGradient;
+	protected final boolean averageSteps;
+	protected final boolean nonnegativeWeights;
+	protected double[] truthIncompatibility;
+	protected double[] expectedIncompatibility;
 	
-	/** stop flag to quit the loop. */
+	/** Stop flag to quit the loop. */
 	protected boolean toStop = false;
+	
+	/** Learning loss at current point */
+	private double loss = Double.POSITIVE_INFINITY;
 	
 	public VotedPerceptron(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
 		super(model, rvDB, observedDB, config);
@@ -184,7 +189,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 		nonnegativeWeights = config.getBoolean(NONNEGATIVE_WEIGHTS_KEY, NONNEGATIVE_WEIGHTS_DEFAULT);
 	}
 	
-	private void addLossAugmentedKernels() {
+	protected void addLossAugmentedKernels() {
 		double obsvTrueWeight, obsvFalseWeight;
 		obsvTrueWeight = -1.0;
 		obsvFalseWeight = -1.0;
@@ -210,15 +215,24 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 					gk = new LossAugmentingGroundKernel(e.getKey(), 1.0, new PositiveWeight(-1 * obsvTrueWeight));
 
 				nonExtremeLossKernels.add(gk);
-				log.error("Non extreme ground truth found at atom {}. This is not properly supported yet in online max-margin learning.", e.getValue());
+				// log.error("Non extreme ground truth found at atom {}. This is not properly supported yet in online max-margin learning.", e.getValue());
 			}
 
 			reasoner.addGroundKernel(gk);
 			lossKernels.add(gk);
 		}
 	}
+	
+	protected void removeLossAugmentedKernels() {
+		List<LossAugmentingGroundKernel> lossKernels = new ArrayList<LossAugmentingGroundKernel>();
+		for (LossAugmentingGroundKernel k : Iterables.filter(reasoner.getGroundKernels(), LossAugmentingGroundKernel.class))
+			lossKernels.add(k);
+		for (LossAugmentingGroundKernel k : lossKernels)
+			reasoner.removeGroundKernel(k);
+		lossKernels = new ArrayList<LossAugmentingGroundKernel>();
+	}
 
-	private double getStepSize(int iter) {
+	protected double getStepSize(int iter) {
 		if (scheduleStepSize)
 			return stepSize / (double) (iter + 1);
 		else
@@ -228,8 +242,6 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	@Override
 	protected void doLearn() {
 		double[] avgWeights;
-		double[] truthIncompatibility;
-		double[] expectedIncompatibility;
 		double[] scalingFactor;
 		
 		avgWeights = new double[kernels.size()];
@@ -253,16 +265,18 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 			/* Computes the expected total incompatibility for each CompatibilityKernel */
 			expectedIncompatibility = computeExpectedIncomp();
 			scalingFactor  = computeScalingFactor();
-
+			loss = computeLoss();
+			
 			/* Updates weights */
 			for (int i = 0; i < kernels.size(); i++) {
+				double weight = kernels.get(i).getWeight().getWeight();
 				double currentStep = (expectedIncompatibility[i] - truthIncompatibility[i]
-						- l2Regularization * kernels.get(i).getWeight().getWeight()
+						- l2Regularization * weight
 						- l1Regularization) / scalingFactor[i];
 				currentStep *= getStepSize(step);
 				log.debug("Step of {} for kernel {}", currentStep, kernels.get(i));
-				log.debug(" --- Expected incomp.: {}, Truth incomp.: {}", expectedIncompatibility[i], truthIncompatibility[i]);
-				double weight = kernels.get(i).getWeight().getWeight() + currentStep;
+				log.debug(" --- Expected incomp.: {}, Truth incomp.: {}", expectedIncompatibility[i], truthIncompatibility[i]);weight += currentStep;
+				weight += currentStep;
 				if (nonnegativeWeights)
 					weight = Math.max(weight, 0.0);
 				avgWeights[i] += weight;
@@ -286,16 +300,11 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 				double avgWeight = avgWeights[i] / numSteps;
 				kernels.get(i).setWeight((avgWeight >= 0.0) ? new PositiveWeight(avgWeight) : new NegativeWeight(avgWeight));
 			}
+			reasoner.changedGroundKernelWeights();
 		}
 		
-		if (augmentLoss) {
-			List<LossAugmentingGroundKernel> lossKernels = new ArrayList<LossAugmentingGroundKernel>();
-			for (LossAugmentingGroundKernel k : Iterables.filter(reasoner.getGroundKernels(), LossAugmentingGroundKernel.class))
-				lossKernels.add(k);
-			for (LossAugmentingGroundKernel k : lossKernels)
-				reasoner.removeGroundKernel(k);
-			lossKernels = new ArrayList<LossAugmentingGroundKernel>();
-		}
+		if (augmentLoss)
+			removeLossAugmentedKernels();
 	}
 	
 	protected double[] computeObservedIncomp() {
@@ -323,6 +332,32 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	 */
 	protected abstract double[] computeExpectedIncomp();
 	
+	protected double computeRegularizer() {
+		double l2 = 0;
+		double l1 = 0;
+		for (int i = 0; i < kernels.size(); i++) {
+			l2 += Math.pow(kernels.get(i).getWeight().getWeight(), 2);
+			l1 += Math.abs(kernels.get(i).getWeight().getWeight());
+		}
+		return 0.5 * l2Regularization * l2 + l1Regularization * l1;
+	}
+	
+	/**
+	 * Internal method for computing the loss at the current point
+	 * before taking a step.
+	 * 
+	 * Returns 0.0 if not overridden by a subclass
+	 * 
+	 * @return current learning loss
+	 */
+	protected double computeLoss() {
+		return Double.POSITIVE_INFINITY;
+	}
+	
+	public double getLoss() {
+		return loss;
+	}
+	
 	/**
 	 * Computes the amount to scale gradient for each rule
 	 * Scales by the number of groundings of each rule
@@ -343,7 +378,6 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	public void stop() {
 		toStop = true;
 	}
-
 
 	/**
 	 * Intermediate state object to 

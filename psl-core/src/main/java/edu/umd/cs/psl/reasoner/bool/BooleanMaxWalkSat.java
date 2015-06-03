@@ -131,6 +131,11 @@ public class BooleanMaxWalkSat extends MemoryGroundKernelStore implements Reason
 		
 		/* Changes some RV blocks */
 		for (int flip = 0; flip < maxFlips; flip++) {
+			
+			/* Just in case... */
+			if (unsatGKs.size() == 0)
+				return;
+			
 			GroundKernel gk = (GroundKernel) selectAtRandom(unsatGKs);
 			
 			/* Collects the RV blocks with at least one RV in gk */
@@ -241,10 +246,6 @@ public class BooleanMaxWalkSat extends MemoryGroundKernelStore implements Reason
 					unsatGKs.add(incidentGK);
 				else
 					unsatGKs.remove(incidentGK);
-			
-			/* Just in case... */
-			if (unsatGKs.size() == 0)
-				return;
 			
 			if (flip == 0 || (flip+1) % 5000 == 0) {
 				log.info("Total weighted incompatibility: {}, Infeasbility norm: {}",

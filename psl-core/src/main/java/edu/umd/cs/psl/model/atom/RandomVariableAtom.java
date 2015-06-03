@@ -33,12 +33,12 @@ import edu.umd.cs.psl.reasoner.function.MutableAtomFunctionVariable;
  * </ul>
  */
 public class RandomVariableAtom extends GroundAtom {
-	
+
 	protected RandomVariableAtom(StandardPredicate p, GroundTerm[] args,
 			Database db, double value, double confidenceValue) {
 		super(p, args, db, value, confidenceValue);
 	}
-	
+
 	@Override
 	public StandardPredicate getPredicate() {
 		return (StandardPredicate) predicate;
@@ -52,14 +52,14 @@ public class RandomVariableAtom extends GroundAtom {
 	 * @throws IllegalArgumentException  if value is not in [0,1]
 	 */
 	public RandomVariableAtom setValue(double value) {
-		if (0.0 <= value && value <= 1.0) 
-			this.value = value;
-		else
-			throw new IllegalArgumentException("Value should be in [0,1] but is " + value);
-		
+		//		if (0.0 <= value && value <= 1.0) 
+		this.value = value;
+		//		else
+		//			throw new IllegalArgumentException("Value should be in [0,1] but is " + value);
+
 		return this;
 	}
-	
+
 	/**
 	 * Sets the confidence value of this Atom.
 	 * 
@@ -73,10 +73,10 @@ public class RandomVariableAtom extends GroundAtom {
 			this.confidenceValue = value;
 		else
 			throw new IllegalArgumentException();
-		
+
 		return this;
 	}
-	
+
 	/**
 	 * Calls {@link Database#commit(RandomVariableAtom)} with this Atom
 	 * on the Database that instantiated it.

@@ -14,17 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.model.kernel;
+package edu.umd.cs.psl.reasoner.bool;
 
-import edu.umd.cs.psl.model.parameters.Weight;
+import edu.umd.cs.psl.config.ConfigBundle;
+import edu.umd.cs.psl.reasoner.Reasoner;
+import edu.umd.cs.psl.reasoner.ReasonerFactory;
 
-public interface CompatibilityKernel extends Kernel {
-	
-	public Weight getWeight();
-	
-	public void setWeight(Weight w);
-	
-	public boolean isWeightMutable();
-	
-	public void setWeightMutable(boolean mutable);
+/**
+ * Factory for a {@link AD3Reasoner}.
+ * 
+ * @author Stephen Bach <bach@cs.umd.edu>
+ */
+public class AD3ReasonerFactory implements ReasonerFactory {
+
+	@Override
+	public Reasoner getReasoner(ConfigBundle config)
+			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
+		return new AD3Reasoner(config);
+	}
+
 }

@@ -30,11 +30,13 @@ public class CompatibilityRuleKernel extends AbstractRuleKernel implements Compa
 	
 	protected Weight weight;
 	protected boolean squared;
+	protected boolean mutable;
 
 	public CompatibilityRuleKernel(Formula f, double w, boolean squared) {
 		super(f);
 		weight = (w >= 0.0) ? new PositiveWeight(w) : new NegativeWeight(w);
 		this.squared = squared;
+		mutable = true;
 	}
 
 	@Override
@@ -49,6 +51,9 @@ public class CompatibilityRuleKernel extends AbstractRuleKernel implements Compa
 	
 	@Override
 	public void setWeight(Weight w) {
+		if (!mutable)
+			throw new IllegalStateException("Kernel weight is not mutable.");
+		
 		weight = w;
 	}
 	
@@ -61,5 +66,15 @@ public class CompatibilityRuleKernel extends AbstractRuleKernel implements Compa
 	@Override
 	public Kernel clone() {
 		return new CompatibilityRuleKernel(formula, weight.getWeight(), squared);
+	}
+
+	@Override
+	public boolean isWeightMutable() {
+		return mutable;
+	}
+
+	@Override
+	public void setWeightMutable(boolean mutable) {
+		this.mutable = mutable;
 	}
 }

@@ -100,7 +100,7 @@ public class LBFGSB
  }
 
   public void setMaxIter(final int iter) { maxIter_ = iter; }
-  public void setFtol(final int tol)     { ftol_ = tol;     }
+  public void setFtol(final double tol)     { ftol_ = tol;     }
 
   public void setLowerBound(final int idx, final double bnd) { l_[idx] = bnd;    }
   public void setUpperBound(final int idx, final double bnd) { u_[idx] = bnd;    }
@@ -142,6 +142,7 @@ public class LBFGSB
     //while routine returns "FG" or "NEW_X" in task, keep calling it
     while (matchPrefix(task_[0],"FG") || matchPrefix(task_[0],"NEW_X"))
     {
+
       if (matchPrefix(task_[0],"FG"))
       {
         f[0] = getValueAndGradient(g_, wts);
@@ -172,21 +173,21 @@ public class LBFGSB
 
     if (matchPrefix(task_[0],"ABNO"))
     {
-      System.err.println("ERROR: LBFGSB failed. Returned ABNO");
+      System.out.println("ERROR: LBFGSB failed. Returned ABNO");
       error[0] = true;
       return initialValue;
     }
 
     if (matchPrefix(task_[0],"ERROR"))
     {
-      System.err.println("ERROR: LBFGSB failed. Returned ERROR");
+      System.out.println("ERROR: LBFGSB failed. Returned ERROR");
       error[0] = true;
       return initialValue;
     }
 
     if (matchPrefix(task_[0],"CONV"))
     {
-      //cout << "LBFGSB converged!" << endl;
+        if (iprint >= 1) System.out.println("LBFGSB converged");
     }
 
     return f[0];
@@ -464,7 +465,7 @@ public class LBFGSB
 
         if (iprint >= 1)
         {
-          System.err.println(sbgnrm + "At iterate " + iter + ": f=" + f[0] + ",  |proj g|=");
+          System.out.println(sbgnrm + "At iterate " + iter + ": f=" + f[0] + ",  |proj g|=");
           write(itfile, "At iterate " + iter + ": nfgv=" + nfgv[0] + ", sbgnrm=" + sbgnrm + ", f=" + f[0] + "\n");
         }
 
@@ -2071,7 +2072,7 @@ public class LBFGSB
     {
       if (iprint >= 0)
       {
-        System.out.println("           * * *"
+        System.out.println("           * * *\n"
                            + "Tit   = total number of iterations\n"
                            + "Tnf   = total number of function evaluations\n"
                            + "Tnint = total number of segments explored during"

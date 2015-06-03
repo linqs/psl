@@ -16,6 +16,8 @@
  */
 package edu.umd.cs.psl.application.learning.weight.maxlikelihood;
 
+import java.util.Arrays;
+
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.Model;
@@ -32,6 +34,8 @@ import edu.umd.cs.psl.model.kernel.GroundKernel;
  * @author Stephen Bach <bach@cs.umd.edu>
  */
 public class MaxLikelihoodMPE extends VotedPerceptron {
+	
+	double[] fullObservedIncompatibility, fullExpectedIncompatibility;
 
 	public MaxLikelihoodMPE(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
 		super(model, rvDB, observedDB, config);
@@ -39,7 +43,7 @@ public class MaxLikelihoodMPE extends VotedPerceptron {
 	
 	@Override
 	protected double[] computeExpectedIncomp() {
-		double[] expIncomp = new double[kernels.size()];
+		fullExpectedIncompatibility = new double[kernels.size() + immutableKernels.size()];
 		
 		/* Computes the MPE state */
 		reasoner.optimize();
@@ -47,11 +51,48 @@ public class MaxLikelihoodMPE extends VotedPerceptron {
 		/* Computes incompatibility */
 		for (int i = 0; i < kernels.size(); i++) {
 			for (GroundKernel gk : reasoner.getGroundKernels(kernels.get(i))) {
-				expIncomp[i] += ((GroundCompatibilityKernel) gk).getIncompatibility();
+				fullExpectedIncompatibility[i] += ((GroundCompatibilityKernel) gk).getIncompatibility();
+			}
+		}
+		for (int i = 0; i < immutableKernels.size(); i++) {
+			for (GroundKernel gk : reasoner.getGroundKernels(immutableKernels.get(i))) {
+				fullExpectedIncompatibility[kernels.size() + i] += ((GroundCompatibilityKernel) gk).getIncompatibility();
 			}
 		}
 		
-		return expIncomp;
+		return Arrays.copyOf(fullExpectedIncompatibility, kernels.size());
+	}
+	
+	@Override
+	protected double[] computeObservedIncomp() {
+		numGroundings = new double[kernels.size()];
+		fullObservedIncompatibility = new double[kernels.size() + immutableKernels.size()];
+		setLabeledRandomVariables();
+		
+		/* Computes the observed incompatibilities and numbers of groundings */
+		for (int i = 0; i < kernels.size(); i++) {
+			for (GroundKernel gk : reasoner.getGroundKernels(kernels.get(i))) {
+				fullObservedIncompatibility[i] += ((GroundCompatibilityKernel) gk).getIncompatibility();
+				numGroundings[i]++;
+			}
+		}
+		for (int i = 0; i < immutableKernels.size(); i++) {
+			for (GroundKernel gk : reasoner.getGroundKernels(immutableKernels.get(i))) {
+				fullObservedIncompatibility[kernels.size() + i] += ((GroundCompatibilityKernel) gk).getIncompatibility();
+			}
+		}
+		
+		return Arrays.copyOf(fullObservedIncompatibility, kernels.size());
+	}
+	
+	@Override
+	protected double computeLoss() {
+		double loss = 0.0;
+		for (int i = 0; i < kernels.size(); i++)
+			loss += kernels.get(i).getWeight().getWeight() * (fullObservedIncompatibility[i] - fullExpectedIncompatibility[i]);
+		for (int i = 0; i < immutableKernels.size(); i++)
+			loss += immutableKernels.get(i).getWeight().getWeight() * (fullObservedIncompatibility[kernels.size() + i] - fullExpectedIncompatibility[kernels.size() + i]);
+		return loss;
 	}
 
 }
