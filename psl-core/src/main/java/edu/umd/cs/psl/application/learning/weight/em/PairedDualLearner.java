@@ -195,7 +195,7 @@ public class PairedDualLearner extends ExpectationMaximization {
 	Random random = new Random();
 	
 	private void subgrad() {
-		log.debug("Starting optimization");
+		log.info("Starting optimization");
 		double [] weights = new double[kernels.size()];
 		for (int i = 0; i < kernels.size(); i++)
 			weights[i] = kernels.get(i).getWeight().getWeight();
@@ -233,40 +233,33 @@ public class PairedDualLearner extends ExpectationMaximization {
 			}
 
 			if (storeWeights) {
-				int interval = (int) Math.max(Math.floor(storedWeights.size() / 20), 1);
-				if (step % interval == 0 || step == iterations-1) {
-					Map<CompatibilityKernel,Double> weightMap = new HashMap<CompatibilityKernel, Double>();
-					for (int i = 0; i < kernels.size(); i++) {
-						double weight = (averageSteps)? avgWeights[i] : weights[i];
-						if (weight > 0.0)
-							weightMap.put(kernels.get(i), weight);
-					}
-
-					log.debug("Stored {} weights", weightMap.size());
-					storedWeights.add(weightMap);
-				} else {
-					log.debug("Skipping weight storing");
-					storedWeights.add(null);
+				Map<CompatibilityKernel,Double> weightMap = new HashMap<CompatibilityKernel, Double>();
+				for (int i = 0; i < kernels.size(); i++) {
+					double weight = (averageSteps)? avgWeights[i] : weights[i];
+					if (weight != 0.0)
+						weightMap.put(kernels.get(i), weight);
 				}
+
+				storedWeights.add(weightMap);
 			}
 			
 			gradNorm = Math.sqrt(gradNorm);
 			change = Math.sqrt(change);
 			DecimalFormat df = new DecimalFormat("0.0000E00");
 			if (step % 1 == 0)
-				log.debug("Iter {}, obj: {}, norm grad: " + df.format(gradNorm) + ", change: " + df.format(change), step, df.format(objective));
+				log.info("Iter {}, obj: {}, norm grad: " + df.format(gradNorm) + ", change: " + df.format(change), step, df.format(objective));
 
 			if (step % 50 == 0)
 				outputModel(step);
 			
 			if (change < tolerance) {
-				log.debug("Change in w ({}) is less than tolerance. Finishing subgrad.", change);
+				log.info("Change in w ({}) is less than tolerance. Finishing subgrad.", change);
 				break;
 			}
 		}
 		outputModel(iterations);
 
-		log.debug("Learning finished with final objective value {}", objective);
+		log.info("Learning finished with final objective value {}", objective);
 
 		for (int i = 0; i < kernels.size(); i++) {
 			if (averageSteps)
@@ -307,7 +300,7 @@ public class PairedDualLearner extends ExpectationMaximization {
 			addLossAugmentedKernels();
 		
 		if (warmupRounds > 0) {
-			log.debug("Warming up optimizers with {} iterations each.", warmupRounds * admmIterations);
+			log.info("Warming up optimizers with {} iterations each.", warmupRounds * admmIterations);
 			for (int i = 0; i < warmupRounds; i++) {
 				reasoner.optimize();
 				latentVariableReasoner.optimize();
