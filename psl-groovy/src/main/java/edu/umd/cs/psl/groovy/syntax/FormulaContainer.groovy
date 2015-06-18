@@ -40,6 +40,24 @@ class FormulaContainer {
 		if (!(f.formula instanceof Atom)) throw new IllegalArgumentException("Expected atom but got : ${f.formula}");
 	}
 	
+	private void checkAvgConjunction(Object f) {
+		if (!(f instanceof FormulaContainer)) throw new IllegalArgumentException("Expected formula but got : ${f}");
+		boolean isOtherAC = f.formula instanceof AvgConjunction;
+		boolean isOtherAtom = f.formula instanceof Atom;
+		boolean isOtherNegatedAtom = false;
+		if (f.formula instanceof Negation && f.formula.getFormula() instanceof Atom) { 
+			isOtherNegatedAtom = true;
+		}
+		boolean isAC = formula instanceof AvgConjunction;
+		boolean isAtom = formula instanceof Atom;
+		boolean isNegatedAtom = false;
+		if (formula instanceof Negation && formula.getFormula() instanceof Atom) {
+			isNegatedAtom = true;
+		}
+		if (!(isAC || isAtom || isNegatedAtom)) throw new IllegalArgumentException("For an average conjunction, the formula must be an average conjunction or a literal, but instead got : ${f.formula}");
+		if (!(isOtherAC || isOtherAtom || isOtherNegatedAtom)) throw new IllegalArgumentException("For an average conjunction, expected another average conjunction or a literal, but instead got : ${f.formula}");
+	}
+	
 	def and(f2) {
 		checkFormula(f2);
 		return new FormulaContainer(new Conjunction(formula,f2.formula));
@@ -66,6 +84,12 @@ class FormulaContainer {
 	
 	def bitwiseNegate() {
 		return new FormulaContainer(new Negation(formula));
+	}
+	
+	def xor(f2) {
+		//Average conjunction operator
+		checkAvgConjunction(f2);
+		return new FormulaContainer(new AvgConjunction(formula,f2.formula));
 	}
 	
 }
