@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import edu.umd.cs.psl.application.inference.MPEInference;
+import edu.umd.cs.psl.cli.modelloader.ModelLoader;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.database.DataStore;
@@ -108,7 +109,7 @@ public class Launcher {
 		File modelFile = new File(modelPath);
 		FileInputStream modelFileInputStream = new FileInputStream(modelFile);
 
-		Model model = ModelLoaderDummy.load(data, modelFileInputStream);
+		Model model = ModelLoader.load(data, modelFileInputStream);
 		log.info("model:: loading:: ::done");
 
 		/*
