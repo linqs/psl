@@ -86,10 +86,10 @@ public class DataLoader {
 				StandardPredicate predicate = (StandardPredicate) pf.getPredicate(loadSpec.getKey());
 				Inserter insert = datastore.getInserter(predicate, p);
 				if(loadSpec.getValue() instanceof String){
-					InserterUtils.loadDelimitedData(insert, (String) loadSpec.getValue());
+					InserterUtils.loadDelimitedDataAutomatic(predicate, insert, (String) loadSpec.getValue());
 				} else if (loadSpec.getValue() instanceof List){
 					for(String filename : ((List<String>)loadSpec.getValue())){
-						InserterUtils.loadDelimitedData(insert, filename);
+						InserterUtils.loadDelimitedDataAutomatic(predicate, insert, filename);
 					}
 				} else {
 					throw new Exception("Unknown specification when loading "+partitionName);

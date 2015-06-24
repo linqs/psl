@@ -40,6 +40,43 @@ public class InserterUtils {
 	private static final Logger log = LoggerFactory.getLogger(InserterUtils.class);
 	
 
+	public static void loadDelimitedDataAutomatic(final Predicate p, final Inserter insert, String file, String delimiter) {
+		LoadDelimitedData.loadTabData(file, new DelimitedObjectConstructor<String>(){
+
+			@Override
+			public String create(String[] data) {
+				//assert data.length==length;
+				if(p.getArity()<data.length){
+					double truth;
+					try {
+						truth = Double.parseDouble(data[data.length-1]);
+					} catch (NumberFormatException e) {
+						throw new AssertionError("Could not read truth value for data: " + Arrays.toString(data));
+					}
+					if (truth<0.0 || truth>1.0)
+						throw new AssertionError("Illegal truth value encountered: " + truth);
+					Object[] newdata = new Object[data.length-1];
+					System.arraycopy(data, 0, newdata, 0, newdata.length);
+					insert.insertValue(truth,newdata);
+					return null;
+				} else {
+					insert.insert((Object[])data);
+					return null;
+				}
+			}
+
+			@Override
+			public int length() {
+				return 0;
+			}
+			
+		}, delimiter);
+	}
+	
+	public static void loadDelimitedDataAutomatic(final Predicate p, final Inserter insert, String file) {
+		loadDelimitedDataAutomatic(p,insert,file,LoadDelimitedData.defaultDelimiter);
+	}
+	
 	public static void loadDelimitedData(final Inserter insert, String file, String delimiter) {
 		LoadDelimitedData.loadTabData(file, new DelimitedObjectConstructor<String>(){
 
