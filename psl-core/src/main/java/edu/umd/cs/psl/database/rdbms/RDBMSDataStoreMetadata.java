@@ -69,7 +69,7 @@ public class RDBMSDataStoreMetadata implements DataStoreMetdata {
 			ResultSet rs = conn.getMetaData().getTables(null, null, mdTableName, null);
 			if(rs.next()) { exists = true;}
 		} catch (Exception e) {
-			log.error(e.getMessage());
+			log.error("Error finding metadata table: "+e.getMessage());
 		};	
 		return exists;
 	}
@@ -81,7 +81,7 @@ public class RDBMSDataStoreMetadata implements DataStoreMetdata {
 			PreparedStatement stmt = conn.prepareStatement("CREATE TABLE "+mdTableName+" (namespace VARCHAR(20), keytype VARCHAR(20), key VARCHAR(255), value VARCHAR(255), PRIMARY KEY(namespace,keytype,key))");
 			stmt.execute();
 		} catch (Exception e) { 
-			log.error(e.getMessage());
+			log.error("Error creating metadata table: "+e.getMessage());
 		}
 		
 	}
@@ -97,7 +97,7 @@ public class RDBMSDataStoreMetadata implements DataStoreMetdata {
 			stmt.setString(4, val);
 			stmt.execute();						
 		} catch (Exception e) {
-			log.info(e.getMessage());
+			log.info("Error adding row to metadata table: "+e.getMessage());
 			return false;
 		}
 		return true;
@@ -115,7 +115,7 @@ public class RDBMSDataStoreMetadata implements DataStoreMetdata {
 				return rs.getString(1);
 			}
 		} catch (Exception e) {
-			log.info(e.getMessage());
+			log.info("Error fetching value from metadata table: "+e.getMessage());
 			return null;
 		}
 		return null;
@@ -130,7 +130,7 @@ public class RDBMSDataStoreMetadata implements DataStoreMetdata {
 			stmt.setString(3, key);
 			stmt.execute();						
 		} catch (Exception e) {
-			log.info(e.getMessage());
+			log.info("Error removing metadata row: "+e.getMessage());
 			return false;
 		}
 		return true;	
@@ -149,7 +149,7 @@ public class RDBMSDataStoreMetadata implements DataStoreMetdata {
 				vals.put(rs.getString(1), rs.getString(2));
 			}
 		} catch (Exception e) {
-			log.error(e.getMessage());
+			log.error("Error retrieving metadata values "+e.getMessage());
 		}
 		return vals;
 	}
@@ -184,7 +184,7 @@ public class RDBMSDataStoreMetadata implements DataStoreMetdata {
 		if(vals != null){
 			partitions = new HashSet<Partition>();
 			for(String name : vals.keySet()){
-				int id = Integer.parseInt(vals.get(name));				
+				int id = Integer.parseInt(vals.get(name));
 				partitions.add(new RDBMSPartition(id,name));
 			}
 		}
@@ -201,7 +201,7 @@ public class RDBMSDataStoreMetadata implements DataStoreMetdata {
 				max = Integer.parseInt(rs.getString(1));
 			}
 		} catch (Exception e) {
-			log.error(e.getMessage());
+			log.warn("Determining max partition, no partitions found "+e.getMessage());
 			return 0;
 		}		
 		return max;
