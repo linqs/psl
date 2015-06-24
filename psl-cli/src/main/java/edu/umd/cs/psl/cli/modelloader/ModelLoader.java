@@ -18,14 +18,14 @@ package edu.umd.cs.psl.cli.modelloader;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.LinkedList;
-import java.util.List;
 
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 
 import edu.umd.cs.psl.cli.modelloader.PSLParser.AtomContext;
+import edu.umd.cs.psl.cli.modelloader.PSLParser.ConstantContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.Disjunctive_clauseContext;
+import edu.umd.cs.psl.cli.modelloader.PSLParser.Exponent_expressionContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.LiteralContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.Logical_rule_expressionContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.PredicateContext;
@@ -33,10 +33,14 @@ import edu.umd.cs.psl.cli.modelloader.PSLParser.ProgramContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.Psl_ruleContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.TermContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.Unweighted_logical_ruleContext;
+import edu.umd.cs.psl.cli.modelloader.PSLParser.VariableContext;
+import edu.umd.cs.psl.cli.modelloader.PSLParser.Weight_expressionContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.Weighted_logical_ruleContext;
 import edu.umd.cs.psl.database.DataStore;
 import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.argument.Term;
+import edu.umd.cs.psl.model.argument.UniqueID;
+import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.QueryAtom;
 import edu.umd.cs.psl.model.formula.Disjunction;
@@ -105,8 +109,32 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	
 	@Override
 	public CompatibilityRuleKernel visitWeighted_logical_rule(Weighted_logical_ruleContext ctx) {
-		System.out.println("Visiting weighted logical rule: " + ctx.getText());
-		return null;
+		Double w = visitWeight_expression(ctx.weight_expression());
+		Formula f = visitLogical_rule_expression(ctx.logical_rule_expression());
+		Boolean sq = false;
+		if (ctx.exponent_expression() != null) {
+			sq = visitExponent_expression(ctx.exponent_expression());
+		}
+		
+		return new CompatibilityRuleKernel(f, w, sq);
+	}
+	
+	@Override
+	public Double visitWeight_expression(Weight_expressionContext ctx) {
+		return Double.parseDouble(ctx.NONNEGATIVE_NUMBER().getText());
+	}
+	
+	@Override
+	public Boolean visitExponent_expression(Exponent_expressionContext ctx) {
+		if (ctx.EXPONENT().getText().equals("2")) {
+			return true;
+		}
+		else if (ctx.EXPONENT().getText().equals("1")) {
+			return false;
+		}
+		else {
+			throw new IllegalStateException();
+		}
 	}
 	
 	@Override
@@ -179,6 +207,24 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	
 	@Override
 	public Term visitTerm(TermContext ctx) {
-		return null;
+		if (ctx.variable() != null) {
+			return visitVariable(ctx.variable());
+		}
+		else if (ctx.constant() != null) {
+			return visitConstant(ctx.constant());
+		}
+		else {
+			throw new IllegalStateException();
+		}
+	}
+	
+	@Override
+	public Variable visitVariable(VariableContext ctx) {
+		return new Variable(ctx.IDENTIFIER().getText());
+	}
+	
+	@Override
+	public UniqueID visitConstant(ConstantContext ctx) {
+		return data.getUniqueID(ctx.IDENTIFIER().getText());
 	}
 }
