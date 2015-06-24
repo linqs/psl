@@ -98,10 +98,10 @@ public class DataLoader {
 		}
 	}
 	
-	public static DataLoaderOutput load(DataStore datastore, String inputPath) throws Exception{
+	public static DataLoaderOutput load(DataStore datastore, InputStream inputStream) throws Exception{
 		//FileInputStream inStream = openInputFile(inputPath);
 		Yaml yaml = new Yaml();
-		Map yamlParse = (Map)yaml.load(openInputFile(inputPath));
+		Map yamlParse = (Map)yaml.load(inputStream);
 		System.out.println(yamlParse.toString());
 		Set closedPredicates = definePredicates(datastore, yamlParse);
 		loadDataFiles(datastore, yamlParse);
