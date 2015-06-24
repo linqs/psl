@@ -2,12 +2,12 @@ package edu.umd.cs.psl.cli;
 
 import java.util.Set;
 
-import edu.umd.cs.psl.model.predicate.Predicate;
+import edu.umd.cs.psl.model.predicate.StandardPredicate;
 
 public class DataLoaderOutputDummy {
-	Set<Predicate> closedPredicates;
+	Set<StandardPredicate> closedPredicates;
 
-	public Set<Predicate> getClosedPredicates() {
+	public Set<StandardPredicate> getClosedPredicates() {
 		return closedPredicates;
 	}
 }
