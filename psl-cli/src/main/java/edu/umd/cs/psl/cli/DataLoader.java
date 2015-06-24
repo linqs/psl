@@ -104,7 +104,7 @@ public class DataLoader {
 		Map yamlParse = (Map)yaml.load(openInputFile(inputPath));
 		System.out.println(yamlParse.toString());
 		Set closedPredicates = definePredicates(datastore, yamlParse);
-
+		loadDataFiles(datastore, yamlParse);
 		
 		return new DataLoaderOutput(closedPredicates);
 	}
