@@ -44,16 +44,7 @@ import edu.umd.cs.psl.ui.loading.InserterUtils;
  */
 public class DataLoader {
 	private static final Logger log = LoggerFactory.getLogger(DataLoader.class);
-	
-	private static void stubWarning(String warn){
-		System.out.println(warn);
-	}
-	
-	private static FileInputStream openInputFile(String inputPath) throws FileNotFoundException{
-		File inFile = new File(inputPath);
-		return new FileInputStream(inFile);
-	}
-	
+
 	private static Set<StandardPredicate> definePredicates(DataStore datastore, Map yamlMap) throws Exception{
 		if(!yamlMap.containsKey("predicates")){
 			throw new Exception("No 'predicates' block defined in data specification");			
@@ -61,7 +52,7 @@ public class DataLoader {
 		Set<StandardPredicate> closed = new HashSet<StandardPredicate>();
 		PredicateFactory pf = PredicateFactory.getFactory();
 		for (Entry<String, String> predicateSpec : ((Map<String,String>)yamlMap.get("predicates")).entrySet()){
-			
+
 			//parse the predicate/args part
 			String[] predicateParts = predicateSpec.getKey().split("/",2);
 			if(predicateParts.length < 2){
@@ -70,7 +61,7 @@ public class DataLoader {
 			String predicateStr = predicateParts[0];
 			int arity = Integer.parseInt(predicateParts[1]);
 			log.debug("Found predicate {} with arity {}",predicateStr, arity);
-			
+
 			//create a predicate and add it to the datastore
 			ArgumentType[] args = new ArgumentType[arity];
 			for(int i = 0; i < arity; i++){
@@ -78,28 +69,28 @@ public class DataLoader {
 			}
 			StandardPredicate predicate = pf.createStandardPredicate(predicateStr, args);
 			datastore.registerPredicate(predicate);
-			
+
 			//check if closed
 			if(predicateSpec.getValue().equals("closed")){
 				closed.add(predicate);
 			}
-			
+
 		}
 		return closed;
 	}
-	
-	public static void loadDataFiles(DataStore datastore, Map yamlMap) throws Exception{
+
+	private static void loadDataFiles(DataStore datastore, Map yamlMap) throws Exception{
 		for (String partitionName : ((Map<String,Object>) yamlMap).keySet()){
 			//skip special partition predicates
 			if(partitionName.equals("predicates")){
 				continue;
 			}
-			
+
 			PredicateFactory pf = PredicateFactory.getFactory();
-			
+
 			//find files to load into this partition
 			Partition p = datastore.getPartition(partitionName); 
-			
+
 			for( Entry<String,Object> loadSpec : ((Map<String,Object>) yamlMap.get(partitionName)).entrySet() ) {
 				StandardPredicate predicate = (StandardPredicate) pf.getPredicate(loadSpec.getKey());
 				Inserter insert = datastore.getInserter(predicate, p);
@@ -115,17 +106,24 @@ public class DataLoader {
 			}
 		}
 	}
-	
+	/**
+	 * Loads a YAML-formatted data specification into a datastore
+	 * The YAML input should use key-value formatting where keys
+	 * correspond to predicate specification or data partitions
+	 * 
+	 * @param datastore the datastore where data will be loaded
+	 * @param inputStream YAML-formatted input for predicate and data definitions
+	 * @return DataLoaderOutput with data loading results, including closed predicates
+	 * @throws Exception
+	 */
 	public static DataLoaderOutput load(DataStore datastore, InputStream inputStream) throws Exception{
-		//FileInputStream inStream = openInputFile(inputPath);
 		Yaml yaml = new Yaml();
 		Map yamlParse = (Map)yaml.load(inputStream);
-		System.out.println(yamlParse.toString());
 		Set closedPredicates = definePredicates(datastore, yamlParse);
 		loadDataFiles(datastore, yamlParse);
-		
+
 		return new DataLoaderOutput(closedPredicates);
 	}
-	
+
 }
 
