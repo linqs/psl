@@ -19,74 +19,44 @@ package edu.umd.cs.psl.reasoner.function;
 import java.util.*;
 
 /**
- * A numeric function defined as a sum of {@link FunctionSummand FunctionSummands}.
+ * Computes minus the sum of the logs of the terms of {@link FunctionSummand FunctionSummands}.
+ * In the sum, the logarithms are multiplied by the coefficients of the FunctionSummands.
  */
-public class FunctionSum implements Iterable<FunctionSummand>, FunctionTerm {
-
-	protected final List<FunctionSummand> sum;
+public class NegativeLogFunction extends FunctionSum {
 	
-	public FunctionSum() {
-		sum = new ArrayList<FunctionSummand>();
+	public NegativeLogFunction() {
+		super();
 	}
+	
 	
 	/**
-	 * Adds a {@link FunctionSummand} to the sum.
+	 * Returns the sum of the logs of the values of the atoms
 	 *
-	 * @param summand  the summand to add
-	 */
-	public void add(FunctionSummand summand) {
-		sum.add(summand);
-	}
-
-	@Override
-	public Iterator<FunctionSummand> iterator() {
-		return sum.iterator();
-	}
-	
-	public int size() {
-		return sum.size();
-	}
-	
-	public FunctionSummand get(int pos) {
-		return sum.get(pos);
-	}
-
-	/**
-	 * Returns the sum of the {@link FunctionSummand} values.
-	 *
-	 * @return  the FunctionSum's value
+	 * @return  the NegativeLogFunction's value
 	 */
 	@Override
 	public double getValue() {
 		double val = 0.0;
-		for (FunctionSummand s : sum) val+=s.getValue();
+		for (FunctionSummand s : sum) val-= s.getCoefficient() * Math.log(s.getTerm().getValue());
 		return val;
 	}
-	
 	
 	@Override
 	public double getValue(Map<? extends FunctionVariable,Double> values, boolean useCurrentValues) {
+		//TODO I'm not at all sure that this is what should be done here.
 		double val = 0.0;
-		for (FunctionSummand s : sum) val+=s.getValue(values,useCurrentValues);
+		for (FunctionSummand s : sum) val-= s.getCoefficient() * Math.log(s.getTerm().getValue(values, useCurrentValues));
 		return val;
 	}
 
+
+	
 	@Override
 	public boolean isLinear() {
-		for (FunctionSummand s : sum) {
-			if (!s.isLinear()) return false;
-		}
-		return true;
+		return false;
 	}
 	
-	@Override
-	public boolean isConstant() {
-		for (FunctionSummand s : sum) {
-			if (!s.isConstant()) return false;
-		}
-		return true;
-	}
-	
+		
 	@Override
 	public String toString() {
 		StringBuilder string = new StringBuilder();
@@ -96,8 +66,8 @@ public class FunctionSum implements Iterable<FunctionSummand>, FunctionTerm {
 			if (skip)
 				skip = false;
 			else
-				string.append("+");
-			string.append(" " + term.toString() + " ");
+				string.append("-");
+			string.append("log( " + term.toString() + ") ");
 		}
 		string.append(")");
 		return string.toString();

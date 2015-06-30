@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.Iterables;
 
 import de.mathnbits.util.KeyedRetrievalSet;
+import edu.umd.cs.psl.application.topicmodel.LDAgroundLogLoss;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
@@ -45,6 +46,7 @@ import edu.umd.cs.psl.reasoner.function.FunctionSum;
 import edu.umd.cs.psl.reasoner.function.FunctionSummand;
 import edu.umd.cs.psl.reasoner.function.FunctionTerm;
 import edu.umd.cs.psl.reasoner.function.MaxFunction;
+import edu.umd.cs.psl.reasoner.function.NegativeLogFunction;
 import edu.umd.cs.psl.reasoner.function.PowerOfTwo;
 import edu.umd.cs.psl.util.collection.HashList;
 import edu.umd.cs.psl.util.concurrent.ThreadPool;
@@ -129,17 +131,17 @@ public class ADMMReasoner implements Reasoner {
 	/** Ordered list of GroundKernels for looking up indices in terms */
 	HashList<GroundKernel> orderedGroundKernels;
 	/** Ground kernels wrapped to be objective function terms for ADMM */
-	List<ADMMObjectiveTerm> terms;
+	protected List<ADMMObjectiveTerm> terms;
 	/** Ordered list of variables for looking up indices in z */
-	HashList<AtomFunctionVariable> variables;
+	protected HashList<AtomFunctionVariable> variables;
 	/** Consensus vector */
-	List<Double> z;
+	protected List<Double> z;
 	/** Lower bounds on variables */
-	List<Double> lb;
+	protected List<Double> lb;
 	/** Upper bounds on variables */
-	List<Double> ub;
+	protected List<Double> ub;
 	/** Lists of local variable locations for updating consensus variables */
-	List<List<VariableLocation>> varLocations;
+	protected List<List<VariableLocation>> varLocations;
 	
 	/* Multithreading variables */
 	private final int numThreads;
@@ -311,6 +313,17 @@ public class ADMMReasoner implements Reasoner {
 					}
 					else
 						throw new IllegalArgumentException("Max function must have one linear function and 0.0 as arguments.");
+				}
+				/* Else, if it's a NegativeLogFunction, constructs the objective term (a log loss).
+				 * Note that this must come before FunctionSum, since NegativeLogFunction extends FunctionSum.*/
+				else if (function instanceof NegativeLogFunction) {
+					Hyperplane hp = processHyperplane((FunctionSum) function);
+					if (groundKernel instanceof LDAgroundLogLoss) {
+						term = new NegativeLogLossTerm(this, hp.zIndices, ((LDAgroundLogLoss) groundKernel).getCoefficientsArray(), ((GroundCompatibilityKernel) groundKernel).getWeight().getWeight());
+					}
+					else {
+						term = new NegativeLogLossTerm(this, hp.zIndices, hp.coeffs, ((GroundCompatibilityKernel) groundKernel).getWeight().getWeight());
+					}
 				}
 				/* Else, if it's a FunctionSum, constructs the objective term (a linear loss) */
 				else if (function instanceof FunctionSum) {
@@ -709,19 +722,26 @@ public class ADMMReasoner implements Reasoner {
 		return hp;
 	}
 	
-	private class Hyperplane {
+	protected class Hyperplane {
 		int[] zIndices;
 		double[] coeffs;
 		double constant;
 	}
 	
-	private class VariableLocation {
+	public class VariableLocation {
 		private final ADMMObjectiveTerm term;
 		private final int localIndex;
 		
 		private VariableLocation(ADMMObjectiveTerm term, int localIndex) {
 			this.term = term;
 			this.localIndex = localIndex;
+		}
+		public ADMMObjectiveTerm getTerm() {
+			return term;
+		}
+		
+		public int getLocalIndex() {
+			return localIndex;
 		}
 	}
 
