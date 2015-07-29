@@ -22,6 +22,7 @@ import com.wcohen.ss.Level2MongeElkan;
 import edu.umd.cs.psl.database.ReadOnlyDatabase;
 import edu.umd.cs.psl.model.argument.ArgumentType;
 import edu.umd.cs.psl.model.argument.GroundTerm;
+import edu.umd.cs.psl.model.argument.StringAttribute;
 import edu.umd.cs.psl.model.function.ExternalFunction;
 
 /**
@@ -53,12 +54,13 @@ class Level2MongeElkanSimilarity implements ExternalFunction {
 	
 	@Override
 	public double getValue(ReadOnlyDatabase db, GroundTerm... args) {
-		double sim = 0.0;
-		BasicStringWrapper aWrapped = new BasicStringWrapper(args[0].toString());
-		BasicStringWrapper bWrapped = new BasicStringWrapper(args[1].toString());
+		String a = ((StringAttribute) args[0]).getValue();
+		String b = ((StringAttribute) args[1]).getValue();
+		BasicStringWrapper aWrapped = new BasicStringWrapper(a);
+		BasicStringWrapper bWrapped = new BasicStringWrapper(b);
 		
 		Level2MongeElkan mongeElkan = new Level2MongeElkan();
-		sim = mongeElkan.score(aWrapped, bWrapped);
+		double sim = mongeElkan.score(aWrapped, bWrapped);
 		
 		if (sim < simThresh) 
 			return 0.0;

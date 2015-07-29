@@ -16,6 +16,7 @@
  */
 package edu.umd.cs.psl.ui.functions.textsimilarity;
 
+import edu.umd.cs.psl.model.argument.StringAttribute;
 import org.apache.commons.lang.StringUtils;
 
 import edu.umd.cs.psl.database.ReadOnlyDatabase;
@@ -55,11 +56,14 @@ public class LevenshteinSimilarity implements ExternalFunction {
 	@Override
 	public double getValue(ReadOnlyDatabase db, GroundTerm... args) {
 
-		int maxLen = Math.max(args[0].toString().length(), args[1].toString().length());
+		String a = ((StringAttribute) args[0]).getValue();
+		String b = ((StringAttribute) args[1]).getValue();
+
+		int maxLen = Math.max(a.length(), b.length());
 		if (maxLen == 0)
 			return 1.0;
 
-		double ldist = StringUtils.getLevenshteinDistance(args[0].toString(), args[1].toString());
+		double ldist = StringUtils.getLevenshteinDistance(a, b);
 		double sim = 1.0 - (ldist / maxLen);
 
 		if (sim > similarityThreshold)

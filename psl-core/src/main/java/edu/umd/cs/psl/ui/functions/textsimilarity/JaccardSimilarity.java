@@ -22,6 +22,7 @@ import com.wcohen.ss.Jaccard;
 import edu.umd.cs.psl.database.ReadOnlyDatabase;
 import edu.umd.cs.psl.model.argument.ArgumentType;
 import edu.umd.cs.psl.model.argument.GroundTerm;
+import edu.umd.cs.psl.model.argument.StringAttribute;
 import edu.umd.cs.psl.model.function.ExternalFunction;
 
 /**
@@ -52,12 +53,13 @@ class JaccardSimilarity implements ExternalFunction {
 	
 	@Override
 	public double getValue(ReadOnlyDatabase db, GroundTerm... args) {
-		double sim = 0.0;
-		BasicStringWrapper aWrapped = new BasicStringWrapper(args[0].toString());
-		BasicStringWrapper bWrapped = new BasicStringWrapper(args[1].toString());
+		String a = ((StringAttribute) args[0]).getValue();
+		String b = ((StringAttribute) args[1]).getValue();
+		BasicStringWrapper aWrapped = new BasicStringWrapper(a);
+		BasicStringWrapper bWrapped = new BasicStringWrapper(b);
 		
 		Jaccard jaccard = new Jaccard();
-		sim = jaccard.score(aWrapped, bWrapped);
+		double sim = jaccard.score(aWrapped, bWrapped);
 		
 		if (sim < simThresh) 
 			return 0.0;
