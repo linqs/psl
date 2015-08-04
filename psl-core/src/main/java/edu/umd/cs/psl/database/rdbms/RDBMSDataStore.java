@@ -297,29 +297,35 @@ public class RDBMSDataStore implements DataStore {
 		for (int i=0; i < pi.argCols.length; i++) {
 			String colName = pi.argCols[i];
 			String typeName;
-			
+
 			switch (pi.predicate.getArgumentType(i)) {
-			case Double:
-				typeName = "DOUBLE";
-				break;
-			case Integer:
-				typeName = "INT";
-				break;
-			case String:
-				typeName = "MEDIUMTEXT";
-				colName = dbDriver.castStringWithModifiersForIndexing(colName);
-				break;
-			case UniqueID:
-				hashIndexes.add(colName);
-				if (stringUniqueIDs)
-					typeName = "VARCHAR(255)";
-				else
+				case Double:
+					typeName = "DOUBLE";
+					break;
+				case Integer:
 					typeName = "INT";
-				break;
-			default:
-				throw new IllegalStateException("Unknown ArgumentType for predicate " + p.getName());
+					break;
+				case String:
+					typeName = "MEDIUMTEXT";
+					colName = dbDriver.castStringWithModifiersForIndexing(colName);
+					break;
+				case Long:
+					typeName = "BIGINT";
+					break;
+				case Date:
+					typeName = "DATE";
+					break;
+				case UniqueID:
+					hashIndexes.add(colName);
+					if (stringUniqueIDs)
+						typeName = "VARCHAR(255)";
+					else
+						typeName = "INT";
+					break;
+				default:
+					throw new IllegalStateException("Unknown ArgumentType for predicate " + p.getName());
 			}
-			
+
 			keyColumns.append(colName).append(", ");
 			q.addCustomColumn(pi.argCols[i] + " " + typeName, ColumnConstraint.NOT_NULL);
 		}
