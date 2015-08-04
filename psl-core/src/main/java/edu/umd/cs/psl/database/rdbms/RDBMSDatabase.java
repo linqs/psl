@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import edu.umd.cs.psl.model.argument.*;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,16 +47,6 @@ import edu.umd.cs.psl.database.DatabaseQuery;
 import edu.umd.cs.psl.database.Partition;
 import edu.umd.cs.psl.database.ReadOnlyDatabase;
 import edu.umd.cs.psl.database.ResultList;
-import edu.umd.cs.psl.model.argument.ArgumentType;
-import edu.umd.cs.psl.model.argument.Attribute;
-import edu.umd.cs.psl.model.argument.DoubleAttribute;
-import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.argument.IntegerAttribute;
-import edu.umd.cs.psl.model.argument.StringAttribute;
-import edu.umd.cs.psl.model.argument.Term;
-import edu.umd.cs.psl.model.argument.UniqueID;
-import edu.umd.cs.psl.model.argument.Variable;
-import edu.umd.cs.psl.model.argument.VariableTypeMap;
 import edu.umd.cs.psl.model.atom.AtomCache;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.QueryAtom;
@@ -300,13 +292,17 @@ public class RDBMSDatabase implements Database {
 				if (argument instanceof IntegerAttribute)
 					ps.setInt(paramIndex, ((IntegerAttribute)argument).getValue());
 				else if (argument instanceof DoubleAttribute)
-					ps.setDouble(paramIndex, ((DoubleAttribute)argument).getValue());
+					ps.setDouble(paramIndex, ((DoubleAttribute) argument).getValue());
 				else if (argument instanceof StringAttribute)
 					ps.setString(paramIndex, ((StringAttribute)argument).getValue());
+				else if (argument instanceof LongAttribute)
+					ps.setLong(paramIndex, ((LongAttribute) argument).getValue());
+				else if (argument instanceof DateAttribute)
+					ps.setDate(paramIndex, new java.sql.Date(((DateAttribute) argument).getValue().getMillis()));
 				else if (argument instanceof RDBMSUniqueIntID)
-					ps.setInt(paramIndex, ((RDBMSUniqueIntID)argument).getID());
+					ps.setInt(paramIndex, ((RDBMSUniqueIntID) argument).getID());
 				else if (argument instanceof RDBMSUniqueStringID)
-					ps.setString(paramIndex, ((RDBMSUniqueStringID)argument).getID());
+					ps.setString(paramIndex, ((RDBMSUniqueStringID) argument).getID());
 			}
 			return ps.executeQuery();
 		} catch (SQLException e) {
@@ -602,6 +598,12 @@ public class RDBMSDatabase implements Database {
 									break;
 								case String:
 									res[i] = new StringAttribute(rs.getString(var.getName()));
+									break;
+                                case Long:
+									res[i] = new LongAttribute(rs.getLong(var.getName()));
+									break;
+                                case Date:
+									res[i] = new DateAttribute(new DateTime(rs.getDate(var.getName()).getTime()));
 									break;
 								case UniqueID:
 									res[i] = getUniqueID(rs.getObject(var.getName()));

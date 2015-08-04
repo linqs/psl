@@ -30,6 +30,8 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import edu.umd.cs.psl.model.argument.*;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,12 +51,6 @@ import edu.umd.cs.psl.database.ReadOnlyDatabase;
 import edu.umd.cs.psl.database.loading.Inserter;
 import edu.umd.cs.psl.database.loading.Updater;
 import edu.umd.cs.psl.database.rdbms.driver.DatabaseDriver;
-import edu.umd.cs.psl.model.argument.ArgumentType;
-import edu.umd.cs.psl.model.argument.DoubleAttribute;
-import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.argument.IntegerAttribute;
-import edu.umd.cs.psl.model.argument.StringAttribute;
-import edu.umd.cs.psl.model.argument.UniqueID;
 import edu.umd.cs.psl.model.function.ExternalFunction;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.PredicateFactory;
@@ -607,6 +603,12 @@ public class RDBMSDataStore implements DataStore {
 				break;
 			case String:
 				arguments[i] = new StringAttribute(args[i]);
+				break;
+            case Long:
+				arguments[i] = new LongAttribute(Long.parseLong(args[i]));
+				break;
+            case Date:
+				arguments[i] = new DateAttribute(new DateTime(args[i]));
 				break;
 			case UniqueID:
 				arguments[i] = db.getUniqueID(args[i]);
