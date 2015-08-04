@@ -592,32 +592,32 @@ public class RDBMSDataStore implements DataStore {
 		for (int i=0; i < args.length; i++) {
 			if (args[i]==null)
 				throw new IllegalArgumentException("Argument cannot be null!");
-			
+
 			ArgumentType t = extFun.getArgumentTypes()[i];
 			switch (t) {
-			case Double:
-				arguments[i] = new DoubleAttribute(Double.parseDouble(args[i]));
-				break;
-			case Integer:
-				arguments[i] = new IntegerAttribute(Integer.parseInt(args[i]));
-				break;
-			case String:
-				arguments[i] = new StringAttribute(args[i]);
-				break;
-            case Long:
-				arguments[i] = new LongAttribute(Long.parseLong(args[i]));
-				break;
-            case Date:
-				arguments[i] = new DateAttribute(new DateTime(args[i]));
-				break;
-			case UniqueID:
-				arguments[i] = db.getUniqueID(args[i]);
-				break;
-			default:
-				throw new IllegalArgumentException("Unknown argument type: " + t.getName());
+				case Double:
+					arguments[i] = new DoubleAttribute(Double.parseDouble(args[i]));
+					break;
+				case Integer:
+					arguments[i] = new IntegerAttribute(Integer.parseInt(args[i]));
+					break;
+				case String:
+					arguments[i] = new StringAttribute(args[i]);
+					break;
+				case Long:
+					arguments[i] = new LongAttribute(Long.parseLong(args[i]));
+					break;
+				case Date:
+					arguments[i] = new DateAttribute(new DateTime(args[i]));
+					break;
+				case UniqueID:
+					arguments[i] = db.getUniqueID(args[i]);
+					break;
+				default:
+					throw new IllegalArgumentException("Unknown argument type: " + t.getName());
 			}
 		}
-		
+
 		return extFun.getValue(db, arguments);
 	}
 }

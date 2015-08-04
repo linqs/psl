@@ -590,26 +590,26 @@ public class RDBMSDatabase implements Database {
 							} else {
 								ArgumentType type = varTypes.getType(var);
 								switch (type) {
-								case Double:
-									res[i] = new DoubleAttribute(rs.getDouble(var.getName()));
-									break;
-								case Integer:
-									res[i] = new IntegerAttribute(rs.getInt(var.getName()));
-									break;
-								case String:
-									res[i] = new StringAttribute(rs.getString(var.getName()));
-									break;
-                                case Long:
-									res[i] = new LongAttribute(rs.getLong(var.getName()));
-									break;
-                                case Date:
-									res[i] = new DateAttribute(new DateTime(rs.getDate(var.getName()).getTime()));
-									break;
-								case UniqueID:
-									res[i] = getUniqueID(rs.getObject(var.getName()));
-									break;
-								default:
-									throw new IllegalArgumentException("Unknown argument type: " + type);
+									case Double:
+										res[i] = new DoubleAttribute(rs.getDouble(var.getName()));
+										break;
+									case Integer:
+										res[i] = new IntegerAttribute(rs.getInt(var.getName()));
+										break;
+									case String:
+										res[i] = new StringAttribute(rs.getString(var.getName()));
+										break;
+									case Long:
+										res[i] = new LongAttribute(rs.getLong(var.getName()));
+										break;
+									case Date:
+										res[i] = new DateAttribute(new DateTime(rs.getDate(var.getName()).getTime()));
+										break;
+									case UniqueID:
+										res[i] = getUniqueID(rs.getObject(var.getName()));
+										break;
+									default:
+										throw new IllegalArgumentException("Unknown argument type: " + type);
 								}
 							}
 						}
