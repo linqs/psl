@@ -19,6 +19,7 @@ package edu.umd.cs.psl.ui.functions.textsimilarity;
 import edu.umd.cs.psl.database.ReadOnlyDatabase;
 import edu.umd.cs.psl.model.argument.ArgumentType;
 import edu.umd.cs.psl.model.argument.GroundTerm;
+import edu.umd.cs.psl.model.argument.StringAttribute;
 import edu.umd.cs.psl.model.function.ExternalFunction;
 
 public class SubStringSimilarity implements ExternalFunction {
@@ -35,8 +36,8 @@ public class SubStringSimilarity implements ExternalFunction {
 	
 	@Override
 	public double getValue(ReadOnlyDatabase db, GroundTerm... args) {
-		String a = args[0].toString();
-		String b = args[1].toString();
+		String a = ((StringAttribute) args[0]).getValue();
+		String b = ((StringAttribute) args[1]).getValue();
 		String s1,s2;
 		if (a.length()<b.length()) {
 			s1 = a; s2 = b;
