@@ -143,7 +143,7 @@ public class Queries {
 						break;
 					case Long:
 						if (rawArgs[i] instanceof Long)
-							args[i] = new IntegerAttribute((Integer) rawArgs[i]);
+							args[i] = new LongAttribute((Integer) rawArgs[i]);
 						else
 							throw new IllegalArgumentException("Could not convert raw arg " + i + " to Long.");
 					case Date:
