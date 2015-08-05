@@ -23,9 +23,9 @@ import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 
 import edu.umd.cs.psl.cli.modelloader.PSLParser.AtomContext;
+import edu.umd.cs.psl.cli.modelloader.PSLParser.Conjunctive_clauseContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.ConstantContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.Disjunctive_clauseContext;
-import edu.umd.cs.psl.cli.modelloader.PSLParser.Exponent_expressionContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.LiteralContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.Logical_rule_expressionContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.PredicateContext;
@@ -43,9 +43,11 @@ import edu.umd.cs.psl.model.argument.UniqueID;
 import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.QueryAtom;
+import edu.umd.cs.psl.model.formula.Conjunction;
 import edu.umd.cs.psl.model.formula.Disjunction;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.formula.Negation;
+import edu.umd.cs.psl.model.formula.Rule;
 import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.model.kernel.rule.AbstractRuleKernel;
 import edu.umd.cs.psl.model.kernel.rule.CompatibilityRuleKernel;
@@ -112,8 +114,8 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 		Double w = visitWeight_expression(ctx.weight_expression());
 		Formula f = visitLogical_rule_expression(ctx.logical_rule_expression());
 		Boolean sq = false;
-		if (ctx.exponent_expression() != null) {
-			sq = visitExponent_expression(ctx.exponent_expression());
+		if (ctx.EXPONENT_EXPRESSION() != null) {
+			sq = ctx.EXPONENT_EXPRESSION().getText().equals("^2");
 		}
 		
 		return new CompatibilityRuleKernel(f, w, sq);
@@ -125,19 +127,6 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	}
 	
 	@Override
-	public Boolean visitExponent_expression(Exponent_expressionContext ctx) {
-		if (ctx.EXPONENT().getText().equals("2")) {
-			return true;
-		}
-		else if (ctx.EXPONENT().getText().equals("1")) {
-			return false;
-		}
-		else {
-			throw new IllegalStateException();
-		}
-	}
-	
-	@Override
 	public ConstraintRuleKernel visitUnweighted_logical_rule(Unweighted_logical_ruleContext ctx) {
 		Formula f = visitLogical_rule_expression(ctx.logical_rule_expression());
 		return new ConstraintRuleKernel(f);
@@ -146,7 +135,14 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	@Override
 	public Formula visitLogical_rule_expression(Logical_rule_expressionContext ctx) {
 		if (ctx.children.size() == 3) {
-			throw new IllegalStateException();
+			if (ctx.conjunctive_clause() != null & ctx.disjunctive_clause() != null) {
+				Formula body = visitConjunctive_clause(ctx.conjunctive_clause());
+				Formula head = visitDisjunctive_clause(ctx.disjunctive_clause());
+				return new Rule(body, head);
+			}
+			else {
+				throw new IllegalStateException();
+			}
 		}
 		else if (ctx.children.size() == 1) {
 			if (ctx.disjunctive_clause() != null) {
@@ -162,12 +158,31 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	}
 	
 	@Override
-	public Disjunction visitDisjunctive_clause(Disjunctive_clauseContext ctx) {
+	public Formula visitConjunctive_clause(Conjunctive_clauseContext ctx) {
 		Formula[] literals = new Formula[ctx.literal().size()];
 		for (int i = 0; i < literals.length; i++) {
 			literals[i] = visitLiteral(ctx.literal(i));
 		}
-		return new Disjunction(literals);
+		if (literals.length == 1) {
+			return literals[0];
+		}
+		else {
+			return new Conjunction(literals);
+		}
+	}
+	
+	@Override
+	public Formula visitDisjunctive_clause(Disjunctive_clauseContext ctx) {
+		Formula[] literals = new Formula[ctx.literal().size()];
+		for (int i = 0; i < literals.length; i++) {
+			literals[i] = visitLiteral(ctx.literal(i));
+		}
+		if (literals.length == 1) {
+			return literals[0];
+		}
+		else {
+			return new Disjunction(literals);
+		}
 	}
 	
 	@Override

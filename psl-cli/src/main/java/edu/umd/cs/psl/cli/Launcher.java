@@ -26,8 +26,6 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import edu.umd.cs.psl.application.inference.MPEInference;
 import edu.umd.cs.psl.cli.modelloader.ModelLoader;
@@ -59,8 +57,6 @@ public class Launcher {
 	public static String PARTITION_NAME_OBSERVATIONS = "observations";
 	public static String PARTITION_NAME_TARGET = "targets";
 	
-	Logger log = LoggerFactory.getLogger(Launcher.class);
-
 	public void run(String[] args) throws Exception {
 		ConfigManager cm = ConfigManager.getManager();
 		ConfigBundle cb = cm.getBundle("cli");
@@ -89,7 +85,7 @@ public class Launcher {
 		 * Load data.
 		 */
 
-		log.info("data:: loading:: ::starting");
+		System.out.println("data:: loading:: ::starting");
 		String dataPath = args[2];
 		File dataFile = new File(dataPath);
 		InputStream dataFileInputStream = new FileInputStream(dataFile);
@@ -98,19 +94,20 @@ public class Launcher {
 				dataFileInputStream);
 		Set<StandardPredicate> closedPredicates = dataLoaderOutput
 				.getClosedPredicates();
-		log.info("data:: loading:: ::done");
+		System.out.println("data:: loading:: ::done");
 
 		/*
 		 * Load model.
 		 */
 
-		log.info("model:: loading:: ::starting");
+		System.out.println("model:: loading:: ::starting");
 		String modelPath = args[1];
 		File modelFile = new File(modelPath);
 		FileInputStream modelFileInputStream = new FileInputStream(modelFile);
 
 		Model model = ModelLoader.load(data, modelFileInputStream);
-		log.info("model:: loading:: ::done");
+		System.out.println(model);
+		System.out.println("model:: loading:: ::done");
 
 		/*
 		 * Create database, application, etc.
@@ -125,13 +122,13 @@ public class Launcher {
 
 		// Inference
 		if (operation.equals(OPERATION_INFER)) {
-			log.info("operation::infer ::starting");
+			System.out.println("operation::infer ::starting");
 		
-			log.info("operation::infer inference:: ::starting");
+			System.out.println("operation::infer inference:: ::starting");
 			cb.setProperty(MPEInference.REASONER_KEY, new ADMMReasonerFactory());
 			MPEInference mpe = new MPEInference(model, database, cb);
 			FullInferenceResult result = mpe.mpeInference();
-			log.info("operation::infer inference:: ::done");
+			System.out.println("operation::infer inference:: ::done");
 			
 			// List of open predicates
 			Set<StandardPredicate> openPredicates = data
@@ -147,7 +144,7 @@ public class Launcher {
 						.getOptionValue(OPTION_OUTPUT_DIR);
 				File outputDirectory = new File(outputDirectoryPath);
 				if (!outputDirectory.exists()) {
-					log.info("creating directory: "
+					System.out.println("creating directory: "
 							+ outputDirectoryPath);
 					boolean resulttmp = false;
 					try {
@@ -157,7 +154,7 @@ public class Launcher {
 						// handle it
 					}
 					if (resulttmp) {
-						log.info("DIR created");
+						System.out.println("DIR created");
 					}
 				}
 				for (StandardPredicate openPredicate : openPredicates) {
@@ -178,12 +175,12 @@ public class Launcher {
 				for (StandardPredicate openPredicate : openPredicates) {
 					for (GroundAtom atom : Queries.getAllAtoms(database,
 							openPredicate)) {
-						log.info(atom.toString() + " = "
+						System.out.println(atom.toString() + " = "
 								+ atom.getValue());
 					}
 				}
 			}
-			log.info("operation::infer ::done");
+			System.out.println("operation::infer ::done");
 
 		} else if (operation.equals(OPERATION_LEARN)) {
 			throw new Exception("Operation not supported: " + OPERATION_LEARN);

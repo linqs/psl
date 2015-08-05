@@ -305,13 +305,13 @@ public class PSLBaseListener implements PSLListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterExponent_expression(PSLParser.Exponent_expressionContext ctx) { }
+	@Override public void enterNumber(PSLParser.NumberContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitExponent_expression(PSLParser.Exponent_expressionContext ctx) { }
+	@Override public void exitNumber(PSLParser.NumberContext ctx) { }
 
 	/**
 	 * {@inheritDoc}

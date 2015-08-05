@@ -16,9 +16,6 @@
  */
 package edu.umd.cs.psl.cli;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.util.HashSet;
 import java.util.List;
@@ -118,8 +115,8 @@ public class DataLoader {
 	 */
 	public static DataLoaderOutput load(DataStore datastore, InputStream inputStream) throws Exception{
 		Yaml yaml = new Yaml();
-		Map yamlParse = (Map)yaml.load(inputStream);
-		Set closedPredicates = definePredicates(datastore, yamlParse);
+		Map yamlParse = (Map) yaml.load(inputStream);
+		Set<StandardPredicate> closedPredicates = definePredicates(datastore, yamlParse);
 		loadDataFiles(datastore, yamlParse);
 
 		return new DataLoaderOutput(closedPredicates);

@@ -249,13 +249,13 @@ public interface PSLListener extends ParseTreeListener {
 	 */
 	void exitWeight_expression(PSLParser.Weight_expressionContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link PSLParser#exponent_expression}.
+	 * Enter a parse tree produced by {@link PSLParser#number}.
 	 * @param ctx the parse tree
 	 */
-	void enterExponent_expression(PSLParser.Exponent_expressionContext ctx);
+	void enterNumber(PSLParser.NumberContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link PSLParser#exponent_expression}.
+	 * Exit a parse tree produced by {@link PSLParser#number}.
 	 * @param ctx the parse tree
 	 */
-	void exitExponent_expression(PSLParser.Exponent_expressionContext ctx);
+	void exitNumber(PSLParser.NumberContext ctx);
 }

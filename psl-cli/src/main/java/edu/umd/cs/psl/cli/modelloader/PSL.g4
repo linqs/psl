@@ -52,7 +52,7 @@ logical_rule
 	;
 
 weighted_logical_rule
-	:	weight_expression logical_rule_expression exponent_expression?
+	:	weight_expression logical_rule_expression EXPONENT_EXPRESSION?
 	;
 
 unweighted_logical_rule
@@ -83,7 +83,7 @@ arithmetic_rule
 	;
 
 weighted_arithmetic_rule
-	:	weight_expression arithmetic_rule_expression exponent_expression? select_statement*
+	:	weight_expression arithmetic_rule_expression EXPONENT_EXPRESSION? select_statement*
 	;
 
 unweighted_arithmetic_rule
@@ -104,7 +104,7 @@ sum_augmented_atom
 	;
 
 coefficient
-	:	NUMBER
+	:	number
 	|	PIPE variable PIPE
 	|	coefficient ARITHMETIC_OPERATOR coefficient
 	|	COEFF_OPERATOR LBRACKET coefficient (COMMA coefficient)+ RBRACKET
@@ -119,8 +119,7 @@ bool_expression
 	:	literal
 	|	LPAREN bool_expression RPAREN
 	|	bool_expression OR bool_expression
-	|	bool_expression AND bool_expression
-//	|	bool_expression 
+	|	bool_expression AND bool_expression 
 	;
 
 //
@@ -131,13 +130,8 @@ weight_expression
 	:	NONNEGATIVE_NUMBER COLON
 	;
 
-exponent_expression
-	:	'^' EXPONENT
-	;
-
-EXPONENT
-	: '1'
-	| '2'
+EXPONENT_EXPRESSION
+	:	CARET [12]
 	;
 
 //
@@ -176,7 +170,6 @@ IMPLIED_BY
 TERM_OPERATOR
 	:	TERM_EQUAL
 	|	NOT_EQUAL
-	|	SYMMETRIC
 	;
 
 TERM_EQUAL
@@ -185,10 +178,6 @@ TERM_EQUAL
 
 NOT_EQUAL
 	:	'!='
-	;
-
-SYMMETRIC
-	:	'^'
 	;
 
 //
@@ -255,27 +244,27 @@ COEFF_OPERATOR
 	;
 
 MAX
-	:	'Max'
+	:	'@Max'
 	;
 
 MIN
-	:	'Min'
+	:	'@Min'
 	;
 
 //
 // Identifiers and numbers
 //
 
+number
+	:	MINUS? NONNEGATIVE_NUMBER
+	;
+
 IDENTIFIER
 	:	LETTER (LETTER | DIGIT)*
 	;
 
 NONNEGATIVE_NUMBER
-	:	DIGIT+ '.'? DIGIT* (('e'|'E') '-'? DIGIT+)?
-	;
-
-NUMBER
-	:	'-'? NONNEGATIVE_NUMBER
+	:	DIGIT+ (PERIOD DIGIT+)? ([eE] MINUS? DIGIT+)?
 	;
 
 fragment
@@ -294,6 +283,10 @@ DIGIT
 
 PERIOD
 	:	'.'
+	;
+
+CARET
+	:	'^'
 	;
 
 COMMA

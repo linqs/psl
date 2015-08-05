@@ -186,5 +186,5 @@ public class PSLBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements PS
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitExponent_expression(PSLParser.Exponent_expressionContext ctx) { return visitChildren(ctx); }
+	@Override public T visitNumber(PSLParser.NumberContext ctx) { return visitChildren(ctx); }
 }

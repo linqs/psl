@@ -156,9 +156,9 @@ public interface PSLVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitWeight_expression(PSLParser.Weight_expressionContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link PSLParser#exponent_expression}.
+	 * Visit a parse tree produced by {@link PSLParser#number}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitExponent_expression(PSLParser.Exponent_expressionContext ctx);
+	T visitNumber(PSLParser.NumberContext ctx);
 }

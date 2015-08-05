@@ -17,14 +17,14 @@ public class PSLParser extends Parser {
 	protected static final PredictionContextCache _sharedContextCache =
 		new PredictionContextCache();
 	public static final int
-		EXPONENT=1, NOT=2, AND=3, OR=4, THEN=5, IMPLIED_BY=6, TERM_OPERATOR=7, 
-		TERM_EQUAL=8, NOT_EQUAL=9, SYMMETRIC=10, ARITHMETIC_RULE_OPERATOR=11, 
-		LESS_THAN_EQUAL=12, GREATER_THAN_EQUAL=13, EQUAL=14, ARITHMETIC_OPERATOR=15, 
-		LINEAR_OPERATOR=16, PLUS=17, MINUS=18, MULT=19, DIV=20, COEFF_OPERATOR=21, 
-		MAX=22, MIN=23, IDENTIFIER=24, NONNEGATIVE_NUMBER=25, NUMBER=26, PERIOD=27, 
-		COMMA=28, COLON=29, PIPE=30, LPAREN=31, RPAREN=32, LBRACE=33, RBRACE=34, 
-		LBRACKET=35, RBRACKET=36, SINGLE_QUOTE=37, DOUBLE_QUOTE=38, WS=39, COMMENT=40, 
-		LINE_COMMENT=41, PYTHON_COMMENT=42;
+		EXPONENT_EXPRESSION=1, NOT=2, AND=3, OR=4, THEN=5, IMPLIED_BY=6, TERM_OPERATOR=7, 
+		TERM_EQUAL=8, NOT_EQUAL=9, ARITHMETIC_RULE_OPERATOR=10, LESS_THAN_EQUAL=11, 
+		GREATER_THAN_EQUAL=12, EQUAL=13, ARITHMETIC_OPERATOR=14, LINEAR_OPERATOR=15, 
+		PLUS=16, MINUS=17, MULT=18, DIV=19, COEFF_OPERATOR=20, MAX=21, MIN=22, 
+		IDENTIFIER=23, NONNEGATIVE_NUMBER=24, PERIOD=25, CARET=26, COMMA=27, COLON=28, 
+		PIPE=29, LPAREN=30, RPAREN=31, LBRACE=32, RBRACE=33, LBRACKET=34, RBRACKET=35, 
+		SINGLE_QUOTE=36, DOUBLE_QUOTE=37, WS=38, COMMENT=39, LINE_COMMENT=40, 
+		PYTHON_COMMENT=41;
 	public static final int
 		RULE_program = 0, RULE_psl_rule = 1, RULE_predicate = 2, RULE_atom = 3, 
 		RULE_literal = 4, RULE_term = 5, RULE_variable = 6, RULE_constant = 7, 
@@ -33,7 +33,7 @@ public class PSLParser extends Parser {
 		RULE_arithmetic_rule = 14, RULE_weighted_arithmetic_rule = 15, RULE_unweighted_arithmetic_rule = 16, 
 		RULE_arithmetic_rule_expression = 17, RULE_arithmetic_rule_operand = 18, 
 		RULE_sum_augmented_atom = 19, RULE_coefficient = 20, RULE_select_statement = 21, 
-		RULE_bool_expression = 22, RULE_weight_expression = 23, RULE_exponent_expression = 24;
+		RULE_bool_expression = 22, RULE_weight_expression = 23, RULE_number = 24;
 	public static final String[] ruleNames = {
 		"program", "psl_rule", "predicate", "atom", "literal", "term", "variable", 
 		"constant", "logical_rule", "weighted_logical_rule", "unweighted_logical_rule", 
@@ -41,23 +41,23 @@ public class PSLParser extends Parser {
 		"arithmetic_rule", "weighted_arithmetic_rule", "unweighted_arithmetic_rule", 
 		"arithmetic_rule_expression", "arithmetic_rule_operand", "sum_augmented_atom", 
 		"coefficient", "select_statement", "bool_expression", "weight_expression", 
-		"exponent_expression"
+		"number"
 	};
 
 	private static final String[] _LITERAL_NAMES = {
-		null, null, null, null, null, null, null, null, "'=='", "'!='", "'^'", 
-		null, "'<='", "'>='", "'='", null, null, "'+'", "'-'", "'*'", "'/'", null, 
-		"'Max'", "'Min'", null, null, null, "'.'", "','", "':'", "'|'", "'('", 
-		"')'", "'{'", "'}'", "'['", "']'", "'''", "'\"'"
+		null, null, null, null, null, null, null, null, "'=='", "'!='", null, 
+		"'<='", "'>='", "'='", null, null, "'+'", "'-'", "'*'", "'/'", null, "'@Max'", 
+		"'@Min'", null, null, "'.'", "'^'", "','", "':'", "'|'", "'('", "')'", 
+		"'{'", "'}'", "'['", "']'", "'''", "'\"'"
 	};
 	private static final String[] _SYMBOLIC_NAMES = {
-		null, "EXPONENT", "NOT", "AND", "OR", "THEN", "IMPLIED_BY", "TERM_OPERATOR", 
-		"TERM_EQUAL", "NOT_EQUAL", "SYMMETRIC", "ARITHMETIC_RULE_OPERATOR", "LESS_THAN_EQUAL", 
-		"GREATER_THAN_EQUAL", "EQUAL", "ARITHMETIC_OPERATOR", "LINEAR_OPERATOR", 
-		"PLUS", "MINUS", "MULT", "DIV", "COEFF_OPERATOR", "MAX", "MIN", "IDENTIFIER", 
-		"NONNEGATIVE_NUMBER", "NUMBER", "PERIOD", "COMMA", "COLON", "PIPE", "LPAREN", 
-		"RPAREN", "LBRACE", "RBRACE", "LBRACKET", "RBRACKET", "SINGLE_QUOTE", 
-		"DOUBLE_QUOTE", "WS", "COMMENT", "LINE_COMMENT", "PYTHON_COMMENT"
+		null, "EXPONENT_EXPRESSION", "NOT", "AND", "OR", "THEN", "IMPLIED_BY", 
+		"TERM_OPERATOR", "TERM_EQUAL", "NOT_EQUAL", "ARITHMETIC_RULE_OPERATOR", 
+		"LESS_THAN_EQUAL", "GREATER_THAN_EQUAL", "EQUAL", "ARITHMETIC_OPERATOR", 
+		"LINEAR_OPERATOR", "PLUS", "MINUS", "MULT", "DIV", "COEFF_OPERATOR", "MAX", 
+		"MIN", "IDENTIFIER", "NONNEGATIVE_NUMBER", "PERIOD", "CARET", "COMMA", 
+		"COLON", "PIPE", "LPAREN", "RPAREN", "LBRACE", "RBRACE", "LBRACKET", "RBRACKET", 
+		"SINGLE_QUOTE", "DOUBLE_QUOTE", "WS", "COMMENT", "LINE_COMMENT", "PYTHON_COMMENT"
 	};
 	public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
 
@@ -127,6 +127,11 @@ public class PSLParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof PSLListener ) ((PSLListener)listener).exitProgram(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PSLVisitor ) return ((PSLVisitor<? extends T>)visitor).visitProgram(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final ProgramContext program() throws RecognitionException {
@@ -149,7 +154,7 @@ public class PSLParser extends Parser {
 				setState(53); 
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-			} while ( (((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << NOT) | (1L << COEFF_OPERATOR) | (1L << IDENTIFIER) | (1L << NONNEGATIVE_NUMBER) | (1L << NUMBER) | (1L << PIPE) | (1L << LPAREN) | (1L << SINGLE_QUOTE) | (1L << DOUBLE_QUOTE))) != 0) );
+			} while ( (((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << NOT) | (1L << MINUS) | (1L << COEFF_OPERATOR) | (1L << IDENTIFIER) | (1L << NONNEGATIVE_NUMBER) | (1L << PIPE) | (1L << LPAREN) | (1L << SINGLE_QUOTE) | (1L << DOUBLE_QUOTE))) != 0) );
 			}
 		}
 		catch (RecognitionException re) {
@@ -181,6 +186,11 @@ public class PSLParser extends Parser {
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof PSLListener ) ((PSLListener)listener).exitPsl_rule(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PSLVisitor ) return ((PSLVisitor<? extends T>)visitor).visitPsl_rule(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -230,6 +240,11 @@ public class PSLParser extends Parser {
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof PSLListener ) ((PSLListener)listener).exitPredicate(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PSLVisitor ) return ((PSLVisitor<? extends T>)visitor).visitPredicate(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -282,6 +297,11 @@ public class PSLParser extends Parser {
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof PSLListener ) ((PSLListener)listener).exitAtom(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PSLVisitor ) return ((PSLVisitor<? extends T>)visitor).visitAtom(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -365,6 +385,11 @@ public class PSLParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof PSLListener ) ((PSLListener)listener).exitLiteral(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PSLVisitor ) return ((PSLVisitor<? extends T>)visitor).visitLiteral(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final LiteralContext literal() throws RecognitionException {
@@ -425,6 +450,11 @@ public class PSLParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof PSLListener ) ((PSLListener)listener).exitTerm(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PSLVisitor ) return ((PSLVisitor<? extends T>)visitor).visitTerm(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final TermContext term() throws RecognitionException {
@@ -477,6 +507,11 @@ public class PSLParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof PSLListener ) ((PSLListener)listener).exitVariable(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PSLVisitor ) return ((PSLVisitor<? extends T>)visitor).visitVariable(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final VariableContext variable() throws RecognitionException {
@@ -521,6 +556,11 @@ public class PSLParser extends Parser {
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof PSLListener ) ((PSLListener)listener).exitConstant(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PSLVisitor ) return ((PSLVisitor<? extends T>)visitor).visitConstant(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -586,6 +626,11 @@ public class PSLParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof PSLListener ) ((PSLListener)listener).exitLogical_rule(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PSLVisitor ) return ((PSLVisitor<? extends T>)visitor).visitLogical_rule(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final Logical_ruleContext logical_rule() throws RecognitionException {
@@ -633,9 +678,7 @@ public class PSLParser extends Parser {
 		public Logical_rule_expressionContext logical_rule_expression() {
 			return getRuleContext(Logical_rule_expressionContext.class,0);
 		}
-		public Exponent_expressionContext exponent_expression() {
-			return getRuleContext(Exponent_expressionContext.class,0);
-		}
+		public TerminalNode EXPONENT_EXPRESSION() { return getToken(PSLParser.EXPONENT_EXPRESSION, 0); }
 		public Weighted_logical_ruleContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -647,6 +690,11 @@ public class PSLParser extends Parser {
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof PSLListener ) ((PSLListener)listener).exitWeighted_logical_rule(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PSLVisitor ) return ((PSLVisitor<? extends T>)visitor).visitWeighted_logical_rule(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -663,10 +711,10 @@ public class PSLParser extends Parser {
 			logical_rule_expression();
 			setState(105);
 			_la = _input.LA(1);
-			if (_la==SYMMETRIC) {
+			if (_la==EXPONENT_EXPRESSION) {
 				{
 				setState(104);
-				exponent_expression();
+				match(EXPONENT_EXPRESSION);
 				}
 			}
 
@@ -699,6 +747,11 @@ public class PSLParser extends Parser {
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof PSLListener ) ((PSLListener)listener).exitUnweighted_logical_rule(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PSLVisitor ) return ((PSLVisitor<? extends T>)visitor).visitUnweighted_logical_rule(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -745,6 +798,11 @@ public class PSLParser extends Parser {
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof PSLListener ) ((PSLListener)listener).exitLogical_rule_expression(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PSLVisitor ) return ((PSLVisitor<? extends T>)visitor).visitLogical_rule_expression(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -819,6 +877,11 @@ public class PSLParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof PSLListener ) ((PSLListener)listener).exitDisjunctive_clause(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PSLVisitor ) return ((PSLVisitor<? extends T>)visitor).visitDisjunctive_clause(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final Disjunctive_clauseContext disjunctive_clause() throws RecognitionException {
@@ -882,6 +945,11 @@ public class PSLParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof PSLListener ) ((PSLListener)listener).exitConjunctive_clause(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PSLVisitor ) return ((PSLVisitor<? extends T>)visitor).visitConjunctive_clause(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final Conjunctive_clauseContext conjunctive_clause() throws RecognitionException {
@@ -941,6 +1009,11 @@ public class PSLParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof PSLListener ) ((PSLListener)listener).exitArithmetic_rule(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PSLVisitor ) return ((PSLVisitor<? extends T>)visitor).visitArithmetic_rule(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final Arithmetic_ruleContext arithmetic_rule() throws RecognitionException {
@@ -948,27 +1021,21 @@ public class PSLParser extends Parser {
 		enterRule(_localctx, 28, RULE_arithmetic_rule);
 		try {
 			setState(139);
-			switch (_input.LA(1)) {
-			case NONNEGATIVE_NUMBER:
+			switch ( getInterpreter().adaptivePredict(_input,12,_ctx) ) {
+			case 1:
 				enterOuterAlt(_localctx, 1);
 				{
 				setState(137);
 				weighted_arithmetic_rule();
 				}
 				break;
-			case COEFF_OPERATOR:
-			case IDENTIFIER:
-			case NUMBER:
-			case PIPE:
-			case LPAREN:
+			case 2:
 				enterOuterAlt(_localctx, 2);
 				{
 				setState(138);
 				unweighted_arithmetic_rule();
 				}
 				break;
-			default:
-				throw new NoViableAltException(this);
 			}
 		}
 		catch (RecognitionException re) {
@@ -989,9 +1056,7 @@ public class PSLParser extends Parser {
 		public Arithmetic_rule_expressionContext arithmetic_rule_expression() {
 			return getRuleContext(Arithmetic_rule_expressionContext.class,0);
 		}
-		public Exponent_expressionContext exponent_expression() {
-			return getRuleContext(Exponent_expressionContext.class,0);
-		}
+		public TerminalNode EXPONENT_EXPRESSION() { return getToken(PSLParser.EXPONENT_EXPRESSION, 0); }
 		public List<Select_statementContext> select_statement() {
 			return getRuleContexts(Select_statementContext.class);
 		}
@@ -1010,6 +1075,11 @@ public class PSLParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof PSLListener ) ((PSLListener)listener).exitWeighted_arithmetic_rule(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PSLVisitor ) return ((PSLVisitor<? extends T>)visitor).visitWeighted_arithmetic_rule(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final Weighted_arithmetic_ruleContext weighted_arithmetic_rule() throws RecognitionException {
@@ -1025,10 +1095,10 @@ public class PSLParser extends Parser {
 			arithmetic_rule_expression();
 			setState(144);
 			_la = _input.LA(1);
-			if (_la==SYMMETRIC) {
+			if (_la==EXPONENT_EXPRESSION) {
 				{
 				setState(143);
-				exponent_expression();
+				match(EXPONENT_EXPRESSION);
 				}
 			}
 
@@ -1081,6 +1151,11 @@ public class PSLParser extends Parser {
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof PSLListener ) ((PSLListener)listener).exitUnweighted_arithmetic_rule(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PSLVisitor ) return ((PSLVisitor<? extends T>)visitor).visitUnweighted_arithmetic_rule(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -1145,6 +1220,11 @@ public class PSLParser extends Parser {
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof PSLListener ) ((PSLListener)listener).exitArithmetic_rule_expression(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PSLVisitor ) return ((PSLVisitor<? extends T>)visitor).visitArithmetic_rule_expression(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -1230,6 +1310,11 @@ public class PSLParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof PSLListener ) ((PSLListener)listener).exitArithmetic_rule_operand(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PSLVisitor ) return ((PSLVisitor<? extends T>)visitor).visitArithmetic_rule_operand(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final Arithmetic_rule_operandContext arithmetic_rule_operand() throws RecognitionException {
@@ -1244,7 +1329,7 @@ public class PSLParser extends Parser {
 				{
 				setState(181);
 				_la = _input.LA(1);
-				if ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << COEFF_OPERATOR) | (1L << NUMBER) | (1L << PIPE) | (1L << LPAREN))) != 0)) {
+				if ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << MINUS) | (1L << COEFF_OPERATOR) | (1L << NONNEGATIVE_NUMBER) | (1L << PIPE) | (1L << LPAREN))) != 0)) {
 					{
 					setState(177);
 					coefficient(0);
@@ -1327,6 +1412,11 @@ public class PSLParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof PSLListener ) ((PSLListener)listener).exitSum_augmented_atom(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PSLVisitor ) return ((PSLVisitor<? extends T>)visitor).visitSum_augmented_atom(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final Sum_augmented_atomContext sum_augmented_atom() throws RecognitionException {
@@ -1392,7 +1482,9 @@ public class PSLParser extends Parser {
 	}
 
 	public static class CoefficientContext extends ParserRuleContext {
-		public TerminalNode NUMBER() { return getToken(PSLParser.NUMBER, 0); }
+		public NumberContext number() {
+			return getRuleContext(NumberContext.class,0);
+		}
 		public List<TerminalNode> PIPE() { return getTokens(PSLParser.PIPE); }
 		public TerminalNode PIPE(int i) {
 			return getToken(PSLParser.PIPE, i);
@@ -1428,6 +1520,11 @@ public class PSLParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof PSLListener ) ((PSLListener)listener).exitCoefficient(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PSLVisitor ) return ((PSLVisitor<? extends T>)visitor).visitCoefficient(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final CoefficientContext coefficient() throws RecognitionException {
@@ -1448,10 +1545,11 @@ public class PSLParser extends Parser {
 			{
 			setState(230);
 			switch (_input.LA(1)) {
-			case NUMBER:
+			case MINUS:
+			case NONNEGATIVE_NUMBER:
 				{
 				setState(210);
-				match(NUMBER);
+				number();
 				}
 				break;
 			case PIPE:
@@ -1565,6 +1663,11 @@ public class PSLParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof PSLListener ) ((PSLListener)listener).exitSelect_statement(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PSLVisitor ) return ((PSLVisitor<? extends T>)visitor).visitSelect_statement(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final Select_statementContext select_statement() throws RecognitionException {
@@ -1621,6 +1724,11 @@ public class PSLParser extends Parser {
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof PSLListener ) ((PSLListener)listener).exitBool_expression(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PSLVisitor ) return ((PSLVisitor<? extends T>)visitor).visitBool_expression(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -1733,6 +1841,11 @@ public class PSLParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof PSLListener ) ((PSLListener)listener).exitWeight_expression(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PSLVisitor ) return ((PSLVisitor<? extends T>)visitor).visitWeight_expression(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final Weight_expressionContext weight_expression() throws RecognitionException {
@@ -1758,32 +1871,46 @@ public class PSLParser extends Parser {
 		return _localctx;
 	}
 
-	public static class Exponent_expressionContext extends ParserRuleContext {
-		public TerminalNode EXPONENT() { return getToken(PSLParser.EXPONENT, 0); }
-		public Exponent_expressionContext(ParserRuleContext parent, int invokingState) {
+	public static class NumberContext extends ParserRuleContext {
+		public TerminalNode NONNEGATIVE_NUMBER() { return getToken(PSLParser.NONNEGATIVE_NUMBER, 0); }
+		public TerminalNode MINUS() { return getToken(PSLParser.MINUS, 0); }
+		public NumberContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
-		@Override public int getRuleIndex() { return RULE_exponent_expression; }
+		@Override public int getRuleIndex() { return RULE_number; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof PSLListener ) ((PSLListener)listener).enterExponent_expression(this);
+			if ( listener instanceof PSLListener ) ((PSLListener)listener).enterNumber(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof PSLListener ) ((PSLListener)listener).exitExponent_expression(this);
+			if ( listener instanceof PSLListener ) ((PSLListener)listener).exitNumber(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PSLVisitor ) return ((PSLVisitor<? extends T>)visitor).visitNumber(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
-	public final Exponent_expressionContext exponent_expression() throws RecognitionException {
-		Exponent_expressionContext _localctx = new Exponent_expressionContext(_ctx, getState());
-		enterRule(_localctx, 48, RULE_exponent_expression);
+	public final NumberContext number() throws RecognitionException {
+		NumberContext _localctx = new NumberContext(_ctx, getState());
+		enterRule(_localctx, 48, RULE_number);
+		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(268);
-			match(SYMMETRIC);
 			setState(269);
-			match(EXPONENT);
+			_la = _input.LA(1);
+			if (_la==MINUS) {
+				{
+				setState(268);
+				match(MINUS);
+				}
+			}
+
+			setState(271);
+			match(NONNEGATIVE_NUMBER);
 			}
 		}
 		catch (RecognitionException re) {
@@ -1824,7 +1951,7 @@ public class PSLParser extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\3\u0430\ud6d1\u8206\uad2d\u4417\uaef1\u8d80\uaadd\3,\u0112\4\2\t\2\4"+
+		"\3\u0430\ud6d1\u8206\uad2d\u4417\uaef1\u8d80\uaadd\3+\u0114\4\2\t\2\4"+
 		"\3\t\3\4\4\t\4\4\5\t\5\4\6\t\6\4\7\t\7\4\b\t\b\4\t\t\t\4\n\t\n\4\13\t"+
 		"\13\4\f\t\f\4\r\t\r\4\16\t\16\4\17\t\17\4\20\t\20\4\21\t\21\4\22\t\22"+
 		"\4\23\t\23\4\24\t\24\4\25\t\25\4\26\t\26\4\27\t\27\4\30\t\30\4\31\t\31"+
@@ -1846,75 +1973,76 @@ public class PSLParser extends Parser {
 		"\26\7\26\u00ee\n\26\f\26\16\26\u00f1\13\26\3\27\3\27\3\27\3\27\3\27\3"+
 		"\27\3\30\3\30\3\30\3\30\3\30\3\30\5\30\u00ff\n\30\3\30\3\30\3\30\3\30"+
 		"\3\30\3\30\7\30\u0107\n\30\f\30\16\30\u010a\13\30\3\31\3\31\3\31\3\32"+
-		"\3\32\3\32\3\32\2\4*.\33\2\4\6\b\n\f\16\20\22\24\26\30\32\34\36 \"$&("+
-		"*,.\60\62\2\2\u011a\2\65\3\2\2\2\4;\3\2\2\2\6=\3\2\2\2\bO\3\2\2\2\nT\3"+
-		"\2\2\2\fX\3\2\2\2\16Z\3\2\2\2\20b\3\2\2\2\22f\3\2\2\2\24h\3\2\2\2\26m"+
-		"\3\2\2\2\30y\3\2\2\2\32{\3\2\2\2\34\u0083\3\2\2\2\36\u008d\3\2\2\2 \u008f"+
-		"\3\2\2\2\"\u009a\3\2\2\2$\u00a2\3\2\2\2&\u00bf\3\2\2\2(\u00c1\3\2\2\2"+
-		"*\u00e8\3\2\2\2,\u00f2\3\2\2\2.\u00fe\3\2\2\2\60\u010b\3\2\2\2\62\u010e"+
-		"\3\2\2\2\64\66\5\4\3\2\65\64\3\2\2\2\66\67\3\2\2\2\67\65\3\2\2\2\678\3"+
-		"\2\2\28\3\3\2\2\29<\5\22\n\2:<\5\36\20\2;9\3\2\2\2;:\3\2\2\2<\5\3\2\2"+
-		"\2=>\7\32\2\2>\7\3\2\2\2?@\5\6\4\2@A\7!\2\2AF\5\f\7\2BC\7\36\2\2CE\5\f"+
-		"\7\2DB\3\2\2\2EH\3\2\2\2FD\3\2\2\2FG\3\2\2\2GI\3\2\2\2HF\3\2\2\2IJ\7\""+
-		"\2\2JP\3\2\2\2KL\5\f\7\2LM\7\t\2\2MN\5\f\7\2NP\3\2\2\2O?\3\2\2\2OK\3\2"+
-		"\2\2P\t\3\2\2\2QU\5\b\5\2RS\7\4\2\2SU\5\n\6\2TQ\3\2\2\2TR\3\2\2\2U\13"+
-		"\3\2\2\2VY\5\16\b\2WY\5\20\t\2XV\3\2\2\2XW\3\2\2\2Y\r\3\2\2\2Z[\7\32\2"+
-		"\2[\17\3\2\2\2\\]\7\'\2\2]^\7\32\2\2^c\7\'\2\2_`\7(\2\2`a\7\32\2\2ac\7"+
-		"(\2\2b\\\3\2\2\2b_\3\2\2\2c\21\3\2\2\2dg\5\24\13\2eg\5\26\f\2fd\3\2\2"+
-		"\2fe\3\2\2\2g\23\3\2\2\2hi\5\60\31\2ik\5\30\r\2jl\5\62\32\2kj\3\2\2\2"+
-		"kl\3\2\2\2l\25\3\2\2\2mn\5\30\r\2no\7\35\2\2o\27\3\2\2\2pz\5\32\16\2q"+
-		"r\5\32\16\2rs\7\b\2\2st\5\34\17\2tz\3\2\2\2uv\5\34\17\2vw\7\7\2\2wx\5"+
-		"\32\16\2xz\3\2\2\2yp\3\2\2\2yq\3\2\2\2yu\3\2\2\2z\31\3\2\2\2{\u0080\5"+
-		"\n\6\2|}\7\6\2\2}\177\5\n\6\2~|\3\2\2\2\177\u0082\3\2\2\2\u0080~\3\2\2"+
-		"\2\u0080\u0081\3\2\2\2\u0081\33\3\2\2\2\u0082\u0080\3\2\2\2\u0083\u0088"+
-		"\5\n\6\2\u0084\u0085\7\5\2\2\u0085\u0087\5\n\6\2\u0086\u0084\3\2\2\2\u0087"+
-		"\u008a\3\2\2\2\u0088\u0086\3\2\2\2\u0088\u0089\3\2\2\2\u0089\35\3\2\2"+
-		"\2\u008a\u0088\3\2\2\2\u008b\u008e\5 \21\2\u008c\u008e\5\"\22\2\u008d"+
-		"\u008b\3\2\2\2\u008d\u008c\3\2\2\2\u008e\37\3\2\2\2\u008f\u0090\5\60\31"+
-		"\2\u0090\u0092\5$\23\2\u0091\u0093\5\62\32\2\u0092\u0091\3\2\2\2\u0092"+
-		"\u0093\3\2\2\2\u0093\u0097\3\2\2\2\u0094\u0096\5,\27\2\u0095\u0094\3\2"+
-		"\2\2\u0096\u0099\3\2\2\2\u0097\u0095\3\2\2\2\u0097\u0098\3\2\2\2\u0098"+
-		"!\3\2\2\2\u0099\u0097\3\2\2\2\u009a\u009b\5$\23\2\u009b\u009f\7\35\2\2"+
+		"\5\32\u0110\n\32\3\32\3\32\3\32\2\4*.\33\2\4\6\b\n\f\16\20\22\24\26\30"+
+		"\32\34\36 \"$&(*,.\60\62\2\2\u011d\2\65\3\2\2\2\4;\3\2\2\2\6=\3\2\2\2"+
+		"\bO\3\2\2\2\nT\3\2\2\2\fX\3\2\2\2\16Z\3\2\2\2\20b\3\2\2\2\22f\3\2\2\2"+
+		"\24h\3\2\2\2\26m\3\2\2\2\30y\3\2\2\2\32{\3\2\2\2\34\u0083\3\2\2\2\36\u008d"+
+		"\3\2\2\2 \u008f\3\2\2\2\"\u009a\3\2\2\2$\u00a2\3\2\2\2&\u00bf\3\2\2\2"+
+		"(\u00c1\3\2\2\2*\u00e8\3\2\2\2,\u00f2\3\2\2\2.\u00fe\3\2\2\2\60\u010b"+
+		"\3\2\2\2\62\u010f\3\2\2\2\64\66\5\4\3\2\65\64\3\2\2\2\66\67\3\2\2\2\67"+
+		"\65\3\2\2\2\678\3\2\2\28\3\3\2\2\29<\5\22\n\2:<\5\36\20\2;9\3\2\2\2;:"+
+		"\3\2\2\2<\5\3\2\2\2=>\7\31\2\2>\7\3\2\2\2?@\5\6\4\2@A\7 \2\2AF\5\f\7\2"+
+		"BC\7\35\2\2CE\5\f\7\2DB\3\2\2\2EH\3\2\2\2FD\3\2\2\2FG\3\2\2\2GI\3\2\2"+
+		"\2HF\3\2\2\2IJ\7!\2\2JP\3\2\2\2KL\5\f\7\2LM\7\t\2\2MN\5\f\7\2NP\3\2\2"+
+		"\2O?\3\2\2\2OK\3\2\2\2P\t\3\2\2\2QU\5\b\5\2RS\7\4\2\2SU\5\n\6\2TQ\3\2"+
+		"\2\2TR\3\2\2\2U\13\3\2\2\2VY\5\16\b\2WY\5\20\t\2XV\3\2\2\2XW\3\2\2\2Y"+
+		"\r\3\2\2\2Z[\7\31\2\2[\17\3\2\2\2\\]\7&\2\2]^\7\31\2\2^c\7&\2\2_`\7\'"+
+		"\2\2`a\7\31\2\2ac\7\'\2\2b\\\3\2\2\2b_\3\2\2\2c\21\3\2\2\2dg\5\24\13\2"+
+		"eg\5\26\f\2fd\3\2\2\2fe\3\2\2\2g\23\3\2\2\2hi\5\60\31\2ik\5\30\r\2jl\7"+
+		"\3\2\2kj\3\2\2\2kl\3\2\2\2l\25\3\2\2\2mn\5\30\r\2no\7\33\2\2o\27\3\2\2"+
+		"\2pz\5\32\16\2qr\5\32\16\2rs\7\b\2\2st\5\34\17\2tz\3\2\2\2uv\5\34\17\2"+
+		"vw\7\7\2\2wx\5\32\16\2xz\3\2\2\2yp\3\2\2\2yq\3\2\2\2yu\3\2\2\2z\31\3\2"+
+		"\2\2{\u0080\5\n\6\2|}\7\6\2\2}\177\5\n\6\2~|\3\2\2\2\177\u0082\3\2\2\2"+
+		"\u0080~\3\2\2\2\u0080\u0081\3\2\2\2\u0081\33\3\2\2\2\u0082\u0080\3\2\2"+
+		"\2\u0083\u0088\5\n\6\2\u0084\u0085\7\5\2\2\u0085\u0087\5\n\6\2\u0086\u0084"+
+		"\3\2\2\2\u0087\u008a\3\2\2\2\u0088\u0086\3\2\2\2\u0088\u0089\3\2\2\2\u0089"+
+		"\35\3\2\2\2\u008a\u0088\3\2\2\2\u008b\u008e\5 \21\2\u008c\u008e\5\"\22"+
+		"\2\u008d\u008b\3\2\2\2\u008d\u008c\3\2\2\2\u008e\37\3\2\2\2\u008f\u0090"+
+		"\5\60\31\2\u0090\u0092\5$\23\2\u0091\u0093\7\3\2\2\u0092\u0091\3\2\2\2"+
+		"\u0092\u0093\3\2\2\2\u0093\u0097\3\2\2\2\u0094\u0096\5,\27\2\u0095\u0094"+
+		"\3\2\2\2\u0096\u0099\3\2\2\2\u0097\u0095\3\2\2\2\u0097\u0098\3\2\2\2\u0098"+
+		"!\3\2\2\2\u0099\u0097\3\2\2\2\u009a\u009b\5$\23\2\u009b\u009f\7\33\2\2"+
 		"\u009c\u009e\5,\27\2\u009d\u009c\3\2\2\2\u009e\u00a1\3\2\2\2\u009f\u009d"+
 		"\3\2\2\2\u009f\u00a0\3\2\2\2\u00a0#\3\2\2\2\u00a1\u009f\3\2\2\2\u00a2"+
-		"\u00a7\5&\24\2\u00a3\u00a4\7\22\2\2\u00a4\u00a6\5&\24\2\u00a5\u00a3\3"+
+		"\u00a7\5&\24\2\u00a3\u00a4\7\21\2\2\u00a4\u00a6\5&\24\2\u00a5\u00a3\3"+
 		"\2\2\2\u00a6\u00a9\3\2\2\2\u00a7\u00a5\3\2\2\2\u00a7\u00a8\3\2\2\2\u00a8"+
-		"\u00aa\3\2\2\2\u00a9\u00a7\3\2\2\2\u00aa\u00ab\7\r\2\2\u00ab\u00b0\5&"+
-		"\24\2\u00ac\u00ad\7\22\2\2\u00ad\u00af\5&\24\2\u00ae\u00ac\3\2\2\2\u00af"+
+		"\u00aa\3\2\2\2\u00a9\u00a7\3\2\2\2\u00aa\u00ab\7\f\2\2\u00ab\u00b0\5&"+
+		"\24\2\u00ac\u00ad\7\21\2\2\u00ad\u00af\5&\24\2\u00ae\u00ac\3\2\2\2\u00af"+
 		"\u00b2\3\2\2\2\u00b0\u00ae\3\2\2\2\u00b0\u00b1\3\2\2\2\u00b1%\3\2\2\2"+
-		"\u00b2\u00b0\3\2\2\2\u00b3\u00b5\5*\26\2\u00b4\u00b6\7\25\2\2\u00b5\u00b4"+
+		"\u00b2\u00b0\3\2\2\2\u00b3\u00b5\5*\26\2\u00b4\u00b6\7\24\2\2\u00b5\u00b4"+
 		"\3\2\2\2\u00b5\u00b6\3\2\2\2\u00b6\u00b8\3\2\2\2\u00b7\u00b3\3\2\2\2\u00b7"+
-		"\u00b8\3\2\2\2\u00b8\u00b9\3\2\2\2\u00b9\u00bc\5(\25\2\u00ba\u00bb\7\26"+
+		"\u00b8\3\2\2\2\u00b8\u00b9\3\2\2\2\u00b9\u00bc\5(\25\2\u00ba\u00bb\7\25"+
 		"\2\2\u00bb\u00bd\5*\26\2\u00bc\u00ba\3\2\2\2\u00bc\u00bd\3\2\2\2\u00bd"+
 		"\u00c0\3\2\2\2\u00be\u00c0\5*\26\2\u00bf\u00b7\3\2\2\2\u00bf\u00be\3\2"+
-		"\2\2\u00c0\'\3\2\2\2\u00c1\u00c2\5\6\4\2\u00c2\u00c4\7!\2\2\u00c3\u00c5"+
-		"\7\23\2\2\u00c4\u00c3\3\2\2\2\u00c4\u00c5\3\2\2\2\u00c5\u00c6\3\2\2\2"+
-		"\u00c6\u00ce\5\16\b\2\u00c7\u00c9\7\36\2\2\u00c8\u00ca\7\23\2\2\u00c9"+
+		"\2\2\u00c0\'\3\2\2\2\u00c1\u00c2\5\6\4\2\u00c2\u00c4\7 \2\2\u00c3\u00c5"+
+		"\7\22\2\2\u00c4\u00c3\3\2\2\2\u00c4\u00c5\3\2\2\2\u00c5\u00c6\3\2\2\2"+
+		"\u00c6\u00ce\5\16\b\2\u00c7\u00c9\7\35\2\2\u00c8\u00ca\7\22\2\2\u00c9"+
 		"\u00c8\3\2\2\2\u00c9\u00ca\3\2\2\2\u00ca\u00cb\3\2\2\2\u00cb\u00cd\5\16"+
 		"\b\2\u00cc\u00c7\3\2\2\2\u00cd\u00d0\3\2\2\2\u00ce\u00cc\3\2\2\2\u00ce"+
-		"\u00cf\3\2\2\2\u00cf\u00d1\3\2\2\2\u00d0\u00ce\3\2\2\2\u00d1\u00d2\7\""+
-		"\2\2\u00d2)\3\2\2\2\u00d3\u00d4\b\26\1\2\u00d4\u00e9\7\34\2\2\u00d5\u00d6"+
-		"\7 \2\2\u00d6\u00d7\5\16\b\2\u00d7\u00d8\7 \2\2\u00d8\u00e9\3\2\2\2\u00d9"+
-		"\u00da\7\27\2\2\u00da\u00db\7%\2\2\u00db\u00de\5*\26\2\u00dc\u00dd\7\36"+
-		"\2\2\u00dd\u00df\5*\26\2\u00de\u00dc\3\2\2\2\u00df\u00e0\3\2\2\2\u00e0"+
-		"\u00de\3\2\2\2\u00e0\u00e1\3\2\2\2\u00e1\u00e2\3\2\2\2\u00e2\u00e3\7&"+
-		"\2\2\u00e3\u00e9\3\2\2\2\u00e4\u00e5\7!\2\2\u00e5\u00e6\5*\26\2\u00e6"+
-		"\u00e7\7\"\2\2\u00e7\u00e9\3\2\2\2\u00e8\u00d3\3\2\2\2\u00e8\u00d5\3\2"+
+		"\u00cf\3\2\2\2\u00cf\u00d1\3\2\2\2\u00d0\u00ce\3\2\2\2\u00d1\u00d2\7!"+
+		"\2\2\u00d2)\3\2\2\2\u00d3\u00d4\b\26\1\2\u00d4\u00e9\5\62\32\2\u00d5\u00d6"+
+		"\7\37\2\2\u00d6\u00d7\5\16\b\2\u00d7\u00d8\7\37\2\2\u00d8\u00e9\3\2\2"+
+		"\2\u00d9\u00da\7\26\2\2\u00da\u00db\7$\2\2\u00db\u00de\5*\26\2\u00dc\u00dd"+
+		"\7\35\2\2\u00dd\u00df\5*\26\2\u00de\u00dc\3\2\2\2\u00df\u00e0\3\2\2\2"+
+		"\u00e0\u00de\3\2\2\2\u00e0\u00e1\3\2\2\2\u00e1\u00e2\3\2\2\2\u00e2\u00e3"+
+		"\7%\2\2\u00e3\u00e9\3\2\2\2\u00e4\u00e5\7 \2\2\u00e5\u00e6\5*\26\2\u00e6"+
+		"\u00e7\7!\2\2\u00e7\u00e9\3\2\2\2\u00e8\u00d3\3\2\2\2\u00e8\u00d5\3\2"+
 		"\2\2\u00e8\u00d9\3\2\2\2\u00e8\u00e4\3\2\2\2\u00e9\u00ef\3\2\2\2\u00ea"+
-		"\u00eb\f\5\2\2\u00eb\u00ec\7\21\2\2\u00ec\u00ee\5*\26\6\u00ed\u00ea\3"+
+		"\u00eb\f\5\2\2\u00eb\u00ec\7\20\2\2\u00ec\u00ee\5*\26\6\u00ed\u00ea\3"+
 		"\2\2\2\u00ee\u00f1\3\2\2\2\u00ef\u00ed\3\2\2\2\u00ef\u00f0\3\2\2\2\u00f0"+
-		"+\3\2\2\2\u00f1\u00ef\3\2\2\2\u00f2\u00f3\7#\2\2\u00f3\u00f4\5\16\b\2"+
-		"\u00f4\u00f5\7\37\2\2\u00f5\u00f6\5.\30\2\u00f6\u00f7\7$\2\2\u00f7-\3"+
-		"\2\2\2\u00f8\u00f9\b\30\1\2\u00f9\u00ff\5\n\6\2\u00fa\u00fb\7!\2\2\u00fb"+
-		"\u00fc\5.\30\2\u00fc\u00fd\7\"\2\2\u00fd\u00ff\3\2\2\2\u00fe\u00f8\3\2"+
+		"+\3\2\2\2\u00f1\u00ef\3\2\2\2\u00f2\u00f3\7\"\2\2\u00f3\u00f4\5\16\b\2"+
+		"\u00f4\u00f5\7\36\2\2\u00f5\u00f6\5.\30\2\u00f6\u00f7\7#\2\2\u00f7-\3"+
+		"\2\2\2\u00f8\u00f9\b\30\1\2\u00f9\u00ff\5\n\6\2\u00fa\u00fb\7 \2\2\u00fb"+
+		"\u00fc\5.\30\2\u00fc\u00fd\7!\2\2\u00fd\u00ff\3\2\2\2\u00fe\u00f8\3\2"+
 		"\2\2\u00fe\u00fa\3\2\2\2\u00ff\u0108\3\2\2\2\u0100\u0101\f\4\2\2\u0101"+
 		"\u0102\7\6\2\2\u0102\u0107\5.\30\5\u0103\u0104\f\3\2\2\u0104\u0105\7\5"+
 		"\2\2\u0105\u0107\5.\30\4\u0106\u0100\3\2\2\2\u0106\u0103\3\2\2\2\u0107"+
 		"\u010a\3\2\2\2\u0108\u0106\3\2\2\2\u0108\u0109\3\2\2\2\u0109/\3\2\2\2"+
-		"\u010a\u0108\3\2\2\2\u010b\u010c\7\33\2\2\u010c\u010d\7\37\2\2\u010d\61"+
-		"\3\2\2\2\u010e\u010f\7\f\2\2\u010f\u0110\7\3\2\2\u0110\63\3\2\2\2!\67"+
-		";FOTXbfky\u0080\u0088\u008d\u0092\u0097\u009f\u00a7\u00b0\u00b5\u00b7"+
-		"\u00bc\u00bf\u00c4\u00c9\u00ce\u00e0\u00e8\u00ef\u00fe\u0106\u0108";
+		"\u010a\u0108\3\2\2\2\u010b\u010c\7\32\2\2\u010c\u010d\7\36\2\2\u010d\61"+
+		"\3\2\2\2\u010e\u0110\7\23\2\2\u010f\u010e\3\2\2\2\u010f\u0110\3\2\2\2"+
+		"\u0110\u0111\3\2\2\2\u0111\u0112\7\32\2\2\u0112\63\3\2\2\2\"\67;FOTXb"+
+		"fky\u0080\u0088\u008d\u0092\u0097\u009f\u00a7\u00b0\u00b5\u00b7\u00bc"+
+		"\u00bf\u00c4\u00c9\u00ce\u00e0\u00e8\u00ef\u00fe\u0106\u0108\u010f";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {
