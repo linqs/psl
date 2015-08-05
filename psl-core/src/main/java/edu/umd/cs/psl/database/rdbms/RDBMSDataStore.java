@@ -30,6 +30,8 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import edu.umd.cs.psl.model.argument.*;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,12 +51,6 @@ import edu.umd.cs.psl.database.ReadOnlyDatabase;
 import edu.umd.cs.psl.database.loading.Inserter;
 import edu.umd.cs.psl.database.loading.Updater;
 import edu.umd.cs.psl.database.rdbms.driver.DatabaseDriver;
-import edu.umd.cs.psl.model.argument.ArgumentType;
-import edu.umd.cs.psl.model.argument.DoubleAttribute;
-import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.argument.IntegerAttribute;
-import edu.umd.cs.psl.model.argument.StringAttribute;
-import edu.umd.cs.psl.model.argument.UniqueID;
 import edu.umd.cs.psl.model.function.ExternalFunction;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.PredicateFactory;
@@ -301,29 +297,35 @@ public class RDBMSDataStore implements DataStore {
 		for (int i=0; i < pi.argCols.length; i++) {
 			String colName = pi.argCols[i];
 			String typeName;
-			
+
 			switch (pi.predicate.getArgumentType(i)) {
-			case Double:
-				typeName = "DOUBLE";
-				break;
-			case Integer:
-				typeName = "INT";
-				break;
-			case String:
-				typeName = "MEDIUMTEXT";
-				colName = dbDriver.castStringWithModifiersForIndexing(colName);
-				break;
-			case UniqueID:
-				hashIndexes.add(colName);
-				if (stringUniqueIDs)
-					typeName = "VARCHAR(255)";
-				else
+				case Double:
+					typeName = "DOUBLE";
+					break;
+				case Integer:
 					typeName = "INT";
-				break;
-			default:
-				throw new IllegalStateException("Unknown ArgumentType for predicate " + p.getName());
+					break;
+				case String:
+					typeName = "MEDIUMTEXT";
+					colName = dbDriver.castStringWithModifiersForIndexing(colName);
+					break;
+				case Long:
+					typeName = "BIGINT";
+					break;
+				case Date:
+					typeName = "DATE";
+					break;
+				case UniqueID:
+					hashIndexes.add(colName);
+					if (stringUniqueIDs)
+						typeName = "VARCHAR(255)";
+					else
+						typeName = "INT";
+					break;
+				default:
+					throw new IllegalStateException("Unknown ArgumentType for predicate " + p.getName());
 			}
-			
+
 			keyColumns.append(colName).append(", ");
 			q.addCustomColumn(pi.argCols[i] + " " + typeName, ColumnConstraint.NOT_NULL);
 		}
@@ -596,26 +598,32 @@ public class RDBMSDataStore implements DataStore {
 		for (int i=0; i < args.length; i++) {
 			if (args[i]==null)
 				throw new IllegalArgumentException("Argument cannot be null!");
-			
+
 			ArgumentType t = extFun.getArgumentTypes()[i];
 			switch (t) {
-			case Double:
-				arguments[i] = new DoubleAttribute(Double.parseDouble(args[i]));
-				break;
-			case Integer:
-				arguments[i] = new IntegerAttribute(Integer.parseInt(args[i]));
-				break;
-			case String:
-				arguments[i] = new StringAttribute(args[i]);
-				break;
-			case UniqueID:
-				arguments[i] = db.getUniqueID(args[i]);
-				break;
-			default:
-				throw new IllegalArgumentException("Unknown argument type: " + t.getName());
+				case Double:
+					arguments[i] = new DoubleAttribute(Double.parseDouble(args[i]));
+					break;
+				case Integer:
+					arguments[i] = new IntegerAttribute(Integer.parseInt(args[i]));
+					break;
+				case String:
+					arguments[i] = new StringAttribute(args[i]);
+					break;
+				case Long:
+					arguments[i] = new LongAttribute(Long.parseLong(args[i]));
+					break;
+				case Date:
+					arguments[i] = new DateAttribute(new DateTime(args[i]));
+					break;
+				case UniqueID:
+					arguments[i] = db.getUniqueID(args[i]);
+					break;
+				default:
+					throw new IllegalArgumentException("Unknown argument type: " + t.getName());
 			}
 		}
-		
+
 		return extFun.getValue(db, arguments);
 	}
 }

@@ -64,9 +64,39 @@ public enum ArgumentType {
 			return (term instanceof DoubleAttribute);
 		}
 	},
+
+	/**
+	 * A {@link Long} argument.
+	 */
+	Long {
+		@Override
+		public String getName() {
+			return "Long";
+		}
+
+		@Override
+		public boolean isInstance(GroundTerm term) {
+			return term instanceof LongAttribute;
+		}
+	},
+
+	/**
+	 * A {@link org.joda.time.DateTime} argument.
+	 */
+	Date {
+		@Override
+		public String getName() {
+			return "Date";
+		}
+
+		@Override
+		public boolean isInstance(GroundTerm term) {
+			return term instanceof DateAttribute;
+		}
+	},
 	
 	/**
-	 * A {@link edu.umd.cs.psl.database.UniqueID} argument.
+	 * A {@link UniqueID} argument.
 	 */
 	UniqueID {
 		
