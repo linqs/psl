@@ -1,4 +1,4 @@
-package edu.umd.cs.psl.application.topicmodel;
+package edu.umd.cs.psl.application.topicmodel.reasoner.admm;
 
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.reasoner.Reasoner;
@@ -9,7 +9,7 @@ import edu.umd.cs.psl.reasoner.ReasonerFactory;
  * @author Jimmy Foulds <jfoulds@ucsc.edu>
  *
  */
-public class LtmADMMReasonerFactory implements ReasonerFactory {
+public class LtnADMMReasonerFactory implements ReasonerFactory {
 	
 	@Override
 	public Reasoner getReasoner(ConfigBundle config)

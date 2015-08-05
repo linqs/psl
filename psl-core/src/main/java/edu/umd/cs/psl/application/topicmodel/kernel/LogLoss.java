@@ -1,4 +1,4 @@
-package edu.umd.cs.psl.model.kernel.logloss;
+package edu.umd.cs.psl.application.topicmodel.kernel;
 
 import edu.umd.cs.psl.application.groundkernelstore.GroundKernelStore;
 import edu.umd.cs.psl.model.atom.AtomEvent;
@@ -7,7 +7,10 @@ import edu.umd.cs.psl.model.atom.AtomManager;
 import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.model.parameters.Parameters;
 
-/** First order log loss kernels, useful when PSL variables are given a probabilistic interpretation, as in latent topic networks.
+/**
+ * First order log loss kernels, useful when PSL variables are given a
+ * probabilistic interpretation, as in latent topic networks.
+ * 
  * @author Jimmy Foulds <jfoulds@ucsc.edu>
  */
 public class LogLoss implements Kernel {

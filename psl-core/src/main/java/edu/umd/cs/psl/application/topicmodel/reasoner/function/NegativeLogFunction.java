@@ -14,9 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.reasoner.function;
+package edu.umd.cs.psl.application.topicmodel.reasoner.function;
 
-import java.util.*;
+import java.util.Map;
+
+import edu.umd.cs.psl.reasoner.function.FunctionSum;
+import edu.umd.cs.psl.reasoner.function.FunctionSummand;
+import edu.umd.cs.psl.reasoner.function.FunctionTerm;
+import edu.umd.cs.psl.reasoner.function.FunctionVariable;
 
 /**
  * Computes minus the sum of the logs of the terms of {@link FunctionSummand FunctionSummands}.

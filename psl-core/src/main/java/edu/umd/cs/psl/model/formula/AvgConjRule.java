@@ -16,21 +16,22 @@
  */
 package edu.umd.cs.psl.model.formula;
 
-import java.util.*;
-
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.lang.builder.HashCodeBuilder;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import edu.umd.cs.psl.model.argument.VariableTypeMap;
 import edu.umd.cs.psl.model.atom.Atom;
-import edu.umd.cs.psl.model.atom.GroundAtom;
 
-/** A PSL rule containing averaging conjunctions.  These rules are restricted to implications where the body
- * is a Lukasiewicz conjunction of averaging conjunctions of literals, and the head is a Lukasiewicz disjunction
- * of averaging conjunctions of literals.
+/**
+ * A PSL rule containing averaging conjunctions. These rules are restricted to
+ * implications where the body is a Lukasiewicz conjunction of averaging
+ * conjunctions of literals, and the head is a Lukasiewicz disjunction of
+ * averaging conjunctions of literals.
  * 
  * @author Jimmy Foulds <jfoulds@ucsc.edu>
- *
  */
 public class AvgConjRule implements Formula {
 

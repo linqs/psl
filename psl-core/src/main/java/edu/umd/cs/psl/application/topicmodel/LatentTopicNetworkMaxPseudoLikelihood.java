@@ -25,9 +25,7 @@ import edu.umd.cs.psl.application.learning.weight.maxlikelihood.VotedPerceptron;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.database.Database;
-import edu.umd.cs.psl.database.rdbms.RDBMSUniqueIntID;
 import edu.umd.cs.psl.model.Model;
-import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
@@ -37,7 +35,8 @@ import edu.umd.cs.psl.util.model.ConstraintBlocker;
 
 /**
  * Learns weights by optimizing the pseudo-log-likelihood of the data.
- * Modified version of MaxPseudoLikelihood which takes the LTN's log losses into account by importance sampling from the implied Dirichlet distribution.
+ * Modified version of MaxPseudoLikelihood which takes the LTN's log losses
+ * into account by importance sampling from the implied Dirichlet distribution.
  * 
  * @author Ben London <blondon@cs.umd.edu>
  * @author Jimmy Foulds <jfoulds@ucsc.edu>

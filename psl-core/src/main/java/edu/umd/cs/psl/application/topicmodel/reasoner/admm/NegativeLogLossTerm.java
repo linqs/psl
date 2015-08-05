@@ -14,7 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.reasoner.admm;
+package edu.umd.cs.psl.application.topicmodel.reasoner.admm;
+
+import edu.umd.cs.psl.reasoner.admm.ADMMObjectiveTerm;
+import edu.umd.cs.psl.reasoner.admm.ADMMReasoner;
+import edu.umd.cs.psl.reasoner.admm.WeightedObjectiveTerm;
 
 /**
  * {@link ADMMReasoner} objective term of the form <br />

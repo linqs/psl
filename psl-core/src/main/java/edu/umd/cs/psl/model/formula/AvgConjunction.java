@@ -18,10 +18,10 @@ package edu.umd.cs.psl.model.formula;
 
 import java.util.ArrayList;
 
-/** An averaging conjunction formula.
+/**
+ * An averaging conjunction formula.
  * 
  * @author Jimmy Foulds <jfoulds@ucsc.edu>
- *
  */
 public class AvgConjunction extends AbstractBranchFormula {
 

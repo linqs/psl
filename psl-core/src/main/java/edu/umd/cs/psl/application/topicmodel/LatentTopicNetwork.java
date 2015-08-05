@@ -25,46 +25,42 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import edu.umd.cs.psl.application.ModelApplication;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import edu.umd.cs.psl.application.learning.weight.maxlikelihood.MaxPseudoLikelihood;
+import edu.umd.cs.psl.application.ModelApplication;
+import edu.umd.cs.psl.application.topicmodel.kernel.LDAgroundLogLoss;
+import edu.umd.cs.psl.application.topicmodel.reasoner.admm.LatentTopicNetworkADMMReasoner;
 import edu.umd.cs.psl.application.util.GroundKernels;
 import edu.umd.cs.psl.application.util.Grounding;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
-import edu.umd.cs.psl.config.Factory;
 import edu.umd.cs.psl.database.DataStore;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.database.DatabasePopulator;
 import edu.umd.cs.psl.database.Partition;
 import edu.umd.cs.psl.database.loading.Inserter;
-import edu.umd.cs.psl.database.loading.Updater;
 import edu.umd.cs.psl.evaluation.result.FullInferenceResult;
 import edu.umd.cs.psl.evaluation.result.memory.MemoryFullInferenceResult;
 import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.argument.IntegerAttribute;
 import edu.umd.cs.psl.model.argument.UniqueID;
 import edu.umd.cs.psl.model.atom.GroundAtom;
-import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.PersistedAtomManager;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
-import edu.umd.cs.psl.model.kernel.logloss.GroundLogLoss;
 import edu.umd.cs.psl.model.parameters.PositiveWeight;
-import edu.umd.cs.psl.model.parameters.Weight;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.PredicateFactory;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
 import edu.umd.cs.psl.reasoner.Reasoner;
-import edu.umd.cs.psl.reasoner.ReasonerFactory;
-import edu.umd.cs.psl.reasoner.admm.ADMMReasonerFactory;
 import edu.umd.cs.psl.util.database.Queries;
 
-/** Latent Topic Networks, a framework which jointly reasons over a PSL model with a topic model, as published in:
- * J.R. Foulds, S.H. Kumar, L. Getoor (2015). Latent Topic Networks: A Versatile Probabilistic Programming Framework for Topic Models.
+/**
+ * Latent Topic Networks, a framework which jointly reasons over a PSL model
+ * with a topic model, as published in:
+ * 
+ * J.R. Foulds, S.H. Kumar, L. Getoor (2015). Latent Topic Networks:
+ * A Versatile Probabilistic Programming Framework for Topic Models.
  * Proceedings of The 32nd International Conference on Machine Learning, pages 777-786.
  * 
  * @author Jimmy Foulds <jfoulds@ucsc.edu>
@@ -573,7 +569,6 @@ public class LatentTopicNetwork implements ModelApplication {
 		
 		//TODO do I need separate sets for theta and phi variables?
 		Set<StandardPredicate> setX = new HashSet<StandardPredicate>(Arrays.asList(this.X));
-		Set<StandardPredicate> setY = new HashSet<StandardPredicate>(Arrays.asList(this.Y));
 		Set<StandardPredicate> setZ = new HashSet<StandardPredicate>(Arrays.asList(this.Z));
 		
 		if (hingeLossTheta) {

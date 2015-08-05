@@ -24,9 +24,7 @@ import edu.umd.cs.psl.application.learning.weight.maxlikelihood.VotedPerceptron;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.database.Database;
-import edu.umd.cs.psl.database.rdbms.RDBMSUniqueIntID;
 import edu.umd.cs.psl.model.Model;
-import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
@@ -207,9 +205,6 @@ public class LatentTopicNetworkMaxPseudoLikelihood_Naive extends VotedPerceptron
 							if (rvBlocks[iBlock][iVar].getPredicate() != p) //only Theta or Phi
 								continue;
 							double val = rvBlocks[iBlock][iVar].getValue();
-							GroundTerm[] args = rvBlocks[iBlock][iVar].getArguments();
-							int iInd = ((RDBMSUniqueIntID)args[0]).getID();
-							int jInd = ((RDBMSUniqueIntID)args[1]).getID();
 							logLosses[iSample] += (dirichletParam - 1) * Math.log(val);
 						}
 					}

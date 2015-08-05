@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.model.kernel.logloss;
+package edu.umd.cs.psl.application.topicmodel.kernel;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -22,28 +22,20 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import edu.umd.cs.psl.application.groundkernelstore.GroundKernelStore;
+import edu.umd.cs.psl.application.topicmodel.reasoner.function.NegativeLogFunction;
 import edu.umd.cs.psl.model.atom.Atom;
-import edu.umd.cs.psl.model.atom.AtomEvent;
-import edu.umd.cs.psl.model.atom.AtomEventFramework;
-import edu.umd.cs.psl.model.atom.AtomManager;
 import edu.umd.cs.psl.model.atom.GroundAtom;
-import edu.umd.cs.psl.model.atom.RandomVariableAtom;
-import edu.umd.cs.psl.model.kernel.AbstractKernel;
 import edu.umd.cs.psl.model.kernel.BindingMode;
 import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.parameters.Weight;
-import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
-import edu.umd.cs.psl.reasoner.function.ConstantNumber;
 import edu.umd.cs.psl.reasoner.function.FunctionSummand;
 import edu.umd.cs.psl.reasoner.function.FunctionTerm;
-import edu.umd.cs.psl.reasoner.function.MaxFunction;
-import edu.umd.cs.psl.reasoner.function.MutableAtomFunctionVariable;
-import edu.umd.cs.psl.reasoner.function.NegativeLogFunction;
-import edu.umd.cs.psl.reasoner.function.PowerOfTwo;
 
-/** Ground log loss kernels, useful when PSL variables are given a probabilistic interpretation, as in latent topic networks.
+/**
+ * Ground log loss kernels, useful when PSL variables are given a probabilistic
+ * interpretation, as in latent topic networks.
+ * 
  * @author Jimmy Foulds <jfoulds@ucsc.edu>
  */
 public class GroundLogLoss implements GroundCompatibilityKernel {

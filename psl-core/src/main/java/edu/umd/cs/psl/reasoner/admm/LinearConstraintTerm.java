@@ -32,7 +32,7 @@ public class LinearConstraintTerm extends HyperplaneTerm {
 	
 	private final FunctionComparator comparator;
 	
-	LinearConstraintTerm(ADMMReasoner reasoner, int[] zIndices, double[] coeffs,
+	protected LinearConstraintTerm(ADMMReasoner reasoner, int[] zIndices, double[] coeffs,
 			double constant, FunctionComparator comparator) {
 		super(reasoner, zIndices, coeffs, constant);
 		this.comparator = comparator;
@@ -73,14 +73,5 @@ public class LinearConstraintTerm extends HyperplaneTerm {
 		 * projects onto the hyperplane
 		 */
 		project();
-	}
-	
-	/* A sensible initialization for a constraint on a Dirichlet simplex variable
-	 * for latent topic networks is to set the dual variables to minus the sum of the Dirichlet counts.
-	 */
-	public void initDualVariablesAsDirichlet(double dirichletCoefficientSum) {
-		for (int i = 0; i < y.length; i++) {
-			y[i] = -dirichletCoefficientSum;
-		}
 	}
 }
