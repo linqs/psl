@@ -48,7 +48,7 @@ public class NegativeLogLossTerm extends ADMMObjectiveTerm implements WeightedOb
 		for (int i = 0; i < x.length; i++) {
 			//the updated value is the positive value of the two solutions to a quadratic equation
 			a = reasoner.stepSize;
-			b = (y[i] - a * reasoner.z.get(zIndices[i]));
+			b = (y[i] - a * reasoner.getConsensusVariableValue(zIndices[i]));
 			c = -coeffs[i] * weight;
 			sol1 = (-b + Math.sqrt(b*b - 4 * a * c)) / 2 * a;
 			sol2 = (-b - Math.sqrt(b*b - 4 * a * c)) / 2 * a;

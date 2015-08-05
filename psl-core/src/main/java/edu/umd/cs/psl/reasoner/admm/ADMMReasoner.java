@@ -133,7 +133,7 @@ public class ADMMReasoner implements Reasoner {
 	/** Ordered list of variables for looking up indices in z */
 	protected HashList<AtomFunctionVariable> variables;
 	/** Consensus vector */
-	public List<Double> z;
+	protected List<Double> z;
 	/** Lower bounds on variables */
 	protected List<Double> lb;
 	/** Upper bounds on variables */
@@ -377,6 +377,14 @@ public class ADMMReasoner implements Reasoner {
 			variables.get(zIndex).setValue(term.x[i]);			
 		}
 		return ((GroundCompatibilityKernel) gk).getIncompatibility();
+	}
+	
+	public double getConsensusVariableValue(int index) {
+		if (z == null) {
+			throw new IllegalStateException("Consensus variables have not been initialized. "
+					+ "Must call optimize() first.");
+		}
+		return z.get(index);
 	}
 	
 	private class ADMMTask implements Runnable {

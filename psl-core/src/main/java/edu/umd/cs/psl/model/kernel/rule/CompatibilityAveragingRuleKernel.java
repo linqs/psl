@@ -30,19 +30,16 @@ import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.atom.VariableAssignment;
 import edu.umd.cs.psl.model.formula.AvgConjRule;
-import edu.umd.cs.psl.model.formula.Formula;
-import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.model.parameters.PositiveWeight;
-import edu.umd.cs.psl.model.parameters.Weight;
 import edu.umd.cs.psl.reasoner.function.FunctionTerm;
 import edu.umd.cs.psl.reasoner.function.FunctionVariable;
 
-/** A CompatibilityRuleKernel for averaging conjunction rules.
+/**
+ * A CompatibilityRuleKernel for averaging conjunction rules.
  * 
  * @author Jimmy Foulds <jfoulds@ucsc.edu>
- *
  */
 public class CompatibilityAveragingRuleKernel extends CompatibilityRuleKernel {
 	
@@ -54,15 +51,18 @@ public class CompatibilityAveragingRuleKernel extends CompatibilityRuleKernel {
 	protected final List<Double> posLiteralsWeights; 
 	protected final List<Double> negLiteralsWeights;
 
-	public CompatibilityAveragingRuleKernel(Formula f, double w, boolean squared) {
+	public CompatibilityAveragingRuleKernel(AvgConjRule f, double w, boolean squared) {
 		super(f, w, squared); //create DNF, etc as required by the superclass.
 		weight = new PositiveWeight(w);
 		this.squared = squared;
-		AvgConjRule acr = (AvgConjRule)f;
+		AvgConjRule acr = f;
 		
-		//At this point, we negate the rule to create the hinge function for its distance to satisfaction.
-		//The super class has also negated it at the creation of the object, when creating its FormulaAnalysis object.
-		//Negative and positive are therefore reversed below.
+		/*
+		 * At this point, we negate the rule to create the hinge function for
+		 * its distance to satisfaction. The super class has also negated it at
+		 * the creation of the object, when creating its FormulaAnalysis object.
+		 * Negative and positive are therefore reversed below.
+		 */
 		posLiterals = acr.getNegLiterals();
 		negLiterals = acr.getPosLiterals();
 		posLiteralsWeights = acr.getNegLiteralsWeights();
@@ -75,12 +75,12 @@ public class CompatibilityAveragingRuleKernel extends CompatibilityRuleKernel {
 	}
 	
 	protected GroundCompatibilityRule groundWeightedFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals, List<Double> posLiteralsWeights, List<Double> negLiteralsWeights) {
-		return new WeightedGroundCompatibilityRule(this, posLiterals, negLiterals, squared, posLiteralsWeights, negLiteralsWeights);
+		return new GroundWeightedCompatibilityRule(this, posLiterals, negLiterals, squared, posLiteralsWeights, negLiteralsWeights);
 	}
 			
 	@Override
 	public Kernel clone() {
-		return new CompatibilityAveragingRuleKernel(formula, weight.getWeight(), squared);
+		return new CompatibilityAveragingRuleKernel((AvgConjRule) formula, weight.getWeight(), squared);
 	}
 	
 	@Override

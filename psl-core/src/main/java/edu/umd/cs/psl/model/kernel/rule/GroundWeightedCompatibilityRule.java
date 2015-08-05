@@ -19,25 +19,20 @@ package edu.umd.cs.psl.model.kernel.rule;
 import java.util.List;
 
 import edu.umd.cs.psl.model.atom.GroundAtom;
-import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
-import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
-import edu.umd.cs.psl.model.parameters.Weight;
 import edu.umd.cs.psl.reasoner.function.ConstantNumber;
 import edu.umd.cs.psl.reasoner.function.FunctionSum;
 import edu.umd.cs.psl.reasoner.function.FunctionSummand;
-import edu.umd.cs.psl.reasoner.function.FunctionTerm;
-import edu.umd.cs.psl.reasoner.function.MaxFunction;
-import edu.umd.cs.psl.reasoner.function.PowerOfTwo;
 
-/** A Ground Compatibility Rule with weights on the literals
+/**
+ * A Ground Compatibility Rule with weights on the literals
+ * 
  * @author Jimmy Foulds <jfoulds@ucsc.edu>
- *
  */
-public class WeightedGroundCompatibilityRule extends GroundCompatibilityRule {
+public class GroundWeightedCompatibilityRule extends GroundCompatibilityRule {
 	protected final List<Double> posLiteralsWeights; 
 	protected final List<Double> negLiteralsWeights;
 	
-	WeightedGroundCompatibilityRule(CompatibilityRuleKernel k, List<GroundAtom> posLiterals,
+	GroundWeightedCompatibilityRule(CompatibilityRuleKernel k, List<GroundAtom> posLiterals,
 			List<GroundAtom> negLiterals, boolean squared, List<Double> posLiteralsWeights, List<Double> negLiteralsWeights) {
 		super(k, posLiterals, negLiterals, squared);
 		this.posLiteralsWeights = posLiteralsWeights;
