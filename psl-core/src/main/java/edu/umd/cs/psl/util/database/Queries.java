@@ -16,20 +16,29 @@
  */
 package edu.umd.cs.psl.util.database;
 
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
+
+import org.joda.time.DateTime;
 
 import com.google.common.base.Preconditions;
 
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.database.DatabaseQuery;
 import edu.umd.cs.psl.database.ResultList;
-import edu.umd.cs.psl.model.argument.*;
+import edu.umd.cs.psl.model.argument.ArgumentType;
+import edu.umd.cs.psl.model.argument.DateAttribute;
+import edu.umd.cs.psl.model.argument.DoubleAttribute;
+import edu.umd.cs.psl.model.argument.GroundTerm;
+import edu.umd.cs.psl.model.argument.IntegerAttribute;
+import edu.umd.cs.psl.model.argument.LongAttribute;
+import edu.umd.cs.psl.model.argument.StringAttribute;
+import edu.umd.cs.psl.model.argument.Term;
+import edu.umd.cs.psl.model.argument.UniqueID;
+import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.QueryAtom;
 import edu.umd.cs.psl.model.predicate.Predicate;
-import org.joda.time.DateTime;
 
 /**
  * Utility methods for common {@link Database} and {@link DatabaseQuery} tasks.
