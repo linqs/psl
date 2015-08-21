@@ -130,6 +130,10 @@ public class MPEInference implements ModelApplication {
 		int size = reasoner.size();
 		return new MemoryFullInferenceResult(incompatibility, infeasibility, count, size);
 	}
+	
+	public Reasoner getReasoner() {
+		return reasoner;
+	}
 
 	@Override
 	public void close() {
