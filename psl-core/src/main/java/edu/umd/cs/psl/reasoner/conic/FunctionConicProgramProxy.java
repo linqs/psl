@@ -179,6 +179,12 @@ class FunctionConicProgramProxy extends ConicProgramProxy {
 		}
 	}
 	
+	/**
+	 * Represents the objective function term as one or more constraints on
+	 * featureVar and adds those constraints to the conic program.
+	 *  
+	 * @param fun  the objective term to add to the conic program
+	 */
 	protected void addFunctionTerm(FunctionTerm fun) {
 		if (fun instanceof MaxFunction) {
 			for (FunctionTerm t : (MaxFunction)fun)
@@ -194,8 +200,12 @@ class FunctionConicProgramProxy extends ConicProgramProxy {
 				con = new ConstraintTerm(featureSummand, FunctionComparator.SmallerThan, -1*fun.getValue());
 			}
 			else if (fun instanceof FunctionSum) {
-				((FunctionSum)fun).add(featureSummand);
-				con = new ConstraintTerm(fun, FunctionComparator.SmallerThan, 0.0);
+				FunctionSum sum = new FunctionSum();
+				for (FunctionSummand summand : (FunctionSum) fun) {
+					sum.add(summand);
+				}
+				sum.add(featureSummand);
+				con = new ConstraintTerm(sum, FunctionComparator.SmallerThan, 0.0);
 			}
 			else if (fun instanceof FunctionSummand) {
 				FunctionSum sum = new FunctionSum();
