@@ -101,7 +101,7 @@ public class RDBMSDataStore implements DataStore {
 	public static final String USE_STRING_ID_KEY = CONFIG_PREFIX + ".usestringids";
 	
 	/** Default value for the USE_STRING_ID_KEY property */
-	public static final boolean USE_STRING_ID_DEFAULT = false;
+	public static final boolean USE_STRING_ID_DEFAULT = true;
 	
 	/*
 	 * The values for the PSL columns.
