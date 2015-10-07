@@ -138,6 +138,27 @@
 						<artifactId>maven-resources-plugin</artifactId>
 						<version>2.5</version>
 						<executions>
+							<!-- We first force the default behavior -->
+							<execution>
+								<id>default-cli</id>
+								<phase>generate-resources</phase>
+								<goals>
+									<goal>copy-resources</goal>
+								</goals>
+								<configuration>
+									<outputDirectory>${project.build.outputDirectory}</outputDirectory>
+									<resources>
+										<resource>
+											<directory>src/main/resources</directory>
+											<includes>
+												<include>**/*</include>
+											</includes>
+											<filtering>false</filtering>
+										</resource>
+									</resources>
+								</configuration>
+							</execution>
+							<!-- Then we do another execution specifically for license files -->
 							<execution>
 								<id>copy-license-resources</id>
 								<phase>generate-resources</phase>
