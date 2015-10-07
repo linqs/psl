@@ -21,7 +21,7 @@ package edu.umd.cs.psl.reasoner.admm;
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-abstract class ADMMObjectiveTerm {
+public abstract class ADMMObjectiveTerm {
 	protected final ADMMReasoner reasoner;
 	protected final double[] x;
 	protected final double[] y;

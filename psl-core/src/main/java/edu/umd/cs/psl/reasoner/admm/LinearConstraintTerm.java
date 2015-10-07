@@ -28,11 +28,11 @@ import edu.umd.cs.psl.reasoner.function.FunctionComparator;
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-class LinearConstraintTerm extends HyperplaneTerm {
+public class LinearConstraintTerm extends HyperplaneTerm {
 	
 	private final FunctionComparator comparator;
 	
-	LinearConstraintTerm(ADMMReasoner reasoner, int[] zIndices, double[] coeffs,
+	protected LinearConstraintTerm(ADMMReasoner reasoner, int[] zIndices, double[] coeffs,
 			double constant, FunctionComparator comparator) {
 		super(reasoner, zIndices, coeffs, constant);
 		this.comparator = comparator;

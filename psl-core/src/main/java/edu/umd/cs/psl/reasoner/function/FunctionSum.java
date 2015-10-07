@@ -23,7 +23,7 @@ import java.util.*;
  */
 public class FunctionSum implements Iterable<FunctionSummand>, FunctionTerm {
 
-	private final List<FunctionSummand> sum;
+	protected final List<FunctionSummand> sum;
 	
 	public FunctionSum() {
 		sum = new ArrayList<FunctionSummand>();

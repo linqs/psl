@@ -116,7 +116,7 @@ public class ADMMReasoner implements Reasoner {
 	
 	private int maxIter;
 	/* Sometimes called rho or eta */
-	final double stepSize;
+	public final double stepSize;
 	
 	private double epsilonRel, epsilonAbs;
 	private final int stopCheck;
@@ -129,17 +129,17 @@ public class ADMMReasoner implements Reasoner {
 	/** Ordered list of GroundKernels for looking up indices in terms */
 	HashList<GroundKernel> orderedGroundKernels;
 	/** Ground kernels wrapped to be objective function terms for ADMM */
-	List<ADMMObjectiveTerm> terms;
+	protected List<ADMMObjectiveTerm> terms;
 	/** Ordered list of variables for looking up indices in z */
-	HashList<AtomFunctionVariable> variables;
+	protected HashList<AtomFunctionVariable> variables;
 	/** Consensus vector */
-	List<Double> z;
+	protected List<Double> z;
 	/** Lower bounds on variables */
-	List<Double> lb;
+	protected List<Double> lb;
 	/** Upper bounds on variables */
-	List<Double> ub;
+	protected List<Double> ub;
 	/** Lists of local variable locations for updating consensus variables */
-	List<List<VariableLocation>> varLocations;
+	protected List<List<VariableLocation>> varLocations;
 	
 	/* Multithreading variables */
 	private final int numThreads;
@@ -254,92 +254,11 @@ public class ADMMReasoner implements Reasoner {
 		varLocations = new ArrayList<List<VariableLocation>>(groundKernels.size() * 2);
 		n = 0;
 				
-		GroundKernel groundKernel;
-		boolean squared;
-		FunctionTerm function, innerFunction, zeroTerm, innerFunctionA, innerFunctionB;
-		ADMMObjectiveTerm term;
-		
 		/* Initializes objective terms from ground kernels */
 		log.debug("Initializing objective terms for {} ground kernels", groundKernels.size());
 		for (Iterator<GroundKernel> itr = groundKernels.iterator(); itr.hasNext(); ) {
-			groundKernel = itr.next();
-			if (groundKernel instanceof GroundCompatibilityKernel) {
-				function = ((GroundCompatibilityKernel) groundKernel).getFunctionDefinition();
-				
-				/* Checks if the function is wrapped in a PowerOfTwo */
-				if (function instanceof PowerOfTwo) {
-					squared = true;
-					function = ((PowerOfTwo) function).getInnerFunction();
-				}
-				else
-					squared = false;
-				
-				/*
-				 * If the FunctionTerm is a MaxFunction, ensures that it has two arguments, a linear
-				 * function and zero, and constructs the objective term (a hinge loss)
-				 */
-				if (function instanceof MaxFunction) {
-					if (((MaxFunction) function).size() != 2)
-						throw new IllegalArgumentException("Max function must have one linear function and 0.0 as arguments.");
-					innerFunction = null;
-					zeroTerm = null;
-					innerFunctionA = ((MaxFunction) function).get(0);
-					innerFunctionB = ((MaxFunction) function).get(1);
-					
-					if (innerFunctionA instanceof ConstantNumber && innerFunctionA.getValue() == 0.0) {
-						zeroTerm = innerFunctionA;
-						innerFunction = innerFunctionB;
-					}
-					else if (innerFunctionB instanceof ConstantNumber && innerFunctionB.getValue() == 0.0) {
-						zeroTerm = innerFunctionB;
-						innerFunction = innerFunctionA;
-					}
-					
-					if (zeroTerm == null)
-						throw new IllegalArgumentException("Max function must have one linear function and 0.0 as arguments.");
-					
-					if (innerFunction instanceof FunctionSum) {
-						Hyperplane hp = processHyperplane((FunctionSum) innerFunction);
-						if (squared) {
-							term = new SquaredHingeLossTerm(this, hp.zIndices, hp.coeffs, hp.constant,
-									((GroundCompatibilityKernel) groundKernel).getWeight().getWeight());
-						}
-						else {
-							term = new HingeLossTerm(this, hp.zIndices, hp.coeffs, hp.constant,
-									((GroundCompatibilityKernel) groundKernel).getWeight().getWeight());
-						}
-					}
-					else
-						throw new IllegalArgumentException("Max function must have one linear function and 0.0 as arguments.");
-				}
-				/* Else, if it's a FunctionSum, constructs the objective term (a linear loss) */
-				else if (function instanceof FunctionSum) {
-					Hyperplane hp = processHyperplane((FunctionSum) function);
-					if (squared) {
-						term = new SquaredLinearLossTerm(this, hp.zIndices, hp.coeffs, 0.0,
-								((GroundCompatibilityKernel) groundKernel).getWeight().getWeight());
-					}
-					else {
-						term = new LinearLossTerm(this, hp.zIndices, hp.coeffs,
-								((GroundCompatibilityKernel) groundKernel).getWeight().getWeight());
-					}
-				}
-				else
-					throw new IllegalArgumentException("Unrecognized function: " + ((GroundCompatibilityKernel) groundKernel).getFunctionDefinition());
-			}
-			else if (groundKernel instanceof GroundConstraintKernel) {
-				ConstraintTerm constraint = ((GroundConstraintKernel) groundKernel).getConstraintDefinition();
-				function = constraint.getFunction();
-				if (function instanceof FunctionSum) {
-					Hyperplane hp = processHyperplane((FunctionSum) function);
-					term = new LinearConstraintTerm(this, hp.zIndices, hp.coeffs,
-							constraint.getValue() + hp.constant, constraint.getComparator());
-				}
-				else
-					throw new IllegalArgumentException("Unrecognized constraint: " + constraint);
-			}
-			else
-				throw new IllegalStateException("Unsupported ground kernel: " + groundKernel);
+			GroundKernel groundKernel = itr.next();
+			ADMMObjectiveTerm term = createTerm(groundKernel);
 			
 			if (term.x.length > 0) {
 				registerLocalVariableCopies(term);
@@ -349,6 +268,99 @@ public class ADMMReasoner implements Reasoner {
 		}
 		
 		rebuildModel = false;
+	}
+	
+	/**
+	 * Processes a {@link GroundKernel} to create a corresponding
+	 * {@link ADMMObjectiveTerm}
+	 * 
+	 * @param groundKernel  the GroundKernel to be added to the ADMM objective
+	 * @return  the created ADMMObjectiveTerm
+	 */
+	protected ADMMObjectiveTerm createTerm(GroundKernel groundKernel) {
+		boolean squared;
+		FunctionTerm function, innerFunction, zeroTerm, innerFunctionA, innerFunctionB;
+		ADMMObjectiveTerm term;
+		
+		if (groundKernel instanceof GroundCompatibilityKernel) {
+			function = ((GroundCompatibilityKernel) groundKernel).getFunctionDefinition();
+			
+			/* Checks if the function is wrapped in a PowerOfTwo */
+			if (function instanceof PowerOfTwo) {
+				squared = true;
+				function = ((PowerOfTwo) function).getInnerFunction();
+			}
+			else
+				squared = false;
+			
+			/*
+			 * If the FunctionTerm is a MaxFunction, ensures that it has two arguments, a linear
+			 * function and zero, and constructs the objective term (a hinge loss)
+			 */
+			if (function instanceof MaxFunction) {
+				if (((MaxFunction) function).size() != 2)
+					throw new IllegalArgumentException("Max function must have one linear function and 0.0 as arguments.");
+				innerFunction = null;
+				zeroTerm = null;
+				innerFunctionA = ((MaxFunction) function).get(0);
+				innerFunctionB = ((MaxFunction) function).get(1);
+				
+				if (innerFunctionA instanceof ConstantNumber && innerFunctionA.getValue() == 0.0) {
+					zeroTerm = innerFunctionA;
+					innerFunction = innerFunctionB;
+				}
+				else if (innerFunctionB instanceof ConstantNumber && innerFunctionB.getValue() == 0.0) {
+					zeroTerm = innerFunctionB;
+					innerFunction = innerFunctionA;
+				}
+				
+				if (zeroTerm == null)
+					throw new IllegalArgumentException("Max function must have one linear function and 0.0 as arguments.");
+				
+				if (innerFunction instanceof FunctionSum) {
+					Hyperplane hp = processHyperplane((FunctionSum) innerFunction);
+					if (squared) {
+						term = new SquaredHingeLossTerm(this, hp.zIndices, hp.coeffs, hp.constant,
+								((GroundCompatibilityKernel) groundKernel).getWeight().getWeight());
+					}
+					else {
+						term = new HingeLossTerm(this, hp.zIndices, hp.coeffs, hp.constant,
+								((GroundCompatibilityKernel) groundKernel).getWeight().getWeight());
+					}
+				}
+				else
+					throw new IllegalArgumentException("Max function must have one linear function and 0.0 as arguments.");
+			}
+			/* Else, if it's a FunctionSum, constructs the objective term (a linear loss) */
+			else if (function instanceof FunctionSum) {
+				Hyperplane hp = processHyperplane((FunctionSum) function);
+				if (squared) {
+					term = new SquaredLinearLossTerm(this, hp.zIndices, hp.coeffs, 0.0,
+							((GroundCompatibilityKernel) groundKernel).getWeight().getWeight());
+				}
+				else {
+					term = new LinearLossTerm(this, hp.zIndices, hp.coeffs,
+							((GroundCompatibilityKernel) groundKernel).getWeight().getWeight());
+				}
+			}
+			else
+				throw new IllegalArgumentException("Unrecognized function: " + ((GroundCompatibilityKernel) groundKernel).getFunctionDefinition());
+		}
+		else if (groundKernel instanceof GroundConstraintKernel) {
+			ConstraintTerm constraint = ((GroundConstraintKernel) groundKernel).getConstraintDefinition();
+			function = constraint.getFunction();
+			if (function instanceof FunctionSum) {
+				Hyperplane hp = processHyperplane((FunctionSum) function);
+				term = new LinearConstraintTerm(this, hp.zIndices, hp.coeffs,
+						constraint.getValue() + hp.constant, constraint.getComparator());
+			}
+			else
+				throw new IllegalArgumentException("Unrecognized constraint: " + constraint);
+		}
+		else
+			throw new IllegalArgumentException("Unsupported ground kernel: " + groundKernel);
+		
+		return term;
 	}
 
 	/**
@@ -365,6 +377,14 @@ public class ADMMReasoner implements Reasoner {
 			variables.get(zIndex).setValue(term.x[i]);			
 		}
 		return ((GroundCompatibilityKernel) gk).getIncompatibility();
+	}
+	
+	public double getConsensusVariableValue(int index) {
+		if (z == null) {
+			throw new IllegalStateException("Consensus variables have not been initialized. "
+					+ "Must call optimize() first.");
+		}
+		return z.get(index);
 	}
 	
 	private class ADMMTask implements Runnable {
@@ -636,7 +656,7 @@ public class ADMMReasoner implements Reasoner {
 		}
 	}
 	
-	private Hyperplane processHyperplane(FunctionSum sum) {
+	protected Hyperplane processHyperplane(FunctionSum sum) {
 		Hyperplane hp = new Hyperplane();
 		HashMap<AtomFunctionVariable, Integer> localVarLocations = new HashMap<AtomFunctionVariable, Integer>();
 		ArrayList<Integer> tempZIndices = new ArrayList<Integer>(sum.size());
@@ -709,19 +729,26 @@ public class ADMMReasoner implements Reasoner {
 		return hp;
 	}
 	
-	private class Hyperplane {
-		int[] zIndices;
-		double[] coeffs;
-		double constant;
+	protected class Hyperplane {
+		public int[] zIndices;
+		public double[] coeffs;
+		public double constant;
 	}
 	
-	private class VariableLocation {
+	public class VariableLocation {
 		private final ADMMObjectiveTerm term;
 		private final int localIndex;
 		
 		private VariableLocation(ADMMObjectiveTerm term, int localIndex) {
 			this.term = term;
 			this.localIndex = localIndex;
+		}
+		public ADMMObjectiveTerm getTerm() {
+			return term;
+		}
+		
+		public int getLocalIndex() {
+			return localIndex;
 		}
 	}
 
