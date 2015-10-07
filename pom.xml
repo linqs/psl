@@ -192,6 +192,7 @@
 								</goals>
 								<configuration>
 									<bottom>Copyright &#169; {inceptionYear}-{currentYear} {organizationName}.</bottom>
+									<failOnError>false</failOnError>
 								</configuration>
 							</execution>
 						</executions>
