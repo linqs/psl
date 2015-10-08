@@ -22,19 +22,19 @@
 	<groupId>edu.umd.cs</groupId>
 	<artifactId>psl-groovy</artifactId>
 	<name>psl-groovy</name>
-	<version>1.2-SNAPSHOT</version>
+	<version>1.2</version>
 	<packaging>jar</packaging>
 	<description>The groovy user interface module of the PSL software from the University of Maryland.</description>
 	<parent>
 		<groupId>edu.umd.cs</groupId>
 		<artifactId>psl</artifactId>
-		<version>1.2-SNAPSHOT</version>
+		<version>1.2</version>
 	</parent>
 	<dependencies>
 		<dependency>
 			<groupId>edu.umd.cs</groupId>
 			<artifactId>psl-core</artifactId>
-			<version>1.2-SNAPSHOT</version>
+			<version>1.2</version>
 		</dependency>
 		<dependency>
 			<groupId>org.codehaus.groovy</groupId>
