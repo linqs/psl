@@ -552,11 +552,12 @@ public class RDBMSDataStore implements DataStore {
 	 * @return		the String ID for this database
 	 */
 	public static final String getDatabaseID(RDBMSDatabase db) {
-		if (registeredDatabases.containsKey(db)) {
-			return registeredDatabases.get(db);
+	    ReadOnlyDatabase roDB = new ReadOnlyDatabase(db);
+		if (registeredDatabases.containsKey(roDB)) {
+			return registeredDatabases.get(roDB);
 		} else {
 			String id = "database" + (databaseCounter++);
-			registeredDatabases.put(new ReadOnlyDatabase(db), id);
+			registeredDatabases.put(roDB, id);
 			return id;
 		}
 	}
