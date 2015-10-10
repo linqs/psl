@@ -22,19 +22,19 @@
 	<groupId>edu.umd.cs</groupId>
 	<artifactId>psl-parser</artifactId>
 	<name>psl-parser</name>
-	<version>1.2</version>
+	<version>1.2.1-SNAPSHOT</version>
 	<packaging>jar</packaging>
 	<description>The model-parsing user interface module of the PSL software from the University of Maryland.</description>
 	<parent>
 		<groupId>edu.umd.cs</groupId>
 		<artifactId>psl</artifactId>
-		<version>1.2</version>
+		<version>1.2.1-SNAPSHOT</version>
 	</parent>
 	<dependencies>
 		<dependency>
 			<groupId>edu.umd.cs</groupId>
 			<artifactId>psl-core</artifactId>
-			<version>1.2</version>
+			<version>1.2.1-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>org.antlr</groupId>

@@ -22,13 +22,13 @@
 	<groupId>edu.umd.cs</groupId>
 	<artifactId>psl-core</artifactId>
 	<name>psl-core</name>
-	<version>1.2</version>
+	<version>1.2.1-SNAPSHOT</version>
 	<packaging>jar</packaging>
 	<description>Core module of the PSL software from the University of Maryland.</description>
 	<parent>
 		<groupId>edu.umd.cs</groupId>
 		<artifactId>psl</artifactId>
-		<version>1.2</version>
+		<version>1.2.1-SNAPSHOT</version>
 	</parent>
 	<dependencies>
 		<!-- linear algebra dependencies -->
@@ -45,7 +45,7 @@
 		<dependency>
 			<groupId>edu.emory.mathcs</groupId>
 			<artifactId>jplasma</artifactId>
-			<version>1.2</version>
+			<version>1.2.1-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>org.ujmp</groupId>
