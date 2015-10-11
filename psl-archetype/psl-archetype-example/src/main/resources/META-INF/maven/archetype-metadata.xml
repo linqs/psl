@@ -37,7 +37,7 @@
 			<defaultValue>psl-example</defaultValue>
 		</requiredProperty>
 		<requiredProperty key="version">
-			<defaultValue>1.2.1-SNAPSHOT</defaultValue>
+			<defaultValue>1.2.1</defaultValue>
 		</requiredProperty>
 		<requiredProperty key="package">
 			<defaultValue>edu.umd.cs.example</defaultValue>
