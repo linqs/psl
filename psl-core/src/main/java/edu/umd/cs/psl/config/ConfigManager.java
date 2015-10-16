@@ -50,7 +50,7 @@ public class ConfigManager {
 			loadResource(pslConfigFile);
 		}
 		catch (FileNotFoundException e) {
-			log.info("PSL configuration file '" + pslConfigFile + "' not found. " +
+			log.info("PSL configuration file not found. " +
 					"Only default values will be used unless additional properties are " +
 					"specified.");
 		}
@@ -76,6 +76,7 @@ public class ConfigManager {
 		if (url != null) {
 			newConfig = new PropertiesConfiguration(url);
 			masterConfig.append(newConfig);
+			log.info("Configuration file loaded: {}", url);
 		}
 		else
 			throw new FileNotFoundException();

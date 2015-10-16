@@ -88,11 +88,10 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 			return visitLogical_rule(ctx.logical_rule());
 		}
 		else if (ctx.arithmetic_rule() != null) {
-			System.out.println("Arithmetic rules are not supported!");
-			throw new IllegalStateException();
+			throw new IllegalStateException("(Line " + ctx.getStart().getLine()+ ") Arithmetic rules are not supported!");
 		}
 		else {
-			throw new IllegalStateException();
+			throw new IllegalStateException("(Line " + ctx.getStart().getLine()+ ") Rule not recognized as logical or arithmetic.");
 		}
 	}
 

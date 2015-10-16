@@ -19,13 +19,26 @@ package edu.umd.cs.psl.cli;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
+import java.util.Comparator;
 import java.util.Set;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.log4j.BasicConfigurator;
+import org.apache.log4j.ConsoleAppender;
+import org.apache.log4j.PatternLayout;
+import org.apache.log4j.Priority;
+import org.apache.log4j.PropertyConfigurator;
 
 import edu.umd.cs.psl.application.inference.MPEInference;
 import edu.umd.cs.psl.cli.modelloader.ModelLoader;
@@ -50,59 +63,79 @@ import edu.umd.cs.psl.util.database.Queries;
  */
 public class Launcher {
 
-	public static String OPERATION_INFER = "infer";
-	public static String OPERATION_LEARN = "learn";
-	public static String OPTION_PROPERTIES = "propertiesPath";
-	public static String OPTION_OUTPUT_DIR = "outputDirectoryPath";
-	public static String PARTITION_NAME_OBSERVATIONS = "observations";
-	public static String PARTITION_NAME_TARGET = "targets";
+	/* Command line syntax keywords */
+	public static final String OPERATION_INFER = "infer";
+	public static final String OPERATION_LEARN = "learn";
+	public static final String OPTION_MODEL = "model";
+	public static final String OPTION_DATA = "data";
+	public static final String OPTION_PROPERTIES = "properties";
+	public static final String OPTION_LOG4J = "log4j";
+	public static final String OPTION_OUTPUT_DIR = "output";
 	
-	public void run(String[] args) throws Exception {
+	/* Reserved partition names */
+	public static final String PARTITION_NAME_OBSERVATIONS = "observations";
+	public static final String PARTITION_NAME_TARGET = "targets";
+	
+	@SuppressWarnings("deprecation")
+	public void run(CommandLine cmd) throws IOException, ConfigurationException, ClassNotFoundException, IllegalAccessException, InstantiationException {
+		
+		/*
+		 * Initializes log4j
+		 */
+		if (cmd.hasOption(OPTION_LOG4J)) {
+			URL url = new URL(cmd.getOptionValue(OPTION_LOG4J));
+			PropertyConfigurator.configure(url);
+		}
+		else {
+			ConsoleAppender appender = new ConsoleAppender();
+			appender.setName("psl-cli");
+			appender.setThreshold(Priority.ERROR);
+			appender.setLayout(new PatternLayout("%-4r [%t] %-5p %c %x - %m%n"));
+			appender.setTarget(ConsoleAppender.SYSTEM_OUT);
+			appender.activateOptions();
+			BasicConfigurator.configure(appender);
+		}
+		
+		/*
+		 * Loads configuration
+		 */
+		
 		ConfigManager cm = ConfigManager.getManager();
-		ConfigBundle cb = cm.getBundle("cli");
-		cb.setProperty("rdbmsdatastore.usestringids", true);
-		String defaultPath = System.getProperty("java.io.tmpdir");
-		String dbpath = cb.getString("dbpath", defaultPath + File.separator
-				+ "cli");
-		DataStore data = new RDBMSDataStore(new H2DatabaseDriver(Type.Disk,
-				cb.getString("dbpath", dbpath), true), cb);
-
-		Options options = new Options();
-		options.addOption(OPTION_PROPERTIES, false, "Properties file path.");
-		options.addOption("OPTION_OUTPUT_DIR", false, "Output directory path.");
-		CommandLineParser parser = new DefaultParser();
-		CommandLine cmd = parser.parse(options, args);
-
-		// Optional PSL properties
 		if (cmd.hasOption(OPTION_PROPERTIES)) {
 			String propertiesPath = cmd.getOptionValue(OPTION_PROPERTIES);
 			cm.loadResource(propertiesPath);
 		}
-
-		String operation = args[0];
+		ConfigBundle cb = cm.getBundle("cli");
+		//TODO: Delete the following command when it becomes default behavior
+		cb.setProperty(RDBMSDataStore.USE_STRING_ID_KEY, true);
 
 		/*
-		 * Load data.
+		 * Sets up DataStore
 		 */
+		
+		String defaultPath = System.getProperty("java.io.tmpdir");
+		String dbpath = cb.getString("dbpath", defaultPath + File.separator + "cli");
+		DataStore data = new RDBMSDataStore(new H2DatabaseDriver(Type.Disk,
+				cb.getString("dbpath", dbpath), true), cb);
 
+		/*
+		 * Loads data
+		 */
+		
 		System.out.println("data:: loading:: ::starting");
-		String dataPath = args[2];
-		File dataFile = new File(dataPath);
+		File dataFile = new File(cmd.getOptionValue(OPTION_DATA));
 		InputStream dataFileInputStream = new FileInputStream(dataFile);
 
-		DataLoaderOutput dataLoaderOutput = DataLoader.load(data,
-				dataFileInputStream);
-		Set<StandardPredicate> closedPredicates = dataLoaderOutput
-				.getClosedPredicates();
+		DataLoaderOutput dataLoaderOutput = DataLoader.load(data, dataFileInputStream);
+		Set<StandardPredicate> closedPredicates = dataLoaderOutput.getClosedPredicates();
 		System.out.println("data:: loading:: ::done");
 
 		/*
-		 * Load model.
+		 * Loads model
 		 */
 
 		System.out.println("model:: loading:: ::starting");
-		String modelPath = args[1];
-		File modelFile = new File(modelPath);
+		File modelFile = new File(cmd.getOptionValue(OPTION_MODEL));
 		FileInputStream modelFileInputStream = new FileInputStream(modelFile);
 
 		Model model = ModelLoader.load(data, modelFileInputStream);
@@ -113,15 +146,12 @@ public class Launcher {
 		 * Create database, application, etc.
 		 */
 
-		Partition targetPartition = data
-				.getPartition(PARTITION_NAME_TARGET);
-		Partition observationsPartition = data
-				.getPartition(PARTITION_NAME_OBSERVATIONS);
-		Database database = data.getDatabase(targetPartition,
-				observationsPartition);
+		Partition targetPartition = data.getPartition(PARTITION_NAME_TARGET);
+		Partition observationsPartition = data.getPartition(PARTITION_NAME_OBSERVATIONS);
+		Database database = data.getDatabase(targetPartition, observationsPartition);
 
 		// Inference
-		if (operation.equals(OPERATION_INFER)) {
+		if (cmd.hasOption(OPERATION_INFER)) {
 			System.out.println("operation::infer ::starting");
 		
 			System.out.println("operation::infer inference:: ::starting");
@@ -182,21 +212,104 @@ public class Launcher {
 			}
 			System.out.println("operation::infer ::done");
 
-		} else if (operation.equals(OPERATION_LEARN)) {
-			throw new Exception("Operation not supported: " + OPERATION_LEARN);
+		} else if (cmd.hasOption(OPERATION_LEARN)) {
+			throw new IllegalArgumentException("Operation not supported: " + OPERATION_LEARN);
 			// Learning
 		} else {
-			throw new Exception("Operation not supported: " + operation);
+			throw new IllegalArgumentException("No valid operation provided.");
 		}
 		database.close();
 		data.close();
 	}
 
-	/**
-	 * @throws Exception
-	 * 
-	 */
-	public static void main(String[] args) throws Exception {
-		new Launcher().run(args);
+	public static void main(String[] args) {
+		try {
+			
+			/*
+			 * Parses command line
+			 */
+			
+			Options options = new Options();
+			
+			OptionGroup mainCommand = new OptionGroup();
+			mainCommand.addOption(new Option(OPERATION_INFER, "Run MAP inference"));
+			mainCommand.addOption(new Option(OPERATION_LEARN, "Run weight learning"));
+			mainCommand.setRequired(true);
+			options.addOptionGroup(mainCommand);
+			
+			options.addOption(Option.builder(OPTION_MODEL)
+					.required()
+					.desc("Path to PSL model file")
+					.hasArg()
+					.argName("path")
+					.build());
+			
+			options.addOption(Option.builder(OPTION_DATA)
+					.required()
+					.desc("Path to PSL data file")
+					.hasArg()
+					.argName("path")
+					.build());
+			
+			options.addOption(Option.builder(OPTION_LOG4J)
+					.desc("Optional log4j properties file path")
+					.hasArg()
+					.argName("path")
+					.build());
+			
+			options.addOption(Option.builder(OPTION_PROPERTIES)
+					.desc("Optional PSL properties file path")
+					.hasArg()
+					.argName("path")
+					.build());
+			
+			options.addOption(Option.builder(OPTION_OUTPUT_DIR)
+					.desc("Optional path for writing results to filesystem (default is STDOUT)")
+					.hasArg()
+					.argName("path")
+					.build());
+			
+			HelpFormatter hf = new HelpFormatter();
+			/* Hacks the option ordering */
+			hf.setOptionComparator(new Comparator<Option>() {
+				@Override
+				public int compare(Option o1, Option o2) {
+					if (!o1.hasArg() && o2.hasArg()) {
+						return -1;
+					}
+					else if (o1.hasArg() && !o2.hasArg()) {
+						return 1;
+					}
+					else if (o1.isRequired() && !o2.isRequired()) {
+						return -1;
+					}
+					else if (!o1.isRequired() && o2.isRequired()) {
+						return 1;
+					}
+					else {
+						return o1.toString().compareTo(o2.toString());
+					}
+				}
+			});
+			
+			try {
+				
+				/*
+				 * Runs PSL
+				 */
+				
+				CommandLineParser parser = new DefaultParser();
+				CommandLine cmd = parser.parse(options, args);
+				new Launcher().run(cmd);
+			}
+			catch (ParseException e) {
+				System.err.println("Command line error: " + e.getMessage());
+				hf.printHelp("psl", options, true);
+			}
+		}
+		catch (Exception e) {
+			System.err.println("Unexpected exception!");
+			e.printStackTrace(System.err);
+		}
 	}
 }

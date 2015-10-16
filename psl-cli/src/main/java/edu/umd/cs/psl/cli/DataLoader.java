@@ -42,9 +42,9 @@ import edu.umd.cs.psl.ui.loading.InserterUtils;
 public class DataLoader {
 	private static final Logger log = LoggerFactory.getLogger(DataLoader.class);
 
-	private static Set<StandardPredicate> definePredicates(DataStore datastore, Map yamlMap) throws Exception{
+	private static Set<StandardPredicate> definePredicates(DataStore datastore, Map yamlMap) {
 		if(!yamlMap.containsKey("predicates")){
-			throw new Exception("No 'predicates' block defined in data specification");			
+			throw new IllegalArgumentException("No 'predicates' block defined in data specification");			
 		}
 		Set<StandardPredicate> closed = new HashSet<StandardPredicate>();
 		PredicateFactory pf = PredicateFactory.getFactory();
@@ -53,7 +53,7 @@ public class DataLoader {
 			//parse the predicate/args part
 			String[] predicateParts = predicateSpec.getKey().split("/",2);
 			if(predicateParts.length < 2){
-				throw new Exception("Improperly specified predicate "+predicateSpec.getKey());
+				throw new IllegalArgumentException("Improperly specified predicate "+predicateSpec.getKey());
 			}
 			String predicateStr = predicateParts[0];
 			int arity = Integer.parseInt(predicateParts[1]);
@@ -76,7 +76,7 @@ public class DataLoader {
 		return closed;
 	}
 
-	private static void loadDataFiles(DataStore datastore, Map yamlMap) throws Exception{
+	private static void loadDataFiles(DataStore datastore, Map yamlMap) {
 		for (String partitionName : ((Map<String,Object>) yamlMap).keySet()){
 			//skip special partition predicates
 			if(partitionName.equals("predicates")){
@@ -98,7 +98,7 @@ public class DataLoader {
 						InserterUtils.loadDelimitedDataAutomatic(predicate, insert, filename);
 					}
 				} else {
-					throw new Exception("Unknown specification when loading "+partitionName);
+					throw new IllegalArgumentException("Unknown specification when loading "+partitionName);
 				}
 			}
 		}
@@ -113,7 +113,7 @@ public class DataLoader {
 	 * @return DataLoaderOutput with data loading results, including closed predicates
 	 * @throws Exception
 	 */
-	public static DataLoaderOutput load(DataStore datastore, InputStream inputStream) throws Exception{
+	public static DataLoaderOutput load(DataStore datastore, InputStream inputStream) {
 		Yaml yaml = new Yaml();
 		Map yamlParse = (Map) yaml.load(inputStream);
 		Set<StandardPredicate> closedPredicates = definePredicates(datastore, yamlParse);
