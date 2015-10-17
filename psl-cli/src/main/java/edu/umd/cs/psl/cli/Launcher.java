@@ -41,6 +41,8 @@ import org.apache.log4j.Priority;
 import org.apache.log4j.PropertyConfigurator;
 
 import edu.umd.cs.psl.application.inference.MPEInference;
+import edu.umd.cs.psl.cli.dataloader.DataLoader;
+import edu.umd.cs.psl.cli.dataloader.DataLoaderOutput;
 import edu.umd.cs.psl.cli.modelloader.ModelLoader;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
@@ -59,7 +61,7 @@ import edu.umd.cs.psl.reasoner.admm.ADMMReasonerFactory;
 import edu.umd.cs.psl.util.database.Queries;
 
 /**
- *
+ * Launches PSL from the command line. Supports inference and supervised parameter learning
  */
 public class Launcher {
 

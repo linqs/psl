@@ -54,6 +54,7 @@ import edu.umd.cs.psl.model.kernel.rule.CompatibilityRuleKernel;
 import edu.umd.cs.psl.model.kernel.rule.ConstraintRuleKernel;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.PredicateFactory;
+import edu.umd.cs.psl.model.predicate.SpecialPredicate;
 
 public class ModelLoader extends PSLBaseVisitor<Object> {
 
@@ -199,12 +200,31 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	
 	@Override
 	public Atom visitAtom(AtomContext ctx) {
-		Predicate p = visitPredicate(ctx.predicate());
-		Term[] args = new Term[ctx.term().size()];
-		for (int i = 0; i < args.length; i++) {
-			args[i] = visitTerm(ctx.term(i));
+		if (ctx.predicate() != null) {
+			Predicate p = visitPredicate(ctx.predicate());
+			Term[] args = new Term[ctx.term().size()];
+			for (int i = 0; i < args.length; i++) {
+				args[i] = visitTerm(ctx.term(i));
+			}
+			return new QueryAtom(p, args);
 		}
-		return new QueryAtom(p, args);
+		else if (ctx.TERM_OPERATOR() != null) {
+			// TODO: There might be a better way to look up which operator it is
+			SpecialPredicate p;
+			if (("'" + ctx.TERM_OPERATOR().getText() + "'").equals(PSLParser.VOCABULARY.getLiteralName(PSLParser.NOT_EQUAL))) {
+				p = SpecialPredicate.NotEqual;
+			}
+			else if (("'" + ctx.TERM_OPERATOR().getText() + "'").equals(PSLParser.VOCABULARY.getLiteralName(PSLParser.TERM_EQUAL))) {
+				p = SpecialPredicate.Equal;
+			}
+			else {
+				throw new IllegalStateException();
+			}
+			return new QueryAtom(p, visitTerm(ctx.term(0)), visitTerm(ctx.term(1)));
+		}
+		else {
+			throw new IllegalStateException();
+		}
 	}
 	
 	@Override

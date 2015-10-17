@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.cli;
+package edu.umd.cs.psl.cli.dataloader;
 
 import java.util.Set;
 
