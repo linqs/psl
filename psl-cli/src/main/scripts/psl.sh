@@ -20,7 +20,7 @@
 # This script runs PSL. Its only dependency is Maven 3.
 #
 
-export PSL_VERSION=1.3-SNAPSHOT
+export PSL_VERSION=2.0-SNAPSHOT
 
 if [ ! -f "pom.xml" ]
 then 
