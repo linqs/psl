@@ -1,6 +1,7 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011-2013 University of Maryland
+ * Copyright 2011-2015 University of Maryland
+ * Copyright 2013-2015 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,12 +29,14 @@ import edu.umd.cs.psl.model.argument.Term
 import edu.umd.cs.psl.model.argument.Variable
 import edu.umd.cs.psl.model.argument.VariableTypeMap
 import edu.umd.cs.psl.model.atom.QueryAtom
+import edu.umd.cs.psl.model.formula.AvgConjRule
 import edu.umd.cs.psl.model.formula.Formula
 import edu.umd.cs.psl.model.function.ExternalFunction
 import edu.umd.cs.psl.model.kernel.Kernel
 import edu.umd.cs.psl.model.kernel.predicateconstraint.DomainRangeConstraintKernel
 import edu.umd.cs.psl.model.kernel.predicateconstraint.SymmetryConstraintKernel
 import edu.umd.cs.psl.model.kernel.rule.AbstractRuleKernel
+import edu.umd.cs.psl.model.kernel.rule.CompatibilityAveragingRuleKernel
 import edu.umd.cs.psl.model.kernel.rule.CompatibilityRuleKernel
 import edu.umd.cs.psl.model.kernel.rule.ConstraintRuleKernel
 import edu.umd.cs.psl.model.kernel.setdefinition.SetDefinitionKernel
@@ -56,6 +59,7 @@ class PSLModel extends Model {
 	private static final String functionKey = 'function';
 	private static final String ruleKey = 'rule';
 	private static final String setComparisonKey = 'setcomparison';
+	private static final String avgConjRuleKey = 'avgConjRule';
 
 	private static final String auxPredicateSeparator = '__';
 	
@@ -203,13 +207,19 @@ class PSLModel extends Model {
 			FormulaContainer ruledef = args[ruleKey];
 			args.remove ruleKey;
 			return addRule(ruledef,args);
+		} else if (args.containsKey(avgConjRuleKey)) {
+			if (!(args[avgConjRuleKey] instanceof FormulaContainer))
+				throw new IllegalArgumentException("Expected a formula, but got: ${args[ruleKey]}");
+			FormulaContainer ruledef = args[avgConjRuleKey];
+			args.remove avgConjRuleKey;
+			return addAvgConjRule(ruledef,args);
 		} else {
 			throw new IllegalArgumentException("Unrecognized element added to model: ${args}");
 		}
 	}
 	
 	/*
-	 * Handles adding PredicateContstraints
+	 * Handles adding PredicateConstraints
 	 */
 	def add(Map args, PredicateConstraint type) {
 		addConstraint(type,args)
@@ -311,6 +321,35 @@ class PSLModel extends Model {
 		} else {
 			pslrule = new CompatibilityRuleKernel(ruleformula, weight, isSquared);
 		}
+		
+		addKernel(pslrule);
+		return pslrule;
+	}
+	
+	def addAvgConjRule(FormulaContainer rule, Map args) {
+		boolean isSquared = true;
+		if (args.containsKey('constraint')) {
+			throw new IllegalArgumentException("Average conjunction rules cannot be constraints");
+		}
+		
+		if (args.containsKey('squared')) {
+			if (isFact) throw new IllegalArgumentException("Cannot set squared on a fact rule.");
+			if (!(args['squared'] instanceof Boolean)) throw new IllegalArgumentException("The parameter [squared] for a rule must be either TRUE or FALSE");
+			isSquared = args['squared'];
+		}
+		
+		double weight = Double.NaN;
+		if (args.containsKey('weight')) {
+			if (!isNumber(args['weight']))
+				throw new IllegalArgumentException("The weight parameter is expected to be a real number: ${args['weight'].class}");
+			weight = args['weight'];
+		}
+		
+		Formula ruleformula = rule.getFormula();
+		
+		Formula avgConjRuleFormula = new AvgConjRule(ruleformula);
+
+		AbstractRuleKernel pslrule = new CompatibilityAveragingRuleKernel(avgConjRuleFormula, weight, isSquared);
 		
 		addKernel(pslrule);
 		return pslrule;

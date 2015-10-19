@@ -1,6 +1,7 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011-2013 University of Maryland
+ * Copyright 2011-2015 University of Maryland
+ * Copyright 2013-2015 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -100,7 +101,7 @@ public class SimpleRankingComparator implements RankingComparator {
 			if (a1.getValue() > a2.getValue())
 				return 1;
 			else if (a1.getValue() == a2.getValue())
-				return 0;
+				return a1.toString().compareTo(a2.toString());
 			else
 				return -1;
 		}

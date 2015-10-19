@@ -1,6 +1,7 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011-2013 University of Maryland
+ * Copyright 2011-2015 University of Maryland
+ * Copyright 2013-2015 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +23,7 @@ import com.wcohen.ss.Level2JaroWinkler;
 import edu.umd.cs.psl.database.ReadOnlyDatabase;
 import edu.umd.cs.psl.model.argument.ArgumentType;
 import edu.umd.cs.psl.model.argument.GroundTerm;
+import edu.umd.cs.psl.model.argument.StringAttribute;
 import edu.umd.cs.psl.model.function.ExternalFunction;
 
 /**
@@ -53,12 +55,13 @@ class Level2JaroWinklerSimilarity implements ExternalFunction {
 	
 	@Override
 	public double getValue(ReadOnlyDatabase db, GroundTerm... args) {
-		double sim = 0.0;
-		BasicStringWrapper aWrapped = new BasicStringWrapper(args[0].toString());
-		BasicStringWrapper bWrapped = new BasicStringWrapper(args[1].toString());
+		String a = ((StringAttribute) args[0]).getValue();
+		String b = ((StringAttribute) args[1]).getValue();
+		BasicStringWrapper aWrapped = new BasicStringWrapper(a);
+		BasicStringWrapper bWrapped = new BasicStringWrapper(b);
 		
 		Level2JaroWinkler l2jaroW = new Level2JaroWinkler();
-		sim = l2jaroW.score(aWrapped, bWrapped);
+		double sim = l2jaroW.score(aWrapped, bWrapped);
 		
 		if (sim < simThresh) 
 			return 0.0;

@@ -1,6 +1,7 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011-2013 University of Maryland
+ * Copyright 2011-2015 University of Maryland
+ * Copyright 2013-2015 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,4 +97,23 @@ public class H2DatabaseDriver implements DatabaseDriver {
 		return dbConnection;
 	}
 
+  @Override
+  public boolean isSupportExternalFunction() {
+    return true;
+  }
+
+  @Override
+  public String createHashIndex(String index_name, String table_name, String column_name) {
+  	return "CREATE HASH INDEX " + index_name + " ON " + table_name + " (" + column_name + " ) ";
+  }
+
+  @Override
+  public String castStringWithModifiersForIndexing(String column_name) {
+  	return column_name;
+  }
+
+  @Override
+  public String createPrimaryKey(String table_name, String columns) {
+  	return "CREATE PRIMARY KEY HASH ON " + table_name + " (" + columns + " ) ";	
+  }
 }

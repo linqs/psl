@@ -1,6 +1,7 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011-2013 University of Maryland
+ * Copyright 2011-2015 University of Maryland
+ * Copyright 2013-2015 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,9 +66,8 @@ public class PersistedAtomManager implements AtomManager {
 	}
 	
 	private void buildPersistedAtomCache() {
-		//TODO Isn't it possible to query for a predicate that is not registered with this database?
 		// Iterate through all of the registered predicates in this database
-		for (StandardPredicate predicate : db.getDataStore().getRegisteredPredicates()) {
+		for (StandardPredicate predicate : db.getRegisteredPredicates()) {
 			// Ignore any closed predicates, they will not return RandomVariableAtoms
 			if (db.isClosed(predicate))
 				continue;

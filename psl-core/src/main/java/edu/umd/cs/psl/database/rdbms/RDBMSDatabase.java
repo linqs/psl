@@ -1,6 +1,7 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011-2013 University of Maryland
+ * Copyright 2011-2015 University of Maryland
+ * Copyright 2013-2015 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +29,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import edu.umd.cs.psl.model.argument.*;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,16 +49,6 @@ import edu.umd.cs.psl.database.DatabaseQuery;
 import edu.umd.cs.psl.database.Partition;
 import edu.umd.cs.psl.database.ReadOnlyDatabase;
 import edu.umd.cs.psl.database.ResultList;
-import edu.umd.cs.psl.model.argument.ArgumentType;
-import edu.umd.cs.psl.model.argument.Attribute;
-import edu.umd.cs.psl.model.argument.DoubleAttribute;
-import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.argument.IntegerAttribute;
-import edu.umd.cs.psl.model.argument.StringAttribute;
-import edu.umd.cs.psl.model.argument.Term;
-import edu.umd.cs.psl.model.argument.UniqueID;
-import edu.umd.cs.psl.model.argument.Variable;
-import edu.umd.cs.psl.model.argument.VariableTypeMap;
 import edu.umd.cs.psl.model.atom.AtomCache;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.QueryAtom;
@@ -174,7 +167,15 @@ public class RDBMSDatabase implements Database {
 		this.closed = false;
 	}
 	
-	public void registerPredicate(RDBMSPredicateHandle ph) {
+	/**
+	 * Adds a RDBMSPredicateHandle to this Database. Expected to be called only
+	 * immediately after construction by parent DataStore, in order to preserve
+	 * contract that only predicates registered with the DataStore at time of
+	 * construction are registered with this Database.
+	 * 
+	 * @param ph predicate to register
+	 */
+	void registerPredicate(RDBMSPredicateHandle ph) {
 		if (predicateHandles.containsKey(ph.predicate()))
 			throw new IllegalArgumentException("Predicate has already been registered!");
 		predicateHandles.put(ph.predicate(), ph);
@@ -186,6 +187,15 @@ public class RDBMSDatabase implements Database {
 			createInsertStatement(ph);
 			createDeleteStatement(ph);
 		}
+	}
+	
+	@Override
+	public Set<StandardPredicate> getRegisteredPredicates() {
+		Set<StandardPredicate> predicates = new HashSet<StandardPredicate>();
+		for (Predicate p : predicateHandles.keySet())
+			if (p instanceof StandardPredicate)
+				predicates.add((StandardPredicate) p);
+		return predicates;
 	}
 	
 	private void createQueryStatement(RDBMSPredicateHandle ph) {
@@ -305,13 +315,17 @@ public class RDBMSDatabase implements Database {
 				if (argument instanceof IntegerAttribute)
 					ps.setInt(paramIndex, ((IntegerAttribute)argument).getValue());
 				else if (argument instanceof DoubleAttribute)
-					ps.setDouble(paramIndex, ((DoubleAttribute)argument).getValue());
+					ps.setDouble(paramIndex, ((DoubleAttribute) argument).getValue());
 				else if (argument instanceof StringAttribute)
 					ps.setString(paramIndex, ((StringAttribute)argument).getValue());
+				else if (argument instanceof LongAttribute)
+					ps.setLong(paramIndex, ((LongAttribute) argument).getValue());
+				else if (argument instanceof DateAttribute)
+					ps.setDate(paramIndex, new java.sql.Date(((DateAttribute) argument).getValue().getMillis()));
 				else if (argument instanceof RDBMSUniqueIntID)
-					ps.setInt(paramIndex, ((RDBMSUniqueIntID)argument).getID());
+					ps.setInt(paramIndex, ((RDBMSUniqueIntID) argument).getID());
 				else if (argument instanceof RDBMSUniqueStringID)
-					ps.setString(paramIndex, ((RDBMSUniqueStringID)argument).getID());
+					ps.setString(paramIndex, ((RDBMSUniqueStringID) argument).getID());
 			}
 			return ps.executeQuery();
 		} catch (SQLException e) {
@@ -395,10 +409,13 @@ public class RDBMSDatabase implements Database {
 		ResultSet rs = queryDBForAtom(qAtom);
 		try {
 			if (rs.next()) {
-				double value = rs.getDouble(ph.valueColumn());
+					double value = rs.getDouble(ph.valueColumn());
+					// need to check whether the previous double is null, if so set it specifically to NaN
+					if (rs.wasNull()) value = Double.NaN;
 	    		double confidence = rs.getDouble(ph.confidenceColumn());
+	    		if (rs.wasNull()) confidence = Double.NaN;
+
 	    		int partition = rs.getInt(ph.partitionColumn());
-	    		
 	    		if (partition == writeID) {
 	    			// Found in the write partition
 	    			if (isClosed((StandardPredicate) p)) {
@@ -483,7 +500,12 @@ public class RDBMSDatabase implements Database {
 			sqlIndex ++;
 			
 			// Update the confidence value
-			update.setDouble(sqlIndex, atom.getConfidenceValue());
+			if (Double.isNaN(atom.getConfidenceValue())) {
+				update.setNull(sqlIndex, java.sql.Types.DOUBLE); 
+			} else {
+				update.setDouble(sqlIndex, atom.getConfidenceValue());
+			}
+
 			sqlIndex ++;
 			
 			// Next, fill in arguments
@@ -533,8 +555,11 @@ public class RDBMSDatabase implements Database {
 			sqlIndex ++;
 			
 			// Update the confidence value
-			insert.setDouble(sqlIndex, atom.getConfidenceValue());
-			
+			if (Double.isNaN(atom.getConfidenceValue())) {
+				insert.setNull(sqlIndex, java.sql.Types.DOUBLE); 
+			} else {
+				insert.setDouble(sqlIndex, atom.getConfidenceValue());
+			}
 			// Batch the command for later execution
 			insert.addBatch();
 			
@@ -621,20 +646,26 @@ public class RDBMSDatabase implements Database {
 							} else {
 								ArgumentType type = varTypes.getType(var);
 								switch (type) {
-								case Double:
-									res[i] = new DoubleAttribute(rs.getDouble(var.getName()));
-									break;
-								case Integer:
-									res[i] = new IntegerAttribute(rs.getInt(var.getName()));
-									break;
-								case String:
-									res[i] = new StringAttribute(rs.getString(var.getName()));
-									break;
-								case UniqueID:
-									res[i] = getUniqueID(rs.getObject(var.getName()));
-									break;
-								default:
-									throw new IllegalArgumentException("Unknown argument type: " + type);
+									case Double:
+										res[i] = new DoubleAttribute(rs.getDouble(var.getName()));
+										break;
+									case Integer:
+										res[i] = new IntegerAttribute(rs.getInt(var.getName()));
+										break;
+									case String:
+										res[i] = new StringAttribute(rs.getString(var.getName()));
+										break;
+									case Long:
+										res[i] = new LongAttribute(rs.getLong(var.getName()));
+										break;
+									case Date:
+										res[i] = new DateAttribute(new DateTime(rs.getDate(var.getName()).getTime()));
+										break;
+									case UniqueID:
+										res[i] = getUniqueID(rs.getObject(var.getName()));
+										break;
+									default:
+										throw new IllegalArgumentException("Unknown argument type: " + type);
 								}
 							}
 						}
@@ -676,7 +707,7 @@ public class RDBMSDatabase implements Database {
 	@Override
 	public void close() {
 		if (closed)
-			throw new IllegalStateException("Cannot closed database after it has been closed.");
+			throw new IllegalStateException("Cannot close database after it has been closed.");
 		
 		executePendingStatements();
 		parentDataStore.releasePartitions(this);

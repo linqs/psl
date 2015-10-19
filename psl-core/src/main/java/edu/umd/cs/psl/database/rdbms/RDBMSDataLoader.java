@@ -1,6 +1,7 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011-2013 University of Maryland
+ * Copyright 2011-2015 University of Maryland
+ * Copyright 2013-2015 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -171,7 +172,13 @@ public class RDBMSDataLoader implements DataLoader {
 					if (data[i] instanceof Integer) {
 						insertStmt.setInt(noCol, (Integer)data[i]);
 					} else if (data[i] instanceof Double) {
-						insertStmt.setDouble(noCol, (Double)data[i]);
+						// The standard JDBC way to insert NaN is using setNull
+						// if not, mysql will complain about the NaN default confidence value
+						if (Double.isNaN((Double)data[i])) {
+							insertStmt.setNull(noCol, java.sql.Types.DOUBLE); 
+						} else {
+							insertStmt.setDouble(noCol, (Double)data[i]);
+						}
 					} else if (data[i] instanceof String) {
 						insertStmt.setString(noCol, escapeSingleQuotes((String)data[i]));
 					} else if (data[i] instanceof RDBMSUniqueIntID) {
@@ -182,11 +189,18 @@ public class RDBMSDataLoader implements DataLoader {
 				}
 				
 				noCol++;
-				insertStmt.setDouble(noCol, value);
+				if (Double.isNaN(value)) {
+					insertStmt.setNull(noCol, java.sql.Types.DOUBLE); 
+				} else {
+					insertStmt.setDouble(noCol, value);	
+				}
 				noCol++;
-				insertStmt.setDouble(noCol, confidence);
-
-			    insertStmt.executeUpdate();
+				if (Double.isNaN(confidence)) {
+					insertStmt.setNull(noCol, java.sql.Types.DOUBLE); 
+				} else {
+					insertStmt.setDouble(noCol, confidence);
+				}
+		    insertStmt.executeUpdate();
 
 			} catch (SQLException e) {
 				log.error(e.getMessage() + "\n" + Arrays.toString(data));

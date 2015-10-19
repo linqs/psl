@@ -1,6 +1,7 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011-2013 University of Maryland
+ * Copyright 2011-2015 University of Maryland
+ * Copyright 2013-2015 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -82,7 +83,7 @@ public class TrainingMap implements AtomManager {
 		this.latentVariables = new HashSet<RandomVariableAtom>();
 		
 		// Iterate through all of the registered predicates in the RandomVariableAtom database
-		for (StandardPredicate predicate : rvDB.getDataStore().getRegisteredPredicates()) {
+		for (StandardPredicate predicate : rvDB.getRegisteredPredicates()) {
 			// Ignore any closed predicates, they will not return RandomVariableAtoms
 			if (rvDB.isClosed(predicate))
 				continue;

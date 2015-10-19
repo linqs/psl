@@ -1,6 +1,7 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011-2013 University of Maryland
+ * Copyright 2011-2015 University of Maryland
+ * Copyright 2013-2015 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +17,8 @@
  */
 package edu.umd.cs.psl.application.learning.weight.maxmargin;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -40,20 +39,20 @@ import edu.umd.cs.psl.model.parameters.PositiveWeight;
 
 /**
  * Learns new weights for the {@link CompatibilityKernel CompatibilityKernels}
- * in a {@link Model} using max margin inference.
+ * in a {@link Model} using max-margin learning.
  * <p>
  * The algorithm is based on structural SVM with cutting plane optimization
  * The objective is to find a weight vector that minimizes an L2 regularizer 
  * subject to the constraint that the ground truth score is better than any 
- * other solution.
- * 
- * min ||w||^2 + C \xi
- * s.t. w * f(y) < min_x (w * f(x) - || x - y ||_1) + \xi
+ * other solution that is scaled by a loss function L.
+ * <p>
+ * min ||w||^2 + C \xi      <br />
+ * s.t. w * f(y) < min_y' (w * f(y') - L(y, y')) + \xi
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  * @author Bert Huang <bert@cs.umd.edu>
  */
-public class MaxMargin extends WeightLearningApplication {
+abstract public class MaxMargin extends WeightLearningApplication {
 	
 	private static final Logger log = LoggerFactory.getLogger(MaxMargin.class);
 	
@@ -79,21 +78,19 @@ public class MaxMargin extends WeightLearningApplication {
 	public static final double SLACK_PENALTY_DEFAULT = 1;
 
 	/**
-	 * Key for positive integer, maximum iterations
+	 * Key for positive integer, maximum number of constraints to add to
+	 * quadratic program
 	 */
 	public static final String MAX_ITER_KEY = CONFIG_PREFIX + ".maxiter";
 	/** Default value for MAX_ITER_KEY */
 	public static final int MAX_ITER_DEFAULT = 500;
 	
 	/**
-	 * Key for LossBalancingType enum property. Determines the type of loss
-	 * balancing MaxMargin will use.
-	 * 
-	 * @see LossBalancingType
+	 * Key for boolean property. If true, only non-negative weights will be learned. 
 	 */
-	public static final String BALANCE_LOSS_KEY = CONFIG_PREFIX + ".balanceloss";
-	/** Default value for BALANCE_LOSS_KEY */
-	public static final LossBalancingType BALANCE_LOSS_DEFAULT = LossBalancingType.NONE;
+	public static final String NONNEGATIVE_WEIGHTS_KEY = CONFIG_PREFIX + ".nonnegativeweights";
+	/** Default value for NONNEGATIVE_WEIGHTS_KEY */
+	public static final boolean NONNEGATIVE_WEIGHTS_DEFAULT = true;
 	
 	/**
 	 * Key for NormScalingType enum property. Determines type of norm scaling
@@ -110,22 +107,6 @@ public class MaxMargin extends WeightLearningApplication {
 	public static final String SQUARE_SLACK_KEY= CONFIG_PREFIX + ".squareslack";
 	/** Default value for SQUARE_SLACK KEY*/
 	public static final boolean SQUARE_SLACK_DEFAULT = false;
-	
-	/** Types of loss balancing MaxMargin can use during learning */
-	public enum LossBalancingType {
-		/** No loss balancing. All LossAugmentingGroundKernels weighted as -1.0. */
-		NONE,
-		/**
-		 * Weights of LossAugmentingGroundKernels for true (false) ObservedAtoms
-		 * are -2 * number of true (false) ObservedAtoms / total ObservedAtoms.
-		 */
-		CLASS_WEIGHTS,
-		/**
-		 * Weights of LossAugmentingGroundKernels for true (false) ObservedAtoms
-		 * are -2 * number of false (true) ObservedAtoms / total ObservedAtoms.
-		 */
-		REVERSE_CLASS_WEIGHTS;
-	}
 	
 	/** Types of norm scaling MaxMargin can use during learning */
 	public enum NormScalingType {
@@ -149,19 +130,19 @@ public class MaxMargin extends WeightLearningApplication {
 	
 	protected final double tolerance;
 	protected final int maxIter;
+	protected final boolean nonnegativeWeights;
 	protected double slackPenalty;
-	protected final LossBalancingType balanceLoss;
 	protected final NormScalingType scaleNorm;
 	protected final boolean squareSlack;
 	
-	protected PositiveMinNormProgram normProgram;
+	protected MinNormProgram normProgram;
 	
 	public MaxMargin(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
 		super(model, rvDB, observedDB, config);
 		tolerance = config.getDouble(CUTTING_PLANE_TOLERANCE_KEY, CUTTING_PLANE_TOLERANCE_DEFAULT);
 		maxIter = config.getInt(MAX_ITER_KEY, MAX_ITER_DEFAULT);
+		nonnegativeWeights = config.getBoolean(NONNEGATIVE_WEIGHTS_KEY, NONNEGATIVE_WEIGHTS_DEFAULT);
 		slackPenalty = config.getDouble(SLACK_PENALTY_KEY, SLACK_PENALTY_DEFAULT);
-		balanceLoss = (LossBalancingType) config.getEnum(BALANCE_LOSS_KEY, BALANCE_LOSS_DEFAULT);
 		scaleNorm = (NormScalingType) config.getEnum(SCALE_NORM_KEY, SCALE_NORM_DEFAULT);
 		squareSlack = config.getBoolean(SQUARE_SLACK_KEY, SQUARE_SLACK_DEFAULT);
 	}
@@ -171,8 +152,8 @@ public class MaxMargin extends WeightLearningApplication {
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		super.initGroundModel();
 		
-		/* Sets up the PositiveMinNormProgram (in this method for appropriate throws declarations) */
-		normProgram = new PositiveMinNormProgram(kernels.size() + 1, config);
+		/* Sets up the MinNormProgram (in this method for appropriate throws declarations) */
+		normProgram = new MinNormProgram(kernels.size() + 1, nonnegativeWeights, config);
 		
 		/* Sets linear objective term */
 		double [] coefficients = new double[kernels.size() + 1];
@@ -230,7 +211,7 @@ public class MaxMargin extends WeightLearningApplication {
 	protected void doLearn() {
 		double[] weights;
 		double[] truthIncompatibility;
-		double mpeIncompatibility;
+		double oracleIncompatibility;
 		
 		/* Initializes weights */
 		weights = new double[kernels.size()+1];
@@ -248,65 +229,7 @@ public class MaxMargin extends WeightLearningApplication {
 			}
 		}
 		
-		/* Determines weights of LossAugmentingGroundKernels */
-		double obsvTrueWeight, obsvFalseWeight;
-		if (LossBalancingType.NONE.equals(balanceLoss)) {
-			obsvTrueWeight = -1.0;
-			obsvFalseWeight = -1.0;
-		}
-		else {
-			/*
-			 * Counts positive vs negative ground truth atoms in order to weight
-			 * LossAugmentingGroundKernels
-			 */
-			int posAtoms = 0;
-			for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet())
-				if (e.getValue().getValue() == 1.0)
-					posAtoms++;
-				else if (e.getValue().getValue() != 0.0)
-					throw new IllegalStateException("Cannot perform loss balancing " +
-							"when some ground truth atoms have value other than 1.0 or 0.0.");
-			double posRatio = (double) posAtoms / (double) trainingMap.getTrainingMap().size();
-			
-			if (LossBalancingType.CLASS_WEIGHTS.equals(balanceLoss)) {
-				obsvTrueWeight = -2 * posRatio;
-				obsvFalseWeight = -2 - 2 * obsvTrueWeight;
-			}
-			else if (LossBalancingType.REVERSE_CLASS_WEIGHTS.equals(balanceLoss)) {
-				obsvFalseWeight = -2 * posRatio;
-				obsvTrueWeight = -2 - 2 * obsvFalseWeight;
-			}
-			else
-				throw new IllegalStateException("Unrecognized LossBalancingType.");
-		}
-		
-		/* Sets up loss augmenting ground kernels */
-		log.info("Weighting loss of positive (value = 1.0) examples by {} " +
-				"and negative examples by {}", obsvTrueWeight, obsvFalseWeight);
-		List<LossAugmentingGroundKernel> lossKernels = new ArrayList<LossAugmentingGroundKernel>(trainingMap.getTrainingMap().size());
-		List<LossAugmentingGroundKernel> nonExtremeLossKernels = new ArrayList<LossAugmentingGroundKernel>();
-		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
-			double truth = e.getValue().getValue();
-			LossAugmentingGroundKernel gk;
-			
-			/* If ground truth is at 1.0 or 0.0, sets up ground kernel without planning to change it */
-			if (truth == 1.0 || truth == 0.0) {
-				NegativeWeight weight = new NegativeWeight((truth == 1.0) ? obsvTrueWeight : obsvFalseWeight);
-				gk = new LossAugmentingGroundKernel(e.getKey(), truth, weight);
-			}
-			/* Else, does a little more to check it and change it later */
-			else {
-				if (truth >= 0.5)
-					gk = new LossAugmentingGroundKernel(e.getKey(), 1.0, new NegativeWeight(obsvTrueWeight));
-				else
-					gk = new LossAugmentingGroundKernel(e.getKey(), 1.0, new PositiveWeight(-1 * obsvTrueWeight));
-				
-				nonExtremeLossKernels.add(gk);
-			}
-			
-			reasoner.addGroundKernel(gk);
-			lossKernels.add(gk);
-		}
+		setupSeparationOracle();
 		
 		/* Prepares to begin optimization loop */
 		int iter = 0;
@@ -315,43 +238,11 @@ public class MaxMargin extends WeightLearningApplication {
 		/* Loops to identify separating hyperplane and reoptimize weights */
 		while (iter < maxIter && violation > tolerance) {
 			
-			/* Runs separation oracle */
-			int optimizationCount = 0;
-			boolean rerunOptimization = true;
-			while (rerunOptimization && optimizationCount < maxIter) {
-				reasoner.optimize();
-				
-				rerunOptimization = false;
-				for (LossAugmentingGroundKernel gk : nonExtremeLossKernels) {
-					double currentValue = gk.getAtom().getValue();
-					double truth = trainingMap.getTrainingMap().get(gk.getAtom()).getValue();
-					if (currentValue > truth && gk.getWeight() instanceof PositiveWeight) {
-						gk.setWeight(new NegativeWeight(obsvTrueWeight));
-						rerunOptimization = true;
-					}
-					else if (currentValue < truth && gk.getWeight() instanceof NegativeWeight) {
-						gk.setWeight(new PositiveWeight(-1 * obsvTrueWeight));
-						rerunOptimization = true;
-					}
-				}
-				
-				optimizationCount++;
-			}
+			runSeparationOracle();
 			
-			log.info("Separation oracle performed {} optimizations.", optimizationCount);
-						
 			double slack = weights[kernels.size()];
 
-			/* Computes distance between ground truth and output of separation oracle */
-			double loss = 0.0;
-			for (LossAugmentingGroundKernel gk : lossKernels) {
-				double currentValue = gk.getAtom().getValue();
-				double truth = trainingMap.getTrainingMap().get(gk.getAtom()).getValue();
-				double lossTerm = gk.getWeight().getWeight() * Math.abs(truth - currentValue);
-				if (lossTerm <= 0)
-					lossTerm *= -1;
-				loss += lossTerm;
-			}
+			double loss = evaluateLoss();
 					
 			/* The next loop computes constraint coefficients for max margin constraints:
 			 * w * f(y) < min_x w * f(x) - ||x-y|| + \xi
@@ -364,54 +255,82 @@ public class MaxMargin extends WeightLearningApplication {
 			double [] constraintCoefficients = new double[kernels.size() + 1];
 			violation = 0.0;
 			for (int i = 0; i < kernels.size(); i++) {
-				mpeIncompatibility = 0.0;
+				oracleIncompatibility = 0.0;
 				
 				for (GroundKernel gk : reasoner.getGroundKernels(kernels.get(i)))
-					mpeIncompatibility += ((GroundCompatibilityKernel) gk).getIncompatibility();	
+					oracleIncompatibility += ((GroundCompatibilityKernel) gk).getIncompatibility();	
 				
-				constraintCoefficients[i] =  truthIncompatibility[i] - mpeIncompatibility;
+				constraintCoefficients[i] =  truthIncompatibility[i] - oracleIncompatibility;
 				
 				violation += weights[i] * constraintCoefficients[i];
 			}
 			violation -= slack;
 			violation += loss;
 			
-			// slack coefficient
-			constraintCoefficients[kernels.size()] = -1.0;
-			
-			// add linear constraint weights * truthIncompatility < weights * mpeIncompatibility - loss + \xi
-			normProgram.addInequalityConstraint(constraintCoefficients, -1 * loss);
-			
 			log.debug("Violation of most recent constraint: {}", violation);
-			log.debug("Distance from ground truth: {}", loss);
+			log.debug("Loss at most recent point: {}", loss);
 			log.debug("Slack: {}", slack);
 			
-			
-			// optimize with constraint set
-			try {
-				normProgram.solve();
+			if (violation > tolerance) {
+				// slack coefficient
+				constraintCoefficients[kernels.size()] = -1.0;
+				
+				// add linear constraint weights * truthIncompatility < weights * mpeIncompatibility - loss + \xi
+				normProgram.addInequalityConstraint(constraintCoefficients, -1 * loss);
+				
+				
+				// optimize with constraint set
+				try {
+					normProgram.solve();
+				}
+				catch (IllegalArgumentException e) {
+					log.error("Norm minimization program failed (IllegalArgumentException). Returning early.");
+					return;
+				} 
+				catch (IllegalStateException e) {
+					log.error("Norm minimization program failed (IllegalStateException). Returning early.");
+					return;
+				}
+				
+				// update weights with new solution
+				weights = normProgram.getSolution();
+				/* Sets the weights to the new solution */
+				for (int i = 0; i < kernels.size(); i++)
+					if (nonnegativeWeights && weights[i] < 0.0)
+						kernels.get(i).setWeight(new NegativeWeight(weights[i]));
+					else 
+						kernels.get(i).setWeight(new PositiveWeight(weights[i]));
+				reasoner.changedGroundKernelWeights();
+				
+				iter++;
 			}
-			catch (IllegalArgumentException e) {
-				log.error("Norm minimization program failed. Returning early.");
-				return;
-			} 
-			catch (IllegalStateException e) {
-				log.error("Norm minimization program failed. Returning early.");
-				e.printStackTrace();
-				return;
-			}
-			
-			// update weights with new solution
-			weights = normProgram.getSolution();
-			/* Sets the weights to the new solution */
-			for (int i = 0; i < kernels.size(); i++)
-				kernels.get(i).setWeight(new PositiveWeight(weights[i]));
-			reasoner.changedGroundKernelWeights();
-
-			log.debug("Current model: {}", model);
-			
-			iter++;
 		}
+		
+		log.debug("Number of separation oracle calls: {}", iter);
+		
+		tearDownSeparationOracle();
 	}
+	
+	/**
+	 * Performs any initialization necessary for the separation oracle.
+	 */
+	abstract protected void setupSeparationOracle();
+	
+	/**
+	 * Sets the current Atom states to
+	 * <p>
+	 * min_y' w * f(y') - L(y, y')
+	 */
+	abstract protected void runSeparationOracle();
+	
+	/**
+	 * @return value of L(y, y') for ground truth y and current state y'
+	 */
+	abstract protected double evaluateLoss();
+	
+	/**
+	 * Undoes {@link #setupSeparationOracle()}.
+	 */
+	abstract protected void tearDownSeparationOracle();
 
 }

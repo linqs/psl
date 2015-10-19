@@ -1,6 +1,7 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011-2013 University of Maryland
+ * Copyright 2011-2015 University of Maryland
+ * Copyright 2013-2015 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +31,8 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import edu.umd.cs.psl.model.argument.*;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,12 +52,6 @@ import edu.umd.cs.psl.database.ReadOnlyDatabase;
 import edu.umd.cs.psl.database.loading.Inserter;
 import edu.umd.cs.psl.database.loading.Updater;
 import edu.umd.cs.psl.database.rdbms.driver.DatabaseDriver;
-import edu.umd.cs.psl.model.argument.ArgumentType;
-import edu.umd.cs.psl.model.argument.DoubleAttribute;
-import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.argument.IntegerAttribute;
-import edu.umd.cs.psl.model.argument.StringAttribute;
-import edu.umd.cs.psl.model.argument.UniqueID;
 import edu.umd.cs.psl.model.function.ExternalFunction;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.PredicateFactory;
@@ -108,7 +105,7 @@ public class RDBMSDataStore implements DataStore {
 	public static final String USE_STRING_ID_KEY = CONFIG_PREFIX + ".usestringids";
 	
 	/** Default value for the USE_STRING_ID_KEY property */
-	public static final boolean USE_STRING_ID_DEFAULT = false;
+	public static final boolean USE_STRING_ID_DEFAULT = true;
 	
 	/*
 	 * The values for the PSL columns.
@@ -125,6 +122,11 @@ public class RDBMSDataStore implements DataStore {
 	 */
 	private final Connection connection;
 	private final RDBMSDataLoader dataloader;
+
+	/*
+	 * This Database Driver associated to the datastore.
+	 */
+	private final DatabaseDriver dbDriver;
 	
 	/*
 	 * Metadata
@@ -165,10 +167,13 @@ public class RDBMSDataStore implements DataStore {
 		this.openDatabases = HashMultimap.create();
 		this.writePartitionIDs = new HashSet<Partition>();
 		this.predicates = new HashMap<StandardPredicate, RDBMSPredicateInfo>();
-		
+
+		// Keep database driver locally for generating different query dialets
+		this.dbDriver = dbDriver;
+
 		// Connect to the database
 		this.connection = dbDriver.getConnection();
-		
+
 		// Set up the data loader
 		this.dataloader = new RDBMSDataLoader(connection);
 		
@@ -183,7 +188,9 @@ public class RDBMSDataStore implements DataStore {
 		deserializePredicates();
 		
 		// Register the DataStore class for external functions
-		registerFunctionAlias();
+		if (dbDriver.isSupportExternalFunction()) {
+			registerFunctionAlias();
+		}
 	}
 	
 	/**
@@ -316,30 +323,37 @@ public class RDBMSDataStore implements DataStore {
 		for (int i=0; i < pi.argCols.length; i++) {
 			String colName = pi.argCols[i];
 			String typeName;
-			
+
 			switch (pi.predicate.getArgumentType(i)) {
-			case Double:
-				typeName = "DOUBLE";
-				break;
-			case Integer:
-				typeName = "INT";
-				break;
-			case String:
-				typeName = "MEDIUMTEXT";
-				break;
-			case UniqueID:
-				hashIndexes.add(colName);
-				if (stringUniqueIDs)
-					typeName = "VARCHAR(255)";
-				else
+				case Double:
+					typeName = "DOUBLE";
+					break;
+				case Integer:
 					typeName = "INT";
-				break;
-			default:
-				throw new IllegalStateException("Unknown ArgumentType for predicate " + p.getName());
+					break;
+				case String:
+					typeName = "MEDIUMTEXT";
+					colName = dbDriver.castStringWithModifiersForIndexing(colName);
+					break;
+				case Long:
+					typeName = "BIGINT";
+					break;
+				case Date:
+					typeName = "DATE";
+					break;
+				case UniqueID:
+					hashIndexes.add(colName);
+					if (stringUniqueIDs)
+						typeName = "VARCHAR(255)";
+					else
+						typeName = "INT";
+					break;
+				default:
+					throw new IllegalStateException("Unknown ArgumentType for predicate " + p.getName());
 			}
-			
+
 			keyColumns.append(colName).append(", ");
-			q.addCustomColumn(colName + " " + typeName, ColumnConstraint.NOT_NULL);
+			q.addCustomColumn(pi.argCols[i] + " " + typeName, ColumnConstraint.NOT_NULL);
 		}
 		
 		// Add a column for partitioning
@@ -356,13 +370,22 @@ public class RDBMSDataStore implements DataStore {
 
 			try {
 				// Create the table
-			    stmt.executeUpdate(q.validate().toString());
+		    stmt.executeUpdate(q.validate().toString());
 
-			    // Create indexes for the table
+		    // Create indexes for the table, only for UniqueID types
 				for (String hashcol : hashIndexes) {
-					stmt.executeUpdate("CREATE HASH INDEX " + pi.tableName + hashcol + "hashidx ON " + pi.tableName + " (" + hashcol + " ) ");
+
+					/* to support multiple databases, need to abstract index creation */
+					String index_name = pi.tableName + hashcol + "hashidx";
+					String indexQuery = dbDriver.createHashIndex(index_name, pi.tableName, hashcol);
+					stmt.executeUpdate(indexQuery);
+					//stmt.executeUpdate("CREATE HASH INDEX " + pi.tableName + hashcol + "hashidx ON " + pi.tableName + " (" + hashcol + " ) ");
 				}
-				stmt.executeUpdate("CREATE PRIMARY KEY HASH ON " + pi.tableName + " (" + keyColumns.toString() + " ) ");
+
+				// whole columns as index
+				String primaryKeyQuery = dbDriver.createPrimaryKey(pi.tableName, keyColumns.toString());
+				stmt.executeUpdate(primaryKeyQuery);
+				//stmt.executeUpdate("CREATE PRIMARY KEY HASH ON " + pi.tableName + " (" + keyColumns.toString() + " ) ");
 			} finally {
 			    stmt.close();
 			}
@@ -584,26 +607,32 @@ public class RDBMSDataStore implements DataStore {
 		for (int i=0; i < args.length; i++) {
 			if (args[i]==null)
 				throw new IllegalArgumentException("Argument cannot be null!");
-			
+
 			ArgumentType t = extFun.getArgumentTypes()[i];
 			switch (t) {
-			case Double:
-				arguments[i] = new DoubleAttribute(Double.parseDouble(args[i]));
-				break;
-			case Integer:
-				arguments[i] = new IntegerAttribute(Integer.parseInt(args[i]));
-				break;
-			case String:
-				arguments[i] = new StringAttribute(args[i]);
-				break;
-			case UniqueID:
-				arguments[i] = db.getUniqueID(args[i]);
-				break;
-			default:
-				throw new IllegalArgumentException("Unknown argument type: " + t.getName());
+				case Double:
+					arguments[i] = new DoubleAttribute(Double.parseDouble(args[i]));
+					break;
+				case Integer:
+					arguments[i] = new IntegerAttribute(Integer.parseInt(args[i]));
+					break;
+				case String:
+					arguments[i] = new StringAttribute(args[i]);
+					break;
+				case Long:
+					arguments[i] = new LongAttribute(Long.parseLong(args[i]));
+					break;
+				case Date:
+					arguments[i] = new DateAttribute(new DateTime(args[i]));
+					break;
+				case UniqueID:
+					arguments[i] = db.getUniqueID(args[i]);
+					break;
+				default:
+					throw new IllegalArgumentException("Unknown argument type: " + t.getName());
 			}
 		}
-		
+
 		return extFun.getValue(db, arguments);
 	}
 

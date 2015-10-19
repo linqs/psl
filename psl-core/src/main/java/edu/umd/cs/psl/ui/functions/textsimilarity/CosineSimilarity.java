@@ -1,6 +1,7 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011-2013 University of Maryland
+ * Copyright 2011-2015 University of Maryland
+ * Copyright 2013-2015 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +17,7 @@
  */
 package edu.umd.cs.psl.ui.functions.textsimilarity;
 
+import edu.umd.cs.psl.model.argument.StringAttribute;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,9 +60,12 @@ public class CosineSimilarity implements ExternalFunction {
 	
 	@Override
 	public double getValue(ReadOnlyDatabase db, GroundTerm... args) {
+		String a = ((StringAttribute) args[0]).getValue();
+		String b = ((StringAttribute) args[1]).getValue();
+
 		WordVector vec1, vec2;
-		vec1 = getVector(args[0].toString());
-		vec2 = getVector(args[1].toString());
+		vec1 = getVector(a);
+		vec2 = getVector(b);
 		double result = cosineSimilarity(vec1,vec2);
 		numComputed++;
 		if (numComputed%10000==0) log.debug("Num computed{} | Similarity {}",numComputed,result);

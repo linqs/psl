@@ -1,6 +1,7 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011-2013 University of Maryland
+ * Copyright 2011-2015 University of Maryland
+ * Copyright 2013-2015 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +17,8 @@
  */
 package edu.umd.cs.psl.database;
 
-import edu.umd.cs.psl.database.Partition;
+import java.util.Set;
+
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.UniqueID;
 import edu.umd.cs.psl.model.argument.Variable;
@@ -155,6 +157,17 @@ public interface Database {
 	 * @return TRUE if predicate is closed
 	 */
 	public boolean isClosed(StandardPredicate predicate);
+	
+	/**
+	 * Returns the set of StandardPredicates registered with this Database.
+	 * Note that the result can differ from calling
+	 * {@link DataStore#getRegisteredPredicates()} on this Database's backing
+	 * DataStore, since additional predicates might have been registered since
+	 * this Database was created.
+	 * 
+	 * @return the set of StandardPredicates registered with this Database
+	 */
+	public Set<StandardPredicate> getRegisteredPredicates();
 	
 	/**
 	 * Convenience method.

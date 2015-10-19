@@ -1,6 +1,7 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011-2013 University of Maryland
+ * Copyright 2011-2015 University of Maryland
+ * Copyright 2013-2015 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,15 +20,19 @@ package edu.umd.cs.psl.util.database;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.joda.time.DateTime;
+
 import com.google.common.base.Preconditions;
 
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.database.DatabaseQuery;
 import edu.umd.cs.psl.database.ResultList;
 import edu.umd.cs.psl.model.argument.ArgumentType;
+import edu.umd.cs.psl.model.argument.DateAttribute;
 import edu.umd.cs.psl.model.argument.DoubleAttribute;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.IntegerAttribute;
+import edu.umd.cs.psl.model.argument.LongAttribute;
 import edu.umd.cs.psl.model.argument.StringAttribute;
 import edu.umd.cs.psl.model.argument.Term;
 import edu.umd.cs.psl.model.argument.UniqueID;
@@ -124,30 +129,42 @@ public class Queries {
 			}
 			else {
 				switch (type) {
-				case UniqueID:
-					args[i] = db.getUniqueID(rawArgs[i]);
-					break;
-				case String:
-					args[i] = new StringAttribute(rawArgs[i].toString());
-					break;
-				case Double:
-					if (rawArgs[i] instanceof Double)
-						args[i] = new DoubleAttribute((Double) rawArgs[i]);
-					else if (rawArgs[i] instanceof String)
-						args[i] = new DoubleAttribute(Double.parseDouble((String) rawArgs[i]));
-					else
-						throw new IllegalArgumentException("Could not convert raw arg " + i + " to Double.");
-					break;
-				case Integer:
-					if (rawArgs[i] instanceof Integer)
-						args[i] = new IntegerAttribute((Integer) rawArgs[i]);
-					else if (rawArgs[i] instanceof String)
-						args[i] = new IntegerAttribute(Integer.parseInt((String) rawArgs[i]));
-					else
-						throw new IllegalArgumentException("Could not convert raw arg " + i + " to Integer.");
-					break;
-				default:
-					throw new IllegalArgumentException("Unrecognized argument type " + type + " at index " + i + ".");
+					case UniqueID:
+						args[i] = db.getUniqueID(rawArgs[i]);
+						break;
+					case String:
+						args[i] = new StringAttribute(rawArgs[i].toString());
+						break;
+					case Double:
+						if (rawArgs[i] instanceof Double)
+							args[i] = new DoubleAttribute((Double) rawArgs[i]);
+						else if (rawArgs[i] instanceof String)
+							args[i] = new DoubleAttribute(Double.parseDouble((String) rawArgs[i]));
+						else
+							throw new IllegalArgumentException("Could not convert raw arg " + i + " to Double.");
+						break;
+					case Integer:
+						if (rawArgs[i] instanceof Integer)
+							args[i] = new IntegerAttribute((Integer) rawArgs[i]);
+						else if (rawArgs[i] instanceof String)
+							args[i] = new IntegerAttribute(Integer.parseInt((String) rawArgs[i]));
+						else
+							throw new IllegalArgumentException("Could not convert raw arg " + i + " to Integer.");
+						break;
+					case Long:
+						if (rawArgs[i] instanceof Long)
+							args[i] = new LongAttribute((Long) rawArgs[i]);
+						else
+							throw new IllegalArgumentException("Could not convert raw arg " + i + " to Long.");
+					case Date:
+						try {
+							args[i] = new DateAttribute(new DateTime(rawArgs[i]));
+						} catch (IllegalArgumentException e) {
+							throw new IllegalArgumentException("Could not convert raw arg " + i + " to Date.");
+						}
+						break;
+					default:
+						throw new IllegalArgumentException("Unrecognized argument type " + type + " at index " + i + ".");
 				}
 			}
 		}

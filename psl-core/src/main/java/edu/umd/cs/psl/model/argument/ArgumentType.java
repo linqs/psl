@@ -1,6 +1,7 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011-2013 University of Maryland
+ * Copyright 2011-2015 University of Maryland
+ * Copyright 2013-2015 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,9 +65,39 @@ public enum ArgumentType {
 			return (term instanceof DoubleAttribute);
 		}
 	},
+
+	/**
+	 * A {@link Long} argument.
+	 */
+	Long {
+		@Override
+		public String getName() {
+			return "Long";
+		}
+
+		@Override
+		public boolean isInstance(GroundTerm term) {
+			return term instanceof LongAttribute;
+		}
+	},
+
+	/**
+	 * A {@link org.joda.time.DateTime} argument.
+	 */
+	Date {
+		@Override
+		public String getName() {
+			return "Date";
+		}
+
+		@Override
+		public boolean isInstance(GroundTerm term) {
+			return term instanceof DateAttribute;
+		}
+	},
 	
 	/**
-	 * A {@link edu.umd.cs.psl.database.UniqueID} argument.
+	 * A {@link UniqueID} argument.
 	 */
 	UniqueID {
 		

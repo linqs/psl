@@ -1,6 +1,7 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011-2013 University of Maryland
+ * Copyright 2011-2015 University of Maryland
+ * Copyright 2013-2015 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,11 +78,25 @@ public class MPEInference implements ModelApplication {
 	private Model model;
 	private Database db;
 	private ConfigBundle config;
+	private Reasoner reasoner;
+	private PersistedAtomManager atomManager;
 	
-	public MPEInference(Model model, Database db, ConfigBundle config) {
+	public MPEInference(Model model, Database db, ConfigBundle config) 
+			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		this.model = model;
 		this.db = db;
 		this.config = config;
+		
+		initialize();
+	}
+	
+	
+	private void initialize() throws ClassNotFoundException, IllegalAccessException, InstantiationException {
+		reasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
+		atomManager = new PersistedAtomManager(db);
+		
+		log.info("Grounding out model.");
+		Grounding.groundAll(model, atomManager, reasoner);
 	}
 	
 	/**
@@ -96,14 +111,10 @@ public class MPEInference implements ModelApplication {
 	 * @return inference results
 	 * @see DatabasePopulator
 	 */
-	public FullInferenceResult mpeInference() 
-			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
+	public FullInferenceResult mpeInference() {
 
-		Reasoner reasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
-		PersistedAtomManager atomManager = new PersistedAtomManager(db);
+		reasoner.changedGroundKernelWeights();
 		
-		log.info("Grounding out model.");
-		Grounding.groundAll(model, atomManager, reasoner);
 		log.info("Beginning inference.");
 		reasoner.optimize();
 		log.info("Inference complete. Writing results to Database.");
@@ -118,12 +129,16 @@ public class MPEInference implements ModelApplication {
 		double incompatibility = GroundKernels.getTotalWeightedIncompatibility(reasoner.getCompatibilityKernels());
 		double infeasibility = GroundKernels.getInfeasibilityNorm(reasoner.getConstraintKernels());
 		int size = reasoner.size();
-		reasoner.close();
 		return new MemoryFullInferenceResult(incompatibility, infeasibility, count, size);
+	}
+	
+	public Reasoner getReasoner() {
+		return reasoner;
 	}
 
 	@Override
 	public void close() {
+		reasoner.close();
 		model=null;
 		db = null;
 		config = null;

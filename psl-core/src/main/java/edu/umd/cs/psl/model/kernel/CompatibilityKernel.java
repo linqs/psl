@@ -1,6 +1,7 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011-2013 University of Maryland
+ * Copyright 2011-2015 University of Maryland
+ * Copyright 2013-2015 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,4 +24,8 @@ public interface CompatibilityKernel extends Kernel {
 	public Weight getWeight();
 	
 	public void setWeight(Weight w);
+	
+	public boolean isWeightMutable();
+	
+	public void setWeightMutable(boolean mutable);
 }

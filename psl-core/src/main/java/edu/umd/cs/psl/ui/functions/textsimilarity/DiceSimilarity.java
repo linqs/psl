@@ -1,6 +1,7 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011-2013 University of Maryland
+ * Copyright 2011-2015 University of Maryland
+ * Copyright 2013-2015 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +24,7 @@ import java.util.TreeSet;
 import edu.umd.cs.psl.database.ReadOnlyDatabase;
 import edu.umd.cs.psl.model.argument.ArgumentType;
 import edu.umd.cs.psl.model.argument.GroundTerm;
+import edu.umd.cs.psl.model.argument.StringAttribute;
 import edu.umd.cs.psl.model.function.ExternalFunction;
 
 /**
@@ -57,9 +59,11 @@ public class DiceSimilarity implements ExternalFunction
 	
 	@Override
 	public double getValue(ReadOnlyDatabase db, GroundTerm... args) {
+		String a = ((StringAttribute) args[0]).getValue();
+		String b = ((StringAttribute) args[1]).getValue();
 		// Create two sets of character bigrams, one for each string.
-		Set<String> s1 = splitIntoBigrams(args[0].toString());
-		Set<String> s2 = splitIntoBigrams(args[1].toString());
+		Set<String> s1 = splitIntoBigrams(a);
+		Set<String> s2 = splitIntoBigrams(b);
 		
 		// Get the number of elements in each set.
 		int n1 = s1.size();

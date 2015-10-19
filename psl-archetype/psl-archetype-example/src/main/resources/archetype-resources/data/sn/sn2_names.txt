@@ -1,18 +1,26 @@
 #set( $symbol_pound = '#' )
 #set( $symbol_dollar = '$' )
 #set( $symbol_escape = '\' )
-1	John Braker
-2	Mr. Jack Ressing
-3	Peter Larry Smith
-4	Tim Barosso
-5	Jessica Pannillo
-8	Peter Smithsonian
-9	Miranda Parker
+//
+// Social Network A
+//
 
-21	J. Braker
-22	Mr. J. Ressing
-23	P. L. Smith
+21	John Braker
+22	Mr. Jack Ressing
+23	Peter Larry Smith
 24	Tim Barosso
-25	J. Pannillo
-28	Joseline Splinter
-29	Fox the Panther
+25	Jessica Pannillo
+26	Peter Smithsonian
+27	Miranda Parker
+
+//
+// Social Network B
+//
+
+31	J. Braker
+32	Mr. J. Ressing
+33	P. L. Smith
+34	Tim Barosso
+35	J. Pannillo
+36	Joseline Splinter
+37	Fox the Panther

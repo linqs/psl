@@ -1,6 +1,7 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011-2013 University of Maryland
+ * Copyright 2011-2015 University of Maryland
+ * Copyright 2013-2015 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +26,8 @@ import java.util.Map;
 
 import org.antlr.v4.runtime.ANTLRFileStream;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import edu.umd.cs.psl.database.DataStore;
 import edu.umd.cs.psl.model.Model;
@@ -60,6 +63,8 @@ import edu.umd.cs.psl.model.predicate.StandardPredicate;
  */
 public class PSLModelLoader extends PSLBaseVisitor<Formula> {
 
+	private static final Logger log = LoggerFactory.getLogger(PSLModelLoader.class);
+			
 	private Model model;
 
 	private PredicateFactory pf;
@@ -115,7 +120,7 @@ public class PSLModelLoader extends PSLBaseVisitor<Formula> {
 		// register the predicate with the DataStore
 		ds.registerPredicate((StandardPredicate) pf.getPredicate(predicate));
 
-		System.out.println("Created predicate " + pf.getPredicate(predicate));
+		log.debug("Created predicate " + pf.getPredicate(predicate));
 
 		return null;
 	}
@@ -151,7 +156,7 @@ public class PSLModelLoader extends PSLBaseVisitor<Formula> {
 				}
 				i++;
 			}
-
+			
 			return new QueryAtom(p, arguments);
 
 		} else if (ctx.AND() != null) {
@@ -171,8 +176,8 @@ public class PSLModelLoader extends PSLBaseVisitor<Formula> {
 			return new QueryAtom(SpecialPredicate.NotEqual, 
 					getVariable(ctx.argument(0).getText()), getVariable(ctx.argument(1).getText()));
 		}
-		
-		return visitChildren(ctx); 
+			
+		return visit(ctx.expression(0));
 	}
 
 	/**
@@ -252,7 +257,7 @@ public class PSLModelLoader extends PSLBaseVisitor<Formula> {
 			// start parsing
 			loader.visit(program);
 			
-			System.out.println(loader.getModel());
+			log.debug(loader.getModel().toString());
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

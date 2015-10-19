@@ -1,6 +1,7 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011-2013 University of Maryland
+ * Copyright 2011-2015 University of Maryland
+ * Copyright 2013-2015 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -262,17 +263,18 @@ public class MOSEK implements ConicProgramSolver {
 			switch(solsta[0]) {
 			case optimal:
 			case near_optimal:
+			case unknown:
 				/* Stores solution in conic program */
 				x.assign(solution);
 				program.checkInMatrices();
+				if (mosek.Env.solsta.unknown.equals(solsta[0]))
+					log.warn("MOSEK solution status unknown.");
 				break;
 			case dual_infeas_cer:
 			case prim_infeas_cer:
 			case near_dual_infeas_cer:
 			case near_prim_infeas_cer:
 				throw new IllegalStateException("Infeasible.");
-			case unknown:
-				throw new IllegalStateException("Unknown solution status.");
 			default:
 				throw new IllegalStateException("Other solution status.");
 			}

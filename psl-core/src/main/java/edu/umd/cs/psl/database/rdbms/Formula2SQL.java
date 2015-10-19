@@ -1,6 +1,7 @@
 /*
  * This file is part of the PSL software.
- * Copyright 2011-2013 University of Maryland
+ * Copyright 2011-2015 University of Maryland
+ * Copyright 2013-2015 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +29,6 @@ import com.healthmarketscience.sqlbuilder.FunctionCall;
 import com.healthmarketscience.sqlbuilder.InCondition;
 import com.healthmarketscience.sqlbuilder.SelectQuery;
 
-import edu.umd.cs.psl.database.Partition;
 import edu.umd.cs.psl.model.argument.Attribute;
 import edu.umd.cs.psl.model.argument.Term;
 import edu.umd.cs.psl.model.argument.UniqueID;
@@ -37,7 +37,10 @@ import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.VariableAssignment;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.formula.traversal.AbstractFormulaTraverser;
-import edu.umd.cs.psl.model.predicate.*;
+import edu.umd.cs.psl.model.predicate.ExternalFunctionalPredicate;
+import edu.umd.cs.psl.model.predicate.FunctionalPredicate;
+import edu.umd.cs.psl.model.predicate.SpecialPredicate;
+import edu.umd.cs.psl.model.predicate.StandardPredicate;
 
 public class Formula2SQL extends AbstractFormulaTraverser {
 
