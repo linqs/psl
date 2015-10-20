@@ -21,10 +21,10 @@ import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.parameters.Weight;
 import edu.umd.cs.psl.reasoner.function.FunctionTerm;
 
-public interface GroundCompatibilityKernel extends GroundRule {
+public interface WeightedGroundRule extends GroundRule {
 	
 	@Override
-	public CompatibilityKernel getKernel();
+	public WeightedRule getKernel();
 	
 	/**
 	 * Returns the Weight of this GroundCompatibilityKernel.
@@ -34,7 +34,7 @@ public interface GroundCompatibilityKernel extends GroundRule {
 	 * the most recent Weight set by {@link #setWeight(Weight)}.
 	 * 
 	 * @return this GroundKernel's Weight
-	 * @see CompatibilityKernel#getWeight()
+	 * @see WeightedRule#getWeight()
 	 */
 	public Weight getWeight();
 	

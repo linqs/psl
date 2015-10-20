@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.application.topicmodel.kernel;
+package edu.umd.cs.psl.application.topicmodel.rule;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -24,38 +24,36 @@ import java.util.List;
 import java.util.Set;
 
 import edu.umd.cs.psl.application.topicmodel.reasoner.function.NegativeLogFunction;
-import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.parameters.Weight;
-import edu.umd.cs.psl.model.rule.BindingMode;
-import edu.umd.cs.psl.model.rule.CompatibilityKernel;
-import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.WeightedRule;
+import edu.umd.cs.psl.model.rule.WeightedGroundRule;
 import edu.umd.cs.psl.reasoner.function.FunctionSummand;
 import edu.umd.cs.psl.reasoner.function.FunctionTerm;
 
 /**
- * Ground log loss kernels, useful when PSL variables are given a probabilistic
+ * Ground log loss rules, useful when PSL variables are given a probabilistic
  * interpretation, as in latent topic networks.
  * 
  * @author Jimmy Foulds <jfoulds@ucsc.edu>
  */
-public class GroundLogLoss implements GroundCompatibilityKernel {
+public class GroundLogLoss implements WeightedGroundRule {
 	
 	private Weight weight;
-	private CompatibilityKernel kernel;
+	private WeightedRule kernel;
 	
 	protected final List<GroundAtom> literals;
 	protected final List<Double> coefficients;
 	
-	public GroundLogLoss(CompatibilityKernel k, List<GroundAtom> literals, List<Double> coefficients) {
+	public GroundLogLoss(WeightedRule k, List<GroundAtom> literals, List<Double> coefficients) {
 		kernel = k;
 		this.literals = new ArrayList<GroundAtom>(literals);
 		this.coefficients = new ArrayList<Double>(coefficients);
 	}
 
 	@Override
-	public CompatibilityKernel getKernel() {
-		return (CompatibilityKernel) kernel;
+	public WeightedRule getKernel() {
+		return (WeightedRule) kernel;
 	}
 
 	@Override
@@ -68,11 +66,6 @@ public class GroundLogLoss implements GroundCompatibilityKernel {
 	@Override
 	public void setWeight(Weight w) {
 		weight = w;
-	}
-	
-	@Override
-	public BindingMode getBinding(Atom atom) {
-		return null;
 	}
 	
 	@Override

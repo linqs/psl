@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import edu.umd.cs.psl.application.groundkernelstore.GroundKernelStore;
+import edu.umd.cs.psl.application.groundrulestore.GroundRuleStore;
 import edu.umd.cs.psl.database.ResultList;
 import edu.umd.cs.psl.model.NumericUtilities;
 import edu.umd.cs.psl.model.atom.Atom;
@@ -32,7 +32,7 @@ import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.atom.VariableAssignment;
 import edu.umd.cs.psl.model.formula.AvgConjImplication;
 import edu.umd.cs.psl.model.parameters.PositiveWeight;
-import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.WeightedGroundRule;
 import edu.umd.cs.psl.model.rule.Rule;
 import edu.umd.cs.psl.reasoner.function.FunctionTerm;
 import edu.umd.cs.psl.reasoner.function.FunctionVariable;
@@ -85,7 +85,7 @@ public class CompatibilityAveragingRuleKernel extends CompatibilityRuleKernel {
 	}
 	
 	@Override
-	protected int groundFormula(AtomManager atomManager, GroundKernelStore gks, ResultList res,  VariableAssignment var) {
+	protected int groundFormula(AtomManager atomManager, GroundRuleStore gks, ResultList res,  VariableAssignment var) {
 		int numGroundingsAdded = 0;
 		List<GroundAtom> posLiterals = new ArrayList<GroundAtom>(4);
 		List<GroundAtom> negLiterals = new ArrayList<GroundAtom>(4);
@@ -123,9 +123,9 @@ public class CompatibilityAveragingRuleKernel extends CompatibilityRuleKernel {
 			FunctionTerm function = groundRule.getFunction();
 			worstCaseValue = function.getValue(worstCaseValues, false);
 			if (worstCaseValue > NumericUtilities.strictEpsilon
-					&& (!function.isConstant() || !(groundRule instanceof GroundCompatibilityKernel))
+					&& (!function.isConstant() || !(groundRule instanceof WeightedGroundRule))
 					&& !gks.containsGroundKernel(groundRule)) {
-				gks.addGroundKernel(groundRule);
+				gks.addGroundRule(groundRule);
 				numGroundingsAdded++;
 			}
 			/* If the ground kernel is not actually added, unregisters it from atoms */

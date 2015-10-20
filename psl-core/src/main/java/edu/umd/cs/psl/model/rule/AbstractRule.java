@@ -23,36 +23,36 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
 
-import edu.umd.cs.psl.application.groundkernelstore.GroundKernelStore;
+import edu.umd.cs.psl.application.groundrulestore.GroundRuleStore;
 import edu.umd.cs.psl.model.atom.AtomEvent;
 import edu.umd.cs.psl.model.atom.AtomEventFramework;
 import edu.umd.cs.psl.model.parameters.Parameters;
 
 /**
- * Allows implementing Kernels to avoid keeping track of which GroundKernelStore
+ * Allows implementing Rules to avoid keeping track of which GroundRuleStore
  * to use when handling AtomEvents.
  * 
  * @author Eric Norris <enorris@cs.umd.edu>
  */
-public abstract class AbstractKernel implements Rule {
+public abstract class AbstractRule implements Rule {
 	
-	private static final Logger log = LoggerFactory.getLogger(AbstractKernel.class);
+	private static final Logger log = LoggerFactory.getLogger(AbstractRule.class);
 	
-	protected SetMultimap<AtomEventFramework, GroundKernelStore> frameworks;
+	protected SetMultimap<AtomEventFramework, GroundRuleStore> frameworks;
 	
-	protected AbstractKernel() {
+	protected AbstractRule() {
 		this.frameworks = HashMultimap.create();
 	}
 	
 	@Override
 	public void notifyAtomEvent(AtomEvent event) {
-		for (GroundKernelStore gks : frameworks.get(event.getEventFramework()))
+		for (GroundRuleStore gks : frameworks.get(event.getEventFramework()))
 			notifyAtomEvent(event, gks);
 	}
 
 	@Override
 	public void registerForAtomEvents(AtomEventFramework eventFramework,
-			GroundKernelStore gks) {
+			GroundRuleStore gks) {
 		if (!frameworks.containsKey(eventFramework)) {
 			frameworks.put(eventFramework, gks);
 			registerForAtomEvents(eventFramework);
@@ -64,7 +64,7 @@ public abstract class AbstractKernel implements Rule {
 
 	@Override
 	public void unregisterForAtomEvents(AtomEventFramework eventFramework,
-			GroundKernelStore gks) {
+			GroundRuleStore gks) {
 		if (!frameworks.remove(eventFramework, gks))
 			log.debug("Attempted to unregister with AtomEventFramework that is" +
 					" not registered.");
@@ -89,20 +89,20 @@ public abstract class AbstractKernel implements Rule {
 	}
 	
 	/**
-	 * Handles an AtomEvent using the specified GroundKernelStore.
+	 * Handles an AtomEvent using the specified GroundRuleStore.
 	 * <p>
-	 * Kernels need to have registered to handle this event with an
+	 * Rules need to have registered to handle this event with an
 	 * AtomEventFramework.
 	 * @param event		the AtomEvent that occurred
-	 * @param gks		the GroundKernelStore to use
+	 * @param grs		the GroundRuleStore to use
 	 */
-	protected abstract void notifyAtomEvent(AtomEvent event, GroundKernelStore gks);
+	protected abstract void notifyAtomEvent(AtomEvent event, GroundRuleStore grs);
 	
 	/**
 	 * Registers with a specific AtomEventFramework to handle atom events.
 	 * <p>
 	 * Subclasses are expected to register for the same AtomEvents and Predicates
-	 * at all times. Kernels that do not fit this behavior should not extend
+	 * at all times. Rules that do not fit this behavior should not extend
 	 * this class.
 	 * @param eventFramework	The event framework to register with
 	 */
@@ -112,7 +112,7 @@ public abstract class AbstractKernel implements Rule {
 	 * Unregisters from a specific AtomEventFrameWork to no longer handle atom events.
 	 * <p>
 	 * Subclasses are expected to have registered for the same AtomEvents and Predicates
-	 * at all times. Kernels that do not fit this behavior should not extend this class.
+	 * at all times. Rules that do not fit this behavior should not extend this class.
 	 * @param eventFramework	The event framework to unregister from
 	 */
 	protected abstract void unregisterForAtomEvents(AtomEventFramework eventFramework);

@@ -24,13 +24,13 @@ import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.parameters.PositiveWeight;
-import edu.umd.cs.psl.model.rule.CompatibilityKernel;
-import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.WeightedRule;
+import edu.umd.cs.psl.model.rule.WeightedGroundRule;
 
 /**
  * A {@link MetropolisRandOM} learning algorithm that samples one weight for
- * all {@link GroundCompatibilityKernel GroundCompatibilityKernels} with the
- * same parent {@link CompatibilityKernel}.
+ * all {@link WeightedGroundRule GroundCompatibilityKernels} with the
+ * same parent {@link WeightedRule}.
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  */

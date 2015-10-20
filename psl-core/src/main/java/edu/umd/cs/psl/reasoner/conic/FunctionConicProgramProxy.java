@@ -21,7 +21,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.Vector;
 
-import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.WeightedGroundRule;
 import edu.umd.cs.psl.optimizer.conic.program.ConeType;
 import edu.umd.cs.psl.optimizer.conic.program.LinearConstraint;
 import edu.umd.cs.psl.optimizer.conic.program.RotatedSecondOrderCone;
@@ -57,7 +57,7 @@ class FunctionConicProgramProxy extends ConicProgramProxy {
 		RSOCType.add(ConeType.RotatedSecondOrderCone);
 	}
 	
-	FunctionConicProgramProxy(ConicReasoner reasoner, GroundCompatibilityKernel gk) {
+	FunctionConicProgramProxy(ConicReasoner reasoner, WeightedGroundRule gk) {
 		super(reasoner, gk);
 		updateGroundKernel(gk);
 	}
@@ -136,7 +136,7 @@ class FunctionConicProgramProxy extends ConicProgramProxy {
 			featureVar.setObjectiveCoefficient(weight);
 	}
 	
-	void updateGroundKernelWeight(GroundCompatibilityKernel gk) {
+	void updateGroundKernelWeight(WeightedGroundRule gk) {
 		if (gk.getWeight().getWeight() == 0) {
 			if (initialized)
 				remove();
@@ -149,7 +149,7 @@ class FunctionConicProgramProxy extends ConicProgramProxy {
 		}
 	}
 	
-	void updateGroundKernel(GroundCompatibilityKernel gk) {
+	void updateGroundKernel(WeightedGroundRule gk) {
 		if (gk.getWeight().getWeight() == 0) {
 			if (initialized)
 				remove();

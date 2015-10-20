@@ -31,12 +31,12 @@ import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.parameters.PositiveWeight;
-import edu.umd.cs.psl.model.rule.CompatibilityKernel;
-import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.WeightedRule;
+import edu.umd.cs.psl.model.rule.WeightedGroundRule;
 
 /**
  * Abstract class that learns new weights for the
- * {@link CompatibilityKernel CompatibilityKernels} in a {@link Model} using
+ * {@link WeightedRule CompatibilityKernels} in a {@link Model} using
  * Metropolis MCEM RandOM learning.
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
@@ -203,7 +203,7 @@ public abstract class MetropolisRandOM extends WeightLearningApplication {
 	protected abstract void prepareForRound();
 	
 	/**
-	 * Samples and sets {@link GroundCompatibilityKernel} weights.
+	 * Samples and sets {@link WeightedGroundRule} weights.
 	 */
 	protected abstract void sampleAndSetWeights();
 	

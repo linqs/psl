@@ -15,9 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.application.topicmodel.kernel;
+package edu.umd.cs.psl.application.topicmodel.rule;
 
-import edu.umd.cs.psl.application.groundkernelstore.GroundKernelStore;
+import edu.umd.cs.psl.application.groundrulestore.GroundRuleStore;
 import edu.umd.cs.psl.model.atom.AtomEvent;
 import edu.umd.cs.psl.model.atom.AtomEventFramework;
 import edu.umd.cs.psl.model.atom.AtomManager;
@@ -25,7 +25,7 @@ import edu.umd.cs.psl.model.parameters.Parameters;
 import edu.umd.cs.psl.model.rule.Rule;
 
 /**
- * First order log loss kernels, useful when PSL variables are given a
+ * First order log loss rules, useful when PSL variables are given a
  * probabilistic interpretation, as in latent topic networks.
  * 
  * @author Jimmy Foulds <jfoulds@ucsc.edu>
@@ -38,19 +38,19 @@ public class LogLoss implements Rule {
 	}
 
 	@Override
-	public void groundAll(AtomManager atomManager, GroundKernelStore gks) {
+	public void groundAll(AtomManager atomManager, GroundRuleStore gks) {
 		// TODO Auto-generated method stub
 	}
 
 	@Override
 	public void registerForAtomEvents(AtomEventFramework eventFramework,
-			GroundKernelStore gks) {
+			GroundRuleStore gks) {
 		// TODO Auto-generated method stub
 	}
 
 	@Override
 	public void unregisterForAtomEvents(AtomEventFramework eventFramework,
-			GroundKernelStore gks) {
+			GroundRuleStore gks) {
 		// TODO Auto-generated method stub
 	}
 

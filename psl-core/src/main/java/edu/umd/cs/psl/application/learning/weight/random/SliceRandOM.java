@@ -31,11 +31,11 @@ import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.parameters.PositiveWeight;
-import edu.umd.cs.psl.model.rule.CompatibilityKernel;
+import edu.umd.cs.psl.model.rule.WeightedRule;
 
 /**
  * Abstract class that learns new weights for the
- * {@link CompatibilityKernel CompatibilityKernels} in a {@link Model} using
+ * {@link WeightedRule CompatibilityKernels} in a {@link Model} using
  * slice-sampling MCEM RandOM learning.
  * 
  * @author Stephen Bach <bach@cs.umd.edu>

@@ -20,21 +20,21 @@ package edu.umd.cs.psl.model.rule.logical;
 import java.util.List;
 
 import edu.umd.cs.psl.model.atom.GroundAtom;
-import edu.umd.cs.psl.model.rule.ConstraintKernel;
-import edu.umd.cs.psl.model.rule.GroundConstraintKernel;
+import edu.umd.cs.psl.model.rule.UnweightedRule;
+import edu.umd.cs.psl.model.rule.UnweightedGroundRule;
 import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
 import edu.umd.cs.psl.reasoner.function.FunctionComparator;
 
 public class GroundConstraintRule extends AbstractGroundRule implements
-		GroundConstraintKernel {
+		UnweightedGroundRule {
 	
 	GroundConstraintRule(ConstraintRuleKernel k, List<GroundAtom> posLiterals, List<GroundAtom> negLiterals) {
 		super(k, posLiterals, negLiterals);
 	}
 
 	@Override
-	public ConstraintKernel getKernel() {
-		return (ConstraintKernel) kernel;
+	public UnweightedRule getKernel() {
+		return (UnweightedRule) kernel;
 	}
 	
 	@Override

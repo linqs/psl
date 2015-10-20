@@ -34,8 +34,8 @@ import org.ujmp.core.calculation.Calculation;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
-import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
-import edu.umd.cs.psl.model.rule.GroundConstraintKernel;
+import edu.umd.cs.psl.model.rule.WeightedGroundRule;
+import edu.umd.cs.psl.model.rule.UnweightedGroundRule;
 import edu.umd.cs.psl.model.rule.GroundRule;
 import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
 import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
@@ -141,10 +141,10 @@ abstract public class AbstractHitAndRunSampler implements Sampler {
 		int noObjectiveFuns = 0;
 		
 		for (GroundRule e : evidences) {
-			if (e instanceof GroundCompatibilityKernel) {
+			if (e instanceof WeightedGroundRule) {
 				noObjectiveFuns++;
-			} else if (e instanceof GroundConstraintKernel) {
-				ConstraintTerm con = ((GroundConstraintKernel)e).getConstraintDefinition();
+			} else if (e instanceof UnweightedGroundRule) {
+				ConstraintTerm con = ((UnweightedGroundRule)e).getConstraintDefinition();
 				switch(con.getComparator()) {
 				case Equality:
 					noEqConstraints++;
@@ -180,16 +180,16 @@ abstract public class AbstractHitAndRunSampler implements Sampler {
 		//Construct equality and inequality matrix
 		int eqCount=0, ineqCount=0, objCount=0;
 		for (GroundRule e : evidences) {
-			if (e instanceof GroundCompatibilityKernel) {
-				GroundCompatibilityKernel ev = (GroundCompatibilityKernel)e;
+			if (e instanceof WeightedGroundRule) {
+				WeightedGroundRule ev = (WeightedGroundRule)e;
 				FunctionTerm corefun = FunctionAnalyser.getCoreObjectiveFunction(ev.getFunctionDefinition());
 				if (corefun==null) corefun = ev.getFunctionDefinition();//throw new AssertionError("Expected standard evidence form: " + ev);
 				if (!corefun.isLinear()) throw new AssertionError("Expected linear probabilistic evidence only, but got: " + ev);
 				double constant = setMatrixRow(Aobj,objCount,corefun,false);
 				objConst.setAsDouble(constant, objCount, 0);
 				objCount++;				
-			} else if (e instanceof GroundConstraintKernel) {
-				GroundConstraintKernel ev = (GroundConstraintKernel)e;
+			} else if (e instanceof UnweightedGroundRule) {
+				UnweightedGroundRule ev = (UnweightedGroundRule)e;
 				ConstraintTerm con = ev.getConstraintDefinition();
 				if (!con.getFunction().isLinear()) throw new AssertionError("Expected linear constraints only, but got: " + ev);
 				double value = con.getValue();

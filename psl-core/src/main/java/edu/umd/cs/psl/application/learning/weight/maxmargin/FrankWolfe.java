@@ -33,7 +33,7 @@ import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.parameters.NegativeWeight;
 import edu.umd.cs.psl.model.parameters.PositiveWeight;
-import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.WeightedGroundRule;
 import edu.umd.cs.psl.model.rule.GroundRule;
 
 /**
@@ -156,7 +156,7 @@ public class FrankWolfe extends WeightLearningApplication {
 		}
 		for (int i = 0; i < kernels.size(); i++) {
 			for (GroundRule gk : reasoner.getGroundKernels(kernels.get(i))) {
-				truthIncompatibility[i] += ((GroundCompatibilityKernel) gk).getIncompatibility();
+				truthIncompatibility[i] += ((WeightedGroundRule) gk).getIncompatibility();
 				++numGroundings[i];
 			}
 		}
@@ -172,13 +172,13 @@ public class FrankWolfe extends WeightLearningApplication {
 		double obsvFalseWeight = -1.0;
 		log.debug("Weighting loss of positive (value = 1.0) examples by {} " +
 				  "and negative examples by {}", obsvTrueWeight, obsvFalseWeight);
-		List<LossAugmentingGroundKernel> lossKernels = new ArrayList<LossAugmentingGroundKernel>(trainingMap.getTrainingMap().size());
+		List<LossAugmentingGroundRule> lossKernels = new ArrayList<LossAugmentingGroundRule>(trainingMap.getTrainingMap().size());
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
 			double truth = e.getValue().getValue();
 			NegativeWeight weight = new NegativeWeight((truth == 1.0) ? obsvTrueWeight : obsvFalseWeight);
 			/* If ground truth is not integral, this will throw exception. */
-			LossAugmentingGroundKernel gk = new LossAugmentingGroundKernel(e.getKey(), truth, weight);
-			reasoner.addGroundKernel(gk);
+			LossAugmentingGroundRule gk = new LossAugmentingGroundRule(e.getKey(), truth, weight);
+			reasoner.addGroundRule(gk);
 			lossKernels.add(gk);
 		}
 		
@@ -195,7 +195,7 @@ public class FrankWolfe extends WeightLearningApplication {
 			
 			/* Computes L1 distance to ground truth. */
 			double l1Distance = 0.0;
-			for (LossAugmentingGroundKernel gk : lossKernels) {
+			for (LossAugmentingGroundRule gk : lossKernels) {
 				double truth = trainingMap.getTrainingMap().get(gk.getAtom()).getValue();
 				double lossaugValue = gk.getAtom().getValue();
 				l1Distance += Math.abs(truth - lossaugValue);
@@ -205,9 +205,9 @@ public class FrankWolfe extends WeightLearningApplication {
 			double[] lossaugIncompatibility = new double[kernels.size()];
 			for (int i = 0; i < kernels.size(); i++) {
 				for (GroundRule gk : reasoner.getGroundKernels(kernels.get(i))) {
-					if (gk instanceof LossAugmentingGroundKernel)
+					if (gk instanceof LossAugmentingGroundRule)
 						continue;
-					lossaugIncompatibility[i] += ((GroundCompatibilityKernel) gk).getIncompatibility();
+					lossaugIncompatibility[i] += ((WeightedGroundRule) gk).getIncompatibility();
 				}
 			}
 			

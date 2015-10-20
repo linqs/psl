@@ -23,12 +23,12 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import edu.umd.cs.psl.application.groundkernelstore.GroundKernelStore;
+import edu.umd.cs.psl.application.groundrulestore.GroundRuleStore;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
-import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
-import edu.umd.cs.psl.model.rule.GroundConstraintKernel;
+import edu.umd.cs.psl.model.rule.WeightedGroundRule;
+import edu.umd.cs.psl.model.rule.UnweightedGroundRule;
 import edu.umd.cs.psl.model.rule.GroundRule;
 import edu.umd.cs.psl.model.rule.arithmetic.GroundValueConstraint;
 import edu.umd.cs.psl.model.rule.predicateconstraint.GroundDomainRangeConstraint;
@@ -48,13 +48,13 @@ import edu.umd.cs.psl.reasoner.function.FunctionComparator;
 public class ConstraintBlocker {
 	
 	private RandomVariableAtom[][] rvBlocks;
-	private GroundCompatibilityKernel[][] incidentGKs;
+	private WeightedGroundRule[][] incidentGKs;
 	private boolean[] exactlyOne;
 	private Map<RandomVariableAtom, Integer> rvMap;
 	
-	private final GroundKernelStore store;
+	private final GroundRuleStore store;
 	
-	public ConstraintBlocker(GroundKernelStore store) {
+	public ConstraintBlocker(GroundRuleStore store) {
 		this.store = store;
 	}
 	
@@ -64,7 +64,7 @@ public class ConstraintBlocker {
 		/* Collects constraints */
 		Set<GroundDomainRangeConstraint> drConstraintSet = new HashSet<GroundDomainRangeConstraint>();
 		Map<RandomVariableAtom, GroundValueConstraint> valueConstraintMap = new HashMap<RandomVariableAtom, GroundValueConstraint>();
-		for (GroundConstraintKernel gk : store.getConstraintKernels()) {
+		for (UnweightedGroundRule gk : store.getConstraintKernels()) {
 			if (gk instanceof GroundDomainRangeConstraint)
 				drConstraintSet.add((GroundDomainRangeConstraint) gk);
 			else if (gk instanceof GroundValueConstraint)
@@ -161,18 +161,18 @@ public class ConstraintBlocker {
 		}
 		
 		/* Collects GroundCompatibilityKernels incident on each block of RandomVariableAtoms */
-		incidentGKs = new GroundCompatibilityKernel[rvBlocks.length][];
-		Set<GroundCompatibilityKernel> incidentGKSet = new HashSet<GroundCompatibilityKernel>();
+		incidentGKs = new WeightedGroundRule[rvBlocks.length][];
+		Set<WeightedGroundRule> incidentGKSet = new HashSet<WeightedGroundRule>();
 		for (i = 0; i < rvBlocks.length; i++) {
 			incidentGKSet.clear();
 			for (RandomVariableAtom atom : rvBlocks[i])
 				for (GroundRule incidentGK : atom.getRegisteredGroundKernels())
-					if (incidentGK instanceof GroundCompatibilityKernel)
-						incidentGKSet.add((GroundCompatibilityKernel) incidentGK);
+					if (incidentGK instanceof WeightedGroundRule)
+						incidentGKSet.add((WeightedGroundRule) incidentGK);
 			
-			incidentGKs[i] = new GroundCompatibilityKernel[incidentGKSet.size()];
+			incidentGKs[i] = new WeightedGroundRule[incidentGKSet.size()];
 			int j = 0;
-			for (GroundCompatibilityKernel incidentGK : incidentGKSet)
+			for (WeightedGroundRule incidentGK : incidentGKSet)
 				incidentGKs[i][j++] = incidentGK;
 		}
 		
@@ -189,7 +189,7 @@ public class ConstraintBlocker {
 		return rvMap;
 	}
 	
-	public GroundCompatibilityKernel[][] getIncidentGKs() {
+	public WeightedGroundRule[][] getIncidentGKs() {
 		return incidentGKs;
 	}
 	

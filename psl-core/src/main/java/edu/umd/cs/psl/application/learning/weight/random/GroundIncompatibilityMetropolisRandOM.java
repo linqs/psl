@@ -25,14 +25,14 @@ import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
-import edu.umd.cs.psl.model.rule.CompatibilityKernel;
-import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.WeightedRule;
+import edu.umd.cs.psl.model.rule.WeightedGroundRule;
 import edu.umd.cs.psl.model.rule.GroundRule;
 
 /**
  * A {@link GroundMetropolisRandOM} learning algorithm which scores the likelihood
  * of a sample using the distance in total (unweighted) incompatibility space grouped
- * by {@link CompatibilityKernel} between the sample and the observations.
+ * by {@link WeightedRule} between the sample and the observations.
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  */
@@ -89,7 +89,7 @@ public class GroundIncompatibilityMetropolisRandOM extends GroundMetropolisRandO
 		double[] incompatibility = new double[kernels.size()];
 		for (int i = 0; i < kernels.size(); i++) {
 			for (GroundRule gk : reasoner.getGroundKernels(kernels.get(i)))
-				incompatibility[i] += ((GroundCompatibilityKernel) gk).getIncompatibility();
+				incompatibility[i] += ((WeightedGroundRule) gk).getIncompatibility();
 		}
 		return incompatibility;
 	}

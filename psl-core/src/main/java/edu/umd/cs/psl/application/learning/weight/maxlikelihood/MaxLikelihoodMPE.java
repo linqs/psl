@@ -22,7 +22,7 @@ import java.util.Arrays;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.Model;
-import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.WeightedGroundRule;
 import edu.umd.cs.psl.model.rule.GroundRule;
 
 /**
@@ -52,12 +52,12 @@ public class MaxLikelihoodMPE extends VotedPerceptron {
 		/* Computes incompatibility */
 		for (int i = 0; i < kernels.size(); i++) {
 			for (GroundRule gk : reasoner.getGroundKernels(kernels.get(i))) {
-				fullExpectedIncompatibility[i] += ((GroundCompatibilityKernel) gk).getIncompatibility();
+				fullExpectedIncompatibility[i] += ((WeightedGroundRule) gk).getIncompatibility();
 			}
 		}
 		for (int i = 0; i < immutableKernels.size(); i++) {
 			for (GroundRule gk : reasoner.getGroundKernels(immutableKernels.get(i))) {
-				fullExpectedIncompatibility[kernels.size() + i] += ((GroundCompatibilityKernel) gk).getIncompatibility();
+				fullExpectedIncompatibility[kernels.size() + i] += ((WeightedGroundRule) gk).getIncompatibility();
 			}
 		}
 		
@@ -73,13 +73,13 @@ public class MaxLikelihoodMPE extends VotedPerceptron {
 		/* Computes the observed incompatibilities and numbers of groundings */
 		for (int i = 0; i < kernels.size(); i++) {
 			for (GroundRule gk : reasoner.getGroundKernels(kernels.get(i))) {
-				fullObservedIncompatibility[i] += ((GroundCompatibilityKernel) gk).getIncompatibility();
+				fullObservedIncompatibility[i] += ((WeightedGroundRule) gk).getIncompatibility();
 				numGroundings[i]++;
 			}
 		}
 		for (int i = 0; i < immutableKernels.size(); i++) {
 			for (GroundRule gk : reasoner.getGroundKernels(immutableKernels.get(i))) {
-				fullObservedIncompatibility[kernels.size() + i] += ((GroundCompatibilityKernel) gk).getIncompatibility();
+				fullObservedIncompatibility[kernels.size() + i] += ((WeightedGroundRule) gk).getIncompatibility();
 			}
 		}
 		

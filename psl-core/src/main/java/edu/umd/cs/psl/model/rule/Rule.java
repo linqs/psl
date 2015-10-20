@@ -17,7 +17,7 @@
  */
 package edu.umd.cs.psl.model.rule;
 
-import edu.umd.cs.psl.application.groundkernelstore.GroundKernelStore;
+import edu.umd.cs.psl.application.groundrulestore.GroundRuleStore;
 import edu.umd.cs.psl.model.NumericUtilities;
 import edu.umd.cs.psl.model.atom.AtomEvent;
 import edu.umd.cs.psl.model.atom.AtomEventFramework;
@@ -29,11 +29,11 @@ import edu.umd.cs.psl.model.parameters.Parameters;
 
 /**
  * A template for functions that either constrain or measure the compatibility
- * of the truth values of {@link GroundAtom GroundAtoms}.
+ * of the values of {@link GroundAtom GroundAtoms}.
  * <p>
  * A Rule is responsible for instantiating {@link GroundRule GroundRules}.
- * A Rule must instantiate only {@link GroundCompatibilityKernel}s or only
- * {@link GroundConstraintKernel}s.
+ * A Rule must instantiate only {@link WeightedGroundRule}s or only
+ * {@link UnweightedGroundRule}s.
  * 
  * @author Matthias Broecheler <mail@knowledgefrominformation.com>
  * @author Eric Norris <enorris@cs.umd.edu>
@@ -43,19 +43,19 @@ public interface Rule extends AtomEvent.Listener, Cloneable {
 
 	/**
 	 * Adds all missing, potentially unsatisfied {@link GroundRule GroundRules}
-	 * to a {@link GroundKernelStore} based on an {@link AtomManager}.
+	 * to a {@link GroundRuleStore} based on an {@link AtomManager}.
 	 * <p>
-	 * Specifically, will add any GroundKernel templated by this Kernel
+	 * Specifically, will add any GroundRule templated by this Rule
 	 * that satisfies all the following conditions:
 	 * <ul>
-	 *   <li>The GroundKernel has incompatibility or infeasibility
+	 *   <li>The GroundRule has incompatibility or infeasibility
 	 *   greater than {@link NumericUtilities#strictEpsilon}
 	 *   for some assignment of truth values to the {@link RandomVariableAtom}s
 	 *   <em>currently persisted</em> in the AtomManager's Database given the truth
 	 *   values of the {@link ObservedAtom}s and assuming that any RandomVariableAtom
 	 *   not persisted has a truth value of 0.0.</li>
-	 *   <li>The GroundRule is not already in the GroundKernelStore.</li>
-	 *   <li>If the GroundRule is a {@link GroundCompatibilityKernel}, its
+	 *   <li>The GroundRule is not already in the GroundRuleStore.</li>
+	 *   <li>If the GroundRule is a {@link WeightedGroundRule}, its
 	 *       incompatibility is not constant with respect to the truth values
 	 *       of RandomVariableAtoms (including those not persisted in the
 	 *       AtomManager's Database).
@@ -65,46 +65,46 @@ public interface Rule extends AtomEvent.Listener, Cloneable {
 	 * Only GroundRules which satisfy these conditions should be added.
 	 * 
 	 * @param atomManager  AtomManager on which to base the grounding
-	 * @param gks          store for new GroundKernels
-	 * @see GroundCompatibilityKernel#getIncompatibility()
-	 * @see GroundConstraintKernel#getInfeasibility()
+	 * @param grs          store for new GroundRules
+	 * @see WeightedGroundRule#getIncompatibility()
+	 * @see UnweightedGroundRule#getInfeasibility()
 	 */
-	public void groundAll(AtomManager atomManager, GroundKernelStore gks);
+	public void groundAll(AtomManager atomManager, GroundRuleStore grs);
 	
 	/**
-	 * Registers this Kernel to listen for the {@link AtomEvent AtomEvents}
-	 * it needs to update a {@link GroundKernelStore}.
+	 * Registers this Rule to listen for the {@link AtomEvent AtomEvents}
+	 * it needs to update a {@link GroundRuleStore}.
 	 * <p>
-	 * Specifically, this Kernel will register for AtomEvents and update the
-	 * GroundKernelStore in response to AtomEvents. In response to an AtomEvent
+	 * Specifically, this Rule will register for AtomEvents and update the
+	 * GroundRuleStore in response to AtomEvents. In response to an AtomEvent
 	 * on a {@link RandomVariableAtom}, the GroundKernelStore must contain the
 	 * GroundKernels that are functions of it which would have been added via
-	 * {@link #groundAll(AtomManager, GroundKernelStore)} given the current state of
+	 * {@link #groundAll(AtomManager, GroundRuleStore)} given the current state of
 	 * the AtomEventFramework's Database and assuming that the RandomVariableAtom
 	 * was also persisted in the Database.
 	 * 
 	 * @param eventFramework  AtomEventFramework to register with
-	 * @param gks             GroundKernelStore to update in response to AtomEvents
+	 * @param grs             GroundRuleStore to update in response to AtomEvents
 	 */
-	public void registerForAtomEvents(AtomEventFramework eventFramework, GroundKernelStore gks);
+	public void registerForAtomEvents(AtomEventFramework eventFramework, GroundRuleStore grs);
 	
 	/**
-	 * Stops updating a {@link GroundKernelStore} in response to AtomEvents from
+	 * Stops updating a {@link GroundRuleStore} in response to AtomEvents from
 	 * an {@link AtomEventFramework} and unregisters with that AtomEventFramework
 	 * if it no longer needs to listen for AtomEvents from it.
 	 * 
 	 * @param eventFramework  AtomEventFramework to unregister with
-	 * @param gks             GroundKernelStore to stop updating
+	 * @param grs             GroundRuleStore to stop updating
 	 */
-	public void unregisterForAtomEvents(AtomEventFramework eventFramework, GroundKernelStore gks);
+	public void unregisterForAtomEvents(AtomEventFramework eventFramework, GroundRuleStore grs);
 	
 	/**
-	 * @return the parameterization of this Kernel
+	 * @return the parameterization of this Rule
 	 */
 	public Parameters getParameters();
 	
 	/**
-	 * Sets the Parameters of this Kernel.
+	 * Sets the Parameters of this Rule.
 	 * 
 	 * @param para  the new parameterization
 	 */

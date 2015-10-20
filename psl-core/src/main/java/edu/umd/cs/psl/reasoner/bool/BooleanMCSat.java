@@ -22,11 +22,11 @@ import java.util.Random;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import edu.umd.cs.psl.application.groundkernelstore.MemoryGroundKernelStore;
+import edu.umd.cs.psl.application.groundrulestore.MemoryGroundKernelStore;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
-import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.WeightedGroundRule;
 import edu.umd.cs.psl.model.rule.predicateconstraint.GroundDomainRangeConstraint;
 import edu.umd.cs.psl.reasoner.Reasoner;
 import edu.umd.cs.psl.util.model.ConstraintBlocker;
@@ -96,7 +96,7 @@ public class BooleanMCSat extends MemoryGroundKernelStore implements Reasoner {
 		/* If true, exactly one Atom in the RV block must be 1.0. If false, at most one can. */
 		boolean[] exactlyOne = blocker.getExactlyOne();
 		/* Collects GroundCompatibilityKernels incident on each block of RandomVariableAtoms */
-		GroundCompatibilityKernel[][] incidentGKs = blocker.getIncidentGKs();
+		WeightedGroundRule[][] incidentGKs = blocker.getIncidentGKs();
 		/* Initializes arrays for totaling samples */
 		double[][] totals = blocker.getEmptyDouble2DArray();
 		
@@ -152,11 +152,11 @@ public class BooleanMCSat extends MemoryGroundKernelStore implements Reasoner {
 				rvBlocks[i][j].setValue(totals[i][j] / (numSamples - numBurnIn));
 	}
 	
-	private double computeProbability(GroundCompatibilityKernel incidentGKs[]) {
+	private double computeProbability(WeightedGroundRule incidentGKs[]) {
 		double probability = 0.0;
-		for (GroundCompatibilityKernel gk : incidentGKs) {
-			probability += ((GroundCompatibilityKernel) gk).getWeight().getWeight()
-					* ((GroundCompatibilityKernel) gk).getIncompatibility();
+		for (WeightedGroundRule gk : incidentGKs) {
+			probability += ((WeightedGroundRule) gk).getWeight().getWeight()
+					* ((WeightedGroundRule) gk).getIncompatibility();
 		}
 		return Math.exp(-1 * probability);
 	}

@@ -32,7 +32,7 @@ import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.parameters.PositiveWeight;
-import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.WeightedGroundRule;
 import edu.umd.cs.psl.model.rule.GroundRule;
 
 /**
@@ -72,20 +72,20 @@ public class UnforgivingGroundSliceRandOM extends GroundSliceRandOM {
 	@Override
 	protected void doLearn() {
 		/* Initializes GroundKernel weights to non-zero likelihood */
-		Set<GroundCompatibilityKernel> unaryKernels = new HashSet<GroundCompatibilityKernel>();
+		Set<WeightedGroundRule> unaryKernels = new HashSet<WeightedGroundRule>();
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
 			/*
 			 * Collects unary ground compatibility kernels which can be used to
 			 * adjust optimal truth value. All others are given weight zero for now.
 			 */
 			for (GroundRule gk : e.getKey().getRegisteredGroundKernels()) {
-				if (gk instanceof GroundCompatibilityKernel) {
-					GroundCompatibilityKernel gck = (GroundCompatibilityKernel) gk;
+				if (gk instanceof WeightedGroundRule) {
+					WeightedGroundRule gck = (WeightedGroundRule) gk;
 					
 					/* Checks if gck is unary */
 					boolean unary = true;
 					for (GroundAtom atom : gck.getAtoms()) {
-						if (atom instanceof GroundCompatibilityKernel && !atom.equals(e.getKey()))
+						if (atom instanceof WeightedGroundRule && !atom.equals(e.getKey()))
 							unary = false;
 					}
 					
@@ -103,9 +103,9 @@ public class UnforgivingGroundSliceRandOM extends GroundSliceRandOM {
 			 */
 			
 			/* Finds one that makes the truth value go up and one that makes it go down */
-			GroundCompatibilityKernel posGCK = null, negGCK = null;
+			WeightedGroundRule posGCK = null, negGCK = null;
 			double incAtZero, incAtOne;
-			for (GroundCompatibilityKernel gck : unaryKernels) {
+			for (WeightedGroundRule gck : unaryKernels) {
 				e.getKey().setValue(0.0);
 				incAtZero = gck.getIncompatibility();
 				e.getKey().setValue(1.0);
@@ -122,7 +122,7 @@ public class UnforgivingGroundSliceRandOM extends GroundSliceRandOM {
 						"negative unary ground compatibility kernel for atom: " +
 						e.getKey());
 			
-			for (GroundCompatibilityKernel gck : unaryKernels)
+			for (WeightedGroundRule gck : unaryKernels)
 				gck.setWeight(new PositiveWeight(0.0));
 			
 			if (e.getValue().getValue() == 1.0)

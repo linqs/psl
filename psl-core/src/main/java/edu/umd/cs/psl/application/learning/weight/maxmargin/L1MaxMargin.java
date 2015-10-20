@@ -78,7 +78,7 @@ public class L1MaxMargin extends MaxMargin {
 	
 	private final LossBalancingType balanceLoss;
 	private double obsvTrueWeight, obsvFalseWeight;
-	private List<LossAugmentingGroundKernel> lossKernels, nonExtremeLossKernels;
+	private List<LossAugmentingGroundRule> lossKernels, nonExtremeLossKernels;
 
 	public L1MaxMargin(Model model, Database rvDB, Database observedDB,
 			ConfigBundle config) {
@@ -122,28 +122,28 @@ public class L1MaxMargin extends MaxMargin {
 		/* Sets up loss augmenting ground kernels */
 		log.info("Weighting loss of positive (value = 1.0) examples by {} " +
 				"and negative examples by {}", obsvTrueWeight, obsvFalseWeight);
-		lossKernels = new ArrayList<LossAugmentingGroundKernel>(trainingMap.getTrainingMap().size());
-		nonExtremeLossKernels = new ArrayList<LossAugmentingGroundKernel>();
+		lossKernels = new ArrayList<LossAugmentingGroundRule>(trainingMap.getTrainingMap().size());
+		nonExtremeLossKernels = new ArrayList<LossAugmentingGroundRule>();
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
 			double truth = e.getValue().getValue();
-			LossAugmentingGroundKernel gk;
+			LossAugmentingGroundRule gk;
 			
 			/* If ground truth is at 1.0 or 0.0, sets up ground kernel without planning to change it */
 			if (truth == 1.0 || truth == 0.0) {
 				NegativeWeight weight = new NegativeWeight((truth == 1.0) ? obsvTrueWeight : obsvFalseWeight);
-				gk = new LossAugmentingGroundKernel(e.getKey(), truth, weight);
+				gk = new LossAugmentingGroundRule(e.getKey(), truth, weight);
 			}
 			/* Else, does a little more to check it and change it later */
 			else {
 				if (truth >= 0.5)
-					gk = new LossAugmentingGroundKernel(e.getKey(), 1.0, new NegativeWeight(obsvTrueWeight));
+					gk = new LossAugmentingGroundRule(e.getKey(), 1.0, new NegativeWeight(obsvTrueWeight));
 				else
-					gk = new LossAugmentingGroundKernel(e.getKey(), 1.0, new PositiveWeight(-1 * obsvTrueWeight));
+					gk = new LossAugmentingGroundRule(e.getKey(), 1.0, new PositiveWeight(-1 * obsvTrueWeight));
 				
 				nonExtremeLossKernels.add(gk);
 			}
 			
-			reasoner.addGroundKernel(gk);
+			reasoner.addGroundRule(gk);
 			lossKernels.add(gk);
 		}
 	}
@@ -156,7 +156,7 @@ public class L1MaxMargin extends MaxMargin {
 			reasoner.optimize();
 			
 			rerunOptimization = false;
-			for (LossAugmentingGroundKernel gk : nonExtremeLossKernels) {
+			for (LossAugmentingGroundRule gk : nonExtremeLossKernels) {
 				double currentValue = gk.getAtom().getValue();
 				double truth = trainingMap.getTrainingMap().get(gk.getAtom()).getValue();
 				if (currentValue > truth && gk.getWeight() instanceof PositiveWeight) {
@@ -179,7 +179,7 @@ public class L1MaxMargin extends MaxMargin {
 	@Override
 	protected double evaluateLoss() {
 		double loss = 0.0;
-		for (LossAugmentingGroundKernel gk : lossKernels) {
+		for (LossAugmentingGroundRule gk : lossKernels) {
 			double currentValue = gk.getAtom().getValue();
 			double truth = trainingMap.getTrainingMap().get(gk.getAtom()).getValue();
 			double lossTerm = gk.getWeight().getWeight() * Math.abs(truth - currentValue);
@@ -192,7 +192,7 @@ public class L1MaxMargin extends MaxMargin {
 
 	@Override
 	protected void tearDownSeparationOracle() {
-		for (LossAugmentingGroundKernel gk : lossKernels)
+		for (LossAugmentingGroundRule gk : lossKernels)
 			reasoner.removeGroundKernel(gk);
 		
 		lossKernels.clear();

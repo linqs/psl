@@ -33,8 +33,8 @@ import com.google.common.collect.Iterables;
 import de.mathnbits.util.KeyedRetrievalSet;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
-import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
-import edu.umd.cs.psl.model.rule.GroundConstraintKernel;
+import edu.umd.cs.psl.model.rule.WeightedGroundRule;
+import edu.umd.cs.psl.model.rule.UnweightedGroundRule;
 import edu.umd.cs.psl.model.rule.GroundRule;
 import edu.umd.cs.psl.model.rule.Rule;
 import edu.umd.cs.psl.reasoner.Reasoner;
@@ -199,18 +199,18 @@ public class ADMMReasoner implements Reasoner {
 	}
 	
 	@Override
-	public void addGroundKernel(GroundRule gk) {
+	public void addGroundRule(GroundRule gk) {
 		groundKernels.put(gk.getKernel(), gk);
 		rebuildModel = true;
 	}
 
 	@Override
-	public void changedGroundKernel(GroundRule gk) {
+	public void changedGroundRule(GroundRule gk) {
 		rebuildModel = true;
 	}
 
 	@Override
-	public void changedGroundKernelWeight(GroundCompatibilityKernel gk) {
+	public void changedGroundKernelWeight(WeightedGroundRule gk) {
 		if (!rebuildModel) {
 			int index = orderedGroundKernels.indexOf(gk);
 			if (index != -1) {
@@ -222,7 +222,7 @@ public class ADMMReasoner implements Reasoner {
 	@Override
 	public void changedGroundKernelWeights() {
 		if (!rebuildModel)
-			for (GroundCompatibilityKernel gk : getCompatibilityKernels())
+			for (WeightedGroundRule gk : getCompatibilityKernels())
 				changedGroundKernelWeight(gk);
 	}
 	
@@ -283,8 +283,8 @@ public class ADMMReasoner implements Reasoner {
 		FunctionTerm function, innerFunction, zeroTerm, innerFunctionA, innerFunctionB;
 		ADMMObjectiveTerm term;
 		
-		if (groundKernel instanceof GroundCompatibilityKernel) {
-			function = ((GroundCompatibilityKernel) groundKernel).getFunctionDefinition();
+		if (groundKernel instanceof WeightedGroundRule) {
+			function = ((WeightedGroundRule) groundKernel).getFunctionDefinition();
 			
 			/* Checks if the function is wrapped in a PowerOfTwo */
 			if (function instanceof PowerOfTwo) {
@@ -322,11 +322,11 @@ public class ADMMReasoner implements Reasoner {
 					Hyperplane hp = processHyperplane((FunctionSum) innerFunction);
 					if (squared) {
 						term = new SquaredHingeLossTerm(this, hp.zIndices, hp.coeffs, hp.constant,
-								((GroundCompatibilityKernel) groundKernel).getWeight().getWeight());
+								((WeightedGroundRule) groundKernel).getWeight().getWeight());
 					}
 					else {
 						term = new HingeLossTerm(this, hp.zIndices, hp.coeffs, hp.constant,
-								((GroundCompatibilityKernel) groundKernel).getWeight().getWeight());
+								((WeightedGroundRule) groundKernel).getWeight().getWeight());
 					}
 				}
 				else
@@ -337,18 +337,18 @@ public class ADMMReasoner implements Reasoner {
 				Hyperplane hp = processHyperplane((FunctionSum) function);
 				if (squared) {
 					term = new SquaredLinearLossTerm(this, hp.zIndices, hp.coeffs, 0.0,
-							((GroundCompatibilityKernel) groundKernel).getWeight().getWeight());
+							((WeightedGroundRule) groundKernel).getWeight().getWeight());
 				}
 				else {
 					term = new LinearLossTerm(this, hp.zIndices, hp.coeffs,
-							((GroundCompatibilityKernel) groundKernel).getWeight().getWeight());
+							((WeightedGroundRule) groundKernel).getWeight().getWeight());
 				}
 			}
 			else
-				throw new IllegalArgumentException("Unrecognized function: " + ((GroundCompatibilityKernel) groundKernel).getFunctionDefinition());
+				throw new IllegalArgumentException("Unrecognized function: " + ((WeightedGroundRule) groundKernel).getFunctionDefinition());
 		}
-		else if (groundKernel instanceof GroundConstraintKernel) {
-			ConstraintTerm constraint = ((GroundConstraintKernel) groundKernel).getConstraintDefinition();
+		else if (groundKernel instanceof UnweightedGroundRule) {
+			ConstraintTerm constraint = ((UnweightedGroundRule) groundKernel).getConstraintDefinition();
 			function = constraint.getFunction();
 			if (function instanceof FunctionSum) {
 				Hyperplane hp = processHyperplane((FunctionSum) function);
@@ -377,7 +377,7 @@ public class ADMMReasoner implements Reasoner {
 			int zIndex = term.zIndices[i];
 			variables.get(zIndex).setValue(term.x[i]);			
 		}
-		return ((GroundCompatibilityKernel) gk).getIncompatibility();
+		return ((WeightedGroundRule) gk).getIncompatibility();
 	}
 	
 	public double getConsensusVariableValue(int index) {
@@ -612,12 +612,12 @@ public class ADMMReasoner implements Reasoner {
 	}
 
 	@Override
-	public Iterable<GroundCompatibilityKernel> getCompatibilityKernels() {
-		return Iterables.filter(groundKernels, GroundCompatibilityKernel.class);
+	public Iterable<WeightedGroundRule> getCompatibilityKernels() {
+		return Iterables.filter(groundKernels, WeightedGroundRule.class);
 	}
 	
-	public Iterable<GroundConstraintKernel> getConstraintKernels() {
-		return Iterables.filter(groundKernels, GroundConstraintKernel.class);
+	public Iterable<UnweightedGroundRule> getConstraintKernels() {
+		return Iterables.filter(groundKernels, UnweightedGroundRule.class);
 	}
 
 	@Override

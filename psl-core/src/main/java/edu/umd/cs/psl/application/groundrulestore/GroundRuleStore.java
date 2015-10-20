@@ -15,60 +15,60 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.application.groundkernelstore;
+package edu.umd.cs.psl.application.groundrulestore;
 
-import edu.umd.cs.psl.model.rule.CompatibilityKernel;
-import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
-import edu.umd.cs.psl.model.rule.GroundConstraintKernel;
+import edu.umd.cs.psl.model.rule.WeightedRule;
+import edu.umd.cs.psl.model.rule.WeightedGroundRule;
+import edu.umd.cs.psl.model.rule.UnweightedGroundRule;
 import edu.umd.cs.psl.model.rule.GroundRule;
 import edu.umd.cs.psl.model.rule.Rule;
 
 /**
- * Container for a set of {@link GroundRule GroundKernels}.
+ * Container for a set of {@link GroundRule GroundRules}.
  * <p>
- * Since this container uses set semantics, no two GroundKernels that are equal
- * can be stored in it. If a {@link Rule} wants to add another GroundKernel
+ * Since this container uses set semantics, no two GroundRules that are equal
+ * can be stored in it. If a {@link Rule} wants to add another GroundRule
  * that does the same thing over the same GroundAtoms, then it should retrieve
- * the original GroundKernel, modify it, and call {@link #changedGroundKernel(GroundRule)}.
+ * the original GroundRule, modify it, and call {@link #changedGroundRule(GroundRule)}.
  */
-public interface GroundKernelStore {
+public interface GroundRuleStore {
 
 	/**
-	 * Adds a GroundKernel to this store.
+	 * Adds a GroundRule to this store.
 	 * 
-	 * @param gk  the GroundKernel to add
-	 * @throws IllegalArgumentException  if gk is already in this store
+	 * @param gr  the GroundRule to add
+	 * @throws IllegalArgumentException  if gr is already in this store
 	 */
-	public void addGroundKernel(GroundRule gk);
+	public void addGroundRule(GroundRule gr);
 	
 	/**
-	 * Notifies this store that a GroundKernel was changed.
+	 * Notifies this store that a GroundRule was changed.
 	 * <p>
-	 * Any component that modifies a GroundKernel in this store should call
+	 * Any component that modifies a GroundRule in this store should call
 	 * this method.
 	 * 
-	 * @param gk  the changed GroundKernel
-	 * @throws IllegalArgumentException  if gk is not in this store
+	 * @param gr  the changed GroundRule
+	 * @throws IllegalArgumentException  if gr is not in this store
 	 */
-	public void changedGroundKernel(GroundRule gk);
+	public void changedGroundRule(GroundRule gr);
 	
 	/**
-	 * Notifies this store that a {@link GroundCompatibilityKernel}'s weight
+	 * Notifies this store that a {@link WeightedGroundRule}'s weight
 	 * was changed.
 	 * <p>
 	 * This method should be called whenever the weight of a GroundCompatibilityKernel
-	 * in this store is changed, or the weight of its parent {@link CompatibilityKernel}
+	 * in this store is changed, or the weight of its parent {@link WeightedRule}
 	 * is changed (and the GroundCompatibilityKernel's weight is still tied to it).
 	 * <p>
-	 * It is not necessary to also call {@link #changedGroundKernel(GroundRule)}
+	 * It is not necessary to also call {@link #changedGroundRule(GroundRule)}
 	 * if only the weight was changed.
 	 * 
 	 * @param gk  the ground kernel with a changed weight
 	 */
-	public void changedGroundKernelWeight(GroundCompatibilityKernel gk);
+	public void changedGroundKernelWeight(WeightedGroundRule gk);
 	
 	/**
-	 * Equivalent to calling {@link #changedGroundKernelWeight(GroundCompatibilityKernel)}
+	 * Equivalent to calling {@link #changedGroundKernelWeight(WeightedGroundRule)}
 	 * for all GroundCompatibilityKernels.
 	 */
 	public void changedGroundKernelWeights();
@@ -94,7 +94,7 @@ public interface GroundKernelStore {
 	 *  
 	 * @param gk  the GroundKernel to match
 	 * @return the GroundKernel in this store, or NULL if not present
-	 * @see #changedGroundKernel(GroundRule)
+	 * @see #changedGroundRule(GroundRule)
 	 */
 	public GroundRule getGroundKernel(GroundRule gk);
 	
@@ -104,14 +104,14 @@ public interface GroundKernelStore {
 	public Iterable<GroundRule> getGroundKernels();
 	
 	/**
-	 * @return every {@link GroundCompatibilityKernel} in this store
+	 * @return every {@link WeightedGroundRule} in this store
 	 */
-	public Iterable<GroundCompatibilityKernel> getCompatibilityKernels();
+	public Iterable<WeightedGroundRule> getCompatibilityKernels();
 	
 	/**
-	 * @return every {@link GroundConstraintKernel} in this store
+	 * @return every {@link UnweightedGroundRule} in this store
 	 */
-	public Iterable<GroundConstraintKernel> getConstraintKernels();
+	public Iterable<UnweightedGroundRule> getConstraintKernels();
 	
 	/**
 	 * Returns every GroundKernel that was instantiated by a given Kernel.

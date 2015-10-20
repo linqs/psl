@@ -15,24 +15,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.application.groundkernelstore;
+package edu.umd.cs.psl.application.groundrulestore;
 
 import com.google.common.collect.Iterables;
 
 import de.mathnbits.util.KeyedRetrievalSet;
-import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
-import edu.umd.cs.psl.model.rule.GroundConstraintKernel;
+import edu.umd.cs.psl.model.rule.WeightedGroundRule;
+import edu.umd.cs.psl.model.rule.UnweightedGroundRule;
 import edu.umd.cs.psl.model.rule.GroundRule;
 import edu.umd.cs.psl.model.rule.Rule;
 import edu.umd.cs.psl.util.collection.Filters;
 
 /**
- * A simple {@link GroundKernelStore} that just stores each {@link GroundRule}
+ * A simple {@link GroundRuleStore} that just stores each {@link GroundRule}
  * in memory.
  * <p>
- * No action is taken by {@link #changedGroundKernel(GroundRule)}.
+ * No action is taken by {@link #changedGroundRule(GroundRule)}.
  */
-public class MemoryGroundKernelStore implements GroundKernelStore {
+public class MemoryGroundKernelStore implements GroundRuleStore {
 
 	protected final KeyedRetrievalSet<Rule,GroundRule> groundKernels;
 	
@@ -51,18 +51,18 @@ public class MemoryGroundKernelStore implements GroundKernelStore {
 	}
 	
 	@Override
-	public void addGroundKernel(GroundRule gk) {
+	public void addGroundRule(GroundRule gk) {
 		if (!groundKernels.put(gk.getKernel(), gk))
 			throw new IllegalArgumentException("GroundKernel has already been added: " + gk);
 	}
 	
 	@Override
-	public void changedGroundKernel(GroundRule gk) {
+	public void changedGroundRule(GroundRule gk) {
 		/* Intentionally blank */
 	}
 
 	@Override
-	public void changedGroundKernelWeight(GroundCompatibilityKernel k) {
+	public void changedGroundKernelWeight(WeightedGroundRule k) {
 		/* Intentionally blank */
 	}
 
@@ -81,12 +81,12 @@ public class MemoryGroundKernelStore implements GroundKernelStore {
 	}
 	
 	@Override
-	public Iterable<GroundCompatibilityKernel> getCompatibilityKernels() {
-		return Iterables.filter(groundKernels.filterIterable(Filters.CompatibilityKernel), GroundCompatibilityKernel.class);
+	public Iterable<WeightedGroundRule> getCompatibilityKernels() {
+		return Iterables.filter(groundKernels.filterIterable(Filters.CompatibilityKernel), WeightedGroundRule.class);
 	}
 	
-	public Iterable<GroundConstraintKernel> getConstraintKernels() {
-		return Iterables.filter(groundKernels.filterIterable(Filters.ConstraintKernel), GroundConstraintKernel.class);
+	public Iterable<UnweightedGroundRule> getConstraintKernels() {
+		return Iterables.filter(groundKernels.filterIterable(Filters.ConstraintKernel), UnweightedGroundRule.class);
 	}
 	
 	@Override

@@ -30,8 +30,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import edu.umd.cs.psl.application.ModelApplication;
-import edu.umd.cs.psl.application.topicmodel.kernel.LDAgroundLogLoss;
 import edu.umd.cs.psl.application.topicmodel.reasoner.admm.LatentTopicNetworkADMMReasoner;
+import edu.umd.cs.psl.application.topicmodel.rule.LDAgroundLogLoss;
 import edu.umd.cs.psl.application.util.GroundKernels;
 import edu.umd.cs.psl.application.util.Grounding;
 import edu.umd.cs.psl.config.ConfigBundle;
@@ -406,7 +406,7 @@ public class LatentTopicNetwork implements ModelApplication {
 			}
 			LDAgroundLogLoss GLL = new LDAgroundLogLoss(null, literals, coefficients, expectedCounts[j]);
 			GLL.setWeight(new PositiveWeight(1));
-			reasoner.addGroundKernel(GLL);
+			reasoner.addGroundRule(GLL);
 		}
 	}
 	

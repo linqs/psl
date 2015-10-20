@@ -26,13 +26,13 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import edu.umd.cs.psl.application.groundkernelstore.MemoryGroundKernelStore;
+import edu.umd.cs.psl.application.groundrulestore.MemoryGroundKernelStore;
 import edu.umd.cs.psl.application.util.GroundKernels;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
-import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.WeightedGroundRule;
 import edu.umd.cs.psl.model.rule.GroundRule;
 import edu.umd.cs.psl.model.rule.predicateconstraint.GroundDomainRangeConstraint;
 import edu.umd.cs.psl.reasoner.Reasoner;
@@ -107,7 +107,7 @@ public class BooleanMaxWalkSat extends MemoryGroundKernelStore implements Reason
 		/* If true, exactly one Atom in the RV block must be 1.0. If false, at most one can. */
 		boolean[] exactlyOne = blocker.getExactlyOne();
 		/* Collects GroundCompatibilityKernels incident on each block of RandomVariableAtoms */
-		GroundCompatibilityKernel[][] incidentGKs = blocker.getIncidentGKs();
+		WeightedGroundRule[][] incidentGKs = blocker.getIncidentGKs();
 		/* Maps RandomVariableAtoms to their block index */
 		Map<RandomVariableAtom, Integer> rvMap = blocker.getRVMap();
 		
@@ -118,7 +118,7 @@ public class BooleanMaxWalkSat extends MemoryGroundKernelStore implements Reason
 		Set<RandomVariableAtom> rvsToInclude = new HashSet<RandomVariableAtom>();
 		Set<Integer> blocksToInclude = new HashSet<Integer>(rvsToInclude.size());
 		RandomVariableAtom[][] candidateRVBlocks;
-		GroundCompatibilityKernel[][] candidateIncidentGKs;
+		WeightedGroundRule[][] candidateIncidentGKs;
 		boolean[] candidateExactlyOne;
 		double currentIncompatibility;
 		double bestIncompatibility;
@@ -127,7 +127,7 @@ public class BooleanMaxWalkSat extends MemoryGroundKernelStore implements Reason
 		
 		/* Finds initially unsatisfied GroundKernels */
 		for (GroundRule gk : getGroundKernels())
-			if (gk instanceof GroundCompatibilityKernel && ((GroundCompatibilityKernel) gk).getIncompatibility() > 0.0)
+			if (gk instanceof WeightedGroundRule && ((WeightedGroundRule) gk).getIncompatibility() > 0.0)
 				unsatGKs.add(gk);
 		
 		/* Changes some RV blocks */
@@ -153,7 +153,7 @@ public class BooleanMaxWalkSat extends MemoryGroundKernelStore implements Reason
 			for (RandomVariableAtom atom : rvsToInclude)
 				blocksToInclude.add(rvMap.get(atom));
 			candidateRVBlocks = new RandomVariableAtom[blocksToInclude.size()][];
-			candidateIncidentGKs = new GroundCompatibilityKernel[blocksToInclude.size()][];
+			candidateIncidentGKs = new WeightedGroundRule[blocksToInclude.size()][];
 			candidateExactlyOne = new boolean[blocksToInclude.size()];
 			int i = 0;
 			for (Integer blockIndex : blocksToInclude) {
@@ -216,10 +216,10 @@ public class BooleanMaxWalkSat extends MemoryGroundKernelStore implements Reason
 							
 							/* Computes weighted incompatibility */
 							currentIncompatibility = 0.0;
-							for (GroundCompatibilityKernel incidentGK : candidateIncidentGKs[iBlock]) {
+							for (WeightedGroundRule incidentGK : candidateIncidentGKs[iBlock]) {
 								if (!unsatGKs.contains(incidentGK)) {
 									if (incidentGK.getIncompatibility() > 0.0)
-										currentIncompatibility += ((GroundCompatibilityKernel) incidentGK).getWeight().getWeight() * ((GroundCompatibilityKernel) incidentGK).getIncompatibility();
+										currentIncompatibility += ((WeightedGroundRule) incidentGK).getWeight().getWeight() * ((WeightedGroundRule) incidentGK).getIncompatibility();
 								}
 							}
 							
@@ -242,7 +242,7 @@ public class BooleanMaxWalkSat extends MemoryGroundKernelStore implements Reason
 				candidateRVBlocks[changeBlock][iChangeRV].setValue((iChangeRV == newBlockSetting) ? 1.0 : 0.0);
 			
 			/* Computes change to set of unsatisfied GroundCompatibilityKernels */
-			for (GroundCompatibilityKernel incidentGK : candidateIncidentGKs[changeBlock])
+			for (WeightedGroundRule incidentGK : candidateIncidentGKs[changeBlock])
 				if (incidentGK.getIncompatibility() > 0.0)
 					unsatGKs.add(incidentGK);
 				else

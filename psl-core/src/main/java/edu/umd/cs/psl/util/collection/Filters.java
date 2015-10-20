@@ -17,8 +17,8 @@
  */
 package edu.umd.cs.psl.util.collection;
 
-import edu.umd.cs.psl.model.rule.CompatibilityKernel;
-import edu.umd.cs.psl.model.rule.ConstraintKernel;
+import edu.umd.cs.psl.model.rule.WeightedRule;
+import edu.umd.cs.psl.model.rule.UnweightedRule;
 import edu.umd.cs.psl.model.rule.Rule;
 
 public class Filters {
@@ -27,7 +27,7 @@ public class Filters {
 
 		@Override
 		public boolean apply(Rule k) {
-			return k instanceof CompatibilityKernel;
+			return k instanceof WeightedRule;
 		}
 		
 	};
@@ -36,7 +36,7 @@ public class Filters {
 
 		@Override
 		public boolean apply(Rule k) {
-			return k instanceof ConstraintKernel;
+			return k instanceof UnweightedRule;
 		}
 		
 	};

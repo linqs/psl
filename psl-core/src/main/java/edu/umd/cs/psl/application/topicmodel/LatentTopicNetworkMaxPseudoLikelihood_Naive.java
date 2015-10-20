@@ -28,8 +28,8 @@ import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.predicate.Predicate;
-import edu.umd.cs.psl.model.rule.CompatibilityKernel;
-import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.WeightedRule;
+import edu.umd.cs.psl.model.rule.WeightedGroundRule;
 import edu.umd.cs.psl.model.rule.GroundRule;
 import edu.umd.cs.psl.util.model.ConstraintBlocker;
 
@@ -145,7 +145,7 @@ public class LatentTopicNetworkMaxPseudoLikelihood_Naive extends VotedPerceptron
 		/* If true, exactly one Atom in the RV block must be 1.0. If false, at most one can. */
 		boolean[] exactlyOne = blocker.getExactlyOne();
 		/* Collects GroundCompatibilityKernels incident on each block of RandomVariableAtoms */
-		GroundCompatibilityKernel[][] incidentGKs = blocker.getIncidentGKs();
+		WeightedGroundRule[][] incidentGKs = blocker.getIncidentGKs();
 		
 		double[] expInc = new double[kernels.size()];
 		
@@ -178,7 +178,7 @@ public class LatentTopicNetworkMaxPseudoLikelihood_Naive extends VotedPerceptron
 			}
 				
 			/* Compute the incompatibility of each sample for each kernel */
-			HashMap<CompatibilityKernel,double[]> incompatibilities = new HashMap<CompatibilityKernel,double[]>();
+			HashMap<WeightedRule,double[]> incompatibilities = new HashMap<WeightedRule,double[]>();
 			/* Also compute the latent topic network log-loss of each sample -JF*/
 			double[] logLosses = new double[s.length];
 			
@@ -189,8 +189,8 @@ public class LatentTopicNetworkMaxPseudoLikelihood_Naive extends VotedPerceptron
 			
 			/* Computes the probability */
 			for (GroundRule gk : incidentGKs[iBlock]) {
-				if (gk instanceof GroundCompatibilityKernel) {
-					CompatibilityKernel k = (CompatibilityKernel) gk.getKernel();
+				if (gk instanceof WeightedGroundRule) {
+					WeightedRule k = (WeightedRule) gk.getKernel();
 					if (!incompatibilities.containsKey(k))
 						incompatibilities.put(k, new double[s.length]);
 					double[] inc = incompatibilities.get(k);
@@ -199,7 +199,7 @@ public class LatentTopicNetworkMaxPseudoLikelihood_Naive extends VotedPerceptron
 						for (int iChange = 0; iChange < rvBlocks[iBlock].length; iChange++)
 							rvBlocks[iBlock][iChange].setValue(s[iSample][iChange]);
 						
-						inc[iSample] += ((GroundCompatibilityKernel) gk).getIncompatibility();
+						inc[iSample] += ((WeightedGroundRule) gk).getIncompatibility();
 						
 						/* Compute the log loss terms for the block. -JF */
 						for (int iVar = 0; iVar < rvBlocks[iBlock].length; iVar++) {
@@ -217,13 +217,13 @@ public class LatentTopicNetworkMaxPseudoLikelihood_Naive extends VotedPerceptron
 				rvBlocks[iBlock][iChange].setValue(originalState[iChange]);
 			
 			/* Compute the exp incomp and accumulate the partition for the current atom. */
-			HashMap<CompatibilityKernel,Double> expIncAtom = new HashMap<CompatibilityKernel,Double>();
+			HashMap<WeightedRule,Double> expIncAtom = new HashMap<WeightedRule,Double>();
 			double Z = 0.0;
 			for (int j = 0; j < s.length; j++) {
 				/* Compute the exponent */
 				double sum = 0.0;
-				for (Map.Entry<CompatibilityKernel,double[]> e2 : incompatibilities.entrySet()) {
-					CompatibilityKernel k = e2.getKey();
+				for (Map.Entry<WeightedRule,double[]> e2 : incompatibilities.entrySet()) {
+					WeightedRule k = e2.getKey();
 					double[] inc = e2.getValue();
 					sum -= k.getWeight().getWeight() * inc[j];
 				}
@@ -233,8 +233,8 @@ public class LatentTopicNetworkMaxPseudoLikelihood_Naive extends VotedPerceptron
 				/* Add to partition */
 				Z += exp;
 				/* Compute the exp incomp for current atom */
-				for (Map.Entry<CompatibilityKernel,double[]> e2 : incompatibilities.entrySet()) {
-					CompatibilityKernel k = e2.getKey();
+				for (Map.Entry<WeightedRule,double[]> e2 : incompatibilities.entrySet()) {
+					WeightedRule k = e2.getKey();
 					if (!expIncAtom.containsKey(k))
 						expIncAtom.put(k, 0.0);
 					double val = expIncAtom.get(k).doubleValue();
@@ -244,7 +244,7 @@ public class LatentTopicNetworkMaxPseudoLikelihood_Naive extends VotedPerceptron
 			}
 			/* Finally, we add to the exp incomp for each kernel */ 
 			for (int i = 0; i < kernels.size(); i++) {
-				CompatibilityKernel k = kernels.get(i);
+				WeightedRule k = kernels.get(i);
 				if (expIncAtom.containsKey(k))
 					if (expIncAtom.get(k) > 0.0) 
 						expInc[i] += expIncAtom.get(k) / Z;

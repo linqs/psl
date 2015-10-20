@@ -36,7 +36,7 @@ import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
-import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.WeightedGroundRule;
 import edu.umd.cs.psl.model.rule.GroundRule;
 import edu.umd.cs.psl.model.rule.Rule;
 import edu.umd.cs.psl.model.rule.arithmetic.GroundValueConstraint;
@@ -122,7 +122,7 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 						eventFramework.activateAtom((RandomVariableAtom) correspondingAtom);
 						GroundValueConstraint con = new GroundValueConstraint((RandomVariableAtom) correspondingAtom, ((ObservedAtom) labeledAtom).getValue());
 						targetMap.put((RandomVariableAtom) correspondingAtom, con);
-						reasoner.addGroundKernel(con);
+						reasoner.addGroundRule(con);
 					}
 				}
 			}
@@ -163,7 +163,7 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 			
 			/* Adds new constraints to reasoner */
 			for (GroundValueConstraint con : toAdd)
-				reasoner.addGroundKernel(con);
+				reasoner.addGroundRule(con);
 			toAdd.clear();
 			
 		}
@@ -174,7 +174,7 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 		double[] truthIncompatibility = new double[kernels.size()];
 		for (int i = 0; i < kernels.size(); i++) {
 			for (GroundRule gk : reasoner.getGroundKernels(kernels.get(i))) {
-				truthIncompatibility[i] += ((GroundCompatibilityKernel) gk).getIncompatibility();
+				truthIncompatibility[i] += ((WeightedGroundRule) gk).getIncompatibility();
 			}
 		}
 		
@@ -200,7 +200,7 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 		/* Computes incompatibility */
 		for (int i = 0; i < kernels.size(); i++) {
 			for (GroundRule gk : reasoner.getGroundKernels(kernels.get(i))) {
-				expIncomp[i] += ((GroundCompatibilityKernel) gk).getIncompatibility();
+				expIncomp[i] += ((WeightedGroundRule) gk).getIncompatibility();
 			}
 		}
 		

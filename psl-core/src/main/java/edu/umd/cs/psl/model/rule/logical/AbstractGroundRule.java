@@ -24,14 +24,12 @@ import java.util.Set;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
-import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.formula.Disjunction;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.formula.Negation;
 import edu.umd.cs.psl.model.formula.Tnorm;
 import edu.umd.cs.psl.model.formula.traversal.FormulaEvaluator;
-import edu.umd.cs.psl.model.rule.BindingMode;
 import edu.umd.cs.psl.model.rule.GroundRule;
 import edu.umd.cs.psl.reasoner.function.ConstantNumber;
 import edu.umd.cs.psl.reasoner.function.FunctionSum;
@@ -112,14 +110,6 @@ abstract public class AbstractGroundRule implements GroundRule {
 	
 	public double getTruthValue() {
 		return 1 - Math.max(getFunction().getValue(), 0.0);
-	}
-	
-	@Override
-	public BindingMode getBinding(Atom atom) {
-		if (getAtoms().contains(atom)) {
-			return BindingMode.StrongRV;
-		}
-		return BindingMode.NoBinding;
 	}
 	
 	@Override

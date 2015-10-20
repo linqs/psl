@@ -19,7 +19,6 @@ package edu.umd.cs.psl.model.rule;
 
 import java.util.Set;
 
-import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 
 /**
@@ -50,10 +49,4 @@ public interface GroundRule {
 	 *             GroundKernel's incompatibility or infeasibility
 	 */
 	public Set<GroundAtom> getAtoms();
-
-	/**
-	 * Something about whether GroundAtoms can be removed from this GroundKernel
-	 * if they have truth value of 0.0...
-	 */
-	public BindingMode getBinding(Atom atom);
 }

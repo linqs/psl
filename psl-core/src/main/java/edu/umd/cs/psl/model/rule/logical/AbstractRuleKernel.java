@@ -25,7 +25,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import edu.umd.cs.psl.application.groundkernelstore.GroundKernelStore;
+import edu.umd.cs.psl.application.groundrulestore.GroundRuleStore;
 import edu.umd.cs.psl.database.DatabaseQuery;
 import edu.umd.cs.psl.database.ResultList;
 import edu.umd.cs.psl.model.NumericUtilities;
@@ -42,14 +42,14 @@ import edu.umd.cs.psl.model.atom.VariableAssignment;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.formula.FormulaAnalysis;
 import edu.umd.cs.psl.model.formula.FormulaAnalysis.DNFClause;
-import edu.umd.cs.psl.model.rule.AbstractKernel;
-import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.AbstractRule;
+import edu.umd.cs.psl.model.rule.WeightedGroundRule;
 import edu.umd.cs.psl.model.rule.Rule;
 import edu.umd.cs.psl.model.formula.Negation;
 import edu.umd.cs.psl.reasoner.function.FunctionTerm;
 import edu.umd.cs.psl.reasoner.function.FunctionVariable;
 
-abstract public class AbstractRuleKernel extends AbstractKernel {
+abstract public class AbstractRuleKernel extends AbstractRule {
 	private static final Logger log = LoggerFactory.getLogger(AbstractRuleKernel.class);
 	
 	protected Formula formula;
@@ -78,13 +78,13 @@ abstract public class AbstractRuleKernel extends AbstractKernel {
 	}
 	
 	@Override
-	public void groundAll(AtomManager atomManager, GroundKernelStore gks) {
+	public void groundAll(AtomManager atomManager, GroundRuleStore gks) {
 		ResultList res = atomManager.executeQuery(new DatabaseQuery(clause.getQueryFormula()));
 		int numGrounded = groundFormula(atomManager, gks, res, null);
 		log.debug("Grounded {} instances of rule {}", numGrounded, this);
 	}
 	
-	protected int groundFormula(AtomManager atomManager, GroundKernelStore gks, ResultList res,  VariableAssignment var) {
+	protected int groundFormula(AtomManager atomManager, GroundRuleStore gks, ResultList res,  VariableAssignment var) {
 		int numGroundingsAdded = 0;
 		List<GroundAtom> posLiterals = new ArrayList<GroundAtom>(4);
 		List<GroundAtom> negLiterals = new ArrayList<GroundAtom>(4);
@@ -118,9 +118,9 @@ abstract public class AbstractRuleKernel extends AbstractKernel {
 			FunctionTerm function = groundRule.getFunction();
 			worstCaseValue = function.getValue(worstCaseValues, false);
 			if (worstCaseValue > NumericUtilities.strictEpsilon
-					&& (!function.isConstant() || !(groundRule instanceof GroundCompatibilityKernel))
+					&& (!function.isConstant() || !(groundRule instanceof WeightedGroundRule))
 					&& !gks.containsGroundKernel(groundRule)) {
-				gks.addGroundKernel(groundRule);
+				gks.addGroundRule(groundRule);
 				numGroundingsAdded++;
 			}
 			/* If the ground kernel is not actually added, unregisters it from atoms */
@@ -158,7 +158,7 @@ abstract public class AbstractRuleKernel extends AbstractKernel {
 	abstract protected AbstractGroundRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals);
 
 	@Override
-	public void notifyAtomEvent(AtomEvent event, GroundKernelStore gks) {
+	public void notifyAtomEvent(AtomEvent event, GroundRuleStore gks) {
 		List<VariableAssignment> vars = clause.traceAtomEvent(event.getAtom());
 		if (!vars.isEmpty()) {
 			for (VariableAssignment var : vars) {

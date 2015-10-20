@@ -34,7 +34,7 @@ import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.parameters.PositiveWeight;
-import edu.umd.cs.psl.model.rule.CompatibilityKernel;
+import edu.umd.cs.psl.model.rule.WeightedRule;
 import edu.umd.cs.psl.model.rule.arithmetic.GroundValueConstraint;
 import edu.umd.cs.psl.reasoner.Reasoner;
 import edu.umd.cs.psl.reasoner.ReasonerFactory;
@@ -101,7 +101,7 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 	private int round;
 	
 	protected final boolean storeWeights;
-	protected ArrayList<Map<CompatibilityKernel, Double>> storedWeights;
+	protected ArrayList<Map<WeightedRule, Double>> storedWeights;
 
 	
 	/**
@@ -124,7 +124,7 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 		
 		storeWeights = config.getBoolean(STORE_WEIGHTS_KEY, STORE_WEIGHTS_DEFAULT);
 		if (storeWeights) 
-			storedWeights = new ArrayList<Map<CompatibilityKernel, Double>>();
+			storedWeights = new ArrayList<Map<WeightedRule, Double>>();
 	}
 
 	@Override
@@ -151,7 +151,7 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 			}
 			
 			if (storeWeights) {
-				Map<CompatibilityKernel,Double> weightMap = new HashMap<CompatibilityKernel, Double>();
+				Map<WeightedRule,Double> weightMap = new HashMap<WeightedRule, Double>();
 				for (int i = 0; i < kernels.size(); i++) {
 					double weight = (averageSteps)? avgWeights[i] : weights[i];
 					if (weight > 0.0)
@@ -197,7 +197,7 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 		latentVariableReasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
 		Grounding.groundAll(model, trainingMap, latentVariableReasoner);
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet())
-			latentVariableReasoner.addGroundKernel(new GroundValueConstraint(e.getKey(), e.getValue().getValue()));
+			latentVariableReasoner.addGroundRule(new GroundValueConstraint(e.getKey(), e.getValue().getValue()));
 	}
 	
 	/**
@@ -233,7 +233,7 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 			return super.getStepSize(iter);
 	}
 	
-	public ArrayList<Map<CompatibilityKernel, Double>> getStoredWeights() {
+	public ArrayList<Map<WeightedRule, Double>> getStoredWeights() {
 		return (storeWeights)? storedWeights : null;
 	}
 	

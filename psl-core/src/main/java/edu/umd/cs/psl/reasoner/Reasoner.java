@@ -17,14 +17,14 @@
  */
 package edu.umd.cs.psl.reasoner;
 
-import edu.umd.cs.psl.application.groundkernelstore.GroundKernelStore;
+import edu.umd.cs.psl.application.groundrulestore.GroundRuleStore;
 
 /**
  * A GroundKernelStore that can minimize the total weighted incompatibility
  * of its GroundCompatibilityKernels such that the infeasibility of its
  * GroundConstraintKernels is (close to) zero by optimizing the RandomVariableAtoms.
  */
-public interface Reasoner extends GroundKernelStore {
+public interface Reasoner extends GroundRuleStore {
 	
 	/**
 	 * Minimizes the total weighted incompatibility of the this Reasoner's

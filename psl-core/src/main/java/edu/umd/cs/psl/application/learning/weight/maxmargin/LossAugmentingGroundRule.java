@@ -23,31 +23,29 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.parameters.Weight;
-import edu.umd.cs.psl.model.rule.BindingMode;
-import edu.umd.cs.psl.model.rule.CompatibilityKernel;
-import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.WeightedRule;
+import edu.umd.cs.psl.model.rule.WeightedGroundRule;
 import edu.umd.cs.psl.reasoner.function.ConstantNumber;
 import edu.umd.cs.psl.reasoner.function.FunctionSum;
 import edu.umd.cs.psl.reasoner.function.FunctionSummand;
 import edu.umd.cs.psl.reasoner.function.FunctionTerm;
 
 /**
- * Special ground kernel that penalizes being close to a fixed value of 1.0 or 0.0.
+ * Special ground rule that penalizes being close to a fixed value of 1.0 or 0.0.
  * 
  * @author Bert Huang <bert@cs.umd.edu>
  */
-public class LossAugmentingGroundKernel implements GroundCompatibilityKernel {
+public class LossAugmentingGroundRule implements WeightedGroundRule {
 
-	private static final Logger log = LoggerFactory.getLogger(LossAugmentingGroundKernel.class);
+	private static final Logger log = LoggerFactory.getLogger(LossAugmentingGroundRule.class);
 
 	private GroundAtom atom;
 	private double groundTruth;	
 	private Weight weight;
 	
-	public LossAugmentingGroundKernel(GroundAtom atom, double truthValue, Weight weight) {
+	public LossAugmentingGroundRule(GroundAtom atom, double truthValue, Weight weight) {
 		this.atom = atom;
 		this.groundTruth = truthValue;
 		if (!(groundTruth == 1.0 || groundTruth == 0.0))
@@ -62,7 +60,7 @@ public class LossAugmentingGroundKernel implements GroundCompatibilityKernel {
 	}
 
 	@Override
-	public CompatibilityKernel getKernel() {
+	public WeightedRule getKernel() {
 		return null;
 	}
 
@@ -76,11 +74,6 @@ public class LossAugmentingGroundKernel implements GroundCompatibilityKernel {
 	@Override
 	public double getIncompatibility() {
 		return Math.abs(atom.getValue() - this.groundTruth);
-	}
-
-	@Override
-	public BindingMode getBinding(Atom atom) {
-		return null;
 	}
 
 	@Override

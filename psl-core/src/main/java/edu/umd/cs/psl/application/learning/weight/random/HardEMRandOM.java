@@ -28,7 +28,7 @@ import com.google.common.collect.Iterables;
 
 import edu.umd.cs.psl.application.ModelApplication;
 import edu.umd.cs.psl.application.learning.weight.TrainingMap;
-import edu.umd.cs.psl.application.learning.weight.maxmargin.LossAugmentingGroundKernel;
+import edu.umd.cs.psl.application.learning.weight.maxmargin.LossAugmentingGroundRule;
 import edu.umd.cs.psl.application.learning.weight.maxmargin.MinNormProgram;
 import edu.umd.cs.psl.application.util.Grounding;
 import edu.umd.cs.psl.config.ConfigBundle;
@@ -41,14 +41,14 @@ import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.parameters.NegativeWeight;
 import edu.umd.cs.psl.model.parameters.PositiveWeight;
-import edu.umd.cs.psl.model.rule.CompatibilityKernel;
-import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.WeightedRule;
+import edu.umd.cs.psl.model.rule.WeightedGroundRule;
 import edu.umd.cs.psl.reasoner.Reasoner;
 import edu.umd.cs.psl.reasoner.ReasonerFactory;
 import edu.umd.cs.psl.reasoner.admm.ADMMReasonerFactory;
 
 /**
- * Learns new weights for the {@link CompatibilityKernel CompatibilityKernels}
+ * Learns new weights for the {@link WeightedRule CompatibilityKernels}
  * in a {@link Model} using hard EM RandOM learning.
  * <p>
  * TODO: description
@@ -172,8 +172,8 @@ public class HardEMRandOM implements ModelApplication {
 					"by MaxMargin.");
 		Grounding.groundAll(model, trainingMap, reasoner);
 
-		List<GroundCompatibilityKernel> groundKernels = new ArrayList<GroundCompatibilityKernel>();
-		for (GroundCompatibilityKernel k : Iterables.filter(reasoner.getGroundKernels(), GroundCompatibilityKernel.class))
+		List<WeightedGroundRule> groundKernels = new ArrayList<WeightedGroundRule>();
+		for (WeightedGroundRule k : Iterables.filter(reasoner.getGroundKernels(), WeightedGroundRule.class))
 			groundKernels.add(k);
 
 		weights = new double[groundKernels.size()+1];
@@ -186,7 +186,7 @@ public class HardEMRandOM implements ModelApplication {
 		}
 
 		for (int i = 0; i < groundKernels.size(); i++) {
-			GroundCompatibilityKernel gk = groundKernels.get(i);
+			WeightedGroundRule gk = groundKernels.get(i);
 			truthIncompatibility[i] += gk.getIncompatibility();
 
 			/* Initializes the current weights */
@@ -198,7 +198,7 @@ public class HardEMRandOM implements ModelApplication {
 		// set up loss augmenting ground kernels
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
 			e.getKey().setValue(e.getValue().getValue());
-			reasoner.addGroundKernel(new LossAugmentingGroundKernel(
+			reasoner.addGroundRule(new LossAugmentingGroundRule(
 					e.getKey(), e.getValue().getValue(), new NegativeWeight(-1.0)));
 		}
 		
@@ -241,7 +241,7 @@ public class HardEMRandOM implements ModelApplication {
 				for (int i = 0; i < groundKernels.size(); i++) {
 					mpeIncompatibility = 0.0;
 
-					GroundCompatibilityKernel gk = groundKernels.get(i);
+					WeightedGroundRule gk = groundKernels.get(i);
 					mpeIncompatibility = gk.getIncompatibility();	
 
 					constraintCoefficients[i] =  truthIncompatibility[i] - mpeIncompatibility;
@@ -280,11 +280,11 @@ public class HardEMRandOM implements ModelApplication {
 			 * TODO: if we really want to make PSL a RandOM, we could also learn variances here
 			 */
 			double totalChange = 0;
-			for (CompatibilityKernel k : Iterables.filter(model.getKernels(), CompatibilityKernel.class)) {
+			for (WeightedRule k : Iterables.filter(model.getKernels(), WeightedRule.class)) {
 				double avgWeight = 0.0;
 				int count = 0;
-				for (GroundCompatibilityKernel gk : Iterables.filter(
-						reasoner.getGroundKernels(k), GroundCompatibilityKernel.class)) {
+				for (WeightedGroundRule gk : Iterables.filter(
+						reasoner.getGroundKernels(k), WeightedGroundRule.class)) {
 					avgWeight += gk.getWeight().getWeight();
 					count++;
 				}
@@ -305,7 +305,7 @@ public class HardEMRandOM implements ModelApplication {
 		}
 	}
 
-	private double[] getOrigin(List<GroundCompatibilityKernel> groundKernels) {
+	private double[] getOrigin(List<WeightedGroundRule> groundKernels) {
 		double [] origin = new double[groundKernels.size() + 1];
 		for (int i = 0; i < groundKernels.size(); i++) 
 			origin[i] = groundKernels.get(i).getKernel().getWeight().getWeight();

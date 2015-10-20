@@ -15,8 +15,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.model.rule;
+package edu.umd.cs.psl.application.topicmodel.rule;
 
-public interface ConstraintKernel extends Rule {
+import java.util.List;
+
+import edu.umd.cs.psl.model.atom.GroundAtom;
+import edu.umd.cs.psl.model.rule.WeightedRule;
+
+/**
+ * Ground log loss rules for LDA.  Keeps a pointer to an array of coefficients,
+ * which may be updated.
+ * 
+ * @author Jimmy Foulds <jfoulds@ucsc.edu>
+ *
+ */
+public class LDAgroundLogLoss extends GroundLogLoss {
+	final double[] coefficientsArray;
+	public LDAgroundLogLoss(WeightedRule k, List<GroundAtom> literals, List<Double> coefficients, double[] coefficientsArray) {
+		super(k, literals, coefficients);
+		this.coefficientsArray = coefficientsArray;
+	}
 	
+	public double[] getCoefficientsArray() {
+		return coefficientsArray;
+	}
+
 }

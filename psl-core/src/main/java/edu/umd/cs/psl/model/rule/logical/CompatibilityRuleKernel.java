@@ -24,10 +24,10 @@ import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.parameters.NegativeWeight;
 import edu.umd.cs.psl.model.parameters.PositiveWeight;
 import edu.umd.cs.psl.model.parameters.Weight;
-import edu.umd.cs.psl.model.rule.CompatibilityKernel;
+import edu.umd.cs.psl.model.rule.WeightedRule;
 import edu.umd.cs.psl.model.rule.Rule;
 
-public class CompatibilityRuleKernel extends AbstractRuleKernel implements CompatibilityKernel {
+public class CompatibilityRuleKernel extends AbstractRuleKernel implements WeightedRule {
 	
 	protected Weight weight;
 	protected boolean squared;

@@ -22,7 +22,7 @@ import com.google.common.collect.Iterables;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.Model;
-import edu.umd.cs.psl.model.rule.CompatibilityKernel;
+import edu.umd.cs.psl.model.rule.WeightedRule;
 
 public class LatentObjectiveComputer extends HardEM {
 
@@ -31,7 +31,7 @@ public class LatentObjectiveComputer extends HardEM {
 		super(model, rvDB, observedDB, config);
 
 		/* Gathers the CompatibilityKernels */
-		for (CompatibilityKernel k : Iterables.filter(model.getKernels(), CompatibilityKernel.class))
+		for (WeightedRule k : Iterables.filter(model.getKernels(), WeightedRule.class))
 			if (k.isWeightMutable())
 				kernels.add(k);
 			else

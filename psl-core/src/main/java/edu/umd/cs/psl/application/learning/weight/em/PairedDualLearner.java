@@ -38,7 +38,7 @@ import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.parameters.PositiveWeight;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.PredicateFactory;
-import edu.umd.cs.psl.model.rule.CompatibilityKernel;
+import edu.umd.cs.psl.model.rule.WeightedRule;
 import edu.umd.cs.psl.model.rule.GroundRule;
 import edu.umd.cs.psl.reasoner.admm.ADMMReasoner;
 
@@ -234,7 +234,7 @@ public class PairedDualLearner extends ExpectationMaximization {
 			}
 
 			if (storeWeights) {
-				Map<CompatibilityKernel,Double> weightMap = new HashMap<CompatibilityKernel, Double>();
+				Map<WeightedRule,Double> weightMap = new HashMap<WeightedRule, Double>();
 				for (int i = 0; i < kernels.size(); i++) {
 					double weight = (averageSteps)? avgWeights[i] : weights[i];
 					if (weight != 0.0)

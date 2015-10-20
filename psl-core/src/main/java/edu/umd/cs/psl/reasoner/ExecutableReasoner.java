@@ -34,8 +34,8 @@ import com.google.common.collect.Iterables;
 import de.mathnbits.util.KeyedRetrievalSet;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
-import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
-import edu.umd.cs.psl.model.rule.GroundConstraintKernel;
+import edu.umd.cs.psl.model.rule.WeightedGroundRule;
+import edu.umd.cs.psl.model.rule.UnweightedGroundRule;
 import edu.umd.cs.psl.model.rule.GroundRule;
 import edu.umd.cs.psl.model.rule.Rule;
 
@@ -152,7 +152,7 @@ abstract public class ExecutableReasoner implements Reasoner {
 	}
 
 	@Override
-	public void addGroundKernel(GroundRule gk) {
+	public void addGroundRule(GroundRule gk) {
 		groundKernels.put(gk.getKernel(), gk);
 	}
 
@@ -178,12 +178,12 @@ abstract public class ExecutableReasoner implements Reasoner {
 	}
 
 	@Override
-	public Iterable<GroundCompatibilityKernel> getCompatibilityKernels() {
-		return Iterables.filter(groundKernels, GroundCompatibilityKernel.class);
+	public Iterable<WeightedGroundRule> getCompatibilityKernels() {
+		return Iterables.filter(groundKernels, WeightedGroundRule.class);
 	}
 	
-	public Iterable<GroundConstraintKernel> getConstraintKernels() {
-		return Iterables.filter(groundKernels, GroundConstraintKernel.class);
+	public Iterable<UnweightedGroundRule> getConstraintKernels() {
+		return Iterables.filter(groundKernels, UnweightedGroundRule.class);
 	}
 
 	@Override
@@ -197,12 +197,12 @@ abstract public class ExecutableReasoner implements Reasoner {
 	}
 
 	@Override
-	public void changedGroundKernel(GroundRule gk) {
+	public void changedGroundRule(GroundRule gk) {
 		/* Intentionally empty */
 	}
 
 	@Override
-	public void changedGroundKernelWeight(GroundCompatibilityKernel gk) {
+	public void changedGroundKernelWeight(WeightedGroundRule gk) {
 		/* Intentionally empty */
 	}
 

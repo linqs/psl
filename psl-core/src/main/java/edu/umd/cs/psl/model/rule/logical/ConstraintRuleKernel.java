@@ -21,10 +21,10 @@ import java.util.List;
 
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.formula.Formula;
-import edu.umd.cs.psl.model.rule.ConstraintKernel;
+import edu.umd.cs.psl.model.rule.UnweightedRule;
 import edu.umd.cs.psl.model.rule.Rule;
 
-public class ConstraintRuleKernel extends AbstractRuleKernel implements ConstraintKernel {
+public class ConstraintRuleKernel extends AbstractRuleKernel implements UnweightedRule {
 	
 	public ConstraintRuleKernel(Formula f) {
 		super(f);

@@ -21,11 +21,9 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.GroundAtom;
-import edu.umd.cs.psl.model.rule.BindingMode;
-import edu.umd.cs.psl.model.rule.ConstraintKernel;
-import edu.umd.cs.psl.model.rule.GroundConstraintKernel;
+import edu.umd.cs.psl.model.rule.UnweightedRule;
+import edu.umd.cs.psl.model.rule.UnweightedGroundRule;
 import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
 import edu.umd.cs.psl.reasoner.function.FunctionComparator;
 import edu.umd.cs.psl.reasoner.function.FunctionSum;
@@ -36,7 +34,7 @@ import edu.umd.cs.psl.reasoner.function.FunctionSummand;
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-public class GroundLinearConstraint implements GroundConstraintKernel {
+public class GroundLinearConstraint implements UnweightedGroundRule {
 	
 	private final GroundAtom[] atoms;
 	private final double[] coeffs;
@@ -65,16 +63,7 @@ public class GroundLinearConstraint implements GroundConstraintKernel {
 	}
 
 	@Override
-	public BindingMode getBinding(Atom atom) {
-		for (GroundAtom candidateAtom : atoms)
-			if (candidateAtom.equals(atom))
-				return BindingMode.StrongCertainty;
-		
-		return BindingMode.NoBinding;
-	}
-
-	@Override
-	public ConstraintKernel getKernel() {
+	public UnweightedRule getKernel() {
 		return null;
 	}
 

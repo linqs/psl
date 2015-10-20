@@ -21,15 +21,15 @@ import java.util.List;
 
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.parameters.Weight;
-import edu.umd.cs.psl.model.rule.CompatibilityKernel;
-import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.WeightedRule;
+import edu.umd.cs.psl.model.rule.WeightedGroundRule;
 import edu.umd.cs.psl.reasoner.function.ConstantNumber;
 import edu.umd.cs.psl.reasoner.function.FunctionTerm;
 import edu.umd.cs.psl.reasoner.function.MaxFunction;
 import edu.umd.cs.psl.reasoner.function.PowerOfTwo;
 
 public class GroundCompatibilityRule extends AbstractGroundRule implements
-		GroundCompatibilityKernel {
+		WeightedGroundRule {
 	
 	private Weight weight;
 	private final boolean squared;
@@ -42,8 +42,8 @@ public class GroundCompatibilityRule extends AbstractGroundRule implements
 	}
 
 	@Override
-	public CompatibilityKernel getKernel() {
-		return (CompatibilityKernel) kernel;
+	public WeightedRule getKernel() {
+		return (WeightedRule) kernel;
 	}
 
 	@Override

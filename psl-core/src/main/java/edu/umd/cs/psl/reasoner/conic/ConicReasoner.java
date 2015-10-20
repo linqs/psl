@@ -25,8 +25,8 @@ import com.google.common.collect.Iterables;
 
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
-import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
-import edu.umd.cs.psl.model.rule.GroundConstraintKernel;
+import edu.umd.cs.psl.model.rule.WeightedGroundRule;
+import edu.umd.cs.psl.model.rule.UnweightedGroundRule;
 import edu.umd.cs.psl.model.rule.GroundRule;
 import edu.umd.cs.psl.model.rule.Rule;
 import edu.umd.cs.psl.optimizer.conic.ConicProgramSolver;
@@ -87,13 +87,13 @@ public class ConicReasoner implements Reasoner {
 	}
 	
 	@Override
-	public void addGroundKernel(GroundRule gk) {
+	public void addGroundRule(GroundRule gk) {
 		if (gkRepresentation.containsKey(gk)) throw new IllegalArgumentException("Provided evidence has already been added to the reasoner: " + gk);
 		ConicProgramProxy proxy;
-		if (gk instanceof GroundCompatibilityKernel) {
-			proxy = new FunctionConicProgramProxy(this, (GroundCompatibilityKernel) gk);
-		} else if (gk instanceof GroundConstraintKernel) {
-			proxy = new ConstraintConicProgramProxy(this, ((GroundConstraintKernel)gk).getConstraintDefinition(), gk);
+		if (gk instanceof WeightedGroundRule) {
+			proxy = new FunctionConicProgramProxy(this, (WeightedGroundRule) gk);
+		} else if (gk instanceof UnweightedGroundRule) {
+			proxy = new ConstraintConicProgramProxy(this, ((UnweightedGroundRule)gk).getConstraintDefinition(), gk);
 		} else throw new AssertionError("Unrecognized evidence type provided: " + gk);
 		gkRepresentation.put(gk, proxy);
 	}
@@ -110,23 +110,23 @@ public class ConicReasoner implements Reasoner {
 	}
 	
 	@Override
-	public void changedGroundKernel(GroundRule gk) {
+	public void changedGroundRule(GroundRule gk) {
 		if (!gkRepresentation.containsKey(gk)) throw new IllegalArgumentException("Provided evidence has never been added to the reasoner: " + gk);
 		ConicProgramProxy proxy = gkRepresentation.get(gk);
-		if (gk instanceof GroundCompatibilityKernel) {
+		if (gk instanceof WeightedGroundRule) {
 			assert proxy instanceof FunctionConicProgramProxy;
-			((FunctionConicProgramProxy)proxy).updateGroundKernel((GroundCompatibilityKernel) gk);
-		} else if (gk instanceof GroundConstraintKernel) {
+			((FunctionConicProgramProxy)proxy).updateGroundKernel((WeightedGroundRule) gk);
+		} else if (gk instanceof UnweightedGroundRule) {
 			assert proxy instanceof ConstraintConicProgramProxy;
-			((ConstraintConicProgramProxy)proxy).updateConstraint(((GroundConstraintKernel)gk).getConstraintDefinition());
+			((ConstraintConicProgramProxy)proxy).updateConstraint(((UnweightedGroundRule)gk).getConstraintDefinition());
 		} else throw new AssertionError("Unrecognized evidence type provided: " + gk);
 	}
 	
 	@Override
-	public void changedGroundKernelWeight(GroundCompatibilityKernel gk) {
+	public void changedGroundKernelWeight(WeightedGroundRule gk) {
 		ConicProgramProxy proxy = gkRepresentation.get(gk);
 		if (proxy instanceof FunctionConicProgramProxy)
-			((FunctionConicProgramProxy) proxy).updateGroundKernelWeight((GroundCompatibilityKernel) gk);
+			((FunctionConicProgramProxy) proxy).updateGroundKernelWeight((WeightedGroundRule) gk);
 		else
 			throw new IllegalStateException("Expected a FunctionConicProgramProxy.");
 	}
@@ -134,9 +134,9 @@ public class ConicReasoner implements Reasoner {
 	@Override
 	public void changedGroundKernelWeights() {
 		for (Map.Entry<GroundRule, ConicProgramProxy> e : gkRepresentation.entrySet()) {
-			if (e.getKey() instanceof GroundCompatibilityKernel) {
+			if (e.getKey() instanceof WeightedGroundRule) {
 				if (e.getValue() instanceof FunctionConicProgramProxy) {
-					((FunctionConicProgramProxy) e.getValue()).updateGroundKernelWeight((GroundCompatibilityKernel) e.getKey());
+					((FunctionConicProgramProxy) e.getValue()).updateGroundKernelWeight((WeightedGroundRule) e.getKey());
 				}
 				else {
 					throw new IllegalStateException("Expected a FunctionConicProgramProxy.");
@@ -168,12 +168,12 @@ public class ConicReasoner implements Reasoner {
 	}
 
 	@Override
-	public Iterable<GroundCompatibilityKernel> getCompatibilityKernels() {
-		return Iterables.filter(gkRepresentation.keySet(), GroundCompatibilityKernel.class);
+	public Iterable<WeightedGroundRule> getCompatibilityKernels() {
+		return Iterables.filter(gkRepresentation.keySet(), WeightedGroundRule.class);
 	}
 	
-	public Iterable<GroundConstraintKernel> getConstraintKernels() {
-		return Iterables.filter(gkRepresentation.keySet(), GroundConstraintKernel.class);
+	public Iterable<UnweightedGroundRule> getConstraintKernels() {
+		return Iterables.filter(gkRepresentation.keySet(), UnweightedGroundRule.class);
 	}
 
 	@Override

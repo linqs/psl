@@ -31,7 +31,7 @@ import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
-import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.WeightedGroundRule;
 import edu.umd.cs.psl.reasoner.ExecutableReasoner;
 import edu.umd.cs.psl.util.model.ConstraintBlocker;
 
@@ -126,14 +126,14 @@ public class UAIFormatReasoner extends ExecutableReasoner {
 		modelWriter.write("\n");
 		
 		/* Collects list of potentials */
-		List<GroundCompatibilityKernel> gcks = new ArrayList<GroundCompatibilityKernel>();
-		for (GroundCompatibilityKernel gck : getCompatibilityKernels())
+		List<WeightedGroundRule> gcks = new ArrayList<WeightedGroundRule>();
+		for (WeightedGroundRule gck : getCompatibilityKernels())
 			gcks.add(gck);
 		
 		/* Writes out number of potentials and indices of participating variables */
 		modelWriter.write(gcks.size() + "\n");
 		List<Integer> vars = new ArrayList<Integer>();
-		for (GroundCompatibilityKernel gck : gcks) {
+		for (WeightedGroundRule gck : gcks) {
 			for (GroundAtom atom : gck.getAtoms()) {
 				if (atom instanceof RandomVariableAtom)
 					vars.add(rvMap.get(atom));
@@ -149,7 +149,7 @@ public class UAIFormatReasoner extends ExecutableReasoner {
 		}
 		
 		/* Writes out potential tables */
-		for (GroundCompatibilityKernel gck : gcks) {
+		for (WeightedGroundRule gck : gcks) {
 			modelWriter.write("\n");
 			for (GroundAtom atom : gck.getAtoms()) {
 				if (atom instanceof RandomVariableAtom)

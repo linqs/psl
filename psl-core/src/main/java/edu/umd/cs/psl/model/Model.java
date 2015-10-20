@@ -24,8 +24,8 @@ import java.util.List;
 import java.util.Set;
 
 import edu.umd.cs.psl.application.ModelApplication;
-import edu.umd.cs.psl.model.rule.CompatibilityKernel;
-import edu.umd.cs.psl.model.rule.ConstraintKernel;
+import edu.umd.cs.psl.model.rule.WeightedRule;
+import edu.umd.cs.psl.model.rule.UnweightedRule;
 import edu.umd.cs.psl.model.rule.Rule;
 
 /**
@@ -147,9 +147,9 @@ public class Model {
 		List<Rule> constraintKernels = new LinkedList<Rule>();
 		List<Rule> compatibilityKernels = new LinkedList<Rule>();
 		for (Rule kernel : kernels)
-			if (kernel instanceof CompatibilityKernel)
+			if (kernel instanceof WeightedRule)
 				compatibilityKernels.add(kernel);
-			else if (kernel instanceof ConstraintKernel)
+			else if (kernel instanceof UnweightedRule)
 				constraintKernels.add(kernel);
 			else
 				throw new IllegalStateException("Unrecognized kernel: " + kernel);

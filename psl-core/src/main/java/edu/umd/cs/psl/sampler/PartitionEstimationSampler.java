@@ -17,7 +17,7 @@
  */
 package edu.umd.cs.psl.sampler;
 
-import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.WeightedGroundRule;
 import edu.umd.cs.psl.model.rule.GroundRule;
 import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
 
@@ -51,8 +51,8 @@ public class PartitionEstimationSampler extends UniformSampler {
 	protected void processSampledPoint(Iterable<GroundRule> groundKernels) {
 		double incompatibility = 0.0;
     	for (GroundRule gk : groundKernels) {
-    		if (gk instanceof GroundCompatibilityKernel) {
-    			incompatibility += ((GroundCompatibilityKernel) gk).getIncompatibility();
+    		if (gk instanceof WeightedGroundRule) {
+    			incompatibility += ((WeightedGroundRule) gk).getIncompatibility();
     		}
     	}
     	total += Math.exp(-1 * incompatibility);

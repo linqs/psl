@@ -17,8 +17,20 @@
  */
 package edu.umd.cs.psl.model.rule;
 
-public enum BindingMode {
+import edu.umd.cs.psl.model.atom.GroundAtom;
+import edu.umd.cs.psl.model.parameters.Weight;
 
-	NoBinding, WeakRV, WeakCertainty, StrongCertainty, StrongRV;
+/**
+ * A template for {@link WeightedGroundRule WeightedGroundRules},
+ * which measure the compatibility of the values of {@link GroundAtom GroundAtoms}.
+ */
+public interface WeightedRule extends Rule {
 	
+	public Weight getWeight();
+	
+	public void setWeight(Weight w);
+	
+	public boolean isWeightMutable();
+	
+	public void setWeightMutable(boolean mutable);
 }

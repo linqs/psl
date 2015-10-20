@@ -21,11 +21,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import edu.umd.cs.psl.application.topicmodel.kernel.LDAgroundLogLoss;
 import edu.umd.cs.psl.application.topicmodel.reasoner.function.NegativeLogFunction;
+import edu.umd.cs.psl.application.topicmodel.rule.LDAgroundLogLoss;
 import edu.umd.cs.psl.config.ConfigBundle;
-import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
-import edu.umd.cs.psl.model.rule.GroundConstraintKernel;
+import edu.umd.cs.psl.model.rule.WeightedGroundRule;
+import edu.umd.cs.psl.model.rule.UnweightedGroundRule;
 import edu.umd.cs.psl.model.rule.GroundRule;
 import edu.umd.cs.psl.reasoner.admm.ADMMObjectiveTerm;
 import edu.umd.cs.psl.reasoner.admm.ADMMReasoner;
@@ -73,15 +73,15 @@ public class LatentTopicNetworkADMMReasoner extends ADMMReasoner {
 		
 		/* If it's a NegativeLogFunction, constructs the objective term (a log loss).
 		 * Note that this must come before FunctionSum, since NegativeLogFunction extends FunctionSum.*/
-		if (groundKernel instanceof GroundCompatibilityKernel) {
-			function = ((GroundCompatibilityKernel) groundKernel).getFunctionDefinition();
+		if (groundKernel instanceof WeightedGroundRule) {
+			function = ((WeightedGroundRule) groundKernel).getFunctionDefinition();
 			if (function instanceof NegativeLogFunction) {
 				Hyperplane hp = processHyperplane((FunctionSum) function);
 				if (groundKernel instanceof LDAgroundLogLoss) {
-					term = new NegativeLogLossTerm(this, hp.zIndices, ((LDAgroundLogLoss) groundKernel).getCoefficientsArray(), ((GroundCompatibilityKernel) groundKernel).getWeight().getWeight());
+					term = new NegativeLogLossTerm(this, hp.zIndices, ((LDAgroundLogLoss) groundKernel).getCoefficientsArray(), ((WeightedGroundRule) groundKernel).getWeight().getWeight());
 				}
 				else {
-					term = new NegativeLogLossTerm(this, hp.zIndices, hp.coeffs, ((GroundCompatibilityKernel) groundKernel).getWeight().getWeight());
+					term = new NegativeLogLossTerm(this, hp.zIndices, hp.coeffs, ((WeightedGroundRule) groundKernel).getWeight().getWeight());
 				}
 				return term;
 			}
@@ -89,8 +89,8 @@ public class LatentTopicNetworkADMMReasoner extends ADMMReasoner {
 				return super.createTerm(groundKernel);
 			}
 		}
-		else if (groundKernel instanceof GroundConstraintKernel) {
-			ConstraintTerm constraint = ((GroundConstraintKernel) groundKernel).getConstraintDefinition();
+		else if (groundKernel instanceof UnweightedGroundRule) {
+			ConstraintTerm constraint = ((UnweightedGroundRule) groundKernel).getConstraintDefinition();
 			function = constraint.getFunction();
 			if (function instanceof FunctionSum) {
 				Hyperplane hp = processHyperplane((FunctionSum) function);

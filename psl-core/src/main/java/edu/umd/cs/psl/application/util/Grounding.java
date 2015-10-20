@@ -17,7 +17,7 @@
  */
 package edu.umd.cs.psl.application.util;
 
-import edu.umd.cs.psl.application.groundkernelstore.GroundKernelStore;
+import edu.umd.cs.psl.application.groundrulestore.GroundRuleStore;
 import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.atom.AtomManager;
 import edu.umd.cs.psl.model.rule.Rule;
@@ -33,19 +33,19 @@ public class Grounding {
 	};
 	
 	/**
-	 * Calls {@link Rule#groundAll(AtomManager, GroundKernelStore)} on
+	 * Calls {@link Rule#groundAll(AtomManager, GroundRuleStore)} on
 	 * each Kernel in a Model.
 	 * 
 	 * @param m  the Model with the Kernels to ground
 	 * @param atomManager  AtomManager to use for grounding
 	 * @param gks  GroundKernelStore to use for grounding
 	 */
-	public static void groundAll(Model m, AtomManager atomManager, GroundKernelStore gks) {
+	public static void groundAll(Model m, AtomManager atomManager, GroundRuleStore gks) {
 		groundAll(m,atomManager, gks, all);
 	}
 	
 	/**
-	 * Calls {@link Rule#groundAll(AtomManager, GroundKernelStore)} on
+	 * Calls {@link Rule#groundAll(AtomManager, GroundRuleStore)} on
 	 * each Kernel in a Model which passes a filter.
 	 * 
 	 * @param m  the Model with the Kernels to ground
@@ -53,7 +53,7 @@ public class Grounding {
 	 * @param gks  GroundKernelStore to use for grounding
 	 * @param filter  filter for Kernels to ground
 	 */
-	public static void groundAll(Model m, AtomManager atomManager, GroundKernelStore gks,
+	public static void groundAll(Model m, AtomManager atomManager, GroundRuleStore gks,
 			com.google.common.base.Predicate<Rule> filter) {
 		for (Rule k : m.getKernels()) {
 			if (filter.apply(k))

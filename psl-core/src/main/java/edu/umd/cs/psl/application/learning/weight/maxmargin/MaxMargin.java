@@ -33,12 +33,12 @@ import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.parameters.NegativeWeight;
 import edu.umd.cs.psl.model.parameters.PositiveWeight;
-import edu.umd.cs.psl.model.rule.CompatibilityKernel;
-import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.WeightedRule;
+import edu.umd.cs.psl.model.rule.WeightedGroundRule;
 import edu.umd.cs.psl.model.rule.GroundRule;
 
 /**
- * Learns new weights for the {@link CompatibilityKernel CompatibilityKernels}
+ * Learns new weights for the {@link WeightedRule CompatibilityKernels}
  * in a {@link Model} using max-margin learning.
  * <p>
  * The algorithm is based on structural SVM with cutting plane optimization
@@ -225,7 +225,7 @@ abstract public class MaxMargin extends WeightLearningApplication {
 		}
 		for (int i = 0; i < kernels.size(); i++) {
 			for (GroundRule gk : reasoner.getGroundKernels(kernels.get(i))) {
-				truthIncompatibility[i] += ((GroundCompatibilityKernel) gk).getIncompatibility();
+				truthIncompatibility[i] += ((WeightedGroundRule) gk).getIncompatibility();
 			}
 		}
 		
@@ -258,7 +258,7 @@ abstract public class MaxMargin extends WeightLearningApplication {
 				oracleIncompatibility = 0.0;
 				
 				for (GroundRule gk : reasoner.getGroundKernels(kernels.get(i)))
-					oracleIncompatibility += ((GroundCompatibilityKernel) gk).getIncompatibility();	
+					oracleIncompatibility += ((WeightedGroundRule) gk).getIncompatibility();	
 				
 				constraintCoefficients[i] =  truthIncompatibility[i] - oracleIncompatibility;
 				

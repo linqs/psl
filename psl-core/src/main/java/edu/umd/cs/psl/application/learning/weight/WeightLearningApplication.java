@@ -34,14 +34,14 @@ import edu.umd.cs.psl.database.DatabasePopulator;
 import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
-import edu.umd.cs.psl.model.rule.CompatibilityKernel;
+import edu.umd.cs.psl.model.rule.WeightedRule;
 import edu.umd.cs.psl.reasoner.Reasoner;
 import edu.umd.cs.psl.reasoner.ReasonerFactory;
 import edu.umd.cs.psl.reasoner.admm.ADMMReasonerFactory;
 
 /**
  * Abstract class for learning the weights of
- * {@link CompatibilityKernel CompatibilityKernels} in a {@link Model}
+ * {@link WeightedRule CompatibilityKernels} in a {@link Model}
  * from data.
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
@@ -76,8 +76,8 @@ public abstract class WeightLearningApplication extends Observable implements Mo
 	protected Database rvDB, observedDB;
 	protected ConfigBundle config;
 	
-	protected final List<CompatibilityKernel> kernels;
-	protected final List<CompatibilityKernel> immutableKernels;
+	protected final List<WeightedRule> kernels;
+	protected final List<WeightedRule> immutableKernels;
 	protected TrainingMap trainingMap;
 	protected Reasoner reasoner;
 	
@@ -87,8 +87,8 @@ public abstract class WeightLearningApplication extends Observable implements Mo
 		this.observedDB = observedDB;
 		this.config = config;
 
-		kernels = new ArrayList<CompatibilityKernel>();
-		immutableKernels = new ArrayList<CompatibilityKernel>();
+		kernels = new ArrayList<WeightedRule>();
+		immutableKernels = new ArrayList<WeightedRule>();
 	}
 	
 	/**
@@ -107,7 +107,7 @@ public abstract class WeightLearningApplication extends Observable implements Mo
 	public void learn()
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		/* Gathers the CompatibilityKernels */
-		for (CompatibilityKernel k : Iterables.filter(model.getKernels(), CompatibilityKernel.class))
+		for (WeightedRule k : Iterables.filter(model.getKernels(), WeightedRule.class))
 			if (k.isWeightMutable())
 				kernels.add(k);
 			else

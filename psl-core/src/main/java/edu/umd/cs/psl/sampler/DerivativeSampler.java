@@ -21,7 +21,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.WeightedGroundRule;
 import edu.umd.cs.psl.model.rule.GroundRule;
 import edu.umd.cs.psl.model.rule.Rule;
 import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
@@ -64,8 +64,8 @@ public class DerivativeSampler extends UniformSampler {
 		double total = 0.0;
 		double incompatibility;
 		for (GroundRule gk : groundKernels) {
-			if (gk instanceof GroundCompatibilityKernel) {
-				incompatibility = ((GroundCompatibilityKernel) gk).getIncompatibility();
+			if (gk instanceof WeightedGroundRule) {
+				incompatibility = ((WeightedGroundRule) gk).getIncompatibility();
 				total -= incompatibility;
 				
 	    		Rule k = gk.getKernel();

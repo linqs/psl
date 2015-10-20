@@ -15,29 +15,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.application.topicmodel.kernel;
-
-import java.util.List;
+package edu.umd.cs.psl.model.rule;
 
 import edu.umd.cs.psl.model.atom.GroundAtom;
-import edu.umd.cs.psl.model.rule.CompatibilityKernel;
 
 /**
- * Ground log loss kernels for LDA.  Keeps a pointer to an array of coefficients,
- * which may be updated.
- * 
- * @author Jimmy Foulds <jfoulds@ucsc.edu>
- *
+ * A template for {@link UnweightedGroundRule UnweightedGroundRules},
+ * which constrain the values that {@link GroundAtom GroundAtoms} can take.
  */
-public class LDAgroundLogLoss extends GroundLogLoss {
-	final double[] coefficientsArray;
-	public LDAgroundLogLoss(CompatibilityKernel k, List<GroundAtom> literals, List<Double> coefficients, double[] coefficientsArray) {
-		super(k, literals, coefficients);
-		this.coefficientsArray = coefficientsArray;
-	}
+public interface UnweightedRule extends Rule {
 	
-	public double[] getCoefficientsArray() {
-		return coefficientsArray;
-	}
-
 }

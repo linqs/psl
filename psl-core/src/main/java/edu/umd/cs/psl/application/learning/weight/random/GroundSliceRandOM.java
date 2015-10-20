@@ -28,14 +28,14 @@ import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.NumericUtilities;
 import edu.umd.cs.psl.model.parameters.PositiveWeight;
-import edu.umd.cs.psl.model.rule.CompatibilityKernel;
-import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.WeightedRule;
+import edu.umd.cs.psl.model.rule.WeightedGroundRule;
 import edu.umd.cs.psl.model.rule.GroundRule;
 
 /**
  * A {@link SliceRandOM} learning algorithm that samples a different weight
- * for each {@link GroundCompatibilityKernel} but all those with the same parent
- * {@link CompatibilityKernel} share a mean and a variance.
+ * for each {@link WeightedGroundRule} but all those with the same parent
+ * {@link WeightedRule} share a mean and a variance.
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  */
@@ -57,7 +57,7 @@ public class GroundSliceRandOM extends SliceRandOM {
 	/** Default value for PROPOSAL_VARIANCE */
 	public static final double PROPOSAL_VARIANCE_DEFAULT = .25;
 	
-	protected GroundCompatibilityKernel[] gks;
+	protected WeightedGroundRule[] gks;
 	protected int[] cumulativeGroundings;
 	protected double[] currentWeights, previousWeights, sum, sumSq;
 	
@@ -81,13 +81,13 @@ public class GroundSliceRandOM extends SliceRandOM {
 		
 		/* Collects the GroundCompatibilityKernels */
 		cumulativeGroundings = new int[kernels.size()];
-		ArrayList<GroundCompatibilityKernel> tempGroundKernels = new ArrayList<GroundCompatibilityKernel>(reasoner.size());
+		ArrayList<WeightedGroundRule> tempGroundKernels = new ArrayList<WeightedGroundRule>(reasoner.size());
 		for (int i = 0; i < kernels.size(); i++) {
 			for (GroundRule gk : reasoner.getGroundKernels(kernels.get(i)))
-				tempGroundKernels.add((GroundCompatibilityKernel) gk);
+				tempGroundKernels.add((WeightedGroundRule) gk);
 			cumulativeGroundings[i] = tempGroundKernels.size();
 		}
-		gks = tempGroundKernels.toArray(new GroundCompatibilityKernel[tempGroundKernels.size()]);
+		gks = tempGroundKernels.toArray(new WeightedGroundRule[tempGroundKernels.size()]);
 		log.info("Learning with {} ground kernels.", gks.length);
 		
 		/* Initializes weights */

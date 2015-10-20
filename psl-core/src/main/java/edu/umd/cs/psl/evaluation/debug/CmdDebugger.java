@@ -40,7 +40,7 @@ import edu.umd.cs.psl.model.atom.QueryAtom;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.PredicateFactory;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
-import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.WeightedGroundRule;
 import edu.umd.cs.psl.model.rule.GroundRule;
 import edu.umd.cs.psl.util.database.Queries;
 
@@ -106,8 +106,8 @@ public class CmdDebugger implements Debugger {
 	
 	private String printGroundKernels(GroundRule e) {
 		String ret = e.toString();
-		if (e instanceof GroundCompatibilityKernel) {
-			ret += " V="+valueFormatter.format(((GroundCompatibilityKernel)e).getIncompatibility());
+		if (e instanceof WeightedGroundRule) {
+			ret += " V="+valueFormatter.format(((WeightedGroundRule)e).getIncompatibility());
 		}
 		return ret;
 	}
