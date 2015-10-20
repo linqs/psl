@@ -35,11 +35,11 @@ import edu.umd.cs.psl.model.atom.AtomEventFramework;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
-import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
-import edu.umd.cs.psl.model.kernel.GroundKernel;
-import edu.umd.cs.psl.model.kernel.Kernel;
-import edu.umd.cs.psl.model.kernel.linearconstraint.GroundValueConstraint;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
+import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.GroundRule;
+import edu.umd.cs.psl.model.rule.Rule;
+import edu.umd.cs.psl.model.rule.arithmetic.GroundValueConstraint;
 import edu.umd.cs.psl.reasoner.ReasonerFactory;
 import edu.umd.cs.psl.util.database.Queries;
 
@@ -82,7 +82,7 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 		eventFramework = new AtomEventFramework(rvDB, config);
 		
 		/* Registers the Model's Kernels with the AtomEventFramework */
-		for (Kernel k : model.getKernels())
+		for (Rule k : model.getKernels())
 			k.registerForAtomEvents(eventFramework, reasoner);
 		
 		/* Grounds the model */
@@ -144,7 +144,7 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 			while (eventFramework.checkToActivate() > 0);
 			
 			/* Collects existing RandomVariableAtoms and pairs them with label constraints */
-			for (GroundKernel k : reasoner.getGroundKernels()) {
+			for (GroundRule k : reasoner.getGroundKernels()) {
 				for (Atom a : k.getAtoms()) {
 					if (a instanceof RandomVariableAtom) {
 						RandomVariableAtom rv = (RandomVariableAtom) a;
@@ -173,7 +173,7 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 		/* Computes the observed incompatibilities */
 		double[] truthIncompatibility = new double[kernels.size()];
 		for (int i = 0; i < kernels.size(); i++) {
-			for (GroundKernel gk : reasoner.getGroundKernels(kernels.get(i))) {
+			for (GroundRule gk : reasoner.getGroundKernels(kernels.get(i))) {
 				truthIncompatibility[i] += ((GroundCompatibilityKernel) gk).getIncompatibility();
 			}
 		}
@@ -199,7 +199,7 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 		
 		/* Computes incompatibility */
 		for (int i = 0; i < kernels.size(); i++) {
-			for (GroundKernel gk : reasoner.getGroundKernels(kernels.get(i))) {
+			for (GroundRule gk : reasoner.getGroundKernels(kernels.get(i))) {
 				expIncomp[i] += ((GroundCompatibilityKernel) gk).getIncompatibility();
 			}
 		}
@@ -212,7 +212,7 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 		double[] scalingFactor = new double[kernels.size()];
 		
 		for (int i = 0; i < kernels.size(); i++) {
-			Iterator<GroundKernel> itr = reasoner.getGroundKernels(kernels.get(i)).iterator();
+			Iterator<GroundRule> itr = reasoner.getGroundKernels(kernels.get(i)).iterator();
 			while(itr.hasNext()) {
 				itr.next();
 				scalingFactor[i]++;
@@ -228,7 +228,7 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 	@Override
 	protected void cleanUpGroundModel() {
 		/* Unregisters the Model's Kernels with the AtomEventFramework */
-		for (Kernel k : model.getKernels())
+		for (Rule k : model.getKernels())
 			k.unregisterForAtomEvents(eventFramework, reasoner);
 		eventFramework = null;
 		

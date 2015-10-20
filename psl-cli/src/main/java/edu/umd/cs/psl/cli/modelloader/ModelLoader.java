@@ -48,14 +48,14 @@ import edu.umd.cs.psl.model.formula.Conjunction;
 import edu.umd.cs.psl.model.formula.Disjunction;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.formula.Negation;
-import edu.umd.cs.psl.model.formula.Rule;
-import edu.umd.cs.psl.model.kernel.Kernel;
-import edu.umd.cs.psl.model.kernel.rule.AbstractRuleKernel;
-import edu.umd.cs.psl.model.kernel.rule.CompatibilityRuleKernel;
-import edu.umd.cs.psl.model.kernel.rule.ConstraintRuleKernel;
+import edu.umd.cs.psl.model.formula.Implication;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.PredicateFactory;
 import edu.umd.cs.psl.model.predicate.SpecialPredicate;
+import edu.umd.cs.psl.model.rule.Rule;
+import edu.umd.cs.psl.model.rule.logical.AbstractRuleKernel;
+import edu.umd.cs.psl.model.rule.logical.CompatibilityRuleKernel;
+import edu.umd.cs.psl.model.rule.logical.ConstraintRuleKernel;
 
 public class ModelLoader extends PSLBaseVisitor<Object> {
 
@@ -78,14 +78,14 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	public Model visitProgram(ProgramContext ctx) {
 		Model model = new Model();
 		for (Psl_ruleContext psl_rule : ctx.psl_rule()) {
-			Kernel k = visitPsl_rule(psl_rule);
+			Rule k = visitPsl_rule(psl_rule);
 			model.addKernel(k);
 		}
 		return model;
 	}
 	
 	@Override
-	public Kernel visitPsl_rule(Psl_ruleContext ctx) {
+	public Rule visitPsl_rule(Psl_ruleContext ctx) {
 		if (ctx.logical_rule() != null) {
 			return visitLogical_rule(ctx.logical_rule());
 		}
@@ -139,7 +139,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 			if (ctx.conjunctive_clause() != null & ctx.disjunctive_clause() != null) {
 				Formula body = visitConjunctive_clause(ctx.conjunctive_clause());
 				Formula head = visitDisjunctive_clause(ctx.disjunctive_clause());
-				return new Rule(body, head);
+				return new Implication(body, head);
 			}
 			else {
 				throw new IllegalStateException();

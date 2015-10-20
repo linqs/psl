@@ -21,8 +21,8 @@ import edu.umd.cs.psl.application.groundkernelstore.GroundKernelStore;
 import edu.umd.cs.psl.model.atom.AtomEvent;
 import edu.umd.cs.psl.model.atom.AtomEventFramework;
 import edu.umd.cs.psl.model.atom.AtomManager;
-import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.model.parameters.Parameters;
+import edu.umd.cs.psl.model.rule.Rule;
 
 /**
  * First order log loss kernels, useful when PSL variables are given a
@@ -30,7 +30,7 @@ import edu.umd.cs.psl.model.parameters.Parameters;
  * 
  * @author Jimmy Foulds <jfoulds@ucsc.edu>
  */
-public class LogLoss implements Kernel {
+public class LogLoss implements Rule {
 
 	@Override
 	public void notifyAtomEvent(AtomEvent event) {
@@ -66,7 +66,7 @@ public class LogLoss implements Kernel {
 	}
 
 	@Override
-	public Kernel clone() throws CloneNotSupportedException {
+	public Rule clone() throws CloneNotSupportedException {
 		// TODO Auto-generated method stub
 		return null;
 	}

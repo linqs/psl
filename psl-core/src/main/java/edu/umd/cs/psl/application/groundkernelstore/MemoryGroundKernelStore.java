@@ -20,44 +20,44 @@ package edu.umd.cs.psl.application.groundkernelstore;
 import com.google.common.collect.Iterables;
 
 import de.mathnbits.util.KeyedRetrievalSet;
-import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
-import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
-import edu.umd.cs.psl.model.kernel.GroundKernel;
-import edu.umd.cs.psl.model.kernel.Kernel;
+import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.GroundConstraintKernel;
+import edu.umd.cs.psl.model.rule.GroundRule;
+import edu.umd.cs.psl.model.rule.Rule;
 import edu.umd.cs.psl.util.collection.Filters;
 
 /**
- * A simple {@link GroundKernelStore} that just stores each {@link GroundKernel}
+ * A simple {@link GroundKernelStore} that just stores each {@link GroundRule}
  * in memory.
  * <p>
- * No action is taken by {@link #changedGroundKernel(GroundKernel)}.
+ * No action is taken by {@link #changedGroundKernel(GroundRule)}.
  */
 public class MemoryGroundKernelStore implements GroundKernelStore {
 
-	protected final KeyedRetrievalSet<Kernel,GroundKernel> groundKernels;
+	protected final KeyedRetrievalSet<Rule,GroundRule> groundKernels;
 	
 	public MemoryGroundKernelStore() {
-		groundKernels = new KeyedRetrievalSet<Kernel,GroundKernel>();
+		groundKernels = new KeyedRetrievalSet<Rule,GroundRule>();
 	}
 	
 	@Override
-	public boolean containsGroundKernel(GroundKernel gk) {
+	public boolean containsGroundKernel(GroundRule gk) {
 		return groundKernels.contains(gk.getKernel(),gk);
 	}
 	
 	@Override
-	public GroundKernel getGroundKernel(GroundKernel gk) {
+	public GroundRule getGroundKernel(GroundRule gk) {
 		return groundKernels.get(gk.getKernel(),gk);
 	}
 	
 	@Override
-	public void addGroundKernel(GroundKernel gk) {
+	public void addGroundKernel(GroundRule gk) {
 		if (!groundKernels.put(gk.getKernel(), gk))
 			throw new IllegalArgumentException("GroundKernel has already been added: " + gk);
 	}
 	
 	@Override
-	public void changedGroundKernel(GroundKernel gk) {
+	public void changedGroundKernel(GroundRule gk) {
 		/* Intentionally blank */
 	}
 
@@ -72,11 +72,11 @@ public class MemoryGroundKernelStore implements GroundKernelStore {
 	}
 	
 	@Override
-	public void removeGroundKernel(GroundKernel gk) {
+	public void removeGroundKernel(GroundRule gk) {
 		groundKernels.remove(gk.getKernel(), gk);
 	}
 	
-	public Iterable<GroundKernel> getGroundKernels() {
+	public Iterable<GroundRule> getGroundKernels() {
 		return groundKernels;
 	}
 	
@@ -90,7 +90,7 @@ public class MemoryGroundKernelStore implements GroundKernelStore {
 	}
 	
 	@Override
-	public Iterable<GroundKernel> getGroundKernels(Kernel k) {
+	public Iterable<GroundRule> getGroundKernels(Rule k) {
 		return groundKernels.keyIterable(k);
 	}
 	

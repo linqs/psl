@@ -25,10 +25,10 @@ import org.slf4j.LoggerFactory;
 
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.GroundAtom;
-import edu.umd.cs.psl.model.kernel.BindingMode;
-import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
-import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.parameters.Weight;
+import edu.umd.cs.psl.model.rule.BindingMode;
+import edu.umd.cs.psl.model.rule.CompatibilityKernel;
+import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
 import edu.umd.cs.psl.reasoner.function.ConstantNumber;
 import edu.umd.cs.psl.reasoner.function.FunctionSum;
 import edu.umd.cs.psl.reasoner.function.FunctionSummand;

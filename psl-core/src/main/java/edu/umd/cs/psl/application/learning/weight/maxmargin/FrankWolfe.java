@@ -31,10 +31,10 @@ import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
-import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
-import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.parameters.NegativeWeight;
 import edu.umd.cs.psl.model.parameters.PositiveWeight;
+import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.GroundRule;
 
 /**
  * Implements the batch Frank-Wolfe algorithm for StructSVM
@@ -155,7 +155,7 @@ public class FrankWolfe extends WeightLearningApplication {
 			e.getKey().setValue(e.getValue().getValue());
 		}
 		for (int i = 0; i < kernels.size(); i++) {
-			for (GroundKernel gk : reasoner.getGroundKernels(kernels.get(i))) {
+			for (GroundRule gk : reasoner.getGroundKernels(kernels.get(i))) {
 				truthIncompatibility[i] += ((GroundCompatibilityKernel) gk).getIncompatibility();
 				++numGroundings[i];
 			}
@@ -204,7 +204,7 @@ public class FrankWolfe extends WeightLearningApplication {
 			/* Computes loss-augmented incompatibilities. */
 			double[] lossaugIncompatibility = new double[kernels.size()];
 			for (int i = 0; i < kernels.size(); i++) {
-				for (GroundKernel gk : reasoner.getGroundKernels(kernels.get(i))) {
+				for (GroundRule gk : reasoner.getGroundKernels(kernels.get(i))) {
 					if (gk instanceof LossAugmentingGroundKernel)
 						continue;
 					lossaugIncompatibility[i] += ((GroundCompatibilityKernel) gk).getIncompatibility();

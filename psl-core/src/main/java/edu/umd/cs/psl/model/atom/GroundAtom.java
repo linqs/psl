@@ -28,9 +28,9 @@ import com.google.common.collect.SetMultimap;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.argument.VariableTypeMap;
-import edu.umd.cs.psl.model.kernel.GroundKernel;
-import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.model.predicate.Predicate;
+import edu.umd.cs.psl.model.rule.GroundRule;
+import edu.umd.cs.psl.model.rule.Rule;
 import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
 
 /**
@@ -45,8 +45,8 @@ abstract public class GroundAtom extends Atom {
 	
 	protected double confidenceValue;
 	
-	private static final Set<GroundKernel> emptyGroundKernels = ImmutableSet.of();
-	protected SetMultimap<Kernel, GroundKernel> registeredGroundKernels;
+	private static final Set<GroundRule> emptyGroundKernels = ImmutableSet.of();
+	protected SetMultimap<Rule, GroundRule> registeredGroundKernels;
 
 	protected GroundAtom(Predicate p, GroundTerm[] args, Database db, double value,
 			double confidenceValue) {
@@ -94,7 +94,7 @@ abstract public class GroundAtom extends Atom {
 	 * @param f A ground kernel
 	 * @return TRUE if successful; FALSE if kernel was already registered 
 	 */
-	public boolean registerGroundKernel(GroundKernel f) {
+	public boolean registerGroundKernel(GroundRule f) {
 		if (registeredGroundKernels == null)
 			registeredGroundKernels = HashMultimap.create();
 		return registeredGroundKernels.put(f.getKernel(), f);
@@ -106,7 +106,7 @@ abstract public class GroundAtom extends Atom {
 	 * @param f A ground kernel
 	 * @return TRUE if successful; FALSE if kernel was never registered
 	 */
-	public boolean unregisterGroundKernel(GroundKernel f) {
+	public boolean unregisterGroundKernel(GroundRule f) {
 		if (registeredGroundKernels == null)
 			return false;
 		return registeredGroundKernels.remove(f.getKernel(), f);
@@ -118,7 +118,7 @@ abstract public class GroundAtom extends Atom {
 	 * @param f A kernel
 	 * @return A set of all registered ground kernels that match f
 	 */
-	public Set<GroundKernel> getRegisteredGroundKernels(Kernel f) {
+	public Set<GroundRule> getRegisteredGroundKernels(Rule f) {
 		if (registeredGroundKernels == null)
 			return emptyGroundKernels;
 		return registeredGroundKernels.get(f);
@@ -129,7 +129,7 @@ abstract public class GroundAtom extends Atom {
 	 * 
 	 * @return A collection of all registered ground kernels
 	 */
-	public Collection<GroundKernel> getRegisteredGroundKernels() {
+	public Collection<GroundRule> getRegisteredGroundKernels() {
 		if (registeredGroundKernels == null)
 			return emptyGroundKernels;
 		return registeredGroundKernels.values();

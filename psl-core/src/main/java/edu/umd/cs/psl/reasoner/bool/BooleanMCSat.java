@@ -26,8 +26,8 @@ import edu.umd.cs.psl.application.groundkernelstore.MemoryGroundKernelStore;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
-import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
-import edu.umd.cs.psl.model.kernel.predicateconstraint.GroundDomainRangeConstraint;
+import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.predicateconstraint.GroundDomainRangeConstraint;
 import edu.umd.cs.psl.reasoner.Reasoner;
 import edu.umd.cs.psl.util.model.ConstraintBlocker;
 

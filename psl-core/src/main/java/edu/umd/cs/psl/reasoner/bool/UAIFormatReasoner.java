@@ -31,7 +31,7 @@ import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
-import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
 import edu.umd.cs.psl.reasoner.ExecutableReasoner;
 import edu.umd.cs.psl.util.model.ConstraintBlocker;
 

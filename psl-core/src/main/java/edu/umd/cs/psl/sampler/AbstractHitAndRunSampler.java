@@ -34,9 +34,9 @@ import org.ujmp.core.calculation.Calculation;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
-import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
-import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
-import edu.umd.cs.psl.model.kernel.GroundKernel;
+import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.GroundConstraintKernel;
+import edu.umd.cs.psl.model.rule.GroundRule;
 import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
 import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
 import edu.umd.cs.psl.reasoner.function.FunctionSum;
@@ -131,16 +131,16 @@ abstract public class AbstractHitAndRunSampler implements Sampler {
 	
 	abstract protected double sampleAlpha(Matrix direction, Matrix Aobj, Matrix objConst, double alphaLow, double alphaHigh);
 	
-	abstract protected void processSampledPoint(Iterable<GroundKernel> groundKernels);
+	abstract protected void processSampledPoint(Iterable<GroundRule> groundKernels);
 	
-	public void sample(Iterable<GroundKernel> evidences, double activationThreshold, int activatorThreshold) {
+	public void sample(Iterable<GroundRule> evidences, double activationThreshold, int activatorThreshold) {
 		
 		//Check dimensionality and inputs
 		int noEqConstraints = 0;
 		int noIneqConstraints = 0;
 		int noObjectiveFuns = 0;
 		
-		for (GroundKernel e : evidences) {
+		for (GroundRule e : evidences) {
 			if (e instanceof GroundCompatibilityKernel) {
 				noObjectiveFuns++;
 			} else if (e instanceof GroundConstraintKernel) {
@@ -179,7 +179,7 @@ abstract public class AbstractHitAndRunSampler implements Sampler {
 		
 		//Construct equality and inequality matrix
 		int eqCount=0, ineqCount=0, objCount=0;
-		for (GroundKernel e : evidences) {
+		for (GroundRule e : evidences) {
 			if (e instanceof GroundCompatibilityKernel) {
 				GroundCompatibilityKernel ev = (GroundCompatibilityKernel)e;
 				FunctionTerm corefun = FunctionAnalyser.getCoreObjectiveFunction(ev.getFunctionDefinition());

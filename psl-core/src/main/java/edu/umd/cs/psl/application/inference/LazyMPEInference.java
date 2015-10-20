@@ -37,7 +37,7 @@ import edu.umd.cs.psl.model.atom.AtomEventFramework;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
-import edu.umd.cs.psl.model.kernel.Kernel;
+import edu.umd.cs.psl.model.rule.Rule;
 import edu.umd.cs.psl.reasoner.Reasoner;
 import edu.umd.cs.psl.reasoner.ReasonerFactory;
 import edu.umd.cs.psl.reasoner.admm.ADMMReasonerFactory;
@@ -118,7 +118,7 @@ public class LazyMPEInference extends Observable implements ModelApplication {
 		AtomEventFramework eventFramework = new AtomEventFramework(db, config);
 		
 		/* Registers the Model's Kernels with the AtomEventFramework */
-		for (Kernel k : model.getKernels())
+		for (Rule k : model.getKernels())
 			k.registerForAtomEvents(eventFramework, reasoner);
 		
 		/* Initializes the ground model */
@@ -157,7 +157,7 @@ public class LazyMPEInference extends Observable implements ModelApplication {
 		double infeasibility = GroundKernels.getInfeasibilityNorm(reasoner.getConstraintKernels());
 		
 		/* Unregisters the Model's Kernels with the AtomEventFramework */
-		for (Kernel k : model.getKernels())
+		for (Rule k : model.getKernels())
 			k.unregisterForAtomEvents(eventFramework, reasoner);
 		
 		int size = reasoner.size();

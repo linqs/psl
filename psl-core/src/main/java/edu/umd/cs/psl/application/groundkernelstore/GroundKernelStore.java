@@ -17,19 +17,19 @@
  */
 package edu.umd.cs.psl.application.groundkernelstore;
 
-import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
-import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
-import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
-import edu.umd.cs.psl.model.kernel.GroundKernel;
-import edu.umd.cs.psl.model.kernel.Kernel;
+import edu.umd.cs.psl.model.rule.CompatibilityKernel;
+import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.GroundConstraintKernel;
+import edu.umd.cs.psl.model.rule.GroundRule;
+import edu.umd.cs.psl.model.rule.Rule;
 
 /**
- * Container for a set of {@link GroundKernel GroundKernels}.
+ * Container for a set of {@link GroundRule GroundKernels}.
  * <p>
  * Since this container uses set semantics, no two GroundKernels that are equal
- * can be stored in it. If a {@link Kernel} wants to add another GroundKernel
+ * can be stored in it. If a {@link Rule} wants to add another GroundKernel
  * that does the same thing over the same GroundAtoms, then it should retrieve
- * the original GroundKernel, modify it, and call {@link #changedGroundKernel(GroundKernel)}.
+ * the original GroundKernel, modify it, and call {@link #changedGroundKernel(GroundRule)}.
  */
 public interface GroundKernelStore {
 
@@ -39,7 +39,7 @@ public interface GroundKernelStore {
 	 * @param gk  the GroundKernel to add
 	 * @throws IllegalArgumentException  if gk is already in this store
 	 */
-	public void addGroundKernel(GroundKernel gk);
+	public void addGroundKernel(GroundRule gk);
 	
 	/**
 	 * Notifies this store that a GroundKernel was changed.
@@ -50,7 +50,7 @@ public interface GroundKernelStore {
 	 * @param gk  the changed GroundKernel
 	 * @throws IllegalArgumentException  if gk is not in this store
 	 */
-	public void changedGroundKernel(GroundKernel gk);
+	public void changedGroundKernel(GroundRule gk);
 	
 	/**
 	 * Notifies this store that a {@link GroundCompatibilityKernel}'s weight
@@ -60,7 +60,7 @@ public interface GroundKernelStore {
 	 * in this store is changed, or the weight of its parent {@link CompatibilityKernel}
 	 * is changed (and the GroundCompatibilityKernel's weight is still tied to it).
 	 * <p>
-	 * It is not necessary to also call {@link #changedGroundKernel(GroundKernel)}
+	 * It is not necessary to also call {@link #changedGroundKernel(GroundRule)}
 	 * if only the weight was changed.
 	 * 
 	 * @param gk  the ground kernel with a changed weight
@@ -79,7 +79,7 @@ public interface GroundKernelStore {
 	 * @param gk  the GroundKernel to remove
 	 * @throws IllegalArgumentException  if gk is not in this store
 	 */
-	public void removeGroundKernel(GroundKernel gk);
+	public void removeGroundKernel(GroundRule gk);
 	
 	/**
 	 * Checks whether a GroundKernel is in this store.
@@ -87,21 +87,21 @@ public interface GroundKernelStore {
 	 * @param gk  the GroundKernel to check
 	 * @return TRUE if gk is in this store
 	 */
-	public boolean containsGroundKernel(GroundKernel gk);
+	public boolean containsGroundKernel(GroundRule gk);
 	
 	/**
 	 * Retrieves the GroundKernel equal to a given one from this store.
 	 *  
 	 * @param gk  the GroundKernel to match
 	 * @return the GroundKernel in this store, or NULL if not present
-	 * @see #changedGroundKernel(GroundKernel)
+	 * @see #changedGroundKernel(GroundRule)
 	 */
-	public GroundKernel getGroundKernel(GroundKernel gk);
+	public GroundRule getGroundKernel(GroundRule gk);
 	
 	/**
 	 * @return every GroundKernel in this store
 	 */
-	public Iterable<GroundKernel> getGroundKernels();
+	public Iterable<GroundRule> getGroundKernels();
 	
 	/**
 	 * @return every {@link GroundCompatibilityKernel} in this store
@@ -119,7 +119,7 @@ public interface GroundKernelStore {
 	 * @param k  the Kernel of the GroundKernels to return
 	 * @return the Kernel's GroundKernels
 	 */
-	public Iterable<GroundKernel> getGroundKernels(Kernel k);
+	public Iterable<GroundRule> getGroundKernels(Rule k);
 	
 	/**
 	 * @return the number of GroundKernels in this store

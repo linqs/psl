@@ -27,11 +27,11 @@ import edu.umd.cs.psl.application.groundkernelstore.GroundKernelStore;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
-import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
-import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
-import edu.umd.cs.psl.model.kernel.GroundKernel;
-import edu.umd.cs.psl.model.kernel.linearconstraint.GroundValueConstraint;
-import edu.umd.cs.psl.model.kernel.predicateconstraint.GroundDomainRangeConstraint;
+import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.GroundConstraintKernel;
+import edu.umd.cs.psl.model.rule.GroundRule;
+import edu.umd.cs.psl.model.rule.arithmetic.GroundValueConstraint;
+import edu.umd.cs.psl.model.rule.predicateconstraint.GroundDomainRangeConstraint;
 import edu.umd.cs.psl.reasoner.function.FunctionComparator;
 
 /**
@@ -76,12 +76,12 @@ public class ConstraintBlocker {
 		
 		/* Collects the free RandomVariableAtoms that remain */
 		Set<RandomVariableAtom> freeRVSet = new HashSet<RandomVariableAtom>();
-		for (GroundKernel gk : store.getGroundKernels()) {
+		for (GroundRule gk : store.getGroundKernels()) {
 			for (GroundAtom atom : gk.getAtoms()) {
 				if (atom instanceof RandomVariableAtom) {
 					int numDRConstraints = 0;
 					int numValueConstraints = 0;
-					for (GroundKernel incidentGK : atom.getRegisteredGroundKernels())
+					for (GroundRule incidentGK : atom.getRegisteredGroundKernels())
 						if (incidentGK instanceof GroundDomainRangeConstraint)
 							numDRConstraints++;
 						else if (incidentGK instanceof GroundValueConstraint)
@@ -166,7 +166,7 @@ public class ConstraintBlocker {
 		for (i = 0; i < rvBlocks.length; i++) {
 			incidentGKSet.clear();
 			for (RandomVariableAtom atom : rvBlocks[i])
-				for (GroundKernel incidentGK : atom.getRegisteredGroundKernels())
+				for (GroundRule incidentGK : atom.getRegisteredGroundKernels())
 					if (incidentGK instanceof GroundCompatibilityKernel)
 						incidentGKSet.add((GroundCompatibilityKernel) incidentGK);
 			

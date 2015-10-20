@@ -23,9 +23,9 @@ import org.slf4j.LoggerFactory;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.Model;
-import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
-import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.parameters.PositiveWeight;
+import edu.umd.cs.psl.model.rule.CompatibilityKernel;
+import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
 
 /**
  * A {@link MetropolisRandOM} learning algorithm that samples one weight for

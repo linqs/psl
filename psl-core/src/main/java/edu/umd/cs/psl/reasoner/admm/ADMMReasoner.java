@@ -33,10 +33,10 @@ import com.google.common.collect.Iterables;
 import de.mathnbits.util.KeyedRetrievalSet;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
-import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
-import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
-import edu.umd.cs.psl.model.kernel.GroundKernel;
-import edu.umd.cs.psl.model.kernel.Kernel;
+import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.GroundConstraintKernel;
+import edu.umd.cs.psl.model.rule.GroundRule;
+import edu.umd.cs.psl.model.rule.Rule;
 import edu.umd.cs.psl.reasoner.Reasoner;
 import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
 import edu.umd.cs.psl.reasoner.function.ConstantNumber;
@@ -126,9 +126,9 @@ public class ADMMReasoner implements Reasoner {
 	private double lagrangePenalty, augmentedLagrangePenalty;
 	
 	/** Ground kernels defining the objective function */
-	KeyedRetrievalSet<Kernel, GroundKernel> groundKernels;
+	KeyedRetrievalSet<Rule, GroundRule> groundKernels;
 	/** Ordered list of GroundKernels for looking up indices in terms */
-	HashList<GroundKernel> orderedGroundKernels;
+	HashList<GroundRule> orderedGroundKernels;
 	/** Ground kernels wrapped to be objective function terms for ADMM */
 	protected List<ADMMObjectiveTerm> terms;
 	/** Ordered list of variables for looking up indices in z */
@@ -158,7 +158,7 @@ public class ADMMReasoner implements Reasoner {
 		
 		rebuildModel = true;
 		
-		groundKernels = new KeyedRetrievalSet<Kernel, GroundKernel>();
+		groundKernels = new KeyedRetrievalSet<Rule, GroundRule>();
 		
 		// Multithreading
 		numThreads = config.getInt(NUM_THREADS_KEY, NUM_THREADS_DEFAULT);
@@ -199,13 +199,13 @@ public class ADMMReasoner implements Reasoner {
 	}
 	
 	@Override
-	public void addGroundKernel(GroundKernel gk) {
+	public void addGroundKernel(GroundRule gk) {
 		groundKernels.put(gk.getKernel(), gk);
 		rebuildModel = true;
 	}
 
 	@Override
-	public void changedGroundKernel(GroundKernel gk) {
+	public void changedGroundKernel(GroundRule gk) {
 		rebuildModel = true;
 	}
 
@@ -227,18 +227,18 @@ public class ADMMReasoner implements Reasoner {
 	}
 	
 	@Override
-	public GroundKernel getGroundKernel(GroundKernel gk) {
+	public GroundRule getGroundKernel(GroundRule gk) {
 		return groundKernels.get(gk.getKernel(), gk);
 	}
 
 	@Override
-	public void removeGroundKernel(GroundKernel gk) {
+	public void removeGroundKernel(GroundRule gk) {
 		groundKernels.remove(gk.getKernel(), gk);
 		rebuildModel = true;
 	}
 
 	@Override
-	public boolean containsGroundKernel(GroundKernel gk) {
+	public boolean containsGroundKernel(GroundRule gk) {
 		return groundKernels.contains(gk.getKernel(), gk);
 	}
 	
@@ -246,7 +246,7 @@ public class ADMMReasoner implements Reasoner {
 		log.debug("(Re)building reasoner data structures");
 		
 		/* Initializes data structures */
-		orderedGroundKernels = new HashList<GroundKernel>(groundKernels.size() * 2);
+		orderedGroundKernels = new HashList<GroundRule>(groundKernels.size() * 2);
 		terms = new ArrayList<ADMMObjectiveTerm>(groundKernels.size());
 		variables = new HashList<AtomFunctionVariable>(groundKernels.size() * 2);
 		z = new ArrayList<Double>(groundKernels.size() * 2);
@@ -257,8 +257,8 @@ public class ADMMReasoner implements Reasoner {
 				
 		/* Initializes objective terms from ground kernels */
 		log.debug("Initializing objective terms for {} ground kernels", groundKernels.size());
-		for (Iterator<GroundKernel> itr = groundKernels.iterator(); itr.hasNext(); ) {
-			GroundKernel groundKernel = itr.next();
+		for (Iterator<GroundRule> itr = groundKernels.iterator(); itr.hasNext(); ) {
+			GroundRule groundKernel = itr.next();
 			ADMMObjectiveTerm term = createTerm(groundKernel);
 			
 			if (term.x.length > 0) {
@@ -272,13 +272,13 @@ public class ADMMReasoner implements Reasoner {
 	}
 	
 	/**
-	 * Processes a {@link GroundKernel} to create a corresponding
+	 * Processes a {@link GroundRule} to create a corresponding
 	 * {@link ADMMObjectiveTerm}
 	 * 
 	 * @param groundKernel  the GroundKernel to be added to the ADMM objective
 	 * @return  the created ADMMObjectiveTerm
 	 */
-	protected ADMMObjectiveTerm createTerm(GroundKernel groundKernel) {
+	protected ADMMObjectiveTerm createTerm(GroundRule groundKernel) {
 		boolean squared;
 		FunctionTerm function, innerFunction, zeroTerm, innerFunctionA, innerFunctionB;
 		ADMMObjectiveTerm term;
@@ -370,7 +370,7 @@ public class ADMMReasoner implements Reasoner {
 	 * @param gk
 	 * @return local (dual) incompatibility
 	 */
-	public double getDualIncompatibility(GroundKernel gk) {
+	public double getDualIncompatibility(GroundRule gk) {
 		int index = orderedGroundKernels.indexOf(gk);
 		ADMMObjectiveTerm term = terms.get(index);
 		for (int i = 0; i < term.zIndices.length; i++) {					
@@ -607,7 +607,7 @@ public class ADMMReasoner implements Reasoner {
 	}
 
 	@Override
-	public Iterable<GroundKernel> getGroundKernels() {
+	public Iterable<GroundRule> getGroundKernels() {
 		return groundKernels;
 	}
 
@@ -621,7 +621,7 @@ public class ADMMReasoner implements Reasoner {
 	}
 
 	@Override
-	public Iterable<GroundKernel> getGroundKernels(Kernel k) {
+	public Iterable<GroundRule> getGroundKernels(Rule k) {
 		return groundKernels.keyIterable(k);
 	}
 

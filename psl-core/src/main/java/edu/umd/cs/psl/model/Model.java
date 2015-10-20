@@ -24,14 +24,14 @@ import java.util.List;
 import java.util.Set;
 
 import edu.umd.cs.psl.application.ModelApplication;
-import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
-import edu.umd.cs.psl.model.kernel.ConstraintKernel;
-import edu.umd.cs.psl.model.kernel.Kernel;
+import edu.umd.cs.psl.model.rule.CompatibilityKernel;
+import edu.umd.cs.psl.model.rule.ConstraintKernel;
+import edu.umd.cs.psl.model.rule.Rule;
 
 /**
  * A probabilistic soft logic model.
  * <p>
- * Encapsulates a set of {@link Kernel Kernels}. A {@link ModelApplication}
+ * Encapsulates a set of {@link Rule Kernels}. A {@link ModelApplication}
  * can be used to combine a Model with data to perform inference or learn.
  * <p>
  * Objects which use a Model should register with it to listen
@@ -39,17 +39,17 @@ import edu.umd.cs.psl.model.kernel.Kernel;
  */
 public class Model {
 
-	protected final List<Kernel> kernels;
+	protected final List<Rule> kernels;
 	/** Redundant set for fast membership checks */
-	protected final Set<Kernel> kernelSet;
+	protected final Set<Rule> kernelSet;
 	protected final Set<ModelEvent.Listener> modelObservers;
 	
 	/**
 	 * Sole constructor.
 	 */
 	public Model() {
-		kernels = new LinkedList<Kernel>();
-		kernelSet = new HashSet<Kernel>();
+		kernels = new LinkedList<Rule>();
+		kernelSet = new HashSet<Rule>();
 		modelObservers = new HashSet<ModelEvent.Listener>();
 	}
 	
@@ -75,9 +75,9 @@ public class Model {
 	}
 	
 	/**
-	 * @return the {@link Kernel Kernels} contained in this model
+	 * @return the {@link Rule Kernels} contained in this model
 	 */
-	public Iterable<Kernel> getKernels() {
+	public Iterable<Rule> getKernels() {
 		return Collections.unmodifiableList(kernels);
 	}
 	
@@ -89,7 +89,7 @@ public class Model {
 	 * @param k  Kernel to add
 	 * @throws IllegalArgumentException  if the Kernel is already in this Model
 	 */
-	public void addKernel(Kernel k) {
+	public void addKernel(Rule k) {
 		if (kernelSet.contains(k))
 			throw new IllegalArgumentException("Kernel already added to this model.");
 		else {
@@ -107,7 +107,7 @@ public class Model {
 	 * @param k  Kernel to remove
 	 * @throws IllegalArgumentException  if the Kernel is not in this Model
 	 */
-	public void removeKernel(Kernel k) {
+	public void removeKernel(Rule k) {
 		if (!kernelSet.contains(k))
 			throw new IllegalArgumentException("Kernel not in this model.");
 		else {
@@ -126,7 +126,7 @@ public class Model {
 	 * @param k  the Kernel that was modified
 	 * @throws IllegalArgumentException  if the Kernel is not in this Model
 	 */
-	public void notifyKernelParametersModified(Kernel k) {
+	public void notifyKernelParametersModified(Rule k) {
 		if (!kernelSet.contains(k))
 			throw new IllegalArgumentException("Kernel not in this model.");
 		broadcastModelEvent(new ModelEvent(ModelEvent.Type.KernelParametersModified, this, k));
@@ -140,13 +140,13 @@ public class Model {
 	 * by a newline). Constraint Kernels will come before compatibility kernels.
 	 * 
 	 * @return the String representation 
-	 * @see Kernel#isCompatibilityKernel()
+	 * @see Rule#isCompatibilityKernel()
 	 */
 	@Override
 	public String toString() {
-		List<Kernel> constraintKernels = new LinkedList<Kernel>();
-		List<Kernel> compatibilityKernels = new LinkedList<Kernel>();
-		for (Kernel kernel : kernels)
+		List<Rule> constraintKernels = new LinkedList<Rule>();
+		List<Rule> compatibilityKernels = new LinkedList<Rule>();
+		for (Rule kernel : kernels)
 			if (kernel instanceof CompatibilityKernel)
 				compatibilityKernels.add(kernel);
 			else if (kernel instanceof ConstraintKernel)
@@ -156,9 +156,9 @@ public class Model {
 
 		StringBuilder s = new StringBuilder();
 		s.append("Model:\n");
-		for (Kernel kernel : constraintKernels)
+		for (Rule kernel : constraintKernels)
 			s.append(kernel.toString()).append("\n");
-		for (Kernel kernel : compatibilityKernels)
+		for (Rule kernel : compatibilityKernels)
 			s.append(kernel.toString()).append("\n");
 		
 		return s.toString();

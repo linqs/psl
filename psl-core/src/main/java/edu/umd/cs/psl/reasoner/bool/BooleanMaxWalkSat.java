@@ -32,9 +32,9 @@ import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
-import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
-import edu.umd.cs.psl.model.kernel.GroundKernel;
-import edu.umd.cs.psl.model.kernel.predicateconstraint.GroundDomainRangeConstraint;
+import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.GroundRule;
+import edu.umd.cs.psl.model.rule.predicateconstraint.GroundDomainRangeConstraint;
 import edu.umd.cs.psl.reasoner.Reasoner;
 import edu.umd.cs.psl.util.model.ConstraintBlocker;
 
@@ -114,7 +114,7 @@ public class BooleanMaxWalkSat extends MemoryGroundKernelStore implements Reason
 		/* Randomly initializes the RVs to a feasible state */
 		blocker.randomlyInitializeRVs();
 		
-		Set<GroundKernel> unsatGKs = new HashSet<GroundKernel>();
+		Set<GroundRule> unsatGKs = new HashSet<GroundRule>();
 		Set<RandomVariableAtom> rvsToInclude = new HashSet<RandomVariableAtom>();
 		Set<Integer> blocksToInclude = new HashSet<Integer>(rvsToInclude.size());
 		RandomVariableAtom[][] candidateRVBlocks;
@@ -126,7 +126,7 @@ public class BooleanMaxWalkSat extends MemoryGroundKernelStore implements Reason
 		int newBlockSetting;
 		
 		/* Finds initially unsatisfied GroundKernels */
-		for (GroundKernel gk : getGroundKernels())
+		for (GroundRule gk : getGroundKernels())
 			if (gk instanceof GroundCompatibilityKernel && ((GroundCompatibilityKernel) gk).getIncompatibility() > 0.0)
 				unsatGKs.add(gk);
 		
@@ -137,7 +137,7 @@ public class BooleanMaxWalkSat extends MemoryGroundKernelStore implements Reason
 			if (unsatGKs.size() == 0)
 				return;
 			
-			GroundKernel gk = (GroundKernel) selectAtRandom(unsatGKs);
+			GroundRule gk = (GroundRule) selectAtRandom(unsatGKs);
 			
 			/* Collects the RV blocks with at least one RV in gk */
 			rvsToInclude.clear();

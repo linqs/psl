@@ -21,7 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import de.mathnbits.statistics.DoubleDist;
-import edu.umd.cs.psl.model.kernel.GroundKernel;
+import edu.umd.cs.psl.model.rule.GroundRule;
 import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
 
 public class MarginalSampler extends LinearSampler {
@@ -57,7 +57,7 @@ public class MarginalSampler extends LinearSampler {
 	}
 	
 	@Override
-	protected void processSampledPoint(Iterable<GroundKernel> groundKernels) {
+	protected void processSampledPoint(Iterable<GroundRule> groundKernels) {
 		for (Map.Entry<AtomFunctionVariable, DoubleDist> e : samples.entrySet())
 			e.getValue().inc(e.getKey().getValue());
 	}

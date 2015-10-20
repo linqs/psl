@@ -20,7 +20,7 @@
  * Provides interfaces and classes for defining functions that
  * {@link edu.umd.cs.psl.reasoner.Reasoner Reasoners} can interpret.
  *
- * {@link edu.umd.cs.psl.model.kernel.GroundKernel GroundKernels} use these
+ * {@link edu.umd.cs.psl.model.rule.GroundRule GroundKernels} use these
  * to define their incompatibility and constraint functions.
  */
 package edu.umd.cs.psl.reasoner.function;

@@ -25,10 +25,10 @@ import com.google.common.collect.Iterables;
 
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
-import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
-import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
-import edu.umd.cs.psl.model.kernel.GroundKernel;
-import edu.umd.cs.psl.model.kernel.Kernel;
+import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.GroundConstraintKernel;
+import edu.umd.cs.psl.model.rule.GroundRule;
+import edu.umd.cs.psl.model.rule.Rule;
 import edu.umd.cs.psl.optimizer.conic.ConicProgramSolver;
 import edu.umd.cs.psl.optimizer.conic.ConicProgramSolverFactory;
 import edu.umd.cs.psl.optimizer.conic.ipm.HomogeneousIPMFactory;
@@ -68,7 +68,7 @@ public class ConicReasoner implements Reasoner {
 
 	ConicProgram program;
 	ConicProgramSolver solver;
-	private final Map<GroundKernel, ConicProgramProxy> gkRepresentation;
+	private final Map<GroundRule, ConicProgramProxy> gkRepresentation;
 	private final Map<AtomFunctionVariable, VariableConicProgramProxy> vars;
 	
 	/**
@@ -82,12 +82,12 @@ public class ConicReasoner implements Reasoner {
 		ConicProgramSolverFactory cpsFactory = (ConicProgramSolverFactory) config.getFactory(CPS_KEY, CPS_DEFAULT);
 		solver = cpsFactory.getConicProgramSolver(config);
 		solver.setConicProgram(program);
-		gkRepresentation = new HashMap<GroundKernel, ConicProgramProxy>();
+		gkRepresentation = new HashMap<GroundRule, ConicProgramProxy>();
 		vars = new HashMap<AtomFunctionVariable, VariableConicProgramProxy>();
 	}
 	
 	@Override
-	public void addGroundKernel(GroundKernel gk) {
+	public void addGroundKernel(GroundRule gk) {
 		if (gkRepresentation.containsKey(gk)) throw new IllegalArgumentException("Provided evidence has already been added to the reasoner: " + gk);
 		ConicProgramProxy proxy;
 		if (gk instanceof GroundCompatibilityKernel) {
@@ -99,18 +99,18 @@ public class ConicReasoner implements Reasoner {
 	}
 	
 	@Override
-	public boolean containsGroundKernel(GroundKernel gk) {
+	public boolean containsGroundKernel(GroundRule gk) {
 		return gkRepresentation.containsKey(gk);
 	}
 	
 	@Override
-	public GroundKernel getGroundKernel(GroundKernel gk) {
+	public GroundRule getGroundKernel(GroundRule gk) {
 		ConicProgramProxy proxy = gkRepresentation.get(gk);
 		return (proxy != null) ? proxy.getGroundKernel() : null;
 	}
 	
 	@Override
-	public void changedGroundKernel(GroundKernel gk) {
+	public void changedGroundKernel(GroundRule gk) {
 		if (!gkRepresentation.containsKey(gk)) throw new IllegalArgumentException("Provided evidence has never been added to the reasoner: " + gk);
 		ConicProgramProxy proxy = gkRepresentation.get(gk);
 		if (gk instanceof GroundCompatibilityKernel) {
@@ -133,7 +133,7 @@ public class ConicReasoner implements Reasoner {
 	
 	@Override
 	public void changedGroundKernelWeights() {
-		for (Map.Entry<GroundKernel, ConicProgramProxy> e : gkRepresentation.entrySet()) {
+		for (Map.Entry<GroundRule, ConicProgramProxy> e : gkRepresentation.entrySet()) {
 			if (e.getKey() instanceof GroundCompatibilityKernel) {
 				if (e.getValue() instanceof FunctionConicProgramProxy) {
 					((FunctionConicProgramProxy) e.getValue()).updateGroundKernelWeight((GroundCompatibilityKernel) e.getKey());
@@ -146,7 +146,7 @@ public class ConicReasoner implements Reasoner {
 	}
 	
 	@Override
-	public void removeGroundKernel(GroundKernel gk) {
+	public void removeGroundKernel(GroundRule gk) {
 		if (!gkRepresentation.containsKey(gk)) throw new IllegalArgumentException("Provided evidence has never been added to the reasoner: " + gk);
 		ConicProgramProxy proxy = gkRepresentation.get(gk);
 		gkRepresentation.remove(gk);
@@ -163,7 +163,7 @@ public class ConicReasoner implements Reasoner {
 	}
 	
 	@Override
-	public Iterable<GroundKernel> getGroundKernels() {
+	public Iterable<GroundRule> getGroundKernels() {
 		return Collections.unmodifiableSet(gkRepresentation.keySet());
 	}
 
@@ -177,11 +177,11 @@ public class ConicReasoner implements Reasoner {
 	}
 
 	@Override
-	public Iterable<GroundKernel> getGroundKernels(final Kernel k) {
-		return Iterables.filter(gkRepresentation.keySet(), new com.google.common.base.Predicate<GroundKernel>() {
+	public Iterable<GroundRule> getGroundKernels(final Rule k) {
+		return Iterables.filter(gkRepresentation.keySet(), new com.google.common.base.Predicate<GroundRule>() {
 
 			@Override
-			public boolean apply(GroundKernel gk) {
+			public boolean apply(GroundRule gk) {
 				return gk.getKernel().equals(k);
 			}
 			

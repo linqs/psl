@@ -33,9 +33,9 @@ import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
-import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
-import edu.umd.cs.psl.model.kernel.GroundKernel;
-import edu.umd.cs.psl.model.kernel.linearconstraint.GroundValueConstraint;
+import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.GroundRule;
+import edu.umd.cs.psl.model.rule.arithmetic.GroundValueConstraint;
 
 /**
  * EM algorithm which fits a Bernoulli mean field (product of independent Bernoulli
@@ -107,7 +107,7 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 				 * Iterates over each potential which is a function of the current
 				 * latent random variable
 				 */
-				for(GroundKernel gk : latentRV.getRegisteredGroundKernels()) {
+				for(GroundRule gk : latentRV.getRegisteredGroundKernels()) {
 					if (gk instanceof GroundCompatibilityKernel) {
 						if (reasoner.containsGroundKernel(gk)) {
 							GroundCompatibilityKernel gck = (GroundCompatibilityKernel) gk;
@@ -183,7 +183,7 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 		/* Computes the expected observed incompatibilities and numbers of groundings */
 		Vector<RandomVariableAtom> incidentLatentRVs = new Vector<RandomVariableAtom>();
 		for (int iKernel = 0; iKernel < kernels.size(); iKernel++) {
-			for (GroundKernel gk : reasoner.getGroundKernels(kernels.get(iKernel))) {
+			for (GroundRule gk : reasoner.getGroundKernels(kernels.get(iKernel))) {
 				GroundCompatibilityKernel gck = (GroundCompatibilityKernel) gk;
 				incidentLatentRVs.clear();
 				
@@ -231,7 +231,7 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 		
 		/* Computes incompatibility */
 		for (int i = 0; i < kernels.size(); i++) {
-			for (GroundKernel gk : reasoner.getGroundKernels(kernels.get(i))) {
+			for (GroundRule gk : reasoner.getGroundKernels(kernels.get(i))) {
 				expIncomp[i] += ((GroundCompatibilityKernel) gk).getIncompatibility();
 			}
 		}

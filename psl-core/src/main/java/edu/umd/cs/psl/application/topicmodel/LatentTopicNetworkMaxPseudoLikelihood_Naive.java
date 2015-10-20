@@ -27,10 +27,10 @@ import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
-import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
-import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
-import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.predicate.Predicate;
+import edu.umd.cs.psl.model.rule.CompatibilityKernel;
+import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.GroundRule;
 import edu.umd.cs.psl.util.model.ConstraintBlocker;
 
 /**
@@ -188,7 +188,7 @@ public class LatentTopicNetworkMaxPseudoLikelihood_Naive extends VotedPerceptron
 				originalState[iSave] = rvBlocks[iBlock][iSave].getValue();
 			
 			/* Computes the probability */
-			for (GroundKernel gk : incidentGKs[iBlock]) {
+			for (GroundRule gk : incidentGKs[iBlock]) {
 				if (gk instanceof GroundCompatibilityKernel) {
 					CompatibilityKernel k = (CompatibilityKernel) gk.getKernel();
 					if (!incompatibilities.containsKey(k))

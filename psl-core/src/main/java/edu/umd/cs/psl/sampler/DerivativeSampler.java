@@ -21,32 +21,32 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
-import edu.umd.cs.psl.model.kernel.GroundKernel;
-import edu.umd.cs.psl.model.kernel.Kernel;
+import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.GroundRule;
+import edu.umd.cs.psl.model.rule.Rule;
 import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
 
 public class DerivativeSampler extends UniformSampler {
 
-	private transient Map<Kernel, Double> totals;
+	private transient Map<Rule, Double> totals;
 	
-	public DerivativeSampler(Collection<Kernel> k) {
+	public DerivativeSampler(Collection<Rule> k) {
 		this(k, defaultMaxNoSteps,defaultSignificantDigits);
 	}
 	
-	public DerivativeSampler(Collection<Kernel> k, int maxNoSteps) {
+	public DerivativeSampler(Collection<Rule> k, int maxNoSteps) {
 		this(k, maxNoSteps,defaultSignificantDigits);
 	}
  	
-	public DerivativeSampler(Collection<Kernel> k, int maxNoSteps, int significantDigits) {
+	public DerivativeSampler(Collection<Rule> k, int maxNoSteps, int significantDigits) {
 		super(maxNoSteps, significantDigits);
-		totals = new HashMap<Kernel, Double>();
-		for (Kernel kernel : k) {
+		totals = new HashMap<Rule, Double>();
+		for (Rule kernel : k) {
 			totals.put(kernel, 0.0);
 		}
 	}
 	
-	public double getAverage(Kernel k) {
+	public double getAverage(Rule k) {
 		return totals.get(k) / getNoSamples();
 	}
 
@@ -56,19 +56,19 @@ public class DerivativeSampler extends UniformSampler {
 	}
 
 	@Override
-	protected void processSampledPoint(Iterable<GroundKernel> groundKernels) {
-		Map<Kernel, Double> sampleTotals = new HashMap<Kernel, Double>();
-		for (Kernel k : totals.keySet())
+	protected void processSampledPoint(Iterable<GroundRule> groundKernels) {
+		Map<Rule, Double> sampleTotals = new HashMap<Rule, Double>();
+		for (Rule k : totals.keySet())
 			sampleTotals.put(k, 0.0);
 		
 		double total = 0.0;
 		double incompatibility;
-		for (GroundKernel gk : groundKernels) {
+		for (GroundRule gk : groundKernels) {
 			if (gk instanceof GroundCompatibilityKernel) {
 				incompatibility = ((GroundCompatibilityKernel) gk).getIncompatibility();
 				total -= incompatibility;
 				
-	    		Kernel k = gk.getKernel();
+	    		Rule k = gk.getKernel();
 	    		if (sampleTotals.containsKey(k)) {
 	    			sampleTotals.put(k, sampleTotals.get(k) + incompatibility);
 	    		}
@@ -76,7 +76,7 @@ public class DerivativeSampler extends UniformSampler {
     	}
 		
 		double density = Math.exp(total);
-		for (Kernel k : sampleTotals.keySet())
+		for (Rule k : sampleTotals.keySet())
 			totals.put(k, totals.get(k) + sampleTotals.get(k) * density);
 	}
 	

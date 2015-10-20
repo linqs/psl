@@ -24,9 +24,9 @@ import java.util.Map;
 import edu.umd.cs.psl.application.topicmodel.kernel.LDAgroundLogLoss;
 import edu.umd.cs.psl.application.topicmodel.reasoner.function.NegativeLogFunction;
 import edu.umd.cs.psl.config.ConfigBundle;
-import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
-import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
-import edu.umd.cs.psl.model.kernel.GroundKernel;
+import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.GroundConstraintKernel;
+import edu.umd.cs.psl.model.rule.GroundRule;
 import edu.umd.cs.psl.reasoner.admm.ADMMObjectiveTerm;
 import edu.umd.cs.psl.reasoner.admm.ADMMReasoner;
 import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
@@ -67,7 +67,7 @@ public class LatentTopicNetworkADMMReasoner extends ADMMReasoner {
 	}
 	
 	@Override
-	protected ADMMObjectiveTerm createTerm(GroundKernel groundKernel) {
+	protected ADMMObjectiveTerm createTerm(GroundRule groundKernel) {
 		FunctionTerm function;
 		ADMMObjectiveTerm term;
 		

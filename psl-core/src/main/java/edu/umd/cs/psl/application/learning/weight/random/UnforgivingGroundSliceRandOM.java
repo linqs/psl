@@ -31,9 +31,9 @@ import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
-import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
-import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.parameters.PositiveWeight;
+import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.GroundRule;
 
 /**
  * A {@link GroundSliceRandOM} learning algorithm that constrains the ground
@@ -78,7 +78,7 @@ public class UnforgivingGroundSliceRandOM extends GroundSliceRandOM {
 			 * Collects unary ground compatibility kernels which can be used to
 			 * adjust optimal truth value. All others are given weight zero for now.
 			 */
-			for (GroundKernel gk : e.getKey().getRegisteredGroundKernels()) {
+			for (GroundRule gk : e.getKey().getRegisteredGroundKernels()) {
 				if (gk instanceof GroundCompatibilityKernel) {
 					GroundCompatibilityKernel gck = (GroundCompatibilityKernel) gk;
 					

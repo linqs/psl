@@ -17,25 +17,25 @@
  */
 package edu.umd.cs.psl.util.collection;
 
-import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
-import edu.umd.cs.psl.model.kernel.ConstraintKernel;
-import edu.umd.cs.psl.model.kernel.Kernel;
+import edu.umd.cs.psl.model.rule.CompatibilityKernel;
+import edu.umd.cs.psl.model.rule.ConstraintKernel;
+import edu.umd.cs.psl.model.rule.Rule;
 
 public class Filters {
 
-	public static final com.google.common.base.Predicate<Kernel> CompatibilityKernel = new com.google.common.base.Predicate<Kernel>() {
+	public static final com.google.common.base.Predicate<Rule> CompatibilityKernel = new com.google.common.base.Predicate<Rule>() {
 
 		@Override
-		public boolean apply(Kernel k) {
+		public boolean apply(Rule k) {
 			return k instanceof CompatibilityKernel;
 		}
 		
 	};
 	
-	public static final com.google.common.base.Predicate<Kernel> ConstraintKernel = new com.google.common.base.Predicate<Kernel>() {
+	public static final com.google.common.base.Predicate<Rule> ConstraintKernel = new com.google.common.base.Predicate<Rule>() {
 
 		@Override
-		public boolean apply(Kernel k) {
+		public boolean apply(Rule k) {
 			return k instanceof ConstraintKernel;
 		}
 		

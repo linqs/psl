@@ -17,18 +17,18 @@
  */
 package edu.umd.cs.psl.reasoner.conic;
 
-import edu.umd.cs.psl.model.kernel.GroundKernel;
+import edu.umd.cs.psl.model.rule.GroundRule;
 
 abstract class ConicProgramProxy {
 	protected final ConicReasoner reasoner;
-	protected final GroundKernel kernel;
+	protected final GroundRule kernel;
 	
-	ConicProgramProxy(ConicReasoner reasoner, GroundKernel kernel) {
+	ConicProgramProxy(ConicReasoner reasoner, GroundRule kernel) {
 		this.reasoner = reasoner;
 		this.kernel = kernel;
 	}
 	
-	public GroundKernel getGroundKernel() {
+	public GroundRule getGroundKernel() {
 		return kernel;
 	}
 	

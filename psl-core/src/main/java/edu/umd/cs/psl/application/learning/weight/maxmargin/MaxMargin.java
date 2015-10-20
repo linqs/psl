@@ -31,11 +31,11 @@ import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
-import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
-import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
-import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.parameters.NegativeWeight;
 import edu.umd.cs.psl.model.parameters.PositiveWeight;
+import edu.umd.cs.psl.model.rule.CompatibilityKernel;
+import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.GroundRule;
 
 /**
  * Learns new weights for the {@link CompatibilityKernel CompatibilityKernels}
@@ -170,7 +170,7 @@ abstract public class MaxMargin extends WeightLearningApplication {
 			/* Counts numbers of groundings to scale norm */
 			int[] numGroundings = new int[kernels.size()];
 			for (int i = 0; i < kernels.size(); i++) {
-				Iterator<GroundKernel> itr = reasoner.getGroundKernels(kernels.get(i)).iterator();
+				Iterator<GroundRule> itr = reasoner.getGroundKernels(kernels.get(i)).iterator();
 				while(itr.hasNext()) {
 					itr.next();
 					numGroundings[i]++;
@@ -224,7 +224,7 @@ abstract public class MaxMargin extends WeightLearningApplication {
 			e.getKey().setValue(e.getValue().getValue());
 		}
 		for (int i = 0; i < kernels.size(); i++) {
-			for (GroundKernel gk : reasoner.getGroundKernels(kernels.get(i))) {
+			for (GroundRule gk : reasoner.getGroundKernels(kernels.get(i))) {
 				truthIncompatibility[i] += ((GroundCompatibilityKernel) gk).getIncompatibility();
 			}
 		}
@@ -257,7 +257,7 @@ abstract public class MaxMargin extends WeightLearningApplication {
 			for (int i = 0; i < kernels.size(); i++) {
 				oracleIncompatibility = 0.0;
 				
-				for (GroundKernel gk : reasoner.getGroundKernels(kernels.get(i)))
+				for (GroundRule gk : reasoner.getGroundKernels(kernels.get(i)))
 					oracleIncompatibility += ((GroundCompatibilityKernel) gk).getIncompatibility();	
 				
 				constraintCoefficients[i] =  truthIncompatibility[i] - oracleIncompatibility;

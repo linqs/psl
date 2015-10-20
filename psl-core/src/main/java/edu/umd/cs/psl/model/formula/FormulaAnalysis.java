@@ -37,15 +37,15 @@ import edu.umd.cs.psl.model.atom.AtomEvent;
 import edu.umd.cs.psl.model.atom.AtomEvent.Type;
 import edu.umd.cs.psl.model.atom.AtomEventFramework;
 import edu.umd.cs.psl.model.atom.VariableAssignment;
-import edu.umd.cs.psl.model.kernel.Kernel;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
+import edu.umd.cs.psl.model.rule.Rule;
 
 /**
  * Converts a {@link Formula} to a simplified Disjunctive Normal Form view
  * and makes the clauses available.
  * <p>
- * Each clause reports properties and helps {@link Kernel Kernels} with registering
+ * Each clause reports properties and helps {@link Rule Kernels} with registering
  * for the appropriate {@link AtomEvent AtomEvents} and running the appropriate
  * {@link DatabaseQuery DatabaseQueries} to identify true groundings.
  * 
@@ -290,7 +290,7 @@ public class FormulaAnalysis {
 			return vars;
 		}
 		
-		public void registerClauseForEvents(AtomEventFramework eventFramework, Set<Type> eventTypes, Kernel k) {
+		public void registerClauseForEvents(AtomEventFramework eventFramework, Set<Type> eventTypes, Rule k) {
 			for (Predicate p : dependence.keySet()) {
 				if (!eventFramework.isClosed((StandardPredicate) p)) {
 					eventFramework.registerAtomEventListener(eventTypes, (StandardPredicate) p, k);
@@ -298,7 +298,7 @@ public class FormulaAnalysis {
 			}
 		}
 		
-		public void unregisterClauseForEvents(AtomEventFramework eventFramework, Set<Type> eventTypes, Kernel k) {
+		public void unregisterClauseForEvents(AtomEventFramework eventFramework, Set<Type> eventTypes, Rule k) {
 			for (Predicate p : dependence.keySet()) {
 				if (!eventFramework.isClosed((StandardPredicate) p)) {
 					eventFramework.unregisterAtomEventListener(eventTypes, (StandardPredicate) p, k);

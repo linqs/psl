@@ -35,11 +35,11 @@ import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.Model;
-import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
-import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.parameters.PositiveWeight;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.PredicateFactory;
+import edu.umd.cs.psl.model.rule.CompatibilityKernel;
+import edu.umd.cs.psl.model.rule.GroundRule;
 import edu.umd.cs.psl.reasoner.admm.ADMMReasoner;
 
 /**
@@ -145,13 +145,13 @@ public class PairedDualLearner extends ExpectationMaximization {
 
 		// Compute the dual incompatbility for each ADMM subproblem
 		for (int i = 0; i < kernels.size(); i++) {
-			for (GroundKernel gk : reasoner.getGroundKernels(kernels.get(i))) {
+			for (GroundRule gk : reasoner.getGroundKernels(kernels.get(i))) {
 				dualExpectedIncompatibility[i] += admm.getDualIncompatibility(gk);
 			}
 		}
 
 		for (int i = 0; i < immutableKernels.size(); i++) {
-			for (GroundKernel gk : reasoner.getGroundKernels(immutableKernels.get(i))) {
+			for (GroundRule gk : reasoner.getGroundKernels(immutableKernels.get(i))) {
 				dualExpectedIncompatibility[kernels.size() + i] += admm.getDualIncompatibility(gk);
 			}
 		}
@@ -169,13 +169,13 @@ public class PairedDualLearner extends ExpectationMaximization {
 
 		/* Computes the observed incompatibilities and numbers of groundings */
 		for (int i = 0; i < kernels.size(); i++) {
-			for (GroundKernel gk : latentVariableReasoner.getGroundKernels(kernels.get(i))) {
+			for (GroundRule gk : latentVariableReasoner.getGroundKernels(kernels.get(i))) {
 				dualObservedIncompatibility[i] += admm.getDualIncompatibility(gk);
 				numGroundings[i]++;
 			}
 		}
 		for (int i = 0; i < immutableKernels.size(); i++) {
-			for (GroundKernel gk : latentVariableReasoner.getGroundKernels(immutableKernels.get(i))) {
+			for (GroundRule gk : latentVariableReasoner.getGroundKernels(immutableKernels.get(i))) {
 				dualObservedIncompatibility[kernels.size() + i] += admm.getDualIncompatibility(gk);
 			}
 		}

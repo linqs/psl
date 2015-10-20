@@ -34,7 +34,7 @@ import edu.umd.cs.psl.database.DatabasePopulator;
 import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
-import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
+import edu.umd.cs.psl.model.rule.CompatibilityKernel;
 import edu.umd.cs.psl.reasoner.Reasoner;
 import edu.umd.cs.psl.reasoner.ReasonerFactory;
 import edu.umd.cs.psl.reasoner.admm.ADMMReasonerFactory;

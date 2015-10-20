@@ -24,9 +24,9 @@ import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.NumericUtilities;
-import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
-import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.parameters.PositiveWeight;
+import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.GroundRule;
 
 public class FirstOrderSliceRandOM extends SliceRandOM {
 
@@ -168,7 +168,7 @@ public class FirstOrderSliceRandOM extends SliceRandOM {
 	private double moveAndCheck(double weight) {
 		currentWeights[nextKernel] = weight;
 		kernels.get(nextKernel).setWeight(new PositiveWeight(Math.max(weight, 0.0)));
-		for (GroundKernel gk : reasoner.getGroundKernels(kernels.get(nextKernel)))
+		for (GroundRule gk : reasoner.getGroundKernels(kernels.get(nextKernel)))
 			reasoner.changedGroundKernelWeight((GroundCompatibilityKernel) gk);
 		
 		reasoner.optimize();

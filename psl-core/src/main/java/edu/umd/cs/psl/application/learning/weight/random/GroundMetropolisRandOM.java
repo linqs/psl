@@ -26,10 +26,10 @@ import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.Model;
-import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
-import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
-import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.parameters.PositiveWeight;
+import edu.umd.cs.psl.model.rule.CompatibilityKernel;
+import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.GroundRule;
 
 /**
  * A {@link MetropolisRandOM} learning algorithm that samples a different weight
@@ -76,7 +76,7 @@ public class GroundMetropolisRandOM extends MetropolisRandOM {
 		cumulativeGroundings = new int[kernels.size()];
 		ArrayList<GroundCompatibilityKernel> tempGroundKernels = new ArrayList<GroundCompatibilityKernel>(reasoner.size());
 		for (int i = 0; i < kernels.size(); i++) {
-			for (GroundKernel gk : reasoner.getGroundKernels(kernels.get(i)))
+			for (GroundRule gk : reasoner.getGroundKernels(kernels.get(i)))
 				tempGroundKernels.add((GroundCompatibilityKernel) gk);
 			cumulativeGroundings[i] = tempGroundKernels.size();
 		}

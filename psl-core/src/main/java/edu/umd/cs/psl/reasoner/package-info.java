@@ -22,7 +22,7 @@
  * 
  * {@link edu.umd.cs.psl.reasoner.Reasoner} and its implementations are the main
  * tools for inference. See the function subpackage provides interfaces and classes
- * for defining functions that {@link edu.umd.cs.psl.model.kernel.GroundKernel GroundKernels}
+ * for defining functions that {@link edu.umd.cs.psl.model.rule.GroundRule GroundKernels}
  * should use.
  */
 package edu.umd.cs.psl.reasoner;

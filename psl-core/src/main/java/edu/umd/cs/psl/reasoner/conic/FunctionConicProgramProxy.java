@@ -21,7 +21,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.Vector;
 
-import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
 import edu.umd.cs.psl.optimizer.conic.program.ConeType;
 import edu.umd.cs.psl.optimizer.conic.program.LinearConstraint;
 import edu.umd.cs.psl.optimizer.conic.program.RotatedSecondOrderCone;

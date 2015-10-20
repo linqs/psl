@@ -31,8 +31,8 @@ import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
-import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
-import edu.umd.cs.psl.model.kernel.GroundKernel;
+import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.GroundRule;
 import edu.umd.cs.psl.reasoner.ExecutableReasoner;
 import edu.umd.cs.psl.util.model.ConstraintBlocker;
 
@@ -93,7 +93,7 @@ public class AD3Reasoner extends ExecutableReasoner {
 	protected void writeModel(BufferedWriter modelWriter) throws IOException {
 		/* Creates a list of RandomVariableAtoms */
 		Set<RandomVariableAtom> unorderedVars = new HashSet<RandomVariableAtom>();
-		for (GroundKernel gk : getGroundKernels())
+		for (GroundRule gk : getGroundKernels())
 			for (GroundAtom atom : gk.getAtoms())
 				if (atom instanceof RandomVariableAtom)
 					unorderedVars.add((RandomVariableAtom) atom);

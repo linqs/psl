@@ -26,10 +26,10 @@ import java.util.Set;
 import edu.umd.cs.psl.application.topicmodel.reasoner.function.NegativeLogFunction;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.GroundAtom;
-import edu.umd.cs.psl.model.kernel.BindingMode;
-import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
-import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
 import edu.umd.cs.psl.model.parameters.Weight;
+import edu.umd.cs.psl.model.rule.BindingMode;
+import edu.umd.cs.psl.model.rule.CompatibilityKernel;
+import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
 import edu.umd.cs.psl.reasoner.function.FunctionSummand;
 import edu.umd.cs.psl.reasoner.function.FunctionTerm;
 

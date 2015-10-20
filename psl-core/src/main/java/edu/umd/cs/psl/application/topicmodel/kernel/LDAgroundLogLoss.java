@@ -20,7 +20,7 @@ package edu.umd.cs.psl.application.topicmodel.kernel;
 import java.util.List;
 
 import edu.umd.cs.psl.model.atom.GroundAtom;
-import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
+import edu.umd.cs.psl.model.rule.CompatibilityKernel;
 
 /**
  * Ground log loss kernels for LDA.  Keeps a pointer to an array of coefficients,

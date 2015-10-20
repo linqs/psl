@@ -25,9 +25,9 @@ import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
-import edu.umd.cs.psl.model.kernel.CompatibilityKernel;
-import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
-import edu.umd.cs.psl.model.kernel.GroundKernel;
+import edu.umd.cs.psl.model.rule.CompatibilityKernel;
+import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.GroundRule;
 
 /**
  * A {@link FirstOrderSliceRandOM} learning algorithm which scores the likelihood
@@ -56,7 +56,7 @@ public class IncompatibilitySliceRandOM extends FirstOrderSliceRandOM {
 		/* Counts the numbers of groundings */
 		numGroundings = new int[kernels.size()];
 		for (int i = 0; i < kernels.size(); i++) {
-			Iterator<GroundKernel> itr = reasoner.getGroundKernels(kernels.get(i)).iterator();
+			Iterator<GroundRule> itr = reasoner.getGroundKernels(kernels.get(i)).iterator();
 			while(itr.hasNext()) {
 				itr.next();
 				numGroundings[i]++;
@@ -85,7 +85,7 @@ public class IncompatibilitySliceRandOM extends FirstOrderSliceRandOM {
 	protected double[] computeIncompatibilities() {
 		double[] incompatibility = new double[kernels.size()];
 		for (int i = 0; i < kernels.size(); i++) {
-			for (GroundKernel gk : reasoner.getGroundKernels(kernels.get(i)))
+			for (GroundRule gk : reasoner.getGroundKernels(kernels.get(i)))
 				incompatibility[i] += ((GroundCompatibilityKernel) gk).getIncompatibility();
 		}
 		return incompatibility;

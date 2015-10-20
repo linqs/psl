@@ -34,10 +34,10 @@ import com.google.common.collect.Iterables;
 import de.mathnbits.util.KeyedRetrievalSet;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
-import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
-import edu.umd.cs.psl.model.kernel.GroundConstraintKernel;
-import edu.umd.cs.psl.model.kernel.GroundKernel;
-import edu.umd.cs.psl.model.kernel.Kernel;
+import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.GroundConstraintKernel;
+import edu.umd.cs.psl.model.rule.GroundRule;
+import edu.umd.cs.psl.model.rule.Rule;
 
 /**
  * An abstract superclass for reasoners implemented as command-line executables.
@@ -66,7 +66,7 @@ abstract public class ExecutableReasoner implements Reasoner {
 	public static final String EXECUTABLE_KEY = CONFIG_PREFIX + ".executable";
 	
 	/** Ground kernels defining the objective function */
-	protected KeyedRetrievalSet<Kernel, GroundKernel> groundKernels;
+	protected KeyedRetrievalSet<Rule, GroundRule> groundKernels;
 	
 	protected final String executable;
 	
@@ -75,7 +75,7 @@ abstract public class ExecutableReasoner implements Reasoner {
 		if (executable.equals(""))
 			throw new IllegalArgumentException("Must specify executable.");
 		
-		groundKernels = new KeyedRetrievalSet<Kernel, GroundKernel>();
+		groundKernels = new KeyedRetrievalSet<Rule, GroundRule>();
 	}
 
 	@Override
@@ -152,28 +152,28 @@ abstract public class ExecutableReasoner implements Reasoner {
 	}
 
 	@Override
-	public void addGroundKernel(GroundKernel gk) {
+	public void addGroundKernel(GroundRule gk) {
 		groundKernels.put(gk.getKernel(), gk);
 	}
 
 	@Override
-	public void removeGroundKernel(GroundKernel gk) {
+	public void removeGroundKernel(GroundRule gk) {
 		groundKernels.remove(gk.getKernel(), gk);
 
 	}
 
 	@Override
-	public boolean containsGroundKernel(GroundKernel gk) {
+	public boolean containsGroundKernel(GroundRule gk) {
 		return groundKernels.contains(gk.getKernel(), gk);
 	}
 
 	@Override
-	public GroundKernel getGroundKernel(GroundKernel gk) {
+	public GroundRule getGroundKernel(GroundRule gk) {
 		return groundKernels.get(gk.getKernel(), gk);
 	}
 
 	@Override
-	public Iterable<GroundKernel> getGroundKernels() {
+	public Iterable<GroundRule> getGroundKernels() {
 		return groundKernels;
 	}
 
@@ -187,7 +187,7 @@ abstract public class ExecutableReasoner implements Reasoner {
 	}
 
 	@Override
-	public Iterable<GroundKernel> getGroundKernels(Kernel k) {
+	public Iterable<GroundRule> getGroundKernels(Rule k) {
 		return groundKernels.keyIterable(k);
 	}
 
@@ -197,7 +197,7 @@ abstract public class ExecutableReasoner implements Reasoner {
 	}
 
 	@Override
-	public void changedGroundKernel(GroundKernel gk) {
+	public void changedGroundKernel(GroundRule gk) {
 		/* Intentionally empty */
 	}
 

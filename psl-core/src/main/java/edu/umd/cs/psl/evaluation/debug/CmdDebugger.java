@@ -37,11 +37,11 @@ import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.AtomCache;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.QueryAtom;
-import edu.umd.cs.psl.model.kernel.GroundCompatibilityKernel;
-import edu.umd.cs.psl.model.kernel.GroundKernel;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.PredicateFactory;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
+import edu.umd.cs.psl.model.rule.GroundCompatibilityKernel;
+import edu.umd.cs.psl.model.rule.GroundRule;
 import edu.umd.cs.psl.util.database.Queries;
 
 public class CmdDebugger implements Debugger {
@@ -104,7 +104,7 @@ public class CmdDebugger implements Debugger {
 			printGroundKernels(((GroundAtom) atom).getRegisteredGroundKernels());
 	}
 	
-	private String printGroundKernels(GroundKernel e) {
+	private String printGroundKernels(GroundRule e) {
 		String ret = e.toString();
 		if (e instanceof GroundCompatibilityKernel) {
 			ret += " V="+valueFormatter.format(((GroundCompatibilityKernel)e).getIncompatibility());
@@ -112,10 +112,10 @@ public class CmdDebugger implements Debugger {
 		return ret;
 	}
 	
-	private void printGroundKernels(Collection<GroundKernel> evidences) {
+	private void printGroundKernels(Collection<GroundRule> evidences) {
 		BiMap<Integer,Atom> biatomHandles = HashBiMap.create();
 		int counter = 1;
-		for (GroundKernel e : evidences) {
+		for (GroundRule e : evidences) {
 			String str = printGroundKernels(e);
 			StringBuilder dep = new StringBuilder();
 			dep.append("--> Affected Atoms: ");

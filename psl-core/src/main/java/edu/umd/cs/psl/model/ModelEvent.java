@@ -17,7 +17,7 @@
  */
 package edu.umd.cs.psl.model;
 
-import edu.umd.cs.psl.model.kernel.Kernel;
+import edu.umd.cs.psl.model.rule.Rule;
 
 /**
  * An event related to a {@link Model}.
@@ -46,7 +46,7 @@ public class ModelEvent {
 	
 	private final Type type;
 	private final Model model;
-	private final Kernel kernel;
+	private final Rule kernel;
 	
 	/**
 	 * Constructs a new ModelEvent with associated properties.
@@ -55,7 +55,7 @@ public class ModelEvent {
 	 * @param model  the Model for which the event occurred
 	 * @param kernel  the Kernel related to the event
 	 */
-	public ModelEvent(Type type, Model model, Kernel kernel) {
+	public ModelEvent(Type type, Model model, Rule kernel) {
 		this.type = type;
 		this.model = model;
 		this.kernel = kernel;
@@ -78,7 +78,7 @@ public class ModelEvent {
 	/**
 	 * @return the associated Kernel, or null if no Kernel is associated
 	 */
-	public Kernel getKernel() {
+	public Rule getKernel() {
 		return kernel;
 	}
 	
