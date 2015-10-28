@@ -18,7 +18,7 @@
 package edu.umd.cs.psl.ui.functions.textsimilarity;
 
 import edu.umd.cs.psl.model.argument.StringAttribute;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import edu.umd.cs.psl.database.ReadOnlyDatabase;
 import edu.umd.cs.psl.model.argument.ArgumentType;

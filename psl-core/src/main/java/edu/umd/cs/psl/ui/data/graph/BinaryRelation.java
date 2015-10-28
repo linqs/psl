@@ -17,7 +17,7 @@
  */
 package edu.umd.cs.psl.ui.data.graph;
 
-import org.apache.commons.lang.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 public class BinaryRelation<ET extends EntityType, RT extends RelationType> extends Relation<ET,RT> {
 	

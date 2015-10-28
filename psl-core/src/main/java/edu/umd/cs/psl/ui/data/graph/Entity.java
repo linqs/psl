@@ -19,7 +19,7 @@ package edu.umd.cs.psl.ui.data.graph;
 
 import java.util.*;
 
-import org.apache.commons.lang.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.HashMultimap;

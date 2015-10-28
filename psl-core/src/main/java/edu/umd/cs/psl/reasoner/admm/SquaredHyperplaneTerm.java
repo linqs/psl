@@ -20,7 +20,7 @@ package edu.umd.cs.psl.reasoner.admm;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.commons.lang.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.algo.decomposition.DenseDoubleCholeskyDecomposition;
