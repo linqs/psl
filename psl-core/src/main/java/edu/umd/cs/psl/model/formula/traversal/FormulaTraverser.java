@@ -20,8 +20,6 @@ package edu.umd.cs.psl.model.formula.traversal;
 import edu.umd.cs.psl.model.atom.Atom;
 /**
  * Interface specifying the methods needed to properly traverse a formula
- * 
- *
  */
 public interface FormulaTraverser {
 
@@ -38,5 +36,4 @@ public interface FormulaTraverser {
 	public void afterNegation();
 	
 	public void visitAtom(Atom atom);
-	
 }

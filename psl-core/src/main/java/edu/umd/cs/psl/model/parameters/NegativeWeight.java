@@ -32,16 +32,7 @@ public class NegativeWeight extends Weight {
 	}
 
 	@Override
-	public double[] bounds(int parameterNo) {
-		assert parameterNo==0;
-		return new double[]{Double.NEGATIVE_INFINITY,0.0};
-	}
-
-	@Override
 	public Weight duplicate() {
 		return new NegativeWeight(getWeight());
 	}
-
-	
-	
 }

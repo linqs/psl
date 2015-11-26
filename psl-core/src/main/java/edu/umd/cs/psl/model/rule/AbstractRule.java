@@ -26,7 +26,6 @@ import com.google.common.collect.SetMultimap;
 import edu.umd.cs.psl.application.groundrulestore.GroundRuleStore;
 import edu.umd.cs.psl.model.atom.AtomEvent;
 import edu.umd.cs.psl.model.atom.AtomEventFramework;
-import edu.umd.cs.psl.model.parameters.Parameters;
 
 /**
  * Allows implementing Rules to avoid keeping track of which GroundRuleStore
@@ -76,16 +75,6 @@ public abstract class AbstractRule implements Rule {
 	@Override
 	public Rule clone() throws CloneNotSupportedException {
 		throw new CloneNotSupportedException();
-	}
-	
-	@Override
-	public Parameters getParameters() {
-		return Parameters.NoParameters;
-	}
-	
-	@Override
-	public void setParameters(Parameters para) {
-		throw new UnsupportedOperationException(this.getClass().getName() + " does not have parameters.");
 	}
 	
 	/**

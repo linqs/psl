@@ -28,8 +28,6 @@ import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.formula.Disjunction;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.formula.Negation;
-import edu.umd.cs.psl.model.formula.Tnorm;
-import edu.umd.cs.psl.model.formula.traversal.FormulaEvaluator;
 import edu.umd.cs.psl.model.rule.GroundRule;
 import edu.umd.cs.psl.reasoner.function.ConstantNumber;
 import edu.umd.cs.psl.reasoner.function.FunctionSum;
@@ -42,9 +40,6 @@ import edu.umd.cs.psl.reasoner.function.FunctionSummand;
  * @author Stephen Bach
  */
 abstract public class AbstractGroundLogicalRule implements GroundRule {
-	
-	public static final Tnorm tnorm = Tnorm.LUKASIEWICZ;
-	public static final FormulaEvaluator formulaNorm =FormulaEvaluator.LUKASIEWICZ;
 	
 	protected final AbstractLogicalRule rule;
 	protected final List<GroundAtom> posLiterals;

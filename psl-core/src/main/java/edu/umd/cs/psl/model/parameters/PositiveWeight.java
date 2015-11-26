@@ -17,7 +17,6 @@
  */
 package edu.umd.cs.psl.model.parameters;
 
-
 public class PositiveWeight extends Weight {
 
 	public PositiveWeight() {
@@ -33,16 +32,7 @@ public class PositiveWeight extends Weight {
 	}
 
 	@Override
-	public double[] bounds(int parameterNo) {
-		assert parameterNo==0;
-		return new double[]{0.0,Double.POSITIVE_INFINITY};
-	}
-
-	@Override
 	public Weight duplicate() {
 		return new PositiveWeight(getWeight());
 	}
-
-	
-	
 }

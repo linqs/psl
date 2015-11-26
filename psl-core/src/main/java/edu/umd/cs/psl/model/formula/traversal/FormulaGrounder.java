@@ -36,8 +36,6 @@ import edu.umd.cs.psl.model.formula.Negation;
  * FormulaGrounder is an object capable of traversing a {@link Formula},
  * replacing {@link Variable Variables} with values specified in the
  * {@link VariableAssignment} or {@link ResultList} passed to the constructor.
- * 
- * 
  */
 
 public class FormulaGrounder extends AbstractFormulaTraverser {

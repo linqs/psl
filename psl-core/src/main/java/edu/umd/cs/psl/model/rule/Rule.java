@@ -25,7 +25,6 @@ import edu.umd.cs.psl.model.atom.AtomManager;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
-import edu.umd.cs.psl.model.parameters.Parameters;
 
 /**
  * A template for functions that either constrain or measure the compatibility
@@ -97,18 +96,6 @@ public interface Rule extends AtomEvent.Listener, Cloneable {
 	 * @param grs             GroundRuleStore to stop updating
 	 */
 	public void unregisterForAtomEvents(AtomEventFramework eventFramework, GroundRuleStore grs);
-	
-	/**
-	 * @return the parameterization of this Rule
-	 */
-	public Parameters getParameters();
-	
-	/**
-	 * Sets the Parameters of this Rule.
-	 * 
-	 * @param para  the new parameterization
-	 */
-	public void setParameters(Parameters para);
 	
 	public Rule clone() throws CloneNotSupportedException;
 	

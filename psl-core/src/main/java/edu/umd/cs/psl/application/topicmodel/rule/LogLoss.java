@@ -21,7 +21,6 @@ import edu.umd.cs.psl.application.groundrulestore.GroundRuleStore;
 import edu.umd.cs.psl.model.atom.AtomEvent;
 import edu.umd.cs.psl.model.atom.AtomEventFramework;
 import edu.umd.cs.psl.model.atom.AtomManager;
-import edu.umd.cs.psl.model.parameters.Parameters;
 import edu.umd.cs.psl.model.rule.Rule;
 
 /**
@@ -51,17 +50,6 @@ public class LogLoss implements Rule {
 	@Override
 	public void unregisterForAtomEvents(AtomEventFramework eventFramework,
 			GroundRuleStore gks) {
-		// TODO Auto-generated method stub
-	}
-
-	@Override
-	public Parameters getParameters() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public void setParameters(Parameters para) {
 		// TODO Auto-generated method stub
 	}
 

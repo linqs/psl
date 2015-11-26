@@ -19,7 +19,7 @@ package edu.umd.cs.psl.model.parameters;
 
 import com.google.common.base.Preconditions;
 
-public abstract class Weight implements Parameters {
+public abstract class Weight {
 
 	private static final double comparisonEpsilon = 1e-100;
 	
@@ -39,36 +39,12 @@ public abstract class Weight implements Parameters {
 	void checkWeight(double w) {
 		Preconditions.checkArgument(isValidWeight(w),"Illegal weight:" + w);
 	}
-
-	@Override
-	public int numParameters() {
-		return 1;
-	}
 	
 	public double getWeight() {
 		return weight;
 	}
 	
 	public abstract Weight duplicate();
-
-
-	@Override
-	public void setParameter(int parameterNo, double value) {
-		assert parameterNo==0;
-		checkWeight(value);
-		weight = value;
-	}
-
-	@Override
-	public double getParameter(int parameterNo) {
-		assert parameterNo==0;
-		return weight;
-	}
-
-	@Override
-	public double[] getParameters() {
-		return new double[]{weight};
-	}
 	
 	@Override
 	public String toString() {
@@ -82,6 +58,4 @@ public abstract class Weight implements Parameters {
 		Weight w = (Weight)oth;
 		return Math.abs(weight - w.weight)<comparisonEpsilon;
 	}
-	
-	
 }
