@@ -308,7 +308,7 @@ public class HardEMRandOM implements ModelApplication {
 	private double[] getOrigin(List<WeightedGroundRule> groundKernels) {
 		double [] origin = new double[groundKernels.size() + 1];
 		for (int i = 0; i < groundKernels.size(); i++) 
-			origin[i] = groundKernels.get(i).getKernel().getWeight().getWeight();
+			origin[i] = groundKernels.get(i).getRule().getWeight().getWeight();
 		return origin;
 	}
 

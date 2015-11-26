@@ -15,27 +15,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.model.rule.logical;
+package edu.umd.cs.psl.model.rule.misc;
 
 import java.util.List;
 
 import edu.umd.cs.psl.model.atom.GroundAtom;
+import edu.umd.cs.psl.model.rule.logical.WeightedGroundLogicalRule;
+import edu.umd.cs.psl.model.rule.logical.WeightedLogicalRule;
 import edu.umd.cs.psl.reasoner.function.ConstantNumber;
 import edu.umd.cs.psl.reasoner.function.FunctionSum;
 import edu.umd.cs.psl.reasoner.function.FunctionSummand;
 
 /**
- * A Ground Compatibility Rule with weights on the literals
+ * TODO: Rename this
+ * A generalization of a {@link WeightedGroundLogicalRule}
+ * with weights on the literals
  * 
  * @author Jimmy Foulds <jfoulds@ucsc.edu>
  */
-public class GroundWeightedCompatibilityRule extends GroundCompatibilityRule {
+public class GroundWeightedCompatibilityRule extends WeightedGroundLogicalRule {
 	protected final List<Double> posLiteralsWeights; 
 	protected final List<Double> negLiteralsWeights;
 	
-	GroundWeightedCompatibilityRule(CompatibilityRuleKernel k, List<GroundAtom> posLiterals,
+	protected GroundWeightedCompatibilityRule(WeightedLogicalRule r, List<GroundAtom> posLiterals,
 			List<GroundAtom> negLiterals, boolean squared, List<Double> posLiteralsWeights, List<Double> negLiteralsWeights) {
-		super(k, posLiterals, negLiterals, squared);
+		super(r, posLiterals, negLiterals, squared);
 		this.posLiteralsWeights = posLiteralsWeights;
 		this.negLiteralsWeights = negLiteralsWeights;
 	}

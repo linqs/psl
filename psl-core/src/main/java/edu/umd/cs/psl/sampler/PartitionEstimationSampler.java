@@ -48,11 +48,11 @@ public class PartitionEstimationSampler extends UniformSampler {
 	}
 	
 	@Override
-	protected void processSampledPoint(Iterable<GroundRule> groundKernels) {
+	protected void processSampledPoint(Iterable<GroundRule> groundRules) {
 		double incompatibility = 0.0;
-    	for (GroundRule gk : groundKernels) {
-    		if (gk instanceof WeightedGroundRule) {
-    			incompatibility += ((WeightedGroundRule) gk).getIncompatibility();
+    	for (GroundRule gr : groundRules) {
+    		if (gr instanceof WeightedGroundRule) {
+    			incompatibility += ((WeightedGroundRule) gr).getIncompatibility();
     		}
     	}
     	total += Math.exp(-1 * incompatibility);

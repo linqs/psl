@@ -30,24 +30,24 @@ public class DerivativeSampler extends UniformSampler {
 
 	private transient Map<Rule, Double> totals;
 	
-	public DerivativeSampler(Collection<Rule> k) {
-		this(k, defaultMaxNoSteps,defaultSignificantDigits);
+	public DerivativeSampler(Collection<Rule> r) {
+		this(r, defaultMaxNoSteps,defaultSignificantDigits);
 	}
 	
-	public DerivativeSampler(Collection<Rule> k, int maxNoSteps) {
-		this(k, maxNoSteps,defaultSignificantDigits);
+	public DerivativeSampler(Collection<Rule> r, int maxNoSteps) {
+		this(r, maxNoSteps,defaultSignificantDigits);
 	}
  	
-	public DerivativeSampler(Collection<Rule> k, int maxNoSteps, int significantDigits) {
+	public DerivativeSampler(Collection<Rule> r, int maxNoSteps, int significantDigits) {
 		super(maxNoSteps, significantDigits);
 		totals = new HashMap<Rule, Double>();
-		for (Rule kernel : k) {
-			totals.put(kernel, 0.0);
+		for (Rule rule : r) {
+			totals.put(rule, 0.0);
 		}
 	}
 	
-	public double getAverage(Rule k) {
-		return totals.get(k) / getNoSamples();
+	public double getAverage(Rule r) {
+		return totals.get(r) / getNoSamples();
 	}
 
 	@Override
@@ -56,28 +56,28 @@ public class DerivativeSampler extends UniformSampler {
 	}
 
 	@Override
-	protected void processSampledPoint(Iterable<GroundRule> groundKernels) {
+	protected void processSampledPoint(Iterable<GroundRule> groundRules) {
 		Map<Rule, Double> sampleTotals = new HashMap<Rule, Double>();
 		for (Rule k : totals.keySet())
 			sampleTotals.put(k, 0.0);
 		
 		double total = 0.0;
 		double incompatibility;
-		for (GroundRule gk : groundKernels) {
-			if (gk instanceof WeightedGroundRule) {
-				incompatibility = ((WeightedGroundRule) gk).getIncompatibility();
+		for (GroundRule gr : groundRules) {
+			if (gr instanceof WeightedGroundRule) {
+				incompatibility = ((WeightedGroundRule) gr).getIncompatibility();
 				total -= incompatibility;
 				
-	    		Rule k = gk.getKernel();
-	    		if (sampleTotals.containsKey(k)) {
-	    			sampleTotals.put(k, sampleTotals.get(k) + incompatibility);
+	    		Rule r = gr.getRule();
+	    		if (sampleTotals.containsKey(r)) {
+	    			sampleTotals.put(r, sampleTotals.get(r) + incompatibility);
 	    		}
 			}
     	}
 		
 		double density = Math.exp(total);
-		for (Rule k : sampleTotals.keySet())
-			totals.put(k, totals.get(k) + sampleTotals.get(k) * density);
+		for (Rule r : sampleTotals.keySet())
+			totals.put(r, totals.get(r) + sampleTotals.get(r) * density);
 	}
 	
 }

@@ -23,30 +23,30 @@ import edu.umd.cs.psl.model.atom.GroundAtom;
 
 /**
  * A function that either constrains or measures the compatibility of the
- * truth values of {@link GroundAtom GroundAtoms}.
+ * values of {@link GroundAtom GroundAtoms}.
  * <p>
- * GroundKernels are templated by a parent {@link Rule}.
+ * GroundRules are templated by a parent {@link Rule}.
  */
 public interface GroundRule {
 
 	/**
-	 * Notifies this GroundKernel that the parameterization of its parent
+	 * Notifies this GroundRule that the parameterization of its parent
 	 * {@link Rule} has changed.
 	 * 
-	 * @return TRUE if this GroundKernel's incompatibility changed
+	 * @return TRUE if this GroundRule's incompatibility changed
 	 * @see Rule#getParameters()
 	 * @see #getIncompatibility()
 	 */
 	public boolean updateParameters();
 
 	/**
-	 * @return this GroundKernel's parent {@link Rule}
+	 * @return this GroundRules's parent {@link Rule}
 	 */
-	public Rule getKernel();
+	public Rule getRule();
 
 	/**
 	 * @return set of {@link GroundAtom GroundAtoms} which determine this
-	 *             GroundKernel's incompatibility or infeasibility
+	 *             GroundRules's incompatibility or infeasibility
 	 */
 	public Set<GroundAtom> getAtoms();
 }

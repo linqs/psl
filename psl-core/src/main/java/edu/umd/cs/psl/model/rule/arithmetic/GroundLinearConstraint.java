@@ -63,7 +63,7 @@ public class GroundLinearConstraint implements UnweightedGroundRule {
 	}
 
 	@Override
-	public UnweightedRule getKernel() {
+	public UnweightedRule getRule() {
 		return null;
 	}
 

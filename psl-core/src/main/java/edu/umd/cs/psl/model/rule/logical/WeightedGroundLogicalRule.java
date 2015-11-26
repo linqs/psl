@@ -28,28 +28,28 @@ import edu.umd.cs.psl.reasoner.function.FunctionTerm;
 import edu.umd.cs.psl.reasoner.function.MaxFunction;
 import edu.umd.cs.psl.reasoner.function.PowerOfTwo;
 
-public class GroundCompatibilityRule extends AbstractGroundRule implements
+public class WeightedGroundLogicalRule extends AbstractGroundLogicalRule implements
 		WeightedGroundRule {
 	
 	private Weight weight;
 	private final boolean squared;
 	
-	GroundCompatibilityRule(CompatibilityRuleKernel k, List<GroundAtom> posLiterals,
+	protected WeightedGroundLogicalRule(WeightedLogicalRule r, List<GroundAtom> posLiterals,
 			List<GroundAtom> negLiterals, boolean squared) {
-		super(k, posLiterals, negLiterals);
+		super(r, posLiterals, negLiterals);
 		weight = null;
 		this.squared = squared;
 	}
 
 	@Override
-	public WeightedRule getKernel() {
-		return (WeightedRule) kernel;
+	public WeightedRule getRule() {
+		return (WeightedRule) rule;
 	}
 
 	@Override
 	public Weight getWeight() {
 		if (weight == null) 
-			return getKernel().getWeight();
+			return getRule().getWeight();
 		return weight;
 	}
 	

@@ -49,13 +49,16 @@ import edu.umd.cs.psl.model.formula.Negation;
 import edu.umd.cs.psl.reasoner.function.FunctionTerm;
 import edu.umd.cs.psl.reasoner.function.FunctionVariable;
 
-abstract public class AbstractRuleKernel extends AbstractRule {
-	private static final Logger log = LoggerFactory.getLogger(AbstractRuleKernel.class);
+/**
+ * Base class for all (first order, i.e., not ground) logical rules.
+ */
+abstract public class AbstractLogicalRule extends AbstractRule {
+	private static final Logger log = LoggerFactory.getLogger(AbstractLogicalRule.class);
 	
 	protected Formula formula;
 	protected final DNFClause clause;
 	
-	public AbstractRuleKernel(Formula f) {
+	public AbstractLogicalRule(Formula f) {
 		super();
 		formula = f;
 		FormulaAnalysis analysis = new FormulaAnalysis(new Negation(formula));
@@ -78,13 +81,13 @@ abstract public class AbstractRuleKernel extends AbstractRule {
 	}
 	
 	@Override
-	public void groundAll(AtomManager atomManager, GroundRuleStore gks) {
+	public void groundAll(AtomManager atomManager, GroundRuleStore grs) {
 		ResultList res = atomManager.executeQuery(new DatabaseQuery(clause.getQueryFormula()));
-		int numGrounded = groundFormula(atomManager, gks, res, null);
+		int numGrounded = groundFormula(atomManager, grs, res, null);
 		log.debug("Grounded {} instances of rule {}", numGrounded, this);
 	}
 	
-	protected int groundFormula(AtomManager atomManager, GroundRuleStore gks, ResultList res,  VariableAssignment var) {
+	protected int groundFormula(AtomManager atomManager, GroundRuleStore grs, ResultList res,  VariableAssignment var) {
 		int numGroundingsAdded = 0;
 		List<GroundAtom> posLiterals = new ArrayList<GroundAtom>(4);
 		List<GroundAtom> negLiterals = new ArrayList<GroundAtom>(4);
@@ -114,13 +117,13 @@ abstract public class AbstractRuleKernel extends AbstractRule {
 				negLiterals.add(atom);
 			}
 			
-			AbstractGroundRule groundRule = groundFormulaInstance(posLiterals, negLiterals);
+			AbstractGroundLogicalRule groundRule = groundFormulaInstance(posLiterals, negLiterals);
 			FunctionTerm function = groundRule.getFunction();
 			worstCaseValue = function.getValue(worstCaseValues, false);
 			if (worstCaseValue > NumericUtilities.strictEpsilon
 					&& (!function.isConstant() || !(groundRule instanceof WeightedGroundRule))
-					&& !gks.containsGroundKernel(groundRule)) {
-				gks.addGroundRule(groundRule);
+					&& !grs.containsGroundKernel(groundRule)) {
+				grs.addGroundRule(groundRule);
 				numGroundingsAdded++;
 			}
 			/* If the ground kernel is not actually added, unregisters it from atoms */
@@ -155,17 +158,17 @@ abstract public class AbstractRuleKernel extends AbstractRule {
 		return atomManager.getAtom(atom.getPredicate(), newArgs);
 	}
 	
-	abstract protected AbstractGroundRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals);
+	abstract protected AbstractGroundLogicalRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals);
 
 	@Override
-	public void notifyAtomEvent(AtomEvent event, GroundRuleStore gks) {
+	public void notifyAtomEvent(AtomEvent event, GroundRuleStore grs) {
 		List<VariableAssignment> vars = clause.traceAtomEvent(event.getAtom());
 		if (!vars.isEmpty()) {
 			for (VariableAssignment var : vars) {
 				DatabaseQuery dbQuery = new DatabaseQuery(clause.getQueryFormula());
 				dbQuery.getPartialGrounding().putAll(var);
 				ResultList res = event.getEventFramework().executeQuery(dbQuery);
-				groundFormula(event.getEventFramework(), gks, res, var);
+				groundFormula(event.getEventFramework(), grs, res, var);
 			}
 		}
 	}

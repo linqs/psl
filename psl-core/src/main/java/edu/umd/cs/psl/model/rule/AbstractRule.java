@@ -52,11 +52,11 @@ public abstract class AbstractRule implements Rule {
 
 	@Override
 	public void registerForAtomEvents(AtomEventFramework eventFramework,
-			GroundRuleStore gks) {
+			GroundRuleStore grs) {
 		if (!frameworks.containsKey(eventFramework)) {
-			frameworks.put(eventFramework, gks);
+			frameworks.put(eventFramework, grs);
 			registerForAtomEvents(eventFramework);
-		} else if (!frameworks.put(eventFramework, gks)) {
+		} else if (!frameworks.put(eventFramework, grs)) {
 			log.debug("Attempted to register for AtomEventFramework that has" +
 					" already been registered.");
 		}
@@ -64,8 +64,8 @@ public abstract class AbstractRule implements Rule {
 
 	@Override
 	public void unregisterForAtomEvents(AtomEventFramework eventFramework,
-			GroundRuleStore gks) {
-		if (!frameworks.remove(eventFramework, gks))
+			GroundRuleStore grs) {
+		if (!frameworks.remove(eventFramework, grs))
 			log.debug("Attempted to unregister with AtomEventFramework that is" +
 					" not registered.");
 		else if (!frameworks.containsKey(eventFramework))

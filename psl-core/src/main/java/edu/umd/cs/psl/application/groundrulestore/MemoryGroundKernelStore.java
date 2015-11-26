@@ -42,17 +42,17 @@ public class MemoryGroundKernelStore implements GroundRuleStore {
 	
 	@Override
 	public boolean containsGroundKernel(GroundRule gk) {
-		return groundKernels.contains(gk.getKernel(),gk);
+		return groundKernels.contains(gk.getRule(),gk);
 	}
 	
 	@Override
 	public GroundRule getGroundKernel(GroundRule gk) {
-		return groundKernels.get(gk.getKernel(),gk);
+		return groundKernels.get(gk.getRule(),gk);
 	}
 	
 	@Override
 	public void addGroundRule(GroundRule gk) {
-		if (!groundKernels.put(gk.getKernel(), gk))
+		if (!groundKernels.put(gk.getRule(), gk))
 			throw new IllegalArgumentException("GroundKernel has already been added: " + gk);
 	}
 	
@@ -73,7 +73,7 @@ public class MemoryGroundKernelStore implements GroundRuleStore {
 	
 	@Override
 	public void removeGroundKernel(GroundRule gk) {
-		groundKernels.remove(gk.getKernel(), gk);
+		groundKernels.remove(gk.getRule(), gk);
 	}
 	
 	public Iterable<GroundRule> getGroundKernels() {

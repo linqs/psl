@@ -97,7 +97,7 @@ abstract public class GroundAtom extends Atom {
 	public boolean registerGroundKernel(GroundRule f) {
 		if (registeredGroundKernels == null)
 			registeredGroundKernels = HashMultimap.create();
-		return registeredGroundKernels.put(f.getKernel(), f);
+		return registeredGroundKernels.put(f.getRule(), f);
 	}
 	
 	/**
@@ -109,7 +109,7 @@ abstract public class GroundAtom extends Atom {
 	public boolean unregisterGroundKernel(GroundRule f) {
 		if (registeredGroundKernels == null)
 			return false;
-		return registeredGroundKernels.remove(f.getKernel(), f);
+		return registeredGroundKernels.remove(f.getRule(), f);
 	}
 	
 	/**

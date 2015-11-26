@@ -60,7 +60,7 @@ public class LossAugmentingGroundRule implements WeightedGroundRule {
 	}
 
 	@Override
-	public WeightedRule getKernel() {
+	public WeightedRule getRule() {
 		return null;
 	}
 

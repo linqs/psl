@@ -27,13 +27,13 @@ import edu.umd.cs.psl.model.parameters.Weight;
 import edu.umd.cs.psl.model.rule.WeightedRule;
 import edu.umd.cs.psl.model.rule.Rule;
 
-public class CompatibilityRuleKernel extends AbstractRuleKernel implements WeightedRule {
+public class WeightedLogicalRule extends AbstractLogicalRule implements WeightedRule {
 	
 	protected Weight weight;
 	protected boolean squared;
 	protected boolean mutable;
 
-	public CompatibilityRuleKernel(Formula f, double w, boolean squared) {
+	public WeightedLogicalRule(Formula f, double w, boolean squared) {
 		super(f);
 		weight = (w >= 0.0) ? new PositiveWeight(w) : new NegativeWeight(w);
 		this.squared = squared;
@@ -41,8 +41,8 @@ public class CompatibilityRuleKernel extends AbstractRuleKernel implements Weigh
 	}
 
 	@Override
-	protected GroundCompatibilityRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals) {
-		return new GroundCompatibilityRule(this, posLiterals, negLiterals, squared);
+	protected WeightedGroundLogicalRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals) {
+		return new WeightedGroundLogicalRule(this, posLiterals, negLiterals, squared);
 	}
 	
 	@Override
@@ -66,7 +66,7 @@ public class CompatibilityRuleKernel extends AbstractRuleKernel implements Weigh
 	
 	@Override
 	public Rule clone() {
-		return new CompatibilityRuleKernel(formula, weight.getWeight(), squared);
+		return new WeightedLogicalRule(formula, weight.getWeight(), squared);
 	}
 
 	@Override

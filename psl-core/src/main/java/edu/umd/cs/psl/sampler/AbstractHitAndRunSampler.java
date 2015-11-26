@@ -131,20 +131,20 @@ abstract public class AbstractHitAndRunSampler implements Sampler {
 	
 	abstract protected double sampleAlpha(Matrix direction, Matrix Aobj, Matrix objConst, double alphaLow, double alphaHigh);
 	
-	abstract protected void processSampledPoint(Iterable<GroundRule> groundKernels);
+	abstract protected void processSampledPoint(Iterable<GroundRule> groundRules);
 	
-	public void sample(Iterable<GroundRule> evidences, double activationThreshold, int activatorThreshold) {
+	public void sample(Iterable<GroundRule> groundRules, double activationThreshold, int activatorThreshold) {
 		
 		//Check dimensionality and inputs
 		int noEqConstraints = 0;
 		int noIneqConstraints = 0;
 		int noObjectiveFuns = 0;
 		
-		for (GroundRule e : evidences) {
-			if (e instanceof WeightedGroundRule) {
+		for (GroundRule r : groundRules) {
+			if (r instanceof WeightedGroundRule) {
 				noObjectiveFuns++;
-			} else if (e instanceof UnweightedGroundRule) {
-				ConstraintTerm con = ((UnweightedGroundRule)e).getConstraintDefinition();
+			} else if (r instanceof UnweightedGroundRule) {
+				ConstraintTerm con = ((UnweightedGroundRule)r).getConstraintDefinition();
 				switch(con.getComparator()) {
 				case Equality:
 					noEqConstraints++;
@@ -155,9 +155,9 @@ abstract public class AbstractHitAndRunSampler implements Sampler {
 					break;
 				default: throw new AssertionError("Unknown comparator type: " + con.getComparator());
 				}				
-			} else throw new AssertionError("Unknown evidence type: "  +e);
+			} else throw new AssertionError("Unknown evidence type: "  +r);
 			//Determine dimensionality
-			for (GroundAtom a : e.getAtoms()) {
+			for (GroundAtom a : r.getAtoms()) {
 				if (a instanceof RandomVariableAtom)
 					getorSetIndex(a.getVariable());
 			}
@@ -179,7 +179,7 @@ abstract public class AbstractHitAndRunSampler implements Sampler {
 		
 		//Construct equality and inequality matrix
 		int eqCount=0, ineqCount=0, objCount=0;
-		for (GroundRule e : evidences) {
+		for (GroundRule e : groundRules) {
 			if (e instanceof WeightedGroundRule) {
 				WeightedGroundRule ev = (WeightedGroundRule)e;
 				FunctionTerm corefun = FunctionAnalyser.getCoreObjectiveFunction(ev.getFunctionDefinition());
@@ -433,7 +433,7 @@ abstract public class AbstractHitAndRunSampler implements Sampler {
 //		    		}
 		    	}
 		    	
-	    		processSampledPoint(evidences);
+	    		processSampledPoint(groundRules);
 		    	noSamples++;
 		    }
 	    } while (noSteps<maxNumberSteps && activatedAtoms.size()<activatorThreshold);

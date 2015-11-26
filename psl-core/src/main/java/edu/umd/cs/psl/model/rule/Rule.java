@@ -77,8 +77,8 @@ public interface Rule extends AtomEvent.Listener, Cloneable {
 	 * <p>
 	 * Specifically, this Rule will register for AtomEvents and update the
 	 * GroundRuleStore in response to AtomEvents. In response to an AtomEvent
-	 * on a {@link RandomVariableAtom}, the GroundKernelStore must contain the
-	 * GroundKernels that are functions of it which would have been added via
+	 * on a {@link RandomVariableAtom}, the GroundRuleStore must contain the
+	 * GroundRules that are functions of it which would have been added via
 	 * {@link #groundAll(AtomManager, GroundRuleStore)} given the current state of
 	 * the AtomEventFramework's Database and assuming that the RandomVariableAtom
 	 * was also persisted in the Database.

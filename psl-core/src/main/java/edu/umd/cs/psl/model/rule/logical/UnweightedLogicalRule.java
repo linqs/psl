@@ -24,15 +24,15 @@ import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.rule.UnweightedRule;
 import edu.umd.cs.psl.model.rule.Rule;
 
-public class ConstraintRuleKernel extends AbstractRuleKernel implements UnweightedRule {
+public class UnweightedLogicalRule extends AbstractLogicalRule implements UnweightedRule {
 	
-	public ConstraintRuleKernel(Formula f) {
+	public UnweightedLogicalRule(Formula f) {
 		super(f);
 	}
 
 	@Override
-	protected AbstractGroundRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals) {
-		return new GroundConstraintRule(this, posLiterals, negLiterals);
+	protected AbstractGroundLogicalRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals) {
+		return new UnweightedGroundLogicalRule(this, posLiterals, negLiterals);
 	}
 	
 	@Override
@@ -42,6 +42,6 @@ public class ConstraintRuleKernel extends AbstractRuleKernel implements Unweight
 	
 	@Override
 	public Rule clone() {
-		return new ConstraintRuleKernel(formula);
+		return new UnweightedLogicalRule(formula);
 	}
 }

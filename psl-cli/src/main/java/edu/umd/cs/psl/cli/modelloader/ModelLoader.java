@@ -53,9 +53,9 @@ import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.PredicateFactory;
 import edu.umd.cs.psl.model.predicate.SpecialPredicate;
 import edu.umd.cs.psl.model.rule.Rule;
-import edu.umd.cs.psl.model.rule.logical.AbstractRuleKernel;
-import edu.umd.cs.psl.model.rule.logical.CompatibilityRuleKernel;
-import edu.umd.cs.psl.model.rule.logical.ConstraintRuleKernel;
+import edu.umd.cs.psl.model.rule.logical.AbstractLogicalRule;
+import edu.umd.cs.psl.model.rule.logical.WeightedLogicalRule;
+import edu.umd.cs.psl.model.rule.logical.UnweightedLogicalRule;
 
 public class ModelLoader extends PSLBaseVisitor<Object> {
 
@@ -98,7 +98,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	}
 
 	@Override
-	public AbstractRuleKernel visitLogical_rule(PSLParser.Logical_ruleContext ctx) {
+	public AbstractLogicalRule visitLogical_rule(PSLParser.Logical_ruleContext ctx) {
 		if (ctx.weighted_logical_rule() != null) {
 			return visitWeighted_logical_rule(ctx.weighted_logical_rule());
 		}
@@ -111,7 +111,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	}
 	
 	@Override
-	public CompatibilityRuleKernel visitWeighted_logical_rule(Weighted_logical_ruleContext ctx) {
+	public WeightedLogicalRule visitWeighted_logical_rule(Weighted_logical_ruleContext ctx) {
 		Double w = visitWeight_expression(ctx.weight_expression());
 		Formula f = visitLogical_rule_expression(ctx.logical_rule_expression());
 		Boolean sq = false;
@@ -119,7 +119,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 			sq = ctx.EXPONENT_EXPRESSION().getText().equals("^2");
 		}
 		
-		return new CompatibilityRuleKernel(f, w, sq);
+		return new WeightedLogicalRule(f, w, sq);
 	}
 	
 	@Override
@@ -128,9 +128,9 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	}
 	
 	@Override
-	public ConstraintRuleKernel visitUnweighted_logical_rule(Unweighted_logical_ruleContext ctx) {
+	public UnweightedLogicalRule visitUnweighted_logical_rule(Unweighted_logical_ruleContext ctx) {
 		Formula f = visitLogical_rule_expression(ctx.logical_rule_expression());
-		return new ConstraintRuleKernel(f);
+		return new UnweightedLogicalRule(f);
 	}
 	
 	@Override

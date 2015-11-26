@@ -23,12 +23,12 @@ import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
 public interface UnweightedGroundRule extends GroundRule {
 	
 	@Override
-	public UnweightedRule getKernel();
+	public UnweightedRule getRule();
 
 	public ConstraintTerm getConstraintDefinition();
 	
 	/**
-	 * Returns the infeasibility of the truth values of this GroundKernel's
+	 * Returns the infeasibility of the truth values of this GroundRule's
 	 * {@link GroundAtom GroundAtoms}.
 	 * <p>
 	 * Specifically, returns the distance between the value of the constraint's

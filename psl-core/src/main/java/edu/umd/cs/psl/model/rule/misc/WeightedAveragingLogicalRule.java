@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.model.rule.logical;
+package edu.umd.cs.psl.model.rule.misc;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -33,16 +33,20 @@ import edu.umd.cs.psl.model.atom.VariableAssignment;
 import edu.umd.cs.psl.model.formula.AvgConjImplication;
 import edu.umd.cs.psl.model.parameters.PositiveWeight;
 import edu.umd.cs.psl.model.rule.WeightedGroundRule;
+import edu.umd.cs.psl.model.rule.logical.AbstractGroundLogicalRule;
+import edu.umd.cs.psl.model.rule.logical.WeightedGroundLogicalRule;
+import edu.umd.cs.psl.model.rule.logical.WeightedLogicalRule;
 import edu.umd.cs.psl.model.rule.Rule;
 import edu.umd.cs.psl.reasoner.function.FunctionTerm;
 import edu.umd.cs.psl.reasoner.function.FunctionVariable;
 
 /**
- * A CompatibilityRuleKernel for averaging conjunction rules.
+ * TODO: Rename this
+ * A WeightedLogicalRule for averaging conjunction rules.
  * 
  * @author Jimmy Foulds <jfoulds@ucsc.edu>
  */
-public class CompatibilityAveragingRuleKernel extends CompatibilityRuleKernel {
+public class WeightedAveragingLogicalRule extends WeightedLogicalRule {
 	
 	protected PositiveWeight weight;
 	protected boolean squared;
@@ -52,7 +56,7 @@ public class CompatibilityAveragingRuleKernel extends CompatibilityRuleKernel {
 	protected final List<Double> posLiteralsWeights; 
 	protected final List<Double> negLiteralsWeights;
 
-	public CompatibilityAveragingRuleKernel(AvgConjImplication f, double w, boolean squared) {
+	public WeightedAveragingLogicalRule(AvgConjImplication f, double w, boolean squared) {
 		super(f, w, squared); //create DNF, etc as required by the superclass.
 		weight = new PositiveWeight(w);
 		this.squared = squared;
@@ -71,17 +75,17 @@ public class CompatibilityAveragingRuleKernel extends CompatibilityRuleKernel {
 	}
 
 	@Override
-	protected GroundCompatibilityRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals) {
+	protected WeightedGroundLogicalRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals) {
 		throw new IllegalStateException("groundFormulaInstance should not be called for a CompatibilityAveragingRuleKernel, as it does not handle literal weights!");
 	}
 	
-	protected GroundCompatibilityRule groundWeightedFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals, List<Double> posLiteralsWeights, List<Double> negLiteralsWeights) {
+	protected WeightedGroundLogicalRule groundWeightedFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals, List<Double> posLiteralsWeights, List<Double> negLiteralsWeights) {
 		return new GroundWeightedCompatibilityRule(this, posLiterals, negLiterals, squared, posLiteralsWeights, negLiteralsWeights);
 	}
 			
 	@Override
 	public Rule clone() {
-		return new CompatibilityAveragingRuleKernel((AvgConjImplication) formula, weight.getWeight(), squared);
+		return new WeightedAveragingLogicalRule((AvgConjImplication) formula, weight.getWeight(), squared);
 	}
 	
 	@Override
@@ -119,7 +123,7 @@ public class CompatibilityAveragingRuleKernel extends CompatibilityRuleKernel {
 				assert clause.getNegLiterals().get(j).equals(this.negLiterals.get(j));
 			}
 			
-			AbstractGroundRule groundRule = groundWeightedFormulaInstance(posLiterals, negLiterals, posLiteralsWeights, negLiteralsWeights);
+			WeightedGroundLogicalRule groundRule = groundWeightedFormulaInstance(posLiterals, negLiterals, posLiteralsWeights, negLiteralsWeights);
 			FunctionTerm function = groundRule.getFunction();
 			worstCaseValue = function.getValue(worstCaseValues, false);
 			if (worstCaseValue > NumericUtilities.strictEpsilon

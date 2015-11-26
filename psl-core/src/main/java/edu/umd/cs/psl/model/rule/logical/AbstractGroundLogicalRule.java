@@ -36,27 +36,25 @@ import edu.umd.cs.psl.reasoner.function.FunctionSum;
 import edu.umd.cs.psl.reasoner.function.FunctionSummand;
 
 /**
- * Currently, we assume that the body of the rule is a conjunction and the head of the rule is
- * a disjunction of atoms.
+ * Base class for all ground logical rules.
  * 
  * @author Matthias Broecheler
  * @author Stephen Bach
  */
-
-abstract public class AbstractGroundRule implements GroundRule {
+abstract public class AbstractGroundLogicalRule implements GroundRule {
 	
 	public static final Tnorm tnorm = Tnorm.LUKASIEWICZ;
 	public static final FormulaEvaluator formulaNorm =FormulaEvaluator.LUKASIEWICZ;
 	
-	protected final AbstractRuleKernel kernel;
+	protected final AbstractLogicalRule rule;
 	protected final List<GroundAtom> posLiterals;
 	protected final List<GroundAtom> negLiterals;
 	protected final FunctionSum function;
 
 	private final int hashcode;
 	
-	AbstractGroundRule(AbstractRuleKernel k, List<GroundAtom> posLiterals, List<GroundAtom> negLiterals) {
-		kernel = k;
+	protected AbstractGroundLogicalRule(AbstractLogicalRule r, List<GroundAtom> posLiterals, List<GroundAtom> negLiterals) {
+		rule = r;
 		this.posLiterals = new ArrayList<GroundAtom>(posLiterals);
 		this.negLiterals = new ArrayList<GroundAtom>(negLiterals);
 		
@@ -73,7 +71,7 @@ abstract public class AbstractGroundRule implements GroundRule {
 		
 		/* Constructs hash code */
 		HashCodeBuilder hcb = new HashCodeBuilder();
-		hcb.append(kernel);
+		hcb.append(rule);
 		for (GroundAtom atom : posLiterals)
 			hcb.append(atom);
 		for (GroundAtom atom : negLiterals)
@@ -116,11 +114,11 @@ abstract public class AbstractGroundRule implements GroundRule {
 	public boolean equals(Object other) {
 		if (other==this)
 			return true;
-		if (other==null || !(other instanceof AbstractGroundRule))
+		if (other==null || !(other instanceof AbstractGroundLogicalRule))
 			return false;
 		
-		AbstractGroundRule otherRule = (AbstractGroundRule) other;
-		if (!kernel.equals(otherRule.getKernel()))
+		AbstractGroundLogicalRule otherRule = (AbstractGroundLogicalRule) other;
+		if (!rule.equals(otherRule.getRule()))
 			return false;
 		
 		return posLiterals.equals(otherRule.posLiterals)

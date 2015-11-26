@@ -24,22 +24,22 @@ import edu.umd.cs.psl.reasoner.function.FunctionTerm;
 public interface WeightedGroundRule extends GroundRule {
 	
 	@Override
-	public WeightedRule getKernel();
+	public WeightedRule getRule();
 	
 	/**
-	 * Returns the Weight of this GroundCompatibilityKernel.
+	 * Returns the Weight of this WeightedGroundRule.
 	 * <p>
-	 * Until {@link #setWeight(Weight)} is called, this GroundKernel's weight
-	 * is the current weight of its parent Kernel. After it is called, it remains
+	 * Until {@link #setWeight(Weight)} is called, this GroundRule's weight
+	 * is the current weight of its parent Rule. After it is called, it remains
 	 * the most recent Weight set by {@link #setWeight(Weight)}.
 	 * 
-	 * @return this GroundKernel's Weight
+	 * @return this GroundRule's Weight
 	 * @see WeightedRule#getWeight()
 	 */
 	public Weight getWeight();
 	
 	/**
-	 * Sets a weight for this GroundCompatibilityKernel.
+	 * Sets a weight for this WeightedGroundRule.
 	 * 
 	 * @param w  new weight
 	 */
@@ -48,7 +48,7 @@ public interface WeightedGroundRule extends GroundRule {
 	public FunctionTerm getFunctionDefinition();
 
 	/**
-	 * Returns the incompatibility of the truth values of this GroundKernel's
+	 * Returns the incompatibility of the truth values of this GroundRule's
 	 * {@link GroundAtom GroundAtoms}.
 	 * <p>
 	 * Incompatibility is always non-negative.

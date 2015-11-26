@@ -177,12 +177,12 @@ public class ConicReasoner implements Reasoner {
 	}
 
 	@Override
-	public Iterable<GroundRule> getGroundKernels(final Rule k) {
+	public Iterable<GroundRule> getGroundKernels(final Rule r) {
 		return Iterables.filter(gkRepresentation.keySet(), new com.google.common.base.Predicate<GroundRule>() {
 
 			@Override
-			public boolean apply(GroundRule gk) {
-				return gk.getKernel().equals(k);
+			public boolean apply(GroundRule gr) {
+				return gr.getRule().equals(r);
 			}
 			
 		});

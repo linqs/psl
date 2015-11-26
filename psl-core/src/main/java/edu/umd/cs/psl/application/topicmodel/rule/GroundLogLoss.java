@@ -52,14 +52,14 @@ public class GroundLogLoss implements WeightedGroundRule {
 	}
 
 	@Override
-	public WeightedRule getKernel() {
+	public WeightedRule getRule() {
 		return (WeightedRule) kernel;
 	}
 
 	@Override
 	public Weight getWeight() {
 		if (weight == null) 
-			return getKernel().getWeight();
+			return getRule().getWeight();
 		return weight;
 	}
 	

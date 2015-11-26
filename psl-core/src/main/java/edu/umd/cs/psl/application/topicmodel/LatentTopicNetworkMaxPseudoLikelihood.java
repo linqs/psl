@@ -202,7 +202,7 @@ public class LatentTopicNetworkMaxPseudoLikelihood extends VotedPerceptron {
 			/* Computes the probability */
 			for (GroundRule gk : incidentGKs[iBlock]) {
 				if (gk instanceof WeightedGroundRule) {
-					WeightedRule k = (WeightedRule) gk.getKernel();
+					WeightedRule k = (WeightedRule) gk.getRule();
 					if (!incompatibilities.containsKey(k))
 						incompatibilities.put(k, new double[s.length]);
 					double[] inc = incompatibilities.get(k);
