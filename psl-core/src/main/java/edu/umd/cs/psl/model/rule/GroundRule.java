@@ -40,13 +40,13 @@ public interface GroundRule {
 	public boolean updateParameters();
 
 	/**
-	 * @return this GroundRules's parent {@link Rule}
+	 * @return this GroundRule's parent {@link Rule}
 	 */
 	public Rule getRule();
 
 	/**
 	 * @return set of {@link GroundAtom GroundAtoms} which determine this
-	 *             GroundRules's incompatibility or infeasibility
+	 *             GroundRule's incompatibility or infeasibility
 	 */
 	public Set<GroundAtom> getAtoms();
 }

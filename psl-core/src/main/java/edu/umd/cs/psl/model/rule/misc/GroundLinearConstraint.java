@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.model.rule.arithmetic;
+package edu.umd.cs.psl.model.rule.misc;
 
 import java.util.Arrays;
 import java.util.HashSet;

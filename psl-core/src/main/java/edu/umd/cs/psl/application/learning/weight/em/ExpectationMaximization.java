@@ -35,7 +35,7 @@ import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.parameters.PositiveWeight;
 import edu.umd.cs.psl.model.rule.WeightedRule;
-import edu.umd.cs.psl.model.rule.arithmetic.GroundValueConstraint;
+import edu.umd.cs.psl.model.rule.misc.GroundValueConstraint;
 import edu.umd.cs.psl.reasoner.Reasoner;
 import edu.umd.cs.psl.reasoner.ReasonerFactory;
 

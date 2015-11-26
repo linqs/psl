@@ -37,9 +37,9 @@ import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
 import edu.umd.cs.psl.model.rule.WeightedGroundRule;
+import edu.umd.cs.psl.model.rule.misc.GroundValueConstraint;
 import edu.umd.cs.psl.model.rule.GroundRule;
 import edu.umd.cs.psl.model.rule.Rule;
-import edu.umd.cs.psl.model.rule.arithmetic.GroundValueConstraint;
 import edu.umd.cs.psl.reasoner.ReasonerFactory;
 import edu.umd.cs.psl.util.database.Queries;
 

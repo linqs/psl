@@ -34,8 +34,8 @@ import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.rule.WeightedGroundRule;
+import edu.umd.cs.psl.model.rule.misc.GroundValueConstraint;
 import edu.umd.cs.psl.model.rule.GroundRule;
-import edu.umd.cs.psl.model.rule.arithmetic.GroundValueConstraint;
 
 /**
  * EM algorithm which fits a Bernoulli mean field (product of independent Bernoulli
