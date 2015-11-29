@@ -18,7 +18,7 @@
 package edu.umd.cs.psl.model.rule;
 
 import edu.umd.cs.psl.model.atom.GroundAtom;
-import edu.umd.cs.psl.model.parameters.Weight;
+import edu.umd.cs.psl.model.weight.Weight;
 
 /**
  * A template for {@link WeightedGroundRule WeightedGroundRules},

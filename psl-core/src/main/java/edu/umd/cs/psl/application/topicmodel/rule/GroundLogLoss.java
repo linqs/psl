@@ -25,8 +25,8 @@ import java.util.Set;
 
 import edu.umd.cs.psl.application.topicmodel.reasoner.function.NegativeLogFunction;
 import edu.umd.cs.psl.model.atom.GroundAtom;
-import edu.umd.cs.psl.model.parameters.Weight;
 import edu.umd.cs.psl.model.rule.WeightedRule;
+import edu.umd.cs.psl.model.weight.Weight;
 import edu.umd.cs.psl.model.rule.WeightedGroundRule;
 import edu.umd.cs.psl.reasoner.function.FunctionSummand;
 import edu.umd.cs.psl.reasoner.function.FunctionTerm;

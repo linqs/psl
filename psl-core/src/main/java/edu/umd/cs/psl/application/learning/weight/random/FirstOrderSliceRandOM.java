@@ -24,8 +24,8 @@ import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.NumericUtilities;
-import edu.umd.cs.psl.model.parameters.PositiveWeight;
 import edu.umd.cs.psl.model.rule.WeightedGroundRule;
+import edu.umd.cs.psl.model.weight.PositiveWeight;
 import edu.umd.cs.psl.model.rule.GroundRule;
 
 public class FirstOrderSliceRandOM extends SliceRandOM {

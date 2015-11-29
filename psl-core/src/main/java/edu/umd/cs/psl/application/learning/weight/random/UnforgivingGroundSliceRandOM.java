@@ -31,8 +31,8 @@ import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
-import edu.umd.cs.psl.model.parameters.PositiveWeight;
 import edu.umd.cs.psl.model.rule.WeightedGroundRule;
+import edu.umd.cs.psl.model.weight.PositiveWeight;
 import edu.umd.cs.psl.model.rule.GroundRule;
 
 /**

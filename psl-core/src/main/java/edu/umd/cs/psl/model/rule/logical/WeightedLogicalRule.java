@@ -21,10 +21,10 @@ import java.util.List;
 
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.formula.Formula;
-import edu.umd.cs.psl.model.parameters.NegativeWeight;
-import edu.umd.cs.psl.model.parameters.PositiveWeight;
-import edu.umd.cs.psl.model.parameters.Weight;
 import edu.umd.cs.psl.model.rule.WeightedRule;
+import edu.umd.cs.psl.model.weight.NegativeWeight;
+import edu.umd.cs.psl.model.weight.PositiveWeight;
+import edu.umd.cs.psl.model.weight.Weight;
 import edu.umd.cs.psl.model.rule.Rule;
 
 public class WeightedLogicalRule extends AbstractLogicalRule implements WeightedRule {

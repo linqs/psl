@@ -49,10 +49,10 @@ import edu.umd.cs.psl.model.argument.UniqueID;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.PersistedAtomManager;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
-import edu.umd.cs.psl.model.parameters.PositiveWeight;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.PredicateFactory;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
+import edu.umd.cs.psl.model.weight.PositiveWeight;
 import edu.umd.cs.psl.reasoner.Reasoner;
 import edu.umd.cs.psl.util.database.Queries;
 

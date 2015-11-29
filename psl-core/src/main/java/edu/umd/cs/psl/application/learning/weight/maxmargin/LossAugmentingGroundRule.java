@@ -24,8 +24,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import edu.umd.cs.psl.model.atom.GroundAtom;
-import edu.umd.cs.psl.model.parameters.Weight;
 import edu.umd.cs.psl.model.rule.WeightedRule;
+import edu.umd.cs.psl.model.weight.Weight;
 import edu.umd.cs.psl.model.rule.WeightedGroundRule;
 import edu.umd.cs.psl.reasoner.function.ConstantNumber;
 import edu.umd.cs.psl.reasoner.function.FunctionSum;
