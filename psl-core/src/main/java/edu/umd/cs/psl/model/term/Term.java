@@ -15,18 +15,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.model.argument;
+package edu.umd.cs.psl.model.term;
+
+import edu.umd.cs.psl.model.predicate.Predicate;
 
 /**
- * A {@link GroundTerm} that is a value, as opposed to a {@link UniqueID}.
+ * An argument to a {@link Predicate}.
  * 
  * @author Matthias Broecheler
  */
-public interface Attribute extends GroundTerm {
+public interface Term {
 	
 	/**
-	 * @return Java representation of the Attribute's value
+	 * @return a human-friendly String identifier
 	 */
-	public Object getValue();
+	public String toString();
+	
+	/**
+	 * @return hash code
+	 */
+	public int hashCode();
+	
+	/**
+	 * Checks equality with an Object.
+	 * <p>
+	 * Equality semantics are implementation specific.
+	 * 
+	 * @param oth  Object to compare to
+	 * @return TRUE if equal, FALSE otherwise
+	 */
+	public boolean equals(Object oth);
 
 }

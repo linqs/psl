@@ -19,9 +19,9 @@ package edu.umd.cs.psl.model.predicate;
 
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.database.ReadOnlyDatabase;
-import edu.umd.cs.psl.model.argument.ArgumentType;
-import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.argument.UniqueID;
+import edu.umd.cs.psl.model.term.ConstantType;
+import edu.umd.cs.psl.model.term.Constant;
+import edu.umd.cs.psl.model.term.UniqueID;
 
 /**
  * A commonly used FunctionalPredicate.
@@ -38,17 +38,17 @@ import edu.umd.cs.psl.model.argument.UniqueID;
  */
 abstract public class SpecialPredicate extends FunctionalPredicate {
 	
-	private SpecialPredicate(String name, ArgumentType[] types) {
+	private SpecialPredicate(String name, ConstantType[] types) {
 		super(name, types);
 	}
 	
 	/** True if arguments are equal. */
 	public static final SpecialPredicate Equal
-		= new SpecialPredicate("#Equal", new ArgumentType[] {ArgumentType.UniqueID, ArgumentType.UniqueID}) {
+		= new SpecialPredicate("#Equal", new ConstantType[] {ConstantType.UniqueID, ConstantType.UniqueID}) {
 		
 		@Override
-		public double computeValue(ReadOnlyDatabase db, GroundTerm... args) {
-			if (args.length==2 && ArgumentType.UniqueID.isInstance(args[0]) && ArgumentType.UniqueID.isInstance(args[1]))
+		public double computeValue(ReadOnlyDatabase db, Constant... args) {
+			if (args.length==2 && ConstantType.UniqueID.isInstance(args[0]) && ConstantType.UniqueID.isInstance(args[1]))
 				return (args[0].equals(args[1])) ? 1.0 : 0.0;
 			else
 				throw new IllegalArgumentException(getName() + " acts on two Entities.");
@@ -57,11 +57,11 @@ abstract public class SpecialPredicate extends FunctionalPredicate {
 	
 	/** True if arguments are not equal. */
 	public static final SpecialPredicate NotEqual
-		= new SpecialPredicate("#NotEqual", new ArgumentType[] {ArgumentType.UniqueID, ArgumentType.UniqueID}) {
+		= new SpecialPredicate("#NotEqual", new ConstantType[] {ConstantType.UniqueID, ConstantType.UniqueID}) {
 
 		@Override
-		public double computeValue(ReadOnlyDatabase db, GroundTerm... args) {
-			if (args.length==2 && ArgumentType.UniqueID.isInstance(args[0]) && ArgumentType.UniqueID.isInstance(args[1]))
+		public double computeValue(ReadOnlyDatabase db, Constant... args) {
+			if (args.length==2 && ConstantType.UniqueID.isInstance(args[0]) && ConstantType.UniqueID.isInstance(args[1]))
 				return (!args[0].equals(args[1])) ? 1.0 : 0.0;
 			else
 				throw new IllegalArgumentException(getName() + " acts on two Entities.");
@@ -74,11 +74,11 @@ abstract public class SpecialPredicate extends FunctionalPredicate {
 	 * Used to ground only one of a symmetric pair of ground rules.
 	 */
 	public static final SpecialPredicate NonSymmetric
-		= new SpecialPredicate("#NonSymmetric", new ArgumentType[] {ArgumentType.UniqueID, ArgumentType.UniqueID}) {
+		= new SpecialPredicate("#NonSymmetric", new ConstantType[] {ConstantType.UniqueID, ConstantType.UniqueID}) {
 		
 		@Override
-		public double computeValue(ReadOnlyDatabase db, GroundTerm... args) {
-			if (args.length==2 && ArgumentType.UniqueID.isInstance(args[0]) && ArgumentType.UniqueID.isInstance(args[1])) {
+		public double computeValue(ReadOnlyDatabase db, Constant... args) {
+			if (args.length==2 && ConstantType.UniqueID.isInstance(args[0]) && ConstantType.UniqueID.isInstance(args[1])) {
 				UniqueID uid1 = ((UniqueID)args[0]);
 				UniqueID uid2 = ((UniqueID)args[1]);
 				return (uid1.compareTo(uid2) < 0) ? 1.0 : 0.0;

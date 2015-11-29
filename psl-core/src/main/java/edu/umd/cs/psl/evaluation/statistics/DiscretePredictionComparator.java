@@ -25,10 +25,10 @@ import java.util.Set;
 
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.evaluation.statistics.filter.AtomFilter;
-import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.predicate.Predicate;
+import edu.umd.cs.psl.model.term.Constant;
 import edu.umd.cs.psl.util.database.Queries;
 
 public class DiscretePredictionComparator implements PredictionComparator {
@@ -128,16 +128,16 @@ public class DiscretePredictionComparator implements PredictionComparator {
 		correctAtoms = new HashSet<GroundAtom>();
 		
 		GroundAtom resultAtom, baselineAtom;
-		GroundTerm[] args;
+		Constant[] args;
 		boolean actual, expected;
 
 		Iterator<GroundAtom> iter = resultFilter.filter(Queries.getAllAtoms(result, p).iterator());
 		
 		while (iter.hasNext()) {
 			resultAtom = iter.next();
-			args = new GroundTerm[resultAtom.getArity()];
+			args = new Constant[resultAtom.getArity()];
 			for (int i = 0; i < args.length; i++)
-				args[i] = (GroundTerm) resultAtom.getArguments()[i];
+				args[i] = (Constant) resultAtom.getArguments()[i];
 			baselineAtom = baseline.getAtom(resultAtom.getPredicate(), args);
 			
 			if (baselineAtom instanceof ObservedAtom) {

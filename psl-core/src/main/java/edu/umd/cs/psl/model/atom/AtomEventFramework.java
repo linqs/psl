@@ -34,9 +34,9 @@ import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.database.DatabaseQuery;
 import edu.umd.cs.psl.database.ResultList;
-import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
+import edu.umd.cs.psl.model.term.Constant;
 
 /**
  * AtomManager with support for {@link AtomEvent AtomEvents}. 
@@ -46,8 +46,8 @@ import edu.umd.cs.psl.model.predicate.StandardPredicate;
  * <p>
  * A RandomVariableAtom is considered when it is instantiated in memory
  * and added to its {@link Database}'s {@link AtomCache} via
- * {@link #getAtom(Predicate, GroundTerm...)}. Warning: if a RandomVariableAtom
- * is instantiated in memory other than via a call to {@link #getAtom(Predicate, GroundTerm...)},
+ * {@link #getAtom(Predicate, Constant...)}. Warning: if a RandomVariableAtom
+ * is instantiated in memory other than via a call to {@link #getAtom(Predicate, Constant...)},
  * then no consideration event will be generated during the life of the Database.
  * <p>
  * A RandomVariableAtom is activated if it has not already been activated
@@ -108,14 +108,14 @@ public class AtomEventFramework implements AtomManager {
 	}
 	
 	/**
-	 * Calls {@link Database#getAtom(Predicate, GroundTerm...)} and adds
+	 * Calls {@link Database#getAtom(Predicate, Constant...)} and adds
 	 * a {@link AtomEvent#ConsideredRVAtom} event to the job queue if the
 	 * GroundAtom is a RandomVariableAtom and not already in the Database's AtomCache. 
 	 * 
 	 * @see #workOffJobQueue()
 	 */
 	@Override
-	public GroundAtom getAtom(Predicate p, GroundTerm... arguments) {
+	public GroundAtom getAtom(Predicate p, Constant... arguments) {
 		Atom check = db.getAtomCache().getCachedAtom(new QueryAtom(p, arguments));
 		GroundAtom atom = db.getAtom(p,  arguments);
 		if (atom instanceof RandomVariableAtom && check == null) {

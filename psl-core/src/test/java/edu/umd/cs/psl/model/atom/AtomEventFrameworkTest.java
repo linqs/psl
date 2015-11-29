@@ -32,11 +32,11 @@ import edu.umd.cs.psl.database.rdbms.RDBMSPartition;
 import edu.umd.cs.psl.database.rdbms.RDBMSDataStore;
 import edu.umd.cs.psl.database.rdbms.driver.H2DatabaseDriver;
 import edu.umd.cs.psl.database.rdbms.driver.H2DatabaseDriver.Type;
-import edu.umd.cs.psl.model.argument.ArgumentType;
-import edu.umd.cs.psl.model.argument.UniqueID;
-import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.predicate.PredicateFactory;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
+import edu.umd.cs.psl.model.term.ConstantType;
+import edu.umd.cs.psl.model.term.UniqueID;
+import edu.umd.cs.psl.model.term.Variable;
 
 public class AtomEventFrameworkTest {
 	
@@ -47,8 +47,8 @@ public class AtomEventFrameworkTest {
 	@Before
 	public final void setUp() throws ConfigurationException {
 		PredicateFactory pf = PredicateFactory.getFactory();
-		p1 = pf.createStandardPredicate("AtomEventFrameworkTest_P1", ArgumentType.UniqueID, ArgumentType.UniqueID);
-		p2 = pf.createStandardPredicate("AtomEventFrameworkTest_P2", ArgumentType.UniqueID, ArgumentType.UniqueID);
+		p1 = pf.createStandardPredicate("AtomEventFrameworkTest_P1", ConstantType.UniqueID, ConstantType.UniqueID);
+		p2 = pf.createStandardPredicate("AtomEventFrameworkTest_P2", ConstantType.UniqueID, ConstantType.UniqueID);
 		
 		DataStore dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Memory, null, true), new EmptyBundle());
 		dataStore.registerPredicate(p1);

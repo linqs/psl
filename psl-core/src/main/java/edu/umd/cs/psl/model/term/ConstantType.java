@@ -15,15 +15,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.model.argument;
+package edu.umd.cs.psl.model.term;
 
 /**
- * A type of {@link GroundTerm}.
+ * A type of {@link Constant}.
  * <p>
- * The enumerated types of ArgumentType are used to identify different subtypes
- * of GroundTerm.
+ * The enumerated types of ConstantType are used to identify different subtypes
+ * of Constant.
  */
-public enum ArgumentType {
+public enum ConstantType {
 
 	/**
 	 * A {@link StringAttribute} argument.
@@ -33,7 +33,7 @@ public enum ArgumentType {
 		public String getName() { return "String"; }
 		
 		@Override
-		public boolean isInstance(GroundTerm term) {
+		public boolean isInstance(Constant term) {
 			return (term instanceof StringAttribute);
 		}
 	},
@@ -47,7 +47,7 @@ public enum ArgumentType {
 		public String getName() { return "Integer"; }
 		
 		@Override
-		public boolean isInstance(GroundTerm term) {
+		public boolean isInstance(Constant term) {
 			return (term instanceof IntegerAttribute);
 		}
 	},
@@ -61,7 +61,7 @@ public enum ArgumentType {
 		public String getName() { return "Double"; }
 		
 		@Override
-		public boolean isInstance(GroundTerm term) {
+		public boolean isInstance(Constant term) {
 			return (term instanceof DoubleAttribute);
 		}
 	},
@@ -76,7 +76,7 @@ public enum ArgumentType {
 		}
 
 		@Override
-		public boolean isInstance(GroundTerm term) {
+		public boolean isInstance(Constant term) {
 			return term instanceof LongAttribute;
 		}
 	},
@@ -91,7 +91,7 @@ public enum ArgumentType {
 		}
 
 		@Override
-		public boolean isInstance(GroundTerm term) {
+		public boolean isInstance(Constant term) {
 			return term instanceof DateAttribute;
 		}
 	},
@@ -105,8 +105,8 @@ public enum ArgumentType {
 		public String getName() { return "UniqueID"; }
 		
 		@Override
-		public boolean isInstance(GroundTerm term) {
-			return (term instanceof edu.umd.cs.psl.model.argument.UniqueID);
+		public boolean isInstance(Constant term) {
+			return (term instanceof edu.umd.cs.psl.model.term.UniqueID);
 		}
 	};
 	
@@ -121,10 +121,10 @@ public enum ArgumentType {
 	 * @param term  the term to check
 	 * @return TRUE if term is an instance of the corresponding type
 	 */
-	abstract public boolean isInstance(GroundTerm term);
+	abstract public boolean isInstance(Constant term);
 	
-	public static ArgumentType getType(GroundTerm term) {
-		for (ArgumentType type : ArgumentType.values())
+	public static ConstantType getType(Constant term) {
+		for (ConstantType type : ConstantType.values())
 			if (type.isInstance(term))
 				return type;
 		

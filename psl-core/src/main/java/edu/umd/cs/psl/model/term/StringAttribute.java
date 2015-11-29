@@ -15,34 +15,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.model.argument;
+package edu.umd.cs.psl.model.term;
 
 /**
- * An {@link Attribute} that encapsulates an Integer.
+ * An {@link Attribute} that encapsulates a String.
  */
-public class IntegerAttribute implements Attribute {
+public class StringAttribute implements Attribute {
 
-	private final Integer value;
+	private final String value;
 	
 	/**
-	 * Constructs an Integer attribute from an Integer
+	 * Constructs a StringAttribute from a String
 	 * 
-	 * @param value  Integer to encapsulate
+	 * @param value  String to encapsulate
 	 */
-	public IntegerAttribute(Integer value) {
+	public StringAttribute(String value) {
 		this.value = value;
 	}
 	
 	/**
-	 * @return the encapsulated Integer as a String in single quotes
+	 * @return the encapsulated String in single quotes, truncated to 30 characters
 	 */
 	@Override
 	public String toString() {
-		return "'" + value + "'";
+		if (value.length() > 28)
+			return "'" + value.substring(0, Math.min(value.length(), 25)) + "...'";
+		else
+			return "'" + value + "'";
 	}
 	
 	@Override
-	public Integer getValue() {
+	public String getValue() {
 		return value;
 	}
 	
@@ -52,22 +55,22 @@ public class IntegerAttribute implements Attribute {
 	}
 	
 	/**
-	 * An IntegerAttribute is equal to another Object if that Object is an IntegerAttribute
+	 * A StringAttribute is equal to another Object if that Object is a TextAttribute
 	 * and their values are equal.
 	 */
 	@Override
 	public boolean equals(Object oth) {
 		if (oth==this) return true;
-		if (oth==null || !(oth instanceof IntegerAttribute)) return false;
-		return value.equals(((IntegerAttribute)oth).getValue());  
+		if (oth==null || !(oth instanceof StringAttribute) ) return false;
+		return value.equals(((StringAttribute) oth).getValue());  
 	}
 
 	@Override
-	public int compareTo(GroundTerm o) {
-		if (o instanceof IntegerAttribute)
-			return value - ((IntegerAttribute) o).value;
+	public int compareTo(Constant o) {
+		if (o instanceof StringAttribute)
+			return value.compareTo(((StringAttribute) o).value);
 		else
 			return this.getClass().getSimpleName().compareTo(o.getClass().getSimpleName());
 	}
-
+	
 }

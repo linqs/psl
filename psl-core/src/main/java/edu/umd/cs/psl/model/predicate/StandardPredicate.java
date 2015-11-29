@@ -18,8 +18,8 @@
 package edu.umd.cs.psl.model.predicate;
 
 import edu.umd.cs.psl.database.Database;
-import edu.umd.cs.psl.model.argument.ArgumentType;
 import edu.umd.cs.psl.model.atom.GroundAtom;
+import edu.umd.cs.psl.model.term.ConstantType;
 
 /**
  * Predicate of {@link GroundAtom GroundAtoms} that can be persisted in a
@@ -34,7 +34,7 @@ public class StandardPredicate extends Predicate {
 	 * @param types  types for each of the predicate's arguments
 	 * @see PredicateFactory
 	 */
-	StandardPredicate(String name, ArgumentType[] types) {
+	StandardPredicate(String name, ConstantType[] types) {
 		super(name, types);
 	}
 	

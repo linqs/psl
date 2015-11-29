@@ -27,19 +27,19 @@ import com.google.common.base.Preconditions;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.database.DatabaseQuery;
 import edu.umd.cs.psl.database.ResultList;
-import edu.umd.cs.psl.model.argument.ArgumentType;
-import edu.umd.cs.psl.model.argument.DateAttribute;
-import edu.umd.cs.psl.model.argument.DoubleAttribute;
-import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.argument.IntegerAttribute;
-import edu.umd.cs.psl.model.argument.LongAttribute;
-import edu.umd.cs.psl.model.argument.StringAttribute;
-import edu.umd.cs.psl.model.argument.Term;
-import edu.umd.cs.psl.model.argument.UniqueID;
-import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.QueryAtom;
 import edu.umd.cs.psl.model.predicate.Predicate;
+import edu.umd.cs.psl.model.term.ConstantType;
+import edu.umd.cs.psl.model.term.DateAttribute;
+import edu.umd.cs.psl.model.term.DoubleAttribute;
+import edu.umd.cs.psl.model.term.Constant;
+import edu.umd.cs.psl.model.term.IntegerAttribute;
+import edu.umd.cs.psl.model.term.LongAttribute;
+import edu.umd.cs.psl.model.term.StringAttribute;
+import edu.umd.cs.psl.model.term.Term;
+import edu.umd.cs.psl.model.term.UniqueID;
+import edu.umd.cs.psl.model.term.Variable;
 
 /**
  * Utility methods for common {@link Database} and {@link DatabaseQuery} tasks.
@@ -51,7 +51,7 @@ public class Queries {
 	 * <p>
 	 * GroundAtoms are retrieved by executing the query returned by
 	 * {@link #getQueryForAllAtoms(Predicate)} and calling
-	 * {@link Database#getAtom(Predicate, GroundTerm...)} on each result.
+	 * {@link Database#getAtom(Predicate, Constant...)} on each result.
 	 * 
 	 * @param db  the Database to query for GroundAtoms
 	 * @param p  the Predicate of the GroundAtoms to return
@@ -104,7 +104,7 @@ public class Queries {
 	 * <p>
 	 * Returns Terms such that they match the ArgumentTypes of a Predicate. Any
 	 * raw argument that is already a Term is returned as is. Any other raw
-	 * argument will be used to construct a {@link GroundTerm} of the appropriate
+	 * argument will be used to construct a {@link Constant} of the appropriate
 	 * type if possible.
 	 * 
 	 * @param db  the Database to use to get a {@link UniqueID}
@@ -118,14 +118,14 @@ public class Queries {
 	public static Term[] convertArguments(Database db, Predicate p, Object... rawArgs) {
 		Preconditions.checkArgument(p.getArity()==rawArgs.length);
 		Term[] args = new Term[rawArgs.length];
-		ArgumentType type;
+		ConstantType type;
 		for (int i=0;i<rawArgs.length;i++) {
 			type = p.getArgumentType(i);
 			if (rawArgs[i] instanceof Variable) {
 				args[i] = (Variable) rawArgs[i]; 
 			}
-			else if (rawArgs[i] instanceof GroundTerm && type.isInstance((GroundTerm) rawArgs[i])) {
-				args[i] = (GroundTerm) rawArgs[i];
+			else if (rawArgs[i] instanceof Constant && type.isInstance((Constant) rawArgs[i])) {
+				args[i] = (Constant) rawArgs[i];
 			}
 			else {
 				switch (type) {

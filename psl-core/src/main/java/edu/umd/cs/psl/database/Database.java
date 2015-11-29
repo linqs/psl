@@ -19,9 +19,6 @@ package edu.umd.cs.psl.database;
 
 import java.util.Set;
 
-import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.argument.UniqueID;
-import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.atom.AtomCache;
 import edu.umd.cs.psl.model.atom.AtomManager;
 import edu.umd.cs.psl.model.atom.GroundAtom;
@@ -30,12 +27,15 @@ import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.predicate.FunctionalPredicate;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
+import edu.umd.cs.psl.model.term.Constant;
+import edu.umd.cs.psl.model.term.UniqueID;
+import edu.umd.cs.psl.model.term.Variable;
 
 /**
  * A data model for retrieving and persisting {@link GroundAtom GroundAtoms}.
  * <p>
  * Every GroundAtom retrieved from a Database is either a {@link RandomVariableAtom}
- * or an {@link ObservedAtom}. The method {@link #getAtom(Predicate, GroundTerm...)}
+ * or an {@link ObservedAtom}. The method {@link #getAtom(Predicate, Constant...)}
  * determines which type a GroundAtom is. In addition, a GroundAtom with a
  * {@link StandardPredicate} can be persisted in a Database. If a
  * GroundAtom is persisted, it is persisted in one of the Partitions the
@@ -52,15 +52,15 @@ import edu.umd.cs.psl.model.predicate.StandardPredicate;
  * A Database can be instantiated with a set of StandardPredicates
  * to close. (Any StandardPredicate not closed initially remains open). Whether
  * a StandardPredicate is open or closed affects the behavior of
- * {@link #getAtom(Predicate, GroundTerm...)}.
+ * {@link #getAtom(Predicate, Constant...)}.
  * 
  * <h2>Retrieving GroundAtoms</h2>
  * 
  * A Database is the canonical source for a set of GroundAtoms.
- * GroundAtoms should only be retrieved via {@link #getAtom(Predicate, GroundTerm...)}
+ * GroundAtoms should only be retrieved via {@link #getAtom(Predicate, Constant...)}
  * to ensure there exists only a single object for each GroundAtom from the Database.
  * (However, a Database might be wrapped in an {@link AtomManager}, which will pass
- * through calls to {@link AtomManager#getAtom(Predicate, GroundTerm...)}.)
+ * through calls to {@link AtomManager#getAtom(Predicate, Constant...)}.)
  * <p>
  * A Database contains an {@link AtomCache} which is used to store GroundAtoms
  * that have been instantiated in memory and ensure these objects are unique.
@@ -116,7 +116,7 @@ public interface Database {
 	 * @throws IllegalArgumentException  if p is not registered or arguments are not valid
 	 * @throws IllegalStateException  if the Atom is persisted in multiple read Partitions
 	 */
-	public GroundAtom getAtom(Predicate p, GroundTerm... arguments);
+	public GroundAtom getAtom(Predicate p, Constant... arguments);
 	
 	/**
 	 * Removes the GroundAtom from the Database, if it exists.
@@ -144,7 +144,7 @@ public interface Database {
 	 * Returns all groundings of a Formula that match a DatabaseQuery.
 	 * 
 	 * @param query  the query to match
-	 * @return a list of lists of substitutions of {@link GroundTerm GroundTerms}
+	 * @return a list of lists of substitutions of {@link Constant GroundTerms}
 	 *             for {@link Variable Variables}
 	 * @throws IllegalArgumentException  if the query Formula is invalid
 	 */

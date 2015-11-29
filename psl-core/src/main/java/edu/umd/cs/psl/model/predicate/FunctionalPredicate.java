@@ -18,11 +18,11 @@
 package edu.umd.cs.psl.model.predicate;
 
 import edu.umd.cs.psl.database.ReadOnlyDatabase;
-import edu.umd.cs.psl.model.argument.ArgumentType;
-import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
+import edu.umd.cs.psl.model.term.ConstantType;
+import edu.umd.cs.psl.model.term.Constant;
 
 /**
  * A Predicate with {@link GroundAtom GroundAtoms} that have truth values defined
@@ -44,7 +44,7 @@ abstract public class FunctionalPredicate extends Predicate {
 	 * @param types  types for each of the predicate's arguments
 	 * @see PredicateFactory
 	 */
-	FunctionalPredicate(String name, ArgumentType[] types) {
+	FunctionalPredicate(String name, ConstantType[] types) {
 		super(name, types);
 	}
 
@@ -57,6 +57,6 @@ abstract public class FunctionalPredicate extends Predicate {
 	 * @return the computed truth value
 	 * @throws IllegalArgumentException  if args is not valid
 	 */
-	abstract public double computeValue(ReadOnlyDatabase db, GroundTerm... args);
+	abstract public double computeValue(ReadOnlyDatabase db, Constant... args);
 	
 }

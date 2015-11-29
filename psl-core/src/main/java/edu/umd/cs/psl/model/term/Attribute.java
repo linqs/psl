@@ -15,35 +15,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.model.argument;
-
-import edu.umd.cs.psl.model.predicate.Predicate;
+package edu.umd.cs.psl.model.term;
 
 /**
- * An argument to a {@link Predicate}.
+ * A {@link Constant} that is a value, as opposed to a {@link UniqueID}.
+ * <p>
+ * For example, people in a social network should probably be represented as
+ * UniqueIDs, but their properties, such as names or ages, should probably
+ * be Attributes.
  * 
  * @author Matthias Broecheler
  */
-public interface Term {
+public interface Attribute extends Constant {
 	
 	/**
-	 * @return a human-friendly String identifier
+	 * @return Java representation of the Attribute's value
 	 */
-	public String toString();
-	
-	/**
-	 * @return hash code
-	 */
-	public int hashCode();
-	
-	/**
-	 * Checks equality with an Object.
-	 * <p>
-	 * Equality semantics are implementation specific.
-	 * 
-	 * @param oth  Object to compare to
-	 * @return TRUE if equal, FALSE otherwise
-	 */
-	public boolean equals(Object oth);
+	public Object getValue();
 
 }

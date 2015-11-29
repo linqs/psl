@@ -32,11 +32,11 @@ import edu.umd.cs.psl.database.rdbms.RDBMSPartition;
 import edu.umd.cs.psl.database.rdbms.RDBMSDataStore;
 import edu.umd.cs.psl.database.rdbms.driver.H2DatabaseDriver;
 import edu.umd.cs.psl.evaluation.statistics.DiscretePredictionStatistics.BinaryClass;
-import edu.umd.cs.psl.model.argument.ArgumentType;
-import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.predicate.PredicateFactory;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
+import edu.umd.cs.psl.model.term.ConstantType;
+import edu.umd.cs.psl.model.term.Constant;
 
 public class DiscretePredictionComparatorTest {
 
@@ -49,7 +49,7 @@ public class DiscretePredictionComparatorTest {
 		PredicateFactory factory = PredicateFactory.getFactory();
 		predicate = factory.createStandardPredicate(
 				"DiscretePredictionComparatorTest_same"
-				, new ArgumentType[]{ArgumentType.UniqueID, ArgumentType.UniqueID}
+				, new ConstantType[]{ConstantType.UniqueID, ConstantType.UniqueID}
 			);
 		
 		// Instantiate an in-memory database
@@ -59,29 +59,29 @@ public class DiscretePredictionComparatorTest {
 		Database baseline = ds.getDatabase(ds.getPartition("2"), ds.getPartition("2"));
 		
 		// create some canned ground inference atoms
-		GroundTerm[][] cannedTerms = new GroundTerm[5][];
-		cannedTerms[0] = new GroundTerm[]{ ds.getUniqueID(1), ds.getUniqueID(2) };
-		cannedTerms[1] = new GroundTerm[]{ ds.getUniqueID(2), ds.getUniqueID(1) };
-		cannedTerms[2] = new GroundTerm[]{ ds.getUniqueID(3), ds.getUniqueID(4) };
-		cannedTerms[3] = new GroundTerm[]{ ds.getUniqueID(5), ds.getUniqueID(6) };
-		cannedTerms[4] = new GroundTerm[]{ ds.getUniqueID(6), ds.getUniqueID(5) };
+		Constant[][] cannedTerms = new Constant[5][];
+		cannedTerms[0] = new Constant[]{ ds.getUniqueID(1), ds.getUniqueID(2) };
+		cannedTerms[1] = new Constant[]{ ds.getUniqueID(2), ds.getUniqueID(1) };
+		cannedTerms[2] = new Constant[]{ ds.getUniqueID(3), ds.getUniqueID(4) };
+		cannedTerms[3] = new Constant[]{ ds.getUniqueID(5), ds.getUniqueID(6) };
+		cannedTerms[4] = new Constant[]{ ds.getUniqueID(6), ds.getUniqueID(5) };
 		
 		// Store this in the "results" database
-		for (GroundTerm[] terms : cannedTerms) {
+		for (Constant[] terms : cannedTerms) {
 			RandomVariableAtom atom = (RandomVariableAtom) results.getAtom(predicate, terms);
 			atom.setValue(0.8);
 			results.commit(atom);
 		}
 		
 		// create some ground truth atoms
-		GroundTerm[][] baselineTerms = new GroundTerm[4][];
-		baselineTerms[0] = new GroundTerm[]{ ds.getUniqueID(1), ds.getUniqueID(2) };
-		baselineTerms[1] = new GroundTerm[]{ ds.getUniqueID(2), ds.getUniqueID(1) };
-		baselineTerms[2] = new GroundTerm[]{ ds.getUniqueID(3), ds.getUniqueID(4) };
-		baselineTerms[3] = new GroundTerm[]{ ds.getUniqueID(4), ds.getUniqueID(3) };
+		Constant[][] baselineTerms = new Constant[4][];
+		baselineTerms[0] = new Constant[]{ ds.getUniqueID(1), ds.getUniqueID(2) };
+		baselineTerms[1] = new Constant[]{ ds.getUniqueID(2), ds.getUniqueID(1) };
+		baselineTerms[2] = new Constant[]{ ds.getUniqueID(3), ds.getUniqueID(4) };
+		baselineTerms[3] = new Constant[]{ ds.getUniqueID(4), ds.getUniqueID(3) };
 		
 		// Store this in the "baseline" database
-		for (GroundTerm[] terms : baselineTerms) {
+		for (Constant[] terms : baselineTerms) {
 			RandomVariableAtom atom = (RandomVariableAtom) baseline.getAtom(predicate, terms);
 			atom.setValue(1.0);
 			baseline.commit(atom);

@@ -23,9 +23,9 @@ import java.util.Map;
 import com.google.common.collect.Iterables;
 
 import edu.umd.cs.psl.database.Database;
-import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
+import edu.umd.cs.psl.model.term.Constant;
 
 /**
  * Storage for {@link GroundAtom GroundAtoms} so that a {@link Database}
@@ -52,7 +52,7 @@ public class AtomCache {
 	 * Checks whether a {@link GroundAtom} matching a QueryAtom exists in the
 	 * cache and returns it if so.
 	 * 
-	 * @param atom  QueryAtom with all {@link GroundTerm GroundTerms}
+	 * @param atom  QueryAtom with all {@link Constant GroundTerms}
 	 * @return the requested GroundAtom, or NULL if it is not cached
 	 */
 	public GroundAtom getCachedAtom(QueryAtom atom) {
@@ -112,8 +112,8 @@ public class AtomCache {
 	 * Instantiates an ObservedAtom and stores it in this AtomCache.
 	 * <p>
 	 * This method should only be called by this AtomCache's {@link Database}.
-	 * To retrieve a GroundAtom, all others should use {@link Database#getAtom(Predicate, GroundTerm[])}
-	 * or {@link AtomManager#getAtom(Predicate, GroundTerm[])}.
+	 * To retrieve a GroundAtom, all others should use {@link Database#getAtom(Predicate, Constant[])}
+	 * or {@link AtomManager#getAtom(Predicate, Constant[])}.
 	 * <p>
 	 * Further, this method should only be called after ensuring that the Atom
 	 * is not already in this AtomCache using {@link #getCachedAtom(QueryAtom)}.
@@ -124,7 +124,7 @@ public class AtomCache {
 	 * @param confidence  the Atom's confidence value
 	 * @return the new ObservedAtom
 	 */
-	public ObservedAtom instantiateObservedAtom(Predicate p, GroundTerm[] args,
+	public ObservedAtom instantiateObservedAtom(Predicate p, Constant[] args,
 			double value, double confidence) {
 		ObservedAtom atom = new ObservedAtom(p, args, db, value, confidence);
 		QueryAtom key = new QueryAtom(p, args);
@@ -136,8 +136,8 @@ public class AtomCache {
 	 * Instantiates a RandomVariableAtom and stores it in this AtomCache.
 	 * <p>
 	 * This method should only be called by this AtomCache's {@link Database}.
-	 * To retrieve a GroundAtom, all others should use {@link Database#getAtom(Predicate, GroundTerm[])}
-	 * or {@link AtomManager#getAtom(Predicate, GroundTerm[])}.
+	 * To retrieve a GroundAtom, all others should use {@link Database#getAtom(Predicate, Constant[])}
+	 * or {@link AtomManager#getAtom(Predicate, Constant[])}.
 	 * <p>
 	 * Further, this method should only be called after ensuring that the Atom
 	 * is not already in this AtomCache using {@link #getCachedAtom(QueryAtom)}.
@@ -149,7 +149,7 @@ public class AtomCache {
 	 * @return the new RandomVariableAtom
 	 */
 	public RandomVariableAtom instantiateRandomVariableAtom(StandardPredicate p,
-			GroundTerm[] args, double value, double confidence) {
+			Constant[] args, double value, double confidence) {
 		RandomVariableAtom atom = new RandomVariableAtom(p, args, db, value, confidence);
 		QueryAtom key = new QueryAtom(p, args);
 		cache.put(key, atom);

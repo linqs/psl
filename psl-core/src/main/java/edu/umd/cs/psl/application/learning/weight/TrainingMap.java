@@ -26,8 +26,6 @@ import java.util.Set;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.database.DatabaseQuery;
 import edu.umd.cs.psl.database.ResultList;
-import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.atom.AtomManager;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
@@ -36,6 +34,8 @@ import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
+import edu.umd.cs.psl.model.term.Constant;
+import edu.umd.cs.psl.model.term.Variable;
 
 /**
  * A TrainingMap matches {@link RandomVariableAtom RandomVariableAtoms} in one database
@@ -132,7 +132,7 @@ public class TrainingMap implements AtomManager {
 	}
 
 	@Override
-	public GroundAtom getAtom(Predicate p, GroundTerm... arguments) {
+	public GroundAtom getAtom(Predicate p, Constant... arguments) {
 		GroundAtom atom = rvDB.getAtom(p, arguments);
 		if (atom instanceof RandomVariableAtom) {
 			// Check if this is in our set of persisted RandomVariableAtoms

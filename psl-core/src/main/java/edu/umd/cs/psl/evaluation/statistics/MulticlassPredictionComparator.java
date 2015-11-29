@@ -25,16 +25,16 @@ import java.util.Map.Entry;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.evaluation.statistics.filter.AtomFilter;
 import edu.umd.cs.psl.evaluation.statistics.filter.MaxValueFilter;
-import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.predicate.Predicate;
+import edu.umd.cs.psl.model.term.Constant;
 import edu.umd.cs.psl.util.database.Queries;
 
 /**
  * Computes statistics for multiclass prediction.
  * 
  * NOTE: Currently only works with binary predicates of the form (example, label) or (label, example),
- * where example is a single {@link GroundTerm} and label is a single {@link IntegerAttribute}.
+ * where example is a single {@link Constant} and label is a single {@link IntegerAttribute}.
  * 
  * @author Ben
  *
@@ -80,7 +80,7 @@ public class MulticlassPredictionComparator implements ResultComparator {
 	 * @param labelIndex The index of the label in each example's terms.
 	 * @return A {@link MulticlassPredictionStatistics}.
 	 */
-	public PredictionStatistics compare(Predicate p, Map<GroundTerm,Integer> labelMap, int labelIndex) {
+	public PredictionStatistics compare(Predicate p, Map<Constant,Integer> labelMap, int labelIndex) {
 		/* Allocate a square confusion matrix. */
 		int numClass = labelMap.size();
 		int[][] cm = new int[numClass][numClass];
@@ -113,7 +113,7 @@ public class MulticlassPredictionComparator implements ResultComparator {
 	 * @param labelIndex
 	 * @return
 	 */
-	private Map<Example,Integer> getAllMaxScoreAtoms(Database db, Predicate p, Map<GroundTerm,Integer> labelMap, int labelIndex) {
+	private Map<Example,Integer> getAllMaxScoreAtoms(Database db, Predicate p, Map<Constant,Integer> labelMap, int labelIndex) {
 		Map<Example,Integer> atoms = new HashMap<Example,Integer>();
 		AtomFilter maxFilter = new MaxValueFilter(p, labelIndex);
 		Iterator<GroundAtom> iter = maxFilter.filter(Queries.getAllAtoms(db, p).iterator());
@@ -121,14 +121,14 @@ public class MulticlassPredictionComparator implements ResultComparator {
 			GroundAtom predAtom = iter.next();
 			if (predAtom.getValue() == 0.0)
 				throw new RuntimeException("Max value does not exist.");
-			GroundTerm[] terms = predAtom.getArguments();
-			GroundTerm[] exTerms = new GroundTerm[terms.length-1];
+			Constant[] terms = predAtom.getArguments();
+			Constant[] exTerms = new Constant[terms.length-1];
 			int i = 0;
 			for (int j = 0; j < terms.length; j++) {
 				if (j != labelIndex)
 					exTerms[i++] = terms[j];
 			}
-			GroundTerm label = terms[labelIndex];
+			Constant label = terms[labelIndex];
 			atoms.put(new Example(exTerms), labelMap.get(label));
 		}
 		return atoms;
@@ -144,9 +144,9 @@ public class MulticlassPredictionComparator implements ResultComparator {
 	 */
 	class Example {
 		
-		private final GroundTerm[] terms;
+		private final Constant[] terms;
 		
-		public Example(GroundTerm[] terms) {
+		public Example(Constant[] terms) {
 			this.terms = terms;
 		}
 		

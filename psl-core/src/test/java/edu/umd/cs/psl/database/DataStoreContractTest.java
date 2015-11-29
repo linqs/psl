@@ -30,12 +30,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import edu.umd.cs.psl.database.loading.Inserter;
-import edu.umd.cs.psl.model.argument.ArgumentType;
-import edu.umd.cs.psl.model.argument.DoubleAttribute;
-import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.argument.StringAttribute;
-import edu.umd.cs.psl.model.argument.UniqueID;
-import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.QueryAtom;
@@ -47,6 +41,12 @@ import edu.umd.cs.psl.model.predicate.FunctionalPredicate;
 import edu.umd.cs.psl.model.predicate.PredicateFactory;
 import edu.umd.cs.psl.model.predicate.SpecialPredicate;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
+import edu.umd.cs.psl.model.term.ConstantType;
+import edu.umd.cs.psl.model.term.DoubleAttribute;
+import edu.umd.cs.psl.model.term.Constant;
+import edu.umd.cs.psl.model.term.StringAttribute;
+import edu.umd.cs.psl.model.term.UniqueID;
+import edu.umd.cs.psl.model.term.Variable;
 
 /**
  * Contract tests for classes that implement {@link DataStore}.
@@ -77,14 +77,14 @@ abstract public class DataStoreContractTest {
 	
 	static {
 		PredicateFactory predicateFactory = PredicateFactory.getFactory();
-		p1 = predicateFactory.createStandardPredicate("DataStoreContractTest_P1", ArgumentType.UniqueID, ArgumentType.UniqueID);
-		p2 = predicateFactory.createStandardPredicate("DataStoreContractTest_P2", ArgumentType.String, ArgumentType.String);
-		p3 = predicateFactory.createStandardPredicate("DataStoreContractTest_P3", ArgumentType.Double, ArgumentType.Double);
-		p4 = predicateFactory.createStandardPredicate("DataStoreContractTest_P4", ArgumentType.UniqueID, ArgumentType.Double);
+		p1 = predicateFactory.createStandardPredicate("DataStoreContractTest_P1", ConstantType.UniqueID, ConstantType.UniqueID);
+		p2 = predicateFactory.createStandardPredicate("DataStoreContractTest_P2", ConstantType.String, ConstantType.String);
+		p3 = predicateFactory.createStandardPredicate("DataStoreContractTest_P3", ConstantType.Double, ConstantType.Double);
+		p4 = predicateFactory.createStandardPredicate("DataStoreContractTest_P4", ConstantType.UniqueID, ConstantType.Double);
 		fp1 = predicateFactory.createFunctionalPredicate("DataStoreContractTest_FP1", new ExternalFunction() {
 			
 			@Override
-			public double getValue(ReadOnlyDatabase db, GroundTerm... args) {
+			public double getValue(ReadOnlyDatabase db, Constant... args) {
 				double a = ((DoubleAttribute) args[0]).getValue();
 				double b = ((DoubleAttribute) args[1]).getValue();
 				
@@ -97,8 +97,8 @@ abstract public class DataStoreContractTest {
 			}
 			
 			@Override
-			public ArgumentType[] getArgumentTypes() {
-				return new ArgumentType[] {ArgumentType.Double, ArgumentType.Double};
+			public ConstantType[] getArgumentTypes() {
+				return new ConstantType[] {ConstantType.Double, ConstantType.Double};
 			}
 		});
 	}
@@ -368,7 +368,7 @@ abstract public class DataStoreContractTest {
 		DatabaseQuery query;
 		Formula formula;
 		ResultList results;
-		GroundTerm[] grounding;
+		Constant[] grounding;
 		
 		UniqueID a = datastore.getUniqueID(0);
 		UniqueID b = datastore.getUniqueID(1);

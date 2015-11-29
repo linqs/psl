@@ -19,19 +19,19 @@ package edu.umd.cs.psl.model.atom;
 
 import java.util.*;
 
-import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.formula.Formula;
+import edu.umd.cs.psl.model.term.Constant;
+import edu.umd.cs.psl.model.term.Variable;
 
 /**
- * Maintains a mapping from {@link Variable Variables} to {@link GroundTerm GroundTerms},
+ * Maintains a mapping from {@link Variable Variables} to {@link Constant GroundTerms},
  * i.e. a variable substitution.
  * 
  * Used to maintain a grounding of a {@link Formula}.
  * 
  * @author Matthias Broecheler
  */
-public class VariableAssignment extends HashMap<Variable, GroundTerm> {
+public class VariableAssignment extends HashMap<Variable, Constant> {
 
 	private static final long serialVersionUID = 6358039563542554044L;
 
@@ -64,7 +64,7 @@ public class VariableAssignment extends HashMap<Variable, GroundTerm> {
 	 * @param var variable
 	 * @param arg assigned ground argument
 	 */
-	public void assign(Variable var, GroundTerm arg) {
+	public void assign(Variable var, Constant arg) {
 		put(var, arg);
 	}
 	
@@ -95,7 +95,7 @@ public class VariableAssignment extends HashMap<Variable, GroundTerm> {
 	 * @param arg A ground term
 	 * @return A copy of this variable assignment, with the addition of (var, arg)
 	 */
-	public VariableAssignment copyAssign(Variable var, GroundTerm arg) {
+	public VariableAssignment copyAssign(Variable var, Constant arg) {
 		VariableAssignment copy = this.copy();
 		copy.assign(var, arg);
 		return copy;
@@ -107,7 +107,7 @@ public class VariableAssignment extends HashMap<Variable, GroundTerm> {
 	 * @param var A variable
 	 * @return The gound term associated with var
 	 */
-	public GroundTerm getVariable(Variable var) {
+	public Constant getVariable(Variable var) {
 		if (!containsKey(var)) throw new IllegalArgumentException("Variable has not been set!");
 		return get(var);
 	}

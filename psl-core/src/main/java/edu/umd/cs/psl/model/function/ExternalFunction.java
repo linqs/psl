@@ -18,15 +18,15 @@
 package edu.umd.cs.psl.model.function;
 
 import edu.umd.cs.psl.database.ReadOnlyDatabase;
-import edu.umd.cs.psl.model.argument.ArgumentType;
-import edu.umd.cs.psl.model.argument.GroundTerm;
+import edu.umd.cs.psl.model.term.ConstantType;
+import edu.umd.cs.psl.model.term.Constant;
 
 public interface ExternalFunction {
 
-	public double getValue(ReadOnlyDatabase db, GroundTerm... args);
+	public double getValue(ReadOnlyDatabase db, Constant... args);
 	
 	public int getArity();
 	
-	public ArgumentType[] getArgumentTypes();
+	public ConstantType[] getArgumentTypes();
 	
 }

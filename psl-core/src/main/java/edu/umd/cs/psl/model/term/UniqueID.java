@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.model.argument;
+package edu.umd.cs.psl.model.term;
 
 import edu.umd.cs.psl.database.DataStore;
 import edu.umd.cs.psl.database.Database;
@@ -26,7 +26,7 @@ import edu.umd.cs.psl.model.atom.GroundAtom;
  * <p>
  * {@link DataStore DataStores} and {@link Database Databases} use UniqueIDs
  * to identify distinct entities for performance reasons. They should be used
- * instead of {@link Attribute Attributes} when the GroundTerm is expected
+ * instead of {@link Attribute Attributes} when the {@link Constant} is expected
  * to appear in multiple {@link GroundAtom GroundAtoms}.
  * <p>
  * For example, people in a social network should probably be represented as
@@ -36,7 +36,7 @@ import edu.umd.cs.psl.model.atom.GroundAtom;
  * @see DataStore#getUniqueID(Object)
  * @see Database#getUniqueID(Object)
  */
-public interface UniqueID extends GroundTerm {
+public interface UniqueID extends Constant {
 
 	/**
 	 * Returns a human-friendly String representation of this UniqueID.

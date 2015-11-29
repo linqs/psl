@@ -17,8 +17,8 @@
  */
 package edu.umd.cs.psl.database.rdbms;
 
-import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.argument.UniqueID;
+import edu.umd.cs.psl.model.term.Constant;
+import edu.umd.cs.psl.model.term.UniqueID;
 
 
 public class RDBMSUniqueIntID implements UniqueID {
@@ -51,7 +51,7 @@ public class RDBMSUniqueIntID implements UniqueID {
 	}
 
 	@Override
-	public int compareTo(GroundTerm o) {
+	public int compareTo(Constant o) {
 		if (o instanceof RDBMSUniqueIntID)
 			return id - ((RDBMSUniqueIntID)o).id;
 		else

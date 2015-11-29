@@ -20,15 +20,15 @@ package edu.umd.cs.psl.model.atom;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.database.DatabaseQuery;
 import edu.umd.cs.psl.database.ResultList;
-import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
+import edu.umd.cs.psl.model.term.Constant;
 
 /**
  * Provides centralization and hooks for managing the {@link GroundAtom GroundAtoms}
  * that are instantiated from a {@link Database}.
  * <p>
- * By wrapping {@link Database#getAtom(Predicate, GroundTerm...)},
+ * By wrapping {@link Database#getAtom(Predicate, Constant...)},
  * an AtomManager gives additional control over the GroundAtoms that come from
  * that Database.
  * <p>
@@ -43,14 +43,14 @@ public interface AtomManager {
 	/**
 	 * Returns the GroundAtom for the given Predicate and GroundTerms.
 	 * <p>
-	 * This method must call {@link Database#getAtom(Predicate, GroundTerm...)}
+	 * This method must call {@link Database#getAtom(Predicate, Constant...)}
 	 * to actually retrieve the GroundAtom.
 	 * 
 	 * @param p  the Predicate of the Atom
 	 * @param arguments  the GroundTerms of the Atom
 	 * @return the Atom
 	 */
-	public GroundAtom getAtom(Predicate p, GroundTerm... arguments);
+	public GroundAtom getAtom(Predicate p, Constant... arguments);
 	
 	/**
 	 * Calls {@link Database#executeQuery(DatabaseQuery)} on the

@@ -20,8 +20,6 @@ package edu.umd.cs.psl.database;
 import java.util.HashSet;
 import java.util.Set;
 
-import edu.umd.cs.psl.model.argument.Term;
-import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.VariableAssignment;
 import edu.umd.cs.psl.model.formula.Conjunction;
@@ -30,6 +28,8 @@ import edu.umd.cs.psl.model.formula.FormulaAnalysis;
 import edu.umd.cs.psl.model.formula.traversal.AbstractFormulaTraverser;
 import edu.umd.cs.psl.model.predicate.FunctionalPredicate;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
+import edu.umd.cs.psl.model.term.Term;
+import edu.umd.cs.psl.model.term.Variable;
 import edu.umd.cs.psl.util.collection.HashList;
 
 /**

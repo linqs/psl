@@ -29,10 +29,6 @@ import com.healthmarketscience.sqlbuilder.FunctionCall;
 import com.healthmarketscience.sqlbuilder.InCondition;
 import com.healthmarketscience.sqlbuilder.SelectQuery;
 
-import edu.umd.cs.psl.model.argument.Attribute;
-import edu.umd.cs.psl.model.argument.Term;
-import edu.umd.cs.psl.model.argument.UniqueID;
-import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.VariableAssignment;
 import edu.umd.cs.psl.model.formula.Formula;
@@ -41,6 +37,10 @@ import edu.umd.cs.psl.model.predicate.ExternalFunctionalPredicate;
 import edu.umd.cs.psl.model.predicate.FunctionalPredicate;
 import edu.umd.cs.psl.model.predicate.SpecialPredicate;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
+import edu.umd.cs.psl.model.term.Attribute;
+import edu.umd.cs.psl.model.term.Term;
+import edu.umd.cs.psl.model.term.UniqueID;
+import edu.umd.cs.psl.model.term.Variable;
 
 public class Formula2SQL extends AbstractFormulaTraverser {
 

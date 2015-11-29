@@ -29,9 +29,6 @@ import edu.umd.cs.psl.application.groundrulestore.GroundRuleStore;
 import edu.umd.cs.psl.database.DatabaseQuery;
 import edu.umd.cs.psl.database.ResultList;
 import edu.umd.cs.psl.model.NumericUtilities;
-import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.argument.Term;
-import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.AtomEvent;
 import edu.umd.cs.psl.model.atom.AtomEventFramework;
@@ -44,6 +41,9 @@ import edu.umd.cs.psl.model.formula.FormulaAnalysis;
 import edu.umd.cs.psl.model.formula.FormulaAnalysis.DNFClause;
 import edu.umd.cs.psl.model.rule.AbstractRule;
 import edu.umd.cs.psl.model.rule.WeightedGroundRule;
+import edu.umd.cs.psl.model.term.Constant;
+import edu.umd.cs.psl.model.term.Term;
+import edu.umd.cs.psl.model.term.Variable;
 import edu.umd.cs.psl.model.rule.Rule;
 import edu.umd.cs.psl.model.formula.Negation;
 import edu.umd.cs.psl.reasoner.function.FunctionTerm;
@@ -141,7 +141,7 @@ abstract public class AbstractLogicalRule extends AbstractRule {
 	
 	protected GroundAtom groundAtom(AtomManager atomManager, Atom atom, ResultList res, int resultIndex, VariableAssignment var) {
 		Term[] oldArgs = atom.getArguments();
-		GroundTerm[] newArgs = new GroundTerm[atom.getArity()];
+		Constant[] newArgs = new Constant[atom.getArity()];
 		for (int i = 0; i < oldArgs.length; i++)
 			if (oldArgs[i] instanceof Variable) {
 				Variable v = (Variable) oldArgs[i];
@@ -150,8 +150,8 @@ abstract public class AbstractLogicalRule extends AbstractRule {
 				else
 					newArgs[i] = res.get(resultIndex, (Variable) oldArgs[i]);
 			}
-			else if (oldArgs[i] instanceof GroundTerm)
-				newArgs[i] = (GroundTerm) oldArgs[i];
+			else if (oldArgs[i] instanceof Constant)
+				newArgs[i] = (Constant) oldArgs[i];
 			else
 				throw new IllegalArgumentException("Unrecognized type of Term.");
 		

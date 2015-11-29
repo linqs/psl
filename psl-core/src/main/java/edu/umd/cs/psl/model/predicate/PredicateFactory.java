@@ -23,8 +23,8 @@ import java.util.regex.Pattern;
 
 import com.google.common.collect.Iterables;
 
-import edu.umd.cs.psl.model.argument.ArgumentType;
 import edu.umd.cs.psl.model.function.ExternalFunction;
+import edu.umd.cs.psl.model.term.ConstantType;
 
 /**
  * The factory for Predicates.
@@ -77,7 +77,7 @@ public class PredicateFactory {
 	 *                                       match \w+; types has length zero;
 	 *                                       or an element of types is NULL
 	 */
-	public StandardPredicate createStandardPredicate(String name, ArgumentType... types) {
+	public StandardPredicate createStandardPredicate(String name, ConstantType... types) {
 		name = name.toUpperCase();
 		Predicate p = predicateByName.get(name);
 		if (p != null) {
@@ -143,7 +143,7 @@ public class PredicateFactory {
 	 * @throws IllegalArgumentException  if name doesn't match \w+, types has length zero,
 	 *                                       or an element of types is NULL
 	 */
-	private void checkPredicateSignature(String name, ArgumentType[] types) {
+	private void checkPredicateSignature(String name, ConstantType[] types) {
 		if (!predicateNamePattern.matcher(name).matches())
 			throw new IllegalArgumentException("Name must match \\w+");
 		if (types.length == 0)

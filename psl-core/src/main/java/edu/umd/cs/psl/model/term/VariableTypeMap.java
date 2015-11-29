@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.model.argument;
+package edu.umd.cs.psl.model.term;
 
 import java.util.*;
 
@@ -29,7 +29,7 @@ import java.util.*;
  * @author
  *
  */
-public class VariableTypeMap extends HashMap<Variable,ArgumentType> {
+public class VariableTypeMap extends HashMap<Variable,ConstantType> {
 
 	private static final long serialVersionUID = -6590175777602710989L;
 
@@ -39,8 +39,8 @@ public class VariableTypeMap extends HashMap<Variable,ArgumentType> {
 	 * @param var A variable
 	 * @param type An argument type
 	 */
-	public void addVariable(Variable var, ArgumentType type) {
-		ArgumentType t = get(var);
+	public void addVariable(Variable var, ConstantType type) {
+		ConstantType t = get(var);
 		if (t!=null) {
 			if (t!=type) throw new IllegalStateException("Variable has inconsistent type: " + var);
 		} else put(var,type);
@@ -61,8 +61,8 @@ public class VariableTypeMap extends HashMap<Variable,ArgumentType> {
 	 * @param var A variable
 	 * @return The argument type of the given variable
 	 */
-	public ArgumentType getType(Variable var) {
-		ArgumentType t = get(var);
+	public ConstantType getType(Variable var) {
+		ConstantType t = get(var);
 		if (t==null) throw new IllegalArgumentException("Specified variable is unknown: "+var);
 		return t;
 	}
@@ -83,7 +83,7 @@ public class VariableTypeMap extends HashMap<Variable,ArgumentType> {
 	 * @param other Another VariableTypeMap
 	 */
 	public void addAll(VariableTypeMap other) {
-		for (Map.Entry<Variable, ArgumentType> entry : other.entrySet()) {
+		for (Map.Entry<Variable, ConstantType> entry : other.entrySet()) {
 			addVariable(entry.getKey(),entry.getValue());
 		}
 	}

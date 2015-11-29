@@ -17,9 +17,9 @@
  */
 package edu.umd.cs.psl.database;
 
-import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.formula.Formula;
+import edu.umd.cs.psl.model.term.Constant;
+import edu.umd.cs.psl.model.term.Variable;
 
 /**
  * List of substitutions for {@link Variable Variables} in a {@link Formula}.
@@ -45,7 +45,7 @@ public interface ResultList {
 	 * @return  the substituted GroundTerm
 	 * @throws IllegalArgumentException  if resultNo is out of range or var is invalid
 	 */
-	public GroundTerm get(int resultNo, Variable var);
+	public Constant get(int resultNo, Variable var);
 	
 	/**
 	 * Returns a substitution for all {@link Variable Variables}.
@@ -58,6 +58,6 @@ public interface ResultList {
 	 * @return  the substituted GroundTerms
 	 * @throws IllegalArgumentException  if resultNo is out of range
 	 */
-	public GroundTerm[] get(int resultNo);
+	public Constant[] get(int resultNo);
 	
 }

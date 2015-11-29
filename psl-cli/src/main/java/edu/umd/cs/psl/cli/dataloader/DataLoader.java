@@ -31,9 +31,9 @@ import org.yaml.snakeyaml.Yaml;
 import edu.umd.cs.psl.database.DataStore;
 import edu.umd.cs.psl.database.Partition;
 import edu.umd.cs.psl.database.loading.Inserter;
-import edu.umd.cs.psl.model.argument.ArgumentType;
 import edu.umd.cs.psl.model.predicate.PredicateFactory;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
+import edu.umd.cs.psl.model.term.ConstantType;
 import edu.umd.cs.psl.ui.loading.InserterUtils;
 
 /**
@@ -61,9 +61,9 @@ public class DataLoader {
 			log.debug("Found predicate {} with arity {}",predicateStr, arity);
 
 			//create a predicate and add it to the datastore
-			ArgumentType[] args = new ArgumentType[arity];
+			ConstantType[] args = new ConstantType[arity];
 			for(int i = 0; i < arity; i++){
-				args[i] = ArgumentType.UniqueID;
+				args[i] = ConstantType.UniqueID;
 			}
 			StandardPredicate predicate = pf.createStandardPredicate(predicateStr, args);
 			datastore.registerPredicate(predicate);

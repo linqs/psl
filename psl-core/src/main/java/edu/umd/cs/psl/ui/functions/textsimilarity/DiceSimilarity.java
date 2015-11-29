@@ -22,10 +22,10 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import edu.umd.cs.psl.database.ReadOnlyDatabase;
-import edu.umd.cs.psl.model.argument.ArgumentType;
-import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.argument.StringAttribute;
 import edu.umd.cs.psl.model.function.ExternalFunction;
+import edu.umd.cs.psl.model.term.ConstantType;
+import edu.umd.cs.psl.model.term.Constant;
+import edu.umd.cs.psl.model.term.StringAttribute;
 
 /**
  * Implements the dice similarity measure (quick-n-dirty version).
@@ -53,12 +53,12 @@ public class DiceSimilarity implements ExternalFunction
 	}
 
 	@Override
-	public ArgumentType[] getArgumentTypes() {
-		return new ArgumentType[] { ArgumentType.String, ArgumentType.String };
+	public ConstantType[] getArgumentTypes() {
+		return new ConstantType[] { ConstantType.String, ConstantType.String };
 	}
 	
 	@Override
-	public double getValue(ReadOnlyDatabase db, GroundTerm... args) {
+	public double getValue(ReadOnlyDatabase db, Constant... args) {
 		String a = ((StringAttribute) args[0]).getValue();
 		String b = ((StringAttribute) args[1]).getValue();
 		// Create two sets of character bigrams, one for each string.

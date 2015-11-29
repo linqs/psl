@@ -20,22 +20,22 @@ package edu.umd.cs.psl.database.rdbms;
 import java.util.*;
 
 import edu.umd.cs.psl.database.ResultList;
-import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.argument.Variable;
+import edu.umd.cs.psl.model.term.Constant;
+import edu.umd.cs.psl.model.term.Variable;
 
 public class RDBMSResultList implements ResultList {
 
 	private final Map<Variable,Integer> varPos;
-	private final List<GroundTerm[]> results;
+	private final List<Constant[]> results;
 	private final int arity;
 	
 	public RDBMSResultList(int arity) {
 		varPos = new HashMap<Variable,Integer>();
-		results = new ArrayList<GroundTerm[]>();
+		results = new ArrayList<Constant[]>();
 		this.arity=arity;
 	}
 	
-	public void addResult(GroundTerm[] res) {
+	public void addResult(Constant[] res) {
 		assert res.length==arity;
 		results.add(res);
 	}
@@ -51,12 +51,12 @@ public class RDBMSResultList implements ResultList {
 	}
 
 	@Override
-	public GroundTerm get(int resultNo, Variable var) {
+	public Constant get(int resultNo, Variable var) {
 		return results.get(resultNo)[getPos(var)];
 	}
 	
 	@Override
-	public GroundTerm[] get(int resultNo) {
+	public Constant[] get(int resultNo) {
 		return results.get(resultNo);
 	}
 	
@@ -75,7 +75,7 @@ public class RDBMSResultList implements ResultList {
 		StringBuilder s = new StringBuilder();
 		s.append("Size: ").append(size()).append("\n");
 		int len = getArity();
-		for (GroundTerm[] res : results) {
+		for (Constant[] res : results) {
 			for (int i=0;i<len;i++) {
 				if (i>0) s.append(", ");
 				s.append(res[i]);

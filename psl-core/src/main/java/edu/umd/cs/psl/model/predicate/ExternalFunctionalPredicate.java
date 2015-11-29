@@ -18,8 +18,8 @@
 package edu.umd.cs.psl.model.predicate;
 
 import edu.umd.cs.psl.database.ReadOnlyDatabase;
-import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.function.ExternalFunction;
+import edu.umd.cs.psl.model.term.Constant;
 
 /**
  * A FunctionalPredicate which uses an {@link ExternalFunction} to compute
@@ -44,7 +44,7 @@ public class ExternalFunctionalPredicate extends FunctionalPredicate {
 	}
 	
 	@Override
-	public double computeValue(ReadOnlyDatabase db, GroundTerm... args) {
+	public double computeValue(ReadOnlyDatabase db, Constant... args) {
 		return extFun.getValue(db, args);
 	}
 	

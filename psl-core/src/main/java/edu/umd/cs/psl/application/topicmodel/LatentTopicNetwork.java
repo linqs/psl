@@ -44,14 +44,14 @@ import edu.umd.cs.psl.database.loading.Inserter;
 import edu.umd.cs.psl.evaluation.result.FullInferenceResult;
 import edu.umd.cs.psl.evaluation.result.memory.MemoryFullInferenceResult;
 import edu.umd.cs.psl.model.Model;
-import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.argument.UniqueID;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.PersistedAtomManager;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.PredicateFactory;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
+import edu.umd.cs.psl.model.term.Constant;
+import edu.umd.cs.psl.model.term.UniqueID;
 import edu.umd.cs.psl.model.weight.PositiveWeight;
 import edu.umd.cs.psl.reasoner.Reasoner;
 import edu.umd.cs.psl.util.database.Queries;
@@ -492,7 +492,7 @@ public class LatentTopicNetwork implements ModelApplication {
 		
 			for (GroundAtom atom : Queries.getAllAtoms(dbTheta, p)) {	
 				//println atom.toString() + "\t" + atom.getValue();
-				GroundTerm[] terms  = atom.getArguments();
+				Constant[] terms  = atom.getArguments();
 				theta[Integer.valueOf(terms[0].toString())][Integer.valueOf(terms[1].toString())] = atom.getValue();
 			}
 			
@@ -520,7 +520,7 @@ public class LatentTopicNetwork implements ModelApplication {
 			log.info("finished for phi");
 			
 			for (GroundAtom atom : Queries.getAllAtoms(dbPhi, p)) {	
-				GroundTerm[] terms  = atom.getArguments();
+				Constant[] terms  = atom.getArguments();
 				phi[Integer.valueOf(terms[0].toString())][Integer.valueOf(terms[1].toString())] = atom.getValue();
 			}
 			
@@ -654,7 +654,7 @@ public class LatentTopicNetwork implements ModelApplication {
 		Inserter u = dataStore.getInserter(p, partition);
 		Set<GroundAtom> groundings = Queries.getAllAtoms(sourceDB, p);
 		for (GroundAtom ga : groundings) {
-			GroundTerm[] arguments = ga.getArguments();
+			Constant[] arguments = ga.getArguments();
 			GroundAtom rv = sourceDB.getAtom(p, arguments);
 			u.insertValue(rv.getValue(), (Object[]) arguments);
 		}

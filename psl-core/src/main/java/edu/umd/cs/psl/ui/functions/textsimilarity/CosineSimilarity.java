@@ -17,7 +17,6 @@
  */
 package edu.umd.cs.psl.ui.functions.textsimilarity;
 
-import edu.umd.cs.psl.model.argument.StringAttribute;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,9 +24,10 @@ import cern.colt.list.tint.IntArrayList;
 import cern.colt.map.tdouble.AbstractIntDoubleMap;
 import cern.colt.map.tdouble.OpenIntDoubleHashMap;
 import edu.umd.cs.psl.database.ReadOnlyDatabase;
-import edu.umd.cs.psl.model.argument.ArgumentType;
-import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.function.ExternalFunction;
+import edu.umd.cs.psl.model.term.ConstantType;
+import edu.umd.cs.psl.model.term.Constant;
+import edu.umd.cs.psl.model.term.StringAttribute;
 
 public class CosineSimilarity implements ExternalFunction {
 
@@ -54,12 +54,12 @@ public class CosineSimilarity implements ExternalFunction {
 	}
 
 	@Override
-	public ArgumentType[] getArgumentTypes() {
-		return new ArgumentType[] { ArgumentType.String, ArgumentType.String };
+	public ConstantType[] getArgumentTypes() {
+		return new ConstantType[] { ConstantType.String, ConstantType.String };
 	}
 	
 	@Override
-	public double getValue(ReadOnlyDatabase db, GroundTerm... args) {
+	public double getValue(ReadOnlyDatabase db, Constant... args) {
 		String a = ((StringAttribute) args[0]).getValue();
 		String b = ((StringAttribute) args[1]).getValue();
 

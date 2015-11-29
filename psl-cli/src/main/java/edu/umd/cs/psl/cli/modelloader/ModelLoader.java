@@ -39,9 +39,6 @@ import edu.umd.cs.psl.cli.modelloader.PSLParser.Weight_expressionContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.Weighted_logical_ruleContext;
 import edu.umd.cs.psl.database.DataStore;
 import edu.umd.cs.psl.model.Model;
-import edu.umd.cs.psl.model.argument.Term;
-import edu.umd.cs.psl.model.argument.UniqueID;
-import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.QueryAtom;
 import edu.umd.cs.psl.model.formula.Conjunction;
@@ -55,6 +52,9 @@ import edu.umd.cs.psl.model.predicate.SpecialPredicate;
 import edu.umd.cs.psl.model.rule.Rule;
 import edu.umd.cs.psl.model.rule.logical.AbstractLogicalRule;
 import edu.umd.cs.psl.model.rule.logical.WeightedLogicalRule;
+import edu.umd.cs.psl.model.term.Term;
+import edu.umd.cs.psl.model.term.UniqueID;
+import edu.umd.cs.psl.model.term.Variable;
 import edu.umd.cs.psl.model.rule.logical.UnweightedLogicalRule;
 
 public class ModelLoader extends PSLBaseVisitor<Object> {

@@ -29,9 +29,6 @@ import com.google.common.collect.Multimap;
 
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.database.DatabaseQuery;
-import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.argument.Term;
-import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.AtomEvent;
 import edu.umd.cs.psl.model.atom.AtomEvent.Type;
@@ -40,6 +37,9 @@ import edu.umd.cs.psl.model.atom.VariableAssignment;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
 import edu.umd.cs.psl.model.rule.Rule;
+import edu.umd.cs.psl.model.term.Constant;
+import edu.umd.cs.psl.model.term.Term;
+import edu.umd.cs.psl.model.term.Variable;
 
 /**
  * Converts a {@link Formula} to a simplified Disjunctive Normal Form view
@@ -275,8 +275,8 @@ public class FormulaAnalysis {
 				for (int i=0;i<argsGround.length;i++) {
 					if (argsTemplate[i] instanceof Variable) {
 						//Add mapping
-						assert argsGround[i] instanceof GroundTerm;
-						var.assign((Variable)argsTemplate[i], (GroundTerm)argsGround[i]);
+						assert argsGround[i] instanceof Constant;
+						var.assign((Variable)argsTemplate[i], (Constant)argsGround[i]);
 					} else {
 						//They must be the same
 						if (!argsTemplate[i].equals(argsGround[i])) {

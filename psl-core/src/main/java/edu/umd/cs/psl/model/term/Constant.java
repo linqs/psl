@@ -15,21 +15,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.model.argument;
+package edu.umd.cs.psl.model.term;
 
 /**
- * A {@link Term} that is ground, i.e., not a {@link Variable}.
+ * An element in the universe over which a PSL program is grounded.
  */
-public interface GroundTerm extends Term, Comparable<GroundTerm> {
+public interface Constant extends Term, Comparable<Constant> {
 	
 	/**
 	 * Inherited from {@link Comparable#compareTo(Object)}.
 	 * <p>
-	 * Implementations should compare to GroundTerms without a parent implementation
+	 * Implementations should compare to Constants without a parent implementation
 	 * in common using
 	 * <p>
 	 * this.getClass().getSimpleName().compareTo(o.getClass().getSimpleName()); 
 	 */
 	@Override
-	public int compareTo(GroundTerm o);
+	public int compareTo(Constant o);
 }

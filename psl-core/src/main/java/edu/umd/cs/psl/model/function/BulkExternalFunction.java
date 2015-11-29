@@ -19,11 +19,11 @@ package edu.umd.cs.psl.model.function;
 
 import java.util.Map;
 
-import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.argument.Variable;
+import edu.umd.cs.psl.model.term.Constant;
+import edu.umd.cs.psl.model.term.Variable;
 
 public interface BulkExternalFunction extends ExternalFunction {
 
-	public Map<GroundTerm[], Double> bulkCompute(Map<Variable,int[]> argMap, Map<GroundTerm,GroundTerm[]>... args);
+	public Map<Constant[], Double> bulkCompute(Map<Variable,int[]> argMap, Map<Constant,Constant[]>... args);
 	
 }

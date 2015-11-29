@@ -31,8 +31,6 @@ import de.mathnbits.io.BasicUserInteraction;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.database.DatabaseQuery;
 import edu.umd.cs.psl.database.ResultList;
-import edu.umd.cs.psl.model.argument.Term;
-import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.AtomCache;
 import edu.umd.cs.psl.model.atom.GroundAtom;
@@ -41,6 +39,8 @@ import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.PredicateFactory;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
 import edu.umd.cs.psl.model.rule.WeightedGroundRule;
+import edu.umd.cs.psl.model.term.Term;
+import edu.umd.cs.psl.model.term.Variable;
 import edu.umd.cs.psl.model.rule.GroundRule;
 import edu.umd.cs.psl.util.database.Queries;
 

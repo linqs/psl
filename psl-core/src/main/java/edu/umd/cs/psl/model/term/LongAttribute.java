@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.model.argument;
+package edu.umd.cs.psl.model.term;
 
 /**
  * An {@link Attribute} that encapsulates a Double.
@@ -65,7 +65,7 @@ public class LongAttribute implements Attribute {
     }
 
     @Override
-    public int compareTo(GroundTerm o) {
+    public int compareTo(Constant o) {
         if (o instanceof LongAttribute)
             return value.compareTo(((LongAttribute) o).value);
         else

@@ -32,16 +32,16 @@ import edu.umd.cs.psl.config.EmptyBundle;
 import edu.umd.cs.psl.database.rdbms.RDBMSDataStore;
 import edu.umd.cs.psl.database.rdbms.driver.DatabaseDriver;
 import edu.umd.cs.psl.database.rdbms.driver.H2DatabaseDriver;
-import edu.umd.cs.psl.model.argument.ArgumentType;
-import edu.umd.cs.psl.model.argument.DoubleAttribute;
-import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.argument.StringAttribute;
-import edu.umd.cs.psl.model.argument.UniqueID;
-import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.atom.QueryAtom;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.predicate.PredicateFactory;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
+import edu.umd.cs.psl.model.term.ConstantType;
+import edu.umd.cs.psl.model.term.DoubleAttribute;
+import edu.umd.cs.psl.model.term.Constant;
+import edu.umd.cs.psl.model.term.StringAttribute;
+import edu.umd.cs.psl.model.term.UniqueID;
+import edu.umd.cs.psl.model.term.Variable;
 
 public class DatabasePopulatorTest {
 	
@@ -54,8 +54,8 @@ public class DatabasePopulatorTest {
 	
 	static {
 		PredicateFactory predicateFactory = PredicateFactory.getFactory();
-		p1 = predicateFactory.createStandardPredicate("DatabasePopulatorTest_P1", ArgumentType.UniqueID, ArgumentType.UniqueID);
-		p2 = predicateFactory.createStandardPredicate("DatabasePopulatorTest_P2", ArgumentType.String, ArgumentType.Double);
+		p1 = predicateFactory.createStandardPredicate("DatabasePopulatorTest_P1", ConstantType.UniqueID, ConstantType.UniqueID);
+		p2 = predicateFactory.createStandardPredicate("DatabasePopulatorTest_P2", ConstantType.String, ConstantType.Double);
 	}
 	
 	@Before
@@ -86,12 +86,12 @@ public class DatabasePopulatorTest {
 		// Generate the population
 		Variable x = new Variable("X");
 		Variable y = new Variable("Y");
-		HashSet<GroundTerm> terms = new HashSet<GroundTerm>();
+		HashSet<Constant> terms = new HashSet<Constant>();
 		terms.add(db.getUniqueID(1));
 		terms.add(db.getUniqueID(2));
 		terms.add(db.getUniqueID(3));
 		terms.add(db.getUniqueID(4));
-		HashMap<Variable, Set<GroundTerm>> substitutions = new HashMap<Variable, Set<GroundTerm>>();
+		HashMap<Variable, Set<Constant>> substitutions = new HashMap<Variable, Set<Constant>>();
 		substitutions.put(x, terms);
 		substitutions.put(y, terms);
 		
@@ -105,8 +105,8 @@ public class DatabasePopulatorTest {
 		
 		// Generate the expected results
 		HashSet<String> expected = new HashSet<String>();
-		for (GroundTerm termA : terms) {
-			for (GroundTerm termB : terms) {
+		for (Constant termA : terms) {
+			for (Constant termB : terms) {
 				expected.add(((UniqueID)termA).getInternalID() + "," + ((UniqueID)termB).getInternalID());
 			}
 		}
@@ -133,20 +133,20 @@ public class DatabasePopulatorTest {
 		// Generate the population for p1
 		Variable x = new Variable("X");
 		Variable y = new Variable("Y");
-		HashSet<GroundTerm> p1terms = new HashSet<GroundTerm>();
+		HashSet<Constant> p1terms = new HashSet<Constant>();
 		p1terms.add(db.getUniqueID(1));
 		p1terms.add(db.getUniqueID(2));
-		HashMap<Variable, Set<GroundTerm>> substitutions = new HashMap<Variable, Set<GroundTerm>>();
+		HashMap<Variable, Set<Constant>> substitutions = new HashMap<Variable, Set<Constant>>();
 		substitutions.put(x, p1terms);
 		substitutions.put(y, p1terms);
 		
 		// Generate the population for p2
 		Variable a = new Variable("A");
 		Variable b = new Variable("B");
-		HashSet<GroundTerm> p2termsA = new HashSet<GroundTerm>();
+		HashSet<Constant> p2termsA = new HashSet<Constant>();
 		p2termsA.add(new StringAttribute("Mordecai"));
 		p2termsA.add(new StringAttribute("Rigby"));
-		HashSet<GroundTerm> p2termsB = new HashSet<GroundTerm>();
+		HashSet<Constant> p2termsB = new HashSet<Constant>();
 		p2termsB.add(new DoubleAttribute(1.0));
 		p2termsB.add(new DoubleAttribute(2.0));
 		substitutions.put(a, p2termsA);
@@ -165,8 +165,8 @@ public class DatabasePopulatorTest {
 		
 		// Generate the expected results for P1
 		HashSet<String> expected = new HashSet<String>();
-		for (GroundTerm termA : p1terms) {
-			for (GroundTerm termB : p1terms) {
+		for (Constant termA : p1terms) {
+			for (Constant termB : p1terms) {
 				expected.add(((UniqueID)termA).getInternalID() + "," + ((UniqueID)termB).getInternalID());
 			}
 		}
@@ -187,8 +187,8 @@ public class DatabasePopulatorTest {
 		
 		// Generate the expected results for P2
 		expected = new HashSet<String>();
-		for (GroundTerm termA : p2termsA) {
-			for (GroundTerm termB : p2termsB) {
+		for (Constant termA : p2termsA) {
+			for (Constant termB : p2termsB) {
 				expected.add(((StringAttribute)termA).getValue() + "," + ((DoubleAttribute)termB).getValue());
 			}
 		}

@@ -17,19 +17,19 @@
  */
 package edu.umd.cs.psl.model.atom;
 
-import edu.umd.cs.psl.model.argument.ArgumentType;
-import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.argument.Term;
-import edu.umd.cs.psl.model.argument.Variable;
-import edu.umd.cs.psl.model.argument.VariableTypeMap;
 import edu.umd.cs.psl.model.predicate.Predicate;
+import edu.umd.cs.psl.model.term.ConstantType;
+import edu.umd.cs.psl.model.term.Constant;
+import edu.umd.cs.psl.model.term.Term;
+import edu.umd.cs.psl.model.term.Variable;
+import edu.umd.cs.psl.model.term.VariableTypeMap;
 
 /**
  * An Atom that can be used in a query, but does not have a truth value or
  * confidence value.
  * <p>
  * Arguments to a QueryAtom can be a mix of {@link Variable Variables} and
- * {@link GroundTerm GroundTerms}. In other words, they are not necessarily
+ * {@link Constant GroundTerms}. In other words, they are not necessarily
  * ground and can be used for matching GroundAtoms in a query.
  */
 public class QueryAtom extends Atom {
@@ -41,7 +41,7 @@ public class QueryAtom extends Atom {
 	public VariableTypeMap collectVariables(VariableTypeMap varMap) {
 		for (int i=0;i<arguments.length;i++) {
 			if (arguments[i] instanceof Variable) {
-				ArgumentType t = predicate.getArgumentType(i);
+				ConstantType t = predicate.getArgumentType(i);
 				varMap.addVariable((Variable)arguments[i], t);
 			}
 		}

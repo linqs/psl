@@ -55,9 +55,9 @@ import edu.umd.cs.psl.database.rdbms.driver.H2DatabaseDriver;
 import edu.umd.cs.psl.database.rdbms.driver.H2DatabaseDriver.Type;
 import edu.umd.cs.psl.evaluation.result.FullInferenceResult;
 import edu.umd.cs.psl.model.Model;
-import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
+import edu.umd.cs.psl.model.term.Constant;
 import edu.umd.cs.psl.reasoner.admm.ADMMReasonerFactory;
 import edu.umd.cs.psl.util.database.Queries;
 
@@ -196,7 +196,7 @@ public class Launcher {
 					FileWriter predFileWriter = new FileWriter(predFile);
 					for (GroundAtom atom : Queries.getAllAtoms(database,
 							openPredicate)) {
-						for (GroundTerm term : atom.getArguments()) {
+						for (Constant term : atom.getArguments()) {
 							predFileWriter.write(term.toString() + ",");
 						}
 						predFileWriter.write(Double.toString(atom.getValue()));

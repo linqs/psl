@@ -20,13 +20,13 @@ package edu.umd.cs.psl.database;
 import java.util.Map;
 import java.util.Set;
 
-import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.argument.Term;
-import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.QueryAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.predicate.Predicate;
+import edu.umd.cs.psl.model.term.Constant;
+import edu.umd.cs.psl.model.term.Term;
+import edu.umd.cs.psl.model.term.Variable;
 import edu.umd.cs.psl.util.database.Queries;
 
 /**
@@ -59,12 +59,12 @@ public class DatabasePopulator {
 	 * @param qAtom			the QueryAtom to perform substitution on
 	 * @param substitutions		the map of Variables to their possible GroundTerm substitutions
 	 */
-	public void populate(QueryAtom qAtom, Map<Variable, Set<GroundTerm>> substitutions) {
+	public void populate(QueryAtom qAtom, Map<Variable, Set<Constant>> substitutions) {
 		this.substitutions = substitutions;
 		// Set the variables for the recursive traversal
 		rootPredicate = qAtom.getPredicate();
 		rootArguments = qAtom.getArguments();
-		GroundTerm[] groundArguments = new GroundTerm[rootArguments.length];
+		Constant[] groundArguments = new Constant[rootArguments.length];
 		
 		// Perform a recursive depth-first traversal of the arguments and their substitutions
 		groundAndPersistAtom(0, groundArguments);
@@ -79,7 +79,7 @@ public class DatabasePopulator {
 	public void populateFromDB(Database sourceDB, Predicate p) {
 		Set<GroundAtom> groundings = Queries.getAllAtoms(sourceDB, p);
 		for (GroundAtom ga : groundings) {
-			GroundTerm[] arguments = ga.getArguments();
+			Constant[] arguments = ga.getArguments();
 			GroundAtom rv = db.getAtom(p, arguments);
 			if (rv instanceof RandomVariableAtom)
 				db.commit((RandomVariableAtom)rv);
@@ -89,7 +89,7 @@ public class DatabasePopulator {
 	/*
 	 * The following variables are used for the recursive call
 	 */
-	private Map<Variable, Set<GroundTerm>> substitutions;
+	private Map<Variable, Set<Constant>> substitutions;
 	private Predicate rootPredicate;
 	private Term[] rootArguments;
 	
@@ -99,25 +99,25 @@ public class DatabasePopulator {
 	 * @param index			the current "depth" into the arguments
 	 * @param arguments		the substituted arguments at this "depth"
 	 */
-	private void groundAndPersistAtom(int index, GroundTerm[] arguments) {
+	private void groundAndPersistAtom(int index, Constant[] arguments) {
 		if (index < rootArguments.length) {
 			// Check the type of the argument
 			if (rootArguments[index] instanceof Variable) {
 				// Get all of the substitutions for a variable 
-				Set<GroundTerm> groundTerms = substitutions.get((Variable)rootArguments[index]);
+				Set<Constant> groundTerms = substitutions.get((Variable)rootArguments[index]);
 				
 				// Sanity check
 				if (groundTerms == null || groundTerms.size() == 0) // Sanity check
 					throw new RuntimeException("No valid GroundTerm substitutions for " + rootArguments[index].toString());
 				
 				// Iterate through the GroundTerms, performing a recursive depth-first replacement
-				for (GroundTerm term : groundTerms) {
+				for (Constant term : groundTerms) {
 					arguments[index] = term;
 					groundAndPersistAtom(index + 1, arguments);
 				}
-			} else if (rootArguments[index] instanceof GroundTerm) {
+			} else if (rootArguments[index] instanceof Constant) {
 				// No substitutions necessary, there is only one.
-				arguments[index] = (GroundTerm) rootArguments[index];
+				arguments[index] = (Constant) rootArguments[index];
 				groundAndPersistAtom(index + 1, arguments);
 			} else {
 				// Error, this is an unknown / unexpected type of argument.

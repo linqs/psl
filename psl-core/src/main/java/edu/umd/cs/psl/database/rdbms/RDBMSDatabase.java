@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import edu.umd.cs.psl.model.argument.*;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,6 +57,7 @@ import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.predicate.FunctionalPredicate;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
+import edu.umd.cs.psl.model.term.*;
 
 /**
  * 
@@ -334,7 +334,7 @@ public class RDBMSDatabase implements Database {
 	}
 	
 	@Override
-	public GroundAtom getAtom(Predicate p, GroundTerm... arguments) {
+	public GroundAtom getAtom(Predicate p, Constant... arguments) {
 		/*
 		 * First, check cache to see if the atom exists.
 		 * Yes, return atom.
@@ -396,7 +396,7 @@ public class RDBMSDatabase implements Database {
 		return deleted;		
 	}
 
-	private GroundAtom getAtom(StandardPredicate p, GroundTerm... arguments) {
+	private GroundAtom getAtom(StandardPredicate p, Constant... arguments) {
 		RDBMSPredicateHandle ph = getHandle(p);
 		QueryAtom qAtom = new QueryAtom(p, arguments);
 		GroundAtom result = cache.getCachedAtom(qAtom);
@@ -447,7 +447,7 @@ public class RDBMSDatabase implements Database {
 		return result;
 	}
 	
-	private GroundAtom getAtom(FunctionalPredicate p, GroundTerm... arguments) {
+	private GroundAtom getAtom(FunctionalPredicate p, Constant... arguments) {
 		QueryAtom qAtom = new QueryAtom(p, arguments);
 		GroundAtom result = cache.getCachedAtom(qAtom);
 		if (result != null)
@@ -638,13 +638,13 @@ public class RDBMSDatabase implements Database {
 				ResultSet rs = stmt.executeQuery(queryString);
 				try {
 					while (rs.next()) {
-						GroundTerm[] res = new GroundTerm[projectTo.size()];
+						Constant[] res = new Constant[projectTo.size()];
 						for (Variable var : projectTo) {
 							i = results.getPos(var);
 							if (partialGrounding.hasVariable(var)) {
 								res[i] = partialGrounding.getVariable(var);
 							} else {
-								ArgumentType type = varTypes.getType(var);
+								ConstantType type = varTypes.getType(var);
 								switch (type) {
 									case Double:
 										res[i] = new DoubleAttribute(rs.getDouble(var.getName()));

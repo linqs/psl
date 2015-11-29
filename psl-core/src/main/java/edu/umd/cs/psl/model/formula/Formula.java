@@ -19,9 +19,9 @@ package edu.umd.cs.psl.model.formula;
 
 import java.util.*;
 
-import edu.umd.cs.psl.model.argument.Variable;
-import edu.umd.cs.psl.model.argument.VariableTypeMap;
 import edu.umd.cs.psl.model.atom.Atom;
+import edu.umd.cs.psl.model.term.Variable;
+import edu.umd.cs.psl.model.term.VariableTypeMap;
 
 /**
  * A logical formula composed of {@link Atom Atoms} and logical operators.

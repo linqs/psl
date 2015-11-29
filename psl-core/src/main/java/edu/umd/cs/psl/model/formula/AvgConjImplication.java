@@ -23,8 +23,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import edu.umd.cs.psl.model.argument.VariableTypeMap;
 import edu.umd.cs.psl.model.atom.Atom;
+import edu.umd.cs.psl.model.term.VariableTypeMap;
 
 /**
  * An implication containing averaging conjunctions. These rules are restricted to

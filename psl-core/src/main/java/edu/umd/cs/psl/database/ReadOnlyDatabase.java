@@ -19,13 +19,13 @@ package edu.umd.cs.psl.database;
 
 import java.util.HashSet;
 
-import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.argument.UniqueID;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.predicate.FunctionalPredicate;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
+import edu.umd.cs.psl.model.term.Constant;
+import edu.umd.cs.psl.model.term.UniqueID;
 
 public class ReadOnlyDatabase {
 
@@ -37,7 +37,7 @@ public class ReadOnlyDatabase {
 		
 	}
 	
-	public GroundAtom getAtom(Predicate p, GroundTerm... arguments) {
+	public GroundAtom getAtom(Predicate p, Constant... arguments) {
 		if (p instanceof FunctionalPredicate) {
 			return db.getAtom(p, arguments);
 		} else if (p instanceof StandardPredicate) {

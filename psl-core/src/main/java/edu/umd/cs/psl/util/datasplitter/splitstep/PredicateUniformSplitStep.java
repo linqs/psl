@@ -31,9 +31,9 @@ import java.util.TreeSet;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.database.loading.Inserter;
 import edu.umd.cs.psl.database.Partition;
-import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
+import edu.umd.cs.psl.model.term.Constant;
 import edu.umd.cs.psl.util.database.Queries;
 
 public class PredicateUniformSplitStep implements SplitStep {
@@ -67,7 +67,7 @@ public class PredicateUniformSplitStep implements SplitStep {
 
 	@Override
 	public List<Collection<Partition>> getSplits(Database inputDB, Random random) {
-		Map<GroundTerm, Set<GroundAtom>> groupMap = new HashMap<GroundTerm, Set<GroundAtom>>();
+		Map<Constant, Set<GroundAtom>> groupMap = new HashMap<Constant, Set<GroundAtom>>();
 		Collection<Set<GroundAtom>> groups;
 		List<Collection<Partition>> splits = new ArrayList<Collection<Partition>>();
 
@@ -83,7 +83,7 @@ public class PredicateUniformSplitStep implements SplitStep {
 		} else {
 			// group atoms
 			for (GroundAtom atom : allAtoms) {
-				GroundTerm key = atom.getArguments()[groupBy];
+				Constant key = atom.getArguments()[groupBy];
 				if (groupMap.get(key) == null) {
 					groupMap.put(key, new TreeSet<GroundAtom>());
 				}

@@ -18,10 +18,10 @@
 package edu.umd.cs.psl.model.atom;
 
 import edu.umd.cs.psl.database.Database;
-import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.predicate.FunctionalPredicate;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
+import edu.umd.cs.psl.model.term.Constant;
 import edu.umd.cs.psl.reasoner.function.ConstantAtomFunctionVariable;
 
 /**
@@ -39,7 +39,7 @@ import edu.umd.cs.psl.reasoner.function.ConstantAtomFunctionVariable;
  */
 public class ObservedAtom extends GroundAtom {
 
-	protected ObservedAtom(Predicate p, GroundTerm[] args, Database db, double value,
+	protected ObservedAtom(Predicate p, Constant[] args, Database db, double value,
 			double confidenceValue) {
 		super(p, args, db, value, confidenceValue);
 	}

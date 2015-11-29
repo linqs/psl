@@ -31,7 +31,6 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import edu.umd.cs.psl.model.argument.*;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,6 +55,7 @@ import edu.umd.cs.psl.model.function.ExternalFunction;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.PredicateFactory;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
+import edu.umd.cs.psl.model.term.*;
 
 /**
  * The RDMBSDataStore is an RDBMS implementation of the DataStore interface. It
@@ -248,7 +248,7 @@ public class RDBMSDataStore implements DataStore {
 			DatabaseMetaData dbMetaData = connection.getMetaData();
 			ResultSet rs = dbMetaData.getColumns(null, null, tableName, null);
 			try {
-				ArrayList<ArgumentType> args = new ArrayList<ArgumentType>();
+				ArrayList<ConstantType> args = new ArrayList<ConstantType>();
 				while (rs.next()) {
 					String columnName = rs.getString("COLUMN_NAME");
 					Matcher m = argumentPattern.matcher(columnName);
@@ -256,13 +256,13 @@ public class RDBMSDataStore implements DataStore {
 						String argumentName = m.group(1).toLowerCase();
 						int argumentLocation = Integer.parseInt(m.group(2));
 						if (argumentName.equals("string")) {
-							args.add(argumentLocation, ArgumentType.String);
+							args.add(argumentLocation, ConstantType.String);
 						} else if (argumentName.equals("integer")) {
-							args.add(argumentLocation, ArgumentType.Integer);
+							args.add(argumentLocation, ConstantType.Integer);
 						} else if (argumentName.equals("double")) {
-							args.add(argumentLocation, ArgumentType.Double);
+							args.add(argumentLocation, ConstantType.Double);
 						} else if (argumentName.equals("uniqueid")) {
-							args.add(argumentLocation, ArgumentType.UniqueID);
+							args.add(argumentLocation, ConstantType.UniqueID);
 						}
 					}
 				}
@@ -270,7 +270,7 @@ public class RDBMSDataStore implements DataStore {
 				if (args.size() == 0)
 					return false;
 				
-				StandardPredicate p = factory.createStandardPredicate(name, args.toArray(new ArgumentType[args.size()]));
+				StandardPredicate p = factory.createStandardPredicate(name, args.toArray(new ConstantType[args.size()]));
 				RDBMSPredicateInfo pi = getDefaultPredicateDBInfo(p);
 				predicates.put(p, pi);
 				// Update the data loader with the new predicate
@@ -603,12 +603,12 @@ public class RDBMSDataStore implements DataStore {
 		if (args.length!=extFun.getArgumentTypes().length) 
 			throw new IllegalArgumentException("Number of arguments does not match arity of external function!");
 		
-		GroundTerm[] arguments = new GroundTerm[args.length];
+		Constant[] arguments = new Constant[args.length];
 		for (int i=0; i < args.length; i++) {
 			if (args[i]==null)
 				throw new IllegalArgumentException("Argument cannot be null!");
 
-			ArgumentType t = extFun.getArgumentTypes()[i];
+			ConstantType t = extFun.getArgumentTypes()[i];
 			switch (t) {
 				case Double:
 					arguments[i] = new DoubleAttribute(Double.parseDouble(args[i]));

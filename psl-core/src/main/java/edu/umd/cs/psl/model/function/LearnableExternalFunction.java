@@ -19,12 +19,12 @@ package edu.umd.cs.psl.model.function;
 
 import java.util.Map;
 
-import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.argument.Variable;
+import edu.umd.cs.psl.model.term.Constant;
+import edu.umd.cs.psl.model.term.Variable;
 
 public interface LearnableExternalFunction extends ExternalFunction {
 	
-	public void learn(Map<GroundTerm[],double[]> truth, Map<Variable,int[]> argMap, Map<GroundTerm,GroundTerm[]>... args);
+	public void learn(Map<Constant[],double[]> truth, Map<Variable,int[]> argMap, Map<Constant,Constant[]>... args);
 
 	
 }

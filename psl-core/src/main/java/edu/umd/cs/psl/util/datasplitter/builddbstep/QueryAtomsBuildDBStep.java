@@ -28,20 +28,20 @@ import edu.umd.cs.psl.database.DataStore;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.database.DatabasePopulator;
 import edu.umd.cs.psl.database.Partition;
-import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.argument.Term;
-import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.QueryAtom;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
+import edu.umd.cs.psl.model.term.Constant;
+import edu.umd.cs.psl.model.term.Term;
+import edu.umd.cs.psl.model.term.Variable;
 import edu.umd.cs.psl.util.database.Queries;
 
 /**
  * This class uses a Map of {@link QueryAtom} objects and corresponding
  * {@link Variable} substitution map (similar to {@link DatabasePopulator}) to
  * generate the atoms corresponding to inference targets. Instead of using the
- * {@link GroundTerm} arguments to the QueryAtom, ground terms associated with
+ * {@link Constant} arguments to the QueryAtom, ground terms associated with
  * each GroundAtom are generated from the supplied {@link Partition}
  * collections.
  * 
@@ -51,7 +51,7 @@ import edu.umd.cs.psl.util.database.Queries;
 public class QueryAtomsBuildDBStep implements BuildDBStep {
 
 	protected Set<StandardPredicate> toClose = null;
-	protected Map<QueryAtom, Map<Variable, Set<GroundTerm>>> queryAtoms = null;
+	protected Map<QueryAtom, Map<Variable, Set<Constant>>> queryAtoms = null;
 
 	/**
 	 * 
@@ -64,7 +64,7 @@ public class QueryAtomsBuildDBStep implements BuildDBStep {
 	 *            QueryAtom. Non-variable terms will be ignored.
 	 */
 	public QueryAtomsBuildDBStep(Set<StandardPredicate> toClose,
-			Map<QueryAtom, Map<Variable, Set<GroundTerm>>> queryAtoms) {
+			Map<QueryAtom, Map<Variable, Set<Constant>>> queryAtoms) {
 		this.toClose = toClose;
 		this.queryAtoms = queryAtoms;
 
@@ -84,7 +84,7 @@ public class QueryAtomsBuildDBStep implements BuildDBStep {
 	 */
 	protected void addQueryAtomGroundings(Database inverseDB,
 			Database outputDB, QueryAtom qAtom,
-			Map<Variable, Set<GroundTerm>> substitutions) {
+			Map<Variable, Set<Constant>> substitutions) {
 		DatabasePopulator dbPop = new DatabasePopulator(outputDB);
 
 		Predicate qPredicate = qAtom.getPredicate();
@@ -140,7 +140,7 @@ public class QueryAtomsBuildDBStep implements BuildDBStep {
 					(Partition[]) pL.toArray());
 			
 			//iterate over all QueryAtom, substitution pairs specified to the constructor, performing query/substitution
-			for (Entry<QueryAtom, Map<Variable, Set<GroundTerm>>> e : queryAtoms.entrySet()) {
+			for (Entry<QueryAtom, Map<Variable, Set<Constant>>> e : queryAtoms.entrySet()) {
 				addQueryAtomGroundings(truthDB, taskDB, e.getKey(),
 						e.getValue());
 			}

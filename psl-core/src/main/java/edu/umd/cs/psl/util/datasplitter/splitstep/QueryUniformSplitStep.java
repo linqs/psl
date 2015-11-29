@@ -32,12 +32,12 @@ import edu.umd.cs.psl.database.DatabaseQuery;
 import edu.umd.cs.psl.database.ResultList;
 import edu.umd.cs.psl.database.loading.Inserter;
 import edu.umd.cs.psl.database.Partition;
-import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.QueryAtom;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
+import edu.umd.cs.psl.model.term.Constant;
+import edu.umd.cs.psl.model.term.Variable;
 
 public class QueryUniformSplitStep implements SplitStep {
 	private Iterable<QueryAtom> targets;
@@ -58,7 +58,7 @@ public class QueryUniformSplitStep implements SplitStep {
 
 	@Override
 	public List<Collection<Partition>> getSplits(Database inputDB, Random random) {
-		Map<GroundTerm, Set<GroundAtom>> groupMap = new HashMap<GroundTerm, Set<GroundAtom>>();		
+		Map<Constant, Set<GroundAtom>> groupMap = new HashMap<Constant, Set<GroundAtom>>();		
 		Collection<Set<GroundAtom>> groups;
 
 		List<Collection<Partition>> splits = new ArrayList<Collection<Partition>>();
@@ -73,7 +73,7 @@ public class QueryUniformSplitStep implements SplitStep {
 				GroundAtom atom = inputDB.getAtom(predicate, results.get(i));
 
 				// group atoms
-				GroundTerm key = atom.getArguments()[groupIndex];
+				Constant key = atom.getArguments()[groupIndex];
 				if (groupMap.get(key) == null) {
 					groupMap.put(key, new TreeSet<GroundAtom>());
 				}

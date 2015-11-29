@@ -23,9 +23,9 @@ import java.util.Map;
 
 import com.google.common.base.Preconditions;
 
-import edu.umd.cs.psl.model.argument.Term;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.predicate.Predicate;
+import edu.umd.cs.psl.model.term.Term;
 
 public class MaxValueFilter implements AtomFilter {
 

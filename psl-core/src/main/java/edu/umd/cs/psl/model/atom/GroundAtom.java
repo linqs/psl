@@ -26,15 +26,15 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.SetMultimap;
 
 import edu.umd.cs.psl.database.Database;
-import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.argument.VariableTypeMap;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.rule.GroundRule;
 import edu.umd.cs.psl.model.rule.Rule;
+import edu.umd.cs.psl.model.term.Constant;
+import edu.umd.cs.psl.model.term.VariableTypeMap;
 import edu.umd.cs.psl.reasoner.function.AtomFunctionVariable;
 
 /**
- * An Atom with only {@link GroundTerm GroundTerms} for arguments.
+ * An Atom with only {@link Constant GroundTerms} for arguments.
  * <p>
  * A GroundAtom has a truth value and a confidence value.
  */
@@ -48,7 +48,7 @@ abstract public class GroundAtom extends Atom {
 	private static final Set<GroundRule> emptyGroundKernels = ImmutableSet.of();
 	protected SetMultimap<Rule, GroundRule> registeredGroundKernels;
 
-	protected GroundAtom(Predicate p, GroundTerm[] args, Database db, double value,
+	protected GroundAtom(Predicate p, Constant[] args, Database db, double value,
 			double confidenceValue) {
 		super(p, args);
 		this.db = db;
@@ -61,8 +61,8 @@ abstract public class GroundAtom extends Atom {
 	}
 	
 	@Override
-	public GroundTerm[] getArguments() {
-		return Arrays.copyOf((GroundTerm[]) arguments, arguments.length);
+	public Constant[] getArguments() {
+		return Arrays.copyOf((Constant[]) arguments, arguments.length);
 	}
 
 	/**

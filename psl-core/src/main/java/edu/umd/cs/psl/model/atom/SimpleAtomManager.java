@@ -20,9 +20,9 @@ package edu.umd.cs.psl.model.atom;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.database.DatabaseQuery;
 import edu.umd.cs.psl.database.ResultList;
-import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
+import edu.umd.cs.psl.model.term.Constant;
 
 /**
  * AtomManager that does not provide any functionality beyond passing calls
@@ -37,10 +37,10 @@ public class SimpleAtomManager implements AtomManager {
 	}
 
 	/**
-	 * Calls {@link Database#getAtom(Predicate, GroundTerm...)}.
+	 * Calls {@link Database#getAtom(Predicate, Constant...)}.
 	 */
 	@Override
-	public GroundAtom getAtom(Predicate p, GroundTerm... arguments) {
+	public GroundAtom getAtom(Predicate p, Constant... arguments) {
 		return db.getAtom(p, arguments);
 	}
 

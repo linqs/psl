@@ -22,9 +22,9 @@ import java.util.Set;
 import edu.umd.cs.psl.database.loading.Inserter;
 import edu.umd.cs.psl.database.loading.Updater;
 import edu.umd.cs.psl.database.Partition;
-import edu.umd.cs.psl.model.argument.UniqueID;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
+import edu.umd.cs.psl.model.term.UniqueID;
 
 /**
  * Makes {@link GroundAtom GroundAtoms} available via {@link Database Databases}.

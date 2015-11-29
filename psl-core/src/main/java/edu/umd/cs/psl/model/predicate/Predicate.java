@@ -17,9 +17,9 @@
  */
 package edu.umd.cs.psl.model.predicate;
 
-import edu.umd.cs.psl.model.argument.ArgumentType;
-import edu.umd.cs.psl.model.argument.Term;
 import edu.umd.cs.psl.model.atom.Atom;
+import edu.umd.cs.psl.model.term.ConstantType;
+import edu.umd.cs.psl.model.term.Term;
 
 /**
  * A relation that can be applied to {@link Term Terms} to form {@link Atom Atoms}.
@@ -34,7 +34,7 @@ abstract public class Predicate {
 	
 	private final String predicateName;
 	
-	private final ArgumentType[] types;
+	private final ConstantType[] types;
 	
 	/**
 	 * Sole constructor.
@@ -44,7 +44,7 @@ abstract public class Predicate {
 	 * @param name  name for this predicate
 	 * @param types  types for each of the predicate's arguments
 	 */
-	Predicate(String name, ArgumentType[] types) {
+	Predicate(String name, ConstantType[] types) {
 		this.types = types;
 		predicateName = name.toUpperCase();
 	}
@@ -78,7 +78,7 @@ abstract public class Predicate {
 	 * @param position  the argument position
 	 * @return the type of argument accepted for the given position
 	 */
-	public ArgumentType getArgumentType(int position) {
+	public ConstantType getArgumentType(int position) {
 		return types[position];
 	}
 	

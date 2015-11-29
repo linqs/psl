@@ -21,10 +21,10 @@ import com.wcohen.ss.BasicStringWrapper;
 import com.wcohen.ss.Level2Levenstein;
 
 import edu.umd.cs.psl.database.ReadOnlyDatabase;
-import edu.umd.cs.psl.model.argument.ArgumentType;
-import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.argument.StringAttribute;
 import edu.umd.cs.psl.model.function.ExternalFunction;
+import edu.umd.cs.psl.model.term.ConstantType;
+import edu.umd.cs.psl.model.term.Constant;
+import edu.umd.cs.psl.model.term.StringAttribute;
 
 /**
  * Wraps the Level 2 Levenshtein string similarity from the Second String library.
@@ -49,12 +49,12 @@ class Level2LevenshteinSimilarity implements ExternalFunction {
 	}
 
 	@Override
-	public ArgumentType[] getArgumentTypes() {
-		return new ArgumentType[] { ArgumentType.String, ArgumentType.String };
+	public ConstantType[] getArgumentTypes() {
+		return new ConstantType[] { ConstantType.String, ConstantType.String };
 	}
 	
 	@Override
-	public double getValue(ReadOnlyDatabase db, GroundTerm... args) {
+	public double getValue(ReadOnlyDatabase db, Constant... args) {
 		String a = ((StringAttribute) args[0]).getValue();
 		String b = ((StringAttribute) args[1]).getValue();
 		BasicStringWrapper aWrapped = new BasicStringWrapper(a);

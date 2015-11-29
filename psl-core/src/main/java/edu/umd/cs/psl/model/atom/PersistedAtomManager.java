@@ -24,11 +24,11 @@ import java.util.Set;
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.database.DatabaseQuery;
 import edu.umd.cs.psl.database.ResultList;
-import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
+import edu.umd.cs.psl.model.term.Constant;
+import edu.umd.cs.psl.model.term.Variable;
 
 /**
  * Implements the {@link AtomManager} with a twist: this AtomManager will only return
@@ -92,7 +92,7 @@ public class PersistedAtomManager implements AtomManager {
 	}
 	
 	@Override
-	public GroundAtom getAtom(Predicate p, GroundTerm... arguments) {
+	public GroundAtom getAtom(Predicate p, Constant... arguments) {
 		GroundAtom atom = db.getAtom(p, arguments);
 		if (atom instanceof RandomVariableAtom) {
 			// Check if this is in our persisted atom cache

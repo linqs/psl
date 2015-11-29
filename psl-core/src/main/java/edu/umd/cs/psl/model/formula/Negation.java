@@ -21,8 +21,8 @@ import java.util.*;
 
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
-import edu.umd.cs.psl.model.argument.VariableTypeMap;
 import edu.umd.cs.psl.model.atom.Atom;
+import edu.umd.cs.psl.model.term.VariableTypeMap;
 
 /**
  * This class implements fuzzy negation. Note that we currently only allow the negation of singletons, i.e

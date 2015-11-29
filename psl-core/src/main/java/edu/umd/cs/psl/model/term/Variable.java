@@ -15,12 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.model.argument;
+package edu.umd.cs.psl.model.term;
 
 /**
  * A variable {@link Term}.
  * <p>
- * Variables are wildcards used to match {@link GroundTerm GroundTerms}.
+ * Variables are wildcards used to match {@link Constant GroundTerms}.
  * 
  * @author Matthias Broecheler
  */

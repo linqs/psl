@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- package edu.umd.cs.psl.model.argument;
+ package edu.umd.cs.psl.model.term;
 
 import org.joda.time.DateTime;
 
@@ -67,7 +67,7 @@ public class DateAttribute implements Attribute{
     }
 
     @Override
-    public int compareTo(GroundTerm o) {
+    public int compareTo(Constant o) {
         if (o instanceof DateAttribute)
             return value.compareTo(((DateAttribute) o).value);
         else

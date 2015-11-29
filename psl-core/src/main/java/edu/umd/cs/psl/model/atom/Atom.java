@@ -22,11 +22,11 @@ import java.util.Set;
 
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
-import edu.umd.cs.psl.model.argument.ArgumentType;
-import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.argument.Term;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.predicate.Predicate;
+import edu.umd.cs.psl.model.term.ConstantType;
+import edu.umd.cs.psl.model.term.Constant;
+import edu.umd.cs.psl.model.term.Term;
 
 /**
  * A {@link Predicate} combined with the correct number of {@link Term Terms}
@@ -99,8 +99,8 @@ abstract public class Atom implements Formula {
 	 *             of the predicate
 	 * @throws IllegalArgumentException  if any argument is null
 	 * @throws IllegalArgumentException
-	 *             if any argument is a {@link GroundTerm} and does not match
-	 *             the Predicate's {@link ArgumentType}.
+	 *             if any argument is a {@link Constant} and does not match
+	 *             the Predicate's {@link ConstantType}.
 	 */
 	private void checkSchema() {
 		if (predicate.getArity()!=arguments.length) {
@@ -109,7 +109,7 @@ abstract public class Atom implements Formula {
 		for (int i=0;i<arguments.length;i++) {
 			if (arguments[i]==null)
 				throw new IllegalArgumentException("Arguments must not be null!");
-			if ((arguments[i] instanceof GroundTerm) && !(predicate.getArgumentType(i).isInstance((GroundTerm) arguments[i])))
+			if ((arguments[i] instanceof Constant) && !(predicate.getArgumentType(i).isInstance((Constant) arguments[i])))
 				throw new IllegalArgumentException("Expected type "+predicate.getArgumentType(i)+" at position "+i+" but was given: " + arguments[i] + " for predicate " + predicate);
 		}
 	}

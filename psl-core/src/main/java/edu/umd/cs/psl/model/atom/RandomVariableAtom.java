@@ -19,8 +19,8 @@ package edu.umd.cs.psl.model.atom;
 
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.model.ConfidenceValues;
-import edu.umd.cs.psl.model.argument.GroundTerm;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
+import edu.umd.cs.psl.model.term.Constant;
 import edu.umd.cs.psl.reasoner.function.MutableAtomFunctionVariable;
 
 /**
@@ -35,7 +35,7 @@ import edu.umd.cs.psl.reasoner.function.MutableAtomFunctionVariable;
  */
 public class RandomVariableAtom extends GroundAtom {
 
-	protected RandomVariableAtom(StandardPredicate p, GroundTerm[] args,
+	protected RandomVariableAtom(StandardPredicate p, Constant[] args,
 			Database db, double value, double confidenceValue) {
 		super(p, args, db, value, confidenceValue);
 	}

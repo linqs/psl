@@ -20,8 +20,8 @@ package edu.umd.cs.psl.model.formula;
 import java.util.Arrays;
 import java.util.Set;
 
-import edu.umd.cs.psl.model.argument.VariableTypeMap;
 import edu.umd.cs.psl.model.atom.Atom;
+import edu.umd.cs.psl.model.term.VariableTypeMap;
 
 /**
  * An abstract branching formula.
