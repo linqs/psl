@@ -20,7 +20,7 @@ package edu.umd.cs.psl.model.rule.arithmetic;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.rule.WeightedRule;
-import edu.umd.cs.psl.model.rule.arithmetic.coefficient.Coefficient;
+import edu.umd.cs.psl.model.rule.arithmetic.formula.Coefficient;
 import edu.umd.cs.psl.model.weight.NegativeWeight;
 import edu.umd.cs.psl.model.weight.PositiveWeight;
 import edu.umd.cs.psl.model.weight.Weight;

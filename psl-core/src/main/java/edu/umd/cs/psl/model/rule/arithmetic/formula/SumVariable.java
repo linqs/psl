@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.model.rule.arithmetic.coefficient;
+package edu.umd.cs.psl.model.rule.arithmetic.formula;
 
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.predicate.Predicate;

@@ -20,7 +20,7 @@ package edu.umd.cs.psl.model.rule.arithmetic;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.rule.UnweightedRule;
-import edu.umd.cs.psl.model.rule.arithmetic.coefficient.Coefficient;
+import edu.umd.cs.psl.model.rule.arithmetic.formula.Coefficient;
 
 /**
  * A template for {@link UnweightedGroundArithmeticRule UnweightedGroundArithmeticRules}.

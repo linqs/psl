@@ -27,8 +27,8 @@ import edu.umd.cs.psl.model.atom.AtomManager;
 import edu.umd.cs.psl.model.formula.Conjunction;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.rule.AbstractRule;
-import edu.umd.cs.psl.model.rule.arithmetic.coefficient.Coefficient;
-import edu.umd.cs.psl.model.rule.arithmetic.coefficient.SumVariable;
+import edu.umd.cs.psl.model.rule.arithmetic.formula.Coefficient;
+import edu.umd.cs.psl.model.rule.arithmetic.formula.SumVariable;
 import edu.umd.cs.psl.model.term.Term;
 import edu.umd.cs.psl.model.term.Variable;
 
