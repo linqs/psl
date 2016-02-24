@@ -81,11 +81,6 @@ abstract public class AbstractGroundLogicalRule implements GroundRule {
 			atom.registerGroundKernel(this);
 	}
 	
-	@Override
-	public boolean updateParameters() {
-		return true;
-	}
-	
 	protected FunctionSum getFunction() {
 		return function;
 	}

@@ -15,28 +15,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.model.rule;
+package edu.umd.cs.psl.model.rule.arithmetic;
 
-import java.util.Set;
-
-import edu.umd.cs.psl.model.atom.GroundAtom;
+import edu.umd.cs.psl.model.atom.Atom;
+import edu.umd.cs.psl.model.formula.Formula;
+import edu.umd.cs.psl.model.rule.UnweightedRule;
+import edu.umd.cs.psl.model.rule.arithmetic.coefficient.Coefficient;
 
 /**
- * A function that either constrains or measures the compatibility of the
- * values of {@link GroundAtom GroundAtoms}.
- * <p>
- * GroundRules are templated by a parent {@link Rule}.
+ * A template for {@link UnweightedGroundArithmeticRule UnweightedGroundArithmeticRules}.
+ * 
+ * @author Stephen Bach
  */
-public interface GroundRule {
+public class UnweightedArithmeticRule extends AbstractArithmeticRule
+		implements UnweightedRule {
 
-	/**
-	 * @return this GroundRule's parent {@link Rule}
-	 */
-	public Rule getRule();
+	public UnweightedArithmeticRule(Coefficient[] coeffs, Atom[] atoms, Comparator comparator, Coefficient c,
+			Formula[] selectStatements) {
+		super(coeffs, atoms, comparator, c, selectStatements);
+	}
 
-	/**
-	 * @return set of {@link GroundAtom GroundAtoms} which determine this
-	 *             GroundRule's incompatibility or infeasibility
-	 */
-	public Set<GroundAtom> getAtoms();
 }

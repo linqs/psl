@@ -25,8 +25,8 @@ import edu.umd.cs.psl.model.rule.UnweightedGroundRule;
 import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
 import edu.umd.cs.psl.reasoner.function.FunctionComparator;
 
-public class UnweightedGroundLogicalRule extends AbstractGroundLogicalRule implements
-		UnweightedGroundRule {
+public class UnweightedGroundLogicalRule extends AbstractGroundLogicalRule
+		implements UnweightedGroundRule {
 	
 	protected UnweightedGroundLogicalRule(UnweightedLogicalRule r, List<GroundAtom> posLiterals, List<GroundAtom> negLiterals) {
 		super(r, posLiterals, negLiterals);

@@ -23,6 +23,7 @@ import java.io.InputStream;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 
+import edu.umd.cs.psl.cli.modelloader.PSLParser.Arithmetic_ruleContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.AtomContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.Conjunctive_clauseContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.ConstantContext;
@@ -33,9 +34,11 @@ import edu.umd.cs.psl.cli.modelloader.PSLParser.PredicateContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.ProgramContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.Psl_ruleContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.TermContext;
+import edu.umd.cs.psl.cli.modelloader.PSLParser.Unweighted_arithmetic_ruleContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.Unweighted_logical_ruleContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.VariableContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.Weight_expressionContext;
+import edu.umd.cs.psl.cli.modelloader.PSLParser.Weighted_arithmetic_ruleContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.Weighted_logical_ruleContext;
 import edu.umd.cs.psl.database.DataStore;
 import edu.umd.cs.psl.model.Model;
@@ -44,18 +47,21 @@ import edu.umd.cs.psl.model.atom.QueryAtom;
 import edu.umd.cs.psl.model.formula.Conjunction;
 import edu.umd.cs.psl.model.formula.Disjunction;
 import edu.umd.cs.psl.model.formula.Formula;
-import edu.umd.cs.psl.model.formula.Negation;
 import edu.umd.cs.psl.model.formula.Implication;
+import edu.umd.cs.psl.model.formula.Negation;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.PredicateFactory;
 import edu.umd.cs.psl.model.predicate.SpecialPredicate;
 import edu.umd.cs.psl.model.rule.Rule;
+import edu.umd.cs.psl.model.rule.arithmetic.AbstractArithmeticRule;
+import edu.umd.cs.psl.model.rule.arithmetic.UnweightedArithmeticRule;
+import edu.umd.cs.psl.model.rule.arithmetic.WeightedArithmeticRule;
 import edu.umd.cs.psl.model.rule.logical.AbstractLogicalRule;
+import edu.umd.cs.psl.model.rule.logical.UnweightedLogicalRule;
 import edu.umd.cs.psl.model.rule.logical.WeightedLogicalRule;
 import edu.umd.cs.psl.model.term.Term;
 import edu.umd.cs.psl.model.term.UniqueID;
 import edu.umd.cs.psl.model.term.Variable;
-import edu.umd.cs.psl.model.rule.logical.UnweightedLogicalRule;
 
 public class ModelLoader extends PSLBaseVisitor<Object> {
 
@@ -90,7 +96,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 			return visitLogical_rule(ctx.logical_rule());
 		}
 		else if (ctx.arithmetic_rule() != null) {
-			throw new IllegalStateException("(Line " + ctx.getStart().getLine()+ ") Arithmetic rules are not supported!");
+			return visitArithmetic_rule(ctx.arithmetic_rule());
 		}
 		else {
 			throw new IllegalStateException("(Line " + ctx.getStart().getLine()+ ") Rule not recognized as logical or arithmetic.");
@@ -156,6 +162,29 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 		else {
 			throw new IllegalStateException();
 		}
+	}
+	
+	@Override
+	public AbstractArithmeticRule visitArithmetic_rule(Arithmetic_ruleContext ctx) {
+		if (ctx.weighted_arithmetic_rule() != null) {
+			return visitWeighted_arithmetic_rule(ctx.weighted_arithmetic_rule());
+		}
+		else if (ctx.unweighted_arithmetic_rule() != null) {
+			return visitUnweighted_arithmetic_rule(ctx.unweighted_arithmetic_rule());
+		}
+		else {
+			throw new IllegalStateException();
+		}
+	}
+	
+	@Override
+	public WeightedArithmeticRule visitWeighted_arithmetic_rule(Weighted_arithmetic_ruleContext ctx) {
+		return visitChildren(ctx);
+	}
+	
+	@Override
+	public UnweightedArithmeticRule visitUnweighted_arithmetic_rule(Unweighted_arithmetic_ruleContext ctx) {
+		return visitChildren(ctx);
 	}
 	
 	@Override

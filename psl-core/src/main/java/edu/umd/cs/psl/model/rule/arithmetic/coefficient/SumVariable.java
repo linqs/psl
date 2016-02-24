@@ -15,28 +15,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.model.rule;
+package edu.umd.cs.psl.model.rule.arithmetic.coefficient;
 
-import java.util.Set;
-
-import edu.umd.cs.psl.model.atom.GroundAtom;
+import edu.umd.cs.psl.model.formula.Formula;
+import edu.umd.cs.psl.model.predicate.Predicate;
+import edu.umd.cs.psl.model.term.Constant;
+import edu.umd.cs.psl.model.term.Variable;
 
 /**
- * A function that either constrains or measures the compatibility of the
- * values of {@link GroundAtom GroundAtoms}.
+ * Special argument to a {@link Predicate} in a {@link Formula}.
  * <p>
- * GroundRules are templated by a parent {@link Rule}.
+ * It is a placeholder for {@link Constant Constants} that are allowed to vary in
+ * a summation.
+ * 
+ * @author Stephen Bach
  */
-public interface GroundRule {
+public class SumVariable extends Variable {
 
-	/**
-	 * @return this GroundRule's parent {@link Rule}
-	 */
-	public Rule getRule();
+	public SumVariable(String name) {
+		super(name);
+	}
+	
+	@Override
+	public String toString() {
+		return "+" + super.toString();
+	}
 
-	/**
-	 * @return set of {@link GroundAtom GroundAtoms} which determine this
-	 *             GroundRule's incompatibility or infeasibility
-	 */
-	public Set<GroundAtom> getAtoms();
 }

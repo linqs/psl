@@ -15,58 +15,46 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.model.rule.logical;
+package edu.umd.cs.psl.model.rule.arithmetic;
 
-import java.util.List;
-
-import edu.umd.cs.psl.model.atom.GroundAtom;
+import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.rule.WeightedRule;
+import edu.umd.cs.psl.model.rule.arithmetic.coefficient.Coefficient;
 import edu.umd.cs.psl.model.weight.NegativeWeight;
 import edu.umd.cs.psl.model.weight.PositiveWeight;
 import edu.umd.cs.psl.model.weight.Weight;
-import edu.umd.cs.psl.model.rule.Rule;
 
-public class WeightedLogicalRule extends AbstractLogicalRule implements WeightedRule {
+/**
+ * A template for {@link WeightedGroundArithmeticRule WeightedGroundArithmeticRules}.
+ * 
+ * @author Stephen Bach
+ */
+public class WeightedArithmeticRule extends AbstractArithmeticRule implements WeightedRule {
 	
 	protected Weight weight;
 	protected boolean squared;
 	protected boolean mutable;
 
-	public WeightedLogicalRule(Formula f, double w, boolean squared) {
-		super(f);
+	public WeightedArithmeticRule(Coefficient[] coeffs, Atom[] atoms, Comparator comparator, Coefficient c,
+			Formula[] selectStatements, double w, boolean squared) {
+		super(coeffs, atoms, comparator, c, selectStatements);
 		weight = (w >= 0.0) ? new PositiveWeight(w) : new NegativeWeight(w);
 		this.squared = squared;
 		mutable = true;
 	}
 
 	@Override
-	protected WeightedGroundLogicalRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals) {
-		return new WeightedGroundLogicalRule(this, posLiterals, negLiterals, squared);
-	}
-	
-	@Override
 	public Weight getWeight() {
 		return weight.duplicate();
 	}
-	
+
 	@Override
 	public void setWeight(Weight w) {
 		if (!mutable)
 			throw new IllegalStateException("Rule weight is not mutable.");
 		
 		weight = w;
-	}
-	
-	@Override
-	public String toString() {
-		return "{" + weight.getWeight() + "} " + formula
-				+ ((squared) ? " {squared}" : "");
-	}
-	
-	@Override
-	public Rule clone() {
-		return new WeightedLogicalRule(formula, weight.getWeight(), squared);
 	}
 
 	@Override
@@ -78,4 +66,5 @@ public class WeightedLogicalRule extends AbstractLogicalRule implements Weighted
 	public void setWeightMutable(boolean mutable) {
 		this.mutable = mutable;
 	}
+
 }

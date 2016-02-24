@@ -28,8 +28,8 @@ import edu.umd.cs.psl.reasoner.function.FunctionTerm;
 import edu.umd.cs.psl.reasoner.function.MaxFunction;
 import edu.umd.cs.psl.reasoner.function.PowerOfTwo;
 
-public class WeightedGroundLogicalRule extends AbstractGroundLogicalRule implements
-		WeightedGroundRule {
+public class WeightedGroundLogicalRule extends AbstractGroundLogicalRule
+		implements WeightedGroundRule {
 	
 	private Weight weight;
 	private final boolean squared;

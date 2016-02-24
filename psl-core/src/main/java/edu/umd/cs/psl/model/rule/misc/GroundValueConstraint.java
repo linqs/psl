@@ -46,11 +46,6 @@ public class GroundValueConstraint implements UnweightedGroundRule {
 	}
 
 	@Override
-	public boolean updateParameters() {
-		return false;
-	}
-
-	@Override
 	public Set<GroundAtom> getAtoms() {
 		Set<GroundAtom> atoms = new HashSet<GroundAtom>();
 		atoms.add(atom);
