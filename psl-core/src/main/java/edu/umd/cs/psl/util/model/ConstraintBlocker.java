@@ -28,16 +28,17 @@ import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.atom.ObservedAtom;
 import edu.umd.cs.psl.model.atom.RandomVariableAtom;
 import edu.umd.cs.psl.model.rule.WeightedGroundRule;
+import edu.umd.cs.psl.model.rule.arithmetic.UnweightedGroundArithmeticRule;
 import edu.umd.cs.psl.model.rule.misc.GroundValueConstraint;
 import edu.umd.cs.psl.model.rule.UnweightedGroundRule;
 import edu.umd.cs.psl.model.rule.GroundRule;
-import edu.umd.cs.psl.model.rule.predicateconstraint.GroundDomainRangeConstraint;
 import edu.umd.cs.psl.reasoner.function.FunctionComparator;
+import edu.umd.cs.psl.reasoner.function.FunctionSum;
 
 /**
  * This class blocks free {@link RandomVariableAtom RandomVariableAtoms}
  * and RandomVariableAtoms that are each constrained by a single
- * {@link GroundDomainRangeConstraint} into logically individual categorical variables.
+ * {@link UnweightedGroundArithmeticRule} into individual categorical variables.
  * {@link GroundValueConstraint GroundValueConstraints} are also supported.
  * <p>
  * It also assumes that all ObservedAtoms and value-constrained atoms have
@@ -48,7 +49,7 @@ import edu.umd.cs.psl.reasoner.function.FunctionComparator;
 public class ConstraintBlocker {
 	
 	private RandomVariableAtom[][] rvBlocks;
-	private WeightedGroundRule[][] incidentGKs;
+	private WeightedGroundRule[][] incidentGRs;
 	private boolean[] exactlyOne;
 	private Map<RandomVariableAtom, Integer> rvMap;
 	
@@ -62,16 +63,52 @@ public class ConstraintBlocker {
 		rvMap = (prepareRVMap) ? new HashMap<RandomVariableAtom, Integer>() : null;
 		
 		/* Collects constraints */
-		Set<GroundDomainRangeConstraint> drConstraintSet = new HashSet<GroundDomainRangeConstraint>();
+		Set<UnweightedGroundArithmeticRule> constraintSet = new HashSet<UnweightedGroundArithmeticRule>();
 		Map<RandomVariableAtom, GroundValueConstraint> valueConstraintMap = new HashMap<RandomVariableAtom, GroundValueConstraint>();
-		for (UnweightedGroundRule gk : store.getConstraintKernels()) {
-			if (gk instanceof GroundDomainRangeConstraint)
-				drConstraintSet.add((GroundDomainRangeConstraint) gk);
-			else if (gk instanceof GroundValueConstraint)
-				valueConstraintMap.put((RandomVariableAtom) gk.getAtoms().iterator().next(), (GroundValueConstraint) gk);
+		for (UnweightedGroundRule gr : store.getConstraintKernels()) {
+			if (gr instanceof UnweightedGroundArithmeticRule) {
+				/* 
+				 * If the ground rule is an UnweightedGroundArithmeticRule, checks if it
+				 * is a categorical, i.e., at-least-1-of-k or 1-of-k, constraint 
+				 */
+				UnweightedGroundArithmeticRule gar = (UnweightedGroundArithmeticRule) gr;
+				boolean categorical = true;
+				
+				if (!(
+						FunctionComparator.Equality.equals(gar.getConstraintDefinition().getComparator())
+						||
+						(FunctionComparator.SmallerThan.equals(gar.getConstraintDefinition().getComparator()) && gar.getConstraintDefinition().getValue() > 0)
+						||
+						(FunctionComparator.LargerThan.equals(gar.getConstraintDefinition().getComparator()) && gar.getConstraintDefinition().getValue() < 0)
+						)){
+					categorical = false;
+				}
+				
+				if (gar.getConstraintDefinition().getFunction() instanceof FunctionSum) {
+					FunctionSum sum = (FunctionSum) gar.getConstraintDefinition().getFunction();
+					for (int i = 0; i < sum.size(); i++) {
+						if (Math.abs(sum.get(i).getCoefficient() - gar.getConstraintDefinition().getValue()) > 1e-8) {
+							categorical = false;
+							break;
+						}
+					}
+				}
+				else
+					categorical = false;
+				
+				if (categorical) {
+					constraintSet.add(gar);
+				}
+				else {
+					throw new IllegalStateException("The only supported constraints are 1-of-k constraints "
+							+ "and at-least-1-of-k constraints and value constraints.");
+				}
+			}
+			else if (gr instanceof GroundValueConstraint)
+				valueConstraintMap.put((RandomVariableAtom) gr.getAtoms().iterator().next(), (GroundValueConstraint) gr);
 			else
-				throw new IllegalStateException("The only supported constraints are domain-range " +
-						"constraints and value constraints.");
+				throw new IllegalStateException("The only supported constraints are 1-of-k constraints "
+						+ "and at-least-1-of-k constraints and value constraints.");
 		}
 		
 		/* Collects the free RandomVariableAtoms that remain */
@@ -81,16 +118,16 @@ public class ConstraintBlocker {
 				if (atom instanceof RandomVariableAtom) {
 					int numDRConstraints = 0;
 					int numValueConstraints = 0;
-					for (GroundRule incidentGK : atom.getRegisteredGroundKernels())
-						if (incidentGK instanceof GroundDomainRangeConstraint)
+					for (GroundRule incidentGR : atom.getRegisteredGroundKernels())
+						if (incidentGR instanceof UnweightedGroundArithmeticRule)
 							numDRConstraints++;
-						else if (incidentGK instanceof GroundValueConstraint)
+						else if (incidentGR instanceof GroundValueConstraint)
 							numValueConstraints++;
 					if (numDRConstraints == 0 && numValueConstraints == 0)
 						freeRVSet.add(((RandomVariableAtom) atom));
 					else if (numDRConstraints >= 2 || numValueConstraints >= 2)
 						throw new IllegalStateException("RandomVariableAtoms may " +
-								"only participate in one GroundDomainRangeConstraint " +
+								"only participate in one (at-least) 1-of-k " +
 								"and/or GroundValueConstraint.");
 				}
 			}
@@ -99,7 +136,7 @@ public class ConstraintBlocker {
 		int i;
 		
 		/* Puts RandomVariableAtoms in 2d array by block */
-		rvBlocks = new RandomVariableAtom[drConstraintSet.size() + freeRVSet.size()][];
+		rvBlocks = new RandomVariableAtom[constraintSet.size() + freeRVSet.size()][];
 		/* If true, exactly one Atom in the RV block must be 1.0. If false, at most one can. */
 		exactlyOne = new boolean[rvBlocks.length];
 		
@@ -111,7 +148,7 @@ public class ConstraintBlocker {
 		 */
 		boolean varsAreFree;
 		i = 0;
-		for (GroundDomainRangeConstraint con : drConstraintSet) {
+		for (UnweightedGroundArithmeticRule con : constraintSet) {
 			constrainedRVSet.clear();
 			varsAreFree = true;
 			for (GroundAtom atom : con.getAtoms()) {
@@ -160,8 +197,8 @@ public class ConstraintBlocker {
 			i++;
 		}
 		
-		/* Collects GroundCompatibilityKernels incident on each block of RandomVariableAtoms */
-		incidentGKs = new WeightedGroundRule[rvBlocks.length][];
+		/* Collects WeightedGroundRules incident on each block of RandomVariableAtoms */
+		incidentGRs = new WeightedGroundRule[rvBlocks.length][];
 		Set<WeightedGroundRule> incidentGKSet = new HashSet<WeightedGroundRule>();
 		for (i = 0; i < rvBlocks.length; i++) {
 			incidentGKSet.clear();
@@ -170,10 +207,10 @@ public class ConstraintBlocker {
 					if (incidentGK instanceof WeightedGroundRule)
 						incidentGKSet.add((WeightedGroundRule) incidentGK);
 			
-			incidentGKs[i] = new WeightedGroundRule[incidentGKSet.size()];
+			incidentGRs[i] = new WeightedGroundRule[incidentGKSet.size()];
 			int j = 0;
 			for (WeightedGroundRule incidentGK : incidentGKSet)
-				incidentGKs[i][j++] = incidentGK;
+				incidentGRs[i][j++] = incidentGK;
 		}
 		
 		/* Sets all value-constrained atoms */
@@ -190,7 +227,7 @@ public class ConstraintBlocker {
 	}
 	
 	public WeightedGroundRule[][] getIncidentGKs() {
-		return incidentGKs;
+		return incidentGRs;
 	}
 	
 	public boolean[] getExactlyOne() {
