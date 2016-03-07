@@ -99,11 +99,6 @@ public class GroundLogLoss implements WeightedGroundRule {
 	}
 
 	@Override
-	public boolean updateParameters() {
-		return false;
-	}
-
-	@Override
 	public Set<GroundAtom> getAtoms() {
 		HashSet<GroundAtom> atoms = new HashSet<GroundAtom>();
 		for (GroundAtom atom : literals)
