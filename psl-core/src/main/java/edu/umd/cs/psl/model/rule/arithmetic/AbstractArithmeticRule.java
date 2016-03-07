@@ -74,21 +74,23 @@ public class AbstractArithmeticRule extends AbstractRule {
 		for (int i = 0; i < groundings.size(); i++) {
 			
 		}
+		
+		throw new UnsupportedOperationException("Grounding arithmetic rules is not supported.");
 	}
 
 	@Override
 	protected void notifyAtomEvent(AtomEvent event, GroundRuleStore grs) {
-		throw new UnsupportedOperationException();
+		throw new UnsupportedOperationException("Arithmetic rules do not support atom events.");
 	}
 
 	@Override
 	protected void registerForAtomEvents(AtomEventFramework eventFramework) {
-		throw new UnsupportedOperationException();
+		throw new UnsupportedOperationException("Arithmetic rules do not support atom events.");
 	}
 
 	@Override
 	protected void unregisterForAtomEvents(AtomEventFramework eventFramework) {
-		throw new UnsupportedOperationException();
+		throw new UnsupportedOperationException("Arithmetic rules do not support atom events.");
 	}
 
 }

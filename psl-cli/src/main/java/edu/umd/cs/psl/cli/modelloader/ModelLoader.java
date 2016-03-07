@@ -179,12 +179,12 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	
 	@Override
 	public WeightedArithmeticRule visitWeighted_arithmetic_rule(Weighted_arithmetic_ruleContext ctx) {
-		return visitChildren(ctx);
+		throw new UnsupportedOperationException("Parsing arithmetic rules is not supported.");
 	}
 	
 	@Override
 	public UnweightedArithmeticRule visitUnweighted_arithmetic_rule(Unweighted_arithmetic_ruleContext ctx) {
-		return visitChildren(ctx);
+		throw new UnsupportedOperationException("Parsing arithmetic rules is not supported.");
 	}
 	
 	@Override
