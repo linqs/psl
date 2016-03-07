@@ -69,8 +69,6 @@ public class Negation implements Formula {
 		}
 		else if (body instanceof Implication)
 			return new Negation(body.getDNF()).getDNF();
-		else if (body instanceof AvgConjImplication)
-			return new Negation(body.getDNF()).getDNF();
 		else
 			throw new IllegalStateException("Body of negation is unrecognized type.");
 	}
