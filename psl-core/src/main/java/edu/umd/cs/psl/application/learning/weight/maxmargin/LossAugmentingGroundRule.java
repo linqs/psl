@@ -20,13 +20,10 @@ package edu.umd.cs.psl.application.learning.weight.maxmargin;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import edu.umd.cs.psl.model.atom.GroundAtom;
+import edu.umd.cs.psl.model.rule.WeightedGroundRule;
 import edu.umd.cs.psl.model.rule.WeightedRule;
 import edu.umd.cs.psl.model.weight.Weight;
-import edu.umd.cs.psl.model.rule.WeightedGroundRule;
 import edu.umd.cs.psl.reasoner.function.ConstantNumber;
 import edu.umd.cs.psl.reasoner.function.FunctionSum;
 import edu.umd.cs.psl.reasoner.function.FunctionSummand;
@@ -39,8 +36,6 @@ import edu.umd.cs.psl.reasoner.function.FunctionTerm;
  */
 public class LossAugmentingGroundRule implements WeightedGroundRule {
 
-	private static final Logger log = LoggerFactory.getLogger(LossAugmentingGroundRule.class);
-
 	private GroundAtom atom;
 	private double groundTruth;	
 	private Weight weight;
@@ -51,12 +46,6 @@ public class LossAugmentingGroundRule implements WeightedGroundRule {
 		if (!(groundTruth == 1.0 || groundTruth == 0.0))
 			throw new IllegalArgumentException("Truth value must be 1.0 or 0.0.");
 		this.weight = weight;
-	}
-
-	@Override
-	public boolean updateParameters() {
-		log.warn("Called unsupported function on LossAugmentedGroundKernel");
-		return false;
 	}
 
 	@Override

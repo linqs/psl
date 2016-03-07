@@ -17,14 +17,7 @@
  */
 package edu.umd.cs.psl.evaluation.statistics;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
-import java.util.List;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.evaluation.statistics.filter.AtomFilter;
@@ -33,8 +26,6 @@ import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.util.database.Queries;
 
 public class ContinuousPredictionComparator implements ResultComparator {
-
-	private static final Logger log = LoggerFactory.getLogger(ContinuousPredictionComparator.class);
 
 	private final Database result;
 	private Database baseline;
