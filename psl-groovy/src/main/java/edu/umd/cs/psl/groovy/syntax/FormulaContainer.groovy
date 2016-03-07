@@ -43,12 +43,12 @@ class FormulaContainer {
 	
 	def and(f2) {
 		checkFormula(f2);
-		return new FormulaContainer(new Conjunction(formula,f2.formula));
+		return new FormulaContainer(new Conjunction(formula, f2.formula));
 	}
 	
 	def or(f2) {
 		checkFormula(f2);
-		return new FormulaContainer(new Disjunction(formula,f2.formula));
+		return new FormulaContainer(new Disjunction(formula, f2.formula));
 	}
 	
 	def rightShift(FormulaContainer f2) {
@@ -57,12 +57,12 @@ class FormulaContainer {
 	
 	def leftShift(f2) {
 		checkFormula(f2);
-		return new FormulaContainer(new Rule(f2.formula,formula));
+		return new FormulaContainer(new Implication(f2.formula, formula));
 	}
 	
 	def then(f2) {
 		checkFormula(f2);
-		return new FormulaContainer(new Rule(formula,f2.formula));
+		return new FormulaContainer(new Implication(formula, f2.formula));
 	}
 	
 	def bitwiseNegate() {

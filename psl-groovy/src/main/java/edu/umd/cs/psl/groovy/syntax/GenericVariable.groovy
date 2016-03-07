@@ -18,11 +18,9 @@
 package edu.umd.cs.psl.groovy.syntax;
 
 import edu.umd.cs.psl.groovy.PSLModel
-import edu.umd.cs.psl.model.argument.ArgumentType
-import edu.umd.cs.psl.model.argument.Variable
 import edu.umd.cs.psl.model.atom.QueryAtom
 import edu.umd.cs.psl.model.predicate.SpecialPredicate
-import edu.umd.cs.psl.model.set.term.VariableSetTerm
+import edu.umd.cs.psl.model.term.Variable
 
 class GenericVariable {
 	
@@ -46,16 +44,6 @@ class GenericVariable {
 		return new Variable(name);
 	}
 	
-	def propertyMissing(String name) {
-		return new SetFormulaConstructor(model,name,this,OIPModifier.None);
-	}
-	
-	def methodMissing(String name, args) {
-		if (args.length==0) return new SetFormulaConstructor(model,name,this,OIPModifier.None);
-		else if (args.length==1) return new SetFormulaConstructor(model,name,this,OIPModifier.parse(args[0]));
-		else throw new IllegalArgumentException("Unrecognized modifier used on predicate [${name}] in set term construction: ${args}");
-	}
-	
 	def xor(other) {
 		if (!(other instanceof GenericVariable)) {
 			throw new IllegalArgumentException("Can only compare variables to variables! ${this} compared to ${other}");
@@ -69,10 +57,6 @@ class GenericVariable {
 			throw new IllegalArgumentException("Can only compare variables to variables! ${this} compared to ${other}");
 		}
 		return new FormulaContainer(new QueryAtom(SpecialPredicate.NotEqual, this.toAtomVariable(), other.toAtomVariable()));
-	}
-	
-	def getSetTerm() {
-		return new VariableSetTerm(new Variable(name),ArgumentType.UniqueID);
 	}
 
 	

@@ -21,28 +21,21 @@ import edu.umd.cs.psl.database.DataStore
 import edu.umd.cs.psl.groovy.syntax.FormulaContainer
 import edu.umd.cs.psl.groovy.syntax.GenericVariable
 import edu.umd.cs.psl.model.Model
-import edu.umd.cs.psl.model.argument.ArgumentType
-import edu.umd.cs.psl.model.argument.DoubleAttribute
-import edu.umd.cs.psl.model.argument.IntegerAttribute
-import edu.umd.cs.psl.model.argument.StringAttribute
-import edu.umd.cs.psl.model.argument.Term
-import edu.umd.cs.psl.model.argument.Variable
-import edu.umd.cs.psl.model.argument.VariableTypeMap
 import edu.umd.cs.psl.model.atom.QueryAtom
 import edu.umd.cs.psl.model.formula.Formula
 import edu.umd.cs.psl.model.function.ExternalFunction
-import edu.umd.cs.psl.model.kernel.Kernel
-import edu.umd.cs.psl.model.kernel.predicateconstraint.DomainRangeConstraintKernel
-import edu.umd.cs.psl.model.kernel.predicateconstraint.SymmetryConstraintKernel
-import edu.umd.cs.psl.model.kernel.rule.AbstractRuleKernel
-import edu.umd.cs.psl.model.kernel.rule.CompatibilityRuleKernel
-import edu.umd.cs.psl.model.kernel.rule.ConstraintRuleKernel
-import edu.umd.cs.psl.model.kernel.setdefinition.SetDefinitionKernel
 import edu.umd.cs.psl.model.predicate.FunctionalPredicate
 import edu.umd.cs.psl.model.predicate.Predicate
 import edu.umd.cs.psl.model.predicate.PredicateFactory
 import edu.umd.cs.psl.model.predicate.StandardPredicate
-import edu.umd.cs.psl.model.set.term.SetTerm
+import edu.umd.cs.psl.model.rule.logical.AbstractLogicalRule
+import edu.umd.cs.psl.model.rule.logical.UnweightedLogicalRule
+import edu.umd.cs.psl.model.rule.logical.WeightedLogicalRule
+import edu.umd.cs.psl.model.term.ConstantType
+import edu.umd.cs.psl.model.term.DoubleAttribute
+import edu.umd.cs.psl.model.term.IntegerAttribute
+import edu.umd.cs.psl.model.term.StringAttribute
+import edu.umd.cs.psl.model.term.Term
 
 /**
  * Groovy class representing a PSL model.
@@ -56,12 +49,10 @@ class PSLModel extends Model {
 	private static final String predicateArgsKey = 'types';
 	private static final String functionKey = 'function';
 	private static final String ruleKey = 'rule';
-	private static final String setComparisonKey = 'setcomparison';
 
 	private static final String auxPredicateSeparator = '__';
 	
 	// Storage for set comparisons
-	def Map setComparisons = [:];
 	private int auxPredicateCounter = 0;
 	
 	// Local PredicateFactory
@@ -133,51 +124,10 @@ class PSLModel extends Model {
 			}
 			
 			return new FormulaContainer(new QueryAtom(pred, terms));
-		} else if (setComparisons.containsKey(name)) {
-			Map setcomp = setComparisons[name];
-			if (args.size() != 2)
-				throw new IllegalArgumentException("Expected 2 set definition for set comparison, but got: ${args}");
-			if (!(args[0] instanceof Closure && args[1] instanceof Closure))
-				throw new IllegalArgumentException("Expected set definitions for set comparison, but got: ${args}");
-			
-			SetTerm t1 = args[0].call().getSetTerm();
-			SetTerm t2 = args[1].call().getSetTerm();
-			
-			VariableTypeMap vars = t2.getAnchorVariables(t1.getAnchorVariables(new VariableTypeMap()));
-			
-			ArgumentType[] types = new ArgumentType[vars.size()];
-			Variable[] variables = new Variable[vars.size()];
-			Term[] terms = new Term[vars.size()];
-			String predname = name + auxPredicateSeparator + (++ auxPredicateCounter);
-			
-			/* Sorts Variables used to define sets to also use as arguments to new aux Predicate */
-			List<Map.Entry<Variable, ArgumentType>> sortedVars = new ArrayList<Map.Entry<Variable, ArgumentType>>(vars.entrySet());
-			Collections.sort(sortedVars, new Comparator<Map.Entry<Variable, ArgumentType>>() {
-				public int compare(Map.Entry<Variable, ArgumentType> a, Map.Entry<Variable, ArgumentType> b) {
-					return a.getKey().getName().compareTo(b.getKey().getName());
-				}
-			});
-		
-			for (int i = 0; i < sortedVars.size(); i++) {
-				variables[i] = sortedVars.get(i).getKey();
-				types[i] = sortedVars.get(i).getValue();
-				terms[i] = sortedVars.get(i).getKey();
-			}
-			
-			StandardPredicate auxpred = addAggregatePredicate(predname,types);
-			
-			addKernel(new SetDefinitionKernel(auxpred, t1, t2, variables, setcomp['predicate'], setcomp['aggregator']));
-			return new FormulaContainer(new QueryAtom(auxpred, terms));	
 		} else if (name == 'when') {
 			return args[0];
 		} else 
 			throw new RuntimeException("Unknown method: " + name);
-	}
-	
-	private StandardPredicate addAggregatePredicate(String name, ArgumentType[] types) {
-		StandardPredicate p = pf.createStandardPredicate(name, types);
-		ds.registerPredicate(p);
-		return p;
 	}
 	
 	/*
@@ -192,12 +142,6 @@ class PSLModel extends Model {
 			String functionname = args[functionKey];
 			args.remove functionKey;
 			return addFunction(functionname, args);
-		} else if (args.containsKey(setComparisonKey)) {
-			if (!(args[setComparisonKey] instanceof String))
-				throw new IllegalArgumentException("Expected a STRING as set comparison function name, but got: ${args[setComparisonKey]}");
-			String setcompname = args[setComparisonKey];
-			args.remove setComparisonKey;
-			return addSetComparison(setcompname,args);
 		} else if (args.containsKey(ruleKey)) {
 			if (!(args[ruleKey] instanceof FormulaContainer))
 				throw new IllegalArgumentException("Expected a formula, but got: ${args[ruleKey]}");
@@ -209,32 +153,25 @@ class PSLModel extends Model {
 		}
 	}
 	
-	/*
-	 * Handles adding PredicateConstraints
-	 */
-	def add(Map args, PredicateConstraint type) {
-		addConstraint(type,args)
-	}
-	
 	def addPredicate(String name, Map args) {
 		if (args.containsKey(predicateArgsKey)) {
-			ArgumentType[] predArgs;
+			ConstantType[] predArgs;
 			if (args[predicateArgsKey] instanceof List<?>) {
-				predArgs = ((List<?>) args[predicateArgsKey]).toArray(new ArgumentType[1]);
+				predArgs = ((List<?>) args[predicateArgsKey]).toArray(new ConstantType[1]);
 			}
-			else if (args[predicateArgsKey] instanceof ArgumentType) {
-				predArgs = new ArgumentType[1];
+			else if (args[predicateArgsKey] instanceof ConstantType) {
+				predArgs = new ConstantType[1];
 				predArgs[0] = args[predicateArgsKey];
 			}
 			else
-				throw new IllegalArgumentException("Must provide at least one ArgumentType. " +
+				throw new IllegalArgumentException("Must provide at least one ConstantType. " +
 					"Include multiple arguments as a list wrapped in [...].");
 				
 			StandardPredicate pred = pf.createStandardPredicate(name, predArgs);
 			ds.registerPredicate(pred);
 		}
 		else
-			throw new IllegalArgumentException("Must provide at least one ArgumentType. " +
+			throw new IllegalArgumentException("Must provide at least one ConstantType. " +
 				"Include multiple arguments as a list wrapped in [...].");
 	}
 	
@@ -255,18 +192,6 @@ class PSLModel extends Model {
 	
 	public FunctionalPredicate addFunctionalPredicate(String name, ExternalFunction extFun) {
 		return pf.createFunctionalPredicate(name, extFun);
-	}
-	
-	def addSetComparison(String name, Map args) {
-		if (setComparisons.containsKey(name))
-			throw new IllegalArgumentException("Set comparison [${name}] has already been defined.");
-		StandardPredicate predicate = getBasicPredicate(args,'on');
-		if (!(args['using'] instanceof SetComparison))
-			throw new IllegalArgumentException("Expected set comparison operator for [using] label, but got: ${args['using']}")
-		
-		setComparisons[name] = [:];
-		setComparisons[name]['predicate'] = predicate;
-		setComparisons[name]['aggregator'] = args['using'].getAggregator();
 	}
 	
 	private StandardPredicate getBasicPredicate(Map args, String key) {
@@ -306,11 +231,11 @@ class PSLModel extends Model {
 
 		Formula ruleformula = rule.getFormula();
 		
-		AbstractRuleKernel pslrule;
+		AbstractLogicalRule pslrule;
 		if (isFact) {
-			pslrule = new ConstraintRuleKernel(ruleformula);
+			pslrule = new UnweightedLogicalRule(ruleformula);
 		} else {
-			pslrule = new CompatibilityRuleKernel(ruleformula, weight, isSquared);
+			pslrule = new WeightedLogicalRule(ruleformula, weight, isSquared);
 		}
 		
 		addKernel(pslrule);
@@ -319,21 +244,6 @@ class PSLModel extends Model {
 	
 	private boolean isNumber(n) {
 		return (n instanceof Double || n instanceof Integer || n instanceof BigDecimal);
-	}
-	
-	def addConstraint(PredicateConstraint type, Map args) {
-		StandardPredicate predicate = getBasicPredicate(args,'on');
-		Kernel con;
-		if (PredicateConstraint.Symmetric.equals(type)) {
-			con = new SymmetryConstraintKernel(predicate);
-		} else if (args.containsKey("valueMap")) {
-			con = new DomainRangeConstraintKernel(predicate, type.getPSLConstraint(), args.get("valueMap"));
-		}
-		else {
-			con = new DomainRangeConstraintKernel(predicate, type.getPSLConstraint());
-		}
-		addKernel(con);
-		return con;
 	}
 	
 	def getPredicate(String name) {
