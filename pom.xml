@@ -41,7 +41,6 @@
 		<module>psl-core</module>
 		<module>psl-groovy</module>
 		<module>psl-cli</module>
-		<module>psl-parser</module>
 		<module>psl-archetype</module>
 	</modules>
 	<properties>
