@@ -5,15 +5,15 @@ Probabilistic soft logic (PSL) is a probabilistic programming language for reaso
 relational and structured data that is designed to be highly scalable. More information about PSL
 is available at the [PSL homepage](http://psl.cs.umd.edu).
 
-Building Models
----------------
+Getting Started with PSL
+------------------------
 
-If you want to use PSL to build models, you probably do not need this source code. Instead,
-visit the [Getting Started guide](https://github.com/linqs/psl/wiki/Getting-started) to learn
-how to create PSL projects that will automatically install a stable version of these libraries.
+If you want to use PSL, you do not need this source code to get started. Instead,
+visit the [PSL wiki](https://github.com/linqs/psl/wiki) to learn
+how to create PSL projects that use a stable version of these libraries.
 
-Installation
-------------
+Installing PSL from Source
+--------------------------
 
 If you do want to install PSL from source, you can use [Maven](https://maven.apache.org/) 3.x.
 In the top-level directory of the PSL source (which should be the same directory that holds this
@@ -41,6 +41,6 @@ Additional Resources
 
 * [PSL wiki](https://github.com/linqs/psl/wiki)
 
-* [Getting Started guide](https://github.com/linqs/psl/wiki/Getting-started)
+* [Developers' Guide](https://github.com/linqs/psl/wiki/Developing-PSL)
 
 * [User group](https://groups.google.com/forum/#!forum/psl-users)
