@@ -161,11 +161,53 @@ public interface PSLVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitWeightExpression(PSLParser.WeightExpressionContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link PSLParser#not}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitNot(PSLParser.NotContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PSLParser#and}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitAnd(PSLParser.AndContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PSLParser#or}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitOr(PSLParser.OrContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PSLParser#then}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitThen(PSLParser.ThenContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PSLParser#impliedBy}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitImpliedBy(PSLParser.ImpliedByContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link PSLParser#termOperator}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitTermOperator(PSLParser.TermOperatorContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PSLParser#termEqual}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTermEqual(PSLParser.TermEqualContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PSLParser#notEqual}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitNotEqual(PSLParser.NotEqualContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link PSLParser#arithmeticRuleRelation}.
 	 * @param ctx the parse tree

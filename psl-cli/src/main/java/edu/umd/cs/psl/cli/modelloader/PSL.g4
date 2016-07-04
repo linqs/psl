@@ -25,7 +25,7 @@ atom
 
 literal
 	:	atom
-	|	NOT literal
+	|	not literal
 	;
 
 term
@@ -61,16 +61,16 @@ unweightedLogicalRule
 
 logicalRuleExpression
 	:	disjunctiveClause
-	|	disjunctiveClause IMPLIED_BY conjunctiveClause
-	|	conjunctiveClause THEN disjunctiveClause
+	|	disjunctiveClause impliedBy conjunctiveClause
+	|	conjunctiveClause then disjunctiveClause
 	;
 
 disjunctiveClause
-	:	literal (OR literal)*
+	:	literal (or literal)*
 	;
 
 conjunctiveClause
-	:	literal (AND literal)*
+	:	literal (and literal)*
 	;
 
 //
@@ -122,8 +122,8 @@ selectStatement
 boolExpression
 	:	literal
 	|	LPAREN boolExpression RPAREN
-	|	boolExpression OR boolExpression
-	|	boolExpression AND boolExpression 
+	|	boolExpression or boolExpression
+	|	boolExpression and boolExpression 
 	;
 
 //
@@ -142,27 +142,26 @@ EXPONENT_EXPRESSION
 // Logical operators
 //
 
-NOT
-	: '~'
-	| '!'
+not
+	:	NEGATION
 	;
 
-AND
-	: '&'
-	| '&&'
+and
+	:	AMPERSAND
+	|	AMPERSAND AMPERSAND
 	;
 
-OR
-	: '|'
-	| '||'
+or
+	:	PIPE
+	|	PIPE PIPE
 	;
 
-THEN
+then
 	:	'>>'
 	|	'->'
 	;
 
-IMPLIED_BY
+impliedBy
 	:	'<<'
 	|	'<-'
 	;
@@ -172,16 +171,16 @@ IMPLIED_BY
 //
 
 termOperator
-	:	TERM_EQUAL
-	|	NOT_EQUAL
+	:	termEqual
+	|	notEqual
 	;
 
-TERM_EQUAL
-	:	'=='
+termEqual
+	:	EQUAL EQUAL
 	;
 
-NOT_EQUAL
-	:	'!='
+notEqual
+	:	NEGATION EQUAL
 	;
 
 //
@@ -295,6 +294,15 @@ COMMA
 
 COLON
 	:	':'
+	;
+
+NEGATION
+	:	'~'
+	|	'!'
+	;
+
+AMPERSAND
+	:	'&'
 	;
 
 PIPE

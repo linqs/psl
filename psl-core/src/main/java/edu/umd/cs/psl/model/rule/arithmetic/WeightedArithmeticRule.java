@@ -83,7 +83,8 @@ public class WeightedArithmeticRule extends AbstractArithmeticRule implements We
 		s.append((squared) ? " ^2" : " ^1");
 		for (Map.Entry<SummationVariable, Formula> e : selects.entrySet()) {
 			s.append("\n{");
-			s.append(e.getKey());
+			// We append the corresponding Variable, not the SummationVariable, to leave out the '+'
+			s.append(e.getKey().getVariable());
 			s.append(" : ");
 			s.append(e.getValue());
 			s.append("}");

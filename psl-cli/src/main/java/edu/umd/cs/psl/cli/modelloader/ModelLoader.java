@@ -32,6 +32,7 @@ import edu.umd.cs.psl.cli.modelloader.PSLParser.ArithmeticRuleExpressionContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.ArithmeticRuleOperandContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.ArithmeticRuleRelationContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.AtomContext;
+import edu.umd.cs.psl.cli.modelloader.PSLParser.BoolExpressionContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.CoefficientContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.ConjunctiveClauseContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.ConstantContext;
@@ -94,6 +95,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	static public Model load(DataStore data, InputStream input) throws IOException  {
 		PSLLexer lexer = new PSLLexer(new ANTLRInputStream(input));
 		CommonTokenStream tokens = new CommonTokenStream(lexer);
+		System.out.println(tokens.getTokens());
 		PSLParser parser = new PSLParser(tokens);
 		ProgramContext program = parser.program();
 		ModelLoader visitor = new ModelLoader(data);
@@ -486,7 +488,29 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	
 	@Override
 	public SelectStatement visitSelectStatement(SelectStatementContext ctx) {
-		throw new UnsupportedOperationException("Parsing select statements is not supported.");
+		SelectStatement select = new SelectStatement();
+		select.v = new SummationVariable(ctx.variable().getText());
+		select.f = visitBoolExpression(ctx.boolExpression());
+		return select;
+	}
+	
+	@Override
+	public Formula visitBoolExpression(BoolExpressionContext ctx) {
+		if (ctx.literal() != null) {
+			return visitLiteral(ctx.literal());
+		}
+		else if (ctx.or() != null) {
+			return new Disjunction(visitBoolExpression(ctx.boolExpression(0)), visitBoolExpression(ctx.boolExpression(1)));
+		}
+		else if (ctx.and() != null) {
+			return new Conjunction(visitBoolExpression(ctx.boolExpression(0)), visitBoolExpression(ctx.boolExpression(1))); 
+		}
+		else if (ctx.boolExpression() != null) {
+			return visitBoolExpression(ctx.boolExpression(0));
+		}
+		else {
+			throw new IllegalStateException("(Line " + ctx.getStart().getLine()+ ") Boolean expresion not recognized.");
+		}
 	}
 	
 	@Override
@@ -506,10 +530,10 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 		}
 		else if (ctx.termOperator() != null) {
 			SpecialPredicate p;
-			if (ctx.termOperator().NOT_EQUAL() != null) {
+			if (ctx.termOperator().notEqual() != null) {
 				p = SpecialPredicate.NotEqual;
 			}
-			else if (ctx.termOperator().TERM_EQUAL() != null) {
+			else if (ctx.termOperator().termEqual() != null) {
 				p = SpecialPredicate.Equal;
 			}
 			else {

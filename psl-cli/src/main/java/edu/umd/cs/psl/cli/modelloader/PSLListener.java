@@ -258,6 +258,56 @@ public interface PSLListener extends ParseTreeListener {
 	 */
 	void exitWeightExpression(PSLParser.WeightExpressionContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link PSLParser#not}.
+	 * @param ctx the parse tree
+	 */
+	void enterNot(PSLParser.NotContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link PSLParser#not}.
+	 * @param ctx the parse tree
+	 */
+	void exitNot(PSLParser.NotContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link PSLParser#and}.
+	 * @param ctx the parse tree
+	 */
+	void enterAnd(PSLParser.AndContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link PSLParser#and}.
+	 * @param ctx the parse tree
+	 */
+	void exitAnd(PSLParser.AndContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link PSLParser#or}.
+	 * @param ctx the parse tree
+	 */
+	void enterOr(PSLParser.OrContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link PSLParser#or}.
+	 * @param ctx the parse tree
+	 */
+	void exitOr(PSLParser.OrContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link PSLParser#then}.
+	 * @param ctx the parse tree
+	 */
+	void enterThen(PSLParser.ThenContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link PSLParser#then}.
+	 * @param ctx the parse tree
+	 */
+	void exitThen(PSLParser.ThenContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link PSLParser#impliedBy}.
+	 * @param ctx the parse tree
+	 */
+	void enterImpliedBy(PSLParser.ImpliedByContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link PSLParser#impliedBy}.
+	 * @param ctx the parse tree
+	 */
+	void exitImpliedBy(PSLParser.ImpliedByContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link PSLParser#termOperator}.
 	 * @param ctx the parse tree
 	 */
@@ -267,6 +317,26 @@ public interface PSLListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitTermOperator(PSLParser.TermOperatorContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link PSLParser#termEqual}.
+	 * @param ctx the parse tree
+	 */
+	void enterTermEqual(PSLParser.TermEqualContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link PSLParser#termEqual}.
+	 * @param ctx the parse tree
+	 */
+	void exitTermEqual(PSLParser.TermEqualContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link PSLParser#notEqual}.
+	 * @param ctx the parse tree
+	 */
+	void enterNotEqual(PSLParser.NotEqualContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link PSLParser#notEqual}.
+	 * @param ctx the parse tree
+	 */
+	void exitNotEqual(PSLParser.NotEqualContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link PSLParser#arithmeticRuleRelation}.
 	 * @param ctx the parse tree
