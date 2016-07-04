@@ -64,7 +64,7 @@ public class ArithmeticRuleExpression {
 		for (int i = 0; i < coeffs.size(); i++) {
 			s.append(coeffs.get(i));
 			s.append(" * ");
-			s.append(coeffs.get(i));
+			s.append(atoms.get(i));
 		}
 		s.append(" ");
 		s.append(comparator);

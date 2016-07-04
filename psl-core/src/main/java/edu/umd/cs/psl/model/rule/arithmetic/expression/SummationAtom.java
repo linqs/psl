@@ -18,7 +18,9 @@
 package edu.umd.cs.psl.model.rule.arithmetic.expression;
 
 import edu.umd.cs.psl.model.atom.Atom;
+import edu.umd.cs.psl.model.atom.QueryAtom;
 import edu.umd.cs.psl.model.predicate.Predicate;
+import edu.umd.cs.psl.model.term.Term;
 
 /**
  * A variant of an {@link Atom} that can additionally take {@link SummationVariable SummationVariables}
@@ -40,16 +42,37 @@ public class SummationAtom implements SummationAtomOrAtom {
 		this.args = args;
 	}
 	
+	public QueryAtom getQueryAtom() {
+		Term[] queryAtomArgs = new Term[args.length];
+		for (int i = 0; i < args.length; i++) {
+			if (args[i] instanceof Term) {
+				queryAtomArgs[i] = (Term) args[i];
+			}
+			else {
+				queryAtomArgs[i] = ((SummationVariable) args[i]).getVariable();
+			}
+		}
+		return new QueryAtom(p, queryAtomArgs);
+	}
+	
 	@Override
 	public String toString() {
-		// TODO
-		return null;
+		StringBuilder s = new StringBuilder();
+		s.append(p.getName());
+		s.append("(");
+		for (int i = 0; i < args.length; i++) {
+			if (i > 0) {
+				s.append(", ");
+			}
+			s.append(args[i]);
+		}
+		s.append(")");
+		return s.toString();
 	}
 	
 	@Override
 	public int hashCode() {
-		// TODO
-		return 0;
+		return getQueryAtom().hashCode();
 	}
 	
 	@Override
@@ -57,8 +80,21 @@ public class SummationAtom implements SummationAtomOrAtom {
 		if (oth==this) return true;
 		if (oth==null || !(oth instanceof SummationAtom)) return false;
 		
-		// TODO
-		return false;
+		if (!p.equals(((SummationAtom) oth).p)) {
+			return false;
+		}
+		
+		if (args.length != ((SummationAtom) oth).args.length) {
+			return false;
+		}
+		
+		for (int i = 0; i < args.length; i++) {
+			if (!args[i].equals(((SummationAtom) oth).args[i])) {
+				return false;
+			}
+		}
+		
+		return true;
 	}	
 
 }

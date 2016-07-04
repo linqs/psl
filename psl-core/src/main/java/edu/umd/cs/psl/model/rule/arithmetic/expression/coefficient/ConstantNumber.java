@@ -19,6 +19,8 @@ package edu.umd.cs.psl.model.rule.arithmetic.expression.coefficient;
 
 import java.util.Map;
 
+import edu.umd.cs.psl.model.rule.arithmetic.expression.SummationVariable;
+
 public class ConstantNumber extends Coefficient {
 	
 	protected final double value;
@@ -28,7 +30,7 @@ public class ConstantNumber extends Coefficient {
 	}
 
 	@Override
-	public double getValue(Map<Cardinality, Double> cardinalityMap) {
+	public double getValue(Map<SummationVariable, Double> cardinalityMap) {
 		return value;
 	}
 	

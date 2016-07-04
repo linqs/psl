@@ -111,7 +111,7 @@ coefficient
 	:	number
 	|	PIPE variable PIPE
 	|	coefficient arithmeticOperator coefficient
-	|	coeffOperator LBRACKET coefficient (COMMA coefficient)+ RBRACKET
+	|	coeffOperator LBRACKET coefficient COMMA coefficient RBRACKET
 	|	LPAREN coefficient RPAREN
 	;
 

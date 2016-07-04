@@ -36,6 +36,7 @@ import edu.umd.cs.psl.cli.modelloader.PSLParser.CoefficientContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.ConjunctiveClauseContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.ConstantContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.DisjunctiveClauseContext;
+import edu.umd.cs.psl.cli.modelloader.PSLParser.LinearOperatorContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.LiteralContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.LogicalRuleExpressionContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.NumberContext;
@@ -73,9 +74,12 @@ import edu.umd.cs.psl.model.rule.arithmetic.expression.SummationAtomOrAtom;
 import edu.umd.cs.psl.model.rule.arithmetic.expression.SummationVariable;
 import edu.umd.cs.psl.model.rule.arithmetic.expression.SummationVariableOrTerm;
 import edu.umd.cs.psl.model.rule.arithmetic.expression.coefficient.Add;
+import edu.umd.cs.psl.model.rule.arithmetic.expression.coefficient.Cardinality;
 import edu.umd.cs.psl.model.rule.arithmetic.expression.coefficient.Coefficient;
 import edu.umd.cs.psl.model.rule.arithmetic.expression.coefficient.ConstantNumber;
 import edu.umd.cs.psl.model.rule.arithmetic.expression.coefficient.Divide;
+import edu.umd.cs.psl.model.rule.arithmetic.expression.coefficient.Max;
+import edu.umd.cs.psl.model.rule.arithmetic.expression.coefficient.Min;
 import edu.umd.cs.psl.model.rule.arithmetic.expression.coefficient.Multiply;
 import edu.umd.cs.psl.model.rule.arithmetic.expression.coefficient.Subtract;
 import edu.umd.cs.psl.model.rule.logical.UnweightedLogicalRule;
@@ -375,7 +379,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	@Override
 	public SummationAtom visitSummationAtom(SummationAtomContext ctx) {
 		Predicate p = visitPredicate(ctx.predicate());
-		SummationVariableOrTerm[] args = new SummationVariableOrTerm[ctx.getChildCount() / 2];
+		SummationVariableOrTerm[] args = new SummationVariableOrTerm[ctx.getChildCount() / 2 - 1];
 		for (int i = 1; i < ctx.getChildCount() / 2; i++) {
 			if (ctx.getChild(i*2).getPayload() instanceof SummationVariableContext) {
 				args[i - 1] = visitSummationVariable((SummationVariableContext) ctx.getChild(i*2).getPayload());
@@ -401,8 +405,77 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 		if (ctx.number() != null) {
 			return new ConstantNumber(visitNumber(ctx.number()));
 		}
+		else if (ctx.variable() != null) {
+			return new Cardinality(new SummationVariable(ctx.variable().getText()));
+		}
+		else if (ctx.arithmeticOperator() != null) {
+			Coefficient c1 = (Coefficient) visit(ctx.coefficient(0));
+			Coefficient c2 = (Coefficient) visit(ctx.coefficient(1));
+			
+			if (ctx.arithmeticOperator().PLUS() != null) {
+				return new Add(c1 , c2);
+			}
+			else if (ctx.arithmeticOperator().MINUS() != null) {
+				return new Subtract(c1 , c2);
+			}
+			else if (ctx.arithmeticOperator().MULT() != null) {
+				return new Multiply(c1 , c2);
+			}
+			else if (ctx.arithmeticOperator().DIV() != null) {
+				return new Divide(c1 , c2);
+			}
+			else {
+				throw new IllegalStateException("(Line " + ctx.getStart().getLine()+ ") Arithmetic operator not recognized.");
+			}
+		}
+		else if (ctx.coeffOperator() != null) {
+			Coefficient c1 = (Coefficient) visit(ctx.coefficient(0));
+			Coefficient c2 = (Coefficient) visit(ctx.coefficient(1));
+			
+			if (ctx.coeffOperator().MAX() != null) {
+				return new Max(c1, c2);
+			}
+			else if (ctx.coeffOperator().MIN() != null) {
+				return new Min(c1, c2);
+			}
+			else {
+				throw new IllegalStateException("(Line " + ctx.getStart().getLine()+ ") Coefficient operator not recognized.");
+			}
+		}
+		else if (ctx.LPAREN() != null) {
+			return (Coefficient) visit(ctx.getChild(1));
+		}
 		else {
 			throw new IllegalStateException("(Line " + ctx.getStart().getLine()+ ") Coefficient expresion not recognized.");
+		}
+	}
+	
+	@Override
+	public FunctionComparator visitArithmeticRuleRelation(ArithmeticRuleRelationContext ctx) {
+		if (ctx.EQUAL() != null) {
+			return FunctionComparator.Equality;
+		}
+		else if (ctx.LESS_THAN_EQUAL() != null) {
+			return FunctionComparator.SmallerThan;
+		}
+		else if (ctx.GREATER_THAN_EQUAL() != null) {
+			return FunctionComparator.LargerThan;
+		}
+		else {
+			throw new IllegalStateException();
+		}
+	}
+	
+	@Override
+	public Boolean visitLinearOperator(LinearOperatorContext ctx) {
+		if (ctx.PLUS() != null) {
+			return true;
+		}
+		else if (ctx.MINUS() != null) {
+			return false;
+		}
+		else {
+			throw new IllegalStateException();
 		}
 	}
 	

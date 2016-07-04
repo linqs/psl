@@ -20,6 +20,7 @@ package edu.umd.cs.psl.model.rule.arithmetic.expression.coefficient;
 import java.util.Map;
 
 import edu.umd.cs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
+import edu.umd.cs.psl.model.rule.arithmetic.expression.SummationVariable;
 
 /**
  * Numeric coefficient in a {@link ArithmeticRuleExpression}.
@@ -32,5 +33,5 @@ import edu.umd.cs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
  */
 abstract public class Coefficient {
 	
-	abstract public double getValue(Map<Cardinality, Double> cardinalityMap);
+	abstract public double getValue(Map<SummationVariable, Double> cardinalityMap);
 }

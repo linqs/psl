@@ -33,7 +33,7 @@ public class Cardinality extends Coefficient {
 	}
 
 	@Override
-	public double getValue(Map<Cardinality, Double> cardinalityMap) {
+	public double getValue(Map<SummationVariable, Double> cardinalityMap) {
 		return cardinalityMap.get(v);
 	}
 	

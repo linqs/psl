@@ -77,10 +77,10 @@ public class WeightedArithmeticRule extends AbstractArithmeticRule implements We
 	@Override
 	public String toString() {
 		StringBuilder s = new StringBuilder();
-		s.append(weight);
+		s.append(weight.getWeight());
 		s.append(": ");
 		s.append(expression);
-		s.append((squared) ? "^2" : "^1");
+		s.append((squared) ? " ^2" : " ^1");
 		for (Map.Entry<SummationVariable, Formula> e : selects.entrySet()) {
 			s.append("\n{");
 			s.append(e.getKey());

@@ -19,6 +19,8 @@ package edu.umd.cs.psl.model.rule.arithmetic.expression.coefficient;
 
 import java.util.Map;
 
+import edu.umd.cs.psl.model.rule.arithmetic.expression.SummationVariable;
+
 public class Subtract extends Coefficient {
 	
 	protected final Coefficient c1, c2;
@@ -29,7 +31,7 @@ public class Subtract extends Coefficient {
 	}
 	
 	@Override
-	public double getValue(Map<Cardinality, Double> cardinalityMap) {
+	public double getValue(Map<SummationVariable, Double> cardinalityMap) {
 		return c1.getValue(cardinalityMap) - c2.getValue(cardinalityMap);
 	}
 	

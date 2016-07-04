@@ -25,4 +25,13 @@ public enum FunctionComparator {
 
 	Equality, SmallerThan, LargerThan;
 
+	@Override
+	public String toString() {
+		switch(this) {
+		case Equality: return "=";
+		case SmallerThan: return "<=";
+		case LargerThan: return ">=";
+		default: throw new IllegalStateException();
+		}
+	}
 }
