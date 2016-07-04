@@ -17,10 +17,13 @@
  */
 package edu.umd.cs.psl.model.rule.arithmetic;
 
-import edu.umd.cs.psl.model.atom.Atom;
+import java.util.HashMap;
+import java.util.Map;
+
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.rule.WeightedRule;
-import edu.umd.cs.psl.model.rule.arithmetic.formula.Coefficient;
+import edu.umd.cs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
+import edu.umd.cs.psl.model.rule.arithmetic.expression.SummationVariable;
 import edu.umd.cs.psl.model.weight.NegativeWeight;
 import edu.umd.cs.psl.model.weight.PositiveWeight;
 import edu.umd.cs.psl.model.weight.Weight;
@@ -35,10 +38,14 @@ public class WeightedArithmeticRule extends AbstractArithmeticRule implements We
 	protected Weight weight;
 	protected boolean squared;
 	protected boolean mutable;
+	
+	public WeightedArithmeticRule(ArithmeticRuleExpression expression, double w, boolean squared) {
+		this(expression, new HashMap<SummationVariable, Formula>(), w, squared);
+	}
 
-	public WeightedArithmeticRule(Coefficient[] coeffs, Atom[] atoms, Comparator comparator, Coefficient c,
-			Formula[] selectStatements, double w, boolean squared) {
-		super(coeffs, atoms, comparator, c, selectStatements);
+	public WeightedArithmeticRule(ArithmeticRuleExpression expression, Map<SummationVariable, Formula> selectStatements,
+			double w, boolean squared) {
+		super(expression, selectStatements);
 		weight = (w >= 0.0) ? new PositiveWeight(w) : new NegativeWeight(w);
 		this.squared = squared;
 		mutable = true;
@@ -65,6 +72,23 @@ public class WeightedArithmeticRule extends AbstractArithmeticRule implements We
 	@Override
 	public void setWeightMutable(boolean mutable) {
 		this.mutable = mutable;
+	}
+	
+	@Override
+	public String toString() {
+		StringBuilder s = new StringBuilder();
+		s.append(weight);
+		s.append(": ");
+		s.append(expression);
+		s.append((squared) ? "^2" : "^1");
+		for (Map.Entry<SummationVariable, Formula> e : selects.entrySet()) {
+			s.append("\n{");
+			s.append(e.getKey());
+			s.append(" : ");
+			s.append(e.getValue());
+			s.append("}");
+		}
+		return s.toString();
 	}
 
 }

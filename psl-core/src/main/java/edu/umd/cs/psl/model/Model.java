@@ -24,14 +24,12 @@ import java.util.List;
 import java.util.Set;
 
 import edu.umd.cs.psl.application.ModelApplication;
-import edu.umd.cs.psl.model.rule.WeightedRule;
-import edu.umd.cs.psl.model.rule.UnweightedRule;
 import edu.umd.cs.psl.model.rule.Rule;
 
 /**
  * A probabilistic soft logic model.
  * <p>
- * Encapsulates a set of {@link Rule Kernels}. A {@link ModelApplication}
+ * Encapsulates a set of {@link Rule Rules}. A {@link ModelApplication}
  * can be used to combine a Model with data to perform inference or learn.
  * <p>
  * Objects which use a Model should register with it to listen
@@ -39,17 +37,17 @@ import edu.umd.cs.psl.model.rule.Rule;
  */
 public class Model {
 
-	protected final List<Rule> kernels;
+	protected final List<Rule> rules;
 	/** Redundant set for fast membership checks */
-	protected final Set<Rule> kernelSet;
+	protected final Set<Rule> ruleSet;
 	protected final Set<ModelEvent.Listener> modelObservers;
 	
 	/**
 	 * Sole constructor.
 	 */
 	public Model() {
-		kernels = new LinkedList<Rule>();
-		kernelSet = new HashSet<Rule>();
+		rules = new LinkedList<Rule>();
+		ruleSet = new HashSet<Rule>();
 		modelObservers = new HashSet<ModelEvent.Listener>();
 	}
 	
@@ -75,92 +73,74 @@ public class Model {
 	}
 	
 	/**
-	 * @return the {@link Rule Kernels} contained in this model
+	 * @return the {@link Rule Rules} contained in this model
 	 */
-	public Iterable<Rule> getKernels() {
-		return Collections.unmodifiableList(kernels);
+	public Iterable<Rule> getRules() {
+		return Collections.unmodifiableList(rules);
 	}
 	
 	/**
-	 * Adds a Kernel to this Model.
+	 * Adds a Rule to this Model.
 	 * <p>
-	 * All observers of this Model will receive a {@link ModelEvent#KernelAdded} event.
+	 * All observers of this Model will receive a {@link ModelEvent#RuleAdded} event.
 	 * 
-	 * @param k  Kernel to add
-	 * @throws IllegalArgumentException  if the Kernel is already in this Model
+	 * @param r  Rule to add
+	 * @throws IllegalArgumentException  if the Rule is already in this Model
 	 */
-	public void addKernel(Rule k) {
-		if (kernelSet.contains(k))
-			throw new IllegalArgumentException("Kernel already added to this model.");
+	public void addRule(Rule r) {
+		if (ruleSet.contains(r))
+			throw new IllegalArgumentException("Rule already added to this model.");
 		else {
-			kernels.add(k);
-			kernelSet.add(k);
-			broadcastModelEvent(new ModelEvent(ModelEvent.Type.KernelAdded, this, k));
+			rules.add(r);
+			ruleSet.add(r);
+			broadcastModelEvent(new ModelEvent(ModelEvent.Type.RuleAdded, this, r));
 		}
 	}
 	
 	/**
-	 * Removes a Kernel from this Model.
+	 * Removes a Rule from this Model.
 	 * <p>
-	 * All observers of this Model will receive a {@link ModelEvent#KernelRemoved} event.
+	 * All observers of this Model will receive a {@link ModelEvent#RuleRemoved} event.
 	 * 
-	 * @param k  Kernel to remove
-	 * @throws IllegalArgumentException  if the Kernel is not in this Model
+	 * @param r  Rule to remove
+	 * @throws IllegalArgumentException  if the Rule is not in this Model
 	 */
-	public void removeKernel(Rule k) {
-		if (!kernelSet.contains(k))
+	public void removeRule(Rule r) {
+		if (!ruleSet.contains(r))
 			throw new IllegalArgumentException("Kernel not in this model.");
 		else {
-			kernels.remove(k);
-			kernelSet.remove(k);
+			rules.remove(r);
+			ruleSet.remove(r);
 			
-			broadcastModelEvent(new ModelEvent(ModelEvent.Type.KernelRemoved, this, k));
+			broadcastModelEvent(new ModelEvent(ModelEvent.Type.RuleRemoved, this, r));
 		}
 	}
 	
 	/**
-	 * Notifies this Model that a Kernel's parameters were modified.
+	 * Notifies this Model that a Rule's parameters were modified.
 	 * <p>
-	 * All observers of this model will receive a {@link ModelEvent#KernelParametersModified} event.
+	 * All observers of this model will receive a {@link ModelEvent#RuleParametersModified} event.
 	 * 
-	 * @param k  the Kernel that was modified
-	 * @throws IllegalArgumentException  if the Kernel is not in this Model
+	 * @param r  the Rule that was modified
+	 * @throws IllegalArgumentException  if the Rule is not in this Model
 	 */
-	public void notifyKernelParametersModified(Rule k) {
-		if (!kernelSet.contains(k))
+	public void notifyRuleParametersModified(Rule r) {
+		if (!ruleSet.contains(r))
 			throw new IllegalArgumentException("Kernel not in this model.");
-		broadcastModelEvent(new ModelEvent(ModelEvent.Type.KernelParametersModified, this, k));
+		broadcastModelEvent(new ModelEvent(ModelEvent.Type.RuleParametersModified, this, r));
 	}
 	
 	/**
 	 * Returns a String representation of this Model.
-	 * <p>
-	 * The String will start with "Model:", followed by a newline, then
-	 * the String representations of each Kernel in this Model (each followed
-	 * by a newline). Constraint Kernels will come before compatibility kernels.
 	 * 
-	 * @return the String representation 
-	 * @see Rule#isCompatibilityKernel()
+	 * @return the String representation
 	 */
 	@Override
 	public String toString() {
-		List<Rule> constraintKernels = new LinkedList<Rule>();
-		List<Rule> compatibilityKernels = new LinkedList<Rule>();
-		for (Rule kernel : kernels)
-			if (kernel instanceof WeightedRule)
-				compatibilityKernels.add(kernel);
-			else if (kernel instanceof UnweightedRule)
-				constraintKernels.add(kernel);
-			else
-				throw new IllegalStateException("Unrecognized kernel: " + kernel);
-
 		StringBuilder s = new StringBuilder();
 		s.append("Model:\n");
-		for (Rule kernel : constraintKernels)
-			s.append(kernel.toString()).append("\n");
-		for (Rule kernel : compatibilityKernels)
-			s.append(kernel.toString()).append("\n");
-		
+		for (Rule rule : rules)
+			s.append(rule).append("\n");
 		return s.toString();
 	}
 	

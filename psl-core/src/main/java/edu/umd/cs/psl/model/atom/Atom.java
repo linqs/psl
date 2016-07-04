@@ -24,6 +24,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.predicate.Predicate;
+import edu.umd.cs.psl.model.rule.arithmetic.expression.SummationAtomOrAtom;
 import edu.umd.cs.psl.model.term.ConstantType;
 import edu.umd.cs.psl.model.term.Constant;
 import edu.umd.cs.psl.model.term.Term;
@@ -38,7 +39,7 @@ import edu.umd.cs.psl.model.term.Term;
  * 
  * @author Matthias Broecheler
  */
-abstract public class Atom implements Formula {
+abstract public class Atom implements Formula, SummationAtomOrAtom {
 	
 	protected final Predicate predicate;
 	

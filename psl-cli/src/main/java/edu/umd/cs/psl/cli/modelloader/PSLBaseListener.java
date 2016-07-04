@@ -1,8 +1,7 @@
-// Generated from PSL.g4 by ANTLR 4.5
+// Generated from PSL.g4 by ANTLR 4.5.3
 package edu.umd.cs.psl.cli.modelloader;
 
 import org.antlr.v4.runtime.ParserRuleContext;
-import org.antlr.v4.runtime.misc.NotNull;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
@@ -29,13 +28,13 @@ public class PSLBaseListener implements PSLListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterPsl_rule(PSLParser.Psl_ruleContext ctx) { }
+	@Override public void enterPslRule(PSLParser.PslRuleContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitPsl_rule(PSLParser.Psl_ruleContext ctx) { }
+	@Override public void exitPslRule(PSLParser.PslRuleContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -113,145 +112,157 @@ public class PSLBaseListener implements PSLListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterLogical_rule(PSLParser.Logical_ruleContext ctx) { }
+	@Override public void enterLogicalRule(PSLParser.LogicalRuleContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitLogical_rule(PSLParser.Logical_ruleContext ctx) { }
+	@Override public void exitLogicalRule(PSLParser.LogicalRuleContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterWeighted_logical_rule(PSLParser.Weighted_logical_ruleContext ctx) { }
+	@Override public void enterWeightedLogicalRule(PSLParser.WeightedLogicalRuleContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitWeighted_logical_rule(PSLParser.Weighted_logical_ruleContext ctx) { }
+	@Override public void exitWeightedLogicalRule(PSLParser.WeightedLogicalRuleContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterUnweighted_logical_rule(PSLParser.Unweighted_logical_ruleContext ctx) { }
+	@Override public void enterUnweightedLogicalRule(PSLParser.UnweightedLogicalRuleContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitUnweighted_logical_rule(PSLParser.Unweighted_logical_ruleContext ctx) { }
+	@Override public void exitUnweightedLogicalRule(PSLParser.UnweightedLogicalRuleContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterLogical_rule_expression(PSLParser.Logical_rule_expressionContext ctx) { }
+	@Override public void enterLogicalRuleExpression(PSLParser.LogicalRuleExpressionContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitLogical_rule_expression(PSLParser.Logical_rule_expressionContext ctx) { }
+	@Override public void exitLogicalRuleExpression(PSLParser.LogicalRuleExpressionContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterDisjunctive_clause(PSLParser.Disjunctive_clauseContext ctx) { }
+	@Override public void enterDisjunctiveClause(PSLParser.DisjunctiveClauseContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitDisjunctive_clause(PSLParser.Disjunctive_clauseContext ctx) { }
+	@Override public void exitDisjunctiveClause(PSLParser.DisjunctiveClauseContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterConjunctive_clause(PSLParser.Conjunctive_clauseContext ctx) { }
+	@Override public void enterConjunctiveClause(PSLParser.ConjunctiveClauseContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitConjunctive_clause(PSLParser.Conjunctive_clauseContext ctx) { }
+	@Override public void exitConjunctiveClause(PSLParser.ConjunctiveClauseContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterArithmetic_rule(PSLParser.Arithmetic_ruleContext ctx) { }
+	@Override public void enterArithmeticRule(PSLParser.ArithmeticRuleContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitArithmetic_rule(PSLParser.Arithmetic_ruleContext ctx) { }
+	@Override public void exitArithmeticRule(PSLParser.ArithmeticRuleContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterWeighted_arithmetic_rule(PSLParser.Weighted_arithmetic_ruleContext ctx) { }
+	@Override public void enterWeightedArithmeticRule(PSLParser.WeightedArithmeticRuleContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitWeighted_arithmetic_rule(PSLParser.Weighted_arithmetic_ruleContext ctx) { }
+	@Override public void exitWeightedArithmeticRule(PSLParser.WeightedArithmeticRuleContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterUnweighted_arithmetic_rule(PSLParser.Unweighted_arithmetic_ruleContext ctx) { }
+	@Override public void enterUnweightedArithmeticRule(PSLParser.UnweightedArithmeticRuleContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitUnweighted_arithmetic_rule(PSLParser.Unweighted_arithmetic_ruleContext ctx) { }
+	@Override public void exitUnweightedArithmeticRule(PSLParser.UnweightedArithmeticRuleContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterArithmetic_rule_expression(PSLParser.Arithmetic_rule_expressionContext ctx) { }
+	@Override public void enterArithmeticRuleExpression(PSLParser.ArithmeticRuleExpressionContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitArithmetic_rule_expression(PSLParser.Arithmetic_rule_expressionContext ctx) { }
+	@Override public void exitArithmeticRuleExpression(PSLParser.ArithmeticRuleExpressionContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterArithmetic_rule_operand(PSLParser.Arithmetic_rule_operandContext ctx) { }
+	@Override public void enterArithmeticRuleOperand(PSLParser.ArithmeticRuleOperandContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitArithmetic_rule_operand(PSLParser.Arithmetic_rule_operandContext ctx) { }
+	@Override public void exitArithmeticRuleOperand(PSLParser.ArithmeticRuleOperandContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterSum_augmented_atom(PSLParser.Sum_augmented_atomContext ctx) { }
+	@Override public void enterSummationAtom(PSLParser.SummationAtomContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitSum_augmented_atom(PSLParser.Sum_augmented_atomContext ctx) { }
+	@Override public void exitSummationAtom(PSLParser.SummationAtomContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterSummationVariable(PSLParser.SummationVariableContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitSummationVariable(PSLParser.SummationVariableContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -269,37 +280,97 @@ public class PSLBaseListener implements PSLListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterSelect_statement(PSLParser.Select_statementContext ctx) { }
+	@Override public void enterSelectStatement(PSLParser.SelectStatementContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitSelect_statement(PSLParser.Select_statementContext ctx) { }
+	@Override public void exitSelectStatement(PSLParser.SelectStatementContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterBool_expression(PSLParser.Bool_expressionContext ctx) { }
+	@Override public void enterBoolExpression(PSLParser.BoolExpressionContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitBool_expression(PSLParser.Bool_expressionContext ctx) { }
+	@Override public void exitBoolExpression(PSLParser.BoolExpressionContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterWeight_expression(PSLParser.Weight_expressionContext ctx) { }
+	@Override public void enterWeightExpression(PSLParser.WeightExpressionContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitWeight_expression(PSLParser.Weight_expressionContext ctx) { }
+	@Override public void exitWeightExpression(PSLParser.WeightExpressionContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterTermOperator(PSLParser.TermOperatorContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitTermOperator(PSLParser.TermOperatorContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterArithmeticRuleRelation(PSLParser.ArithmeticRuleRelationContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitArithmeticRuleRelation(PSLParser.ArithmeticRuleRelationContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterArithmeticOperator(PSLParser.ArithmeticOperatorContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitArithmeticOperator(PSLParser.ArithmeticOperatorContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterLinearOperator(PSLParser.LinearOperatorContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitLinearOperator(PSLParser.LinearOperatorContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterCoeffOperator(PSLParser.CoeffOperatorContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitCoeffOperator(PSLParser.CoeffOperatorContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

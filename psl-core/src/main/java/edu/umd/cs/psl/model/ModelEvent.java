@@ -26,12 +26,12 @@ public class ModelEvent {
 	
 	/** Types of ModelEvents */
 	public enum Type {
-		/** A Kernel was added to a model */
-		KernelAdded,
-		/** A Kernel was removed from a model */
-		KernelRemoved,
-		/** A Kernel's parameters were modified */
-		KernelParametersModified;
+		/** A Rule was added to a model */
+		RuleAdded,
+		/** A Rule was removed from a model */
+		RuleRemoved,
+		/** A Rule's parameters were modified */
+		RuleParametersModified;
 	}
 	
 	/** A listener for ModelEvents. */
@@ -46,19 +46,19 @@ public class ModelEvent {
 	
 	private final Type type;
 	private final Model model;
-	private final Rule kernel;
+	private final Rule rule;
 	
 	/**
 	 * Constructs a new ModelEvent with associated properties.
 	 * 
 	 * @param type  the Type of the new event
 	 * @param model  the Model for which the event occurred
-	 * @param kernel  the Kernel related to the event
+	 * @param rule  the Kernel related to the event
 	 */
-	public ModelEvent(Type type, Model model, Rule kernel) {
+	public ModelEvent(Type type, Model model, Rule rule) {
 		this.type = type;
 		this.model = model;
-		this.kernel = kernel;
+		this.rule = rule;
 	}
 	
 	/**
@@ -79,7 +79,7 @@ public class ModelEvent {
 	 * @return the associated Kernel, or null if no Kernel is associated
 	 */
 	public Rule getKernel() {
-		return kernel;
+		return rule;
 	}
 	
 }

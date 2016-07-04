@@ -82,7 +82,7 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 		eventFramework = new AtomEventFramework(rvDB, config);
 		
 		/* Registers the Model's Kernels with the AtomEventFramework */
-		for (Rule k : model.getKernels())
+		for (Rule k : model.getRules())
 			k.registerForAtomEvents(eventFramework, reasoner);
 		
 		/* Grounds the model */
@@ -228,7 +228,7 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 	@Override
 	protected void cleanUpGroundModel() {
 		/* Unregisters the Model's Kernels with the AtomEventFramework */
-		for (Rule k : model.getKernels())
+		for (Rule k : model.getRules())
 			k.unregisterForAtomEvents(eventFramework, reasoner);
 		eventFramework = null;
 		

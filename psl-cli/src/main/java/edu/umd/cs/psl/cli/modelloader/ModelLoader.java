@@ -19,27 +19,39 @@ package edu.umd.cs.psl.cli.modelloader;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 import org.antlr.v4.runtime.ANTLRInputStream;
+import org.antlr.v4.runtime.CommonToken;
 import org.antlr.v4.runtime.CommonTokenStream;
 
-import edu.umd.cs.psl.cli.modelloader.PSLParser.Arithmetic_ruleContext;
+import edu.umd.cs.psl.cli.modelloader.PSLParser.ArithmeticRuleExpressionContext;
+import edu.umd.cs.psl.cli.modelloader.PSLParser.ArithmeticRuleOperandContext;
+import edu.umd.cs.psl.cli.modelloader.PSLParser.ArithmeticRuleRelationContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.AtomContext;
-import edu.umd.cs.psl.cli.modelloader.PSLParser.Conjunctive_clauseContext;
+import edu.umd.cs.psl.cli.modelloader.PSLParser.CoefficientContext;
+import edu.umd.cs.psl.cli.modelloader.PSLParser.ConjunctiveClauseContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.ConstantContext;
-import edu.umd.cs.psl.cli.modelloader.PSLParser.Disjunctive_clauseContext;
+import edu.umd.cs.psl.cli.modelloader.PSLParser.DisjunctiveClauseContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.LiteralContext;
-import edu.umd.cs.psl.cli.modelloader.PSLParser.Logical_rule_expressionContext;
+import edu.umd.cs.psl.cli.modelloader.PSLParser.LogicalRuleExpressionContext;
+import edu.umd.cs.psl.cli.modelloader.PSLParser.NumberContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.PredicateContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.ProgramContext;
-import edu.umd.cs.psl.cli.modelloader.PSLParser.Psl_ruleContext;
+import edu.umd.cs.psl.cli.modelloader.PSLParser.PslRuleContext;
+import edu.umd.cs.psl.cli.modelloader.PSLParser.SelectStatementContext;
+import edu.umd.cs.psl.cli.modelloader.PSLParser.SummationAtomContext;
+import edu.umd.cs.psl.cli.modelloader.PSLParser.SummationVariableContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.TermContext;
-import edu.umd.cs.psl.cli.modelloader.PSLParser.Unweighted_arithmetic_ruleContext;
-import edu.umd.cs.psl.cli.modelloader.PSLParser.Unweighted_logical_ruleContext;
+import edu.umd.cs.psl.cli.modelloader.PSLParser.UnweightedArithmeticRuleContext;
+import edu.umd.cs.psl.cli.modelloader.PSLParser.UnweightedLogicalRuleContext;
 import edu.umd.cs.psl.cli.modelloader.PSLParser.VariableContext;
-import edu.umd.cs.psl.cli.modelloader.PSLParser.Weight_expressionContext;
-import edu.umd.cs.psl.cli.modelloader.PSLParser.Weighted_arithmetic_ruleContext;
-import edu.umd.cs.psl.cli.modelloader.PSLParser.Weighted_logical_ruleContext;
+import edu.umd.cs.psl.cli.modelloader.PSLParser.WeightExpressionContext;
+import edu.umd.cs.psl.cli.modelloader.PSLParser.WeightedArithmeticRuleContext;
+import edu.umd.cs.psl.cli.modelloader.PSLParser.WeightedLogicalRuleContext;
 import edu.umd.cs.psl.database.DataStore;
 import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.atom.Atom;
@@ -53,15 +65,25 @@ import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.PredicateFactory;
 import edu.umd.cs.psl.model.predicate.SpecialPredicate;
 import edu.umd.cs.psl.model.rule.Rule;
-import edu.umd.cs.psl.model.rule.arithmetic.AbstractArithmeticRule;
 import edu.umd.cs.psl.model.rule.arithmetic.UnweightedArithmeticRule;
 import edu.umd.cs.psl.model.rule.arithmetic.WeightedArithmeticRule;
-import edu.umd.cs.psl.model.rule.logical.AbstractLogicalRule;
+import edu.umd.cs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
+import edu.umd.cs.psl.model.rule.arithmetic.expression.SummationAtom;
+import edu.umd.cs.psl.model.rule.arithmetic.expression.SummationAtomOrAtom;
+import edu.umd.cs.psl.model.rule.arithmetic.expression.SummationVariable;
+import edu.umd.cs.psl.model.rule.arithmetic.expression.SummationVariableOrTerm;
+import edu.umd.cs.psl.model.rule.arithmetic.expression.coefficient.Add;
+import edu.umd.cs.psl.model.rule.arithmetic.expression.coefficient.Coefficient;
+import edu.umd.cs.psl.model.rule.arithmetic.expression.coefficient.ConstantNumber;
+import edu.umd.cs.psl.model.rule.arithmetic.expression.coefficient.Divide;
+import edu.umd.cs.psl.model.rule.arithmetic.expression.coefficient.Multiply;
+import edu.umd.cs.psl.model.rule.arithmetic.expression.coefficient.Subtract;
 import edu.umd.cs.psl.model.rule.logical.UnweightedLogicalRule;
 import edu.umd.cs.psl.model.rule.logical.WeightedLogicalRule;
 import edu.umd.cs.psl.model.term.Term;
 import edu.umd.cs.psl.model.term.UniqueID;
 import edu.umd.cs.psl.model.term.Variable;
+import edu.umd.cs.psl.reasoner.function.FunctionComparator;
 
 public class ModelLoader extends PSLBaseVisitor<Object> {
 
@@ -83,43 +105,16 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	@Override
 	public Model visitProgram(ProgramContext ctx) {
 		Model model = new Model();
-		for (Psl_ruleContext psl_rule : ctx.psl_rule()) {
-			Rule k = visitPsl_rule(psl_rule);
-			model.addKernel(k);
+		for (PslRuleContext ruleCtx : ctx.pslRule()) {
+			model.addRule((Rule) visit(ruleCtx));
 		}
 		return model;
 	}
 	
 	@Override
-	public Rule visitPsl_rule(Psl_ruleContext ctx) {
-		if (ctx.logical_rule() != null) {
-			return visitLogical_rule(ctx.logical_rule());
-		}
-		else if (ctx.arithmetic_rule() != null) {
-			return visitArithmetic_rule(ctx.arithmetic_rule());
-		}
-		else {
-			throw new IllegalStateException("(Line " + ctx.getStart().getLine()+ ") Rule not recognized as logical or arithmetic.");
-		}
-	}
-
-	@Override
-	public AbstractLogicalRule visitLogical_rule(PSLParser.Logical_ruleContext ctx) {
-		if (ctx.weighted_logical_rule() != null) {
-			return visitWeighted_logical_rule(ctx.weighted_logical_rule());
-		}
-		else if (ctx.unweighted_logical_rule() != null) {
-			return visitUnweighted_logical_rule(ctx.unweighted_logical_rule());
-		}
-		else {
-			throw new IllegalStateException();
-		}
-	}
-	
-	@Override
-	public WeightedLogicalRule visitWeighted_logical_rule(Weighted_logical_ruleContext ctx) {
-		Double w = visitWeight_expression(ctx.weight_expression());
-		Formula f = visitLogical_rule_expression(ctx.logical_rule_expression());
+	public WeightedLogicalRule visitWeightedLogicalRule(WeightedLogicalRuleContext ctx) {
+		Double w = visitWeightExpression(ctx.weightExpression());
+		Formula f = visitLogicalRuleExpression(ctx.logicalRuleExpression());
 		Boolean sq = false;
 		if (ctx.EXPONENT_EXPRESSION() != null) {
 			sq = ctx.EXPONENT_EXPRESSION().getText().equals("^2");
@@ -129,22 +124,17 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	}
 	
 	@Override
-	public Double visitWeight_expression(Weight_expressionContext ctx) {
-		return Double.parseDouble(ctx.NONNEGATIVE_NUMBER().getText());
-	}
-	
-	@Override
-	public UnweightedLogicalRule visitUnweighted_logical_rule(Unweighted_logical_ruleContext ctx) {
-		Formula f = visitLogical_rule_expression(ctx.logical_rule_expression());
+	public UnweightedLogicalRule visitUnweightedLogicalRule(UnweightedLogicalRuleContext ctx) {
+		Formula f = visitLogicalRuleExpression(ctx.logicalRuleExpression());
 		return new UnweightedLogicalRule(f);
 	}
 	
 	@Override
-	public Formula visitLogical_rule_expression(Logical_rule_expressionContext ctx) {
+	public Formula visitLogicalRuleExpression(LogicalRuleExpressionContext ctx) {
 		if (ctx.children.size() == 3) {
-			if (ctx.conjunctive_clause() != null & ctx.disjunctive_clause() != null) {
-				Formula body = visitConjunctive_clause(ctx.conjunctive_clause());
-				Formula head = visitDisjunctive_clause(ctx.disjunctive_clause());
+			if (ctx.conjunctiveClause() != null & ctx.disjunctiveClause() != null) {
+				Formula body = visitConjunctiveClause(ctx.conjunctiveClause());
+				Formula head = visitDisjunctiveClause(ctx.disjunctiveClause());
 				return new Implication(body, head);
 			}
 			else {
@@ -152,8 +142,8 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 			}
 		}
 		else if (ctx.children.size() == 1) {
-			if (ctx.disjunctive_clause() != null) {
-				return visitDisjunctive_clause(ctx.disjunctive_clause());
+			if (ctx.disjunctiveClause() != null) {
+				return visitDisjunctiveClause(ctx.disjunctiveClause());
 			}
 			else {
 				throw new IllegalStateException();
@@ -165,30 +155,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	}
 	
 	@Override
-	public AbstractArithmeticRule visitArithmetic_rule(Arithmetic_ruleContext ctx) {
-		if (ctx.weighted_arithmetic_rule() != null) {
-			return visitWeighted_arithmetic_rule(ctx.weighted_arithmetic_rule());
-		}
-		else if (ctx.unweighted_arithmetic_rule() != null) {
-			return visitUnweighted_arithmetic_rule(ctx.unweighted_arithmetic_rule());
-		}
-		else {
-			throw new IllegalStateException();
-		}
-	}
-	
-	@Override
-	public WeightedArithmeticRule visitWeighted_arithmetic_rule(Weighted_arithmetic_ruleContext ctx) {
-		throw new UnsupportedOperationException("Parsing arithmetic rules is not supported.");
-	}
-	
-	@Override
-	public UnweightedArithmeticRule visitUnweighted_arithmetic_rule(Unweighted_arithmetic_ruleContext ctx) {
-		throw new UnsupportedOperationException("Parsing arithmetic rules is not supported.");
-	}
-	
-	@Override
-	public Formula visitConjunctive_clause(Conjunctive_clauseContext ctx) {
+	public Formula visitConjunctiveClause(ConjunctiveClauseContext ctx) {
 		Formula[] literals = new Formula[ctx.literal().size()];
 		for (int i = 0; i < literals.length; i++) {
 			literals[i] = visitLiteral(ctx.literal(i));
@@ -202,7 +169,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	}
 	
 	@Override
-	public Formula visitDisjunctive_clause(Disjunctive_clauseContext ctx) {
+	public Formula visitDisjunctiveClause(DisjunctiveClauseContext ctx) {
 		Formula[] literals = new Formula[ctx.literal().size()];
 		for (int i = 0; i < literals.length; i++) {
 			literals[i] = visitLiteral(ctx.literal(i));
@@ -229,28 +196,253 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	}
 	
 	@Override
+	public WeightedArithmeticRule visitWeightedArithmeticRule(WeightedArithmeticRuleContext ctx) {
+		Double w = visitWeightExpression(ctx.weightExpression());
+		ArithmeticRuleExpression expression = (ArithmeticRuleExpression) visitArithmeticRuleExpression(ctx.arithmeticRuleExpression());
+		Map<SummationVariable, Formula> selectStatements = new HashMap<SummationVariable, Formula>();
+		for (int i = 0; i < ctx.selectStatement().size(); i++) {
+			SelectStatement ss = visitSelectStatement(ctx.selectStatement(i));
+			selectStatements.put(ss.v, ss.f);
+		}
+		Boolean sq = false;
+		if (ctx.EXPONENT_EXPRESSION() != null) {
+			sq = ctx.EXPONENT_EXPRESSION().getText().equals("^2");
+		}
+		return new WeightedArithmeticRule(expression, selectStatements, w, sq);
+	}
+	
+	@Override
+	public UnweightedArithmeticRule visitUnweightedArithmeticRule(UnweightedArithmeticRuleContext ctx) {
+		ArithmeticRuleExpression expression = (ArithmeticRuleExpression) visitArithmeticRuleExpression(ctx.arithmeticRuleExpression());
+		Map<SummationVariable, Formula> selectStatements = new HashMap<SummationVariable, Formula>();
+		for (int i = 0; i < ctx.selectStatement().size(); i++) {
+			SelectStatement ss = visitSelectStatement(ctx.selectStatement(i));
+			selectStatements.put(ss.v, ss.f);
+		}
+		return new UnweightedArithmeticRule(expression, selectStatements);
+	}
+	
+	@Override
+	public ArithmeticRuleExpression visitArithmeticRuleExpression(ArithmeticRuleExpressionContext ctx) {
+		List<ArithmeticRuleOperand> ops1, ops2, currentOps;
+		ops1 = new LinkedList<ArithmeticRuleOperand>();
+		ops2 = new LinkedList<ArithmeticRuleOperand>();
+		currentOps = ops1;
+		
+		List<Boolean> pos1, pos2, currentPos;
+		pos1 = new LinkedList<Boolean>();
+		pos1.add(true);
+		pos2 = new LinkedList<Boolean>();
+		pos2.add(true);
+		currentPos = pos1;
+		
+		FunctionComparator comp = null;
+		
+		for (int i = 0; i < ctx.getChildCount(); i++) {
+			if (i % 2 == 0) {
+				currentOps.add((ArithmeticRuleOperand) visit(ctx.getChild(i)));
+			}
+			else {
+				if (ctx.getChild(i).getPayload() instanceof ArithmeticRuleRelationContext) {
+					comp = (FunctionComparator) visit(ctx.getChild(i));
+					currentOps = ops2;
+					currentPos = pos2;
+				}
+				else {
+					currentPos.add((Boolean) visit(ctx.getChild(i)));
+				}
+			}
+		}
+		
+		List<Coefficient> coeffs = new LinkedList<Coefficient>();
+		List<SummationAtomOrAtom> atoms = new LinkedList<SummationAtomOrAtom>();
+		Coefficient finalCoeff = null;
+		
+		/*
+		 * Processes first subexpression
+		 */
+		for (int i = 0; i < ops1.size(); i++) {
+			// Checks if it is just a coefficient
+			if (ops1.get(i).atom == null) {
+				// If it is the first coefficient, uses it to start the final coefficient
+				if (finalCoeff == null) {
+					if (pos1.get(i)) {
+						finalCoeff = new Multiply(new ConstantNumber(-1.0), ops1.get(i).coefficient);
+					}
+					else {
+						finalCoeff = ops1.get(i).coefficient;
+					}
+				}
+				// Else, adds it to the final coefficient
+				else {
+					if (pos1.get(i)) {
+						finalCoeff = new Subtract(finalCoeff, ops1.get(i).coefficient);
+					}
+					else {
+						finalCoeff = new Add(finalCoeff, ops1.get(i).coefficient);
+					}
+				}
+			}
+			// Else, processes the SummationAtomOrAtom 
+			else {
+				if (ops1.get(i).coefficient == null) {
+					coeffs.add(new ConstantNumber(1.0));
+				}
+				else {
+					coeffs.add(ops1.get(i).coefficient);
+				}
+				atoms.add(ops1.get(i).atom);
+			}
+		}
+		
+		/*
+		 * Processes second subexpression
+		 */
+		for (int i = 0; i < ops2.size(); i++) {
+			// Checks if it is just a coefficient
+			if (ops2.get(i).atom == null) {
+				// If it is the first coefficient, uses it to start the final coefficient
+				if (finalCoeff == null) {
+					finalCoeff = ops2.get(i).coefficient;
+				}
+				// Else, adds it to the final coefficient
+				else {
+					if (pos2.get(i)) {
+						finalCoeff = new Add(finalCoeff, ops2.get(i).coefficient);
+					}
+					else {
+						finalCoeff = new Subtract(finalCoeff, ops2.get(i).coefficient);
+					}
+				}
+			}
+			// Else, processes the SummationAtomOrAtom 
+			else {
+				if (ops2.get(i).coefficient == null) {
+					coeffs.add(new ConstantNumber(-1.0));
+				}
+				else {
+					coeffs.add(new Multiply(new ConstantNumber(-1.0), ops2.get(i).coefficient));
+				}
+				atoms.add(ops2.get(i).atom);
+			}
+		}
+		
+		return new ArithmeticRuleExpression(coeffs, atoms, comp, finalCoeff);
+	}
+	
+	private static class ArithmeticRuleOperand {
+		SummationAtomOrAtom atom;
+		Coefficient coefficient;
+		
+		private ArithmeticRuleOperand() {
+			atom = null;
+			coefficient = null;
+		}
+	}
+	
+	@Override
+	public ArithmeticRuleOperand visitArithmeticRuleOperand(ArithmeticRuleOperandContext ctx) {
+		ArithmeticRuleOperand operand = new ArithmeticRuleOperand();
+		// Checks if the operand is just a coefficient
+		if (ctx.getChildCount() == 1 && ctx.getChild(0).getPayload() instanceof CoefficientContext) {
+			operand.coefficient = visitCoefficient((CoefficientContext) ctx.getChild(0));
+		}
+		else {
+			// Checks if there is a prepended multiplier coefficient
+			int atomIndex = 0;
+			if (ctx.getChild(0).getPayload() instanceof CoefficientContext) {
+				operand.coefficient = visitCoefficient((CoefficientContext) ctx.getChild(0).getPayload());
+				atomIndex = (ctx.getChild(1).getPayload() instanceof CommonToken) ? 2 : 1;
+			}
+			
+			// Parses SummationAtom or Atom
+			operand.atom = (SummationAtomOrAtom) visit(ctx.getChild(atomIndex));
+			
+			// Checks if there is an appended divisor coefficient
+			if (ctx.getChildCount() > atomIndex + 1) {
+				Coefficient divisor = visitCoefficient((CoefficientContext) ctx.getChild(atomIndex + 2));
+				if (operand.coefficient == null) {
+					operand.coefficient = new Divide(new ConstantNumber(1.0), divisor);
+				}
+				else {
+					operand.coefficient = new Divide(operand.coefficient, divisor);
+				}
+			}
+		}
+		return operand;
+	}
+	
+	@Override
+	public SummationAtom visitSummationAtom(SummationAtomContext ctx) {
+		Predicate p = visitPredicate(ctx.predicate());
+		SummationVariableOrTerm[] args = new SummationVariableOrTerm[ctx.getChildCount() / 2];
+		for (int i = 1; i < ctx.getChildCount() / 2; i++) {
+			if (ctx.getChild(i*2).getPayload() instanceof SummationVariableContext) {
+				args[i - 1] = visitSummationVariable((SummationVariableContext) ctx.getChild(i*2).getPayload());
+			}
+			else if (ctx.getChild(i*2).getPayload() instanceof TermContext) {
+				args[i - 1] = (Term) visit(ctx.getChild(i*2));
+			}
+			else {
+				throw new IllegalStateException();
+			}
+		}
+		
+		return new SummationAtom(p, args);
+	}
+
+	@Override
+	public SummationVariable visitSummationVariable(SummationVariableContext ctx) {
+		return new SummationVariable(ctx.IDENTIFIER().getText());
+	}
+	
+	@Override
+	public Coefficient visitCoefficient(CoefficientContext ctx) {
+		if (ctx.number() != null) {
+			return new ConstantNumber(visitNumber(ctx.number()));
+		}
+		else {
+			throw new IllegalStateException("(Line " + ctx.getStart().getLine()+ ") Coefficient expresion not recognized.");
+		}
+	}
+	
+	private static class SelectStatement {
+		SummationVariable v;
+		Formula f;
+	}
+	
+	@Override
+	public SelectStatement visitSelectStatement(SelectStatementContext ctx) {
+		throw new UnsupportedOperationException("Parsing select statements is not supported.");
+	}
+	
+	@Override
+	public Double visitWeightExpression(WeightExpressionContext ctx) {
+		return Double.parseDouble(ctx.NONNEGATIVE_NUMBER().getText());
+	}
+	
+	@Override
 	public Atom visitAtom(AtomContext ctx) {
 		if (ctx.predicate() != null) {
 			Predicate p = visitPredicate(ctx.predicate());
 			Term[] args = new Term[ctx.term().size()];
 			for (int i = 0; i < args.length; i++) {
-				args[i] = visitTerm(ctx.term(i));
+				args[i] = (Term) visit(ctx.term(i));
 			}
 			return new QueryAtom(p, args);
 		}
-		else if (ctx.TERM_OPERATOR() != null) {
-			// TODO: There might be a better way to look up which operator it is
+		else if (ctx.termOperator() != null) {
 			SpecialPredicate p;
-			if (("'" + ctx.TERM_OPERATOR().getText() + "'").equals(PSLParser.VOCABULARY.getLiteralName(PSLParser.NOT_EQUAL))) {
+			if (ctx.termOperator().NOT_EQUAL() != null) {
 				p = SpecialPredicate.NotEqual;
 			}
-			else if (("'" + ctx.TERM_OPERATOR().getText() + "'").equals(PSLParser.VOCABULARY.getLiteralName(PSLParser.TERM_EQUAL))) {
+			else if (ctx.termOperator().TERM_EQUAL() != null) {
 				p = SpecialPredicate.Equal;
 			}
 			else {
 				throw new IllegalStateException();
 			}
-			return new QueryAtom(p, visitTerm(ctx.term(0)), visitTerm(ctx.term(1)));
+			return new QueryAtom(p, (Term) visit(ctx.term(0)), (Term) visit(ctx.term(1)));
 		}
 		else {
 			throw new IllegalStateException();
@@ -270,19 +462,6 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	}
 	
 	@Override
-	public Term visitTerm(TermContext ctx) {
-		if (ctx.variable() != null) {
-			return visitVariable(ctx.variable());
-		}
-		else if (ctx.constant() != null) {
-			return visitConstant(ctx.constant());
-		}
-		else {
-			throw new IllegalStateException();
-		}
-	}
-	
-	@Override
 	public Variable visitVariable(VariableContext ctx) {
 		return new Variable(ctx.IDENTIFIER().getText());
 	}
@@ -290,5 +469,10 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	@Override
 	public UniqueID visitConstant(ConstantContext ctx) {
 		return data.getUniqueID(ctx.IDENTIFIER().getText());
+	}
+	
+	@Override
+	public Double visitNumber(NumberContext ctx) {
+		return Double.parseDouble(ctx.getText());
 	}
 }

@@ -15,30 +15,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.model.rule.arithmetic.formula;
+package edu.umd.cs.psl.model.rule.arithmetic.expression;
 
-import edu.umd.cs.psl.model.formula.Formula;
-import edu.umd.cs.psl.model.predicate.Predicate;
-import edu.umd.cs.psl.model.term.Constant;
-import edu.umd.cs.psl.model.term.Variable;
+import edu.umd.cs.psl.model.atom.Atom;
 
 /**
- * Special argument to a {@link Predicate} in a {@link Formula}.
+ * Either a {@link SummationAtom} or {@link Atom}.
  * <p>
- * It is a placeholder for {@link Constant Constants} that are allowed to vary in
- * a summation.
+ * Hack for a union type (which is not directly supported in Java).
  * 
  * @author Stephen Bach
  */
-public class SumVariable extends Variable {
-
-	public SumVariable(String name) {
-		super(name);
-	}
-	
-	@Override
-	public String toString() {
-		return "+" + super.toString();
-	}
-
-}
+public interface SummationAtomOrAtom { }

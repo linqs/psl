@@ -17,20 +17,16 @@
  */
 package edu.umd.cs.psl.model.rule.arithmetic;
 
+import java.util.Map;
+
 import edu.umd.cs.psl.application.groundrulestore.GroundRuleStore;
-import edu.umd.cs.psl.database.DatabaseQuery;
-import edu.umd.cs.psl.database.ResultList;
-import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.AtomEvent;
 import edu.umd.cs.psl.model.atom.AtomEventFramework;
 import edu.umd.cs.psl.model.atom.AtomManager;
-import edu.umd.cs.psl.model.formula.Conjunction;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.rule.AbstractRule;
-import edu.umd.cs.psl.model.rule.arithmetic.formula.Coefficient;
-import edu.umd.cs.psl.model.rule.arithmetic.formula.SumVariable;
-import edu.umd.cs.psl.model.term.Term;
-import edu.umd.cs.psl.model.term.Variable;
+import edu.umd.cs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
+import edu.umd.cs.psl.model.rule.arithmetic.expression.SummationVariable;
 
 /**
  * Base class for all (first order, i.e., not ground) arithmetic rules.
@@ -41,29 +37,22 @@ public class AbstractArithmeticRule extends AbstractRule {
 	
 	enum Comparator {EQUAL, GREATER_EQUAL, LESS_EQUAL}
 	
-	protected final Coefficient[] coeffs;
-	protected final Atom[] atoms;
-	protected final Comparator comparator;
-	protected final Coefficient c;
-	protected final Formula[] selects;
-
-	public AbstractArithmeticRule(Coefficient[] coeffs, Atom[] atoms,
-			Comparator comparator, Coefficient c, Formula... selectStatements) {
-		this.coeffs = coeffs;
-		this.atoms = atoms;
-		this.comparator = comparator;
-		this.c = c;
+	protected final ArithmeticRuleExpression expression;
+	protected final Map<SummationVariable, Formula> selects;
+	
+	public AbstractArithmeticRule(ArithmeticRuleExpression expression, Map<SummationVariable, Formula> selectStatements) {
+		this.expression = expression;
 		this.selects = selectStatements;
 	}
 	
 	@Override
 	public void groundAll(AtomManager atomManager, GroundRuleStore grs) {
-		DatabaseQuery query = new DatabaseQuery(new Conjunction(atoms));
+		//DatabaseQuery query = new DatabaseQuery(new Conjunction(expression.getAtoms()));
 		
 		/* Collects regular variables to to project query onto them */
-		for (Atom atom : atoms) {
+		/*for (Atom atom : expression.getAtoms()) {
 			for (Term term : atom.getArguments()) {
-				if (term instanceof Variable && !(term instanceof SumVariable)) {
+				if (term instanceof Variable && !(term instanceof SummationVariable)) {
 					query.getProjectionSubset().add((Variable) term);
 				}
 			}
@@ -73,7 +62,7 @@ public class AbstractArithmeticRule extends AbstractRule {
 		
 		for (int i = 0; i < groundings.size(); i++) {
 			
-		}
+		}*/
 		
 		throw new UnsupportedOperationException("Grounding arithmetic rules is not supported.");
 	}

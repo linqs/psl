@@ -31,7 +31,7 @@ public class LatentObjectiveComputer extends HardEM {
 		super(model, rvDB, observedDB, config);
 
 		/* Gathers the CompatibilityKernels */
-		for (WeightedRule k : Iterables.filter(model.getKernels(), WeightedRule.class))
+		for (WeightedRule k : Iterables.filter(model.getRules(), WeightedRule.class))
 			if (k.isWeightMutable())
 				kernels.add(k);
 			else

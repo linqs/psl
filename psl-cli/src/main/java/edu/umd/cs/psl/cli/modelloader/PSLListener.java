@@ -1,6 +1,5 @@
-// Generated from PSL.g4 by ANTLR 4.5
+// Generated from PSL.g4 by ANTLR 4.5.3
 package edu.umd.cs.psl.cli.modelloader;
-import org.antlr.v4.runtime.misc.NotNull;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
 /**
@@ -19,15 +18,15 @@ public interface PSLListener extends ParseTreeListener {
 	 */
 	void exitProgram(PSLParser.ProgramContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link PSLParser#psl_rule}.
+	 * Enter a parse tree produced by {@link PSLParser#pslRule}.
 	 * @param ctx the parse tree
 	 */
-	void enterPsl_rule(PSLParser.Psl_ruleContext ctx);
+	void enterPslRule(PSLParser.PslRuleContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link PSLParser#psl_rule}.
+	 * Exit a parse tree produced by {@link PSLParser#pslRule}.
 	 * @param ctx the parse tree
 	 */
-	void exitPsl_rule(PSLParser.Psl_ruleContext ctx);
+	void exitPslRule(PSLParser.PslRuleContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link PSLParser#predicate}.
 	 * @param ctx the parse tree
@@ -89,125 +88,135 @@ public interface PSLListener extends ParseTreeListener {
 	 */
 	void exitConstant(PSLParser.ConstantContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link PSLParser#logical_rule}.
+	 * Enter a parse tree produced by {@link PSLParser#logicalRule}.
 	 * @param ctx the parse tree
 	 */
-	void enterLogical_rule(PSLParser.Logical_ruleContext ctx);
+	void enterLogicalRule(PSLParser.LogicalRuleContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link PSLParser#logical_rule}.
+	 * Exit a parse tree produced by {@link PSLParser#logicalRule}.
 	 * @param ctx the parse tree
 	 */
-	void exitLogical_rule(PSLParser.Logical_ruleContext ctx);
+	void exitLogicalRule(PSLParser.LogicalRuleContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link PSLParser#weighted_logical_rule}.
+	 * Enter a parse tree produced by {@link PSLParser#weightedLogicalRule}.
 	 * @param ctx the parse tree
 	 */
-	void enterWeighted_logical_rule(PSLParser.Weighted_logical_ruleContext ctx);
+	void enterWeightedLogicalRule(PSLParser.WeightedLogicalRuleContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link PSLParser#weighted_logical_rule}.
+	 * Exit a parse tree produced by {@link PSLParser#weightedLogicalRule}.
 	 * @param ctx the parse tree
 	 */
-	void exitWeighted_logical_rule(PSLParser.Weighted_logical_ruleContext ctx);
+	void exitWeightedLogicalRule(PSLParser.WeightedLogicalRuleContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link PSLParser#unweighted_logical_rule}.
+	 * Enter a parse tree produced by {@link PSLParser#unweightedLogicalRule}.
 	 * @param ctx the parse tree
 	 */
-	void enterUnweighted_logical_rule(PSLParser.Unweighted_logical_ruleContext ctx);
+	void enterUnweightedLogicalRule(PSLParser.UnweightedLogicalRuleContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link PSLParser#unweighted_logical_rule}.
+	 * Exit a parse tree produced by {@link PSLParser#unweightedLogicalRule}.
 	 * @param ctx the parse tree
 	 */
-	void exitUnweighted_logical_rule(PSLParser.Unweighted_logical_ruleContext ctx);
+	void exitUnweightedLogicalRule(PSLParser.UnweightedLogicalRuleContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link PSLParser#logical_rule_expression}.
+	 * Enter a parse tree produced by {@link PSLParser#logicalRuleExpression}.
 	 * @param ctx the parse tree
 	 */
-	void enterLogical_rule_expression(PSLParser.Logical_rule_expressionContext ctx);
+	void enterLogicalRuleExpression(PSLParser.LogicalRuleExpressionContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link PSLParser#logical_rule_expression}.
+	 * Exit a parse tree produced by {@link PSLParser#logicalRuleExpression}.
 	 * @param ctx the parse tree
 	 */
-	void exitLogical_rule_expression(PSLParser.Logical_rule_expressionContext ctx);
+	void exitLogicalRuleExpression(PSLParser.LogicalRuleExpressionContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link PSLParser#disjunctive_clause}.
+	 * Enter a parse tree produced by {@link PSLParser#disjunctiveClause}.
 	 * @param ctx the parse tree
 	 */
-	void enterDisjunctive_clause(PSLParser.Disjunctive_clauseContext ctx);
+	void enterDisjunctiveClause(PSLParser.DisjunctiveClauseContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link PSLParser#disjunctive_clause}.
+	 * Exit a parse tree produced by {@link PSLParser#disjunctiveClause}.
 	 * @param ctx the parse tree
 	 */
-	void exitDisjunctive_clause(PSLParser.Disjunctive_clauseContext ctx);
+	void exitDisjunctiveClause(PSLParser.DisjunctiveClauseContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link PSLParser#conjunctive_clause}.
+	 * Enter a parse tree produced by {@link PSLParser#conjunctiveClause}.
 	 * @param ctx the parse tree
 	 */
-	void enterConjunctive_clause(PSLParser.Conjunctive_clauseContext ctx);
+	void enterConjunctiveClause(PSLParser.ConjunctiveClauseContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link PSLParser#conjunctive_clause}.
+	 * Exit a parse tree produced by {@link PSLParser#conjunctiveClause}.
 	 * @param ctx the parse tree
 	 */
-	void exitConjunctive_clause(PSLParser.Conjunctive_clauseContext ctx);
+	void exitConjunctiveClause(PSLParser.ConjunctiveClauseContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link PSLParser#arithmetic_rule}.
+	 * Enter a parse tree produced by {@link PSLParser#arithmeticRule}.
 	 * @param ctx the parse tree
 	 */
-	void enterArithmetic_rule(PSLParser.Arithmetic_ruleContext ctx);
+	void enterArithmeticRule(PSLParser.ArithmeticRuleContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link PSLParser#arithmetic_rule}.
+	 * Exit a parse tree produced by {@link PSLParser#arithmeticRule}.
 	 * @param ctx the parse tree
 	 */
-	void exitArithmetic_rule(PSLParser.Arithmetic_ruleContext ctx);
+	void exitArithmeticRule(PSLParser.ArithmeticRuleContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link PSLParser#weighted_arithmetic_rule}.
+	 * Enter a parse tree produced by {@link PSLParser#weightedArithmeticRule}.
 	 * @param ctx the parse tree
 	 */
-	void enterWeighted_arithmetic_rule(PSLParser.Weighted_arithmetic_ruleContext ctx);
+	void enterWeightedArithmeticRule(PSLParser.WeightedArithmeticRuleContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link PSLParser#weighted_arithmetic_rule}.
+	 * Exit a parse tree produced by {@link PSLParser#weightedArithmeticRule}.
 	 * @param ctx the parse tree
 	 */
-	void exitWeighted_arithmetic_rule(PSLParser.Weighted_arithmetic_ruleContext ctx);
+	void exitWeightedArithmeticRule(PSLParser.WeightedArithmeticRuleContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link PSLParser#unweighted_arithmetic_rule}.
+	 * Enter a parse tree produced by {@link PSLParser#unweightedArithmeticRule}.
 	 * @param ctx the parse tree
 	 */
-	void enterUnweighted_arithmetic_rule(PSLParser.Unweighted_arithmetic_ruleContext ctx);
+	void enterUnweightedArithmeticRule(PSLParser.UnweightedArithmeticRuleContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link PSLParser#unweighted_arithmetic_rule}.
+	 * Exit a parse tree produced by {@link PSLParser#unweightedArithmeticRule}.
 	 * @param ctx the parse tree
 	 */
-	void exitUnweighted_arithmetic_rule(PSLParser.Unweighted_arithmetic_ruleContext ctx);
+	void exitUnweightedArithmeticRule(PSLParser.UnweightedArithmeticRuleContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link PSLParser#arithmetic_rule_expression}.
+	 * Enter a parse tree produced by {@link PSLParser#arithmeticRuleExpression}.
 	 * @param ctx the parse tree
 	 */
-	void enterArithmetic_rule_expression(PSLParser.Arithmetic_rule_expressionContext ctx);
+	void enterArithmeticRuleExpression(PSLParser.ArithmeticRuleExpressionContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link PSLParser#arithmetic_rule_expression}.
+	 * Exit a parse tree produced by {@link PSLParser#arithmeticRuleExpression}.
 	 * @param ctx the parse tree
 	 */
-	void exitArithmetic_rule_expression(PSLParser.Arithmetic_rule_expressionContext ctx);
+	void exitArithmeticRuleExpression(PSLParser.ArithmeticRuleExpressionContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link PSLParser#arithmetic_rule_operand}.
+	 * Enter a parse tree produced by {@link PSLParser#arithmeticRuleOperand}.
 	 * @param ctx the parse tree
 	 */
-	void enterArithmetic_rule_operand(PSLParser.Arithmetic_rule_operandContext ctx);
+	void enterArithmeticRuleOperand(PSLParser.ArithmeticRuleOperandContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link PSLParser#arithmetic_rule_operand}.
+	 * Exit a parse tree produced by {@link PSLParser#arithmeticRuleOperand}.
 	 * @param ctx the parse tree
 	 */
-	void exitArithmetic_rule_operand(PSLParser.Arithmetic_rule_operandContext ctx);
+	void exitArithmeticRuleOperand(PSLParser.ArithmeticRuleOperandContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link PSLParser#sum_augmented_atom}.
+	 * Enter a parse tree produced by {@link PSLParser#summationAtom}.
 	 * @param ctx the parse tree
 	 */
-	void enterSum_augmented_atom(PSLParser.Sum_augmented_atomContext ctx);
+	void enterSummationAtom(PSLParser.SummationAtomContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link PSLParser#sum_augmented_atom}.
+	 * Exit a parse tree produced by {@link PSLParser#summationAtom}.
 	 * @param ctx the parse tree
 	 */
-	void exitSum_augmented_atom(PSLParser.Sum_augmented_atomContext ctx);
+	void exitSummationAtom(PSLParser.SummationAtomContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link PSLParser#summationVariable}.
+	 * @param ctx the parse tree
+	 */
+	void enterSummationVariable(PSLParser.SummationVariableContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link PSLParser#summationVariable}.
+	 * @param ctx the parse tree
+	 */
+	void exitSummationVariable(PSLParser.SummationVariableContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link PSLParser#coefficient}.
 	 * @param ctx the parse tree
@@ -219,35 +228,85 @@ public interface PSLListener extends ParseTreeListener {
 	 */
 	void exitCoefficient(PSLParser.CoefficientContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link PSLParser#select_statement}.
+	 * Enter a parse tree produced by {@link PSLParser#selectStatement}.
 	 * @param ctx the parse tree
 	 */
-	void enterSelect_statement(PSLParser.Select_statementContext ctx);
+	void enterSelectStatement(PSLParser.SelectStatementContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link PSLParser#select_statement}.
+	 * Exit a parse tree produced by {@link PSLParser#selectStatement}.
 	 * @param ctx the parse tree
 	 */
-	void exitSelect_statement(PSLParser.Select_statementContext ctx);
+	void exitSelectStatement(PSLParser.SelectStatementContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link PSLParser#bool_expression}.
+	 * Enter a parse tree produced by {@link PSLParser#boolExpression}.
 	 * @param ctx the parse tree
 	 */
-	void enterBool_expression(PSLParser.Bool_expressionContext ctx);
+	void enterBoolExpression(PSLParser.BoolExpressionContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link PSLParser#bool_expression}.
+	 * Exit a parse tree produced by {@link PSLParser#boolExpression}.
 	 * @param ctx the parse tree
 	 */
-	void exitBool_expression(PSLParser.Bool_expressionContext ctx);
+	void exitBoolExpression(PSLParser.BoolExpressionContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link PSLParser#weight_expression}.
+	 * Enter a parse tree produced by {@link PSLParser#weightExpression}.
 	 * @param ctx the parse tree
 	 */
-	void enterWeight_expression(PSLParser.Weight_expressionContext ctx);
+	void enterWeightExpression(PSLParser.WeightExpressionContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link PSLParser#weight_expression}.
+	 * Exit a parse tree produced by {@link PSLParser#weightExpression}.
 	 * @param ctx the parse tree
 	 */
-	void exitWeight_expression(PSLParser.Weight_expressionContext ctx);
+	void exitWeightExpression(PSLParser.WeightExpressionContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link PSLParser#termOperator}.
+	 * @param ctx the parse tree
+	 */
+	void enterTermOperator(PSLParser.TermOperatorContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link PSLParser#termOperator}.
+	 * @param ctx the parse tree
+	 */
+	void exitTermOperator(PSLParser.TermOperatorContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link PSLParser#arithmeticRuleRelation}.
+	 * @param ctx the parse tree
+	 */
+	void enterArithmeticRuleRelation(PSLParser.ArithmeticRuleRelationContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link PSLParser#arithmeticRuleRelation}.
+	 * @param ctx the parse tree
+	 */
+	void exitArithmeticRuleRelation(PSLParser.ArithmeticRuleRelationContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link PSLParser#arithmeticOperator}.
+	 * @param ctx the parse tree
+	 */
+	void enterArithmeticOperator(PSLParser.ArithmeticOperatorContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link PSLParser#arithmeticOperator}.
+	 * @param ctx the parse tree
+	 */
+	void exitArithmeticOperator(PSLParser.ArithmeticOperatorContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link PSLParser#linearOperator}.
+	 * @param ctx the parse tree
+	 */
+	void enterLinearOperator(PSLParser.LinearOperatorContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link PSLParser#linearOperator}.
+	 * @param ctx the parse tree
+	 */
+	void exitLinearOperator(PSLParser.LinearOperatorContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link PSLParser#coeffOperator}.
+	 * @param ctx the parse tree
+	 */
+	void enterCoeffOperator(PSLParser.CoeffOperatorContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link PSLParser#coeffOperator}.
+	 * @param ctx the parse tree
+	 */
+	void exitCoeffOperator(PSLParser.CoeffOperatorContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link PSLParser#number}.
 	 * @param ctx the parse tree

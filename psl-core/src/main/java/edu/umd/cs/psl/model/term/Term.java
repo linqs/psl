@@ -18,13 +18,14 @@
 package edu.umd.cs.psl.model.term;
 
 import edu.umd.cs.psl.model.predicate.Predicate;
+import edu.umd.cs.psl.model.rule.arithmetic.expression.SummationVariableOrTerm;
 
 /**
  * An argument to a {@link Predicate}.
  * 
  * @author Matthias Broecheler
  */
-public interface Term {
+public interface Term extends SummationVariableOrTerm {
 	
 	/**
 	 * @return a human-friendly String identifier

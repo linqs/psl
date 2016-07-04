@@ -55,7 +55,7 @@ public class Grounding {
 	 */
 	public static void groundAll(Model m, AtomManager atomManager, GroundRuleStore gks,
 			com.google.common.base.Predicate<Rule> filter) {
-		for (Rule k : m.getKernels()) {
+		for (Rule k : m.getRules()) {
 			if (filter.apply(k))
 				k.groundAll(atomManager, gks);
 		}

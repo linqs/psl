@@ -17,10 +17,13 @@
  */
 package edu.umd.cs.psl.model.rule.arithmetic;
 
-import edu.umd.cs.psl.model.atom.Atom;
+import java.util.HashMap;
+import java.util.Map;
+
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.rule.UnweightedRule;
-import edu.umd.cs.psl.model.rule.arithmetic.formula.Coefficient;
+import edu.umd.cs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
+import edu.umd.cs.psl.model.rule.arithmetic.expression.SummationVariable;
 
 /**
  * A template for {@link UnweightedGroundArithmeticRule UnweightedGroundArithmeticRules}.
@@ -30,9 +33,27 @@ import edu.umd.cs.psl.model.rule.arithmetic.formula.Coefficient;
 public class UnweightedArithmeticRule extends AbstractArithmeticRule
 		implements UnweightedRule {
 
-	public UnweightedArithmeticRule(Coefficient[] coeffs, Atom[] atoms, Comparator comparator, Coefficient c,
-			Formula[] selectStatements) {
-		super(coeffs, atoms, comparator, c, selectStatements);
+	public UnweightedArithmeticRule(ArithmeticRuleExpression expression) {
+		this(expression, new HashMap<SummationVariable, Formula>());
+	}
+	
+	public UnweightedArithmeticRule(ArithmeticRuleExpression expression, Map<SummationVariable, Formula> selectStatements) {
+		super(expression, selectStatements);
+	}
+	
+	@Override
+	public String toString() {
+		StringBuilder s = new StringBuilder();
+		s.append(expression);
+		s.append(" .");
+		for (Map.Entry<SummationVariable, Formula> e : selects.entrySet()) {
+			s.append("\n{");
+			s.append(e.getKey());
+			s.append(" : ");
+			s.append(e.getValue());
+			s.append("}");
+		}
+		return s.toString();
 	}
 
 }

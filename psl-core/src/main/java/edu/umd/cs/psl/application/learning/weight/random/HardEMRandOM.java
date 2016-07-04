@@ -280,7 +280,7 @@ public class HardEMRandOM implements ModelApplication {
 			 * TODO: if we really want to make PSL a RandOM, we could also learn variances here
 			 */
 			double totalChange = 0;
-			for (WeightedRule k : Iterables.filter(model.getKernels(), WeightedRule.class)) {
+			for (WeightedRule k : Iterables.filter(model.getRules(), WeightedRule.class)) {
 				double avgWeight = 0.0;
 				int count = 0;
 				for (WeightedGroundRule gk : Iterables.filter(

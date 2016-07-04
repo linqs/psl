@@ -118,7 +118,7 @@ public class LazyMPEInference extends Observable implements ModelApplication {
 		AtomEventFramework eventFramework = new AtomEventFramework(db, config);
 		
 		/* Registers the Model's Kernels with the AtomEventFramework */
-		for (Rule k : model.getKernels())
+		for (Rule k : model.getRules())
 			k.registerForAtomEvents(eventFramework, reasoner);
 		
 		/* Initializes the ground model */
@@ -157,7 +157,7 @@ public class LazyMPEInference extends Observable implements ModelApplication {
 		double infeasibility = GroundKernels.getInfeasibilityNorm(reasoner.getConstraintKernels());
 		
 		/* Unregisters the Model's Kernels with the AtomEventFramework */
-		for (Rule k : model.getKernels())
+		for (Rule k : model.getRules())
 			k.unregisterForAtomEvents(eventFramework, reasoner);
 		
 		int size = reasoner.size();

@@ -1,6 +1,5 @@
-// Generated from PSL.g4 by ANTLR 4.5
+// Generated from PSL.g4 by ANTLR 4.5.3
 package edu.umd.cs.psl.cli.modelloader;
-import org.antlr.v4.runtime.misc.NotNull;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
 /**
@@ -18,11 +17,11 @@ public interface PSLVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitProgram(PSLParser.ProgramContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link PSLParser#psl_rule}.
+	 * Visit a parse tree produced by {@link PSLParser#pslRule}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitPsl_rule(PSLParser.Psl_ruleContext ctx);
+	T visitPslRule(PSLParser.PslRuleContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link PSLParser#predicate}.
 	 * @param ctx the parse tree
@@ -60,77 +59,83 @@ public interface PSLVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitConstant(PSLParser.ConstantContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link PSLParser#logical_rule}.
+	 * Visit a parse tree produced by {@link PSLParser#logicalRule}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitLogical_rule(PSLParser.Logical_ruleContext ctx);
+	T visitLogicalRule(PSLParser.LogicalRuleContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link PSLParser#weighted_logical_rule}.
+	 * Visit a parse tree produced by {@link PSLParser#weightedLogicalRule}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitWeighted_logical_rule(PSLParser.Weighted_logical_ruleContext ctx);
+	T visitWeightedLogicalRule(PSLParser.WeightedLogicalRuleContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link PSLParser#unweighted_logical_rule}.
+	 * Visit a parse tree produced by {@link PSLParser#unweightedLogicalRule}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitUnweighted_logical_rule(PSLParser.Unweighted_logical_ruleContext ctx);
+	T visitUnweightedLogicalRule(PSLParser.UnweightedLogicalRuleContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link PSLParser#logical_rule_expression}.
+	 * Visit a parse tree produced by {@link PSLParser#logicalRuleExpression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitLogical_rule_expression(PSLParser.Logical_rule_expressionContext ctx);
+	T visitLogicalRuleExpression(PSLParser.LogicalRuleExpressionContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link PSLParser#disjunctive_clause}.
+	 * Visit a parse tree produced by {@link PSLParser#disjunctiveClause}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitDisjunctive_clause(PSLParser.Disjunctive_clauseContext ctx);
+	T visitDisjunctiveClause(PSLParser.DisjunctiveClauseContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link PSLParser#conjunctive_clause}.
+	 * Visit a parse tree produced by {@link PSLParser#conjunctiveClause}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitConjunctive_clause(PSLParser.Conjunctive_clauseContext ctx);
+	T visitConjunctiveClause(PSLParser.ConjunctiveClauseContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link PSLParser#arithmetic_rule}.
+	 * Visit a parse tree produced by {@link PSLParser#arithmeticRule}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitArithmetic_rule(PSLParser.Arithmetic_ruleContext ctx);
+	T visitArithmeticRule(PSLParser.ArithmeticRuleContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link PSLParser#weighted_arithmetic_rule}.
+	 * Visit a parse tree produced by {@link PSLParser#weightedArithmeticRule}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitWeighted_arithmetic_rule(PSLParser.Weighted_arithmetic_ruleContext ctx);
+	T visitWeightedArithmeticRule(PSLParser.WeightedArithmeticRuleContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link PSLParser#unweighted_arithmetic_rule}.
+	 * Visit a parse tree produced by {@link PSLParser#unweightedArithmeticRule}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitUnweighted_arithmetic_rule(PSLParser.Unweighted_arithmetic_ruleContext ctx);
+	T visitUnweightedArithmeticRule(PSLParser.UnweightedArithmeticRuleContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link PSLParser#arithmetic_rule_expression}.
+	 * Visit a parse tree produced by {@link PSLParser#arithmeticRuleExpression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitArithmetic_rule_expression(PSLParser.Arithmetic_rule_expressionContext ctx);
+	T visitArithmeticRuleExpression(PSLParser.ArithmeticRuleExpressionContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link PSLParser#arithmetic_rule_operand}.
+	 * Visit a parse tree produced by {@link PSLParser#arithmeticRuleOperand}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitArithmetic_rule_operand(PSLParser.Arithmetic_rule_operandContext ctx);
+	T visitArithmeticRuleOperand(PSLParser.ArithmeticRuleOperandContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link PSLParser#sum_augmented_atom}.
+	 * Visit a parse tree produced by {@link PSLParser#summationAtom}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitSum_augmented_atom(PSLParser.Sum_augmented_atomContext ctx);
+	T visitSummationAtom(PSLParser.SummationAtomContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PSLParser#summationVariable}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitSummationVariable(PSLParser.SummationVariableContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link PSLParser#coefficient}.
 	 * @param ctx the parse tree
@@ -138,23 +143,53 @@ public interface PSLVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitCoefficient(PSLParser.CoefficientContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link PSLParser#select_statement}.
+	 * Visit a parse tree produced by {@link PSLParser#selectStatement}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitSelect_statement(PSLParser.Select_statementContext ctx);
+	T visitSelectStatement(PSLParser.SelectStatementContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link PSLParser#bool_expression}.
+	 * Visit a parse tree produced by {@link PSLParser#boolExpression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitBool_expression(PSLParser.Bool_expressionContext ctx);
+	T visitBoolExpression(PSLParser.BoolExpressionContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link PSLParser#weight_expression}.
+	 * Visit a parse tree produced by {@link PSLParser#weightExpression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitWeight_expression(PSLParser.Weight_expressionContext ctx);
+	T visitWeightExpression(PSLParser.WeightExpressionContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PSLParser#termOperator}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTermOperator(PSLParser.TermOperatorContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PSLParser#arithmeticRuleRelation}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitArithmeticRuleRelation(PSLParser.ArithmeticRuleRelationContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PSLParser#arithmeticOperator}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitArithmeticOperator(PSLParser.ArithmeticOperatorContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PSLParser#linearOperator}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitLinearOperator(PSLParser.LinearOperatorContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PSLParser#coeffOperator}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitCoeffOperator(PSLParser.CoeffOperatorContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link PSLParser#number}.
 	 * @param ctx the parse tree

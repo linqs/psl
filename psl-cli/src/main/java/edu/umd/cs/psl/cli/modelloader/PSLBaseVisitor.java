@@ -1,6 +1,5 @@
-// Generated from PSL.g4 by ANTLR 4.5
+// Generated from PSL.g4 by ANTLR 4.5.3
 package edu.umd.cs.psl.cli.modelloader;
-import org.antlr.v4.runtime.misc.NotNull;
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**
@@ -25,7 +24,7 @@ public class PSLBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements PS
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitPsl_rule(PSLParser.Psl_ruleContext ctx) { return visitChildren(ctx); }
+	@Override public T visitPslRule(PSLParser.PslRuleContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -74,84 +73,91 @@ public class PSLBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements PS
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitLogical_rule(PSLParser.Logical_ruleContext ctx) { return visitChildren(ctx); }
+	@Override public T visitLogicalRule(PSLParser.LogicalRuleContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitWeighted_logical_rule(PSLParser.Weighted_logical_ruleContext ctx) { return visitChildren(ctx); }
+	@Override public T visitWeightedLogicalRule(PSLParser.WeightedLogicalRuleContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitUnweighted_logical_rule(PSLParser.Unweighted_logical_ruleContext ctx) { return visitChildren(ctx); }
+	@Override public T visitUnweightedLogicalRule(PSLParser.UnweightedLogicalRuleContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitLogical_rule_expression(PSLParser.Logical_rule_expressionContext ctx) { return visitChildren(ctx); }
+	@Override public T visitLogicalRuleExpression(PSLParser.LogicalRuleExpressionContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitDisjunctive_clause(PSLParser.Disjunctive_clauseContext ctx) { return visitChildren(ctx); }
+	@Override public T visitDisjunctiveClause(PSLParser.DisjunctiveClauseContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitConjunctive_clause(PSLParser.Conjunctive_clauseContext ctx) { return visitChildren(ctx); }
+	@Override public T visitConjunctiveClause(PSLParser.ConjunctiveClauseContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitArithmetic_rule(PSLParser.Arithmetic_ruleContext ctx) { return visitChildren(ctx); }
+	@Override public T visitArithmeticRule(PSLParser.ArithmeticRuleContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitWeighted_arithmetic_rule(PSLParser.Weighted_arithmetic_ruleContext ctx) { return visitChildren(ctx); }
+	@Override public T visitWeightedArithmeticRule(PSLParser.WeightedArithmeticRuleContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitUnweighted_arithmetic_rule(PSLParser.Unweighted_arithmetic_ruleContext ctx) { return visitChildren(ctx); }
+	@Override public T visitUnweightedArithmeticRule(PSLParser.UnweightedArithmeticRuleContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitArithmetic_rule_expression(PSLParser.Arithmetic_rule_expressionContext ctx) { return visitChildren(ctx); }
+	@Override public T visitArithmeticRuleExpression(PSLParser.ArithmeticRuleExpressionContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitArithmetic_rule_operand(PSLParser.Arithmetic_rule_operandContext ctx) { return visitChildren(ctx); }
+	@Override public T visitArithmeticRuleOperand(PSLParser.ArithmeticRuleOperandContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitSum_augmented_atom(PSLParser.Sum_augmented_atomContext ctx) { return visitChildren(ctx); }
+	@Override public T visitSummationAtom(PSLParser.SummationAtomContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public T visitSummationVariable(PSLParser.SummationVariableContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -165,21 +171,56 @@ public class PSLBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements PS
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitSelect_statement(PSLParser.Select_statementContext ctx) { return visitChildren(ctx); }
+	@Override public T visitSelectStatement(PSLParser.SelectStatementContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitBool_expression(PSLParser.Bool_expressionContext ctx) { return visitChildren(ctx); }
+	@Override public T visitBoolExpression(PSLParser.BoolExpressionContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitWeight_expression(PSLParser.Weight_expressionContext ctx) { return visitChildren(ctx); }
+	@Override public T visitWeightExpression(PSLParser.WeightExpressionContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public T visitTermOperator(PSLParser.TermOperatorContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public T visitArithmeticRuleRelation(PSLParser.ArithmeticRuleRelationContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public T visitArithmeticOperator(PSLParser.ArithmeticOperatorContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public T visitLinearOperator(PSLParser.LinearOperatorContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public T visitCoeffOperator(PSLParser.CoeffOperatorContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *

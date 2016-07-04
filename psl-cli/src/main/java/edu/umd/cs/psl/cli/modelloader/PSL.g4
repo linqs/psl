@@ -2,12 +2,12 @@
 grammar PSL;
 
 program
-	:	psl_rule+
+	:	pslRule+
 	;
 
-psl_rule
-	:	logical_rule
-	|	arithmetic_rule
+pslRule
+	:	logicalRule
+	|	arithmeticRule
 	;
 
 //
@@ -20,7 +20,7 @@ predicate
 
 atom
 	:	predicate LPAREN term (COMMA term)* RPAREN
-	|	term TERM_OPERATOR term
+	|	term termOperator term
 	;
 
 literal
@@ -46,30 +46,30 @@ constant
 // Logical rules
 //
 
-logical_rule
-	:	weighted_logical_rule
-	|	unweighted_logical_rule
+logicalRule
+	:	weightedLogicalRule
+	|	unweightedLogicalRule
 	;
 
-weighted_logical_rule
-	:	weight_expression logical_rule_expression EXPONENT_EXPRESSION?
+weightedLogicalRule
+	:	weightExpression logicalRuleExpression EXPONENT_EXPRESSION?
 	;
 
-unweighted_logical_rule
-	:	logical_rule_expression PERIOD
+unweightedLogicalRule
+	:	logicalRuleExpression PERIOD
 	;
 
-logical_rule_expression
-	:	disjunctive_clause
-	|	disjunctive_clause IMPLIED_BY conjunctive_clause
-	|	conjunctive_clause THEN disjunctive_clause
+logicalRuleExpression
+	:	disjunctiveClause
+	|	disjunctiveClause IMPLIED_BY conjunctiveClause
+	|	conjunctiveClause THEN disjunctiveClause
 	;
 
-disjunctive_clause
+disjunctiveClause
 	:	literal (OR literal)*
 	;
 
-conjunctive_clause
+conjunctiveClause
 	:	literal (AND literal)*
 	;
 
@@ -77,61 +77,65 @@ conjunctive_clause
 // Arithmetic rules
 //
 
-arithmetic_rule
-	:	weighted_arithmetic_rule
-	|	unweighted_arithmetic_rule
+arithmeticRule
+	:	weightedArithmeticRule
+	|	unweightedArithmeticRule
 	;
 
-weighted_arithmetic_rule
-	:	weight_expression arithmetic_rule_expression EXPONENT_EXPRESSION? select_statement*
+weightedArithmeticRule
+	:	weightExpression arithmeticRuleExpression EXPONENT_EXPRESSION? selectStatement*
 	;
 
-unweighted_arithmetic_rule
-	:	arithmetic_rule_expression PERIOD select_statement*
+unweightedArithmeticRule
+	:	arithmeticRuleExpression PERIOD selectStatement*
 	;
 
-arithmetic_rule_expression
-	:	arithmetic_rule_operand (LINEAR_OPERATOR arithmetic_rule_operand)* ARITHMETIC_RULE_OPERATOR arithmetic_rule_operand (LINEAR_OPERATOR arithmetic_rule_operand)*
+arithmeticRuleExpression
+	:	arithmeticRuleOperand (linearOperator arithmeticRuleOperand)* arithmeticRuleRelation arithmeticRuleOperand (linearOperator arithmeticRuleOperand)*
 	;
 
-arithmetic_rule_operand
-	:	(coefficient MULT?)? sum_augmented_atom (DIV coefficient)?
+arithmeticRuleOperand
+	:	(coefficient MULT?)? (summationAtom | atom) (DIV coefficient)?
 	|	coefficient
 	;
 
-sum_augmented_atom
-	:	predicate LPAREN PLUS? variable (COMMA PLUS? variable)* RPAREN
+summationAtom
+	:	predicate LPAREN (summationVariable | term) (COMMA (summationVariable | term))* RPAREN
+	;
+	
+summationVariable
+	:	PLUS IDENTIFIER
 	;
 
 coefficient
 	:	number
 	|	PIPE variable PIPE
-	|	coefficient ARITHMETIC_OPERATOR coefficient
-	|	COEFF_OPERATOR LBRACKET coefficient (COMMA coefficient)+ RBRACKET
+	|	coefficient arithmeticOperator coefficient
+	|	coeffOperator LBRACKET coefficient (COMMA coefficient)+ RBRACKET
 	|	LPAREN coefficient RPAREN
 	;
 
-select_statement
-	:	LBRACE variable COLON bool_expression RBRACE
+selectStatement
+	:	LBRACE variable COLON boolExpression RBRACE
 	;
 
-bool_expression
+boolExpression
 	:	literal
-	|	LPAREN bool_expression RPAREN
-	|	bool_expression OR bool_expression
-	|	bool_expression AND bool_expression 
+	|	LPAREN boolExpression RPAREN
+	|	boolExpression OR boolExpression
+	|	boolExpression AND boolExpression 
 	;
 
 //
 // Common expressions
 //
 
-weight_expression
+weightExpression
 	:	NONNEGATIVE_NUMBER COLON
 	;
 
 EXPONENT_EXPRESSION
-	:	CARET [12]
+	:	'^' [12]
 	;
 
 //
@@ -167,7 +171,7 @@ IMPLIED_BY
 // Term operators
 //
 
-TERM_OPERATOR
+termOperator
 	:	TERM_EQUAL
 	|	NOT_EQUAL
 	;
@@ -181,10 +185,10 @@ NOT_EQUAL
 	;
 
 //
-// Arithmetic rule operators
+// Arithmetic rule relations
 //
 
-ARITHMETIC_RULE_OPERATOR
+arithmeticRuleRelation
 	:	LESS_THAN_EQUAL
 	|	GREATER_THAN_EQUAL
 	|	EQUAL
@@ -206,14 +210,14 @@ EQUAL
 // Arithmetic operators
 //
 
-ARITHMETIC_OPERATOR
+arithmeticOperator
 	:	PLUS
 	|	MINUS
 	|	MULT
 	|	DIV
 	;
 
-LINEAR_OPERATOR
+linearOperator
 	:	PLUS
 	|	MINUS
 	;
@@ -238,7 +242,7 @@ DIV
 // Additional coefficient operators
 //
 
-COEFF_OPERATOR
+coeffOperator
 	:	MAX
 	|	MIN
 	;
@@ -283,10 +287,6 @@ DIGIT
 
 PERIOD
 	:	'.'
-	;
-
-CARET
-	:	'^'
 	;
 
 COMMA
