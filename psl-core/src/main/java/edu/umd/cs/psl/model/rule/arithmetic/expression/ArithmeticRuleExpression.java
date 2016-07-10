@@ -18,9 +18,14 @@
 package edu.umd.cs.psl.model.rule.arithmetic.expression;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
+import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.rule.arithmetic.expression.coefficient.Coefficient;
+import edu.umd.cs.psl.model.term.Term;
+import edu.umd.cs.psl.model.term.Variable;
 import edu.umd.cs.psl.reasoner.function.FunctionComparator;
 
 /**
@@ -33,6 +38,8 @@ public class ArithmeticRuleExpression {
 	private final List<SummationAtomOrAtom> atoms;
 	private final FunctionComparator comparator;
 	private final Coefficient c;
+	private final Set<Variable> vars;
+	private final Set<SummationVariable> sumVars;
 
 	public ArithmeticRuleExpression(List<Coefficient> coeffs, List<SummationAtomOrAtom> atoms,
 			FunctionComparator comparator, Coefficient c) {
@@ -40,6 +47,37 @@ public class ArithmeticRuleExpression {
 		this.atoms = Collections.unmodifiableList(atoms);
 		this.comparator = comparator;
 		this.c = c;
+		
+		Set<Variable> vars = new HashSet<Variable>();
+		for (SummationAtomOrAtom saoa : getAtoms()) {
+			if (saoa instanceof SummationAtom) {
+				for (SummationVariableOrTerm svot : ((SummationAtom) saoa).getArguments()) {
+					if (svot instanceof Variable) {
+						vars.add((Variable) svot);
+					}
+				}
+			}
+			else {
+				for (Term term : ((Atom) saoa).getArguments()) {
+					if (term instanceof Variable) {
+						vars.add((Variable) term);
+					}
+				}
+			}
+		}
+		this.vars = Collections.unmodifiableSet(vars);
+		
+		Set<SummationVariable> sumVars = new HashSet<SummationVariable>();
+		for (SummationAtomOrAtom saoa : getAtoms()) {
+			if (saoa instanceof SummationAtom) {
+				for (SummationVariableOrTerm svot : ((SummationAtom) saoa).getArguments()) {
+					if (svot instanceof SummationVariable) {
+						sumVars.add((SummationVariable) svot);
+					}
+				}
+			}
+		}
+		this.sumVars = Collections.unmodifiableSet(sumVars);
 	}
 	
 	public List<Coefficient> getAtomCoefficients() {
@@ -56,6 +94,14 @@ public class ArithmeticRuleExpression {
 	
 	public Coefficient getFinalCoefficient() {
 		return c;
+	}
+	
+	public Set<Variable> getVariables() {
+		return vars;
+	}
+	
+	public Set<SummationVariable> getSummationVariables() {
+		return sumVars;
 	}
 	
 	@Override

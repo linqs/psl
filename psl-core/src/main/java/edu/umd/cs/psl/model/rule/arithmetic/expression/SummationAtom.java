@@ -17,6 +17,8 @@
  */
 package edu.umd.cs.psl.model.rule.arithmetic.expression;
 
+import java.util.Arrays;
+
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.QueryAtom;
 import edu.umd.cs.psl.model.predicate.Predicate;
@@ -53,6 +55,24 @@ public class SummationAtom implements SummationAtomOrAtom {
 			}
 		}
 		return new QueryAtom(p, queryAtomArgs);
+	}
+	
+	/**
+	 * Returns the number of arguments to the associated Predicate.
+	 * 
+	 * @return The number of arguments
+	 */
+	public int getArity() {
+		return p.getArity();
+	}
+	
+	/**
+	 * Returns the arguments associated with this SummationAtom.
+	 * 
+	 * @return The arguments associated with this SummationAtom
+	 */
+	public SummationVariableOrTerm[] getArguments() {
+		return Arrays.copyOf(args, args.length);
 	}
 	
 	@Override

@@ -18,8 +18,10 @@
 package edu.umd.cs.psl.model.rule.arithmetic.expression.coefficient;
 
 import java.util.Map;
+import java.util.Set;
 
 import edu.umd.cs.psl.model.rule.arithmetic.expression.SummationVariable;
+import edu.umd.cs.psl.model.term.Constant;
 
 public class Max extends Coefficient {
 	
@@ -31,8 +33,8 @@ public class Max extends Coefficient {
 	}
 	
 	@Override
-	public double getValue(Map<SummationVariable, Double> cardinalityMap) {
-		return Math.max(c1.getValue(cardinalityMap), c2.getValue(cardinalityMap));
+	public double getValue(Map<SummationVariable, Set<Constant>> subs) {
+		return Math.max(c1.getValue(subs), c2.getValue(subs));
 	}
 	
 	@Override

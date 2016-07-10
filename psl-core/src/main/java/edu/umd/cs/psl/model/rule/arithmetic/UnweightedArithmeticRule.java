@@ -20,10 +20,12 @@ package edu.umd.cs.psl.model.rule.arithmetic;
 import java.util.HashMap;
 import java.util.Map;
 
+import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.rule.UnweightedRule;
 import edu.umd.cs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
 import edu.umd.cs.psl.model.rule.arithmetic.expression.SummationVariable;
+import edu.umd.cs.psl.reasoner.function.FunctionComparator;
 
 /**
  * A template for {@link UnweightedGroundArithmeticRule UnweightedGroundArithmeticRules}.
@@ -40,6 +42,12 @@ public class UnweightedArithmeticRule extends AbstractArithmeticRule
 	public UnweightedArithmeticRule(ArithmeticRuleExpression expression, Map<SummationVariable, Formula> selectStatements) {
 		super(expression, selectStatements);
 	}
+
+	@Override
+	protected UnweightedGroundArithmeticRule makeGroundRule(double[] coeffs, GroundAtom[] atoms,
+			FunctionComparator comparator, double c) {
+		return new UnweightedGroundArithmeticRule(this, coeffs, atoms, comparator, c);
+	}
 	
 	@Override
 	public String toString() {
@@ -48,6 +56,7 @@ public class UnweightedArithmeticRule extends AbstractArithmeticRule
 		s.append(" .");
 		for (Map.Entry<SummationVariable, Formula> e : selects.entrySet()) {
 			s.append("\n{");
+			// Appends the corresponding Variable, not the SummationVariable, to leave out the '+'
 			s.append(e.getKey().getVariable());
 			s.append(" : ");
 			s.append(e.getValue());

@@ -20,7 +20,6 @@ package edu.umd.cs.psl.model.rule.arithmetic;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.rule.UnweightedGroundRule;
 import edu.umd.cs.psl.model.rule.UnweightedRule;
-import edu.umd.cs.psl.model.rule.arithmetic.AbstractArithmeticRule.Comparator;
 import edu.umd.cs.psl.reasoner.function.ConstraintTerm;
 import edu.umd.cs.psl.reasoner.function.FunctionComparator;
 import edu.umd.cs.psl.reasoner.function.FunctionSum;
@@ -36,7 +35,7 @@ public class UnweightedGroundArithmeticRule extends AbstractGroundArithmeticRule
 		implements UnweightedGroundRule {
 
 	protected UnweightedGroundArithmeticRule(UnweightedArithmeticRule rule, double[] coeffs,
-			GroundAtom[] atoms, Comparator comparator, double c) {
+			GroundAtom[] atoms, FunctionComparator comparator, double c) {
 		super(rule, coeffs, atoms, comparator, c);
 	}
 	
@@ -51,11 +50,11 @@ public class UnweightedGroundArithmeticRule extends AbstractGroundArithmeticRule
 		for (int i = 0; i < coeffs.length; i++)
 			sum += coeffs[i] * atoms[i].getValue();
 		switch (comparator) {
-		case EQUAL:
+		case Equality:
 			return Math.abs(sum - c);
-		case GREATER_EQUAL:
+		case LargerThan:
 			return -1 * Math.min(sum - c, 0);
-		case LESS_EQUAL:
+		case SmallerThan:
 			return Math.max(sum - c, 0);
 		default:
 			throw new IllegalStateException("Unrecognized comparator: " + comparator);
@@ -67,21 +66,7 @@ public class UnweightedGroundArithmeticRule extends AbstractGroundArithmeticRule
 		FunctionSum sum = new FunctionSum();
 		for (int i = 0; i < coeffs.length; i++)
 			sum.add(new FunctionSummand(coeffs[i], atoms[i].getVariable()));
-		FunctionComparator fc;
-		switch (comparator) {
-		case EQUAL:
-			fc = FunctionComparator.Equality;
-			break;
-		case GREATER_EQUAL:
-			fc = FunctionComparator.LargerThan;
-			break;
-		case LESS_EQUAL:
-			fc = FunctionComparator.SmallerThan;
-			break;
-		default:
-			throw new IllegalStateException("Unrecognized comparator: " + comparator);
-		}
-		return new ConstraintTerm(sum, fc, c);
+		return new ConstraintTerm(sum, comparator, c);
 	}
 	
 	@Override

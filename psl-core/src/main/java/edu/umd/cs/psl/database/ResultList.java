@@ -60,4 +60,11 @@ public interface ResultList {
 	 */
 	public Constant[] get(int resultNo);
 	
+	/**
+	 * Returns an array of {@link Variable Variables} in the same order as their
+	 * substitutions are returned by {@link #get(int)}.
+	 * 
+	 * @return map of indices to Variables
+	 */
+	public Variable[] getVariableMap();
 }

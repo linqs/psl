@@ -18,9 +18,11 @@
 package edu.umd.cs.psl.model.rule.arithmetic.expression.coefficient;
 
 import java.util.Map;
+import java.util.Set;
 
 import edu.umd.cs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
 import edu.umd.cs.psl.model.rule.arithmetic.expression.SummationVariable;
+import edu.umd.cs.psl.model.term.Constant;
 
 /**
  * Numeric coefficient in a {@link ArithmeticRuleExpression}.
@@ -33,5 +35,5 @@ import edu.umd.cs.psl.model.rule.arithmetic.expression.SummationVariable;
  */
 abstract public class Coefficient {
 	
-	abstract public double getValue(Map<SummationVariable, Double> cardinalityMap);
+	abstract public double getValue(Map<SummationVariable, Set<Constant>> subs);
 }

@@ -20,6 +20,7 @@ package edu.umd.cs.psl.model.rule.arithmetic;
 import java.util.HashMap;
 import java.util.Map;
 
+import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.rule.WeightedRule;
 import edu.umd.cs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
@@ -27,6 +28,7 @@ import edu.umd.cs.psl.model.rule.arithmetic.expression.SummationVariable;
 import edu.umd.cs.psl.model.weight.NegativeWeight;
 import edu.umd.cs.psl.model.weight.PositiveWeight;
 import edu.umd.cs.psl.model.weight.Weight;
+import edu.umd.cs.psl.reasoner.function.FunctionComparator;
 
 /**
  * A template for {@link WeightedGroundArithmeticRule WeightedGroundArithmeticRules}.
@@ -49,6 +51,12 @@ public class WeightedArithmeticRule extends AbstractArithmeticRule implements We
 		weight = (w >= 0.0) ? new PositiveWeight(w) : new NegativeWeight(w);
 		this.squared = squared;
 		mutable = true;
+	}
+
+	@Override
+	protected AbstractGroundArithmeticRule makeGroundRule(double[] coeffs, GroundAtom[] atoms,
+			FunctionComparator comparator, double c) {
+		return new WeightedGroundArithmeticRule(this, coeffs, atoms, comparator, c, squared);
 	}
 
 	@Override
@@ -83,7 +91,7 @@ public class WeightedArithmeticRule extends AbstractArithmeticRule implements We
 		s.append((squared) ? " ^2" : " ^1");
 		for (Map.Entry<SummationVariable, Formula> e : selects.entrySet()) {
 			s.append("\n{");
-			// We append the corresponding Variable, not the SummationVariable, to leave out the '+'
+			// Appends the corresponding Variable, not the SummationVariable, to leave out the '+'
 			s.append(e.getKey().getVariable());
 			s.append(" : ");
 			s.append(e.getValue());

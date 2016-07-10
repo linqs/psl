@@ -20,9 +20,9 @@ package edu.umd.cs.psl.model.rule.arithmetic;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.rule.WeightedGroundRule;
 import edu.umd.cs.psl.model.rule.WeightedRule;
-import edu.umd.cs.psl.model.rule.arithmetic.AbstractArithmeticRule.Comparator;
 import edu.umd.cs.psl.model.weight.Weight;
 import edu.umd.cs.psl.reasoner.function.ConstantNumber;
+import edu.umd.cs.psl.reasoner.function.FunctionComparator;
 import edu.umd.cs.psl.reasoner.function.FunctionSum;
 import edu.umd.cs.psl.reasoner.function.FunctionSummand;
 import edu.umd.cs.psl.reasoner.function.FunctionTerm;
@@ -43,13 +43,13 @@ public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule
 	private final boolean squared;
 
 	protected WeightedGroundArithmeticRule(WeightedArithmeticRule rule, double[] coeffs, GroundAtom[] atoms,
-			Comparator comparator, double c, boolean squared) {
+			FunctionComparator comparator, double c, boolean squared) {
 		super(rule, coeffs, atoms, comparator, c);
-		if (Comparator.EQUAL.equals(comparator))
+		if (FunctionComparator.Equality.equals(comparator))
 			throw new IllegalArgumentException("WeightedGroundArithmeticRules do not support equality comparators. "
-					+ "Create two ground rules instead, one with " + Comparator.LESS_EQUAL + " and one with "
-					+ Comparator.GREATER_EQUAL + ".");
-		else if (!Comparator.LESS_EQUAL.equals(comparator) && !Comparator.GREATER_EQUAL.equals(comparator))
+					+ "Create two ground rules instead, one with " + FunctionComparator.SmallerThan + " and one with "
+					+ FunctionComparator.LargerThan + ".");
+		else if (!FunctionComparator.SmallerThan.equals(comparator) && !FunctionComparator.LargerThan.equals(comparator))
 			throw new IllegalArgumentException("Unrecognized comparator: " + comparator);
 		
 		weight = null;
@@ -78,9 +78,9 @@ public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule
 		FunctionSum sum = new FunctionSum();
 		for (int i = 0; i < coeffs.length; i++)
 			sum.add(new FunctionSummand(
-					(Comparator.GREATER_EQUAL.equals(comparator)) ? -1 * coeffs[i] : coeffs[i],
+					(FunctionComparator.LargerThan.equals(comparator)) ? -1 * coeffs[i] : coeffs[i],
 					atoms[i].getVariable()));
-		sum.add(new FunctionSummand((Comparator.GREATER_EQUAL.equals(comparator)) ? 1 : -1, new ConstantNumber(c)));
+		sum.add(new FunctionSummand((FunctionComparator.LargerThan.equals(comparator)) ? 1 : -1, new ConstantNumber(c)));
 		
 		MaxFunction fun = new MaxFunction();
 		fun.add(sum);
@@ -94,7 +94,7 @@ public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule
 		for (int i = 0; i < coeffs.length; i++)
 			sum += coeffs[i] * atoms[i].getValue();
 		sum -= c;
-		if (Comparator.GREATER_EQUAL.equals(comparator))
+		if (FunctionComparator.LargerThan.equals(comparator))
 			sum *= -1;
 		return (squared) ? Math.pow(Math.max(sum, 0.0), 2) : Math.max(sum, 0.0);
 	}

@@ -23,7 +23,7 @@ import java.util.Set;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.rule.GroundRule;
 import edu.umd.cs.psl.model.rule.Rule;
-import edu.umd.cs.psl.model.rule.arithmetic.AbstractArithmeticRule.Comparator;
+import edu.umd.cs.psl.reasoner.function.FunctionComparator;
 
 /**
  * Base class for all ground arithmetic rules.
@@ -35,11 +35,11 @@ public class AbstractGroundArithmeticRule implements GroundRule {
 	protected final AbstractArithmeticRule rule;
 	protected final double[] coeffs;
 	protected final GroundAtom[] atoms;
-	protected final Comparator comparator;
+	protected final FunctionComparator comparator;
 	protected final double c;
 	
 	protected AbstractGroundArithmeticRule(AbstractArithmeticRule rule,
-			double[] coeffs, GroundAtom[] atoms, Comparator comparator, double c) {
+			double[] coeffs, GroundAtom[] atoms, FunctionComparator comparator, double c) {
 		this.rule = rule;
 		this.coeffs = coeffs;
 		this.atoms = atoms;
@@ -71,13 +71,13 @@ public class AbstractGroundArithmeticRule implements GroundRule {
 		}
 		
 		switch (comparator) {
-		case EQUAL:
+		case Equality:
 			sb.append("=");
 			break;
-		case GREATER_EQUAL:
+		case LargerThan:
 			sb.append(">=");
 			break;
-		case LESS_EQUAL:
+		case SmallerThan:
 			sb.append("<=");
 			break;
 		default:

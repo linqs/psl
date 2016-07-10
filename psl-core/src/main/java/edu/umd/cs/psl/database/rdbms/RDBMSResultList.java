@@ -26,12 +26,14 @@ import edu.umd.cs.psl.model.term.Variable;
 public class RDBMSResultList implements ResultList {
 
 	private final Map<Variable,Integer> varPos;
+	private Variable[] varMap;
 	private final List<Constant[]> results;
 	private final int arity;
 	
 	public RDBMSResultList(int arity) {
 		varPos = new HashMap<Variable,Integer>();
 		results = new ArrayList<Constant[]>();
+		varMap = null;
 		this.arity=arity;
 	}
 	
@@ -44,9 +46,19 @@ public class RDBMSResultList implements ResultList {
 		if (varPos.containsKey(var)) throw new IllegalArgumentException("Variable has already been set!");
 		varPos.put(var, Integer.valueOf(pos));
 	}
+
+	@Override
+	public Variable[] getVariableMap() {
+		if (varMap == null) {
+			varMap = new Variable[varPos.keySet().size()];
+			for (Map.Entry<Variable, Integer> e : varPos.entrySet()) {
+				varMap[e.getValue()] = e.getKey();
+			}
+		}
+		return varMap;
+	}
 	
-	public final int getPos(Variable var) {
-		if (!varPos.containsKey(var)) throw new IllegalArgumentException("Variable ["+var+"] is unknown!");
+	public int getPos(Variable var) {
 		return varPos.get(var);
 	}
 

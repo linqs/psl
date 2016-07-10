@@ -18,8 +18,10 @@
 package edu.umd.cs.psl.model.rule.arithmetic.expression.coefficient;
 
 import java.util.Map;
+import java.util.Set;
 
 import edu.umd.cs.psl.model.rule.arithmetic.expression.SummationVariable;
+import edu.umd.cs.psl.model.term.Constant;
 
 /**
  * The number of substitutions made for a {@link SummationVariable} in a grounding.
@@ -33,8 +35,8 @@ public class Cardinality extends Coefficient {
 	}
 
 	@Override
-	public double getValue(Map<SummationVariable, Double> cardinalityMap) {
-		return cardinalityMap.get(v);
+	public double getValue(Map<SummationVariable, Set<Constant>> subs) {
+		return subs.get(v).size();
 	}
 	
 	@Override
