@@ -17,7 +17,11 @@
  */
 package edu.umd.cs.psl.database.rdbms;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import edu.umd.cs.psl.database.ResultList;
 import edu.umd.cs.psl.model.term.Constant;
@@ -25,15 +29,13 @@ import edu.umd.cs.psl.model.term.Variable;
 
 public class RDBMSResultList implements ResultList {
 
-	private final Map<Variable,Integer> varPos;
-	private Variable[] varMap;
+	private final Map<Variable,Integer> varMap;
 	private final List<Constant[]> results;
 	private final int arity;
 	
 	public RDBMSResultList(int arity) {
-		varPos = new HashMap<Variable,Integer>();
+		varMap = new HashMap<Variable,Integer>();
 		results = new ArrayList<Constant[]>();
-		varMap = null;
 		this.arity=arity;
 	}
 	
@@ -43,23 +45,17 @@ public class RDBMSResultList implements ResultList {
 	}
 	
 	public void setVariable(Variable var, int pos) {
-		if (varPos.containsKey(var)) throw new IllegalArgumentException("Variable has already been set!");
-		varPos.put(var, Integer.valueOf(pos));
+		if (varMap.containsKey(var)) throw new IllegalArgumentException("Variable has already been set!");
+		varMap.put(var, Integer.valueOf(pos));
 	}
 
 	@Override
-	public Variable[] getVariableMap() {
-		if (varMap == null) {
-			varMap = new Variable[varPos.keySet().size()];
-			for (Map.Entry<Variable, Integer> e : varPos.entrySet()) {
-				varMap[e.getValue()] = e.getKey();
-			}
-		}
-		return varMap;
+	public Map<Variable, Integer> getVariableMap() {
+		return Collections.unmodifiableMap(varMap);
 	}
 	
 	public int getPos(Variable var) {
-		return varPos.get(var);
+		return varMap.get(var);
 	}
 
 	@Override

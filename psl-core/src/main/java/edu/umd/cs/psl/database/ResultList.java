@@ -17,6 +17,8 @@
  */
 package edu.umd.cs.psl.database;
 
+import java.util.Map;
+
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.term.Constant;
 import edu.umd.cs.psl.model.term.Variable;
@@ -61,10 +63,10 @@ public interface ResultList {
 	public Constant[] get(int resultNo);
 	
 	/**
-	 * Returns an array of {@link Variable Variables} in the same order as their
-	 * substitutions are returned by {@link #get(int)}.
+	 * Returns a Map from {@link Variable Variables} to the indices of 
+	 * substitutions that are returned by {@link #get(int)}.
 	 * 
-	 * @return map of indices to Variables
+	 * @return map of Variables to indices
 	 */
-	public Variable[] getVariableMap();
+	public Map<Variable, Integer> getVariableMap();
 }

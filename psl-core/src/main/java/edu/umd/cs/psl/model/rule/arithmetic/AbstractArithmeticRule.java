@@ -35,6 +35,7 @@ import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.formula.Conjunction;
 import edu.umd.cs.psl.model.formula.Disjunction;
 import edu.umd.cs.psl.model.formula.Formula;
+import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.rule.AbstractRule;
 import edu.umd.cs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
 import edu.umd.cs.psl.model.rule.arithmetic.expression.SummationAtom;
@@ -95,7 +96,7 @@ abstract public class AbstractArithmeticRule extends AbstractRule {
 		/* Processes results */
 		List<Double> coeffs = new LinkedList<Double>();
 		List<GroundAtom> atoms = new LinkedList<GroundAtom>();
-		Variable[] varMap = groundings.getVariableMap();
+		Map<Variable, Integer> varMap = groundings.getVariableMap();
 		for (int i = 0; i < groundings.size(); i++) {
 			populateSummationVariableSubs(subs, groundings.get(i), varMap, atomManager);
 			populateCoeffsAndAtoms(coeffs, atoms, groundings.get(i), varMap, atomManager, subs);
@@ -104,7 +105,7 @@ abstract public class AbstractArithmeticRule extends AbstractRule {
 	}
 	
 	private void populateSummationVariableSubs(Map<SummationVariable, Set<Constant>> subs,
-			Constant[] grounding, Variable[] varMap, AtomManager atomManager) {
+			Constant[] grounding, Map<Variable, Integer> varMap, AtomManager atomManager) {
 		/* Clears output data structure */
 		for (Set<Constant> constants : subs.values()) {
 			constants.clear();
@@ -112,42 +113,55 @@ abstract public class AbstractArithmeticRule extends AbstractRule {
 		
 		for (Map.Entry<SummationVariable, Set<Constant>> e : subs.entrySet()) {
 			Disjunction clauses = (Disjunction) selects.get(e.getKey());
+			
+			for (int i = 0; i < clauses.getNoFormulas(); i++) {
+				
+			}
 		}
 	}
 	
 	private void populateCoeffsAndAtoms(List<Double> coeffs, List<GroundAtom> atoms, Constant[] grounding,
-			Variable[] varMap, AtomManager atomManager, Map<SummationVariable, Set<Constant>> subs) {
+			Map<Variable, Integer> varMap, AtomManager atomManager, Map<SummationVariable, Set<Constant>> subs) {
 		/* Clears output data structures */
 		coeffs.clear();
 		atoms.clear();
 		
-		Map<SummationVariable, Integer> sumVarIndices = new HashMap<SummationVariable, Integer>();
+		/* Does population */
 		for (int j = 0; j < expression.getAtoms().size(); j++) {
+			/* Handles a SummationAtom */
 			if (expression.getAtoms().get(j) instanceof SummationAtom) {
+				/* Collects non-SummationVariable args and SummationVariable positions */
 				SummationAtom atom = (SummationAtom) expression.getAtoms().get(j);
 				SummationVariableOrTerm[] atomArgs = atom.getArguments();
-				Constant[] args = new Constant[atom.getArguments().length];
-				for (int k = 0; k < args.length; k++) {
+				SummationVariable[] sumVars = new SummationVariable[atom.getArguments().length];
+				Constant[] partialGrounding = new Constant[atom.getArguments().length];
+				for (int k = 0; k < partialGrounding.length; k++) {
 					if (atomArgs[k] instanceof SummationVariable) {
-						sumVarIndices.put((SummationVariable) atomArgs[k], k);
+						sumVars[k] = (SummationVariable) atomArgs[k];
+						partialGrounding[k] = null;
 					}
 					else if (atomArgs[k] instanceof Variable) {
-						args[k] = grounding[varSubMap[j][k]];
+						sumVars[k] = null;
+						partialGrounding[k] = grounding[varMap.get(atomArgs[k])];
 					}
 					else {
-						args[k] = (Constant) atomArgs[k];
+						sumVars[k] = null;
+						partialGrounding[k] = (Constant) atomArgs[k];
 					}
 				}
 				
-				/* Iterates over cross-product of SummationVariable substitutions */
+				/* Iterates over cross product of SummationVariable substitutions */
+				double coeffValue = expression.getAtomCoefficients().get(j).getValue(subs);
+				populateCoeffsAndAtomsForSummationAtom(coeffs, atoms, atom.getPredicate(), 0, sumVars, partialGrounding, atomManager, subs, coeffValue);
 			}
+			/* Handles an Atom */
 			else {
 				Atom atom = (Atom) expression.getAtoms().get(j);
 				Term[] atomArgs = atom.getArguments();
 				Constant[] args = new Constant[atom.getArguments().length];
 				for (int k = 0; k < args.length; k++) {
 					if (atomArgs[k] instanceof Variable) {
-						args[k] = grounding[varSubMap[j][k]];
+						args[k] = grounding[varMap.get(atomArgs[k])];
 					}
 					else {
 						args[k] = (Constant) atomArgs[k];
@@ -155,6 +169,24 @@ abstract public class AbstractArithmeticRule extends AbstractRule {
 				}
 				atoms.add(atomManager.getAtom(atom.getPredicate(), args));
 				coeffs.add(expression.getAtomCoefficients().get(j).getValue(subs));
+			}
+		}
+	}
+	
+	private void populateCoeffsAndAtomsForSummationAtom(List<Double> coeffs, List<GroundAtom> atoms, Predicate p,
+			int index, SummationVariable[] sumVars, Constant[] partialGrounding, AtomManager atomManager,
+			Map<SummationVariable, Set<Constant>> subs, double coeff) {
+		if (index >= partialGrounding.length) {
+			atoms.add(atomManager.getAtom(p, partialGrounding));
+			coeffs.add(coeff);
+		}
+		else if (sumVars[index] == null) {
+			populateCoeffsAndAtomsForSummationAtom(coeffs, atoms, p, index + 1, sumVars, partialGrounding, atomManager, subs, coeff);
+		}
+		else {
+			for (Constant sub : subs.get(sumVars[index])) {
+				partialGrounding[index] = sub;
+				populateCoeffsAndAtomsForSummationAtom(coeffs, atoms, p, index + 1, sumVars, partialGrounding, atomManager, subs, coeff);
 			}
 		}
 	}

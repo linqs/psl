@@ -58,6 +58,15 @@ public class SummationAtom implements SummationAtomOrAtom {
 	}
 	
 	/**
+	 * Returns the predicate associated with this SummationAtom.
+	 * 
+	 * @return A predicate
+	 */
+	public Predicate getPredicate() {
+		return p;
+	}
+	
+	/**
 	 * Returns the number of arguments to the associated Predicate.
 	 * 
 	 * @return The number of arguments
