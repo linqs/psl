@@ -115,7 +115,11 @@ abstract public class AbstractArithmeticRule extends AbstractRule {
 			Disjunction clauses = (Disjunction) selects.get(e.getKey());
 			
 			for (int i = 0; i < clauses.getNoFormulas(); i++) {
-				
+				DatabaseQuery query = new DatabaseQuery(clauses.get(i));
+				ResultList results = atomManager.executeQuery(query);
+				for (int j = 0; j < results.size(); j++) {
+					e.getValue().add(results.get(j, e.getKey().getVariable()));
+				}
 			}
 		}
 	}
@@ -130,7 +134,7 @@ abstract public class AbstractArithmeticRule extends AbstractRule {
 		for (int j = 0; j < expression.getAtoms().size(); j++) {
 			/* Handles a SummationAtom */
 			if (expression.getAtoms().get(j) instanceof SummationAtom) {
-				/* Collects non-SummationVariable args and SummationVariable positions */
+				/* Separates SummationVariable args and substitutes Constants for Variables */
 				SummationAtom atom = (SummationAtom) expression.getAtoms().get(j);
 				SummationVariableOrTerm[] atomArgs = atom.getArguments();
 				SummationVariable[] sumVars = new SummationVariable[atom.getArguments().length];
@@ -173,10 +177,13 @@ abstract public class AbstractArithmeticRule extends AbstractRule {
 		}
 	}
 	
+	/**
+	 * Recursively grounds GroundAtoms by replacing SummationVariables with all constants.
+	 */
 	private void populateCoeffsAndAtomsForSummationAtom(List<Double> coeffs, List<GroundAtom> atoms, Predicate p,
 			int index, SummationVariable[] sumVars, Constant[] partialGrounding, AtomManager atomManager,
 			Map<SummationVariable, Set<Constant>> subs, double coeff) {
-		if (index >= partialGrounding.length) {
+		if (index == partialGrounding.length) {
 			atoms.add(atomManager.getAtom(p, partialGrounding));
 			coeffs.add(coeff);
 		}
