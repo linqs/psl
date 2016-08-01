@@ -81,7 +81,13 @@ abstract public class AbstractArithmeticRule extends AbstractRule {
 				queryAtoms.add((Atom) saoa);
 			}
 		}
-		DatabaseQuery query = new DatabaseQuery(new Conjunction((Formula[]) queryAtoms.toArray()));
+		DatabaseQuery query;
+		if (queryAtoms.size() > 1) {
+			query = new DatabaseQuery(new Conjunction(queryAtoms.toArray(new Formula[queryAtoms.size()])));
+		}
+		else {
+			query = new DatabaseQuery(queryAtoms.get(0));
+		}
 		query.getProjectionSubset().addAll(expression.getVariables());
 		
 		/* Executes initial query */
@@ -203,7 +209,7 @@ abstract public class AbstractArithmeticRule extends AbstractRule {
 		for (int j = 0; j < coeffArray.length; j++) {
 			coeffArray[j] = coeffs.get(j);
 		}
-		GroundAtom[] atomArray = (GroundAtom[]) atoms.toArray();
+		GroundAtom[] atomArray = atoms.toArray(new GroundAtom[atoms.size()]);
 		
 		if (FunctionComparator.Equality.equals(expression.getComparator())) {
 			grs.addGroundRule(makeGroundRule(coeffArray, atomArray, FunctionComparator.LargerThan, finalCoeff));

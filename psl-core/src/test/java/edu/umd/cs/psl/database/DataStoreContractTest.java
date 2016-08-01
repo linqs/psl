@@ -530,7 +530,7 @@ abstract public class DataStoreContractTest {
 			assertTrue(false);
 	}
 	
-	@Test(expected=IllegalArgumentException.class)
+	@Test(expected=NullPointerException.class)
 	public void testExecuteQueryIllegalProjectionVariable() {
 		Inserter inserter;
 		Database db;
