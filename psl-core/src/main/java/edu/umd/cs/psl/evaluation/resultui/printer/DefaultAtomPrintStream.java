@@ -20,23 +20,31 @@ package edu.umd.cs.psl.evaluation.resultui.printer;
 import edu.umd.cs.psl.evaluation.debug.AtomPrinter;
 import edu.umd.cs.psl.model.atom.Atom;
 
+import java.io.PrintStream;
+
 public class DefaultAtomPrintStream implements AtomPrintStream {
 
 	private int atomcount;
+        private PrintStream ps;
 	
 	public DefaultAtomPrintStream() {
+	    this(System.out);
+	}
+    
+	public DefaultAtomPrintStream(PrintStream ps) {
 		atomcount=0;
-		System.out.println("--- Atoms: ");
+		this.ps = ps;
+		ps.println("--- Atoms: ");
 	}
 	
 	@Override
 	public void close() {
-		System.out.println("# Atoms: " + atomcount);
+		ps.println("# Atoms: " + atomcount);
 	}
 
 	@Override
 	public void printAtom(Atom atom) {
-		System.out.println(AtomPrinter.atomDetails(atom,false,false));
+		ps.println(AtomPrinter.atomDetails(atom,false,false));
 		atomcount++;
 	}
 
