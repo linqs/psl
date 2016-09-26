@@ -238,7 +238,7 @@ class PSLModel extends Model {
 			pslrule = new WeightedLogicalRule(ruleformula, weight, isSquared);
 		}
 		
-		addKernel(pslrule);
+		addRule(pslrule);
 		return pslrule;
 	}
 	
