@@ -39,6 +39,11 @@ public class EmptyBundle implements ConfigBundle {
 	@Override
 	public void clear() { }
 
+    	@Override
+	public Object getProperty(String key){
+		throw new UnsupportedOperationException();
+	}
+
 	@Override
 	public Boolean getBoolean(String key, Boolean defaultValue) {
 		return defaultValue;

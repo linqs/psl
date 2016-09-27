@@ -115,6 +115,16 @@ public interface ConfigBundle {
 	void clear();
 
 	/**
+	 * Get a property from the configuration.
+	 * 
+	 * @param key
+	 *            The configuration key
+	 *
+	 * @return The associated Object (or null if undefined)
+	 */
+	Object getProperty(String key);
+    
+	/**
 	 * Get a boolean associated with the given configuration key. If the key
 	 * doesn't map to an existing object, the default value is returned.
 	 * 

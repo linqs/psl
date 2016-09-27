@@ -51,9 +51,9 @@ public class ConfigManager {
 			loadResource(pslConfigFile);
 		}
 		catch (FileNotFoundException e) {
-			log.info("PSL configuration file not found. " +
+			log.info("PSL configuration {} file not found. " +
 					"Only default values will be used unless additional properties are " +
-					"specified.");
+				 "specified.", pslConfigFile);
 		}
 	}
 	
@@ -132,6 +132,16 @@ public class ConfigManager {
 			log.debug("Cleared all options in {} bundle.", prefix);
 		}
 		
+		@Override
+		public Object getProperty(String key) {
+			logAccess(key, "");
+			if(config.containsKey(key)){
+			    return config.getProperty(key);
+			} else {
+			    return null;
+			}
+		}
+	    
 		@Override
 		public Boolean getBoolean(String key, Boolean defaultValue) {
 			logAccess(key, defaultValue);
@@ -245,7 +255,7 @@ public class ConfigManager {
 			List<?> configList = config.getList(key, defaultValue);
 			List<String> toReturn = new ArrayList<String>(configList.size());
 			for (int i = 0; i < configList.size(); i++) {
-				toReturn.set(i, (String) configList.get(i));
+				toReturn.add( (String) configList.get(i));
 			}
 			return toReturn;
 		}
