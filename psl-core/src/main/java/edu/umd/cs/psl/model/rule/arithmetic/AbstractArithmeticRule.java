@@ -83,7 +83,7 @@ abstract public class AbstractArithmeticRule extends AbstractRule {
 		}
 		DatabaseQuery query;
 		if (queryAtoms.size() > 1) {
-			query = new DatabaseQuery(new Conjunction(queryAtoms.toArray(new Formula[queryAtoms.size()])));
+			query = new DatabaseQuery(new Conjunction(queryAtoms.toArray(new Formula[0])));
 		}
 		else {
 			query = new DatabaseQuery(queryAtoms.get(0));
@@ -118,10 +118,42 @@ abstract public class AbstractArithmeticRule extends AbstractRule {
 		}
 		
 		for (Map.Entry<SummationVariable, Set<Constant>> e : subs.entrySet()) {
-			Disjunction clauses = (Disjunction) selects.get(e.getKey());
+			Formula select = selects.get(e.getKey());
 			
-			for (int i = 0; i < clauses.getNoFormulas(); i++) {
-				DatabaseQuery query = new DatabaseQuery(clauses.get(i));
+			/* If there is no select statement for a summation variable, then the arithmetic rule expression is used */
+			if (select == null) {
+				List<Atom> queryAtoms = new LinkedList<Atom>();
+				for (SummationAtomOrAtom atom : this.expression.getAtoms()) {
+					if (atom instanceof SummationAtom) {
+						queryAtoms.add(((SummationAtom) atom).getQueryAtom());
+					}
+					else {
+						queryAtoms.add((Atom) atom);
+					}
+				}
+				if (queryAtoms.size() == 1) {
+					select = queryAtoms.get(0);
+				}
+				else {
+					select = new Conjunction(queryAtoms.toArray(new Formula[0]));
+				}
+			}
+			
+			select = select.getDNF();
+			
+			Formula[] queries; 
+			if (select instanceof Disjunction) {
+				queries = new Formula[((Disjunction) select).getNoFormulas()];
+				for (int i = 0; i < queries.length; i++) {
+					queries[i] = ((Disjunction) select).get(i);
+				}
+			}
+			else {
+				queries = new Formula[] {select};
+			}
+			
+			for (Formula f : queries) {
+				DatabaseQuery query = new DatabaseQuery(f);
 				ResultList results = atomManager.executeQuery(query);
 				for (int j = 0; j < results.size(); j++) {
 					e.getValue().add(results.get(j, e.getKey().getVariable()));
