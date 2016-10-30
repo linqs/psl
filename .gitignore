@@ -12,6 +12,7 @@ psl-archetype-example/target
 psl-archetype-groovy/target
 psl-core/target
 psl-groovy/target
+classpath.out
 
 # Eclipse metadata #
 ####################
@@ -40,3 +41,6 @@ psl-groovy/.classpath
 psl-groovy/.project
 psl-groovy/.settings
 
+# Editor Temporary #
+####################
+*.swp

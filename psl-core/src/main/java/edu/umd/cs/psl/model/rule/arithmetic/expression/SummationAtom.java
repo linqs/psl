@@ -42,6 +42,27 @@ public class SummationAtom implements SummationAtomOrAtom {
 	public SummationAtom(Predicate p, SummationVariableOrTerm[] args) {
 		this.p = p;
 		this.args = args;
+
+		checkSchema();
+	}
+
+	/**
+	 * Verifies that this atom has valid arguments.
+	 *
+	 * @throws IllegalArgumentException if the number of arguments doesn't match the
+	 *  number of arguments of the predicate
+	 * @throws IllegalArgumentException if any argument is null
+	 */
+	private void checkSchema() {
+		if (p.getArity() != args.length) {
+			throw new IllegalArgumentException("Length of Schema does not match the number of args.");
+		}
+
+		for (SummationVariableOrTerm arg : args) {
+			if (arg == null) {
+				throw new IllegalArgumentException("Arguments must not be null.");
+			}
+		}
 	}
 	
 	public QueryAtom getQueryAtom() {
