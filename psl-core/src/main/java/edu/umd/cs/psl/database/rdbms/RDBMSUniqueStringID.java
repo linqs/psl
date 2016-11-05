@@ -60,6 +60,6 @@ public class RDBMSUniqueStringID implements UniqueID {
 	
 	@Override
 	public String toString() {
-		return id;
+		return "'" + id + "'";
 	}
 }

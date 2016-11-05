@@ -137,7 +137,7 @@ public class AbstractArithmeticRuleTest {
 
 	@Test
 	public void testSumWithConstant() {
-		// DoubleClosed(+A, 1) = 1
+		// DoubleClosed(+A, 'Foo') = 1
 		List<Coefficient> coefficients = Arrays.asList(
 			(Coefficient)(new ConstantNumber(1))
 		);
@@ -145,14 +145,14 @@ public class AbstractArithmeticRuleTest {
 		List<SummationAtomOrAtom> atoms = Arrays.asList(
 			(SummationAtomOrAtom)(new SummationAtom(doubleClosed, new SummationVariableOrTerm[]{
 				new SummationVariable("A"),
-				dataStore.getUniqueID(1)
+				dataStore.getUniqueID("Foo")
 			}))
 		);
 
 		AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
 				coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1)));
 
-		assertEquals(rule.toString(), "1.0 * DOUBLECLOSED(+A, 1) = 1.0 .");
+		assertEquals(rule.toString(), "1.0 * DOUBLECLOSED(+A, 'Foo') = 1.0 .");
 	}
 
 	@Test
