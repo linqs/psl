@@ -137,7 +137,7 @@ public class AbstractArithmeticRuleTest {
 
 	@Test
 	public void testSumWithConstant() {
-		// DoubleClosed(+A, 1) = 1
+		// DoubleClosed(+A, 'Foo') = 1
 		List<Coefficient> coefficients = Arrays.asList(
 			(Coefficient)(new ConstantNumber(1))
 		);
