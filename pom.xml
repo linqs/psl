@@ -38,10 +38,11 @@
 		<url>http://www.umd.edu</url>
 	</organization>
 	<modules>
+		<module>psl-archetype</module>
+		<module>psl-cli</module>
 		<module>psl-core</module>
 		<module>psl-groovy</module>
-		<module>psl-cli</module>
-		<module>psl-archetype</module>
+		<module>psl-parser</module>
 	</modules>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

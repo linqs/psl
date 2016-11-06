@@ -102,7 +102,7 @@ arithmeticRuleOperand
 summationAtom
 	:	predicate LPAREN (summationVariable | term) (COMMA (summationVariable | term))* RPAREN
 	;
-	
+
 summationVariable
 	:	PLUS IDENTIFIER
 	;
@@ -123,7 +123,7 @@ boolExpression
 	:	literal
 	|	LPAREN boolExpression RPAREN
 	|	boolExpression or boolExpression
-	|	boolExpression and boolExpression 
+	|	boolExpression and boolExpression
 	;
 
 //
@@ -276,7 +276,7 @@ LETTER
 	;
 
 fragment
-DIGIT 
+DIGIT
 	:	[0-9]
 	;
 

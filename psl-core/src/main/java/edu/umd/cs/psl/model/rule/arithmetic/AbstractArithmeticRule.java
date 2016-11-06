@@ -36,6 +36,7 @@ import edu.umd.cs.psl.model.formula.Conjunction;
 import edu.umd.cs.psl.model.formula.Disjunction;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.predicate.Predicate;
+import edu.umd.cs.psl.model.predicate.StandardPredicate;
 import edu.umd.cs.psl.model.rule.AbstractRule;
 import edu.umd.cs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
 import edu.umd.cs.psl.model.rule.arithmetic.expression.SummationAtom;
@@ -45,6 +46,7 @@ import edu.umd.cs.psl.model.rule.arithmetic.expression.SummationVariableOrTerm;
 import edu.umd.cs.psl.model.term.Constant;
 import edu.umd.cs.psl.model.term.Term;
 import edu.umd.cs.psl.model.term.Variable;
+import edu.umd.cs.psl.model.term.VariableTypeMap;
 import edu.umd.cs.psl.reasoner.function.FunctionComparator;
 
 /**
@@ -52,7 +54,7 @@ import edu.umd.cs.psl.reasoner.function.FunctionComparator;
  * 
  * @author Stephen Bach
  */
-abstract public class AbstractArithmeticRule extends AbstractRule {
+public abstract class AbstractArithmeticRule extends AbstractRule {
 	
 	protected final ArithmeticRuleExpression expression;
 	protected final Map<SummationVariable, Formula> selects;
@@ -66,11 +68,27 @@ abstract public class AbstractArithmeticRule extends AbstractRule {
 			e.setValue(e.getValue().getDNF());
 		}
 		
-		//TODO: Input validation
+		validateRule();
 	}
 	
 	@Override
 	public void groundAll(AtomManager atomManager, GroundRuleStore grs) {
+		/* Ensure that no open predicates are being used in a select. */
+		Set<Atom> selectAtoms = new HashSet<Atom>();
+		for (Formula select : selects.values()) {
+			select.getAtoms(selectAtoms);
+		}
+
+		for (Atom selectAtom : selectAtoms) {
+			if (selectAtom.getPredicate() instanceof StandardPredicate
+					&& !atomManager.isClosed(((StandardPredicate)selectAtom.getPredicate()))) {
+				throw new IllegalArgumentException(String.format(
+						"Open predicate (%s) not allowed in select. " +
+						"Only closed predicates	may appear in selects.",
+						selectAtom.getPredicate().getName()));
+			}
+		}
+
 		/* Constructs initial query */
 		List<Atom> queryAtoms = new LinkedList<Atom>();
 		for (SummationAtomOrAtom saoa : expression.getAtoms()) {
@@ -249,6 +267,45 @@ abstract public class AbstractArithmeticRule extends AbstractRule {
 		}
 		else {
 			grs.addGroundRule(makeGroundRule(coeffArray, atomArray, expression.getComparator(), finalCoeff));
+		}
+	}
+
+	/**
+	 * Validate what we can about an abstract rule at creation:
+	 *	 - An argument to a select must appear in the arithmetic expression.
+	 *	 - All variables used in a select are either the argument to the select or
+	 *     appear in the arithmetic expression.
+	 */
+	private void validateRule() {
+		/* Ensure all select arguments appear in the arithmetic expression. */
+		for (SummationVariable selectArg : selects.keySet()) {
+			if (!expression.getSummationVariables().contains(selectArg)) {
+				throw new IllegalArgumentException(String.format(
+						"Unknown variable (%s) used as select argument. " +
+						"All select arguments must appear as summation variables in associated arithmetic expression.",
+						selectArg.getVariable().getName()));
+			}
+		}
+
+		/* Ensure all variables used in the selects are either the argument summation variable or in the expression. */
+		Set<String> expressionVariableNames = new HashSet<String>();
+		for (Variable var : expression.getVariables()) {
+			expressionVariableNames.add(var.getName());
+		}
+
+		for (Map.Entry<SummationVariable, Formula> select : selects.entrySet()) {
+			VariableTypeMap selectVars = new VariableTypeMap();
+			select.getValue().collectVariables(selectVars);
+
+			for (Variable var : selectVars.keySet()) {
+				if (!(select.getKey().getVariable().getName().equals(var.getName()) || expressionVariableNames.contains(var.getName()))) {
+					throw new IllegalArgumentException(String.format(
+							"Unknown variable (%s) used in select. " +
+							"All select variables must either be the select argument or appear " +
+							"in the associated arithmetic expression.",
+							var.getName()));
+				}
+			}
 		}
 	}
 	

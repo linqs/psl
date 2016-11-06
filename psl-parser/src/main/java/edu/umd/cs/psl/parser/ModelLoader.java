@@ -15,47 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.cli.modelloader;
+package edu.umd.cs.psl.parser;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-
-import org.antlr.v4.runtime.ANTLRInputStream;
-import org.antlr.v4.runtime.CommonToken;
-import org.antlr.v4.runtime.CommonTokenStream;
-
-import edu.umd.cs.psl.cli.modelloader.PSLParser.ArithmeticRuleExpressionContext;
-import edu.umd.cs.psl.cli.modelloader.PSLParser.ArithmeticRuleOperandContext;
-import edu.umd.cs.psl.cli.modelloader.PSLParser.ArithmeticRuleRelationContext;
-import edu.umd.cs.psl.cli.modelloader.PSLParser.AtomContext;
-import edu.umd.cs.psl.cli.modelloader.PSLParser.BoolExpressionContext;
-import edu.umd.cs.psl.cli.modelloader.PSLParser.CoefficientContext;
-import edu.umd.cs.psl.cli.modelloader.PSLParser.ConjunctiveClauseContext;
-import edu.umd.cs.psl.cli.modelloader.PSLParser.ConstantContext;
-import edu.umd.cs.psl.cli.modelloader.PSLParser.DisjunctiveClauseContext;
-import edu.umd.cs.psl.cli.modelloader.PSLParser.LinearOperatorContext;
-import edu.umd.cs.psl.cli.modelloader.PSLParser.LiteralContext;
-import edu.umd.cs.psl.cli.modelloader.PSLParser.LogicalRuleExpressionContext;
-import edu.umd.cs.psl.cli.modelloader.PSLParser.NumberContext;
-import edu.umd.cs.psl.cli.modelloader.PSLParser.PredicateContext;
-import edu.umd.cs.psl.cli.modelloader.PSLParser.ProgramContext;
-import edu.umd.cs.psl.cli.modelloader.PSLParser.PslRuleContext;
-import edu.umd.cs.psl.cli.modelloader.PSLParser.SelectStatementContext;
-import edu.umd.cs.psl.cli.modelloader.PSLParser.SummationAtomContext;
-import edu.umd.cs.psl.cli.modelloader.PSLParser.SummationVariableContext;
-import edu.umd.cs.psl.cli.modelloader.PSLParser.TermContext;
-import edu.umd.cs.psl.cli.modelloader.PSLParser.UnweightedArithmeticRuleContext;
-import edu.umd.cs.psl.cli.modelloader.PSLParser.UnweightedLogicalRuleContext;
-import edu.umd.cs.psl.cli.modelloader.PSLParser.VariableContext;
-import edu.umd.cs.psl.cli.modelloader.PSLParser.WeightExpressionContext;
-import edu.umd.cs.psl.cli.modelloader.PSLParser.WeightedArithmeticRuleContext;
-import edu.umd.cs.psl.cli.modelloader.PSLParser.WeightedLogicalRuleContext;
 import edu.umd.cs.psl.database.DataStore;
-import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.QueryAtom;
 import edu.umd.cs.psl.model.formula.Conjunction;
@@ -63,17 +25,11 @@ import edu.umd.cs.psl.model.formula.Disjunction;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.formula.Implication;
 import edu.umd.cs.psl.model.formula.Negation;
+import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.predicate.Predicate;
 import edu.umd.cs.psl.model.predicate.PredicateFactory;
 import edu.umd.cs.psl.model.predicate.SpecialPredicate;
-import edu.umd.cs.psl.model.rule.Rule;
-import edu.umd.cs.psl.model.rule.arithmetic.UnweightedArithmeticRule;
-import edu.umd.cs.psl.model.rule.arithmetic.WeightedArithmeticRule;
 import edu.umd.cs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
-import edu.umd.cs.psl.model.rule.arithmetic.expression.SummationAtom;
-import edu.umd.cs.psl.model.rule.arithmetic.expression.SummationAtomOrAtom;
-import edu.umd.cs.psl.model.rule.arithmetic.expression.SummationVariable;
-import edu.umd.cs.psl.model.rule.arithmetic.expression.SummationVariableOrTerm;
 import edu.umd.cs.psl.model.rule.arithmetic.expression.coefficient.Add;
 import edu.umd.cs.psl.model.rule.arithmetic.expression.coefficient.Cardinality;
 import edu.umd.cs.psl.model.rule.arithmetic.expression.coefficient.Coefficient;
@@ -83,31 +39,142 @@ import edu.umd.cs.psl.model.rule.arithmetic.expression.coefficient.Max;
 import edu.umd.cs.psl.model.rule.arithmetic.expression.coefficient.Min;
 import edu.umd.cs.psl.model.rule.arithmetic.expression.coefficient.Multiply;
 import edu.umd.cs.psl.model.rule.arithmetic.expression.coefficient.Subtract;
+import edu.umd.cs.psl.model.rule.arithmetic.expression.SummationAtom;
+import edu.umd.cs.psl.model.rule.arithmetic.expression.SummationAtomOrAtom;
+import edu.umd.cs.psl.model.rule.arithmetic.expression.SummationVariable;
+import edu.umd.cs.psl.model.rule.arithmetic.expression.SummationVariableOrTerm;
+import edu.umd.cs.psl.model.rule.arithmetic.UnweightedArithmeticRule;
+import edu.umd.cs.psl.model.rule.arithmetic.WeightedArithmeticRule;
 import edu.umd.cs.psl.model.rule.logical.UnweightedLogicalRule;
 import edu.umd.cs.psl.model.rule.logical.WeightedLogicalRule;
+import edu.umd.cs.psl.model.rule.Rule;
 import edu.umd.cs.psl.model.term.Term;
 import edu.umd.cs.psl.model.term.UniqueID;
 import edu.umd.cs.psl.model.term.Variable;
+import edu.umd.cs.psl.parser.antlr.PSLBaseVisitor;
+import edu.umd.cs.psl.parser.antlr.PSLLexer;
+import edu.umd.cs.psl.parser.antlr.PSLParser;
+import edu.umd.cs.psl.parser.antlr.PSLParser.ArithmeticRuleExpressionContext;
+import edu.umd.cs.psl.parser.antlr.PSLParser.ArithmeticRuleOperandContext;
+import edu.umd.cs.psl.parser.antlr.PSLParser.ArithmeticRuleRelationContext;
+import edu.umd.cs.psl.parser.antlr.PSLParser.AtomContext;
+import edu.umd.cs.psl.parser.antlr.PSLParser.BoolExpressionContext;
+import edu.umd.cs.psl.parser.antlr.PSLParser.CoefficientContext;
+import edu.umd.cs.psl.parser.antlr.PSLParser.ConjunctiveClauseContext;
+import edu.umd.cs.psl.parser.antlr.PSLParser.ConstantContext;
+import edu.umd.cs.psl.parser.antlr.PSLParser.DisjunctiveClauseContext;
+import edu.umd.cs.psl.parser.antlr.PSLParser.LinearOperatorContext;
+import edu.umd.cs.psl.parser.antlr.PSLParser.LiteralContext;
+import edu.umd.cs.psl.parser.antlr.PSLParser.LogicalRuleExpressionContext;
+import edu.umd.cs.psl.parser.antlr.PSLParser.NumberContext;
+import edu.umd.cs.psl.parser.antlr.PSLParser.PredicateContext;
+import edu.umd.cs.psl.parser.antlr.PSLParser.ProgramContext;
+import edu.umd.cs.psl.parser.antlr.PSLParser.PslRuleContext;
+import edu.umd.cs.psl.parser.antlr.PSLParser.SelectStatementContext;
+import edu.umd.cs.psl.parser.antlr.PSLParser.SummationAtomContext;
+import edu.umd.cs.psl.parser.antlr.PSLParser.SummationVariableContext;
+import edu.umd.cs.psl.parser.antlr.PSLParser.TermContext;
+import edu.umd.cs.psl.parser.antlr.PSLParser.UnweightedArithmeticRuleContext;
+import edu.umd.cs.psl.parser.antlr.PSLParser.UnweightedLogicalRuleContext;
+import edu.umd.cs.psl.parser.antlr.PSLParser.VariableContext;
+import edu.umd.cs.psl.parser.antlr.PSLParser.WeightedArithmeticRuleContext;
+import edu.umd.cs.psl.parser.antlr.PSLParser.WeightedLogicalRuleContext;
+import edu.umd.cs.psl.parser.antlr.PSLParser.WeightExpressionContext;
 import edu.umd.cs.psl.reasoner.function.FunctionComparator;
 
-public class ModelLoader extends PSLBaseVisitor<Object> {
+import org.antlr.v4.runtime.ANTLRInputStream;
+import org.antlr.v4.runtime.BailErrorStrategy;
+import org.antlr.v4.runtime.BaseErrorListener;
+import org.antlr.v4.runtime.CommonToken;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.RecognitionException;
+import org.antlr.v4.runtime.Recognizer;
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 
-	static public Model load(DataStore data, InputStream input) throws IOException  {
+import java.io.Reader;
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+
+public class ModelLoader extends PSLBaseVisitor<Object> {
+	/**
+	 * Parse and return a single rule.
+	 * If exactly one rule is not specified, an exception is thrown.
+	 */
+	public static Rule loadRule(DataStore data, String input) throws IOException {
+		Model model = load(data, new StringReader(input));
+
+		int ruleCount = 0;
+		Rule targetRule = null;
+
+		for (Rule rule : model.getRules()) {
+			if (ruleCount == 0) {
+				targetRule = rule;
+			}
+			ruleCount++;
+		}
+
+		if (ruleCount != 1) {
+			throw new IllegalArgumentException(String.format("Expected 1 rule, found %d.", ruleCount));
+		}
+
+		return targetRule;
+	}
+
+	/**
+	 * Convenience interface to load().
+	 */
+	public static Model load(DataStore data, String input) throws IOException {
+		return load(data, new StringReader(input));
+	}
+
+	/**
+	 * Parse and return a Model (collection of rules).
+	 * The input should only contain rules and the DataStore should contain all the predicates
+	 * used by the rules.
+	 */
+	public static Model load(DataStore data, Reader input) throws IOException  {
 		PSLLexer lexer = new PSLLexer(new ANTLRInputStream(input));
+
+		// We need to add a error listener to the lexer so we halt on lex errors.
+		lexer.addErrorListener(new BaseErrorListener() {
+			@Override
+			public void syntaxError(
+					Recognizer<?, ?> recognizer,
+					Object offendingSymbol,
+					int line,
+					int charPositionInLine,
+					String msg,
+					RecognitionException ex) throws ParseCancellationException {
+				throw new ParseCancellationException("line " + line + ":" + charPositionInLine + " " + msg, ex);
+			}
+		});
 		CommonTokenStream tokens = new CommonTokenStream(lexer);
-		System.out.println(tokens.getTokens());
+
 		PSLParser parser = new PSLParser(tokens);
-		ProgramContext program = parser.program();
+		parser.setErrorHandler(new BailErrorStrategy());
+		ProgramContext program = null;
+
+		try {
+			program = parser.program();
+		} catch (ParseCancellationException ex) {
+			// Cancel the parse and rethrow the cause.
+			throw (RuntimeException)ex.getCause();
+		}
+
 		ModelLoader visitor = new ModelLoader(data);
 		return visitor.visitProgram(program);
 	}
-	
-	protected final DataStore data;
+
+	private final DataStore data;
 
 	public ModelLoader(DataStore data) {
 		this.data = data;
 	}
-	
+
 	@Override
 	public Model visitProgram(ProgramContext ctx) {
 		Model model = new Model();
@@ -116,7 +183,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 		}
 		return model;
 	}
-	
+
 	@Override
 	public WeightedLogicalRule visitWeightedLogicalRule(WeightedLogicalRuleContext ctx) {
 		Double w = visitWeightExpression(ctx.weightExpression());
@@ -125,16 +192,16 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 		if (ctx.EXPONENT_EXPRESSION() != null) {
 			sq = ctx.EXPONENT_EXPRESSION().getText().equals("^2");
 		}
-		
+
 		return new WeightedLogicalRule(f, w, sq);
 	}
-	
+
 	@Override
 	public UnweightedLogicalRule visitUnweightedLogicalRule(UnweightedLogicalRuleContext ctx) {
 		Formula f = visitLogicalRuleExpression(ctx.logicalRuleExpression());
 		return new UnweightedLogicalRule(f);
 	}
-	
+
 	@Override
 	public Formula visitLogicalRuleExpression(LogicalRuleExpressionContext ctx) {
 		if (ctx.children.size() == 3) {
@@ -159,7 +226,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 			throw new IllegalStateException();
 		}
 	}
-	
+
 	@Override
 	public Formula visitConjunctiveClause(ConjunctiveClauseContext ctx) {
 		Formula[] literals = new Formula[ctx.literal().size()];
@@ -173,7 +240,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 			return new Conjunction(literals);
 		}
 	}
-	
+
 	@Override
 	public Formula visitDisjunctiveClause(DisjunctiveClauseContext ctx) {
 		Formula[] literals = new Formula[ctx.literal().size()];
@@ -187,7 +254,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 			return new Disjunction(literals);
 		}
 	}
-	
+
 	@Override
 	public Formula visitLiteral(LiteralContext ctx) {
 		if (ctx.children.size() == 2) {
@@ -200,7 +267,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 			throw new IllegalStateException();
 		}
 	}
-	
+
 	@Override
 	public WeightedArithmeticRule visitWeightedArithmeticRule(WeightedArithmeticRuleContext ctx) {
 		Double w = visitWeightExpression(ctx.weightExpression());
@@ -216,7 +283,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 		}
 		return new WeightedArithmeticRule(expression, selectStatements, w, sq);
 	}
-	
+
 	@Override
 	public UnweightedArithmeticRule visitUnweightedArithmeticRule(UnweightedArithmeticRuleContext ctx) {
 		ArithmeticRuleExpression expression = (ArithmeticRuleExpression) visitArithmeticRuleExpression(ctx.arithmeticRuleExpression());
@@ -227,23 +294,23 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 		}
 		return new UnweightedArithmeticRule(expression, selectStatements);
 	}
-	
+
 	@Override
 	public ArithmeticRuleExpression visitArithmeticRuleExpression(ArithmeticRuleExpressionContext ctx) {
 		List<ArithmeticRuleOperand> ops1, ops2, currentOps;
 		ops1 = new LinkedList<ArithmeticRuleOperand>();
 		ops2 = new LinkedList<ArithmeticRuleOperand>();
 		currentOps = ops1;
-		
+
 		List<Boolean> pos1, pos2, currentPos;
 		pos1 = new LinkedList<Boolean>();
 		pos1.add(true);
 		pos2 = new LinkedList<Boolean>();
 		pos2.add(true);
 		currentPos = pos1;
-		
+
 		FunctionComparator comp = null;
-		
+
 		for (int i = 0; i < ctx.getChildCount(); i++) {
 			if (i % 2 == 0) {
 				currentOps.add((ArithmeticRuleOperand) visit(ctx.getChild(i)));
@@ -259,11 +326,11 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 				}
 			}
 		}
-		
+
 		List<Coefficient> coeffs = new LinkedList<Coefficient>();
 		List<SummationAtomOrAtom> atoms = new LinkedList<SummationAtomOrAtom>();
 		Coefficient finalCoeff = null;
-		
+
 		/*
 		 * Processes first subexpression
 		 */
@@ -289,7 +356,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 					}
 				}
 			}
-			// Else, processes the SummationAtomOrAtom 
+			// Else, processes the SummationAtomOrAtom
 			else {
 				if (ops1.get(i).coefficient == null) {
 					coeffs.add(new ConstantNumber(1.0));
@@ -300,7 +367,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 				atoms.add(ops1.get(i).atom);
 			}
 		}
-		
+
 		/*
 		 * Processes second subexpression
 		 */
@@ -321,7 +388,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 					}
 				}
 			}
-			// Else, processes the SummationAtomOrAtom 
+			// Else, processes the SummationAtomOrAtom
 			else {
 				if (ops2.get(i).coefficient == null) {
 					coeffs.add(new ConstantNumber(-1.0));
@@ -332,20 +399,20 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 				atoms.add(ops2.get(i).atom);
 			}
 		}
-		
+
 		return new ArithmeticRuleExpression(coeffs, atoms, comp, finalCoeff);
 	}
-	
+
 	private static class ArithmeticRuleOperand {
 		SummationAtomOrAtom atom;
 		Coefficient coefficient;
-		
+
 		private ArithmeticRuleOperand() {
 			atom = null;
 			coefficient = null;
 		}
 	}
-	
+
 	@Override
 	public ArithmeticRuleOperand visitArithmeticRuleOperand(ArithmeticRuleOperandContext ctx) {
 		ArithmeticRuleOperand operand = new ArithmeticRuleOperand();
@@ -360,10 +427,10 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 				operand.coefficient = visitCoefficient((CoefficientContext) ctx.getChild(0).getPayload());
 				atomIndex = (ctx.getChild(1).getPayload() instanceof CommonToken) ? 2 : 1;
 			}
-			
+
 			// Parses SummationAtom or Atom
 			operand.atom = (SummationAtomOrAtom) visit(ctx.getChild(atomIndex));
-			
+
 			// Checks if there is an appended divisor coefficient
 			if (ctx.getChildCount() > atomIndex + 1) {
 				Coefficient divisor = visitCoefficient((CoefficientContext) ctx.getChild(atomIndex + 2));
@@ -377,7 +444,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 		}
 		return operand;
 	}
-	
+
 	@Override
 	public SummationAtom visitSummationAtom(SummationAtomContext ctx) {
 		Predicate p = visitPredicate(ctx.predicate());
@@ -393,7 +460,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 				throw new IllegalStateException();
 			}
 		}
-		
+
 		return new SummationAtom(p, args);
 	}
 
@@ -401,7 +468,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	public SummationVariable visitSummationVariable(SummationVariableContext ctx) {
 		return new SummationVariable(ctx.IDENTIFIER().getText());
 	}
-	
+
 	@Override
 	public Coefficient visitCoefficient(CoefficientContext ctx) {
 		if (ctx.number() != null) {
@@ -413,7 +480,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 		else if (ctx.arithmeticOperator() != null) {
 			Coefficient c1 = (Coefficient) visit(ctx.coefficient(0));
 			Coefficient c2 = (Coefficient) visit(ctx.coefficient(1));
-			
+
 			if (ctx.arithmeticOperator().PLUS() != null) {
 				return new Add(c1 , c2);
 			}
@@ -433,7 +500,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 		else if (ctx.coeffOperator() != null) {
 			Coefficient c1 = (Coefficient) visit(ctx.coefficient(0));
 			Coefficient c2 = (Coefficient) visit(ctx.coefficient(1));
-			
+
 			if (ctx.coeffOperator().MAX() != null) {
 				return new Max(c1, c2);
 			}
@@ -451,7 +518,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 			throw new IllegalStateException("(Line " + ctx.getStart().getLine()+ ") Coefficient expresion not recognized.");
 		}
 	}
-	
+
 	@Override
 	public FunctionComparator visitArithmeticRuleRelation(ArithmeticRuleRelationContext ctx) {
 		if (ctx.EQUAL() != null) {
@@ -467,7 +534,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 			throw new IllegalStateException();
 		}
 	}
-	
+
 	@Override
 	public Boolean visitLinearOperator(LinearOperatorContext ctx) {
 		if (ctx.PLUS() != null) {
@@ -480,12 +547,12 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 			throw new IllegalStateException();
 		}
 	}
-	
+
 	private static class SelectStatement {
 		SummationVariable v;
 		Formula f;
 	}
-	
+
 	@Override
 	public SelectStatement visitSelectStatement(SelectStatementContext ctx) {
 		SelectStatement select = new SelectStatement();
@@ -493,7 +560,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 		select.f = visitBoolExpression(ctx.boolExpression());
 		return select;
 	}
-	
+
 	@Override
 	public Formula visitBoolExpression(BoolExpressionContext ctx) {
 		if (ctx.literal() != null) {
@@ -503,7 +570,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 			return new Disjunction(visitBoolExpression(ctx.boolExpression(0)), visitBoolExpression(ctx.boolExpression(1)));
 		}
 		else if (ctx.and() != null) {
-			return new Conjunction(visitBoolExpression(ctx.boolExpression(0)), visitBoolExpression(ctx.boolExpression(1))); 
+			return new Conjunction(visitBoolExpression(ctx.boolExpression(0)), visitBoolExpression(ctx.boolExpression(1)));
 		}
 		else if (ctx.boolExpression() != null) {
 			return visitBoolExpression(ctx.boolExpression(0));
@@ -512,12 +579,12 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 			throw new IllegalStateException("(Line " + ctx.getStart().getLine()+ ") Boolean expresion not recognized.");
 		}
 	}
-	
+
 	@Override
 	public Double visitWeightExpression(WeightExpressionContext ctx) {
 		return Double.parseDouble(ctx.NONNEGATIVE_NUMBER().getText());
 	}
-	
+
 	@Override
 	public Atom visitAtom(AtomContext ctx) {
 		if (ctx.predicate() != null) {
@@ -545,7 +612,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 			throw new IllegalStateException();
 		}
 	}
-	
+
 	@Override
 	public Predicate visitPredicate(PredicateContext ctx) {
 		PredicateFactory pf = PredicateFactory.getFactory();
@@ -557,17 +624,17 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 			throw new IllegalStateException("Undefined predicate " + ctx.IDENTIFIER().getText());
 		}
 	}
-	
+
 	@Override
 	public Variable visitVariable(VariableContext ctx) {
 		return new Variable(ctx.IDENTIFIER().getText());
 	}
-	
+
 	@Override
 	public UniqueID visitConstant(ConstantContext ctx) {
 		return data.getUniqueID(ctx.IDENTIFIER().getText());
 	}
-	
+
 	@Override
 	public Double visitNumber(NumberContext ctx) {
 		return Double.parseDouble(ctx.getText());

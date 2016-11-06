@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Set;
 
 import edu.umd.cs.psl.model.atom.Atom;
+import edu.umd.cs.psl.model.rule.arithmetic.expression.coefficient.Cardinality;
 import edu.umd.cs.psl.model.rule.arithmetic.expression.coefficient.Coefficient;
 import edu.umd.cs.psl.model.term.Term;
 import edu.umd.cs.psl.model.term.Variable;
@@ -49,15 +50,25 @@ public class ArithmeticRuleExpression {
 		this.c = c;
 		
 		Set<Variable> vars = new HashSet<Variable>();
+		Set<SummationVariable> sumVars = new HashSet<SummationVariable>();
+		Set<String> sumVarNames = new HashSet<String>();
+
 		for (SummationAtomOrAtom saoa : getAtoms()) {
 			if (saoa instanceof SummationAtom) {
 				for (SummationVariableOrTerm svot : ((SummationAtom) saoa).getArguments()) {
 					if (svot instanceof Variable) {
 						vars.add((Variable) svot);
+					} else if (svot instanceof SummationVariable) {
+						if (sumVars.contains((SummationVariable) svot)) {
+							throw new IllegalArgumentException(
+									"Each summation variable in an ArithmeticRuleExpression must be unique.");
+						}
+
+						sumVars.add((SummationVariable) svot);
+						sumVarNames.add(((SummationVariable)svot).getVariable().getName());
 					}
 				}
-			}
-			else {
+			} else {
 				for (Term term : ((Atom) saoa).getArguments()) {
 					if (term instanceof Variable) {
 						vars.add((Variable) term);
@@ -65,18 +76,30 @@ public class ArithmeticRuleExpression {
 				}
 			}
 		}
-		this.vars = Collections.unmodifiableSet(vars);
-		
-		Set<SummationVariable> sumVars = new HashSet<SummationVariable>();
-		for (SummationAtomOrAtom saoa : getAtoms()) {
-			if (saoa instanceof SummationAtom) {
-				for (SummationVariableOrTerm svot : ((SummationAtom) saoa).getArguments()) {
-					if (svot instanceof SummationVariable) {
-						sumVars.add((SummationVariable) svot);
-					}
+
+		// Check for summation variables used as terms.
+		for (Variable var : vars) {
+			if (sumVarNames.contains(var.getName())) {
+				throw new IllegalArgumentException(String.format(
+						"Summation variable (+%s) cannot be used as a normal variable (%s).",
+						var.getName(), var.getName()));
+			}
+		}
+
+		// Check for cardinality being used on non-summation variables.
+		for (Coefficient coefficient : coeffs) {
+			if (coefficient instanceof Cardinality) {
+				String name = ((Cardinality)coefficient).getSummationVariable().getVariable().getName();
+				if (!sumVarNames.contains(name)) {
+					throw new IllegalArgumentException(String.format(
+							"Cannot use variable (%s) in cardinality. " +
+							"Only summation variables can be used in cardinality.",
+							name));
 				}
 			}
 		}
+
+		this.vars = Collections.unmodifiableSet(vars);
 		this.sumVars = Collections.unmodifiableSet(sumVars);
 	}
 	
@@ -108,6 +131,10 @@ public class ArithmeticRuleExpression {
 	public String toString() {
 		StringBuilder s = new StringBuilder();
 		for (int i = 0; i < coeffs.size(); i++) {
+			if (i != 0) {
+				s.append(" + ");
+			}
+
 			s.append(coeffs.get(i));
 			s.append(" * ");
 			s.append(atoms.get(i));

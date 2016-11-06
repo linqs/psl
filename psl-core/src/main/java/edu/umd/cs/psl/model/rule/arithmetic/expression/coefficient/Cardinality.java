@@ -34,6 +34,10 @@ public class Cardinality extends Coefficient {
 		this.v = v;
 	}
 
+	public SummationVariable getSummationVariable() {
+		return v;
+	}
+
 	@Override
 	public double getValue(Map<SummationVariable, Set<Constant>> subs) {
 		return subs.get(v).size();
