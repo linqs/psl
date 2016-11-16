@@ -34,7 +34,6 @@ public class MPEInferenceTest {
 			System.out.println(ex);
 			ex.printStackTrace();
 			fail("Exception thrown during MPE constructor.");
-			throw new RuntimeException("oops!");
 		}
 
 		mpe.mpeInference();

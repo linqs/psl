@@ -60,6 +60,12 @@ public class TestModelFactory {
 	 *    10: Person(A) & Person(B) & Friends(A, B) & (A - B) -> Friends(B, A) ^2
 	 *    1: ~Friends(A, B) ^2
 	 *
+	 * Data:
+	 *    - There are 5 people.
+	 *    - Every person has a Nice value.
+	 *    - All Friendships are in the target partition.
+	 *    - All Friendships have a binary truth value in the truth partition.
+	 *
 	 * Data is added as well and can be seen in the code.
 	 */
 	public static ModelInformation getModel() {
