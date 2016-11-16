@@ -1,4 +1,4 @@
-PSL
+PSL [![Stable Docs](https://img.shields.io/badge/docs-stable-brightgreen.svg)](https://linqs-data.soe.ucsc.edu/psl-docs/master-head/index.html) [![Develop Docs](https://img.shields.io/badge/docs-develop-orange.svg)](https://linqs-data.soe.ucsc.edu/psl-docs/develop-head/index.html)
 ===
 
 Probabilistic soft logic (PSL) is a probabilistic programming language for reasoning about
