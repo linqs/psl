@@ -9,7 +9,7 @@ Building Models
 ---------------
 
 If you want to use PSL to build models, you probably do not need this source code. Instead,
-visit the [Getting Started guide](https://github.com/linqs/psl/wiki/Getting-started) to learn
+visit the [Getting Started guide](../../wiki/Getting-Started) to learn
 how to create PSL projects that will automatically install a stable version of these libraries.
 
 Installation
@@ -39,8 +39,8 @@ Additional Resources
 
 * [PSL source repository](https://github.com/linqs/psl)
 
-* [PSL wiki](https://github.com/linqs/psl/wiki)
+* [PSL wiki](../../wiki)
 
-* [Getting Started guide](https://github.com/linqs/psl/wiki/Getting-started)
+* [Getting Started guide](../../wiki/Getting-Started)
 
 * [User group](https://groups.google.com/forum/#!forum/psl-users)
