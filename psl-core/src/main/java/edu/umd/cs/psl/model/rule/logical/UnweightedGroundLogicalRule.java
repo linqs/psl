@@ -49,6 +49,6 @@ public class UnweightedGroundLogicalRule extends AbstractGroundLogicalRule
 	
 	@Override
 	public String toString() {
-		return "{constraint} " + super.toString(); 
+		return "{constraint}: " + super.toString();
 	}
 }
