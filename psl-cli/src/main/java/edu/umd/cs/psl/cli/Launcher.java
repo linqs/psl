@@ -19,6 +19,7 @@ package edu.umd.cs.psl.cli;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -44,7 +45,6 @@ import org.apache.log4j.PropertyConfigurator;
 import edu.umd.cs.psl.application.inference.MPEInference;
 import edu.umd.cs.psl.cli.dataloader.DataLoader;
 import edu.umd.cs.psl.cli.dataloader.DataLoaderOutput;
-import edu.umd.cs.psl.cli.modelloader.ModelLoader;
 import edu.umd.cs.psl.config.ConfigBundle;
 import edu.umd.cs.psl.config.ConfigManager;
 import edu.umd.cs.psl.database.DataStore;
@@ -58,6 +58,7 @@ import edu.umd.cs.psl.model.Model;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
 import edu.umd.cs.psl.model.term.Constant;
+import edu.umd.cs.psl.parser.ModelLoader;
 import edu.umd.cs.psl.reasoner.admm.ADMMReasonerFactory;
 import edu.umd.cs.psl.util.database.Queries;
 
@@ -139,9 +140,9 @@ public class Launcher {
 
 		System.out.println("model:: loading:: ::starting");
 		File modelFile = new File(cmd.getOptionValue(OPTION_MODEL));
-		FileInputStream modelFileInputStream = new FileInputStream(modelFile);
+		FileReader modelFileReader = new FileReader(modelFile);
 
-		Model model = ModelLoader.load(data, modelFileInputStream);
+		Model model = ModelLoader.load(data, modelFileReader);
 		System.out.println(model);
 		System.out.println("model:: loading:: ::done");
 

@@ -37,7 +37,7 @@ public class UnweightedLogicalRule extends AbstractLogicalRule implements Unweig
 	
 	@Override
 	public String toString() {
-		return "{constraint} " + formula; 
+		return "{constraint}: " + formula;
 	}
 	
 	@Override

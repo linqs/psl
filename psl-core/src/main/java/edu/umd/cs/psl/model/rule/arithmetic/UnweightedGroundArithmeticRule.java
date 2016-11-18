@@ -71,7 +71,7 @@ public class UnweightedGroundArithmeticRule extends AbstractGroundArithmeticRule
 	
 	@Override
 	public String toString() {
-		return super.toString() + " ."; 
+		return "{constraint}: " + super.toString();
 	}
 
 }

@@ -109,7 +109,7 @@ public class AbstractArithmeticRuleTest {
 		AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
 				coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1)));
 
-		assertEquals(rule.toString(), "1.0 * SINGLECLOSED(A) + 1.0 * SINGLECLOSED(B) = 1.0 .");
+		assertEquals("{constraint}: 1.0 * SINGLECLOSED(A) + 1.0 * SINGLECLOSED(B) = 1.0", rule.toString());
 	}
 
 	@Test
@@ -152,7 +152,7 @@ public class AbstractArithmeticRuleTest {
 		AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
 				coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1)));
 
-		assertEquals(rule.toString(), "1.0 * DOUBLECLOSED(+A, 'Foo') = 1.0 .");
+		assertEquals("{constraint}: 1.0 * DOUBLECLOSED(+A, 'Foo') = 1.0", rule.toString());
 	}
 
 	@Test
@@ -171,7 +171,7 @@ public class AbstractArithmeticRuleTest {
 		AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
 				coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1)));
 
-		assertEquals(rule.toString(), "1.0 * SINGLECLOSED(+A) + 1.0 * SINGLECLOSED(+B) = 1.0 .");
+		assertEquals("{constraint}: 1.0 * SINGLECLOSED(+A) + 1.0 * SINGLECLOSED(+B) = 1.0", rule.toString());
 	}
 
 	@Test
@@ -216,7 +216,7 @@ public class AbstractArithmeticRuleTest {
 				coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1));
 		AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, selects);
 
-		assertEquals(rule.toString(), "1.0 * SINGLECLOSED(+A) = 1.0 .\n{A : SINGLECLOSED(A)}");
+		assertEquals("{constraint}: 1.0 * SINGLECLOSED(+A) = 1.0\n{A : SINGLECLOSED(A)}", rule.toString());
 	}
 
 	@Test
@@ -242,7 +242,7 @@ public class AbstractArithmeticRuleTest {
 				coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1));
 		AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, selects);
 
-		assertEquals(rule.toString(), "1.0 * SINGLECLOSED(+A) = 1.0 .\n{A : ( SINGLECLOSED(A) | DOUBLECLOSED(A, A) )}");
+		assertEquals("{constraint}: 1.0 * SINGLECLOSED(+A) = 1.0\n{A : ( SINGLECLOSED(A) | DOUBLECLOSED(A, A) )}", rule.toString());
 	}
 
 	@Test
@@ -267,7 +267,7 @@ public class AbstractArithmeticRuleTest {
 				coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1));
 		AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, selects);
 
-		assertEquals(rule.toString(), "1.0 * DOUBLECLOSED(+A, B) = 1.0 .\n{A : SINGLECLOSED(B)}");
+		assertEquals("{constraint}: 1.0 * DOUBLECLOSED(+A, B) = 1.0\n{A : SINGLECLOSED(B)}", rule.toString());
 	}
 
 	@Test
@@ -291,7 +291,7 @@ public class AbstractArithmeticRuleTest {
 				coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1));
 		AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, selects);
 
-		assertEquals(rule.toString(), "1.0 * SINGLECLOSED(+A) + 1.0 * SINGLECLOSED(+B) = 1.0 .\n{A : SINGLECLOSED(A)}\n{B : SINGLECLOSED(B)}");
+		assertEquals("{constraint}: 1.0 * SINGLECLOSED(+A) + 1.0 * SINGLECLOSED(+B) = 1.0\n{A : SINGLECLOSED(A)}\n{B : SINGLECLOSED(B)}", rule.toString());
 	}
 
 	@Test
@@ -445,7 +445,7 @@ public class AbstractArithmeticRuleTest {
 		AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
 				coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1)));
 
-		assertEquals(rule.toString(), "|A| * SINGLECLOSED(+A) = 1.0 .");
+		assertEquals("{constraint}: |A| * SINGLECLOSED(+A) = 1.0", rule.toString());
 	}
 
 	@Test
@@ -462,7 +462,7 @@ public class AbstractArithmeticRuleTest {
 		AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
 				coefficients, atoms, FunctionComparator.Equality, new Cardinality(new SummationVariable("A"))));
 
-		assertEquals(rule.toString(), "|A| * SINGLECLOSED(+A) = |A| .");
+		assertEquals("{constraint}: |A| * SINGLECLOSED(+A) = |A|", rule.toString());
 	}
 
 	@Test
@@ -481,7 +481,7 @@ public class AbstractArithmeticRuleTest {
 		AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
 				coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1)));
 
-		assertEquals(rule.toString(), "|A| * SINGLECLOSED(+A) + |B| * SINGLECLOSED(+B) = 1.0 .");
+		assertEquals("{constraint}: |A| * SINGLECLOSED(+A) + |B| * SINGLECLOSED(+B) = 1.0", rule.toString());
 	}
 
 	@Test
@@ -519,7 +519,7 @@ public class AbstractArithmeticRuleTest {
 		AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
 				coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1)));
 
-		assertEquals(rule.toString(), "@Max[|A|, 0.0] * SINGLECLOSED(+A) = 1.0 .");
+		assertEquals("{constraint}: @Max[|A|, 0.0] * SINGLECLOSED(+A) = 1.0", rule.toString());
 	}
 
 	@Test
@@ -536,7 +536,7 @@ public class AbstractArithmeticRuleTest {
 		AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
 				coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1)));
 
-		assertEquals(rule.toString(), "@Max[1.0, 0.0] * SINGLECLOSED(+A) = 1.0 .");
+		assertEquals("{constraint}: @Max[1.0, 0.0] * SINGLECLOSED(+A) = 1.0", rule.toString());
 	}
 
 	@Test
@@ -555,7 +555,7 @@ public class AbstractArithmeticRuleTest {
 		AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
 				coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1)));
 
-		assertEquals(rule.toString(), "@Max[|A|, |B|] * SINGLECLOSED(+A) + 1.0 * SINGLECLOSED(+B) = 1.0 .");
+		assertEquals("{constraint}: @Max[|A|, |B|] * SINGLECLOSED(+A) + 1.0 * SINGLECLOSED(+B) = 1.0", rule.toString());
 	}
 
 	@Test
@@ -572,7 +572,7 @@ public class AbstractArithmeticRuleTest {
 		AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
 				coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1)));
 
-		assertEquals(rule.toString(), "@Min[1.0, 0.0] * SINGLECLOSED(A) = 1.0 .");
+		assertEquals("{constraint}: @Min[1.0, 0.0] * SINGLECLOSED(A) = 1.0", rule.toString());
 	}
 
 	@After

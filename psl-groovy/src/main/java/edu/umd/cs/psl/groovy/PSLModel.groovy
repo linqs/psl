@@ -36,6 +36,7 @@ import edu.umd.cs.psl.model.term.DoubleAttribute
 import edu.umd.cs.psl.model.term.IntegerAttribute
 import edu.umd.cs.psl.model.term.StringAttribute
 import edu.umd.cs.psl.model.term.Term
+import edu.umd.cs.psl.parser.ModelLoader;
 
 /**
  * Groovy class representing a PSL model.
@@ -143,11 +144,19 @@ class PSLModel extends Model {
 			args.remove functionKey;
 			return addFunction(functionname, args);
 		} else if (args.containsKey(ruleKey)) {
-			if (!(args[ruleKey] instanceof FormulaContainer))
-				throw new IllegalArgumentException("Expected a formula, but got: ${args[ruleKey]}");
-			FormulaContainer ruledef = args[ruleKey];
-			args.remove ruleKey;
-			return addRule(ruledef,args);
+			if (args[ruleKey] instanceof FormulaContainer) {
+				FormulaContainer ruledef = args[ruleKey];
+				args.remove ruleKey;
+				return addRule(ruledef, args);
+			}
+
+			if (args[ruleKey] instanceof String) {
+				String ruledef = args[ruleKey];
+				args.remove ruleKey;
+				return addRule(ruledef, args);
+			}
+
+			throw new IllegalArgumentException("Expected a formula or string, but got: ${args[ruleKey]}");
 		} else {
 			throw new IllegalArgumentException("Unrecognized element added to model: ${args}");
 		}
@@ -203,7 +212,15 @@ class PSLModel extends Model {
 		}
 		return predicate;
 	}
-	
+
+	def addRule(String rule, Map args) {
+		if (args.size() > 0) {
+			throw new IllegalArgumentException("Rules using a string do not accept any other parameters.");
+		}
+
+		addRule(ModelLoader.loadRule(ds, rule));
+	}
+
 	def addRule(FormulaContainer rule, Map args) {
 		boolean isFact = false;
 		boolean isSquared = true;
