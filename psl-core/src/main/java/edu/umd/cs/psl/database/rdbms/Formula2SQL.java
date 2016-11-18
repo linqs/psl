@@ -96,7 +96,6 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 	private void visitFunctionalAtom(Atom atom) {
 		assert atom.getPredicate() instanceof FunctionalPredicate;
 		Term[] arguments = atom.getArguments();
-		assert arguments.length == 2;
 		Object[] convert = convertArguments(arguments);
 
 		if (atom.getPredicate() instanceof ExternalFunctionalPredicate) {
