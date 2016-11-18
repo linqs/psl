@@ -1,5 +1,5 @@
 // Generated from PSL.g4 by ANTLR 4.5.3
-package edu.umd.cs.psl.cli.modelloader;
+package edu.umd.cs.psl.parser.antlr;
 import org.antlr.v4.runtime.atn.*;
 import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.*;

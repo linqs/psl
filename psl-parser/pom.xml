@@ -24,7 +24,7 @@
 	<name>psl-parser</name>
 	<version>2.0-SNAPSHOT</version>
 	<packaging>jar</packaging>
-	<description>The model-parsing user interface module of the PSL software from the University of Maryland.</description>
+	<description>The model-parsing interface module of the PSL software.</description>
 	<parent>
 		<groupId>edu.umd.cs</groupId>
 		<artifactId>psl</artifactId>
@@ -39,7 +39,7 @@
 		<dependency>
 			<groupId>org.antlr</groupId>
 			<artifactId>antlr4-runtime</artifactId>
-			<version>4.1</version>
+			<version>4.5</version>
 		</dependency>
 	</dependencies>
 	<build>
