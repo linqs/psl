@@ -1,6 +1,9 @@
 PSL
 ===
 
+Master: [![Build Status](https://travis-ci.org/eriq-augustine/psl.svg?branch=master)](https://travis-ci.org/eriq-augustine/psl)
+Develop: [![Build Status](https://travis-ci.org/eriq-augustine/psl.svg?branch=develop)](https://travis-ci.org/eriq-augustine/psl)
+
 Probabilistic soft logic (PSL) is a probabilistic programming language for reasoning about
 relational and structured data that is designed to be highly scalable. More information about PSL
 is available at the [PSL homepage](http://psl.cs.umd.edu).
