@@ -105,8 +105,8 @@ public class ModelLoaderTest {
 			"1: Single(A) & Double(A, B) >> Single(B) ^2\n" +
 			"5: Single(B) & Double(B, A) >> Single(A) ^2\n";
 		String[] expected = new String[]{
-			"{1.0} ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) {squared}",
-			"{5.0} ( SINGLE(B) & DOUBLE(B, A) ) >> SINGLE(A) {squared}"
+			"{1.0}: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) {squared}",
+			"{5.0}: ( SINGLE(B) & DOUBLE(B, A) ) >> SINGLE(A) {squared}"
 		};
 
 		assertModel(input, expected);
@@ -132,7 +132,7 @@ public class ModelLoaderTest {
 			parts.add(String.format("Single(%c) & Double(%c, Z)", i, i));
 		}
 		String input = String.format("1: %s >> Single(Z) ^2", StringUtils.join(parts, " & "));
-		String expected = String.format("{1.0} ( %s ) >> SINGLE(Z) {squared}", StringUtils.join(parts, " & ").toUpperCase());
+		String expected = String.format("{1.0}: ( %s ) >> SINGLE(Z) {squared}", StringUtils.join(parts, " & ").toUpperCase());
 
 		assertModel(input, new String[]{expected});
 	}
@@ -168,12 +168,12 @@ public class ModelLoaderTest {
 			"1: Single(A) & Double(A, B) /* & Single(C) */ >> Single(B) ^2 // Inside of other syntax.\n" +
 			"";
 		String[] expected = new String[]{
-			"{1.0} ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) {squared}",
-			"{1.0} ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) {squared}",
-			"{1.0} ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) {squared}",
-			"{1.0} ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) {squared}",
-			"{1.0} ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B)",
-			"{1.0} ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) {squared}"
+			"{1.0}: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) {squared}",
+			"{1.0}: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) {squared}",
+			"{1.0}: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) {squared}",
+			"{1.0}: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) {squared}",
+			"{1.0}: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B)",
+			"{1.0}: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) {squared}"
 		};
 
 		assertModel(input, expected);
@@ -185,8 +185,8 @@ public class ModelLoaderTest {
 			"1: Single(A) & Double(A, \"bar\") & Single(\"bar\") >> Double(A, \"bar\") ^2\n" +
 			"1: Single(A) & Double(A, 'bar') & Single('bar') >> Double(A, 'bar') ^2\n";
 		String[] expected = new String[]{
-			"{1.0} ( SINGLE(A) & DOUBLE(A, 'bar') & SINGLE('bar') ) >> DOUBLE(A, 'bar') {squared}",
-			"{1.0} ( SINGLE(A) & DOUBLE(A, 'bar') & SINGLE('bar') ) >> DOUBLE(A, 'bar') {squared}"
+			"{1.0}: ( SINGLE(A) & DOUBLE(A, 'bar') & SINGLE('bar') ) >> DOUBLE(A, 'bar') {squared}",
+			"{1.0}: ( SINGLE(A) & DOUBLE(A, 'bar') & SINGLE('bar') ) >> DOUBLE(A, 'bar') {squared}"
 		};
 
 		assertModel(input, expected);
@@ -241,11 +241,11 @@ public class ModelLoaderTest {
 			"1: Single(A__) >> Single(A__) ^2\n" +
 			"";
 		String[] expected = new String[]{
-			"{1.0} SINGLE(A1) >> SINGLE(A1) {squared}",
-			"{1.0} SINGLE(A1A) >> SINGLE(A1A) {squared}",
-			"{1.0} SINGLE(A_A) >> SINGLE(A_A) {squared}",
-			"{1.0} SINGLE(A_1) >> SINGLE(A_1) {squared}",
-			"{1.0} SINGLE(A__) >> SINGLE(A__) {squared}"
+			"{1.0}: SINGLE(A1) >> SINGLE(A1) {squared}",
+			"{1.0}: SINGLE(A1A) >> SINGLE(A1A) {squared}",
+			"{1.0}: SINGLE(A_A) >> SINGLE(A_A) {squared}",
+			"{1.0}: SINGLE(A_1) >> SINGLE(A_1) {squared}",
+			"{1.0}: SINGLE(A__) >> SINGLE(A__) {squared}"
 		};
 
 		assertModel(input, expected);
@@ -270,13 +270,13 @@ public class ModelLoaderTest {
 			"2.5e-10: Single(A) >> Single(A)\n" +
 			"";
 		String[] expected = new String[]{
-			"{1.0} SINGLE(A) >> SINGLE(A)",
-			"{0.0} SINGLE(A) >> SINGLE(A)",
-			"{0.5} SINGLE(A) >> SINGLE(A)",
+			"{1.0}: SINGLE(A) >> SINGLE(A)",
+			"{0.0}: SINGLE(A) >> SINGLE(A)",
+			"{0.5}: SINGLE(A) >> SINGLE(A)",
 			"{999999.0} SINGLE(A) >> SINGLE(A)",
 			"{9.999999999E9} SINGLE(A) >> SINGLE(A)",
-			"{1.0} SINGLE(A) >> SINGLE(A)",
-			"{0.001} SINGLE(A) >> SINGLE(A)",
+			"{1.0}: SINGLE(A) >> SINGLE(A)",
+			"{0.001}: SINGLE(A) >> SINGLE(A)",
 			"{1.0E-8} SINGLE(A) >> SINGLE(A)",
 			"{2.0E10} SINGLE(A) >> SINGLE(A)",
 			"{2.0E10} SINGLE(A) >> SINGLE(A)",
@@ -294,8 +294,8 @@ public class ModelLoaderTest {
 			"1: Single(A) & Double(A, B) >> Single(B) ^2\n" +
 			"1: Single(B) << Single(A) & Double(A, B) ^2\n";
 		String[] expected = new String[]{
-			"{1.0} ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) {squared}",
-			"{1.0} ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) {squared}"
+			"{1.0}: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) {squared}",
+			"{1.0}: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) {squared}"
 		};
 
 		assertModel(input, expected);
@@ -307,8 +307,8 @@ public class ModelLoaderTest {
 			"1: Single(A) | Double(A, B) << Single(B) & Single(A) ^2\n" +
 			"1: Single(A) & Double(B, C) >> Single(B) | Single(C) ^2\n";
 		String[] expected = new String[]{
-			"{1.0} ( SINGLE(B) & SINGLE(A) ) >> ( SINGLE(A) | DOUBLE(A, B) ) {squared}",
-			"{1.0} ( SINGLE(A) & DOUBLE(B, C) ) >> ( SINGLE(B) | SINGLE(C) ) {squared}"
+			"{1.0}: ( SINGLE(B) & SINGLE(A) ) >> ( SINGLE(A) | DOUBLE(A, B) ) {squared}",
+			"{1.0}: ( SINGLE(A) & DOUBLE(B, C) ) >> ( SINGLE(B) | SINGLE(C) ) {squared}"
 		};
 
 		assertModel(input, expected);
@@ -319,7 +319,7 @@ public class ModelLoaderTest {
 		String input =
 			"1: ~Single(A) & ~~Double(A, B) >> ~~~Single(B) ^2\n";
 		String[] expected = new String[]{
-			"{1.0} ( ~( SINGLE(A) ) & ~( ~( DOUBLE(A, B) ) ) ) >> ~( ~( ~( SINGLE(B) ) ) ) {squared}"
+			"{1.0}: ( ~( SINGLE(A) ) & ~( ~( DOUBLE(A, B) ) ) ) >> ~( ~( ~( SINGLE(B) ) ) ) {squared}"
 		};
 
 		assertModel(input, expected);
@@ -338,14 +338,14 @@ public class ModelLoaderTest {
 			"1: 'Foo' ~= 'Bar' & Double(A, B) >> Single(B) ^2\n" +
 			"";
 		String[] expected = new String[]{
-			"{1.0} ( #EQUAL(A, B) & DOUBLE(A, B) ) >> SINGLE(B) {squared}",
-			"{1.0} ( #EQUAL(A, 'Bar') & DOUBLE(A, B) ) >> SINGLE(B) {squared}",
-			"{1.0} ( #EQUAL('Foo', B) & DOUBLE(A, B) ) >> SINGLE(B) {squared}",
-			"{1.0} ( #EQUAL('Foo', 'Bar') & DOUBLE(A, B) ) >> SINGLE(B) {squared}",
-			"{1.0} ( #NOTEQUAL(A, B) & DOUBLE(A, B) ) >> SINGLE(B) {squared}",
-			"{1.0} ( #NOTEQUAL(A, 'Bar') & DOUBLE(A, B) ) >> SINGLE(B) {squared}",
-			"{1.0} ( #NOTEQUAL('Foo', B) & DOUBLE(A, B) ) >> SINGLE(B) {squared}",
-			"{1.0} ( #NOTEQUAL('Foo', 'Bar') & DOUBLE(A, B) ) >> SINGLE(B) {squared}"
+			"{1.0}: ( #EQUAL(A, B) & DOUBLE(A, B) ) >> SINGLE(B) {squared}",
+			"{1.0}: ( #EQUAL(A, 'Bar') & DOUBLE(A, B) ) >> SINGLE(B) {squared}",
+			"{1.0}: ( #EQUAL('Foo', B) & DOUBLE(A, B) ) >> SINGLE(B) {squared}",
+			"{1.0}: ( #EQUAL('Foo', 'Bar') & DOUBLE(A, B) ) >> SINGLE(B) {squared}",
+			"{1.0}: ( #NOTEQUAL(A, B) & DOUBLE(A, B) ) >> SINGLE(B) {squared}",
+			"{1.0}: ( #NOTEQUAL(A, 'Bar') & DOUBLE(A, B) ) >> SINGLE(B) {squared}",
+			"{1.0}: ( #NOTEQUAL('Foo', B) & DOUBLE(A, B) ) >> SINGLE(B) {squared}",
+			"{1.0}: ( #NOTEQUAL('Foo', 'Bar') & DOUBLE(A, B) ) >> SINGLE(B) {squared}"
 		};
 
 		assertModel(input, expected);
@@ -366,16 +366,16 @@ public class ModelLoaderTest {
 			"1: A ~= B & Double(A, B) >> Single(B)\n" +
 			"";
 		String[] expected = new String[]{
-			"{1.0} ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B)",
-			"{1.0} ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B)",
-			"{1.0} ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B)",
-			"{1.0} ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B)",
-			"{1.0} DOUBLE(A, B) >> ( SINGLE(A) | SINGLE(B) )",
-			"{1.0} DOUBLE(A, B) >> ( SINGLE(A) | SINGLE(B) )",
-			"{1.0} DOUBLE(A, B) >> ( SINGLE(A) | SINGLE(B) )",
-			"{1.0} DOUBLE(A, B) >> ( SINGLE(A) | SINGLE(B) )",
-			"{1.0} ( #NOTEQUAL(A, B) & DOUBLE(A, B) ) >> SINGLE(B)",
-			"{1.0} ( #NOTEQUAL(A, B) & DOUBLE(A, B) ) >> SINGLE(B)"
+			"{1.0}: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B)",
+			"{1.0}: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B)",
+			"{1.0}: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B)",
+			"{1.0}: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B)",
+			"{1.0}: DOUBLE(A, B) >> ( SINGLE(A) | SINGLE(B) )",
+			"{1.0}: DOUBLE(A, B) >> ( SINGLE(A) | SINGLE(B) )",
+			"{1.0}: DOUBLE(A, B) >> ( SINGLE(A) | SINGLE(B) )",
+			"{1.0}: DOUBLE(A, B) >> ( SINGLE(A) | SINGLE(B) )",
+			"{1.0}: ( #NOTEQUAL(A, B) & DOUBLE(A, B) ) >> SINGLE(B)",
+			"{1.0}: ( #NOTEQUAL(A, B) & DOUBLE(A, B) ) >> SINGLE(B)"
 		};
 
 		assertModel(input, expected);
@@ -437,7 +437,7 @@ public class ModelLoaderTest {
 	@Test
 	public void testLoadRuleBase() {
 		String input = "1: Single(A) & Double(A, B) >> Single(B) ^2";
-		String expected = "{1.0} ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) {squared}";
+		String expected = "{1.0}: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) {squared}";
 		assertRule(input, expected);
 	}
 
@@ -454,7 +454,7 @@ public class ModelLoaderTest {
 		String input =
 			"1: Single(A) & Double(A, B) >> Single(B) ^2\n" +
 			"5: Single(B) & Double(B, A) >> Single(A) ^2\n";
-		String expected = "{1.0} ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) {squared}";
+		String expected = "{1.0}: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) {squared}";
 
 		try {
 			assertRule(input, expected);
@@ -472,7 +472,7 @@ public class ModelLoaderTest {
 			"1: .1 Single(A) = 1 ^2"
 		};
 		String[] expected = new String[]{
-			"{0.1} ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) {squared}",
+			"{0.1}: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) {squared}",
 			"1.0: 0.1 * SINGLE(A) = 1.0 ^2"
 		};
 
@@ -505,11 +505,11 @@ public class ModelLoaderTest {
 			"-1: Single(A) & Double(A B) >> Single(B) ^2"
 		};
 		String[] expected = new String[]{
-			"{1.0} ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) {squared}",
-			"{1.0} ( UNKNOWN(A) & DOUBLE(A, B) ) >> SINGLE(B) {squared}",
-			"{1.0} ( SINGLE(A) & DOUBLE('Foo', B) ) >> SINGLE(B) {squared}",
-			"{1.0} ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) {squared}",
-			"{1.0} ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) {squared}",
+			"{1.0}: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) {squared}",
+			"{1.0}: ( UNKNOWN(A) & DOUBLE(A, B) ) >> SINGLE(B) {squared}",
+			"{1.0}: ( SINGLE(A) & DOUBLE('Foo', B) ) >> SINGLE(B) {squared}",
+			"{1.0}: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) {squared}",
+			"{1.0}: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) {squared}",
 			"{constraint} ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) {squared}",
 			"{-1.0} ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) {squared}"
 		};
@@ -536,12 +536,12 @@ public class ModelLoaderTest {
 			"1: Single(A) & Double(A, B) >> Single(B) ^-3"
 		};
 		String[] expected = new String[]{
-			// "{1.0} ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B)",
-			"{1.0} ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B)",
-			"{1.0} ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B)",
-			"{1.0} ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B)",
-			"{1.0} ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B)",
-			"{1.0} ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B)"
+			// "{1.0}: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B)",
+			"{1.0}: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B)",
+			"{1.0}: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B)",
+			"{1.0}: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B)",
+			"{1.0}: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B)",
+			"{1.0}: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B)"
 		};
 
 		for (int i = 0; i < input.length; i++) {
