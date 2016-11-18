@@ -25,6 +25,7 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Semaphore;
 
+import org.apache.commons.collections4.set.ListOrderedSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +48,6 @@ import edu.umd.cs.psl.reasoner.function.FunctionSummand;
 import edu.umd.cs.psl.reasoner.function.FunctionTerm;
 import edu.umd.cs.psl.reasoner.function.MaxFunction;
 import edu.umd.cs.psl.reasoner.function.PowerOfTwo;
-import edu.umd.cs.psl.util.collection.HashList;
 import edu.umd.cs.psl.util.concurrent.ThreadPool;
 
 /**
@@ -128,11 +128,11 @@ public class ADMMReasoner implements Reasoner {
 	/** Ground kernels defining the objective function */
 	KeyedRetrievalSet<Rule, GroundRule> groundKernels;
 	/** Ordered list of GroundKernels for looking up indices in terms */
-	HashList<GroundRule> orderedGroundKernels;
+	ListOrderedSet<GroundRule> orderedGroundKernels;
 	/** Ground kernels wrapped to be objective function terms for ADMM */
 	protected List<ADMMObjectiveTerm> terms;
 	/** Ordered list of variables for looking up indices in z */
-	protected HashList<AtomFunctionVariable> variables;
+	protected ListOrderedSet<AtomFunctionVariable> variables;
 	/** Consensus vector */
 	protected List<Double> z;
 	/** Lower bounds on variables */
@@ -246,9 +246,9 @@ public class ADMMReasoner implements Reasoner {
 		log.debug("(Re)building reasoner data structures");
 		
 		/* Initializes data structures */
-		orderedGroundKernels = new HashList<GroundRule>(groundKernels.size() * 2);
+		orderedGroundKernels = new ListOrderedSet<GroundRule>();
 		terms = new ArrayList<ADMMObjectiveTerm>(groundKernels.size());
-		variables = new HashList<AtomFunctionVariable>(groundKernels.size() * 2);
+		variables = new ListOrderedSet<AtomFunctionVariable>();
 		z = new ArrayList<Double>(groundKernels.size() * 2);
 		lb = new ArrayList<Double>(groundKernels.size() * 2);
 		ub = new ArrayList<Double>(groundKernels.size() * 2);

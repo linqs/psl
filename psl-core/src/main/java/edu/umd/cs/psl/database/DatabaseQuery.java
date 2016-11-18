@@ -20,6 +20,8 @@ package edu.umd.cs.psl.database;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.commons.collections4.set.ListOrderedSet;
+
 import edu.umd.cs.psl.model.atom.Atom;
 import edu.umd.cs.psl.model.atom.VariableAssignment;
 import edu.umd.cs.psl.model.formula.Conjunction;
@@ -30,7 +32,7 @@ import edu.umd.cs.psl.model.predicate.FunctionalPredicate;
 import edu.umd.cs.psl.model.predicate.StandardPredicate;
 import edu.umd.cs.psl.model.term.Term;
 import edu.umd.cs.psl.model.term.Variable;
-import edu.umd.cs.psl.util.collection.HashList;
+
 
 /**
  * A query to select groundings from a {@link Database}.
@@ -68,7 +70,7 @@ public class DatabaseQuery {
 	private final Formula formula;
 	private final VariableAssignment partialGrounding;
 	private final Set<Variable> projectTo;
-	private final HashList<Variable> ordering;
+	private final ListOrderedSet<Variable> ordering;
 	
 	public DatabaseQuery(Formula formula) {
 		this.formula = formula;
@@ -87,7 +89,7 @@ public class DatabaseQuery {
 					"with a StandardPredicate. " +
 					"Formula: " + formula);
 		
-		ordering = new HashList<Variable>();
+		ordering = new ListOrderedSet<Variable>();
 		
 		AbstractFormulaTraverser.traverse(formula, new VariableOrderer());
 	}

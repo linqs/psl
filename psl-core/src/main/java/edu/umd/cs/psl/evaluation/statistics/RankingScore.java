@@ -20,6 +20,8 @@ package edu.umd.cs.psl.evaluation.statistics;
 import java.util.Iterator;
 import java.util.List;
 
+import org.apache.commons.collections4.set.ListOrderedSet;
+
 import edu.umd.cs.psl.model.atom.GroundAtom;
 
 /**
@@ -241,10 +243,10 @@ public enum RankingScore {
 	/**
 	 * Scores a ranking of Atoms given an expected ranking
 	 * 
-	 * @param expected  the expected ranking
-	 * @param actual  the actual ranking
+	 * @param baselineList  the expected ranking
+	 * @param resultList  the actual ranking
 	 * @return the actual ranking's score relative to the expected ranking
 	 */
-	public abstract double getScore(List<GroundAtom> expected, List<GroundAtom> actual);
+	public abstract double getScore(List<GroundAtom> baselineList, List<GroundAtom> resultList);
 
 }

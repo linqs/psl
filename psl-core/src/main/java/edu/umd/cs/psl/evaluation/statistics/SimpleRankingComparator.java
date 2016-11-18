@@ -23,6 +23,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
+import org.apache.commons.collections4.set.ListOrderedSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,7 +31,6 @@ import edu.umd.cs.psl.database.Database;
 import edu.umd.cs.psl.evaluation.statistics.filter.AtomFilter;
 import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.predicate.Predicate;
-import edu.umd.cs.psl.util.collection.HashList;
 import edu.umd.cs.psl.util.database.Queries;
 
 public class SimpleRankingComparator implements RankingComparator {
@@ -85,14 +85,14 @@ public class SimpleRankingComparator implements RankingComparator {
 		log.debug("Collected and sorted base atoms. Size: {}", baselineAtoms.size());
 		
 		
-		HashList<GroundAtom> baselineHashList = new HashList<GroundAtom>(baselineAtoms.size());
+		ListOrderedSet<GroundAtom> baselineHashList = new ListOrderedSet<GroundAtom>();
 		for (GroundAtom atom : baselineAtoms)
 			baselineHashList.add(atom);	
-		HashList<GroundAtom> resultHashList = new HashList<GroundAtom>(resultAtoms.size());
+		ListOrderedSet<GroundAtom> resultHashList = new ListOrderedSet<GroundAtom>();
 		for (GroundAtom atom : resultAtoms)
 			resultHashList.add(atom);	
 		
-		return rankScore.getScore(baselineHashList, resultHashList);
+		return rankScore.getScore(baselineHashList.asList(), resultHashList.asList());
 	}
 	
 	private class AtomComparator implements Comparator<GroundAtom> {
