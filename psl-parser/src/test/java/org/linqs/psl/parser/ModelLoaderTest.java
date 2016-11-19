@@ -338,14 +338,14 @@ public class ModelLoaderTest {
 			"1: 'Foo' ~= 'Bar' & Double(A, B) >> Single(B) ^2\n" +
 			"";
 		String[] expected = new String[]{
-			"1.0: ( #EQUAL(A, B) & DOUBLE(A, B) ) >> SINGLE(B) ^2",
-			"1.0: ( #EQUAL(A, 'Bar') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
-			"1.0: ( #EQUAL('Foo', B) & DOUBLE(A, B) ) >> SINGLE(B) ^2",
-			"1.0: ( #EQUAL('Foo', 'Bar') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
-			"1.0: ( #NOTEQUAL(A, B) & DOUBLE(A, B) ) >> SINGLE(B) ^2",
-			"1.0: ( #NOTEQUAL(A, 'Bar') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
-			"1.0: ( #NOTEQUAL('Foo', B) & DOUBLE(A, B) ) >> SINGLE(B) ^2",
-			"1.0: ( #NOTEQUAL('Foo', 'Bar') & DOUBLE(A, B) ) >> SINGLE(B) ^2"
+			"1.0: ( A == B & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( A == 'Bar' & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( 'Foo' == B & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( 'Foo' == 'Bar' & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( A != B & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( A != 'Bar' & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( 'Foo' != B & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( 'Foo' != 'Bar' & DOUBLE(A, B) ) >> SINGLE(B) ^2"
 		};
 
 		assertModel(input, expected);
@@ -374,8 +374,8 @@ public class ModelLoaderTest {
 			"1.0: DOUBLE(A, B) >> ( SINGLE(A) | SINGLE(B) )",
 			"1.0: DOUBLE(A, B) >> ( SINGLE(A) | SINGLE(B) )",
 			"1.0: DOUBLE(A, B) >> ( SINGLE(A) | SINGLE(B) )",
-			"1.0: ( #NOTEQUAL(A, B) & DOUBLE(A, B) ) >> SINGLE(B)",
-			"1.0: ( #NOTEQUAL(A, B) & DOUBLE(A, B) ) >> SINGLE(B)"
+			"1.0: ( A != B & DOUBLE(A, B) ) >> SINGLE(B)",
+			"1.0: ( A != B & DOUBLE(A, B) ) >> SINGLE(B)"
 		};
 
 		assertModel(input, expected);
