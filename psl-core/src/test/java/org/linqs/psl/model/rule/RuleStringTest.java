@@ -187,11 +187,11 @@ public class RuleStringTest {
 
 		// Unweighted (Not Squared)
 		rule = new UnweightedArithmeticRule(arithmeticBaseRule);
-		assertEquals("{constraint}: 1.0 * SINGLEPREDICATE(A) + 1.0 * SINGLEPREDICATE(B) = 1.0", rule.toString());
+		assertEquals("1.0 * SINGLEPREDICATE(A) + 1.0 * SINGLEPREDICATE(B) = 1.0 .", rule.toString());
 
 		// Weighted, Squared
 		rule = new WeightedArithmeticRule(arithmeticBaseRule,	10.0, true);
-		assertEquals("10.0: 1.0 * SINGLEPREDICATE(A) + 1.0 * SINGLEPREDICATE(B) = 1.0 {squared}", rule.toString());
+		assertEquals("10.0: 1.0 * SINGLEPREDICATE(A) + 1.0 * SINGLEPREDICATE(B) = 1.0 ^2", rule.toString());
 
 		// Weighted, Not Squared
 		rule = new WeightedArithmeticRule(arithmeticBaseRule,	10.0, false);

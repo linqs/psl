@@ -52,8 +52,8 @@ public class UnweightedArithmeticRule extends AbstractArithmeticRule
 	@Override
 	public String toString() {
 		StringBuilder s = new StringBuilder();
-		s.append("{constraint}: ");
 		s.append(expression);
+		s.append(" .");
 		for (Map.Entry<SummationVariable, Formula> e : selects.entrySet()) {
 			s.append("\n{");
 			// Appends the corresponding Variable, not the SummationVariable, to leave out the '+'

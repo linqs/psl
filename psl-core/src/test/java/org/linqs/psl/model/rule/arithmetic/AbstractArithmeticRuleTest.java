@@ -51,7 +51,6 @@ import org.linqs.psl.model.rule.arithmetic.expression.coefficient.ConstantNumber
 import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Max;
 import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Min;
 import org.linqs.psl.model.term.ConstantType;
-import org.linqs.psl.model.term.UniqueID;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.admm.ADMMReasoner;
 import org.linqs.psl.reasoner.function.FunctionComparator;
@@ -110,7 +109,7 @@ public class AbstractArithmeticRuleTest {
 		AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
 				coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1)));
 
-		assertEquals("{constraint}: 1.0 * SINGLECLOSED(A) + 1.0 * SINGLECLOSED(B) = 1.0", rule.toString());
+		assertEquals("1.0 * SINGLECLOSED(A) + 1.0 * SINGLECLOSED(B) = 1.0 .", rule.toString());
 	}
 
 	@Test
@@ -153,7 +152,7 @@ public class AbstractArithmeticRuleTest {
 		AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
 				coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1)));
 
-		assertEquals("{constraint}: 1.0 * DOUBLECLOSED(+A, 'Foo') = 1.0", rule.toString());
+		assertEquals("1.0 * DOUBLECLOSED(+A, 'Foo') = 1.0 .", rule.toString());
 	}
 
 	@Test
@@ -172,7 +171,7 @@ public class AbstractArithmeticRuleTest {
 		AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
 				coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1)));
 
-		assertEquals("{constraint}: 1.0 * SINGLECLOSED(+A) + 1.0 * SINGLECLOSED(+B) = 1.0", rule.toString());
+		assertEquals("1.0 * SINGLECLOSED(+A) + 1.0 * SINGLECLOSED(+B) = 1.0 .", rule.toString());
 	}
 
 	@Test
@@ -217,7 +216,7 @@ public class AbstractArithmeticRuleTest {
 				coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1));
 		AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, selects);
 
-		assertEquals("{constraint}: 1.0 * SINGLECLOSED(+A) = 1.0\n{A : SINGLECLOSED(A)}", rule.toString());
+		assertEquals("1.0 * SINGLECLOSED(+A) = 1.0 .\n{A : SINGLECLOSED(A)}", rule.toString());
 	}
 
 	@Test
@@ -243,7 +242,7 @@ public class AbstractArithmeticRuleTest {
 				coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1));
 		AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, selects);
 
-		assertEquals("{constraint}: 1.0 * SINGLECLOSED(+A) = 1.0\n{A : ( SINGLECLOSED(A) | DOUBLECLOSED(A, A) )}", rule.toString());
+		assertEquals("1.0 * SINGLECLOSED(+A) = 1.0 .\n{A : ( SINGLECLOSED(A) | DOUBLECLOSED(A, A) )}", rule.toString());
 	}
 
 	@Test
@@ -268,7 +267,7 @@ public class AbstractArithmeticRuleTest {
 				coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1));
 		AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, selects);
 
-		assertEquals("{constraint}: 1.0 * DOUBLECLOSED(+A, B) = 1.0\n{A : SINGLECLOSED(B)}", rule.toString());
+		assertEquals("1.0 * DOUBLECLOSED(+A, B) = 1.0 .\n{A : SINGLECLOSED(B)}", rule.toString());
 	}
 
 	@Test
@@ -448,7 +447,7 @@ public class AbstractArithmeticRuleTest {
 		AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
 				coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1)));
 
-		assertEquals("{constraint}: |A| * SINGLECLOSED(+A) = 1.0", rule.toString());
+		assertEquals("|A| * SINGLECLOSED(+A) = 1.0 .", rule.toString());
 	}
 
 	@Test
@@ -465,7 +464,7 @@ public class AbstractArithmeticRuleTest {
 		AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
 				coefficients, atoms, FunctionComparator.Equality, new Cardinality(new SummationVariable("A"))));
 
-		assertEquals("{constraint}: |A| * SINGLECLOSED(+A) = |A|", rule.toString());
+		assertEquals("|A| * SINGLECLOSED(+A) = |A| .", rule.toString());
 	}
 
 	@Test
@@ -484,7 +483,7 @@ public class AbstractArithmeticRuleTest {
 		AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
 				coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1)));
 
-		assertEquals("{constraint}: |A| * SINGLECLOSED(+A) + |B| * SINGLECLOSED(+B) = 1.0", rule.toString());
+		assertEquals("|A| * SINGLECLOSED(+A) + |B| * SINGLECLOSED(+B) = 1.0 .", rule.toString());
 	}
 
 	@Test
@@ -522,7 +521,7 @@ public class AbstractArithmeticRuleTest {
 		AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
 				coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1)));
 
-		assertEquals("{constraint}: @Max[|A|, 0.0] * SINGLECLOSED(+A) = 1.0", rule.toString());
+		assertEquals("@Max[|A|, 0.0] * SINGLECLOSED(+A) = 1.0 .", rule.toString());
 	}
 
 	@Test
@@ -539,7 +538,7 @@ public class AbstractArithmeticRuleTest {
 		AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
 				coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1)));
 
-		assertEquals("{constraint}: @Max[1.0, 0.0] * SINGLECLOSED(+A) = 1.0", rule.toString());
+		assertEquals("@Max[1.0, 0.0] * SINGLECLOSED(+A) = 1.0 .", rule.toString());
 	}
 
 	@Test
@@ -558,7 +557,7 @@ public class AbstractArithmeticRuleTest {
 		AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
 				coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1)));
 
-		assertEquals("{constraint}: @Max[|A|, |B|] * SINGLECLOSED(+A) + 1.0 * SINGLECLOSED(+B) = 1.0", rule.toString());
+		assertEquals("@Max[|A|, |B|] * SINGLECLOSED(+A) + 1.0 * SINGLECLOSED(+B) = 1.0 .", rule.toString());
 	}
 
 	@Test
@@ -575,7 +574,7 @@ public class AbstractArithmeticRuleTest {
 		AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
 				coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1)));
 
-		assertEquals("{constraint}: @Min[1.0, 0.0] * SINGLECLOSED(A) = 1.0", rule.toString());
+		assertEquals("@Min[1.0, 0.0] * SINGLECLOSED(A) = 1.0 .", rule.toString());
 	}
 
 	@After
