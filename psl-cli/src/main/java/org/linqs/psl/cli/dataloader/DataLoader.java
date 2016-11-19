@@ -30,7 +30,6 @@ import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.model.predicate.PredicateFactory;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.ConstantType;
-import org.linqs.psl.ui.loading.InserterUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
@@ -92,10 +91,10 @@ public class DataLoader {
 				StandardPredicate predicate = (StandardPredicate) pf.getPredicate(loadSpec.getKey());
 				Inserter insert = datastore.getInserter(predicate, p);
 				if(loadSpec.getValue() instanceof String){
-					InserterUtils.loadDelimitedDataAutomatic(predicate, insert, (String) loadSpec.getValue());
+					DataInserter.loadDelimitedDataAutomatic(predicate, insert, (String) loadSpec.getValue());
 				} else if (loadSpec.getValue() instanceof List){
 					for(String filename : ((List<String>)loadSpec.getValue())){
-						InserterUtils.loadDelimitedDataAutomatic(predicate, insert, filename);
+						DataInserter.loadDelimitedDataAutomatic(predicate, insert, filename);
 					}
 				} else {
 					throw new IllegalArgumentException("Unknown specification when loading "+partitionName);
