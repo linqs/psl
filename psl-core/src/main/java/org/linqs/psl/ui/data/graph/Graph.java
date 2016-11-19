@@ -47,7 +47,10 @@ public class Graph<ET extends EntityType, RT extends RelationType> {
 	}
 	
 	public Iterator<Entity<ET,RT>> getEntities(ET type) {
-		if (!entities.containsKey(type)) return Iterators.emptyIterator();
+		if (!entities.containsKey(type)) {
+			return new ArrayList<Entity<ET, RT>>().iterator();
+		}
+
 		final Iterator<Entity<ET,RT>> iter = entities.get(type).values().iterator();
 		return new Iterator<Entity<ET,RT>>() {
 

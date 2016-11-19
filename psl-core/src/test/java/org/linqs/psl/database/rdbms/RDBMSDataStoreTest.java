@@ -32,11 +32,10 @@ public class RDBMSDataStoreTest extends DataStoreContractTest {
 	private String dbName;
 
 	@Override
-	public DataStore getDataStore() {
+	public DataStore getDataStore(boolean clearDB) {
 		dbPath = System.getProperty("java.io.tmpdir") + "/";
 		dbName = "rdbmsDataStoreTest";
-		DatabaseDriver driver = new H2DatabaseDriver(H2DatabaseDriver.Type.Disk, dbPath + dbName, false);
-		//System.err.println("New database at "+dbPath+dbName);
+		DatabaseDriver driver = new H2DatabaseDriver(H2DatabaseDriver.Type.Disk, dbPath + dbName, clearDB);
 		RDBMSDataStore dataStore = new RDBMSDataStore(driver, new EmptyBundle());
 		return dataStore;
 	}

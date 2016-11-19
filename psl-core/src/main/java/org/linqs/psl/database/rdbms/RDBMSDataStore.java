@@ -54,7 +54,6 @@ import com.google.common.collect.HashBiMap;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.healthmarketscience.sqlbuilder.CreateTableQuery;
-import com.healthmarketscience.sqlbuilder.CreateTableQuery.ColumnConstraint;
 
 /**
  * The RDMBSDataStore is an RDBMS implementation of the DataStore interface. It
@@ -331,7 +330,7 @@ public class RDBMSDataStore implements DataStore {
 					typeName = "INT";
 					break;
 				case String:
-					typeName = "MEDIUMTEXT";
+					typeName = "VARCHAR";
 					colName = dbDriver.castStringWithModifiersForIndexing(colName);
 					break;
 				case Long:
@@ -352,16 +351,16 @@ public class RDBMSDataStore implements DataStore {
 			}
 
 			keyColumns.append(colName).append(", ");
-			q.addCustomColumn(pi.argCols[i] + " " + typeName, ColumnConstraint.NOT_NULL);
+			q.addCustomColumns(pi.argCols[i] + " " + typeName + " NOT NULL");
 		}
 		
 		// Add a column for partitioning
 		keyColumns.append(pi.partitionCol);
 		hashIndexes.add(pi.partitionCol);
-		q.addCustomColumn(pi.partitionCol + " INT DEFAULT 0", ColumnConstraint.NOT_NULL);
+		q.addCustomColumns(pi.partitionCol + " INT DEFAULT 0 NOT NULL");
 		
 		// Add columns for value and confidence
-		q.addCustomColumn(pi.valueCol + " DOUBLE", ColumnConstraint.NOT_NULL);
+		q.addCustomColumns(pi.valueCol + " DOUBLE NOT NULL");
 		q.addCustomColumns(pi.confidenceCol + " DOUBLE");
 		
 		try {

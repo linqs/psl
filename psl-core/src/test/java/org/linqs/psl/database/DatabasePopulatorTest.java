@@ -66,7 +66,7 @@ public class DatabasePopulatorTest {
 	public void setUp() throws Exception {
 		dbPath = System.getProperty("java.io.tmpdir") + "/";
 		dbName = "databasePopulatorTest";
-		DatabaseDriver driver = new H2DatabaseDriver(H2DatabaseDriver.Type.Disk, dbPath + dbName, false);
+		DatabaseDriver driver = new H2DatabaseDriver(H2DatabaseDriver.Type.Disk, dbPath + dbName, true);
 		datastore = new RDBMSDataStore(driver, new EmptyBundle());
 		datastore.registerPredicate(p1);
 		datastore.registerPredicate(p2);

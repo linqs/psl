@@ -71,7 +71,7 @@ abstract public class DataStoreContractTest {
 	 * @return the DataStore to be tested, should always be backed by the same
 	 *             persistence mechanism
 	 */
-	abstract public DataStore getDataStore();
+	abstract public DataStore getDataStore(boolean clearDB);
 	
 	/**
 	 * Deletes any files and releases any resources used by the tested DataStore
@@ -109,7 +109,7 @@ abstract public class DataStoreContractTest {
 
 	@Before
 	public void setUp() throws Exception {
-		datastore = getDataStore();
+		datastore = getDataStore(true);
 		dbs = new LinkedList<Database>();
 	}
 
@@ -332,7 +332,7 @@ abstract public class DataStoreContractTest {
 		datastore.registerPredicate(p2);
 		
 		datastore.close();
-		datastore = getDataStore();
+		datastore = getDataStore(false);
 		
 		Set<StandardPredicate> registeredPredicates = datastore.getRegisteredPredicates();
 		assertTrue(registeredPredicates.contains(p1));
@@ -766,7 +766,7 @@ abstract public class DataStoreContractTest {
 		datastore.registerPredicate(p2);
 		
 		datastore.close();
-		datastore = getDataStore();
+		datastore = getDataStore(false);
 		datastore.getInserter(p1, datastore.getPartition("0"));
 	}
 	
