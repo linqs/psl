@@ -78,7 +78,7 @@ public class PSLModelTest {
 		);
 
 		String[] expected = [
-			"{1.0} ( SINGLE(A) & SIM(A, B) ) >> SINGLE(B) {squared}"
+			"1.0: ( SINGLE(A) & SIM(A, B) ) >> SINGLE(B) ^2"
 		];
 
 		assertModel(expected);
@@ -91,7 +91,7 @@ public class PSLModelTest {
 		);
 
 		String[] expected = [
-			"{1.0} ( SINGLE(A) & SIM(A, B) ) >> SINGLE(B) {squared}"
+			"1.0: ( SINGLE(A) & SIM(A, B) ) >> SINGLE(B) ^2"
 		];
 
 		assertModel(expected);
