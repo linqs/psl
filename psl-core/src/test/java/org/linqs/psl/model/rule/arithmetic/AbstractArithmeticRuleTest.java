@@ -18,11 +18,13 @@
 package org.linqs.psl.model.rule.arithmetic;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.EmptyBundle;
 import org.linqs.psl.database.DataStore;
@@ -290,7 +292,9 @@ public class AbstractArithmeticRuleTest {
 				coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1));
 		AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, selects);
 
-		assertEquals("{constraint}: 1.0 * SINGLECLOSED(+A) + 1.0 * SINGLECLOSED(+B) = 1.0\n{A : SINGLECLOSED(A)}\n{B : SINGLECLOSED(B)}", rule.toString());
+		assertTrue(rule.toString().equals("1.0 * SINGLECLOSED(+A) + 1.0 * SINGLECLOSED(+B) = 1.0 .\n{A : SINGLECLOSED(A)}\n{B : SINGLECLOSED(B)}")
+				||
+				rule.toString().equals("1.0 * SINGLECLOSED(+A) + 1.0 * SINGLECLOSED(+B) = 1.0 .\n{B : SINGLECLOSED(B)}\n{A : SINGLECLOSED(A)}"));
 	}
 
 	@Test

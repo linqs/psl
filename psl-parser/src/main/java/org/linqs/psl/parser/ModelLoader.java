@@ -399,6 +399,9 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 			}
 		}
 
+		if (finalCoeff == null)
+			finalCoeff = new ConstantNumber(0.0);
+		
 		return new ArithmeticRuleExpression(coeffs, atoms, comp, finalCoeff);
 	}
 
