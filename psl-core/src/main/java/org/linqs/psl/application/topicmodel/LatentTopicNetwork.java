@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.Set;
 
 import org.linqs.psl.application.ModelApplication;
+import org.linqs.psl.application.inference.result.FullInferenceResult;
+import org.linqs.psl.application.inference.result.memory.MemoryFullInferenceResult;
 import org.linqs.psl.application.topicmodel.reasoner.admm.LatentTopicNetworkADMMReasoner;
 import org.linqs.psl.application.topicmodel.rule.LDAgroundLogLoss;
 import org.linqs.psl.application.util.GroundKernels;
@@ -38,8 +40,6 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabasePopulator;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.loading.Inserter;
-import org.linqs.psl.evaluation.result.FullInferenceResult;
-import org.linqs.psl.evaluation.result.memory.MemoryFullInferenceResult;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.PersistedAtomManager;

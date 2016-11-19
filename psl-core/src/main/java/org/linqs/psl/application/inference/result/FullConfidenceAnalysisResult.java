@@ -15,33 +15,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.evaluation.statistics.filter;
+package org.linqs.psl.application.inference.result;
 
-import java.util.Iterator;
-import java.util.Set;
+import java.util.Map;
 
-import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.predicate.Predicate;
+import org.linqs.psl.reasoner.function.AtomFunctionVariable;
 
-import com.google.common.base.Predicate;
-import com.google.common.collect.Iterators;
+import de.mathnbits.statistics.DoubleDist;
 
-public class InSetFilter implements AtomFilter {
+public interface FullConfidenceAnalysisResult extends InferenceResult {
 	
-	private final Set<GroundAtom> atoms;
+	public Map<AtomFunctionVariable,DoubleDist> getDistribution();
 	
-	public InSetFilter(Set<GroundAtom> atomSet) {
-		atoms = atomSet;
-	}
-
-	@Override
-	public Iterator<GroundAtom> filter(Iterator<GroundAtom> input) {
-		return Iterators.filter(input, new Predicate<GroundAtom>() {
-			@Override
-			public boolean apply(GroundAtom atom) {
-				return atoms.contains(atom);
-			}
-			
-		});
-	}
-
+	public double[] getHistogram(AtomFunctionVariable atomvar, int noBins);
+	
+	public double KLdivergence(AtomFunctionVariable atomvar, int noBins, FullConfidenceAnalysisResult other);
+	
+	public double averageKLdivergence(Predicate p, int noBins, FullConfidenceAnalysisResult other);
 }

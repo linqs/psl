@@ -15,11 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.evaluation.result.memory;
+package org.linqs.psl.application.inference.result.memory;
 
 import java.util.Map;
 
-import org.linqs.psl.evaluation.result.FullConfidenceAnalysisResult;
+import org.linqs.psl.application.inference.result.FullConfidenceAnalysisResult;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.reasoner.function.AtomFunctionVariable;

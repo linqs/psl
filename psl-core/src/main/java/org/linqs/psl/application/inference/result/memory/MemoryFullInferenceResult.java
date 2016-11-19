@@ -15,9 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.evaluation.result.memory;
+package org.linqs.psl.application.inference.result.memory;
 
-import org.linqs.psl.evaluation.result.FullInferenceResult;
+import org.linqs.psl.application.inference.result.FullInferenceResult;
 
 public class MemoryFullInferenceResult implements FullInferenceResult {
 

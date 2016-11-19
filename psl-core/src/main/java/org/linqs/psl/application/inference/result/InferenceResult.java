@@ -15,18 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.evaluation.result;
+package org.linqs.psl.application.inference.result;
 
-public interface FullInferenceResult extends InferenceResult {
-
-	public double getTotalWeightedIncompatibility();
-	
-	public double getInfeasibilityNorm();
-
-	public int getNumGroundAtoms();
-
-	public int getNumGroundEvidence();
-	
-	
+public interface InferenceResult {
 	
 }

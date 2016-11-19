@@ -20,6 +20,8 @@ package org.linqs.psl.application.inference;
 import java.util.Observable;
 
 import org.linqs.psl.application.ModelApplication;
+import org.linqs.psl.application.inference.result.FullInferenceResult;
+import org.linqs.psl.application.inference.result.memory.MemoryFullInferenceResult;
 import org.linqs.psl.application.util.GroundKernels;
 import org.linqs.psl.application.util.Grounding;
 import org.linqs.psl.config.ConfigBundle;
@@ -27,8 +29,6 @@ import org.linqs.psl.config.ConfigManager;
 import org.linqs.psl.config.Factory;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabasePopulator;
-import org.linqs.psl.evaluation.result.FullInferenceResult;
-import org.linqs.psl.evaluation.result.memory.MemoryFullInferenceResult;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.AtomEventFramework;
 import org.linqs.psl.model.atom.GroundAtom;
