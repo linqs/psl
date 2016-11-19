@@ -102,7 +102,7 @@ public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule
 	@Override
 	public String toString() {
 		return "" + getWeight().getWeight() + ": " + super.toString()
-			+ ((squared) ? " {squared}" : "");
+			+ ((squared) ? " ^2" : "");
 	}
 
 }

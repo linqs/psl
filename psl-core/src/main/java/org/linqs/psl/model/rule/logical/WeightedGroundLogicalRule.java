@@ -76,6 +76,6 @@ public class WeightedGroundLogicalRule extends AbstractGroundLogicalRule
 	@Override
 	public String toString() {
 		return "" + getWeight().getWeight() + ": " + super.toString()
-				+ ((squared) ? " {squared}" : "");
+				+ ((squared) ? " ^2" : "");
 	}
 }

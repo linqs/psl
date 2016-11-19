@@ -159,11 +159,11 @@ public class RuleStringTest {
 
 		// Unweighted (Not Squared)
 		rule = new UnweightedLogicalRule(logicalBaseRule);
-		assertEquals("{constraint}: ( SINGLEPREDICATE(A) & SINGLEPREDICATE(B) ) >> DOUBLEPREDICATE(A, B)", rule.toString());
+		assertEquals("( SINGLEPREDICATE(A) & SINGLEPREDICATE(B) ) >> DOUBLEPREDICATE(A, B) .", rule.toString());
 
 		// Weighted, Squared
 		rule = new WeightedLogicalRule(logicalBaseRule, 10.0, true);
-		assertEquals("10.0: ( SINGLEPREDICATE(A) & SINGLEPREDICATE(B) ) >> DOUBLEPREDICATE(A, B) {squared}", rule.toString());
+		assertEquals("10.0: ( SINGLEPREDICATE(A) & SINGLEPREDICATE(B) ) >> DOUBLEPREDICATE(A, B) ^2", rule.toString());
 
 		// Weighted, Not Squared
 		rule = new WeightedLogicalRule(logicalBaseRule, 10.0, false);
@@ -210,10 +210,10 @@ public class RuleStringTest {
 		rule = new UnweightedLogicalRule(logicalBaseRule);
 		// Remember, all rules will be in DNF.
 		expected = Arrays.asList(
-			"{constraint}: ( ~( SINGLEPREDICATE('Alice') ) | ~( SINGLEPREDICATE('Alice') ) | DOUBLEPREDICATE('Alice', 'Alice') )",
-			"{constraint}: ( ~( SINGLEPREDICATE('Alice') ) | ~( SINGLEPREDICATE('Bob') ) | DOUBLEPREDICATE('Alice', 'Bob') )",
-			"{constraint}: ( ~( SINGLEPREDICATE('Bob') ) | ~( SINGLEPREDICATE('Alice') ) | DOUBLEPREDICATE('Bob', 'Alice') )",
-			"{constraint}: ( ~( SINGLEPREDICATE('Bob') ) | ~( SINGLEPREDICATE('Bob') ) | DOUBLEPREDICATE('Bob', 'Bob') )"
+			"( ~( SINGLEPREDICATE('Alice') ) | ~( SINGLEPREDICATE('Alice') ) | DOUBLEPREDICATE('Alice', 'Alice') ) .",
+			"( ~( SINGLEPREDICATE('Alice') ) | ~( SINGLEPREDICATE('Bob') ) | DOUBLEPREDICATE('Alice', 'Bob') ) .",
+			"( ~( SINGLEPREDICATE('Bob') ) | ~( SINGLEPREDICATE('Alice') ) | DOUBLEPREDICATE('Bob', 'Alice') ) .",
+			"( ~( SINGLEPREDICATE('Bob') ) | ~( SINGLEPREDICATE('Bob') ) | DOUBLEPREDICATE('Bob', 'Bob') ) ."
 		);
 		rule.groundAll(manager, store);
 		compareGroundRules(expected, rule, store);
@@ -221,10 +221,10 @@ public class RuleStringTest {
 		// Weighted, Squared
 		rule = new WeightedLogicalRule(logicalBaseRule, 10.0, true);
 		expected = Arrays.asList(
-			"10.0: ( ~( SINGLEPREDICATE('Alice') ) | ~( SINGLEPREDICATE('Alice') ) | DOUBLEPREDICATE('Alice', 'Alice') ) {squared}",
-			"10.0: ( ~( SINGLEPREDICATE('Alice') ) | ~( SINGLEPREDICATE('Bob') ) | DOUBLEPREDICATE('Alice', 'Bob') ) {squared}",
-			"10.0: ( ~( SINGLEPREDICATE('Bob') ) | ~( SINGLEPREDICATE('Alice') ) | DOUBLEPREDICATE('Bob', 'Alice') ) {squared}",
-			"10.0: ( ~( SINGLEPREDICATE('Bob') ) | ~( SINGLEPREDICATE('Bob') ) | DOUBLEPREDICATE('Bob', 'Bob') ) {squared}"
+			"10.0: ( ~( SINGLEPREDICATE('Alice') ) | ~( SINGLEPREDICATE('Alice') ) | DOUBLEPREDICATE('Alice', 'Alice') ) ^2",
+			"10.0: ( ~( SINGLEPREDICATE('Alice') ) | ~( SINGLEPREDICATE('Bob') ) | DOUBLEPREDICATE('Alice', 'Bob') ) ^2",
+			"10.0: ( ~( SINGLEPREDICATE('Bob') ) | ~( SINGLEPREDICATE('Alice') ) | DOUBLEPREDICATE('Bob', 'Alice') ) ^2",
+			"10.0: ( ~( SINGLEPREDICATE('Bob') ) | ~( SINGLEPREDICATE('Bob') ) | DOUBLEPREDICATE('Bob', 'Bob') ) ^2"
 		);
 		rule.groundAll(manager, store);
 		compareGroundRules(expected, rule, store);
@@ -253,14 +253,14 @@ public class RuleStringTest {
 		rule = new UnweightedArithmeticRule(arithmeticBaseRule);
 		// Remember, equality inserts two rules (<= and >=).
 		expected = Arrays.asList(
-			"{constraint}: 1.0 SINGLEPREDICATE('Alice') 1.0 SINGLEPREDICATE('Alice') <= 1.0",
-			"{constraint}: 1.0 SINGLEPREDICATE('Alice') 1.0 SINGLEPREDICATE('Alice') >= 1.0",
-			"{constraint}: 1.0 SINGLEPREDICATE('Alice') 1.0 SINGLEPREDICATE('Bob') <= 1.0",
-			"{constraint}: 1.0 SINGLEPREDICATE('Alice') 1.0 SINGLEPREDICATE('Bob') >= 1.0",
-			"{constraint}: 1.0 SINGLEPREDICATE('Bob') 1.0 SINGLEPREDICATE('Alice') <= 1.0",
-			"{constraint}: 1.0 SINGLEPREDICATE('Bob') 1.0 SINGLEPREDICATE('Alice') >= 1.0",
-			"{constraint}: 1.0 SINGLEPREDICATE('Bob') 1.0 SINGLEPREDICATE('Bob') <= 1.0",
-			"{constraint}: 1.0 SINGLEPREDICATE('Bob') 1.0 SINGLEPREDICATE('Bob') >= 1.0"
+			"1.0 SINGLEPREDICATE('Alice') 1.0 SINGLEPREDICATE('Alice') <= 1.0 .",
+			"1.0 SINGLEPREDICATE('Alice') 1.0 SINGLEPREDICATE('Alice') >= 1.0 .",
+			"1.0 SINGLEPREDICATE('Alice') 1.0 SINGLEPREDICATE('Bob') <= 1.0 .",
+			"1.0 SINGLEPREDICATE('Alice') 1.0 SINGLEPREDICATE('Bob') >= 1.0 .",
+			"1.0 SINGLEPREDICATE('Bob') 1.0 SINGLEPREDICATE('Alice') <= 1.0 .",
+			"1.0 SINGLEPREDICATE('Bob') 1.0 SINGLEPREDICATE('Alice') >= 1.0 .",
+			"1.0 SINGLEPREDICATE('Bob') 1.0 SINGLEPREDICATE('Bob') <= 1.0 .",
+			"1.0 SINGLEPREDICATE('Bob') 1.0 SINGLEPREDICATE('Bob') >= 1.0 ."
 		);
 		rule.groundAll(manager, store);
 		compareGroundRules(expected, rule, store);
@@ -268,14 +268,14 @@ public class RuleStringTest {
 		// Weighted, Squared
 		rule = new WeightedArithmeticRule(arithmeticBaseRule,	10.0, true);
 		expected = Arrays.asList(
-			"10.0: 1.0 SINGLEPREDICATE('Alice') 1.0 SINGLEPREDICATE('Alice') <= 1.0 {squared}",
-			"10.0: 1.0 SINGLEPREDICATE('Alice') 1.0 SINGLEPREDICATE('Alice') >= 1.0 {squared}",
-			"10.0: 1.0 SINGLEPREDICATE('Alice') 1.0 SINGLEPREDICATE('Bob') <= 1.0 {squared}",
-			"10.0: 1.0 SINGLEPREDICATE('Alice') 1.0 SINGLEPREDICATE('Bob') >= 1.0 {squared}",
-			"10.0: 1.0 SINGLEPREDICATE('Bob') 1.0 SINGLEPREDICATE('Alice') <= 1.0 {squared}",
-			"10.0: 1.0 SINGLEPREDICATE('Bob') 1.0 SINGLEPREDICATE('Alice') >= 1.0 {squared}",
-			"10.0: 1.0 SINGLEPREDICATE('Bob') 1.0 SINGLEPREDICATE('Bob') <= 1.0 {squared}",
-			"10.0: 1.0 SINGLEPREDICATE('Bob') 1.0 SINGLEPREDICATE('Bob') >= 1.0 {squared}"
+			"10.0: 1.0 SINGLEPREDICATE('Alice') 1.0 SINGLEPREDICATE('Alice') <= 1.0 ^2",
+			"10.0: 1.0 SINGLEPREDICATE('Alice') 1.0 SINGLEPREDICATE('Alice') >= 1.0 ^2",
+			"10.0: 1.0 SINGLEPREDICATE('Alice') 1.0 SINGLEPREDICATE('Bob') <= 1.0 ^2",
+			"10.0: 1.0 SINGLEPREDICATE('Alice') 1.0 SINGLEPREDICATE('Bob') >= 1.0 ^2",
+			"10.0: 1.0 SINGLEPREDICATE('Bob') 1.0 SINGLEPREDICATE('Alice') <= 1.0 ^2",
+			"10.0: 1.0 SINGLEPREDICATE('Bob') 1.0 SINGLEPREDICATE('Alice') >= 1.0 ^2",
+			"10.0: 1.0 SINGLEPREDICATE('Bob') 1.0 SINGLEPREDICATE('Bob') <= 1.0 ^2",
+			"10.0: 1.0 SINGLEPREDICATE('Bob') 1.0 SINGLEPREDICATE('Bob') >= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
 		compareGroundRules(expected, rule, store);
