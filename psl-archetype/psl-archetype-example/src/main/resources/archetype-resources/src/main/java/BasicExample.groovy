@@ -22,29 +22,29 @@ package ${package};
 
 import java.text.DecimalFormat;
 
-import edu.umd.cs.psl.application.inference.MPEInference;
-import edu.umd.cs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
-import edu.umd.cs.psl.config.*
-import edu.umd.cs.psl.database.DataStore
-import edu.umd.cs.psl.database.Database;
-import edu.umd.cs.psl.database.DatabasePopulator;
-import edu.umd.cs.psl.database.Partition;
-import edu.umd.cs.psl.database.ReadOnlyDatabase;
-import edu.umd.cs.psl.database.rdbms.RDBMSDataStore
-import edu.umd.cs.psl.database.rdbms.driver.H2DatabaseDriver
-import edu.umd.cs.psl.database.rdbms.driver.H2DatabaseDriver.Type
-import edu.umd.cs.psl.groovy.PSLModel;
-import edu.umd.cs.psl.groovy.PredicateConstraint;
-import edu.umd.cs.psl.groovy.SetComparison;
-import edu.umd.cs.psl.model.argument.ArgumentType;
-import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.argument.UniqueID;
-import edu.umd.cs.psl.model.argument.Variable;
-import edu.umd.cs.psl.model.atom.GroundAtom;
-import edu.umd.cs.psl.model.function.ExternalFunction;
-import edu.umd.cs.psl.ui.functions.textsimilarity.*
-import edu.umd.cs.psl.ui.loading.InserterUtils;
-import edu.umd.cs.psl.util.database.Queries;
+import org.linqs.psl.application.inference.MPEInference;
+import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
+import org.linqs.psl.config.*
+import org.linqs.psl.database.DataStore
+import org.linqs.psl.database.Database;
+import org.linqs.psl.database.DatabasePopulator;
+import org.linqs.psl.database.Partition;
+import org.linqs.psl.database.ReadOnlyDatabase;
+import org.linqs.psl.database.rdbms.RDBMSDataStore
+import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver
+import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver.Type
+import org.linqs.psl.groovy.PSLModel;
+import org.linqs.psl.groovy.PredicateConstraint;
+import org.linqs.psl.groovy.SetComparison;
+import org.linqs.psl.model.argument.ArgumentType;
+import org.linqs.psl.model.argument.GroundTerm;
+import org.linqs.psl.model.argument.UniqueID;
+import org.linqs.psl.model.argument.Variable;
+import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.function.ExternalFunction;
+import org.linqs.psl.ui.functions.textsimilarity.*
+import org.linqs.psl.ui.loading.InserterUtils;
+import org.linqs.psl.util.database.Queries;
 
 /* 
  * The first thing we need to do is initialize a ConfigBundle and a DataStore
@@ -326,7 +326,7 @@ db2.close();
  * This simple implementation checks whether two strings are identical, in which case it returns 1.0
  * or different (returning 0.0).
  *
- * The package edu.umd.cs.psl.ui.functions.textsimilarity contains additional and
+ * The package org.linqs.psl.ui.functions.textsimilarity contains additional and
  * more sophisticated string similarity functions.
  */
 class MyStringSimilarity implements ExternalFunction {

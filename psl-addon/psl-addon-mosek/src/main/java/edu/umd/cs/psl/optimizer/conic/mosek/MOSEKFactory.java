@@ -15,11 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.optimizer.conic.mosek;
+package org.linqs.psl.optimizer.conic.mosek;
 
-import edu.umd.cs.psl.config.ConfigBundle;
-import edu.umd.cs.psl.optimizer.conic.ConicProgramSolver;
-import edu.umd.cs.psl.optimizer.conic.ConicProgramSolverFactory;
+import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.optimizer.conic.ConicProgramSolver;
+import org.linqs.psl.optimizer.conic.ConicProgramSolverFactory;
 
 public class MOSEKFactory implements ConicProgramSolverFactory {
 

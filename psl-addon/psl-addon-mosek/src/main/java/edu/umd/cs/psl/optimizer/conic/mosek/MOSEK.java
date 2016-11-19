@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.umd.cs.psl.optimizer.conic.mosek;
+package org.linqs.psl.optimizer.conic.mosek;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -31,16 +31,16 @@ import org.slf4j.LoggerFactory;
 
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.impl.SparseCCDoubleMatrix2D;
-import edu.umd.cs.psl.config.ConfigBundle;
-import edu.umd.cs.psl.config.ConfigManager;
-import edu.umd.cs.psl.optimizer.conic.ConicProgramSolver;
-import edu.umd.cs.psl.optimizer.conic.program.ConeType;
-import edu.umd.cs.psl.optimizer.conic.program.ConicProgram;
-import edu.umd.cs.psl.optimizer.conic.program.LinearConstraint;
-import edu.umd.cs.psl.optimizer.conic.program.NonNegativeOrthantCone;
-import edu.umd.cs.psl.optimizer.conic.program.RotatedSecondOrderCone;
-import edu.umd.cs.psl.optimizer.conic.program.SecondOrderCone;
-import edu.umd.cs.psl.optimizer.conic.program.Variable;
+import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.config.ConfigManager;
+import org.linqs.psl.optimizer.conic.ConicProgramSolver;
+import org.linqs.psl.optimizer.conic.program.ConeType;
+import org.linqs.psl.optimizer.conic.program.ConicProgram;
+import org.linqs.psl.optimizer.conic.program.LinearConstraint;
+import org.linqs.psl.optimizer.conic.program.NonNegativeOrthantCone;
+import org.linqs.psl.optimizer.conic.program.RotatedSecondOrderCone;
+import org.linqs.psl.optimizer.conic.program.SecondOrderCone;
+import org.linqs.psl.optimizer.conic.program.Variable;
 
 public class MOSEK implements ConicProgramSolver {
 	

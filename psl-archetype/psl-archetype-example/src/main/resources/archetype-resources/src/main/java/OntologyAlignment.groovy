@@ -22,26 +22,26 @@ package ${package};
 
 import java.text.DecimalFormat;
 
-import edu.umd.cs.psl.groovy.*;
-import edu.umd.cs.psl.ui.functions.textsimilarity.*;
-import edu.umd.cs.psl.ui.loading.InserterUtils;
-import edu.umd.cs.psl.util.database.Queries;
-import edu.umd.cs.psl.model.argument.ArgumentType;
-import edu.umd.cs.psl.model.argument.GroundTerm;
-import edu.umd.cs.psl.model.predicate.Predicate;
-import edu.umd.cs.psl.model.argument.type.*;
-import edu.umd.cs.psl.model.atom.GroundAtom;
-import edu.umd.cs.psl.model.atom.RandomVariableAtom;
-import edu.umd.cs.psl.model.predicate.type.*;
-import edu.umd.cs.psl.application.inference.MPEInference;
-import edu.umd.cs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
-import edu.umd.cs.psl.config.*;
-import edu.umd.cs.psl.database.DataStore;
-import edu.umd.cs.psl.database.Database;
-import edu.umd.cs.psl.database.Partition;
-import edu.umd.cs.psl.database.rdbms.RDBMSDataStore;
-import edu.umd.cs.psl.database.rdbms.driver.H2DatabaseDriver;
-import edu.umd.cs.psl.database.rdbms.driver.H2DatabaseDriver.Type;
+import org.linqs.psl.groovy.*;
+import org.linqs.psl.ui.functions.textsimilarity.*;
+import org.linqs.psl.ui.loading.InserterUtils;
+import org.linqs.psl.util.database.Queries;
+import org.linqs.psl.model.argument.ArgumentType;
+import org.linqs.psl.model.argument.GroundTerm;
+import org.linqs.psl.model.predicate.Predicate;
+import org.linqs.psl.model.argument.type.*;
+import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.predicate.type.*;
+import org.linqs.psl.application.inference.MPEInference;
+import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
+import org.linqs.psl.config.*;
+import org.linqs.psl.database.DataStore;
+import org.linqs.psl.database.Database;
+import org.linqs.psl.database.Partition;
+import org.linqs.psl.database.rdbms.RDBMSDataStore;
+import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
+import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver.Type;
 
 ////////////////////////// initial setup ////////////////////////
 ConfigManager cm = ConfigManager.getManager()

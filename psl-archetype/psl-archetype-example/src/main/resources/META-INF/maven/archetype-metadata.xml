@@ -31,7 +31,7 @@
 	</fileSets>
 	<requiredProperties>
 		<requiredProperty key="groupId">
-			<defaultValue>edu.umd.cs</defaultValue>
+			<defaultValue>org.linqs</defaultValue>
 		</requiredProperty>
 		<requiredProperty key="artifactId">
 			<defaultValue>psl-example</defaultValue>
@@ -40,7 +40,7 @@
 			<defaultValue>2.0-SNAPSHOT</defaultValue>
 		</requiredProperty>
 		<requiredProperty key="package">
-			<defaultValue>edu.umd.cs.example</defaultValue>
+			<defaultValue>org.linqs.psl.example</defaultValue>
 		</requiredProperty>
 	</requiredProperties>
 </archetype-descriptor>

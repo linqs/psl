@@ -7,7 +7,7 @@
 	<packaging>jar</packaging>
 	<dependencies>
 		<dependency>
-			<groupId>edu.umd.cs</groupId>
+			<groupId>org.linqs</groupId>
 			<artifactId>psl-groovy</artifactId>
 			<version>2.0-SNAPSHOT</version>
 		</dependency>

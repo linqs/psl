@@ -19,20 +19,20 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>edu.umd.cs</groupId>
+	<groupId>org.linqs</groupId>
 	<artifactId>psl-parser</artifactId>
 	<name>psl-parser</name>
 	<version>2.0-SNAPSHOT</version>
 	<packaging>jar</packaging>
 	<description>The model-parsing interface module of the PSL software.</description>
 	<parent>
-		<groupId>edu.umd.cs</groupId>
+		<groupId>org.linqs</groupId>
 		<artifactId>psl</artifactId>
 		<version>2.0-SNAPSHOT</version>
 	</parent>
 	<dependencies>
 		<dependency>
-			<groupId>edu.umd.cs</groupId>
+			<groupId>org.linqs</groupId>
 			<artifactId>psl-core</artifactId>
 			<version>2.0-SNAPSHOT</version>
 		</dependency>

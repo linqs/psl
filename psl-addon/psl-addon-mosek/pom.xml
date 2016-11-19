@@ -19,20 +19,20 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>edu.umd.cs</groupId>
+	<groupId>org.linqs</groupId>
 	<artifactId>psl-addon-mosek</artifactId>
 	<name>psl-addon-mosek</name>
 	<version>2.0-SNAPSHOT</version>
 	<packaging>jar</packaging>
 	<description>A wrapper to use the MOSEK numeric optimization software with the PSL software from the University of Maryland.</description>
 	<parent>
-		<groupId>edu.umd.cs</groupId>
+		<groupId>org.linqs</groupId>
 		<artifactId>psl-addon</artifactId>
 		<version>2.0-SNAPSHOT</version>
 	</parent>
 	<dependencies>
 		<dependency>
-			<groupId>edu.umd.cs</groupId>
+			<groupId>org.linqs</groupId>
 			<artifactId>psl-core</artifactId>
 			<version>2.0-SNAPSHOT</version>
 		</dependency>
