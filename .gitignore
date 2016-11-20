@@ -5,10 +5,6 @@
 # Compiled sources #
 ####################
 target
-psl-addon/target
-psl-addon-mosek/target
-psl-core/target
-psl-groovy/target
 classpath.out
 
 # Eclipse metadata #
@@ -16,18 +12,6 @@ classpath.out
 .classpath
 .project
 .settings
-psl-addon/.classpath
-psl-addon/.project
-psl-addon/.settings
-psl-addon-mosek/.classpath
-psl-addon-mosek/.project
-psl-addon-mosek/.settings
-psl-core/.classpath
-psl-core/.project
-psl-core/.settings
-psl-groovy/.classpath
-psl-groovy/.project
-psl-groovy/.settings
 
 # Editor Temporary #
 ####################
