@@ -98,8 +98,7 @@ public class PSLModelTest {
 	}
 
 	@Test
-	// String rules take no arguments except for the rule itself.
-	public void testStringRuleNoArgs() {
+	public void testStringRuleBadArgs() {
 		try {
 			model.add(
 				rule: "1: Single(A) & Sim(A, B) >> Single(B) ^2",
@@ -130,5 +129,53 @@ public class PSLModelTest {
 		} catch (IllegalArgumentException ex) {
 			// Exception expected.
 		}
+
+		try {
+			model.add(
+				rule: "Single(A) & Sim(A, B) >> Single(B)",
+				weight: 1
+			);
+			fail("IllegalArgumentException not thrown when only one argument was supplied to a partial.");
+		} catch (IllegalArgumentException ex) {
+			// Exception expected.
+		}
+
+		try {
+			model.add(
+				rule: "Single(A) & Sim(A, B) >> Single(B)",
+				squared: true
+			);
+			fail("IllegalArgumentException not thrown when only one argument was supplied to a partial.");
+		} catch (IllegalArgumentException ex) {
+			// Exception expected.
+		}
+	}
+
+	@Test
+	// String rules take no arguments except for the rule itself.
+	public void testStringRuleArgs() {
+		model.add(
+			rule: "Single(A) & Sim(A, B) >> Single(B)",
+			squared: true,
+			weight: 1
+		);
+
+		model.add(
+			rule: "Single(A) & Sim(A, B) >> Single(B)",
+			squared: false,
+			weight: 5
+		);
+
+		model.add(
+			rule: "Single(A) & Sim(A, B) >> Single(B) ."
+		);
+
+		String[] expected = [
+			"1.0: ( SINGLE(A) & SIM(A, B) ) >> SINGLE(B) ^2",
+			"5.0: ( SINGLE(A) & SIM(A, B) ) >> SINGLE(B)",
+			"( SINGLE(A) & SIM(A, B) ) >> SINGLE(B) ."
+		];
+
+		assertModel(expected);
 	}
 }

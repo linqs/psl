@@ -20,11 +20,11 @@ package org.linqs.psl.groovy.syntax;
 import org.linqs.psl.model.formula.*;
 import org.linqs.psl.model.atom.Atom;
 
-class FormulaContainer {
+public class FormulaContainer {
 	
 	private final Formula formula;
 	
-	FormulaContainer(Formula f) {
+	public FormulaContainer(Formula f) {
 		formula = f;
 	}
 	
