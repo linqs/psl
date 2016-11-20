@@ -585,7 +585,7 @@ public class ModelLoaderTest {
 
 		try {
 			for (int i = 0; i < inputs.length; i++) {
-				ModelLoader.RulePartial partial = ModelLoader.loadRulePartial(dataStore, inputs[i]);
+				RulePartial partial = ModelLoader.loadRulePartial(dataStore, inputs[i]);
 				assertEquals(
 						String.format("Expected RulePartial #%d to be a rule, but was not.", i),
 						true,
@@ -631,7 +631,7 @@ public class ModelLoaderTest {
 
 		try {
 			for (int i = 0; i < inputs.length; i++) {
-				ModelLoader.RulePartial partial = ModelLoader.loadRulePartial(dataStore, inputs[i]);
+				RulePartial partial = ModelLoader.loadRulePartial(dataStore, inputs[i]);
 				assertEquals(
 						String.format("Expected RulePartial #%d to not a rule, but was.", i),
 						false,
