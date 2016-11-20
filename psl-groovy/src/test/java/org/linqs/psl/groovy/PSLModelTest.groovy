@@ -45,6 +45,7 @@ public class PSLModelTest {
 		model = new PSLModel(this, dataStore);
 
 		model.add(predicate: "Single", types: [ConstantType.UniqueID]);
+		model.add(predicate: "Double", types: [ConstantType.UniqueID, ConstantType.UniqueID]);
 		model.add(predicate: "Sim", types: [ConstantType.UniqueID, ConstantType.UniqueID]);
 	}
 
@@ -176,6 +177,167 @@ public class PSLModelTest {
 			"( SINGLE(A) & SIM(A, B) ) >> SINGLE(B) ."
 		];
 
+		assertModel(expected);
+	}
+
+	@Test
+	public void testAddRules() {
+		String input =
+			"~Single(A) .\n" +
+			"1: Single(A) & Double(A, B) >> Single(B) ^2\n" +
+			"5: Single(B) & Double(B, A) >> Single(A) ^2\n" +
+			"1: Single(A) & Double(A, \"bar\") & Single(\"bar\") >> Double(A, \"bar\") ^2\n" +
+			"1: Single(A) & Double(A, 'bar') & Single('bar') >> Double(A, 'bar') ^2\n" +
+			"1: 1 Single(A) = 1 ^2\n" +
+			"1: 1.0 Single(A) = 1 ^2\n" +
+			"1: 1.5 Single(A) = 1 ^2\n" +
+			"1: 0.5 Single(A) = 1 ^2\n" +
+			"1: -1.0 Single(A) = 1 ^2\n" +
+			"1: 5E10 Single(A) = 1 ^2\n" +
+			"1: 5e10 Single(A) = 1 ^2\n" +
+			"1: -5e10 Single(A) = 1 ^2\n" +
+			"1: 5e-10 Single(A) = 1 ^2\n" +
+			"1: 1.2e10 Single(A) = 1 ^2\n" +
+			"1: -1.2e10 Single(A) = 1 ^2\n" +
+			"1: 1.2e-10 Single(A) = 1 ^2\n" +
+			"1: Single(A1) >> Single(A1) ^2\n" +
+			"1: Single(A1A) >> Single(A1A) ^2\n" +
+			"1: Single(A_A) >> Single(A_A) ^2\n" +
+			"1: Single(A_1) >> Single(A_1) ^2\n" +
+			"1: Single(A__) >> Single(A__) ^2\n" +
+			"1: Single(A) >> Single(A)\n" +
+			"0: Single(A) >> Single(A)\n" +
+			"0.5: Single(A) >> Single(A)\n" +
+			"999999: Single(A) >> Single(A)\n" +
+			"9999999999: Single(A) >> Single(A)\n" +
+			"0000000001: Single(A) >> Single(A)\n" +
+			"0.001: Single(A) >> Single(A)\n" +
+			"0.00000001: Single(A) >> Single(A)\n" +
+			"2E10: Single(A) >> Single(A)\n" +
+			"2e10: Single(A) >> Single(A)\n" +
+			"2e-10: Single(A) >> Single(A)\n" +
+			"2.5e10: Single(A) >> Single(A)\n" +
+			"2.5e-10: Single(A) >> Single(A)\n" +
+			"1: Single(A) & Double(A, B) >> Single(B) ^2\n" +
+			"1: Single(B) << Single(A) & Double(A, B) ^2\n" +
+			"1: Single(A) | Double(A, B) << Single(B) & Single(A) ^2\n" +
+			"1: Single(A) & Double(B, C) >> Single(B) | Single(C) ^2\n" +
+			"1: ~Single(A) & ~~Double(A, B) >> ~~~Single(B) ^2\n" +
+			"1: A == B & Double(A, B) >> Single(B) ^2\n" +
+			"1: A == 'Bar' & Double(A, B) >> Single(B) ^2\n" +
+			"1: 'Foo' == B & Double(A, B) >> Single(B) ^2\n" +
+			"1: 'Foo' == 'Bar' & Double(A, B) >> Single(B) ^2\n" +
+			"1: A ~= B & Double(A, B) >> Single(B) ^2\n" +
+			"1: A ~= 'Bar' & Double(A, B) >> Single(B) ^2\n" +
+			"1: 'Foo' ~= B & Double(A, B) >> Single(B) ^2\n" +
+			"1: 'Foo' ~= 'Bar' & Double(A, B) >> Single(B) ^2\n" +
+			"1: Single(A) & Double(A, B) >> Single(B)\n" +
+			"1: Single(A) && Double(A, B) >> Single(B)\n" +
+			"1: Single(A) & Double(A, B) >> Single(B)\n" +
+			"1: Single(A) & Double(A, B) -> Single(B)\n" +
+			"1: Single(A) | Single(B) << Double(A, B)\n" +
+			"1: Single(A) || Single(B) << Double(A, B)\n" +
+			"1: Single(A) | Single(B) << Double(A, B)\n" +
+			"1: Single(A) | Single(B) <- Double(A, B)\n" +
+			"1: A != B & Double(A, B) >> Single(B)\n" +
+			"1: A ~= B & Double(A, B) >> Single(B)\n" +
+			"1: 1 Single(A) = 1 ^2\n" +
+			"1: 1 * Single(A) = 1 ^2\n" +
+			"Single(A) + Single(B) = 1 .\n" +
+			"Double(+A, 'Foo') = 1 .\n" +
+			"Single(+A) + Single(+B) = 1 .\n" +
+			"Single(+A) = 1 . {A: Single(A)}\n" +
+			"Single(+A) = 1 . {A: Single(A) || Double(A, A) }\n" +
+			"Double(+A, B) = 1 . {A: Single(B)}\n" +
+			"Single(+A) + Single(+B) = 1 . {A: Single(A)} {B: Single(B)}\n" +
+			"|A| Single(+A) = 1 .\n" +
+			"|A| Single(+A) = |A| .\n" +
+			"|A| Single(+A) + |B| Single(+B) = 1 .\n" +
+			"@Max[|A|, 0] Single(+A) = 1 .\n" +
+			"@Max[1, 0] Single(+A) = 1 .\n" +
+			"@Max[|A|, |B|] Single(+A) + Single(+B) = 1 .\n" +
+			"@Min[1, 0] Single(A) = 1 .\n" +
+			""
+		;
+
+		String[] expected = [
+			"~( SINGLE(A) ) .",
+			"1.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"5.0: ( SINGLE(B) & DOUBLE(B, A) ) >> SINGLE(A) ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, 'bar') & SINGLE('bar') ) >> DOUBLE(A, 'bar') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, 'bar') & SINGLE('bar') ) >> DOUBLE(A, 'bar') ^2",
+			"1.0: 1.0 * SINGLE(A) = 1.0 ^2",
+			"1.0: 1.0 * SINGLE(A) = 1.0 ^2",
+			"1.0: 1.5 * SINGLE(A) = 1.0 ^2",
+			"1.0: 0.5 * SINGLE(A) = 1.0 ^2",
+			"1.0: -1.0 * SINGLE(A) = 1.0 ^2",
+			"1.0: 5.0E10 * SINGLE(A) = 1.0 ^2",
+			"1.0: 5.0E10 * SINGLE(A) = 1.0 ^2",
+			"1.0: -5.0E10 * SINGLE(A) = 1.0 ^2",
+			"1.0: 5.0E-10 * SINGLE(A) = 1.0 ^2",
+			"1.0: 1.2E10 * SINGLE(A) = 1.0 ^2",
+			"1.0: -1.2E10 * SINGLE(A) = 1.0 ^2",
+			"1.0: 1.2E-10 * SINGLE(A) = 1.0 ^2",
+			"1.0: SINGLE(A1) >> SINGLE(A1) ^2",
+			"1.0: SINGLE(A1A) >> SINGLE(A1A) ^2",
+			"1.0: SINGLE(A_A) >> SINGLE(A_A) ^2",
+			"1.0: SINGLE(A_1) >> SINGLE(A_1) ^2",
+			"1.0: SINGLE(A__) >> SINGLE(A__) ^2",
+			"1.0: SINGLE(A) >> SINGLE(A)",
+			"0.0: SINGLE(A) >> SINGLE(A)",
+			"0.5: SINGLE(A) >> SINGLE(A)",
+			"999999.0: SINGLE(A) >> SINGLE(A)",
+			"9.999999999E9: SINGLE(A) >> SINGLE(A)",
+			"1.0: SINGLE(A) >> SINGLE(A)",
+			"0.001: SINGLE(A) >> SINGLE(A)",
+			"1.0E-8: SINGLE(A) >> SINGLE(A)",
+			"2.0E10: SINGLE(A) >> SINGLE(A)",
+			"2.0E10: SINGLE(A) >> SINGLE(A)",
+			"2.0E-10: SINGLE(A) >> SINGLE(A)",
+			"2.5E10: SINGLE(A) >> SINGLE(A)",
+			"2.5E-10: SINGLE(A) >> SINGLE(A)",
+			"1.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE(B) & SINGLE(A) ) >> ( SINGLE(A) | DOUBLE(A, B) ) ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(B, C) ) >> ( SINGLE(B) | SINGLE(C) ) ^2",
+			"1.0: ( ~( SINGLE(A) ) & ~( ~( DOUBLE(A, B) ) ) ) >> ~( ~( ~( SINGLE(B) ) ) ) ^2",
+			"1.0: ( A == B & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( A == 'Bar' & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( 'Foo' == B & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( 'Foo' == 'Bar' & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( A != B & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( A != 'Bar' & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( 'Foo' != B & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( 'Foo' != 'Bar' & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B)",
+			"1.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B)",
+			"1.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B)",
+			"1.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B)",
+			"1.0: DOUBLE(A, B) >> ( SINGLE(A) | SINGLE(B) )",
+			"1.0: DOUBLE(A, B) >> ( SINGLE(A) | SINGLE(B) )",
+			"1.0: DOUBLE(A, B) >> ( SINGLE(A) | SINGLE(B) )",
+			"1.0: DOUBLE(A, B) >> ( SINGLE(A) | SINGLE(B) )",
+			"1.0: ( A != B & DOUBLE(A, B) ) >> SINGLE(B)",
+			"1.0: ( A != B & DOUBLE(A, B) ) >> SINGLE(B)",
+			"1.0: 1.0 * SINGLE(A) = 1.0 ^2",
+			"1.0: 1.0 * SINGLE(A) = 1.0 ^2",
+			"1.0 * SINGLE(A) + 1.0 * SINGLE(B) = 1.0 .",
+			"1.0 * DOUBLE(+A, 'Foo') = 1.0 .",
+			"1.0 * SINGLE(+A) + 1.0 * SINGLE(+B) = 1.0 .",
+			"1.0 * SINGLE(+A) = 1.0 .\n{A : SINGLE(A)}",
+			"1.0 * SINGLE(+A) = 1.0 .\n{A : ( SINGLE(A) | DOUBLE(A, A) )}",
+			"1.0 * DOUBLE(+A, B) = 1.0 .\n{A : SINGLE(B)}",
+			"1.0 * SINGLE(+A) + 1.0 * SINGLE(+B) = 1.0 .\n{A : SINGLE(A)}\n{B : SINGLE(B)}",
+			"|A| * SINGLE(+A) = 1.0 .",
+			"|A| * SINGLE(+A) = |A| .",
+			"|A| * SINGLE(+A) + |B| * SINGLE(+B) = 1.0 .",
+			"@Max[|A|, 0.0] * SINGLE(+A) = 1.0 .",
+			"@Max[1.0, 0.0] * SINGLE(+A) = 1.0 .",
+			"@Max[|A|, |B|] * SINGLE(+A) + 1.0 * SINGLE(+B) = 1.0 .",
+			"@Min[1.0, 0.0] * SINGLE(A) = 1.0 ."
+		];
+
+		model.addRules(input);
 		assertModel(expected);
 	}
 }

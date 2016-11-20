@@ -219,6 +219,24 @@ public class PSLModel extends Model {
 		return predicate;
 	}
 
+	/**
+	 * Alternative interface to addRules().
+	 */
+	public void addRules(String rules) {
+		addRules(new StringReader(rules));
+	}
+
+	/**
+	 * Add all the rules from a reader.
+	 * Rules must be fully specified in their string form.
+	 */
+	public void addRules(Reader rules) {
+		Model model = ModelLoader.load(ds, rules);
+		for (Rule rule : model.getRules()) {
+			addRule(rule);
+		}
+	}
+
 	private Rule addRule(String stringRule, Map args) {
 		RulePartial partial = ModelLoader.loadRulePartial(ds, stringRule);
 		Rule rule;
