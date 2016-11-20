@@ -31,9 +31,15 @@ import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver.Type;
 import org.linqs.psl.model.Model;
+import org.linqs.psl.model.formula.Implication;
 import org.linqs.psl.model.predicate.PredicateFactory;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.arithmetic.UnweightedArithmeticRule;
+import org.linqs.psl.model.rule.arithmetic.WeightedArithmeticRule;
+import org.linqs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
+import org.linqs.psl.model.rule.logical.UnweightedLogicalRule;
+import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.parser.ModelLoader;
 
@@ -144,12 +150,12 @@ public class ModelLoaderTest {
 			"# This is a comment!\n" +
 			"#This is a comment!\n" +
 			"## This is another comment (but actually the same form).\n" +
-			"      # This is a comment!\n" +
+			"		# This is a comment!\n" +
 			"\n" +
 			"//This is a comment!\n" +
 			"// This is a comment!\n" +
 			"//// This is another comment (but actually the same form).\n" +
-			"      // This is a comment!\n" +
+			"		// This is a comment!\n" +
 			"\n" +
 			"/* Block time! */\n" +
 			"/* Block time!\n" +
@@ -551,6 +557,103 @@ public class ModelLoaderTest {
 			} catch (Exception ex) {
 				// Exception expected.
 			}
+		}
+	}
+
+	@Test
+	// First test only rules that are fully specified.
+	public void testLoadRulePartialCompleteRules() {
+		String[] inputs = new String[]{
+			"1: Single(A) & Double(A, B) >> Single(B) ^2",
+			"Single(A) & Double(A, B) >> Single(B) .",
+			"1: 1 Single(A) = 1 ^2",
+			"1 Single(A) = 1 .",
+			"Single(+A) = 1 . {A: Single(A)}",
+			"1: Single(+A) = 1 {A: Single(A)}",
+			"1: Single(+A) = 1 ^2 {A: Single(A)}"
+		};
+
+		String[] expected = new String[]{
+			"1.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) .",
+			"1.0: 1.0 * SINGLE(A) = 1.0 ^2",
+			"1.0 * SINGLE(A) = 1.0 .",
+			"1.0 * SINGLE(+A) = 1.0 .\n{A : SINGLE(A)}",
+			"1.0: 1.0 * SINGLE(+A) = 1.0\n{A : SINGLE(A)}",
+			"1.0: 1.0 * SINGLE(+A) = 1.0 ^2\n{A : SINGLE(A)}",
+		};
+
+		try {
+			for (int i = 0; i < inputs.length; i++) {
+				ModelLoader.RulePartial partial = ModelLoader.loadRulePartial(dataStore, inputs[i]);
+				assertEquals(
+						String.format("Expected RulePartial #%d to be a rule, but was not.", i),
+						true,
+						partial.isRule()
+				);
+
+				Rule rule = partial.toRule();
+				assertEquals(
+						String.format("Rule %d string mismatch. Expected: [%s], found [%s].", i, expected[i], rule.toString()),
+						expected[i],
+						rule.toString()
+				);
+			}
+		} catch (IOException ex) {
+			fail("Unexpected IOException thrown from ModelLoader.loadRulePartial(): " + ex);
+		}
+	}
+
+	@Test
+	// First test only rules that are fully specified.
+	public void testLoadRulePartialPartialRules() {
+		String[] inputs = new String[]{
+			"Single(A) & Double(A, B) >> Single(B)",
+			"1 Single(A) = 1",
+			"Single(+A) = 1 {A: Single(A)}",
+			"Single(+A) + Single(+B) = 1 {A: Single(A)} {B: Single(B)}"
+		};
+
+		String[] unweightedExpected = new String[]{
+			"( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) .",
+			"1.0 * SINGLE(A) = 1.0 .",
+			"1.0 * SINGLE(+A) = 1.0 .\n{A : SINGLE(A)}",
+			"1.0 * SINGLE(+A) + 1.0 * SINGLE(+B) = 1.0 .\n{A : SINGLE(A)}\n{B : SINGLE(B)}"
+		};
+
+		// Weight all the variants with 5 and square them.
+		String[] weightedExpected = new String[]{
+			"5.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"5.0: 1.0 * SINGLE(A) = 1.0 ^2",
+			"5.0: 1.0 * SINGLE(+A) = 1.0 ^2\n{A : SINGLE(A)}",
+			"5.0: 1.0 * SINGLE(+A) + 1.0 * SINGLE(+B) = 1.0 ^2\n{A : SINGLE(A)}\n{B : SINGLE(B)}"
+		};
+
+		try {
+			for (int i = 0; i < inputs.length; i++) {
+				ModelLoader.RulePartial partial = ModelLoader.loadRulePartial(dataStore, inputs[i]);
+				assertEquals(
+						String.format("Expected RulePartial #%d to not a rule, but was.", i),
+						false,
+						partial.isRule()
+				);
+
+				Rule unweightedRule = partial.toRule();
+				assertEquals(
+						String.format("Unweighted rule %d string mismatch. Expected: [%s], found [%s].", i, unweightedExpected[i], unweightedRule.toString()),
+						unweightedExpected[i],
+						unweightedRule.toString()
+				);
+
+				Rule weightedRule = partial.toRule(5.0, true);
+				assertEquals(
+						String.format("Weighted rule %d string mismatch. Expected: [%s], found [%s].", i, weightedExpected[i], weightedRule.toString()),
+						weightedExpected[i],
+						weightedRule.toString()
+				);
+			}
+		} catch (IOException ex) {
+			fail("Unexpected IOException thrown from ModelLoader.loadRulePartial(): " + ex);
 		}
 	}
 }

@@ -2,12 +2,21 @@
 grammar PSL;
 
 program
-	:	pslRule+
+	:	pslRule+ EOF
 	;
 
 pslRule
 	:	logicalRule
 	|	arithmeticRule
+	;
+
+// The inner part of a rule (logical or arithmetic).
+// This cannot be reached from a default PSL program and must be asked for specifically.
+pslRulePartial
+	:	logicalRule EOF
+	|	arithmeticRule EOF
+	|	logicalRuleExpression EOF
+	|	arithmeticRuleExpression selectStatement* EOF
 	;
 
 //
