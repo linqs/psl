@@ -1,6 +1,11 @@
 PSL
 ===
 
+[![Stable Docs](https://img.shields.io/badge/docs-stable-brightgreen.svg)](https://linqs-data.soe.ucsc.edu/psl-docs/master-head/index.html)
+[![Develop Docs](https://img.shields.io/badge/docs-develop-orange.svg)](https://linqs-data.soe.ucsc.edu/psl-docs/develop-head/index.html)
+Master: [![Build Status](https://travis-ci.org/eriq-augustine/psl.svg?branch=master)](https://travis-ci.org/eriq-augustine/psl)
+Develop: [![Build Status](https://travis-ci.org/eriq-augustine/psl.svg?branch=develop)](https://travis-ci.org/eriq-augustine/psl)
+
 Probabilistic soft logic (PSL) is a probabilistic programming language for reasoning about
 relational and structured data that is designed to be highly scalable. More information about PSL
 is available at the [PSL homepage](http://psl.cs.umd.edu).
@@ -8,9 +13,9 @@ is available at the [PSL homepage](http://psl.cs.umd.edu).
 Getting Started with PSL
 ------------------------
 
-If you want to use PSL, you do not need this source code to get started. Instead,
-visit the [PSL wiki](https://github.com/linqs/psl/wiki) to learn
-how to create PSL projects that use a stable version of these libraries.
+If you want to use PSL to build models, you probably do not need this source code. Instead,
+visit the [Getting Started guide](../../wiki/Getting-Started) to learn
+how to create PSL projects that will automatically install a stable version of these libraries.
 
 Installing PSL from Source
 --------------------------
@@ -39,8 +44,8 @@ Additional Resources
 
 * [PSL source repository](https://github.com/linqs/psl)
 
-* [PSL wiki](https://github.com/linqs/psl/wiki)
+* [PSL wiki](../../wiki)
 
-* [Developers' Guide](https://github.com/linqs/psl/wiki/Developing-PSL)
+* [Getting Started guide](../../wiki/Getting-Started)
 
 * [User group](https://groups.google.com/forum/#!forum/psl-users)
