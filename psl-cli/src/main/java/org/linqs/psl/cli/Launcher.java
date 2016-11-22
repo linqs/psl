@@ -50,6 +50,7 @@ import org.linqs.psl.config.ConfigManager;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
+import org.linqs.psl.database.Queries;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver.Type;
@@ -59,7 +60,6 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.parser.ModelLoader;
 import org.linqs.psl.reasoner.admm.ADMMReasonerFactory;
-import org.linqs.psl.util.database.Queries;
 
 /**
  * Launches PSL from the command line. Supports inference and supervised parameter learning
