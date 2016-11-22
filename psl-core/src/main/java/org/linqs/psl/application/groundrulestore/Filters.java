@@ -15,11 +15,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.util.graph.partition;
+package org.linqs.psl.application.groundrulestore;
 
-import org.linqs.psl.config.ConfigBundle;
-import org.linqs.psl.config.Factory;
+import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.UnweightedRule;
+import org.linqs.psl.model.rule.WeightedRule;
 
-public interface PartitionerFactory extends Factory {
-	public Partitioner getPartitioner(ConfigBundle config);
+public class Filters {
+
+	public static final com.google.common.base.Predicate<Rule> CompatibilityKernel = new com.google.common.base.Predicate<Rule>() {
+
+		@Override
+		public boolean apply(Rule k) {
+			return k instanceof WeightedRule;
+		}
+		
+	};
+	
+	public static final com.google.common.base.Predicate<Rule> ConstraintKernel = new com.google.common.base.Predicate<Rule>() {
+
+		@Override
+		public boolean apply(Rule k) {
+			return k instanceof UnweightedRule;
+		}
+		
+	};
+	
 }

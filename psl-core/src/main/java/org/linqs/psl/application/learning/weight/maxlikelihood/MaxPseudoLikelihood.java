@@ -23,12 +23,12 @@ import java.util.Map;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.ConfigManager;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.model.ConstraintBlocker;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
-import org.linqs.psl.util.model.ConstraintBlocker;
 
 /**
  * Learns weights by optimizing the pseudo-log-likelihood of the data using

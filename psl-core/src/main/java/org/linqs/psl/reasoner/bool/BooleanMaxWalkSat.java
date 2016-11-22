@@ -27,12 +27,12 @@ import org.linqs.psl.application.groundrulestore.MemoryGroundKernelStore;
 import org.linqs.psl.application.util.GroundKernels;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.ConfigManager;
+import org.linqs.psl.model.ConstraintBlocker;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.Reasoner;
-import org.linqs.psl.util.model.ConstraintBlocker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

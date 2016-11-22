@@ -23,19 +23,19 @@ import java.util.Set;
 import java.util.Vector;
 
 import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.experimental.graph.Graph;
+import org.linqs.psl.experimental.graph.Node;
+import org.linqs.psl.experimental.graph.Relationship;
+import org.linqs.psl.experimental.graph.memory.MemoryGraph;
+import org.linqs.psl.experimental.graph.partition.hierarchical.HierarchicalPartitioning;
+import org.linqs.psl.experimental.graph.partition.hierarchical.HyperPartitioning;
+import org.linqs.psl.experimental.graph.weight.RelationshipWeighter;
 import org.linqs.psl.optimizer.conic.program.Cone;
 import org.linqs.psl.optimizer.conic.program.ConicProgram;
 import org.linqs.psl.optimizer.conic.program.LinearConstraint;
 import org.linqs.psl.optimizer.conic.program.NonNegativeOrthantCone;
 import org.linqs.psl.optimizer.conic.program.SecondOrderCone;
 import org.linqs.psl.optimizer.conic.program.Variable;
-import org.linqs.psl.util.graph.Graph;
-import org.linqs.psl.util.graph.Node;
-import org.linqs.psl.util.graph.Relationship;
-import org.linqs.psl.util.graph.memory.MemoryGraph;
-import org.linqs.psl.util.graph.partition.hierarchical.HierarchicalPartitioning;
-import org.linqs.psl.util.graph.partition.hierarchical.HyperPartitioning;
-import org.linqs.psl.util.graph.weight.RelationshipWeighter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

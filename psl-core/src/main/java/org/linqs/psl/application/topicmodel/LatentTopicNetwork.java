@@ -39,6 +39,7 @@ import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabasePopulator;
 import org.linqs.psl.database.Partition;
+import org.linqs.psl.database.Queries;
 import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.GroundAtom;
@@ -51,7 +52,6 @@ import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.UniqueID;
 import org.linqs.psl.model.weight.PositiveWeight;
 import org.linqs.psl.reasoner.Reasoner;
-import org.linqs.psl.util.database.Queries;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

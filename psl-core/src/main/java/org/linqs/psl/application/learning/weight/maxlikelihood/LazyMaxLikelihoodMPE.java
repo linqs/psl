@@ -26,6 +26,7 @@ import java.util.Set;
 import org.linqs.psl.application.util.Grounding;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.database.Queries;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.AtomEventFramework;
@@ -38,7 +39,6 @@ import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.misc.GroundValueConstraint;
 import org.linqs.psl.reasoner.ReasonerFactory;
-import org.linqs.psl.util.database.Queries;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

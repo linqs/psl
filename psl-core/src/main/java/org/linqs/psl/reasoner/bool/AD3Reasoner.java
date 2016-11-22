@@ -29,12 +29,12 @@ import java.util.Set;
 
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.ConfigManager;
+import org.linqs.psl.model.ConstraintBlocker;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.ExecutableReasoner;
-import org.linqs.psl.util.model.ConstraintBlocker;
 
 /**
  * Reasoner that performs inferences as a Boolean MRF using the AD3 command-line

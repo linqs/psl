@@ -15,15 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.util.database;
+package org.linqs.psl.database;
 
 import java.util.HashSet;
 import java.util.Set;
 
 import org.joda.time.DateTime;
-import org.linqs.psl.database.Database;
-import org.linqs.psl.database.DatabaseQuery;
-import org.linqs.psl.database.ResultList;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.predicate.Predicate;

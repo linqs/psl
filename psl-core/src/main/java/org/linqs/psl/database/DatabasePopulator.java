@@ -27,7 +27,6 @@ import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
-import org.linqs.psl.util.database.Queries;
 
 /**
  * A DatabasePopulator can easily commit a large number of
