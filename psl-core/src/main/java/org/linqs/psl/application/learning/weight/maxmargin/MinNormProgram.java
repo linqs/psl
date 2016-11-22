@@ -21,14 +21,14 @@ import java.util.Iterator;
 
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.ConfigManager;
-import org.linqs.psl.optimizer.conic.ConicProgramSolver;
-import org.linqs.psl.optimizer.conic.ConicProgramSolverFactory;
-import org.linqs.psl.optimizer.conic.ipm.HomogeneousIPMFactory;
-import org.linqs.psl.optimizer.conic.program.ConicProgram;
-import org.linqs.psl.optimizer.conic.program.LinearConstraint;
-import org.linqs.psl.optimizer.conic.program.NonNegativeOrthantCone;
-import org.linqs.psl.optimizer.conic.program.SecondOrderCone;
-import org.linqs.psl.optimizer.conic.program.Variable;
+import org.linqs.psl.experimental.optimizer.conic.ConicProgramSolver;
+import org.linqs.psl.experimental.optimizer.conic.ConicProgramSolverFactory;
+import org.linqs.psl.experimental.optimizer.conic.ipm.HomogeneousIPMFactory;
+import org.linqs.psl.experimental.optimizer.conic.program.ConicProgram;
+import org.linqs.psl.experimental.optimizer.conic.program.LinearConstraint;
+import org.linqs.psl.experimental.optimizer.conic.program.NonNegativeOrthantCone;
+import org.linqs.psl.experimental.optimizer.conic.program.SecondOrderCone;
+import org.linqs.psl.experimental.optimizer.conic.program.Variable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,7 +61,7 @@ public class MinNormProgram {
 	/**
 	 * Default value for CPS_KEY property.
 	 * 
-	 * Value is instance of {@link org.linqs.psl.optimizer.conic.ipm.HomogeneousIPMFactory}.
+	 * Value is instance of {@link org.linqs.psl.experimental.optimizer.conic.ipm.HomogeneousIPMFactory}.
 	 */
 	public static final ConicProgramSolverFactory CPS_DEFAULT = new HomogeneousIPMFactory();
 

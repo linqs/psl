@@ -21,11 +21,11 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.linqs.psl.optimizer.conic.program.Cone;
-import org.linqs.psl.optimizer.conic.program.ConicProgram;
-import org.linqs.psl.optimizer.conic.program.LinearConstraint;
-import org.linqs.psl.optimizer.conic.program.SecondOrderCone;
-import org.linqs.psl.optimizer.conic.program.Variable;
+import org.linqs.psl.experimental.optimizer.conic.program.Cone;
+import org.linqs.psl.experimental.optimizer.conic.program.ConicProgram;
+import org.linqs.psl.experimental.optimizer.conic.program.LinearConstraint;
+import org.linqs.psl.experimental.optimizer.conic.program.SecondOrderCone;
+import org.linqs.psl.experimental.optimizer.conic.program.Variable;
 
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 

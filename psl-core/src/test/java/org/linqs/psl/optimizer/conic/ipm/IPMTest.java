@@ -21,9 +21,9 @@ import java.util.List;
 import java.util.Vector;
 
 import org.linqs.psl.config.EmptyBundle;
-import org.linqs.psl.optimizer.conic.ConicProgramSolver;
+import org.linqs.psl.experimental.optimizer.conic.ConicProgramSolver;
+import org.linqs.psl.experimental.optimizer.conic.ipm.IPM;
 import org.linqs.psl.optimizer.conic.ConicProgramSolverContractTest;
-import org.linqs.psl.optimizer.conic.ipm.IPM;
 
 public class IPMTest extends ConicProgramSolverContractTest {
 

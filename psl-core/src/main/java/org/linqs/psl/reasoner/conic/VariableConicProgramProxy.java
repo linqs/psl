@@ -19,9 +19,9 @@ package org.linqs.psl.reasoner.conic;
 
 import java.util.Map;
 
+import org.linqs.psl.experimental.optimizer.conic.program.LinearConstraint;
+import org.linqs.psl.experimental.optimizer.conic.program.Variable;
 import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.optimizer.conic.program.LinearConstraint;
-import org.linqs.psl.optimizer.conic.program.Variable;
 import org.linqs.psl.reasoner.function.ConstraintTerm;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.function.FunctionSummand;

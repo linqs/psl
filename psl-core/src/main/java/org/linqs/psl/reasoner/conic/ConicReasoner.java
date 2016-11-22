@@ -23,14 +23,14 @@ import java.util.Map;
 
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.ConfigManager;
+import org.linqs.psl.experimental.optimizer.conic.ConicProgramSolver;
+import org.linqs.psl.experimental.optimizer.conic.ConicProgramSolverFactory;
+import org.linqs.psl.experimental.optimizer.conic.ipm.HomogeneousIPMFactory;
+import org.linqs.psl.experimental.optimizer.conic.program.ConicProgram;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
-import org.linqs.psl.optimizer.conic.ConicProgramSolver;
-import org.linqs.psl.optimizer.conic.ConicProgramSolverFactory;
-import org.linqs.psl.optimizer.conic.ipm.HomogeneousIPMFactory;
-import org.linqs.psl.optimizer.conic.program.ConicProgram;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.function.AtomFunctionVariable;
 
@@ -52,17 +52,17 @@ public class ConicReasoner implements Reasoner {
 	/**
 	 * Key for {@link org.linqs.psl.config.Factory} or String property.
 	 * 
-	 * Should be set to a {@link org.linqs.psl.optimizer.conic.ConicProgramSolverFactory}
+	 * Should be set to a {@link org.linqs.psl.experimental.optimizer.conic.ConicProgramSolverFactory}
 	 * (or the binary name of one). The ConicReasoner will use this
-	 * {@link org.linqs.psl.optimizer.conic.ConicProgramSolverFactory} to
-	 * instantiate a {@link org.linqs.psl.optimizer.conic.ConicProgramSolver},
+	 * {@link org.linqs.psl.experimental.optimizer.conic.ConicProgramSolverFactory} to
+	 * instantiate a {@link org.linqs.psl.experimental.optimizer.conic.ConicProgramSolver},
 	 * which will then be used for inference.
 	 */
 	public static final String CPS_KEY = CONFIG_PREFIX + ".conicprogramsolver";
 	/**
 	 * Default value for CPS_KEY property.
 	 * 
-	 * Value is instance of {@link org.linqs.psl.optimizer.conic.ipm.HomogeneousIPMFactory}.
+	 * Value is instance of {@link org.linqs.psl.experimental.optimizer.conic.ipm.HomogeneousIPMFactory}.
 	 */
 	public static final ConicProgramSolverFactory CPS_DEFAULT = new HomogeneousIPMFactory();
 

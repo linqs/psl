@@ -21,11 +21,11 @@ import static org.junit.Assert.assertEquals;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.linqs.psl.optimizer.conic.program.ConicProgram;
-import org.linqs.psl.optimizer.conic.program.LinearConstraint;
-import org.linqs.psl.optimizer.conic.program.SecondOrderCone;
-import org.linqs.psl.optimizer.conic.program.Variable;
-import org.linqs.psl.optimizer.conic.util.FeasiblePointInitializer;
+import org.linqs.psl.experimental.optimizer.conic.program.ConicProgram;
+import org.linqs.psl.experimental.optimizer.conic.program.LinearConstraint;
+import org.linqs.psl.experimental.optimizer.conic.program.SecondOrderCone;
+import org.linqs.psl.experimental.optimizer.conic.program.Variable;
+import org.linqs.psl.experimental.optimizer.conic.util.FeasiblePointInitializer;
 
 public class FeasiblePointInitializerTest {
 	

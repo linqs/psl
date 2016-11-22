@@ -24,12 +24,12 @@ import org.junit.Before;
 import org.junit.Test;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.ConfigManager;
-import org.linqs.psl.optimizer.conic.ConicProgramSolver;
-import org.linqs.psl.optimizer.conic.ipm.HomogeneousIPM;
-import org.linqs.psl.optimizer.conic.program.ConicProgram;
-import org.linqs.psl.optimizer.conic.program.LinearConstraint;
-import org.linqs.psl.optimizer.conic.program.Variable;
-import org.linqs.psl.optimizer.conic.util.Dualizer;
+import org.linqs.psl.experimental.optimizer.conic.ConicProgramSolver;
+import org.linqs.psl.experimental.optimizer.conic.ipm.HomogeneousIPM;
+import org.linqs.psl.experimental.optimizer.conic.program.ConicProgram;
+import org.linqs.psl.experimental.optimizer.conic.program.LinearConstraint;
+import org.linqs.psl.experimental.optimizer.conic.program.Variable;
+import org.linqs.psl.experimental.optimizer.conic.util.Dualizer;
 
 public class DualizerTest {
 	

@@ -26,11 +26,11 @@ import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.linqs.psl.optimizer.conic.partition.ConicProgramPartition;
-import org.linqs.psl.optimizer.conic.program.Cone;
-import org.linqs.psl.optimizer.conic.program.ConicProgram;
-import org.linqs.psl.optimizer.conic.program.LinearConstraint;
-import org.linqs.psl.optimizer.conic.program.NonNegativeOrthantCone;
+import org.linqs.psl.experimental.optimizer.conic.partition.ConicProgramPartition;
+import org.linqs.psl.experimental.optimizer.conic.program.Cone;
+import org.linqs.psl.experimental.optimizer.conic.program.ConicProgram;
+import org.linqs.psl.experimental.optimizer.conic.program.LinearConstraint;
+import org.linqs.psl.experimental.optimizer.conic.program.NonNegativeOrthantCone;
 
 /**
  * Tests {@link ConicProgramPartition}. 

@@ -27,11 +27,11 @@ import java.util.Vector;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.linqs.psl.optimizer.conic.ConicProgramSolver;
-import org.linqs.psl.optimizer.conic.program.ConicProgram;
-import org.linqs.psl.optimizer.conic.program.LinearConstraint;
-import org.linqs.psl.optimizer.conic.program.SecondOrderCone;
-import org.linqs.psl.optimizer.conic.program.Variable;
+import org.linqs.psl.experimental.optimizer.conic.ConicProgramSolver;
+import org.linqs.psl.experimental.optimizer.conic.program.ConicProgram;
+import org.linqs.psl.experimental.optimizer.conic.program.LinearConstraint;
+import org.linqs.psl.experimental.optimizer.conic.program.SecondOrderCone;
+import org.linqs.psl.experimental.optimizer.conic.program.Variable;
 
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.algo.DenseDoubleAlgebra;

@@ -19,7 +19,7 @@ package org.linqs.psl.reasoner.conic;
 
 import java.util.Map;
 
-import org.linqs.psl.optimizer.conic.program.Variable;
+import org.linqs.psl.experimental.optimizer.conic.program.Variable;
 import org.linqs.psl.reasoner.function.FunctionSingleton;
 import org.linqs.psl.reasoner.function.FunctionVariable;
 

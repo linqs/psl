@@ -21,12 +21,12 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.Vector;
 
+import org.linqs.psl.experimental.optimizer.conic.program.ConeType;
+import org.linqs.psl.experimental.optimizer.conic.program.LinearConstraint;
+import org.linqs.psl.experimental.optimizer.conic.program.RotatedSecondOrderCone;
+import org.linqs.psl.experimental.optimizer.conic.program.SecondOrderCone;
+import org.linqs.psl.experimental.optimizer.conic.program.Variable;
 import org.linqs.psl.model.rule.WeightedGroundRule;
-import org.linqs.psl.optimizer.conic.program.ConeType;
-import org.linqs.psl.optimizer.conic.program.LinearConstraint;
-import org.linqs.psl.optimizer.conic.program.RotatedSecondOrderCone;
-import org.linqs.psl.optimizer.conic.program.SecondOrderCone;
-import org.linqs.psl.optimizer.conic.program.Variable;
 import org.linqs.psl.reasoner.function.ConstraintTerm;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.function.FunctionSum;
