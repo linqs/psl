@@ -23,6 +23,7 @@ import static org.junit.Assert.fail;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.linqs.psl.PSLTest;
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.EmptyBundle;
@@ -133,25 +134,6 @@ public class RuleStringTest {
 		database = dataStore.getDatabase(dataStore.getNewPartition(), toClose);
 	}
 
-	private void compareGroundRules(List<String> expected, Rule rule, GroundRuleStore store) {
-		List<String> actual = new ArrayList<String>();
-		for (GroundRule groundRule : store.getGroundKernels(rule)) {
-			actual.add(groundRule.toString());
-		}
-
-		assertEquals("Size mismatch in comparing rules.", expected.size(), actual.size());
-
-		Collections.sort(expected);
-		Collections.sort(actual);
-
-		for (int i = 0; i < expected.size(); i++) {
-			assertEquals(
-					String.format("Rule %d mismatch. Expected: [%s], found [%s].", i, expected.get(i), actual.get(i)),
-					expected.get(i),
-					actual.get(i));
-		}
-	}
-
 	@Test
 	public void testLogicalRuleString() {
 		// Base Rule: SinglePredicate(A) & SinglePredicate(B) -> DoublePredicate(A, B)
@@ -216,7 +198,7 @@ public class RuleStringTest {
 			"( ~( SINGLEPREDICATE('Bob') ) | ~( SINGLEPREDICATE('Bob') ) | DOUBLEPREDICATE('Bob', 'Bob') ) ."
 		);
 		rule.groundAll(manager, store);
-		compareGroundRules(expected, rule, store);
+		PSLTest.compareGroundRules(expected, rule, store);
 
 		// Weighted, Squared
 		rule = new WeightedLogicalRule(logicalBaseRule, 10.0, true);
@@ -227,7 +209,7 @@ public class RuleStringTest {
 			"10.0: ( ~( SINGLEPREDICATE('Bob') ) | ~( SINGLEPREDICATE('Bob') ) | DOUBLEPREDICATE('Bob', 'Bob') ) ^2"
 		);
 		rule.groundAll(manager, store);
-		compareGroundRules(expected, rule, store);
+		PSLTest.compareGroundRules(expected, rule, store);
 
 		// Weighted, Not Squared
 		rule = new WeightedLogicalRule(logicalBaseRule, 10.0, false);
@@ -238,7 +220,7 @@ public class RuleStringTest {
 			"10.0: ( ~( SINGLEPREDICATE('Bob') ) | ~( SINGLEPREDICATE('Bob') ) | DOUBLEPREDICATE('Bob', 'Bob') )"
 		);
 		rule.groundAll(manager, store);
-		compareGroundRules(expected, rule, store);
+		PSLTest.compareGroundRules(expected, rule, store);
 	}
 
 	@Test
@@ -263,7 +245,7 @@ public class RuleStringTest {
 			"1.0 SINGLEPREDICATE('Bob') 1.0 SINGLEPREDICATE('Bob') >= 1.0 ."
 		);
 		rule.groundAll(manager, store);
-		compareGroundRules(expected, rule, store);
+		PSLTest.compareGroundRules(expected, rule, store);
 
 		// Weighted, Squared
 		rule = new WeightedArithmeticRule(arithmeticBaseRule,	10.0, true);
@@ -278,7 +260,7 @@ public class RuleStringTest {
 			"10.0: 1.0 SINGLEPREDICATE('Bob') 1.0 SINGLEPREDICATE('Bob') >= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
-		compareGroundRules(expected, rule, store);
+		PSLTest.compareGroundRules(expected, rule, store);
 
 		// Weighted, Not Squared
 		rule = new WeightedArithmeticRule(arithmeticBaseRule,	10.0, false);
@@ -293,7 +275,7 @@ public class RuleStringTest {
 			"10.0: 1.0 SINGLEPREDICATE('Bob') 1.0 SINGLEPREDICATE('Bob') >= 1.0"
 		);
 		rule.groundAll(manager, store);
-		compareGroundRules(expected, rule, store);
+		PSLTest.compareGroundRules(expected, rule, store);
 	}
 
 	@After
