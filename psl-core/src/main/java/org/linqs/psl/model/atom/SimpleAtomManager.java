@@ -30,7 +30,7 @@ import org.linqs.psl.model.term.Constant;
  */
 public class SimpleAtomManager implements AtomManager {
 	
-	private final Database db;
+	protected final Database db;
 	
 	public SimpleAtomManager(Database db) {
 		this.db = db;

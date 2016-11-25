@@ -36,11 +36,11 @@ import com.google.common.collect.Iterables;
  */
 public class PredicateFactory {
 	
-	private static final PredicateFactory instance = new PredicateFactory();
+	protected static final PredicateFactory instance = new PredicateFactory();
 
-	private final Map<String,Predicate> predicateByName;
+	protected final Map<String,Predicate> predicateByName;
 	
-	private final Pattern predicateNamePattern;
+	protected final Pattern predicateNamePattern;
 	
 	/**
 	 * Sole constructor.
@@ -49,7 +49,7 @@ public class PredicateFactory {
 	 * 
 	 * @see #getFactory()
 	 */
-	private PredicateFactory() {
+	protected PredicateFactory() {
 		predicateByName = new HashMap<String,Predicate>();
 		predicateNamePattern = Pattern.compile("\\w+");
 		
@@ -143,7 +143,7 @@ public class PredicateFactory {
 	 * @throws IllegalArgumentException  if name doesn't match \w+, types has length zero,
 	 *                                       or an element of types is NULL
 	 */
-	private void checkPredicateSignature(String name, ConstantType[] types) {
+	protected void checkPredicateSignature(String name, ConstantType[] types) {
 		if (!predicateNamePattern.matcher(name).matches())
 			throw new IllegalArgumentException("Name must match \\w+");
 		if (types.length == 0)
@@ -153,7 +153,7 @@ public class PredicateFactory {
 				throw new IllegalArgumentException("No ArgumentType may be NULL.");
 	}
 	
-	private void addPredicate(Predicate p, String name) {
+	protected void addPredicate(Predicate p, String name) {
 		predicateByName.put(name, p);
 	}
 	

@@ -44,13 +44,13 @@ public class PersistedAtomManager implements AtomManager {
 	/**
 	 * This AtomManager's connection to a database.
 	 */
-	private final Database db;
+	protected final Database db;
 	
 	/**
 	 * The set of all persisted RandomVariableAtoms at the time of this AtomManager's
 	 * instantiation.
 	 */
-	private final Set<RandomVariableAtom> persistedCache;
+	protected final Set<RandomVariableAtom> persistedCache;
 	
 	/**
 	 * Constructs a PersistedAtomManager with a built-in set of all the database's
@@ -65,7 +65,7 @@ public class PersistedAtomManager implements AtomManager {
 		buildPersistedAtomCache();
 	}
 	
-	private void buildPersistedAtomCache() {
+	protected void buildPersistedAtomCache() {
 		// Iterate through all of the registered predicates in this database
 		for (StandardPredicate predicate : db.getRegisteredPredicates()) {
 			// Ignore any closed predicates, they will not return RandomVariableAtoms
