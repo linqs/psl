@@ -118,18 +118,18 @@ public class RDBMSDataStore implements DataStore {
 	 * This DataStore's connection to the RDBMS + the data loader associated
 	 * with it.
 	 */
-	private final Connection connection;
-	private final RDBMSDataLoader dataloader;
+	protected final Connection connection;
+	protected final RDBMSDataLoader dataloader;
 
 	/*
 	 * This Database Driver associated to the datastore.
 	 */
-	private final DatabaseDriver dbDriver;
+	protected final DatabaseDriver dbDriver;
 	
 	/*
 	 * Metadata
 	 */
-	private RDBMSDataStoreMetadata metadata;
+	protected RDBMSDataStoreMetadata metadata;
 	
 	/*
 	 * TODO DataStore's should have a static collection of all the RDBMSs they are connected to, in order to prevent multiple connections to the same RDBMS.
@@ -139,15 +139,15 @@ public class RDBMSDataStore implements DataStore {
 	 * The list of databases matched with their read partitions, and the set of
 	 * all write partitions open in this database.
 	 */
-	private final Multimap<Partition,RDBMSDatabase> openDatabases;
-	private final Set<Partition> writePartitionIDs;
+	protected final Multimap<Partition,RDBMSDatabase> openDatabases;
+	protected final Set<Partition> writePartitionIDs;
 	
 	/*
 	 * The predicates registered with this DataStore
 	 */
-	private final Map<StandardPredicate, RDBMSPredicateInfo> predicates;
+	protected final Map<StandardPredicate, RDBMSPredicateInfo> predicates;
 	
-	private final boolean stringUniqueIDs;
+	protected final boolean stringUniqueIDs;
 	
 	/**
 	 * Returns an RDBMSDataStore that utilizes the connection created by the {@link DatabaseDriver}.
@@ -204,7 +204,7 @@ public class RDBMSDataStore implements DataStore {
 	/**
 	 * Helper method to register all existing predicates from the RDBMS.
 	 */
-	private void deserializePredicates() {
+	protected void deserializePredicates() {
 		int numPredicates = 0;
 		
 		try {
@@ -309,7 +309,7 @@ public class RDBMSDataStore implements DataStore {
 				valueColumn, confidenceColumn, partitionColumn);
 	}
 	
-	private void createTableForPredicate(RDBMSPredicateInfo pi) {
+	protected void createTableForPredicate(RDBMSPredicateInfo pi) {
 		Predicate p = pi.predicate;
 		
 		CreateTableQuery q = new CreateTableQuery(pi.tableName);
@@ -524,7 +524,7 @@ public class RDBMSDataStore implements DataStore {
 	 * ########### Handling function calls
 	 */
 	
-	private void registerFunctionAlias() {
+	protected void registerFunctionAlias() {
 		try {
 			Statement stmt = connection.createStatement();
 			try {
@@ -543,12 +543,12 @@ public class RDBMSDataStore implements DataStore {
 	static final String aliasFunctionName = "extFunctionCall";
 	
 	// Map for external function registration
-	private static final BiMap<ExternalFunction, String> externalFunctions = HashBiMap.create();
-	private static int externalFunctionCounter = 0;
+	protected static final BiMap<ExternalFunction, String> externalFunctions = HashBiMap.create();
+	protected static int externalFunctionCounter = 0;
 	
 	// Map for database registration
-	private static final BiMap<ReadOnlyDatabase, String> registeredDatabases = HashBiMap.create();
-	private static int databaseCounter = 0;
+	protected static final BiMap<ReadOnlyDatabase, String> registeredDatabases = HashBiMap.create();
+	protected static int databaseCounter = 0;
 	
 	/**
 	 * Registers and returns an ID for a given ExternalFunction. If this function
@@ -639,7 +639,7 @@ public class RDBMSDataStore implements DataStore {
 		return new RDBMSPartition(partnum,"AnonymousPartition_"+Integer.toString(partnum));
 	}
 	
-	private int getNextPartition() {
+	protected int getNextPartition() {
 		int maxPartition = 0;
 		maxPartition = metadata.getMaxPartition();
 		return maxPartition+1;

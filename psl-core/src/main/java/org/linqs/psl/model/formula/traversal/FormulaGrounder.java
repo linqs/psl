@@ -40,12 +40,12 @@ import org.linqs.psl.model.term.Variable;
 
 public class FormulaGrounder extends AbstractFormulaTraverser {
 
-	private final AtomManager atommanger;
-	private final ArrayList<Formula> stack;
-	private final ResultList results;
-	private final VariableAssignment varAssign;
+	protected final AtomManager atommanger;
+	protected final ArrayList<Formula> stack;
+	protected final ResultList results;
+	protected final VariableAssignment varAssign;
 
-	private int position;
+	protected int position;
 
 	public FormulaGrounder(AtomManager m, ResultList res, VariableAssignment var) {
 		assert m != null && res != null;

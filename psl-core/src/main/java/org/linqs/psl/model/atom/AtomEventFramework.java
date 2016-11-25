@@ -86,11 +86,11 @@ public class AtomEventFramework implements AtomManager {
 	
 	public static final StandardPredicate AllPredicates = null;
 	
-	private final Database db;
-	private final double activationThreshold;
-	private Queue<AtomEvent> jobQueue;
-	private EnumMap<AtomEvent.Type,SetMultimap<StandardPredicate,AtomEvent.Listener>> atomListeners;
-	private Set<Atom> activeAtoms;
+	protected final Database db;
+	protected final double activationThreshold;
+	protected Queue<AtomEvent> jobQueue;
+	protected EnumMap<AtomEvent.Type,SetMultimap<StandardPredicate,AtomEvent.Listener>> atomListeners;
+	protected Set<Atom> activeAtoms;
 	
 	public AtomEventFramework(Database db, ConfigBundle config) {
 		this.db = db;
@@ -219,7 +219,7 @@ public class AtomEventFramework implements AtomManager {
 		}
 	}
 	
-	private void doActivateAtom(RandomVariableAtom atom) {
+	protected void doActivateAtom(RandomVariableAtom atom) {
 		AtomEvent event = new AtomEvent(AtomEvent.Type.ActivatedRVAtom,
 				(RandomVariableAtom) atom, this);
 		addAtomJob(event);
@@ -255,11 +255,11 @@ public class AtomEventFramework implements AtomManager {
 		return db.isClosed(predicate);
 	}
 	
-	private void addAtomJob(AtomEvent event) {
+	protected void addAtomJob(AtomEvent event) {
 		jobQueue.add(event);
 	}
 	
-	private void notifyListeners(AtomEvent event) {
+	protected void notifyListeners(AtomEvent event) {
 		Atom atom = event.getAtom();
 	
 		/* notify all listeners registered by predicate */

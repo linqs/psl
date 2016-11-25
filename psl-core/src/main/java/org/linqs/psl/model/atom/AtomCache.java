@@ -35,9 +35,9 @@ import com.google.common.collect.Iterables;
  */
 public class AtomCache {
 	
-	private final Database db;
+	protected final Database db;
 	
-	private final Map<QueryAtom, GroundAtom> cache;
+	protected final Map<QueryAtom, GroundAtom> cache;
 	/**
 	 * Constructs a new AtomCache for a Database.
 	 * 

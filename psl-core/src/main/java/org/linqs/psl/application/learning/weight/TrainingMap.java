@@ -55,17 +55,17 @@ public class TrainingMap implements AtomManager {
 	 * The source of the RandomVariableAtoms for constructing the training map,
 	 * and the source of all Atoms for the AtomManager functionality.
 	 */
-	private final Database rvDB;
+	protected final Database rvDB;
 	
 	/**
 	 * The mapping between an atom and its observed truth value.
 	 */
-	private final Map<RandomVariableAtom, ObservedAtom> trainingMap;
+	protected final Map<RandomVariableAtom, ObservedAtom> trainingMap;
 	
 	/**
 	 * The set of atoms that have no backing of an observed truth value.
 	 */
-	private final Set<RandomVariableAtom> latentVariables;
+	protected final Set<RandomVariableAtom> latentVariables;
 	
 	/**
 	 * Initializes the training map of {@link RandomVariableAtom RandomVariableAtoms}

@@ -68,59 +68,59 @@ public class RDBMSDatabase implements Database {
 	/**
 	 * The backing data store that created this database.
 	 */
-	private final RDBMSDataStore parentDataStore;
+	protected final RDBMSDataStore parentDataStore;
 	
 	/**
 	 * The connection to the JDBC database
 	 */
-	private final Connection dbConnection;
+	protected final Connection dbConnection;
 	
 	/**
 	 * The partition ID in which this database writes.
 	 */
 	protected final Partition writePartition;
-	private final int writeID;
+	protected final int writeID;
 	
 	/**
 	 * The partition IDs that this database reads from.
 	 */
 	protected final Partition[] readPartitions;
-	private final List<Integer> readIDs;
+	protected final List<Integer> readIDs;
 	
 	/**
 	 * Predicates that, for the purpose of this database, are closed.
 	 */
-	private final Set<StandardPredicate> closedPredicates;
+	protected final Set<StandardPredicate> closedPredicates;
 	
 	/** 
 	 * Mapping from a predicate to its database handle.
 	 */
-	private final Map<Predicate, RDBMSPredicateHandle> predicateHandles;
+	protected final Map<Predicate, RDBMSPredicateHandle> predicateHandles;
 
 	/**
 	 * The atom cache for this database.
 	 */
-	private final AtomCache cache;
+	protected final AtomCache cache;
 	
 	/**
 	 * The following map predicates to pre-compiled SQL statements.
 	 */
-	private final Map<Predicate, PreparedStatement> queryStatement;
-	private final Map<Predicate, PreparedStatement> updateStatement;
-	private final Map<Predicate, PreparedStatement> insertStatement;
-	private final Map<Predicate, PreparedStatement> deleteStatement;
+	protected final Map<Predicate, PreparedStatement> queryStatement;
+	protected final Map<Predicate, PreparedStatement> updateStatement;
+	protected final Map<Predicate, PreparedStatement> insertStatement;
+	protected final Map<Predicate, PreparedStatement> deleteStatement;
 	
 	
 	/**
 	 * The following keeps track of bulk atoms to be committed.
 	 */
-	private final Set<RandomVariableAtom> pendingInserts;
-	private final Set<RandomVariableAtom> pendingUpdates;
+	protected final Set<RandomVariableAtom> pendingInserts;
+	protected final Set<RandomVariableAtom> pendingUpdates;
 	
 	/*
 	 * Keeps track of the open / closed status of this database.
 	 */
-	private boolean closed;
+	protected boolean closed;
 
 	/**
 	 * The constructor for the RDBMSDatabase. Note: This assumes the parent
@@ -197,7 +197,7 @@ public class RDBMSDatabase implements Database {
 		return predicates;
 	}
 	
-	private void createQueryStatement(RDBMSPredicateHandle ph) {
+	protected void createQueryStatement(RDBMSPredicateHandle ph) {
 		SelectQuery q = new SelectQuery();
 		QueryPreparer preparer = new QueryPreparer();
 		QueryPreparer.MultiPlaceHolder placeHolder = preparer.getNewMultiPlaceHolder();
@@ -216,7 +216,7 @@ public class RDBMSDatabase implements Database {
 		}
 	}
 	
-	private void createUpdateStatement(RDBMSPredicateHandle ph) {
+	protected void createUpdateStatement(RDBMSPredicateHandle ph) {
 		UpdateQuery q = new UpdateQuery(ph.tableName());
 		QueryPreparer preparer = new QueryPreparer();
 		QueryPreparer.MultiPlaceHolder placeHolder = preparer.getNewMultiPlaceHolder();
@@ -243,7 +243,7 @@ public class RDBMSDatabase implements Database {
 		}
 	}
 	
-	private void createInsertStatement(RDBMSPredicateHandle ph) {
+	protected void createInsertStatement(RDBMSPredicateHandle ph) {
 		InsertQuery q = new InsertQuery(ph.tableName());
 		QueryPreparer preparer = new QueryPreparer();
 		QueryPreparer.MultiPlaceHolder placeHolder = preparer.getNewMultiPlaceHolder();
@@ -270,7 +270,7 @@ public class RDBMSDatabase implements Database {
 		}
 	}
 	
-	private void createDeleteStatement(RDBMSPredicateHandle ph){
+	protected void createDeleteStatement(RDBMSPredicateHandle ph){
 		DeleteQuery q = new DeleteQuery(ph.tableName());
 		QueryPreparer preparer = new QueryPreparer();
 		QueryPreparer.MultiPlaceHolder placeHolder = preparer.getNewMultiPlaceHolder();
@@ -300,7 +300,7 @@ public class RDBMSDatabase implements Database {
 		return ph;
 	}
 	
-	private ResultSet queryDBForAtom(QueryAtom a) {
+	protected ResultSet queryDBForAtom(QueryAtom a) {
 		if (closed)
 			throw new IllegalStateException("Cannot query atom from closed database.");
 		
@@ -395,7 +395,7 @@ public class RDBMSDatabase implements Database {
 		return deleted;		
 	}
 
-	private GroundAtom getAtom(StandardPredicate p, Constant... arguments) {
+	protected GroundAtom getAtom(StandardPredicate p, Constant... arguments) {
 		RDBMSPredicateHandle ph = getHandle(p);
 		QueryAtom qAtom = new QueryAtom(p, arguments);
 		GroundAtom result = cache.getCachedAtom(qAtom);
@@ -446,7 +446,7 @@ public class RDBMSDatabase implements Database {
 		return result;
 	}
 	
-	private GroundAtom getAtom(FunctionalPredicate p, Constant... arguments) {
+	protected GroundAtom getAtom(FunctionalPredicate p, Constant... arguments) {
 		QueryAtom qAtom = new QueryAtom(p, arguments);
 		GroundAtom result = cache.getCachedAtom(qAtom);
 		if (result != null)
@@ -487,7 +487,7 @@ public class RDBMSDatabase implements Database {
 	 * Helper method to fill in the fields of a PreparedStatement for an update
 	 * @param atom
 	 */
-	private PreparedStatement updateAtom(RandomVariableAtom atom) {
+	protected PreparedStatement updateAtom(RandomVariableAtom atom) {
 		RDBMSPredicateHandle ph = getHandle(atom.getPredicate());
 		PreparedStatement update = updateStatement.get(atom.getPredicate());
 		int sqlIndex = 1;
@@ -531,7 +531,7 @@ public class RDBMSDatabase implements Database {
 	 * Helper method to fill in the fields of a PreparedStatement for an insert
 	 * @param atom
 	 */
-	private PreparedStatement insertAtom(RandomVariableAtom atom) {
+	protected PreparedStatement insertAtom(RandomVariableAtom atom) {
 		RDBMSPredicateHandle ph = getHandle(atom.getPredicate());
 		PreparedStatement insert = insertStatement.get(atom.getPredicate());
 		int sqlIndex = 1;
@@ -568,7 +568,7 @@ public class RDBMSDatabase implements Database {
 		}
 	}
 
-	private void executePendingStatements() {
+	protected void executePendingStatements() {
 		int pendingOperationCount = pendingInserts.size() + pendingUpdates.size();
 		if (pendingOperationCount == 0)
 			return;
