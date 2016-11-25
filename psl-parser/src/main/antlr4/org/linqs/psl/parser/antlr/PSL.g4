@@ -35,6 +35,7 @@ atom
 literal
 	:	atom
 	|	not literal
+	|	LPAREN literal RPAREN
 	;
 
 term
@@ -144,7 +145,7 @@ weightExpression
 	;
 
 EXPONENT_EXPRESSION
-	:	'^' [12]
+	:	CARROT [12]
 	;
 
 //
@@ -182,6 +183,7 @@ impliedBy
 termOperator
 	:	termEqual
 	|	notEqual
+	|	nonSymmetric
 	;
 
 termEqual
@@ -190,6 +192,11 @@ termEqual
 
 notEqual
 	:	NEGATION EQUAL
+	;
+
+nonSymmetric
+	:	MOD
+	|	CARROT
 	;
 
 //
@@ -348,6 +355,14 @@ SINGLE_QUOTE
 
 DOUBLE_QUOTE
 	:	'\"'
+	;
+
+MOD
+	:	'%'
+	;
+
+CARROT
+	:	'^'
 	;
 
 //

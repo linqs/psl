@@ -121,6 +121,7 @@ abstract public class Atom implements Formula, SummationAtomOrAtom {
 	public String toString() {
 		StringBuilder s = new StringBuilder();
 		if (predicate instanceof SpecialPredicate)  {
+         s.append("(");
 			if (predicate == SpecialPredicate.NotEqual) {
 				s.append(arguments[0]);
 				s.append(" != ");
@@ -131,14 +132,14 @@ abstract public class Atom implements Formula, SummationAtomOrAtom {
 				s.append(arguments[1]);
 			} else if (predicate == SpecialPredicate.NonSymmetric) {
 				s.append(arguments[0]);
-				// TODO: Append whatever symbol is chosen for this predicate here
+				s.append(" % ");
 				s.append(arguments[1]);
-				throw new UnsupportedOperationException();
-			} else
+			} else {
 				throw new UnsupportedOperationException(
 						"Unrecognized SpecialPredicate: " + predicate);
-		}
-		else {
+         }
+         s.append(")");
+		} else {
 			s.append(predicate.getName()).append("(");
 			String connector = "";
 			for (Term arg : arguments) {

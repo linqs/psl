@@ -44,6 +44,13 @@ class GenericVariable {
 	public Variable toAtomVariable() {
 		return new Variable(name);
 	}
+
+	/**
+	 * Alias for xor (non-symmetric).
+	 */
+	def mod(other) {
+		return xor(other);
+	}
 	
 	def xor(other) {
 		if (!(other instanceof GenericVariable)) {
