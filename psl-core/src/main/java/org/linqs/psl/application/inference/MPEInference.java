@@ -74,11 +74,11 @@ public class MPEInference implements ModelApplication {
 	 */
 	public static final ReasonerFactory REASONER_DEFAULT = new ADMMReasonerFactory();
 	
-	private Model model;
-	private Database db;
-	private ConfigBundle config;
-	private Reasoner reasoner;
-	private PersistedAtomManager atomManager;
+	protected Model model;
+	protected Database db;
+	protected ConfigBundle config;
+	protected Reasoner reasoner;
+	protected PersistedAtomManager atomManager;
 	
 	public MPEInference(Model model, Database db, ConfigBundle config) 
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
@@ -90,7 +90,7 @@ public class MPEInference implements ModelApplication {
 	}
 	
 	
-	private void initialize() throws ClassNotFoundException, IllegalAccessException, InstantiationException {
+	protected void initialize() throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		reasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
 		atomManager = new PersistedAtomManager(db);
 		
