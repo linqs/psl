@@ -89,6 +89,12 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 			}
 		}
 
+      // TEST
+      System.out.println("TEST2: " + selects.size());
+      for (Map.Entry<SummationVariable, Formula> select : selects.entrySet()) {
+         System.out.println("   TEST2.1: " + select.getKey() + " - " + select.getValue());
+      }
+
 		/* Constructs initial query */
 		List<Atom> queryAtoms = new LinkedList<Atom>();
 		for (SummationAtomOrAtom saoa : expression.getAtoms()) {
@@ -110,6 +116,11 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 		
 		/* Executes initial query */
 		ResultList groundings = atomManager.executeQuery(query);
+
+      // TEST
+      System.out.println("TEST3.0");
+      System.out.println(groundings);
+      System.out.println("TEST3.1");
 		
 		/* Prepares data structure for SummationVariable substitutions */
 		Map<SummationVariable, Set<Constant>> subs = new HashMap<SummationVariable, Set<Constant>>();
@@ -122,6 +133,9 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 		List<GroundAtom> atoms = new LinkedList<GroundAtom>();
 		Map<Variable, Integer> varMap = groundings.getVariableMap();
 		for (int i = 0; i < groundings.size(); i++) {
+         // TEST
+         System.out.println("TEST4: " + i + " - " + java.util.Arrays.toString(groundings.get(i)));
+
 			populateSummationVariableSubs(subs, groundings.get(i), varMap, atomManager);
 			populateCoeffsAndAtoms(coeffs, atoms, groundings.get(i), varMap, atomManager, subs);
 			ground(grs, coeffs, atoms, expression.getFinalCoefficient().getValue(subs));
@@ -135,11 +149,20 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 			constants.clear();
 		}
 		
+      // TEST
+      System.out.println("TEST4.5: " + subs.size());
+
 		for (Map.Entry<SummationVariable, Set<Constant>> e : subs.entrySet()) {
+         // TEST
+         System.out.println("TEST4.5.1: " + e.getKey() + " - " + e.getValue().size());
+
 			Formula select = selects.get(e.getKey());
 			
 			/* If there is no select statement for a summation variable, then the arithmetic rule expression is used */
 			if (select == null) {
+            // TEST
+            System.out.println("TEST5.0");
+
 				List<Atom> queryAtoms = new LinkedList<Atom>();
 				for (SummationAtomOrAtom atom : this.expression.getAtoms()) {
 					if (atom instanceof SummationAtom) {
@@ -158,22 +181,37 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 			}
 			
 			select = select.getDNF();
+
+         // TEST
+         System.out.println("TEST5.1: " + select);
 			
 			Formula[] queries; 
 			if (select instanceof Disjunction) {
+            // TEST
+            System.out.println("TEST5.2A: " + select);
+			
 				queries = new Formula[((Disjunction) select).getNoFormulas()];
 				for (int i = 0; i < queries.length; i++) {
 					queries[i] = ((Disjunction) select).get(i);
 				}
 			}
 			else {
+            // TEST
+            System.out.println("TEST5.2B: " + select);
+			
 				queries = new Formula[] {select};
 			}
 			
 			for (Formula f : queries) {
+            // TEST
+            System.out.println("TEST6: " + f);
+
 				DatabaseQuery query = new DatabaseQuery(f);
 				ResultList results = atomManager.executeQuery(query);
 				for (int j = 0; j < results.size(); j++) {
+					// TEST
+               System.out.println("TEST6.1: " + j + " - " + results.get(j, e.getKey().getVariable()));
+
 					e.getValue().add(results.get(j, e.getKey().getVariable()));
 				}
 			}
@@ -209,7 +247,11 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 						partialGrounding[k] = (Constant) atomArgs[k];
 					}
 				}
-				
+			
+            // TEST
+            System.out.println("TEST7.0: " + java.util.Arrays.toString(sumVars));
+            System.out.println("TEST7.1: " + java.util.Arrays.toString(partialGrounding));
+
 				/* Iterates over cross product of SummationVariable substitutions */
 				double coeffValue = expression.getAtomCoefficients().get(j).getValue(subs);
 				populateCoeffsAndAtomsForSummationAtom(coeffs, atoms, atom.getPredicate(), 0, sumVars, partialGrounding, atomManager, subs, coeffValue);
@@ -247,7 +289,13 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 			populateCoeffsAndAtomsForSummationAtom(coeffs, atoms, p, index + 1, sumVars, partialGrounding, atomManager, subs, coeff);
 		}
 		else {
+         // TEST
+         System.out.println("TEST: 7.3.0 - " + subs.get(sumVars[index]).size());
+
 			for (Constant sub : subs.get(sumVars[index])) {
+            // TEST
+            System.out.println("TEST: 7.3.1 - " + sub);
+
 				partialGrounding[index] = sub;
 				populateCoeffsAndAtomsForSummationAtom(coeffs, atoms, p, index + 1, sumVars, partialGrounding, atomManager, subs, coeff);
 			}
