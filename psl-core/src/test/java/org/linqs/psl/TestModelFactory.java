@@ -220,9 +220,7 @@ public class TestModelFactory {
 			Map<StandardPredicate, List<PredicateData>> truths) {
 		ConfigBundle config = new EmptyBundle();
 		DataStore dataStore = new RDBMSDataStore(new H2DatabaseDriver(
-				// TEST
-				// Type.Memory, String.format("%s-%03d", TestModelFactory.class.getName(), modelId), true), config);
-				Type.Disk, String.format("/tmp/%s-%03d", TestModelFactory.class.getName(), modelId), true), config);
+				Type.Memory, String.format("%s-%03d", TestModelFactory.class.getName(), modelId), true), config);
 		Model model = new Model();
 
 		// Predicates

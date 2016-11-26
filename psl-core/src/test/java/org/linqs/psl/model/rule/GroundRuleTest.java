@@ -31,6 +31,7 @@ import org.linqs.psl.config.EmptyBundle;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
+import org.linqs.psl.database.Queries;
 import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.RDBMSUniqueStringID;
@@ -495,22 +496,16 @@ public class GroundRuleTest {
 				true
 		);
 
-		// TEST
-		System.out.println("TEST0");
-
 		// All groundings should be removed by the select.
 		expected = new ArrayList<String>();
 		rule.groundAll(manager, store);
 		PSLTest.compareGroundRules(expected, rule, store, false);
-
-		// TEST
-		System.out.println("TEST9");
 	}
 	*/
 
 	@Test
 	// Everyone is 100% Nice in this test.
-	public void testArithmeticSelectNice() {
+	public void testArithmeticSelect() {
 		GroundRuleStore store = new ADMMReasoner(model.config);
 		AtomManager manager = new SimpleAtomManager(database);
 
@@ -520,10 +515,8 @@ public class GroundRuleTest {
 		List<SummationAtomOrAtom> atoms;
 		Map<SummationVariable, Formula> selects;
 
-		// 1.0: Friends(A, +B) >= 1 ^2 {B: !Nice(B)}
+		// 1.0: |B| * Friends(A, +B) >= 1 ^2 {B: Nice(B)}
 		coefficients = Arrays.asList(
-			// (Coefficient)(new ConstantNumber(1))
-			// TEST: Cardinality leads to all 5's (no reduction).
 			(Coefficient)(new Cardinality(new SummationVariable("B")))
 		);
 
@@ -535,12 +528,7 @@ public class GroundRuleTest {
 		);
 
 		selects = new HashMap<SummationVariable, Formula>();
-		// selects.put(new SummationVariable("B"), new Negation(new QueryAtom(model.predicates.get("Nice"), new Variable("B"))));
-		// selects.put(new SummationVariable("B"), new QueryAtom(model.predicates.get("Nice"), new Variable("B")));
-		selects.put(new SummationVariable("B"), new Conjunction(
-			new QueryAtom(model.predicates.get("Nice"), new Variable("B")),
-			new QueryAtom(model.predicates.get("Nice"), new Variable("A"))
-		));
+		selects.put(new SummationVariable("B"), new QueryAtom(model.predicates.get("Nice"), new Variable("B")));
 
 		rule = new WeightedArithmeticRule(
 				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
@@ -550,15 +538,25 @@ public class GroundRuleTest {
 		);
 
 		// TEST
-		System.out.println("TEST0");
-
-		// All groundings should be removed by the select.
-		expected = new ArrayList<String>();
-		rule.groundAll(manager, store);
-		PSLTest.compareGroundRules(expected, rule, store, false);
+		System.out.println("Rule: " + rule.toString());
 
 		// TEST
-		System.out.println("TEST9");
+		System.out.println("Nice Atoms:");
+		for (Atom atom : Queries.getAllAtoms(database, model.predicates.get("Nice"))) {
+			System.out.println("   " + atom + " - " + ((ObservedAtom)atom).getValue());
+		}
+
+		// Note that 'Eugene' is not present because Nice('Eugene') = 0.
+		expected = Arrays.asList(
+			"1.0: 4.0 FRIENDS('Alice', 'Alice') 4.0 FRIENDS('Alice', 'Bob') 4.0 FRIENDS('Alice', 'Charlie') 4.0 FRIENDS('Alice', 'Derek') >= 1.0 ^2",
+			"1.0: 4.0 FRIENDS('Bob', 'Alice') 4.0 FRIENDS('Bob', 'Bob') 4.0 FRIENDS('Bob', 'Charlie') 4.0 FRIENDS('Bob', 'Derek') >= 1.0 ^2",
+			"1.0: 4.0 FRIENDS('Charlie', 'Alice') 4.0 FRIENDS('Charlie', 'Bob') 4.0 FRIENDS('Charlie', 'Charlie') 4.0 FRIENDS('Charlie', 'Derek') >= 1.0 ^2",
+			"1.0: 4.0 FRIENDS('Derek', 'Alice') 4.0 FRIENDS('Derek', 'Bob') 4.0 FRIENDS('Derek', 'Charlie') 4.0 FRIENDS('Derek', 'Derek') >= 1.0 ^2"
+		);
+		rule.groundAll(manager, store);
+		// TEST: Don't worry about the actual comparison for now, we can just visually inspect.
+		// PSLTest.compareGroundRules(expected, rule, store, true);
+		PSLTest.compareGroundRules(expected, rule, store, false);
 	}
 
 	/*
@@ -611,9 +609,7 @@ public class GroundRuleTest {
 			"1.0: 1.0 FRIENDS('Eugene', 'Bob') 1.0 FRIENDS('Eugene', 'Charlie') 1.0 FRIENDS('Eugene', 'Derek') 1.0 FRIENDS('Eugene', 'Eugene') >= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
-		// TEST
-		// PSLTest.compareGroundRules(expected, rule, store, true);
-		PSLTest.compareGroundRules(expected, rule, store, false);
+		PSLTest.compareGroundRules(expected, rule, store, true);
 	}
 	*/
 

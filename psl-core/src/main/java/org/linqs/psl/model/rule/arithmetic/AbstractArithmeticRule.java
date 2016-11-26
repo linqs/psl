@@ -51,26 +51,26 @@ import org.linqs.psl.reasoner.function.FunctionComparator;
 
 /**
  * Base class for all (first order, i.e., not ground) arithmetic rules.
- * 
+ *
  * @author Stephen Bach
  */
 public abstract class AbstractArithmeticRule extends AbstractRule {
-	
+
 	protected final ArithmeticRuleExpression expression;
 	protected final Map<SummationVariable, Formula> selects;
-	
+
 	public AbstractArithmeticRule(ArithmeticRuleExpression expression, Map<SummationVariable, Formula> selectStatements) {
 		this.expression = expression;
 		this.selects = selectStatements;
-		
+
 		/* Ensures that all Formulas are in DNF */
 		for (Map.Entry<SummationVariable, Formula> e : this.selects.entrySet()) {
 			e.setValue(e.getValue().getDNF());
 		}
-		
+
 		validateRule();
 	}
-	
+
 	@Override
 	public void groundAll(AtomManager atomManager, GroundRuleStore grs) {
 		/* Ensure that no open predicates are being used in a select. */
@@ -88,12 +88,6 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 						selectAtom.getPredicate().getName()));
 			}
 		}
-
-      // TEST
-      System.out.println("TEST2: " + selects.size());
-      for (Map.Entry<SummationVariable, Formula> select : selects.entrySet()) {
-         System.out.println("   TEST2.1: " + select.getKey() + " - " + select.getValue());
-      }
 
 		/* Constructs initial query */
 		List<Atom> queryAtoms = new LinkedList<Atom>();
@@ -113,56 +107,39 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 			query = new DatabaseQuery(queryAtoms.get(0));
 		}
 		query.getProjectionSubset().addAll(expression.getVariables());
-		
+
 		/* Executes initial query */
 		ResultList groundings = atomManager.executeQuery(query);
 
-      // TEST
-      System.out.println("TEST3.0");
-      System.out.println(groundings);
-      System.out.println("TEST3.1");
-		
 		/* Prepares data structure for SummationVariable substitutions */
 		Map<SummationVariable, Set<Constant>> subs = new HashMap<SummationVariable, Set<Constant>>();
 		for (SummationVariable sumVar : expression.getSummationVariables()) {
 			subs.put(sumVar, new HashSet<Constant>());
 		}
-		
+
 		/* Processes results */
 		List<Double> coeffs = new LinkedList<Double>();
 		List<GroundAtom> atoms = new LinkedList<GroundAtom>();
 		Map<Variable, Integer> varMap = groundings.getVariableMap();
 		for (int i = 0; i < groundings.size(); i++) {
-         // TEST
-         System.out.println("TEST4: " + i + " - " + java.util.Arrays.toString(groundings.get(i)));
-
 			populateSummationVariableSubs(subs, groundings.get(i), varMap, atomManager);
 			populateCoeffsAndAtoms(coeffs, atoms, groundings.get(i), varMap, atomManager, subs);
 			ground(grs, coeffs, atoms, expression.getFinalCoefficient().getValue(subs));
 		}
 	}
-	
+
 	private void populateSummationVariableSubs(Map<SummationVariable, Set<Constant>> subs,
 			Constant[] grounding, Map<Variable, Integer> varMap, AtomManager atomManager) {
 		/* Clears output data structure */
 		for (Set<Constant> constants : subs.values()) {
 			constants.clear();
 		}
-		
-      // TEST
-      System.out.println("TEST4.5: " + subs.size());
 
 		for (Map.Entry<SummationVariable, Set<Constant>> e : subs.entrySet()) {
-         // TEST
-         System.out.println("TEST4.5.1: " + e.getKey() + " - " + e.getValue().size());
-
 			Formula select = selects.get(e.getKey());
-			
+
 			/* If there is no select statement for a summation variable, then the arithmetic rule expression is used */
 			if (select == null) {
-            // TEST
-            System.out.println("TEST5.0");
-
 				List<Atom> queryAtoms = new LinkedList<Atom>();
 				for (SummationAtomOrAtom atom : this.expression.getAtoms()) {
 					if (atom instanceof SummationAtom) {
@@ -179,51 +156,36 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 					select = new Conjunction(queryAtoms.toArray(new Formula[0]));
 				}
 			}
-			
+
 			select = select.getDNF();
 
-         // TEST
-         System.out.println("TEST5.1: " + select);
-			
-			Formula[] queries; 
+			Formula[] queries;
 			if (select instanceof Disjunction) {
-            // TEST
-            System.out.println("TEST5.2A: " + select);
-			
 				queries = new Formula[((Disjunction) select).getNoFormulas()];
 				for (int i = 0; i < queries.length; i++) {
 					queries[i] = ((Disjunction) select).get(i);
 				}
 			}
 			else {
-            // TEST
-            System.out.println("TEST5.2B: " + select);
-			
 				queries = new Formula[] {select};
 			}
-			
-			for (Formula f : queries) {
-            // TEST
-            System.out.println("TEST6: " + f);
 
+			for (Formula f : queries) {
 				DatabaseQuery query = new DatabaseQuery(f);
 				ResultList results = atomManager.executeQuery(query);
 				for (int j = 0; j < results.size(); j++) {
-					// TEST
-               System.out.println("TEST6.1: " + j + " - " + results.get(j, e.getKey().getVariable()));
-
 					e.getValue().add(results.get(j, e.getKey().getVariable()));
 				}
 			}
 		}
 	}
-	
+
 	private void populateCoeffsAndAtoms(List<Double> coeffs, List<GroundAtom> atoms, Constant[] grounding,
 			Map<Variable, Integer> varMap, AtomManager atomManager, Map<SummationVariable, Set<Constant>> subs) {
 		/* Clears output data structures */
 		coeffs.clear();
 		atoms.clear();
-		
+
 		/* Does population */
 		for (int j = 0; j < expression.getAtoms().size(); j++) {
 			/* Handles a SummationAtom */
@@ -247,10 +209,6 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 						partialGrounding[k] = (Constant) atomArgs[k];
 					}
 				}
-			
-            // TEST
-            System.out.println("TEST7.0: " + java.util.Arrays.toString(sumVars));
-            System.out.println("TEST7.1: " + java.util.Arrays.toString(partialGrounding));
 
 				/* Iterates over cross product of SummationVariable substitutions */
 				double coeffValue = expression.getAtomCoefficients().get(j).getValue(subs);
@@ -274,7 +232,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 			}
 		}
 	}
-	
+
 	/**
 	 * Recursively grounds GroundAtoms by replacing SummationVariables with all constants.
 	 */
@@ -289,26 +247,20 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 			populateCoeffsAndAtomsForSummationAtom(coeffs, atoms, p, index + 1, sumVars, partialGrounding, atomManager, subs, coeff);
 		}
 		else {
-         // TEST
-         System.out.println("TEST: 7.3.0 - " + subs.get(sumVars[index]).size());
-
 			for (Constant sub : subs.get(sumVars[index])) {
-            // TEST
-            System.out.println("TEST: 7.3.1 - " + sub);
-
 				partialGrounding[index] = sub;
 				populateCoeffsAndAtomsForSummationAtom(coeffs, atoms, p, index + 1, sumVars, partialGrounding, atomManager, subs, coeff);
 			}
 		}
 	}
-	
+
 	private void ground(GroundRuleStore grs, List<Double>coeffs, List<GroundAtom> atoms, double finalCoeff) {
 		double[] coeffArray = new double[coeffs.size()];
 		for (int j = 0; j < coeffArray.length; j++) {
 			coeffArray[j] = coeffs.get(j);
 		}
 		GroundAtom[] atomArray = atoms.toArray(new GroundAtom[atoms.size()]);
-		
+
 		if (FunctionComparator.Equality.equals(expression.getComparator())) {
 			grs.addGroundRule(makeGroundRule(coeffArray, atomArray, FunctionComparator.LargerThan, finalCoeff));
 			grs.addGroundRule(makeGroundRule(coeffArray, atomArray, FunctionComparator.SmallerThan, finalCoeff));
@@ -356,7 +308,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 			}
 		}
 	}
-	
+
 	abstract protected AbstractGroundArithmeticRule makeGroundRule(double[] coeffs,
 			GroundAtom[] atoms, FunctionComparator comparator, double c);
 
