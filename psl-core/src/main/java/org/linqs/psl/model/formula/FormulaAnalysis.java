@@ -54,8 +54,8 @@ import com.google.common.collect.Multimap;
  */
 public class FormulaAnalysis {
 
-	private final Formula f;
-	private final List<DNFClause> clauses;
+	protected final Formula f;
+	protected final List<DNFClause> clauses;
 	
 	public FormulaAnalysis(Formula formula) {
 		f = formula;
@@ -159,12 +159,12 @@ public class FormulaAnalysis {
 	}
 	
 	public class DNFClause {
-		private final List<Atom> posLiterals;
-		private final List<Atom> negLiterals; 
-		private final Multimap<Predicate,Atom> dependence;
-		private final Formula query;
-		private final boolean allVariablesBound;
-		private final boolean isGround;
+		protected final List<Atom> posLiterals;
+		protected final List<Atom> negLiterals; 
+		protected final Multimap<Predicate,Atom> dependence;
+		protected final Formula query;
+		protected final boolean allVariablesBound;
+		protected final boolean isGround;
 		
 		public DNFClause(List<Atom> posLiterals, List<Atom> negLiterals) {
 			this.posLiterals = new ArrayList<Atom>(posLiterals);

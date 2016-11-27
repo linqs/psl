@@ -83,13 +83,13 @@ public class LazyMPEInference extends Observable implements ModelApplication {
 	/** Default value for MAX_ROUNDS_KEY property */
 	public static final int MAX_ROUNDS_DEFAULT = 100;
 	
-	private Model model;
-	private Database db;
-	private ConfigBundle config;
-	private final int maxRounds;
+	protected Model model;
+	protected Database db;
+	protected ConfigBundle config;
+	protected final int maxRounds;
 	
 	/** stop flag to quit the loop. */
-	private boolean toStop = false;
+	protected boolean toStop = false;
 	
 	public LazyMPEInference(Model model, Database db, ConfigBundle config) {
 		this.model = model;
@@ -140,7 +140,7 @@ public class LazyMPEInference extends Observable implements ModelApplication {
 			log.debug("Completed round {} and activated {} atoms.", rounds, numActivated);
 			// notify registered observers
 			setChanged();
-			notifyObservers(new IntermidateState(rounds, numActivated, maxRounds));
+			notifyObservers(new IntermediateState(rounds, numActivated, maxRounds));
 		} while (numActivated > 0 && rounds < maxRounds && !toStop);
 
 		// TODO: Check for consideration events when deciding to terminate?
@@ -184,12 +184,12 @@ public class LazyMPEInference extends Observable implements ModelApplication {
 	 * notify the registered observers.
 	 *
 	 */
-	public class IntermidateState {
+	public class IntermediateState {
 		public final int rounds;
 		public final int numActivated;
 		public final int maxRounds; 
 		
-		public IntermidateState(int currRounds, int currNumActivated, int confMaxRounds) {
+		public IntermediateState(int currRounds, int currNumActivated, int confMaxRounds) {
 			this.rounds = currRounds;
 			this.numActivated = currNumActivated;
 			this.maxRounds = confMaxRounds;

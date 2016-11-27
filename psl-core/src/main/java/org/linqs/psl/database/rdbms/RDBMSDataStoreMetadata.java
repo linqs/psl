@@ -36,9 +36,9 @@ import org.slf4j.LoggerFactory;
  */
 public class RDBMSDataStoreMetadata implements DataStoreMetdata {
 	private static final Logger log = LoggerFactory.getLogger(RDBMSDataStoreMetadata.class);
-	private String mdTableName;
-	private Connection conn;
-	private HashMap<String,Integer> partitionNames;
+	protected String mdTableName;
+	protected Connection conn;
+	protected HashMap<String,Integer> partitionNames;
 	
 	public RDBMSDataStoreMetadata(Connection conn, String mdTableName){
 		this.mdTableName = mdTableName;
