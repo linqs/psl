@@ -159,23 +159,48 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 
 			select = select.getDNF();
 
+			// TEST
+			System.out.println("TEST4.0: " + select);
+
 			Formula[] queries;
 			if (select instanceof Disjunction) {
+				// TEST
+				System.out.println("   TEST4.1");
+
 				queries = new Formula[((Disjunction) select).getNoFormulas()];
 				for (int i = 0; i < queries.length; i++) {
 					queries[i] = ((Disjunction) select).get(i);
 				}
 			}
 			else {
+				// TEST
+				System.out.println("   TEST4.2");
+
 				queries = new Formula[] {select};
 			}
 
 			for (Formula f : queries) {
+				// TEST
+				System.out.println("TEST5.0: " + f);
+
 				DatabaseQuery query = new DatabaseQuery(f);
 				ResultList results = atomManager.executeQuery(query);
+				// TEST
+				System.out.println("   TEST5.1: " + results);
+
 				for (int j = 0; j < results.size(); j++) {
+					// TEST
+					System.out.println("   TEST5.3: " + results.get(j, e.getKey().getVariable()));
+
+					// TODO(eriq): This is broken when we use a variable that is not the summation variable.
+					//  The foreach of the map up top assumes that we are only working with
+					//  the summation variable. Then this will null pointer out since the results don't
+					//  have this column.
 					e.getValue().add(results.get(j, e.getKey().getVariable()));
 				}
+
+				// TEST
+				System.out.println("TEST5.5");
 			}
 		}
 	}

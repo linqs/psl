@@ -45,6 +45,7 @@ import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.atom.SimpleAtomManager;
 import org.linqs.psl.model.formula.Conjunction;
+import org.linqs.psl.model.formula.Disjunction;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.formula.Implication;
 import org.linqs.psl.model.formula.Negation;
@@ -528,7 +529,14 @@ public class GroundRuleTest {
 		);
 
 		selects = new HashMap<SummationVariable, Formula>();
-		selects.put(new SummationVariable("B"), new QueryAtom(model.predicates.get("Nice"), new Variable("B")));
+		// selects.put(new SummationVariable("B"), new QueryAtom(model.predicates.get("Nice"), new Variable("B")));
+		selects.put(
+				new SummationVariable("B"),
+				new Disjunction(
+						new QueryAtom(model.predicates.get("Nice"), new Variable("B")),
+						new QueryAtom(model.predicates.get("Nice"), new Variable("A"))
+				)
+		);
 
 		rule = new WeightedArithmeticRule(
 				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
