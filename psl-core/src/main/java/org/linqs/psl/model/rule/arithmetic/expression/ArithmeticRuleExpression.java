@@ -35,12 +35,12 @@ import org.linqs.psl.reasoner.function.FunctionComparator;
  * @author Stephen Bach
  */
 public class ArithmeticRuleExpression {
-	private final List<Coefficient> coeffs;
-	private final List<SummationAtomOrAtom> atoms;
-	private final FunctionComparator comparator;
-	private final Coefficient c;
-	private final Set<Variable> vars;
-	private final Set<SummationVariable> sumVars;
+	protected final List<Coefficient> coeffs;
+	protected final List<SummationAtomOrAtom> atoms;
+	protected final FunctionComparator comparator;
+	protected final Coefficient c;
+	protected final Set<Variable> vars;
+	protected final Set<SummationVariable> sumVars;
 
 	public ArithmeticRuleExpression(List<Coefficient> coeffs, List<SummationAtomOrAtom> atoms,
 			FunctionComparator comparator, Coefficient c) {

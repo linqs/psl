@@ -60,7 +60,7 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 	
 	private static final Logger log = LoggerFactory.getLogger(AtomEventFramework.class);
 	
-	private AtomEventFramework eventFramework;
+	protected AtomEventFramework eventFramework;
 
 	/**
 	 * Constructs a new weight learner.

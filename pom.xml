@@ -116,6 +116,16 @@
 					<enableAssertions>false</enableAssertions>
 				</configuration>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>2.10.4</version>
+				<configuration>
+					<links>
+						<link>https://docs.oracle.com/javase/7/docs/api/</link>
+					</links>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 	<!-- Configurations for specific profiles -->

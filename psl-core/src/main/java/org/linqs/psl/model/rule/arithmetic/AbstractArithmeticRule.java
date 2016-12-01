@@ -127,8 +127,8 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 			ground(grs, coeffs, atoms, expression.getFinalCoefficient().getValue(subs));
 		}
 	}
-
-	private void populateSummationVariableSubs(Map<SummationVariable, Set<Constant>> subs,
+	
+	protected void populateSummationVariableSubs(Map<SummationVariable, Set<Constant>> subs,
 			Constant[] grounding, Map<Variable, Integer> varMap, AtomManager atomManager) {
 		/* Clears output data structure */
 		for (Set<Constant> constants : subs.values()) {
@@ -204,8 +204,8 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 			}
 		}
 	}
-
-	private void populateCoeffsAndAtoms(List<Double> coeffs, List<GroundAtom> atoms, Constant[] grounding,
+	
+	protected void populateCoeffsAndAtoms(List<Double> coeffs, List<GroundAtom> atoms, Constant[] grounding,
 			Map<Variable, Integer> varMap, AtomManager atomManager, Map<SummationVariable, Set<Constant>> subs) {
 		/* Clears output data structures */
 		coeffs.clear();
@@ -261,7 +261,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 	/**
 	 * Recursively grounds GroundAtoms by replacing SummationVariables with all constants.
 	 */
-	private void populateCoeffsAndAtomsForSummationAtom(List<Double> coeffs, List<GroundAtom> atoms, Predicate p,
+	protected void populateCoeffsAndAtomsForSummationAtom(List<Double> coeffs, List<GroundAtom> atoms, Predicate p,
 			int index, SummationVariable[] sumVars, Constant[] partialGrounding, AtomManager atomManager,
 			Map<SummationVariable, Set<Constant>> subs, double coeff) {
 		if (index == partialGrounding.length) {
@@ -278,8 +278,8 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 			}
 		}
 	}
-
-	private void ground(GroundRuleStore grs, List<Double>coeffs, List<GroundAtom> atoms, double finalCoeff) {
+	
+	protected void ground(GroundRuleStore grs, List<Double>coeffs, List<GroundAtom> atoms, double finalCoeff) {
 		double[] coeffArray = new double[coeffs.size()];
 		for (int j = 0; j < coeffArray.length; j++) {
 			coeffArray[j] = coeffs.get(j);
@@ -301,7 +301,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 	 *	 - All variables used in a select are either the argument to the select or
 	 *     appear in the arithmetic expression.
 	 */
-	private void validateRule() {
+	protected void validateRule() {
 		/* Ensure all select arguments appear in the arithmetic expression. */
 		for (SummationVariable selectArg : selects.keySet()) {
 			if (!expression.getSummationVariables().contains(selectArg)) {

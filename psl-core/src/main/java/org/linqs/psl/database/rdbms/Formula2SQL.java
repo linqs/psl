@@ -46,17 +46,17 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 
 	private static final String tablePrefix = "t";
 
-	private final Set<Variable> projection;
-	private final VariableAssignment partialGrounding;
-	private final RDBMSDatabase database;
+	protected final Set<Variable> projection;
+	protected final VariableAssignment partialGrounding;
+	protected final RDBMSDatabase database;
 
-	private final Map<Variable, String> joins;
+	protected final Map<Variable, String> joins;
 
-	private final List<Atom> functionalAtoms;
+	protected final List<Atom> functionalAtoms;
 
-	private final SelectQuery query;
+	protected final SelectQuery query;
 
-	private int tableCounter;
+	protected int tableCounter;
 
 	public Formula2SQL(VariableAssignment pg, Set<Variable> proj,
 			RDBMSDatabase db) {
@@ -93,7 +93,7 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 				"Negation is currently not supported by database");
 	}
 
-	private void visitFunctionalAtom(Atom atom) {
+	protected void visitFunctionalAtom(Atom atom) {
 		assert atom.getPredicate() instanceof FunctionalPredicate;
 		Term[] arguments = atom.getArguments();
 		Object[] convert = convertArguments(arguments);
@@ -128,7 +128,7 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 
 	}
 
-	private Object[] convertArguments(Term[] arguments) {
+	protected Object[] convertArguments(Term[] arguments) {
 		Object[] convert = new Object[arguments.length];
 
 		for (int i = 0; i < arguments.length; i++) {

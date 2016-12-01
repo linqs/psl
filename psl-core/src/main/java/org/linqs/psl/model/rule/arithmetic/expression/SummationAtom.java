@@ -36,8 +36,8 @@ import org.linqs.psl.model.term.Term;
  */
 public class SummationAtom implements SummationAtomOrAtom {
 	
-	private final Predicate p;
-	private final SummationVariableOrTerm[] args;
+	protected final Predicate p;
+	protected final SummationVariableOrTerm[] args;
 
 	public SummationAtom(Predicate p, SummationVariableOrTerm[] args) {
 		this.p = p;
@@ -53,7 +53,7 @@ public class SummationAtom implements SummationAtomOrAtom {
 	 *  number of arguments of the predicate
 	 * @throws IllegalArgumentException if any argument is null
 	 */
-	private void checkSchema() {
+	protected void checkSchema() {
 		if (p.getArity() != args.length) {
 			throw new IllegalArgumentException("Length of Schema does not match the number of args.");
 		}
