@@ -43,6 +43,8 @@ import org.apache.log4j.Priority;
 import org.apache.log4j.PropertyConfigurator;
 import org.linqs.psl.application.inference.MPEInference;
 import org.linqs.psl.application.inference.result.FullInferenceResult;
+import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
+import org.linqs.psl.application.learning.weight.maxlikelihood.VotedPerceptron;
 import org.linqs.psl.cli.dataloader.DataLoader;
 import org.linqs.psl.cli.dataloader.DataLoaderOutput;
 import org.linqs.psl.config.ConfigBundle;
@@ -60,11 +62,14 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.parser.ModelLoader;
 import org.linqs.psl.reasoner.admm.ADMMReasonerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Launches PSL from the command line. Supports inference and supervised parameter learning
  */
 public class Launcher {
+	private static final Logger log = LoggerFactory.getLogger(Launcher.class);
 
 	/* Command line syntax keywords */
 	public static final String OPERATION_INFER = "infer";
@@ -75,9 +80,68 @@ public class Launcher {
 	public static final String OPTION_LOG4J = "log4j";
 	public static final String OPTION_OUTPUT_DIR = "output";
 	
+	public static final String MODEL_FILE_EXTENSION = ".psl";
+	
 	/* Reserved partition names */
 	public static final String PARTITION_NAME_OBSERVATIONS = "observations";
 	public static final String PARTITION_NAME_TARGET = "targets";
+	public static final String PARTITION_NAME_LABELS = "truth";
+	
+	public void outputResults(CommandLine cmd, Database database, 
+			Set<StandardPredicate> openPredicates){
+		if (cmd.hasOption(OPTION_OUTPUT_DIR)) {
+			/*
+			 * If an output directory is specified, write a file for each
+			 * predicate and suppress the output to STDOUT.
+			 */
+			String outputDirectoryPath = cmd
+					.getOptionValue(OPTION_OUTPUT_DIR);
+			File outputDirectory = new File(outputDirectoryPath);
+			if (!outputDirectory.exists()) {
+				log.debug("creating directory: {}", outputDirectoryPath);
+				boolean dirCreated = false;
+				try {
+					outputDirectory.mkdir();
+					dirCreated = true;
+				} catch (SecurityException se) {
+					log.error("Unable to create directory");
+					return;
+				}
+				if (dirCreated) {
+					log.debug("{} created", outputDirectoryPath);
+				}
+			}
+			for (StandardPredicate openPredicate : openPredicates) {
+				try {
+					File predFile = new File(outputDirectory,
+							openPredicate.getName() + ".csv");
+					FileWriter predFileWriter = new FileWriter(predFile);
+					for (GroundAtom atom : Queries.getAllAtoms(database,
+							openPredicate)) {
+						for (Constant term : atom.getArguments()) {
+							predFileWriter.write(term.toString() + ",");
+						}
+						predFileWriter.write(Double.toString(atom.getValue()));
+						predFileWriter.write("\n");
+					}
+					predFileWriter.close();
+				} catch (IOException e){
+					log.error("Exception writing predicate {}", openPredicate);
+				}
+			}
+		} else {
+			for (StandardPredicate openPredicate : openPredicates) {
+				for (GroundAtom atom : Queries.getAllAtoms(database,
+						openPredicate)) {
+					System.out.println(atom.toString() + " = "
+							+ atom.getValue());
+				}
+			}
+		}
+		
+		
+	}
+	
 	
 	@SuppressWarnings("deprecation")
 	public void run(CommandLine cmd) throws IOException, ConfigurationException, ClassNotFoundException, IllegalAccessException, InstantiationException {
@@ -102,7 +166,6 @@ public class Launcher {
 		/*
 		 * Loads configuration
 		 */
-		
 		ConfigManager cm = ConfigManager.getManager();
 		if (cmd.hasOption(OPTION_PROPERTIES)) {
 			String propertiesPath = cmd.getOptionValue(OPTION_PROPERTIES);
@@ -125,98 +188,76 @@ public class Launcher {
 		 * Loads data
 		 */
 		
-		System.out.println("data:: loading:: ::starting");
+		log.info("data:: loading:: ::starting");
 		File dataFile = new File(cmd.getOptionValue(OPTION_DATA));
 		InputStream dataFileInputStream = new FileInputStream(dataFile);
 
 		DataLoaderOutput dataLoaderOutput = DataLoader.load(data, dataFileInputStream);
 		Set<StandardPredicate> closedPredicates = dataLoaderOutput.getClosedPredicates();
-		System.out.println("data:: loading:: ::done");
+		log.info("data:: loading:: ::done");
 
 		/*
 		 * Loads model
 		 */
-
-		System.out.println("model:: loading:: ::starting");
+		log.info("model:: loading:: ::starting");
 		File modelFile = new File(cmd.getOptionValue(OPTION_MODEL));
 		FileReader modelFileReader = new FileReader(modelFile);
 
 		Model model = ModelLoader.load(data, modelFileReader);
-		System.out.println(model);
-		System.out.println("model:: loading:: ::done");
+		log.debug(model.toString());
+		log.info("model:: loading:: ::done");
 
 		/*
 		 * Create database, application, etc.
 		 */
-
 		Partition targetPartition = data.getPartition(PARTITION_NAME_TARGET);
 		Partition observationsPartition = data.getPartition(PARTITION_NAME_OBSERVATIONS);
+		Partition truthPartition = data.getPartition(PARTITION_NAME_LABELS);
 		Database database = data.getDatabase(targetPartition, observationsPartition);
 
 		// Inference
 		if (cmd.hasOption(OPERATION_INFER)) {
-			System.out.println("operation::infer ::starting");
-		
-			System.out.println("operation::infer inference:: ::starting");
+			log.info("operation::infer ::starting");
+			
 			cb.setProperty(MPEInference.REASONER_KEY, new ADMMReasonerFactory());
 			MPEInference mpe = new MPEInference(model, database, cb);
 			FullInferenceResult result = mpe.mpeInference();
-			System.out.println("operation::infer inference:: ::done");
+			log.info("operation::infer inference:: ::done");
 			
 			// List of open predicates
-			Set<StandardPredicate> openPredicates = data
-					.getRegisteredPredicates();
+			Set<StandardPredicate> openPredicates = data.getRegisteredPredicates();
 			openPredicates.remove(closedPredicates);
-
-			if (cmd.hasOption(OPTION_OUTPUT_DIR)) {
-				/*
-				 * If an output directory is specified, write a file for each
-				 * predicate and suppress the output to STDOUT.
-				 */
-				String outputDirectoryPath = cmd
-						.getOptionValue(OPTION_OUTPUT_DIR);
-				File outputDirectory = new File(outputDirectoryPath);
-				if (!outputDirectory.exists()) {
-					System.out.println("creating directory: "
-							+ outputDirectoryPath);
-					boolean resulttmp = false;
-					try {
-						outputDirectory.mkdir();
-						resulttmp = true;
-					} catch (SecurityException se) {
-						// handle it
-					}
-					if (resulttmp) {
-						System.out.println("DIR created");
-					}
-				}
-				for (StandardPredicate openPredicate : openPredicates) {
-					File predFile = new File(outputDirectory,
-							openPredicate.getName() + ".csv");
-					FileWriter predFileWriter = new FileWriter(predFile);
-					for (GroundAtom atom : Queries.getAllAtoms(database,
-							openPredicate)) {
-						for (Constant term : atom.getArguments()) {
-							predFileWriter.write(term.toString() + ",");
-						}
-						predFileWriter.write(Double.toString(atom.getValue()));
-						predFileWriter.write("\n");
-					}
-					predFileWriter.close();
-				}
-			} else {
-				for (StandardPredicate openPredicate : openPredicates) {
-					for (GroundAtom atom : Queries.getAllAtoms(database,
-							openPredicate)) {
-						System.out.println(atom.toString() + " = "
-								+ atom.getValue());
-					}
-				}
-			}
-			System.out.println("operation::infer ::done");
+			
+			outputResults(cmd, database, openPredicates);
+			
+			log.info("operation::infer ::done");
 
 		} else if (cmd.hasOption(OPERATION_LEARN)) {
-			throw new IllegalArgumentException("Operation not supported: " + OPERATION_LEARN);
+			log.info("operation::learn ::starting");
+			Database tr_database = data.getDatabase(truthPartition, data.getRegisteredPredicates());
+			VotedPerceptron vp =  new MaxLikelihoodMPE(model, database, tr_database, cb);
+			vp.learn();
+			log.info("operation::learn learning:: ::done");
+			
+			String modelFilename = cmd.getOptionValue(OPTION_MODEL);
+			String learnedFilename;
+			int prefixPos = modelFilename.lastIndexOf(MODEL_FILE_EXTENSION);
+			if(prefixPos == -1){
+				log.error("Model filename {} does not end in {} - improvising", 
+						modelFilename, MODEL_FILE_EXTENSION);
+				learnedFilename = modelFilename + MODEL_FILE_EXTENSION;
+			} else {
+				learnedFilename = modelFilename.substring(0, prefixPos) + "-learned" 
+						+ MODEL_FILE_EXTENSION;
+			}
+			log.info("Writing learned model to {}", learnedFilename);
+			File learnedFile = new File(learnedFilename);
+			FileWriter learnedFileWriter = new FileWriter(learnedFile);
+			learnedFileWriter.write(model.toString());
+			learnedFileWriter.close();
+			
+			log.info("operation::learn ::done");
+			//throw new IllegalArgumentException("Operation not supported: " + OPERATION_LEARN);
 			// Learning
 		} else {
 			throw new IllegalArgumentException("No valid operation provided.");
