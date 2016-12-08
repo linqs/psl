@@ -69,7 +69,7 @@ import org.slf4j.LoggerFactory;
  * Launches PSL from the command line. Supports inference and supervised parameter learning
  */
 public class Launcher {
-	private static final Logger log = LoggerFactory.getLogger(Launcher.class);
+	private static Logger log;
 
 	/* Command line syntax keywords */
 	public static final String OPERATION_INFER = "infer";
@@ -156,13 +156,13 @@ public class Launcher {
 		else {
 			ConsoleAppender appender = new ConsoleAppender();
 			appender.setName("psl-cli");
-			appender.setThreshold(Priority.ERROR);
+			appender.setThreshold(Priority.INFO);
 			appender.setLayout(new PatternLayout("%-4r [%t] %-5p %c %x - %m%n"));
 			appender.setTarget(ConsoleAppender.SYSTEM_OUT);
 			appender.activateOptions();
 			BasicConfigurator.configure(appender);
 		}
-		
+		log = LoggerFactory.getLogger(Launcher.class);
 		/*
 		 * Loads configuration
 		 */
@@ -226,7 +226,7 @@ public class Launcher {
 			
 			// List of open predicates
 			Set<StandardPredicate> openPredicates = data.getRegisteredPredicates();
-			openPredicates.remove(closedPredicates);
+			openPredicates.removeAll(closedPredicates);
 			
 			outputResults(cmd, database, openPredicates);
 			
