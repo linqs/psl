@@ -139,6 +139,13 @@ public class Model {
 	public String toString() {
 		StringBuilder s = new StringBuilder();
 		s.append("Model:\n");
+		s.append(asString());
+		return s.toString();
+	}
+	
+	public String asString() {
+		StringBuilder s = new StringBuilder();
+		//s.append("Model:\n");
 		if (rules.size() > 0) {
 			s.append(rules.get(0));
 		}

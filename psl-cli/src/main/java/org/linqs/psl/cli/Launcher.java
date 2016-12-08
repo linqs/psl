@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.Comparator;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -86,6 +87,7 @@ public class Launcher {
 	public static final String PARTITION_NAME_OBSERVATIONS = "observations";
 	public static final String PARTITION_NAME_TARGET = "targets";
 	public static final String PARTITION_NAME_LABELS = "truth";
+	
 	
 	public void outputResults(CommandLine cmd, Database database, 
 			Set<StandardPredicate> openPredicates){
@@ -253,7 +255,9 @@ public class Launcher {
 			log.info("Writing learned model to {}", learnedFilename);
 			File learnedFile = new File(learnedFilename);
 			FileWriter learnedFileWriter = new FileWriter(learnedFile);
-			learnedFileWriter.write(model.toString());
+			//TODO: fix this so we don't need cleanModel!
+			String outModel = Pattern.compile("\\( | \\)").matcher(model.asString()).replaceAll("");
+			learnedFileWriter.write(outModel);
 			learnedFileWriter.close();
 			
 			log.info("operation::learn ::done");
