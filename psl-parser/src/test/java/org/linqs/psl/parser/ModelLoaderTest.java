@@ -344,14 +344,14 @@ public class ModelLoaderTest {
 			"1: 'Foo' ~= 'Bar' & Double(A, B) >> Single(B) ^2\n" +
 			"";
 		String[] expected = new String[]{
-			"1.0: ( A == B & DOUBLE(A, B) ) >> SINGLE(B) ^2",
-			"1.0: ( A == 'Bar' & DOUBLE(A, B) ) >> SINGLE(B) ^2",
-			"1.0: ( 'Foo' == B & DOUBLE(A, B) ) >> SINGLE(B) ^2",
-			"1.0: ( 'Foo' == 'Bar' & DOUBLE(A, B) ) >> SINGLE(B) ^2",
-			"1.0: ( A != B & DOUBLE(A, B) ) >> SINGLE(B) ^2",
-			"1.0: ( A != 'Bar' & DOUBLE(A, B) ) >> SINGLE(B) ^2",
-			"1.0: ( 'Foo' != B & DOUBLE(A, B) ) >> SINGLE(B) ^2",
-			"1.0: ( 'Foo' != 'Bar' & DOUBLE(A, B) ) >> SINGLE(B) ^2"
+			"1.0: ( (A == B) & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( (A == 'Bar') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( ('Foo' == B) & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( ('Foo' == 'Bar') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( (A != B) & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( (A != 'Bar') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( ('Foo' != B) & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( ('Foo' != 'Bar') & DOUBLE(A, B) ) >> SINGLE(B) ^2"
 		};
 
 		assertModel(input, expected);
@@ -380,8 +380,8 @@ public class ModelLoaderTest {
 			"1.0: DOUBLE(A, B) >> ( SINGLE(A) | SINGLE(B) )",
 			"1.0: DOUBLE(A, B) >> ( SINGLE(A) | SINGLE(B) )",
 			"1.0: DOUBLE(A, B) >> ( SINGLE(A) | SINGLE(B) )",
-			"1.0: ( A != B & DOUBLE(A, B) ) >> SINGLE(B)",
-			"1.0: ( A != B & DOUBLE(A, B) ) >> SINGLE(B)"
+			"1.0: ( (A != B) & DOUBLE(A, B) ) >> SINGLE(B)",
+			"1.0: ( (A != B) & DOUBLE(A, B) ) >> SINGLE(B)"
 		};
 
 		assertModel(input, expected);
@@ -655,5 +655,19 @@ public class ModelLoaderTest {
 		} catch (IOException ex) {
 			fail("Unexpected IOException thrown from ModelLoader.loadRulePartial(): " + ex);
 		}
+	}
+
+	@Test
+	public void testNonSymmetric() {
+		String input =
+			"1: Single(A) & Single(B) & (A % B) >> Double(A, B) ^2\n" +
+			"1: Single(A) & Single(B) & (A ^ B) >> Double(A, B) ^2\n" +
+			"";
+		String[] expected = new String[]{
+			"1.0: ( SINGLE(A) & SINGLE(B) & (A % B) ) >> DOUBLE(A, B) ^2",
+			"1.0: ( SINGLE(A) & SINGLE(B) & (A % B) ) >> DOUBLE(A, B) ^2"
+		};
+
+		assertModel(input, expected);
 	}
 }

@@ -322,11 +322,14 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 
 	@Override
 	public Formula visitLiteral(LiteralContext ctx) {
-		if (ctx.children.size() == 2) {
+		if (ctx.atom() != null) {
+			return visitAtom(ctx.atom());
+		}
+		else if (ctx.not() != null) {
 			return new Negation(visitLiteral(ctx.literal()));
 		}
-		else if (ctx.atom() != null) {
-			return visitAtom(ctx.atom());
+		else if (ctx.LPAREN() != null) {
+			return visitLiteral(ctx.literal());
 		}
 		else {
 			throw new IllegalStateException();
@@ -655,6 +658,9 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 			}
 			else if (ctx.termOperator().termEqual() != null) {
 				p = SpecialPredicate.Equal;
+			}
+			else if (ctx.termOperator().nonSymmetric() != null) {
+				p = SpecialPredicate.NonSymmetric;
 			}
 			else {
 				throw new IllegalStateException();
