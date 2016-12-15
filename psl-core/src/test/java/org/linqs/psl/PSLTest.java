@@ -58,12 +58,6 @@ public class PSLTest {
 			}
 		}
 
-		// TEST
-		Collections.sort(actual);
-		for (String actualRule : actual) {
-			System.out.println(actualRule);
-		}
-
 		assertEquals("Size mismatch in comparing rules.", expected.size(), actual.size());
 
 		if (alphabetize) {

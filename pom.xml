@@ -113,7 +113,8 @@
 				<artifactId>maven-surefire-plugin</artifactId>
 				<version>2.19</version>
 				<configuration>
-					<enableAssertions>false</enableAssertions>
+					<enableAssertions>true</enableAssertions>
+               <trimStackTrace>false</trimStackTrace>
 				</configuration>
 			</plugin>
 			<plugin>

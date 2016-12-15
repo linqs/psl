@@ -1,11 +1,5 @@
 package org.linqs.psl;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.linqs.psl.application.inference.MPEInference;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.EmptyBundle;
@@ -30,6 +24,13 @@ import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.Variable;
+
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * An easy interface for loading models to test.
@@ -219,8 +220,12 @@ public class TestModelFactory {
 			Map<StandardPredicate, List<PredicateData>> observations, Map<StandardPredicate, List<PredicateData>> targets,
 			Map<StandardPredicate, List<PredicateData>> truths) {
 		ConfigBundle config = new EmptyBundle();
+      String identifier = String.format("%s-%03d", TestModelFactory.class.getName(), modelId);
+      // TODO(eriq): TEST DB should be in memory
 		DataStore dataStore = new RDBMSDataStore(new H2DatabaseDriver(
-				Type.Memory, String.format("%s-%03d", TestModelFactory.class.getName(), modelId), true), config);
+				Type.Memory,
+            Paths.get(System.getProperty("java.io.tmpdir"), identifier).toString(),
+            true), config);
 		Model model = new Model();
 
 		// Predicates

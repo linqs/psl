@@ -94,6 +94,8 @@ public class GroundRuleTest {
 		model = TestModelFactory.getModel(true);
 		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
 		toClose.add(model.predicates.get("Nice"));
+		// TEST(eriq): Don't need to close this in tests.
+		toClose.add(model.predicates.get("Person"));
 		database = model.dataStore.getDatabase(model.targetPartition, toClose, model.observationPartition);
 	}
 	/*TEST
@@ -506,6 +508,7 @@ public class GroundRuleTest {
 
 	@Test
 	// Everyone is 100% Nice in this test.
+   // |B| * Friends(A, +B) >= 1 {B: Nice(B)}
 	public void testArithmeticSelect() {
 		GroundRuleStore store = new ADMMReasoner(model.config);
 		AtomManager manager = new SimpleAtomManager(database);
@@ -516,7 +519,6 @@ public class GroundRuleTest {
 		List<SummationAtomOrAtom> atoms;
 		Map<SummationVariable, Formula> selects;
 
-		// 1.0: |B| * Friends(A, +B) >= 1 ^2 {B: Nice(B)}
 		coefficients = Arrays.asList(
 			(Coefficient)(new Cardinality(new SummationVariable("B")))
 		);
@@ -529,10 +531,62 @@ public class GroundRuleTest {
 		);
 
 		selects = new HashMap<SummationVariable, Formula>();
+		selects.put(new SummationVariable("B"), new QueryAtom(model.predicates.get("Nice"), new Variable("B")));
+
+		rule = new WeightedArithmeticRule(
+				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+				selects,
+				1.0,
+				true
+		);
+
+		// Note that 'Eugene' is not present because Nice('Eugene') = 0.
+		expected = Arrays.asList(
+			"1.0: 3.0 FRIENDS('Alice', 'Bob') 3.0 FRIENDS('Alice', 'Charlie') 3.0 FRIENDS('Alice', 'Derek') >= 1.0 ^2",
+			"1.0: 3.0 FRIENDS('Bob', 'Alice') 3.0 FRIENDS('Bob', 'Charlie') 3.0 FRIENDS('Bob', 'Derek') >= 1.0 ^2",
+			"1.0: 3.0 FRIENDS('Charlie', 'Alice') 3.0 FRIENDS('Charlie', 'Bob') 3.0 FRIENDS('Charlie', 'Derek') >= 1.0 ^2",
+			"1.0: 3.0 FRIENDS('Derek', 'Alice') 3.0 FRIENDS('Derek', 'Bob') 3.0 FRIENDS('Derek', 'Charlie') >= 1.0 ^2",
+			"1.0: 4.0 FRIENDS('Eugene', 'Alice') 4.0 FRIENDS('Eugene', 'Bob') 4.0 FRIENDS('Eugene', 'Charlie') 4.0 FRIENDS('Eugene', 'Derek') >= 1.0 ^2"
+		);
+		rule.groundAll(manager, store);
+		PSLTest.compareGroundRules(expected, rule, store, true);
+	}
+
+   // TODO(eriq): What happens when no subs can be made?
+
+   /* TEST
+	// Everyone is 100% Nice in this test.
+	public void testArithmeticSelect() {
+		GroundRuleStore store = new ADMMReasoner(model.config);
+		AtomManager manager = new SimpleAtomManager(database);
+
+		Rule rule;
+		List<String> expected;
+		List<Coefficient> coefficients;
+		List<SummationAtomOrAtom> atoms;
+		Map<SummationVariable, Formula> selects;
+
+		coefficients = Arrays.asList(
+			(Coefficient)(new Cardinality(new SummationVariable("B"))),
+         (Coefficient)(new ConstantNumber(1))
+		);
+
+		atoms = Arrays.asList(
+			(SummationAtomOrAtom)(new SummationAtom(
+				model.predicates.get("Friends"),
+				new SummationVariableOrTerm[]{new Variable("A"), new SummationVariable("B")}
+			)),
+			(SummationAtomOrAtom)(new QueryAtom(
+				model.predicates.get("Nice"),
+				new Variable("A")
+			))
+		);
+
+		selects = new HashMap<SummationVariable, Formula>();
 		// selects.put(new SummationVariable("B"), new QueryAtom(model.predicates.get("Nice"), new Variable("B")));
 		selects.put(
 				new SummationVariable("B"),
-				new Disjunction(
+				new Conjunction(
 						new QueryAtom(model.predicates.get("Nice"), new Variable("B")),
 						new QueryAtom(model.predicates.get("Nice"), new Variable("A"))
 				)
@@ -566,6 +620,7 @@ public class GroundRuleTest {
 		// PSLTest.compareGroundRules(expected, rule, store, true);
 		PSLTest.compareGroundRules(expected, rule, store, false);
 	}
+   */
 
 	/*
 	@Test
@@ -745,6 +800,15 @@ public class GroundRuleTest {
 		PSLTest.compareGroundRules(expected, rule, store);
 	}
 	*/
+
+   // TODO(eriq):
+   //   - Multiple summation variables in single atom.
+   //   - No Goundings because of select
+   //   - No Groundings not because of select
+   //   - Groundings limited by select with variable not from summation atom.
+   //       (Bi(A, +B) + Uno(C) = 1 {B: Bi(B, C)}
+   //       Imagine if Uno(C) only had C1 while Bi(B, C) has (B1, C1), (B2, C2), and (B3, C3).
+   //   - Triple atom with 2 normal and 1 summation variable.
 
 	@After
 	public void cleanup() {
