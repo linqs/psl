@@ -110,8 +110,11 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 			}
 		}
 
-		// TEST
-		System.out.println("Non-Summation Variables: " + nonSummationVariables);
+      // Build a variable map for the constants used as keys in |summationSubs|.
+      Map<Variable, Integer> subsVariableMap = new HashMap<Variable, Integer>();
+      for (int i = 0; i < nonSummationVariables.size(); i++) {
+         subsVariableMap.put(nonSummationVariables.get(i), new Integer(i));
+      }
 
 		DatabaseQuery query;
 		if (queryAtoms.size() > 1) {
@@ -120,25 +123,15 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 			query = new DatabaseQuery(queryAtoms.get(0));
 		}
 
-		// TEST
-		System.out.println("TEST3.0");
-
 		/* Executes initial query */
 		ResultList rawGroundings = atomManager.executeQuery(query);
 
 		Map<Variable, Integer> groundingVariableMap = rawGroundings.getVariableMap();
 
-		// TEST
-		System.out.println("TEST3.1: " + rawGroundings);
-		System.out.println("TEST3.2: " + groundingVariableMap);
-
-		// TODO(eriq): May have to make a non-summation variable map.
-
 		// <Non-Summation Values, <Summation Variable, Summation Replacements>>
 		Map<List<Constant>, Map<SummationVariable, Set<Constant>>> summationSubs =
 				new HashMap<List<Constant>, Map<SummationVariable, Set<Constant>>>();
 
-		System.out.println("TEST4.0");
 		for (int i = 0; i < rawGroundings.size(); i++) {
 			Constant[] rawGrounding = rawGroundings.get(i);
 
@@ -149,8 +142,6 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 			for (Variable nonSummationVariable : nonSummationVariables) {
 				nonSummationConstants.add(rawGrounding[groundingVariableMap.get(nonSummationVariable).intValue()]);
 			}
-			// TEST
-			System.out.println("TEST4.2." + i + ": " + nonSummationConstants);
 
 			if (!summationSubs.containsKey(nonSummationConstants)) {
 				summationSubs.put(nonSummationConstants, new HashMap<SummationVariable, Set<Constant>>());
@@ -169,17 +160,6 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 				}
 			}
 		}
-		System.out.println("TEST4.2");
-
-		// TEST
-		System.out.println(summationSubs);
-
-      // Build a new variable map for the constnts used as keys in |summationSubs|.
-      Map<Variable, Integer> subsVariableMap = new HashMap<Variable, Integer>();
-      for (int i = 0; i < nonSummationVariables.size(); i++) {
-         subsVariableMap.put(nonSummationVariables.get(i), new Integer(i));
-      }
-
 
 		List<Double> coeffs = new LinkedList<Double>();
 		List<GroundAtom> atoms = new LinkedList<GroundAtom>();
@@ -211,28 +191,15 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 				query = new DatabaseQuery(queryAtoms[0]);
 			}
 
-			System.out.println("   TEST5.0");
-
 			/* Executes initial query */
 			ResultList selectGroundings = atomManager.executeQuery(query);
 
-			// TEST
-			System.out.println("   TEST5.1: " + selectGroundings);
-
-			// TODO(eriq)
-
-			System.out.println("TEST6.0");
 			for (int i = 0; i < selectGroundings.size(); i++) {
 				boolean evaluationValue = evaluateSelectGrounding(atomManager,
 						selectFormula, queryAtoms,
 						selectGroundings.get(i), selectGroundings.getVariableMap());
-
-				// TEST
-				System.out.println(evaluationValue);
-
 				summationEval.add(selectGroundings.get(i), selectGroundings.getVariableMap(), evaluationValue);
 			}
-			System.out.println("TEST6.2");
 
 			summationEvals.put(select.getKey(), summationEval);
 		}
@@ -290,130 +257,6 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 		}
 	}
 
-	// TODO(eriq): TEST
-   /*
-	public void groundAllOld(AtomManager atomManager, GroundRuleStore grs) {
-		validateGroundRule(atomManager);
-
-		// Constructs initial query
-		List<Atom> queryAtoms = new LinkedList<Atom>();
-		for (SummationAtomOrAtom saoa : expression.getAtoms()) {
-			if (saoa instanceof SummationAtom) {
-				queryAtoms.add(((SummationAtom) saoa).getQueryAtom());
-			} else {
-				queryAtoms.add((Atom) saoa);
-			}
-		}
-		DatabaseQuery query;
-		if (queryAtoms.size() > 1) {
-			query = new DatabaseQuery(new Conjunction(queryAtoms.toArray(new Formula[0])));
-		} else {
-			query = new DatabaseQuery(queryAtoms.get(0));
-		}
-		query.getProjectionSubset().addAll(expression.getVariables());
-
-		// TEST
-		System.out.println("TEST3.0");
-
-		// Executes initial query
-		ResultList groundings = atomManager.executeQuery(query);
-
-		// TEST
-		System.out.println("TEST3.1: " + groundings);
-		System.out.println("TEST3.2");
-
-		// Prepares data structure for SummationVariable substitutions
-		Map<SummationVariable, Set<Constant>> subs = new HashMap<SummationVariable, Set<Constant>>();
-		for (SummationVariable sumVar : expression.getSummationVariables()) {
-			subs.put(sumVar, new HashSet<Constant>());
-		}
-
-		// Processes results
-		List<Double> coeffs = new LinkedList<Double>();
-		List<GroundAtom> atoms = new LinkedList<GroundAtom>();
-		Map<Variable, Integer> varMap = groundings.getVariableMap();
-		for (int i = 0; i < groundings.size(); i++) {
-			populateSummationVariableSubs(subs, groundings.get(i), varMap, atomManager);
-			populateCoeffsAndAtoms(coeffs, atoms, groundings.get(i), varMap, atomManager, subs);
-			ground(grs, coeffs, atoms, expression.getFinalCoefficient().getValue(subs));
-		}
-	}
-   */
-	
-	protected void populateSummationVariableSubs(Map<SummationVariable, Set<Constant>> subs,
-			Constant[] grounding, Map<Variable, Integer> varMap, AtomManager atomManager) {
-		/* Clears output data structure */
-		for (Set<Constant> constants : subs.values()) {
-			constants.clear();
-		}
-
-		for (Map.Entry<SummationVariable, Set<Constant>> e : subs.entrySet()) {
-			Formula select = selects.get(e.getKey());
-
-			/* If there is no select statement for a summation variable, then the arithmetic rule expression is used */
-			if (select == null) {
-				List<Atom> queryAtoms = new LinkedList<Atom>();
-				for (SummationAtomOrAtom atom : this.expression.getAtoms()) {
-					if (atom instanceof SummationAtom) {
-						queryAtoms.add(((SummationAtom) atom).getQueryAtom());
-					} else {
-						queryAtoms.add((Atom) atom);
-					}
-				}
-				if (queryAtoms.size() == 1) {
-					select = queryAtoms.get(0);
-				} else {
-					select = new Conjunction(queryAtoms.toArray(new Formula[0]));
-				}
-			}
-
-			select = select.getDNF();
-
-			// TEST
-			System.out.println("TEST4.0: " + select);
-
-			Formula[] queries;
-			if (select instanceof Disjunction) {
-				// TEST
-				System.out.println("	TEST4.1");
-
-				queries = new Formula[((Disjunction) select).getNoFormulas()];
-				for (int i = 0; i < queries.length; i++) {
-					queries[i] = ((Disjunction) select).get(i);
-				}
-			} else {
-				// TEST
-				System.out.println("	TEST4.2");
-
-				queries = new Formula[] {select};
-			}
-
-			for (Formula f : queries) {
-				// TEST
-				System.out.println("TEST5.0: " + f);
-
-				DatabaseQuery query = new DatabaseQuery(f);
-				ResultList results = atomManager.executeQuery(query);
-				// TEST
-				System.out.println("	TEST5.1: " + results);
-
-				for (int j = 0; j < results.size(); j++) {
-					// TEST
-					System.out.println("	TEST5.3: " + results.get(j, e.getKey().getVariable()));
-
-					// TODO(eriq): This is broken when we use a variable that is not the summation variable.
-					//  The foreach of the map up top assumes that we are only working with
-					//  the summation variable. Then this will null pointer out since the results don't
-					//  have this column.
-					e.getValue().add(results.get(j, e.getKey().getVariable()));
-				}
-
-				// TEST
-				System.out.println("TEST5.5");
-			}
-		}
-	}
-	
 	protected void populateCoeffsAndAtoms(List<Double> coeffs, List<GroundAtom> atoms, List<Constant> grounding,
 			Map<Variable, Integer> varMap, AtomManager atomManager, Map<SummationVariable, Set<Constant>> subs) {
 		/* Clears output data structures */
