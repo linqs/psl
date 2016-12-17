@@ -198,8 +198,19 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 			return true;
 		} else if (formula instanceof Disjunction) {
 			Disjunction disjunction = (Disjunction)formula;
+			// TEST
+			System.out.println("TEST 5.0: " + disjunction.getNoFormulas());
+			System.out.println("   " + Arrays.toString(groundings));
+			System.out.println("   " + variableMap);
+
 			for (int i = 0; i < disjunction.getNoFormulas(); i++) {
+				// TEST
+				System.out.println("TEST 5.1." + i + ": " + disjunction.get(i));
+
 				if (evaluateSelectGrounding(atomManager, disjunction.get(i), groundings, variableMap)) {
+					// TEST
+					System.out.println("TEST 5.2." + i + ": Short");
+
 					// Short circuit.
 					return true;
 				}
@@ -368,13 +379,13 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 					&& !atomManager.isClosed(((StandardPredicate)selectAtom.getPredicate()))) {
 				throw new IllegalArgumentException(String.format(
 						"Open predicate (%s) not allowed in select. " +
-						"Only closed predicates	may appear in selects.",
+						"Only closed predicates may appear in selects.",
 						selectAtom.getPredicate().getName()));
 			}
 		}
 	}
 
-	abstract protected AbstractGroundArithmeticRule makeGroundRule(double[] coeffs,
+	protected abstract AbstractGroundArithmeticRule makeGroundRule(double[] coeffs,
 			GroundAtom[] atoms, FunctionComparator comparator, double c);
 
 	@Override

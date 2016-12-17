@@ -63,7 +63,7 @@ public class TestModelFactory {
 	 *
 	 * Data:
 	 *    - There are 5 people.
-	 *    - Every person has a Nice value. Alice starts at 1.0 then is decreases by 0.2 alphabetically.
+	 *    - Every person has a Nice value. Alice starts at 0.8 then is decreases by 0.2 alphabetically (Eugue is 0.0).
 	 *    - All Friendships are in the target partition.
 	 *    - All Friendships have a binary truth value in the truth partition.
 	 *
@@ -145,17 +145,15 @@ public class TestModelFactory {
 				new PredicateData(1.0, new Object[]{"Bob"}),
 				new PredicateData(1.0, new Object[]{"Charlie"}),
 				new PredicateData(1.0, new Object[]{"Derek"}),
-				// TEST: Seed one person at 0 niceness.
-				// new PredicateData(1.0, new Object[]{"Eugene"})
-				new PredicateData(0.0, new Object[]{"Eugene"})
+				new PredicateData(1.0, new Object[]{"Eugene"})
 			)));
 		} else {
 			observations.put(predicates.get("Nice"), new ArrayList<PredicateData>(Arrays.asList(
-				new PredicateData(1.0, new Object[]{"Alice"}),
-				new PredicateData(0.8, new Object[]{"Bob"}),
-				new PredicateData(0.6, new Object[]{"Charlie"}),
-				new PredicateData(0.4, new Object[]{"Derek"}),
-				new PredicateData(0.2, new Object[]{"Eugene"})
+				new PredicateData(0.8, new Object[]{"Alice"}),
+				new PredicateData(0.6, new Object[]{"Bob"}),
+				new PredicateData(0.4, new Object[]{"Charlie"}),
+				new PredicateData(0.2, new Object[]{"Derek"}),
+				new PredicateData(0.0, new Object[]{"Eugene"})
 			)));
 		}
 
@@ -221,7 +219,6 @@ public class TestModelFactory {
 			Map<StandardPredicate, List<PredicateData>> truths) {
 		ConfigBundle config = new EmptyBundle();
       String identifier = String.format("%s-%03d", TestModelFactory.class.getName(), modelId);
-      // TODO(eriq): TEST DB should be in memory
 		DataStore dataStore = new RDBMSDataStore(new H2DatabaseDriver(
 				Type.Memory,
             Paths.get(System.getProperty("java.io.tmpdir"), identifier).toString(),

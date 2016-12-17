@@ -68,6 +68,7 @@ import org.linqs.psl.model.rule.logical.UnweightedLogicalRule;
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
+import org.linqs.psl.model.term.StringAttribute;
 import org.linqs.psl.model.term.UniqueID;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.admm.ADMMReasoner;
@@ -91,14 +92,27 @@ public class GroundRuleTest {
 
 	@Before
 	public void setup() {
-		model = TestModelFactory.getModel(true);
+		initModel(true);
+	}
+
+	private void initModel(boolean useNice) {
+		if (database != null) {
+			database.close();
+			database = null;
+		}
+
+		if (model != null) {
+			model.dataStore.close();
+			model = null;
+		}
+
+		model = TestModelFactory.getModel(useNice);
 		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
 		toClose.add(model.predicates.get("Nice"));
-		// TEST(eriq): Don't need to close this in tests.
 		toClose.add(model.predicates.get("Person"));
 		database = model.dataStore.getDatabase(model.targetPartition, toClose, model.observationPartition);
 	}
-	/*TEST
+
 	@Test
 	public void testLogicalBase() {
 		GroundRuleStore store = new ADMMReasoner(model.config);
@@ -437,7 +451,8 @@ public class GroundRuleTest {
 
 	@Test
 	// Everyone is 100% Nice in this test.
-	public void testArithmeticSelectNice() {
+   // |B| * Friends(A, +B) >= 1 {B: Nice(B)}
+	public void testArithmeticSelectBaseNice() {
 		GroundRuleStore store = new ADMMReasoner(model.config);
 		AtomManager manager = new SimpleAtomManager(database);
 
@@ -447,9 +462,8 @@ public class GroundRuleTest {
 		List<SummationAtomOrAtom> atoms;
 		Map<SummationVariable, Formula> selects;
 
-		// 1.0: Friends(A, +B) >= 1 ^2 {B: Nice(B)}
 		coefficients = Arrays.asList(
-			(Coefficient)(new ConstantNumber(1))
+			(Coefficient)(new Cardinality(new SummationVariable("B")))
 		);
 
 		atoms = Arrays.asList(
@@ -464,52 +478,52 @@ public class GroundRuleTest {
 
 		rule = new WeightedArithmeticRule(
 				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+				selects,
 				1.0,
 				true
 		);
 
+		// Note that 'Eugene' is not present because Nice('Eugene') = 0.
 		expected = Arrays.asList(
-			"1.0: 1.0 FRIENDS('Alice', 'Alice') 1.0 FRIENDS('Alice', 'Bob') 1.0 FRIENDS('Alice', 'Charlie') 1.0 FRIENDS('Alice', 'Derek') 1.0 FRIENDS('Alice', 'Eugene') >= 1.0 ^2",
-			"1.0: 1.0 FRIENDS('Bob', 'Alice') 1.0 FRIENDS('Bob', 'Bob') 1.0 FRIENDS('Bob', 'Charlie') 1.0 FRIENDS('Bob', 'Derek') 1.0 FRIENDS('Bob', 'Eugene') >= 1.0 ^2",
-			"1.0: 1.0 FRIENDS('Charlie', 'Alice') 1.0 FRIENDS('Charlie', 'Bob') 1.0 FRIENDS('Charlie', 'Charlie') 1.0 FRIENDS('Charlie', 'Derek') 1.0 FRIENDS('Charlie', 'Eugene') >= 1.0 ^2",
-			"1.0: 1.0 FRIENDS('Derek', 'Alice') 1.0 FRIENDS('Derek', 'Bob') 1.0 FRIENDS('Derek', 'Charlie') 1.0 FRIENDS('Derek', 'Derek') 1.0 FRIENDS('Derek', 'Eugene') >= 1.0 ^2",
-			"1.0: 1.0 FRIENDS('Eugene', 'Alice') 1.0 FRIENDS('Eugene', 'Bob') 1.0 FRIENDS('Eugene', 'Charlie') 1.0 FRIENDS('Eugene', 'Derek') 1.0 FRIENDS('Eugene', 'Eugene') >= 1.0 ^2"
+			"1.0: 4.0 FRIENDS('Alice', 'Bob') 4.0 FRIENDS('Alice', 'Charlie') 4.0 FRIENDS('Alice', 'Derek') 4.0 FRIENDS('Alice', 'Eugene') >= 1.0 ^2",
+			"1.0: 4.0 FRIENDS('Bob', 'Alice') 4.0 FRIENDS('Bob', 'Charlie') 4.0 FRIENDS('Bob', 'Derek') 4.0 FRIENDS('Bob', 'Eugene') >= 1.0 ^2",
+			"1.0: 4.0 FRIENDS('Charlie', 'Alice') 4.0 FRIENDS('Charlie', 'Bob') 4.0 FRIENDS('Charlie', 'Derek') 4.0 FRIENDS('Charlie', 'Eugene') >= 1.0 ^2",
+			"1.0: 4.0 FRIENDS('Derek', 'Alice') 4.0 FRIENDS('Derek', 'Bob') 4.0 FRIENDS('Derek', 'Charlie') 4.0 FRIENDS('Derek', 'Eugene') >= 1.0 ^2",
+			"1.0: 4.0 FRIENDS('Eugene', 'Alice') 4.0 FRIENDS('Eugene', 'Bob') 4.0 FRIENDS('Eugene', 'Charlie') 4.0 FRIENDS('Eugene', 'Derek') >= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
 		PSLTest.compareGroundRules(expected, rule, store, true);
 
-		// 1.0: Friends(A, +B) >= 1 ^2 {B: !Nice(B)}
-		coefficients = Arrays.asList(
-			(Coefficient)(new ConstantNumber(1))
-		);
-
-		atoms = Arrays.asList(
-			(SummationAtomOrAtom)(new SummationAtom(
-				model.predicates.get("Friends"),
-				new SummationVariableOrTerm[]{new Variable("A"), new SummationVariable("B")}
-			))
-		);
+		// Now negate the select and we should observe no groundings.
+		store = new ADMMReasoner(model.config);
 
 		selects = new HashMap<SummationVariable, Formula>();
 		selects.put(new SummationVariable("B"), new Negation(new QueryAtom(model.predicates.get("Nice"), new Variable("B"))));
 
 		rule = new WeightedArithmeticRule(
 				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+				selects,
 				1.0,
 				true
 		);
 
-		// All groundings should be removed by the select.
+      /* TEST TODO(eriq): Question out to Steve for semantics.
+		// TEST
+		System.out.println("TEST");
+
 		expected = new ArrayList<String>();
 		rule.groundAll(manager, store);
-		PSLTest.compareGroundRules(expected, rule, store, false);
+		PSLTest.compareGroundRules(expected, rule, store, true);
+      */
 	}
-	*/
 
 	@Test
-	// Everyone is 100% Nice in this test.
+	// Everyone except Eugene has non-zero niceness.
    // |B| * Friends(A, +B) >= 1 {B: Nice(B)}
-	public void testArithmeticSelect() {
+	public void testArithmeticSelectBaseNotNice() {
+		// Reset the model to not use 100% nice.
+		initModel(false);
+
 		GroundRuleStore store = new ADMMReasoner(model.config);
 		AtomManager manager = new SimpleAtomManager(database);
 
@@ -550,47 +564,12 @@ public class GroundRuleTest {
 		);
 		rule.groundAll(manager, store);
 		PSLTest.compareGroundRules(expected, rule, store, true);
-	}
 
-   // TODO(eriq): What happens when no subs can be made?
-
-   /* TEST
-	// Everyone is 100% Nice in this test.
-	public void testArithmeticSelect() {
-		GroundRuleStore store = new ADMMReasoner(model.config);
-		AtomManager manager = new SimpleAtomManager(database);
-
-		Rule rule;
-		List<String> expected;
-		List<Coefficient> coefficients;
-		List<SummationAtomOrAtom> atoms;
-		Map<SummationVariable, Formula> selects;
-
-		coefficients = Arrays.asList(
-			(Coefficient)(new Cardinality(new SummationVariable("B"))),
-         (Coefficient)(new ConstantNumber(1))
-		);
-
-		atoms = Arrays.asList(
-			(SummationAtomOrAtom)(new SummationAtom(
-				model.predicates.get("Friends"),
-				new SummationVariableOrTerm[]{new Variable("A"), new SummationVariable("B")}
-			)),
-			(SummationAtomOrAtom)(new QueryAtom(
-				model.predicates.get("Nice"),
-				new Variable("A")
-			))
-		);
+		// Now negate the select.
+		store = new ADMMReasoner(model.config);
 
 		selects = new HashMap<SummationVariable, Formula>();
-		// selects.put(new SummationVariable("B"), new QueryAtom(model.predicates.get("Nice"), new Variable("B")));
-		selects.put(
-				new SummationVariable("B"),
-				new Conjunction(
-						new QueryAtom(model.predicates.get("Nice"), new Variable("B")),
-						new QueryAtom(model.predicates.get("Nice"), new Variable("A"))
-				)
-		);
+		selects.put(new SummationVariable("B"), new Negation(new QueryAtom(model.predicates.get("Nice"), new Variable("B"))));
 
 		rule = new WeightedArithmeticRule(
 				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
@@ -599,39 +578,35 @@ public class GroundRuleTest {
 				true
 		);
 
+      /* TEST TODO(eriq): Question out to Steve for semantics.
 		// TEST
-		System.out.println("Rule: " + rule.toString());
+		System.out.println("TEST");
 
-		// TEST
-		System.out.println("Nice Atoms:");
-		for (Atom atom : Queries.getAllAtoms(database, model.predicates.get("Nice"))) {
-			System.out.println("   " + atom + " - " + ((ObservedAtom)atom).getValue());
-		}
-
-		// Note that 'Eugene' is not present because Nice('Eugene') = 0.
+		// Note that 'Eugene' is the only one because Nice('Eugene') = 0.
 		expected = Arrays.asList(
-			"1.0: 4.0 FRIENDS('Alice', 'Alice') 4.0 FRIENDS('Alice', 'Bob') 4.0 FRIENDS('Alice', 'Charlie') 4.0 FRIENDS('Alice', 'Derek') >= 1.0 ^2",
-			"1.0: 4.0 FRIENDS('Bob', 'Alice') 4.0 FRIENDS('Bob', 'Bob') 4.0 FRIENDS('Bob', 'Charlie') 4.0 FRIENDS('Bob', 'Derek') >= 1.0 ^2",
-			"1.0: 4.0 FRIENDS('Charlie', 'Alice') 4.0 FRIENDS('Charlie', 'Bob') 4.0 FRIENDS('Charlie', 'Charlie') 4.0 FRIENDS('Charlie', 'Derek') >= 1.0 ^2",
-			"1.0: 4.0 FRIENDS('Derek', 'Alice') 4.0 FRIENDS('Derek', 'Bob') 4.0 FRIENDS('Derek', 'Charlie') 4.0 FRIENDS('Derek', 'Derek') >= 1.0 ^2"
+			"1.0: 1.0 FRIENDS('Alice', 'Euegne') >= 1.0 ^2",
+			"1.0: 1.0 FRIENDS('Bob', 'Euegne') >= 1.0 ^2",
+			"1.0: 1.0 FRIENDS('Charlie', 'Euegne') >= 1.0 ^2",
+			"1.0: 1.0 FRIENDS('Derek', 'Euegne') >= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
-		// TEST: Don't worry about the actual comparison for now, we can just visually inspect.
-		// PSLTest.compareGroundRules(expected, rule, store, true);
-		PSLTest.compareGroundRules(expected, rule, store, false);
+		PSLTest.compareGroundRules(expected, rule, store, true);
+		*/
 	}
-   */
 
-	/*
 	@Test
-	// Alice is 100% nice, Bob is 80%, and so on.
-	public void testArithmeticSelect() {
-		// Reset the model.
-		database.close();
-		model.dataStore.close();
+	// Everyone except Eugene has non-zero niceness.
+   // |B| * Friends(A, +B) >= 1 {B: Nice(B)}
+	public void testArithmeticSelectConstant() {
+		// Reset the model to not use 100% nice.
+		initModel(false);
 
-		model = TestModelFactory.getModel(false);
+		database.close();
+
 		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
+		toClose.add(model.predicates.get("Nice"));
+		toClose.add(model.predicates.get("Person"));
+		toClose.add(model.predicates.get("Friends"));
 		database = model.dataStore.getDatabase(model.targetPartition, toClose, model.observationPartition);
 
 		GroundRuleStore store = new ADMMReasoner(model.config);
@@ -643,9 +618,8 @@ public class GroundRuleTest {
 		List<SummationAtomOrAtom> atoms;
 		Map<SummationVariable, Formula> selects;
 
-		// 1.0: Friends(A, +B) >= 1 ^2 {B: !Nice(B)}
 		coefficients = Arrays.asList(
-			(Coefficient)(new ConstantNumber(1))
+			(Coefficient)(new Cardinality(new SummationVariable("B")))
 		);
 
 		atoms = Arrays.asList(
@@ -656,25 +630,64 @@ public class GroundRuleTest {
 		);
 
 		selects = new HashMap<SummationVariable, Formula>();
-		selects.put(new SummationVariable("B"), new Negation(new QueryAtom(model.predicates.get("Nice"), new Variable("B"))));
+		selects.put(
+			new SummationVariable("B"),
+			new Conjunction(
+				new QueryAtom(model.predicates.get("Friends"), new Variable("B"), database.getUniqueID("Alice")),
+				new QueryAtom(model.predicates.get("Nice"), database.getUniqueID("Alice"))
+			)
+		);
 
 		rule = new WeightedArithmeticRule(
 				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+				selects,
 				1.0,
 				true
 		);
 
+		// Note that 'Alice' is not friends with herself.
 		expected = Arrays.asList(
-			"1.0: 1.0 FRIENDS('Alice', 'Bob') 1.0 FRIENDS('Alice', 'Charlie') 1.0 FRIENDS('Alice', 'Derek') 1.0 FRIENDS('Alice', 'Eugene') >= 1.0 ^2",
-			"1.0: 1.0 FRIENDS('Bob', 'Bob') 1.0 FRIENDS('Bob', 'Charlie') 1.0 FRIENDS('Bob', 'Derek') 1.0 FRIENDS('Bob', 'Eugene') >= 1.0 ^2",
-			"1.0: 1.0 FRIENDS('Charlie', 'Bob') 1.0 FRIENDS('Charlie', 'Charlie') 1.0 FRIENDS('Charlie', 'Derek') 1.0 FRIENDS('Charlie', 'Eugene') >= 1.0 ^2",
-			"1.0: 1.0 FRIENDS('Derek', 'Bob') 1.0 FRIENDS('Derek', 'Charlie') 1.0 FRIENDS('Derek', 'Derek') 1.0 FRIENDS('Derek', 'Eugene') >= 1.0 ^2",
-			"1.0: 1.0 FRIENDS('Eugene', 'Bob') 1.0 FRIENDS('Eugene', 'Charlie') 1.0 FRIENDS('Eugene', 'Derek') 1.0 FRIENDS('Eugene', 'Eugene') >= 1.0 ^2"
+			"1.0: 4.0 FRIENDS('Alice', 'Bob') 4.0 FRIENDS('Alice', 'Charlie') 4.0 FRIENDS('Alice', 'Derek') 4.0 FRIENDS('Alice', 'Eugene') >= 1.0 ^2",
+			"1.0: 3.0 FRIENDS('Bob', 'Charlie') 3.0 FRIENDS('Bob', 'Derek') 3.0 FRIENDS('Bob', 'Eugene') >= 1.0 ^2",
+			"1.0: 3.0 FRIENDS('Charlie', 'Bob') 3.0 FRIENDS('Charlie', 'Derek') 3.0 FRIENDS('Charlie', 'Eugene') >= 1.0 ^2",
+			"1.0: 3.0 FRIENDS('Derek', 'Bob') 3.0 FRIENDS('Derek', 'Charlie') 3.0 FRIENDS('Derek', 'Eugene') >= 1.0 ^2",
+			"1.0: 3.0 FRIENDS('Eugene', 'Bob') 3.0 FRIENDS('Eugene', 'Charlie') 3.0 FRIENDS('Eugene', 'Derek') >= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
 		PSLTest.compareGroundRules(expected, rule, store, true);
+
+		// Now change the select to a disjunction.
+		store = new ADMMReasoner(model.config);
+
+		selects = new HashMap<SummationVariable, Formula>();
+		selects.put(
+			new SummationVariable("B"),
+			new Disjunction(
+				new QueryAtom(model.predicates.get("Friends"), new Variable("B"), database.getUniqueID("Alice")),
+				new QueryAtom(model.predicates.get("Nice"), database.getUniqueID("Alice"))
+			)
+		);
+
+		rule = new WeightedArithmeticRule(
+				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+				selects,
+				1.0,
+				true
+		);
+
+		// Note that 'Alice' is not friends with herself.
+		expected = Arrays.asList(
+			"1.0: 4.0 FRIENDS('Alice', 'Bob') 4.0 FRIENDS('Alice', 'Charlie') 4.0 FRIENDS('Alice', 'Derek') 4.0 FRIENDS('Alice', 'Eugene') >= 1.0 ^2",
+			"1.0: 4.0 FRIENDS('Bob', 'Alice') 4.0 FRIENDS('Bob', 'Charlie') 4.0 FRIENDS('Bob', 'Derek') 4.0 FRIENDS('Bob', 'Eugene') >= 1.0 ^2",
+			"1.0: 4.0 FRIENDS('Charlie', 'Alice') 4.0 FRIENDS('Charlie', 'Bob') 4.0 FRIENDS('Charlie', 'Derek') 4.0 FRIENDS('Charlie', 'Eugene') >= 1.0 ^2",
+			"1.0: 4.0 FRIENDS('Derek', 'Alice') 4.0 FRIENDS('Derek', 'Bob') 4.0 FRIENDS('Derek', 'Charlie') 4.0 FRIENDS('Derek', 'Eugene') >= 1.0 ^2",
+			"1.0: 4.0 FRIENDS('Eugene', 'Alice') 4.0 FRIENDS('Eugene', 'Bob') 4.0 FRIENDS('Eugene', 'Charlie') 4.0 FRIENDS('Eugene', 'Derek') >= 1.0 ^2"
+		);
+		// TEST
+		System.out.println("TEST4");
+		rule.groundAll(manager, store);
+		PSLTest.compareGroundRules(expected, rule, store, false);
 	}
-	*/
 
 	/*
 			'Alice', 'Alice',
@@ -702,106 +715,11 @@ public class GroundRuleTest {
 			'Eugene', 'Charlie',
 			'Eugene', 'Derek',
 			'Eugene', 'Eugene'
-	@Test
-	public void testGroundLogicalRuleString() {
-		GroundRuleStore store = new ADMMReasoner(config);
-		AtomManager manager = new SimpleAtomManager(database);
 
-		Rule rule;
-		List<String> expected;
-
-		// Unweighted (Not Squared)
-		rule = new UnweightedLogicalRule(logicalBaseRule);
-		// Remember, all rules will be in DNF.
-		expected = Arrays.asList(
-			"( ~( NICE('Alice') ) | ~( NICE('Alice') ) | Friends('Alice', 'Alice') ) .",
-			"( ~( NICE('Alice') ) | ~( NICE('Bob') ) | Friends('Alice', 'Bob') ) .",
-			"( ~( NICE('Bob') ) | ~( NICE('Alice') ) | Friends('Bob', 'Alice') ) .",
-			"( ~( NICE('Bob') ) | ~( NICE('Bob') ) | Friends('Bob', 'Bob') ) ."
-		);
-		rule.groundAll(manager, store);
-		PSLTest.compareGroundRules(expected, rule, store);
-
-		// Weighted, Squared
-		rule = new WeightedLogicalRule(logicalBaseRule, 10.0, true);
-		expected = Arrays.asList(
-			"10.0: ( ~( NICE('Alice') ) | ~( NICE('Alice') ) | Friends('Alice', 'Alice') ) ^2",
-			"10.0: ( ~( NICE('Alice') ) | ~( NICE('Bob') ) | Friends('Alice', 'Bob') ) ^2",
-			"10.0: ( ~( NICE('Bob') ) | ~( NICE('Alice') ) | Friends('Bob', 'Alice') ) ^2",
-			"10.0: ( ~( NICE('Bob') ) | ~( NICE('Bob') ) | Friends('Bob', 'Bob') ) ^2"
-		);
-		rule.groundAll(manager, store);
-		PSLTest.compareGroundRules(expected, rule, store);
-
-		// Weighted, Not Squared
-		rule = new WeightedLogicalRule(logicalBaseRule, 10.0, false);
-		expected = Arrays.asList(
-			"10.0: ( ~( NICE('Alice') ) | ~( NICE('Alice') ) | Friends('Alice', 'Alice') )",
-			"10.0: ( ~( NICE('Alice') ) | ~( NICE('Bob') ) | Friends('Alice', 'Bob') )",
-			"10.0: ( ~( NICE('Bob') ) | ~( NICE('Alice') ) | Friends('Bob', 'Alice') )",
-			"10.0: ( ~( NICE('Bob') ) | ~( NICE('Bob') ) | Friends('Bob', 'Bob') )"
-		);
-		rule.groundAll(manager, store);
-		PSLTest.compareGroundRules(expected, rule, store);
-	}
-
-	@Test
-	public void testGroundArithmeticRuleString() {
-		GroundRuleStore store = new ADMMReasoner(config);
-		AtomManager manager = new SimpleAtomManager(database);
-
-		Rule rule;
-		List<String> expected;
-
-		// Unweighted (Not Squared)
-		rule = new UnweightedArithmeticRule(arithmeticBaseRule);
-		// Remember, equality inserts two rules (<= and >=).
-		expected = Arrays.asList(
-			"1.0 NICE('Alice') 1.0 NICE('Alice') <= 1.0 .",
-			"1.0 NICE('Alice') 1.0 NICE('Alice') >= 1.0 .",
-			"1.0 NICE('Alice') 1.0 NICE('Bob') <= 1.0 .",
-			"1.0 NICE('Alice') 1.0 NICE('Bob') >= 1.0 .",
-			"1.0 NICE('Bob') 1.0 NICE('Alice') <= 1.0 .",
-			"1.0 NICE('Bob') 1.0 NICE('Alice') >= 1.0 .",
-			"1.0 NICE('Bob') 1.0 NICE('Bob') <= 1.0 .",
-			"1.0 NICE('Bob') 1.0 NICE('Bob') >= 1.0 ."
-		);
-		rule.groundAll(manager, store);
-		PSLTest.compareGroundRules(expected, rule, store);
-
-		// Weighted, Squared
-		rule = new WeightedArithmeticRule(arithmeticBaseRule,	10.0, true);
-		expected = Arrays.asList(
-			"10.0: 1.0 NICE('Alice') 1.0 NICE('Alice') <= 1.0 ^2",
-			"10.0: 1.0 NICE('Alice') 1.0 NICE('Alice') >= 1.0 ^2",
-			"10.0: 1.0 NICE('Alice') 1.0 NICE('Bob') <= 1.0 ^2",
-			"10.0: 1.0 NICE('Alice') 1.0 NICE('Bob') >= 1.0 ^2",
-			"10.0: 1.0 NICE('Bob') 1.0 NICE('Alice') <= 1.0 ^2",
-			"10.0: 1.0 NICE('Bob') 1.0 NICE('Alice') >= 1.0 ^2",
-			"10.0: 1.0 NICE('Bob') 1.0 NICE('Bob') <= 1.0 ^2",
-			"10.0: 1.0 NICE('Bob') 1.0 NICE('Bob') >= 1.0 ^2"
-		);
-		rule.groundAll(manager, store);
-		PSLTest.compareGroundRules(expected, rule, store);
-
-		// Weighted, Not Squared
-		rule = new WeightedArithmeticRule(arithmeticBaseRule,	10.0, false);
-		expected = Arrays.asList(
-			"10.0: 1.0 NICE('Alice') 1.0 NICE('Alice') <= 1.0",
-			"10.0: 1.0 NICE('Alice') 1.0 NICE('Alice') >= 1.0",
-			"10.0: 1.0 NICE('Alice') 1.0 NICE('Bob') <= 1.0",
-			"10.0: 1.0 NICE('Alice') 1.0 NICE('Bob') >= 1.0",
-			"10.0: 1.0 NICE('Bob') 1.0 NICE('Alice') <= 1.0",
-			"10.0: 1.0 NICE('Bob') 1.0 NICE('Alice') >= 1.0",
-			"10.0: 1.0 NICE('Bob') 1.0 NICE('Bob') <= 1.0",
-			"10.0: 1.0 NICE('Bob') 1.0 NICE('Bob') >= 1.0"
-		);
-		rule.groundAll(manager, store);
-		PSLTest.compareGroundRules(expected, rule, store);
-	}
-	*/
 
    // TODO(eriq):
+   //   - Constants in select
+	//	  - No Select with no summation variables.
    //   - Multiple summation variables in single atom.
    //   - No Goundings because of select
    //   - No Groundings not because of select
@@ -809,6 +727,8 @@ public class GroundRuleTest {
    //       (Bi(A, +B) + Uno(C) = 1 {B: Bi(B, C)}
    //       Imagine if Uno(C) only had C1 while Bi(B, C) has (B1, C1), (B2, C2), and (B3, C3).
    //   - Triple atom with 2 normal and 1 summation variable.
+
+	*/
 
 	@After
 	public void cleanup() {
