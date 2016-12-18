@@ -80,15 +80,16 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 	public void groundAll(AtomManager atomManager, GroundRuleStore grs) {
 		validateGroundRule(atomManager);
 
+		// Evaluate the selects.
+		Map<SummationVariable, SummationDisjunctionValues> selectEvaluations = evaluateSelects(atomManager);
+
 		// Later, we will collect all the non-summation grounding values, so we will need to know which
 		// variables are non-summations.
 		List<Variable> nonSummationVariables = new ArrayList<Variable>();
 
-		// Collect all the atoms from both the body and selects.
-		Set<Atom> queryAtoms = new HashSet<Atom>();
-
-		// Pretend that all atoms in the body are non-summation atoms.
-		// We also want to keep track of non-summation variables.
+		// Collect all the atoms from the body (expression).
+		// Pretend that all atoms are non-summation atoms.
+		List<Atom> queryAtoms = new ArrayList<Atom>();
 		for (SummationAtomOrAtom atom : expression.getAtoms()) {
 			if (atom instanceof SummationAtom) {
 				queryAtoms.add(((SummationAtom)atom).getQueryAtom());
@@ -109,30 +110,22 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 			}
 		}
 
-		// Collect the atoms from each select.
-		for (Map.Entry<SummationVariable, Formula> select : selects.entrySet()) {
-			Set<Atom> atoms = new HashSet<Atom>();
-			atoms = select.getValue().getAtoms(atoms);
-			for (Atom atom : atoms) {
-				queryAtoms.add(atom);
-			}
-		}
-
-		// Build a variable map for the constants used as keys in |summationSubs|.
-		Map<Variable, Integer> subsVariableMap = new HashMap<Variable, Integer>();
-		for (int i = 0; i < nonSummationVariables.size(); i++) {
-			subsVariableMap.put(nonSummationVariables.get(i), new Integer(i));
-		}
+      // Build a variable map for the constants used as keys in |summationSubs|.
+      Map<Variable, Integer> subsVariableMap = new HashMap<Variable, Integer>();
+      for (int i = 0; i < nonSummationVariables.size(); i++) {
+         subsVariableMap.put(nonSummationVariables.get(i), new Integer(i));
+      }
 
 		DatabaseQuery query;
 		if (queryAtoms.size() > 1) {
 			query = new DatabaseQuery(new Conjunction(queryAtoms.toArray(new Formula[0])));
 		} else {
-			query = new DatabaseQuery(queryAtoms.toArray(new Formula[0])[0]);
+			query = new DatabaseQuery(queryAtoms.get(0));
 		}
 
 		// Executes initial query
 		ResultList rawGroundings = atomManager.executeQuery(query);
+
 		Map<Variable, Integer> groundingVariableMap = rawGroundings.getVariableMap();
 
 		// <Non-Summation Values, <Summation Variable, Summation Replacements>>
@@ -156,13 +149,13 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 			Map<SummationVariable, Set<Constant>> subs = summationSubs.get(nonSummationConstants);
 
 			// Add summation values that pass the select into the set of summation subs.
-			for (Map.Entry<SummationVariable, Formula> select : selects.entrySet()) {
-				SummationVariable sumVar = select.getKey();
+			for (Map.Entry<SummationVariable, SummationDisjunctionValues> selectEvaluation : selectEvaluations.entrySet()) {
+				SummationVariable sumVar = selectEvaluation.getKey();
 				if (!subs.containsKey(sumVar)) {
 					subs.put(sumVar, new HashSet<Constant>());
 				}
 
-				if (evaluateSelectGrounding(atomManager, select.getValue(), rawGrounding, groundingVariableMap)) {
+				if (selectEvaluation.getValue().getEvaluation(rawGrounding, groundingVariableMap)) {
 					subs.get(sumVar).add(rawGrounding[groundingVariableMap.get(sumVar.getVariable()).intValue()]);
 				}
 			}
@@ -170,54 +163,91 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 
 		List<Double> coeffs = new LinkedList<Double>();
 		List<GroundAtom> atoms = new LinkedList<GroundAtom>();
-		for (Map.Entry<List<Constant>, Map<SummationVariable, Set<Constant>>> summationSub : summationSubs.entrySet()) {
+      for (Map.Entry<List<Constant>, Map<SummationVariable, Set<Constant>>> summationSub : summationSubs.entrySet()) {
 			populateCoeffsAndAtoms(coeffs, atoms, summationSub.getKey(), subsVariableMap, atomManager, summationSub.getValue());
 			ground(grs, coeffs, atoms, expression.getFinalCoefficient().getValue(summationSub.getValue()));
 
-			coeffs.clear();
-			atoms.clear();
+         coeffs.clear();
+         atoms.clear();
+      }
+	}
+
+	private Map<SummationVariable, SummationDisjunctionValues> evaluateSelects(AtomManager atomManager) {
+		Map<SummationVariable, SummationDisjunctionValues> summationEvals = new HashMap<SummationVariable, SummationDisjunctionValues>();
+
+		// For each select
+		for (Map.Entry<SummationVariable, Formula> select : selects.entrySet()) {
+			SummationDisjunctionValues summationDisjunctionEval = new SummationDisjunctionValues();
+
+			Formula selectFormula = select.getValue().getDNF();
+
+			// Collect all the formula used in this select (may be more than one if it is a disjunction).
+			List<Formula> selectFormulas = new ArrayList<Formula>();
+			if (selectFormula instanceof Disjunction) {
+				for (int i = 0; i < ((Disjunction)selectFormula).getNoFormulas(); i++) {
+					selectFormulas.add(((Disjunction)selectFormula).get(i));
+				}
+			} else {
+				selectFormulas.add(selectFormula);
+			}
+
+			// For each conjunction/negation (component of the disjunction that is the select).
+			// We need to do each disjunction independently, because the non-exsistance of a grounding
+			// in one part of the disjunction should not affect the other parts of the disjunction.
+			// Ex: Friends(A, +B) >= 1 {B: Empty(B) || AlwaysTrue(B)
+			// Where Empty has no observations and AlwaysTrue has 1 for every possible opservation.
+			for (Formula componentFormula : selectFormulas) {
+				Set<Atom> queryAtomsSet = new HashSet<Atom>();
+				queryAtomsSet = componentFormula.getAtoms(queryAtomsSet);
+
+				SummationValues summationEval = new SummationValues(queryAtomsSet);
+				Atom[] queryAtoms = queryAtomsSet.toArray(new Atom[0]);
+
+				DatabaseQuery query;
+				if (queryAtoms.length > 1) {
+					query = new DatabaseQuery(new Conjunction(queryAtoms));
+				} else {
+					query = new DatabaseQuery(queryAtoms[0]);
+				}
+
+				ResultList selectGroundings = atomManager.executeQuery(query);
+				for (int i = 0; i < selectGroundings.size(); i++) {
+					boolean evaluationValue = evaluateSelectGrounding(atomManager,
+							componentFormula, queryAtoms,
+							selectGroundings.get(i), selectGroundings.getVariableMap());
+					summationEval.add(selectGroundings.get(i), selectGroundings.getVariableMap(), evaluationValue);
+				}
+
+				summationDisjunctionEval.addComponent(summationEval);
+			}
+
+			summationEvals.put(select.getKey(), summationDisjunctionEval);
 		}
+
+		return summationEvals;
 	}
 
 	/**
 	 * Recursively evaluate a select grounding.
-	 * The input formual should already be in DNF.
+	 * The input formula should already be in DNF.
 	 */
 	private boolean evaluateSelectGrounding(
 			AtomManager atomManager,
-			Formula formula,
+			Formula formula, Atom[] atoms,
 			Constant[] groundings, Map<Variable, Integer> variableMap) {
 		if (formula instanceof Conjunction) {
 			Conjunction conjunction = (Conjunction)formula;
 			for (int i = 0; i < conjunction.getNoFormulas(); i++) {
-				if (!evaluateSelectGrounding(atomManager, conjunction.get(i), groundings, variableMap)) {
+				if (!evaluateSelectGrounding(atomManager, conjunction.get(i), atoms, groundings, variableMap)) {
 					// Short circuit.
 					return false;
 				}
 			}
 			return true;
 		} else if (formula instanceof Disjunction) {
-			Disjunction disjunction = (Disjunction)formula;
-			// TEST
-			System.out.println("TEST 5.0: " + disjunction.getNoFormulas());
-			System.out.println("   " + Arrays.toString(groundings));
-			System.out.println("   " + variableMap);
-
-			for (int i = 0; i < disjunction.getNoFormulas(); i++) {
-				// TEST
-				System.out.println("TEST 5.1." + i + ": " + disjunction.get(i));
-
-				if (evaluateSelectGrounding(atomManager, disjunction.get(i), groundings, variableMap)) {
-					// TEST
-					System.out.println("TEST 5.2." + i + ": Short");
-
-					// Short circuit.
-					return true;
-				}
-			}
-			return false;
+			throw new IllegalArgumentException("Select disjunctions should be handled independently of one another.");
 		} else if (formula instanceof Negation) {
-			return !(evaluateSelectGrounding(atomManager, ((Negation)formula).getFormula(), groundings, variableMap));
+			return !(evaluateSelectGrounding(atomManager, ((Negation)formula).getFormula(), atoms, groundings, variableMap));
 		} else if (formula instanceof Atom) {
 			Atom atom = (Atom)formula;
 			Term[] args = atom.getArguments();
@@ -259,12 +289,10 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 					if (atomArgs[k] instanceof SummationVariable) {
 						sumVars[k] = (SummationVariable) atomArgs[k];
 						partialGrounding[k] = null;
-					}
-					else if (atomArgs[k] instanceof Variable) {
+					} else if (atomArgs[k] instanceof Variable) {
 						sumVars[k] = null;
 						partialGrounding[k] = grounding.get(varMap.get(atomArgs[k]));
-					}
-					else {
+					} else {
 						sumVars[k] = null;
 						partialGrounding[k] = (Constant) atomArgs[k];
 					}
@@ -309,7 +337,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 			}
 		}
 	}
-
+	
 	protected void ground(GroundRuleStore grs, List<Double>coeffs, List<GroundAtom> atoms, double finalCoeff) {
 		double[] coeffArray = new double[coeffs.size()];
 		for (int j = 0; j < coeffArray.length; j++) {
@@ -385,6 +413,157 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 		}
 	}
 
+	/**
+	 * Holds the SummationValues for a single select.
+	 * Since each component of the disjunction (we will call conjunction, but can also be a negation)
+	 * needs to be evaluated independently and has an independent set of variables used, we
+	 * will need to keep track of each separately.
+	 */
+	private static class SummationDisjunctionValues {
+		// Each conjunction/negation/atom that makes of the disjunction.
+		private List<SummationValues> components;
+
+		public SummationDisjunctionValues() {
+			components = new ArrayList<SummationValues>();
+		}
+
+		public void addComponent(SummationValues component) {
+			this.components.add(component);
+		}
+
+		public boolean getEvaluation(Constant[] groundings, Map<Variable, Integer> variableMap) {
+			for (SummationValues component : components) {
+				if (component.getEvaluation(groundings, variableMap)) {
+					return true;
+				}
+			}
+			return false;
+		}
+	}
+
+	/**
+	 * All the non-summation variables, groundings, and truth value of a select grounding.
+	 */
+	private static class SummationValues {
+		// In the case that there are no variables used in to this select (all constants),
+		// we will use this key to access the single value.
+		// Since we only hold true values, we will not even need to read the value, just check the
+		// size of the map.
+		private static final Constant SINGLE_VALUE_KEY = null;
+
+		// The non-summation variables used in this select.
+		// Ordered lexicographically.
+		private List<Variable> variables;
+
+		// A map holding all the constants and final evaluation values.
+		// We only actually hold true (falses are implicit when no key is found.
+		// The keys are in the order of |variables| (which is sorted lexicographically).
+		// HACK(eriq): The complex structure is to squeeze some performance out of this until we
+		// have more database support.
+		// 
+		// <Constant, Object>
+		// Either:
+		//   <Constant, Map<Constant, Object>>
+		//   or
+		//   <Constant, Boolean>
+		private Map<Constant, Object> valueMap;
+
+		public SummationValues(Set<Atom> atoms) {
+			Set<Variable> setVariables = new HashSet<Variable>();
+			for (Atom atom : atoms) {
+				Term[] args = atom.getArguments();
+				for (Term arg : args) {
+					if (arg instanceof Variable) {
+						setVariables.add((Variable)arg);
+					}
+				}
+			}
+
+			this.variables = Arrays.asList(setVariables.toArray(new Variable[0]));
+			Collections.sort(this.variables, new Comparator() {
+				public int compare(Object a, Object b) {
+					return ((Variable)a).getName().compareTo(((Variable)b).getName());
+				}
+			});
+
+			valueMap = new HashMap<Constant, Object>();
+		}
+
+		/**
+		 * Add a new select evaluation.
+		 */
+		public void add(Constant[] groundings, Map<Variable, Integer> variableMap, boolean value) {
+			assert(variableMap.size() == variables.size());
+
+			// We don't actually hold false values.
+			if (!value) {
+				return;
+			}
+
+			// It is possible for there to be no variables in a select.
+			if (variables.size() == 0) {
+				valueMap.put(SINGLE_VALUE_KEY, new Boolean(true));
+				return;
+			}
+
+			addEvaluation(0, valueMap, groundings, variableMap);
+		}
+
+		/**
+		 * Recursivley add the select evaluation.
+		 */
+		private void addEvaluation(int variableIndex, Map<Constant, Object> currentMap,
+				Constant[] groundings, Map<Variable, Integer> variableMap) {
+			Constant currentConstant = groundings[variableMap.get(variables.get(variableIndex)).intValue()];
+			// If all but one of the variables have been evaluated, then put in the evaluation.
+			if (variableIndex == variables.size() - 1) {
+				currentMap.put(currentConstant, new Boolean(true));
+				return;
+			}
+
+			if (!currentMap.containsKey(currentConstant)) {
+				currentMap.put(currentConstant, new HashMap<Constant, Object>());
+			}
+
+			addEvaluation(variableIndex + 1, (Map<Constant, Object>)currentMap.get(currentConstant), groundings, variableMap);
+		}
+
+		/**
+		 * Get the evaluation for a specific grounding.
+		 */
+		public boolean getEvaluation(Constant[] groundings, Map<Variable, Integer> variableMap) {
+			if (variables.size() == 0) {
+				return valueMap.size() == 1;
+			}
+
+			return getEvaluation(0, valueMap, groundings, variableMap);
+		}
+
+		/**
+		 * Recursivley check for the evaluation.
+		 */
+		private boolean getEvaluation(int variableIndex, Map<Constant, Object> currentMap,
+				Constant[] groundings, Map<Variable, Integer> variableMap) {
+			Constant currentConstant = groundings[variableMap.get(variables.get(variableIndex)).intValue()];
+
+			// We made it to the final map.
+			if (variableIndex == variables.size() - 1) {
+				return currentMap.containsKey(currentConstant);
+			}
+
+			// If there is no key for this constant, then the evaluation is false.
+			if (!currentMap.containsKey(currentConstant)) {
+				return false;
+			}
+
+			return getEvaluation(variableIndex + 1, (Map<Constant, Object>)currentMap.get(currentConstant), groundings, variableMap);
+		}
+
+		public String toString() {
+			return "{{" + variables.toString() + " -- " + valueMap.toString() + "}}";
+		}
+	}
+
 	protected abstract AbstractGroundArithmeticRule makeGroundRule(double[] coeffs,
 			GroundAtom[] atoms, FunctionComparator comparator, double c);
 
@@ -402,4 +581,5 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 	protected void unregisterForAtomEvents(AtomEventFramework eventFramework) {
 		throw new UnsupportedOperationException("Arithmetic rules do not support atom events.");
 	}
+
 }

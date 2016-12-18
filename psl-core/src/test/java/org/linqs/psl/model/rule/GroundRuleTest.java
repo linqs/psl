@@ -452,6 +452,7 @@ public class GroundRuleTest {
 	@Test
 	// Everyone is 100% Nice in this test.
    // |B| * Friends(A, +B) >= 1 {B: Nice(B)}
+   // |B| * Friends(A, +B) >= 1 {B: !Nice(B)}
 	public void testArithmeticSelectBaseNice() {
 		GroundRuleStore store = new ADMMReasoner(model.config);
 		AtomManager manager = new SimpleAtomManager(database);
@@ -520,6 +521,7 @@ public class GroundRuleTest {
 	@Test
 	// Everyone except Eugene has non-zero niceness.
    // |B| * Friends(A, +B) >= 1 {B: Nice(B)}
+   // |B| * Friends(A, +B) >= 1 {B: !Nice(B)}
 	public void testArithmeticSelectBaseNotNice() {
 		// Reset the model to not use 100% nice.
 		initModel(false);
@@ -596,7 +598,8 @@ public class GroundRuleTest {
 
 	@Test
 	// Everyone except Eugene has non-zero niceness.
-   // |B| * Friends(A, +B) >= 1 {B: Nice(B)}
+   // |B| * Friends(A, +B) >= 1 {B: Friends(B, 'Alice') && Nice(B)}
+   // |B| * Friends(A, +B) >= 1 {B: Friends(B, 'Alice') || Nice(B)}
 	public void testArithmeticSelectConstant() {
 		// Reset the model to not use 100% nice.
 		initModel(false);
@@ -683,10 +686,8 @@ public class GroundRuleTest {
 			"1.0: 4.0 FRIENDS('Derek', 'Alice') 4.0 FRIENDS('Derek', 'Bob') 4.0 FRIENDS('Derek', 'Charlie') 4.0 FRIENDS('Derek', 'Eugene') >= 1.0 ^2",
 			"1.0: 4.0 FRIENDS('Eugene', 'Alice') 4.0 FRIENDS('Eugene', 'Bob') 4.0 FRIENDS('Eugene', 'Charlie') 4.0 FRIENDS('Eugene', 'Derek') >= 1.0 ^2"
 		);
-		// TEST
-		System.out.println("TEST4");
 		rule.groundAll(manager, store);
-		PSLTest.compareGroundRules(expected, rule, store, false);
+		PSLTest.compareGroundRules(expected, rule, store, true);
 	}
 
 	/*
@@ -718,7 +719,6 @@ public class GroundRuleTest {
 
 
    // TODO(eriq):
-   //   - Constants in select
 	//	  - No Select with no summation variables.
    //   - Multiple summation variables in single atom.
    //   - No Goundings because of select
