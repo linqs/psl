@@ -453,7 +453,7 @@ public class GroundRuleTest {
 	// Everyone is 100% Nice in this test.
    // |B| * Friends(A, +B) >= 1 {B: Nice(B)}
    // |B| * Friends(A, +B) >= 1 {B: !Nice(B)}
-	public void testArithmeticSelectBaseNice() {
+	public void testSelectBaseNice() {
 		GroundRuleStore store = new ADMMReasoner(model.config);
 		AtomManager manager = new SimpleAtomManager(database);
 
@@ -522,7 +522,7 @@ public class GroundRuleTest {
 	// Everyone except Eugene has non-zero niceness.
    // |B| * Friends(A, +B) >= 1 {B: Nice(B)}
    // |B| * Friends(A, +B) >= 1 {B: !Nice(B)}
-	public void testArithmeticSelectBaseNotNice() {
+	public void testSelectBaseNotNice() {
 		// Reset the model to not use 100% nice.
 		initModel(false);
 
@@ -600,7 +600,7 @@ public class GroundRuleTest {
 	// Everyone except Eugene has non-zero niceness.
    // |B| * Friends(A, +B) >= 1 {B: Friends(B, 'Alice') && Nice(B)}
    // |B| * Friends(A, +B) >= 1 {B: Friends(B, 'Alice') || Nice(B)}
-	public void testArithmeticSelectConstant() {
+	public void testSelectConstant() {
 		// Reset the model to not use 100% nice.
 		initModel(false);
 
@@ -690,6 +690,49 @@ public class GroundRuleTest {
 		PSLTest.compareGroundRules(expected, rule, store, true);
 	}
 
+	@Test
+   // |B| * Friends(A, +B) >= 1
+	public void testSummationNoSelect() {
+		GroundRuleStore store = new ADMMReasoner(model.config);
+		AtomManager manager = new SimpleAtomManager(database);
+
+		Rule rule;
+		List<String> expected;
+		List<Coefficient> coefficients;
+		List<SummationAtomOrAtom> atoms;
+		Map<SummationVariable, Formula> selects;
+
+		coefficients = Arrays.asList(
+			(Coefficient)(new Cardinality(new SummationVariable("B")))
+		);
+
+		atoms = Arrays.asList(
+			(SummationAtomOrAtom)(new SummationAtom(
+				model.predicates.get("Friends"),
+				new SummationVariableOrTerm[]{new Variable("A"), new SummationVariable("B")}
+			))
+		);
+
+		selects = new HashMap<SummationVariable, Formula>();
+
+		rule = new WeightedArithmeticRule(
+				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+				selects,
+				1.0,
+				true
+		);
+
+		expected = Arrays.asList(
+			"1.0: 4.0 FRIENDS('Alice', 'Bob') 4.0 FRIENDS('Alice', 'Charlie') 4.0 FRIENDS('Alice', 'Derek') 4.0 FRIENDS('Alice', 'Eugene') >= 1.0 ^2",
+			"1.0: 4.0 FRIENDS('Bob', 'Alice') 4.0 FRIENDS('Bob', 'Charlie') 4.0 FRIENDS('Bob', 'Derek') 4.0 FRIENDS('Bob', 'Eugene') >= 1.0 ^2",
+			"1.0: 4.0 FRIENDS('Charlie', 'Alice') 4.0 FRIENDS('Charlie', 'Bob') 4.0 FRIENDS('Charlie', 'Derek') 4.0 FRIENDS('Charlie', 'Eugene') >= 1.0 ^2",
+			"1.0: 4.0 FRIENDS('Derek', 'Alice') 4.0 FRIENDS('Derek', 'Bob') 4.0 FRIENDS('Derek', 'Charlie') 4.0 FRIENDS('Derek', 'Eugene') >= 1.0 ^2",
+			"1.0: 4.0 FRIENDS('Eugene', 'Alice') 4.0 FRIENDS('Eugene', 'Bob') 4.0 FRIENDS('Eugene', 'Charlie') 4.0 FRIENDS('Eugene', 'Derek') >= 1.0 ^2"
+		);
+		rule.groundAll(manager, store);
+		PSLTest.compareGroundRules(expected, rule, store, true);
+	}
+
 	/*
 			'Alice', 'Alice',
 			'Alice', 'Bob',
@@ -719,7 +762,8 @@ public class GroundRuleTest {
 
 
    // TODO(eriq):
-	//	  - No Select with no summation variables.
+	//	  - No Select with summation variables.
+	//	  - Multiple summation variables, only one with select.
    //   - Multiple summation variables in single atom.
    //   - No Goundings because of select
    //   - No Groundings not because of select

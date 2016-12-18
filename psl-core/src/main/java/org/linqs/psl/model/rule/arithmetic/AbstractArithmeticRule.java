@@ -87,6 +87,11 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 		// variables are non-summations.
 		List<Variable> nonSummationVariables = new ArrayList<Variable>();
 
+		// We will also need to maintain a collection of all the summation variables.
+		// Note that we can no just use |selects| because not all summation variables
+		// will have a select associated with it.
+		Set<SummationVariable> summationVariables = new HashSet<SummationVariable>();
+
 		// Collect all the atoms from the body (expression).
 		// Pretend that all atoms are non-summation atoms.
 		List<Atom> queryAtoms = new ArrayList<Atom>();
@@ -97,6 +102,8 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 				for (SummationVariableOrTerm arg : ((SummationAtom)atom).getArguments()) {
 					if (arg instanceof Variable && !nonSummationVariables.contains((Variable)arg)) {
 						nonSummationVariables.add((Variable)arg);
+					} else if (arg instanceof SummationVariable) {
+						summationVariables.add((SummationVariable)arg);
 					}
 				}
 			} else {
@@ -123,9 +130,8 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 			query = new DatabaseQuery(queryAtoms.get(0));
 		}
 
-		// Executes initial query
+		// Execute the body query
 		ResultList rawGroundings = atomManager.executeQuery(query);
-
 		Map<Variable, Integer> groundingVariableMap = rawGroundings.getVariableMap();
 
 		// <Non-Summation Values, <Summation Variable, Summation Replacements>>
@@ -137,7 +143,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 
 			// Put all the non-summation constants into a list.
 			// Note that we know the size ahead of time and would have used an array, but this will need to
-			// be a key in a map so must be an Object.
+			// be a key in a map so it must be an Object.
 			List<Constant> nonSummationConstants = new ArrayList<Constant>();
 			for (Variable nonSummationVariable : nonSummationVariables) {
 				nonSummationConstants.add(rawGrounding[groundingVariableMap.get(nonSummationVariable).intValue()]);
@@ -149,13 +155,15 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 			Map<SummationVariable, Set<Constant>> subs = summationSubs.get(nonSummationConstants);
 
 			// Add summation values that pass the select into the set of summation subs.
-			for (Map.Entry<SummationVariable, SummationDisjunctionValues> selectEvaluation : selectEvaluations.entrySet()) {
-				SummationVariable sumVar = selectEvaluation.getKey();
+			// If there is no select, we just add it directly.
+			for (SummationVariable sumVar : summationVariables) {
 				if (!subs.containsKey(sumVar)) {
 					subs.put(sumVar, new HashSet<Constant>());
 				}
 
-				if (selectEvaluation.getValue().getEvaluation(rawGrounding, groundingVariableMap)) {
+				// No select or select allows this grounding.
+				if (!selectEvaluations.containsKey(sumVar)
+					 || selectEvaluations.get(sumVar).getEvaluation(rawGrounding, groundingVariableMap)) {
 					subs.get(sumVar).add(rawGrounding[groundingVariableMap.get(sumVar.getVariable()).intValue()]);
 				}
 			}
