@@ -61,9 +61,13 @@ import org.linqs.psl.model.rule.arithmetic.expression.SummationAtom;
 import org.linqs.psl.model.rule.arithmetic.expression.SummationAtomOrAtom;
 import org.linqs.psl.model.rule.arithmetic.expression.SummationVariable;
 import org.linqs.psl.model.rule.arithmetic.expression.SummationVariableOrTerm;
+import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Add;
 import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Cardinality;
 import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Coefficient;
 import org.linqs.psl.model.rule.arithmetic.expression.coefficient.ConstantNumber;
+import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Divide;
+import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Multiply;
+import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Subtract;
 import org.linqs.psl.model.rule.logical.UnweightedLogicalRule;
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
 import org.linqs.psl.model.term.Constant;
@@ -733,6 +737,304 @@ public class GroundRuleTest {
 		PSLTest.compareGroundRules(expected, rule, store, true);
 	}
 
+	@Test
+   // Friends(+A, +B) >= 1
+   // Friends(+A, +B) >= 1 {A: Nice(A)}
+   // Friends(+A, +B) >= 1 {A: Nice(A)} {B: Nice(B)}
+	public void testMultipleSummation() {
+		// Reset the model to not use 100% nice.
+		initModel(false);
+
+		GroundRuleStore store = new ADMMReasoner(model.config);
+		AtomManager manager = new SimpleAtomManager(database);
+
+		Rule rule;
+		List<String> expected;
+		List<Coefficient> coefficients;
+		List<SummationAtomOrAtom> atoms;
+		Map<SummationVariable, Formula> selects;
+
+		coefficients = Arrays.asList(
+			(Coefficient)(new ConstantNumber(1))
+		);
+
+		atoms = Arrays.asList(
+			(SummationAtomOrAtom)(new SummationAtom(
+				model.predicates.get("Friends"),
+				new SummationVariableOrTerm[]{new SummationVariable("A"), new SummationVariable("B")}
+			))
+		);
+
+		selects = new HashMap<SummationVariable, Formula>();
+
+		rule = new WeightedArithmeticRule(
+				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+				selects,
+				1.0,
+				true
+		);
+
+		expected = Arrays.asList(
+			"1.0: " +
+				"1.0 FRIENDS('Alice', 'Bob') 1.0 FRIENDS('Alice', 'Charlie') 1.0 FRIENDS('Alice', 'Derek') 1.0 FRIENDS('Alice', 'Eugene') " +
+				"1.0 FRIENDS('Bob', 'Alice') 1.0 FRIENDS('Bob', 'Charlie') 1.0 FRIENDS('Bob', 'Derek') 1.0 FRIENDS('Bob', 'Eugene') " +
+				"1.0 FRIENDS('Charlie', 'Alice') 1.0 FRIENDS('Charlie', 'Bob') 1.0 FRIENDS('Charlie', 'Derek') 1.0 FRIENDS('Charlie', 'Eugene') " +
+				"1.0 FRIENDS('Derek', 'Alice') 1.0 FRIENDS('Derek', 'Bob') 1.0 FRIENDS('Derek', 'Charlie') 1.0 FRIENDS('Derek', 'Eugene') " +
+				"1.0 FRIENDS('Eugene', 'Alice') 1.0 FRIENDS('Eugene', 'Bob') 1.0 FRIENDS('Eugene', 'Charlie') 1.0 FRIENDS('Eugene', 'Derek') " +
+				">= 1.0 ^2"
+		);
+		rule.groundAll(manager, store);
+		// TODO(eriq): Waiting response from Steve.
+		// PSLTest.compareGroundRules(expected, rule, store, true);
+
+		// Add a select on A.
+		store = new ADMMReasoner(model.config);
+
+		selects.put(
+			new SummationVariable("A"),
+			new QueryAtom(model.predicates.get("Nice"), new Variable("A"))
+		);
+
+		rule = new WeightedArithmeticRule(
+				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+				selects,
+				1.0,
+				true
+		);
+
+		expected = Arrays.asList(
+			"1.0: " +
+				"1.0 FRIENDS('Alice', 'Bob') 1.0 FRIENDS('Alice', 'Charlie') 1.0 FRIENDS('Alice', 'Derek') 1.0 FRIENDS('Alice', 'Eugene') " +
+				"1.0 FRIENDS('Bob', 'Alice') 1.0 FRIENDS('Bob', 'Charlie') 1.0 FRIENDS('Bob', 'Derek') 1.0 FRIENDS('Bob', 'Eugene') " +
+				"1.0 FRIENDS('Charlie', 'Alice') 1.0 FRIENDS('Charlie', 'Bob') 1.0 FRIENDS('Charlie', 'Derek') 1.0 FRIENDS('Charlie', 'Eugene') " +
+				"1.0 FRIENDS('Derek', 'Alice') 1.0 FRIENDS('Derek', 'Bob') 1.0 FRIENDS('Derek', 'Charlie') 1.0 FRIENDS('Derek', 'Eugene') " +
+				">= 1.0 ^2"
+		);
+		rule.groundAll(manager, store);
+		// TODO(eriq): Waiting response from Steve.
+		// PSLTest.compareGroundRules(expected, rule, store, true);
+
+		// Add a select on B.
+		store = new ADMMReasoner(model.config);
+
+		selects.put(
+			new SummationVariable("B"),
+			new QueryAtom(model.predicates.get("Nice"), new Variable("B"))
+		);
+
+		rule = new WeightedArithmeticRule(
+				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+				selects,
+				1.0,
+				true
+		);
+
+		expected = Arrays.asList(
+			"1.0: " +
+				"1.0 FRIENDS('Alice', 'Bob') 1.0 FRIENDS('Alice', 'Charlie') 1.0 FRIENDS('Alice', 'Derek') " +
+				"1.0 FRIENDS('Bob', 'Alice') 1.0 FRIENDS('Bob', 'Charlie') 1.0 FRIENDS('Bob', 'Derek') " +
+				"1.0 FRIENDS('Charlie', 'Alice') 1.0 FRIENDS('Charlie', 'Bob') 1.0 FRIENDS('Charlie', 'Derek') " +
+				"1.0 FRIENDS('Derek', 'Alice') 1.0 FRIENDS('Derek', 'Bob') 1.0 FRIENDS('Derek', 'Charlie') " +
+				">= 1.0 ^2"
+		);
+		rule.groundAll(manager, store);
+		// TODO(eriq): Waiting response from Steve.
+		// PSLTest.compareGroundRules(expected, rule, store, true);
+	}
+
+	@Test
+   // |A| * Friends(+A, +B) >= 1 {B: Nice(B)}
+   // |B| * Friends(+A, +B) >= 1 {B: Nice(B)}
+   // |A| + |B| * Friends(+A, +B) >= 1 {B: Nice(B)}
+   // |A| - |B| * Friends(+A, +B) >= 1 {B: Nice(B)}
+   // |A| * |B| * Friends(+A, +B) >= 1 {B: Nice(B)}
+   // |A| / |B| * Friends(+A, +B) >= 1 {B: Nice(B)}
+	public void testMultipleSummationCardinality() {
+		// Reset the model to not use 100% nice.
+		initModel(false);
+
+		GroundRuleStore store = new ADMMReasoner(model.config);
+		AtomManager manager = new SimpleAtomManager(database);
+
+		Rule rule;
+		List<String> expected;
+		List<Coefficient> coefficients;
+		List<SummationAtomOrAtom> atoms;
+		Map<SummationVariable, Formula> selects;
+
+		coefficients = Arrays.asList(
+			(Coefficient)(new Cardinality(new SummationVariable("A")))
+		);
+
+		atoms = Arrays.asList(
+			(SummationAtomOrAtom)(new SummationAtom(
+				model.predicates.get("Friends"),
+				new SummationVariableOrTerm[]{new SummationVariable("A"), new SummationVariable("B")}
+			))
+		);
+
+		selects = new HashMap<SummationVariable, Formula>();
+		selects.put(
+			new SummationVariable("B"),
+			new QueryAtom(model.predicates.get("Nice"), new Variable("B"))
+		);
+
+		rule = new WeightedArithmeticRule(
+				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+				selects,
+				1.0,
+				true
+		);
+
+		expected = Arrays.asList(
+			"1.0: " +
+				"5.0 FRIENDS('Alice', 'Bob') 5.0 FRIENDS('Alice', 'Charlie') 5.0 FRIENDS('Alice', 'Derek') " +
+				"5.0 FRIENDS('Bob', 'Alice') 5.0 FRIENDS('Bob', 'Charlie') 5.0 FRIENDS('Bob', 'Derek') " +
+				"5.0 FRIENDS('Charlie', 'Alice') 5.0 FRIENDS('Charlie', 'Bob') 5.0 FRIENDS('Charlie', 'Derek') " +
+				"5.0 FRIENDS('Derek', 'Alice') 5.0 FRIENDS('Derek', 'Bob') 5.0 FRIENDS('Derek', 'Charlie') " +
+				"5.0 FRIENDS('Eugene', 'Alice') 5.0 FRIENDS('Eugene', 'Bob') 5.0 FRIENDS('Eugene', 'Charlie') 5.0 FRIENDS('Eugene', 'Derek') " +
+				">= 1.0 ^2"
+		);
+		rule.groundAll(manager, store);
+		// TODO(eriq): Waiting response from Steve.
+		// PSLTest.compareGroundRules(expected, rule, store, true);
+
+		// |B|
+		store = new ADMMReasoner(model.config);
+
+		coefficients = Arrays.asList(
+			(Coefficient)(new Cardinality(new SummationVariable("B")))
+		);
+
+		rule = new WeightedArithmeticRule(
+				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+				selects,
+				1.0,
+				true
+		);
+
+		expected = Arrays.asList(
+			"1.0: " +
+				"4.0 FRIENDS('Alice', 'Bob') 4.0 FRIENDS('Alice', 'Charlie') 4.0 FRIENDS('Alice', 'Derek') " +
+				"4.0 FRIENDS('Bob', 'Alice') 4.0 FRIENDS('Bob', 'Charlie') 4.0 FRIENDS('Bob', 'Derek') " +
+				"4.0 FRIENDS('Charlie', 'Alice') 4.0 FRIENDS('Charlie', 'Bob') 4.0 FRIENDS('Charlie', 'Derek') " +
+				"4.0 FRIENDS('Derek', 'Alice') 4.0 FRIENDS('Derek', 'Bob') 4.0 FRIENDS('Derek', 'Charlie') " +
+				"4.0 FRIENDS('Eugene', 'Alice') 4.0 FRIENDS('Eugene', 'Bob') 4.0 FRIENDS('Eugene', 'Charlie') 4.0 FRIENDS('Eugene', 'Derek') " +
+				">= 1.0 ^2"
+		);
+		rule.groundAll(manager, store);
+		// TODO(eriq): Waiting response from Steve.
+		// PSLTest.compareGroundRules(expected, rule, store, true);
+
+		// |A| + |B|
+		store = new ADMMReasoner(model.config);
+
+		coefficients = Arrays.asList(
+			(Coefficient)(new Add(new Cardinality(new SummationVariable("A")), new Cardinality(new SummationVariable("B"))))
+		);
+
+		rule = new WeightedArithmeticRule(
+				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+				selects,
+				1.0,
+				true
+		);
+
+		expected = Arrays.asList(
+			"1.0: " +
+				"9.0 FRIENDS('Alice', 'Bob') 9.0 FRIENDS('Alice', 'Charlie') 9.0 FRIENDS('Alice', 'Derek') " +
+				"9.0 FRIENDS('Bob', 'Alice') 9.0 FRIENDS('Bob', 'Charlie') 9.0 FRIENDS('Bob', 'Derek') " +
+				"9.0 FRIENDS('Charlie', 'Alice') 9.0 FRIENDS('Charlie', 'Bob') 9.0 FRIENDS('Charlie', 'Derek') " +
+				"9.0 FRIENDS('Derek', 'Alice') 9.0 FRIENDS('Derek', 'Bob') 9.0 FRIENDS('Derek', 'Charlie') " +
+				"9.0 FRIENDS('Eugene', 'Alice') 9.0 FRIENDS('Eugene', 'Bob') 9.0 FRIENDS('Eugene', 'Charlie') 9.0 FRIENDS('Eugene', 'Derek') " +
+				">= 1.0 ^2"
+		);
+		rule.groundAll(manager, store);
+		// TODO(eriq): Waiting response from Steve.
+		// PSLTest.compareGroundRules(expected, rule, store, true);
+
+		// |A| - |B|
+		store = new ADMMReasoner(model.config);
+
+		coefficients = Arrays.asList(
+			(Coefficient)(new Subtract(new Cardinality(new SummationVariable("A")), new Cardinality(new SummationVariable("B"))))
+		);
+
+		rule = new WeightedArithmeticRule(
+				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+				selects,
+				1.0,
+				true
+		);
+
+		expected = Arrays.asList(
+			"1.0: " +
+				"1.0 FRIENDS('Alice', 'Bob') 1.0 FRIENDS('Alice', 'Charlie') 1.0 FRIENDS('Alice', 'Derek') " +
+				"1.0 FRIENDS('Bob', 'Alice') 1.0 FRIENDS('Bob', 'Charlie') 1.0 FRIENDS('Bob', 'Derek') " +
+				"1.0 FRIENDS('Charlie', 'Alice') 1.0 FRIENDS('Charlie', 'Bob') 1.0 FRIENDS('Charlie', 'Derek') " +
+				"1.0 FRIENDS('Derek', 'Alice') 1.0 FRIENDS('Derek', 'Bob') 1.0 FRIENDS('Derek', 'Charlie') " +
+				"1.0 FRIENDS('Eugene', 'Alice') 1.0 FRIENDS('Eugene', 'Bob') 1.0 FRIENDS('Eugene', 'Charlie') 1.0 FRIENDS('Eugene', 'Derek') " +
+				">= 1.0 ^2"
+		);
+		rule.groundAll(manager, store);
+		// TODO(eriq): Waiting response from Steve.
+		// PSLTest.compareGroundRules(expected, rule, store, true);
+
+		// |A| * |B|
+		store = new ADMMReasoner(model.config);
+
+		coefficients = Arrays.asList(
+			(Coefficient)(new Multiply(new Cardinality(new SummationVariable("A")), new Cardinality(new SummationVariable("B"))))
+		);
+
+		rule = new WeightedArithmeticRule(
+				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+				selects,
+				1.0,
+				true
+		);
+
+		expected = Arrays.asList(
+			"1.0: " +
+				"20.0 FRIENDS('Alice', 'Bob') 20.0 FRIENDS('Alice', 'Charlie') 20.0 FRIENDS('Alice', 'Derek') " +
+				"20.0 FRIENDS('Bob', 'Alice') 20.0 FRIENDS('Bob', 'Charlie') 20.0 FRIENDS('Bob', 'Derek') " +
+				"20.0 FRIENDS('Charlie', 'Alice') 20.0 FRIENDS('Charlie', 'Bob') 20.0 FRIENDS('Charlie', 'Derek') " +
+				"20.0 FRIENDS('Derek', 'Alice') 20.0 FRIENDS('Derek', 'Bob') 20.0 FRIENDS('Derek', 'Charlie') " +
+				"20.0 FRIENDS('Eugene', 'Alice') 20.0 FRIENDS('Eugene', 'Bob') 20.0 FRIENDS('Eugene', 'Charlie') 20.0 FRIENDS('Eugene', 'Derek') " +
+				">= 1.0 ^2"
+		);
+		rule.groundAll(manager, store);
+		// TODO(eriq): Waiting response from Steve.
+		// PSLTest.compareGroundRules(expected, rule, store, true);
+
+		// |A| / |B|
+		store = new ADMMReasoner(model.config);
+
+		coefficients = Arrays.asList(
+			(Coefficient)(new Divide(new Cardinality(new SummationVariable("A")), new Cardinality(new SummationVariable("B"))))
+		);
+
+		rule = new WeightedArithmeticRule(
+				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+				selects,
+				1.0,
+				true
+		);
+
+		expected = Arrays.asList(
+			"1.0: " +
+				"1.25 FRIENDS('Alice', 'Bob') 1.25 FRIENDS('Alice', 'Charlie') 1.25 FRIENDS('Alice', 'Derek') " +
+				"1.25 FRIENDS('Bob', 'Alice') 1.25 FRIENDS('Bob', 'Charlie') 1.25 FRIENDS('Bob', 'Derek') " +
+				"1.25 FRIENDS('Charlie', 'Alice') 1.25 FRIENDS('Charlie', 'Bob') 1.25 FRIENDS('Charlie', 'Derek') " +
+				"1.25 FRIENDS('Derek', 'Alice') 1.25 FRIENDS('Derek', 'Bob') 1.25 FRIENDS('Derek', 'Charlie') " +
+				"1.25 FRIENDS('Eugene', 'Alice') 1.25 FRIENDS('Eugene', 'Bob') 1.25 FRIENDS('Eugene', 'Charlie') 1.25 FRIENDS('Eugene', 'Derek') " +
+				">= 1.0 ^2"
+		);
+		rule.groundAll(manager, store);
+		// TODO(eriq): Waiting response from Steve.
+		// PSLTest.compareGroundRules(expected, rule, store, true);
+	}
+
 	/*
 			'Alice', 'Alice',
 			'Alice', 'Bob',
@@ -762,11 +1064,11 @@ public class GroundRuleTest {
 
 
    // TODO(eriq):
-	//	  - No Select with summation variables.
-	//	  - Multiple summation variables, only one with select.
-   //   - Multiple summation variables in single atom.
    //   - No Goundings because of select
    //   - No Groundings not because of select
+	//   - Coefficient Functions
+	//       - (Min / Max)
+	//       - Use cardinality
    //   - Groundings limited by select with variable not from summation atom.
    //       (Bi(A, +B) + Uno(C) = 1 {B: Bi(B, C)}
    //       Imagine if Uno(C) only had C1 while Bi(B, C) has (B1, C1), (B2, C2), and (B3, C3).
