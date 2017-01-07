@@ -455,8 +455,8 @@ public class GroundRuleTest {
 
 	@Test
 	// Everyone is 100% Nice in this test.
-   // |B| * Friends(A, +B) >= 1 {B: Nice(B)}
-   // |B| * Friends(A, +B) >= 1 {B: !Nice(B)}
+	// |B| * Friends(A, +B) >= 1 {B: Nice(B)}
+	// |B| * Friends(A, +B) >= 1 {B: !Nice(B)}
 	public void testSelectBaseNice() {
 		GroundRuleStore store = new ADMMReasoner(model.config);
 		AtomManager manager = new SimpleAtomManager(database);
@@ -512,20 +512,20 @@ public class GroundRuleTest {
 				true
 		);
 
-      /* TEST TODO(eriq): Question out to Steve for semantics.
+		/* TEST TODO(eriq): Question out to Steve for semantics.
 		// TEST
 		System.out.println("TEST");
 
 		expected = new ArrayList<String>();
 		rule.groundAll(manager, store);
 		PSLTest.compareGroundRules(expected, rule, store, true);
-      */
+		*/
 	}
 
 	@Test
 	// Everyone except Eugene has non-zero niceness.
-   // |B| * Friends(A, +B) >= 1 {B: Nice(B)}
-   // |B| * Friends(A, +B) >= 1 {B: !Nice(B)}
+	// |B| * Friends(A, +B) >= 1 {B: Nice(B)}
+	// |B| * Friends(A, +B) >= 1 {B: !Nice(B)}
 	public void testSelectBaseNotNice() {
 		// Reset the model to not use 100% nice.
 		initModel(false);
@@ -584,7 +584,7 @@ public class GroundRuleTest {
 				true
 		);
 
-      /* TEST TODO(eriq): Question out to Steve for semantics.
+		/* TEST TODO(eriq): Question out to Steve for semantics.
 		// TEST
 		System.out.println("TEST");
 
@@ -602,8 +602,8 @@ public class GroundRuleTest {
 
 	@Test
 	// Everyone except Eugene has non-zero niceness.
-   // |B| * Friends(A, +B) >= 1 {B: Friends(B, 'Alice') && Nice(B)}
-   // |B| * Friends(A, +B) >= 1 {B: Friends(B, 'Alice') || Nice(B)}
+	// |B| * Friends(A, +B) >= 1 {B: Friends(B, 'Alice') && Nice(B)}
+	// |B| * Friends(A, +B) >= 1 {B: Friends(B, 'Alice') || Nice(B)}
 	public void testSelectConstant() {
 		// Reset the model to not use 100% nice.
 		initModel(false);
@@ -695,7 +695,7 @@ public class GroundRuleTest {
 	}
 
 	@Test
-   // |B| * Friends(A, +B) >= 1
+	// |B| * Friends(A, +B) >= 1
 	public void testSummationNoSelect() {
 		GroundRuleStore store = new ADMMReasoner(model.config);
 		AtomManager manager = new SimpleAtomManager(database);
@@ -738,9 +738,9 @@ public class GroundRuleTest {
 	}
 
 	@Test
-   // Friends(+A, +B) >= 1
-   // Friends(+A, +B) >= 1 {A: Nice(A)}
-   // Friends(+A, +B) >= 1 {A: Nice(A)} {B: Nice(B)}
+	// Friends(+A, +B) >= 1
+	// Friends(+A, +B) >= 1 {A: Nice(A)}
+	// Friends(+A, +B) >= 1 {A: Nice(A)} {B: Nice(B)}
 	public void testMultipleSummation() {
 		// Reset the model to not use 100% nice.
 		initModel(false);
@@ -784,8 +784,7 @@ public class GroundRuleTest {
 				">= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
-		// TODO(eriq): Waiting response from Steve.
-		// PSLTest.compareGroundRules(expected, rule, store, true);
+		PSLTest.compareGroundRules(expected, rule, store, true);
 
 		// Add a select on A.
 		store = new ADMMReasoner(model.config);
@@ -811,8 +810,7 @@ public class GroundRuleTest {
 				">= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
-		// TODO(eriq): Waiting response from Steve.
-		// PSLTest.compareGroundRules(expected, rule, store, true);
+		PSLTest.compareGroundRules(expected, rule, store, true);
 
 		// Add a select on B.
 		store = new ADMMReasoner(model.config);
@@ -838,17 +836,16 @@ public class GroundRuleTest {
 				">= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
-		// TODO(eriq): Waiting response from Steve.
-		// PSLTest.compareGroundRules(expected, rule, store, true);
+		PSLTest.compareGroundRules(expected, rule, store, true);
 	}
 
 	@Test
-   // |A| * Friends(+A, +B) >= 1 {B: Nice(B)}
-   // |B| * Friends(+A, +B) >= 1 {B: Nice(B)}
-   // |A| + |B| * Friends(+A, +B) >= 1 {B: Nice(B)}
-   // |A| - |B| * Friends(+A, +B) >= 1 {B: Nice(B)}
-   // |A| * |B| * Friends(+A, +B) >= 1 {B: Nice(B)}
-   // |A| / |B| * Friends(+A, +B) >= 1 {B: Nice(B)}
+	// |A| * Friends(+A, +B) >= 1 {B: Nice(B)}
+	// |B| * Friends(+A, +B) >= 1 {B: Nice(B)}
+	// |A| + |B| * Friends(+A, +B) >= 1 {B: Nice(B)}
+	// |A| - |B| * Friends(+A, +B) >= 1 {B: Nice(B)}
+	// |A| * |B| * Friends(+A, +B) >= 1 {B: Nice(B)}
+	// |A| / |B| * Friends(+A, +B) >= 1 {B: Nice(B)}
 	public void testMultipleSummationCardinality() {
 		// Reset the model to not use 100% nice.
 		initModel(false);
@@ -896,8 +893,7 @@ public class GroundRuleTest {
 				">= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
-		// TODO(eriq): Waiting response from Steve.
-		// PSLTest.compareGroundRules(expected, rule, store, true);
+		PSLTest.compareGroundRules(expected, rule, store, true);
 
 		// |B|
 		store = new ADMMReasoner(model.config);
@@ -923,8 +919,7 @@ public class GroundRuleTest {
 				">= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
-		// TODO(eriq): Waiting response from Steve.
-		// PSLTest.compareGroundRules(expected, rule, store, true);
+		PSLTest.compareGroundRules(expected, rule, store, true);
 
 		// |A| + |B|
 		store = new ADMMReasoner(model.config);
@@ -950,8 +945,7 @@ public class GroundRuleTest {
 				">= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
-		// TODO(eriq): Waiting response from Steve.
-		// PSLTest.compareGroundRules(expected, rule, store, true);
+		PSLTest.compareGroundRules(expected, rule, store, true);
 
 		// |A| - |B|
 		store = new ADMMReasoner(model.config);
@@ -977,8 +971,7 @@ public class GroundRuleTest {
 				">= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
-		// TODO(eriq): Waiting response from Steve.
-		// PSLTest.compareGroundRules(expected, rule, store, true);
+		PSLTest.compareGroundRules(expected, rule, store, true);
 
 		// |A| * |B|
 		store = new ADMMReasoner(model.config);
@@ -1004,8 +997,7 @@ public class GroundRuleTest {
 				">= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
-		// TODO(eriq): Waiting response from Steve.
-		// PSLTest.compareGroundRules(expected, rule, store, true);
+		PSLTest.compareGroundRules(expected, rule, store, true);
 
 		// |A| / |B|
 		store = new ADMMReasoner(model.config);
@@ -1031,8 +1023,7 @@ public class GroundRuleTest {
 				">= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
-		// TODO(eriq): Waiting response from Steve.
-		// PSLTest.compareGroundRules(expected, rule, store, true);
+		PSLTest.compareGroundRules(expected, rule, store, true);
 	}
 
 	/*
@@ -1063,16 +1054,16 @@ public class GroundRuleTest {
 			'Eugene', 'Eugene'
 
 
-   // TODO(eriq):
-   //   - No Goundings because of select
-   //   - No Groundings not because of select
-	//   - Coefficient Functions
-	//       - (Min / Max)
-	//       - Use cardinality
-   //   - Groundings limited by select with variable not from summation atom.
-   //       (Bi(A, +B) + Uno(C) = 1 {B: Bi(B, C)}
-   //       Imagine if Uno(C) only had C1 while Bi(B, C) has (B1, C1), (B2, C2), and (B3, C3).
-   //   - Triple atom with 2 normal and 1 summation variable.
+	// TODO(eriq):
+	//	- No Goundings because of select
+	//	- No Groundings not because of select
+	//	- Coefficient Functions
+	//		 - (Min / Max)
+	//		 - Use cardinality
+	//	- Groundings limited by select with variable not from summation atom.
+	//		 (Bi(A, +B) + Uno(C) = 1 {B: Bi(B, C)}
+	//		 Imagine if Uno(C) only had C1 while Bi(B, C) has (B1, C1), (B2, C2), and (B3, C3).
+	//	- Triple atom with 2 normal and 1 summation variable.
 
 	*/
 

@@ -88,9 +88,11 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 		List<Variable> nonSummationVariables = new ArrayList<Variable>();
 
 		// We will also need to maintain a collection of all the summation variables.
-		// Note that we can no just use |selects| because not all summation variables
+		// Note that we can not just use |selects| because not all summation variables
 		// will have a select associated with it.
 		Set<SummationVariable> summationVariables = new HashSet<SummationVariable>();
+
+		Set<SummationAtom> summationAtoms = new HashSet<SummationAtom>();
 
 		// Collect all the atoms from the body (expression).
 		// Pretend that all atoms are non-summation atoms.
@@ -98,6 +100,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 		for (SummationAtomOrAtom atom : expression.getAtoms()) {
 			if (atom instanceof SummationAtom) {
 				queryAtoms.add(((SummationAtom)atom).getQueryAtom());
+				summationAtoms.add(((SummationAtom)atom));
 
 				for (SummationVariableOrTerm arg : ((SummationAtom)atom).getArguments()) {
 					if (arg instanceof Variable && !nonSummationVariables.contains((Variable)arg)) {
@@ -117,11 +120,11 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 			}
 		}
 
-      // Build a variable map for the constants used as keys in |summationSubs|.
-      Map<Variable, Integer> subsVariableMap = new HashMap<Variable, Integer>();
-      for (int i = 0; i < nonSummationVariables.size(); i++) {
-         subsVariableMap.put(nonSummationVariables.get(i), new Integer(i));
-      }
+		// Build a variable map for the constants used as keys in |summationSubs|.
+		Map<Variable, Integer> subsVariableMap = new HashMap<Variable, Integer>();
+		for (int i = 0; i < nonSummationVariables.size(); i++) {
+			subsVariableMap.put(nonSummationVariables.get(i), new Integer(i));
+		}
 
 		DatabaseQuery query;
 		if (queryAtoms.size() > 1) {
@@ -138,8 +141,16 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 		Map<List<Constant>, Map<SummationVariable, Set<Constant>>> summationSubs =
 				new HashMap<List<Constant>, Map<SummationVariable, Set<Constant>>>();
 
+		// Store all ground summation atoms for later validation.
+		Set<GroundAtom> groundSummationAtoms = new HashSet<GroundAtom>();
+
 		for (int i = 0; i < rawGroundings.size(); i++) {
 			Constant[] rawGrounding = rawGroundings.get(i);
+
+			// Store all ground summation atoms for later validation.
+			for (SummationAtom summationAtom : summationAtoms) {
+				groundSummationAtoms.add(getGroundAtom(summationAtom, Arrays.asList(rawGrounding), groundingVariableMap, atomManager));
+			}
 
 			// Put all the non-summation constants into a list.
 			// Note that we know the size ahead of time and would have used an array, but this will need to
@@ -161,7 +172,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 					subs.put(sumVar, new HashSet<Constant>());
 				}
 
-				// No select or select allows this grounding.
+				// Either there is no select statement, or the select allows this grounding.
 				if (!selectEvaluations.containsKey(sumVar)
 					 || selectEvaluations.get(sumVar).getEvaluation(rawGrounding, groundingVariableMap)) {
 					subs.get(sumVar).add(rawGrounding[groundingVariableMap.get(sumVar.getVariable()).intValue()]);
@@ -171,13 +182,18 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 
 		List<Double> coeffs = new LinkedList<Double>();
 		List<GroundAtom> atoms = new LinkedList<GroundAtom>();
-      for (Map.Entry<List<Constant>, Map<SummationVariable, Set<Constant>>> summationSub : summationSubs.entrySet()) {
-			populateCoeffsAndAtoms(coeffs, atoms, summationSub.getKey(), subsVariableMap, atomManager, summationSub.getValue());
-			ground(grs, coeffs, atoms, expression.getFinalCoefficient().getValue(summationSub.getValue()));
 
-         coeffs.clear();
-         atoms.clear();
-      }
+		// For each ground set of non-summation constants,
+		// ground out the non-summation atoms along with all the summation substitutions.
+		for (Map.Entry<List<Constant>, Map<SummationVariable, Set<Constant>>> summationSub : summationSubs.entrySet()) {
+			populateCoeffsAndAtoms(coeffs, atoms, summationSub.getKey(), subsVariableMap,
+					atomManager, summationSub.getValue(), groundSummationAtoms);
+			ground(grs, coeffs, atoms,
+					expression.getFinalCoefficient().getValue(summationSub.getValue()));
+
+			coeffs.clear();
+			atoms.clear();
+		}
 	}
 
 	private Map<SummationVariable, SummationDisjunctionValues> evaluateSelects(AtomManager atomManager) {
@@ -278,74 +294,163 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 		}
 	}
 
-	protected void populateCoeffsAndAtoms(List<Double> coeffs, List<GroundAtom> atoms, List<Constant> grounding,
-			Map<Variable, Integer> varMap, AtomManager atomManager, Map<SummationVariable, Set<Constant>> subs) {
+	/**
+	 * Given a collection of the non-summation constants and allowed substitutions,
+	 * figure out all the atoms and coefficients that will appear in the final ground rule.
+	 */
+	protected void populateCoeffsAndAtoms(List<Double> coeffs, List<GroundAtom> atoms,
+			List<Constant> grounding, Map<Variable, Integer> varMap,
+			AtomManager atomManager, Map<SummationVariable, Set<Constant>> subs,
+			Set<GroundAtom> groundSummationAtoms) {
 		// Clears output data structures
 		coeffs.clear();
 		atoms.clear();
 
-		// Does population
-		for (int j = 0; j < expression.getAtoms().size(); j++) {
-			// Handles a SummationAtom
-			if (expression.getAtoms().get(j) instanceof SummationAtom) {
+		// For each atom in the body's expression.
+		for (int atomIndex = 0; atomIndex < expression.getAtoms().size(); atomIndex++) {
+			// Summation atoms will get replaced using the substitutions.
+			if (expression.getAtoms().get(atomIndex) instanceof SummationAtom) {
 				// Separates SummationVariable args and substitutes Constants for Variables
-				SummationAtom atom = (SummationAtom) expression.getAtoms().get(j);
+				SummationAtom atom = (SummationAtom)expression.getAtoms().get(atomIndex);
 				SummationVariableOrTerm[] atomArgs = atom.getArguments();
-				SummationVariable[] sumVars = new SummationVariable[atom.getArguments().length];
-				Constant[] partialGrounding = new Constant[atom.getArguments().length];
-				for (int k = 0; k < partialGrounding.length; k++) {
-					if (atomArgs[k] instanceof SummationVariable) {
-						sumVars[k] = (SummationVariable) atomArgs[k];
-						partialGrounding[k] = null;
-					} else if (atomArgs[k] instanceof Variable) {
-						sumVars[k] = null;
-						partialGrounding[k] = grounding.get(varMap.get(atomArgs[k]));
+
+				// Each position will either be null if there is no summation variable
+				// at that position in the atom, or the summation atom that appears at
+				// that argument position.
+				SummationVariable[] sumVars = new SummationVariable[atomArgs.length];
+
+				// Each position will be either null if a summation atom appears at this location,
+				// or the actual constant that will appear in the ground rule if there
+				// is no summation atom at that position.
+				Constant[] partialGrounding = new Constant[atomArgs.length];
+
+				for (int termIndex = 0; termIndex < atomArgs.length; termIndex++) {
+					if (atomArgs[termIndex] instanceof SummationVariable) {
+						sumVars[termIndex] = (SummationVariable)atomArgs[termIndex];
+						partialGrounding[termIndex] = null;
+					} else if (atomArgs[termIndex] instanceof Variable) {
+						sumVars[termIndex] = null;
+						partialGrounding[termIndex] = grounding.get(varMap.get(atomArgs[termIndex]));
 					} else {
-						sumVars[k] = null;
-						partialGrounding[k] = (Constant) atomArgs[k];
+						sumVars[termIndex] = null;
+						partialGrounding[termIndex] = (Constant)atomArgs[termIndex];
 					}
 				}
 
-				// Iterates over cross product of SummationVariable substitutions
-				double coeffValue = expression.getAtomCoefficients().get(j).getValue(subs);
-				populateCoeffsAndAtomsForSummationAtom(coeffs, atoms, atom.getPredicate(), 0, sumVars, partialGrounding, atomManager, subs, coeffValue);
+				double coeffValue = expression.getAtomCoefficients().get(atomIndex).getValue(subs);
+
+				// Iterates over cross product of SummationVariable substitutions and add them to
+				// |atoms| and |coeff|.
+				populateCoeffsAndAtomsForSummationAtom(coeffs, atoms,
+						atom.getPredicate(), sumVars,
+						partialGrounding, atomManager,
+						groundSummationAtoms, subs, coeffValue, 0, 0);
 			} else {
-				// Handles an Atom
-				Atom atom = (Atom) expression.getAtoms().get(j);
-				Term[] atomArgs = atom.getArguments();
-				Constant[] args = new Constant[atom.getArguments().length];
-				for (int k = 0; k < args.length; k++) {
-					if (atomArgs[k] instanceof Variable) {
-						args[k] = grounding.get(varMap.get(atomArgs[k]));
-					} else {
-						args[k] = (Constant) atomArgs[k];
-					}
+				// Non-summation atoms will get onverted into ground atoms.
+				GroundAtom atom = getGroundAtom((Atom)expression.getAtoms().get(atomIndex),
+						grounding, varMap, atomManager);
+
+				if (validateGroundAtom(atom, 0, groundSummationAtoms)) {
+					atoms.add(atom);
+					coeffs.add(expression.getAtomCoefficients().get(atomIndex).getValue(subs));
 				}
-				atoms.add(atomManager.getAtom(atom.getPredicate(), args));
-				coeffs.add(expression.getAtomCoefficients().get(j).getValue(subs));
 			}
 		}
 	}
 
 	/**
+	 * Get a ground atom as if there were no summation variables.
+	 */
+	protected GroundAtom getGroundAtom(SummationAtom atom, List<Constant> grounding,
+			Map<Variable, Integer> varMap, AtomManager atomManager) {
+		SummationVariableOrTerm[] atomArgs = atom.getArguments();
+		Constant[] args = new Constant[atomArgs.length];
+
+		for (int termIndex = 0; termIndex < args.length; termIndex++) {
+			SummationVariableOrTerm term = atomArgs[termIndex];
+			if (term instanceof Variable) {
+				args[termIndex] = grounding.get(varMap.get((Variable)term));
+			} else if (term instanceof SummationVariable) {
+				args[termIndex] = grounding.get(varMap.get(((SummationVariable)term).getVariable()));
+			} else {
+				args[termIndex] = (Constant)term;
+			}
+		}
+
+		return atomManager.getAtom(atom.getPredicate(), args);
+	}
+
+	/**
+	 * Get a ground atom from an atom and its groundings.
+	 */
+	protected GroundAtom getGroundAtom(Atom atom, List<Constant> grounding,
+			Map<Variable, Integer> varMap, AtomManager atomManager) {
+		Term[] atomArgs = atom.getArguments();
+		Constant[] args = new Constant[atomArgs.length];
+
+		for (int termIndex = 0; termIndex < args.length; termIndex++) {
+			if (atomArgs[termIndex] instanceof Variable) {
+				args[termIndex] = grounding.get(varMap.get(atomArgs[termIndex]));
+			} else {
+				args[termIndex] = (Constant)atomArgs[termIndex];
+			}
+		}
+
+		return atomManager.getAtom(atom.getPredicate(), args);
+	}
+
+	/**
 	 * Recursively grounds GroundAtoms by replacing SummationVariables with all constants.
 	 */
-	protected void populateCoeffsAndAtomsForSummationAtom(List<Double> coeffs, List<GroundAtom> atoms, Predicate p,
-			int index, SummationVariable[] sumVars, Constant[] partialGrounding, AtomManager atomManager,
-			Map<SummationVariable, Set<Constant>> subs, double coeff) {
-		if (index == partialGrounding.length) {
-			atoms.add(atomManager.getAtom(p, partialGrounding));
-			coeffs.add(coeff);
-		} else if (sumVars[index] == null) {
-			populateCoeffsAndAtomsForSummationAtom(coeffs, atoms, p, index + 1, sumVars, partialGrounding, atomManager, subs, coeff);
+	protected void populateCoeffsAndAtomsForSummationAtom(List<Double> coeffs, List<GroundAtom> atoms,
+			Predicate predicate, SummationVariable[] sumVars,
+			Constant[] partialGrounding, AtomManager atomManager,
+			Set<GroundAtom> groundSummationAtoms,
+			Map<SummationVariable, Set<Constant>> subs, double coeff,
+			int termIndex, int summationVariableCount) {
+		// If we have already examined all terms.
+		if (termIndex == partialGrounding.length) {
+			GroundAtom atom = atomManager.getAtom(predicate, partialGrounding);
+			if (validateGroundAtom(atom, summationVariableCount, groundSummationAtoms)) {
+				atoms.add(atom);
+				coeffs.add(coeff);
+			}
+		} else if (sumVars[termIndex] == null) {
+			// This term is a not a summation variable, move to the next term.
+			populateCoeffsAndAtomsForSummationAtom(coeffs, atoms, predicate, sumVars,
+					partialGrounding, atomManager, groundSummationAtoms, subs, coeff,
+					termIndex + 1, summationVariableCount);
 		} else {
-			for (Constant sub : subs.get(sumVars[index])) {
-				partialGrounding[index] = sub;
-				populateCoeffsAndAtomsForSummationAtom(coeffs, atoms, p, index + 1, sumVars, partialGrounding, atomManager, subs, coeff);
+			// This term is a summation variable, go through all substitutions for this variable.
+			for (Constant sub : subs.get(sumVars[termIndex])) {
+				partialGrounding[termIndex] = sub;
+				populateCoeffsAndAtomsForSummationAtom(coeffs, atoms, predicate, sumVars,
+						partialGrounding, atomManager, groundSummationAtoms, subs, coeff,
+						termIndex + 1, summationVariableCount + 1);
 			}
 		}
 	}
-	
+
+	/**
+	 * Last chance to invalidate a ground atom before it is added to a ground rule.
+	 * |summationVariableCount| is the number of summation variables in this
+	 * specific atom.
+	 */
+	protected boolean validateGroundAtom(GroundAtom atom,
+			int summationVariableCount, Set<GroundAtom> groundSummationAtoms) {
+		// Multiple summation variables in the same atom can put us in a situation
+		// where we create ground atoms that do not actually exist.
+		// Invalidate these.
+		// Skip the costly check for the simple cases.
+		if (summationVariableCount >= 2) {
+			if (!groundSummationAtoms.contains(atom)) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
 	protected void ground(GroundRuleStore grs, List<Double>coeffs, List<GroundAtom> atoms, double finalCoeff) {
 		double[] coeffArray = new double[coeffs.size()];
 		for (int j = 0; j < coeffArray.length; j++) {
