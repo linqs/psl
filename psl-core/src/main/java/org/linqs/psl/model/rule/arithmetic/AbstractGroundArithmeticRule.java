@@ -64,11 +64,16 @@ public class AbstractGroundArithmeticRule implements GroundRule {
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < coeffs.length; i++) {
+			if (i != 0) {
+				sb.append(" + ");
+			}
+
 			sb.append(coeffs[i]);
-			sb.append(" ");
+			sb.append(" * ");
 			sb.append(atoms[i]);
-			sb.append(" ");
 		}
+
+		sb.append(" ");
 		
 		switch (comparator) {
 		case Equality:

@@ -117,11 +117,11 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 			}
 		}
 
-      // Build a variable map for the constants used as keys in |summationSubs|.
-      Map<Variable, Integer> subsVariableMap = new HashMap<Variable, Integer>();
-      for (int i = 0; i < nonSummationVariables.size(); i++) {
-         subsVariableMap.put(nonSummationVariables.get(i), new Integer(i));
-      }
+		// Build a variable map for the constants used as keys in |summationSubs|.
+		Map<Variable, Integer> subsVariableMap = new HashMap<Variable, Integer>();
+		for (int i = 0; i < nonSummationVariables.size(); i++) {
+			subsVariableMap.put(nonSummationVariables.get(i), new Integer(i));
+		}
 
 		DatabaseQuery query;
 		if (queryAtoms.size() > 1) {
@@ -171,13 +171,13 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 
 		List<Double> coeffs = new LinkedList<Double>();
 		List<GroundAtom> atoms = new LinkedList<GroundAtom>();
-      for (Map.Entry<List<Constant>, Map<SummationVariable, Set<Constant>>> summationSub : summationSubs.entrySet()) {
+		for (Map.Entry<List<Constant>, Map<SummationVariable, Set<Constant>>> summationSub : summationSubs.entrySet()) {
 			populateCoeffsAndAtoms(coeffs, atoms, summationSub.getKey(), subsVariableMap, atomManager, summationSub.getValue());
 			ground(grs, coeffs, atoms, expression.getFinalCoefficient().getValue(summationSub.getValue()));
 
-         coeffs.clear();
-         atoms.clear();
-      }
+			coeffs.clear();
+			atoms.clear();
+		}
 	}
 
 	private Map<SummationVariable, SummationDisjunctionValues> evaluateSelects(AtomManager atomManager) {
