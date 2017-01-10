@@ -130,15 +130,23 @@ public class ArithmeticRuleExpression {
 	@Override
 	public String toString() {
 		StringBuilder s = new StringBuilder();
-		for (int i = 0; i < coeffs.size(); i++) {
-			if (i != 0) {
-				s.append(" + ");
-			}
 
-			s.append(coeffs.get(i));
-			s.append(" * ");
-			s.append(atoms.get(i));
+		// If there are coefficients, print each one.
+		if (coeffs.size() > 0) {
+			for (int i = 0; i < coeffs.size(); i++) {
+				if (i != 0) {
+					s.append(" + ");
+				}
+
+				s.append(coeffs.get(i));
+				s.append(" * ");
+				s.append(atoms.get(i));
+			}
+		} else {
+			// Otherwise, just put in a zero.
+			s.append("0.0");
 		}
+
 		s.append(" ");
 		s.append(comparator);
 		s.append(" ");

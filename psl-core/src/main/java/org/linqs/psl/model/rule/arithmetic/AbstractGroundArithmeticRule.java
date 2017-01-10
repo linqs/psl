@@ -63,11 +63,18 @@ public class AbstractGroundArithmeticRule implements GroundRule {
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
-		for (int i = 0; i < coeffs.length; i++) {
-			sb.append(coeffs[i]);
-			sb.append(" ");
-			sb.append(atoms[i]);
-			sb.append(" ");
+
+		// If there are coefficients, print each one.
+		if (coeffs.length > 0) {
+			for (int i = 0; i < coeffs.length; i++) {
+				sb.append(coeffs[i]);
+				sb.append(" ");
+				sb.append(atoms[i]);
+				sb.append(" ");
+			}
+		} else {
+			// Otherwise, just put in a zero.
+			sb.append("0.0 ");
 		}
 		
 		switch (comparator) {

@@ -499,7 +499,7 @@ public class GroundRuleTest {
 		rule.groundAll(manager, store);
 		PSLTest.compareGroundRules(expected, rule, store, true);
 
-		// Now negate the select and we should observe no groundings.
+		// Now negate the select.
 		store = new ADMMReasoner(model.config);
 
 		selects = new HashMap<SummationVariable, Formula>();
@@ -512,14 +512,15 @@ public class GroundRuleTest {
 				true
 		);
 
-		/* TEST TODO(eriq): Question out to Steve for semantics.
-		// TEST
-		System.out.println("TEST");
-
-		expected = new ArrayList<String>();
+		expected = Arrays.asList(
+			"1.0: 0.0 >= 1.0 ^2",
+			"1.0: 0.0 >= 1.0 ^2",
+			"1.0: 0.0 >= 1.0 ^2",
+			"1.0: 0.0 >= 1.0 ^2",
+			"1.0: 0.0 >= 1.0 ^2"
+		);
 		rule.groundAll(manager, store);
-		PSLTest.compareGroundRules(expected, rule, store, true);
-		*/
+		PSLTest.compareGroundRules(expected, rule, store, false);
 	}
 
 	@Test
