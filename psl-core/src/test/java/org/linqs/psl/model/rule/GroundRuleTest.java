@@ -499,7 +499,7 @@ public class GroundRuleTest {
 		rule.groundAll(manager, store);
 		PSLTest.compareGroundRules(expected, rule, store, true);
 
-		// Now negate the select and we should observe no groundings.
+		// Now negate the select.
 		store = new ADMMReasoner(model.config);
 
 		selects = new HashMap<SummationVariable, Formula>();
@@ -512,14 +512,15 @@ public class GroundRuleTest {
 				true
 		);
 
-		/* TEST TODO(eriq): Question out to Steve for semantics.
-		// TEST
-		System.out.println("TEST");
-
-		expected = new ArrayList<String>();
+		expected = Arrays.asList(
+			"1.0: 0.0 >= 1.0 ^2",
+			"1.0: 0.0 >= 1.0 ^2",
+			"1.0: 0.0 >= 1.0 ^2",
+			"1.0: 0.0 >= 1.0 ^2",
+			"1.0: 0.0 >= 1.0 ^2"
+		);
 		rule.groundAll(manager, store);
-		PSLTest.compareGroundRules(expected, rule, store, true);
-		*/
+		PSLTest.compareGroundRules(expected, rule, store, false);
 	}
 
 	@Test
@@ -776,16 +777,15 @@ public class GroundRuleTest {
 
 		expected = Arrays.asList(
 			"1.0: " +
-				"1.0 * FRIENDS('Alice', 'Bob') + 1.0 * FRIENDS('Alice', 'Charlie') + 1.0 * FRIENDS('Alice', 'Derek') + 1.0 * FRIENDS('Alice', 'Eugene') " +
-				"1.0 * FRIENDS('Bob', 'Alice') + 1.0 * FRIENDS('Bob', 'Charlie') + 1.0 * FRIENDS('Bob', 'Derek') + 1.0 * FRIENDS('Bob', 'Eugene') " +
-				"1.0 * FRIENDS('Charlie', 'Alice') + 1.0 * FRIENDS('Charlie', 'Bob') + 1.0 * FRIENDS('Charlie', 'Derek') + 1.0 * FRIENDS('Charlie', 'Eugene') " +
-				"1.0 * FRIENDS('Derek', 'Alice') + 1.0 * FRIENDS('Derek', 'Bob') + 1.0 * FRIENDS('Derek', 'Charlie') + 1.0 * FRIENDS('Derek', 'Eugene') " +
+				"1.0 * FRIENDS('Alice', 'Bob') + 1.0 * FRIENDS('Alice', 'Charlie') + 1.0 * FRIENDS('Alice', 'Derek') + 1.0 * FRIENDS('Alice', 'Eugene') + " +
+				"1.0 * FRIENDS('Bob', 'Alice') + 1.0 * FRIENDS('Bob', 'Charlie') + 1.0 * FRIENDS('Bob', 'Derek') + 1.0 * FRIENDS('Bob', 'Eugene') + " +
+				"1.0 * FRIENDS('Charlie', 'Alice') + 1.0 * FRIENDS('Charlie', 'Bob') + 1.0 * FRIENDS('Charlie', 'Derek') + 1.0 * FRIENDS('Charlie', 'Eugene') + " +
+				"1.0 * FRIENDS('Derek', 'Alice') + 1.0 * FRIENDS('Derek', 'Bob') + 1.0 * FRIENDS('Derek', 'Charlie') + 1.0 * FRIENDS('Derek', 'Eugene') + " +
 				"1.0 * FRIENDS('Eugene', 'Alice') + 1.0 * FRIENDS('Eugene', 'Bob') + 1.0 * FRIENDS('Eugene', 'Charlie') + 1.0 * FRIENDS('Eugene', 'Derek') " +
 				">= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
-		// TODO(eriq): Waiting response from Steve.
-		// PSLTest.compareGroundRules(expected, rule, store, true);
+		PSLTest.compareGroundRules(expected, rule, store, true);
 
 		// Add a select on A.
 		store = new ADMMReasoner(model.config);
@@ -804,15 +804,14 @@ public class GroundRuleTest {
 
 		expected = Arrays.asList(
 			"1.0: " +
-				"1.0 * FRIENDS('Alice', 'Bob') + 1.0 * FRIENDS('Alice', 'Charlie') + 1.0 * FRIENDS('Alice', 'Derek') + 1.0 * FRIENDS('Alice', 'Eugene') " +
-				"1.0 * FRIENDS('Bob', 'Alice') + 1.0 * FRIENDS('Bob', 'Charlie') + 1.0 * FRIENDS('Bob', 'Derek') + 1.0 * FRIENDS('Bob', 'Eugene') " +
-				"1.0 * FRIENDS('Charlie', 'Alice') + 1.0 * FRIENDS('Charlie', 'Bob') + 1.0 * FRIENDS('Charlie', 'Derek') + 1.0 * FRIENDS('Charlie', 'Eugene') " +
+				"1.0 * FRIENDS('Alice', 'Bob') + 1.0 * FRIENDS('Alice', 'Charlie') + 1.0 * FRIENDS('Alice', 'Derek') + 1.0 * FRIENDS('Alice', 'Eugene') + " +
+				"1.0 * FRIENDS('Bob', 'Alice') + 1.0 * FRIENDS('Bob', 'Charlie') + 1.0 * FRIENDS('Bob', 'Derek') + 1.0 * FRIENDS('Bob', 'Eugene') + " +
+				"1.0 * FRIENDS('Charlie', 'Alice') + 1.0 * FRIENDS('Charlie', 'Bob') + 1.0 * FRIENDS('Charlie', 'Derek') + 1.0 * FRIENDS('Charlie', 'Eugene') + " +
 				"1.0 * FRIENDS('Derek', 'Alice') + 1.0 * FRIENDS('Derek', 'Bob') + 1.0 * FRIENDS('Derek', 'Charlie') + 1.0 * FRIENDS('Derek', 'Eugene') " +
 				">= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
-		// TODO(eriq): Waiting response from Steve.
-		// PSLTest.compareGroundRules(expected, rule, store, true);
+		PSLTest.compareGroundRules(expected, rule, store, true);
 
 		// Add a select on B.
 		store = new ADMMReasoner(model.config);
@@ -831,15 +830,14 @@ public class GroundRuleTest {
 
 		expected = Arrays.asList(
 			"1.0: " +
-				"1.0 * FRIENDS('Alice', 'Bob') + 1.0 * FRIENDS('Alice', 'Charlie') + 1.0 * FRIENDS('Alice', 'Derek') " +
-				"1.0 * FRIENDS('Bob', 'Alice') + 1.0 * FRIENDS('Bob', 'Charlie') + 1.0 * FRIENDS('Bob', 'Derek') " +
-				"1.0 * FRIENDS('Charlie', 'Alice') + 1.0 * FRIENDS('Charlie', 'Bob') + 1.0 * FRIENDS('Charlie', 'Derek') " +
+				"1.0 * FRIENDS('Alice', 'Bob') + 1.0 * FRIENDS('Alice', 'Charlie') + 1.0 * FRIENDS('Alice', 'Derek') + " +
+				"1.0 * FRIENDS('Bob', 'Alice') + 1.0 * FRIENDS('Bob', 'Charlie') + 1.0 * FRIENDS('Bob', 'Derek') + " +
+				"1.0 * FRIENDS('Charlie', 'Alice') + 1.0 * FRIENDS('Charlie', 'Bob') + 1.0 * FRIENDS('Charlie', 'Derek') + " +
 				"1.0 * FRIENDS('Derek', 'Alice') + 1.0 * FRIENDS('Derek', 'Bob') + 1.0 * FRIENDS('Derek', 'Charlie') " +
 				">= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
-		// TODO(eriq): Waiting response from Steve.
-		// PSLTest.compareGroundRules(expected, rule, store, true);
+		PSLTest.compareGroundRules(expected, rule, store, true);
 	}
 
 	@Test
@@ -888,16 +886,15 @@ public class GroundRuleTest {
 
 		expected = Arrays.asList(
 			"1.0: " +
-				"5.0 * FRIENDS('Alice', 'Bob') + 5.0 * FRIENDS('Alice', 'Charlie') + 5.0 * FRIENDS('Alice', 'Derek') " +
-				"5.0 * FRIENDS('Bob', 'Alice') + 5.0 * FRIENDS('Bob', 'Charlie') + 5.0 * FRIENDS('Bob', 'Derek') " +
-				"5.0 * FRIENDS('Charlie', 'Alice') + 5.0 * FRIENDS('Charlie', 'Bob') + 5.0 * FRIENDS('Charlie', 'Derek') " +
-				"5.0 * FRIENDS('Derek', 'Alice') + 5.0 * FRIENDS('Derek', 'Bob') + 5.0 * FRIENDS('Derek', 'Charlie') " +
+				"5.0 * FRIENDS('Alice', 'Bob') + 5.0 * FRIENDS('Alice', 'Charlie') + 5.0 * FRIENDS('Alice', 'Derek') + " +
+				"5.0 * FRIENDS('Bob', 'Alice') + 5.0 * FRIENDS('Bob', 'Charlie') + 5.0 * FRIENDS('Bob', 'Derek') + " +
+				"5.0 * FRIENDS('Charlie', 'Alice') + 5.0 * FRIENDS('Charlie', 'Bob') + 5.0 * FRIENDS('Charlie', 'Derek') + " +
+				"5.0 * FRIENDS('Derek', 'Alice') + 5.0 * FRIENDS('Derek', 'Bob') + 5.0 * FRIENDS('Derek', 'Charlie') + " +
 				"5.0 * FRIENDS('Eugene', 'Alice') + 5.0 * FRIENDS('Eugene', 'Bob') + 5.0 * FRIENDS('Eugene', 'Charlie') + 5.0 * FRIENDS('Eugene', 'Derek') " +
 				">= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
-		// TODO(eriq): Waiting response from Steve.
-		// PSLTest.compareGroundRules(expected, rule, store, true);
+		PSLTest.compareGroundRules(expected, rule, store, true);
 
 		// |B|
 		store = new ADMMReasoner(model.config);
@@ -915,16 +912,15 @@ public class GroundRuleTest {
 
 		expected = Arrays.asList(
 			"1.0: " +
-				"4.0 * FRIENDS('Alice', 'Bob') + 4.0 * FRIENDS('Alice', 'Charlie') + 4.0 * FRIENDS('Alice', 'Derek') " +
-				"4.0 * FRIENDS('Bob', 'Alice') + 4.0 * FRIENDS('Bob', 'Charlie') + 4.0 * FRIENDS('Bob', 'Derek') " +
-				"4.0 * FRIENDS('Charlie', 'Alice') + 4.0 * FRIENDS('Charlie', 'Bob') + 4.0 * FRIENDS('Charlie', 'Derek') " +
-				"4.0 * FRIENDS('Derek', 'Alice') + 4.0 * FRIENDS('Derek', 'Bob') + 4.0 * FRIENDS('Derek', 'Charlie') " +
+				"4.0 * FRIENDS('Alice', 'Bob') + 4.0 * FRIENDS('Alice', 'Charlie') + 4.0 * FRIENDS('Alice', 'Derek') + " +
+				"4.0 * FRIENDS('Bob', 'Alice') + 4.0 * FRIENDS('Bob', 'Charlie') + 4.0 * FRIENDS('Bob', 'Derek') + " +
+				"4.0 * FRIENDS('Charlie', 'Alice') + 4.0 * FRIENDS('Charlie', 'Bob') + 4.0 * FRIENDS('Charlie', 'Derek') + " +
+				"4.0 * FRIENDS('Derek', 'Alice') + 4.0 * FRIENDS('Derek', 'Bob') + 4.0 * FRIENDS('Derek', 'Charlie') + " +
 				"4.0 * FRIENDS('Eugene', 'Alice') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Derek') " +
 				">= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
-		// TODO(eriq): Waiting response from Steve.
-		// PSLTest.compareGroundRules(expected, rule, store, true);
+		PSLTest.compareGroundRules(expected, rule, store, true);
 
 		// |A| + |B|
 		store = new ADMMReasoner(model.config);
@@ -942,16 +938,15 @@ public class GroundRuleTest {
 
 		expected = Arrays.asList(
 			"1.0: " +
-				"9.0 * FRIENDS('Alice', 'Bob') + 9.0 * FRIENDS('Alice', 'Charlie') + 9.0 * FRIENDS('Alice', 'Derek') " +
-				"9.0 * FRIENDS('Bob', 'Alice') + 9.0 * FRIENDS('Bob', 'Charlie') + 9.0 * FRIENDS('Bob', 'Derek') " +
-				"9.0 * FRIENDS('Charlie', 'Alice') + 9.0 * FRIENDS('Charlie', 'Bob') + 9.0 * FRIENDS('Charlie', 'Derek') " +
-				"9.0 * FRIENDS('Derek', 'Alice') + 9.0 * FRIENDS('Derek', 'Bob') + 9.0 * FRIENDS('Derek', 'Charlie') " +
+				"9.0 * FRIENDS('Alice', 'Bob') + 9.0 * FRIENDS('Alice', 'Charlie') + 9.0 * FRIENDS('Alice', 'Derek') + " +
+				"9.0 * FRIENDS('Bob', 'Alice') + 9.0 * FRIENDS('Bob', 'Charlie') + 9.0 * FRIENDS('Bob', 'Derek') + " +
+				"9.0 * FRIENDS('Charlie', 'Alice') + 9.0 * FRIENDS('Charlie', 'Bob') + 9.0 * FRIENDS('Charlie', 'Derek') + " +
+				"9.0 * FRIENDS('Derek', 'Alice') + 9.0 * FRIENDS('Derek', 'Bob') + 9.0 * FRIENDS('Derek', 'Charlie') + " +
 				"9.0 * FRIENDS('Eugene', 'Alice') + 9.0 * FRIENDS('Eugene', 'Bob') + 9.0 * FRIENDS('Eugene', 'Charlie') + 9.0 * FRIENDS('Eugene', 'Derek') " +
 				">= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
-		// TODO(eriq): Waiting response from Steve.
-		// PSLTest.compareGroundRules(expected, rule, store, true);
+		PSLTest.compareGroundRules(expected, rule, store, true);
 
 		// |A| - |B|
 		store = new ADMMReasoner(model.config);
@@ -969,16 +964,15 @@ public class GroundRuleTest {
 
 		expected = Arrays.asList(
 			"1.0: " +
-				"1.0 * FRIENDS('Alice', 'Bob') + 1.0 * FRIENDS('Alice', 'Charlie') + 1.0 * FRIENDS('Alice', 'Derek') " +
-				"1.0 * FRIENDS('Bob', 'Alice') + 1.0 * FRIENDS('Bob', 'Charlie') + 1.0 * FRIENDS('Bob', 'Derek') " +
-				"1.0 * FRIENDS('Charlie', 'Alice') + 1.0 * FRIENDS('Charlie', 'Bob') + 1.0 * FRIENDS('Charlie', 'Derek') " +
-				"1.0 * FRIENDS('Derek', 'Alice') + 1.0 * FRIENDS('Derek', 'Bob') + 1.0 * FRIENDS('Derek', 'Charlie') " +
+				"1.0 * FRIENDS('Alice', 'Bob') + 1.0 * FRIENDS('Alice', 'Charlie') + 1.0 * FRIENDS('Alice', 'Derek') + " +
+				"1.0 * FRIENDS('Bob', 'Alice') + 1.0 * FRIENDS('Bob', 'Charlie') + 1.0 * FRIENDS('Bob', 'Derek') + " +
+				"1.0 * FRIENDS('Charlie', 'Alice') + 1.0 * FRIENDS('Charlie', 'Bob') + 1.0 * FRIENDS('Charlie', 'Derek') + " +
+				"1.0 * FRIENDS('Derek', 'Alice') + 1.0 * FRIENDS('Derek', 'Bob') + 1.0 * FRIENDS('Derek', 'Charlie') + " +
 				"1.0 * FRIENDS('Eugene', 'Alice') + 1.0 * FRIENDS('Eugene', 'Bob') + 1.0 * FRIENDS('Eugene', 'Charlie') + 1.0 * FRIENDS('Eugene', 'Derek') " +
 				">= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
-		// TODO(eriq): Waiting response from Steve.
-		// PSLTest.compareGroundRules(expected, rule, store, true);
+		PSLTest.compareGroundRules(expected, rule, store, true);
 
 		// |A| * |B|
 		store = new ADMMReasoner(model.config);
@@ -996,16 +990,15 @@ public class GroundRuleTest {
 
 		expected = Arrays.asList(
 			"1.0: " +
-				"20.0 * FRIENDS('Alice', 'Bob') + 20.0 * FRIENDS('Alice', 'Charlie') + 20.0 * FRIENDS('Alice', 'Derek') " +
-				"20.0 * FRIENDS('Bob', 'Alice') + 20.0 * FRIENDS('Bob', 'Charlie') + 20.0 * FRIENDS('Bob', 'Derek') " +
-				"20.0 * FRIENDS('Charlie', 'Alice') + 20.0 * FRIENDS('Charlie', 'Bob') + 20.0 * FRIENDS('Charlie', 'Derek') " +
-				"20.0 * FRIENDS('Derek', 'Alice') + 20.0 * FRIENDS('Derek', 'Bob') + 20.0 * FRIENDS('Derek', 'Charlie') " +
+				"20.0 * FRIENDS('Alice', 'Bob') + 20.0 * FRIENDS('Alice', 'Charlie') + 20.0 * FRIENDS('Alice', 'Derek') + " +
+				"20.0 * FRIENDS('Bob', 'Alice') + 20.0 * FRIENDS('Bob', 'Charlie') + 20.0 * FRIENDS('Bob', 'Derek') + " +
+				"20.0 * FRIENDS('Charlie', 'Alice') + 20.0 * FRIENDS('Charlie', 'Bob') + 20.0 * FRIENDS('Charlie', 'Derek') + " +
+				"20.0 * FRIENDS('Derek', 'Alice') + 20.0 * FRIENDS('Derek', 'Bob') + 20.0 * FRIENDS('Derek', 'Charlie') + " +
 				"20.0 * FRIENDS('Eugene', 'Alice') + 20.0 * FRIENDS('Eugene', 'Bob') + 20.0 * FRIENDS('Eugene', 'Charlie') + 20.0 * FRIENDS('Eugene', 'Derek') " +
 				">= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
-		// TODO(eriq): Waiting response from Steve.
-		// PSLTest.compareGroundRules(expected, rule, store, true);
+		PSLTest.compareGroundRules(expected, rule, store, true);
 
 		// |A| / |B|
 		store = new ADMMReasoner(model.config);
@@ -1023,16 +1016,15 @@ public class GroundRuleTest {
 
 		expected = Arrays.asList(
 			"1.0: " +
-				"1.25 * FRIENDS('Alice', 'Bob') + 1.25 * FRIENDS('Alice', 'Charlie') + 1.25 * FRIENDS('Alice', 'Derek') " +
-				"1.25 * FRIENDS('Bob', 'Alice') + 1.25 * FRIENDS('Bob', 'Charlie') + 1.25 * FRIENDS('Bob', 'Derek') " +
-				"1.25 * FRIENDS('Charlie', 'Alice') + 1.25 * FRIENDS('Charlie', 'Bob') + 1.25 * FRIENDS('Charlie', 'Derek') " +
-				"1.25 * FRIENDS('Derek', 'Alice') + 1.25 * FRIENDS('Derek', 'Bob') + 1.25 * FRIENDS('Derek', 'Charlie') " +
+				"1.25 * FRIENDS('Alice', 'Bob') + 1.25 * FRIENDS('Alice', 'Charlie') + 1.25 * FRIENDS('Alice', 'Derek') + " +
+				"1.25 * FRIENDS('Bob', 'Alice') + 1.25 * FRIENDS('Bob', 'Charlie') + 1.25 * FRIENDS('Bob', 'Derek') + " +
+				"1.25 * FRIENDS('Charlie', 'Alice') + 1.25 * FRIENDS('Charlie', 'Bob') + 1.25 * FRIENDS('Charlie', 'Derek') + " +
+				"1.25 * FRIENDS('Derek', 'Alice') + 1.25 * FRIENDS('Derek', 'Bob') + 1.25 * FRIENDS('Derek', 'Charlie') + " +
 				"1.25 * FRIENDS('Eugene', 'Alice') + 1.25 * FRIENDS('Eugene', 'Bob') + 1.25 * FRIENDS('Eugene', 'Charlie') + 1.25 * FRIENDS('Eugene', 'Derek') " +
 				">= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
-		// TODO(eriq): Waiting response from Steve.
-		// PSLTest.compareGroundRules(expected, rule, store, true);
+		PSLTest.compareGroundRules(expected, rule, store, true);
 	}
 
 	/*
