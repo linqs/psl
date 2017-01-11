@@ -624,9 +624,6 @@ public class RDBMSDatabase implements Database {
 		String queryString = sqler.getSQL(f);
 		log.trace(queryString);
 
-		// TEST
-		System.out.println(queryString);
-		
 		// Create and initialize ResultList
 		int i = 0;
 		RDBMSResultList results = new RDBMSResultList(projectTo.size());
