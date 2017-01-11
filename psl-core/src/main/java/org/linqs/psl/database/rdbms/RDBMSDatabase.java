@@ -623,7 +623,7 @@ public class RDBMSDatabase implements Database {
 		Formula2SQL sqler = new Formula2SQL(partialGrounding, projectTo, this);
 		String queryString = sqler.getSQL(f);
 		log.trace(queryString);
-		
+
 		// Create and initialize ResultList
 		int i = 0;
 		RDBMSResultList results = new RDBMSResultList(projectTo.size());

@@ -31,7 +31,7 @@ import org.linqs.psl.reasoner.function.FunctionComparator;
 
 /**
  * Container for components of an arithmetic rule formula.
- * 
+ *
  * @author Stephen Bach
  */
 public class ArithmeticRuleExpression {
@@ -48,7 +48,7 @@ public class ArithmeticRuleExpression {
 		this.atoms = Collections.unmodifiableList(atoms);
 		this.comparator = comparator;
 		this.c = c;
-		
+
 		Set<Variable> vars = new HashSet<Variable>();
 		Set<SummationVariable> sumVars = new HashSet<SummationVariable>();
 		Set<String> sumVarNames = new HashSet<String>();
@@ -102,43 +102,51 @@ public class ArithmeticRuleExpression {
 		this.vars = Collections.unmodifiableSet(vars);
 		this.sumVars = Collections.unmodifiableSet(sumVars);
 	}
-	
+
 	public List<Coefficient> getAtomCoefficients() {
 		return coeffs;
 	}
-	
+
 	public List<SummationAtomOrAtom> getAtoms() {
 		return atoms;
 	}
-	
+
 	public FunctionComparator getComparator() {
 		return comparator;
 	}
-	
+
 	public Coefficient getFinalCoefficient() {
 		return c;
 	}
-	
+
 	public Set<Variable> getVariables() {
 		return vars;
 	}
-	
+
 	public Set<SummationVariable> getSummationVariables() {
 		return sumVars;
 	}
-	
+
 	@Override
 	public String toString() {
 		StringBuilder s = new StringBuilder();
-		for (int i = 0; i < coeffs.size(); i++) {
-			if (i != 0) {
-				s.append(" + ");
-			}
 
-			s.append(coeffs.get(i));
-			s.append(" * ");
-			s.append(atoms.get(i));
+		// If there are coefficients, print each one.
+		if (coeffs.size() > 0) {
+			for (int i = 0; i < coeffs.size(); i++) {
+				if (i != 0) {
+					s.append(" + ");
+				}
+
+				s.append(coeffs.get(i));
+				s.append(" * ");
+				s.append(atoms.get(i));
+			}
+		} else {
+			// Otherwise, just put in a zero.
+			s.append("0.0");
 		}
+
 		s.append(" ");
 		s.append(comparator);
 		s.append(" ");

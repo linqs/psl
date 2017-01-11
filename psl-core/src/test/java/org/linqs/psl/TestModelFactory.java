@@ -1,11 +1,5 @@
 package org.linqs.psl;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.linqs.psl.application.inference.MPEInference;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.EmptyBundle;
@@ -30,6 +24,13 @@ import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.Variable;
+
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * An easy interface for loading models to test.
@@ -62,13 +63,20 @@ public class TestModelFactory {
 	 *
 	 * Data:
 	 *    - There are 5 people.
-	 *    - Every person has a Nice value.
+	 *    - Every person has a Nice value. Alice starts at 0.8 then is decreases by 0.2 alphabetically (Eugue is 0.0).
 	 *    - All Friendships are in the target partition.
 	 *    - All Friendships have a binary truth value in the truth partition.
 	 *
 	 * Data is added as well and can be seen in the code.
 	 */
 	public static ModelInformation getModel() {
+		return getModel(false);
+	}
+
+	/**
+	 * Same as getModel(), but if specified all people have a nice truth value of 1.0.
+	 */
+	public static ModelInformation getModel(boolean nicePeople) {
 		// Define Predicates
 		Map<String, ConstantType[]> predicatesInfo = new HashMap<String, ConstantType[]>();
 		predicatesInfo.put("Nice", new ConstantType[]{ConstantType.UniqueID});
@@ -131,13 +139,23 @@ public class TestModelFactory {
 		)));
 
 		// Nice
-		observations.put(predicates.get("Nice"), new ArrayList<PredicateData>(Arrays.asList(
-			new PredicateData(1.0, new Object[]{"Alice"}),
-			new PredicateData(0.8, new Object[]{"Bob"}),
-			new PredicateData(0.6, new Object[]{"Charlie"}),
-			new PredicateData(0.4, new Object[]{"Derek"}),
-			new PredicateData(0.2, new Object[]{"Eugene"})
-		)));
+		if (nicePeople) {
+			observations.put(predicates.get("Nice"), new ArrayList<PredicateData>(Arrays.asList(
+				new PredicateData(1.0, new Object[]{"Alice"}),
+				new PredicateData(1.0, new Object[]{"Bob"}),
+				new PredicateData(1.0, new Object[]{"Charlie"}),
+				new PredicateData(1.0, new Object[]{"Derek"}),
+				new PredicateData(1.0, new Object[]{"Eugene"})
+			)));
+		} else {
+			observations.put(predicates.get("Nice"), new ArrayList<PredicateData>(Arrays.asList(
+				new PredicateData(0.8, new Object[]{"Alice"}),
+				new PredicateData(0.6, new Object[]{"Bob"}),
+				new PredicateData(0.4, new Object[]{"Charlie"}),
+				new PredicateData(0.2, new Object[]{"Derek"}),
+				new PredicateData(0.0, new Object[]{"Eugene"})
+			)));
+		}
 
 		// Friends
 		targets.put(predicates.get("Friends"), new ArrayList<PredicateData>(Arrays.asList(
@@ -200,8 +218,11 @@ public class TestModelFactory {
 			Map<StandardPredicate, List<PredicateData>> observations, Map<StandardPredicate, List<PredicateData>> targets,
 			Map<StandardPredicate, List<PredicateData>> truths) {
 		ConfigBundle config = new EmptyBundle();
+      String identifier = String.format("%s-%03d", TestModelFactory.class.getName(), modelId);
 		DataStore dataStore = new RDBMSDataStore(new H2DatabaseDriver(
-				Type.Memory, String.format("%s-%03d", TestModelFactory.class.getName(), modelId), true), config);
+				Type.Memory,
+            Paths.get(System.getProperty("java.io.tmpdir"), identifier).toString(),
+            true), config);
 		Model model = new Model();
 
 		// Predicates

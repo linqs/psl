@@ -235,14 +235,14 @@ public class RuleStringTest {
 		rule = new UnweightedArithmeticRule(arithmeticBaseRule);
 		// Remember, equality inserts two rules (<= and >=).
 		expected = Arrays.asList(
-			"1.0 SINGLEPREDICATE('Alice') 1.0 SINGLEPREDICATE('Alice') <= 1.0 .",
-			"1.0 SINGLEPREDICATE('Alice') 1.0 SINGLEPREDICATE('Alice') >= 1.0 .",
-			"1.0 SINGLEPREDICATE('Alice') 1.0 SINGLEPREDICATE('Bob') <= 1.0 .",
-			"1.0 SINGLEPREDICATE('Alice') 1.0 SINGLEPREDICATE('Bob') >= 1.0 .",
-			"1.0 SINGLEPREDICATE('Bob') 1.0 SINGLEPREDICATE('Alice') <= 1.0 .",
-			"1.0 SINGLEPREDICATE('Bob') 1.0 SINGLEPREDICATE('Alice') >= 1.0 .",
-			"1.0 SINGLEPREDICATE('Bob') 1.0 SINGLEPREDICATE('Bob') <= 1.0 .",
-			"1.0 SINGLEPREDICATE('Bob') 1.0 SINGLEPREDICATE('Bob') >= 1.0 ."
+			"1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Alice') <= 1.0 .",
+			"1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Alice') >= 1.0 .",
+			"1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Bob') <= 1.0 .",
+			"1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Bob') >= 1.0 .",
+			"1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Alice') <= 1.0 .",
+			"1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Alice') >= 1.0 .",
+			"1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Bob') <= 1.0 .",
+			"1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Bob') >= 1.0 ."
 		);
 		rule.groundAll(manager, store);
 		PSLTest.compareGroundRules(expected, rule, store);
@@ -250,14 +250,14 @@ public class RuleStringTest {
 		// Weighted, Squared
 		rule = new WeightedArithmeticRule(arithmeticBaseRule,	10.0, true);
 		expected = Arrays.asList(
-			"10.0: 1.0 SINGLEPREDICATE('Alice') 1.0 SINGLEPREDICATE('Alice') <= 1.0 ^2",
-			"10.0: 1.0 SINGLEPREDICATE('Alice') 1.0 SINGLEPREDICATE('Alice') >= 1.0 ^2",
-			"10.0: 1.0 SINGLEPREDICATE('Alice') 1.0 SINGLEPREDICATE('Bob') <= 1.0 ^2",
-			"10.0: 1.0 SINGLEPREDICATE('Alice') 1.0 SINGLEPREDICATE('Bob') >= 1.0 ^2",
-			"10.0: 1.0 SINGLEPREDICATE('Bob') 1.0 SINGLEPREDICATE('Alice') <= 1.0 ^2",
-			"10.0: 1.0 SINGLEPREDICATE('Bob') 1.0 SINGLEPREDICATE('Alice') >= 1.0 ^2",
-			"10.0: 1.0 SINGLEPREDICATE('Bob') 1.0 SINGLEPREDICATE('Bob') <= 1.0 ^2",
-			"10.0: 1.0 SINGLEPREDICATE('Bob') 1.0 SINGLEPREDICATE('Bob') >= 1.0 ^2"
+			"10.0: 1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Alice') <= 1.0 ^2",
+			"10.0: 1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Alice') >= 1.0 ^2",
+			"10.0: 1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Bob') <= 1.0 ^2",
+			"10.0: 1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Bob') >= 1.0 ^2",
+			"10.0: 1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Alice') <= 1.0 ^2",
+			"10.0: 1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Alice') >= 1.0 ^2",
+			"10.0: 1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Bob') <= 1.0 ^2",
+			"10.0: 1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Bob') >= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
 		PSLTest.compareGroundRules(expected, rule, store);
@@ -265,14 +265,14 @@ public class RuleStringTest {
 		// Weighted, Not Squared
 		rule = new WeightedArithmeticRule(arithmeticBaseRule,	10.0, false);
 		expected = Arrays.asList(
-			"10.0: 1.0 SINGLEPREDICATE('Alice') 1.0 SINGLEPREDICATE('Alice') <= 1.0",
-			"10.0: 1.0 SINGLEPREDICATE('Alice') 1.0 SINGLEPREDICATE('Alice') >= 1.0",
-			"10.0: 1.0 SINGLEPREDICATE('Alice') 1.0 SINGLEPREDICATE('Bob') <= 1.0",
-			"10.0: 1.0 SINGLEPREDICATE('Alice') 1.0 SINGLEPREDICATE('Bob') >= 1.0",
-			"10.0: 1.0 SINGLEPREDICATE('Bob') 1.0 SINGLEPREDICATE('Alice') <= 1.0",
-			"10.0: 1.0 SINGLEPREDICATE('Bob') 1.0 SINGLEPREDICATE('Alice') >= 1.0",
-			"10.0: 1.0 SINGLEPREDICATE('Bob') 1.0 SINGLEPREDICATE('Bob') <= 1.0",
-			"10.0: 1.0 SINGLEPREDICATE('Bob') 1.0 SINGLEPREDICATE('Bob') >= 1.0"
+			"10.0: 1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Alice') <= 1.0",
+			"10.0: 1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Alice') >= 1.0",
+			"10.0: 1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Bob') <= 1.0",
+			"10.0: 1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Bob') >= 1.0",
+			"10.0: 1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Alice') <= 1.0",
+			"10.0: 1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Alice') >= 1.0",
+			"10.0: 1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Bob') <= 1.0",
+			"10.0: 1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Bob') >= 1.0"
 		);
 		rule.groundAll(manager, store);
 		PSLTest.compareGroundRules(expected, rule, store);
