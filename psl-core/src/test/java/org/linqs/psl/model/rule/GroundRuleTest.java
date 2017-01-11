@@ -585,20 +585,17 @@ public class GroundRuleTest {
 				true
 		);
 
-		/* TEST TODO(eriq): Question out to Steve for semantics.
-		// TEST
-		System.out.println("TEST");
-
 		// Note that 'Eugene' is the only one because Nice('Eugene') = 0.
+		// However, FRIENDS('Eugene', 'Eugene') does not appear in the observations.
 		expected = Arrays.asList(
-			"1.0: 1.0 * FRIENDS('Alice', 'Euegne') >= 1.0 ^2",
-			"1.0: 1.0 * FRIENDS('Bob', 'Euegne') >= 1.0 ^2",
-			"1.0: 1.0 * FRIENDS('Charlie', 'Euegne') >= 1.0 ^2",
-			"1.0: 1.0 * FRIENDS('Derek', 'Euegne') >= 1.0 ^2"
+			"1.0: 1.0 * FRIENDS('Alice', 'Eugene') >= 1.0 ^2",
+			"1.0: 1.0 * FRIENDS('Bob', 'Eugene') >= 1.0 ^2",
+			"1.0: 1.0 * FRIENDS('Charlie', 'Eugene') >= 1.0 ^2",
+			"1.0: 1.0 * FRIENDS('Derek', 'Eugene') >= 1.0 ^2",
+			"1.0: 0.0 >= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
-		PSLTest.compareGroundRules(expected, rule, store, true);
-		*/
+		PSLTest.compareGroundRules(expected, rule, store, false);
 	}
 
 	@Test
@@ -1056,8 +1053,6 @@ public class GroundRuleTest {
 
 
 	// TODO(eriq):
-	//	- No Goundings because of select
-	//	- No Groundings not because of select
 	//	- Coefficient Functions
 	//		 - (Min / Max)
 	//		 - Use cardinality
