@@ -114,7 +114,7 @@
 				<version>2.19</version>
 				<configuration>
 					<enableAssertions>true</enableAssertions>
-               <trimStackTrace>false</trimStackTrace>
+					<trimStackTrace>false</trimStackTrace>
 				</configuration>
 			</plugin>
 			<plugin>
