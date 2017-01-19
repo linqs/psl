@@ -29,7 +29,7 @@ then
 <project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" \n\
 	xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd\"> \n\
 	<modelVersion>4.0.0</modelVersion> \n\
-	<groupId>edu.umd.cs</groupId> \n\
+	<groupId>org.linqs</groupId> \n\
 	<artifactId>psl-cli-stub</artifactId> \n\
 	<name>psl-cli-stub</name> \n\
 	<version>$PSL_VERSION</version> \n\
@@ -37,7 +37,7 @@ then
 	<description>A stub POM file for running PSL from the command line.</description> \n\
 	<dependencies> \n\
 		<dependency> \n\
-			<groupId>edu.umd.cs</groupId> \n\
+			<groupId>org.linqs</groupId> \n\
 			<artifactId>psl-cli</artifactId> \n\
 			<version>$PSL_VERSION</version> \n\
 		</dependency> \n\
@@ -75,4 +75,4 @@ then
 	mvn dependency:build-classpath -Dmdep.outputFile=classpath.out > /dev/null
 fi
 
-java -cp `cat classpath.out` edu.umd.cs.psl.cli.Launcher "$@"
+java -cp `cat classpath.out` org.linqs.psl.cli.Launcher "$@"
