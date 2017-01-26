@@ -45,6 +45,7 @@ import org.linqs.psl.parser.ModelLoader;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class ModelLoaderTest {
@@ -67,7 +68,22 @@ public class ModelLoaderTest {
 		dataStore.registerPredicate(doublePredicate);
 	}
 
+	/**
+	 * Convenience call for the common functionality of assertModel() (don't alphabetize).
+	 */
 	public void assertModel(String input, String[] expectedRules) {
+		assertModel(input, expectedRules, false);
+	}
+
+	/**
+	 * Load a rules into a model from a string.
+	 *
+	 * If, for some reason, the exact format of the output is not known (like with summations which
+	 * may order the summation terms in different ways), then you can use |alphabetize| to sort all
+	 * characters in both strings (actual and expected) before comparing.
+	 * Only alphabetize if it is really necessary since it makes the output much harder to interpret.
+	 */
+	public void assertModel(String input, String[] expectedRules, boolean alphabetize) {
 		Model model = null;
 
 		try {
@@ -76,20 +92,50 @@ public class ModelLoaderTest {
 			fail("IOException thrown from ModelLoader.load(): " + ex);
 		}
 
-		int i = 0;
-		for (Rule rule : model.getRules()) {
-			assertEquals(
-					String.format("Rule %d mismatch. Expected: [%s], found [%s].", i, expectedRules[i], rule.toString()),
-					expectedRules[i],
-					rule.toString()
-			);
-			i++;
+		int ruleCount = 0;
+
+		if (alphabetize) {
+			for (Rule rule : model.getRules()) {
+				String alphaRule = sort(rule.toString());
+				String alphaExpected = sort(expectedRules[ruleCount]);
+
+				assertEquals(
+						String.format("Rule %d mismatch. Expected (before alphabetizing): [%s], found [%s].", ruleCount, expectedRules[ruleCount], rule.toString()),
+						alphaExpected,
+						alphaRule
+				);
+				ruleCount++;
+			}
+		} else {
+			for (Rule rule : model.getRules()) {
+				assertEquals(
+						String.format("Rule %d mismatch. Expected: [%s], found [%s].", ruleCount, expectedRules[ruleCount], rule.toString()),
+						expectedRules[ruleCount],
+						rule.toString()
+				);
+				ruleCount++;
+			}
 		}
 
-		assertEquals("Mismatch in expected rule count.", expectedRules.length, i);
+		assertEquals("Mismatch in expected rule count.", expectedRules.length, ruleCount);
 	}
 
+	/**
+	 * Convenience call for the common functionality of assertRule() (don't alphabetize).
+	 */
 	public void assertRule(String input, String expectedRule) {
+		assertRule(input, expectedRule, false);
+	}
+
+	/**
+	 * Load a rule into a model from a string.
+	 *
+	 * If, for some reason, the exact format of the output is not known (like with summations which
+	 * may order the summation terms in different ways), then you can use |alphabetize| to sort all
+	 * characters in both strings (actual and expected) before comparing.
+	 * Only alphabetize if it is really necessary since it makes the output much harder to interpret.
+	 */
+	public void assertRule(String input, String expectedRule, boolean alphabetize) {
 		Rule rule = null;
 
 		try {
@@ -98,11 +144,28 @@ public class ModelLoaderTest {
 			fail("IOException thrown from ModelLoader.loadRule(): " + ex);
 		}
 
-		assertEquals(
-				String.format("Rule mismatch. Expected: [%s], found [%s].", expectedRule, rule.toString()),
-				expectedRule,
-				rule.toString()
-		);
+		if (alphabetize) {
+			String alphaRule = sort(rule.toString());
+			String alphaExpected = sort(expectedRule);
+
+			assertEquals(
+					String.format("Rule mismatch. Expected (before alphabetizing): [%s], found [%s].", expectedRule, rule.toString()),
+					alphaExpected,
+					alphaRule
+			);
+		} else {
+			assertEquals(
+					String.format("Rule mismatch. Expected: [%s], found [%s].", expectedRule, rule.toString()),
+					expectedRule,
+					rule.toString()
+			);
+		}
+	}
+
+	private static String sort(String string) {
+		char[] chars = string.	toCharArray();
+		Arrays.sort(chars);
+		return new String(chars);
 	}
 
 	@Test
@@ -437,7 +500,7 @@ public class ModelLoaderTest {
 			"@Min[1.0, 0.0] * SINGLE(A) = 1.0 ."
 		};
 
-		assertModel(input, expected);
+		assertModel(input, expected, true);
 	}
 
 	@Test
@@ -641,15 +704,15 @@ public class ModelLoaderTest {
 				Rule unweightedRule = partial.toRule();
 				assertEquals(
 						String.format("Unweighted rule %d string mismatch. Expected: [%s], found [%s].", i, unweightedExpected[i], unweightedRule.toString()),
-						unweightedExpected[i],
-						unweightedRule.toString()
+						sort(unweightedExpected[i]),
+						sort(unweightedRule.toString())
 				);
 
 				Rule weightedRule = partial.toRule(5.0, true);
 				assertEquals(
 						String.format("Weighted rule %d string mismatch. Expected: [%s], found [%s].", i, weightedExpected[i], weightedRule.toString()),
-						weightedExpected[i],
-						weightedRule.toString()
+						sort(weightedExpected[i]),
+						sort(weightedRule.toString())
 				);
 			}
 		} catch (IOException ex) {

@@ -38,51 +38,51 @@ import com.healthmarketscience.sqlbuilder.BinaryCondition;
  * Two Atoms are equal if their Predicate and arguments are equal. Note that this
  * means that their truth values might not match, or one might even be a
  * {@link QueryAtom}.
- * 
+ *
  * @author Matthias Broecheler
  */
 abstract public class Atom implements Formula, SummationAtomOrAtom {
-	
+
 	protected final Predicate predicate;
-	
+
 	protected final Term[] arguments;
-	
+
 	protected final int hashcode;
-	
+
 	protected Atom(Predicate p, Term[] args) {
 		predicate = p;
 		arguments = Arrays.copyOf(args, args.length);
 		hashcode = new HashCodeBuilder().append(predicate).append(arguments).toHashCode();
 		checkSchema();
 	}
-	
+
 	/**
 	 * Returns the predicate associated with this Atom.
-	 * 
+	 *
 	 * @return A predicate
 	 */
 	public Predicate getPredicate() {
 		return predicate;
 	}
-	
+
 	/**
 	 * Returns the number of arguments to the associated predicate.
-	 * 
+	 *
 	 * @return The number of arguments
 	 */
 	public int getArity() {
 		return predicate.getArity();
 	}
-	
+
 	/**
 	 * Returns the arguments associated with this atom.
-	 * 
+	 *
 	 * @return The arguments associated with this atom
 	 */
 	public Term[] getArguments() {
 		return Arrays.copyOf(arguments, arguments.length);
 	}
-	
+
 	@Override
 	public Formula getDNF() {
 		return this;
@@ -93,11 +93,11 @@ abstract public class Atom implements Formula, SummationAtomOrAtom {
 		atoms.add(this);
 		return atoms;
 	}
-	
+
 	/**
 	 * Verifies that this atom has valid arguments.
-	 * 
-	 * @throws IllegalArgumentException 
+	 *
+	 * @throws IllegalArgumentException
 	 *             if the number of arguments doesn't match the number of arguments
 	 *             of the predicate
 	 * @throws IllegalArgumentException  if any argument is null
@@ -116,12 +116,12 @@ abstract public class Atom implements Formula, SummationAtomOrAtom {
 				throw new IllegalArgumentException("Expected type "+predicate.getArgumentType(i)+" at position "+i+" but was given: " + arguments[i] + " for predicate " + predicate);
 		}
 	}
-	
-	@Override 
+
+	@Override
 	public String toString() {
 		StringBuilder s = new StringBuilder();
 		if (predicate instanceof SpecialPredicate)  {
-         s.append("(");
+			s.append("(");
 			if (predicate == SpecialPredicate.NotEqual) {
 				s.append(arguments[0]);
 				s.append(" != ");
@@ -137,8 +137,8 @@ abstract public class Atom implements Formula, SummationAtomOrAtom {
 			} else {
 				throw new UnsupportedOperationException(
 						"Unrecognized SpecialPredicate: " + predicate);
-         }
-         s.append(")");
+			}
+			s.append(")");
 		} else {
 			s.append(predicate.getName()).append("(");
 			String connector = "";
@@ -148,21 +148,23 @@ abstract public class Atom implements Formula, SummationAtomOrAtom {
 			}
 			s.append(")");
 		}
-		
+
 		return s.toString();
 	}
-	
+
 	@Override
 	public int hashCode() {
 		return hashcode;
 	}
-	
+
 	@Override
 	public boolean equals(Object oth) {
 		if (oth == this) return true;
 		if (oth == null) return false;
 		Atom other = (Atom) oth;
-		return predicate.equals(other.predicate) && Arrays.deepEquals(arguments, other.arguments);  
+
+		// First check the hashcode to reduce the time we have to do a deepEquals() on the arguments.
+		// Note that the hashcode is not perfect, but provides a quick insurance on inequality.
+		return hashCode() == other.hashCode() && predicate.equals(other.predicate) && Arrays.deepEquals(arguments, other.arguments);
 	}
-	
 }

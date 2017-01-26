@@ -19,6 +19,7 @@ package org.linqs.psl.groovy;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.EmptyBundle;
 import org.linqs.psl.database.DataStore;
@@ -32,6 +33,8 @@ import org.linqs.psl.model.term.ConstantType;
 import org.junit.Before;
 import org.junit.Test;
 import org.linqs.psl.groovy.PSLModel;
+
+import java.util.Arrays;
 
 public class PSLModelTest {
 	private PSLModel model;
@@ -49,18 +52,54 @@ public class PSLModelTest {
 		model.add(predicate: "Sim", types: [ConstantType.UniqueID, ConstantType.UniqueID]);
 	}
 
+	/**
+	 * Convenience call for the common functionality of assertModel() (don't alphabetize).
+	 */
 	public void assertModel(String[] expectedRules) {
-		int i = 0;
-		for (Rule rule : model.getRules()) {
-			assertEquals(
-					String.format("Rule %d mismatch. Expected: [%s], found [%s].", i, expectedRules[i], rule.toString()),
-					expectedRules[i],
-					rule.toString()
-			);
-			i++;
+		assertModel(expectedRules, false);
+	}
+
+	/**
+	 * Assert that the current model has the given rules.
+	 *
+	 * If, for some reason, the exact format of the output is not known (like with summations which
+	 * may order the summation terms in different ways), then you can use |alphabetize| to sort all
+	 * characters in both strings (actual and expected) before comparing.
+	 * Only alphabetize if it is really necessary since it makes the output much harder to interpret.
+	 */
+	public void assertModel(String[] expectedRules, boolean alphabetize) {
+		int ruleCount = 0;
+
+		if (alphabetize) {
+			for (Rule rule : model.getRules()) {
+				String alphaRule = sort(rule.toString());
+				String alphaExpected = sort(expectedRules[ruleCount]);
+
+				assertEquals(
+						String.format("Rule %d mismatch. Expected (before alphabetizing): [%s], found [%s].", ruleCount, expectedRules[ruleCount], rule.toString()),
+						alphaExpected,
+						alphaRule
+				);
+				ruleCount++;
+			}
+		} else {
+			for (Rule rule : model.getRules()) {
+				assertEquals(
+						String.format("Rule %d mismatch. Expected: [%s], found [%s].", ruleCount, expectedRules[ruleCount], rule.toString()),
+						expectedRules[ruleCount],
+						rule.toString()
+				);
+				ruleCount++;
+			}
 		}
 
-		assertEquals("Mismatch in expected rule count.", expectedRules.length, i);
+		assertEquals("Mismatch in expected rule count.", expectedRules.length, ruleCount);
+	}
+
+	private static String sort(String string) {
+		char[] chars = string.	toCharArray();
+		Arrays.sort(chars);
+		return new String(chars);
 	}
 
 	@Test
@@ -338,6 +377,6 @@ public class PSLModelTest {
 		];
 
 		model.addRules(input);
-		assertModel(expected);
+		assertModel(expected, true);
 	}
 }
