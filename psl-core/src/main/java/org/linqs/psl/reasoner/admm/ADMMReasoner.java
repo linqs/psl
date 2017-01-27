@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Semaphore;
@@ -127,12 +128,24 @@ public class ADMMReasoner implements Reasoner {
 
 	/** Ground kernels defining the objective function */
 	KeyedRetrievalSet<Rule, GroundRule> groundKernels;
-	/** Ordered list of GroundKernels for looking up indices in terms */
-	ListOrderedSet<GroundRule> orderedGroundKernels;
+
+	/**
+	 * Ordered list of GroundKernels for looking up indices in terms.
+	 * The integer value corresponds to the index into terms.
+	 */
+	Map<GroundRule, Integer> orderedGroundKernels;
+
 	/** Ground kernels wrapped to be objective function terms for ADMM */
 	protected List<ADMMObjectiveTerm> terms;
-	/** Ordered list of variables for looking up indices in z */
-	protected ListOrderedSet<AtomFunctionVariable> variables;
+
+	/**
+	 * Collection of variables and their associated indices for looking up indices in z.
+	 * We hold both a forward and reverse map.
+	 * Note that we reference the same AtomFunctionVariable in both structures.
+	 */
+	protected Map<Integer, AtomFunctionVariable> indexToVariable;
+	protected Map<AtomFunctionVariable, Integer> variableToIndex;
+
 	/** Consensus vector */
 	protected List<Double> z;
 	/** Lower bounds on variables */
@@ -212,7 +225,7 @@ public class ADMMReasoner implements Reasoner {
 	@Override
 	public void changedGroundKernelWeight(WeightedGroundRule gk) {
 		if (!rebuildModel) {
-			int index = orderedGroundKernels.indexOf(gk);
+			int index = orderedGroundKernels.get(gk);
 			if (index != -1) {
 				((WeightedObjectiveTerm) terms.get(index)).setWeight(gk.getWeight().getWeight());
 			}
@@ -249,9 +262,12 @@ public class ADMMReasoner implements Reasoner {
 		System.out.println("TEST0: " + System.currentTimeMillis());
 
 		/* Initializes data structures */
-		orderedGroundKernels = new ListOrderedSet<GroundRule>();
+		orderedGroundKernels = new HashMap<GroundRule, Integer>(groundKernels.size());
 		terms = new ArrayList<ADMMObjectiveTerm>(groundKernels.size());
-		variables = new ListOrderedSet<AtomFunctionVariable>();
+
+		indexToVariable = new HashMap<Integer, AtomFunctionVariable>(groundKernels.size());
+		variableToIndex = new HashMap<AtomFunctionVariable, Integer>(groundKernels.size());
+
 		z = new ArrayList<Double>(groundKernels.size() * 2);
 		lb = new ArrayList<Double>(groundKernels.size() * 2);
 		ub = new ArrayList<Double>(groundKernels.size() * 2);
@@ -273,7 +289,7 @@ public class ADMMReasoner implements Reasoner {
 
 			if (term.x.length > 0) {
 				registerLocalVariableCopies(term);
-				orderedGroundKernels.add(groundKernel);
+				orderedGroundKernels.put(groundKernel, orderedGroundKernels.size());
 				terms.add(term);
 			}
 
@@ -389,11 +405,11 @@ public class ADMMReasoner implements Reasoner {
 	 * @return local (dual) incompatibility
 	 */
 	public double getDualIncompatibility(GroundRule gk) {
-		int index = orderedGroundKernels.indexOf(gk);
+		int index = orderedGroundKernels.get(gk);
 		ADMMObjectiveTerm term = terms.get(index);
 		for (int i = 0; i < term.zIndices.length; i++) {
 			int zIndex = term.zIndices[i];
-			variables.get(zIndex).setValue(term.x[i]);
+			indexToVariable.get(zIndex).setValue(term.x[i]);
 		}
 		return ((WeightedGroundRule) gk).getIncompatibility();
 	}
@@ -526,7 +542,7 @@ public class ADMMReasoner implements Reasoner {
 	@Override
 	public void optimize() {
 		// TEST
-		System.out.println("START Optimize");
+		System.out.println("START Optimize - 000");
 
 		if (rebuildModel)
 			buildGroundModel();
@@ -623,8 +639,9 @@ public class ADMMReasoner implements Reasoner {
 				"Primal res.: {}, Dual res.: {}", new Object[] {iter, primalRes, dualRes});
 
 		/* Updates variables */
-		for (int i = 0; i < variables.size(); i++)
-			variables.get(i).setValue(z.get(i));
+		for (int i = 0; i < indexToVariable.size(); i++) {
+			indexToVariable.get(i).setValue(z.get(i));
+		}
 	}
 
 	@Override
@@ -656,7 +673,8 @@ public class ADMMReasoner implements Reasoner {
 		groundKernels = null;
 		orderedGroundKernels = null;
 		terms = null;
-		variables = null;
+		variableToIndex = null;
+		indexToVariable = null;
 		z = null;
 		lb = null;
 		ub = null;
@@ -688,11 +706,12 @@ public class ADMMReasoner implements Reasoner {
 			FunctionSummand summand = sItr.next();
 			FunctionSingleton singleton = summand.getTerm();
 			if (singleton instanceof AtomFunctionVariable && !singleton.isConstant()) {
-				int zIndex = variables.indexOf(singleton);
 				/*
 				 * If this variable has been encountered before in any hyperplane...
 				 */
-				if (zIndex != -1) {
+				if (variableToIndex.containsKey(singleton)) {
+					int zIndex = variableToIndex.get(singleton);
+
 					/*
 					 * Checks if the variable has already been encountered
 					 * in THIS hyperplane
@@ -715,7 +734,9 @@ public class ADMMReasoner implements Reasoner {
 				/* Else, creates a new global variable and a local variable */
 				else {
 					/* Creates the global variable */
-					variables.add((AtomFunctionVariable) singleton);
+					indexToVariable.put(indexToVariable.size(), (AtomFunctionVariable)singleton);
+					variableToIndex.put((AtomFunctionVariable)singleton, variableToIndex.size());
+
 					z.add(singleton.getValue());
 					lb.add(0.0);
 					ub.add(1.0);
