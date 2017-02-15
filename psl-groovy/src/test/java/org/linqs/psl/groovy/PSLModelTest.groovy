@@ -97,7 +97,7 @@ public class PSLModelTest {
 	}
 
 	private static String sort(String string) {
-		char[] chars = string.	toCharArray();
+		char[] chars = string.toCharArray();
 		Arrays.sort(chars);
 		return new String(chars);
 	}

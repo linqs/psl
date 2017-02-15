@@ -26,6 +26,8 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Semaphore;
 
+import org.apache.commons.collections4.BidiMap;
+import org.apache.commons.collections4.bidimap.DualHashBidiMap;
 import org.apache.commons.collections4.set.ListOrderedSet;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.ConfigManager;
@@ -140,11 +142,9 @@ public class ADMMReasoner implements Reasoner {
 
 	/**
 	 * Collection of variables and their associated indices for looking up indices in z.
-	 * We hold both a forward and reverse map.
-	 * Note that we reference the same AtomFunctionVariable in both structures.
+	 * We hold both a forward and reverse mapping.
 	 */
-	protected Map<Integer, AtomFunctionVariable> indexToVariable;
-	protected Map<AtomFunctionVariable, Integer> variableToIndex;
+	protected BidiMap<Integer, AtomFunctionVariable> variables;
 
 	/** Consensus vector */
 	protected List<Double> z;
@@ -258,28 +258,17 @@ public class ADMMReasoner implements Reasoner {
 	protected void buildGroundModel() {
 		log.debug("(Re)building reasoner data structures");
 
-		// TEST
-		System.out.println("TEST0: " + System.currentTimeMillis());
-
 		/* Initializes data structures */
 		orderedGroundKernels = new HashMap<GroundRule, Integer>(groundKernels.size());
 		terms = new ArrayList<ADMMObjectiveTerm>(groundKernels.size());
 
-		indexToVariable = new HashMap<Integer, AtomFunctionVariable>(groundKernels.size());
-		variableToIndex = new HashMap<AtomFunctionVariable, Integer>(groundKernels.size());
+		variables = new DualHashBidiMap<Integer, AtomFunctionVariable>();
 
 		z = new ArrayList<Double>(groundKernels.size() * 2);
 		lb = new ArrayList<Double>(groundKernels.size() * 2);
 		ub = new ArrayList<Double>(groundKernels.size() * 2);
 		varLocations = new ArrayList<List<VariableLocation>>(groundKernels.size() * 2);
 		n = 0;
-
-		// TEST
-		System.out.println("TEST1: " + System.currentTimeMillis());
-
-		// TEST
-		long startTime = System.currentTimeMillis();
-		int count = 0;
 
 		/* Initializes objective terms from ground kernels */
 		log.debug("Initializing objective terms for {} ground kernels", groundKernels.size());
@@ -291,14 +280,6 @@ public class ADMMReasoner implements Reasoner {
 				registerLocalVariableCopies(term);
 				orderedGroundKernels.put(groundKernel, orderedGroundKernels.size());
 				terms.add(term);
-			}
-
-			// TEST
-			count++;
-			if (count % 1000 == 0) {
-				System.out.println(String.format("Took %d ms to initialize %d terms", System.currentTimeMillis() - startTime, count));
-				count = 0;
-				startTime = System.currentTimeMillis();
 			}
 		}
 
@@ -409,7 +390,7 @@ public class ADMMReasoner implements Reasoner {
 		ADMMObjectiveTerm term = terms.get(index);
 		for (int i = 0; i < term.zIndices.length; i++) {
 			int zIndex = term.zIndices[i];
-			indexToVariable.get(zIndex).setValue(term.x[i]);
+			variables.get(zIndex).setValue(term.x[i]);
 		}
 		return ((WeightedGroundRule) gk).getIncompatibility();
 	}
@@ -541,9 +522,6 @@ public class ADMMReasoner implements Reasoner {
 
 	@Override
 	public void optimize() {
-		// TEST
-		System.out.println("START Optimize - 000");
-
 		if (rebuildModel)
 			buildGroundModel();
 
@@ -639,8 +617,8 @@ public class ADMMReasoner implements Reasoner {
 				"Primal res.: {}, Dual res.: {}", new Object[] {iter, primalRes, dualRes});
 
 		/* Updates variables */
-		for (int i = 0; i < indexToVariable.size(); i++) {
-			indexToVariable.get(i).setValue(z.get(i));
+		for (int i = 0; i < variables.size(); i++) {
+			variables.get(i).setValue(z.get(i));
 		}
 	}
 
@@ -673,8 +651,7 @@ public class ADMMReasoner implements Reasoner {
 		groundKernels = null;
 		orderedGroundKernels = null;
 		terms = null;
-		variableToIndex = null;
-		indexToVariable = null;
+		variables = null;
 		z = null;
 		lb = null;
 		ub = null;
@@ -709,8 +686,8 @@ public class ADMMReasoner implements Reasoner {
 				/*
 				 * If this variable has been encountered before in any hyperplane...
 				 */
-				if (variableToIndex.containsKey(singleton)) {
-					int zIndex = variableToIndex.get(singleton);
+				if (variables.containsValue(singleton)) {
+					int zIndex = variables.getKey(singleton).intValue();
 
 					/*
 					 * Checks if the variable has already been encountered
@@ -734,8 +711,7 @@ public class ADMMReasoner implements Reasoner {
 				/* Else, creates a new global variable and a local variable */
 				else {
 					/* Creates the global variable */
-					indexToVariable.put(indexToVariable.size(), (AtomFunctionVariable)singleton);
-					variableToIndex.put((AtomFunctionVariable)singleton, variableToIndex.size());
+					variables.put(variables.size(), (AtomFunctionVariable)singleton);
 
 					z.add(singleton.getValue());
 					lb.add(0.0);
