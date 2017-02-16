@@ -733,4 +733,16 @@ public class ModelLoaderTest {
 
 		assertModel(input, expected);
 	}
+
+	@Test
+	public void testArithmeticCoefficientOperationOrder() {
+		String input =
+			"1.0 + 2.0 * 3.0 * Single(A) = 1 .\n" +
+			"";
+		String[] expected = new String[]{
+         "(1.0 + (2.0 * 3.0)) * SINGLE(A) = 1.0 ."
+		};
+
+		assertModel(input, expected);
+	}
 }
