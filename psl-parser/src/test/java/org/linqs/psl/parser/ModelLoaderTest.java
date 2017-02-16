@@ -733,4 +733,23 @@ public class ModelLoaderTest {
 
 		assertModel(input, expected);
 	}
+
+	@Test
+	public void testNotEquals() {
+      // Test both syntaxes.
+		String input =
+			"1: A != B & Single(A) & Single(B) >> Double(A, B) ^2\n" +
+			"1: (A != B) & Single(A) & Single(B) >> Double(A, B) ^2\n" +
+			"1: A - B & Single(A) & Single(B) >> Double(A, B) ^2\n" +
+			"1: (A - B) & Single(A) & Single(B) >> Double(A, B) ^2\n" +
+			"";
+		String[] expected = new String[]{
+			"1.0: ( (A != B) & SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B) ^2",
+			"1.0: ( (A != B) & SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B) ^2",
+			"1.0: ( (A != B) & SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B) ^2",
+			"1.0: ( (A != B) & SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B) ^2"
+		};
+
+		assertModel(input, expected);
+	}
 }
