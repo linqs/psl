@@ -734,6 +734,53 @@ public class ModelLoaderTest {
 		assertModel(input, expected);
 	}
 
+	public void testArithmeticCoefficientOperationOrder() {
+		String input =
+			"1.0 + 2.0 * 3.0 * Single(A) = 99 .\n" +
+			"1.0 + 2.0 * 3.0 * Single(A) + Single(B) = 99 .\n" +
+			"99 = 1.0 + 2.0 * 3.0 * Single(A) .\n" +
+			"1.0 + 2.0 * 3.0 * Single(A) = 4.0 + 5.0 * 6.0 * Single(B) .\n" +
+			"1.0 + 2.0 - 3.0 * Single(A) = 99 .\n" +
+			"1.0 - 2.0 + 3.0 * Single(A) = 99 .\n" +
+			"1.0 + 2.0 + 3.0 - 4.0 * Single(A) = 99 .\n" +
+			"1.0 - 2.0 - 3.0 + 4.0 * Single(A) = 99 .\n" +
+			"1.0 + (2.0 * 3.0) * Single(A) = 99 .\n" +
+			"(1.0 + 2.0) * 3.0 * Single(A) = 99 .\n" +
+			"1.0 + 2.0 * |A| * Single(+A) = 99 .\n" +
+			"1.0 + 2.0 * @Min(3.0, 4.0) * Single(+A) = 99 .\n" +
+			"1.0 + 2.0 * @Max(3.0, 4.0) * Single(+A) = 99 .\n" +
+			"1.0 + 2.0 * 3.0 + 4.0 * Single(A) = 99 .\n" +
+			"1.0 + (2.0 * 3.0) + 4.0 * Single(A) = 99 .\n" +
+			"(1.0 + 2.0) * (3.0 + 4.0) * Single(A) = 99 .\n" +
+			"1.0 - 2.0 / 3.0 - 4.0 * Single(A) = 99 .\n" +
+			"1.0 - (2.0 / 3.0) - 4.0 * Single(A) = 99 .\n" +
+			"(1.0 - 2.0) / (3.0 - 4.0) * Single(A) = 99 .\n" +
+			"";
+		String[] expected = new String[]{
+			"(1.0 + (2.0 * 3.0)) * SINGLE(A) = 99.0 .",
+			"(1.0 + (2.0 * 3.0)) * SINGLE(A) + 1.0 * SINGLE(B) = 99.0 .",
+			"(-1.0 * (1.0 + (2.0 * 3.0))) * SINGLE(A) = (-1.0 * 99.0) .",
+			"(1.0 + (2.0 * 3.0)) * SINGLE(A) + (-1.0 * (4.0 + (5.0 * 6.0))) * SINGLE(B) = 0.0 .",
+			"((1.0 + 2.0) - 3.0) * SINGLE(A) = 99.0 .",
+			"((1.0 - 2.0) + 3.0) * SINGLE(A) = 99.0 .",
+			"(((1.0 + 2.0) + 3.0) - 4.0) * SINGLE(A) = 99.0 .",
+			"(((1.0 - 2.0) - 3.0) + 4.0) * SINGLE(A) = 99.0 .",
+			"(1.0 + (2.0 * 3.0)) * SINGLE(A) = 99.0 .",
+			"((1.0 + 2.0) * 3.0) * SINGLE(A) = 99.0 .",
+			"(1.0 + (2.0 * |A|)) * SINGLE(+A) = 99.0 .",
+			"(1.0 + (2.0 * @Min[3.0, 4.0])) * SINGLE(+A) = 99.0 .",
+			"(1.0 + (2.0 * @Max[3.0, 4.0])) * SINGLE(+A) = 99.0 .",
+			"((1.0 + (2.0 * 3.0)) + 4.0) * SINGLE(A) = 99.0 .",
+			"((1.0 + (2.0 * 3.0)) + 4.0) * SINGLE(A) = 99.0 .",
+			"((1.0 + 2.0) * (3.0 + 4.0)) * SINGLE(A) = 99.0 .",
+			"((1.0 - (2.0 / 3.0)) - 4.0) * SINGLE(A) = 99.0 .",
+			"((1.0 - (2.0 / 3.0)) - 4.0) * SINGLE(A) = 99.0 .",
+			"((1.0 - 2.0) / (3.0 - 4.0)) * SINGLE(A) = 99.0 ."
+		};
+
+		assertModel(input, expected);
+	}
+
 	@Test
 	public void testNotEquals() {
       // Test both syntaxes.
