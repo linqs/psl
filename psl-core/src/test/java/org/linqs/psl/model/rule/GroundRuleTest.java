@@ -499,7 +499,7 @@ public class GroundRuleTest {
 			"1.0: 4.0 * FRIENDS('Eugene', 'Alice') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Derek') >= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
-		PSLTest.compareGroundRules(expected, rule, store, true);
+		PSLTest.compareGroundRules(expected, rule, store);
 
 		// Now negate the select.
 		store = new ADMMReasoner(model.config);
@@ -572,7 +572,7 @@ public class GroundRuleTest {
 			"1.0: 4.0 * FRIENDS('Eugene', 'Alice') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Derek') >= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
-		PSLTest.compareGroundRules(expected, rule, store, true);
+		PSLTest.compareGroundRules(expected, rule, store);
 
 		// Now negate the select.
 		store = new ADMMReasoner(model.config);
@@ -661,7 +661,7 @@ public class GroundRuleTest {
 			"1.0: 3.0 * FRIENDS('Eugene', 'Bob') + 3.0 * FRIENDS('Eugene', 'Charlie') + 3.0 * FRIENDS('Eugene', 'Derek') >= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
-		PSLTest.compareGroundRules(expected, rule, store, true);
+		PSLTest.compareGroundRules(expected, rule, store);
 
 		// Now change the select to a disjunction.
 		store = new ADMMReasoner(model.config);
@@ -691,7 +691,7 @@ public class GroundRuleTest {
 			"1.0: 4.0 * FRIENDS('Eugene', 'Alice') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Derek') >= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
-		PSLTest.compareGroundRules(expected, rule, store, true);
+		PSLTest.compareGroundRules(expected, rule, store);
 	}
 
 	@Test
@@ -734,7 +734,7 @@ public class GroundRuleTest {
 			"1.0: 4.0 * FRIENDS('Eugene', 'Alice') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Derek') >= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
-		PSLTest.compareGroundRules(expected, rule, store, true);
+		PSLTest.compareGroundRules(expected, rule, store);
 	}
 
 	@Test
@@ -784,7 +784,7 @@ public class GroundRuleTest {
 				">= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
-		PSLTest.compareGroundRules(expected, rule, store, true);
+		PSLTest.compareGroundRules(expected, rule, store);
 
 		// Add a select on A.
 		store = new ADMMReasoner(model.config);
@@ -810,7 +810,7 @@ public class GroundRuleTest {
 				">= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
-		PSLTest.compareGroundRules(expected, rule, store, true);
+		PSLTest.compareGroundRules(expected, rule, store);
 
 		// Add a select on B.
 		store = new ADMMReasoner(model.config);
@@ -836,7 +836,7 @@ public class GroundRuleTest {
 				">= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
-		PSLTest.compareGroundRules(expected, rule, store, true);
+		PSLTest.compareGroundRules(expected, rule, store);
 	}
 
 	@Test
@@ -893,7 +893,7 @@ public class GroundRuleTest {
 				">= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
-		PSLTest.compareGroundRules(expected, rule, store, true);
+		PSLTest.compareGroundRules(expected, rule, store);
 
 		// |B|
 		store = new ADMMReasoner(model.config);
@@ -919,7 +919,7 @@ public class GroundRuleTest {
 				">= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
-		PSLTest.compareGroundRules(expected, rule, store, true);
+		PSLTest.compareGroundRules(expected, rule, store);
 
 		// |A| + |B|
 		store = new ADMMReasoner(model.config);
@@ -945,7 +945,7 @@ public class GroundRuleTest {
 				">= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
-		PSLTest.compareGroundRules(expected, rule, store, true);
+		PSLTest.compareGroundRules(expected, rule, store);
 
 		// |A| - |B|
 		store = new ADMMReasoner(model.config);
@@ -971,7 +971,7 @@ public class GroundRuleTest {
 				">= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
-		PSLTest.compareGroundRules(expected, rule, store, true);
+		PSLTest.compareGroundRules(expected, rule, store);
 
 		// |A| * |B|
 		store = new ADMMReasoner(model.config);
@@ -997,7 +997,7 @@ public class GroundRuleTest {
 				">= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
-		PSLTest.compareGroundRules(expected, rule, store, true);
+		PSLTest.compareGroundRules(expected, rule, store);
 
 		// |A| / |B|
 		store = new ADMMReasoner(model.config);
@@ -1023,7 +1023,7 @@ public class GroundRuleTest {
 				">= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
-		PSLTest.compareGroundRules(expected, rule, store, true);
+		PSLTest.compareGroundRules(expected, rule, store);
 	}
 
 	@Test
@@ -1109,7 +1109,7 @@ public class GroundRuleTest {
 			"1.0: 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Derek') + 4.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Eugene') >= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
-		PSLTest.compareGroundRules(expected, rule, store, true);
+		PSLTest.compareGroundRules(expected, rule, store);
 
 		// Add the additional clause to the select.
 		store = new ADMMReasoner(model.config);
@@ -1163,7 +1163,7 @@ public class GroundRuleTest {
 			"1.0: 1.0 * PERSON('Eugene') >= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
-		PSLTest.compareGroundRules(expected, rule, store, true);
+		PSLTest.compareGroundRules(expected, rule, store);
 	}
 
 	@Test
@@ -1281,7 +1281,7 @@ public class GroundRuleTest {
 			);
 
 			rule.groundAll(manager, store);
-			PSLTest.compareGroundRules(expected, rule, store, true);
+			PSLTest.compareGroundRules(expected, rule, store);
 		}
 	}
 

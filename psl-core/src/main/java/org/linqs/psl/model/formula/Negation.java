@@ -17,90 +17,112 @@
  */
 package org.linqs.psl.model.formula;
 
-import java.util.*;
-
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.term.VariableTypeMap;
+
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+
+import java.util.Set;
 
 /**
  * This class implements fuzzy negation. Note that we currently only allow the negation of singletons, i.e
  * single atoms. This is not really a restriction, because every formula can be converted into one where
  * only atoms are negated.
- * 
+ *
  * @author Matthias Broecheler
  * @author Stephen Bach
- *
  */
 public class Negation implements Formula {
-
 	/**
 	 * The fuzzy singleton of which this is the negation
 	 */
 	private final Formula body;
+	private final int hash;
 
 	public Negation(Formula f) {
-		assert f!=null;
+		assert(f != null);
 		body = f;
+
+		// Note that we are adding a prime to our hash code to avoid
+		// A and !A from conflicting.
+		hash = new HashCodeBuilder().append(f).toHashCode() + 37;
 	}
-	
+
 	public Formula getFormula() {
 		return body;
 	}
-	
+
 	@Override
 	public Formula getDNF() {
-		if (body instanceof Atom)
+		if (body instanceof Atom) {
 			return this;
-		else if (body instanceof Negation)
-			return ((Negation) body).body.getDNF();
-		else if (body instanceof Conjunction) {
-			Formula[] components = new Formula[((Conjunction) body).getNoFormulas()];
-			for (int i = 0; i < components.length; i++)
-				components[i] = new Negation(((Conjunction) body).get(i));
+		}
+
+		if (body instanceof Negation) {
+			// Collapse the double negation.
+			return ((Negation)body).body.getDNF();
+		}
+
+		if (body instanceof Conjunction) {
+			// Apply DeMorgans Law.
+			Conjunction conjunction = (Conjunction)body;
+			Formula[] components = new Formula[conjunction.length()];
+			for (int i = 0; i < components.length; i++) {
+				components[i] = new Negation(conjunction.get(i));
+			}
 			return new Disjunction(components).getDNF();
 		}
-		else if (body instanceof Disjunction) {
-			Formula[] components = new Formula[((Disjunction) body).getNoFormulas()];
-			for (int i = 0; i < components.length; i++)
-				components[i] = new Negation(((Disjunction) body).get(i));
+
+		if (body instanceof Disjunction) {
+			// Apply DeMorgans Law.
+			Disjunction disjunction = (Disjunction)body;
+			Formula[] components = new Formula[disjunction.length()];
+			for (int i = 0; i < components.length; i++) {
+				components[i] = new Negation(disjunction.get(i));
+			}
 			return new Conjunction(components).getDNF();
 		}
-		else if (body instanceof Implication)
+
+		if (body instanceof Implication) {
 			return new Negation(body.getDNF()).getDNF();
-		else
-			throw new IllegalStateException("Body of negation is unrecognized type.");
+		}
+
+		throw new IllegalStateException("Body of negation is unrecognized type.");
 	}
 
 	@Override
 	public String toString() {
 		return "~( " + body + " )";
 	}
-	
+
 	@Override
 	public int hashCode() {
-		return new HashCodeBuilder().append(body).toHashCode();
+		return hash;
 	}
 
 	@Override
 	public boolean equals(Object oth) {
-		if (oth==this) return true;
-		if (oth==null || !(getClass().isInstance(oth)) ) return false;
-		return body.equals(((Negation)oth).body);
+		if (oth == this) {
+			return true;
+		}
+
+		if (oth == null || !(getClass().isInstance(oth))) {
+			return false;
+		}
+
+		Negation other = (Negation)oth;
+		return this.hash == other.hash && body.equals(other.body);
 	}
 
 	@Override
-	public Set<Atom> getAtoms(Set<Atom> list) {
-		body.getAtoms(list);
-		return list;
+	public Set<Atom> getAtoms(Set<Atom> atoms) {
+		body.getAtoms(atoms);
+		return atoms;
 	}
-
 
 	@Override
 	public VariableTypeMap collectVariables(VariableTypeMap varMap) {
 		body.collectVariables(varMap);
 		return varMap;
 	}
-
-	
 }

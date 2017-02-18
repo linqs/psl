@@ -45,17 +45,17 @@ public abstract class AbstractFormulaTraverser implements FormulaTraverser {
 		if (f instanceof Conjunction) {
 			if (!traverser.beforeConjunction()) return;
 			Conjunction c = (Conjunction)f;
-			for (int i=0;i<c.getNoFormulas();i++) {
+			for (int i=0;i<c.length();i++) {
 				recursiveTraverse(c.get(i),traverser);
 			}
-			traverser.afterConjunction(c.getNoFormulas());
+			traverser.afterConjunction(c.length());
 		} else if (f instanceof Disjunction) {
 			if (!traverser.beforeDisjunction()) return;
 			Disjunction d = (Disjunction)f;
-			for (int i=0;i<d.getNoFormulas();i++) {
+			for (int i=0;i<d.length();i++) {
 				recursiveTraverse(d.get(i),traverser);
 			}
-			traverser.afterDisjunction(d.getNoFormulas());
+			traverser.afterDisjunction(d.length());
 		} else if (f instanceof Negation) {
 			if (!traverser.beforeNegation()) return;
 			recursiveTraverse(((Negation)f).getFormula(),traverser);
