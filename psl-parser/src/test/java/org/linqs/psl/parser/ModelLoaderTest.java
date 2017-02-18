@@ -808,4 +808,43 @@ public class ModelLoaderTest {
 
 		assertModel(input, expected);
 	}
+
+	@Test
+	public void testSelectOperatorOrder() {
+		String input =
+			"Single(+A) + Double(B, C) = 1 . {A: Single(A) || Single(B) || Single(C)}\n" +
+			"Single(+A) + Double(B, C) = 1 . {A: Single(A) && Single(B) && Single(C)}\n" +
+			"Single(+A) + Double(B, C) = 1 . {A: Single(A) || Single(B) && Single(C)}\n" +
+			"Single(+A) + Double(B, C) = 1 . {A: Single(A) && Single(B) || Single(C)}\n" +
+
+			"Single(+A) + Double(B, C) = 1 . {A: (Single(A) || Single(B)) || Single(C)}\n" +
+			"Single(+A) + Double(B, C) = 1 . {A: Single(A) || (Single(B) || Single(C))}\n" +
+			"Single(+A) + Double(B, C) = 1 . {A: (Single(A) && Single(B)) && Single(C)}\n" +
+			"Single(+A) + Double(B, C) = 1 . {A: Single(A) && (Single(B) && Single(C))}\n" +
+
+			"Single(+A) + Double(B, C) = 1 . {A: (Single(A) || Single(B)) && Single(C)}\n" +
+			"Single(+A) + Double(B, C) = 1 . {A: Single(A) || (Single(B) && Single(C))}\n" +
+			"Single(+A) + Double(B, C) = 1 . {A: (Single(A) && Single(B)) || Single(C)}\n" +
+			// TODO(eriq): There is a bug in Conjunction that causes this test to fail.
+			// "Single(+A) + Double(B, C) = 1 . {A: Single(A) && (Single(B) || Single(C))}\n" +
+			"";
+		String[] expected = new String[]{
+			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( ( SINGLE(A) | SINGLE(B) ) | SINGLE(C) )}",
+			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( ( SINGLE(A) & SINGLE(B) ) & SINGLE(C) )}",
+			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( SINGLE(A) | ( SINGLE(B) & SINGLE(C) ) )}",
+			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( ( SINGLE(A) & SINGLE(B) ) | SINGLE(C) )}",
+
+			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( ( SINGLE(A) | SINGLE(B) ) | SINGLE(C) )}",
+			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( SINGLE(A) | ( SINGLE(B) | SINGLE(C) ) )}",
+			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( ( SINGLE(A) & SINGLE(B) ) & SINGLE(C) )}",
+			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( SINGLE(A) & ( SINGLE(B) & SINGLE(C) ) )}",
+
+			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( ( SINGLE(A) | SINGLE(B) ) & SINGLE(C) )}",
+			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( SINGLE(A) | ( SINGLE(B) & SINGLE(C) ) )}",
+			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( ( SINGLE(A) & SINGLE(B) ) | SINGLE(C) )}",
+			// "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( SINGLE(A) & ( SINGLE(B) | SINGLE(C) ) )}"
+		};
+
+		assertModel(input, expected);
+	}
 }

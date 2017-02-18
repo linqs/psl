@@ -157,14 +157,26 @@ coefficientFunctionOperator
     ;
 
 selectStatement
-    :   LBRACE variable COLON boolExpression RBRACE
+    :   LBRACE variable COLON booleanExpression RBRACE
     ;
 
-boolExpression
+booleanValue
     :   literal
-    |   LPAREN boolExpression RPAREN
-    |   boolExpression or boolExpression
-    |   boolExpression and boolExpression
+    |   LPAREN booleanExpression RPAREN
+    ;
+
+booleanConjunctiveExpression
+    :   booleanValue
+    |   booleanConjunctiveExpression and booleanValue
+    ;
+
+booleanDisjunctiveExpression
+    :   booleanConjunctiveExpression
+    |   booleanDisjunctiveExpression or booleanConjunctiveExpression
+    ;
+
+booleanExpression
+    :   booleanDisjunctiveExpression
     ;
 
 //

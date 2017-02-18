@@ -66,7 +66,10 @@ import org.linqs.psl.parser.antlr.PSLParser.ArithmeticRuleExpressionContext;
 import org.linqs.psl.parser.antlr.PSLParser.ArithmeticRuleOperandContext;
 import org.linqs.psl.parser.antlr.PSLParser.ArithmeticRuleRelationContext;
 import org.linqs.psl.parser.antlr.PSLParser.AtomContext;
-import org.linqs.psl.parser.antlr.PSLParser.BoolExpressionContext;
+import org.linqs.psl.parser.antlr.PSLParser.BooleanExpressionContext;
+import org.linqs.psl.parser.antlr.PSLParser.BooleanConjunctiveExpressionContext;
+import org.linqs.psl.parser.antlr.PSLParser.BooleanDisjunctiveExpressionContext;
+import org.linqs.psl.parser.antlr.PSLParser.BooleanValueContext;
 import org.linqs.psl.parser.antlr.PSLParser.CoefficientContext;
 import org.linqs.psl.parser.antlr.PSLParser.CoefficientAdditiveExpressionContext;
 import org.linqs.psl.parser.antlr.PSLParser.CoefficientExpressionContext;
@@ -159,7 +162,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	 * The input should only contain rules and the DataStore should contain all the predicates
 	 * used by the rules.
 	 */
-	public static Model load(DataStore data, Reader input) throws IOException  {
+	public static Model load(DataStore data, Reader input) throws IOException {
 		PSLParser parser = getParser(input);
 		ProgramContext program = null;
 
@@ -177,7 +180,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	/**
 	 * Get a parser over the given input.
 	 */
-	private static PSLParser getParser(Reader input) throws IOException  {
+	private static PSLParser getParser(Reader input) throws IOException {
 		PSLLexer lexer = new PSLLexer(new ANTLRInputStream(input));
 
 		// We need to add a error listener to the lexer so we halt on lex errors.
@@ -201,7 +204,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 		return parser;
 	}
 
-	private static PSLParser getParser(String input) throws IOException  {
+	private static PSLParser getParser(String input) throws IOException {
 		return getParser(new StringReader(input));
 	}
 
@@ -651,27 +654,51 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	public SelectStatement visitSelectStatement(SelectStatementContext ctx) {
 		SelectStatement select = new SelectStatement();
 		select.v = new SummationVariable(ctx.variable().getText());
-		select.f = visitBoolExpression(ctx.boolExpression());
+		select.f = visitBooleanExpression(ctx.booleanExpression());
+
 		return select;
 	}
 
 	@Override
-	public Formula visitBoolExpression(BoolExpressionContext ctx) {
-		if (ctx.literal() != null) {
+	public Formula visitBooleanValue(BooleanValueContext ctx) {
+		// A plain literal.
+		if (ctx.getChildCount() == 1) {
 			return visitLiteral(ctx.literal());
 		}
-		else if (ctx.or() != null) {
-			return new Disjunction(visitBoolExpression(ctx.boolExpression(0)), visitBoolExpression(ctx.boolExpression(1)));
+
+		// Bool expression with parens.
+		return visitBooleanExpression(ctx.booleanExpression());
+	}
+
+	@Override
+	public Formula visitBooleanConjunctiveExpression(BooleanConjunctiveExpressionContext ctx) {
+		// Passthrough to booleanValue.
+		if (ctx.getChildCount() == 1) {
+			return visitBooleanValue(ctx.booleanValue());
 		}
-		else if (ctx.and() != null) {
-			return new Conjunction(visitBoolExpression(ctx.boolExpression(0)), visitBoolExpression(ctx.boolExpression(1)));
+
+		// Conjunction.
+		Formula lhs = visitBooleanConjunctiveExpression(ctx.booleanConjunctiveExpression());
+		Formula rhs = visitBooleanValue(ctx.booleanValue());
+		return new Conjunction(lhs, rhs);
+	}
+
+	@Override
+	public Formula visitBooleanDisjunctiveExpression(BooleanDisjunctiveExpressionContext ctx) {
+		// Passthrough to booleanConjunctiveExpression.
+		if (ctx.getChildCount() == 1) {
+			return visitBooleanConjunctiveExpression(ctx.booleanConjunctiveExpression());
 		}
-		else if (ctx.boolExpression() != null) {
-			return visitBoolExpression(ctx.boolExpression(0));
-		}
-		else {
-			throw new IllegalStateException("(Line " + ctx.getStart().getLine()+ ") Boolean expresion not recognized.");
-		}
+
+		// Conjunction.
+		Formula lhs = visitBooleanDisjunctiveExpression(ctx.booleanDisjunctiveExpression());
+		Formula rhs = visitBooleanConjunctiveExpression(ctx.booleanConjunctiveExpression());
+		return new Disjunction(lhs, rhs);
+	}
+
+	@Override
+	public Formula visitBooleanExpression(BooleanExpressionContext ctx) {
+		return visitBooleanDisjunctiveExpression(ctx.booleanDisjunctiveExpression());
 	}
 
 	@Override
