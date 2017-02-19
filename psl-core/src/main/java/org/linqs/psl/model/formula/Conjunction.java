@@ -19,88 +19,74 @@ package org.linqs.psl.model.formula;
 
 import java.util.ArrayList;
 
-public class Conjunction extends AbstractBranchFormula {
-
+public class Conjunction extends AbstractBranchFormula<Conjunction> {
 	public Conjunction(Formula... f) {
 		super(f);
 	}
-	
+
 	@Override
 	public Formula getDNF() {
-		Formula[] components = new Formula[getNoFormulas()];
-		ArrayList<Integer> disjunctions = new ArrayList<Integer>();
-		int size = 1;
+		// Get the DNF for all components of the conjunction.
+		Formula[] components = new Formula[length()];
+		for (int i = 0; i < formulas.length; i++) {
+			components[i] = formulas[i].getDNF();
+		}
+
+		// Simplify (flatten).
+		components = flatten(components).formulas;
+
+		// Distribute any disjunctions over the conjunctions.
+		// We will favor clarity over performance for this code since we usually do not
+		// have very large (> 10) rules and this is error-prone code.
+
+		// Find the first disjunction.
+		int disjunctionIndex = -1;
 		for (int i = 0; i < components.length; i++) {
-			components[i] = get(i).getDNF();
 			if (components[i] instanceof Disjunction) {
-				size *= ((Disjunction) components[i]).getNoFormulas();
-				disjunctions.add(i);
+				disjunctionIndex = i;
+				break;
 			}
 		}
-		
-		if (disjunctions.size() == 0)
+
+		// If there is no disjunction, then we are already in DNF (since each component is in DNF).
+		if (disjunctionIndex == -1) {
 			return new Conjunction(components);
-		
-		/* Distributes the conjunction operator over disjunctions */
-		Formula[] dnfComponents = new Formula[size];
-		Formula[] conjunctionComponents = new Formula[getNoFormulas()];
-		int[] indices = new int[disjunctions.size()];
-		for (int i = 0; i < size; i++) {
-			/*
-			 * First, increments a vector of indices corresponding to the
-			 * current formula in each disjunction such that each combination
-			 * of formulas will be selected once
-			 */
-			for (int j = 0; j < indices.length; j++) {
-				indices[j]++;
-				if (indices[j] == ((Disjunction) components[disjunctions.get(j)]).getNoFormulas())
-					indices[j] = 0;
-				else
-					break;
-			}
-			
-			/*
-			 * Next, creates a conjunction from the selected formulas, finds
-			 * its DNF, and adds it to the set of formulas that will be returned
-			 * as a disjunction
-			 */
-			for (int j = 0; j < conjunctionComponents.length; j++) {
-				if (components[j] instanceof Disjunction)
-					conjunctionComponents[j] = ((Disjunction) components[j]).get(indices[j]);
-				else
-					conjunctionComponents[j] = components[j];
-			}
-			
-			dnfComponents[i] = new Conjunction(conjunctionComponents).getDNF();
 		}
-		
-		return new Disjunction(dnfComponents);
-	}
-	
-	/**
-	 * Collapses nested Conjunctions.
-	 * <p>
-	 * Stops descending where ever a Formula other than a Conjunction is.
-	 * 
-	 * @return the flattened Conjunction
-	 */
-	public Conjunction flatten() {
-		ArrayList<Formula> conj = new ArrayList<Formula>(getNoFormulas());
-		for (Formula f : formulas) {
-			if (f instanceof Conjunction) {
-				Formula[] newFormulas = ((Conjunction) f).flatten().formulas;
-				for (Formula newF : newFormulas)
-					conj.add(newF);
+
+		// Distribute the components of the first disjunction (at disjunctionIndex)
+		// amongst all the other components of the conjunction.
+		// ie. form a disjunction where each component is a conjunction all of the
+		// components of the original conjunction (without the first disjunction) and
+		// a single component from the disjunction.
+		// A ^ B ^ (X v Y) -> (A ^ B ^ X) v (A ^ B ^ Y)
+
+		// Note that we only need to deal with the first disjunction since we will break the conjunction into a
+		// disjunction and call getDNF() on each component of the disjunction.
+		// We will just need to make sure we flatten at the end.
+		Disjunction firstDisjunction = (Disjunction)components[disjunctionIndex];
+
+		Formula[] disjunctionComponents = new Formula[firstDisjunction.length()];
+
+		for (int disjunctionComponentIndex = 0; disjunctionComponentIndex < disjunctionComponents.length; disjunctionComponentIndex++) {
+			// Note that the size of each conjunction will actually be the same as the original conjunction.
+			// (Removed the first disjunction, but added a component from that disjunction.)
+			Formula[] conjunctionComponents = new Formula[components.length];
+			for (int i = 0; i < components.length; i++) {
+				if (i == disjunctionIndex) {
+					conjunctionComponents[i] = firstDisjunction.get(disjunctionComponentIndex);
+				} else {
+					conjunctionComponents[i] = components[i];
+				}
 			}
-			else
-				conj.add(f);
+
+			disjunctionComponents[disjunctionComponentIndex] = new Conjunction(conjunctionComponents).getDNF();
 		}
-		return new Conjunction((Formula[]) conj.toArray(new Formula[conj.size()]));
+
+		return new Disjunction(disjunctionComponents).flatten();
 	}
 
 	@Override
 	protected String separatorString() {
 		return "&";
 	}
-
 }

@@ -208,7 +208,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 			// Collect all the formula used in this select (may be more than one if it is a disjunction).
 			List<Formula> selectFormulas = new ArrayList<Formula>();
 			if (selectFormula instanceof Disjunction) {
-				for (int i = 0; i < ((Disjunction)selectFormula).getNoFormulas(); i++) {
+				for (int i = 0; i < ((Disjunction)selectFormula).length(); i++) {
 					selectFormulas.add(((Disjunction)selectFormula).get(i));
 				}
 			} else {
@@ -261,7 +261,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 			Constant[] groundings, Map<Variable, Integer> variableMap) {
 		if (formula instanceof Conjunction) {
 			Conjunction conjunction = (Conjunction)formula;
-			for (int i = 0; i < conjunction.getNoFormulas(); i++) {
+			for (int i = 0; i < conjunction.length(); i++) {
 				if (!evaluateSelectGrounding(atomManager, conjunction.get(i), atoms, groundings, variableMap)) {
 					// Short circuit.
 					return false;
