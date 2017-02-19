@@ -69,10 +69,10 @@ public class ModelLoaderTest {
 	}
 
 	/**
-	 * Convenience call for the common functionality of assertModel() (don't alphabetize).
+	 * Convenience call for the common functionality of assertModel() (alphabetize).
 	 */
 	public void assertModel(String input, String[] expectedRules) {
-		assertModel(input, expectedRules, false);
+		assertModel(input, expectedRules, true);
 	}
 
 	/**
@@ -190,7 +190,7 @@ public class ModelLoaderTest {
 			"~( SINGLE(A) ) ."
 		};
 
-		assertModel(input, expected);
+		assertModel(input, expected, false);
 	}
 
 	@Test
@@ -296,7 +296,7 @@ public class ModelLoaderTest {
 			"1.0: 1.2E-10 * SINGLE(A) = 1.0 ^2"
 		};
 
-		assertModel(input, expected);
+		assertModel(input, expected, false);
 	}
 
 	@Test
@@ -317,7 +317,7 @@ public class ModelLoaderTest {
 			"1.0: SINGLE(A__) >> SINGLE(A__) ^2"
 		};
 
-		assertModel(input, expected);
+		assertModel(input, expected, false);
 	}
 
 	@Test
@@ -354,7 +354,7 @@ public class ModelLoaderTest {
 			"2.5E-10: SINGLE(A) >> SINGLE(A)"
 		};
 
-		assertModel(input, expected);
+		assertModel(input, expected, false);
 	}
 
 	@Test
@@ -417,7 +417,7 @@ public class ModelLoaderTest {
 			"1.0: ( ('Foo' != 'Bar') & DOUBLE(A, B) ) >> SINGLE(B) ^2"
 		};
 
-		assertModel(input, expected);
+		assertModel(input, expected, false);
 	}
 
 	@Test
@@ -447,7 +447,7 @@ public class ModelLoaderTest {
 			"1.0: ( (A != B) & DOUBLE(A, B) ) >> SINGLE(B)"
 		};
 
-		assertModel(input, expected);
+		assertModel(input, expected, false);
 	}
 
 	@Test
@@ -500,7 +500,7 @@ public class ModelLoaderTest {
 			"@Min[1.0, 0.0] * SINGLE(A) = 1.0 ."
 		};
 
-		assertModel(input, expected, true);
+		assertModel(input, expected, false);
 	}
 
 	@Test
@@ -825,24 +825,23 @@ public class ModelLoaderTest {
 			"Single(+A) + Double(B, C) = 1 . {A: (Single(A) || Single(B)) && Single(C)}\n" +
 			"Single(+A) + Double(B, C) = 1 . {A: Single(A) || (Single(B) && Single(C))}\n" +
 			"Single(+A) + Double(B, C) = 1 . {A: (Single(A) && Single(B)) || Single(C)}\n" +
-			// TODO(eriq): There is a bug in Conjunction that causes this test to fail.
-			// "Single(+A) + Double(B, C) = 1 . {A: Single(A) && (Single(B) || Single(C))}\n" +
+			"Single(+A) + Double(B, C) = 1 . {A: Single(A) && (Single(B) || Single(C))}\n" +
 			"";
 		String[] expected = new String[]{
-			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( ( SINGLE(A) | SINGLE(B) ) | SINGLE(C) )}",
-			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( ( SINGLE(A) & SINGLE(B) ) & SINGLE(C) )}",
+			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( SINGLE(A) | SINGLE(B) | SINGLE(C) )}",
+			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( SINGLE(A) & SINGLE(B) & SINGLE(C) )}",
 			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( SINGLE(A) | ( SINGLE(B) & SINGLE(C) ) )}",
 			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( ( SINGLE(A) & SINGLE(B) ) | SINGLE(C) )}",
 
-			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( ( SINGLE(A) | SINGLE(B) ) | SINGLE(C) )}",
-			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( SINGLE(A) | ( SINGLE(B) | SINGLE(C) ) )}",
-			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( ( SINGLE(A) & SINGLE(B) ) & SINGLE(C) )}",
-			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( SINGLE(A) & ( SINGLE(B) & SINGLE(C) ) )}",
+			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( SINGLE(A) | SINGLE(B) | SINGLE(C) )}",
+			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( SINGLE(A) | SINGLE(B) | SINGLE(C) )}",
+			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( SINGLE(A) & SINGLE(B) & SINGLE(C) )}",
+			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( SINGLE(A) & SINGLE(B) & SINGLE(C) )}",
 
-			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( ( SINGLE(A) | SINGLE(B) ) & SINGLE(C) )}",
+			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( ( SINGLE(A) & SINGLE(C) ) | ( SINGLE(B) & SINGLE(C) ) )}",
 			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( SINGLE(A) | ( SINGLE(B) & SINGLE(C) ) )}",
 			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( ( SINGLE(A) & SINGLE(B) ) | SINGLE(C) )}",
-			// "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( SINGLE(A) & ( SINGLE(B) | SINGLE(C) ) )}"
+			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( ( SINGLE(A) & SINGLE(B) ) | ( SINGLE(A) & SINGLE(C) ) )}"
 		};
 
 		assertModel(input, expected);
