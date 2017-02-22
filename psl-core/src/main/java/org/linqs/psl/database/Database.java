@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.database;
 
+import java.util.List;
 import java.util.Set;
 
 import org.linqs.psl.model.atom.AtomCache;
@@ -40,9 +41,9 @@ import org.linqs.psl.model.term.Variable;
  * {@link StandardPredicate} can be persisted in a Database. If a
  * GroundAtom is persisted, it is persisted in one of the Partitions the
  * Database can read and is available for querying via {@link #executeQuery(DatabaseQuery)}.
- * 
+ *
  * <h2>Setup</h2>
- * 
+ *
  * Databases are instantiated via {@link DataStore#getDatabase} methods.
  * <p>
  * A Database writes to and reads from one {@link Partition} of a DataStore
@@ -53,9 +54,9 @@ import org.linqs.psl.model.term.Variable;
  * to close. (Any StandardPredicate not closed initially remains open). Whether
  * a StandardPredicate is open or closed affects the behavior of
  * {@link #getAtom(Predicate, Constant...)}.
- * 
+ *
  * <h2>Retrieving GroundAtoms</h2>
- * 
+ *
  * A Database is the canonical source for a set of GroundAtoms.
  * GroundAtoms should only be retrieved via {@link #getAtom(Predicate, Constant...)}
  * to ensure there exists only a single object for each GroundAtom from the Database.
@@ -65,15 +66,15 @@ import org.linqs.psl.model.term.Variable;
  * A Database contains an {@link AtomCache} which is used to store GroundAtoms
  * that have been instantiated in memory and ensure these objects are unique.
  * The AtomCache is accessible via {@link #getAtomCache()}.
- * 
+ *
  * <h2>Persisting RandomVariableAtoms</h2>
- * 
+ *
  * A RandomVariableAtom can be persisted (including updated) in the write
  * Partition via {@link #commit(RandomVariableAtom)} or
  * {@link RandomVariableAtom#commitToDB()}.
- * 
+ *
  * <h2>Querying for Groundings</h2>
- * 
+ *
  * {@link DatabaseQuery DatabaseQueries} can be run via {@link #executeQuery(DatabaseQuery)}.
  * Note that queries only act on the GroundAtoms persisted in Partitions and
  * GroundAtoms with {@link FunctionalPredicate FunctionalPredicates}.
@@ -109,7 +110,7 @@ public interface Database {
 	 *   instantiated as an ObservedAtom with the functionally defined
 	 *   truth value and a confidence value of NaN.</li>
 	 * </ul>
-	 * 
+	 *
 	 * @param p  the Predicate of the Atom
 	 * @param arguments  the GroundTerms of the Atom
 	 * @return the Atom
@@ -117,75 +118,84 @@ public interface Database {
 	 * @throws IllegalStateException  if the Atom is persisted in multiple read Partitions
 	 */
 	public GroundAtom getAtom(Predicate p, Constant... arguments);
-	
+
+	/**
+	 * Fetch all the ground RandomVariableAtoms for a predicate.
+	 * By "ground", we mean that it exists in the database.
+	 * This will not leverage the closed world assumption for any atoms.
+	 *
+	 * @param predicate the predicate to fetch atoms for
+	 * @return All ground atoms present in the write partition of the database.
+	 */
+	public List<RandomVariableAtom> getAllGroundRandomVariableAtoms(StandardPredicate predicate);
+
 	/**
 	 * Removes the GroundAtom from the Database, if it exists.
 	 *
-	 * 
+	 *
 	 * @param a the GroundAtom to delete
 	 * @return If an atom was removed
 	 * @throws IllegalArgumentException  if p is not registered or arguments are not valid
 	 */
 	public boolean deleteAtom(GroundAtom a);
-	
-	
+
 	/**
 	 * Persists a RandomVariableAtom in this Database's write Partition.
 	 * <p>
 	 * If the RandomVariableAtom has already been persisted in the write Partition,
 	 * it will be updated.
-	 * 
+	 *
 	 * @param atom  the Atom to persist
 	 * @throws IllegalArgumentException  if atom does not belong to this Database
 	 */
 	public void commit(RandomVariableAtom atom);
-	
+
 	/**
 	 * Returns all groundings of a Formula that match a DatabaseQuery.
-	 * 
+	 *
 	 * @param query  the query to match
 	 * @return a list of lists of substitutions of {@link Constant GroundTerms}
 	 *             for {@link Variable Variables}
 	 * @throws IllegalArgumentException  if the query Formula is invalid
 	 */
 	public ResultList executeQuery(DatabaseQuery query);
-	
+
 	/**
 	 * Returns whether a StandardPredicate is closed in this Database.
-	 * 
+	 *
 	 * @param predicate  the Predicate to check
 	 * @return TRUE if predicate is closed
 	 */
 	public boolean isClosed(StandardPredicate predicate);
-	
+
 	/**
 	 * Returns the set of StandardPredicates registered with this Database.
 	 * Note that the result can differ from calling
 	 * {@link DataStore#getRegisteredPredicates()} on this Database's backing
 	 * DataStore, since additional predicates might have been registered since
 	 * this Database was created.
-	 * 
+	 *
 	 * @return the set of StandardPredicates registered with this Database
 	 */
 	public Set<StandardPredicate> getRegisteredPredicates();
-	
+
 	/**
 	 * Convenience method.
 	 * <p>
 	 * Calls {@link DataStore#getUniqueID(Object)} on this Database's DataStore.
 	 */
 	public UniqueID getUniqueID(Object key);
-	
+
 	/**
 	 * @return the DataStore backing this Database
 	 */
 	public DataStore getDataStore();
-	
+
 	/**
 	 * @return the Database's AtomCache
 	 */
 	public AtomCache getAtomCache();
-	
+
 	/**
 	 * Releases the {@link Partition Partitions} used by this Database.
 	 */

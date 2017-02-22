@@ -19,6 +19,7 @@ package org.linqs.psl.model.atom;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.linqs.psl.database.Database;
@@ -32,11 +33,11 @@ import org.linqs.psl.model.term.Variable;
 
 /**
  * Implements the {@link AtomManager} with a twist: this AtomManager will only return
- * {@link RandomVariableAtom RandomVariableAtoms} that were persisted in the Database 
+ * {@link RandomVariableAtom RandomVariableAtoms} that were persisted in the Database
  * at instantiation.
  * <p>
  * All other types of Atoms are returned normally.
- * 
+ *
  * @author Eric Norris <enorris@cs.umd.edu>
  */
 public class PersistedAtomManager implements AtomManager {
@@ -45,77 +46,67 @@ public class PersistedAtomManager implements AtomManager {
 	 * This AtomManager's connection to a database.
 	 */
 	protected final Database db;
-	
+
 	/**
 	 * The set of all persisted RandomVariableAtoms at the time of this AtomManager's
 	 * instantiation.
 	 */
 	protected final Set<RandomVariableAtom> persistedCache;
-	
+
 	/**
 	 * Constructs a PersistedAtomManager with a built-in set of all the database's
 	 * persisted RandomVariableAtoms.
-	 * 
+	 *
 	 * @param db  the Database to query for all getAtom() calls.
 	 */
 	public PersistedAtomManager(Database db) {
 		this.db = db;
 		this.persistedCache = new HashSet<RandomVariableAtom>();
-		
+
 		buildPersistedAtomCache();
 	}
-	
+
 	protected void buildPersistedAtomCache() {
 		// Iterate through all of the registered predicates in this database
 		for (StandardPredicate predicate : db.getRegisteredPredicates()) {
 			// Ignore any closed predicates, they will not return RandomVariableAtoms
-			if (db.isClosed(predicate))
+			if (db.isClosed(predicate)) {
 				continue;
-			
-			// Construct the query for this predicate
-			Variable vars[] = new Variable[predicate.getArity()];
-			for (int i = 0; i < vars.length; i++)
-				vars[i] = new Variable("V" + String.valueOf(i));
-			Formula queryFormula = new QueryAtom(predicate, vars);
-			
-			// Execute the query and interpret the results
-			ResultList list = db.executeQuery(new DatabaseQuery(queryFormula));
-			for (int i = 0; i < list.size(); i ++) {
-				// Query the database for this specific atom
-				GroundAtom atom = db.getAtom(predicate, list.get(i));
-				
-				// If this is a RandomVariableAtom, store it in our cache
-				if (atom instanceof RandomVariableAtom)
-					persistedCache.add((RandomVariableAtom)atom);
+			}
+
+			List<RandomVariableAtom> atoms = db.getAllGroundRandomVariableAtoms(predicate);
+			for (RandomVariableAtom atom : atoms) {
+				persistedCache.add(atom);
 			}
 		}
 	}
-	
+
 	@Override
 	public GroundAtom getAtom(Predicate p, Constant... arguments) {
 		GroundAtom atom = db.getAtom(p, arguments);
-		if (atom instanceof RandomVariableAtom) {
-			// Check if this is in our persisted atom cache
-			if (persistedCache.contains(atom))
-				return atom;
-			else
-				throw new IllegalArgumentException("Can only call getAtom() on persisted RandomVariableAtoms using a PersistedAtomManager. Cannot access " + atom);
-		} else
+		if (!(atom instanceof RandomVariableAtom)) {
 			return atom;
+		}
+
+		// Check if this is in our persisted atom cache
+		if (persistedCache.contains(atom)) {
+			return atom;
+		}
+
+		throw new IllegalArgumentException("Can only call getAtom() on persisted RandomVariableAtoms using a PersistedAtomManager. Cannot access " + atom);
 	}
 
 	@Override
 	public ResultList executeQuery(DatabaseQuery query) {
 		return db.executeQuery(query);
 	}
-	
+
 	@Override
 	public boolean isClosed(StandardPredicate predicate) {
 		return db.isClosed(predicate);
 	}
-	
+
 	public Iterable<RandomVariableAtom> getPersistedRVAtoms() {
 		return Collections.unmodifiableSet(persistedCache);
 	}
-
 }
