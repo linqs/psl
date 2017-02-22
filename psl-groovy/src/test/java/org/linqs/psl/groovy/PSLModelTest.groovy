@@ -27,6 +27,7 @@ import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver.Type;
 import org.linqs.psl.model.Model;
+import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.term.ConstantType;
 
@@ -53,10 +54,10 @@ public class PSLModelTest {
 	}
 
 	/**
-	 * Convenience call for the common functionality of assertModel() (don't alphabetize).
+	 * Convenience call for the common functionality of assertModel() (alphabetize).
 	 */
 	public void assertModel(String[] expectedRules) {
-		assertModel(expectedRules, false);
+		assertModel(expectedRules, true);
 	}
 
 	/**
@@ -94,6 +95,34 @@ public class PSLModelTest {
 		}
 
 		assertEquals("Mismatch in expected rule count.", expectedRules.length, ruleCount);
+	}
+
+	/**
+	 * Compare two Arrays of strings for equality.
+	 *
+	 * If, for some reason, the content but not exact format of the output is not known;
+	 * then you can use |alphabetize| to sort all
+	 * characters in both strings (actual and expected) before comparing.
+	 * Only alphabetize if it is really necessary because it can hide errors in order that are expected.
+	 */
+	public static void compareStrings(String[] expected, String[] actual, boolean alphabetize) {
+		assertEquals("Size mismatch.", expected.length, actual.length);
+
+		for (int i = 0; i < expected.length; i++) {
+			if (alphabetize) {
+				assertEquals(
+					String.format("String %d mismatch. (Before alphabetize) expected: [%s], found [%s].", i, expected[i], actual[i]),
+					sort(expected[i]),
+					sort(actual[i])
+				);
+			} else {
+				assertEquals(
+					String.format("String %d mismatch. Expected: [%s], found [%s].", i, expected[i], actual[i]),
+					expected[i],
+					actual[i]
+				);
+			}
+		}
 	}
 
 	private static String sort(String string) {
@@ -378,5 +407,36 @@ public class PSLModelTest {
 
 		model.addRules(input);
 		assertModel(expected, true);
+	}
+
+	@Test
+	public void testDNFResolution() {
+		Formula[] formulas = [
+			(~(Single(A) & Single(B) & Sim(A, B))).getFormula(),
+			((Single(A) & Single(B)) >> ~Sim(A, B)).getFormula()
+		];
+
+		String[] actualToString = new String[formulas.length];
+		for (int i = 0; i < formulas.length; i++) {
+			actualToString[i] = formulas[i].toString();
+		}
+
+		String[] actualDNF = new String[formulas.length];
+		for (int i = 0; i < formulas.length; i++) {
+			actualDNF[i] = formulas[i].getDNF().toString();
+		}
+
+		String[] expectedToString = [
+			"~( ( ( SINGLE(A) & SINGLE(B) ) & SIM(A, B) ) )",
+			"( SINGLE(A) & SINGLE(B) ) >> ~( SIM(A, B) )"
+		];
+
+		String[] expectedDNF = [
+			"( ~( SINGLE(A) ) | ~( SINGLE(B) ) | ~( SIM(A, B) ) )",
+			"( ~( SINGLE(A) ) | ~( SINGLE(B) ) | ~( SIM(A, B) ) )"
+		];
+
+		compareStrings(expectedToString, actualToString, true);
+		compareStrings(expectedDNF, actualDNF, true);
 	}
 }
