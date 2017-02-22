@@ -500,7 +500,7 @@ public class ModelLoaderTest {
 			"@Min[1.0, 0.0] * SINGLE(A) = 1.0 ."
 		};
 
-		assertModel(input, expected, false);
+		assertModel(input, expected);
 	}
 
 	@Test
