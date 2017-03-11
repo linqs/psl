@@ -846,4 +846,16 @@ public class ModelLoaderTest {
 
 		assertModel(input, expected);
 	}
+
+	@Test
+	public void testArithmeticSubtraction() {
+		String input =
+			"Double(A, B) - Double(B, A) = 0.0 .\n" +
+			"";
+		String[] expected = new String[]{
+			"1.0 * DOUBLE(A, B) - 1.0 * DOUBLE(B, A) = 0.0 ."
+		};
+
+		assertModel(input, expected);
+	}
 }
