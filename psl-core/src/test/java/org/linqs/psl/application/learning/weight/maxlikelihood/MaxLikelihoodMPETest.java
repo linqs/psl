@@ -46,12 +46,12 @@ public class MaxLikelihoodMPETest {
 	public void baseTest() {
 		Set<StandardPredicate> allPredicates = new HashSet<StandardPredicate>(model.predicates.values());
 		Set<StandardPredicate> closedPredicates = new HashSet<StandardPredicate>(model.predicates.values());
-      closedPredicates.remove(model.predicates.get("Friends"));
+		closedPredicates.remove(model.predicates.get("Friends"));
 
-      Database weightLearningTrainDB = model.dataStore.getDatabase(model.targetPartition, closedPredicates, model.observationPartition);
-      Database weightLearningTruthDB = model.dataStore.getDatabase(model.truthPartition, allPredicates, model.observationPartition);
+		Database weightLearningTrainDB = model.dataStore.getDatabase(model.targetPartition, closedPredicates, model.observationPartition);
+		Database weightLearningTruthDB = model.dataStore.getDatabase(model.truthPartition, allPredicates, model.observationPartition);
 
-      WeightLearningApplication weightLearner = null;
+		WeightLearningApplication weightLearner = null;
 		try {
 			weightLearner = new MaxLikelihoodMPE(model.model, weightLearningTrainDB, weightLearningTruthDB, model.config);
 		} catch (Exception ex) {
@@ -60,48 +60,48 @@ public class MaxLikelihoodMPETest {
 			fail("Exception thrown during MPE constructor.");
 		}
 
-      try {
-         weightLearner.learn();
-      } catch (Exception ex) {
-         System.out.println(ex);
+		try {
+			weightLearner.learn();
+		} catch (Exception ex) {
+			System.out.println(ex);
 			ex.printStackTrace();
 			fail("Exception thrown during weight learning.");
-      }
+		}
 
-      weightLearner.close();
+		weightLearner.close();
 		
 		weightLearningTrainDB.close();
 		weightLearningTruthDB.close();
 	}
 
-   /**
-    * Ensure that a rule with no groundings does not break.
-    */
+	/**
+	 * Ensure that a rule with no groundings does not break.
+	 */
 	@Test
 	public void ruleWithNoGroundingsTest() {
-      // Add in a rule that will have zero groundings.
-      // People are not friends with themselves.
+		// Add in a rule that will have zero groundings.
+		// People are not friends with themselves.
 		Rule newRule = new WeightedLogicalRule(
-         new Implication(
-            new Conjunction(
-               new QueryAtom(model.predicates.get("Nice"), model.dataStore.getUniqueID("ZzZ__FAKE_PERSON_A__ZzZ")),
-               new QueryAtom(model.predicates.get("Nice"), new Variable("B"))
-            ),
-            new QueryAtom(model.predicates.get("Friends"), model.dataStore.getUniqueID("ZzZ__FAKE_PERSON_A__ZzZ"), new Variable("B"))
-         ),
-         5.0,
-         true
-      );
-      model.model.addRule(newRule);
+			new Implication(
+				new Conjunction(
+					new QueryAtom(model.predicates.get("Nice"), model.dataStore.getUniqueID("ZzZ__FAKE_PERSON_A__ZzZ")),
+					new QueryAtom(model.predicates.get("Nice"), new Variable("B"))
+				),
+				new QueryAtom(model.predicates.get("Friends"), model.dataStore.getUniqueID("ZzZ__FAKE_PERSON_A__ZzZ"), new Variable("B"))
+			),
+			5.0,
+			true
+		);
+		model.model.addRule(newRule);
 
 		Set<StandardPredicate> allPredicates = new HashSet<StandardPredicate>(model.predicates.values());
 		Set<StandardPredicate> closedPredicates = new HashSet<StandardPredicate>(model.predicates.values());
-      closedPredicates.remove(model.predicates.get("Friends"));
+		closedPredicates.remove(model.predicates.get("Friends"));
 
-      Database weightLearningTrainDB = model.dataStore.getDatabase(model.targetPartition, closedPredicates, model.observationPartition);
-      Database weightLearningTruthDB = model.dataStore.getDatabase(model.truthPartition, allPredicates, model.observationPartition);
+		Database weightLearningTrainDB = model.dataStore.getDatabase(model.targetPartition, closedPredicates, model.observationPartition);
+		Database weightLearningTruthDB = model.dataStore.getDatabase(model.truthPartition, allPredicates, model.observationPartition);
 
-      WeightLearningApplication weightLearner = null;
+		WeightLearningApplication weightLearner = null;
 		try {
 			weightLearner = new MaxLikelihoodMPE(model.model, weightLearningTrainDB, weightLearningTruthDB, model.config);
 		} catch (Exception ex) {
@@ -110,15 +110,15 @@ public class MaxLikelihoodMPETest {
 			fail("Exception thrown during MPE constructor.");
 		}
 
-      try {
-         weightLearner.learn();
-      } catch (Exception ex) {
-         System.out.println(ex);
+		try {
+			weightLearner.learn();
+		} catch (Exception ex) {
+			System.out.println(ex);
 			ex.printStackTrace();
 			fail("Exception thrown during weight learning.");
-      }
+		}
 
-      weightLearner.close();
+		weightLearner.close();
 		
 		weightLearningTrainDB.close();
 		weightLearningTruthDB.close();
