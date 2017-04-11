@@ -19,44 +19,23 @@ package org.linqs.psl.model.formula;
 
 import java.util.ArrayList;
 
-public class Disjunction extends AbstractBranchFormula {
-
+public class Disjunction extends AbstractBranchFormula<Disjunction> {
 	public Disjunction(Formula... f) {
 		super(f);
 	}
-	
+
 	@Override
 	public Formula getDNF() {
-		Formula[] components = new Formula[getNoFormulas()];
-		for (int i = 0; i < components.length; i++)
+		Formula[] components = new Formula[length()];
+		for (int i = 0; i < components.length; i++) {
 			components[i] = get(i).getDNF();
-		return new Disjunction(components);
+		}
+
+		return new Disjunction(components).flatten();
 	}
 
 	@Override
 	protected String separatorString() {
 		return "|";
 	}
-	
-	/**
-	 * Collapses nested Disjunctions.
-	 * <p>
-	 * Stops descending where ever a Formula other than a Disjunction is.
-	 * 
-	 * @return the flattened Disjunction
-	 */
-	public Disjunction flatten() {
-		ArrayList<Formula> disj = new ArrayList<Formula>(getNoFormulas());
-		for (Formula f : formulas) {
-			if (f instanceof Disjunction) {
-				Formula[] newFormulas = ((Disjunction) f).flatten().formulas;
-				for (Formula newF : newFormulas)
-					disj.add(newF);
-			}
-			else
-				disj.add(f);
-		}
-		return new Disjunction((Formula[]) disj.toArray(new Formula[disj.size()]));
-	}
-
 }

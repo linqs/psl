@@ -69,10 +69,10 @@ public class ModelLoaderTest {
 	}
 
 	/**
-	 * Convenience call for the common functionality of assertModel() (don't alphabetize).
+	 * Convenience call for the common functionality of assertModel() (alphabetize).
 	 */
 	public void assertModel(String input, String[] expectedRules) {
-		assertModel(input, expectedRules, false);
+		assertModel(input, expectedRules, true);
 	}
 
 	/**
@@ -190,7 +190,7 @@ public class ModelLoaderTest {
 			"~( SINGLE(A) ) ."
 		};
 
-		assertModel(input, expected);
+		assertModel(input, expected, false);
 	}
 
 	@Test
@@ -296,7 +296,7 @@ public class ModelLoaderTest {
 			"1.0: 1.2E-10 * SINGLE(A) = 1.0 ^2"
 		};
 
-		assertModel(input, expected);
+		assertModel(input, expected, false);
 	}
 
 	@Test
@@ -317,7 +317,7 @@ public class ModelLoaderTest {
 			"1.0: SINGLE(A__) >> SINGLE(A__) ^2"
 		};
 
-		assertModel(input, expected);
+		assertModel(input, expected, false);
 	}
 
 	@Test
@@ -354,7 +354,7 @@ public class ModelLoaderTest {
 			"2.5E-10: SINGLE(A) >> SINGLE(A)"
 		};
 
-		assertModel(input, expected);
+		assertModel(input, expected, false);
 	}
 
 	@Test
@@ -417,7 +417,7 @@ public class ModelLoaderTest {
 			"1.0: ( ('Foo' != 'Bar') & DOUBLE(A, B) ) >> SINGLE(B) ^2"
 		};
 
-		assertModel(input, expected);
+		assertModel(input, expected, false);
 	}
 
 	@Test
@@ -447,7 +447,7 @@ public class ModelLoaderTest {
 			"1.0: ( (A != B) & DOUBLE(A, B) ) >> SINGLE(B)"
 		};
 
-		assertModel(input, expected);
+		assertModel(input, expected, false);
 	}
 
 	@Test
@@ -500,7 +500,7 @@ public class ModelLoaderTest {
 			"@Min[1.0, 0.0] * SINGLE(A) = 1.0 ."
 		};
 
-		assertModel(input, expected, true);
+		assertModel(input, expected);
 	}
 
 	@Test
@@ -729,6 +729,137 @@ public class ModelLoaderTest {
 		String[] expected = new String[]{
 			"1.0: ( SINGLE(A) & SINGLE(B) & (A % B) ) >> DOUBLE(A, B) ^2",
 			"1.0: ( SINGLE(A) & SINGLE(B) & (A % B) ) >> DOUBLE(A, B) ^2"
+		};
+
+		assertModel(input, expected);
+	}
+
+	@Test
+	public void testArithmeticCoefficientOperationOrder() {
+		String input =
+			"1.0 + 2.0 * 3.0 * Single(A) = 99 .\n" +
+			"1.0 + 2.0 * 3.0 * Single(A) + Single(B) = 99 .\n" +
+			"99 = 1.0 + 2.0 * 3.0 * Single(A) .\n" +
+			"1.0 + 2.0 * 3.0 * Single(A) = 4.0 + 5.0 * 6.0 * Single(B) .\n" +
+			"1.0 + 2.0 - 3.0 * Single(A) = 99 .\n" +
+			"1.0 - 2.0 + 3.0 * Single(A) = 99 .\n" +
+			"1.0 + 2.0 + 3.0 - 4.0 * Single(A) = 99 .\n" +
+			"1.0 - 2.0 - 3.0 + 4.0 * Single(A) = 99 .\n" +
+			"1.0 + (2.0 * 3.0) * Single(A) = 99 .\n" +
+			"(1.0 + 2.0) * 3.0 * Single(A) = 99 .\n" +
+			"1.0 + 2.0 * |A| * Single(+A) = 99 .\n" +
+			"1.0 + 2.0 * @Min(3.0, 4.0) * Single(+A) = 99 .\n" +
+			"1.0 + 2.0 * @Max(3.0, 4.0) * Single(+A) = 99 .\n" +
+			"1.0 + 2.0 * 3.0 + 4.0 * Single(A) = 99 .\n" +
+			"1.0 + (2.0 * 3.0) + 4.0 * Single(A) = 99 .\n" +
+			"(1.0 + 2.0) * (3.0 + 4.0) * Single(A) = 99 .\n" +
+			"1.0 - 2.0 / 3.0 - 4.0 * Single(A) = 99 .\n" +
+			"1.0 - (2.0 / 3.0) - 4.0 * Single(A) = 99 .\n" +
+			"(1.0 - 2.0) / (3.0 - 4.0) * Single(A) = 99 .\n" +
+			"";
+		String[] expected = new String[]{
+			"(1.0 + (2.0 * 3.0)) * SINGLE(A) = 99.0 .",
+			"(1.0 + (2.0 * 3.0)) * SINGLE(A) + 1.0 * SINGLE(B) = 99.0 .",
+			"(-1.0 * (1.0 + (2.0 * 3.0))) * SINGLE(A) = (-1.0 * 99.0) .",
+			"(1.0 + (2.0 * 3.0)) * SINGLE(A) + (-1.0 * (4.0 + (5.0 * 6.0))) * SINGLE(B) = 0.0 .",
+			"((1.0 + 2.0) - 3.0) * SINGLE(A) = 99.0 .",
+			"((1.0 - 2.0) + 3.0) * SINGLE(A) = 99.0 .",
+			"(((1.0 + 2.0) + 3.0) - 4.0) * SINGLE(A) = 99.0 .",
+			"(((1.0 - 2.0) - 3.0) + 4.0) * SINGLE(A) = 99.0 .",
+			"(1.0 + (2.0 * 3.0)) * SINGLE(A) = 99.0 .",
+			"((1.0 + 2.0) * 3.0) * SINGLE(A) = 99.0 .",
+			"(1.0 + (2.0 * |A|)) * SINGLE(+A) = 99.0 .",
+			"(1.0 + (2.0 * @Min[3.0, 4.0])) * SINGLE(+A) = 99.0 .",
+			"(1.0 + (2.0 * @Max[3.0, 4.0])) * SINGLE(+A) = 99.0 .",
+			"((1.0 + (2.0 * 3.0)) + 4.0) * SINGLE(A) = 99.0 .",
+			"((1.0 + (2.0 * 3.0)) + 4.0) * SINGLE(A) = 99.0 .",
+			"((1.0 + 2.0) * (3.0 + 4.0)) * SINGLE(A) = 99.0 .",
+			"((1.0 - (2.0 / 3.0)) - 4.0) * SINGLE(A) = 99.0 .",
+			"((1.0 - (2.0 / 3.0)) - 4.0) * SINGLE(A) = 99.0 .",
+			"((1.0 - 2.0) / (3.0 - 4.0)) * SINGLE(A) = 99.0 ."
+		};
+
+		assertModel(input, expected);
+	}
+
+	@Test
+	public void testNotEquals() {
+		// Test both syntaxes.
+		String input =
+			"1: A != B & Single(A) & Single(B) >> Double(A, B) ^2\n" +
+			"1: (A != B) & Single(A) & Single(B) >> Double(A, B) ^2\n" +
+			"1: A!=B & Single(A) & Single(B) >> Double(A, B) ^2\n" +
+			"1: (A!=B) & Single(A) & Single(B) >> Double(A, B) ^2\n" +
+			"1: A - B & Single(A) & Single(B) >> Double(A, B) ^2\n" +
+			"1: (A - B) & Single(A) & Single(B) >> Double(A, B) ^2\n" +
+			"1: A-B & Single(A) & Single(B) >> Double(A, B) ^2\n" +
+			"1: (A-B) & Single(A) & Single(B) >> Double(A, B) ^2\n" +
+			"";
+		String[] expected = new String[]{
+			"1.0: ( (A != B) & SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B) ^2",
+			"1.0: ( (A != B) & SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B) ^2",
+			"1.0: ( (A != B) & SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B) ^2",
+			"1.0: ( (A != B) & SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B) ^2",
+			"1.0: ( (A != B) & SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B) ^2",
+			"1.0: ( (A != B) & SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B) ^2",
+			"1.0: ( (A != B) & SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B) ^2",
+			"1.0: ( (A != B) & SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B) ^2"
+		};
+
+		assertModel(input, expected);
+	}
+
+	@Test
+	public void testSelectOperatorOrder() {
+		String input =
+			"Single(+A) + Double(B, C) = 1 . {A: Single(A) || Single(B) || Single(C)}\n" +
+			"Single(+A) + Double(B, C) = 1 . {A: Single(A) && Single(B) && Single(C)}\n" +
+			"Single(+A) + Double(B, C) = 1 . {A: Single(A) || Single(B) && Single(C)}\n" +
+			"Single(+A) + Double(B, C) = 1 . {A: Single(A) && Single(B) || Single(C)}\n" +
+
+			"Single(+A) + Double(B, C) = 1 . {A: (Single(A) || Single(B)) || Single(C)}\n" +
+			"Single(+A) + Double(B, C) = 1 . {A: Single(A) || (Single(B) || Single(C))}\n" +
+			"Single(+A) + Double(B, C) = 1 . {A: (Single(A) && Single(B)) && Single(C)}\n" +
+			"Single(+A) + Double(B, C) = 1 . {A: Single(A) && (Single(B) && Single(C))}\n" +
+
+			"Single(+A) + Double(B, C) = 1 . {A: (Single(A) || Single(B)) && Single(C)}\n" +
+			"Single(+A) + Double(B, C) = 1 . {A: Single(A) || (Single(B) && Single(C))}\n" +
+			"Single(+A) + Double(B, C) = 1 . {A: (Single(A) && Single(B)) || Single(C)}\n" +
+			"Single(+A) + Double(B, C) = 1 . {A: Single(A) && (Single(B) || Single(C))}\n" +
+			"";
+		String[] expected = new String[]{
+			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( SINGLE(A) | SINGLE(B) | SINGLE(C) )}",
+			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( SINGLE(A) & SINGLE(B) & SINGLE(C) )}",
+			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( SINGLE(A) | ( SINGLE(B) & SINGLE(C) ) )}",
+			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( ( SINGLE(A) & SINGLE(B) ) | SINGLE(C) )}",
+
+			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( SINGLE(A) | SINGLE(B) | SINGLE(C) )}",
+			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( SINGLE(A) | SINGLE(B) | SINGLE(C) )}",
+			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( SINGLE(A) & SINGLE(B) & SINGLE(C) )}",
+			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( SINGLE(A) & SINGLE(B) & SINGLE(C) )}",
+
+			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( ( SINGLE(A) & SINGLE(C) ) | ( SINGLE(B) & SINGLE(C) ) )}",
+			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( SINGLE(A) | ( SINGLE(B) & SINGLE(C) ) )}",
+			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( ( SINGLE(A) & SINGLE(B) ) | SINGLE(C) )}",
+			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( ( SINGLE(A) & SINGLE(B) ) | ( SINGLE(A) & SINGLE(C) ) )}"
+		};
+
+		assertModel(input, expected);
+	}
+
+	@Test
+	public void testArithmeticSubtraction() {
+		String input =
+			"Double(A, B) - Double(B, A) = 0.0 .\n" +
+			"0.0 = Double(A, B) - Double(B, A) .\n" +
+			"Double(A, B) + Double(B, A) = 0.0 .\n" +
+			"0.0 = Double(A, B) + Double(B, A) .\n" +
+			"";
+		String[] expected = new String[]{
+			"1.0 * DOUBLE(A, B) + (-1.0 * 1.0) * DOUBLE(B, A) = 0.0 .",
+			"(-1.0 * 1.0) * DOUBLE(A, B) + 1.0 * DOUBLE(B, A) = (-1.0 * 0.0) .",
+			"1.0 * DOUBLE(A, B) + 1.0 * DOUBLE(B, A) = 0.0 .",
+			"(-1.0 * 1.0) * DOUBLE(A, B) + (-1.0 * 1.0) * DOUBLE(B, A) = (-1.0 * 0.0) ."
 		};
 
 		assertModel(input, expected);

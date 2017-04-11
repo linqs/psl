@@ -66,8 +66,16 @@ import org.linqs.psl.parser.antlr.PSLParser.ArithmeticRuleExpressionContext;
 import org.linqs.psl.parser.antlr.PSLParser.ArithmeticRuleOperandContext;
 import org.linqs.psl.parser.antlr.PSLParser.ArithmeticRuleRelationContext;
 import org.linqs.psl.parser.antlr.PSLParser.AtomContext;
-import org.linqs.psl.parser.antlr.PSLParser.BoolExpressionContext;
+import org.linqs.psl.parser.antlr.PSLParser.BooleanExpressionContext;
+import org.linqs.psl.parser.antlr.PSLParser.BooleanConjunctiveExpressionContext;
+import org.linqs.psl.parser.antlr.PSLParser.BooleanDisjunctiveExpressionContext;
+import org.linqs.psl.parser.antlr.PSLParser.BooleanValueContext;
 import org.linqs.psl.parser.antlr.PSLParser.CoefficientContext;
+import org.linqs.psl.parser.antlr.PSLParser.CoefficientAdditiveExpressionContext;
+import org.linqs.psl.parser.antlr.PSLParser.CoefficientExpressionContext;
+import org.linqs.psl.parser.antlr.PSLParser.CoefficientFunctionContext;
+import org.linqs.psl.parser.antlr.PSLParser.CoefficientMultiplicativeExpressionContext;
+import org.linqs.psl.parser.antlr.PSLParser.CoefficientOperatorContext;
 import org.linqs.psl.parser.antlr.PSLParser.ConjunctiveClauseContext;
 import org.linqs.psl.parser.antlr.PSLParser.ConstantContext;
 import org.linqs.psl.parser.antlr.PSLParser.DisjunctiveClauseContext;
@@ -154,7 +162,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	 * The input should only contain rules and the DataStore should contain all the predicates
 	 * used by the rules.
 	 */
-	public static Model load(DataStore data, Reader input) throws IOException  {
+	public static Model load(DataStore data, Reader input) throws IOException {
 		PSLParser parser = getParser(input);
 		ProgramContext program = null;
 
@@ -172,7 +180,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	/**
 	 * Get a parser over the given input.
 	 */
-	private static PSLParser getParser(Reader input) throws IOException  {
+	private static PSLParser getParser(Reader input) throws IOException {
 		PSLLexer lexer = new PSLLexer(new ANTLRInputStream(input));
 
 		// We need to add a error listener to the lexer so we halt on lex errors.
@@ -196,7 +204,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 		return parser;
 	}
 
-	private static PSLParser getParser(String input) throws IOException  {
+	private static PSLParser getParser(String input) throws IOException {
 		return getParser(new StringReader(input));
 	}
 
@@ -365,32 +373,41 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 
 	@Override
 	public ArithmeticRuleExpression visitArithmeticRuleExpression(ArithmeticRuleExpressionContext ctx) {
-		List<ArithmeticRuleOperand> ops1, ops2, currentOps;
-		ops1 = new LinkedList<ArithmeticRuleOperand>();
-		ops2 = new LinkedList<ArithmeticRuleOperand>();
-		currentOps = ops1;
+		// The operands to the arithmetic rule.
+		List<ArithmeticRuleOperand> lhsOperands = new LinkedList<ArithmeticRuleOperand>();
+		List<ArithmeticRuleOperand> rhsOperands = new LinkedList<ArithmeticRuleOperand>();
+		List<ArithmeticRuleOperand> currentOperands = lhsOperands;
 
-		List<Boolean> pos1, pos2, currentPos;
-		pos1 = new LinkedList<Boolean>();
-		pos1.add(true);
-		pos2 = new LinkedList<Boolean>();
-		pos2.add(true);
-		currentPos = pos1;
+		// The sign of each operand.
+		// The entire arithmetic expression will eventually become a linear
+		// combination of all the operands compared against a single number.
+		// ie we will simplify the expression by moving RHS terms to the LHS.
+		// true means that the corresponding operand is positive on its respective side,
+		// (lhs is true on the left, rhs is true on the right) false is negative.
+		List<Boolean> lhsOperandSigns = new LinkedList<Boolean>();
+		List<Boolean> rhsOperandSigns = new LinkedList<Boolean>();
+		List<Boolean> currentOperandSigns = lhsOperandSigns;
 
-		FunctionComparator comp = null;
+		// There must be at least one operand on each side, and they are always positive.
+		// Note that any negative sign here is associated with the coefficient.
+		lhsOperandSigns.add(true);
+		rhsOperandSigns.add(true);
+
+		// The relational operator between the LHS and RHS.
+		FunctionComparator relationalComparison = null;
 
 		for (int i = 0; i < ctx.getChildCount(); i++) {
+			// Even children are ArithmeticRuleOperand's, while odd children
+			// will either be a LinearOperator or an ArithmeticRuleRelation.
 			if (i % 2 == 0) {
-				currentOps.add((ArithmeticRuleOperand) visit(ctx.getChild(i)));
-			}
-			else {
+				currentOperands.add(visitArithmeticRuleOperand(((ArithmeticRuleOperandContext)ctx.getChild(i))));
+			} else {
 				if (ctx.getChild(i).getPayload() instanceof ArithmeticRuleRelationContext) {
-					comp = (FunctionComparator) visit(ctx.getChild(i));
-					currentOps = ops2;
-					currentPos = pos2;
-				}
-				else {
-					currentPos.add((Boolean) visit(ctx.getChild(i)));
+					relationalComparison = (FunctionComparator)visit(ctx.getChild(i));
+					currentOperands = rhsOperands;
+					currentOperandSigns = rhsOperandSigns;
+				} else {
+					currentOperandSigns.add(visitLinearOperator((LinearOperatorContext)ctx.getChild(i)));
 				}
 			}
 		}
@@ -399,110 +416,118 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 		List<SummationAtomOrAtom> atoms = new LinkedList<SummationAtomOrAtom>();
 		Coefficient finalCoeff = null;
 
-		/*
-		 * Processes first subexpression
-		 */
-		for (int i = 0; i < ops1.size(); i++) {
-			// Checks if it is just a coefficient
-			if (ops1.get(i).atom == null) {
+		// Processes the LHS.
+		for (int i = 0; i < lhsOperands.size(); i++) {
+			// Check if it is just a coefficient
+			if (lhsOperands.get(i).atom == null) {
 				// If it is the first coefficient, uses it to start the final coefficient
 				if (finalCoeff == null) {
-					if (pos1.get(i)) {
-						finalCoeff = new Multiply(new ConstantNumber(-1.0), ops1.get(i).coefficient);
+					if (lhsOperandSigns.get(i)) {
+						finalCoeff = new Multiply(new ConstantNumber(-1.0), lhsOperands.get(i).coefficient);
+					} else {
+						finalCoeff = lhsOperands.get(i).coefficient;
 					}
-					else {
-						finalCoeff = ops1.get(i).coefficient;
-					}
-				}
-				// Else, adds it to the final coefficient
-				else {
-					if (pos1.get(i)) {
-						finalCoeff = new Subtract(finalCoeff, ops1.get(i).coefficient);
-					}
-					else {
-						finalCoeff = new Add(finalCoeff, ops1.get(i).coefficient);
+				// Else, add it to the final coefficient
+				} else {
+					if (lhsOperandSigns.get(i)) {
+						finalCoeff = new Subtract(finalCoeff, lhsOperands.get(i).coefficient);
+					} else {
+						finalCoeff = new Add(finalCoeff, lhsOperands.get(i).coefficient);
 					}
 				}
-			}
-			// Else, processes the SummationAtomOrAtom
-			else {
-				if (ops1.get(i).coefficient == null) {
-					coeffs.add(new ConstantNumber(1.0));
+			// Else, process the SummationAtomOrAtom
+			} else {
+				Coefficient coeff = null;
+				if (lhsOperands.get(i).coefficient == null) {
+					coeff = new ConstantNumber(1.0);
+				} else {
+					coeff = lhsOperands.get(i).coefficient;
 				}
-				else {
-					coeffs.add(ops1.get(i).coefficient);
+
+				// Check the sign.
+				if (!lhsOperandSigns.get(i).booleanValue()) {
+					coeff = new Multiply(new ConstantNumber(-1.0), coeff);
 				}
-				atoms.add(ops1.get(i).atom);
+
+				coeffs.add(coeff);
+				atoms.add(lhsOperands.get(i).atom);
 			}
 		}
 
-		/*
-		 * Processes second subexpression
-		 */
-		for (int i = 0; i < ops2.size(); i++) {
-			// Checks if it is just a coefficient
-			if (ops2.get(i).atom == null) {
+		// Processes the RHS.
+		for (int i = 0; i < rhsOperands.size(); i++) {
+			// Check if it is just a coefficient
+			if (rhsOperands.get(i).atom == null) {
 				// If it is the first coefficient, uses it to start the final coefficient
 				if (finalCoeff == null) {
-					finalCoeff = ops2.get(i).coefficient;
-				}
-				// Else, adds it to the final coefficient
-				else {
-					if (pos2.get(i)) {
-						finalCoeff = new Add(finalCoeff, ops2.get(i).coefficient);
-					}
-					else {
-						finalCoeff = new Subtract(finalCoeff, ops2.get(i).coefficient);
+					finalCoeff = rhsOperands.get(i).coefficient;
+				// Else, add it to the final coefficient
+				} else {
+					if (rhsOperandSigns.get(i)) {
+						finalCoeff = new Add(finalCoeff, rhsOperands.get(i).coefficient);
+					} else {
+						finalCoeff = new Subtract(finalCoeff, rhsOperands.get(i).coefficient);
 					}
 				}
-			}
-			// Else, processes the SummationAtomOrAtom
-			else {
-				if (ops2.get(i).coefficient == null) {
-					coeffs.add(new ConstantNumber(-1.0));
+			// Else, process the SummationAtomOrAtom
+			} else {
+				Coefficient coeff = null;
+				if (rhsOperands.get(i).coefficient == null) {
+					coeff = new ConstantNumber(1.0);
+				} else {
+					coeff = rhsOperands.get(i).coefficient;
 				}
-				else {
-					coeffs.add(new Multiply(new ConstantNumber(-1.0), ops2.get(i).coefficient));
+
+				// Check the sign.
+				// Remember that the sign will swap once when we move the RHS to the LHS.
+				if (rhsOperandSigns.get(i).booleanValue()) {
+					coeff = new Multiply(new ConstantNumber(-1.0), coeff);
 				}
-				atoms.add(ops2.get(i).atom);
+
+				coeffs.add(coeff);
+				atoms.add(rhsOperands.get(i).atom);
 			}
 		}
 
-		if (finalCoeff == null)
+		if (finalCoeff == null) {
 			finalCoeff = new ConstantNumber(0.0);
-		
-		return new ArithmeticRuleExpression(coeffs, atoms, comp, finalCoeff);
+		}
+
+		return new ArithmeticRuleExpression(coeffs, atoms, relationalComparison, finalCoeff);
 	}
 
 	@Override
 	public ArithmeticRuleOperand visitArithmeticRuleOperand(ArithmeticRuleOperandContext ctx) {
 		ArithmeticRuleOperand operand = new ArithmeticRuleOperand();
-		// Checks if the operand is just a coefficient
-		if (ctx.getChildCount() == 1 && ctx.getChild(0).getPayload() instanceof CoefficientContext) {
-			operand.coefficient = visitCoefficient((CoefficientContext) ctx.getChild(0));
-		}
-		else {
-			// Checks if there is a prepended multiplier coefficient
-			int atomIndex = 0;
-			if (ctx.getChild(0).getPayload() instanceof CoefficientContext) {
-				operand.coefficient = visitCoefficient((CoefficientContext) ctx.getChild(0).getPayload());
-				atomIndex = (ctx.getChild(1).getPayload() instanceof CommonToken) ? 2 : 1;
-			}
 
-			// Parses SummationAtom or Atom
-			operand.atom = (SummationAtomOrAtom) visit(ctx.getChild(atomIndex));
+		// Check if the operand is just a coefficient
+		if (ctx.getChildCount() == 1 && ctx.getChild(0).getPayload() instanceof CoefficientExpressionContext) {
+			operand.coefficient = visitCoefficientExpression((CoefficientExpressionContext)ctx.getChild(0));
+			return operand;
+		}
 
-			// Checks if there is an appended divisor coefficient
-			if (ctx.getChildCount() > atomIndex + 1) {
-				Coefficient divisor = visitCoefficient((CoefficientContext) ctx.getChild(atomIndex + 2));
-				if (operand.coefficient == null) {
-					operand.coefficient = new Divide(new ConstantNumber(1.0), divisor);
-				}
-				else {
-					operand.coefficient = new Divide(operand.coefficient, divisor);
-				}
+		// Checks if there is a prepended multiplier coefficient
+		int atomIndex = 0;
+		if (ctx.getChild(0).getPayload() instanceof CoefficientExpressionContext) {
+			operand.coefficient = visitCoefficientExpression((CoefficientExpressionContext)ctx.getChild(0));
+
+			// Skip the optional '*'.
+			atomIndex = (ctx.getChild(1).getPayload() instanceof CommonToken) ? 2 : 1;
+		}
+
+		// Parses SummationAtom or Atom
+		operand.atom = (SummationAtomOrAtom)visit(ctx.getChild(atomIndex));
+
+		// Checks if there is an appended divisor coefficient
+		if (ctx.getChildCount() > atomIndex + 1) {
+			Coefficient divisor = visitCoefficientExpression((CoefficientExpressionContext)ctx.getChild(atomIndex + 2));
+			if (operand.coefficient == null) {
+				operand.coefficient = new Divide(new ConstantNumber(1.0), divisor);
+			} else {
+				operand.coefficient = new Divide(operand.coefficient, divisor);
 			}
 		}
+
 		return operand;
 	}
 
@@ -531,52 +556,85 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	}
 
 	@Override
+	public Coefficient visitCoefficientExpression(CoefficientExpressionContext ctx) {
+		return visitCoefficientAdditiveExpression((CoefficientAdditiveExpressionContext)ctx.getChild(0));
+	}
+
+	@Override
+	public Coefficient visitCoefficientAdditiveExpression(CoefficientAdditiveExpressionContext ctx) {
+		// Passthrough to multiplicative expression.
+		if (ctx.getChildCount() == 1) {
+			return visitCoefficientMultiplicativeExpression((CoefficientMultiplicativeExpressionContext)ctx.getChild(0));
+		}
+
+		// Binary addative operation.
+		Coefficient lhs = visitCoefficientAdditiveExpression((CoefficientAdditiveExpressionContext)ctx.getChild(0));
+		Coefficient rhs = visitCoefficientMultiplicativeExpression((CoefficientMultiplicativeExpressionContext)ctx.getChild(2));
+
+		if (ctx.PLUS() != null) {
+			return new Add(lhs, rhs);
+		} else {
+			return new Subtract(lhs, rhs);
+		}
+	}
+
+	@Override
+	public Coefficient visitCoefficientMultiplicativeExpression(CoefficientMultiplicativeExpressionContext ctx) {
+		// Passthrough to coefficient.
+		if (ctx.getChildCount() == 1) {
+			return visitCoefficient((CoefficientContext)ctx.getChild(0));
+		}
+
+		// Binary multiplicative operation.
+		Coefficient lhs = visitCoefficientMultiplicativeExpression((CoefficientMultiplicativeExpressionContext)ctx.getChild(0));
+		Coefficient rhs = visitCoefficient((CoefficientContext)ctx.getChild(2));
+
+		if (ctx.MULT() != null) {
+			return new Multiply(lhs, rhs);
+		} else {
+			return new Divide(lhs, rhs);
+		}
+	}
+
+	@Override
 	public Coefficient visitCoefficient(CoefficientContext ctx) {
+		// Just a number
 		if (ctx.number() != null) {
 			return new ConstantNumber(visitNumber(ctx.number()));
 		}
-		else if (ctx.variable() != null) {
+
+		// Coefficient surrounded by parens.
+		if (ctx.getChildCount() == 3) {
+			return visitCoefficientExpression((CoefficientExpressionContext)ctx.getChild(1));
+		}
+
+		// Coefficient Operator (cardinality, min, max).
+		return visitCoefficientOperator((CoefficientOperatorContext)ctx.getChild(0));
+	}
+
+	@Override
+	public Coefficient visitCoefficientOperator(CoefficientOperatorContext ctx) {
+		// Cardinality.
+		if (ctx.getChildCount() == 3) {
 			return new Cardinality(new SummationVariable(ctx.variable().getText()));
 		}
-		else if (ctx.arithmeticOperator() != null) {
-			Coefficient c1 = (Coefficient) visit(ctx.coefficient(0));
-			Coefficient c2 = (Coefficient) visit(ctx.coefficient(1));
 
-			if (ctx.arithmeticOperator().PLUS() != null) {
-				return new Add(c1 , c2);
-			}
-			else if (ctx.arithmeticOperator().MINUS() != null) {
-				return new Subtract(c1 , c2);
-			}
-			else if (ctx.arithmeticOperator().MULT() != null) {
-				return new Multiply(c1 , c2);
-			}
-			else if (ctx.arithmeticOperator().DIV() != null) {
-				return new Divide(c1 , c2);
-			}
-			else {
-				throw new IllegalStateException("(Line " + ctx.getStart().getLine()+ ") Arithmetic operator not recognized.");
-			}
-		}
-		else if (ctx.coeffOperator() != null) {
-			Coefficient c1 = (Coefficient) visit(ctx.coefficient(0));
-			Coefficient c2 = (Coefficient) visit(ctx.coefficient(1));
+		// Coefficient function (min / max)
+		return visitCoefficientFunction((CoefficientFunctionContext)ctx.getChild(0));
+	}
 
-			if (ctx.coeffOperator().MAX() != null) {
-				return new Max(c1, c2);
-			}
-			else if (ctx.coeffOperator().MIN() != null) {
-				return new Min(c1, c2);
-			}
-			else {
-				throw new IllegalStateException("(Line " + ctx.getStart().getLine()+ ") Coefficient operator not recognized.");
-			}
-		}
-		else if (ctx.LPAREN() != null) {
-			return (Coefficient) visit(ctx.getChild(1));
-		}
-		else {
-			throw new IllegalStateException("(Line " + ctx.getStart().getLine()+ ") Coefficient expresion not recognized.");
+	@Override
+	public Coefficient visitCoefficientFunction(CoefficientFunctionContext ctx) {
+		// Children: [function, open, lhs, comma, rhs, close]
+
+		// All functions are binary.
+		Coefficient lhs = visitCoefficientExpression((CoefficientExpressionContext)ctx.getChild(2));
+		Coefficient rhs = visitCoefficientExpression((CoefficientExpressionContext)ctx.getChild(4));
+
+		if (ctx.coefficientFunctionOperator().MAX() != null) {
+			return new Max(lhs, rhs);
+		} else {
+			return new Min(lhs, rhs);
 		}
 	}
 
@@ -600,11 +658,9 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	public Boolean visitLinearOperator(LinearOperatorContext ctx) {
 		if (ctx.PLUS() != null) {
 			return true;
-		}
-		else if (ctx.MINUS() != null) {
+		} else if (ctx.MINUS() != null) {
 			return false;
-		}
-		else {
+		} else {
 			throw new IllegalStateException();
 		}
 	}
@@ -613,27 +669,51 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	public SelectStatement visitSelectStatement(SelectStatementContext ctx) {
 		SelectStatement select = new SelectStatement();
 		select.v = new SummationVariable(ctx.variable().getText());
-		select.f = visitBoolExpression(ctx.boolExpression());
+		select.f = visitBooleanExpression(ctx.booleanExpression());
+
 		return select;
 	}
 
 	@Override
-	public Formula visitBoolExpression(BoolExpressionContext ctx) {
-		if (ctx.literal() != null) {
+	public Formula visitBooleanValue(BooleanValueContext ctx) {
+		// A plain literal.
+		if (ctx.getChildCount() == 1) {
 			return visitLiteral(ctx.literal());
 		}
-		else if (ctx.or() != null) {
-			return new Disjunction(visitBoolExpression(ctx.boolExpression(0)), visitBoolExpression(ctx.boolExpression(1)));
+
+		// Bool expression with parens.
+		return visitBooleanExpression(ctx.booleanExpression());
+	}
+
+	@Override
+	public Formula visitBooleanConjunctiveExpression(BooleanConjunctiveExpressionContext ctx) {
+		// Passthrough to booleanValue.
+		if (ctx.getChildCount() == 1) {
+			return visitBooleanValue(ctx.booleanValue());
 		}
-		else if (ctx.and() != null) {
-			return new Conjunction(visitBoolExpression(ctx.boolExpression(0)), visitBoolExpression(ctx.boolExpression(1)));
+
+		// Conjunction.
+		Formula lhs = visitBooleanConjunctiveExpression(ctx.booleanConjunctiveExpression());
+		Formula rhs = visitBooleanValue(ctx.booleanValue());
+		return new Conjunction(lhs, rhs);
+	}
+
+	@Override
+	public Formula visitBooleanDisjunctiveExpression(BooleanDisjunctiveExpressionContext ctx) {
+		// Passthrough to booleanConjunctiveExpression.
+		if (ctx.getChildCount() == 1) {
+			return visitBooleanConjunctiveExpression(ctx.booleanConjunctiveExpression());
 		}
-		else if (ctx.boolExpression() != null) {
-			return visitBoolExpression(ctx.boolExpression(0));
-		}
-		else {
-			throw new IllegalStateException("(Line " + ctx.getStart().getLine()+ ") Boolean expresion not recognized.");
-		}
+
+		// Conjunction.
+		Formula lhs = visitBooleanDisjunctiveExpression(ctx.booleanDisjunctiveExpression());
+		Formula rhs = visitBooleanConjunctiveExpression(ctx.booleanConjunctiveExpression());
+		return new Disjunction(lhs, rhs);
+	}
+
+	@Override
+	public Formula visitBooleanExpression(BooleanExpressionContext ctx) {
+		return visitBooleanDisjunctiveExpression(ctx.booleanDisjunctiveExpression());
 	}
 
 	@Override

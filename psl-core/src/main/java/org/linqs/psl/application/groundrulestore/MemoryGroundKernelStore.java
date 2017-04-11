@@ -22,9 +22,9 @@ import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 
+import org.apache.commons.collections4.SetValuedMap;
+import org.apache.commons.collections4.multimap.HashSetValuedHashMap;
 import com.google.common.collect.Iterables;
-
-import de.mathnbits.util.KeyedRetrievalSet;
 
 /**
  * A simple {@link GroundRuleStore} that just stores each {@link GroundRule}
@@ -34,20 +34,15 @@ import de.mathnbits.util.KeyedRetrievalSet;
  */
 public class MemoryGroundKernelStore implements GroundRuleStore {
 
-	protected final KeyedRetrievalSet<Rule,GroundRule> groundKernels;
+	protected final SetValuedMap<Rule, GroundRule> groundKernels;
 	
 	public MemoryGroundKernelStore() {
-		groundKernels = new KeyedRetrievalSet<Rule,GroundRule>();
+		groundKernels = new HashSetValuedHashMap<Rule, GroundRule>();
 	}
 	
 	@Override
 	public boolean containsGroundKernel(GroundRule gk) {
-		return groundKernels.contains(gk.getRule(),gk);
-	}
-	
-	@Override
-	public GroundRule getGroundKernel(GroundRule gk) {
-		return groundKernels.get(gk.getRule(),gk);
+		return groundKernels.containsMapping(gk.getRule(),gk);
 	}
 	
 	@Override
@@ -73,25 +68,25 @@ public class MemoryGroundKernelStore implements GroundRuleStore {
 	
 	@Override
 	public void removeGroundKernel(GroundRule gk) {
-		groundKernels.remove(gk.getRule(), gk);
+		groundKernels.removeMapping(gk.getRule(), gk);
 	}
 	
 	public Iterable<GroundRule> getGroundKernels() {
-		return groundKernels;
+		return groundKernels.values();
 	}
 	
 	@Override
 	public Iterable<WeightedGroundRule> getCompatibilityKernels() {
-		return Iterables.filter(groundKernels.filterIterable(Filters.CompatibilityKernel), WeightedGroundRule.class);
+		return Iterables.filter(groundKernels.values(), WeightedGroundRule.class);
 	}
 	
 	public Iterable<UnweightedGroundRule> getConstraintKernels() {
-		return Iterables.filter(groundKernels.filterIterable(Filters.ConstraintKernel), UnweightedGroundRule.class);
+		return Iterables.filter(groundKernels.values(), UnweightedGroundRule.class);
 	}
 	
 	@Override
 	public Iterable<GroundRule> getGroundKernels(Rule k) {
-		return groundKernels.keyIterable(k);
+		return groundKernels.get(k);
 	}
 	
 	@Override

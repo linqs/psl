@@ -33,15 +33,47 @@ import java.util.List;
  */
 public class PSLTest {
 	/**
-	 * Convenience call for the common functionality of compareGroundRules() (don't alphabetize).
+	 * Convenience call for the common functionality of assertRule() (don't alphabetize).
+	 */
+	public static void assertRule(Rule rule, String expected) {
+		assertRule(rule, expected, true);
+	}
+
+	/**
+	 * Assert that a rule has the given string representation.
+	 *
+	 * If, for some reason, the exact format of the output is not known (like with summations which
+	 * may order the summation terms in different ways), then you can use |alphabetize| to sort all
+	 * characters in both strings (actual and expected) before comparing.
+	 * Only alphabetize if it is really necessary since it makes the output much harder to interpret.
+	 */
+	public static void assertRule(Rule rule, String expected, boolean alphabetize) {
+		if (alphabetize) {
+			assertEquals(
+				String.format("Rule mismatch. (Before alphabetizing) expected: [%s], found [%s].", expected, rule.toString()),
+				sort(expected),
+				sort(rule.toString())
+			);
+		} else {
+			assertEquals(
+				String.format("Rule mismatch. Expected: [%s], found [%s].", expected, rule.toString()),
+				expected,
+				rule.toString()
+			);
+		}
+	}
+
+	/**
+	 * Convenience call for the common functionality of compareGroundRules() (alphabetize).
 	 */
 	public static void compareGroundRules(List<String> expected, Rule rule, GroundRuleStore store) {
-		compareGroundRules(expected, rule, store, false);
+		compareGroundRules(expected, rule, store, true);
 	}
 
 	/**
 	 * Ground out a rule and check all the grounding against the expected list.
 	 * Both the actual grounding and expected grounding will be sorted before comparing.
+	 * Here, sorting will occur within each rule and then between rules.
 	 *
 	 * If, for some reason, the exact format of the output is not known (like with summations which
 	 * may order the summation terms in different ways), then you can use |alphabetize| to sort all
@@ -77,8 +109,36 @@ public class PSLTest {
 		}
 	}
 
+	/**
+	 * Compare two Arrays of strings for equality.
+	 *
+	 * If, for some reason, the content but not exact format of the output is not known;
+	 * then you can use |alphabetize| to sort all
+	 * characters in both strings (actual and expected) before comparing.
+	 * Only alphabetize if it is really necessary because it can hide errors in order that are expected.
+	 */
+	public static void compareStrings(String[] expected, String[] actual, boolean alphabetize) {
+		assertEquals("Size mismatch.", expected.length, actual.length);
+
+		for (int i = 0; i < expected.length; i++) {
+			if (alphabetize) {
+				assertEquals(
+					String.format("String %d mismatch. (Before alphabetize) expected: [%s], found [%s].", i, expected[i], actual[i]),
+					sort(expected[i]),
+					sort(actual[i])
+				);
+			} else {
+				assertEquals(
+					String.format("String %d mismatch. Expected: [%s], found [%s].", i, expected[i], actual[i]),
+					expected[i],
+					actual[i]
+				);
+			}
+		}
+	}
+
 	private static String sort(String string) {
-		char[] chars = string.	toCharArray();
+		char[] chars = string.toCharArray();
 		Arrays.sort(chars);
 		return new String(chars);
 	}

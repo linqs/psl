@@ -2,368 +2,403 @@
 grammar PSL;
 
 program
-	:	pslRule+ EOF
-	;
+    :   pslRule+ EOF
+    ;
 
 pslRule
-	:	logicalRule
-	|	arithmeticRule
-	;
+    :   logicalRule
+    |   arithmeticRule
+    ;
 
 // The inner part of a rule (logical or arithmetic).
 // This cannot be reached from a default PSL program and must be asked for specifically.
 pslRulePartial
-	:	logicalRule EOF
-	|	arithmeticRule EOF
-	|	logicalRuleExpression EOF
-	|	arithmeticRuleExpression selectStatement* EOF
-	;
+    :   logicalRule EOF
+    |   arithmeticRule EOF
+    |   logicalRuleExpression EOF
+    |   arithmeticRuleExpression selectStatement* EOF
+    ;
 
 //
 // Atoms and literals
 //
 
 predicate
-	:	IDENTIFIER
-	;
+    :   IDENTIFIER
+    ;
 
 atom
-	:	predicate LPAREN term (COMMA term)* RPAREN
-	|	term termOperator term
-	;
+    :   predicate LPAREN term (COMMA term)* RPAREN
+    |   term termOperator term
+    ;
 
 literal
-	:	atom
-	|	not literal
-	|	LPAREN literal RPAREN
-	;
+    :   atom
+    |   not literal
+    |   LPAREN literal RPAREN
+    ;
 
 term
-	:	variable
-	|	constant
-	;
+    :   variable
+    |   constant
+    ;
 
 variable
-	:	IDENTIFIER
-	;
+    :   IDENTIFIER
+    ;
 
 constant
-	:	SINGLE_QUOTE IDENTIFIER SINGLE_QUOTE
-	|	DOUBLE_QUOTE IDENTIFIER DOUBLE_QUOTE
-	;
+    :   SINGLE_QUOTE IDENTIFIER SINGLE_QUOTE
+    |   DOUBLE_QUOTE IDENTIFIER DOUBLE_QUOTE
+    ;
 
 //
 // Logical rules
 //
 
 logicalRule
-	:	weightedLogicalRule
-	|	unweightedLogicalRule
-	;
+    :   weightedLogicalRule
+    |   unweightedLogicalRule
+    ;
 
 weightedLogicalRule
-	:	weightExpression logicalRuleExpression EXPONENT_EXPRESSION?
-	;
+    :   weightExpression logicalRuleExpression EXPONENT_EXPRESSION?
+    ;
 
 unweightedLogicalRule
-	:	logicalRuleExpression PERIOD
-	;
+    :   logicalRuleExpression PERIOD
+    ;
 
 logicalRuleExpression
-	:	disjunctiveClause
-	|	disjunctiveClause impliedBy conjunctiveClause
-	|	conjunctiveClause then disjunctiveClause
-	;
+    :   disjunctiveClause
+    |   disjunctiveClause impliedBy conjunctiveClause
+    |   conjunctiveClause then disjunctiveClause
+    ;
 
 disjunctiveClause
-	:	literal (or literal)*
-	;
+    :   literal (or literal)*
+    ;
 
 conjunctiveClause
-	:	literal (and literal)*
-	;
+    :   literal (and literal)*
+    ;
 
 //
 // Arithmetic rules
 //
 
 arithmeticRule
-	:	weightedArithmeticRule
-	|	unweightedArithmeticRule
-	;
+    :   weightedArithmeticRule
+    |   unweightedArithmeticRule
+    ;
 
 weightedArithmeticRule
-	:	weightExpression arithmeticRuleExpression EXPONENT_EXPRESSION? selectStatement*
-	;
+    :   weightExpression arithmeticRuleExpression EXPONENT_EXPRESSION? selectStatement*
+    ;
 
 unweightedArithmeticRule
-	:	arithmeticRuleExpression PERIOD selectStatement*
-	;
+    :   arithmeticRuleExpression PERIOD selectStatement*
+    ;
 
 arithmeticRuleExpression
-	:	arithmeticRuleOperand (linearOperator arithmeticRuleOperand)* arithmeticRuleRelation arithmeticRuleOperand (linearOperator arithmeticRuleOperand)*
-	;
+    :   arithmeticRuleOperand (linearOperator arithmeticRuleOperand)* arithmeticRuleRelation arithmeticRuleOperand (linearOperator arithmeticRuleOperand)*
+    ;
 
 arithmeticRuleOperand
-	:	(coefficient MULT?)? (summationAtom | atom) (DIV coefficient)?
-	|	coefficient
-	;
+    :   (coefficientExpression MULT?)? (summationAtom | atom) (DIV coefficientExpression)?
+    |   coefficientExpression
+    ;
 
 summationAtom
-	:	predicate LPAREN (summationVariable | term) (COMMA (summationVariable | term))* RPAREN
-	;
+    :   predicate LPAREN (summationVariable | term) (COMMA (summationVariable | term))* RPAREN
+    ;
 
 summationVariable
-	:	PLUS IDENTIFIER
-	;
+    :   PLUS IDENTIFIER
+    ;
 
 coefficient
-	:	number
-	|	PIPE variable PIPE
-	|	coefficient arithmeticOperator coefficient
-	|	coeffOperator LBRACKET coefficient COMMA coefficient RBRACKET
-	|	LPAREN coefficient RPAREN
-	;
+    :   number
+    |   coefficientOperator
+    |   '(' coefficientExpression ')'
+    ;
+
+coefficientMultiplicativeExpression
+    :   coefficient
+    |   coefficientMultiplicativeExpression MULT coefficient
+    |   coefficientMultiplicativeExpression DIV coefficient
+    ;
+
+coefficientAdditiveExpression
+    :   coefficientMultiplicativeExpression
+    |   coefficientAdditiveExpression PLUS coefficientMultiplicativeExpression
+    |   coefficientAdditiveExpression MINUS coefficientMultiplicativeExpression
+    ;
+
+coefficientExpression
+    :   coefficientAdditiveExpression
+    ;
+
+// Note: The currently supported (non-cardinality) operators support exactly two arguments.
+// To support future operators, we would have to change the syntax a bit.
+coefficientOperator
+    :   PIPE variable PIPE
+    |   coefficientFunction
+    ;
+
+coefficientFunction
+    :   coefficientFunctionOperator LBRACKET coefficientExpression COMMA coefficientExpression RBRACKET
+    |   coefficientFunctionOperator LPAREN coefficientExpression COMMA coefficientExpression RPAREN
+    ;
+
+coefficientFunctionOperator
+    :   MAX
+    |   MIN
+    ;
 
 selectStatement
-	:	LBRACE variable COLON boolExpression RBRACE
-	;
+    :   LBRACE variable COLON booleanExpression RBRACE
+    ;
 
-boolExpression
-	:	literal
-	|	LPAREN boolExpression RPAREN
-	|	boolExpression or boolExpression
-	|	boolExpression and boolExpression
-	;
+booleanValue
+    :   literal
+    |   LPAREN booleanExpression RPAREN
+    ;
+
+booleanConjunctiveExpression
+    :   booleanValue
+    |   booleanConjunctiveExpression and booleanValue
+    ;
+
+booleanDisjunctiveExpression
+    :   booleanConjunctiveExpression
+    |   booleanDisjunctiveExpression or booleanConjunctiveExpression
+    ;
+
+booleanExpression
+    :   booleanDisjunctiveExpression
+    ;
 
 //
 // Common expressions
 //
 
 weightExpression
-	:	NONNEGATIVE_NUMBER COLON
-	;
+    :   NONNEGATIVE_NUMBER COLON
+    ;
 
 EXPONENT_EXPRESSION
-	:	CARROT [12]
-	;
+    :   CARROT [12]
+    ;
 
 //
 // Logical operators
 //
 
 not
-	:	NEGATION
-	;
+    :   NEGATION
+    ;
 
 and
-	:	AMPERSAND
-	|	AMPERSAND AMPERSAND
-	;
+    :   AMPERSAND
+    |   AMPERSAND AMPERSAND
+    ;
 
 or
-	:	PIPE
-	|	PIPE PIPE
-	;
+    :   PIPE
+    |   PIPE PIPE
+    ;
 
 then
-	:	'>>'
-	|	'->'
-	;
+    :   '>>'
+    |   '->'
+    ;
 
 impliedBy
-	:	'<<'
-	|	'<-'
-	;
+    :   '<<'
+    |   '<-'
+    ;
 
 //
 // Term operators
 //
 
 termOperator
-	:	termEqual
-	|	notEqual
-	|	nonSymmetric
-	;
+    :   termEqual
+    |   notEqual
+    |   nonSymmetric
+    ;
 
 termEqual
-	:	EQUAL EQUAL
-	;
+    :   EQUAL EQUAL
+    ;
 
 notEqual
-	:	NEGATION EQUAL
-	;
+    :   NEGATION EQUAL
+    |   MINUS
+    ;
 
 nonSymmetric
-	:	MOD
-	|	CARROT
-	;
+    :   MOD
+    |   CARROT
+    ;
 
 //
 // Arithmetic rule relations
 //
 
 arithmeticRuleRelation
-	:	LESS_THAN_EQUAL
-	|	GREATER_THAN_EQUAL
-	|	EQUAL
-	;
+    :   LESS_THAN_EQUAL
+    |   GREATER_THAN_EQUAL
+    |   EQUAL
+    ;
 
 LESS_THAN_EQUAL
-	:	'<='
-	;
+    :   '<='
+    ;
 
 GREATER_THAN_EQUAL
-	:	'>='
-	;
+    :   '>='
+    ;
 
 EQUAL
-	:	'='
-	;
+    :   '='
+    ;
 
 //
 // Arithmetic operators
 //
 
 arithmeticOperator
-	:	PLUS
-	|	MINUS
-	|	MULT
-	|	DIV
-	;
+    :   PLUS
+    |   MINUS
+    |   MULT
+    |   DIV
+    ;
 
 linearOperator
-	:	PLUS
-	|	MINUS
-	;
+    :   PLUS
+    |   MINUS
+    ;
 
 PLUS
-	:	'+'
-	;
+    :   '+'
+    ;
 
 MINUS
-	:	'-'
-	;
+    :   '-'
+    ;
 
 MULT
-	:	'*'
-	;
+    :   '*'
+    ;
 
 DIV
-	:	'/'
-	;
-
-//
-// Additional coefficient operators
-//
-
-coeffOperator
-	:	MAX
-	|	MIN
-	;
+    :   '/'
+    ;
 
 MAX
-	:	'@Max'
-	;
+    :   '@Max'
+    ;
 
 MIN
-	:	'@Min'
-	;
+    :   '@Min'
+    ;
 
 //
 // Identifiers and numbers
 //
 
 number
-	:	MINUS? NONNEGATIVE_NUMBER
-	;
+    :   MINUS? NONNEGATIVE_NUMBER
+    ;
 
 IDENTIFIER
-	:	LETTER (LETTER | DIGIT)*
-	;
+    :   LETTER (LETTER | DIGIT)*
+    ;
 
 NONNEGATIVE_NUMBER
-	:	DIGIT+ (PERIOD DIGIT+)? ([eE] MINUS? DIGIT+)?
-	;
+    :   DIGIT+ (PERIOD DIGIT+)? ([eE] MINUS? DIGIT+)?
+    ;
 
 fragment
 LETTER
-	:	[a-zA-Z$_] // these are the "java letters" below 0xFF
-	;
+    :   [a-zA-Z$_] // these are the "java letters" below 0xFF
+    ;
 
 fragment
 DIGIT
-	:	[0-9]
-	;
+    :   [0-9]
+    ;
 
 //
 // Common tokens
 //
 
 PERIOD
-	:	'.'
-	;
+    :   '.'
+    ;
 
 COMMA
-	:	','
-	;
+    :   ','
+    ;
 
 COLON
-	:	':'
-	;
+    :   ':'
+    ;
 
 NEGATION
-	:	'~'
-	|	'!'
-	;
+    :   '~'
+    |   '!'
+    ;
 
 AMPERSAND
-	:	'&'
-	;
+    :   '&'
+    ;
 
 PIPE
-	:	'|'
-	;
+    :   '|'
+    ;
 
 LPAREN
-	:	'('
-	;
+    :   '('
+    ;
 
 RPAREN
-	:	')'
-	;
+    :   ')'
+    ;
 
 LBRACE
-	:	'{'
-	;
+    :   '{'
+    ;
 
 RBRACE
-	:	'}'
-	;
+    :   '}'
+    ;
 
 LBRACKET
-	:	'['
-	;
+    :   '['
+    ;
 
 RBRACKET
-	:	']'
-	;
+    :   ']'
+    ;
 
 SINGLE_QUOTE
-	:	'\''
-	;
+    :   '\''
+    ;
 
 DOUBLE_QUOTE
-	:	'\"'
-	;
+    :   '\"'
+    ;
 
 MOD
-	:	'%'
-	;
+    :   '%'
+    ;
 
 CARROT
-	:	'^'
-	;
+    :   '^'
+    ;
 
 //
 // Whitespace and comments
@@ -371,17 +406,17 @@ CARROT
 //
 
 WS
-	:	[ \t\r\n\u000C]+ -> skip
-	;
+    :   [ \t\r\n\u000C]+ -> skip
+    ;
 
 COMMENT
-	:	'/*' .*? '*/' -> skip
-	;
+    :   '/*' .*? '*/' -> skip
+    ;
 
 LINE_COMMENT
-	:	'//' ~[\r\n]* -> skip
-	;
+    :   '//' ~[\r\n]* -> skip
+    ;
 
 PYTHON_COMMENT
-	:	'#' ~[\r\n]* -> skip
-	;
+    :   '#' ~[\r\n]* -> skip
+    ;
