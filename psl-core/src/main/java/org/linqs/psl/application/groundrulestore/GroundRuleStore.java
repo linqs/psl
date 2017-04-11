@@ -90,15 +90,6 @@ public interface GroundRuleStore {
 	public boolean containsGroundKernel(GroundRule gk);
 	
 	/**
-	 * Retrieves the GroundKernel equal to a given one from this store.
-	 *  
-	 * @param gk  the GroundKernel to match
-	 * @return the GroundKernel in this store, or NULL if not present
-	 * @see #changedGroundRule(GroundRule)
-	 */
-	public GroundRule getGroundKernel(GroundRule gk);
-	
-	/**
 	 * @return every GroundKernel in this store
 	 */
 	public Iterable<GroundRule> getGroundKernels();
