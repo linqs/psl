@@ -851,9 +851,15 @@ public class ModelLoaderTest {
 	public void testArithmeticSubtraction() {
 		String input =
 			"Double(A, B) - Double(B, A) = 0.0 .\n" +
+			"0.0 = Double(A, B) - Double(B, A) .\n" +
+			"Double(A, B) + Double(B, A) = 0.0 .\n" +
+			"0.0 = Double(A, B) + Double(B, A) .\n" +
 			"";
 		String[] expected = new String[]{
-			"1.0 * DOUBLE(A, B) - 1.0 * DOUBLE(B, A) = 0.0 ."
+			"1.0 * DOUBLE(A, B) + (-1.0 * 1.0) * DOUBLE(B, A) = 0.0 .",
+			"(-1.0 * 1.0) * DOUBLE(A, B) + 1.0 * DOUBLE(B, A) = (-1.0 * 0.0) .",
+			"1.0 * DOUBLE(A, B) + 1.0 * DOUBLE(B, A) = 0.0 .",
+			"(-1.0 * 1.0) * DOUBLE(A, B) + (-1.0 * 1.0) * DOUBLE(B, A) = (-1.0 * 0.0) ."
 		};
 
 		assertModel(input, expected);

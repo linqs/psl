@@ -437,12 +437,19 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 				}
 			// Else, process the SummationAtomOrAtom
 			} else {
+				Coefficient coeff = null;
 				if (lhsOperands.get(i).coefficient == null) {
-					coeffs.add(new ConstantNumber(1.0));
+					coeff = new ConstantNumber(1.0);
 				} else {
-					coeffs.add(lhsOperands.get(i).coefficient);
+					coeff = lhsOperands.get(i).coefficient;
 				}
 
+				// Check the sign.
+				if (!lhsOperandSigns.get(i).booleanValue()) {
+					coeff = new Multiply(new ConstantNumber(-1.0), coeff);
+				}
+
+				coeffs.add(coeff);
 				atoms.add(lhsOperands.get(i).atom);
 			}
 		}
@@ -464,12 +471,20 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 				}
 			// Else, process the SummationAtomOrAtom
 			} else {
+				Coefficient coeff = null;
 				if (rhsOperands.get(i).coefficient == null) {
-					coeffs.add(new ConstantNumber(-1.0));
+					coeff = new ConstantNumber(1.0);
 				} else {
-					coeffs.add(new Multiply(new ConstantNumber(-1.0), rhsOperands.get(i).coefficient));
+					coeff = rhsOperands.get(i).coefficient;
 				}
 
+				// Check the sign.
+				// Remember that the sign will swap once when we move the RHS to the LHS.
+				if (rhsOperandSigns.get(i).booleanValue()) {
+					coeff = new Multiply(new ConstantNumber(-1.0), coeff);
+				}
+
+				coeffs.add(coeff);
 				atoms.add(rhsOperands.get(i).atom);
 			}
 		}
