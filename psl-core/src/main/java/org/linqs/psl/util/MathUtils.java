@@ -15,34 +15,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.model.rule.arithmetic.expression.coefficient;
+package org.linqs.psl.util;
 
-import java.util.Map;
-import java.util.Set;
+/**
+ * Various static math utilities.
+ */
+public final class MathUtils {
+	public static final double EPSILON = 0.000001;
 
-import org.linqs.psl.model.rule.arithmetic.expression.SummationVariable;
-import org.linqs.psl.model.term.Constant;
+	// Static only.
+	private MathUtils() {}
 
-public class ConstantNumber extends Coefficient {
-	
-	protected final double value;
-	
-	public ConstantNumber(double value) {
-		this.value = value;
+	public static boolean equals(double a, double b) {
+		return Math.abs(a - b) <= EPSILON;
 	}
 
-	@Override
-	public double getValue(Map<SummationVariable, Set<Constant>> subs) {
-		return value;
-	}
-	
-	@Override
-	public String toString() {
-		return Double.toString(value);
-	}
-
-	@Override
-	public Coefficient simplify() {
-		return this;
+	public static boolean isZero(double a) {
+		return equals(a, 0.0);
 	}
 }

@@ -22,10 +22,12 @@ import java.util.Set;
 
 import org.linqs.psl.model.rule.arithmetic.expression.SummationVariable;
 import org.linqs.psl.model.term.Constant;
+import org.linqs.psl.util.MathUtils;
 
 public class Divide extends Coefficient {
 	
-	protected final Coefficient c1, c2;
+	protected final Coefficient c1;
+	protected final Coefficient c2;
 	
 	public Divide(Coefficient c1, Coefficient c2) {
 		this.c1 = c1;
@@ -40,5 +42,28 @@ public class Divide extends Coefficient {
 	@Override
 	public String toString() {
 		return "(" + c1.toString() + " / " + c2.toString() + ")";
+	}
+
+	@Override
+	public Coefficient simplify() {
+		Coefficient lhs = c1.simplify();
+		Coefficient rhs = c2.simplify();
+
+		// If the numerator is 0, then just return zero.
+		if (lhs instanceof ConstantNumber && MathUtils.isZero(((ConstantNumber)lhs).value)) {
+			return new ConstantNumber(0.0);
+		}
+
+		// If the denoinator is 1, then just reutrn the numerator.
+		if (rhs instanceof ConstantNumber && MathUtils.equals(((ConstantNumber)rhs).value, 1.0)) {
+			return lhs;
+		}
+
+		// If both sides are constants, then just do the math.
+		if (lhs instanceof ConstantNumber && rhs instanceof ConstantNumber) {
+			return new ConstantNumber(getValue(null));
+		}
+
+		return new Divide(lhs, rhs);
 	}
 }
