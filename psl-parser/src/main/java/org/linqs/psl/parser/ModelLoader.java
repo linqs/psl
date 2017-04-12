@@ -63,7 +63,7 @@ import org.linqs.psl.parser.antlr.PSLBaseVisitor;
 import org.linqs.psl.parser.antlr.PSLLexer;
 import org.linqs.psl.parser.antlr.PSLParser;
 import org.linqs.psl.parser.antlr.PSLParser.ArithmeticRuleExpressionContext;
-import org.linqs.psl.parser.antlr.PSLParser.ArithmeticRuleOperandContext;
+import org.linqs.psl.parser.antlr.PSLParser.ArithmeticCoefficientOperandContext;
 import org.linqs.psl.parser.antlr.PSLParser.ArithmeticRuleRelationContext;
 import org.linqs.psl.parser.antlr.PSLParser.AtomContext;
 import org.linqs.psl.parser.antlr.PSLParser.BooleanExpressionContext;
@@ -79,6 +79,8 @@ import org.linqs.psl.parser.antlr.PSLParser.CoefficientOperatorContext;
 import org.linqs.psl.parser.antlr.PSLParser.ConjunctiveClauseContext;
 import org.linqs.psl.parser.antlr.PSLParser.ConstantContext;
 import org.linqs.psl.parser.antlr.PSLParser.DisjunctiveClauseContext;
+import org.linqs.psl.parser.antlr.PSLParser.LinearArithmeticExpressionContext;
+import org.linqs.psl.parser.antlr.PSLParser.LinearArithmeticOperandContext;
 import org.linqs.psl.parser.antlr.PSLParser.LinearOperatorContext;
 import org.linqs.psl.parser.antlr.PSLParser.LiteralContext;
 import org.linqs.psl.parser.antlr.PSLParser.LogicalRuleExpressionContext;
@@ -373,132 +375,133 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 
 	@Override
 	public ArithmeticRuleExpression visitArithmeticRuleExpression(ArithmeticRuleExpressionContext ctx) {
-		// The operands to the arithmetic rule.
-		List<ArithmeticRuleOperand> lhsOperands = new LinkedList<ArithmeticRuleOperand>();
-		List<ArithmeticRuleOperand> rhsOperands = new LinkedList<ArithmeticRuleOperand>();
-		List<ArithmeticRuleOperand> currentOperands = lhsOperands;
+		LinearArithmeticExpression lhs = visitLinearArithmeticExpression((LinearArithmeticExpressionContext)ctx.getChild(0));
+		FunctionComparator relationalComparison = visitArithmeticRuleRelation((ArithmeticRuleRelationContext)ctx.getChild(1));
+		LinearArithmeticExpression rhs = visitLinearArithmeticExpression((LinearArithmeticExpressionContext)ctx.getChild(2));
 
-		// The sign of each operand.
-		// The entire arithmetic expression will eventually become a linear
-		// combination of all the operands compared against a single number.
-		// ie we will simplify the expression by moving RHS terms to the LHS.
-		// true means that the corresponding operand is positive on its respective side,
-		// (lhs is true on the left, rhs is true on the right) false is negative.
-		List<Boolean> lhsOperandSigns = new LinkedList<Boolean>();
-		List<Boolean> rhsOperandSigns = new LinkedList<Boolean>();
-		List<Boolean> currentOperandSigns = lhsOperandSigns;
+		// Start the terms from the lhs.
+		List<Coefficient> coefficients = lhs.coefficients;
+		List<SummationAtomOrAtom> atoms = lhs.atoms;
+		Coefficient finalCoefficient = null;
 
-		// There must be at least one operand on each side, and they are always positive.
-		// Note that any negative sign here is associated with the coefficient.
-		lhsOperandSigns.add(true);
-		rhsOperandSigns.add(true);
+		// Add in the RHS terms, negating the coefficients.
+		for (int i = 0; i < rhs.atoms.size(); i++) {
+			coefficients.add(new Multiply(new ConstantNumber(-1.0), rhs.coefficients.get(i)));
+			atoms.add(rhs.atoms.get(i));
+		}
 
-		// The relational operator between the LHS and RHS.
-		FunctionComparator relationalComparison = null;
+		// Now the final coefficient which will appearon the RHS.
+		// Note that we could start the coefficient at 0 and just add terms in, but we want to match legacy behavior.
+		if (lhs.nonAtomCoefficient != null) {
+			finalCoefficient = new Multiply(new ConstantNumber(-1.0), lhs.nonAtomCoefficient);
+		}
 
-		for (int i = 0; i < ctx.getChildCount(); i++) {
-			// Even children are ArithmeticRuleOperand's, while odd children
-			// will either be a LinearOperator or an ArithmeticRuleRelation.
-			if (i % 2 == 0) {
-				currentOperands.add(visitArithmeticRuleOperand(((ArithmeticRuleOperandContext)ctx.getChild(i))));
+		if (rhs.nonAtomCoefficient != null) {
+			if (finalCoefficient == null) {
+				finalCoefficient = rhs.nonAtomCoefficient;
 			} else {
-				if (ctx.getChild(i).getPayload() instanceof ArithmeticRuleRelationContext) {
-					relationalComparison = (FunctionComparator)visit(ctx.getChild(i));
-					currentOperands = rhsOperands;
-					currentOperandSigns = rhsOperandSigns;
-				} else {
-					currentOperandSigns.add(visitLinearOperator((LinearOperatorContext)ctx.getChild(i)));
-				}
+				finalCoefficient = new Add(finalCoefficient, rhs.nonAtomCoefficient);
 			}
 		}
 
-		List<Coefficient> coeffs = new LinkedList<Coefficient>();
-		List<SummationAtomOrAtom> atoms = new LinkedList<SummationAtomOrAtom>();
-		Coefficient finalCoeff = null;
-
-		// Processes the LHS.
-		for (int i = 0; i < lhsOperands.size(); i++) {
-			// Check if it is just a coefficient
-			if (lhsOperands.get(i).atom == null) {
-				// If it is the first coefficient, uses it to start the final coefficient
-				if (finalCoeff == null) {
-					if (lhsOperandSigns.get(i)) {
-						finalCoeff = new Multiply(new ConstantNumber(-1.0), lhsOperands.get(i).coefficient);
-					} else {
-						finalCoeff = lhsOperands.get(i).coefficient;
-					}
-				// Else, add it to the final coefficient
-				} else {
-					if (lhsOperandSigns.get(i)) {
-						finalCoeff = new Subtract(finalCoeff, lhsOperands.get(i).coefficient);
-					} else {
-						finalCoeff = new Add(finalCoeff, lhsOperands.get(i).coefficient);
-					}
-				}
-			// Else, process the SummationAtomOrAtom
-			} else {
-				Coefficient coeff = null;
-				if (lhsOperands.get(i).coefficient == null) {
-					coeff = new ConstantNumber(1.0);
-				} else {
-					coeff = lhsOperands.get(i).coefficient;
-				}
-
-				// Check the sign.
-				if (!lhsOperandSigns.get(i).booleanValue()) {
-					coeff = new Multiply(new ConstantNumber(-1.0), coeff);
-				}
-
-				coeffs.add(coeff);
-				atoms.add(lhsOperands.get(i).atom);
-			}
+		if (finalCoefficient == null) {
+			finalCoefficient = new ConstantNumber(0.0);
 		}
 
-		// Processes the RHS.
-		for (int i = 0; i < rhsOperands.size(); i++) {
-			// Check if it is just a coefficient
-			if (rhsOperands.get(i).atom == null) {
-				// If it is the first coefficient, uses it to start the final coefficient
-				if (finalCoeff == null) {
-					finalCoeff = rhsOperands.get(i).coefficient;
-				// Else, add it to the final coefficient
-				} else {
-					if (rhsOperandSigns.get(i)) {
-						finalCoeff = new Add(finalCoeff, rhsOperands.get(i).coefficient);
-					} else {
-						finalCoeff = new Subtract(finalCoeff, rhsOperands.get(i).coefficient);
-					}
-				}
-			// Else, process the SummationAtomOrAtom
-			} else {
-				Coefficient coeff = null;
-				if (rhsOperands.get(i).coefficient == null) {
-					coeff = new ConstantNumber(1.0);
-				} else {
-					coeff = rhsOperands.get(i).coefficient;
-				}
-
-				// Check the sign.
-				// Remember that the sign will swap once when we move the RHS to the LHS.
-				if (rhsOperandSigns.get(i).booleanValue()) {
-					coeff = new Multiply(new ConstantNumber(-1.0), coeff);
-				}
-
-				coeffs.add(coeff);
-				atoms.add(rhsOperands.get(i).atom);
-			}
+		// Finally, simplify all coefficients.
+		for (int i = 0; i < coefficients.size(); i++) {
+			coefficients.set(i, coefficients.get(i).simplify());
 		}
+		finalCoefficient = finalCoefficient.simplify();
 
-		if (finalCoeff == null) {
-			finalCoeff = new ConstantNumber(0.0);
-		}
-
-		return new ArithmeticRuleExpression(coeffs, atoms, relationalComparison, finalCoeff);
+		return new ArithmeticRuleExpression(coefficients, atoms, relationalComparison, finalCoefficient);
 	}
 
 	@Override
-	public ArithmeticRuleOperand visitArithmeticRuleOperand(ArithmeticRuleOperandContext ctx) {
-		ArithmeticRuleOperand operand = new ArithmeticRuleOperand();
+	public LinearArithmeticExpression visitLinearArithmeticExpression(LinearArithmeticExpressionContext ctx) {
+		// Just an operand.
+		if (ctx.getChildCount() == 1) {
+			return visitLinearArithmeticOperand((LinearArithmeticOperandContext)ctx.getChild(0));
+		}
+
+		if (ctx.getChildCount() != 3) {
+			throw new IllegalStateException("Expeciting three children.");
+		}
+
+		LinearArithmeticExpression lhs = visitLinearArithmeticExpression((LinearArithmeticExpressionContext)ctx.getChild(0));
+		boolean isAddition = visitLinearOperator((LinearOperatorContext)ctx.getChild(1)).booleanValue();
+		LinearArithmeticExpression rhs = visitLinearArithmeticOperand((LinearArithmeticOperandContext)ctx.getChild(2));
+
+		// Start with the LHS.
+		LinearArithmeticExpression expression = lhs;
+
+		// Add in each term from the rhs, negating if the operator is a subtraction.
+		for (int i = 0; i < rhs.atoms.size(); i++) {
+			Coefficient coefficient = rhs.coefficients.get(i);
+			if (!isAddition) {
+				coefficient = new Multiply(new ConstantNumber(-1.0), coefficient);
+			}
+
+			expression.atoms.add(rhs.atoms.get(i));
+			expression.coefficients.add(coefficient);
+		}
+
+		// No the additional, non-atom coefficients.
+		Coefficient nonAtomCoefficient = null;
+		if (lhs.nonAtomCoefficient != null) {
+			nonAtomCoefficient = lhs.nonAtomCoefficient;
+		}
+
+		if (rhs.nonAtomCoefficient != null) {
+			if (nonAtomCoefficient == null) {
+				nonAtomCoefficient = rhs.nonAtomCoefficient;
+			} else {
+				if (isAddition) {
+					nonAtomCoefficient = new Add(nonAtomCoefficient, rhs.nonAtomCoefficient);
+				} else {
+					nonAtomCoefficient = new Subtract(nonAtomCoefficient, rhs.nonAtomCoefficient);
+				}
+			}
+		}
+
+		expression.nonAtomCoefficient = nonAtomCoefficient;
+
+		return expression;
+	}
+
+	@Override
+	public LinearArithmeticExpression visitLinearArithmeticOperand(LinearArithmeticOperandContext ctx) {
+		// Must be a parenthesis expression.
+		if (ctx.getChildCount() == 3) {
+			return visitLinearArithmeticExpression((LinearArithmeticExpressionContext)ctx.getChild(1));
+		}
+
+		// A ArithmeticCoefficientOperand
+		if (ctx.getChildCount() != 1) {
+			throw new IllegalStateException("Expeciting three children.");
+		}
+
+		LinearArithmeticExpression expression = new LinearArithmeticExpression();
+
+		ArithmeticCoefficientOperand operand = visitArithmeticCoefficientOperand((ArithmeticCoefficientOperandContext)ctx.getChild(0));
+		Coefficient coefficient = new ConstantNumber(1.0);
+		if (operand.coefficient != null) {
+			coefficient = operand.coefficient;
+		}
+
+		if (operand.atom != null) {
+			expression.coefficients.add(coefficient);
+			expression.atoms.add(operand.atom);
+		} else {
+			expression.nonAtomCoefficient = coefficient;
+		}
+
+		return expression;
+	}
+
+	@Override
+	public ArithmeticCoefficientOperand visitArithmeticCoefficientOperand(ArithmeticCoefficientOperandContext ctx) {
+		ArithmeticCoefficientOperand operand = new ArithmeticCoefficientOperand();
 
 		// Check if the operand is just a coefficient
 		if (ctx.getChildCount() == 1 && ctx.getChild(0).getPayload() instanceof CoefficientExpressionContext) {
@@ -642,14 +645,11 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	public FunctionComparator visitArithmeticRuleRelation(ArithmeticRuleRelationContext ctx) {
 		if (ctx.EQUAL() != null) {
 			return FunctionComparator.Equality;
-		}
-		else if (ctx.LESS_THAN_EQUAL() != null) {
+		} else if (ctx.LESS_THAN_EQUAL() != null) {
 			return FunctionComparator.SmallerThan;
-		}
-		else if (ctx.GREATER_THAN_EQUAL() != null) {
+		} else if (ctx.GREATER_THAN_EQUAL() != null) {
 			return FunctionComparator.LargerThan;
-		}
-		else {
+		} else {
 			throw new IllegalStateException();
 		}
 	}
@@ -779,13 +779,29 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 		return Double.parseDouble(ctx.getText());
 	}
 
-	private static class ArithmeticRuleOperand {
+	private static class ArithmeticCoefficientOperand {
 		SummationAtomOrAtom atom;
 		Coefficient coefficient;
 
-		private ArithmeticRuleOperand() {
+		private ArithmeticCoefficientOperand() {
 			atom = null;
 			coefficient = null;
+		}
+	}
+
+	// Minus operations will be attached to the corresponding coefficient.
+	// There will be no gaps in |coefficients| or |atoms|.
+	// Solo coefficients will be combined toegther into |nonAtomCoefficient|.
+	// Solo atoms will get a coefficient of one.
+	private static class LinearArithmeticExpression {
+		public List<Coefficient> coefficients;
+		public List<SummationAtomOrAtom> atoms;
+		public Coefficient nonAtomCoefficient;
+
+		public LinearArithmeticExpression() {
+			coefficients = new LinkedList<Coefficient>();
+			atoms = new LinkedList<SummationAtomOrAtom>();
+			nonAtomCoefficient = null;
 		}
 	}
 

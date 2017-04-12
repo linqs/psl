@@ -101,10 +101,20 @@ unweightedArithmeticRule
     ;
 
 arithmeticRuleExpression
-    :   arithmeticRuleOperand (linearOperator arithmeticRuleOperand)* arithmeticRuleRelation arithmeticRuleOperand (linearOperator arithmeticRuleOperand)*
+    :   linearArithmeticExpression arithmeticRuleRelation linearArithmeticExpression
     ;
 
-arithmeticRuleOperand
+linearArithmeticExpression
+    :   linearArithmeticOperand
+    |   linearArithmeticExpression linearOperator linearArithmeticOperand
+    ;
+
+linearArithmeticOperand
+    :   arithmeticCoefficientOperand
+    |   '(' linearArithmeticExpression ')'
+    ;
+
+arithmeticCoefficientOperand
     :   (coefficientExpression MULT?)? (summationAtom | atom) (DIV coefficientExpression)?
     |   coefficientExpression
     ;

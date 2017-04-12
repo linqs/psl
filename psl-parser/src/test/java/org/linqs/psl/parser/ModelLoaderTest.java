@@ -495,9 +495,9 @@ public class ModelLoaderTest {
 			"|A| * SINGLE(+A) = |A| .",
 			"|A| * SINGLE(+A) + |B| * SINGLE(+B) = 1.0 .",
 			"@Max[|A|, 0.0] * SINGLE(+A) = 1.0 .",
-			"@Max[1.0, 0.0] * SINGLE(+A) = 1.0 .",
+			"1.0 * SINGLE(+A) = 1.0 .",
 			"@Max[|A|, |B|] * SINGLE(+A) + 1.0 * SINGLE(+B) = 1.0 .",
-			"@Min[1.0, 0.0] * SINGLE(A) = 1.0 ."
+			"0.0 * SINGLE(A) = 1.0 ."
 		};
 
 		assertModel(input, expected);
@@ -753,30 +753,30 @@ public class ModelLoaderTest {
 			"1.0 + 2.0 * 3.0 + 4.0 * Single(A) = 99 .\n" +
 			"1.0 + (2.0 * 3.0) + 4.0 * Single(A) = 99 .\n" +
 			"(1.0 + 2.0) * (3.0 + 4.0) * Single(A) = 99 .\n" +
-			"1.0 - 2.0 / 3.0 - 4.0 * Single(A) = 99 .\n" +
-			"1.0 - (2.0 / 3.0) - 4.0 * Single(A) = 99 .\n" +
-			"(1.0 - 2.0) / (3.0 - 4.0) * Single(A) = 99 .\n" +
+			"1.0 - 2.0 / 4.0 - 5.0 * Single(A) = 99 .\n" +
+			"1.0 - (2.0 / 4.0) - 5.0 * Single(A) = 99 .\n" +
+			"(1.0 - 2.0) / (4.0 - 5.0) * Single(A) = 99 .\n" +
 			"";
 		String[] expected = new String[]{
-			"(1.0 + (2.0 * 3.0)) * SINGLE(A) = 99.0 .",
-			"(1.0 + (2.0 * 3.0)) * SINGLE(A) + 1.0 * SINGLE(B) = 99.0 .",
-			"(-1.0 * (1.0 + (2.0 * 3.0))) * SINGLE(A) = (-1.0 * 99.0) .",
-			"(1.0 + (2.0 * 3.0)) * SINGLE(A) + (-1.0 * (4.0 + (5.0 * 6.0))) * SINGLE(B) = 0.0 .",
-			"((1.0 + 2.0) - 3.0) * SINGLE(A) = 99.0 .",
-			"((1.0 - 2.0) + 3.0) * SINGLE(A) = 99.0 .",
-			"(((1.0 + 2.0) + 3.0) - 4.0) * SINGLE(A) = 99.0 .",
-			"(((1.0 - 2.0) - 3.0) + 4.0) * SINGLE(A) = 99.0 .",
-			"(1.0 + (2.0 * 3.0)) * SINGLE(A) = 99.0 .",
-			"((1.0 + 2.0) * 3.0) * SINGLE(A) = 99.0 .",
+			"7.0 * SINGLE(A) = 99.0 .",
+			"7.0 * SINGLE(A) + 1.0 * SINGLE(B) = 99.0 .",
+			"-7.0 * SINGLE(A) = -99.0 .",
+			"7.0 * SINGLE(A) + -34.0 * SINGLE(B) = 0.0 .",
+			"0.0 * SINGLE(A) = 99.0 .",
+			"2.0 * SINGLE(A) = 99.0 .",
+			"2.0 * SINGLE(A) = 99.0 .",
+			"0.0 * SINGLE(A) = 99.0 .",
+			"7.0 * SINGLE(A) = 99.0 .",
+			"9.0 * SINGLE(A) = 99.0 .",
 			"(1.0 + (2.0 * |A|)) * SINGLE(+A) = 99.0 .",
-			"(1.0 + (2.0 * @Min[3.0, 4.0])) * SINGLE(+A) = 99.0 .",
-			"(1.0 + (2.0 * @Max[3.0, 4.0])) * SINGLE(+A) = 99.0 .",
-			"((1.0 + (2.0 * 3.0)) + 4.0) * SINGLE(A) = 99.0 .",
-			"((1.0 + (2.0 * 3.0)) + 4.0) * SINGLE(A) = 99.0 .",
-			"((1.0 + 2.0) * (3.0 + 4.0)) * SINGLE(A) = 99.0 .",
-			"((1.0 - (2.0 / 3.0)) - 4.0) * SINGLE(A) = 99.0 .",
-			"((1.0 - (2.0 / 3.0)) - 4.0) * SINGLE(A) = 99.0 .",
-			"((1.0 - 2.0) / (3.0 - 4.0)) * SINGLE(A) = 99.0 ."
+			"7.0 * SINGLE(+A) = 99.0 .",
+			"9.0 * SINGLE(+A) = 99.0 .",
+			"11.0 * SINGLE(A) = 99.0 .",
+			"11.0 * SINGLE(A) = 99.0 .",
+			"21.0 * SINGLE(A) = 99.0 .",
+			"-4.5 * SINGLE(A) = 99.0 .",
+			"-4.5 * SINGLE(A) = 99.0 .",
+			"1.0 * SINGLE(A) = 99.0 ."
 		};
 
 		assertModel(input, expected);
@@ -856,10 +856,24 @@ public class ModelLoaderTest {
 			"0.0 = Double(A, B) + Double(B, A) .\n" +
 			"";
 		String[] expected = new String[]{
-			"1.0 * DOUBLE(A, B) + (-1.0 * 1.0) * DOUBLE(B, A) = 0.0 .",
-			"(-1.0 * 1.0) * DOUBLE(A, B) + 1.0 * DOUBLE(B, A) = (-1.0 * 0.0) .",
+			"1.0 * DOUBLE(A, B) + -1.0 * DOUBLE(B, A) = 0.0 .",
+			"-1.0 * DOUBLE(A, B) + 1.0 * DOUBLE(B, A) = 0.0 .",
 			"1.0 * DOUBLE(A, B) + 1.0 * DOUBLE(B, A) = 0.0 .",
-			"(-1.0 * 1.0) * DOUBLE(A, B) + (-1.0 * 1.0) * DOUBLE(B, A) = (-1.0 * 0.0) ."
+			"-1.0 * DOUBLE(A, B) + -1.0 * DOUBLE(B, A) = 0.0 ."
+		};
+
+		assertModel(input, expected);
+	}
+
+	@Test
+	public void testArithmeticParens() {
+		String input =
+			"Single(A) + Single(B) = 0.0 .\n" +
+			"(Single(A) + Single(B)) = 0.0 .\n" +
+			"";
+		String[] expected = new String[]{
+			"1.0 * SINGLE(A) + 1.0 * SINGLE(B) = 0.0 .",
+			"1.0 * SINGLE(A) + 1.0 * SINGLE(B) = 0.0 ."
 		};
 
 		assertModel(input, expected);

@@ -400,9 +400,9 @@ public class PSLModelTest {
 			"|A| * SINGLE(+A) = |A| .",
 			"|A| * SINGLE(+A) + |B| * SINGLE(+B) = 1.0 .",
 			"@Max[|A|, 0.0] * SINGLE(+A) = 1.0 .",
-			"@Max[1.0, 0.0] * SINGLE(+A) = 1.0 .",
+			"1.0 * SINGLE(+A) = 1.0 .",
 			"@Max[|A|, |B|] * SINGLE(+A) + 1.0 * SINGLE(+B) = 1.0 .",
-			"@Min[1.0, 0.0] * SINGLE(A) = 1.0 ."
+			"0.0 * SINGLE(A) = 1.0 ."
 		];
 
 		model.addRules(input);
