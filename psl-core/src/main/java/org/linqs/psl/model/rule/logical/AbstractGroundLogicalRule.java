@@ -75,9 +75,9 @@ abstract public class AbstractGroundLogicalRule implements GroundRule {
 		
 		/* Must register after all the members (like the hashcode!) are set */
 		for (GroundAtom atom : posLiterals)
-			atom.registerGroundKernel(this);
+			atom.registerGroundRule(this);
 		for (GroundAtom atom : negLiterals)
-			atom.registerGroundKernel(this);
+			atom.registerGroundRule(this);
 	}
 	
 	protected FunctionSum getFunction() {

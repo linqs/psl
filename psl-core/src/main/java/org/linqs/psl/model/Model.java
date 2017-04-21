@@ -107,7 +107,7 @@ public class Model {
 	 */
 	public void removeRule(Rule r) {
 		if (!ruleSet.contains(r))
-			throw new IllegalArgumentException("Kernel not in this model.");
+			throw new IllegalArgumentException("Rule not in this model.");
 		else {
 			rules.remove(r);
 			ruleSet.remove(r);
@@ -126,7 +126,7 @@ public class Model {
 	 */
 	public void notifyRuleParametersModified(Rule r) {
 		if (!ruleSet.contains(r))
-			throw new IllegalArgumentException("Kernel not in this model.");
+			throw new IllegalArgumentException("Rule not in this model.");
 		broadcastModelEvent(new ModelEvent(ModelEvent.Type.RuleParametersModified, this, r));
 	}
 	

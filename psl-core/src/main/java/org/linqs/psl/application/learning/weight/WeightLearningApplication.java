@@ -41,7 +41,7 @@ import com.google.common.collect.Iterables;
 
 /**
  * Abstract class for learning the weights of
- * {@link WeightedRule CompatibilityKernels} in a {@link Model}
+ * {@link WeightedRule CompatibilityRules} in a {@link Model}
  * from data.
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
@@ -76,8 +76,8 @@ public abstract class WeightLearningApplication extends Observable implements Mo
 	protected Database rvDB, observedDB;
 	protected ConfigBundle config;
 	
-	protected final List<WeightedRule> kernels;
-	protected final List<WeightedRule> immutableKernels;
+	protected final List<WeightedRule> rules;
+	protected final List<WeightedRule> immutableRules;
 	protected TrainingMap trainingMap;
 	protected Reasoner reasoner;
 	
@@ -87,8 +87,8 @@ public abstract class WeightLearningApplication extends Observable implements Mo
 		this.observedDB = observedDB;
 		this.config = config;
 
-		kernels = new ArrayList<WeightedRule>();
-		immutableKernels = new ArrayList<WeightedRule>();
+		rules = new ArrayList<WeightedRule>();
+		immutableRules = new ArrayList<WeightedRule>();
 	}
 	
 	/**
@@ -106,12 +106,14 @@ public abstract class WeightLearningApplication extends Observable implements Mo
 	 */
 	public void learn()
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-		/* Gathers the CompatibilityKernels */
-		for (WeightedRule k : Iterables.filter(model.getRules(), WeightedRule.class))
-			if (k.isWeightMutable())
-				kernels.add(k);
-			else
-				immutableKernels.add(k);
+		/* Gathers the CompatibilityRules */
+		for (WeightedRule rule : Iterables.filter(model.getRules(), WeightedRule.class)) {
+			if (rule.isWeightMutable()) {
+				rules.add(rule);
+			} else {
+				immutableRules.add(rule);
+			}
+		}
 		
 		/* Sets up the ground model */
 		initGroundModel();
@@ -119,7 +121,7 @@ public abstract class WeightLearningApplication extends Observable implements Mo
 		/* Learns new weights */
 		doLearn();
 		
-		kernels.clear();
+		rules.clear();
 		cleanUpGroundModel();
 	}
 	
@@ -127,7 +129,7 @@ public abstract class WeightLearningApplication extends Observable implements Mo
 	
 	/**
 	 * Constructs a ground model using model and trainingMap, and stores the
-	 * resulting GroundKernels in reasoner.
+	 * resulting GroundRules in reasoner.
 	 */
 	protected void initGroundModel()
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {

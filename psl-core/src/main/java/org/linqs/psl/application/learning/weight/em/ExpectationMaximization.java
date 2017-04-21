@@ -128,10 +128,10 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 
 	@Override
 	protected void doLearn() {
-		double[] weights = new double[kernels.size()];
+		double[] weights = new double[rules.size()];
 		for (int i = 0; i < weights.length; i++)
-			weights[i] = kernels.get(i).getWeight().getWeight();
-		double [] avgWeights = new double[kernels.size()];
+			weights[i] = rules.get(i).getWeight().getWeight();
+		double [] avgWeights = new double[rules.size()];
 		
 		round = 0;
 		while (round++ < iterations) {
@@ -142,19 +142,19 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 			super.doLearn();
 			
 			double change = 0;
-			for (int i = 0; i < kernels.size(); i++) {
-				change += Math.pow(weights[i] - kernels.get(i).getWeight().getWeight(), 2);
-				weights[i] = kernels.get(i).getWeight().getWeight();
+			for (int i = 0; i < rules.size(); i++) {
+				change += Math.pow(weights[i] - rules.get(i).getWeight().getWeight(), 2);
+				weights[i] = rules.get(i).getWeight().getWeight();
 
 				avgWeights[i] = (1 - (1.0 / (double) round)) * avgWeights[i] + (1.0 / (double) round) * weights[i];		
 			}
 			
 			if (storeWeights) {
 				Map<WeightedRule,Double> weightMap = new HashMap<WeightedRule, Double>();
-				for (int i = 0; i < kernels.size(); i++) {
+				for (int i = 0; i < rules.size(); i++) {
 					double weight = (averageSteps)? avgWeights[i] : weights[i];
 					if (weight > 0.0)
-						weightMap.put(kernels.get(i), weight);
+						weightMap.put(rules.get(i), weight);
 				}
 				storedWeights.add(weightMap);
 			}
@@ -171,9 +171,11 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 				log.info("Finished EM round {} with m-step norm {}. Loss: " + loss + ", regularizer: " + regularizer + ", objective: " + objective, round, change);
 		}
 		
-		if (averageSteps) 
-			for (int i = 0; i < kernels.size(); i++)
-				kernels.get(i).setWeight(new PositiveWeight(avgWeights[i]));
+		if (averageSteps) {
+			for (int i = 0; i < rules.size(); i++) {
+				rules.get(i).setWeight(new PositiveWeight(avgWeights[i]));
+			}
+		}
 	}
 
 	abstract protected void minimizeKLDivergence();
@@ -216,10 +218,10 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 		/* 
 		 * Infers most probable assignment latent variables
 		 * 
-		 * (Called changedGroundKernelWeights() might be unnecessary, but this is
+		 * (Called changedGroundRuleWeights() might be unnecessary, but this is
 		 * the easiest way to be sure latentVariableReasoner is updated.)
 		 */
-		latentVariableReasoner.changedGroundKernelWeights();
+		latentVariableReasoner.changedGroundRuleWeights();
 		latentVariableReasoner.optimize();
 	}
 	

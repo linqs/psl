@@ -54,7 +54,7 @@ import org.apache.commons.collections4.multimap.HashSetValuedHashMap;
 import com.google.common.collect.Iterables;
 
 /**
- * Uses an ADMM optimization method to optimize its GroundKernels.
+ * Uses an ADMM optimization method to optimize its GroundRules.
  *
  * @author Stephen Bach <bach@cs.umd.edu>
  * @author Eric Norris
@@ -128,16 +128,16 @@ public class ADMMReasoner implements Reasoner {
 	private boolean rebuildModel;
 	private double lagrangePenalty, augmentedLagrangePenalty;
 
-	/** Ground kernels defining the objective function */
-	protected SetValuedMap<Rule, GroundRule> groundKernels;
+	/** Ground rules defining the objective function */
+	protected SetValuedMap<Rule, GroundRule> groundRules;
 
 	/**
-	 * Ordered list of GroundKernels for looking up indices in terms.
+	 * Ordered list of GroundRules for looking up indices in terms.
 	 * The integer value corresponds to the index into terms.
 	 */
-	protected Map<GroundRule, Integer> orderedGroundKernels;
+	protected Map<GroundRule, Integer> orderedGroundRules;
 
-	/** Ground kernels wrapped to be objective function terms for ADMM */
+	/** Ground rules wrapped to be objective function terms for ADMM */
 	protected List<ADMMObjectiveTerm> terms;
 
 	/**
@@ -171,7 +171,7 @@ public class ADMMReasoner implements Reasoner {
 
 		rebuildModel = true;
 
-		groundKernels = new HashSetValuedHashMap<Rule, GroundRule>();
+		groundRules = new HashSetValuedHashMap<Rule, GroundRule>();
 
 		// Multithreading
 		numThreads = config.getInt(NUM_THREADS_KEY, NUM_THREADS_DEFAULT);
@@ -212,67 +212,67 @@ public class ADMMReasoner implements Reasoner {
 	}
 
 	@Override
-	public void addGroundRule(GroundRule gk) {
-		groundKernels.put(gk.getRule(), gk);
+	public void addGroundRule(GroundRule groundRule) {
+		groundRules.put(groundRule.getRule(), groundRule);
 		rebuildModel = true;
 	}
 
 	@Override
-	public void changedGroundRule(GroundRule gk) {
+	public void changedGroundRule(GroundRule groundRule) {
 		rebuildModel = true;
 	}
 
 	@Override
-	public void changedGroundKernelWeight(WeightedGroundRule gk) {
+	public void changedGroundRuleWeight(WeightedGroundRule groundRule) {
 		if (!rebuildModel) {
-			int index = orderedGroundKernels.get(gk);
+			int index = orderedGroundRules.get(groundRule);
 			if (index != -1) {
-				((WeightedObjectiveTerm) terms.get(index)).setWeight(gk.getWeight().getWeight());
+				((WeightedObjectiveTerm) terms.get(index)).setWeight(groundRule.getWeight().getWeight());
 			}
 		}
 	}
 
 	@Override
-	public void changedGroundKernelWeights() {
+	public void changedGroundRuleWeights() {
 		if (!rebuildModel)
-			for (WeightedGroundRule gk : getCompatibilityKernels())
-				changedGroundKernelWeight(gk);
+			for (WeightedGroundRule groundRule : getCompatibilityRules())
+				changedGroundRuleWeight(groundRule);
 	}
 
 	@Override
-	public void removeGroundKernel(GroundRule gk) {
-		groundKernels.removeMapping(gk.getRule(), gk);
+	public void removeGroundRule(GroundRule groundRule) {
+		groundRules.removeMapping(groundRule.getRule(), groundRule);
 		rebuildModel = true;
 	}
 
 	@Override
-	public boolean containsGroundKernel(GroundRule gk) {
-		return groundKernels.containsMapping(gk.getRule(), gk);
+	public boolean containsGroundRule(GroundRule groundRule) {
+		return groundRules.containsMapping(groundRule.getRule(), groundRule);
 	}
 
 	protected void buildGroundModel() {
 		log.debug("(Re)building reasoner data structures");
 
 		/* Initializes data structures */
-		orderedGroundKernels = new HashMap<GroundRule, Integer>(groundKernels.size());
-		terms = new ArrayList<ADMMObjectiveTerm>(groundKernels.size());
+		orderedGroundRules = new HashMap<GroundRule, Integer>(groundRules.size());
+		terms = new ArrayList<ADMMObjectiveTerm>(groundRules.size());
 
 		variables = new DualHashBidiMap<Integer, AtomFunctionVariable>();
 
-		z = new ArrayList<Double>(groundKernels.size() * 2);
-		lb = new ArrayList<Double>(groundKernels.size() * 2);
-		ub = new ArrayList<Double>(groundKernels.size() * 2);
-		varLocations = new ArrayList<List<VariableLocation>>(groundKernels.size() * 2);
+		z = new ArrayList<Double>(groundRules.size() * 2);
+		lb = new ArrayList<Double>(groundRules.size() * 2);
+		ub = new ArrayList<Double>(groundRules.size() * 2);
+		varLocations = new ArrayList<List<VariableLocation>>(groundRules.size() * 2);
 		n = 0;
 
-		/* Initializes objective terms from ground kernels */
-		log.debug("Initializing objective terms for {} ground kernels", groundKernels.size());
-		for (GroundRule groundKernel : groundKernels.values()) {
-			ADMMObjectiveTerm term = createTerm(groundKernel);
+		/* Initializes objective terms from ground rules */
+		log.debug("Initializing objective terms for {} ground rules", groundRules.size());
+		for (GroundRule groundRule : groundRules.values()) {
+			ADMMObjectiveTerm term = createTerm(groundRule);
 
 			if (term.x.length > 0) {
 				registerLocalVariableCopies(term);
-				orderedGroundKernels.put(groundKernel, orderedGroundKernels.size());
+				orderedGroundRules.put(groundRule, orderedGroundRules.size());
 				terms.add(term);
 			}
 		}
@@ -284,16 +284,16 @@ public class ADMMReasoner implements Reasoner {
 	 * Processes a {@link GroundRule} to create a corresponding
 	 * {@link ADMMObjectiveTerm}
 	 *
-	 * @param groundKernel  the GroundKernel to be added to the ADMM objective
+	 * @param groundRule  the GroundRule to be added to the ADMM objective
 	 * @return  the created ADMMObjectiveTerm
 	 */
-	protected ADMMObjectiveTerm createTerm(GroundRule groundKernel) {
+	protected ADMMObjectiveTerm createTerm(GroundRule groundRule) {
 		boolean squared;
 		FunctionTerm function, innerFunction, zeroTerm, innerFunctionA, innerFunctionB;
 		ADMMObjectiveTerm term;
 
-		if (groundKernel instanceof WeightedGroundRule) {
-			function = ((WeightedGroundRule) groundKernel).getFunctionDefinition();
+		if (groundRule instanceof WeightedGroundRule) {
+			function = ((WeightedGroundRule) groundRule).getFunctionDefinition();
 
 			/* Checks if the function is wrapped in a PowerOfTwo */
 			if (function instanceof PowerOfTwo) {
@@ -331,11 +331,11 @@ public class ADMMReasoner implements Reasoner {
 					Hyperplane hp = processHyperplane((FunctionSum) innerFunction);
 					if (squared) {
 						term = new SquaredHingeLossTerm(this, hp.zIndices, hp.coeffs, hp.constant,
-								((WeightedGroundRule) groundKernel).getWeight().getWeight());
+								((WeightedGroundRule) groundRule).getWeight().getWeight());
 					}
 					else {
 						term = new HingeLossTerm(this, hp.zIndices, hp.coeffs, hp.constant,
-								((WeightedGroundRule) groundKernel).getWeight().getWeight());
+								((WeightedGroundRule) groundRule).getWeight().getWeight());
 					}
 				}
 				else
@@ -346,18 +346,18 @@ public class ADMMReasoner implements Reasoner {
 				Hyperplane hp = processHyperplane((FunctionSum) function);
 				if (squared) {
 					term = new SquaredLinearLossTerm(this, hp.zIndices, hp.coeffs, 0.0,
-							((WeightedGroundRule) groundKernel).getWeight().getWeight());
+							((WeightedGroundRule) groundRule).getWeight().getWeight());
 				}
 				else {
 					term = new LinearLossTerm(this, hp.zIndices, hp.coeffs,
-							((WeightedGroundRule) groundKernel).getWeight().getWeight());
+							((WeightedGroundRule) groundRule).getWeight().getWeight());
 				}
 			}
 			else
-				throw new IllegalArgumentException("Unrecognized function: " + ((WeightedGroundRule) groundKernel).getFunctionDefinition());
+				throw new IllegalArgumentException("Unrecognized function: " + ((WeightedGroundRule) groundRule).getFunctionDefinition());
 		}
-		else if (groundKernel instanceof UnweightedGroundRule) {
-			ConstraintTerm constraint = ((UnweightedGroundRule) groundKernel).getConstraintDefinition();
+		else if (groundRule instanceof UnweightedGroundRule) {
+			ConstraintTerm constraint = ((UnweightedGroundRule) groundRule).getConstraintDefinition();
 			function = constraint.getFunction();
 			if (function instanceof FunctionSum) {
 				Hyperplane hp = processHyperplane((FunctionSum) function);
@@ -368,25 +368,25 @@ public class ADMMReasoner implements Reasoner {
 				throw new IllegalArgumentException("Unrecognized constraint: " + constraint);
 		}
 		else
-			throw new IllegalArgumentException("Unsupported ground kernel: " + groundKernel);
+			throw new IllegalArgumentException("Unsupported ground rule: " + groundRule);
 
 		return term;
 	}
 
 	/**
 	 * Computes the incompatibility of the local variable copies corresponding to
-	 * GroundKernel gk
-	 * @param gk
+	 * GroundRule groundRule
+	 * @param groundRule
 	 * @return local (dual) incompatibility
 	 */
-	public double getDualIncompatibility(GroundRule gk) {
-		int index = orderedGroundKernels.get(gk);
+	public double getDualIncompatibility(GroundRule groundRule) {
+		int index = orderedGroundRules.get(groundRule);
 		ADMMObjectiveTerm term = terms.get(index);
 		for (int i = 0; i < term.zIndices.length; i++) {
 			int zIndex = term.zIndices[i];
 			variables.get(zIndex).setValue(term.x[i]);
 		}
-		return ((WeightedGroundRule) gk).getIncompatibility();
+		return ((WeightedGroundRule)groundRule).getIncompatibility();
 	}
 
 	public double getConsensusVariableValue(int index) {
@@ -617,33 +617,33 @@ public class ADMMReasoner implements Reasoner {
 	}
 
 	@Override
-	public Iterable<GroundRule> getGroundKernels() {
-		return groundKernels.values();
+	public Iterable<GroundRule> getGroundRules() {
+		return groundRules.values();
 	}
 
 	@Override
-	public Iterable<WeightedGroundRule> getCompatibilityKernels() {
-		return Iterables.filter(groundKernels.values(), WeightedGroundRule.class);
+	public Iterable<WeightedGroundRule> getCompatibilityRules() {
+		return Iterables.filter(groundRules.values(), WeightedGroundRule.class);
 	}
 
-	public Iterable<UnweightedGroundRule> getConstraintKernels() {
-		return Iterables.filter(groundKernels.values(), UnweightedGroundRule.class);
+	public Iterable<UnweightedGroundRule> getConstraintRules() {
+		return Iterables.filter(groundRules.values(), UnweightedGroundRule.class);
 	}
 
 	@Override
-	public Iterable<GroundRule> getGroundKernels(Rule k) {
-		return groundKernels.get(k);
+	public Iterable<GroundRule> getGroundRules(Rule k) {
+		return groundRules.get(k);
 	}
 
 	@Override
 	public int size() {
-		return groundKernels.size();
+		return groundRules.size();
 	}
 
 	@Override
 	public void close() {
-		groundKernels = null;
-		orderedGroundKernels = null;
+		groundRules = null;
+		orderedGroundRules = null;
 		terms = null;
 		variables = null;
 		z = null;

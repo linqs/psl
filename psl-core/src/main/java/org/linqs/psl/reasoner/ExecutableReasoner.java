@@ -65,8 +65,8 @@ abstract public class ExecutableReasoner implements Reasoner {
 	 */
 	public static final String EXECUTABLE_KEY = CONFIG_PREFIX + ".executable";
 	
-	/** Ground kernels defining the objective function */
-	protected SetValuedMap<Rule, GroundRule> groundKernels;
+	/** Ground rules defining the objective function */
+	protected SetValuedMap<Rule, GroundRule> groundRules;
 	
 	protected final String executable;
 	
@@ -75,7 +75,7 @@ abstract public class ExecutableReasoner implements Reasoner {
 		if (executable.equals(""))
 			throw new IllegalArgumentException("Must specify executable.");
 		
-		groundKernels = new HashSetValuedHashMap<Rule, GroundRule>();
+		groundRules = new HashSetValuedHashMap<Rule, GroundRule>();
 	}
 
 	@Override
@@ -152,63 +152,63 @@ abstract public class ExecutableReasoner implements Reasoner {
 	}
 
 	@Override
-	public void addGroundRule(GroundRule gk) {
-		groundKernels.put(gk.getRule(), gk);
+	public void addGroundRule(GroundRule groundRule) {
+		groundRules.put(groundRule.getRule(), groundRule);
 	}
 
 	@Override
-	public void removeGroundKernel(GroundRule gk) {
-		groundKernels.removeMapping(gk.getRule(), gk);
+	public void removeGroundRule(GroundRule groundRule) {
+		groundRules.removeMapping(groundRule.getRule(), groundRule);
 
 	}
 
 	@Override
-	public boolean containsGroundKernel(GroundRule gk) {
-		return groundKernels.containsMapping(gk.getRule(), gk);
+	public boolean containsGroundRule(GroundRule groundRule) {
+		return groundRules.containsMapping(groundRule.getRule(), groundRule);
 	}
 
 	@Override
-	public Iterable<GroundRule> getGroundKernels() {
-		return groundKernels.values();
+	public Iterable<GroundRule> getGroundRules() {
+		return groundRules.values();
 	}
 
 	@Override
-	public Iterable<WeightedGroundRule> getCompatibilityKernels() {
-		return Iterables.filter(groundKernels.values(), WeightedGroundRule.class);
+	public Iterable<WeightedGroundRule> getCompatibilityRules() {
+		return Iterables.filter(groundRules.values(), WeightedGroundRule.class);
 	}
 	
-	public Iterable<UnweightedGroundRule> getConstraintKernels() {
-		return Iterables.filter(groundKernels.values(), UnweightedGroundRule.class);
+	public Iterable<UnweightedGroundRule> getConstraintRules() {
+		return Iterables.filter(groundRules.values(), UnweightedGroundRule.class);
 	}
 
 	@Override
-	public Iterable<GroundRule> getGroundKernels(Rule k) {
-		return groundKernels.get(k);
+	public Iterable<GroundRule> getGroundRules(Rule k) {
+		return groundRules.get(k);
 	}
 
 	@Override
 	public int size() {
-		return groundKernels.size();
+		return groundRules.size();
 	}
 
 	@Override
-	public void changedGroundRule(GroundRule gk) {
+	public void changedGroundRule(GroundRule groundRule) {
 		/* Intentionally empty */
 	}
 
 	@Override
-	public void changedGroundKernelWeight(WeightedGroundRule gk) {
+	public void changedGroundRuleWeight(WeightedGroundRule groundRule) {
 		/* Intentionally empty */
 	}
 
 	@Override
-	public void changedGroundKernelWeights() {
+	public void changedGroundRuleWeights() {
 		/* Intentionally empty */
 	}
 
 	@Override
 	public void close() {
-		groundKernels = null;
+		groundRules = null;
 	}
 
 }

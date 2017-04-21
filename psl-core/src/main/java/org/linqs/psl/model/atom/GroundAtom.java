@@ -39,14 +39,15 @@ import com.google.common.collect.SetMultimap;
  * A GroundAtom has a truth value and a confidence value.
  */
 abstract public class GroundAtom extends Atom {
+	private static final Set<GroundRule> emptyGroundRules = ImmutableSet.of();
+
 	final protected Database db;
 	
 	protected double value;
 	
 	protected double confidenceValue;
 	
-	private static final Set<GroundRule> emptyGroundKernels = ImmutableSet.of();
-	protected SetMultimap<Rule, GroundRule> registeredGroundKernels;
+	protected SetMultimap<Rule, GroundRule> registeredGroundRules;
 
 	protected GroundAtom(Predicate p, Constant[] args, Database db, double value,
 			double confidenceValue) {
@@ -55,9 +56,9 @@ abstract public class GroundAtom extends Atom {
 		this.value = value;
 		this.confidenceValue = confidenceValue;
 		
-		/* Until a ground kernel is registered, the empty ground kernels set 
+		/* Until a ground rule is registered, the empty ground rules set 
 		 * will be used / returned to indicate an empty set. */
-		this.registeredGroundKernels = null;
+		this.registeredGroundRules = null;
 	}
 	
 	@Override
@@ -87,63 +88,63 @@ abstract public class GroundAtom extends Atom {
 	}
 	
 	/**
-	 * Registers a ground kernel to receive update events.
+	 * Registers a ground rule to receive update events.
 	 * <p>
-	 * Any GroundKernel that is a function of this Atom should be registered.
+	 * Any GroundRule that is a function of this Atom should be registered.
 	 * 
-	 * @param f A ground kernel
-	 * @return TRUE if successful; FALSE if kernel was already registered 
+	 * @param rule A ground rule
+	 * @return TRUE if successful; FALSE if rule was already registered 
 	 */
-	public boolean registerGroundKernel(GroundRule f) {
-		if (registeredGroundKernels == null)
-			registeredGroundKernels = HashMultimap.create();
-		return registeredGroundKernels.put(f.getRule(), f);
+	public boolean registerGroundRule(GroundRule rule) {
+		if (registeredGroundRules == null)
+			registeredGroundRules = HashMultimap.create();
+		return registeredGroundRules.put(rule.getRule(), rule);
 	}
 	
 	/**
-	 * Unregisters a ground kernel, so that it no longer receives update events.
+	 * Unregisters a ground rule, so that it no longer receives update events.
 	 * 
-	 * @param f A ground kernel
-	 * @return TRUE if successful; FALSE if kernel was never registered
+	 * @param rule A ground rule
+	 * @return TRUE if successful; FALSE if rule was never registered
 	 */
-	public boolean unregisterGroundKernel(GroundRule f) {
-		if (registeredGroundKernels == null)
+	public boolean unregisterGroundRule(GroundRule rule) {
+		if (registeredGroundRules == null)
 			return false;
-		return registeredGroundKernels.remove(f.getRule(), f);
+		return registeredGroundRules.remove(rule.getRule(), rule);
 	}
 	
 	/**
-	 * Returns a set of all registered ground kernels that match a given kernel.
+	 * Returns a set of all registered ground rules that match a given rule.
 	 * 
-	 * @param f A kernel
-	 * @return A set of all registered ground kernels that match f
+	 * @param rule A rule
+	 * @return A set of all registered ground rules that match rule
 	 */
-	public Set<GroundRule> getRegisteredGroundKernels(Rule f) {
-		if (registeredGroundKernels == null)
-			return emptyGroundKernels;
-		return registeredGroundKernels.get(f);
+	public Set<GroundRule> getRegisteredGroundRules(Rule rule) {
+		if (registeredGroundRules == null)
+			return emptyGroundRules;
+		return registeredGroundRules.get(rule);
 	}
 	
 	/**
-	 * Returns a set of all registered ground kernels.
+	 * Returns a set of all registered ground rules.
 	 * 
-	 * @return A collection of all registered ground kernels
+	 * @return A collection of all registered ground rules
 	 */
-	public Collection<GroundRule> getRegisteredGroundKernels() {
-		if (registeredGroundKernels == null)
-			return emptyGroundKernels;
-		return registeredGroundKernels.values();
+	public Collection<GroundRule> getRegisteredGroundRules() {
+		if (registeredGroundRules == null)
+			return emptyGroundRules;
+		return registeredGroundRules.values();
 	}
 	
 	/**
-	 * Returns the number of registered ground kernels.
+	 * Returns the number of registered ground rules.
 	 * 
-	 * @return The number of registered ground kernels
+	 * @return The number of registered ground rules
 	 */
-	public int getNumRegisteredGroundKernels() {
-		if (registeredGroundKernels == null)
+	public int getNumRegisteredGroundRules() {
+		if (registeredGroundRules == null)
 			return 0;
-		return registeredGroundKernels.size();
+		return registeredGroundRules.size();
 	}
 
 }

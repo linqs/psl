@@ -29,65 +29,65 @@ import org.linqs.psl.model.rule.WeightedGroundRule;
 /**
  * Static utilities for common {@link GroundRule} tasks.
  */
-public class GroundKernels {
+public class GroundRules {
 
 	/**
 	 * Sums the total weighted incompatibility of an iterable container of
-	 * {@link WeightedGroundRule GroundCompatibilityKernels}.
+	 * {@link WeightedGroundRule GroundCompatibilityRules}.
 	 * 
-	 * @param gks  the GroundCompatibilityKernels
+	 * @param groundRules  the GroundCompatibilityRules
 	 * @return the total weighted incompatibility
 	 * @see WeightedGroundRule#getIncompatibility()
 	 * @see WeightedGroundRule#getWeight()
 	 */
-	public static double getTotalWeightedIncompatibility(Iterable<WeightedGroundRule> gks) {
+	public static double getTotalWeightedIncompatibility(Iterable<WeightedGroundRule> groundRules) {
 		double totalInc = 0.0;
-		for (WeightedGroundRule gk : gks)
-			totalInc += gk.getIncompatibility() * gk.getWeight().getWeight();
+		for (WeightedGroundRule groundRule : groundRules)
+			totalInc += groundRule.getIncompatibility() * groundRule.getWeight().getWeight();
 		return totalInc;
 	}
 	
 	/**
 	 * Sums the total weighted compatibility (1 - incompatibility) of an iterable
-	 * container of {@link WeightedGroundRule GroundCompatibilityKernels}.
+	 * container of {@link WeightedGroundRule GroundCompatibilityRules}.
 	 * 
-	 * WARNING: This method does not account for GroundCompatibilityKernels that
+	 * WARNING: This method does not account for GroundCompatibilityRules that
 	 * were not grounded because they are trivially satisfied.
 	 * 
-	 * @param gks  the GroundCompatibilityKernels
+	 * @param groundRules  the GroundCompatibilityRules
 	 * @return the total weighted compatibility
 	 * @see WeightedGroundRule#getIncompatibility()
 	 * @see WeightedGroundRule#getWeight()
 	 */
-	public static double getTotalWeightedCompatibility(Iterable<WeightedGroundRule> gks) {
+	public static double getTotalWeightedCompatibility(Iterable<WeightedGroundRule> groundRules) {
 		double totalInc = 0.0;
-		for (WeightedGroundRule gk : gks)
-			totalInc += (1 - gk.getIncompatibility()) * gk.getWeight().getWeight();
+		for (WeightedGroundRule groundRule : groundRules)
+			totalInc += (1 - groundRule.getIncompatibility()) * groundRule.getWeight().getWeight();
 		return totalInc;
 	}
 	
 	/**
 	 * Computes the expected total weighted incompatibility of an iterable 
-	 * container of {@link WeightedGroundRule GroundCompatibilityKernels}
+	 * container of {@link WeightedGroundRule GroundCompatibilityRules}
 	 * from independently rounding each {@link RandomVariableAtom} to 1.0 or 0.0
 	 * with probability equal to its current truth value.
 	 * 
 	 * WARNING: the result of this function is incorrect if the RandomVariableAtoms
-	 * are subject to any {@link UnweightedGroundRule GroundConstraintKernels}.
+	 * are subject to any {@link UnweightedGroundRule GroundConstraintRules}.
 	 * 
-	 * @param gks  the GroundCompatibilityKernels
+	 * @param groundRules  the GroundCompatibilityRules
 	 * @return the expected total weighted incompatibility
 	 * @see WeightedGroundRule#getIncompatibility()
 	 * @see WeightedGroundRule#getWeight()
 	 */
-	public static double getExpectedTotalWeightedIncompatibility(Iterable<WeightedGroundRule> gks) {
+	public static double getExpectedTotalWeightedIncompatibility(Iterable<WeightedGroundRule> groundRules) {
 		double totalInc = 0.0;
 		List<RandomVariableAtom> atoms = new ArrayList<RandomVariableAtom>();
-		for (WeightedGroundRule gck : gks) {
+		for (WeightedGroundRule groundRule : groundRules) {
 			double inc = 0.0;
 			
 			/* Collects RandomVariableAtoms */
-			for (GroundAtom atom : gck.getAtoms())
+			for (GroundAtom atom : groundRule.getAtoms())
 				if (atom instanceof RandomVariableAtom)
 					atoms.add((RandomVariableAtom) atom);
 			
@@ -107,7 +107,7 @@ public class GroundKernels {
 					assignmentProb *= (assignment == 1) ? truthValues[j] : 1 - truthValues[j];
 				}
 				
-				inc += assignmentProb * gck.getIncompatibility();
+				inc += assignmentProb * groundRule.getIncompatibility();
 			}
 			
 			/* Restores truth values */
@@ -118,7 +118,7 @@ public class GroundKernels {
 			atoms.clear();
 			
 			/* Weights and adds to total */
-			inc *= gck.getWeight().getWeight();
+			inc *= groundRule.getWeight().getWeight();
 			totalInc += inc;
 		}
 		return totalInc;
@@ -126,24 +126,24 @@ public class GroundKernels {
 	
 	/**
 	 * Computes the expected total weighted compatibility (1 - incompatibility)
-	 * of an iterable container of {@link WeightedGroundRule GroundCompatibilityKernels}
+	 * of an iterable container of {@link WeightedGroundRule GroundCompatibilityRules}
 	 * from independently rounding each {@link RandomVariableAtom} to 1.0 or 0.0
 	 * with probability equal to its current truth value.
 	 * 
 	 * WARNING: the result of this function is incorrect if the RandomVariableAtoms
-	 * are subject to any {@link UnweightedGroundRule GroundConstraintKernels}.
+	 * are subject to any {@link UnweightedGroundRule GroundConstraintRules}.
 	 * 
-	 * WARNING: This method does not account for GroundCompatibilityKernels that
+	 * WARNING: This method does not account for GroundCompatibilityRules that
 	 * were not grounded because they are trivially satisfied.
 	 * 
-	 * @param gks  the GroundCompatibilityKernels
+	 * @param groundRules  the GroundCompatibilityRules
 	 * @return the expected total weighted incompatibility
-	 * @see GroundKernels#getExpectedWeightedCompatibility(WeightedGroundRule)
+	 * @see GroundRules#getExpectedWeightedCompatibility(WeightedGroundRule)
 	 */
-	public static double getExpectedTotalWeightedCompatibility(Iterable<WeightedGroundRule> gks) {
+	public static double getExpectedTotalWeightedCompatibility(Iterable<WeightedGroundRule> groundRules) {
 		double totalInc = 0.0;
-		for (WeightedGroundRule gck : gks)
-			totalInc += getExpectedWeightedCompatibility(gck);
+		for (WeightedGroundRule groundRule : groundRules)
+			totalInc += getExpectedWeightedCompatibility(groundRule);
 		return totalInc;
 	}
 	
@@ -154,19 +154,19 @@ public class GroundKernels {
 	 * with probability equal to its current truth value.
 	 * 
 	 * WARNING: the result of this function is incorrect if the RandomVariableAtoms
-	 * are subject to any {@link UnweightedGroundRule GroundConstraintKernels}.
+	 * are subject to any {@link UnweightedGroundRule GroundConstraintRules}.
 	 * 
-	 * @param gks  the GroundCompatibilityKernels
+	 * @param groundRules  the GroundCompatibilityRules
 	 * @return the expected weighted compatibility
 	 * @see WeightedGroundRule#getIncompatibility()
 	 * @see WeightedGroundRule#getWeight()
 	 */
-	public static double getExpectedWeightedCompatibility(WeightedGroundRule gck) {
+	public static double getExpectedWeightedCompatibility(WeightedGroundRule groundRule) {
 		double inc = 0.0;
 		List<RandomVariableAtom> atoms = new ArrayList<RandomVariableAtom>();
 		
 		/* Collects RandomVariableAtoms */
-		for (GroundAtom atom : gck.getAtoms())
+		for (GroundAtom atom : groundRule.getAtoms())
 			if (atom instanceof RandomVariableAtom)
 				atoms.add((RandomVariableAtom) atom);
 		
@@ -186,7 +186,7 @@ public class GroundKernels {
 				assignmentProb *= (assignment == 1) ? truthValues[j] : 1 - truthValues[j];
 			}
 			
-			inc += assignmentProb * (1 - gck.getIncompatibility());
+			inc += assignmentProb * (1 - groundRule.getIncompatibility());
 		}
 		
 		/* Restores truth values */
@@ -194,21 +194,21 @@ public class GroundKernels {
 			atoms.get(i).setValue(truthValues[i]);
 		
 		/* Weights and returns */
-		return inc * gck.getWeight().getWeight();
+		return inc * groundRule.getWeight().getWeight();
 	}
 	
 	/**
 	 * Computes the Euclidean norm of the infeasibilities of an iterable container
-	 * of {@link UnweightedGroundRule GroundConstraintKernels}.
+	 * of {@link UnweightedGroundRule GroundConstraintRules}.
 	 * 
-	 * @param gks  the GroundConstraintKernels
+	 * @param groundRules  the GroundConstraintRules
 	 * @return the Euclidean norm of the infeasibilities
 	 * @see UnweightedGroundRule#getInfeasibility()
 	 */
-	public static double getInfeasibilityNorm(Iterable<UnweightedGroundRule> gks) {
+	public static double getInfeasibilityNorm(Iterable<UnweightedGroundRule> groundRules) {
 		double inf, norm = 0.0;
-		for (UnweightedGroundRule gk : gks) {
-			inf = gk.getInfeasibility();
+		for (UnweightedGroundRule groundRule : groundRules) {
+			inf = groundRule.getInfeasibility();
 			norm += inf * inf;
 		}
 		return Math.sqrt(norm);

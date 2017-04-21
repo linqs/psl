@@ -22,7 +22,7 @@ import java.util.Observable;
 import org.linqs.psl.application.ModelApplication;
 import org.linqs.psl.application.inference.result.FullInferenceResult;
 import org.linqs.psl.application.inference.result.memory.MemoryFullInferenceResult;
-import org.linqs.psl.application.util.GroundKernels;
+import org.linqs.psl.application.util.GroundRules;
 import org.linqs.psl.application.util.Grounding;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.ConfigManager;
@@ -116,14 +116,16 @@ public class LazyMPEInference extends Observable implements ModelApplication {
 		Reasoner reasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
 		AtomEventFramework eventFramework = new AtomEventFramework(db, config);
 		
-		/* Registers the Model's Kernels with the AtomEventFramework */
-		for (Rule k : model.getRules())
-			k.registerForAtomEvents(eventFramework, reasoner);
+		/* Registers the Model's Rules with the AtomEventFramework */
+		for (Rule rule : model.getRules()) {
+			rule.registerForAtomEvents(eventFramework, reasoner);
+		}
 		
 		/* Initializes the ground model */
 		Grounding.groundAll(model, eventFramework, reasoner);
-		while (eventFramework.checkToActivate() > 0)
+		while (eventFramework.checkToActivate() > 0) {
 			eventFramework.workOffJobQueue();
+		}
 		
 		/* Performs rounds of inference until the ground model stops growing */
 		int rounds = 0;
@@ -152,12 +154,13 @@ public class LazyMPEInference extends Observable implements ModelApplication {
 			count++;
 		}
 		
-		double incompatibility = GroundKernels.getTotalWeightedIncompatibility(reasoner.getCompatibilityKernels());
-		double infeasibility = GroundKernels.getInfeasibilityNorm(reasoner.getConstraintKernels());
+		double incompatibility = GroundRules.getTotalWeightedIncompatibility(reasoner.getCompatibilityRules());
+		double infeasibility = GroundRules.getInfeasibilityNorm(reasoner.getConstraintRules());
 		
-		/* Unregisters the Model's Kernels with the AtomEventFramework */
-		for (Rule k : model.getRules())
-			k.unregisterForAtomEvents(eventFramework, reasoner);
+		/* Unregisters the Model's Rules with the AtomEventFramework */
+		for (Rule rule : model.getRules()) {
+			rule.unregisterForAtomEvents(eventFramework, reasoner);
+		}
 		
 		int size = reasoner.size();
 		reasoner.close();

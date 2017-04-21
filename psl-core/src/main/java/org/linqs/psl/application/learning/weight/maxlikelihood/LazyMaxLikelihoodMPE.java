@@ -80,9 +80,9 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 		reasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
 		eventFramework = new AtomEventFramework(rvDB, config);
 		
-		/* Registers the Model's Kernels with the AtomEventFramework */
-		for (Rule k : model.getRules())
-			k.registerForAtomEvents(eventFramework, reasoner);
+		/* Registers the Model's Rules with the AtomEventFramework */
+		for (Rule rule : model.getRules())
+			rule.registerForAtomEvents(eventFramework, reasoner);
 		
 		/* Grounds the model */
 		Grounding.groundAll(model, eventFramework, reasoner);
@@ -143,8 +143,8 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 			while (eventFramework.checkToActivate() > 0);
 			
 			/* Collects existing RandomVariableAtoms and pairs them with label constraints */
-			for (GroundRule k : reasoner.getGroundKernels()) {
-				for (Atom a : k.getAtoms()) {
+			for (GroundRule groundRule : reasoner.getGroundRules()) {
+				for (Atom a : groundRule.getAtoms()) {
 					if (a instanceof RandomVariableAtom) {
 						RandomVariableAtom rv = (RandomVariableAtom) a;
 						if (!targetMap.containsKey(rv)) {
@@ -170,16 +170,16 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 		log.debug("Finished growing labeled network.");
 		
 		/* Computes the observed incompatibilities */
-		double[] truthIncompatibility = new double[kernels.size()];
-		for (int i = 0; i < kernels.size(); i++) {
-			for (GroundRule gk : reasoner.getGroundKernels(kernels.get(i))) {
-				truthIncompatibility[i] += ((WeightedGroundRule) gk).getIncompatibility();
+		double[] truthIncompatibility = new double[rules.size()];
+		for (int i = 0; i < rules.size(); i++) {
+			for (GroundRule groundRule : reasoner.getGroundRules(rules.get(i))) {
+				truthIncompatibility[i] += ((WeightedGroundRule) groundRule).getIncompatibility();
 			}
 		}
 		
 		/* Removes label value constraints */
 		for (GroundValueConstraint con : targetMap.values()) {
-			reasoner.removeGroundKernel(con);
+			reasoner.removeGroundRule(con);
 		}
 		
 		return truthIncompatibility;
@@ -187,7 +187,7 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 	
 	@Override
 	protected double[] computeExpectedIncomp() {
-		double[] expIncomp = new double[kernels.size()];
+		double[] expIncomp = new double[rules.size()];
 		
 		/* Computes the MPE state */
 		do {
@@ -197,9 +197,9 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 		while (eventFramework.checkToActivate() > 0);
 		
 		/* Computes incompatibility */
-		for (int i = 0; i < kernels.size(); i++) {
-			for (GroundRule gk : reasoner.getGroundKernels(kernels.get(i))) {
-				expIncomp[i] += ((WeightedGroundRule) gk).getIncompatibility();
+		for (int i = 0; i < rules.size(); i++) {
+			for (GroundRule groundRule : reasoner.getGroundRules(rules.get(i))) {
+				expIncomp[i] += ((WeightedGroundRule) groundRule).getIncompatibility();
 			}
 		}
 		
@@ -208,10 +208,10 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 	
 	@Override
 	protected double[] computeScalingFactor() {
-		double[] scalingFactor = new double[kernels.size()];
+		double[] scalingFactor = new double[rules.size()];
 		
-		for (int i = 0; i < kernels.size(); i++) {
-			Iterator<GroundRule> itr = reasoner.getGroundKernels(kernels.get(i)).iterator();
+		for (int i = 0; i < rules.size(); i++) {
+			Iterator<GroundRule> itr = reasoner.getGroundRules(rules.get(i)).iterator();
 			while(itr.hasNext()) {
 				itr.next();
 				scalingFactor[i]++;
@@ -226,9 +226,9 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 	
 	@Override
 	protected void cleanUpGroundModel() {
-		/* Unregisters the Model's Kernels with the AtomEventFramework */
-		for (Rule k : model.getRules())
-			k.unregisterForAtomEvents(eventFramework, reasoner);
+		/* Unregisters the Model's Rules with the AtomEventFramework */
+		for (Rule rule : model.getRules())
+			rule.unregisterForAtomEvents(eventFramework, reasoner);
 		eventFramework = null;
 		
 		super.cleanUpGroundModel();

@@ -82,7 +82,7 @@ public class PSLTest {
 	 */
 	public static void compareGroundRules(List<String> expected, Rule rule, GroundRuleStore store, boolean alphabetize) {
 		List<String> actual = new ArrayList<String>();
-		for (GroundRule groundRule : store.getGroundKernels(rule)) {
+		for (GroundRule groundRule : store.getGroundRules(rule)) {
 			if (alphabetize) {
 				actual.add(sort(groundRule.toString()));
 			} else {

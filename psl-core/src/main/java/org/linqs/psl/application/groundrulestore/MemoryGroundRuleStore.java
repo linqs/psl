@@ -32,66 +32,65 @@ import com.google.common.collect.Iterables;
  * <p>
  * No action is taken by {@link #changedGroundRule(GroundRule)}.
  */
-public class MemoryGroundKernelStore implements GroundRuleStore {
+public class MemoryGroundRuleStore implements GroundRuleStore {
 
-	protected final SetValuedMap<Rule, GroundRule> groundKernels;
+	protected final SetValuedMap<Rule, GroundRule> groundRules;
 	
-	public MemoryGroundKernelStore() {
-		groundKernels = new HashSetValuedHashMap<Rule, GroundRule>();
+	public MemoryGroundRuleStore() {
+		groundRules = new HashSetValuedHashMap<Rule, GroundRule>();
 	}
 	
 	@Override
-	public boolean containsGroundKernel(GroundRule gk) {
-		return groundKernels.containsMapping(gk.getRule(),gk);
+	public boolean containsGroundRule(GroundRule groundRule) {
+		return groundRules.containsMapping(groundRule.getRule(), groundRule);
 	}
 	
 	@Override
-	public void addGroundRule(GroundRule gk) {
-		if (!groundKernels.put(gk.getRule(), gk))
-			throw new IllegalArgumentException("GroundKernel has already been added: " + gk);
+	public void addGroundRule(GroundRule groundRule) {
+		if (!groundRules.put(groundRule.getRule(), groundRule))
+			throw new IllegalArgumentException("GroundRule has already been added: " + groundRule);
 	}
 	
 	@Override
-	public void changedGroundRule(GroundRule gk) {
+	public void changedGroundRule(GroundRule groundRule) {
 		/* Intentionally blank */
 	}
 
 	@Override
-	public void changedGroundKernelWeight(WeightedGroundRule k) {
+	public void changedGroundRuleWeight(WeightedGroundRule k) {
 		/* Intentionally blank */
 	}
 
 	@Override
-	public void changedGroundKernelWeights() {
+	public void changedGroundRuleWeights() {
 		/* Intentionally blank */
 	}
 	
 	@Override
-	public void removeGroundKernel(GroundRule gk) {
-		groundKernels.removeMapping(gk.getRule(), gk);
+	public void removeGroundRule(GroundRule groundRule) {
+		groundRules.removeMapping(groundRule.getRule(), groundRule);
 	}
 	
-	public Iterable<GroundRule> getGroundKernels() {
-		return groundKernels.values();
-	}
-	
-	@Override
-	public Iterable<WeightedGroundRule> getCompatibilityKernels() {
-		return Iterables.filter(groundKernels.values(), WeightedGroundRule.class);
-	}
-	
-	public Iterable<UnweightedGroundRule> getConstraintKernels() {
-		return Iterables.filter(groundKernels.values(), UnweightedGroundRule.class);
+	public Iterable<GroundRule> getGroundRules() {
+		return groundRules.values();
 	}
 	
 	@Override
-	public Iterable<GroundRule> getGroundKernels(Rule k) {
-		return groundKernels.get(k);
+	public Iterable<WeightedGroundRule> getCompatibilityRules() {
+		return Iterables.filter(groundRules.values(), WeightedGroundRule.class);
+	}
+	
+	public Iterable<UnweightedGroundRule> getConstraintRules() {
+		return Iterables.filter(groundRules.values(), UnweightedGroundRule.class);
+	}
+	
+	@Override
+	public Iterable<GroundRule> getGroundRules(Rule k) {
+		return groundRules.get(k);
 	}
 	
 	@Override
 	public int size() {
-		return groundKernels.size();
+		return groundRules.size();
 	}
-	
 }

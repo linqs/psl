@@ -40,20 +40,20 @@ import org.linqs.psl.reasoner.function.FunctionTerm;
 public class GroundLogLoss implements WeightedGroundRule {
 	
 	private Weight weight;
-	private WeightedRule kernel;
+	private WeightedRule rule;
 	
 	protected final List<GroundAtom> literals;
 	protected final List<Double> coefficients;
 	
-	public GroundLogLoss(WeightedRule k, List<GroundAtom> literals, List<Double> coefficients) {
-		kernel = k;
+	public GroundLogLoss(WeightedRule rule, List<GroundAtom> literals, List<Double> coefficients) {
+		this.rule = rule;
 		this.literals = new ArrayList<GroundAtom>(literals);
 		this.coefficients = new ArrayList<Double>(coefficients);
 	}
 
 	@Override
 	public WeightedRule getRule() {
-		return (WeightedRule) kernel;
+		return (WeightedRule) rule;
 	}
 
 	@Override

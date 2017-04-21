@@ -20,7 +20,7 @@ package org.linqs.psl.application.inference;
 import org.linqs.psl.application.ModelApplication;
 import org.linqs.psl.application.inference.result.FullInferenceResult;
 import org.linqs.psl.application.inference.result.memory.MemoryFullInferenceResult;
-import org.linqs.psl.application.util.GroundKernels;
+import org.linqs.psl.application.util.GroundRules;
 import org.linqs.psl.application.util.Grounding;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.ConfigManager;
@@ -112,7 +112,7 @@ public class MPEInference implements ModelApplication {
 	 */
 	public FullInferenceResult mpeInference() {
 
-		reasoner.changedGroundKernelWeights();
+		reasoner.changedGroundRuleWeights();
 		
 		log.info("Beginning inference.");
 		reasoner.optimize();
@@ -125,8 +125,8 @@ public class MPEInference implements ModelApplication {
 			count++;
 		}
 		
-		double incompatibility = GroundKernels.getTotalWeightedIncompatibility(reasoner.getCompatibilityKernels());
-		double infeasibility = GroundKernels.getInfeasibilityNorm(reasoner.getConstraintKernels());
+		double incompatibility = GroundRules.getTotalWeightedIncompatibility(reasoner.getCompatibilityRules());
+		double infeasibility = GroundRules.getInfeasibilityNorm(reasoner.getConstraintRules());
 		int size = reasoner.size();
 		return new MemoryFullInferenceResult(incompatibility, infeasibility, count, size);
 	}

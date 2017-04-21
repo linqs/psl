@@ -121,14 +121,14 @@ abstract public class AbstractLogicalRule extends AbstractRule {
 			worstCaseValue = function.getValue(worstCaseValues, false);
 			if (worstCaseValue > NumericUtilities.strictEpsilon
 					&& (!function.isConstant() || !(groundRule instanceof WeightedGroundRule))
-					&& !grs.containsGroundKernel(groundRule)) {
+					&& !grs.containsGroundRule(groundRule)) {
 				grs.addGroundRule(groundRule);
 				numGroundingsAdded++;
 			}
-			/* If the ground kernel is not actually added, unregisters it from atoms */
+			/* If the ground rule is not actually added, unregisters it from atoms */
 			else
 				for (GroundAtom incidentAtom : groundRule.getAtoms())
-					incidentAtom.unregisterGroundKernel(groundRule);
+					incidentAtom.unregisterGroundRule(groundRule);
 			
 			posLiterals.clear();
 			negLiterals.clear();

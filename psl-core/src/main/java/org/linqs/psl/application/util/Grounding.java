@@ -34,11 +34,11 @@ public class Grounding {
 	
 	/**
 	 * Calls {@link Rule#groundAll(AtomManager, GroundRuleStore)} on
-	 * each Kernel in a Model.
+	 * each Rule in a Model.
 	 * 
-	 * @param m  the Model with the Kernels to ground
+	 * @param m  the Model with the Rules to ground
 	 * @param atomManager  AtomManager to use for grounding
-	 * @param gks  GroundKernelStore to use for grounding
+	 * @param gks  GroundRuleStore to use for grounding
 	 */
 	public static void groundAll(Model m, AtomManager atomManager, GroundRuleStore gks) {
 		groundAll(m,atomManager, gks, all);
@@ -46,18 +46,18 @@ public class Grounding {
 	
 	/**
 	 * Calls {@link Rule#groundAll(AtomManager, GroundRuleStore)} on
-	 * each Kernel in a Model which passes a filter.
+	 * each Rule in a Model which passes a filter.
 	 * 
-	 * @param m  the Model with the Kernels to ground
+	 * @param m  the Model with the Rules to ground
 	 * @param atomManager  AtomManager to use for grounding
-	 * @param gks  GroundKernelStore to use for grounding
-	 * @param filter  filter for Kernels to ground
+	 * @param gks  GroundRuleStore to use for grounding
+	 * @param filter  filter for Rules to ground
 	 */
 	public static void groundAll(Model m, AtomManager atomManager, GroundRuleStore gks,
 			com.google.common.base.Predicate<Rule> filter) {
-		for (Rule k : m.getRules()) {
-			if (filter.apply(k))
-				k.groundAll(atomManager, gks);
+		for (Rule rule : m.getRules()) {
+			if (filter.apply(rule))
+				rule.groundAll(atomManager, gks);
 		}
 	}
 	

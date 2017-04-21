@@ -22,7 +22,7 @@
  * 
  * {@link org.linqs.psl.reasoner.Reasoner} and its implementations are the main
  * tools for inference. See the function subpackage provides interfaces and classes
- * for defining functions that {@link org.linqs.psl.model.rule.GroundRule GroundKernels}
+ * for defining functions that {@link org.linqs.psl.model.rule.GroundRule GroundRules}
  * should use.
  */
 package org.linqs.psl.reasoner;

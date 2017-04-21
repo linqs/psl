@@ -30,12 +30,14 @@ public class LatentObjectiveComputer extends HardEM {
 			Database observedDB, ConfigBundle config) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		super(model, rvDB, observedDB, config);
 
-		/* Gathers the CompatibilityKernels */
-		for (WeightedRule k : Iterables.filter(model.getRules(), WeightedRule.class))
-			if (k.isWeightMutable())
-				kernels.add(k);
-			else
-				immutableKernels.add(k);
+		/* Gathers the CompatibilityRules */
+		for (WeightedRule rule : Iterables.filter(model.getRules(), WeightedRule.class)) {
+			if (rule.isWeightMutable()) {
+				rules.add(rule);
+			} else {
+				immutableRules.add(rule);
+         }
+      }
 		
 		/* Sets up the ground model */
 		initGroundModel();
@@ -46,7 +48,7 @@ public class LatentObjectiveComputer extends HardEM {
 	 * @return
 	 */
 	public double getObjective() {
-		reasoner.changedGroundKernelWeights();
+		reasoner.changedGroundRuleWeights();
 		minimizeKLDivergence();
 		computeObservedIncomp();
 		computeExpectedIncomp();

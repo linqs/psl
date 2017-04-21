@@ -67,30 +67,30 @@ public class LatentTopicNetworkADMMReasoner extends ADMMReasoner {
 	}
 	
 	@Override
-	protected ADMMObjectiveTerm createTerm(GroundRule groundKernel) {
+	protected ADMMObjectiveTerm createTerm(GroundRule groundRule) {
 		FunctionTerm function;
 		ADMMObjectiveTerm term;
 		
 		/* If it's a NegativeLogFunction, constructs the objective term (a log loss).
 		 * Note that this must come before FunctionSum, since NegativeLogFunction extends FunctionSum.*/
-		if (groundKernel instanceof WeightedGroundRule) {
-			function = ((WeightedGroundRule) groundKernel).getFunctionDefinition();
+		if (groundRule instanceof WeightedGroundRule) {
+			function = ((WeightedGroundRule) groundRule).getFunctionDefinition();
 			if (function instanceof NegativeLogFunction) {
 				Hyperplane hp = processHyperplane((FunctionSum) function);
-				if (groundKernel instanceof LDAgroundLogLoss) {
-					term = new NegativeLogLossTerm(this, hp.zIndices, ((LDAgroundLogLoss) groundKernel).getCoefficientsArray(), ((WeightedGroundRule) groundKernel).getWeight().getWeight());
+				if (groundRule instanceof LDAgroundLogLoss) {
+					term = new NegativeLogLossTerm(this, hp.zIndices, ((LDAgroundLogLoss) groundRule).getCoefficientsArray(), ((WeightedGroundRule) groundRule).getWeight().getWeight());
 				}
 				else {
-					term = new NegativeLogLossTerm(this, hp.zIndices, hp.coeffs, ((WeightedGroundRule) groundKernel).getWeight().getWeight());
+					term = new NegativeLogLossTerm(this, hp.zIndices, hp.coeffs, ((WeightedGroundRule) groundRule).getWeight().getWeight());
 				}
 				return term;
 			}
 			else {
-				return super.createTerm(groundKernel);
+				return super.createTerm(groundRule);
 			}
 		}
-		else if (groundKernel instanceof UnweightedGroundRule) {
-			ConstraintTerm constraint = ((UnweightedGroundRule) groundKernel).getConstraintDefinition();
+		else if (groundRule instanceof UnweightedGroundRule) {
+			ConstraintTerm constraint = ((UnweightedGroundRule) groundRule).getConstraintDefinition();
 			function = constraint.getFunction();
 			if (function instanceof FunctionSum) {
 				Hyperplane hp = processHyperplane((FunctionSum) function);
@@ -102,7 +102,7 @@ public class LatentTopicNetworkADMMReasoner extends ADMMReasoner {
 				throw new IllegalArgumentException("Unrecognized constraint: " + constraint);
 		}
 		else
-			throw new IllegalArgumentException("Unsupported ground kernel: " + groundKernel);
+			throw new IllegalArgumentException("Unsupported ground rule: " + groundRule);
 	}
 	
 	/* Initialize ADMM parameters to the optimal value for vanilla LDA.

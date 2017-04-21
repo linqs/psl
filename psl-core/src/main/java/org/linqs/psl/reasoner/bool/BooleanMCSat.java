@@ -19,7 +19,7 @@ package org.linqs.psl.reasoner.bool;
 
 import java.util.Random;
 
-import org.linqs.psl.application.groundrulestore.MemoryGroundKernelStore;
+import org.linqs.psl.application.groundrulestore.MemoryGroundRuleStore;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.ConfigManager;
 import org.linqs.psl.model.ConstraintBlocker;
@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-public class BooleanMCSat extends MemoryGroundKernelStore implements Reasoner {
+public class BooleanMCSat extends MemoryGroundRuleStore implements Reasoner {
 	
 	private static final Logger log = LoggerFactory.getLogger(BooleanMCSat.class);
 	
@@ -93,7 +93,7 @@ public class BooleanMCSat extends MemoryGroundKernelStore implements Reasoner {
 		RandomVariableAtom[][] rvBlocks = blocker.getRVBlocks();
 		/* If true, exactly one Atom in the RV block must be 1.0. If false, at most one can. */
 		boolean[] exactlyOne = blocker.getExactlyOne();
-		/* Collects GroundCompatibilityKernels incident on each block of RandomVariableAtoms */
+		/* Collects GroundCompatibilityRules incident on each block of RandomVariableAtoms */
 		WeightedGroundRule[][] incidentGKs = blocker.getIncidentGKs();
 		/* Initializes arrays for totaling samples */
 		double[][] totals = blocker.getEmptyDouble2DArray();
@@ -152,9 +152,9 @@ public class BooleanMCSat extends MemoryGroundKernelStore implements Reasoner {
 	
 	private double computeProbability(WeightedGroundRule incidentGKs[]) {
 		double probability = 0.0;
-		for (WeightedGroundRule gk : incidentGKs) {
-			probability += ((WeightedGroundRule) gk).getWeight().getWeight()
-					* ((WeightedGroundRule) gk).getIncompatibility();
+		for (WeightedGroundRule groundRule : incidentGKs) {
+			probability += ((WeightedGroundRule) groundRule).getWeight().getWeight()
+					* ((WeightedGroundRule) groundRule).getIncompatibility();
 		}
 		return Math.exp(-1 * probability);
 	}

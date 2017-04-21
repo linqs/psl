@@ -93,7 +93,7 @@ public class PairedDualLearner extends ExpectationMaximization {
 	public PairedDualLearner(Model model, Database rvDB, Database observedDB,
 			ConfigBundle config) {
 		super(model, rvDB, observedDB, config);
-		scalingFactor = new double[kernels.size()];
+		scalingFactor = new double[rules.size()];
 		warmupRounds = config.getInt(WARMUP_ROUNDS_KEY, WARMUP_ROUNDS_DEFAULT);
 		if (warmupRounds < 0) {
 			throw new IllegalArgumentException(CONFIG_PREFIX + "." + WARMUP_ROUNDS_KEY
@@ -135,7 +135,7 @@ public class PairedDualLearner extends ExpectationMaximization {
 
 	@Override
 	protected double[] computeExpectedIncomp() {
-		dualExpectedIncompatibility = new double[kernels.size() + immutableKernels.size()];
+		dualExpectedIncompatibility = new double[rules.size() + immutableRules.size()];
 
 		/* Computes the MPE state */
 		reasoner.optimize();
@@ -143,52 +143,52 @@ public class PairedDualLearner extends ExpectationMaximization {
 		ADMMReasoner admm = (ADMMReasoner) reasoner;
 
 		// Compute the dual incompatbility for each ADMM subproblem
-		for (int i = 0; i < kernels.size(); i++) {
-			for (GroundRule gk : reasoner.getGroundKernels(kernels.get(i))) {
-				dualExpectedIncompatibility[i] += admm.getDualIncompatibility(gk);
+		for (int i = 0; i < rules.size(); i++) {
+			for (GroundRule groundRule : reasoner.getGroundRules(rules.get(i))) {
+				dualExpectedIncompatibility[i] += admm.getDualIncompatibility(groundRule);
 			}
 		}
 
-		for (int i = 0; i < immutableKernels.size(); i++) {
-			for (GroundRule gk : reasoner.getGroundKernels(immutableKernels.get(i))) {
-				dualExpectedIncompatibility[kernels.size() + i] += admm.getDualIncompatibility(gk);
+		for (int i = 0; i < immutableRules.size(); i++) {
+			for (GroundRule groundRule : reasoner.getGroundRules(immutableRules.get(i))) {
+				dualExpectedIncompatibility[rules.size() + i] += admm.getDualIncompatibility(groundRule);
 			}
 		}
 
-		return Arrays.copyOf(dualExpectedIncompatibility, kernels.size());
+		return Arrays.copyOf(dualExpectedIncompatibility, rules.size());
 	}
 
 	@Override
 	protected double[] computeObservedIncomp() {
-		numGroundings = new double[kernels.size()];
-		dualObservedIncompatibility = new double[kernels.size() + immutableKernels.size()];
+		numGroundings = new double[rules.size()];
+		dualObservedIncompatibility = new double[rules.size() + immutableRules.size()];
 		setLabeledRandomVariables();
 
 		ADMMReasoner admm = (ADMMReasoner) latentVariableReasoner;
 
 		/* Computes the observed incompatibilities and numbers of groundings */
-		for (int i = 0; i < kernels.size(); i++) {
-			for (GroundRule gk : latentVariableReasoner.getGroundKernels(kernels.get(i))) {
-				dualObservedIncompatibility[i] += admm.getDualIncompatibility(gk);
+		for (int i = 0; i < rules.size(); i++) {
+			for (GroundRule groundRule : latentVariableReasoner.getGroundRules(rules.get(i))) {
+				dualObservedIncompatibility[i] += admm.getDualIncompatibility(groundRule);
 				numGroundings[i]++;
 			}
 		}
-		for (int i = 0; i < immutableKernels.size(); i++) {
-			for (GroundRule gk : latentVariableReasoner.getGroundKernels(immutableKernels.get(i))) {
-				dualObservedIncompatibility[kernels.size() + i] += admm.getDualIncompatibility(gk);
+		for (int i = 0; i < immutableRules.size(); i++) {
+			for (GroundRule groundRule : latentVariableReasoner.getGroundRules(immutableRules.get(i))) {
+				dualObservedIncompatibility[rules.size() + i] += admm.getDualIncompatibility(groundRule);
 			}
 		}
 
-		return Arrays.copyOf(dualObservedIncompatibility, kernels.size());
+		return Arrays.copyOf(dualObservedIncompatibility, rules.size());
 	}
 
 	@Override
 	protected double computeLoss() {
 		double loss = 0.0;
-		for (int i = 0; i < kernels.size(); i++)
-			loss += kernels.get(i).getWeight().getWeight() * (dualObservedIncompatibility[i] - dualExpectedIncompatibility[i]);
-		for (int i = 0; i < immutableKernels.size(); i++)
-			loss += immutableKernels.get(i).getWeight().getWeight() * (dualObservedIncompatibility[kernels.size() + i] - dualExpectedIncompatibility[kernels.size() + i]);
+		for (int i = 0; i < rules.size(); i++)
+			loss += rules.get(i).getWeight().getWeight() * (dualObservedIncompatibility[i] - dualExpectedIncompatibility[i]);
+		for (int i = 0; i < immutableRules.size(); i++)
+			loss += immutableRules.get(i).getWeight().getWeight() * (dualObservedIncompatibility[rules.size() + i] - dualExpectedIncompatibility[rules.size() + i]);
 		return loss;
 	}
 
@@ -196,24 +196,24 @@ public class PairedDualLearner extends ExpectationMaximization {
 	
 	private void subgrad() {
 		log.info("Starting optimization");
-		double [] weights = new double[kernels.size()];
-		for (int i = 0; i < kernels.size(); i++)
-			weights[i] = kernels.get(i).getWeight().getWeight();
+		double [] weights = new double[rules.size()];
+		for (int i = 0; i < rules.size(); i++)
+			weights[i] = rules.get(i).getWeight().getWeight();
 
-		double [] avgWeights = new double[kernels.size()];
+		double [] avgWeights = new double[rules.size()];
 
-		double [] gradient = new double[kernels.size()];
+		double [] gradient = new double[rules.size()];
 		
-		for (int i = 0; i < kernels.size(); i++)
+		for (int i = 0; i < rules.size(); i++)
 			gradient[i] = 1.0;
 		
-		double [] scale = new double[kernels.size()];
+		double [] scale = new double[rules.size()];
 		double objective = 0;
 		for (int step = 0; step < iterations; step++) {
 			objective = getValueAndGradient(gradient, weights);
 			double gradNorm = 0;
 			double change = 0;
-			for (int i = 0; i < kernels.size(); i++) {
+			for (int i = 0; i < rules.size(); i++) {
 				if (scheduleStepSize)
 					scale[i] = Math.pow((double) (step + 1), 2);
 				else
@@ -234,10 +234,10 @@ public class PairedDualLearner extends ExpectationMaximization {
 
 			if (storeWeights) {
 				Map<WeightedRule,Double> weightMap = new HashMap<WeightedRule, Double>();
-				for (int i = 0; i < kernels.size(); i++) {
+				for (int i = 0; i < rules.size(); i++) {
 					double weight = (averageSteps)? avgWeights[i] : weights[i];
 					if (weight != 0.0)
-						weightMap.put(kernels.get(i), weight);
+						weightMap.put(rules.get(i), weight);
 				}
 
 				storedWeights.add(weightMap);
@@ -261,10 +261,10 @@ public class PairedDualLearner extends ExpectationMaximization {
 
 		log.info("Learning finished with final objective value {}", objective);
 
-		for (int i = 0; i < kernels.size(); i++) {
+		for (int i = 0; i < rules.size(); i++) {
 			if (averageSteps)
 				weights[i] = avgWeights[i];
-			kernels.get(i).setWeight(new PositiveWeight(weights[i]));
+			rules.get(i).setWeight(new PositiveWeight(weights[i]));
 		}
 	}
 	
@@ -297,7 +297,7 @@ public class PairedDualLearner extends ExpectationMaximization {
 		((ADMMReasoner) latentVariableReasoner).setMaxIter(admmIterations);
 		
 		if (augmentLoss)
-			addLossAugmentedKernels();
+			addLossAugmentedRules();
 		
 		if (warmupRounds > 0) {
 			log.info("Warming up optimizers with {} iterations each.", warmupRounds * admmIterations);
@@ -310,7 +310,7 @@ public class PairedDualLearner extends ExpectationMaximization {
 		subgrad();
 		
 		if (augmentLoss)
-			removeLossAugmentedKernels();
+			removeLossAugmentedRules();
 
 		((ADMMReasoner) reasoner).setMaxIter(maxIter);
 		((ADMMReasoner) latentVariableReasoner).setMaxIter(maxIter);
@@ -318,29 +318,29 @@ public class PairedDualLearner extends ExpectationMaximization {
 	}
 
 	private double getValueAndGradient(double[] gradient, double[] weights) {
-		for (int i = 0; i < kernels.size(); i++) {
+		for (int i = 0; i < rules.size(); i++) {
 			if (gradient[i] != 0.0)
-				kernels.get(i).setWeight(new PositiveWeight(weights[i]));
+				rules.get(i).setWeight(new PositiveWeight(weights[i]));
 		}
 		minimizeKLDivergence();
 		computeObservedIncomp();
 
-		reasoner.changedGroundKernelWeights();
+		reasoner.changedGroundRuleWeights();
 		computeExpectedIncomp();
 
 		double loss = 0.0;
-		for (int i = 0; i < kernels.size(); i++)
+		for (int i = 0; i < rules.size(); i++)
 			loss += weights[i] * (dualObservedIncompatibility[i] - dualExpectedIncompatibility[i]);
-		for (int i = 0; i < immutableKernels.size(); i++)
-			loss += immutableKernels.get(i).getWeight().getWeight() * (dualObservedIncompatibility[kernels.size() + i] - dualExpectedIncompatibility[kernels.size() + i]);
+		for (int i = 0; i < immutableRules.size(); i++)
+			loss += immutableRules.get(i).getWeight().getWeight() * (dualObservedIncompatibility[rules.size() + i] - dualExpectedIncompatibility[rules.size() + i]);
 		double eStepLagrangianPenalty = ((ADMMReasoner) latentVariableReasoner).getLagrangianPenalty();
 		double eStepAugLagrangianPenalty = ((ADMMReasoner) latentVariableReasoner).getAugmentedLagrangianPenalty();
 		double mStepLagrangianPenalty = ((ADMMReasoner) reasoner).getLagrangianPenalty();
 		double mStepAugLagrangianPenalty = ((ADMMReasoner) reasoner).getAugmentedLagrangianPenalty();
 		loss += eStepLagrangianPenalty + eStepAugLagrangianPenalty - mStepLagrangianPenalty - mStepAugLagrangianPenalty;
 		
-		for (int i = 0; i < kernels.size(); i++) {
-			log.debug("Incompatibility for kernel {}", kernels.get(i));
+		for (int i = 0; i < rules.size(); i++) {
+			log.debug("Incompatibility for rule {}", rules.get(i));
 			log.debug("Truth incompatbility {}, expected incompatibility {}", dualObservedIncompatibility[i], dualExpectedIncompatibility[i]);
 		}
 		log.debug("E Penalty: {}, E Aug Penalty: {}, M Penalty: {}, M Aug Penalty: {}",
@@ -350,7 +350,7 @@ public class PairedDualLearner extends ExpectationMaximization {
 		double regularizer = computeRegularizer();
 
 		if (null != gradient) 
-			for (int i = 0; i < kernels.size(); i++) {
+			for (int i = 0; i < rules.size(); i++) {
 				gradient[i] = dualObservedIncompatibility[i] - dualExpectedIncompatibility[i];
 				if (scaleGradient && numGroundings[i] > 0.0)
 					gradient[i] /= numGroundings[i];

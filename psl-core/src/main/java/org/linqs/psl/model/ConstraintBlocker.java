@@ -65,13 +65,13 @@ public class ConstraintBlocker {
 		/* Collects constraints */
 		Set<UnweightedGroundArithmeticRule> constraintSet = new HashSet<UnweightedGroundArithmeticRule>();
 		Map<RandomVariableAtom, GroundValueConstraint> valueConstraintMap = new HashMap<RandomVariableAtom, GroundValueConstraint>();
-		for (UnweightedGroundRule gr : store.getConstraintKernels()) {
-			if (gr instanceof UnweightedGroundArithmeticRule) {
+		for (UnweightedGroundRule groundRule : store.getConstraintRules()) {
+			if (groundRule instanceof UnweightedGroundArithmeticRule) {
 				/* 
 				 * If the ground rule is an UnweightedGroundArithmeticRule, checks if it
 				 * is a categorical, i.e., at-least-1-of-k or 1-of-k, constraint 
 				 */
-				UnweightedGroundArithmeticRule gar = (UnweightedGroundArithmeticRule) gr;
+				UnweightedGroundArithmeticRule gar = (UnweightedGroundArithmeticRule) groundRule;
 				boolean categorical = true;
 				
 				if (!(
@@ -104,8 +104,8 @@ public class ConstraintBlocker {
 							+ "and at-least-1-of-k constraints and value constraints.");
 				}
 			}
-			else if (gr instanceof GroundValueConstraint)
-				valueConstraintMap.put((RandomVariableAtom) gr.getAtoms().iterator().next(), (GroundValueConstraint) gr);
+			else if (groundRule instanceof GroundValueConstraint)
+				valueConstraintMap.put((RandomVariableAtom) groundRule.getAtoms().iterator().next(), (GroundValueConstraint) groundRule);
 			else
 				throw new IllegalStateException("The only supported constraints are 1-of-k constraints "
 						+ "and at-least-1-of-k constraints and value constraints.");
@@ -113,12 +113,12 @@ public class ConstraintBlocker {
 		
 		/* Collects the free RandomVariableAtoms that remain */
 		Set<RandomVariableAtom> freeRVSet = new HashSet<RandomVariableAtom>();
-		for (GroundRule gk : store.getGroundKernels()) {
-			for (GroundAtom atom : gk.getAtoms()) {
+		for (GroundRule groundRule : store.getGroundRules()) {
+			for (GroundAtom atom : groundRule.getAtoms()) {
 				if (atom instanceof RandomVariableAtom) {
 					int numDRConstraints = 0;
 					int numValueConstraints = 0;
-					for (GroundRule incidentGR : atom.getRegisteredGroundKernels())
+					for (GroundRule incidentGR : atom.getRegisteredGroundRules())
 						if (incidentGR instanceof UnweightedGroundArithmeticRule)
 							numDRConstraints++;
 						else if (incidentGR instanceof GroundValueConstraint)
@@ -203,7 +203,7 @@ public class ConstraintBlocker {
 		for (i = 0; i < rvBlocks.length; i++) {
 			incidentGKSet.clear();
 			for (RandomVariableAtom atom : rvBlocks[i])
-				for (GroundRule incidentGK : atom.getRegisteredGroundKernels())
+				for (GroundRule incidentGK : atom.getRegisteredGroundRules())
 					if (incidentGK instanceof WeightedGroundRule)
 						incidentGKSet.add((WeightedGroundRule) incidentGK);
 			

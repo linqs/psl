@@ -36,10 +36,10 @@ public interface GroundRuleStore {
 	/**
 	 * Adds a GroundRule to this store.
 	 * 
-	 * @param gr  the GroundRule to add
-	 * @throws IllegalArgumentException  if gr is already in this store
+	 * @param rule  the GroundRule to add
+	 * @throws IllegalArgumentException  if rule is already in this store
 	 */
-	public void addGroundRule(GroundRule gr);
+	public void addGroundRule(GroundRule rule);
 	
 	/**
 	 * Notifies this store that a GroundRule was changed.
@@ -47,73 +47,73 @@ public interface GroundRuleStore {
 	 * Any component that modifies a GroundRule in this store should call
 	 * this method.
 	 * 
-	 * @param gr  the changed GroundRule
-	 * @throws IllegalArgumentException  if gr is not in this store
+	 * @param rule  the changed GroundRule
+	 * @throws IllegalArgumentException  if rule is not in this store
 	 */
-	public void changedGroundRule(GroundRule gr);
+	public void changedGroundRule(GroundRule rule);
 	
 	/**
 	 * Notifies this store that a {@link WeightedGroundRule}'s weight
 	 * was changed.
 	 * <p>
-	 * This method should be called whenever the weight of a GroundCompatibilityKernel
+	 * This method should be called whenever the weight of a GroundCompatibilityRule
 	 * in this store is changed, or the weight of its parent {@link WeightedRule}
-	 * is changed (and the GroundCompatibilityKernel's weight is still tied to it).
+	 * is changed (and the GroundCompatibilityRule's weight is still tied to it).
 	 * <p>
 	 * It is not necessary to also call {@link #changedGroundRule(GroundRule)}
 	 * if only the weight was changed.
 	 * 
-	 * @param gk  the ground kernel with a changed weight
+	 * @param rule  the ground rule with a changed weight
 	 */
-	public void changedGroundKernelWeight(WeightedGroundRule gk);
+	public void changedGroundRuleWeight(WeightedGroundRule rule);
 	
 	/**
-	 * Equivalent to calling {@link #changedGroundKernelWeight(WeightedGroundRule)}
-	 * for all GroundCompatibilityKernels.
+	 * Equivalent to calling {@link #changedGroundRuleWeight(WeightedGroundRule)}
+	 * for all GroundCompatibilityRules.
 	 */
-	public void changedGroundKernelWeights();
+	public void changedGroundRuleWeights();
 	
 	/**
-	 * Removes a GroundKernel from this store.
+	 * Removes a GroundRule from this store.
 	 * 
-	 * @param gk  the GroundKernel to remove
-	 * @throws IllegalArgumentException  if gk is not in this store
+	 * @param rule  the GroundRule to remove
+	 * @throws IllegalArgumentException  if rule is not in this store
 	 */
-	public void removeGroundKernel(GroundRule gk);
+	public void removeGroundRule(GroundRule rule);
 	
 	/**
-	 * Checks whether a GroundKernel is in this store.
+	 * Checks whether a GroundRule is in this store.
 	 * 
-	 * @param gk  the GroundKernel to check
-	 * @return TRUE if gk is in this store
+	 * @param rule  the GroundRule to check
+	 * @return true if rule is in this store
 	 */
-	public boolean containsGroundKernel(GroundRule gk);
+	public boolean containsGroundRule(GroundRule rule);
 	
 	/**
-	 * @return every GroundKernel in this store
+	 * @return every GroundRule in this store
 	 */
-	public Iterable<GroundRule> getGroundKernels();
+	public Iterable<GroundRule> getGroundRules();
 	
 	/**
 	 * @return every {@link WeightedGroundRule} in this store
 	 */
-	public Iterable<WeightedGroundRule> getCompatibilityKernels();
+	public Iterable<WeightedGroundRule> getCompatibilityRules();
 	
 	/**
 	 * @return every {@link UnweightedGroundRule} in this store
 	 */
-	public Iterable<UnweightedGroundRule> getConstraintKernels();
+	public Iterable<UnweightedGroundRule> getConstraintRules();
 	
 	/**
-	 * Returns every GroundKernel that was instantiated by a given Kernel.
+	 * Returns every GroundRule that was instantiated by a given Rule.
 	 * 
-	 * @param k  the Kernel of the GroundKernels to return
-	 * @return the Kernel's GroundKernels
+	 * @param rule  the Rule of the GroundRules to return
+	 * @return the Rule's GroundRules
 	 */
-	public Iterable<GroundRule> getGroundKernels(Rule k);
+	public Iterable<GroundRule> getGroundRules(Rule rule);
 	
 	/**
-	 * @return the number of GroundKernels in this store
+	 * @return the number of GroundRules in this store
 	 */
 	public int size();
 	

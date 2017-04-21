@@ -144,10 +144,10 @@ public class LatentTopicNetworkMaxPseudoLikelihood_Naive extends VotedPerceptron
 		RandomVariableAtom[][] rvBlocks = blocker.getRVBlocks();
 		/* If true, exactly one Atom in the RV block must be 1.0. If false, at most one can. */
 		boolean[] exactlyOne = blocker.getExactlyOne();
-		/* Collects GroundCompatibilityKernels incident on each block of RandomVariableAtoms */
+		/* Collects GroundCompatibilityRules incident on each block of RandomVariableAtoms */
 		WeightedGroundRule[][] incidentGKs = blocker.getIncidentGKs();
 		
-		double[] expInc = new double[kernels.size()];
+		double[] expInc = new double[rules.size()];
 		
 		/* Accumulate the expected incompatibility over all atoms */
 		for (int iBlock = 0; iBlock < rvBlocks.length; iBlock++) {
@@ -177,7 +177,7 @@ public class LatentTopicNetworkMaxPseudoLikelihood_Naive extends VotedPerceptron
 					s[s.length-1] = new double[rvBlocks[iBlock].length];
 			}
 				
-			/* Compute the incompatibility of each sample for each kernel */
+			/* Compute the incompatibility of each sample for each rule */
 			HashMap<WeightedRule,double[]> incompatibilities = new HashMap<WeightedRule,double[]>();
 			/* Also compute the latent topic network log-loss of each sample -JF*/
 			double[] logLosses = new double[s.length];
@@ -188,18 +188,18 @@ public class LatentTopicNetworkMaxPseudoLikelihood_Naive extends VotedPerceptron
 				originalState[iSave] = rvBlocks[iBlock][iSave].getValue();
 			
 			/* Computes the probability */
-			for (GroundRule gk : incidentGKs[iBlock]) {
-				if (gk instanceof WeightedGroundRule) {
-					WeightedRule k = (WeightedRule) gk.getRule();
-					if (!incompatibilities.containsKey(k))
-						incompatibilities.put(k, new double[s.length]);
-					double[] inc = incompatibilities.get(k);
+			for (GroundRule groundRule : incidentGKs[iBlock]) {
+				if (groundRule instanceof WeightedGroundRule) {
+					WeightedRule rule = (WeightedRule) groundRule.getRule();
+					if (!incompatibilities.containsKey(rule))
+						incompatibilities.put(rule, new double[s.length]);
+					double[] inc = incompatibilities.get(rule);
 					for (int iSample = 0; iSample < s.length; iSample++) {
 						/* Changes the state of the block to the next point */
 						for (int iChange = 0; iChange < rvBlocks[iBlock].length; iChange++)
 							rvBlocks[iBlock][iChange].setValue(s[iSample][iChange]);
 						
-						inc[iSample] += ((WeightedGroundRule) gk).getIncompatibility();
+						inc[iSample] += ((WeightedGroundRule) groundRule).getIncompatibility();
 						
 						/* Compute the log loss terms for the block. -JF */
 						for (int iVar = 0; iVar < rvBlocks[iBlock].length; iVar++) {
@@ -223,9 +223,9 @@ public class LatentTopicNetworkMaxPseudoLikelihood_Naive extends VotedPerceptron
 				/* Compute the exponent */
 				double sum = 0.0;
 				for (Map.Entry<WeightedRule,double[]> e2 : incompatibilities.entrySet()) {
-					WeightedRule k = e2.getKey();
+					WeightedRule rule = e2.getKey();
 					double[] inc = e2.getValue();
-					sum -= k.getWeight().getWeight() * inc[j];
+					sum -= rule.getWeight().getWeight() * inc[j];
 				}
 				//add the log-loss term. -JF
 				sum += logLosses[j];
@@ -234,20 +234,20 @@ public class LatentTopicNetworkMaxPseudoLikelihood_Naive extends VotedPerceptron
 				Z += exp;
 				/* Compute the exp incomp for current atom */
 				for (Map.Entry<WeightedRule,double[]> e2 : incompatibilities.entrySet()) {
-					WeightedRule k = e2.getKey();
-					if (!expIncAtom.containsKey(k))
-						expIncAtom.put(k, 0.0);
-					double val = expIncAtom.get(k).doubleValue();
-					val += exp * incompatibilities.get(k)[j];
-					expIncAtom.put(k, val);
+					WeightedRule rule = e2.getKey();
+					if (!expIncAtom.containsKey(rule))
+						expIncAtom.put(rule, 0.0);
+					double val = expIncAtom.get(rule).doubleValue();
+					val += exp * incompatibilities.get(rule)[j];
+					expIncAtom.put(rule, val);
 				}
 			}
-			/* Finally, we add to the exp incomp for each kernel */ 
-			for (int i = 0; i < kernels.size(); i++) {
-				WeightedRule k = kernels.get(i);
-				if (expIncAtom.containsKey(k))
-					if (expIncAtom.get(k) > 0.0) 
-						expInc[i] += expIncAtom.get(k) / Z;
+			/* Finally, we add to the exp incomp for each rule */ 
+			for (int i = 0; i < rules.size(); i++) {
+				WeightedRule rule = rules.get(i);
+				if (expIncAtom.containsKey(rule))
+					if (expIncAtom.get(rule) > 0.0) 
+						expInc[i] += expIncAtom.get(rule) / Z;
 			}
 		}
 	

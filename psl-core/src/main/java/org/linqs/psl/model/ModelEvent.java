@@ -53,7 +53,7 @@ public class ModelEvent {
 	 * 
 	 * @param type  the Type of the new event
 	 * @param model  the Model for which the event occurred
-	 * @param rule  the Kernel related to the event
+	 * @param rule  the Rule related to the event
 	 */
 	public ModelEvent(Type type, Model model, Rule rule) {
 		this.type = type;
@@ -76,9 +76,9 @@ public class ModelEvent {
 	}
 
 	/**
-	 * @return the associated Kernel, or null if no Kernel is associated
+	 * @return the associated Rule, or null if no Rule is associated
 	 */
-	public Rule getKernel() {
+	public Rule getRule() {
 		return rule;
 	}
 	

@@ -31,7 +31,7 @@ import org.linqs.psl.application.inference.result.FullInferenceResult;
 import org.linqs.psl.application.inference.result.memory.MemoryFullInferenceResult;
 import org.linqs.psl.application.topicmodel.reasoner.admm.LatentTopicNetworkADMMReasoner;
 import org.linqs.psl.application.topicmodel.rule.LDAgroundLogLoss;
-import org.linqs.psl.application.util.GroundKernels;
+import org.linqs.psl.application.util.GroundRules;
 import org.linqs.psl.application.util.Grounding;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.ConfigManager;
@@ -150,7 +150,7 @@ public class LatentTopicNetwork implements ModelApplication {
 	
 	/**
 	 * Key for Boolean property indicating whether to initialize the ADMM variables to LDA, for theta.
-	 * The alternative is to initialize at the previous iteration.  LDA initialization may be best in high dimensions,
+	 * The alternative is to initialize at the previous iteration. LDA initialization may be best in high dimensions,
 	 * while previous iteration initialization may be best with strong weights.
 	 */
 	public static final String INIT_MSTEP_TO_LDA_THETA_KEY = CONFIG_PREFIX + ".initMStepToLDAtheta";
@@ -159,7 +159,7 @@ public class LatentTopicNetwork implements ModelApplication {
 	
 	/**
 	 * Key for Boolean property indicating whether to initialize the ADMM variables to LDA, for phi.
-	 * The alternative is to initialize at the previous iteration.  LDA initialization may be best in high dimensions,
+	 * The alternative is to initialize at the previous iteration. LDA initialization may be best in high dimensions,
 	 * while previous iteration initialization may be best with strong weights.
 	 */
 	public static final String INIT_MSTEP_TO_LDA_PHI_KEY = CONFIG_PREFIX + ".initMStepToLDAphi";
@@ -204,9 +204,9 @@ public class LatentTopicNetwork implements ModelApplication {
 	StandardPredicate[] Y;
 	StandardPredicate[] Z;
 	int firstWLearningIter = Integer.MAX_VALUE;
-    int wLearningGap = Integer.MAX_VALUE;
-    DataStore dataStore;
-    Database rvDBweightLearningTheta;		
+	int wLearningGap = Integer.MAX_VALUE;
+	DataStore dataStore;
+	Database rvDBweightLearningTheta;		
 	Database observedDBweightLearningTheta;
 	Database rvDBweightLearningPhi;		
 	Database observedDBweightLearningPhi;
@@ -242,7 +242,7 @@ public class LatentTopicNetwork implements ModelApplication {
 			this.dataStore = dataStore;
 			rvPartitionTheta = dataStore.getNewPartition();
 			labelPartitionTheta = dataStore.getNewPartition();
-			rvPartitionPhi  = dataStore.getNewPartition();
+			rvPartitionPhi = dataStore.getNewPartition();
 			labelPartitionPhi = dataStore.getNewPartition();
 		}
 	}
@@ -350,9 +350,9 @@ public class LatentTopicNetwork implements ModelApplication {
 				theta[j][k] /=	total;
 			}
 		}
-		for (int k = 0; k < numTopics; k++)  {
+		for (int k = 0; k < numTopics; k++) {
 			total = 0;
-			for  (int w = 0; w < numWords; w++) {
+			for (int w = 0; w < numWords; w++) {
 				phi[k][w] = Math.random();
 				total += phi[k][w];
 			}
@@ -381,7 +381,7 @@ public class LatentTopicNetwork implements ModelApplication {
 		Grounding.groundAll(model, atomManager, reasoner);
 		
 		//Add log loss terms
-		log.info("Adding log loss ground kernels");
+		log.info("Adding log loss ground rules");
 		UniqueID row; //doc, for theta, or topic, for phi
 		UniqueID col; //topic, for theta, or word, for phi
 		
@@ -403,9 +403,9 @@ public class LatentTopicNetwork implements ModelApplication {
 				literals.add(ga);
 				coefficients.add(expectedCounts[j][k]);
 			}
-			LDAgroundLogLoss GLL = new LDAgroundLogLoss(null, literals, coefficients, expectedCounts[j]);
-			GLL.setWeight(new PositiveWeight(1));
-			reasoner.addGroundRule(GLL);
+			LDAgroundLogLoss gll = new LDAgroundLogLoss(null, literals, coefficients, expectedCounts[j]);
+			gll.setWeight(new PositiveWeight(1));
+			reasoner.addGroundRule(gll);
 		}
 	}
 	
@@ -491,7 +491,7 @@ public class LatentTopicNetwork implements ModelApplication {
 		
 			for (GroundAtom atom : Queries.getAllAtoms(dbTheta, p)) {	
 				//println atom.toString() + "\t" + atom.getValue();
-				Constant[] terms  = atom.getArguments();
+				Constant[] terms = atom.getArguments();
 				theta[Integer.valueOf(terms[0].toString())][Integer.valueOf(terms[1].toString())] = atom.getValue();
 			}
 			
@@ -519,7 +519,7 @@ public class LatentTopicNetwork implements ModelApplication {
 			log.info("finished for phi");
 			
 			for (GroundAtom atom : Queries.getAllAtoms(dbPhi, p)) {	
-				Constant[] terms  = atom.getArguments();
+				Constant[] terms = atom.getArguments();
 				phi[Integer.valueOf(terms[0].toString())][Integer.valueOf(terms[1].toString())] = atom.getValue();
 			}
 			
@@ -536,9 +536,9 @@ public class LatentTopicNetwork implements ModelApplication {
 			}
 			
 			//normalizing phi
-			for (int k = 0; k < numTopics; k++)  {
+			for (int k = 0; k < numTopics; k++) {
 				double total = 0;
-				for  (int w = 0; w < numWords; w++) {
+				for (int w = 0; w < numWords; w++) {
 					total += phi[k][w];
 				}
 				for (int w = 0; w < numWords; w++) {
@@ -685,8 +685,8 @@ public class LatentTopicNetwork implements ModelApplication {
 			count++;
 		}
 		
-		double incompatibility = GroundKernels.getTotalWeightedIncompatibility(reasoner.getCompatibilityKernels());
-		double infeasibility = GroundKernels.getInfeasibilityNorm(reasoner.getConstraintKernels());
+		double incompatibility = GroundRules.getTotalWeightedIncompatibility(reasoner.getCompatibilityRules());
+		double infeasibility = GroundRules.getInfeasibilityNorm(reasoner.getConstraintRules());
 		int size = reasoner.size();
 		return new MemoryFullInferenceResult(incompatibility, infeasibility, count, size);
 	}
@@ -717,7 +717,7 @@ public class LatentTopicNetwork implements ModelApplication {
 				for (int k = 0; k < numTopics; k++) {
 					prob = prob + theta[j][k] * phi[k][word];
 				}
-				ll  += count * Math.log(prob);
+				ll += count * Math.log(prob);
 			}
 		}
 		return ll;

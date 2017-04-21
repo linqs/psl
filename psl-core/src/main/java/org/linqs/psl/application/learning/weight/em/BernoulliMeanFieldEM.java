@@ -106,10 +106,10 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 				 * Iterates over each potential which is a function of the current
 				 * latent random variable
 				 */
-				for(GroundRule gk : latentRV.getRegisteredGroundKernels()) {
-					if (gk instanceof WeightedGroundRule) {
-						if (reasoner.containsGroundKernel(gk)) {
-							WeightedGroundRule gck = (WeightedGroundRule) gk;
+				for(GroundRule groundRule : latentRV.getRegisteredGroundRules()) {
+					if (groundRule instanceof WeightedGroundRule) {
+						if (reasoner.containsGroundRule(groundRule)) {
+							WeightedGroundRule gck = (WeightedGroundRule) groundRule;
 							incidentLatentRVs.clear();
 							
 							/* Collects latent variables incident on this potential */
@@ -150,11 +150,11 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 								throw new IllegalStateException("Expected there to be at least one incident latent RV.");
 						}
 						else
-							log.warn("Ground kernel {} registered to atom {} is not in " +
-									"the current distribution. Skipping.", gk, latentRV);
+							log.warn("Ground rule {} registered to atom {} is not in " +
+									"the current distribution. Skipping.", groundRule, latentRV);
 					}
 					else
-						throw new IllegalStateException("Model contains a constraint: " + gk);
+						throw new IllegalStateException("Model contains a constraint: " + groundRule);
 				}
 				double newMean = 1 / (1 + Math.exp(c));
 				if (newMean == 0.0)
@@ -175,15 +175,15 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 	 */
 	@Override
 	protected double[] computeObservedIncomp() {
-		numGroundings = new double[kernels.size()];
-		double[] truthIncompatibility = new double[kernels.size()];
+		numGroundings = new double[rules.size()];
+		double[] truthIncompatibility = new double[rules.size()];
 		setLabeledRandomVariables();
 		
 		/* Computes the expected observed incompatibilities and numbers of groundings */
 		Vector<RandomVariableAtom> incidentLatentRVs = new Vector<RandomVariableAtom>();
-		for (int iKernel = 0; iKernel < kernels.size(); iKernel++) {
-			for (GroundRule gk : reasoner.getGroundKernels(kernels.get(iKernel))) {
-				WeightedGroundRule gck = (WeightedGroundRule) gk;
+		for (int iRule = 0; iRule < rules.size(); iRule++) {
+			for (GroundRule groundRule : reasoner.getGroundRules(rules.get(iRule))) {
+				WeightedGroundRule gck = (WeightedGroundRule) groundRule;
 				incidentLatentRVs.clear();
 				
 				/* Collects latent variables incident on this potential */
@@ -212,9 +212,9 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 						}
 					}
 					
-					truthIncompatibility[iKernel] += gck.getIncompatibility() * meanFieldProb;
+					truthIncompatibility[iRule] += gck.getIncompatibility() * meanFieldProb;
 				}
-				numGroundings[iKernel]++;
+				numGroundings[iRule]++;
 			}
 		}
 		
@@ -223,15 +223,15 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 
 	@Override
 	protected double[] computeExpectedIncomp() {
-		double[] expIncomp = new double[kernels.size()];
+		double[] expIncomp = new double[rules.size()];
 		
 		/* Computes the MPE state */
 		reasoner.optimize();
 		
 		/* Computes incompatibility */
-		for (int i = 0; i < kernels.size(); i++) {
-			for (GroundRule gk : reasoner.getGroundKernels(kernels.get(i))) {
-				expIncomp[i] += ((WeightedGroundRule) gk).getIncompatibility();
+		for (int i = 0; i < rules.size(); i++) {
+			for (GroundRule groundRule : reasoner.getGroundRules(rules.get(i))) {
+				expIncomp[i] += ((WeightedGroundRule) groundRule).getIncompatibility();
 			}
 		}
 		
@@ -265,7 +265,7 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 		
 		/* Removes constraints */
 		for (GroundValueConstraint con : labelConstraints)
-			reasoner.removeGroundKernel(con);
+			reasoner.removeGroundRule(con);
 		
 		/* Sets mean field */
 		means.clear();
@@ -292,7 +292,7 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 		 */
 		setLabeledRandomVariables();
 		Vector<RandomVariableAtom> incidentLatentRVs = new Vector<RandomVariableAtom>();
-		for (WeightedGroundRule gck : reasoner.getCompatibilityKernels()) {
+		for (WeightedGroundRule gck : reasoner.getCompatibilityRules()) {
 			incidentLatentRVs.clear();
 			
 			/* Collects latent variables incident on this potential */
