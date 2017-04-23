@@ -36,6 +36,8 @@ import org.linqs.psl.reasoner.function.FunctionSummand;
 import org.linqs.psl.reasoner.function.FunctionTerm;
 import org.linqs.psl.reasoner.function.MaxFunction;
 import org.linqs.psl.reasoner.function.PowerOfTwo;
+import org.linqs.psl.reasoner.term.MemoryTermStore;
+import org.linqs.psl.reasoner.term.TermStore;
 
 import com.google.common.collect.Iterables;
 import org.apache.commons.collections4.BidiMap;
@@ -131,16 +133,14 @@ public class ADMMReasoner implements Reasoner {
 	private double lagrangePenalty, augmentedLagrangePenalty;
 
 	// TEST
-	private GroundRuleStore store;
+	protected GroundRuleStore groundRuleStore;
+	protected TermStore<ADMMObjectiveTerm> termStore;
 
 	/**
 	 * Ordered list of GroundRules for looking up indices in terms.
 	 * The integer value corresponds to the index into terms.
 	 */
 	protected Map<GroundRule, Integer> orderedGroundRules;
-
-	/** Ground rules wrapped to be objective function terms for ADMM */
-	protected List<ADMMObjectiveTerm> terms;
 
 	/**
 	 * Collection of variables and their associated indices for looking up indices in z.
@@ -173,7 +173,7 @@ public class ADMMReasoner implements Reasoner {
 
 		rebuildModel = true;
 
-		store = new MemoryGroundRuleStore();
+		groundRuleStore = new MemoryGroundRuleStore();
 
 		// Multithreading
 		numThreads = config.getInt(NUM_THREADS_KEY, NUM_THREADS_DEFAULT);
@@ -217,26 +217,26 @@ public class ADMMReasoner implements Reasoner {
 		log.debug("(Re)building reasoner data structures");
 
 		/* Initializes data structures */
-		orderedGroundRules = new HashMap<GroundRule, Integer>(store.size());
-		terms = new ArrayList<ADMMObjectiveTerm>(store.size());
+		orderedGroundRules = new HashMap<GroundRule, Integer>(groundRuleStore.size());
+		termStore = new MemoryTermStore<ADMMObjectiveTerm>(groundRuleStore.size());
 
 		variables = new DualHashBidiMap<Integer, AtomFunctionVariable>();
 
-		z = new ArrayList<Double>(store.size() * 2);
-		lb = new ArrayList<Double>(store.size() * 2);
-		ub = new ArrayList<Double>(store.size() * 2);
-		varLocations = new ArrayList<List<VariableLocation>>(store.size() * 2);
+		z = new ArrayList<Double>(groundRuleStore.size() * 2);
+		lb = new ArrayList<Double>(groundRuleStore.size() * 2);
+		ub = new ArrayList<Double>(groundRuleStore.size() * 2);
+		varLocations = new ArrayList<List<VariableLocation>>(groundRuleStore.size() * 2);
 		n = 0;
 
 		/* Initializes objective terms from ground rules */
-		log.debug("Initializing objective terms for {} ground rules", store.size());
-		for (GroundRule groundRule : store.getGroundRules()) {
+		log.debug("Initializing objective terms for {} ground rules", groundRuleStore.size());
+		for (GroundRule groundRule : groundRuleStore.getGroundRules()) {
 			ADMMObjectiveTerm term = createTerm(groundRule);
 
 			if (term.x.length > 0) {
 				registerLocalVariableCopies(term);
 				orderedGroundRules.put(groundRule, orderedGroundRules.size());
-				terms.add(term);
+				termStore.add(term);
 			}
 		}
 
@@ -344,7 +344,7 @@ public class ADMMReasoner implements Reasoner {
 	 */
 	public double getDualIncompatibility(GroundRule groundRule) {
 		int index = orderedGroundRules.get(groundRule);
-		ADMMObjectiveTerm term = terms.get(index);
+		ADMMObjectiveTerm term = termStore.get(index);
 		for (int i = 0; i < term.zIndices.length; i++) {
 			int zIndex = term.zIndices[i];
 			variables.get(zIndex).setValue(term.x[i]);
@@ -375,9 +375,9 @@ public class ADMMReasoner implements Reasoner {
 
 
 			// Determine the section of the terms this thread will look at
-			int tIncrement = (int)(Math.ceil((double)terms.size() / (double)numThreads));
+			int tIncrement = (int)(Math.ceil((double)termStore.size() / (double)numThreads));
 			this.termStart = tIncrement * index;
-			this.termEnd = Math.min(termStart + tIncrement, terms.size());
+			this.termEnd = Math.min(termStart + tIncrement, termStore.size());
 
 			// Determine the section of the z vector this thread will look at
 			int zIncrement = (int)(Math.ceil((double)z.size() / (double)numThreads));
@@ -413,7 +413,7 @@ public class ADMMReasoner implements Reasoner {
 
 				/* Solves each local function */
 				for (int i = termStart; i < termEnd; i ++)
-					terms.get(i).updateLagrange().minimize();
+					termStore.get(i).updateLagrange().minimize();
 
 				// Ensures all threads are at the same point
 				awaitUninterruptibly(workerBarrier);
@@ -482,7 +482,7 @@ public class ADMMReasoner implements Reasoner {
 		if (rebuildModel)
 			buildGroundModel();
 
-		log.debug("Performing optimization with {} variables and {} terms.", z.size(), terms.size());
+		log.debug("Performing optimization with {} variables and {} terms.", z.size(), termStore.size());
 
 		// Starts up the computation threads
 		ADMMTask[] tasks = new ADMMTask[numThreads];
@@ -581,11 +581,13 @@ public class ADMMReasoner implements Reasoner {
 
 	@Override
 	public void close() {
-		store.close();
-		store = null;
+		groundRuleStore.close();
+		groundRuleStore = null;
+
+		termStore.close();
+		termStore = null;
 
 		orderedGroundRules = null;
-		terms = null;
 		variables = null;
 		z = null;
 		lb = null;
@@ -702,7 +704,7 @@ public class ADMMReasoner implements Reasoner {
 
 	@Override
 	public void addGroundRule(GroundRule groundRule) {
-		store.addGroundRule(groundRule);
+		groundRuleStore.addGroundRule(groundRule);
 		rebuildModel = true;
 	}
 
@@ -717,7 +719,7 @@ public class ADMMReasoner implements Reasoner {
 		if (!rebuildModel) {
 			int index = orderedGroundRules.get(groundRule);
 			if (index != -1) {
-				((WeightedObjectiveTerm) terms.get(index)).setWeight(groundRule.getWeight().getWeight());
+				((WeightedObjectiveTerm) termStore.get(index)).setWeight(groundRule.getWeight().getWeight());
 			}
 		}
 	}
@@ -733,39 +735,39 @@ public class ADMMReasoner implements Reasoner {
 
 	@Override
 	public boolean containsGroundRule(GroundRule groundRule) {
-		return store.containsGroundRule(groundRule);
+		return groundRuleStore.containsGroundRule(groundRule);
 	}
 
 	@Override
 	public Iterable<WeightedGroundRule> getCompatibilityRules() {
-		return store.getCompatibilityRules();
+		return groundRuleStore.getCompatibilityRules();
 	}
 
 	@Override
 	public Iterable<UnweightedGroundRule> getConstraintRules() {
-		return store.getConstraintRules();
+		return groundRuleStore.getConstraintRules();
 	}
 
 	@Override
 	public Iterable<GroundRule> getGroundRules() {
-		return store.getGroundRules();
+		return groundRuleStore.getGroundRules();
 	}
 
 	@Override
 	public Iterable<GroundRule> getGroundRules(Rule rule) {
-		return store.getGroundRules(rule);
+		return groundRuleStore.getGroundRules(rule);
 	}
 
 	@Override
 	public void removeGroundRule(GroundRule groundRule) {
-		store.removeGroundRule(groundRule);
+		groundRuleStore.removeGroundRule(groundRule);
 
 		rebuildModel = true;
 	}
 
 	@Override
 	public int size() {
-		return store.size();
+		return groundRuleStore.size();
 	}
 
 }

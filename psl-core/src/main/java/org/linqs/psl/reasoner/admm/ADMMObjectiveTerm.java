@@ -17,12 +17,14 @@
  */
 package org.linqs.psl.reasoner.admm;
 
+import org.linqs.psl.reasoner.term.Term;
+
 /**
  * A term in the objective to be optimized by an {@link ADMMReasoner}.
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-public abstract class ADMMObjectiveTerm {
+public abstract class ADMMObjectiveTerm implements Term {
 	protected final ADMMReasoner reasoner;
 	protected final double[] x;
 	protected final double[] y;
