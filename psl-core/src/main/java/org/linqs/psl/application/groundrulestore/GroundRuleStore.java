@@ -74,6 +74,12 @@ public interface GroundRuleStore {
 	public void changedGroundRuleWeights();
 	
 	/**
+	 * Release any memory held by the store.
+	 * A store that has been closed cannot be used again.
+	 */
+	public void close();
+	
+	/**
 	 * Removes a GroundRule from this store.
 	 * 
 	 * @param rule  the GroundRule to remove

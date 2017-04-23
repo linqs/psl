@@ -34,21 +34,17 @@ import com.google.common.collect.Iterables;
  */
 public class MemoryGroundRuleStore implements GroundRuleStore {
 
-	protected final SetValuedMap<Rule, GroundRule> groundRules;
+	protected SetValuedMap<Rule, GroundRule> groundRules;
 	
 	public MemoryGroundRuleStore() {
 		groundRules = new HashSetValuedHashMap<Rule, GroundRule>();
 	}
 	
 	@Override
-	public boolean containsGroundRule(GroundRule groundRule) {
-		return groundRules.containsMapping(groundRule.getRule(), groundRule);
-	}
-	
-	@Override
 	public void addGroundRule(GroundRule groundRule) {
-		if (!groundRules.put(groundRule.getRule(), groundRule))
+		if (!groundRules.put(groundRule.getRule(), groundRule)) {
 			throw new IllegalArgumentException("GroundRule has already been added: " + groundRule);
+		}
 	}
 	
 	@Override
@@ -57,7 +53,7 @@ public class MemoryGroundRuleStore implements GroundRuleStore {
 	}
 
 	@Override
-	public void changedGroundRuleWeight(WeightedGroundRule k) {
+	public void changedGroundRuleWeight(WeightedGroundRule rule) {
 		/* Intentionally blank */
 	}
 
@@ -67,12 +63,8 @@ public class MemoryGroundRuleStore implements GroundRuleStore {
 	}
 	
 	@Override
-	public void removeGroundRule(GroundRule groundRule) {
-		groundRules.removeMapping(groundRule.getRule(), groundRule);
-	}
-	
-	public Iterable<GroundRule> getGroundRules() {
-		return groundRules.values();
+	public boolean containsGroundRule(GroundRule groundRule) {
+		return groundRules.containsMapping(groundRule.getRule(), groundRule);
 	}
 	
 	@Override
@@ -80,17 +72,34 @@ public class MemoryGroundRuleStore implements GroundRuleStore {
 		return Iterables.filter(groundRules.values(), WeightedGroundRule.class);
 	}
 	
+	@Override
 	public Iterable<UnweightedGroundRule> getConstraintRules() {
 		return Iterables.filter(groundRules.values(), UnweightedGroundRule.class);
 	}
 	
 	@Override
-	public Iterable<GroundRule> getGroundRules(Rule k) {
-		return groundRules.get(k);
+	public Iterable<GroundRule> getGroundRules() {
+		return groundRules.values();
+	}
+	
+	@Override
+	public Iterable<GroundRule> getGroundRules(Rule rule) {
+		return groundRules.get(rule);
+	}
+	
+	@Override
+	public void removeGroundRule(GroundRule groundRule) {
+		groundRules.removeMapping(groundRule.getRule(), groundRule);
 	}
 	
 	@Override
 	public int size() {
 		return groundRules.size();
+	}
+
+	@Override
+	public void close() {
+		groundRules.clear();
+		groundRules = null;
 	}
 }

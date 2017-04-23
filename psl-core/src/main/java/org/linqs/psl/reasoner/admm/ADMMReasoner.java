@@ -17,18 +17,8 @@
  */
 package org.linqs.psl.reasoner.admm;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.Semaphore;
-
-import org.apache.commons.collections4.BidiMap;
-import org.apache.commons.collections4.bidimap.DualHashBidiMap;
-import org.apache.commons.collections4.set.ListOrderedSet;
+import org.linqs.psl.application.groundrulestore.GroundRuleStore;
+import org.linqs.psl.application.groundrulestore.MemoryGroundRuleStore;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.ConfigManager;
 import org.linqs.psl.model.rule.GroundRule;
@@ -46,12 +36,24 @@ import org.linqs.psl.reasoner.function.FunctionSummand;
 import org.linqs.psl.reasoner.function.FunctionTerm;
 import org.linqs.psl.reasoner.function.MaxFunction;
 import org.linqs.psl.reasoner.function.PowerOfTwo;
+
+import com.google.common.collect.Iterables;
+import org.apache.commons.collections4.BidiMap;
+import org.apache.commons.collections4.SetValuedMap;
+import org.apache.commons.collections4.bidimap.DualHashBidiMap;
+import org.apache.commons.collections4.multimap.HashSetValuedHashMap;
+import org.apache.commons.collections4.set.ListOrderedSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.commons.collections4.SetValuedMap;
-import org.apache.commons.collections4.multimap.HashSetValuedHashMap;
-import com.google.common.collect.Iterables;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.Semaphore;
 
 /**
  * Uses an ADMM optimization method to optimize its GroundRules.
@@ -128,8 +130,8 @@ public class ADMMReasoner implements Reasoner {
 	private boolean rebuildModel;
 	private double lagrangePenalty, augmentedLagrangePenalty;
 
-	/** Ground rules defining the objective function */
-	protected SetValuedMap<Rule, GroundRule> groundRules;
+	// TEST
+	private GroundRuleStore store;
 
 	/**
 	 * Ordered list of GroundRules for looking up indices in terms.
@@ -171,7 +173,7 @@ public class ADMMReasoner implements Reasoner {
 
 		rebuildModel = true;
 
-		groundRules = new HashSetValuedHashMap<Rule, GroundRule>();
+		store = new MemoryGroundRuleStore();
 
 		// Multithreading
 		numThreads = config.getInt(NUM_THREADS_KEY, NUM_THREADS_DEFAULT);
@@ -211,63 +213,24 @@ public class ADMMReasoner implements Reasoner {
 		return this.augmentedLagrangePenalty;
 	}
 
-	@Override
-	public void addGroundRule(GroundRule groundRule) {
-		groundRules.put(groundRule.getRule(), groundRule);
-		rebuildModel = true;
-	}
-
-	@Override
-	public void changedGroundRule(GroundRule groundRule) {
-		rebuildModel = true;
-	}
-
-	@Override
-	public void changedGroundRuleWeight(WeightedGroundRule groundRule) {
-		if (!rebuildModel) {
-			int index = orderedGroundRules.get(groundRule);
-			if (index != -1) {
-				((WeightedObjectiveTerm) terms.get(index)).setWeight(groundRule.getWeight().getWeight());
-			}
-		}
-	}
-
-	@Override
-	public void changedGroundRuleWeights() {
-		if (!rebuildModel)
-			for (WeightedGroundRule groundRule : getCompatibilityRules())
-				changedGroundRuleWeight(groundRule);
-	}
-
-	@Override
-	public void removeGroundRule(GroundRule groundRule) {
-		groundRules.removeMapping(groundRule.getRule(), groundRule);
-		rebuildModel = true;
-	}
-
-	@Override
-	public boolean containsGroundRule(GroundRule groundRule) {
-		return groundRules.containsMapping(groundRule.getRule(), groundRule);
-	}
-
 	protected void buildGroundModel() {
 		log.debug("(Re)building reasoner data structures");
 
 		/* Initializes data structures */
-		orderedGroundRules = new HashMap<GroundRule, Integer>(groundRules.size());
-		terms = new ArrayList<ADMMObjectiveTerm>(groundRules.size());
+		orderedGroundRules = new HashMap<GroundRule, Integer>(store.size());
+		terms = new ArrayList<ADMMObjectiveTerm>(store.size());
 
 		variables = new DualHashBidiMap<Integer, AtomFunctionVariable>();
 
-		z = new ArrayList<Double>(groundRules.size() * 2);
-		lb = new ArrayList<Double>(groundRules.size() * 2);
-		ub = new ArrayList<Double>(groundRules.size() * 2);
-		varLocations = new ArrayList<List<VariableLocation>>(groundRules.size() * 2);
+		z = new ArrayList<Double>(store.size() * 2);
+		lb = new ArrayList<Double>(store.size() * 2);
+		ub = new ArrayList<Double>(store.size() * 2);
+		varLocations = new ArrayList<List<VariableLocation>>(store.size() * 2);
 		n = 0;
 
 		/* Initializes objective terms from ground rules */
-		log.debug("Initializing objective terms for {} ground rules", groundRules.size());
-		for (GroundRule groundRule : groundRules.values()) {
+		log.debug("Initializing objective terms for {} ground rules", store.size());
+		for (GroundRule groundRule : store.getGroundRules()) {
 			ADMMObjectiveTerm term = createTerm(groundRule);
 
 			if (term.x.length > 0) {
@@ -617,32 +580,10 @@ public class ADMMReasoner implements Reasoner {
 	}
 
 	@Override
-	public Iterable<GroundRule> getGroundRules() {
-		return groundRules.values();
-	}
-
-	@Override
-	public Iterable<WeightedGroundRule> getCompatibilityRules() {
-		return Iterables.filter(groundRules.values(), WeightedGroundRule.class);
-	}
-
-	public Iterable<UnweightedGroundRule> getConstraintRules() {
-		return Iterables.filter(groundRules.values(), UnweightedGroundRule.class);
-	}
-
-	@Override
-	public Iterable<GroundRule> getGroundRules(Rule k) {
-		return groundRules.get(k);
-	}
-
-	@Override
-	public int size() {
-		return groundRules.size();
-	}
-
-	@Override
 	public void close() {
-		groundRules = null;
+		store.close();
+		store = null;
+
 		orderedGroundRules = null;
 		terms = null;
 		variables = null;
@@ -650,14 +591,6 @@ public class ADMMReasoner implements Reasoner {
 		lb = null;
 		ub = null;
 		varLocations = null;
-
-//		try {
-//			log.debug("Shutting down thread pool.");
-//			threadPool.shutdownNow();
-//			threadPool.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
-//		} catch (InterruptedException e) {
-//			throw new RuntimeException(e);
-//		}
 	}
 
 	private void registerLocalVariableCopies(ADMMObjectiveTerm term) {
@@ -763,6 +696,76 @@ public class ADMMReasoner implements Reasoner {
 		public int getLocalIndex() {
 			return localIndex;
 		}
+	}
+
+	// TEST(eriq): Remove once we remove GRS from Reasoner
+
+	@Override
+	public void addGroundRule(GroundRule groundRule) {
+		store.addGroundRule(groundRule);
+		rebuildModel = true;
+	}
+
+	@Override
+	public void changedGroundRule(GroundRule groundRule) {
+		rebuildModel = true;
+	}
+
+	// TODO(eriq): Needs to be reworked into GRS/TS/TG.
+	@Override
+	public void changedGroundRuleWeight(WeightedGroundRule groundRule) {
+		if (!rebuildModel) {
+			int index = orderedGroundRules.get(groundRule);
+			if (index != -1) {
+				((WeightedObjectiveTerm) terms.get(index)).setWeight(groundRule.getWeight().getWeight());
+			}
+		}
+	}
+
+	@Override
+	public void changedGroundRuleWeights() {
+		if (!rebuildModel) {
+			for (WeightedGroundRule groundRule : getCompatibilityRules()) {
+				changedGroundRuleWeight(groundRule);
+			}
+		}
+	}
+
+	@Override
+	public boolean containsGroundRule(GroundRule groundRule) {
+		return store.containsGroundRule(groundRule);
+	}
+
+	@Override
+	public Iterable<WeightedGroundRule> getCompatibilityRules() {
+		return store.getCompatibilityRules();
+	}
+
+	@Override
+	public Iterable<UnweightedGroundRule> getConstraintRules() {
+		return store.getConstraintRules();
+	}
+
+	@Override
+	public Iterable<GroundRule> getGroundRules() {
+		return store.getGroundRules();
+	}
+
+	@Override
+	public Iterable<GroundRule> getGroundRules(Rule rule) {
+		return store.getGroundRules(rule);
+	}
+
+	@Override
+	public void removeGroundRule(GroundRule groundRule) {
+		store.removeGroundRule(groundRule);
+
+		rebuildModel = true;
+	}
+
+	@Override
+	public int size() {
+		return store.size();
 	}
 
 }
