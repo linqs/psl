@@ -17,15 +17,8 @@
  */
 package org.linqs.psl.reasoner.term;
 
-import java.util.ArrayList;
-import java.util.List;
+import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 
-public interface TermStore<E extends Term> extends Iterable<E>{
-	public void add(E term);
-
-	public void close();
-
-	public E get(int index);
-
-	public int size();
+public interface TermGenerator<E extends Term> {
+	public void generateTerms(GroundRuleStore ruleStore, TermStore<E> termStore);
 }

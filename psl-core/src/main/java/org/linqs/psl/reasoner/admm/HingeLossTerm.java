@@ -52,7 +52,7 @@ class HingeLossTerm extends HyperplaneTerm implements WeightedObjectiveTerm {
 		 * argmin stepSize/2 * \|x - z + y / stepSize \|_2^2
 		 */
 		for (int i = 0; i < x.length; i++) {
-			x[i] = reasoner.z.get(zIndices[i]) - y[i] / reasoner.stepSize;
+			x[i] = reasoner.getConsensusValue(zIndices[i]) - y[i] / reasoner.getStepSize();
 			total += coeffs[i] * x[i];
 		}
 		
@@ -67,8 +67,8 @@ class HingeLossTerm extends HyperplaneTerm implements WeightedObjectiveTerm {
 		 */
 		total = 0.0;
 		for (int i = 0; i < x.length; i++) {
-			x[i] = reasoner.z.get(zIndices[i]) - y[i] / reasoner.stepSize;
-			x[i] -= weight * coeffs[i] / reasoner.stepSize;
+			x[i] = reasoner.getConsensusValue(zIndices[i]) - y[i] / reasoner.getStepSize();
+			x[i] -= weight * coeffs[i] / reasoner.getStepSize();
 			total += coeffs[i] * x[i];
 		}
 		

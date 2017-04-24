@@ -19,6 +19,7 @@ package org.linqs.psl.reasoner.term;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Iterator;
 
 public class MemoryTermStore<E extends Term> implements TermStore<E> {
 	private static final int DEFAULT_INITIAL_SIZE = 1000;
@@ -49,4 +50,8 @@ public class MemoryTermStore<E extends Term> implements TermStore<E> {
 	public int size() {
 		return store.size();
 	}
+
+   public Iterator<E> iterator() {
+      return store.iterator();
+   }
 }

@@ -30,6 +30,9 @@ public abstract class ADMMObjectiveTerm implements Term {
 	protected final double[] y;
 	protected final int[] zIndices;
 	
+	/**
+	 * Caller releases control of |zIndices|.
+	 */
 	public ADMMObjectiveTerm(ADMMReasoner reasoner, int[] zIndices) {
 		this.reasoner = reasoner;
 		
@@ -39,8 +42,9 @@ public abstract class ADMMObjectiveTerm implements Term {
 		this.zIndices = zIndices;
 		
 		/* This loop ensures that the reasoner, when it first computes y, will keep it at 0 */
-		for (int i = 0; i < x.length; i++)
-			x[i] = reasoner.z.get(zIndices[i]);
+		for (int i = 0; i < x.length; i++) {
+			x[i] = reasoner.getConsensusValue(zIndices[i]);
+      }
 	}
 	
 	/**
@@ -55,7 +59,7 @@ public abstract class ADMMObjectiveTerm implements Term {
 	 */
 	protected ADMMObjectiveTerm updateLagrange() {
 		for (int i = 0; i < y.length; i++) {
-			y[i] = y[i] + reasoner.stepSize * (x[i] - reasoner.z.get(zIndices[i]));
+			y[i] = y[i] + reasoner.getStepSize() * (x[i] - reasoner.getConsensusValue(zIndices[i]));
 		}
 		
 		return this;

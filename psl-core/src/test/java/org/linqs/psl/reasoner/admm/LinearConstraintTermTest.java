@@ -19,8 +19,6 @@ package org.linqs.psl.reasoner.admm;
 
 import static org.junit.Assert.assertEquals;
 
-import java.util.Vector;
-
 import org.apache.commons.configuration.ConfigurationException;
 import org.junit.Before;
 import org.junit.Test;
@@ -31,13 +29,11 @@ import org.linqs.psl.reasoner.admm.LinearConstraintTerm;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 
 public class LinearConstraintTermTest {
-	
 	private ConfigBundle config;
 	
 	@Before
 	public final void setUp() throws ConfigurationException {
-		ConfigManager manager = ConfigManager.getManager();
-		config = manager.getBundle("dummy");
+		config = ConfigManager.getManager().getBundle("dummy");
 	}
 	
 	@Test
@@ -90,21 +86,24 @@ public class LinearConstraintTermTest {
 			FunctionComparator comparator, final double stepSize, double[] expected) {
 		config.setProperty("admmreasoner.stepsize", stepSize);
 		ADMMReasoner reasoner = new ADMMReasoner(config);
-		reasoner.z = new Vector<Double>(z.length);
-		for (int i = 0; i < z.length; i++)
-			reasoner.z.add(z[i]);
+
+		for (double zValue : z) {
+			reasoner.addGlobalVariable(new FakeFunctionVariable(zValue));
+		}
 		
 		int[] zIndices = new int[z.length];
-		for (int i = 0; i < z.length; i++)
+		for (int i = 0; i < z.length; i++) {
 			zIndices[i] = i;
+		}
 		
 		LinearConstraintTerm term = new LinearConstraintTerm(reasoner, zIndices, coeffs, constant, comparator);
-		for (int i = 0; i < z.length; i++)
+		for (int i = 0; i < z.length; i++) {
 			term.y[i] = y[i];
+		}
 		term.minimize();
 		
-		for (int i = 0; i < z.length; i++)
+		for (int i = 0; i < z.length; i++) {
 			assertEquals(expected[i], term.x[i], 5e-5);
+		}
 	}
-
 }

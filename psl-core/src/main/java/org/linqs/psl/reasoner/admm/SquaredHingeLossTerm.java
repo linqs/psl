@@ -40,7 +40,7 @@ class SquaredHingeLossTerm extends SquaredHyperplaneTerm {
 		 * argmin stepSize/2 * \|x - z + y / stepSize \|_2^2
 		 */
 		for (int i = 0; i < x.length; i++) {
-			x[i] = reasoner.z.get(zIndices[i]) - y[i] / reasoner.stepSize;
+			x[i] = reasoner.getConsensusValue(zIndices[i]) - y[i] / reasoner.getStepSize();
 			total += coeffs[i] * x[i];
 		}
 		

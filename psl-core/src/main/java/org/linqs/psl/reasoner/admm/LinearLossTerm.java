@@ -23,11 +23,14 @@ package org.linqs.psl.reasoner.admm;
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-class LinearLossTerm extends ADMMObjectiveTerm implements WeightedObjectiveTerm {
+public class LinearLossTerm extends ADMMObjectiveTerm implements WeightedObjectiveTerm {
 	
 	private final double[] coeffs;
 	private double weight;
-	
+
+	/**
+	 * Caller releases control of |zIndices| and |coeffs|.
+	 */
 	LinearLossTerm(ADMMReasoner reasoner, int[] zIndices, double[] coeffs, double weight) {
 		super(reasoner, zIndices);
 		this.coeffs = coeffs;
@@ -42,8 +45,8 @@ class LinearLossTerm extends ADMMObjectiveTerm implements WeightedObjectiveTerm 
 	@Override
 	protected void minimize() {
 		for (int i = 0; i < x.length; i++) {
-			x[i] = reasoner.z.get(zIndices[i]) - y[i] / reasoner.stepSize;
-			x[i] -= weight * coeffs[i] / reasoner.stepSize;
+			x[i] = reasoner.getConsensusValue(zIndices[i]) - y[i] / reasoner.getStepSize();
+			x[i] -= weight * coeffs[i] / reasoner.getStepSize();
 		}
 	}
 }

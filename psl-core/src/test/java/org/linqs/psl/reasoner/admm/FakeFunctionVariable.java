@@ -15,17 +15,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.reasoner.term;
+package org.linqs.psl.reasoner.admm;
 
-import java.util.ArrayList;
-import java.util.List;
+import org.linqs.psl.reasoner.function.ConstantAtomFunctionVariable;
 
-public interface TermStore<E extends Term> extends Iterable<E>{
-	public void add(E term);
+public class FakeFunctionVariable extends ConstantAtomFunctionVariable {
+   private static int nextId = 0;
 
-	public void close();
+	private double value;
+	private int id;
 
-	public E get(int index);
+	public FakeFunctionVariable(double value) {
+		super(null);
+		this.value = value;
+      id = nextId++;
+	}
 
-	public int size();
+	@Override
+	public double getValue() {
+		return value;
+	}
+
+   @Override
+   public int hashCode() {
+      return id;
+   }
 }

@@ -35,7 +35,7 @@ import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements WeightedObjectiveTerm {
+public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements WeightedObjectiveTerm {
 	
 	protected final double[] coeffs;
 	protected final double constant;
@@ -67,7 +67,7 @@ abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements Weight
 		for (int i = 0; i < x.length; i++) {
 			for (int j = 0; j < x.length; j++) {
 				if (i == j) {
-					coeff = 2 * weight * coeffs[i] * coeffs[i] + reasoner.stepSize;
+					coeff = 2 * weight * coeffs[i] * coeffs[i] + reasoner.getStepSize();
 					matrix.setQuick(i, i, coeff);
 				}
 				else {
@@ -101,17 +101,17 @@ abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements Weight
 	protected void minWeightedSquaredHyperplane() {
 		/* Constructs constant term in the gradient (moved to right-hand side) */
 		for (int i = 0; i < x.length; i++) {
-			x[i] = reasoner.stepSize * (reasoner.z.get(zIndices[i]) - y[i] / reasoner.stepSize);
+			x[i] = reasoner.getStepSize() * (reasoner.getConsensusValue(zIndices[i]) - y[i] / reasoner.getStepSize());
 			x[i] += 2 * weight * coeffs[i] * constant;
 		}
 		
 		/* Solves for x */
 		if (x.length == 1) {
-			x[0] /= 2 * weight * coeffs[0] * coeffs[0] + reasoner.stepSize;
+			x[0] /= 2 * weight * coeffs[0] * coeffs[0] + reasoner.getStepSize();
 		}
 		else if (x.length == 2) {
-			double a0 = 2 * weight * coeffs[0] * coeffs[0] + reasoner.stepSize;
-			double b1 = 2 * weight * coeffs[1] * coeffs[1] + reasoner.stepSize;
+			double a0 = 2 * weight * coeffs[0] * coeffs[0] + reasoner.getStepSize();
+			double b1 = 2 * weight * coeffs[1] * coeffs[1] + reasoner.getStepSize();
 			double a1b0 = 2 * weight * coeffs[0] * coeffs[1];
 			
 			x[1] -= a1b0 * x[0] / a0;
