@@ -41,10 +41,12 @@ public abstract class ADMMObjectiveTerm implements Term {
 		
 		this.zIndices = zIndices;
 		
-		/* This loop ensures that the reasoner, when it first computes y, will keep it at 0 */
+		// This loop ensures that the reasoner, when it first computes y, will keep it at 0.
+		// ie. Start each variable in this term at its current consensus value.
 		for (int i = 0; i < x.length; i++) {
+			// TODO(eriq): This is not always the same. We need to find a proper value w/o the reasoner.
 			x[i] = reasoner.getConsensusValue(zIndices[i]);
-      }
+		}
 	}
 	
 	/**
@@ -52,7 +54,7 @@ public abstract class ADMMObjectiveTerm implements Term {
 	 * argmin f(x) + stepSize / 2 * \|x - z + y / stepSize \|_2^2 <br />
 	 * for the objective term f(x)
 	 */
-	abstract protected void minimize();
+	 protected abstract void minimize();
 	
 	/**
 	 * @return this for convenience

@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.reasoner.admm;
 
+// TODO(eriq): Remove imports
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 import org.linqs.psl.application.groundrulestore.MemoryGroundRuleStore;
 import org.linqs.psl.config.ConfigBundle;
@@ -141,12 +142,10 @@ public class ADMMReasoner implements Reasoner {
 	 */
 	private int totalVariableCount;
 
+	// TODO(eriq): The entire method that this code manages variables is a bit suspect, ponder on it.
+
 	private boolean rebuildModel;
 	private double lagrangePenalty, augmentedLagrangePenalty;
-
-	// TEST
-	protected GroundRuleStore groundRuleStore;
-	protected TermStore<ADMMObjectiveTerm> termStore;
 
 	/**
 	 * Collection of variables and their associated indices for looking up indices in z.
@@ -183,11 +182,9 @@ public class ADMMReasoner implements Reasoner {
 			throw new IllegalArgumentException("Property " + EPSILON_REL_KEY + " must be positive.");
 		}
 
-		groundRuleStore = new MemoryGroundRuleStore();
 		rebuildModel = true;
 
 		// TODO(eriq): We need these initialized for tests,  but I don't like the reinit in buildGroundModel().
-		termStore = new MemoryTermStore<ADMMObjectiveTerm>(0);
 		variables = new DualHashBidiMap<Integer, AtomFunctionVariable>();
 		z = new ArrayList<Double>();
 		lb = new ArrayList<Double>();
@@ -277,25 +274,18 @@ public class ADMMReasoner implements Reasoner {
 		return index.intValue();
 	}
 
-	protected void buildGroundModel() {
-		log.debug("(Re)building reasoner data structures");
+	// TODO(eriq): Rethink the concept of rebuilding the model (based on the termstore).
+	// TEST(eriq): Because of circular dependencies on the term generator, this is strange for now.
+	// private void buildGroundModel(TermStore<ADMMObjectiveTerm> termStore) {
+	private void rebuildGroundModel(TermStore<ADMMObjectiveTerm> termStore) {
+		log.debug("Rebuilding reasoner data structures");
 
-		/* Initializes data structures */
-		termStore = new MemoryTermStore<ADMMObjectiveTerm>(groundRuleStore.size());
+		varLocations = new ArrayList<List<VariableLocation>>();
+		for (int i = 0; i < z.size(); i++) {
+			varLocations.add(new ArrayList<ADMMReasoner.VariableLocation>());
+		}
 
-		variables = new DualHashBidiMap<Integer, AtomFunctionVariable>();
-
-		z = new ArrayList<Double>(groundRuleStore.size() * 2);
-		lb = new ArrayList<Double>(groundRuleStore.size() * 2);
-		ub = new ArrayList<Double>(groundRuleStore.size() * 2);
-		varLocations = new ArrayList<List<VariableLocation>>(groundRuleStore.size() * 2);
-		totalVariableCount = 0;
-
-		/* Initializes objective terms from ground rules */
-		log.debug("Initializing objective terms for {} ground rules", groundRuleStore.size());
-		TermGenerator<ADMMObjectiveTerm> termGenerator = new ADMMTermGenerator(this);
-		termGenerator.generateTerms(groundRuleStore, termStore);
-
+		// Register all the local variables.
 		for (ADMMObjectiveTerm term : termStore) {
 			registerLocalVariableCopies(term);
 		}
@@ -322,6 +312,7 @@ public class ADMMReasoner implements Reasoner {
 		throw new UnsupportedOperationException("Temporarily unsupported during rework");
 	}
 
+	// TODO(eriq): Dup?
 	public double getConsensusVariableValue(int index) {
 		if (z == null) {
 			throw new IllegalStateException("Consensus variables have not been initialized. "
@@ -330,127 +321,15 @@ public class ADMMReasoner implements Reasoner {
 		return z.get(index);
 	}
 
-	private class ADMMTask implements Runnable {
-		public boolean flag;
-		private final int termStart, termEnd;
-		private final int zStart, zEnd;
-		private final CyclicBarrier workerBarrier, checkBarrier;
-		private final Semaphore notification;
-
-		public ADMMTask(int index, CyclicBarrier wBarrier, CyclicBarrier cBarrier, Semaphore notification) {
-			this.workerBarrier = wBarrier;
-			this.checkBarrier = cBarrier;
-			this.notification = notification;
-			this.flag = true;
-
-
-			// Determine the section of the terms this thread will look at
-			int tIncrement = (int)(Math.ceil((double)termStore.size() / (double)numThreads));
-			this.termStart = tIncrement * index;
-			this.termEnd = Math.min(termStart + tIncrement, termStore.size());
-
-			// Determine the section of the z vector this thread will look at
-			int zIncrement = (int)(Math.ceil((double)z.size() / (double)numThreads));
-			this.zStart = zIncrement * index;
-			this.zEnd = Math.min(zStart + zIncrement, z.size());
-		}
-
-		public double primalResInc = 0.0;
-		public double dualResInc = 0.0;
-		public double AxNormInc = 0.0;
-		public double BzNormInc = 0.0;
-		public double AyNormInc = 0.0;
-		protected double lagrangePenalty = 0.0;
-		protected double augmentedLagrangePenalty = 0.0;
-
-		private void awaitUninterruptibly(CyclicBarrier b) {
-			try {
-				b.await();
-			} catch (InterruptedException e) {
-				throw new RuntimeException(e);
-			} catch (BrokenBarrierException e) {
-				throw new RuntimeException(e);
-			}
-		}
-
-		@Override
-		public void run() {
-			awaitUninterruptibly(checkBarrier);
-
-			int iter = 1;
-			while (flag) {
-				boolean check = (iter-1) % stopCheck == 0;
-
-				/* Solves each local function */
-				for (int i = termStart; i < termEnd; i ++)
-					termStore.get(i).updateLagrange().minimize();
-
-				// Ensures all threads are at the same point
-				awaitUninterruptibly(workerBarrier);
-
-				if (check) {
-					primalResInc = 0.0;
-					dualResInc = 0.0;
-					AxNormInc = 0.0;
-					BzNormInc = 0.0;
-					AyNormInc = 0.0;
-					lagrangePenalty = 0.0;
-					augmentedLagrangePenalty = 0.0;
-				}
-
-				for (int i = zStart; i < zEnd; i++) {
-					double total = 0.0;
-					/* First pass computes newZ and dual residual */
-					for (Iterator<VariableLocation> itr = varLocations.get(i).iterator(); itr.hasNext(); ) {
-						VariableLocation location = itr.next();
-						total += location.term.x[location.localIndex] + location.term.y[location.localIndex] / stepSize;
-						if (check) {
-							AxNormInc += location.term.x[location.localIndex] * location.term.x[location.localIndex];
-							AyNormInc += location.term.y[location.localIndex] * location.term.y[location.localIndex];
-						}
-					}
-					double newZ = total / varLocations.get(i).size();
-					if (newZ < lb.get(i))
-						newZ = lb.get(i);
-					else if (newZ > ub.get(i))
-						newZ = ub.get(i);
-
-					if (check) {
-						double diff = z.get(i) - newZ;
-						/* Residual is diff^2 * number of local variables mapped to z element */
-						dualResInc += diff * diff * varLocations.get(i).size();
-						BzNormInc += newZ * newZ * varLocations.get(i).size();
-					}
-					z.set(i, newZ);
-
-					/* Second pass computes primal residuals */
-					if (check) {
-						for (Iterator<VariableLocation> itr = varLocations.get(i).iterator(); itr.hasNext(); ) {
-							VariableLocation location = itr.next();
-							double diff = location.term.x[location.localIndex] - newZ;
-							primalResInc += diff * diff;
-							// computes Lagrangian penalties
-							lagrangePenalty += location.term.y[location.localIndex] * (location.term.x[location.localIndex] - z.get(i));
-							augmentedLagrangePenalty += 0.5 * stepSize * Math.pow(location.term.x[location.localIndex]-z.get(i), 2);
-						}
-					}
-				}
-
-				if (check)
-					notification.release();
-
-				// Waits for main thread
-				awaitUninterruptibly(checkBarrier);
-			}
-			awaitUninterruptibly(checkBarrier);
-		}
-
-	}
-
 	@Override
 	public void optimize() {
-		if (rebuildModel)
-			buildGroundModel();
+	}
+
+	// TEST(eriq)
+	public void optimize(TermStore<ADMMObjectiveTerm> termStore) {
+		if (rebuildModel) {
+			rebuildGroundModel(termStore);
+		}
 
 		log.debug("Performing optimization with {} variables and {} terms.", z.size(), termStore.size());
 
@@ -461,7 +340,7 @@ public class ADMMReasoner implements Reasoner {
 		Semaphore notifySem = new Semaphore(0);
 		ThreadPool threadPool = ThreadPool.getPool();
 		for (int i = 0; i < numThreads; i ++) {
-			tasks[i] = new ADMMTask(i, workerBarrier, checkBarrier, notifySem);
+			tasks[i] = new ADMMTask(i, workerBarrier, checkBarrier, notifySem, termStore);
 			threadPool.submit(tasks[i]);
 		}
 
@@ -551,12 +430,6 @@ public class ADMMReasoner implements Reasoner {
 
 	@Override
 	public void close() {
-		groundRuleStore.close();
-		groundRuleStore = null;
-
-		termStore.close();
-		termStore = null;
-
 		variables = null;
 		z = null;
 		lb = null;
@@ -579,6 +452,7 @@ public class ADMMReasoner implements Reasoner {
 			this.term = term;
 			this.localIndex = localIndex;
 		}
+
 		public ADMMObjectiveTerm getTerm() {
 			return term;
 		}
@@ -588,21 +462,153 @@ public class ADMMReasoner implements Reasoner {
 		}
 	}
 
-	// TEST(eriq): Remove once we remove GRS from Reasoner
+	private class ADMMTask implements Runnable {
+		public boolean flag;
+		private final int termStart, termEnd;
+		private final int zStart, zEnd;
+		private final CyclicBarrier workerBarrier, checkBarrier;
+		private final Semaphore notification;
+		private final TermStore<ADMMObjectiveTerm> termStore;
 
-	@Override
-	public void addGroundRule(GroundRule groundRule) {
-		groundRuleStore.addGroundRule(groundRule);
-		rebuildModel = true;
+		public ADMMTask(int index, CyclicBarrier wBarrier, CyclicBarrier cBarrier,
+				Semaphore notification, TermStore<ADMMObjectiveTerm> termStore) {
+			this.workerBarrier = wBarrier;
+			this.checkBarrier = cBarrier;
+			this.notification = notification;
+			this.termStore = termStore;
+			this.flag = true;
+
+
+			// Determine the section of the terms this thread will look at
+			int tIncrement = (int)(Math.ceil((double)termStore.size() / (double)numThreads));
+			this.termStart = tIncrement * index;
+			this.termEnd = Math.min(termStart + tIncrement, termStore.size());
+
+			// Determine the section of the z vector this thread will look at
+			int zIncrement = (int)(Math.ceil((double)z.size() / (double)numThreads));
+			this.zStart = zIncrement * index;
+			this.zEnd = Math.min(zStart + zIncrement, z.size());
+		}
+
+		public double primalResInc = 0.0;
+		public double dualResInc = 0.0;
+		public double AxNormInc = 0.0;
+		public double BzNormInc = 0.0;
+		public double AyNormInc = 0.0;
+		protected double lagrangePenalty = 0.0;
+		protected double augmentedLagrangePenalty = 0.0;
+
+		private void awaitUninterruptibly(CyclicBarrier b) {
+			try {
+				b.await();
+			} catch (InterruptedException e) {
+				throw new RuntimeException(e);
+			} catch (BrokenBarrierException e) {
+				throw new RuntimeException(e);
+			}
+		}
+
+		@Override
+		public void run() {
+			awaitUninterruptibly(checkBarrier);
+
+			int iter = 1;
+			while (flag) {
+				boolean check = (iter-1) % stopCheck == 0;
+
+				/* Solves each local function */
+				for (int i = termStart; i < termEnd; i ++)
+					termStore.get(i).updateLagrange().minimize();
+
+				// Ensures all threads are at the same point
+				awaitUninterruptibly(workerBarrier);
+
+				// TODO(eriq): Be careful here when refactoring. Make sure there are not used between checks,
+				// when they have their old values..
+				if (check) {
+					primalResInc = 0.0;
+					dualResInc = 0.0;
+					AxNormInc = 0.0;
+					BzNormInc = 0.0;
+					AyNormInc = 0.0;
+					lagrangePenalty = 0.0;
+					augmentedLagrangePenalty = 0.0;
+				}
+
+				for (int i = zStart; i < zEnd; i++) {
+					double total = 0.0;
+					/* First pass computes newZ and dual residual */
+					for (VariableLocation location : varLocations.get(i)) {
+						total += location.term.x[location.localIndex] + location.term.y[location.localIndex] / stepSize;
+
+						if (check) {
+							AxNormInc += location.term.x[location.localIndex] * location.term.x[location.localIndex];
+							AyNormInc += location.term.y[location.localIndex] * location.term.y[location.localIndex];
+						}
+					}
+					double newZ = total / varLocations.get(i).size();
+					if (newZ < lb.get(i)) {
+						newZ = lb.get(i);
+					} else if (newZ > ub.get(i)) {
+						newZ = ub.get(i);
+					}
+
+					if (check) {
+						double diff = z.get(i) - newZ;
+						/* Residual is diff^2 * number of local variables mapped to z element */
+						dualResInc += diff * diff * varLocations.get(i).size();
+						BzNormInc += newZ * newZ * varLocations.get(i).size();
+					}
+					z.set(i, newZ);
+
+					/* Second pass computes primal residuals */
+					if (check) {
+						for (VariableLocation location : varLocations.get(i)) {
+							double diff = location.term.x[location.localIndex] - newZ;
+							primalResInc += diff * diff;
+							// computes Lagrangian penalties
+							lagrangePenalty += location.term.y[location.localIndex] * (location.term.x[location.localIndex] - z.get(i));
+							augmentedLagrangePenalty += 0.5 * stepSize * Math.pow(location.term.x[location.localIndex]-z.get(i), 2);
+						}
+					}
+				}
+
+				if (check) {
+					notification.release();
+				}
+
+				// Waits for main thread
+				awaitUninterruptibly(checkBarrier);
+			}
+			awaitUninterruptibly(checkBarrier);
+		}
 	}
 
-	@Override
+
+
+
+	// TEST(eriq): Remove once we remove GRS from Reasoner
+
+
+
+
+
+
+
+
+	public void addGroundRule(GroundRule groundRule) {
+		rebuildModel = true;
+		// TEST
+		throw new RuntimeException("TEST(eriq)");
+	}
+
 	public void changedGroundRule(GroundRule groundRule) {
 		rebuildModel = true;
+		// TEST
+		throw new RuntimeException("TEST(eriq)");
 	}
 
 	// TODO(eriq): Needs to be reworked into GRS/TS/TG.
-	@Override
 	public void changedGroundRuleWeight(WeightedGroundRule groundRule) {
 		if (!rebuildModel) {
 			/* TODO(eriq)
@@ -612,52 +618,60 @@ public class ADMMReasoner implements Reasoner {
 			}
 			*/
 		}
+		// TEST
+		throw new RuntimeException("TEST(eriq)");
 	}
 
-	@Override
 	public void changedGroundRuleWeights() {
 		if (!rebuildModel) {
 			for (WeightedGroundRule groundRule : getCompatibilityRules()) {
 				changedGroundRuleWeight(groundRule);
 			}
 		}
+		// TEST
+		throw new RuntimeException("TEST(eriq)");
 	}
 
-	@Override
 	public boolean containsGroundRule(GroundRule groundRule) {
-		return groundRuleStore.containsGroundRule(groundRule);
+		// TEST
+		throw new RuntimeException("TEST(eriq)");
+		// return false;
 	}
 
-	@Override
 	public Iterable<WeightedGroundRule> getCompatibilityRules() {
-		return groundRuleStore.getCompatibilityRules();
+		// TEST
+		throw new RuntimeException("TEST(eriq)");
+		// return null;
 	}
 
-	@Override
 	public Iterable<UnweightedGroundRule> getConstraintRules() {
-		return groundRuleStore.getConstraintRules();
+		// TEST
+		throw new RuntimeException("TEST(eriq)");
+		// return null;
 	}
 
-	@Override
 	public Iterable<GroundRule> getGroundRules() {
-		return groundRuleStore.getGroundRules();
+		// TEST
+		throw new RuntimeException("TEST(eriq)");
+		// return null;
 	}
 
-	@Override
 	public Iterable<GroundRule> getGroundRules(Rule rule) {
-		return groundRuleStore.getGroundRules(rule);
+		// TEST
+		throw new RuntimeException("TEST(eriq)");
+		// return null;
 	}
 
-	@Override
 	public void removeGroundRule(GroundRule groundRule) {
-		groundRuleStore.removeGroundRule(groundRule);
-
 		rebuildModel = true;
+		// TEST
+		throw new RuntimeException("TEST(eriq)");
 	}
 
-	@Override
 	public int size() {
-		return groundRuleStore.size();
+		// TEST
+		throw new RuntimeException("TEST(eriq)");
+		// return 0;
 	}
 
 }

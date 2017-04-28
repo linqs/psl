@@ -17,6 +17,9 @@
  */
 package org.linqs.psl.application.inference;
 
+import org.linqs.psl.application.groundrulestore.GroundRuleStore;
+// TEST(eriq)
+import org.linqs.psl.application.groundrulestore.MemoryGroundRuleStore;
 import org.linqs.psl.application.ModelApplication;
 import org.linqs.psl.application.inference.result.FullInferenceResult;
 import org.linqs.psl.application.inference.result.memory.MemoryFullInferenceResult;
@@ -35,6 +38,12 @@ import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.ReasonerFactory;
 import org.linqs.psl.reasoner.admm.ADMMReasonerFactory;
+// TEST(eriq)
+import org.linqs.psl.reasoner.admm.ADMMTermGenerator;
+import org.linqs.psl.reasoner.term.TermGenerator;
+import org.linqs.psl.reasoner.term.TermStore;
+// TEST(eriq)
+import org.linqs.psl.reasoner.term.MemoryTermStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,6 +88,9 @@ public class MPEInference implements ModelApplication {
 	protected ConfigBundle config;
 	protected Reasoner reasoner;
 	protected PersistedAtomManager atomManager;
+
+	protected GroundRuleStore groundRuleStore;
+	protected TermStore termStore;
 	
 	public MPEInference(Model model, Database db, ConfigBundle config) 
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
@@ -89,13 +101,24 @@ public class MPEInference implements ModelApplication {
 		initialize();
 	}
 	
-	
 	protected void initialize() throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		reasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
+
+		log.debug("Creating persisted atom mannager.");
 		atomManager = new PersistedAtomManager(db);
-		
+
 		log.info("Grounding out model.");
-		Grounding.groundAll(model, atomManager, reasoner);
+		groundRuleStore = new MemoryGroundRuleStore();
+		Grounding.groundAll(model, atomManager, groundRuleStore);
+
+		// TODO(eriq): It won't always be ADMM Terms
+		termStore = new MemoryTermStore(groundRuleStore.size());
+		TermGenerator termGenerator = new ADMMTermGenerator((org.linqs.psl.reasoner.admm.ADMMReasoner)reasoner);
+
+		log.debug("Initializing objective terms for %d ground rules.", groundRuleStore.size());
+		termGenerator.generateTerms(groundRuleStore, termStore);
+
+		log.debug("Generated %d objective terms from %d ground rules.", termStore.size(), groundRuleStore.size());
 	}
 	
 	/**
@@ -111,11 +134,13 @@ public class MPEInference implements ModelApplication {
 	 * @see DatabasePopulator
 	 */
 	public FullInferenceResult mpeInference() {
-
-		reasoner.changedGroundRuleWeights();
+		// TODO(eriq)
+		// reasoner.changedGroundRuleWeights();
 		
 		log.info("Beginning inference.");
-		reasoner.optimize();
+		// TEST(eriq)
+		// reasoner.optimize();
+		((org.linqs.psl.reasoner.admm.ADMMReasoner)reasoner).optimize(termStore);
 		log.info("Inference complete. Writing results to Database.");
 		
 		/* Commits the RandomVariableAtoms back to the Database */
@@ -125,9 +150,9 @@ public class MPEInference implements ModelApplication {
 			count++;
 		}
 		
-		double incompatibility = GroundRules.getTotalWeightedIncompatibility(reasoner.getCompatibilityRules());
-		double infeasibility = GroundRules.getInfeasibilityNorm(reasoner.getConstraintRules());
-		int size = reasoner.size();
+		double incompatibility = GroundRules.getTotalWeightedIncompatibility(groundRuleStore.getCompatibilityRules());
+		double infeasibility = GroundRules.getInfeasibilityNorm(groundRuleStore.getConstraintRules());
+		int size = groundRuleStore.size();
 		return new MemoryFullInferenceResult(incompatibility, infeasibility, count, size);
 	}
 	

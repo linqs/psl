@@ -25,6 +25,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.linqs.psl.PSLTest;
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
+import org.linqs.psl.application.groundrulestore.MemoryGroundRuleStore;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.EmptyBundle;
 import org.linqs.psl.database.DataStore;
@@ -62,7 +63,6 @@ import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.UniqueID;
 import org.linqs.psl.model.term.Variable;
-import org.linqs.psl.reasoner.admm.ADMMReasoner;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 
 import java.util.ArrayList;
@@ -182,7 +182,7 @@ public class RuleStringTest {
 
 	@Test
 	public void testGroundLogicalRuleString() {
-		GroundRuleStore store = new ADMMReasoner(config);
+		GroundRuleStore store = new MemoryGroundRuleStore();
 		AtomManager manager = new SimpleAtomManager(database);
 
 		Rule rule;
@@ -225,7 +225,7 @@ public class RuleStringTest {
 
 	@Test
 	public void testGroundArithmeticRuleString() {
-		GroundRuleStore store = new ADMMReasoner(config);
+		GroundRuleStore store = new MemoryGroundRuleStore();
 		AtomManager manager = new SimpleAtomManager(database);
 
 		Rule rule;

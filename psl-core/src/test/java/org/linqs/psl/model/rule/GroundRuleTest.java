@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.linqs.psl.PSLTest;
 import org.linqs.psl.TestModelFactory;
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
+import org.linqs.psl.application.groundrulestore.MemoryGroundRuleStore;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.EmptyBundle;
 import org.linqs.psl.database.DataStore;
@@ -77,7 +78,6 @@ import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.StringAttribute;
 import org.linqs.psl.model.term.UniqueID;
 import org.linqs.psl.model.term.Variable;
-import org.linqs.psl.reasoner.admm.ADMMReasoner;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 
 import java.util.ArrayList;
@@ -121,7 +121,7 @@ public class GroundRuleTest {
 
 	@Test
 	public void testLogicalBase() {
-		GroundRuleStore store = new ADMMReasoner(model.config);
+		GroundRuleStore store = new MemoryGroundRuleStore();
 		AtomManager manager = new SimpleAtomManager(database);
 
 		Rule rule;
@@ -174,7 +174,7 @@ public class GroundRuleTest {
 
 	@Test
 	public void testLogicalSpecialPredicates() {
-		GroundRuleStore store = new ADMMReasoner(model.config);
+		GroundRuleStore store = new MemoryGroundRuleStore();
 		AtomManager manager = new SimpleAtomManager(database);
 
 		Rule rule;
@@ -278,7 +278,7 @@ public class GroundRuleTest {
 
 	@Test
 	public void testArithmeticBase() {
-		GroundRuleStore store = new ADMMReasoner(model.config);
+		GroundRuleStore store = new MemoryGroundRuleStore();
 		AtomManager manager = new SimpleAtomManager(database);
 
 		Rule rule;
@@ -460,7 +460,7 @@ public class GroundRuleTest {
 	// |B| * Friends(A, +B) >= 1 {B: Nice(B)}
 	// |B| * Friends(A, +B) >= 1 {B: !Nice(B)}
 	public void testSelectBaseNice() {
-		GroundRuleStore store = new ADMMReasoner(model.config);
+		GroundRuleStore store = new MemoryGroundRuleStore();
 		AtomManager manager = new SimpleAtomManager(database);
 
 		Rule rule;
@@ -502,7 +502,7 @@ public class GroundRuleTest {
 		PSLTest.compareGroundRules(expected, rule, store);
 
 		// Now negate the select.
-		store = new ADMMReasoner(model.config);
+		store = new MemoryGroundRuleStore();
 
 		selects = new HashMap<SummationVariable, Formula>();
 		selects.put(new SummationVariable("B"), new Negation(new QueryAtom(model.predicates.get("Nice"), new Variable("B"))));
@@ -533,7 +533,7 @@ public class GroundRuleTest {
 		// Reset the model to not use 100% nice.
 		initModel(false);
 
-		GroundRuleStore store = new ADMMReasoner(model.config);
+		GroundRuleStore store = new MemoryGroundRuleStore();
 		AtomManager manager = new SimpleAtomManager(database);
 
 		Rule rule;
@@ -575,7 +575,7 @@ public class GroundRuleTest {
 		PSLTest.compareGroundRules(expected, rule, store);
 
 		// Now negate the select.
-		store = new ADMMReasoner(model.config);
+		store = new MemoryGroundRuleStore();
 
 		selects = new HashMap<SummationVariable, Formula>();
 		selects.put(new SummationVariable("B"), new Negation(new QueryAtom(model.predicates.get("Nice"), new Variable("B"))));
@@ -616,7 +616,7 @@ public class GroundRuleTest {
 		toClose.add(model.predicates.get("Friends"));
 		database = model.dataStore.getDatabase(model.targetPartition, toClose, model.observationPartition);
 
-		GroundRuleStore store = new ADMMReasoner(model.config);
+		GroundRuleStore store = new MemoryGroundRuleStore();
 		AtomManager manager = new SimpleAtomManager(database);
 
 		Rule rule;
@@ -664,7 +664,7 @@ public class GroundRuleTest {
 		PSLTest.compareGroundRules(expected, rule, store);
 
 		// Now change the select to a disjunction.
-		store = new ADMMReasoner(model.config);
+		store = new MemoryGroundRuleStore();
 
 		selects = new HashMap<SummationVariable, Formula>();
 		selects.put(
@@ -697,7 +697,7 @@ public class GroundRuleTest {
 	@Test
 	// |B| * Friends(A, +B) >= 1
 	public void testSummationNoSelect() {
-		GroundRuleStore store = new ADMMReasoner(model.config);
+		GroundRuleStore store = new MemoryGroundRuleStore();
 		AtomManager manager = new SimpleAtomManager(database);
 
 		Rule rule;
@@ -745,7 +745,7 @@ public class GroundRuleTest {
 		// Reset the model to not use 100% nice.
 		initModel(false);
 
-		GroundRuleStore store = new ADMMReasoner(model.config);
+		GroundRuleStore store = new MemoryGroundRuleStore();
 		AtomManager manager = new SimpleAtomManager(database);
 
 		Rule rule;
@@ -787,7 +787,7 @@ public class GroundRuleTest {
 		PSLTest.compareGroundRules(expected, rule, store);
 
 		// Add a select on A.
-		store = new ADMMReasoner(model.config);
+		store = new MemoryGroundRuleStore();
 
 		selects.put(
 			new SummationVariable("A"),
@@ -813,7 +813,7 @@ public class GroundRuleTest {
 		PSLTest.compareGroundRules(expected, rule, store);
 
 		// Add a select on B.
-		store = new ADMMReasoner(model.config);
+		store = new MemoryGroundRuleStore();
 
 		selects.put(
 			new SummationVariable("B"),
@@ -850,7 +850,7 @@ public class GroundRuleTest {
 		// Reset the model to not use 100% nice.
 		initModel(false);
 
-		GroundRuleStore store = new ADMMReasoner(model.config);
+		GroundRuleStore store = new MemoryGroundRuleStore();
 		AtomManager manager = new SimpleAtomManager(database);
 
 		Rule rule;
@@ -896,7 +896,7 @@ public class GroundRuleTest {
 		PSLTest.compareGroundRules(expected, rule, store);
 
 		// |B|
-		store = new ADMMReasoner(model.config);
+		store = new MemoryGroundRuleStore();
 
 		coefficients = Arrays.asList(
 			(Coefficient)(new Cardinality(new SummationVariable("B")))
@@ -922,7 +922,7 @@ public class GroundRuleTest {
 		PSLTest.compareGroundRules(expected, rule, store);
 
 		// |A| + |B|
-		store = new ADMMReasoner(model.config);
+		store = new MemoryGroundRuleStore();
 
 		coefficients = Arrays.asList(
 			(Coefficient)(new Add(new Cardinality(new SummationVariable("A")), new Cardinality(new SummationVariable("B"))))
@@ -948,7 +948,7 @@ public class GroundRuleTest {
 		PSLTest.compareGroundRules(expected, rule, store);
 
 		// |A| - |B|
-		store = new ADMMReasoner(model.config);
+		store = new MemoryGroundRuleStore();
 
 		coefficients = Arrays.asList(
 			(Coefficient)(new Subtract(new Cardinality(new SummationVariable("A")), new Cardinality(new SummationVariable("B"))))
@@ -974,7 +974,7 @@ public class GroundRuleTest {
 		PSLTest.compareGroundRules(expected, rule, store);
 
 		// |A| * |B|
-		store = new ADMMReasoner(model.config);
+		store = new MemoryGroundRuleStore();
 
 		coefficients = Arrays.asList(
 			(Coefficient)(new Multiply(new Cardinality(new SummationVariable("A")), new Cardinality(new SummationVariable("B"))))
@@ -1000,7 +1000,7 @@ public class GroundRuleTest {
 		PSLTest.compareGroundRules(expected, rule, store);
 
 		// |A| / |B|
-		store = new ADMMReasoner(model.config);
+		store = new MemoryGroundRuleStore();
 
 		coefficients = Arrays.asList(
 			(Coefficient)(new Divide(new Cardinality(new SummationVariable("A")), new Cardinality(new SummationVariable("B"))))
@@ -1041,7 +1041,7 @@ public class GroundRuleTest {
 		toClose.add(model.predicates.get("Friends"));
 		database = model.dataStore.getDatabase(model.targetPartition, toClose, model.observationPartition);
 
-		GroundRuleStore store = new ADMMReasoner(model.config);
+		GroundRuleStore store = new MemoryGroundRuleStore();
 		AtomManager manager = new SimpleAtomManager(database);
 
 		Rule rule;
@@ -1112,7 +1112,7 @@ public class GroundRuleTest {
 		PSLTest.compareGroundRules(expected, rule, store);
 
 		// Add the additional clause to the select.
-		store = new ADMMReasoner(model.config);
+		store = new MemoryGroundRuleStore();
 
 		selects = new HashMap<SummationVariable, Formula>();
 		selects.put(
@@ -1268,7 +1268,7 @@ public class GroundRuleTest {
 
 		for (int i = 0; i < testCoefficients.length; i++) {
 			expected = Arrays.asList(expectedBase.replaceAll("__VAL__", expectedValues[i]));
-			store = new ADMMReasoner(model.config);
+			store = new MemoryGroundRuleStore();
 
 			coefficients.clear();
 			coefficients.add(testCoefficients[i]);

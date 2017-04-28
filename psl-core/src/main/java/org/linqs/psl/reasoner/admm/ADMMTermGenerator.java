@@ -42,6 +42,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * A TermGenerator for ADMM objective terms.
+ */
 public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 	private ADMMReasoner reasoner;
 
@@ -158,20 +161,15 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 		for (FunctionSummand summand : sum) {
 			FunctionSingleton singleton = summand.getTerm();
 			if (singleton instanceof AtomFunctionVariable && !singleton.isConstant()) {
-				/*
-				 * If this variable has been encountered before in any hyperplane...
-				 */
+				// If this variable has been encountered before in any hyperplane.
 				int zIndex = reasoner.getConsensusIndex((AtomFunctionVariable)singleton);
 				if (zIndex != -1) {
-					/*
-					 * Checks if the variable has already been encountered
-					 * in THIS hyperplane
-					 */
+					// Checks if the variable has already been encountered in THIS hyperplane.
 					Integer localIndex = localVarLocations.get(singleton);
-					/* If it has, just adds the coefficient... */
+					// If it has, just adds the coefficient.
 					if (localIndex != null) {
 						tempCoeffs.set(localIndex, tempCoeffs.get(localIndex) + summand.getCoefficient());
-					/* Else, creates a new local variable */
+					// Else, creates a new local variable.
 					} else {
 						tempZIndices.add(zIndex);
 						tempCoeffs.add(summand.getCoefficient());
@@ -179,18 +177,18 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 
 						reasoner.addLocalVariable();
 					}
-				/* Else, creates a new global variable and a local variable */
+				// Else, creates a new global variable and a local variable.
 				} else {
 					// Create the global variable.
 					zIndex = reasoner.addGlobalVariable((AtomFunctionVariable)singleton);
 
-					/* Creates the local variable */
+					// Creates the local variable.
 					tempZIndices.add(zIndex);
 					tempCoeffs.add(summand.getCoefficient());
 					localVarLocations.put((AtomFunctionVariable)singleton, tempZIndices.size() - 1);
 				}
 			} else if (singleton.isConstant()) {
-				/* Subtracts because hyperplane is stored as coeffs^T * x = constant */
+				// Subtracts because hyperplane is stored as coeffs^T * x = constant.
 				hp.constant -= summand.getValue();
 			} else {
 				throw new IllegalArgumentException("Unexpected summand.");
