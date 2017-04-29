@@ -17,17 +17,29 @@
  */
 package org.linqs.psl.reasoner.term;
 
+import org.linqs.psl.config.ConfigBundle;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Iterator;
 
 public class MemoryTermStore<E extends Term> implements TermStore<E> {
-	private static final int DEFAULT_INITIAL_SIZE = 1000;
+	public static final String CONFIG_PREFIX = "memorytermstore";
+
+	/**
+	 * Initial size for the memory store.
+	 */
+	public static final String INITIAL_SIZE_KEY = CONFIG_PREFIX + ".initialsize";
+	public static final int INITIAL_SIZE_DEFAULT = 5000;
 
 	private List<E> store;
 
 	public MemoryTermStore() {
-		this(DEFAULT_INITIAL_SIZE);
+		this(INITIAL_SIZE_DEFAULT);
+	}
+
+	public MemoryTermStore(ConfigBundle config) {
+		this(config.getInt(INITIAL_SIZE_KEY, INITIAL_SIZE_DEFAULT));
 	}
 
 	public MemoryTermStore(int initialSize) {
@@ -51,7 +63,7 @@ public class MemoryTermStore<E extends Term> implements TermStore<E> {
 		return store.size();
 	}
 
-   public Iterator<E> iterator() {
-      return store.iterator();
-   }
+	public Iterator<E> iterator() {
+		return store.iterator();
+	}
 }

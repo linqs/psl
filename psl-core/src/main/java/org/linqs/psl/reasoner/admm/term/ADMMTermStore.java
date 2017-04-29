@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
+import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.reasoner.function.AtomFunctionVariable;
 import org.linqs.psl.reasoner.term.MemoryTermStore;
 import org.linqs.psl.reasoner.term.TermStore;
@@ -33,6 +34,14 @@ import java.util.Map;
  * This class will focus on keeping track of the variables in the terms.
  */
 public class ADMMTermStore implements TermStore<ADMMObjectiveTerm> {
+	public static final String CONFIG_PREFIX = "admmmemorytermstore";
+
+	/**
+	 * Initial size for the memory store.
+	 */
+	public static final String INTERNAL_STORE_KEY = CONFIG_PREFIX + ".internalstore";
+	public static final String INTERNAL_STORE_DEFAULT = "org.linqs.psl.reasoner.term.MemoryTermStore";
+
 	// Keep an internal store to hold the terms while this class focus on variables.
 	private TermStore<ADMMObjectiveTerm> store;
 
@@ -45,14 +54,18 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm> {
 	private int numLocalVariables;
 
 	public ADMMTermStore() {
-		store = new MemoryTermStore<ADMMObjectiveTerm>();
-		variableIndexes = new HashMap<AtomFunctionVariable, Integer>();
-		localVariables = new ArrayList<List<LocalVariable>>();
-		numLocalVariables = 0;
+		this(new MemoryTermStore<ADMMObjectiveTerm>());
+	}
+
+	public ADMMTermStore(ConfigBundle config) {
+		this((TermStore<ADMMObjectiveTerm>)config.getNewObject(INTERNAL_STORE_KEY, INTERNAL_STORE_DEFAULT));
 	}
 
 	public ADMMTermStore(TermStore<ADMMObjectiveTerm> store) {
 		this.store = store;
+		variableIndexes = new HashMap<AtomFunctionVariable, Integer>();
+		localVariables = new ArrayList<List<LocalVariable>>();
+		numLocalVariables = 0;
 	}
 
 	/**

@@ -18,6 +18,7 @@
 package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
+import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
@@ -40,8 +41,8 @@ import java.util.List;
  * A TermGenerator for ADMM objective terms.
  */
 public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
-	public ADMMTermGenerator() {
-   }
+	public ADMMTermGenerator() {}
+	public ADMMTermGenerator(ConfigBundle config) {}
 
 	public void generateTerms(GroundRuleStore ruleStore, TermStore<ADMMObjectiveTerm> termStore) {
       if (!(termStore instanceof ADMMTermStore)) {

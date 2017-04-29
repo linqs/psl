@@ -17,6 +17,8 @@
  */
 package org.linqs.psl.config;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.io.FileNotFoundException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -39,11 +41,11 @@ import org.slf4j.LoggerFactory;
 public class ConfigManager {
 
 	private static ConfigManager instance = null;
-	
+
 	private static final Logger log = LoggerFactory.getLogger(ConfigManager.class);
-	
+
 	private DataConfiguration masterConfig;
-	
+
 	private ConfigManager() throws ConfigurationException {
 		masterConfig = new DataConfiguration(new BaseConfiguration());
 		String pslConfigFile = OptionConverter.getSystemProperty("psl.configuration", "psl.properties");
@@ -56,18 +58,18 @@ public class ConfigManager {
 				 "specified.", pslConfigFile);
 		}
 	}
-	
+
 	public static ConfigManager getManager() throws ConfigurationException {
 		if (instance == null) {
 			instance = new ConfigManager();
 		}
 		return instance;
 	}
-	
+
 	public void loadResource(String resource) throws FileNotFoundException, ConfigurationException {
 		URL url;
 		PropertiesConfiguration newConfig;
-		
+
 		try {
 			url = new URL(resource);
 		}
@@ -82,21 +84,21 @@ public class ConfigManager {
 		else
 			throw new FileNotFoundException();
 	}
-	
+
 	public ConfigBundle getBundle(String id) {
 		return new ManagedBundle((SubsetConfiguration) masterConfig.subset(id));
 	}
-	
+
 	private class ManagedBundle implements ConfigBundle {
 		private DataConfiguration config;
 		private String prefix;
-		
+
 		private ManagedBundle(SubsetConfiguration bundleConfig) {
 			prefix = bundleConfig.getPrefix();
 			config = new DataConfiguration(new BaseConfiguration());
 			config.copy(bundleConfig);
 		}
-		
+
 		private void logAccess(String key, Object defaultValue) {
 			String scopedKey = prefix + "." + key;
 			if (config.containsKey(key)) {
@@ -107,7 +109,7 @@ public class ConfigManager {
 				log.info("No value found for option {}. Returning default of {}.", scopedKey, defaultValue);
 			}
 		}
-		
+
 		@Override
 		public void addProperty(String key, Object value) {
 			config.addProperty(key, value);
@@ -131,7 +133,7 @@ public class ConfigManager {
 			config.clear();
 			log.debug("Cleared all options in {} bundle.", prefix);
 		}
-		
+
 		@Override
 		public Object getProperty(String key) {
 			logAccess(key, "");
@@ -141,7 +143,7 @@ public class ConfigManager {
 			    return null;
 			}
 		}
-	    
+
 		@Override
 		public Boolean getBoolean(String key, Boolean defaultValue) {
 			logAccess(key, defaultValue);
@@ -259,7 +261,7 @@ public class ConfigManager {
 			}
 			return toReturn;
 		}
-		
+
 		@Override
 		public Factory getFactory(String key, Factory defaultValue)
 				throws ClassNotFoundException, IllegalAccessException, InstantiationException {
@@ -280,7 +282,12 @@ public class ConfigManager {
 			logAccess(key, defaultValue);
 			return (Enum<?>) config.get(defaultValue.getDeclaringClass(), key, defaultValue);
 		}
-		
+
+		@Override
+		public Object getNewObject(String key, String defaultValue) {
+			return ConfigManager.getNewObject(this, key, defaultValue);
+		}
+
 		@Override
 		public String toString() {
 			StringBuilder string = new StringBuilder();
@@ -291,5 +298,54 @@ public class ConfigManager {
 			}
 			return string.toString();
 		}
+	}
+
+	/**
+	 * See ConfigBundle.getNewObject.
+	 * This is static so it can be a shared implementation for different types of ConfigBundle.
+	 */
+	protected static Object getNewObject(ConfigBundle config, String key, String defaultValue) {
+		String className = config.getString(key, defaultValue);
+
+		Class classObject;
+		try {
+			classObject = Class.forName(className);
+		} catch (ClassNotFoundException ex) {
+			throw new IllegalArgumentException("Could not find class: " + className);
+		}
+
+		Constructor constructor;
+		boolean useConfig = true;
+		try {
+			// First, try to get a constructor with only a ConfigBundle.
+			constructor = classObject.getConstructor(ConfigBundle.class);
+		} catch (NoSuchMethodException ex) {
+			try {
+				// Now try to get a default (no param) constructor.
+				constructor = classObject.getConstructor();
+				useConfig = false;
+			} catch (NoSuchMethodException ex2) {
+				throw new IllegalArgumentException(
+						"Could not find a suitable constructor (only ConfigBundle or no parameters) for " +
+						className);
+			}
+		}
+
+		Object rtn;
+		try {
+			if (useConfig) {
+				rtn = constructor.newInstance(config);
+			} else {
+				rtn = constructor.newInstance();
+			}
+		} catch (InstantiationException ex) {
+			throw new RuntimeException("Unable to instantiate object (" + className + ")", ex);
+		} catch (IllegalAccessException ex) {
+			throw new RuntimeException("Insufficient access to constructor for " + className, ex);
+		} catch (InvocationTargetException ex) {
+			throw new RuntimeException("Error thrown while constructing " + className, ex);
+		}
+
+		return rtn;
 	}
 }
