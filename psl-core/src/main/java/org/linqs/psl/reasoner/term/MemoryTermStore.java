@@ -46,23 +46,33 @@ public class MemoryTermStore<E extends Term> implements TermStore<E> {
 		store = new ArrayList<E>(initialSize);
 	}
 
+	@Override
 	public void add(E term) {
 		store.add(term);
 	}
 
-	public void close() {
+	@Override
+	public void clear() {
 		store.clear();
+	}
+
+	@Override
+	public void close() {
+		clear();
 		store = null;
 	}
 
+	@Override
 	public E get(int index) {
 		return store.get(index);
 	}
 
+	@Override
 	public int size() {
 		return store.size();
 	}
 
+	@Override
 	public Iterator<E> iterator() {
 		return store.iterator();
 	}

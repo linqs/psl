@@ -218,18 +218,15 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 				// log.error("Non extreme ground truth found at atom {}. This is not properly supported yet in online max-margin learning.", e.getValue());
 			}
 
-			reasoner.addGroundRule(groundRule);
+			groundRuleStore.addGroundRule(groundRule);
 			lossRules.add(groundRule);
 		}
 	}
 	
 	protected void removeLossAugmentedRules() {
-		List<LossAugmentingGroundRule> lossRules = new ArrayList<LossAugmentingGroundRule>();
-		for (LossAugmentingGroundRule k : Iterables.filter(reasoner.getGroundRules(), LossAugmentingGroundRule.class))
-			lossRules.add(k);
-		for (LossAugmentingGroundRule k : lossRules)
-			reasoner.removeGroundRule(k);
-		lossRules = new ArrayList<LossAugmentingGroundRule>();
+		for (LossAugmentingGroundRule k : Iterables.filter(groundRuleStore.getGroundRules(), LossAugmentingGroundRule.class)) {
+			groundRuleStore.removeGroundRule(k);
+		}
 	}
 
 	protected double getStepSize(int iter) {
@@ -284,7 +281,8 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 				rules.get(i).setWeight(newWeight);
 			}
 			
-			reasoner.changedGroundRuleWeights();
+			changedRules = true;
+
 			// notify the registered observers
 			setChanged();
 			notifyObservers(new IntermediateState(step, numSteps));
@@ -300,7 +298,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 				double avgWeight = avgWeights[i] / numSteps;
 				rules.get(i).setWeight((avgWeight >= 0.0) ? new PositiveWeight(avgWeight) : new NegativeWeight(avgWeight));
 			}
-			reasoner.changedGroundRuleWeights();
+			changedRules = true;
 		}
 		
 		if (augmentLoss)
@@ -314,7 +312,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 		
 		/* Computes the observed incompatibilities and numbers of groundings */
 		for (int i = 0; i < rules.size(); i++) {
-			for (GroundRule groundRule : reasoner.getGroundRules(rules.get(i))) {
+			for (GroundRule groundRule : groundRuleStore.getGroundRules(rules.get(i))) {
 				truthIncompatibility[i] += ((WeightedGroundRule) groundRule).getIncompatibility();
 				numGroundings[i]++;
 			}
@@ -325,7 +323,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	
 	/**
 	 * Computes the expected (unweighted) total incompatibility of the
-	 * {@link WeightedGroundRule GroundCompatibilityRules} in reasoner
+	 * {@link WeightedGroundRule GroundCompatibilityRules} in groundRuleStore
 	 * for each {@link WeightedRule}.
 	 * 
 	 * @return expected incompatibilities, ordered according to rules

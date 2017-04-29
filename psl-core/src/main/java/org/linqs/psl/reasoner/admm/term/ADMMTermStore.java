@@ -119,14 +119,21 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm> {
 	}
 
 	@Override
-	public void close() {
-		store.close();
-		store = null;
-
+	public void clear() {
+		store.clear();
 		variableIndexes.clear();
-		variableIndexes = null;
-
 		localVariables.clear();
+
+      numLocalVariables = 0;
+	}
+
+	@Override
+	public void close() {
+      clear();
+
+      store.close();
+		store = null;
+		variableIndexes = null;
 		localVariables = null;
 	}
 

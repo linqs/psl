@@ -17,6 +17,21 @@
  */
 package org.linqs.psl.reasoner;
 
+import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.config.ConfigManager;
+import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.UnweightedGroundRule;
+import org.linqs.psl.model.rule.WeightedGroundRule;
+import org.linqs.psl.reasoner.term.TermStore;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.apache.commons.collections4.SetValuedMap;
+import org.apache.commons.collections4.multimap.HashSetValuedHashMap;
+import com.google.common.collect.Iterables;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -26,56 +41,48 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.List;
 
-import org.linqs.psl.config.ConfigBundle;
-import org.linqs.psl.config.ConfigManager;
-import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.model.rule.Rule;
-import org.linqs.psl.model.rule.UnweightedGroundRule;
-import org.linqs.psl.model.rule.WeightedGroundRule;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import org.apache.commons.collections4.SetValuedMap;
-import org.apache.commons.collections4.multimap.HashSetValuedHashMap;
-import com.google.common.collect.Iterables;
-
 /**
  * An abstract superclass for reasoners implemented as command-line executables.
- * 
+ *
  * Ground models are provided to the executable and results are read via
  * temporary text files.
- * 
+ *
  * @author Stephen Bach <bach@cs.umd.edu>
  */
 abstract public class ExecutableReasoner implements Reasoner {
-	
+
 	private static final Logger log = LoggerFactory.getLogger(ExecutableReasoner.class);
-	
+
 	/**
 	 * Prefix of property keys used by this class.
-	 * 
+	 *
 	 * @see ConfigManager
 	 */
 	public static final String CONFIG_PREFIX = "executablereasoner";
-	
+
 	/**
 	 * Key for String property which is path to reasoner executable.
-	 * 
+	 *
 	 * This is the rare PSL property that is mandatory to specify.
 	 */
 	public static final String EXECUTABLE_KEY = CONFIG_PREFIX + ".executable";
-	
+
 	/** Ground rules defining the objective function */
 	protected SetValuedMap<Rule, GroundRule> groundRules;
-	
+
 	protected final String executable;
-	
+
 	public ExecutableReasoner(ConfigBundle config) {
 		executable = config.getString(EXECUTABLE_KEY, "");
 		if (executable.equals(""))
 			throw new IllegalArgumentException("Must specify executable.");
-		
+
 		groundRules = new HashSetValuedHashMap<Rule, GroundRule>();
+	}
+
+	// TODO(eriq)
+	@Override
+	public void optimize(TermStore termStore) {
 	}
 
 	@Override
@@ -90,7 +97,7 @@ abstract public class ExecutableReasoner implements Reasoner {
 		catch (IOException e) {
 			throw new Error("IOException when writing model file.", e);
 		}
-		
+
 		log.debug("Finished writing model file. Calling reasoner.");
 		try {
 			callReasoner();
@@ -98,7 +105,7 @@ abstract public class ExecutableReasoner implements Reasoner {
 		catch (IOException e) {
 			throw new Error("IOException when calling reasoner.", e);
 		}
-		
+
 		log.debug("Reasoner finished. Reading results file.");
 		File resultsFile = new File(getResultsFileName());
 		try {
@@ -109,12 +116,12 @@ abstract public class ExecutableReasoner implements Reasoner {
 		catch (IOException e) {
 			throw new Error("IOException when reading results file.", e);
 		}
-		
+
 		log.debug("Finished reading results file.");
 		modelFile.delete();
 		resultsFile.delete();
 	}
-	
+
 	protected void callReasoner() throws IOException {
 		List<String> command = getArgs();
 		command.add(0, executable);
@@ -136,17 +143,17 @@ abstract public class ExecutableReasoner implements Reasoner {
 		if (exitValue != 0)
 			log.warn("Executable exited with unexpected value: {}", exitValue);
 	}
-	
+
 	abstract protected List<String> getArgs();
-	
+
 	abstract protected void writeModel(BufferedWriter modelWriter) throws IOException;
-	
+
 	abstract protected void readResults(BufferedReader resultsReader) throws IOException;
-	
+
 	protected String getModelFileName() {
 		return "model";
 	}
-	
+
 	protected String getResultsFileName() {
 		return "results";
 	}
@@ -176,7 +183,7 @@ abstract public class ExecutableReasoner implements Reasoner {
 	public Iterable<WeightedGroundRule> getCompatibilityRules() {
 		return Iterables.filter(groundRules.values(), WeightedGroundRule.class);
 	}
-	
+
 	public Iterable<UnweightedGroundRule> getConstraintRules() {
 		return Iterables.filter(groundRules.values(), UnweightedGroundRule.class);
 	}

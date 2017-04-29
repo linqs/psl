@@ -23,6 +23,14 @@ import java.util.List;
 public interface TermStore<E extends Term> extends Iterable<E>{
 	public void add(E term);
 
+	/**
+	 * Remove any existing terms and prepare for a new set.
+	 */
+	public void clear();
+
+	/**
+	 * Close down the term store, it will not be used any more.
+	 */
 	public void close();
 
 	public E get(int index);

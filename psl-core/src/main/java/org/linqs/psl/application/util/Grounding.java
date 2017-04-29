@@ -31,11 +31,11 @@ public class Grounding {
 		@Override
 		public boolean apply(Rule el) {	return true; }
 	};
-	
+
 	/**
 	 * Calls {@link Rule#groundAll(AtomManager, GroundRuleStore)} on
 	 * each Rule in a Model.
-	 * 
+	 *
 	 * @param m  the Model with the Rules to ground
 	 * @param atomManager  AtomManager to use for grounding
 	 * @param grs  GroundRuleStore to use for grounding
@@ -43,11 +43,11 @@ public class Grounding {
 	public static void groundAll(Model m, AtomManager atomManager, GroundRuleStore grs) {
 		groundAll(m, atomManager, grs, all);
 	}
-	
+
 	/**
 	 * Calls {@link Rule#groundAll(AtomManager, GroundRuleStore)} on
 	 * each Rule in a Model which passes a filter.
-	 * 
+	 *
 	 * @param m  the Model with the Rules to ground
 	 * @param atomManager  AtomManager to use for grounding
 	 * @param grs  GroundRuleStore to use for grounding
@@ -61,5 +61,5 @@ public class Grounding {
 			}
 		}
 	}
-	
+
 }
