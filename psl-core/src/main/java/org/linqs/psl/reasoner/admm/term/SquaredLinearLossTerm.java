@@ -15,38 +15,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.reasoner.admm;
+package org.linqs.psl.reasoner.admm.term;
+
+import java.util.List;
 
 /**
  * {@link ADMMReasoner} objective term of the form <br />
- * weight * coeffs^T * x
+ * weight * (coeffs^T * x - constant)^2
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-public class LinearLossTerm extends ADMMObjectiveTerm implements WeightedObjectiveTerm {
-	
-	private final double[] coeffs;
-	private double weight;
-
-	/**
-	 * Caller releases control of |zIndices| and |coeffs|.
-	 */
-	LinearLossTerm(ADMMReasoner reasoner, int[] zIndices, double[] coeffs, double weight) {
-		super(reasoner, zIndices);
-		this.coeffs = coeffs;
-		setWeight(weight);
-	}
-
-	@Override
-	public void setWeight(double weight) {
-		this.weight = weight;
+public class SquaredLinearLossTerm extends SquaredHyperplaneTerm {
+	SquaredLinearLossTerm(List<LocalVariable> variables, List<Double> coeffs, double constant, double weight) {
+		super(variables, coeffs, constant, weight);
 	}
 	
 	@Override
-	protected void minimize() {
-		for (int i = 0; i < x.length; i++) {
-			x[i] = reasoner.getConsensusValue(zIndices[i]) - y[i] / reasoner.getStepSize();
-			x[i] -= weight * coeffs[i] / reasoner.getStepSize();
-		}
+	public void minimize(double stepSize, double[] consensusValues) {
+		minWeightedSquaredHyperplane(stepSize, consensusValues);
 	}
 }

@@ -15,18 +15,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.reasoner.admm;
+package org.linqs.psl.reasoner.admm.term;
 
 import static org.junit.Assert.assertEquals;
+
+import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.config.ConfigManager;
+import org.linqs.psl.reasoner.function.ConstantAtomFunctionVariable;
 
 import org.apache.commons.configuration.ConfigurationException;
 import org.junit.Before;
 import org.junit.Test;
-import org.linqs.psl.config.ConfigBundle;
-import org.linqs.psl.config.ConfigManager;
-import org.linqs.psl.reasoner.admm.ADMMReasoner;
-import org.linqs.psl.reasoner.admm.HingeLossTerm;
-import org.linqs.psl.reasoner.function.ConstantAtomFunctionVariable;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class HingeLossTermTest {
 	private ConfigBundle config;
@@ -129,26 +131,21 @@ public class HingeLossTermTest {
 	
 	private void testProblem(double[] z, double[] y, double[] coeffs, double constant,
 			double weight, final double stepSize, double[] expected) {
-		config.setProperty("admmreasoner.stepsize", stepSize);
-		ADMMReasoner reasoner = new ADMMReasoner(config);
+		List<LocalVariable> variables = new ArrayList<LocalVariable>(z.length);
+		List<Double> coeffsList = new ArrayList<Double>(z.length);
 
-		for (double zValue : z) {
-			reasoner.addGlobalVariable(new FakeFunctionVariable(zValue));
-		}
-
-		int[] zIndices = new int[z.length];
 		for (int i = 0; i < z.length; i++) {
-			zIndices[i] = i;
+			variables.add(new LocalVariable(i, z[i]));
+			variables.get(i).setLagrange(y[i]);
+
+			coeffsList.add(new Double(coeffs[i]));
 		}
 		
-		HingeLossTerm term = new HingeLossTerm(reasoner, zIndices, coeffs, constant, weight);
-		for (int i = 0; i < z.length; i++) {
-			term.y[i] = y[i];
-		}
-		term.minimize();
+		HingeLossTerm term = new HingeLossTerm(variables, coeffsList, constant, weight);
+		term.minimize(stepSize, z);
 		
 		for (int i = 0; i < z.length; i++) {
-			assertEquals(expected[i], term.x[i], 5e-5);
+			assertEquals(expected[i], variables.get(i).getValue(), 5e-5);
 		}
 	}
 }

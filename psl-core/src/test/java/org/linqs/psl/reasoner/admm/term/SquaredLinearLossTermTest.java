@@ -15,19 +15,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.reasoner.admm;
+package org.linqs.psl.reasoner.admm.term;
 
 import static org.junit.Assert.assertEquals;
+
+import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.config.ConfigManager;
 
 import org.apache.commons.configuration.ConfigurationException;
 import org.junit.Before;
 import org.junit.Test;
-import org.linqs.psl.config.ConfigBundle;
-import org.linqs.psl.config.ConfigManager;
-import org.linqs.psl.reasoner.admm.ADMMReasoner;
-import org.linqs.psl.reasoner.admm.LinearLossTerm;
 
-public class LinearLossTermTest {
+import java.util.ArrayList;
+import java.util.List;
+
+public class SquaredLinearLossTermTest {
+	
 	private ConfigBundle config;
 	
 	@Before
@@ -40,37 +43,33 @@ public class LinearLossTermTest {
 		/*
 		 * Problem 1
 		 */
-		double[] z = {0.4, 0.5};
-		double[] y = {0.0, 0.0};
-		double[] coeffs = {0.3, -1.0};
-		double weight = 1.0;
-		double stepSize = 1.0;
-		double[] expected = {0.1, 1.5};
-		testProblem(z, y, coeffs, weight, stepSize, expected);
+		double[] z = {0.4, 0.5, 0.1};
+		double[] y = {0.0, 0.0, -0.05};
+		double[] coeffs = {0.3, -1.0, 0.4};
+		double constant = -20.0;
+		double weight = 0.5;
+		double stepSize = 2.0;
+		double[] expected = {-1.41569, 6.55231, -2.29593};
+		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
 	}
 	
-	private void testProblem(double[] z, double[] y, double[] coeffs, double weight,
-			final double stepSize, double[] expected) {
-		config.setProperty("admmreasoner.stepsize", stepSize);
-		ADMMReasoner reasoner = new ADMMReasoner(config);
+	private void testProblem(double[] z, double[] y, double[] coeffs, double constant,
+			double weight, final double stepSize, double[] expected) {
+		List<LocalVariable> variables = new ArrayList<LocalVariable>(z.length);
+		List<Double> coeffsList = new ArrayList<Double>(z.length);
 
-		for (double zValue : z) {
-			reasoner.addGlobalVariable(new FakeFunctionVariable(zValue));
+		for (int i = 0; i < z.length; i++) {
+			variables.add(new LocalVariable(i, z[i]));
+			variables.get(i).setLagrange(y[i]);
+
+			coeffsList.add(new Double(coeffs[i]));
 		}
 		
-		int[] zIndices = new int[z.length];
-		for (int i = 0; i < z.length; i++) {
-			zIndices[i] = i;
-      }
-
-		LinearLossTerm term = new LinearLossTerm(reasoner, zIndices, coeffs, weight);
-		for (int i = 0; i < z.length; i++) {
-			term.y[i] = y[i];
-      }
-		term.minimize();
+		SquaredLinearLossTerm term = new SquaredLinearLossTerm(variables, coeffsList, constant, weight);
+		term.minimize(stepSize, z);
 		
 		for (int i = 0; i < z.length; i++) {
-			assertEquals(expected[i], term.x[i], 5e-5);
-      }
+			assertEquals(expected[i], variables.get(i).getValue(), 5e-5);
+		}
 	}
 }

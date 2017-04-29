@@ -15,16 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.reasoner.admm;
+package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
-import org.linqs.psl.reasoner.admm.HingeLossTerm;
-import org.linqs.psl.reasoner.admm.LinearLossTerm;
-import org.linqs.psl.reasoner.admm.SquaredHingeLossTerm;
-import org.linqs.psl.reasoner.admm.SquaredLinearLossTerm;
 import org.linqs.psl.reasoner.function.AtomFunctionVariable;
 import org.linqs.psl.reasoner.function.ConstantNumber;
 import org.linqs.psl.reasoner.function.ConstraintTerm;
@@ -38,24 +34,23 @@ import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * A TermGenerator for ADMM objective terms.
  */
 public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
-	private ADMMReasoner reasoner;
-
-	public ADMMTermGenerator(ADMMReasoner reasoner) {
-		this.reasoner = reasoner;
-	}
+	public ADMMTermGenerator() {
+   }
 
 	public void generateTerms(GroundRuleStore ruleStore, TermStore<ADMMObjectiveTerm> termStore) {
+      if (!(termStore instanceof ADMMTermStore)) {
+         throw new IllegalArgumentException("ADMMTermGenerator requires an ADMMTermStore");
+      }
+
 		for (GroundRule groundRule : ruleStore.getGroundRules()) {
-			ADMMObjectiveTerm term = createTerm(groundRule);
-			if (term.x.length > 0) {
+			ADMMObjectiveTerm term = createTerm(groundRule, (ADMMTermStore)termStore);
+			if (term.variables.size() > 0) {
 				termStore.add(term);
 			}
 		}
@@ -68,13 +63,13 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 	 * @param groundRule  the GroundRule to be added to the ADMM objective
 	 * @return  the created ADMMObjectiveTerm
 	 */
-	private ADMMObjectiveTerm createTerm(GroundRule groundRule) {
-		boolean squared;
-		FunctionTerm function, innerFunction, zeroTerm, innerFunctionA, innerFunctionB;
+	private ADMMObjectiveTerm createTerm(GroundRule groundRule, ADMMTermStore termStore) {
 		ADMMObjectiveTerm term;
 
 		if (groundRule instanceof WeightedGroundRule) {
-			function = ((WeightedGroundRule)groundRule).getFunctionDefinition();
+         boolean squared;
+         double weight = ((WeightedGroundRule)groundRule).getWeight().getWeight();
+			FunctionTerm function = ((WeightedGroundRule)groundRule).getFunctionDefinition();
 
 			/* Checks if the function is wrapped in a PowerOfTwo */
 			if (function instanceof PowerOfTwo) {
@@ -93,17 +88,18 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 					throw new IllegalArgumentException("Max function must have one linear function and 0.0 as arguments.");
 				}
 
-				innerFunction = null;
-				zeroTerm = null;
-				innerFunctionA = ((MaxFunction)function).get(0);
-				innerFunctionB = ((MaxFunction)function).get(1);
+				FunctionTerm innerFunction = null;
+				FunctionTerm zeroTerm = null;
 
-				if (innerFunctionA instanceof ConstantNumber && innerFunctionA.getValue() == 0.0) {
-					zeroTerm = innerFunctionA;
-					innerFunction = innerFunctionB;
-				} else if (innerFunctionB instanceof ConstantNumber && innerFunctionB.getValue() == 0.0) {
-					zeroTerm = innerFunctionB;
-					innerFunction = innerFunctionA;
+				FunctionTerm innerFunction0 = ((MaxFunction)function).get(0);
+				FunctionTerm innerFunction1 = ((MaxFunction)function).get(1);
+
+				if (innerFunction0 instanceof ConstantNumber && innerFunction0.getValue() == 0.0) {
+					zeroTerm = innerFunction0;
+					innerFunction = innerFunction1;
+				} else if (innerFunction1 instanceof ConstantNumber && innerFunction1.getValue() == 0.0) {
+					zeroTerm = innerFunction1;
+					innerFunction = innerFunction0;
 				}
 
 				if (zeroTerm == null) {
@@ -111,37 +107,33 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 				}
 
 				if (innerFunction instanceof FunctionSum) {
-					Hyperplane hp = processHyperplane((FunctionSum) innerFunction);
+					Hyperplane hyperplane = processHyperplane((FunctionSum) innerFunction, termStore);
 					if (squared) {
-						term = new SquaredHingeLossTerm(reasoner, hp.zIndices, hp.coeffs, hp.constant,
-								((WeightedGroundRule)groundRule).getWeight().getWeight());
+						term = new SquaredHingeLossTerm(hyperplane.variables, hyperplane.coeffs, hyperplane.constant, weight);
 					} else {
-						term = new HingeLossTerm(reasoner, hp.zIndices, hp.coeffs, hp.constant,
-								((WeightedGroundRule)groundRule).getWeight().getWeight());
+						term = new HingeLossTerm(hyperplane.variables, hyperplane.coeffs, hyperplane.constant, weight);
 					}
 				} else {
 					throw new IllegalArgumentException("Max function must have one linear function and 0.0 as arguments.");
 				}
 			/* Else, if it's a FunctionSum, constructs the objective term (a linear loss) */
 			} else if (function instanceof FunctionSum) {
-				Hyperplane hp = processHyperplane((FunctionSum) function);
+				Hyperplane hyperplane = processHyperplane((FunctionSum) function, termStore);
 				if (squared) {
-					term = new SquaredLinearLossTerm(reasoner, hp.zIndices, hp.coeffs, 0.0,
-							((WeightedGroundRule)groundRule).getWeight().getWeight());
+					term = new SquaredLinearLossTerm(hyperplane.variables, hyperplane.coeffs, 0.0, weight);
 				} else {
-					term = new LinearLossTerm(reasoner, hp.zIndices, hp.coeffs,
-							((WeightedGroundRule)groundRule).getWeight().getWeight());
+					term = new LinearLossTerm(hyperplane.variables, hyperplane.coeffs, weight);
 				}
 			} else {
-				throw new IllegalArgumentException("Unrecognized function: " + ((WeightedGroundRule) groundRule).getFunctionDefinition());
+				throw new IllegalArgumentException("Unrecognized function: " + function);
 			}
 		} else if (groundRule instanceof UnweightedGroundRule) {
 			ConstraintTerm constraint = ((UnweightedGroundRule)groundRule).getConstraintDefinition();
-			function = constraint.getFunction();
+			FunctionTerm function = constraint.getFunction();
 			if (function instanceof FunctionSum) {
-				Hyperplane hp = processHyperplane((FunctionSum)function);
-				term = new LinearConstraintTerm(reasoner, hp.zIndices, hp.coeffs,
-						constraint.getValue() + hp.constant, constraint.getComparator());
+				Hyperplane hyperplane = processHyperplane((FunctionSum)function, termStore);
+				term = new LinearConstraintTerm(hyperplane.variables, hyperplane.coeffs,
+						constraint.getValue() + hyperplane.constant, constraint.getComparator());
 			} else {
 				throw new IllegalArgumentException("Unrecognized constraint: " + constraint);
 			}
@@ -152,64 +144,47 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 		return term;
 	}
 
-	private Hyperplane processHyperplane(FunctionSum sum) {
-		Hyperplane hp = new Hyperplane();
-		Map<AtomFunctionVariable, Integer> localVarLocations = new HashMap<AtomFunctionVariable, Integer>();
-		List<Integer> tempZIndices = new ArrayList<Integer>(sum.size());
-		List<Double> tempCoeffs = new ArrayList<Double>(sum.size());
+	private Hyperplane processHyperplane(FunctionSum sum, ADMMTermStore termStore) {
+		Hyperplane hyperplane = new Hyperplane();
 
 		for (FunctionSummand summand : sum) {
 			FunctionSingleton singleton = summand.getTerm();
+
 			if (singleton instanceof AtomFunctionVariable && !singleton.isConstant()) {
-				// If this variable has been encountered before in any hyperplane.
-				int zIndex = reasoner.getConsensusIndex((AtomFunctionVariable)singleton);
-				if (zIndex != -1) {
-					// Checks if the variable has already been encountered in THIS hyperplane.
-					Integer localIndex = localVarLocations.get(singleton);
+            LocalVariable variable = termStore.createLocalVariable((AtomFunctionVariable)singleton);
+
+            // Check to see if we have seen this variable before in this hyperplane.
+            // Note that we checking for existance in a List (O(n)), but there are usually a small number of
+            // variables per hyperplane.
+            int localIndex = hyperplane.variables.indexOf(variable);
+            if (localIndex != -1) {
 					// If it has, just adds the coefficient.
-					if (localIndex != null) {
-						tempCoeffs.set(localIndex, tempCoeffs.get(localIndex) + summand.getCoefficient());
-					// Else, creates a new local variable.
-					} else {
-						tempZIndices.add(zIndex);
-						tempCoeffs.add(summand.getCoefficient());
-						localVarLocations.put((AtomFunctionVariable)singleton, tempZIndices.size() - 1);
-
-						reasoner.addLocalVariable();
-					}
-				// Else, creates a new global variable and a local variable.
-				} else {
-					// Create the global variable.
-					zIndex = reasoner.addGlobalVariable((AtomFunctionVariable)singleton);
-
-					// Creates the local variable.
-					tempZIndices.add(zIndex);
-					tempCoeffs.add(summand.getCoefficient());
-					localVarLocations.put((AtomFunctionVariable)singleton, tempZIndices.size() - 1);
-				}
+               hyperplane.coeffs.set(localIndex, hyperplane.coeffs.get(localIndex) + summand.getCoefficient());
+            } else {
+               hyperplane.variables.add(variable);
+               hyperplane.coeffs.add(summand.getCoefficient());
+            }
 			} else if (singleton.isConstant()) {
 				// Subtracts because hyperplane is stored as coeffs^T * x = constant.
-				hp.constant -= summand.getValue();
+				hyperplane.constant -= summand.getValue();
 			} else {
 				throw new IllegalArgumentException("Unexpected summand.");
 			}
 		}
 
-		hp.zIndices = new int[tempZIndices.size()];
-		hp.coeffs = new double[tempCoeffs.size()];
-
-		for (int i = 0; i < tempZIndices.size(); i++) {
-			hp.zIndices[i] = tempZIndices.get(i);
-			hp.coeffs[i] = tempCoeffs.get(i);
-		}
-
-		return hp;
+		return hyperplane;
 	}
 
 	private static class Hyperplane {
-		public int[] zIndices;
-		public double[] coeffs;
+		public List<LocalVariable> variables;
+		public List<Double> coeffs;
 		public double constant;
+
+      public Hyperplane() {
+         variables = new ArrayList<LocalVariable>();
+         coeffs = new ArrayList<Double>();
+         constant = 0.0;
+      }
 	}
 
 }

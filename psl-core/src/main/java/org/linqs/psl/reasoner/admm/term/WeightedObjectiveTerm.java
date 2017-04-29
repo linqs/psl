@@ -15,29 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.reasoner.admm;
+package org.linqs.psl.reasoner.admm.term;
 
-import org.linqs.psl.reasoner.function.ConstantAtomFunctionVariable;
-
-public class FakeFunctionVariable extends ConstantAtomFunctionVariable {
-   private static int nextId = 0;
-
-	private double value;
-	private int id;
-
-	public FakeFunctionVariable(double value) {
-		super(null);
-		this.value = value;
-      id = nextId++;
-	}
-
-	@Override
-	public double getValue() {
-		return value;
-	}
-
-   @Override
-   public int hashCode() {
-      return id;
-   }
+/**
+ * An {@link ADMMObjectiveTerm} with a scalar coefficient, i.e., it is of the form
+ * f(x) = weight * g(x).
+ */
+public interface WeightedObjectiveTerm {
+	public void setWeight(double weight); 
 }

@@ -39,11 +39,10 @@ import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.ReasonerFactory;
 import org.linqs.psl.reasoner.admm.ADMMReasonerFactory;
 // TEST(eriq)
-import org.linqs.psl.reasoner.admm.ADMMTermGenerator;
+import org.linqs.psl.reasoner.admm.term.ADMMTermGenerator;
+import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
-// TEST(eriq)
-import org.linqs.psl.reasoner.term.MemoryTermStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -112,8 +111,8 @@ public class MPEInference implements ModelApplication {
 		Grounding.groundAll(model, atomManager, groundRuleStore);
 
 		// TODO(eriq): It won't always be ADMM Terms
-		termStore = new MemoryTermStore(groundRuleStore.size());
-		TermGenerator termGenerator = new ADMMTermGenerator((org.linqs.psl.reasoner.admm.ADMMReasoner)reasoner);
+		termStore = new ADMMTermStore();
+		TermGenerator termGenerator = new ADMMTermGenerator();
 
 		log.debug("Initializing objective terms for %d ground rules.", groundRuleStore.size());
 		termGenerator.generateTerms(groundRuleStore, termStore);

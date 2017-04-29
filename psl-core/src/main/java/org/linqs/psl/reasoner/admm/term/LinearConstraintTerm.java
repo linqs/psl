@@ -15,9 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.reasoner.admm;
+package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.reasoner.function.FunctionComparator;
+
+import java.util.List;
 
 /**
  * {@link ADMMReasoner} objective term of the form <br />
@@ -33,14 +35,13 @@ public class LinearConstraintTerm extends HyperplaneTerm {
 	
 	private final FunctionComparator comparator;
 	
-	protected LinearConstraintTerm(ADMMReasoner reasoner, int[] zIndices, double[] coeffs,
-			double constant, FunctionComparator comparator) {
-		super(reasoner, zIndices, coeffs, constant);
+	protected LinearConstraintTerm(List<LocalVariable> variables, List<Double> coeffs, double constant, FunctionComparator comparator) {
+		super(variables, coeffs, constant);
 		this.comparator = comparator;
 	}
 	
 	@Override
-	protected void minimize() {
+	public void minimize(double stepSize, double[] consensusValues) {
 		/* If it's not an equality constraint, first tries to minimize without the constraint */
 		if (!comparator.equals(FunctionComparator.Equality)) {
 		
@@ -51,10 +52,11 @@ public class LinearConstraintTerm extends HyperplaneTerm {
 			 * Minimizes without regard for the constraint, i.e., solves
 			 * argmin stepSize/2 * \|x - z + y / stepSize \|_2^2
 			 */
-			for (int i = 0; i < x.length; i++) {
-				x[i] = reasoner.getConsensusValue(zIndices[i]) - y[i] / reasoner.getStepSize();
+			for (int i = 0; i < variables.size(); i++) {
+				LocalVariable variable = variables.get(i);
+				variable.setValue(consensusValues[variable.getGlobalId()] - variable.getLagrange() / stepSize);
 				
-				total += coeffs[i] * x[i];
+				total += coeffs.get(i).doubleValue() * variable.getValue();
 			}
 			
 			/*
@@ -73,6 +75,6 @@ public class LinearConstraintTerm extends HyperplaneTerm {
 		 * If the naive minimization didn't work, or if it's an equality constraint,
 		 * projects onto the hyperplane
 		 */
-		project();
+		project(stepSize, consensusValues);
 	}
 }

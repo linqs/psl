@@ -15,7 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.reasoner.admm;
+package org.linqs.psl.reasoner.admm.term;
+
+import java.util.List;
 
 /**
  * {@link ADMMReasoner} objective term of the form <br />
@@ -26,14 +28,14 @@ package org.linqs.psl.reasoner.admm;
  * @author Stephen Bach <bach@cs.umd.edu>
  */
 class HingeLossTerm extends HyperplaneTerm implements WeightedObjectiveTerm {
-	
 	private double weight;
 	
-	HingeLossTerm(ADMMReasoner reasoner, int[] zIndices, double[] coeffs,
-			double constant, double weight) {
-		super(reasoner, zIndices, coeffs, constant);
-		if (weight < 0.0)
+	HingeLossTerm(List<LocalVariable> variables, List<Double> coeffs, double constant, double weight) {
+		super(variables, coeffs, constant);
+
+		if (weight < 0.0) {
 			throw new IllegalArgumentException("Only non-negative weights are supported.");
+		}
 		setWeight(weight);
 	}
 
@@ -43,7 +45,7 @@ class HingeLossTerm extends HyperplaneTerm implements WeightedObjectiveTerm {
 	}
 	
 	@Override
-	protected void minimize() {
+	public void minimize(double stepSize, double[] consensusValues) {
 		/* Initializes scratch data */
 		double total = 0.0;
 		
@@ -51,9 +53,10 @@ class HingeLossTerm extends HyperplaneTerm implements WeightedObjectiveTerm {
 		 * Minimizes without the linear loss, i.e., solves
 		 * argmin stepSize/2 * \|x - z + y / stepSize \|_2^2
 		 */
-		for (int i = 0; i < x.length; i++) {
-			x[i] = reasoner.getConsensusValue(zIndices[i]) - y[i] / reasoner.getStepSize();
-			total += coeffs[i] * x[i];
+		for (int i = 0; i < variables.size(); i++) {
+			LocalVariable variable = variables.get(i);
+			variable.setValue(consensusValues[variable.getGlobalId()] - variable.getLagrange() / stepSize);
+			total += (coeffs.get(i).doubleValue() * variable.getValue());
 		}
 		
 		/* If the linear loss is NOT active at the computed point, it is the solution... */
@@ -66,10 +69,14 @@ class HingeLossTerm extends HyperplaneTerm implements WeightedObjectiveTerm {
 		 * argmin weight * coeffs^T * x + stepSize/2 * \|x - z + y / stepSize \|_2^2
 		 */
 		total = 0.0;
-		for (int i = 0; i < x.length; i++) {
-			x[i] = reasoner.getConsensusValue(zIndices[i]) - y[i] / reasoner.getStepSize();
-			x[i] -= weight * coeffs[i] / reasoner.getStepSize();
-			total += coeffs[i] * x[i];
+		for (int i = 0; i < variables.size(); i++) {
+			LocalVariable variable = variables.get(i);
+
+			// TODO(eriq): We just took this step above. Is ADMM accidentally taking two steps?
+			variable.setValue(consensusValues[variable.getGlobalId()] - variable.getLagrange() / stepSize);
+			variable.setValue(variable.getValue() - weight * coeffs.get(i).doubleValue() / stepSize);
+
+			total += coeffs.get(i).doubleValue() * variable.getValue();
 		}
 		
 		/* If the linear loss IS active at the computed point, it is the solution... */
@@ -78,6 +85,6 @@ class HingeLossTerm extends HyperplaneTerm implements WeightedObjectiveTerm {
 		}
 		
 		/* Else, the solution is on the hinge */
-		project();
+		project(stepSize, consensusValues);
 	}
 }

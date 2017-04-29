@@ -28,6 +28,8 @@ import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.ThreadPool;
+import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
+import org.linqs.psl.reasoner.admm.term.LocalVariable;
 import org.linqs.psl.reasoner.function.AtomFunctionVariable;
 import org.linqs.psl.reasoner.function.ConstantNumber;
 import org.linqs.psl.reasoner.function.ConstraintTerm;
@@ -37,7 +39,6 @@ import org.linqs.psl.reasoner.function.FunctionSummand;
 import org.linqs.psl.reasoner.function.FunctionTerm;
 import org.linqs.psl.reasoner.function.MaxFunction;
 import org.linqs.psl.reasoner.function.PowerOfTwo;
-import org.linqs.psl.reasoner.term.MemoryTermStore;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 
@@ -66,7 +67,6 @@ import java.util.concurrent.Semaphore;
  * @author Eric Norris
  */
 public class ADMMReasoner implements Reasoner {
-
 	private static final Logger log = LoggerFactory.getLogger(ADMMReasoner.class);
 
 	/**
@@ -124,48 +124,39 @@ public class ADMMReasoner implements Reasoner {
 	 * (by default uses the number of processors in the system) */
 	public static final int NUM_THREADS_DEFAULT = Runtime.getRuntime().availableProcessors();
 
-	private int maxIter;
+	private static final double LOWER_BOUND = 0.0;
+	private static final double UPPER_BOUND = 1.0;
 
 	/**
-	 * Sometimes called rho or eta
+	 * Sometimes called eta or rho,
 	 */
 	private final double stepSize;
 
-	private double epsilonRel, epsilonAbs;
-	private final int stopCheck;
-
 	/**
-	 * The count of local and global variables.
-	 * Global variables are accessed via |variables|,
-	 * and local ones are only accessible to the local objective term.
-	 * May be referred to as "n".
+	 * Multithreading variables
 	 */
-	private int totalVariableCount;
+	private final int numThreads;
+
+	private double epsilonRel;
+	private double epsilonAbs;
+
+	private final int stopCheck;
 
 	// TODO(eriq): The entire method that this code manages variables is a bit suspect, ponder on it.
 
 	private boolean rebuildModel;
-	private double lagrangePenalty, augmentedLagrangePenalty;
+	private double lagrangePenalty;
+	private double augmentedLagrangePenalty;
 
-	/**
-	 * Collection of variables and their associated indices for looking up indices in z.
-	 * We hold both a forward and reverse mapping.
-	 */
-	protected BidiMap<Integer, AtomFunctionVariable> variables;
+	private int maxIter;
 
 	// TODO(eriq): These  were previously public and accessed directly. Do a quick performance check.
 	// TODO(eriq): Renames? Include a mapping in comments?
-	/** Consensus vector */
-	private List<Double> z;
-	/** Lower bounds on variables */
-	private List<Double> lb;
-	/** Upper bounds on variables */
-	private List<Double> ub;
-	/** Lists of local variable locations for updating consensus variables */
-	private List<List<VariableLocation>> varLocations;
-
-	/* Multithreading variables */
-	private final int numThreads;
+	/**
+	 * Consensus vector.
+	 * Also sometimes called 'z'.
+	 */
+	private double[] consensusValues;
 
 	public ADMMReasoner(ConfigBundle config) {
 		maxIter = config.getInt(MAX_ITER_KEY, MAX_ITER_DEFAULT);
@@ -183,14 +174,7 @@ public class ADMMReasoner implements Reasoner {
 		}
 
 		rebuildModel = true;
-
-		// TODO(eriq): We need these initialized for tests,  but I don't like the reinit in buildGroundModel().
-		variables = new DualHashBidiMap<Integer, AtomFunctionVariable>();
-		z = new ArrayList<Double>();
-		lb = new ArrayList<Double>();
-		ub = new ArrayList<Double>();
-		varLocations = new ArrayList<List<VariableLocation>>();
-		totalVariableCount = 0;
+		consensusValues = null;
 
 		// Multithreading
 		numThreads = config.getInt(NUM_THREADS_KEY, NUM_THREADS_DEFAULT);
@@ -231,64 +215,16 @@ public class ADMMReasoner implements Reasoner {
 		return this.augmentedLagrangePenalty;
 	}
 
-	public double getStepSize() {
-		return stepSize;
-	}
-
-	public double getConsensusValue(int index) {
-		return z.get(index).doubleValue();
-	}
-
-	/**
-	 * Create variable with its associated consensus (z) variable and return the new consensus variable's index.
-	 */
-	public int addGlobalVariable(AtomFunctionVariable variable) {
-		variables.put(variables.size(), variable);
-
-		z.add(variable.getValue());
-		lb.add(0.0);
-		ub.add(1.0);
-		varLocations.add(new ArrayList<ADMMReasoner.VariableLocation>());
-
-		totalVariableCount++;
-
-		return z.size() - 1;
-	}
-
-	/**
-	 * Just increment the variable count.
-	 */
-	public void addLocalVariable() {
-		totalVariableCount++;
-	}
-
-	/**
-	 * If the variable exists get it's index into the consensus (z) vector, return -1 otherwise.
-	 */
-	public int getConsensusIndex(AtomFunctionVariable variable) {
-		Integer index = variables.getKey(variable);
-		if (index == null) {
-			return -1;
-		}
-
-		return index.intValue();
-	}
-
 	// TODO(eriq): Rethink the concept of rebuilding the model (based on the termstore).
+	//  Now this would be like clearing the store and regrounding all groundrules.
+	//  Then re-initing the consensus vector.
 	// TEST(eriq): Because of circular dependencies on the term generator, this is strange for now.
-	// private void buildGroundModel(TermStore<ADMMObjectiveTerm> termStore) {
-	private void rebuildGroundModel(TermStore<ADMMObjectiveTerm> termStore) {
+	// private void buildGroundModel() {
+	private void rebuildGroundModel(ADMMTermStore termStore) {
 		log.debug("Rebuilding reasoner data structures");
 
-		varLocations = new ArrayList<List<VariableLocation>>();
-		for (int i = 0; i < z.size(); i++) {
-			varLocations.add(new ArrayList<ADMMReasoner.VariableLocation>());
-		}
-
-		// Register all the local variables.
-		for (ADMMObjectiveTerm term : termStore) {
-			registerLocalVariableCopies(term);
-		}
+		// TEST
+		consensusValues = new double[termStore.getNumGlobalVariables()];
 
 		rebuildModel = false;
 	}
@@ -312,26 +248,22 @@ public class ADMMReasoner implements Reasoner {
 		throw new UnsupportedOperationException("Temporarily unsupported during rework");
 	}
 
-	// TODO(eriq): Dup?
-	public double getConsensusVariableValue(int index) {
-		if (z == null) {
-			throw new IllegalStateException("Consensus variables have not been initialized. "
-					+ "Must call optimize() first.");
-		}
-		return z.get(index);
-	}
-
 	@Override
 	public void optimize() {
 	}
 
 	// TEST(eriq)
-	public void optimize(TermStore<ADMMObjectiveTerm> termStore) {
+	public void optimize(TermStore baseTermStore) {
+		if (!(baseTermStore instanceof ADMMTermStore)) {
+			throw new IllegalArgumentException("ADMMReasoner requires an ADMMTermStore");
+		}
+		ADMMTermStore termStore = (ADMMTermStore)baseTermStore;
+		
 		if (rebuildModel) {
 			rebuildGroundModel(termStore);
 		}
 
-		log.debug("Performing optimization with {} variables and {} terms.", z.size(), termStore.size());
+		log.debug("Performing optimization with {} variables and {} terms.", termStore.getNumGlobalVariables(), termStore.size());
 
 		// Starts up the computation threads
 		ADMMTask[] tasks = new ADMMTask[numThreads];
@@ -349,7 +281,7 @@ public class ADMMReasoner implements Reasoner {
 		double dualRes = Double.POSITIVE_INFINITY;
 		double epsilonPrimal = 0;
 		double epsilonDual = 0;
-		double epsilonAbsTerm = Math.sqrt(totalVariableCount) * epsilonAbs;
+		double epsilonAbsTerm = Math.sqrt(termStore.getNumLocalVariables()) * epsilonAbs;
 		double AxNorm = 0.0, BzNorm = 0.0, AyNorm = 0.0;
 		boolean check = false;
 		int iter = 0;
@@ -404,8 +336,9 @@ public class ADMMReasoner implements Reasoner {
 		}
 
 		// Notify threads the optimization is complete
-		for (ADMMTask task : tasks)
+		for (ADMMTask task : tasks) {
 			task.flag = false;
+		}
 
 		try {
 			// First wake all threads
@@ -422,81 +355,57 @@ public class ADMMReasoner implements Reasoner {
 		log.info("Optimization completed in  {} iterations. " +
 				"Primal res.: {}, Dual res.: {}", new Object[] {iter, primalRes, dualRes});
 
-		/* Updates variables */
-		for (int i = 0; i < variables.size(); i++) {
-			variables.get(i).setValue(z.get(i));
-		}
+		// Updates variables
+		termStore.updateVariables(consensusValues);
 	}
 
 	@Override
 	public void close() {
-		variables = null;
-		z = null;
-		lb = null;
-		ub = null;
-		varLocations = null;
-	}
-
-	private void registerLocalVariableCopies(ADMMObjectiveTerm term) {
-		for (int i = 0; i < term.x.length; i++) {
-			VariableLocation varLocation = new VariableLocation(term, i);
-			varLocations.get(term.zIndices[i]).add(varLocation);
-		}
-	}
-
-	public class VariableLocation {
-		private final ADMMObjectiveTerm term;
-		private final int localIndex;
-
-		private VariableLocation(ADMMObjectiveTerm term, int localIndex) {
-			this.term = term;
-			this.localIndex = localIndex;
-		}
-
-		public ADMMObjectiveTerm getTerm() {
-			return term;
-		}
-
-		public int getLocalIndex() {
-			return localIndex;
-		}
+		consensusValues = null;
 	}
 
 	private class ADMMTask implements Runnable {
 		public boolean flag;
-		private final int termStart, termEnd;
-		private final int zStart, zEnd;
+		private final int termIndexStart, termIndexEnd;
+		private final int variableIndexStart, variableIndexEnd;
 		private final CyclicBarrier workerBarrier, checkBarrier;
 		private final Semaphore notification;
-		private final TermStore<ADMMObjectiveTerm> termStore;
+		private final ADMMTermStore termStore;
+
+		public double primalResInc;
+		public double dualResInc;
+		public double AxNormInc;
+		public double BzNormInc;
+		public double AyNormInc;
+		protected double lagrangePenalty;
+		protected double augmentedLagrangePenalty;
 
 		public ADMMTask(int index, CyclicBarrier wBarrier, CyclicBarrier cBarrier,
-				Semaphore notification, TermStore<ADMMObjectiveTerm> termStore) {
+				Semaphore notification, ADMMTermStore termStore) {
 			this.workerBarrier = wBarrier;
 			this.checkBarrier = cBarrier;
 			this.notification = notification;
 			this.termStore = termStore;
 			this.flag = true;
 
-
 			// Determine the section of the terms this thread will look at
 			int tIncrement = (int)(Math.ceil((double)termStore.size() / (double)numThreads));
-			this.termStart = tIncrement * index;
-			this.termEnd = Math.min(termStart + tIncrement, termStore.size());
+			this.termIndexStart = tIncrement * index;
+			this.termIndexEnd = Math.min(termIndexStart + tIncrement, termStore.size());
 
-			// Determine the section of the z vector this thread will look at
-			int zIncrement = (int)(Math.ceil((double)z.size() / (double)numThreads));
-			this.zStart = zIncrement * index;
-			this.zEnd = Math.min(zStart + zIncrement, z.size());
+			// Determine the section of the consensusValues vector this thread will look at.
+			int zIncrement = (int)(Math.ceil(consensusValues.length / numThreads));
+			this.variableIndexStart = zIncrement * index;
+			this.variableIndexEnd = Math.min(variableIndexStart + zIncrement, consensusValues.length);
+
+			primalResInc = 0.0;
+			dualResInc = 0.0;
+			AxNormInc = 0.0;
+			BzNormInc = 0.0;
+			AyNormInc = 0.0;
+			lagrangePenalty = 0.0;
+			augmentedLagrangePenalty = 0.0;
 		}
-
-		public double primalResInc = 0.0;
-		public double dualResInc = 0.0;
-		public double AxNormInc = 0.0;
-		public double BzNormInc = 0.0;
-		public double AyNormInc = 0.0;
-		protected double lagrangePenalty = 0.0;
-		protected double augmentedLagrangePenalty = 0.0;
 
 		private void awaitUninterruptibly(CyclicBarrier b) {
 			try {
@@ -514,11 +423,13 @@ public class ADMMReasoner implements Reasoner {
 
 			int iter = 1;
 			while (flag) {
-				boolean check = (iter-1) % stopCheck == 0;
+				boolean check = ((iter - 1) % stopCheck) == 0;
 
-				/* Solves each local function */
-				for (int i = termStart; i < termEnd; i ++)
-					termStore.get(i).updateLagrange().minimize();
+				// Solves each local function.
+				for (int i = termIndexStart; i < termIndexEnd; i ++) {
+					termStore.get(i).updateLagrange(stepSize, consensusValues);
+					termStore.get(i).minimize(stepSize, consensusValues);
+				}
 
 				// Ensures all threads are at the same point
 				awaitUninterruptibly(workerBarrier);
@@ -535,40 +446,41 @@ public class ADMMReasoner implements Reasoner {
 					augmentedLagrangePenalty = 0.0;
 				}
 
-				for (int i = zStart; i < zEnd; i++) {
+				for (int i = variableIndexStart; i < variableIndexEnd; i++) {
 					double total = 0.0;
-					/* First pass computes newZ and dual residual */
-					for (VariableLocation location : varLocations.get(i)) {
-						total += location.term.x[location.localIndex] + location.term.y[location.localIndex] / stepSize;
+					// First pass computes newConsensusValue and dual residual fom all local copies.
+					for (LocalVariable localVariable : termStore.getLocalVariables(i)) {
+						total += localVariable.getValue() + localVariable.getLagrange() / stepSize;
 
 						if (check) {
-							AxNormInc += location.term.x[location.localIndex] * location.term.x[location.localIndex];
-							AyNormInc += location.term.y[location.localIndex] * location.term.y[location.localIndex];
+							AxNormInc += localVariable.getValue() * localVariable.getValue();
+							AyNormInc += localVariable.getLagrange() * localVariable.getLagrange();
 						}
 					}
-					double newZ = total / varLocations.get(i).size();
-					if (newZ < lb.get(i)) {
-						newZ = lb.get(i);
-					} else if (newZ > ub.get(i)) {
-						newZ = ub.get(i);
+
+					double newConsensusValue = total / termStore.getLocalVariables(i).size();
+					if (newConsensusValue < LOWER_BOUND) {
+						newConsensusValue = LOWER_BOUND;
+					} else if (newConsensusValue > UPPER_BOUND) {
+						newConsensusValue = UPPER_BOUND;
 					}
 
 					if (check) {
-						double diff = z.get(i) - newZ;
-						/* Residual is diff^2 * number of local variables mapped to z element */
-						dualResInc += diff * diff * varLocations.get(i).size();
-						BzNormInc += newZ * newZ * varLocations.get(i).size();
+						double diff = consensusValues[i] - newConsensusValue;
+						// Residual is diff^2 * number of local variables mapped to consensusValues element.
+						dualResInc += diff * diff * termStore.getLocalVariables(i).size();
+						BzNormInc += newConsensusValue * newConsensusValue * termStore.getLocalVariables(i).size();
 					}
-					z.set(i, newZ);
+					consensusValues[i] = newConsensusValue;
 
 					/* Second pass computes primal residuals */
 					if (check) {
-						for (VariableLocation location : varLocations.get(i)) {
-							double diff = location.term.x[location.localIndex] - newZ;
+						for (LocalVariable localVariable : termStore.getLocalVariables(i)) {
+							double diff = localVariable.getValue() - newConsensusValue;
 							primalResInc += diff * diff;
 							// computes Lagrangian penalties
-							lagrangePenalty += location.term.y[location.localIndex] * (location.term.x[location.localIndex] - z.get(i));
-							augmentedLagrangePenalty += 0.5 * stepSize * Math.pow(location.term.x[location.localIndex]-z.get(i), 2);
+							lagrangePenalty += localVariable.getLagrange() * (localVariable.getValue() - consensusValues[i]);
+							augmentedLagrangePenalty += 0.5 * stepSize * Math.pow(localVariable.getValue() - consensusValues[i], 2);
 						}
 					}
 				}
@@ -580,6 +492,7 @@ public class ADMMReasoner implements Reasoner {
 				// Waits for main thread
 				awaitUninterruptibly(checkBarrier);
 			}
+
 			awaitUninterruptibly(checkBarrier);
 		}
 	}

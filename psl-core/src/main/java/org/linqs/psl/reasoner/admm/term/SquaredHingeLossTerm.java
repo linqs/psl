@@ -15,7 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.reasoner.admm;
+package org.linqs.psl.reasoner.admm.term;
+
+import java.util.List;
 
 /**
  * {@link ADMMReasoner} objective term of the form <br />
@@ -23,15 +25,14 @@ package org.linqs.psl.reasoner.admm;
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-class SquaredHingeLossTerm extends SquaredHyperplaneTerm {
+public class SquaredHingeLossTerm extends SquaredHyperplaneTerm {
 	
-	public SquaredHingeLossTerm(ADMMReasoner reasoner, int[] zIndices,
-			double[] coeffs, double constant, double weight) {
-		super(reasoner, zIndices, coeffs, constant, weight);
+	public SquaredHingeLossTerm(List<LocalVariable> variables, List<Double> coeffs, double constant, double weight) {
+		super(variables, coeffs, constant, weight);
 	}
 
 	@Override
-	protected void minimize() {
+	public void minimize(double stepSize, double[] consensusValues) {
 		/* Initializes scratch data */
 		double total = 0.0;
 		
@@ -39,9 +40,10 @@ class SquaredHingeLossTerm extends SquaredHyperplaneTerm {
 		 * Minimizes without the quadratic loss, i.e., solves
 		 * argmin stepSize/2 * \|x - z + y / stepSize \|_2^2
 		 */
-		for (int i = 0; i < x.length; i++) {
-			x[i] = reasoner.getConsensusValue(zIndices[i]) - y[i] / reasoner.getStepSize();
-			total += coeffs[i] * x[i];
+		for (int i = 0; i < variables.size(); i++) {
+			LocalVariable variable = variables.get(i);
+			variable.setValue(consensusValues[variable.getGlobalId()] - variable.getLagrange() / stepSize);
+			total += coeffs.get(i).doubleValue() * variable.getValue();
 		}
 		
 		/* If the quadratic loss is NOT active at the computed point, it is the solution... */
@@ -53,7 +55,6 @@ class SquaredHingeLossTerm extends SquaredHyperplaneTerm {
 		 * Else, minimizes with the quadratic loss, i.e., solves
 		 * argmin weight * (coeffs^T * x - constant)^2 + stepSize/2 * \|x - z + y / stepSize \|_2^2
 		 */
-		minWeightedSquaredHyperplane();
+		minWeightedSquaredHyperplane(stepSize, consensusValues);
 	}
-
 }
