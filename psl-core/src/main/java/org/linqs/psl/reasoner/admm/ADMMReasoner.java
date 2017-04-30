@@ -151,7 +151,7 @@ public class ADMMReasoner implements Reasoner {
 	private int maxIter;
 
 	// TODO(eriq): These  were previously public and accessed directly. Do a quick performance check.
-	// TODO(eriq): Renames? Include a mapping in comments?
+	// TODO(eriq): Does not need to be member data anymore (along with most non-finals).
 	/**
 	 * Consensus vector.
 	 * Also sometimes called 'z'.

@@ -42,17 +42,6 @@ public interface GroundRuleStore {
 	public void addGroundRule(GroundRule rule);
 	
 	/**
-	 * Notifies this store that a GroundRule was changed.
-	 * <p>
-	 * Any component that modifies a GroundRule in this store should call
-	 * this method.
-	 * 
-	 * @param rule  the changed GroundRule
-	 * @throws IllegalArgumentException  if rule is not in this store
-	 */
-	public void changedGroundRule(GroundRule rule);
-	
-	/**
 	 * Notifies this store that a {@link WeightedGroundRule}'s weight
 	 * was changed.
 	 * <p>
@@ -62,14 +51,6 @@ public interface GroundRuleStore {
 	 * <p>
 	 * It is not necessary to also call {@link #changedGroundRule(GroundRule)}
 	 * if only the weight was changed.
-	 * 
-	 * @param rule  the ground rule with a changed weight
-	 */
-	public void changedGroundRuleWeight(WeightedGroundRule rule);
-	
-	/**
-	 * Equivalent to calling {@link #changedGroundRuleWeight(WeightedGroundRule)}
-	 * for all GroundCompatibilityRules.
 	 */
 	public void changedGroundRuleWeights();
 	

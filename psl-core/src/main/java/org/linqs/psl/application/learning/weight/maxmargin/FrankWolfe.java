@@ -188,10 +188,9 @@ public class FrankWolfe extends WeightLearningApplication {
 		boolean converged = false;
 		int iter = 0;
 		while (!converged && iter++ < maxIter) {
-			if (changedRules) {
-				termStore.clear();
-				termGenerator.generateTerms(groundRuleStore, termStore);
-				changedRules = false;
+			if (changedRuleWeights) {
+				termGenerator.updateWeights(groundRuleStore, termStore);
+				changedRuleWeights = false;
 			}
 
 			// Runs loss-augmented inference with current weights.
@@ -273,7 +272,7 @@ public class FrankWolfe extends WeightLearningApplication {
 							  + 2.0 / ((double)iter + 2.0) * weights[i];
 			}
 
-			changedRules = true;
+			changedRuleWeights = true;
 
 			loss = (1.0 - stepSize) * loss + stepSize * l1Distance;
 
@@ -310,7 +309,7 @@ public class FrankWolfe extends WeightLearningApplication {
 						rules.get(i).setWeight(new NegativeWeight(avgWeights[i]));
 				}
 
-				changedRules = true;
+				changedRuleWeights = true;
 			}
 		}
 		else

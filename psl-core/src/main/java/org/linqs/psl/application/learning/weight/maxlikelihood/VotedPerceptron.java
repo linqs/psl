@@ -281,7 +281,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 				rules.get(i).setWeight(newWeight);
 			}
 			
-			changedRules = true;
+			changedRuleWeights = true;
 
 			// notify the registered observers
 			setChanged();
@@ -298,7 +298,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 				double avgWeight = avgWeights[i] / numSteps;
 				rules.get(i).setWeight((avgWeight >= 0.0) ? new PositiveWeight(avgWeight) : new NegativeWeight(avgWeight));
 			}
-			changedRules = true;
+			changedRuleWeights = true;
 		}
 		
 		if (augmentLoss)

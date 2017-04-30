@@ -25,4 +25,9 @@ public interface TermGenerator<E extends Term> {
 	 * Use the ground rules in |ruleStore| to generate optimization terms and populate |termStore|.
 	 */
 	public void generateTerms(GroundRuleStore ruleStore, TermStore<E> termStore);
+
+	/**
+	 * Use the ground rules in |ruleStore| to update the weights in the term store.
+	 */
+	public void updateWeights(GroundRuleStore ruleStore, TermStore<E> termStore);
 }

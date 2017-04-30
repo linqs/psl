@@ -17,6 +17,8 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
+import org.linqs.psl.reasoner.term.WeightedTerm;
+
 import java.util.List;
 
 /**
@@ -27,7 +29,7 @@ import java.util.List;
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-class HingeLossTerm extends HyperplaneTerm implements WeightedObjectiveTerm {
+public class HingeLossTerm extends HyperplaneTerm implements WeightedTerm {
 	private double weight;
 	
 	HingeLossTerm(List<LocalVariable> variables, List<Double> coeffs, double constant, double weight) {

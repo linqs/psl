@@ -17,6 +17,8 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
+import org.linqs.psl.reasoner.term.WeightedTerm;
+
 import java.util.List;
 
 /**
@@ -25,7 +27,7 @@ import java.util.List;
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-public class LinearLossTerm extends ADMMObjectiveTerm implements WeightedObjectiveTerm {
+public class LinearLossTerm extends ADMMObjectiveTerm implements WeightedTerm {
 	
 	private final List<Double> coeffs;
 	private double weight;

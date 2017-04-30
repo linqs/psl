@@ -17,15 +17,16 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.linqs.psl.reasoner.term.WeightedTerm;
 
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.algo.decomposition.DenseDoubleCholeskyDecomposition;
 import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Objective term for an {@link ADMMReasoner} that is based on a squared
@@ -36,7 +37,7 @@ import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements WeightedObjectiveTerm {
+public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements WeightedTerm {
 	protected final List<Double> coeffs;
 	protected final double constant;
 	protected double weight;
@@ -51,7 +52,7 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
 
 		this.coeffs = coeffs;
 		this.constant = constant;
-      L = null;
+		L = null;
 
 		if (weight < 0.0) {
 			throw new IllegalArgumentException("Only non-negative weights are supported.");
@@ -86,8 +87,8 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
 	@Override
 	public void setWeight(double weight) {
 		this.weight = weight;
-      // Recompute L.
-      L = null;
+		// Recompute L.
+		L = null;
 	}
 	
 	/**
@@ -138,9 +139,9 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
 		}
 
 		// Fast system solve.
-      if (L == null) {
-         computeL(stepSize);
-      }
+		if (L == null) {
+			computeL(stepSize);
+		}
 
 		for (int i = 0; i < variables.size(); i++) {
 			for (int j = 0; j < i; j++) {

@@ -15,12 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.reasoner.admm.term;
+package org.linqs.psl.reasoner.term;
 
-/**
- * An {@link ADMMObjectiveTerm} with a scalar coefficient, i.e., it is of the form
- * f(x) = weight * g(x).
- */
-public interface WeightedObjectiveTerm {
-	public void setWeight(double weight); 
+public interface WeightedTerm extends Term {
+	/**
+	 * Set the weight of the term.
+	 * Typically called during weight learning.
+	 */
+	public void setWeight(double value);
 }

@@ -48,16 +48,6 @@ public class MemoryGroundRuleStore implements GroundRuleStore {
 	}
 	
 	@Override
-	public void changedGroundRule(GroundRule groundRule) {
-		/* Intentionally blank */
-	}
-
-	@Override
-	public void changedGroundRuleWeight(WeightedGroundRule rule) {
-		/* Intentionally blank */
-	}
-
-	@Override
 	public void changedGroundRuleWeights() {
 		/* Intentionally blank */
 	}

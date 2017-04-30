@@ -17,11 +17,20 @@
  */
 package org.linqs.psl.reasoner.term;
 
+import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.model.rule.WeightedGroundRule;
+
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * A place to store terms that are to be optimized.
+ */
 public interface TermStore<E extends Term> extends Iterable<E>{
-	public void add(E term);
+	/**
+	 * Add a term to the store that was generated from the given ground rule.
+	 */
+	public void add(GroundRule rule, E term);
 
 	/**
 	 * Remove any existing terms and prepare for a new set.
@@ -36,4 +45,6 @@ public interface TermStore<E extends Term> extends Iterable<E>{
 	public E get(int index);
 
 	public int size();
+
+	public void updateWeight(WeightedGroundRule rule);
 }

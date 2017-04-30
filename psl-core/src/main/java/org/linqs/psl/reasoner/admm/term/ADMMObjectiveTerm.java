@@ -35,17 +35,17 @@ public abstract class ADMMObjectiveTerm implements Term {
 	public ADMMObjectiveTerm(List<LocalVariable> variables) {
 		this.variables = variables;
 	}
-	
+
+	public void updateLagrange(double stepSize, double[] consensusValues) {
+		for (LocalVariable variable : variables) {
+			variable.setLagrange(variable.getLagrange() + stepSize * (variable.getValue() - consensusValues[variable.getGlobalId()]));
+		}
+	}
+
 	/**
 	 * Updates x to the solution of <br />
 	 * argmin f(x) + stepSize / 2 * \|x - z + y / stepSize \|_2^2 <br />
 	 * for the objective term f(x)
 	 */
 	public abstract void minimize(double stepSize, double[] consensusValues);
-	
-	public void updateLagrange(double stepSize, double[] consensusValues) {
-		for (LocalVariable variable : variables) {
-			variable.setLagrange(variable.getLagrange() + stepSize * (variable.getValue() - consensusValues[variable.getGlobalId()]));
-		}
-	}
 }

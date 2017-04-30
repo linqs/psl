@@ -44,15 +44,25 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 	public ADMMTermGenerator() {}
 	public ADMMTermGenerator(ConfigBundle config) {}
 
+	@Override
 	public void generateTerms(GroundRuleStore ruleStore, TermStore<ADMMObjectiveTerm> termStore) {
-      if (!(termStore instanceof ADMMTermStore)) {
-         throw new IllegalArgumentException("ADMMTermGenerator requires an ADMMTermStore");
-      }
+		if (!(termStore instanceof ADMMTermStore)) {
+			throw new IllegalArgumentException("ADMMTermGenerator requires an ADMMTermStore");
+		}
 
 		for (GroundRule groundRule : ruleStore.getGroundRules()) {
 			ADMMObjectiveTerm term = createTerm(groundRule, (ADMMTermStore)termStore);
 			if (term.variables.size() > 0) {
-				termStore.add(term);
+				termStore.add(groundRule, term);
+			}
+		}
+	}
+
+	@Override
+	public void updateWeights(GroundRuleStore ruleStore, TermStore<ADMMObjectiveTerm> termStore) {
+		for (GroundRule groundRule : ruleStore.getGroundRules()) {
+			if (groundRule instanceof WeightedGroundRule) {
+				termStore.updateWeight((WeightedGroundRule)groundRule);
 			}
 		}
 	}
@@ -68,8 +78,8 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 		ADMMObjectiveTerm term;
 
 		if (groundRule instanceof WeightedGroundRule) {
-         boolean squared;
-         double weight = ((WeightedGroundRule)groundRule).getWeight().getWeight();
+			boolean squared;
+			double weight = ((WeightedGroundRule)groundRule).getWeight().getWeight();
 			FunctionTerm function = ((WeightedGroundRule)groundRule).getFunctionDefinition();
 
 			/* Checks if the function is wrapped in a PowerOfTwo */
@@ -152,19 +162,19 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 			FunctionSingleton singleton = summand.getTerm();
 
 			if (singleton instanceof AtomFunctionVariable && !singleton.isConstant()) {
-            LocalVariable variable = termStore.createLocalVariable((AtomFunctionVariable)singleton);
+				LocalVariable variable = termStore.createLocalVariable((AtomFunctionVariable)singleton);
 
-            // Check to see if we have seen this variable before in this hyperplane.
-            // Note that we checking for existance in a List (O(n)), but there are usually a small number of
-            // variables per hyperplane.
-            int localIndex = hyperplane.variables.indexOf(variable);
-            if (localIndex != -1) {
+				// Check to see if we have seen this variable before in this hyperplane.
+				// Note that we checking for existance in a List (O(n)), but there are usually a small number of
+				// variables per hyperplane.
+				int localIndex = hyperplane.variables.indexOf(variable);
+				if (localIndex != -1) {
 					// If it has, just adds the coefficient.
-               hyperplane.coeffs.set(localIndex, hyperplane.coeffs.get(localIndex) + summand.getCoefficient());
-            } else {
-               hyperplane.variables.add(variable);
-               hyperplane.coeffs.add(summand.getCoefficient());
-            }
+					hyperplane.coeffs.set(localIndex, hyperplane.coeffs.get(localIndex) + summand.getCoefficient());
+				} else {
+					hyperplane.variables.add(variable);
+					hyperplane.coeffs.add(summand.getCoefficient());
+				}
 			} else if (singleton.isConstant()) {
 				// Subtracts because hyperplane is stored as coeffs^T * x = constant.
 				hyperplane.constant -= summand.getValue();
@@ -181,11 +191,11 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 		public List<Double> coeffs;
 		public double constant;
 
-      public Hyperplane() {
-         variables = new ArrayList<LocalVariable>();
-         coeffs = new ArrayList<Double>();
-         constant = 0.0;
-      }
+		public Hyperplane() {
+			variables = new ArrayList<LocalVariable>();
+			coeffs = new ArrayList<Double>();
+			constant = 0.0;
+		}
 	}
 
 }

@@ -18,6 +18,11 @@
 package org.linqs.psl.reasoner.term;
 
 import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.model.rule.WeightedGroundRule;
+
+import org.apache.commons.collections4.SetValuedMap;
+import org.apache.commons.collections4.multimap.HashSetValuedHashMap;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +39,16 @@ public class MemoryTermStore<E extends Term> implements TermStore<E> {
 
 	private List<E> store;
 
+	/**
+	 * A mapping of ground rule to the term indexes associated with
+	 * that ground rule.
+	 * This is used for updating weights, so we only track weighted
+	 * ground rules and terms.
+	 * Note that it could be possible to generate multiple terms
+	 * for a single ground rule.
+	 */
+	private SetValuedMap<WeightedGroundRule, Integer> ruleMapping;
+
 	public MemoryTermStore() {
 		this(INITIAL_SIZE_DEFAULT);
 	}
@@ -44,22 +59,29 @@ public class MemoryTermStore<E extends Term> implements TermStore<E> {
 
 	public MemoryTermStore(int initialSize) {
 		store = new ArrayList<E>(initialSize);
+		ruleMapping = new HashSetValuedHashMap<WeightedGroundRule, Integer>(initialSize);
 	}
 
 	@Override
-	public void add(E term) {
+	public void add(GroundRule rule, E term) {
+		if (rule instanceof WeightedGroundRule && term instanceof WeightedTerm) {
+			ruleMapping.put((WeightedGroundRule)rule, new Integer(store.size()));
+		}
+
 		store.add(term);
 	}
 
 	@Override
 	public void clear() {
 		store.clear();
+		ruleMapping.clear();
 	}
 
 	@Override
 	public void close() {
 		clear();
 		store = null;
+		ruleMapping = null;
 	}
 
 	@Override
@@ -75,5 +97,12 @@ public class MemoryTermStore<E extends Term> implements TermStore<E> {
 	@Override
 	public Iterator<E> iterator() {
 		return store.iterator();
+	}
+
+	@Override
+	public void updateWeight(WeightedGroundRule rule) {
+		for (Integer index : ruleMapping.get(rule)) {
+			((WeightedTerm)store.get(index.intValue())).setWeight(rule.getWeight().getWeight());
+		}
 	}
 }

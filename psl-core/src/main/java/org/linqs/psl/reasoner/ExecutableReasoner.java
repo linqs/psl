@@ -199,16 +199,6 @@ abstract public class ExecutableReasoner implements Reasoner {
 	}
 
 	@Override
-	public void changedGroundRule(GroundRule groundRule) {
-		/* Intentionally empty */
-	}
-
-	@Override
-	public void changedGroundRuleWeight(WeightedGroundRule groundRule) {
-		/* Intentionally empty */
-	}
-
-	@Override
 	public void changedGroundRuleWeights() {
 		/* Intentionally empty */
 	}

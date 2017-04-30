@@ -149,10 +149,9 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 			do {
 				eventFramework.workOffJobQueue();
 
-				if (changedRules) {
-					termStore.clear();
-					termGenerator.generateTerms(groundRuleStore, termStore);
-					changedRules = false;
+				if (changedRuleWeights) {
+					termGenerator.updateWeights(groundRuleStore, termStore);
+					changedRuleWeights = false;
 				}
 
 				/* Computes the MPE state */
@@ -214,10 +213,9 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 		do {
 			eventFramework.workOffJobQueue();
 
-			if (changedRules) {
-				termStore.clear();
-				termGenerator.generateTerms(groundRuleStore, termStore);
-				changedRules = false;
+			if (changedRuleWeights) {
+				termGenerator.updateWeights(groundRuleStore, termStore);
+				changedRuleWeights = false;
 			}
 
 			/* Computes the MPE state */

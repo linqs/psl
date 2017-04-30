@@ -104,10 +104,10 @@ public abstract class WeightLearningApplication extends Observable implements Mo
 	protected TrainingMap trainingMap;
 
 	/**
-	 * Indicates that the rules have changed in some way.
+	 * Indicates that the rule weights have been changed and should be updated before optimization.
 	 * This should always be checked before optimization.
 	 */
-	protected boolean changedRules;
+	protected boolean changedRuleWeights;
 
 	protected Reasoner reasoner;
 	protected GroundRuleStore groundRuleStore;
@@ -120,7 +120,7 @@ public abstract class WeightLearningApplication extends Observable implements Mo
 		this.observedDB = observedDB;
 		this.config = config;
 
-		changedRules = true;
+		changedRuleWeights = true;
 
 		rules = new ArrayList<WeightedRule>();
 		immutableRules = new ArrayList<WeightedRule>();
@@ -181,6 +181,7 @@ public abstract class WeightLearningApplication extends Observable implements Mo
 		}
 
 		Grounding.groundAll(model, trainingMap, groundRuleStore);
+		termGenerator.generateTerms(groundRuleStore, termStore);
 	}
 
 	protected void cleanUpGroundModel() {

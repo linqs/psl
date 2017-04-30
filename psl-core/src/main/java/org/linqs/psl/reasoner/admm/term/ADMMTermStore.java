@@ -18,6 +18,8 @@
 package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.function.AtomFunctionVariable;
 import org.linqs.psl.reasoner.term.MemoryTermStore;
 import org.linqs.psl.reasoner.term.TermStore;
@@ -114,8 +116,8 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm> {
 	}
 
 	@Override
-	public void add(ADMMObjectiveTerm term) {
-		store.add(term);
+	public void add(GroundRule rule, ADMMObjectiveTerm term) {
+		store.add(rule, term);
 	}
 
 	@Override
@@ -124,14 +126,14 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm> {
 		variableIndexes.clear();
 		localVariables.clear();
 
-      numLocalVariables = 0;
+		numLocalVariables = 0;
 	}
 
 	@Override
 	public void close() {
-      clear();
+		clear();
 
-      store.close();
+		store.close();
 		store = null;
 		variableIndexes = null;
 		localVariables = null;
@@ -150,5 +152,10 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm> {
 	@Override
 	public Iterator<ADMMObjectiveTerm> iterator() {
 		return store.iterator();
+	}
+
+	@Override
+	public void updateWeight(WeightedGroundRule rule) {
+		store.updateWeight(rule);
 	}
 }

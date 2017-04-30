@@ -46,10 +46,9 @@ public class MaxLikelihoodMPE extends VotedPerceptron {
 	protected double[] computeExpectedIncomp() {
 		fullExpectedIncompatibility = new double[rules.size() + immutableRules.size()];
 
-		if (changedRules) {
-			termStore.clear();
-			termGenerator.generateTerms(groundRuleStore, termStore);
-			changedRules = false;
+		if (changedRuleWeights) {
+			termGenerator.updateWeights(groundRuleStore, termStore);
+			changedRuleWeights = false;
 		}
 
 		// Computes the MPE state.
