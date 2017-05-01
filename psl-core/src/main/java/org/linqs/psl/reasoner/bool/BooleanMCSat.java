@@ -86,13 +86,8 @@ public class BooleanMCSat extends MemoryGroundRuleStore implements Reasoner {
 			throw new IllegalArgumentException("Number of burn in samples must be less than number of samples.");
 	}
 
-	// TODO(eriq)
 	@Override
 	public void optimize(TermStore termStore) {
-	}
-
-	@Override
-	public void optimize() {
 		ConstraintBlocker blocker = new ConstraintBlocker(this);
 		blocker.prepareBlocks(false);
 

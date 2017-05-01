@@ -147,16 +147,11 @@ public class MPEInference implements ModelApplication {
 	 * @see DatabasePopulator
 	 */
 	public FullInferenceResult mpeInference() {
-		// TODO(eriq)
-		// reasoner.changedGroundRuleWeights();
-
 		log.info("Beginning inference.");
-		// TEST(eriq)
-		// reasoner.optimize();
-		((org.linqs.psl.reasoner.admm.ADMMReasoner)reasoner).optimize(termStore);
+		reasoner.optimize(termStore);
 		log.info("Inference complete. Writing results to Database.");
 
-		/* Commits the RandomVariableAtoms back to the Database */
+		// Commits the RandomVariableAtoms back to the Database.
 		int count = 0;
 		for (RandomVariableAtom atom : atomManager.getPersistedRVAtoms()) {
 			atom.commitToDB();

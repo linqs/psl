@@ -86,17 +86,22 @@ public class HardEM extends ExpectationMaximization  {
 	protected double[] computeExpectedIncomp() {
 		fullExpectedIncompatibility = new double[rules.size() + immutableRules.size()];
 
-		/* Computes the MPE state */
-		reasoner.optimize();
+		if (changedRuleWeights) {
+			termGenerator.updateWeights(groundRuleStore, termStore);
+			changedRuleWeights = false;
+		}
+
+		// Computes the MPE state.
+		reasoner.optimize(termStore);
 
 		/* Computes incompatibility */
 		for (int i = 0; i < rules.size(); i++) {
-			for (GroundRule groundRule : reasoner.getGroundRules(rules.get(i))) {
+			for (GroundRule groundRule : groundRuleStore.getGroundRules(rules.get(i))) {
 				fullExpectedIncompatibility[i] += ((WeightedGroundRule) groundRule).getIncompatibility();
 			}
 		}
 		for (int i = 0; i < immutableRules.size(); i++) {
-			for (GroundRule groundRule : reasoner.getGroundRules(immutableRules.get(i))) {
+			for (GroundRule groundRule : groundRuleStore.getGroundRules(immutableRules.get(i))) {
 				fullExpectedIncompatibility[rules.size() + i] += ((WeightedGroundRule) groundRule).getIncompatibility();
 			}
 		}
@@ -112,13 +117,13 @@ public class HardEM extends ExpectationMaximization  {
 
 		/* Computes the observed incompatibilities and numbers of groundings */
 		for (int i = 0; i < rules.size(); i++) {
-			for (GroundRule groundRule : reasoner.getGroundRules(rules.get(i))) {
+			for (GroundRule groundRule : groundRuleStore.getGroundRules(rules.get(i))) {
 				fullObservedIncompatibility[i] += ((WeightedGroundRule) groundRule).getIncompatibility();
 				numGroundings[i]++;
 			}
 		}
 		for (int i = 0; i < immutableRules.size(); i++) {
-			for (GroundRule groundRule : reasoner.getGroundRules(immutableRules.get(i))) {
+			for (GroundRule groundRule : groundRuleStore.getGroundRules(immutableRules.get(i))) {
 				fullObservedIncompatibility[rules.size() + i] += ((WeightedGroundRule) groundRule).getIncompatibility();
 			}
 		}

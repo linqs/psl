@@ -48,7 +48,7 @@ public class LatentObjectiveComputer extends HardEM {
 	 * @return
 	 */
 	public double getObjective() {
-		reasoner.changedGroundRuleWeights();
+		termGenerator.updateWeights(groundRuleStore, termStore);
 		minimizeKLDivergence();
 		computeObservedIncomp();
 		computeExpectedIncomp();

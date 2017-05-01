@@ -49,7 +49,7 @@ import java.util.List;
  *
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-abstract public class ExecutableReasoner implements Reasoner {
+public abstract class ExecutableReasoner implements Reasoner {
 
 	private static final Logger log = LoggerFactory.getLogger(ExecutableReasoner.class);
 
@@ -67,42 +67,32 @@ abstract public class ExecutableReasoner implements Reasoner {
 	 */
 	public static final String EXECUTABLE_KEY = CONFIG_PREFIX + ".executable";
 
-	/** Ground rules defining the objective function */
-	protected SetValuedMap<Rule, GroundRule> groundRules;
-
 	protected final String executable;
 
 	public ExecutableReasoner(ConfigBundle config) {
 		executable = config.getString(EXECUTABLE_KEY, "");
-		if (executable.equals(""))
+		if (executable.equals("")) {
 			throw new IllegalArgumentException("Must specify executable.");
-
-		groundRules = new HashSetValuedHashMap<Rule, GroundRule>();
+		}
 	}
 
-	// TODO(eriq)
 	@Override
 	public void optimize(TermStore termStore) {
-	}
-
-	@Override
-	public void optimize() {
 		log.debug("Writing model file.");
 		File modelFile = new File(getModelFileName());
+
 		try {
 			BufferedWriter modelWriter = new BufferedWriter(new FileWriter(modelFile));
 			writeModel(modelWriter);
 			modelWriter.close();
-		}
-		catch (IOException e) {
+		} catch (IOException e) {
 			throw new Error("IOException when writing model file.", e);
 		}
 
 		log.debug("Finished writing model file. Calling reasoner.");
 		try {
 			callReasoner();
-		}
-		catch (IOException e) {
+		} catch (IOException e) {
 			throw new Error("IOException when calling reasoner.", e);
 		}
 
@@ -112,8 +102,7 @@ abstract public class ExecutableReasoner implements Reasoner {
 			BufferedReader resultsReader = new BufferedReader(new FileReader(resultsFile));
 			readResults(resultsReader);
 			resultsReader.close();
-		}
-		catch (IOException e) {
+		} catch (IOException e) {
 			throw new Error("IOException when reading results file.", e);
 		}
 
@@ -159,53 +148,6 @@ abstract public class ExecutableReasoner implements Reasoner {
 	}
 
 	@Override
-	public void addGroundRule(GroundRule groundRule) {
-		groundRules.put(groundRule.getRule(), groundRule);
-	}
-
-	@Override
-	public void removeGroundRule(GroundRule groundRule) {
-		groundRules.removeMapping(groundRule.getRule(), groundRule);
-
-	}
-
-	@Override
-	public boolean containsGroundRule(GroundRule groundRule) {
-		return groundRules.containsMapping(groundRule.getRule(), groundRule);
-	}
-
-	@Override
-	public Iterable<GroundRule> getGroundRules() {
-		return groundRules.values();
-	}
-
-	@Override
-	public Iterable<WeightedGroundRule> getCompatibilityRules() {
-		return Iterables.filter(groundRules.values(), WeightedGroundRule.class);
-	}
-
-	public Iterable<UnweightedGroundRule> getConstraintRules() {
-		return Iterables.filter(groundRules.values(), UnweightedGroundRule.class);
-	}
-
-	@Override
-	public Iterable<GroundRule> getGroundRules(Rule k) {
-		return groundRules.get(k);
-	}
-
-	@Override
-	public int size() {
-		return groundRules.size();
-	}
-
-	@Override
-	public void changedGroundRuleWeights() {
-		/* Intentionally empty */
-	}
-
-	@Override
 	public void close() {
-		groundRules = null;
 	}
-
 }

@@ -108,7 +108,7 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 				 */
 				for(GroundRule groundRule : latentRV.getRegisteredGroundRules()) {
 					if (groundRule instanceof WeightedGroundRule) {
-						if (reasoner.containsGroundRule(groundRule)) {
+						if (groundRuleStore.containsGroundRule(groundRule)) {
 							WeightedGroundRule gck = (WeightedGroundRule) groundRule;
 							incidentLatentRVs.clear();
 							
@@ -182,7 +182,7 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 		/* Computes the expected observed incompatibilities and numbers of groundings */
 		Vector<RandomVariableAtom> incidentLatentRVs = new Vector<RandomVariableAtom>();
 		for (int iRule = 0; iRule < rules.size(); iRule++) {
-			for (GroundRule groundRule : reasoner.getGroundRules(rules.get(iRule))) {
+			for (GroundRule groundRule : groundRuleStore.getGroundRules(rules.get(iRule))) {
 				WeightedGroundRule gck = (WeightedGroundRule) groundRule;
 				incidentLatentRVs.clear();
 				
@@ -224,13 +224,18 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 	@Override
 	protected double[] computeExpectedIncomp() {
 		double[] expIncomp = new double[rules.size()];
+
+		if (changedRuleWeights) {
+			termGenerator.updateWeights(groundRuleStore, termStore);
+			changedRuleWeights = false;
+		}
 		
-		/* Computes the MPE state */
-		reasoner.optimize();
+		// Computes the MPE state.
+		reasoner.optimize(termStore);
 		
 		/* Computes incompatibility */
 		for (int i = 0; i < rules.size(); i++) {
-			for (GroundRule groundRule : reasoner.getGroundRules(rules.get(i))) {
+			for (GroundRule groundRule : groundRuleStore.getGroundRules(rules.get(i))) {
 				expIncomp[i] += ((WeightedGroundRule) groundRule).getIncompatibility();
 			}
 		}
@@ -259,13 +264,19 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 		List<GroundValueConstraint> labelConstraints = new ArrayList<GroundValueConstraint>();
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet())
 			labelConstraints.add(new GroundValueConstraint(e.getKey(), e.getValue().getValue()));
+
+		if (changedRuleWeights) {
+			termGenerator.updateWeights(groundRuleStore, termStore);
+			changedRuleWeights = false;
+		}
 		
-		/* Infers most probable assignment latent variables */
-		reasoner.optimize();
+		// Infers most probable assignment latent variables.
+		reasoner.optimize(termStore);
 		
 		/* Removes constraints */
-		for (GroundValueConstraint con : labelConstraints)
-			reasoner.removeGroundRule(con);
+		for (GroundValueConstraint con : labelConstraints) {
+			groundRuleStore.removeGroundRule(con);
+		}
 		
 		/* Sets mean field */
 		means.clear();
@@ -292,7 +303,7 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 		 */
 		setLabeledRandomVariables();
 		Vector<RandomVariableAtom> incidentLatentRVs = new Vector<RandomVariableAtom>();
-		for (WeightedGroundRule gck : reasoner.getCompatibilityRules()) {
+		for (WeightedGroundRule gck : groundRuleStore.getCompatibilityRules()) {
 			incidentLatentRVs.clear();
 			
 			/* Collects latent variables incident on this potential */

@@ -17,10 +17,7 @@
  */
 package org.linqs.psl.application.learning.weight.em;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-
+import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.application.learning.weight.maxlikelihood.VotedPerceptron;
 import org.linqs.psl.application.util.Grounding;
@@ -35,8 +32,15 @@ import org.linqs.psl.model.rule.misc.GroundValueConstraint;
 import org.linqs.psl.model.weight.PositiveWeight;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.ReasonerFactory;
+import org.linqs.psl.reasoner.term.TermGenerator;
+import org.linqs.psl.reasoner.term.TermStore;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Abstract superclass for implementations of the expectation-maximization
@@ -44,20 +48,20 @@ import org.slf4j.LoggerFactory;
  * <p>
  * This class extends {@link VotedPerceptron}, which is used during the M-step
  * to update the weights.
- * 
+ *
  * @author Stephen Bach <bach@cs.umd.edu>
  */
 abstract public class ExpectationMaximization extends VotedPerceptron {
 
 	private static final Logger log = LoggerFactory.getLogger(ExpectationMaximization.class);
-	
+
 	/**
 	 * Prefix of property keys used by this class.
-	 * 
+	 *
 	 * @see ConfigManager
 	 */
 	public static final String CONFIG_PREFIX = "em";
-	
+
 	/**
 	 * Key for positive int property for the number of iterations of expectation
 	 * maximization to perform
@@ -65,26 +69,26 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 	public static final String ITER_KEY = CONFIG_PREFIX + ".iterations";
 	/** Default value for ITER_KEY property */
 	public static final int ITER_DEFAULT = 10;
-	
+
 	/**
 	 * Key for Boolean property that indicates whether to reset step-size schedule
 	 * for each EM round. If TRUE, schedule will be {@link VotedPerceptron#STEP_SIZE_KEY}
 	 * at start of each round. If FALSE, schedule will smoothly decrease across rounds,
 	 * i.e., the schedule will be 1/ (round number * num steps + step number).
-	 * 
+	 *
 	 * This property has no effect if {@link VotedPerceptron#STEP_SCHEDULE_KEY} is false.
 	 */
 	public static final String RESET_SCHEDULE_KEY = CONFIG_PREFIX + ".resetschedule";
 	/** Default value for STORE_WEIGHTS_KEY */
 	public static final boolean RESET_SCHEDULE_DEFAULT = true;
-	
+
 	/**
 	 * Key for Boolean property that indicates whether to store weights along entire optimization path
 	 */
 	public static final String STORE_WEIGHTS_KEY = CONFIG_PREFIX + ".storeweights";
 	/** Default value for STORE_WEIGHTS_KEY */
 	public static final boolean STORE_WEIGHTS_DEFAULT = false;
-	
+
 	/**
 	 * Key for positive double property for the minimum absolute change in weights
 	 * such that EM is considered converged
@@ -92,23 +96,26 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 	public static final String TOLERANCE_KEY = CONFIG_PREFIX + ".tolerance";
 	/** Default value for TOLERANCE_KEY property */
 	public static final double TOLERANCE_DEFAULT = 1e-3;
-	
+
 	protected final int iterations;
 	protected final double tolerance;
 	protected final boolean resetSchedule;
-	
+
 	private int round;
-	
+
 	protected final boolean storeWeights;
 	protected ArrayList<Map<WeightedRule, Double>> storedWeights;
 
-	
+
 	/**
 	 * A reasoner for inferring the latent variables conditioned on
 	 * the observations and labels
 	 */
 	protected Reasoner latentVariableReasoner;
-	
+	protected GroundRuleStore latentGroundRuleStore;
+	protected TermStore latentTermStore;
+	protected TermGenerator latentTermGenerator;
+
 	public ExpectationMaximization(Model model, Database rvDB,
 			Database observedDB, ConfigBundle config) {
 		super(model, rvDB, observedDB, config);
@@ -116,13 +123,11 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 		iterations = config.getInt(ITER_KEY, ITER_DEFAULT);
 
 		tolerance = config.getDouble(TOLERANCE_KEY, TOLERANCE_DEFAULT);
-		
+
 		resetSchedule = config.getBoolean(RESET_SCHEDULE_KEY, RESET_SCHEDULE_DEFAULT);
-		
-		latentVariableReasoner = null;
-		
+
 		storeWeights = config.getBoolean(STORE_WEIGHTS_KEY, STORE_WEIGHTS_DEFAULT);
-		if (storeWeights) 
+		if (storeWeights)
 			storedWeights = new ArrayList<Map<WeightedRule, Double>>();
 	}
 
@@ -132,7 +137,7 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 		for (int i = 0; i < weights.length; i++)
 			weights[i] = rules.get(i).getWeight().getWeight();
 		double [] avgWeights = new double[rules.size()];
-		
+
 		round = 0;
 		while (round++ < iterations) {
 			log.debug("Beginning EM round {} of {}", round, iterations);
@@ -140,15 +145,15 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 			minimizeKLDivergence();
 			/* M-step */
 			super.doLearn();
-			
+
 			double change = 0;
 			for (int i = 0; i < rules.size(); i++) {
 				change += Math.pow(weights[i] - rules.get(i).getWeight().getWeight(), 2);
 				weights[i] = rules.get(i).getWeight().getWeight();
 
-				avgWeights[i] = (1 - (1.0 / (double) round)) * avgWeights[i] + (1.0 / (double) round) * weights[i];		
+				avgWeights[i] = (1 - (1.0 / (double) round)) * avgWeights[i] + (1.0 / (double) round) * weights[i];
 			}
-			
+
 			if (storeWeights) {
 				Map<WeightedRule,Double> weightMap = new HashMap<WeightedRule, Double>();
 				for (int i = 0; i < rules.size(); i++) {
@@ -162,7 +167,7 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 			double loss = getLoss();
 			double regularizer = computeRegularizer();
 			double objective = loss + regularizer;
-			
+
 			change = Math.sqrt(change);
 			if (change <= tolerance) {
 				log.info("EM converged with m-step norm {} in {} rounds. Loss: " + loss, change, round);
@@ -170,7 +175,7 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 			} else
 				log.info("Finished EM round {} with m-step norm {}. Loss: " + loss + ", regularizer: " + regularizer + ", objective: " + objective, round, change);
 		}
-		
+
 		if (averageSteps) {
 			for (int i = 0; i < rules.size(); i++) {
 				rules.get(i).setWeight(new PositiveWeight(avgWeights[i]));
@@ -183,48 +188,62 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 	@Override
 	protected void initGroundModel()
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-		trainingMap = new TrainingMap(rvDB, observedDB);
-		
 		reasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
-		Grounding.groundAll(model, trainingMap, reasoner);
-		
-		/* 
+		termStore = (TermStore)config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
+		groundRuleStore = (GroundRuleStore)config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
+		termGenerator = (TermGenerator)config.getNewObject(TERM_GENERATOR_KEY, TERM_GENERATOR_DEFAULT);
+
+		trainingMap = new TrainingMap(rvDB, observedDB);
+
+		Grounding.groundAll(model, trainingMap, groundRuleStore);
+		termGenerator.generateTerms(groundRuleStore, termStore);
+
+		/*
 		 * The latentVariableReasoner should be cleaned up in close(), not
 		 * cleanUpGroundModel(), so that calls to inferLatentVariables() still
 		 * work
 		 */
-		if (latentVariableReasoner != null)
+		if (latentVariableReasoner != null) {
 			latentVariableReasoner.close();
+		}
+
 		latentVariableReasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
-		Grounding.groundAll(model, trainingMap, latentVariableReasoner);
-		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet())
-			latentVariableReasoner.addGroundRule(new GroundValueConstraint(e.getKey(), e.getValue().getValue()));
+		latentTermStore = (TermStore)config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
+		latentGroundRuleStore = (GroundRuleStore)config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
+		latentTermGenerator = (TermGenerator)config.getNewObject(TERM_GENERATOR_KEY, TERM_GENERATOR_DEFAULT);
+
+		Grounding.groundAll(model, trainingMap, latentGroundRuleStore);
+		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
+			latentGroundRuleStore.addGroundRule(new GroundValueConstraint(e.getKey(), e.getValue().getValue()));
+		}
+		latentTermGenerator.generateTerms(latentGroundRuleStore, latentTermStore);
 	}
-	
+
 	/**
 	 * Infers the most probable assignment to the latent variables conditioned
 	 * on the observations and labeled unknowns using the most recently learned
 	 * model.
-	 * 
+	 *
 	 * The atoms with corresponding labels will be set to their label values.
-	 * 
+	 *
 	 * @throws IllegalStateException  if no model has been learned
 	 */
 	public void inferLatentVariables() {
-		if (latentVariableReasoner == null)
+		if (latentVariableReasoner == null) {
 			throw new IllegalStateException("A model must have been learned " +
 					"before latent variables can be inferred.");
-		
-		/* 
+		}
+
+		/*
 		 * Infers most probable assignment latent variables
-		 * 
-		 * (Called changedGroundRuleWeights() might be unnecessary, but this is
-		 * the easiest way to be sure latentVariableReasoner is updated.)
+		 *
+		 * (Calling updateWeights() might be unnecessary, but this is
+		 * the easiest way to be sure the terms are updated.)
 		 */
-		latentVariableReasoner.changedGroundRuleWeights();
-		latentVariableReasoner.optimize();
+		latentTermGenerator.updateWeights(latentGroundRuleStore, latentTermStore);
+		latentVariableReasoner.optimize(latentTermStore);
 	}
-	
+
 	@Override
 	protected double getStepSize(int iter) {
 		if (scheduleStepSize && !resetSchedule) {
@@ -233,18 +252,23 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 		else
 			return super.getStepSize(iter);
 	}
-	
+
 	public ArrayList<Map<WeightedRule, Double>> getStoredWeights() {
 		return (storeWeights)? storedWeights : null;
 	}
-	
+
 	@Override
 	public void close() {
 		super.close();
 		if (latentVariableReasoner != null) {
+			latentTermStore.close();
+			latentTermStore = null;
+
+			latentGroundRuleStore.close();
+			latentGroundRuleStore = null;
+
 			latentVariableReasoner.close();
 			latentVariableReasoner = null;
 		}
 	}
-
 }

@@ -17,11 +17,6 @@
  */
 package org.linqs.psl.application.learning.weight;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Observable;
-
 import org.linqs.psl.application.ModelApplication;
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 import org.linqs.psl.application.util.Grounding;
@@ -41,6 +36,11 @@ import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 
 import com.google.common.collect.Iterables;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Observable;
 
 /**
  * Abstract class for learning the weights of

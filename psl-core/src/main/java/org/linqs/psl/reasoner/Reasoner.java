@@ -24,16 +24,12 @@ import org.linqs.psl.reasoner.term.TermStore;
  * An oprimizer to minimize the total weighted incompatibility
  * of the terms provided by a TermStore.
  */
-// TODO(eriq): remove interface extension.
-public interface Reasoner extends GroundRuleStore {
+public interface Reasoner {
 	/**
 	 * Minimizes the total weighted incompatibility of the terms in the provided
 	 * TermStore.
 	 */
 	public void optimize(TermStore termStore);
-
-	// TODO(eriq)
-	public void optimize();
 
 	/**
 	 * Releases all resources acquired by this Reasoner.

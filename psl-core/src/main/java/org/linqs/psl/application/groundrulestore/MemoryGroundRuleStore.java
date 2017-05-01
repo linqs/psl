@@ -29,8 +29,6 @@ import com.google.common.collect.Iterables;
 /**
  * A simple {@link GroundRuleStore} that just stores each {@link GroundRule}
  * in memory.
- * <p>
- * No action is taken by {@link #changedGroundRule(GroundRule)}.
  */
 public class MemoryGroundRuleStore implements GroundRuleStore {
 
@@ -45,11 +43,6 @@ public class MemoryGroundRuleStore implements GroundRuleStore {
 		if (!groundRules.put(groundRule.getRule(), groundRule)) {
 			throw new IllegalArgumentException("GroundRule has already been added: " + groundRule);
 		}
-	}
-	
-	@Override
-	public void changedGroundRuleWeights() {
-		/* Intentionally blank */
 	}
 	
 	@Override

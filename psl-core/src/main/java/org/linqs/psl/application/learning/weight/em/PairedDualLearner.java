@@ -137,20 +137,25 @@ public class PairedDualLearner extends ExpectationMaximization {
 	protected double[] computeExpectedIncomp() {
 		dualExpectedIncompatibility = new double[rules.size() + immutableRules.size()];
 
-		/* Computes the MPE state */
-		reasoner.optimize();
+		if (changedRuleWeights) {
+			termGenerator.updateWeights(groundRuleStore, termStore);
+			changedRuleWeights = false;
+		}
+
+		// Computes the MPE state.
+		reasoner.optimize(termStore);
 
 		ADMMReasoner admm = (ADMMReasoner) reasoner;
 
 		// Compute the dual incompatbility for each ADMM subproblem
 		for (int i = 0; i < rules.size(); i++) {
-			for (GroundRule groundRule : reasoner.getGroundRules(rules.get(i))) {
+			for (GroundRule groundRule : groundRuleStore.getGroundRules(rules.get(i))) {
 				dualExpectedIncompatibility[i] += admm.getDualIncompatibility(groundRule);
 			}
 		}
 
 		for (int i = 0; i < immutableRules.size(); i++) {
-			for (GroundRule groundRule : reasoner.getGroundRules(immutableRules.get(i))) {
+			for (GroundRule groundRule : groundRuleStore.getGroundRules(immutableRules.get(i))) {
 				dualExpectedIncompatibility[rules.size() + i] += admm.getDualIncompatibility(groundRule);
 			}
 		}
@@ -164,17 +169,18 @@ public class PairedDualLearner extends ExpectationMaximization {
 		dualObservedIncompatibility = new double[rules.size() + immutableRules.size()];
 		setLabeledRandomVariables();
 
+		latentTermGenerator.updateWeights(latentGroundRuleStore, latentTermStore);
 		ADMMReasoner admm = (ADMMReasoner) latentVariableReasoner;
 
 		/* Computes the observed incompatibilities and numbers of groundings */
 		for (int i = 0; i < rules.size(); i++) {
-			for (GroundRule groundRule : latentVariableReasoner.getGroundRules(rules.get(i))) {
+			for (GroundRule groundRule : latentGroundRuleStore.getGroundRules(rules.get(i))) {
 				dualObservedIncompatibility[i] += admm.getDualIncompatibility(groundRule);
 				numGroundings[i]++;
 			}
 		}
 		for (int i = 0; i < immutableRules.size(); i++) {
-			for (GroundRule groundRule : latentVariableReasoner.getGroundRules(immutableRules.get(i))) {
+			for (GroundRule groundRule : latentGroundRuleStore.getGroundRules(immutableRules.get(i))) {
 				dualObservedIncompatibility[rules.size() + i] += admm.getDualIncompatibility(groundRule);
 			}
 		}
@@ -302,8 +308,8 @@ public class PairedDualLearner extends ExpectationMaximization {
 		if (warmupRounds > 0) {
 			log.info("Warming up optimizers with {} iterations each.", warmupRounds * admmIterations);
 			for (int i = 0; i < warmupRounds; i++) {
-				reasoner.optimize();
-				latentVariableReasoner.optimize();
+				reasoner.optimize(termStore);
+				latentVariableReasoner.optimize(latentTermStore);
 			}
 		}
 		
@@ -325,7 +331,7 @@ public class PairedDualLearner extends ExpectationMaximization {
 		minimizeKLDivergence();
 		computeObservedIncomp();
 
-		reasoner.changedGroundRuleWeights();
+		termGenerator.updateWeights(groundRuleStore, termStore);
 		computeExpectedIncomp();
 
 		double loss = 0.0;

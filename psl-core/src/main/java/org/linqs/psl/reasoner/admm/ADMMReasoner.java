@@ -17,45 +17,21 @@
  */
 package org.linqs.psl.reasoner.admm;
 
-// TODO(eriq): Remove imports
-import org.linqs.psl.application.groundrulestore.GroundRuleStore;
-import org.linqs.psl.application.groundrulestore.MemoryGroundRuleStore;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.ConfigManager;
 import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.model.rule.Rule;
-import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.ThreadPool;
 import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
 import org.linqs.psl.reasoner.admm.term.LocalVariable;
-import org.linqs.psl.reasoner.function.AtomFunctionVariable;
-import org.linqs.psl.reasoner.function.ConstantNumber;
-import org.linqs.psl.reasoner.function.ConstraintTerm;
-import org.linqs.psl.reasoner.function.FunctionSingleton;
-import org.linqs.psl.reasoner.function.FunctionSum;
-import org.linqs.psl.reasoner.function.FunctionSummand;
-import org.linqs.psl.reasoner.function.FunctionTerm;
-import org.linqs.psl.reasoner.function.MaxFunction;
-import org.linqs.psl.reasoner.function.PowerOfTwo;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 
 import com.google.common.collect.Iterables;
-import org.apache.commons.collections4.BidiMap;
-import org.apache.commons.collections4.SetValuedMap;
-import org.apache.commons.collections4.bidimap.DualHashBidiMap;
-import org.apache.commons.collections4.multimap.HashSetValuedHashMap;
-import org.apache.commons.collections4.set.ListOrderedSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Semaphore;
@@ -142,9 +118,6 @@ public class ADMMReasoner implements Reasoner {
 
 	private final int stopCheck;
 
-	// TODO(eriq): The entire method that this code manages variables is a bit suspect, ponder on it.
-
-	private boolean rebuildModel;
 	private double lagrangePenalty;
 	private double augmentedLagrangePenalty;
 
@@ -173,7 +146,6 @@ public class ADMMReasoner implements Reasoner {
 			throw new IllegalArgumentException("Property " + EPSILON_REL_KEY + " must be positive.");
 		}
 
-		rebuildModel = true;
 		consensusValues = null;
 
 		// Multithreading
@@ -215,20 +187,6 @@ public class ADMMReasoner implements Reasoner {
 		return this.augmentedLagrangePenalty;
 	}
 
-	// TODO(eriq): Rethink the concept of rebuilding the model (based on the termstore).
-	//  Now this would be like clearing the store and regrounding all groundrules.
-	//  Then re-initing the consensus vector.
-	// TEST(eriq): Because of circular dependencies on the term generator, this is strange for now.
-	// private void buildGroundModel() {
-	private void rebuildGroundModel(ADMMTermStore termStore) {
-		log.debug("Rebuilding reasoner data structures");
-
-		// TEST
-		consensusValues = new double[termStore.getNumGlobalVariables()];
-
-		rebuildModel = false;
-	}
-
 	/**
 	 * Computes the incompatibility of the local variable copies corresponding to
 	 * GroundRule groundRule
@@ -249,21 +207,15 @@ public class ADMMReasoner implements Reasoner {
 	}
 
 	@Override
-	public void optimize() {
-	}
-
-	// TEST(eriq)
 	public void optimize(TermStore baseTermStore) {
 		if (!(baseTermStore instanceof ADMMTermStore)) {
 			throw new IllegalArgumentException("ADMMReasoner requires an ADMMTermStore");
 		}
 		ADMMTermStore termStore = (ADMMTermStore)baseTermStore;
-		
-		if (rebuildModel) {
-			rebuildGroundModel(termStore);
-		}
 
 		log.debug("Performing optimization with {} variables and {} terms.", termStore.getNumGlobalVariables(), termStore.size());
+
+		consensusValues = new double[termStore.getNumGlobalVariables()];
 
 		// Starts up the computation threads
 		ADMMTask[] tasks = new ADMMTask[numThreads];
@@ -496,95 +448,4 @@ public class ADMMReasoner implements Reasoner {
 			awaitUninterruptibly(checkBarrier);
 		}
 	}
-
-
-
-
-	// TEST(eriq): Remove once we remove GRS from Reasoner
-
-
-
-
-
-
-
-
-	public void addGroundRule(GroundRule groundRule) {
-		rebuildModel = true;
-		// TEST
-		throw new RuntimeException("TEST(eriq)");
-	}
-
-	public void changedGroundRule(GroundRule groundRule) {
-		rebuildModel = true;
-		// TEST
-		throw new RuntimeException("TEST(eriq)");
-	}
-
-	// TODO(eriq): Needs to be reworked into GRS/TS/TG.
-	public void changedGroundRuleWeight(WeightedGroundRule groundRule) {
-		if (!rebuildModel) {
-			/* TODO(eriq)
-			int index = orderedGroundRules.get(groundRule);
-			if (index != -1) {
-				((WeightedObjectiveTerm) termStore.get(index)).setWeight(groundRule.getWeight().getWeight());
-			}
-			*/
-		}
-		// TEST
-		throw new RuntimeException("TEST(eriq)");
-	}
-
-	public void changedGroundRuleWeights() {
-		if (!rebuildModel) {
-			for (WeightedGroundRule groundRule : getCompatibilityRules()) {
-				changedGroundRuleWeight(groundRule);
-			}
-		}
-		// TEST
-		throw new RuntimeException("TEST(eriq)");
-	}
-
-	public boolean containsGroundRule(GroundRule groundRule) {
-		// TEST
-		throw new RuntimeException("TEST(eriq)");
-		// return false;
-	}
-
-	public Iterable<WeightedGroundRule> getCompatibilityRules() {
-		// TEST
-		throw new RuntimeException("TEST(eriq)");
-		// return null;
-	}
-
-	public Iterable<UnweightedGroundRule> getConstraintRules() {
-		// TEST
-		throw new RuntimeException("TEST(eriq)");
-		// return null;
-	}
-
-	public Iterable<GroundRule> getGroundRules() {
-		// TEST
-		throw new RuntimeException("TEST(eriq)");
-		// return null;
-	}
-
-	public Iterable<GroundRule> getGroundRules(Rule rule) {
-		// TEST
-		throw new RuntimeException("TEST(eriq)");
-		// return null;
-	}
-
-	public void removeGroundRule(GroundRule groundRule) {
-		rebuildModel = true;
-		// TEST
-		throw new RuntimeException("TEST(eriq)");
-	}
-
-	public int size() {
-		// TEST
-		throw new RuntimeException("TEST(eriq)");
-		// return 0;
-	}
-
 }

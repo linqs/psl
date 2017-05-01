@@ -97,13 +97,8 @@ public class BooleanMaxWalkSat extends MemoryGroundRuleStore implements Reasoner
 			throw new IllegalArgumentException("Noise must be in [0,1].");
 	}
 
-	// TODO(eriq)
 	@Override
 	public void optimize(TermStore termStore) {
-	}
-
-	@Override
-	public void optimize() {
 		ConstraintBlocker blocker = new ConstraintBlocker(this);
 		blocker.prepareBlocks(true);
 

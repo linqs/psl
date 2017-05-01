@@ -29,7 +29,7 @@ import org.linqs.psl.model.rule.WeightedRule;
  * Since this container uses set semantics, no two GroundRules that are equal
  * can be stored in it. If a {@link Rule} wants to add another GroundRule
  * that does the same thing over the same GroundAtoms, then it should retrieve
- * the original GroundRule, modify it, and call {@link #changedGroundRule(GroundRule)}.
+ * the original GroundRule and modify it.
  */
 public interface GroundRuleStore {
 
@@ -40,19 +40,6 @@ public interface GroundRuleStore {
 	 * @throws IllegalArgumentException  if rule is already in this store
 	 */
 	public void addGroundRule(GroundRule rule);
-	
-	/**
-	 * Notifies this store that a {@link WeightedGroundRule}'s weight
-	 * was changed.
-	 * <p>
-	 * This method should be called whenever the weight of a GroundCompatibilityRule
-	 * in this store is changed, or the weight of its parent {@link WeightedRule}
-	 * is changed (and the GroundCompatibilityRule's weight is still tied to it).
-	 * <p>
-	 * It is not necessary to also call {@link #changedGroundRule(GroundRule)}
-	 * if only the weight was changed.
-	 */
-	public void changedGroundRuleWeights();
 	
 	/**
 	 * Release any memory held by the store.
