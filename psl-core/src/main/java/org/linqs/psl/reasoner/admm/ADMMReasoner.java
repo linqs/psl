@@ -34,7 +34,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.Semaphore;
 
 /**
  * Uses an ADMM optimization method to optimize its GroundRules.
@@ -298,7 +297,7 @@ public class ADMMReasoner implements Reasoner {
 
 		threadPool.shutdownAndWait();
 
-		log.info("Optimization completed in  {} iterations. " +
+		log.info("Optimization completed in {} iterations. " +
 				"Primal res.: {}, Dual res.: {}", new Object[] {iter, primalRes, dualRes});
 
 		// Updates variables
@@ -384,8 +383,8 @@ public class ADMMReasoner implements Reasoner {
 
 				// Solves each local function.
 				for (int i = termIndexStart; i < termIndexEnd; i++) {
-               termStore.get(i).updateLagrange(stepSize, consensusValues);
-               termStore.get(i).minimize(stepSize, consensusValues);
+					termStore.get(i).updateLagrange(stepSize, consensusValues);
+					termStore.get(i).minimize(stepSize, consensusValues);
 				}
 
 				// Ensures all threads are at the same point

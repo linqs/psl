@@ -26,6 +26,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.linqs.psl.PSLTest;
+import org.linqs.psl.application.groundrulestore.GroundRuleStore;
+import org.linqs.psl.application.groundrulestore.MemoryGroundRuleStore;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.EmptyBundle;
 import org.linqs.psl.database.DataStore;
@@ -53,7 +55,6 @@ import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Max;
 import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Min;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.Variable;
-import org.linqs.psl.reasoner.admm.ADMMReasoner;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 
 import java.util.Arrays;
@@ -422,10 +423,10 @@ public class AbstractArithmeticRuleTest {
 		AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, selects);
 
 		SimpleAtomManager atomManager = new SimpleAtomManager(database);
-		ADMMReasoner reasoner = new ADMMReasoner(config);
+		GroundRuleStore groundRuleStore = new MemoryGroundRuleStore();
 
 		try {
-			rule.groundAll(atomManager, reasoner);
+			rule.groundAll(atomManager, groundRuleStore);
 			fail("IllegalArgumentException not thrown when trying to ground an open predicate in the select.");
 		} catch (IllegalArgumentException ex) {
 			// Exception is expected.
