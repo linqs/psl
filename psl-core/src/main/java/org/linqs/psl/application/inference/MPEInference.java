@@ -128,10 +128,10 @@ public class MPEInference implements ModelApplication {
 		log.info("Grounding out model.");
 		Grounding.groundAll(model, atomManager, groundRuleStore);
 
-		log.debug("Initializing objective terms for %d ground rules.", groundRuleStore.size());
+		log.debug("Initializing objective terms for {} ground rules.", groundRuleStore.size());
 		termGenerator.generateTerms(groundRuleStore, termStore);
 
-		log.debug("Generated %d objective terms from %d ground rules.", termStore.size(), groundRuleStore.size());
+		log.debug("Generated {} objective terms from {} ground rules.", termStore.size(), groundRuleStore.size());
 	}
 
 	/**
@@ -170,7 +170,14 @@ public class MPEInference implements ModelApplication {
 
 	@Override
 	public void close() {
+		termStore.close();
+		groundRuleStore.close();
 		reasoner.close();
+
+		termStore = null;
+		groundRuleStore = null;
+		reasoner = null;
+
 		model=null;
 		db = null;
 		config = null;

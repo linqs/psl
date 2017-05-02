@@ -21,36 +21,45 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 public class ThreadPool {
-
-	private static ThreadPool instance = null;
-	
 	private final ExecutorService pool;
-	
-	private ThreadPool() {
+
+	public ThreadPool() {
 		this.pool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors(), new DaemonThreadFactory());
 	}
-	
-	public static ThreadPool getPool() {
-		if (instance == null)
-			instance = new ThreadPool();
-		
-		return instance;
-	}
-	
+
 	public Future<?> submit(Runnable task) {
 		return pool.submit(task);
+	}
+
+	/**
+	 * Submit no new tasks and wait for all tasks to complete.
+	 */
+	public void shutdownAndWait() {
+		pool.shutdown();
+
+		// Timeout does not matter since we will keep waiting until all threads are done.
+		while (true) {
+			try {
+				if (pool.awaitTermination(60, TimeUnit.SECONDS)) {
+					break;
+				}
+			} catch (InterruptedException ex) {
+				throw new RuntimeException("Interrupted waiting for pool to shutdown.", ex);
+			}
+		}
 	}
 
 	private class DaemonThreadFactory implements ThreadFactory {
 
 		private ThreadFactory defaultThreadFactory;
-		
+
 		public DaemonThreadFactory() {
 			this.defaultThreadFactory = Executors.defaultThreadFactory();
 		}
-		
+
 		@Override
 		public Thread newThread(Runnable r) {
 			Thread thread = defaultThreadFactory.newThread(r);

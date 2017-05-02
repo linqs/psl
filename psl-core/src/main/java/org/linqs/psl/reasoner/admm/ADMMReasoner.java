@@ -123,14 +123,6 @@ public class ADMMReasoner implements Reasoner {
 
 	private int maxIter;
 
-	// TODO(eriq): These  were previously public and accessed directly. Do a quick performance check.
-	// TODO(eriq): Does not need to be member data anymore (along with most non-finals).
-	/**
-	 * Consensus vector.
-	 * Also sometimes called 'z'.
-	 */
-	private double[] consensusValues;
-
 	public ADMMReasoner(ConfigBundle config) {
 		maxIter = config.getInt(MAX_ITER_KEY, MAX_ITER_DEFAULT);
 		stepSize = config.getDouble(STEP_SIZE_KEY, STEP_SIZE_DEFAULT);
@@ -145,8 +137,6 @@ public class ADMMReasoner implements Reasoner {
 		if (epsilonRel <= 0) {
 			throw new IllegalArgumentException("Property " + EPSILON_REL_KEY + " must be positive.");
 		}
-
-		consensusValues = null;
 
 		// Multithreading
 		numThreads = config.getInt(NUM_THREADS_KEY, NUM_THREADS_DEFAULT);
@@ -215,16 +205,17 @@ public class ADMMReasoner implements Reasoner {
 
 		log.debug("Performing optimization with {} variables and {} terms.", termStore.getNumGlobalVariables(), termStore.size());
 
-		consensusValues = new double[termStore.getNumGlobalVariables()];
+		// Also sometimes called 'z'.
+		double[] consensusValues = new double[termStore.getNumGlobalVariables()];
 
 		// Starts up the computation threads
 		ADMMTask[] tasks = new ADMMTask[numThreads];
-		CyclicBarrier workerBarrier = new CyclicBarrier(numThreads);
-		CyclicBarrier checkBarrier = new CyclicBarrier(numThreads + 1);
-		Semaphore notifySem = new Semaphore(0);
-		ThreadPool threadPool = ThreadPool.getPool();
+		CyclicBarrier termUpdateCompleteBarrier = new CyclicBarrier(numThreads);
+		CyclicBarrier workerStartBarrier = new CyclicBarrier(numThreads + 1);
+		CyclicBarrier workerEndBarrier = new CyclicBarrier(numThreads + 1);
+		ThreadPool threadPool = new ThreadPool();
 		for (int i = 0; i < numThreads; i ++) {
-			tasks[i] = new ADMMTask(i, workerBarrier, checkBarrier, notifySem, termStore);
+			tasks[i] = new ADMMTask(i, termUpdateCompleteBarrier, workerStartBarrier, workerEndBarrier, termStore, consensusValues);
 			threadPool.submit(tasks[i]);
 		}
 
@@ -236,13 +227,20 @@ public class ADMMReasoner implements Reasoner {
 		double epsilonAbsTerm = Math.sqrt(termStore.getNumLocalVariables()) * epsilonAbs;
 		double AxNorm = 0.0, BzNorm = 0.0, AyNorm = 0.0;
 		boolean check = false;
-		int iter = 0;
+		int iter = 1;
+
 		while ((primalRes > epsilonPrimal || dualRes > epsilonDual) && iter < maxIter) {
 			check = iter % stopCheck == 0;
+			for (ADMMTask task : tasks) {
+				task.check = check;
+			}
 
-			// Await check barrier
 			try {
-				checkBarrier.await();
+				// Startup all the workers.
+				workerStartBarrier.await();
+
+				// Wait for all workers to report in after optimization round.
+				workerEndBarrier.await();
 			} catch (InterruptedException e) {
 				throw new RuntimeException(e);
 			} catch (BrokenBarrierException e) {
@@ -250,9 +248,6 @@ public class ADMMReasoner implements Reasoner {
 			}
 
 			if (check) {
-				// Acquire semaphore
-				notifySem.acquireUninterruptibly(numThreads);
-
 				primalRes = 0.0;
 				dualRes = 0.0;
 				AxNorm = 0.0;
@@ -289,20 +284,19 @@ public class ADMMReasoner implements Reasoner {
 
 		// Notify threads the optimization is complete
 		for (ADMMTask task : tasks) {
-			task.flag = false;
+			task.done = true;
 		}
 
 		try {
-			// First wake all threads
-			checkBarrier.await();
-
-			// Now wait for all threads to print shutting down msg
-			checkBarrier.await();
+			// Wake up all threads so they can shutdown.
+			workerStartBarrier.await();
 		} catch (InterruptedException e) {
 			throw new RuntimeException(e);
 		} catch (BrokenBarrierException e) {
 			throw new RuntimeException(e);
 		}
+
+		threadPool.shutdownAndWait();
 
 		log.info("Optimization completed in  {} iterations. " +
 				"Primal res.: {}, Dual res.: {}", new Object[] {iter, primalRes, dualRes});
@@ -313,32 +307,42 @@ public class ADMMReasoner implements Reasoner {
 
 	@Override
 	public void close() {
-		consensusValues = null;
 	}
 
 	private class ADMMTask implements Runnable {
-		public boolean flag;
+		// Set by the parent thread each round of optimization.
+		public volatile boolean done;
+		public volatile boolean check;
+
 		private final int termIndexStart, termIndexEnd;
 		private final int variableIndexStart, variableIndexEnd;
-		private final CyclicBarrier workerBarrier, checkBarrier;
-		private final Semaphore notification;
 		private final ADMMTermStore termStore;
+		private double[] consensusValues;
+
+		private final CyclicBarrier termUpdateCompleteBarrier;
+		private final CyclicBarrier workerStartBarrier;
+		private final CyclicBarrier workerEndBarrier;
 
 		public double primalResInc;
 		public double dualResInc;
 		public double AxNormInc;
 		public double BzNormInc;
 		public double AyNormInc;
+
 		protected double lagrangePenalty;
 		protected double augmentedLagrangePenalty;
 
-		public ADMMTask(int index, CyclicBarrier wBarrier, CyclicBarrier cBarrier,
-				Semaphore notification, ADMMTermStore termStore) {
-			this.workerBarrier = wBarrier;
-			this.checkBarrier = cBarrier;
-			this.notification = notification;
+		public ADMMTask(int index, CyclicBarrier termUpdateCompleteBarrier,
+				CyclicBarrier workerStartBarrier, CyclicBarrier workerEndBarrier,
+				ADMMTermStore termStore, double[] consensusValues) {
+			this.termUpdateCompleteBarrier = termUpdateCompleteBarrier;
+			this.workerStartBarrier = workerStartBarrier;
+			this.workerEndBarrier = workerEndBarrier;
+			this.consensusValues = consensusValues;
+
 			this.termStore = termStore;
-			this.flag = true;
+			this.done = false;
+			this.check = false;
 
 			// Determine the section of the terms this thread will look at
 			int tIncrement = (int)(Math.ceil((double)termStore.size() / (double)numThreads));
@@ -371,20 +375,21 @@ public class ADMMReasoner implements Reasoner {
 
 		@Override
 		public void run() {
-			awaitUninterruptibly(checkBarrier);
-
 			int iter = 1;
-			while (flag) {
-				boolean check = ((iter - 1) % stopCheck) == 0;
+			while (true) {
+				awaitUninterruptibly(workerStartBarrier);
+				if (done) {
+					break;
+				}
 
 				// Solves each local function.
-				for (int i = termIndexStart; i < termIndexEnd; i ++) {
-					termStore.get(i).updateLagrange(stepSize, consensusValues);
-					termStore.get(i).minimize(stepSize, consensusValues);
+				for (int i = termIndexStart; i < termIndexEnd; i++) {
+               termStore.get(i).updateLagrange(stepSize, consensusValues);
+               termStore.get(i).minimize(stepSize, consensusValues);
 				}
 
 				// Ensures all threads are at the same point
-				awaitUninterruptibly(workerBarrier);
+				awaitUninterruptibly(termUpdateCompleteBarrier);
 
 				// TODO(eriq): Be careful here when refactoring. Make sure there are not used between checks,
 				// when they have their old values..
@@ -437,15 +442,8 @@ public class ADMMReasoner implements Reasoner {
 					}
 				}
 
-				if (check) {
-					notification.release();
-				}
-
-				// Waits for main thread
-				awaitUninterruptibly(checkBarrier);
+				awaitUninterruptibly(workerEndBarrier);
 			}
-
-			awaitUninterruptibly(checkBarrier);
 		}
 	}
 }

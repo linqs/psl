@@ -38,6 +38,14 @@ public abstract class ADMMObjectiveTerm implements Term {
 
 	public void updateLagrange(double stepSize, double[] consensusValues) {
 		for (LocalVariable variable : variables) {
+         // TEST
+         if (variable == null) {
+            System.err.println("NULL VARIABLE");
+         }
+         if (consensusValues == null) {
+            System.err.println("NULL CONSENSUS");
+         }
+
 			variable.setLagrange(variable.getLagrange() + stepSize * (variable.getValue() - consensusValues[variable.getGlobalId()]));
 		}
 	}

@@ -27,6 +27,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Semaphore;
 
 /**
  * Objective term for an {@link ADMMReasoner} that is based on a squared
@@ -34,33 +35,51 @@ import java.util.Map;
  * <p>
  * Stores the characterization of the hyperplane as coeffs^T * x = constant
  * and minimizes with the weighted, squared hyperplane in the objective.
- * 
+ *
  * @author Stephen Bach <bach@cs.umd.edu>
  */
 public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements WeightedTerm {
 	protected final List<Double> coeffs;
 	protected final double constant;
 	protected double weight;
+
 	private DoubleMatrix2D L;
-	
+
 	private static Map<DenseDoubleMatrix2DWithHashcode, DoubleMatrix2D> lCache = new HashMap<DenseDoubleMatrix2DWithHashcode, DoubleMatrix2D>();
-	
+
+	// TEST
+	private static final Semaphore matrixSemaphore = new Semaphore(1);
+
+	// TODO(eriq): All the matrix work is suspect.
+	// The old code was using some cache that didn't seem too useful. Could it have been?
+
 	SquaredHyperplaneTerm(List<LocalVariable> variables, List<Double> coeffs, double constant, double weight) {
 		super(variables);
-		
+
 		assert(variables.size() == coeffs.size());
 
 		this.coeffs = coeffs;
 		this.constant = constant;
+
 		L = null;
+		/*
+		if (variables.size() >= 3) {
+			computeL();
+		}
+		*/
 
 		if (weight < 0.0) {
 			throw new IllegalArgumentException("Only non-negative weights are supported.");
 		}
 		setWeight(weight);
 	}
-	
+
 	private void computeL(double stepSize) {
+		// Since the method is synchronized, check to see if we have already computed L.
+		if (L != null) {
+			return;
+		}
+
 		double coeff;
 		DenseDoubleMatrix2DWithHashcode matrix = new DenseDoubleMatrix2DWithHashcode(variables.size(), variables.size());
 		for (int i = 0; i < variables.size(); i++) {
@@ -76,21 +95,30 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
 				}
 			}
 		}
-		
+
 		L = lCache.get(matrix);
 		if (L == null) {
+			// The matrix library itself cannot be called concurrently.
+			try {
+				matrixSemaphore.acquire();
+			} catch (InterruptedException ex) {
+				throw new RuntimeException("Interrupted constructing matrix", ex);
+			}
+
 			L = new DenseDoubleCholeskyDecomposition(matrix).getL();
 			lCache.put(matrix, L);
+
+			matrixSemaphore.release();
 		}
 	}
-	
+
 	@Override
 	public void setWeight(double weight) {
 		this.weight = weight;
 		// Recompute L.
 		L = null;
 	}
-	
+
 	/**
 	 * Minimizes the weighted, squared hyperplane <br />
 	 * argmin weight * (coeffs^T * x - constant)^2 + stepSize/2 * \|x - z + y / stepSize \|_2^2
@@ -107,7 +135,7 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
 
 			variable.setValue(value);
 		}
-		
+
 		// Solve for x
 
 		// Handle small hyperplanes specially.
@@ -129,10 +157,10 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
 			double a0 = 2 * weight * coeff0 * coeff0 + stepSize;
 			double b1 = 2 * weight * coeff1 * coeff1 + stepSize;
 			double a1b0 = 2 * weight * coeff0 * coeff1;
-			
+
 			variable1.setValue(variable1.getValue() - a1b0 * variable0.getValue() / a0);
 			variable1.setValue(variable1.getValue() / (b1 - a1b0 * a1b0 / a0));
-			
+
 			variable0.setValue((variable0.getValue() - a1b0 * variable1.getValue()) / a0);
 
 			return;
@@ -157,9 +185,9 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
 			variables.get(i).setValue(variables.get(i).getValue() / L.getQuick(i, i));
 		}
 	}
-	
+
 	private class DenseDoubleMatrix2DWithHashcode extends DenseDoubleMatrix2D {
-		
+
 		private static final long serialVersionUID = -8102931034927566306L;
 		private boolean needsNewHashcode;
 		private int hashcode = 0;
@@ -168,27 +196,24 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
 			super(rows, columns);
 			needsNewHashcode = true;
 		}
-		
+
 		@Override
 		public void setQuick(int row, int column, double value) {
 			needsNewHashcode = true;
 			super.setQuick(row, column, value);
 		}
-		
+
 		@Override
 		public int hashCode() {
 			if (needsNewHashcode) {
 				HashCodeBuilder builder = new HashCodeBuilder();
-				for (int i = 0; i < rows(); i++) {
-					for (int j = 0; j < columns(); j++) {
+				for (int i = 0; i < rows(); i++)
+					for (int j = 0; j < columns(); j++)
 						builder.append(getQuick(i, j));
-					}
-				}
-				
+
 				hashcode = builder.toHashCode();
 				needsNewHashcode = false;
 			}
-
 			return hashcode;
 		}
 	}
