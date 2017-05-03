@@ -384,14 +384,36 @@ public class ModelLoaderTest {
 	}
 
 	@Test
+	// You cannot negate any expression because we only allow conjunctions in the body and disjunctions in the head.
 	public void testNegation() {
 		String input =
-			"1: ~Single(A) & ~~Double(A, B) >> ~~~Single(B) ^2\n";
+			"1: ~Single(A) & Double(A, B) >> ~Single(B) ^2\n";
 		String[] expected = new String[]{
-			"1.0: ( ~( SINGLE(A) ) & ~( ~( DOUBLE(A, B) ) ) ) >> ~( ~( ~( SINGLE(B) ) ) ) ^2"
+			"1.0: ( ~( SINGLE(A) ) & DOUBLE(A, B) ) >> ~( SINGLE(B) ) ^2"
 		};
 
 		assertModel(input, expected);
+
+		try {
+			assertRule("1: ~Single(A) & ~~Double(A, B) >> ~~~Single(B) ^2", "");
+			fail("Negation allowed on non-atom (negation).");
+		} catch (org.antlr.v4.runtime.NoViableAltException ex) {
+			// Exception expected.
+		}
+
+		try {
+			assertRule("1: ~( Single(A) & Single(B) ) >> Double(A, B) ^2", "");
+			fail("Negation allowed on non-atom (conjunction).");
+		} catch (org.antlr.v4.runtime.NoViableAltException ex) {
+			// Exception expected.
+		}
+
+		try {
+			assertRule("1: Double(A, B) >> ~( Single(A) | Single(B) ) ^2", "");
+			fail("Negation allowed on non-atom (disjunction).");
+		} catch (org.antlr.v4.runtime.NoViableAltException ex) {
+			// Exception expected.
+		}
 	}
 
 	@Test
@@ -417,7 +439,7 @@ public class ModelLoaderTest {
 			"1.0: ( ('Foo' != 'Bar') & DOUBLE(A, B) ) >> SINGLE(B) ^2"
 		};
 
-		assertModel(input, expected, false);
+		assertModel(input, expected);
 	}
 
 	@Test
@@ -447,7 +469,7 @@ public class ModelLoaderTest {
 			"1.0: ( (A != B) & DOUBLE(A, B) ) >> SINGLE(B)"
 		};
 
-		assertModel(input, expected, false);
+		assertModel(input, expected);
 	}
 
 	@Test
@@ -860,6 +882,36 @@ public class ModelLoaderTest {
 			"-1.0 * DOUBLE(A, B) + 1.0 * DOUBLE(B, A) = 0.0 .",
 			"1.0 * DOUBLE(A, B) + 1.0 * DOUBLE(B, A) = 0.0 .",
 			"-1.0 * DOUBLE(A, B) + -1.0 * DOUBLE(B, A) = 0.0 ."
+		};
+
+		assertModel(input, expected);
+	}
+
+	@Test
+	public void testLogicalParens() {
+		String input =
+			"1.0: Single(A) & Single(B) >> Double(A, B) ^2\n" +
+			"1.0: Single(A) & Single(B) >> Double(A, B)\n" +
+			"1.0: ( Single(A) && Single(B) ) -> Double(A, B) ^2\n" +
+			"1.0: ( Single(A) && Single(B) ) -> Double(A, B)\n" +
+
+			"1.0: (Single(A)) & Single(B) >> Double(A, B)\n" +
+			"1.0: (Single(A)) & (Single(B)) >> Double(A, B)\n" +
+			"1.0: ((Single(A)) & (Single(B))) >> Double(A, B)\n" +
+			"1.0: (Single(A)) & Single(B) >> (Double(A, B))\n" +
+			"1.0: (((Single(A)) & (Single(B))) & Double(B, A)) >> Double(A, B)\n" +
+			"";
+		String[] expected = new String[]{
+			"1.0: ( SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B) ^2",
+			"1.0: ( SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B)",
+			"1.0: ( SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B) ^2",
+			"1.0: ( SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B)",
+
+			"1.0: ( SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B)",
+			"1.0: ( SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B)",
+			"1.0: ( SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B)",
+			"1.0: ( SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B)",
+			"1.0: ( SINGLE(A) & SINGLE(B) & DOUBLE(B, A) ) >> DOUBLE(A, B)",
 		};
 
 		assertModel(input, expected);
