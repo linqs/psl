@@ -316,6 +316,6 @@ public class DNFTest {
 			actual[i] = inputs[i].getDNF().toString();
 		}
 
-		PSLTest.compareStrings(expected, actual, true);
+		PSLTest.assertStringsEquals(expected, actual, true);
 	}
 }

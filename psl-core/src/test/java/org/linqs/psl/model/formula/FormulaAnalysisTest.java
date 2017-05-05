@@ -323,6 +323,6 @@ public class FormulaAnalysisTest {
 			actual[i] = StringUtils.join(clauses, " | ");
 		}
 
-		PSLTest.compareStrings(expected, actual, true);
+		PSLTest.assertStringsEquals(expected, actual, true);
 	}
 }
