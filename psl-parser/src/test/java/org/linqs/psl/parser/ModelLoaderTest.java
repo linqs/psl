@@ -121,10 +121,10 @@ public class ModelLoaderTest {
 	}
 
 	/**
-	 * Convenience call for the common functionality of assertRule() (don't alphabetize).
+	 * Convenience call for the common functionality of assertRule() (alphabetize).
 	 */
 	public void assertRule(String input, String expectedRule) {
-		assertRule(input, expectedRule, false);
+		assertRule(input, expectedRule, true);
 	}
 
 	/**
@@ -190,7 +190,7 @@ public class ModelLoaderTest {
 			"~( SINGLE(A) ) ."
 		};
 
-		assertModel(input, expected, false);
+		assertModel(input, expected);
 	}
 
 	@Test
