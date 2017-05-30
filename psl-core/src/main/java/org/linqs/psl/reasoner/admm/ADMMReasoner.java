@@ -405,7 +405,9 @@ public class ADMMReasoner implements Reasoner {
 				for (int i = variableIndexStart; i < variableIndexEnd; i++) {
 					double total = 0.0;
 					// First pass computes newConsensusValue and dual residual fom all local copies.
-					for (LocalVariable localVariable : termStore.getLocalVariables(i)) {
+					// Use indexes instead of iterators for profiling purposes: http://psy-lob-saw.blogspot.co.uk/2014/12/the-escape-of-arraylistiterator.html
+					for (int localVarIndex = 0; localVarIndex < termStore.getLocalVariables(i).size(); localVarIndex++) {
+						LocalVariable localVariable = termStore.getLocalVariables(i).get(localVarIndex);
 						total += localVariable.getValue() + localVariable.getLagrange() / stepSize;
 
 						if (check) {
@@ -429,9 +431,12 @@ public class ADMMReasoner implements Reasoner {
 					}
 					consensusValues[i] = newConsensusValue;
 
-					/* Second pass computes primal residuals */
+					// Second pass computes primal residuals,
 					if (check) {
-						for (LocalVariable localVariable : termStore.getLocalVariables(i)) {
+						// Use indexes instead of iterators for profiling purposes: http://psy-lob-saw.blogspot.co.uk/2014/12/the-escape-of-arraylistiterator.html
+						for (int localVarIndex = 0; localVarIndex < termStore.getLocalVariables(i).size(); localVarIndex++) {
+							LocalVariable localVariable = termStore.getLocalVariables(i).get(localVarIndex);
+
 							double diff = localVariable.getValue() - newConsensusValue;
 							primalResInc += diff * diff;
 							// computes Lagrangian penalties

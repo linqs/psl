@@ -21,12 +21,13 @@ import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 
-import org.apache.commons.collections4.SetValuedMap;
-import org.apache.commons.collections4.multimap.HashSetValuedHashMap;
-
 import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class MemoryTermStore<E extends Term> implements TermStore<E> {
 	public static final String CONFIG_PREFIX = "memorytermstore";
@@ -47,7 +48,7 @@ public class MemoryTermStore<E extends Term> implements TermStore<E> {
 	 * Note that it could be possible to generate multiple terms
 	 * for a single ground rule.
 	 */
-	private SetValuedMap<WeightedGroundRule, Integer> ruleMapping;
+	private Map<WeightedGroundRule, List<Integer>> ruleMapping;
 
 	public MemoryTermStore() {
 		this(INITIAL_SIZE_DEFAULT);
@@ -59,13 +60,17 @@ public class MemoryTermStore<E extends Term> implements TermStore<E> {
 
 	public MemoryTermStore(int initialSize) {
 		store = new ArrayList<E>(initialSize);
-		ruleMapping = new HashSetValuedHashMap<WeightedGroundRule, Integer>(initialSize);
+		ruleMapping = new HashMap<WeightedGroundRule, List<Integer>>(initialSize);
 	}
 
 	@Override
 	public void add(GroundRule rule, E term) {
 		if (rule instanceof WeightedGroundRule && term instanceof WeightedTerm) {
-			ruleMapping.put((WeightedGroundRule)rule, new Integer(store.size()));
+			if (!ruleMapping.containsKey((WeightedGroundRule)rule)) {
+				ruleMapping.put((WeightedGroundRule)rule, new LinkedList<Integer>());
+			}
+
+			ruleMapping.get((WeightedGroundRule)rule).add(new Integer(store.size()));
 		}
 
 		store.add(term);
@@ -101,8 +106,8 @@ public class MemoryTermStore<E extends Term> implements TermStore<E> {
 
 	@Override
 	public void updateWeight(WeightedGroundRule rule) {
-		for (Integer index : ruleMapping.get(rule)) {
-			((WeightedTerm)store.get(index.intValue())).setWeight(rule.getWeight().getWeight());
+		for (Integer termIndex : ruleMapping.get(rule)) {
+			((WeightedTerm)store.get(termIndex.intValue())).setWeight(rule.getWeight().getWeight());
 		}
 	}
 }

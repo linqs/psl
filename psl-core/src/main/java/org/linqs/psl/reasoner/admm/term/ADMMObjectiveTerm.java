@@ -37,15 +37,10 @@ public abstract class ADMMObjectiveTerm implements Term {
 	}
 
 	public void updateLagrange(double stepSize, double[] consensusValues) {
-		for (LocalVariable variable : variables) {
-         // TEST
-         if (variable == null) {
-            System.err.println("NULL VARIABLE");
-         }
-         if (consensusValues == null) {
-            System.err.println("NULL CONSENSUS");
-         }
-
+		// Use index instead of iterator here so we can see clear results in the profiler.
+		// http://psy-lob-saw.blogspot.co.uk/2014/12/the-escape-of-arraylistiterator.html
+		for (int i = 0; i < variables.size(); i++) {
+			LocalVariable variable = variables.get(i);
 			variable.setLagrange(variable.getLagrange() + stepSize * (variable.getValue() - consensusValues[variable.getGlobalId()]));
 		}
 	}
