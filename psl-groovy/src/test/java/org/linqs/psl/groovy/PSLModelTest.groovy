@@ -290,7 +290,7 @@ public class PSLModelTest {
 			"1: Single(B) << Single(A) & Double(A, B) ^2\n" +
 			"1: Single(A) | Double(A, B) << Single(B) & Single(A) ^2\n" +
 			"1: Single(A) & Double(B, C) >> Single(B) | Single(C) ^2\n" +
-			"1: ~Single(A) & ~~Double(A, B) >> ~~~Single(B) ^2\n" +
+			"1: ~Single(A) & Double(A, B) >> ~Single(B) ^2\n" +
 			"1: A == B & Double(A, B) >> Single(B) ^2\n" +
 			"1: A == 'Bar' & Double(A, B) >> Single(B) ^2\n" +
 			"1: 'Foo' == B & Double(A, B) >> Single(B) ^2\n" +
@@ -368,7 +368,7 @@ public class PSLModelTest {
 			"1.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) ^2",
 			"1.0: ( SINGLE(B) & SINGLE(A) ) >> ( SINGLE(A) | DOUBLE(A, B) ) ^2",
 			"1.0: ( SINGLE(A) & DOUBLE(B, C) ) >> ( SINGLE(B) | SINGLE(C) ) ^2",
-			"1.0: ( ~( SINGLE(A) ) & ~( ~( DOUBLE(A, B) ) ) ) >> ~( ~( ~( SINGLE(B) ) ) ) ^2",
+			"1.0: ( ~( SINGLE(A) ) & DOUBLE(A, B) ) >> ~( SINGLE(B) ) ^2",
 			"1.0: ( (A == B) & DOUBLE(A, B) ) >> SINGLE(B) ^2",
 			"1.0: ( (A == 'Bar') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
 			"1.0: ( ('Foo' == B) & DOUBLE(A, B) ) >> SINGLE(B) ^2",

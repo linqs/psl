@@ -38,6 +38,7 @@ import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
 
+import org.apache.commons.lang.StringUtils;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 
@@ -48,7 +49,7 @@ import com.google.common.collect.Multimap;
  * Each clause reports properties and helps {@link Rule Rules} with registering
  * for the appropriate {@link AtomEvent AtomEvents} and running the appropriate
  * {@link DatabaseQuery DatabaseQueries} to identify true groundings.
- * 
+ *
  * @author Matthias Broecheler
  * @author Stephen Bach <bach@cs.umd.edu>
  */
@@ -56,10 +57,10 @@ public class FormulaAnalysis {
 
 	protected final Formula f;
 	protected final List<DNFClause> clauses;
-	
+
 	public FormulaAnalysis(Formula formula) {
 		f = formula;
-		
+
 		/*
 		 * Converts the Formula to Disjunctive Normal Form and collects the clauses
 		 */
@@ -74,15 +75,15 @@ public class FormulaAnalysis {
 		else {
 			rawClauses = new Formula[] {formula};
 		}
-		
+
 		/*
 		 * Processes each clause
 		 */
 		clauses = new ArrayList<DNFClause>(rawClauses.length);
-		
+
 		List<Atom> posLiterals = new ArrayList<Atom>(4);
 		List<Atom> negLiterals = new ArrayList<Atom>(4);
-		
+
 		for (int i = 0; i < rawClauses.length; i++) {
 			/*
 			 * Extracts the positive and negative literals from the clause
@@ -122,7 +123,7 @@ public class FormulaAnalysis {
 			else {
 				throw new IllegalStateException("Unexpected sub-Formula. Formula was not in flattened Disjunctive Normal Form.");
 			}
-			
+
 			/*
 			 * Stores the DNFClause
 			 */
@@ -131,41 +132,40 @@ public class FormulaAnalysis {
 			negLiterals.clear();
 		}
 	}
-	
+
 	/**
 	 * @return the original Formula that was analyzed
 	 */
 	public Formula getFormula() {
 		return f;
 	}
-	
+
 	/**
-	 * @return the number of clauses in the Formula after it has been converted
-	 *             to Disjunctive Normal Form
+	 * @return the number of clauses in the Formula after it has been converted to Disjunctive Normal Form.
 	 */
 	public int getNumDNFClauses() {
 		return clauses.size();
 	}
-	
+
 	/**
 	 * Returns the specified clause of the Formula after it has been converted
 	 * to Disjunctive Normal Form.
-	 * 
+	 *
 	 * @param index  the clause's index
 	 * @return the DNF clause
 	 */
 	public DNFClause getDNFClause(int index) {
 		return clauses.get(index);
 	}
-	
+
 	public class DNFClause {
 		protected final List<Atom> posLiterals;
-		protected final List<Atom> negLiterals; 
+		protected final List<Atom> negLiterals;
 		protected final Multimap<Predicate,Atom> dependence;
 		protected final Formula query;
 		protected final boolean allVariablesBound;
 		protected final boolean isGround;
-		
+
 		public DNFClause(List<Atom> posLiterals, List<Atom> negLiterals) {
 			this.posLiterals = new ArrayList<Atom>(posLiterals);
 			this.negLiterals = new ArrayList<Atom>(negLiterals);
@@ -173,45 +173,45 @@ public class FormulaAnalysis {
 			Set<Variable> allowedVariables = new HashSet<Variable>();
 			Set<Variable> variablesToCheck = new HashSet<Variable>();
 			boolean tempAllVariablesBound = true;
-			
+
 			/*
 			 * Checks if all Variables in the clause appear in a positive literal
 			 * with a StandardPredicate.
 			 */
 			Set<Variable> setToAdd;
-			
+
 			for (Atom atom : posLiterals) {
 				if (atom.getPredicate() instanceof StandardPredicate)
 					setToAdd = allowedVariables;
 				else
 					setToAdd = variablesToCheck;
-				
+
 				for (Term t : atom.getArguments()) {
 					if (t instanceof Variable)
 						setToAdd.add((Variable) t);
 				}
 			}
-			
+
 			for (Atom atom : negLiterals)
 				for (Term t : atom.getArguments())
 					if (t instanceof Variable)
 						variablesToCheck.add((Variable) t);
-			
+
 			isGround = (allowedVariables.size() + variablesToCheck.size() == 0) ? true : false;
-			
+
 			for (Variable v : variablesToCheck)
 				if (!allowedVariables.contains(v))
 					tempAllVariablesBound = false;
-			
+
 			allVariablesBound = tempAllVariablesBound;
-			
+
 			/*
 			 * Processes the positive literals with StandardPredicates further
 			 */
 			for (int i = 0; i < posLiterals.size(); i++)
 				if (posLiterals.get(i).getPredicate() instanceof StandardPredicate)
 					dependence.put(posLiterals.get(i).getPredicate(), posLiterals.get(i));
-			
+
 			if (posLiterals.size() == 0)
 				query = null;
 			else if (posLiterals.size() == 1)
@@ -219,21 +219,21 @@ public class FormulaAnalysis {
 			else
 				query = (allVariablesBound) ? new Conjunction(posLiterals.toArray(new Formula[posLiterals.size()])) : null;
 		}
-		
+
 		/**
 		 * @return the positive literals, i.e., Atoms not negated, in the clause
 		 */
 		public List<Atom> getPosLiterals() {
 			return Collections.unmodifiableList(posLiterals);
 		}
-		
+
 		/**
 		 * @return the negative literals, i.e., negated Atoms, in the clause
 		 */
 		public List<Atom> getNegLiterals() {
 			return Collections.unmodifiableList(negLiterals);
 		}
-		
+
 		/**
 		 * Returns whether all Variables in the clause appear at least once in a
 		 * positive literal with a {@link StandardPredicate}.
@@ -241,28 +241,28 @@ public class FormulaAnalysis {
 		 * If all Variables are bound, then {@link DatabaseQuery DatabaseQueries}
 		 * can identify all groundings of the clause with possibly non-zero truth
 		 * values in a {@link Database}.
-		 * 
+		 *
 		 * @return whether all Variables are bound
 		 */
 		public boolean getAllVariablesBound() {
 			return allVariablesBound;
 		}
-		
+
 		public boolean isGround() {
 			return isGround;
 		}
-		
+
 		public boolean isQueriable() {
 			return (query != null);
 		}
-		
+
 		public Formula getQueryFormula() {
 			if (query != null)
 				return query;
 			else
 				throw new IllegalStateException("Clause is not queriable.");
 		}
-		
+
 		public List<VariableAssignment> traceAtomEvent(Atom atom) {
 			Collection<Atom> atoms = dependence.get(atom.getPredicate());
 			List<VariableAssignment> vars = new ArrayList<VariableAssignment>(atoms.size());
@@ -289,7 +289,7 @@ public class FormulaAnalysis {
 			}
 			return vars;
 		}
-		
+
 		public void registerClauseForEvents(AtomEventFramework eventFramework, Set<Type> eventTypes, Rule k) {
 			for (Predicate p : dependence.keySet()) {
 				if (!eventFramework.isClosed((StandardPredicate) p)) {
@@ -297,13 +297,27 @@ public class FormulaAnalysis {
 				}
 			}
 		}
-		
+
 		public void unregisterClauseForEvents(AtomEventFramework eventFramework, Set<Type> eventTypes, Rule k) {
 			for (Predicate p : dependence.keySet()) {
 				if (!eventFramework.isClosed((StandardPredicate) p)) {
 					eventFramework.unregisterAtomEventListener(eventTypes, (StandardPredicate) p, k);
 				}
 			}
+		}
+
+		public String toString() {
+			List<String> allLiterals = new ArrayList<>();
+
+			for (Atom posLit : getPosLiterals()) {
+				allLiterals.add(posLit.toString());
+			}
+
+			for (Atom negLit : getNegLiterals()) {
+				allLiterals.add("~" + negLit.toString());
+			}
+
+			return StringUtils.join(allLiterals, " & ");
 		}
 	}
 }

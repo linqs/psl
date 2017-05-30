@@ -32,12 +32,6 @@ atom
     |   term termOperator term
     ;
 
-literal
-    :   atom
-    |   not literal
-    |   LPAREN literal RPAREN
-    ;
-
 term
     :   variable
     |   constant
@@ -69,18 +63,41 @@ unweightedLogicalRule
     :   logicalRuleExpression PERIOD
     ;
 
+logicalValue
+    :   atom
+    |   not atom
+    ;
+
+logicalConjunctiveValue
+    :   logicalValue
+    |   LPAREN logicalConjunctiveExpression RPAREN
+    ;
+
+logicalDisjunctiveValue
+    :   logicalValue
+    |   LPAREN logicalDisjunctiveExpression RPAREN
+    ;
+
+logicalConjunctiveExpression
+    :   logicalConjunctiveValue
+    |   logicalConjunctiveExpression and logicalConjunctiveValue
+    ;
+
+logicalDisjunctiveExpression
+    :   logicalDisjunctiveValue
+    |   logicalDisjunctiveExpression or logicalDisjunctiveValue
+    ;
+
+// Note that we are not supporting mixing disjunctions and conjunction.
+// You can onyl have one type on each side of the arrow.
+logicalImplicationExpression
+    :   logicalDisjunctiveExpression impliedBy logicalConjunctiveExpression
+    |   logicalConjunctiveExpression then logicalDisjunctiveExpression
+    ;
+
 logicalRuleExpression
-    :   disjunctiveClause
-    |   disjunctiveClause impliedBy conjunctiveClause
-    |   conjunctiveClause then disjunctiveClause
-    ;
-
-disjunctiveClause
-    :   literal (or literal)*
-    ;
-
-conjunctiveClause
-    :   literal (and literal)*
+    :   logicalDisjunctiveExpression
+    |   logicalImplicationExpression
     ;
 
 //
@@ -111,7 +128,7 @@ linearArithmeticExpression
 
 linearArithmeticOperand
     :   arithmeticCoefficientOperand
-    |   '(' linearArithmeticExpression ')'
+    |   LPAREN linearArithmeticExpression RPAREN
     ;
 
 arithmeticCoefficientOperand
@@ -130,7 +147,7 @@ summationVariable
 coefficient
     :   number
     |   coefficientOperator
-    |   '(' coefficientExpression ')'
+    |   LPAREN coefficientExpression RPAREN
     ;
 
 coefficientMultiplicativeExpression
@@ -171,7 +188,7 @@ selectStatement
     ;
 
 booleanValue
-    :   literal
+    :   logicalValue
     |   LPAREN booleanExpression RPAREN
     ;
 
@@ -415,8 +432,9 @@ CARROT
 // (from https://github.com/antlr/grammars-v4)
 //
 
+// Put the whitespace in a hidden channel instead of skipping so we can preserve space in debugging.
 WS
-    :   [ \t\r\n\u000C]+ -> skip
+    :   [ \t\r\n\u000C]+ -> channel(HIDDEN)
     ;
 
 COMMENT

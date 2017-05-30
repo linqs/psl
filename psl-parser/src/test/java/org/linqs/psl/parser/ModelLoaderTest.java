@@ -20,32 +20,25 @@ package org.linqs.psl.parser;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-import org.apache.commons.lang3.StringUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.linqs.psl.PSLTest;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.EmptyBundle;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver.Type;
-import org.linqs.psl.model.Model;
-import org.linqs.psl.model.formula.Implication;
 import org.linqs.psl.model.predicate.PredicateFactory;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
-import org.linqs.psl.model.rule.arithmetic.UnweightedArithmeticRule;
-import org.linqs.psl.model.rule.arithmetic.WeightedArithmeticRule;
-import org.linqs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
-import org.linqs.psl.model.rule.logical.UnweightedLogicalRule;
-import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
 import org.linqs.psl.model.term.ConstantType;
-import org.linqs.psl.parser.ModelLoader;
+
+import org.apache.commons.lang3.StringUtils;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class ModelLoaderTest {
@@ -68,106 +61,6 @@ public class ModelLoaderTest {
 		dataStore.registerPredicate(doublePredicate);
 	}
 
-	/**
-	 * Convenience call for the common functionality of assertModel() (alphabetize).
-	 */
-	public void assertModel(String input, String[] expectedRules) {
-		assertModel(input, expectedRules, true);
-	}
-
-	/**
-	 * Load a rules into a model from a string.
-	 *
-	 * If, for some reason, the exact format of the output is not known (like with summations which
-	 * may order the summation terms in different ways), then you can use |alphabetize| to sort all
-	 * characters in both strings (actual and expected) before comparing.
-	 * Only alphabetize if it is really necessary since it makes the output much harder to interpret.
-	 */
-	public void assertModel(String input, String[] expectedRules, boolean alphabetize) {
-		Model model = null;
-
-		try {
-			model = ModelLoader.load(dataStore, input);
-		} catch (IOException ex) {
-			fail("IOException thrown from ModelLoader.load(): " + ex);
-		}
-
-		int ruleCount = 0;
-
-		if (alphabetize) {
-			for (Rule rule : model.getRules()) {
-				String alphaRule = sort(rule.toString());
-				String alphaExpected = sort(expectedRules[ruleCount]);
-
-				assertEquals(
-						String.format("Rule %d mismatch. Expected (before alphabetizing): [%s], found [%s].", ruleCount, expectedRules[ruleCount], rule.toString()),
-						alphaExpected,
-						alphaRule
-				);
-				ruleCount++;
-			}
-		} else {
-			for (Rule rule : model.getRules()) {
-				assertEquals(
-						String.format("Rule %d mismatch. Expected: [%s], found [%s].", ruleCount, expectedRules[ruleCount], rule.toString()),
-						expectedRules[ruleCount],
-						rule.toString()
-				);
-				ruleCount++;
-			}
-		}
-
-		assertEquals("Mismatch in expected rule count.", expectedRules.length, ruleCount);
-	}
-
-	/**
-	 * Convenience call for the common functionality of assertRule() (don't alphabetize).
-	 */
-	public void assertRule(String input, String expectedRule) {
-		assertRule(input, expectedRule, false);
-	}
-
-	/**
-	 * Load a rule into a model from a string.
-	 *
-	 * If, for some reason, the exact format of the output is not known (like with summations which
-	 * may order the summation terms in different ways), then you can use |alphabetize| to sort all
-	 * characters in both strings (actual and expected) before comparing.
-	 * Only alphabetize if it is really necessary since it makes the output much harder to interpret.
-	 */
-	public void assertRule(String input, String expectedRule, boolean alphabetize) {
-		Rule rule = null;
-
-		try {
-			rule = ModelLoader.loadRule(dataStore, input);
-		} catch (IOException ex) {
-			fail("IOException thrown from ModelLoader.loadRule(): " + ex);
-		}
-
-		if (alphabetize) {
-			String alphaRule = sort(rule.toString());
-			String alphaExpected = sort(expectedRule);
-
-			assertEquals(
-					String.format("Rule mismatch. Expected (before alphabetizing): [%s], found [%s].", expectedRule, rule.toString()),
-					alphaExpected,
-					alphaRule
-			);
-		} else {
-			assertEquals(
-					String.format("Rule mismatch. Expected: [%s], found [%s].", expectedRule, rule.toString()),
-					expectedRule,
-					rule.toString()
-			);
-		}
-	}
-
-	private static String sort(String string) {
-		char[] chars = string.	toCharArray();
-		Arrays.sort(chars);
-		return new String(chars);
-	}
-
 	@Test
 	public void testBase() {
 		String input =
@@ -178,7 +71,7 @@ public class ModelLoaderTest {
 			"5.0: ( SINGLE(B) & DOUBLE(B, A) ) >> SINGLE(A) ^2"
 		};
 
-		assertModel(input, expected);
+		PSLTest.assertModel(dataStore, input, expected);
 	}
 
 	@Test
@@ -190,7 +83,7 @@ public class ModelLoaderTest {
 			"~( SINGLE(A) ) ."
 		};
 
-		assertModel(input, expected, false);
+		PSLTest.assertModel(dataStore, input, expected);
 	}
 
 	@Test
@@ -203,7 +96,7 @@ public class ModelLoaderTest {
 		String input = String.format("1: %s >> Single(Z) ^2", StringUtils.join(parts, " & "));
 		String expected = String.format("1.0: ( %s ) >> SINGLE(Z) ^2", StringUtils.join(parts, " & ").toUpperCase());
 
-		assertModel(input, new String[]{expected});
+		PSLTest.assertModel(dataStore, input, new String[]{expected});
 	}
 
 	@Test
@@ -245,7 +138,7 @@ public class ModelLoaderTest {
 			"1.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) ^2"
 		};
 
-		assertModel(input, expected);
+		PSLTest.assertModel(dataStore, input, expected);
 	}
 
 	@Test
@@ -258,7 +151,7 @@ public class ModelLoaderTest {
 			"1.0: ( SINGLE(A) & DOUBLE(A, 'bar') & SINGLE('bar') ) >> DOUBLE(A, 'bar') ^2"
 		};
 
-		assertModel(input, expected);
+		PSLTest.assertModel(dataStore, input, expected);
 	}
 
 	@Test
@@ -296,7 +189,7 @@ public class ModelLoaderTest {
 			"1.0: 1.2E-10 * SINGLE(A) = 1.0 ^2"
 		};
 
-		assertModel(input, expected, false);
+		PSLTest.assertModel(dataStore, input, expected);
 	}
 
 	@Test
@@ -317,7 +210,7 @@ public class ModelLoaderTest {
 			"1.0: SINGLE(A__) >> SINGLE(A__) ^2"
 		};
 
-		assertModel(input, expected, false);
+		PSLTest.assertModel(dataStore, input, expected);
 	}
 
 	@Test
@@ -354,7 +247,7 @@ public class ModelLoaderTest {
 			"2.5E-10: SINGLE(A) >> SINGLE(A)"
 		};
 
-		assertModel(input, expected, false);
+		PSLTest.assertModel(dataStore, input, expected);
 	}
 
 	@Test
@@ -367,7 +260,7 @@ public class ModelLoaderTest {
 			"1.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) ^2"
 		};
 
-		assertModel(input, expected);
+		PSLTest.assertModel(dataStore, input, expected);
 	}
 
 	@Test
@@ -380,18 +273,40 @@ public class ModelLoaderTest {
 			"1.0: ( SINGLE(A) & DOUBLE(B, C) ) >> ( SINGLE(B) | SINGLE(C) ) ^2"
 		};
 
-		assertModel(input, expected);
+		PSLTest.assertModel(dataStore, input, expected);
 	}
 
 	@Test
+	// You cannot negate any expression because we only allow conjunctions in the body and disjunctions in the head.
 	public void testNegation() {
 		String input =
-			"1: ~Single(A) & ~~Double(A, B) >> ~~~Single(B) ^2\n";
+			"1: ~Single(A) & Double(A, B) >> ~Single(B) ^2\n";
 		String[] expected = new String[]{
-			"1.0: ( ~( SINGLE(A) ) & ~( ~( DOUBLE(A, B) ) ) ) >> ~( ~( ~( SINGLE(B) ) ) ) ^2"
+			"1.0: ( ~( SINGLE(A) ) & DOUBLE(A, B) ) >> ~( SINGLE(B) ) ^2"
 		};
 
-		assertModel(input, expected);
+		PSLTest.assertModel(dataStore, input, expected);
+
+		try {
+			PSLTest.assertRule(dataStore, "1: ~Single(A) & ~~Double(A, B) >> ~~~Single(B) ^2", "");
+			fail("Negation allowed on non-atom (negation).");
+		} catch (org.antlr.v4.runtime.NoViableAltException ex) {
+			// Exception expected.
+		}
+
+		try {
+			PSLTest.assertRule(dataStore, "1: ~( Single(A) & Single(B) ) >> Double(A, B) ^2", "");
+			fail("Negation allowed on non-atom (conjunction).");
+		} catch (org.antlr.v4.runtime.NoViableAltException ex) {
+			// Exception expected.
+		}
+
+		try {
+			PSLTest.assertRule(dataStore, "1: Double(A, B) >> ~( Single(A) | Single(B) ) ^2", "");
+			fail("Negation allowed on non-atom (disjunction).");
+		} catch (org.antlr.v4.runtime.NoViableAltException ex) {
+			// Exception expected.
+		}
 	}
 
 	@Test
@@ -417,7 +332,7 @@ public class ModelLoaderTest {
 			"1.0: ( ('Foo' != 'Bar') & DOUBLE(A, B) ) >> SINGLE(B) ^2"
 		};
 
-		assertModel(input, expected, false);
+		PSLTest.assertModel(dataStore, input, expected);
 	}
 
 	@Test
@@ -447,7 +362,7 @@ public class ModelLoaderTest {
 			"1.0: ( (A != B) & DOUBLE(A, B) ) >> SINGLE(B)"
 		};
 
-		assertModel(input, expected, false);
+		PSLTest.assertModel(dataStore, input, expected);
 	}
 
 	@Test
@@ -461,7 +376,7 @@ public class ModelLoaderTest {
 			"1.0: 1.0 * SINGLE(A) = 1.0 ^2"
 		};
 
-		assertModel(input, expected);
+		PSLTest.assertModel(dataStore, input, expected);
 	}
 
 	@Test
@@ -500,21 +415,21 @@ public class ModelLoaderTest {
 			"0.0 * SINGLE(A) = 1.0 ."
 		};
 
-		assertModel(input, expected);
+		PSLTest.assertModel(dataStore, input, expected);
 	}
 
 	@Test
 	public void testLoadRuleBase() {
 		String input = "1: Single(A) & Double(A, B) >> Single(B) ^2";
 		String expected = "1.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) ^2";
-		assertRule(input, expected);
+		PSLTest.assertRule(dataStore, input, expected);
 	}
 
 	@Test
 	public void testLoadRuleBadCount() {
 		// Having zero rules is a parse error, so the exception is different.
 		try {
-			assertRule("// Just a comment", "");
+			PSLTest.assertRule(dataStore, "// Just a comment", "");
 			fail("ModelLoader.LoadRule() with no rule did not throw an exception.");
 		} catch (org.antlr.v4.runtime.NoViableAltException ex) {
 			// Exception expected.
@@ -526,7 +441,7 @@ public class ModelLoaderTest {
 		String expected = "1.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) ^2";
 
 		try {
-			assertRule(input, expected);
+			PSLTest.assertRule(dataStore, input, expected);
 			fail("ModelLoader.LoadRule() with more than one rule did not throw an exception.");
 		} catch (IllegalArgumentException ex) {
 			// Exception expected.
@@ -547,7 +462,7 @@ public class ModelLoaderTest {
 
 		for (int i = 0; i < input.length; i++) {
 			try {
-				assertRule(input[i], expected[i]);
+				PSLTest.assertRule(dataStore, input[i], expected[i]);
 				fail(String.format("Rule: %d - Exception not thrown when float used without leading digit.", i));
 			} catch (Exception ex) {
 				// Exception expected.
@@ -585,7 +500,7 @@ public class ModelLoaderTest {
 
 		for (int i = 0; i < input.length; i++) {
 			try {
-				assertRule(input[i], expected[i]);
+				PSLTest.assertRule(dataStore, input[i], expected[i]);
 				fail(String.format("Rule: %d - Exception not thrown on general syntax error.", i));
 			} catch (Exception ex) {
 				// Exception expected.
@@ -615,7 +530,7 @@ public class ModelLoaderTest {
 
 		for (int i = 0; i < input.length; i++) {
 			try {
-				assertRule(input[i], expected[i]);
+				PSLTest.assertRule(dataStore, input[i], expected[i]);
 				fail(String.format("Rule: %d - Exception not thrown on bad square error.", i));
 			} catch (Exception ex) {
 				// Exception expected.
@@ -656,11 +571,8 @@ public class ModelLoaderTest {
 				);
 
 				Rule rule = partial.toRule();
-				assertEquals(
-						String.format("Rule %d string mismatch. Expected: [%s], found [%s].", i, expected[i], rule.toString()),
-						expected[i],
-						rule.toString()
-				);
+				PSLTest.assertStringEquals(expected[i], rule.toString(), true,
+						String.format("Rule %d string mismatch", i));
 			}
 		} catch (IOException ex) {
 			fail("Unexpected IOException thrown from ModelLoader.loadRulePartial(): " + ex);
@@ -702,18 +614,12 @@ public class ModelLoaderTest {
 				);
 
 				Rule unweightedRule = partial.toRule();
-				assertEquals(
-						String.format("Unweighted rule %d string mismatch. Expected: [%s], found [%s].", i, unweightedExpected[i], unweightedRule.toString()),
-						sort(unweightedExpected[i]),
-						sort(unweightedRule.toString())
-				);
+				PSLTest.assertStringEquals(unweightedExpected[i], unweightedRule.toString(), true,
+						String.format("Unweighted rule %d string mismatch", i));
 
 				Rule weightedRule = partial.toRule(5.0, true);
-				assertEquals(
-						String.format("Weighted rule %d string mismatch. Expected: [%s], found [%s].", i, weightedExpected[i], weightedRule.toString()),
-						sort(weightedExpected[i]),
-						sort(weightedRule.toString())
-				);
+				PSLTest.assertStringEquals(weightedExpected[i], weightedRule.toString(), true,
+						String.format("Weighted rule %d string mismatch", i));
 			}
 		} catch (IOException ex) {
 			fail("Unexpected IOException thrown from ModelLoader.loadRulePartial(): " + ex);
@@ -731,7 +637,7 @@ public class ModelLoaderTest {
 			"1.0: ( SINGLE(A) & SINGLE(B) & (A % B) ) >> DOUBLE(A, B) ^2"
 		};
 
-		assertModel(input, expected);
+		PSLTest.assertModel(dataStore, input, expected);
 	}
 
 	@Test
@@ -779,7 +685,7 @@ public class ModelLoaderTest {
 			"1.0 * SINGLE(A) = 99.0 ."
 		};
 
-		assertModel(input, expected);
+		PSLTest.assertModel(dataStore, input, expected);
 	}
 
 	@Test
@@ -806,7 +712,7 @@ public class ModelLoaderTest {
 			"1.0: ( (A != B) & SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B) ^2"
 		};
 
-		assertModel(input, expected);
+		PSLTest.assertModel(dataStore, input, expected);
 	}
 
 	@Test
@@ -844,7 +750,7 @@ public class ModelLoaderTest {
 			"1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( ( SINGLE(A) & SINGLE(B) ) | ( SINGLE(A) & SINGLE(C) ) )}"
 		};
 
-		assertModel(input, expected);
+		PSLTest.assertModel(dataStore, input, expected);
 	}
 
 	@Test
@@ -862,7 +768,37 @@ public class ModelLoaderTest {
 			"-1.0 * DOUBLE(A, B) + -1.0 * DOUBLE(B, A) = 0.0 ."
 		};
 
-		assertModel(input, expected);
+		PSLTest.assertModel(dataStore, input, expected);
+	}
+
+	@Test
+	public void testLogicalParens() {
+		String input =
+			"1.0: Single(A) & Single(B) >> Double(A, B) ^2\n" +
+			"1.0: Single(A) & Single(B) >> Double(A, B)\n" +
+			"1.0: ( Single(A) && Single(B) ) -> Double(A, B) ^2\n" +
+			"1.0: ( Single(A) && Single(B) ) -> Double(A, B)\n" +
+
+			"1.0: (Single(A)) & Single(B) >> Double(A, B)\n" +
+			"1.0: (Single(A)) & (Single(B)) >> Double(A, B)\n" +
+			"1.0: ((Single(A)) & (Single(B))) >> Double(A, B)\n" +
+			"1.0: (Single(A)) & Single(B) >> (Double(A, B))\n" +
+			"1.0: (((Single(A)) & (Single(B))) & Double(B, A)) >> Double(A, B)\n" +
+			"";
+		String[] expected = new String[]{
+			"1.0: ( SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B) ^2",
+			"1.0: ( SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B)",
+			"1.0: ( SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B) ^2",
+			"1.0: ( SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B)",
+
+			"1.0: ( SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B)",
+			"1.0: ( SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B)",
+			"1.0: ( SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B)",
+			"1.0: ( SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B)",
+			"1.0: ( SINGLE(A) & SINGLE(B) & DOUBLE(B, A) ) >> DOUBLE(A, B)",
+		};
+
+		PSLTest.assertModel(dataStore, input, expected);
 	}
 
 	@Test
@@ -876,6 +812,28 @@ public class ModelLoaderTest {
 			"1.0 * SINGLE(A) + 1.0 * SINGLE(B) = 0.0 ."
 		};
 
-		assertModel(input, expected);
+		PSLTest.assertModel(dataStore, input, expected);
+	}
+
+	@Test
+	public void testArithmeticDivideByZero() {
+		String[] input = new String[]{
+			"Single(A) / 0 + Single(B) = 0.0 .",
+			"2 / 0 * Single(A) + Single(B) = 0.0 .",
+			"2 / (2 - 2) * Single(A) + Single(B) = 0.0 .",
+			"Single(A) / (-1 + 1) + Single(B) = 0.0 .",
+			"Single(A) / @Min[0, 1] + Single(B) = 0.0 ."
+		};
+
+		for (String rule : input) {
+			try {
+				PSLTest.assertRule(dataStore, rule, "");
+				fail("Divide by zero did not throw exception.");
+			} catch (RuntimeException ex) {
+				if (!(ex.getCause() instanceof ArithmeticException)) {
+					fail("Divide by zero thre a non-Arithmetic exception.");
+				}
+			}
+		}
 	}
 }

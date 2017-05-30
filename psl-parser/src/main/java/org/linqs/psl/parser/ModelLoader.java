@@ -76,14 +76,17 @@ import org.linqs.psl.parser.antlr.PSLParser.CoefficientExpressionContext;
 import org.linqs.psl.parser.antlr.PSLParser.CoefficientFunctionContext;
 import org.linqs.psl.parser.antlr.PSLParser.CoefficientMultiplicativeExpressionContext;
 import org.linqs.psl.parser.antlr.PSLParser.CoefficientOperatorContext;
-import org.linqs.psl.parser.antlr.PSLParser.ConjunctiveClauseContext;
 import org.linqs.psl.parser.antlr.PSLParser.ConstantContext;
-import org.linqs.psl.parser.antlr.PSLParser.DisjunctiveClauseContext;
 import org.linqs.psl.parser.antlr.PSLParser.LinearArithmeticExpressionContext;
 import org.linqs.psl.parser.antlr.PSLParser.LinearArithmeticOperandContext;
 import org.linqs.psl.parser.antlr.PSLParser.LinearOperatorContext;
-import org.linqs.psl.parser.antlr.PSLParser.LiteralContext;
+import org.linqs.psl.parser.antlr.PSLParser.LogicalConjunctiveExpressionContext;
+import org.linqs.psl.parser.antlr.PSLParser.LogicalConjunctiveValueContext;
+import org.linqs.psl.parser.antlr.PSLParser.LogicalDisjunctiveExpressionContext;
+import org.linqs.psl.parser.antlr.PSLParser.LogicalDisjunctiveValueContext;
+import org.linqs.psl.parser.antlr.PSLParser.LogicalImplicationExpressionContext;
 import org.linqs.psl.parser.antlr.PSLParser.LogicalRuleExpressionContext;
+import org.linqs.psl.parser.antlr.PSLParser.LogicalValueContext;
 import org.linqs.psl.parser.antlr.PSLParser.NumberContext;
 import org.linqs.psl.parser.antlr.PSLParser.PredicateContext;
 import org.linqs.psl.parser.antlr.PSLParser.ProgramContext;
@@ -176,7 +179,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 		}
 
 		ModelLoader visitor = new ModelLoader(data);
-		return visitor.visitProgram(program);
+		return visitor.visitProgram(program, parser);
 	}
 
 	/**
@@ -218,11 +221,14 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 		this.data = data;
 	}
 
-	@Override
-	public Model visitProgram(ProgramContext ctx) {
+	public Model visitProgram(ProgramContext ctx, PSLParser parser) {
 		Model model = new Model();
 		for (PslRuleContext ruleCtx : ctx.pslRule()) {
-			model.addRule((Rule) visit(ruleCtx));
+			try {
+				model.addRule((Rule) visit(ruleCtx));
+			} catch (RuntimeException ex) {
+				throw new RuntimeException("Failed to compile rule: [" + parser.getTokenStream().getText(ruleCtx) + "]", ex);
+			}
 		}
 		return model;
 	}
@@ -279,71 +285,82 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 
 	@Override
 	public Formula visitLogicalRuleExpression(LogicalRuleExpressionContext ctx) {
-		if (ctx.children.size() == 3) {
-			if (ctx.conjunctiveClause() != null & ctx.disjunctiveClause() != null) {
-				Formula body = visitConjunctiveClause(ctx.conjunctiveClause());
-				Formula head = visitDisjunctiveClause(ctx.disjunctiveClause());
-				return new Implication(body, head);
-			}
-			else {
-				throw new IllegalStateException();
-			}
+		if (ctx.logicalDisjunctiveExpression() != null) {
+			return visitLogicalDisjunctiveExpression(ctx.logicalDisjunctiveExpression());
 		}
-		else if (ctx.children.size() == 1) {
-			if (ctx.disjunctiveClause() != null) {
-				return visitDisjunctiveClause(ctx.disjunctiveClause());
-			}
-			else {
-				throw new IllegalStateException();
-			}
+
+		if (ctx.logicalImplicationExpression() != null) {
+			return visitLogicalImplicationExpression(ctx.logicalImplicationExpression());
 		}
-		else {
-			throw new IllegalStateException();
-		}
+
+		throw new IllegalStateException();
 	}
 
 	@Override
-	public Formula visitConjunctiveClause(ConjunctiveClauseContext ctx) {
-		Formula[] literals = new Formula[ctx.literal().size()];
-		for (int i = 0; i < literals.length; i++) {
-			literals[i] = visitLiteral(ctx.literal(i));
-		}
-		if (literals.length == 1) {
-			return literals[0];
-		}
-		else {
-			return new Conjunction(literals);
-		}
+	public Formula visitLogicalImplicationExpression(LogicalImplicationExpressionContext ctx) {
+		Formula body = visitLogicalConjunctiveExpression(ctx.logicalConjunctiveExpression());
+		Formula head = visitLogicalDisjunctiveExpression(ctx.logicalDisjunctiveExpression());
+
+		return new Implication(body, head);
 	}
 
 	@Override
-	public Formula visitDisjunctiveClause(DisjunctiveClauseContext ctx) {
-		Formula[] literals = new Formula[ctx.literal().size()];
-		for (int i = 0; i < literals.length; i++) {
-			literals[i] = visitLiteral(ctx.literal(i));
+	public Formula visitLogicalDisjunctiveExpression(LogicalDisjunctiveExpressionContext ctx) {
+		// Passthrough to disjunctive value.
+		if (ctx.getChildCount() == 1) {
+			return visitLogicalDisjunctiveValue(ctx.logicalDisjunctiveValue());
 		}
-		if (literals.length == 1) {
-			return literals[0];
-		}
-		else {
-			return new Disjunction(literals);
-		}
+
+		// Binary disjunction.
+		Formula lhs = visitLogicalDisjunctiveExpression(ctx.logicalDisjunctiveExpression());
+		Formula rhs = visitLogicalDisjunctiveValue(ctx.logicalDisjunctiveValue());
+
+		return new Disjunction(lhs, rhs).flatten();
 	}
 
 	@Override
-	public Formula visitLiteral(LiteralContext ctx) {
-		if (ctx.atom() != null) {
-			return visitAtom(ctx.atom());
+	public Formula visitLogicalConjunctiveExpression(LogicalConjunctiveExpressionContext ctx) {
+		// Passthrough to conjunctive value.
+		if (ctx.getChildCount() == 1) {
+			return visitLogicalConjunctiveValue(ctx.logicalConjunctiveValue());
 		}
-		else if (ctx.not() != null) {
-			return new Negation(visitLiteral(ctx.literal()));
+
+		// Binary disjunction.
+		Formula lhs = visitLogicalConjunctiveExpression(ctx.logicalConjunctiveExpression());
+		Formula rhs = visitLogicalConjunctiveValue(ctx.logicalConjunctiveValue());
+
+		return new Conjunction(lhs, rhs).flatten();
+	}
+
+	@Override
+	public Formula visitLogicalDisjunctiveValue(LogicalDisjunctiveValueContext ctx) {
+		if (ctx.getChildCount() == 1) {
+			return visitLogicalValue(ctx.logicalValue());
 		}
-		else if (ctx.LPAREN() != null) {
-			return visitLiteral(ctx.literal());
+
+		// Parens
+		return visitLogicalDisjunctiveExpression(ctx.logicalDisjunctiveExpression());
+	}
+
+	@Override
+	public Formula visitLogicalConjunctiveValue(LogicalConjunctiveValueContext ctx) {
+		if (ctx.getChildCount() == 1) {
+			return visitLogicalValue(ctx.logicalValue());
 		}
-		else {
-			throw new IllegalStateException();
+
+		// Parens
+		return visitLogicalConjunctiveExpression(ctx.logicalConjunctiveExpression());
+	}
+
+	@Override
+	public Formula visitLogicalValue(LogicalValueContext ctx) {
+		Atom atom = visitAtom(ctx.atom());
+
+		if (ctx.not() != null) {
+			return new Negation(atom);
 		}
+
+		return atom;
 	}
 
 	@Override
@@ -676,9 +693,9 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 
 	@Override
 	public Formula visitBooleanValue(BooleanValueContext ctx) {
-		// A plain literal.
-		if (ctx.getChildCount() == 1) {
-			return visitLiteral(ctx.literal());
+		// A logical value.
+		if (ctx.logicalValue() != null) {
+			return visitLogicalValue(ctx.logicalValue());
 		}
 
 		// Bool expression with parens.

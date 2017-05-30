@@ -24,6 +24,13 @@ import org.linqs.psl.model.rule.arithmetic.expression.SummationVariable;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.util.MathUtils;
 
+/**
+ * A coefficient to represent division.
+ * We will check for a divide by zero in three places:
+ *  - On construction
+ *  - When simplifying
+ *  - when getting the actual value (using actual values)
+ */
 public class Divide extends Coefficient {
 	
 	protected final Coefficient c1;
@@ -32,11 +39,24 @@ public class Divide extends Coefficient {
 	public Divide(Coefficient c1, Coefficient c2) {
 		this.c1 = c1;
 		this.c2 = c2;
+
+		// If the denoinator is 0, then throw an exception.
+		if (c2 instanceof ConstantNumber && MathUtils.isZero(((ConstantNumber)c2).value)) {
+			throw new ArithmeticException("Coefficient divides by zero");
+		}
 	}
 	
 	@Override
 	public double getValue(Map<SummationVariable, Set<Constant>> subs) {
-		return c1.getValue(subs) / c2.getValue(subs);
+		double lhs = c1.getValue(subs);
+		double rhs = c2.getValue(subs);
+
+		// If the denoinator is 0, then throw an exception.
+		if (MathUtils.isZero(rhs)) {
+			throw new ArithmeticException("Coefficient divides by zero");
+		}
+
+		return lhs / rhs;
 	}
 	
 	@Override
@@ -48,6 +68,11 @@ public class Divide extends Coefficient {
 	public Coefficient simplify() {
 		Coefficient lhs = c1.simplify();
 		Coefficient rhs = c2.simplify();
+
+		// If the denoinator is 0, then throw an exception.
+		if (rhs instanceof ConstantNumber && MathUtils.isZero(((ConstantNumber)rhs).value)) {
+			throw new ArithmeticException("Coefficient divides by zero");
+		}
 
 		// If the numerator is 0, then just return zero.
 		if (lhs instanceof ConstantNumber && MathUtils.isZero(((ConstantNumber)lhs).value)) {

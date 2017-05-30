@@ -18,14 +18,16 @@
 package org.linqs.psl;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
-import org.linqs.psl.application.groundrulestore.GroundRuleStore;
-import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.database.DataStore;
+import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.parser.ModelLoader;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -58,13 +60,13 @@ public class PSLTest {
 		assertRules(rules, expected, true);
 	}
 
-	public static void assertRules(Rule[] rules, String[] expected, boolean alphabetize) {
+	 public static void assertRules(Rule[] rules, String[] expected, boolean alphabetize) {
 		assertEquals("Size mismatch.", expected.length, rules.length);
 
 		for (int i = 0; i < expected.length; i++) {
-			assertStringEquals(expected[i], rules[i].toString(), alphabetize, String.format("Rule %d mismatch"));
+			assertStringEquals(expected[i], rules[i].toString(), alphabetize, String.format("Rule %d mismatch", i));
 		}
-	}
+	 }
 
 	/**
 	 * Assert that two strings are equal, possibly forcing alphabetization on the strings first.
@@ -102,49 +104,62 @@ public class PSLTest {
 	}
 
 	/**
-	 * Convenience call for the common functionality of compareGroundRules() (alphabetize).
+	 * Convenience call for the common functionality of assertModel() (alphabetize).
 	 */
-	public static void compareGroundRules(List<String> expected, Rule rule, GroundRuleStore store) {
-		compareGroundRules(expected, rule, store, true);
+	public static void assertModel(DataStore dataStore, String input, String[] expectedRules) {
+		assertModel(dataStore, input, expectedRules, true);
 	}
 
 	/**
-	 * Ground out a rule and check all the grounding against the expected list.
-	 * Both the actual grounding and expected grounding will be sorted before comparing.
-	 * Here, sorting will occur within each rule and then between rules.
+	 * Load a rules into a model from a string.
 	 *
 	 * If, for some reason, the exact format of the output is not known (like with summations which
 	 * may order the summation terms in different ways), then you can use |alphabetize| to sort all
 	 * characters in both strings (actual and expected) before comparing.
-	 * Only alphabetize if it is really necessary.
+	 * Only alphabetize if it is really necessary since it makes the output much harder to interpret.
 	 */
-	public static void compareGroundRules(List<String> expected, Rule rule, GroundRuleStore store, boolean alphabetize) {
-		List<String> actual = new ArrayList<String>();
-		for (GroundRule groundRule : store.getGroundRules(rule)) {
-			if (alphabetize) {
-				actual.add(sort(groundRule.toString()));
-			} else {
-				actual.add(groundRule.toString());
-			}
+	public static void assertModel(DataStore dataStore, String input, String[] expectedRules, boolean alphabetize) {
+		Model model = null;
+
+		try {
+			model = ModelLoader.load(dataStore, input);
+		} catch (IOException ex) {
+			fail("IOException thrown from ModelLoader.load(): " + ex);
 		}
 
-		assertEquals("Size mismatch in comparing rules.", expected.size(), actual.size());
-
-		if (alphabetize) {
-			for (int i = 0; i < expected.size(); i++) {
-				expected.set(i, sort(expected.get(i)));
-			}
+		List<Rule> rules = new ArrayList<Rule>();
+		for (Rule rule : model.getRules()) {
+			rules.add(rule);
 		}
 
-		Collections.sort(expected);
-		Collections.sort(actual);
+		assertRules(rules.toArray(new Rule[0]), expectedRules, alphabetize);
+	}
 
-		for (int i = 0; i < expected.size(); i++) {
-			assertEquals(
-					String.format("Rule %d mismatch. Expected: [%s], found [%s].", i, expected.get(i), actual.get(i)),
-					expected.get(i),
-					actual.get(i));
+	/**
+	 * Convenience call for the common functionality of assertRule() (alphabetize).
+	 */
+	public static void assertRule(DataStore dataStore, String input, String expectedRule) {
+		assertRule(dataStore, input, expectedRule, true);
+	}
+
+	/**
+	 * Load a rule into a model from a string.
+	 *
+	 * If, for some reason, the exact format of the output is not known (like with summations which
+	 * may order the summation terms in different ways), then you can use |alphabetize| to sort all
+	 * characters in both strings (actual and expected) before comparing.
+	 * Only alphabetize if it is really necessary since it makes the output much harder to interpret.
+	 */
+	public static void assertRule(DataStore dataStore, String input, String expectedRule, boolean alphabetize) {
+		Rule rule = null;
+
+		try {
+			rule = ModelLoader.loadRule(dataStore, input);
+		} catch (IOException ex) {
+			fail("IOException thrown from ModelLoader.loadRule(): " + ex);
 		}
+
+		assertRule(rule, expectedRule, alphabetize);
 	}
 
 	private static String sort(String string) {

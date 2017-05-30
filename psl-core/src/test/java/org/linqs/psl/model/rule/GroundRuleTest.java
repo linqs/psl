@@ -1285,6 +1285,62 @@ public class GroundRuleTest {
 		}
 	}
 
+	@Test
+	// Ensure that exceptions are thrown when zero coefficients are divided by.
+	// Note that here we are not interested in coefficients that are statically evaluated to zero,
+	// instead we are interested in coefficients that require grounding to become zero (like with cardinality).
+	// 1.0 * Friends(A, +B) + Nice(A) / |B| >= 1 {B: !Nice(B)}
+	// Note that everyone is 100% nice in this test.
+	public void testArithmeticDivdeByZero() {
+		GroundRuleStore store = new MemoryGroundRuleStore();
+		AtomManager manager = new SimpleAtomManager(database);
+
+		Rule rule;
+		List<String> expected;
+		List<Coefficient> coefficients;
+		List<SummationAtomOrAtom> atoms;
+		Map<SummationVariable, Formula> selects;
+
+		coefficients = Arrays.asList(
+			(Coefficient)(new ConstantNumber(1.0)),
+			(Coefficient)(new Divide(new ConstantNumber(1.0), new Cardinality(new SummationVariable("B"))))
+		);
+
+		atoms = Arrays.asList(
+			(SummationAtomOrAtom)(new SummationAtom(
+				model.predicates.get("Friends"),
+				new SummationVariableOrTerm[]{new Variable("A"), new SummationVariable("B")}
+			)),
+			(SummationAtomOrAtom)(new QueryAtom(model.predicates.get("Nice"), new Variable("A")))
+		);
+
+		selects = new HashMap<SummationVariable, Formula>();
+		selects.put(new SummationVariable("B"), new Negation(new QueryAtom(model.predicates.get("Nice"), new Variable("B"))));
+
+		rule = new WeightedArithmeticRule(
+				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+				selects,
+				1.0,
+				true
+		);
+
+		// Note that no B passes the select, so the FRIENDS atom is zeroed.
+		// We actually expect an error, but this is what the rules would look like when grounded.
+		expected = Arrays.asList(
+			"1.0: 1.0 * 0.0 + 1.0 / 0.0 * Nice('Alice') >= 1.0 ^2",
+			"1.0: 1.0 * 0.0 + 1.0 / 0.0 * Nice('Bob') >= 1.0 ^2",
+			"1.0: 1.0 * 0.0 + 1.0 / 0.0 * Nice('Charlie') >= 1.0 ^2",
+			"1.0: 1.0 * 0.0 + 1.0 / 0.0 * Nice('Derek') >= 1.0 ^2",
+			"1.0: 1.0 * 0.0 + 1.0 / 0.0 * Nice('Eugene') >= 1.0 ^2"
+		);
+		try {
+			rule.groundAll(manager, store);
+			fail("Divide by zero did not throw an ArithmeticException.");
+		} catch (ArithmeticException ex) {
+			// Expected
+		}
+	}
+
 	@After
 	public void cleanup() {
 		database.close();
