@@ -179,7 +179,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 		}
 
 		ModelLoader visitor = new ModelLoader(data);
-		return visitor.visitProgram(program);
+		return visitor.visitProgram(program, parser);
 	}
 
 	/**
@@ -221,11 +221,14 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 		this.data = data;
 	}
 
-	@Override
-	public Model visitProgram(ProgramContext ctx) {
+	public Model visitProgram(ProgramContext ctx, PSLParser parser) {
 		Model model = new Model();
 		for (PslRuleContext ruleCtx : ctx.pslRule()) {
-			model.addRule((Rule) visit(ruleCtx));
+			try {
+				model.addRule((Rule) visit(ruleCtx));
+			} catch (RuntimeException ex) {
+				throw new RuntimeException("Failed to compile rule: [" + parser.getTokenStream().getText(ruleCtx) + "]", ex);
+			}
 		}
 		return model;
 	}

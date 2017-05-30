@@ -432,8 +432,9 @@ CARROT
 // (from https://github.com/antlr/grammars-v4)
 //
 
+// Put the whitespace in a hidden channel instead of skipping so we can preserve space in debugging.
 WS
-    :   [ \t\r\n\u000C]+ -> skip
+    :   [ \t\r\n\u000C]+ -> channel(HIDDEN)
     ;
 
 COMMENT

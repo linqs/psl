@@ -814,4 +814,26 @@ public class ModelLoaderTest {
 
 		PSLTest.assertModel(dataStore, input, expected);
 	}
+
+	@Test
+	public void testArithmeticDivideByZero() {
+		String[] input = new String[]{
+			"Single(A) / 0 + Single(B) = 0.0 .",
+			"2 / 0 * Single(A) + Single(B) = 0.0 .",
+			"2 / (2 - 2) * Single(A) + Single(B) = 0.0 .",
+			"Single(A) / (-1 + 1) + Single(B) = 0.0 .",
+			"Single(A) / @Min[0, 1] + Single(B) = 0.0 ."
+		};
+
+		for (String rule : input) {
+			try {
+				PSLTest.assertRule(dataStore, rule, "");
+				fail("Divide by zero did not throw exception.");
+			} catch (RuntimeException ex) {
+				if (!(ex.getCause() instanceof ArithmeticException)) {
+					fail("Divide by zero thre a non-Arithmetic exception.");
+				}
+			}
+		}
+	}
 }
