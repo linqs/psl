@@ -275,7 +275,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 						- l1Regularization) / scalingFactor[i];
 				currentStep *= getStepSize(step);
 				log.debug("Step of {} for kernel {}", currentStep, kernels.get(i));
-				log.debug(" --- Expected incomp.: {}, Truth incomp.: {}", expectedIncompatibility[i], truthIncompatibility[i]);weight += currentStep;
+				log.debug(" --- Expected incomp.: {}, Truth incomp.: {}", expectedIncompatibility[i], truthIncompatibility[i]);
 				weight += currentStep;
 				if (nonnegativeWeights)
 					weight = Math.max(weight, 0.0);

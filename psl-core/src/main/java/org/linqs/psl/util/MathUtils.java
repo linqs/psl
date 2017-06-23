@@ -15,23 +15,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.reasoner.bool;
-
-import org.linqs.psl.config.ConfigBundle;
-import org.linqs.psl.reasoner.Reasoner;
-import org.linqs.psl.reasoner.ReasonerFactory;
+package org.linqs.psl.util;
 
 /**
- * Factory for a {@link UAIFormatReasoner}.
- * 
- * @author Stephen Bach <bach@cs.umd.edu>
+ * Various static math utilities.
  */
-public class UAIFormatReasonerFactory implements ReasonerFactory {
+public final class MathUtils {
+	public static final double EPSILON = 0.000001;
 
-	@Override
-	public Reasoner getReasoner(ConfigBundle config)
-			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-		return new UAIFormatReasoner(config);
+	// Static only.
+	private MathUtils() {}
+
+	public static boolean equals(double a, double b) {
+		return Math.abs(a - b) <= EPSILON;
 	}
 
+	public static boolean isZero(double a) {
+		return equals(a, 0.0);
+	}
 }

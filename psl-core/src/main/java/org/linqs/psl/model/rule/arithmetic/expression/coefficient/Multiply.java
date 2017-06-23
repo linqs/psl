@@ -22,6 +22,7 @@ import java.util.Set;
 
 import org.linqs.psl.model.rule.arithmetic.expression.SummationVariable;
 import org.linqs.psl.model.term.Constant;
+import org.linqs.psl.util.MathUtils;
 
 public class Multiply extends Coefficient {
 	
@@ -40,5 +41,36 @@ public class Multiply extends Coefficient {
 	@Override
 	public String toString() {
 		return "(" + c1.toString() + " * " + c2.toString() + ")";
+	}
+
+	@Override
+	public Coefficient simplify() {
+		Coefficient lhs = c1.simplify();
+		Coefficient rhs = c2.simplify();
+
+		// If one of the sides is 0, then return 0.
+		if (lhs instanceof ConstantNumber && MathUtils.isZero(((ConstantNumber)lhs).value)) {
+			return new ConstantNumber(0.0);
+		}
+
+		if (rhs instanceof ConstantNumber && MathUtils.isZero(((ConstantNumber)rhs).value)) {
+			return new ConstantNumber(0.0);
+		}
+
+		// If one of the sides is 1, then return the other size.
+		if (lhs instanceof ConstantNumber && MathUtils.equals(((ConstantNumber)lhs).value, 1.0)) {
+			return rhs;
+		}
+
+		if (rhs instanceof ConstantNumber && MathUtils.equals(((ConstantNumber)rhs).value, 1.0)) {
+			return lhs;
+		}
+
+		// If both sides are constants, then just do the math.
+		if (lhs instanceof ConstantNumber && rhs instanceof ConstantNumber) {
+			return new ConstantNumber(getValue(null));
+		}
+
+		return new Multiply(lhs, rhs);
 	}
 }

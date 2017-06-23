@@ -45,6 +45,7 @@ Additional Resources
 ====================
 
 - [PSL homepage](http://psl.cs.umd.edu)
+- [API Refernce](https://linqs-data.soe.ucsc.edu/psl-docs/)
 - [PSL source repository](https://github.com/linqs/psl)
 - [PSL wiki](../../wiki)
 - [Getting Started guide](../../wiki/Core-Topics)

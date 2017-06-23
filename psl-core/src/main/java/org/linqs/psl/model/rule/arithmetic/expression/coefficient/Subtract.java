@@ -22,10 +22,12 @@ import java.util.Set;
 
 import org.linqs.psl.model.rule.arithmetic.expression.SummationVariable;
 import org.linqs.psl.model.term.Constant;
+import org.linqs.psl.util.MathUtils;
 
 public class Subtract extends Coefficient {
 	
-	protected final Coefficient c1, c2;
+	protected final Coefficient c1;
+	protected final Coefficient c2;
 	
 	public Subtract(Coefficient c1, Coefficient c2) {
 		this.c1 = c1;
@@ -40,5 +42,18 @@ public class Subtract extends Coefficient {
 	@Override
 	public String toString() {
 		return "(" + c1.toString() + " - " + c2.toString() + ")";
+	}
+
+	@Override
+	public Coefficient simplify() {
+		Coefficient lhs = c1.simplify();
+		Coefficient rhs = c2.simplify();
+
+		// If both sides are constants, then just do the math.
+		if (lhs instanceof ConstantNumber && rhs instanceof ConstantNumber) {
+			return new ConstantNumber(getValue(null));
+		}
+
+		return new Subtract(lhs, rhs);
 	}
 }

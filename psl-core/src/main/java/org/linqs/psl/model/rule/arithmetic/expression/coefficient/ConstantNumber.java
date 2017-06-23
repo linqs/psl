@@ -40,4 +40,9 @@ public class ConstantNumber extends Coefficient {
 	public String toString() {
 		return Double.toString(value);
 	}
+
+	@Override
+	public Coefficient simplify() {
+		return this;
+	}
 }

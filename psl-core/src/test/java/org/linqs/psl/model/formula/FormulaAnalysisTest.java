@@ -29,10 +29,12 @@ import org.linqs.psl.TestModelFactory;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.term.Variable;
 
-/**
- * Check that getDNF() is working properly for a variety of formulas.
- */
-public class DNFTest {
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.commons.lang.StringUtils;
+
+public class FormulaAnalysisTest {
 	private TestModelFactory.ModelInformation model;
 
 	@Before
@@ -266,54 +268,59 @@ public class DNFTest {
 			// A
 			"NICE(A)",
 			// !A
-			"~( NICE(A) )",
+			"~NICE(A)",
 			// A && B
-			"( NICE(A) & NICE(B) )",
+			"NICE(A) & NICE(B)",
 			// A || B
-			"( NICE(A) | NICE(B) )",
+			"NICE(A) | NICE(B)",
 			// !(A && B)
-			"( ~( NICE(A) ) | ~( NICE(B) ) )",
+			"~NICE(A) | ~NICE(B)",
 			// !(A || B)
-			"( ~( NICE(A) ) & ~( NICE(B) ) )",
+			"~NICE(A) & ~NICE(B)",
 			// A && B && C
-			"( NICE(A) & NICE(B) & NICE(C) )",
+			"NICE(A) & NICE(B) & NICE(C)",
 			// A && (B && C)
-			"( NICE(A) & NICE(B) & NICE(C) )",
+			"NICE(A) & NICE(B) & NICE(C)",
 			// A || B || C
-			"( NICE(A) | NICE(B) | NICE(C) )",
+			"NICE(A) | NICE(B) | NICE(C)",
 			// A || (B || C)
-			"( NICE(A) | NICE(B) | NICE(C) )",
+			"NICE(A) | NICE(B) | NICE(C)",
 			// A && (A && B)
-			"( NICE(A) & NICE(B) )",
+			"NICE(A) & NICE(B)",
 			// A || (A || B)
-			"( NICE(A) | NICE(B) )",
+			"NICE(A) | NICE(B)",
 			// A && (B || C)
-			"( ( NICE(A) & NICE(B) ) | ( NICE(A) & NICE(C) ) )",
+			"NICE(A) & NICE(B) | NICE(A) & NICE(C)",
 			// A || (B && C)
-			"( NICE(A) | ( NICE(B) & NICE(C) ) )",
+			"NICE(A) | NICE(B) & NICE(C)",
 			// (A && B) && (C && D)
-			"( NICE(A) & NICE(B) & NICE(C) & NICE(D) )",
+			"NICE(A) & NICE(B) & NICE(C) & NICE(D)",
 			// (A && B) || (C && D)
-			"( ( NICE(A) & NICE(B) ) | ( NICE(C) & NICE(D) ) )",
+			"NICE(A) & NICE(B) | NICE(C) & NICE(D)",
 			// (A || B) && (C || D)
-			"( ( NICE(A) & NICE(C) ) | ( NICE(A) & NICE(D) ) | ( NICE(B) & NICE(C) ) | ( NICE(B) & NICE(D) ) )",
+			"NICE(A) & NICE(C) | NICE(A) & NICE(D) | NICE(B) & NICE(C) | NICE(B) & NICE(D)",
 			// (A || B) || (C && D)
-			"( NICE(A) | NICE(B) | NICE(C) | NICE(D) )",
+			"NICE(A) | NICE(B) | NICE(C) | NICE(D)",
 			// A && (B && C) && (D && E)
-			"( NICE(A) & NICE(B) & NICE(C) & NICE(D) & NICE(E) )",
+			"NICE(A) & NICE(B) & NICE(C) & NICE(D) & NICE(E)",
 			// A || (B || C) || (D || E)
-			"( NICE(A) | NICE(B) | NICE(C) | NICE(D) | NICE(E) )",
+			"NICE(A) | NICE(B) | NICE(C) | NICE(D) | NICE(E)",
 			// A && (B || C) && (D || E)
-			"( ( NICE(A) & NICE(B) & NICE(D) ) | ( NICE(A) & NICE(B) & NICE(E) ) | ( NICE(A) & NICE(C) & NICE(D) ) | ( NICE(A) & NICE(C) & NICE(E) ) )",
+			"NICE(A) & NICE(B) & NICE(D) | NICE(A) & NICE(B) & NICE(E) | NICE(A) & NICE(C) & NICE(D) | NICE(A) & NICE(C) & NICE(E)",
 			// A || (B && C) || (D && E)
-			"( NICE(A) | ( NICE(B) & NICE(C) ) | ( NICE(D) & NICE(E) ) )",
+			"NICE(A) | NICE(B) & NICE(C) | NICE(D) & NICE(E)",
 			// A -> B
-			"( ~( NICE(A) ) | NICE(B) )",
+			"~NICE(A) | NICE(B)",
 		};
 
 		String[] actual = new String[inputs.length];
 		for (int i = 0; i < inputs.length; i++) {
-			actual[i] = inputs[i].getDNF().toString();
+			FormulaAnalysis analysis = new FormulaAnalysis(inputs[i]);
+			List<String> clauses = new ArrayList<String>();
+			for (int j = 0; j < analysis.getNumDNFClauses(); j++) {
+				clauses.add(analysis.getDNFClause(j).toString());
+			}
+			actual[i] = StringUtils.join(clauses, " | ");
 		}
 
 		PSLTest.assertStringsEquals(expected, actual, true);

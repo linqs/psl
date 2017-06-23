@@ -107,7 +107,7 @@ abstract class AbstractBranchFormula<T extends AbstractBranchFormula<T>> impleme
 	/**
 	 * flatten(), but with the the components belonging to this formula.
 	 */
-	protected T flatten() {
+	public T flatten() {
 		return flatten(formulas);
 	}
 
@@ -118,7 +118,7 @@ abstract class AbstractBranchFormula<T extends AbstractBranchFormula<T>> impleme
 	 *
 	 * @return the flattened Formula.
 	 */
-	protected T flatten(Formula[] components) {
+	public T flatten(Formula[] components) {
 		Set<Formula> flatComponents = new HashSet<Formula>();
 
 		for (Formula component : components) {

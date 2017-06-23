@@ -47,4 +47,9 @@ public class Cardinality extends Coefficient {
 	public String toString() {
 		return "|" + v.getVariable().toString() + "|";
 	}
+
+	@Override
+	public Coefficient simplify() {
+		return this;
+	}
 }

@@ -33,7 +33,11 @@ import org.linqs.psl.model.term.Constant;
  * 
  * @author Stephen Bach
  */
-abstract public class Coefficient {
-	
-	abstract public double getValue(Map<SummationVariable, Set<Constant>> subs);
+public abstract class Coefficient {
+	public abstract double getValue(Map<SummationVariable, Set<Constant>> subs);
+
+	/**
+	 * Get a simplified version of this Coefficient, the Coefficient itself if it cannot be simplified further.
+	 */
+	public abstract Coefficient simplify();
 }

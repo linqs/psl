@@ -25,7 +25,8 @@ import org.linqs.psl.model.term.Constant;
 
 public class Min extends Coefficient {
 	
-	protected final Coefficient c1, c2;
+	protected final Coefficient c1;
+	protected final Coefficient c2;
 	
 	public Min(Coefficient c1, Coefficient c2) {
 		this.c1 = c1;
@@ -40,5 +41,18 @@ public class Min extends Coefficient {
 	@Override
 	public String toString() {
 		return "@Min[" + c1.toString() + ", " + c2.toString() + "]";
+	}
+
+	@Override
+	public Coefficient simplify() {
+		Coefficient lhs = c1.simplify();
+		Coefficient rhs = c2.simplify();
+
+		// If both sides are constants, then just do the math.
+		if (lhs instanceof ConstantNumber && rhs instanceof ConstantNumber) {
+			return new ConstantNumber(getValue(null));
+		}
+
+		return new Min(lhs, rhs);
 	}
 }
