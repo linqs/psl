@@ -34,11 +34,12 @@ Citing PSL
 
 We hope you find PSL useful! If you have, please consider citing PSL in any related publications as
 ```
-	@article{bach:arxiv15,
-	 Title = {Hinge-Loss Markov Random Fields and Probabilistic Soft Logic},
-	 Author = {Bach, Stephen H. and Broecheler, Matthias and Huang, Bert and Getoor, Lise},
-	 Volume = {arXiv:1505.04406 [cs.LG]},
-	 Year = {2015}}
+@article{bach:jmlr17,
+  Author = {Bach, Stephen H. and Broecheler, Matthias and Huang, Bert and Getoor, Lise},
+  Journal = {Journal of Machine Learning Research (JMLR)},
+  Title = {Hinge-Loss {M}arkov Random Fields and Probabilistic Soft Logic},
+  Year = {2017}
+}
 ```
 
 Additional Resources
