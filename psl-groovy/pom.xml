@@ -22,7 +22,6 @@
 	<groupId>org.linqs</groupId>
 	<artifactId>psl-groovy</artifactId>
 	<name>psl-groovy</name>
-	<version>2.0-SNAPSHOT</version>
 	<packaging>jar</packaging>
 	<description>The groovy user interface module of the PSL software from the LINQS research group.</description>
 	<parent>
@@ -35,12 +34,12 @@
 		<dependency>
 			<groupId>org.linqs</groupId>
 			<artifactId>psl-core</artifactId>
-			<version>2.0-SNAPSHOT</version>
+			<version>${project.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.linqs</groupId>
 			<artifactId>psl-parser</artifactId>
-			<version>2.0-SNAPSHOT</version>
+			<version>${project.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.codehaus.groovy</groupId>
@@ -97,4 +96,3 @@
 		</plugins>
 	</build>
 </project>
-

@@ -22,7 +22,6 @@
 	<groupId>org.linqs</groupId>
 	<artifactId>psl-core</artifactId>
 	<name>psl-core</name>
-	<version>2.0-SNAPSHOT</version>
 	<packaging>jar</packaging>
 	<description>Core module of the PSL software from the LINQS research group.</description>
 	<parent>
@@ -125,4 +124,3 @@
 		</dependency>
 	</dependencies>
 </project>
-
