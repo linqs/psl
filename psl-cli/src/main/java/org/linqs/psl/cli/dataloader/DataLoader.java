@@ -77,8 +77,13 @@ public class DataLoader {
 
 	private static void loadDataFiles(DataStore datastore, Map yamlMap) {
 		for (String partitionName : ((Map<String,Object>) yamlMap).keySet()){
-			//skip special partition predicates
+			// Skip special partition predicates
 			if(partitionName.equals("predicates")){
+				continue;
+			}
+
+			// Skip special information that PSL does not care about.
+			if (partitionName.equalsIgnoreCase("PredicateDetails")) {
 				continue;
 			}
 
