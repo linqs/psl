@@ -43,6 +43,9 @@ import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.model.term.VariableTypeMap;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -60,6 +63,7 @@ import java.util.Set;
  * @author Stephen Bach
  */
 public abstract class AbstractArithmeticRule extends AbstractRule {
+	private static final Logger log = LoggerFactory.getLogger(AbstractArithmeticRule.class);
 
 	protected final ArithmeticRuleExpression expression;
 	protected final Map<SummationVariable, Formula> selects;
@@ -183,17 +187,21 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 		List<Double> coeffs = new LinkedList<Double>();
 		List<GroundAtom> atoms = new LinkedList<GroundAtom>();
 
+		int groundCount = 0;
+
 		// For each ground set of non-summation constants,
 		// ground out the non-summation atoms along with all the summation substitutions.
 		for (Map.Entry<List<Constant>, Map<SummationVariable, Set<Constant>>> summationSub : summationSubs.entrySet()) {
 			populateCoeffsAndAtoms(coeffs, atoms, summationSub.getKey(), subsVariableMap,
 					atomManager, summationSub.getValue(), groundSummationAtoms);
-			ground(grs, coeffs, atoms,
+			groundCount += ground(grs, coeffs, atoms,
 					expression.getFinalCoefficient().getValue(summationSub.getValue()));
 
 			coeffs.clear();
 			atoms.clear();
 		}
+
+		log.debug("Grounded {} instances of rule {}", groundCount, this);
 	}
 
 	private Map<SummationVariable, SummationDisjunctionValues> evaluateSelects(AtomManager atomManager) {
@@ -451,7 +459,11 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 		return true;
 	}
 
-	protected void ground(GroundRuleStore grs, List<Double>coeffs, List<GroundAtom> atoms, double finalCoeff) {
+	/**
+	 * The actual grounding into the GroundRuleStore.
+	 * @return the number of ground rules added to the store.
+	 */
+	protected int ground(GroundRuleStore grs, List<Double>coeffs, List<GroundAtom> atoms, double finalCoeff) {
 		double[] coeffArray = new double[coeffs.size()];
 		for (int j = 0; j < coeffArray.length; j++) {
 			coeffArray[j] = coeffs.get(j);
@@ -461,8 +473,10 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 		if (FunctionComparator.Equality.equals(expression.getComparator())) {
 			grs.addGroundRule(makeGroundRule(coeffArray, atomArray, FunctionComparator.LargerThan, finalCoeff));
 			grs.addGroundRule(makeGroundRule(coeffArray, atomArray, FunctionComparator.SmallerThan, finalCoeff));
+			return 2;
 		} else {
 			grs.addGroundRule(makeGroundRule(coeffArray, atomArray, expression.getComparator(), finalCoeff));
+			return 1;
 		}
 	}
 
@@ -573,7 +587,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 		// The keys are in the order of |variables| (which is sorted lexicographically).
 		// HACK(eriq): The complex structure is to squeeze some performance out of this until we
 		// have more database support.
-		// 
+		//
 		// <Constant, Object>
 		// Either:
 		//   <Constant, Map<Constant, Object>>

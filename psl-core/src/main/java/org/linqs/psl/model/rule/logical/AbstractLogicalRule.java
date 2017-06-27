@@ -53,51 +53,51 @@ import org.slf4j.LoggerFactory;
  */
 abstract public class AbstractLogicalRule extends AbstractRule {
 	private static final Logger log = LoggerFactory.getLogger(AbstractLogicalRule.class);
-	
+
 	protected Formula formula;
 	protected final DNFClause clause;
-	
+
 	public AbstractLogicalRule(Formula f) {
 		super();
 		formula = f;
 		FormulaAnalysis analysis = new FormulaAnalysis(new Negation(formula));
-		
+
 		if (analysis.getNumDNFClauses() > 1)
 			throw new IllegalArgumentException("Formula must be a disjunction of literals (or a negative literal).");
 		else
 			clause = analysis.getDNFClause(0);
-		
+
 		if (!clause.getAllVariablesBound())
 			throw new IllegalArgumentException("All Variables must be used at " +
 					"least once as an argument for a negative literal with a " +
 					"StandardPredicate.");
-		
+
 		if (clause.isGround())
 			throw new IllegalArgumentException("Formula has no Variables.");
-		
+
 		if (!clause.isQueriable())
 			throw new IllegalArgumentException("Formula is not a valid rule for unknown reason.");
 	}
-	
+
 	@Override
 	public void groundAll(AtomManager atomManager, GroundRuleStore grs) {
 		ResultList res = atomManager.executeQuery(new DatabaseQuery(clause.getQueryFormula()));
 		int numGrounded = groundFormula(atomManager, grs, res, null);
 		log.debug("Grounded {} instances of rule {}", numGrounded, this);
 	}
-	
+
 	protected int groundFormula(AtomManager atomManager, GroundRuleStore grs, ResultList res,  VariableAssignment var) {
 		int numGroundingsAdded = 0;
 		List<GroundAtom> posLiterals = new ArrayList<GroundAtom>(4);
 		List<GroundAtom> negLiterals = new ArrayList<GroundAtom>(4);
-		
+
 		/* Uses these to check worst-case truth value */
 		Map<FunctionVariable, Double> worstCaseValues = new HashMap<FunctionVariable, Double>(8);
 		double worstCaseValue;
 
 		GroundAtom atom;
 		for (int i = 0; i < res.size(); i++) {
-			
+
 			for (int j = 0; j < clause.getPosLiterals().size(); j++) {
 				atom = groundAtom(atomManager, clause.getPosLiterals().get(j), res, i, var);
 				if (atom instanceof RandomVariableAtom)
@@ -106,7 +106,7 @@ abstract public class AbstractLogicalRule extends AbstractRule {
 					worstCaseValues.put(atom.getVariable(), atom.getValue());
 				posLiterals.add(atom);
 			}
-			
+
 			for (int j = 0; j < clause.getNegLiterals().size(); j++) {
 				atom = groundAtom(atomManager, clause.getNegLiterals().get(j), res, i, var);
 				if (atom instanceof RandomVariableAtom)
@@ -115,7 +115,7 @@ abstract public class AbstractLogicalRule extends AbstractRule {
 					worstCaseValues.put(atom.getVariable(), atom.getValue());
 				negLiterals.add(atom);
 			}
-			
+
 			AbstractGroundLogicalRule groundRule = groundFormulaInstance(posLiterals, negLiterals);
 			FunctionTerm function = groundRule.getFunction();
 			worstCaseValue = function.getValue(worstCaseValues, false);
@@ -129,15 +129,15 @@ abstract public class AbstractLogicalRule extends AbstractRule {
 			else
 				for (GroundAtom incidentAtom : groundRule.getAtoms())
 					incidentAtom.unregisterGroundKernel(groundRule);
-			
+
 			posLiterals.clear();
 			negLiterals.clear();
 			worstCaseValues.clear();
 		}
-		
+
 		return numGroundingsAdded;
 	}
-	
+
 	protected GroundAtom groundAtom(AtomManager atomManager, Atom atom, ResultList res, int resultIndex, VariableAssignment var) {
 		Term[] oldArgs = atom.getArguments();
 		Constant[] newArgs = new Constant[atom.getArity()];
@@ -153,10 +153,10 @@ abstract public class AbstractLogicalRule extends AbstractRule {
 				newArgs[i] = (Constant) oldArgs[i];
 			else
 				throw new IllegalArgumentException("Unrecognized type of Term.");
-		
+
 		return atomManager.getAtom(atom.getPredicate(), newArgs);
 	}
-	
+
 	abstract protected AbstractGroundLogicalRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals);
 
 	@Override
@@ -171,7 +171,7 @@ abstract public class AbstractLogicalRule extends AbstractRule {
 			}
 		}
 	}
-	
+
 	@Override
 	public void registerForAtomEvents(AtomEventFramework manager) {
 		clause.registerClauseForEvents(manager, AtomEvent.ActivatedEventTypeSet, this);
