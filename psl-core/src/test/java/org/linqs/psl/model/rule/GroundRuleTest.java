@@ -1285,12 +1285,12 @@ public class GroundRuleTest {
 		}
 	}
 
-	@Test
 	// Ensure that exceptions are thrown when zero coefficients are divided by.
 	// Note that here we are not interested in coefficients that are statically evaluated to zero,
 	// instead we are interested in coefficients that require grounding to become zero (like with cardinality).
 	// 1.0 * Friends(A, +B) + Nice(A) / |B| >= 1 {B: !Nice(B)}
 	// Note that everyone is 100% nice in this test.
+	@Test
 	public void testArithmeticDivdeByZero() {
 		GroundRuleStore store = new ADMMReasoner(model.config);
 		AtomManager manager = new SimpleAtomManager(database);
