@@ -17,11 +17,6 @@
  */
 package org.linqs.psl.model.rule.logical;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 import org.linqs.psl.database.DatabaseQuery;
 import org.linqs.psl.database.ResultList;
@@ -45,8 +40,17 @@ import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.FunctionTerm;
 import org.linqs.psl.reasoner.function.FunctionVariable;
+
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Base class for all (first order, i.e., not ground) logical rules.
@@ -62,21 +66,31 @@ abstract public class AbstractLogicalRule extends AbstractRule {
 		formula = f;
 		FormulaAnalysis analysis = new FormulaAnalysis(new Negation(formula));
 
-		if (analysis.getNumDNFClauses() > 1)
+		if (analysis.getNumDNFClauses() > 1) {
 			throw new IllegalArgumentException("Formula must be a disjunction of literals (or a negative literal).");
-		else
+		} else {
 			clause = analysis.getDNFClause(0);
+		}
 
-		if (!clause.getAllVariablesBound())
-			throw new IllegalArgumentException("All Variables must be used at " +
-					"least once as an argument for a negative literal with a " +
-					"StandardPredicate.");
+		Set<Variable> unboundVariables = clause.getUnboundVariables();
+		if (unboundVariables.size() > 0) {
+			Variable[] sortedVariables = unboundVariables.toArray(new Variable[unboundVariables.size()]);
+			Arrays.sort(sortedVariables);
 
-		if (clause.isGround())
+			throw new IllegalArgumentException(
+					"Any variable used in a negated (non-functional) predicate must also participate" +
+					" in a positive (non-functional) predicate." +
+					" The following variables do not meet this requirement: [" + StringUtils.join(sortedVariables, ", ") + "]."
+			);
+		}
+
+		if (clause.isGround()) {
 			throw new IllegalArgumentException("Formula has no Variables.");
+		}
 
-		if (!clause.isQueriable())
+		if (!clause.isQueriable()) {
 			throw new IllegalArgumentException("Formula is not a valid rule for unknown reason.");
+		}
 	}
 
 	@Override
