@@ -716,7 +716,7 @@ public class ModelLoaderTest {
 	}
 
 	@Test
-	public void testSelectOperatorOrder() {
+	public void testFilterOperatorOrder() {
 		String input =
 			"Single(+A) + Double(B, C) = 1 . {A: Single(A) || Single(B) || Single(C)}\n" +
 			"Single(+A) + Double(B, C) = 1 . {A: Single(A) && Single(B) && Single(C)}\n" +

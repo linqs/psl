@@ -29,7 +29,7 @@ import org.linqs.psl.reasoner.function.FunctionComparator;
 
 /**
  * A template for {@link UnweightedGroundArithmeticRule UnweightedGroundArithmeticRules}.
- * 
+ *
  * @author Stephen Bach
  */
 public class UnweightedArithmeticRule extends AbstractArithmeticRule
@@ -38,9 +38,9 @@ public class UnweightedArithmeticRule extends AbstractArithmeticRule
 	public UnweightedArithmeticRule(ArithmeticRuleExpression expression) {
 		this(expression, new HashMap<SummationVariable, Formula>());
 	}
-	
-	public UnweightedArithmeticRule(ArithmeticRuleExpression expression, Map<SummationVariable, Formula> selectStatements) {
-		super(expression, selectStatements);
+
+	public UnweightedArithmeticRule(ArithmeticRuleExpression expression, Map<SummationVariable, Formula> filterClauses) {
+		super(expression, filterClauses);
 	}
 
 	@Override
@@ -48,13 +48,13 @@ public class UnweightedArithmeticRule extends AbstractArithmeticRule
 			FunctionComparator comparator, double c) {
 		return new UnweightedGroundArithmeticRule(this, coeffs, atoms, comparator, c);
 	}
-	
+
 	@Override
 	public String toString() {
 		StringBuilder s = new StringBuilder();
 		s.append(expression);
 		s.append(" .");
-		for (Map.Entry<SummationVariable, Formula> e : selects.entrySet()) {
+		for (Map.Entry<SummationVariable, Formula> e : filters.entrySet()) {
 			s.append("\n{");
 			// Appends the corresponding Variable, not the SummationVariable, to leave out the '+'
 			s.append(e.getKey().getVariable());
