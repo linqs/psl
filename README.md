@@ -2,11 +2,11 @@ PSL
 ===
 
 ### Master
-[![Build Status](https://travis-ci.org/eriq-augustine/psl.svg?branch=master)](https://travis-ci.org/eriq-augustine/psl)
+[![Build Status](https://travis-ci.org/linqs/psl.svg?branch=master)](https://travis-ci.org/linqs/psl)
 [![Stable Docs](https://img.shields.io/badge/docs-stable-brightgreen.svg)](https://linqs-data.soe.ucsc.edu/psl-docs/docs/psl/master-head/index.html)
 
 ### Develop
-[![Build Status](https://travis-ci.org/eriq-augustine/psl.svg?branch=develop)](https://travis-ci.org/eriq-augustine/psl)
+[![Build Status](https://travis-ci.org/linqs/psl.svg?branch=develop)](https://travis-ci.org/linqs/psl)
 [![Develop Docs](https://img.shields.io/badge/docs-develop-orange.svg)](https://linqs-data.soe.ucsc.edu/psl-docs/docs/psl/develop-head/index.html)
 
 Probabilistic soft logic (PSL) is a probabilistic programming language for reasoning about
@@ -44,7 +44,7 @@ We hope you find PSL useful! If you have, please consider citing PSL in any rela
 
 Additional Resources
 ====================
-
+* [PSL wiki](https://github.com/linqs/psl/wiki)
 - [PSL homepage](http://psl.linqs.org)
 - [API Refernce](https://linqs-data.soe.ucsc.edu/psl-docs/)
 - [PSL source repository](https://github.com/linqs/psl)
