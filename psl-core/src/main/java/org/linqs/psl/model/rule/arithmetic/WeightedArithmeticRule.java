@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2015 The Regents of the University of California
+ * Copyright 2013-2017 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,22 +32,22 @@ import org.linqs.psl.reasoner.function.FunctionComparator;
 
 /**
  * A template for {@link WeightedGroundArithmeticRule WeightedGroundArithmeticRules}.
- * 
+ *
  * @author Stephen Bach
  */
 public class WeightedArithmeticRule extends AbstractArithmeticRule implements WeightedRule {
-	
+
 	protected Weight weight;
 	protected boolean squared;
 	protected boolean mutable;
-	
+
 	public WeightedArithmeticRule(ArithmeticRuleExpression expression, double w, boolean squared) {
 		this(expression, new HashMap<SummationVariable, Formula>(), w, squared);
 	}
 
-	public WeightedArithmeticRule(ArithmeticRuleExpression expression, Map<SummationVariable, Formula> selectStatements,
+	public WeightedArithmeticRule(ArithmeticRuleExpression expression, Map<SummationVariable, Formula> filterClauses,
 			double w, boolean squared) {
-		super(expression, selectStatements);
+		super(expression, filterClauses);
 		weight = (w >= 0.0) ? new PositiveWeight(w) : new NegativeWeight(w);
 		this.squared = squared;
 		mutable = true;
@@ -68,7 +68,7 @@ public class WeightedArithmeticRule extends AbstractArithmeticRule implements We
 	public void setWeight(Weight w) {
 		if (!mutable)
 			throw new IllegalStateException("Rule weight is not mutable.");
-		
+
 		weight = w;
 	}
 
@@ -81,7 +81,7 @@ public class WeightedArithmeticRule extends AbstractArithmeticRule implements We
 	public void setWeightMutable(boolean mutable) {
 		this.mutable = mutable;
 	}
-	
+
 	@Override
 	public String toString() {
 		StringBuilder s = new StringBuilder();
@@ -89,7 +89,7 @@ public class WeightedArithmeticRule extends AbstractArithmeticRule implements We
 		s.append(": ");
 		s.append(expression);
 		s.append((squared) ? " ^2" : "");
-		for (Map.Entry<SummationVariable, Formula> e : selects.entrySet()) {
+		for (Map.Entry<SummationVariable, Formula> e : filters.entrySet()) {
 			s.append("\n{");
 			// Appends the corresponding Variable, not the SummationVariable, to leave out the '+'
 			s.append(e.getKey().getVariable());

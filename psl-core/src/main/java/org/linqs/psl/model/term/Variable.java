@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2015 The Regents of the University of California
+ * Copyright 2013-2017 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,24 +21,26 @@ package org.linqs.psl.model.term;
  * A variable {@link Term}.
  * <p>
  * Variables are wildcards used to match {@link Constant GroundTerms}.
- * 
+ *
  * @author Matthias Broecheler
  */
-public class Variable implements Term {
+public class Variable implements Comparable<Variable>, Term {
 
 	private final String name;
-	
+
 	/**
 	 * Constructs a Variable, given a name.
-	 * 
+	 *
 	 * @param name A string ID
 	 */
 	public Variable(String name) {
-		if (!name.matches("^[a-zA-Z]\\w*"))
+		if (name == null || !name.matches("^[a-zA-Z]\\w*")) {
 			throw new IllegalArgumentException("Variable name must begin with a-z or A-Z and contain only [a-zA-Z0-9_]. Invalid name: " + name);
+		}
+
 		this.name = name;
 	}
-	
+
 	/**
 	 * @return the Variable's name
 	 */
@@ -53,22 +55,40 @@ public class Variable implements Term {
 	public String toString() {
 		return getName();
 	}
-	
+
 	@Override
 	public int hashCode() {
 		return name.hashCode() * 1163;
 	}
-	
+
 	/**
 	 * Checks equality with another object.
-	 * 
-	 * @param oth  Object to check for equality
+	 *
+	 * @param oth Object to check for equality
 	 * @return TRUE if oth is a Variable with the same name
 	 */
 	@Override
 	public boolean equals(Object oth) {
-		if (oth==this) return true;
-		if (oth==null || !(oth instanceof Variable)) return false;
-		return getName().equals(((Variable)oth).getName());  
-	}	
+		if (oth == this) {
+			return true;
+		}
+
+		if (oth == null || !(oth instanceof Variable)) {
+			return false;
+		}
+
+		return getName().equals(((Variable)oth).getName());
+	}
+
+	/**
+	 * Just use the name for comparison.
+	 */
+	 @Override
+	public int compareTo(Variable other) {
+		if (other == null) {
+			return -1;
+		}
+
+		return name.compareTo(other.name);
+	}
 }

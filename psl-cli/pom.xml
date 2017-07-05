@@ -2,7 +2,7 @@
 <!--
   - This file is part of the PSL software.
   - Copyright 2011-2015 University of Maryland
-  - Copyright 2013-2015 The Regents of the University of California
+  - Copyright 2013-2017 The Regents of the University of California
   -
   - Licensed under the Apache License, Version 2.0 (the "License");
   - you may not use this file except in compliance with the License.
@@ -22,25 +22,24 @@
 	<groupId>org.linqs</groupId>
 	<artifactId>psl-cli</artifactId>
 	<name>psl-cli</name>
-	<version>2.0-SNAPSHOT</version>
 	<packaging>jar</packaging>
 	<description>The command line interface module of the PSL software from the LINQS research group.</description>
 	<parent>
 		<groupId>org.linqs</groupId>
 		<artifactId>psl</artifactId>
-		<version>2.0-SNAPSHOT</version>
+		<version>2.1.0-SNAPSHOT</version>
 	</parent>
 
 	<dependencies>
 		<dependency>
 			<groupId>org.linqs</groupId>
 			<artifactId>psl-core</artifactId>
-			<version>2.0-SNAPSHOT</version>
+			<version>${project.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.linqs</groupId>
 			<artifactId>psl-parser</artifactId>
-			<version>2.0-SNAPSHOT</version>
+			<version>${project.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>commons-cli</groupId>
@@ -55,28 +54,27 @@
 	</dependencies>
 
 	<build>
-	  <plugins>
-	    <plugin>
-	      <groupId>org.apache.maven.plugins</groupId>
-	      <artifactId>maven-shade-plugin</artifactId>
-	      <version>2.4.3</version>
-	      <executions>
-		<execution>
-		  <phase>package</phase>
-		  <goals>
-		    <goal>shade</goal>
-		  </goals>
-		  <configuration>
-		    <transformers>
-		      <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-			<mainClass>org.linqs.psl.cli.Launcher</mainClass>
-		      </transformer>
-		    </transformers>
-		  </configuration>
-		</execution>
-	      </executions>
-	    </plugin>	    
-	  </plugins>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>2.4.3</version>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+						<configuration>
+							<transformers>
+								<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+									<mainClass>org.linqs.psl.cli.Launcher</mainClass>
+								</transformer>
+							</transformers>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
 	</build>
 </project>
-

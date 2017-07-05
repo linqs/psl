@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2015 The Regents of the University of California
+ * Copyright 2013-2017 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,6 @@
  */
 package org.linqs.psl.database;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import org.apache.commons.collections4.set.ListOrderedSet;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.VariableAssignment;
@@ -32,14 +29,20 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
 
+import org.apache.commons.lang3.StringUtils;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
 
 /**
  * A query to select groundings from a {@link Database}.
  * <p>
  * Groundings that match the query are returned in the form of a {@link ResultList}.
- * 
+ *
  * <h2>Semantics</h2>
- * 
+ *
  * A DatabaseQuery has three components: a Formula, a partial grounding,
  * and a set of {@link Variable Variables} onto which the results will be
  * projected.
@@ -70,73 +73,80 @@ public class DatabaseQuery {
 	private final VariableAssignment partialGrounding;
 	private final Set<Variable> projectTo;
 	private final ListOrderedSet<Variable> ordering;
-	
+
 	public DatabaseQuery(Formula formula) {
 		this.formula = formula;
 		partialGrounding = new VariableAssignment();
 		projectTo = new HashSet<Variable>();
-		
+
 		FormulaAnalysis analysis = new FormulaAnalysis(formula);
-		if (analysis.getNumDNFClauses() > 1 || analysis.getDNFClause(0).getNegLiterals().size() > 0)
+		if (analysis.getNumDNFClauses() > 1 || analysis.getDNFClause(0).getNegLiterals().size() > 0) {
 			throw new IllegalArgumentException("Illegal query formula. " +
 					"Must be a conjunction of atoms or a single atom. " +
 					"Formula: " + formula);
-		
-		if (!analysis.getDNFClause(0).getAllVariablesBound())
-			throw new IllegalArgumentException("Illegal query formula. " +
-					"All variables must appear at least once in an atom " +
-					"with a StandardPredicate. " +
-					"Formula: " + formula);
-		
+		}
+
+		Set<Variable> unboundVariables = analysis.getDNFClause(0).getUnboundVariables();
+		if (unboundVariables.size() > 0) {
+			Variable[] sortedVariables = unboundVariables.toArray(new Variable[unboundVariables.size()]);
+			Arrays.sort(sortedVariables);
+
+			throw new IllegalArgumentException(
+					"Any variable used in a negated (non-functional) predicate must also participate" +
+					" in a positive (non-functional) predicate." +
+					" The following variables do not meet this requirement: [" + StringUtils.join(sortedVariables, ", ") + "]."
+			);
+		}
+
 		ordering = new ListOrderedSet<Variable>();
-		
+
 		AbstractFormulaTraverser.traverse(formula, new VariableOrderer());
 	}
-	
+
 	public Formula getFormula() {
 		return formula;
 	}
-	
+
 	public VariableAssignment getPartialGrounding() {
 		return partialGrounding;
 	}
-	
+
 	public Set<Variable> getProjectionSubset() {
 		return projectTo;
 	}
-	
+
 	/**
 	 * @return the number of Variables in this query's Formula
 	 */
 	public int getNumVariables() {
 		return ordering.size();
 	}
-	
+
 	/**
 	 * Returns the Variable at a given index in this Query's formula according
 	 * to a depth-first, left-to-right traversal (starting with 0).
-	 * 
+	 *
 	 * @param index  the index of the Variable to return
 	 * @return the Variable with the given index
 	 */
 	public Variable getVariable(int index) {
 		return ordering.get(index);
 	}
-	
+
 	/**
 	 * Returns the index of a Variable in this Query's formula according to a
 	 * depth-first, left-to-right traversal (starting with 0).
-	 * 
+	 *
 	 * @param var  the Variable in the formula
 	 * @return the Variable's index, or -1 if it is not in the formula
 	 */
 	public int getVariableIndex(Variable var) {
 		return ordering.indexOf(var);
 	}
-	
+
 	/**
 	 * Places the Variables in the query Formula in ordering in order
-	 * of their first appearances in a depth-first, left-to-right traversal. 
+	 * of their first appearances in a depth-first, left-to-right traversal.
 	 */
 	private class VariableOrderer extends AbstractFormulaTraverser {
 		@Override
@@ -147,5 +157,5 @@ public class DatabaseQuery {
 						ordering.add((Variable) term);
 		}
 	}
-	
+
 }

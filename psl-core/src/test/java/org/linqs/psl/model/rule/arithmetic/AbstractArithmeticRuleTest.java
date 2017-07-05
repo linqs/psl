@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2015 The Regents of the University of California
+ * Copyright 2013-2017 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -200,7 +200,7 @@ public class AbstractArithmeticRuleTest {
 	}
 
 	@Test
-	public void testSingleSelect() {
+	public void testSingleFilter() {
 		// SingleClosed(+A) = 1 . {A: SingleClosed(A)}
 		List<Coefficient> coefficients = Arrays.asList(
 			(Coefficient)(new ConstantNumber(1))
@@ -210,18 +210,18 @@ public class AbstractArithmeticRuleTest {
 			(SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")}))
 		);
 
-		Map<SummationVariable, Formula> selects = new HashMap<SummationVariable, Formula>();
-		selects.put(new SummationVariable("A"), new QueryAtom(singleClosed, new Variable("A")));
+		Map<SummationVariable, Formula> filters = new HashMap<SummationVariable, Formula>();
+		filters.put(new SummationVariable("A"), new QueryAtom(singleClosed, new Variable("A")));
 
 		ArithmeticRuleExpression expression = new ArithmeticRuleExpression(
 				coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1));
-		AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, selects);
+		AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, filters);
 
 		PSLTest.assertRule(rule, "1.0 * SINGLECLOSED(+A) = 1.0 .\n{A : SINGLECLOSED(A)}");
 	}
 
 	@Test
-	public void testDisjunctiveSelect() {
+	public void testDisjunctiveFilter() {
 		// SingleClosed(+A) = 1 . {A: SingleClosed(A) || DoubleClosed(A, A) }
 		List<Coefficient> coefficients = Arrays.asList(
 			(Coefficient)(new ConstantNumber(1))
@@ -231,8 +231,8 @@ public class AbstractArithmeticRuleTest {
 			(SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")}))
 		);
 
-		Map<SummationVariable, Formula> selects = new HashMap<SummationVariable, Formula>();
-		selects.put(new SummationVariable("A"),
+		Map<SummationVariable, Formula> filters = new HashMap<SummationVariable, Formula>();
+		filters.put(new SummationVariable("A"),
 				new Disjunction(
 						new QueryAtom(singleClosed, new Variable("A")),
 						new QueryAtom(doubleClosed, new Variable("A"), new Variable("A"))
@@ -241,13 +241,13 @@ public class AbstractArithmeticRuleTest {
 
 		ArithmeticRuleExpression expression = new ArithmeticRuleExpression(
 				coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1));
-		AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, selects);
+		AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, filters);
 
 		PSLTest.assertRule(rule, "1.0 * SINGLECLOSED(+A) = 1.0 .\n{A : ( SINGLECLOSED(A) | DOUBLECLOSED(A, A) )}", true);
 	}
 
 	@Test
-	public void testSingleSelectDifferentVariable() {
+	public void testSingleFilterDifferentVariable() {
 		// DoubleClosed(+A, B) = 1 . {A: SingleClosed(B)}
 		List<Coefficient> coefficients = Arrays.asList(
 			(Coefficient)(new ConstantNumber(1))
@@ -261,18 +261,18 @@ public class AbstractArithmeticRuleTest {
 			(SummationAtomOrAtom)(new QueryAtom(singleClosed, new Variable("B")))
 		);
 
-		Map<SummationVariable, Formula> selects = new HashMap<SummationVariable, Formula>();
-		selects.put(new SummationVariable("A"), new QueryAtom(singleClosed, new Variable("B")));
+		Map<SummationVariable, Formula> filters = new HashMap<SummationVariable, Formula>();
+		filters.put(new SummationVariable("A"), new QueryAtom(singleClosed, new Variable("B")));
 
 		ArithmeticRuleExpression expression = new ArithmeticRuleExpression(
 				coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1));
-		AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, selects);
+		AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, filters);
 
 		PSLTest.assertRule(rule, "1.0 * DOUBLECLOSED(+A, B) = 1.0 .\n{A : SINGLECLOSED(B)}");
 	}
 
 	@Test
-	public void testMultipleSelects() {
+	public void testMultipleFilters() {
 		// SingleClosed(+A) + SingleClosed(+B) = 1 . {A: SingleClosed(A)} {B: SingleClosed(B)}
 		List<Coefficient> coefficients = Arrays.asList(
 			(Coefficient)(new ConstantNumber(1)),
@@ -284,21 +284,21 @@ public class AbstractArithmeticRuleTest {
 			(SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("B")}))
 		);
 
-		Map<SummationVariable, Formula> selects = new HashMap<SummationVariable, Formula>();
-		selects.put(new SummationVariable("A"), new QueryAtom(singleClosed, new Variable("A")));
-		selects.put(new SummationVariable("B"), new QueryAtom(singleClosed, new Variable("B")));
+		Map<SummationVariable, Formula> filters = new HashMap<SummationVariable, Formula>();
+		filters.put(new SummationVariable("A"), new QueryAtom(singleClosed, new Variable("A")));
+		filters.put(new SummationVariable("B"), new QueryAtom(singleClosed, new Variable("B")));
 
 		ArithmeticRuleExpression expression = new ArithmeticRuleExpression(
 				coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1));
-		AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, selects);
+		AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, filters);
 
 		PSLTest.assertRule(rule, "1.0 * SINGLECLOSED(+A) + 1.0 * SINGLECLOSED(+B) = 1.0 .\n{A : SINGLECLOSED(A)}\n{B : SINGLECLOSED(B)}", true);
 	}
 
 	@Test
-	public void testSelectArgNotInExpression() {
+	public void testFilterArgNotInExpression() {
 		// SingleClosed(+A) = 1 . {B: SingleClosed(B)}
-		// Fail: the select argument (B) is unknown.
+		// Fail: the filter argument (B) is unknown.
 		List<Coefficient> coefficients = Arrays.asList(
 			(Coefficient)(new ConstantNumber(1))
 		);
@@ -307,24 +307,24 @@ public class AbstractArithmeticRuleTest {
 			(SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")}))
 		);
 
-		Map<SummationVariable, Formula> selects = new HashMap<SummationVariable, Formula>();
-		selects.put(new SummationVariable("B"), new QueryAtom(singleClosed, new Variable("B")));
+		Map<SummationVariable, Formula> filters = new HashMap<SummationVariable, Formula>();
+		filters.put(new SummationVariable("B"), new QueryAtom(singleClosed, new Variable("B")));
 
 		ArithmeticRuleExpression expression = new ArithmeticRuleExpression(
 				coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1));
 
 		try {
-			AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, selects);
-			fail("IllegalArgumentException not thrown when unknown variable used as select argument.");
+			AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, filters);
+			fail("IllegalArgumentException not thrown when unknown variable used as filter argument.");
 		} catch (IllegalArgumentException ex) {
 			// Exception is expected.
 		}
 	}
 
 	@Test
-	public void testUnknownVariableInSelect() {
+	public void testUnknownVariableInFilter() {
 		// SingleClosed(+A) = 1 . {A: SingleClosed(B)}
-		// Fail: a variable in the select does not appear in the arithmetic expression.
+		// Fail: a variable in the filter does not appear in the arithmetic expression.
 		List<Coefficient> coefficients = Arrays.asList(
 			(Coefficient)(new ConstantNumber(1))
 		);
@@ -333,24 +333,24 @@ public class AbstractArithmeticRuleTest {
 			(SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")}))
 		);
 
-		Map<SummationVariable, Formula> selects = new HashMap<SummationVariable, Formula>();
-		selects.put(new SummationVariable("A"), new QueryAtom(singleClosed, new Variable("B")));
+		Map<SummationVariable, Formula> filters = new HashMap<SummationVariable, Formula>();
+		filters.put(new SummationVariable("A"), new QueryAtom(singleClosed, new Variable("B")));
 
 		ArithmeticRuleExpression expression = new ArithmeticRuleExpression(
 				coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1));
 
 		try {
-			AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, selects);
-			fail("IllegalArgumentException not thrown when unknown variable appears in select.");
+			AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, filters);
+			fail("IllegalArgumentException not thrown when unknown variable appears in filter.");
 		} catch (IllegalArgumentException ex) {
 			// Exception is expected.
 		}
 	}
 
 	@Test
-	public void testSelectWithNoSummation() {
+	public void testFilterWithNoSummation() {
 		// SingleClosed(A) = 1 . {A: SingleClosed(A)}
-		// Fail: a select requires a summation atom.
+		// Fail: a filter requires a summation atom.
 		List<Coefficient> coefficients = Arrays.asList(
 			(Coefficient)(new ConstantNumber(1))
 		);
@@ -359,24 +359,24 @@ public class AbstractArithmeticRuleTest {
 			(SummationAtomOrAtom)(new QueryAtom(singleClosed, new Variable("A")))
 		);
 
-		Map<SummationVariable, Formula> selects = new HashMap<SummationVariable, Formula>();
-		selects.put(new SummationVariable("A"), new QueryAtom(singleClosed, new Variable("A")));
+		Map<SummationVariable, Formula> filters = new HashMap<SummationVariable, Formula>();
+		filters.put(new SummationVariable("A"), new QueryAtom(singleClosed, new Variable("A")));
 
 		ArithmeticRuleExpression expression = new ArithmeticRuleExpression(
 				coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1));
 
 		try {
-			AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, selects);
-			fail("IllegalArgumentException not thrown when select appears without summation.");
+			AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, filters);
+			fail("IllegalArgumentException not thrown when filter appears without summation.");
 		} catch (IllegalArgumentException ex) {
 			// Exception is expected.
 		}
 	}
 
 	@Test
-	public void testSelectWithNonSummationArgument() {
+	public void testFilterWithNonSummationArgument() {
 		// DoubleClosed(+A, B) = 1 . {B: SingleClosed(A)}
-		// Fail: select arguments must be summation variable.
+		// Fail: filter arguments must be summation variable.
 		List<Coefficient> coefficients = Arrays.asList(
 			(Coefficient)(new ConstantNumber(1))
 		);
@@ -388,24 +388,24 @@ public class AbstractArithmeticRuleTest {
 			}))
 		);
 
-		Map<SummationVariable, Formula> selects = new HashMap<SummationVariable, Formula>();
-		selects.put(new SummationVariable("B"), new QueryAtom(singleClosed, new Variable("A")));
+		Map<SummationVariable, Formula> filters = new HashMap<SummationVariable, Formula>();
+		filters.put(new SummationVariable("B"), new QueryAtom(singleClosed, new Variable("A")));
 
 		ArithmeticRuleExpression expression = new ArithmeticRuleExpression(
 				coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1));
 
 		try {
-			AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, selects);
-			fail("IllegalArgumentException not thrown when non-summation variable used as select argument.");
+			AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, filters);
+			fail("IllegalArgumentException not thrown when non-summation variable used as filter argument.");
 		} catch (IllegalArgumentException ex) {
 			// Exception is expected.
 		}
 	}
 
 	@Test
-	public void testSelectOpenPredicate() {
+	public void testFilterOpenPredicate() {
 		// SingleClosed(+A) = 1 . {A: SingleOpened(A)}
-		// Fail: predicates in select must be closed.
+		// Fail: predicates in filter must be closed.
 		List<Coefficient> coefficients = Arrays.asList(
 			(Coefficient)(new ConstantNumber(1))
 		);
@@ -414,19 +414,19 @@ public class AbstractArithmeticRuleTest {
 			(SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")}))
 		);
 
-		Map<SummationVariable, Formula> selects = new HashMap<SummationVariable, Formula>();
-		selects.put(new SummationVariable("A"), new QueryAtom(singleOpened, new Variable("A")));
+		Map<SummationVariable, Formula> filters = new HashMap<SummationVariable, Formula>();
+		filters.put(new SummationVariable("A"), new QueryAtom(singleOpened, new Variable("A")));
 
 		ArithmeticRuleExpression expression = new ArithmeticRuleExpression(
 				coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1));
-		AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, selects);
+		AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, filters);
 
 		SimpleAtomManager atomManager = new SimpleAtomManager(database);
 		ADMMReasoner reasoner = new ADMMReasoner(config);
 
 		try {
 			rule.groundAll(atomManager, reasoner);
-			fail("IllegalArgumentException not thrown when trying to ground an open predicate in the select.");
+			fail("IllegalArgumentException not thrown when trying to ground an open predicate in the filter.");
 		} catch (IllegalArgumentException ex) {
 			// Exception is expected.
 		}

@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2015 The Regents of the University of California
+ * Copyright 2013-2017 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,19 +29,19 @@ import com.google.common.collect.SetMultimap;
 /**
  * Allows implementing Rules to avoid keeping track of which GroundRuleStore
  * to use when handling AtomEvents.
- * 
+ *
  * @author Eric Norris <enorris@cs.umd.edu>
  */
 public abstract class AbstractRule implements Rule {
-	
+
 	private static final Logger log = LoggerFactory.getLogger(AbstractRule.class);
-	
+
 	protected SetMultimap<AtomEventFramework, GroundRuleStore> frameworks;
-	
+
 	protected AbstractRule() {
 		this.frameworks = HashMultimap.create();
 	}
-	
+
 	@Override
 	public void notifyAtomEvent(AtomEvent event) {
 		for (GroundRuleStore gks : frameworks.get(event.getEventFramework()))
@@ -69,13 +69,13 @@ public abstract class AbstractRule implements Rule {
 		else if (!frameworks.containsKey(eventFramework))
 			unregisterForAtomEvents(eventFramework);
 	}
-	
-	
+
+
 	@Override
 	public Rule clone() throws CloneNotSupportedException {
 		throw new CloneNotSupportedException();
 	}
-	
+
 	/**
 	 * Handles an AtomEvent using the specified GroundRuleStore.
 	 * <p>
@@ -85,7 +85,7 @@ public abstract class AbstractRule implements Rule {
 	 * @param grs		the GroundRuleStore to use
 	 */
 	protected abstract void notifyAtomEvent(AtomEvent event, GroundRuleStore grs);
-	
+
 	/**
 	 * Registers with a specific AtomEventFramework to handle atom events.
 	 * <p>
@@ -95,7 +95,7 @@ public abstract class AbstractRule implements Rule {
 	 * @param eventFramework	The event framework to register with
 	 */
 	protected abstract void registerForAtomEvents(AtomEventFramework eventFramework);
-	
+
 	/**
 	 * Unregisters from a specific AtomEventFrameWork to no longer handle atom events.
 	 * <p>

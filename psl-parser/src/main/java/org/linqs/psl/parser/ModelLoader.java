@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2015 The Regents of the University of California
+ * Copyright 2013-2017 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -92,7 +92,7 @@ import org.linqs.psl.parser.antlr.PSLParser.PredicateContext;
 import org.linqs.psl.parser.antlr.PSLParser.ProgramContext;
 import org.linqs.psl.parser.antlr.PSLParser.PslRuleContext;
 import org.linqs.psl.parser.antlr.PSLParser.PslRulePartialContext;
-import org.linqs.psl.parser.antlr.PSLParser.SelectStatementContext;
+import org.linqs.psl.parser.antlr.PSLParser.FilterClauseContext;
 import org.linqs.psl.parser.antlr.PSLParser.SummationAtomContext;
 import org.linqs.psl.parser.antlr.PSLParser.SummationVariableContext;
 import org.linqs.psl.parser.antlr.PSLParser.TermContext;
@@ -249,20 +249,20 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 			return new RulePartial(ruleCore);
 		}
 
-		// Any remaining children are select statements.
+		// Any remaining children are filter statements.
 		// So, the core must be an ArithmeticRuleExpression.
 		if (!(ruleCore instanceof ArithmeticRuleExpression)) {
 			throw new IllegalStateException();
 		}
 
-		Map<SummationVariable, Formula> selectStatements = new HashMap<SummationVariable, Formula>();
+		Map<SummationVariable, Formula> filterClauses = new HashMap<SummationVariable, Formula>();
 		// Skip the initial node (ruleCore) and the EOF at the end.
 		for (int i = 1; i < ctx.getChildCount() - 1; i++) {
-			SelectStatement selectStatement = visitSelectStatement((SelectStatementContext)ctx.getChild(i));
-			selectStatements.put(selectStatement.v, selectStatement.f);
+			FilterClause filterClause = visitFilterClause((FilterClauseContext)ctx.getChild(i));
+			filterClauses.put(filterClause.v, filterClause.f);
 		}
 
-		return new RulePartial((ArithmeticRuleExpression)ruleCore, selectStatements);
+		return new RulePartial((ArithmeticRuleExpression)ruleCore, filterClauses);
 	}
 
 	@Override
@@ -367,27 +367,27 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	public WeightedArithmeticRule visitWeightedArithmeticRule(WeightedArithmeticRuleContext ctx) {
 		Double w = visitWeightExpression(ctx.weightExpression());
 		ArithmeticRuleExpression expression = (ArithmeticRuleExpression) visitArithmeticRuleExpression(ctx.arithmeticRuleExpression());
-		Map<SummationVariable, Formula> selectStatements = new HashMap<SummationVariable, Formula>();
-		for (int i = 0; i < ctx.selectStatement().size(); i++) {
-			SelectStatement ss = visitSelectStatement(ctx.selectStatement(i));
-			selectStatements.put(ss.v, ss.f);
+		Map<SummationVariable, Formula> filterClauses = new HashMap<SummationVariable, Formula>();
+		for (int i = 0; i < ctx.filterClause().size(); i++) {
+			FilterClause filterClause = visitFilterClause(ctx.filterClause(i));
+			filterClauses.put(filterClause.v, filterClause.f);
 		}
 		Boolean sq = false;
 		if (ctx.EXPONENT_EXPRESSION() != null) {
 			sq = ctx.EXPONENT_EXPRESSION().getText().equals("^2");
 		}
-		return new WeightedArithmeticRule(expression, selectStatements, w, sq);
+		return new WeightedArithmeticRule(expression, filterClauses, w, sq);
 	}
 
 	@Override
 	public UnweightedArithmeticRule visitUnweightedArithmeticRule(UnweightedArithmeticRuleContext ctx) {
 		ArithmeticRuleExpression expression = (ArithmeticRuleExpression) visitArithmeticRuleExpression(ctx.arithmeticRuleExpression());
-		Map<SummationVariable, Formula> selectStatements = new HashMap<SummationVariable, Formula>();
-		for (int i = 0; i < ctx.selectStatement().size(); i++) {
-			SelectStatement ss = visitSelectStatement(ctx.selectStatement(i));
-			selectStatements.put(ss.v, ss.f);
+		Map<SummationVariable, Formula> filterClauses = new HashMap<SummationVariable, Formula>();
+		for (int i = 0; i < ctx.filterClause().size(); i++) {
+			FilterClause filterClause = visitFilterClause(ctx.filterClause(i));
+			filterClauses.put(filterClause.v, filterClause.f);
 		}
-		return new UnweightedArithmeticRule(expression, selectStatements);
+		return new UnweightedArithmeticRule(expression, filterClauses);
 	}
 
 	@Override
@@ -683,12 +683,12 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	}
 
 	@Override
-	public SelectStatement visitSelectStatement(SelectStatementContext ctx) {
-		SelectStatement select = new SelectStatement();
-		select.v = new SummationVariable(ctx.variable().getText());
-		select.f = visitBooleanExpression(ctx.booleanExpression());
+	public FilterClause visitFilterClause(FilterClauseContext ctx) {
+		FilterClause filter = new FilterClause();
+		filter.v = new SummationVariable(ctx.variable().getText());
+		filter.f = visitBooleanExpression(ctx.booleanExpression());
 
-		return select;
+		return filter;
 	}
 
 	@Override
@@ -822,7 +822,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 		}
 	}
 
-	private static class SelectStatement {
+	private static class FilterClause {
 		SummationVariable v;
 		Formula f;
 	}

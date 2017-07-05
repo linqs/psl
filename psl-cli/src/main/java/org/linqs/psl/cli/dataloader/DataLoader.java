@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2015 The Regents of the University of California
+ * Copyright 2013-2017 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,8 +77,13 @@ public class DataLoader {
 
 	private static void loadDataFiles(DataStore datastore, Map yamlMap) {
 		for (String partitionName : ((Map<String,Object>) yamlMap).keySet()){
-			//skip special partition predicates
+			// Skip special partition predicates
 			if(partitionName.equals("predicates")){
+				continue;
+			}
+
+			// Skip special information that PSL does not care about.
+			if (partitionName.equalsIgnoreCase("PredicateDetails")) {
 				continue;
 			}
 

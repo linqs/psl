@@ -16,7 +16,7 @@ pslRulePartial
     :   logicalRule EOF
     |   arithmeticRule EOF
     |   logicalRuleExpression EOF
-    |   arithmeticRuleExpression selectStatement* EOF
+    |   arithmeticRuleExpression filterClause* EOF
     ;
 
 //
@@ -110,11 +110,11 @@ arithmeticRule
     ;
 
 weightedArithmeticRule
-    :   weightExpression arithmeticRuleExpression EXPONENT_EXPRESSION? selectStatement*
+    :   weightExpression arithmeticRuleExpression EXPONENT_EXPRESSION? filterClause*
     ;
 
 unweightedArithmeticRule
-    :   arithmeticRuleExpression PERIOD selectStatement*
+    :   arithmeticRuleExpression PERIOD filterClause*
     ;
 
 arithmeticRuleExpression
@@ -183,7 +183,7 @@ coefficientFunctionOperator
     |   MIN
     ;
 
-selectStatement
+filterClause
     :   LBRACE variable COLON booleanExpression RBRACE
     ;
 
