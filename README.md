@@ -11,7 +11,7 @@ PSL
 
 Probabilistic soft logic (PSL) is a probabilistic programming language for reasoning about
 relational and structured data that is designed to be highly scalable. More information about PSL
-is available at the [PSL homepage](http://psl.cs.umd.edu).
+is available at the [PSL homepage](http://psl.linqs.org).
 
 Getting Started with PSL
 ------------------------
@@ -45,7 +45,7 @@ We hope you find PSL useful! If you have, please consider citing PSL in any rela
 Additional Resources
 ====================
 
-- [PSL homepage](http://psl.cs.umd.edu)
+- [PSL homepage](http://psl.linqs.org)
 - [API Refernce](https://linqs-data.soe.ucsc.edu/psl-docs/)
 - [PSL source repository](https://github.com/linqs/psl)
 - [PSL wiki](../../wiki)
