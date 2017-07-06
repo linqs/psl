@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2015 The Regents of the University of California
+ * Copyright 2013-2017 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,9 @@ import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.model.term.VariableTypeMap;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -60,16 +63,17 @@ import java.util.Set;
  * @author Stephen Bach
  */
 public abstract class AbstractArithmeticRule extends AbstractRule {
+	private static final Logger log = LoggerFactory.getLogger(AbstractArithmeticRule.class);
 
 	protected final ArithmeticRuleExpression expression;
-	protected final Map<SummationVariable, Formula> selects;
+	protected final Map<SummationVariable, Formula> filters;
 
-	public AbstractArithmeticRule(ArithmeticRuleExpression expression, Map<SummationVariable, Formula> selectStatements) {
+	public AbstractArithmeticRule(ArithmeticRuleExpression expression, Map<SummationVariable, Formula> filterClauses) {
 		this.expression = expression;
-		this.selects = selectStatements;
+		this.filters = filterClauses;
 
 		// Ensures that all Formulas are in DNF
-		for (Map.Entry<SummationVariable, Formula> e : this.selects.entrySet()) {
+		for (Map.Entry<SummationVariable, Formula> e : this.filters.entrySet()) {
 			e.setValue(e.getValue().getDNF());
 		}
 
@@ -80,16 +84,16 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 	public void groundAll(AtomManager atomManager, GroundRuleStore grs) {
 		validateGroundRule(atomManager);
 
-		// Evaluate the selects.
-		Map<SummationVariable, SummationDisjunctionValues> selectEvaluations = evaluateSelects(atomManager);
+		// Evaluate the filters.
+		Map<SummationVariable, SummationDisjunctionValues> filterEvaluations = evaluateFilters(atomManager);
 
 		// Later, we will collect all the non-summation grounding values, so we will need to know which
 		// variables are non-summations.
 		List<Variable> nonSummationVariables = new ArrayList<Variable>();
 
 		// We will also need to maintain a collection of all the summation variables.
-		// Note that we can not just use |selects| because not all summation variables
-		// will have a select associated with it.
+		// Note that we can not just use |filters| because not all summation variables
+		// will have a filter associated with it.
 		Set<SummationVariable> summationVariables = new HashSet<SummationVariable>();
 
 		Set<SummationAtom> summationAtoms = new HashSet<SummationAtom>();
@@ -165,16 +169,16 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 			}
 			Map<SummationVariable, Set<Constant>> subs = summationSubs.get(nonSummationConstants);
 
-			// Add summation values that pass the select into the set of summation subs.
-			// If there is no select, we just add it directly.
+			// Add summation values that pass the filter into the set of summation subs.
+			// If there is no filter, we just add it directly.
 			for (SummationVariable sumVar : summationVariables) {
 				if (!subs.containsKey(sumVar)) {
 					subs.put(sumVar, new HashSet<Constant>());
 				}
 
-				// Either there is no select statement, or the select allows this grounding.
-				if (!selectEvaluations.containsKey(sumVar)
-					 || selectEvaluations.get(sumVar).getEvaluation(rawGrounding, groundingVariableMap)) {
+				// Either there is no filter statement, or the filter allows this grounding.
+				if (!filterEvaluations.containsKey(sumVar)
+					 || filterEvaluations.get(sumVar).getEvaluation(rawGrounding, groundingVariableMap)) {
 					subs.get(sumVar).add(rawGrounding[groundingVariableMap.get(sumVar.getVariable()).intValue()]);
 				}
 			}
@@ -183,44 +187,48 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 		List<Double> coeffs = new LinkedList<Double>();
 		List<GroundAtom> atoms = new LinkedList<GroundAtom>();
 
+		int groundCount = 0;
+
 		// For each ground set of non-summation constants,
 		// ground out the non-summation atoms along with all the summation substitutions.
 		for (Map.Entry<List<Constant>, Map<SummationVariable, Set<Constant>>> summationSub : summationSubs.entrySet()) {
 			populateCoeffsAndAtoms(coeffs, atoms, summationSub.getKey(), subsVariableMap,
 					atomManager, summationSub.getValue(), groundSummationAtoms);
-			ground(grs, coeffs, atoms,
+			groundCount += ground(grs, coeffs, atoms,
 					expression.getFinalCoefficient().getValue(summationSub.getValue()));
 
 			coeffs.clear();
 			atoms.clear();
 		}
+
+		log.debug("Grounded {} instances of rule {}", groundCount, this);
 	}
 
-	private Map<SummationVariable, SummationDisjunctionValues> evaluateSelects(AtomManager atomManager) {
+	private Map<SummationVariable, SummationDisjunctionValues> evaluateFilters(AtomManager atomManager) {
 		Map<SummationVariable, SummationDisjunctionValues> summationEvals = new HashMap<SummationVariable, SummationDisjunctionValues>();
 
-		// For each select
-		for (Map.Entry<SummationVariable, Formula> select : selects.entrySet()) {
+		// For each filter
+		for (Map.Entry<SummationVariable, Formula> filter : filters.entrySet()) {
 			SummationDisjunctionValues summationDisjunctionEval = new SummationDisjunctionValues();
 
-			Formula selectFormula = select.getValue().getDNF();
+			Formula filterFormula = filter.getValue().getDNF();
 
-			// Collect all the formula used in this select (may be more than one if it is a disjunction).
-			List<Formula> selectFormulas = new ArrayList<Formula>();
-			if (selectFormula instanceof Disjunction) {
-				for (int i = 0; i < ((Disjunction)selectFormula).length(); i++) {
-					selectFormulas.add(((Disjunction)selectFormula).get(i));
+			// Collect all the formula used in this filter (may be more than one if it is a disjunction).
+			List<Formula> filterFormulas = new ArrayList<Formula>();
+			if (filterFormula instanceof Disjunction) {
+				for (int i = 0; i < ((Disjunction)filterFormula).length(); i++) {
+					filterFormulas.add(((Disjunction)filterFormula).get(i));
 				}
 			} else {
-				selectFormulas.add(selectFormula);
+				filterFormulas.add(filterFormula);
 			}
 
-			// For each conjunction/negation (component of the disjunction that is the select).
+			// For each conjunction/negation (component of the disjunction that is the filter).
 			// We need to do each disjunction independently, because the non-exsistance of a grounding
 			// in one part of the disjunction should not affect the other parts of the disjunction.
 			// Ex: Friends(A, +B) >= 1 {B: Empty(B) || AlwaysTrue(B)
 			// Where Empty has no observations and AlwaysTrue has 1 for every possible opservation.
-			for (Formula componentFormula : selectFormulas) {
+			for (Formula componentFormula : filterFormulas) {
 				Set<Atom> queryAtomsSet = new HashSet<Atom>();
 				queryAtomsSet = componentFormula.getAtoms(queryAtomsSet);
 
@@ -234,44 +242,44 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 					query = new DatabaseQuery(queryAtoms[0]);
 				}
 
-				ResultList selectGroundings = atomManager.executeQuery(query);
-				for (int i = 0; i < selectGroundings.size(); i++) {
-					boolean evaluationValue = evaluateSelectGrounding(atomManager,
+				ResultList filterGroundings = atomManager.executeQuery(query);
+				for (int i = 0; i < filterGroundings.size(); i++) {
+					boolean evaluationValue = evaluateFilterGrounding(atomManager,
 							componentFormula, queryAtoms,
-							selectGroundings.get(i), selectGroundings.getVariableMap());
-					summationEval.add(selectGroundings.get(i), selectGroundings.getVariableMap(), evaluationValue);
+							filterGroundings.get(i), filterGroundings.getVariableMap());
+					summationEval.add(filterGroundings.get(i), filterGroundings.getVariableMap(), evaluationValue);
 				}
 
 				summationDisjunctionEval.addComponent(summationEval);
 			}
 
-			summationEvals.put(select.getKey(), summationDisjunctionEval);
+			summationEvals.put(filter.getKey(), summationDisjunctionEval);
 		}
 
 		return summationEvals;
 	}
 
 	/**
-	 * Recursively evaluate a select grounding.
+	 * Recursively evaluate a filter grounding.
 	 * The input formula should already be in DNF.
 	 */
-	private boolean evaluateSelectGrounding(
+	private boolean evaluateFilterGrounding(
 			AtomManager atomManager,
 			Formula formula, Atom[] atoms,
 			Constant[] groundings, Map<Variable, Integer> variableMap) {
 		if (formula instanceof Conjunction) {
 			Conjunction conjunction = (Conjunction)formula;
 			for (int i = 0; i < conjunction.length(); i++) {
-				if (!evaluateSelectGrounding(atomManager, conjunction.get(i), atoms, groundings, variableMap)) {
+				if (!evaluateFilterGrounding(atomManager, conjunction.get(i), atoms, groundings, variableMap)) {
 					// Short circuit.
 					return false;
 				}
 			}
 			return true;
 		} else if (formula instanceof Disjunction) {
-			throw new IllegalArgumentException("Select disjunctions should be handled independently of one another.");
+			throw new IllegalArgumentException("Filter disjunctions should be handled independently of one another.");
 		} else if (formula instanceof Negation) {
-			return !(evaluateSelectGrounding(atomManager, ((Negation)formula).getFormula(), atoms, groundings, variableMap));
+			return !(evaluateFilterGrounding(atomManager, ((Negation)formula).getFormula(), atoms, groundings, variableMap));
 		} else if (formula instanceof Atom) {
 			Atom atom = (Atom)formula;
 			Term[] args = atom.getArguments();
@@ -451,7 +459,11 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 		return true;
 	}
 
-	protected void ground(GroundRuleStore grs, List<Double>coeffs, List<GroundAtom> atoms, double finalCoeff) {
+	/**
+	 * The actual grounding into the GroundRuleStore.
+	 * @return the number of ground rules added to the store.
+	 */
+	protected int ground(GroundRuleStore grs, List<Double>coeffs, List<GroundAtom> atoms, double finalCoeff) {
 		double[] coeffArray = new double[coeffs.size()];
 		for (int j = 0; j < coeffArray.length; j++) {
 			coeffArray[j] = coeffs.get(j);
@@ -461,43 +473,45 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 		if (FunctionComparator.Equality.equals(expression.getComparator())) {
 			grs.addGroundRule(makeGroundRule(coeffArray, atomArray, FunctionComparator.LargerThan, finalCoeff));
 			grs.addGroundRule(makeGroundRule(coeffArray, atomArray, FunctionComparator.SmallerThan, finalCoeff));
+			return 2;
 		} else {
 			grs.addGroundRule(makeGroundRule(coeffArray, atomArray, expression.getComparator(), finalCoeff));
+			return 1;
 		}
 	}
 
 	/**
 	 * Validate what we can about an abstract rule at creation:
-	 *	 - An argument to a select must appear in the arithmetic expression.
-	 *	 - All variables used in a select are either the argument to the select or
+	 *	 - An argument to a filter must appear in the arithmetic expression.
+	 *	 - All variables used in a filter are either the argument to the filter or
 	 *	  appear in the arithmetic expression.
 	 */
 	protected void validateRule() {
-		// Ensure all select arguments appear in the arithmetic expression.
-		for (SummationVariable selectArg : selects.keySet()) {
-			if (!expression.getSummationVariables().contains(selectArg)) {
+		// Ensure all filter arguments appear in the arithmetic expression.
+		for (SummationVariable filterArg : filters.keySet()) {
+			if (!expression.getSummationVariables().contains(filterArg)) {
 				throw new IllegalArgumentException(String.format(
-						"Unknown variable (%s) used as select argument. " +
-						"All select arguments must appear as summation variables in associated arithmetic expression.",
-						selectArg.getVariable().getName()));
+						"Unknown variable (%s) used as filter argument. " +
+						"All filter arguments must appear as summation variables in associated arithmetic expression.",
+						filterArg.getVariable().getName()));
 			}
 		}
 
-		// Ensure all variables used in the selects are either the argument summation variable or in the expression.
+		// Ensure all variables used in the filters are either the argument summation variable or in the expression.
 		Set<String> expressionVariableNames = new HashSet<String>();
 		for (Variable var : expression.getVariables()) {
 			expressionVariableNames.add(var.getName());
 		}
 
-		for (Map.Entry<SummationVariable, Formula> select : selects.entrySet()) {
-			VariableTypeMap selectVars = new VariableTypeMap();
-			select.getValue().collectVariables(selectVars);
+		for (Map.Entry<SummationVariable, Formula> filter : filters.entrySet()) {
+			VariableTypeMap filterVars = new VariableTypeMap();
+			filter.getValue().collectVariables(filterVars);
 
-			for (Variable var : selectVars.keySet()) {
-				if (!(select.getKey().getVariable().getName().equals(var.getName()) || expressionVariableNames.contains(var.getName()))) {
+			for (Variable var : filterVars.keySet()) {
+				if (!(filter.getKey().getVariable().getName().equals(var.getName()) || expressionVariableNames.contains(var.getName()))) {
 					throw new IllegalArgumentException(String.format(
-							"Unknown variable (%s) used in select. " +
-							"All select variables must either be the select argument or appear " +
+							"Unknown variable (%s) used in filter. " +
+							"All filter variables must either be the filter argument or appear " +
 							"in the associated arithmetic expression.",
 							var.getName()));
 				}
@@ -507,27 +521,27 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 
 	/**
 	 * Validate the abstract rule in the context of of grounding.
-	 * Ensure that no open predicates are being used in a select.
+	 * Ensure that no open predicates are being used in a filter.
 	 */
 	public void validateGroundRule(AtomManager atomManager) {
-		Set<Atom> selectAtoms = new HashSet<Atom>();
-		for (Formula select : selects.values()) {
-			select.getAtoms(selectAtoms);
+		Set<Atom> filterAtoms = new HashSet<Atom>();
+		for (Formula filter : filters.values()) {
+			filter.getAtoms(filterAtoms);
 		}
 
-		for (Atom selectAtom : selectAtoms) {
-			if (selectAtom.getPredicate() instanceof StandardPredicate
-					&& !atomManager.isClosed(((StandardPredicate)selectAtom.getPredicate()))) {
+		for (Atom filterAtom : filterAtoms) {
+			if (filterAtom.getPredicate() instanceof StandardPredicate
+					&& !atomManager.isClosed(((StandardPredicate)filterAtom.getPredicate()))) {
 				throw new IllegalArgumentException(String.format(
-						"Open predicate (%s) not allowed in select. " +
-						"Only closed predicates may appear in selects.",
-						selectAtom.getPredicate().getName()));
+						"Open predicate (%s) not allowed in filter. " +
+						"Only closed predicates may appear in filters.",
+						filterAtom.getPredicate().getName()));
 			}
 		}
 	}
 
 	/**
-	 * Holds the SummationValues for a single select.
+	 * Holds the SummationValues for a single filter.
 	 * Since each component of the disjunction (we will call conjunction, but can also be a negation)
 	 * needs to be evaluated independently and has an independent set of variables used, we
 	 * will need to keep track of each separately.
@@ -555,16 +569,16 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 	}
 
 	/**
-	 * All the non-summation variables, groundings, and truth value of a select grounding.
+	 * All the non-summation variables, groundings, and truth value of a filter grounding.
 	 */
 	private static class SummationValues {
-		// In the case that there are no variables used in to this select (all constants),
+		// In the case that there are no variables used in to this filter (all constants),
 		// we will use this key to access the single value.
 		// Since we only hold true values, we will not even need to read the value, just check the
 		// size of the map.
 		private static final Constant SINGLE_VALUE_KEY = null;
 
-		// The non-summation variables used in this select.
+		// The non-summation variables used in this filter.
 		// Ordered lexicographically.
 		private List<Variable> variables;
 
@@ -573,7 +587,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 		// The keys are in the order of |variables| (which is sorted lexicographically).
 		// HACK(eriq): The complex structure is to squeeze some performance out of this until we
 		// have more database support.
-		// 
+		//
 		// <Constant, Object>
 		// Either:
 		//   <Constant, Map<Constant, Object>>
@@ -603,7 +617,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 		}
 
 		/**
-		 * Add a new select evaluation.
+		 * Add a new filter evaluation.
 		 */
 		public void add(Constant[] groundings, Map<Variable, Integer> variableMap, boolean value) {
 			assert(variableMap.size() == variables.size());
@@ -613,7 +627,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 				return;
 			}
 
-			// It is possible for there to be no variables in a select.
+			// It is possible for there to be no variables in a filter.
 			if (variables.size() == 0) {
 				valueMap.put(SINGLE_VALUE_KEY, new Boolean(true));
 				return;
@@ -623,7 +637,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 		}
 
 		/**
-		 * Recursivley add the select evaluation.
+		 * Recursivley add the filter evaluation.
 		 */
 		private void addEvaluation(int variableIndex, Map<Constant, Object> currentMap,
 				Constant[] groundings, Map<Variable, Integer> variableMap) {

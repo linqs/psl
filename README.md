@@ -11,7 +11,7 @@ PSL
 
 Probabilistic soft logic (PSL) is a probabilistic programming language for reasoning about
 relational and structured data that is designed to be highly scalable. More information about PSL
-is available at the [PSL homepage](http://psl.cs.umd.edu).
+is available at the [PSL homepage](http://psl.linqs.org).
 
 Getting Started with PSL
 ------------------------
@@ -34,17 +34,18 @@ Citing PSL
 
 We hope you find PSL useful! If you have, please consider citing PSL in any related publications as
 ```
-	@article{bach:arxiv15,
-	 Title = {Hinge-Loss Markov Random Fields and Probabilistic Soft Logic},
-	 Author = {Bach, Stephen H. and Broecheler, Matthias and Huang, Bert and Getoor, Lise},
-	 Volume = {arXiv:1505.04406 [cs.LG]},
-	 Year = {2015}}
+@article{bach:jmlr17,
+  Author = {Bach, Stephen H. and Broecheler, Matthias and Huang, Bert and Getoor, Lise},
+  Journal = {Journal of Machine Learning Research (JMLR)},
+  Title = {Hinge-Loss {M}arkov Random Fields and Probabilistic Soft Logic},
+  Year = {2017}
+}
 ```
 
 Additional Resources
 ====================
 
-- [PSL homepage](http://psl.cs.umd.edu)
+- [PSL homepage](http://psl.linqs.org)
 - [API Refernce](https://linqs-data.soe.ucsc.edu/psl-docs/)
 - [PSL source repository](https://github.com/linqs/psl)
 - [PSL wiki](../../wiki)

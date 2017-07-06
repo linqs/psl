@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2015 The Regents of the University of California
+ * Copyright 2013-2017 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ import org.linqs.psl.reasoner.function.FunctionComparator;
 
 /**
  * A template for {@link UnweightedGroundArithmeticRule UnweightedGroundArithmeticRules}.
- * 
+ *
  * @author Stephen Bach
  */
 public class UnweightedArithmeticRule extends AbstractArithmeticRule
@@ -38,9 +38,9 @@ public class UnweightedArithmeticRule extends AbstractArithmeticRule
 	public UnweightedArithmeticRule(ArithmeticRuleExpression expression) {
 		this(expression, new HashMap<SummationVariable, Formula>());
 	}
-	
-	public UnweightedArithmeticRule(ArithmeticRuleExpression expression, Map<SummationVariable, Formula> selectStatements) {
-		super(expression, selectStatements);
+
+	public UnweightedArithmeticRule(ArithmeticRuleExpression expression, Map<SummationVariable, Formula> filterClauses) {
+		super(expression, filterClauses);
 	}
 
 	@Override
@@ -48,13 +48,13 @@ public class UnweightedArithmeticRule extends AbstractArithmeticRule
 			FunctionComparator comparator, double c) {
 		return new UnweightedGroundArithmeticRule(this, coeffs, atoms, comparator, c);
 	}
-	
+
 	@Override
 	public String toString() {
 		StringBuilder s = new StringBuilder();
 		s.append(expression);
 		s.append(" .");
-		for (Map.Entry<SummationVariable, Formula> e : selects.entrySet()) {
+		for (Map.Entry<SummationVariable, Formula> e : filters.entrySet()) {
 			s.append("\n{");
 			// Appends the corresponding Variable, not the SummationVariable, to leave out the '+'
 			s.append(e.getKey().getVariable());

@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2015 The Regents of the University of California
+ * Copyright 2013-2017 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,16 +80,16 @@ public class Launcher {
 	public static final String OPTION_PROPERTIES = "properties";
 	public static final String OPTION_LOG4J = "log4j";
 	public static final String OPTION_OUTPUT_DIR = "output";
-	
+
 	public static final String MODEL_FILE_EXTENSION = ".psl";
-	
+
 	/* Reserved partition names */
 	public static final String PARTITION_NAME_OBSERVATIONS = "observations";
 	public static final String PARTITION_NAME_TARGET = "targets";
 	public static final String PARTITION_NAME_LABELS = "truth";
-	
-	
-	public void outputResults(CommandLine cmd, Database database, 
+
+
+	public void outputResults(CommandLine cmd, Database database,
 			Set<StandardPredicate> openPredicates){
 		if (cmd.hasOption(OPTION_OUTPUT_DIR)) {
 			/*
@@ -140,14 +140,14 @@ public class Launcher {
 				}
 			}
 		}
-		
-		
+
+
 	}
-	
-	
+
+
 	@SuppressWarnings("deprecation")
 	public void run(CommandLine cmd) throws IOException, ConfigurationException, ClassNotFoundException, IllegalAccessException, InstantiationException {
-		
+
 		/*
 		 * Initializes log4j
 		 */
@@ -180,7 +180,7 @@ public class Launcher {
 		/*
 		 * Sets up DataStore
 		 */
-		
+
 		String defaultPath = System.getProperty("java.io.tmpdir");
 		String dbpath = cb.getString("dbpath", defaultPath + File.separator + "cli");
 		DataStore data = new RDBMSDataStore(new H2DatabaseDriver(Type.Disk,
@@ -189,7 +189,7 @@ public class Launcher {
 		/*
 		 * Loads data
 		 */
-		
+
 		log.info("data:: loading:: ::starting");
 		File dataFile = new File(cmd.getOptionValue(OPTION_DATA));
 		InputStream dataFileInputStream = new FileInputStream(dataFile);
@@ -215,23 +215,23 @@ public class Launcher {
 		Partition targetPartition = data.getPartition(PARTITION_NAME_TARGET);
 		Partition observationsPartition = data.getPartition(PARTITION_NAME_OBSERVATIONS);
 		Partition truthPartition = data.getPartition(PARTITION_NAME_LABELS);
-		Database database = data.getDatabase(targetPartition, observationsPartition);
+		Database database = data.getDatabase(targetPartition, closedPredicates, observationsPartition);
 
 		// Inference
 		if (cmd.hasOption(OPERATION_INFER)) {
 			log.info("operation::infer ::starting");
-			
+
 			cb.setProperty(MPEInference.REASONER_KEY, new ADMMReasonerFactory());
 			MPEInference mpe = new MPEInference(model, database, cb);
 			FullInferenceResult result = mpe.mpeInference();
 			log.info("operation::infer inference:: ::done");
-			
+
 			// List of open predicates
 			Set<StandardPredicate> openPredicates = data.getRegisteredPredicates();
 			openPredicates.removeAll(closedPredicates);
-			
+
 			outputResults(cmd, database, openPredicates);
-			
+
 			log.info("operation::infer ::done");
 
 		} else if (cmd.hasOption(OPERATION_LEARN)) {
@@ -240,16 +240,16 @@ public class Launcher {
 			VotedPerceptron vp =  new MaxLikelihoodMPE(model, database, tr_database, cb);
 			vp.learn();
 			log.info("operation::learn learning:: ::done");
-			
+
 			String modelFilename = cmd.getOptionValue(OPTION_MODEL);
 			String learnedFilename;
 			int prefixPos = modelFilename.lastIndexOf(MODEL_FILE_EXTENSION);
 			if(prefixPos == -1){
-				log.error("Model filename {} does not end in {} - improvising", 
+				log.error("Model filename {} does not end in {} - improvising",
 						modelFilename, MODEL_FILE_EXTENSION);
 				learnedFilename = modelFilename + MODEL_FILE_EXTENSION;
 			} else {
-				learnedFilename = modelFilename.substring(0, prefixPos) + "-learned" 
+				learnedFilename = modelFilename.substring(0, prefixPos) + "-learned"
 						+ MODEL_FILE_EXTENSION;
 			}
 			log.info("Writing learned model to {}", learnedFilename);
@@ -259,7 +259,7 @@ public class Launcher {
 			String outModel = Pattern.compile("\\( | \\)").matcher(model.asString()).replaceAll("");
 			learnedFileWriter.write(outModel);
 			learnedFileWriter.close();
-			
+
 			log.info("operation::learn ::done");
 			//throw new IllegalArgumentException("Operation not supported: " + OPERATION_LEARN);
 			// Learning
@@ -272,51 +272,51 @@ public class Launcher {
 
 	public static void main(String[] args) {
 		try {
-			
+
 			/*
 			 * Parses command line
 			 */
-			
+
 			Options options = new Options();
-			
+
 			OptionGroup mainCommand = new OptionGroup();
 			mainCommand.addOption(new Option(OPERATION_INFER, "Run MAP inference"));
 			mainCommand.addOption(new Option(OPERATION_LEARN, "Run weight learning"));
 			mainCommand.setRequired(true);
 			options.addOptionGroup(mainCommand);
-			
+
 			options.addOption(Option.builder(OPTION_MODEL)
 					.required()
 					.desc("Path to PSL model file")
 					.hasArg()
 					.argName("path")
 					.build());
-			
+
 			options.addOption(Option.builder(OPTION_DATA)
 					.required()
 					.desc("Path to PSL data file")
 					.hasArg()
 					.argName("path")
 					.build());
-			
+
 			options.addOption(Option.builder(OPTION_LOG4J)
 					.desc("Optional log4j properties file path")
 					.hasArg()
 					.argName("path")
 					.build());
-			
+
 			options.addOption(Option.builder(OPTION_PROPERTIES)
 					.desc("Optional PSL properties file path")
 					.hasArg()
 					.argName("path")
 					.build());
-			
+
 			options.addOption(Option.builder(OPTION_OUTPUT_DIR)
 					.desc("Optional path for writing results to filesystem (default is STDOUT)")
 					.hasArg()
 					.argName("path")
 					.build());
-			
+
 			HelpFormatter hf = new HelpFormatter();
 			/* Hacks the option ordering */
 			hf.setOptionComparator(new Comparator<Option>() {
@@ -339,13 +339,12 @@ public class Launcher {
 					}
 				}
 			});
-			
+
 			try {
-				
+
 				/*
 				 * Runs PSL
 				 */
-				
 				CommandLineParser parser = new DefaultParser();
 				CommandLine cmd = parser.parse(options, args);
 				new Launcher().run(cmd);

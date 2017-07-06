@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2015 The Regents of the University of California
+ * Copyright 2013-2017 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,6 @@
  * limitations under the License.
  */
 package org.linqs.psl.model.rule.logical;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 import org.linqs.psl.database.DatabaseQuery;
@@ -45,59 +40,78 @@ import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.FunctionTerm;
 import org.linqs.psl.reasoner.function.FunctionVariable;
+
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Base class for all (first order, i.e., not ground) logical rules.
  */
 abstract public class AbstractLogicalRule extends AbstractRule {
 	private static final Logger log = LoggerFactory.getLogger(AbstractLogicalRule.class);
-	
+
 	protected Formula formula;
 	protected final DNFClause clause;
-	
+
 	public AbstractLogicalRule(Formula f) {
 		super();
 		formula = f;
 		FormulaAnalysis analysis = new FormulaAnalysis(new Negation(formula));
-		
-		if (analysis.getNumDNFClauses() > 1)
+
+		if (analysis.getNumDNFClauses() > 1) {
 			throw new IllegalArgumentException("Formula must be a disjunction of literals (or a negative literal).");
-		else
+		} else {
 			clause = analysis.getDNFClause(0);
-		
-		if (!clause.getAllVariablesBound())
-			throw new IllegalArgumentException("All Variables must be used at " +
-					"least once as an argument for a negative literal with a " +
-					"StandardPredicate.");
-		
-		if (clause.isGround())
+		}
+
+		Set<Variable> unboundVariables = clause.getUnboundVariables();
+		if (unboundVariables.size() > 0) {
+			Variable[] sortedVariables = unboundVariables.toArray(new Variable[unboundVariables.size()]);
+			Arrays.sort(sortedVariables);
+
+			throw new IllegalArgumentException(
+					"Any variable used in a negated (non-functional) predicate must also participate" +
+					" in a positive (non-functional) predicate." +
+					" The following variables do not meet this requirement: [" + StringUtils.join(sortedVariables, ", ") + "]."
+			);
+		}
+
+		if (clause.isGround()) {
 			throw new IllegalArgumentException("Formula has no Variables.");
-		
-		if (!clause.isQueriable())
+		}
+
+		if (!clause.isQueriable()) {
 			throw new IllegalArgumentException("Formula is not a valid rule for unknown reason.");
+		}
 	}
-	
+
 	@Override
 	public void groundAll(AtomManager atomManager, GroundRuleStore grs) {
 		ResultList res = atomManager.executeQuery(new DatabaseQuery(clause.getQueryFormula()));
 		int numGrounded = groundFormula(atomManager, grs, res, null);
 		log.debug("Grounded {} instances of rule {}", numGrounded, this);
 	}
-	
+
 	protected int groundFormula(AtomManager atomManager, GroundRuleStore grs, ResultList res,  VariableAssignment var) {
 		int numGroundingsAdded = 0;
 		List<GroundAtom> posLiterals = new ArrayList<GroundAtom>(4);
 		List<GroundAtom> negLiterals = new ArrayList<GroundAtom>(4);
-		
+
 		/* Uses these to check worst-case truth value */
 		Map<FunctionVariable, Double> worstCaseValues = new HashMap<FunctionVariable, Double>(8);
 		double worstCaseValue;
 
 		GroundAtom atom;
 		for (int i = 0; i < res.size(); i++) {
-			
+
 			for (int j = 0; j < clause.getPosLiterals().size(); j++) {
 				atom = groundAtom(atomManager, clause.getPosLiterals().get(j), res, i, var);
 				if (atom instanceof RandomVariableAtom)
@@ -106,7 +120,7 @@ abstract public class AbstractLogicalRule extends AbstractRule {
 					worstCaseValues.put(atom.getVariable(), atom.getValue());
 				posLiterals.add(atom);
 			}
-			
+
 			for (int j = 0; j < clause.getNegLiterals().size(); j++) {
 				atom = groundAtom(atomManager, clause.getNegLiterals().get(j), res, i, var);
 				if (atom instanceof RandomVariableAtom)
@@ -115,7 +129,7 @@ abstract public class AbstractLogicalRule extends AbstractRule {
 					worstCaseValues.put(atom.getVariable(), atom.getValue());
 				negLiterals.add(atom);
 			}
-			
+
 			AbstractGroundLogicalRule groundRule = groundFormulaInstance(posLiterals, negLiterals);
 			FunctionTerm function = groundRule.getFunction();
 			worstCaseValue = function.getValue(worstCaseValues, false);
@@ -124,20 +138,21 @@ abstract public class AbstractLogicalRule extends AbstractRule {
 					&& !grs.containsGroundRule(groundRule)) {
 				grs.addGroundRule(groundRule);
 				numGroundingsAdded++;
-			}
 			/* If the ground rule is not actually added, unregisters it from atoms */
-			else
-				for (GroundAtom incidentAtom : groundRule.getAtoms())
+			} else {
+				for (GroundAtom incidentAtom : groundRule.getAtoms()) {
 					incidentAtom.unregisterGroundRule(groundRule);
-			
+				}
+			}
+
 			posLiterals.clear();
 			negLiterals.clear();
 			worstCaseValues.clear();
 		}
-		
+
 		return numGroundingsAdded;
 	}
-	
+
 	protected GroundAtom groundAtom(AtomManager atomManager, Atom atom, ResultList res, int resultIndex, VariableAssignment var) {
 		Term[] oldArgs = atom.getArguments();
 		Constant[] newArgs = new Constant[atom.getArity()];
@@ -153,10 +168,10 @@ abstract public class AbstractLogicalRule extends AbstractRule {
 				newArgs[i] = (Constant) oldArgs[i];
 			else
 				throw new IllegalArgumentException("Unrecognized type of Term.");
-		
+
 		return atomManager.getAtom(atom.getPredicate(), newArgs);
 	}
-	
+
 	abstract protected AbstractGroundLogicalRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals);
 
 	@Override
@@ -171,7 +186,7 @@ abstract public class AbstractLogicalRule extends AbstractRule {
 			}
 		}
 	}
-	
+
 	@Override
 	public void registerForAtomEvents(AtomEventFramework manager) {
 		clause.registerClauseForEvents(manager, AtomEvent.ActivatedEventTypeSet, this);

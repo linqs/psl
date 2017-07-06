@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2015 The Regents of the University of California
+ * Copyright 2013-2017 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ public class RulePartial {
 	private Rule rule;
 	private Formula formula;
 	private ArithmeticRuleExpression arithmeticExpression;
-	private Map<SummationVariable, Formula> selects;
+	private Map<SummationVariable, Formula> filters;
 
 	public RulePartial(Object ruleCore) {
 		if (ruleCore instanceof Rule) {
@@ -55,9 +55,9 @@ public class RulePartial {
 		}
 	}
 
-	public RulePartial(ArithmeticRuleExpression arithmeticExpression, Map<SummationVariable, Formula> selects) {
+	public RulePartial(ArithmeticRuleExpression arithmeticExpression, Map<SummationVariable, Formula> filters) {
 		this.arithmeticExpression = arithmeticExpression;
-		this.selects = selects;
+		this.filters = filters;
 	}
 
 	public boolean isRule() {
@@ -112,18 +112,18 @@ public class RulePartial {
 	}
 
 	private Rule toUnweightedArithmeticRule() {
-		if (selects == null) {
+		if (filters == null) {
 			return new UnweightedArithmeticRule(arithmeticExpression);
 		}
 
-		return new UnweightedArithmeticRule(arithmeticExpression, selects);
+		return new UnweightedArithmeticRule(arithmeticExpression, filters);
 	}
 
 	private Rule toWeightedArithmeticRule(double weight, boolean squared) {
-		if (selects == null) {
+		if (filters == null) {
 			return new WeightedArithmeticRule(arithmeticExpression, weight, squared);
 		}
 
-		return new WeightedArithmeticRule(arithmeticExpression, selects, weight, squared);
+		return new WeightedArithmeticRule(arithmeticExpression, filters, weight, squared);
 	}
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2015 The Regents of the University of California
+ * Copyright 2013-2017 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,17 +27,17 @@ import org.linqs.psl.reasoner.function.FunctionComparator;
 
 /**
  * Base class for all ground arithmetic rules.
- * 
+ *
  * @author Stephen Bach
  */
-public class AbstractGroundArithmeticRule implements GroundRule {
-	
+public abstract class AbstractGroundArithmeticRule implements GroundRule {
+
 	protected final AbstractArithmeticRule rule;
 	protected final double[] coeffs;
 	protected final GroundAtom[] atoms;
 	protected final FunctionComparator comparator;
 	protected final double c;
-	
+
 	protected AbstractGroundArithmeticRule(AbstractArithmeticRule rule,
 			double[] coeffs, GroundAtom[] atoms, FunctionComparator comparator, double c) {
 		this.rule = rule;
@@ -59,7 +59,7 @@ public class AbstractGroundArithmeticRule implements GroundRule {
 			atoms.add(atom);
 		return atoms;
 	}
-	
+
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
@@ -81,7 +81,7 @@ public class AbstractGroundArithmeticRule implements GroundRule {
 		}
 
 		sb.append(" ");
-		
+
 		switch (comparator) {
 		case Equality:
 			sb.append("=");
@@ -94,13 +94,12 @@ public class AbstractGroundArithmeticRule implements GroundRule {
 			break;
 		default:
 			throw new IllegalStateException("Unrecognized comparator: " + comparator);
-		
+
 		}
-		
+
 		sb.append(" ");
 		sb.append(c);
-		
+
 		return sb.toString();
 	}
-
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2015 The Regents of the University of California
+ * Copyright 2013-2017 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -467,7 +467,7 @@ public class GroundRuleTest {
 		List<String> expected;
 		List<Coefficient> coefficients;
 		List<SummationAtomOrAtom> atoms;
-		Map<SummationVariable, Formula> selects;
+		Map<SummationVariable, Formula> filters;
 
 		coefficients = Arrays.asList(
 			(Coefficient)(new Cardinality(new SummationVariable("B")))
@@ -480,12 +480,12 @@ public class GroundRuleTest {
 			))
 		);
 
-		selects = new HashMap<SummationVariable, Formula>();
-		selects.put(new SummationVariable("B"), new QueryAtom(model.predicates.get("Nice"), new Variable("B")));
+		filters = new HashMap<SummationVariable, Formula>();
+		filters.put(new SummationVariable("B"), new QueryAtom(model.predicates.get("Nice"), new Variable("B")));
 
 		rule = new WeightedArithmeticRule(
 				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
-				selects,
+				filters,
 				1.0,
 				true
 		);
@@ -504,12 +504,12 @@ public class GroundRuleTest {
 		// Now negate the select.
 		store = new MemoryGroundRuleStore();
 
-		selects = new HashMap<SummationVariable, Formula>();
-		selects.put(new SummationVariable("B"), new Negation(new QueryAtom(model.predicates.get("Nice"), new Variable("B"))));
+		filters = new HashMap<SummationVariable, Formula>();
+		filters.put(new SummationVariable("B"), new Negation(new QueryAtom(model.predicates.get("Nice"), new Variable("B"))));
 
 		rule = new WeightedArithmeticRule(
 				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
-				selects,
+				filters,
 				1.0,
 				true
 		);
@@ -529,7 +529,7 @@ public class GroundRuleTest {
 	// Everyone except Eugene has non-zero niceness.
 	// |B| * Friends(A, +B) >= 1 {B: Nice(B)}
 	// |B| * Friends(A, +B) >= 1 {B: !Nice(B)}
-	public void testSelectBaseNotNice() {
+	public void testFilterBaseNotNice() {
 		// Reset the model to not use 100% nice.
 		initModel(false);
 
@@ -540,7 +540,7 @@ public class GroundRuleTest {
 		List<String> expected;
 		List<Coefficient> coefficients;
 		List<SummationAtomOrAtom> atoms;
-		Map<SummationVariable, Formula> selects;
+		Map<SummationVariable, Formula> filters;
 
 		coefficients = Arrays.asList(
 			(Coefficient)(new Cardinality(new SummationVariable("B")))
@@ -553,12 +553,12 @@ public class GroundRuleTest {
 			))
 		);
 
-		selects = new HashMap<SummationVariable, Formula>();
-		selects.put(new SummationVariable("B"), new QueryAtom(model.predicates.get("Nice"), new Variable("B")));
+		filters = new HashMap<SummationVariable, Formula>();
+		filters.put(new SummationVariable("B"), new QueryAtom(model.predicates.get("Nice"), new Variable("B")));
 
 		rule = new WeightedArithmeticRule(
 				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
-				selects,
+				filters,
 				1.0,
 				true
 		);
@@ -577,12 +577,12 @@ public class GroundRuleTest {
 		// Now negate the select.
 		store = new MemoryGroundRuleStore();
 
-		selects = new HashMap<SummationVariable, Formula>();
-		selects.put(new SummationVariable("B"), new Negation(new QueryAtom(model.predicates.get("Nice"), new Variable("B"))));
+		filters = new HashMap<SummationVariable, Formula>();
+		filters.put(new SummationVariable("B"), new Negation(new QueryAtom(model.predicates.get("Nice"), new Variable("B"))));
 
 		rule = new WeightedArithmeticRule(
 				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
-				selects,
+				filters,
 				1.0,
 				true
 		);
@@ -604,7 +604,7 @@ public class GroundRuleTest {
 	// Everyone except Eugene has non-zero niceness.
 	// |B| * Friends(A, +B) >= 1 {B: Friends(B, 'Alice') && Nice(B)}
 	// |B| * Friends(A, +B) >= 1 {B: Friends(B, 'Alice') || Nice(B)}
-	public void testSelectConstant() {
+	public void testFilterConstant() {
 		// Reset the model to not use 100% nice.
 		initModel(false);
 
@@ -623,7 +623,7 @@ public class GroundRuleTest {
 		List<String> expected;
 		List<Coefficient> coefficients;
 		List<SummationAtomOrAtom> atoms;
-		Map<SummationVariable, Formula> selects;
+		Map<SummationVariable, Formula> filters;
 
 		coefficients = Arrays.asList(
 			(Coefficient)(new Cardinality(new SummationVariable("B")))
@@ -636,8 +636,8 @@ public class GroundRuleTest {
 			))
 		);
 
-		selects = new HashMap<SummationVariable, Formula>();
-		selects.put(
+		filters = new HashMap<SummationVariable, Formula>();
+		filters.put(
 			new SummationVariable("B"),
 			new Conjunction(
 				new QueryAtom(model.predicates.get("Friends"), new Variable("B"), database.getUniqueID("Alice")),
@@ -647,7 +647,7 @@ public class GroundRuleTest {
 
 		rule = new WeightedArithmeticRule(
 				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
-				selects,
+				filters,
 				1.0,
 				true
 		);
@@ -666,8 +666,8 @@ public class GroundRuleTest {
 		// Now change the select to a disjunction.
 		store = new MemoryGroundRuleStore();
 
-		selects = new HashMap<SummationVariable, Formula>();
-		selects.put(
+		filters = new HashMap<SummationVariable, Formula>();
+		filters.put(
 			new SummationVariable("B"),
 			new Disjunction(
 				new QueryAtom(model.predicates.get("Friends"), new Variable("B"), database.getUniqueID("Alice")),
@@ -677,7 +677,7 @@ public class GroundRuleTest {
 
 		rule = new WeightedArithmeticRule(
 				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
-				selects,
+				filters,
 				1.0,
 				true
 		);
@@ -704,7 +704,7 @@ public class GroundRuleTest {
 		List<String> expected;
 		List<Coefficient> coefficients;
 		List<SummationAtomOrAtom> atoms;
-		Map<SummationVariable, Formula> selects;
+		Map<SummationVariable, Formula> filters;
 
 		coefficients = Arrays.asList(
 			(Coefficient)(new Cardinality(new SummationVariable("B")))
@@ -717,11 +717,11 @@ public class GroundRuleTest {
 			))
 		);
 
-		selects = new HashMap<SummationVariable, Formula>();
+		filters = new HashMap<SummationVariable, Formula>();
 
 		rule = new WeightedArithmeticRule(
 				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
-				selects,
+				filters,
 				1.0,
 				true
 		);
@@ -752,7 +752,7 @@ public class GroundRuleTest {
 		List<String> expected;
 		List<Coefficient> coefficients;
 		List<SummationAtomOrAtom> atoms;
-		Map<SummationVariable, Formula> selects;
+		Map<SummationVariable, Formula> filters;
 
 		coefficients = Arrays.asList(
 			(Coefficient)(new ConstantNumber(1))
@@ -765,11 +765,11 @@ public class GroundRuleTest {
 			))
 		);
 
-		selects = new HashMap<SummationVariable, Formula>();
+		filters = new HashMap<SummationVariable, Formula>();
 
 		rule = new WeightedArithmeticRule(
 				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
-				selects,
+				filters,
 				1.0,
 				true
 		);
@@ -789,14 +789,14 @@ public class GroundRuleTest {
 		// Add a select on A.
 		store = new MemoryGroundRuleStore();
 
-		selects.put(
+		filters.put(
 			new SummationVariable("A"),
 			new QueryAtom(model.predicates.get("Nice"), new Variable("A"))
 		);
 
 		rule = new WeightedArithmeticRule(
 				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
-				selects,
+				filters,
 				1.0,
 				true
 		);
@@ -815,14 +815,14 @@ public class GroundRuleTest {
 		// Add a select on B.
 		store = new MemoryGroundRuleStore();
 
-		selects.put(
+		filters.put(
 			new SummationVariable("B"),
 			new QueryAtom(model.predicates.get("Nice"), new Variable("B"))
 		);
 
 		rule = new WeightedArithmeticRule(
 				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
-				selects,
+				filters,
 				1.0,
 				true
 		);
@@ -857,7 +857,7 @@ public class GroundRuleTest {
 		List<String> expected;
 		List<Coefficient> coefficients;
 		List<SummationAtomOrAtom> atoms;
-		Map<SummationVariable, Formula> selects;
+		Map<SummationVariable, Formula> filters;
 
 		coefficients = Arrays.asList(
 			(Coefficient)(new Cardinality(new SummationVariable("A")))
@@ -870,15 +870,15 @@ public class GroundRuleTest {
 			))
 		);
 
-		selects = new HashMap<SummationVariable, Formula>();
-		selects.put(
+		filters = new HashMap<SummationVariable, Formula>();
+		filters.put(
 			new SummationVariable("B"),
 			new QueryAtom(model.predicates.get("Nice"), new Variable("B"))
 		);
 
 		rule = new WeightedArithmeticRule(
 				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
-				selects,
+				filters,
 				1.0,
 				true
 		);
@@ -904,7 +904,7 @@ public class GroundRuleTest {
 
 		rule = new WeightedArithmeticRule(
 				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
-				selects,
+				filters,
 				1.0,
 				true
 		);
@@ -930,7 +930,7 @@ public class GroundRuleTest {
 
 		rule = new WeightedArithmeticRule(
 				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
-				selects,
+				filters,
 				1.0,
 				true
 		);
@@ -956,7 +956,7 @@ public class GroundRuleTest {
 
 		rule = new WeightedArithmeticRule(
 				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
-				selects,
+				filters,
 				1.0,
 				true
 		);
@@ -982,7 +982,7 @@ public class GroundRuleTest {
 
 		rule = new WeightedArithmeticRule(
 				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
-				selects,
+				filters,
 				1.0,
 				true
 		);
@@ -1008,7 +1008,7 @@ public class GroundRuleTest {
 
 		rule = new WeightedArithmeticRule(
 				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
-				selects,
+				filters,
 				1.0,
 				true
 		);
@@ -1029,7 +1029,7 @@ public class GroundRuleTest {
 	@Test
 	// |B| * Friends(A, +B) + Person(C) >= 1 {B: Friends(C, B)}
 	// |B| * Friends(A, +B) + Person(C) >= 1 {B: Friends(C, B) && Nice(C)}
-	public void testSelectBinary() {
+	public void testFilterBinary() {
 		// Reset the model to not use 100% nice.
 		initModel(false);
 
@@ -1048,7 +1048,7 @@ public class GroundRuleTest {
 		List<String> expected;
 		List<Coefficient> coefficients;
 		List<SummationAtomOrAtom> atoms;
-		Map<SummationVariable, Formula> selects;
+		Map<SummationVariable, Formula> filters;
 
 		coefficients = Arrays.asList(
 			(Coefficient)(new Cardinality(new SummationVariable("B"))),
@@ -1063,15 +1063,15 @@ public class GroundRuleTest {
 			(SummationAtomOrAtom)(new QueryAtom(model.predicates.get("Person"), new Variable("C")))
 		);
 
-		selects = new HashMap<SummationVariable, Formula>();
-		selects.put(
+		filters = new HashMap<SummationVariable, Formula>();
+		filters.put(
 			new SummationVariable("B"),
 			new QueryAtom(model.predicates.get("Friends"), new Variable("C"), new Variable("B"))
 		);
 
 		rule = new WeightedArithmeticRule(
 				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
-				selects,
+				filters,
 				1.0,
 				true
 		);
@@ -1114,8 +1114,8 @@ public class GroundRuleTest {
 		// Add the additional clause to the select.
 		store = new MemoryGroundRuleStore();
 
-		selects = new HashMap<SummationVariable, Formula>();
-		selects.put(
+		filters = new HashMap<SummationVariable, Formula>();
+		filters.put(
 			new SummationVariable("B"),
 			new Conjunction(
 				new QueryAtom(model.predicates.get("Friends"), new Variable("C"), new Variable("B")),
@@ -1125,7 +1125,7 @@ public class GroundRuleTest {
 
 		rule = new WeightedArithmeticRule(
 				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
-				selects,
+				filters,
 				1.0,
 				true
 		);
@@ -1197,7 +1197,7 @@ public class GroundRuleTest {
 		List<String> expected;
 		List<Coefficient> coefficients = new ArrayList<Coefficient>();
 		List<SummationAtomOrAtom> atoms;
-		Map<SummationVariable, Formula> selects;
+		Map<SummationVariable, Formula> filters;
 
 		atoms = Arrays.asList(
 			(SummationAtomOrAtom)(new SummationAtom(
@@ -1206,8 +1206,8 @@ public class GroundRuleTest {
 			))
 		);
 
-		selects = new HashMap<SummationVariable, Formula>();
-		selects.put(
+		filters = new HashMap<SummationVariable, Formula>();
+		filters.put(
 			new SummationVariable("B"),
 			new QueryAtom(model.predicates.get("Nice"), new Variable("B"))
 		);
@@ -1275,7 +1275,7 @@ public class GroundRuleTest {
 
 			rule = new WeightedArithmeticRule(
 					new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
-					selects,
+					filters,
 					1.0,
 					true
 			);
@@ -1285,12 +1285,12 @@ public class GroundRuleTest {
 		}
 	}
 
-	@Test
 	// Ensure that exceptions are thrown when zero coefficients are divided by.
 	// Note that here we are not interested in coefficients that are statically evaluated to zero,
 	// instead we are interested in coefficients that require grounding to become zero (like with cardinality).
 	// 1.0 * Friends(A, +B) + Nice(A) / |B| >= 1 {B: !Nice(B)}
 	// Note that everyone is 100% nice in this test.
+	@Test
 	public void testArithmeticDivdeByZero() {
 		GroundRuleStore store = new MemoryGroundRuleStore();
 		AtomManager manager = new SimpleAtomManager(database);
@@ -1299,7 +1299,7 @@ public class GroundRuleTest {
 		List<String> expected;
 		List<Coefficient> coefficients;
 		List<SummationAtomOrAtom> atoms;
-		Map<SummationVariable, Formula> selects;
+		Map<SummationVariable, Formula> filters;
 
 		coefficients = Arrays.asList(
 			(Coefficient)(new ConstantNumber(1.0)),
@@ -1314,17 +1314,17 @@ public class GroundRuleTest {
 			(SummationAtomOrAtom)(new QueryAtom(model.predicates.get("Nice"), new Variable("A")))
 		);
 
-		selects = new HashMap<SummationVariable, Formula>();
-		selects.put(new SummationVariable("B"), new Negation(new QueryAtom(model.predicates.get("Nice"), new Variable("B"))));
+		filters = new HashMap<SummationVariable, Formula>();
+		filters.put(new SummationVariable("B"), new Negation(new QueryAtom(model.predicates.get("Nice"), new Variable("B"))));
 
 		rule = new WeightedArithmeticRule(
 				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
-				selects,
+				filters,
 				1.0,
 				true
 		);
 
-		// Note that no B passes the select, so the FRIENDS atom is zeroed.
+		// Note that no B passes the filter, so the FRIENDS atom is zeroed.
 		// We actually expect an error, but this is what the rules would look like when grounded.
 		expected = Arrays.asList(
 			"1.0: 1.0 * 0.0 + 1.0 / 0.0 * Nice('Alice') >= 1.0 ^2",

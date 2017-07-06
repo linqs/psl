@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2015 The Regents of the University of California
+ * Copyright 2013-2017 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,6 @@
  * limitations under the License.
  */
 package org.linqs.psl.model.formula;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseQuery;
@@ -41,6 +34,13 @@ import org.linqs.psl.model.term.Variable;
 import org.apache.commons.lang.StringUtils;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Converts a {@link Formula} to a simplified Disjunctive Normal Form view
@@ -163,51 +163,48 @@ public class FormulaAnalysis {
 		protected final List<Atom> negLiterals;
 		protected final Multimap<Predicate,Atom> dependence;
 		protected final Formula query;
-		protected final boolean allVariablesBound;
+		protected final Set<Variable> unboundVariables;
 		protected final boolean isGround;
 
 		public DNFClause(List<Atom> posLiterals, List<Atom> negLiterals) {
 			this.posLiterals = new ArrayList<Atom>(posLiterals);
 			this.negLiterals = new ArrayList<Atom>(negLiterals);
+			this.unboundVariables = new HashSet<Variable>();
+
 			dependence = ArrayListMultimap.create();
 			Set<Variable> allowedVariables = new HashSet<Variable>();
-			Set<Variable> variablesToCheck = new HashSet<Variable>();
-			boolean tempAllVariablesBound = true;
 
-			/*
-			 * Checks if all Variables in the clause appear in a positive literal
-			 * with a StandardPredicate.
-			 */
+			// Checks if all Variables in the clause appear in a positive literal with a StandardPredicate.
 			Set<Variable> setToAdd;
 
 			for (Atom atom : posLiterals) {
-				if (atom.getPredicate() instanceof StandardPredicate)
+				if (atom.getPredicate() instanceof StandardPredicate) {
 					setToAdd = allowedVariables;
-				else
-					setToAdd = variablesToCheck;
+				} else {
+					setToAdd = unboundVariables;
+				}
 
-				for (Term t : atom.getArguments()) {
-					if (t instanceof Variable)
-						setToAdd.add((Variable) t);
+				for (Term term : atom.getArguments()) {
+					if (term instanceof Variable) {
+						setToAdd.add((Variable)term);
+					}
 				}
 			}
 
-			for (Atom atom : negLiterals)
-				for (Term t : atom.getArguments())
-					if (t instanceof Variable)
-						variablesToCheck.add((Variable) t);
+			for (Atom atom : negLiterals) {
+				for (Term term : atom.getArguments()) {
+					if (term instanceof Variable) {
+						unboundVariables.add((Variable) term);
+					}
+				}
+			}
 
-			isGround = (allowedVariables.size() + variablesToCheck.size() == 0) ? true : false;
+			isGround = (allowedVariables.size() + unboundVariables.size() == 0) ? true : false;
 
-			for (Variable v : variablesToCheck)
-				if (!allowedVariables.contains(v))
-					tempAllVariablesBound = false;
+			// Remove any allowed (bound) variables from the list of unbound variables.
+			unboundVariables.removeAll(allowedVariables);
 
-			allVariablesBound = tempAllVariablesBound;
-
-			/*
-			 * Processes the positive literals with StandardPredicates further
-			 */
+			// Processes the positive literals with StandardPredicates further
 			for (int i = 0; i < posLiterals.size(); i++)
 				if (posLiterals.get(i).getPredicate() instanceof StandardPredicate)
 					dependence.put(posLiterals.get(i).getPredicate(), posLiterals.get(i));
@@ -215,9 +212,9 @@ public class FormulaAnalysis {
 			if (posLiterals.size() == 0)
 				query = null;
 			else if (posLiterals.size() == 1)
-				query = (allVariablesBound) ? posLiterals.get(0) : null;
+				query = (unboundVariables.isEmpty()) ? posLiterals.get(0) : null;
 			else
-				query = (allVariablesBound) ? new Conjunction(posLiterals.toArray(new Formula[posLiterals.size()])) : null;
+				query = (unboundVariables.isEmpty()) ? new Conjunction(posLiterals.toArray(new Formula[posLiterals.size()])) : null;
 		}
 
 		/**
@@ -235,17 +232,18 @@ public class FormulaAnalysis {
 		}
 
 		/**
-		 * Returns whether all Variables in the clause appear at least once in a
+		 * Returns any unbound variables.
+		 * A bound variable is a varible in the clause that appears at least once in a
 		 * positive literal with a {@link StandardPredicate}.
 		 * <p>
 		 * If all Variables are bound, then {@link DatabaseQuery DatabaseQueries}
 		 * can identify all groundings of the clause with possibly non-zero truth
 		 * values in a {@link Database}.
 		 *
-		 * @return whether all Variables are bound
+		 * @return an unmodifiable set containing any unbound variables, or an empty set.
 		 */
-		public boolean getAllVariablesBound() {
-			return allVariablesBound;
+		public Set<Variable> getUnboundVariables() {
+			return Collections.unmodifiableSet(unboundVariables);
 		}
 
 		public boolean isGround() {
