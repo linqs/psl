@@ -122,6 +122,10 @@ public class ADMMReasoner implements Reasoner {
 
 	private int maxIter;
 
+	// Also sometimes called 'z'.
+	// Only populated after inference.
+	private double[] consensusValues;
+
 	public ADMMReasoner(ConfigBundle config) {
 		maxIter = config.getInt(MAX_ITER_KEY, MAX_ITER_DEFAULT);
 		stepSize = config.getDouble(STEP_SIZE_KEY, STEP_SIZE_DEFAULT);
@@ -177,22 +181,22 @@ public class ADMMReasoner implements Reasoner {
 	}
 
 	/**
-	 * Computes the incompatibility of the local variable copies corresponding to
-	 * GroundRule groundRule
+	 * Computes the incompatibility of the local variable copies corresponding to GroundRule groundRule.
 	 * @param groundRule
 	 * @return local (dual) incompatibility
 	 */
-	public double getDualIncompatibility(GroundRule groundRule) {
-		/* TODO(eriq): Unsupported until you can get Terms by GroundRules.
-		int index = orderedGroundRules.get(groundRule);
-		ADMMObjectiveTerm term = termStore.get(index);
-		for (int i = 0; i < term.zIndices.length; i++) {
-			int zIndex = term.zIndices[i];
-			variables.get(zIndex).setValue(term.x[i]);
+	public double getDualIncompatibility(GroundRule groundRule, ADMMTermStore termStore) {
+		// Set the global variables to the value of the local variables for this rule.
+		for (Integer termIndex : termStore.getTermIndices((WeightedGroundRule)groundRule)) {
+			for (LocalVariable localVariable : termStore.get(termIndex).getVariables()) {
+				consensusValues[localVariable.getGlobalId()] = localVariable.getValue();
+			}
 		}
+
+		// Updates variables
+		termStore.updateVariables(consensusValues);
+
 		return ((WeightedGroundRule)groundRule).getIncompatibility();
-		*/
-		throw new UnsupportedOperationException("Temporarily unsupported during rework");
 	}
 
 	@Override
@@ -205,7 +209,7 @@ public class ADMMReasoner implements Reasoner {
 		log.debug("Performing optimization with {} variables and {} terms.", termStore.getNumGlobalVariables(), termStore.size());
 
 		// Also sometimes called 'z'.
-		double[] consensusValues = new double[termStore.getNumGlobalVariables()];
+		consensusValues = new double[termStore.getNumGlobalVariables()];
 
 		// Starts up the computation threads
 		ADMMTask[] tasks = new ADMMTask[numThreads];
@@ -390,8 +394,6 @@ public class ADMMReasoner implements Reasoner {
 				// Ensures all threads are at the same point
 				awaitUninterruptibly(termUpdateCompleteBarrier);
 
-				// TODO(eriq): Be careful here when refactoring. Make sure there are not used between checks,
-				// when they have their old values..
 				if (check) {
 					primalResInc = 0.0;
 					dualResInc = 0.0;

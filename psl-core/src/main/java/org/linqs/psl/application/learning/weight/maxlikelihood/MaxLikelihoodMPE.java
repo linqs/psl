@@ -52,11 +52,9 @@ public class MaxLikelihoodMPE extends VotedPerceptron {
 		}
 
 		// Computes the MPE state.
-		// TEST
-		// reasoner.optimize();
 		reasoner.optimize(termStore);
 
-		/* Computes incompatibility */
+		// Computes incompatibility.
 		for (int i = 0; i < rules.size(); i++) {
 			for (GroundRule groundRule : groundRuleStore.getGroundRules(rules.get(i))) {
 				fullExpectedIncompatibility[i] += ((WeightedGroundRule) groundRule).getIncompatibility();
@@ -77,7 +75,7 @@ public class MaxLikelihoodMPE extends VotedPerceptron {
 		fullObservedIncompatibility = new double[rules.size() + immutableRules.size()];
 		setLabeledRandomVariables();
 
-		/* Computes the observed incompatibilities and numbers of groundings */
+		// Computes the observed incompatibilities and numbers of groundings.
 		for (int i = 0; i < rules.size(); i++) {
 			for (GroundRule groundRule : groundRuleStore.getGroundRules(rules.get(i))) {
 				fullObservedIncompatibility[i] += ((WeightedGroundRule) groundRule).getIncompatibility();

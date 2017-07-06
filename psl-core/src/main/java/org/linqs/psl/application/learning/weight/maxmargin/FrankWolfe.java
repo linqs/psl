@@ -194,8 +194,6 @@ public class FrankWolfe extends WeightLearningApplication {
 			}
 
 			// Runs loss-augmented inference with current weights.
-			// TEST
-			// reasoner.optimize();
 			reasoner.optimize(termStore);
 
 			/* Computes L1 distance to ground truth. */

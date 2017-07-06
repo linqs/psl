@@ -285,7 +285,6 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 			Term[] args = atom.getArguments();
 			Constant[] groundValues = new Constant[args.length];
 
-			// TODO(eriq): Deal with constants (check more, more pondering)
 			for (int i = 0; i < args.length; i++) {
 				if (args[i] instanceof Constant) {
 					groundValues[i] = (Constant)args[i];

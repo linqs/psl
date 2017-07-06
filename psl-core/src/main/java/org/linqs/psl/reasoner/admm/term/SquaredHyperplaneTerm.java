@@ -47,7 +47,6 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
 
 	private static Map<DenseDoubleMatrix2DWithHashcode, DoubleMatrix2D> lCache = new HashMap<DenseDoubleMatrix2DWithHashcode, DoubleMatrix2D>();
 
-	// TEST
 	private static final Semaphore matrixSemaphore = new Semaphore(1);
 
 	// TODO(eriq): All the matrix work is suspect.
@@ -62,11 +61,6 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
 		this.constant = constant;
 
 		L = null;
-		/*
-		if (variables.size() >= 3) {
-			computeL();
-		}
-		*/
 
 		if (weight < 0.0) {
 			throw new IllegalArgumentException("Only non-negative weights are supported.");

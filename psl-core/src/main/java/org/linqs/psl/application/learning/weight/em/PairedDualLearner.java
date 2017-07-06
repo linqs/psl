@@ -38,6 +38,7 @@ import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.weight.PositiveWeight;
 import org.linqs.psl.reasoner.admm.ADMMReasoner;
+import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -150,13 +151,13 @@ public class PairedDualLearner extends ExpectationMaximization {
 		// Compute the dual incompatbility for each ADMM subproblem
 		for (int i = 0; i < rules.size(); i++) {
 			for (GroundRule groundRule : groundRuleStore.getGroundRules(rules.get(i))) {
-				dualExpectedIncompatibility[i] += admm.getDualIncompatibility(groundRule);
+				dualExpectedIncompatibility[i] += admm.getDualIncompatibility(groundRule, (ADMMTermStore)termStore);
 			}
 		}
 
 		for (int i = 0; i < immutableRules.size(); i++) {
 			for (GroundRule groundRule : groundRuleStore.getGroundRules(immutableRules.get(i))) {
-				dualExpectedIncompatibility[rules.size() + i] += admm.getDualIncompatibility(groundRule);
+				dualExpectedIncompatibility[rules.size() + i] += admm.getDualIncompatibility(groundRule, (ADMMTermStore)termStore);
 			}
 		}
 
@@ -175,13 +176,13 @@ public class PairedDualLearner extends ExpectationMaximization {
 		/* Computes the observed incompatibilities and numbers of groundings */
 		for (int i = 0; i < rules.size(); i++) {
 			for (GroundRule groundRule : latentGroundRuleStore.getGroundRules(rules.get(i))) {
-				dualObservedIncompatibility[i] += admm.getDualIncompatibility(groundRule);
+				dualObservedIncompatibility[i] += admm.getDualIncompatibility(groundRule, (ADMMTermStore)latentTermStore);
 				numGroundings[i]++;
 			}
 		}
 		for (int i = 0; i < immutableRules.size(); i++) {
 			for (GroundRule groundRule : latentGroundRuleStore.getGroundRules(immutableRules.get(i))) {
-				dualObservedIncompatibility[rules.size() + i] += admm.getDualIncompatibility(groundRule);
+				dualObservedIncompatibility[rules.size() + i] += admm.getDualIncompatibility(groundRule, (ADMMTermStore)latentTermStore);
 			}
 		}
 

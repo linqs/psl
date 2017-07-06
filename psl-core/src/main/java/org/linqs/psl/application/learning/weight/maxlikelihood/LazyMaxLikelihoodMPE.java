@@ -154,9 +154,7 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 					changedRuleWeights = false;
 				}
 
-				/* Computes the MPE state */
-				// TEST
-				// reasoner.optimize();
+				// Computes the MPE state.
 				reasoner.optimize(termStore);
 			}
 			while (eventFramework.checkToActivate() > 0);
@@ -218,9 +216,7 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 				changedRuleWeights = false;
 			}
 
-			/* Computes the MPE state */
-			// TEST
-			// reasoner.optimize();
+			// Computes the MPE state,
 			reasoner.optimize(termStore);
 		}
 		while (eventFramework.checkToActivate() > 0);

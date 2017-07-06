@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.collections4.list.UnmodifiableList;
+
 public class MemoryTermStore<E extends Term> implements TermStore<E> {
 	public static final String CONFIG_PREFIX = "memorytermstore";
 
@@ -109,5 +111,10 @@ public class MemoryTermStore<E extends Term> implements TermStore<E> {
 		for (Integer termIndex : ruleMapping.get(rule)) {
 			((WeightedTerm)store.get(termIndex.intValue())).setWeight(rule.getWeight().getWeight());
 		}
+	}
+
+	@Override
+	public List<Integer> getTermIndices(WeightedGroundRule rule) {
+		return new UnmodifiableList<Integer>(ruleMapping.get(rule));
 	}
 }

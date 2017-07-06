@@ -21,7 +21,7 @@ import org.linqs.psl.reasoner.term.Term;
 
 import java.util.List;
 
-// TODO(eriq): In general, we have swapped from [] to List<>. Ponder this some more.
+import org.apache.commons.collections4.list.UnmodifiableList;
 
 /**
  * A term in the objective to be optimized by an {@link ADMMReasoner}.
@@ -51,4 +51,8 @@ public abstract class ADMMObjectiveTerm implements Term {
 	 * for the objective term f(x)
 	 */
 	public abstract void minimize(double stepSize, double[] consensusValues);
+
+	public List<LocalVariable> getVariables() {
+		return new UnmodifiableList<LocalVariable>(variables);
+	}
 }
