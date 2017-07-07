@@ -18,17 +18,11 @@
 package org.linqs.psl.database.loading;
 
 public interface Updater {
-	
 	public void set(Object... data);
 
 	public void setValue(double value, Object... data);
-	
+
 	public void setValues(double[] values, Object... data);
-	
-	public void setValue(double value, double confidence, Object... data);
-	
-	public void setValues(double[] values, double[] confidences, Object... data);
-	
+
 	public void remove(Object... data);
-	
 }

@@ -103,12 +103,12 @@ public interface Database {
 	 *   if it is open.</li>
 	 *   <li>If the GroundAtom has a StandardPredicate but is not persisted
 	 *   in any of the Database's partitions, it will be instantiated with a truth
-	 *   value of 0.0 and a confidence value of NaN. It will be instantiated as an
-	 *   ObservedAtom if its Predicate is closed and as a RandomVariableAtom
+	 *   value of 0.0. It will be instantiated as an ObservedAtom if its Predicate
+	 *   is closed and as a RandomVariableAtom
 	 *   if it is open.</li>
 	 *   <li>If the GroundAtom has a FunctionalPredicate, then it will be
 	 *   instantiated as an ObservedAtom with the functionally defined
-	 *   truth value and a confidence value of NaN.</li>
+	 *   truth value.</li>
 	 * </ul>
 	 *
 	 * @param p  the Predicate of the Atom

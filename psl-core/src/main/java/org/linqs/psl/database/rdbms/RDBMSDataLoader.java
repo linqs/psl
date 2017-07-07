@@ -28,7 +28,6 @@ import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.loading.DataLoader;
 import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.database.loading.OpenInserter;
-import org.linqs.psl.model.ConfidenceValues;
 import org.linqs.psl.model.predicate.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,22 +35,21 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Preconditions;
 
 public class RDBMSDataLoader implements DataLoader {
-	
 	private static final Logger log = LoggerFactory.getLogger(RDBMSDataLoader.class);
-	
+
 	private final Connection database;
-	
+
 	private final Map<Predicate,RDBMSTableInserter> inserts;
-	
+
 	public RDBMSDataLoader(Connection c) {
 		database = c;
 		inserts = new HashMap<Predicate,RDBMSTableInserter>();
 	}
-	
+
 	void registerPredicate(RDBMSPredicateHandle ph) {
 		inserts.put(ph.predicate(), new RDBMSTableInserter(ph));
 	}
-	
+
 	@Override
 	public RDBMSTableInserter getOpenInserter(Predicate p) {
 		RDBMSTableInserter ins = inserts.get(p);
@@ -60,17 +58,17 @@ public class RDBMSDataLoader implements DataLoader {
 		}
 		return ins;
 	}
-	
+
 	@Override
 	public Inserter getInserter(Predicate p, Partition partitionID) {
 		return new RDBMSInserter(getOpenInserter(p),partitionID);
 	}
-	
+
 	private class RDBMSInserter implements Inserter {
-		
+
 		private final RDBMSTableInserter inserter;
 		private final Partition partitionID;
-		
+
 		public RDBMSInserter(RDBMSTableInserter ins, Partition pid) {
 			Preconditions.checkNotNull(pid);
 			inserter = ins;
@@ -86,22 +84,15 @@ public class RDBMSDataLoader implements DataLoader {
 		public void insertValue(double value, Object... data) {
 			inserter.insertValue(partitionID, value, data);
 		}
-		
-		@Override
-		public void insertValueConfidence(double value, double confidence, Object... data) {
-			inserter.insertValue(partitionID, value, confidence, data);
-		}
-		
 	}
-	
+
 	private class RDBMSTableInserter implements OpenInserter {
-		
+
 		private final RDBMSPredicateHandle handle;
 		private final int argSize;
 		private final PreparedStatement insertStmt;
 		private final double defaultEvidenceValue;
-		private final double defaultConfidence;
-		
+
 		public RDBMSTableInserter(RDBMSPredicateHandle ph) {
 			handle = ph;
 			argSize = handle.predicate().getArity();
@@ -110,16 +101,14 @@ public class RDBMSDataLoader implements DataLoader {
 			sql.append("INSERT INTO ").append(handle.tableName()).append(" (");
 			sql.append(handle.partitionColumn());
 			numCols++;
-			
+
 			for (int i=0;i<handle.argumentColumns().length;i++) {
 				sql.append(", ").append(handle.argumentColumns()[i]);
 				numCols++;
 			}
 			sql.append(", ").append(handle.valueColumn());
 			numCols++;
-			sql.append(", ").append(handle.confidenceColumn());
-			numCols++;
-			
+
 			sql.append(") VALUES ( ");
 			for (int i=0;i<numCols;i++) {
 				if (i>0) sql.append(", ");
@@ -131,50 +120,44 @@ public class RDBMSDataLoader implements DataLoader {
 			} catch (SQLException e) {
 				throw new AssertionError(e);
 			}
-			
-			// TODO Is this the correct assumption? -enorris
+
 			defaultEvidenceValue = 1.0;
-			defaultConfidence = Double.NaN;
 		}
-		
+
 		@Override
 		public void insert(Partition partitionID, Object... data) {
-			insertInternal(partitionID, defaultEvidenceValue, defaultConfidence, data);
+			insertInternal(partitionID, defaultEvidenceValue, data);
 		}
-		
+
 		@Override
 		public void insertValue(Partition partitionID, double value, Object... data) {
-			insertInternal(partitionID, value, defaultConfidence, data);
+			insertInternal(partitionID, value, data);
 		}
-		
-		@Override
-		public void insertValue(Partition partitionID, double value, double confidence, Object... data) {
-			insertInternal(partitionID, value, confidence, data);
-		}
-		
-		private void insertInternal(Partition partition, double value, double confidence, Object[] data) {
+
+		private void insertInternal(Partition partition, double value, Object[] data) {
 			int partitionID = partition.getID();
-			if (partitionID < 0)
+			if (partitionID < 0) {
 				throw new IllegalArgumentException("Partition IDs must be non-negative.");
-			if (data.length != argSize)
+			}
+
+			if (data.length != argSize) {
 				throw new IllegalArgumentException("Data length does not match: " + data.length + " " + argSize);
-			// TODO What is the valid range for truth values? Do we care? -enorris
-			if (!ConfidenceValues.isValid(confidence))
-				throw new IllegalArgumentException("Invalid confidence value: " + confidence);
-			
+			}
+
 			try {
-				insertStmt.setInt(1,partitionID);
+				insertStmt.setInt(1, partitionID);
 				int noCol = 1;
-				for (int i=0;i<argSize;i++) {
+				for (int i = 0; i < argSize; i++) {
 					noCol++;
-					assert data[i]!=null;
+					assert data[i] != null;
+
 					if (data[i] instanceof Integer) {
 						insertStmt.setInt(noCol, (Integer)data[i]);
 					} else if (data[i] instanceof Double) {
 						// The standard JDBC way to insert NaN is using setNull
-						// if not, mysql will complain about the NaN default confidence value
+						// if not, mysql will complain about any NaNs.
 						if (Double.isNaN((Double)data[i])) {
-							insertStmt.setNull(noCol, java.sql.Types.DOUBLE); 
+							insertStmt.setNull(noCol, java.sql.Types.DOUBLE);
 						} else {
 							insertStmt.setDouble(noCol, (Double)data[i]);
 						}
@@ -186,31 +169,24 @@ public class RDBMSDataLoader implements DataLoader {
 						insertStmt.setString(noCol, ((RDBMSUniqueStringID)data[i]).getID());
 					}else throw new IllegalArgumentException("Unknown data type for :"+data[i]);
 				}
-				
+
 				noCol++;
 				if (Double.isNaN(value)) {
-					insertStmt.setNull(noCol, java.sql.Types.DOUBLE); 
+					insertStmt.setNull(noCol, java.sql.Types.DOUBLE);
 				} else {
-					insertStmt.setDouble(noCol, value);	
+					insertStmt.setDouble(noCol, value);
 				}
-				noCol++;
-				if (Double.isNaN(confidence)) {
-					insertStmt.setNull(noCol, java.sql.Types.DOUBLE); 
-				} else {
-					insertStmt.setDouble(noCol, confidence);
-				}
-		    insertStmt.executeUpdate();
+
+				insertStmt.executeUpdate();
 
 			} catch (SQLException e) {
 				log.error(e.getMessage() + "\n" + Arrays.toString(data));
 				throw new AssertionError(e);
 			}
 		}
-		
+
 		private String escapeSingleQuotes(String s) {
 			return s.replaceAll("'", "''");
 		}
-		
 	}
-
 }

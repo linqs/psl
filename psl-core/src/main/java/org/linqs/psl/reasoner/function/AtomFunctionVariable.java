@@ -26,9 +26,8 @@ import org.linqs.psl.model.atom.GroundAtom;
  * for use in numeric functions.
  */
 public abstract class AtomFunctionVariable implements FunctionVariable {
-	
 	protected final GroundAtom atom;
-	
+
 	public AtomFunctionVariable(GroundAtom atom) {
 		this.atom = atom;
 	}
@@ -37,21 +36,16 @@ public abstract class AtomFunctionVariable implements FunctionVariable {
 	public boolean isLinear() {
 		return true;
 	}
-	
+
 	public GroundAtom getAtom() {
 		return atom;
-	}
-
-	@Override
-	public double getConfidence() {
-		return atom.getConfidenceValue();
 	}
 
 	@Override
 	public double getValue() {
 		return atom.getValue();
 	}
-	
+
 	@Override
 	public double getValue(Map<? extends FunctionVariable,Double> values, boolean useCurrentValues) {
 		Double val = values.get(this);
@@ -62,12 +56,12 @@ public abstract class AtomFunctionVariable implements FunctionVariable {
 			return val;
 		}
 	}
-	
+
 	@Override
 	public int hashCode() {
 		return atom.hashCode() + 97;
 	}
-	
+
 	@Override
 	public boolean equals(Object oth) {
 		if (oth==this)
@@ -77,10 +71,9 @@ public abstract class AtomFunctionVariable implements FunctionVariable {
 		AtomFunctionVariable other = (AtomFunctionVariable) oth;
 		return getAtom().equals(other.getAtom());
 	}
-	
+
 	@Override
 	public String toString() {
 		return atom.toString();
 	}
-	
 }

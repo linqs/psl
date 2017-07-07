@@ -21,39 +21,35 @@ import org.linqs.psl.model.predicate.Predicate;
 
 import com.google.common.base.Preconditions;
 
-class RDBMSPredicateInfo {
-	
+public class RDBMSPredicateInfo {
 	final Predicate predicate;
 	final String[] argCols;
 	final String tableName;
 	final String valueCol;
-	final String confidenceCol;
 	final String partitionCol;
-	
-	RDBMSPredicateInfo(Predicate def, String[] args, String table, String value, 
-			String confidence, String partition) {
+
+	RDBMSPredicateInfo(Predicate def, String[] args, String table, String value,
+			String partition) {
 		predicate = def;
 		argCols = args;
 		tableName = table + "_predicate";
 		valueCol = value;
-		confidenceCol = confidence;
 		partitionCol = partition;
-		
+
 		Preconditions.checkNotNull(valueCol);
-		Preconditions.checkNotNull(confidenceCol);
 		Preconditions.checkNotNull(predicate);
 		Preconditions.checkNotNull(argCols);
 		Preconditions.checkNotNull(tableName);
 		Preconditions.checkNotNull(partitionCol);
 		if (argCols.length!=predicate.getArity()) throw new IllegalArgumentException("Number of predicate argument names must match its arity!");
 	}
-	
+
 	RDBMSPredicateHandle getPredicateHandle() {
 		return new InternalRDBMSPredicateHandle();
 	}
-	
+
 	private class InternalRDBMSPredicateHandle implements RDBMSPredicateHandle {
-		
+
 		private InternalRDBMSPredicateHandle() { }
 
 		@Override
@@ -64,11 +60,6 @@ class RDBMSPredicateInfo {
 		@Override
 		public String valueColumn() {
 			return valueCol;
-		}
-
-		@Override
-		public String confidenceColumn() {
-			return confidenceCol;
 		}
 
 		@Override
@@ -85,7 +76,6 @@ class RDBMSPredicateInfo {
 		public Predicate predicate() {
 			return predicate;
 		}
-		
+
 	}
-	
 }

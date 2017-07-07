@@ -20,11 +20,7 @@ package org.linqs.psl.database.loading;
 import org.linqs.psl.database.Partition;
 
 public interface OpenInserter {
-
 	public void insert(Partition partitionID, Object... data);
-	
+
 	public void insertValue(Partition partitionID, double truth, Object... data);
-	
-	public void insertValue(Partition partitionID, double value, double confidence, Object... data);
-	
 }
