@@ -20,17 +20,13 @@ package org.linqs.psl.database.rdbms;
 import org.linqs.psl.model.predicate.Predicate;
 
 public interface RDBMSPredicateHandle {
-
 	public Predicate predicate();
-	
+
 	public String tableName();
-	
+
 	public String[] argumentColumns();
-	
+
 	public String partitionColumn();
-	
+
 	public String valueColumn();
-	
-	public String confidenceColumn();
-	
 }

@@ -18,13 +18,10 @@
 package org.linqs.psl.database.loading;
 
 public interface Inserter {
-	
 	public void insert(Object... data);
-	
+
 	public void insertValue(double value, Object... data);
-	
-	public void insertValueConfidence(double value, double confidence, Object... data);
-	
+
 	public static final Inserter nullInserter = new Inserter() {
 
 		@Override
@@ -32,9 +29,5 @@ public interface Inserter {
 
 		@Override
 		public void insertValue(double value, Object... data) { }
-
-		@Override
-		public void insertValueConfidence(double value, double confidence, Object... data) { }
-		
 	};
 }

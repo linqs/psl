@@ -232,9 +232,6 @@ public class RDBMSDatabase implements Database {
 		// Set a placeholder for the value
 		q.addCustomSetClause(ph.valueColumn(), placeHolder);
 
-		// Set a placeholder for the confidence
-		q.addCustomSetClause(ph.confidenceColumn(), placeHolder);
-
 		try {
 			PreparedStatement ps = dbConnection.prepareStatement(q.toString());
 			updateStatement.put(ph.predicate(), ps);
@@ -258,9 +255,6 @@ public class RDBMSDatabase implements Database {
 
 		// Set a placeholder for the value
 		q.addCustomColumn(ph.valueColumn(), placeHolder);
-
-		// Set a placeholder for the confidence
-		q.addCustomColumn(ph.confidenceColumn(), placeHolder);
 
 		try {
 			PreparedStatement ps = dbConnection.prepareStatement(q.toString());
@@ -466,17 +460,12 @@ public class RDBMSDatabase implements Database {
 					value = Double.NaN;
 				}
 
-				double confidence = results.getDouble(predicateHandle.confidenceColumn());
-				if (results.wasNull()) {
-					confidence = Double.NaN;
-				}
-
 				Constant[] arguments = new Constant[argumentCols.length];
 				for (int i = 0; i < argumentCols.length; i++) {
 					arguments[i] = extractConstantFromResult(results, argumentCols[i], predicate.getArgumentType(i));
 				}
 
-				atoms.add(cache.instantiateRandomVariableAtom(predicate, arguments, value, confidence));
+				atoms.add(cache.instantiateRandomVariableAtom(predicate, arguments, value));
 			}
 		} catch (SQLException ex) {
 			throw new RuntimeException("Error fetching results.", ex);
@@ -514,25 +503,25 @@ public class RDBMSDatabase implements Database {
 		ResultSet rs = queryDBForAtom(qAtom);
 		try {
 			if (rs.next()) {
-					double value = rs.getDouble(ph.valueColumn());
-					// need to check whether the previous double is null, if so set it specifically to NaN
-					if (rs.wasNull()) value = Double.NaN;
-		 		double confidence = rs.getDouble(ph.confidenceColumn());
-		 		if (rs.wasNull()) confidence = Double.NaN;
+				double value = rs.getDouble(ph.valueColumn());
+				// Need to check whether the previous double is null, if so set it specifically to NaN
+				if (rs.wasNull()) {
+					value = Double.NaN;
+				}
 
 		 		int partition = rs.getInt(ph.partitionColumn());
 		 		if (partition == writeID) {
 		 			// Found in the write partition
 		 			if (isClosed((StandardPredicate) p)) {
 		 				// Predicate is closed, instantiate as ObservedAtom
-		 				result = cache.instantiateObservedAtom(p, arguments, value, confidence);
+		 				result = cache.instantiateObservedAtom(p, arguments, value);
 		 			} else {
 		 				// Predicate is open, instantiate as RandomVariableAtom
-		 				result = cache.instantiateRandomVariableAtom((StandardPredicate) p, arguments, value, confidence);
+		 				result = cache.instantiateRandomVariableAtom((StandardPredicate) p, arguments, value);
 		 			}
 		 		} else {
 		 			// Must be in a read partition, instantiate as ObservedAtom
-		 			result = cache.instantiateObservedAtom(p, arguments, value, confidence);
+		 			result = cache.instantiateObservedAtom(p, arguments, value);
 		 		}
 		 		if (rs.next())
 		 			throw new IllegalStateException("Atom cannot exist in more than one partition.");
@@ -544,9 +533,9 @@ public class RDBMSDatabase implements Database {
 
 		if (result == null) {
 			if (isClosed((StandardPredicate) p))
-				result = cache.instantiateObservedAtom(p, arguments, 0.0, Double.NaN);
+				result = cache.instantiateObservedAtom(p, arguments, 0.0);
 			else
-				result = cache.instantiateRandomVariableAtom((StandardPredicate) p, arguments, 0.0, Double.NaN);
+				result = cache.instantiateRandomVariableAtom((StandardPredicate) p, arguments, 0.0);
 		}
 
 		return result;
@@ -559,7 +548,7 @@ public class RDBMSDatabase implements Database {
 			return result;
 
 		double value = p.computeValue(new ReadOnlyDatabase(this), arguments);
-		return cache.instantiateObservedAtom(p, arguments, value, Double.NaN);
+		return cache.instantiateObservedAtom(p, arguments, value);
 	}
 
 	@Override
@@ -602,15 +591,6 @@ public class RDBMSDatabase implements Database {
 		try {
 			// Update the value for the atom
 			update.setDouble(sqlIndex, atom.getValue());
-			sqlIndex ++;
-
-			// Update the confidence value
-			if (Double.isNaN(atom.getConfidenceValue())) {
-				update.setNull(sqlIndex, java.sql.Types.DOUBLE);
-			} else {
-				update.setDouble(sqlIndex, atom.getConfidenceValue());
-			}
-
 			sqlIndex ++;
 
 			// Next, fill in arguments
@@ -659,12 +639,6 @@ public class RDBMSDatabase implements Database {
 			insert.setDouble(sqlIndex, atom.getValue());
 			sqlIndex ++;
 
-			// Update the confidence value
-			if (Double.isNaN(atom.getConfidenceValue())) {
-				insert.setNull(sqlIndex, java.sql.Types.DOUBLE);
-			} else {
-				insert.setDouble(sqlIndex, atom.getConfidenceValue());
-			}
 			// Batch the command for later execution
 			insert.addBatch();
 

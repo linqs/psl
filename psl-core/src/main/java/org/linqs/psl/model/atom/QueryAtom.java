@@ -25,19 +25,17 @@ import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.model.term.VariableTypeMap;
 
 /**
- * An Atom that can be used in a query, but does not have a truth value or
- * confidence value.
+ * An Atom that can be used in a query, but does not have a truth value.
  * <p>
  * Arguments to a QueryAtom can be a mix of {@link Variable Variables} and
  * {@link Constant GroundTerms}. In other words, they are not necessarily
  * ground and can be used for matching GroundAtoms in a query.
  */
 public class QueryAtom extends Atom {
-
 	public QueryAtom(Predicate p, Term... args) {
 		super(p, args);
 	}
-	
+
 	public VariableTypeMap collectVariables(VariableTypeMap varMap) {
 		for (int i=0;i<arguments.length;i++) {
 			if (arguments[i] instanceof Variable) {
@@ -45,7 +43,7 @@ public class QueryAtom extends Atom {
 				varMap.addVariable((Variable)arguments[i], t);
 			}
 		}
+
 		return varMap;
 	}
-	
 }

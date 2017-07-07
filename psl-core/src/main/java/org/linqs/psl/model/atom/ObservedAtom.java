@@ -25,7 +25,7 @@ import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.reasoner.function.ConstantAtomFunctionVariable;
 
 /**
- * A {@link GroundAtom} with a fixed truth value and a confidence value of infinity.
+ * A {@link GroundAtom} with a fixed truth value.
  * <p>
  * Circumstances that cause a GroundAtom to be instantiated as an ObservedAtom
  * include
@@ -38,15 +38,12 @@ import org.linqs.psl.reasoner.function.ConstantAtomFunctionVariable;
  * Other reasons may exist for specific Database implementations.
  */
 public class ObservedAtom extends GroundAtom {
-
-	protected ObservedAtom(Predicate p, Constant[] args, Database db, double value,
-			double confidenceValue) {
-		super(p, args, db, value, confidenceValue);
+	protected ObservedAtom(Predicate p, Constant[] args, Database db, double value) {
+		super(p, args, db, value);
 	}
 
 	@Override
 	public ConstantAtomFunctionVariable getVariable() {
 		return new ConstantAtomFunctionVariable(this);
 	}
-
 }

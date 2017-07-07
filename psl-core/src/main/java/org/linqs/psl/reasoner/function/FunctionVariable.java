@@ -23,26 +23,11 @@ package org.linqs.psl.reasoner.function;
 public interface FunctionVariable extends FunctionSingleton {
 
 	public boolean isConstant();
-	
+
 	/**
 	 * Sets the variable's value
 	 *
 	 * @param val  the value to set
 	 */
 	public void setValue(double val);
-	
-	/**
-	 * Sets a confidence value that is associated with the variable.
-	 *
-	 * @param val  the value to set
-	 */
-	public void setConfidence(double val);
-	
-	/**
-	 * Returns a confidence value associated with the variable.
-	 *
-	 * @return  the confidence value
-	 */
-	public double getConfidence();
-	
 }
