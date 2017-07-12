@@ -44,7 +44,7 @@ We hope you find PSL useful! If you have, please consider citing PSL in any rela
 
 Additional Resources
 ====================
-* [PSL wiki](https://github.com/linqs/psl/wiki)
+
 - [PSL homepage](http://psl.linqs.org)
 - [API Refernce](https://linqs-data.soe.ucsc.edu/psl-docs/)
 - [PSL source repository](https://github.com/linqs/psl)
