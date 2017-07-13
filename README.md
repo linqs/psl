@@ -44,10 +44,9 @@ We hope you find PSL useful! If you have, please consider citing PSL in any rela
 
 Additional Resources
 ====================
-
 - [PSL homepage](http://psl.linqs.org)
-- [API Refernce](https://linqs-data.soe.ucsc.edu/psl-docs/)
+- [API reference](https://linqs-data.soe.ucsc.edu/psl-docs/)
 - [PSL source repository](https://github.com/linqs/psl)
 - [PSL wiki](../../wiki)
-- [Getting Started guide](../../wiki/Core-Topics)
+- [Getting started guide](../../wiki/Core-Topics)
 - [User group](https://groups.google.com/forum/#!forum/psl-users)
