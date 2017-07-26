@@ -93,7 +93,7 @@
 		<dependency>
 			<groupId>com.healthmarketscience.sqlbuilder</groupId>
 			<artifactId>sqlbuilder</artifactId>
-			<version>2.1.5</version>
+			<version>2.1.7</version>
 		</dependency>
 
 		<!-- miscellaneous dependencies -->

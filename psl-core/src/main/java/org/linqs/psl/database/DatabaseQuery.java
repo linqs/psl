@@ -35,7 +35,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-
 /**
  * A query to select groundings from a {@link Database}.
  * <p>

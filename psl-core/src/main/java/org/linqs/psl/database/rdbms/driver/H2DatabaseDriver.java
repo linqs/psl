@@ -17,6 +17,8 @@
  */
 package org.linqs.psl.database.rdbms.driver;
 
+import org.linqs.psl.model.term.ConstantType;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -55,43 +57,37 @@ public class H2DatabaseDriver implements DatabaseDriver {
 			this.dbConnection = getMemoryDatabase(path);
 			break;
 		default:
-			throw new IllegalArgumentException("Unknown database type: "
-					+ dbType);
+			throw new IllegalArgumentException("Unknown database type: " + dbType);
 		}
 
 		// Clear the database if specified
-		if (clearDB)
+		if (clearDB) {
 			clearDB();
+		}
 	}
 
 	public Connection getDiskDatabase(String path) {
 		try {
-			return DriverManager.getConnection("jdbc:h2:" + path );
-			//return DriverManager.getConnection("jdbc:h2:" + path);
+			return DriverManager.getConnection("jdbc:h2:" + path);
 		} catch (SQLException e) {
-			throw new RuntimeException(
-					"Could not connect to database: " + path, e);
+			throw new RuntimeException("Could not connect to database: " + path, e);
 		}
 	}
 
 	public Connection getDiskDatabase(String path, String options) {
 		try {
 			return DriverManager.getConnection("jdbc:h2:" + path + options);
-			//return DriverManager.getConnection("jdbc:h2:" + path);
 		} catch (SQLException e) {
 			throw new RuntimeException(
 					"Could not connect to database: " + path, e);
 		}
 	}
 
-	
-	
 	public Connection getMemoryDatabase(String path) {
 		try {
 			return DriverManager.getConnection("jdbc:h2:mem:" + path);
 		} catch (SQLException e) {
-			throw new RuntimeException(
-					"Could not connect to database: " + path, e);
+			throw new RuntimeException("Could not connect to database: " + path, e);
 		}
 	}
 
@@ -109,23 +105,57 @@ public class H2DatabaseDriver implements DatabaseDriver {
 		return dbConnection;
 	}
 
-  @Override
-  public boolean isSupportExternalFunction() {
-    return true;
-  }
+	@Override
+	public boolean isSupportExternalFunction() {
+		return true;
+	}
 
-  @Override
-  public String createHashIndex(String index_name, String table_name, String column_name) {
-  	return "CREATE HASH INDEX " + index_name + " ON " + table_name + " (" + column_name + " ) ";
-  }
+	@Override
+	public String createHashIndex(String index_name, String table_name, String column_name) {
+		return "CREATE HASH INDEX " + index_name + " ON " + table_name + " (" + column_name + " ) ";
+	}
 
-  @Override
-  public String castStringWithModifiersForIndexing(String column_name) {
-  	return column_name;
-  }
+	@Override
+	public String castStringWithModifiersForIndexing(String column_name) {
+		return column_name;
+	}
 
-  @Override
-  public String createPrimaryKey(String table_name, String columns) {
-  	return "CREATE PRIMARY KEY HASH ON " + table_name + " (" + columns + " ) ";	
-  }
+	@Override
+	public String createPrimaryKey(String table_name, String columns) {
+		return "CREATE PRIMARY KEY HASH ON " + table_name + " (" + columns + " ) ";
+	}
+
+	@Override
+	public String getTypeName(ConstantType type) {
+		switch (type) {
+			case Double:
+				return "DOUBLE";
+			case Integer:
+				return "INT";
+			case String:
+				return "VARCHAR";
+			case Long:
+				return "BIGINT";
+			case Date:
+				return "DATE";
+			case UniqueIntID:
+				return "INT";
+			case UniqueStringID:
+				return "VARCHAR(255)";
+			case UniqueID:
+				throw new IllegalArgumentException("UniqueID too general, use specific form of UniqueID.");
+			default:
+				throw new IllegalStateException("Unknown ConstantType: " + type);
+		}
+	}
+
+	@Override
+	public String getSurrogateKeyColumnDefinition(String columnName) {
+		return columnName + " BIGINT IDENTITY PRIMARY KEY";
+	}
+
+	@Override
+	public String getDoubleTypeName() {
+		return "DOUBLE";
+	}
 }

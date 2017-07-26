@@ -17,20 +17,6 @@
  */
 package org.linqs.psl.database.rdbms;
 
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import org.joda.time.DateTime;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.ConfigManager;
@@ -39,7 +25,6 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.ReadOnlyDatabase;
 import org.linqs.psl.database.loading.Inserter;
-import org.linqs.psl.database.loading.Updater;
 import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 import org.linqs.psl.model.function.ExternalFunction;
 import org.linqs.psl.model.predicate.Predicate;
@@ -55,9 +40,24 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.healthmarketscience.sqlbuilder.CreateTableQuery;
 
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 /**
- * The RDMBSDataStore is an RDBMS implementation of the DataStore interface. It
- * will connect to any RDBMS that has a supporting {@link DatabaseDriver} implementation, and
+ * The RDMBSDataStore is an RDBMS implementation of the DataStore interface.
+ * It will connect to any RDBMS that has a supporting {@link DatabaseDriver} implementation, and
  * through the {@link ConfigBundle} can use custom names for its value and partition columns.
  * <p>
  * The ConfigBundle can also specify whether or not this RDBMSDatabase should use
@@ -69,6 +69,9 @@ import com.healthmarketscience.sqlbuilder.CreateTableQuery;
 public class RDBMSDataStore implements DataStore {
 	private static final Logger log = LoggerFactory.getLogger(RDBMSDataStore.class);
 
+	// Map for database registration
+	private static final BiMap<ReadOnlyDatabase, String> registeredDatabases = HashBiMap.create();
+	private static int databaseCounter = 0;
 
 	/**
 	 * Prefix of property keys used by this class.
@@ -80,29 +83,11 @@ public class RDBMSDataStore implements DataStore {
 	/** Name of metadata table **/
 	public static final String METADATA_TABLENAME = CONFIG_PREFIX + "_metadata";
 
-	/** Key for String property for the name of the value column in the database. */
-	public static final String VALUE_COLUMN_KEY = CONFIG_PREFIX + ".valuecolumn";
-
-	/** Default value for the VALUE_COLUMN_KEY property */
-	public static final String VALUE_COLUMN_DEFAULT = "truth";
-
-	/** Key for String property for the name of the partition column in the database. */
-	public static final String PARTITION_COLUMN_KEY = CONFIG_PREFIX + ".partitioncolumn";
-
-	/** Default value for the PARTITION_COLUMN_KEY property */
-	public static final String PARTITION_COLUMN_DEFAULT = "partition";
-
 	/** Key for boolean property of whether to use {@link RDBMSUniqueStringID} as a UniqueID. */
 	public static final String USE_STRING_ID_KEY = CONFIG_PREFIX + ".usestringids";
 
 	/** Default value for the USE_STRING_ID_KEY property */
 	public static final boolean USE_STRING_ID_DEFAULT = true;
-
-	/*
-	 * The values for the PSL columns.
-	 */
-	protected final String valueColumn;
-	protected final String partitionColumn;
 
 	protected Pattern predicatePattern;
 
@@ -124,10 +109,6 @@ public class RDBMSDataStore implements DataStore {
 	protected RDBMSDataStoreMetadata metadata;
 
 	/*
-	 * TODO DataStore's should have a static collection of all the RDBMSs they are connected to, in order to prevent multiple connections to the same RDBMS.
-	 */
-
-	/*
 	 * The list of databases matched with their read partitions, and the set of
 	 * all write partitions open in this database.
 	 */
@@ -137,7 +118,7 @@ public class RDBMSDataStore implements DataStore {
 	/*
 	 * The predicates registered with this DataStore
 	 */
-	protected final Map<StandardPredicate, RDBMSPredicateInfo> predicates;
+	protected final Map<Predicate, PredicateInfo> predicates;
 
 	protected final boolean stringUniqueIDs;
 
@@ -147,15 +128,12 @@ public class RDBMSDataStore implements DataStore {
 	 * @param config	the configuration for this DataStore.
 	 */
 	public RDBMSDataStore(DatabaseDriver dbDriver, ConfigBundle config) {
-		// Set up column names
-		this.valueColumn = config.getString(VALUE_COLUMN_KEY, VALUE_COLUMN_DEFAULT);
-		this.partitionColumn = config.getString(PARTITION_COLUMN_KEY, PARTITION_COLUMN_DEFAULT);
 		this.predicatePattern = getPredicateTablePattern();
 
 		// Initialize all private variables
 		this.openDatabases = HashMultimap.create();
 		this.writePartitionIDs = new HashSet<Partition>();
-		this.predicates = new HashMap<StandardPredicate, RDBMSPredicateInfo>();
+		this.predicates = new HashMap<Predicate, PredicateInfo>();
 
 		// Keep database driver locally for generating different query dialets
 		this.dbDriver = dbDriver;
@@ -172,13 +150,12 @@ public class RDBMSDataStore implements DataStore {
 		// Store the type of unique ID this RDBMS will use
 		this.stringUniqueIDs = config.getBoolean(USE_STRING_ID_KEY, USE_STRING_ID_DEFAULT);
 
-
 		// Read in any predicates that exist in the database
 		deserializePredicates();
 
 		// Register the DataStore class for external functions
 		if (dbDriver.isSupportExternalFunction()) {
-			registerFunctionAlias();
+			ExternalFunctions.registerFunctionAlias(connection);
 		}
 	}
 
@@ -190,7 +167,9 @@ public class RDBMSDataStore implements DataStore {
 		metadata.createMetadataTable();
 	}
 
-	protected Pattern getPredicateTablePattern() {return Pattern.compile("(\\w+)_PREDICATE"); }
+	protected Pattern getPredicateTablePattern() {
+		return Pattern.compile("(\\w+)" + PredicateInfo.PREDICATE_TABLE_SUFFIX);
+	}
 
 	/**
 	 * Helper method to register all existing predicates from the RDBMS.
@@ -209,8 +188,9 @@ public class RDBMSDataStore implements DataStore {
 					Matcher m = predicatePattern.matcher(tableName);
 					if (m.find()) {
 						String predicateName = m.group(1);
-						if (createPredicateFromTable(tableName, predicateName))
+						if (createPredicateFromTable(tableName, predicateName)) {
 							numPredicates++;
+						}
 					}
 				}
 			} finally {
@@ -219,8 +199,7 @@ public class RDBMSDataStore implements DataStore {
 		} catch (SQLException e) {
 			throw new RuntimeException("Error reading database metadata.", e);
 		} finally {
-			log.debug("Registered {} pre-existing predicates from RDBMS.",
-					numPredicates);
+			log.debug("Registered {} pre-existing predicates from RDBMS.", numPredicates);
 		}
 	}
 
@@ -260,10 +239,10 @@ public class RDBMSDataStore implements DataStore {
 					return false;
 
 				StandardPredicate p = factory.createStandardPredicate(name, args.toArray(new ConstantType[args.size()]));
-				RDBMSPredicateInfo pi = getDefaultPredicateDBInfo(p);
+				PredicateInfo pi = getDefaultPredicateDBInfo(p);
 				predicates.put(p, pi);
 				// Update the data loader with the new predicate
-				dataloader.registerPredicate(pi.getPredicateHandle());
+				dataloader.registerPredicate(pi);
 				return true;
 			} finally {
 				rs.close();
@@ -275,111 +254,29 @@ public class RDBMSDataStore implements DataStore {
 
 	@Override
 	public void registerPredicate(StandardPredicate predicate) {
-		if (!predicates.containsKey(predicate)) {
-			RDBMSPredicateInfo pi = getDefaultPredicateDBInfo(predicate);
-			predicates.put(predicate, pi);
-
-			/*
-			 * All registered predicates are new predicates, because the
-			 * database reads in any predicates that already existed.
-			 */
-			createTableForPredicate(pi);
-
-			// Update the data loader with the new predicate
-			dataloader.registerPredicate(pi.getPredicateHandle());
+		if (predicates.containsKey(predicate)) {
+			return;
 		}
+
+		PredicateInfo pi = getDefaultPredicateDBInfo(predicate);
+		predicates.put(predicate, pi);
+
+		// All registered predicates are new predicates, because the
+		// database reads in any predicates that already existed.
+		pi.setupTable(connection, dbDriver, stringUniqueIDs);
+
+		// Update the data loader with the new predicate
+		dataloader.registerPredicate(pi);
 	}
 
-	protected RDBMSPredicateInfo getDefaultPredicateDBInfo(Predicate predicate) {
+	protected PredicateInfo getDefaultPredicateDBInfo(Predicate predicate) {
 		// Construct argnames from Predicate argument types
 		String[] argNames = new String[predicate.getArity()];
-		for (int i = 0; i < argNames.length; i ++)
+		for (int i = 0; i < argNames.length; i ++) {
 			argNames[i] = predicate.getArgumentType(i).getName() + "_" + i;
-
-		return new RDBMSPredicateInfo(predicate, argNames, predicate.getName(),
-				valueColumn, partitionColumn);
-	}
-
-	protected void createTableForPredicate(RDBMSPredicateInfo pi) {
-		Predicate p = pi.predicate;
-
-		CreateTableQuery q = new CreateTableQuery(pi.tableName);
-
-		List<String> hashIndexes = new ArrayList<String>(pi.argCols.length);
-		StringBuilder keyColumns = new StringBuilder();
-
-		// Add columns for each predicate argument
-		for (int i=0; i < pi.argCols.length; i++) {
-			String colName = pi.argCols[i];
-			String typeName;
-
-			switch (pi.predicate.getArgumentType(i)) {
-				case Double:
-					typeName = "DOUBLE";
-					break;
-				case Integer:
-					typeName = "INT";
-					break;
-				case String:
-					typeName = "VARCHAR";
-					colName = dbDriver.castStringWithModifiersForIndexing(colName);
-					break;
-				case Long:
-					typeName = "BIGINT";
-					break;
-				case Date:
-					typeName = "DATE";
-					break;
-				case UniqueID:
-					hashIndexes.add(colName);
-					if (stringUniqueIDs)
-						typeName = "VARCHAR(255)";
-					else
-						typeName = "INT";
-					break;
-				default:
-					throw new IllegalStateException("Unknown ArgumentType for predicate " + p.getName());
-			}
-
-			keyColumns.append(colName).append(", ");
-			q.addCustomColumns(pi.argCols[i] + " " + typeName + " NOT NULL");
 		}
 
-		// Add a column for partitioning
-		keyColumns.append(pi.partitionCol);
-		hashIndexes.add(pi.partitionCol);
-		q.addCustomColumns(pi.partitionCol + " INT DEFAULT 0 NOT NULL");
-
-		// Add a column for value.
-		q.addCustomColumns(pi.valueCol + " DOUBLE NOT NULL");
-
-		try {
-			Statement stmt = connection.createStatement();
-
-			try {
-				// Create the table
-		    stmt.executeUpdate(q.validate().toString());
-
-		    // Create indexes for the table, only for UniqueID types
-				for (String hashcol : hashIndexes) {
-
-					/* to support multiple databases, need to abstract index creation */
-					String index_name = pi.tableName + hashcol + "hashidx";
-					String indexQuery = dbDriver.createHashIndex(index_name, pi.tableName, hashcol);
-					stmt.executeUpdate(indexQuery);
-					//stmt.executeUpdate("CREATE HASH INDEX " + pi.tableName + hashcol + "hashidx ON " + pi.tableName + " (" + hashcol + " ) ");
-				}
-
-				// whole columns as index
-				String primaryKeyQuery = dbDriver.createPrimaryKey(pi.tableName, keyColumns.toString());
-				stmt.executeUpdate(primaryKeyQuery);
-				//stmt.executeUpdate("CREATE PRIMARY KEY HASH ON " + pi.tableName + " (" + keyColumns.toString() + " ) ");
-			} finally {
-			    stmt.close();
-			}
-		} catch(SQLException e) {
-			throw new RuntimeException("Error creating table for predicate: " + p.getName(), e);
-		}
+		return new PredicateInfo(predicate, argNames, predicate.getName());
 	}
 
 	@Override
@@ -388,8 +285,7 @@ public class RDBMSDataStore implements DataStore {
 	}
 
 	@Override
-	public Database getDatabase(Partition write,
-			Set<StandardPredicate> toClose, Partition... read) {
+	public Database getDatabase(Partition write, Set<StandardPredicate> toClose, Partition... read) {
 		/*
 		 * Checks that:
 		 * 1. No other databases are writing to the specified write partition
@@ -400,18 +296,16 @@ public class RDBMSDataStore implements DataStore {
 			throw new IllegalArgumentException("The specified write partition ID is already used by another database.");
 		if (openDatabases.containsKey(write))
 			throw new IllegalArgumentException("The specified write partition ID is also a read partition.");
-		for (Partition partID : read)
-			if (writePartitionIDs.contains(partID))
-				throw new IllegalArgumentException("Another database is writing to a specified read partition: " + partID);
+		for (Partition partition : read)
+			if (writePartitionIDs.contains(partition))
+				throw new IllegalArgumentException("Another database is writing to a specified read partition: " + partition);
 
 		// Creates the database and registers the current predicates
-		RDBMSDatabase db = new RDBMSDatabase(this,connection, write, read, toClose);
-		for (RDBMSPredicateInfo predinfo : predicates.values())
-			db.registerPredicate(predinfo.getPredicateHandle());
+		RDBMSDatabase db = new RDBMSDatabase(this, connection, write, read, Collections.unmodifiableMap(predicates), toClose);
 
 		// Register the write and read partitions as being associated with this database
-		for (Partition partID : read) {
-			openDatabases.put(partID, db);
+		for (Partition partition : read) {
+			openDatabases.put(partition, db);
 		}
 		writePartitionIDs.add(write);
 		return db;
@@ -449,19 +343,21 @@ public class RDBMSDataStore implements DataStore {
 		if (!predicates.containsKey(predicate))
 			throw new IllegalArgumentException("Unknown predicate specified: " + predicate);
 		if (writePartitionIDs.contains(partition) || openDatabases.containsKey(partition))
-			throw new IllegalStateException("Partition [" + partition + "] is already in use. Can only be modified via Updater!");
+			throw new IllegalStateException("Partition [" + partition + "] is currently in use, cannot insert into it.");
 
-		return dataloader.getInserter(predicates.get(predicate).predicate,partition);
-	}
-
-	@Override
-	public Updater getUpdater(StandardPredicate predicate, Partition partition) {
-		throw new UnsupportedOperationException("Not yet implemented");
+		return dataloader.getInserter(predicates.get(predicate).predicate(), partition);
 	}
 
 	@Override
 	public Set<StandardPredicate> getRegisteredPredicates() {
-		return predicates.keySet();
+		Set<StandardPredicate> standardPredicates = new HashSet<StandardPredicate>();
+		for (Predicate predicate : predicates.keySet()) {
+			if (predicate instanceof StandardPredicate) {
+				standardPredicates.add((StandardPredicate) predicate);
+			}
+		}
+
+		return standardPredicates;
 	}
 
 	@Override
@@ -471,8 +367,8 @@ public class RDBMSDataStore implements DataStore {
 			throw new IllegalArgumentException("Cannot delete partition that is in use.");
 		try {
 			Statement stmt = connection.createStatement();
-			for (RDBMSPredicateInfo pred : predicates.values()) {
-				String sql = "DELETE FROM " + pred.tableName + " WHERE " + pred.partitionCol + " = " + partition.getID();
+			for (PredicateInfo pred : predicates.values()) {
+				String sql = "DELETE FROM " + pred.tableName() + " WHERE " + PredicateInfo.PARTITION_COLUMN_NAME + " = " + partition.getID();
 				deletedEntries+= stmt.executeUpdate(sql);
 			}
 			stmt.close();
@@ -501,132 +397,19 @@ public class RDBMSDataStore implements DataStore {
 			throw new IllegalArgumentException("Database has not been opened with this data store.");
 
 		// Release the read partition(s) in use by this database
-		for (Partition partID : db.readPartitions)
-			openDatabases.remove(partID, db);
+		for (Partition partition : db.getReadPartitions()) {
+			openDatabases.remove(partition, db);
+		}
 
 		// Release the write partition in use by this database
-		writePartitionIDs.remove(db.writePartition);
+		writePartitionIDs.remove(db.getWritePartition());
 
 		registeredDatabases.remove(new ReadOnlyDatabase(db));
 	}
 
-	/*
-	 * ########### Handling function calls
-	 */
-
-	protected void registerFunctionAlias() {
-		try {
-			Statement stmt = connection.createStatement();
-			try {
-				stmt.executeUpdate("CREATE ALIAS IF NOT EXISTS "
-						+ aliasFunctionName + " FOR \""
-						+ getClass().getCanonicalName()
-						+ ".registeredExternalFunctionCall\" ");
-			} finally {
-				stmt.close();
-			}
-		} catch (SQLException e) {
-			throw new RuntimeException("Could not register function alias.", e);
-		}
-	}
-
-	static final String aliasFunctionName = "extFunctionCall";
-
-	// Map for external function registration
-	protected static final BiMap<ExternalFunction, String> externalFunctions = HashBiMap.create();
-	protected static int externalFunctionCounter = 0;
-
-	// Map for database registration
-	protected static final BiMap<ReadOnlyDatabase, String> registeredDatabases = HashBiMap.create();
-	protected static int databaseCounter = 0;
-
-	/**
-	 * Registers and returns an ID for a given ExternalFunction. If this function
-	 * was already registered, returns the same ID that was returned initially.
-	 * @param extFun	the ExternalFunction to register
-	 * @return			the String ID for this function
-	 */
-	public static final String getSimilarityFunctionID(ExternalFunction extFun) {
-		if (externalFunctions.containsKey(extFun)) {
-			return externalFunctions.get(extFun);
-		} else {
-			String id = "extFun" + (externalFunctionCounter++);
-			externalFunctions.put(extFun, id);
-			return id;
-		}
-	}
-
-	/**
-	 * Registers and returns an ID for a given RDBMSDatabase. If this database
-	 * was already registered, returns the same ID that was returned initially.
-	 * @param db	the RDBMSDatabase to register
-	 * @return		the String ID for this database
-	 */
-	public static final String getDatabaseID(RDBMSDatabase db) {
-	    ReadOnlyDatabase roDB = new ReadOnlyDatabase(db);
-		if (registeredDatabases.containsKey(roDB)) {
-			return registeredDatabases.get(roDB);
-		} else {
-			String id = "database" + (databaseCounter++);
-			registeredDatabases.put(roDB, id);
-			return id;
-		}
-	}
-
-	/**
-	 * Used by the RDBMS to make an external function call.
-	 * @param databaseID	the ID for the {@link RDBMSDatabase} associated with this function call
-	 * @param functionID	the ID of the {@link ExternalFunction} to execute
-	 * @param args			the arguments for the ExternalFunction
-	 * @return				the result from the ExternalFunction
-	 */
-	public static final double registeredExternalFunctionCall(String databaseID, String functionID, String... args) {
-		ReadOnlyDatabase db = registeredDatabases.inverse().get(databaseID);
-		if (db==null)
-			throw new IllegalArgumentException("Unknown database alias: " + functionID);
-
-		ExternalFunction extFun = externalFunctions.inverse().get(functionID);
-		if (extFun==null)
-			throw new IllegalArgumentException("Unknown external function alias: " + functionID);
-		if (args.length!=extFun.getArgumentTypes().length)
-			throw new IllegalArgumentException("Number of arguments does not match arity of external function!");
-
-		Constant[] arguments = new Constant[args.length];
-		for (int i=0; i < args.length; i++) {
-			if (args[i]==null)
-				throw new IllegalArgumentException("Argument cannot be null!");
-
-			ConstantType t = extFun.getArgumentTypes()[i];
-			switch (t) {
-				case Double:
-					arguments[i] = new DoubleAttribute(Double.parseDouble(args[i]));
-					break;
-				case Integer:
-					arguments[i] = new IntegerAttribute(Integer.parseInt(args[i]));
-					break;
-				case String:
-					arguments[i] = new StringAttribute(args[i]);
-					break;
-				case Long:
-					arguments[i] = new LongAttribute(Long.parseLong(args[i]));
-					break;
-				case Date:
-					arguments[i] = new DateAttribute(new DateTime(args[i]));
-					break;
-				case UniqueID:
-					arguments[i] = db.getUniqueID(args[i]);
-					break;
-				default:
-					throw new IllegalArgumentException("Unknown argument type: " + t.getName());
-			}
-		}
-
-		return extFun.getValue(db, arguments);
-	}
-
 	public Partition getNewPartition(){
 		int partnum = getNextPartition();
-		return new RDBMSPartition(partnum,"AnonymousPartition_"+Integer.toString(partnum));
+		return new Partition(partnum,"AnonymousPartition_"+Integer.toString(partnum));
 	}
 
 	protected int getNextPartition() {
@@ -635,8 +418,8 @@ public class RDBMSDataStore implements DataStore {
 		return maxPartition+1;
 		/*try {
 			Statement stmt = connection.createStatement();
-			for (RDBMSPredicateInfo pred : predicates.values()) {
-				String sql = "SELECT MAX(" + pred.partitionCol + ") FROM " + pred.tableName;
+			for (PredicateInfo pred : predicates.values()) {
+				String sql = "SELECT MAX(" + PredicateInfo.PARTITION_COLUMN_NAME + ") FROM " + pred.tableName;
 				ResultSet result = stmt.executeQuery(sql);
 				while(result.next()) {
 					maxPartition = Math.max(maxPartition, result.getInt(1));
@@ -653,7 +436,7 @@ public class RDBMSDataStore implements DataStore {
 	public Partition getPartition(String partitionName) {
 		Partition p = metadata.getPartitionByName(partitionName);
 		if(p == null){
-			p = new RDBMSPartition(getNextPartition(), partitionName);
+			p = new Partition(getNextPartition(), partitionName);
 			metadata.addPartition(p);
 		}
 		return p;
@@ -662,5 +445,33 @@ public class RDBMSDataStore implements DataStore {
 	@Override
 	public Set<Partition> getPartitions() {
 		return metadata.getAllPartitions();
+	}
+
+	/**
+	 * Registers and returns an ID for a given RDBMSDatabase.
+	 * If this database was already registered, returns the same ID that was returned initially.
+	 * @param db	the RDBMSDatabase to register
+	 * @return		the String ID for this database
+	 */
+	public static String getDatabaseID(RDBMSDatabase db) {
+		ReadOnlyDatabase roDB = new ReadOnlyDatabase(db);
+		if (registeredDatabases.containsKey(roDB)) {
+			return registeredDatabases.get(roDB);
+		}
+
+		String id = "database" + (databaseCounter++);
+		registeredDatabases.put(roDB, id);
+		return id;
+	}
+
+	/**
+	 * Get a read-only database given the id from getDatabaseID().
+	 */
+	public static ReadOnlyDatabase getDatabase(String databaseID) {
+		if (registeredDatabases.containsValue(databaseID)) {
+			return registeredDatabases.inverse().get(databaseID);
+		}
+
+		throw new IllegalArgumentException("No database registerd for id: " + databaseID);
 	}
 }

@@ -28,7 +28,6 @@ import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.DatabaseQuery;
 import org.linqs.psl.database.ResultList;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
-import org.linqs.psl.database.rdbms.RDBMSPartition;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver.Type;
 import org.linqs.psl.model.atom.AtomEvent;

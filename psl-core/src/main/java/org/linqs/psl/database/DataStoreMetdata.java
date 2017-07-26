@@ -22,12 +22,12 @@ package org.linqs.psl.database;
  *
  */
 public interface  DataStoreMetdata {
-	
+
 	/*
 	 * Adds a partition to the metadata	object
 	 */
 	public boolean addPartition(Partition p);
-	
+
 	/*
 	 * Removes a partition from the metadata object
 	 */

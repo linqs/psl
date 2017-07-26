@@ -102,10 +102,9 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 			ExternalFunctionalPredicate predicate = (ExternalFunctionalPredicate) atom
 					.getPredicate();
 			FunctionCall fun = new FunctionCall(
-					RDBMSDataStore.aliasFunctionName);
+					ExternalFunctions.ALIAS_FUNCTION_NAME);
 			fun.addCustomParams(RDBMSDataStore.getDatabaseID(database));
-			fun.addCustomParams(RDBMSDataStore
-					.getSimilarityFunctionID(predicate.getExternalFunction()));
+			fun.addCustomParams(ExternalFunctions.getExternalFunctionID(predicate.getExternalFunction()));
 			for (int i = 0; i < arguments.length; i++)
 				fun.addCustomParams(convert[i]);
 			query.addCondition(BinaryCondition.greaterThan(fun, 0.0, false));
@@ -141,7 +140,7 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 					convert[i] = new CustomSql(joins.get((Variable) arg));
 					continue;
 				}
-			} 
+			}
 			if (arg instanceof Attribute) {
 				convert[i] = ((Attribute) arg).getValue();
 			} else if (arg instanceof UniqueID) {
@@ -160,13 +159,13 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 			functionalAtoms.add(atom);
 		} else {
 			assert atom.getPredicate() instanceof StandardPredicate;
-			RDBMSPredicateHandle ph = database.getHandle(atom.getPredicate());
+			PredicateInfo ph = database.getPredicateInfo(atom.getPredicate());
 
 			String tableName = tablePrefix + tableCounter;
 			String tableDot = tableName + ".";
 			query.addCustomFromTable(ph.tableName() + " " + tableName);
 			Term[] arguments = atom.getArguments();
-			for (int i = 0; i < ph.argumentColumns().length; i++) {
+			for (int i = 0; i < ph.argumentColumns().size(); i++) {
 				Term arg = arguments[i];
 
 				if (arg instanceof Variable) {
@@ -178,15 +177,15 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 						if (joins.containsKey(var)) {
 							query.addCondition(BinaryCondition.equalTo(
 									new CustomSql(tableDot
-											+ ph.argumentColumns()[i]),
+											+ ph.argumentColumns().get(i)),
 									new CustomSql(joins.get(var))));
 						} else {
 							if (projection.contains(var)) {
 								query.addAliasedColumn(new CustomSql(tableDot
-										+ ph.argumentColumns()[i]),
+										+ ph.argumentColumns().get(i)),
 										var.getName());
 							}
-							joins.put(var, tableDot + ph.argumentColumns()[i]);
+							joins.put(var, tableDot + ph.argumentColumns().get(i));
 						}
 					}
 				}
@@ -196,26 +195,25 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 					if (value instanceof String)
 						value = escapeSingleQuotes((String) value);
 					query.addCondition(BinaryCondition.equalTo(new CustomSql(
-							tableDot + ph.argumentColumns()[i]), value));
+							tableDot + ph.argumentColumns().get(i)), value));
 				} else if (arg instanceof UniqueID) { // Entity
 					Object value = ((UniqueID) arg).getInternalID();
 					if (value instanceof String)
 						value = escapeSingleQuotes((String) value);
 					query.addCondition(BinaryCondition.equalTo(new CustomSql(
-							tableDot + ph.argumentColumns()[i]), value));
+							tableDot + ph.argumentColumns().get(i)), value));
 				} else
 					assert arg instanceof Variable;
 			}
-			
-			ArrayList<Integer> partitions;
-			partitions = new ArrayList<Integer>(database.readPartitions.length);
-			// Query all of the read (and the write) partition(s) belonging to the database
-			for (int i = 0; i < database.readPartitions.length; i++)
-			    partitions.add(database.readPartitions[i].getID());
-			partitions.add(database.writePartition.getID());
 
-			query.addCondition(new InCondition(new CustomSql(tableDot
-					+ ph.partitionColumn()), partitions));
+			ArrayList<Integer> partitions = new ArrayList<Integer>(database.getReadPartitions().size());
+			// Query all of the read (and the write) partition(s) belonging to the database
+			for (int i = 0; i < database.getReadPartitions().size(); i++) {
+				partitions.add(database.getReadPartitions().get(i).getID());
+			}
+			partitions.add(database.getWritePartition().getID());
+
+			query.addCondition(new InCondition(new CustomSql(tableDot + PredicateInfo.PARTITION_COLUMN_NAME), partitions));
 			tableCounter++;
 		}
 	}
@@ -226,7 +224,7 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 			visitFunctionalAtom(atom);
 		return query.validate().toString();
 	}
-	
+
 	public String escapeSingleQuotes(String s) {
 		return s.replaceAll("'", "''");
 	}

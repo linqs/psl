@@ -42,6 +42,7 @@ import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.function.ExternalFunction;
 import org.linqs.psl.model.predicate.FunctionalPredicate;
+import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.PredicateFactory;
 import org.linqs.psl.model.predicate.SpecialPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
@@ -306,7 +307,7 @@ public abstract class DataStoreContractTest {
 	public void testPredicateRegistration() {
 		datastore.registerPredicate(p1);
 
-		Set<StandardPredicate> registeredPredicates = datastore.getRegisteredPredicates();
+		Set<Predicate> registeredPredicates = datastore.getRegisteredPredicates();
 		assertTrue(registeredPredicates.contains(p1));
 	}
 
@@ -318,7 +319,7 @@ public abstract class DataStoreContractTest {
 		datastore.close();
 		datastore = getDataStore(false);
 
-		Set<StandardPredicate> registeredPredicates = datastore.getRegisteredPredicates();
+		Set<Predicate> registeredPredicates = datastore.getRegisteredPredicates();
 		assertTrue(registeredPredicates.contains(p1));
 		assertTrue(registeredPredicates.contains(p2));
 	}

@@ -108,6 +108,38 @@ public enum ConstantType {
 		public boolean isInstance(Constant term) {
 			return (term instanceof org.linqs.psl.model.term.UniqueID);
 		}
+	},
+	
+	/**
+	 * A {@link UniqueIntID} argument.
+	 * Like a UniqueID, but explicitly an int.
+	 * Will generally perform faster than a UniqueStringID.
+	 */
+	UniqueIntID {
+		
+		@Override
+		public String getName() { return "UniqueIntID"; }
+		
+		@Override
+		public boolean isInstance(Constant term) {
+			return (term instanceof org.linqs.psl.model.term.UniqueID);
+		}
+	},
+	
+	/**
+	 * A {@link UniqueStringID} argument.
+	 * Like a UniqueID, but explicitly a String.
+	 * Will generally perform slower than a UniqueIntID.
+	 */
+	UniqueStringID {
+		
+		@Override
+		public String getName() { return "UniqueStringID"; }
+		
+		@Override
+		public boolean isInstance(Constant term) {
+			return (term instanceof org.linqs.psl.model.term.UniqueID);
+		}
 	};
 	
 	/**

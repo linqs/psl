@@ -48,10 +48,10 @@ import org.linqs.psl.model.term.Variable;
  * <p>
  * A Database writes to and reads from one {@link Partition} of a DataStore
  * and can read from additional Partitions. The write Partition of a Database
- * may not be a read (or write) Partition of any other Database.
+ * may not be a read (or write) Partition of any other Database managed by the datastore.
  * <p>
  * A Database can be instantiated with a set of StandardPredicates
- * to close. (Any StandardPredicate not closed initially remains open). Whether
+ * to close. (Any StandardPredicate not closed initially remains open.) Whether
  * a StandardPredicate is open or closed affects the behavior of
  * {@link #getAtom(Predicate, Constant...)}.
  *

@@ -17,10 +17,12 @@
  */
 package org.linqs.psl.database.rdbms.driver;
 
+import org.linqs.psl.model.term.ConstantType;
+
 import java.sql.Connection;
 
 public interface DatabaseDriver {
-	
+
 	/**
 	 * Returns a connection to the database. Database drivers are expected to
 	 * fully connect at instantiation (i.e. in the constructor).
@@ -28,35 +30,51 @@ public interface DatabaseDriver {
 	 */
 	public Connection getConnection();
 
-  /**
-   * Returns whether the underline database supports external java functions. 
-   * Distinguish from H2 Java External Function Support, which is very special.
-   * @return true if support H2 in memory java method, false if not support
-   */
-  public boolean isSupportExternalFunction();
+	/**
+	 * Returns whether the underline database supports external java functions.
+	 * Distinguish from H2 Java External Function Support, which is very special.
+	 * @return true if support H2 in memory java method, false if not support
+	 */
+	public boolean isSupportExternalFunction();
 
-  /**
-   * Template for hash index creation for different drivers.
-   * Hash index is useful for PSL shared literal joins. 
-   *
-   * JDBC has poor support for index creation DML. Often db schema is not dynamically generated, 
-   * but hand tuned by DBA. PSL is opposite, db schema is generated on the fly.
-   * Configuration bundle is not good place for put index creation queries due to its inflexibility.
-   */
-  public String createHashIndex(String index_name, String table_name, String column_name);
+	/**
+	 * Template for hash index creation for different drivers.
+	 * Hash index is useful for PSL shared literal joins.
+	 *
+	 * JDBC has poor support for index creation DML. Often db schema is not dynamically generated,
+	 * but hand tuned by DBA. PSL is opposite, db schema is generated on the fly.
+	 * Configuration bundle is not good place for put index creation queries due to its inflexibility.
+	 */
+	public String createHashIndex(String indexName, String tableName, String columnName);
 
-  /**
-   * Primary key creation syntax is not friendly in JDBC. 
-   * The template method for each database driver to return the proper clause.
-   */
-  public String createPrimaryKey(String table_name, String columns);
+	/**
+	 * Primary key creation syntax is not friendly in JDBC.
+	 * The template method for each database driver to return the proper clause.
+	 */
+	public String createPrimaryKey(String tableName, String columns);
 
-  /**
-   * String type is not friendly to index. Different database retreat it 
-   * differently. For example in a hash index, often a prefix of the string
-   * is useful enough for indexing purpose. A full string index, not only 
-   * reduces query time, but also increases inserting time. 
-   * H2 has no complain about string, but mysql does have a limit of string prefix.
-   */
-  public String castStringWithModifiersForIndexing(String column_name);
+	/**
+	 * String type is not friendly to index. Different database treat it
+	 * differently. For example in a hash index, often a prefix of the string
+	 * is useful enough for indexing purpose. A full string index, not only
+	 * reduces query time, but also increases inserting time.
+	 * H2 has no complain about string, but mysql does have a limit of string prefix.
+	 */
+	public String castStringWithModifiersForIndexing(String columnName);
+
+	/**
+	 * Get the type name for each argument type.
+	 */
+	public String getTypeName(ConstantType type);
+
+	/**
+	 * Get the SQL definition for a primary, surrogate (auto-increment) key
+	 * for use in a CREATE TABLE statement.
+	 */
+	public String getSurrogateKeyColumnDefinition(String columnName);
+
+	/**
+	 * Get the type name for a double type.
+	 */
+	public String getDoubleTypeName();
 }

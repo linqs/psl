@@ -32,16 +32,16 @@ import org.linqs.psl.model.term.Variable;
  * A DatabasePopulator can easily commit a large number of
  * {@link RandomVariableAtom RandomVariableAtoms}
  * to a database.
- * 
+ *
  * @author Eric Norris
  */
 public class DatabasePopulator {
-	
+
 	/**
 	 * The database specified by the constructor
 	 */
 	private final Database db;
-	
+
 	/**
 	 * Constructs a DatabasePopulator using the specified {@link Database}.
 	 * @param db	the Database to populate
@@ -49,12 +49,12 @@ public class DatabasePopulator {
 	public DatabasePopulator(Database db) {
 		this.db = db;
 	}
-	
+
 	/**
 	 * Substitutes the {@link Variable Variables} from the substitution map into a
 	 * {@link QueryAtom} and commits the resulting RandomVariableAtoms into the Database provided
 	 * to the constructor.
-	 * 
+	 *
 	 * @param qAtom			the QueryAtom to perform substitution on
 	 * @param substitutions		the map of Variables to their possible GroundTerm substitutions
 	 */
@@ -64,13 +64,13 @@ public class DatabasePopulator {
 		rootPredicate = qAtom.getPredicate();
 		rootArguments = qAtom.getArguments();
 		Constant[] groundArguments = new Constant[rootArguments.length];
-		
+
 		// Perform a recursive depth-first traversal of the arguments and their substitutions
 		groundAndPersistAtom(0, groundArguments);
 	}
-	
+
 	/**
-	 * Populates the {@link Predicate} p using all of the groudings of p in 
+	 * Populates the {@link Predicate} p using all of the groudings of p in
 	 * the source {@link Database} sourceDB.
 	 * @param sourceDB	{@link Database} containing groundings of p
 	 * @param p			{@link Predicate} to be populated
@@ -84,14 +84,14 @@ public class DatabasePopulator {
 				db.commit((RandomVariableAtom)rv);
 		}
 	}
-	
+
 	/*
 	 * The following variables are used for the recursive call
 	 */
 	private Map<Variable, Set<Constant>> substitutions;
 	private Predicate rootPredicate;
 	private Term[] rootArguments;
-	
+
 	/**
 	 * Using the root predicate and root arguments set by the original calling function,
 	 * this helper method performs a recursive depth-first traversal of the arguments
@@ -102,13 +102,13 @@ public class DatabasePopulator {
 		if (index < rootArguments.length) {
 			// Check the type of the argument
 			if (rootArguments[index] instanceof Variable) {
-				// Get all of the substitutions for a variable 
+				// Get all of the substitutions for a variable
 				Set<Constant> groundTerms = substitutions.get((Variable)rootArguments[index]);
-				
+
 				// Sanity check
 				if (groundTerms == null || groundTerms.size() == 0) // Sanity check
 					throw new RuntimeException("No valid GroundTerm substitutions for " + rootArguments[index].toString());
-				
+
 				// Iterate through the GroundTerms, performing a recursive depth-first replacement
 				for (Constant term : groundTerms) {
 					arguments[index] = term;

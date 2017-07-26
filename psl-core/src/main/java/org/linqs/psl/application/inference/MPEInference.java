@@ -26,7 +26,6 @@ import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.ConfigManager;
 import org.linqs.psl.config.Factory;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.database.DatabasePopulator;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
@@ -45,7 +44,6 @@ import org.slf4j.LoggerFactory;
  * <p>
  * The set of RandomVariableAtoms is those persisted in the Database when {@link #mpeInference()}
  * is called. This set must contain all RandomVariableAtoms the Model might access.
- * ({@link DatabasePopulator} can help with this.)
  * 
  * @author Stephen Bach <bach@cs.umd.edu>
  */
@@ -108,7 +106,6 @@ public class MPEInference implements ModelApplication {
 	 * which the Model might access must be persisted in the Database.
 	 * 
 	 * @return inference results
-	 * @see DatabasePopulator
 	 */
 	public FullInferenceResult mpeInference() {
 

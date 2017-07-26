@@ -21,7 +21,6 @@ import java.util.Set;
 
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.loading.Inserter;
-import org.linqs.psl.database.loading.Updater;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.UniqueID;
@@ -42,11 +41,11 @@ public interface DataStore {
 	 * <p>
 	 * If GroundAtoms of a StandardPredicate were already persisted in this DataStore
 	 * at initialization, that StandardPredicate is already registered.
-	 * 
+	 *
 	 * @param predicate  the predicate to register
 	 */
 	public void registerPredicate(StandardPredicate predicate);
-	
+
 	/**
 	 * Gets a new {@link Partition} of the DataStore with the given name.
 	 * If the partition doesn't exist, a new one will be created and added to the DataStore
@@ -54,11 +53,11 @@ public interface DataStore {
 	 * @param partitionName a human-readable name for the partition
 	 */
 	public Partition getPartition(String partitionName);
-	
+
 	/**
 	 * Creates a Database that can read from and write to a {@link Partition} and
 	 * optionally read from additional Partitions.
-	 * 
+	 *
 	 * @param write  the Partition to write to and read from
 	 * @param read  additional Partitions to read from
 	 * @return a new Database backed by this DataStore
@@ -66,14 +65,14 @@ public interface DataStore {
 	 *                                       write Partition of another Database
 	 */
 	public Database getDatabase(Partition write, Partition... read);
-	
+
 	/**
 	 * Creates a Database that can read from and write to a {@link Partition} and
 	 * optionally read from additional Partitions.
 	 * <p>
 	 * Additionally, defines a set of StandardPredicates as closed in the Database,
 	 * meaning that all GroundAtoms of that Predicate are ObservedAtoms.
-	 * 
+	 *
 	 * @param write  the Partition to write to and read from
 	 * @param toClose  set of StandardPredicates to close
 	 * @param read  additional Partitions to read from
@@ -82,7 +81,7 @@ public interface DataStore {
 	 *                                       write Partition of another Database
 	 */
 	public Database getDatabase(Partition write, Set<StandardPredicate> toClose, Partition... read);
-	
+
 	/**
 	 * Returns a UniqueID based on the given key.
 	 * <p>
@@ -90,17 +89,17 @@ public interface DataStore {
 	 * implementations and/or configurations.
 	 * <p>
 	 * If two keys are equal, they must map to the same UniqueID.
-	 * 
+	 *
 	 * @param key  the key to a UniqueID
 	 * @return the UniqueID indicated by key
 	 * @throws IllegalArgumentException  if the key is invalid
 	 */
 	public UniqueID getUniqueID(Object key);
-	
+
 	/**
 	 * Creates an Inserter for persisting new {@link GroundAtom GroundAtoms}
 	 * in a {@link Partition}.
-	 * 
+	 *
 	 * @param predicate  the Predicate of the Atoms to be inserted
 	 * @param partition  the Partition into which Atoms will be inserted
 	 * @return the Inserter
@@ -108,56 +107,44 @@ public interface DataStore {
 	 *                                       not registered
 	 */
 	public Inserter getInserter(StandardPredicate predicate, Partition partition);
-	
-	/**
-	 * Creates an Updater for updating {@link GroundAtom GroundAtoms} persisted
-	 * in a {@link Partition}.
-	 * 
-	 * @param predicate  the Predicate of the Atoms to be updated
-	 * @param partition  the Partition of the Atoms to be updated
-	 * @return the Updater
-	 * @throws IllegalArgumentException  if partition is in use or predicate is
-	 *                                       not registered
-	 */
-	public Updater getUpdater(StandardPredicate predicate, Partition partition);
-	
+
 	/**
 	 * Returns the set of StandardPredicates registered with this DataStore.
 	 * Note that the result can differ from calling
 	 * {@link Database#getRegisteredPredicates()} on an associated Database,
 	 * since additional predicates might have been registered since that Database
 	 * was created.
-	 * 
+	 *
 	 * @return the set of StandardPredicates registered with this DataStore
 	 */
 	public Set<StandardPredicate> getRegisteredPredicates();
-	
+
 	/**
-	 * @return a set containing all {@link Partition Partitions} of this DataStore 
+	 * @return a set containing all {@link Partition Partitions} of this DataStore
 	 */
 	public Set<Partition> getPartitions();
-	
+
 	/**
 	 * Deletes all {@link GroundAtom GroundAtoms} persisted in a Partition.
-	 *  
+	 *
 	 * @param partition  the partition to delete
 	 * @return the number of Atoms deleted
 	 * @throws IllegalArgumentException  if partition is in use
 	 */
 	public int deletePartition(Partition partition);
-	
+
 	/**
 	 * Requests a new {@link Partition} that is assigned an auto-generated name
 	 * and the next unused ID. This partition will remain in the datastore
 	 * metadata unless explicitly deleted.
-	 * 
+	 *
 	 * @return new, unused partition
 	 */
 	public Partition getNewPartition();
-	
+
 	/**
 	 * Releases all resources and locks obtained by this DataStore.
-	 * 
+	 *
 	 * @throws IllegalStateException  if any Partitions are in use
 	 */
 	public void close();

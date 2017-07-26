@@ -17,6 +17,17 @@
  */
 package org.linqs.psl.database.rdbms;
 
+import org.linqs.psl.database.Partition;
+import org.linqs.psl.database.loading.DataLoader;
+import org.linqs.psl.database.loading.Inserter;
+import org.linqs.psl.database.loading.OpenInserter;
+import org.linqs.psl.model.predicate.Predicate;
+
+import com.healthmarketscience.sqlbuilder.CustomSql;
+import com.healthmarketscience.sqlbuilder.InsertQuery;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -24,54 +35,45 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.linqs.psl.database.Partition;
-import org.linqs.psl.database.loading.DataLoader;
-import org.linqs.psl.database.loading.Inserter;
-import org.linqs.psl.database.loading.OpenInserter;
-import org.linqs.psl.model.predicate.Predicate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Preconditions;
-
 public class RDBMSDataLoader implements DataLoader {
+	public static final double DEFAULT_EVIDENCE_VALUE = 1.0;
+
 	private static final Logger log = LoggerFactory.getLogger(RDBMSDataLoader.class);
 
-	private final Connection database;
+	private final Connection connection;
+	private final Map<Predicate, RDBMSTableInserter> inserts;
 
-	private final Map<Predicate,RDBMSTableInserter> inserts;
-
-	public RDBMSDataLoader(Connection c) {
-		database = c;
-		inserts = new HashMap<Predicate,RDBMSTableInserter>();
+	public RDBMSDataLoader(Connection connection) {
+		this.connection = connection;
+		inserts = new HashMap<Predicate, RDBMSTableInserter>();
 	}
 
-	void registerPredicate(RDBMSPredicateHandle ph) {
-		inserts.put(ph.predicate(), new RDBMSTableInserter(ph));
+	void registerPredicate(PredicateInfo predicateHandle) {
+		inserts.put(predicateHandle.predicate(), new RDBMSTableInserter(predicateHandle));
 	}
 
 	@Override
-	public RDBMSTableInserter getOpenInserter(Predicate p) {
-		RDBMSTableInserter ins = inserts.get(p);
-		if (ins==null) {
-			throw new IllegalArgumentException("Predicate is unknown: "+ p);
+	public RDBMSTableInserter getOpenInserter(Predicate predicate) {
+		RDBMSTableInserter inserter = inserts.get(predicate);
+		if (inserter == null) {
+			throw new IllegalArgumentException("Predicate is unknown: " + predicate);
 		}
-		return ins;
+
+		return inserter;
 	}
 
 	@Override
-	public Inserter getInserter(Predicate p, Partition partitionID) {
-		return new RDBMSInserter(getOpenInserter(p),partitionID);
+	public Inserter getInserter(Predicate predicate, Partition partitionID) {
+		return new RDBMSInserter(getOpenInserter(predicate),partitionID);
 	}
 
 	private class RDBMSInserter implements Inserter {
-
 		private final RDBMSTableInserter inserter;
 		private final Partition partitionID;
 
-		public RDBMSInserter(RDBMSTableInserter ins, Partition pid) {
-			Preconditions.checkNotNull(pid);
-			inserter = ins;
+		public RDBMSInserter(RDBMSTableInserter inserter, Partition pid) {
+			assert(pid != null);
+			this.inserter = inserter;
 			partitionID = pid;
 		}
 
@@ -87,51 +89,40 @@ public class RDBMSDataLoader implements DataLoader {
 	}
 
 	private class RDBMSTableInserter implements OpenInserter {
-
-		private final RDBMSPredicateHandle handle;
+		private final PredicateInfo predicateHandle;
 		private final int argSize;
 		private final PreparedStatement insertStmt;
-		private final double defaultEvidenceValue;
 
-		public RDBMSTableInserter(RDBMSPredicateHandle ph) {
-			handle = ph;
-			argSize = handle.predicate().getArity();
-			int numCols = 0;
-			StringBuilder sql = new StringBuilder();
-			sql.append("INSERT INTO ").append(handle.tableName()).append(" (");
-			sql.append(handle.partitionColumn());
-			numCols++;
+		public RDBMSTableInserter(PredicateInfo predicateHandle) {
+			this.predicateHandle = predicateHandle;
+			this.argSize = predicateHandle.predicate().getArity();
 
-			for (int i=0;i<handle.argumentColumns().length;i++) {
-				sql.append(", ").append(handle.argumentColumns()[i]);
-				numCols++;
+			InsertQuery sqlBuilder = new InsertQuery(predicateHandle.tableName());
+
+			// Core columns (partition, value).
+			sqlBuilder.addCustomPreparedColumns(new CustomSql(PredicateInfo.PARTITION_COLUMN_NAME));
+			sqlBuilder.addCustomPreparedColumns(new CustomSql(PredicateInfo.VALUE_COLUMN_NAME));
+
+			// Argument columns.
+			for (String column : predicateHandle.argumentColumns()) {
+				sqlBuilder.addCustomPreparedColumns(new CustomSql(column));
 			}
-			sql.append(", ").append(handle.valueColumn());
-			numCols++;
 
-			sql.append(") VALUES ( ");
-			for (int i=0;i<numCols;i++) {
-				if (i>0) sql.append(", ");
-				sql.append("?");
-			}
-			sql.append(")");
 			try {
-				insertStmt = database.prepareStatement( sql.toString() );
-			} catch (SQLException e) {
-				throw new AssertionError(e);
+				insertStmt = connection.prepareStatement(sqlBuilder.validate().toString());
+			} catch (SQLException ex) {
+				throw new RuntimeException(ex);
 			}
-
-			defaultEvidenceValue = 1.0;
 		}
 
 		@Override
-		public void insert(Partition partitionID, Object... data) {
-			insertInternal(partitionID, defaultEvidenceValue, data);
+		public void insert(Partition partition, Object... data) {
+			insertInternal(partition, DEFAULT_EVIDENCE_VALUE, data);
 		}
 
 		@Override
-		public void insertValue(Partition partitionID, double value, Object... data) {
-			insertInternal(partitionID, value, data);
+		public void insertValue(Partition partition, double value, Object... data) {
+			insertInternal(partition, value, data);
 		}
 
 		private void insertInternal(Partition partition, double value, Object[] data) {
@@ -141,52 +132,54 @@ public class RDBMSDataLoader implements DataLoader {
 			}
 
 			if (data.length != argSize) {
-				throw new IllegalArgumentException("Data length does not match: " + data.length + " " + argSize);
+				throw new IllegalArgumentException(
+					String.format("Data length does not match for %s: Expecting: %d, Got: %d",
+					partition.getName(), argSize, data.length));
 			}
 
 			try {
+				// Partition
 				insertStmt.setInt(1, partitionID);
-				int noCol = 1;
+
+				// Value
+				if (Double.isNaN(value)) {
+					insertStmt.setNull(2, java.sql.Types.DOUBLE);
+				} else {
+					insertStmt.setDouble(2, value);
+				}
+
+				// Prepared startments index by 1, and offset by the partition and value.
+				int dataOffset = 3;
 				for (int i = 0; i < argSize; i++) {
-					noCol++;
 					assert data[i] != null;
 
 					if (data[i] instanceof Integer) {
-						insertStmt.setInt(noCol, (Integer)data[i]);
+						insertStmt.setInt(i + dataOffset, (Integer)data[i]);
 					} else if (data[i] instanceof Double) {
 						// The standard JDBC way to insert NaN is using setNull
 						// if not, mysql will complain about any NaNs.
 						if (Double.isNaN((Double)data[i])) {
-							insertStmt.setNull(noCol, java.sql.Types.DOUBLE);
+							insertStmt.setNull(i + dataOffset, java.sql.Types.DOUBLE);
 						} else {
-							insertStmt.setDouble(noCol, (Double)data[i]);
+							insertStmt.setDouble(i + dataOffset, (Double)data[i]);
 						}
 					} else if (data[i] instanceof String) {
-						insertStmt.setString(noCol, escapeSingleQuotes((String)data[i]));
+						insertStmt.setString(i + dataOffset, (String)data[i]);
 					} else if (data[i] instanceof RDBMSUniqueIntID) {
-						insertStmt.setInt(noCol, ((RDBMSUniqueIntID)data[i]).getID());
+						insertStmt.setInt(i + dataOffset, ((RDBMSUniqueIntID)data[i]).getID());
 					} else if (data[i] instanceof RDBMSUniqueStringID) {
-						insertStmt.setString(noCol, ((RDBMSUniqueStringID)data[i]).getID());
-					}else throw new IllegalArgumentException("Unknown data type for :"+data[i]);
-				}
-
-				noCol++;
-				if (Double.isNaN(value)) {
-					insertStmt.setNull(noCol, java.sql.Types.DOUBLE);
-				} else {
-					insertStmt.setDouble(noCol, value);
+						insertStmt.setString(i + dataOffset, ((RDBMSUniqueStringID)data[i]).getID());
+					} else {
+						throw new IllegalArgumentException("Unknown data type for :" + data[i]);
+					}
 				}
 
 				insertStmt.executeUpdate();
-
-			} catch (SQLException e) {
-				log.error(e.getMessage() + "\n" + Arrays.toString(data));
-				throw new AssertionError(e);
+				insertStmt.clearParameters();
+			} catch (SQLException ex) {
+				log.error(ex.getMessage() + "\n" + Arrays.toString(data));
+				throw new RuntimeException(ex);
 			}
-		}
-
-		private String escapeSingleQuotes(String s) {
-			return s.replaceAll("'", "''");
 		}
 	}
 }

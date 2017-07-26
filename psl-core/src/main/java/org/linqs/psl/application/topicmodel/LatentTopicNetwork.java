@@ -37,7 +37,6 @@ import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.ConfigManager;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.database.DatabasePopulator;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.Queries;
 import org.linqs.psl.database.loading.Inserter;
@@ -669,7 +668,6 @@ public class LatentTopicNetwork implements ModelApplication {
 	 * which the Model might access must be persisted in the Database.
 	 * 
 	 * @return inference results
-	 * @see DatabasePopulator
 	 */
 	protected FullInferenceResult mpeInference(Reasoner reasoner, PersistedAtomManager atomManager, Model model, Database db, double[][] expectedCounts, double[][] initialization, Predicate p)
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {

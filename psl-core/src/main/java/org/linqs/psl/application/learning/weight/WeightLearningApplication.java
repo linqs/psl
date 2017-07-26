@@ -28,7 +28,6 @@ import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.ConfigManager;
 import org.linqs.psl.config.Factory;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.database.DatabasePopulator;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
@@ -101,8 +100,6 @@ public abstract class WeightLearningApplication extends Observable implements Mo
 	 * Each such RandomVariableAtom should have a corresponding {@link ObservedAtom}
 	 * in the observed Database, unless the subclass implementation supports latent
 	 * variables.
-	 * 
-	 * @see DatabasePopulator
 	 */
 	public void learn()
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
