@@ -53,18 +53,18 @@ import org.slf4j.LoggerFactory;
  * an error if the labelDB does not include a corresponding label for a
  * RandomVariableAtom. All unspecified labels will set to their most probable
  * values conditioned on the observations in distributionDB and the labels in labelDB.
- * 
+ *
  * @author Stephen Bach <bach@cs.umd.edu>
  */
 public class LazyMaxLikelihoodMPE extends VotedPerceptron {
-	
+
 	private static final Logger log = LoggerFactory.getLogger(AtomEventFramework.class);
-	
+
 	protected AtomEventFramework eventFramework;
 
 	/**
 	 * Constructs a new weight learner.
-	 * 
+	 *
 	 * @param model  the model for which to learn weights
 	 * @param distributionDB  a Database containing all atoms for the ground distribution
 	 * @param labelDB  a Database containing labels for the unknowns in the distribution
@@ -73,41 +73,40 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 	public LazyMaxLikelihoodMPE(Model model, Database distributionDB, Database labelDB, ConfigBundle config) {
 		super(model, distributionDB, labelDB, config);
 	}
-	
+
 	@Override
 	protected void initGroundModel()
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		reasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
 		eventFramework = new AtomEventFramework(rvDB, config);
-		
+
 		/* Registers the Model's Kernels with the AtomEventFramework */
 		for (Rule k : model.getRules())
 			k.registerForAtomEvents(eventFramework, reasoner);
-		
+
 		/* Grounds the model */
 		Grounding.groundAll(model, eventFramework, reasoner);
 		while (eventFramework.checkToActivate() > 0)
 			eventFramework.workOffJobQueue();
 	}
-	
+
 	@Override
 	protected double[] computeObservedIncomp() {
-		
+
 		/*
 		 * In order to ground out the graphical model with the label truth values,
 		 * all labeled atoms with non-zero truth values are activated and constrained.
-		 * 
+		 *
 		 * Then, a loop is used to extend the network based on MPE inference and
 		 * activation events, and then check for new labeled RandomVariableAtoms
 		 * to constrain as necessary.
 		 */
-	
+
 		Map<RandomVariableAtom, GroundValueConstraint> targetMap = new HashMap<RandomVariableAtom, GroundValueConstraint>();
-		
+
 		/* Activates all non-zero labeled atoms */
 		for (StandardPredicate p : observedDB.getRegisteredPredicates()) {
-			Set<GroundAtom> labeledAtoms = Queries.getAllAtoms(observedDB, p);
-			for (GroundAtom labeledAtom : labeledAtoms) {
+			for (GroundAtom labeledAtom : Queries.getAllAtoms(observedDB, p)) {
 				/*
 				 * Double checks that it is observed in observedDB and unobserved in rvDB,
 				 * since those are the only atoms in observedDB to be considered. Also,
@@ -126,22 +125,22 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 				}
 			}
 		}
-		
+
 		boolean continueGrowing;
 		/* Maintains a temporary set during collection to avoid concurrent modification errors */
 		Set<GroundValueConstraint> toAdd = new HashSet<GroundValueConstraint>();
-		
+
 		log.debug("Beginning to grow labeled network.");
 		do {
 			continueGrowing = false;
-			
+
 			/* Computes the MPE state and grows graphical model */
 			do {
 				eventFramework.workOffJobQueue();
 				reasoner.optimize();
 			}
 			while (eventFramework.checkToActivate() > 0);
-			
+
 			/* Collects existing RandomVariableAtoms and pairs them with label constraints */
 			for (GroundRule k : reasoner.getGroundKernels()) {
 				for (Atom a : k.getAtoms()) {
@@ -159,16 +158,16 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 					}
 				}
 			}
-			
+
 			/* Adds new constraints to reasoner */
 			for (GroundValueConstraint con : toAdd)
 				reasoner.addGroundRule(con);
 			toAdd.clear();
-			
+
 		}
 		while (continueGrowing);
 		log.debug("Finished growing labeled network.");
-		
+
 		/* Computes the observed incompatibilities */
 		double[] truthIncompatibility = new double[kernels.size()];
 		for (int i = 0; i < kernels.size(); i++) {
@@ -176,61 +175,61 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 				truthIncompatibility[i] += ((WeightedGroundRule) gk).getIncompatibility();
 			}
 		}
-		
+
 		/* Removes label value constraints */
 		for (GroundValueConstraint con : targetMap.values()) {
 			reasoner.removeGroundKernel(con);
 		}
-		
+
 		return truthIncompatibility;
 	}
-	
+
 	@Override
 	protected double[] computeExpectedIncomp() {
 		double[] expIncomp = new double[kernels.size()];
-		
+
 		/* Computes the MPE state */
 		do {
 			eventFramework.workOffJobQueue();
 			reasoner.optimize();
 		}
 		while (eventFramework.checkToActivate() > 0);
-		
+
 		/* Computes incompatibility */
 		for (int i = 0; i < kernels.size(); i++) {
 			for (GroundRule gk : reasoner.getGroundKernels(kernels.get(i))) {
 				expIncomp[i] += ((WeightedGroundRule) gk).getIncompatibility();
 			}
 		}
-		
+
 		return expIncomp;
 	}
-	
+
 	@Override
 	protected double[] computeScalingFactor() {
 		double[] scalingFactor = new double[kernels.size()];
-		
+
 		for (int i = 0; i < kernels.size(); i++) {
 			Iterator<GroundRule> itr = reasoner.getGroundKernels(kernels.get(i)).iterator();
 			while(itr.hasNext()) {
 				itr.next();
 				scalingFactor[i]++;
 			}
-			
+
 			if (scalingFactor[i] == 0.0)
 				scalingFactor[i]++;
 		}
-		
+
 		return scalingFactor;
 	}
-	
+
 	@Override
 	protected void cleanUpGroundModel() {
 		/* Unregisters the Model's Kernels with the AtomEventFramework */
 		for (Rule k : model.getRules())
 			k.unregisterForAtomEvents(eventFramework, reasoner);
 		eventFramework = null;
-		
+
 		super.cleanUpGroundModel();
 	}
 

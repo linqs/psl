@@ -95,20 +95,20 @@ public interface Database {
 	 * stored in the AtomCache before being returned. The subtype and state of the
 	 * instantiated GroundAtom depends on several factors:
 	 * <ul>
-	 *   <li>If the GroundAtom is persisted in a read Partition, then it will be
-	 *   instantiated as an {@link ObservedAtom} with the persisted state.</li>
-	 *   <li>If the GroundAtom is persisted in the write Partition, then it will be
-	 *   instantiated with the persisted state. It will be instantiated as an
-	 *   ObservedAtom if its Predicate is closed and as a {@link RandomVariableAtom}
-	 *   if it is open.</li>
-	 *   <li>If the GroundAtom has a StandardPredicate but is not persisted
-	 *   in any of the Database's partitions, it will be instantiated with a truth
-	 *   value of 0.0. It will be instantiated as an ObservedAtom if its Predicate
-	 *   is closed and as a RandomVariableAtom
-	 *   if it is open.</li>
-	 *   <li>If the GroundAtom has a FunctionalPredicate, then it will be
-	 *   instantiated as an ObservedAtom with the functionally defined
-	 *   truth value.</li>
+	 *	<li>If the GroundAtom is persisted in a read Partition, then it will be
+	 *	instantiated as an {@link ObservedAtom} with the persisted state.</li>
+	 *	<li>If the GroundAtom is persisted in the write Partition, then it will be
+	 *	instantiated with the persisted state. It will be instantiated as an
+	 *	ObservedAtom if its Predicate is closed and as a {@link RandomVariableAtom}
+	 *	if it is open.</li>
+	 *	<li>If the GroundAtom has a StandardPredicate but is not persisted
+	 *	in any of the Database's partitions, it will be instantiated with a truth
+	 *	value of 0.0. It will be instantiated as an ObservedAtom if its Predicate
+	 *	is closed and as a RandomVariableAtom
+	 *	if it is open.</li>
+	 *	<li>If the GroundAtom has a FunctionalPredicate, then it will be
+	 *	instantiated as an ObservedAtom with the functionally defined
+	 *	truth value.</li>
 	 * </ul>
 	 *
 	 * @param p  the Predicate of the Atom
@@ -118,6 +118,16 @@ public interface Database {
 	 * @throws IllegalStateException  if the Atom is persisted in multiple read Partitions
 	 */
 	public GroundAtom getAtom(Predicate p, Constant... arguments);
+
+	/**
+	 * Fetch all the ground atoms for a predicate.
+	 * By "ground", we mean that it exists in the database.
+	 * This will not leverage the closed world assumption for any atoms.
+	 *
+	 * @param predicate the predicate to fetch atoms for
+	 * @return All ground atoms present in any partition of the database.
+	 */
+	public List<GroundAtom> getAllGroundAtoms(StandardPredicate predicate);
 
 	/**
 	 * Fetch all the ground RandomVariableAtoms for a predicate.
@@ -150,10 +160,10 @@ public interface Database {
 	 */
 	public void commit(RandomVariableAtom atom);
 
-   /**
-    * A batch form or commit().
-    * When possible, this commit should be used.
-    */
+	/**
+	 * A batch form or commit().
+	 * When possible, this commit should be used.
+	 */
 	public void commit(Iterable<RandomVariableAtom> atoms);
 
 	/**
@@ -161,7 +171,7 @@ public interface Database {
 	 *
 	 * @param query  the query to match
 	 * @return a list of lists of substitutions of {@link Constant GroundTerms}
-	 *             for {@link Variable Variables}
+	 *				 for {@link Variable Variables}
 	 * @throws IllegalArgumentException  if the query Formula is invalid
 	 */
 	public ResultList executeQuery(DatabaseQuery query);

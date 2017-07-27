@@ -71,15 +71,15 @@ public class DatabaseQuery {
 	private final VariableAssignment partialGrounding;
 	private final Set<Variable> projectTo;
 	private final ListOrderedSet<Variable> ordering;
-   private final boolean distinct;
+	private final boolean distinct;
 
 	public DatabaseQuery(Formula formula) {
-      this(formula, true);
-   }
+		this(formula, true);
+	}
 
 	public DatabaseQuery(Formula formula, boolean distinct) {
 		this.formula = formula;
-      this.distinct = distinct;
+		this.distinct = distinct;
 
 		partialGrounding = new VariableAssignment();
 		projectTo = new HashSet<Variable>();
@@ -112,9 +112,9 @@ public class DatabaseQuery {
 		return formula;
 	}
 
-   public boolean getDistinct() {
-      return distinct;
-   }
+	public boolean getDistinct() {
+		return distinct;
+	}
 
 	public VariableAssignment getPartialGrounding() {
 		return partialGrounding;

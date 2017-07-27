@@ -45,10 +45,10 @@ public class ReadOnlyDatabase {
 				return db.getAtom(predicate, arguments);
 			} else {
 				throw new IllegalArgumentException("Can only call getAtom() on a closed or functional predicate.");
-         }
+			}
 		} else {
 			throw new IllegalArgumentException("Unknown predicate type: " + predicate.getClass().getName());
-      }
+		}
 	}
 
 	public ResultList executeQuery(DatabaseQuery query) {
@@ -62,10 +62,10 @@ public class ReadOnlyDatabase {
 					throw new IllegalArgumentException("Can only perform queries over closed or functional predicates.");
 				} else {
 					continue;
-            }
+				}
 			} else {
 				throw new IllegalArgumentException("Unknown predicate type: " + atom.getPredicate().getClass().getName());
-         }
+			}
 		}
 
 		return db.executeQuery(query);
@@ -79,9 +79,9 @@ public class ReadOnlyDatabase {
 	public boolean equals(Object other) {
 		if (other != null && other instanceof ReadOnlyDatabase) {
 			return db.equals(((ReadOnlyDatabase)other).db);
-      }
+		}
 
-      return false;
+		return false;
 	}
 
 	@Override

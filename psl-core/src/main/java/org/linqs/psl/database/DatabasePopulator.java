@@ -24,6 +24,7 @@ import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.Predicate;
+import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
@@ -75,9 +76,8 @@ public class DatabasePopulator {
 	 * @param sourceDB	{@link Database} containing groundings of p
 	 * @param p			{@link Predicate} to be populated
 	 */
-	public void populateFromDB(Database sourceDB, Predicate p) {
-		Set<GroundAtom> groundings = Queries.getAllAtoms(sourceDB, p);
-		for (GroundAtom ga : groundings) {
+	public void populateFromDB(Database sourceDB, StandardPredicate p) {
+		for (GroundAtom ga : Queries.getAllAtoms(sourceDB, p)) {
 			Constant[] arguments = ga.getArguments();
 			GroundAtom rv = db.getAtom(p, arguments);
 			if (rv instanceof RandomVariableAtom)

@@ -86,25 +86,42 @@ public class PredicateInfo {
 	}
 
 	/**
-	 * Create a prepared statement that queries for all random variable atoms
-	 * (atoms in the write partition) of this predicate.
-	 * No query parameters need filling.
+	 * Create a prepared statement to query all the atoms for this predicate (within the specified partitions).
+	 * You can specify no partitions with null or an empty list.
 	 */
-	public PreparedStatement createQueryAllWriteStatement(Connection connection, int writePartition) {
+	public PreparedStatement createQueryAllStatement(Connection connection, List<Integer> partitions) {
 		SelectQuery query = new SelectQuery();
-		QueryPreparer.MultiPlaceHolder placeHolder = (new QueryPreparer()).getNewMultiPlaceHolder();
 
 		// Seelct *
 		query.addAllColumns();
 		query.addCustomFromTable(tableName);
 
-		// We only want to query from the write partition.
-		query.addCondition(BinaryCondition.equalTo(new CustomSql(PARTITION_COLUMN_NAME), writePartition));
+		// If there is only 1 partition, just do equality, otherwise use IN.
+		// All DBMSs should optimize a single IN the same as equality, but just in case.
+		if (partitions != null && partitions.size() > 0) {
+			if (partitions.size() == 1) {
+				query.addCondition(BinaryCondition.equalTo(new CustomSql(PARTITION_COLUMN_NAME), partitions.get(0)));
+			} else {
+				query.addCondition(new InCondition(new CustomSql(PARTITION_COLUMN_NAME), partitions));
+			}
+		}
+
 		try {
 			return connection.prepareStatement(query.validate().toString());
 		} catch (SQLException ex) {
 			throw new RuntimeException("Could not create prepared statement.", ex);
 		}
+	}
+
+	/**
+	 * Create a prepared statement that queries for all random variable atoms
+	 * (atoms in the write partition) of this predicate.
+	 * No query parameters need filling.
+	 */
+	public PreparedStatement createQueryAllWriteStatement(Connection connection, int writePartition) {
+		List<Integer> partitions = new ArrayList<Integer>(1);
+		partitions.add(writePartition);
+		return createQueryAllStatement(connection, partitions);
 	}
 
 	/**
@@ -234,7 +251,7 @@ public class PredicateInfo {
 		}
 
 		try (Statement statement = connection.createStatement()) {
-         statement.executeUpdate(createTable.validate().toString());
+			statement.executeUpdate(createTable.validate().toString());
 		} catch(SQLException ex) {
 			throw new RuntimeException("Error creating table for predicate: " + predicate.getName(), ex);
 		}
@@ -253,7 +270,7 @@ public class PredicateInfo {
 		}
 
 		try (Statement statement = connection.createStatement()) {
-         statement.executeUpdate(createIndex.validate().toString());
+			statement.executeUpdate(createIndex.validate().toString());
 		} catch(SQLException ex) {
 			throw new RuntimeException("Error creating index on table for predicate: " + predicate.getName(), ex);
 		}

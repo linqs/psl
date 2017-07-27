@@ -62,7 +62,7 @@ public interface DataStore {
 	 * @param read  additional Partitions to read from
 	 * @return a new Database backed by this DataStore
 	 * @throws IllegalArgumentException  if write is in use or if read is the
-	 *                                       write Partition of another Database
+	 *													write Partition of another Database
 	 */
 	public Database getDatabase(Partition write, Partition... read);
 
@@ -78,7 +78,7 @@ public interface DataStore {
 	 * @param read  additional Partitions to read from
 	 * @return a new Database backed by this DataStore
 	 * @throws IllegalArgumentException  if write is in use or if read is the
-	 *                                       write Partition of another Database
+	 *													write Partition of another Database
 	 */
 	public Database getDatabase(Partition write, Set<StandardPredicate> toClose, Partition... read);
 
@@ -104,7 +104,7 @@ public interface DataStore {
 	 * @param partition  the Partition into which Atoms will be inserted
 	 * @return the Inserter
 	 * @throws IllegalArgumentException  if partition is in use or predicate is
-	 *                                       not registered
+	 *													not registered
 	 */
 	public Inserter getInserter(StandardPredicate predicate, Partition partition);
 

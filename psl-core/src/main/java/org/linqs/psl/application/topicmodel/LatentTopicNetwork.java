@@ -57,96 +57,96 @@ import org.slf4j.LoggerFactory;
 /**
  * Latent Topic Networks, a framework which jointly reasons over a PSL model
  * with a topic model, as published in:
- * 
+ *
  * J.R. Foulds, S.H. Kumar, L. Getoor (2015). Latent Topic Networks:
  * A Versatile Probabilistic Programming Framework for Topic Models.
  * Proceedings of The 32nd International Conference on Machine Learning, pages 777-786.
- * 
+ *
  * @author Jimmy Foulds <jfoulds@ucsc.edu>
  */
 public class LatentTopicNetwork implements ModelApplication {
-	
+
 
 	private static final Logger log = LoggerFactory.getLogger(LatentTopicNetwork.class);
-	
+
 	/**
 	 * Prefix of property keys used by this class.
-	 * 
+	 *
 	 * @see ConfigManager
 	 */
 	public static final String CONFIG_PREFIX = "latentTopicNetworks";
-	
+
 	/**
 	 * Key for Boolean property indicating whether to use a hinge-loss MRF to model theta.
 	 */
 	public static final String HINGE_LOSS_THETA_KEY = CONFIG_PREFIX + ".hingeLossTheta";
 	/** Default value for HINGE_LOSS_THETA_KEY */
 	public static final boolean HINGE_LOSS_THETA_DEFAULT = true;
-	
+
 	/**
 	 * Key for Boolean property indicating whether to use a hinge-loss MRF to model phi.
 	 */
 	public static final String HINGE_LOSS_PHI_KEY = CONFIG_PREFIX + ".hingeLossPhi";
 	/** Default value for HINGE_LOSS_PHI_KEY */
 	public static final boolean HINGE_LOSS_PHI_DEFAULT = false;
-	
+
 	/**
 	 * Key for positive integer property indicating the number of EM iterations to perform.
 	 */
 	public static final String NUM_ITERATIONS_KEY = CONFIG_PREFIX + ".numIterations";
 	/** Default value for NUM_ITERATIONS_KEY */
 	public static final int NUM_ITERATIONS_DEFAULT = 200;
-	
+
 	/**
 	 * Key for positive integer property indicating the number of vanilla LDA EM iterations to perform before using hinge losses in the M step.
 	 */
 	public static final String NUM_BURNIN_KEY = CONFIG_PREFIX + ".numBurnIn";
 	/** Default value for NUM_BURNIN_KEY */
 	public static final int NUM_BURNIN_DEFAULT = 0;
-	
-	
+
+
 	/**
 	 * Key for positive integer property indicating the number of EM iterations to perform.
 	 */
 	public static final String NUM_TOPICS_KEY = CONFIG_PREFIX + ".numTopics";
 	/** Default value for NUM_TOPICS_KEY */
 	public static final int NUM_TOPICS_DEFAULT = 20;
-	
+
 	/**
 	 * Key for positive double property, the Dirichlet prior hyperparameter alpha.
 	 */
 	public static final String ALPHA_KEY = CONFIG_PREFIX + ".alpha";
 	/** Default value for ALPHA_KEY */
 	public static final double ALPHA_DEFAULT = 1.01;
-	
+
 	/**
 	 * Key for positive double property, the Dirichlet prior hyperparameter beta.
 	 */
 	public static final String BETA_KEY = CONFIG_PREFIX + ".beta";
 	/** Default value for BETA_KEY */
 	public static final double BETA_DEFAULT = 1.01;
-	
+
 	/**
 	 * Key for Boolean property indicating whether to perform pseudo-likelihood weight learning in the EM loop.
 	 */
 	public static final String WEIGHT_LEARNING_KEY = CONFIG_PREFIX + ".weightLearning";
 	/** Default value for WEIGHT_LEARNING_KEY */
 	public static final boolean WEIGHT_LEARNING_DEFAULT = false;
-	
+
 	/**
 	 * Key for positive integer property indicating the number of EM iterations to perform before performing weight learning.
 	 */
 	public static final String FIRST_W_LEARNING_ITER_KEY = CONFIG_PREFIX + ".firstWLearningIter";
 	/** Default value for FIRST_W_LEARNING_ITER_KEY */
 	public static final int FIRST_W_LEARNING_ITER_DEFAULT = 50;
-	
+
 	/**
 	 * Key for positive integer property indicating the number of EM iterations to between weight learning steps.
 	 */
 	public static final String W_LEARNING_GAP_KEY = CONFIG_PREFIX + ".WLearningGap";
 	/** Default value for W_LEARNING_GAP_KEY */
 	public static final int W_LEARNING_GAP_DEFAULT = 10;
-	
+
 	/**
 	 * Key for Boolean property indicating whether to initialize the ADMM variables to LDA, for theta.
 	 * The alternative is to initialize at the previous iteration.  LDA initialization may be best in high dimensions,
@@ -155,7 +155,7 @@ public class LatentTopicNetwork implements ModelApplication {
 	public static final String INIT_MSTEP_TO_LDA_THETA_KEY = CONFIG_PREFIX + ".initMStepToLDAtheta";
 	/** Default value for INIT_MSTEP_TO_LDA_THETA_KEY */
 	public static final boolean INIT_MSTEP_TO_LDA_THETA_DEFAULT = false;
-	
+
 	/**
 	 * Key for Boolean property indicating whether to initialize the ADMM variables to LDA, for phi.
 	 * The alternative is to initialize at the previous iteration.  LDA initialization may be best in high dimensions,
@@ -164,14 +164,14 @@ public class LatentTopicNetwork implements ModelApplication {
 	public static final String INIT_MSTEP_TO_LDA_PHI_KEY = CONFIG_PREFIX + ".initMStepToLDAphi";
 	/** Default value for INIT_MSTEP_TO_LDA_PHI_KEY */
 	public static final boolean INIT_MSTEP_TO_LDA_PHI_DEFAULT = true;
-	
+
 	/**
 	 * Key for string property indicating the directory to save intermediate topic models (if empty, do not save them).
 	 */
 	public static final String SAVE_DIR_KEY = CONFIG_PREFIX + ".saveDir";
 	/** Default value for SAVE_DIR_KEY */
 	public static final String SAVE_DIR_DEFAULT = "";
-	
+
 	private Model modelTheta;
 	private Model modelPhi;
 	private Database dbTheta;
@@ -190,39 +190,39 @@ public class LatentTopicNetwork implements ModelApplication {
 	double[][] expectedCountsPhi; //[topic][word]
 	double[][] theta; //parameters
 	double[][] phi;
-	
+
 	final boolean hingeLossTheta; //false means do only LDA inference, ignore hinge loss
 	final boolean hingeLossPhi;
-	
+
 	final boolean initMStepToLDAtheta; //if true, initialize ADMM to LDA's solution, otherwise initialize to the values at the previous iteration.
 	final boolean initMStepToLDAphi;
-	
+
 	//weight learning variables
 	boolean doWeightLearning;
 	StandardPredicate[] X;
 	StandardPredicate[] Y;
 	StandardPredicate[] Z;
 	int firstWLearningIter = Integer.MAX_VALUE;
-    int wLearningGap = Integer.MAX_VALUE;
-    DataStore dataStore;
-    Database rvDBweightLearningTheta;		
+	int wLearningGap = Integer.MAX_VALUE;
+	DataStore dataStore;
+	Database rvDBweightLearningTheta;
 	Database observedDBweightLearningTheta;
-	Database rvDBweightLearningPhi;		
+	Database rvDBweightLearningPhi;
 	Database observedDBweightLearningPhi;
 	Partition rvPartitionTheta;;
 	Partition labelPartitionTheta;
 	Partition rvPartitionPhi;
 	Partition labelPartitionPhi;
-	
+
 	double alpha; //hyper-parameters
 	double beta;
-	
+
 	//store the data
 	int[][] docWords; //[document][dictionary index]
 	int[][] docCounts;//[document][count of corresponding word in docWords]
-	
+
 	final String saveDir;
-	
+
 	public LatentTopicNetwork(Model modelTheta, Database dbTheta, Model modelPhi, Database dbPhi, int[][] docWords, int[][] docCounts, int numWords, String[] X, String[] Y, String[] Z, DataStore dataStore, ConfigBundle config) {
 		this(modelTheta, dbTheta, modelPhi, dbPhi, docWords, docCounts, numWords, config);
 		doWeightLearning = config.getBoolean(WEIGHT_LEARNING_KEY, WEIGHT_LEARNING_DEFAULT);
@@ -245,7 +245,7 @@ public class LatentTopicNetwork implements ModelApplication {
 			labelPartitionPhi = dataStore.getNewPartition();
 		}
 	}
-	
+
 	/** A convenience constructor with fewer required fields which can be used when not performing weight learning. */
 	public LatentTopicNetwork(Model modelTheta, Database dbTheta, Model modelPhi, Database dbPhi, int[][] docWords, int[][] docCounts, int numWords, ConfigBundle config) {
 		numIterations = config.getInt(NUM_ITERATIONS_KEY, NUM_ITERATIONS_DEFAULT);
@@ -266,12 +266,12 @@ public class LatentTopicNetwork implements ModelApplication {
 		if (beta <= 0)
 			throw new IllegalArgumentException("beta must be positive.");
 		doWeightLearning = false; //Fields required for weight learning have not been provided.
-		
+
 		initMStepToLDAtheta = config.getBoolean(INIT_MSTEP_TO_LDA_THETA_KEY, INIT_MSTEP_TO_LDA_THETA_DEFAULT);
 		initMStepToLDAphi = config.getBoolean(INIT_MSTEP_TO_LDA_PHI_KEY, INIT_MSTEP_TO_LDA_PHI_DEFAULT);
-		
+
 		saveDir = config.getString(SAVE_DIR_KEY, SAVE_DIR_DEFAULT);
-		
+
 		this.modelTheta = modelTheta;
 		this.dbTheta = dbTheta;
 		this.modelPhi = modelPhi;
@@ -281,21 +281,21 @@ public class LatentTopicNetwork implements ModelApplication {
 		this.docWords = docWords;
 		this.docCounts = docCounts;
 		numDocuments = docWords.length;
-		
+
 		expectedCountsTheta = new double[numDocuments][numTopics];
 		theta = new double[numDocuments][numTopics];
 		expectedCountsPhi = new double[numTopics][numWords];
 		phi = new double[numTopics][numWords];
 	}
-	
-	
+
+
 	public double[][] getTheta() {
 		return theta;
 	}
 	public double[][] getPhi() {
 		return phi;
 	}
-	
+
 	public void trainModel() throws ClassNotFoundException, IllegalAccessException, InstantiationException, IOException {
 		initialize();
 		boolean firstMStep = true;
@@ -317,17 +317,17 @@ public class LatentTopicNetwork implements ModelApplication {
 				System.exit(-1);
 			}
 			log.debug("Log-likelihood after Iteration " + i + ": " + logLikelihood());
-			
+
 			if (doWeightLearning && i >= firstWLearningIter && ((i - firstWLearningIter) % wLearningGap == 0)) {
 				weightLearning();
 			}
-			
+
 			if (saveDir.length() > 0) {
 				ObjectOutputStream outStream = new ObjectOutputStream(new FileOutputStream(saveDir + "theta_iteration_" + i + ".ser"));
 				outStream.writeObject(theta);
 				outStream.flush();
 				outStream.close();
-				
+
 				outStream = new ObjectOutputStream(new FileOutputStream(saveDir + "phi_iteration_" + i + ".ser"));
 				outStream.writeObject(phi);
 				outStream.flush();
@@ -335,7 +335,7 @@ public class LatentTopicNetwork implements ModelApplication {
 			}
 		}
 	}
-	
+
 	protected void initialize() throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		//reset counts
 		double total;
@@ -359,14 +359,14 @@ public class LatentTopicNetwork implements ModelApplication {
 				phi[k][w] /= total;
 			}
 		}
-		
+
 		eStep();
 
 		reasonerTheta = new LatentTopicNetworkADMMReasoner(config);
 		reasonerPhi = new LatentTopicNetworkADMMReasoner(config);
 		atomManagerTheta = new PersistedAtomManager(dbTheta);
 		atomManagerPhi = new PersistedAtomManager(dbPhi);
-		
+
 		Predicate p = PredicateFactory.getFactory().getPredicate("Theta");
 		if (hingeLossTheta)
 			initializeForReasoner(reasonerTheta, atomManagerTheta, modelTheta, dbTheta, expectedCountsTheta, theta, p);
@@ -374,23 +374,23 @@ public class LatentTopicNetwork implements ModelApplication {
 		if (hingeLossPhi)
 			initializeForReasoner(reasonerPhi, atomManagerPhi, modelPhi, dbPhi, expectedCountsPhi, phi, p);
 	}
-	
+
 	protected void initializeForReasoner(Reasoner reasoner, PersistedAtomManager atomManager, Model model, Database db, double[][] expectedCounts, double[][] initialization, Predicate p) {
 		log.info("Grounding out model.");
 		Grounding.groundAll(model, atomManager, reasoner);
-		
+
 		//Add log loss terms
 		log.info("Adding log loss ground kernels");
 		UniqueID row; //doc, for theta, or topic, for phi
 		UniqueID col; //topic, for theta, or word, for phi
-		
-		
+
+
 		int numRows = expectedCounts.length; //num documents, or num topics
 		int numColumns = expectedCounts[0].length; //num topics, or num words
-		
+
 		List<GroundAtom> literals;
 		List<Double> coefficients;
-		
+
 		for (int j = 0; j < numRows; j++) {
 			row = db.getUniqueID(new Integer(j));
 			 literals = new ArrayList<GroundAtom>(numColumns);
@@ -407,7 +407,7 @@ public class LatentTopicNetwork implements ModelApplication {
 			reasoner.addGroundRule(GLL);
 		}
 	}
-	
+
 	protected void eStep() {
 		log.info("E-step");
 		//reset counts
@@ -421,7 +421,7 @@ public class LatentTopicNetwork implements ModelApplication {
 				expectedCountsPhi[k][w] = beta - 1;
 			}
 		}
-		
+
 		int w;
 		double total;
 		int count;
@@ -433,14 +433,14 @@ public class LatentTopicNetwork implements ModelApplication {
 				w = docWords[j][wInd];
 				count = docCounts[j][wInd];
 				total = 0;
-				
+
 				//compute e-step responsibilities for current word
 				for (int k = 0; k < numTopics; k++) {
 					gamma[k] = theta[j][k] * phi[k][w];
 					total = total + gamma[k];
 				}
-				
-				//normalize and add it to the expected count matrices				
+
+				//normalize and add it to the expected count matrices
 				for (int k = 0; k < numTopics; k++) {
 					gamma_k = gamma[k] / total;
 					if (Double.isNaN(gamma_k)) {
@@ -452,7 +452,7 @@ public class LatentTopicNetwork implements ModelApplication {
 				}
 			}
 	}
-	
+
 	protected void LdaMStep() {
 		double total;
 		for (int j = 0; j < numDocuments; j++) {
@@ -474,26 +474,26 @@ public class LatentTopicNetwork implements ModelApplication {
 			}
 		}
 	}
-	
+
 	protected void mStep(boolean firstTime) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		log.info("LDA M-step");
 		LdaMStep();
-		Predicate p;
+		StandardPredicate p;
 		if (hingeLossTheta) {
 			log.info("M-Step. Inference for theta");
 			if (!firstTime && initMStepToLDAtheta) {
 				reasonerTheta.initDirichletTerms();
 			}
-			p = PredicateFactory.getFactory().getPredicate("Theta");
+			p = (StandardPredicate)PredicateFactory.getFactory().getPredicate("Theta");
 			mpeInference(reasonerTheta, atomManagerTheta, modelTheta, dbTheta, expectedCountsTheta, theta, p);
 			log.info("finished inference for theta");
-		
-			for (GroundAtom atom : Queries.getAllAtoms(dbTheta, p)) {	
+
+			for (GroundAtom atom : Queries.getAllAtoms(dbTheta, p)) {
 				//println atom.toString() + "\t" + atom.getValue();
 				Constant[] terms  = atom.getArguments();
 				theta[Integer.valueOf(terms[0].toString())][Integer.valueOf(terms[1].toString())] = atom.getValue();
 			}
-			
+
 			//DEBUG
 			if (log.isDebugEnabled()) {
 				log.debug("theta totals: ");
@@ -507,21 +507,21 @@ public class LatentTopicNetwork implements ModelApplication {
 				log.debug("");
 			}
 		}
-		
+
 		if (hingeLossPhi) {
 			log.info("inference for phi");
 			if (!firstTime && initMStepToLDAphi) {
 				reasonerPhi.initDirichletTerms();
 			}
-			p = PredicateFactory.getFactory().getPredicate("Phi");
+			p = (StandardPredicate)PredicateFactory.getFactory().getPredicate("Phi");
 			mpeInference(reasonerPhi, atomManagerPhi, modelPhi, dbPhi, expectedCountsPhi, phi, p);
 			log.info("finished for phi");
-			
-			for (GroundAtom atom : Queries.getAllAtoms(dbPhi, p)) {	
+
+			for (GroundAtom atom : Queries.getAllAtoms(dbPhi, p)) {
 				Constant[] terms  = atom.getArguments();
 				phi[Integer.valueOf(terms[0].toString())][Integer.valueOf(terms[1].toString())] = atom.getValue();
 			}
-			
+
 			if (log.isDebugEnabled()) {
 				log.debug("phi totals ");
 				for (int k = 0; k < 10; k++) {
@@ -533,7 +533,7 @@ public class LatentTopicNetwork implements ModelApplication {
 				}
 				log.debug("");
 			}
-			
+
 			//normalizing phi
 			for (int k = 0; k < numTopics; k++)  {
 				double total = 0;
@@ -544,7 +544,7 @@ public class LatentTopicNetwork implements ModelApplication {
 					phi[k][w] /= total;
 				}
 			}
-						
+
 			if (log.isDebugEnabled()) {
 				log.debug("entropy after normalizing");
 				for (int k = 0; k < 10; k++) {
@@ -556,21 +556,21 @@ public class LatentTopicNetwork implements ModelApplication {
 				}
 				log.debug("");
 			}
-			
+
 		}
-				
+
 	}
-	
+
 	protected void weightLearning() throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-		
+
 		//TODO do I need separate sets for theta and phi variables?
 		Set<StandardPredicate> setX = new HashSet<StandardPredicate>(Arrays.asList(this.X));
 		Set<StandardPredicate> setZ = new HashSet<StandardPredicate>(Arrays.asList(this.Z));
-		
+
 		if (hingeLossTheta) {
 			log.info("Populating databases for Theta");
 			StandardPredicate pTheta = (StandardPredicate)PredicateFactory.getFactory().getPredicate("Theta");
-			
+
 			for (int i = 0; i < X.length; i++) {
 				updateVariablesForWeightLearning(rvPartitionTheta, X[i], dbTheta);
 			}
@@ -582,34 +582,34 @@ public class LatentTopicNetwork implements ModelApplication {
 				updateVariablesForWeightLearning(rvPartitionTheta, Z[i], dbTheta);
 				updateVariablesForWeightLearning(labelPartitionTheta, Z[i], dbTheta); //the hidden variables are observed for the purposes of the weight learning M-step.
 			}
-			
+
 			updateVariablesForWeightLearning(rvPartitionTheta, pTheta, dbTheta);
 			updateVariablesForWeightLearning(labelPartitionTheta, pTheta, dbTheta); //the parameters are observed for the purposes of the weight learning M-step.
-						
+
 			Set<StandardPredicate> toCloseLabelPartitionTheta = new HashSet<StandardPredicate>(Arrays.asList(this.Y));
 			toCloseLabelPartitionTheta.addAll(setZ);
-			
+
 			toCloseLabelPartitionTheta.add(pTheta);
-			rvDBweightLearningTheta = dataStore.getDatabase(rvPartitionTheta, setX);		
+			rvDBweightLearningTheta = dataStore.getDatabase(rvPartitionTheta, setX);
 			observedDBweightLearningTheta = dataStore.getDatabase(labelPartitionTheta, toCloseLabelPartitionTheta); //the hidden variables are observed for the purposes of the weight learning M-step.
-			
+
 			log.info("Running weight learning for Theta");
 			LatentTopicNetworkMaxPseudoLikelihood MPL = new LatentTopicNetworkMaxPseudoLikelihood(modelTheta, rvDBweightLearningTheta, observedDBweightLearningTheta, config, alpha, pTheta);
 			MPL.learn();
-			
+
 			//clean up
 			rvDBweightLearningTheta.close();
 			observedDBweightLearningTheta.close();
 			dataStore.deletePartition(rvPartitionTheta);
 			dataStore.deletePartition(labelPartitionTheta);
-			
+
 			log.info("Finished running weight learning for Theta");
 			log.info(modelTheta.toString());
 		}
 		if (hingeLossPhi) {
 			log.info("Populating databases for Phi");
 			StandardPredicate pPhi = (StandardPredicate)PredicateFactory.getFactory().getPredicate("Phi");
-			
+
 			for (int i = 0; i < X.length; i++) {
 				updateVariablesForWeightLearning(rvPartitionPhi, X[i], dbPhi);
 			}
@@ -621,43 +621,42 @@ public class LatentTopicNetwork implements ModelApplication {
 				updateVariablesForWeightLearning(rvPartitionPhi, Z[i], dbPhi);
 				updateVariablesForWeightLearning(labelPartitionPhi, Z[i], dbPhi); //the hidden variables are observed for the purposes of the weight learning M-step.
 			}
-			
+
 			updateVariablesForWeightLearning(rvPartitionPhi, pPhi, dbPhi);
 			updateVariablesForWeightLearning(labelPartitionPhi, pPhi, dbPhi); //the parameters are observed for the purposes of the weight learning M-step.
-						
+
 			Set<StandardPredicate> toCloseLabelPartitionPhi = new HashSet<StandardPredicate>(Arrays.asList(this.Y));
 			toCloseLabelPartitionPhi.addAll(setZ);
-			
+
 			toCloseLabelPartitionPhi.add(pPhi);
-			rvDBweightLearningPhi = dataStore.getDatabase(rvPartitionPhi, setX);		
+			rvDBweightLearningPhi = dataStore.getDatabase(rvPartitionPhi, setX);
 			observedDBweightLearningPhi = dataStore.getDatabase(labelPartitionPhi, toCloseLabelPartitionPhi); //the hidden variables are observed for the purposes of the weight learning M-step.
-			
+
 			log.info("Running weight learning for Phi");
 			LatentTopicNetworkMaxPseudoLikelihood MPL = new LatentTopicNetworkMaxPseudoLikelihood(modelPhi, rvDBweightLearningPhi, observedDBweightLearningPhi, config, beta, pPhi);
 			MPL.learn();
-			
+
 			//clean up
 			rvDBweightLearningPhi.close();
 			observedDBweightLearningPhi.close();
 			dataStore.deletePartition(rvPartitionPhi);
 			dataStore.deletePartition(labelPartitionPhi);
-			
+
 			log.info("Finished running weight learning for Phi");
 			log.info(modelPhi.toString());
-			
+
 		}
 	}
-	
+
 	protected void updateVariablesForWeightLearning(Partition partition, StandardPredicate p, Database sourceDB) {
 		Inserter u = dataStore.getInserter(p, partition);
-		Set<GroundAtom> groundings = Queries.getAllAtoms(sourceDB, p);
-		for (GroundAtom ga : groundings) {
+		for (GroundAtom ga : Queries.getAllAtoms(sourceDB, p)) {
 			Constant[] arguments = ga.getArguments();
 			GroundAtom rv = sourceDB.getAtom(p, arguments);
 			u.insertValue(rv.getValue(), (Object[]) arguments);
 		}
 	}
-	
+
 	/**
 	 * Minimizes the total weighted incompatibility of the {@link GroundAtom GroundAtoms}
 	 * in the Database according to the Model and commits the updated truth
@@ -666,23 +665,23 @@ public class LatentTopicNetwork implements ModelApplication {
 	 * The {@link RandomVariableAtom RandomVariableAtoms} to be inferred are those
 	 * persisted in the Database when this method is called. All RandomVariableAtoms
 	 * which the Model might access must be persisted in the Database.
-	 * 
+	 *
 	 * @return inference results
 	 */
 	protected FullInferenceResult mpeInference(Reasoner reasoner, PersistedAtomManager atomManager, Model model, Database db, double[][] expectedCounts, double[][] initialization, Predicate p)
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-				
+
 		log.info("Beginning inference.");
 		reasoner.optimize();
 		log.info("Inference complete. Writing results to Database.");
-		
+
 		/* Commits the RandomVariableAtoms back to the Database */
 		int count = 0;
 		for (RandomVariableAtom atom : atomManager.getPersistedRVAtoms()) {
 			atom.commitToDB();
 			count++;
 		}
-		
+
 		double incompatibility = GroundKernels.getTotalWeightedIncompatibility(reasoner.getCompatibilityKernels());
 		double infeasibility = GroundKernels.getInfeasibilityNorm(reasoner.getConstraintKernels());
 		int size = reasoner.size();
@@ -699,7 +698,7 @@ public class LatentTopicNetwork implements ModelApplication {
 		reasonerTheta.close();
 		reasonerPhi.close();
 	}
-	
+
 	/** Compute LDA training log-likelihood.
 	 */
 	public double logLikelihood() {

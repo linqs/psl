@@ -257,35 +257,29 @@ public class RDBMSDatabase implements Database {
 	}
 
 	@Override
-	public List<RandomVariableAtom> getAllGroundRandomVariableAtoms(StandardPredicate predicate) {
-		List<RandomVariableAtom> atoms = new ArrayList<RandomVariableAtom>();
+	public List<GroundAtom> getAllGroundAtoms(StandardPredicate predicate) {
+		List<Integer> partitions = new ArrayList<Integer>();
+		partitions.addAll(readIDs);
+		partitions.add(writeID);
 
+		return getAllGroundAtoms(predicate, partitions);
+	}
+
+	@Override
+	public List<RandomVariableAtom> getAllGroundRandomVariableAtoms(StandardPredicate predicate) {
 		// Closed predicates have no random variable atoms.
 		if (isClosed(predicate)) {
-			return atoms;
+			return new ArrayList<RandomVariableAtom>();
 		}
 
-		PredicateInfo predicateInfo = getPredicateInfo(predicate);
+		// All the atoms should be random vairable, since we are pulling from the write parition of an open predicate.
+		List<Integer> partitions = new ArrayList<Integer>(1);
+		partitions.add(writeID);
+		List<GroundAtom> groundAtoms = getAllGroundAtoms(predicate, partitions);
 
-		// Columns for each argument to the predicate.
-		List<String> argumentCols = predicateInfo.argumentColumns();
-		Constant[] arguments = new Constant[argumentCols.size()];
-
-		try (ResultSet results = getAllWriteAtomQuery(predicateInfo).executeQuery()) {
-			while (results.next()) {
-				double value = results.getDouble(PredicateInfo.VALUE_COLUMN_NAME);
-				if (results.wasNull()) {
-					value = Double.NaN;
-				}
-
-				for (int i = 0; i < argumentCols.size(); i++) {
-					arguments[i] = extractConstantFromResult(results, argumentCols.get(i), predicate.getArgumentType(i));
-				}
-
-				atoms.add(cache.instantiateRandomVariableAtom(predicate, arguments, value));
-			}
-		} catch (SQLException ex) {
-			throw new RuntimeException("Error fetching all ground random variable atoms for: " + predicate, ex);
+		List<RandomVariableAtom> atoms = new ArrayList<RandomVariableAtom>(groundAtoms.size());
+		for (GroundAtom atom : groundAtoms) {
+			atoms.add((RandomVariableAtom)atom);
 		}
 
 		return atoms;
@@ -556,6 +550,34 @@ public class RDBMSDatabase implements Database {
 		}
 	}
 
+	/**
+	 * Extract a single ground atom from a ResultSet.
+	 * The ResultSet MUST already be primed (next() should have been already called.
+	 * Will throw if there is no next().
+	 */
+	private GroundAtom extractGroundAtomFromResult(ResultSet resultSet, StandardPredicate predicate, Constant[] arguments)
+			throws SQLException {
+		double value = resultSet.getDouble(PredicateInfo.VALUE_COLUMN_NAME);
+		if (resultSet.wasNull()) {
+			value = Double.NaN;
+		}
+
+		int partition = resultSet.getInt(PredicateInfo.PARTITION_COLUMN_NAME);
+		if (partition == writeID) {
+			// Found in the write partition
+			if (isClosed((StandardPredicate)predicate)) {
+				// Predicate is closed, instantiate as ObservedAtom
+				return cache.instantiateObservedAtom(predicate, arguments, value);
+			}
+
+			// Predicate is open, instantiate as RandomVariableAtom
+			return cache.instantiateRandomVariableAtom((StandardPredicate)predicate, arguments, value);
+		}
+
+		// Must be in a read partition, instantiate as ObservedAtom
+		return cache.instantiateObservedAtom(predicate, arguments, value);
+	}
+
 	private GroundAtom getAtom(StandardPredicate predicate, Constant... arguments) {
 		// Ensure this database has this predicate.
 		getPredicateInfo(predicate);
@@ -568,25 +590,7 @@ public class RDBMSDatabase implements Database {
 
 		try (ResultSet resultSet = queryDBForAtom(queryAtom)) {
 			if (resultSet.next()) {
-				double value = resultSet.getDouble(PredicateInfo.VALUE_COLUMN_NAME);
-				if (resultSet.wasNull()) {
-					value = Double.NaN;
-				}
-
-		 		int partition = resultSet.getInt(PredicateInfo.PARTITION_COLUMN_NAME);
-		 		if (partition == writeID) {
-		 			// Found in the write partition
-		 			if (isClosed((StandardPredicate)predicate)) {
-		 				// Predicate is closed, instantiate as ObservedAtom
-		 				result = cache.instantiateObservedAtom(predicate, arguments, value);
-		 			} else {
-		 				// Predicate is open, instantiate as RandomVariableAtom
-		 				result = cache.instantiateRandomVariableAtom((StandardPredicate)predicate, arguments, value);
-		 			}
-		 		} else {
-		 			// Must be in a read partition, instantiate as ObservedAtom
-		 			result = cache.instantiateObservedAtom(predicate, arguments, value);
-		 		}
+				result = extractGroundAtomFromResult(resultSet, predicate, arguments);
 
 		 		if (resultSet.next()) {
 		 			throw new IllegalStateException("Cannot have duplicate atoms, or atoms in multiple partitions in a single database");
@@ -600,11 +604,36 @@ public class RDBMSDatabase implements Database {
 			if (isClosed((StandardPredicate) predicate)) {
 				result = cache.instantiateObservedAtom(predicate, arguments, DEFAULT_UNOBSERVED_VALUE);
 			} else {
-				result = cache.instantiateRandomVariableAtom((StandardPredicate) predicate, arguments, DEFAULT_UNOBSERVED_VALUE);
+				result = cache.instantiateRandomVariableAtom(predicate, arguments, DEFAULT_UNOBSERVED_VALUE);
 			}
 		}
 
 		return result;
+	}
+
+	private List<GroundAtom> getAllGroundAtoms(StandardPredicate predicate, List<Integer> partitions) {
+		List<GroundAtom> atoms = new ArrayList<GroundAtom>();
+		PredicateInfo predicateInfo = getPredicateInfo(predicate);
+
+		// Columns for each argument to the predicate.
+		List<String> argumentCols = predicateInfo.argumentColumns();
+		Constant[] arguments = new Constant[argumentCols.size()];
+
+		try (
+				PreparedStatement statement = predicateInfo.createQueryAllStatement(connection, partitions);
+				ResultSet results = statement.executeQuery()) {
+			while (results.next()) {
+				for (int i = 0; i < argumentCols.size(); i++) {
+					arguments[i] = extractConstantFromResult(results, argumentCols.get(i), predicate.getArgumentType(i));
+				}
+
+				atoms.add(extractGroundAtomFromResult(results, predicate, arguments));
+			}
+		} catch (SQLException ex) {
+			throw new RuntimeException("Error fetching all ground atoms for: " + predicate, ex);
+		}
+
+		return atoms;
 	}
 
 	private GroundAtom getAtom(FunctionalPredicate predicate, Constant... arguments) {

@@ -21,6 +21,7 @@ import org.joda.time.DateTime;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.predicate.Predicate;
+import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.DateAttribute;
@@ -32,8 +33,7 @@ import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.UniqueID;
 import org.linqs.psl.model.term.Variable;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
 
 /**
  * Utility methods for common {@link Database} and {@link DatabaseQuery} tasks.
@@ -41,24 +41,13 @@ import java.util.Set;
 public class Queries {
 	/**
 	 * Returns all GroundAtoms of a Predicate persisted in a Database.
-	 * GroundAtoms are retrieved by executing the query returned by
-	 * {@link #getQueryForAllAtoms(Predicate)} and calling
-	 * {@link Database#getAtom(Predicate, Constant...)} on each result.
 	 *
-	 * @param db  the Database to query for GroundAtoms
-	 * @param predicate  the Predicate of the GroundAtoms to return
+	 * @param db the Database to query for GroundAtoms
+	 * @param predicate the Predicate of the GroundAtoms to return
 	 * @return all GroundAtoms of predicate in db
 	 */
-	public static Set<GroundAtom> getAllAtoms(Database db, Predicate predicate) {
-		DatabaseQuery query = getQueryForAllAtoms(predicate);
-		ResultList results = db.executeQuery(query);
-
-		Set<GroundAtom> atoms = new HashSet<GroundAtom>(results.size());
-		for (int i = 0; i < results.size(); i++) {
-			atoms.add(db.getAtom(predicate, results.get(i)));
-		}
-
-		return atoms;
+	public static List<GroundAtom> getAllAtoms(Database db, StandardPredicate predicate) {
+		return db.getAllGroundAtoms(predicate);
 	}
 
 	/**
@@ -74,6 +63,7 @@ public class Queries {
 		for (int i = 0; i < args.length; i++) {
 			args[i] = new Variable("Vars" + i);
 		}
+
 		return new DatabaseQuery(new QueryAtom(predicate, args));
 	}
 
@@ -86,8 +76,8 @@ public class Queries {
 	 * @param rawArgs  the arguments to the QueryAtom (after conversion)
 	 * @return the QueryAtom
 	 * @throws IllegalArgumentException  if any element of rawArgs could not be
-	 *                                       converted to a valid type or is already
-	 *                                       a GroundTerm of an invalid type
+	 *													converted to a valid type or is already
+	 *													a GroundTerm of an invalid type
 	 */
 	public static QueryAtom getQueryAtom(Database db, Predicate predicate, Object... rawArgs) {
 		return new QueryAtom(predicate, convertArguments(db, predicate, rawArgs));
@@ -105,8 +95,8 @@ public class Queries {
 	 * @param rawArgs  the arguments to convert
 	 * @return the converted terms
 	 * @throws IllegalArgumentException  if any element of rawArgs could not be
-	 *                                       converted to a valid type or is already
-	 *                                       a GroundTerm of an invalid type
+	 *													converted to a valid type or is already
+	 *													a GroundTerm of an invalid type
 	 */
 	public static Term[] convertArguments(Database db, Predicate predicate, Object... rawArgs) {
 		assert(predicate.getArity() == rawArgs.length);
