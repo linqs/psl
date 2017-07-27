@@ -38,7 +38,6 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
-import com.healthmarketscience.sqlbuilder.CreateTableQuery;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -447,9 +446,9 @@ public class RDBMSDataStore implements DataStore {
 		return metadata.getAllPartitions();
 	}
 
-   public DatabaseDriver getDriver() {
-      return dbDriver;
-   }
+	public DatabaseDriver getDriver() {
+		return dbDriver;
+	}
 
 	/**
 	 * Registers and returns an ID for a given RDBMSDatabase.

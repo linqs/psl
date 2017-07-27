@@ -87,8 +87,8 @@ public class PredicateInfo {
 
 	/**
 	 * Create a prepared statement that queries for all random variable atoms
-    * (atoms in the write partition) of this predicate.
-    * No query parameters need filling.
+	 * (atoms in the write partition) of this predicate.
+	 * No query parameters need filling.
 	 */
 	public PreparedStatement createQueryAllWriteStatement(Connection connection, int writePartition) {
 		SelectQuery query = new SelectQuery();
@@ -138,23 +138,23 @@ public class PredicateInfo {
 	 * The variables left to set in the query are the partition, value, and predciate arguments.
 	 */
 	public PreparedStatement createUpsertStatement(Connection connection, DatabaseDriver dbDriver) {
-      // Columns with data in them: partition, value, argument.
-      String[] columns = new String[2 + argCols.size()];
+		// Columns with data in them: partition, value, argument.
+		String[] columns = new String[2 + argCols.size()];
 
-      // Columns to treat as a key: partition, arguments.
-      String[] keyColumns = new String[1 + argCols.size()];
+		// Columns to treat as a key: partition, arguments.
+		String[] keyColumns = new String[1 + argCols.size()];
 
-      columns[0] = PredicateInfo.PARTITION_COLUMN_NAME;
-      columns[1] = PredicateInfo.VALUE_COLUMN_NAME;
+		columns[0] = PredicateInfo.PARTITION_COLUMN_NAME;
+		columns[1] = PredicateInfo.VALUE_COLUMN_NAME;
 
-      keyColumns[0] = PredicateInfo.PARTITION_COLUMN_NAME;
+		keyColumns[0] = PredicateInfo.PARTITION_COLUMN_NAME;
 
-      for (int i = 0; i < argCols.size(); i++) {
-         columns[2 + i] = argCols.get(i);
-         keyColumns[1 + i] = argCols.get(i);
-      }
+		for (int i = 0; i < argCols.size(); i++) {
+			columns[2 + i] = argCols.get(i);
+			keyColumns[1 + i] = argCols.get(i);
+		}
 
-      return dbDriver.getUpsert(connection, tableName, columns, keyColumns);
+		return dbDriver.getUpsert(connection, tableName, columns, keyColumns);
 	}
 
 	/**
@@ -215,34 +215,26 @@ public class PredicateInfo {
 		}
 
 		// Add a unique constraint for all the unique ids (and partition).
-      uniqueColumns.add(0, PARTITION_COLUMN_NAME);
+		uniqueColumns.add(0, PARTITION_COLUMN_NAME);
 		if (uniqueColumns.size() > 1) {
 			createTable.addCustomConstraints("UNIQUE(" + StringUtils.join(uniqueColumns, ", ") + ")");
 		}
 
-      // We have an additional constraint that all atoms in a partition must be unique.
-      // If all columns are UniqueIDs, when we are already done.
-      // Add 1 since we already put the partition in |uniqueColumns|.
-      if (uniqueColumns.size() < (argCols.size() + 1)) {
-         for (String colName : argCols) {
-            if (!uniqueColumns.contains(colName)) {
-               uniqueColumns.add(colName);
-            }
-         }
-
-			createTable.addCustomConstraints("UNIQUE(" + StringUtils.join(uniqueColumns, ", ") + ")");
-      }
-
-		try {
-			Statement stmt = connection.createStatement();
-
-			try {
-				stmt.executeUpdate(createTable.validate().toString());
-			} finally {
-				if (stmt != null) {
-					stmt.close();
+		// We have an additional constraint that all atoms in a partition must be unique.
+		// If all columns are UniqueIDs, when we are already done.
+		// Add 1 since we already put the partition in |uniqueColumns|.
+		if (uniqueColumns.size() < (argCols.size() + 1)) {
+			for (String colName : argCols) {
+				if (!uniqueColumns.contains(colName)) {
+					uniqueColumns.add(colName);
 				}
 			}
+
+			createTable.addCustomConstraints("UNIQUE(" + StringUtils.join(uniqueColumns, ", ") + ")");
+		}
+
+		try (Statement statement = connection.createStatement()) {
+         statement.executeUpdate(createTable.validate().toString());
 		} catch(SQLException ex) {
 			throw new RuntimeException("Error creating table for predicate: " + predicate.getName(), ex);
 		}
@@ -252,25 +244,16 @@ public class PredicateInfo {
 		// The primary index used for grounding.
 		CreateIndexQuery createIndex = new CreateIndexQuery(tableName(), "IX_" + tableName() + "_GROUNDING");
 
-		// First add non-variable columns: partition, value.
+		// First add the partition.
 		createIndex.addCustomColumns(PARTITION_COLUMN_NAME);
-		createIndex.addCustomColumns(VALUE_COLUMN_NAME);
 
 		// Now add the variable columns.
 		for (String colName : argCols) {
 			createIndex.addCustomColumns(colName);
 		}
 
-		try {
-			Statement stmt = connection.createStatement();
-
-			try {
-				stmt.executeUpdate(createIndex.validate().toString());
-			} finally {
-				if (stmt != null) {
-					stmt.close();
-				}
-			}
+		try (Statement statement = connection.createStatement()) {
+         statement.executeUpdate(createIndex.validate().toString());
 		} catch(SQLException ex) {
 			throw new RuntimeException("Error creating index on table for predicate: " + predicate.getName(), ex);
 		}

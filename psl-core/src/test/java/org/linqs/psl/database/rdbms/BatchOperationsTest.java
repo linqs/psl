@@ -36,8 +36,8 @@ public class BatchOperationsTest {
 
       // TEST
       long start = System.currentTimeMillis();
-      for (int i = 0; i < 200; i++) {
-         for (int j = 0; j < 200; j++) {
+      for (int i = 0; i < 100; i++) {
+         for (int j = 0; j < 100; j++) {
             atoms.add((RandomVariableAtom)database.getAtom(
                   model.predicates.get("Friends"),
                   model.dataStore.getUniqueID("" + i), model.dataStore.getUniqueID("" + j)));
@@ -63,8 +63,8 @@ public class BatchOperationsTest {
 
       // TEST
       long start = System.currentTimeMillis();
-      for (int i = 0; i < 200; i++) {
-         for (int j = 0; j < 200; j++) {
+      for (int i = 0; i < 100; i++) {
+         for (int j = 0; j < 100; j++) {
             atoms.add((RandomVariableAtom)database.getAtom(
                   model.predicates.get("Friends"),
                   model.dataStore.getUniqueID("" + i), model.dataStore.getUniqueID("" + j)));
@@ -78,7 +78,7 @@ public class BatchOperationsTest {
       start = System.currentTimeMillis();
 
       // TEST
-      ((org.linqs.psl.database.rdbms.RDBMSDatabase)database).commit(atoms);
+      database.commit(atoms);
 
       // TEST
       System.out.println("Batch Commit time: " + (System.currentTimeMillis() - start));

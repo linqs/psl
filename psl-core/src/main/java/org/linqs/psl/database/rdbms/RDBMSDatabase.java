@@ -68,7 +68,7 @@ import java.util.Set;
 public class RDBMSDatabase implements Database {
 	private static final Logger log = LoggerFactory.getLogger(RDBMSDatabase.class);
 
-   private static final double DEFAULT_UNOBSERVED_VALUE = 0.0;
+	private static final double DEFAULT_UNOBSERVED_VALUE = 0.0;
 
 	/**
 	 * The backing data store that created this database.
@@ -109,7 +109,7 @@ public class RDBMSDatabase implements Database {
 
 	/**
 	 * The following map predicates to pre-compiled SQL statements.
-    * Do not close these statements until the entire db closes.
+	 * Do not close these statements until the entire db closes.
 	 */
 	private final Map<Predicate, PreparedStatement> queryStatements;
 	private final Map<Predicate, PreparedStatement> queryAllWriteStatements;
@@ -251,7 +251,7 @@ public class RDBMSDatabase implements Database {
 			}
 		} catch (SQLException ex) {
 			throw new RuntimeException("Error deleting atom: " + atom, ex);
-      }
+		}
 
 		return deleted;
 	}
@@ -269,7 +269,7 @@ public class RDBMSDatabase implements Database {
 
 		// Columns for each argument to the predicate.
 		List<String> argumentCols = predicateInfo.argumentColumns();
-      Constant[] arguments = new Constant[argumentCols.size()];
+		Constant[] arguments = new Constant[argumentCols.size()];
 
 		try (ResultSet results = getAllWriteAtomQuery(predicateInfo).executeQuery()) {
 			while (results.next()) {
@@ -292,71 +292,71 @@ public class RDBMSDatabase implements Database {
 	}
 
 	@Override
-	public void commit(List<RandomVariableAtom> atoms) {
-      if (closed) {
-         throw new IllegalStateException("Cannot commit on a closed database.");
-      }
+	public void commit(Iterable<RandomVariableAtom> atoms) {
+		if (closed) {
+			throw new IllegalStateException("Cannot commit on a closed database.");
+		}
 
-      // Split the atoms up by predicate.
-      Map<Predicate, List<RandomVariableAtom>> atomsByPredicate = new HashMap<Predicate, List<RandomVariableAtom>>();
+		// Split the atoms up by predicate.
+		Map<Predicate, List<RandomVariableAtom>> atomsByPredicate = new HashMap<Predicate, List<RandomVariableAtom>>();
 
-      for (RandomVariableAtom atom : atoms) {
-         if (!atomsByPredicate.containsKey(atom.getPredicate())) {
-            atomsByPredicate.put(atom.getPredicate(), new ArrayList<RandomVariableAtom>());
-         }
+		for (RandomVariableAtom atom : atoms) {
+			if (!atomsByPredicate.containsKey(atom.getPredicate())) {
+				atomsByPredicate.put(atom.getPredicate(), new ArrayList<RandomVariableAtom>());
+			}
 
-         atomsByPredicate.get(atom.getPredicate()).add(atom);
-      }
+			atomsByPredicate.get(atom.getPredicate()).add(atom);
+		}
 
-      // Upsert each predicate batch.
-      for (Map.Entry<Predicate, List<RandomVariableAtom>> entry : atomsByPredicate.entrySet()) {
-         PreparedStatement statement = getAtomUpsert(getPredicateInfo(entry.getKey()));
+		// Upsert each predicate batch.
+		for (Map.Entry<Predicate, List<RandomVariableAtom>> entry : atomsByPredicate.entrySet()) {
+			PreparedStatement statement = getAtomUpsert(getPredicateInfo(entry.getKey()));
 
-         try {
-            // Set all the upsert params.
-            for (RandomVariableAtom atom : entry.getValue()) {
-               // Partition
-               statement.setInt(1, writeID);
+			try {
+				// Set all the upsert params.
+				for (RandomVariableAtom atom : entry.getValue()) {
+					// Partition
+					statement.setInt(1, writeID);
 
-               // Value
-               statement.setDouble(2, atom.getValue());
+					// Value
+					statement.setDouble(2, atom.getValue());
 
-               // Args
-               Term[] arguments = atom.getArguments();
-               for (int i = 0; i < arguments.length; i++) {
-                  if (arguments[i] instanceof Attribute) {
-                     statement.setObject(3 + i, ((Attribute)arguments[i]).getValue());
-                  } else if (arguments[i] instanceof UniqueID) {
-                     statement.setObject(3 + i, ((UniqueID)arguments[i]).getInternalID());
-                  } else {
-                     throw new IllegalArgumentException("Unknown argument type: " + arguments[i].getClass());
-                  }
-               }
+					// Args
+					Term[] arguments = atom.getArguments();
+					for (int i = 0; i < arguments.length; i++) {
+						if (arguments[i] instanceof Attribute) {
+							statement.setObject(3 + i, ((Attribute)arguments[i]).getValue());
+						} else if (arguments[i] instanceof UniqueID) {
+							statement.setObject(3 + i, ((UniqueID)arguments[i]).getInternalID());
+						} else {
+							throw new IllegalArgumentException("Unknown argument type: " + arguments[i].getClass());
+						}
+					}
 
-               statement.addBatch();
-            }
+					statement.addBatch();
+				}
 
-            // Execute all the upserts for this predicate.
-            statement.executeBatch();
-            statement.clearBatch();
-         } catch (SQLException ex) {
-            throw new RuntimeException("Error doing batch commit for: " + entry.getKey(), ex);
-         }
-      }
+				// Execute all the upserts for this predicate.
+				statement.executeBatch();
+				statement.clearBatch();
+			} catch (SQLException ex) {
+				throw new RuntimeException("Error doing batch commit for: " + entry.getKey(), ex);
+			}
+		}
 	}
 
 	@Override
 	public void commit(RandomVariableAtom atom) {
-      List<RandomVariableAtom> atoms = new ArrayList<RandomVariableAtom>(1);
-      atoms.add(atom);
-      commit(atoms);
+		List<RandomVariableAtom> atoms = new ArrayList<RandomVariableAtom>(1);
+		atoms.add(atom);
+		commit(atoms);
 	}
 
 	@Override
 	public ResultList executeQuery(DatabaseQuery query) {
 		if (closed) {
 			throw new IllegalStateException("Cannot perform query on database that was closed.");
-      }
+		}
 
 		Formula formula = query.getFormula();
 		VariableAssignment partialGrounding = query.getPartialGrounding();
@@ -379,21 +379,21 @@ public class RDBMSDatabase implements Database {
 		for (int varIndex = 0; varIndex < query.getNumVariables(); varIndex++) {
 			if (projectTo.contains(query.getVariable(varIndex))) {
 				results.setVariable(query.getVariable(varIndex), i++);
-         }
-      }
+			}
+		}
 
 		try (Statement statement = connection.createStatement(); ResultSet resultSet = statement.executeQuery(queryString)) {
-         while (resultSet.next()) {
-            Constant[] res = new Constant[projectTo.size()];
-            for (Variable var : projectTo) {
-               if (partialGrounding.hasVariable(var)) {
-                  res[results.getPos(var)] = partialGrounding.getVariable(var);
-               } else {
-                  res[results.getPos(var)] = extractConstantFromResult(resultSet, var.getName(), varTypes.getType(var));
-               }
-            }
-            results.addResult(res);
-         }
+			while (resultSet.next()) {
+				Constant[] res = new Constant[projectTo.size()];
+				for (Variable var : projectTo) {
+					if (partialGrounding.hasVariable(var)) {
+						res[results.getPos(var)] = partialGrounding.getVariable(var);
+					} else {
+						res[results.getPos(var)] = extractConstantFromResult(resultSet, var.getName(), varTypes.getType(var));
+					}
+				}
+				results.addResult(res);
+			}
 		} catch (SQLException ex) {
 			throw new RuntimeException("Error executing database query: (" + query + ") -- [" + queryString + "]", ex);
 		}
@@ -434,7 +434,7 @@ public class RDBMSDatabase implements Database {
 	public void close() {
 		if (closed) {
 			throw new IllegalStateException("Cannot close database after it has been closed.");
-      }
+		}
 
 		parentDataStore.releasePartitions(this);
 		closed = true;
@@ -443,19 +443,19 @@ public class RDBMSDatabase implements Database {
 		try {
 			for (PreparedStatement statement : queryStatements.values()) {
 				statement.close();
-         }
+			}
 
 			for (PreparedStatement statement : queryAllWriteStatements.values()) {
 				statement.close();
-         }
+			}
 
 			for (PreparedStatement statement : upsertStatements.values()) {
 				statement.close();
-         }
+			}
 
 			for (PreparedStatement statement : deleteStatements.values()) {
 				statement.close();
-         }
+			}
 		} catch (SQLException e) {
 			throw new RuntimeException("Error closing prepared statements.", e);
 		}
@@ -557,14 +557,14 @@ public class RDBMSDatabase implements Database {
 	}
 
 	private GroundAtom getAtom(StandardPredicate predicate, Constant... arguments) {
-      // Ensure this database has this predicate.
-      getPredicateInfo(predicate);
+		// Ensure this database has this predicate.
+		getPredicateInfo(predicate);
 
 		QueryAtom queryAtom = new QueryAtom(predicate, arguments);
 		GroundAtom result = cache.getCachedAtom(queryAtom);
 		if (result != null) {
 			return result;
-      }
+		}
 
 		try (ResultSet resultSet = queryDBForAtom(queryAtom)) {
 			if (resultSet.next()) {
@@ -590,7 +590,7 @@ public class RDBMSDatabase implements Database {
 
 		 		if (resultSet.next()) {
 		 			throw new IllegalStateException("Cannot have duplicate atoms, or atoms in multiple partitions in a single database");
-            }
+				}
 			}
 		} catch (SQLException ex) {
 			throw new RuntimeException("Error getting atom for " + predicate, ex);
@@ -601,7 +601,7 @@ public class RDBMSDatabase implements Database {
 				result = cache.instantiateObservedAtom(predicate, arguments, DEFAULT_UNOBSERVED_VALUE);
 			} else {
 				result = cache.instantiateRandomVariableAtom((StandardPredicate) predicate, arguments, DEFAULT_UNOBSERVED_VALUE);
-         }
+			}
 		}
 
 		return result;
@@ -612,7 +612,7 @@ public class RDBMSDatabase implements Database {
 		GroundAtom result = cache.getCachedAtom(queryAtom);
 		if (result != null) {
 			return result;
-      }
+		}
 
 		double value = predicate.computeValue(new ReadOnlyDatabase(this), arguments);
 		return cache.instantiateObservedAtom(predicate, arguments, value);

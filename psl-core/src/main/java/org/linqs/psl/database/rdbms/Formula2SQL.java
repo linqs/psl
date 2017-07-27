@@ -49,9 +49,9 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 	private final VariableAssignment partialGrounding;
 	private final RDBMSDatabase database;
 
-   /**
-    * Maps a variable to the first column (table alias and column) that we see it in.
-    */
+	/**
+	 * Maps a variable to the first column (table alias and column) that we see it in.
+	 */
 	private final Map<Variable, String> joins;
 
 	private final List<Atom> functionalAtoms;
@@ -61,8 +61,8 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 	private int tableCounter;
 
 	public Formula2SQL(VariableAssignment partialGrounding, Set<Variable> projection, RDBMSDatabase database) {
-	   this(partialGrounding, projection, database, true);
-   }
+		this(partialGrounding, projection, database, true);
+	}
 
 	public Formula2SQL(VariableAssignment partialGrounding, Set<Variable> projection, RDBMSDatabase database, boolean isDistinct) {
 		this.partialGrounding = partialGrounding;
@@ -78,7 +78,7 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 
 		if (projection.isEmpty()) {
 			query.addAllColumns();
-      }
+		}
 	}
 
 	public List<Atom> getFunctionalAtoms() {
@@ -114,7 +114,7 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 
 			fun.addCustomParams(RDBMSDataStore.getDatabaseID(database));
 			fun.addCustomParams(ExternalFunctions.getExternalFunctionID(predicate.getExternalFunction()));
-         fun.addCustomParams(convert);
+			fun.addCustomParams(convert);
 
 			query.addCondition(BinaryCondition.greaterThan(fun, 0.0, false));
 		} else {
@@ -128,7 +128,7 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 				query.addCondition(BinaryCondition.lessThan(convert[0], convert[1], false));
 			} else {
 				throw new UnsupportedOperationException("Unrecognized functional Predicate: " + predicate);
-         }
+			}
 		}
 	}
 
@@ -138,8 +138,8 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 		for (int i = 0; i < arguments.length; i++) {
 			Term arg = arguments[i];
 
-         // If the variable is not in the argument map, just query for that variable.
-         // If it is in the mapping, then pull out the mapped value and convert that.
+			// If the variable is not in the argument map, just query for that variable.
+			// If it is in the mapping, then pull out the mapped value and convert that.
 			if (arg instanceof Variable) {
 				if (partialGrounding.hasVariable((Variable)arg)) {
 					arg = partialGrounding.getVariable((Variable)arg);
@@ -166,78 +166,78 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 	public void visitAtom(Atom atom) {
 		if (atom.getPredicate() instanceof FunctionalPredicate) {
 			functionalAtoms.add(atom);
-         return;
-      }
+			return;
+		}
 
-      // Each standard atom brings a new table join.
-      assert(atom.getPredicate() instanceof StandardPredicate);
-      PredicateInfo predicateInfo = database.getPredicateInfo(atom.getPredicate());
+		// Each standard atom brings a new table join.
+		assert(atom.getPredicate() instanceof StandardPredicate);
+		PredicateInfo predicateInfo = database.getPredicateInfo(atom.getPredicate());
 
-      String tableAlias = String.format("%s_%03d", TABLE_ALIAS_PREFIX, tableCounter);
+		String tableAlias = String.format("%s_%03d", TABLE_ALIAS_PREFIX, tableCounter);
 
-      query.addCustomFromTable(predicateInfo.tableName() + " " + tableAlias);
+		query.addCustomFromTable(predicateInfo.tableName() + " " + tableAlias);
 
-      Term[] arguments = atom.getArguments();
-      List<String> columnNames = predicateInfo.argumentColumns();
-      assert(arguments.length == columnNames.size());
+		Term[] arguments = atom.getArguments();
+		List<String> columnNames = predicateInfo.argumentColumns();
+		assert(arguments.length == columnNames.size());
 
-      for (int i = 0; i < arguments.length; i++) {
-         Term arg = arguments[i];
-         String columnReference = tableAlias + "." + columnNames.get(i);
+		for (int i = 0; i < arguments.length; i++) {
+			Term arg = arguments[i];
+			String columnReference = tableAlias + "." + columnNames.get(i);
 
-         if (arg instanceof Variable) {
-            Variable var = (Variable)arg;
-            if (partialGrounding.hasVariable(var)) {
-               arg = partialGrounding.getVariable(var);
-            } else {
-               if (joins.containsKey(var)) {
-                  query.addCondition(BinaryCondition.equalTo(
-                        new CustomSql(columnReference),
-                        new CustomSql(joins.get(var))));
-               } else {
-                  if (projection.contains(var)) {
-                     query.addAliasedColumn(new CustomSql(columnReference), var.getName());
-                  }
+			if (arg instanceof Variable) {
+				Variable var = (Variable)arg;
+				if (partialGrounding.hasVariable(var)) {
+					arg = partialGrounding.getVariable(var);
+				} else {
+					if (joins.containsKey(var)) {
+						query.addCondition(BinaryCondition.equalTo(
+								new CustomSql(columnReference),
+								new CustomSql(joins.get(var))));
+					} else {
+						if (projection.contains(var)) {
+							query.addAliasedColumn(new CustomSql(columnReference), var.getName());
+						}
 
-                  joins.put(var, columnReference);
-               }
-            }
-         }
+						joins.put(var, columnReference);
+					}
+				}
+			}
 
-         if (arg instanceof Attribute || arg instanceof UniqueID) {
-            Object value = null;
-            if (arg instanceof Attribute) {
-               value = ((Attribute)arg).getValue();
-            } else {
-               value = ((UniqueID)arg).getInternalID();
-            }
+			if (arg instanceof Attribute || arg instanceof UniqueID) {
+				Object value = null;
+				if (arg instanceof Attribute) {
+					value = ((Attribute)arg).getValue();
+				} else {
+					value = ((UniqueID)arg).getInternalID();
+				}
 
-            if (value instanceof String) {
-               value = escapeSingleQuotes((String)value);
-            }
+				if (value instanceof String) {
+					value = escapeSingleQuotes((String)value);
+				}
 
-            query.addCondition(BinaryCondition.equalTo(new CustomSql(columnReference), value));
-         } else {
-            assert(arg instanceof Variable);
-         }
-      }
+				query.addCondition(BinaryCondition.equalTo(new CustomSql(columnReference), value));
+			} else {
+				assert(arg instanceof Variable);
+			}
+		}
 
-      // Query all of the read (and the write) partition(s) belonging to the database
-      ArrayList<Integer> partitions = new ArrayList<Integer>(database.getReadPartitions().size());
-      for (int i = 0; i < database.getReadPartitions().size(); i++) {
-         partitions.add(database.getReadPartitions().get(i).getID());
-      }
-      partitions.add(database.getWritePartition().getID());
-      query.addCondition(new InCondition(new CustomSql(tableAlias + "." + PredicateInfo.PARTITION_COLUMN_NAME), partitions));
+		// Query all of the read (and the write) partition(s) belonging to the database
+		ArrayList<Integer> partitions = new ArrayList<Integer>(database.getReadPartitions().size());
+		for (int i = 0; i < database.getReadPartitions().size(); i++) {
+			partitions.add(database.getReadPartitions().get(i).getID());
+		}
+		partitions.add(database.getWritePartition().getID());
+		query.addCondition(new InCondition(new CustomSql(tableAlias + "." + PredicateInfo.PARTITION_COLUMN_NAME), partitions));
 
-      tableCounter++;
+		tableCounter++;
 	}
 
 	public String getSQL(Formula formula) {
 		AbstractFormulaTraverser.traverse(formula, this);
 		for (Atom atom : functionalAtoms) {
 			visitFunctionalAtom(atom);
-      }
+		}
 
 		return query.validate().toString();
 	}

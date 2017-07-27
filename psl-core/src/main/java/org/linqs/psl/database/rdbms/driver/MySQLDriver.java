@@ -139,26 +139,26 @@ public class MySQLDriver implements DatabaseDriver {
 	}
 
 	@Override
-   public PreparedStatement getUpsert(Connection connection, String tableName,
-         String[] columns, String[] keyColumns) {
-      List<String> updateValues = new ArrayList<String>();
-      for (String column : columns) {
-         updateValues.add(String.format("`%s` = VALUES(`%s`)", column, column));
-      }
+	public PreparedStatement getUpsert(Connection connection, String tableName,
+			String[] columns, String[] keyColumns) {
+		List<String> updateValues = new ArrayList<String>();
+		for (String column : columns) {
+			updateValues.add(String.format("`%s` = VALUES(`%s`)", column, column));
+		}
 
-      // MySQL usees the "INSERT ... ON DUPLICATE KEY" syntax.
-      List<String> sql = new ArrayList<String>();
-      sql.add("INSERT INTO `" + tableName + "`");
-      sql.add("   (`" + StringUtils.join(columns, "`, `") + "`)");
-      sql.add("VALUES");
-      sql.add("   (" + StringUtils.repeat("?", ", ", columns.length) + ")");
-      sql.add("ON DUPLICATE KEY UPDATE");
-      sql.add("   " + StringUtils.join(updateValues, ", "));
+		// MySQL usees the "INSERT ... ON DUPLICATE KEY" syntax.
+		List<String> sql = new ArrayList<String>();
+		sql.add("INSERT INTO `" + tableName + "`");
+		sql.add("	(`" + StringUtils.join(columns, "`, `") + "`)");
+		sql.add("VALUES");
+		sql.add("	(" + StringUtils.repeat("?", ", ", columns.length) + ")");
+		sql.add("ON DUPLICATE KEY UPDATE");
+		sql.add("	" + StringUtils.join(updateValues, ", "));
 
-      try {
-         return connection.prepareStatement(StringUtils.join(sql, "\n"));
-      } catch (SQLException ex) {
-         throw new RuntimeException("Could not prepare MySQL upsert for " + tableName, ex);
-      }
-   }
+		try {
+			return connection.prepareStatement(StringUtils.join(sql, "\n"));
+		} catch (SQLException ex) {
+			throw new RuntimeException("Could not prepare MySQL upsert for " + tableName, ex);
+		}
+	}
 }

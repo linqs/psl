@@ -34,30 +34,30 @@ import java.sql.Statement;
  * PostgreSQL Connection Wrapper.
  */
 public class PostgreSQLDriver implements DatabaseDriver {
-   public static final String DEFAULT_HOST = "localhost";
-   public static final String DEFAULT_PORT = "5432";
+	public static final String DEFAULT_HOST = "localhost";
+	public static final String DEFAULT_PORT = "5432";
 
 	// The connection to PostgreSQL
 	private final Connection dbConnection;
 
 	public PostgreSQLDriver(String databaseName, boolean clearDatabase) {
-      this(DEFAULT_HOST, DEFAULT_PORT, databaseName, clearDatabase);
-   }
+		this(DEFAULT_HOST, DEFAULT_PORT, databaseName, clearDatabase);
+	}
 
 	public PostgreSQLDriver(String host, String port, String databaseName, boolean clearDatabase) {
-      this(String.format("jdbc:postgresql://%s:%s/%s", host, port, databaseName), databaseName, clearDatabase);
-   }
+		this(String.format("jdbc:postgresql://%s:%s/%s", host, port, databaseName), databaseName, clearDatabase);
+	}
 
 	public PostgreSQLDriver(String connectionString, String databaseName, boolean clearDatabase) {
 		try {
-         Class.forName("org.postgresql.Driver");
+			Class.forName("org.postgresql.Driver");
 			dbConnection = DriverManager.getConnection(connectionString);
 
 			if (clearDatabase) {
-            executeUpdate("DROP SCHEMA public CASCADE");
-            executeUpdate("CREATE SCHEMA public");
-            executeUpdate("GRANT ALL ON SCHEMA public TO postgres");
-            executeUpdate("GRANT ALL ON SCHEMA public TO public");
+				executeUpdate("DROP SCHEMA public CASCADE");
+				executeUpdate("CREATE SCHEMA public");
+				executeUpdate("GRANT ALL ON SCHEMA public TO postgres");
+				executeUpdate("GRANT ALL ON SCHEMA public TO public");
 			}
 		} catch (ClassNotFoundException ex) {
 			throw new RuntimeException("Could not find postgres connector. Please check classpath.", ex);
@@ -111,30 +111,30 @@ public class PostgreSQLDriver implements DatabaseDriver {
 	}
 
 	@Override
-   public PreparedStatement getUpsert(Connection connection, String tableName,
-         String[] columns, String[] keyColumns) {
-      List<String> updateValues = new ArrayList<String>();
-      for (String column : columns) {
-         updateValues.add(String.format("%s = EXCLUDED.%s", column, column));
-      }
+	public PreparedStatement getUpsert(Connection connection, String tableName,
+			String[] columns, String[] keyColumns) {
+		List<String> updateValues = new ArrayList<String>();
+		for (String column : columns) {
+			updateValues.add(String.format("%s = EXCLUDED.%s", column, column));
+		}
 
-      // PostgreSQL uses the "INSERT ... ON CONFLICT" syntax.
-      List<String> sql = new ArrayList<String>();
-      sql.add("INSERT INTO " + tableName + "");
-      sql.add("   (" + StringUtils.join(columns, ", ") + ")");
-      sql.add("VALUES");
-      sql.add("   (" + StringUtils.repeat("?", ", ", columns.length) + ")");
-      sql.add("ON CONFLICT");
-      sql.add("   (" + StringUtils.join(keyColumns, ", ") + ")");
-      sql.add("DO UPDATE SET");
-      sql.add("   " + StringUtils.join(updateValues, ", "));
+		// PostgreSQL uses the "INSERT ... ON CONFLICT" syntax.
+		List<String> sql = new ArrayList<String>();
+		sql.add("INSERT INTO " + tableName + "");
+		sql.add("	(" + StringUtils.join(columns, ", ") + ")");
+		sql.add("VALUES");
+		sql.add("	(" + StringUtils.repeat("?", ", ", columns.length) + ")");
+		sql.add("ON CONFLICT");
+		sql.add("	(" + StringUtils.join(keyColumns, ", ") + ")");
+		sql.add("DO UPDATE SET");
+		sql.add("	" + StringUtils.join(updateValues, ", "));
 
-      try {
-         return connection.prepareStatement(StringUtils.join(sql, "\n"));
-      } catch (SQLException ex) {
-         throw new RuntimeException("Could not prepare PostgreSQL upsert for " + tableName, ex);
-      }
-   }
+		try {
+			return connection.prepareStatement(StringUtils.join(sql, "\n"));
+		} catch (SQLException ex) {
+			throw new RuntimeException("Could not prepare PostgreSQL upsert for " + tableName, ex);
+		}
+	}
 
 	private void executeUpdate(String query) throws SQLException {
 		Statement stmt = null;

@@ -54,13 +54,13 @@ public interface DatabaseDriver {
 	 */
 	public String getDoubleTypeName();
 
-   /**
-    * Get a PreparedStatement for an upsert (merge) on the specified table and columns.
-    * An "upsert" updates existing records and inserts where there is no record.
-    * Most RDBMSs support some for of upsert, but the syntax is inconsistent.
-    * The parameters for the statement should the the specified columns in order.
-    * Some databases (like H2) require knowing the key columns we need to use.
-    */
-   public PreparedStatement getUpsert(Connection connection, String tableName,
-         String[] columns, String[] keyColumns);
+	/**
+	 * Get a PreparedStatement for an upsert (merge) on the specified table and columns.
+	 * An "upsert" updates existing records and inserts where there is no record.
+	 * Most RDBMSs support some for of upsert, but the syntax is inconsistent.
+	 * The parameters for the statement should the the specified columns in order.
+	 * Some databases (like H2) require knowing the key columns we need to use.
+	 */
+	public PreparedStatement getUpsert(Connection connection, String tableName,
+			String[] columns, String[] keyColumns);
 }
