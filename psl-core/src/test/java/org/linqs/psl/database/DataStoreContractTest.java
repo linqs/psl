@@ -307,7 +307,7 @@ public abstract class DataStoreContractTest {
 	public void testPredicateRegistration() {
 		datastore.registerPredicate(p1);
 
-		Set<Predicate> registeredPredicates = datastore.getRegisteredPredicates();
+		Set<StandardPredicate> registeredPredicates = datastore.getRegisteredPredicates();
 		assertTrue(registeredPredicates.contains(p1));
 	}
 
@@ -319,7 +319,7 @@ public abstract class DataStoreContractTest {
 		datastore.close();
 		datastore = getDataStore(false);
 
-		Set<Predicate> registeredPredicates = datastore.getRegisteredPredicates();
+		Set<StandardPredicate> registeredPredicates = datastore.getRegisteredPredicates();
 		assertTrue(registeredPredicates.contains(p1));
 		assertTrue(registeredPredicates.contains(p2));
 	}

@@ -19,8 +19,13 @@ package org.linqs.psl.database.rdbms.driver;
 
 import org.linqs.psl.model.term.ConstantType;
 
+import org.apache.commons.lang3.StringUtils;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 
@@ -99,41 +104,15 @@ public class MySQLDriver implements DatabaseDriver {
 		return false;
 	}
 
-	/**
-	 * Create a full length hash index on the given column@table using the index_name.
-	 * For more information see: http://dev.mysql.com/doc/refman/5.1/en/create-index.html
-	 */
-	@Override
-	public String createHashIndex(String index_name, String table_name, String column_name) {
-		return "CREATE INDEX " + index_name + " ON " + table_name + " (" + column_name + " ) USING HASH";
-	}
-
-	/**
-	 * At most use the first 255 characters in an index containing string
-	 */
-	@Override
-	public String castStringWithModifiersForIndexing(String column_name) {
-		return column_name + "(255)";
-	}
-
-	/**
-	 * Create primary key clause
-	 * For more information see: http://dev.mysql.com/doc/refman/5.1/en/alter-table.html
-	 */
-	@Override
-	public String createPrimaryKey(String table_name, String columns) {
-		return "ALTER TABLE " + table_name + " ADD PRIMARY KEY (" + columns + ")";
-	}
-
 	@Override
 	public String getTypeName(ConstantType type) {
 		switch (type) {
 			case Double:
-				return "DOUBLE PRECISION";
+				return "DOUBLE";
 			case Integer:
 				return "INT";
 			case String:
-				return "TEXT";
+				return "VARCHAR(256)";
 			case Long:
 				return "BIGINT";
 			case Date:
@@ -141,7 +120,7 @@ public class MySQLDriver implements DatabaseDriver {
 			case UniqueIntID:
 				return "INT";
 			case UniqueStringID:
-				return "TEXT";
+				return "VARCHAR(256)";
 			case UniqueID:
 				throw new IllegalArgumentException("UniqueID too general, use specific form of UniqueID.");
 			default:
@@ -158,4 +137,28 @@ public class MySQLDriver implements DatabaseDriver {
 	public String getDoubleTypeName() {
 		return "DOUBLE";
 	}
+
+	@Override
+   public PreparedStatement getUpsert(Connection connection, String tableName,
+         String[] columns, String[] keyColumns) {
+      List<String> updateValues = new ArrayList<String>();
+      for (String column : columns) {
+         updateValues.add(String.format("`%s` = VALUES(`%s`)", column, column));
+      }
+
+      // MySQL usees the "INSERT ... ON DUPLICATE KEY" syntax.
+      List<String> sql = new ArrayList<String>();
+      sql.add("INSERT INTO `" + tableName + "`");
+      sql.add("   (`" + StringUtils.join(columns, "`, `") + "`)");
+      sql.add("VALUES");
+      sql.add("   (" + StringUtils.repeat("?", ", ", columns.length) + ")");
+      sql.add("ON DUPLICATE KEY UPDATE");
+      sql.add("   " + StringUtils.join(updateValues, ", "));
+
+      try {
+         return connection.prepareStatement(StringUtils.join(sql, "\n"));
+      } catch (SQLException ex) {
+         throw new RuntimeException("Could not prepare MySQL upsert for " + tableName, ex);
+      }
+   }
 }

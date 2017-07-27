@@ -106,7 +106,7 @@ public class RDBMSDataStore implements DataStore {
 	/*
 	 * Metadata
 	 */
-	protected RDBMSDataStoreMetadata metadata;
+	protected DataStoreMetadata metadata;
 
 	/*
 	 * The list of databases matched with their read partitions, and the set of
@@ -163,7 +163,7 @@ public class RDBMSDataStore implements DataStore {
 	 * Helper method to read from metadata table and store results into metadata object
 	 */
 	protected void initializeMetadata(Connection conn, String tblName){
-		this.metadata = new RDBMSDataStoreMetadata(conn, tblName);
+		this.metadata = new DataStoreMetadata(conn, tblName);
 		metadata.createMetadataTable();
 	}
 
@@ -446,6 +446,10 @@ public class RDBMSDataStore implements DataStore {
 	public Set<Partition> getPartitions() {
 		return metadata.getAllPartitions();
 	}
+
+   public DatabaseDriver getDriver() {
+      return dbDriver;
+   }
 
 	/**
 	 * Registers and returns an ID for a given RDBMSDatabase.

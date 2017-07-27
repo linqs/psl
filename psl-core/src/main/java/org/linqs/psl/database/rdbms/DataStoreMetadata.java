@@ -34,14 +34,14 @@ import java.util.Set;
 /**
  * @author jay
  */
-public class RDBMSDataStoreMetadata implements DataStoreMetdata {
-	private static final Logger log = LoggerFactory.getLogger(RDBMSDataStoreMetadata.class);
+public class DataStoreMetadata implements DataStoreMetdata {
+	private static final Logger log = LoggerFactory.getLogger(DataStoreMetadata.class);
 
 	protected String mdTableName;
 	protected Connection conn;
 	protected HashMap<String,Integer> partitionNames;
 
-	public RDBMSDataStoreMetadata(Connection conn, String mdTableName){
+	public DataStoreMetadata(Connection conn, String mdTableName){
 		this.mdTableName = mdTableName;
 		this.conn = conn;
 		partitionNames = new HashMap<String, Integer>();

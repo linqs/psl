@@ -19,8 +19,13 @@ package org.linqs.psl.database.rdbms.driver;
 
 import org.linqs.psl.model.term.ConstantType;
 
+import org.apache.commons.lang3.StringUtils;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 
@@ -111,21 +116,6 @@ public class H2DatabaseDriver implements DatabaseDriver {
 	}
 
 	@Override
-	public String createHashIndex(String index_name, String table_name, String column_name) {
-		return "CREATE HASH INDEX " + index_name + " ON " + table_name + " (" + column_name + " ) ";
-	}
-
-	@Override
-	public String castStringWithModifiersForIndexing(String column_name) {
-		return column_name;
-	}
-
-	@Override
-	public String createPrimaryKey(String table_name, String columns) {
-		return "CREATE PRIMARY KEY HASH ON " + table_name + " (" + columns + " ) ";
-	}
-
-	@Override
 	public String getTypeName(ConstantType type) {
 		switch (type) {
 			case Double:
@@ -158,4 +148,23 @@ public class H2DatabaseDriver implements DatabaseDriver {
 	public String getDoubleTypeName() {
 		return "DOUBLE";
 	}
+
+	@Override
+   public PreparedStatement getUpsert(Connection connection, String tableName,
+         String[] columns, String[] keyColumns) {
+      // H2 uses a "MERGE" syntax and requires a specified key.
+      List<String> sql = new ArrayList<String>();
+      sql.add("MERGE INTO " + tableName + "");
+      sql.add("   (" + StringUtils.join(columns, ", ") + ")");
+      sql.add("KEY");
+      sql.add("   (" + StringUtils.join(keyColumns, ", ") + ")");
+      sql.add("VALUES");
+      sql.add("   (" + StringUtils.repeat("?", ", ", columns.length) + ")");
+
+      try {
+         return connection.prepareStatement(StringUtils.join(sql, "\n"));
+      } catch (SQLException ex) {
+         throw new RuntimeException("Could not prepare MySQL upsert for " + tableName, ex);
+      }
+   }
 }

@@ -67,14 +67,20 @@ import java.util.Set;
  * to modify the subset. It is initially empty.
  */
 public class DatabaseQuery {
-
 	private final Formula formula;
 	private final VariableAssignment partialGrounding;
 	private final Set<Variable> projectTo;
 	private final ListOrderedSet<Variable> ordering;
+   private final boolean distinct;
 
 	public DatabaseQuery(Formula formula) {
+      this(formula, true);
+   }
+
+	public DatabaseQuery(Formula formula, boolean distinct) {
 		this.formula = formula;
+      this.distinct = distinct;
+
 		partialGrounding = new VariableAssignment();
 		projectTo = new HashSet<Variable>();
 
@@ -105,6 +111,10 @@ public class DatabaseQuery {
 	public Formula getFormula() {
 		return formula;
 	}
+
+   public boolean getDistinct() {
+      return distinct;
+   }
 
 	public VariableAssignment getPartialGrounding() {
 		return partialGrounding;

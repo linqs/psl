@@ -20,6 +20,7 @@ package org.linqs.psl.database.rdbms.driver;
 import org.linqs.psl.model.term.ConstantType;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 
 public interface DatabaseDriver {
 
@@ -38,31 +39,6 @@ public interface DatabaseDriver {
 	public boolean isSupportExternalFunction();
 
 	/**
-	 * Template for hash index creation for different drivers.
-	 * Hash index is useful for PSL shared literal joins.
-	 *
-	 * JDBC has poor support for index creation DML. Often db schema is not dynamically generated,
-	 * but hand tuned by DBA. PSL is opposite, db schema is generated on the fly.
-	 * Configuration bundle is not good place for put index creation queries due to its inflexibility.
-	 */
-	public String createHashIndex(String indexName, String tableName, String columnName);
-
-	/**
-	 * Primary key creation syntax is not friendly in JDBC.
-	 * The template method for each database driver to return the proper clause.
-	 */
-	public String createPrimaryKey(String tableName, String columns);
-
-	/**
-	 * String type is not friendly to index. Different database treat it
-	 * differently. For example in a hash index, often a prefix of the string
-	 * is useful enough for indexing purpose. A full string index, not only
-	 * reduces query time, but also increases inserting time.
-	 * H2 has no complain about string, but mysql does have a limit of string prefix.
-	 */
-	public String castStringWithModifiersForIndexing(String columnName);
-
-	/**
 	 * Get the type name for each argument type.
 	 */
 	public String getTypeName(ConstantType type);
@@ -77,4 +53,14 @@ public interface DatabaseDriver {
 	 * Get the type name for a double type.
 	 */
 	public String getDoubleTypeName();
+
+   /**
+    * Get a PreparedStatement for an upsert (merge) on the specified table and columns.
+    * An "upsert" updates existing records and inserts where there is no record.
+    * Most RDBMSs support some for of upsert, but the syntax is inconsistent.
+    * The parameters for the statement should the the specified columns in order.
+    * Some databases (like H2) require knowing the key columns we need to use.
+    */
+   public PreparedStatement getUpsert(Connection connection, String tableName,
+         String[] columns, String[] keyColumns);
 }

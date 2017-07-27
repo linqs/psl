@@ -86,7 +86,29 @@ public class PredicateInfo {
 	}
 
 	/**
-	 * Create a prepared statrment that queries for one specific atom.
+	 * Create a prepared statement that queries for all random variable atoms
+    * (atoms in the write partition) of this predicate.
+    * No query parameters need filling.
+	 */
+	public PreparedStatement createQueryAllWriteStatement(Connection connection, int writePartition) {
+		SelectQuery query = new SelectQuery();
+		QueryPreparer.MultiPlaceHolder placeHolder = (new QueryPreparer()).getNewMultiPlaceHolder();
+
+		// Seelct *
+		query.addAllColumns();
+		query.addCustomFromTable(tableName);
+
+		// We only want to query from the write partition.
+		query.addCondition(BinaryCondition.equalTo(new CustomSql(PARTITION_COLUMN_NAME), writePartition));
+		try {
+			return connection.prepareStatement(query.validate().toString());
+		} catch (SQLException ex) {
+			throw new RuntimeException("Could not create prepared statement.", ex);
+		}
+	}
+
+	/**
+	 * Create a prepared statement that queries for one specific atom.
 	 * The variables left to set in the query are the predciate arguments.
 	 */
 	public PreparedStatement createQueryStatement(Connection connection, List<Integer> readPartitions) {
@@ -112,59 +134,31 @@ public class PredicateInfo {
 	}
 
 	/**
-	 * Create a prepared statrment that updates one specific atom.
-	 * The variables left to set in the query are the value and predciate arguments.
+	 * Create a prepared statement that upserts.
+	 * The variables left to set in the query are the partition, value, and predciate arguments.
 	 */
-	public PreparedStatement createUpdateStatement(Connection connection, int writePartition) {
-		UpdateQuery update = new UpdateQuery(tableName);
-		QueryPreparer.MultiPlaceHolder placeHolder = (new QueryPreparer()).getNewMultiPlaceHolder();
+	public PreparedStatement createUpsertStatement(Connection connection, DatabaseDriver dbDriver) {
+      // Columns with data in them: partition, value, argument.
+      String[] columns = new String[2 + argCols.size()];
 
-		// We only want to update atoms in the write partition.
-		update.addCondition(BinaryCondition.equalTo(new CustomSql(PARTITION_COLUMN_NAME), writePartition));
+      // Columns to treat as a key: partition, arguments.
+      String[] keyColumns = new String[1 + argCols.size()];
 
-		// Set a placeholder for the value
-		update.addCustomSetClause(VALUE_COLUMN_NAME, placeHolder);
+      columns[0] = PredicateInfo.PARTITION_COLUMN_NAME;
+      columns[1] = PredicateInfo.VALUE_COLUMN_NAME;
 
-		// Set placeholders for the arguments
-		for (String colName : argCols) {
-			update.addCondition(BinaryCondition.equalTo(new CustomSql(colName), placeHolder));
-		}
+      keyColumns[0] = PredicateInfo.PARTITION_COLUMN_NAME;
 
-		try {
-			return connection.prepareStatement(update.validate().toString());
-		} catch (SQLException ex) {
-			throw new RuntimeException("Could not prepare update for: " + tableName, ex);
-		}
+      for (int i = 0; i < argCols.size(); i++) {
+         columns[2 + i] = argCols.get(i);
+         keyColumns[1 + i] = argCols.get(i);
+      }
+
+      return dbDriver.getUpsert(connection, tableName, columns, keyColumns);
 	}
 
 	/**
-	 * Create a prepared statrment that inserts one ground atom.
-	 * The variables left to set in the query are the value and predciate arguments.
-	 */
-	public PreparedStatement createInsertStatement(Connection connection, int writePartition) {
-		InsertQuery insert = new InsertQuery(tableName);
-		QueryPreparer.MultiPlaceHolder placeHolder = (new QueryPreparer()).getNewMultiPlaceHolder();
-
-		// Set the partition equal to the write partition.
-		insert.addCustomColumn(PredicateInfo.PARTITION_COLUMN_NAME, writePartition);
-
-		// Set a placeholder for the value.
-		insert.addCustomColumn(PredicateInfo.VALUE_COLUMN_NAME, placeHolder);
-
-		// Set placeholders for the arguments
-		for (String colName : argCols) {
-			insert.addCustomColumn(colName, placeHolder);
-		}
-
-		try {
-			return connection.prepareStatement(insert.toString());
-		} catch (SQLException ex) {
-			throw new RuntimeException("Could not prepare insert for " + tableName, ex);
-		}
-	}
-
-	/**
-	 * Create a prepared statrment that deletes ground atoms that match all the arguments.
+	 * Create a prepared statement that deletes ground atoms that match all the arguments.
 	 * Note that we will only delete from the write partition.
 	 */
 	public PreparedStatement createDeleteStatement(Connection connection, int writePartition) {
@@ -221,10 +215,23 @@ public class PredicateInfo {
 		}
 
 		// Add a unique constraint for all the unique ids (and partition).
-		if (uniqueColumns.size() > 0) {
-			uniqueColumns.add(0, PARTITION_COLUMN_NAME);
+      uniqueColumns.add(0, PARTITION_COLUMN_NAME);
+		if (uniqueColumns.size() > 1) {
 			createTable.addCustomConstraints("UNIQUE(" + StringUtils.join(uniqueColumns, ", ") + ")");
 		}
+
+      // We have an additional constraint that all atoms in a partition must be unique.
+      // If all columns are UniqueIDs, when we are already done.
+      // Add 1 since we already put the partition in |uniqueColumns|.
+      if (uniqueColumns.size() < (argCols.size() + 1)) {
+         for (String colName : argCols) {
+            if (!uniqueColumns.contains(colName)) {
+               uniqueColumns.add(colName);
+            }
+         }
+
+			createTable.addCustomConstraints("UNIQUE(" + StringUtils.join(uniqueColumns, ", ") + ")");
+      }
 
 		try {
 			Statement stmt = connection.createStatement();

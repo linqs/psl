@@ -150,6 +150,12 @@ public interface Database {
 	 */
 	public void commit(RandomVariableAtom atom);
 
+   /**
+    * A batch form or commit().
+    * When possible, this commit should be used.
+    */
+	public void commit(List<RandomVariableAtom> atom);
+
 	/**
 	 * Returns all groundings of a Formula that match a DatabaseQuery.
 	 *

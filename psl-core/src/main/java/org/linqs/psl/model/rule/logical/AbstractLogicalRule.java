@@ -95,7 +95,7 @@ abstract public class AbstractLogicalRule extends AbstractRule {
 
 	@Override
 	public void groundAll(AtomManager atomManager, GroundRuleStore grs) {
-		ResultList res = atomManager.executeQuery(new DatabaseQuery(clause.getQueryFormula()));
+		ResultList res = atomManager.executeQuery(new DatabaseQuery(clause.getQueryFormula(), false));
 		int numGrounded = groundFormula(atomManager, grs, res, null);
 		log.debug("Grounded {} instances of rule {}", numGrounded, this);
 	}
