@@ -17,69 +17,77 @@
  */
 package org.linqs.psl.model.term;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 
 /**
  * A hashed storage class for arguments, keyed on their associated variables.
- * 
+ *
  * This class extends the functionality of its parent class, {@link HashMap},
  * adding functionality specific to predicate arguments.
- * 
+ *
  * @author
  *
  */
 public class VariableTypeMap extends HashMap<Variable,ConstantType> {
-
 	private static final long serialVersionUID = -6590175777602710989L;
 
 	/**
 	 * Adds a variable-type pair to the hashmap.
-	 * 
+	 *
 	 * @param var A variable
 	 * @param type An argument type
 	 */
 	public void addVariable(Variable var, ConstantType type) {
-		ConstantType t = get(var);
-		if (t!=null) {
-			if (t!=type) throw new IllegalStateException("Variable has inconsistent type: " + var);
-		} else put(var,type);
+		ConstantType oldType = get(var);
+		if (oldType != null) {
+			if (oldType != type) {
+				throw new IllegalStateException("Variable, " + var + ",  has inconsistent type. First: " + oldType + ", Now: " + type);
+			}
+		} else {
+			put(var, type);
+		}
 	}
 
 	/**
 	 * Returns all variables in the hashmap.
-	 *  
+	 *
 	 * @return A set of variables
 	 */
 	public Set<Variable> getVariables() {
 		return keySet();
 	}
-	
+
 	/**
 	 * Returns the type of a given variable.
-	 * 
+	 *
 	 * @param var A variable
 	 * @return The argument type of the given variable
 	 */
 	public ConstantType getType(Variable var) {
-		ConstantType t = get(var);
-		if (t==null) throw new IllegalArgumentException("Specified variable is unknown: "+var);
-		return t;
+		ConstantType type = get(var);
+		if (type == null) {
+			throw new IllegalArgumentException("Specified variable is unknown: " + var);
+		}
+
+		return type;
 	}
-	
+
 	/**
 	 * Returns whether the given variable exists in the hashmap.
-	 * 
+	 *
 	 * @param var A variable
 	 * @return TRUE if exists; FALSE otherwise
 	 */
 	public boolean hasVariable(Variable var) {
 		return containsKey(var);
 	}
-	
+
 	/**
 	 * Performs a shallow copy of all variable-type pairs from another VariableTypeMap to this one.
-	 * 
+	 *
 	 * @param other Another VariableTypeMap
 	 */
 	public void addAll(VariableTypeMap other) {
@@ -87,5 +95,4 @@ public class VariableTypeMap extends HashMap<Variable,ConstantType> {
 			addVariable(entry.getKey(),entry.getValue());
 		}
 	}
-	
 }

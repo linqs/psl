@@ -137,17 +137,17 @@ public class RDBMSDataStore implements DataStore {
 		// Keep database driver locally for generating different query dialets
 		this.dbDriver = dbDriver;
 
+		// Store the type of unique ID this RDBMS will use
+		this.stringUniqueIDs = config.getBoolean(USE_STRING_ID_KEY, USE_STRING_ID_DEFAULT);
+
 		// Connect to the database
 		this.connection = dbDriver.getConnection();
 
 		// Set up the data loader
-		this.dataloader = new RDBMSDataLoader(connection);
+		this.dataloader = new RDBMSDataLoader(connection, stringUniqueIDs);
 
 		//Initialize metadata
 		initializeMetadata(connection, METADATA_TABLENAME);
-
-		// Store the type of unique ID this RDBMS will use
-		this.stringUniqueIDs = config.getBoolean(USE_STRING_ID_KEY, USE_STRING_ID_DEFAULT);
 
 		// Read in any predicates that exist in the database
 		deserializePredicates();
@@ -202,6 +202,7 @@ public class RDBMSDataStore implements DataStore {
 		}
 	}
 
+   // TODO(eriq): Move to PredicateInfo.
 	/**
 	 * Helper method to register a predicate from a given table
 	 * @param tableName		the database table to analyze
@@ -229,6 +230,7 @@ public class RDBMSDataStore implements DataStore {
 						} else if (argumentName.equals("double")) {
 							args.add(argumentLocation, ConstantType.Double);
 						} else if (argumentName.equals("uniqueid")) {
+                     // TODO(eriq): What type
 							args.add(argumentLocation, ConstantType.UniqueID);
 						}
 					}

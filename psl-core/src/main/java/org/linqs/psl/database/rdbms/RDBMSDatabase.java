@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.database.rdbms;
 
-import org.joda.time.DateTime;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseQuery;
@@ -33,9 +32,18 @@ import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.predicate.FunctionalPredicate;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
-import org.linqs.psl.model.term.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.model.term.Attribute;
+import org.linqs.psl.model.term.Constant;
+import org.linqs.psl.model.term.ConstantType;
+import org.linqs.psl.model.term.DateAttribute;
+import org.linqs.psl.model.term.DoubleAttribute;
+import org.linqs.psl.model.term.IntegerAttribute;
+import org.linqs.psl.model.term.LongAttribute;
+import org.linqs.psl.model.term.StringAttribute;
+import org.linqs.psl.model.term.Term;
+import org.linqs.psl.model.term.UniqueID;
+import org.linqs.psl.model.term.Variable;
+import org.linqs.psl.model.term.VariableTypeMap;
 
 import com.healthmarketscience.sqlbuilder.BinaryCondition;
 import com.healthmarketscience.sqlbuilder.CustomSql;
@@ -45,6 +53,9 @@ import com.healthmarketscience.sqlbuilder.QueryPreparer;
 import com.healthmarketscience.sqlbuilder.SelectQuery;
 import com.healthmarketscience.sqlbuilder.UpdateQuery;
 import com.healthmarketscience.sqlbuilder.DeleteQuery;
+import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -505,6 +516,8 @@ public class RDBMSDatabase implements Database {
 				case Date:
 					return new DateAttribute(new DateTime(results.getDate(columnName).getTime()));
 				case UniqueID:
+				case UniqueIntID:
+				case UniqueStringID:
 					return getUniqueID(results.getObject(columnName));
 				default:
 					throw new IllegalArgumentException("Unknown argument type: " + type);

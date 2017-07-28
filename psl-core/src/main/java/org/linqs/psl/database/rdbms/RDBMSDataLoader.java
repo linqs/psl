@@ -22,19 +22,26 @@ import org.linqs.psl.database.loading.DataLoader;
 import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.database.loading.OpenInserter;
 import org.linqs.psl.model.predicate.Predicate;
+import org.linqs.psl.model.term.ConstantType;
 
 import com.healthmarketscience.sqlbuilder.CustomSql;
 import com.healthmarketscience.sqlbuilder.InsertQuery;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+/**
+ * Handle the loading of predicate data into the database.
+ * The inserters that originate from here will handle type conversion.
+ */
 public class RDBMSDataLoader implements DataLoader {
 	public static final double DEFAULT_EVIDENCE_VALUE = 1.0;
 
@@ -42,14 +49,16 @@ public class RDBMSDataLoader implements DataLoader {
 
 	private final Connection connection;
 	private final Map<Predicate, RDBMSTableInserter> inserts;
+	private final boolean stringUniqueIDs;
 
-	public RDBMSDataLoader(Connection connection) {
+	public RDBMSDataLoader(Connection connection, boolean stringUniqueIDs) {
 		this.connection = connection;
+		this.stringUniqueIDs = stringUniqueIDs;
 		inserts = new HashMap<Predicate, RDBMSTableInserter>();
 	}
 
-	void registerPredicate(PredicateInfo predicateHandle) {
-		inserts.put(predicateHandle.predicate(), new RDBMSTableInserter(predicateHandle));
+	void registerPredicate(PredicateInfo predicateInfo) {
+		inserts.put(predicateInfo.predicate(), new RDBMSTableInserter(predicateInfo));
 	}
 
 	@Override
@@ -63,48 +72,47 @@ public class RDBMSDataLoader implements DataLoader {
 	}
 
 	@Override
-	public Inserter getInserter(Predicate predicate, Partition partitionID) {
-		return new RDBMSInserter(getOpenInserter(predicate),partitionID);
+	public Inserter getInserter(Predicate predicate, Partition partition) {
+		return new RDBMSInserter(getOpenInserter(predicate), partition);
 	}
 
-	private class RDBMSInserter implements Inserter {
+	private class RDBMSInserter extends Inserter {
 		private final RDBMSTableInserter inserter;
-		private final Partition partitionID;
+		private final Partition partition;
 
-		public RDBMSInserter(RDBMSTableInserter inserter, Partition pid) {
-			assert(pid != null);
+		public RDBMSInserter(RDBMSTableInserter inserter, Partition partition) {
+			assert(partition != null);
+
 			this.inserter = inserter;
-			partitionID = pid;
+			this.partition = partition;
 		}
 
 		@Override
-		public void insert(Object... data) {
-			inserter.insert(partitionID, data);
+		public void insertAll(List<List<Object>> data) {
+			inserter.insertAll(partition, data);
 		}
 
 		@Override
-		public void insertValue(double value, Object... data) {
-			inserter.insertValue(partitionID, value, data);
+		public void insertAllValues(List<Double> values, List<List<Object>> data) {
+			inserter.insertAllValues(partition, values, data);
 		}
 	}
 
-	private class RDBMSTableInserter implements OpenInserter {
-		private final PredicateInfo predicateHandle;
-		private final int argSize;
+	private class RDBMSTableInserter extends OpenInserter {
+		private final PredicateInfo predicateInfo;
 		private final PreparedStatement insertStmt;
 
-		public RDBMSTableInserter(PredicateInfo predicateHandle) {
-			this.predicateHandle = predicateHandle;
-			this.argSize = predicateHandle.predicate().getArity();
+		public RDBMSTableInserter(PredicateInfo predicateInfo) {
+			this.predicateInfo = predicateInfo;
 
-			InsertQuery sqlBuilder = new InsertQuery(predicateHandle.tableName());
+			InsertQuery sqlBuilder = new InsertQuery(predicateInfo.tableName());
 
 			// Core columns (partition, value).
 			sqlBuilder.addCustomPreparedColumns(new CustomSql(PredicateInfo.PARTITION_COLUMN_NAME));
 			sqlBuilder.addCustomPreparedColumns(new CustomSql(PredicateInfo.VALUE_COLUMN_NAME));
 
 			// Argument columns.
-			for (String column : predicateHandle.argumentColumns()) {
+			for (String column : predicateInfo.argumentColumns()) {
 				sqlBuilder.addCustomPreparedColumns(new CustomSql(column));
 			}
 
@@ -116,69 +124,124 @@ public class RDBMSDataLoader implements DataLoader {
 		}
 
 		@Override
-		public void insert(Partition partition, Object... data) {
-			insertInternal(partition, DEFAULT_EVIDENCE_VALUE, data);
+		public void insertAll(Partition partition, List<List<Object>> data) {
+			List<Double> truthValues = new ArrayList<Double>(data.size());
+			for (int i = 0; i < data.size(); i++) {
+				truthValues.add(DEFAULT_EVIDENCE_VALUE);
+			}
+
+			insertInternal(partition, truthValues, data);
 		}
 
 		@Override
-		public void insertValue(Partition partition, double value, Object... data) {
-			insertInternal(partition, value, data);
+		public void insertAllValues(Partition partition, List<Double> values, List<List<Object>> data) {
+			insertInternal(partition, values, data);
 		}
 
-		private void insertInternal(Partition partition, double value, Object[] data) {
+		private void insertInternal(Partition partition, List<Double> values, List<List<Object>> data) {
+			assert(values.size() == data.size());
+
 			int partitionID = partition.getID();
 			if (partitionID < 0) {
 				throw new IllegalArgumentException("Partition IDs must be non-negative.");
 			}
 
-			if (data.length != argSize) {
-				throw new IllegalArgumentException(
-					String.format("Data length does not match for %s: Expecting: %d, Got: %d",
-					partition.getName(), argSize, data.length));
-			}
-
 			try {
-				// Partition
-				insertStmt.setInt(1, partitionID);
+				insertStmt.clearBatch();
 
-				// Value
-				if (Double.isNaN(value)) {
-					insertStmt.setNull(2, java.sql.Types.DOUBLE);
-				} else {
-					insertStmt.setDouble(2, value);
-				}
+				for (int rowIndex = 0; rowIndex < data.size(); rowIndex++) {
+					List<Object> row = data.get(rowIndex);
+					Double value = values.get(rowIndex);
 
-				// Prepared startments index by 1, and offset by the partition and value.
-				int dataOffset = 3;
-				for (int i = 0; i < argSize; i++) {
-					assert data[i] != null;
+					assert(row != null);
 
-					if (data[i] instanceof Integer) {
-						insertStmt.setInt(i + dataOffset, (Integer)data[i]);
-					} else if (data[i] instanceof Double) {
-						// The standard JDBC way to insert NaN is using setNull
-						// if not, mysql will complain about any NaNs.
-						if (Double.isNaN((Double)data[i])) {
-							insertStmt.setNull(i + dataOffset, java.sql.Types.DOUBLE);
-						} else {
-							insertStmt.setDouble(i + dataOffset, (Double)data[i]);
-						}
-					} else if (data[i] instanceof String) {
-						insertStmt.setString(i + dataOffset, (String)data[i]);
-					} else if (data[i] instanceof RDBMSUniqueIntID) {
-						insertStmt.setInt(i + dataOffset, ((RDBMSUniqueIntID)data[i]).getID());
-					} else if (data[i] instanceof RDBMSUniqueStringID) {
-						insertStmt.setString(i + dataOffset, ((RDBMSUniqueStringID)data[i]).getID());
-					} else {
-						throw new IllegalArgumentException("Unknown data type for :" + data[i]);
+					if (row.size() != predicateInfo.argumentColumns().size()) {
+						throw new IllegalArgumentException(
+							String.format("Data on row %d length does not match for %s: Expecting: %d, Got: %d",
+							rowIndex, partition.getName(), predicateInfo.argumentColumns().size(), row.size()));
 					}
+
+					insertStmt.clearParameters();
+
+					// Partition
+					insertStmt.setInt(1, partitionID);
+
+					// Value
+					if (value == null || value.isNaN()) {
+						insertStmt.setNull(2, java.sql.Types.DOUBLE);
+					} else {
+						insertStmt.setDouble(2, value);
+					}
+
+					// Prepared startments index by 1, and offset by the partition and value.
+					int dataOffset = 3;
+					for (int argIndex = 0; argIndex < predicateInfo.argumentColumns().size(); argIndex++) {
+						Object argValue = row.get(argIndex);
+						int paramIndex = argIndex + dataOffset;
+
+						assert(argValue != null);
+
+						if (argValue instanceof Integer) {
+							insertStmt.setInt(paramIndex, (Integer)argValue);
+						} else if (argValue instanceof Double) {
+							// The standard JDBC way to insert NaN is using setNull
+							// if not, mysql will complain about any NaNs.
+							if (Double.isNaN((Double)argValue)) {
+								insertStmt.setNull(paramIndex, java.sql.Types.DOUBLE);
+							} else {
+								insertStmt.setDouble(paramIndex, (Double)argValue);
+							}
+						} else if (argValue instanceof String) {
+							// This is the most common value we get when someone is using InsertUtils.
+							// The value may need to be convered from a string.
+							insertStmt.setObject(paramIndex, convertString((String)argValue, argIndex));
+						} else if (argValue instanceof RDBMSUniqueIntID) {
+							insertStmt.setInt(paramIndex, ((RDBMSUniqueIntID)argValue).getID());
+						} else if (argValue instanceof RDBMSUniqueStringID) {
+							insertStmt.setString(paramIndex, ((RDBMSUniqueStringID)argValue).getID());
+						} else {
+							throw new IllegalArgumentException("Unknown data type for :" + argValue);
+						}
+					}
+
+					insertStmt.addBatch();
+					insertStmt.clearParameters();
 				}
 
-				insertStmt.executeUpdate();
-				insertStmt.clearParameters();
+				insertStmt.executeBatch();
+				insertStmt.clearBatch();
 			} catch (SQLException ex) {
-				log.error(ex.getMessage() + "\n" + Arrays.toString(data));
-				throw new RuntimeException(ex);
+				log.error(ex.getMessage());
+				throw new RuntimeException("Error inserting into RDBMS.", ex);
+			}
+		}
+
+		/**
+		 * Take in the value to be inserted as a string and convert it to the appropriate Java type
+		 * for PreparedStatement.setObject().
+		 */
+		private Object convertString(String value, int argumentIndex) {
+			switch (predicateInfo.predicate().getArgumentType(argumentIndex)) {
+				case Double:
+					return new Double(Double.parseDouble(value));
+				case Integer:
+				case UniqueIntID:
+					return new Integer(Integer.parseInt(value));
+				case String:
+				case UniqueStringID:
+					return value;
+				case Long:
+					return new Long(Long.parseLong(value));
+				case Date:
+					return new DateTime(value);
+				case UniqueID:
+					if (stringUniqueIDs) {
+						return value;
+					} else {
+						return new Integer(Integer.parseInt(value));
+					}
+				default:
+					throw new IllegalArgumentException("Unknown argument type: " + predicateInfo.predicate().getArgumentType(argumentIndex));
 			}
 		}
 	}
