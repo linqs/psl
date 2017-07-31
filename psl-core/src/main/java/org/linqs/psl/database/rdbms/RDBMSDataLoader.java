@@ -23,6 +23,8 @@ import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.database.loading.OpenInserter;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.term.ConstantType;
+import org.linqs.psl.model.term.UniqueIntID;
+import org.linqs.psl.model.term.UniqueStringID;
 
 import com.healthmarketscience.sqlbuilder.CustomSql;
 import com.healthmarketscience.sqlbuilder.InsertQuery;
@@ -49,11 +51,9 @@ public class RDBMSDataLoader implements DataLoader {
 
 	private final Connection connection;
 	private final Map<Predicate, RDBMSTableInserter> inserts;
-	private final boolean stringUniqueIDs;
 
-	public RDBMSDataLoader(Connection connection, boolean stringUniqueIDs) {
+	public RDBMSDataLoader(Connection connection) {
 		this.connection = connection;
-		this.stringUniqueIDs = stringUniqueIDs;
 		inserts = new HashMap<Predicate, RDBMSTableInserter>();
 	}
 
@@ -195,10 +195,10 @@ public class RDBMSDataLoader implements DataLoader {
 							// This is the most common value we get when someone is using InsertUtils.
 							// The value may need to be convered from a string.
 							insertStmt.setObject(paramIndex, convertString((String)argValue, argIndex));
-						} else if (argValue instanceof RDBMSUniqueIntID) {
-							insertStmt.setInt(paramIndex, ((RDBMSUniqueIntID)argValue).getID());
-						} else if (argValue instanceof RDBMSUniqueStringID) {
-							insertStmt.setString(paramIndex, ((RDBMSUniqueStringID)argValue).getID());
+						} else if (argValue instanceof UniqueIntID) {
+							insertStmt.setInt(paramIndex, ((UniqueIntID)argValue).getID());
+						} else if (argValue instanceof UniqueStringID) {
+							insertStmt.setString(paramIndex, ((UniqueStringID)argValue).getID());
 						} else {
 							throw new IllegalArgumentException("Unknown data type for :" + argValue);
 						}
@@ -234,12 +234,6 @@ public class RDBMSDataLoader implements DataLoader {
 					return new Long(Long.parseLong(value));
 				case Date:
 					return new DateTime(value);
-				case UniqueID:
-					if (stringUniqueIDs) {
-						return value;
-					} else {
-						return new Integer(Integer.parseInt(value));
-					}
 				default:
 					throw new IllegalArgumentException("Unknown argument type: " + predicateInfo.predicate().getArgumentType(argumentIndex));
 			}

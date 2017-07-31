@@ -50,7 +50,7 @@ import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.DoubleAttribute;
 import org.linqs.psl.model.term.StringAttribute;
-import org.linqs.psl.model.term.UniqueID;
+import org.linqs.psl.model.term.UniqueIntID;
 import org.linqs.psl.model.term.Variable;
 
 /**
@@ -69,10 +69,9 @@ public abstract class DataStoreContractTest {
 	private List<Database> dbs;
 
 	/**
-	 * @return the DataStore to be tested, should always be backed by the same
-	 *             persistence mechanism
+	 * @return the DataStore to be tested, should always be backed by the same persistence mechanism
 	 */
-	abstract public DataStore getDataStore(boolean clearDB);
+	public abstract DataStore getDataStore(boolean clearDB);
 
 	/**
 	 * Deletes any files and releases any resources used by the tested DataStore
@@ -82,11 +81,11 @@ public abstract class DataStoreContractTest {
 
 	static {
 		PredicateFactory predicateFactory = PredicateFactory.getFactory();
-		p1 = predicateFactory.createStandardPredicate("DataStoreContractTest_P1", ConstantType.UniqueID, ConstantType.UniqueID);
+		p1 = predicateFactory.createStandardPredicate("DataStoreContractTest_P1", ConstantType.UniqueIntID, ConstantType.UniqueIntID);
 		p2 = predicateFactory.createStandardPredicate("DataStoreContractTest_P2", ConstantType.String, ConstantType.String);
 		p3 = predicateFactory.createStandardPredicate("DataStoreContractTest_P3", ConstantType.Double, ConstantType.Double);
-		p4 = predicateFactory.createStandardPredicate("DataStoreContractTest_P4", ConstantType.UniqueID, ConstantType.Double);
-		fp1 = predicateFactory.createFunctionalPredicate("DataStoreContractTest_FP1", new ExternalFunction() {
+		p4 = predicateFactory.createStandardPredicate("DataStoreContractTest_P4", ConstantType.UniqueIntID, ConstantType.Double);
+		fp1 = predicateFactory.createExternalFunctionalPredicate("DataStoreContractTest_FP1", new ExternalFunction() {
 
 			@Override
 			public double getValue(ReadOnlyDatabase db, Constant... args) {
@@ -127,10 +126,10 @@ public abstract class DataStoreContractTest {
 		datastore.registerPredicate(p1);
 		Inserter inserter = datastore.getInserter(p1, datastore.getPartition("0"));
 
-		UniqueID a = datastore.getUniqueID(0);
-		UniqueID b = datastore.getUniqueID(1);
-		UniqueID c = datastore.getUniqueID(2);
-		UniqueID d = datastore.getUniqueID(3);
+		UniqueIntID a = new UniqueIntID(0);
+		UniqueIntID b = new UniqueIntID(1);
+		UniqueIntID c = new UniqueIntID(2);
+		UniqueIntID d = new UniqueIntID(3);
 
 		inserter.insert(a, b);
 		inserter.insertValue(0.5, b, c);
@@ -218,8 +217,8 @@ public abstract class DataStoreContractTest {
 	public void testCommit() {
 		datastore.registerPredicate(p1);
 
-		UniqueID a = datastore.getUniqueID(0);
-		UniqueID b = datastore.getUniqueID(1);
+		UniqueIntID a = new UniqueIntID(0);
+		UniqueIntID b = new UniqueIntID(1);
 
 		Database db = datastore.getDatabase(datastore.getPartition("0"));
 
@@ -245,8 +244,8 @@ public abstract class DataStoreContractTest {
 	public void testDoubleCommit() {
 		datastore.registerPredicate(p1);
 
-		UniqueID a = datastore.getUniqueID(0);
-		UniqueID b = datastore.getUniqueID(1);
+		UniqueIntID a = new UniqueIntID(0);
+		UniqueIntID b = new UniqueIntID(1);
 
 		Database db = datastore.getDatabase(datastore.getPartition("0"));
 		RandomVariableAtom atom = (RandomVariableAtom) db.getAtom(p1, a, b);
@@ -276,10 +275,10 @@ public abstract class DataStoreContractTest {
 	public void testInsertTwoAtoms() {
 		datastore.registerPredicate(p1);
 
-		UniqueID a = datastore.getUniqueID(0);
-		UniqueID b = datastore.getUniqueID(1);
-		UniqueID c = datastore.getUniqueID(2);
-		UniqueID d = datastore.getUniqueID(3);
+		UniqueIntID a = new UniqueIntID(0);
+		UniqueIntID b = new UniqueIntID(1);
+		UniqueIntID c = new UniqueIntID(2);
+		UniqueIntID d = new UniqueIntID(3);
 
 		Database db = datastore.getDatabase(datastore.getPartition("0"));
 		RandomVariableAtom atom1 = (RandomVariableAtom) db.getAtom(p1, a, b);
@@ -357,12 +356,12 @@ public abstract class DataStoreContractTest {
 		ResultList results;
 		Constant[] grounding;
 
-		UniqueID a = datastore.getUniqueID(0);
-		UniqueID b = datastore.getUniqueID(1);
-		UniqueID c = datastore.getUniqueID(2);
-		UniqueID d = datastore.getUniqueID(3);
-		UniqueID e = datastore.getUniqueID(4);
-		UniqueID f = datastore.getUniqueID(5);
+		UniqueIntID a = new UniqueIntID(0);
+		UniqueIntID b = new UniqueIntID(1);
+		UniqueIntID c = new UniqueIntID(2);
+		UniqueIntID d = new UniqueIntID(3);
+		UniqueIntID e = new UniqueIntID(4);
+		UniqueIntID f = new UniqueIntID(5);
 
 		Variable X = new Variable("X");
 		Variable Y = new Variable("Y");
@@ -426,7 +425,7 @@ public abstract class DataStoreContractTest {
 		results = db.executeQuery(new DatabaseQuery(formula));
 		assertEquals(6, results.size());
 		for (int i = 0; i < 6; i++) {
-			assertTrue(results.get(i)[0] instanceof UniqueID);
+			assertTrue(results.get(i)[0] instanceof UniqueIntID);
 		}
 
 		/*
@@ -524,12 +523,12 @@ public abstract class DataStoreContractTest {
 		DatabaseQuery query;
 		Formula formula;
 
-		UniqueID a = datastore.getUniqueID(0);
-		UniqueID b = datastore.getUniqueID(1);
-		UniqueID c = datastore.getUniqueID(2);
-		UniqueID d = datastore.getUniqueID(3);
-		UniqueID e = datastore.getUniqueID(4);
-		UniqueID f = datastore.getUniqueID(5);
+		UniqueIntID a = new UniqueIntID(0);
+		UniqueIntID b = new UniqueIntID(1);
+		UniqueIntID c = new UniqueIntID(2);
+		UniqueIntID d = new UniqueIntID(3);
+		UniqueIntID e = new UniqueIntID(4);
+		UniqueIntID f = new UniqueIntID(5);
 
 		Variable X = new Variable("X");
 		Variable Y = new Variable("Y");
@@ -555,8 +554,8 @@ public abstract class DataStoreContractTest {
 	public void testSpecialPredicates() {
 		datastore.registerPredicate(p1);
 
-		UniqueID a = datastore.getUniqueID(0);
-		UniqueID b = datastore.getUniqueID(1);
+		UniqueIntID a = new UniqueIntID(0);
+		UniqueIntID b = new UniqueIntID(1);
 
 		Inserter inserter = datastore.getInserter(p1, datastore.getPartition("0"));
 		inserter.insert(a, a);
@@ -641,8 +640,8 @@ public abstract class DataStoreContractTest {
 	public void testAtomInReadAndWritePartitions() {
 		datastore.registerPredicate(p1);
 
-		UniqueID a = datastore.getUniqueID(0);
-		UniqueID b = datastore.getUniqueID(1);
+		UniqueIntID a = new UniqueIntID(0);
+		UniqueIntID b = new UniqueIntID(1);
 
 		Inserter inserter = datastore.getInserter(p1, datastore.getPartition("0"));
 		inserter.insert(a, b);
@@ -659,8 +658,8 @@ public abstract class DataStoreContractTest {
 	public void testAtomInTwoReadPartitions() {
 		datastore.registerPredicate(p1);
 
-		UniqueID a = datastore.getUniqueID(0);
-		UniqueID b = datastore.getUniqueID(1);
+		UniqueIntID a = new UniqueIntID(0);
+		UniqueIntID b = new UniqueIntID(1);
 
 		Inserter inserter = datastore.getInserter(p1, datastore.getPartition("0"));
 		inserter.insert(a, b);
@@ -679,10 +678,10 @@ public abstract class DataStoreContractTest {
 
 		Inserter inserter = datastore.getInserter(p1, datastore.getPartition("0"));
 
-		UniqueID a = datastore.getUniqueID(0);
-		UniqueID b = datastore.getUniqueID(1);
-		UniqueID c = datastore.getUniqueID(2);
-		UniqueID d = datastore.getUniqueID(3);
+		UniqueIntID a = new UniqueIntID(0);
+		UniqueIntID b = new UniqueIntID(1);
+		UniqueIntID c = new UniqueIntID(2);
+		UniqueIntID d = new UniqueIntID(3);
 
 		inserter.insert(a, b);
 		inserter.insert(b, c);
@@ -751,8 +750,8 @@ public abstract class DataStoreContractTest {
 	public void testGetAtomAfterClose() {
 		datastore.registerPredicate(p1);
 
-		UniqueID a = datastore.getUniqueID(0);
-		UniqueID b = datastore.getUniqueID(1);
+		UniqueIntID a = new UniqueIntID(0);
+		UniqueIntID b = new UniqueIntID(1);
 
 		Database db = datastore.getDatabase(datastore.getPartition("0"));
 		db.close();
@@ -763,8 +762,8 @@ public abstract class DataStoreContractTest {
 	public void testCommitAfterClose() {
 		datastore.registerPredicate(p1);
 
-		UniqueID a = datastore.getUniqueID(0);
-		UniqueID b = datastore.getUniqueID(1);
+		UniqueIntID a = new UniqueIntID(0);
+		UniqueIntID b = new UniqueIntID(1);
 
 		Database db = datastore.getDatabase(datastore.getPartition("0"));
 		RandomVariableAtom atom = (RandomVariableAtom) db.getAtom(p1, a, b);
@@ -792,10 +791,10 @@ public abstract class DataStoreContractTest {
 
 		Inserter inserter = datastore.getInserter(p1, datastore.getPartition("0"));
 
-		UniqueID a = datastore.getUniqueID(0);
-		UniqueID b = datastore.getUniqueID(1);
-		UniqueID c = datastore.getUniqueID(2);
-		UniqueID d = datastore.getUniqueID(3);
+		UniqueIntID a = new UniqueIntID(0);
+		UniqueIntID b = new UniqueIntID(1);
+		UniqueIntID c = new UniqueIntID(2);
+		UniqueIntID d = new UniqueIntID(3);
 
 		inserter.insert(a, b);
 		inserter.insert(b, c);

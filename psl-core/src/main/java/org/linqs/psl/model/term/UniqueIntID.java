@@ -15,24 +15,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.database.rdbms;
+package org.linqs.psl.model.term;
 
-import org.linqs.psl.model.term.Constant;
-import org.linqs.psl.model.term.UniqueID;
-
-public class RDBMSUniqueIntID implements UniqueID {
+public class UniqueIntID implements Constant {
 	private final int id;
 
-	public RDBMSUniqueIntID(int id) {
+	public UniqueIntID(int id) {
 		this.id = id;
 	}
 
 	public int getID() {
-		return id;
-	}
-
-	@Override
-	public Object getInternalID() {
 		return id;
 	}
 
@@ -51,16 +43,16 @@ public class RDBMSUniqueIntID implements UniqueID {
 			return false;
 		}
 
-		return id == ((RDBMSUniqueIntID)other).id;
+		return id == ((UniqueIntID)other).id;
 	}
 
 	@Override
 	public int compareTo(Constant other) {
-		if (other instanceof RDBMSUniqueIntID) {
-			return id - ((RDBMSUniqueIntID)other).id;
-		} else {
-			return this.getClass().getSimpleName().compareTo(other.getClass().getSimpleName());
+		if (other instanceof UniqueIntID) {
+			return id - ((UniqueIntID)other).id;
 		}
+
+		return this.getClass().getSimpleName().compareTo(other.getClass().getSimpleName());
 	}
 
 	@Override

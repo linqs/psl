@@ -45,7 +45,7 @@ import org.linqs.psl.parser.RulePartial;
 
 /**
  * Groovy class representing a PSL model.
- * 
+ *
  * @author Matthias Broecheler
  * @author Eric Norris <enorris@cs.umd.edu>
  */
@@ -57,14 +57,14 @@ public class PSLModel extends Model {
 	private static final String ruleKey = 'rule';
 
 	private static final String auxPredicateSeparator = '__';
-	
+
 	// Storage for set comparisons
 	private int auxPredicateCounter = 0;
-	
+
 	// Local PredicateFactory
 	private PredicateFactory pf = PredicateFactory.getFactory();
 	private DataStore ds;
-	
+
 	// TODO: Documentation
 	public PSLModel(Object context, DataStore ds) {
 		this.ds = ds;
@@ -75,7 +75,7 @@ public class PSLModel extends Model {
 			return createFormulaContainer(name, args);
 		}
 	}
-	
+
 	/**
 	 * - Looks up a Predicate with the given name, else
 	 * - Allows for "inverse" and "inv" syntactic sugar, or
@@ -87,32 +87,32 @@ public class PSLModel extends Model {
 		/* Hacky fix for broken println */
 		if (name.equals("out"))
 			return System.out;
-		
+
 		Predicate predicate = pf.getPredicate(name);
-		
+
 		if (predicate != null)
 			return predicate;
-		
+
 		if (name == "inverse" || name == "inv")
 			return 'inverse';
-		
+
 		if (name.charAt(0).isUpperCase())
 			return new GenericVariable(name, this);
-		
+
 		throw new RuntimeException("Unknown property: " + name);
 	}
-	
+
 	/**
 	 * Creates a FormulaContainer using the predicate specified by name.
 	 * @param name		the predicate to use for the Formula
-	 * @return			a FormulaContainer 
+	 * @return			a FormulaContainer
 	 */
 	public Object createFormulaContainer(String name, Object[] args) {
 		Predicate pred = pf.getPredicate(name);
-		
+
 		if (pred != null) {
 			Term[] terms = new Term[args.size()];
-			
+
 			for (int i = 0; i < terms.length; i ++) {
 				if (args[i] instanceof GenericVariable) {
 					terms[i]=args[i].toAtomVariable();
@@ -124,17 +124,17 @@ public class PSLModel extends Model {
 					terms[i] = new DoubleAttribute(args[i]);
 				} else if (args[i] instanceof Integer) {
 					terms[i] = new IntegerAttribute(args[i]);
-				} else 
+				} else
 					throw new IllegalArgumentException("The arguments to predicate ${name} must be terms");
 			}
-			
+
 			return new FormulaContainer(new QueryAtom(pred, terms));
 		} else if (name == 'when') {
 			return args[0];
-		} else 
+		} else
 			throw new RuntimeException("Unknown method: " + name);
 	}
-	
+
 	/*
 	 * Allows for syntactic sugar when creating rules, functions, and set comparisons.
 	 */
@@ -165,7 +165,7 @@ public class PSLModel extends Model {
 			throw new IllegalArgumentException("Unrecognized element added to model: ${args}");
 		}
 	}
-	
+
 	private Predicate addPredicate(String name, Map args) {
 		if (args.containsKey(predicateArgsKey)) {
 			ConstantType[] predArgs;
@@ -178,7 +178,7 @@ public class PSLModel extends Model {
 				throw new IllegalArgumentException("Must provide at least one ConstantType. " +
 					"Include multiple arguments as a list wrapped in [...].");
 			}
-				
+
 			StandardPredicate pred = pf.createStandardPredicate(name, predArgs);
 			ds.registerPredicate(pred);
 			return pred;
@@ -187,12 +187,12 @@ public class PSLModel extends Model {
 				"Include multiple arguments as a list wrapped in [...].");
 		}
 	}
-	
+
 	private FunctionalPredicate addFunction(String name, Map args) {
 		if (pf.getPredicate(name) != null) {
 			throw new IllegalArgumentException("A similarity function with the name [${name}] has already been defined.");
 		}
-		
+
 		ExternalFunction implementation = null;
 		if (args.containsKey('implementation')) {
 			if (args['implementation'] instanceof ExternalFunction) {
@@ -202,16 +202,16 @@ public class PSLModel extends Model {
 			}
 			args.remove 'implementation';
 		}
-		
-		return pf.createFunctionalPredicate(name, implementation);
+
+		return pf.createExternalFunctionalPredicate(name, implementation);
 	}
-	
+
 	private StandardPredicate getBasicPredicate(Map args, String key) {
 		Predicate predicate = args[key];
 		if (predicate == null) {
 			throw new IllegalArgumentException("Need to define predicate via [${key}] argument label.");
 		}
-		
+
 		if (!(predicate instanceof StandardPredicate)) {
 			throw new IllegalArgumentException("Expected basic predicate, but got: ${predicate}");
 		}
@@ -278,7 +278,7 @@ public class PSLModel extends Model {
 			if (!(args['constraint'] instanceof Boolean)) throw new IllegalArgumentException("The parameter [constraint] for a rule must be either TRUE or FALSE");
 			isFact = args['constraint'];
 		}
-		
+
 		if (args.containsKey('squared')) {
 			if (isFact) {
 				throw new IllegalArgumentException("Cannot set squared on a fact rule.");
@@ -290,7 +290,7 @@ public class PSLModel extends Model {
 
 			isSquared = args['squared'];
 		}
-		
+
 		double weight = Double.NaN;
 		if (args.containsKey('weight')) {
 			if (isFact) {
@@ -303,28 +303,28 @@ public class PSLModel extends Model {
 
 			weight = args['weight'];
 		}
-		
+
 		if (!Double.isNaN(weight) && isFact) {
 			throw new IllegalArgumentException("A rule cannot be a constraint and have a weight.");
 		}
 
 		Formula ruleformula = rule.getFormula();
-		
+
 		AbstractLogicalRule pslrule;
 		if (isFact) {
 			pslrule = new UnweightedLogicalRule(ruleformula);
 		} else {
 			pslrule = new WeightedLogicalRule(ruleformula, weight, isSquared);
 		}
-		
+
 		addRule(pslrule);
 		return pslrule;
 	}
-	
+
 	private boolean isNumber(n) {
 		return (n instanceof Double || n instanceof Integer || n instanceof BigDecimal);
 	}
-	
+
 	public Predicate getPredicate(String name) {
 		return pf.getPredicate(name);
 	}

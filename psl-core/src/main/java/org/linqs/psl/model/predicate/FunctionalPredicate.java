@@ -32,14 +32,13 @@ import org.linqs.psl.model.term.ConstantType;
  * <p>
  * Before extending this class, users should consider using a
  * {@link SpecialPredicate} or an {@link ExternalFunctionalPredicate}.
- * 
+ *
  * @author Matthias Broecheler
  */
-abstract public class FunctionalPredicate extends Predicate {
-
+public abstract class FunctionalPredicate extends Predicate {
 	/**
 	 * Sole constructor.
-	 * 
+	 *
 	 * @param name  name for this predicate
 	 * @param types  types for each of the predicate's arguments
 	 * @see PredicateFactory
@@ -51,12 +50,11 @@ abstract public class FunctionalPredicate extends Predicate {
 	/**
 	 * Computes the truth value of the {@link Atom} of this Predicate
 	 * with the given arguments.
-	 * 
+	 *
 	 * @param db	the connection to the database which is running this query
 	 * @param args  the arguments for which the truth value will be computed
 	 * @return the computed truth value
 	 * @throws IllegalArgumentException  if args is not valid
 	 */
-	abstract public double computeValue(ReadOnlyDatabase db, Constant... args);
-	
+	public abstract double computeValue(ReadOnlyDatabase db, Constant... args);
 }

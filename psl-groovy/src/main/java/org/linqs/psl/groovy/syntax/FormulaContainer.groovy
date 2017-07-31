@@ -21,52 +21,52 @@ import org.linqs.psl.model.formula.*;
 import org.linqs.psl.model.atom.Atom;
 
 public class FormulaContainer {
-	
+
 	private final Formula formula;
-	
+
 	public FormulaContainer(Formula f) {
 		formula = f;
 	}
-	
+
 	public Formula getFormula() {
 		return formula;
 	}
-	
+
 	private void checkFormula(Object f) {
 		if (!(f instanceof FormulaContainer)) throw new IllegalArgumentException("Expected formula but got : ${f}");
 	}
-	
+
 	private void checkAtom(Object f) {
 		if (!(f instanceof FormulaContainer)) throw new IllegalArgumentException("Expected formula but got : ${f}");
 		if (!(f.formula instanceof Atom)) throw new IllegalArgumentException("Expected atom but got : ${f.formula}");
 	}
-	
+
 	def and(f2) {
 		checkFormula(f2);
 		return new FormulaContainer(new Conjunction(formula, f2.formula));
 	}
-	
+
 	def or(f2) {
 		checkFormula(f2);
 		return new FormulaContainer(new Disjunction(formula, f2.formula));
 	}
-	
+
 	def rightShift(FormulaContainer f2) {
 		then(f2);
 	}
-	
+
 	def leftShift(f2) {
 		checkFormula(f2);
 		return new FormulaContainer(new Implication(f2.formula, formula));
 	}
-	
+
 	def then(f2) {
 		checkFormula(f2);
 		return new FormulaContainer(new Implication(formula, f2.formula));
 	}
-	
+
 	def bitwiseNegate() {
 		return new FormulaContainer(new Negation(formula));
 	}
-	
+
 }

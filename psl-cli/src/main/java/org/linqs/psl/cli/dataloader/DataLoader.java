@@ -61,7 +61,7 @@ public class DataLoader {
 			//create a predicate and add it to the datastore
 			ConstantType[] args = new ConstantType[arity];
 			for(int i = 0; i < arity; i++){
-				args[i] = ConstantType.UniqueID;
+				args[i] = ConstantType.UniqueStringID;
 			}
 			StandardPredicate predicate = pf.createStandardPredicate(predicateStr, args);
 			datastore.registerPredicate(predicate);

@@ -80,8 +80,8 @@ public class PredicateInfo {
 		return predicate;
 	}
 
-	public void setupTable(Connection connection, DatabaseDriver dbDriver, boolean stringUniqueIDs) {
-		createTable(connection, dbDriver, stringUniqueIDs);
+	public void setupTable(Connection connection, DatabaseDriver dbDriver) {
+		createTable(connection, dbDriver);
 		index(connection, dbDriver);
 	}
 
@@ -197,7 +197,7 @@ public class PredicateInfo {
 		}
 	}
 
-	private void createTable(Connection connection, DatabaseDriver dbDriver, boolean stringUniqueIDs) {
+	private void createTable(Connection connection, DatabaseDriver dbDriver) {
 		CreateTableQuery createTable = new CreateTableQuery(tableName);
 
 		// First add non-variable columns: suggogate key, partition, value.
@@ -213,18 +213,10 @@ public class PredicateInfo {
 			String colName = argCols.get(i);
 
 			ConstantType type = predicate.getArgumentType(i);
-			if (type == ConstantType.UniqueID) {
-				if (stringUniqueIDs) {
-					type = ConstantType.UniqueStringID;
-				} else {
-					type = ConstantType.UniqueIntID;
-				}
-			}
-
 			String typeName = dbDriver.getTypeName(type);
 
-			// All unique columns get added to the unique constraint.
-			if (type == ConstantType.UniqueIntID || type == ConstantType.UniqueStringID || type == ConstantType.UniqueID) {
+			// All unique columns get added to a unique constraint.
+			if (type == ConstantType.UniqueIntID || type == ConstantType.UniqueStringID) {
 				uniqueColumns.add(colName);
 			}
 

@@ -30,7 +30,8 @@ import org.linqs.psl.model.term.IntegerAttribute;
 import org.linqs.psl.model.term.LongAttribute;
 import org.linqs.psl.model.term.StringAttribute;
 import org.linqs.psl.model.term.Term;
-import org.linqs.psl.model.term.UniqueID;
+import org.linqs.psl.model.term.UniqueIntID;
+import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.model.term.Variable;
 
 import java.util.List;
@@ -58,7 +59,7 @@ public class Queries {
 	 * @param predicate  the Predicate of the Atoms to return
 	 * @return the query
 	 */
-	public static DatabaseQuery getQueryForAllAtoms(Predicate predicate) {
+	public static DatabaseQuery getQueryForAllAtoms(StandardPredicate predicate) {
 		Variable[] args = new Variable[predicate.getArity()];
 		for (int i = 0; i < args.length; i++) {
 			args[i] = new Variable("Vars" + i);
@@ -71,7 +72,6 @@ public class Queries {
 	 * Constructs a {@link QueryAtom} from raw arguments using
 	 * {@link #convertArguments(Database, Predicate, Object...)}.
 	 *
-	 * @param db  the Database to use to get a {@link UniqueID}
 	 * @param predicate  the Predicate of the QueryAtom
 	 * @param rawArgs  the arguments to the QueryAtom (after conversion)
 	 * @return the QueryAtom
@@ -79,8 +79,8 @@ public class Queries {
 	 *													converted to a valid type or is already
 	 *													a GroundTerm of an invalid type
 	 */
-	public static QueryAtom getQueryAtom(Database db, Predicate predicate, Object... rawArgs) {
-		return new QueryAtom(predicate, convertArguments(db, predicate, rawArgs));
+	public static QueryAtom getQueryAtom(StandardPredicate predicate, Object... rawArgs) {
+		return new QueryAtom(predicate, convertArguments(predicate, rawArgs));
 	}
 
 	/**
@@ -90,7 +90,6 @@ public class Queries {
 	 * argument will be used to construct a {@link Constant} of the appropriate
 	 * type if possible.
 	 *
-	 * @param db  the Database to use to get a {@link UniqueID}
 	 * @param predicate  the Predicate to match the arguments to
 	 * @param rawArgs  the arguments to convert
 	 * @return the converted terms
@@ -98,7 +97,7 @@ public class Queries {
 	 *													converted to a valid type or is already
 	 *													a GroundTerm of an invalid type
 	 */
-	public static Term[] convertArguments(Database db, Predicate predicate, Object... rawArgs) {
+	public static Term[] convertArguments(StandardPredicate predicate, Object... rawArgs) {
 		assert(predicate.getArity() == rawArgs.length);
 
 		Term[] args = new Term[rawArgs.length];
@@ -111,8 +110,19 @@ public class Queries {
 				args[i] = (Constant) rawArgs[i];
 			} else {
 				switch (type) {
-					case UniqueID:
-						args[i] = db.getUniqueID(rawArgs[i]);
+					case UniqueIntID:
+						if (!(rawArgs[i] instanceof Integer)) {
+							throw new IllegalArgumentException("UniqueIntID must be an Integer.");
+						}
+
+						args[i] = new UniqueIntID(((Integer)rawArgs[i]).intValue());
+						break;
+					case UniqueStringID:
+						if (!(rawArgs[i] instanceof String)) {
+							throw new IllegalArgumentException("UniqueStringID must be a String.");
+						}
+
+						args[i] = new UniqueStringID(((String)rawArgs[i]));
 						break;
 					case String:
 						args[i] = new StringAttribute(rawArgs[i].toString());

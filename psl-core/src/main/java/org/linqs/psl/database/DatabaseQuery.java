@@ -24,7 +24,6 @@ import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.formula.FormulaAnalysis;
 import org.linqs.psl.model.formula.traversal.AbstractFormulaTraverser;
-import org.linqs.psl.model.predicate.FunctionalPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
@@ -52,7 +51,7 @@ import java.util.Set;
  * (Then it can be used in others as well.)
  * The query will return any grounding such that each GroundAtom
  * with a {@link StandardPredicate} in the ground Formula is persisted in the
- * Database and each GroundAtom with a {@link FunctionalPredicate}
+ * Database and each GroundAtom with a FunctionalPredicate.
  * in the ground Formula has a non-zero truth value (regardless of whether
  * it is instantiated in memory).
  * <p>

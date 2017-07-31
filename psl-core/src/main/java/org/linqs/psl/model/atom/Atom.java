@@ -27,21 +27,25 @@ import org.linqs.psl.model.predicate.SpecialPredicate;
 import org.linqs.psl.model.rule.arithmetic.expression.SummationAtomOrAtom;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
+import org.linqs.psl.model.term.IntegerAttribute;
+import org.linqs.psl.model.term.StringAttribute;
 import org.linqs.psl.model.term.Term;
+import org.linqs.psl.model.term.UniqueIntID;
+import org.linqs.psl.model.term.UniqueStringID;
 
 import com.healthmarketscience.sqlbuilder.BinaryCondition;
 
 /**
  * A {@link Predicate} combined with the correct number of {@link Term Terms}
  * as arguments.
- * <p>
+ *
  * Two Atoms are equal if their Predicate and arguments are equal. Note that this
  * means that their truth values might not match, or one might even be a
  * {@link QueryAtom}.
  *
  * @author Matthias Broecheler
  */
-abstract public class Atom implements Formula, SummationAtomOrAtom {
+public abstract class Atom implements Formula, SummationAtomOrAtom {
 
 	protected final Predicate predicate;
 
@@ -49,11 +53,15 @@ abstract public class Atom implements Formula, SummationAtomOrAtom {
 
 	protected final int hashcode;
 
+	/**
+	 * Type mismatches will throw an exception unless
+	 * the types are trivially convertable like UniqueIntID and IntegerAttribute.
+	 */
 	protected Atom(Predicate p, Term[] args) {
 		predicate = p;
 		arguments = Arrays.copyOf(args, args.length);
+		validate();
 		hashcode = new HashCodeBuilder().append(predicate).append(arguments).toHashCode();
-		checkSchema();
 	}
 
 	/**
@@ -96,24 +104,48 @@ abstract public class Atom implements Formula, SummationAtomOrAtom {
 
 	/**
 	 * Verifies that this atom has valid arguments.
+	 * This will also convert arguments of the incorrect type into the declared type if they are trivially similar
+	 * (eg. StringAttribute and UniqueStringID).
 	 *
 	 * @throws IllegalArgumentException
-	 *             if the number of arguments doesn't match the number of arguments
-	 *             of the predicate
+	 *				 if the number of arguments doesn't match the number of arguments
+	 *				 of the predicate
 	 * @throws IllegalArgumentException  if any argument is null
 	 * @throws IllegalArgumentException
-	 *             if any argument is a {@link Constant} and does not match
-	 *             the Predicate's {@link ConstantType}.
+	 *				 if any argument is a {@link Constant} and does not match
+	 *				 the Predicate's {@link ConstantType}.
 	 */
-	private void checkSchema() {
-		if (predicate.getArity()!=arguments.length) {
+	private void validate() {
+		if (predicate.getArity() != arguments.length) {
 			throw new IllegalArgumentException("Length of Schema does not match the number of arguments.");
 		}
-		for (int i=0;i<arguments.length;i++) {
-			if (arguments[i]==null)
+
+		for (int i = 0; i < arguments.length; i++) {
+			if (arguments[i] == null) {
 				throw new IllegalArgumentException("Arguments must not be null!");
-			if ((arguments[i] instanceof Constant) && !(predicate.getArgumentType(i).isInstance((Constant) arguments[i])))
-				throw new IllegalArgumentException("Expected type "+predicate.getArgumentType(i)+" at position "+i+" but was given: " + arguments[i] + " for predicate " + predicate);
+			}
+
+			// Perform any trivial type conversions to get the correct types.
+			ConstantType declaredType = predicate.getArgumentType(i);
+			if (declaredType == ConstantType.UniqueIntID && arguments[i] instanceof IntegerAttribute) {
+				arguments[i] = new UniqueIntID(((IntegerAttribute)arguments[i]).getValue().intValue());
+			} else if (declaredType == ConstantType.Integer && arguments[i] instanceof UniqueIntID) {
+				arguments[i] = new IntegerAttribute(((IntegerAttribute)arguments[i]).getValue());
+			} else if (declaredType == ConstantType.UniqueStringID && arguments[i] instanceof StringAttribute) {
+				arguments[i] = new UniqueStringID(((StringAttribute)arguments[i]).getValue());
+			} else if (declaredType == ConstantType.String && arguments[i] instanceof UniqueStringID) {
+				arguments[i] = new StringAttribute(((StringAttribute)arguments[i]).getValue());
+			} else if (declaredType == ConstantType.DeferredFunctionalUniqueID && arguments[i] instanceof IntegerAttribute) {
+				arguments[i] = new UniqueIntID(((IntegerAttribute)arguments[i]).getValue().intValue());
+			} else if (declaredType == ConstantType.DeferredFunctionalUniqueID && arguments[i] instanceof StringAttribute) {
+				arguments[i] = new UniqueStringID(((StringAttribute)arguments[i]).getValue());
+			}
+
+			if ((arguments[i] instanceof Constant) && !(predicate.getArgumentType(i).isInstance((Constant)arguments[i]))) {
+				throw new IllegalArgumentException(
+						String.format("Expected type %s at position %d but was given: %s (%s) for predicate %s",
+						predicate.getArgumentType(i), i, arguments[i], arguments[i].getClass().getName(), predicate));
+			}
 		}
 	}
 

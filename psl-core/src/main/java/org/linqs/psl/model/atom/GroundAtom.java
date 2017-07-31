@@ -38,7 +38,7 @@ import com.google.common.collect.SetMultimap;
  * <p>
  * A GroundAtom has a truth value.
  */
-abstract public class GroundAtom extends Atom {
+public abstract class GroundAtom extends Atom {
 	final protected Database db;
 
 	protected double value;

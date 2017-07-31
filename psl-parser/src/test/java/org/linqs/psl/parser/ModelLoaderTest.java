@@ -54,10 +54,10 @@ public class ModelLoaderTest {
 
 		PredicateFactory factory = PredicateFactory.getFactory();
 
-		singlePredicate = factory.createStandardPredicate("Single", ConstantType.UniqueID);
+		singlePredicate = factory.createStandardPredicate("Single", ConstantType.UniqueStringID);
 		dataStore.registerPredicate(singlePredicate);
 
-		doublePredicate = factory.createStandardPredicate("Double", ConstantType.UniqueID, ConstantType.UniqueID);
+		doublePredicate = factory.createStandardPredicate("Double", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
 		dataStore.registerPredicate(doublePredicate);
 	}
 
@@ -142,13 +142,15 @@ public class ModelLoaderTest {
 	}
 
 	@Test
-	public void testStringConstants() {
+	public void testConstants() {
 		String input =
 			"1: Single(A) & Double(A, \"bar\") & Single(\"bar\") >> Double(A, \"bar\") ^2\n" +
-			"1: Single(A) & Double(A, 'bar') & Single('bar') >> Double(A, 'bar') ^2\n";
+			"1: Single(A) & Double(A, 'bar') & Single('bar') >> Double(A, 'bar') ^2\n" +
+			"1: Single(A) & Double(A, 'BAR') & Single('BAR') >> Double(A, 'BAR') ^2\n";
 		String[] expected = new String[]{
 			"1.0: ( SINGLE(A) & DOUBLE(A, 'bar') & SINGLE('bar') ) >> DOUBLE(A, 'bar') ^2",
-			"1.0: ( SINGLE(A) & DOUBLE(A, 'bar') & SINGLE('bar') ) >> DOUBLE(A, 'bar') ^2"
+			"1.0: ( SINGLE(A) & DOUBLE(A, 'bar') & SINGLE('bar') ) >> DOUBLE(A, 'bar') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, 'BAR') & SINGLE('BAR') ) >> DOUBLE(A, 'BAR') ^2"
 		};
 
 		PSLTest.assertModel(dataStore, input, expected);

@@ -11,6 +11,7 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.model.term.UniqueStringID;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -40,7 +41,7 @@ public class BatchOperationsTest {
          for (int j = 0; j < 100; j++) {
             atoms.add((RandomVariableAtom)database.getAtom(
                   model.predicates.get("Friends"),
-                  model.dataStore.getUniqueID("" + i), model.dataStore.getUniqueID("" + j)));
+                  new UniqueStringID("" + i), new UniqueStringID("" + j)));
          }
       }
 
@@ -67,7 +68,7 @@ public class BatchOperationsTest {
          for (int j = 0; j < 100; j++) {
             atoms.add((RandomVariableAtom)database.getAtom(
                   model.predicates.get("Friends"),
-                  model.dataStore.getUniqueID("" + i), model.dataStore.getUniqueID("" + j)));
+                  new UniqueStringID("" + i), new UniqueStringID("" + j)));
          }
       }
 

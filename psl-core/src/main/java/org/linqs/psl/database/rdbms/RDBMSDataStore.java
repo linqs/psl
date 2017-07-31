@@ -59,9 +59,6 @@ import java.util.regex.Pattern;
  * It will connect to any RDBMS that has a supporting {@link DatabaseDriver} implementation, and
  * through the {@link ConfigBundle} can use custom names for its value and partition columns.
  * <p>
- * The ConfigBundle can also specify whether or not this RDBMSDatabase should use
- * {@link RDBMSUniqueStringID} for its UniqueID implementation (as opposed to using
- * {@link RDBMSUniqueIntID}).
  * @author Eric Norris <enorris@cs.umd.edu>
  *
  */
@@ -81,9 +78,6 @@ public class RDBMSDataStore implements DataStore {
 
 	/** Name of metadata table **/
 	public static final String METADATA_TABLENAME = CONFIG_PREFIX + "_metadata";
-
-	/** Key for boolean property of whether to use {@link RDBMSUniqueStringID} as a UniqueID. */
-	public static final String USE_STRING_ID_KEY = CONFIG_PREFIX + ".usestringids";
 
 	/** Default value for the USE_STRING_ID_KEY property */
 	public static final boolean USE_STRING_ID_DEFAULT = true;
@@ -119,8 +113,6 @@ public class RDBMSDataStore implements DataStore {
 	 */
 	protected final Map<Predicate, PredicateInfo> predicates;
 
-	protected final boolean stringUniqueIDs;
-
 	/**
 	 * Returns an RDBMSDataStore that utilizes the connection created by the {@link DatabaseDriver}.
 	 * @param dbDriver	the DatabaseDriver that contains a connection to the backing database.
@@ -137,14 +129,11 @@ public class RDBMSDataStore implements DataStore {
 		// Keep database driver locally for generating different query dialets
 		this.dbDriver = dbDriver;
 
-		// Store the type of unique ID this RDBMS will use
-		this.stringUniqueIDs = config.getBoolean(USE_STRING_ID_KEY, USE_STRING_ID_DEFAULT);
-
 		// Connect to the database
 		this.connection = dbDriver.getConnection();
 
 		// Set up the data loader
-		this.dataloader = new RDBMSDataLoader(connection, stringUniqueIDs);
+		this.dataloader = new RDBMSDataLoader(connection);
 
 		//Initialize metadata
 		initializeMetadata(connection, METADATA_TABLENAME);
@@ -229,9 +218,10 @@ public class RDBMSDataStore implements DataStore {
 							args.add(argumentLocation, ConstantType.Integer);
 						} else if (argumentName.equals("double")) {
 							args.add(argumentLocation, ConstantType.Double);
-						} else if (argumentName.equals("uniqueid")) {
-                     // TODO(eriq): What type
-							args.add(argumentLocation, ConstantType.UniqueID);
+						} else if (argumentName.equals("uniqueintid")) {
+							args.add(argumentLocation, ConstantType.UniqueIntID);
+						} else if (argumentName.equals("uniquestringid")) {
+							args.add(argumentLocation, ConstantType.UniqueStringID);
 						}
 					}
 				}
@@ -264,7 +254,7 @@ public class RDBMSDataStore implements DataStore {
 
 		// All registered predicates are new predicates, because the
 		// database reads in any predicates that already existed.
-		pi.setupTable(connection, dbDriver, stringUniqueIDs);
+		pi.setupTable(connection, dbDriver);
 
 		// Update the data loader with the new predicate
 		dataloader.registerPredicate(pi);
@@ -310,33 +300,6 @@ public class RDBMSDataStore implements DataStore {
 		}
 		writePartitionIDs.add(write);
 		return db;
-	}
-
-	@Override
-	public UniqueID getUniqueID(Object key) {
-		if (stringUniqueIDs)
-			return new RDBMSUniqueStringID(key.toString());
-		else {
-			Integer intKey;
-
-			if (key instanceof String) {
-				try {
-					intKey = Integer.parseInt((String) key);
-				}
-				catch (NumberFormatException e) {
-					throw new IllegalArgumentException("Key for UniqueID is a string that could not be parsed as an integer, " +
-							"but this DataStore is set to use integer UniqueIDs.");
-				}
-			}
-			else if (key instanceof Integer) {
-				intKey = (Integer) key;
-			}
-			else
-				throw new IllegalArgumentException("Key for UniqueID is not an integer or a string representation of an integer, " +
-						"but this DataStore is set to use integer UniqueIDs.");
-
-			return new RDBMSUniqueIntID(intKey);
-		}
 	}
 
 	@Override

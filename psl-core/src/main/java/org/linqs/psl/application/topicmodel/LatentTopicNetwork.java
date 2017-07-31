@@ -48,7 +48,7 @@ import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.PredicateFactory;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
-import org.linqs.psl.model.term.UniqueID;
+import org.linqs.psl.model.term.UniqueIntID;
 import org.linqs.psl.model.weight.PositiveWeight;
 import org.linqs.psl.reasoner.Reasoner;
 import org.slf4j.Logger;
@@ -381,8 +381,8 @@ public class LatentTopicNetwork implements ModelApplication {
 
 		//Add log loss terms
 		log.info("Adding log loss ground kernels");
-		UniqueID row; //doc, for theta, or topic, for phi
-		UniqueID col; //topic, for theta, or word, for phi
+		UniqueIntID row; //doc, for theta, or topic, for phi
+		UniqueIntID col; //topic, for theta, or word, for phi
 
 
 		int numRows = expectedCounts.length; //num documents, or num topics
@@ -392,11 +392,11 @@ public class LatentTopicNetwork implements ModelApplication {
 		List<Double> coefficients;
 
 		for (int j = 0; j < numRows; j++) {
-			row = db.getUniqueID(new Integer(j));
-			 literals = new ArrayList<GroundAtom>(numColumns);
-			 coefficients = new ArrayList<Double>(numColumns);
+			row = new UniqueIntID(j);
+			literals = new ArrayList<GroundAtom>(numColumns);
+			coefficients = new ArrayList<Double>(numColumns);
 			for (int k = 0; k < numColumns; k++) {
-				col = db.getUniqueID(new Integer(k));
+				col = new UniqueIntID(k);
 				GroundAtom ga = atomManager.getAtom(p, row, col);
 				ga.getVariable().setValue(initialization[j][k]);
 				literals.add(ga);

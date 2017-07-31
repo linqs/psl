@@ -24,16 +24,15 @@ import org.linqs.psl.model.term.Constant;
 /**
  * A FunctionalPredicate which uses an {@link ExternalFunction} to compute
  * truth values.
- * 
+ *
  * @author Matthias Broecheler
  */
 public class ExternalFunctionalPredicate extends FunctionalPredicate {
-
 	private final ExternalFunction extFun;
-	
+
 	/**
 	 * Sole constructor.
-	 * 
+	 *
 	 * @param name  the name of this predicate
 	 * @param extFun  the ExternalFunction to use to compute truth values
 	 * @see PredicateFactory
@@ -42,19 +41,18 @@ public class ExternalFunctionalPredicate extends FunctionalPredicate {
 		super(name, extFun.getArgumentTypes());
 		this.extFun = extFun;
 	}
-	
+
 	@Override
 	public double computeValue(ReadOnlyDatabase db, Constant... args) {
 		return extFun.getValue(db, args);
 	}
-	
+
 	/**
 	 * Returns the ExternalFunction this predicate uses to compute truth values.
-	 * 
+	 *
 	 * @return this predicate's ExternalFunction
 	 */
 	public ExternalFunction getExternalFunction() {
 		return extFun;
 	}
-	
 }

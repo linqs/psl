@@ -23,7 +23,6 @@ import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
-import org.linqs.psl.model.term.UniqueID;
 
 /**
  * Makes {@link GroundAtom GroundAtoms} available via {@link Database Databases}.
@@ -81,20 +80,6 @@ public interface DataStore {
 	 *													write Partition of another Database
 	 */
 	public Database getDatabase(Partition write, Set<StandardPredicate> toClose, Partition... read);
-
-	/**
-	 * Returns a UniqueID based on the given key.
-	 * <p>
-	 * An Integer must always be a valid key. Other types may be supported by
-	 * implementations and/or configurations.
-	 * <p>
-	 * If two keys are equal, they must map to the same UniqueID.
-	 *
-	 * @param key  the key to a UniqueID
-	 * @return the UniqueID indicated by key
-	 * @throws IllegalArgumentException  if the key is invalid
-	 */
-	public UniqueID getUniqueID(Object key);
 
 	/**
 	 * Creates an Inserter for persisting new {@link GroundAtom GroundAtoms}

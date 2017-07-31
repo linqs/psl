@@ -93,8 +93,6 @@ public class PostgreSQLDriver implements DatabaseDriver {
 				return "INT";
 			case UniqueStringID:
 				return "TEXT";
-			case UniqueID:
-				throw new IllegalArgumentException("UniqueID too general, use specific form of UniqueID.");
 			default:
 				throw new IllegalStateException("Unknown ConstantType: " + type);
 		}

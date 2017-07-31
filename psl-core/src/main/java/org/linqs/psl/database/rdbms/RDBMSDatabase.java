@@ -31,6 +31,7 @@ import org.linqs.psl.model.atom.VariableAssignment;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.predicate.FunctionalPredicate;
 import org.linqs.psl.model.predicate.Predicate;
+import org.linqs.psl.model.predicate.SpecialPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Attribute;
 import org.linqs.psl.model.term.Constant;
@@ -41,7 +42,8 @@ import org.linqs.psl.model.term.IntegerAttribute;
 import org.linqs.psl.model.term.LongAttribute;
 import org.linqs.psl.model.term.StringAttribute;
 import org.linqs.psl.model.term.Term;
-import org.linqs.psl.model.term.UniqueID;
+import org.linqs.psl.model.term.UniqueIntID;
+import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.model.term.VariableTypeMap;
 
@@ -246,14 +248,7 @@ public class RDBMSDatabase implements Database {
 			// Fill in all the query parameters (1-indexed).
 			int paramIndex = 1;
 			for (Term argument : arguments) {
-				if (argument instanceof Attribute) {
-					statement.setObject(paramIndex, ((Attribute)argument).getValue());
-				} else if (argument instanceof UniqueID) {
-					statement.setObject(paramIndex, ((UniqueID)argument).getInternalID());
-				} else {
-					throw new IllegalArgumentException("Unknown argument type: " + argument.getClass());
-				}
-
+				setAtomArgument(statement, argument, paramIndex);
 				paramIndex++;
 			}
 
@@ -329,13 +324,7 @@ public class RDBMSDatabase implements Database {
 					// Args
 					Term[] arguments = atom.getArguments();
 					for (int i = 0; i < arguments.length; i++) {
-						if (arguments[i] instanceof Attribute) {
-							statement.setObject(3 + i, ((Attribute)arguments[i]).getValue());
-						} else if (arguments[i] instanceof UniqueID) {
-							statement.setObject(3 + i, ((UniqueID)arguments[i]).getInternalID());
-						} else {
-							throw new IllegalArgumentException("Unknown argument type: " + arguments[i].getClass());
-						}
+						setAtomArgument(statement, arguments[i], i + 3);
 					}
 
 					statement.addBatch();
@@ -410,11 +399,6 @@ public class RDBMSDatabase implements Database {
 	@Override
 	public boolean isClosed(StandardPredicate predicate) {
 		return closedPredicates.contains(predicate);
-	}
-
-	@Override
-	public UniqueID getUniqueID(Object key) {
-		return parentDataStore.getUniqueID(key);
 	}
 
 	@Override
@@ -515,10 +499,10 @@ public class RDBMSDatabase implements Database {
 					return new LongAttribute(results.getLong(columnName));
 				case Date:
 					return new DateAttribute(new DateTime(results.getDate(columnName).getTime()));
-				case UniqueID:
 				case UniqueIntID:
+					return new UniqueIntID(results.getInt(columnName));
 				case UniqueStringID:
-					return getUniqueID(results.getObject(columnName));
+					return new UniqueStringID(results.getString(columnName));
 				default:
 					throw new IllegalArgumentException("Unknown argument type: " + type);
 			}
@@ -537,24 +521,7 @@ public class RDBMSDatabase implements Database {
 
 		try {
 			for (int i = 0; i < arguments.length; i++) {
-				int paramIndex = i + 1;
-				Term argument = arguments[i];
-
-				if (argument instanceof IntegerAttribute) {
-					statement.setInt(paramIndex, ((IntegerAttribute)argument).getValue());
-				} else if (argument instanceof DoubleAttribute) {
-					statement.setDouble(paramIndex, ((DoubleAttribute) argument).getValue());
-				} else if (argument instanceof StringAttribute) {
-					statement.setString(paramIndex, ((StringAttribute)argument).getValue());
-				} else if (argument instanceof LongAttribute) {
-					statement.setLong(paramIndex, ((LongAttribute) argument).getValue());
-				} else if (argument instanceof DateAttribute) {
-					statement.setDate(paramIndex, new java.sql.Date(((DateAttribute) argument).getValue().getMillis()));
-				} else if (argument instanceof RDBMSUniqueIntID) {
-					statement.setInt(paramIndex, ((RDBMSUniqueIntID) argument).getID());
-				} else if (argument instanceof RDBMSUniqueStringID) {
-					statement.setString(paramIndex, ((RDBMSUniqueStringID) argument).getID());
-				}
+				setAtomArgument(statement, arguments[i], i + 1);
 			}
 
 			return statement.executeQuery();
@@ -658,5 +625,28 @@ public class RDBMSDatabase implements Database {
 
 		double value = predicate.computeValue(new ReadOnlyDatabase(this), arguments);
 		return cache.instantiateObservedAtom(predicate, arguments, value);
+	}
+
+	/**
+	 * Set the parameter given by the prepared statement and index to the specified argument.
+	 */
+	private void setAtomArgument(PreparedStatement statement, Term argument, int index) throws SQLException {
+		if (argument instanceof IntegerAttribute) {
+			statement.setInt(index, ((IntegerAttribute)argument).getValue());
+		} else if (argument instanceof DoubleAttribute) {
+			statement.setDouble(index, ((DoubleAttribute) argument).getValue());
+		} else if (argument instanceof StringAttribute) {
+			statement.setString(index, ((StringAttribute)argument).getValue());
+		} else if (argument instanceof LongAttribute) {
+			statement.setLong(index, ((LongAttribute) argument).getValue());
+		} else if (argument instanceof DateAttribute) {
+			statement.setDate(index, new java.sql.Date(((DateAttribute) argument).getValue().getMillis()));
+		} else if (argument instanceof UniqueIntID) {
+			statement.setInt(index, ((UniqueIntID)argument).getID());
+		} else if (argument instanceof UniqueStringID) {
+			statement.setString(index, ((UniqueStringID)argument).getID());
+		} else {
+			throw new IllegalArgumentException("Unknown argument type: " + argument.getClass());
+		}
 	}
 }

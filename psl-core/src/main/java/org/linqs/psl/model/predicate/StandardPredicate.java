@@ -17,25 +17,30 @@
  */
 package org.linqs.psl.model.predicate;
 
-import org.linqs.psl.database.Database;
-import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.term.ConstantType;
 
 /**
- * Predicate of {@link GroundAtom GroundAtoms} that can be persisted in a
- * {@link Database}.
+ * Predicate of GroundAtoms that can be persisted.
+ * Standard predicates cannot have arguments of DeferredFunctionalUniqueID
+ * since the underlying storage type is not known.
  */
 public class StandardPredicate extends Predicate {
-	
 	/**
 	 * Sole constructor.
-	 * 
+	 *
 	 * @param name  name for this predicate
 	 * @param types  types for each of the predicate's arguments
 	 * @see PredicateFactory
 	 */
 	StandardPredicate(String name, ConstantType[] types) {
 		super(name, types);
+
+		for (ConstantType type : types) {
+			if (type == ConstantType.DeferredFunctionalUniqueID) {
+				throw new IllegalArgumentException(
+						"DeferredFunctionalUniqueID can only be used with FunctionalPredicates" +
+						" (and should only be used in rare cases.");
+			}
+		}
 	}
-	
 }

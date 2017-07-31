@@ -28,8 +28,10 @@ import java.util.Set;
  * This class extends the functionality of its parent class, {@link HashMap},
  * adding functionality specific to predicate arguments.
  *
- * @author
- *
+ * Any variable that changes type will throw an exception,
+ * except for DeferredFunctionalUniqueID.
+ * DeferredFunctionalUniqueID can be replaced with UniqueIntID or UniqueStringID.
+ * After all variables in a rule are added, there should be no DeferredFunctionalUniqueID left.
  */
 public class VariableTypeMap extends HashMap<Variable,ConstantType> {
 	private static final long serialVersionUID = -6590175777602710989L;
@@ -42,13 +44,39 @@ public class VariableTypeMap extends HashMap<Variable,ConstantType> {
 	 */
 	public void addVariable(Variable var, ConstantType type) {
 		ConstantType oldType = get(var);
-		if (oldType != null) {
-			if (oldType != type) {
-				throw new IllegalStateException("Variable, " + var + ",  has inconsistent type. First: " + oldType + ", Now: " + type);
-			}
-		} else {
+		if (oldType == null) {
 			put(var, type);
+			return;
 		}
+
+		// No need to do anything on a type match.
+		if (oldType == type) {
+			return;
+		}
+
+		// Type mismatch. Check for DeferredFunctionalUniqueID.
+
+		// Only DeferredFunctionalUniqueID is allowed to have a different type than other instance of the variable.
+		if (oldType == ConstantType.DeferredFunctionalUniqueID) {
+			// Any other unique id can replace a deferred one.
+			if (!(type == ConstantType.UniqueIntID || type == ConstantType.UniqueStringID)) {
+				throw new IllegalStateException("Variable, " + var + ", is DeferredFunctionalUniqueID and connot be replaced by " + type);
+			}
+
+			put(var, type);
+			return;
+		}
+
+		if (type == ConstantType.DeferredFunctionalUniqueID) {
+			// Deferred types do not replace unique ones.
+			if (!(oldType == ConstantType.UniqueIntID || oldType == ConstantType.UniqueStringID)) {
+				throw new IllegalStateException("Variable, " + var + ", is " + oldType + " and cannot also be a DeferredFunctionalUniqueID");
+			}
+
+			return;
+		}
+
+		throw new IllegalStateException("Variable, " + var + ", has inconsistent type. First: " + oldType + ", Now: " + type);
 	}
 
 	/**

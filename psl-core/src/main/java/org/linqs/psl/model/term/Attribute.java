@@ -18,19 +18,16 @@
 package org.linqs.psl.model.term;
 
 /**
- * A {@link Constant} that is a value, as opposed to a {@link UniqueID}.
- * <p>
+ * A {@link Constant} that is a value, as opposed to a unique identifier.
  * For example, people in a social network should probably be represented as
- * UniqueIDs, but their properties, such as names or ages, should probably
+ * unique identifiers, but their properties, such as names or ages, should probably
  * be Attributes.
- * 
+ *
  * @author Matthias Broecheler
  */
 public interface Attribute extends Constant {
-	
 	/**
 	 * @return Java representation of the Attribute's value
 	 */
 	public Object getValue();
-
 }

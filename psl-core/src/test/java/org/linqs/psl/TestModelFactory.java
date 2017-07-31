@@ -52,9 +52,9 @@ public class TestModelFactory {
 	 * Get a default model.
 	 * The caller owns everything that is returned and should make sure to close the datastore.
 	 * Predicates:
-	 *    Nice(UniqueID)
-	 *    Person(UniqueID)
-	 *    Friends(UniqueID, UniqueID)
+	 *    Nice(UniqueStringID)
+	 *    Person(UniqueStringID)
+	 *    Friends(UniqueStringID, UniqueStringID)
 	 *
 	 * Rules:
 	 *    5: Nice(A) & Nice(B) & (A - B) -> Friends(A, B) ^2
@@ -79,9 +79,9 @@ public class TestModelFactory {
 	public static ModelInformation getModel(boolean nicePeople) {
 		// Define Predicates
 		Map<String, ConstantType[]> predicatesInfo = new HashMap<String, ConstantType[]>();
-		predicatesInfo.put("Nice", new ConstantType[]{ConstantType.UniqueID});
-		predicatesInfo.put("Person", new ConstantType[]{ConstantType.UniqueID});
-		predicatesInfo.put("Friends", new ConstantType[]{ConstantType.UniqueID, ConstantType.UniqueID});
+		predicatesInfo.put("Nice", new ConstantType[]{ConstantType.UniqueStringID});
+		predicatesInfo.put("Person", new ConstantType[]{ConstantType.UniqueStringID});
+		predicatesInfo.put("Friends", new ConstantType[]{ConstantType.UniqueStringID, ConstantType.UniqueStringID});
 
 		Map<String, StandardPredicate> predicates = new HashMap<String, StandardPredicate>();
 		PredicateFactory predicateFactory = PredicateFactory.getFactory();

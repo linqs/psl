@@ -37,50 +37,50 @@ import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.PredicateFactory;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.ConstantType;
-import org.linqs.psl.model.term.UniqueID;
+import org.linqs.psl.model.term.UniqueIntID;
 import org.linqs.psl.model.term.Variable;
 
 public class AtomEventFrameworkTest {
-	
+
 	private AtomEventFramework framework;
 	private StandardPredicate p1, p2;
-	private UniqueID a, b;
-	
+	private UniqueIntID a, b;
+
 	@Before
 	public final void setUp() throws ConfigurationException {
 		PredicateFactory pf = PredicateFactory.getFactory();
-		p1 = pf.createStandardPredicate("AtomEventFrameworkTest_P1", ConstantType.UniqueID, ConstantType.UniqueID);
-		p2 = pf.createStandardPredicate("AtomEventFrameworkTest_P2", ConstantType.UniqueID, ConstantType.UniqueID);
-		
+		p1 = pf.createStandardPredicate("AtomEventFrameworkTest_P1", ConstantType.UniqueIntID, ConstantType.UniqueIntID);
+		p2 = pf.createStandardPredicate("AtomEventFrameworkTest_P2", ConstantType.UniqueIntID, ConstantType.UniqueIntID);
+
 		DataStore dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Memory, null, true), new EmptyBundle());
 		dataStore.registerPredicate(p1);
 		dataStore.registerPredicate(p2);
-		a = dataStore.getUniqueID(0);
-		b = dataStore.getUniqueID(1);
-		
+		a = new UniqueIntID(0);
+		b = new UniqueIntID(1);
+
 		framework = new AtomEventFramework(dataStore.getDatabase(dataStore.getPartition("0")), new EmptyBundle());
 	}
-	
+
 	@Test
 	public void testRegisterAndWorkOffJobQueue() {
 		DummyListener p1ConsiderationListener = new DummyListener();
 		framework.registerAtomEventListener(AtomEvent.ConsideredEventTypeSet, p1, p1ConsiderationListener);
-		
+
 		DummyListener p1ActivationListener = new DummyListener();
 		framework.registerAtomEventListener(AtomEvent.ActivatedEventTypeSet, p1, p1ActivationListener);
-		
+
 		DummyListener p2AllEventsListener = new DummyListener();
 		framework.registerAtomEventListener(AtomEvent.AllEventTypesSet, p2, p2AllEventsListener);
-		
+
 		DummyListener allPredicatesConsiderationListener = new DummyListener();
 		framework.registerAtomEventListener(AtomEvent.ConsideredEventTypeSet, allPredicatesConsiderationListener);
-		
+
 		DummyListener allPredicatesActivationListener = new DummyListener();
 		framework.registerAtomEventListener(AtomEvent.ActivatedEventTypeSet, allPredicatesActivationListener);
-		
+
 		DummyListener allPredicatesAllEventsListener = new DummyListener();
 		framework.registerAtomEventListener(AtomEvent.AllEventTypesSet, allPredicatesAllEventsListener);
-		
+
 		/*
 		 * Tests consideration of a p1 atom
 		 */
@@ -95,7 +95,7 @@ public class AtomEventFrameworkTest {
 		assertNull(allPredicatesActivationListener.lastEvent);
 		assertEquals(AtomEvent.Type.ConsideredRVAtom, allPredicatesAllEventsListener.lastEvent.getType());
 		allPredicatesAllEventsListener.lastEvent = null;
-		
+
 		/*
 		 * Tests activation of a p1 atom
 		 */
@@ -115,16 +115,13 @@ public class AtomEventFrameworkTest {
 		assertEquals(AtomEvent.Type.ActivatedRVAtom, allPredicatesAllEventsListener.lastEvent.getType());
 		allPredicatesAllEventsListener.lastEvent = null;
 	}
-	
+
 	private class DummyListener implements AtomEvent.Listener {
-		
 		private AtomEvent lastEvent = null;
 
 		@Override
 		public void notifyAtomEvent(AtomEvent event) {
 			lastEvent = event;
 		}
-		
 	}
-
 }

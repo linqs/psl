@@ -27,6 +27,8 @@ import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.IntegerAttribute;
 import org.linqs.psl.model.term.LongAttribute;
 import org.linqs.psl.model.term.StringAttribute;
+import org.linqs.psl.model.term.UniqueIntID;
+import org.linqs.psl.model.term.UniqueStringID;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
@@ -120,9 +122,16 @@ public class ExternalFunctions {
 				case Date:
 					arguments[i] = new DateAttribute(new DateTime(args[i]));
 					break;
-				case UniqueID:
-					arguments[i] = db.getUniqueID(args[i]);
+				case UniqueIntID:
+					arguments[i] = new UniqueIntID(Integer.parseInt(args[i]));
 					break;
+				case UniqueStringID:
+					arguments[i] = new UniqueStringID(args[i]);
+					break;
+				case DeferredFunctionalUniqueID:
+					throw new UnsupportedOperationException(
+							"DeferredFunctionalUniqueID has not been resolved by invocation time." +
+							" If possible, use UniqueIntID or UniqueStringID.");
 				default:
 					throw new IllegalArgumentException("Unknown argument type: " + type.getName());
 			}

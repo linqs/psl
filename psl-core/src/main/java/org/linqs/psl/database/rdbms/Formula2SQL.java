@@ -33,7 +33,8 @@ import org.linqs.psl.model.predicate.SpecialPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Attribute;
 import org.linqs.psl.model.term.Term;
-import org.linqs.psl.model.term.UniqueID;
+import org.linqs.psl.model.term.UniqueIntID;
+import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.model.term.Variable;
 
 import com.healthmarketscience.sqlbuilder.BinaryCondition;
@@ -117,8 +118,8 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 			fun.addCustomParams(convert);
 
 			query.addCondition(BinaryCondition.greaterThan(fun, 0.0, false));
-		} else {
-			FunctionalPredicate predicate = (FunctionalPredicate)atom.getPredicate();
+		} else if (atom.getPredicate() instanceof SpecialPredicate) {
+			SpecialPredicate predicate = (SpecialPredicate)atom.getPredicate();
 
 			if (predicate == SpecialPredicate.NotEqual) {
 				query.addCondition(BinaryCondition.notEqualTo(convert[0], convert[1]));
@@ -127,8 +128,10 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 			} else if (predicate == SpecialPredicate.NonSymmetric) {
 				query.addCondition(BinaryCondition.lessThan(convert[0], convert[1], false));
 			} else {
-				throw new UnsupportedOperationException("Unrecognized functional Predicate: " + predicate);
+				throw new UnsupportedOperationException("Unrecognized SpecialPredicate: " + predicate);
 			}
+		} else {
+			throw new UnsupportedOperationException("Unrecognized FunctionalPredicate: " + atom.getPredicate());
 		}
 	}
 
@@ -152,8 +155,10 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 
 			if (arg instanceof Attribute) {
 				convert[i] = ((Attribute)arg).getValue();
-			} else if (arg instanceof UniqueID) {
-				convert[i] = ((UniqueID)arg).getInternalID();
+			} else if (arg instanceof UniqueIntID) {
+				convert[i] = new Integer(((UniqueIntID)arg).getID());
+			} else if (arg instanceof UniqueStringID) {
+				convert[i] = ((UniqueStringID)arg).getID();
 			} else {
 				throw new IllegalArgumentException("Unknown argument type: " + arg.getClass().getName());
 			}
@@ -204,12 +209,14 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 				}
 			}
 
-			if (arg instanceof Attribute || arg instanceof UniqueID) {
+			if (arg instanceof Attribute || arg instanceof UniqueIntID || arg instanceof UniqueStringID) {
 				Object value = null;
 				if (arg instanceof Attribute) {
 					value = ((Attribute)arg).getValue();
+				} else if (arg instanceof UniqueIntID) {
+					value = new Integer(((UniqueIntID)arg).getID());
 				} else {
-					value = ((UniqueID)arg).getInternalID();
+					value = ((UniqueStringID)arg).getID();
 				}
 
 				if (value instanceof String) {

@@ -19,11 +19,12 @@ package org.linqs.psl.database;
 
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.predicate.ExternalFunctionalPredicate;
 import org.linqs.psl.model.predicate.FunctionalPredicate;
 import org.linqs.psl.model.predicate.Predicate;
+import org.linqs.psl.model.predicate.SpecialPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
-import org.linqs.psl.model.term.UniqueID;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -38,7 +39,7 @@ public class ReadOnlyDatabase {
 	}
 
 	public GroundAtom getAtom(Predicate predicate, Constant... arguments) {
-		if (predicate instanceof FunctionalPredicate) {
+		if (predicate instanceof ExternalFunctionalPredicate) {
 			return db.getAtom(predicate, arguments);
 		} else if (predicate instanceof StandardPredicate) {
 			if (db.isClosed((StandardPredicate)predicate)) {
@@ -46,6 +47,8 @@ public class ReadOnlyDatabase {
 			} else {
 				throw new IllegalArgumentException("Can only call getAtom() on a closed or functional predicate.");
 			}
+		} else if (predicate instanceof SpecialPredicate) {
+         throw new IllegalArgumentException("SpecialPredicates do not have tangible atoms.");
 		} else {
 			throw new IllegalArgumentException("Unknown predicate type: " + predicate.getClass().getName());
 		}
@@ -55,24 +58,23 @@ public class ReadOnlyDatabase {
 		Set<Atom> atoms = new HashSet<Atom>();
 
 		for (Atom atom : query.getFormula().getAtoms(atoms)) {
-			if (atom.getPredicate() instanceof FunctionalPredicate) {
+         Predicate predicate = atom.getPredicate();
+
+			if (predicate instanceof FunctionalPredicate) {
 				continue;
-			} else if (atom.getPredicate() instanceof StandardPredicate) {
-				if (!db.isClosed((StandardPredicate)atom.getPredicate())) {
-					throw new IllegalArgumentException("Can only perform queries over closed or functional predicates.");
-				} else {
-					continue;
-				}
+			} else if (predicate instanceof StandardPredicate) {
+				if (db.isClosed((StandardPredicate)predicate)) {
+               continue;
+            }
+            throw new IllegalArgumentException("Can only perform queries over closed or functional predicates.");
+         } else if (predicate instanceof SpecialPredicate) {
+            throw new IllegalArgumentException("SpecialPredicates do not have tangible atoms.");
 			} else {
-				throw new IllegalArgumentException("Unknown predicate type: " + atom.getPredicate().getClass().getName());
+				throw new IllegalArgumentException("Unknown predicate type: " + predicate.getClass().getName());
 			}
 		}
 
 		return db.executeQuery(query);
-	}
-
-	public UniqueID getUniqueID(Object key) {
-		return db.getUniqueID(key);
 	}
 
 	@Override

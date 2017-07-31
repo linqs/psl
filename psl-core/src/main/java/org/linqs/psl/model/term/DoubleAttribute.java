@@ -23,16 +23,16 @@ package org.linqs.psl.model.term;
 public class DoubleAttribute implements Attribute {
 
 	private final Double value;
-	
+
 	/**
 	 * Constructs a Double attribute from a Double
-	 * 
+	 *
 	 * @param value  Double to encapsulate
 	 */
 	public DoubleAttribute(Double value) {
 		this.value = value;
 	}
-	
+
 	/**
 	 * @return the encapsulated Double as a String in single quotes
 	 */
@@ -40,17 +40,17 @@ public class DoubleAttribute implements Attribute {
 	public String toString() {
 		return "'" + value + "'";
 	}
-	
+
 	@Override
 	public Double getValue() {
 		return value;
 	}
-	
+
 	@Override
 	public int hashCode() {
 		return value.hashCode();
 	}
-	
+
 	/**
 	 * A DoubleAttribute is equal to another Object if that Object is a DoubleAttribute
 	 * and their values are equal.
@@ -59,7 +59,7 @@ public class DoubleAttribute implements Attribute {
 	public boolean equals(Object oth) {
 		if (oth==this) return true;
 		if (oth==null || !(oth instanceof DoubleAttribute)) return false;
-		return value.equals(((DoubleAttribute)oth).getValue());  
+		return value.equals(((DoubleAttribute)oth).getValue());
 	}
 
 	@Override

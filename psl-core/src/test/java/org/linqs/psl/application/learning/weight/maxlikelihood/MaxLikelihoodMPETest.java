@@ -16,6 +16,7 @@ import org.linqs.psl.model.formula.Implication;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
+import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.model.term.Variable;
 
 import java.util.HashSet;
@@ -84,10 +85,10 @@ public class MaxLikelihoodMPETest {
 		Rule newRule = new WeightedLogicalRule(
 			new Implication(
 				new Conjunction(
-					new QueryAtom(model.predicates.get("Nice"), model.dataStore.getUniqueID("ZzZ__FAKE_PERSON_A__ZzZ")),
+					new QueryAtom(model.predicates.get("Nice"), new UniqueStringID("ZzZ__FAKE_PERSON_A__ZzZ")),
 					new QueryAtom(model.predicates.get("Nice"), new Variable("B"))
 				),
-				new QueryAtom(model.predicates.get("Friends"), model.dataStore.getUniqueID("ZzZ__FAKE_PERSON_A__ZzZ"), new Variable("B"))
+				new QueryAtom(model.predicates.get("Friends"), new UniqueStringID("ZzZ__FAKE_PERSON_A__ZzZ"), new Variable("B"))
 			),
 			5.0,
 			true

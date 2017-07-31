@@ -27,20 +27,19 @@ import org.linqs.psl.model.term.Term;
  * Predicates must be constructed using the {@link PredicateFactory}.
  * <p>
  * A Predicate is uniquely identified by its name.
- * 
+ *
  * @author Matthias Broecheler
  */
-abstract public class Predicate {
-	
+public abstract class Predicate {
 	private final String predicateName;
-	
+
 	private final ConstantType[] types;
-	
+
 	/**
 	 * Sole constructor.
 	 * <p>
 	 * Should only be called by {@link PredicateFactory}.
-	 * 
+	 *
 	 * @param name  name for this predicate
 	 * @param types  types for each of the predicate's arguments
 	 */
@@ -51,37 +50,37 @@ abstract public class Predicate {
 
 	/**
 	 * Returns the name of this Predicate.
-	 * 
+	 *
 	 * @return a string identifier for this Predicate
 	 */
 	public String getName() {
 		return predicateName;
 	}
-	
+
 	/**
 	 * Returns the number of {@link Term Terms} that are related when using
 	 * this Predicate.
 	 * <p>
 	 * In other words, the arity of a Predicate is the number of arguments it
 	 * accepts. For example, the Predicate Related(A,B) has an arity of 2.
-	 * 
+	 *
 	 * @return the arity of this Predicate
 	 */
 	public int getArity() {
 		return types.length;
 	}
-	
+
 	/**
 	 * Returns the ArgumentType which a {@link Term} must have to be a valid
 	 * argument for a particular argument position of this Predicate.
-	 * 
+	 *
 	 * @param position  the argument position
 	 * @return the type of argument accepted for the given position
 	 */
 	public ConstantType getArgumentType(int position) {
 		return types[position];
 	}
-	
+
 	@Override
 	public String toString() {
 		StringBuilder s = new StringBuilder();
@@ -92,7 +91,7 @@ abstract public class Predicate {
 		}
 		return s.append(")").toString();
 	}
-	
+
 	@Override
 	public int hashCode() {
 		/*
@@ -101,7 +100,7 @@ abstract public class Predicate {
 		 */
 		return super.hashCode();
 	}
-	
+
 	@Override
 	public boolean equals(Object oth) {
 		/*
@@ -110,5 +109,4 @@ abstract public class Predicate {
 		 */
 		return oth == this;
 	}
-	
 }
