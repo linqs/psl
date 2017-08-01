@@ -28,6 +28,7 @@ import org.linqs.psl.model.term.UniqueStringID;
 
 import com.healthmarketscience.sqlbuilder.CustomSql;
 import com.healthmarketscience.sqlbuilder.InsertQuery;
+import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,9 +44,21 @@ import java.util.Map;
 /**
  * Handle the loading of predicate data into the database.
  * The inserters that originate from here will handle type conversion.
+ * Inserters from here will leverage multi-insert statements until there is not enough
+ * data for the multi-insert statement and then fall back to single inserts.
+ * In addition, the inserters from here will also be sure to batch their inserts.
  */
 public class RDBMSDataLoader implements DataLoader {
+	/**
+	 * The number of inserts in each batch.
+	 */
+	public static final int DEFAULT_PAGE_SIZE = 2500;
 	public static final double DEFAULT_EVIDENCE_VALUE = 1.0;
+
+	/**
+	 * The number of records in each multi-row insert.
+	 */
+	public static final int DEFAULT_MULTIROW_COUNT = 25;
 
 	private static final Logger log = LoggerFactory.getLogger(RDBMSDataLoader.class);
 
@@ -100,11 +113,20 @@ public class RDBMSDataLoader implements DataLoader {
 
 	private class RDBMSTableInserter extends OpenInserter {
 		private final PredicateInfo predicateInfo;
-		private final PreparedStatement insertStmt;
+
+		// We will keep two prepared statements:
+		//  - one for inserting a single record
+		//  - one for inserting DEFAULT_MULTIROW_COUNT records
+		private final PreparedStatement singleInsertStatement;
+		private final PreparedStatement multiInsertStatement;
 
 		public RDBMSTableInserter(PredicateInfo predicateInfo) {
 			this.predicateInfo = predicateInfo;
+			singleInsertStatement = createSingleInsert();
+			multiInsertStatement = createMultiInsert();
+		}
 
+		private PreparedStatement createSingleInsert() {
 			InsertQuery sqlBuilder = new InsertQuery(predicateInfo.tableName());
 
 			// Core columns (partition, value).
@@ -117,7 +139,28 @@ public class RDBMSDataLoader implements DataLoader {
 			}
 
 			try {
-				insertStmt = connection.prepareStatement(sqlBuilder.validate().toString());
+				return connection.prepareStatement(sqlBuilder.validate().toString());
+			} catch (SQLException ex) {
+				throw new RuntimeException(ex);
+			}
+		}
+
+		private PreparedStatement createMultiInsert() {
+			List<String> columns = new ArrayList<String>();
+			columns.add(PredicateInfo.PARTITION_COLUMN_NAME);
+			columns.add(PredicateInfo.VALUE_COLUMN_NAME);
+			columns.addAll(predicateInfo.argumentColumns());
+
+			String placeholders = StringUtils.repeat("?", ", ", columns.size());
+
+			List<String> multiInsert = new ArrayList<String>();
+			multiInsert.add("INSERT INTO " + predicateInfo.tableName());
+			multiInsert.add("	(" + StringUtils.join(columns, ", ") + ")");
+			multiInsert.add("VALUES");
+			multiInsert.add("	" + StringUtils.repeat("(" + placeholders + ")", ", ", DEFAULT_MULTIROW_COUNT));
+
+			try {
+				return connection.prepareStatement(StringUtils.join(multiInsert, "\n"));
 			} catch (SQLException ex) {
 				throw new RuntimeException(ex);
 			}
@@ -146,70 +189,102 @@ public class RDBMSDataLoader implements DataLoader {
 				throw new IllegalArgumentException("Partition IDs must be non-negative.");
 			}
 
+			for (int rowIndex = 0; rowIndex < data.size(); rowIndex++) {
+				List<Object> row = data.get(rowIndex);
+
+				assert(row != null);
+
+				if (row.size() != predicateInfo.argumentColumns().size()) {
+					throw new IllegalArgumentException(
+						String.format("Data on row %d length does not match for %s: Expecting: %d, Got: %d",
+						rowIndex, partition.getName(), predicateInfo.argumentColumns().size(), row.size()));
+				}
+			}
+
 			try {
-				insertStmt.clearBatch();
+				int batchSize = 0;
+				// We will from the multi-insert to the single-insert when we don't have enough data to dill the multi-insert.
+				PreparedStatement activeStatement = multiInsertStatement;
+				int insertSize = DEFAULT_MULTIROW_COUNT;
 
-				for (int rowIndex = 0; rowIndex < data.size(); rowIndex++) {
-					List<Object> row = data.get(rowIndex);
-					Double value = values.get(rowIndex);
+				int rowIndex = 0;
+				while (rowIndex < data.size()) {
+					// Index for the current index.
+					int paramIndex = 1;
 
-					assert(row != null);
-
-					if (row.size() != predicateInfo.argumentColumns().size()) {
-						throw new IllegalArgumentException(
-							String.format("Data on row %d length does not match for %s: Expecting: %d, Got: %d",
-							rowIndex, partition.getName(), predicateInfo.argumentColumns().size(), row.size()));
-					}
-
-					insertStmt.clearParameters();
-
-					// Partition
-					insertStmt.setInt(1, partitionID);
-
-					// Value
-					if (value == null || value.isNaN()) {
-						insertStmt.setNull(2, java.sql.Types.DOUBLE);
-					} else {
-						insertStmt.setDouble(2, value);
-					}
-
-					// Prepared startments index by 1, and offset by the partition and value.
-					int dataOffset = 3;
-					for (int argIndex = 0; argIndex < predicateInfo.argumentColumns().size(); argIndex++) {
-						Object argValue = row.get(argIndex);
-						int paramIndex = argIndex + dataOffset;
-
-						assert(argValue != null);
-
-						if (argValue instanceof Integer) {
-							insertStmt.setInt(paramIndex, (Integer)argValue);
-						} else if (argValue instanceof Double) {
-							// The standard JDBC way to insert NaN is using setNull
-							// if not, mysql will complain about any NaNs.
-							if (Double.isNaN((Double)argValue)) {
-								insertStmt.setNull(paramIndex, java.sql.Types.DOUBLE);
-							} else {
-								insertStmt.setDouble(paramIndex, (Double)argValue);
-							}
-						} else if (argValue instanceof String) {
-							// This is the most common value we get when someone is using InsertUtils.
-							// The value may need to be convered from a string.
-							insertStmt.setObject(paramIndex, convertString((String)argValue, argIndex));
-						} else if (argValue instanceof UniqueIntID) {
-							insertStmt.setInt(paramIndex, ((UniqueIntID)argValue).getID());
-						} else if (argValue instanceof UniqueStringID) {
-							insertStmt.setString(paramIndex, ((UniqueStringID)argValue).getID());
-						} else {
-							throw new IllegalArgumentException("Unknown data type for :" + argValue);
+					if (data.size() - rowIndex < DEFAULT_MULTIROW_COUNT) {
+						// Commit any records left in the multi-insert batch.
+						if (batchSize >= DEFAULT_PAGE_SIZE) {
+							activeStatement.executeBatch();
+							activeStatement.clearBatch();
+							batchSize = 0;
 						}
+
+						activeStatement = singleInsertStatement;
+						insertSize = 1;
 					}
 
-					insertStmt.addBatch();
-					insertStmt.clearParameters();
+					for (int i = 0; i < insertSize; i++) {
+						List<Object> row = data.get(rowIndex);
+						Double value = values.get(rowIndex);
+
+						// Partition
+						activeStatement.setInt(paramIndex++, partitionID);
+
+						// Value
+						if (value == null || value.isNaN()) {
+							activeStatement.setNull(paramIndex++, java.sql.Types.DOUBLE);
+						} else {
+							activeStatement.setDouble(paramIndex++, value);
+						}
+
+						for (int argIndex = 0; argIndex < predicateInfo.argumentColumns().size(); argIndex++) {
+							Object argValue = row.get(argIndex);
+
+							assert(argValue != null);
+
+							if (argValue instanceof Integer) {
+								activeStatement.setInt(paramIndex++, (Integer)argValue);
+							} else if (argValue instanceof Double) {
+								// The standard JDBC way to insert NaN is using setNull
+								// if not, mysql will complain about any NaNs.
+								if (Double.isNaN((Double)argValue)) {
+									activeStatement.setNull(paramIndex++, java.sql.Types.DOUBLE);
+								} else {
+									activeStatement.setDouble(paramIndex++, (Double)argValue);
+								}
+							} else if (argValue instanceof String) {
+								// This is the most common value we get when someone is using InsertUtils.
+								// The value may need to be convered from a string.
+								activeStatement.setObject(paramIndex++, convertString((String)argValue, argIndex));
+							} else if (argValue instanceof UniqueIntID) {
+								activeStatement.setInt(paramIndex++, ((UniqueIntID)argValue).getID());
+							} else if (argValue instanceof UniqueStringID) {
+								activeStatement.setString(paramIndex++, ((UniqueStringID)argValue).getID());
+							} else {
+								throw new IllegalArgumentException("Unknown data type for :" + argValue);
+							}
+						}
+
+						rowIndex++;
+					}
+
+					activeStatement.addBatch();
+					batchSize++;
+
+					if (batchSize >= DEFAULT_PAGE_SIZE) {
+						activeStatement.executeBatch();
+						activeStatement.clearBatch();
+						batchSize = 0;
+					}
 				}
 
-				insertStmt.executeBatch();
-				insertStmt.clearBatch();
+				if (batchSize > 0) {
+					activeStatement.executeBatch();
+					activeStatement.clearBatch();
+					batchSize = 0;
+				}
+				activeStatement.clearParameters();
 			} catch (SQLException ex) {
 				log.error(ex.getMessage());
 				throw new RuntimeException("Error inserting into RDBMS.", ex);

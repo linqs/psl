@@ -313,6 +313,8 @@ public class RDBMSDatabase implements Database {
 			PreparedStatement statement = getAtomUpsert(getPredicateInfo(entry.getKey()));
 
 			try {
+				int batchSize = 0;
+
 				// Set all the upsert params.
 				for (RandomVariableAtom atom : entry.getValue()) {
 					// Partition
@@ -328,11 +330,20 @@ public class RDBMSDatabase implements Database {
 					}
 
 					statement.addBatch();
+					batchSize++;
+
+					if (batchSize >= RDBMSDataLoader.DEFAULT_PAGE_SIZE) {
+						statement.executeBatch();
+						statement.clearBatch();
+						batchSize = 0;
+					}
 				}
 
-				// Execute all the upserts for this predicate.
-				statement.executeBatch();
-				statement.clearBatch();
+				if (batchSize > 0) {
+					statement.executeBatch();
+					statement.clearBatch();
+				}
+				statement.clearParameters();
 			} catch (SQLException ex) {
 				throw new RuntimeException("Error doing batch commit for: " + entry.getKey(), ex);
 			}
@@ -392,7 +403,7 @@ public class RDBMSDatabase implements Database {
 			throw new RuntimeException("Error executing database query: (" + query + ") -- [" + queryString + "]", ex);
 		}
 
-		log.trace("Number of results: {}",results.size());
+		log.trace("Number of results: {}", results.size());
 		return results;
 	}
 

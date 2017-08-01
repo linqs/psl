@@ -233,11 +233,14 @@ public class PredicateInfo {
 		// If all columns are UniqueIDs, when we are already done.
 		// Add 1 since we already put the partition in |uniqueColumns|.
 		if (uniqueColumns.size() < (argCols.size() + 1)) {
+			// We want the partition to be last.
+			uniqueColumns.remove(0, PARTITION_COLUMN_NAME);
 			for (String colName : argCols) {
 				if (!uniqueColumns.contains(colName)) {
 					uniqueColumns.add(colName);
 				}
 			}
+			uniqueColumns.add(0, PARTITION_COLUMN_NAME);
 
 			createTable.addCustomConstraints("UNIQUE(" + StringUtils.join(uniqueColumns, ", ") + ")");
 		}
@@ -253,13 +256,14 @@ public class PredicateInfo {
 		// The primary index used for grounding.
 		CreateIndexQuery createIndex = new CreateIndexQuery(tableName(), "IX_" + tableName() + "_GROUNDING");
 
-		// First add the partition.
-		createIndex.addCustomColumns(PARTITION_COLUMN_NAME);
+		// The column order is very important for this critical index.
+		// First the data columns, then the partition.
 
-		// Now add the variable columns.
 		for (String colName : argCols) {
 			createIndex.addCustomColumns(colName);
 		}
+
+		createIndex.addCustomColumns(PARTITION_COLUMN_NAME);
 
 		try (Statement statement = connection.createStatement()) {
 			statement.executeUpdate(createIndex.validate().toString());
