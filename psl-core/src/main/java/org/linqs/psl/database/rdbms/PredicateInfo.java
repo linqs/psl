@@ -234,7 +234,7 @@ public class PredicateInfo {
 		// Add 1 since we already put the partition in |uniqueColumns|.
 		if (uniqueColumns.size() < (argCols.size() + 1)) {
 			// We want the partition to be last.
-			uniqueColumns.remove(0, PARTITION_COLUMN_NAME);
+			uniqueColumns.remove(PARTITION_COLUMN_NAME);
 			for (String colName : argCols) {
 				if (!uniqueColumns.contains(colName)) {
 					uniqueColumns.add(colName);
