@@ -44,7 +44,6 @@ import java.util.List;
 
 public class PredicateInfo {
 	public static final String PREDICATE_TABLE_SUFFIX = "_PREDICATE";
-	public static final String SURROGATE_KEY_COLUMN_NAME = "id";
 	public static final String PARTITION_COLUMN_NAME = "partition";
 	public static final String VALUE_COLUMN_NAME = "value";
 
@@ -201,7 +200,6 @@ public class PredicateInfo {
 		CreateTableQuery createTable = new CreateTableQuery(tableName);
 
 		// First add non-variable columns: suggogate key, partition, value.
-		createTable.addCustomColumns(dbDriver.getSurrogateKeyColumnDefinition(SURROGATE_KEY_COLUMN_NAME));
 		createTable.addCustomColumns(PARTITION_COLUMN_NAME + " INT NOT NULL");
 		createTable.addCustomColumns(VALUE_COLUMN_NAME + " " + dbDriver.getDoubleTypeName() + " NOT NULL");
 
@@ -253,20 +251,35 @@ public class PredicateInfo {
 	}
 
 	private void index(Connection connection, DatabaseDriver dbDriver) {
+		List<String> indexes = new ArrayList<String>();
+
 		// The primary index used for grounding.
 		CreateIndexQuery createIndex = new CreateIndexQuery(tableName(), "IX_" + tableName() + "_GROUNDING");
 
-		// The column order is very important for this critical index.
-		// First the data columns, then the partition.
-
+		// The column order is very important: data columns, then index.
 		for (String colName : argCols) {
 			createIndex.addCustomColumns(colName);
 		}
-
 		createIndex.addCustomColumns(PARTITION_COLUMN_NAME);
+		indexes.add(createIndex.validate().toString());
+
+		// Create simple index on each column.
+		// Often the query planner will choose a small index over the full one for specific parts of the query.
+		for (String colName : argCols) {
+			createIndex = new CreateIndexQuery(tableName(), "IX_" + tableName() + "_" + colName);
+			createIndex.addCustomColumns(colName);
+			indexes.add(createIndex.validate().toString());
+		}
+
+		// Include he partition.
+		createIndex = new CreateIndexQuery(tableName(), "IX_" + tableName() + "_" + PARTITION_COLUMN_NAME);
+		createIndex.addCustomColumns(PARTITION_COLUMN_NAME);
+		indexes.add(createIndex.validate().toString());
 
 		try (Statement statement = connection.createStatement()) {
-			statement.executeUpdate(createIndex.validate().toString());
+			for (String index : indexes) {
+				statement.executeUpdate(index);
+			}
 		} catch(SQLException ex) {
 			throw new RuntimeException("Error creating index on table for predicate: " + predicate.getName(), ex);
 		}

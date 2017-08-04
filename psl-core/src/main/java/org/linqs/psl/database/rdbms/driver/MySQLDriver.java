@@ -112,7 +112,7 @@ public class MySQLDriver implements DatabaseDriver {
 			case Integer:
 				return "INT";
 			case String:
-				return "VARCHAR(256)";
+				return "VARCHAR(255)";
 			case Long:
 				return "BIGINT";
 			case Date:
@@ -120,7 +120,7 @@ public class MySQLDriver implements DatabaseDriver {
 			case UniqueIntID:
 				return "INT";
 			case UniqueStringID:
-				return "VARCHAR(256)";
+				return "VARCHAR(255)";
 			default:
 				throw new IllegalStateException("Unknown ConstantType: " + type);
 		}
