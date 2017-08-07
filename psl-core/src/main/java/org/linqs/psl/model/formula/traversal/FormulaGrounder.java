@@ -37,7 +37,6 @@ import org.linqs.psl.model.term.Variable;
  * replacing {@link Variable Variables} with values specified in the
  * {@link VariableAssignment} or {@link ResultList} passed to the constructor.
  */
-
 public class FormulaGrounder extends AbstractFormulaTraverser {
 
 	protected final AtomManager atommanger;
@@ -127,8 +126,6 @@ public class FormulaGrounder extends AbstractFormulaTraverser {
 	 * arguments are included in an {@link org.linqs.psl.model.atom.Atom Atom}
 	 * that will be included in the ground
 	 * {@link org.linqs.psl.model.formula.Formula Formula}
-	 * 
-	 * 
 	 */
 	@Override
 	public void visitAtom(Atom atom) {

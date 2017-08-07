@@ -87,12 +87,18 @@ public class PredicateInfo {
 	/**
 	 * Create a prepared statement to query all the atoms for this predicate (within the specified partitions).
 	 * You can specify no partitions with null or an empty list.
+	 * The columns will ALWAYS be in the following order: partition, value, data columns (determined by getArgumentColumns()).
 	 */
 	public PreparedStatement createQueryAllStatement(Connection connection, List<Integer> partitions) {
 		SelectQuery query = new SelectQuery();
 
-		// Seelct *
-		query.addAllColumns();
+		// Select everything in a predictable order.
+		query.addCustomColumns(new CustomSql(PARTITION_COLUMN_NAME));
+		query.addCustomColumns(new CustomSql(VALUE_COLUMN_NAME));
+		for (String colName : argCols) {
+			query.addCustomColumns(new CustomSql(colName));
+		}
+
 		query.addCustomFromTable(tableName);
 
 		// If there is only 1 partition, just do equality, otherwise use IN.
@@ -222,7 +228,8 @@ public class PredicateInfo {
 		}
 
 		// Add a unique constraint for all the unique ids (and partition).
-		uniqueColumns.add(0, PARTITION_COLUMN_NAME);
+		// The partition column MUST be the last one (since H2 is super picky).
+		uniqueColumns.add(PARTITION_COLUMN_NAME);
 		if (uniqueColumns.size() > 1) {
 			createTable.addCustomConstraints("UNIQUE(" + StringUtils.join(uniqueColumns, ", ") + ")");
 		}
@@ -244,7 +251,7 @@ public class PredicateInfo {
 		}
 
 		try (Statement statement = connection.createStatement()) {
-			statement.executeUpdate(createTable.validate().toString());
+			statement.executeUpdate(dbDriver.finalizeCreateTable(createTable));
 		} catch(SQLException ex) {
 			throw new RuntimeException("Error creating table for predicate: " + predicate.getName(), ex);
 		}
@@ -271,7 +278,7 @@ public class PredicateInfo {
 			indexes.add(createIndex.validate().toString());
 		}
 
-		// Include he partition.
+		// Include the partition.
 		createIndex = new CreateIndexQuery(tableName(), "IX_" + tableName() + "_" + PARTITION_COLUMN_NAME);
 		createIndex.addCustomColumns(PARTITION_COLUMN_NAME);
 		indexes.add(createIndex.validate().toString());

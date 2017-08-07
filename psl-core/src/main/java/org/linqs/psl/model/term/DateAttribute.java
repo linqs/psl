@@ -25,7 +25,6 @@ import org.joda.time.DateTime;
  * @author John Sullivan
  */
 public class DateAttribute implements Attribute{
-
 	 private final DateTime value;
 
 	 /**

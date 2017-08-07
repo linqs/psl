@@ -20,6 +20,7 @@ package org.linqs.psl.database.rdbms.driver;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.model.term.ConstantType;
 
+import com.healthmarketscience.sqlbuilder.CreateTableQuery;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
@@ -56,7 +57,6 @@ public class PostgreSQLDriver implements DatabaseDriver {
 			if (clearDatabase) {
 				executeUpdate("DROP SCHEMA public CASCADE");
 				executeUpdate("CREATE SCHEMA public");
-				executeUpdate("GRANT ALL ON SCHEMA public TO postgres");
 				executeUpdate("GRANT ALL ON SCHEMA public TO public");
 			}
 		} catch (ClassNotFoundException ex) {
@@ -139,5 +139,11 @@ public class PostgreSQLDriver implements DatabaseDriver {
 		stmt = dbConnection.createStatement();
 		stmt.executeUpdate(query);
 		stmt.close();
+	}
+
+	@Override
+	public String finalizeCreateTable(CreateTableQuery createTable) {
+		// Use unlogged tables.
+		return createTable.validate().toString().replace("CREATE TABLE", "CREATE UNLOGGED TABLE");
 	}
 }

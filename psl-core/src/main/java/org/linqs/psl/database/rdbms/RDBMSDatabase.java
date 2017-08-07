@@ -240,14 +240,12 @@ public class RDBMSDatabase implements Database {
 		}
 
 		PredicateInfo predciate = getPredicateInfo(atom.getPredicate());
-		Term[] arguments = atom.getArguments();
-
 		PreparedStatement statement = getAtomDelete(predicates.get(atom.getPredicate()));
 
 		try {
 			// Fill in all the query parameters (1-indexed).
 			int paramIndex = 1;
-			for (Term argument : arguments) {
+			for (Term argument : atom.getArguments()) {
 				setAtomArgument(statement, argument, paramIndex);
 				paramIndex++;
 			}
@@ -376,27 +374,51 @@ public class RDBMSDatabase implements Database {
 		// Construct query from formula
 		Formula2SQL sqler = new Formula2SQL(partialGrounding, projectTo, this, query.getDistinct());
 		String queryString = sqler.getSQL(formula);
+		Map<Variable, Integer> projectionMap = sqler.getProjectionMap();
+
 		log.trace(queryString);
 
 		// Create and initialize ResultList
-		int i = 0;
+		int variableCount = 0;
 		RDBMSResultList results = new RDBMSResultList(projectTo.size());
 		for (int varIndex = 0; varIndex < query.getNumVariables(); varIndex++) {
 			if (projectTo.contains(query.getVariable(varIndex))) {
-				results.setVariable(query.getVariable(varIndex), i++);
+				results.setVariable(query.getVariable(varIndex), variableCount++);
 			}
+		}
+
+		// Figure out all the partial variables ahead of time.
+		// This will help us reduce memory usage when reading in the result set.
+		// Since there are potentially many results, little boosts help.
+		Constant[] orderedPartials = new Constant[projectTo.size()];
+		int[] orderedIndexes = new int[projectTo.size()];
+		ConstantType[] orderedTypes = new ConstantType[projectTo.size()];
+		for (Map.Entry<Variable, Integer> entry : results.getVariableMap().entrySet()) {
+			Variable variable = entry.getKey();
+			int index = entry.getValue().intValue();
+
+			if (partialGrounding.hasVariable(variable)) {
+				orderedPartials[index] = partialGrounding.getVariable(variable);
+			} else {
+				orderedPartials[index] = null;
+			}
+
+			orderedIndexes[index] = projectionMap.get(variable);
+			orderedTypes[index] = varTypes.getType(variable);
 		}
 
 		try (Statement statement = connection.createStatement(); ResultSet resultSet = statement.executeQuery(queryString)) {
 			while (resultSet.next()) {
-				Constant[] res = new Constant[projectTo.size()];
-				for (Variable var : projectTo) {
-					if (partialGrounding.hasVariable(var)) {
-						res[results.getPos(var)] = partialGrounding.getVariable(var);
+				Constant[] res = new Constant[orderedPartials.length];
+
+				for (int i = 0; i < orderedPartials.length; i++) {
+					if (orderedPartials[i] != null) {
+						res[i] = orderedPartials[i];
 					} else {
-						res[results.getPos(var)] = extractConstantFromResult(resultSet, var.getName(), varTypes.getType(var));
+						res[i] = extractConstantFromResult(resultSet, orderedIndexes[i], orderedTypes[i]);
 					}
 				}
+
 				results.addResult(res);
 			}
 		} catch (SQLException ex) {
@@ -404,6 +426,7 @@ public class RDBMSDatabase implements Database {
 		}
 
 		log.trace("Number of results: {}", results.size());
+
 		return results;
 	}
 
@@ -496,24 +519,25 @@ public class RDBMSDatabase implements Database {
 	/**
 	 * Given a ResultSet, column name, and ConstantType,
 	 * get the value as a Constnt from the results.
+	 * columnIndex should be 0-indexed (eventhough jdbc uses 1-index).
 	 */
-	private Constant extractConstantFromResult(ResultSet results, String columnName, ConstantType type) {
+	private Constant extractConstantFromResult(ResultSet results, int columnIndex, ConstantType type) {
 		try {
 			switch (type) {
 				case Double:
-					return new DoubleAttribute(results.getDouble(columnName));
+					return new DoubleAttribute(results.getDouble(columnIndex + 1));
 				case Integer:
-					return new IntegerAttribute(results.getInt(columnName));
+					return new IntegerAttribute(results.getInt(columnIndex + 1));
 				case String:
-					return new StringAttribute(results.getString(columnName));
+					return new StringAttribute(results.getString(columnIndex + 1));
 				case Long:
-					return new LongAttribute(results.getLong(columnName));
+					return new LongAttribute(results.getLong(columnIndex + 1));
 				case Date:
-					return new DateAttribute(new DateTime(results.getDate(columnName).getTime()));
+					return new DateAttribute(new DateTime(results.getDate(columnIndex + 1).getTime()));
 				case UniqueIntID:
-					return new UniqueIntID(results.getInt(columnName));
+					return new UniqueIntID(results.getInt(columnIndex + 1));
 				case UniqueStringID:
-					return new UniqueStringID(results.getString(columnName));
+					return new UniqueStringID(results.getString(columnIndex + 1));
 				default:
 					throw new IllegalArgumentException("Unknown argument type: " + type);
 			}
@@ -615,7 +639,8 @@ public class RDBMSDatabase implements Database {
 				ResultSet results = statement.executeQuery()) {
 			while (results.next()) {
 				for (int i = 0; i < argumentCols.size(); i++) {
-					arguments[i] = extractConstantFromResult(results, argumentCols.get(i), predicate.getArgumentType(i));
+					// As per PredicateInfo.createQueryAllStatement, the data columns are offset by two.
+					arguments[i] = extractConstantFromResult(results, i + 2, predicate.getArgumentType(i));
 				}
 
 				atoms.add(extractGroundAtomFromResult(results, predicate, arguments));

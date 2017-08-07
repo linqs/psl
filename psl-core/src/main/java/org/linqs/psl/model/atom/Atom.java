@@ -46,11 +46,8 @@ import com.healthmarketscience.sqlbuilder.BinaryCondition;
  * @author Matthias Broecheler
  */
 public abstract class Atom implements Formula, SummationAtomOrAtom {
-
 	protected final Predicate predicate;
-
 	protected final Term[] arguments;
-
 	protected final int hashcode;
 
 	/**

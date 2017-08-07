@@ -19,6 +19,8 @@ package org.linqs.psl.database.rdbms.driver;
 
 import org.linqs.psl.model.term.ConstantType;
 
+import com.healthmarketscience.sqlbuilder.CreateTableQuery;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 
@@ -63,4 +65,10 @@ public interface DatabaseDriver {
 	 */
 	public PreparedStatement getUpsert(Connection connection, String tableName,
 			String[] columns, String[] keyColumns);
+
+	/**
+	 * Gives the driver a chance to perform any final
+	 * manipulations to the CREATE TABLE statement.
+	 */
+	public String finalizeCreateTable(CreateTableQuery createTable);
 }
