@@ -19,6 +19,7 @@ package org.linqs.psl.database.rdbms.driver;
 
 import org.linqs.psl.model.term.ConstantType;
 
+import com.healthmarketscience.sqlbuilder.CreateTableQuery;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
@@ -158,5 +159,10 @@ public class MySQLDriver implements DatabaseDriver {
 		} catch (SQLException ex) {
 			throw new RuntimeException("Could not prepare MySQL upsert for " + tableName, ex);
 		}
+	}
+
+	@Override
+	public String finalizeCreateTable(CreateTableQuery createTable) {
+		return createTable.validate().toString();
 	}
 }

@@ -105,28 +105,31 @@ abstract public class AbstractLogicalRule extends AbstractRule {
 		List<GroundAtom> posLiterals = new ArrayList<GroundAtom>(4);
 		List<GroundAtom> negLiterals = new ArrayList<GroundAtom>(4);
 
-		/* Uses these to check worst-case truth value */
+		// Uses these to check worst-case truth value.
 		Map<FunctionVariable, Double> worstCaseValues = new HashMap<FunctionVariable, Double>(8);
 		double worstCaseValue;
 
 		GroundAtom atom;
 		for (int i = 0; i < res.size(); i++) {
-
 			for (int j = 0; j < clause.getPosLiterals().size(); j++) {
 				atom = groundAtom(atomManager, clause.getPosLiterals().get(j), res, i, var);
-				if (atom instanceof RandomVariableAtom)
+				if (atom instanceof RandomVariableAtom) {
 					worstCaseValues.put(atom.getVariable(), 1.0);
-				else
+				} else {
 					worstCaseValues.put(atom.getVariable(), atom.getValue());
+				}
+
 				posLiterals.add(atom);
 			}
 
 			for (int j = 0; j < clause.getNegLiterals().size(); j++) {
 				atom = groundAtom(atomManager, clause.getNegLiterals().get(j), res, i, var);
-				if (atom instanceof RandomVariableAtom)
+				if (atom instanceof RandomVariableAtom) {
 					worstCaseValues.put(atom.getVariable(), 0.0);
-				else
+				} else {
 					worstCaseValues.put(atom.getVariable(), atom.getValue());
+				}
+
 				negLiterals.add(atom);
 			}
 
@@ -138,11 +141,12 @@ abstract public class AbstractLogicalRule extends AbstractRule {
 					&& !grs.containsGroundKernel(groundRule)) {
 				grs.addGroundRule(groundRule);
 				numGroundingsAdded++;
-			}
-			/* If the ground kernel is not actually added, unregisters it from atoms */
-			else
-				for (GroundAtom incidentAtom : groundRule.getAtoms())
+			// If the ground kernel is not actually added, unregisters it from atoms.
+			} else {
+				for (GroundAtom incidentAtom : groundRule.getAtoms()) {
 					incidentAtom.unregisterGroundKernel(groundRule);
+				}
+			}
 
 			posLiterals.clear();
 			negLiterals.clear();

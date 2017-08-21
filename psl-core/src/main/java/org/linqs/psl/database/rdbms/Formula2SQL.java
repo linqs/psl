@@ -17,12 +17,6 @@
  */
 package org.linqs.psl.database.rdbms;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.VariableAssignment;
 import org.linqs.psl.model.formula.Formula;
@@ -43,6 +37,13 @@ import com.healthmarketscience.sqlbuilder.FunctionCall;
 import com.healthmarketscience.sqlbuilder.InCondition;
 import com.healthmarketscience.sqlbuilder.SelectQuery;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 public class Formula2SQL extends AbstractFormulaTraverser {
 	private static final String TABLE_ALIAS_PREFIX = "T";
 
@@ -59,6 +60,11 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 
 	private final SelectQuery query;
 
+	/**
+	 * The order of the variables as they appear in the select clause.
+	 */
+	private final Map<Variable, Integer> projectionMap;
+
 	private int tableCounter;
 
 	public Formula2SQL(VariableAssignment partialGrounding, Set<Variable> projection, RDBMSDatabase database) {
@@ -71,6 +77,7 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 		this.database = database;
 
 		joins = new HashMap<Variable, String>();
+		projectionMap = new HashMap<Variable, Integer>();
 		functionalAtoms = new ArrayList<Atom>();
 		tableCounter = 0;
 
@@ -84,6 +91,10 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 
 	public List<Atom> getFunctionalAtoms() {
 		return functionalAtoms;
+	}
+
+	public Map<Variable, Integer> getProjectionMap() {
+		return Collections.unmodifiableMap(projectionMap);
 	}
 
 	@Override
@@ -106,8 +117,7 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 	private void visitFunctionalAtom(Atom atom) {
 		assert(atom.getPredicate() instanceof FunctionalPredicate);
 
-		Term[] arguments = atom.getArguments();
-		Object[] convert = convertArguments(arguments);
+		Object[] convert = convertArguments(atom.getArguments());
 
 		if (atom.getPredicate() instanceof ExternalFunctionalPredicate) {
 			ExternalFunctionalPredicate predicate = (ExternalFunctionalPredicate)atom.getPredicate();
@@ -202,6 +212,7 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 					} else {
 						if (projection.contains(var)) {
 							query.addAliasedColumn(new CustomSql(columnReference), var.getName());
+							projectionMap.put(var, projectionMap.size());
 						}
 
 						joins.put(var, columnReference);

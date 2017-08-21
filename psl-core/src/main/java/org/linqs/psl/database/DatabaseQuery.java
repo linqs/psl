@@ -36,15 +36,14 @@ import java.util.Set;
 
 /**
  * A query to select groundings from a {@link Database}.
- * <p>
  * Groundings that match the query are returned in the form of a {@link ResultList}.
  *
- * <h2>Semantics</h2>
+ * Semantics
  *
  * A DatabaseQuery has three components: a Formula, a partial grounding,
  * and a set of {@link Variable Variables} onto which the results will be
  * projected.
- * <p>
+ *
  * The Formula is given upon initialization and is fixed. It must be
  * a {@link Conjunction} of Atoms or a single Atom. Any {@link Variable}
  * in the Formula must be used in an Atom with a {@link StandardPredicate}.
@@ -54,11 +53,11 @@ import java.util.Set;
  * Database and each GroundAtom with a FunctionalPredicate.
  * in the ground Formula has a non-zero truth value (regardless of whether
  * it is instantiated in memory).
- * <p>
+ *
  * The partial grounding is a {@link VariableAssignment} which all returned
  * groundings must match. Use {@link #getPartialGrounding()} to modify the partial
  * grounding. It is initially empty.
- * <p>
+ *
  * The projection subset is a subset of the Variables in the Formula onto
  * which the returned groundings will be projected. An empty subset is
  * the same as including all Variables in the Formula in the subset except those

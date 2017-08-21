@@ -55,7 +55,7 @@ public class ArithmeticRuleExpression {
 
 		for (SummationAtomOrAtom saoa : getAtoms()) {
 			if (saoa instanceof SummationAtom) {
-				for (SummationVariableOrTerm svot : ((SummationAtom) saoa).getArguments()) {
+				for (SummationVariableOrTerm svot : ((SummationAtom)saoa).getArguments()) {
 					if (svot instanceof Variable) {
 						vars.add((Variable) svot);
 					} else if (svot instanceof SummationVariable) {

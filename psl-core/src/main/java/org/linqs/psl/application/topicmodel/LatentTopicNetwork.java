@@ -489,7 +489,6 @@ public class LatentTopicNetwork implements ModelApplication {
 			log.info("finished inference for theta");
 
 			for (GroundAtom atom : Queries.getAllAtoms(dbTheta, p)) {
-				//println atom.toString() + "\t" + atom.getValue();
 				Constant[] terms  = atom.getArguments();
 				theta[Integer.valueOf(terms[0].toString())][Integer.valueOf(terms[1].toString())] = atom.getValue();
 			}
@@ -653,7 +652,7 @@ public class LatentTopicNetwork implements ModelApplication {
 		for (GroundAtom ga : Queries.getAllAtoms(sourceDB, p)) {
 			Constant[] arguments = ga.getArguments();
 			GroundAtom rv = sourceDB.getAtom(p, arguments);
-			u.insertValue(rv.getValue(), (Object[]) arguments);
+			u.insertValue(rv.getValue(), (Object[])arguments);
 		}
 	}
 

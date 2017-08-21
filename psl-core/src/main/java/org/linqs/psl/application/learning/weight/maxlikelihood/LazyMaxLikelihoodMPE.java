@@ -45,10 +45,10 @@ import org.slf4j.LoggerFactory;
 /**
  * Voted perceptron algorithm that does not require a ground model of pre-specified
  * dimensionality.
- * <p>
+ *
  * For the gradient of the objective, the expected total incompatibility is
  * computed by finding the MPE state.
- * <p>
+ *
  * Note that this class does not support latent variables but will not throw
  * an error if the labelDB does not include a corresponding label for a
  * RandomVariableAtom. All unspecified labels will set to their most probable

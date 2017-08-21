@@ -203,7 +203,8 @@ public class RDBMSDataLoader implements DataLoader {
 
 			try {
 				int batchSize = 0;
-				// We will from the multi-insert to the single-insert when we don't have enough data to dill the multi-insert.
+
+				// We will go from the multi-insert to the single-insert when we don't have enough data to fill the multi-insert.
 				PreparedStatement activeStatement = multiInsertStatement;
 				int insertSize = DEFAULT_MULTIROW_COUNT;
 
@@ -212,9 +213,9 @@ public class RDBMSDataLoader implements DataLoader {
 					// Index for the current index.
 					int paramIndex = 1;
 
-					if (data.size() - rowIndex < DEFAULT_MULTIROW_COUNT) {
+					if (activeStatement == multiInsertStatement && data.size() - rowIndex < DEFAULT_MULTIROW_COUNT) {
 						// Commit any records left in the multi-insert batch.
-						if (batchSize >= DEFAULT_PAGE_SIZE) {
+						if (batchSize > 0) {
 							activeStatement.executeBatch();
 							activeStatement.clearBatch();
 							batchSize = 0;

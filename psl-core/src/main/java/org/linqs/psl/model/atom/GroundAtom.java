@@ -35,15 +35,14 @@ import com.google.common.collect.SetMultimap;
 
 /**
  * An Atom with only {@link Constant GroundTerms} for arguments.
- * <p>
+ *
  * A GroundAtom has a truth value.
  */
 public abstract class GroundAtom extends Atom {
-	final protected Database db;
-
-	protected double value;
-
 	private static final Set<GroundRule> emptyGroundKernels = ImmutableSet.of();
+
+	protected final Database db;
+	protected double value;
 	protected SetMultimap<Rule, GroundRule> registeredGroundKernels;
 
 	protected GroundAtom(Predicate p, Constant[] args, Database db, double value) {
@@ -58,7 +57,7 @@ public abstract class GroundAtom extends Atom {
 
 	@Override
 	public Constant[] getArguments() {
-		return Arrays.copyOf((Constant[]) arguments, arguments.length);
+		return (Constant[])arguments;
 	}
 
 	/**
@@ -84,8 +83,10 @@ public abstract class GroundAtom extends Atom {
 	 * @return TRUE if successful; FALSE if kernel was already registered
 	 */
 	public boolean registerGroundKernel(GroundRule f) {
-		if (registeredGroundKernels == null)
+		if (registeredGroundKernels == null) {
 			registeredGroundKernels = HashMultimap.create();
+		}
+
 		return registeredGroundKernels.put(f.getRule(), f);
 	}
 
