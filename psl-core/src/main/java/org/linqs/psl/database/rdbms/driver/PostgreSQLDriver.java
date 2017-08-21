@@ -56,7 +56,6 @@ public class PostgreSQLDriver implements DatabaseDriver {
 			if (clearDatabase) {
 				executeUpdate("DROP SCHEMA public CASCADE");
 				executeUpdate("CREATE SCHEMA public");
-				executeUpdate("GRANT ALL ON SCHEMA public TO postgres");
 				executeUpdate("GRANT ALL ON SCHEMA public TO public");
 			}
 		} catch (ClassNotFoundException ex) {
