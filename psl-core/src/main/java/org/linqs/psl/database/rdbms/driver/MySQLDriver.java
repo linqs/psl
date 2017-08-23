@@ -101,7 +101,7 @@ public class MySQLDriver implements DatabaseDriver {
 	}
 
 	@Override
-	public boolean isSupportExternalFunction() {
+	public boolean supportsExternalFunctions() {
 		return false;
 	}
 

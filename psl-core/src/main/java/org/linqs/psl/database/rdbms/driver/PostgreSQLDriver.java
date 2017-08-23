@@ -46,7 +46,7 @@ public class PostgreSQLDriver implements DatabaseDriver {
 	}
 
 	public PostgreSQLDriver(String host, String port, String databaseName, boolean clearDatabase) {
-		this(String.format("jdbc:postgresql://%s:%s/%s", host, port, databaseName), databaseName, clearDatabase);
+		this(String.format("jdbc:postgresql://%s:%s/%s?loggerLevel=OFF", host, port, databaseName), databaseName, clearDatabase);
 	}
 
 	public PostgreSQLDriver(String connectionString, String databaseName, boolean clearDatabase) {
@@ -72,7 +72,7 @@ public class PostgreSQLDriver implements DatabaseDriver {
 	}
 
 	@Override
-	public boolean isSupportExternalFunction() {
+	public boolean supportsExternalFunctions() {
 		return false;
 	}
 

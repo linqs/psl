@@ -112,7 +112,7 @@ public class H2DatabaseDriver implements DatabaseDriver {
 	}
 
 	@Override
-	public boolean isSupportExternalFunction() {
+	public boolean supportsExternalFunctions() {
 		return true;
 	}
 

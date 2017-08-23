@@ -38,7 +38,7 @@ public interface DatabaseDriver {
 	 * Distinguish from H2 Java External Function Support, which is very special.
 	 * @return true if support H2 in memory java method, false if not support
 	 */
-	public boolean isSupportExternalFunction();
+	public boolean supportsExternalFunctions();
 
 	/**
 	 * Get the type name for each argument type.

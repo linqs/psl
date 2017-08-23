@@ -19,6 +19,8 @@ package org.linqs.psl.database.rdbms;
 
 import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 import org.linqs.psl.model.predicate.Predicate;
+import org.linqs.psl.model.predicate.PredicateFactory;
+import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.ConstantType;
 
 import com.healthmarketscience.sqlbuilder.BinaryCondition;
@@ -27,22 +29,26 @@ import com.healthmarketscience.sqlbuilder.CreateTableQuery;
 import com.healthmarketscience.sqlbuilder.CustomSql;
 import com.healthmarketscience.sqlbuilder.DeleteQuery;
 import com.healthmarketscience.sqlbuilder.InCondition;
-import com.healthmarketscience.sqlbuilder.InsertQuery;
 import com.healthmarketscience.sqlbuilder.QueryPreparer;
 import com.healthmarketscience.sqlbuilder.SelectQuery;
-import com.healthmarketscience.sqlbuilder.UpdateQuery;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.Statement;
-import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class PredicateInfo {
+	private static final Logger log = LoggerFactory.getLogger(PredicateInfo.class);
+
 	public static final String PREDICATE_TABLE_SUFFIX = "_PREDICATE";
 	public static final String PARTITION_COLUMN_NAME = "partition";
 	public static final String VALUE_COLUMN_NAME = "value";
@@ -51,19 +57,15 @@ public class PredicateInfo {
 	private final List<String> argCols;
 	private final String tableName;
 
-	public PredicateInfo(Predicate predicate, String[] argCols, String tableName) {
+	public PredicateInfo(Predicate predicate) {
 		assert(predicate != null);
-		assert(argCols != null);
-		assert(tableName != null);
 
 		this.predicate = predicate;
-		this.argCols = Arrays.asList(argCols);
-		this.tableName = tableName + PREDICATE_TABLE_SUFFIX;
+		this.tableName = predicate.getName() + PREDICATE_TABLE_SUFFIX;
 
-		if (this.argCols.size() != predicate.getArity()) {
-			throw new IllegalArgumentException(String.format(
-					"Number of predicate argument names (%d) must match its arity (%d)!",
-					this.argCols.size(), predicate.getArity()));
+		argCols = new ArrayList<String>(predicate.getArity());
+		for (int i = 0; i < predicate.getArity(); i++) {
+			argCols.add(predicate.getArgumentType(i).getName() + "_" + i);
 		}
 	}
 
@@ -289,6 +291,91 @@ public class PredicateInfo {
 			}
 		} catch(SQLException ex) {
 			throw new RuntimeException("Error creating index on table for predicate: " + predicate.getName(), ex);
+		}
+	}
+
+	/**
+	 * Look through the database's tables and columns and construct predicates tables that look like predicate tables.
+	 */
+	public static List<StandardPredicate> deserializePredicates(Connection connection) {
+		List<StandardPredicate> predicates = new ArrayList<StandardPredicate>();
+
+		try (ResultSet resultSet = connection.getMetaData().getTables(null, null, null, null)) {
+			while (resultSet.next()) {
+				String tableName = resultSet.getString("TABLE_NAME");
+				String tableSchema = resultSet.getString("TABLE_SCHEM");
+
+				// We always create predicate tables in the public schema.
+				if (!tableSchema.equalsIgnoreCase("public")) {
+					continue;
+				}
+
+				// Extract the predicate name from a matching table name
+				if (tableName.toLowerCase().endsWith(PredicateInfo.PREDICATE_TABLE_SUFFIX.toLowerCase())) {
+					String predicateName = tableName.toLowerCase().replaceFirst(PredicateInfo.PREDICATE_TABLE_SUFFIX.toLowerCase() + "$", "");
+
+					StandardPredicate predicate = createPredicateFromTable(connection, tableName, predicateName);
+					if (predicate != null) {
+						predicates.add(predicate);
+					}
+				}
+			}
+		} catch (SQLException ex) {
+			throw new RuntimeException("Error reading database metadata.", ex);
+		}
+
+		log.debug("Registered {} pre-existing predicates from RDBMS.", predicates.size());
+		return predicates;
+	}
+
+	/**
+	 * Construct a predicate given a specific table.
+	 * If this table is not actually a predicate table, the null will be returned.
+	 */
+	private static StandardPredicate createPredicateFromTable(Connection connection, String tableName, String name) {
+		Pattern argumentPattern = Pattern.compile("(\\w+)_(\\d)");
+
+		try (ResultSet resultSet = connection.getMetaData().getColumns(null, null, tableName, null)) {
+			ArrayList<ConstantType> args = new ArrayList<ConstantType>();
+
+			boolean hasPartitionColumn = false;
+			boolean hasValueColumn = false;
+
+			while (resultSet.next()) {
+				String columnName = resultSet.getString("COLUMN_NAME");
+
+				Matcher match = argumentPattern.matcher(columnName);
+				if (columnName.equalsIgnoreCase(PredicateInfo.PARTITION_COLUMN_NAME)) {
+					hasPartitionColumn = true;
+				} else if (columnName.equalsIgnoreCase(PredicateInfo.VALUE_COLUMN_NAME)) {
+					hasValueColumn = true;
+				} else if (match.find()) {
+					String argumentName = match.group(1).toLowerCase();
+					int argumentLocation = Integer.parseInt(match.group(2));
+
+					if (argumentName.equals("string")) {
+						args.add(argumentLocation, ConstantType.String);
+					} else if (argumentName.equals("integer")) {
+						args.add(argumentLocation, ConstantType.Integer);
+					} else if (argumentName.equals("double")) {
+						args.add(argumentLocation, ConstantType.Double);
+					} else if (argumentName.equals("uniqueintid")) {
+						args.add(argumentLocation, ConstantType.UniqueIntID);
+					} else if (argumentName.equals("uniquestringid")) {
+						args.add(argumentLocation, ConstantType.UniqueStringID);
+					}
+				}
+			}
+
+			// Check if we found all the required columns and some argument columns were found.
+			if (!hasPartitionColumn || !hasValueColumn || args.size() == 0) {
+				return null;
+			}
+
+			PredicateFactory factory = PredicateFactory.getFactory();
+			return factory.createStandardPredicate(name, args.toArray(new ConstantType[args.size()]));
+		} catch (SQLException ex) {
+			throw new RuntimeException("Failed to create predicate (" + name + ") from table (" + tableName + ").", ex);
 		}
 	}
 }

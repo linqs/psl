@@ -134,4 +134,8 @@ public interface DataStore {
 	 */
 	public void close();
 
+	/**
+	 * Check to see if this DataStore supports external functions.
+	 */
+	public boolean supportsExternalFunctions();
 }
