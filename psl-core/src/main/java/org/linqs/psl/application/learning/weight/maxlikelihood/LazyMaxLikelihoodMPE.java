@@ -49,10 +49,10 @@ import java.util.Set;
 /**
  * Voted perceptron algorithm that does not require a ground model of pre-specified
  * dimensionality.
- * <p>
+ *
  * For the gradient of the objective, the expected total incompatibility is
  * computed by finding the MPE state.
- * <p>
+ *
  * Note that this class does not support latent variables but will not throw
  * an error if the labelDB does not include a corresponding label for a
  * RandomVariableAtom. All unspecified labels will set to their most probable
@@ -88,7 +88,7 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 
 		eventFramework = new AtomEventFramework(rvDB, config);
 
-		/* Registers the Model's Rules with the AtomEventFramework */
+		// Registers the Model's Rules with the AtomEventFramework.
 		for (Rule rule : model.getRules()) {
 			rule.registerForAtomEvents(eventFramework, groundRuleStore);
 		}
@@ -114,10 +114,9 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 
 		Map<RandomVariableAtom, GroundValueConstraint> targetMap = new HashMap<RandomVariableAtom, GroundValueConstraint>();
 
-		/* Activates all non-zero labeled atoms */
+		// Activates all non-zero labeled atoms.
 		for (StandardPredicate p : observedDB.getRegisteredPredicates()) {
-			Set<GroundAtom> labeledAtoms = Queries.getAllAtoms(observedDB, p);
-			for (GroundAtom labeledAtom : labeledAtoms) {
+			for (GroundAtom labeledAtom : Queries.getAllAtoms(observedDB, p)) {
 				/*
 				 * Double checks that it is observed in observedDB and unobserved in rvDB,
 				 * since those are the only atoms in observedDB to be considered. Also,
@@ -138,14 +137,14 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 		}
 
 		boolean continueGrowing;
-		/* Maintains a temporary set during collection to avoid concurrent modification errors */
+		// Maintains a temporary set during collection to avoid concurrent modification errors.
 		Set<GroundValueConstraint> toAdd = new HashSet<GroundValueConstraint>();
 
 		log.debug("Beginning to grow labeled network.");
 		do {
 			continueGrowing = false;
 
-			/* Computes the MPE state and grows graphical model */
+			// Computes the MPE state and grows graphical model.
 			do {
 				eventFramework.workOffJobQueue();
 
@@ -159,7 +158,7 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 			}
 			while (eventFramework.checkToActivate() > 0);
 
-			/* Collects existing RandomVariableAtoms and pairs them with label constraints */
+			// Collects existing RandomVariableAtoms and pairs them with label constraints.
 			for (GroundRule groundRule : groundRuleStore.getGroundRules()) {
 				for (Atom a : groundRule.getAtoms()) {
 					if (a instanceof RandomVariableAtom) {
@@ -187,7 +186,7 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 		while (continueGrowing);
 		log.debug("Finished growing labeled network.");
 
-		/* Computes the observed incompatibilities */
+		// Computes the observed incompatibilities.
 		double[] truthIncompatibility = new double[rules.size()];
 		for (int i = 0; i < rules.size(); i++) {
 			for (GroundRule groundRule : groundRuleStore.getGroundRules(rules.get(i))) {
@@ -195,7 +194,7 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 			}
 		}
 
-		/* Removes label value constraints */
+		// Removes label value constraints.
 		for (GroundValueConstraint con : targetMap.values()) {
 			groundRuleStore.removeGroundRule(con);
 		}
@@ -207,7 +206,7 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 	protected double[] computeExpectedIncomp() {
 		double[] expIncomp = new double[rules.size()];
 
-		/* Computes the MPE state */
+		// Computes the MPE state.
 		do {
 			eventFramework.workOffJobQueue();
 
@@ -221,7 +220,7 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 		}
 		while (eventFramework.checkToActivate() > 0);
 
-		/* Computes incompatibility */
+		// Computes incompatibility.
 		for (int i = 0; i < rules.size(); i++) {
 			for (GroundRule groundRule : groundRuleStore.getGroundRules(rules.get(i))) {
 				expIncomp[i] += ((WeightedGroundRule) groundRule).getIncompatibility();
@@ -236,14 +235,13 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 		double[] scalingFactor = new double[rules.size()];
 
 		for (int i = 0; i < rules.size(); i++) {
-			Iterator<GroundRule> itr = groundRuleStore.getGroundRules(rules.get(i)).iterator();
-			while(itr.hasNext()) {
-				itr.next();
+			for (GroundRule rule : groundRuleStore.getGroundRules(rules.get(i))) {
 				scalingFactor[i]++;
 			}
 
-			if (scalingFactor[i] == 0.0)
+			if (scalingFactor[i] == 0.0) {
 				scalingFactor[i]++;
+			}
 		}
 
 		return scalingFactor;
@@ -251,12 +249,11 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 
 	@Override
 	protected void cleanUpGroundModel() {
-		/* Unregisters the Model's Rules with the AtomEventFramework */
+		// Unregisters the Model's Rules with the AtomEventFramework.
 		for (Rule rule : model.getRules())
 			rule.unregisterForAtomEvents(eventFramework, groundRuleStore);
 		eventFramework = null;
 
 		super.cleanUpGroundModel();
 	}
-
 }

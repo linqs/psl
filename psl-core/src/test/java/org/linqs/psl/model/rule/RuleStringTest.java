@@ -33,7 +33,6 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
-import org.linqs.psl.database.rdbms.RDBMSUniqueStringID;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver.Type;
 import org.linqs.psl.model.atom.Atom;
@@ -61,7 +60,7 @@ import org.linqs.psl.model.rule.logical.UnweightedLogicalRule;
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
-import org.linqs.psl.model.term.UniqueID;
+import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 
@@ -93,10 +92,10 @@ public class RuleStringTest {
 		// Predicates
 		PredicateFactory factory = PredicateFactory.getFactory();
 
-		singlePredicate = factory.createStandardPredicate("SinglePredicate", ConstantType.UniqueID);
+		singlePredicate = factory.createStandardPredicate("SinglePredicate", ConstantType.UniqueStringID);
 		dataStore.registerPredicate(singlePredicate);
 
-		doublePredicate = factory.createStandardPredicate("DoublePredicate", ConstantType.UniqueID, ConstantType.UniqueID);
+		doublePredicate = factory.createStandardPredicate("DoublePredicate", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
 		dataStore.registerPredicate(doublePredicate);
 
 		// Rules
@@ -127,8 +126,8 @@ public class RuleStringTest {
 		obsPartition = dataStore.getNewPartition();
 
 		Inserter inserter = dataStore.getInserter(singlePredicate, obsPartition);
-		inserter.insert(dataStore.getUniqueID("Alice"));
-		inserter.insert(dataStore.getUniqueID("Bob"));
+		inserter.insert(new UniqueStringID("Alice"));
+		inserter.insert(new UniqueStringID("Bob"));
 
 		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
 		database = dataStore.getDatabase(dataStore.getNewPartition(), toClose);

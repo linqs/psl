@@ -56,8 +56,9 @@ import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Multiply;
 import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Subtract;
 import org.linqs.psl.model.rule.logical.UnweightedLogicalRule;
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
+import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Term;
-import org.linqs.psl.model.term.UniqueID;
+import org.linqs.psl.model.term.StringAttribute;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.parser.antlr.PSLBaseVisitor;
 import org.linqs.psl.parser.antlr.PSLLexer;
@@ -773,10 +774,10 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	public Predicate visitPredicate(PredicateContext ctx) {
 		PredicateFactory pf = PredicateFactory.getFactory();
 		Predicate p = pf.getPredicate(ctx.IDENTIFIER().getText());
+
 		if (p != null) {
 			return p;
-		}
-		else {
+		} else {
 			throw new IllegalStateException("Undefined predicate " + ctx.IDENTIFIER().getText());
 		}
 	}
@@ -787,8 +788,12 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	}
 
 	@Override
-	public UniqueID visitConstant(ConstantContext ctx) {
-		return data.getUniqueID(ctx.IDENTIFIER().getText());
+	public Constant visitConstant(ConstantContext ctx) {
+		// Return the most trival constant type that matches the parsed type.
+		// Note that these values will get promoted to unique identifiers if necessary
+		// by Atom.
+
+		return new StringAttribute(ctx.IDENTIFIER().getText());
 	}
 
 	@Override

@@ -45,7 +45,7 @@ import java.util.Set;
 /**
  * Converts a {@link Formula} to a simplified Disjunctive Normal Form view
  * and makes the clauses available.
- * <p>
+ *
  * Each clause reports properties and helps {@link Rule Rules} with registering
  * for the appropriate {@link AtomEvent AtomEvents} and running the appropriate
  * {@link DatabaseQuery DatabaseQueries} to identify true groundings.
@@ -54,7 +54,6 @@ import java.util.Set;
  * @author Stephen Bach <bach@cs.umd.edu>
  */
 public class FormulaAnalysis {
-
 	protected final Formula f;
 	protected final List<DNFClause> clauses;
 

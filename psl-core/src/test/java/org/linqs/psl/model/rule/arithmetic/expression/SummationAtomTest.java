@@ -49,10 +49,10 @@ public class SummationAtomTest {
 
 		PredicateFactory factory = PredicateFactory.getFactory();
 
-		singlePredicate = factory.createStandardPredicate("SingleClosed", ConstantType.UniqueID);
+		singlePredicate = factory.createStandardPredicate("SingleClosed", ConstantType.UniqueStringID);
 		dataStore.registerPredicate(singlePredicate);
 
-		doublePredicate = factory.createStandardPredicate("DoubleClosed", ConstantType.UniqueID, ConstantType.UniqueID);
+		doublePredicate = factory.createStandardPredicate("DoubleClosed", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
 		dataStore.registerPredicate(doublePredicate);
 	}
 	

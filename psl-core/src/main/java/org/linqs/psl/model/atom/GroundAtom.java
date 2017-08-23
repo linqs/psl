@@ -35,31 +35,30 @@ import com.google.common.collect.SetMultimap;
 
 /**
  * An Atom with only {@link Constant GroundTerms} for arguments.
- * <p>
+ *
  * A GroundAtom has a truth value.
  */
-abstract public class GroundAtom extends Atom {
+public abstract class GroundAtom extends Atom {
 	private static final Set<GroundRule> emptyGroundRules = ImmutableSet.of();
 
-	final protected Database db;
-
+	protected final Database db;
 	protected double value;
-	
+
 	protected SetMultimap<Rule, GroundRule> registeredGroundRules;
 
 	protected GroundAtom(Predicate p, Constant[] args, Database db, double value) {
 		super(p, args);
 		this.db = db;
 		this.value = value;
-		
-		/* Until a ground rule is registered, the empty ground rules set 
-		 * will be used / returned to indicate an empty set. */
+
+		// Until a ground rule is registered, the empty ground rules set
+		// will be used / returned to indicate an empty set.
 		this.registeredGroundRules = null;
 	}
 
 	@Override
 	public Constant[] getArguments() {
-		return Arrays.copyOf((Constant[]) arguments, arguments.length);
+		return (Constant[])arguments;
 	}
 
 	/**
@@ -72,7 +71,7 @@ abstract public class GroundAtom extends Atom {
 	abstract public AtomFunctionVariable getVariable();
 
 	public VariableTypeMap collectVariables(VariableTypeMap varMap) {
-		/* No Variables in GroundAtoms */
+		// No Variables in GroundAtoms.
 		return varMap;
 	}
 
@@ -80,19 +79,21 @@ abstract public class GroundAtom extends Atom {
 	 * Registers a ground rule to receive update events.
 	 * <p>
 	 * Any GroundRule that is a function of this Atom should be registered.
-	 * 
+	 *
 	 * @param rule A ground rule
-	 * @return TRUE if successful; FALSE if rule was already registered 
+	 * @return TRUE if successful; FALSE if rule was already registered
 	 */
 	public boolean registerGroundRule(GroundRule rule) {
-		if (registeredGroundRules == null)
+		if (registeredGroundRules == null) {
 			registeredGroundRules = HashMultimap.create();
+		}
+
 		return registeredGroundRules.put(rule.getRule(), rule);
 	}
 
 	/**
 	 * Unregisters a ground rule, so that it no longer receives update events.
-	 * 
+	 *
 	 * @param rule A ground rule
 	 * @return TRUE if successful; FALSE if rule was never registered
 	 */
@@ -104,7 +105,7 @@ abstract public class GroundAtom extends Atom {
 
 	/**
 	 * Returns a set of all registered ground rules that match a given rule.
-	 * 
+	 *
 	 * @param rule A rule
 	 * @return A set of all registered ground rules that match rule
 	 */
@@ -116,7 +117,7 @@ abstract public class GroundAtom extends Atom {
 
 	/**
 	 * Returns a set of all registered ground rules.
-	 * 
+	 *
 	 * @return A collection of all registered ground rules
 	 */
 	public Collection<GroundRule> getRegisteredGroundRules() {
@@ -127,7 +128,7 @@ abstract public class GroundAtom extends Atom {
 
 	/**
 	 * Returns the number of registered ground rules.
-	 * 
+	 *
 	 * @return The number of registered ground rules
 	 */
 	public int getNumRegisteredGroundRules() {

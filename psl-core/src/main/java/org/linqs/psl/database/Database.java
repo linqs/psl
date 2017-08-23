@@ -25,11 +25,9 @@ import org.linqs.psl.model.atom.AtomManager;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
-import org.linqs.psl.model.predicate.FunctionalPredicate;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
-import org.linqs.psl.model.term.UniqueID;
 import org.linqs.psl.model.term.Variable;
 
 /**
@@ -48,10 +46,10 @@ import org.linqs.psl.model.term.Variable;
  * <p>
  * A Database writes to and reads from one {@link Partition} of a DataStore
  * and can read from additional Partitions. The write Partition of a Database
- * may not be a read (or write) Partition of any other Database.
+ * may not be a read (or write) Partition of any other Database managed by the datastore.
  * <p>
  * A Database can be instantiated with a set of StandardPredicates
- * to close. (Any StandardPredicate not closed initially remains open). Whether
+ * to close. (Any StandardPredicate not closed initially remains open.) Whether
  * a StandardPredicate is open or closed affects the behavior of
  * {@link #getAtom(Predicate, Constant...)}.
  *
@@ -77,7 +75,7 @@ import org.linqs.psl.model.term.Variable;
  *
  * {@link DatabaseQuery DatabaseQueries} can be run via {@link #executeQuery(DatabaseQuery)}.
  * Note that queries only act on the GroundAtoms persisted in Partitions and
- * GroundAtoms with {@link FunctionalPredicate FunctionalPredicates}.
+ * GroundAtoms with FunctionalPredicates.
  */
 public interface Database {
 
@@ -86,7 +84,7 @@ public interface Database {
 	 * <p>
 	 * Any GroundAtom with a {@link StandardPredicate} can be retrieved if and only
 	 * if its Predicate was registered with the DataStore at the time of the Database's
-	 * instantiation. Any GroundAtom with a {@link FunctionalPredicate} can also be retrieved.
+	 * instantiation. Any GroundAtom with an ExternalFunctionalPredicate} can also be retrieved.
 	 * This method first checks the {@link AtomCache} to see if the GroundAtom already
 	 * exists in memory. If it does, then that object is returned. (The AtomCache is
 	 * accessible via {@link #getAtomCache()}.)
@@ -95,20 +93,20 @@ public interface Database {
 	 * stored in the AtomCache before being returned. The subtype and state of the
 	 * instantiated GroundAtom depends on several factors:
 	 * <ul>
-	 *   <li>If the GroundAtom is persisted in a read Partition, then it will be
-	 *   instantiated as an {@link ObservedAtom} with the persisted state.</li>
-	 *   <li>If the GroundAtom is persisted in the write Partition, then it will be
-	 *   instantiated with the persisted state. It will be instantiated as an
-	 *   ObservedAtom if its Predicate is closed and as a {@link RandomVariableAtom}
-	 *   if it is open.</li>
-	 *   <li>If the GroundAtom has a StandardPredicate but is not persisted
-	 *   in any of the Database's partitions, it will be instantiated with a truth
-	 *   value of 0.0. It will be instantiated as an ObservedAtom if its Predicate
-	 *   is closed and as a RandomVariableAtom
-	 *   if it is open.</li>
-	 *   <li>If the GroundAtom has a FunctionalPredicate, then it will be
-	 *   instantiated as an ObservedAtom with the functionally defined
-	 *   truth value.</li>
+	 *	<li>If the GroundAtom is persisted in a read Partition, then it will be
+	 *	instantiated as an {@link ObservedAtom} with the persisted state.</li>
+	 *	<li>If the GroundAtom is persisted in the write Partition, then it will be
+	 *	instantiated with the persisted state. It will be instantiated as an
+	 *	ObservedAtom if its Predicate is closed and as a {@link RandomVariableAtom}
+	 *	if it is open.</li>
+	 *	<li>If the GroundAtom has a StandardPredicate but is not persisted
+	 *	in any of the Database's partitions, it will be instantiated with a truth
+	 *	value of 0.0. It will be instantiated as an ObservedAtom if its Predicate
+	 *	is closed and as a RandomVariableAtom
+	 *	if it is open.</li>
+	 *	<li>If the GroundAtom has an ExternalFunctionalPredicate, then it will be
+	 *	instantiated as an ObservedAtom with the functionally defined
+	 *	truth value.</li>
 	 * </ul>
 	 *
 	 * @param p  the Predicate of the Atom
@@ -118,6 +116,16 @@ public interface Database {
 	 * @throws IllegalStateException  if the Atom is persisted in multiple read Partitions
 	 */
 	public GroundAtom getAtom(Predicate p, Constant... arguments);
+
+	/**
+	 * Fetch all the ground atoms for a predicate.
+	 * By "ground", we mean that it exists in the database.
+	 * This will not leverage the closed world assumption for any atoms.
+	 *
+	 * @param predicate the predicate to fetch atoms for
+	 * @return All ground atoms present in any partition of the database.
+	 */
+	public List<GroundAtom> getAllGroundAtoms(StandardPredicate predicate);
 
 	/**
 	 * Fetch all the ground RandomVariableAtoms for a predicate.
@@ -151,11 +159,17 @@ public interface Database {
 	public void commit(RandomVariableAtom atom);
 
 	/**
+	 * A batch form or commit().
+	 * When possible, this commit should be used.
+	 */
+	public void commit(Iterable<RandomVariableAtom> atoms);
+
+	/**
 	 * Returns all groundings of a Formula that match a DatabaseQuery.
 	 *
 	 * @param query  the query to match
 	 * @return a list of lists of substitutions of {@link Constant GroundTerms}
-	 *             for {@link Variable Variables}
+	 *				 for {@link Variable Variables}
 	 * @throws IllegalArgumentException  if the query Formula is invalid
 	 */
 	public ResultList executeQuery(DatabaseQuery query);
@@ -178,13 +192,6 @@ public interface Database {
 	 * @return the set of StandardPredicates registered with this Database
 	 */
 	public Set<StandardPredicate> getRegisteredPredicates();
-
-	/**
-	 * Convenience method.
-	 * <p>
-	 * Calls {@link DataStore#getUniqueID(Object)} on this Database's DataStore.
-	 */
-	public UniqueID getUniqueID(Object key);
 
 	/**
 	 * @return the DataStore backing this Database

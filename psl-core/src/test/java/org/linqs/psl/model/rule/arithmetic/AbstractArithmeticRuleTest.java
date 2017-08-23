@@ -54,6 +54,7 @@ import org.linqs.psl.model.rule.arithmetic.expression.coefficient.ConstantNumber
 import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Max;
 import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Min;
 import org.linqs.psl.model.term.ConstantType;
+import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 
@@ -80,13 +81,13 @@ public class AbstractArithmeticRuleTest {
 
 		PredicateFactory factory = PredicateFactory.getFactory();
 
-		singleClosed = factory.createStandardPredicate("SingleClosed", ConstantType.UniqueID);
+		singleClosed = factory.createStandardPredicate("SingleClosed", ConstantType.UniqueStringID);
 		dataStore.registerPredicate(singleClosed);
 
-		doubleClosed = factory.createStandardPredicate("DoubleClosed", ConstantType.UniqueID, ConstantType.UniqueID);
+		doubleClosed = factory.createStandardPredicate("DoubleClosed", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
 		dataStore.registerPredicate(doubleClosed);
 
-		singleOpened = factory.createStandardPredicate("SingleOpened", ConstantType.UniqueID);
+		singleOpened = factory.createStandardPredicate("SingleOpened", ConstantType.UniqueStringID);
 		dataStore.registerPredicate(singleOpened);
 
 		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
@@ -147,7 +148,7 @@ public class AbstractArithmeticRuleTest {
 		List<SummationAtomOrAtom> atoms = Arrays.asList(
 			(SummationAtomOrAtom)(new SummationAtom(doubleClosed, new SummationVariableOrTerm[]{
 				new SummationVariable("A"),
-				dataStore.getUniqueID("Foo")
+				new UniqueStringID("Foo")
 			}))
 		);
 

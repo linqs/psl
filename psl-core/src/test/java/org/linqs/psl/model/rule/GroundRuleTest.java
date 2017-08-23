@@ -35,7 +35,6 @@ import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.Queries;
 import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
-import org.linqs.psl.database.rdbms.RDBMSUniqueStringID;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver.Type;
 import org.linqs.psl.model.atom.Atom;
@@ -76,7 +75,7 @@ import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.StringAttribute;
-import org.linqs.psl.model.term.UniqueID;
+import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 
@@ -640,8 +639,8 @@ public class GroundRuleTest {
 		filters.put(
 			new SummationVariable("B"),
 			new Conjunction(
-				new QueryAtom(model.predicates.get("Friends"), new Variable("B"), database.getUniqueID("Alice")),
-				new QueryAtom(model.predicates.get("Nice"), database.getUniqueID("Alice"))
+				new QueryAtom(model.predicates.get("Friends"), new Variable("B"), new UniqueStringID("Alice")),
+				new QueryAtom(model.predicates.get("Nice"), new UniqueStringID("Alice"))
 			)
 		);
 
@@ -670,8 +669,8 @@ public class GroundRuleTest {
 		filters.put(
 			new SummationVariable("B"),
 			new Disjunction(
-				new QueryAtom(model.predicates.get("Friends"), new Variable("B"), database.getUniqueID("Alice")),
-				new QueryAtom(model.predicates.get("Nice"), database.getUniqueID("Alice"))
+				new QueryAtom(model.predicates.get("Friends"), new Variable("B"), new UniqueStringID("Alice")),
+				new QueryAtom(model.predicates.get("Nice"), new UniqueStringID("Alice"))
 			)
 		);
 

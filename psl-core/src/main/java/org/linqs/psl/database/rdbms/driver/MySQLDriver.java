@@ -17,8 +17,16 @@
  */
 package org.linqs.psl.database.rdbms.driver;
 
+import org.linqs.psl.model.term.ConstantType;
+
+import com.healthmarketscience.sqlbuilder.CreateTableQuery;
+import org.apache.commons.lang3.StringUtils;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 
@@ -27,99 +35,134 @@ import java.sql.Statement;
  */
 public class MySQLDriver implements DatabaseDriver {
 
-  // The connection to MySQL
-  private final Connection dbConnection;
+	// The connection to MySQL
+	private final Connection dbConnection;
 
-  // Wrapper for rdbms DML
-  private void executeUpdate(String query) throws SQLException {
-    Statement stmt = null;
-    stmt = dbConnection.createStatement();
-    stmt.executeUpdate(query);
-    stmt.close();
-  }
+	// Wrapper for rdbms DML
+	private void executeUpdate(String query) throws SQLException {
+		Statement stmt = null;
+		stmt = dbConnection.createStatement();
+		stmt.executeUpdate(query);
+		stmt.close();
+	}
 
-  /**
-   * Constructor for the MySQL database driver
-   * On Performance:
-   * Use the non-memory specific model, innodb as default
-   * (Note one can change to use MyISAM or Memory engine. For
-   *  PSL, as there's no transactions, Innodb may be an overhead
-   *  however the indexes availability should be taken into 
-   *  consideration, for simplicity, use default innodb 
-   *  here.)
-   *
-   * On Configuration:
-   * Use the localhost, user root and no pwd for now
-   * One potentially can connect to mysql clusters, or use 
-   * other user/pwd.
-   * 
-   * @param dbname  mysql database name, similiar to H2 path
-   * @param clearDB whether to delete the database
-   */
-  public MySQLDriver(String dbname, boolean clearDB) {
-    try {
-      // load driver
-      Class.forName("com.mysql.jdbc.Driver").newInstance();
+	/**
+	 * Constructor for the MySQL database driver
+	 * On Performance:
+	 * Use the non-memory specific model, innodb as default
+	 * (Note one can change to use MyISAM or Memory engine. For
+	 * PSL, as there's no transactions, Innodb may be an overhead
+	 * however the indexes availability should be taken into
+	 * consideration, for simplicity, use default innodb
+	 * here.)
+	 *
+	 * On Configuration:
+	 * Use the localhost, user root and no pwd for now
+	 * One potentially can connect to mysql clusters, or use
+	 * other user/pwd.
+	 *
+	 * @param dbname mysql database name, similiar to H2 path
+	 * @param clearDB whether to delete the database
+	 */
+	public MySQLDriver(String dbname, boolean clearDB) {
+		try {
+			// load driver
+			Class.forName("com.mysql.jdbc.Driver").newInstance();
 
-      // get connection
-      dbConnection = DriverManager.getConnection("jdbc:mysql://localhost/?user=root&password="); 
+			// get connection
+			dbConnection = DriverManager.getConnection("jdbc:mysql://localhost/?user=root&password=");
 
-      // clean db if specified
-      if (clearDB) {
-        executeUpdate("DROP DATABASE IF EXISTS " + dbname);
-      }
+			// clean db if specified
+			if (clearDB) {
+				executeUpdate("DROP DATABASE IF EXISTS " + dbname);
+			}
 
-      // create db if not exists
-      executeUpdate("CREATE DATABASE IF NOT EXISTS " + dbname);
-      executeUpdate("USE " + dbname);
+			// create db if not exists
+			executeUpdate("CREATE DATABASE IF NOT EXISTS " + dbname);
+			executeUpdate("USE " + dbname);
 
-    } catch (ClassNotFoundException e) {
-      throw new RuntimeException(
-          "Could not find mysql connector j. Please check classpath.", e);
-    } catch (InstantiationException e) {
-      throw new RuntimeException(
-          "Could not initiate mysql connector j. Please check the jar and its version.", e);
-    } catch (IllegalAccessException e) {
-      throw new RuntimeException(
-          "Could not initiate mysql connector j. Please check the jar and its version.", e);
-    } catch (SQLException e) {
-      throw new RuntimeException("Database error: " + e.getMessage(), e);
-    }
-  }
+		} catch (ClassNotFoundException e) {
+			throw new RuntimeException(
+					"Could not find mysql connector. Please check classpath.", e);
+		} catch (InstantiationException e) {
+			throw new RuntimeException(
+					"Could not initiate mysql connector. Please check the jar and its version.", e);
+		} catch (IllegalAccessException e) {
+			throw new RuntimeException(
+					"Could not initiate mysql connector. Please check the jar and its version.", e);
+		} catch (SQLException e) {
+			throw new RuntimeException("Database error: " + e.getMessage(), e);
+		}
+	}
 
-  @Override
-  public Connection getConnection() {
-    return dbConnection;
-  }
+	@Override
+	public Connection getConnection() {
+		return dbConnection;
+	}
 
-  @Override
-  public boolean isSupportExternalFunction() {
-    return false;
-  }
+	@Override
+	public boolean supportsExternalFunctions() {
+		return false;
+	}
 
-  /**
-   * Create a full length hash index on the given column@table using the index_name.
-   * For more information see: http://dev.mysql.com/doc/refman/5.1/en/create-index.html
-   */
-  @Override
-  public String createHashIndex(String index_name, String table_name, String column_name) {
-    return "CREATE INDEX " + index_name + " ON " + table_name + " (" + column_name + " ) USING HASH";
-  }
+	@Override
+	public String getTypeName(ConstantType type) {
+		switch (type) {
+			case Double:
+				return "DOUBLE";
+			case Integer:
+				return "INT";
+			case String:
+				return "VARCHAR(255)";
+			case Long:
+				return "BIGINT";
+			case Date:
+				return "DATE";
+			case UniqueIntID:
+				return "INT";
+			case UniqueStringID:
+				return "VARCHAR(255)";
+			default:
+				throw new IllegalStateException("Unknown ConstantType: " + type);
+		}
+	}
 
-  /**
-   * At most use the first 255 characters in an index containing string
-   */
-  @Override
-  public String castStringWithModifiersForIndexing(String column_name) {
-    return column_name + "(255)";
-  }
+	@Override
+	public String getSurrogateKeyColumnDefinition(String columnName) {
+		return columnName + " INT AUTO_INCREMENT PRIMARY KEY";
+	}
 
-  /**
-   * Create primary key clause
-   * For more information see: http://dev.mysql.com/doc/refman/5.1/en/alter-table.html
-   */
-  @Override
-  public String createPrimaryKey(String table_name, String columns) {
-    return "ALTER TABLE " + table_name + " ADD PRIMARY KEY (" + columns + ")";
-  }
+	@Override
+	public String getDoubleTypeName() {
+		return "DOUBLE";
+	}
+
+	@Override
+	public PreparedStatement getUpsert(Connection connection, String tableName,
+			String[] columns, String[] keyColumns) {
+		List<String> updateValues = new ArrayList<String>();
+		for (String column : columns) {
+			updateValues.add(String.format("`%s` = VALUES(`%s`)", column, column));
+		}
+
+		// MySQL usees the "INSERT ... ON DUPLICATE KEY" syntax.
+		List<String> sql = new ArrayList<String>();
+		sql.add("INSERT INTO `" + tableName + "`");
+		sql.add("	(`" + StringUtils.join(columns, "`, `") + "`)");
+		sql.add("VALUES");
+		sql.add("	(" + StringUtils.repeat("?", ", ", columns.length) + ")");
+		sql.add("ON DUPLICATE KEY UPDATE");
+		sql.add("	" + StringUtils.join(updateValues, ", "));
+
+		try {
+			return connection.prepareStatement(StringUtils.join(sql, "\n"));
+		} catch (SQLException ex) {
+			throw new RuntimeException("Could not prepare MySQL upsert for " + tableName, ex);
+		}
+	}
+
+	@Override
+	public String finalizeCreateTable(CreateTableQuery createTable) {
+		return createTable.validate().toString();
+	}
 }

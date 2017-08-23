@@ -15,14 +15,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.database.loading;
+package org.linqs.psl.database.rdbms;
 
-public interface Updater {
-	public void set(Object... data);
+import org.linqs.psl.config.EmptyBundle;
+import org.linqs.psl.database.DataStore;
+import org.linqs.psl.database.DataStoreContractTest;
+import org.linqs.psl.database.DatabaseTestUtil;
+import org.linqs.psl.database.rdbms.RDBMSDataStore;
+import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 
-	public void setValue(double value, Object... data);
+public class H2DataStoreContractTest extends DataStoreContractTest {
+	@Override
+	public DataStore getDataStore(boolean clearDB) {
+		DatabaseDriver driver = DatabaseTestUtil.getH2Driver(clearDB);
+		return new RDBMSDataStore(driver, new EmptyBundle());
+	}
 
-	public void setValues(double[] values, Object... data);
-
-	public void remove(Object... data);
+	@Override
+	public void cleanUp() {
+		DatabaseTestUtil.cleanH2Driver();
+	}
 }

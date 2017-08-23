@@ -106,7 +106,7 @@ public class PersistedAtomManager implements AtomManager {
 		return db.isClosed(predicate);
 	}
 
-	public Iterable<RandomVariableAtom> getPersistedRVAtoms() {
+	public Set<RandomVariableAtom> getPersistedRVAtoms() {
 		return Collections.unmodifiableSet(persistedCache);
 	}
 }

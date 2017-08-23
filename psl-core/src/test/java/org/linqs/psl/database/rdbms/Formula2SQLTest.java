@@ -39,7 +39,7 @@ public class Formula2SQLTest {
 
 		PredicateFactory predicateFactory = PredicateFactory.getFactory();
 		SpyFunction function = new SpyFunction(1);
-		Predicate functionPredicate = predicateFactory.createFunctionalPredicate("UnaryFunction", function);
+		Predicate functionPredicate = predicateFactory.createExternalFunctionalPredicate("UnaryFunction", function);
 
 		// Add a rule using the new function.
 		// 10: Person(A) & Person(B) & UnaryFunction(A) & UnaryFunction(B) & (A - B) -> Friends(A, B) ^2
@@ -89,7 +89,7 @@ public class Formula2SQLTest {
 
 		PredicateFactory predicateFactory = PredicateFactory.getFactory();
 		SpyFunction function = new SpyFunction(3);
-		Predicate functionPredicate = predicateFactory.createFunctionalPredicate("TernaryFunction", function);
+		Predicate functionPredicate = predicateFactory.createExternalFunctionalPredicate("TernaryFunction", function);
 
 		// Add a rule using the new function.
 		// 10: Person(A) & Person(B) & TernaryFunction(A, B, A) & (A - B) -> Friends(A, B) ^2
@@ -148,7 +148,7 @@ public class Formula2SQLTest {
 		public ConstantType[] getArgumentTypes() {
 			ConstantType[] args = new ConstantType[arity];
 			for (int i = 0; i < arity; i++) {
-				args[i] = ConstantType.UniqueID;
+				args[i] = ConstantType.UniqueStringID;
 			}
 
 			return args;

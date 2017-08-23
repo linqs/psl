@@ -30,36 +30,40 @@ public enum ConstantType {
 	 */
 	String {
 		@Override
-		public String getName() { return "String"; }
-		
+		public String getName() {
+			return "String";
+		}
+
 		@Override
 		public boolean isInstance(Constant term) {
 			return (term instanceof StringAttribute);
 		}
 	},
-	
+
 	/**
 	 * An {@link IntegerAttribute} argument.
 	 */
 	Integer {
-		
 		@Override
-		public String getName() { return "Integer"; }
-		
+		public String getName() {
+			return "Integer";
+		}
+
 		@Override
 		public boolean isInstance(Constant term) {
 			return (term instanceof IntegerAttribute);
 		}
 	},
-	
+
 	/**
 	 * A {@link DoubleAttribute} argument.
 	 */
 	Double {
-		
 		@Override
-		public String getName() { return "Double"; }
-		
+		public String getName() {
+			return "Double";
+		}
+
 		@Override
 		public boolean isInstance(Constant term) {
 			return (term instanceof DoubleAttribute);
@@ -95,40 +99,79 @@ public enum ConstantType {
 			return term instanceof DateAttribute;
 		}
 	},
-	
+
 	/**
-	 * A {@link UniqueID} argument.
+	 * A {@link UniqueIntID} argument.
+	 * A unique identifier that is explicitly an int.
+	 * Will generally perform faster than a UniqueStringID.
 	 */
-	UniqueID {
-		
+	UniqueIntID {
 		@Override
-		public String getName() { return "UniqueID"; }
-		
+		public String getName() {
+			return "UniqueIntID";
+		}
+
 		@Override
 		public boolean isInstance(Constant term) {
-			return (term instanceof org.linqs.psl.model.term.UniqueID);
+			return (term instanceof UniqueIntID);
+		}
+	},
+
+	/**
+	 * A {@link UniqueStringID} argument.
+	 * A unique identifier that is explicitly a String.
+	 * Will generally perform slower than a UniqueIntID.
+	 */
+	UniqueStringID {
+		@Override
+		public String getName() {
+			return "UniqueStringID";
+		}
+
+		@Override
+		public boolean isInstance(Constant term) {
+			return (term instanceof UniqueStringID);
+		}
+	},
+
+	/**
+	 * A special type of unique identifier to only be used by functional predicates in special situations.
+	 * This is to be used only when the exact type of unique id must be deferred until actual computation time.
+	 * STRONGLY prefer UniqueIntID or UniqueStringID over this.
+	 */
+	DeferredFunctionalUniqueID {
+		@Override
+		public String getName() {
+			return "DeferredFunctionalUniqueID";
+		}
+
+		@Override
+		public boolean isInstance(Constant term) {
+			// Any real unique identifier can match.
+			return (term instanceof UniqueIntID) || (term instanceof UniqueStringID);
 		}
 	};
-	
+
 	/**
 	 * @return a human-friendly String identifier for this ArgumentType
 	 */
-	abstract public String getName();
-	
+	public abstract String getName();
+
 	/**
 	 * Returns whether a GroundTerm is of the type identified by this ArgumentType
-	 * 
+	 *
 	 * @param term  the term to check
 	 * @return TRUE if term is an instance of the corresponding type
 	 */
-	abstract public boolean isInstance(Constant term);
-	
+	public abstract boolean isInstance(Constant term);
+
 	public static ConstantType getType(Constant term) {
-		for (ConstantType type : ConstantType.values())
-			if (type.isInstance(term))
+		for (ConstantType type : ConstantType.values()) {
+			if (type.isInstance(term)) {
 				return type;
-		
+         }
+      }
+
 		throw new IllegalArgumentException("Term is of unknown type : " + term);
 	}
-	
 }

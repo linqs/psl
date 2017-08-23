@@ -29,7 +29,6 @@ import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.ConfigManager;
 import org.linqs.psl.config.Factory;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.database.DatabasePopulator;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.AtomEventFramework;
 import org.linqs.psl.model.atom.GroundAtom;
@@ -48,10 +47,9 @@ import org.slf4j.LoggerFactory;
  * Infers the most-probable explanation (MPE) state of the
  * {@link RandomVariableAtom RandomVariableAtoms} persisted in a {@link Database},
  * according to a {@link Model}, given the Database's {@link ObservedAtom ObservedAtoms}.
- * <p>
+ *
  * The set of RandomVariableAtoms is those persisted in the Database when {@link #mpeInference()}
  * is called. This set must contain all RandomVariableAtoms the Model might access.
- * ({@link DatabasePopulator} can help with this.)
  *
  * @author Stephen Bach <bach@cs.umd.edu>
  */
@@ -131,7 +129,6 @@ public class LazyMPEInference extends Observable implements ModelApplication {
 	 * which the Model might access must be persisted in the Database.
 	 *
 	 * @return inference results
-	 * @see DatabasePopulator
 	 */
 	public FullInferenceResult mpeInference()
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
@@ -162,9 +159,9 @@ public class LazyMPEInference extends Observable implements ModelApplication {
 			rounds++;
 			log.debug("Starting round %d of inference.", rounds);
 
-         // Regenerate optimization terms.
-         termStore.clear();
-         termGenerator.generateTerms(groundRuleStore, termStore);
+			// Regenerate optimization terms.
+			termStore.clear();
+			termGenerator.generateTerms(groundRuleStore, termStore);
 			log.debug("Generated %d optimization terms.", termStore.size());
 
 			reasoner.optimize(termStore);
@@ -200,8 +197,8 @@ public class LazyMPEInference extends Observable implements ModelApplication {
 
 		int size = groundRuleStore.size();
 
-      termStore.close();
-      groundRuleStore.close();
+		termStore.close();
+		groundRuleStore.close();
 		reasoner.close();
 
 		return new MemoryFullInferenceResult(incompatibility, infeasibility, count, size);

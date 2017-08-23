@@ -23,24 +23,24 @@ import org.linqs.psl.model.atom.QueryAtom
 import org.linqs.psl.model.predicate.SpecialPredicate
 import org.linqs.psl.model.term.Variable
 
-class GenericVariable {
-	
+public class GenericVariable {
+
 	private final String name;
 	private final PSLModel model;
-	
-	GenericVariable(String s, PSLModel m) {
-		name =s;
+
+	public GenericVariable(String s, PSLModel m) {
+		name = s;
 		model = m;
 	}
-	
+
 	public String toString() {
 		return name;
 	}
-	
+
 	public String getName() {
 		return name;
 	}
-	
+
 	public Variable toAtomVariable() {
 		return new Variable(name);
 	}
@@ -51,7 +51,7 @@ class GenericVariable {
 	def mod(other) {
 		return xor(other);
 	}
-	
+
 	def xor(other) {
 		if (!(other instanceof GenericVariable)) {
 			throw new IllegalArgumentException("Can only compare variables to variables! ${this} compared to ${other}");
@@ -59,13 +59,11 @@ class GenericVariable {
 		assert other instanceof GenericVariable
 		return new FormulaContainer(new QueryAtom(SpecialPredicate.NonSymmetric, this.toAtomVariable(), other.toAtomVariable()));
 	}
-	
+
 	def minus(other) {
 		if (!(other instanceof GenericVariable)) {
 			throw new IllegalArgumentException("Can only compare variables to variables! ${this} compared to ${other}");
 		}
 		return new FormulaContainer(new QueryAtom(SpecialPredicate.NotEqual, this.toAtomVariable(), other.toAtomVariable()));
 	}
-
-	
 }

@@ -17,8 +17,49 @@
  */
 package org.linqs.psl.database;
 
-public interface Partition {
-	public int getID();
-	public String getName();
-	public String toString();
+public class Partition {
+	private final int id;
+	private final String name;
+
+	/**
+	 * Sole constructor.
+	 *
+	 * @param id  non-negative identifier
+	 */
+	public Partition(int id, String name) {
+		assert(id >= 0);
+
+		this.id = id;
+		this.name = name;
+	}
+
+	public int getID() {
+		return id;
+	}
+
+	public String getName(){
+		return name;
+	}
+
+	public String toString() {
+		return "Partition[" + name + "]";
+	}
+
+	@Override
+	public int hashCode() {
+		return id;
+	}
+
+	@Override
+	public boolean equals(Object other) {
+		if (other == this) {
+			return true;
+		}
+
+		if (other == null || !(other instanceof Partition)) {
+			return false;
+		}
+
+		return id == ((Partition)other).id;
+	}
 }

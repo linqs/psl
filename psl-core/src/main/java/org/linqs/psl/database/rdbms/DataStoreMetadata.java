@@ -17,6 +17,12 @@
  */
 package org.linqs.psl.database.rdbms;
 
+import org.linqs.psl.database.DataStoreMetdata;
+import org.linqs.psl.database.Partition;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -25,35 +31,30 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.linqs.psl.database.DataStoreMetdata;
-import org.linqs.psl.database.Partition;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * @author jay
- *
  */
-public class RDBMSDataStoreMetadata implements DataStoreMetdata {
-	private static final Logger log = LoggerFactory.getLogger(RDBMSDataStoreMetadata.class);
+public class DataStoreMetadata implements DataStoreMetdata {
+	private static final Logger log = LoggerFactory.getLogger(DataStoreMetadata.class);
+
 	protected String mdTableName;
 	protected Connection conn;
 	protected HashMap<String,Integer> partitionNames;
-	
-	public RDBMSDataStoreMetadata(Connection conn, String mdTableName){
+
+	public DataStoreMetadata(Connection conn, String mdTableName){
 		this.mdTableName = mdTableName;
 		this.conn = conn;
-		partitionNames = new HashMap<String, Integer>();	
+		partitionNames = new HashMap<String, Integer>();
 	}
-	
+
 	protected Connection getConnection(){
 		return conn;
 	}
-	
+
 	protected String getMetadataTableName() {
 		return mdTableName;
 	}
-	
+
 	public boolean checkIfMetadataTableExists(){
 		boolean exists = false;
 		// This should work for MySQL and H2, but not sure about other things (like Oracle)
@@ -62,23 +63,23 @@ public class RDBMSDataStoreMetadata implements DataStoreMetdata {
 			if(rs.next()) { exists = true;}
 		} catch (Exception e) {
 			log.error("Error finding metadata table: "+e.getMessage());
-		};	
+		};
 		return exists;
 	}
-	
+
 	public void createMetadataTable(){
 		if(checkIfMetadataTableExists())
 			return;
 		try {
 			PreparedStatement stmt = conn.prepareStatement("CREATE TABLE "+mdTableName+" (namespace VARCHAR(20), keytype VARCHAR(20), key VARCHAR(255), value VARCHAR(255), PRIMARY KEY(namespace,keytype,key))");
 			stmt.execute();
-		} catch (Exception e) { 
+		} catch (Exception e) {
 			log.error("Error creating metadata table: "+e.getMessage());
 		}
-		
+
 	}
-	
-	
+
+
 	/**** Database Helper functions ****/
 	protected boolean addRow(String mdTableName, String space, String type, String key, String val){
 		try{
@@ -87,7 +88,7 @@ public class RDBMSDataStoreMetadata implements DataStoreMetdata {
 			stmt.setString(2, type);
 			stmt.setString(3, key);
 			stmt.setString(4, val);
-			stmt.execute();						
+			stmt.execute();
 		} catch (Exception e) {
 			log.info("Error adding row to metadata table: "+e.getMessage());
 			return false;
@@ -112,20 +113,20 @@ public class RDBMSDataStoreMetadata implements DataStoreMetdata {
 		}
 		return null;
 	}
-	
-	
+
+
 	protected boolean removeRow(String mdTableName, String space, String type, String key) {
 		try{
 			PreparedStatement stmt = conn.prepareStatement("DELETE FROM "+mdTableName+" WHERE namespace = ? AND keytype = ? AND key = ?");
 			stmt.setString(1, space);
 			stmt.setString(2, type);
 			stmt.setString(3, key);
-			stmt.execute();						
+			stmt.execute();
 		} catch (Exception e) {
 			log.info("Error removing metadata row: "+e.getMessage());
 			return false;
 		}
-		return true;	
+		return true;
 	}
 
 	public Map<String,String> getAllValuesByType(String mdTableName, String space, String type){
@@ -145,44 +146,44 @@ public class RDBMSDataStoreMetadata implements DataStoreMetdata {
 		}
 		return vals;
 	}
-	
-	
-	
 
-	
+
+
+
+
 	/**** Partition-related functions ****/
 	public void loadPartitionNames(){
 		Map<String,String> vals = getAllValuesByType(mdTableName,"Partition","name");
 		if(vals != null){
 			for(String name : vals.keySet()){
-				int id = Integer.parseInt(vals.get(name));				
+				int id = Integer.parseInt(vals.get(name));
 				partitionNames.put(name, id);
 			}
 		}
 	}
-	
+
 	public Partition getPartitionByName(String name){
 		Partition p = null;
 		String idStr = getValue(mdTableName,"Partition","name",name);
 		if(idStr != null){
-			p = new RDBMSPartition(Integer.parseInt(idStr),name);
+			p = new Partition(Integer.parseInt(idStr),name);
 		}
 		return p;
 	}
-	
+
 	public Set<Partition> getAllPartitions(){
-		Set<Partition> partitions = null; 
+		Set<Partition> partitions = null;
 		Map<String,String> vals = getAllValuesByType(mdTableName,"Partition","name");
 		if(vals != null){
 			partitions = new HashSet<Partition>();
 			for(String name : vals.keySet()){
 				int id = Integer.parseInt(vals.get(name));
-				partitions.add(new RDBMSPartition(id,name));
+				partitions.add(new Partition(id,name));
 			}
 		}
 		return partitions;
 	}
-	
+
 	public int getMaxPartition(){
 		int max = 0;
 		try{
@@ -195,11 +196,11 @@ public class RDBMSDataStoreMetadata implements DataStoreMetdata {
 		} catch (Exception e) {
 			log.warn("Determining max partition, no partitions found "+e.getMessage());
 			return 0;
-		}		
+		}
 		return max;
 	}
-	
-	/* 
+
+	/*
 	 */
 	@Override
 	public boolean addPartition(Partition p) {

@@ -17,16 +17,26 @@
  */
 package org.linqs.psl.database.rdbms;
 
-import org.linqs.psl.model.predicate.Predicate;
+import org.linqs.psl.config.EmptyBundle;
+import org.linqs.psl.database.DataStore;
+import org.linqs.psl.database.DataStoreContractTest;
+import org.linqs.psl.database.DatabaseTestUtil;
+import org.linqs.psl.database.rdbms.RDBMSDataStore;
+import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 
-public interface RDBMSPredicateHandle {
-	public Predicate predicate();
+public class PostgresDataStoreContractTest extends DataStoreContractTest {
+	@Override
+	public DataStore getDataStore(boolean clearDB) {
+		DatabaseDriver driver = DatabaseTestUtil.getPostgresDriver(clearDB);
+		if (driver == null) {
+			return null;
+		}
 
-	public String tableName();
+		return new RDBMSDataStore(driver, new EmptyBundle());
+	}
 
-	public String[] argumentColumns();
-
-	public String partitionColumn();
-
-	public String valueColumn();
+	@Override
+	public void cleanUp() {
+		DatabaseTestUtil.cleanPostgresDriver();
+	}
 }

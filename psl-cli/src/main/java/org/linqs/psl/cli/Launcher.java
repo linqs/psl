@@ -174,8 +174,6 @@ public class Launcher {
 			cm.loadResource(propertiesPath);
 		}
 		ConfigBundle cb = cm.getBundle("cli");
-		//TODO: Delete the following command when it becomes default behavior
-		cb.setProperty(RDBMSDataStore.USE_STRING_ID_KEY, true);
 
 		/*
 		 * Sets up DataStore

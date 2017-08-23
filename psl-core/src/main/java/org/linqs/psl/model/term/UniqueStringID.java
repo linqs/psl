@@ -15,49 +15,46 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.database.rdbms;
+package org.linqs.psl.model.term;
 
-import org.linqs.psl.model.term.Constant;
-import org.linqs.psl.model.term.UniqueID;
-
-
-public class RDBMSUniqueStringID implements UniqueID {
-
+public class UniqueStringID implements Constant {
 	private final String id;
-	
-	public RDBMSUniqueStringID(String _id) {
-		id = _id;
+
+	public UniqueStringID(String id) {
+		this.id = id;
 	}
-	
+
 	public String getID() {
 		return id;
 	}
-	
-	@Override
-	public Object getInternalID() {
-		return id;
-	}
-	
+
 	@Override
 	public int hashCode() {
 		return id.hashCode();
 	}
-	
+
 	@Override
-	public boolean equals(Object oth) {
-		if (oth==this) return true;
-		if (oth==null || !(getClass().isInstance(oth)) ) return false;
-		return id.equals(((RDBMSUniqueStringID)oth).id);  
+	public boolean equals(Object other) {
+		if (other == this) {
+			return true;
+		}
+
+		if (other == null || !(getClass().isInstance(other))) {
+			return false;
+		}
+
+		return id.equals(((UniqueStringID)other).id);
 	}
 
 	@Override
-	public int compareTo(Constant o) {
-		if (o instanceof RDBMSUniqueStringID)
-			return id.compareTo(((RDBMSUniqueStringID)o).id);
-		else
-			return this.getClass().getSimpleName().compareTo(o.getClass().getSimpleName());
+	public int compareTo(Constant other) {
+		if (other instanceof UniqueStringID) {
+			return id.compareTo(((UniqueStringID)other).id);
+		}
+
+		return this.getClass().getSimpleName().compareTo(other.getClass().getSimpleName());
 	}
-	
+
 	@Override
 	public String toString() {
 		return "'" + id + "'";

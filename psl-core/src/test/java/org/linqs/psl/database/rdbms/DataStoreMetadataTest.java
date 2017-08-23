@@ -28,7 +28,7 @@ import org.junit.Test;
 import java.util.HashMap;
 import java.util.Map;
 
-public class RDBMSDataStoreMetadataTest {
+public class DataStoreMetadataTest {
 	private TestModelFactory.ModelInformation model;
 
 	@Before
@@ -38,7 +38,7 @@ public class RDBMSDataStoreMetadataTest {
 
 	@Test
 	public void testGetAllPartitions() {
-		RDBMSDataStoreMetadata metadata = ((RDBMSDataStore)model.dataStore).metadata;
+		DataStoreMetadata metadata = ((RDBMSDataStore)model.dataStore).getMetadata();
 		Map<String, String> actual = metadata.getAllValuesByType(metadata.mdTableName, "Partition", "name");
 
 		Map<String, String> expected = new HashMap<String, String>();

@@ -27,7 +27,6 @@ import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.ConfigManager;
 import org.linqs.psl.config.Factory;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.database.DatabasePopulator;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
@@ -38,17 +37,19 @@ import org.linqs.psl.reasoner.ReasonerFactory;
 import org.linqs.psl.reasoner.admm.ADMMReasonerFactory;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Set;
 
 /**
  * Infers the most-probable explanation (MPE) state of the
  * {@link RandomVariableAtom RandomVariableAtoms} persisted in a {@link Database},
  * according to a {@link Model}, given the Database's {@link ObservedAtom ObservedAtoms}.
- * <p>
+ *
  * The set of RandomVariableAtoms is those persisted in the Database when {@link #mpeInference()}
  * is called. This set must contain all RandomVariableAtoms the Model might access.
- * ({@link DatabasePopulator} can help with this.)
  *
  * @author Stephen Bach <bach@cs.umd.edu>
  */
@@ -144,24 +145,20 @@ public class MPEInference implements ModelApplication {
 	 * which the Model might access must be persisted in the Database.
 	 *
 	 * @return inference results
-	 * @see DatabasePopulator
 	 */
 	public FullInferenceResult mpeInference() {
 		log.info("Beginning inference.");
 		reasoner.optimize(termStore);
 		log.info("Inference complete. Writing results to Database.");
 
-		// Commits the RandomVariableAtoms back to the Database.
-		int count = 0;
-		for (RandomVariableAtom atom : atomManager.getPersistedRVAtoms()) {
-			atom.commitToDB();
-			count++;
-		}
+		// Commits the RandomVariableAtoms back to the Database,
+		Set<RandomVariableAtom> atoms = atomManager.getPersistedRVAtoms();
+		db.commit(atoms);
 
 		double incompatibility = GroundRules.getTotalWeightedIncompatibility(groundRuleStore.getCompatibilityRules());
 		double infeasibility = GroundRules.getInfeasibilityNorm(groundRuleStore.getConstraintRules());
-		int size = groundRuleStore.size();
-		return new MemoryFullInferenceResult(incompatibility, infeasibility, count, size);
+
+		return new MemoryFullInferenceResult(incompatibility, infeasibility, atoms.size(), groundRuleStore.size());
 	}
 
 	public Reasoner getReasoner() {
