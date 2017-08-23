@@ -1,1 +1,7 @@
 language: java
+
+services:
+  - postgresql
+
+before_script:
+  - psql -c 'create database psl-test;' -U postgres

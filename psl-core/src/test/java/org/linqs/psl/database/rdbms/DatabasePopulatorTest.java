@@ -15,27 +15,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.database;
+package org.linqs.psl.database.rdbms;
 
 import static org.junit.Assert.assertEquals;
 
-import java.io.File;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 import org.linqs.psl.config.EmptyBundle;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.database.DatabaseTestUtil;
 import org.linqs.psl.database.DatabasePopulator;
 import org.linqs.psl.database.DatabaseQuery;
 import org.linqs.psl.database.ResultList;
-import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
+import org.linqs.psl.database.rdbms.driver.PostgreSQLDriver;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.predicate.PredicateFactory;
@@ -47,14 +40,18 @@ import org.linqs.psl.model.term.StringAttribute;
 import org.linqs.psl.model.term.UniqueIntID;
 import org.linqs.psl.model.term.Variable;
 
-public class DatabasePopulatorTest {
+import java.io.File;
+import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
+public class DatabasePopulatorTest {
 	private static StandardPredicate p1;
 	private static StandardPredicate p2;
-
-	private DataStore datastore;
-	private String dbPath;
-	private String dbName;
 
 	static {
 		PredicateFactory predicateFactory = PredicateFactory.getFactory();
@@ -62,28 +59,47 @@ public class DatabasePopulatorTest {
 		p2 = predicateFactory.createStandardPredicate("DatabasePopulatorTest_P2", ConstantType.String, ConstantType.Double);
 	}
 
-	@Before
-	public void setUp() throws Exception {
-		dbPath = System.getProperty("java.io.tmpdir") + "/";
-		dbName = "databasePopulatorTest";
-		DatabaseDriver driver = new H2DatabaseDriver(H2DatabaseDriver.Type.Disk, dbPath + dbName, true);
-		datastore = new RDBMSDataStore(driver, new EmptyBundle());
-		datastore.registerPredicate(p1);
-		datastore.registerPredicate(p2);
-	}
-
-	@After
-	public void tearDown() throws Exception {
-		datastore.close();
-		File file;
-		file = new File(dbPath + dbName + ".h2.db");
-		file.delete();
-		file = new File(dbPath + dbName + ".trace.db");
-		file.delete();
+	@Test
+	public void testH2SimplePopulateDatabase() {
+		DatabaseDriver driver = DatabaseTestUtil.getH2Driver();
+		simplePopulateDatabase(driver);
+		DatabaseTestUtil.cleanH2Driver();
 	}
 
 	@Test
-	public void testSimplePopulateDatabase() {
+	public void testPostgresSimplePopulateDatabase() {
+		DatabaseDriver driver = DatabaseTestUtil.getPostgresDriver();
+		if (driver == null) {
+			return;
+		}
+
+		simplePopulateDatabase(driver);
+		DatabaseTestUtil.cleanPostgresDriver();
+	}
+
+	@Test
+	public void testH2ComplexPopulateDatabase() {
+		DatabaseDriver driver = DatabaseTestUtil.getH2Driver();
+		complexPopulateDatabase(driver);
+		DatabaseTestUtil.cleanH2Driver();
+	}
+
+	@Test
+	public void testPostgresComplexPopulateDatabase() {
+		DatabaseDriver driver = DatabaseTestUtil.getPostgresDriver();
+		if (driver == null) {
+			return;
+		}
+
+		complexPopulateDatabase(driver);
+		DatabaseTestUtil.cleanPostgresDriver();
+	}
+
+	private void simplePopulateDatabase(DatabaseDriver driver) {
+		DataStore datastore = new RDBMSDataStore(driver, new EmptyBundle());
+		datastore.registerPredicate(p1);
+		datastore.registerPredicate(p2);
+
 		Database db = datastore.getDatabase(datastore.getPartition("0"));
 		DatabasePopulator populator = new DatabasePopulator(db);
 
@@ -127,10 +143,14 @@ public class DatabasePopulatorTest {
 		assert(expected.size() == 0);
 
 		db.close();
+		datastore.close();
 	}
 
-	@Test
-	public void testComplexPopulateDatabase() {
+	private void complexPopulateDatabase(DatabaseDriver driver) {
+		DataStore datastore = new RDBMSDataStore(driver, new EmptyBundle());
+		datastore.registerPredicate(p1);
+		datastore.registerPredicate(p2);
+
 		Database db = datastore.getDatabase(datastore.getPartition("0"));
 		DatabasePopulator populator = new DatabasePopulator(db);
 
@@ -208,5 +228,6 @@ public class DatabasePopulatorTest {
 		assert(expected.size() == 0);
 
 		db.close();
+		datastore.close();
 	}
 }

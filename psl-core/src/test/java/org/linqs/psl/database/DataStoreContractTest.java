@@ -57,7 +57,6 @@ import org.linqs.psl.model.term.Variable;
  * Contract tests for classes that implement {@link DataStore}.
  */
 public abstract class DataStoreContractTest {
-
 	private static StandardPredicate p1;
 	private static StandardPredicate p2;
 	private static StandardPredicate p3;
@@ -77,16 +76,16 @@ public abstract class DataStoreContractTest {
 	 * Deletes any files and releases any resources used by the tested DataStore
 	 * and its persistence mechanism
 	 */
-	abstract public void cleanUp();
+	public abstract void cleanUp();
 
 	static {
 		PredicateFactory predicateFactory = PredicateFactory.getFactory();
-		p1 = predicateFactory.createStandardPredicate("DataStoreContractTest_P1", ConstantType.UniqueIntID, ConstantType.UniqueIntID);
-		p2 = predicateFactory.createStandardPredicate("DataStoreContractTest_P2", ConstantType.String, ConstantType.String);
-		p3 = predicateFactory.createStandardPredicate("DataStoreContractTest_P3", ConstantType.Double, ConstantType.Double);
-		p4 = predicateFactory.createStandardPredicate("DataStoreContractTest_P4", ConstantType.UniqueIntID, ConstantType.Double);
-		fp1 = predicateFactory.createExternalFunctionalPredicate("DataStoreContractTest_FP1", new ExternalFunction() {
+		p1 = predicateFactory.createStandardPredicate("P1", ConstantType.UniqueIntID, ConstantType.UniqueIntID);
+		p2 = predicateFactory.createStandardPredicate("P2", ConstantType.String, ConstantType.String);
+		p3 = predicateFactory.createStandardPredicate("P3", ConstantType.Double, ConstantType.Double);
+		p4 = predicateFactory.createStandardPredicate("P4", ConstantType.UniqueIntID, ConstantType.Double);
 
+		fp1 = predicateFactory.createExternalFunctionalPredicate("FP1", new ExternalFunction() {
 			@Override
 			public double getValue(ReadOnlyDatabase db, Constant... args) {
 				double a = ((DoubleAttribute) args[0]).getValue();
@@ -115,14 +114,23 @@ public abstract class DataStoreContractTest {
 
 	@After
 	public void tearDown() throws Exception {
-		for (Database db : dbs)
+		for (Database db : dbs) {
 			db.close();
-		datastore.close();
+		}
+
+		if (datastore != null) {
+			datastore.close();
+		}
+
 		cleanUp();
 	}
 
 	@Test
 	public void testInsertAndGetAtom() {
+		if (datastore == null) {
+			return;
+		}
+
 		datastore.registerPredicate(p1);
 		Inserter inserter = datastore.getInserter(p1, datastore.getPartition("0"));
 
@@ -138,7 +146,7 @@ public abstract class DataStoreContractTest {
 		Database db;
 		GroundAtom atom;
 
-		/* Tests open predicate with atoms in write partition */
+		// Tests open predicate with atoms in write partition.
 		db = datastore.getDatabase(datastore.getPartition("0"));
 		atom = db.getAtom(p1, a, b);
 		assertEquals(1.0, atom.getValue(), 0.0);
@@ -158,7 +166,7 @@ public abstract class DataStoreContractTest {
 
 		db.close();
 
-		/* Tests open predicate with atoms in read partition */
+		// Tests open predicate with atoms in read partition.
 		db = datastore.getDatabase(datastore.getPartition("1"), datastore.getPartition("0"));
 		atom = db.getAtom(p1, a, b);
 		assertEquals(1.0, atom.getValue(), 0.0);
@@ -174,7 +182,7 @@ public abstract class DataStoreContractTest {
 
 		db.close();
 
-		/* Tests closed predicate with atoms in write partition */
+		// Tests closed predicate with atoms in write partition.
 		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
 		toClose.add(p1);
 		db = datastore.getDatabase(datastore.getPartition("0"), toClose);
@@ -196,7 +204,7 @@ public abstract class DataStoreContractTest {
 
 		db.close();
 
-		/* Tests closed predicate with atoms in read partition */
+		// Tests closed predicate with atoms in read partition.
 		db = datastore.getDatabase(datastore.getPartition("1"), toClose, datastore.getPartition("0"));
 		atom = db.getAtom(p1, a, b);
 		assertEquals(1.0, atom.getValue(), 0.0);
@@ -215,6 +223,10 @@ public abstract class DataStoreContractTest {
 
 	@Test
 	public void testCommit() {
+		if (datastore == null) {
+			return;
+		}
+
 		datastore.registerPredicate(p1);
 
 		UniqueIntID a = new UniqueIntID(0);
@@ -242,6 +254,10 @@ public abstract class DataStoreContractTest {
 
 	@Test
 	public void testDoubleCommit() {
+		if (datastore == null) {
+			return;
+		}
+
 		datastore.registerPredicate(p1);
 
 		UniqueIntID a = new UniqueIntID(0);
@@ -273,6 +289,10 @@ public abstract class DataStoreContractTest {
 
 	@Test
 	public void testInsertTwoAtoms() {
+		if (datastore == null) {
+			return;
+		}
+
 		datastore.registerPredicate(p1);
 
 		UniqueIntID a = new UniqueIntID(0);
@@ -296,6 +316,10 @@ public abstract class DataStoreContractTest {
 
 	@Test
 	public void testStringEscaping() {
+		if (datastore == null) {
+			return;
+		}
+
 		datastore.registerPredicate(p2);
 		Database db = datastore.getDatabase(datastore.getPartition("0"));
 		DatabaseQuery query = new DatabaseQuery(new QueryAtom(p2, new StringAttribute("a"), new StringAttribute("jk'a")));
@@ -304,6 +328,10 @@ public abstract class DataStoreContractTest {
 
 	@Test
 	public void testPredicateRegistration() {
+		if (datastore == null) {
+			return;
+		}
+
 		datastore.registerPredicate(p1);
 
 		Set<StandardPredicate> registeredPredicates = datastore.getRegisteredPredicates();
@@ -312,6 +340,10 @@ public abstract class DataStoreContractTest {
 
 	@Test
 	public void testPredicateSerialization() {
+		if (datastore == null) {
+			return;
+		}
+
 		datastore.registerPredicate(p1);
 		datastore.registerPredicate(p2);
 
@@ -325,6 +357,14 @@ public abstract class DataStoreContractTest {
 
 	@Test
 	public void testExternalFunctionalPredicate() {
+		if (datastore == null) {
+			return;
+		}
+
+		if (!datastore.supportsExternalFunctions()) {
+			return;
+		}
+
 		datastore.registerPredicate(p3);
 		Inserter inserter = datastore.getInserter(p3, datastore.getPartition("0"));
 		inserter.insert(0.5, 1.0);
@@ -349,6 +389,10 @@ public abstract class DataStoreContractTest {
 
 	@Test
 	public void testExecuteQuery() {
+		if (datastore == null) {
+			return;
+		}
+
 		Inserter inserter;
 		Database db;
 		DatabaseQuery query;
@@ -370,9 +414,7 @@ public abstract class DataStoreContractTest {
 		datastore.registerPredicate(p1);
 		datastore.registerPredicate(p4);
 
-		/*
-		 * Tests a simple query
-		 */
+		// Tests a simple query
 		inserter = datastore.getInserter(p1, datastore.getPartition("0"));
 		inserter.insert(a, b);
 
@@ -390,9 +432,7 @@ public abstract class DataStoreContractTest {
 
 		db.close();
 
-		/*
-		 * Tests a simple query with mixed argument types
-		 */
+		// Tests a simple query with mixed argument types
 		inserter.insert(b, a);
 		inserter = datastore.getInserter(p4, datastore.getPartition("0"));
 		inserter.insert(a, -0.1);
@@ -411,9 +451,7 @@ public abstract class DataStoreContractTest {
 
 		db.close();
 
-		/*
-		 * Tests a simple query with multiple results
-		 */
+		// Tests a simple query with multiple results
 		inserter.insert(b, 4.0);
 		inserter.insert(c, 4.0);
 		inserter.insert(d, 4.0);
@@ -428,17 +466,13 @@ public abstract class DataStoreContractTest {
 			assertTrue(results.get(i)[0] instanceof UniqueIntID);
 		}
 
-		/*
-		 * Tests a query with multiple Atoms
-		 */
+		// Tests a query with multiple Atoms
 		formula = new Conjunction(new QueryAtom(p1, Y, X),
 				new QueryAtom(p4, X, Z));
 		results = db.executeQuery(new DatabaseQuery(formula));
 		assertEquals(2, results.size());
 
-		/*
-		 * Tests a query with a constant specified in the formula
-		 */
+		// Tests a query with a constant specified in the formula
 		formula = new Conjunction(new QueryAtom(p4, X, new DoubleAttribute(4.0)),
 						new QueryAtom(p1, Y, X));
 		results = db.executeQuery(new DatabaseQuery(formula));
@@ -446,9 +480,7 @@ public abstract class DataStoreContractTest {
 		assertEquals(b, results.get(0)[0]);
 		assertEquals(a, results.get(0)[1]);
 
-		/*
-		 * Tests the same query with a different Variable ordering
-		 */
+		// Tests the same query with a different Variable ordering
 		formula = new Conjunction(new QueryAtom(p1, Y, X),
 				new QueryAtom(p4, X, new DoubleAttribute(4.0)));
 		results = db.executeQuery(new DatabaseQuery(formula));
@@ -456,9 +488,7 @@ public abstract class DataStoreContractTest {
 		assertEquals(a, results.get(0)[0]);
 		assertEquals(b, results.get(0)[1]);
 
-		/*
-		 * Tests the same query using the partial grounding to specify constants
-		 */
+		// Tests the same query using the partial grounding to specify constants
 		formula = new Conjunction(new QueryAtom(p1, Y, X),
 				new QueryAtom(p4, X, Z));
 		query = new DatabaseQuery(formula);
@@ -468,9 +498,7 @@ public abstract class DataStoreContractTest {
 		assertEquals(a, results.get(0)[0]);
 		assertEquals(b, results.get(0)[1]);
 
-		/*
-		 * Tests a multi-atom query with a projection set
-		 */
+		// Tests a multi-atom query with a projection set
 		formula = new Conjunction(new QueryAtom(p1, Y, X),
 				new QueryAtom(p4, X, Z));
 		query = new DatabaseQuery(formula);
@@ -494,10 +522,7 @@ public abstract class DataStoreContractTest {
 		else
 			assertTrue(false);
 
-		/*
-		 * Tests a query with a projection set that collapses multiple
-		 * groundings to one
-		 */
+		// Tests a query with a projection set that collapses multiple groundings to one.
 		formula = new QueryAtom(p4, X, Z);
 		query = new DatabaseQuery(formula);
 		query.getProjectionSubset().add(Z);
@@ -518,6 +543,10 @@ public abstract class DataStoreContractTest {
 
 	@Test(expected=NullPointerException.class)
 	public void testExecuteQueryIllegalProjectionVariable() {
+		if (datastore == null) {
+			throw new NullPointerException();
+		}
+
 		Inserter inserter;
 		Database db;
 		DatabaseQuery query;
@@ -552,6 +581,10 @@ public abstract class DataStoreContractTest {
 
 	@Test
 	public void testSpecialPredicates() {
+		if (datastore == null) {
+			return;
+		}
+
 		datastore.registerPredicate(p1);
 
 		UniqueIntID a = new UniqueIntID(0);
@@ -569,9 +602,7 @@ public abstract class DataStoreContractTest {
 		ResultList results;
 		GroundAtom atom;
 
-		/*
-		 * Tests equality
-		 */
+		// Tests equality
 		f = new Conjunction(
 				new QueryAtom(p1, X, Y),
 				new QueryAtom(SpecialPredicate.Equal, X, Y));
@@ -586,9 +617,7 @@ public abstract class DataStoreContractTest {
 		atom = db.getAtom(SpecialPredicate.Equal, a, b);
 		assertEquals(0.0, atom.getValue(), 0.0);
 
-		/*
-		 * Tests inequality
-		 */
+		// Tests inequality
 		f = new Conjunction(
 				new QueryAtom(p1, X, Y),
 				new QueryAtom(SpecialPredicate.NotEqual, X, Y));
@@ -603,9 +632,7 @@ public abstract class DataStoreContractTest {
 		atom = db.getAtom(SpecialPredicate.NotEqual, a, b);
 		assertEquals(1.0, atom.getValue(), 0.0);
 
-		/*
-		 * Tests non-symmetry
-		 */
+		// Tests non-symmetry
 		f = new Conjunction(
 				new QueryAtom(p1, X, Y),
 				new QueryAtom(SpecialPredicate.NonSymmetric, X, Y));
@@ -623,6 +650,10 @@ public abstract class DataStoreContractTest {
 
 	@Test(expected=IllegalArgumentException.class)
 	public void testGetAtomUnregisteredPredicate() {
+		if (datastore == null) {
+			throw new IllegalArgumentException();
+		}
+
 		Database db = datastore.getDatabase(datastore.getPartition("0"));
 		dbs.add(db);
 		db.getAtom(p2, new StringAttribute("a"), new StringAttribute("b"));
@@ -630,6 +661,10 @@ public abstract class DataStoreContractTest {
 
 	@Test(expected=IllegalArgumentException.class)
 	public void testLateRegisteredPredicate() {
+		if (datastore == null) {
+			throw new IllegalArgumentException();
+		}
+
 		Database db = datastore.getDatabase(datastore.getPartition("0"));
 		dbs.add(db);
 		datastore.registerPredicate(p1);
@@ -638,6 +673,10 @@ public abstract class DataStoreContractTest {
 
 	@Test(expected=IllegalStateException.class)
 	public void testAtomInReadAndWritePartitions() {
+		if (datastore == null) {
+			throw new IllegalStateException();
+		}
+
 		datastore.registerPredicate(p1);
 
 		UniqueIntID a = new UniqueIntID(0);
@@ -656,6 +695,10 @@ public abstract class DataStoreContractTest {
 
 	@Test(expected=IllegalStateException.class)
 	public void testAtomInTwoReadPartitions() {
+		if (datastore == null) {
+			throw new IllegalStateException();
+		}
+
 		datastore.registerPredicate(p1);
 
 		UniqueIntID a = new UniqueIntID(0);
@@ -674,6 +717,10 @@ public abstract class DataStoreContractTest {
 
 	@Test
 	public void testSharedReadPartition() {
+		if (datastore == null) {
+			return;
+		}
+
 		datastore.registerPredicate(p1);
 
 		Inserter inserter = datastore.getInserter(p1, datastore.getPartition("0"));
@@ -703,41 +750,69 @@ public abstract class DataStoreContractTest {
 
 	@Test(expected=IllegalArgumentException.class)
 	public void testSharedWritePartition() {
+		if (datastore == null) {
+			throw new IllegalArgumentException();
+		}
+
 		dbs.add(datastore.getDatabase(datastore.getPartition("0")));
 		dbs.add(datastore.getDatabase(datastore.getPartition("0")));
 	}
 
 	@Test(expected=IllegalArgumentException.class)
 	public void testSharedReadWritePartition1() {
+		if (datastore == null) {
+			throw new IllegalArgumentException();
+		}
+
 		dbs.add(datastore.getDatabase(datastore.getPartition("0")));
 		dbs.add(datastore.getDatabase(datastore.getPartition("1"), datastore.getPartition("0")));
 	}
 
 	@Test(expected=IllegalArgumentException.class)
 	public void testSharedReadWritePartition2() {
+		if (datastore == null) {
+			throw new IllegalArgumentException();
+		}
+
 		dbs.add(datastore.getDatabase(datastore.getPartition("0"), datastore.getPartition("1")));
 		dbs.add(datastore.getDatabase(datastore.getPartition("1")));
 	}
 
 	@Test(expected=IllegalArgumentException.class)
 	public void testGetInserterUnregisteredPredicate() {
+		if (datastore == null) {
+			throw new IllegalArgumentException();
+		}
+
 		datastore.getInserter(p1, datastore.getPartition("0"));
 	}
 
 	@Test(expected=IllegalArgumentException.class)
 	public void testGetInserterPartitionInUseWrite() {
+		if (datastore == null) {
+			throw new IllegalArgumentException();
+		}
+
 		dbs.add(datastore.getDatabase(datastore.getPartition("0")));
 		datastore.getInserter(p1, datastore.getPartition("0"));
 	}
 
 	@Test(expected=IllegalArgumentException.class)
 	public void testGetInserterPartitionInUseRead() {
+		if (datastore == null) {
+			throw new IllegalArgumentException();
+		}
+
 		dbs.add(datastore.getDatabase(datastore.getPartition("1"), datastore.getPartition("0")));
 		datastore.getInserter(p1, datastore.getPartition("0"));
 	}
 
 	@Test
 	public void testGetInserterForDeserializedPredicate() {
+		if (datastore == null) {
+			return;
+		}
+
 		datastore.registerPredicate(p1);
 		datastore.registerPredicate(p2);
 
@@ -748,6 +823,10 @@ public abstract class DataStoreContractTest {
 
 	@Test(expected=IllegalStateException.class)
 	public void testGetAtomAfterClose() {
+		if (datastore == null) {
+			throw new IllegalStateException();
+		}
+
 		datastore.registerPredicate(p1);
 
 		UniqueIntID a = new UniqueIntID(0);
@@ -760,6 +839,10 @@ public abstract class DataStoreContractTest {
 
 	@Test(expected=IllegalStateException.class)
 	public void testCommitAfterClose() {
+		if (datastore == null) {
+			throw new IllegalStateException();
+		}
+
 		datastore.registerPredicate(p1);
 
 		UniqueIntID a = new UniqueIntID(0);
@@ -773,6 +856,10 @@ public abstract class DataStoreContractTest {
 
 	@Test(expected=IllegalStateException.class)
 	public void testQueryAfterClose() {
+		if (datastore == null) {
+			throw new IllegalStateException();
+		}
+
 		datastore.registerPredicate(p1);
 
 		Variable X = new Variable("X");
@@ -787,6 +874,10 @@ public abstract class DataStoreContractTest {
 
 	@Test
 	public void testDeletePartition() {
+		if (datastore == null) {
+			return;
+		}
+
 		datastore.registerPredicate(p1);
 
 		Inserter inserter = datastore.getInserter(p1, datastore.getPartition("0"));
@@ -816,12 +907,20 @@ public abstract class DataStoreContractTest {
 
 	@Test(expected=IllegalArgumentException.class)
 	public void testDeletePartitionInUse() {
+		if (datastore == null) {
+			throw new IllegalArgumentException();
+		}
+
 		dbs.add(datastore.getDatabase(datastore.getPartition("0")));
 		datastore.deletePartition(datastore.getPartition("0"));
 	}
 
 	@Test
 	public void testIsClosed() {
+		if (datastore == null) {
+			return;
+		}
+
 		datastore.registerPredicate(p1);
 		datastore.registerPredicate(p2);
 
@@ -833,5 +932,4 @@ public abstract class DataStoreContractTest {
 		assertTrue(db.isClosed(p1));
 		assertTrue(!db.isClosed(p2));
 	}
-
 }

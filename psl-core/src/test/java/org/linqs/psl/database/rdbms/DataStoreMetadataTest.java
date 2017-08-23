@@ -38,7 +38,7 @@ public class DataStoreMetadataTest {
 
 	@Test
 	public void testGetAllPartitions() {
-		DataStoreMetadata metadata = ((RDBMSDataStore)model.dataStore).metadata;
+		DataStoreMetadata metadata = ((RDBMSDataStore)model.dataStore).getMetadata();
 		Map<String, String> actual = metadata.getAllValuesByType(metadata.mdTableName, "Partition", "name");
 
 		Map<String, String> expected = new HashMap<String, String>();

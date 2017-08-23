@@ -52,20 +52,20 @@ public class TestModelFactory {
 	 * Get a default model.
 	 * The caller owns everything that is returned and should make sure to close the datastore.
 	 * Predicates:
-	 *    Nice(UniqueStringID)
-	 *    Person(UniqueStringID)
-	 *    Friends(UniqueStringID, UniqueStringID)
+	 *	 Nice(UniqueStringID)
+	 *	 Person(UniqueStringID)
+	 *	 Friends(UniqueStringID, UniqueStringID)
 	 *
 	 * Rules:
-	 *    5: Nice(A) & Nice(B) & (A - B) -> Friends(A, B) ^2
-	 *    10: Person(A) & Person(B) & Friends(A, B) & (A - B) -> Friends(B, A) ^2
-	 *    1: ~Friends(A, B) ^2
+	 *	 5: Nice(A) & Nice(B) & (A - B) -> Friends(A, B) ^2
+	 *	 10: Person(A) & Person(B) & Friends(A, B) & (A - B) -> Friends(B, A) ^2
+	 *	 1: ~Friends(A, B) ^2
 	 *
 	 * Data:
-	 *    - There are 5 people.
-	 *    - Every person has a Nice value. Alice starts at 0.8 then is decreases by 0.2 alphabetically (Eugue is 0.0).
-	 *    - All Friendships are in the target partition.
-	 *    - All Friendships have a binary truth value in the truth partition.
+	 *	 - There are 5 people.
+	 *	 - Every person has a Nice value. Alice starts at 0.8 then is decreases by 0.2 alphabetically (Eugue is 0.0).
+	 *	 - All Friendships are in the target partition.
+	 *	 - All Friendships have a binary truth value in the truth partition.
 	 *
 	 * Data is added as well and can be seen in the code.
 	 */
@@ -218,11 +218,11 @@ public class TestModelFactory {
 			Map<StandardPredicate, List<PredicateData>> observations, Map<StandardPredicate, List<PredicateData>> targets,
 			Map<StandardPredicate, List<PredicateData>> truths) {
 		ConfigBundle config = new EmptyBundle();
-      String identifier = String.format("%s-%03d", TestModelFactory.class.getName(), modelId);
+		String identifier = String.format("%s-%03d", TestModelFactory.class.getName(), modelId);
 		DataStore dataStore = new RDBMSDataStore(new H2DatabaseDriver(
 				Type.Memory,
-            Paths.get(System.getProperty("java.io.tmpdir"), identifier).toString(),
-            true), config);
+				Paths.get(System.getProperty("java.io.tmpdir"), identifier).toString(),
+				true), config);
 		Model model = new Model();
 
 		// Predicates

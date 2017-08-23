@@ -17,36 +17,22 @@
  */
 package org.linqs.psl.database.rdbms;
 
-import java.io.File;
-
 import org.linqs.psl.config.EmptyBundle;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.DataStoreContractTest;
+import org.linqs.psl.database.DatabaseTestUtil;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
-import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 
-public class RDBMSDataStoreTest extends DataStoreContractTest {
-	
-	private String dbPath;
-	private String dbName;
-
+public class H2DataStoreContractTest extends DataStoreContractTest {
 	@Override
 	public DataStore getDataStore(boolean clearDB) {
-		dbPath = System.getProperty("java.io.tmpdir") + "/";
-		dbName = "rdbmsDataStoreTest";
-		DatabaseDriver driver = new H2DatabaseDriver(H2DatabaseDriver.Type.Disk, dbPath + dbName, clearDB);
-		RDBMSDataStore dataStore = new RDBMSDataStore(driver, new EmptyBundle());
-		return dataStore;
+		DatabaseDriver driver = DatabaseTestUtil.getH2Driver(clearDB);
+		return new RDBMSDataStore(driver, new EmptyBundle());
 	}
 
 	@Override
 	public void cleanUp() {
-		File file;
-		file = new File(dbPath + dbName + ".h2.db");
-		file.delete();
-		file = new File(dbPath + dbName + ".trace.db");
-		file.delete();
+		DatabaseTestUtil.cleanH2Driver();
 	}
-
 }
