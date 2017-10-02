@@ -152,8 +152,7 @@ public class Launcher {
 		 * Initializes log4j
 		 */
 		if (cmd.hasOption(OPTION_LOG4J)) {
-			URL url = new URL(cmd.getOptionValue(OPTION_LOG4J));
-			PropertyConfigurator.configure(url);
+			PropertyConfigurator.configure(cmd.getOptionValue(OPTION_LOG4J));
 		}
 		else {
 			ConsoleAppender appender = new ConsoleAppender();
