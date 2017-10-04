@@ -30,8 +30,10 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.Queries;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
+import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver.Type;
+import org.linqs.psl.database.rdbms.driver.PostgreSQLDriver;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
@@ -88,6 +90,8 @@ public class Launcher {
 
 	public static final String OPTION_DATA = "d";
 	public static final String OPTION_DATA_LONG = "data";
+	public static final String OPTION_DB_H2_PATH = "h2path";
+	public static final String OPTION_DB_POSTGRESQL_NAME = "postgres";
 	public static final String OPTION_LOG4J = "4j";
 	public static final String OPTION_LOG4J_LONG = "log4j";
 	public static final String OPTION_MODEL = "m";
@@ -100,6 +104,10 @@ public class Launcher {
 
 	public static final String CONFIG_PREFIX = "cli";
 	public static final String MODEL_FILE_EXTENSION = ".psl";
+	public static final String DEFAULT_H2_DB_PATH =
+			Paths.get(System.getProperty("java.io.tmpdir"),
+			"cli_" + System.getProperty("user.name") + "@" + getHostname()).toString();
+	public static final String DEFAULT_POSTGRES_DB_NAME = "psl_cli";
 
 	// Reserved partition names.
 	public static final String PARTITION_NAME_OBSERVATIONS = "observations";
@@ -201,11 +209,24 @@ public class Launcher {
 	 * Set up the DataStore.
 	 */
 	private DataStore initDataStore() {
-		String defaultSuffix = System.getProperty("user.name") + "@" + getHostname();
-		String defaultPath = Paths.get(System.getProperty("java.io.tmpdir"), "cli_" + defaultSuffix).toString();
+		String dbPath = DEFAULT_H2_DB_PATH;
+		boolean useH2 = true;
 
-		String dbpath = config.getString("dbpath", defaultPath);
-		return new RDBMSDataStore(new H2DatabaseDriver(Type.Disk, dbpath, true), config);
+		if (options.hasOption(OPTION_DB_H2_PATH)) {
+			dbPath = options.getOptionValue(OPTION_DB_H2_PATH);
+		} else if (options.hasOption(OPTION_DB_POSTGRESQL_NAME)) {
+			dbPath = options.getOptionValue(OPTION_DB_POSTGRESQL_NAME, DEFAULT_POSTGRES_DB_NAME);
+			useH2 = false;
+		}
+
+		DatabaseDriver driver = null;
+		if (useH2) {
+			driver = new H2DatabaseDriver(Type.Disk, dbPath, true);
+		} else {
+			driver = new PostgreSQLDriver(dbPath, true);
+		}
+
+		return new RDBMSDataStore(driver, config);
 	}
 
 	private Set<StandardPredicate> loadData(DataStore dataStore) {
@@ -355,13 +376,13 @@ public class Launcher {
 		dataStore.close();
 	}
 
-	private String getHostname() {
+	private static String getHostname() {
 		String hostname = "unknown";
 
 		try {
 			hostname = InetAddress.getLocalHost().getHostName();
 		} catch (UnknownHostException ex) {
-			log.warn("Hostname can not be resolved, using '" + hostname + "'.");
+			// log.warn("Hostname can not be resolved, using '" + hostname + "'.");
 		}
 
 		return hostname;
@@ -382,6 +403,24 @@ public class Launcher {
 				.desc("Path to PSL data file")
 				.hasArg()
 				.argName("path")
+				.build());
+
+		options.addOption(Option.builder()
+				.longOpt(OPTION_DB_H2_PATH)
+				.desc("Path for H2 database file (defaults to 'cli_<user name>@<host name>' ('" + DEFAULT_H2_DB_PATH + "'))." +
+						" Not compatible with the '--" + OPTION_DB_POSTGRESQL_NAME + "' option.")
+				.hasArg()
+				.argName("path")
+				.build());
+
+		options.addOption(Option.builder()
+				.longOpt(OPTION_DB_POSTGRESQL_NAME)
+				.desc("Name for the PostgreSQL database to use (defaults to " + DEFAULT_POSTGRES_DB_NAME + ")." +
+						" Not compatible with the '--" + OPTION_DB_H2_PATH + "' option." +
+						" Currently only local databases without credentials are supported.")
+				.hasArg()
+				.argName("name")
+				.optionalArg(true)
 				.build());
 
 		options.addOption(Option.builder(OPTION_HELP)
@@ -474,6 +513,12 @@ public class Launcher {
 		if (commandLineOptions.hasOption(OPTION_HELP)) {
 			getHelpFormatter().printHelp("psl", options, true);
 			System.exit(0);
+		}
+
+		if (commandLineOptions.hasOption(OPTION_DB_H2_PATH) && commandLineOptions.hasOption(OPTION_DB_POSTGRESQL_NAME)) {
+			System.err.println("Command line error: Options '--" + OPTION_DB_H2_PATH + "' and '--" + OPTION_DB_POSTGRESQL_NAME + "' are not compatible.");
+			getHelpFormatter().printHelp("psl", options, true);
+			System.exit(2);
 		}
 
 		return commandLineOptions;
