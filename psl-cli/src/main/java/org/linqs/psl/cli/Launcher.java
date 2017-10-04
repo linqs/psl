@@ -17,31 +17,6 @@
  */
 package org.linqs.psl.cli;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.util.Comparator;
-import java.util.Set;
-import java.util.regex.Pattern;
-
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.OptionGroup;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.log4j.BasicConfigurator;
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.PatternLayout;
-import org.apache.log4j.Priority;
-import org.apache.log4j.PropertyConfigurator;
 import org.linqs.psl.application.inference.MPEInference;
 import org.linqs.psl.application.inference.result.FullInferenceResult;
 import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
@@ -63,297 +38,455 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.parser.ModelLoader;
 import org.linqs.psl.reasoner.admm.ADMMReasonerFactory;
+
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.OptionGroup;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.log4j.BasicConfigurator;
+import org.apache.log4j.ConsoleAppender;
+import org.apache.log4j.PatternLayout;
+import org.apache.log4j.Priority;
+import org.apache.log4j.PropertyConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.InetAddress;
+import java.net.URL;
+import java.net.UnknownHostException;
+import java.nio.file.Paths;
+import java.util.Comparator;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.regex.Pattern;
+
 /**
- * Launches PSL from the command line. Supports inference and supervised parameter learning
+ * Launches PSL from the command line.
+ * Supports inference and supervised parameter learning.
  */
 public class Launcher {
-	private static Logger log;
+	// Command line options.
+	public static final String OPTION_HELP = "h";
+	public static final String OPTION_HELP_LONG = "help";
+	public static final String OPERATION_INFER = "i";
+	public static final String OPERATION_INFER_LONG = "infer";
+	public static final String OPERATION_LEARN = "l";
+	public static final String OPERATION_LEARN_LONG = "learn";
 
-	/* Command line syntax keywords */
-	public static final String OPERATION_INFER = "infer";
-	public static final String OPERATION_LEARN = "learn";
-	public static final String OPTION_MODEL = "model";
-	public static final String OPTION_DATA = "data";
-	public static final String OPTION_PROPERTIES = "properties";
-	public static final String OPTION_LOG4J = "log4j";
-	public static final String OPTION_OUTPUT_DIR = "output";
+	public static final String OPTION_DATA = "d";
+	public static final String OPTION_DATA_LONG = "data";
+	public static final String OPTION_LOG4J = "4j";
+	public static final String OPTION_LOG4J_LONG = "log4j";
+	public static final String OPTION_MODEL = "m";
+	public static final String OPTION_MODEL_LONG = "model";
+	public static final String OPTION_OUTPUT_DIR = "o";
+	public static final String OPTION_OUTPUT_DIR_LONG = "output";
+	public static final String OPTION_PROPERTIES = "D";
+	public static final String OPTION_PROPERTIES_FILE = "p";
+	public static final String OPTION_PROPERTIES_FILE_LONG = "properties";
 
+	public static final String CONFIG_PREFIX = "cli";
 	public static final String MODEL_FILE_EXTENSION = ".psl";
 
-	/* Reserved partition names */
+	// Reserved partition names.
 	public static final String PARTITION_NAME_OBSERVATIONS = "observations";
 	public static final String PARTITION_NAME_TARGET = "targets";
 	public static final String PARTITION_NAME_LABELS = "truth";
 
+	private CommandLine options;
+	private ConfigBundle config;
+	private Logger log;
 
-	public void outputResults(CommandLine cmd, Database database,
-			Set<StandardPredicate> openPredicates){
-		if (cmd.hasOption(OPTION_OUTPUT_DIR)) {
-			/*
-			 * If an output directory is specified, write a file for each
-			 * predicate and suppress the output to STDOUT.
-			 */
-			String outputDirectoryPath = cmd
-					.getOptionValue(OPTION_OUTPUT_DIR);
-			File outputDirectory = new File(outputDirectoryPath);
-			if (!outputDirectory.exists()) {
-				log.debug("creating directory: {}", outputDirectoryPath);
-				boolean dirCreated = false;
-				try {
-					outputDirectory.mkdir();
-					dirCreated = true;
-				} catch (SecurityException se) {
-					log.error("Unable to create directory");
-					return;
-				}
-				if (dirCreated) {
-					log.debug("{} created", outputDirectoryPath);
-				}
-			}
-			for (StandardPredicate openPredicate : openPredicates) {
-				try {
-					File predFile = new File(outputDirectory,
-							openPredicate.getName() + ".csv");
-					FileWriter predFileWriter = new FileWriter(predFile);
-					for (GroundAtom atom : Queries.getAllAtoms(database,
-							openPredicate)) {
-						for (Constant term : atom.getArguments()) {
-							predFileWriter.write(term.toString() + ",");
-						}
-						predFileWriter.write(Double.toString(atom.getValue()));
-						predFileWriter.write("\n");
-					}
-					predFileWriter.close();
-				} catch (IOException e){
-					log.error("Exception writing predicate {}", openPredicate);
-				}
-			}
-		} else {
-			for (StandardPredicate openPredicate : openPredicates) {
-				for (GroundAtom atom : Queries.getAllAtoms(database,
-						openPredicate)) {
-					System.out.println(atom.toString() + " = "
-							+ atom.getValue());
-				}
-			}
-		}
-
-
+	private Launcher(CommandLine options) {
+		this.options = options;
+		this.log = initLogger();
+		this.config = initConfig();
 	}
 
+	/**
+	 * Initializes log4j.
+	 */
+	private Logger initLogger() {
+		Properties props = new Properties();
 
-	@SuppressWarnings("deprecation")
-	public void run(CommandLine cmd) throws IOException, ConfigurationException, ClassNotFoundException, IllegalAccessException, InstantiationException {
-
-		/*
-		 * Initializes log4j
-		 */
-		if (cmd.hasOption(OPTION_LOG4J)) {
-			PropertyConfigurator.configure(cmd.getOptionValue(OPTION_LOG4J));
+		if (options.hasOption(OPTION_LOG4J)) {
+			try {
+				props.load(new FileReader(options.getOptionValue(OPTION_LOG4J)));
+			} catch (IOException ex) {
+				throw new RuntimeException("Failed to read logger configuration from a file.", ex);
+			}
+		} else {
+			// Setup a default logger.
+			props.setProperty("log4j.rootLogger", "INFO, A1");
+			props.setProperty("log4j.appender.A1", "org.apache.log4j.ConsoleAppender");
+			props.setProperty("log4j.appender.A1.layout", "org.apache.log4j.PatternLayout");
+			props.setProperty("log4j.appender.A1.layout.ConversionPattern", "%-4r [%t] %-5p %c %x - %m%n");
 		}
-		else {
-			ConsoleAppender appender = new ConsoleAppender();
-			appender.setName("psl-cli");
-			appender.setThreshold(Priority.INFO);
-			appender.setLayout(new PatternLayout("%-4r [%t] %-5p %c %x - %m%n"));
-			appender.setTarget(ConsoleAppender.SYSTEM_OUT);
-			appender.activateOptions();
-			BasicConfigurator.configure(appender);
+
+		// Load any options specified directly on the command line (override standing options).
+		for (Map.Entry<Object, Object> entry : options.getOptionProperties("D").entrySet()) {
+			String key = entry.getKey().toString();
+
+			// If the key is prefixed woth CONFIG_PREFIX, then add another key without the prefix.
+			// The user may have been confused.
+			if (key.startsWith(CONFIG_PREFIX + ".")) {
+				key = key.replaceFirst(CONFIG_PREFIX + ".", "");
+			}
+
+			if (!key.startsWith("log4j.")) {
+				continue;
+			}
+
+			props.setProperty(key, entry.getValue().toString());
 		}
-		log = LoggerFactory.getLogger(Launcher.class);
-		/*
-		 * Loads configuration
-		 */
-		ConfigManager cm = ConfigManager.getManager();
-		if (cmd.hasOption(OPTION_PROPERTIES)) {
-			String propertiesPath = cmd.getOptionValue(OPTION_PROPERTIES);
-			cm.loadResource(propertiesPath);
+
+		// Log4j is pretty picky about it's thresholds, so we will specially set one option.
+		if (props.containsKey("log4j.threshold")) {
+			props.setProperty("log4j.rootLogger", props.getProperty("log4j.threshold") + ", A1");
 		}
-		ConfigBundle cb = cm.getBundle("cli");
 
-		/*
-		 * Sets up DataStore
-		 */
+		PropertyConfigurator.configure(props);
+		return LoggerFactory.getLogger(Launcher.class);
+	}
 
-		String defaultPath = System.getProperty("java.io.tmpdir");
-		String dbpath = cb.getString("dbpath", defaultPath + File.separator + "cli");
-		DataStore data = new RDBMSDataStore(new H2DatabaseDriver(Type.Disk,
-				cb.getString("dbpath", dbpath), true), cb);
+	/**
+	 * Loads configuration.
+	 */
+	private ConfigBundle initConfig() {
+		ConfigManager cm = null;
 
-		/*
-		 * Loads data
-		 */
+		try {
+			cm = ConfigManager.getManager();
 
-		log.info("data:: loading:: ::starting");
-		File dataFile = new File(cmd.getOptionValue(OPTION_DATA));
-		InputStream dataFileInputStream = new FileInputStream(dataFile);
+			// Load a properties file that was specified on the command line.
+			if (options.hasOption(OPTION_PROPERTIES_FILE)) {
+				String propertiesPath = options.getOptionValue(OPTION_PROPERTIES_FILE);
+				cm.loadResource(propertiesPath);
+			}
+		} catch (ConfigurationException ex) {
+			throw new RuntimeException("Failed to initialize configuration for CLI.", ex);
+		}
 
-		DataLoaderOutput dataLoaderOutput = DataLoader.load(data, dataFileInputStream);
-		Set<StandardPredicate> closedPredicates = dataLoaderOutput.getClosedPredicates();
-		log.info("data:: loading:: ::done");
+		ConfigBundle bundle = cm.getBundle(CONFIG_PREFIX);
 
-		/*
-		 * Loads model
-		 */
-		log.info("model:: loading:: ::starting");
-		File modelFile = new File(cmd.getOptionValue(OPTION_MODEL));
-		FileReader modelFileReader = new FileReader(modelFile);
+		// Load any options specified directly on the command line (override standing options).
+		for (Map.Entry<Object, Object> entry : options.getOptionProperties("D").entrySet()) {
+			String key = entry.getKey().toString();
+			bundle.setProperty(key, entry.getValue());
 
-		Model model = ModelLoader.load(data, modelFileReader);
+			// If the key is prefixed woth CONFIG_PREFIX, then add another key without the prefix.
+			// The user may have been confused.
+			if (key.startsWith(CONFIG_PREFIX + ".")) {
+				bundle.setProperty(key.replaceFirst(CONFIG_PREFIX + ".", ""), entry.getValue());
+			}
+		}
+
+		return bundle;
+	}
+
+	/**
+	 * Set up the DataStore.
+	 */
+	private DataStore initDataStore() {
+		String defaultSuffix = System.getProperty("user.name") + "@" + getHostname();
+		String defaultPath = Paths.get(System.getProperty("java.io.tmpdir"), "cli_" + defaultSuffix).toString();
+
+		String dbpath = config.getString("dbpath", defaultPath);
+		return new RDBMSDataStore(new H2DatabaseDriver(Type.Disk, dbpath, true), config);
+	}
+
+	private Set<StandardPredicate> loadData(DataStore dataStore) {
+		log.info("Loading data");
+
+		Set<StandardPredicate> closedPredicates;
+		try {
+			File dataFile = new File(options.getOptionValue(OPTION_DATA));
+			DataLoaderOutput dataLoaderOutput = DataLoader.load(dataStore, new FileInputStream(dataFile));
+			closedPredicates = dataLoaderOutput.getClosedPredicates();
+		} catch (FileNotFoundException ex) {
+			throw new RuntimeException("Failed to load data.", ex);
+		}
+
+		log.info("Data loading complete");
+
+		return closedPredicates;
+	}
+
+	private void runInference(Model model, DataStore dataStore, Set<StandardPredicate> closedPredicates)
+			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
+		log.info("Starting inference");
+
+		// Create database.
+		Partition targetPartition = dataStore.getPartition(PARTITION_NAME_TARGET);
+		Partition observationsPartition = dataStore.getPartition(PARTITION_NAME_OBSERVATIONS);
+		Database database = dataStore.getDatabase(targetPartition, closedPredicates, observationsPartition);
+
+		MPEInference mpe = new MPEInference(model, database, config);
+		FullInferenceResult result = mpe.mpeInference();
+
+		log.info("Inference Complete");
+
+		// Output the results.
+		outputResults(database, dataStore, closedPredicates);
+
+		database.close();
+	}
+
+	private void outputResults(Database database, DataStore dataStore, Set<StandardPredicate> closedPredicates) {
+		// List of open predicates
+		Set<StandardPredicate> openPredicates = dataStore.getRegisteredPredicates();
+		openPredicates.removeAll(closedPredicates);
+
+		// If we are just writing to the console, use a more human-readable format.
+		if (!options.hasOption(OPTION_OUTPUT_DIR)) {
+			for (StandardPredicate openPredicate : openPredicates) {
+				for (GroundAtom atom : Queries.getAllAtoms(database, openPredicate)) {
+					System.out.println(atom.toString() + " = " + atom.getValue());
+				}
+			}
+
+			return;
+		}
+
+		// If we have an output directory, then write a different file for each predicate.
+		String outputDirectoryPath = options.getOptionValue(OPTION_OUTPUT_DIR);
+		File outputDirectory = new File(outputDirectoryPath);
+
+		// mkdir -p
+		outputDirectory.mkdirs();
+
+		for (StandardPredicate openPredicate : openPredicates) {
+			try {
+				FileWriter predFileWriter = new FileWriter(new File(outputDirectory, openPredicate.getName() + ".txt"));
+
+				for (GroundAtom atom : Queries.getAllAtoms(database, openPredicate)) {
+					for (Constant term : atom.getArguments()) {
+						predFileWriter.write(term.toString() + "\t");
+					}
+					predFileWriter.write(Double.toString(atom.getValue()));
+					predFileWriter.write("\n");
+				}
+
+				predFileWriter.close();
+			} catch (IOException ex) {
+				log.error("Exception writing predicate {}", openPredicate);
+			}
+		}
+	}
+
+	private void learnWeights(Model model, DataStore dataStore, Set<StandardPredicate> closedPredicates)
+			throws ClassNotFoundException, IOException, IllegalAccessException, InstantiationException {
+		log.info("Starting weight learning");
+
+		Partition targetPartition = dataStore.getPartition(PARTITION_NAME_TARGET);
+		Partition observationsPartition = dataStore.getPartition(PARTITION_NAME_OBSERVATIONS);
+		Partition truthPartition = dataStore.getPartition(PARTITION_NAME_LABELS);
+
+		Database randomVariableDatabase = dataStore.getDatabase(targetPartition, closedPredicates, observationsPartition);
+		Database observedTruthDatabase = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
+
+		VotedPerceptron vp = new MaxLikelihoodMPE(model, randomVariableDatabase, observedTruthDatabase, config);
+		vp.learn();
+
+		randomVariableDatabase.close();
+		observedTruthDatabase.close();
+
+		log.info("Weight learning complete");
+
+		String modelFilename = options.getOptionValue(OPTION_MODEL);
+
+		String learnedFilename;
+		int prefixPos = modelFilename.lastIndexOf(MODEL_FILE_EXTENSION);
+		if (prefixPos == -1) {
+			learnedFilename = modelFilename + MODEL_FILE_EXTENSION;
+		} else {
+			learnedFilename = modelFilename.substring(0, prefixPos) + "-learned" + MODEL_FILE_EXTENSION;
+		}
+		log.info("Writing learned model to {}", learnedFilename);
+
+		FileWriter learnedFileWriter = new FileWriter(new File(learnedFilename));
+		String outModel = model.asString();
+
+		// Remove excess parens.
+		outModel = outModel.replaceAll("\\( | \\)", "");
+
+		// String outModel = model.asString();
+
+		learnedFileWriter.write(outModel);
+		learnedFileWriter.close();
+	}
+
+	private void run()
+			throws IOException, ConfigurationException, ClassNotFoundException, IllegalAccessException, InstantiationException {
+		DataStore dataStore = initDataStore();
+
+		// Loads data
+		Set<StandardPredicate> closedPredicates = loadData(dataStore);
+
+		// Loads model
+		log.info("Loading model");
+		File modelFile = new File(options.getOptionValue(OPTION_MODEL));
+		Model model = ModelLoader.load(dataStore, new FileReader(modelFile));
 		log.debug(model.toString());
-		log.info("model:: loading:: ::done");
-
-		/*
-		 * Create database, application, etc.
-		 */
-		Partition targetPartition = data.getPartition(PARTITION_NAME_TARGET);
-		Partition observationsPartition = data.getPartition(PARTITION_NAME_OBSERVATIONS);
-		Partition truthPartition = data.getPartition(PARTITION_NAME_LABELS);
-		Database database = data.getDatabase(targetPartition, closedPredicates, observationsPartition);
+		log.info("Model loading complete");
 
 		// Inference
-		if (cmd.hasOption(OPERATION_INFER)) {
-			log.info("operation::infer ::starting");
-
-			cb.setProperty(MPEInference.REASONER_KEY, new ADMMReasonerFactory());
-			MPEInference mpe = new MPEInference(model, database, cb);
-			FullInferenceResult result = mpe.mpeInference();
-			log.info("operation::infer inference:: ::done");
-
-			// List of open predicates
-			Set<StandardPredicate> openPredicates = data.getRegisteredPredicates();
-			openPredicates.removeAll(closedPredicates);
-
-			outputResults(cmd, database, openPredicates);
-
-			log.info("operation::infer ::done");
-
-		} else if (cmd.hasOption(OPERATION_LEARN)) {
-			log.info("operation::learn ::starting");
-			Database tr_database = data.getDatabase(truthPartition, data.getRegisteredPredicates());
-			VotedPerceptron vp =  new MaxLikelihoodMPE(model, database, tr_database, cb);
-			vp.learn();
-			log.info("operation::learn learning:: ::done");
-
-			String modelFilename = cmd.getOptionValue(OPTION_MODEL);
-			String learnedFilename;
-			int prefixPos = modelFilename.lastIndexOf(MODEL_FILE_EXTENSION);
-			if(prefixPos == -1){
-				log.error("Model filename {} does not end in {} - improvising",
-						modelFilename, MODEL_FILE_EXTENSION);
-				learnedFilename = modelFilename + MODEL_FILE_EXTENSION;
-			} else {
-				learnedFilename = modelFilename.substring(0, prefixPos) + "-learned"
-						+ MODEL_FILE_EXTENSION;
-			}
-			log.info("Writing learned model to {}", learnedFilename);
-			File learnedFile = new File(learnedFilename);
-			FileWriter learnedFileWriter = new FileWriter(learnedFile);
-			//TODO: fix this so we don't need cleanModel!
-			String outModel = Pattern.compile("\\( | \\)").matcher(model.asString()).replaceAll("");
-			learnedFileWriter.write(outModel);
-			learnedFileWriter.close();
-
-			log.info("operation::learn ::done");
-			//throw new IllegalArgumentException("Operation not supported: " + OPERATION_LEARN);
-			// Learning
+		if (options.hasOption(OPERATION_INFER)) {
+			runInference(model, dataStore, closedPredicates);
+		} else if (options.hasOption(OPERATION_LEARN)) {
+			learnWeights(model, dataStore, closedPredicates);
 		} else {
 			throw new IllegalArgumentException("No valid operation provided.");
 		}
-		database.close();
-		data.close();
+
+		dataStore.close();
+	}
+
+	private String getHostname() {
+		String hostname = "unknown";
+
+		try {
+			hostname = InetAddress.getLocalHost().getHostName();
+		} catch (UnknownHostException ex) {
+			log.warn("Hostname can not be resolved, using '" + hostname + "'.");
+		}
+
+		return hostname;
+	}
+
+	private static Options setupOptions() {
+		Options options = new Options();
+
+		OptionGroup mainCommand = new OptionGroup();
+		mainCommand.addOption(new Option(OPERATION_INFER, OPERATION_INFER_LONG, false, "Run MAP inference"));
+		mainCommand.addOption(new Option(OPERATION_LEARN, OPERATION_LEARN_LONG, false, "Run weight learning"));
+		mainCommand.setRequired(true);
+		options.addOptionGroup(mainCommand);
+
+		options.addOption(Option.builder(OPTION_DATA)
+				.longOpt(OPTION_DATA_LONG)
+				.required()
+				.desc("Path to PSL data file")
+				.hasArg()
+				.argName("path")
+				.build());
+
+		options.addOption(Option.builder(OPTION_HELP)
+				.longOpt(OPTION_HELP_LONG)
+				.desc("Print this help message and exit")
+				.build());
+
+		options.addOption(Option.builder(OPTION_LOG4J)
+				.longOpt(OPTION_LOG4J_LONG)
+				.desc("Optional log4j properties file path")
+				.hasArg()
+				.argName("path")
+				.build());
+
+		options.addOption(Option.builder(OPTION_MODEL)
+				.longOpt(OPTION_MODEL_LONG)
+				.required()
+				.desc("Path to PSL model file")
+				.hasArg()
+				.argName("path")
+				.build());
+
+		options.addOption(Option.builder(OPTION_OUTPUT_DIR)
+				.longOpt(OPTION_OUTPUT_DIR_LONG)
+				.desc("Optional path for writing results to filesystem (default is STDOUT)")
+				.hasArg()
+				.argName("path")
+				.build());
+
+		options.addOption(Option.builder(OPTION_PROPERTIES_FILE)
+				.longOpt(OPTION_PROPERTIES_FILE_LONG)
+				.desc("Optional PSL properties file path")
+				.hasArg()
+				.argName("path")
+				.build());
+
+		options.addOption(Option.builder(OPTION_PROPERTIES)
+				.argName("name=value")
+				.desc("Directly specify PSL properties (overrides options set via --" + OPTION_PROPERTIES_FILE_LONG + ")." +
+						" See https://github.com/linqs/psl/wiki/Configuration-Options for a list of available options." +
+						" Log4j properties (properties starting with 'log4j') will be passed to the logger." +
+						" 'log4j.threshold=DEBUG', for example, will be passed to log4j and set the global logging threshold.")
+				.hasArg()
+				.numberOfArgs(2)
+				.valueSeparator('=')
+				.build());
+
+		return options;
+	}
+
+	private static HelpFormatter getHelpFormatter() {
+		HelpFormatter helpFormatter = new HelpFormatter();
+
+		// Hack the option ordering to put argumentions without options first and then required options first.
+		helpFormatter.setOptionComparator(new Comparator<Option>() {
+			@Override
+			public int compare(Option o1, Option o2) {
+				if (!o1.hasArg() && o2.hasArg()) {
+					return -1;
+				} else if (o1.hasArg() && !o2.hasArg()) {
+					return 1;
+				} else if (o1.isRequired() && !o2.isRequired()) {
+					return -1;
+				} else if (!o1.isRequired() && o2.isRequired()) {
+					return 1;
+				} else {
+					return o1.toString().compareTo(o2.toString());
+				}
+			}
+		});
+
+		helpFormatter.setWidth(100);
+
+		return helpFormatter;
+	}
+
+	private static CommandLine parseOptions(String[] args) {
+		Options options = setupOptions();
+		CommandLineParser parser = new DefaultParser();
+		CommandLine commandLineOptions = null;
+
+		try {
+			commandLineOptions = parser.parse(options, args);
+		} catch (ParseException ex) {
+			System.err.println("Command line error: " + ex.getMessage());
+			getHelpFormatter().printHelp("psl", options, true);
+			System.exit(1);
+		}
+
+		if (commandLineOptions.hasOption(OPTION_HELP)) {
+			getHelpFormatter().printHelp("psl", options, true);
+			System.exit(0);
+		}
+
+		return commandLineOptions;
 	}
 
 	public static void main(String[] args) {
 		try {
-
-			/*
-			 * Parses command line
-			 */
-
-			Options options = new Options();
-
-			OptionGroup mainCommand = new OptionGroup();
-			mainCommand.addOption(new Option(OPERATION_INFER, "Run MAP inference"));
-			mainCommand.addOption(new Option(OPERATION_LEARN, "Run weight learning"));
-			mainCommand.setRequired(true);
-			options.addOptionGroup(mainCommand);
-
-			options.addOption(Option.builder(OPTION_MODEL)
-					.required()
-					.desc("Path to PSL model file")
-					.hasArg()
-					.argName("path")
-					.build());
-
-			options.addOption(Option.builder(OPTION_DATA)
-					.required()
-					.desc("Path to PSL data file")
-					.hasArg()
-					.argName("path")
-					.build());
-
-			options.addOption(Option.builder(OPTION_LOG4J)
-					.desc("Optional log4j properties file path")
-					.hasArg()
-					.argName("path")
-					.build());
-
-			options.addOption(Option.builder(OPTION_PROPERTIES)
-					.desc("Optional PSL properties file path")
-					.hasArg()
-					.argName("path")
-					.build());
-
-			options.addOption(Option.builder(OPTION_OUTPUT_DIR)
-					.desc("Optional path for writing results to filesystem (default is STDOUT)")
-					.hasArg()
-					.argName("path")
-					.build());
-
-			HelpFormatter hf = new HelpFormatter();
-			/* Hacks the option ordering */
-			hf.setOptionComparator(new Comparator<Option>() {
-				@Override
-				public int compare(Option o1, Option o2) {
-					if (!o1.hasArg() && o2.hasArg()) {
-						return -1;
-					}
-					else if (o1.hasArg() && !o2.hasArg()) {
-						return 1;
-					}
-					else if (o1.isRequired() && !o2.isRequired()) {
-						return -1;
-					}
-					else if (!o1.isRequired() && o2.isRequired()) {
-						return 1;
-					}
-					else {
-						return o1.toString().compareTo(o2.toString());
-					}
-				}
-			});
-
-			try {
-
-				/*
-				 * Runs PSL
-				 */
-				CommandLineParser parser = new DefaultParser();
-				CommandLine cmd = parser.parse(options, args);
-				new Launcher().run(cmd);
-			}
-			catch (ParseException e) {
-				System.err.println("Command line error: " + e.getMessage());
-				hf.printHelp("psl", options, true);
-			}
-		}
-		catch (Exception e) {
+			CommandLine commandLineOptions = parseOptions(args);
+			Launcher pslLauncher = new Launcher(commandLineOptions);
+			pslLauncher.run();
+		} catch (Exception ex) {
 			System.err.println("Unexpected exception!");
-			e.printStackTrace(System.err);
+			ex.printStackTrace(System.err);
 		}
 	}
 }

@@ -100,10 +100,9 @@ public class ConfigManager {
 			String scopedKey = prefix + "." + key;
 			if (config.containsKey(key)) {
 				Object value = config.getProperty(key);
-				log.info("Found value {} for option {}.", value, scopedKey);
-			}
-			else {
-				log.info("No value found for option {}. Returning default of {}.", scopedKey, defaultValue);
+				log.debug("Found value {} for option {}.", value, scopedKey);
+			} else {
+				log.debug("No value found for option {}. Returning default of {}.", scopedKey, defaultValue);
 			}
 		}
 
@@ -134,7 +133,7 @@ public class ConfigManager {
 		@Override
 		public Object getProperty(String key) {
 			logAccess(key, "");
-			if(config.containsKey(key)){
+			if (config.containsKey(key)) {
 				 return config.getProperty(key);
 			} else {
 				 return null;
@@ -263,15 +262,19 @@ public class ConfigManager {
 		public Factory getFactory(String key, Factory defaultValue)
 				throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 			logAccess(key, defaultValue);
+
 			Object value = config.getProperty(key);
-			if (value == null)
+			if (value == null) {
 				return defaultValue;
-			if (value instanceof Factory)
+			}
+
+			if (value instanceof Factory) {
 				return (Factory) value;
-			else if (value instanceof String)
+			} else if (value instanceof String) {
 				return (Factory) ClassLoader.getSystemClassLoader().loadClass((String) value).newInstance();
-			else
+			} else {
 				throw new IllegalArgumentException("Value " + value + " is not a Factory nor a String.");
+			}
 		}
 
 		@Override
