@@ -38,59 +38,11 @@
 			<version>${project.version}</version>
 		</dependency>
 
-		<!-- linear algebra dependencies -->
-		<dependency>
-			<groupId>org.ujmp</groupId>
-			<artifactId>ujmp-complete</artifactId>
-			<version>0.2.4</version>
-		</dependency>
-
-		<!-- logging dependencies -->
-		<dependency>
-			<groupId>log4j</groupId>
-			<artifactId>log4j</artifactId>
-			<version>1.2.17</version>
-		</dependency>
-		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-api</artifactId>
-			<version>1.7.21</version>
-		</dependency>
-		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-log4j12</artifactId>
-			<version>1.7.21</version>
-		</dependency>
-
 		<!-- guava dependencies -->
 		<dependency>
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
 			<version>20.0</version>
-		</dependency>
-
-		<!-- commons dependencies -->
-		<dependency>
-			<groupId>org.apache.commons</groupId>
-			<artifactId>commons-lang3</artifactId>
-			<version>3.5</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.commons</groupId>
-			<artifactId>commons-collections4</artifactId>
-			<version>4.1</version>
-		</dependency>
-
-		<!-- miscellaneous dependencies -->
-		<dependency>
-			<groupId>de.mathnbits</groupId>
-			<artifactId>mathnbitsSTL</artifactId>
-			<version>1.0</version>
-		</dependency>
-		<dependency>
-			<groupId>net.sourceforge.collections</groupId>
-			<artifactId>collections-generic</artifactId>
-			<version>4.01</version>
 		</dependency>
 	</dependencies>
 </project>
