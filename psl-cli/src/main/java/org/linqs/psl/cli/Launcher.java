@@ -34,6 +34,9 @@ import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver.Type;
 import org.linqs.psl.database.rdbms.driver.PostgreSQLDriver;
+import org.linqs.psl.evaluation.statistics.ContinuousPredictionComparator;
+import org.linqs.psl.evaluation.statistics.DiscretePredictionComparator;
+import org.linqs.psl.evaluation.statistics.DiscretePredictionStatistics;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
@@ -92,6 +95,10 @@ public class Launcher {
 	public static final String OPTION_DATA_LONG = "data";
 	public static final String OPTION_DB_H2_PATH = "h2path";
 	public static final String OPTION_DB_POSTGRESQL_NAME = "postgres";
+	public static final String OPTION_EVAL_CONTINUOUS = "ec";
+	public static final String OPTION_EVAL_CONTINUOUS_LONG = "eval-continuous";
+	public static final String OPTION_EVAL_DISCRETE = "ed";
+	public static final String OPTION_EVAL_DISCRETE_LONG = "eval-discrete";
 	public static final String OPTION_LOG4J = "4j";
 	public static final String OPTION_LOG4J_LONG = "log4j";
 	public static final String OPTION_MODEL = "m";
@@ -108,6 +115,7 @@ public class Launcher {
 			Paths.get(System.getProperty("java.io.tmpdir"),
 			"cli_" + System.getProperty("user.name") + "@" + getHostname()).toString();
 	public static final String DEFAULT_POSTGRES_DB_NAME = "psl_cli";
+	public static final String DEFAULT_DISCRETE_THRESHOLD = "0.5";
 
 	// Reserved partition names.
 	public static final String PARTITION_NAME_OBSERVATIONS = "observations";
@@ -267,7 +275,7 @@ public class Launcher {
 	}
 
 	private void outputResults(Database database, DataStore dataStore, Set<StandardPredicate> closedPredicates) {
-		// List of open predicates
+		// Set of open predicates
 		Set<StandardPredicate> openPredicates = dataStore.getRegisteredPredicates();
 		openPredicates.removeAll(closedPredicates);
 
@@ -344,10 +352,95 @@ public class Launcher {
 		// Remove excess parens.
 		outModel = outModel.replaceAll("\\( | \\)", "");
 
-		// String outModel = model.asString();
-
 		learnedFileWriter.write(outModel);
 		learnedFileWriter.close();
+	}
+
+	private void continuousEval(DataStore dataStore, Set<StandardPredicate> closedPredicates) {
+		log.info("Starting continuous evaluation");
+
+		// Set of open predicates
+		Set<StandardPredicate> openPredicates = dataStore.getRegisteredPredicates();
+		openPredicates.removeAll(closedPredicates);
+
+		// Create database.
+		Partition targetPartition = dataStore.getPartition(PARTITION_NAME_TARGET);
+		Partition truthPartition = dataStore.getPartition(PARTITION_NAME_LABELS);
+
+		Database predictionDatabase = dataStore.getDatabase(targetPartition);
+		Database truthDatabase = dataStore.getDatabase(truthPartition);
+
+		ContinuousPredictionComparator comparator = new ContinuousPredictionComparator(predictionDatabase);
+		comparator.setBaseline(truthDatabase);
+
+		for (StandardPredicate targetPredicate : openPredicates) {
+			// Before we run evaluation, ensure that the truth database actaully has instances of the target predicate.
+			if (Queries.countAllGroundAtoms(truthDatabase, targetPredicate) == 0) {
+				log.info("Skipping continuous evaluation for {} since there are no ground truth atoms", targetPredicate);
+				continue;
+			}
+
+			comparator.setMetric(ContinuousPredictionComparator.Metric.MAE);
+			double mae = comparator.compare(targetPredicate);
+
+			comparator.setMetric(ContinuousPredictionComparator.Metric.MSE);
+			double mse = comparator.compare(targetPredicate);
+
+			log.info("Continuous evaluation results for {} -- MAE: {}, MSE: {}", targetPredicate.getName(), mae, mse);
+		}
+
+		predictionDatabase.close();
+		truthDatabase.close();
+
+		log.info("Continuous evaluation complete");
+	}
+
+	private void discreteEval(DataStore dataStore, Set<StandardPredicate> closedPredicates, double threshold) {
+		log.info("Starting discrete evaluation");
+
+		// Set of open predicates
+		Set<StandardPredicate> openPredicates = dataStore.getRegisteredPredicates();
+		openPredicates.removeAll(closedPredicates);
+
+		// Create database.
+		Partition targetPartition = dataStore.getPartition(PARTITION_NAME_TARGET);
+		Partition truthPartition = dataStore.getPartition(PARTITION_NAME_LABELS);
+
+		Database predictionDatabase = dataStore.getDatabase(targetPartition, openPredicates);
+		Database truthDatabase = dataStore.getDatabase(truthPartition, openPredicates);
+
+		DiscretePredictionComparator comparator = new DiscretePredictionComparator(predictionDatabase);
+		comparator.setThreshold(threshold);
+		comparator.setBaseline(truthDatabase);
+
+		for (StandardPredicate targetPredicate : openPredicates) {
+			// Before we run evaluation, ensure that the truth database actaully has instances of the target predicate.
+			if (Queries.countAllGroundAtoms(truthDatabase, targetPredicate) == 0) {
+				log.info("Skipping discrete evaluation for {} since there are no ground truth atoms", targetPredicate);
+				continue;
+			}
+
+			DiscretePredictionStatistics stats = comparator.compare(targetPredicate);
+
+			double accuracy = stats.getAccuracy();
+			double error = stats.getError();
+			double positivePrecision = stats.getPrecision(DiscretePredictionStatistics.BinaryClass.POSITIVE);
+			double positiveRecall = stats.getRecall(DiscretePredictionStatistics.BinaryClass.POSITIVE);
+			double negativePrecision = stats.getPrecision(DiscretePredictionStatistics.BinaryClass.NEGATIVE);
+			double negativeRecall = stats.getRecall(DiscretePredictionStatistics.BinaryClass.NEGATIVE);
+
+			log.info("Discrete evaluation results for {} --" +
+					" Accuracy: {}, Error: {}," +
+					" Positive Class Precision: {}, Positive Class Recall: {}," +
+					" Negative Class Precision: {}, Negative Class Recall: {},",
+					targetPredicate.getName(),
+					accuracy, error, positivePrecision, positiveRecall, negativePrecision, negativeRecall);
+		}
+
+		predictionDatabase.close();
+		truthDatabase.close();
+
+		log.info("Discrete evaluation complete");
 	}
 
 	private void run()
@@ -371,6 +464,16 @@ public class Launcher {
 			learnWeights(model, dataStore, closedPredicates);
 		} else {
 			throw new IllegalArgumentException("No valid operation provided.");
+		}
+
+		// Evaluation
+		if (options.hasOption(OPTION_EVAL_CONTINUOUS)) {
+			continuousEval(dataStore, closedPredicates);
+		}
+
+		if (options.hasOption(OPTION_EVAL_DISCRETE)) {
+			String stringThreshold = options.getOptionValue(OPTION_EVAL_DISCRETE, DEFAULT_DISCRETE_THRESHOLD);
+			discreteEval(dataStore, closedPredicates, Double.valueOf(stringThreshold));
 		}
 
 		dataStore.close();
@@ -420,6 +523,21 @@ public class Launcher {
 						" Currently only local databases without credentials are supported.")
 				.hasArg()
 				.argName("name")
+				.optionalArg(true)
+				.build());
+
+		options.addOption(Option.builder(OPTION_EVAL_CONTINUOUS)
+				.longOpt(OPTION_EVAL_CONTINUOUS_LONG)
+				.desc("Run evlaution using continuous comparison on any open predicate with a 'truth' partition.")
+				.build());
+
+		options.addOption(Option.builder(OPTION_EVAL_DISCRETE)
+				.longOpt(OPTION_EVAL_DISCRETE_LONG)
+				.desc("Run evlaution using discrete comparison on any open predicate with a 'truth' partition." +
+						" You can optionally supply 'threshold' (defaults to " + DEFAULT_DISCRETE_THRESHOLD + ")." +
+						" Every truth value over the threshold is considered true.")
+				.hasArg()
+				.argName("threshold")
 				.optionalArg(true)
 				.build());
 
@@ -475,20 +593,45 @@ public class Launcher {
 		HelpFormatter helpFormatter = new HelpFormatter();
 
 		// Hack the option ordering to put argumentions without options first and then required options first.
+		// infer and learn go first, then required, then just normal.
 		helpFormatter.setOptionComparator(new Comparator<Option>() {
 			@Override
 			public int compare(Option o1, Option o2) {
-				if (!o1.hasArg() && o2.hasArg()) {
-					return -1;
-				} else if (o1.hasArg() && !o2.hasArg()) {
-					return 1;
-				} else if (o1.isRequired() && !o2.isRequired()) {
-					return -1;
-				} else if (!o1.isRequired() && o2.isRequired()) {
-					return 1;
-				} else {
-					return o1.toString().compareTo(o2.toString());
+				String name1 = o1.getOpt();
+				if (name1 == null) {
+					name1 = o1.getLongOpt();
 				}
+
+				String name2 = o2.getOpt();
+				if (name2 == null) {
+					name2 = o2.getLongOpt();
+				}
+
+				if (name1.equals(OPERATION_INFER)) {
+					return -1;
+				}
+
+				if (name2.equals(OPERATION_INFER)) {
+					return 1;
+				}
+
+				if (name1.equals(OPERATION_LEARN)) {
+					return -1;
+				}
+
+				if (name2.equals(OPERATION_LEARN)) {
+					return 1;
+				}
+				
+				if (o1.isRequired() && !o2.isRequired()) {
+					return -1;
+				}
+				
+				if (!o1.isRequired() && o2.isRequired()) {
+					return 1;
+				}
+
+				return name1.compareTo(name2);
 			}
 		});
 
@@ -519,6 +662,20 @@ public class Launcher {
 			System.err.println("Command line error: Options '--" + OPTION_DB_H2_PATH + "' and '--" + OPTION_DB_POSTGRESQL_NAME + "' are not compatible.");
 			getHelpFormatter().printHelp("psl", options, true);
 			System.exit(2);
+		}
+
+		if (commandLineOptions.hasOption(OPTION_EVAL_DISCRETE)) {
+			String stringThreshold = commandLineOptions.getOptionValue(OPTION_EVAL_DISCRETE, DEFAULT_DISCRETE_THRESHOLD);
+			try {
+				double threshold = Double.valueOf(stringThreshold);
+				if (threshold < 0 || threshold > 1) {
+					throw new NumberFormatException();
+				}
+			} catch (NumberFormatException ex) {
+				System.err.println("Command line error: The optional argument to '-" + OPTION_EVAL_DISCRETE + "' must be a double in [0, 1].");
+				getHelpFormatter().printHelp("psl", options, true);
+				System.exit(3);
+			}
 		}
 
 		return commandLineOptions;
