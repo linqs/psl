@@ -67,10 +67,14 @@ public abstract class GroundAtom extends Atom {
 		return value;
 	}
 
-	abstract public AtomFunctionVariable getVariable();
+	public String toStringWithValue() {
+		return super.toString() + " = " + getValue();
+	}
+
+	public abstract AtomFunctionVariable getVariable();
 
 	public VariableTypeMap collectVariables(VariableTypeMap varMap) {
-		/* No Variables in GroundAtoms */
+		// No Variables in GroundAtoms.
 		return varMap;
 	}
 
@@ -97,8 +101,10 @@ public abstract class GroundAtom extends Atom {
 	 * @return TRUE if successful; FALSE if kernel was never registered
 	 */
 	public boolean unregisterGroundKernel(GroundRule f) {
-		if (registeredGroundKernels == null)
+		if (registeredGroundKernels == null) {
 			return false;
+		}
+
 		return registeredGroundKernels.remove(f.getRule(), f);
 	}
 
@@ -109,8 +115,10 @@ public abstract class GroundAtom extends Atom {
 	 * @return A set of all registered ground kernels that match f
 	 */
 	public Set<GroundRule> getRegisteredGroundKernels(Rule f) {
-		if (registeredGroundKernels == null)
+		if (registeredGroundKernels == null) {
 			return emptyGroundKernels;
+		}
+
 		return registeredGroundKernels.get(f);
 	}
 
@@ -120,8 +128,10 @@ public abstract class GroundAtom extends Atom {
 	 * @return A collection of all registered ground kernels
 	 */
 	public Collection<GroundRule> getRegisteredGroundKernels() {
-		if (registeredGroundKernels == null)
+		if (registeredGroundKernels == null) {
 			return emptyGroundKernels;
+		}
+
 		return registeredGroundKernels.values();
 	}
 
@@ -131,8 +141,10 @@ public abstract class GroundAtom extends Atom {
 	 * @return The number of registered ground kernels
 	 */
 	public int getNumRegisteredGroundKernels() {
-		if (registeredGroundKernels == null)
+		if (registeredGroundKernels == null) {
 			return 0;
+		}
+
 		return registeredGroundKernels.size();
 	}
 }
