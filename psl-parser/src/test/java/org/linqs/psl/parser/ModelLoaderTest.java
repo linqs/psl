@@ -146,11 +146,20 @@ public class ModelLoaderTest {
 		String input =
 			"1: Single(A) & Double(A, \"bar\") & Single(\"bar\") >> Double(A, \"bar\") ^2\n" +
 			"1: Single(A) & Double(A, 'bar') & Single('bar') >> Double(A, 'bar') ^2\n" +
-			"1: Single(A) & Double(A, 'BAR') & Single('BAR') >> Double(A, 'BAR') ^2\n";
+			"1: Single(A) & Double(A, 'BAR') & Single('BAR') >> Double(A, 'BAR') ^2\n" +
+			"1: Single(A) & Double(A, '1BAR') & Single('1BAR') >> Double(A, '1BAR') ^2\n" +
+			// Note that all constants get quotes, but they will get converted into their native types later.
+			"1: Single(A) & Double(A, '1') & Single('1') >> Double(A, '1') ^2\n" +
+			"1: Single(A) & Double(A, '999') & Single('999') >> Double(A, '999') ^2\n" +
+			"1: Single(A) & Double(A, \"999\") & Single(\"999\") >> Double(A, \"999\") ^2\n";
 		String[] expected = new String[]{
 			"1.0: ( SINGLE(A) & DOUBLE(A, 'bar') & SINGLE('bar') ) >> DOUBLE(A, 'bar') ^2",
 			"1.0: ( SINGLE(A) & DOUBLE(A, 'bar') & SINGLE('bar') ) >> DOUBLE(A, 'bar') ^2",
-			"1.0: ( SINGLE(A) & DOUBLE(A, 'BAR') & SINGLE('BAR') ) >> DOUBLE(A, 'BAR') ^2"
+			"1.0: ( SINGLE(A) & DOUBLE(A, 'BAR') & SINGLE('BAR') ) >> DOUBLE(A, 'BAR') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, '1BAR') & SINGLE('1BAR') ) >> DOUBLE(A, '1BAR') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, '1') & SINGLE('1') ) >> DOUBLE(A, '1') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, '999') & SINGLE('999') ) >> DOUBLE(A, '999') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, '999') & SINGLE('999') ) >> DOUBLE(A, '999') ^2"
 		};
 
 		PSLTest.assertModel(dataStore, input, expected);
@@ -159,9 +168,6 @@ public class ModelLoaderTest {
 	@Test
 	// We are actually testing both numeric constants and coefficients.
 	public void testNumericConstants() {
-		/* TODO(eriq): Awaiting word from Steve/Jay about numeric constants being allowed?
-			"1: Single(A) & Double(A, 1) >> Single(B) ^2\n" +
-		*/
 		String input =
 			"1: 1 Single(A) = 1 ^2\n" +
 			"1: 1.0 Single(A) = 1 ^2\n" +
@@ -833,7 +839,7 @@ public class ModelLoaderTest {
 				fail("Divide by zero did not throw exception.");
 			} catch (RuntimeException ex) {
 				if (!(ex.getCause() instanceof ArithmeticException)) {
-					fail("Divide by zero thre a non-Arithmetic exception.");
+					fail("Divide by zero threw a non-Arithmetic exception: " + ex.getCause() + ".");
 				}
 			}
 		}
