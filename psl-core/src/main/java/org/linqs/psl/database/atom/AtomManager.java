@@ -15,11 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.model.atom;
+package org.linqs.psl.database.atom;
 
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseQuery;
 import org.linqs.psl.database.ResultList;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
@@ -27,47 +28,55 @@ import org.linqs.psl.model.term.Constant;
 /**
  * Provides centralization and hooks for managing the {@link GroundAtom GroundAtoms}
  * that are instantiated from a {@link Database}.
- * <p>
+ *
  * By wrapping {@link Database#getAtom(Predicate, Constant...)},
  * an AtomManager gives additional control over the GroundAtoms that come from
  * that Database.
- * <p>
+ *
  * Additionally, AtomManagers can support other functionality that might require
  * coordination by providing a single component to call to carry out tasks.
- * <p>
+ *
  * An AtomManager should be initialized with the Database for which it is managing
  * Atoms.
  */
-public interface AtomManager {
-	
+public abstract class AtomManager {
+	protected final Database db;
+
+	public AtomManager(Database db) {
+		this.db = db;
+	}
+
 	/**
 	 * Returns the GroundAtom for the given Predicate and GroundTerms.
-	 * <p>
+	 *
 	 * This method must call {@link Database#getAtom(Predicate, Constant...)}
 	 * to actually retrieve the GroundAtom.
-	 * 
-	 * @param p  the Predicate of the Atom
-	 * @param arguments  the GroundTerms of the Atom
+	 *
+	 * @param predicate the Predicate of the Atom
+	 * @param arguments the GroundTerms of the Atom
 	 * @return the Atom
 	 */
-	public GroundAtom getAtom(Predicate p, Constant... arguments);
-	
+	public abstract GroundAtom getAtom(Predicate predicate, Constant... arguments);
+
 	/**
 	 * Calls {@link Database#executeQuery(DatabaseQuery)} on the
 	 * encapsulated Database.
-	 * 
-	 * @param query  the query to execute
+	 *
+	 * @param query the query to execute
 	 * @return the query results exactly as returned by the Database
 	 */
-	public ResultList executeQuery(DatabaseQuery query);
-	
+	public ResultList executeQuery(DatabaseQuery query) {
+		return db.executeQuery(query);
+	}
+
 	/**
 	 * Calls {@link Database#isClosed(StandardPredicate)} on the
 	 * encapsulated Database.
-	 * 
-	 * @param predicate  the predicate to check
+	 *
+	 * @param predicate the predicate to check
 	 * @return TRUE if predicate is closed in the Database
 	 */
-	public boolean isClosed(StandardPredicate predicate);
-	
+	public boolean isClosed(StandardPredicate predicate) {
+		return db.isClosed(predicate);
+	}
 }

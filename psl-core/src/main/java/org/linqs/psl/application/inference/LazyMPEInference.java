@@ -29,8 +29,8 @@ import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.ConfigManager;
 import org.linqs.psl.config.Factory;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.database.atom.LazyAtomManager;
 import org.linqs.psl.model.Model;
-import org.linqs.psl.model.atom.AtomEventFramework;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
@@ -57,7 +57,7 @@ import java.util.List;
  *
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-public class LazyMPEInference extends Observable implements ModelApplication {
+public class LazyMPEInference implements ModelApplication {
 
 	private static final Logger log = LoggerFactory.getLogger(LazyMPEInference.class);
 
@@ -117,7 +117,7 @@ public class LazyMPEInference extends Observable implements ModelApplication {
 	protected GroundRuleStore groundRuleStore;
 	protected TermStore termStore;
 	protected TermGenerator termGenerator;
-	protected AtomEventFramework eventFramework;
+   protected LazyAtomManager lazyAtomManager;
 
 	// Stop flag to quit the loop.
 	protected boolean toStop = false;
@@ -142,21 +142,11 @@ public class LazyMPEInference extends Observable implements ModelApplication {
 			throw new RuntimeException("Failed to prepare storage for inference.", ex);
 		}
 
-		eventFramework = new AtomEventFramework(db, config);
-
-		// Registers the Model's Rules with the AtomEventFramework.
-		log.debug("Registering rules for atom events.");
-		for (Rule rule : model.getRules()) {
-			rule.registerForAtomEvents(eventFramework, groundRuleStore);
-		}
+		// TEST(eriq)
+      lazyAtomManager = new LazyAtomManager(db);
 
 		log.debug("Initial grounding.");
-		Grounding.groundAll(model, eventFramework, groundRuleStore);
-
-		log.debug("Working off initial event queue.");
-		while (eventFramework.checkToActivate() > 0) {
-			eventFramework.workOffJobQueue();
-		}
+		Grounding.groundAll(model, lazyAtomManager, groundRuleStore);
 	}
 
 	/**
@@ -206,15 +196,16 @@ public class LazyMPEInference extends Observable implements ModelApplication {
 			System.out.println("vvvvv");
 
 			// Only activates if there is another round.
+         /* TEST(eriq)
 			if (rounds < maxRounds) {
 				numActivated = eventFramework.checkToActivate();
 				eventFramework.workOffJobQueue();
 			}
 			log.debug("Completed round {} and activated {} atoms.", rounds, numActivated);
+         */
 
-			// notify registered observers
-			setChanged();
-			notifyObservers(new IntermediateState(rounds, numActivated, maxRounds));
+         // TEST(eriq)
+         break;
 		} while (numActivated > 0 && rounds < maxRounds && !toStop);
 
 		// TODO: Check for consideration events when deciding to terminate?
@@ -243,11 +234,6 @@ public class LazyMPEInference extends Observable implements ModelApplication {
 
 	@Override
 	public void close() {
-		// Unregisters the Model's Rules with the AtomEventFramework.
-		for (Rule rule : model.getRules()) {
-			rule.unregisterForAtomEvents(eventFramework, groundRuleStore);
-		}
-
 		termStore.close();
 		groundRuleStore.close();
 		reasoner.close();
@@ -263,22 +249,5 @@ public class LazyMPEInference extends Observable implements ModelApplication {
 
 	public GroundRuleStore getGroundRuleStore() {
 		return groundRuleStore;
-	}
-
-	/**
-	 * Intermediate state object to
-	 * notify the registered observers.
-	 *
-	 */
-	public class IntermediateState {
-		public final int rounds;
-		public final int numActivated;
-		public final int maxRounds;
-
-		public IntermediateState(int currRounds, int currNumActivated, int confMaxRounds) {
-			this.rounds = currRounds;
-			this.numActivated = currNumActivated;
-			this.maxRounds = confMaxRounds;
-		}
 	}
 }

@@ -20,10 +20,7 @@ package org.linqs.psl.model.formula;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseQuery;
 import org.linqs.psl.model.atom.Atom;
-import org.linqs.psl.model.atom.AtomEvent;
-import org.linqs.psl.model.atom.AtomEventFramework;
 import org.linqs.psl.model.atom.VariableAssignment;
-import org.linqs.psl.model.atom.AtomEvent.Type;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
@@ -45,13 +42,6 @@ import java.util.Set;
 /**
  * Converts a {@link Formula} to a simplified Disjunctive Normal Form view
  * and makes the clauses available.
- *
- * Each clause reports properties and helps {@link Rule Rules} with registering
- * for the appropriate {@link AtomEvent AtomEvents} and running the appropriate
- * {@link DatabaseQuery DatabaseQueries} to identify true groundings.
- *
- * @author Matthias Broecheler
- * @author Stephen Bach <bach@cs.umd.edu>
  */
 public class FormulaAnalysis {
 	protected final Formula f;
@@ -254,53 +244,11 @@ public class FormulaAnalysis {
 		}
 
 		public Formula getQueryFormula() {
-			if (query != null)
+			if (query != null) {
 				return query;
-			else
-				throw new IllegalStateException("Clause is not queriable.");
-		}
-
-		public List<VariableAssignment> traceAtomEvent(Atom atom) {
-			Collection<Atom> atoms = dependence.get(atom.getPredicate());
-			List<VariableAssignment> vars = new ArrayList<VariableAssignment>(atoms.size());
-			for (Atom entry : atoms) {
-				//Check whether arguments match
-				VariableAssignment var = new VariableAssignment();
-				Term[] argsGround = atom.getArguments();
-				Term[] argsTemplate = entry.getArguments();
-				assert argsGround.length==argsTemplate.length;
-				for (int i=0;i<argsGround.length;i++) {
-					if (argsTemplate[i] instanceof Variable) {
-						//Add mapping
-						assert argsGround[i] instanceof Constant;
-						var.assign((Variable)argsTemplate[i], (Constant)argsGround[i]);
-					} else {
-						//They must be the same
-						if (!argsTemplate[i].equals(argsGround[i])) {
-							var = null;
-							break;
-						}
-					}
-				}
-				if (var!=null) vars.add(var);
 			}
-			return vars;
-		}
 
-		public void registerClauseForEvents(AtomEventFramework eventFramework, Set<Type> eventTypes, Rule k) {
-			for (Predicate p : dependence.keySet()) {
-				if (!eventFramework.isClosed((StandardPredicate) p)) {
-					eventFramework.registerAtomEventListener(eventTypes, (StandardPredicate) p, k);
-				}
-			}
-		}
-
-		public void unregisterClauseForEvents(AtomEventFramework eventFramework, Set<Type> eventTypes, Rule k) {
-			for (Predicate p : dependence.keySet()) {
-				if (!eventFramework.isClosed((StandardPredicate) p)) {
-					eventFramework.unregisterAtomEventListener(eventTypes, (StandardPredicate) p, k);
-				}
-			}
+			throw new IllegalStateException("Clause is not queriable.");
 		}
 
 		public String toString() {

@@ -24,7 +24,6 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Queries;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.Atom;
-import org.linqs.psl.model.atom.AtomEventFramework;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
@@ -62,9 +61,10 @@ import java.util.Set;
  */
 public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 
-	private static final Logger log = LoggerFactory.getLogger(AtomEventFramework.class);
+	private static final Logger log = LoggerFactory.getLogger(LazyMaxLikelihoodMPE.class);
 
-	protected AtomEventFramework eventFramework;
+	// TEST(eriq)
+	// protected AtomEventFramework eventFramework;
 
 	/**
 	 * Constructs a new weight learner.
@@ -81,6 +81,38 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 	@Override
 	protected void initGroundModel()
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
+		// TODO(eriq)
+	}
+
+	@Override
+	protected double[] computeObservedIncomp() {
+		// TODO(eriq)
+		return null;
+	}
+
+	@Override
+	protected double[] computeExpectedIncomp() {
+		// TODO(eriq)
+		return null;
+	}
+
+	@Override
+	protected double[] computeScalingFactor() {
+		// TODO(eriq)
+		return null;
+	}
+
+	@Override
+	protected void cleanUpGroundModel() {
+		// TODO(eriq)
+	}
+
+
+
+	/*
+	@Override
+	protected void initGroundModel()
+			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		reasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
 		termStore = (TermStore)config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
 		groundRuleStore = (GroundRuleStore)config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
@@ -93,7 +125,7 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 			rule.registerForAtomEvents(eventFramework, groundRuleStore);
 		}
 
-		/* Grounds the model */
+		// Grounds the model
 		Grounding.groundAll(model, eventFramework, groundRuleStore);
 		while (eventFramework.checkToActivate() > 0) {
 			eventFramework.workOffJobQueue();
@@ -103,27 +135,21 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 	@Override
 	protected double[] computeObservedIncomp() {
 
-		/*
-		 * In order to ground out the graphical model with the label truth values,
-		 * all labeled atoms with non-zero truth values are activated and constrained.
-		 *
-		 * Then, a loop is used to extend the network based on MPE inference and
-		 * activation events, and then check for new labeled RandomVariableAtoms
-		 * to constrain as necessary.
-		 */
-
+		// In order to ground out the graphical model with the label truth values,
+		// all labeled atoms with non-zero truth values are activated and constrained.
+		// Then, a loop is used to extend the network based on MPE inference and
+		// activation events, and then check for new labeled RandomVariableAtoms
+		// to constrain as necessary.
 		Map<RandomVariableAtom, GroundValueConstraint> targetMap = new HashMap<RandomVariableAtom, GroundValueConstraint>();
 
 		// Activates all non-zero labeled atoms.
 		for (StandardPredicate p : observedDB.getRegisteredPredicates()) {
 			for (GroundAtom labeledAtom : Queries.getAllAtoms(observedDB, p)) {
-				/*
-				 * Double checks that it is observed in observedDB and unobserved in rvDB,
-				 * since those are the only atoms in observedDB to be considered. Also,
-				 * checks if the labeled truth value is greater than 0.0, since activation
-				 * would be unnecessary until the corresponding atom in rvDB had a non-zero
-				 * truth value. If all three conditions are met, activates and constrains the atom.
-				 */
+				// Double checks that it is observed in observedDB and unobserved in rvDB,
+				// since those are the only atoms in observedDB to be considered. Also,
+				// checks if the labeled truth value is greater than 0.0, since activation
+				// would be unnecessary until the corresponding atom in rvDB had a non-zero
+				// truth value. If all three conditions are met, activates and constrains the atom.
 				if (labeledAtom instanceof ObservedAtom && labeledAtom.getValue() > 0.0) {
 					GroundAtom correspondingAtom = eventFramework.getAtom(labeledAtom.getPredicate(), labeledAtom.getArguments());
 					if (correspondingAtom instanceof RandomVariableAtom) {
@@ -256,4 +282,5 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 
 		super.cleanUpGroundModel();
 	}
+	*/
 }

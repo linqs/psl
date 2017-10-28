@@ -39,7 +39,6 @@ import com.google.common.collect.Iterables;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Observable;
 
 /**
  * Abstract class for learning the weights of
@@ -48,7 +47,7 @@ import java.util.Observable;
  *
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-public abstract class WeightLearningApplication extends Observable implements ModelApplication {
+public abstract class WeightLearningApplication implements ModelApplication {
 
 	/**
 	 * Prefix of property keys used by this class.

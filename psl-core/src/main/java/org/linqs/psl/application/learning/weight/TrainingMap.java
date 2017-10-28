@@ -26,7 +26,7 @@ import java.util.Set;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseQuery;
 import org.linqs.psl.database.ResultList;
-import org.linqs.psl.model.atom.AtomManager;
+import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.QueryAtom;
@@ -41,69 +41,64 @@ import org.linqs.psl.model.term.Variable;
  * A TrainingMap matches {@link RandomVariableAtom RandomVariableAtoms} in one database
  * to their respective {@link ObservedAtom} in a second database. Any RandomVariableAtoms
  * that do not have a matching ObservedAtom are kept in the set of latent variables.
- * <p>
+ *
  * Also acts as an {@link AtomManager} for the first Database. Attempting to
  * retrieve any RandomVariableAtom outside those persisted in the first Database
  * will throw an exception. All other Atoms are returned from the first Database
  * normally.
- * 
+ *
  * @author Eric Norris
  */
-public class TrainingMap implements AtomManager {
-	
-	/**
-	 * The source of the RandomVariableAtoms for constructing the training map,
-	 * and the source of all Atoms for the AtomManager functionality.
-	 */
-	protected final Database rvDB;
-	
+public class TrainingMap extends AtomManager {
 	/**
 	 * The mapping between an atom and its observed truth value.
 	 */
 	protected final Map<RandomVariableAtom, ObservedAtom> trainingMap;
-	
+
 	/**
 	 * The set of atoms that have no backing of an observed truth value.
 	 */
 	protected final Set<RandomVariableAtom> latentVariables;
-	
+
 	/**
 	 * Initializes the training map of {@link RandomVariableAtom RandomVariableAtoms}
 	 * to {@link ObservedAtom ObservedAtoms}. Any RandomVariableAtom that does not have
 	 * a matching ObservedAtom in the second Database are stored in the set of latent
 	 * variables.
-	 * 
+	 *
 	 * @param rvDB			The database containing the RandomVariableAtoms (any other atom types are ignored)
 	 * @param observedDB	The database containing matching ObservedAtoms
 	 */
 	public TrainingMap(Database rvDB, Database observedDB) {
-		this.rvDB = rvDB;
+      // We will pass the random variable database to super.
+      super(rvDB);
+
 		// Initialize private variables
 		this.trainingMap = new HashMap<RandomVariableAtom, ObservedAtom>();
 		this.latentVariables = new HashSet<RandomVariableAtom>();
-		
+
 		// Iterate through all of the registered predicates in the RandomVariableAtom database
 		for (StandardPredicate predicate : rvDB.getRegisteredPredicates()) {
 			// Ignore any closed predicates, they will not return RandomVariableAtoms
 			if (rvDB.isClosed(predicate))
 				continue;
-			
+
 			// Construct the query for this predicate
 			Variable vars[] = new Variable[predicate.getArity()];
 			for (int i = 0; i < vars.length; i++)
 				vars[i] = new Variable("V" + String.valueOf(i));
 			Formula queryFormula = new QueryAtom(predicate, vars);
-			
+
 			// Execute the query and interpret the results
 			ResultList list = rvDB.executeQuery(new DatabaseQuery(queryFormula));
 			for (int i = 0; i < list.size(); i ++) {
 				// Query the database for this specific atom
 				GroundAtom atom = rvDB.getAtom(predicate, list.get(i));
-				
+
 				if (atom instanceof RandomVariableAtom) {
 					// Now query the other database for this atom's truth value
 					GroundAtom otherAtom = observedDB.getAtom(predicate, list.get(i));
-					
+
 					if (otherAtom instanceof ObservedAtom)
 						trainingMap.put((RandomVariableAtom)atom, (ObservedAtom)otherAtom);
 					else
@@ -112,19 +107,19 @@ public class TrainingMap implements AtomManager {
 			}
 		}
 	}
-	
+
 	/**
 	 * Gets the map created by the constructor.
-	 * 
+	 *
 	 * @return the training map.
 	 */
 	public Map<RandomVariableAtom, ObservedAtom> getTrainingMap() {
 		return Collections.unmodifiableMap(trainingMap);
 	}
-	
+
 	/**
 	 * Gets the set of latent variables created by the constructor.
-	 * 
+	 *
 	 * @return the set of latent variables.
 	 */
 	public Set<RandomVariableAtom> getLatentVariables() {
@@ -132,8 +127,8 @@ public class TrainingMap implements AtomManager {
 	}
 
 	@Override
-	public GroundAtom getAtom(Predicate p, Constant... arguments) {
-		GroundAtom atom = rvDB.getAtom(p, arguments);
+	public GroundAtom getAtom(Predicate predicate, Constant... arguments) {
+		GroundAtom atom = db.getAtom(predicate, arguments);
 		if (atom instanceof RandomVariableAtom) {
 			// Check if this is in our set of persisted RandomVariableAtoms
 			if (trainingMap.containsKey(atom) || latentVariables.contains(atom))
@@ -143,15 +138,4 @@ public class TrainingMap implements AtomManager {
 		} else
 			return atom;
 	}
-
-	@Override
-	public ResultList executeQuery(DatabaseQuery query) {
-		return rvDB.executeQuery(query);
-	}
-	
-	@Override
-	public boolean isClosed(StandardPredicate predicate) {
-		return rvDB.isClosed(predicate);
-	}
-
 }

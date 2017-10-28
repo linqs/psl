@@ -21,8 +21,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.linqs.psl.database.ResultList;
+import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.model.atom.Atom;
-import org.linqs.psl.model.atom.AtomManager;
 import org.linqs.psl.model.atom.VariableAssignment;
 import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Disjunction;

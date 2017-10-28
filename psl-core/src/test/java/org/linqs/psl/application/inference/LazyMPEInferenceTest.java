@@ -12,7 +12,6 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.Queries;
 import org.linqs.psl.model.Model;
-import org.linqs.psl.model.atom.AtomEventFramework;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Implication;

@@ -15,38 +15,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.model.atom;
-
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+package org.linqs.psl.database.atom;
 
 import org.linqs.psl.database.Database;
-import org.linqs.psl.database.DatabaseQuery;
-import org.linqs.psl.database.ResultList;
+import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Variable;
 
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 /**
  * Implements the {@link AtomManager} with a twist: this AtomManager will only return
  * {@link RandomVariableAtom RandomVariableAtoms} that were persisted in the Database
  * at instantiation.
- * <p>
- * All other types of Atoms are returned normally.
  *
- * @author Eric Norris <enorris@cs.umd.edu>
+ * All other types of Atoms are returned normally.
  */
-public class PersistedAtomManager implements AtomManager {
-
-	/**
-	 * This AtomManager's connection to a database.
-	 */
-	protected final Database db;
-
+public class PersistedAtomManager extends AtomManager {
 	/**
 	 * The set of all persisted RandomVariableAtoms at the time of this AtomManager's
 	 * instantiation.
@@ -60,13 +52,13 @@ public class PersistedAtomManager implements AtomManager {
 	 * @param db  the Database to query for all getAtom() calls.
 	 */
 	public PersistedAtomManager(Database db) {
-		this.db = db;
+		super(db);
 		this.persistedCache = new HashSet<RandomVariableAtom>();
 
 		buildPersistedAtomCache();
 	}
 
-	protected void buildPersistedAtomCache() {
+	private void buildPersistedAtomCache() {
 		// Iterate through all of the registered predicates in this database
 		for (StandardPredicate predicate : db.getRegisteredPredicates()) {
 			// Ignore any closed predicates, they will not return RandomVariableAtoms
@@ -74,39 +66,39 @@ public class PersistedAtomManager implements AtomManager {
 				continue;
 			}
 
-			List<RandomVariableAtom> atoms = db.getAllGroundRandomVariableAtoms(predicate);
-			for (RandomVariableAtom atom : atoms) {
+			for (RandomVariableAtom atom : db.getAllGroundRandomVariableAtoms(predicate)) {
 				persistedCache.add(atom);
 			}
 		}
 	}
 
 	@Override
-	public GroundAtom getAtom(Predicate p, Constant... arguments) {
-		GroundAtom atom = db.getAtom(p, arguments);
+	public GroundAtom getAtom(Predicate predicate, Constant... arguments) {
+		GroundAtom atom = db.getAtom(predicate, arguments);
 		if (!(atom instanceof RandomVariableAtom)) {
 			return atom;
 		}
+		RandomVariableAtom rvAtom = (RandomVariableAtom)atom;
 
 		// Check if this is in our persisted atom cache
-		if (persistedCache.contains(atom)) {
+		if (persistedCache.contains(rvAtom)) {
 			return atom;
 		}
 
-		throw new IllegalArgumentException("Can only call getAtom() on persisted RandomVariableAtoms using a PersistedAtomManager. Cannot access " + atom);
-	}
-
-	@Override
-	public ResultList executeQuery(DatabaseQuery query) {
-		return db.executeQuery(query);
-	}
-
-	@Override
-	public boolean isClosed(StandardPredicate predicate) {
-		return db.isClosed(predicate);
+		throw new PersistedAccessException(rvAtom);
 	}
 
 	public Set<RandomVariableAtom> getPersistedRVAtoms() {
 		return Collections.unmodifiableSet(persistedCache);
+	}
+
+	public static class PersistedAccessException extends IllegalArgumentException {
+		public RandomVariableAtom atom;
+		public PersistedAccessException(RandomVariableAtom atom) {
+			super("Can only call getAtom() on persisted RandomVariableAtoms" +
+					" using a PersistedAtomManager." +
+					" Cannot access " + atom);
+			this.atom = atom;
+		}
 	}
 }

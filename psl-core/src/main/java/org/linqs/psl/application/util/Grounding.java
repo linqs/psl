@@ -18,8 +18,8 @@
 package org.linqs.psl.application.util;
 
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
+import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.model.Model;
-import org.linqs.psl.model.atom.AtomManager;
 import org.linqs.psl.model.rule.Rule;
 
 /**
@@ -61,5 +61,4 @@ public class Grounding {
 			}
 		}
 	}
-
 }

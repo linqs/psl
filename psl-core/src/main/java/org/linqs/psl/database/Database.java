@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Set;
 
 import org.linqs.psl.model.atom.AtomCache;
-import org.linqs.psl.model.atom.AtomManager;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
@@ -32,7 +31,7 @@ import org.linqs.psl.model.term.Variable;
 
 /**
  * A data model for retrieving and persisting {@link GroundAtom GroundAtoms}.
- * <p>
+ *
  * Every GroundAtom retrieved from a Database is either a {@link RandomVariableAtom}
  * or an {@link ObservedAtom}. The method {@link #getAtom(Predicate, Constant...)}
  * determines which type a GroundAtom is. In addition, a GroundAtom with a
@@ -43,11 +42,11 @@ import org.linqs.psl.model.term.Variable;
  * <h2>Setup</h2>
  *
  * Databases are instantiated via {@link DataStore#getDatabase} methods.
- * <p>
+ *
  * A Database writes to and reads from one {@link Partition} of a DataStore
  * and can read from additional Partitions. The write Partition of a Database
  * may not be a read (or write) Partition of any other Database managed by the datastore.
- * <p>
+ * 
  * A Database can be instantiated with a set of StandardPredicates
  * to close. (Any StandardPredicate not closed initially remains open.) Whether
  * a StandardPredicate is open or closed affects the behavior of
@@ -58,9 +57,7 @@ import org.linqs.psl.model.term.Variable;
  * A Database is the canonical source for a set of GroundAtoms.
  * GroundAtoms should only be retrieved via {@link #getAtom(Predicate, Constant...)}
  * to ensure there exists only a single object for each GroundAtom from the Database.
- * (However, a Database might be wrapped in an {@link AtomManager}, which will pass
- * through calls to {@link AtomManager#getAtom(Predicate, Constant...)}.)
- * <p>
+ *
  * A Database contains an {@link AtomCache} which is used to store GroundAtoms
  * that have been instantiated in memory and ensure these objects are unique.
  * The AtomCache is accessible via {@link #getAtomCache()}.

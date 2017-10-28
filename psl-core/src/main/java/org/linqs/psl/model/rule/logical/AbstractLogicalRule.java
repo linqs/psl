@@ -20,11 +20,9 @@ package org.linqs.psl.model.rule.logical;
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 import org.linqs.psl.database.DatabaseQuery;
 import org.linqs.psl.database.ResultList;
+import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.model.NumericUtilities;
 import org.linqs.psl.model.atom.Atom;
-import org.linqs.psl.model.atom.AtomEvent;
-import org.linqs.psl.model.atom.AtomEventFramework;
-import org.linqs.psl.model.atom.AtomManager;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.atom.VariableAssignment;
@@ -176,35 +174,6 @@ abstract public class AbstractLogicalRule extends AbstractRule {
 	}
 
 	abstract protected AbstractGroundLogicalRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals);
-
-	@Override
-	public void notifyAtomEvent(AtomEvent event, GroundRuleStore grs) {
-		List<VariableAssignment> vars = clause.traceAtomEvent(event.getAtom());
-		if (!vars.isEmpty()) {
-			// TEST
-			System.out.println("ALR - Notify");
-
-			for (VariableAssignment var : vars) {
-				// TEST
-				System.out.println("   ALR - Assignment: " + var);
-
-				DatabaseQuery dbQuery = new DatabaseQuery(clause.getQueryFormula());
-				dbQuery.getPartialGrounding().putAll(var);
-				ResultList res = event.getEventFramework().executeQuery(dbQuery);
-				groundFormula(event.getEventFramework(), grs, res, var);
-			}
-		}
-	}
-
-	@Override
-	public void registerForAtomEvents(AtomEventFramework manager) {
-		clause.registerClauseForEvents(manager, AtomEvent.ActivatedEventTypeSet, this);
-	}
-
-	@Override
-	public void unregisterForAtomEvents(AtomEventFramework manager) {
-		clause.unregisterClauseForEvents(manager, AtomEvent.ActivatedEventTypeSet, this);
-	}
 
 	@Override
 	public Rule clone() throws CloneNotSupportedException {

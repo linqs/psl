@@ -284,9 +284,6 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 			
 			changedRuleWeights = true;
 
-			// notify the registered observers
-			setChanged();
-			notifyObservers(new IntermediateState(step, numSteps));
 			// if stop() has been called, exit the loop early
 			if (toStop) {
 				break;

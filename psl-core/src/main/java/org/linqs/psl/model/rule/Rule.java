@@ -18,10 +18,8 @@
 package org.linqs.psl.model.rule;
 
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
+import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.model.NumericUtilities;
-import org.linqs.psl.model.atom.AtomEvent;
-import org.linqs.psl.model.atom.AtomEventFramework;
-import org.linqs.psl.model.atom.AtomManager;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
@@ -38,7 +36,7 @@ import org.linqs.psl.model.atom.RandomVariableAtom;
  * @author Eric Norris <enorris@cs.umd.edu>
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-public interface Rule extends AtomEvent.Listener, Cloneable {
+public interface Rule extends Cloneable {
 
 	/**
 	 * Adds all missing, potentially unsatisfied {@link GroundRule GroundRules}
@@ -70,33 +68,5 @@ public interface Rule extends AtomEvent.Listener, Cloneable {
 	 */
 	public void groundAll(AtomManager atomManager, GroundRuleStore grs);
 	
-	/**
-	 * Registers this Rule to listen for the {@link AtomEvent AtomEvents}
-	 * it needs to update a {@link GroundRuleStore}.
-	 * <p>
-	 * Specifically, this Rule will register for AtomEvents and update the
-	 * GroundRuleStore in response to AtomEvents. In response to an AtomEvent
-	 * on a {@link RandomVariableAtom}, the GroundRuleStore must contain the
-	 * GroundRules that are functions of it which would have been added via
-	 * {@link #groundAll(AtomManager, GroundRuleStore)} given the current state of
-	 * the AtomEventFramework's Database and assuming that the RandomVariableAtom
-	 * was also persisted in the Database.
-	 * 
-	 * @param eventFramework  AtomEventFramework to register with
-	 * @param grs             GroundRuleStore to update in response to AtomEvents
-	 */
-	public void registerForAtomEvents(AtomEventFramework eventFramework, GroundRuleStore grs);
-	
-	/**
-	 * Stops updating a {@link GroundRuleStore} in response to AtomEvents from
-	 * an {@link AtomEventFramework} and unregisters with that AtomEventFramework
-	 * if it no longer needs to listen for AtomEvents from it.
-	 * 
-	 * @param eventFramework  AtomEventFramework to unregister with
-	 * @param grs             GroundRuleStore to stop updating
-	 */
-	public void unregisterForAtomEvents(AtomEventFramework eventFramework, GroundRuleStore grs);
-	
 	public Rule clone() throws CloneNotSupportedException;
-	
 }

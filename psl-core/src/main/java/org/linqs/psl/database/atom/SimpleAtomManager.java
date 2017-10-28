@@ -15,11 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.model.atom;
+package org.linqs.psl.database.atom;
 
 import org.linqs.psl.database.Database;
-import org.linqs.psl.database.DatabaseQuery;
-import org.linqs.psl.database.ResultList;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
@@ -28,30 +27,13 @@ import org.linqs.psl.model.term.Constant;
  * AtomManager that does not provide any functionality beyond passing calls
  * to underlying components.
  */
-public class SimpleAtomManager implements AtomManager {
-	
-	protected final Database db;
-	
+public class SimpleAtomManager extends AtomManager {
 	public SimpleAtomManager(Database db) {
-		this.db = db;
-	}
-
-	/**
-	 * Calls {@link Database#getAtom(Predicate, Constant...)}.
-	 */
-	@Override
-	public GroundAtom getAtom(Predicate p, Constant... arguments) {
-		return db.getAtom(p, arguments);
+		super(db);
 	}
 
 	@Override
-	public ResultList executeQuery(DatabaseQuery query) {
-		return db.executeQuery(query);
+	public GroundAtom getAtom(Predicate predicate, Constant... arguments) {
+		return db.getAtom(predicate, arguments);
 	}
-	
-	@Override
-	public boolean isClosed(StandardPredicate predicate) {
-		return db.isClosed(predicate);
-	}
-	
 }

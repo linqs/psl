@@ -20,10 +20,8 @@ package org.linqs.psl.model.rule.arithmetic;
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 import org.linqs.psl.database.DatabaseQuery;
 import org.linqs.psl.database.ResultList;
+import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.model.atom.Atom;
-import org.linqs.psl.model.atom.AtomEvent;
-import org.linqs.psl.model.atom.AtomEventFramework;
-import org.linqs.psl.model.atom.AtomManager;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Disjunction;
@@ -692,20 +690,4 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 
 	protected abstract AbstractGroundArithmeticRule makeGroundRule(double[] coeffs,
 			GroundAtom[] atoms, FunctionComparator comparator, double c);
-
-	@Override
-	protected void notifyAtomEvent(AtomEvent event, GroundRuleStore grs) {
-		throw new UnsupportedOperationException("Arithmetic rules do not support atom events.");
-	}
-
-	@Override
-	protected void registerForAtomEvents(AtomEventFramework eventFramework) {
-		throw new UnsupportedOperationException("Arithmetic rules do not support atom events.");
-	}
-
-	@Override
-	protected void unregisterForAtomEvents(AtomEventFramework eventFramework) {
-		throw new UnsupportedOperationException("Arithmetic rules do not support atom events.");
-	}
-
 }
