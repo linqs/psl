@@ -99,6 +99,8 @@ public class Launcher {
 	public static final String OPTION_EVAL_CONTINUOUS_LONG = "eval-continuous";
 	public static final String OPTION_EVAL_DISCRETE = "ed";
 	public static final String OPTION_EVAL_DISCRETE_LONG = "eval-discrete";
+	public static final String OPTION_INT_IDS = "int";
+	public static final String OPTION_INT_IDS_LONG = "int-ids";
 	public static final String OPTION_LOG4J = "4j";
 	public static final String OPTION_LOG4J_LONG = "log4j";
 	public static final String OPTION_MODEL = "m";
@@ -243,7 +245,7 @@ public class Launcher {
 		Set<StandardPredicate> closedPredicates;
 		try {
 			File dataFile = new File(options.getOptionValue(OPTION_DATA));
-			DataLoaderOutput dataLoaderOutput = DataLoader.load(dataStore, new FileInputStream(dataFile));
+			DataLoaderOutput dataLoaderOutput = DataLoader.load(dataStore, new FileInputStream(dataFile), options.hasOption(OPTION_INT_IDS));
 			closedPredicates = dataLoaderOutput.getClosedPredicates();
 		} catch (FileNotFoundException ex) {
 			throw new RuntimeException("Failed to load data.", ex);
@@ -544,6 +546,11 @@ public class Launcher {
 		options.addOption(Option.builder(OPTION_HELP)
 				.longOpt(OPTION_HELP_LONG)
 				.desc("Print this help message and exit")
+				.build());
+
+		options.addOption(Option.builder(OPTION_INT_IDS)
+				.longOpt(OPTION_INT_IDS_LONG)
+				.desc("Use integer identifiers (UniqueIntID) instead of string identifiers (UniqueStringID).")
 				.build());
 
 		options.addOption(Option.builder(OPTION_LOG4J)

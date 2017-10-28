@@ -40,7 +40,7 @@ import org.yaml.snakeyaml.Yaml;
 public class DataLoader {
 	private static final Logger log = LoggerFactory.getLogger(DataLoader.class);
 
-	private static Set<StandardPredicate> definePredicates(DataStore datastore, Map yamlMap) {
+	private static Set<StandardPredicate> definePredicates(DataStore datastore, Map yamlMap, boolean useIntIds) {
 		if (!yamlMap.containsKey("predicates")) {
 			throw new IllegalArgumentException("No 'predicates' block defined in data specification");
 		}
@@ -62,7 +62,11 @@ public class DataLoader {
 			// create a predicate and add it to the datastore
 			ConstantType[] args = new ConstantType[arity];
 			for (int i = 0; i < arity; i++) {
-				args[i] = ConstantType.UniqueStringID;
+				if (useIntIds) {
+					args[i] = ConstantType.UniqueIntID;
+				} else {
+					args[i] = ConstantType.UniqueStringID;
+				}
 			}
 			StandardPredicate predicate = pf.createStandardPredicate(predicateStr, args);
 			datastore.registerPredicate(predicate);
@@ -123,10 +127,10 @@ public class DataLoader {
 	 * @return DataLoaderOutput with data loading results, including closed predicates
 	 * @throws Exception
 	 */
-	public static DataLoaderOutput load(DataStore datastore, InputStream inputStream) {
+	public static DataLoaderOutput load(DataStore datastore, InputStream inputStream, boolean useIntIds) {
 		Yaml yaml = new Yaml();
 		Map yamlParse = (Map)yaml.load(inputStream);
-		Set<StandardPredicate> closedPredicates = definePredicates(datastore, yamlParse);
+		Set<StandardPredicate> closedPredicates = definePredicates(datastore, yamlParse, useIntIds);
 		loadDataFiles(datastore, yamlParse);
 
 		return new DataLoaderOutput(closedPredicates);
