@@ -23,10 +23,13 @@ import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 
+import org.apache.log4j.PropertyConfigurator;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Properties;
 
 /**
  * Utilities for testing PSL.
@@ -151,5 +154,22 @@ public class PSLTest {
 		char[] chars = string.toCharArray();
 		Arrays.sort(chars);
 		return new String(chars);
+	}
+
+	// Init a defualt logger with the given level.
+	public static void initLogger(String logLevel) {
+		Properties props = new Properties();
+
+		props.setProperty("log4j.rootLogger", String.format("%s, A1", logLevel));
+		props.setProperty("log4j.appender.A1", "org.apache.log4j.ConsoleAppender");
+		props.setProperty("log4j.appender.A1.layout", "org.apache.log4j.PatternLayout");
+		props.setProperty("log4j.appender.A1.layout.ConversionPattern", "%-4r [%t] %-5p %c %x - %m%n");
+
+		PropertyConfigurator.configure(props);
+	}
+
+	// Init with the default logging level: DEBUG.
+	public static void initLogger() {
+		initLogger("DEBUG");
 	}
 }

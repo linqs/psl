@@ -40,8 +40,12 @@ import org.linqs.psl.reasoner.ReasonerFactory;
 import org.linqs.psl.reasoner.admm.ADMMReasonerFactory;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Infers the most-probable explanation (MPE) state of the
@@ -109,7 +113,13 @@ public class LazyMPEInference extends Observable implements ModelApplication {
 	protected ConfigBundle config;
 	protected final int maxRounds;
 
-	/** stop flag to quit the loop. */
+	protected Reasoner reasoner;
+	protected GroundRuleStore groundRuleStore;
+	protected TermStore termStore;
+	protected TermGenerator termGenerator;
+	protected AtomEventFramework eventFramework;
+
+	// Stop flag to quit the loop.
 	protected boolean toStop = false;
 
 	public LazyMPEInference(Model model, Database db, ConfigBundle config) {
@@ -117,6 +127,36 @@ public class LazyMPEInference extends Observable implements ModelApplication {
 		this.db = db;
 		this.config = config;
 		maxRounds = config.getInt(MAX_ROUNDS_KEY, MAX_ROUNDS_DEFAULT);
+
+		initialize();
+	}
+
+	private void initialize() {
+		try {
+			reasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
+			termStore = (TermStore)config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
+			groundRuleStore = (GroundRuleStore)config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
+			termGenerator = (TermGenerator)config.getNewObject(TERM_GENERATOR_KEY, TERM_GENERATOR_DEFAULT);
+		} catch (Exception ex) {
+			// The caller couldn't handle these exception anyways, convert them to runtime ones.
+			throw new RuntimeException("Failed to prepare storage for inference.", ex);
+		}
+
+		eventFramework = new AtomEventFramework(db, config);
+
+		// Registers the Model's Rules with the AtomEventFramework.
+		log.debug("Registering rules for atom events.");
+		for (Rule rule : model.getRules()) {
+			rule.registerForAtomEvents(eventFramework, groundRuleStore);
+		}
+
+		log.debug("Initial grounding.");
+		Grounding.groundAll(model, eventFramework, groundRuleStore);
+
+		log.debug("Working off initial event queue.");
+		while (eventFramework.checkToActivate() > 0) {
+			eventFramework.workOffJobQueue();
+		}
 	}
 
 	/**
@@ -130,41 +170,33 @@ public class LazyMPEInference extends Observable implements ModelApplication {
 	 *
 	 * @return inference results
 	 */
-	public FullInferenceResult mpeInference()
-			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-
-		Reasoner reasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
-		TermStore termStore = (TermStore)config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
-		GroundRuleStore groundRuleStore = (GroundRuleStore)config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
-		TermGenerator termGenerator = (TermGenerator)config.getNewObject(TERM_GENERATOR_KEY, TERM_GENERATOR_DEFAULT);
-
-		AtomEventFramework eventFramework = new AtomEventFramework(db, config);
-
-		// Registers the Model's Rules with the AtomEventFramework.
-		for (Rule rule : model.getRules()) {
-			rule.registerForAtomEvents(eventFramework, groundRuleStore);
-		}
-
-		// Initializes the ground model.
-		Grounding.groundAll(model, eventFramework, groundRuleStore);
-		while (eventFramework.checkToActivate() > 0) {
-			eventFramework.workOffJobQueue();
-		}
-
+	public FullInferenceResult mpeInference() {
 		// Performs rounds of inference until the ground model stops growing.
 		int rounds = 0;
 		int numActivated = 0;
 
 		do {
 			rounds++;
-			log.debug("Starting round %d of inference.", rounds);
+			log.debug("Starting round {} of inference.", rounds);
 
 			// Regenerate optimization terms.
+			// TODO(eriq): We would rather not regen every time.
 			termStore.clear();
-			termGenerator.generateTerms(groundRuleStore, termStore);
-			log.debug("Generated %d optimization terms.", termStore.size());
 
+			log.debug("Initializing objective terms for {} ground rules.", groundRuleStore.size());
+			termGenerator.generateTerms(groundRuleStore, termStore);
+			log.debug("Generated {} objective terms from {} ground rules.", termStore.size(), groundRuleStore.size());
+
+			log.info("Beginning inference round {}.", rounds);
 			reasoner.optimize(termStore);
+			log.info("Inference round {} complete. Writing results to Database.", rounds);
+
+			// TEST
+			System.out.println("^^^^^");
+			for (GroundAtom atom : db.getAtomCache().getCachedAtoms()) {
+				System.out.println("	" + atom.toStringWithValue());
+			}
+			System.out.println("vvvvv");
 
 			// Only activates if there is another round.
 			if (rounds < maxRounds) {
@@ -180,28 +212,19 @@ public class LazyMPEInference extends Observable implements ModelApplication {
 
 		// TODO: Check for consideration events when deciding to terminate?
 
-		/* Commits the RandomVariableAtoms back to the Database */
-		int count = 0;
+		// Commits the RandomVariableAtoms back to the Database.
+		List<RandomVariableAtom> atoms = new ArrayList<RandomVariableAtom>();
 		for (RandomVariableAtom atom : db.getAtomCache().getCachedRandomVariableAtoms()) {
-			atom.commitToDB();
-			count++;
+			atoms.add(atom);
 		}
+		db.commit(atoms);
 
 		double incompatibility = GroundRules.getTotalWeightedIncompatibility(groundRuleStore.getCompatibilityRules());
 		double infeasibility = GroundRules.getInfeasibilityNorm(groundRuleStore.getConstraintRules());
 
-		/* Unregisters the Model's Rules with the AtomEventFramework */
-		for (Rule rule : model.getRules()) {
-			rule.unregisterForAtomEvents(eventFramework, groundRuleStore);
-		}
-
 		int size = groundRuleStore.size();
 
-		termStore.close();
-		groundRuleStore.close();
-		reasoner.close();
-
-		return new MemoryFullInferenceResult(incompatibility, infeasibility, count, size);
+		return new MemoryFullInferenceResult(incompatibility, infeasibility, atoms.size(), size);
 	}
 
 	/**
@@ -213,9 +236,26 @@ public class LazyMPEInference extends Observable implements ModelApplication {
 
 	@Override
 	public void close() {
-		model=null;
+		// Unregisters the Model's Rules with the AtomEventFramework.
+		for (Rule rule : model.getRules()) {
+			rule.unregisterForAtomEvents(eventFramework, groundRuleStore);
+		}
+
+		termStore.close();
+		groundRuleStore.close();
+		reasoner.close();
+
+		termStore = null;
+		groundRuleStore = null;
+		reasoner = null;
+
+		model = null;
 		db = null;
 		config = null;
+	}
+
+	public GroundRuleStore getGroundRuleStore() {
+		return groundRuleStore;
 	}
 
 	/**

@@ -181,7 +181,13 @@ abstract public class AbstractLogicalRule extends AbstractRule {
 	public void notifyAtomEvent(AtomEvent event, GroundRuleStore grs) {
 		List<VariableAssignment> vars = clause.traceAtomEvent(event.getAtom());
 		if (!vars.isEmpty()) {
+			// TEST
+			System.out.println("ALR - Notify");
+
 			for (VariableAssignment var : vars) {
+				// TEST
+				System.out.println("   ALR - Assignment: " + var);
+
 				DatabaseQuery dbQuery = new DatabaseQuery(clause.getQueryFormula());
 				dbQuery.getPartialGrounding().putAll(var);
 				ResultList res = event.getEventFramework().executeQuery(dbQuery);

@@ -40,6 +40,8 @@ public class TestModelFactory {
 	public static final String PARTITION_OBSERVATIONS = "observations";
 	public static final String PARTITION_TARGETS = "targets";
 	public static final String PARTITION_TRUTH = "truth";
+	// This class promises not to use this partition, so tests can guarantee it will be empty.
+	public static final String PARTITION_UNUSED = "unused";
 
 	// Give each model a unique identifier.
 	private static int modelId = 0;

@@ -107,21 +107,26 @@ public class MPEInference implements ModelApplication {
 	protected GroundRuleStore groundRuleStore;
 	protected TermStore termStore;
 
-	public MPEInference(Model model, Database db, ConfigBundle config)
-			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
+	public MPEInference(Model model, Database db, ConfigBundle config) {
 		this.model = model;
 		this.db = db;
 		this.config = config;
 
-		reasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
-		termStore = (TermStore)config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
-		groundRuleStore = (GroundRuleStore)config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
-
 		initialize();
 	}
 
-	protected void initialize() throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-		TermGenerator termGenerator = (TermGenerator)config.getNewObject(TERM_GENERATOR_KEY, TERM_GENERATOR_DEFAULT);
+	protected void initialize() {
+		TermGenerator termGenerator = null;
+
+		try {
+			reasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
+			termStore = (TermStore)config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
+			groundRuleStore = (GroundRuleStore)config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
+			termGenerator = (TermGenerator)config.getNewObject(TERM_GENERATOR_KEY, TERM_GENERATOR_DEFAULT);
+		} catch (Exception ex) {
+			// The caller couldn't handle these exception anyways, convert them to runtime ones.
+			throw new RuntimeException("Failed to prepare storage for inference.", ex);
+		}
 
 		log.debug("Creating persisted atom mannager.");
 		atomManager = new PersistedAtomManager(db);
