@@ -118,6 +118,26 @@ public interface Database {
 	public GroundAtom getAtom(Predicate p, Constant... arguments);
 
 	/**
+	 * Get a count of all the ground atoms for a predicate.
+	 * By "ground", we mean that it exists in the database.
+	 * This will not leverage the closed world assumption for any atoms.
+	 *
+	 * @param predicate the predicate to get a count for
+	 * @return The count of all ground atoms present in any partition of the database.
+	 */
+	public int countAllGroundAtoms(StandardPredicate predicate);
+
+	/**
+	 * Get a count of all the ground RandomVariableAtoms for a predicate.
+	 * By "ground", we mean that it exists in the database.
+	 * This will not leverage the closed world assumption for any atoms.
+	 *
+	 * @param predicate the predicate to get a count for
+	 * @return The count of all ground atoms present in the write partition of the database.
+	 */
+	public int countAllGroundRandomVariableAtoms(StandardPredicate predicate);
+
+	/**
 	 * Fetch all the ground atoms for a predicate.
 	 * By "ground", we mean that it exists in the database.
 	 * This will not leverage the closed world assumption for any atoms.

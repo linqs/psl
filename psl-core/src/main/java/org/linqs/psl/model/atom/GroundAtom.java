@@ -68,7 +68,11 @@ public abstract class GroundAtom extends Atom {
 		return value;
 	}
 
-	abstract public AtomFunctionVariable getVariable();
+	public String toStringWithValue() {
+		return super.toString() + " = " + getValue();
+	}
+
+	public abstract AtomFunctionVariable getVariable();
 
 	public VariableTypeMap collectVariables(VariableTypeMap varMap) {
 		// No Variables in GroundAtoms.
@@ -98,8 +102,10 @@ public abstract class GroundAtom extends Atom {
 	 * @return TRUE if successful; FALSE if rule was never registered
 	 */
 	public boolean unregisterGroundRule(GroundRule rule) {
-		if (registeredGroundRules == null)
+		if (registeredGroundRules == null) {
 			return false;
+		}
+
 		return registeredGroundRules.remove(rule.getRule(), rule);
 	}
 
@@ -110,8 +116,10 @@ public abstract class GroundAtom extends Atom {
 	 * @return A set of all registered ground rules that match rule
 	 */
 	public Set<GroundRule> getRegisteredGroundRules(Rule rule) {
-		if (registeredGroundRules == null)
+		if (registeredGroundRules == null) {
 			return emptyGroundRules;
+		}
+
 		return registeredGroundRules.get(rule);
 	}
 
@@ -121,8 +129,10 @@ public abstract class GroundAtom extends Atom {
 	 * @return A collection of all registered ground rules
 	 */
 	public Collection<GroundRule> getRegisteredGroundRules() {
-		if (registeredGroundRules == null)
+		if (registeredGroundRules == null) {
 			return emptyGroundRules;
+		}
+
 		return registeredGroundRules.values();
 	}
 
@@ -132,8 +142,10 @@ public abstract class GroundAtom extends Atom {
 	 * @return The number of registered ground rules
 	 */
 	public int getNumRegisteredGroundRules() {
-		if (registeredGroundRules == null)
+		if (registeredGroundRules == null) {
 			return 0;
+		}
+
 		return registeredGroundRules.size();
 	}
 }

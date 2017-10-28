@@ -87,6 +87,33 @@ public class PredicateInfo {
 	}
 
 	/**
+	 * Create a prepared statement to count all the ground atoms for this predicate (within the specified partitions).
+	 * You can specify no partitions with null or an empty list.
+	 */
+	public PreparedStatement createCountAllStatement(Connection connection, List<Integer> partitions) {
+		SelectQuery query = new SelectQuery();
+
+		query.addCustomColumns(new CustomSql("COUNT(*)"));
+		query.addCustomFromTable(tableName);
+
+		// If there is only 1 partition, just do equality, otherwise use IN.
+		// All DBMSs should optimize a single IN the same as equality, but just in case.
+		if (partitions != null && partitions.size() > 0) {
+			if (partitions.size() == 1) {
+				query.addCondition(BinaryCondition.equalTo(new CustomSql(PARTITION_COLUMN_NAME), partitions.get(0)));
+			} else {
+				query.addCondition(new InCondition(new CustomSql(PARTITION_COLUMN_NAME), partitions));
+			}
+		}
+
+		try {
+			return connection.prepareStatement(query.validate().toString());
+		} catch (SQLException ex) {
+			throw new RuntimeException("Could not create prepared statement.", ex);
+		}
+	}
+
+	/**
 	 * Create a prepared statement to query all the atoms for this predicate (within the specified partitions).
 	 * You can specify no partitions with null or an empty list.
 	 * The columns will ALWAYS be in the following order: partition, value, data columns (determined by getArgumentColumns()).

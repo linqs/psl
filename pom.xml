@@ -40,6 +40,7 @@
 	<modules>
 		<module>psl-cli</module>
 		<module>psl-core</module>
+		<module>psl-evaluation</module>
 		<module>psl-groovy</module>
 		<module>psl-parser</module>
 	</modules>

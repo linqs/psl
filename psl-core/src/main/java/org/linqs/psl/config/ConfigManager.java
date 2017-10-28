@@ -17,17 +17,6 @@
  */
 package org.linqs.psl.config;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.io.FileNotFoundException;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.DataConfiguration;
@@ -38,24 +27,41 @@ import org.apache.log4j.helpers.OptionConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
 public class ConfigManager {
+	private static final Logger log = LoggerFactory.getLogger(ConfigManager.class);
 
 	private static ConfigManager instance = null;
-
-	private static final Logger log = LoggerFactory.getLogger(ConfigManager.class);
 
 	private DataConfiguration masterConfig;
 
 	private ConfigManager() throws ConfigurationException {
 		masterConfig = new DataConfiguration(new BaseConfiguration());
 		String pslConfigFile = OptionConverter.getSystemProperty("psl.configuration", "psl.properties");
-		try {
+
+		// Load the configuration file directly if it exists.
+		if ((new File(pslConfigFile)).isFile()) {
 			loadResource(pslConfigFile);
-		}
-		catch (FileNotFoundException e) {
-			log.info("PSL configuration {} file not found. " +
-					"Only default values will be used unless additional properties are " +
-				 "specified.", pslConfigFile);
+		} else {
+			// Try to get a resource URL from the system (if we have a property key instead of a path).
+			URL resourceURL = Loader.getResource(pslConfigFile);
+			if (resourceURL != null) {
+				loadResource(resourceURL);
+			} else {
+				log.debug("PSL configuration {} file not found. " +
+						"Only default values will be used unless additional properties are " +
+						"specified.", pslConfigFile);
+			}
 		}
 	}
 
@@ -63,26 +69,18 @@ public class ConfigManager {
 		if (instance == null) {
 			instance = new ConfigManager();
 		}
+
 		return instance;
 	}
 
-	public void loadResource(String resource) throws FileNotFoundException, ConfigurationException {
-		URL url;
-		PropertiesConfiguration newConfig;
+	public void loadResource(String path) throws ConfigurationException {
+		masterConfig.append(new PropertiesConfiguration(path));
+		log.debug("Configuration file loaded: {}", path);
+	}
 
-		try {
-			url = new URL(resource);
-		}
-		catch (MalformedURLException ex) {
-			url = Loader.getResource(resource);
-		}
-		if (url != null) {
-			newConfig = new PropertiesConfiguration(url);
-			masterConfig.append(newConfig);
-			log.info("Configuration file loaded: {}", url);
-		}
-		else
-			throw new FileNotFoundException();
+	public void loadResource(URL url) throws ConfigurationException {
+		masterConfig.append(new PropertiesConfiguration(url));
+		log.debug("Configuration URL loaded: {}", url);
 	}
 
 	public ConfigBundle getBundle(String id) {
@@ -103,10 +101,9 @@ public class ConfigManager {
 			String scopedKey = prefix + "." + key;
 			if (config.containsKey(key)) {
 				Object value = config.getProperty(key);
-				log.info("Found value {} for option {}.", value, scopedKey);
-			}
-			else {
-				log.info("No value found for option {}. Returning default of {}.", scopedKey, defaultValue);
+				log.debug("Found value {} for option {}.", value, scopedKey);
+			} else {
+				log.debug("No value found for option {}. Returning default of {}.", scopedKey, defaultValue);
 			}
 		}
 
@@ -137,10 +134,10 @@ public class ConfigManager {
 		@Override
 		public Object getProperty(String key) {
 			logAccess(key, "");
-			if(config.containsKey(key)){
-			    return config.getProperty(key);
+			if (config.containsKey(key)) {
+				 return config.getProperty(key);
 			} else {
-			    return null;
+				 return null;
 			}
 		}
 
@@ -266,15 +263,19 @@ public class ConfigManager {
 		public Factory getFactory(String key, Factory defaultValue)
 				throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 			logAccess(key, defaultValue);
+
 			Object value = config.getProperty(key);
-			if (value == null)
+			if (value == null) {
 				return defaultValue;
-			if (value instanceof Factory)
+			}
+
+			if (value instanceof Factory) {
 				return (Factory) value;
-			else if (value instanceof String)
+			} else if (value instanceof String) {
 				return (Factory) ClassLoader.getSystemClassLoader().loadClass((String) value).newInstance();
-			else
+			} else {
 				throw new IllegalArgumentException("Value " + value + " is not a Factory nor a String.");
+			}
 		}
 
 		@Override

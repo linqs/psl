@@ -261,6 +261,29 @@ public class RDBMSDatabase implements Database {
 	}
 
 	@Override
+	public int countAllGroundAtoms(StandardPredicate predicate) {
+		List<Integer> partitions = new ArrayList<Integer>();
+		partitions.addAll(readIDs);
+		partitions.add(writeID);
+
+		return countAllGroundAtoms(predicate, partitions);
+	}
+
+	@Override
+	public int countAllGroundRandomVariableAtoms(StandardPredicate predicate) {
+		// Closed predicates have no random variable atoms.
+		if (isClosed(predicate)) {
+			return 0;
+		}
+
+		// All the atoms should be random vairable, since we are pulling from the write parition of an open predicate.
+		List<Integer> partitions = new ArrayList<Integer>(1);
+		partitions.add(writeID);
+
+		return countAllGroundAtoms(predicate, partitions);
+	}
+
+	@Override
 	public List<GroundAtom> getAllGroundAtoms(StandardPredicate predicate) {
 		List<Integer> partitions = new ArrayList<Integer>();
 		partitions.addAll(readIDs);
@@ -650,6 +673,22 @@ public class RDBMSDatabase implements Database {
 		}
 
 		return atoms;
+	}
+
+	private int countAllGroundAtoms(StandardPredicate predicate, List<Integer> partitions) {
+		PredicateInfo predicateInfo = getPredicateInfo(predicate);
+
+		try (
+				PreparedStatement statement = predicateInfo.createCountAllStatement(connection, partitions);
+				ResultSet results = statement.executeQuery()) {
+			if (!results.next()) {
+            throw new RuntimeException("No results from a COUNT(*)");
+         }
+
+         return results.getInt(1);
+		} catch (SQLException ex) {
+			throw new RuntimeException("Error fetching all ground atoms for: " + predicate, ex);
+		}
 	}
 
 	private GroundAtom getAtom(FunctionalPredicate predicate, Constant... arguments) {

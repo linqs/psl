@@ -793,7 +793,11 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 		// Note that these values will get promoted to unique identifiers if necessary
 		// by Atom.
 
-		return new StringAttribute(ctx.IDENTIFIER().getText());
+		// Remove the encapsulating single or double quotes.
+		// Make sure not to strip off any extra values.
+		String constantValue = ctx.CONSTANT_VALUE().getText();
+		constantValue = constantValue.replaceFirst("^(['\"])(.*)\\1$", "$2");
+		return new StringAttribute(constantValue);
 	}
 
 	@Override
