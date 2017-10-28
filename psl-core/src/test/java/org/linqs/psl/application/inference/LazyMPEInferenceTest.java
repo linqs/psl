@@ -12,6 +12,7 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.Queries;
 import org.linqs.psl.model.Model;
+import org.linqs.psl.model.atom.AtomEventFramework;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Implication;
@@ -33,6 +34,7 @@ import java.util.Set;
 public class LazyMPEInferenceTest {
 	// TODO(eriq): Tests:
 	//   - base: not nice
+	//	 - below threshold (will require different rules that don't hit all targets on initial grounding)
 	//   - multiple predicates
 	//   - partially observed
 	//   - rules such that no instantiation will happen
@@ -125,5 +127,10 @@ public class LazyMPEInferenceTest {
 
 		mpe.close();
 		inferDB.close();
+	}
+
+	@After
+	public void cleanup() {
+		PSLTest.disableLogger();
 	}
 }

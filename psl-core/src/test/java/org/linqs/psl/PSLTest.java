@@ -172,4 +172,8 @@ public class PSLTest {
 	public static void initLogger() {
 		initLogger("DEBUG");
 	}
+
+	public static void disableLogger() {
+		initLogger("OFF");
+	}
 }

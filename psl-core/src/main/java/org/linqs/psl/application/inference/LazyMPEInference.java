@@ -175,6 +175,13 @@ public class LazyMPEInference extends Observable implements ModelApplication {
 		int rounds = 0;
 		int numActivated = 0;
 
+		// TEST
+		System.out.println("^^^^^ -- initial");
+		for (GroundAtom atom : db.getAtomCache().getCachedAtoms()) {
+			System.out.println("	" + atom.toStringWithValue());
+		}
+		System.out.println("vvvvv");
+
 		do {
 			rounds++;
 			log.debug("Starting round {} of inference.", rounds);
