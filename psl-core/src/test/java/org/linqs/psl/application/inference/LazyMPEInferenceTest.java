@@ -32,12 +32,17 @@ import java.util.Set;
 
 public class LazyMPEInferenceTest {
 	// TODO(eriq): Tests:
-	//   - base: not nice
-	//	 - below threshold (will require different rules that don't hit all targets on initial grounding)
-	//   - multiple predicates
-	//   - partially observed
-	//   - rules such that no instantiation will happen
-	//   - arithmetic rules
+	//  - base: not nice
+	//  - below threshold (will require different rules that don't hit all targets on initial grounding)
+	//  - multiple predicates
+	//  - partially observed
+	//  - rules such that no instantiation will happen
+	//  - arithmetic rules
+
+	static {
+		// TEST
+		System.out.println("TEST0");
+	}
 
 	/**
 	 * A quick test that only checks to see if LazyMPEInference is running.
@@ -45,6 +50,9 @@ public class LazyMPEInferenceTest {
 	 */
 	@Test
 	public void testBase() {
+		// TEST
+		System.out.println("TEST1");
+
 		TestModelFactory.ModelInformation info = TestModelFactory.getModel(true);
 
 		// Get an empty partition so that no targets will exist in it and we will have to lazily instantiate them all.

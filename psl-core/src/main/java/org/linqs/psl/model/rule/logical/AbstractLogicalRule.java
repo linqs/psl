@@ -91,6 +91,14 @@ abstract public class AbstractLogicalRule extends AbstractRule {
 		}
 	}
 
+	public Formula getFormula() {
+		return formula;
+	}
+
+	public DNFClause getDNF() {
+		return clause;
+	}
+
 	@Override
 	public void groundAll(AtomManager atomManager, GroundRuleStore grs) {
 		ResultList res = atomManager.executeQuery(new DatabaseQuery(clause.getQueryFormula(), false));

@@ -117,7 +117,7 @@ public class LazyMPEInference implements ModelApplication {
 	protected GroundRuleStore groundRuleStore;
 	protected TermStore termStore;
 	protected TermGenerator termGenerator;
-   protected LazyAtomManager lazyAtomManager;
+	protected LazyAtomManager lazyAtomManager;
 
 	// Stop flag to quit the loop.
 	protected boolean toStop = false;
@@ -143,7 +143,7 @@ public class LazyMPEInference implements ModelApplication {
 		}
 
 		// TEST(eriq)
-      lazyAtomManager = new LazyAtomManager(db);
+		lazyAtomManager = new LazyAtomManager(db, config);
 
 		log.debug("Initial grounding.");
 		Grounding.groundAll(model, lazyAtomManager, groundRuleStore);
@@ -189,23 +189,24 @@ public class LazyMPEInference implements ModelApplication {
 			log.info("Inference round {} complete. Writing results to Database.", rounds);
 
 			// TEST
-			System.out.println("^^^^^");
+			System.out.println("^^^^^ All Cached Atoms (" + rounds + ") ^^^^^");
 			for (GroundAtom atom : db.getAtomCache().getCachedAtoms()) {
+				System.out.println("	" + atom.toStringWithValue());
+			}
+			System.out.println("----- Lazy Atoms -----");
+			for (RandomVariableAtom atom : lazyAtomManager.getLazyAtoms()) {
 				System.out.println("	" + atom.toStringWithValue());
 			}
 			System.out.println("vvvvv");
 
 			// Only activates if there is another round.
-         /* TEST(eriq)
 			if (rounds < maxRounds) {
-				numActivated = eventFramework.checkToActivate();
-				eventFramework.workOffJobQueue();
+				numActivated = lazyAtomManager.activateAtoms(model);
 			}
 			log.debug("Completed round {} and activated {} atoms.", rounds, numActivated);
-         */
 
-         // TEST(eriq)
-         break;
+			// TEST(eriq)
+			break;
 		} while (numActivated > 0 && rounds < maxRounds && !toStop);
 
 		// TODO: Check for consideration events when deciding to terminate?

@@ -18,13 +18,22 @@
 package org.linqs.psl.database;
 
 public class Partition {
+	/**
+	 * When grounding with lazy atoms, we will initially set their partition
+	 * value to this so that we can tell them apart.
+	 * Afterwards, they will be reset to the correct value (the write partition
+	 * of the database).
+	 * Note that no valid partition is actaully allowed to have negative values.
+	 */
+	public static final int LAZY_PARTITION_ID = -1;
+
 	private final int id;
 	private final String name;
 
 	/**
 	 * Sole constructor.
 	 *
-	 * @param id  non-negative identifier
+	 * @param id non-negative identifier
 	 */
 	public Partition(int id, String name) {
 		assert(id >= 0);

@@ -25,27 +25,26 @@ import org.linqs.psl.model.term.VariableTypeMap;
 
 /**
  * A logical formula composed of {@link Atom Atoms} and logical operators.
- * 
+ *
  * @author Matthias Broecheler
  */
 public interface Formula {
-	
+
 	/**
 	 * @return a logically equivalent Formula in disjunctive normal form
 	 */
 	public Formula getDNF();
-	
+
 	/**
 	 * @return Atoms in the Formula
 	 */
 	public Set<Atom> getAtoms(Set<Atom> atoms);
-	
+
 	/**
 	 * Adds the {@link Variable Variables}
-	 * 
+	 *
 	 * @param varMap
 	 * @return
 	 */
 	public VariableTypeMap collectVariables(VariableTypeMap varMap);
-	
 }

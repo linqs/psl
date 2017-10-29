@@ -19,6 +19,7 @@ package org.linqs.psl.database.rdbms;
 
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.VariableAssignment;
+import org.linqs.psl.database.Partition;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.formula.traversal.AbstractFormulaTraverser;
 import org.linqs.psl.model.predicate.ExternalFunctionalPredicate;
@@ -65,16 +66,47 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 	 */
 	private final Map<Variable, Integer> projectionMap;
 
+	private final List<Integer> partitions;
+	private final Atom lazyTarget;
+
 	private int tableCounter;
 
+	/**
+	 * Convert a formula to a query that will fetch all possible combinations of constants used in that
+	 * formual (aka grounding).
+	 * This variant will enforce unqiue results (DISTINCT).
+	 * @param partialGrounding Populate if some variables are alreay assigned to specific constants.
+	 * @param projection the collection of variables (columns) to return (the variable's name will be used
+	 * as the column alias). If not set, all columns (*) will be retutned.
+	 * @param database the database to query over. The read and write partitions will be picked up from here.
+	 */
 	public Formula2SQL(VariableAssignment partialGrounding, Set<Variable> projection, RDBMSDatabase database) {
 		this(partialGrounding, projection, database, true);
 	}
 
-	public Formula2SQL(VariableAssignment partialGrounding, Set<Variable> projection, RDBMSDatabase database, boolean isDistinct) {
+	/**
+	 * See above description.
+	 * @param isDistinct true if you want to enforce unique results (DISTINCT), false otherwise.
+	 *  Warning: this can be a costly operation.
+	 */
+	public Formula2SQL(VariableAssignment partialGrounding, Set<Variable> projection, RDBMSDatabase database,
+			boolean isDistinct) {
+		this(partialGrounding, projection, database, isDistinct, null);
+	}
+
+	/**
+	 * See above description.
+	 * @param lazyTarget if this is non-null, then this formula will be treated as a partial grounding query.
+	 *  This means that we will treat Partition.LAZY_PARTITION_ID as a valid partition, and this atom
+	 *  will be exclusivley drawn from Partition.LAZY_PARTITION_ID.
+	 *  We will do a DIRECT REFERENCE comparison against atoms in the formual to check for this specific one.
+	 */
+	public Formula2SQL(VariableAssignment partialGrounding, Set<Variable> projection, RDBMSDatabase database,
+			boolean isDistinct, Atom lazyTarget) {
 		this.partialGrounding = partialGrounding;
 		this.projection = projection;
 		this.database = database;
+		this.lazyTarget = lazyTarget;
 
 		joins = new HashMap<Variable, String>();
 		projectionMap = new HashMap<Variable, Integer>();
@@ -86,6 +118,17 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 
 		if (projection.isEmpty()) {
 			query.addAllColumns();
+		}
+
+		// Query all of the read (and the write) partition(s) belonging to the database
+		partitions = new ArrayList<Integer>(database.getReadPartitions().size() + 1);
+		for (Partition partition : database.getReadPartitions()) {
+			partitions.add(partition.getID());
+		}
+		partitions.add(database.getWritePartition().getID());
+
+		if (lazyTarget != null) {
+			partitions.add(Partition.LAZY_PARTITION_ID);
 		}
 	}
 
@@ -240,24 +283,29 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 			}
 		}
 
-		// Query all of the read (and the write) partition(s) belonging to the database
-		ArrayList<Integer> partitions = new ArrayList<Integer>(database.getReadPartitions().size());
-		for (int i = 0; i < database.getReadPartitions().size(); i++) {
-			partitions.add(database.getReadPartitions().get(i).getID());
+		// Make sure to limit the partitions.
+		// Most atoms get to choose from anywhere, lazy atoms can only come from the lazy partition.
+		CustomSql partitionColumn = new CustomSql(tableAlias + "." + PredicateInfo.PARTITION_COLUMN_NAME);
+		if (atom == lazyTarget) {
+			query.addCondition(BinaryCondition.equalTo(partitionColumn, Partition.LAZY_PARTITION_ID));
+		} else {
+			query.addCondition(new InCondition(partitionColumn, partitions));
 		}
-		partitions.add(database.getWritePartition().getID());
-		query.addCondition(new InCondition(new CustomSql(tableAlias + "." + PredicateInfo.PARTITION_COLUMN_NAME), partitions));
 
 		tableCounter++;
 	}
 
-	public String getSQL(Formula formula) {
+	public SelectQuery getQuery(Formula formula) {
 		AbstractFormulaTraverser.traverse(formula, this);
 		for (Atom atom : functionalAtoms) {
 			visitFunctionalAtom(atom);
 		}
 
-		return query.validate().toString();
+		return query.validate();
+	}
+
+	public String getSQL(Formula formula) {
+		return getQuery(formula).toString();
 	}
 
 	private String escapeSingleQuotes(String s) {
