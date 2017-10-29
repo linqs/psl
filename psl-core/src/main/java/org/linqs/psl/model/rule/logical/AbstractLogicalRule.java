@@ -102,7 +102,12 @@ abstract public class AbstractLogicalRule extends AbstractRule {
 	@Override
 	public void groundAll(AtomManager atomManager, GroundRuleStore grs) {
 		ResultList res = atomManager.executeQuery(new DatabaseQuery(clause.getQueryFormula(), false));
-		int numGrounded = groundFormula(atomManager, grs, res, null);
+		groundAll(res, atomManager, grs);
+	}
+
+	// TODO(eriq): Does this need to be part of the superclass?
+	public void groundAll(ResultList groundVariables, AtomManager atomManager, GroundRuleStore grs) {
+		int numGrounded = groundFormula(atomManager, grs, groundVariables, null);
 		log.debug("Grounded {} instances of rule {}", numGrounded, this);
 	}
 

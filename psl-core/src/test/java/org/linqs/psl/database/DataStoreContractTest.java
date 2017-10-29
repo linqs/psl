@@ -502,8 +502,8 @@ public abstract class DataStoreContractTest {
 		formula = new Conjunction(new QueryAtom(p1, Y, X),
 				new QueryAtom(p4, X, Z));
 		query = new DatabaseQuery(formula);
-		query.getProjectionSubset().add(Y);
-		query.getProjectionSubset().add(Z);
+		query.addToProjection(Y);
+		query.addToProjection(Z);
 		results = db.executeQuery(query);
 		assertEquals(2, results.size());
 		grounding = results.get(0);
@@ -525,7 +525,7 @@ public abstract class DataStoreContractTest {
 		// Tests a query with a projection set that collapses multiple groundings to one.
 		formula = new QueryAtom(p4, X, Z);
 		query = new DatabaseQuery(formula);
-		query.getProjectionSubset().add(Z);
+		query.addToProjection(Z);
 		results = db.executeQuery(query);
 		assertEquals(2, results.size());
 		grounding = results.get(0);
@@ -541,7 +541,7 @@ public abstract class DataStoreContractTest {
 			assertTrue(false);
 	}
 
-	@Test(expected=NullPointerException.class)
+	@Test(expected=IllegalArgumentException.class)
 	public void testExecuteQueryIllegalProjectionVariable() {
 		if (datastore == null) {
 			throw new NullPointerException();
@@ -574,9 +574,8 @@ public abstract class DataStoreContractTest {
 
 		formula = new QueryAtom(p1, X, Y);
 		query = new DatabaseQuery(formula);
-		query.getProjectionSubset().add(X);
-		query.getProjectionSubset().add(Z);
-		db.executeQuery(query);
+		query.addToProjection(X);
+		query.addToProjection(Z);
 	}
 
 	@Test

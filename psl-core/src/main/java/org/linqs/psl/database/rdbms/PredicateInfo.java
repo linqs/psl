@@ -31,6 +31,7 @@ import com.healthmarketscience.sqlbuilder.DeleteQuery;
 import com.healthmarketscience.sqlbuilder.InCondition;
 import com.healthmarketscience.sqlbuilder.QueryPreparer;
 import com.healthmarketscience.sqlbuilder.SelectQuery;
+import com.healthmarketscience.sqlbuilder.UpdateQuery;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -228,6 +229,22 @@ public class PredicateInfo {
 			return connection.prepareStatement(delete.toString());
 		} catch (SQLException ex) {
 			throw new RuntimeException("Could not prepare delete for " + tableName, ex);
+		}
+	}
+
+	/**
+	 * Create a prepared statement that changes moves atoms from one partition to another.
+	 */
+	public PreparedStatement createPartitionMoveStatement(Connection connection, int oldPartition, int newPartition) {
+		UpdateQuery update = new UpdateQuery(tableName);
+
+		update.addCondition(BinaryCondition.equalTo(new CustomSql(PARTITION_COLUMN_NAME), oldPartition));
+		update.addCustomSetClause(new CustomSql(PARTITION_COLUMN_NAME), newPartition);
+
+		try {
+			return connection.prepareStatement(update.toString());
+		} catch (SQLException ex) {
+			throw new RuntimeException("Could not prepare update for " + tableName, ex);
 		}
 	}
 

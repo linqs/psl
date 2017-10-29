@@ -182,6 +182,20 @@ public interface Database {
 	public void commit(Iterable<RandomVariableAtom> atoms);
 
 	/**
+	 * A form of commit() that allows the caller to choose the specific partition
+	 * the atoms are comitted to.
+	 * Should only be used if you REALLY know what you are doing.
+	 */
+	public void commit(Iterable<RandomVariableAtom> atoms, int partitionId);
+
+	/**
+	 * Move all ground atoms of a predicate/partition combination into
+	 * the write partition.
+	 * Be careful not to call this while the database is in use.
+	 */
+	public void moveToWritePartition(StandardPredicate predicate, int oldPartitionId);
+
+	/**
 	 * Returns all groundings of a Formula that match a DatabaseQuery.
 	 *
 	 * @param query  the query to match

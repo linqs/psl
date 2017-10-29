@@ -33,7 +33,7 @@ import java.util.Set;
  * DeferredFunctionalUniqueID can be replaced with UniqueIntID or UniqueStringID.
  * After all variables in a rule are added, there should be no DeferredFunctionalUniqueID left.
  */
-public class VariableTypeMap extends HashMap<Variable,ConstantType> {
+public class VariableTypeMap extends HashMap<Variable, ConstantType> {
 	private static final long serialVersionUID = -6590175777602710989L;
 
 	/**

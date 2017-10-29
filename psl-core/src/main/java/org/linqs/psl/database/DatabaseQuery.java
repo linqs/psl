@@ -31,6 +31,7 @@ import org.linqs.psl.model.term.Variable;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -61,8 +62,8 @@ import java.util.Set;
  * The projection subset is a subset of the Variables in the Formula onto
  * which the returned groundings will be projected. An empty subset is
  * the same as including all Variables in the Formula in the subset except those
- * with assignments in the partial grounding. Use {@link #getProjectionSubset()}
- * to modify the subset. It is initially empty.
+ * with assignments in the partial grounding. Use addToProjection() to add to it.
+ * It is initially empty.
  */
 public class DatabaseQuery {
 	private final Formula formula;
@@ -118,8 +119,16 @@ public class DatabaseQuery {
 		return partialGrounding;
 	}
 
+	public void addToProjection(Variable var) {
+		if (!ordering.contains(var)) {
+			throw new IllegalArgumentException("Variable not appearing in query cannot be in projection: " + var);
+		}
+
+		projectTo.add(var);
+	}
+
 	public Set<Variable> getProjectionSubset() {
-		return projectTo;
+		return Collections.unmodifiableSet(projectTo);
 	}
 
 	/**
@@ -158,10 +167,13 @@ public class DatabaseQuery {
 	private class VariableOrderer extends AbstractFormulaTraverser {
 		@Override
 		public void visitAtom(Atom atom) {
-			for (Term term : atom.getArguments())
-				if (term instanceof Variable)
-					if (!ordering.contains(term))
+			for (Term term : atom.getArguments()) {
+				if (term instanceof Variable) {
+					if (!ordering.contains(term)) {
 						ordering.add((Variable) term);
+					}
+				}
+			}
 		}
 	}
 

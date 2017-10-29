@@ -92,6 +92,10 @@ public class PersistedAtomManager extends AtomManager {
 		return Collections.unmodifiableSet(persistedCache);
 	}
 
+	protected void addToPersistedCache(Set<RandomVariableAtom> atoms) {
+		persistedCache.addAll(atoms);
+	}
+
 	public static class PersistedAccessException extends IllegalArgumentException {
 		public RandomVariableAtom atom;
 		public PersistedAccessException(RandomVariableAtom atom) {

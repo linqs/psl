@@ -314,6 +314,11 @@ public class RDBMSDatabase implements Database {
 
 	@Override
 	public void commit(Iterable<RandomVariableAtom> atoms) {
+		commit(atoms, writeID);
+	}
+
+	@Override
+	public void commit(Iterable<RandomVariableAtom> atoms, int partitionId) {
 		if (closed) {
 			throw new IllegalStateException("Cannot commit on a closed database.");
 		}
@@ -339,7 +344,7 @@ public class RDBMSDatabase implements Database {
 				// Set all the upsert params.
 				for (RandomVariableAtom atom : entry.getValue()) {
 					// Partition
-					statement.setInt(1, writeID);
+					statement.setInt(1, partitionId);
 
 					// Value
 					statement.setDouble(2, atom.getValue());
@@ -379,14 +384,21 @@ public class RDBMSDatabase implements Database {
 	}
 
 	@Override
-	public ResultList executeQuery(DatabaseQuery query) {
-		if (closed) {
-			throw new IllegalStateException("Cannot perform query on database that was closed.");
-		}
+	public void moveToWritePartition(StandardPredicate predicate, int oldPartitionId) {
+		PredicateInfo predicateInfo = getPredicateInfo(predicate);
 
+		try (PreparedStatement statement = predicateInfo.createPartitionMoveStatement(connection, oldPartitionId, writeID)) {
+			statement.executeUpdate();
+		} catch (SQLException ex) {
+			throw new RuntimeException("Error moving partitions for: " + predicate, ex);
+		}
+	}
+
+	@Override
+	public ResultList executeQuery(DatabaseQuery query) {
 		Formula formula = query.getFormula();
 		VariableAssignment partialGrounding = query.getPartialGrounding();
-		Set<Variable> projectTo = query.getProjectionSubset();
+		Set<Variable> projectTo = new HashSet<Variable>(query.getProjectionSubset());
 
 		VariableTypeMap varTypes = formula.collectVariables(new VariableTypeMap());
 		if (projectTo.size() == 0) {
@@ -399,23 +411,37 @@ public class RDBMSDatabase implements Database {
 		String queryString = sqler.getSQL(formula);
 		Map<Variable, Integer> projectionMap = sqler.getProjectionMap();
 
+		return executeQuery(partialGrounding, projectionMap, varTypes, queryString);
+	}
+
+	/**
+	 * A more general form for executeQuery().
+	 * @param partialGrounding any variables that are already tied to constants.
+	 * @param projectionMap a mapping of each variable we want returned to the
+	 *  order it appears in the select statement.
+	 * @param varTypes the types for each variable in the projection.
+	 * @param queryString the SQL query.
+	 */
+	public ResultList executeQuery(VariableAssignment partialGrounding, Map<Variable, Integer> projectionMap,
+			VariableTypeMap varTypes, String queryString) {
+		if (closed) {
+			throw new IllegalStateException("Cannot perform query on database that was closed.");
+		}
+
 		log.trace(queryString);
 
 		// Create and initialize ResultList
-		int variableCount = 0;
-		RDBMSResultList results = new RDBMSResultList(projectTo.size());
-		for (int varIndex = 0; varIndex < query.getNumVariables(); varIndex++) {
-			if (projectTo.contains(query.getVariable(varIndex))) {
-				results.setVariable(query.getVariable(varIndex), variableCount++);
-			}
-		}
+		RDBMSResultList results = new RDBMSResultList(projectionMap.size());
+      for (Map.Entry<Variable, Integer> projection : projectionMap.entrySet()) {
+         results.setVariable(projection.getKey(), projection.getValue().intValue());
+      }
 
 		// Figure out all the partial variables ahead of time.
 		// This will help us reduce memory usage when reading in the result set.
 		// Since there are potentially many results, little boosts help.
-		Constant[] orderedPartials = new Constant[projectTo.size()];
-		int[] orderedIndexes = new int[projectTo.size()];
-		ConstantType[] orderedTypes = new ConstantType[projectTo.size()];
+		Constant[] orderedPartials = new Constant[projectionMap.size()];
+		int[] orderedIndexes = new int[projectionMap.size()];
+		ConstantType[] orderedTypes = new ConstantType[projectionMap.size()];
 		for (Map.Entry<Variable, Integer> entry : results.getVariableMap().entrySet()) {
 			Variable variable = entry.getKey();
 			int index = entry.getValue().intValue();
@@ -445,7 +471,7 @@ public class RDBMSDatabase implements Database {
 				results.addResult(res);
 			}
 		} catch (SQLException ex) {
-			throw new RuntimeException("Error executing database query: (" + query + ") -- [" + queryString + "]", ex);
+			throw new RuntimeException("Error executing database query: [" + queryString + "]", ex);
 		}
 
 		log.trace("Number of results: {}", results.size());

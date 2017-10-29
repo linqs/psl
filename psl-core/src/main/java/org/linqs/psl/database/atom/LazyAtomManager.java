@@ -19,28 +19,40 @@ package org.linqs.psl.database.atom;
 
 // TODO(eriq): Evaluate imports.
 
+import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.database.Partition;
+import org.linqs.psl.database.ResultList;
+import org.linqs.psl.database.rdbms.RDBMSDatabase;
+import org.linqs.psl.database.rdbms.Formula2SQL;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.atom.VariableAssignment;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Variable;
+import org.linqs.psl.model.term.VariableTypeMap;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.arithmetic.AbstractArithmeticRule;
 import org.linqs.psl.model.rule.logical.AbstractLogicalRule;
 
+import com.healthmarketscience.sqlbuilder.SelectQuery;
+import com.healthmarketscience.sqlbuilder.SetOperationQuery;
+import com.healthmarketscience.sqlbuilder.UnionQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -110,7 +122,7 @@ public class LazyAtomManager extends PersistedAtomManager  {
 	 * Activate any lazy atoms above the threshold.
 	 * @return the number of lazy atoms instantiated.
 	 */
-	public int activateAtoms(Model model) {
+	public int activateAtoms(Model model, GroundRuleStore groundRuleStore) {
 		Set<RandomVariableAtom> toActivate = new HashSet<RandomVariableAtom>();
 
 		Iterator<RandomVariableAtom> lazyAtomIterator = lazyAtoms.iterator();
@@ -123,73 +135,105 @@ public class LazyAtomManager extends PersistedAtomManager  {
 			}
 		}
 
-		activate(toActivate, model);
+		activate(toActivate, model, groundRuleStore);
 		return toActivate.size();
 	}
 
-	private void activate(Set<RandomVariableAtom> toActivate, Model model) {
+	private void activate(Set<RandomVariableAtom> toActivate, Model model, GroundRuleStore groundRuleStore) {
 		// First commit the atoms to the database.
-		// TODO(eriq): Commit to the lazy partition.
-		db.commit(toActivate);
+		db.commit(toActivate, Partition.LAZY_PARTITION_ID);
+
+		// Also ensure that the activated atoms are now considered "persisted" by the atom manager.
+		addToPersistedCache(toActivate);
 
 		// Now, we need to do a partial regrounding with the activated atoms.
 
 		// Collect the specific predicates that are targets in this lazy batch
 		// and the rules associated with those predicates.
-		Set<Predicate> lazyPredicates = getLazyPredicates(toActivate);
+		Set<StandardPredicate> lazyPredicates = getLazyPredicates(toActivate);
 		Set<Rule> lazyRules = getLazyRules(model, lazyPredicates);
 
 		for (Rule lazyRule : lazyRules) {
-			// TEST
-			System.out.println("TEST3: " + lazyRule);
-
 			// TODO(eriq): Arithmetic
 			AbstractLogicalRule rule = (AbstractLogicalRule)lazyRule;
 
-			// For every mention of a lazy predicate in this rule, get the grounding query
-			// with that specific predicate mention being the lazy target.
-			Set<Atom> atoms = new HashSet<Atom>();
-			org.linqs.psl.model.formula.Formula formula = rule.getDNF().getQueryFormula();
-			formula.getAtoms(atoms);
+			Formula formula = rule.getDNF().getQueryFormula();
+			List<Atom> lazyTargets = new ArrayList<Atom>();
 
-			for (Atom atom : atoms) {
+			// For every mention of a lazy predicate in this rule, we will need to get the grounding query
+			// with that specific predicate mention being the lazy target.
+			for (Atom atom : formula.getAtoms(new HashSet<Atom>())) {
 				if (!lazyPredicates.contains(atom.getPredicate())) {
 					continue;
 				}
 
-				// TODO(eriq): We need to reach out to the DB to do this properly.
-				org.linqs.psl.model.atom.VariableAssignment assign = new org.linqs.psl.model.atom.VariableAssignment();
-				Set<org.linqs.psl.model.term.Variable> projection = new HashSet<org.linqs.psl.model.term.Variable>();
-				org.linqs.psl.database.rdbms.Formula2SQL sql = new org.linqs.psl.database.rdbms.Formula2SQL(assign, projection, (org.linqs.psl.database.rdbms.RDBMSDatabase)db, false, atom);
+				lazyTargets.add(atom);
+			}
 
-				// TODO(eriq): Get SelectQuery so we can union later.
-				System.out.println("TEST4: " + sql.getSQL(formula));
+			if (lazyTargets.size() == 0) {
+				continue;
+			}
+
+			// Do the grounding query for this rule.
+			ResultList groundingResults = lazyGround(formula, lazyTargets, groundRuleStore);
+
+			rule.groundAll(groundingResults, this, groundRuleStore);
+		}
+
+		// Move all the new atoms out of the lazy partition and into the write partition.
+		for (StandardPredicate lazyPredicate : lazyPredicates) {
+			db.moveToWritePartition(lazyPredicate, Partition.LAZY_PARTITION_ID);
+		}
+	}
+
+
+	private ResultList lazyGround(Formula formula, List<Atom> lazyTargets, GroundRuleStore groundRuleStore) {
+		if (lazyTargets.size() == 0) {
+			throw new IllegalArgumentException();
+		}
+
+		// TODO(eriq): Force super to have RDBMS?
+		RDBMSDatabase relationalDB = ((RDBMSDatabase)db);
+
+		List<SelectQuery> queries = new ArrayList<SelectQuery>();
+
+		VariableAssignment partialGrounding = new VariableAssignment();
+		VariableTypeMap varTypes = formula.collectVariables(new VariableTypeMap());
+		Map<Variable, Integer> projectionMap = null;
+
+		for (Atom lazyTarget : lazyTargets) {
+			Formula2SQL sqler = new Formula2SQL(partialGrounding, varTypes.getVariables(), relationalDB, false, lazyTarget);
+			queries.add(sqler.getQuery(formula));
+
+			if (projectionMap == null) {
+				projectionMap = sqler.getProjectionMap();
 			}
 		}
 
-		// TODO(eriq): Change the lazy atoms' partition to the db's write partition.
+		// This fallbacks to a normal SELECT when there is only one.
+		UnionQuery union = new UnionQuery(SetOperationQuery.Type.UNION, queries.toArray(new SelectQuery[0]));
+		return relationalDB.executeQuery(partialGrounding, projectionMap, varTypes, union.validate().toString());
 	}
 
-	private Set<Predicate> getLazyPredicates(Set<RandomVariableAtom> toActivate) {
-		Set<Predicate> lazyPredicates = new HashSet<Predicate>();
+	private Set<StandardPredicate> getLazyPredicates(Set<RandomVariableAtom> toActivate) {
+		Set<StandardPredicate> lazyPredicates = new HashSet<StandardPredicate>();
 		for (Atom atom : toActivate) {
-			lazyPredicates.add(atom.getPredicate());
+			if (atom.getPredicate() instanceof StandardPredicate) {
+				lazyPredicates.add((StandardPredicate)atom.getPredicate());
+			}
 		}
 		return lazyPredicates;
 	}
 
-	private Set<Rule> getLazyRules(Model model, Set<Predicate> lazyPredicates) {
+	private Set<Rule> getLazyRules(Model model, Set<StandardPredicate> lazyPredicates) {
 		Set<Rule> lazyRules = new HashSet<Rule>();
 
 		for (Rule rule : model.getRules()) {
 			if (rule instanceof AbstractLogicalRule) {
-				Set<Atom> atoms = new HashSet<Atom>();
 				// Note that we check for atoms not in the base formula, but in the
 				// query formula for the DNF because negated atoms will not
 				// be considered.
-				((AbstractLogicalRule)rule).getDNF().getQueryFormula().getAtoms(atoms);
-
-				for (Atom atom : atoms) {
+				for (Atom atom : ((AbstractLogicalRule)rule).getDNF().getQueryFormula().getAtoms(new HashSet<Atom>())) {
 					if (lazyPredicates.contains(atom.getPredicate())) {
 						lazyRules.add(rule);
 						break;

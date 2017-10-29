@@ -142,7 +142,6 @@ public class LazyMPEInference implements ModelApplication {
 			throw new RuntimeException("Failed to prepare storage for inference.", ex);
 		}
 
-		// TEST(eriq)
 		lazyAtomManager = new LazyAtomManager(db, config);
 
 		log.debug("Initial grounding.");
@@ -201,12 +200,9 @@ public class LazyMPEInference implements ModelApplication {
 
 			// Only activates if there is another round.
 			if (rounds < maxRounds) {
-				numActivated = lazyAtomManager.activateAtoms(model);
+				numActivated = lazyAtomManager.activateAtoms(model, groundRuleStore);
 			}
 			log.debug("Completed round {} and activated {} atoms.", rounds, numActivated);
-
-			// TEST(eriq)
-			break;
 		} while (numActivated > 0 && rounds < maxRounds && !toStop);
 
 		// TODO: Check for consideration events when deciding to terminate?
