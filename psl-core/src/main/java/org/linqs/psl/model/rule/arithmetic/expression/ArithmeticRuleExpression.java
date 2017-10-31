@@ -17,17 +17,20 @@
  */
 package org.linqs.psl.model.rule.arithmetic.expression;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
 import org.linqs.psl.model.atom.Atom;
+import org.linqs.psl.model.formula.Conjunction;
+import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Cardinality;
 import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Coefficient;
 import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.FunctionComparator;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Container for components of an arithmetic rule formula.
@@ -52,6 +55,10 @@ public class ArithmeticRuleExpression {
 		Set<Variable> vars = new HashSet<Variable>();
 		Set<SummationVariable> sumVars = new HashSet<SummationVariable>();
 		Set<String> sumVarNames = new HashSet<String>();
+
+		if (atoms.size() == 0) {
+			throw new IllegalArgumentException("Cannot have an arithmetic rule without atoms.");
+		}
 
 		for (SummationAtomOrAtom saoa : getAtoms()) {
 			if (saoa instanceof SummationAtom) {
@@ -125,6 +132,28 @@ public class ArithmeticRuleExpression {
 
 	public Set<SummationVariable> getSummationVariables() {
 		return sumVars;
+	}
+
+	/**
+	 * Get a formula that can be used in a DatabaseQuery to fetch all the possibilites.
+	 */
+	public Formula getQueryFormula() {
+		List<Atom> queryAtoms = new ArrayList<Atom>();
+
+		// First collect all the atoms as query atoms.
+		for (SummationAtomOrAtom atom : atoms) {
+			if (atom instanceof SummationAtom) {
+				queryAtoms.add(((SummationAtom)atom).getQueryAtom());
+			} else {
+				queryAtoms.add((Atom)atom);
+			}
+		}
+
+		if (queryAtoms.size() == 1) {
+			return queryAtoms.get(0);
+		}
+
+		return new Conjunction(queryAtoms.toArray(new Formula[0]));
 	}
 
 	@Override

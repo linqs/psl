@@ -85,7 +85,7 @@ public abstract class Atom implements Formula, SummationAtomOrAtom {
 	 * @return The arguments associated with this atom
 	 */
 	public Term[] getArguments() {
-		return Arrays.copyOf(arguments, arguments.length);
+		return arguments;
 	}
 
 	@Override

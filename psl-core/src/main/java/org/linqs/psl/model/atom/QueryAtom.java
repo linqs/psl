@@ -17,6 +17,8 @@
  */
 package org.linqs.psl.model.atom;
 
+import org.linqs.psl.database.ResultList;
+import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
@@ -34,6 +36,22 @@ import org.linqs.psl.model.term.VariableTypeMap;
 public class QueryAtom extends Atom {
 	public QueryAtom(Predicate p, Term... args) {
 		super(p, args);
+	}
+
+	public GroundAtom ground(AtomManager atomManager, ResultList res, int resultIndex) {
+		Constant[] newArgs = new Constant[arguments.length];
+
+		for (int i = 0; i < arguments.length; i++) {
+			if (arguments[i] instanceof Variable) {
+				newArgs[i] = res.get(resultIndex, (Variable)arguments[i]);
+			} else if (arguments[i] instanceof Constant) {
+				newArgs[i] = (Constant)arguments[i];
+			} else {
+				throw new IllegalArgumentException("Unrecognized type of Term.");
+			}
+		}
+
+		return atomManager.getAtom(predicate, newArgs);
 	}
 
 	public VariableTypeMap collectVariables(VariableTypeMap varMap) {

@@ -24,6 +24,7 @@ import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.model.NumericUtilities;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.atom.VariableAssignment;
 import org.linqs.psl.model.formula.Formula;
@@ -107,11 +108,11 @@ abstract public class AbstractLogicalRule extends AbstractRule {
 
 	// TODO(eriq): Does this need to be part of the superclass?
 	public void groundAll(ResultList groundVariables, AtomManager atomManager, GroundRuleStore grs) {
-		int numGrounded = groundFormula(atomManager, grs, groundVariables, null);
+		int numGrounded = groundFormula(atomManager, grs, groundVariables);
 		log.debug("Grounded {} instances of rule {}", numGrounded, this);
 	}
 
-	protected int groundFormula(AtomManager atomManager, GroundRuleStore grs, ResultList res,  VariableAssignment var) {
+	protected int groundFormula(AtomManager atomManager, GroundRuleStore grs, ResultList res) {
 		int numGroundingsAdded = 0;
 		List<GroundAtom> posLiterals = new ArrayList<GroundAtom>(4);
 		List<GroundAtom> negLiterals = new ArrayList<GroundAtom>(4);
@@ -123,7 +124,7 @@ abstract public class AbstractLogicalRule extends AbstractRule {
 		GroundAtom atom;
 		for (int i = 0; i < res.size(); i++) {
 			for (int j = 0; j < clause.getPosLiterals().size(); j++) {
-				atom = groundAtom(atomManager, clause.getPosLiterals().get(j), res, i, var);
+				atom = ((QueryAtom)clause.getPosLiterals().get(j)).ground(atomManager, res, i);
 				if (atom instanceof RandomVariableAtom) {
 					worstCaseValues.put(atom.getVariable(), 1.0);
 				} else {
@@ -134,7 +135,7 @@ abstract public class AbstractLogicalRule extends AbstractRule {
 			}
 
 			for (int j = 0; j < clause.getNegLiterals().size(); j++) {
-				atom = groundAtom(atomManager, clause.getNegLiterals().get(j), res, i, var);
+				atom = ((QueryAtom)clause.getNegLiterals().get(j)).ground(atomManager, res, i);
 				if (atom instanceof RandomVariableAtom) {
 					worstCaseValues.put(atom.getVariable(), 0.0);
 				} else {
@@ -165,25 +166,6 @@ abstract public class AbstractLogicalRule extends AbstractRule {
 		}
 
 		return numGroundingsAdded;
-	}
-
-	protected GroundAtom groundAtom(AtomManager atomManager, Atom atom, ResultList res, int resultIndex, VariableAssignment var) {
-		Term[] oldArgs = atom.getArguments();
-		Constant[] newArgs = new Constant[atom.getArity()];
-		for (int i = 0; i < oldArgs.length; i++)
-			if (oldArgs[i] instanceof Variable) {
-				Variable v = (Variable) oldArgs[i];
-				if (var != null && var.hasVariable(v))
-					newArgs[i] = var.getVariable(v);
-				else
-					newArgs[i] = res.get(resultIndex, (Variable) oldArgs[i]);
-			}
-			else if (oldArgs[i] instanceof Constant)
-				newArgs[i] = (Constant) oldArgs[i];
-			else
-				throw new IllegalArgumentException("Unrecognized type of Term.");
-
-		return atomManager.getAtom(atom.getPredicate(), newArgs);
 	}
 
 	abstract protected AbstractGroundLogicalRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals);

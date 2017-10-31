@@ -23,6 +23,7 @@ import org.linqs.psl.database.ResultList;
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Disjunction;
 import org.linqs.psl.model.formula.Formula;
@@ -70,7 +71,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 		this.expression = expression;
 		this.filters = filterClauses;
 
-		// Ensures that all Formulas are in DNF
+		// Ensures that all filter Formulas are in DNF
 		for (Map.Entry<SummationVariable, Formula> e : this.filters.entrySet()) {
 			e.setValue(e.getValue().getDNF());
 		}
@@ -79,9 +80,68 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 	}
 
 	@Override
-	public void groundAll(AtomManager atomManager, GroundRuleStore grs) {
+	public void groundAll(AtomManager atomManager, GroundRuleStore groundRuleStore) {
 		validateGroundRule(atomManager);
 
+		int groundCount = -1;
+		if (expression.getSummationVariables().size() == 0) {
+			groundCount = groundNonSummationRule(atomManager, groundRuleStore);
+		} else {
+			groundCount = groundSummationRule(atomManager, groundRuleStore);
+		}
+
+		log.debug("Grounded {} instances of rule {}", groundCount, this);
+	}
+
+	/**
+	 * Rules without summations are much easier to ground and can do simpler queries.
+	 */
+	private int groundNonSummationRule(AtomManager atomManager, GroundRuleStore groundRuleStore) {
+		// Ground the variables.
+		ResultList groundVariables = atomManager.executeQuery(new DatabaseQuery(expression.getQueryFormula(), false));
+
+		List<QueryAtom> queryAtoms = new ArrayList<QueryAtom>();
+		for (SummationAtomOrAtom atom : expression.getAtoms()) {
+			queryAtoms.add((QueryAtom)atom);
+		}
+
+		GroundAtom[] groundAtoms = new GroundAtom[queryAtoms.size()];
+
+		// Since there are no summations, we only need to calculate the coefficients once,
+		// and we don't need to pass any substitution information.
+		double[] coefficients = new double[queryAtoms.size()];
+		for (int i = 0; i < coefficients.length; i++) {
+			coefficients[i] = expression.getAtomCoefficients().get(i).getValue(null);
+		}
+		double finalCoefficient = expression.getFinalCoefficient().getValue(null);
+
+		// Instantiate the ground rules with the correct constants.
+		int groundCount = 0;
+		for (int groundingIndex = 0; groundingIndex < groundVariables.size(); groundingIndex++) {
+			for (int atomIndex = 0; atomIndex < groundAtoms.length; atomIndex++) {
+				groundAtoms[atomIndex] = queryAtoms.get(atomIndex).ground(atomManager, groundVariables, groundingIndex);
+			}
+
+			if (FunctionComparator.Equality.equals(expression.getComparator())) {
+				groundRuleStore.addGroundRule(
+						makeGroundRule(coefficients, groundAtoms, FunctionComparator.LargerThan, finalCoefficient));
+				groundRuleStore.addGroundRule(
+						makeGroundRule(coefficients, groundAtoms, FunctionComparator.SmallerThan, finalCoefficient));
+				groundCount += 2;
+			} else {
+				groundRuleStore.addGroundRule(
+						makeGroundRule(coefficients, groundAtoms, expression.getComparator(), finalCoefficient));
+				groundCount++;
+			}
+		}
+
+		return groundCount;
+	}
+
+	/**
+	 * Rules with summations are complex and need to be grounded in a special way.
+	 */
+	private int groundSummationRule(AtomManager atomManager, GroundRuleStore groundRuleStore) {
 		// Evaluate the filters.
 		Map<SummationVariable, SummationDisjunctionValues> filterEvaluations = evaluateFilters(atomManager);
 
@@ -93,7 +153,6 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 		// Note that we can not just use |filters| because not all summation variables
 		// will have a filter associated with it.
 		Set<SummationVariable> summationVariables = new HashSet<SummationVariable>();
-
 		Set<SummationAtom> summationAtoms = new HashSet<SummationAtom>();
 
 		// Collect all the atoms from the body (expression).
@@ -123,6 +182,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 		}
 
 		// Build a variable map for the constants used as keys in |summationSubs|.
+		// Maps non-summation variables to a unique integer.
 		Map<Variable, Integer> subsVariableMap = new HashMap<Variable, Integer>();
 		for (int i = 0; i < nonSummationVariables.size(); i++) {
 			subsVariableMap.put(nonSummationVariables.get(i), new Integer(i));
@@ -146,6 +206,9 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 		// Store all ground summation atoms for later validation.
 		Set<GroundAtom> groundSummationAtoms = new HashSet<GroundAtom>();
 
+		// Collapse all the groundings with the same non-arithmetic components into one grounding (|summationSubs|).
+		// Ex: Foo(A, +B) = 1 -- [Foo('Alice', 'Bob') = 1, Foo('Alice', 'Charlie') = 1]
+		//  becomes [Foo('Alice', 'Bob') + Foo('Alice', 'Charlie') = 1]
 		for (int i = 0; i < rawGroundings.size(); i++) {
 			Constant[] rawGrounding = rawGroundings.get(i);
 
@@ -157,7 +220,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 			// Put all the non-summation constants into a list.
 			// Note that we know the size ahead of time and would have used an array, but this will need to
 			// be a key in a map so it must be an Object.
-			List<Constant> nonSummationConstants = new ArrayList<Constant>();
+			List<Constant> nonSummationConstants = new ArrayList<Constant>(nonSummationVariables.size());
 			for (Variable nonSummationVariable : nonSummationVariables) {
 				nonSummationConstants.add(rawGrounding[groundingVariableMap.get(nonSummationVariable).intValue()]);
 			}
@@ -192,14 +255,14 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 		for (Map.Entry<List<Constant>, Map<SummationVariable, Set<Constant>>> summationSub : summationSubs.entrySet()) {
 			populateCoeffsAndAtoms(coeffs, atoms, summationSub.getKey(), subsVariableMap,
 					atomManager, summationSub.getValue(), groundSummationAtoms);
-			groundCount += ground(grs, coeffs, atoms,
+			groundCount += ground(groundRuleStore, coeffs, atoms,
 					expression.getFinalCoefficient().getValue(summationSub.getValue()));
 
 			coeffs.clear();
 			atoms.clear();
 		}
 
-		log.debug("Grounded {} instances of rule {}", groundCount, this);
+		return groundCount;
 	}
 
 	private Map<SummationVariable, SummationDisjunctionValues> evaluateFilters(AtomManager atomManager) {
@@ -221,8 +284,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 				filterFormulas.add(filterFormula);
 			}
 
-			// For each conjunction/negation (component of the disjunction that is the filter).
-			// We need to do each disjunction independently, because the non-exsistance of a grounding
+			// We need to process each disjunctive component independently, because the non-exsistance of a grounding
 			// in one part of the disjunction should not affect the other parts of the disjunction.
 			// Ex: Friends(A, +B) >= 1 {B: Empty(B) || AlwaysTrue(B)
 			// Where Empty has no observations and AlwaysTrue has 1 for every possible opservation.
@@ -351,7 +413,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 						partialGrounding, atomManager,
 						groundSummationAtoms, subs, coeffValue, 0, 0);
 			} else {
-				// Non-summation atoms will get onverted into ground atoms.
+				// Non-summation atoms will get converted into ground atoms.
 				GroundAtom atom = getGroundAtom((Atom)expression.getAtoms().get(atomIndex),
 						grounding, varMap, atomManager);
 
@@ -460,7 +522,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 	 * The actual grounding into the GroundRuleStore.
 	 * @return the number of ground rules added to the store.
 	 */
-	protected int ground(GroundRuleStore grs, List<Double>coeffs, List<GroundAtom> atoms, double finalCoeff) {
+	protected int ground(GroundRuleStore groundRuleStore, List<Double>coeffs, List<GroundAtom> atoms, double finalCoeff) {
 		double[] coeffArray = new double[coeffs.size()];
 		for (int j = 0; j < coeffArray.length; j++) {
 			coeffArray[j] = coeffs.get(j);
@@ -468,11 +530,11 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 		GroundAtom[] atomArray = atoms.toArray(new GroundAtom[atoms.size()]);
 
 		if (FunctionComparator.Equality.equals(expression.getComparator())) {
-			grs.addGroundRule(makeGroundRule(coeffArray, atomArray, FunctionComparator.LargerThan, finalCoeff));
-			grs.addGroundRule(makeGroundRule(coeffArray, atomArray, FunctionComparator.SmallerThan, finalCoeff));
+			groundRuleStore.addGroundRule(makeGroundRule(coeffArray, atomArray, FunctionComparator.LargerThan, finalCoeff));
+			groundRuleStore.addGroundRule(makeGroundRule(coeffArray, atomArray, FunctionComparator.SmallerThan, finalCoeff));
 			return 2;
 		} else {
-			grs.addGroundRule(makeGroundRule(coeffArray, atomArray, expression.getComparator(), finalCoeff));
+			groundRuleStore.addGroundRule(makeGroundRule(coeffArray, atomArray, expression.getComparator(), finalCoeff));
 			return 1;
 		}
 	}
@@ -539,12 +601,12 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 
 	/**
 	 * Holds the SummationValues for a single filter.
-	 * Since each component of the disjunction (we will call conjunction, but can also be a negation)
+	 * Since each component of the disjunction (we usually will call conjunction, but can also be a negation)
 	 * needs to be evaluated independently and has an independent set of variables used, we
 	 * will need to keep track of each separately.
 	 */
 	private static class SummationDisjunctionValues {
-		// Each conjunction/negation/atom that makes of the disjunction.
+		// Each conjunction/negation/atom that makes up the disjunction.
 		private List<SummationValues> components;
 
 		public SummationDisjunctionValues() {
@@ -595,8 +657,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 		public SummationValues(Set<Atom> atoms) {
 			Set<Variable> setVariables = new HashSet<Variable>();
 			for (Atom atom : atoms) {
-				Term[] args = atom.getArguments();
-				for (Term arg : args) {
+				for (Term arg : atom.getArguments()) {
 					if (arg instanceof Variable) {
 						setVariables.add((Variable)arg);
 					}
@@ -656,6 +717,8 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 		 * Get the evaluation for a specific grounding.
 		 */
 		public boolean getEvaluation(Constant[] groundings, Map<Variable, Integer> variableMap) {
+			// If we have no variables we are actually tracking, then see if this is always
+			// true (has any true values).
 			if (variables.size() == 0) {
 				return valueMap.size() == 1;
 			}
