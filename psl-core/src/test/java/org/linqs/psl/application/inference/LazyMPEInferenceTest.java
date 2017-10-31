@@ -16,6 +16,7 @@ import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Implication;
 import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.arithmetic.WeightedArithmeticRule;
 import org.linqs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
 import org.linqs.psl.model.rule.arithmetic.expression.SummationAtomOrAtom;
@@ -50,10 +51,52 @@ public class LazyMPEInferenceTest {
 	 */
 	@Test
 	public void testBase() {
+		TestModelFactory.ModelInformation info = TestModelFactory.getModel(true);
+
+		// Get an empty partition so that no targets will exist in it and we will have to lazily instantiate them all.
+		Partition targetPartition = info.dataStore.getPartition(TestModelFactory.PARTITION_UNUSED);
+
+		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
+		Database inferDB = info.dataStore.getDatabase(targetPartition, toClose, info.observationPartition);
+		LazyMPEInference mpe = new LazyMPEInference(info.model, inferDB, info.config);
+
+		// The Friends predicate should be empty.
+		assertEquals(0, Queries.countAllGroundRandomVariableAtoms(inferDB, info.predicates.get("Friends")));
+
+		mpe.mpeInference();
+
+		// Now the Friends predicate should have the crossproduct (5x5) minus self pairs (5) in it.
+		assertEquals(20, Queries.countAllGroundRandomVariableAtoms(inferDB, info.predicates.get("Friends")));
+
+		mpe.close();
+		inferDB.close();
+	}
+
+	/**
+	 * Ensure that simple arithmetic groundings (no summation atoms) works.
+	 */
+	@Test
+	public void testSimpleArithmetic() {
 		// TEST
-		System.out.println("TEST1");
+		PSLTest.initLogger("DEBUG");
 
 		TestModelFactory.ModelInformation info = TestModelFactory.getModel(true);
+
+		// 1.0: Friends(A, B) >= 0.5 ^2
+		List<Coefficient> coefficients = Arrays.asList(
+			(Coefficient)(new ConstantNumber(1))
+		);
+
+		List<SummationAtomOrAtom> atoms = Arrays.asList(
+			(SummationAtomOrAtom)(new QueryAtom(info.predicates.get("Friends"), new Variable("A"), new Variable("B")))
+		);
+
+		Rule rule = new WeightedArithmeticRule(
+				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(0.5)),
+				1.0,
+				true
+		);
+		info.model.addRule(rule);
 
 		// Get an empty partition so that no targets will exist in it and we will have to lazily instantiate them all.
 		Partition targetPartition = info.dataStore.getPartition(TestModelFactory.PARTITION_UNUSED);

@@ -154,30 +154,19 @@ public class LazyAtomManager extends PersistedAtomManager  {
 		Set<Rule> lazyRules = getLazyRules(model, lazyPredicates);
 
 		for (Rule lazyRule : lazyRules) {
-			// TODO(eriq): Arithmetic
-			AbstractLogicalRule rule = (AbstractLogicalRule)lazyRule;
-
-			Formula formula = rule.getDNF().getQueryFormula();
-			List<Atom> lazyTargets = new ArrayList<Atom>();
-
-			// For every mention of a lazy predicate in this rule, we will need to get the grounding query
-			// with that specific predicate mention being the lazy target.
-			for (Atom atom : formula.getAtoms(new HashSet<Atom>())) {
-				if (!lazyPredicates.contains(atom.getPredicate())) {
-					continue;
+			if (lazyRule instanceof AbstractLogicalRule) {
+				lazyLogicalGround((AbstractLogicalRule)lazyRule, lazyPredicates, groundRuleStore);
+			} else if (lazyRule instanceof AbstractArithmeticRule) {
+				if (((AbstractArithmeticRule)lazyRule).hasSummation()) {
+					// TEST(eriq)
+					// lazyComplexArithmeticGround((AbstractArithmeticRule)lazyRule, lazyPredicates, groundRuleStore);
+					throw new IllegalStateException("TODO(eriq)");
+				} else {
+					lazySimpleArithmeticGround((AbstractArithmeticRule)lazyRule, lazyPredicates, groundRuleStore);
 				}
-
-				lazyTargets.add(atom);
+			} else {
+				throw new IllegalStateException("Unknown rule type: " + lazyRule.getClass().getName());
 			}
-
-			if (lazyTargets.size() == 0) {
-				continue;
-			}
-
-			// Do the grounding query for this rule.
-			ResultList groundingResults = lazyGround(formula, lazyTargets, groundRuleStore);
-
-			rule.groundAll(groundingResults, this, groundRuleStore);
 		}
 
 		// Move all the new atoms out of the lazy partition and into the write partition.
@@ -186,8 +175,46 @@ public class LazyAtomManager extends PersistedAtomManager  {
 		}
 	}
 
+	private void lazySimpleArithmeticGround(AbstractArithmeticRule rule, Set<StandardPredicate> lazyPredicates, GroundRuleStore groundRuleStore) {
+		Formula formula = rule.getExpression().getQueryFormula();
+		ResultList groundingResults = getLazyGroundingResults(formula, lazyPredicates);
+		if (groundingResults == null) {
+			return;
+		}
+		rule.groundNonSummationRule(groundingResults, this, groundRuleStore);
+	}
 
-	private ResultList lazyGround(Formula formula, List<Atom> lazyTargets, GroundRuleStore groundRuleStore) {
+	private void lazyLogicalGround(AbstractLogicalRule rule, Set<StandardPredicate> lazyPredicates, GroundRuleStore groundRuleStore) {
+		Formula formula = rule.getDNF().getQueryFormula();
+		ResultList groundingResults = getLazyGroundingResults(formula, lazyPredicates);
+		if (groundingResults == null) {
+			return;
+		}
+		rule.groundAll(groundingResults, this, groundRuleStore);
+	}
+
+	private ResultList getLazyGroundingResults(Formula formula, Set<StandardPredicate> lazyPredicates) {
+		List<Atom> lazyTargets = new ArrayList<Atom>();
+
+		// For every mention of a lazy predicate in this rule, we will need to get the grounding query
+		// with that specific predicate mention being the lazy target.
+		for (Atom atom : formula.getAtoms(new HashSet<Atom>())) {
+			if (!lazyPredicates.contains(atom.getPredicate())) {
+				continue;
+			}
+
+			lazyTargets.add(atom);
+		}
+
+		if (lazyTargets.size() == 0) {
+			return null;
+		}
+
+		// Do the grounding query for this rule.
+		return lazyGround(formula, lazyTargets);
+	}
+
+	private ResultList lazyGround(Formula formula, List<Atom> lazyTargets) {
 		if (lazyTargets.size() == 0) {
 			throw new IllegalArgumentException();
 		}
@@ -239,6 +266,16 @@ public class LazyAtomManager extends PersistedAtomManager  {
 						break;
 					}
 				}
+			} else if (rule instanceof AbstractArithmeticRule) {
+				// Note that we do not bother checking the filters since those predicates must be closed.
+				for (Predicate predicate : ((AbstractArithmeticRule)rule).getBodyPredicates()) {
+					if (lazyPredicates.contains(predicate)) {
+						lazyRules.add(rule);
+						break;
+					}
+				}
+			} else {
+				throw new IllegalStateException("Unknown rule type: " + rule.getClass().getName());
 			}
 
 			// TODO(eriq): Arithmetic
