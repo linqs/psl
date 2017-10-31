@@ -54,6 +54,7 @@ import org.linqs.psl.model.predicate.SpecialPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.arithmetic.UnweightedArithmeticRule;
 import org.linqs.psl.model.rule.arithmetic.WeightedArithmeticRule;
 import org.linqs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
@@ -92,6 +93,7 @@ import java.util.Set;
  * Check for ground rules being created properly.
  */
 public class GroundRuleTest {
+	private static final double EPSILON = 0.00001;
 	private TestModelFactory.ModelInformation model;
 	private Database database;
 
@@ -101,6 +103,10 @@ public class GroundRuleTest {
 	}
 
 	private void initModel(boolean useNice) {
+		initModel(useNice, false);
+	}
+
+	private void initModel(boolean useNice, boolean addSelfTargets) {
 		if (database != null) {
 			database.close();
 			database = null;
@@ -112,6 +118,18 @@ public class GroundRuleTest {
 		}
 
 		model = TestModelFactory.getModel(useNice);
+
+		// Add in self friendship ground atoms so we can get more groundings on some tests.
+		// (Specifically arithmetic tests where we query for even negative atoms.)
+		if (addSelfTargets) {
+			Inserter inserter = model.dataStore.getInserter(model.predicates.get("Friends"), model.targetPartition);
+			inserter.insert("Alice", "Alice");
+			inserter.insert("Bob", "Bob");
+			inserter.insert("Charlie", "Charlie");
+			inserter.insert("Derek", "Derek");
+			inserter.insert("Eugene", "Eugene");
+		}
+
 		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
 		toClose.add(model.predicates.get("Nice"));
 		toClose.add(model.predicates.get("Person"));
@@ -270,6 +288,141 @@ public class GroundRuleTest {
 			"1.0: ( ~( NICE('Charlie') ) | ~( NICE('Derek') ) | ~( ('Charlie' % 'Derek') ) | FRIENDS('Charlie', 'Derek') ) ^2",
 			"1.0: ( ~( NICE('Charlie') ) | ~( NICE('Eugene') ) | ~( ('Charlie' % 'Eugene') ) | FRIENDS('Charlie', 'Eugene') ) ^2",
 			"1.0: ( ~( NICE('Derek') ) | ~( NICE('Eugene') ) | ~( ('Derek' % 'Eugene') ) | FRIENDS('Derek', 'Eugene') ) ^2"
+		);
+		rule.groundAll(manager, store);
+		PSLTest.compareGroundRules(expected, rule, store);
+	}
+
+	@Test
+	public void testArithmeticSpecialPredicates() {
+		initModel(true, true);
+
+		GroundRuleStore store = new MemoryGroundRuleStore();
+		AtomManager manager = new SimpleAtomManager(database);
+
+		Rule rule;
+		List<String> expected;
+		List<Coefficient> coefficients;
+		List<SummationAtomOrAtom> atoms;
+
+		// Nice(A) + Nice(B) + (A == B) >= Friends(A, B)
+		// Nice(A) + Nice(B) + (A == B) - Friends(A, B) >= 0
+		coefficients = Arrays.asList(
+			(Coefficient)(new ConstantNumber(1)),
+			(Coefficient)(new ConstantNumber(1)),
+			(Coefficient)(new ConstantNumber(1)),
+			(Coefficient)(new ConstantNumber(-1))
+		);
+
+		atoms = Arrays.asList(
+			(SummationAtomOrAtom)(new QueryAtom(model.predicates.get("Nice"), new Variable("A"))),
+			(SummationAtomOrAtom)(new QueryAtom(model.predicates.get("Nice"), new Variable("B"))),
+			(SummationAtomOrAtom)(new QueryAtom(SpecialPredicate.Equal, new Variable("A"), new Variable("B"))),
+			(SummationAtomOrAtom)(new QueryAtom(model.predicates.get("Friends"), new Variable("A"), new Variable("B")))
+		);
+
+		rule = new WeightedArithmeticRule(
+				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.SmallerThan, new ConstantNumber(0)),
+				1.0,
+				true
+		);
+
+		expected = Arrays.asList(
+			"1.0: 1.0 * NICE('Alice') + 1.0 * NICE('Alice') + 1.0 * ('Alice' == 'Alice') + -1.0 * FRIENDS('Alice', 'Alice') <= 0.0 ^2",
+			"1.0: 1.0 * NICE('Bob') + 1.0 * NICE('Bob') + 1.0 * ('Bob' == 'Bob') + -1.0 * FRIENDS('Bob', 'Bob') <= 0.0 ^2",
+			"1.0: 1.0 * NICE('Charlie') + 1.0 * NICE('Charlie') + 1.0 * ('Charlie' == 'Charlie') + -1.0 * FRIENDS('Charlie', 'Charlie') <= 0.0 ^2",
+			"1.0: 1.0 * NICE('Derek') + 1.0 * NICE('Derek') + 1.0 * ('Derek' == 'Derek') + -1.0 * FRIENDS('Derek', 'Derek') <= 0.0 ^2",
+			"1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Eugene') + 1.0 * ('Eugene' == 'Eugene') + -1.0 * FRIENDS('Eugene', 'Eugene') <= 0.0 ^2"
+		);
+		rule.groundAll(manager, store);
+		PSLTest.compareGroundRules(expected, rule, store);
+
+		// Ensure that the special predicate is not contributing to the value (incompatibility) of the rule.
+		for (GroundRule groundRule : store.getGroundRules(rule)) {
+			// All should gave the value of 1.0: Both Nice values are 1,0, and the Friends starts at 1.0 (with -1 coefficient).
+			assertEquals(1.0, ((WeightedGroundRule)groundRule).getIncompatibility(), EPSILON);
+		}
+
+		// Nice(A) + Nice(B) + (A != B) <= Friends(A, B)
+		// Nice(A) + Nice(B) + (A != B) - Friends(A, B) <= 0
+		coefficients = Arrays.asList(
+			(Coefficient)(new ConstantNumber(1)),
+			(Coefficient)(new ConstantNumber(1)),
+			(Coefficient)(new ConstantNumber(1)),
+			(Coefficient)(new ConstantNumber(-1))
+		);
+
+		atoms = Arrays.asList(
+			(SummationAtomOrAtom)(new QueryAtom(model.predicates.get("Nice"), new Variable("A"))),
+			(SummationAtomOrAtom)(new QueryAtom(model.predicates.get("Nice"), new Variable("B"))),
+			(SummationAtomOrAtom)(new QueryAtom(SpecialPredicate.NotEqual, new Variable("A"), new Variable("B"))),
+			(SummationAtomOrAtom)(new QueryAtom(model.predicates.get("Friends"), new Variable("A"), new Variable("B")))
+		);
+
+		rule = new WeightedArithmeticRule(
+				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.SmallerThan, new ConstantNumber(0)),
+				1.0,
+				true
+		);
+
+		expected = Arrays.asList(
+			"1.0: 1.0 * NICE('Alice') + 1.0 * NICE('Bob') + 1.0 * ('Alice' != 'Bob') + -1.0 * FRIENDS('Alice', 'Bob') <= 0.0 ^2",
+			"1.0: 1.0 * NICE('Alice') + 1.0 * NICE('Charlie') + 1.0 * ('Alice' != 'Charlie') + -1.0 * FRIENDS('Alice', 'Charlie') <= 0.0 ^2",
+			"1.0: 1.0 * NICE('Alice') + 1.0 * NICE('Derek') + 1.0 * ('Alice' != 'Derek') + -1.0 * FRIENDS('Alice', 'Derek') <= 0.0 ^2",
+			"1.0: 1.0 * NICE('Alice') + 1.0 * NICE('Eugene') + 1.0 * ('Alice' != 'Eugene') + -1.0 * FRIENDS('Alice', 'Eugene') <= 0.0 ^2",
+			"1.0: 1.0 * NICE('Bob') + 1.0 * NICE('Alice') + 1.0 * ('Bob' != 'Alice') + -1.0 * FRIENDS('Bob', 'Alice') <= 0.0 ^2",
+			"1.0: 1.0 * NICE('Bob') + 1.0 * NICE('Charlie') + 1.0 * ('Bob' != 'Charlie') + -1.0 * FRIENDS('Bob', 'Charlie') <= 0.0 ^2",
+			"1.0: 1.0 * NICE('Bob') + 1.0 * NICE('Derek') + 1.0 * ('Bob' != 'Derek') + -1.0 * FRIENDS('Bob', 'Derek') <= 0.0 ^2",
+			"1.0: 1.0 * NICE('Bob') + 1.0 * NICE('Eugene') + 1.0 * ('Bob' != 'Eugene') + -1.0 * FRIENDS('Bob', 'Eugene') <= 0.0 ^2",
+			"1.0: 1.0 * NICE('Charlie') + 1.0 * NICE('Alice') + 1.0 * ('Charlie' != 'Alice') + -1.0 * FRIENDS('Charlie', 'Alice') <= 0.0 ^2",
+			"1.0: 1.0 * NICE('Charlie') + 1.0 * NICE('Bob') + 1.0 * ('Charlie' != 'Bob') + -1.0 * FRIENDS('Charlie', 'Bob') <= 0.0 ^2",
+			"1.0: 1.0 * NICE('Charlie') + 1.0 * NICE('Derek') + 1.0 * ('Charlie' != 'Derek') + -1.0 * FRIENDS('Charlie', 'Derek') <= 0.0 ^2",
+			"1.0: 1.0 * NICE('Charlie') + 1.0 * NICE('Eugene') + 1.0 * ('Charlie' != 'Eugene') + -1.0 * FRIENDS('Charlie', 'Eugene') <= 0.0 ^2",
+			"1.0: 1.0 * NICE('Derek') + 1.0 * NICE('Alice') + 1.0 * ('Derek' != 'Alice') + -1.0 * FRIENDS('Derek', 'Alice') <= 0.0 ^2",
+			"1.0: 1.0 * NICE('Derek') + 1.0 * NICE('Bob') + 1.0 * ('Derek' != 'Bob') + -1.0 * FRIENDS('Derek', 'Bob') <= 0.0 ^2",
+			"1.0: 1.0 * NICE('Derek') + 1.0 * NICE('Charlie') + 1.0 * ('Derek' != 'Charlie') + -1.0 * FRIENDS('Derek', 'Charlie') <= 0.0 ^2",
+			"1.0: 1.0 * NICE('Derek') + 1.0 * NICE('Eugene') + 1.0 * ('Derek' != 'Eugene') + -1.0 * FRIENDS('Derek', 'Eugene') <= 0.0 ^2",
+			"1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Alice') + 1.0 * ('Eugene' != 'Alice') + -1.0 * FRIENDS('Eugene', 'Alice') <= 0.0 ^2",
+			"1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Bob') + 1.0 * ('Eugene' != 'Bob') + -1.0 * FRIENDS('Eugene', 'Bob') <= 0.0 ^2",
+			"1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Charlie') + 1.0 * ('Eugene' != 'Charlie') + -1.0 * FRIENDS('Eugene', 'Charlie') <= 0.0 ^2",
+			"1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Derek') + 1.0 * ('Eugene' != 'Derek') + -1.0 * FRIENDS('Eugene', 'Derek') <= 0.0 ^2"
+		);
+		rule.groundAll(manager, store);
+		PSLTest.compareGroundRules(expected, rule, store);
+
+		// Nice(A) + Nice(B) + (A % B) <= Friends(A, B)
+		// Nice(A) + Nice(B) + (A % B) - Friends(A, B) <= 0
+		coefficients = Arrays.asList(
+			(Coefficient)(new ConstantNumber(1)),
+			(Coefficient)(new ConstantNumber(1)),
+			(Coefficient)(new ConstantNumber(1)),
+			(Coefficient)(new ConstantNumber(-1))
+		);
+
+		atoms = Arrays.asList(
+			(SummationAtomOrAtom)(new QueryAtom(model.predicates.get("Nice"), new Variable("A"))),
+			(SummationAtomOrAtom)(new QueryAtom(model.predicates.get("Nice"), new Variable("B"))),
+			(SummationAtomOrAtom)(new QueryAtom(SpecialPredicate.NonSymmetric, new Variable("A"), new Variable("B"))),
+			(SummationAtomOrAtom)(new QueryAtom(model.predicates.get("Friends"), new Variable("A"), new Variable("B")))
+		);
+
+		rule = new WeightedArithmeticRule(
+				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.SmallerThan, new ConstantNumber(0)),
+				1.0,
+				true
+		);
+
+		expected = Arrays.asList(
+			"1.0: 1.0 * NICE('Alice') + 1.0 * NICE('Bob') + 1.0 * ('Alice' % 'Bob') + -1.0 * FRIENDS('Alice', 'Bob') <= 0.0 ^2",
+			"1.0: 1.0 * NICE('Alice') + 1.0 * NICE('Charlie') + 1.0 * ('Alice' % 'Charlie') + -1.0 * FRIENDS('Alice', 'Charlie') <= 0.0 ^2",
+			"1.0: 1.0 * NICE('Alice') + 1.0 * NICE('Derek') + 1.0 * ('Alice' % 'Derek') + -1.0 * FRIENDS('Alice', 'Derek') <= 0.0 ^2",
+			"1.0: 1.0 * NICE('Alice') + 1.0 * NICE('Eugene') + 1.0 * ('Alice' % 'Eugene') + -1.0 * FRIENDS('Alice', 'Eugene') <= 0.0 ^2",
+			"1.0: 1.0 * NICE('Bob') + 1.0 * NICE('Charlie') + 1.0 * ('Bob' % 'Charlie') + -1.0 * FRIENDS('Bob', 'Charlie') <= 0.0 ^2",
+			"1.0: 1.0 * NICE('Bob') + 1.0 * NICE('Derek') + 1.0 * ('Bob' % 'Derek') + -1.0 * FRIENDS('Bob', 'Derek') <= 0.0 ^2",
+			"1.0: 1.0 * NICE('Bob') + 1.0 * NICE('Eugene') + 1.0 * ('Bob' % 'Eugene') + -1.0 * FRIENDS('Bob', 'Eugene') <= 0.0 ^2",
+			"1.0: 1.0 * NICE('Charlie') + 1.0 * NICE('Derek') + 1.0 * ('Charlie' % 'Derek') + -1.0 * FRIENDS('Charlie', 'Derek') <= 0.0 ^2",
+			"1.0: 1.0 * NICE('Charlie') + 1.0 * NICE('Eugene') + 1.0 * ('Charlie' % 'Eugene') + -1.0 * FRIENDS('Charlie', 'Eugene') <= 0.0 ^2",
+			"1.0: 1.0 * NICE('Derek') + 1.0 * NICE('Eugene') + 1.0 * ('Derek' % 'Eugene') + -1.0 * FRIENDS('Derek', 'Eugene') <= 0.0 ^2"
 		);
 		rule.groundAll(manager, store);
 		PSLTest.compareGroundRules(expected, rule, store);
