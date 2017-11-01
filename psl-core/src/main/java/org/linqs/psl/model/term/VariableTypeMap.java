@@ -36,13 +36,18 @@ import java.util.Set;
 public class VariableTypeMap extends HashMap<Variable, ConstantType> {
 	private static final long serialVersionUID = -6590175777602710989L;
 
+	public void addVariable(Variable var, ConstantType type) {
+		addVariable(var, type, false);
+	}
+
 	/**
 	 * Adds a variable-type pair to the hashmap.
 	 *
 	 * @param var A variable
 	 * @param type An argument type
+	 * @param force ignore any consistency checks. This is not suggested.
 	 */
-	public void addVariable(Variable var, ConstantType type) {
+	public void addVariable(Variable var, ConstantType type, boolean force) {
 		ConstantType oldType = get(var);
 		if (oldType == null) {
 			put(var, type);
@@ -51,6 +56,11 @@ public class VariableTypeMap extends HashMap<Variable, ConstantType> {
 
 		// No need to do anything on a type match.
 		if (oldType == type) {
+			return;
+		}
+
+		if (force) {
+			put(var, type);
 			return;
 		}
 
@@ -120,7 +130,7 @@ public class VariableTypeMap extends HashMap<Variable, ConstantType> {
 	 */
 	public void addAll(VariableTypeMap other) {
 		for (Map.Entry<Variable, ConstantType> entry : other.entrySet()) {
-			addVariable(entry.getKey(),entry.getValue());
+			addVariable(entry.getKey(), entry.getValue());
 		}
 	}
 }

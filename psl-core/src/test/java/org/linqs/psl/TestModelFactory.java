@@ -230,10 +230,15 @@ public class TestModelFactory {
 		}
 
 		String identifier = String.format("%s-%03d", TestModelFactory.class.getName(), modelId);
+		// TEST
+		/*
 		DataStore dataStore = new RDBMSDataStore(new H2DatabaseDriver(
 				Type.Memory,
 				Paths.get(System.getProperty("java.io.tmpdir"), identifier).toString(),
 				true), config);
+		*/
+		DataStore dataStore = new RDBMSDataStore(new org.linqs.psl.database.rdbms.driver.PostgreSQLDriver("testtime", true), config);
+
 		Model model = new Model();
 
 		// Predicates

@@ -643,6 +643,13 @@ public class RDBMSDatabase implements Database {
 	}
 
 	private GroundAtom getAtom(StandardPredicate predicate, Constant... arguments) {
+		return getAtom(predicate, true, arguments);
+	}
+
+	/**
+	 * @param create Create an atom if one does not exist.
+	 */
+	private GroundAtom getAtom(StandardPredicate predicate, boolean create, Constant... arguments) {
 		// Ensure this database has this predicate.
 		getPredicateInfo(predicate);
 
@@ -664,15 +671,21 @@ public class RDBMSDatabase implements Database {
 			throw new RuntimeException("Error getting atom for " + predicate, ex);
 		}
 
-		if (result == null) {
-			if (isClosed((StandardPredicate) predicate)) {
-				result = cache.instantiateObservedAtom(predicate, arguments, DEFAULT_UNOBSERVED_VALUE);
-			} else {
-				result = cache.instantiateRandomVariableAtom(predicate, arguments, DEFAULT_UNOBSERVED_VALUE);
-			}
+		if (result != null || !create) {
+			return result;
+		}
+
+		if (isClosed((StandardPredicate) predicate)) {
+			result = cache.instantiateObservedAtom(predicate, arguments, DEFAULT_UNOBSERVED_VALUE);
+		} else {
+			result = cache.instantiateRandomVariableAtom(predicate, arguments, DEFAULT_UNOBSERVED_VALUE);
 		}
 
 		return result;
+	}
+
+	public boolean hasAtom(StandardPredicate predicate, Constant... arguments) {
+		return getAtom(predicate, false, arguments) != null;
 	}
 
 	private List<GroundAtom> getAllGroundAtoms(StandardPredicate predicate, List<Integer> partitions) {

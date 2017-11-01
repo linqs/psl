@@ -32,7 +32,7 @@ public class ConstantNumber extends Coefficient {
 	}
 
 	@Override
-	public double getValue(Map<SummationVariable, Set<Constant>> subs) {
+	public double getValue(Map<SummationVariable, Integer> subs) {
 		return value;
 	}
 	

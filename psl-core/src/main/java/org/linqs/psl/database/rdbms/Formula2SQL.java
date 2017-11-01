@@ -57,6 +57,11 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 	 */
 	private final Map<Variable, String> joins;
 
+	/**
+	 * Maps each atom to the table (alias) it is drawn from.
+	 */
+	private final Map<Atom, String> tableAliases;
+
 	private final List<Atom> functionalAtoms;
 
 	private final SelectQuery query;
@@ -109,6 +114,7 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 		this.lazyTarget = lazyTarget;
 
 		joins = new HashMap<Variable, String>();
+		tableAliases = new HashMap<Atom, String>();
 		projectionMap = new HashMap<Variable, Integer>();
 		functionalAtoms = new ArrayList<Atom>();
 		tableCounter = 0;
@@ -138,6 +144,10 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 
 	public Map<Variable, Integer> getProjectionMap() {
 		return Collections.unmodifiableMap(projectionMap);
+	}
+
+	public Map<Atom, String> getTableAliases() {
+		return Collections.unmodifiableMap(tableAliases);
 	}
 
 	@Override
@@ -232,6 +242,7 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 		PredicateInfo predicateInfo = database.getPredicateInfo(atom.getPredicate());
 
 		String tableAlias = String.format("%s_%03d", TABLE_ALIAS_PREFIX, tableCounter);
+		tableAliases.put(atom, tableAlias);
 
 		query.addCustomFromTable(predicateInfo.tableName() + " " + tableAlias);
 

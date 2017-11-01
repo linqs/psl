@@ -79,4 +79,8 @@ public abstract class AtomManager {
 	public boolean isClosed(StandardPredicate predicate) {
 		return db.isClosed(predicate);
 	}
+
+	public Database getDatabase() {
+		return db;
+	}
 }

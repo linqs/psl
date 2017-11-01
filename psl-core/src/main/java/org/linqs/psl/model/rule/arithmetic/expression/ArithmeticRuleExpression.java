@@ -126,6 +126,9 @@ public class ArithmeticRuleExpression {
 		return c;
 	}
 
+	/**
+	 * Get the non-summation variables.
+	 */
 	public Set<Variable> getVariables() {
 		return vars;
 	}

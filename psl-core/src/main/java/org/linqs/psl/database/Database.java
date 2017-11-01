@@ -78,14 +78,14 @@ public interface Database {
 
 	/**
 	 * Returns the GroundAtom for the given Predicate and GroundTerms.
-	 * <p>
+	 *
 	 * Any GroundAtom with a {@link StandardPredicate} can be retrieved if and only
 	 * if its Predicate was registered with the DataStore at the time of the Database's
 	 * instantiation. Any GroundAtom with an ExternalFunctionalPredicate} can also be retrieved.
 	 * This method first checks the {@link AtomCache} to see if the GroundAtom already
 	 * exists in memory. If it does, then that object is returned. (The AtomCache is
 	 * accessible via {@link #getAtomCache()}.)
-	 * <p>
+	 *
 	 * If the GroundAtom does not exist in memory, then it will be instantiated and
 	 * stored in the AtomCache before being returned. The subtype and state of the
 	 * instantiated GroundAtom depends on several factors:
@@ -106,13 +106,20 @@ public interface Database {
 	 *	truth value.</li>
 	 * </ul>
 	 *
-	 * @param p  the Predicate of the Atom
-	 * @param arguments  the GroundTerms of the Atom
+	 * @param predicate the Predicate of the Atom
+	 * @param arguments the GroundTerms of the Atom
 	 * @return the Atom
-	 * @throws IllegalArgumentException  if p is not registered or arguments are not valid
-	 * @throws IllegalStateException  if the Atom is persisted in multiple read Partitions
+	 * @throws IllegalArgumentException if predicate is not registered or arguments are not valid
+	 * @throws IllegalStateException if the Atom is persisted in multiple read Partitions
 	 */
-	public GroundAtom getAtom(Predicate p, Constant... arguments);
+	public GroundAtom getAtom(Predicate predicate, Constant... arguments);
+
+	/**
+	 * Check to see if a ground atom exists in the database.
+	 * This looks for a real ground atom and ignores the closed-world assumption.
+	 * If found, the atom will be cached for subsequent requests to this or getAtom().
+	 */
+	public boolean hasAtom(StandardPredicate predicate, Constant... arguments);
 
 	/**
 	 * Get a count of all the ground atoms for a predicate.
@@ -160,18 +167,18 @@ public interface Database {
 	 *
 	 * @param a the GroundAtom to delete
 	 * @return If an atom was removed
-	 * @throws IllegalArgumentException  if p is not registered or arguments are not valid
+	 * @throws IllegalArgumentException if predicate is not registered or arguments are not valid
 	 */
 	public boolean deleteAtom(GroundAtom a);
 
 	/**
 	 * Persists a RandomVariableAtom in this Database's write Partition.
-	 * <p>
+	 *
 	 * If the RandomVariableAtom has already been persisted in the write Partition,
 	 * it will be updated.
 	 *
-	 * @param atom  the Atom to persist
-	 * @throws IllegalArgumentException  if atom does not belong to this Database
+	 * @param atom the Atom to persist
+	 * @throws IllegalArgumentException if atom does not belong to this Database
 	 */
 	public void commit(RandomVariableAtom atom);
 
@@ -198,17 +205,17 @@ public interface Database {
 	/**
 	 * Returns all groundings of a Formula that match a DatabaseQuery.
 	 *
-	 * @param query  the query to match
+	 * @param query the query to match
 	 * @return a list of lists of substitutions of {@link Constant GroundTerms}
 	 *				 for {@link Variable Variables}
-	 * @throws IllegalArgumentException  if the query Formula is invalid
+	 * @throws IllegalArgumentException if the query Formula is invalid
 	 */
 	public ResultList executeQuery(DatabaseQuery query);
 
 	/**
 	 * Returns whether a StandardPredicate is closed in this Database.
 	 *
-	 * @param predicate  the Predicate to check
+	 * @param predicate the Predicate to check
 	 * @return TRUE if predicate is closed
 	 */
 	public boolean isClosed(StandardPredicate predicate);

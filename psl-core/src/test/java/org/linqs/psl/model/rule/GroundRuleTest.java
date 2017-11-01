@@ -666,13 +666,8 @@ public class GroundRuleTest {
 				true
 		);
 
-		expected = Arrays.asList(
-			"1.0: 0.0 >= 1.0 ^2",
-			"1.0: 0.0 >= 1.0 ^2",
-			"1.0: 0.0 >= 1.0 ^2",
-			"1.0: 0.0 >= 1.0 ^2",
-			"1.0: 0.0 >= 1.0 ^2"
-		);
+		// There will be no results because ground rules with no subs in the selects do not ground.
+		expected = new ArrayList<String>();
 		rule.groundAll(manager, store);
 		PSLTest.compareGroundRules(expected, rule, store, false);
 	}
@@ -745,8 +740,7 @@ public class GroundRuleTest {
 			"1.0: 1.0 * FRIENDS('Alice', 'Eugene') >= 1.0 ^2",
 			"1.0: 1.0 * FRIENDS('Bob', 'Eugene') >= 1.0 ^2",
 			"1.0: 1.0 * FRIENDS('Charlie', 'Eugene') >= 1.0 ^2",
-			"1.0: 1.0 * FRIENDS('Derek', 'Eugene') >= 1.0 ^2",
-			"1.0: 0.0 >= 1.0 ^2"
+			"1.0: 1.0 * FRIENDS('Derek', 'Eugene') >= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
 		PSLTest.compareGroundRules(expected, rule, store, false);
@@ -988,7 +982,9 @@ public class GroundRuleTest {
 				">= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
-		PSLTest.compareGroundRules(expected, rule, store);
+		// TEST
+      // PSLTest.compareGroundRules(expected, rule, store);
+		PSLTest.compareGroundRules(expected, rule, store, false);
 	}
 
 	@Test
@@ -1288,31 +1284,35 @@ public class GroundRuleTest {
 			"1.0: 3.0 * FRIENDS('Alice', 'Charlie') + 3.0 * FRIENDS('Alice', 'Derek') + 3.0 * FRIENDS('Alice', 'Eugene') + 1.0 * PERSON('Bob') >= 1.0 ^2",
 			"1.0: 3.0 * FRIENDS('Alice', 'Bob') + 3.0 * FRIENDS('Alice', 'Derek') + 3.0 * FRIENDS('Alice', 'Eugene') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
 			"1.0: 3.0 * FRIENDS('Alice', 'Bob') + 3.0 * FRIENDS('Alice', 'Charlie') + 3.0 * FRIENDS('Alice', 'Eugene') + 1.0 * PERSON('Derek') >= 1.0 ^2",
-			"1.0: 1.0 * PERSON('Eugene') >= 1.0 ^2",
 
 			"1.0: 3.0 * FRIENDS('Bob', 'Charlie') + 3.0 * FRIENDS('Bob', 'Derek') + 3.0 * FRIENDS('Bob', 'Eugene') + 1.0 * PERSON('Alice') >= 1.0 ^2",
 			"1.0: 4.0 * FRIENDS('Bob', 'Alice') + 4.0 * FRIENDS('Bob', 'Charlie') + 4.0 * FRIENDS('Bob', 'Derek') + 4.0 * FRIENDS('Bob', 'Eugene') + 1.0 * PERSON('Bob') >= 1.0 ^2",
 			"1.0: 3.0 * FRIENDS('Bob', 'Alice') + 3.0 * FRIENDS('Bob', 'Derek') + 3.0 * FRIENDS('Bob', 'Eugene') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
 			"1.0: 3.0 * FRIENDS('Bob', 'Alice') + 3.0 * FRIENDS('Bob', 'Charlie') + 3.0 * FRIENDS('Bob', 'Eugene') + 1.0 * PERSON('Derek') >= 1.0 ^2",
-			"1.0: 1.0 * PERSON('Eugene') >= 1.0 ^2",
 
 			"1.0: 3.0 * FRIENDS('Charlie', 'Bob') + 3.0 * FRIENDS('Charlie', 'Derek') + 3.0 * FRIENDS('Charlie', 'Eugene') + 1.0 * PERSON('Alice') >= 1.0 ^2",
 			"1.0: 3.0 * FRIENDS('Charlie', 'Alice') + 3.0 * FRIENDS('Charlie', 'Derek') + 3.0 * FRIENDS('Charlie', 'Eugene') + 1.0 * PERSON('Bob') >= 1.0 ^2",
 			"1.0: 4.0 * FRIENDS('Charlie', 'Bob') + 4.0 * FRIENDS('Charlie', 'Alice') + 4.0 * FRIENDS('Charlie', 'Derek') + 4.0 * FRIENDS('Charlie', 'Eugene') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
 			"1.0: 3.0 * FRIENDS('Charlie', 'Bob') + 3.0 * FRIENDS('Charlie', 'Alice') + 3.0 * FRIENDS('Charlie', 'Eugene') + 1.0 * PERSON('Derek') >= 1.0 ^2",
-			"1.0: 1.0 * PERSON('Eugene') >= 1.0 ^2",
 
 			"1.0: 3.0 * FRIENDS('Derek', 'Bob') + 3.0 * FRIENDS('Derek', 'Charlie') + 3.0 * FRIENDS('Derek', 'Eugene') + 1.0 * PERSON('Alice') >= 1.0 ^2",
 			"1.0: 3.0 * FRIENDS('Derek', 'Charlie') + 3.0 * FRIENDS('Derek', 'Alice') + 3.0 * FRIENDS('Derek', 'Eugene') + 1.0 * PERSON('Bob') >= 1.0 ^2",
 			"1.0: 3.0 * FRIENDS('Derek', 'Bob') + 3.0 * FRIENDS('Derek', 'Alice') + 3.0 * FRIENDS('Derek', 'Eugene') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
 			"1.0: 4.0 * FRIENDS('Derek', 'Bob') + 4.0 * FRIENDS('Derek', 'Charlie') + 4.0 * FRIENDS('Derek', 'Alice') + 4.0 * FRIENDS('Derek', 'Eugene') + 1.0 * PERSON('Derek') >= 1.0 ^2",
-			"1.0: 1.0 * PERSON('Eugene') >= 1.0 ^2",
 
 			"1.0: 3.0 * FRIENDS('Eugene', 'Bob') + 3.0 * FRIENDS('Eugene', 'Charlie') + 3.0 * FRIENDS('Eugene', 'Derek') + 1.0 * PERSON('Alice') >= 1.0 ^2",
 			"1.0: 3.0 * FRIENDS('Eugene', 'Charlie') + 3.0 * FRIENDS('Eugene', 'Derek') + 3.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Bob') >= 1.0 ^2",
 			"1.0: 3.0 * FRIENDS('Eugene', 'Bob') + 3.0 * FRIENDS('Eugene', 'Derek') + 3.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
-			"1.0: 3.0 * FRIENDS('Eugene', 'Bob') + 3.0 * FRIENDS('Eugene', 'Charlie') + 3.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Derek') >= 1.0 ^2",
+			"1.0: 3.0 * FRIENDS('Eugene', 'Bob') + 3.0 * FRIENDS('Eugene', 'Charlie') + 3.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Derek') >= 1.0 ^2"
+
+         // Note that these grounding will not happen because the summation has no substitutions.
+         /*
+			"1.0: 1.0 * PERSON('Eugene') >= 1.0 ^2",
+			"1.0: 1.0 * PERSON('Eugene') >= 1.0 ^2",
+			"1.0: 1.0 * PERSON('Eugene') >= 1.0 ^2",
+			"1.0: 1.0 * PERSON('Eugene') >= 1.0 ^2",
 			"1.0: 1.0 * PERSON('Eugene') >= 1.0 ^2"
+         */
 		);
 		rule.groundAll(manager, store);
 		PSLTest.compareGroundRules(expected, rule, store);
@@ -1440,7 +1440,7 @@ public class GroundRuleTest {
 	// Ensure that exceptions are thrown when zero coefficients are divided by.
 	// Note that here we are not interested in coefficients that are statically evaluated to zero,
 	// instead we are interested in coefficients that require grounding to become zero (like with cardinality).
-	// 1.0 * Friends(A, +B) + Nice(A) / |B| >= 1 {B: !Nice(B)}
+	// 1.0 * Friends(A, +B) + Nice(A) / (|B| - 5) >= 1 {B: Nice(B)}
 	// Note that everyone is 100% nice in this test.
 	@Test
 	public void testArithmeticDivdeByZero() {
@@ -1455,7 +1455,13 @@ public class GroundRuleTest {
 
 		coefficients = Arrays.asList(
 			(Coefficient)(new ConstantNumber(1.0)),
-			(Coefficient)(new Divide(new ConstantNumber(1.0), new Cardinality(new SummationVariable("B"))))
+			(Coefficient)(new Divide(
+				new ConstantNumber(1.0),
+				new Subtract(
+					new Cardinality(new SummationVariable("B")),
+					new ConstantNumber(4.0)
+				)
+			))
 		);
 
 		atoms = Arrays.asList(
@@ -1467,7 +1473,7 @@ public class GroundRuleTest {
 		);
 
 		filters = new HashMap<SummationVariable, Formula>();
-		filters.put(new SummationVariable("B"), new Negation(new QueryAtom(model.predicates.get("Nice"), new Variable("B"))));
+		filters.put(new SummationVariable("B"), new QueryAtom(model.predicates.get("Nice"), new Variable("B")));
 
 		rule = new WeightedArithmeticRule(
 				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
@@ -1476,15 +1482,6 @@ public class GroundRuleTest {
 				true
 		);
 
-		// Note that no B passes the filter, so the FRIENDS atom is zeroed.
-		// We actually expect an error, but this is what the rules would look like when grounded.
-		expected = Arrays.asList(
-			"1.0: 1.0 * 0.0 + 1.0 / 0.0 * Nice('Alice') >= 1.0 ^2",
-			"1.0: 1.0 * 0.0 + 1.0 / 0.0 * Nice('Bob') >= 1.0 ^2",
-			"1.0: 1.0 * 0.0 + 1.0 / 0.0 * Nice('Charlie') >= 1.0 ^2",
-			"1.0: 1.0 * 0.0 + 1.0 / 0.0 * Nice('Derek') >= 1.0 ^2",
-			"1.0: 1.0 * 0.0 + 1.0 / 0.0 * Nice('Eugene') >= 1.0 ^2"
-		);
 		try {
 			rule.groundAll(manager, store);
 			fail("Divide by zero did not throw an ArithmeticException.");

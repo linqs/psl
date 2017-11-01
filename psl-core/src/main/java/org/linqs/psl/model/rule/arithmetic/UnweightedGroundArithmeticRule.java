@@ -26,6 +26,8 @@ import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.function.FunctionSum;
 import org.linqs.psl.reasoner.function.FunctionSummand;
 
+import java.util.List;
+
 /**
  * An {@link AbstractGroundArithmeticRule} that is unweighted, i.e., it is a hard
  * constraint that must always hold.
@@ -34,6 +36,11 @@ import org.linqs.psl.reasoner.function.FunctionSummand;
  */
 public class UnweightedGroundArithmeticRule extends AbstractGroundArithmeticRule
 		implements UnweightedGroundRule {
+
+	protected UnweightedGroundArithmeticRule(UnweightedArithmeticRule rule, List<Double> coeffs,
+			List<GroundAtom> atoms, FunctionComparator comparator, double c) {
+		super(rule, coeffs, atoms, comparator, c);
+	}
 
 	protected UnweightedGroundArithmeticRule(UnweightedArithmeticRule rule, double[] coeffs,
 			GroundAtom[] atoms, FunctionComparator comparator, double c) {
