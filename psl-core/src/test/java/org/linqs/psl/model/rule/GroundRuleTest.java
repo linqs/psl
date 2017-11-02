@@ -982,9 +982,7 @@ public class GroundRuleTest {
 				">= 1.0 ^2"
 		);
 		rule.groundAll(manager, store);
-		// TEST
-      // PSLTest.compareGroundRules(expected, rule, store);
-		PSLTest.compareGroundRules(expected, rule, store, false);
+		PSLTest.compareGroundRules(expected, rule, store);
 	}
 
 	@Test
@@ -1305,14 +1303,14 @@ public class GroundRuleTest {
 			"1.0: 3.0 * FRIENDS('Eugene', 'Bob') + 3.0 * FRIENDS('Eugene', 'Derek') + 3.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
 			"1.0: 3.0 * FRIENDS('Eugene', 'Bob') + 3.0 * FRIENDS('Eugene', 'Charlie') + 3.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Derek') >= 1.0 ^2"
 
-         // Note that these grounding will not happen because the summation has no substitutions.
-         /*
+			// Note that these grounding will not happen because the summation has no substitutions.
+			/*
 			"1.0: 1.0 * PERSON('Eugene') >= 1.0 ^2",
 			"1.0: 1.0 * PERSON('Eugene') >= 1.0 ^2",
 			"1.0: 1.0 * PERSON('Eugene') >= 1.0 ^2",
 			"1.0: 1.0 * PERSON('Eugene') >= 1.0 ^2",
 			"1.0: 1.0 * PERSON('Eugene') >= 1.0 ^2"
-         */
+			*/
 		);
 		rule.groundAll(manager, store);
 		PSLTest.compareGroundRules(expected, rule, store);

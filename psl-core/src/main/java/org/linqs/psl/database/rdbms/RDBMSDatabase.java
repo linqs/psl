@@ -432,9 +432,9 @@ public class RDBMSDatabase implements Database {
 
 		// Create and initialize ResultList
 		RDBMSResultList results = new RDBMSResultList(projectionMap.size());
-      for (Map.Entry<Variable, Integer> projection : projectionMap.entrySet()) {
-         results.setVariable(projection.getKey(), projection.getValue().intValue());
-      }
+		for (Map.Entry<Variable, Integer> projection : projectionMap.entrySet()) {
+			results.setVariable(projection.getKey(), projection.getValue().intValue());
+		}
 
 		// Figure out all the partial variables ahead of time.
 		// This will help us reduce memory usage when reading in the result set.
@@ -721,10 +721,10 @@ public class RDBMSDatabase implements Database {
 				PreparedStatement statement = predicateInfo.createCountAllStatement(connection, partitions);
 				ResultSet results = statement.executeQuery()) {
 			if (!results.next()) {
-            throw new RuntimeException("No results from a COUNT(*)");
-         }
+				throw new RuntimeException("No results from a COUNT(*)");
+			}
 
-         return results.getInt(1);
+			return results.getInt(1);
 		} catch (SQLException ex) {
 			throw new RuntimeException("Error fetching all ground atoms for: " + predicate, ex);
 		}

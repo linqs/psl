@@ -23,7 +23,9 @@ import org.linqs.psl.database.ResultList;
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.database.rdbms.Formula2SQL;
 import org.linqs.psl.database.rdbms.PredicateInfo;
+import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.RDBMSDatabase;
+import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.QueryAtom;
@@ -75,6 +77,12 @@ import java.util.Set;
  */
 public abstract class AbstractArithmeticRule extends AbstractRule {
 	private static final Logger log = LoggerFactory.getLogger(AbstractArithmeticRule.class);
+
+	/**
+	 * The delimiter  to use when building summation substitutions.
+	 * Make sure the value for this key does not appear in ground atoms that use a summation.
+	 */
+	private static String DELIM = ";";
 
 	protected final ArithmeticRuleExpression expression;
 	protected final Map<SummationVariable, Formula> filters;
@@ -198,7 +206,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 		UnionQuery subquery = buildCoreSummationQuery(relationalDB, projectionMap, varTypes);
 
 		// Now build the full, aggregate query.
-		SelectQuery query = buildAggregateSummationQuery(projectionMap, subquery);
+		SelectQuery query = buildAggregateSummationQuery(projectionMap, subquery, ((RDBMSDataStore)relationalDB.getDataStore()).getDriver());
 
 		// We need to edit the variable types to have strings on the aggregate (concatenated) values.
 		VariableTypeMap fakeTypes = new VariableTypeMap();
@@ -233,8 +241,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 
 			for (SummationVariable summationVar : expression.getSummationVariables()) {
 				Constant rawSubs = groundingResults.get(groundingIndex, summationVar.getVariable());
-				// TODO(eriq): Constant (config) delim
-				String[] stringSubs = ((StringAttribute)rawSubs).getValue().split(";");
+				String[] stringSubs = ((StringAttribute)rawSubs).getValue().split(DELIM);
 
 				Constant[] constantSubs = new Constant[stringSubs.length];
 				for (int i = 0; i < stringSubs.length; i++) {
@@ -317,7 +324,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 	/**
 	 * Build the aggregate query that concatenates all the summation replacemnets.
 	 */
-	private SelectQuery buildAggregateSummationQuery(Map<Variable, Integer> projectionMap, UnionQuery subquery) {
+	private SelectQuery buildAggregateSummationQuery(Map<Variable, Integer> projectionMap, UnionQuery subquery, DatabaseDriver driver) {
 		SelectQuery query = new SelectQuery();
 
 		// Make sure we keep the same projection order.
@@ -328,14 +335,14 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 			columns[projectionMap.get(var).intValue()] = var.getName();
 		}
 
-		// TODO(eriq): H2/Mysql Support, delimiter
 		// Add all the summation columns as aggregates.
 		for (SummationVariable summationVar : expression.getSummationVariables()) {
 			Variable var = summationVar.getVariable();
-			// TODO(eriq): Constant (config) delim
-			String column = "STRING_AGG(DISTINCT CAST(" + var.getName() + " AS TEXT), ';') AS " + var.getName();
+			String aggExpression = driver.getStringAggregate(var.getName(), DELIM, true);
+			String column = aggExpression + " AS " + var.getName();
 			columns[projectionMap.get(var).intValue()] = column;
 		}
+
 
 		for (String column : columns) {
 			query.addCustomColumns(new CustomSql(column));
@@ -431,7 +438,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 				// Add in the current disjunctive component and descend.
 				Formula formula = stableQueryConjunction(baseFormula, disjunction.get(i));
 
-            Formula newAppendedFormuals = null;
+				Formula newAppendedFormuals = null;
 				if (appendedFormulas == null) {
 					newAppendedFormuals = disjunction.get(i);
 				} else {
@@ -738,7 +745,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 	 * Given a collection of the non-summation constants and allowed substitutions,
 	 * figure out all the atoms and coefficients that will appear in the final ground rule.
 	 */
-	protected void populateCoeffsAndAtoms(List<Double> coeffs, List<GroundAtom> atoms,
+	private void populateCoeffsAndAtoms(List<Double> coeffs, List<GroundAtom> atoms,
 			List<Constant> grounding, Map<Variable, Integer> varMap,
 			AtomManager atomManager, Map<SummationVariable, Set<Constant>> subs,
 			Set<GroundAtom> groundSummationAtoms) {
@@ -805,7 +812,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 	/**
 	 * Get a ground atom as if there were no summation variables.
 	 */
-	protected GroundAtom getGroundAtom(SummationAtom atom, List<Constant> grounding,
+	private GroundAtom getGroundAtom(SummationAtom atom, List<Constant> grounding,
 			Map<Variable, Integer> varMap, AtomManager atomManager) {
 		SummationVariableOrTerm[] atomArgs = atom.getArguments();
 		Constant[] args = new Constant[atomArgs.length];
@@ -827,7 +834,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 	/**
 	 * Get a ground atom from an atom and its groundings.
 	 */
-	protected GroundAtom getGroundAtom(Atom atom, List<Constant> grounding,
+	private GroundAtom getGroundAtom(Atom atom, List<Constant> grounding,
 			Map<Variable, Integer> varMap, AtomManager atomManager) {
 		Term[] atomArgs = atom.getArguments();
 		Constant[] args = new Constant[atomArgs.length];
@@ -846,7 +853,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 	/**
 	 * Recursively grounds GroundAtoms by replacing SummationVariables with all constants.
 	 */
-	protected void populateCoeffsAndAtomsForSummationAtom(List<Double> coeffs, List<GroundAtom> atoms,
+	private void populateCoeffsAndAtomsForSummationAtom(List<Double> coeffs, List<GroundAtom> atoms,
 			Predicate predicate, SummationVariable[] sumVars,
 			Constant[] partialGrounding, AtomManager atomManager,
 			Set<GroundAtom> groundSummationAtoms,
@@ -880,7 +887,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 	 * |summationVariableCount| is the number of summation variables in this
 	 * specific atom.
 	 */
-	protected boolean validateGroundAtom(GroundAtom atom,
+	private boolean validateGroundAtom(GroundAtom atom,
 			int summationVariableCount, Set<GroundAtom> groundSummationAtoms) {
 		// Multiple summation variables in the same atom can put us in a situation
 		// where we create ground atoms that do not actually exist.
@@ -899,7 +906,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 	 * The actual grounding into the GroundRuleStore.
 	 * @return the number of ground rules added to the store.
 	 */
-	protected int ground(GroundRuleStore groundRuleStore, List<Double>coeffs, List<GroundAtom> atoms, double finalCoeff) {
+	private int ground(GroundRuleStore groundRuleStore, List<Double>coeffs, List<GroundAtom> atoms, double finalCoeff) {
 		double[] coeffArray = new double[coeffs.size()];
 		for (int j = 0; j < coeffArray.length; j++) {
 			coeffArray[j] = coeffs.get(j);
@@ -922,7 +929,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 	 *	 - All variables used in a filter are either the argument to the filter or
 	 *	  appear in the arithmetic expression.
 	 */
-	protected void validateRule() {
+	private void validateRule() {
 		// Ensure all filter arguments appear in the arithmetic expression.
 		for (SummationVariable filterArg : filters.keySet()) {
 			if (!expression.getSummationVariables().contains(filterArg)) {
@@ -1133,4 +1140,9 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 
 	protected abstract AbstractGroundArithmeticRule makeGroundRule(List<Double> coeffs,
 			List<GroundAtom> atoms, FunctionComparator comparator, double c);
+
+	// TODO(eriq): Remove this once global configuration is implemented.
+	public static void setDelim(String delim) {
+		DELIM = delim;
+	}
 }

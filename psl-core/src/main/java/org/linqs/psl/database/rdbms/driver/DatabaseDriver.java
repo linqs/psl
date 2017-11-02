@@ -71,4 +71,11 @@ public interface DatabaseDriver {
 	 * manipulations to the CREATE TABLE statement.
 	 */
 	public String finalizeCreateTable(CreateTableQuery createTable);
+
+	/**
+	 * Get a string aggregating expression (one that
+	 * would appear in the SELECT clause of a grouping query.
+	 * Postgres uses STRING_AGG, MySQL and H2 use GROUP_CONCAT.
+	 */
+	public String getStringAggregate(String columnName, String delimiter, boolean distinct);
 }

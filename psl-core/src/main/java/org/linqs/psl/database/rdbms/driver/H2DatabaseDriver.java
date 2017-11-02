@@ -171,4 +171,14 @@ public class H2DatabaseDriver implements DatabaseDriver {
 	public String finalizeCreateTable(CreateTableQuery createTable) {
 		return createTable.validate().toString();
 	}
+
+	@Override
+	public String getStringAggregate(String columnName, String delimiter, boolean distinct) {
+		if (delimiter.contains("'")) {
+			throw new IllegalArgumentException("Delimiter (" + delimiter + ") may not contain a single quote.");
+		}
+
+		return String.format("GROUP_CONCAT(DISTINCT CAST(%s AS TEXT) SEPARATOR '%s')",
+				columnName, delimiter);
+	}
 }

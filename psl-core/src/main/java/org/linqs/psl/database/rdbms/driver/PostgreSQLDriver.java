@@ -146,4 +146,14 @@ public class PostgreSQLDriver implements DatabaseDriver {
 		// Use unlogged tables.
 		return createTable.validate().toString().replace("CREATE TABLE", "CREATE UNLOGGED TABLE");
 	}
+
+	@Override
+	public String getStringAggregate(String columnName, String delimiter, boolean distinct) {
+		if (delimiter.contains("'")) {
+			throw new IllegalArgumentException("Delimiter (" + delimiter + ") may not contain a single quote.");
+		}
+
+		return String.format("STRING_AGG(DISTINCT CAST(%s AS TEXT), '%s')",
+				columnName, delimiter);
+	}
 }
