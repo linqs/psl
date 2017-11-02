@@ -25,7 +25,6 @@ import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.UnweightedRule;
 
 public class UnweightedLogicalRule extends AbstractLogicalRule implements UnweightedRule {
-	
 	public UnweightedLogicalRule(Formula f) {
 		super(f);
 	}
@@ -34,14 +33,9 @@ public class UnweightedLogicalRule extends AbstractLogicalRule implements Unweig
 	protected AbstractGroundLogicalRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals) {
 		return new UnweightedGroundLogicalRule(this, posLiterals, negLiterals);
 	}
-	
+
 	@Override
 	public String toString() {
 		return formula.toString() + " .";
-	}
-	
-	@Override
-	public Rule clone() {
-		return new UnweightedLogicalRule(formula);
 	}
 }

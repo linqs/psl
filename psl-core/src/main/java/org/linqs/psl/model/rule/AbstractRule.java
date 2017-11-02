@@ -27,11 +27,5 @@ import com.google.common.collect.SetMultimap;
 public abstract class AbstractRule implements Rule {
 	private static final Logger log = LoggerFactory.getLogger(AbstractRule.class);
 
-	protected AbstractRule() {
-	}
-
-	@Override
-	public Rule clone() throws CloneNotSupportedException {
-		throw new CloneNotSupportedException();
-	}
+	protected AbstractRule() {}
 }

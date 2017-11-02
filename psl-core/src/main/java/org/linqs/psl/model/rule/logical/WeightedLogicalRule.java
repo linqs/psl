@@ -28,13 +28,13 @@ import org.linqs.psl.model.weight.PositiveWeight;
 import org.linqs.psl.model.weight.Weight;
 
 public class WeightedLogicalRule extends AbstractLogicalRule implements WeightedRule {
-	
 	protected Weight weight;
 	protected boolean squared;
 	protected boolean mutable;
 
 	public WeightedLogicalRule(Formula f, double w, boolean squared) {
 		super(f);
+
 		weight = (w >= 0.0) ? new PositiveWeight(w) : new NegativeWeight(w);
 		this.squared = squared;
 		mutable = true;
@@ -44,29 +44,25 @@ public class WeightedLogicalRule extends AbstractLogicalRule implements Weighted
 	protected WeightedGroundLogicalRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals) {
 		return new WeightedGroundLogicalRule(this, posLiterals, negLiterals, squared);
 	}
-	
+
 	@Override
 	public Weight getWeight() {
 		return weight.duplicate();
 	}
-	
+
 	@Override
-	public void setWeight(Weight w) {
-		if (!mutable)
+	public void setWeight(Weight weight) {
+		if (!mutable) {
 			throw new IllegalStateException("Rule weight is not mutable.");
-		
-		weight = w;
+		}
+
+		this.weight = weight;
 	}
-	
+
 	@Override
 	public String toString() {
-		return "" + weight.getWeight() + ": " + formula
-				+ ((squared) ? " ^2" : "");
-	}
-	
-	@Override
-	public Rule clone() {
-		return new WeightedLogicalRule(formula, weight.getWeight(), squared);
+		String squared = (squared) ? " ^2" : "";
+		return "" + weight.getWeight() + ": " + formula + squared;
 	}
 
 	@Override

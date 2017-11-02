@@ -168,10 +168,5 @@ abstract public class AbstractLogicalRule extends AbstractRule {
 		return numGroundingsAdded;
 	}
 
-	abstract protected AbstractGroundLogicalRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals);
-
-	@Override
-	public Rule clone() throws CloneNotSupportedException {
-		throw new CloneNotSupportedException();
-	}
+	protected abstract AbstractGroundLogicalRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals);
 }

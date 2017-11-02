@@ -51,12 +51,13 @@ public class VariableAssignment extends HashMap<Variable, Constant> {
 		this(4);
 	}
 
-	/** This constructor is only used internally for cloning.
-	 * @param ass Assignment of cloned variable assignment
+	/**
+	 * This constructor is only used internally for cloning.
+	 * @param vars Assignment of cloned variable assignment
 	 */
-	private VariableAssignment(VariableAssignment ass) {
+	private VariableAssignment(VariableAssignment vars) {
 		this();
-		putAll(ass);
+		putAll(vars);
 	}
 
 	/**
