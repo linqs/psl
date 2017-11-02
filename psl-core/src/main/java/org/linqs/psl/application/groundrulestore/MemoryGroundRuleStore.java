@@ -33,48 +33,53 @@ import com.google.common.collect.Iterables;
 public class MemoryGroundRuleStore implements GroundRuleStore {
 
 	protected SetValuedMap<Rule, GroundRule> groundRules;
-	
+
 	public MemoryGroundRuleStore() {
 		groundRules = new HashSetValuedHashMap<Rule, GroundRule>();
 	}
-	
+
 	@Override
 	public void addGroundRule(GroundRule groundRule) {
 		if (!groundRules.put(groundRule.getRule(), groundRule)) {
 			throw new IllegalArgumentException("GroundRule has already been added: " + groundRule);
 		}
 	}
-	
+
 	@Override
 	public boolean containsGroundRule(GroundRule groundRule) {
 		return groundRules.containsMapping(groundRule.getRule(), groundRule);
 	}
-	
+
 	@Override
 	public Iterable<WeightedGroundRule> getCompatibilityRules() {
 		return Iterables.filter(groundRules.values(), WeightedGroundRule.class);
 	}
-	
+
 	@Override
 	public Iterable<UnweightedGroundRule> getConstraintRules() {
 		return Iterables.filter(groundRules.values(), UnweightedGroundRule.class);
 	}
-	
+
 	@Override
 	public Iterable<GroundRule> getGroundRules() {
 		return groundRules.values();
 	}
-	
+
 	@Override
 	public Iterable<GroundRule> getGroundRules(Rule rule) {
 		return groundRules.get(rule);
 	}
-	
+
 	@Override
 	public void removeGroundRule(GroundRule groundRule) {
 		groundRules.removeMapping(groundRule.getRule(), groundRule);
 	}
-	
+
+	@Override
+	public void removeGroundRules(Rule rule) {
+		groundRules.remove(rule);
+	}
+
 	@Override
 	public int size() {
 		return groundRules.size();

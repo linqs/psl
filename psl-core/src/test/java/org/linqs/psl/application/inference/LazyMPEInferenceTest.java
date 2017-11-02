@@ -14,12 +14,17 @@ import org.linqs.psl.database.Queries;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.formula.Conjunction;
+import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.formula.Implication;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.arithmetic.WeightedArithmeticRule;
 import org.linqs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
+import org.linqs.psl.model.rule.arithmetic.expression.SummationAtom;
 import org.linqs.psl.model.rule.arithmetic.expression.SummationAtomOrAtom;
+import org.linqs.psl.model.rule.arithmetic.expression.SummationVariable;
+import org.linqs.psl.model.rule.arithmetic.expression.SummationVariableOrTerm;
+import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Cardinality;
 import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Coefficient;
 import org.linqs.psl.model.rule.arithmetic.expression.coefficient.ConstantNumber;
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
@@ -27,8 +32,10 @@ import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class LazyMPEInferenceTest {
@@ -39,11 +46,6 @@ public class LazyMPEInferenceTest {
 	//  - partially observed
 	//  - rules such that no instantiation will happen
 	//  - arithmetic rules
-
-	static {
-		// TEST
-		System.out.println("TEST0");
-	}
 
 	/**
 	 * A quick test that only checks to see if LazyMPEInference is running.
@@ -76,10 +78,7 @@ public class LazyMPEInferenceTest {
 	 * Ensure that simple arithmetic groundings (no summation atoms) works.
 	 */
 	@Test
-	public void testSimpleArithmetic() {
-		// TEST
-		PSLTest.initLogger("DEBUG");
-
+	public void testSimpleArithmeticBase() {
 		TestModelFactory.ModelInformation info = TestModelFactory.getModel(true);
 
 		// 1.0: Friends(A, B) >= 0.5 ^2
@@ -102,6 +101,60 @@ public class LazyMPEInferenceTest {
 		Partition targetPartition = info.dataStore.getPartition(TestModelFactory.PARTITION_UNUSED);
 
 		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
+		Database inferDB = info.dataStore.getDatabase(targetPartition, toClose, info.observationPartition);
+		LazyMPEInference mpe = new LazyMPEInference(info.model, inferDB, info.config);
+
+		// The Friends predicate should be empty.
+		assertEquals(0, Queries.countAllGroundRandomVariableAtoms(inferDB, info.predicates.get("Friends")));
+
+		mpe.mpeInference();
+
+		// Now the Friends predicate should have the crossproduct (5x5) minus self pairs (5) in it.
+		assertEquals(20, Queries.countAllGroundRandomVariableAtoms(inferDB, info.predicates.get("Friends")));
+
+		mpe.close();
+		inferDB.close();
+	}
+
+	/**
+	 * Ensure that complex arithmetic groundings (has summation atoms) works.
+	 */
+	@Test
+	public void testComplexArithmeticBase() {
+		// TEST
+		PSLTest.initLogger("TRACE");
+
+		TestModelFactory.ModelInformation info = TestModelFactory.getModel(true);
+
+		// |B| * Friends(A, +B) >= 1 {B: Nice(B)}
+
+		List<Coefficient> coefficients = Arrays.asList(
+			(Coefficient)(new Cardinality(new SummationVariable("B")))
+		);
+
+		List<SummationAtomOrAtom> atoms = Arrays.asList(
+			(SummationAtomOrAtom)(new SummationAtom(
+				info.predicates.get("Friends"),
+				new SummationVariableOrTerm[]{new Variable("A"), new SummationVariable("B")}
+			))
+		);
+
+		Map<SummationVariable, Formula> filters = new HashMap<SummationVariable, Formula>();
+		filters.put(new SummationVariable("B"), new QueryAtom(info.predicates.get("Nice"), new Variable("B")));
+
+		Rule rule = new WeightedArithmeticRule(
+				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1.0)),
+				filters,
+				1.0,
+				true
+		);
+		info.model.addRule(rule);
+
+		// Get an empty partition so that no targets will exist in it and we will have to lazily instantiate them all.
+		Partition targetPartition = info.dataStore.getPartition(TestModelFactory.PARTITION_UNUSED);
+
+		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
+		toClose.add(info.predicates.get("Nice"));
 		Database inferDB = info.dataStore.getDatabase(targetPartition, toClose, info.observationPartition);
 		LazyMPEInference mpe = new LazyMPEInference(info.model, inferDB, info.config);
 

@@ -35,60 +35,67 @@ public interface GroundRuleStore {
 
 	/**
 	 * Adds a GroundRule to this store.
-	 * 
-	 * @param rule  the GroundRule to add
-	 * @throws IllegalArgumentException  if rule is already in this store
+	 *
+	 * @param rule the GroundRule to add
+	 * @throws IllegalArgumentException if rule is already in this store
 	 */
 	public void addGroundRule(GroundRule rule);
-	
+
 	/**
 	 * Release any memory held by the store.
 	 * A store that has been closed cannot be used again.
 	 */
 	public void close();
-	
+
 	/**
 	 * Removes a GroundRule from this store.
-	 * 
-	 * @param rule  the GroundRule to remove
-	 * @throws IllegalArgumentException  if rule is not in this store
+	 *
+	 * @param rule the GroundRule to remove
+	 * @throws IllegalArgumentException if rule is not in this store
 	 */
 	public void removeGroundRule(GroundRule rule);
-	
+
+	/**
+	 * Removes all GroundRules that was instantiated by a given rule.
+	 *
+	 * @param rule the originator of the ground rules
+	 */
+	public void removeGroundRules(Rule rule);
+
 	/**
 	 * Checks whether a GroundRule is in this store.
-	 * 
-	 * @param rule  the GroundRule to check
+	 *
+	 * @param rule the GroundRule to check
 	 * @return true if rule is in this store
 	 */
 	public boolean containsGroundRule(GroundRule rule);
-	
+
 	/**
 	 * @return every GroundRule in this store
 	 */
 	public Iterable<GroundRule> getGroundRules();
-	
+
 	/**
 	 * @return every {@link WeightedGroundRule} in this store
 	 */
 	public Iterable<WeightedGroundRule> getCompatibilityRules();
-	
+
 	/**
 	 * @return every {@link UnweightedGroundRule} in this store
 	 */
 	public Iterable<UnweightedGroundRule> getConstraintRules();
-	
+
 	/**
 	 * Returns every GroundRule that was instantiated by a given Rule.
-	 * 
-	 * @param rule  the Rule of the GroundRules to return
+	 *
+	 * @param rule the Rule of the GroundRules to return
 	 * @return the Rule's GroundRules
 	 */
 	public Iterable<GroundRule> getGroundRules(Rule rule);
-	
+
 	/**
 	 * @return the number of GroundRules in this store
 	 */
 	public int size();
-	
+
 }

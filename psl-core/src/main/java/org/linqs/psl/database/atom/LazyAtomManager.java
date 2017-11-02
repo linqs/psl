@@ -62,7 +62,7 @@ import java.util.Set;
  * (set by the ACTIVATION_THRESHOLD_KEY configuration option) will be instantiated as
  * real atoms.
  */
-public class LazyAtomManager extends PersistedAtomManager  {
+public class LazyAtomManager extends PersistedAtomManager {
 	/**
 	 * Prefix of property keys used by this class.
 	 */
@@ -158,9 +158,7 @@ public class LazyAtomManager extends PersistedAtomManager  {
 				lazyLogicalGround((AbstractLogicalRule)lazyRule, lazyPredicates, groundRuleStore);
 			} else if (lazyRule instanceof AbstractArithmeticRule) {
 				if (((AbstractArithmeticRule)lazyRule).hasSummation()) {
-					// TEST(eriq)
-					// lazyComplexArithmeticGround((AbstractArithmeticRule)lazyRule, lazyPredicates, groundRuleStore);
-					throw new IllegalStateException("TODO(eriq)");
+					// We will deal with these rules after we move the lazy atoms to the write partition.
 				} else {
 					lazySimpleArithmeticGround((AbstractArithmeticRule)lazyRule, lazyPredicates, groundRuleStore);
 				}
@@ -173,6 +171,28 @@ public class LazyAtomManager extends PersistedAtomManager  {
 		for (StandardPredicate lazyPredicate : lazyPredicates) {
 			db.moveToWritePartition(lazyPredicate, Partition.LAZY_PARTITION_ID);
 		}
+
+		// Since complex aritmetic rules require a full regound, we need to do them
+		// after we move the atoms to the write partition.
+		for (Rule lazyRule : lazyRules) {
+			if (lazyRule instanceof AbstractArithmeticRule) {
+				if (((AbstractArithmeticRule)lazyRule).hasSummation()) {
+					lazyComplexArithmeticGround((AbstractArithmeticRule)lazyRule, groundRuleStore);
+				}
+			}
+		}
+	}
+
+	/**
+	 * Complex arithmetic rules (ones with summations) require FULL regrounding.
+	 * Will will drop all the ground rules originating from this rule and reground.
+	 */
+	private void lazyComplexArithmeticGround(AbstractArithmeticRule rule, GroundRuleStore groundRuleStore) {
+		// Remove all existing ground rules.
+		groundRuleStore.removeGroundRules(rule);
+
+		// Reground.
+		rule.groundAll(this, groundRuleStore);
 	}
 
 	private void lazySimpleArithmeticGround(AbstractArithmeticRule rule, Set<StandardPredicate> lazyPredicates, GroundRuleStore groundRuleStore) {
