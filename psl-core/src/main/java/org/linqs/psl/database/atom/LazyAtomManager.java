@@ -90,6 +90,10 @@ public class LazyAtomManager extends PersistedAtomManager {
 	public LazyAtomManager(Database db, ConfigBundle config) {
 		super(db);
 
+		if (!(db instanceof RDBMSDatabase)) {
+			throw new IllegalArgumentException("LazyAtomManagers require RDBMSDatabase.");
+		}
+
 		lazyAtoms = new HashSet<RandomVariableAtom>();
 		activation = config.getDouble(ACTIVATION_THRESHOLD_KEY, ACTIVATION_THRESHOLD_DEFAULT);
 
@@ -281,7 +285,6 @@ public class LazyAtomManager extends PersistedAtomManager {
 			throw new IllegalArgumentException();
 		}
 
-		// TODO(eriq): Force super to have RDBMS?
 		RDBMSDatabase relationalDB = ((RDBMSDatabase)db);
 
 		List<SelectQuery> queries = new ArrayList<SelectQuery>();
@@ -339,8 +342,6 @@ public class LazyAtomManager extends PersistedAtomManager {
 			} else {
 				throw new IllegalStateException("Unknown rule type: " + rule.getClass().getName());
 			}
-
-			// TODO(eriq): Arithmetic
 		}
 
 		return lazyRules;
