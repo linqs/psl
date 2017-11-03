@@ -85,23 +85,8 @@ public class LazyMaxLikelihoodMPETest {
 	 */
 	@Test
 	public void baseTest() {
-		WeightLearningApplication weightLearner = null;
-		try {
-			weightLearner = new LazyMaxLikelihoodMPE(info.model, weightLearningTrainDB, weightLearningTruthDB, info.config);
-		} catch (Exception ex) {
-			System.out.println(ex);
-			ex.printStackTrace();
-			fail("Exception thrown during MPE constructor.");
-		}
-
-		try {
-			weightLearner.learn();
-		} catch (Exception ex) {
-			System.out.println(ex);
-			ex.printStackTrace();
-			fail("Exception thrown during weight learning.");
-		}
-
+		WeightLearningApplication weightLearner = new LazyMaxLikelihoodMPE(info.model, weightLearningTrainDB, weightLearningTruthDB, info.config);
+		weightLearner.learn();
 		weightLearner.close();
 	}
 
@@ -126,15 +111,7 @@ public class LazyMaxLikelihoodMPETest {
 		info.model.addRule(newRule);
 
 		WeightLearningApplication weightLearner = new LazyMaxLikelihoodMPE(info.model, weightLearningTrainDB, weightLearningTruthDB, info.config);
-
-		try {
-			weightLearner.learn();
-		} catch (Exception ex) {
-			System.out.println(ex);
-			ex.printStackTrace();
-			fail("Exception thrown during weight learning.");
-		}
-
+		weightLearner.learn();
 		weightLearner.close();
 	}
 }

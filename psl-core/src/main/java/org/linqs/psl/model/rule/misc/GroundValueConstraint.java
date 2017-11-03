@@ -44,6 +44,10 @@ public class GroundValueConstraint implements UnweightedGroundRule {
 		this.value = value;
 	}
 
+	public RandomVariableAtom getAtom() {
+		return atom;
+	}
+
 	@Override
 	public Set<GroundAtom> getAtoms() {
 		Set<GroundAtom> atoms = new HashSet<GroundAtom>();

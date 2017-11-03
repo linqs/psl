@@ -6,7 +6,7 @@ import static org.junit.Assert.fail;
 import org.linqs.psl.PSLTest;
 import org.linqs.psl.TestModelFactory;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
-import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
+import org.linqs.psl.application.learning.weight.maxlikelihood.MaxPseudoLikelihood;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.model.atom.QueryAtom;
@@ -25,7 +25,7 @@ import org.junit.Test;
 import java.util.HashSet;
 import java.util.Set;
 
-public class MaxLikelihoodMPETest {
+public class MaxPseudoLikelihoodTest {
 	private Database weightLearningTrainDB;
 	private Database weightLearningTruthDB;
 	private TestModelFactory.ModelInformation info;
@@ -81,7 +81,7 @@ public class MaxLikelihoodMPETest {
 	 */
 	@Test
 	public void baseTest() {
-      WeightLearningApplication weightLearner = new MaxLikelihoodMPE(info.model, weightLearningTrainDB, weightLearningTruthDB, info.config);
+      WeightLearningApplication weightLearner = new MaxPseudoLikelihood(info.model, weightLearningTrainDB, weightLearningTruthDB, info.config);
       weightLearner.learn();
 		weightLearner.close();
 	}
@@ -106,7 +106,7 @@ public class MaxLikelihoodMPETest {
 		);
 		info.model.addRule(newRule);
 
-      WeightLearningApplication weightLearner = new MaxLikelihoodMPE(info.model, weightLearningTrainDB, weightLearningTruthDB, info.config);
+      WeightLearningApplication weightLearner = new MaxPseudoLikelihood(info.model, weightLearningTrainDB, weightLearningTruthDB, info.config);
       weightLearner.learn();
 		weightLearner.close();
 	}
