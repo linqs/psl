@@ -61,8 +61,8 @@ public class WeightedLogicalRule extends AbstractLogicalRule implements Weighted
 
 	@Override
 	public String toString() {
-		String squared = (squared) ? " ^2" : "";
-		return "" + weight.getWeight() + ": " + formula + squared;
+		String squaredSuffix = (squared) ? " ^2" : "";
+		return "" + weight.getWeight() + ": " + formula + squaredSuffix;
 	}
 
 	@Override

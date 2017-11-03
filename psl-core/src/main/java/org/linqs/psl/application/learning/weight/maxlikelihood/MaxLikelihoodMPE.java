@@ -35,8 +35,8 @@ import org.linqs.psl.model.rule.WeightedGroundRule;
  * @author Stephen Bach <bach@cs.umd.edu>
  */
 public class MaxLikelihoodMPE extends VotedPerceptron {
-
-	double[] fullObservedIncompatibility, fullExpectedIncompatibility;
+	double[] fullObservedIncompatibility;
+	double[] fullExpectedIncompatibility;
 
 	public MaxLikelihoodMPE(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
 		super(model, rvDB, observedDB, config);
@@ -60,6 +60,7 @@ public class MaxLikelihoodMPE extends VotedPerceptron {
 				fullExpectedIncompatibility[i] += ((WeightedGroundRule) groundRule).getIncompatibility();
 			}
 		}
+
 		for (int i = 0; i < immutableRules.size(); i++) {
 			for (GroundRule groundRule : groundRuleStore.getGroundRules(immutableRules.get(i))) {
 				fullExpectedIncompatibility[rules.size() + i] += ((WeightedGroundRule) groundRule).getIncompatibility();
@@ -82,6 +83,7 @@ public class MaxLikelihoodMPE extends VotedPerceptron {
 				numGroundings[i]++;
 			}
 		}
+
 		for (int i = 0; i < immutableRules.size(); i++) {
 			for (GroundRule groundRule : groundRuleStore.getGroundRules(immutableRules.get(i))) {
 				fullObservedIncompatibility[rules.size() + i] += ((WeightedGroundRule) groundRule).getIncompatibility();
@@ -94,11 +96,14 @@ public class MaxLikelihoodMPE extends VotedPerceptron {
 	@Override
 	protected double computeLoss() {
 		double loss = 0.0;
-		for (int i = 0; i < rules.size(); i++)
+		for (int i = 0; i < rules.size(); i++) {
 			loss += rules.get(i).getWeight().getWeight() * (fullObservedIncompatibility[i] - fullExpectedIncompatibility[i]);
-		for (int i = 0; i < immutableRules.size(); i++)
+		}
+
+		for (int i = 0; i < immutableRules.size(); i++) {
 			loss += immutableRules.get(i).getWeight().getWeight() * (fullObservedIncompatibility[rules.size() + i] - fullExpectedIncompatibility[rules.size() + i]);
+		}
+
 		return loss;
 	}
-
 }

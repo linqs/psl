@@ -31,7 +31,6 @@ import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.formula.FormulaAnalysis;
 import org.linqs.psl.model.formula.Negation;
 import org.linqs.psl.model.formula.FormulaAnalysis.DNFClause;
-import org.linqs.psl.model.rule.AbstractRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.term.Constant;
@@ -54,24 +53,28 @@ import java.util.Set;
 /**
  * Base class for all (first order, i.e., not ground) logical rules.
  */
-abstract public class AbstractLogicalRule extends AbstractRule {
+public abstract class AbstractLogicalRule implements Rule {
 	private static final Logger log = LoggerFactory.getLogger(AbstractLogicalRule.class);
 
 	protected Formula formula;
-	protected final DNFClause clause;
+	protected final DNFClause negatedDNF;
 
-	public AbstractLogicalRule(Formula f) {
+	public AbstractLogicalRule(Formula formula) {
 		super();
-		formula = f;
+
+		this.formula = formula;
+
+		// Do the formula analysis so we know what atoms to query for grounding.
+		// We will query for all positive atoms in the negated DNF.
 		FormulaAnalysis analysis = new FormulaAnalysis(new Negation(formula));
 
 		if (analysis.getNumDNFClauses() > 1) {
 			throw new IllegalArgumentException("Formula must be a disjunction of literals (or a negative literal).");
 		} else {
-			clause = analysis.getDNFClause(0);
+			negatedDNF = analysis.getDNFClause(0);
 		}
 
-		Set<Variable> unboundVariables = clause.getUnboundVariables();
+		Set<Variable> unboundVariables = negatedDNF.getUnboundVariables();
 		if (unboundVariables.size() > 0) {
 			Variable[] sortedVariables = unboundVariables.toArray(new Variable[unboundVariables.size()]);
 			Arrays.sort(sortedVariables);
@@ -83,11 +86,11 @@ abstract public class AbstractLogicalRule extends AbstractRule {
 			);
 		}
 
-		if (clause.isGround()) {
+		if (negatedDNF.isGround()) {
 			throw new IllegalArgumentException("Formula has no Variables.");
 		}
 
-		if (!clause.isQueriable()) {
+		if (!negatedDNF.isQueriable()) {
 			throw new IllegalArgumentException("Formula is not a valid rule for unknown reason.");
 		}
 	}
@@ -97,16 +100,15 @@ abstract public class AbstractLogicalRule extends AbstractRule {
 	}
 
 	public DNFClause getDNF() {
-		return clause;
+		return negatedDNF;
 	}
 
 	@Override
 	public void groundAll(AtomManager atomManager, GroundRuleStore grs) {
-		ResultList res = atomManager.executeQuery(new DatabaseQuery(clause.getQueryFormula(), false));
+		ResultList res = atomManager.executeQuery(new DatabaseQuery(negatedDNF.getQueryFormula(), false));
 		groundAll(res, atomManager, grs);
 	}
 
-	// TODO(eriq): Does this need to be part of the superclass?
 	public void groundAll(ResultList groundVariables, AtomManager atomManager, GroundRuleStore grs) {
 		int numGrounded = groundFormula(atomManager, grs, groundVariables);
 		log.debug("Grounded {} instances of rule {}", numGrounded, this);
@@ -123,8 +125,8 @@ abstract public class AbstractLogicalRule extends AbstractRule {
 
 		GroundAtom atom;
 		for (int i = 0; i < res.size(); i++) {
-			for (int j = 0; j < clause.getPosLiterals().size(); j++) {
-				atom = ((QueryAtom)clause.getPosLiterals().get(j)).ground(atomManager, res, i);
+			for (int j = 0; j < negatedDNF.getPosLiterals().size(); j++) {
+				atom = ((QueryAtom)negatedDNF.getPosLiterals().get(j)).ground(atomManager, res, i);
 				if (atom instanceof RandomVariableAtom) {
 					worstCaseValues.put(atom.getVariable(), 1.0);
 				} else {
@@ -134,8 +136,8 @@ abstract public class AbstractLogicalRule extends AbstractRule {
 				posLiterals.add(atom);
 			}
 
-			for (int j = 0; j < clause.getNegLiterals().size(); j++) {
-				atom = ((QueryAtom)clause.getNegLiterals().get(j)).ground(atomManager, res, i);
+			for (int j = 0; j < negatedDNF.getNegLiterals().size(); j++) {
+				atom = ((QueryAtom)negatedDNF.getNegLiterals().get(j)).ground(atomManager, res, i);
 				if (atom instanceof RandomVariableAtom) {
 					worstCaseValues.put(atom.getVariable(), 0.0);
 				} else {
