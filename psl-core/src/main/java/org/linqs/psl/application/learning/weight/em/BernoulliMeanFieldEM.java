@@ -47,29 +47,29 @@ import org.slf4j.LoggerFactory;
  * MPE state.
  * <p>
  * This algorithm does not support models with constraints.
- * 
+ *
  * @author Stephen Bach <bach@cs.umd.edu>
  */
 public class BernoulliMeanFieldEM extends ExpectationMaximization {
 
 	private static final Logger log = LoggerFactory.getLogger(BernoulliMeanFieldEM.class);
-	
+
 	/**
 	 * Prefix of property keys used by this class.
-	 * 
+	 *
 	 * @see ConfigManager
 	 */
 	public static final String CONFIG_PREFIX = "bernoullimeanfieldem";
-	
+
 	/**
 	 * Key for Boolean property. If true, the mean field will be reinitialized
 	 * via MPE inference at each round. If false, each mean will be initialized
-	 * to 0.5 before the first round. 
+	 * to 0.5 before the first round.
 	 */
 	public static final String MPE_INITIALIZATION_KEY = CONFIG_PREFIX + ".mpeinit";
 	/** Default value for MPE_INITIALIZATION_KEY property */
 	public static final boolean MPE_INITIALIZATION_DEFAULT = true;
-	
+
 	protected final Map<RandomVariableAtom, Double> means;
 	protected final boolean mpeInit;
 
@@ -79,14 +79,14 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 		means = new HashMap<RandomVariableAtom, Double>();
 		mpeInit = config.getBoolean(MPE_INITIALIZATION_KEY, MPE_INITIALIZATION_DEFAULT);
 	}
-	
+
 	@Override
 	protected void doLearn() {
 		super.doLearn();
 		for (Map.Entry<RandomVariableAtom, Double> e : means.entrySet())
 			log.debug("Mean for {}: {}", e.getKey(), e.getValue());
 	}
-	
+
 	@Override
 	protected void minimizeKLDivergence() {
 		if (mpeInit)
@@ -96,9 +96,9 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 		Vector<RandomVariableAtom> incidentLatentRVs = new Vector<RandomVariableAtom>();
 		/* Iteratively minimizes the KL divergence */
 		for (int round = 0; round < 10; round++) {
-			/* 
+			/*
 			 * Iterates over each latent random variable and minimizes with respect
-			 * to the corresponding mean in the mean field 
+			 * to the corresponding mean in the mean field
 			 */
 			for (RandomVariableAtom latentRV : trainingMap.getLatentVariables()) {
 				double c = 0.0;
@@ -111,12 +111,12 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 						if (groundRuleStore.containsGroundRule(groundRule)) {
 							WeightedGroundRule gck = (WeightedGroundRule) groundRule;
 							incidentLatentRVs.clear();
-							
+
 							/* Collects latent variables incident on this potential */
 							for (GroundAtom atom : gck.getAtoms())
 								if (trainingMap.getLatentVariables().contains(atom))
 									incidentLatentRVs.add((RandomVariableAtom) atom);
-							
+
 							/*
 							 * Iterates over joint settings of latent variables
 							 */
@@ -124,7 +124,7 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 								for (int i = 0; i < Math.pow(2, incidentLatentRVs.size()); i++) {
 									double meanFieldProb = 1.0;
 									double sign = 1.0;
-									
+
 									for (int j = 0; j < incidentLatentRVs.size(); j++) {
 										double mean = means.get(incidentLatentRVs.get(j));
 										/* If the jth variable is 1 in the current setting... */
@@ -142,8 +142,8 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 											incidentLatentRVs.get(j).setValue(0.0);
 										}
 									}
-									
-									c += gck.getWeight().getWeight() * gck.getIncompatibility() * meanFieldProb * sign; 
+
+									c += gck.getWeight().getWeight() * gck.getIncompatibility() * meanFieldProb * sign;
 								}
 							}
 							else
@@ -163,11 +163,11 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 					newMean = 0.9999;
 				means.put(latentRV, newMean);
 			}
-			
+
 			log.debug("KL divergence after round {}: {}", round+1, getKLDivergence());
 		}
 	}
-	
+
 	/**
 	 * Computes the expected ground truth incompatibility with respect to the mean field.
 	 * <p>
@@ -178,26 +178,26 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 		numGroundings = new double[rules.size()];
 		double[] truthIncompatibility = new double[rules.size()];
 		setLabeledRandomVariables();
-		
+
 		/* Computes the expected observed incompatibilities and numbers of groundings */
 		Vector<RandomVariableAtom> incidentLatentRVs = new Vector<RandomVariableAtom>();
 		for (int iRule = 0; iRule < rules.size(); iRule++) {
 			for (GroundRule groundRule : groundRuleStore.getGroundRules(rules.get(iRule))) {
 				WeightedGroundRule gck = (WeightedGroundRule) groundRule;
 				incidentLatentRVs.clear();
-				
+
 				/* Collects latent variables incident on this potential */
 				for (GroundAtom atom : gck.getAtoms())
 					if (trainingMap.getLatentVariables().contains(atom))
 						incidentLatentRVs.add((RandomVariableAtom) atom);
-				
+
 				/*
 				 * Iterates over joint settings of latent variables. If there are
 				 * no incident latent variables, just adds the value of the potential
 				 */
 				for (int i = 0; i < Math.pow(2, incidentLatentRVs.size()); i++) {
 					double meanFieldProb = 1.0;
-					
+
 					for (int j = 0; j < incidentLatentRVs.size(); j++) {
 						double mean = means.get(incidentLatentRVs.get(j));
 						/* If the jth variable is 1 in the current setting... */
@@ -211,13 +211,13 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 							incidentLatentRVs.get(j).setValue(0.0);
 						}
 					}
-					
+
 					truthIncompatibility[iRule] += gck.getIncompatibility() * meanFieldProb;
 				}
 				numGroundings[iRule]++;
 			}
 		}
-		
+
 		return truthIncompatibility;
 	}
 
@@ -229,37 +229,37 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 			termGenerator.updateWeights(groundRuleStore, termStore);
 			changedRuleWeights = false;
 		}
-		
+
 		// Computes the MPE state.
 		reasoner.optimize(termStore);
-		
+
 		/* Computes incompatibility */
 		for (int i = 0; i < rules.size(); i++) {
 			for (GroundRule groundRule : groundRuleStore.getGroundRules(rules.get(i))) {
 				expIncomp[i] += ((WeightedGroundRule) groundRule).getIncompatibility();
 			}
 		}
-		
+
 		return expIncomp;
 	}
-	
+
 	@Override
-	protected void initGroundModel()
-			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
+	protected void initGroundModel() {
 		super.initGroundModel();
-		
+
 		/* Sets all means to 0.5 if MPE_INITIALIZATION_KEY is false */
 		if (!mpeInit) {
 			means.clear();
-			for (RandomVariableAtom latentRV : trainingMap.getLatentVariables())
+			for (RandomVariableAtom latentRV : trainingMap.getLatentVariables()) {
 				means.put(latentRV, 0.5);
+			}
 		}
 	}
-	
+
 	protected void setMeansToMPE() {
 		/* Runs MPE inference in p(Z|X,Y) to set mean field */
 		log.debug("Running MPE inference to initialize mean field.");
-		
+
 		/* Creates constraints to fix labeled random variables to their true values */
 		List<GroundValueConstraint> labelConstraints = new ArrayList<GroundValueConstraint>();
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet())
@@ -269,48 +269,48 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 			termGenerator.updateWeights(groundRuleStore, termStore);
 			changedRuleWeights = false;
 		}
-		
+
 		// Infers most probable assignment latent variables.
 		reasoner.optimize(termStore);
-		
+
 		/* Removes constraints */
 		for (GroundValueConstraint con : labelConstraints) {
 			groundRuleStore.removeGroundRule(con);
 		}
-		
+
 		/* Sets mean field */
 		means.clear();
 		for (RandomVariableAtom latentRV : trainingMap.getLatentVariables())
 			means.put(latentRV, latentRV.getValue());
 	}
-	
+
 	/**
 	 * Computes the KL divergence from the mean field to the distribution p(Z|X,Y),
 	 * minus a constant (the log partition function plus some constant potentials).
-	 * 
+	 *
 	 * @return the KL divergence
 	 */
 	protected double getKLDivergence() {
 		double kl = 0.0;
-		
+
 		/* First computes negative entropy of the mean field */
 		for (Double mean : means.values())
 			kl += mean * Math.log(mean) + (1 - mean) * Math.log(1 - mean);
-		
+
 		/*
 		 * Then computes the cross entropy from the mean field to the (unnormalized)
-		 * distribution p(Z|X,Y) 
+		 * distribution p(Z|X,Y)
 		 */
 		setLabeledRandomVariables();
 		Vector<RandomVariableAtom> incidentLatentRVs = new Vector<RandomVariableAtom>();
 		for (WeightedGroundRule gck : groundRuleStore.getCompatibilityRules()) {
 			incidentLatentRVs.clear();
-			
+
 			/* Collects latent variables incident on this potential */
 			for (GroundAtom atom : gck.getAtoms())
 				if (trainingMap.getLatentVariables().contains(atom))
 					incidentLatentRVs.add((RandomVariableAtom) atom);
-			
+
 			/*
 			 * Iterates over joint settings of latent variables. If there are
 			 * no incident latent variables, just adds the weighted value of
@@ -318,7 +318,7 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 			 */
 			for (int i = 0; i < Math.pow(2, incidentLatentRVs.size()); i++) {
 				double meanFieldProb = 1.0;
-				
+
 				for (int j = 0; j < incidentLatentRVs.size(); j++) {
 					double mean = means.get(incidentLatentRVs.get(j));
 					/* If the jth variable is 1 in the current setting... */
@@ -332,11 +332,11 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 						incidentLatentRVs.get(j).setValue(0.0);
 					}
 				}
-				
-				kl += gck.getWeight().getWeight() * gck.getIncompatibility() * meanFieldProb; 
+
+				kl += gck.getWeight().getWeight() * gck.getIncompatibility() * meanFieldProb;
 			}
 		}
-		
+
 		return kl;
 	}
 }

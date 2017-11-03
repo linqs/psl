@@ -135,9 +135,8 @@ public abstract class WeightLearningApplication implements ModelApplication {
 	 * in the observed Database, unless the subclass implementation supports latent
 	 * variables.
 	 */
-	public void learn()
-			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-		/* Gathers the CompatibilityRules */
+	public void learn() {
+		// Gathers the CompatibilityRules.
 		for (WeightedRule rule : Iterables.filter(model.getRules(), WeightedRule.class)) {
 			if (rule.isWeightMutable()) {
 				rules.add(rule);
@@ -146,14 +145,13 @@ public abstract class WeightLearningApplication implements ModelApplication {
 			}
 		}
 
-		/* Sets up the ground model */
+		// Sets up the ground model.
 		initGroundModel();
 
-		/* Learns new weights */
+		// Learns new weights.
 		doLearn();
 
 		rules.clear();
-		cleanUpGroundModel();
 	}
 
 	protected abstract void doLearn();
@@ -162,11 +160,16 @@ public abstract class WeightLearningApplication implements ModelApplication {
 	 * Constructs a ground model using model and trainingMap, and stores the
 	 * resulting GroundRules in reasoner.
 	 */
-	protected void initGroundModel() throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-		reasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
-		termStore = (TermStore)config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
-		groundRuleStore = (GroundRuleStore)config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
-		termGenerator = (TermGenerator)config.getNewObject(TERM_GENERATOR_KEY, TERM_GENERATOR_DEFAULT);
+	protected void initGroundModel() {
+		try {
+			reasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
+			termStore = (TermStore)config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
+			groundRuleStore = (GroundRuleStore)config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
+			termGenerator = (TermGenerator)config.getNewObject(TERM_GENERATOR_KEY, TERM_GENERATOR_DEFAULT);
+		} catch (Exception ex) {
+			// The caller couldn't handle these exception anyways, convert them to runtime ones.
+			throw new RuntimeException("Failed to prepare storage for inference.", ex);
+		}
 
 		trainingMap = new TrainingMap(rvDB, observedDB);
 		if (trainingMap.getLatentVariables().size() > 0) {
@@ -180,7 +183,8 @@ public abstract class WeightLearningApplication implements ModelApplication {
 		termGenerator.generateTerms(groundRuleStore, termStore);
 	}
 
-	protected void cleanUpGroundModel() {
+	@Override
+	public void close() {
 		trainingMap = null;
 
 		termStore.close();
@@ -191,10 +195,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
 
 		reasoner.close();
 		reasoner = null;
-	}
 
-	@Override
-	public void close() {
 		model = null;
 		rvDB = null;
 		config = null;

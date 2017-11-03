@@ -56,6 +56,10 @@ public abstract class GroundAtom extends Atom {
 		this.registeredGroundRules = null;
 	}
 
+	public Database getDatabase() {
+		return db;
+	}
+
 	@Override
 	public Constant[] getArguments() {
 		return (Constant[])arguments;

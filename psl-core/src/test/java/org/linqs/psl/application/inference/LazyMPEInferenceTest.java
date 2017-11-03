@@ -3,9 +3,6 @@ package org.linqs.psl.application.inference;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 import org.linqs.psl.PSLTest;
 import org.linqs.psl.TestModelFactory;
 import org.linqs.psl.database.Database;
@@ -31,6 +28,10 @@ import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -47,19 +48,57 @@ public class LazyMPEInferenceTest {
 	//  - rules such that no instantiation will happen
 	//  - arithmetic rules
 
+	private Database inferDB;
+	private Partition targetPartition;
+	private Set<StandardPredicate> allPredicates;
+	private Set<StandardPredicate> closedPredicates;
+	private TestModelFactory.ModelInformation info;
+
+	@Before
+	public void setup() {
+		initModel(true);
+	}
+
+	@After
+	public void cleanup() {
+		PSLTest.disableLogger();
+
+		inferDB.close();
+		inferDB = null;
+
+		info.dataStore.close();
+		info = null;
+	}
+
+	private void initModel(boolean useNice) {
+		if (inferDB != null) {
+			inferDB.close();
+			inferDB = null;
+		}
+
+		if (info != null) {
+			info.dataStore.close();
+			info = null;
+		}
+
+		info = TestModelFactory.getModel(useNice);
+
+		// Get an empty partition so that no targets will exist in it and we will have to lazily instantiate them all.
+		targetPartition = info.dataStore.getPartition(TestModelFactory.PARTITION_UNUSED);
+
+		allPredicates = new HashSet<StandardPredicate>(info.predicates.values());
+		closedPredicates = new HashSet<StandardPredicate>(info.predicates.values());
+		closedPredicates.remove(info.predicates.get("Friends"));
+
+		inferDB = info.dataStore.getDatabase(targetPartition, closedPredicates, info.observationPartition);
+	}
+
 	/**
 	 * A quick test that only checks to see if LazyMPEInference is running.
 	 * This is not a targeted or exhaustive test, just a starting point.
 	 */
 	@Test
 	public void testBase() {
-		TestModelFactory.ModelInformation info = TestModelFactory.getModel(true);
-
-		// Get an empty partition so that no targets will exist in it and we will have to lazily instantiate them all.
-		Partition targetPartition = info.dataStore.getPartition(TestModelFactory.PARTITION_UNUSED);
-
-		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
-		Database inferDB = info.dataStore.getDatabase(targetPartition, toClose, info.observationPartition);
 		LazyMPEInference mpe = new LazyMPEInference(info.model, inferDB, info.config);
 
 		// The Friends predicate should be empty.
@@ -71,7 +110,6 @@ public class LazyMPEInferenceTest {
 		assertEquals(20, Queries.countAllGroundRandomVariableAtoms(inferDB, info.predicates.get("Friends")));
 
 		mpe.close();
-		inferDB.close();
 	}
 
 	/**
@@ -79,8 +117,6 @@ public class LazyMPEInferenceTest {
 	 */
 	@Test
 	public void testSimpleArithmeticBase() {
-		TestModelFactory.ModelInformation info = TestModelFactory.getModel(true);
-
 		// 1.0: Friends(A, B) >= 0.5 ^2
 		List<Coefficient> coefficients = Arrays.asList(
 			(Coefficient)(new ConstantNumber(1))
@@ -97,11 +133,6 @@ public class LazyMPEInferenceTest {
 		);
 		info.model.addRule(rule);
 
-		// Get an empty partition so that no targets will exist in it and we will have to lazily instantiate them all.
-		Partition targetPartition = info.dataStore.getPartition(TestModelFactory.PARTITION_UNUSED);
-
-		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
-		Database inferDB = info.dataStore.getDatabase(targetPartition, toClose, info.observationPartition);
 		LazyMPEInference mpe = new LazyMPEInference(info.model, inferDB, info.config);
 
 		// The Friends predicate should be empty.
@@ -113,7 +144,6 @@ public class LazyMPEInferenceTest {
 		assertEquals(20, Queries.countAllGroundRandomVariableAtoms(inferDB, info.predicates.get("Friends")));
 
 		mpe.close();
-		inferDB.close();
 	}
 
 	/**
@@ -123,8 +153,6 @@ public class LazyMPEInferenceTest {
 	public void testComplexArithmeticBase() {
 		// TEST
 		PSLTest.initLogger("TRACE");
-
-		TestModelFactory.ModelInformation info = TestModelFactory.getModel(true);
 
 		// |B| * Friends(A, +B) >= 1 {B: Nice(B)}
 
@@ -150,12 +178,6 @@ public class LazyMPEInferenceTest {
 		);
 		info.model.addRule(rule);
 
-		// Get an empty partition so that no targets will exist in it and we will have to lazily instantiate them all.
-		Partition targetPartition = info.dataStore.getPartition(TestModelFactory.PARTITION_UNUSED);
-
-		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
-		toClose.add(info.predicates.get("Nice"));
-		Database inferDB = info.dataStore.getDatabase(targetPartition, toClose, info.observationPartition);
 		LazyMPEInference mpe = new LazyMPEInference(info.model, inferDB, info.config);
 
 		// The Friends predicate should be empty.
@@ -167,7 +189,6 @@ public class LazyMPEInferenceTest {
 		assertEquals(20, Queries.countAllGroundRandomVariableAtoms(inferDB, info.predicates.get("Friends")));
 
 		mpe.close();
-		inferDB.close();
 	}
 
 	/**
@@ -175,65 +196,17 @@ public class LazyMPEInferenceTest {
 	 */
 	@Test
 	public void testFullySpecified() {
-		TestModelFactory.ModelInformation info = TestModelFactory.getModel(true);
-
-		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
-		Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-		LazyMPEInference mpe = new LazyMPEInference(info.model, inferDB, info.config);
+		Database fullTargetDB = info.dataStore.getDatabase(info.targetPartition, closedPredicates, info.observationPartition);
+		LazyMPEInference mpe = new LazyMPEInference(info.model, fullTargetDB, info.config);
 
 		// The Friends predicate should be fully defined.
-		assertEquals(20, Queries.countAllGroundRandomVariableAtoms(inferDB, info.predicates.get("Friends")));
+		assertEquals(20, Queries.countAllGroundRandomVariableAtoms(fullTargetDB, info.predicates.get("Friends")));
 
 		mpe.mpeInference();
 
-		assertEquals(20, Queries.countAllGroundRandomVariableAtoms(inferDB, info.predicates.get("Friends")));
+		assertEquals(20, Queries.countAllGroundRandomVariableAtoms(fullTargetDB, info.predicates.get("Friends")));
 
 		mpe.close();
-		inferDB.close();
-	}
-
-	@Test
-	// TEST(eriq): Some investigations.
-	public void testWork() {
-		// TEST
-		PSLTest.initLogger("TRACE");
-
-		// TEST(eriq): Make everyone nice?
-		// TestModelFactory.ModelInformation info = TestModelFactory.getModel();
-		TestModelFactory.ModelInformation info = TestModelFactory.getModel(true);
-
-		// Get an empty partition so that no targets will exist in it and we will have to lazily instantiate them all.
-		Partition targetPartition = info.dataStore.getPartition(TestModelFactory.PARTITION_UNUSED);
-
-		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
-		Database inferDB = info.dataStore.getDatabase(targetPartition, toClose, info.observationPartition);
-		LazyMPEInference mpe = new LazyMPEInference(info.model, inferDB, info.config);
-
-		// The Friends predicate should be empty.
-		assertEquals(0, Queries.countAllGroundRandomVariableAtoms(inferDB, info.predicates.get("Friends")));
-
-		mpe.mpeInference();
-
-		// TEST
-		for (org.linqs.psl.model.rule.Rule rule : info.model.getRules()) {
-			int count = 0;
-
-			for (Object groundRule : mpe.getGroundRuleStore().getGroundRules(rule)) {
-				count++;
-			}
-
-			System.out.printf("%s -- %d\n", rule, count);
-		}
-
-		// Now the Friends predicate should have the crossproduct (5x5) minus self pairs (5) in it.
-		assertEquals(20, Queries.countAllGroundRandomVariableAtoms(inferDB, info.predicates.get("Friends")));
-
-		mpe.close();
-		inferDB.close();
-	}
-
-	@After
-	public void cleanup() {
-		PSLTest.disableLogger();
+		fullTargetDB.close();
 	}
 }

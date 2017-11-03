@@ -46,23 +46,23 @@ import org.slf4j.LoggerFactory;
  * Learns the parameters of a HL-MRF with latent variables, using a maximum-likelihood
  * technique that interleaves updates of the parameters and inference steps for
  * fast training. See
- * 
+ *
  * "Paired-Dual Learning for Fast Training of Latent Variable Hinge-Loss MRFs"
  * Stephen H. Bach, Bert Huang, Jordan Boyd-Graber, and Lise Getoor
  * International Conference on Machine Learning (ICML) 2015
- * 
+ *
  * for details.
- * 
+ *
  * @author Stephen Bach <bach@cs.umd.edu>
  * @author Bert Huang <bhuang@vt.edu>
  */
 public class PairedDualLearner extends ExpectationMaximization {
 
 	private static final Logger log = LoggerFactory.getLogger(PairedDualLearner.class);
-	
+
 	/**
 	 * Prefix of property keys used by this class.
-	 * 
+	 *
 	 * @see ConfigManager
 	 */
 	public static final String CONFIG_PREFIX = "pairedduallearner";
@@ -75,7 +75,7 @@ public class PairedDualLearner extends ExpectationMaximization {
 	public static final String WARMUP_ROUNDS_KEY = CONFIG_PREFIX + ".warmuprounds";
 	/** Default value for WARMUP_ROUNDS_KEY */
 	public static final int WARMUP_ROUNDS_DEFAULT = 0;
-	
+
 	/**
 	 * Key for Integer property that indicates how many steps of ADMM to run
 	 * for each inner objective before each gradient step (parameter N in the ICML paper)
@@ -106,16 +106,17 @@ public class PairedDualLearner extends ExpectationMaximization {
 					+ " must be a positive integer.");
 		}
 	}
-	
+
 	@Override
-	protected void initGroundModel() throws ClassNotFoundException, IllegalAccessException, InstantiationException {
+	protected void initGroundModel() {
 		super.initGroundModel();
+
 		if (!(reasoner instanceof ADMMReasoner)) {
 			throw new IllegalArgumentException("PairedDualLearning can only be"
 					+ " used with ADMMReasoner.");
 		}
 	}
-	
+
 	public void setModel(Model m, String s) {
 		model = m;
 		outputPrefix = s;
@@ -200,7 +201,7 @@ public class PairedDualLearner extends ExpectationMaximization {
 	}
 
 	Random random = new Random();
-	
+
 	private void subgrad() {
 		log.info("Starting optimization");
 		double [] weights = new double[rules.size()];
@@ -210,10 +211,10 @@ public class PairedDualLearner extends ExpectationMaximization {
 		double [] avgWeights = new double[rules.size()];
 
 		double [] gradient = new double[rules.size()];
-		
+
 		for (int i = 0; i < rules.size(); i++)
 			gradient[i] = 1.0;
-		
+
 		double [] scale = new double[rules.size()];
 		double objective = 0;
 		for (int step = 0; step < iterations; step++) {
@@ -236,7 +237,7 @@ public class PairedDualLearner extends ExpectationMaximization {
 					gradient[i] = delta;
 					change += Math.pow(delta, 2);
 				}
-				avgWeights[i] = (1 - (1.0 / (double) (step + 1.0))) * avgWeights[i] + (1.0 / (double) (step + 1.0)) * weights[i];		
+				avgWeights[i] = (1 - (1.0 / (double) (step + 1.0))) * avgWeights[i] + (1.0 / (double) (step + 1.0)) * weights[i];
 			}
 
 			if (storeWeights) {
@@ -249,7 +250,7 @@ public class PairedDualLearner extends ExpectationMaximization {
 
 				storedWeights.add(weightMap);
 			}
-			
+
 			gradNorm = Math.sqrt(gradNorm);
 			change = Math.sqrt(change);
 			DecimalFormat df = new DecimalFormat("0.0000E00");
@@ -258,7 +259,7 @@ public class PairedDualLearner extends ExpectationMaximization {
 
 			if (step % 50 == 0)
 				outputModel(step);
-			
+
 			if (change < tolerance) {
 				log.info("Change in w ({}) is less than tolerance. Finishing subgrad.", change);
 				break;
@@ -274,7 +275,7 @@ public class PairedDualLearner extends ExpectationMaximization {
 			rules.get(i).setWeight(new PositiveWeight(weights[i]));
 		}
 	}
-	
+
 	private void outputModel(int step) {
 		if (model == null)
 			return;
@@ -299,13 +300,13 @@ public class PairedDualLearner extends ExpectationMaximization {
 	@Override
 	protected void doLearn() {
 		int maxIter = ((ADMMReasoner) reasoner).getMaxIter();
-		
+
 		((ADMMReasoner) reasoner).setMaxIter(admmIterations);
 		((ADMMReasoner) latentVariableReasoner).setMaxIter(admmIterations);
-		
+
 		if (augmentLoss)
 			addLossAugmentedRules();
-		
+
 		if (warmupRounds > 0) {
 			log.info("Warming up optimizers with {} iterations each.", warmupRounds * admmIterations);
 			for (int i = 0; i < warmupRounds; i++) {
@@ -313,9 +314,9 @@ public class PairedDualLearner extends ExpectationMaximization {
 				latentVariableReasoner.optimize(latentTermStore);
 			}
 		}
-		
+
 		subgrad();
-		
+
 		if (augmentLoss)
 			removeLossAugmentedRules();
 
@@ -345,7 +346,7 @@ public class PairedDualLearner extends ExpectationMaximization {
 		double mStepLagrangianPenalty = ((ADMMReasoner) reasoner).getLagrangianPenalty();
 		double mStepAugLagrangianPenalty = ((ADMMReasoner) reasoner).getAugmentedLagrangianPenalty();
 		loss += eStepLagrangianPenalty + eStepAugLagrangianPenalty - mStepLagrangianPenalty - mStepAugLagrangianPenalty;
-		
+
 		for (int i = 0; i < rules.size(); i++) {
 			log.debug("Incompatibility for rule {}", rules.get(i));
 			log.debug("Truth incompatbility {}, expected incompatibility {}", dualObservedIncompatibility[i], dualExpectedIncompatibility[i]);
@@ -353,10 +354,10 @@ public class PairedDualLearner extends ExpectationMaximization {
 		log.debug("E Penalty: {}, E Aug Penalty: {}, M Penalty: {}, M Aug Penalty: {}",
 				new Double[] {eStepLagrangianPenalty, eStepAugLagrangianPenalty, mStepLagrangianPenalty, mStepAugLagrangianPenalty});
 
-		
+
 		double regularizer = computeRegularizer();
 
-		if (null != gradient) 
+		if (null != gradient)
 			for (int i = 0; i < rules.size(); i++) {
 				gradient[i] = dualObservedIncompatibility[i] - dualExpectedIncompatibility[i];
 				if (scaleGradient && numGroundings[i] > 0.0)

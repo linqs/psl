@@ -119,6 +119,19 @@ public class LazyAtomManager extends PersistedAtomManager {
 	}
 
 	/**
+	 * Compute the number of lazy atoms that can be activated at this moment.
+	 */
+	public int countActivatableAtoms() {
+		int count = 0;
+		for (RandomVariableAtom atom : lazyAtoms) {
+			if (atom.getValue() >= activation) {
+				count++;
+			}
+		}
+		return count;
+	}
+
+	/**
 	 * Activate any lazy atoms above the threshold.
 	 * @return the number of lazy atoms instantiated.
 	 */
@@ -137,6 +150,35 @@ public class LazyAtomManager extends PersistedAtomManager {
 
 		activate(toActivate, model, groundRuleStore);
 		return toActivate.size();
+	}
+
+	/**
+	 * Activate a specific set of lazy atoms.
+	 * Any passed in atom that is not part of this manager's lazy
+	 * atom set will be ignored.
+	 * @return the number of lazy atoms instantiated.
+	 */
+	public int activateAtoms(Set<RandomVariableAtom> atoms, Model model, GroundRuleStore groundRuleStore) {
+		// Ensure that all the atoms are valid.
+		Iterator<RandomVariableAtom> atomIterator = atoms.iterator();
+		while (atomIterator.hasNext()) {
+			RandomVariableAtom atom = atomIterator.next();
+
+			// Make sure we manage this atom.
+			if (!db.equals(atom.getDatabase())) {
+				throw new IllegalArgumentException(String.format(
+						"Atom (%s) did not come from the database managed by this AtomManager.",
+						atom));
+			}
+
+			// Remove atoms that are not lazy.
+			if (!lazyAtoms.contains(atom)) {
+				atomIterator.remove();
+			}
+		}
+
+		activate(atoms, model, groundRuleStore);
+		return atoms.size();
 	}
 
 	private void activate(Set<RandomVariableAtom> toActivate, Model model, GroundRuleStore groundRuleStore) {

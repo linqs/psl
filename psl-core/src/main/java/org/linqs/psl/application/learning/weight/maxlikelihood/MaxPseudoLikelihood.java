@@ -108,9 +108,8 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 	 * Note: calls super.initGroundModel() first, in order to ground model. 
 	 */
 	@Override
-	public void initGroundModel()
-			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-		/* Invoke method in the parent class to setup ground model */
+	public void initGroundModel() {
+		// Invoke method in the parent class to setup ground model.
 		super.initGroundModel();
 		blocker = new ConstraintBlocker(groundRuleStore);
 		blocker.prepareBlocks(true);

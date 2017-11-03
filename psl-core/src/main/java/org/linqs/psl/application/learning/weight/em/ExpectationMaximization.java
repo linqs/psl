@@ -186,31 +186,37 @@ abstract public class ExpectationMaximization extends VotedPerceptron {
 	abstract protected void minimizeKLDivergence();
 
 	@Override
-	protected void initGroundModel()
-			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-		reasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
-		termStore = (TermStore)config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
-		groundRuleStore = (GroundRuleStore)config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
-		termGenerator = (TermGenerator)config.getNewObject(TERM_GENERATOR_KEY, TERM_GENERATOR_DEFAULT);
+	protected void initGroundModel() {
+		try {
+			reasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
+			termStore = (TermStore)config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
+			groundRuleStore = (GroundRuleStore)config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
+			termGenerator = (TermGenerator)config.getNewObject(TERM_GENERATOR_KEY, TERM_GENERATOR_DEFAULT);
+		} catch (Exception ex) {
+			// The caller couldn't handle these exception anyways, convert them to runtime ones.
+			throw new RuntimeException("Failed to prepare storage for inference.", ex);
+		}
 
 		trainingMap = new TrainingMap(rvDB, observedDB);
 
 		Grounding.groundAll(model, trainingMap, groundRuleStore);
 		termGenerator.generateTerms(groundRuleStore, termStore);
 
-		/*
-		 * The latentVariableReasoner should be cleaned up in close(), not
-		 * cleanUpGroundModel(), so that calls to inferLatentVariables() still
-		 * work
-		 */
+		// The latentVariableReasoner should not be closed until close(),
+		// so that calls to inferLatentVariables() still work.
 		if (latentVariableReasoner != null) {
 			latentVariableReasoner.close();
 		}
 
-		latentVariableReasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
-		latentTermStore = (TermStore)config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
-		latentGroundRuleStore = (GroundRuleStore)config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
-		latentTermGenerator = (TermGenerator)config.getNewObject(TERM_GENERATOR_KEY, TERM_GENERATOR_DEFAULT);
+		try {
+			latentVariableReasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
+			latentTermStore = (TermStore)config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
+			latentGroundRuleStore = (GroundRuleStore)config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
+			latentTermGenerator = (TermGenerator)config.getNewObject(TERM_GENERATOR_KEY, TERM_GENERATOR_DEFAULT);
+		} catch (Exception ex) {
+			// The caller couldn't handle these exception anyways, convert them to runtime ones.
+			throw new RuntimeException("Failed to prepare storage for latent inference.", ex);
+		}
 
 		Grounding.groundAll(model, trainingMap, latentGroundRuleStore);
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {

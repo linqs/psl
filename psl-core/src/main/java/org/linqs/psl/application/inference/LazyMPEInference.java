@@ -185,7 +185,7 @@ public class LazyMPEInference implements ModelApplication {
 
 			log.info("Beginning inference round {}.", rounds);
 			reasoner.optimize(termStore);
-			log.info("Inference round {} complete. Writing results to Database.", rounds);
+			log.info("Inference round {} complete.", rounds);
 
 			// TEST
 			System.out.println("^^^^^ All Cached Atoms (" + rounds + ") ^^^^^");
