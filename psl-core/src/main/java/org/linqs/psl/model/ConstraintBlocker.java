@@ -17,13 +17,7 @@
  */
 package org.linqs.psl.model;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-
-import org.linqs.psl.application.groundrulestore.GroundRuleStore;
+import org.linqs.psl.application.groundrulestore.AtomRegisterGroundRuleStore;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
@@ -34,6 +28,12 @@ import org.linqs.psl.model.rule.arithmetic.UnweightedGroundArithmeticRule;
 import org.linqs.psl.model.rule.misc.GroundValueConstraint;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.function.FunctionSum;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
 
 /**
  * This class blocks free {@link RandomVariableAtom RandomVariableAtoms}
@@ -52,10 +52,11 @@ public class ConstraintBlocker {
 	private boolean[] exactlyOne;
 	private Map<RandomVariableAtom, Integer> rvMap;
 
-	private final GroundRuleStore store;
+	// We specifically require a GroundRuleStore that has registerd atoms.
+	private final AtomRegisterGroundRuleStore groundRuleStore;
 
-	public ConstraintBlocker(GroundRuleStore store) {
-		this.store = store;
+	public ConstraintBlocker(AtomRegisterGroundRuleStore groundRuleStore) {
+		this.groundRuleStore = groundRuleStore;
 	}
 
 	public void prepareBlocks(boolean prepareRVMap) {
@@ -64,7 +65,7 @@ public class ConstraintBlocker {
 		// Collects constraints.
 		Set<UnweightedGroundArithmeticRule> constraintSet = new HashSet<UnweightedGroundArithmeticRule>();
 		Map<RandomVariableAtom, GroundValueConstraint> valueConstraintMap = new HashMap<RandomVariableAtom, GroundValueConstraint>();
-		for (UnweightedGroundRule groundRule : store.getConstraintRules()) {
+		for (UnweightedGroundRule groundRule : groundRuleStore.getConstraintRules()) {
 			if (groundRule instanceof GroundValueConstraint) {
 				valueConstraintMap.put(((GroundValueConstraint)groundRule).getAtom(), (GroundValueConstraint)groundRule);
 				continue;
@@ -110,7 +111,7 @@ public class ConstraintBlocker {
 
 		// Collects the free RandomVariableAtoms that remain.
 		Set<RandomVariableAtom> freeRVSet = new HashSet<RandomVariableAtom>();
-		for (GroundRule groundRule : store.getGroundRules()) {
+		for (GroundRule groundRule : groundRuleStore.getGroundRules()) {
 			for (GroundAtom atom : groundRule.getAtoms()) {
 				if (!(atom instanceof RandomVariableAtom)) {
 					continue;
@@ -119,7 +120,7 @@ public class ConstraintBlocker {
 				int numDRConstraints = 0;
 				int numValueConstraints = 0;
 
-				for (GroundRule incidentGR : atom.getRegisteredGroundRules()) {
+				for (GroundRule incidentGR : groundRuleStore.getRegisteredGroundRules(atom)) {
 					if (incidentGR instanceof UnweightedGroundArithmeticRule) {
 						numDRConstraints++;
 					} else if (incidentGR instanceof GroundValueConstraint) {
@@ -206,7 +207,7 @@ public class ConstraintBlocker {
 		for (i = 0; i < rvBlocks.length; i++) {
 			incidentGKSet.clear();
 			for (RandomVariableAtom atom : rvBlocks[i]) {
-				for (GroundRule incidentGK : atom.getRegisteredGroundRules()) {
+				for (GroundRule incidentGK : groundRuleStore.getRegisteredGroundRules(atom)) {
 					if (incidentGK instanceof WeightedGroundRule) {
 						incidentGKSet.add((WeightedGroundRule) incidentGK);
 					}

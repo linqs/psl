@@ -149,17 +149,13 @@ public abstract class AbstractLogicalRule implements Rule {
 
 			AbstractGroundLogicalRule groundRule = groundFormulaInstance(posLiterals, negLiterals);
 			FunctionTerm function = groundRule.getFunction();
+
 			worstCaseValue = function.getValue(worstCaseValues, false);
 			if (worstCaseValue > NumericUtilities.strictEpsilon
 					&& (!function.isConstant() || !(groundRule instanceof WeightedGroundRule))
 					&& !grs.containsGroundRule(groundRule)) {
 				grs.addGroundRule(groundRule);
 				numGroundingsAdded++;
-			// If the ground rule is not actually added, unregisters it from atoms.
-			} else {
-				for (GroundAtom incidentAtom : groundRule.getAtoms()) {
-					incidentAtom.unregisterGroundRule(groundRule);
-				}
 			}
 
 			posLiterals.clear();

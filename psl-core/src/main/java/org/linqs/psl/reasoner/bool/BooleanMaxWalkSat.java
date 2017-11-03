@@ -17,13 +17,7 @@
  */
 package org.linqs.psl.reasoner.bool;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-
-import org.linqs.psl.application.groundrulestore.MemoryGroundRuleStore;
+import org.linqs.psl.application.groundrulestore.AtomRegisterGroundRuleStore;
 import org.linqs.psl.application.util.GroundRules;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.ConfigManager;
@@ -37,6 +31,12 @@ import org.linqs.psl.reasoner.term.TermStore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
 
 /**
  * Implementation of MaxWalkSat, which searches for a good Boolean assignment
@@ -55,8 +55,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-public class BooleanMaxWalkSat extends MemoryGroundRuleStore implements Reasoner {
-
+public class BooleanMaxWalkSat extends AtomRegisterGroundRuleStore implements Reasoner {
 	private static final Logger log = LoggerFactory.getLogger(BooleanMaxWalkSat.class);
 
 	/**
@@ -88,6 +87,7 @@ public class BooleanMaxWalkSat extends MemoryGroundRuleStore implements Reasoner
 
 	public BooleanMaxWalkSat(ConfigBundle config) {
 		super();
+
 		rand = new Random();
 		maxFlips = config.getInt(MAX_FLIPS_KEY, MAX_FLIPS_DEFAULT);
 		if (maxFlips <= 0 )
@@ -268,7 +268,6 @@ public class BooleanMaxWalkSat extends MemoryGroundRuleStore implements Reasoner
 
 	@Override
 	public void close() {
-		/* Intentionally blank */
+		// Intentionally blank
 	}
-
 }

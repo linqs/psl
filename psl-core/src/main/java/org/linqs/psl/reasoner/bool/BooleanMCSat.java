@@ -17,9 +17,7 @@
  */
 package org.linqs.psl.reasoner.bool;
 
-import java.util.Random;
-
-import org.linqs.psl.application.groundrulestore.MemoryGroundRuleStore;
+import org.linqs.psl.application.groundrulestore.AtomRegisterGroundRuleStore;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.ConfigManager;
 import org.linqs.psl.model.ConstraintBlocker;
@@ -30,6 +28,8 @@ import org.linqs.psl.reasoner.term.TermStore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Random;
 
 /**
  * Implementation of MC-Sat, which approximates the marginal probability that each
@@ -44,7 +44,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-public class BooleanMCSat extends MemoryGroundRuleStore implements Reasoner {
+public class BooleanMCSat extends AtomRegisterGroundRuleStore implements Reasoner {
 
 	private static final Logger log = LoggerFactory.getLogger(BooleanMCSat.class);
 
@@ -75,6 +75,7 @@ public class BooleanMCSat extends MemoryGroundRuleStore implements Reasoner {
 
 	public BooleanMCSat(ConfigBundle config) {
 		super();
+
 		rand = new Random();
 		numSamples = config.getInt(NUM_SAMPLES_KEY, NUM_SAMPLES_DEFAULT);
 		if (numSamples <= 0)

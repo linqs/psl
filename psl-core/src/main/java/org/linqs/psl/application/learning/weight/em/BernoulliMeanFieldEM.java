@@ -17,12 +17,7 @@
  */
 package org.linqs.psl.application.learning.weight.em;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Vector;
-
+import org.linqs.psl.application.groundrulestore.AtomRegisterGroundRuleStore;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.ConfigManager;
 import org.linqs.psl.database.Database;
@@ -33,8 +28,15 @@ import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.misc.GroundValueConstraint;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Vector;
 
 /**
  * EM algorithm which fits a Bernoulli mean field (product of independent Bernoulli
@@ -106,7 +108,7 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 				 * Iterates over each potential which is a function of the current
 				 * latent random variable
 				 */
-				for(GroundRule groundRule : latentRV.getRegisteredGroundRules()) {
+				for(GroundRule groundRule : ((AtomRegisterGroundRuleStore)latentGroundRuleStore).getRegisteredGroundRules(latentRV)) {
 					if (groundRule instanceof WeightedGroundRule) {
 						if (groundRuleStore.containsGroundRule(groundRule)) {
 							WeightedGroundRule gck = (WeightedGroundRule) groundRule;
@@ -245,6 +247,9 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 
 	@Override
 	protected void initGroundModel() {
+		// Force super to use a AtomRegisterGroundRuleStore.
+		config.setProperty(GROUND_RULE_STORE_KEY, "org.linqs.psl.application.groundrulestore.AtomRegisterGroundRuleStore");
+
 		super.initGroundModel();
 
 		/* Sets all means to 0.5 if MPE_INITIALIZATION_KEY is false */

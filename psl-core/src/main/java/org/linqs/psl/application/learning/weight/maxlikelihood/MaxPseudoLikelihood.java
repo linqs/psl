@@ -17,9 +17,8 @@
  */
 package org.linqs.psl.application.learning.weight.maxlikelihood;
 
-import java.util.HashMap;
-import java.util.Map;
-
+import org.linqs.psl.application.groundrulestore.AtomRegisterGroundRuleStore;
+import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.ConfigManager;
 import org.linqs.psl.database.Database;
@@ -29,6 +28,9 @@ import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Learns weights by optimizing the pseudo-log-likelihood of the data using
@@ -113,15 +115,15 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 		}
 	}
 
-	/**
-	 * Note: calls super.initGroundModel() first, in order to ground model.
-	 */
 	@Override
 	public void initGroundModel() {
+		// Force super to use a AtomRegisterGroundRuleStore.
+		config.setProperty(GROUND_RULE_STORE_KEY, "org.linqs.psl.application.groundrulestore.AtomRegisterGroundRuleStore");
+
 		// Invoke method in the parent class to setup ground model.
 		super.initGroundModel();
 
-		blocker = new ConstraintBlocker(groundRuleStore);
+		blocker = new ConstraintBlocker((AtomRegisterGroundRuleStore)groundRuleStore);
 		blocker.prepareBlocks(true);
 	}
 
