@@ -161,9 +161,6 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	protected double[] truthIncompatibility;
 	protected double[] expectedIncompatibility;
 
-	/** Stop flag to quit the loop. */
-	protected boolean toStop = false;
-
 	/** Learning loss at current point */
 	private double loss = Double.POSITIVE_INFINITY;
 
@@ -286,11 +283,6 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 			}
 
 			changedRuleWeights = true;
-
-			// if stop() has been called, exit the loop early
-			if (toStop) {
-				break;
-			}
 		}
 
 		// Sets the weights to their averages.
@@ -369,13 +361,6 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 		for (int i = 0; i < numGroundings.length; i++)
 			factor[i] = (scaleGradient && numGroundings[i] > 0) ? numGroundings[i] : 1.0;
 		return factor;
-	}
-
-	/**
-	* Notifies VotedPerceptron to exit after the current step
-	*/
-	public void stop() {
-		toStop = true;
 	}
 
 	/**

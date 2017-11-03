@@ -119,9 +119,6 @@ public class LazyMPEInference implements ModelApplication {
 	protected TermGenerator termGenerator;
 	protected LazyAtomManager lazyAtomManager;
 
-	// Stop flag to quit the loop.
-	protected boolean toStop = false;
-
 	public LazyMPEInference(Model model, Database db, ConfigBundle config) {
 		this.model = model;
 		this.db = db;
@@ -203,7 +200,7 @@ public class LazyMPEInference implements ModelApplication {
 				numActivated = lazyAtomManager.activateAtoms(model, groundRuleStore);
 			}
 			log.debug("Completed round {} and activated {} atoms.", rounds, numActivated);
-		} while (numActivated > 0 && rounds < maxRounds && !toStop);
+		} while (numActivated > 0 && rounds < maxRounds);
 
 		// TODO: Check for consideration events when deciding to terminate?
 
@@ -220,13 +217,6 @@ public class LazyMPEInference implements ModelApplication {
 		int size = groundRuleStore.size();
 
 		return new MemoryFullInferenceResult(incompatibility, infeasibility, atoms.size(), size);
-	}
-
-	/**
-	 * Notifies LazyMPEInference to stop inference at the end of the current round
-	 */
-	public void stop() {
-		toStop = true;
 	}
 
 	@Override
