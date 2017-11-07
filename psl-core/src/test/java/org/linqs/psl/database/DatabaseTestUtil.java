@@ -76,7 +76,7 @@ public class DatabaseTestUtil {
 			// Check to see if we failed to connect because the server is down.
 			if (ex.getCause() instanceof org.postgresql.util.PSQLException) {
 				if (ex.getCause().getCause() instanceof java.net.ConnectException) {
-					if (ex.getCause().getCause().getMessage().equals("Connection refused (Connection refused)")) {
+					if (ex.getCause().getCause().getMessage().contains("Connection refused")) {
 						System.out.println("Skipping Postgres test... cannot connect to database.");
 						return null;
 					}
