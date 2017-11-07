@@ -17,16 +17,15 @@
  */
 package org.linqs.psl.evaluation.statistics;
 
-import java.util.Iterator;
-
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Queries;
 import org.linqs.psl.evaluation.statistics.filter.AtomFilter;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 
-public class ContinuousPredictionComparator implements ResultComparator {
+import java.util.Iterator;
 
+public class ContinuousPredictionComparator implements ResultComparator {
 	private final Database result;
 	private Database baseline;
 	private AtomFilter resultFilter = AtomFilter.NoFilter;
@@ -58,7 +57,6 @@ public class ContinuousPredictionComparator implements ResultComparator {
 	 * For now, assumes the results DB has grounded all relevant instances of the predicate.
 	 * I.e., currently this does not check for missed instances in the baseline DB
 	 * @param predicate
-	 * @return
 	 */
 	public double compare(StandardPredicate predicate) {
 		double score = 0.0;

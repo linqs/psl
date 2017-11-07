@@ -34,12 +34,12 @@ import java.util.Random;
 /**
  * Implementation of MC-Sat, which approximates the marginal probability that each
  * atom has value 1 in a Boolean domain.
- * <p>
+ *
  * Marginal probabilities will be set as the atoms' truth values.
- * <p>
+ *
  * This class supports free {@link RandomVariableAtom RandomVariableAtoms}
  * and RandomVariableAtoms that are each constrained by a single
- * {@link GroundDomainRangeConstraint}. It also assumes that all ObservedAtoms
+ * GroundValueConstraint. It also assumes that all ObservedAtoms
  * have Boolean truth values. Its behavior is not defined otherwise.
  *
  * @author Stephen Bach <bach@cs.umd.edu>

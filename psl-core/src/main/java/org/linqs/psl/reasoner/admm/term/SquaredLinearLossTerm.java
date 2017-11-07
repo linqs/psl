@@ -20,16 +20,16 @@ package org.linqs.psl.reasoner.admm.term;
 import java.util.List;
 
 /**
- * {@link ADMMReasoner} objective term of the form <br />
+ * ADMMReasoner objective term of the form <br />
  * weight * (coeffs^T * x - constant)^2
- * 
+ *
  * @author Stephen Bach <bach@cs.umd.edu>
  */
 public class SquaredLinearLossTerm extends SquaredHyperplaneTerm {
 	SquaredLinearLossTerm(List<LocalVariable> variables, List<Double> coeffs, double constant, double weight) {
 		super(variables, coeffs, constant, weight);
 	}
-	
+
 	@Override
 	public void minimize(double stepSize, double[] consensusValues) {
 		minWeightedSquaredHyperplane(stepSize, consensusValues);

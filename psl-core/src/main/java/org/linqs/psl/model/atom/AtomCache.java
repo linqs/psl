@@ -41,7 +41,7 @@ public class AtomCache {
 	/**
 	 * Constructs a new AtomCache for a Database.
 	 *
-	 * @param db  the Database for which GroundAtoms will be cached
+	 * @param db the Database for which GroundAtoms will be cached
 	 */
 	public AtomCache(Database db) {
 		this.db = db;
@@ -52,7 +52,7 @@ public class AtomCache {
 	 * Checks whether a {@link GroundAtom} matching a QueryAtom exists in the
 	 * cache and returns it if so.
 	 *
-	 * @param atom  QueryAtom with all {@link Constant GroundTerms}
+	 * @param atom QueryAtom with all {@link Constant GroundTerms}
 	 * @return the requested GroundAtom, or NULL if it is not cached
 	 */
 	public GroundAtom getCachedAtom(QueryAtom atom) {
@@ -69,7 +69,7 @@ public class AtomCache {
 	/**
 	 * Returns all GroundAtoms in this AtomCache with a given Predicate.
 	 *
-	 * @param p  the Predicate of Atoms to return
+	 * @param p the Predicate of Atoms to return
 	 * @return the cached Atoms
 	 */
 	public Iterable<GroundAtom> getCachedAtoms(final Predicate p) {
@@ -83,7 +83,7 @@ public class AtomCache {
 	}
 	/**
 	 * Removes an atom from the AtomCache
-	 * @param qAtom  the Atom to remove
+	 * @param qAtom the Atom to remove
 	 * @return whether an atom was removed from the cache
 	 */
 	public boolean removeCachedAtom(QueryAtom qAtom) {
@@ -110,17 +110,17 @@ public class AtomCache {
 
 	/**
 	 * Instantiates an ObservedAtom and stores it in this AtomCache.
-	 * <p>
+	 *
 	 * This method should only be called by this AtomCache's {@link Database}.
-	 * To retrieve a GroundAtom, all others should use {@link Database#getAtom(Predicate, Constant[])}
-	 * or {@link AtomManager#getAtom(Predicate, Constant[])}.
-	 * <p>
+	 * To retrieve a GroundAtom, all others should use Database.getAtom()
+	 * or AtomManager.getAtom().
+	 *
 	 * Further, this method should only be called after ensuring that the Atom
 	 * is not already in this AtomCache using {@link #getCachedAtom(QueryAtom)}.
 	 *
-	 * @param p  the Predicate of the Atom
-	 * @param args  the arguments to this Atom
-	 * @param value  the Atom's truth value
+	 * @param p the Predicate of the Atom
+	 * @param args the arguments to this Atom
+	 * @param value the Atom's truth value
 	 * @return the new ObservedAtom
 	 */
 	public ObservedAtom instantiateObservedAtom(Predicate p, Constant[] args,
@@ -133,17 +133,17 @@ public class AtomCache {
 
 	/**
 	 * Instantiates a RandomVariableAtom and stores it in this AtomCache.
-	 * <p>
+	 *
 	 * This method should only be called by this AtomCache's {@link Database}.
-	 * To retrieve a GroundAtom, all others should use {@link Database#getAtom(Predicate, Constant[])}
-	 * or {@link AtomManager#getAtom(Predicate, Constant[])}.
-	 * <p>
+	 * To retrieve a GroundAtom, all others should use Database.getAtom()
+	 * or AtomManager.getAtom().
+	 *
 	 * Further, this method should only be called after ensuring that the Atom
 	 * is not already in this AtomCache using {@link #getCachedAtom(QueryAtom)}.
 	 *
-	 * @param p  the Predicate of the Atom
-	 * @param args  the arguments to this Atom
-	 * @param value  the Atom's truth value
+	 * @param p the Predicate of the Atom
+	 * @param args the arguments to this Atom
+	 * @param value the Atom's truth value
 	 * @return the new RandomVariableAtom
 	 */
 	public RandomVariableAtom instantiateRandomVariableAtom(StandardPredicate p,

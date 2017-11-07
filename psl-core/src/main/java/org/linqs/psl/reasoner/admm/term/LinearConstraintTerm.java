@@ -22,32 +22,32 @@ import org.linqs.psl.reasoner.function.FunctionComparator;
 import java.util.List;
 
 /**
- * {@link ADMMReasoner} objective term of the form <br />
+ * ADMMReasoner objective term of the form <br />
  * 0 if coeffs^T * x [?] constant <br />
  * infinity otherwise <br />
  * where [?] is ==, >=, or <=
  * <p>
  * All coeffs must be non-zero.
- * 
+ *
  * @author Stephen Bach <bach@cs.umd.edu>
  */
 public class LinearConstraintTerm extends HyperplaneTerm {
-	
+
 	private final FunctionComparator comparator;
-	
+
 	protected LinearConstraintTerm(List<LocalVariable> variables, List<Double> coeffs, double constant, FunctionComparator comparator) {
 		super(variables, coeffs, constant);
 		this.comparator = comparator;
 	}
-	
+
 	@Override
 	public void minimize(double stepSize, double[] consensusValues) {
 		/* If it's not an equality constraint, first tries to minimize without the constraint */
 		if (!comparator.equals(FunctionComparator.Equality)) {
-		
+
 			/* Initializes scratch data */
 			double total = 0.0;
-			
+
 			/*
 			 * Minimizes without regard for the constraint, i.e., solves
 			 * argmin stepSize/2 * \|x - z + y / stepSize \|_2^2
@@ -55,10 +55,10 @@ public class LinearConstraintTerm extends HyperplaneTerm {
 			for (int i = 0; i < variables.size(); i++) {
 				LocalVariable variable = variables.get(i);
 				variable.setValue(consensusValues[variable.getGlobalId()] - variable.getLagrange() / stepSize);
-				
+
 				total += coeffs.get(i).doubleValue() * variable.getValue();
 			}
-			
+
 			/*
 			 * Checks if the solution satisfies the constraint. If so, updates
 			 * the local primal variables and returns.
@@ -66,11 +66,11 @@ public class LinearConstraintTerm extends HyperplaneTerm {
 			if ( (comparator.equals(FunctionComparator.SmallerThan) && total <= constant)
 					||
 				 (comparator.equals(FunctionComparator.LargerThan) && total >= constant)
-			   ) {
+				) {
 				return;
 			}
 		}
-		
+
 		/*
 		 * If the naive minimization didn't work, or if it's an equality constraint,
 		 * projects onto the hyperplane

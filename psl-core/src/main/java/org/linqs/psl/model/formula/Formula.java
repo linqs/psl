@@ -41,7 +41,7 @@ public interface Formula {
 	 * Adds the {@link Variable Variables}
 	 *
 	 * @param varMap
-	 * @return
+	 * @return the passed in VariableTypeMap filled with the variables this formula uses.
 	 */
 	public VariableTypeMap collectVariables(VariableTypeMap varMap);
 

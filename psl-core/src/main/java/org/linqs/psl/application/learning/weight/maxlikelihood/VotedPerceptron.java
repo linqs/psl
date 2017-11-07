@@ -17,10 +17,6 @@
  */
 package org.linqs.psl.application.learning.weight.maxlikelihood;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.maxmargin.LossAugmentingGroundRule;
 import org.linqs.psl.config.ConfigBundle;
@@ -35,35 +31,39 @@ import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.weight.NegativeWeight;
 import org.linqs.psl.model.weight.PositiveWeight;
 import org.linqs.psl.model.weight.Weight;
+
+import com.google.common.collect.Iterables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.Iterables;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * TODO: rewrite class documentation to describe general gradient-based learning algorithms
  * TODO: refactor class so loss augmentation is a strategy that can only be applied to inference-based learning objectives
  * Learns new weights for the {@link WeightedRule CompatibilityRules}
  * in a {@link Model} using the voted perceptron algorithm.
- * <p>
+ *
  * The weight-learning objective is to maximize the likelihood according to the
  * distribution:
- * <p>
+ *
  * p(X) = 1 / Z(w)	*	exp{-sum[w * f(X)]}
- * <p>
+ *
  * where X is the set of RandomVariableAtoms, f(X) the incompatibility of
  * each GroundRule, w is the weight of that GroundRule, and Z(w)
  * is a normalization factor.
- * <p>
+ *
  * The voted perceptron algorithm starts at the current weights and at each step
  * computes the gradient of the objective, takes that step multiplied by a step size
  * (possibly truncated to stay in the region of feasible weights), and
  * saves the new weights. The components of the gradient are each divided by the
  * number of GroundCompatibilityRules from that Rule. The learned weights
  * are the averages of the saved weights.
- * <p>
+ *
  * For the gradient of the objective, the expected total incompatibility is
- * computed by subclasses in {@link #computeExpectedIncomp(List, double[])}.
+ * computed by subclasses in {@link #computeExpectedIncomp()}.
  *
  * @author Stephen Bach <bach@cs.umd.edu>
  */
@@ -354,7 +354,6 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	 * Scales by the number of groundings of each rule
 	 * unless the rule is not grounded in the training set, in which case
 	 * scales by 1.0
-	 * @return
 	 */
 	protected double[] computeScalingFactor() {
 		double [] factor = new double[numGroundings.length];

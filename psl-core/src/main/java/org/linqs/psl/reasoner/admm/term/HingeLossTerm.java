@@ -22,16 +22,16 @@ import org.linqs.psl.reasoner.term.WeightedTerm;
 import java.util.List;
 
 /**
- * {@link ADMMReasoner} objective term of the form <br />
+ * ADMMReasoner objective term of the form <br />
  * weight * max(coeffs^T * x - constant, 0)
- * <p>
+ *
  * All coeffs must be non-zero.
- * 
+ *
  * @author Stephen Bach <bach@cs.umd.edu>
  */
 public class HingeLossTerm extends HyperplaneTerm implements WeightedTerm {
 	private double weight;
-	
+
 	HingeLossTerm(List<LocalVariable> variables, List<Double> coeffs, double constant, double weight) {
 		super(variables, coeffs, constant);
 
@@ -45,12 +45,12 @@ public class HingeLossTerm extends HyperplaneTerm implements WeightedTerm {
 	public void setWeight(double weight) {
 		this.weight = weight;
 	}
-	
+
 	@Override
 	public void minimize(double stepSize, double[] consensusValues) {
 		/* Initializes scratch data */
 		double total = 0.0;
-		
+
 		/*
 		 * Minimizes without the linear loss, i.e., solves
 		 * argmin stepSize/2 * \|x - z + y / stepSize \|_2^2
@@ -60,12 +60,12 @@ public class HingeLossTerm extends HyperplaneTerm implements WeightedTerm {
 			variable.setValue(consensusValues[variable.getGlobalId()] - variable.getLagrange() / stepSize);
 			total += (coeffs.get(i).doubleValue() * variable.getValue());
 		}
-		
+
 		/* If the linear loss is NOT active at the computed point, it is the solution... */
 		if (total <= constant) {
 			return;
 		}
-		
+
 		/*
 		 * Else, minimizes with the linear loss, i.e., solves
 		 * argmin weight * coeffs^T * x + stepSize/2 * \|x - z + y / stepSize \|_2^2
@@ -80,12 +80,12 @@ public class HingeLossTerm extends HyperplaneTerm implements WeightedTerm {
 
 			total += coeffs.get(i).doubleValue() * variable.getValue();
 		}
-		
+
 		/* If the linear loss IS active at the computed point, it is the solution... */
 		if (total >= constant) {
 			return;
 		}
-		
+
 		/* Else, the solution is on the hinge */
 		project(stepSize, consensusValues);
 	}

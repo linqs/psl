@@ -17,12 +17,6 @@
  */
 package org.linqs.psl.evaluation.statistics;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Queries;
 import org.linqs.psl.model.atom.GroundAtom;
@@ -30,6 +24,12 @@ import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.evaluation.statistics.filter.AtomFilter;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
 public class DiscretePredictionComparator implements PredictionComparator {
 	public static final double DEFAULT_THRESHOLD = 0.5;
@@ -84,8 +84,8 @@ public class DiscretePredictionComparator implements PredictionComparator {
 	 * Compares the baseline with the inferred result for a given predicate.
 	 * Checks the baseline database for atoms
 	 *
-	 * @param StandardPredicate predicate : The predicate to compare
-	 * @param int maxAtoms : Defines the maximum number of base atoms that can be found for the given predicate. (This will vary, depending on the predicate and the problem.)
+	 * @param predicate the predicate to compare
+	 * @param maxBaseAtoms defines the maximum number of base atoms that can be found for the given predicate. (This will vary, depending on the predicate and the problem.)
 	 */
 	@Override
 	public DiscretePredictionStatistics compare(StandardPredicate predicate, int maxBaseAtoms) {

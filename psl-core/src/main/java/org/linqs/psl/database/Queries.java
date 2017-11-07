@@ -48,8 +48,8 @@ public class Queries {
 	 * @return the count of all GroundAtoms of predicate in db
 	 */
 	public static int countAllGroundAtoms(Database db, StandardPredicate predicate) {
-      return db.countAllGroundAtoms(predicate);
-   }
+		return db.countAllGroundAtoms(predicate);
+	}
 
 	/**
 	 * Count all ground random variable atoms of a Predicate persisted in a Database.
@@ -59,8 +59,8 @@ public class Queries {
 	 * @return the count of all ground random variable atoms of predicate in db
 	 */
 	public static int countAllGroundRandomVariableAtoms(Database db, StandardPredicate predicate) {
-      return db.countAllGroundRandomVariableAtoms(predicate);
-   }
+		return db.countAllGroundRandomVariableAtoms(predicate);
+	}
 
 	/**
 	 * Returns all GroundAtoms of a Predicate persisted in a Database.
@@ -91,8 +91,7 @@ public class Queries {
 	}
 
 	/**
-	 * Constructs a {@link QueryAtom} from raw arguments using
-	 * {@link #convertArguments(Database, Predicate, Object...)}.
+	 * Constructs a {@link QueryAtom} from raw arguments using convertArguments().
 	 *
 	 * @param predicate  the Predicate of the QueryAtom
 	 * @param rawArgs  the arguments to the QueryAtom (after conversion)

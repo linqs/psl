@@ -21,21 +21,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Objective term for an {@link ADMMReasoner} that is based on a hyperplane in some way.
- * <p>
+ * Objective term for an ADMMReasoner that is based on a hyperplane in some way.
+ *
  * Stores the characterization of the hyperplane as coeffs^T * x = constant
  * and projects onto the hyperplane.
- * <p>
+ *
  * All coeffs must be non-zero.
- * 
+ *
  * @author Stephen Bach <bach@cs.umd.edu>
  */
 public abstract class HyperplaneTerm extends ADMMObjectiveTerm {
-	
+
 	protected final List<Double> coeffs;
 	protected final List<Double> unitNormal;
 	protected final double constant;
-	
+
 	HyperplaneTerm(List<LocalVariable> variables, List<Double> coeffs, double constant) {
 		super(variables);
 
@@ -43,9 +43,9 @@ public abstract class HyperplaneTerm extends ADMMObjectiveTerm {
 
 		this.coeffs = coeffs;
 		this.constant = constant;
-		
+
 		if (variables.size() >= 3) {
-			/* 
+			/*
 			 * Finds a unit vector normal to the hyperplane and a point in the
 			 * hyperplane for future projections
 			 */
@@ -54,7 +54,7 @@ public abstract class HyperplaneTerm extends ADMMObjectiveTerm {
 				length += coeff.doubleValue() * coeff.doubleValue();
 			}
 			length = Math.sqrt(length);
-			
+
 			unitNormal = new ArrayList<Double>(coeffs.size());
 			for (Double coeff : coeffs) {
 				unitNormal.add(coeff.doubleValue() / length);
@@ -63,11 +63,11 @@ public abstract class HyperplaneTerm extends ADMMObjectiveTerm {
 			unitNormal = null;
 		}
 	}
-	
+
 	/**
 	 * Finds the orthogonal projection onto the hyperplane <br />
 	 * argmin stepSize/2 * \|x - z + y / stepSize \|_2^2 <br />
-	 * such that coeffs^T * x = constant
+	 * such that coeffs^T * x = constant.
 	 * <p>
 	 * Stores the result in x.
 	 */
@@ -88,7 +88,7 @@ public abstract class HyperplaneTerm extends ADMMObjectiveTerm {
 			x0 = stepSize * consensusValues[variables.get(0).getGlobalId()] - variables.get(0).getLagrange();
 			x0 -= stepSize * coeff0 / coeff1 * (-1.0 * constant / coeff1 + consensusValues[variables.get(1).getGlobalId()] - variables.get(1).getLagrange() / stepSize);
 			x0 /= stepSize * (1.0 + coeff0 * coeff0 / coeff1 / coeff1);
-			
+
 			x1 = (constant - coeff0 * x0) / coeff1;
 
 			variables.get(0).setValue(x0);
@@ -108,7 +108,7 @@ public abstract class HyperplaneTerm extends ADMMObjectiveTerm {
 		for (int i = 0; i < variables.size(); i++) {
 			multiplier += point[i] * unitNormal.get(i).doubleValue();
 		}
-		
+
 		for (int i = 0; i < variables.size(); i++) {
 			variables.get(i).setValue(point[i] - multiplier * unitNormal.get(i).doubleValue());
 		}

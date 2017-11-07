@@ -22,13 +22,12 @@ import org.linqs.psl.reasoner.term.WeightedTerm;
 import java.util.List;
 
 /**
- * {@link ADMMReasoner} objective term of the form <br />
+ * ADMMReasoner objective term of the form <br />
  * weight * coeffs^T * x
- * 
+ *
  * @author Stephen Bach <bach@cs.umd.edu>
  */
 public class LinearLossTerm extends ADMMObjectiveTerm implements WeightedTerm {
-	
 	private final List<Double> coeffs;
 	private double weight;
 
@@ -48,7 +47,7 @@ public class LinearLossTerm extends ADMMObjectiveTerm implements WeightedTerm {
 	public void setWeight(double weight) {
 		this.weight = weight;
 	}
-	
+
 	@Override
 	public void minimize(double stepSize, double[] consensusValues) {
 		for (int i = 0; i < variables.size(); i++) {

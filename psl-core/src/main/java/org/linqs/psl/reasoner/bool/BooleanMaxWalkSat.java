@@ -41,15 +41,14 @@ import java.util.Set;
 /**
  * Implementation of MaxWalkSat, which searches for a good Boolean assignment
  * of truth values.
- * <p>
+ *
  * See "A General Stochastic Approach to Solving Problems with Hard and Soft
  * Constraints," in The Satisfiability Problem: Theory and Applications (1997),
  * pp. 573-586 by Henry Kautz, Bart Selman, Yueyen Jiang.
- * <p>
+ *
  * Supports free {@link RandomVariableAtom RandomVariableAtoms}
- * and RandomVariableAtoms that are each constrained by a single
- * {@link GroundDomainRangeConstraint}.
- * <p>
+ * and RandomVariableAtoms that are each constrained by a single GroundValueConstraint.
+ *
  * It also assumes that all ObservedAtoms have values in {0.0, 1.0}.
  * Its behavior is not defined otherwise.
  *

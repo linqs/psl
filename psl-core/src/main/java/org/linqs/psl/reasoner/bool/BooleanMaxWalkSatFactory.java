@@ -23,7 +23,7 @@ import org.linqs.psl.reasoner.ReasonerFactory;
 
 /**
  * Factory for a {@link BooleanMaxWalkSat}.
- * 
+ *
  * @author Stephen Bach <bach@cs.umd.edu>
  */
 public class BooleanMaxWalkSatFactory implements ReasonerFactory {

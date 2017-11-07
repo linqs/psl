@@ -24,7 +24,7 @@ import java.util.List;
 import org.apache.commons.collections4.list.UnmodifiableList;
 
 /**
- * A term in the objective to be optimized by an {@link ADMMReasoner}.
+ * A term in the objective to be optimized by an ADMMReasoner.
  */
 public abstract class ADMMObjectiveTerm implements Term {
 	protected final List<LocalVariable> variables;

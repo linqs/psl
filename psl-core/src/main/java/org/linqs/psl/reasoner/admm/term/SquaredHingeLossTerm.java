@@ -20,41 +20,37 @@ package org.linqs.psl.reasoner.admm.term;
 import java.util.List;
 
 /**
- * {@link ADMMReasoner} objective term of the form <br />
+ * ADMMReasoner objective term of the form <br />
  * weight * [max(coeffs^T * x - constant, 0)]^2
- * 
+ *
  * @author Stephen Bach <bach@cs.umd.edu>
  */
 public class SquaredHingeLossTerm extends SquaredHyperplaneTerm {
-	
+
 	public SquaredHingeLossTerm(List<LocalVariable> variables, List<Double> coeffs, double constant, double weight) {
 		super(variables, coeffs, constant, weight);
 	}
 
 	@Override
 	public void minimize(double stepSize, double[] consensusValues) {
-		/* Initializes scratch data */
+		// Initializes scratch data.
 		double total = 0.0;
-		
-		/*
-		 * Minimizes without the quadratic loss, i.e., solves
-		 * argmin stepSize/2 * \|x - z + y / stepSize \|_2^2
-		 */
+
+		// Minimizes without the quadratic loss, i.e., solves
+		// argmin stepSize/2 * \|x - z + y / stepSize \|_2^2
 		for (int i = 0; i < variables.size(); i++) {
 			LocalVariable variable = variables.get(i);
 			variable.setValue(consensusValues[variable.getGlobalId()] - variable.getLagrange() / stepSize);
 			total += coeffs.get(i).doubleValue() * variable.getValue();
 		}
-		
-		/* If the quadratic loss is NOT active at the computed point, it is the solution... */
+
+		// If the quadratic loss is NOT active at the computed point, it is the solution...
 		if (total <= constant) {
 			return;
 		}
-		
-		/*
-		 * Else, minimizes with the quadratic loss, i.e., solves
-		 * argmin weight * (coeffs^T * x - constant)^2 + stepSize/2 * \|x - z + y / stepSize \|_2^2
-		 */
+
+		// Else, minimizes with the quadratic loss, i.e., solves
+		// argmin weight * (coeffs^T * x - constant)^2 + stepSize/2 * \|x - z + y / stepSize \|_2^2
 		minWeightedSquaredHyperplane(stepSize, consensusValues);
 	}
 }

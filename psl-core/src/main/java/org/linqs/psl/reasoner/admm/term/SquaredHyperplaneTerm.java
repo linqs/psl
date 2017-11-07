@@ -30,9 +30,9 @@ import java.util.Map;
 import java.util.concurrent.Semaphore;
 
 /**
- * Objective term for an {@link ADMMReasoner} that is based on a squared
+ * Objective term for an ADMMReasoner that is based on a squared
  * hyperplane in some way.
- * <p>
+ *
  * Stores the characterization of the hyperplane as coeffs^T * x = constant
  * and minimizes with the weighted, squared hyperplane in the objective.
  *
