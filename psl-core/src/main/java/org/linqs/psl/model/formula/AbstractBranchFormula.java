@@ -29,7 +29,7 @@ import org.linqs.psl.model.term.VariableTypeMap;
  * An abstract branching formula.
  * Note, the order in which formulas appear in an AbstractBranchFormula is important!
  */
-abstract class AbstractBranchFormula<T extends AbstractBranchFormula<T>> implements Formula {
+public abstract class AbstractBranchFormula<T extends AbstractBranchFormula<T>> implements Formula {
 	protected final Formula[] formulas;
 
 	public AbstractBranchFormula(Formula... f) {

@@ -51,7 +51,7 @@ import java.util.Map;
  *
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-abstract public class ExpectationMaximization extends VotedPerceptron {
+public abstract class ExpectationMaximization extends VotedPerceptron {
 
 	private static final Logger log = LoggerFactory.getLogger(ExpectationMaximization.class);
 
