@@ -1,6 +1,7 @@
 package org.linqs.psl.application.inference;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import org.linqs.psl.PSLTest;
@@ -40,14 +41,6 @@ import java.util.Map;
 import java.util.Set;
 
 public class LazyMPEInferenceTest {
-	// TODO(eriq): Tests:
-	//  - base: not nice
-	//  - below threshold (will require different rules that don't hit all targets on initial grounding)
-	//  - multiple predicates
-	//  - partially observed
-	//  - rules such that no instantiation will happen
-	//  - arithmetic rules
-
 	private Database inferDB;
 	private Partition targetPartition;
 	private Set<StandardPredicate> allPredicates;
@@ -106,8 +99,29 @@ public class LazyMPEInferenceTest {
 
 		mpe.mpeInference();
 
-		// Now the Friends predicate should have the crossproduct (5x5) minus self pairs (5) in it.
-		assertEquals(20, Queries.countAllGroundRandomVariableAtoms(inferDB, info.predicates.get("Friends")));
+		// There are multiple optimal configuration to the first round of grounding (which snowballs later),
+		// but we know there should be at least 16 ground atoms and less than 20.
+		int groundCount = Queries.countAllGroundRandomVariableAtoms(inferDB, info.predicates.get("Friends"));
+		assertTrue("Expected: >= 16, Found: " + groundCount, groundCount >= 16);
+
+		mpe.close();
+	}
+
+	@Test
+	public void testBaseNotNice() {
+		initModel(false);
+
+		LazyMPEInference mpe = new LazyMPEInference(info.model, inferDB, info.config);
+
+		// The Friends predicate should be empty.
+		assertEquals(0, Queries.countAllGroundRandomVariableAtoms(inferDB, info.predicates.get("Friends")));
+
+		mpe.mpeInference();
+
+		// There are multiple optimal configuration to the first round of grounding,
+		// but we know that at least all 'Eugene's grounding will be excluded.
+		int groundCount = Queries.countAllGroundRandomVariableAtoms(inferDB, info.predicates.get("Friends"));
+		assertTrue("Expected: <= 12, Found: " + groundCount, groundCount <= 12);
 
 		mpe.close();
 	}
@@ -140,8 +154,10 @@ public class LazyMPEInferenceTest {
 
 		mpe.mpeInference();
 
-		// Now the Friends predicate should have the crossproduct (5x5) minus self pairs (5) in it.
-		assertEquals(20, Queries.countAllGroundRandomVariableAtoms(inferDB, info.predicates.get("Friends")));
+		// There are multiple optimal configuration to the first round of grounding (which snowballs later),
+		// but we know there should be at least 16 ground atoms and less than 20.
+		int groundCount = Queries.countAllGroundRandomVariableAtoms(inferDB, info.predicates.get("Friends"));
+		assertTrue("Expected: >= 16, Found: " + groundCount, groundCount >= 16);
 
 		mpe.close();
 	}
@@ -151,9 +167,6 @@ public class LazyMPEInferenceTest {
 	 */
 	@Test
 	public void testComplexArithmeticBase() {
-		// TEST
-		PSLTest.initLogger("TRACE");
-
 		// |B| * Friends(A, +B) >= 1 {B: Nice(B)}
 
 		List<Coefficient> coefficients = Arrays.asList(
@@ -185,8 +198,10 @@ public class LazyMPEInferenceTest {
 
 		mpe.mpeInference();
 
-		// Now the Friends predicate should have the crossproduct (5x5) minus self pairs (5) in it.
-		assertEquals(20, Queries.countAllGroundRandomVariableAtoms(inferDB, info.predicates.get("Friends")));
+		// There are multiple optimal configuration to the first round of grounding (which snowballs later),
+		// but we know there should be at least 16 ground atoms and less than 20.
+		int groundCount = Queries.countAllGroundRandomVariableAtoms(inferDB, info.predicates.get("Friends"));
+		assertTrue("Expected: >= 16, Found: " + groundCount, groundCount >= 16);
 
 		mpe.close();
 	}

@@ -88,6 +88,13 @@ public class PersistedAtomManager extends AtomManager {
 		throw new PersistedAccessException(rvAtom);
 	}
 
+	/**
+	 * Commit all the atoms in this manager's persisted cache.
+	 */
+	public void commitPersistedAtoms() {
+		db.commit(persistedCache);
+	}
+
 	public Set<RandomVariableAtom> getPersistedRVAtoms() {
 		return Collections.unmodifiableSet(persistedCache);
 	}

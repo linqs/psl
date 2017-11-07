@@ -17,8 +17,6 @@
  */
 package org.linqs.psl.database.atom;
 
-// TODO(eriq): Evaluate imports.
-
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.database.Database;

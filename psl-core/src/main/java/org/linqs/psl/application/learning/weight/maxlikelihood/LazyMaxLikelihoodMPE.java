@@ -212,7 +212,6 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 
 			if (numActivated > 0) {
 				// Regenerate optimization terms.
-				// TODO(eriq): We would rather not regen every time.
 				termStore.clear();
 
 				log.debug("Iteration {} -- Initializing objective terms for {} ground rules.",

@@ -154,10 +154,10 @@ public class TestModelFactory {
 			)));
 		} else {
 			observations.put(predicates.get("Nice"), new ArrayList<PredicateData>(Arrays.asList(
-				new PredicateData(0.8, new Object[]{"Alice"}),
-				new PredicateData(0.6, new Object[]{"Bob"}),
-				new PredicateData(0.4, new Object[]{"Charlie"}),
-				new PredicateData(0.2, new Object[]{"Derek"}),
+				new PredicateData(0.9, new Object[]{"Alice"}),
+				new PredicateData(0.8, new Object[]{"Bob"}),
+				new PredicateData(0.7, new Object[]{"Charlie"}),
+				new PredicateData(0.6, new Object[]{"Derek"}),
 				new PredicateData(0.0, new Object[]{"Eugene"})
 			)));
 		}

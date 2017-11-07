@@ -48,17 +48,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Infers the most-probable explanation (MPE) state of the
- * {@link RandomVariableAtom RandomVariableAtoms} persisted in a {@link Database},
- * according to a {@link Model}, given the Database's {@link ObservedAtom ObservedAtoms}.
- *
- * The set of RandomVariableAtoms is those persisted in the Database when {@link #mpeInference()}
- * is called. This set must contain all RandomVariableAtoms the Model might access.
- *
- * @author Stephen Bach <bach@cs.umd.edu>
+ * Performs MPE inference (see MPEInference), but does not require all ground atoms to be
+ * specified ahead of time.
+ * Instead, any target ground atoms that do not exist (lazy atoms) will get temporarily
+ * created at the beginning of each inference round and then persisted to the database
+ * if its truth value is above some threshold at the end of each inference round.
+ * See LazyAtomManager for details on lazy atoms.
  */
 public class LazyMPEInference implements ModelApplication {
-
 	private static final Logger log = LoggerFactory.getLogger(LazyMPEInference.class);
 
 	/**
@@ -70,14 +67,14 @@ public class LazyMPEInference implements ModelApplication {
 
 	/**
 	 * Key for {@link Factory} or String property.
-	 * <p>
+	 *
 	 * Should be set to a {@link ReasonerFactory} or the fully qualified
 	 * name of one. Will be used to instantiate a {@link Reasoner}.
 	 */
 	public static final String REASONER_KEY = CONFIG_PREFIX + ".reasoner";
 	/**
 	 * Default value for REASONER_KEY.
-	 * <p>
+	 *
 	 * Value is instance of {@link ADMMReasonerFactory}.
 	 */
 	public static final ReasonerFactory REASONER_DEFAULT = new ADMMReasonerFactory();
@@ -102,10 +99,14 @@ public class LazyMPEInference implements ModelApplication {
 	public static final String TERM_GENERATOR_KEY = CONFIG_PREFIX + ".termgenerator";
 	public static final String TERM_GENERATOR_DEFAULT = "org.linqs.psl.reasoner.admm.term.ADMMTermGenerator";
 
-	/** Key for int property for the maximum number of rounds of inference. */
+	/**
+	 * Key for int property for the maximum number of rounds of inference.
+	 */
 	public static final String MAX_ROUNDS_KEY = CONFIG_PREFIX + ".maxrounds";
 
-	/** Default value for MAX_ROUNDS_KEY property */
+	/**
+	 * Default value for MAX_ROUNDS_KEY property.
+	 */
 	public static final int MAX_ROUNDS_DEFAULT = 100;
 
 	protected Model model;
@@ -161,19 +162,11 @@ public class LazyMPEInference implements ModelApplication {
 		int rounds = 0;
 		int numActivated = 0;
 
-		// TEST
-		System.out.println("^^^^^ -- initial");
-		for (GroundAtom atom : db.getAtomCache().getCachedAtoms()) {
-			System.out.println("	" + atom.toStringWithValue());
-		}
-		System.out.println("vvvvv");
-
 		do {
 			rounds++;
 			log.debug("Starting round {} of inference.", rounds);
 
 			// Regenerate optimization terms.
-			// TODO(eriq): We would rather not regen every time.
 			termStore.clear();
 
 			log.debug("Initializing objective terms for {} ground rules.", groundRuleStore.size());
@@ -184,17 +177,6 @@ public class LazyMPEInference implements ModelApplication {
 			reasoner.optimize(termStore);
 			log.info("Inference round {} complete.", rounds);
 
-			// TEST
-			System.out.println("^^^^^ All Cached Atoms (" + rounds + ") ^^^^^");
-			for (GroundAtom atom : db.getAtomCache().getCachedAtoms()) {
-				System.out.println("	" + atom.toStringWithValue());
-			}
-			System.out.println("----- Lazy Atoms -----");
-			for (RandomVariableAtom atom : lazyAtomManager.getLazyAtoms()) {
-				System.out.println("	" + atom.toStringWithValue());
-			}
-			System.out.println("vvvvv");
-
 			// Only activates if there is another round.
 			if (rounds < maxRounds) {
 				numActivated = lazyAtomManager.activateAtoms(model, groundRuleStore);
@@ -202,21 +184,14 @@ public class LazyMPEInference implements ModelApplication {
 			log.debug("Completed round {} and activated {} atoms.", rounds, numActivated);
 		} while (numActivated > 0 && rounds < maxRounds);
 
-		// TODO: Check for consideration events when deciding to terminate?
-
 		// Commits the RandomVariableAtoms back to the Database.
-		List<RandomVariableAtom> atoms = new ArrayList<RandomVariableAtom>();
-		for (RandomVariableAtom atom : db.getAtomCache().getCachedRandomVariableAtoms()) {
-			atoms.add(atom);
-		}
-		db.commit(atoms);
+		lazyAtomManager.commitPersistedAtoms();
 
 		double incompatibility = GroundRules.getTotalWeightedIncompatibility(groundRuleStore.getCompatibilityRules());
 		double infeasibility = GroundRules.getInfeasibilityNorm(groundRuleStore.getConstraintRules());
 
-		int size = groundRuleStore.size();
-
-		return new MemoryFullInferenceResult(incompatibility, infeasibility, atoms.size(), size);
+		return new MemoryFullInferenceResult(incompatibility, infeasibility,
+				lazyAtomManager.getPersistedRVAtoms().size(), groundRuleStore.size());
 	}
 
 	@Override
