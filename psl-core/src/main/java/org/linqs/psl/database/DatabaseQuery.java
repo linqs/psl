@@ -24,7 +24,6 @@ import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.formula.FormulaAnalysis;
 import org.linqs.psl.model.formula.traversal.AbstractFormulaTraverser;
-import org.linqs.psl.model.predicate.FunctionalPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
@@ -32,50 +31,55 @@ import org.linqs.psl.model.term.Variable;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-
 /**
  * A query to select groundings from a {@link Database}.
- * <p>
  * Groundings that match the query are returned in the form of a {@link ResultList}.
  *
- * <h2>Semantics</h2>
+ * Semantics
  *
  * A DatabaseQuery has three components: a Formula, a partial grounding,
  * and a set of {@link Variable Variables} onto which the results will be
  * projected.
- * <p>
+ *
  * The Formula is given upon initialization and is fixed. It must be
  * a {@link Conjunction} of Atoms or a single Atom. Any {@link Variable}
  * in the Formula must be used in an Atom with a {@link StandardPredicate}.
  * (Then it can be used in others as well.)
  * The query will return any grounding such that each GroundAtom
  * with a {@link StandardPredicate} in the ground Formula is persisted in the
- * Database and each GroundAtom with a {@link FunctionalPredicate}
+ * Database and each GroundAtom with a FunctionalPredicate.
  * in the ground Formula has a non-zero truth value (regardless of whether
  * it is instantiated in memory).
- * <p>
+ *
  * The partial grounding is a {@link VariableAssignment} which all returned
  * groundings must match. Use {@link #getPartialGrounding()} to modify the partial
  * grounding. It is initially empty.
- * <p>
+ *
  * The projection subset is a subset of the Variables in the Formula onto
  * which the returned groundings will be projected. An empty subset is
  * the same as including all Variables in the Formula in the subset except those
- * with assignments in the partial grounding. Use {@link #getProjectionSubset()}
- * to modify the subset. It is initially empty.
+ * with assignments in the partial grounding. Use addToProjection() to add to it.
+ * It is initially empty.
  */
 public class DatabaseQuery {
-
 	private final Formula formula;
 	private final VariableAssignment partialGrounding;
 	private final Set<Variable> projectTo;
 	private final ListOrderedSet<Variable> ordering;
+	private final boolean distinct;
 
 	public DatabaseQuery(Formula formula) {
+		this(formula, true);
+	}
+
+	public DatabaseQuery(Formula formula, boolean distinct) {
 		this.formula = formula;
+		this.distinct = distinct;
+
 		partialGrounding = new VariableAssignment();
 		projectTo = new HashSet<Variable>();
 
@@ -107,12 +111,24 @@ public class DatabaseQuery {
 		return formula;
 	}
 
+	public boolean getDistinct() {
+		return distinct;
+	}
+
 	public VariableAssignment getPartialGrounding() {
 		return partialGrounding;
 	}
 
+	public void addToProjection(Variable var) {
+		if (!ordering.contains(var)) {
+			throw new IllegalArgumentException("Variable not appearing in query cannot be in projection: " + var);
+		}
+
+		projectTo.add(var);
+	}
+
 	public Set<Variable> getProjectionSubset() {
-		return projectTo;
+		return Collections.unmodifiableSet(projectTo);
 	}
 
 	/**
@@ -151,10 +167,13 @@ public class DatabaseQuery {
 	private class VariableOrderer extends AbstractFormulaTraverser {
 		@Override
 		public void visitAtom(Atom atom) {
-			for (Term term : atom.getArguments())
-				if (term instanceof Variable)
-					if (!ordering.contains(term))
+			for (Term term : atom.getArguments()) {
+				if (term instanceof Variable) {
+					if (!ordering.contains(term)) {
 						ordering.add((Variable) term);
+					}
+				}
+			}
 		}
 	}
 

@@ -17,24 +17,52 @@
  */
 package org.linqs.psl.database.loading;
 
-public interface Inserter {
-	
-	public void insert(Object... data);
-	
-	public void insertValue(double value, Object... data);
-	
-	public void insertValueConfidence(double value, double confidence, Object... data);
-	
-	public static final Inserter nullInserter = new Inserter() {
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
-		@Override
-		public void insert(Object... data) { }
+public abstract class Inserter {
+	/**
+	 * Insert a single object using the default truth value.
+	 */
+	public void insert(Object... data) {
+		if (data == null || data.length == 0) {
+			throw new IllegalArgumentException("Attempted to insert empty data.");
+		}
 
-		@Override
-		public void insertValue(double value, Object... data) { }
+		List<List<Object>> newData = new ArrayList<List<Object>>(1);
+		newData.add(Arrays.asList(data));
+		insertAll(newData);
+	}
 
-		@Override
-		public void insertValueConfidence(double value, double confidence, Object... data) { }
-		
-	};
+	/**
+	 * Insert a single object using the specified truth value.
+	 */
+	public void insertValue(double value, Object... data) {
+		if (data == null || data.length == 0) {
+			throw new IllegalArgumentException("Attempted to insert empty data.");
+		}
+
+		if (value < 0 || value > 1) {
+			throw new IllegalArgumentException("Invalid truth value: " + value + ". Must be between 0 and 1 inclusive.");
+		}
+
+		List<List<Object>> newData = new ArrayList<List<Object>>(1);
+		newData.add(Arrays.asList(data));
+
+		List<Double> newValue = new ArrayList<Double>(1);
+		newValue.add(value);
+
+		insertAllValues(newValue, newData);
+	}
+
+	/**
+	 * Insert several objects using the default truth value.
+	 */
+	public abstract void insertAll(List<List<Object>> data);
+
+	/**
+	 * Insert several objects using the specified truth values.
+	 */
+	public abstract void insertAllValues(List<Double> values, List<List<Object>> data);
 }

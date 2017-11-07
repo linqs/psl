@@ -20,7 +20,7 @@
  * Provides interfaces and classes for defining functions that
  * {@link org.linqs.psl.reasoner.Reasoner Reasoners} can interpret.
  *
- * {@link org.linqs.psl.model.rule.GroundRule GroundKernels} use these
+ * {@link org.linqs.psl.model.rule.GroundRule GroundRules} use these
  * to define their incompatibility and constraint functions.
  */
 package org.linqs.psl.reasoner.function;

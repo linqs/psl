@@ -3,39 +3,76 @@ package org.linqs.psl.application.learning.weight.maxlikelihood;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.linqs.psl.PSLTest;
 import org.linqs.psl.TestModelFactory;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.database.Partition;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Implication;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
+import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.model.term.Variable;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.util.HashSet;
 import java.util.Set;
 
 public class MaxLikelihoodMPETest {
-	private TestModelFactory.ModelInformation model;
+	private Database weightLearningTrainDB;
+	private Database weightLearningTruthDB;
+	private TestModelFactory.ModelInformation info;
 
 	@Before
 	public void setup() {
 		initModel(true);
 	}
 
+	@After
+	public void cleanup() {
+		PSLTest.disableLogger();
+
+		weightLearningTrainDB.close();
+		weightLearningTrainDB = null;
+
+		weightLearningTruthDB.close();
+		weightLearningTruthDB = null;
+
+		info.dataStore.close();
+		info = null;
+	}
+
 	private void initModel(boolean useNice) {
-		if (model != null) {
-			model.dataStore.close();
-			model = null;
+		if (weightLearningTrainDB != null) {
+			weightLearningTrainDB.close();
+			weightLearningTrainDB = null;
 		}
 
-		model = TestModelFactory.getModel(useNice);
+		if (weightLearningTruthDB != null) {
+			weightLearningTruthDB.close();
+			weightLearningTruthDB = null;
+		}
+
+		if (info != null) {
+			info.dataStore.close();
+			info = null;
+		}
+
+		info = TestModelFactory.getModel(useNice);
+
+		Set<StandardPredicate> allPredicates = new HashSet<StandardPredicate>(info.predicates.values());
+		Set<StandardPredicate> closedPredicates = new HashSet<StandardPredicate>(info.predicates.values());
+		closedPredicates.remove(info.predicates.get("Friends"));
+
+		weightLearningTrainDB = info.dataStore.getDatabase(info.targetPartition, closedPredicates, info.observationPartition);
+		weightLearningTruthDB = info.dataStore.getDatabase(info.truthPartition, allPredicates, info.observationPartition);
 	}
 
 	/**
@@ -44,34 +81,9 @@ public class MaxLikelihoodMPETest {
 	 */
 	@Test
 	public void baseTest() {
-		Set<StandardPredicate> allPredicates = new HashSet<StandardPredicate>(model.predicates.values());
-		Set<StandardPredicate> closedPredicates = new HashSet<StandardPredicate>(model.predicates.values());
-		closedPredicates.remove(model.predicates.get("Friends"));
-
-		Database weightLearningTrainDB = model.dataStore.getDatabase(model.targetPartition, closedPredicates, model.observationPartition);
-		Database weightLearningTruthDB = model.dataStore.getDatabase(model.truthPartition, allPredicates, model.observationPartition);
-
-		WeightLearningApplication weightLearner = null;
-		try {
-			weightLearner = new MaxLikelihoodMPE(model.model, weightLearningTrainDB, weightLearningTruthDB, model.config);
-		} catch (Exception ex) {
-			System.out.println(ex);
-			ex.printStackTrace();
-			fail("Exception thrown during MPE constructor.");
-		}
-
-		try {
-			weightLearner.learn();
-		} catch (Exception ex) {
-			System.out.println(ex);
-			ex.printStackTrace();
-			fail("Exception thrown during weight learning.");
-		}
-
+      WeightLearningApplication weightLearner = new MaxLikelihoodMPE(info.model, weightLearningTrainDB, weightLearningTruthDB, info.config);
+      weightLearner.learn();
 		weightLearner.close();
-		
-		weightLearningTrainDB.close();
-		weightLearningTruthDB.close();
 	}
 
 	/**
@@ -84,48 +96,18 @@ public class MaxLikelihoodMPETest {
 		Rule newRule = new WeightedLogicalRule(
 			new Implication(
 				new Conjunction(
-					new QueryAtom(model.predicates.get("Nice"), model.dataStore.getUniqueID("ZzZ__FAKE_PERSON_A__ZzZ")),
-					new QueryAtom(model.predicates.get("Nice"), new Variable("B"))
+					new QueryAtom(info.predicates.get("Nice"), new UniqueStringID("ZzZ__FAKE_PERSON_A__ZzZ")),
+					new QueryAtom(info.predicates.get("Nice"), new Variable("B"))
 				),
-				new QueryAtom(model.predicates.get("Friends"), model.dataStore.getUniqueID("ZzZ__FAKE_PERSON_A__ZzZ"), new Variable("B"))
+				new QueryAtom(info.predicates.get("Friends"), new UniqueStringID("ZzZ__FAKE_PERSON_A__ZzZ"), new Variable("B"))
 			),
 			5.0,
 			true
 		);
-		model.model.addRule(newRule);
+		info.model.addRule(newRule);
 
-		Set<StandardPredicate> allPredicates = new HashSet<StandardPredicate>(model.predicates.values());
-		Set<StandardPredicate> closedPredicates = new HashSet<StandardPredicate>(model.predicates.values());
-		closedPredicates.remove(model.predicates.get("Friends"));
-
-		Database weightLearningTrainDB = model.dataStore.getDatabase(model.targetPartition, closedPredicates, model.observationPartition);
-		Database weightLearningTruthDB = model.dataStore.getDatabase(model.truthPartition, allPredicates, model.observationPartition);
-
-		WeightLearningApplication weightLearner = null;
-		try {
-			weightLearner = new MaxLikelihoodMPE(model.model, weightLearningTrainDB, weightLearningTruthDB, model.config);
-		} catch (Exception ex) {
-			System.out.println(ex);
-			ex.printStackTrace();
-			fail("Exception thrown during MPE constructor.");
-		}
-
-		try {
-			weightLearner.learn();
-		} catch (Exception ex) {
-			System.out.println(ex);
-			ex.printStackTrace();
-			fail("Exception thrown during weight learning.");
-		}
-
+      WeightLearningApplication weightLearner = new MaxLikelihoodMPE(info.model, weightLearningTrainDB, weightLearningTruthDB, info.config);
+      weightLearner.learn();
 		weightLearner.close();
-		
-		weightLearningTrainDB.close();
-		weightLearningTruthDB.close();
-	}
-
-	@After
-	public void cleanup() {
-		model.dataStore.close();
 	}
 }

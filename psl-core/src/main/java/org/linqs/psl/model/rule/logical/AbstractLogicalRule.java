@@ -20,19 +20,17 @@ package org.linqs.psl.model.rule.logical;
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 import org.linqs.psl.database.DatabaseQuery;
 import org.linqs.psl.database.ResultList;
+import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.model.NumericUtilities;
 import org.linqs.psl.model.atom.Atom;
-import org.linqs.psl.model.atom.AtomEvent;
-import org.linqs.psl.model.atom.AtomEventFramework;
-import org.linqs.psl.model.atom.AtomManager;
 import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.atom.VariableAssignment;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.formula.FormulaAnalysis;
 import org.linqs.psl.model.formula.Negation;
 import org.linqs.psl.model.formula.FormulaAnalysis.DNFClause;
-import org.linqs.psl.model.rule.AbstractRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.term.Constant;
@@ -55,24 +53,28 @@ import java.util.Set;
 /**
  * Base class for all (first order, i.e., not ground) logical rules.
  */
-abstract public class AbstractLogicalRule extends AbstractRule {
+public abstract class AbstractLogicalRule implements Rule {
 	private static final Logger log = LoggerFactory.getLogger(AbstractLogicalRule.class);
 
 	protected Formula formula;
-	protected final DNFClause clause;
+	protected final DNFClause negatedDNF;
 
-	public AbstractLogicalRule(Formula f) {
+	public AbstractLogicalRule(Formula formula) {
 		super();
-		formula = f;
+
+		this.formula = formula;
+
+		// Do the formula analysis so we know what atoms to query for grounding.
+		// We will query for all positive atoms in the negated DNF.
 		FormulaAnalysis analysis = new FormulaAnalysis(new Negation(formula));
 
 		if (analysis.getNumDNFClauses() > 1) {
 			throw new IllegalArgumentException("Formula must be a disjunction of literals (or a negative literal).");
 		} else {
-			clause = analysis.getDNFClause(0);
+			negatedDNF = analysis.getDNFClause(0);
 		}
 
-		Set<Variable> unboundVariables = clause.getUnboundVariables();
+		Set<Variable> unboundVariables = negatedDNF.getUnboundVariables();
 		if (unboundVariables.size() > 0) {
 			Variable[] sortedVariables = unboundVariables.toArray(new Variable[unboundVariables.size()]);
 			Arrays.sort(sortedVariables);
@@ -84,65 +86,77 @@ abstract public class AbstractLogicalRule extends AbstractRule {
 			);
 		}
 
-		if (clause.isGround()) {
+		if (negatedDNF.isGround()) {
 			throw new IllegalArgumentException("Formula has no Variables.");
 		}
 
-		if (!clause.isQueriable()) {
+		if (!negatedDNF.isQueriable()) {
 			throw new IllegalArgumentException("Formula is not a valid rule for unknown reason.");
 		}
 	}
 
+	public Formula getFormula() {
+		return formula;
+	}
+
+	public DNFClause getDNF() {
+		return negatedDNF;
+	}
+
 	@Override
 	public void groundAll(AtomManager atomManager, GroundRuleStore grs) {
-		ResultList res = atomManager.executeQuery(new DatabaseQuery(clause.getQueryFormula()));
-		int numGrounded = groundFormula(atomManager, grs, res, null);
+		ResultList res = atomManager.executeQuery(new DatabaseQuery(negatedDNF.getQueryFormula(), false));
+		groundAll(res, atomManager, grs);
+	}
+
+	public void groundAll(ResultList groundVariables, AtomManager atomManager, GroundRuleStore grs) {
+		int numGrounded = groundFormula(atomManager, grs, groundVariables);
 		log.debug("Grounded {} instances of rule {}", numGrounded, this);
 	}
 
-	protected int groundFormula(AtomManager atomManager, GroundRuleStore grs, ResultList res,  VariableAssignment var) {
+	protected int groundFormula(AtomManager atomManager, GroundRuleStore grs, ResultList res) {
 		int numGroundingsAdded = 0;
 		List<GroundAtom> posLiterals = new ArrayList<GroundAtom>(4);
 		List<GroundAtom> negLiterals = new ArrayList<GroundAtom>(4);
 
-		/* Uses these to check worst-case truth value */
+		// Uses these to check worst-case truth value.
 		Map<FunctionVariable, Double> worstCaseValues = new HashMap<FunctionVariable, Double>(8);
 		double worstCaseValue;
 
 		GroundAtom atom;
 		for (int i = 0; i < res.size(); i++) {
-
-			for (int j = 0; j < clause.getPosLiterals().size(); j++) {
-				atom = groundAtom(atomManager, clause.getPosLiterals().get(j), res, i, var);
-				if (atom instanceof RandomVariableAtom)
+			for (int j = 0; j < negatedDNF.getPosLiterals().size(); j++) {
+				atom = ((QueryAtom)negatedDNF.getPosLiterals().get(j)).ground(atomManager, res, i);
+				if (atom instanceof RandomVariableAtom) {
 					worstCaseValues.put(atom.getVariable(), 1.0);
-				else
+				} else {
 					worstCaseValues.put(atom.getVariable(), atom.getValue());
+				}
+
 				posLiterals.add(atom);
 			}
 
-			for (int j = 0; j < clause.getNegLiterals().size(); j++) {
-				atom = groundAtom(atomManager, clause.getNegLiterals().get(j), res, i, var);
-				if (atom instanceof RandomVariableAtom)
+			for (int j = 0; j < negatedDNF.getNegLiterals().size(); j++) {
+				atom = ((QueryAtom)negatedDNF.getNegLiterals().get(j)).ground(atomManager, res, i);
+				if (atom instanceof RandomVariableAtom) {
 					worstCaseValues.put(atom.getVariable(), 0.0);
-				else
+				} else {
 					worstCaseValues.put(atom.getVariable(), atom.getValue());
+				}
+
 				negLiterals.add(atom);
 			}
 
 			AbstractGroundLogicalRule groundRule = groundFormulaInstance(posLiterals, negLiterals);
 			FunctionTerm function = groundRule.getFunction();
+
 			worstCaseValue = function.getValue(worstCaseValues, false);
 			if (worstCaseValue > NumericUtilities.strictEpsilon
 					&& (!function.isConstant() || !(groundRule instanceof WeightedGroundRule))
-					&& !grs.containsGroundKernel(groundRule)) {
+					&& !grs.containsGroundRule(groundRule)) {
 				grs.addGroundRule(groundRule);
 				numGroundingsAdded++;
 			}
-			/* If the ground kernel is not actually added, unregisters it from atoms */
-			else
-				for (GroundAtom incidentAtom : groundRule.getAtoms())
-					incidentAtom.unregisterGroundKernel(groundRule);
 
 			posLiterals.clear();
 			negLiterals.clear();
@@ -152,52 +166,5 @@ abstract public class AbstractLogicalRule extends AbstractRule {
 		return numGroundingsAdded;
 	}
 
-	protected GroundAtom groundAtom(AtomManager atomManager, Atom atom, ResultList res, int resultIndex, VariableAssignment var) {
-		Term[] oldArgs = atom.getArguments();
-		Constant[] newArgs = new Constant[atom.getArity()];
-		for (int i = 0; i < oldArgs.length; i++)
-			if (oldArgs[i] instanceof Variable) {
-				Variable v = (Variable) oldArgs[i];
-				if (var != null && var.hasVariable(v))
-					newArgs[i] = var.getVariable(v);
-				else
-					newArgs[i] = res.get(resultIndex, (Variable) oldArgs[i]);
-			}
-			else if (oldArgs[i] instanceof Constant)
-				newArgs[i] = (Constant) oldArgs[i];
-			else
-				throw new IllegalArgumentException("Unrecognized type of Term.");
-
-		return atomManager.getAtom(atom.getPredicate(), newArgs);
-	}
-
-	abstract protected AbstractGroundLogicalRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals);
-
-	@Override
-	public void notifyAtomEvent(AtomEvent event, GroundRuleStore grs) {
-		List<VariableAssignment> vars = clause.traceAtomEvent(event.getAtom());
-		if (!vars.isEmpty()) {
-			for (VariableAssignment var : vars) {
-				DatabaseQuery dbQuery = new DatabaseQuery(clause.getQueryFormula());
-				dbQuery.getPartialGrounding().putAll(var);
-				ResultList res = event.getEventFramework().executeQuery(dbQuery);
-				groundFormula(event.getEventFramework(), grs, res, var);
-			}
-		}
-	}
-
-	@Override
-	public void registerForAtomEvents(AtomEventFramework manager) {
-		clause.registerClauseForEvents(manager, AtomEvent.ActivatedEventTypeSet, this);
-	}
-
-	@Override
-	public void unregisterForAtomEvents(AtomEventFramework manager) {
-		clause.unregisterClauseForEvents(manager, AtomEvent.ActivatedEventTypeSet, this);
-	}
-
-	@Override
-	public Rule clone() throws CloneNotSupportedException {
-		throw new CloneNotSupportedException();
-	}
+	protected abstract AbstractGroundLogicalRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals);
 }

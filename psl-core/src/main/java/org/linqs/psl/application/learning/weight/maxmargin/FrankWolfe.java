@@ -38,28 +38,28 @@ import org.slf4j.LoggerFactory;
 /**
  * Implements the batch Frank-Wolfe algorithm for StructSVM
  * (Lacoste-Julian et al., 2013).
- * 
+ *
  * This application of the algorithm diverges from the original
  * in that loss-augmented inference returns a real-valued solution,
  * rather than integral. This *should* be OK, since we are solving
  * the primal QP, and therefore don't need to account for the
  * infinite number of dual variables. However, a formal analysis
  * to support this claim is still pending.
- * 
+ *
  * @author blondon
  *
  */
 public class FrankWolfe extends WeightLearningApplication {
 
 	private static final Logger log = LoggerFactory.getLogger(FrankWolfe.class);
-	
+
 	/**
 	 * Prefix of property keys used by this class.
-	 * 
+	 *
 	 * @see ConfigManager
 	 */
 	public static final String CONFIG_PREFIX = "frankwolfe";
-		
+
 	/**
 	 * Key for double property, cutting plane tolerance
 	 */
@@ -73,24 +73,24 @@ public class FrankWolfe extends WeightLearningApplication {
 	public static final String MAX_ITER_KEY = CONFIG_PREFIX + ".maxiter";
 	/** Default value for MAX_ITER_KEY */
 	public static final int MAX_ITER_DEFAULT = 500;
-	
+
 	/**
 	 * Key for boolean property. If true, algorithm will output average weights when
-	 * learning exceeds maximum number of iterations. 
+	 * learning exceeds maximum number of iterations.
 	 */
 	public static final String AVERAGE_WEIGHTS_KEY = CONFIG_PREFIX + ".averageweights";
 	/** Default value for AVERAGE_WEIGHTS_KEY */
 	public static final boolean AVERAGE_WEIGHTS_DEFAULT = false;
-	
+
 	/**
-	 * Key for boolean property. If true, only non-negative weights will be learned. 
+	 * Key for boolean property. If true, only non-negative weights will be learned.
 	 */
 	public static final String NONNEGATIVE_WEIGHTS_KEY = CONFIG_PREFIX + ".nonnegativeweights";
 	/** Default value for NONNEGATIVE_WEIGHTS_KEY */
 	public static final boolean NONNEGATIVE_WEIGHTS_DEFAULT = true;
-	
+
 	/**
-	 * Key for boolean property. If true, loss and gradient will be normalized by number of labels. 
+	 * Key for boolean property. If true, loss and gradient will be normalized by number of labels.
 	 */
 	public static final String NORMALIZE_KEY = CONFIG_PREFIX + ".normalize";
 	/** Default value for NORMALIZE_KEY */
@@ -112,7 +112,7 @@ public class FrankWolfe extends WeightLearningApplication {
 	protected final boolean nonnegativeWeights;
 	protected final boolean normalize;
 	protected double regParam;
-	
+
 	/**
 	 * Constructor
 	 * @param model
@@ -129,97 +129,101 @@ public class FrankWolfe extends WeightLearningApplication {
 		normalize = config.getBoolean(NORMALIZE_KEY, NORMALIZE_DEFAULT);
 		regParam = config.getDouble(REG_PARAM_KEY, REG_PARAM_DEFAULT);
 	}
-	
+
 	@Override
 	protected void doLearn() {
 		/*
 		 * INITIALIZATION
 		 */
-		
+
 		/* Inits local copy of weights and avgWeights to user-specified values. */
-		double[] weights = new double[kernels.size()];
-		double[] avgWeights = new double[kernels.size()];
+		double[] weights = new double[rules.size()];
+		double[] avgWeights = new double[rules.size()];
 		for (int i = 0; i < weights.length; i++) {
-			weights[i] = kernels.get(i).getWeight().getWeight();
+			weights[i] = rules.get(i).getWeight().getWeight();
 			avgWeights[i] = weights[i];
 		}
-		
+
 		/* Inits loss to zero. */
 		double loss = 0;
-		
+
 		/* Computes the observed incompatibilities and number of groundings. */
-		double[] truthIncompatibility = new double[kernels.size()];
-		int[] numGroundings = new int[kernels.size()];
+		double[] truthIncompatibility = new double[rules.size()];
+		int[] numGroundings = new int[rules.size()];
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
 			e.getKey().setValue(e.getValue().getValue());
 		}
-		for (int i = 0; i < kernels.size(); i++) {
-			for (GroundRule gk : reasoner.getGroundKernels(kernels.get(i))) {
-				truthIncompatibility[i] += ((WeightedGroundRule) gk).getIncompatibility();
+		for (int i = 0; i < rules.size(); i++) {
+			for (GroundRule groundRule : groundRuleStore.getGroundRules(rules.get(i))) {
+				truthIncompatibility[i] += ((WeightedGroundRule) groundRule).getIncompatibility();
 				++numGroundings[i];
 			}
 		}
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
 			e.getKey().setValue(0.0);
 		}
-		
+
 		/* Compute (approximate?) number of labels, for normalizing loss, gradient. */
 		int numLabels = trainingMap.getTrainingMap().entrySet().size();
 
-		/* Sets up loss augmenting ground kernels */
+		/* Sets up loss augmenting ground rules */
 		double obsvTrueWeight = -1.0;
 		double obsvFalseWeight = -1.0;
 		log.debug("Weighting loss of positive (value = 1.0) examples by {} " +
 				  "and negative examples by {}", obsvTrueWeight, obsvFalseWeight);
-		List<LossAugmentingGroundRule> lossKernels = new ArrayList<LossAugmentingGroundRule>(trainingMap.getTrainingMap().size());
+		List<LossAugmentingGroundRule> lossRules = new ArrayList<LossAugmentingGroundRule>(trainingMap.getTrainingMap().size());
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
 			double truth = e.getValue().getValue();
 			NegativeWeight weight = new NegativeWeight((truth == 1.0) ? obsvTrueWeight : obsvFalseWeight);
 			/* If ground truth is not integral, this will throw exception. */
-			LossAugmentingGroundRule gk = new LossAugmentingGroundRule(e.getKey(), truth, weight);
-			reasoner.addGroundRule(gk);
-			lossKernels.add(gk);
+			LossAugmentingGroundRule groundRule = new LossAugmentingGroundRule(e.getKey(), truth, weight);
+			groundRuleStore.addGroundRule(groundRule);
+			lossRules.add(groundRule);
 		}
-		
+
 		/**
 		 * MAIN LOOP
 		 */
-		
+
 		boolean converged = false;
 		int iter = 0;
 		while (!converged && iter++ < maxIter) {
-			
-			/* Runs loss-augmented inference with current weights. */
-			reasoner.optimize();
-			
+			if (changedRuleWeights) {
+				termGenerator.updateWeights(groundRuleStore, termStore);
+				changedRuleWeights = false;
+			}
+
+			// Runs loss-augmented inference with current weights.
+			reasoner.optimize(termStore);
+
 			/* Computes L1 distance to ground truth. */
 			double l1Distance = 0.0;
-			for (LossAugmentingGroundRule gk : lossKernels) {
-				double truth = trainingMap.getTrainingMap().get(gk.getAtom()).getValue();
-				double lossaugValue = gk.getAtom().getValue();
+			for (LossAugmentingGroundRule groundRule : lossRules) {
+				double truth = trainingMap.getTrainingMap().get(groundRule.getAtom()).getValue();
+				double lossaugValue = groundRule.getAtom().getValue();
 				l1Distance += Math.abs(truth - lossaugValue);
 			}
 
 			/* Computes loss-augmented incompatibilities. */
-			double[] lossaugIncompatibility = new double[kernels.size()];
-			for (int i = 0; i < kernels.size(); i++) {
-				for (GroundRule gk : reasoner.getGroundKernels(kernels.get(i))) {
-					if (gk instanceof LossAugmentingGroundRule)
+			double[] lossaugIncompatibility = new double[rules.size()];
+			for (int i = 0; i < rules.size(); i++) {
+				for (GroundRule groundRule : groundRuleStore.getGroundRules(rules.get(i))) {
+					if (groundRule instanceof LossAugmentingGroundRule)
 						continue;
-					lossaugIncompatibility[i] += ((WeightedGroundRule) gk).getIncompatibility();
+					lossaugIncompatibility[i] += ((WeightedGroundRule) groundRule).getIncompatibility();
 				}
 			}
-			
+
 			/* Computes gradient of weights, where:
 			 *   gradient = (-1 / regParam) * (truthIncompatibilities - lossaugIncompatibilities)
 			 * Note: this is the negative of the formula in the paper, because
-			 * these are incompatibilities, not compatibilities. 
+			 * these are incompatibilities, not compatibilities.
 			 */
 			double[] gradient = new double[weights.length];
 			for (int i = 0; i < weights.length; ++i) {
 				gradient[i] = (-1.0 / regParam) * (truthIncompatibility[i] - lossaugIncompatibility[i]);
 			}
-			
+
 			/* Normalizes L1 distance and gradient by numLabels. */
 			if (normalize) {
 				l1Distance /= (double)numLabels;
@@ -227,7 +231,7 @@ public class FrankWolfe extends WeightLearningApplication {
 					gradient[i] /= (double)numLabels;
 				}
 			}
-			
+
 			/* Computes step size. */
 			double numerator = 0.0;
 			double denominator = 0.0;
@@ -250,7 +254,7 @@ public class FrankWolfe extends WeightLearningApplication {
 			else
 				stepSize = 0.0;
 
-			
+
 			/* Takes step. */
 			for (int i = 0; i < weights.length; ++i) {
 				/* Updates weights. */
@@ -258,22 +262,24 @@ public class FrankWolfe extends WeightLearningApplication {
 				if (nonnegativeWeights && weights[i] < 0.0)
 					weights[i] = 0.0;
 				if (weights[i] >= 0.0)
-					kernels.get(i).setWeight(new PositiveWeight(weights[i]));
+					rules.get(i).setWeight(new PositiveWeight(weights[i]));
 				else
-					kernels.get(i).setWeight(new NegativeWeight(weights[i]));
+					rules.get(i).setWeight(new NegativeWeight(weights[i]));
 				/* Updates average weights. */
 				avgWeights[i] = (double)iter / ((double)iter + 2.0) * avgWeights[i]
 							  + 2.0 / ((double)iter + 2.0) * weights[i];
 			}
-			reasoner.changedGroundKernelWeights();
+
+			changedRuleWeights = true;
+
 			loss = (1.0 - stepSize) * loss + stepSize * l1Distance;
-			
+
 			/* Compute duality gap. */
 			double gap = regParam * numerator;
 			if (gap < tolerance) {
 				converged = true;
 			}
-			
+
 			/* Log */
 			log.debug("Iter {}: L1 distance of worst violator: {}", iter, l1Distance);
 			log.debug("Iter {}: numerator: {}", iter, numerator);
@@ -284,11 +290,11 @@ public class FrankWolfe extends WeightLearningApplication {
 				log.debug(String.format("Iter %d: i=%d: w_i=%f, g_i=%f", iter, i, weights[i], gradient[i]));
 			}
 		}
-		
+
 		/**
 		 * POST-PROCESSING
 		 */
-		
+
 		/* If not converged, use average weights. */
 		if (!converged) {
 			log.info("Learning did not converge after {} iterations", maxIter);
@@ -296,17 +302,16 @@ public class FrankWolfe extends WeightLearningApplication {
 				log.info("Using average weights");
 				for (int i = 0; i < avgWeights.length; ++i) {
 					if (avgWeights[i] >= 0.0)
-						kernels.get(i).setWeight(new PositiveWeight(avgWeights[i]));
+						rules.get(i).setWeight(new PositiveWeight(avgWeights[i]));
 					else
-						kernels.get(i).setWeight(new NegativeWeight(avgWeights[i]));
+						rules.get(i).setWeight(new NegativeWeight(avgWeights[i]));
 				}
-				reasoner.changedGroundKernelWeights();
+
+				changedRuleWeights = true;
 			}
 		}
 		else
 			log.info("Learning converged after {} iterations", iter);
-		
+
 	}
-
-
 }

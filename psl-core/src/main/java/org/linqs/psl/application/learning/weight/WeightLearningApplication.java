@@ -17,18 +17,13 @@
  */
 package org.linqs.psl.application.learning.weight;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Observable;
-
 import org.linqs.psl.application.ModelApplication;
+import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 import org.linqs.psl.application.util.Grounding;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.ConfigManager;
 import org.linqs.psl.config.Factory;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.database.DatabasePopulator;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
@@ -36,25 +31,31 @@ import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.ReasonerFactory;
 import org.linqs.psl.reasoner.admm.ADMMReasonerFactory;
+import org.linqs.psl.reasoner.term.TermGenerator;
+import org.linqs.psl.reasoner.term.TermStore;
 
 import com.google.common.collect.Iterables;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 /**
  * Abstract class for learning the weights of
- * {@link WeightedRule CompatibilityKernels} in a {@link Model}
+ * {@link WeightedRule CompatibilityRules} in a {@link Model}
  * from data.
- * 
+ *
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-public abstract class WeightLearningApplication extends Observable implements ModelApplication {
-	
+public abstract class WeightLearningApplication implements ModelApplication {
+
 	/**
 	 * Prefix of property keys used by this class.
-	 * 
+	 *
 	 * @see ConfigManager
 	 */
 	public static final String CONFIG_PREFIX = "weightlearning";
-	
+
 	/**
 	 * Key for {@link Factory} or String property.
 	 * <p>
@@ -71,26 +72,58 @@ public abstract class WeightLearningApplication extends Observable implements Mo
 	 * Value is instance of {@link ADMMReasonerFactory}.
 	 */
 	public static final ReasonerFactory REASONER_DEFAULT = new ADMMReasonerFactory();
-	
+
+	/**
+	 * The class to use for ground rule storage.
+	 */
+	public static final String GROUND_RULE_STORE_KEY = CONFIG_PREFIX + ".groundrulestore";
+	public static final String GROUND_RULE_STORE_DEFAULT = "org.linqs.psl.application.groundrulestore.MemoryGroundRuleStore";
+
+	/**
+	 * The class to use for term storage.
+	 * Should be compatible with REASONER_KEY.
+	 */
+	public static final String TERM_STORE_KEY = CONFIG_PREFIX + ".termstore";
+	public static final String TERM_STORE_DEFAULT = "org.linqs.psl.reasoner.admm.term.ADMMTermStore";
+
+	/**
+	 * The class to use for term generator.
+	 * Should be compatible with REASONER_KEY and TERM_STORE_KEY.
+	 */
+	public static final String TERM_GENERATOR_KEY = CONFIG_PREFIX + ".termgenerator";
+	public static final String TERM_GENERATOR_DEFAULT = "org.linqs.psl.reasoner.admm.term.ADMMTermGenerator";
+
 	protected Model model;
 	protected Database rvDB, observedDB;
 	protected ConfigBundle config;
-	
-	protected final List<WeightedRule> kernels;
-	protected final List<WeightedRule> immutableKernels;
+
+	protected final List<WeightedRule> rules;
+	protected final List<WeightedRule> immutableRules;
 	protected TrainingMap trainingMap;
+
+	/**
+	 * Indicates that the rule weights have been changed and should be updated before optimization.
+	 * This should always be checked before optimization.
+	 */
+	protected boolean changedRuleWeights;
+
 	protected Reasoner reasoner;
-	
+	protected GroundRuleStore groundRuleStore;
+	protected TermStore termStore;
+	protected TermGenerator termGenerator;
+
 	public WeightLearningApplication(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
 		this.model = model;
 		this.rvDB = rvDB;
 		this.observedDB = observedDB;
 		this.config = config;
 
-		kernels = new ArrayList<WeightedRule>();
-		immutableKernels = new ArrayList<WeightedRule>();
+		changedRuleWeights = true;
+
+		rules = new ArrayList<WeightedRule>();
+		immutableRules = new ArrayList<WeightedRule>();
 	}
-	
+
 	/**
 	 * Learns new weights.
 	 * <p>
@@ -101,59 +134,73 @@ public abstract class WeightLearningApplication extends Observable implements Mo
 	 * Each such RandomVariableAtom should have a corresponding {@link ObservedAtom}
 	 * in the observed Database, unless the subclass implementation supports latent
 	 * variables.
-	 * 
-	 * @see DatabasePopulator
 	 */
-	public void learn()
-			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-		/* Gathers the CompatibilityKernels */
-		for (WeightedRule k : Iterables.filter(model.getRules(), WeightedRule.class))
-			if (k.isWeightMutable())
-				kernels.add(k);
-			else
-				immutableKernels.add(k);
-		
-		/* Sets up the ground model */
+	public void learn() {
+		// Gathers the CompatibilityRules.
+		for (WeightedRule rule : Iterables.filter(model.getRules(), WeightedRule.class)) {
+			if (rule.isWeightMutable()) {
+				rules.add(rule);
+			} else {
+				immutableRules.add(rule);
+			}
+		}
+
+		// Sets up the ground model.
 		initGroundModel();
-		
-		/* Learns new weights */
+
+		// Learns new weights.
 		doLearn();
-		
-		kernels.clear();
-		cleanUpGroundModel();
+
+		rules.clear();
 	}
-	
+
 	protected abstract void doLearn();
-	
+
 	/**
 	 * Constructs a ground model using model and trainingMap, and stores the
-	 * resulting GroundKernels in reasoner.
+	 * resulting GroundRules in reasoner.
 	 */
-	protected void initGroundModel()
-			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
+	protected void initGroundModel() {
+		try {
+			reasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
+			termStore = (TermStore)config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
+			groundRuleStore = (GroundRuleStore)config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
+			termGenerator = (TermGenerator)config.getNewObject(TERM_GENERATOR_KEY, TERM_GENERATOR_DEFAULT);
+		} catch (Exception ex) {
+			// The caller couldn't handle these exception anyways, convert them to runtime ones.
+			throw new RuntimeException("Failed to prepare storage for inference.", ex);
+		}
+
 		trainingMap = new TrainingMap(rvDB, observedDB);
-		reasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
-		if (trainingMap.getLatentVariables().size() > 0)
+		if (trainingMap.getLatentVariables().size() > 0) {
 			throw new IllegalArgumentException("All RandomVariableAtoms must have " +
 					"corresponding ObservedAtoms. Latent variables are not supported " +
 					"by this WeightLearningApplication. " +
 					"Example latent variable: " + trainingMap.getLatentVariables().iterator().next());
-		Grounding.groundAll(model, trainingMap, reasoner);
-	}
-	
-	protected void cleanUpGroundModel() {
-		trainingMap = null;
-		reasoner.close();
-		reasoner = null;
+		}
+
+		Grounding.groundAll(model, trainingMap, groundRuleStore);
+		termGenerator.generateTerms(groundRuleStore, termStore);
 	}
 
 	@Override
 	public void close() {
+		trainingMap = null;
+
+		termStore.close();
+		termStore = null;
+
+		groundRuleStore.close();
+		groundRuleStore = null;
+
+		reasoner.close();
+		reasoner = null;
+
 		model = null;
 		rvDB = null;
 		config = null;
 	}
-	
+
 	/**
 	 * Sets RandomVariableAtoms with training labels to their observed values.
 	 */

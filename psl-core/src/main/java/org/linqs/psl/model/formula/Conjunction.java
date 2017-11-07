@@ -26,14 +26,15 @@ public class Conjunction extends AbstractBranchFormula<Conjunction> {
 
 	@Override
 	public Formula getDNF() {
-		// Get the DNF for all components of the conjunction.
+		// Get the DNF for all components of the conjunction and flatten them.
 		Formula[] components = new Formula[length()];
 		for (int i = 0; i < formulas.length; i++) {
-			components[i] = formulas[i].getDNF();
+			components[i] = formulas[i].getDNF().flatten();
 		}
 
-		// Simplify (flatten).
-		components = flatten(components).formulas;
+		// Take an extra step to merge conjunctions.
+		// We already flattened each individual component, but not across components.
+		components = ((Conjunction)(new Conjunction(components)).flatten()).formulas;
 
 		// Distribute any disjunctions over the conjunctions.
 		// We will favor clarity over performance for this code since we usually do not

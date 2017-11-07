@@ -23,22 +23,17 @@ import org.linqs.psl.model.rule.WeightedRule;
 
 public class Filters {
 
-	public static final com.google.common.base.Predicate<Rule> CompatibilityKernel = new com.google.common.base.Predicate<Rule>() {
-
+	public static final com.google.common.base.Predicate<Rule> CompatibilityRule = new com.google.common.base.Predicate<Rule>() {
 		@Override
-		public boolean apply(Rule k) {
-			return k instanceof WeightedRule;
+		public boolean apply(Rule rule) {
+			return rule instanceof WeightedRule;
 		}
-		
 	};
 	
-	public static final com.google.common.base.Predicate<Rule> ConstraintKernel = new com.google.common.base.Predicate<Rule>() {
-
+	public static final com.google.common.base.Predicate<Rule> ConstraintRule = new com.google.common.base.Predicate<Rule>() {
 		@Override
-		public boolean apply(Rule k) {
-			return k instanceof UnweightedRule;
+		public boolean apply(Rule rule) {
+			return rule instanceof UnweightedRule;
 		}
-		
 	};
-	
 }

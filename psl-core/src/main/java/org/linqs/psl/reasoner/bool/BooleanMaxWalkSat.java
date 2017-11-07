@@ -17,14 +17,8 @@
  */
 package org.linqs.psl.reasoner.bool;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-
-import org.linqs.psl.application.groundrulestore.MemoryGroundKernelStore;
-import org.linqs.psl.application.util.GroundKernels;
+import org.linqs.psl.application.groundrulestore.AtomRegisterGroundRuleStore;
+import org.linqs.psl.application.util.GroundRules;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.ConfigManager;
 import org.linqs.psl.model.ConstraintBlocker;
@@ -33,37 +27,43 @@ import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.Reasoner;
+import org.linqs.psl.reasoner.term.TermStore;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
 
 /**
  * Implementation of MaxWalkSat, which searches for a good Boolean assignment
  * of truth values.
- * <p>
+ *
  * See "A General Stochastic Approach to Solving Problems with Hard and Soft
  * Constraints," in The Satisfiability Problem: Theory and Applications (1997),
  * pp. 573-586 by Henry Kautz, Bart Selman, Yueyen Jiang.
- * <p>
+ *
  * Supports free {@link RandomVariableAtom RandomVariableAtoms}
- * and RandomVariableAtoms that are each constrained by a single
- * {@link GroundDomainRangeConstraint}.
- * <p>
+ * and RandomVariableAtoms that are each constrained by a single GroundValueConstraint.
+ *
  * It also assumes that all ObservedAtoms have values in {0.0, 1.0}.
  * Its behavior is not defined otherwise.
- * 
+ *
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-public class BooleanMaxWalkSat extends MemoryGroundKernelStore implements Reasoner {
-	
+public class BooleanMaxWalkSat extends AtomRegisterGroundRuleStore implements Reasoner {
 	private static final Logger log = LoggerFactory.getLogger(BooleanMaxWalkSat.class);
-	
+
 	/**
 	 * Prefix of property keys used by this class.
-	 * 
+	 *
 	 * @see ConfigManager
 	 */
 	public static final String CONFIG_PREFIX = "booleanmaxwalksat";
-	
+
 	/**
 	 * Key for positive integer property that is the maximum number of flips
 	 * to try during optimization
@@ -71,7 +71,7 @@ public class BooleanMaxWalkSat extends MemoryGroundKernelStore implements Reason
 	public static final String MAX_FLIPS_KEY = CONFIG_PREFIX + ".maxflips";
 	/** Default value for MAX_FLIPS_KEY */
 	public static final int MAX_FLIPS_DEFAULT = 50000;
-	
+
 	/**
 	 * Key for double property in [0,1] that is the probability of randomly
 	 * perturbing an atom in a randomly chosen potential
@@ -79,13 +79,14 @@ public class BooleanMaxWalkSat extends MemoryGroundKernelStore implements Reason
 	public static final String NOISE_KEY = CONFIG_PREFIX + ".noise";
 	/** Default value for NOISE_KEY */
 	public static final double NOISE_DEFAULT = (double) 1 / 100;
-	
+
 	private Random rand;
 	private final int maxFlips;
 	private final double noise;
-	
+
 	public BooleanMaxWalkSat(ConfigBundle config) {
 		super();
+
 		rand = new Random();
 		maxFlips = config.getInt(MAX_FLIPS_KEY, MAX_FLIPS_DEFAULT);
 		if (maxFlips <= 0 )
@@ -94,24 +95,24 @@ public class BooleanMaxWalkSat extends MemoryGroundKernelStore implements Reason
 		if (noise < 0.0 || noise > 1.0)
 			throw new IllegalArgumentException("Noise must be in [0,1].");
 	}
-	
+
 	@Override
-	public void optimize() {
+	public void optimize(TermStore termStore) {
 		ConstraintBlocker blocker = new ConstraintBlocker(this);
 		blocker.prepareBlocks(true);
-		
+
 		/* Puts RandomVariableAtoms in 2d array by block */
 		RandomVariableAtom[][] rvBlocks = blocker.getRVBlocks();
 		/* If true, exactly one Atom in the RV block must be 1.0. If false, at most one can. */
 		boolean[] exactlyOne = blocker.getExactlyOne();
-		/* Collects GroundCompatibilityKernels incident on each block of RandomVariableAtoms */
+		/* Collects GroundCompatibilityRules incident on each block of RandomVariableAtoms */
 		WeightedGroundRule[][] incidentGKs = blocker.getIncidentGKs();
 		/* Maps RandomVariableAtoms to their block index */
 		Map<RandomVariableAtom, Integer> rvMap = blocker.getRVMap();
-		
+
 		/* Randomly initializes the RVs to a feasible state */
 		blocker.randomlyInitializeRVs();
-		
+
 		Set<GroundRule> unsatGKs = new HashSet<GroundRule>();
 		Set<RandomVariableAtom> rvsToInclude = new HashSet<RandomVariableAtom>();
 		Set<Integer> blocksToInclude = new HashSet<Integer>(rvsToInclude.size());
@@ -122,25 +123,25 @@ public class BooleanMaxWalkSat extends MemoryGroundKernelStore implements Reason
 		double bestIncompatibility;
 		int changeBlock;
 		int newBlockSetting;
-		
-		/* Finds initially unsatisfied GroundKernels */
-		for (GroundRule gk : getGroundKernels())
-			if (gk instanceof WeightedGroundRule && ((WeightedGroundRule) gk).getIncompatibility() > 0.0)
-				unsatGKs.add(gk);
-		
+
+		/* Finds initially unsatisfied GroundRules */
+		for (GroundRule groundRule : getGroundRules())
+			if (groundRule instanceof WeightedGroundRule && ((WeightedGroundRule) groundRule).getIncompatibility() > 0.0)
+				unsatGKs.add(groundRule);
+
 		/* Changes some RV blocks */
 		for (int flip = 0; flip < maxFlips; flip++) {
-			
+
 			/* Just in case... */
 			if (unsatGKs.size() == 0)
 				return;
-			
-			GroundRule gk = (GroundRule) selectAtRandom(unsatGKs);
-			
-			/* Collects the RV blocks with at least one RV in gk */
+
+			GroundRule groundRule = (GroundRule) selectAtRandom(unsatGKs);
+
+			/* Collects the RV blocks with at least one RV in groundRule */
 			rvsToInclude.clear();
 			blocksToInclude.clear();
-			for (GroundAtom atom : gk.getAtoms()) {
+			for (GroundAtom atom : groundRule.getAtoms()) {
 				if (atom instanceof RandomVariableAtom) {
 					Integer blockIndex = rvMap.get(atom);
 					/* Ignore RVs forced to 0.0 */
@@ -159,37 +160,37 @@ public class BooleanMaxWalkSat extends MemoryGroundKernelStore implements Reason
 				candidateExactlyOne[i] = exactlyOne[blockIndex];
 				candidateIncidentGKs[i++] = incidentGKs[blockIndex];
 			}
-			
+
 			if (candidateRVBlocks.length == 0) {
 				flip--;
 				continue;
 			}
-			
-			/* With probability noise, changes an RV block in gk at random */
+
+			/* With probability noise, changes an RV block in groundRule at random */
 			if (rand.nextDouble() <= noise) {
 				changeBlock = rand.nextInt(candidateRVBlocks.length);
 				int blockSize = candidateRVBlocks[changeBlock].length;
-								
+
 				do {
 					newBlockSetting = rand.nextInt(blockSize);
 				}
 				while (candidateExactlyOne[changeBlock] && candidateRVBlocks[changeBlock][newBlockSetting].getValue() == 1.0);
-				
-				/* 
+
+				/*
 				 * If the random setting is the current setting, but all 0.0 is also valid,
 				 * switches to that
 				 */
 				if (candidateRVBlocks[changeBlock][newBlockSetting].getValue() == 1.0)
 					newBlockSetting = candidateRVBlocks[changeBlock].length;
 			}
-			/* With probability 1 - noise, makes the best change to an RV block in gk */
+			/* With probability 1 - noise, makes the best change to an RV block in groundRule */
 			else {
 				changeBlock = 0;
 				newBlockSetting = 0;
 				bestIncompatibility = Double.POSITIVE_INFINITY;
 				double[] currentState;
 				double currentStateTotal;
-				
+
 				/* Considers each block */
 				for (int iBlock = 0; iBlock < candidateRVBlocks.length; iBlock++) {
 					/* Saves current state of block */
@@ -199,7 +200,7 @@ public class BooleanMaxWalkSat extends MemoryGroundKernelStore implements Reason
 						currentState[iRV] = candidateRVBlocks[iBlock][iRV].getValue();
 						currentStateTotal += currentState[iRV];
 					}
-					
+
 					/* Considers each setting to the block */
 					int lastRVIndex = candidateRVBlocks[iBlock].length;
 					/* If all 0.0 is a valid assignment and not the current one, tries that too */
@@ -211,7 +212,7 @@ public class BooleanMaxWalkSat extends MemoryGroundKernelStore implements Reason
 							/* Changes to the current setting to consider */
 							for (int iChangeRV = 0; iChangeRV < candidateRVBlocks[iBlock].length; iChangeRV++)
 								candidateRVBlocks[iBlock][iChangeRV].setValue((iChangeRV == iSetRV) ? 1.0 : 0.0);
-							
+
 							/* Computes weighted incompatibility */
 							currentIncompatibility = 0.0;
 							for (WeightedGroundRule incidentGK : candidateIncidentGKs[iBlock]) {
@@ -220,7 +221,7 @@ public class BooleanMaxWalkSat extends MemoryGroundKernelStore implements Reason
 										currentIncompatibility += ((WeightedGroundRule) incidentGK).getWeight().getWeight() * ((WeightedGroundRule) incidentGK).getIncompatibility();
 								}
 							}
-							
+
 							if (currentIncompatibility < bestIncompatibility) {
 								bestIncompatibility = currentIncompatibility;
 								changeBlock = iBlock;
@@ -228,45 +229,44 @@ public class BooleanMaxWalkSat extends MemoryGroundKernelStore implements Reason
 							}
 						}
 					}
-					
+
 					/* Restores current state */
 					for (int iRV = 0 ; iRV < candidateRVBlocks[iBlock].length; iRV++)
 						candidateRVBlocks[iBlock][iRV].setValue(currentState[iRV]);
 				}
 			}
-			
+
 			/* Changes assignment to RV block */
 			for (int iChangeRV = 0; iChangeRV < candidateRVBlocks[changeBlock].length; iChangeRV++)
 				candidateRVBlocks[changeBlock][iChangeRV].setValue((iChangeRV == newBlockSetting) ? 1.0 : 0.0);
-			
-			/* Computes change to set of unsatisfied GroundCompatibilityKernels */
+
+			/* Computes change to set of unsatisfied GroundCompatibilityRules */
 			for (WeightedGroundRule incidentGK : candidateIncidentGKs[changeBlock])
 				if (incidentGK.getIncompatibility() > 0.0)
 					unsatGKs.add(incidentGK);
 				else
 					unsatGKs.remove(incidentGK);
-			
+
 			if (flip == 0 || (flip+1) % 5000 == 0) {
 				log.info("Total weighted incompatibility: {}, Infeasbility norm: {}",
-						GroundKernels.getTotalWeightedIncompatibility(getCompatibilityKernels()),
-						GroundKernels.getInfeasibilityNorm(getConstraintKernels()));
+						GroundRules.getTotalWeightedIncompatibility(getCompatibilityRules()),
+						GroundRules.getInfeasibilityNorm(getConstraintRules()));
 			}
 		}
 	}
-	
+
 	private Object selectAtRandom(Collection<? extends Object> collection) {
 		int i = 0;
 		int selection = rand.nextInt(collection.size());
 		for (Object o : collection)
 			if (i++ == selection)
 				return o;
-		
+
 		return null;
 	}
 
 	@Override
 	public void close() {
-		/* Intentionally blank */
+		// Intentionally blank
 	}
-
 }

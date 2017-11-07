@@ -47,7 +47,7 @@ public class Divide extends Coefficient {
 	}
 	
 	@Override
-	public double getValue(Map<SummationVariable, Set<Constant>> subs) {
+	public double getValue(Map<SummationVariable, Integer> subs) {
 		double lhs = c1.getValue(subs);
 		double rhs = c2.getValue(subs);
 

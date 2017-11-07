@@ -17,15 +17,16 @@
  */
 package org.linqs.psl.model.rule.arithmetic;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.rule.UnweightedRule;
 import org.linqs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
 import org.linqs.psl.model.rule.arithmetic.expression.SummationVariable;
 import org.linqs.psl.reasoner.function.FunctionComparator;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * A template for {@link UnweightedGroundArithmeticRule UnweightedGroundArithmeticRules}.
@@ -45,6 +46,12 @@ public class UnweightedArithmeticRule extends AbstractArithmeticRule
 
 	@Override
 	protected UnweightedGroundArithmeticRule makeGroundRule(double[] coeffs, GroundAtom[] atoms,
+			FunctionComparator comparator, double c) {
+		return new UnweightedGroundArithmeticRule(this, coeffs, atoms, comparator, c);
+	}
+
+	@Override
+	protected UnweightedGroundArithmeticRule makeGroundRule(List<Double> coeffs, List<GroundAtom> atoms,
 			FunctionComparator comparator, double c) {
 		return new UnweightedGroundArithmeticRule(this, coeffs, atoms, comparator, c);
 	}

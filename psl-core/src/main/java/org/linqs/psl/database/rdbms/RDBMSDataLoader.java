@@ -17,200 +17,302 @@
  */
 package org.linqs.psl.database.rdbms;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.loading.DataLoader;
 import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.database.loading.OpenInserter;
-import org.linqs.psl.model.ConfidenceValues;
 import org.linqs.psl.model.predicate.Predicate;
+import org.linqs.psl.model.term.ConstantType;
+import org.linqs.psl.model.term.UniqueIntID;
+import org.linqs.psl.model.term.UniqueStringID;
+
+import com.healthmarketscience.sqlbuilder.CustomSql;
+import com.healthmarketscience.sqlbuilder.InsertQuery;
+import org.apache.commons.lang3.StringUtils;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Preconditions;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
+/**
+ * Handle the loading of predicate data into the database.
+ * The inserters that originate from here will handle type conversion.
+ * Inserters from here will leverage multi-insert statements until there is not enough
+ * data for the multi-insert statement and then fall back to single inserts.
+ * In addition, the inserters from here will also be sure to batch their inserts.
+ */
 public class RDBMSDataLoader implements DataLoader {
-	
+	/**
+	 * The number of inserts in each batch.
+	 */
+	public static final int DEFAULT_PAGE_SIZE = 2500;
+	public static final double DEFAULT_EVIDENCE_VALUE = 1.0;
+
+	/**
+	 * The number of records in each multi-row insert.
+	 */
+	public static final int DEFAULT_MULTIROW_COUNT = 25;
+
 	private static final Logger log = LoggerFactory.getLogger(RDBMSDataLoader.class);
-	
-	private final Connection database;
-	
-	private final Map<Predicate,RDBMSTableInserter> inserts;
-	
-	public RDBMSDataLoader(Connection c) {
-		database = c;
-		inserts = new HashMap<Predicate,RDBMSTableInserter>();
+
+	private final Connection connection;
+	private final Map<Predicate, RDBMSTableInserter> inserts;
+
+	public RDBMSDataLoader(Connection connection) {
+		this.connection = connection;
+		inserts = new HashMap<Predicate, RDBMSTableInserter>();
 	}
-	
-	void registerPredicate(RDBMSPredicateHandle ph) {
-		inserts.put(ph.predicate(), new RDBMSTableInserter(ph));
+
+	void registerPredicate(PredicateInfo predicateInfo) {
+		inserts.put(predicateInfo.predicate(), new RDBMSTableInserter(predicateInfo));
 	}
-	
+
 	@Override
-	public RDBMSTableInserter getOpenInserter(Predicate p) {
-		RDBMSTableInserter ins = inserts.get(p);
-		if (ins==null) {
-			throw new IllegalArgumentException("Predicate is unknown: "+ p);
+	public RDBMSTableInserter getOpenInserter(Predicate predicate) {
+		RDBMSTableInserter inserter = inserts.get(predicate);
+		if (inserter == null) {
+			throw new IllegalArgumentException("Predicate is unknown: " + predicate);
 		}
-		return ins;
+
+		return inserter;
 	}
-	
+
 	@Override
-	public Inserter getInserter(Predicate p, Partition partitionID) {
-		return new RDBMSInserter(getOpenInserter(p),partitionID);
+	public Inserter getInserter(Predicate predicate, Partition partition) {
+		return new RDBMSInserter(getOpenInserter(predicate), partition);
 	}
-	
-	private class RDBMSInserter implements Inserter {
-		
+
+	private class RDBMSInserter extends Inserter {
 		private final RDBMSTableInserter inserter;
-		private final Partition partitionID;
-		
-		public RDBMSInserter(RDBMSTableInserter ins, Partition pid) {
-			Preconditions.checkNotNull(pid);
-			inserter = ins;
-			partitionID = pid;
+		private final Partition partition;
+
+		public RDBMSInserter(RDBMSTableInserter inserter, Partition partition) {
+			assert(partition != null);
+
+			this.inserter = inserter;
+			this.partition = partition;
 		}
 
 		@Override
-		public void insert(Object... data) {
-			inserter.insert(partitionID, data);
+		public void insertAll(List<List<Object>> data) {
+			inserter.insertAll(partition, data);
 		}
 
 		@Override
-		public void insertValue(double value, Object... data) {
-			inserter.insertValue(partitionID, value, data);
+		public void insertAllValues(List<Double> values, List<List<Object>> data) {
+			inserter.insertAllValues(partition, values, data);
 		}
-		
-		@Override
-		public void insertValueConfidence(double value, double confidence, Object... data) {
-			inserter.insertValue(partitionID, value, confidence, data);
-		}
-		
 	}
-	
-	private class RDBMSTableInserter implements OpenInserter {
-		
-		private final RDBMSPredicateHandle handle;
-		private final int argSize;
-		private final PreparedStatement insertStmt;
-		private final double defaultEvidenceValue;
-		private final double defaultConfidence;
-		
-		public RDBMSTableInserter(RDBMSPredicateHandle ph) {
-			handle = ph;
-			argSize = handle.predicate().getArity();
-			int numCols = 0;
-			StringBuilder sql = new StringBuilder();
-			sql.append("INSERT INTO ").append(handle.tableName()).append(" (");
-			sql.append(handle.partitionColumn());
-			numCols++;
-			
-			for (int i=0;i<handle.argumentColumns().length;i++) {
-				sql.append(", ").append(handle.argumentColumns()[i]);
-				numCols++;
+
+	private class RDBMSTableInserter extends OpenInserter {
+		private final PredicateInfo predicateInfo;
+
+		// We will keep two prepared statements:
+		//  - one for inserting a single record
+		//  - one for inserting DEFAULT_MULTIROW_COUNT records
+		private final PreparedStatement singleInsertStatement;
+		private final PreparedStatement multiInsertStatement;
+
+		public RDBMSTableInserter(PredicateInfo predicateInfo) {
+			this.predicateInfo = predicateInfo;
+			singleInsertStatement = createSingleInsert();
+			multiInsertStatement = createMultiInsert();
+		}
+
+		private PreparedStatement createSingleInsert() {
+			InsertQuery sqlBuilder = new InsertQuery(predicateInfo.tableName());
+
+			// Core columns (partition, value).
+			sqlBuilder.addCustomPreparedColumns(new CustomSql(PredicateInfo.PARTITION_COLUMN_NAME));
+			sqlBuilder.addCustomPreparedColumns(new CustomSql(PredicateInfo.VALUE_COLUMN_NAME));
+
+			// Argument columns.
+			for (String column : predicateInfo.argumentColumns()) {
+				sqlBuilder.addCustomPreparedColumns(new CustomSql(column));
 			}
-			sql.append(", ").append(handle.valueColumn());
-			numCols++;
-			sql.append(", ").append(handle.confidenceColumn());
-			numCols++;
-			
-			sql.append(") VALUES ( ");
-			for (int i=0;i<numCols;i++) {
-				if (i>0) sql.append(", ");
-				sql.append("?");
-			}
-			sql.append(")");
+
 			try {
-				insertStmt = database.prepareStatement( sql.toString() );
-			} catch (SQLException e) {
-				throw new AssertionError(e);
+				return connection.prepareStatement(sqlBuilder.validate().toString());
+			} catch (SQLException ex) {
+				throw new RuntimeException(ex);
 			}
-			
-			// TODO Is this the correct assumption? -enorris
-			defaultEvidenceValue = 1.0;
-			defaultConfidence = Double.NaN;
 		}
-		
+
+		private PreparedStatement createMultiInsert() {
+			List<String> columns = new ArrayList<String>();
+			columns.add(PredicateInfo.PARTITION_COLUMN_NAME);
+			columns.add(PredicateInfo.VALUE_COLUMN_NAME);
+			columns.addAll(predicateInfo.argumentColumns());
+
+			String placeholders = StringUtils.repeat("?", ", ", columns.size());
+
+			List<String> multiInsert = new ArrayList<String>();
+			multiInsert.add("INSERT INTO " + predicateInfo.tableName());
+			multiInsert.add("	(" + StringUtils.join(columns, ", ") + ")");
+			multiInsert.add("VALUES");
+			multiInsert.add("	" + StringUtils.repeat("(" + placeholders + ")", ", ", DEFAULT_MULTIROW_COUNT));
+
+			try {
+				return connection.prepareStatement(StringUtils.join(multiInsert, "\n"));
+			} catch (SQLException ex) {
+				throw new RuntimeException(ex);
+			}
+		}
+
 		@Override
-		public void insert(Partition partitionID, Object... data) {
-			insertInternal(partitionID, defaultEvidenceValue, defaultConfidence, data);
+		public void insertAll(Partition partition, List<List<Object>> data) {
+			List<Double> truthValues = new ArrayList<Double>(data.size());
+			for (int i = 0; i < data.size(); i++) {
+				truthValues.add(DEFAULT_EVIDENCE_VALUE);
+			}
+
+			insertInternal(partition, truthValues, data);
 		}
-		
+
 		@Override
-		public void insertValue(Partition partitionID, double value, Object... data) {
-			insertInternal(partitionID, value, defaultConfidence, data);
+		public void insertAllValues(Partition partition, List<Double> values, List<List<Object>> data) {
+			insertInternal(partition, values, data);
 		}
-		
-		@Override
-		public void insertValue(Partition partitionID, double value, double confidence, Object... data) {
-			insertInternal(partitionID, value, confidence, data);
-		}
-		
-		private void insertInternal(Partition partition, double value, double confidence, Object[] data) {
+
+		private void insertInternal(Partition partition, List<Double> values, List<List<Object>> data) {
+			assert(values.size() == data.size());
+
 			int partitionID = partition.getID();
-			if (partitionID < 0)
+			if (partitionID < 0) {
 				throw new IllegalArgumentException("Partition IDs must be non-negative.");
-			if (data.length != argSize)
-				throw new IllegalArgumentException("Data length does not match: " + data.length + " " + argSize);
-			// TODO What is the valid range for truth values? Do we care? -enorris
-			if (!ConfidenceValues.isValid(confidence))
-				throw new IllegalArgumentException("Invalid confidence value: " + confidence);
-			
-			try {
-				insertStmt.setInt(1,partitionID);
-				int noCol = 1;
-				for (int i=0;i<argSize;i++) {
-					noCol++;
-					assert data[i]!=null;
-					if (data[i] instanceof Integer) {
-						insertStmt.setInt(noCol, (Integer)data[i]);
-					} else if (data[i] instanceof Double) {
-						// The standard JDBC way to insert NaN is using setNull
-						// if not, mysql will complain about the NaN default confidence value
-						if (Double.isNaN((Double)data[i])) {
-							insertStmt.setNull(noCol, java.sql.Types.DOUBLE); 
-						} else {
-							insertStmt.setDouble(noCol, (Double)data[i]);
-						}
-					} else if (data[i] instanceof String) {
-						insertStmt.setString(noCol, escapeSingleQuotes((String)data[i]));
-					} else if (data[i] instanceof RDBMSUniqueIntID) {
-						insertStmt.setInt(noCol, ((RDBMSUniqueIntID)data[i]).getID());
-					} else if (data[i] instanceof RDBMSUniqueStringID) {
-						insertStmt.setString(noCol, ((RDBMSUniqueStringID)data[i]).getID());
-					}else throw new IllegalArgumentException("Unknown data type for :"+data[i]);
-				}
-				
-				noCol++;
-				if (Double.isNaN(value)) {
-					insertStmt.setNull(noCol, java.sql.Types.DOUBLE); 
-				} else {
-					insertStmt.setDouble(noCol, value);	
-				}
-				noCol++;
-				if (Double.isNaN(confidence)) {
-					insertStmt.setNull(noCol, java.sql.Types.DOUBLE); 
-				} else {
-					insertStmt.setDouble(noCol, confidence);
-				}
-		    insertStmt.executeUpdate();
+			}
 
-			} catch (SQLException e) {
-				log.error(e.getMessage() + "\n" + Arrays.toString(data));
-				throw new AssertionError(e);
+			for (int rowIndex = 0; rowIndex < data.size(); rowIndex++) {
+				List<Object> row = data.get(rowIndex);
+
+				assert(row != null);
+
+				if (row.size() != predicateInfo.argumentColumns().size()) {
+					throw new IllegalArgumentException(
+						String.format("Data on row %d length does not match for %s: Expecting: %d, Got: %d",
+						rowIndex, partition.getName(), predicateInfo.argumentColumns().size(), row.size()));
+				}
+			}
+
+			try {
+				int batchSize = 0;
+
+				// We will go from the multi-insert to the single-insert when we don't have enough data to fill the multi-insert.
+				PreparedStatement activeStatement = multiInsertStatement;
+				int insertSize = DEFAULT_MULTIROW_COUNT;
+
+				int rowIndex = 0;
+				while (rowIndex < data.size()) {
+					// Index for the current index.
+					int paramIndex = 1;
+
+					if (activeStatement == multiInsertStatement && data.size() - rowIndex < DEFAULT_MULTIROW_COUNT) {
+						// Commit any records left in the multi-insert batch.
+						if (batchSize > 0) {
+							activeStatement.executeBatch();
+							activeStatement.clearBatch();
+							batchSize = 0;
+						}
+
+						activeStatement = singleInsertStatement;
+						insertSize = 1;
+					}
+
+					for (int i = 0; i < insertSize; i++) {
+						List<Object> row = data.get(rowIndex);
+						Double value = values.get(rowIndex);
+
+						// Partition
+						activeStatement.setInt(paramIndex++, partitionID);
+
+						// Value
+						if (value == null || value.isNaN()) {
+							activeStatement.setNull(paramIndex++, java.sql.Types.DOUBLE);
+						} else {
+							activeStatement.setDouble(paramIndex++, value);
+						}
+
+						for (int argIndex = 0; argIndex < predicateInfo.argumentColumns().size(); argIndex++) {
+							Object argValue = row.get(argIndex);
+
+							assert(argValue != null);
+
+							if (argValue instanceof Integer) {
+								activeStatement.setInt(paramIndex++, (Integer)argValue);
+							} else if (argValue instanceof Double) {
+								// The standard JDBC way to insert NaN is using setNull
+								// if not, mysql will complain about any NaNs.
+								if (Double.isNaN((Double)argValue)) {
+									activeStatement.setNull(paramIndex++, java.sql.Types.DOUBLE);
+								} else {
+									activeStatement.setDouble(paramIndex++, (Double)argValue);
+								}
+							} else if (argValue instanceof String) {
+								// This is the most common value we get when someone is using InsertUtils.
+								// The value may need to be convered from a string.
+								activeStatement.setObject(paramIndex++, convertString((String)argValue, argIndex));
+							} else if (argValue instanceof UniqueIntID) {
+								activeStatement.setInt(paramIndex++, ((UniqueIntID)argValue).getID());
+							} else if (argValue instanceof UniqueStringID) {
+								activeStatement.setString(paramIndex++, ((UniqueStringID)argValue).getID());
+							} else {
+								throw new IllegalArgumentException("Unknown data type for :" + argValue);
+							}
+						}
+
+						rowIndex++;
+					}
+
+					activeStatement.addBatch();
+					batchSize++;
+
+					if (batchSize >= DEFAULT_PAGE_SIZE) {
+						activeStatement.executeBatch();
+						activeStatement.clearBatch();
+						batchSize = 0;
+					}
+				}
+
+				if (batchSize > 0) {
+					activeStatement.executeBatch();
+					activeStatement.clearBatch();
+					batchSize = 0;
+				}
+				activeStatement.clearParameters();
+			} catch (SQLException ex) {
+				log.error(ex.getMessage());
+				throw new RuntimeException("Error inserting into RDBMS.", ex);
 			}
 		}
-		
-		private String escapeSingleQuotes(String s) {
-			return s.replaceAll("'", "''");
-		}
-		
-	}
 
+		/**
+		 * Take in the value to be inserted as a string and convert it to the appropriate Java type
+		 * for PreparedStatement.setObject().
+		 */
+		private Object convertString(String value, int argumentIndex) {
+			switch (predicateInfo.predicate().getArgumentType(argumentIndex)) {
+				case Double:
+					return new Double(Double.parseDouble(value));
+				case Integer:
+				case UniqueIntID:
+					return new Integer(Integer.parseInt(value));
+				case String:
+				case UniqueStringID:
+					return value;
+				case Long:
+					return new Long(Long.parseLong(value));
+				case Date:
+					return new DateTime(value);
+				default:
+					throw new IllegalArgumentException("Unknown argument type: " + predicateInfo.predicate().getArgumentType(argumentIndex));
+			}
+		}
+	}
 }

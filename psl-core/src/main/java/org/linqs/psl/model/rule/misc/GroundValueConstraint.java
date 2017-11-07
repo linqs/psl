@@ -31,18 +31,21 @@ import org.linqs.psl.reasoner.function.FunctionSummand;
 
 /**
  * A simple constraint that fixes the truth value of a {@link RandomVariableAtom}
- * 
+ *
  * @author Stephen Bach <bach@cs.umd.edu>
  */
 public class GroundValueConstraint implements UnweightedGroundRule {
-	
 	private final RandomVariableAtom atom;
-	
+
 	private final double value;
-	
+
 	public GroundValueConstraint(RandomVariableAtom atom, double value) {
 		this.atom = atom;
 		this.value = value;
+	}
+
+	public RandomVariableAtom getAtom() {
+		return atom;
 	}
 
 	@Override
@@ -68,5 +71,4 @@ public class GroundValueConstraint implements UnweightedGroundRule {
 	public double getInfeasibility() {
 		return Math.abs(atom.getValue() - value);
 	}
-
 }

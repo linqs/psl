@@ -35,7 +35,7 @@ public class Add extends Coefficient {
 	}
 	
 	@Override
-	public double getValue(Map<SummationVariable, Set<Constant>> subs) {
+	public double getValue(Map<SummationVariable, Integer> subs) {
 		return c1.getValue(subs) + c2.getValue(subs);
 	}
 	

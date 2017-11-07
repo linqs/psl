@@ -17,8 +17,16 @@
  */
 package org.linqs.psl.database.rdbms.driver;
 
+import org.linqs.psl.model.term.ConstantType;
+
+import com.healthmarketscience.sqlbuilder.CreateTableQuery;
+import org.apache.commons.lang3.StringUtils;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 
@@ -55,43 +63,37 @@ public class H2DatabaseDriver implements DatabaseDriver {
 			this.dbConnection = getMemoryDatabase(path);
 			break;
 		default:
-			throw new IllegalArgumentException("Unknown database type: "
-					+ dbType);
+			throw new IllegalArgumentException("Unknown database type: " + dbType);
 		}
 
 		// Clear the database if specified
-		if (clearDB)
+		if (clearDB) {
 			clearDB();
+		}
 	}
 
 	public Connection getDiskDatabase(String path) {
 		try {
-			return DriverManager.getConnection("jdbc:h2:" + path );
-			//return DriverManager.getConnection("jdbc:h2:" + path);
+			return DriverManager.getConnection("jdbc:h2:" + path);
 		} catch (SQLException e) {
-			throw new RuntimeException(
-					"Could not connect to database: " + path, e);
+			throw new RuntimeException("Could not connect to database: " + path, e);
 		}
 	}
 
 	public Connection getDiskDatabase(String path, String options) {
 		try {
 			return DriverManager.getConnection("jdbc:h2:" + path + options);
-			//return DriverManager.getConnection("jdbc:h2:" + path);
 		} catch (SQLException e) {
 			throw new RuntimeException(
 					"Could not connect to database: " + path, e);
 		}
 	}
 
-	
-	
 	public Connection getMemoryDatabase(String path) {
 		try {
 			return DriverManager.getConnection("jdbc:h2:mem:" + path);
 		} catch (SQLException e) {
-			throw new RuntimeException(
-					"Could not connect to database: " + path, e);
+			throw new RuntimeException("Could not connect to database: " + path, e);
 		}
 	}
 
@@ -109,23 +111,74 @@ public class H2DatabaseDriver implements DatabaseDriver {
 		return dbConnection;
 	}
 
-  @Override
-  public boolean isSupportExternalFunction() {
-    return true;
-  }
+	@Override
+	public boolean supportsExternalFunctions() {
+		return true;
+	}
 
-  @Override
-  public String createHashIndex(String index_name, String table_name, String column_name) {
-  	return "CREATE HASH INDEX " + index_name + " ON " + table_name + " (" + column_name + " ) ";
-  }
+	@Override
+	public String getTypeName(ConstantType type) {
+		switch (type) {
+			case Double:
+				return "DOUBLE";
+			case Integer:
+				return "INT";
+			case String:
+				return "VARCHAR";
+			case Long:
+				return "BIGINT";
+			case Date:
+				return "DATE";
+			case UniqueIntID:
+				return "INT";
+			case UniqueStringID:
+				return "VARCHAR(255)";
+			default:
+				throw new IllegalStateException("Unknown ConstantType: " + type);
+		}
+	}
 
-  @Override
-  public String castStringWithModifiersForIndexing(String column_name) {
-  	return column_name;
-  }
+	@Override
+	public String getSurrogateKeyColumnDefinition(String columnName) {
+		return columnName + " BIGINT IDENTITY PRIMARY KEY";
+	}
 
-  @Override
-  public String createPrimaryKey(String table_name, String columns) {
-  	return "CREATE PRIMARY KEY HASH ON " + table_name + " (" + columns + " ) ";	
-  }
+	@Override
+	public String getDoubleTypeName() {
+		return "DOUBLE";
+	}
+
+	@Override
+	public PreparedStatement getUpsert(Connection connection, String tableName,
+			String[] columns, String[] keyColumns) {
+		// H2 uses a "MERGE" syntax and requires a specified key.
+		List<String> sql = new ArrayList<String>();
+		sql.add("MERGE INTO " + tableName + "");
+		sql.add("	(" + StringUtils.join(columns, ", ") + ")");
+		sql.add("KEY");
+		sql.add("	(" + StringUtils.join(keyColumns, ", ") + ")");
+		sql.add("VALUES");
+		sql.add("	(" + StringUtils.repeat("?", ", ", columns.length) + ")");
+
+		try {
+			return connection.prepareStatement(StringUtils.join(sql, "\n"));
+		} catch (SQLException ex) {
+			throw new RuntimeException("Could not prepare MySQL upsert for " + tableName, ex);
+		}
+	}
+
+	@Override
+	public String finalizeCreateTable(CreateTableQuery createTable) {
+		return createTable.validate().toString();
+	}
+
+	@Override
+	public String getStringAggregate(String columnName, String delimiter, boolean distinct) {
+		if (delimiter.contains("'")) {
+			throw new IllegalArgumentException("Delimiter (" + delimiter + ") may not contain a single quote.");
+		}
+
+		return String.format("GROUP_CONCAT(DISTINCT CAST(%s AS TEXT) SEPARATOR '%s')",
+				columnName, delimiter);
+	}
 }

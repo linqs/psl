@@ -21,9 +21,10 @@ import org.linqs.psl.model.term.Term;
 
 /**
  * Either a {@link SummationVariable} or {@link Term}.
- * <p>
- * Hack for a union type (which is not directly supported in Java). 
- * 
+ * All implementing classes must be immutable.
+ *
+ * Hack for a union type (which is not directly supported in Java).
+ *
  * @author Stephen Bach
  */
-public interface SummationVariableOrTerm { }
+public interface SummationVariableOrTerm {}

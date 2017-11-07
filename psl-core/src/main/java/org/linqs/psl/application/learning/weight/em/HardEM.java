@@ -84,67 +84,72 @@ public class HardEM extends ExpectationMaximization  {
 
 	@Override
 	protected double[] computeExpectedIncomp() {
-		fullExpectedIncompatibility = new double[kernels.size() + immutableKernels.size()];
+		fullExpectedIncompatibility = new double[rules.size() + immutableRules.size()];
 
-		/* Computes the MPE state */
-		reasoner.optimize();
+		if (changedRuleWeights) {
+			termGenerator.updateWeights(groundRuleStore, termStore);
+			changedRuleWeights = false;
+		}
+
+		// Computes the MPE state.
+		reasoner.optimize(termStore);
 
 		/* Computes incompatibility */
-		for (int i = 0; i < kernels.size(); i++) {
-			for (GroundRule gk : reasoner.getGroundKernels(kernels.get(i))) {
-				fullExpectedIncompatibility[i] += ((WeightedGroundRule) gk).getIncompatibility();
+		for (int i = 0; i < rules.size(); i++) {
+			for (GroundRule groundRule : groundRuleStore.getGroundRules(rules.get(i))) {
+				fullExpectedIncompatibility[i] += ((WeightedGroundRule) groundRule).getIncompatibility();
 			}
 		}
-		for (int i = 0; i < immutableKernels.size(); i++) {
-			for (GroundRule gk : reasoner.getGroundKernels(immutableKernels.get(i))) {
-				fullExpectedIncompatibility[kernels.size() + i] += ((WeightedGroundRule) gk).getIncompatibility();
+		for (int i = 0; i < immutableRules.size(); i++) {
+			for (GroundRule groundRule : groundRuleStore.getGroundRules(immutableRules.get(i))) {
+				fullExpectedIncompatibility[rules.size() + i] += ((WeightedGroundRule) groundRule).getIncompatibility();
 			}
 		}
 
-		return Arrays.copyOf(fullExpectedIncompatibility, kernels.size());
+		return Arrays.copyOf(fullExpectedIncompatibility, rules.size());
 	}
 
 	@Override
 	protected double[] computeObservedIncomp() {
-		numGroundings = new double[kernels.size()];
-		fullObservedIncompatibility = new double[kernels.size() + immutableKernels.size()];
+		numGroundings = new double[rules.size()];
+		fullObservedIncompatibility = new double[rules.size() + immutableRules.size()];
 		setLabeledRandomVariables();
 
 		/* Computes the observed incompatibilities and numbers of groundings */
-		for (int i = 0; i < kernels.size(); i++) {
-			for (GroundRule gk : reasoner.getGroundKernels(kernels.get(i))) {
-				fullObservedIncompatibility[i] += ((WeightedGroundRule) gk).getIncompatibility();
+		for (int i = 0; i < rules.size(); i++) {
+			for (GroundRule groundRule : groundRuleStore.getGroundRules(rules.get(i))) {
+				fullObservedIncompatibility[i] += ((WeightedGroundRule) groundRule).getIncompatibility();
 				numGroundings[i]++;
 			}
 		}
-		for (int i = 0; i < immutableKernels.size(); i++) {
-			for (GroundRule gk : reasoner.getGroundKernels(immutableKernels.get(i))) {
-				fullObservedIncompatibility[kernels.size() + i] += ((WeightedGroundRule) gk).getIncompatibility();
+		for (int i = 0; i < immutableRules.size(); i++) {
+			for (GroundRule groundRule : groundRuleStore.getGroundRules(immutableRules.get(i))) {
+				fullObservedIncompatibility[rules.size() + i] += ((WeightedGroundRule) groundRule).getIncompatibility();
 			}
 		}
 
-		return Arrays.copyOf(fullObservedIncompatibility, kernels.size());
+		return Arrays.copyOf(fullObservedIncompatibility, rules.size());
 	}
 
 	@Override
 	protected double computeLoss() {
 		double loss = 0.0;
-		for (int i = 0; i < kernels.size(); i++)
-			loss += kernels.get(i).getWeight().getWeight() * (fullObservedIncompatibility[i] - fullExpectedIncompatibility[i]);
-		for (int i = 0; i < immutableKernels.size(); i++)
-			loss += immutableKernels.get(i).getWeight().getWeight() * (fullObservedIncompatibility[kernels.size() + i] - fullExpectedIncompatibility[kernels.size() + i]);
+		for (int i = 0; i < rules.size(); i++)
+			loss += rules.get(i).getWeight().getWeight() * (fullObservedIncompatibility[i] - fullExpectedIncompatibility[i]);
+		for (int i = 0; i < immutableRules.size(); i++)
+			loss += immutableRules.get(i).getWeight().getWeight() * (fullObservedIncompatibility[rules.size() + i] - fullExpectedIncompatibility[rules.size() + i]);
 		return loss;
 	}
 
 	@Override
 	protected void doLearn() {
-		gradientSum = new double[kernels.size()];
+		gradientSum = new double[rules.size()];
 
 		if (augmentLoss)
-			addLossAugmentedKernels();
+			addLossAugmentedRules();
 		super.doLearn();
 		if (augmentLoss)
-			removeLossAugmentedKernels();
+			removeLossAugmentedRules();
 	}
 	
 	@Override
@@ -152,11 +157,11 @@ public class HardEM extends ExpectationMaximization  {
 		if (!useAdaGrad)
 			return super.computeScalingFactor();
 
-		double [] scalingFactor = new double[kernels.size()];
+		double [] scalingFactor = new double[rules.size()];
 	
 		// otherwise accumulate gradient
 		for (int i = 0; i < numGroundings.length; i++) {
-			double weight = kernels.get(i).getWeight().getWeight();
+			double weight = rules.get(i).getWeight().getWeight();
 			double gradient =  (expectedIncompatibility[i] - truthIncompatibility[i]
 					- l2Regularization * weight
 					- l1Regularization);

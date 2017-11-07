@@ -17,49 +17,53 @@
  */
 package org.linqs.psl.application.inference;
 
+import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 import org.linqs.psl.application.ModelApplication;
 import org.linqs.psl.application.inference.result.FullInferenceResult;
 import org.linqs.psl.application.inference.result.memory.MemoryFullInferenceResult;
-import org.linqs.psl.application.util.GroundKernels;
+import org.linqs.psl.application.util.GroundRules;
 import org.linqs.psl.application.util.Grounding;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.ConfigManager;
 import org.linqs.psl.config.Factory;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.database.DatabasePopulator;
+import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
-import org.linqs.psl.model.atom.PersistedAtomManager;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.ReasonerFactory;
 import org.linqs.psl.reasoner.admm.ADMMReasonerFactory;
+import org.linqs.psl.reasoner.term.TermGenerator;
+import org.linqs.psl.reasoner.term.TermStore;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Set;
 
 /**
  * Infers the most-probable explanation (MPE) state of the
  * {@link RandomVariableAtom RandomVariableAtoms} persisted in a {@link Database},
  * according to a {@link Model}, given the Database's {@link ObservedAtom ObservedAtoms}.
- * <p>
+ *
  * The set of RandomVariableAtoms is those persisted in the Database when {@link #mpeInference()}
  * is called. This set must contain all RandomVariableAtoms the Model might access.
- * ({@link DatabasePopulator} can help with this.)
- * 
+ *
  * @author Stephen Bach <bach@cs.umd.edu>
  */
 public class MPEInference implements ModelApplication {
-	
+
 	private static final Logger log = LoggerFactory.getLogger(MPEInference.class);
-	
+
 	/**
 	 * Prefix of property keys used by this class.
-	 * 
+	 *
 	 * @see ConfigManager
 	 */
 	public static final String CONFIG_PREFIX = "mpeinference";
-	
+
 	/**
 	 * Key for {@link Factory} or String property.
 	 * <p>
@@ -70,34 +74,72 @@ public class MPEInference implements ModelApplication {
 	/**
 	 * Default value for REASONER_KEY.
 	 * <p>
-	 * Value is instance of {@link ADMMReasonerFactory}. 
+	 * Value is instance of {@link ADMMReasonerFactory}.
 	 */
 	public static final ReasonerFactory REASONER_DEFAULT = new ADMMReasonerFactory();
-	
+
+	/**
+	 * The class to use for ground rule storage.
+	 */
+	public static final String GROUND_RULE_STORE_KEY = CONFIG_PREFIX + ".groundrulestore";
+	public static final String GROUND_RULE_STORE_DEFAULT = "org.linqs.psl.application.groundrulestore.MemoryGroundRuleStore";
+
+	/**
+	 * The class to use for term storage.
+	 * Should be compatible with REASONER_KEY.
+	 */
+	public static final String TERM_STORE_KEY = CONFIG_PREFIX + ".termstore";
+	public static final String TERM_STORE_DEFAULT = "org.linqs.psl.reasoner.admm.term.ADMMTermStore";
+
+	/**
+	 * The class to use for term generator.
+	 * Should be compatible with REASONER_KEY and TERM_STORE_KEY.
+	 */
+	public static final String TERM_GENERATOR_KEY = CONFIG_PREFIX + ".termgenerator";
+	public static final String TERM_GENERATOR_DEFAULT = "org.linqs.psl.reasoner.admm.term.ADMMTermGenerator";
+
 	protected Model model;
 	protected Database db;
 	protected ConfigBundle config;
 	protected Reasoner reasoner;
 	protected PersistedAtomManager atomManager;
-	
-	public MPEInference(Model model, Database db, ConfigBundle config) 
-			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
+
+	protected GroundRuleStore groundRuleStore;
+	protected TermStore termStore;
+
+	public MPEInference(Model model, Database db, ConfigBundle config) {
 		this.model = model;
 		this.db = db;
 		this.config = config;
-		
+
 		initialize();
 	}
-	
-	
-	protected void initialize() throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-		reasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
+
+	protected void initialize() {
+		TermGenerator termGenerator = null;
+
+		try {
+			reasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
+			termStore = (TermStore)config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
+			groundRuleStore = (GroundRuleStore)config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
+			termGenerator = (TermGenerator)config.getNewObject(TERM_GENERATOR_KEY, TERM_GENERATOR_DEFAULT);
+		} catch (Exception ex) {
+			// The caller couldn't handle these exception anyways, convert them to runtime ones.
+			throw new RuntimeException("Failed to prepare storage for inference.", ex);
+		}
+
+		log.debug("Creating persisted atom mannager.");
 		atomManager = new PersistedAtomManager(db);
-		
+
 		log.info("Grounding out model.");
-		Grounding.groundAll(model, atomManager, reasoner);
+		Grounding.groundAll(model, atomManager, groundRuleStore);
+
+		log.debug("Initializing objective terms for {} ground rules.", groundRuleStore.size());
+		termGenerator.generateTerms(groundRuleStore, termStore);
+
+		log.debug("Generated {} objective terms from {} ground rules.", termStore.size(), groundRuleStore.size());
 	}
-	
+
 	/**
 	 * Minimizes the total weighted incompatibility of the {@link GroundAtom GroundAtoms}
 	 * in the Database according to the Model and commits the updated truth
@@ -106,38 +148,38 @@ public class MPEInference implements ModelApplication {
 	 * The {@link RandomVariableAtom RandomVariableAtoms} to be inferred are those
 	 * persisted in the Database when this method is called. All RandomVariableAtoms
 	 * which the Model might access must be persisted in the Database.
-	 * 
+	 *
 	 * @return inference results
-	 * @see DatabasePopulator
 	 */
 	public FullInferenceResult mpeInference() {
-
-		reasoner.changedGroundKernelWeights();
-		
 		log.info("Beginning inference.");
-		reasoner.optimize();
+		reasoner.optimize(termStore);
 		log.info("Inference complete. Writing results to Database.");
-		
-		/* Commits the RandomVariableAtoms back to the Database */
-		int count = 0;
-		for (RandomVariableAtom atom : atomManager.getPersistedRVAtoms()) {
-			atom.commitToDB();
-			count++;
-		}
-		
-		double incompatibility = GroundKernels.getTotalWeightedIncompatibility(reasoner.getCompatibilityKernels());
-		double infeasibility = GroundKernels.getInfeasibilityNorm(reasoner.getConstraintKernels());
-		int size = reasoner.size();
-		return new MemoryFullInferenceResult(incompatibility, infeasibility, count, size);
+
+		// Commits the RandomVariableAtoms back to the Database,
+		Set<RandomVariableAtom> atoms = atomManager.getPersistedRVAtoms();
+		db.commit(atoms);
+
+		double incompatibility = GroundRules.getTotalWeightedIncompatibility(groundRuleStore.getCompatibilityRules());
+		double infeasibility = GroundRules.getInfeasibilityNorm(groundRuleStore.getConstraintRules());
+
+		return new MemoryFullInferenceResult(incompatibility, infeasibility, atoms.size(), groundRuleStore.size());
 	}
-	
+
 	public Reasoner getReasoner() {
 		return reasoner;
 	}
 
 	@Override
 	public void close() {
+		termStore.close();
+		groundRuleStore.close();
 		reasoner.close();
+
+		termStore = null;
+		groundRuleStore = null;
+		reasoner = null;
+
 		model=null;
 		db = null;
 		config = null;

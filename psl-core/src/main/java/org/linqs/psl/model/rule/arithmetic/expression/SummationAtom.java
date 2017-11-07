@@ -27,15 +27,14 @@ import org.linqs.psl.model.term.Term;
 /**
  * A variant of an {@link Atom} that can additionally take {@link SummationVariable SummationVariables}
  * as arguments.
- * <p>
+ *
  * SummationAtoms can be used in an {@link ArithmeticRuleExpression}.
- * <p>
+ *
  * Note that SummationAtom is not a subclass of Atom.
- * 
+ *
  * @author Stephen Bach
  */
 public class SummationAtom implements SummationAtomOrAtom {
-	
 	protected final Predicate p;
 	protected final SummationVariableOrTerm[] args;
 
@@ -64,7 +63,7 @@ public class SummationAtom implements SummationAtomOrAtom {
 			}
 		}
 	}
-	
+
 	public QueryAtom getQueryAtom() {
 		Term[] queryAtomArgs = new Term[args.length];
 		for (int i = 0; i < args.length; i++) {
@@ -77,34 +76,34 @@ public class SummationAtom implements SummationAtomOrAtom {
 		}
 		return new QueryAtom(p, queryAtomArgs);
 	}
-	
+
 	/**
 	 * Returns the predicate associated with this SummationAtom.
-	 * 
+	 *
 	 * @return A predicate
 	 */
 	public Predicate getPredicate() {
 		return p;
 	}
-	
+
 	/**
 	 * Returns the number of arguments to the associated Predicate.
-	 * 
+	 *
 	 * @return The number of arguments
 	 */
 	public int getArity() {
 		return p.getArity();
 	}
-	
+
 	/**
 	 * Returns the arguments associated with this SummationAtom.
-	 * 
+	 *
 	 * @return The arguments associated with this SummationAtom
 	 */
 	public SummationVariableOrTerm[] getArguments() {
-		return Arrays.copyOf(args, args.length);
+		return args;
 	}
-	
+
 	@Override
 	public String toString() {
 		StringBuilder s = new StringBuilder();
@@ -119,32 +118,31 @@ public class SummationAtom implements SummationAtomOrAtom {
 		s.append(")");
 		return s.toString();
 	}
-	
+
 	@Override
 	public int hashCode() {
 		return getQueryAtom().hashCode();
 	}
-	
+
 	@Override
 	public boolean equals(Object oth) {
 		if (oth==this) return true;
 		if (oth==null || !(oth instanceof SummationAtom)) return false;
-		
+
 		if (!p.equals(((SummationAtom) oth).p)) {
 			return false;
 		}
-		
+
 		if (args.length != ((SummationAtom) oth).args.length) {
 			return false;
 		}
-		
+
 		for (int i = 0; i < args.length; i++) {
 			if (!args[i].equals(((SummationAtom) oth).args[i])) {
 				return false;
 			}
 		}
-		
-		return true;
-	}	
 
+		return true;
+	}
 }

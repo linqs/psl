@@ -42,6 +42,7 @@ import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.function.ExternalFunction;
 import org.linqs.psl.model.predicate.FunctionalPredicate;
+import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.PredicateFactory;
 import org.linqs.psl.model.predicate.SpecialPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
@@ -49,57 +50,55 @@ import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.DoubleAttribute;
 import org.linqs.psl.model.term.StringAttribute;
-import org.linqs.psl.model.term.UniqueID;
+import org.linqs.psl.model.term.UniqueIntID;
 import org.linqs.psl.model.term.Variable;
 
 /**
  * Contract tests for classes that implement {@link DataStore}.
  */
-abstract public class DataStoreContractTest {
-	
+public abstract class DataStoreContractTest {
 	private static StandardPredicate p1;
 	private static StandardPredicate p2;
 	private static StandardPredicate p3;
 	private static StandardPredicate p4;
 	private static FunctionalPredicate fp1;
-	
+
 	private DataStore datastore;
-	
+
 	private List<Database> dbs;
-	
+
 	/**
-	 * @return the DataStore to be tested, should always be backed by the same
-	 *             persistence mechanism
+	 * @return the DataStore to be tested, should always be backed by the same persistence mechanism
 	 */
-	abstract public DataStore getDataStore(boolean clearDB);
-	
+	public abstract DataStore getDataStore(boolean clearDB);
+
 	/**
 	 * Deletes any files and releases any resources used by the tested DataStore
 	 * and its persistence mechanism
 	 */
-	abstract public void cleanUp();
-	
+	public abstract void cleanUp();
+
 	static {
 		PredicateFactory predicateFactory = PredicateFactory.getFactory();
-		p1 = predicateFactory.createStandardPredicate("DataStoreContractTest_P1", ConstantType.UniqueID, ConstantType.UniqueID);
-		p2 = predicateFactory.createStandardPredicate("DataStoreContractTest_P2", ConstantType.String, ConstantType.String);
-		p3 = predicateFactory.createStandardPredicate("DataStoreContractTest_P3", ConstantType.Double, ConstantType.Double);
-		p4 = predicateFactory.createStandardPredicate("DataStoreContractTest_P4", ConstantType.UniqueID, ConstantType.Double);
-		fp1 = predicateFactory.createFunctionalPredicate("DataStoreContractTest_FP1", new ExternalFunction() {
-			
+		p1 = predicateFactory.createStandardPredicate("P1", ConstantType.UniqueIntID, ConstantType.UniqueIntID);
+		p2 = predicateFactory.createStandardPredicate("P2", ConstantType.String, ConstantType.String);
+		p3 = predicateFactory.createStandardPredicate("P3", ConstantType.Double, ConstantType.Double);
+		p4 = predicateFactory.createStandardPredicate("P4", ConstantType.UniqueIntID, ConstantType.Double);
+
+		fp1 = predicateFactory.createExternalFunctionalPredicate("FP1", new ExternalFunction() {
 			@Override
 			public double getValue(ReadOnlyDatabase db, Constant... args) {
 				double a = ((DoubleAttribute) args[0]).getValue();
 				double b = ((DoubleAttribute) args[1]).getValue();
-				
+
 				return Math.max(0.0, Math.min(1.0, (a + b) / 2));
 			}
-			
+
 			@Override
 			public int getArity() {
 				return 2;
 			}
-			
+
 			@Override
 			public ConstantType[] getArgumentTypes() {
 				return new ConstantType[] {ConstantType.Double, ConstantType.Double};
@@ -115,154 +114,155 @@ abstract public class DataStoreContractTest {
 
 	@After
 	public void tearDown() throws Exception {
-		for (Database db : dbs)
+		for (Database db : dbs) {
 			db.close();
-		datastore.close();
+		}
+
+		if (datastore != null) {
+			datastore.close();
+		}
+
 		cleanUp();
 	}
 
 	@Test
 	public void testInsertAndGetAtom() {
+		if (datastore == null) {
+			return;
+		}
+
 		datastore.registerPredicate(p1);
 		Inserter inserter = datastore.getInserter(p1, datastore.getPartition("0"));
-		
-		UniqueID a = datastore.getUniqueID(0);
-		UniqueID b = datastore.getUniqueID(1);
-		UniqueID c = datastore.getUniqueID(2);
-		UniqueID d = datastore.getUniqueID(3);
-		
+
+		UniqueIntID a = new UniqueIntID(0);
+		UniqueIntID b = new UniqueIntID(1);
+		UniqueIntID c = new UniqueIntID(2);
+		UniqueIntID d = new UniqueIntID(3);
+
 		inserter.insert(a, b);
 		inserter.insertValue(0.5, b, c);
-		inserter.insertValueConfidence(0.25, 10, c, d);
-		
+		inserter.insertValue(0.25, c, d);
+
 		Database db;
 		GroundAtom atom;
-		
-		/* Tests open predicate with atoms in write partition */
+
+		// Tests open predicate with atoms in write partition.
 		db = datastore.getDatabase(datastore.getPartition("0"));
 		atom = db.getAtom(p1, a, b);
 		assertEquals(1.0, atom.getValue(), 0.0);
-		assertTrue(Double.isNaN(atom.getConfidenceValue()));
 		assertTrue(atom instanceof RandomVariableAtom);
-		
+
 		atom = db.getAtom(p1, b, c);
 		assertEquals(0.5, atom.getValue(), 0.0);
-		assertTrue(Double.isNaN(atom.getConfidenceValue()));
 		assertTrue(atom instanceof RandomVariableAtom);
-		
+
 		atom = db.getAtom(p1, c, d);
 		assertEquals(0.25, atom.getValue(), 0.0);
-		assertEquals(10, atom.getConfidenceValue(), 0.0);
 		assertTrue(atom instanceof RandomVariableAtom);
-		
+
 		atom = db.getAtom(p1, d, a);
 		assertEquals(0.0, atom.getValue(), 0.0);
-		assertTrue(Double.isNaN(atom.getConfidenceValue()));
 		assertTrue(atom instanceof RandomVariableAtom);
-		
+
 		db.close();
-		
-		/* Tests open predicate with atoms in read partition */
+
+		// Tests open predicate with atoms in read partition.
 		db = datastore.getDatabase(datastore.getPartition("1"), datastore.getPartition("0"));
 		atom = db.getAtom(p1, a, b);
 		assertEquals(1.0, atom.getValue(), 0.0);
-		assertTrue(Double.isNaN(atom.getConfidenceValue()));
 		assertTrue(atom instanceof ObservedAtom);
-		
+
 		atom = db.getAtom(p1, b, c);
 		assertEquals(0.5, atom.getValue(), 0.0);
-		assertTrue(Double.isNaN(atom.getConfidenceValue()));
 		assertTrue(atom instanceof ObservedAtom);
-		
+
 		atom = db.getAtom(p1, c, d);
 		assertEquals(0.25, atom.getValue(), 0.0);
-		assertEquals(10, atom.getConfidenceValue(), 0.0);
 		assertTrue(atom instanceof ObservedAtom);
-		
+
 		db.close();
-		
-		/* Tests closed predicate with atoms in write partition */
+
+		// Tests closed predicate with atoms in write partition.
 		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
 		toClose.add(p1);
 		db = datastore.getDatabase(datastore.getPartition("0"), toClose);
 		atom = db.getAtom(p1, a, b);
 		assertEquals(1.0, atom.getValue(), 0.0);
-		assertTrue(Double.isNaN(atom.getConfidenceValue()));
 		assertTrue(atom instanceof ObservedAtom);
-		
+
 		atom = db.getAtom(p1, b, c);
 		assertEquals(0.5, atom.getValue(), 0.0);
-		assertTrue(Double.isNaN(atom.getConfidenceValue()));
 		assertTrue(atom instanceof ObservedAtom);
-		
+
 		atom = db.getAtom(p1, c, d);
 		assertEquals(0.25, atom.getValue(), 0.0);
-		assertEquals(10, atom.getConfidenceValue(), 0.0);
 		assertTrue(atom instanceof ObservedAtom);
-		
+
 		atom = db.getAtom(p1, d, a);
 		assertEquals(0.0, atom.getValue(), 0.0);
-		assertTrue(Double.isNaN(atom.getConfidenceValue()));
 		assertTrue(atom instanceof ObservedAtom);
-		
+
 		db.close();
-		
-		/* Tests closed predicate with atoms in read partition */
+
+		// Tests closed predicate with atoms in read partition.
 		db = datastore.getDatabase(datastore.getPartition("1"), toClose, datastore.getPartition("0"));
 		atom = db.getAtom(p1, a, b);
 		assertEquals(1.0, atom.getValue(), 0.0);
-		assertTrue(Double.isNaN(atom.getConfidenceValue()));
 		assertTrue(atom instanceof ObservedAtom);
-		
+
 		atom = db.getAtom(p1, b, c);
 		assertEquals(0.5, atom.getValue(), 0.0);
-		assertTrue(Double.isNaN(atom.getConfidenceValue()));
 		assertTrue(atom instanceof ObservedAtom);
-		
+
 		atom = db.getAtom(p1, c, d);
 		assertEquals(0.25, atom.getValue(), 0.0);
-		assertEquals(10, atom.getConfidenceValue(), 0.0);
 		assertTrue(atom instanceof ObservedAtom);
-		
+
 		db.close();
 	}
-	
+
 	@Test
 	public void testCommit() {
+		if (datastore == null) {
+			return;
+		}
+
 		datastore.registerPredicate(p1);
-		
-		UniqueID a = datastore.getUniqueID(0);
-		UniqueID b = datastore.getUniqueID(1);
-		
+
+		UniqueIntID a = new UniqueIntID(0);
+		UniqueIntID b = new UniqueIntID(1);
+
 		Database db = datastore.getDatabase(datastore.getPartition("0"));
-		
+
 		RandomVariableAtom atom = (RandomVariableAtom) db.getAtom(p1, a, b);
 		atom.setValue(.5);
-		atom.setConfidenceValue(2.0);
 		db.commit(atom);
 		db.close();
-		
+
 		db = datastore.getDatabase(datastore.getPartition("0"));
 		atom = (RandomVariableAtom) db.getAtom(p1, a, b);
 		assertEquals(.5, atom.getValue(), 0.0);
-		assertEquals(2.0, atom.getConfidenceValue(), 0.0);
 		atom.setValue(1.0);
 		db.commit(atom);
 		db.close();
-		
+
 		db = datastore.getDatabase(datastore.getPartition("0"));
 		atom = (RandomVariableAtom) db.getAtom(p1, a, b);
 		assertEquals(1.0, atom.getValue(), 0.0);
 		db.close();
 	}
-	
+
 	@Test
 	public void testDoubleCommit() {
+		if (datastore == null) {
+			return;
+		}
+
 		datastore.registerPredicate(p1);
-		
-		UniqueID a = datastore.getUniqueID(0);
-		UniqueID b = datastore.getUniqueID(1);
-		
+
+		UniqueIntID a = new UniqueIntID(0);
+		UniqueIntID b = new UniqueIntID(1);
+
 		Database db = datastore.getDatabase(datastore.getPartition("0"));
 		RandomVariableAtom atom = (RandomVariableAtom) db.getAtom(p1, a, b);
 		atom.setValue(0.25);
@@ -270,7 +270,7 @@ abstract public class DataStoreContractTest {
 		atom.setValue(0.5);
 		atom.commitToDB();
 		db.close();
-		
+
 		db = datastore.getDatabase(datastore.getPartition("0"));
 		atom = (RandomVariableAtom) db.getAtom(p1, a, b);
 		assertEquals(0.5, atom.getValue(), 0.0);
@@ -279,23 +279,27 @@ abstract public class DataStoreContractTest {
 		atom.setValue(1.0);
 		atom.commitToDB();
 		db.close();
-		
+
 		db = datastore.getDatabase(datastore.getPartition("0"));
 		atom = (RandomVariableAtom) db.getAtom(p1, a, b);
 		assertEquals(1.0, atom.getValue(), 0.0);
 		db.close();
-		
+
 	}
-	
+
 	@Test
 	public void testInsertTwoAtoms() {
+		if (datastore == null) {
+			return;
+		}
+
 		datastore.registerPredicate(p1);
-		
-		UniqueID a = datastore.getUniqueID(0);
-		UniqueID b = datastore.getUniqueID(1);
-		UniqueID c = datastore.getUniqueID(2);
-		UniqueID d = datastore.getUniqueID(3);
-		
+
+		UniqueIntID a = new UniqueIntID(0);
+		UniqueIntID b = new UniqueIntID(1);
+		UniqueIntID c = new UniqueIntID(2);
+		UniqueIntID d = new UniqueIntID(3);
+
 		Database db = datastore.getDatabase(datastore.getPartition("0"));
 		RandomVariableAtom atom1 = (RandomVariableAtom) db.getAtom(p1, a, b);
 		RandomVariableAtom atom2 = (RandomVariableAtom) db.getAtom(p1, c, d);
@@ -306,48 +310,68 @@ abstract public class DataStoreContractTest {
 		DatabaseQuery query = new DatabaseQuery(new QueryAtom(p1,  new Variable("X"), new Variable("Y")));
 		ResultList results = db.executeQuery(query);
 		assertEquals(2, results.size());
-		
+
 		db.close();
 	}
-	
+
 	@Test
 	public void testStringEscaping() {
+		if (datastore == null) {
+			return;
+		}
+
 		datastore.registerPredicate(p2);
 		Database db = datastore.getDatabase(datastore.getPartition("0"));
 		DatabaseQuery query = new DatabaseQuery(new QueryAtom(p2, new StringAttribute("a"), new StringAttribute("jk'a")));
 		db.executeQuery(query);
 	}
-	
+
 	@Test
 	public void testPredicateRegistration() {
+		if (datastore == null) {
+			return;
+		}
+
 		datastore.registerPredicate(p1);
-		
+
 		Set<StandardPredicate> registeredPredicates = datastore.getRegisteredPredicates();
 		assertTrue(registeredPredicates.contains(p1));
 	}
-	
+
 	@Test
 	public void testPredicateSerialization() {
+		if (datastore == null) {
+			return;
+		}
+
 		datastore.registerPredicate(p1);
 		datastore.registerPredicate(p2);
-		
+
 		datastore.close();
 		datastore = getDataStore(false);
-		
+
 		Set<StandardPredicate> registeredPredicates = datastore.getRegisteredPredicates();
 		assertTrue(registeredPredicates.contains(p1));
 		assertTrue(registeredPredicates.contains(p2));
 	}
-	
+
 	@Test
 	public void testExternalFunctionalPredicate() {
+		if (datastore == null) {
+			return;
+		}
+
+		if (!datastore.supportsExternalFunctions()) {
+			return;
+		}
+
 		datastore.registerPredicate(p3);
 		Inserter inserter = datastore.getInserter(p3, datastore.getPartition("0"));
 		inserter.insert(0.5, 1.0);
 		inserter.insert(0.0, 0.0);
-		
+
 		Database db = datastore.getDatabase(datastore.getPartition("0"));
-		
+
 		Variable X = new Variable("X");
 		Variable Y = new Variable("Y");
 		Formula f = new Conjunction(new QueryAtom(p3, X, Y), new QueryAtom(fp1, X, Y));
@@ -355,128 +379,116 @@ abstract public class DataStoreContractTest {
 		assertEquals(1, results.size());
 		assertEquals(0.5, ((DoubleAttribute) results.get(0, X)).getValue(), 0.0);
 		assertEquals(1.0, ((DoubleAttribute) results.get(0, Y)).getValue(), 0.0);
-		
+
 		GroundAtom atom = db.getAtom(fp1, new DoubleAttribute(0.5), new DoubleAttribute(1.0));
 		assertEquals(0.75, atom.getValue(), 0.0);
-		assertTrue(Double.isNaN(atom.getConfidenceValue()));
-		
+
 		atom = db.getAtom(fp1, new DoubleAttribute(0.0), new DoubleAttribute(0.0));
 		assertEquals(0.0, atom.getValue(), 0.0);
-		assertTrue(Double.isNaN(atom.getConfidenceValue()));
 	}
-	
+
 	@Test
 	public void testExecuteQuery() {
+		if (datastore == null) {
+			return;
+		}
+
 		Inserter inserter;
 		Database db;
 		DatabaseQuery query;
 		Formula formula;
 		ResultList results;
 		Constant[] grounding;
-		
-		UniqueID a = datastore.getUniqueID(0);
-		UniqueID b = datastore.getUniqueID(1);
-		UniqueID c = datastore.getUniqueID(2);
-		UniqueID d = datastore.getUniqueID(3);
-		UniqueID e = datastore.getUniqueID(4);
-		UniqueID f = datastore.getUniqueID(5);
-		
+
+		UniqueIntID a = new UniqueIntID(0);
+		UniqueIntID b = new UniqueIntID(1);
+		UniqueIntID c = new UniqueIntID(2);
+		UniqueIntID d = new UniqueIntID(3);
+		UniqueIntID e = new UniqueIntID(4);
+		UniqueIntID f = new UniqueIntID(5);
+
 		Variable X = new Variable("X");
 		Variable Y = new Variable("Y");
 		Variable Z = new Variable("Z");
-		
+
 		datastore.registerPredicate(p1);
 		datastore.registerPredicate(p4);
-		
-		/*
-		 * Tests a simple query
-		 */
+
+		// Tests a simple query
 		inserter = datastore.getInserter(p1, datastore.getPartition("0"));
 		inserter.insert(a, b);
-		
+
 		db = datastore.getDatabase(datastore.getPartition("0"));
-		
+
 		formula = new QueryAtom(p1, X, Y);
 		results = db.executeQuery(new DatabaseQuery(formula));
 		assertEquals(1, results.size());
 		assertEquals(a, results.get(0, X));
 		assertEquals(b, results.get(0, Y));
-		
+
 		grounding = results.get(0);
 		assertEquals(a, grounding[0]);
 		assertEquals(b, grounding[1]);
-		
+
 		db.close();
-		
-		/*
-		 * Tests a simple query with mixed argument types
-		 */
+
+		// Tests a simple query with mixed argument types
 		inserter.insert(b, a);
 		inserter = datastore.getInserter(p4, datastore.getPartition("0"));
 		inserter.insert(a, -0.1);
-		
+
 		db = datastore.getDatabase(datastore.getPartition("0"));
-		
+
 		formula = new QueryAtom(p4, X, Y);
 		results = db.executeQuery(new DatabaseQuery(formula));
 		assertEquals(1, results.size());
 		assertEquals(a, results.get(0, X));
 		assertEquals(new DoubleAttribute(-0.1), results.get(0, Y));
-		
+
 		grounding = results.get(0);
 		assertEquals(a, grounding[0]);
 		assertEquals(new DoubleAttribute(-0.1), grounding[1]);
-		
+
 		db.close();
-		
-		/*
-		 * Tests a simple query with multiple results
-		 */
+
+		// Tests a simple query with multiple results
 		inserter.insert(b, 4.0);
 		inserter.insert(c, 4.0);
 		inserter.insert(d, 4.0);
 		inserter.insert(e, 4.0);
 		inserter.insert(f, 4.0);
-		
+
 		db = datastore.getDatabase(datastore.getPartition("0"));
-		
+
 		results = db.executeQuery(new DatabaseQuery(formula));
 		assertEquals(6, results.size());
 		for (int i = 0; i < 6; i++) {
-			assertTrue(results.get(i)[0] instanceof UniqueID);
+			assertTrue(results.get(i)[0] instanceof UniqueIntID);
 		}
-		
-		/*
-		 * Tests a query with multiple Atoms
-		 */
+
+		// Tests a query with multiple Atoms
 		formula = new Conjunction(new QueryAtom(p1, Y, X),
 				new QueryAtom(p4, X, Z));
 		results = db.executeQuery(new DatabaseQuery(formula));
 		assertEquals(2, results.size());
-		
-		/*
-		 * Tests a query with a constant specified in the formula 
-		 */
+
+		// Tests a query with a constant specified in the formula
 		formula = new Conjunction(new QueryAtom(p4, X, new DoubleAttribute(4.0)),
 						new QueryAtom(p1, Y, X));
 		results = db.executeQuery(new DatabaseQuery(formula));
 		assertEquals(1, results.size());
 		assertEquals(b, results.get(0)[0]);
 		assertEquals(a, results.get(0)[1]);
-		
-		/*
-		 * Tests the same query with a different Variable ordering
-		 */
+
+		// Tests the same query with a different Variable ordering
 		formula = new Conjunction(new QueryAtom(p1, Y, X),
 				new QueryAtom(p4, X, new DoubleAttribute(4.0)));
 		results = db.executeQuery(new DatabaseQuery(formula));
 		assertEquals(1, results.size());
 		assertEquals(a, results.get(0)[0]);
 		assertEquals(b, results.get(0)[1]);
-		
-		/*
-		 * Tests the same query using the partial grounding to specify constants
-		 */
+
+		// Tests the same query using the partial grounding to specify constants
 		formula = new Conjunction(new QueryAtom(p1, Y, X),
 				new QueryAtom(p4, X, Z));
 		query = new DatabaseQuery(formula);
@@ -485,15 +497,13 @@ abstract public class DataStoreContractTest {
 		assertEquals(1, results.size());
 		assertEquals(a, results.get(0)[0]);
 		assertEquals(b, results.get(0)[1]);
-		
-		/*
-		 * Tests a multi-atom query with a projection set
-		 */
+
+		// Tests a multi-atom query with a projection set
 		formula = new Conjunction(new QueryAtom(p1, Y, X),
 				new QueryAtom(p4, X, Z));
 		query = new DatabaseQuery(formula);
-		query.getProjectionSubset().add(Y);
-		query.getProjectionSubset().add(Z);
+		query.addToProjection(Y);
+		query.addToProjection(Z);
 		results = db.executeQuery(query);
 		assertEquals(2, results.size());
 		grounding = results.get(0);
@@ -511,14 +521,11 @@ abstract public class DataStoreContractTest {
 		}
 		else
 			assertTrue(false);
-		
-		/*
-		 * Tests a query with a projection set that collapses multiple
-		 * groundings to one
-		 */
+
+		// Tests a query with a projection set that collapses multiple groundings to one.
 		formula = new QueryAtom(p4, X, Z);
 		query = new DatabaseQuery(formula);
-		query.getProjectionSubset().add(Z);
+		query.addToProjection(Z);
 		results = db.executeQuery(query);
 		assertEquals(2, results.size());
 		grounding = results.get(0);
@@ -533,63 +540,68 @@ abstract public class DataStoreContractTest {
 		else
 			assertTrue(false);
 	}
-	
-	@Test(expected=NullPointerException.class)
+
+	@Test(expected=IllegalArgumentException.class)
 	public void testExecuteQueryIllegalProjectionVariable() {
+		if (datastore == null) {
+			throw new NullPointerException();
+		}
+
 		Inserter inserter;
 		Database db;
 		DatabaseQuery query;
 		Formula formula;
-		
-		UniqueID a = datastore.getUniqueID(0);
-		UniqueID b = datastore.getUniqueID(1);
-		UniqueID c = datastore.getUniqueID(2);
-		UniqueID d = datastore.getUniqueID(3);
-		UniqueID e = datastore.getUniqueID(4);
-		UniqueID f = datastore.getUniqueID(5);
-		
+
+		UniqueIntID a = new UniqueIntID(0);
+		UniqueIntID b = new UniqueIntID(1);
+		UniqueIntID c = new UniqueIntID(2);
+		UniqueIntID d = new UniqueIntID(3);
+		UniqueIntID e = new UniqueIntID(4);
+		UniqueIntID f = new UniqueIntID(5);
+
 		Variable X = new Variable("X");
 		Variable Y = new Variable("Y");
 		Variable Z = new Variable("Z");
-		
+
 		datastore.registerPredicate(p1);
-		
+
 		inserter = datastore.getInserter(p1, datastore.getPartition("0"));
 		inserter.insert(a, b);
 		inserter.insert(c, d);
 		inserter.insert(e, f);
-		
+
 		db = datastore.getDatabase(datastore.getPartition("0"));
-		
+
 		formula = new QueryAtom(p1, X, Y);
 		query = new DatabaseQuery(formula);
-		query.getProjectionSubset().add(X);
-		query.getProjectionSubset().add(Z);
-		db.executeQuery(query);
+		query.addToProjection(X);
+		query.addToProjection(Z);
 	}
-	
+
 	@Test
 	public void testSpecialPredicates() {
+		if (datastore == null) {
+			return;
+		}
+
 		datastore.registerPredicate(p1);
-		
-		UniqueID a = datastore.getUniqueID(0);
-		UniqueID b = datastore.getUniqueID(1);
+
+		UniqueIntID a = new UniqueIntID(0);
+		UniqueIntID b = new UniqueIntID(1);
 
 		Inserter inserter = datastore.getInserter(p1, datastore.getPartition("0"));
 		inserter.insert(a, a);
 		inserter.insert(a, b);
-		
+
 		Variable X = new Variable("X");
 		Variable Y = new Variable("Y");
-		
+
 		Database db = datastore.getDatabase(datastore.getPartition("0"));
 		Formula f;
 		ResultList results;
 		GroundAtom atom;
-		
-		/*
-		 * Tests equality
-		 */
+
+		// Tests equality
 		f = new Conjunction(
 				new QueryAtom(p1, X, Y),
 				new QueryAtom(SpecialPredicate.Equal, X, Y));
@@ -597,18 +609,14 @@ abstract public class DataStoreContractTest {
 		assertEquals(1, results.size());
 		assertEquals(a, results.get(0, X));
 		assertEquals(a, results.get(0, Y));
-		
+
 		atom = db.getAtom(SpecialPredicate.Equal, a, a);
 		assertEquals(1.0, atom.getValue(), 0.0);
-		assertTrue(Double.isNaN(atom.getConfidenceValue()));
-		
+
 		atom = db.getAtom(SpecialPredicate.Equal, a, b);
 		assertEquals(0.0, atom.getValue(), 0.0);
-		assertTrue(Double.isNaN(atom.getConfidenceValue()));
-		
-		/*
-		 * Tests inequality
-		 */
+
+		// Tests inequality
 		f = new Conjunction(
 				new QueryAtom(p1, X, Y),
 				new QueryAtom(SpecialPredicate.NotEqual, X, Y));
@@ -616,18 +624,14 @@ abstract public class DataStoreContractTest {
 		assertEquals(1, results.size());
 		assertEquals(a, results.get(0, X));
 		assertEquals(b, results.get(0, Y));
-		
+
 		atom = db.getAtom(SpecialPredicate.NotEqual, a, a);
 		assertEquals(0.0, atom.getValue(), 0.0);
-		assertTrue(Double.isNaN(atom.getConfidenceValue()));
-		
+
 		atom = db.getAtom(SpecialPredicate.NotEqual, a, b);
 		assertEquals(1.0, atom.getValue(), 0.0);
-		assertTrue(Double.isNaN(atom.getConfidenceValue()));
-		
-		/*
-		 * Tests non-symmetry
-		 */
+
+		// Tests non-symmetry
 		f = new Conjunction(
 				new QueryAtom(p1, X, Y),
 				new QueryAtom(SpecialPredicate.NonSymmetric, X, Y));
@@ -635,227 +639,296 @@ abstract public class DataStoreContractTest {
 		assertEquals(1, results.size());
 		assertEquals(a, results.get(0, X));
 		assertEquals(b, results.get(0, Y));
-		
+
 		atom = db.getAtom(SpecialPredicate.NonSymmetric, b, a);
 		assertEquals(0.0, atom.getValue(), 0.0);
-		assertTrue(Double.isNaN(atom.getConfidenceValue()));
-		
+
 		atom = db.getAtom(SpecialPredicate.NonSymmetric, a, b);
 		assertEquals(1.0, atom.getValue(), 0.0);
-		assertTrue(Double.isNaN(atom.getConfidenceValue()));
 	}
-	
+
 	@Test(expected=IllegalArgumentException.class)
 	public void testGetAtomUnregisteredPredicate() {
+		if (datastore == null) {
+			throw new IllegalArgumentException();
+		}
+
 		Database db = datastore.getDatabase(datastore.getPartition("0"));
 		dbs.add(db);
 		db.getAtom(p2, new StringAttribute("a"), new StringAttribute("b"));
 	}
-	
+
 	@Test(expected=IllegalArgumentException.class)
 	public void testLateRegisteredPredicate() {
+		if (datastore == null) {
+			throw new IllegalArgumentException();
+		}
+
 		Database db = datastore.getDatabase(datastore.getPartition("0"));
 		dbs.add(db);
 		datastore.registerPredicate(p1);
 		db.getAtom(p2, new StringAttribute("a"), new StringAttribute("b"));
 	}
-	
+
 	@Test(expected=IllegalStateException.class)
 	public void testAtomInReadAndWritePartitions() {
+		if (datastore == null) {
+			throw new IllegalStateException();
+		}
+
 		datastore.registerPredicate(p1);
-		
-		UniqueID a = datastore.getUniqueID(0);
-		UniqueID b = datastore.getUniqueID(1);
-		
+
+		UniqueIntID a = new UniqueIntID(0);
+		UniqueIntID b = new UniqueIntID(1);
+
 		Inserter inserter = datastore.getInserter(p1, datastore.getPartition("0"));
 		inserter.insert(a, b);
-		
+
 		inserter = datastore.getInserter(p1, datastore.getPartition("1"));
 		inserter.insert(a, b);
-		
+
 		Database db = datastore.getDatabase(datastore.getPartition("0"), datastore.getPartition("1"));
 		dbs.add(db);
 		db.getAtom(p1, a, b);
 	}
-	
+
 	@Test(expected=IllegalStateException.class)
 	public void testAtomInTwoReadPartitions() {
+		if (datastore == null) {
+			throw new IllegalStateException();
+		}
+
 		datastore.registerPredicate(p1);
-		
-		UniqueID a = datastore.getUniqueID(0);
-		UniqueID b = datastore.getUniqueID(1);
-		
+
+		UniqueIntID a = new UniqueIntID(0);
+		UniqueIntID b = new UniqueIntID(1);
+
 		Inserter inserter = datastore.getInserter(p1, datastore.getPartition("0"));
 		inserter.insert(a, b);
-		
+
 		inserter = datastore.getInserter(p1, datastore.getPartition("1"));
 		inserter.insert(a, b);
-		
+
 		Database db = datastore.getDatabase(datastore.getPartition("2"), datastore.getPartition("0"), datastore.getPartition("1"));
 		dbs.add(db);
 		db.getAtom(p1, a, b);
 	}
-	
+
 	@Test
 	public void testSharedReadPartition() {
+		if (datastore == null) {
+			return;
+		}
+
 		datastore.registerPredicate(p1);
-		
+
 		Inserter inserter = datastore.getInserter(p1, datastore.getPartition("0"));
-		
-		UniqueID a = datastore.getUniqueID(0);
-		UniqueID b = datastore.getUniqueID(1);
-		UniqueID c = datastore.getUniqueID(2);
-		UniqueID d = datastore.getUniqueID(3);
-		
+
+		UniqueIntID a = new UniqueIntID(0);
+		UniqueIntID b = new UniqueIntID(1);
+		UniqueIntID c = new UniqueIntID(2);
+		UniqueIntID d = new UniqueIntID(3);
+
 		inserter.insert(a, b);
 		inserter.insert(b, c);
 		inserter.insert(c, d);
 		inserter.insert(a, d);
-		
+
 		Database db1 = datastore.getDatabase(datastore.getPartition("1"), datastore.getPartition("0"));
 		Database db2 = datastore.getDatabase(datastore.getPartition("2"), datastore.getPartition("0"));
 		dbs.add(db1);
 		dbs.add(db2);
-		
-		
+
+
 		GroundAtom atom = db1.getAtom(p1, b, c);
 		assertTrue(atom instanceof ObservedAtom);
-		
+
 		atom = db2.getAtom(p1, b, c);
 		assertTrue(atom instanceof ObservedAtom);
 	}
-	
+
 	@Test(expected=IllegalArgumentException.class)
 	public void testSharedWritePartition() {
+		if (datastore == null) {
+			throw new IllegalArgumentException();
+		}
+
 		dbs.add(datastore.getDatabase(datastore.getPartition("0")));
 		dbs.add(datastore.getDatabase(datastore.getPartition("0")));
 	}
-	
+
 	@Test(expected=IllegalArgumentException.class)
 	public void testSharedReadWritePartition1() {
+		if (datastore == null) {
+			throw new IllegalArgumentException();
+		}
+
 		dbs.add(datastore.getDatabase(datastore.getPartition("0")));
 		dbs.add(datastore.getDatabase(datastore.getPartition("1"), datastore.getPartition("0")));
 	}
-	
+
 	@Test(expected=IllegalArgumentException.class)
 	public void testSharedReadWritePartition2() {
+		if (datastore == null) {
+			throw new IllegalArgumentException();
+		}
+
 		dbs.add(datastore.getDatabase(datastore.getPartition("0"), datastore.getPartition("1")));
 		dbs.add(datastore.getDatabase(datastore.getPartition("1")));
 	}
-	
+
 	@Test(expected=IllegalArgumentException.class)
 	public void testGetInserterUnregisteredPredicate() {
+		if (datastore == null) {
+			throw new IllegalArgumentException();
+		}
+
 		datastore.getInserter(p1, datastore.getPartition("0"));
 	}
-	
+
 	@Test(expected=IllegalArgumentException.class)
 	public void testGetInserterPartitionInUseWrite() {
+		if (datastore == null) {
+			throw new IllegalArgumentException();
+		}
+
 		dbs.add(datastore.getDatabase(datastore.getPartition("0")));
 		datastore.getInserter(p1, datastore.getPartition("0"));
 	}
-	
+
 	@Test(expected=IllegalArgumentException.class)
 	public void testGetInserterPartitionInUseRead() {
+		if (datastore == null) {
+			throw new IllegalArgumentException();
+		}
+
 		dbs.add(datastore.getDatabase(datastore.getPartition("1"), datastore.getPartition("0")));
 		datastore.getInserter(p1, datastore.getPartition("0"));
 	}
-	
+
 	@Test
 	public void testGetInserterForDeserializedPredicate() {
+		if (datastore == null) {
+			return;
+		}
+
 		datastore.registerPredicate(p1);
 		datastore.registerPredicate(p2);
-		
+
 		datastore.close();
 		datastore = getDataStore(false);
 		datastore.getInserter(p1, datastore.getPartition("0"));
 	}
-	
+
 	@Test(expected=IllegalStateException.class)
 	public void testGetAtomAfterClose() {
+		if (datastore == null) {
+			throw new IllegalStateException();
+		}
+
 		datastore.registerPredicate(p1);
-		
-		UniqueID a = datastore.getUniqueID(0);
-		UniqueID b = datastore.getUniqueID(1);
-		
+
+		UniqueIntID a = new UniqueIntID(0);
+		UniqueIntID b = new UniqueIntID(1);
+
 		Database db = datastore.getDatabase(datastore.getPartition("0"));
 		db.close();
 		db.getAtom(p1, a, b);
 	}
-	
+
 	@Test(expected=IllegalStateException.class)
 	public void testCommitAfterClose() {
+		if (datastore == null) {
+			throw new IllegalStateException();
+		}
+
 		datastore.registerPredicate(p1);
-		
-		UniqueID a = datastore.getUniqueID(0);
-		UniqueID b = datastore.getUniqueID(1);
-		
+
+		UniqueIntID a = new UniqueIntID(0);
+		UniqueIntID b = new UniqueIntID(1);
+
 		Database db = datastore.getDatabase(datastore.getPartition("0"));
 		RandomVariableAtom atom = (RandomVariableAtom) db.getAtom(p1, a, b);
 		db.close();
 		db.commit(atom);
 	}
-	
+
 	@Test(expected=IllegalStateException.class)
 	public void testQueryAfterClose() {
+		if (datastore == null) {
+			throw new IllegalStateException();
+		}
+
 		datastore.registerPredicate(p1);
-		
+
 		Variable X = new Variable("X");
 		Variable Y = new Variable("Y");
-		
+
 		DatabaseQuery query = new DatabaseQuery(new QueryAtom(p1, X, Y));
-		
+
 		Database db = datastore.getDatabase(datastore.getPartition("0"));
 		db.close();
 		db.executeQuery(query);
 	}
-	
+
 	@Test
 	public void testDeletePartition() {
+		if (datastore == null) {
+			return;
+		}
+
 		datastore.registerPredicate(p1);
-		
+
 		Inserter inserter = datastore.getInserter(p1, datastore.getPartition("0"));
-		
-		UniqueID a = datastore.getUniqueID(0);
-		UniqueID b = datastore.getUniqueID(1);
-		UniqueID c = datastore.getUniqueID(2);
-		UniqueID d = datastore.getUniqueID(3);
-		
+
+		UniqueIntID a = new UniqueIntID(0);
+		UniqueIntID b = new UniqueIntID(1);
+		UniqueIntID c = new UniqueIntID(2);
+		UniqueIntID d = new UniqueIntID(3);
+
 		inserter.insert(a, b);
 		inserter.insert(b, c);
 		inserter.insert(c, d);
 		inserter.insert(a, d);
-		
+
 		int numDeleted = datastore.deletePartition(datastore.getPartition("0"));
 		assertEquals(4, numDeleted);
-		
+
 		Database db = datastore.getDatabase(datastore.getPartition("0"));
 		dbs.add(db);
 		Variable X = new Variable("X");
 		Variable Y = new Variable("Y");
 		DatabaseQuery query = new DatabaseQuery(new QueryAtom(p1, X, Y));
-		
+
 		ResultList results = db.executeQuery(query);
 		assertEquals(0, results.size());
 	}
-	
+
 	@Test(expected=IllegalArgumentException.class)
 	public void testDeletePartitionInUse() {
+		if (datastore == null) {
+			throw new IllegalArgumentException();
+		}
+
 		dbs.add(datastore.getDatabase(datastore.getPartition("0")));
 		datastore.deletePartition(datastore.getPartition("0"));
 	}
-	
+
 	@Test
 	public void testIsClosed() {
+		if (datastore == null) {
+			return;
+		}
+
 		datastore.registerPredicate(p1);
 		datastore.registerPredicate(p2);
-		
+
 		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
 		toClose.add(p1);
-		
+
 		Database db = datastore.getDatabase(datastore.getPartition("0"), toClose);
 		dbs.add(db);
 		assertTrue(db.isClosed(p1));
 		assertTrue(!db.isClosed(p2));
 	}
-
 }

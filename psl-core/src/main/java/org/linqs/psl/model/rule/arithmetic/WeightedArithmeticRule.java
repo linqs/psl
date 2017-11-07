@@ -17,9 +17,6 @@
  */
 package org.linqs.psl.model.rule.arithmetic;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.rule.WeightedRule;
@@ -29,6 +26,10 @@ import org.linqs.psl.model.weight.NegativeWeight;
 import org.linqs.psl.model.weight.PositiveWeight;
 import org.linqs.psl.model.weight.Weight;
 import org.linqs.psl.reasoner.function.FunctionComparator;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * A template for {@link WeightedGroundArithmeticRule WeightedGroundArithmeticRules}.
@@ -60,14 +61,21 @@ public class WeightedArithmeticRule extends AbstractArithmeticRule implements We
 	}
 
 	@Override
+	protected AbstractGroundArithmeticRule makeGroundRule(List<Double> coeffs, List<GroundAtom> atoms,
+			FunctionComparator comparator, double c) {
+		return new WeightedGroundArithmeticRule(this, coeffs, atoms, comparator, c, squared);
+	}
+
+	@Override
 	public Weight getWeight() {
 		return weight.duplicate();
 	}
 
 	@Override
 	public void setWeight(Weight w) {
-		if (!mutable)
+		if (!mutable) {
 			throw new IllegalStateException("Rule weight is not mutable.");
+      }
 
 		weight = w;
 	}

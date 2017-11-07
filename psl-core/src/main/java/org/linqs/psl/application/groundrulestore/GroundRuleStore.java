@@ -29,92 +29,73 @@ import org.linqs.psl.model.rule.WeightedRule;
  * Since this container uses set semantics, no two GroundRules that are equal
  * can be stored in it. If a {@link Rule} wants to add another GroundRule
  * that does the same thing over the same GroundAtoms, then it should retrieve
- * the original GroundRule, modify it, and call {@link #changedGroundRule(GroundRule)}.
+ * the original GroundRule and modify it.
  */
 public interface GroundRuleStore {
 
 	/**
 	 * Adds a GroundRule to this store.
-	 * 
-	 * @param gr  the GroundRule to add
-	 * @throws IllegalArgumentException  if gr is already in this store
+	 *
+	 * @param rule the GroundRule to add
+	 * @throws IllegalArgumentException if rule is already in this store
 	 */
-	public void addGroundRule(GroundRule gr);
-	
+	public void addGroundRule(GroundRule rule);
+
 	/**
-	 * Notifies this store that a GroundRule was changed.
-	 * <p>
-	 * Any component that modifies a GroundRule in this store should call
-	 * this method.
-	 * 
-	 * @param gr  the changed GroundRule
-	 * @throws IllegalArgumentException  if gr is not in this store
+	 * Release any memory held by the store.
+	 * A store that has been closed cannot be used again.
 	 */
-	public void changedGroundRule(GroundRule gr);
-	
+	public void close();
+
 	/**
-	 * Notifies this store that a {@link WeightedGroundRule}'s weight
-	 * was changed.
-	 * <p>
-	 * This method should be called whenever the weight of a GroundCompatibilityKernel
-	 * in this store is changed, or the weight of its parent {@link WeightedRule}
-	 * is changed (and the GroundCompatibilityKernel's weight is still tied to it).
-	 * <p>
-	 * It is not necessary to also call {@link #changedGroundRule(GroundRule)}
-	 * if only the weight was changed.
-	 * 
-	 * @param gk  the ground kernel with a changed weight
+	 * Removes a GroundRule from this store.
+	 *
+	 * @param rule the GroundRule to remove
+	 * @throws IllegalArgumentException if rule is not in this store
 	 */
-	public void changedGroundKernelWeight(WeightedGroundRule gk);
-	
+	public void removeGroundRule(GroundRule rule);
+
 	/**
-	 * Equivalent to calling {@link #changedGroundKernelWeight(WeightedGroundRule)}
-	 * for all GroundCompatibilityKernels.
+	 * Removes all GroundRules that was instantiated by a given rule.
+	 *
+	 * @param rule the originator of the ground rules
 	 */
-	public void changedGroundKernelWeights();
-	
+	public void removeGroundRules(Rule rule);
+
 	/**
-	 * Removes a GroundKernel from this store.
-	 * 
-	 * @param gk  the GroundKernel to remove
-	 * @throws IllegalArgumentException  if gk is not in this store
+	 * Checks whether a GroundRule is in this store.
+	 *
+	 * @param rule the GroundRule to check
+	 * @return true if rule is in this store
 	 */
-	public void removeGroundKernel(GroundRule gk);
-	
+	public boolean containsGroundRule(GroundRule rule);
+
 	/**
-	 * Checks whether a GroundKernel is in this store.
-	 * 
-	 * @param gk  the GroundKernel to check
-	 * @return TRUE if gk is in this store
+	 * @return every GroundRule in this store
 	 */
-	public boolean containsGroundKernel(GroundRule gk);
-	
-	/**
-	 * @return every GroundKernel in this store
-	 */
-	public Iterable<GroundRule> getGroundKernels();
-	
+	public Iterable<GroundRule> getGroundRules();
+
 	/**
 	 * @return every {@link WeightedGroundRule} in this store
 	 */
-	public Iterable<WeightedGroundRule> getCompatibilityKernels();
-	
+	public Iterable<WeightedGroundRule> getCompatibilityRules();
+
 	/**
 	 * @return every {@link UnweightedGroundRule} in this store
 	 */
-	public Iterable<UnweightedGroundRule> getConstraintKernels();
-	
+	public Iterable<UnweightedGroundRule> getConstraintRules();
+
 	/**
-	 * Returns every GroundKernel that was instantiated by a given Kernel.
-	 * 
-	 * @param k  the Kernel of the GroundKernels to return
-	 * @return the Kernel's GroundKernels
+	 * Returns every GroundRule that was instantiated by a given Rule.
+	 *
+	 * @param rule the Rule of the GroundRules to return
+	 * @return the Rule's GroundRules
 	 */
-	public Iterable<GroundRule> getGroundKernels(Rule k);
-	
+	public Iterable<GroundRule> getGroundRules(Rule rule);
+
 	/**
-	 * @return the number of GroundKernels in this store
+	 * @return the number of GroundRules in this store
 	 */
 	public int size();
-	
+
 }

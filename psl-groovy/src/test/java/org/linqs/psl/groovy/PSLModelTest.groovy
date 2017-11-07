@@ -48,9 +48,9 @@ public class PSLModelTest {
 
 		model = new PSLModel(this, dataStore);
 
-		model.add(predicate: "Single", types: [ConstantType.UniqueID]);
-		model.add(predicate: "Double", types: [ConstantType.UniqueID, ConstantType.UniqueID]);
-		model.add(predicate: "Sim", types: [ConstantType.UniqueID, ConstantType.UniqueID]);
+		model.add(predicate: "Single", types: [ConstantType.UniqueStringID]);
+		model.add(predicate: "Double", types: [ConstantType.UniqueStringID, ConstantType.UniqueStringID]);
+		model.add(predicate: "Sim", types: [ConstantType.UniqueStringID, ConstantType.UniqueStringID]);
 	}
 
 	/**
@@ -134,8 +134,8 @@ public class PSLModelTest {
 	@Test
 	// We already added predicates in setup(), but we will duplicate it for those just reading test lists.
 	public void testBaseAddPredicate() {
-		model.add(predicate: "TestSingle", types: [ConstantType.UniqueID]);
-		model.add(predicate: "TestSim", types: [ConstantType.UniqueID, ConstantType.UniqueID]);
+		model.add(predicate: "TestSingle", types: [ConstantType.UniqueStringID]);
+		model.add(predicate: "TestSim", types: [ConstantType.UniqueStringID, ConstantType.UniqueStringID]);
 	}
 
 	@Test

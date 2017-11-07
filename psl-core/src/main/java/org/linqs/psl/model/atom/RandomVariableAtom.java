@@ -18,13 +18,12 @@
 package org.linqs.psl.model.atom;
 
 import org.linqs.psl.database.Database;
-import org.linqs.psl.model.ConfidenceValues;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.reasoner.function.MutableAtomFunctionVariable;
 
 /**
- * A {@link GroundAtom} with a truth value and a confidence value which can be modified.
+ * A {@link GroundAtom} with a truth value which can be modified.
  * <p>
  * A GroundAtom is instantiated as a RandomVariableAtom is BOTH of the following
  * conditions are met:
@@ -34,10 +33,9 @@ import org.linqs.psl.reasoner.function.MutableAtomFunctionVariable;
  * </ul>
  */
 public class RandomVariableAtom extends GroundAtom {
-
 	protected RandomVariableAtom(StandardPredicate p, Constant[] args,
-			Database db, double value, double confidenceValue) {
-		super(p, args, db, value, confidenceValue);
+			Database db, double value) {
+		super(p, args, db, value);
 	}
 
 	@Override
@@ -47,33 +45,16 @@ public class RandomVariableAtom extends GroundAtom {
 
 	/**
 	 * Sets the truth value of this Atom.
-	 * 
+	 *
 	 * @param value  a truth value in [0,1]
 	 * @return this for convenience
 	 * @throws IllegalArgumentException  if value is not in [0,1]
 	 */
 	public RandomVariableAtom setValue(double value) {
-		//		if (0.0 <= value && value <= 1.0) 
+		//		if (0.0 <= value && value <= 1.0)
 		this.value = value;
 		//		else
 		//			throw new IllegalArgumentException("Value should be in [0,1] but is " + value);
-
-		return this;
-	}
-
-	/**
-	 * Sets the confidence value of this Atom.
-	 * 
-	 * @param value  the new confidence value
-	 * @return this for convenience
-	 * @throws IllegalArgumentException  if value is invalid
-	 * @see ConfidenceValues#isValid(double);
-	 */
-	public RandomVariableAtom setConfidenceValue(double value) {
-		if (ConfidenceValues.isValid(value))
-			this.confidenceValue = value;
-		else
-			throw new IllegalArgumentException();
 
 		return this;
 	}
@@ -90,5 +71,4 @@ public class RandomVariableAtom extends GroundAtom {
 	public MutableAtomFunctionVariable getVariable() {
 		return new MutableAtomFunctionVariable(this);
 	}
-
 }

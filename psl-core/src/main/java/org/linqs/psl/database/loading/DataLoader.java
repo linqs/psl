@@ -21,9 +21,7 @@ import org.linqs.psl.database.Partition;
 import org.linqs.psl.model.predicate.Predicate;
 
 public interface DataLoader {
-
 	public OpenInserter getOpenInserter(Predicate p);
-	
+
 	public Inserter getInserter(Predicate p, Partition partitionID);
-	
 }

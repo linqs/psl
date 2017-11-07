@@ -26,15 +26,17 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.linqs.psl.PSLTest;
+import org.linqs.psl.application.groundrulestore.GroundRuleStore;
+import org.linqs.psl.application.groundrulestore.MemoryGroundRuleStore;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.EmptyBundle;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.database.atom.SimpleAtomManager;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver.Type;
 import org.linqs.psl.model.atom.QueryAtom;
-import org.linqs.psl.model.atom.SimpleAtomManager;
 import org.linqs.psl.model.formula.Disjunction;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.predicate.PredicateFactory;
@@ -52,8 +54,8 @@ import org.linqs.psl.model.rule.arithmetic.expression.coefficient.ConstantNumber
 import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Max;
 import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Min;
 import org.linqs.psl.model.term.ConstantType;
+import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.model.term.Variable;
-import org.linqs.psl.reasoner.admm.ADMMReasoner;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 
 import java.util.Arrays;
@@ -79,13 +81,13 @@ public class AbstractArithmeticRuleTest {
 
 		PredicateFactory factory = PredicateFactory.getFactory();
 
-		singleClosed = factory.createStandardPredicate("SingleClosed", ConstantType.UniqueID);
+		singleClosed = factory.createStandardPredicate("SingleClosed", ConstantType.UniqueStringID);
 		dataStore.registerPredicate(singleClosed);
 
-		doubleClosed = factory.createStandardPredicate("DoubleClosed", ConstantType.UniqueID, ConstantType.UniqueID);
+		doubleClosed = factory.createStandardPredicate("DoubleClosed", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
 		dataStore.registerPredicate(doubleClosed);
 
-		singleOpened = factory.createStandardPredicate("SingleOpened", ConstantType.UniqueID);
+		singleOpened = factory.createStandardPredicate("SingleOpened", ConstantType.UniqueStringID);
 		dataStore.registerPredicate(singleOpened);
 
 		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
@@ -146,7 +148,7 @@ public class AbstractArithmeticRuleTest {
 		List<SummationAtomOrAtom> atoms = Arrays.asList(
 			(SummationAtomOrAtom)(new SummationAtom(doubleClosed, new SummationVariableOrTerm[]{
 				new SummationVariable("A"),
-				dataStore.getUniqueID("Foo")
+				new UniqueStringID("Foo")
 			}))
 		);
 
@@ -422,10 +424,10 @@ public class AbstractArithmeticRuleTest {
 		AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, filters);
 
 		SimpleAtomManager atomManager = new SimpleAtomManager(database);
-		ADMMReasoner reasoner = new ADMMReasoner(config);
+		GroundRuleStore groundRuleStore = new MemoryGroundRuleStore();
 
 		try {
-			rule.groundAll(atomManager, reasoner);
+			rule.groundAll(atomManager, groundRuleStore);
 			fail("IllegalArgumentException not thrown when trying to ground an open predicate in the filter.");
 		} catch (IllegalArgumentException ex) {
 			// Exception is expected.

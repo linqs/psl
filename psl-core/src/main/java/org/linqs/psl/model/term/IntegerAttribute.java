@@ -23,16 +23,16 @@ package org.linqs.psl.model.term;
 public class IntegerAttribute implements Attribute {
 
 	private final Integer value;
-	
+
 	/**
 	 * Constructs an Integer attribute from an Integer
-	 * 
+	 *
 	 * @param value  Integer to encapsulate
 	 */
 	public IntegerAttribute(Integer value) {
 		this.value = value;
 	}
-	
+
 	/**
 	 * @return the encapsulated Integer as a String in single quotes
 	 */
@@ -40,17 +40,17 @@ public class IntegerAttribute implements Attribute {
 	public String toString() {
 		return "'" + value + "'";
 	}
-	
+
 	@Override
 	public Integer getValue() {
 		return value;
 	}
-	
+
 	@Override
 	public int hashCode() {
 		return value.hashCode();
 	}
-	
+
 	/**
 	 * An IntegerAttribute is equal to another Object if that Object is an IntegerAttribute
 	 * and their values are equal.
@@ -59,7 +59,7 @@ public class IntegerAttribute implements Attribute {
 	public boolean equals(Object oth) {
 		if (oth==this) return true;
 		if (oth==null || !(oth instanceof IntegerAttribute)) return false;
-		return value.equals(((IntegerAttribute)oth).getValue());  
+		return value.equals(((IntegerAttribute)oth).getValue());
 	}
 
 	@Override

@@ -61,13 +61,13 @@ public class AbstractLogicalRuleTest {
 
 		PredicateFactory factory = PredicateFactory.getFactory();
 
-		singleClosed = factory.createStandardPredicate("SingleClosed", ConstantType.UniqueID);
+		singleClosed = factory.createStandardPredicate("SingleClosed", ConstantType.UniqueStringID);
 		dataStore.registerPredicate(singleClosed);
 
-		doubleClosed = factory.createStandardPredicate("DoubleClosed", ConstantType.UniqueID, ConstantType.UniqueID);
+		doubleClosed = factory.createStandardPredicate("DoubleClosed", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
 		dataStore.registerPredicate(doubleClosed);
 
-		singleOpened = factory.createStandardPredicate("SingleOpened", ConstantType.UniqueID);
+		singleOpened = factory.createStandardPredicate("SingleOpened", ConstantType.UniqueStringID);
 		dataStore.registerPredicate(singleOpened);
 
 		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();

@@ -17,13 +17,17 @@
  */
 package org.linqs.psl.model.rule.arithmetic;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
+
+import org.apache.commons.lang3.ArrayUtils;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Base class for all ground arithmetic rules.
@@ -39,12 +43,30 @@ public abstract class AbstractGroundArithmeticRule implements GroundRule {
 	protected final double c;
 
 	protected AbstractGroundArithmeticRule(AbstractArithmeticRule rule,
+			List<Double> coeffs, List<GroundAtom> atoms, FunctionComparator comparator, double c) {
+		this(rule, ArrayUtils.toPrimitive(coeffs.toArray(new Double[0])),
+				atoms.toArray(new GroundAtom[0]), comparator, c, false);
+	}
+
+	protected AbstractGroundArithmeticRule(AbstractArithmeticRule rule,
 			double[] coeffs, GroundAtom[] atoms, FunctionComparator comparator, double c) {
+		this(rule, coeffs, atoms, comparator, c, true);
+	}
+
+	protected AbstractGroundArithmeticRule(AbstractArithmeticRule rule,
+			double[] coeffs, GroundAtom[] atoms, FunctionComparator comparator, double c,
+			boolean copy) {
 		this.rule = rule;
-		this.coeffs = coeffs;
-		this.atoms = atoms;
 		this.comparator = comparator;
 		this.c = c;
+
+		if (copy) {
+			this.coeffs = Arrays.copyOf(coeffs, coeffs.length);
+			this.atoms = Arrays.copyOf(atoms, atoms.length);
+		} else {
+			this.coeffs = coeffs;
+			this.atoms = atoms;
+		}
 	}
 
 	@Override

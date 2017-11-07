@@ -18,25 +18,21 @@
 package org.linqs.psl.reasoner;
 
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
+import org.linqs.psl.reasoner.term.TermStore;
 
 /**
- * A GroundKernelStore that can minimize the total weighted incompatibility
- * of its GroundCompatibilityKernels such that the infeasibility of its
- * GroundConstraintKernels is (close to) zero by optimizing the RandomVariableAtoms.
+ * An oprimizer to minimize the total weighted incompatibility
+ * of the terms provided by a TermStore.
  */
-public interface Reasoner extends GroundRuleStore {
-	
+public interface Reasoner {
 	/**
-	 * Minimizes the total weighted incompatibility of the this Reasoner's
-	 * GroundCompatibilityKernels such that the infeasibility of its
-	 * GroundConstraintKernels is (close to) zero by optimizing the
-	 * RandomVariableAtoms.
+	 * Minimizes the total weighted incompatibility of the terms in the provided
+	 * TermStore.
 	 */
-	public void optimize();
-	
+	public void optimize(TermStore termStore);
+
 	/**
 	 * Releases all resources acquired by this Reasoner.
 	 */
 	public void close();
 }
-

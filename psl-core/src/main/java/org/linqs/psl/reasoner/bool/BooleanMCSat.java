@@ -17,62 +17,65 @@
  */
 package org.linqs.psl.reasoner.bool;
 
-import java.util.Random;
-
-import org.linqs.psl.application.groundrulestore.MemoryGroundKernelStore;
+import org.linqs.psl.application.groundrulestore.AtomRegisterGroundRuleStore;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.ConfigManager;
 import org.linqs.psl.model.ConstraintBlocker;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.Reasoner;
+import org.linqs.psl.reasoner.term.TermStore;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Random;
 
 /**
  * Implementation of MC-Sat, which approximates the marginal probability that each
  * atom has value 1 in a Boolean domain.
- * <p>
+ *
  * Marginal probabilities will be set as the atoms' truth values.
- * <p>
+ *
  * This class supports free {@link RandomVariableAtom RandomVariableAtoms}
  * and RandomVariableAtoms that are each constrained by a single
- * {@link GroundDomainRangeConstraint}. It also assumes that all ObservedAtoms
+ * GroundValueConstraint. It also assumes that all ObservedAtoms
  * have Boolean truth values. Its behavior is not defined otherwise.
- * 
+ *
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-public class BooleanMCSat extends MemoryGroundKernelStore implements Reasoner {
-	
+public class BooleanMCSat extends AtomRegisterGroundRuleStore implements Reasoner {
+
 	private static final Logger log = LoggerFactory.getLogger(BooleanMCSat.class);
-	
+
 	/**
 	 * Prefix of property keys used by this class.
-	 * 
+	 *
 	 * @see ConfigManager
 	 */
 	public static final String CONFIG_PREFIX = "booleanmcsat";
-	
+
 	/**
 	 * Key for length of Markov chain
 	 */
 	public static final String NUM_SAMPLES_KEY = CONFIG_PREFIX + ".numsamples";
 	/** Default value for NUM_SAMPLES_KEY */
 	public static final int NUM_SAMPLES_DEFAULT = 2500;
-	
+
 	/**
 	 * Number of burn-in samples
 	 */
 	public static final String NUM_BURN_IN_KEY = CONFIG_PREFIX + ".numburnin";
 	/** Default value for NUM_BURN_IN_KEY */
 	public static final int NUM_BURN_IN_DEFAULT = 500;
-	
+
 	private final Random rand;
 	private final int numSamples;
 	private final int numBurnIn;
-	
+
 	public BooleanMCSat(ConfigBundle config) {
 		super();
+
 		rand = new Random();
 		numSamples = config.getInt(NUM_SAMPLES_KEY, NUM_SAMPLES_DEFAULT);
 		if (numSamples <= 0)
@@ -83,24 +86,24 @@ public class BooleanMCSat extends MemoryGroundKernelStore implements Reasoner {
 		if (numBurnIn >= numSamples)
 			throw new IllegalArgumentException("Number of burn in samples must be less than number of samples.");
 	}
-	
+
 	@Override
-	public void optimize() {
+	public void optimize(TermStore termStore) {
 		ConstraintBlocker blocker = new ConstraintBlocker(this);
 		blocker.prepareBlocks(false);
-		
+
 		/* Puts RandomVariableAtoms in 2d array by block */
 		RandomVariableAtom[][] rvBlocks = blocker.getRVBlocks();
 		/* If true, exactly one Atom in the RV block must be 1.0. If false, at most one can. */
 		boolean[] exactlyOne = blocker.getExactlyOne();
-		/* Collects GroundCompatibilityKernels incident on each block of RandomVariableAtoms */
+		/* Collects GroundCompatibilityRules incident on each block of RandomVariableAtoms */
 		WeightedGroundRule[][] incidentGKs = blocker.getIncidentGKs();
 		/* Initializes arrays for totaling samples */
 		double[][] totals = blocker.getEmptyDouble2DArray();
-		
+
 		/* Randomly initializes the RVs to a feasible state */
 		blocker.randomlyInitializeRVs();
-		
+
 		/* Samples RV assignments */
 		log.info("Beginning inference.");
 		double[] p;
@@ -108,69 +111,69 @@ public class BooleanMCSat extends MemoryGroundKernelStore implements Reasoner {
 			for (int i = 0; i < rvBlocks.length; i++) {
 				if (rvBlocks.length == 0)
 					continue;
-				
+
 				p = new double[(exactlyOne[i]) ? rvBlocks[i].length : (rvBlocks[i].length + 1)];
-				
+
 				/* Computes probability for assignment of 1.0 to each RV */
 				for (int j = 0; j < rvBlocks[i].length; j++) {
 					/* Sets RVs */
 					for (int k = 0; k < rvBlocks[i].length; k++)
 						rvBlocks[i][k].setValue((k == j) ? 1.0 : 0.0);
-					
+
 					/* Computes probability */
 					p[j] = computeProbability(incidentGKs[i]);
 				}
-				
+
 				/* If all RVs in block assigned 0.0 is valid, computes probability */
 				if (!exactlyOne[i]) {
 					/* Sets all RVs to 0.0 */
 					for (RandomVariableAtom atom : rvBlocks[i])
 						atom.setValue(0.0);
-					
+
 					/* Computes probability */
 					p[p.length - 1] = computeProbability(incidentGKs[i]);
 				}
-				
+
 				/* Draws sample */
 				double[] sample = sampleWithProbability(p);
 				for (int j = 0; j < rvBlocks[i].length; j++) {
 					rvBlocks[i][j].setValue(sample[j]);
-					
+
 					if (sampleIndex >= numBurnIn)
 						totals[i][j] += sample[j];
 				}
 			}
 		}
-		
+
 		log.info("Inference complete.");
-		
+
 		/* Sets truth values of RandomVariableAtoms to marginal probabilities */
 		for (int i = 0; i < rvBlocks.length; i++)
 			for (int j = 0; j < rvBlocks[i].length; j++)
 				rvBlocks[i][j].setValue(totals[i][j] / (numSamples - numBurnIn));
 	}
-	
+
 	private double computeProbability(WeightedGroundRule incidentGKs[]) {
 		double probability = 0.0;
-		for (WeightedGroundRule gk : incidentGKs) {
-			probability += ((WeightedGroundRule) gk).getWeight().getWeight()
-					* ((WeightedGroundRule) gk).getIncompatibility();
+		for (WeightedGroundRule groundRule : incidentGKs) {
+			probability += ((WeightedGroundRule) groundRule).getWeight().getWeight()
+					* ((WeightedGroundRule) groundRule).getIncompatibility();
 		}
 		return Math.exp(-1 * probability);
 	}
-	
+
 	private double[] sampleWithProbability(double[] distribution) {
 		/* Just in case an RV block is empty */
 		if (distribution.length == 0)
 			return new double[0];
-		
+
 		/* Normalizes distribution */
 		double total = 0.0;
 		for (double pValue : distribution)
 			total += pValue;
 		for (int i = 0; i < distribution.length; i++)
 			distribution[i] /= total;
-		
+
 		/* Draws sample */
 		double[] sample = new double[distribution.length];
 		double cutoff = rand.nextDouble();
@@ -190,7 +193,7 @@ public class BooleanMCSat extends MemoryGroundKernelStore implements Reasoner {
 		sample[sample.length-1] = 1.0;
 		return sample;
 	}
-	
+
 	@Override
 	public void close() {
 		/* Intentionally blank */

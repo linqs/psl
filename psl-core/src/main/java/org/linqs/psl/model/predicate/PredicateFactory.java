@@ -17,14 +17,14 @@
  */
 package org.linqs.psl.model.predicate;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.regex.Pattern;
-
 import org.linqs.psl.model.function.ExternalFunction;
 import org.linqs.psl.model.term.ConstantType;
 
-import com.google.common.collect.Iterables;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * The factory for Predicates.
@@ -35,33 +35,32 @@ import com.google.common.collect.Iterables;
  * Ensures that a single Predicate object exists for each Predicate name.
  */
 public class PredicateFactory {
-	
 	protected static final PredicateFactory instance = new PredicateFactory();
 
 	protected final Map<String,Predicate> predicateByName;
-	
+
 	protected final Pattern predicateNamePattern;
-	
+
 	/**
 	 * Sole constructor.
 	 * <p>
 	 * Adds each {@link SpecialPredicate} to the set of existing Predicates.
-	 * 
+	 *
 	 * @see #getFactory()
 	 */
 	protected PredicateFactory() {
 		predicateByName = new HashMap<String,Predicate>();
 		predicateNamePattern = Pattern.compile("\\w+");
-		
+
 		predicateByName.put(SpecialPredicate.Equal.getName(), SpecialPredicate.Equal);
 		predicateByName.put(SpecialPredicate.NotEqual.getName(), SpecialPredicate.NotEqual);
 		predicateByName.put(SpecialPredicate.NonSymmetric.getName(), SpecialPredicate.NonSymmetric);
 	}
-	
+
 	public static PredicateFactory getFactory() {
 		return instance;
 	}
-	
+
 	/**
 	 * Constructs a StandardPredicate.
 	 * <p>
@@ -72,10 +71,10 @@ public class PredicateFactory {
 	 * @param types  types for each of the predicate's arguments
 	 * @return the newly constructed Predicate
 	 * @throws IllegalArgumentException  if name is already used with different
-	 *                                       ArgumentTypes, is already used by
-	 *                                       another type of Predicate, doesn't
-	 *                                       match \w+; types has length zero;
-	 *                                       or an element of types is NULL
+	 *													ArgumentTypes, is already used by
+	 *													another type of Predicate, doesn't
+	 *													match \w+; types has length zero;
+	 *													or an element of types is NULL
 	 */
 	public StandardPredicate createStandardPredicate(String name, ConstantType... types) {
 		name = name.toUpperCase();
@@ -89,7 +88,7 @@ public class PredicateFactory {
 			}
 			else
 				samePredicate = false;
-			
+
 			if (samePredicate)
 				return (StandardPredicate) p;
 			else
@@ -103,7 +102,7 @@ public class PredicateFactory {
 			return sp;
 		}
 	}
-	
+
 	/**
 	 * Constructs an ExternalFunctionalPredicate.
 	 * <p>
@@ -114,74 +113,67 @@ public class PredicateFactory {
 	 * @param extFun  the ExternalFunction the new predicate will use
 	 * @return the newly constructed Predicate
 	 * @throws IllegalArgumentException  if name is already used with different
-	 *                                       ExternalFunction, is already used by
-	 *                                       another type of Predicate, doesn't
-	 *                                       match \w+; types has length zero;
-	 *                                       or extFun does not provide valid ArgumentTypes
+	 *													ExternalFunction, is already used by
+	 *													another type of Predicate, doesn't
+	 *													match \w+; types has length zero;
+	 *													or extFun does not provide valid ArgumentTypes
 	 */
-	public ExternalFunctionalPredicate createFunctionalPredicate(String name, ExternalFunction extFun) {
+	public ExternalFunctionalPredicate createExternalFunctionalPredicate(String name, ExternalFunction extFun) {
 		name = name.toUpperCase();
-		Predicate p = predicateByName.get(name);
-		if (p != null) {
-			if (p instanceof ExternalFunctionalPredicate
-					&& ((ExternalFunctionalPredicate) p).getExternalFunction().equals(extFun)) {
-				return (ExternalFunctionalPredicate) p;
+		Predicate predicate = predicateByName.get(name);
+		if (predicate != null) {
+			if (predicate instanceof ExternalFunctionalPredicate
+					&& ((ExternalFunctionalPredicate)predicate).getExternalFunction().equals(extFun)) {
+				return (ExternalFunctionalPredicate)predicate;
 			}
-			else
-				throw new IllegalArgumentException("Name '" + name + "' already" +
-						" used by another Predicate: " + p);
+
+			throw new IllegalArgumentException("Name '" + name + "' already" + " used by another Predicate: " + predicate);
 		}
-		else {
-			checkPredicateSignature(name, extFun.getArgumentTypes());
-			ExternalFunctionalPredicate efp = new ExternalFunctionalPredicate(name, extFun);
-			addPredicate(efp,name);
-			return efp;
-		}
+
+		checkPredicateSignature(name, extFun.getArgumentTypes());
+		ExternalFunctionalPredicate efp = new ExternalFunctionalPredicate(name, extFun);
+		addPredicate(efp,name);
+		return efp;
 	}
 
 	/**
 	 * @throws IllegalArgumentException  if name doesn't match \w+, types has length zero,
-	 *                                       or an element of types is NULL
+	 *													or an element of types is NULL
 	 */
 	protected void checkPredicateSignature(String name, ConstantType[] types) {
-		if (!predicateNamePattern.matcher(name).matches())
+		if (!predicateNamePattern.matcher(name).matches()) {
 			throw new IllegalArgumentException("Name must match \\w+");
-		if (types.length == 0)
+		}
+
+		if (types.length == 0) {
 			throw new IllegalArgumentException("Predicate needs at least one ArgumentType.");
-		for (int i = 0; i < types.length; i++)
-			if (types[i] == null)
+		}
+
+		for (int i = 0; i < types.length; i++) {
+			if (types[i] == null) {
 				throw new IllegalArgumentException("No ArgumentType may be NULL.");
+			}
+		}
 	}
-	
+
 	protected void addPredicate(Predicate p, String name) {
 		predicateByName.put(name, p);
 	}
-	
+
 	/**
 	 * Gets the Predicate with the given name, if it exists
-	 * 
+	 *
 	 * @param name  the name to match
 	 * @return the Predicate, or NULL if no Predicate with that name exists
 	 */
 	public Predicate getPredicate(String name) {
 		return predicateByName.get(name.toUpperCase());
 	}
-	
-	public Iterable<FunctionalPredicate> getFunctionalPredicates() {
-		// TODO: make immutable
-		return Iterables.filter(predicateByName.values(), FunctionalPredicate.class);
+
+	public Collection<Predicate> getPredicates() {
+		return Collections.unmodifiableCollection(predicateByName.values());
 	}
-	
-	public Iterable<StandardPredicate> getStandardPredicates() {
-		// TODO: make immutable
-		return Iterables.filter(predicateByName.values(), StandardPredicate.class);
-	}
-	
-	public Iterable<Predicate> getPredicates() {
-		// TODO: make immutable
-		return predicateByName.values();
-	}
-	
+
 	@Override
 	public String toString() {
 		StringBuilder s = new StringBuilder();
@@ -190,5 +182,4 @@ public class PredicateFactory {
 		}
 		return s.toString();
 	}
-	
 }

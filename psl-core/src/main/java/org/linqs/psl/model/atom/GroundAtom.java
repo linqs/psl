@@ -35,115 +35,45 @@ import com.google.common.collect.SetMultimap;
 
 /**
  * An Atom with only {@link Constant GroundTerms} for arguments.
- * <p>
- * A GroundAtom has a truth value and a confidence value.
+ *
+ * A GroundAtom has a truth value.
  */
-abstract public class GroundAtom extends Atom {
-	final protected Database db;
-	
-	protected double value;
-	
-	protected double confidenceValue;
-	
-	private static final Set<GroundRule> emptyGroundKernels = ImmutableSet.of();
-	protected SetMultimap<Rule, GroundRule> registeredGroundKernels;
+public abstract class GroundAtom extends Atom {
+	private static final Set<GroundRule> emptyGroundRules = ImmutableSet.of();
 
-	protected GroundAtom(Predicate p, Constant[] args, Database db, double value,
-			double confidenceValue) {
+	protected final Database db;
+	protected double value;
+
+	protected GroundAtom(Predicate p, Constant[] args, Database db, double value) {
 		super(p, args);
 		this.db = db;
 		this.value = value;
-		this.confidenceValue = confidenceValue;
-		
-		/* Until a ground kernel is registered, the empty ground kernels set 
-		 * will be used / returned to indicate an empty set. */
-		this.registeredGroundKernels = null;
 	}
-	
+
+	public Database getDatabase() {
+		return db;
+	}
+
 	@Override
 	public Constant[] getArguments() {
-		return Arrays.copyOf((Constant[]) arguments, arguments.length);
+		return (Constant[])arguments;
 	}
 
 	/**
-	 * @return The truth value of this Atom
+	 * @return the truth value of this Atom
 	 */
 	public double getValue() {
 		return value;
 	}
-	
-	/**
-	 * @return The confidence value of this Atom
-	 */
-	public double getConfidenceValue() {
-		return confidenceValue;
-	}
-	
-	abstract public AtomFunctionVariable getVariable();
-	
-	public VariableTypeMap collectVariables(VariableTypeMap varMap) {
-		/* No Variables in GroundAtoms */
-		return varMap;
-	}
-	
-	/**
-	 * Registers a ground kernel to receive update events.
-	 * <p>
-	 * Any GroundKernel that is a function of this Atom should be registered.
-	 * 
-	 * @param f A ground kernel
-	 * @return TRUE if successful; FALSE if kernel was already registered 
-	 */
-	public boolean registerGroundKernel(GroundRule f) {
-		if (registeredGroundKernels == null)
-			registeredGroundKernels = HashMultimap.create();
-		return registeredGroundKernels.put(f.getRule(), f);
-	}
-	
-	/**
-	 * Unregisters a ground kernel, so that it no longer receives update events.
-	 * 
-	 * @param f A ground kernel
-	 * @return TRUE if successful; FALSE if kernel was never registered
-	 */
-	public boolean unregisterGroundKernel(GroundRule f) {
-		if (registeredGroundKernels == null)
-			return false;
-		return registeredGroundKernels.remove(f.getRule(), f);
-	}
-	
-	/**
-	 * Returns a set of all registered ground kernels that match a given kernel.
-	 * 
-	 * @param f A kernel
-	 * @return A set of all registered ground kernels that match f
-	 */
-	public Set<GroundRule> getRegisteredGroundKernels(Rule f) {
-		if (registeredGroundKernels == null)
-			return emptyGroundKernels;
-		return registeredGroundKernels.get(f);
-	}
-	
-	/**
-	 * Returns a set of all registered ground kernels.
-	 * 
-	 * @return A collection of all registered ground kernels
-	 */
-	public Collection<GroundRule> getRegisteredGroundKernels() {
-		if (registeredGroundKernels == null)
-			return emptyGroundKernels;
-		return registeredGroundKernels.values();
-	}
-	
-	/**
-	 * Returns the number of registered ground kernels.
-	 * 
-	 * @return The number of registered ground kernels
-	 */
-	public int getNumRegisteredGroundKernels() {
-		if (registeredGroundKernels == null)
-			return 0;
-		return registeredGroundKernels.size();
+
+	public String toStringWithValue() {
+		return super.toString() + " = " + getValue();
 	}
 
+	public abstract AtomFunctionVariable getVariable();
+
+	public VariableTypeMap collectVariables(VariableTypeMap varMap) {
+		// No Variables in GroundAtoms.
+		return varMap;
+	}
 }

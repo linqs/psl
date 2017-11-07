@@ -19,14 +19,12 @@ package org.linqs.psl.model.term;
 
 /**
  * A variable {@link Term}.
- * <p>
+ * Variables are immutable.
  * Variables are wildcards used to match {@link Constant GroundTerms}.
- *
- * @author Matthias Broecheler
  */
 public class Variable implements Comparable<Variable>, Term {
-
 	private final String name;
+	private final int hashcode;
 
 	/**
 	 * Constructs a Variable, given a name.
@@ -39,6 +37,7 @@ public class Variable implements Comparable<Variable>, Term {
 		}
 
 		this.name = name;
+		hashcode = this.name.hashCode() * 1163;
 	}
 
 	/**
@@ -58,26 +57,24 @@ public class Variable implements Comparable<Variable>, Term {
 
 	@Override
 	public int hashCode() {
-		return name.hashCode() * 1163;
+		return hashcode;
 	}
 
-	/**
-	 * Checks equality with another object.
-	 *
-	 * @param oth Object to check for equality
-	 * @return TRUE if oth is a Variable with the same name
-	 */
 	@Override
-	public boolean equals(Object oth) {
-		if (oth == this) {
+	public boolean equals(Object other) {
+		if (other == this) {
 			return true;
 		}
 
-		if (oth == null || !(oth instanceof Variable)) {
+		if (other == null || !(other instanceof Variable)) {
 			return false;
 		}
 
-		return getName().equals(((Variable)oth).getName());
+		if (this.hashCode() != other.hashCode()) {
+			return false;
+		}
+
+		return getName().equals(((Variable)other).getName());
 	}
 
 	/**

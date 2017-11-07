@@ -53,7 +53,7 @@ public class EmptyBundle implements ConfigBundle {
 	public Double getDouble(String key, Double defaultValue) {
 		return defaultValue;
 	}
-	
+
 	@Override
 	public String getString(String key, String defaultValue) {
 		return defaultValue;
@@ -143,10 +143,14 @@ public class EmptyBundle implements ConfigBundle {
 	public Factory getFactory(String key, Factory defaultValue) {
 		return defaultValue;
 	}
-	
+
 	@Override
 	public Enum<?> getEnum(String key, Enum<?> defaultValue) {
 		return defaultValue;
 	}
-	
+
+	@Override
+	public Object getNewObject(String key, String defaultValue) {
+		return ConfigManager.getNewObject(this, key, defaultValue);
+	}
 }

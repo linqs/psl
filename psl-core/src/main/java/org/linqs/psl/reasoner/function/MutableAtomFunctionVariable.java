@@ -23,11 +23,9 @@ import org.linqs.psl.model.atom.RandomVariableAtom;
  * Encapsulates the value of a {@link RandomVariableAtom}
  * for use in numeric functions.
  * <p>
- * This FunctionVariable can change the truth value or confidence
- * value of the RandomVariableAtom.
+ * This FunctionVariable can change the truth value of the RandomVariableAtom.
  */
 public class MutableAtomFunctionVariable extends AtomFunctionVariable {
-
 	public MutableAtomFunctionVariable(RandomVariableAtom atom) {
 		super(atom);
 	}
@@ -41,10 +39,4 @@ public class MutableAtomFunctionVariable extends AtomFunctionVariable {
 	public void setValue(double val) {
 		((RandomVariableAtom) atom).setValue(val);
 	}
-
-	@Override
-	public void setConfidence(double val) {
-		((RandomVariableAtom) atom).setConfidenceValue(val);
-	}
-
 }

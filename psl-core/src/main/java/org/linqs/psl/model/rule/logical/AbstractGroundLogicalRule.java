@@ -34,12 +34,8 @@ import org.linqs.psl.reasoner.function.FunctionSummand;
 
 /**
  * Base class for all ground logical rules.
- *
- * @author Matthias Broecheler
- * @author Stephen Bach
  */
 public abstract class AbstractGroundLogicalRule implements GroundRule {
-
 	protected final AbstractLogicalRule rule;
 	protected final List<GroundAtom> posLiterals;
 	protected final List<GroundAtom> negLiterals;
@@ -52,32 +48,30 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
 		this.posLiterals = new ArrayList<GroundAtom>(posLiterals);
 		this.negLiterals = new ArrayList<GroundAtom>(negLiterals);
 
-		/* Constructs function definition */
+		// Constructs function definition.
 		function= new FunctionSum();
 
-		for (GroundAtom atom : posLiterals)
+		for (GroundAtom atom : posLiterals) {
 			function.add(new FunctionSummand(1.0, atom.getVariable()));
+		}
 
-		for (GroundAtom atom : negLiterals)
+		for (GroundAtom atom : negLiterals) {
 			function.add(new FunctionSummand(-1.0, atom.getVariable()));
+		}
 
 		function.add(new FunctionSummand(1.0, new ConstantNumber(1.0 - posLiterals.size())));
 
-		/* Constructs hash code */
+		// Constructs the hash code.
 		HashCodeBuilder hcb = new HashCodeBuilder();
 		hcb.append(rule);
-		for (GroundAtom atom : posLiterals)
+		for (GroundAtom atom : posLiterals) {
 			hcb.append(atom);
-		for (GroundAtom atom : negLiterals)
+		}
+		for (GroundAtom atom : negLiterals) {
 			hcb.append(atom);
+		}
 
 		hashcode = hcb.toHashCode();
-
-		/* Must register after all the members (like the hashcode!) are set */
-		for (GroundAtom atom : posLiterals)
-			atom.registerGroundKernel(this);
-		for (GroundAtom atom : negLiterals)
-			atom.registerGroundKernel(this);
 	}
 
 	protected FunctionSum getFunction() {
@@ -87,10 +81,14 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
 	@Override
 	public Set<GroundAtom> getAtoms() {
 		HashSet<GroundAtom> atoms = new HashSet<GroundAtom>();
-		for (GroundAtom atom : posLiterals)
+
+		for (GroundAtom atom : posLiterals) {
 			atoms.add(atom);
-		for (GroundAtom atom : negLiterals)
+		}
+
+		for (GroundAtom atom : negLiterals) {
 			atoms.add(atom);
+		}
 
 		return atoms;
 	}
@@ -101,14 +99,20 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
 
 	@Override
 	public boolean equals(Object other) {
-		if (other==this)
+		if (other == this) {
 			return true;
-		if (other==null || !(other instanceof AbstractGroundLogicalRule))
-			return false;
+		}
 
-		AbstractGroundLogicalRule otherRule = (AbstractGroundLogicalRule) other;
-		if (!rule.equals(otherRule.getRule()))
+		if (other == null
+				|| !(other instanceof AbstractGroundLogicalRule)
+				|| this.hashCode() != other.hashCode()) {
 			return false;
+		}
+
+		AbstractGroundLogicalRule otherRule = (AbstractGroundLogicalRule)other;
+		if (!rule.equals(otherRule.getRule())) {
+			return false;
+		}
 
 		return posLiterals.equals(otherRule.posLiterals)
 				&& negLiterals.equals(otherRule.negLiterals);
@@ -124,10 +128,14 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
 		/* Negates the clause again to show clause to maximize truth of */
 		Formula[] literals = new Formula[posLiterals.size() + negLiterals.size()];
 		int i;
-		for (i = 0; i < posLiterals.size(); i++)
+
+		for (i = 0; i < posLiterals.size(); i++) {
 			literals[i] = new Negation(posLiterals.get(i));
-		for (int j = 0; j < negLiterals.size(); j++)
+		}
+
+		for (int j = 0; j < negLiterals.size(); j++) {
 			literals[i++] = negLiterals.get(j);
+		}
 
 		return (literals.length > 1) ? new Disjunction(literals).toString() : literals[0].toString();
 	}
