@@ -28,9 +28,6 @@ import java.util.Set;
  * This class implements fuzzy negation. Note that we currently only allow the negation of singletons, i.e
  * single atoms. This is not really a restriction, because every formula can be converted into one where
  * only atoms are negated.
- *
- * @author Matthias Broecheler
- * @author Stephen Bach
  */
 public class Negation implements Formula {
 	/**
@@ -54,18 +51,20 @@ public class Negation implements Formula {
 
 	@Override
 	public Formula getDNF() {
-		if (body instanceof Atom) {
+		Formula flatBody = body.flatten();
+
+		if (flatBody instanceof Atom) {
 			return this;
 		}
 
-		if (body instanceof Negation) {
+		if (flatBody instanceof Negation) {
 			// Collapse the double negation.
-			return ((Negation)body).body.getDNF();
+			return ((Negation)flatBody).body.getDNF();
 		}
 
-		if (body instanceof Conjunction) {
+		if (flatBody instanceof Conjunction) {
 			// Apply DeMorgans Law.
-			Conjunction conjunction = (Conjunction)body;
+			Conjunction conjunction = (Conjunction)flatBody;
 			Formula[] components = new Formula[conjunction.length()];
 			for (int i = 0; i < components.length; i++) {
 				components[i] = new Negation(conjunction.get(i));
@@ -73,9 +72,9 @@ public class Negation implements Formula {
 			return new Disjunction(components).getDNF();
 		}
 
-		if (body instanceof Disjunction) {
+		if (flatBody instanceof Disjunction) {
 			// Apply DeMorgans Law.
-			Disjunction disjunction = (Disjunction)body;
+			Disjunction disjunction = (Disjunction)flatBody;
 			Formula[] components = new Formula[disjunction.length()];
 			for (int i = 0; i < components.length; i++) {
 				components[i] = new Negation(disjunction.get(i));
@@ -83,8 +82,8 @@ public class Negation implements Formula {
 			return new Conjunction(components).getDNF();
 		}
 
-		if (body instanceof Implication) {
-			return new Negation(body.getDNF()).getDNF();
+		if (flatBody instanceof Implication) {
+			return new Negation(flatBody.getDNF()).getDNF();
 		}
 
 		throw new IllegalStateException("Body of negation is unrecognized type.");
@@ -124,5 +123,19 @@ public class Negation implements Formula {
 	public VariableTypeMap collectVariables(VariableTypeMap varMap) {
 		body.collectVariables(varMap);
 		return varMap;
+	}
+
+	@Override
+	public Formula flatten() {
+		// Flatten the body and then see if it is a negation.
+		// If it is, then we have a double negation and we can just return the inner
+		// negation's body.
+		Formula flatBody = body.flatten();
+
+		if (flatBody instanceof Negation) {
+			return ((Negation)flatBody).body;
+		}
+
+		return new Negation(flatBody);
 	}
 }

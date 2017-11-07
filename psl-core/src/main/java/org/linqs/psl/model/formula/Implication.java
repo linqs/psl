@@ -17,78 +17,92 @@
  */
 package org.linqs.psl.model.formula;
 
-import java.util.*;
-
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.term.VariableTypeMap;
 
-public class Implication implements Formula {
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
+import java.util.Set;
+
+public class Implication implements Formula {
 	/**
 	 * The fuzzy singletons that constitute the body of the rule
 	 */
 	protected final Formula body;
+
 	/**
 	 * The fuzzy singleton that is the head of the rule
 	 */
 	protected final Formula head;
-	
-	//private final int hashcode;
-	
-	public Implication(Formula b, Formula h) {
-		assert b!=null && h!=null;
-		body = b;
-		head = h;
-	}
 
+	private final int hash;
+
+	public Implication(Formula body, Formula head) {
+		assert(body != null);
+		assert(head != null);
+
+		this.body = body;
+		this.head = head;
+
+		hash = (new HashCodeBuilder()).append(body).append(head).toHashCode();
+	}
 
 	public Formula getBody() {
 		return body;
 	}
-	
+
 	public Formula getHead() {
 		return head;
 	}
-	
+
 	@Override
 	public Formula getDNF() {
-		return new Disjunction(new Negation(body), head).getDNF();
+		return new Disjunction(new Negation(body.flatten()), head.flatten()).getDNF();
 	}
-	
+
 	@Override
 	public VariableTypeMap collectVariables(VariableTypeMap varMap) {
 		body.collectVariables(varMap);
 		head.collectVariables(varMap);
+
 		return varMap;
 	}
-	
+
 	@Override
 	public Set<Atom> getAtoms(Set<Atom> atoms) {
 		body.getAtoms(atoms);
 		head.getAtoms(atoms);
+
 		return atoms;
-		
-	}	
+	}
 
 	@Override
 	public int hashCode() {
-		return new HashCodeBuilder().append(body).append(head).toHashCode();
+		return hash;
 	}
-	
+
 	@Override
-	public boolean equals(Object oth) {
-		if (oth==this) return true;
-		if (oth==null || !(getClass().isInstance(oth)) ) return false;
-		Implication of = (Implication)oth;
-		return body.equals(of.body) && head.equals(of.head);
+	public boolean equals(Object otherObject) {
+		if (otherObject == this) {
+			return true;
+		}
+
+		if (otherObject == null || !(getClass().isInstance(otherObject))) {
+			return false;
+		}
+
+		Implication other = (Implication)otherObject;
+		return hash == other.hash && body.equals(other.body) && head.equals(other.head);
 	}
-	
+
 	@Override
 	public String toString() {
 		return body.toString() + " >> " + head.toString();
 	}
 
-
-
+	@Override
+	public Formula flatten() {
+		// Just flatten out the body and head.
+		return new Implication(body.flatten(), head.flatten());
+	}
 }

@@ -50,72 +50,56 @@ public class FormulaAnalysis {
 	public FormulaAnalysis(Formula formula) {
 		f = formula;
 
-		/*
-		 * Converts the Formula to Disjunctive Normal Form and collects the clauses
-		 */
+		// Converts the Formula to Disjunctive Normal Form and collects the clauses
 		formula = formula.getDNF();
 		Formula[] rawClauses;
 		if (formula instanceof Disjunction) {
-			Disjunction disj = ((Disjunction) formula).flatten();
+			Disjunction disj = (Disjunction)formula.flatten();
 			rawClauses = new Formula[disj.length()];
 			for (int i = 0; i < rawClauses.length; i++)
 				rawClauses[i] = disj.get(i);
-		}
-		else {
+		} else {
 			rawClauses = new Formula[] {formula};
 		}
 
-		/*
-		 * Processes each clause
-		 */
+		// Processes each clause
 		clauses = new ArrayList<DNFClause>(rawClauses.length);
 
 		List<Atom> posLiterals = new ArrayList<Atom>(4);
 		List<Atom> negLiterals = new ArrayList<Atom>(4);
 
 		for (int i = 0; i < rawClauses.length; i++) {
-			/*
-			 * Extracts the positive and negative literals from the clause
-			 */
+			// Extracts the positive and negative literals from the clause
 			if (rawClauses[i] instanceof Conjunction) {
-				Conjunction c = ((Conjunction) rawClauses[i]).flatten();
+				Conjunction c = (Conjunction)rawClauses[i].flatten();
 				for (int j = 0; j < c.length(); j++) {
 					if (c.get(j) instanceof Atom) {
 						posLiterals.add((Atom) c.get(j));
-					}
-					else if (c.get(j) instanceof Negation) {
+					} else if (c.get(j) instanceof Negation) {
 						Negation n = (Negation) c.get(j);
 						if (n.getFormula() instanceof Atom) {
 							negLiterals.add((Atom) n.getFormula());
-						}
-						else {
+						} else {
 							throw new IllegalStateException("Unexpected sub-Formula. Formula was not in flattened Disjunctive Normal Form.");
 						}
-					}
-					else {
+					} else {
 						throw new IllegalStateException("Unexpected sub-Formula. Formula was not in flattened Disjunctive Normal Form.");
 					}
 				}
-			}
-			else if (rawClauses[i] instanceof Atom) {
+			} else if (rawClauses[i] instanceof Atom) {
 				posLiterals.add((Atom) rawClauses[i]);
-			}
-			else if (rawClauses[i] instanceof Negation) {
+			} else if (rawClauses[i] instanceof Negation) {
 				Negation n = (Negation) rawClauses[i];
 				if (n.getFormula() instanceof Atom) {
 					negLiterals.add((Atom) n.getFormula());
-				}
-				else {
+				} else {
 					throw new IllegalStateException("Unexpected sub-Formula. Formula was not in flattened Disjunctive Normal Form.");
 				}
-			}
-			else {
+			} else {
 				throw new IllegalStateException("Unexpected sub-Formula. Formula was not in flattened Disjunctive Normal Form.");
 			}
 
-			/*
-			 * Stores the DNFClause
-			 */
+			// Stores the DNFClause.
 			clauses.add(new DNFClause(posLiterals, negLiterals));
 			posLiterals.clear();
 			negLiterals.clear();
@@ -194,16 +178,19 @@ public class FormulaAnalysis {
 			unboundVariables.removeAll(allowedVariables);
 
 			// Processes the positive literals with StandardPredicates further
-			for (int i = 0; i < posLiterals.size(); i++)
-				if (posLiterals.get(i).getPredicate() instanceof StandardPredicate)
+			for (int i = 0; i < posLiterals.size(); i++) {
+				if (posLiterals.get(i).getPredicate() instanceof StandardPredicate) {
 					dependence.put(posLiterals.get(i).getPredicate(), posLiterals.get(i));
+				}
+			}
 
-			if (posLiterals.size() == 0)
+			if (posLiterals.size() == 0) {
 				query = null;
-			else if (posLiterals.size() == 1)
+			} else if (posLiterals.size() == 1) {
 				query = (unboundVariables.isEmpty()) ? posLiterals.get(0) : null;
-			else
+			} else {
 				query = (unboundVariables.isEmpty()) ? new Conjunction(posLiterals.toArray(new Formula[posLiterals.size()])) : null;
+			}
 		}
 
 		/**

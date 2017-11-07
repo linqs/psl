@@ -42,8 +42,6 @@ import com.healthmarketscience.sqlbuilder.BinaryCondition;
  * Two Atoms are equal if their Predicate and arguments are equal. Note that this
  * means that their truth values might not match, or one might even be a
  * {@link QueryAtom}.
- *
- * @author Matthias Broecheler
  */
 public abstract class Atom implements Formula, SummationAtomOrAtom {
 	protected final Predicate predicate;
@@ -195,5 +193,11 @@ public abstract class Atom implements Formula, SummationAtomOrAtom {
 		// First check the hashcode to reduce the time we have to do a deepEquals() on the arguments.
 		// Note that the hashcode is not perfect, but provides a quick insurance on inequality.
 		return hashCode() == other.hashCode() && predicate.equals(other.predicate) && Arrays.deepEquals(arguments, other.arguments);
+	}
+
+	@Override
+	public Formula flatten() {
+		// Atom's are already flat by nature.
+		return this;
 	}
 }

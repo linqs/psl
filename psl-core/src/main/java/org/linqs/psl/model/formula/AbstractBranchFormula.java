@@ -104,29 +104,18 @@ abstract class AbstractBranchFormula<T extends AbstractBranchFormula<T>> impleme
 		return s.toString();
 	}
 
-	/**
-	 * flatten(), but with the the components belonging to this formula.
-	 */
-	public T flatten() {
-		return flatten(formulas);
-	}
-
-	/**
-	 * Collapses nested formulas of the same type and remove duplicates at the top level.
-	 * Stops descending whereever a Formula other than the same type is found.
-	 * Ex: (A ^ B) ^ C ^ (D v E) becomes A ^ B ^ C ^ (D v E).
-	 *
-	 * @return the flattened Formula.
-	 */
-	public T flatten(Formula[] components) {
+	@Override
+	public Formula flatten() {
 		Set<Formula> flatComponents = new HashSet<Formula>();
 
-		for (Formula component : components) {
+		for (Formula component : formulas) {
 			// Check if the component is an instance of the current class.
 			// (Cannot use instanceof since we don't have a finite class to check against.)
+			// If it is, then we can flatten it into the current instance
+			// (eg A ^ (B ^ C) can get flattened into A ^ B ^ C).
 			if (this.getClass().isAssignableFrom(component.getClass())) {
 				// Flatten out the new component.
-				Formula[] newComponents = ((AbstractBranchFormula)component).flatten().formulas;
+				Formula[] newComponents = ((AbstractBranchFormula)component.flatten()).formulas;
 				for (Formula newComponent : newComponents) {
 					flatComponents.add(newComponent);
 				}
@@ -143,7 +132,7 @@ abstract class AbstractBranchFormula<T extends AbstractBranchFormula<T>> impleme
 
 			// Note that we have to cast the arguments to an Object since we are using varargs
 			// (variadic arguments) in the constructors.
-			return (T)(this.getClass().getConstructor(Formula[].class).newInstance((Object)args));
+			return (Formula)(this.getClass().getConstructor(Formula[].class).newInstance((Object)args));
 		} catch (NoSuchMethodException ex) {
 			throw new RuntimeException("AbstractBranchFormula does not have a constructor that takes an Array of Formula.", ex);
 		} catch (InstantiationException | IllegalAccessException | InvocationTargetException ex) {
