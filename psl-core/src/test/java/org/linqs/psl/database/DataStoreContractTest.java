@@ -19,15 +19,8 @@ package org.linqs.psl.database;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseQuery;
@@ -52,6 +45,15 @@ import org.linqs.psl.model.term.DoubleAttribute;
 import org.linqs.psl.model.term.StringAttribute;
 import org.linqs.psl.model.term.UniqueIntID;
 import org.linqs.psl.model.term.Variable;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Contract tests for classes that implement {@link DataStore}.
@@ -541,7 +543,7 @@ public abstract class DataStoreContractTest {
 			assertTrue(false);
 	}
 
-	@Test(expected=IllegalArgumentException.class)
+	@Test
 	public void testExecuteQueryIllegalProjectionVariable() {
 		if (datastore == null) {
 			return;
@@ -575,7 +577,13 @@ public abstract class DataStoreContractTest {
 		formula = new QueryAtom(p1, X, Y);
 		query = new DatabaseQuery(formula);
 		query.addToProjection(X);
-		query.addToProjection(Z);
+
+		try {
+			query.addToProjection(Z);
+			fail("IllegalArgumentException not thrown as expected.");
+		} catch (IllegalArgumentException ex) {
+			// Expected
+		}
 	}
 
 	@Test
@@ -647,33 +655,45 @@ public abstract class DataStoreContractTest {
 		assertEquals(1.0, atom.getValue(), 0.0);
 	}
 
-	@Test(expected=IllegalArgumentException.class)
+	@Test
 	public void testGetAtomUnregisteredPredicate() {
 		if (datastore == null) {
-			throw new IllegalArgumentException();
+			return;
 		}
 
 		Database db = datastore.getDatabase(datastore.getPartition("0"));
 		dbs.add(db);
-		db.getAtom(p2, new StringAttribute("a"), new StringAttribute("b"));
+
+		try {
+			db.getAtom(p2, new StringAttribute("a"), new StringAttribute("b"));
+			fail("IllegalArgumentException not thrown as expected.");
+		} catch (IllegalArgumentException ex) {
+			// Expected
+		}
 	}
 
-	@Test(expected=IllegalArgumentException.class)
+	@Test
 	public void testLateRegisteredPredicate() {
 		if (datastore == null) {
-			throw new IllegalArgumentException();
+			return;
 		}
 
 		Database db = datastore.getDatabase(datastore.getPartition("0"));
 		dbs.add(db);
 		datastore.registerPredicate(p1);
-		db.getAtom(p2, new StringAttribute("a"), new StringAttribute("b"));
+
+		try {
+			db.getAtom(p2, new StringAttribute("a"), new StringAttribute("b"));
+			fail("IllegalArgumentException not thrown as expected.");
+		} catch (IllegalArgumentException ex) {
+			// Expected
+		}
 	}
 
-	@Test(expected=IllegalStateException.class)
+	@Test
 	public void testAtomInReadAndWritePartitions() {
 		if (datastore == null) {
-			throw new IllegalStateException();
+			return;
 		}
 
 		datastore.registerPredicate(p1);
@@ -689,13 +709,19 @@ public abstract class DataStoreContractTest {
 
 		Database db = datastore.getDatabase(datastore.getPartition("0"), datastore.getPartition("1"));
 		dbs.add(db);
-		db.getAtom(p1, a, b);
+
+		try {
+			db.getAtom(p1, a, b);
+			fail("IllegalStateException not thrown as expected.");
+		} catch (IllegalStateException ex) {
+			// Expected
+		}
 	}
 
-	@Test(expected=IllegalStateException.class)
+	@Test
 	public void testAtomInTwoReadPartitions() {
 		if (datastore == null) {
-			throw new IllegalStateException();
+			return;
 		}
 
 		datastore.registerPredicate(p1);
@@ -711,7 +737,13 @@ public abstract class DataStoreContractTest {
 
 		Database db = datastore.getDatabase(datastore.getPartition("2"), datastore.getPartition("0"), datastore.getPartition("1"));
 		dbs.add(db);
-		db.getAtom(p1, a, b);
+
+		try {
+			db.getAtom(p1, a, b);
+			fail("IllegalStateException not thrown as expected.");
+		} catch (IllegalStateException ex) {
+			// Expected
+		}
 	}
 
 	@Test
@@ -747,63 +779,98 @@ public abstract class DataStoreContractTest {
 		assertTrue(atom instanceof ObservedAtom);
 	}
 
-	@Test(expected=IllegalArgumentException.class)
+	@Test
 	public void testSharedWritePartition() {
 		if (datastore == null) {
-			throw new IllegalArgumentException();
+			return;
 		}
 
 		dbs.add(datastore.getDatabase(datastore.getPartition("0")));
-		dbs.add(datastore.getDatabase(datastore.getPartition("0")));
+
+		try {
+			dbs.add(datastore.getDatabase(datastore.getPartition("0")));
+			fail("IllegalArgumentException not thrown as expected.");
+		} catch (IllegalArgumentException ex) {
+			// Expected
+		}
 	}
 
-	@Test(expected=IllegalArgumentException.class)
+	@Test
 	public void testSharedReadWritePartition1() {
 		if (datastore == null) {
-			throw new IllegalArgumentException();
+			return;
 		}
 
 		dbs.add(datastore.getDatabase(datastore.getPartition("0")));
-		dbs.add(datastore.getDatabase(datastore.getPartition("1"), datastore.getPartition("0")));
+
+		try {
+			dbs.add(datastore.getDatabase(datastore.getPartition("1"), datastore.getPartition("0")));
+			fail("IllegalArgumentException not thrown as expected.");
+		} catch (IllegalArgumentException ex) {
+			// Expected
+		}
 	}
 
-	@Test(expected=IllegalArgumentException.class)
+	@Test
 	public void testSharedReadWritePartition2() {
 		if (datastore == null) {
-			throw new IllegalArgumentException();
+			return;
 		}
 
 		dbs.add(datastore.getDatabase(datastore.getPartition("0"), datastore.getPartition("1")));
-		dbs.add(datastore.getDatabase(datastore.getPartition("1")));
+
+		try {
+			dbs.add(datastore.getDatabase(datastore.getPartition("1")));
+			fail("IllegalArgumentException not thrown as expected.");
+		} catch (IllegalArgumentException ex) {
+			// Expected
+		}
 	}
 
-	@Test(expected=IllegalArgumentException.class)
+	@Test
 	public void testGetInserterUnregisteredPredicate() {
 		if (datastore == null) {
-			throw new IllegalArgumentException();
+			return;
 		}
 
-		datastore.getInserter(p1, datastore.getPartition("0"));
+		try {
+			datastore.getInserter(p1, datastore.getPartition("0"));
+			fail("IllegalArgumentException not thrown as expected.");
+		} catch (IllegalArgumentException ex) {
+			// Expected
+		}
 	}
 
-	@Test(expected=IllegalArgumentException.class)
+	@Test
 	public void testGetInserterPartitionInUseWrite() {
 		if (datastore == null) {
-			throw new IllegalArgumentException();
+			return;
 		}
 
 		dbs.add(datastore.getDatabase(datastore.getPartition("0")));
-		datastore.getInserter(p1, datastore.getPartition("0"));
+
+		try {
+			datastore.getInserter(p1, datastore.getPartition("0"));
+			fail("IllegalArgumentException not thrown as expected.");
+		} catch (IllegalArgumentException ex) {
+			// Expected
+		}
 	}
 
-	@Test(expected=IllegalArgumentException.class)
+	@Test
 	public void testGetInserterPartitionInUseRead() {
 		if (datastore == null) {
-			throw new IllegalArgumentException();
+			return;
 		}
 
 		dbs.add(datastore.getDatabase(datastore.getPartition("1"), datastore.getPartition("0")));
-		datastore.getInserter(p1, datastore.getPartition("0"));
+
+		try {
+			datastore.getInserter(p1, datastore.getPartition("0"));
+			fail("IllegalArgumentException not thrown as expected.");
+		} catch (IllegalArgumentException ex) {
+			// Expected
+		}
 	}
 
 	@Test
@@ -820,10 +887,10 @@ public abstract class DataStoreContractTest {
 		datastore.getInserter(p1, datastore.getPartition("0"));
 	}
 
-	@Test(expected=IllegalStateException.class)
+	@Test
 	public void testGetAtomAfterClose() {
 		if (datastore == null) {
-			throw new IllegalStateException();
+			return;
 		}
 
 		datastore.registerPredicate(p1);
@@ -833,13 +900,19 @@ public abstract class DataStoreContractTest {
 
 		Database db = datastore.getDatabase(datastore.getPartition("0"));
 		db.close();
-		db.getAtom(p1, a, b);
+
+		try {
+			db.getAtom(p1, a, b);
+			fail("IllegalStateException not thrown as expected.");
+		} catch (IllegalStateException ex) {
+			// Expected
+		}
 	}
 
-	@Test(expected=IllegalStateException.class)
+	@Test
 	public void testCommitAfterClose() {
 		if (datastore == null) {
-			throw new IllegalStateException();
+			return;
 		}
 
 		datastore.registerPredicate(p1);
@@ -850,13 +923,19 @@ public abstract class DataStoreContractTest {
 		Database db = datastore.getDatabase(datastore.getPartition("0"));
 		RandomVariableAtom atom = (RandomVariableAtom) db.getAtom(p1, a, b);
 		db.close();
-		db.commit(atom);
+
+		try {
+			db.commit(atom);
+			fail("IllegalStateException not thrown as expected.");
+		} catch (IllegalStateException ex) {
+			// Expected
+		}
 	}
 
-	@Test(expected=IllegalStateException.class)
+	@Test
 	public void testQueryAfterClose() {
 		if (datastore == null) {
-			throw new IllegalStateException();
+			return;
 		}
 
 		datastore.registerPredicate(p1);
@@ -868,7 +947,13 @@ public abstract class DataStoreContractTest {
 
 		Database db = datastore.getDatabase(datastore.getPartition("0"));
 		db.close();
-		db.executeQuery(query);
+
+		try {
+			db.executeQuery(query);
+			fail("IllegalStateException not thrown as expected.");
+		} catch (IllegalStateException ex) {
+			// Expected
+		}
 	}
 
 	@Test
@@ -904,14 +989,20 @@ public abstract class DataStoreContractTest {
 		assertEquals(0, results.size());
 	}
 
-	@Test(expected=IllegalArgumentException.class)
+	@Test
 	public void testDeletePartitionInUse() {
 		if (datastore == null) {
-			throw new IllegalArgumentException();
+			return;
 		}
 
 		dbs.add(datastore.getDatabase(datastore.getPartition("0")));
-		datastore.deletePartition(datastore.getPartition("0"));
+
+		try {
+			datastore.deletePartition(datastore.getPartition("0"));
+			fail("IllegalArgumentException not thrown as expected.");
+		} catch (IllegalArgumentException ex) {
+			// Expected
+		}
 	}
 
 	@Test
