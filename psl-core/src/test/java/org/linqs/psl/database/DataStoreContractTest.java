@@ -544,7 +544,7 @@ public abstract class DataStoreContractTest {
 	@Test(expected=IllegalArgumentException.class)
 	public void testExecuteQueryIllegalProjectionVariable() {
 		if (datastore == null) {
-			throw new NullPointerException();
+			return;
 		}
 
 		Inserter inserter;
