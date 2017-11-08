@@ -37,7 +37,6 @@ import java.util.Map;
  * @author Stephen Bach
  */
 public class WeightedArithmeticRule extends AbstractArithmeticRule implements WeightedRule {
-
 	protected Weight weight;
 	protected boolean squared;
 	protected boolean mutable;
@@ -75,7 +74,7 @@ public class WeightedArithmeticRule extends AbstractArithmeticRule implements We
 	public void setWeight(Weight w) {
 		if (!mutable) {
 			throw new IllegalStateException("Rule weight is not mutable.");
-      }
+		}
 
 		weight = w;
 	}
@@ -107,5 +106,4 @@ public class WeightedArithmeticRule extends AbstractArithmeticRule implements We
 		}
 		return s.toString();
 	}
-
 }

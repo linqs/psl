@@ -135,6 +135,23 @@ public class PSLTest {
 		assertRules(rules.toArray(new Rule[0]), expectedRules, alphabetize);
 	}
 
+	public static List<Rule> getRules(DataStore dataStore, String input) {
+		Model model = null;
+
+		try {
+			model = ModelLoader.load(dataStore, input);
+		} catch (IOException ex) {
+			fail("IOException thrown from ModelLoader.load(): " + ex);
+		}
+
+		List<Rule> rules = new ArrayList<Rule>();
+		for (Rule rule : model.getRules()) {
+			rules.add(rule);
+		}
+
+		return rules;
+	}
+
 	/**
 	 * Convenience call for the common functionality of assertRule() (alphabetize).
 	 */

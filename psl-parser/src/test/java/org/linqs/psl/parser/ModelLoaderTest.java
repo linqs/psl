@@ -27,9 +27,13 @@ import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver.Type;
+import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.predicate.PredicateFactory;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.arithmetic.WeightedArithmeticRule;
+import org.linqs.psl.model.rule.arithmetic.expression.SummationAtom;
+import org.linqs.psl.model.rule.arithmetic.expression.SummationAtomOrAtom;
 import org.linqs.psl.model.term.ConstantType;
 
 import org.apache.commons.lang3.StringUtils;
@@ -843,5 +847,34 @@ public class ModelLoaderTest {
 				}
 			}
 		}
+	}
+
+	// Make sure that arithmetic rules properly differentiate between
+	// QueryAtoms and SummationAtoms.
+	@Test
+	public void testArithmeticSummationAtom() {
+		// QueryAtom
+		String input = "1.0: Double(A, B) <= 1.0 ^2";
+		List<Rule> rules = PSLTest.getRules(dataStore, input);
+
+		assertEquals(1, rules.size());
+		assertEquals(WeightedArithmeticRule.class, rules.get(0).getClass());
+
+		WeightedArithmeticRule rule = (WeightedArithmeticRule)rules.get(0);
+		List<SummationAtomOrAtom> atoms = rule.getExpression().getAtoms();
+		assertEquals(1, atoms.size());
+		assertEquals(QueryAtom.class, atoms.get(0).getClass());
+
+		// SummationAtom
+		input = "1.0: Double(+A, B) <= 1.0 ^2";
+		rules = PSLTest.getRules(dataStore, input);
+
+		assertEquals(1, rules.size());
+		assertEquals(WeightedArithmeticRule.class, rules.get(0).getClass());
+
+		rule = (WeightedArithmeticRule)rules.get(0);
+		atoms = rule.getExpression().getAtoms();
+		assertEquals(1, atoms.size());
+		assertEquals(SummationAtom.class, atoms.get(0).getClass());
 	}
 }

@@ -1488,6 +1488,80 @@ public class GroundRuleTest {
 		}
 	}
 
+	// Test rules that look like arithmetic priors.
+	@Test
+	public void testArithmeticPrior() {
+		GroundRuleStore store = new MemoryGroundRuleStore();
+		AtomManager manager = new SimpleAtomManager(database);
+
+		Rule rule;
+		List<String> expected;
+		List<Coefficient> coefficients;
+		List<SummationAtomOrAtom> atoms;
+
+		// 1.0: Friends(A, B) = 0 ^2
+		coefficients = Arrays.asList(
+			(Coefficient)(new ConstantNumber(1))
+		);
+
+		atoms = Arrays.asList(
+			(SummationAtomOrAtom)(new QueryAtom(model.predicates.get("Friends"), new Variable("A"), new Variable("B")))
+		);
+
+		rule = new WeightedArithmeticRule(
+				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1)),
+				0,
+				true
+		);
+
+		// Remember, equality puts in a <= and >=.
+		expected = Arrays.asList(
+			"1.0: 1.0 * FRIENDS('Alice', 'Bob') <= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Alice', 'Charlie') <= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Alice', 'Derek') <= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Alice', 'Eugene') <= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Bob', 'Alice') <= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Bob', 'Charlie') <= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Bob', 'Derek') <= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Bob', 'Eugene') <= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Charlie', 'Alice') <= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Charlie', 'Bob') <= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Charlie', 'Derek') <= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Charlie', 'Eugene') <= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Derek', 'Alice') <= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Derek', 'Bob') <= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Derek', 'Charlie') <= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Derek', 'Eugene') <= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Eugene', 'Alice') <= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Eugene', 'Bob') <= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Eugene', 'Charlie') <= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Eugene', 'Derek') <= 0.0 ^2",
+
+			"1.0: 1.0 * FRIENDS('Alice', 'Bob') >= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Alice', 'Charlie') >= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Alice', 'Derek') >= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Alice', 'Eugene') >= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Bob', 'Alice') >= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Bob', 'Charlie') >= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Bob', 'Derek') >= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Bob', 'Eugene') >= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Charlie', 'Alice') >= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Charlie', 'Bob') >= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Charlie', 'Derek') >= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Charlie', 'Eugene') >= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Derek', 'Alice') >= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Derek', 'Bob') >= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Derek', 'Charlie') >= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Derek', 'Eugene') >= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Eugene', 'Alice') >= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Eugene', 'Bob') >= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Eugene', 'Charlie') >= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Eugene', 'Derek') >= 0.0 ^2"
+		);
+		rule.groundAll(manager, store);
+		PSLTest.compareGroundRules(expected, rule, store);
+	}
+
 	@After
 	public void cleanup() {
 		database.close();
