@@ -27,6 +27,7 @@ import org.linqs.psl.database.DatabaseQuery;
 import org.linqs.psl.database.ResultList;
 import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
+import org.linqs.psl.database.rdbms.driver.MySQLDriver;
 import org.linqs.psl.database.rdbms.driver.PostgreSQLDriver;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.formula.Formula;
@@ -49,7 +50,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class DatabaseTestUtil {
-	private static final String DB_NAME = "psl-test";
+	private static final String DB_NAME = "psltest";
 	private static final String DB_BASE_PATH = Paths.get(System.getProperty("java.io.tmpdir"), DB_NAME).toString();
 
 	public static DatabaseDriver getH2Driver() {
@@ -89,11 +90,43 @@ public class DatabaseTestUtil {
 		}
 	}
 
+	public static DatabaseDriver getMySQLDriver() {
+		return getMySQLDriver(true);
+	}
+
+	/**
+	 * Get a driver for the default test MySQL database.
+	 * Will return null if the mysql database could not be connected to.
+	 * This means that the test should be skipped.
+	 */
+	public static DatabaseDriver getMySQLDriver(boolean clear) {
+		try {
+			return new MySQLDriver(DB_NAME, clear);
+		} catch (RuntimeException ex) {
+			// Check to see if we failed to connect because the server is down.
+			if (ex.getCause() instanceof com.mysql.jdbc.exceptions.jdbc4.CommunicationsException) {
+				if (ex.getCause().getCause() instanceof java.net.ConnectException) {
+					if (ex.getCause().getCause().getMessage().contains("Connection refused")) {
+						System.out.println("Skipping MySQL test... cannot connect to database.");
+						return null;
+					}
+				}
+			}
+
+			// We failed to connect, but not because the server is down.
+			// Rethrown the exception.
+			throw ex;
+		}
+	}
+
 	public static void cleanH2Driver() {
 		(new File(DB_BASE_PATH + ".h2.db")).delete();
 		(new File(DB_BASE_PATH + ".trace.db")).delete();
 	}
 
 	public static void cleanPostgresDriver() {
+	}
+
+	public static void cleanMySQLDriver() {
 	}
 }

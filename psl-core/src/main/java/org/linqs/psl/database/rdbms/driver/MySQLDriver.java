@@ -34,6 +34,7 @@ import java.sql.Statement;
  * MySQL Connection Wrapper.
  */
 public class MySQLDriver implements DatabaseDriver {
+	public static final String DEFAULT_CONNECTION_STRING = "jdbc:mysql://localhost";
 
 	// The connection to MySQL
 	private final Connection dbConnection;
@@ -44,6 +45,13 @@ public class MySQLDriver implements DatabaseDriver {
 		stmt = dbConnection.createStatement();
 		stmt.executeUpdate(query);
 		stmt.close();
+	}
+
+	/**
+	 * Connect with the default connection string (localhost and no credentials).
+	 */
+	public MySQLDriver(String dbname, boolean clearDB) {
+		this(dbname, DEFAULT_CONNECTION_STRING, clearDB);
 	}
 
 	/**
@@ -64,13 +72,13 @@ public class MySQLDriver implements DatabaseDriver {
 	 * @param dbname mysql database name, similiar to H2 path
 	 * @param clearDB whether to delete the database
 	 */
-	public MySQLDriver(String dbname, boolean clearDB) {
+	public MySQLDriver(String dbname, String connectionString, boolean clearDB) {
 		try {
 			// load driver
 			Class.forName("com.mysql.jdbc.Driver").newInstance();
 
 			// get connection
-			dbConnection = DriverManager.getConnection("jdbc:mysql://localhost/?user=root&password=");
+			dbConnection = DriverManager.getConnection(connectionString);
 
 			// clean db if specified
 			if (clearDB) {

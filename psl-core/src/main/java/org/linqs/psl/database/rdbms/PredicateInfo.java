@@ -51,7 +51,7 @@ public class PredicateInfo {
 	private static final Logger log = LoggerFactory.getLogger(PredicateInfo.class);
 
 	public static final String PREDICATE_TABLE_SUFFIX = "_PREDICATE";
-	public static final String PARTITION_COLUMN_NAME = "partition";
+	public static final String PARTITION_COLUMN_NAME = "partition_id";
 	public static final String VALUE_COLUMN_NAME = "value";
 
 	private final Predicate predicate;

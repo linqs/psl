@@ -73,11 +73,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/**
- *
- * @author Eric Norris (enorris@cs.umd.edu)
- *
- */
 public class RDBMSDatabase implements Database {
 	private static final Logger log = LoggerFactory.getLogger(RDBMSDatabase.class);
 
