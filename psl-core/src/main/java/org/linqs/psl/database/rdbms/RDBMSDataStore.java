@@ -57,11 +57,6 @@ public class RDBMSDataStore implements DataStore {
 	public static final String CONFIG_PREFIX = "rdbmsdatastore";
 
 	/**
-	 * Name of metadata table.
-	 **/
-	public static final String METADATA_TABLENAME = CONFIG_PREFIX + "_metadata";
-
-	/**
 	 * Default value for the USE_STRING_ID_KEY property.
 	 */
 	public static final boolean USE_STRING_ID_DEFAULT = true;
@@ -116,7 +111,7 @@ public class RDBMSDataStore implements DataStore {
 		this.dataloader = new RDBMSDataLoader(connection);
 
 		// Initialize metadata
-		initializeMetadata(connection, METADATA_TABLENAME);
+		this.metadata = new DataStoreMetadata(connection);
 
 		// Read in any predicates that exist in the database
 		for (StandardPredicate predicate : PredicateInfo.deserializePredicates(connection)) {
@@ -127,14 +122,6 @@ public class RDBMSDataStore implements DataStore {
 		if (dbDriver.supportsExternalFunctions()) {
 			ExternalFunctions.registerFunctionAlias(connection);
 		}
-	}
-
-	/**
-	 * Helper method to read from metadata table and store results into metadata object
-	 */
-	private void initializeMetadata(Connection conn, String tblName){
-		this.metadata = new DataStoreMetadata(conn, tblName);
-		metadata.createMetadataTable();
 	}
 
 	@Override
@@ -272,25 +259,12 @@ public class RDBMSDataStore implements DataStore {
 	}
 
 	public Partition getNewPartition(){
-		int partnum = getNextPartition();
-		return new Partition(partnum,"AnonymousPartition_"+Integer.toString(partnum));
-	}
-
-	private int getNextPartition() {
-		int maxPartition = 0;
-		maxPartition = metadata.getMaxPartition();
-		return maxPartition + 1;
+		return metadata.getNewPartition();
 	}
 
 	@Override
 	public Partition getPartition(String partitionName) {
-		Partition partition = metadata.getPartitionByName(partitionName);
-		if (partition == null) {
-			partition = new Partition(getNextPartition(), partitionName);
-			metadata.addPartition(partition);
-		}
-
-		return partition;
+		return metadata.getPartition(partitionName);
 	}
 
 	@Override
