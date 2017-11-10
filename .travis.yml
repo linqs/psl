@@ -7,9 +7,7 @@ addons:
   postgresql: "9.6"
 
 services:
-  - mysql
   - postgresql
 
 before_script:
   - createdb psltest
-  - mysql -e 'CREATE DATABASE IF NOT EXISTS psltest;'
