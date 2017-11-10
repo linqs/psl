@@ -130,7 +130,7 @@ public class RuleStringTest {
 		inserter.insert(new UniqueStringID("Bob"));
 
 		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
-		database = dataStore.getDatabase(dataStore.getNewPartition(), toClose);
+		database = dataStore.getDatabase(dataStore.getNewPartition(), toClose, obsPartition);
 	}
 
 	@Test
