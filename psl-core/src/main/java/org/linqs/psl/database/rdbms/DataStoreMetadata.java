@@ -66,11 +66,11 @@ public class DataStoreMetadata {
 
 		List<String> sql = new ArrayList<String>();
 		sql.add("CREATE TABLE " + METADATA_TABLENAME + " (");
-		sql.add("   namespace VARCHAR(255),");
-		sql.add("   keytype VARCHAR(255),");
-		sql.add("   key VARCHAR(255),");
-		sql.add("   value VARCHAR(255),");
-		sql.add("   PRIMARY KEY(namespace, keytype, key)");
+		sql.add("  namespace VARCHAR(255),");
+		sql.add("  keytype VARCHAR(255),");
+		sql.add("  key VARCHAR(255),");
+		sql.add("  value VARCHAR(255),");
+		sql.add("  PRIMARY KEY(namespace, keytype, key)");
 		sql.add(")");
 
 		try (PreparedStatement statement = conn.prepareStatement(StringUtils.join(sql, "\n"))) {
@@ -111,9 +111,9 @@ public class DataStoreMetadata {
 		sql.add("SELECT value");
 		sql.add("FROM " + METADATA_TABLENAME);
 		sql.add("WHERE");
-		sql.add("   namespace = ?");
-		sql.add("   AND keytype = ?");
-		sql.add("   AND key = ?");
+		sql.add("  namespace = ?");
+		sql.add("  AND keytype = ?");
+		sql.add("  AND key = ?");
 
 		ResultSet resultSet = null;
 		try (PreparedStatement statement = conn.prepareStatement(StringUtils.join(sql, "\n"))) {
@@ -146,9 +146,9 @@ public class DataStoreMetadata {
 		sql.add("DELETE");
 		sql.add("FROM " + METADATA_TABLENAME);
 		sql.add("WHERE");
-		sql.add("   namespace = ?");
-		sql.add("   AND keytype = ?");
-		sql.add("   AND key = ?");
+		sql.add("  namespace = ?");
+		sql.add("  AND keytype = ?");
+		sql.add("  AND key = ?");
 
 		try (PreparedStatement statement = conn.prepareStatement(StringUtils.join(sql, "\n"))) {
 			statement.setString(1, namespace);
@@ -165,8 +165,8 @@ public class DataStoreMetadata {
 		sql.add("SELECT key, value");
 		sql.add("FROM " + METADATA_TABLENAME);
 		sql.add("WHERE");
-		sql.add("   namespace = ?");
-		sql.add("   AND keytype = ?");
+		sql.add("  namespace = ?");
+		sql.add("  AND keytype = ?");
 
 		ResultSet resultSet = null;
 		Map<String, String> vals = new HashMap<String,String>();
@@ -177,9 +177,7 @@ public class DataStoreMetadata {
 			statement.execute();
 
 			resultSet = statement.getResultSet();
-			vals = new HashMap<String,String>();
-
-			while(resultSet.next()) {
+			while (resultSet.next()) {
 				vals.put(resultSet.getString(1), resultSet.getString(2));
 			}
 		} catch (SQLException ex) {
@@ -208,13 +206,18 @@ public class DataStoreMetadata {
 		return names;
 	}
 
+	private Partition addPartition(int id, String name) {
+		addRow(PARTITION_NAMESPACE, NAME_KEY, name, "" + id);
+		return new Partition(id, name);
+	}
+
 	public Partition getPartition(String name) {
 		String idString = getValue(PARTITION_NAMESPACE, NAME_KEY, name);
 
 		if (idString != null) {
 			return new Partition(Integer.parseInt(idString), name);
 		} else {
-			return new Partition(nextPartition++, name);
+			return addPartition(nextPartition++, name);
 		}
 	}
 
