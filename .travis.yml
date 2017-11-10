@@ -12,3 +12,4 @@ services:
 
 before_script:
   - createdb psltest
+  - mysql -e 'CREATE DATABASE IF NOT EXISTS psltest;'

@@ -75,7 +75,7 @@ public interface DatabaseDriver {
 	/**
 	 * Get a string aggregating expression (one that
 	 * would appear in the SELECT clause of a grouping query.
-	 * Postgres uses STRING_AGG, MySQL and H2 use GROUP_CONCAT.
+	 * Postgres uses STRING_AGG and H2 use GROUP_CONCAT.
 	 */
 	public String getStringAggregate(String columnName, String delimiter, boolean distinct);
 }

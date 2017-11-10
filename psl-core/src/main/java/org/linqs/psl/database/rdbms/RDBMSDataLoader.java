@@ -248,7 +248,6 @@ public class RDBMSDataLoader implements DataLoader {
 								activeStatement.setInt(paramIndex++, (Integer)argValue);
 							} else if (argValue instanceof Double) {
 								// The standard JDBC way to insert NaN is using setNull
-								// if not, mysql will complain about any NaNs.
 								if (Double.isNaN((Double)argValue)) {
 									activeStatement.setNull(paramIndex++, java.sql.Types.DOUBLE);
 								} else {

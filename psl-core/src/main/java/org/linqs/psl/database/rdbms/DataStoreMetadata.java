@@ -65,12 +65,12 @@ public class DataStoreMetadata {
 		}
 
 		List<String> sql = new ArrayList<String>();
-		sql.add("CREATE TABLE " + METADATA_TABLENAME + " (");
+		sql.add("CREATE TABLE IF NOT EXISTS " + METADATA_TABLENAME + " (");
 		sql.add("  namespace VARCHAR(255),");
 		sql.add("  keytype VARCHAR(255),");
-		sql.add("  key VARCHAR(255),");
+		sql.add("  keyvalue VARCHAR(255),");
 		sql.add("  value VARCHAR(255),");
-		sql.add("  PRIMARY KEY(namespace, keytype, key)");
+		sql.add("  PRIMARY KEY(namespace, keytype, keyvalue)");
 		sql.add(")");
 
 		try (PreparedStatement statement = conn.prepareStatement(StringUtils.join(sql, "\n"))) {
@@ -81,8 +81,6 @@ public class DataStoreMetadata {
 	}
 
 	private boolean exists() {
-		boolean exists = false;
-
 		try (ResultSet resultSet = conn.getMetaData().getTables(null, null, METADATA_TABLENAME, null)) {
 			if (resultSet.next()) {
 				return true;
@@ -94,11 +92,11 @@ public class DataStoreMetadata {
 		return false;
 	}
 
-	private void addRow(String namespace, String type, String key, String val) {
+	private void addRow(String namespace, String type, String keyvalue, String val) {
 		try (PreparedStatement statement = conn.prepareStatement("INSERT INTO " + METADATA_TABLENAME + " VALUES(?, ?, ?, ?)")) {
 			statement.setString(1, namespace);
 			statement.setString(2, type);
-			statement.setString(3, key);
+			statement.setString(3, keyvalue);
 			statement.setString(4, val);
 			statement.execute();
 		} catch (SQLException ex) {
@@ -106,20 +104,20 @@ public class DataStoreMetadata {
 		}
 	}
 
-	private String getValue(String namespace, String type, String key) {
+	private String getValue(String namespace, String type, String keyvalue) {
 		List<String> sql = new ArrayList<String>();
 		sql.add("SELECT value");
 		sql.add("FROM " + METADATA_TABLENAME);
 		sql.add("WHERE");
 		sql.add("  namespace = ?");
 		sql.add("  AND keytype = ?");
-		sql.add("  AND key = ?");
+		sql.add("  AND keyvalue = ?");
 
 		ResultSet resultSet = null;
 		try (PreparedStatement statement = conn.prepareStatement(StringUtils.join(sql, "\n"))) {
 			statement.setString(1, namespace);
 			statement.setString(2, type);
-			statement.setString(3, key);
+			statement.setString(3, keyvalue);
 			statement.execute();
 
 			resultSet = statement.getResultSet();
@@ -141,19 +139,19 @@ public class DataStoreMetadata {
 		return null;
 	}
 
-	private void removeRow(String namespace, String type, String key) {
+	private void removeRow(String namespace, String type, String keyvalue) {
 		List<String> sql = new ArrayList<String>();
 		sql.add("DELETE");
 		sql.add("FROM " + METADATA_TABLENAME);
 		sql.add("WHERE");
 		sql.add("  namespace = ?");
 		sql.add("  AND keytype = ?");
-		sql.add("  AND key = ?");
+		sql.add("  AND keyvalue = ?");
 
 		try (PreparedStatement statement = conn.prepareStatement(StringUtils.join(sql, "\n"))) {
 			statement.setString(1, namespace);
 			statement.setString(2, type);
-			statement.setString(3, key);
+			statement.setString(3, keyvalue);
 			statement.execute();
 		} catch (SQLException ex) {
 			throw new RuntimeException("Error removing metadata row", ex);
@@ -162,7 +160,7 @@ public class DataStoreMetadata {
 
 	public Map<String, String> getAllValuesByType(String namespace, String type) {
 		List<String> sql = new ArrayList<String>();
-		sql.add("SELECT key, value");
+		sql.add("SELECT keyvalue, value");
 		sql.add("FROM " + METADATA_TABLENAME);
 		sql.add("WHERE");
 		sql.add("  namespace = ?");

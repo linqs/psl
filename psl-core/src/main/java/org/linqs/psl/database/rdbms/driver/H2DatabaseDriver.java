@@ -163,7 +163,7 @@ public class H2DatabaseDriver implements DatabaseDriver {
 		try {
 			return connection.prepareStatement(StringUtils.join(sql, "\n"));
 		} catch (SQLException ex) {
-			throw new RuntimeException("Could not prepare MySQL upsert for " + tableName, ex);
+			throw new RuntimeException("Could not prepare H2 upsert for " + tableName, ex);
 		}
 	}
 
