@@ -93,24 +93,13 @@ public class ADMMReasoner implements Reasoner {
 	public static final double EPSILON_REL_DEFAULT = 1e-3;
 
 	/**
-	 * Key for positive integer. The number of ADMM iterations after which the
-	 * termination criteria will be checked.
-	 */
-	public static final String STOP_CHECK_KEY = CONFIG_PREFIX + ".stopcheck";
-
-	/**
-	 * Default value for STOP_CHECK_KEY property
-	 */
-	public static final int STOP_CHECK_DEFAULT = 1;
-
-	/**
 	 * Key for positive integer. Number of threads to run the optimization in.
 	 */
 	public static final String NUM_THREADS_KEY = CONFIG_PREFIX + ".numthreads";
 
 	/**
-	 * Default value for STOP_CHECK_KEY property
-	 * (by default uses the number of processors in the system)
+	 * Default value for the number of work threads
+	 * (by default uses the number of processors in the system).
 	 */
 	public static final int NUM_THREADS_DEFAULT = Runtime.getRuntime().availableProcessors();
 
@@ -121,6 +110,11 @@ public class ADMMReasoner implements Reasoner {
 	 * The size of computation blocks for terms and variables.
 	 */
 	private static final int BLOCK_SIZE = 20;
+
+	/**
+	 * Log the residuals once in every period.
+	 */
+	private static final int LOG_PERIOD = 50;
 
 	/**
 	 * Sometimes called eta or rho,
@@ -135,8 +129,6 @@ public class ADMMReasoner implements Reasoner {
 	private double epsilonRel;
 	private double epsilonAbs;
 
-	private final int stopCheck;
-
 	private double lagrangePenalty;
 	private double augmentedLagrangePenalty;
 
@@ -149,7 +141,6 @@ public class ADMMReasoner implements Reasoner {
 	public ADMMReasoner(ConfigBundle config) {
 		maxIter = config.getInt(MAX_ITER_KEY, MAX_ITER_DEFAULT);
 		stepSize = config.getDouble(STEP_SIZE_KEY, STEP_SIZE_DEFAULT);
-		stopCheck = config.getInt(STOP_CHECK_KEY, STOP_CHECK_DEFAULT);
 
 		epsilonAbs = config.getDouble(EPSILON_ABS_KEY, EPSILON_ABS_DEFAULT);
 		if (epsilonAbs <= 0) {
@@ -260,15 +251,9 @@ public class ADMMReasoner implements Reasoner {
 		double epsilonDual = 0;
 		double epsilonAbsTerm = Math.sqrt(termStore.getNumLocalVariables()) * epsilonAbs;
 		double AxNorm = 0.0, BzNorm = 0.0, AyNorm = 0.0;
-		boolean check = false;
 		int iteration = 1;
 
 		while ((primalRes > epsilonPrimal || dualRes > epsilonDual) && iteration <= maxIter) {
-			check = iteration % stopCheck == 0;
-			for (ADMMTask task : tasks) {
-				task.check = check;
-			}
-
 			try {
 				// Reset the counters for a new round.
 				termCounter.reset();
@@ -285,34 +270,32 @@ public class ADMMReasoner implements Reasoner {
 				throw new RuntimeException(e);
 			}
 
-			if (check) {
-				primalRes = 0.0;
-				dualRes = 0.0;
-				AxNorm = 0.0;
-				BzNorm = 0.0;
-				AyNorm = 0.0;
-				lagrangePenalty = 0.0;
-				augmentedLagrangePenalty = 0.0;
+			primalRes = 0.0;
+			dualRes = 0.0;
+			AxNorm = 0.0;
+			BzNorm = 0.0;
+			AyNorm = 0.0;
+			lagrangePenalty = 0.0;
+			augmentedLagrangePenalty = 0.0;
 
-				// Total values from threads
-				for (ADMMTask task : tasks) {
-					primalRes += task.primalResInc;
-					dualRes += task.dualResInc;
-					AxNorm += task.AxNormInc;
-					BzNorm += task.BzNormInc;
-					AyNorm += task.AyNormInc;
-					lagrangePenalty += task.lagrangePenalty;
-					augmentedLagrangePenalty += task.augmentedLagrangePenalty;
-				}
-
-				primalRes = Math.sqrt(primalRes);
-				dualRes = stepSize * Math.sqrt(dualRes);
-
-				epsilonPrimal = epsilonAbsTerm + epsilonRel * Math.max(Math.sqrt(AxNorm), Math.sqrt(BzNorm));
-				epsilonDual = epsilonAbsTerm + epsilonRel * Math.sqrt(AyNorm);
+			// Total values from threads
+			for (ADMMTask task : tasks) {
+				primalRes += task.primalResInc;
+				dualRes += task.dualResInc;
+				AxNorm += task.AxNormInc;
+				BzNorm += task.BzNormInc;
+				AyNorm += task.AyNormInc;
+				lagrangePenalty += task.lagrangePenalty;
+				augmentedLagrangePenalty += task.augmentedLagrangePenalty;
 			}
 
-			if (iteration % (50 * stopCheck) == 0) {
+			primalRes = Math.sqrt(primalRes);
+			dualRes = stepSize * Math.sqrt(dualRes);
+
+			epsilonPrimal = epsilonAbsTerm + epsilonRel * Math.max(Math.sqrt(AxNorm), Math.sqrt(BzNorm));
+			epsilonDual = epsilonAbsTerm + epsilonRel * Math.sqrt(AyNorm);
+
+			if (iteration % LOG_PERIOD == 0) {
 				log.trace("Residuals at iteration {} -- Primal: {} -- Dual: {}", iteration, primalRes, dualRes);
 				log.trace("--------- Epsilon primal: {} -- Epsilon dual: {}", epsilonPrimal, epsilonDual);
 			}
@@ -350,7 +333,6 @@ public class ADMMReasoner implements Reasoner {
 	private class ADMMTask implements Runnable {
 		// Set by the parent thread each round of optimization.
 		public volatile boolean done;
-		public volatile boolean check;
 
 		private final int threadIndex;
 
@@ -393,7 +375,6 @@ public class ADMMReasoner implements Reasoner {
 			this.termStore = termStore;
 
 			this.done = false;
-			this.check = false;
 
 			primalResInc = 0.0;
 			dualResInc = 0.0;
@@ -446,16 +427,13 @@ public class ADMMReasoner implements Reasoner {
 				// Wait for all the workers to finish minimizing.
 				awaitUninterruptibly(termUpdateCompleteBarrier);
 
-				// TODO(eriq): Remove check, I hate it.
-				if (check) {
-					primalResInc = 0.0;
-					dualResInc = 0.0;
-					AxNormInc = 0.0;
-					BzNormInc = 0.0;
-					AyNormInc = 0.0;
-					lagrangePenalty = 0.0;
-					augmentedLagrangePenalty = 0.0;
-				}
+				primalResInc = 0.0;
+				dualResInc = 0.0;
+				AxNormInc = 0.0;
+				BzNormInc = 0.0;
+				AyNormInc = 0.0;
+				lagrangePenalty = 0.0;
+				augmentedLagrangePenalty = 0.0;
 
 				// Instead of dividing up the work ahead of time,
 				// get one job at a time so the threads will have more even workloads.
@@ -474,35 +452,31 @@ public class ADMMReasoner implements Reasoner {
 							LocalVariable localVariable = termStore.getLocalVariables(index).get(localVarIndex);
 							total += localVariable.getValue() + localVariable.getLagrange() / stepSize;
 
-							if (check) {
-								AxNormInc += localVariable.getValue() * localVariable.getValue();
-								AyNormInc += localVariable.getLagrange() * localVariable.getLagrange();
-							}
+							AxNormInc += localVariable.getValue() * localVariable.getValue();
+							AyNormInc += localVariable.getLagrange() * localVariable.getLagrange();
 						}
 
 						double newConsensusValue = total / termStore.getLocalVariables(index).size();
 						newConsensusValue = Math.max(Math.min(newConsensusValue, UPPER_BOUND), LOWER_BOUND);
 
-						if (check) {
-							double diff = consensusValues[index] - newConsensusValue;
-							// Residual is diff^2 * number of local variables mapped to consensusValues element.
-							dualResInc += diff * diff * termStore.getLocalVariables(index).size();
-							BzNormInc += newConsensusValue * newConsensusValue * termStore.getLocalVariables(index).size();
-						}
+						double diff = consensusValues[index] - newConsensusValue;
+						// Residual is diff^2 * number of local variables mapped to consensusValues element.
+						dualResInc += diff * diff * termStore.getLocalVariables(index).size();
+						BzNormInc += newConsensusValue * newConsensusValue * termStore.getLocalVariables(index).size();
+
 						consensusValues[index] = newConsensusValue;
 
 						// Second pass computes primal residuals,
-						if (check) {
-							// Use indexes instead of iterators for profiling purposes: http://psy-lob-saw.blogspot.co.uk/2014/12/the-escape-of-arraylistiterator.html
-							for (int localVarIndex = 0; localVarIndex < termStore.getLocalVariables(index).size(); localVarIndex++) {
-								LocalVariable localVariable = termStore.getLocalVariables(index).get(localVarIndex);
 
-								double diff = localVariable.getValue() - newConsensusValue;
-								primalResInc += diff * diff;
-								// computes Lagrangian penalties
-								lagrangePenalty += localVariable.getLagrange() * (localVariable.getValue() - consensusValues[index]);
-								augmentedLagrangePenalty += 0.5 * stepSize * Math.pow(localVariable.getValue() - consensusValues[index], 2);
-							}
+						// Use indexes instead of iterators for profiling purposes: http://psy-lob-saw.blogspot.co.uk/2014/12/the-escape-of-arraylistiterator.html
+						for (int localVarIndex = 0; localVarIndex < termStore.getLocalVariables(index).size(); localVarIndex++) {
+							LocalVariable localVariable = termStore.getLocalVariables(index).get(localVarIndex);
+
+							diff = localVariable.getValue() - newConsensusValue;
+							primalResInc += diff * diff;
+							// computes Lagrangian penalties
+							lagrangePenalty += localVariable.getLagrange() * (localVariable.getValue() - consensusValues[index]);
+							augmentedLagrangePenalty += 0.5 * stepSize * Math.pow(localVariable.getValue() - consensusValues[index], 2);
 						}
 					}
 				}
