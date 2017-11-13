@@ -339,7 +339,6 @@ public class ADMMReasoner implements Reasoner {
 		private final SyncCounter termCounter;
 		private final SyncCounter variableCounter;
 
-		// TODO(eriq): Get rid of these (have global (thread) access).
 		private double[] consensusValues;
 		private final ADMMTermStore termStore;
 
@@ -357,7 +356,7 @@ public class ADMMReasoner implements Reasoner {
 		protected double augmentedLagrangePenalty;
 
 		public ADMMTask(
-				int index,
+				int threadIndex,
 				CyclicBarrier termUpdateCompleteBarrier,
 				CyclicBarrier workerStartBarrier, CyclicBarrier workerEndBarrier,
 				SyncCounter termCounter, SyncCounter variableCounter,
@@ -366,11 +365,10 @@ public class ADMMReasoner implements Reasoner {
 			this.workerStartBarrier = workerStartBarrier;
 			this.workerEndBarrier = workerEndBarrier;
 
-			this.threadIndex = index;
+			this.threadIndex = threadIndex;
 			this.termCounter = termCounter;
 			this.variableCounter = variableCounter;
 
-			// TODO(eriq)
 			this.consensusValues = consensusValues;
 			this.termStore = termStore;
 
@@ -397,7 +395,6 @@ public class ADMMReasoner implements Reasoner {
 
 		@Override
 		public void run() {
-			// TODO(eriq)
 			int numTerms = termStore.size();
 			int numVariables = termStore.getNumGlobalVariables();
 
@@ -413,14 +410,14 @@ public class ADMMReasoner implements Reasoner {
 				// get one block of jobs at a time so the threads will have more even workloads.
 				for (int blockIndex = termCounter.next(); blockIndex != -1; blockIndex = termCounter.next()) {
 					for (int innerBlockIndex = 0; innerBlockIndex < BLOCK_SIZE; innerBlockIndex++) {
-						int index = blockIndex * BLOCK_SIZE + innerBlockIndex;
+						int termIndex = blockIndex * BLOCK_SIZE + innerBlockIndex;
 
-						if (index >= numTerms) {
+						if (termIndex >= numTerms) {
 							break;
 						}
 
-						termStore.get(index).updateLagrange(stepSize, consensusValues);
-						termStore.get(index).minimize(stepSize, consensusValues);
+						termStore.get(termIndex).updateLagrange(stepSize, consensusValues);
+						termStore.get(termIndex).minimize(stepSize, consensusValues);
 					}
 				}
 
@@ -439,44 +436,47 @@ public class ADMMReasoner implements Reasoner {
 				// get one job at a time so the threads will have more even workloads.
 				for (int blockIndex = variableCounter.next(); blockIndex != -1; blockIndex = variableCounter.next()) {
 					for (int innerBlockIndex = 0; innerBlockIndex < BLOCK_SIZE; innerBlockIndex++) {
-						int index = blockIndex * BLOCK_SIZE + innerBlockIndex;
+						int variableIndex = blockIndex * BLOCK_SIZE + innerBlockIndex;
 
-						if (index >= numVariables) {
+						if (variableIndex >= numVariables) {
 							break;
 						}
 
 						double total = 0.0;
+						int numLocalVariables = termStore.getLocalVariables(variableIndex).size();
+
 						// First pass computes newConsensusValue and dual residual fom all local copies.
 						// Use indexes instead of iterators for profiling purposes: http://psy-lob-saw.blogspot.co.uk/2014/12/the-escape-of-arraylistiterator.html
-						for (int localVarIndex = 0; localVarIndex < termStore.getLocalVariables(index).size(); localVarIndex++) {
-							LocalVariable localVariable = termStore.getLocalVariables(index).get(localVarIndex);
+						for (int localVarIndex = 0; localVarIndex < numLocalVariables; localVarIndex++) {
+							LocalVariable localVariable = termStore.getLocalVariables(variableIndex).get(localVarIndex);
 							total += localVariable.getValue() + localVariable.getLagrange() / stepSize;
 
 							AxNormInc += localVariable.getValue() * localVariable.getValue();
 							AyNormInc += localVariable.getLagrange() * localVariable.getLagrange();
 						}
 
-						double newConsensusValue = total / termStore.getLocalVariables(index).size();
+						double newConsensusValue = total / numLocalVariables;
 						newConsensusValue = Math.max(Math.min(newConsensusValue, UPPER_BOUND), LOWER_BOUND);
 
-						double diff = consensusValues[index] - newConsensusValue;
+						double diff = consensusValues[variableIndex] - newConsensusValue;
 						// Residual is diff^2 * number of local variables mapped to consensusValues element.
-						dualResInc += diff * diff * termStore.getLocalVariables(index).size();
-						BzNormInc += newConsensusValue * newConsensusValue * termStore.getLocalVariables(index).size();
+						dualResInc += diff * diff * numLocalVariables;
+						BzNormInc += newConsensusValue * newConsensusValue * numLocalVariables;
 
-						consensusValues[index] = newConsensusValue;
+						consensusValues[variableIndex] = newConsensusValue;
 
-						// Second pass computes primal residuals,
+						// Second pass computes primal residuals.
 
 						// Use indexes instead of iterators for profiling purposes: http://psy-lob-saw.blogspot.co.uk/2014/12/the-escape-of-arraylistiterator.html
-						for (int localVarIndex = 0; localVarIndex < termStore.getLocalVariables(index).size(); localVarIndex++) {
-							LocalVariable localVariable = termStore.getLocalVariables(index).get(localVarIndex);
+						for (int localVarIndex = 0; localVarIndex < numLocalVariables; localVarIndex++) {
+							LocalVariable localVariable = termStore.getLocalVariables(variableIndex).get(localVarIndex);
 
 							diff = localVariable.getValue() - newConsensusValue;
 							primalResInc += diff * diff;
-							// computes Lagrangian penalties
-							lagrangePenalty += localVariable.getLagrange() * (localVariable.getValue() - consensusValues[index]);
-							augmentedLagrangePenalty += 0.5 * stepSize * Math.pow(localVariable.getValue() - consensusValues[index], 2);
+
+							// compute Lagrangian penalties
+							lagrangePenalty += localVariable.getLagrange() * (localVariable.getValue() - consensusValues[variableIndex]);
+							augmentedLagrangePenalty += 0.5 * stepSize * Math.pow(localVariable.getValue() - consensusValues[variableIndex], 2);
 						}
 					}
 				}
