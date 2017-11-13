@@ -37,9 +37,6 @@ import java.util.concurrent.CyclicBarrier;
 
 /**
  * Uses an ADMM optimization method to optimize its GroundRules.
- *
- * @author Stephen Bach <bach@cs.umd.edu>
- * @author Eric Norris
  */
 public class ADMMReasoner implements Reasoner {
 	private static final Logger log = LoggerFactory.getLogger(ADMMReasoner.class);
@@ -56,7 +53,10 @@ public class ADMMReasoner implements Reasoner {
 	 * perform in a round of inference
 	 */
 	public static final String MAX_ITER_KEY = CONFIG_PREFIX + ".maxiterations";
-	/** Default value for MAX_ITER_KEY property */
+
+	/**
+	 * Default value for MAX_ITER_KEY property
+	 */
 	public static final int MAX_ITER_DEFAULT = 25000;
 
 	/**
@@ -64,7 +64,10 @@ public class ADMMReasoner implements Reasoner {
 	 * values result in larger steps.
 	 */
 	public static final String STEP_SIZE_KEY = CONFIG_PREFIX + ".stepsize";
-	/** Default value for STEP_SIZE_KEY property */
+
+	/**
+	 * Default value for STEP_SIZE_KEY property
+	 */
 	public static final double STEP_SIZE_DEFAULT = 1;
 
 	/**
@@ -72,7 +75,10 @@ public class ADMMReasoner implements Reasoner {
 	 * criteria.
 	 */
 	public static final String EPSILON_ABS_KEY = CONFIG_PREFIX + ".epsilonabs";
-	/** Default value for EPSILON_ABS_KEY property */
+
+	/**
+	 * Default value for EPSILON_ABS_KEY property
+	 */
 	public static final double EPSILON_ABS_DEFAULT = 1e-5;
 
 	/**
@@ -80,7 +86,10 @@ public class ADMMReasoner implements Reasoner {
 	 * criteria.
 	 */
 	public static final String EPSILON_REL_KEY = CONFIG_PREFIX + ".epsilonrel";
-	/** Default value for EPSILON_ABS_KEY property */
+
+	/**
+	 * Default value for EPSILON_ABS_KEY property
+	 */
 	public static final double EPSILON_REL_DEFAULT = 1e-3;
 
 	/**
@@ -88,19 +97,30 @@ public class ADMMReasoner implements Reasoner {
 	 * termination criteria will be checked.
 	 */
 	public static final String STOP_CHECK_KEY = CONFIG_PREFIX + ".stopcheck";
-	/** Default value for STOP_CHECK_KEY property */
+
+	/**
+	 * Default value for STOP_CHECK_KEY property
+	 */
 	public static final int STOP_CHECK_DEFAULT = 1;
 
 	/**
 	 * Key for positive integer. Number of threads to run the optimization in.
 	 */
 	public static final String NUM_THREADS_KEY = CONFIG_PREFIX + ".numthreads";
-	/** Default value for STOP_CHECK_KEY property
-	 * (by default uses the number of processors in the system) */
+
+	/**
+	 * Default value for STOP_CHECK_KEY property
+	 * (by default uses the number of processors in the system)
+	 */
 	public static final int NUM_THREADS_DEFAULT = Runtime.getRuntime().availableProcessors();
 
 	private static final double LOWER_BOUND = 0.0;
 	private static final double UPPER_BOUND = 1.0;
+
+	/**
+	 * The size of computation blocks for terms and variables.
+	 */
+	private static final int BLOCK_SIZE = 20;
 
 	/**
 	 * Sometimes called eta or rho,
@@ -211,14 +231,25 @@ public class ADMMReasoner implements Reasoner {
 		// Also sometimes called 'z'.
 		consensusValues = new double[termStore.getNumGlobalVariables()];
 
+		SyncCounter termCounter = new SyncCounter((int)Math.ceil(termStore.size() / (double)BLOCK_SIZE));
+		SyncCounter variableCounter = new SyncCounter((int)Math.ceil(termStore.getNumGlobalVariables() / (double)BLOCK_SIZE));
+
 		// Starts up the computation threads
 		ADMMTask[] tasks = new ADMMTask[numThreads];
+
+		// Only the workers.
 		CyclicBarrier termUpdateCompleteBarrier = new CyclicBarrier(numThreads);
+
+		// Workers and master.
 		CyclicBarrier workerStartBarrier = new CyclicBarrier(numThreads + 1);
 		CyclicBarrier workerEndBarrier = new CyclicBarrier(numThreads + 1);
+
 		ThreadPool threadPool = new ThreadPool();
 		for (int i = 0; i < numThreads; i ++) {
-			tasks[i] = new ADMMTask(i, termUpdateCompleteBarrier, workerStartBarrier, workerEndBarrier, termStore, consensusValues);
+			tasks[i] = new ADMMTask(i,
+					termUpdateCompleteBarrier, workerStartBarrier, workerEndBarrier,
+					termCounter, variableCounter,
+					termStore, consensusValues);
 			threadPool.submit(tasks[i]);
 		}
 
@@ -239,6 +270,10 @@ public class ADMMReasoner implements Reasoner {
 			}
 
 			try {
+				// Reset the counters for a new round.
+				termCounter.reset();
+				variableCounter.reset();
+
 				// Startup all the workers.
 				workerStartBarrier.await();
 
@@ -317,10 +352,14 @@ public class ADMMReasoner implements Reasoner {
 		public volatile boolean done;
 		public volatile boolean check;
 
-		private final int termIndexStart, termIndexEnd;
-		private final int variableIndexStart, variableIndexEnd;
-		private final ADMMTermStore termStore;
+		private final int threadIndex;
+
+		private final SyncCounter termCounter;
+		private final SyncCounter variableCounter;
+
+		// TODO(eriq): Get rid of these (have global (thread) access).
 		private double[] consensusValues;
+		private final ADMMTermStore termStore;
 
 		private final CyclicBarrier termUpdateCompleteBarrier;
 		private final CyclicBarrier workerStartBarrier;
@@ -335,27 +374,26 @@ public class ADMMReasoner implements Reasoner {
 		protected double lagrangePenalty;
 		protected double augmentedLagrangePenalty;
 
-		public ADMMTask(int index, CyclicBarrier termUpdateCompleteBarrier,
+		public ADMMTask(
+				int index,
+				CyclicBarrier termUpdateCompleteBarrier,
 				CyclicBarrier workerStartBarrier, CyclicBarrier workerEndBarrier,
+				SyncCounter termCounter, SyncCounter variableCounter,
 				ADMMTermStore termStore, double[] consensusValues) {
 			this.termUpdateCompleteBarrier = termUpdateCompleteBarrier;
 			this.workerStartBarrier = workerStartBarrier;
 			this.workerEndBarrier = workerEndBarrier;
-			this.consensusValues = consensusValues;
 
+			this.threadIndex = index;
+			this.termCounter = termCounter;
+			this.variableCounter = variableCounter;
+
+			// TODO(eriq)
+			this.consensusValues = consensusValues;
 			this.termStore = termStore;
+
 			this.done = false;
 			this.check = false;
-
-			// Determine the section of the terms this thread will look at
-			int tIncrement = (int)(Math.ceil((double)termStore.size() / (double)numThreads));
-			this.termIndexStart = tIncrement * index;
-			this.termIndexEnd = Math.min(termIndexStart + tIncrement, termStore.size());
-
-			// Determine the section of the consensusValues vector this thread will look at.
-			int zIncrement = (int)(Math.ceil(consensusValues.length / numThreads));
-			this.variableIndexStart = zIncrement * index;
-			this.variableIndexEnd = Math.min(variableIndexStart + zIncrement, consensusValues.length);
 
 			primalResInc = 0.0;
 			dualResInc = 0.0;
@@ -378,6 +416,10 @@ public class ADMMReasoner implements Reasoner {
 
 		@Override
 		public void run() {
+			// TODO(eriq)
+			int numTerms = termStore.size();
+			int numVariables = termStore.getNumGlobalVariables();
+
 			int iteration = 1;
 			while (true) {
 				awaitUninterruptibly(workerStartBarrier);
@@ -385,15 +427,26 @@ public class ADMMReasoner implements Reasoner {
 					break;
 				}
 
-				// Solves each local function.
-				for (int i = termIndexStart; i < termIndexEnd; i++) {
-					termStore.get(i).updateLagrange(stepSize, consensusValues);
-					termStore.get(i).minimize(stepSize, consensusValues);
+				// Minimize each local function (wrt the local variable copies).
+				// Instead of dividing up the work ahead of time,
+				// get one block of jobs at a time so the threads will have more even workloads.
+				for (int blockIndex = termCounter.next(); blockIndex != -1; blockIndex = termCounter.next()) {
+					for (int innerBlockIndex = 0; innerBlockIndex < BLOCK_SIZE; innerBlockIndex++) {
+						int index = blockIndex * BLOCK_SIZE + innerBlockIndex;
+
+						if (index >= numTerms) {
+							break;
+						}
+
+						termStore.get(index).updateLagrange(stepSize, consensusValues);
+						termStore.get(index).minimize(stepSize, consensusValues);
+					}
 				}
 
-				// Ensures all threads are at the same point
+				// Wait for all the workers to finish minimizing.
 				awaitUninterruptibly(termUpdateCompleteBarrier);
 
+				// TODO(eriq): Remove check, I hate it.
 				if (check) {
 					primalResInc = 0.0;
 					dualResInc = 0.0;
@@ -404,48 +457,86 @@ public class ADMMReasoner implements Reasoner {
 					augmentedLagrangePenalty = 0.0;
 				}
 
-				for (int i = variableIndexStart; i < variableIndexEnd; i++) {
-					double total = 0.0;
-					// First pass computes newConsensusValue and dual residual fom all local copies.
-					// Use indexes instead of iterators for profiling purposes: http://psy-lob-saw.blogspot.co.uk/2014/12/the-escape-of-arraylistiterator.html
-					for (int localVarIndex = 0; localVarIndex < termStore.getLocalVariables(i).size(); localVarIndex++) {
-						LocalVariable localVariable = termStore.getLocalVariables(i).get(localVarIndex);
-						total += localVariable.getValue() + localVariable.getLagrange() / stepSize;
+				// Instead of dividing up the work ahead of time,
+				// get one job at a time so the threads will have more even workloads.
+				for (int blockIndex = variableCounter.next(); blockIndex != -1; blockIndex = variableCounter.next()) {
+					for (int innerBlockIndex = 0; innerBlockIndex < BLOCK_SIZE; innerBlockIndex++) {
+						int index = blockIndex * BLOCK_SIZE + innerBlockIndex;
+
+						if (index >= numVariables) {
+							break;
+						}
+
+						double total = 0.0;
+						// First pass computes newConsensusValue and dual residual fom all local copies.
+						// Use indexes instead of iterators for profiling purposes: http://psy-lob-saw.blogspot.co.uk/2014/12/the-escape-of-arraylistiterator.html
+						for (int localVarIndex = 0; localVarIndex < termStore.getLocalVariables(index).size(); localVarIndex++) {
+							LocalVariable localVariable = termStore.getLocalVariables(index).get(localVarIndex);
+							total += localVariable.getValue() + localVariable.getLagrange() / stepSize;
+
+							if (check) {
+								AxNormInc += localVariable.getValue() * localVariable.getValue();
+								AyNormInc += localVariable.getLagrange() * localVariable.getLagrange();
+							}
+						}
+
+						double newConsensusValue = total / termStore.getLocalVariables(index).size();
+						newConsensusValue = Math.max(Math.min(newConsensusValue, UPPER_BOUND), LOWER_BOUND);
 
 						if (check) {
-							AxNormInc += localVariable.getValue() * localVariable.getValue();
-							AyNormInc += localVariable.getLagrange() * localVariable.getLagrange();
+							double diff = consensusValues[index] - newConsensusValue;
+							// Residual is diff^2 * number of local variables mapped to consensusValues element.
+							dualResInc += diff * diff * termStore.getLocalVariables(index).size();
+							BzNormInc += newConsensusValue * newConsensusValue * termStore.getLocalVariables(index).size();
 						}
-					}
+						consensusValues[index] = newConsensusValue;
 
-					double newConsensusValue = total / termStore.getLocalVariables(i).size();
-					newConsensusValue = Math.max(Math.min(newConsensusValue, UPPER_BOUND), LOWER_BOUND);
+						// Second pass computes primal residuals,
+						if (check) {
+							// Use indexes instead of iterators for profiling purposes: http://psy-lob-saw.blogspot.co.uk/2014/12/the-escape-of-arraylistiterator.html
+							for (int localVarIndex = 0; localVarIndex < termStore.getLocalVariables(index).size(); localVarIndex++) {
+								LocalVariable localVariable = termStore.getLocalVariables(index).get(localVarIndex);
 
-					if (check) {
-						double diff = consensusValues[i] - newConsensusValue;
-						// Residual is diff^2 * number of local variables mapped to consensusValues element.
-						dualResInc += diff * diff * termStore.getLocalVariables(i).size();
-						BzNormInc += newConsensusValue * newConsensusValue * termStore.getLocalVariables(i).size();
-					}
-					consensusValues[i] = newConsensusValue;
-
-					// Second pass computes primal residuals,
-					if (check) {
-						// Use indexes instead of iterators for profiling purposes: http://psy-lob-saw.blogspot.co.uk/2014/12/the-escape-of-arraylistiterator.html
-						for (int localVarIndex = 0; localVarIndex < termStore.getLocalVariables(i).size(); localVarIndex++) {
-							LocalVariable localVariable = termStore.getLocalVariables(i).get(localVarIndex);
-
-							double diff = localVariable.getValue() - newConsensusValue;
-							primalResInc += diff * diff;
-							// computes Lagrangian penalties
-							lagrangePenalty += localVariable.getLagrange() * (localVariable.getValue() - consensusValues[i]);
-							augmentedLagrangePenalty += 0.5 * stepSize * Math.pow(localVariable.getValue() - consensusValues[i], 2);
+								double diff = localVariable.getValue() - newConsensusValue;
+								primalResInc += diff * diff;
+								// computes Lagrangian penalties
+								lagrangePenalty += localVariable.getLagrange() * (localVariable.getValue() - consensusValues[index]);
+								augmentedLagrangePenalty += 0.5 * stepSize * Math.pow(localVariable.getValue() - consensusValues[index], 2);
+							}
 						}
 					}
 				}
 
 				awaitUninterruptibly(workerEndBarrier);
 			}
+		}
+	}
+
+	/**
+	 * A thread-safe counter that starts at 0 and returns |max| successive numbers.
+	 */
+	private static class SyncCounter {
+		private final int max;
+		private int count;
+
+		public SyncCounter(int max) {
+			this.max = max;
+			count = 0;
+		}
+
+		/**
+		 * Returns the next int, or -1 if there are no more.
+		 */
+		public synchronized int next() {
+			if (count >= max) {
+				return -1;
+			}
+
+			return count++;
+		}
+
+		public synchronized void reset() {
+			count = 0;
 		}
 	}
 }
