@@ -43,26 +43,26 @@ public class SquaredLinearLossTermTest {
 		/*
 		 * Problem 1
 		 */
-		double[] z = {0.4, 0.5, 0.1};
-		double[] y = {0.0, 0.0, -0.05};
-		double[] coeffs = {0.3, -1.0, 0.4};
-		double constant = -20.0;
-		double weight = 0.5;
-		double stepSize = 2.0;
-		double[] expected = {-1.41569, 6.55231, -2.29593};
+		float[] z = {0.4f, 0.5f, 0.1f};
+		float[] y = {0.0f, 0.0f, -0.05f};
+		float[] coeffs = {0.3f, -1.0f, 0.4f};
+		float constant = -20.0f;
+		float weight = 0.5f;
+		float stepSize = 2.0f;
+		float[] expected = {-1.41569f, 6.55231f, -2.29593f};
 		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
 	}
 	
-	private void testProblem(double[] z, double[] y, double[] coeffs, double constant,
-			double weight, final double stepSize, double[] expected) {
+	private void testProblem(float[] z, float[] y, float[] coeffs, float constant,
+			float weight, final float stepSize, float[] expected) {
 		List<LocalVariable> variables = new ArrayList<LocalVariable>(z.length);
-		List<Double> coeffsList = new ArrayList<Double>(z.length);
+		List<Float> coeffsList = new ArrayList<Float>(z.length);
 
 		for (int i = 0; i < z.length; i++) {
 			variables.add(new LocalVariable(i, z[i]));
 			variables.get(i).setLagrange(y[i]);
 
-			coeffsList.add(new Double(coeffs[i]));
+			coeffsList.add(new Float(coeffs[i]));
 		}
 		
 		SquaredLinearLossTerm term = new SquaredLinearLossTerm(variables, coeffsList, constant, weight);

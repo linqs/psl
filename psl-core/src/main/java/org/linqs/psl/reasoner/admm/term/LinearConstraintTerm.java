@@ -35,18 +35,18 @@ public class LinearConstraintTerm extends HyperplaneTerm {
 
 	private final FunctionComparator comparator;
 
-	protected LinearConstraintTerm(List<LocalVariable> variables, List<Double> coeffs, double constant, FunctionComparator comparator) {
+	protected LinearConstraintTerm(List<LocalVariable> variables, List<Float> coeffs, float constant, FunctionComparator comparator) {
 		super(variables, coeffs, constant);
 		this.comparator = comparator;
 	}
 
 	@Override
-	public void minimize(double stepSize, double[] consensusValues) {
+	public void minimize(float stepSize, float[] consensusValues) {
 		/* If it's not an equality constraint, first tries to minimize without the constraint */
 		if (!comparator.equals(FunctionComparator.Equality)) {
 
 			/* Initializes scratch data */
-			double total = 0.0;
+			float total = 0.0f;
 
 			/*
 			 * Minimizes without regard for the constraint, i.e., solves
@@ -56,7 +56,7 @@ public class LinearConstraintTerm extends HyperplaneTerm {
 				LocalVariable variable = variables.get(i);
 				variable.setValue(consensusValues[variable.getGlobalId()] - variable.getLagrange() / stepSize);
 
-				total += coeffs.get(i).doubleValue() * variable.getValue();
+				total += coeffs.get(i).floatValue() * variable.getValue();
 			}
 
 			/*

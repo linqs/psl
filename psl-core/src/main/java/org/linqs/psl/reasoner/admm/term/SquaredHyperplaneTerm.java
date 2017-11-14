@@ -19,9 +19,9 @@ package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.reasoner.term.WeightedTerm;
 
-import cern.colt.matrix.tdouble.DoubleMatrix2D;
-import cern.colt.matrix.tdouble.algo.decomposition.DenseDoubleCholeskyDecomposition;
-import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
+import cern.colt.matrix.tfloat.FloatMatrix2D;
+import cern.colt.matrix.tfloat.algo.decomposition.DenseFloatCholeskyDecomposition;
+import cern.colt.matrix.tfloat.impl.DenseFloatMatrix2D;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.util.HashMap;
@@ -39,20 +39,20 @@ import java.util.concurrent.Semaphore;
  * @author Stephen Bach <bach@cs.umd.edu>
  */
 public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements WeightedTerm {
-	protected final List<Double> coeffs;
-	protected final double constant;
-	protected double weight;
+	protected final List<Float> coeffs;
+	protected final float constant;
+	protected float weight;
 
-	private DoubleMatrix2D L;
+	private FloatMatrix2D L;
 
-	private static Map<DenseDoubleMatrix2DWithHashcode, DoubleMatrix2D> lCache = new HashMap<DenseDoubleMatrix2DWithHashcode, DoubleMatrix2D>();
+	private static Map<DenseFloatMatrix2DWithHashcode, FloatMatrix2D> lCache = new HashMap<DenseFloatMatrix2DWithHashcode, FloatMatrix2D>();
 
 	private static final Semaphore matrixSemaphore = new Semaphore(1);
 
 	// TODO(eriq): All the matrix work is suspect.
 	// The old code was using some cache that didn't seem too useful. Could it have been?
 
-	SquaredHyperplaneTerm(List<LocalVariable> variables, List<Double> coeffs, double constant, double weight) {
+	SquaredHyperplaneTerm(List<LocalVariable> variables, List<Float> coeffs, float constant, float weight) {
 		super(variables);
 
 		assert(variables.size() == coeffs.size());
@@ -68,22 +68,22 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
 		setWeight(weight);
 	}
 
-	private void computeL(double stepSize) {
+	private void computeL(float stepSize) {
 		// Since the method is synchronized, check to see if we have already computed L.
 		if (L != null) {
 			return;
 		}
 
-		double coeff;
-		DenseDoubleMatrix2DWithHashcode matrix = new DenseDoubleMatrix2DWithHashcode(variables.size(), variables.size());
+		float coeff;
+		DenseFloatMatrix2DWithHashcode matrix = new DenseFloatMatrix2DWithHashcode(variables.size(), variables.size());
 		for (int i = 0; i < variables.size(); i++) {
 			for (int j = 0; j < variables.size(); j++) {
 				if (i == j) {
-					coeff = 2 * weight * coeffs.get(i).doubleValue() * coeffs.get(i).doubleValue() + stepSize;
+					coeff = 2 * weight * coeffs.get(i).floatValue() * coeffs.get(i).floatValue() + stepSize;
 					matrix.setQuick(i, i, coeff);
 				}
 				else {
-					coeff = 2 * weight * coeffs.get(i).doubleValue() * coeffs.get(j).doubleValue();
+					coeff = 2 * weight * coeffs.get(i).floatValue() * coeffs.get(j).floatValue();
 					matrix.setQuick(i, j, coeff);
 					matrix.setQuick(j, i, coeff);
 				}
@@ -99,7 +99,7 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
 				throw new RuntimeException("Interrupted constructing matrix", ex);
 			}
 
-			L = new DenseDoubleCholeskyDecomposition(matrix).getL();
+			L = new DenseFloatCholeskyDecomposition(matrix).getL();
 			lCache.put(matrix, L);
 
 			matrixSemaphore.release();
@@ -107,7 +107,7 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
 	}
 
 	@Override
-	public void setWeight(double weight) {
+	public void setWeight(float weight) {
 		this.weight = weight;
 		// Recompute L.
 		L = null;
@@ -119,13 +119,13 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
 	 * <p>
 	 * Stores the result in x.
 	 */
-	protected void minWeightedSquaredHyperplane(double stepSize, double[] consensusValues) {
+	protected void minWeightedSquaredHyperplane(float stepSize, float[] consensusValues) {
 		// Constructs constant term in the gradient (moved to right-hand side).
 		for (int i = 0; i < variables.size(); i++) {
 			LocalVariable variable = variables.get(i);
 
-			double value = stepSize * (consensusValues[variable.getGlobalId()] - variable.getLagrange() / stepSize);
-			value += 2 * weight * coeffs.get(i).doubleValue() * constant;
+			float value = stepSize * (consensusValues[variable.getGlobalId()] - variable.getLagrange() / stepSize);
+			value += 2 * weight * coeffs.get(i).floatValue() * constant;
 
 			variable.setValue(value);
 		}
@@ -135,7 +135,7 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
 		// Handle small hyperplanes specially.
 		if (variables.size() == 1) {
 			LocalVariable variable = variables.get(0);
-			double coeff = coeffs.get(0).doubleValue();
+			float coeff = coeffs.get(0).floatValue();
 
 			variable.setValue(variable.getValue() / (2 * weight * coeff * coeff + stepSize));
 			return;
@@ -145,12 +145,12 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
 		if (variables.size() == 2) {
 			LocalVariable variable0 = variables.get(0);
 			LocalVariable variable1 = variables.get(1);
-			double coeff0 = coeffs.get(0).doubleValue();
-			double coeff1 = coeffs.get(1).doubleValue();
+			float coeff0 = coeffs.get(0).floatValue();
+			float coeff1 = coeffs.get(1).floatValue();
 
-			double a0 = 2 * weight * coeff0 * coeff0 + stepSize;
-			double b1 = 2 * weight * coeff1 * coeff1 + stepSize;
-			double a1b0 = 2 * weight * coeff0 * coeff1;
+			float a0 = 2 * weight * coeff0 * coeff0 + stepSize;
+			float b1 = 2 * weight * coeff1 * coeff1 + stepSize;
+			float a1b0 = 2 * weight * coeff0 * coeff1;
 
 			variable1.setValue(variable1.getValue() - a1b0 * variable0.getValue() / a0);
 			variable1.setValue(variable1.getValue() / (b1 - a1b0 * a1b0 / a0));
@@ -180,19 +180,19 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
 		}
 	}
 
-	private class DenseDoubleMatrix2DWithHashcode extends DenseDoubleMatrix2D {
+	private class DenseFloatMatrix2DWithHashcode extends DenseFloatMatrix2D {
 
 		private static final long serialVersionUID = -8102931034927566306L;
 		private boolean needsNewHashcode;
 		private int hashcode = 0;
 
-		public DenseDoubleMatrix2DWithHashcode(int rows, int columns) {
+		public DenseFloatMatrix2DWithHashcode(int rows, int columns) {
 			super(rows, columns);
 			needsNewHashcode = true;
 		}
 
 		@Override
-		public void setQuick(int row, int column, double value) {
+		public void setQuick(int row, int column, float value) {
 			needsNewHashcode = true;
 			super.setQuick(row, column, value);
 		}

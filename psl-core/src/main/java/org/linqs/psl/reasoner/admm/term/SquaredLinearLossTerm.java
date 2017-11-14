@@ -26,12 +26,12 @@ import java.util.List;
  * @author Stephen Bach <bach@cs.umd.edu>
  */
 public class SquaredLinearLossTerm extends SquaredHyperplaneTerm {
-	SquaredLinearLossTerm(List<LocalVariable> variables, List<Double> coeffs, double constant, double weight) {
+	SquaredLinearLossTerm(List<LocalVariable> variables, List<Float> coeffs, float constant, float weight) {
 		super(variables, coeffs, constant, weight);
 	}
 
 	@Override
-	public void minimize(double stepSize, double[] consensusValues) {
+	public void minimize(float stepSize, float[] consensusValues) {
 		minWeightedSquaredHyperplane(stepSize, consensusValues);
 	}
 }

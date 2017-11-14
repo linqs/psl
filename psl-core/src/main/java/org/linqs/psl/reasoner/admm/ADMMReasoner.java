@@ -60,7 +60,7 @@ public class ADMMReasoner implements Reasoner {
 	public static final int MAX_ITER_DEFAULT = 25000;
 
 	/**
-	 * Key for non-negative double property. Controls step size. Higher
+	 * Key for non-negative float property. Controls step size. Higher
 	 * values result in larger steps.
 	 */
 	public static final String STEP_SIZE_KEY = CONFIG_PREFIX + ".stepsize";
@@ -68,10 +68,10 @@ public class ADMMReasoner implements Reasoner {
 	/**
 	 * Default value for STEP_SIZE_KEY property
 	 */
-	public static final double STEP_SIZE_DEFAULT = 1;
+	public static final float STEP_SIZE_DEFAULT = 1.0f;
 
 	/**
-	 * Key for positive double property. Absolute error component of stopping
+	 * Key for positive float property. Absolute error component of stopping
 	 * criteria.
 	 */
 	public static final String EPSILON_ABS_KEY = CONFIG_PREFIX + ".epsilonabs";
@@ -79,10 +79,10 @@ public class ADMMReasoner implements Reasoner {
 	/**
 	 * Default value for EPSILON_ABS_KEY property
 	 */
-	public static final double EPSILON_ABS_DEFAULT = 1e-5;
+	public static final float EPSILON_ABS_DEFAULT = 1e-5f;
 
 	/**
-	 * Key for positive double property. Relative error component of stopping
+	 * Key for positive float property. Relative error component of stopping
 	 * criteria.
 	 */
 	public static final String EPSILON_REL_KEY = CONFIG_PREFIX + ".epsilonrel";
@@ -90,7 +90,7 @@ public class ADMMReasoner implements Reasoner {
 	/**
 	 * Default value for EPSILON_ABS_KEY property
 	 */
-	public static final double EPSILON_REL_DEFAULT = 1e-3;
+	public static final float EPSILON_REL_DEFAULT = 1e-3f;
 
 	/**
 	 * Key for positive integer. Number of threads to run the optimization in.
@@ -103,8 +103,8 @@ public class ADMMReasoner implements Reasoner {
 	 */
 	public static final int NUM_THREADS_DEFAULT = Runtime.getRuntime().availableProcessors();
 
-	private static final double LOWER_BOUND = 0.0;
-	private static final double UPPER_BOUND = 1.0;
+	private static final float LOWER_BOUND = 0.0f;
+	private static final float UPPER_BOUND = 1.0f;
 
 	/**
 	 * The size of computation blocks for terms and variables.
@@ -119,35 +119,35 @@ public class ADMMReasoner implements Reasoner {
 	/**
 	 * Sometimes called eta or rho,
 	 */
-	private final double stepSize;
+	private final float stepSize;
 
 	/**
 	 * Multithreading variables
 	 */
 	private final int numThreads;
 
-	private double epsilonRel;
-	private double epsilonAbs;
+	private float epsilonRel;
+	private float epsilonAbs;
 
-	private double lagrangePenalty;
-	private double augmentedLagrangePenalty;
+	private float lagrangePenalty;
+	private float augmentedLagrangePenalty;
 
 	private int maxIter;
 
 	// Also sometimes called 'z'.
 	// Only populated after inference.
-	private double[] consensusValues;
+	private float[] consensusValues;
 
 	public ADMMReasoner(ConfigBundle config) {
 		maxIter = config.getInt(MAX_ITER_KEY, MAX_ITER_DEFAULT);
-		stepSize = config.getDouble(STEP_SIZE_KEY, STEP_SIZE_DEFAULT);
+		stepSize = config.getFloat(STEP_SIZE_KEY, STEP_SIZE_DEFAULT);
 
-		epsilonAbs = config.getDouble(EPSILON_ABS_KEY, EPSILON_ABS_DEFAULT);
+		epsilonAbs = config.getFloat(EPSILON_ABS_KEY, EPSILON_ABS_DEFAULT);
 		if (epsilonAbs <= 0) {
 			throw new IllegalArgumentException("Property " + EPSILON_ABS_KEY + " must be positive.");
 		}
 
-		epsilonRel = config.getDouble(EPSILON_REL_KEY, EPSILON_REL_DEFAULT);
+		epsilonRel = config.getFloat(EPSILON_REL_KEY, EPSILON_REL_DEFAULT);
 		if (epsilonRel <= 0) {
 			throw new IllegalArgumentException("Property " + EPSILON_REL_KEY + " must be positive.");
 		}
@@ -167,27 +167,27 @@ public class ADMMReasoner implements Reasoner {
 		this.maxIter = maxIter;
 	}
 
-	public double getEpsilonRel() {
+	public float getEpsilonRel() {
 		return epsilonRel;
 	}
 
-	public void setEpsilonRel(double epsilonRel) {
+	public void setEpsilonRel(float epsilonRel) {
 		this.epsilonRel = epsilonRel;
 	}
 
-	public double getEpsilonAbs() {
+	public float getEpsilonAbs() {
 		return epsilonAbs;
 	}
 
-	public void setEpsilonAbs(double epsilonAbs) {
+	public void setEpsilonAbs(float epsilonAbs) {
 		this.epsilonAbs = epsilonAbs;
 	}
 
-	public double getLagrangianPenalty() {
+	public float getLagrangianPenalty() {
 		return this.lagrangePenalty;
 	}
 
-	public double getAugmentedLagrangianPenalty() {
+	public float getAugmentedLagrangianPenalty() {
 		return this.augmentedLagrangePenalty;
 	}
 
@@ -220,10 +220,10 @@ public class ADMMReasoner implements Reasoner {
 		log.debug("Performing optimization with {} variables and {} terms.", termStore.getNumGlobalVariables(), termStore.size());
 
 		// Also sometimes called 'z'.
-		consensusValues = new double[termStore.getNumGlobalVariables()];
+		consensusValues = new float[termStore.getNumGlobalVariables()];
 
-		SyncCounter termCounter = new SyncCounter((int)Math.ceil(termStore.size() / (double)BLOCK_SIZE));
-		SyncCounter variableCounter = new SyncCounter((int)Math.ceil(termStore.getNumGlobalVariables() / (double)BLOCK_SIZE));
+		SyncCounter termCounter = new SyncCounter((int)Math.ceil(termStore.size() / (float)BLOCK_SIZE));
+		SyncCounter variableCounter = new SyncCounter((int)Math.ceil(termStore.getNumGlobalVariables() / (float)BLOCK_SIZE));
 
 		// Starts up the computation threads
 		ADMMTask[] tasks = new ADMMTask[numThreads];
@@ -245,12 +245,14 @@ public class ADMMReasoner implements Reasoner {
 		}
 
 		// Performs inference.
-		double primalRes = Double.POSITIVE_INFINITY;
-		double dualRes = Double.POSITIVE_INFINITY;
-		double epsilonPrimal = 0;
-		double epsilonDual = 0;
-		double epsilonAbsTerm = Math.sqrt(termStore.getNumLocalVariables()) * epsilonAbs;
-		double AxNorm = 0.0, BzNorm = 0.0, AyNorm = 0.0;
+		float primalRes = Float.POSITIVE_INFINITY;
+		float dualRes = Float.POSITIVE_INFINITY;
+		float epsilonPrimal = 0.0f;
+		float epsilonDual = 0.0f;
+		float epsilonAbsTerm = (float)(Math.sqrt(termStore.getNumLocalVariables()) * epsilonAbs);
+		float AxNorm = 0.0f;
+		float BzNorm = 0.0f;
+		float AyNorm = 0.0f;
 		int iteration = 1;
 
 		while ((primalRes > epsilonPrimal || dualRes > epsilonDual) && iteration <= maxIter) {
@@ -270,13 +272,13 @@ public class ADMMReasoner implements Reasoner {
 				throw new RuntimeException(e);
 			}
 
-			primalRes = 0.0;
-			dualRes = 0.0;
-			AxNorm = 0.0;
-			BzNorm = 0.0;
-			AyNorm = 0.0;
-			lagrangePenalty = 0.0;
-			augmentedLagrangePenalty = 0.0;
+			primalRes = 0.0f;
+			dualRes = 0.0f;
+			AxNorm = 0.0f;
+			BzNorm = 0.0f;
+			AyNorm = 0.0f;
+			lagrangePenalty = 0.0f;
+			augmentedLagrangePenalty = 0.0f;
 
 			// Total values from threads
 			for (ADMMTask task : tasks) {
@@ -289,11 +291,11 @@ public class ADMMReasoner implements Reasoner {
 				augmentedLagrangePenalty += task.augmentedLagrangePenalty;
 			}
 
-			primalRes = Math.sqrt(primalRes);
-			dualRes = stepSize * Math.sqrt(dualRes);
+			primalRes = (float)Math.sqrt(primalRes);
+			dualRes = (float)(stepSize * Math.sqrt(dualRes));
 
-			epsilonPrimal = epsilonAbsTerm + epsilonRel * Math.max(Math.sqrt(AxNorm), Math.sqrt(BzNorm));
-			epsilonDual = epsilonAbsTerm + epsilonRel * Math.sqrt(AyNorm);
+			epsilonPrimal = (float)(epsilonAbsTerm + epsilonRel * Math.max(Math.sqrt(AxNorm), Math.sqrt(BzNorm)));
+			epsilonDual = (float)(epsilonAbsTerm + epsilonRel * Math.sqrt(AyNorm));
 
 			if (iteration % LOG_PERIOD == 0) {
 				log.trace("Residuals at iteration {} -- Primal: {} -- Dual: {}", iteration, primalRes, dualRes);
@@ -339,28 +341,28 @@ public class ADMMReasoner implements Reasoner {
 		private final SyncCounter termCounter;
 		private final SyncCounter variableCounter;
 
-		private double[] consensusValues;
+		private float[] consensusValues;
 		private final ADMMTermStore termStore;
 
 		private final CyclicBarrier termUpdateCompleteBarrier;
 		private final CyclicBarrier workerStartBarrier;
 		private final CyclicBarrier workerEndBarrier;
 
-		public double primalResInc;
-		public double dualResInc;
-		public double AxNormInc;
-		public double BzNormInc;
-		public double AyNormInc;
+		public float primalResInc;
+		public float dualResInc;
+		public float AxNormInc;
+		public float BzNormInc;
+		public float AyNormInc;
 
-		protected double lagrangePenalty;
-		protected double augmentedLagrangePenalty;
+		protected float lagrangePenalty;
+		protected float augmentedLagrangePenalty;
 
 		public ADMMTask(
 				int threadIndex,
 				CyclicBarrier termUpdateCompleteBarrier,
 				CyclicBarrier workerStartBarrier, CyclicBarrier workerEndBarrier,
 				SyncCounter termCounter, SyncCounter variableCounter,
-				ADMMTermStore termStore, double[] consensusValues) {
+				ADMMTermStore termStore, float[] consensusValues) {
 			this.termUpdateCompleteBarrier = termUpdateCompleteBarrier;
 			this.workerStartBarrier = workerStartBarrier;
 			this.workerEndBarrier = workerEndBarrier;
@@ -374,13 +376,13 @@ public class ADMMReasoner implements Reasoner {
 
 			this.done = false;
 
-			primalResInc = 0.0;
-			dualResInc = 0.0;
-			AxNormInc = 0.0;
-			BzNormInc = 0.0;
-			AyNormInc = 0.0;
-			lagrangePenalty = 0.0;
-			augmentedLagrangePenalty = 0.0;
+			primalResInc = 0.0f;
+			dualResInc = 0.0f;
+			AxNormInc = 0.0f;
+			BzNormInc = 0.0f;
+			AyNormInc = 0.0f;
+			lagrangePenalty = 0.0f;
+			augmentedLagrangePenalty = 0.0f;
 		}
 
 		private void awaitUninterruptibly(CyclicBarrier b) {
@@ -424,13 +426,13 @@ public class ADMMReasoner implements Reasoner {
 				// Wait for all the workers to finish minimizing.
 				awaitUninterruptibly(termUpdateCompleteBarrier);
 
-				primalResInc = 0.0;
-				dualResInc = 0.0;
-				AxNormInc = 0.0;
-				BzNormInc = 0.0;
-				AyNormInc = 0.0;
-				lagrangePenalty = 0.0;
-				augmentedLagrangePenalty = 0.0;
+				primalResInc = 0.0f;
+				dualResInc = 0.0f;
+				AxNormInc = 0.0f;
+				BzNormInc = 0.0f;
+				AyNormInc = 0.0f;
+				lagrangePenalty = 0.0f;
+				augmentedLagrangePenalty = 0.0f;
 
 				// Instead of dividing up the work ahead of time,
 				// get one job at a time so the threads will have more even workloads.
@@ -442,7 +444,7 @@ public class ADMMReasoner implements Reasoner {
 							break;
 						}
 
-						double total = 0.0;
+						float total = 0.0f;
 						int numLocalVariables = termStore.getLocalVariables(variableIndex).size();
 
 						// First pass computes newConsensusValue and dual residual fom all local copies.
@@ -455,10 +457,10 @@ public class ADMMReasoner implements Reasoner {
 							AyNormInc += localVariable.getLagrange() * localVariable.getLagrange();
 						}
 
-						double newConsensusValue = total / numLocalVariables;
+						float newConsensusValue = total / numLocalVariables;
 						newConsensusValue = Math.max(Math.min(newConsensusValue, UPPER_BOUND), LOWER_BOUND);
 
-						double diff = consensusValues[variableIndex] - newConsensusValue;
+						float diff = consensusValues[variableIndex] - newConsensusValue;
 						// Residual is diff^2 * number of local variables mapped to consensusValues element.
 						dualResInc += diff * diff * numLocalVariables;
 						BzNormInc += newConsensusValue * newConsensusValue * numLocalVariables;

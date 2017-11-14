@@ -27,21 +27,21 @@ import java.util.List;
  */
 public class SquaredHingeLossTerm extends SquaredHyperplaneTerm {
 
-	public SquaredHingeLossTerm(List<LocalVariable> variables, List<Double> coeffs, double constant, double weight) {
+	public SquaredHingeLossTerm(List<LocalVariable> variables, List<Float> coeffs, float constant, float weight) {
 		super(variables, coeffs, constant, weight);
 	}
 
 	@Override
-	public void minimize(double stepSize, double[] consensusValues) {
+	public void minimize(float stepSize, float[] consensusValues) {
 		// Initializes scratch data.
-		double total = 0.0;
+		float total = 0.0f;
 
 		// Minimizes without the quadratic loss, i.e., solves
 		// argmin stepSize/2 * \|x - z + y / stepSize \|_2^2
 		for (int i = 0; i < variables.size(); i++) {
 			LocalVariable variable = variables.get(i);
 			variable.setValue(consensusValues[variable.getGlobalId()] - variable.getLagrange() / stepSize);
-			total += coeffs.get(i).doubleValue() * variable.getValue();
+			total += coeffs.get(i).floatValue() * variable.getValue();
 		}
 
 		// If the quadratic loss is NOT active at the computed point, it is the solution...
