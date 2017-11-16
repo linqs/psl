@@ -141,7 +141,7 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 		/* Collects GroundCompatibilityRules incident on each block of RandomVariableAtoms */
 		WeightedGroundRule[][] incidentGKs = blocker.getIncidentGKs();
 
-		double[] expInc = new double[rules.size()];
+		double[] expInc = new double[mutableRules.size()];
 
 		// Accumulate the expected incompatibility over all atoms.
 		for (int iBlock = 0; iBlock < rvBlocks.length; iBlock++) {
@@ -233,8 +233,8 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 			}
 
 			// Finally, we add to the exp incomp for each rule.
-			for (int i = 0; i < rules.size(); i++) {
-				WeightedRule rule = rules.get(i);
+			for (int i = 0; i < mutableRules.size(); i++) {
+				WeightedRule rule = mutableRules.get(i);
 				if (expIncAtom.containsKey(rule) && expIncAtom.get(rule) > 0.0) {
 					expInc[i] += expIncAtom.get(rule) / Z;
 				}

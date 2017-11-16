@@ -32,7 +32,7 @@ public class LatentObjectiveComputer extends HardEM {
 		// Gathers the CompatibilityRules.
 		for (WeightedRule rule : Iterables.filter(model.getRules(), WeightedRule.class)) {
 			if (rule.isWeightMutable()) {
-				rules.add(rule);
+				mutableRules.add(rule);
 			} else {
 				immutableRules.add(rule);
 			}

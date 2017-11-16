@@ -137,10 +137,10 @@ public class FrankWolfe extends WeightLearningApplication {
 		 */
 
 		/* Inits local copy of weights and avgWeights to user-specified values. */
-		double[] weights = new double[rules.size()];
-		double[] avgWeights = new double[rules.size()];
+		double[] weights = new double[mutableRules.size()];
+		double[] avgWeights = new double[mutableRules.size()];
 		for (int i = 0; i < weights.length; i++) {
-			weights[i] = rules.get(i).getWeight().getWeight();
+			weights[i] = mutableRules.get(i).getWeight().getWeight();
 			avgWeights[i] = weights[i];
 		}
 
@@ -148,13 +148,13 @@ public class FrankWolfe extends WeightLearningApplication {
 		double loss = 0;
 
 		/* Computes the observed incompatibilities and number of groundings. */
-		double[] truthIncompatibility = new double[rules.size()];
-		int[] numGroundings = new int[rules.size()];
+		double[] truthIncompatibility = new double[mutableRules.size()];
+		int[] numGroundings = new int[mutableRules.size()];
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
 			e.getKey().setValue(e.getValue().getValue());
 		}
-		for (int i = 0; i < rules.size(); i++) {
-			for (GroundRule groundRule : groundRuleStore.getGroundRules(rules.get(i))) {
+		for (int i = 0; i < mutableRules.size(); i++) {
+			for (GroundRule groundRule : groundRuleStore.getGroundRules(mutableRules.get(i))) {
 				truthIncompatibility[i] += ((WeightedGroundRule) groundRule).getIncompatibility();
 				++numGroundings[i];
 			}
@@ -205,9 +205,9 @@ public class FrankWolfe extends WeightLearningApplication {
 			}
 
 			/* Computes loss-augmented incompatibilities. */
-			double[] lossaugIncompatibility = new double[rules.size()];
-			for (int i = 0; i < rules.size(); i++) {
-				for (GroundRule groundRule : groundRuleStore.getGroundRules(rules.get(i))) {
+			double[] lossaugIncompatibility = new double[mutableRules.size()];
+			for (int i = 0; i < mutableRules.size(); i++) {
+				for (GroundRule groundRule : groundRuleStore.getGroundRules(mutableRules.get(i))) {
 					if (groundRule instanceof LossAugmentingGroundRule)
 						continue;
 					lossaugIncompatibility[i] += ((WeightedGroundRule) groundRule).getIncompatibility();
@@ -215,7 +215,7 @@ public class FrankWolfe extends WeightLearningApplication {
 			}
 
 			/* Computes gradient of weights, where:
-			 *   gradient = (-1 / regParam) * (truthIncompatibilities - lossaugIncompatibilities)
+			 *	gradient = (-1 / regParam) * (truthIncompatibilities - lossaugIncompatibilities)
 			 * Note: this is the negative of the formula in the paper, because
 			 * these are incompatibilities, not compatibilities.
 			 */
@@ -262,9 +262,9 @@ public class FrankWolfe extends WeightLearningApplication {
 				if (nonnegativeWeights && weights[i] < 0.0)
 					weights[i] = 0.0;
 				if (weights[i] >= 0.0)
-					rules.get(i).setWeight(new PositiveWeight(weights[i]));
+					mutableRules.get(i).setWeight(new PositiveWeight(weights[i]));
 				else
-					rules.get(i).setWeight(new NegativeWeight(weights[i]));
+					mutableRules.get(i).setWeight(new NegativeWeight(weights[i]));
 				/* Updates average weights. */
 				avgWeights[i] = (double)iter / ((double)iter + 2.0) * avgWeights[i]
 							  + 2.0 / ((double)iter + 2.0) * weights[i];
@@ -302,9 +302,9 @@ public class FrankWolfe extends WeightLearningApplication {
 				log.info("Using average weights");
 				for (int i = 0; i < avgWeights.length; ++i) {
 					if (avgWeights[i] >= 0.0)
-						rules.get(i).setWeight(new PositiveWeight(avgWeights[i]));
+						mutableRules.get(i).setWeight(new PositiveWeight(avgWeights[i]));
 					else
-						rules.get(i).setWeight(new NegativeWeight(avgWeights[i]));
+						mutableRules.get(i).setWeight(new NegativeWeight(avgWeights[i]));
 				}
 
 				changedRuleWeights = true;

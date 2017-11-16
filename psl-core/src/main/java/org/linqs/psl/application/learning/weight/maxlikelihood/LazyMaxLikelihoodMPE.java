@@ -33,7 +33,7 @@ import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.misc.GroundValueConstraint;
-import org.linqs.psl.reasoner.ReasonerFactory;
+import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 
@@ -84,7 +84,7 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 	@Override
 	protected void initGroundModel() {
 		try {
-			reasoner = ((ReasonerFactory)config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
+			reasoner = (Reasoner)config.getNewObject(REASONER_KEY, REASONER_DEFAULT);
 			termStore = (TermStore)config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
 			groundRuleStore = (GroundRuleStore)config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
 			termGenerator = (TermGenerator)config.getNewObject(TERM_GENERATOR_KEY, TERM_GENERATOR_DEFAULT);
@@ -148,9 +148,9 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 		log.debug("Finished growing labeled network.");
 
 		// Computes the observed incompatibilities.
-		double[] truthIncompatibility = new double[rules.size()];
-		for (int i = 0; i < rules.size(); i++) {
-			for (GroundRule groundRule : groundRuleStore.getGroundRules(rules.get(i))) {
+		double[] truthIncompatibility = new double[mutableRules.size()];
+		for (int i = 0; i < mutableRules.size(); i++) {
+			for (GroundRule groundRule : groundRuleStore.getGroundRules(mutableRules.get(i))) {
 				truthIncompatibility[i] += ((WeightedGroundRule) groundRule).getIncompatibility();
 			}
 		}
@@ -165,13 +165,13 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 
 	@Override
 	protected double[] computeExpectedIncomp() {
-		double[] expIncomp = new double[rules.size()];
+		double[] expIncomp = new double[mutableRules.size()];
 
 		computeMPEState();
 
 		// Computes incompatibility.
-		for (int i = 0; i < rules.size(); i++) {
-			for (GroundRule groundRule : groundRuleStore.getGroundRules(rules.get(i))) {
+		for (int i = 0; i < mutableRules.size(); i++) {
+			for (GroundRule groundRule : groundRuleStore.getGroundRules(mutableRules.get(i))) {
 				expIncomp[i] += ((WeightedGroundRule) groundRule).getIncompatibility();
 			}
 		}
@@ -181,10 +181,10 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 
 	@Override
 	protected double[] computeScalingFactor() {
-		double[] scalingFactor = new double[rules.size()];
+		double[] scalingFactor = new double[mutableRules.size()];
 
-		for (int i = 0; i < rules.size(); i++) {
-			for (GroundRule rule : groundRuleStore.getGroundRules(rules.get(i))) {
+		for (int i = 0; i < mutableRules.size(); i++) {
+			for (GroundRule rule : groundRuleStore.getGroundRules(mutableRules.get(i))) {
 				scalingFactor[i]++;
 			}
 

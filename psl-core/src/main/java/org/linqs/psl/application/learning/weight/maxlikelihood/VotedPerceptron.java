@@ -190,7 +190,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 		obsvTrueWeight = -1.0;
 		obsvFalseWeight = -1.0;
 
-		// Sets up loss augmenting ground rules.
+		// Sets up loss augmenting ground rules
 		List<LossAugmentingGroundRule> lossRules = new ArrayList<LossAugmentingGroundRule>(trainingMap.getTrainingMap().size());
 		List<LossAugmentingGroundRule> nonExtremeLossRules = new ArrayList<LossAugmentingGroundRule>();
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
@@ -236,7 +236,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 		double[] avgWeights;
 		double[] scalingFactor;
 
-		avgWeights = new double[rules.size()];
+		avgWeights = new double[mutableRules.size()];
 
 		// Computes the observed incompatibilities.
 		truthIncompatibility = computeObservedIncomp();
@@ -265,21 +265,21 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 			loss = computeLoss();
 
 			// Updates weights.
-			for (int i = 0; i < rules.size(); i++) {
-				double weight = rules.get(i).getWeight().getWeight();
+			for (int i = 0; i < mutableRules.size(); i++) {
+				double weight = mutableRules.get(i).getWeight().getWeight();
 				double currentStep = (expectedIncompatibility[i] - truthIncompatibility[i]
 						- l2Regularization * weight
 						- l1Regularization) / scalingFactor[i];
 				currentStep *= getStepSize(step);
 
-				log.debug("Step of {} for rule {}", currentStep, rules.get(i));
+				log.debug("Step of {} for rule {}", currentStep, mutableRules.get(i));
 				log.debug(" --- Expected incomp.: {}, Truth incomp.: {}", expectedIncompatibility[i], truthIncompatibility[i]);
 				weight += currentStep;
 				if (nonnegativeWeights)
 					weight = Math.max(weight, 0.0);
 				avgWeights[i] += weight;
 				Weight newWeight = (weight >= 0.0) ? new PositiveWeight(weight) : new NegativeWeight(weight);
-				rules.get(i).setWeight(newWeight);
+				mutableRules.get(i).setWeight(newWeight);
 			}
 
 			changedRuleWeights = true;
@@ -287,9 +287,9 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 
 		// Sets the weights to their averages.
 		if (averageSteps) {
-			for (int i = 0; i < rules.size(); i++) {
+			for (int i = 0; i < mutableRules.size(); i++) {
 				double avgWeight = avgWeights[i] / numSteps;
-				rules.get(i).setWeight((avgWeight >= 0.0) ? new PositiveWeight(avgWeight) : new NegativeWeight(avgWeight));
+				mutableRules.get(i).setWeight((avgWeight >= 0.0) ? new PositiveWeight(avgWeight) : new NegativeWeight(avgWeight));
 			}
 			changedRuleWeights = true;
 		}
@@ -299,13 +299,13 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	}
 
 	protected double[] computeObservedIncomp() {
-		numGroundings = new double[rules.size()];
-		double[] truthIncompatibility = new double[rules.size()];
+		numGroundings = new double[mutableRules.size()];
+		double[] truthIncompatibility = new double[mutableRules.size()];
 		setLabeledRandomVariables();
 
 		// Computes the observed incompatibilities and numbers of groundings.
-		for (int i = 0; i < rules.size(); i++) {
-			for (GroundRule groundRule : groundRuleStore.getGroundRules(rules.get(i))) {
+		for (int i = 0; i < mutableRules.size(); i++) {
+			for (GroundRule groundRule : groundRuleStore.getGroundRules(mutableRules.get(i))) {
 				truthIncompatibility[i] += ((WeightedGroundRule) groundRule).getIncompatibility();
 				numGroundings[i]++;
 			}
@@ -326,9 +326,9 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	protected double computeRegularizer() {
 		double l2 = 0;
 		double l1 = 0;
-		for (int i = 0; i < rules.size(); i++) {
-			l2 += Math.pow(rules.get(i).getWeight().getWeight(), 2);
-			l1 += Math.abs(rules.get(i).getWeight().getWeight());
+		for (int i = 0; i < mutableRules.size(); i++) {
+			l2 += Math.pow(mutableRules.get(i).getWeight().getWeight(), 2);
+			l1 += Math.abs(mutableRules.get(i).getWeight().getWeight());
 		}
 		return 0.5 * l2Regularization * l2 + l1Regularization * l1;
 	}

@@ -18,12 +18,12 @@
 package org.linqs.psl.application.learning.weight.em;
 
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
-import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.application.learning.weight.maxlikelihood.VotedPerceptron;
 import org.linqs.psl.application.util.Grounding;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.ConfigManager;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.database.atom.TrainingMapAtomManager;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
@@ -31,7 +31,6 @@ import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.rule.misc.GroundValueConstraint;
 import org.linqs.psl.model.weight.PositiveWeight;
 import org.linqs.psl.reasoner.Reasoner;
-import org.linqs.psl.reasoner.ReasonerFactory;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 
@@ -133,10 +132,10 @@ public abstract class ExpectationMaximization extends VotedPerceptron {
 
 	@Override
 	protected void doLearn() {
-		double[] weights = new double[rules.size()];
+		double[] weights = new double[mutableRules.size()];
 		for (int i = 0; i < weights.length; i++)
-			weights[i] = rules.get(i).getWeight().getWeight();
-		double [] avgWeights = new double[rules.size()];
+			weights[i] = mutableRules.get(i).getWeight().getWeight();
+		double [] avgWeights = new double[mutableRules.size()];
 
 		round = 0;
 		while (round++ < iterations) {
@@ -147,19 +146,19 @@ public abstract class ExpectationMaximization extends VotedPerceptron {
 			super.doLearn();
 
 			double change = 0;
-			for (int i = 0; i < rules.size(); i++) {
-				change += Math.pow(weights[i] - rules.get(i).getWeight().getWeight(), 2);
-				weights[i] = rules.get(i).getWeight().getWeight();
+			for (int i = 0; i < mutableRules.size(); i++) {
+				change += Math.pow(weights[i] - mutableRules.get(i).getWeight().getWeight(), 2);
+				weights[i] = mutableRules.get(i).getWeight().getWeight();
 
 				avgWeights[i] = (1 - (1.0 / (double) round)) * avgWeights[i] + (1.0 / (double) round) * weights[i];
 			}
 
 			if (storeWeights) {
 				Map<WeightedRule,Double> weightMap = new HashMap<WeightedRule, Double>();
-				for (int i = 0; i < rules.size(); i++) {
+				for (int i = 0; i < mutableRules.size(); i++) {
 					double weight = (averageSteps)? avgWeights[i] : weights[i];
 					if (weight > 0.0)
-						weightMap.put(rules.get(i), weight);
+						weightMap.put(mutableRules.get(i), weight);
 				}
 				storedWeights.add(weightMap);
 			}
@@ -177,8 +176,8 @@ public abstract class ExpectationMaximization extends VotedPerceptron {
 		}
 
 		if (averageSteps) {
-			for (int i = 0; i < rules.size(); i++) {
-				rules.get(i).setWeight(new PositiveWeight(avgWeights[i]));
+			for (int i = 0; i < mutableRules.size(); i++) {
+				mutableRules.get(i).setWeight(new PositiveWeight(avgWeights[i]));
 			}
 		}
 	}
@@ -188,7 +187,7 @@ public abstract class ExpectationMaximization extends VotedPerceptron {
 	@Override
 	protected void initGroundModel() {
 		try {
-			reasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
+			reasoner = (Reasoner)config.getNewObject(REASONER_KEY, REASONER_DEFAULT);
 			termStore = (TermStore)config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
 			groundRuleStore = (GroundRuleStore)config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
 			termGenerator = (TermGenerator)config.getNewObject(TERM_GENERATOR_KEY, TERM_GENERATOR_DEFAULT);
@@ -197,7 +196,7 @@ public abstract class ExpectationMaximization extends VotedPerceptron {
 			throw new RuntimeException("Failed to prepare storage for inference.", ex);
 		}
 
-		trainingMap = new TrainingMap(rvDB, observedDB);
+		trainingMap = new TrainingMapAtomManager(rvDB, observedDB);
 
 		Grounding.groundAll(model, trainingMap, groundRuleStore);
 		termGenerator.generateTerms(groundRuleStore, termStore);
@@ -209,7 +208,7 @@ public abstract class ExpectationMaximization extends VotedPerceptron {
 		}
 
 		try {
-			latentVariableReasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
+			latentVariableReasoner = (Reasoner)config.getNewObject(REASONER_KEY, REASONER_DEFAULT);
 			latentTermStore = (TermStore)config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
 			latentGroundRuleStore = (GroundRuleStore)config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
 			latentTermGenerator = (TermGenerator)config.getNewObject(TERM_GENERATOR_KEY, TERM_GENERATOR_DEFAULT);

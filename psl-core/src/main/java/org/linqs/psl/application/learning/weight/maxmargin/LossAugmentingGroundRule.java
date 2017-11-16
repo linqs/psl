@@ -31,15 +31,15 @@ import org.linqs.psl.reasoner.function.FunctionTerm;
 
 /**
  * Special ground rule that penalizes being close to a fixed value of 1.0 or 0.0.
- * 
+ *
  * @author Bert Huang <bert@cs.umd.edu>
  */
 public class LossAugmentingGroundRule implements WeightedGroundRule {
 
 	private GroundAtom atom;
-	private double groundTruth;	
+	private double groundTruth;
 	private Weight weight;
-	
+
 	public LossAugmentingGroundRule(GroundAtom atom, double truthValue, Weight weight) {
 		this.atom = atom;
 		this.groundTruth = truthValue;
@@ -74,7 +74,7 @@ public class LossAugmentingGroundRule implements WeightedGroundRule {
 	public void setWeight(Weight w) {
 		this.weight = w;
 	}
-	
+
 	@Override
 	public FunctionTerm getFunctionDefinition() {
 		FunctionSum sum = new FunctionSum();
@@ -88,12 +88,11 @@ public class LossAugmentingGroundRule implements WeightedGroundRule {
 		else {
 			throw new IllegalStateException("Ground truth is not 0 or 1.");
 		}
-		
+
 		return sum;
 	}
-	
+
 	public GroundAtom getAtom() {
 		return atom;
 	}
-	
 }
