@@ -22,12 +22,14 @@ import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.ConfigManager;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.model.ConstraintBlocker;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
+import org.linqs.psl.reasoner.term.ConstraintBlockerTermGenerator;
+import org.linqs.psl.reasoner.term.ConstraintBlockerTermStore;
+import org.linqs.psl.reasoner.term.TermGenerator;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -89,7 +91,7 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 	 */
 	public static final double MIN_WIDTH_DEFAULT = 1e-2;
 
-	private ConstraintBlocker blocker;
+	private ConstraintBlockerTermStore blocker;
 	private final boolean bool;
 	private final int numSamples;
 	private final double minWidth;
@@ -123,8 +125,9 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 		// Invoke method in the parent class to setup ground model.
 		super.initGroundModel();
 
-		blocker = new ConstraintBlocker((AtomRegisterGroundRuleStore)groundRuleStore);
-		blocker.prepareBlocks(true);
+		blocker = new ConstraintBlockerTermStore();
+		TermGenerator termGenerator = new ConstraintBlockerTermGenerator();
+		termGenerator.generateTerms(groundRuleStore, blocker);
 	}
 
 	/**

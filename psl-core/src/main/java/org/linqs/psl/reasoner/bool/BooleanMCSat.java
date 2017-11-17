@@ -20,10 +20,10 @@ package org.linqs.psl.reasoner.bool;
 import org.linqs.psl.application.groundrulestore.AtomRegisterGroundRuleStore;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.ConfigManager;
-import org.linqs.psl.model.ConstraintBlocker;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.Reasoner;
+import org.linqs.psl.reasoner.term.ConstraintBlockerTermStore;
 import org.linqs.psl.reasoner.term.TermStore;
 
 import org.slf4j.Logger;
@@ -44,7 +44,7 @@ import java.util.Random;
  *
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-public class BooleanMCSat extends AtomRegisterGroundRuleStore implements Reasoner {
+public class BooleanMCSat implements Reasoner {
 
 	private static final Logger log = LoggerFactory.getLogger(BooleanMCSat.class);
 
@@ -89,22 +89,28 @@ public class BooleanMCSat extends AtomRegisterGroundRuleStore implements Reasone
 
 	@Override
 	public void optimize(TermStore termStore) {
-		ConstraintBlocker blocker = new ConstraintBlocker(this);
-		blocker.prepareBlocks(false);
+		if (!(termStore instanceof ConstraintBlockerTermStore)) {
+			throw new IllegalArgumentException("ConstraintBlockerTermStore required.");
+		}
+		ConstraintBlockerTermStore blocker = (ConstraintBlockerTermStore)termStore;
 
-		/* Puts RandomVariableAtoms in 2d array by block */
-		RandomVariableAtom[][] rvBlocks = blocker.getRVBlocks();
-		/* If true, exactly one Atom in the RV block must be 1.0. If false, at most one can. */
-		boolean[] exactlyOne = blocker.getExactlyOne();
-		/* Collects GroundCompatibilityRules incident on each block of RandomVariableAtoms */
-		WeightedGroundRule[][] incidentGKs = blocker.getIncidentGKs();
-		/* Initializes arrays for totaling samples */
-		double[][] totals = blocker.getEmptyDouble2DArray();
 
-		/* Randomly initializes the RVs to a feasible state */
+		// Randomly initializes the RVs to a feasible state.
 		blocker.randomlyInitializeRVs();
 
-		/* Samples RV assignments */
+		// Puts RandomVariableAtoms in 2d array by block.
+		RandomVariableAtom[][] rvBlocks = blocker.getRVBlocks();
+
+		// If true, exactly one Atom in the RV block must be 1.0. If false, at most one can.
+		boolean[] exactlyOne = blocker.getExactlyOne();
+
+		// Collects GroundCompatibilityRules incident on each block of RandomVariableAtoms
+		WeightedGroundRule[][] incidentGKs = blocker.getIncidentGKs();
+
+		// Initializes arrays for totaling samples
+		double[][] totals = blocker.getEmptyDouble2DArray();
+
+		// Samples RV assignments
 		log.info("Beginning inference.");
 		double[] p;
 		for (int sampleIndex = 0; sampleIndex < numSamples; sampleIndex++) {

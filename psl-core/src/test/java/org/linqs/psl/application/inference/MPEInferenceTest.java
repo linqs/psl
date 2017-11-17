@@ -39,15 +39,7 @@ public class MPEInferenceTest {
 
 		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
 		Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-		MPEInference mpe = null;
-
-		try {
-			mpe = new MPEInference(info.model, inferDB, info.config);
-		} catch (Exception ex) {
-			System.out.println(ex);
-			ex.printStackTrace();
-			fail("Exception thrown during MPE constructor.");
-		}
+		MPEInference mpe = new MPEInference(info.model, inferDB, info.config);
 
 		mpe.mpeInference();
 		mpe.close();
@@ -83,15 +75,7 @@ public class MPEInferenceTest {
 		toClose.add(info.predicates.get("Friends"));
 
 		Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-		MPEInference mpe = null;
-
-		try {
-			mpe = new MPEInference(info.model, inferDB, info.config);
-		} catch (Exception ex) {
-			System.out.println(ex);
-			ex.printStackTrace();
-			fail("Exception thrown during MPE constructor.");
-		}
+		MPEInference mpe = new MPEInference(info.model, inferDB, info.config);
 
 		mpe.mpeInference();
 		mpe.close();
@@ -133,15 +117,7 @@ public class MPEInferenceTest {
 		toClose.add(info.predicates.get("Nice"));
 
 		Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-		MPEInference mpe = null;
-
-		try {
-			mpe = new MPEInference(info.model, inferDB, info.config);
-		} catch (Exception ex) {
-			System.out.println(ex);
-			ex.printStackTrace();
-			fail("Exception thrown during MPE constructor.");
-		}
+		MPEInference mpe = new MPEInference(info.model, inferDB, info.config);
 
 		mpe.mpeInference();
 		mpe.close();
