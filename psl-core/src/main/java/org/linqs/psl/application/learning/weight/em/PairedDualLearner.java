@@ -17,16 +17,6 @@
  */
 package org.linqs.psl.application.learning.weight.em;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.text.DecimalFormat;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
-
 import org.linqs.psl.application.learning.weight.maxlikelihood.VotedPerceptron;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.ConfigManager;
@@ -36,11 +26,21 @@ import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.PredicateFactory;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
-import org.linqs.psl.model.weight.PositiveWeight;
 import org.linqs.psl.reasoner.admm.ADMMReasoner;
 import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.text.DecimalFormat;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
 
 /**
  * Learns the parameters of a HL-MRF with latent variables, using a maximum-likelihood
@@ -194,9 +194,9 @@ public class PairedDualLearner extends ExpectationMaximization {
 	protected double computeLoss() {
 		double loss = 0.0;
 		for (int i = 0; i < mutableRules.size(); i++)
-			loss += mutableRules.get(i).getWeight().getWeight() * (dualObservedIncompatibility[i] - dualExpectedIncompatibility[i]);
+			loss += mutableRules.get(i).getWeight() * (dualObservedIncompatibility[i] - dualExpectedIncompatibility[i]);
 		for (int i = 0; i < immutableRules.size(); i++)
-			loss += immutableRules.get(i).getWeight().getWeight() * (dualObservedIncompatibility[mutableRules.size() + i] - dualExpectedIncompatibility[mutableRules.size() + i]);
+			loss += immutableRules.get(i).getWeight() * (dualObservedIncompatibility[mutableRules.size() + i] - dualExpectedIncompatibility[mutableRules.size() + i]);
 		return loss;
 	}
 
@@ -206,7 +206,7 @@ public class PairedDualLearner extends ExpectationMaximization {
 		log.info("Starting optimization");
 		double [] weights = new double[mutableRules.size()];
 		for (int i = 0; i < mutableRules.size(); i++)
-			weights[i] = mutableRules.get(i).getWeight().getWeight();
+			weights[i] = mutableRules.get(i).getWeight();
 
 		double [] avgWeights = new double[mutableRules.size()];
 
@@ -243,9 +243,10 @@ public class PairedDualLearner extends ExpectationMaximization {
 			if (storeWeights) {
 				Map<WeightedRule,Double> weightMap = new HashMap<WeightedRule, Double>();
 				for (int i = 0; i < mutableRules.size(); i++) {
-					double weight = (averageSteps)? avgWeights[i] : weights[i];
-					if (weight != 0.0)
+					double weight = (averageSteps) ? avgWeights[i] : weights[i];
+					if (weight != 0.0) {
 						weightMap.put(mutableRules.get(i), weight);
+					}
 				}
 
 				storedWeights.add(weightMap);
@@ -270,9 +271,10 @@ public class PairedDualLearner extends ExpectationMaximization {
 		log.info("Learning finished with final objective value {}", objective);
 
 		for (int i = 0; i < mutableRules.size(); i++) {
-			if (averageSteps)
+			if (averageSteps) {
 				weights[i] = avgWeights[i];
-			mutableRules.get(i).setWeight(new PositiveWeight(weights[i]));
+			}
+			mutableRules.get(i).setWeight(weights[i]);
 		}
 	}
 
@@ -328,7 +330,7 @@ public class PairedDualLearner extends ExpectationMaximization {
 	private double getValueAndGradient(double[] gradient, double[] weights) {
 		for (int i = 0; i < mutableRules.size(); i++) {
 			if (gradient[i] != 0.0)
-				mutableRules.get(i).setWeight(new PositiveWeight(weights[i]));
+				mutableRules.get(i).setWeight(weights[i]);
 		}
 		minimizeKLDivergence();
 		computeObservedIncomp();
@@ -340,7 +342,7 @@ public class PairedDualLearner extends ExpectationMaximization {
 		for (int i = 0; i < mutableRules.size(); i++)
 			loss += weights[i] * (dualObservedIncompatibility[i] - dualExpectedIncompatibility[i]);
 		for (int i = 0; i < immutableRules.size(); i++)
-			loss += immutableRules.get(i).getWeight().getWeight() * (dualObservedIncompatibility[mutableRules.size() + i] - dualExpectedIncompatibility[mutableRules.size() + i]);
+			loss += immutableRules.get(i).getWeight() * (dualObservedIncompatibility[mutableRules.size() + i] - dualExpectedIncompatibility[mutableRules.size() + i]);
 		double eStepLagrangianPenalty = ((ADMMReasoner) latentVariableReasoner).getLagrangianPenalty();
 		double eStepAugLagrangianPenalty = ((ADMMReasoner) latentVariableReasoner).getAugmentedLagrangianPenalty();
 		double mStepLagrangianPenalty = ((ADMMReasoner) reasoner).getLagrangianPenalty();

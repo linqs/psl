@@ -145,7 +145,7 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 										}
 									}
 
-									c += gck.getWeight().getWeight() * gck.getIncompatibility() * meanFieldProb * sign;
+									c += gck.getWeight() * gck.getIncompatibility() * meanFieldProb * sign;
 								}
 							}
 							else
@@ -338,7 +338,7 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 					}
 				}
 
-				kl += gck.getWeight().getWeight() * gck.getIncompatibility() * meanFieldProb;
+				kl += gck.getWeight() * gck.getIncompatibility() * meanFieldProb;
 			}
 		}
 

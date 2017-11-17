@@ -162,7 +162,7 @@ public class BooleanMCSat implements Reasoner {
 	private double computeProbability(WeightedGroundRule incidentGKs[]) {
 		double probability = 0.0;
 		for (WeightedGroundRule groundRule : incidentGKs) {
-			probability += ((WeightedGroundRule) groundRule).getWeight().getWeight()
+			probability += ((WeightedGroundRule) groundRule).getWeight()
 					* ((WeightedGroundRule) groundRule).getIncompatibility();
 		}
 		return Math.exp(-1 * probability);

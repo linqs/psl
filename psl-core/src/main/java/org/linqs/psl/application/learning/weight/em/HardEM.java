@@ -135,9 +135,9 @@ public class HardEM extends ExpectationMaximization  {
 	protected double computeLoss() {
 		double loss = 0.0;
 		for (int i = 0; i < mutableRules.size(); i++)
-			loss += mutableRules.get(i).getWeight().getWeight() * (fullObservedIncompatibility[i] - fullExpectedIncompatibility[i]);
+			loss += mutableRules.get(i).getWeight() * (fullObservedIncompatibility[i] - fullExpectedIncompatibility[i]);
 		for (int i = 0; i < immutableRules.size(); i++)
-			loss += immutableRules.get(i).getWeight().getWeight() * (fullObservedIncompatibility[mutableRules.size() + i] - fullExpectedIncompatibility[mutableRules.size() + i]);
+			loss += immutableRules.get(i).getWeight() * (fullObservedIncompatibility[mutableRules.size() + i] - fullExpectedIncompatibility[mutableRules.size() + i]);
 		return loss;
 	}
 
@@ -161,7 +161,7 @@ public class HardEM extends ExpectationMaximization  {
 
 		// otherwise accumulate gradient
 		for (int i = 0; i < numGroundings.length; i++) {
-			double weight = mutableRules.get(i).getWeight().getWeight();
+			double weight = mutableRules.get(i).getWeight();
 			double gradient =  (expectedIncompatibility[i] - truthIncompatibility[i]
 					- l2Regularization * weight
 					- l1Regularization);

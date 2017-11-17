@@ -17,27 +17,22 @@
  */
 package org.linqs.psl.model.rule.logical;
 
-import java.util.List;
-
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
-import org.linqs.psl.model.weight.NegativeWeight;
-import org.linqs.psl.model.weight.PositiveWeight;
-import org.linqs.psl.model.weight.Weight;
+
+import java.util.List;
 
 public class WeightedLogicalRule extends AbstractLogicalRule implements WeightedRule {
-	protected Weight weight;
+	protected double weight;
 	protected boolean squared;
-	protected boolean mutable;
 
-	public WeightedLogicalRule(Formula f, double w, boolean squared) {
+	public WeightedLogicalRule(Formula f, double weight, boolean squared) {
 		super(f);
 
-		weight = (w >= 0.0) ? new PositiveWeight(w) : new NegativeWeight(w);
+		this.weight = weight;
 		this.squared = squared;
-		mutable = true;
 	}
 
 	@Override
@@ -46,32 +41,23 @@ public class WeightedLogicalRule extends AbstractLogicalRule implements Weighted
 	}
 
 	@Override
-	public Weight getWeight() {
-		return weight.duplicate();
+	public double getWeight() {
+		return weight;
 	}
 
 	@Override
-	public void setWeight(Weight weight) {
-		if (!mutable) {
-			throw new IllegalStateException("Rule weight is not mutable.");
-		}
-
+	public void setWeight(double weight) {
 		this.weight = weight;
 	}
 
 	@Override
 	public String toString() {
 		String squaredSuffix = (squared) ? " ^2" : "";
-		return "" + weight.getWeight() + ": " + formula + squaredSuffix;
+		return "" + weight + ": " + formula + squaredSuffix;
 	}
 
 	@Override
 	public boolean isWeightMutable() {
-		return mutable;
-	}
-
-	@Override
-	public void setWeightMutable(boolean mutable) {
-		this.mutable = mutable;
+		return true;
 	}
 }

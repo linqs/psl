@@ -20,7 +20,6 @@ package org.linqs.psl.application.learning.weight;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
-import org.linqs.psl.model.weight.Weight;
 import org.linqs.psl.reasoner.function.ConstantNumber;
 import org.linqs.psl.reasoner.function.FunctionSum;
 import org.linqs.psl.reasoner.function.FunctionSummand;
@@ -37,9 +36,9 @@ import java.util.Set;
 public class LossAugmentingGroundRule implements WeightedGroundRule {
 	private GroundAtom atom;
 	private double groundTruth;
-	private Weight weight;
+	private double weight;
 
-	public LossAugmentingGroundRule(GroundAtom atom, double truthValue, Weight weight) {
+	public LossAugmentingGroundRule(GroundAtom atom, double truthValue, double weight) {
 		this.atom = atom;
 
 		this.groundTruth = truthValue;
@@ -68,13 +67,13 @@ public class LossAugmentingGroundRule implements WeightedGroundRule {
 	}
 
 	@Override
-	public Weight getWeight() {
+	public double getWeight() {
 		return weight;
 	}
 
 	@Override
-	public void setWeight(Weight w) {
-		this.weight = w;
+	public void setWeight(double weight) {
+		this.weight = weight;
 	}
 
 	@Override

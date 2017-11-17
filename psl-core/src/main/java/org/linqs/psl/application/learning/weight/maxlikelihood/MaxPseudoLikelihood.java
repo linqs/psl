@@ -216,7 +216,7 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 				for (Map.Entry<WeightedRule,double[]> e2 : incompatibilities.entrySet()) {
 					WeightedRule rule = e2.getKey();
 					double[] inc = e2.getValue();
-					sum -= rule.getWeight().getWeight() * inc[j];
+					sum -= rule.getWeight() * inc[j];
 				}
 				double exp = Math.exp(sum);
 

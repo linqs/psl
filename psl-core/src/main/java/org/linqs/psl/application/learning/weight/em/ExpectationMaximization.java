@@ -29,7 +29,6 @@ import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.rule.misc.GroundValueConstraint;
-import org.linqs.psl.model.weight.PositiveWeight;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
@@ -134,7 +133,7 @@ public abstract class ExpectationMaximization extends VotedPerceptron {
 	protected void doLearn() {
 		double[] weights = new double[mutableRules.size()];
 		for (int i = 0; i < weights.length; i++)
-			weights[i] = mutableRules.get(i).getWeight().getWeight();
+			weights[i] = mutableRules.get(i).getWeight();
 		double [] avgWeights = new double[mutableRules.size()];
 
 		round = 0;
@@ -147,8 +146,8 @@ public abstract class ExpectationMaximization extends VotedPerceptron {
 
 			double change = 0;
 			for (int i = 0; i < mutableRules.size(); i++) {
-				change += Math.pow(weights[i] - mutableRules.get(i).getWeight().getWeight(), 2);
-				weights[i] = mutableRules.get(i).getWeight().getWeight();
+				change += Math.pow(weights[i] - mutableRules.get(i).getWeight(), 2);
+				weights[i] = mutableRules.get(i).getWeight();
 
 				avgWeights[i] = (1 - (1.0 / (double) round)) * avgWeights[i] + (1.0 / (double) round) * weights[i];
 			}
@@ -156,7 +155,7 @@ public abstract class ExpectationMaximization extends VotedPerceptron {
 			if (storeWeights) {
 				Map<WeightedRule,Double> weightMap = new HashMap<WeightedRule, Double>();
 				for (int i = 0; i < mutableRules.size(); i++) {
-					double weight = (averageSteps)? avgWeights[i] : weights[i];
+					double weight = (averageSteps) ? avgWeights[i] : weights[i];
 					if (weight > 0.0)
 						weightMap.put(mutableRules.get(i), weight);
 				}
@@ -177,7 +176,7 @@ public abstract class ExpectationMaximization extends VotedPerceptron {
 
 		if (averageSteps) {
 			for (int i = 0; i < mutableRules.size(); i++) {
-				mutableRules.get(i).setWeight(new PositiveWeight(avgWeights[i]));
+				mutableRules.get(i).setWeight(avgWeights[i]);
 			}
 		}
 	}

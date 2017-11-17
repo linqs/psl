@@ -28,9 +28,6 @@ import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
-import org.linqs.psl.model.weight.NegativeWeight;
-import org.linqs.psl.model.weight.PositiveWeight;
-import org.linqs.psl.model.weight.Weight;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -205,13 +202,13 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 
 			// If ground truth is at 1.0 or 0.0, set up ground rule without planning to change it.
 			if (truth == 1.0 || truth == 0.0) {
-				groundRule = new LossAugmentingGroundRule(e.getKey(), truth, new NegativeWeight(-1.0));
+				groundRule = new LossAugmentingGroundRule(e.getKey(), truth, -1.0);
 			} else {
 				// Otherwie, do a little more to check it and change it later.
 				if (truth >= 0.5) {
-					groundRule = new LossAugmentingGroundRule(e.getKey(), 1.0, new NegativeWeight(-1.0));
+					groundRule = new LossAugmentingGroundRule(e.getKey(), 1.0, -1.0);
 				} else {
-					groundRule = new LossAugmentingGroundRule(e.getKey(), 1.0, new PositiveWeight(1.0));
+					groundRule = new LossAugmentingGroundRule(e.getKey(), 1.0, 1.0);
 				}
 			}
 
@@ -269,7 +266,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 
 			// Updates weights.
 			for (int i = 0; i < mutableRules.size(); i++) {
-				double weight = mutableRules.get(i).getWeight().getWeight();
+				double weight = mutableRules.get(i).getWeight();
 				double currentStep = (expectedIncompatibility[i] - truthIncompatibility[i]
 						- l2Regularization * weight
 						- l1Regularization) / scalingFactor[i];
@@ -284,8 +281,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 				}
 
 				avgWeights[i] += weight;
-				Weight newWeight = (weight >= 0.0) ? new PositiveWeight(weight) : new NegativeWeight(weight);
-				mutableRules.get(i).setWeight(newWeight);
+				mutableRules.get(i).setWeight(weight);
 			}
 
 			changedRuleWeights = true;
@@ -294,8 +290,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 		// Sets the weights to their averages.
 		if (averageSteps) {
 			for (int i = 0; i < mutableRules.size(); i++) {
-				double avgWeight = avgWeights[i] / numSteps;
-				mutableRules.get(i).setWeight((avgWeight >= 0.0) ? new PositiveWeight(avgWeight) : new NegativeWeight(avgWeight));
+				mutableRules.get(i).setWeight(avgWeights[i] / numSteps);
 			}
 			changedRuleWeights = true;
 		}
@@ -339,8 +334,8 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 		double l1 = 0.0;
 
 		for (WeightedRule rule : mutableRules) {
-			l2 += Math.pow(rule.getWeight().getWeight(), 2);
-			l1 += Math.abs(rule.getWeight().getWeight());
+			l2 += Math.pow(rule.getWeight(), 2);
+			l1 += Math.abs(rule.getWeight());
 		}
 
 		return 0.5 * l2Regularization * l2 + l1Regularization * l1;

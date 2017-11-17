@@ -27,8 +27,6 @@ import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
-import org.linqs.psl.model.weight.NegativeWeight;
-import org.linqs.psl.model.weight.PositiveWeight;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -142,7 +140,7 @@ public class FrankWolfe extends WeightLearningApplication {
 		double[] weights = new double[mutableRules.size()];
 		double[] avgWeights = new double[mutableRules.size()];
 		for (int i = 0; i < weights.length; i++) {
-			weights[i] = mutableRules.get(i).getWeight().getWeight();
+			weights[i] = mutableRules.get(i).getWeight();
 			avgWeights[i] = weights[i];
 		}
 
@@ -169,16 +167,13 @@ public class FrankWolfe extends WeightLearningApplication {
 		int numLabels = trainingMap.getTrainingMap().entrySet().size();
 
 		/* Sets up loss augmenting ground rules */
-		double obsvTrueWeight = -1.0;
-		double obsvFalseWeight = -1.0;
-		log.debug("Weighting loss of positive (value = 1.0) examples by {} " +
-				  "and negative examples by {}", obsvTrueWeight, obsvFalseWeight);
+		log.debug("Weighting loss of positive (value = 1.0) examples by {} and negative examples by {}", -1.0, -1.0);
+
 		List<LossAugmentingGroundRule> lossRules = new ArrayList<LossAugmentingGroundRule>(trainingMap.getTrainingMap().size());
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
 			double truth = e.getValue().getValue();
-			NegativeWeight weight = new NegativeWeight((truth == 1.0) ? obsvTrueWeight : obsvFalseWeight);
 			/* If ground truth is not integral, this will throw exception. */
-			LossAugmentingGroundRule groundRule = new LossAugmentingGroundRule(e.getKey(), truth, weight);
+			LossAugmentingGroundRule groundRule = new LossAugmentingGroundRule(e.getKey(), truth, -1.0);
 			groundRuleStore.addGroundRule(groundRule);
 			lossRules.add(groundRule);
 		}
@@ -263,10 +258,9 @@ public class FrankWolfe extends WeightLearningApplication {
 				weights[i] = (1.0 - stepSize) * weights[i] + stepSize * gradient[i];
 				if (nonnegativeWeights && weights[i] < 0.0)
 					weights[i] = 0.0;
-				if (weights[i] >= 0.0)
-					mutableRules.get(i).setWeight(new PositiveWeight(weights[i]));
-				else
-					mutableRules.get(i).setWeight(new NegativeWeight(weights[i]));
+
+            mutableRules.get(i).setWeight(weights[i]);
+
 				/* Updates average weights. */
 				avgWeights[i] = (double)iter / ((double)iter + 2.0) * avgWeights[i]
 							  + 2.0 / ((double)iter + 2.0) * weights[i];
@@ -303,10 +297,7 @@ public class FrankWolfe extends WeightLearningApplication {
 			if (averageWeights) {
 				log.info("Using average weights");
 				for (int i = 0; i < avgWeights.length; ++i) {
-					if (avgWeights[i] >= 0.0)
-						mutableRules.get(i).setWeight(new PositiveWeight(avgWeights[i]));
-					else
-						mutableRules.get(i).setWeight(new NegativeWeight(avgWeights[i]));
+               mutableRules.get(i).setWeight(avgWeights[i]);
 				}
 
 				changedRuleWeights = true;

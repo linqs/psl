@@ -241,7 +241,7 @@ public class BooleanMaxWalkSat implements Reasoner {
 							for (WeightedGroundRule incidentGK : candidateIncidentGKs[iBlock]) {
 								if (!unsatGKs.contains(incidentGK)) {
 									if (incidentGK.getIncompatibility() > 0.0) {
-										currentIncompatibility += ((WeightedGroundRule) incidentGK).getWeight().getWeight() * ((WeightedGroundRule) incidentGK).getIncompatibility();
+										currentIncompatibility += ((WeightedGroundRule) incidentGK).getWeight() * ((WeightedGroundRule) incidentGK).getIncompatibility();
 									}
 								}
 							}

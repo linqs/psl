@@ -17,13 +17,13 @@
  */
 package org.linqs.psl.application.learning.weight.maxlikelihood;
 
-import java.util.Arrays;
-
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
+
+import java.util.Arrays;
 
 /**
  * Learns weights by optimizing the log likelihood of the data using
@@ -97,11 +97,11 @@ public class MaxLikelihoodMPE extends VotedPerceptron {
 	protected double computeLoss() {
 		double loss = 0.0;
 		for (int i = 0; i < mutableRules.size(); i++) {
-			loss += mutableRules.get(i).getWeight().getWeight() * (fullObservedIncompatibility[i] - fullExpectedIncompatibility[i]);
+			loss += mutableRules.get(i).getWeight() * (fullObservedIncompatibility[i] - fullExpectedIncompatibility[i]);
 		}
 
 		for (int i = 0; i < immutableRules.size(); i++) {
-			loss += immutableRules.get(i).getWeight().getWeight() * (fullObservedIncompatibility[mutableRules.size() + i] - fullExpectedIncompatibility[mutableRules.size() + i]);
+			loss += immutableRules.get(i).getWeight() * (fullObservedIncompatibility[mutableRules.size() + i] - fullExpectedIncompatibility[mutableRules.size() + i]);
 		}
 
 		return loss;

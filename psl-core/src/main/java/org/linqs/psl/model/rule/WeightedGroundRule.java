@@ -17,44 +17,29 @@
  */
 package org.linqs.psl.model.rule;
 
-import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.weight.Weight;
 import org.linqs.psl.reasoner.function.FunctionTerm;
 
 public interface WeightedGroundRule extends GroundRule {
-	
 	@Override
 	public WeightedRule getRule();
-	
+
 	/**
 	 * Returns the Weight of this WeightedGroundRule.
-	 * <p>
-	 * Until {@link #setWeight(Weight)} is called, this GroundRule's weight
-	 * is the current weight of its parent Rule. After it is called, it remains
-	 * the most recent Weight set by {@link #setWeight(Weight)}.
-	 * 
-	 * @return this GroundRule's Weight
-	 * @see WeightedRule#getWeight()
+	 * Until setWeight() is called, this GroundRule's weight is the current weight of its parent Rule.
+	 * After it is called, it remains the most recent Weight set by setWeight().
 	 */
-	public Weight getWeight();
-	
+	public double getWeight();
+
 	/**
 	 * Sets a weight for this WeightedGroundRule.
-	 * 
-	 * @param w  new weight
 	 */
-	public void setWeight(Weight w);
-	
+	public void setWeight(double weight);
+
 	public FunctionTerm getFunctionDefinition();
 
 	/**
-	 * Returns the incompatibility of the truth values of this GroundRule's
-	 * {@link GroundAtom GroundAtoms}.
-	 * <p>
+	 * Returns the incompatibility of the truth values of this GroundRule's GroundAtoms.
 	 * Incompatibility is always non-negative.
-	 * 
-	 * @return the incompatibility of the current truth values
 	 */
 	public double getIncompatibility();
-	
 }
