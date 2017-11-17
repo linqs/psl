@@ -91,6 +91,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
 	 * Indicates that the rule weights have been changed and should be updated before optimization.
 	 * This should always be checked before optimization.
 	 */
+	// TODO(eriq): This is suspect. Feels like an indication of a hack.
 	protected boolean changedRuleWeights;
 
 	protected Reasoner reasoner;
@@ -106,6 +107,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
 
 		changedRuleWeights = true;
 
+		// TODO(eriq): Why not fill these now? We have the model.
 		mutableRules = new ArrayList<WeightedRule>();
 		immutableRules = new ArrayList<WeightedRule>();
 	}
@@ -137,6 +139,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
 		// Learns new weights.
 		doLearn();
 
+		// TODO(eriq): Why clear? And why not clear immutable?
 		mutableRules.clear();
 	}
 

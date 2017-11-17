@@ -17,45 +17,50 @@
  */
 package org.linqs.psl.model.weight;
 
-import com.google.common.base.Preconditions;
-
 public abstract class Weight {
+	private static final double EPSILON = 1e-100;
 
-	private static final double comparisonEpsilon = 1e-100;
-	
 	private double weight;
-	
+
 	public Weight() {
 		weight = Double.NaN;
 	}
-	
+
 	public Weight(double w) {
 		checkWeight(w);
 		weight = w;
 	}
-	
-	abstract boolean isValidWeight(double w);
-	
-	void checkWeight(double w) {
-		Preconditions.checkArgument(isValidWeight(w),"Illegal weight:" + w);
+
+	private void checkWeight(double w) {
+      if (!isValidWeight(w)) {
+         throw new IllegalArgumentException("Illegal weight: " + w);
+      }
 	}
-	
+
 	public double getWeight() {
 		return weight;
 	}
-	
-	public abstract Weight duplicate();
-	
+
 	@Override
 	public String toString() {
-		return "W="+weight;
+		return "W=" + weight;
 	}
-	
+
 	@Override
 	public boolean equals(Object oth) {
-		if (oth==this) return true;
-		if (oth==null || !(getClass().isInstance(oth)) ) return false;
+		if (oth == this) {
+         return true;
+      }
+
+		if (oth == null || !(getClass().isInstance(oth))) {
+         return false;
+      }
+
 		Weight w = (Weight)oth;
-		return Math.abs(weight - w.weight)<comparisonEpsilon;
+		return Math.abs(weight - w.weight) < EPSILON;
 	}
+
+	protected abstract boolean isValidWeight(double w);
+
+	public abstract Weight duplicate();
 }

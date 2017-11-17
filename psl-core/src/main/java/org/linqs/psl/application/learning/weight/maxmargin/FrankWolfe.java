@@ -17,10 +17,7 @@
  */
 package org.linqs.psl.application.learning.weight.maxmargin;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
+import org.linqs.psl.application.learning.weight.LossAugmentingGroundRule;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.ConfigManager;
@@ -32,8 +29,13 @@ import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.weight.NegativeWeight;
 import org.linqs.psl.model.weight.PositiveWeight;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Implements the batch Frank-Wolfe algorithm for StructSVM

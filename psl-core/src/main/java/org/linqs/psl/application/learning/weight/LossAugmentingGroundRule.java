@@ -15,10 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.learning.weight.maxmargin;
-
-import java.util.HashSet;
-import java.util.Set;
+package org.linqs.psl.application.learning.weight;
 
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.WeightedGroundRule;
@@ -29,22 +26,27 @@ import org.linqs.psl.reasoner.function.FunctionSum;
 import org.linqs.psl.reasoner.function.FunctionSummand;
 import org.linqs.psl.reasoner.function.FunctionTerm;
 
+import java.util.HashSet;
+import java.util.Set;
+
 /**
  * Special ground rule that penalizes being close to a fixed value of 1.0 or 0.0.
  *
  * @author Bert Huang <bert@cs.umd.edu>
  */
 public class LossAugmentingGroundRule implements WeightedGroundRule {
-
 	private GroundAtom atom;
 	private double groundTruth;
 	private Weight weight;
 
 	public LossAugmentingGroundRule(GroundAtom atom, double truthValue, Weight weight) {
 		this.atom = atom;
+
 		this.groundTruth = truthValue;
-		if (!(groundTruth == 1.0 || groundTruth == 0.0))
+		if (!(groundTruth == 1.0 || groundTruth == 0.0)) {
 			throw new IllegalArgumentException("Truth value must be 1.0 or 0.0.");
+		}
+
 		this.weight = weight;
 	}
 
@@ -81,11 +83,9 @@ public class LossAugmentingGroundRule implements WeightedGroundRule {
 		if (groundTruth == 1.0) {
 			sum.add(new FunctionSummand(1.0, new ConstantNumber(1.0)));
 			sum.add(new FunctionSummand(-1.0, atom.getVariable()));
-		}
-		else if (groundTruth == 0.0) {
+		} else if (groundTruth == 0.0) {
 			sum.add(new FunctionSummand(1.0, atom.getVariable()));
-		}
-		else {
+		} else {
 			throw new IllegalStateException("Ground truth is not 0 or 1.");
 		}
 

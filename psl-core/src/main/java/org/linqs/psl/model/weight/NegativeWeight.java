@@ -18,17 +18,16 @@
 package org.linqs.psl.model.weight;
 
 public class NegativeWeight extends Weight {
-
 	public NegativeWeight() {
 		super();
 	}
-	
+
 	public NegativeWeight(double w) {
 		super(w);
 	}
-	
-	boolean isValidWeight(double w) {
-		return Double.isNaN(w) || w<=0;
+
+	protected boolean isValidWeight(double w) {
+		return Double.isNaN(w) || w <= 0;
 	}
 
 	@Override
