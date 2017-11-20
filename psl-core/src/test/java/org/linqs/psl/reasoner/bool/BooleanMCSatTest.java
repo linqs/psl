@@ -10,16 +10,16 @@ import org.junit.Test;
 import java.util.HashSet;
 import java.util.Set;
 
-public class BooleanMaxWalkSatTest {
+public class BooleanMCSatTest {
 	/**
-	 * A quick test that only checks to see if MPEInference works with BooleanMaxWalkSat.
+	 * A quick test that only checks to see if MPEInference works with BooleanMCSat.
 	 * This is not a targeted or exhaustive test, just a starting point.
 	 */
 	@Test
 	public void baseTest() {
 		TestModelFactory.ModelInformation info = TestModelFactory.getModel();
 
-		info.config.setProperty(MPEInference.REASONER_KEY, "org.linqs.psl.reasoner.bool.BooleanMaxWalkSat");
+		info.config.setProperty(MPEInference.REASONER_KEY, "org.linqs.psl.reasoner.bool.BooleanMCSat");
 		info.config.setProperty(MPEInference.GROUND_RULE_STORE_KEY, "org.linqs.psl.application.groundrulestore.AtomRegisterGroundRuleStore");
 		info.config.setProperty(MPEInference.TERM_STORE_KEY, "org.linqs.psl.reasoner.term.ConstraintBlockerTermStore");
 		info.config.setProperty(MPEInference.TERM_GENERATOR_KEY, "org.linqs.psl.reasoner.term.ConstraintBlockerTermGenerator");

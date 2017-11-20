@@ -45,7 +45,6 @@ import java.util.Random;
  * @author Stephen Bach <bach@cs.umd.edu>
  */
 public class BooleanMCSat implements Reasoner {
-
 	private static final Logger log = LoggerFactory.getLogger(BooleanMCSat.class);
 
 	/**
@@ -59,14 +58,20 @@ public class BooleanMCSat implements Reasoner {
 	 * Key for length of Markov chain
 	 */
 	public static final String NUM_SAMPLES_KEY = CONFIG_PREFIX + ".numsamples";
-	/** Default value for NUM_SAMPLES_KEY */
+
+	/**
+	 * Default value for NUM_SAMPLES_KEY
+	 */
 	public static final int NUM_SAMPLES_DEFAULT = 2500;
 
 	/**
 	 * Number of burn-in samples
 	 */
 	public static final String NUM_BURN_IN_KEY = CONFIG_PREFIX + ".numburnin";
-	/** Default value for NUM_BURN_IN_KEY */
+
+	/**
+	 * Default value for NUM_BURN_IN_KEY
+	 */
 	public static final int NUM_BURN_IN_DEFAULT = 500;
 
 	private final Random rand;
@@ -77,14 +82,18 @@ public class BooleanMCSat implements Reasoner {
 		super();
 
 		rand = new Random();
+
 		numSamples = config.getInt(NUM_SAMPLES_KEY, NUM_SAMPLES_DEFAULT);
-		if (numSamples <= 0)
+		if (numSamples <= 0) {
 			throw new IllegalArgumentException("Number of samples must be positive.");
+		}
+
 		numBurnIn = config.getInt(NUM_BURN_IN_KEY, NUM_BURN_IN_DEFAULT);
-		if (numSamples <= 0)
+		if (numSamples <= 0) {
 			throw new IllegalArgumentException("Number of burn in samples must be positive.");
-		if (numBurnIn >= numSamples)
+		} else if (numBurnIn >= numSamples) {
 			throw new IllegalArgumentException("Number of burn in samples must be less than number of samples.");
+		}
 	}
 
 	@Override
@@ -94,69 +103,74 @@ public class BooleanMCSat implements Reasoner {
 		}
 		ConstraintBlockerTermStore blocker = (ConstraintBlockerTermStore)termStore;
 
-
-		// Randomly initializes the RVs to a feasible state.
+		// Randomly initialize the RVs to a feasible state.
 		blocker.randomlyInitializeRVs();
 
-		// Puts RandomVariableAtoms in 2d array by block.
+		// Put RandomVariableAtoms in 2d array by block.
 		RandomVariableAtom[][] rvBlocks = blocker.getRVBlocks();
 
 		// If true, exactly one Atom in the RV block must be 1.0. If false, at most one can.
 		boolean[] exactlyOne = blocker.getExactlyOne();
 
-		// Collects GroundCompatibilityRules incident on each block of RandomVariableAtoms
+		// Collect GroundCompatibilityRules incident on each block of RandomVariableAtoms
 		WeightedGroundRule[][] incidentGKs = blocker.getIncidentGKs();
 
-		// Initializes arrays for totaling samples
+		// Initialize arrays for totaling samples
 		double[][] totals = blocker.getEmptyDouble2DArray();
 
-		// Samples RV assignments
 		log.info("Beginning inference.");
-		double[] p;
+
+		// Sample RV assignments
 		for (int sampleIndex = 0; sampleIndex < numSamples; sampleIndex++) {
 			for (int i = 0; i < rvBlocks.length; i++) {
-				if (rvBlocks.length == 0)
+				if (rvBlocks[i].length == 0) {
 					continue;
+				}
 
-				p = new double[(exactlyOne[i]) ? rvBlocks[i].length : (rvBlocks[i].length + 1)];
+				double[] p = new double[(exactlyOne[i]) ? rvBlocks[i].length : (rvBlocks[i].length + 1)];
 
-				/* Computes probability for assignment of 1.0 to each RV */
+				// Computes probability for assignment of 1.0 to each RV.
 				for (int j = 0; j < rvBlocks[i].length; j++) {
-					/* Sets RVs */
-					for (int k = 0; k < rvBlocks[i].length; k++)
+					// Sets RVs.
+					for (int k = 0; k < rvBlocks[i].length; k++) {
 						rvBlocks[i][k].setValue((k == j) ? 1.0 : 0.0);
+					}
 
-					/* Computes probability */
+					// Computes probability.
 					p[j] = computeProbability(incidentGKs[i]);
 				}
 
-				/* If all RVs in block assigned 0.0 is valid, computes probability */
+				// If all RVs in block assigned 0.0 is valid, computes probability.
 				if (!exactlyOne[i]) {
-					/* Sets all RVs to 0.0 */
-					for (RandomVariableAtom atom : rvBlocks[i])
+					// Sets all RVs to 0.0.
+					for (RandomVariableAtom atom : rvBlocks[i]) {
 						atom.setValue(0.0);
+					}
 
-					/* Computes probability */
+					// Computes probability.
 					p[p.length - 1] = computeProbability(incidentGKs[i]);
 				}
 
-				/* Draws sample */
+				// Draws sample.
 				double[] sample = sampleWithProbability(p);
 				for (int j = 0; j < rvBlocks[i].length; j++) {
 					rvBlocks[i][j].setValue(sample[j]);
 
-					if (sampleIndex >= numBurnIn)
+					if (sampleIndex >= numBurnIn) {
 						totals[i][j] += sample[j];
+					}
 				}
 			}
 		}
 
 		log.info("Inference complete.");
 
-		/* Sets truth values of RandomVariableAtoms to marginal probabilities */
-		for (int i = 0; i < rvBlocks.length; i++)
-			for (int j = 0; j < rvBlocks[i].length; j++)
+		// Sets truth values of RandomVariableAtoms to marginal probabilities.
+		for (int i = 0; i < rvBlocks.length; i++) {
+			for (int j = 0; j < rvBlocks[i].length; j++) {
 				rvBlocks[i][j].setValue(totals[i][j] / (numSamples - numBurnIn));
+			}
+		}
 	}
 
 	private double computeProbability(WeightedGroundRule incidentGKs[]) {
@@ -169,20 +183,25 @@ public class BooleanMCSat implements Reasoner {
 	}
 
 	private double[] sampleWithProbability(double[] distribution) {
-		/* Just in case an RV block is empty */
-		if (distribution.length == 0)
+		// Just in case an RV block is empty.
+		if (distribution.length == 0) {
 			return new double[0];
+		}
 
-		/* Normalizes distribution */
+		// Normalizes distribution.
 		double total = 0.0;
-		for (double pValue : distribution)
+		for (double pValue : distribution) {
 			total += pValue;
-		for (int i = 0; i < distribution.length; i++)
-			distribution[i] /= total;
+		}
 
-		/* Draws sample */
+		for (int i = 0; i < distribution.length; i++) {
+			distribution[i] /= total;
+		}
+
+		// Draws sample.
 		double[] sample = new double[distribution.length];
 		double cutoff = rand.nextDouble();
+
 		total = 0.0;
 		for (int i = 0; i < distribution.length; i++) {
 			total += distribution[i];
@@ -192,17 +211,14 @@ public class BooleanMCSat implements Reasoner {
 			}
 		}
 
-		/*
-		 * Just in case a rounding error and a very high cutoff prevents the loop
-		 * from returning, returns the last assignment
-		 */
-		sample[sample.length-1] = 1.0;
+		// Just in case a rounding error and a very high cutoff prevents the loop
+		// from returning, return the last assignment.
+		sample[sample.length - 1] = 1.0;
 		return sample;
 	}
 
 	@Override
 	public void close() {
-		/* Intentionally blank */
+		// Intentionally blank.
 	}
-
 }
