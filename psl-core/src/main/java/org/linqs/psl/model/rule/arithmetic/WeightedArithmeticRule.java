@@ -22,35 +22,26 @@ import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
 import org.linqs.psl.model.rule.arithmetic.expression.SummationVariable;
-import org.linqs.psl.model.weight.NegativeWeight;
-import org.linqs.psl.model.weight.PositiveWeight;
-import org.linqs.psl.model.weight.Weight;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * A template for {@link WeightedGroundArithmeticRule WeightedGroundArithmeticRules}.
- *
- * @author Stephen Bach
- */
 public class WeightedArithmeticRule extends AbstractArithmeticRule implements WeightedRule {
-	protected Weight weight;
+	protected double weight;
 	protected boolean squared;
-	protected boolean mutable;
 
-	public WeightedArithmeticRule(ArithmeticRuleExpression expression, double w, boolean squared) {
-		this(expression, new HashMap<SummationVariable, Formula>(), w, squared);
+	public WeightedArithmeticRule(ArithmeticRuleExpression expression, double weight, boolean squared) {
+		this(expression, new HashMap<SummationVariable, Formula>(), weight, squared);
 	}
 
 	public WeightedArithmeticRule(ArithmeticRuleExpression expression, Map<SummationVariable, Formula> filterClauses,
-			double w, boolean squared) {
+			double weight, boolean squared) {
 		super(expression, filterClauses);
-		weight = (w >= 0.0) ? new PositiveWeight(w) : new NegativeWeight(w);
+
+		this.weight = weight;
 		this.squared = squared;
-		mutable = true;
 	}
 
 	@Override
@@ -66,33 +57,24 @@ public class WeightedArithmeticRule extends AbstractArithmeticRule implements We
 	}
 
 	@Override
-	public Weight getWeight() {
-		return weight.duplicate();
+	public double getWeight() {
+		return weight;
 	}
 
 	@Override
-	public void setWeight(Weight w) {
-		if (!mutable) {
-			throw new IllegalStateException("Rule weight is not mutable.");
-		}
-
-		weight = w;
+	public void setWeight(double weight) {
+		this.weight = weight;
 	}
 
 	@Override
 	public boolean isWeightMutable() {
-		return mutable;
-	}
-
-	@Override
-	public void setWeightMutable(boolean mutable) {
-		this.mutable = mutable;
+		return true;
 	}
 
 	@Override
 	public String toString() {
 		StringBuilder s = new StringBuilder();
-		s.append(weight.getWeight());
+		s.append(weight);
 		s.append(": ");
 		s.append(expression);
 		s.append((squared) ? " ^2" : "");

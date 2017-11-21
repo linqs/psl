@@ -27,11 +27,9 @@ import org.linqs.psl.reasoner.ReasonerFactory;
  * @author Stephen Bach <bach@cs.umd.edu>
  */
 public class BooleanMaxWalkSatFactory implements ReasonerFactory {
-
 	@Override
 	public Reasoner getReasoner(ConfigBundle config)
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		return new BooleanMaxWalkSat(config);
 	}
-
 }

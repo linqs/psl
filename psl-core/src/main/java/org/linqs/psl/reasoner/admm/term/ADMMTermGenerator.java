@@ -79,7 +79,7 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 
 		if (groundRule instanceof WeightedGroundRule) {
 			boolean squared;
-			float weight = (float)((WeightedGroundRule)groundRule).getWeight().getWeight();
+			float weight = (float)((WeightedGroundRule)groundRule).getWeight();
 			FunctionTerm function = ((WeightedGroundRule)groundRule).getFunctionDefinition();
 
 			/* Checks if the function is wrapped in a PowerOfTwo */

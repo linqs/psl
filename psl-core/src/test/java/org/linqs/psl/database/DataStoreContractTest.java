@@ -50,6 +50,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -1025,5 +1026,51 @@ public abstract class DataStoreContractTest {
 		dbs.add(db);
 		assertTrue(db.isClosed(p1));
 		assertTrue(!db.isClosed(p2));
+	}
+
+	@Test
+	/**
+	 * Ensure that quotes are not over/under escaped.
+	 */
+	public void testQuotes() {
+		if (datastore == null) {
+			return;
+		}
+
+		datastore.registerPredicate(p2);
+		Inserter inserter = datastore.getInserter(p2, datastore.getPartition("0"));
+
+		Set<Object> values = new HashSet<Object>(Arrays.asList(
+			"1",
+			"'2'",
+			"'3",
+			"4'",
+			"'",
+			"''",
+			"\"2\"",
+			"\"3",
+			"4\"",
+			"\"",
+			"\"\""
+		));
+
+		for (Object value : values) {
+			inserter.insert(value, value);
+		}
+
+		Database db = datastore.getDatabase(datastore.getPartition("0"));
+
+		// Check all the terms in all the atoms
+		for (GroundAtom atom : Queries.getAllAtoms(db, p2)) {
+			if (!values.contains(((StringAttribute)atom.getArguments()[0]).getValue())) {
+				fail("First argument of atom (" + atom + ") is an unseen value.");
+			}
+
+			if (!values.contains(((StringAttribute)atom.getArguments()[1]).getValue())) {
+				fail("Second argument of atom (" + atom + ") is an unseen value.");
+			}
+		}
+
+		db.close();
 	}
 }

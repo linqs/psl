@@ -17,20 +17,10 @@
  */
 package org.linqs.psl.model.rule;
 
-import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.weight.Weight;
-
-/**
- * A template for {@link WeightedGroundRule WeightedGroundRules},
- * which measure the compatibility of the values of {@link GroundAtom GroundAtoms}.
- */
 public interface WeightedRule extends Rule {
-	
-	public Weight getWeight();
-	
-	public void setWeight(Weight w);
-	
+	public double getWeight();
+
+	public void setWeight(double weight);
+
 	public boolean isWeightMutable();
-	
-	public void setWeightMutable(boolean mutable);
 }

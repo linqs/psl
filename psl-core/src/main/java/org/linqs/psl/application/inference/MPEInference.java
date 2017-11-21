@@ -65,18 +65,11 @@ public class MPEInference implements ModelApplication {
 	public static final String CONFIG_PREFIX = "mpeinference";
 
 	/**
-	 * Key for {@link Factory} or String property.
-	 * <p>
-	 * Should be set to a {@link ReasonerFactory} or the fully qualified
-	 * name of one. Will be used to instantiate a {@link Reasoner}.
+	 * The class to use for a reasoner.
+	 * Should be compatible with REASONER_KEY.
 	 */
 	public static final String REASONER_KEY = CONFIG_PREFIX + ".reasoner";
-	/**
-	 * Default value for REASONER_KEY.
-	 * <p>
-	 * Value is instance of {@link ADMMReasonerFactory}.
-	 */
-	public static final ReasonerFactory REASONER_DEFAULT = new ADMMReasonerFactory();
+	public static final String REASONER_DEFAULT = "org.linqs.psl.reasoner.admm.ADMMReasoner";
 
 	/**
 	 * The class to use for ground rule storage.
@@ -119,7 +112,7 @@ public class MPEInference implements ModelApplication {
 		TermGenerator termGenerator = null;
 
 		try {
-			reasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
+			reasoner = (Reasoner)config.getNewObject(REASONER_KEY, REASONER_DEFAULT);
 			termStore = (TermStore)config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
 			groundRuleStore = (GroundRuleStore)config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
 			termGenerator = (TermGenerator)config.getNewObject(TERM_GENERATOR_KEY, TERM_GENERATOR_DEFAULT);

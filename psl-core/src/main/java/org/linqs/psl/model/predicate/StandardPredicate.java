@@ -32,7 +32,7 @@ public class StandardPredicate extends Predicate {
 	 * @param types  types for each of the predicate's arguments
 	 * @see PredicateFactory
 	 */
-	StandardPredicate(String name, ConstantType[] types) {
+	public StandardPredicate(String name, ConstantType[] types) {
 		super(name, types);
 
 		for (ConstantType type : types) {
