@@ -21,7 +21,6 @@ import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.SpecialPredicate;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
-import org.linqs.psl.model.weight.Weight;
 import org.linqs.psl.reasoner.function.ConstantNumber;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.function.FunctionSum;
@@ -32,31 +31,27 @@ import org.linqs.psl.reasoner.function.PowerOfTwo;
 
 import java.util.List;
 
-/**
- * An {@link AbstractGroundArithmeticRule} that is weighted, i.e., it corresponds to
- * a weighted hinge-loss potential that measures the compatibility of {@link GroundAtom}
- * values.
- *
- * @author Stephen Bach
- */
-public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule
-		implements WeightedGroundRule {
-	private Weight weight;
+public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule implements WeightedGroundRule {
+	private double weight;
 	private final boolean squared;
 
 	protected WeightedGroundArithmeticRule(WeightedArithmeticRule rule, List<Double> coeffs,
 			List<GroundAtom> atoms, FunctionComparator comparator, double c, boolean squared) {
 		super(rule, coeffs, atoms, comparator, c);
-		weight = null;
+
+		weight = Double.NaN;
 		this.squared = squared;
+
 		validate();
 	}
 
 	protected WeightedGroundArithmeticRule(WeightedArithmeticRule rule, double[] coeffs, GroundAtom[] atoms,
 			FunctionComparator comparator, double c, boolean squared) {
 		super(rule, coeffs, atoms, comparator, c);
-		weight = null;
+
+		weight = Double.NaN;
 		this.squared = squared;
+
 		validate();
 	}
 
@@ -72,19 +67,20 @@ public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule
 
 	@Override
 	public WeightedRule getRule() {
-		return (WeightedRule) rule;
+		return (WeightedRule)rule;
 	}
 
 	@Override
-	public Weight getWeight() {
-		if (weight == null)
+	public double getWeight() {
+		if (Double.isNaN(weight)) {
 			return getRule().getWeight();
+		}
 		return weight;
 	}
 
 	@Override
-	public void setWeight(Weight w) {
-		weight = w;
+	public void setWeight(double weight) {
+		this.weight = weight;
 	}
 
 	@Override
@@ -130,8 +126,6 @@ public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule
 
 	@Override
 	public String toString() {
-		return "" + getWeight().getWeight() + ": " + super.toString()
-			+ ((squared) ? " ^2" : "");
+		return "" + getWeight() + ": " + super.toString() + ((squared) ? " ^2" : "");
 	}
-
 }

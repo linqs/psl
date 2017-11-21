@@ -145,7 +145,7 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 										}
 									}
 
-									c += gck.getWeight().getWeight() * gck.getIncompatibility() * meanFieldProb * sign;
+									c += gck.getWeight() * gck.getIncompatibility() * meanFieldProb * sign;
 								}
 							}
 							else
@@ -177,14 +177,14 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 	 */
 	@Override
 	protected double[] computeObservedIncomp() {
-		numGroundings = new double[rules.size()];
-		double[] truthIncompatibility = new double[rules.size()];
+		numGroundings = new double[mutableRules.size()];
+		double[] truthIncompatibility = new double[mutableRules.size()];
 		setLabeledRandomVariables();
 
 		/* Computes the expected observed incompatibilities and numbers of groundings */
 		Vector<RandomVariableAtom> incidentLatentRVs = new Vector<RandomVariableAtom>();
-		for (int iRule = 0; iRule < rules.size(); iRule++) {
-			for (GroundRule groundRule : groundRuleStore.getGroundRules(rules.get(iRule))) {
+		for (int iRule = 0; iRule < mutableRules.size(); iRule++) {
+			for (GroundRule groundRule : groundRuleStore.getGroundRules(mutableRules.get(iRule))) {
 				WeightedGroundRule gck = (WeightedGroundRule) groundRule;
 				incidentLatentRVs.clear();
 
@@ -225,7 +225,7 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 
 	@Override
 	protected double[] computeExpectedIncomp() {
-		double[] expIncomp = new double[rules.size()];
+		double[] expIncomp = new double[mutableRules.size()];
 
 		if (changedRuleWeights) {
 			termGenerator.updateWeights(groundRuleStore, termStore);
@@ -236,8 +236,8 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 		reasoner.optimize(termStore);
 
 		/* Computes incompatibility */
-		for (int i = 0; i < rules.size(); i++) {
-			for (GroundRule groundRule : groundRuleStore.getGroundRules(rules.get(i))) {
+		for (int i = 0; i < mutableRules.size(); i++) {
+			for (GroundRule groundRule : groundRuleStore.getGroundRules(mutableRules.get(i))) {
 				expIncomp[i] += ((WeightedGroundRule) groundRule).getIncompatibility();
 			}
 		}
@@ -338,7 +338,7 @@ public class BernoulliMeanFieldEM extends ExpectationMaximization {
 					}
 				}
 
-				kl += gck.getWeight().getWeight() * gck.getIncompatibility() * meanFieldProb;
+				kl += gck.getWeight() * gck.getIncompatibility() * meanFieldProb;
 			}
 		}
 

@@ -26,7 +26,7 @@ import java.util.List;
 /**
  * A place to store terms that are to be optimized.
  */
-public interface TermStore<E extends Term> extends Iterable<E>{
+public interface TermStore<E extends Term> extends Iterable<E> {
 	/**
 	 * Add a term to the store that was generated from the given ground rule.
 	 */

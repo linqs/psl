@@ -312,7 +312,7 @@ public class ConfigManager {
 		try {
 			classObject = Class.forName(className);
 		} catch (ClassNotFoundException ex) {
-			throw new IllegalArgumentException("Could not find class: " + className);
+			throw new IllegalArgumentException("Could not find class: " + className, ex);
 		}
 
 		Constructor constructor;
