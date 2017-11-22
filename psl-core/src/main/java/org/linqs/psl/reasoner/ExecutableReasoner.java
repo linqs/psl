@@ -50,7 +50,6 @@ import java.util.List;
  * @author Stephen Bach <bach@cs.umd.edu>
  */
 public abstract class ExecutableReasoner implements Reasoner {
-
 	private static final Logger log = LoggerFactory.getLogger(ExecutableReasoner.class);
 
 	/**
@@ -83,7 +82,7 @@ public abstract class ExecutableReasoner implements Reasoner {
 
 		try {
 			BufferedWriter modelWriter = new BufferedWriter(new FileWriter(modelFile));
-			writeModel(modelWriter);
+			writeModel(modelWriter, termStore);
 			modelWriter.close();
 		} catch (IOException e) {
 			throw new Error("IOException when writing model file.", e);
@@ -100,7 +99,7 @@ public abstract class ExecutableReasoner implements Reasoner {
 		File resultsFile = new File(getResultsFileName());
 		try {
 			BufferedReader resultsReader = new BufferedReader(new FileReader(resultsFile));
-			readResults(resultsReader);
+			readResults(resultsReader, termStore);
 			resultsReader.close();
 		} catch (IOException e) {
 			throw new Error("IOException when reading results file.", e);
@@ -133,11 +132,11 @@ public abstract class ExecutableReasoner implements Reasoner {
 			log.warn("Executable exited with unexpected value: {}", exitValue);
 	}
 
-	abstract protected List<String> getArgs();
+	protected abstract List<String> getArgs();
 
-	abstract protected void writeModel(BufferedWriter modelWriter) throws IOException;
+	protected abstract void writeModel(BufferedWriter modelWriter, TermStore termStore) throws IOException;
 
-	abstract protected void readResults(BufferedReader resultsReader) throws IOException;
+	protected abstract void readResults(BufferedReader resultsReader, TermStore termStore) throws IOException;
 
 	protected String getModelFileName() {
 		return "model";
