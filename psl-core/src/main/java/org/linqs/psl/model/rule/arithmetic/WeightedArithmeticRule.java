@@ -57,6 +57,11 @@ public class WeightedArithmeticRule extends AbstractArithmeticRule implements We
 	}
 
 	@Override
+	public boolean isSquared() {
+		return squared;
+	}
+
+	@Override
 	public double getWeight() {
 		return weight;
 	}

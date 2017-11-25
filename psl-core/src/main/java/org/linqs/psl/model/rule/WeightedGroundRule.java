@@ -23,6 +23,8 @@ public interface WeightedGroundRule extends GroundRule {
 	@Override
 	public WeightedRule getRule();
 
+	public boolean isSquared();
+
 	/**
 	 * Returns the Weight of this WeightedGroundRule.
 	 * Until setWeight() is called, this GroundRule's weight is the current weight of its parent Rule.

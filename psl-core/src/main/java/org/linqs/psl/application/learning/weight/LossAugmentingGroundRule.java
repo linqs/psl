@@ -55,6 +55,11 @@ public class LossAugmentingGroundRule implements WeightedGroundRule {
 	}
 
 	@Override
+	public boolean isSquared() {
+		return false;
+	}
+
+	@Override
 	public Set<GroundAtom> getAtoms() {
 		Set<GroundAtom> ret = new HashSet<GroundAtom>();
 		ret.add(atom);

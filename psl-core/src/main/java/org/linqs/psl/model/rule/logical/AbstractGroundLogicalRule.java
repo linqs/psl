@@ -17,12 +17,6 @@
  */
 package org.linqs.psl.model.rule.logical;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.formula.Disjunction;
 import org.linqs.psl.model.formula.Formula;
@@ -31,6 +25,14 @@ import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.reasoner.function.ConstantNumber;
 import org.linqs.psl.reasoner.function.FunctionSum;
 import org.linqs.psl.reasoner.function.FunctionSummand;
+
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Base class for all ground logical rules.
@@ -95,6 +97,14 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
 
 	public double getTruthValue() {
 		return 1 - Math.max(getFunction().getValue(), 0.0);
+	}
+
+	public List<GroundAtom> getPositiveAtoms() {
+		return Collections.unmodifiableList(posLiterals);
+	}
+
+	public List<GroundAtom> getNegativeAtoms() {
+		return Collections.unmodifiableList(negLiterals);
 	}
 
 	@Override

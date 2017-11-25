@@ -41,6 +41,11 @@ public class WeightedLogicalRule extends AbstractLogicalRule implements Weighted
 	}
 
 	@Override
+	public boolean isSquared() {
+		return squared;
+	}
+
+	@Override
 	public double getWeight() {
 		return weight;
 	}
