@@ -126,7 +126,7 @@ public abstract class ExecutableReasoner implements Reasoner {
 		BufferedReader stdout = new BufferedReader(new InputStreamReader(proc.getInputStream()));
 		String line;
 		while ((line = stdout.readLine()) != null) {
-			log.trace(line);
+			log.debug(line);
 		}
 		stdout.close();
 
