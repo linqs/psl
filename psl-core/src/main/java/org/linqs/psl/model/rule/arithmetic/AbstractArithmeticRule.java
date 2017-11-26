@@ -88,8 +88,6 @@ public abstract class AbstractArithmeticRule implements Rule {
 	protected final Map<SummationVariable, Formula> filters;
 
 	public AbstractArithmeticRule(ArithmeticRuleExpression expression, Map<SummationVariable, Formula> filterClauses) {
-		super();
-
 		this.expression = expression;
 		this.filters = filterClauses;
 
@@ -169,7 +167,9 @@ public abstract class AbstractArithmeticRule implements Rule {
 				groundAtoms[atomIndex] = queryAtoms.get(atomIndex).ground(atomManager, groundVariables, groundingIndex);
 			}
 
-			if (FunctionComparator.Equality.equals(expression.getComparator())) {
+			// Note that unweighed rules will ground an equality, while weighted rules will instead
+			// ground a largerThan and lessThan.
+			if (isWeighted() && FunctionComparator.Equality.equals(expression.getComparator())) {
 				groundRuleStore.addGroundRule(
 						makeGroundRule(coefficients, groundAtoms, FunctionComparator.LargerThan, finalCoefficient));
 				groundRuleStore.addGroundRule(
@@ -270,7 +270,9 @@ public abstract class AbstractArithmeticRule implements Rule {
 
 			double finalCoefficient = expression.getFinalCoefficient().getValue(subCounts);
 
-			if (FunctionComparator.Equality.equals(expression.getComparator())) {
+			// Note that unweighed rules will ground an equality, while weighted rules will instead
+			// ground a largerThan and lessThan.
+			if (isWeighted() && FunctionComparator.Equality.equals(expression.getComparator())) {
 				groundRuleStore.addGroundRule(
 						makeGroundRule(coefficients, groundAtoms, FunctionComparator.LargerThan, finalCoefficient));
 				groundRuleStore.addGroundRule(

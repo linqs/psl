@@ -35,4 +35,6 @@ public interface Rule {
 	 * @param groundRuleStore store for new GroundRules
 	 */
 	public void groundAll(AtomManager atomManager, GroundRuleStore groundRuleStore);
+
+	public boolean isWeighted();
 }

@@ -56,7 +56,7 @@ public class ConstraintBlockerTermGenerator implements TermGenerator<Term> {
 
 	@Override
 	public void updateWeights(GroundRuleStore ruleStore, TermStore<Term> termStore) {
-		// Not supported.
+		throw new UnsupportedOperationException();
 	}
 
 	private void generateTermsInternal(AtomRegisterGroundRuleStore ruleStore, ConstraintBlockerTermStore termStore) {
@@ -199,8 +199,9 @@ public class ConstraintBlockerTermGenerator implements TermGenerator<Term> {
 			}
 
 			if (!(groundRule instanceof UnweightedGroundArithmeticRule)) {
-				throw new IllegalStateException("The only supported constraints are 1-of-k constraints" +
-						" and at-least-1-of-k constraints and value constraints.");
+				throw new IllegalStateException(
+						"Unsupported ground rule: [" + groundRule + "]." +
+						" Only categorical (functional) arithmetic constraints are supported.");
 			}
 
 			// If the ground rule is an UnweightedGroundArithmeticRule, checks if it
@@ -211,7 +212,7 @@ public class ConstraintBlockerTermGenerator implements TermGenerator<Term> {
 			if (!(
 					FunctionComparator.Equality.equals(gar.getConstraintDefinition().getComparator())
 					|| (FunctionComparator.SmallerThan.equals(gar.getConstraintDefinition().getComparator()) && gar.getConstraintDefinition().getValue() > 0)
-					|| (FunctionComparator.LargerThan.equals(gar.getConstraintDefinition().getComparator()) && gar.getConstraintDefinition().getValue() < 0))){
+					|| (FunctionComparator.LargerThan.equals(gar.getConstraintDefinition().getComparator()) && gar.getConstraintDefinition().getValue() < 0))) {
 				categorical = false;
 			} else if (gar.getConstraintDefinition().getFunction() instanceof FunctionSum) {
 				FunctionSum sum = (FunctionSum) gar.getConstraintDefinition().getFunction();
@@ -226,7 +227,9 @@ public class ConstraintBlockerTermGenerator implements TermGenerator<Term> {
 			}
 
 			if (!categorical) {
-				throw new IllegalStateException("The only supported constraints are 1-of-k constraints" +
+				throw new IllegalStateException(
+						"Unsupported ground rule: [" + groundRule + "]." +
+						" The only supported constraints are 1-of-k constraints" +
 						" and at-least-1-of-k constraints and value constraints.");
 			}
 

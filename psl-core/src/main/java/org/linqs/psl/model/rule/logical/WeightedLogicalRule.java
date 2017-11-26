@@ -65,4 +65,9 @@ public class WeightedLogicalRule extends AbstractLogicalRule implements Weighted
 	public boolean isWeightMutable() {
 		return true;
 	}
+
+	@Override
+	public boolean isWeighted() {
+		return true;
+	}
 }

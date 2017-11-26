@@ -72,4 +72,8 @@ public class UnweightedArithmeticRule extends AbstractArithmeticRule
 		return s.toString();
 	}
 
+	@Override
+	public boolean isWeighted() {
+		return false;
+	}
 }

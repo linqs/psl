@@ -93,4 +93,9 @@ public class WeightedArithmeticRule extends AbstractArithmeticRule implements We
 		}
 		return s.toString();
 	}
+
+	@Override
+	public boolean isWeighted() {
+		return true;
+	}
 }

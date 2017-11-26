@@ -38,4 +38,9 @@ public class UnweightedLogicalRule extends AbstractLogicalRule implements Unweig
 	public String toString() {
 		return formula.toString() + " .";
 	}
+
+	@Override
+	public boolean isWeighted() {
+		return false;
+	}
 }

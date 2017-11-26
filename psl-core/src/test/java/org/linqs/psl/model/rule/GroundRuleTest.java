@@ -1514,7 +1514,7 @@ public class GroundRuleTest {
 				true
 		);
 
-		// Remember, equality puts in a <= and >=.
+		// Remember, equality puts in a <= and >= (when weighted).
 		expected = Arrays.asList(
 			"1.0: 1.0 * FRIENDS('Alice', 'Bob') <= 0.0 ^2",
 			"1.0: 1.0 * FRIENDS('Alice', 'Charlie') <= 0.0 ^2",
