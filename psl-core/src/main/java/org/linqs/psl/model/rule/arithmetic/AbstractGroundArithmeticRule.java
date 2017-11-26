@@ -35,7 +35,6 @@ import java.util.Set;
  * @author Stephen Bach
  */
 public abstract class AbstractGroundArithmeticRule implements GroundRule {
-
 	protected final AbstractArithmeticRule rule;
 	protected final double[] coeffs;
 	protected final GroundAtom[] atoms;
@@ -123,5 +122,21 @@ public abstract class AbstractGroundArithmeticRule implements GroundRule {
 		sb.append(c);
 
 		return sb.toString();
+	}
+
+	public double[] getCoefficients() {
+		return coeffs;
+	}
+
+	public GroundAtom[] getOrderedAtoms() {
+		return atoms;
+	}
+
+	public FunctionComparator getComparator() {
+		return comparator;
+	}
+
+	public double getConstant() {
+		return c;
 	}
 }
