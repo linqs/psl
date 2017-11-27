@@ -134,11 +134,11 @@ public abstract class ExecutableReasoner implements Reasoner {
 		try {
 			exitValue = proc.waitFor();
 		} catch (InterruptedException ex) {
-			log.warn("Failed to wait for executable reasoner.", ex);
+			throw new RuntimeException("Failed to wait for executable reasoner.", ex);
 		}
 
 		if (exitValue != 0) {
-			log.warn("Executable exited with unexpected value: {}", exitValue);
+			throw new RuntimeException("Executable exited with unexpected value: " + exitValue);
 		}
 	}
 
