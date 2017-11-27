@@ -1562,6 +1562,56 @@ public class GroundRuleTest {
 		PSLTest.compareGroundRules(expected, rule, store);
 	}
 
+	@Test
+	/**
+	 * Make sure that variables that appear in the head but not the body are fine.
+	 * There was some concern about this before, but once we convert to the DNF,
+	 * there is not head.
+	 */
+	public void testVariablesInHead() {
+		GroundRuleStore store = new MemoryGroundRuleStore();
+		AtomManager manager = new SimpleAtomManager(database);
+
+		Rule rule;
+		List<String> expected;
+
+		// Nice(A) -> !Friends(A, B)
+		rule = new WeightedLogicalRule(
+			new Implication(
+				new QueryAtom(model.predicates.get("Nice"), new Variable("A")),
+				new Negation(new QueryAtom(model.predicates.get("Friends"), new Variable("A"), new Variable("B")))
+			),
+			1.0,
+			true
+		);
+
+		// Remember, all rules will be in DNF.
+		expected = Arrays.asList(
+			"1.0: ( ~( NICE('Alice') ) | ~( FRIENDS('Alice', 'Bob') ) ) ^2",
+			"1.0: ( ~( NICE('Alice') ) | ~( FRIENDS('Alice', 'Charlie') ) ) ^2",
+			"1.0: ( ~( NICE('Alice') ) | ~( FRIENDS('Alice', 'Derek') ) ) ^2",
+			"1.0: ( ~( NICE('Alice') ) | ~( FRIENDS('Alice', 'Eugene') ) ) ^2",
+			"1.0: ( ~( NICE('Bob') ) | ~( FRIENDS('Bob', 'Alice') ) ) ^2",
+			"1.0: ( ~( NICE('Bob') ) | ~( FRIENDS('Bob', 'Charlie') ) ) ^2",
+			"1.0: ( ~( NICE('Bob') ) | ~( FRIENDS('Bob', 'Derek') ) ) ^2",
+			"1.0: ( ~( NICE('Bob') ) | ~( FRIENDS('Bob', 'Eugene') ) ) ^2",
+			"1.0: ( ~( NICE('Charlie') ) | ~( FRIENDS('Charlie', 'Alice') ) ) ^2",
+			"1.0: ( ~( NICE('Charlie') ) | ~( FRIENDS('Charlie', 'Bob') ) ) ^2",
+			"1.0: ( ~( NICE('Charlie') ) | ~( FRIENDS('Charlie', 'Derek') ) ) ^2",
+			"1.0: ( ~( NICE('Charlie') ) | ~( FRIENDS('Charlie', 'Eugene') ) ) ^2",
+			"1.0: ( ~( NICE('Derek') ) | ~( FRIENDS('Derek', 'Alice') ) ) ^2",
+			"1.0: ( ~( NICE('Derek') ) | ~( FRIENDS('Derek', 'Bob') ) ) ^2",
+			"1.0: ( ~( NICE('Derek') ) | ~( FRIENDS('Derek', 'Charlie') ) ) ^2",
+			"1.0: ( ~( NICE('Derek') ) | ~( FRIENDS('Derek', 'Eugene') ) ) ^2",
+			"1.0: ( ~( NICE('Eugene') ) | ~( FRIENDS('Eugene', 'Alice') ) ) ^2",
+			"1.0: ( ~( NICE('Eugene') ) | ~( FRIENDS('Eugene', 'Bob') ) ) ^2",
+			"1.0: ( ~( NICE('Eugene') ) | ~( FRIENDS('Eugene', 'Charlie') ) ) ^2",
+			"1.0: ( ~( NICE('Eugene') ) | ~( FRIENDS('Eugene', 'Derek') ) ) ^2"
+		);
+		rule.groundAll(manager, store);
+		PSLTest.compareGroundRules(expected, rule, store);
+	}
+
 	@After
 	public void cleanup() {
 		database.close();
