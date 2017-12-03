@@ -17,16 +17,6 @@
  */
 package org.linqs.psl.evaluation.statistics;
 
-import java.util.Collections;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
-import org.linqs.psl.model.atom.GroundAtom;
-
-import com.google.common.base.Predicate;
-import com.google.common.collect.Iterables;
-
 public class DiscretePredictionStatistics implements PredictionStatistics {
 	public enum BinaryClass {
 		NEGATIVE,

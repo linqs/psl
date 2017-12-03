@@ -32,8 +32,9 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Compares all observed atoms in a baseline (truth) database against
+ * Discretely compares all observed atoms in a baseline (truth) database against
  * all random variable atoms in a prediction (result) database.
+ * All values at or above the given threshold are considered true, the rest false.
  * If the prediction database does not have an atom corresponding to an atom in the
  * truth database, it will be skipped.
  * If the corresponding atom in the prediction database is observed, then it will be skipped.
