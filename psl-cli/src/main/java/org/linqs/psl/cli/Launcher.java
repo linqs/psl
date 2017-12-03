@@ -369,8 +369,8 @@ public class Launcher {
 		Partition targetPartition = dataStore.getPartition(PARTITION_NAME_TARGET);
 		Partition truthPartition = dataStore.getPartition(PARTITION_NAME_LABELS);
 
-		Database predictionDatabase = dataStore.getDatabase(targetPartition);
-		Database truthDatabase = dataStore.getDatabase(truthPartition);
+		Database predictionDatabase = dataStore.getDatabase(targetPartition, closedPredicates);
+		Database truthDatabase = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
 
 		ContinuousPredictionComparator comparator = new ContinuousPredictionComparator(predictionDatabase);
 		comparator.setBaseline(truthDatabase);
@@ -408,8 +408,8 @@ public class Launcher {
 		Partition targetPartition = dataStore.getPartition(PARTITION_NAME_TARGET);
 		Partition truthPartition = dataStore.getPartition(PARTITION_NAME_LABELS);
 
-		Database predictionDatabase = dataStore.getDatabase(targetPartition, openPredicates);
-		Database truthDatabase = dataStore.getDatabase(truthPartition, openPredicates);
+		Database predictionDatabase = dataStore.getDatabase(targetPartition, closedPredicates);
+		Database truthDatabase = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
 
 		DiscretePredictionComparator comparator = new DiscretePredictionComparator(predictionDatabase);
 		comparator.setThreshold(threshold);
