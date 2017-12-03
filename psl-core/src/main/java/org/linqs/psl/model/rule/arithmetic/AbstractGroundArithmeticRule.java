@@ -75,10 +75,11 @@ public abstract class AbstractGroundArithmeticRule implements GroundRule {
 
 	@Override
 	public Set<GroundAtom> getAtoms() {
-		Set<GroundAtom> atoms = new HashSet<GroundAtom>();
-		for (GroundAtom atom : atoms)
-			atoms.add(atom);
-		return atoms;
+		Set<GroundAtom> atomSet = new HashSet<GroundAtom>();
+		for (GroundAtom atom : atoms) {
+			atomSet.add(atom);
+		}
+		return atomSet;
 	}
 
 	@Override
