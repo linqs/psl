@@ -29,7 +29,4 @@ import org.linqs.psl.model.predicate.StandardPredicate;
  */
 public interface PredictionComparator extends ResultComparator {
 	public PredictionStatistics compare(StandardPredicate predicate);
-
-	public PredictionStatistics compare(StandardPredicate predicate, int maxBaseAtoms);
-
 }

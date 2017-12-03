@@ -21,9 +21,7 @@ package org.linqs.psl.evaluation.statistics;
  * Statistics computed by a {@link PredictionComparator}.
  */
 public interface PredictionStatistics {
-	
 	public double getError();
-	
+
 	public int getNumAtoms();
-	
 }
