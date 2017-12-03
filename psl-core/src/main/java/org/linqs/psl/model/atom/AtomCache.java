@@ -125,9 +125,21 @@ public class AtomCache {
 	 */
 	public ObservedAtom instantiateObservedAtom(Predicate p, Constant[] args,
 			double value) {
-		ObservedAtom atom = new ObservedAtom(p, args, db, value);
 		QueryAtom key = new QueryAtom(p, args);
+
+		// Always check the cache before making new atoms.
+		if (cache.containsKey(key)) {
+			if (!(cache.get(key) instanceof ObservedAtom)) {
+				throw new IllegalArgumentException("Asked to instantiate an observed" +
+						" atom that already exists as a random variable atom: " + key);
+			}
+
+			return (ObservedAtom)cache.get(key);
+		}
+
+		ObservedAtom atom = new ObservedAtom(p, args, db, value);
 		cache.put(key, atom);
+
 		return atom;
 	}
 
@@ -148,9 +160,21 @@ public class AtomCache {
 	 */
 	public RandomVariableAtom instantiateRandomVariableAtom(StandardPredicate p,
 			Constant[] args, double value) {
-		RandomVariableAtom atom = new RandomVariableAtom(p, args, db, value);
 		QueryAtom key = new QueryAtom(p, args);
+
+		// Always check the cache before making new atoms.
+		if (cache.containsKey(key)) {
+			if (!(cache.get(key) instanceof RandomVariableAtom)) {
+				throw new IllegalArgumentException("Asked to instantiate a random variable" +
+						" atom that already exists as an observed atom: " + key);
+			}
+
+			return (RandomVariableAtom)cache.get(key);
+		}
+
+		RandomVariableAtom atom = new RandomVariableAtom(p, args, db, value);
 		cache.put(key, atom);
+
 		return atom;
 	}
 }
