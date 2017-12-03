@@ -25,6 +25,7 @@ import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.ThreadPool;
 import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
 import org.linqs.psl.reasoner.admm.term.LocalVariable;
+import org.linqs.psl.reasoner.inspector.ReasonerInspector;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 
@@ -38,7 +39,7 @@ import java.util.concurrent.CyclicBarrier;
 /**
  * Uses an ADMM optimization method to optimize its GroundRules.
  */
-public class ADMMReasoner implements Reasoner {
+public class ADMMReasoner extends Reasoner {
 	private static final Logger log = LoggerFactory.getLogger(ADMMReasoner.class);
 
 	/**
@@ -139,6 +140,8 @@ public class ADMMReasoner implements Reasoner {
 	private float[] consensusValues;
 
 	public ADMMReasoner(ConfigBundle config) {
+		super(config);
+
 		maxIter = config.getInt(MAX_ITER_KEY, MAX_ITER_DEFAULT);
 		stepSize = config.getFloat(STEP_SIZE_KEY, STEP_SIZE_DEFAULT);
 
@@ -300,6 +303,17 @@ public class ADMMReasoner implements Reasoner {
 			if (iteration % LOG_PERIOD == 0) {
 				log.trace("Residuals at iteration {} -- Primal: {} -- Dual: {}", iteration, primalRes, dualRes);
 				log.trace("--------- Epsilon primal: {} -- Epsilon dual: {}", epsilonPrimal, epsilonDual);
+			}
+
+			if (inspector != null) {
+				// Updating the variables is a costly operation, but the inspector may need access to RVA values.
+				log.debug("Updating random variable atoms with consensus values for inspector");
+				termStore.updateVariables(consensusValues);
+
+				if (!inspector.update(this, new ADMMStatus(iteration, primalRes, dualRes))) {
+					log.info("Stopping ADMM iterations on advice from inspector");
+					break;
+				}
 			}
 
 			iteration++;
@@ -513,6 +527,23 @@ public class ADMMReasoner implements Reasoner {
 
 		public synchronized void reset() {
 			count = 0;
+		}
+	}
+
+	private static class ADMMStatus extends ReasonerInspector.IterativeReasonerStatus {
+		public double primalResidual;
+		public double dualResidual;
+
+		public ADMMStatus(int iteration, double primalResidual, double dualResidual) {
+			super(iteration);
+
+			this.primalResidual = primalResidual;
+			this.dualResidual = dualResidual;
+		}
+
+		@Override
+		public String toString() {
+			return String.format("%s, primal: %f, dual: %f", super.toString(), primalResidual, dualResidual);
 		}
 	}
 }

@@ -308,6 +308,11 @@ public class ConfigManager {
 	protected static Object getNewObject(ConfigBundle config, String key, String defaultValue) {
 		String className = config.getString(key, defaultValue);
 
+		// It is not unusual for someone to want no object if the key does not exist.
+		if (className == null) {
+			return null;
+		}
+
 		Class classObject;
 		try {
 			classObject = Class.forName(className);

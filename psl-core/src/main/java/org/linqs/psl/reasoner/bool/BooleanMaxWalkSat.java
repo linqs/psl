@@ -26,6 +26,7 @@ import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.Reasoner;
+import org.linqs.psl.reasoner.inspector.ReasonerInspector;
 import org.linqs.psl.reasoner.term.ConstraintBlockerTermStore;
 import org.linqs.psl.reasoner.term.TermStore;
 
@@ -54,7 +55,7 @@ import java.util.Set;
  *
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-public class BooleanMaxWalkSat implements Reasoner {
+public class BooleanMaxWalkSat extends Reasoner {
 	private static final Logger log = LoggerFactory.getLogger(BooleanMaxWalkSat.class);
 
 	/**
@@ -91,7 +92,7 @@ public class BooleanMaxWalkSat implements Reasoner {
 	private final double noise;
 
 	public BooleanMaxWalkSat(ConfigBundle config) {
-		super();
+		super(config);
 
 		rand = new Random();
 
@@ -275,10 +276,20 @@ public class BooleanMaxWalkSat implements Reasoner {
 				}
 			}
 
-			if (flip == 0 || (flip+1) % 5000 == 0) {
+			if (flip == 0 || (flip + 1) % 5000 == 0) {
 				log.info("Total weighted incompatibility: {}, Infeasbility norm: {}",
 						GroundRules.getTotalWeightedIncompatibility(blocker.getGroundRuleStore().getCompatibilityRules()),
 						GroundRules.getInfeasibilityNorm(blocker.getGroundRuleStore().getConstraintRules()));
+			}
+
+			if (inspector != null) {
+				double incompatibility = GroundRules.getTotalWeightedIncompatibility(blocker.getGroundRuleStore().getCompatibilityRules());
+				double infeasbility = GroundRules.getInfeasibilityNorm(blocker.getGroundRuleStore().getConstraintRules());
+
+				if (!inspector.update(this, new MaxWalkSatStatus(flip, incompatibility, infeasbility))) {
+					log.info("Stopping MaxWalkSat iterations on advice from inspector");
+					break;
+				}
 			}
 		}
 	}
@@ -299,5 +310,23 @@ public class BooleanMaxWalkSat implements Reasoner {
 	@Override
 	public void close() {
 		// Intentionally blank
+	}
+
+	private static class MaxWalkSatStatus extends ReasonerInspector.IterativeReasonerStatus {
+		public double incompatibility;
+		public double infeasbility;
+
+		public MaxWalkSatStatus(int iteration, double incompatibility, double infeasbility) {
+			super(iteration);
+
+			this.incompatibility = incompatibility;
+			this.infeasbility = infeasbility;
+		}
+
+		@Override
+		public String toString() {
+			return String.format("%s, incompatibility: %f, infeasbility: %f",
+					super.toString(), incompatibility, infeasbility);
+		}
 	}
 }

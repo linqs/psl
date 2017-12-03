@@ -35,6 +35,7 @@ import com.google.common.collect.Multimap;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -47,6 +48,8 @@ import java.util.Set;
  * through the {@link ConfigBundle} can use custom names for its value and partition columns.
  */
 public class RDBMSDataStore implements DataStore {
+	private static final Set<RDBMSDataStore> openDataStores = new HashSet<RDBMSDataStore>();
+
 	// Map for database registration
 	private static final BiMap<ReadOnlyDatabase, String> registeredDatabases = HashBiMap.create();
 	private static int databaseCounter = 0;
@@ -82,7 +85,7 @@ public class RDBMSDataStore implements DataStore {
 	 * The list of databases matched with their read partitions, and the set of
 	 * all write partitions open in this database.
 	 */
-	private final Multimap<Partition, RDBMSDatabase> openDatabases;
+	private final Multimap<Partition, Database> openDatabases;
 	private final Set<Partition> writePartitionIDs;
 
 	/**
@@ -96,6 +99,8 @@ public class RDBMSDataStore implements DataStore {
 	 * @param config	the configuration for this DataStore.
 	 */
 	public RDBMSDataStore(DatabaseDriver dbDriver, ConfigBundle config) {
+		openDataStores.add(this);
+
 		// Initialize all private variables
 		this.openDatabases = HashMultimap.create();
 		this.writePartitionIDs = new HashSet<Partition>();
@@ -185,6 +190,11 @@ public class RDBMSDataStore implements DataStore {
 	}
 
 	@Override
+	public Collection<Database> getOpenDatabases() {
+		return openDatabases.values();
+	}
+
+	@Override
 	public Inserter getInserter(StandardPredicate predicate, Partition partition) {
 		if (!predicates.containsKey(predicate))
 			throw new IllegalArgumentException("Unknown predicate specified: " + predicate);
@@ -228,6 +238,8 @@ public class RDBMSDataStore implements DataStore {
 
 	@Override
 	public void close() {
+		openDataStores.remove(this);
+
 		if (!openDatabases.isEmpty())
 			throw new IllegalStateException("Cannot close data store when databases are still open!");
 		try {
@@ -236,7 +248,6 @@ public class RDBMSDataStore implements DataStore {
 			throw new RuntimeException("Could not close database.", e);
 		}
 	}
-
 
 	public DataStoreMetadata getMetadata() {
 		return metadata;
@@ -274,6 +285,10 @@ public class RDBMSDataStore implements DataStore {
 
 	public DatabaseDriver getDriver() {
 		return dbDriver;
+	}
+
+	public static Set<RDBMSDataStore> getOpenDataStores() {
+		return Collections.unmodifiableSet(openDataStores);
 	}
 
 	/**

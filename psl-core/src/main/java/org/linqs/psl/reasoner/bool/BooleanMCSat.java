@@ -18,11 +18,13 @@
 package org.linqs.psl.reasoner.bool;
 
 import org.linqs.psl.application.groundrulestore.AtomRegisterGroundRuleStore;
+import org.linqs.psl.application.util.GroundRules;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.ConfigManager;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.Reasoner;
+import org.linqs.psl.reasoner.inspector.ReasonerInspector;
 import org.linqs.psl.reasoner.term.ConstraintBlockerTermStore;
 import org.linqs.psl.reasoner.term.TermStore;
 
@@ -44,7 +46,7 @@ import java.util.Random;
  *
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-public class BooleanMCSat implements Reasoner {
+public class BooleanMCSat extends Reasoner {
 	private static final Logger log = LoggerFactory.getLogger(BooleanMCSat.class);
 
 	/**
@@ -79,7 +81,7 @@ public class BooleanMCSat implements Reasoner {
 	private final int numBurnIn;
 
 	public BooleanMCSat(ConfigBundle config) {
-		super();
+		super(config);
 
 		rand = new Random();
 
@@ -161,6 +163,16 @@ public class BooleanMCSat implements Reasoner {
 					}
 				}
 			}
+
+			if (inspector != null) {
+				double incompatibility = GroundRules.getTotalWeightedIncompatibility(blocker.getGroundRuleStore().getCompatibilityRules());
+				double infeasbility = GroundRules.getInfeasibilityNorm(blocker.getGroundRuleStore().getConstraintRules());
+
+				if (!inspector.update(this, new MCSatStatus(sampleIndex, incompatibility, infeasbility))) {
+					log.info("Stopping MCSat iterations on advice from inspector");
+					break;
+				}
+			}
 		}
 
 		log.info("Inference complete.");
@@ -220,5 +232,23 @@ public class BooleanMCSat implements Reasoner {
 	@Override
 	public void close() {
 		// Intentionally blank.
+	}
+
+	private static class MCSatStatus extends ReasonerInspector.IterativeReasonerStatus {
+		public double incompatibility;
+		public double infeasbility;
+
+		public MCSatStatus(int iteration, double incompatibility, double infeasbility) {
+			super(iteration);
+
+			this.incompatibility = incompatibility;
+			this.infeasbility = infeasbility;
+		}
+
+		@Override
+		public String toString() {
+			return String.format("%s, incompatibility: %f, infeasbility: %f",
+					super.toString(), incompatibility, infeasbility);
+		}
 	}
 }

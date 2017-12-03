@@ -39,7 +39,7 @@ import java.util.List;
  *
  * Ground models are provided to the executable and results are read via temporary files.
  */
-public abstract class ExecutableReasoner implements Reasoner {
+public abstract class ExecutableReasoner extends Reasoner {
 	private static final Logger log = LoggerFactory.getLogger(ExecutableReasoner.class);
 
 	/**
@@ -70,12 +70,16 @@ public abstract class ExecutableReasoner implements Reasoner {
 	protected String[] args;
 
 	public ExecutableReasoner(ConfigBundle config) {
+		super(config);
+
 		this.executablePath = config.getString(EXECUTABLE_PATH_KEY, "");
 	}
 
-	public ExecutableReasoner(String executablePath,
+	public ExecutableReasoner(ConfigBundle config, String executablePath,
 			String executableInputPath, String executableOutputPath,
 			String... args) {
+		super(config);
+
 		this.executablePath = executablePath;
 		this.executableInputPath = executableInputPath;
 		this.executableOutputPath = executableOutputPath;

@@ -258,9 +258,15 @@ public abstract class Atom implements Formula, SummationAtomOrAtom {
 
 	@Override
 	public boolean equals(Object oth) {
-		if (oth == this) return true;
-		if (oth == null) return false;
-		Atom other = (Atom) oth;
+		if (oth == this) {
+			return true;
+		}
+
+		if (oth == null || !(oth instanceof Atom)) {
+			return false;
+		}
+
+		Atom other = (Atom)oth;
 
 		// First check the hashcode to reduce the time we have to do a deepEquals() on the arguments.
 		// Note that the hashcode is not perfect, but provides a quick insurance on inequality.

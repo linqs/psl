@@ -17,12 +17,13 @@
  */
 package org.linqs.psl.database;
 
-import java.util.Set;
-
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
+
+import java.util.Collection;
+import java.util.Set;
 
 /**
  * Makes {@link GroundAtom GroundAtoms} available via {@link Database Databases}.
@@ -80,6 +81,11 @@ public interface DataStore {
 	 *													write Partition of another Database
 	 */
 	public Database getDatabase(Partition write, Set<StandardPredicate> toClose, Partition... read);
+
+	/**
+	 * Get all the currenly open databases associated with this data store.
+	 */
+	public Collection<Database> getOpenDatabases();
 
 	/**
 	 * Creates an Inserter for persisting new {@link GroundAtom GroundAtoms}
