@@ -132,9 +132,11 @@ public class BooleanMaxWalkSat extends Reasoner {
 		Set<GroundRule> unsatGKs = new HashSet<GroundRule>();
 		Set<RandomVariableAtom> rvsToInclude = new HashSet<RandomVariableAtom>();
 		Set<Integer> blocksToInclude = new HashSet<Integer>(rvsToInclude.size());
+
 		RandomVariableAtom[][] candidateRVBlocks;
 		WeightedGroundRule[][] candidateIncidentGKs;
 		boolean[] candidateExactlyOne;
+
 		double currentIncompatibility;
 		double bestIncompatibility;
 		int changeBlock;

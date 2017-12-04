@@ -56,7 +56,7 @@ public class ConstraintBlockerTermGenerator implements TermGenerator<Term> {
 
 	@Override
 	public void updateWeights(GroundRuleStore ruleStore, TermStore<Term> termStore) {
-		throw new UnsupportedOperationException();
+		// TODO(eriq): Since we don't keep internal repsentations of the weights, I don't think we need to do anything.
 	}
 
 	private void generateTermsInternal(AtomRegisterGroundRuleStore ruleStore, ConstraintBlockerTermStore termStore) {
@@ -75,14 +75,17 @@ public class ConstraintBlockerTermGenerator implements TermGenerator<Term> {
 		// If true, exactly one Atom in the RV block must be 1.0. If false, at most one can.
 		boolean[] exactlyOne = new boolean[rvBlocks.length];
 
-		// Processes constrained RVs first.
-		Set<RandomVariableAtom> constrainedRVSet = new HashSet<RandomVariableAtom>();
-
 		// False means that an ObservedAtom or constrained RandomVariableAtom
 		// is 1.0, forcing others to 0.0
 		boolean varsAreFree;
 
-		int i = 0;
+		// Index of the current block we are working with.
+		int blockIndex = 0;
+
+		// RVAs constrained by each functional constraint.
+		Set<RandomVariableAtom> constrainedRVSet = new HashSet<RandomVariableAtom>();
+
+		// Process constrained RVs first.
 		for (UnweightedGroundArithmeticRule con : constraintSet) {
 			constrainedRVSet.clear();
 			varsAreFree = true;
@@ -103,51 +106,39 @@ public class ConstraintBlockerTermGenerator implements TermGenerator<Term> {
 			}
 
 			if (varsAreFree) {
-				rvBlocks[i] = new RandomVariableAtom[constrainedRVSet.size()];
+				rvBlocks[blockIndex] = new RandomVariableAtom[constrainedRVSet.size()];
 				int j = 0;
 				for (RandomVariableAtom atom : constrainedRVSet) {
-					rvBlocks[i][j++] = atom;
-					rvMap.put(atom, i);
+					rvBlocks[blockIndex][j++] = atom;
+					rvMap.put(atom, blockIndex);
 				}
 
-				exactlyOne[i] = con.getConstraintDefinition().getComparator().equals(FunctionComparator.Equality) || constrainedRVSet.size() == 0;
+				exactlyOne[blockIndex] = con.getConstraintDefinition().getComparator().equals(FunctionComparator.Equality) || constrainedRVSet.size() == 0;
 			} else {
-				rvBlocks[i] = new RandomVariableAtom[0];
+				rvBlocks[blockIndex] = new RandomVariableAtom[0];
 				// Sets to true regardless of constraint type to avoid extra processing steps
 				// that would not work on empty blocks
-				exactlyOne[i] = true;
+				exactlyOne[blockIndex] = true;
+
+				// Set all the RVs in this block to 0.0 since there is a observed/constrained value.
+				for (RandomVariableAtom atom : constrainedRVSet) {
+					atom.setValue(0.0);
+				}
 			}
 
-			i++;
+			blockIndex++;
 		}
 
 		// Processes free RVs second.
 		for (RandomVariableAtom atom : freeRVSet) {
-			rvBlocks[i] = new RandomVariableAtom[] {atom};
-			exactlyOne[i] = false;
-			rvMap.put(atom, i);
-			i++;
+			rvBlocks[blockIndex] = new RandomVariableAtom[] {atom};
+			exactlyOne[blockIndex] = false;
+			rvMap.put(atom, blockIndex);
+			blockIndex++;
 		}
 
 		// Collects WeightedGroundRules incident on each block of RandomVariableAtoms.
-		WeightedGroundRule[][] incidentGRs = incidentGRs = new WeightedGroundRule[rvBlocks.length][];
-		Set<WeightedGroundRule> incidentGKSet = new HashSet<WeightedGroundRule>();
-		for (i = 0; i < rvBlocks.length; i++) {
-			incidentGKSet.clear();
-			for (RandomVariableAtom atom : rvBlocks[i]) {
-				for (GroundRule incidentGK : ruleStore.getRegisteredGroundRules(atom)) {
-					if (incidentGK instanceof WeightedGroundRule) {
-						incidentGKSet.add((WeightedGroundRule) incidentGK);
-					}
-				}
-			}
-
-			incidentGRs[i] = new WeightedGroundRule[incidentGKSet.size()];
-			int j = 0;
-			for (WeightedGroundRule incidentGK : incidentGKSet) {
-				incidentGRs[i][j++] = incidentGK;
-			}
-		}
+		WeightedGroundRule[][] incidentGRs = collectIncidentWeightedGroundRules(ruleStore, rvBlocks);
 
 		// Sets all value-constrained atoms.
 		for (Map.Entry<RandomVariableAtom, GroundValueConstraint> e : valueConstraintMap.entrySet()) {
@@ -155,6 +146,31 @@ public class ConstraintBlockerTermGenerator implements TermGenerator<Term> {
 		}
 
 		termStore.init(ruleStore, rvBlocks, incidentGRs, exactlyOne, rvMap);
+	}
+
+	private WeightedGroundRule[][] collectIncidentWeightedGroundRules(
+			AtomRegisterGroundRuleStore ruleStore, RandomVariableAtom[][] rvBlocks) {
+		WeightedGroundRule[][] incidentGRs = new WeightedGroundRule[rvBlocks.length][];
+
+		Set<WeightedGroundRule> incidentGKSet = new HashSet<WeightedGroundRule>();
+		for (int blockIndex = 0; blockIndex < rvBlocks.length; blockIndex++) {
+			incidentGKSet.clear();
+			for (RandomVariableAtom atom : rvBlocks[blockIndex]) {
+				for (GroundRule incidentGK : ruleStore.getRegisteredGroundRules(atom)) {
+					if (incidentGK instanceof WeightedGroundRule) {
+						incidentGKSet.add((WeightedGroundRule) incidentGK);
+					}
+				}
+			}
+
+			incidentGRs[blockIndex] = new WeightedGroundRule[incidentGKSet.size()];
+			int j = 0;
+			for (WeightedGroundRule incidentGK : incidentGKSet) {
+				incidentGRs[blockIndex][j++] = incidentGK;
+			}
+		}
+
+		return incidentGRs;
 	}
 
 	private Set<RandomVariableAtom> buildFreeRVSet(AtomRegisterGroundRuleStore ruleStore) {
