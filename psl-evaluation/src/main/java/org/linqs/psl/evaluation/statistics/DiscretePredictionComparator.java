@@ -22,14 +22,7 @@ import org.linqs.psl.database.Queries;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
-import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.evaluation.statistics.filter.AtomFilter;
-
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Discretely compares all observed atoms in a baseline (truth) database against
