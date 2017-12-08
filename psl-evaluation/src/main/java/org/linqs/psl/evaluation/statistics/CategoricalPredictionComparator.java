@@ -62,21 +62,21 @@ public class CategoricalPredictionComparator implements PredictionComparator {
 		this.result = result;
 		this.baseline = baseline;
 
-      catIndexSet = new HashSet<Integer>();
-      if (categoryIndexes != null) {
-         for (int catIndex : categoryIndexes) {
-            catIndexSet.add(catIndex);
-         }
-      }
+		catIndexSet = new HashSet<Integer>();
+		if (categoryIndexes != null) {
+			for (int catIndex : categoryIndexes) {
+				catIndexSet.add(catIndex);
+			}
+		}
 	}
 
 	public void setCategoryIndexes(int[] categoryIndexes) {
-      catIndexSet.clear();
-      if (categoryIndexes != null) {
-         for (int catIndex : categoryIndexes) {
-            catIndexSet.add(catIndex);
-         }
-      }
+		catIndexSet.clear();
+		if (categoryIndexes != null) {
+			for (int catIndex : categoryIndexes) {
+				catIndexSet.add(catIndex);
+			}
+		}
 	}
 
 	@Override
@@ -97,10 +97,10 @@ public class CategoricalPredictionComparator implements PredictionComparator {
 
 		if (catIndexSet.size() >= predicate.getArity()) {
 			throw new IllegalStateException(String.format(
-               "Too many category indexes for %s. Found: %d, Max: %d.",
-               predicate.getName(),
-               catIndexSet.size(),
-               predicate.getArity() - 1));
+					"Too many category indexes for %s. Found: %d, Max: %d.",
+					predicate.getName(),
+					catIndexSet.size(),
+					predicate.getArity() - 1));
 		}
 
 		int hits = 0;
