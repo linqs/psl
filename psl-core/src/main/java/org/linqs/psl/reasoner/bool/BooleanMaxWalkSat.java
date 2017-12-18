@@ -29,6 +29,7 @@ import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.inspector.ReasonerInspector;
 import org.linqs.psl.reasoner.term.ConstraintBlockerTermStore;
 import org.linqs.psl.reasoner.term.TermStore;
+import org.linqs.psl.util.MathUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +50,12 @@ import java.util.Set;
  *
  * Supports free {@link RandomVariableAtom RandomVariableAtoms}
  * and RandomVariableAtoms that are each constrained by a single GroundValueConstraint.
+ *
+ * This differs from the classical MaxWalkSat because instead of just choosing a random
+ * ground rule to modify an atom in, this will choose a random ground rule
+ * and then a random block associated with that random rule.
+ * This will keep the solution feasible because of the semantics of the constraint blocker.
+ * Classical MaxWalkSat can possibly become infeasible.
  *
  * It also assumes that all ObservedAtoms have values in {0.0, 1.0}.
  * Its behavior is not defined otherwise.
@@ -130,17 +137,19 @@ public class BooleanMaxWalkSat extends Reasoner {
 		Map<RandomVariableAtom, Integer> rvMap = blocker.getRVMap();
 
 		Set<GroundRule> unsatGKs = new HashSet<GroundRule>();
-		Set<RandomVariableAtom> rvsToInclude = new HashSet<RandomVariableAtom>();
-		Set<Integer> blocksToInclude = new HashSet<Integer>(rvsToInclude.size());
+		Set<RandomVariableAtom> rvasToInclude = new HashSet<RandomVariableAtom>();
+		Set<Integer> blocksToInclude = new HashSet<Integer>(rvasToInclude.size());
 
 		RandomVariableAtom[][] candidateRVBlocks;
 		WeightedGroundRule[][] candidateIncidentGKs;
 		boolean[] candidateExactlyOne;
 
-		double currentIncompatibility;
-		double bestIncompatibility;
-		int changeBlock;
-		int newBlockSetting;
+		// The block that will will randomly flip a variable in.
+		int blockToChange;
+		// The index of the RVA in the block to become positive.
+		// All other RVAs in the block will be set to zero.
+		// If we want all RVAs in the block to be zero, then set to -1.
+		int positiveRVAIndex;
 
 		// Finds initially unsatisfied GroundRules.
 		for (GroundRule groundRule : blocker.getGroundRuleStore().getGroundRules()) {
@@ -158,119 +167,141 @@ public class BooleanMaxWalkSat extends Reasoner {
 
 			GroundRule groundRule = (GroundRule)selectAtRandom(unsatGKs);
 
-			// Collects the RV blocks with at least one RV in groundRule.
-			rvsToInclude.clear();
+			// Collect all the RV blocks that have some RVA in common with the randomly selected groundRule.
+			rvasToInclude.clear();
 			blocksToInclude.clear();
+
 			for (GroundAtom atom : groundRule.getAtoms()) {
-				if (atom instanceof RandomVariableAtom) {
-					Integer blockIndex = rvMap.get(atom);
-					// Ignore RVs forced to 0.0
-					if (blockIndex != null) {
-						rvsToInclude.add((RandomVariableAtom) atom);
-					}
+				if (!(atom instanceof RandomVariableAtom)) {
+					continue;
+				}
+
+				Integer blockIndex = rvMap.get(atom);
+
+				// RVAs with no block are constrained and cannot be changed without breaking a hard constraint.
+				if (blockIndex != null) {
+					rvasToInclude.add((RandomVariableAtom)atom);
+					blocksToInclude.add(blockIndex);
 				}
 			}
 
-			for (RandomVariableAtom atom : rvsToInclude) {
-				blocksToInclude.add(rvMap.get(atom));
-			}
-
-			candidateRVBlocks = new RandomVariableAtom[blocksToInclude.size()][];
-			candidateIncidentGKs = new WeightedGroundRule[blocksToInclude.size()][];
-			candidateExactlyOne = new boolean[blocksToInclude.size()];
-
-			int i = 0;
-			for (Integer blockIndex : blocksToInclude) {
-				candidateRVBlocks[i] = rvBlocks[blockIndex];
-				candidateExactlyOne[i] = exactlyOne[blockIndex];
-				candidateIncidentGKs[i++] = incidentGKs[blockIndex];
-			}
-
-			if (candidateRVBlocks.length == 0) {
+			// Restart this flip if we choose a ground rule that has no unconstrained RVAs.
+			if (blocksToInclude.size() == 0) {
 				flip--;
 				continue;
 			}
 
-			// With probability noise, changes an RV block in groundRule at random.
+			// TODO(eriq): Don't allocate. Make a single ArrayList outside of loop. clear() here.
+			candidateRVBlocks = new RandomVariableAtom[blocksToInclude.size()][];
+			candidateIncidentGKs = new WeightedGroundRule[blocksToInclude.size()][];
+			candidateExactlyOne = new boolean[blocksToInclude.size()];
+
+			int candidateBlockIndex = 0;
+			for (Integer blockIndex : blocksToInclude) {
+				candidateRVBlocks[candidateBlockIndex] = rvBlocks[blockIndex];
+				candidateExactlyOne[candidateBlockIndex] = exactlyOne[blockIndex];
+				candidateIncidentGKs[candidateBlockIndex] = incidentGKs[blockIndex];
+				candidateBlockIndex++;
+			}
+
+			// With probability noise, change an RV block in groundRule at random.
 			if (rand.nextDouble() <= noise) {
-				changeBlock = rand.nextInt(candidateRVBlocks.length);
-				int blockSize = candidateRVBlocks[changeBlock].length;
+				blockToChange = rand.nextInt(candidateRVBlocks.length);
+				int blockSize = candidateRVBlocks[blockToChange].length;
 
+				// Choose a random RVA in this block to flip on.
+				// If one value in this block must be one, then keep going until we pick an atom that is
+				// currently not active.
 				do {
-					newBlockSetting = rand.nextInt(blockSize);
-				} while (candidateExactlyOne[changeBlock] && candidateRVBlocks[changeBlock][newBlockSetting].getValue() == 1.0);
+					positiveRVAIndex = rand.nextInt(blockSize);
+				} while (candidateExactlyOne[blockToChange] && candidateRVBlocks[blockToChange][positiveRVAIndex].getValue() == 1.0);
 
-				// If the random setting is the current setting, but all 0.0 is also valid,
-				// switches to that
-				if (candidateRVBlocks[changeBlock][newBlockSetting].getValue() == 1.0)
-					newBlockSetting = candidateRVBlocks[changeBlock].length;
+				// If we want to flip an active RVA (value == 1.0), then set the target index to -1.
+				if (candidateRVBlocks[blockToChange][positiveRVAIndex].getValue() == 1.0) {
+					positiveRVAIndex = -1;
+				}
 			} else {
-				// With probability 1 - noise, makes the best change to an RV block in groundRule.
+				// With probability (1 - noise), make the best change to an RV block in the selected ground rule.
 
-				changeBlock = 0;
-				newBlockSetting = 0;
-				bestIncompatibility = Double.POSITIVE_INFINITY;
-				double[] currentState;
-				double currentStateTotal;
+				blockToChange = -1;
+				positiveRVAIndex = -1;
+				double bestIncompatibility = Double.POSITIVE_INFINITY;
+				double[] savedState;
+				double savedStateTotal;
 
-				// Considers each block.
-				for (int iBlock = 0; iBlock < candidateRVBlocks.length; iBlock++) {
-					// Saves current state of block.
-					currentState = new double[candidateRVBlocks[iBlock].length];
-					currentStateTotal = 0.0;
-					for (int iRV = 0 ; iRV < candidateRVBlocks[iBlock].length; iRV++) {
-						currentState[iRV] = candidateRVBlocks[iBlock][iRV].getValue();
-						currentStateTotal += currentState[iRV];
+				// Consider each block.
+				for (int blockIndex = 0; blockIndex < candidateRVBlocks.length; blockIndex++) {
+					// Save the current state of the block.
+					savedState = new double[candidateRVBlocks[blockIndex].length];
+					savedStateTotal = 0.0;
+					for (int i = 0; i < candidateRVBlocks[blockIndex].length; i++) {
+						savedState[i] = candidateRVBlocks[blockIndex][i].getValue();
+						savedStateTotal += savedState[i];
 					}
 
-					// Considers each setting to the block.
-					int lastRVIndex = candidateRVBlocks[iBlock].length;
+					// Consider each setting to the block.
+					int lastRVIndex = candidateRVBlocks[blockIndex].length;
 
-					// If all 0.0 is a valid assignment and not the current one, tries that too.
-					if (!candidateExactlyOne[iBlock] && currentStateTotal > 0.0) {
+					// If all 0.0 is a valid assignment (and the block is not currently all zeroes),
+					// then try that setting as well by moving the last index past the end of the block.
+					if (!candidateExactlyOne[blockIndex]) {
 						lastRVIndex++;
 					}
 
-					for (int iSetRV = 0; iSetRV < lastRVIndex; iSetRV++) {
-						// Only considers this setting if it is not the current setting.
-						if (iSetRV == candidateRVBlocks[iBlock].length || currentState[iSetRV] != 1.0) {
-							// Changes to the current setting to consider.
-							for (int iChangeRV = 0; iChangeRV < candidateRVBlocks[iBlock].length; iChangeRV++) {
-								candidateRVBlocks[iBlock][iChangeRV].setValue((iChangeRV == iSetRV) ? 1.0 : 0.0);
-							}
+					// Be aware that this incrementer may go one past the end of the block.
+					for (int currentPositiveRVA = 0; currentPositiveRVA < lastRVIndex; currentPositiveRVA++) {
+						// We will check the current (saved) configuration as well.
 
-							// Computes weighted incompatibility.
-							currentIncompatibility = 0.0;
-							for (WeightedGroundRule incidentGK : candidateIncidentGKs[iBlock]) {
-								if (!unsatGKs.contains(incidentGK)) {
-									if (incidentGK.getIncompatibility() > 0.0) {
-										currentIncompatibility += ((WeightedGroundRule) incidentGK).getWeight() * ((WeightedGroundRule) incidentGK).getIncompatibility();
-									}
-								}
+						// Change to the current setting to consider.
+						for (int i = 0; i < candidateRVBlocks[blockIndex].length; i++) {
+							if (i == currentPositiveRVA) {
+								candidateRVBlocks[blockIndex][i].setValue(1.0);
+							} else {
+								candidateRVBlocks[blockIndex][i].setValue(0.0);
 							}
+						}
 
-							if (currentIncompatibility < bestIncompatibility) {
-								bestIncompatibility = currentIncompatibility;
-								changeBlock = iBlock;
-								newBlockSetting = iSetRV;
+						// Computes weighted incompatibility.
+						double currentIncompatibility = 0.0;
+						for (WeightedGroundRule incidentGK : candidateIncidentGKs[blockIndex]) {
+							currentIncompatibility += incidentGK.getWeight() * incidentGK.getIncompatibility();
+						}
+
+						if (currentIncompatibility < bestIncompatibility) {
+							bestIncompatibility = currentIncompatibility;
+							blockToChange = blockIndex;
+							positiveRVAIndex = currentPositiveRVA;
+
+							// Break out early if we can't do better.
+							if (MathUtils.isZero(bestIncompatibility)) {
+								break;
 							}
 						}
 					}
 
-					// Restores current state.
-					for (int iRV = 0 ; iRV < candidateRVBlocks[iBlock].length; iRV++) {
-						candidateRVBlocks[iBlock][iRV].setValue(currentState[iRV]);
+					// Restore the saved state.
+					for (int i = 0 ; i < candidateRVBlocks[blockIndex].length; i++) {
+						candidateRVBlocks[blockIndex][i].setValue(savedState[i]);
+					}
+
+					// Break out early if we can't do better.
+					if (MathUtils.isZero(bestIncompatibility)) {
+						break;
 					}
 				}
 			}
 
-			// Changes assignment to RV block.
-			for (int iChangeRV = 0; iChangeRV < candidateRVBlocks[changeBlock].length; iChangeRV++) {
-				candidateRVBlocks[changeBlock][iChangeRV].setValue((iChangeRV == newBlockSetting) ? 1.0 : 0.0);
+			// Update with block with the decided change.
+			for (int i = 0; i < candidateRVBlocks[blockToChange].length; i++) {
+				if (i == positiveRVAIndex) {
+					candidateRVBlocks[blockToChange][i].setValue(1.0);
+				} else {
+					candidateRVBlocks[blockToChange][i].setValue(0.0);
+				}
 			}
 
-			// Computes change to set of unsatisfied GroundCompatibilityRules.
-			for (WeightedGroundRule incidentGK : candidateIncidentGKs[changeBlock]) {
+			// Add/Remove unsatisfied/satisfied weighted ground rules.
+			for (WeightedGroundRule incidentGK : candidateIncidentGKs[blockToChange]) {
 				if (incidentGK.getIncompatibility() > 0.0) {
 					unsatGKs.add(incidentGK);
 				} else {
@@ -278,8 +309,8 @@ public class BooleanMaxWalkSat extends Reasoner {
 				}
 			}
 
-			if (flip == 0 || (flip + 1) % 5000 == 0) {
-				log.info("Total weighted incompatibility: {}, Infeasbility norm: {}",
+			if (flip % 5000 == 0) {
+				log.info("Flip {}, Total weighted incompatibility: {}, Infeasbility norm: {}", flip,
 						GroundRules.getTotalWeightedIncompatibility(blocker.getGroundRuleStore().getCompatibilityRules()),
 						GroundRules.getInfeasibilityNorm(blocker.getGroundRuleStore().getConstraintRules()));
 			}
