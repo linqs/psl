@@ -29,6 +29,7 @@ import org.linqs.psl.model.rule.arithmetic.UnweightedGroundArithmeticRule;
 import org.linqs.psl.model.rule.misc.GroundValueConstraint;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.function.FunctionSum;
+import org.linqs.psl.util.MathUtils;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -221,14 +222,20 @@ public class ConstraintBlockerTermGenerator implements TermGenerator<Term> {
 			}
 
 			// If the ground rule is an UnweightedGroundArithmeticRule, checks if it
-			// is a categorical, i.e., at-least-1-of-k or 1-of-k, constraint.
+			// is a categorical, i.e., at-least-1-of-k (partial functional) or 1-of-k (functional), constraint.
 			UnweightedGroundArithmeticRule gar = (UnweightedGroundArithmeticRule)groundRule;
 			boolean categorical = true;
 
+			FunctionComparator comparator = gar.getConstraintDefinition().getComparator();
+			double rhsValue = gar.getConstraintDefinition().getValue();
+
 			if (!(
-					FunctionComparator.Equality.equals(gar.getConstraintDefinition().getComparator())
-					|| (FunctionComparator.SmallerThan.equals(gar.getConstraintDefinition().getComparator()) && gar.getConstraintDefinition().getValue() > 0)
-					|| (FunctionComparator.LargerThan.equals(gar.getConstraintDefinition().getComparator()) && gar.getConstraintDefinition().getValue() < 0))) {
+					// Foo(A, +B) = 1.0 .
+					(comparator == FunctionComparator.Equality && MathUtils.equals(rhsValue, 1.0))
+					// Foo(A, +B) <= 1.0 .
+					|| (comparator == FunctionComparator.SmallerThan && MathUtils.equals(rhsValue, 1.0))
+					// -Foo(A, +B) >= -1.0 .
+					|| (comparator == FunctionComparator.LargerThan && MathUtils.equals(rhsValue, -1.0)))) {
 				categorical = false;
 			} else if (gar.getConstraintDefinition().getFunction() instanceof FunctionSum) {
 				FunctionSum sum = (FunctionSum) gar.getConstraintDefinition().getFunction();
