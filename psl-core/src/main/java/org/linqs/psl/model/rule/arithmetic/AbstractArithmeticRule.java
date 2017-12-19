@@ -73,6 +73,8 @@ import java.util.Set;
 /**
  * Base class for all (first order, i.e., not ground) arithmetic rules.
  *
+ * Full equality checks (when two rules are the equal, but not the same refernce) are epensive.
+ *
  * @author Stephen Bach
  */
 public abstract class AbstractArithmeticRule implements Rule {
@@ -585,5 +587,19 @@ public abstract class AbstractArithmeticRule implements Rule {
 	// TODO(eriq): Remove this once global configuration is implemented.
 	public static void setDelim(String delim) {
 		DELIM = delim;
+	}
+
+	@Override
+	public boolean equals(Object other) {
+		if (this == other) {
+			return true;
+		}
+
+		if (other == null || !(other instanceof AbstractArithmeticRule)) {
+			return false;
+		}
+
+		AbstractArithmeticRule otherRule = (AbstractArithmeticRule)other;
+		return this.filters.equals(otherRule.filters) && this.expression.equals(otherRule.expression);
 	}
 }

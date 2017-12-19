@@ -43,4 +43,17 @@ public class UnweightedLogicalRule extends AbstractLogicalRule implements Unweig
 	public boolean isWeighted() {
 		return false;
 	}
+
+	@Override
+	public boolean equals(Object other) {
+		if (this == other) {
+			return true;
+		}
+
+		if (other == null || this.getClass() != other.getClass()) {
+			return false;
+		}
+
+		return super.equals(other);
+	}
 }

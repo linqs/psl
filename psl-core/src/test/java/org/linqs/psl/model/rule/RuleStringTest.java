@@ -154,16 +154,6 @@ public class RuleStringTest {
 	@Test
 	public void testArithmeticRuleString() {
 		// Base Rule: SinglePredicate(A) + SinglePredicate(B) = 1
-		List<Coefficient> coefficients = Arrays.asList(
-			(Coefficient)(new ConstantNumber(1)),
-			(Coefficient)(new ConstantNumber(1))
-		);
-
-		List<SummationAtomOrAtom> atoms = Arrays.asList(
-			(SummationAtomOrAtom)(new QueryAtom(singlePredicate, new Variable("A"))),
-			(SummationAtomOrAtom)(new QueryAtom(singlePredicate, new Variable("B")))
-		);
-
 		Rule rule;
 
 		// Unweighted (Not Squared)

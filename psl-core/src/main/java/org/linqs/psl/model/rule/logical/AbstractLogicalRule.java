@@ -40,12 +40,14 @@ import org.linqs.psl.reasoner.function.FunctionTerm;
 import org.linqs.psl.reasoner.function.FunctionVariable;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -58,6 +60,7 @@ public abstract class AbstractLogicalRule implements Rule {
 
 	protected Formula formula;
 	protected final DNFClause negatedDNF;
+	private int hash;
 
 	public AbstractLogicalRule(Formula formula) {
 		super();
@@ -93,6 +96,19 @@ public abstract class AbstractLogicalRule implements Rule {
 		if (!negatedDNF.isQueriable()) {
 			throw new IllegalArgumentException("Formula is not a valid rule for unknown reason.");
 		}
+
+		// Build up the hash code from positive and negative literals.
+		HashCodeBuilder hashBuilder = new HashCodeBuilder();
+
+		for (Atom atom : negatedDNF.getPosLiterals()) {
+			hashBuilder.append(atom);
+		}
+
+		for (Atom atom : negatedDNF.getNegLiterals()) {
+			hashBuilder.append(atom);
+		}
+
+		hash = hashBuilder.toHashCode();
 	}
 
 	public Formula getFormula() {
@@ -164,6 +180,40 @@ public abstract class AbstractLogicalRule implements Rule {
 		}
 
 		return numGroundingsAdded;
+	}
+
+	@Override
+	public boolean equals(Object other) {
+		if (this == other) {
+			return true;
+		}
+
+		if (other == null || !(other instanceof AbstractLogicalRule)) {
+			return false;
+		}
+
+		AbstractLogicalRule otherRule = (AbstractLogicalRule)other;
+
+		if (this.hash != otherRule.hash) {
+			return false;
+		}
+
+		// Final deep equality check.
+		List<Atom> thisPosLiterals = this.negatedDNF.getPosLiterals();
+		List<Atom> otherPosLiterals = otherRule.negatedDNF.getPosLiterals();
+		if (thisPosLiterals.size() != otherPosLiterals.size()) {
+			return false;
+		}
+
+		List<Atom> thisNegLiterals = this.negatedDNF.getNegLiterals();
+		List<Atom> otherNegLiterals = otherRule.negatedDNF.getNegLiterals();
+		if (thisNegLiterals.size() != otherNegLiterals.size()) {
+			return false;
+		}
+
+		return
+				(new HashSet<Atom>(thisPosLiterals)).equals(new HashSet<Atom>(otherPosLiterals)) &&
+				(new HashSet<Atom>(thisNegLiterals)).equals(new HashSet<Atom>(otherNegLiterals));
 	}
 
 	protected abstract AbstractGroundLogicalRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals);
