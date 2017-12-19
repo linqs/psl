@@ -124,47 +124,52 @@ public class BooleanMCSat extends Reasoner {
 
 		// Sample RV assignments
 		for (int sampleIndex = 0; sampleIndex < numSamples; sampleIndex++) {
-			for (int i = 0; i < rvBlocks.length; i++) {
-				if (rvBlocks[i].length == 0) {
+			for (int blockIndex = 0; blockIndex < rvBlocks.length; blockIndex++) {
+				if (rvBlocks[blockIndex].length == 0) {
 					continue;
 				}
 
-				double[] p = new double[(exactlyOne[i]) ? rvBlocks[i].length : (rvBlocks[i].length + 1)];
+				// Compute the probability for every possible discrete assignment to the block.
+				// The additional spot at the end is for the all zero assignment (when !exactlyOne[blockIndex]).
+				double[] probabilities = new double[(exactlyOne[blockIndex]) ? rvBlocks[blockIndex].length : (rvBlocks[blockIndex].length + 1)];
 
-				// Computes probability for assignment of 1.0 to each RV.
-				for (int j = 0; j < rvBlocks[i].length; j++) {
-					// Sets RVs.
-					for (int k = 0; k < rvBlocks[i].length; k++) {
-						rvBlocks[i][k].setValue((k == j) ? 1.0 : 0.0);
+				// Compute the probability for each possible assignment to the block.
+				// Remember that at most 1 atom in a block can be non-zero.
+				// If all zeros are allowed, then atomIndex will be past the bounds of the block and
+				// no atoms will get activated.
+				for (int atomIndex = 0; atomIndex < probabilities.length; atomIndex++) {
+					for (int i = 0; i < rvBlocks[blockIndex].length; i++) {
+						if (i == atomIndex) {
+							rvBlocks[blockIndex][i].setValue(1.0);
+						} else {
+							rvBlocks[blockIndex][i].setValue(0.0);
+						}
 					}
 
-					// Computes probability.
-					p[j] = computeProbability(incidentGKs[i]);
+					// Compute the probability.
+					probabilities[atomIndex] = computeProbability(incidentGKs[blockIndex]);
 				}
 
-				// If all RVs in block assigned 0.0 is valid, computes probability.
-				if (!exactlyOne[i]) {
-					// Sets all RVs to 0.0.
-					for (RandomVariableAtom atom : rvBlocks[i]) {
-						atom.setValue(0.0);
-					}
-
-					// Computes probability.
-					p[p.length - 1] = computeProbability(incidentGKs[i]);
-				}
-
-				// Draws sample.
-				double[] sample = sampleWithProbability(p);
-				for (int j = 0; j < rvBlocks[i].length; j++) {
-					rvBlocks[i][j].setValue(sample[j]);
+				// Draw sample.
+				double[] sample = sampleWithProbability(probabilities);
+				for (int atomIndex = 0; atomIndex < rvBlocks[blockIndex].length; atomIndex++) {
+					rvBlocks[blockIndex][atomIndex].setValue(sample[atomIndex]);
 
 					if (sampleIndex >= numBurnIn) {
-						totals[i][j] += sample[j];
+						totals[blockIndex][atomIndex] += sample[atomIndex];
 					}
 				}
 			}
 
-			if (inspector != null) {
+			// Skip the burn in.
+			if (inspector != null && sampleIndex >= numBurnIn) {
+				// Sets truth values of RandomVariableAtoms to marginal probabilities.
+				for (int blockIndex = 0; blockIndex < rvBlocks.length; blockIndex++) {
+					for (int atomIndex = 0; atomIndex < rvBlocks[blockIndex].length; atomIndex++) {
+						rvBlocks[blockIndex][atomIndex].setValue(totals[blockIndex][atomIndex] / (numSamples - numBurnIn));
+					}
+				}
+
 				double incompatibility = GroundRules.getTotalWeightedIncompatibility(blocker.getGroundRuleStore().getCompatibilityRules());
 				double infeasbility = GroundRules.getInfeasibilityNorm(blocker.getGroundRuleStore().getConstraintRules());
 
@@ -178,29 +183,25 @@ public class BooleanMCSat extends Reasoner {
 		log.info("Inference complete.");
 
 		// Sets truth values of RandomVariableAtoms to marginal probabilities.
-		for (int i = 0; i < rvBlocks.length; i++) {
-			for (int j = 0; j < rvBlocks[i].length; j++) {
-				rvBlocks[i][j].setValue(totals[i][j] / (numSamples - numBurnIn));
+		for (int blockIndex = 0; blockIndex < rvBlocks.length; blockIndex++) {
+			for (int atomIndex = 0; atomIndex < rvBlocks[blockIndex].length; atomIndex++) {
+				rvBlocks[blockIndex][atomIndex].setValue(totals[blockIndex][atomIndex] / (numSamples - numBurnIn));
 			}
 		}
 	}
 
 	private double computeProbability(WeightedGroundRule incidentGKs[]) {
 		double probability = 0.0;
+
 		for (WeightedGroundRule groundRule : incidentGKs) {
-			probability += ((WeightedGroundRule) groundRule).getWeight()
-					* ((WeightedGroundRule) groundRule).getIncompatibility();
+			probability += groundRule.getWeight() * groundRule.getIncompatibility();
 		}
+
 		return Math.exp(-1 * probability);
 	}
 
 	private double[] sampleWithProbability(double[] distribution) {
-		// Just in case an RV block is empty.
-		if (distribution.length == 0) {
-			return new double[0];
-		}
-
-		// Normalizes distribution.
+		// Normalize the distribution.
 		double total = 0.0;
 		for (double pValue : distribution) {
 			total += pValue;
