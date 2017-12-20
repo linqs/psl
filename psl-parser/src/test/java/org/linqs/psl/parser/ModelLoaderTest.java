@@ -127,19 +127,19 @@ public class ModelLoaderTest {
 			"\n" +
 			"1: Single(A) & Double(A, B) >> Single(B) ^2\n" +
 			"// Another comment.\n" +
-			"1: Single(A) & Double(A, B) >> Single(B) ^2 // Inline comment!\n" +
-			"1: Single(A) & Double(A, B) >> Single(B) ^2 # Inline comment!\n" +
-			"1: Single(A) & Double(A, B) >> Single(B) ^2 /* Inline comment! */\n" +
-			"1: Single(A) & Double(A, B) >> Single(B) // ^2 // Changing a rule.\n" +
-			"1: Single(A) & Double(A, B) /* & Single(C) */ >> Single(B) ^2 // Inside of other syntax.\n" +
+			"1: Single(C) & Double(C, D) >> Single(D) ^2 // Inline comment!\n" +
+			"1: Single(E) & Double(E, F) >> Single(F) ^2 # Inline comment!\n" +
+			"1: Single(G) & Double(G, H) >> Single(H) ^2 /* Inline comment! */\n" +
+			"1: Single(I) & Double(I, J) >> Single(J) // ^2 // Changing a rule.\n" +
+			"1: Single(K) & Double(K, L) /* & Single(C) */ >> Single(L) ^2 // Inside of other syntax.\n" +
 			"";
 		String[] expected = new String[]{
 			"1.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) ^2",
-			"1.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) ^2",
-			"1.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) ^2",
-			"1.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) ^2",
-			"1.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B)",
-			"1.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) ^2"
+			"1.0: ( SINGLE(C) & DOUBLE(C, D) ) >> SINGLE(D) ^2",
+			"1.0: ( SINGLE(E) & DOUBLE(E, F) ) >> SINGLE(F) ^2",
+			"1.0: ( SINGLE(G) & DOUBLE(G, H) ) >> SINGLE(H) ^2",
+			"1.0: ( SINGLE(I) & DOUBLE(I, J) ) >> SINGLE(J)",
+			"1.0: ( SINGLE(K) & DOUBLE(K, L) ) >> SINGLE(L) ^2"
 		};
 
 		PSLTest.assertModel(dataStore, input, expected);
@@ -149,21 +149,21 @@ public class ModelLoaderTest {
 	public void testConstants() {
 		String input =
 			"1: Single(A) & Double(A, \"bar\") & Single(\"bar\") >> Double(A, \"bar\") ^2\n" +
-			"1: Single(A) & Double(A, 'bar') & Single('bar') >> Double(A, 'bar') ^2\n" +
-			"1: Single(A) & Double(A, 'BAR') & Single('BAR') >> Double(A, 'BAR') ^2\n" +
-			"1: Single(A) & Double(A, '1BAR') & Single('1BAR') >> Double(A, '1BAR') ^2\n" +
+			"1: Single(B) & Double(B, 'bar') & Single('bar') >> Double(B, 'bar') ^2\n" +
+			"1: Single(C) & Double(C, 'BAR') & Single('BAR') >> Double(C, 'BAR') ^2\n" +
+			"1: Single(D) & Double(D, '1BAR') & Single('1BAR') >> Double(D, '1BAR') ^2\n" +
 			// Note that all constants get quotes, but they will get converted into their native types later.
-			"1: Single(A) & Double(A, '1') & Single('1') >> Double(A, '1') ^2\n" +
-			"1: Single(A) & Double(A, '999') & Single('999') >> Double(A, '999') ^2\n" +
-			"1: Single(A) & Double(A, \"999\") & Single(\"999\") >> Double(A, \"999\") ^2\n";
+			"1: Single(E) & Double(E, '1') & Single('1') >> Double(E, '1') ^2\n" +
+			"1: Single(F) & Double(F, '999') & Single('999') >> Double(F, '999') ^2\n" +
+			"1: Single(G) & Double(G, \"999\") & Single(\"999\") >> Double(G, \"999\") ^2\n";
 		String[] expected = new String[]{
 			"1.0: ( SINGLE(A) & DOUBLE(A, 'bar') & SINGLE('bar') ) >> DOUBLE(A, 'bar') ^2",
-			"1.0: ( SINGLE(A) & DOUBLE(A, 'bar') & SINGLE('bar') ) >> DOUBLE(A, 'bar') ^2",
-			"1.0: ( SINGLE(A) & DOUBLE(A, 'BAR') & SINGLE('BAR') ) >> DOUBLE(A, 'BAR') ^2",
-			"1.0: ( SINGLE(A) & DOUBLE(A, '1BAR') & SINGLE('1BAR') ) >> DOUBLE(A, '1BAR') ^2",
-			"1.0: ( SINGLE(A) & DOUBLE(A, '1') & SINGLE('1') ) >> DOUBLE(A, '1') ^2",
-			"1.0: ( SINGLE(A) & DOUBLE(A, '999') & SINGLE('999') ) >> DOUBLE(A, '999') ^2",
-			"1.0: ( SINGLE(A) & DOUBLE(A, '999') & SINGLE('999') ) >> DOUBLE(A, '999') ^2"
+			"1.0: ( SINGLE(B) & DOUBLE(B, 'bar') & SINGLE('bar') ) >> DOUBLE(B, 'bar') ^2",
+			"1.0: ( SINGLE(C) & DOUBLE(C, 'BAR') & SINGLE('BAR') ) >> DOUBLE(C, 'BAR') ^2",
+			"1.0: ( SINGLE(D) & DOUBLE(D, '1BAR') & SINGLE('1BAR') ) >> DOUBLE(D, '1BAR') ^2",
+			"1.0: ( SINGLE(E) & DOUBLE(E, '1') & SINGLE('1') ) >> DOUBLE(E, '1') ^2",
+			"1.0: ( SINGLE(F) & DOUBLE(F, '999') & SINGLE('999') ) >> DOUBLE(F, '999') ^2",
+			"1.0: ( SINGLE(G) & DOUBLE(G, '999') & SINGLE('999') ) >> DOUBLE(G, '999') ^2"
 		};
 
 		PSLTest.assertModel(dataStore, input, expected);
@@ -230,33 +230,33 @@ public class ModelLoaderTest {
 	public void testWeight() {
 		String input =
 			"1: Single(A) >> Single(A)\n" +
-			"0: Single(A) >> Single(A)\n" +
-			"0.5: Single(A) >> Single(A)\n" +
-			"999999: Single(A) >> Single(A)\n" +
-			"9999999999: Single(A) >> Single(A)\n" +
-			"0000000001: Single(A) >> Single(A)\n" +
-			"0.001: Single(A) >> Single(A)\n" +
-			"0.00000001: Single(A) >> Single(A)\n" +
-			"2E10: Single(A) >> Single(A)\n" +
-			"2e10: Single(A) >> Single(A)\n" +
-			"2e-10: Single(A) >> Single(A)\n" +
-			"2.5e10: Single(A) >> Single(A)\n" +
-			"2.5e-10: Single(A) >> Single(A)\n" +
+			"0: Single(B) >> Single(B)\n" +
+			"0.5: Single(C) >> Single(C)\n" +
+			"999999: Single(D) >> Single(D)\n" +
+			"9999999999: Single(E) >> Single(E)\n" +
+			"0000000001: Single(F) >> Single(F)\n" +
+			"0.001: Single(G) >> Single(G)\n" +
+			"0.00000001: Single(H) >> Single(H)\n" +
+			"2E10: Single(I) >> Single(I)\n" +
+			"2e10: Single(J) >> Single(J)\n" +
+			"2e-10: Single(K) >> Single(K)\n" +
+			"2.5e10: Single(L) >> Single(L)\n" +
+			"2.5e-10: Single(M) >> Single(M)\n" +
 			"";
 		String[] expected = new String[]{
 			"1.0: SINGLE(A) >> SINGLE(A)",
-			"0.0: SINGLE(A) >> SINGLE(A)",
-			"0.5: SINGLE(A) >> SINGLE(A)",
-			"999999.0: SINGLE(A) >> SINGLE(A)",
-			"9.999999999E9: SINGLE(A) >> SINGLE(A)",
-			"1.0: SINGLE(A) >> SINGLE(A)",
-			"0.001: SINGLE(A) >> SINGLE(A)",
-			"1.0E-8: SINGLE(A) >> SINGLE(A)",
-			"2.0E10: SINGLE(A) >> SINGLE(A)",
-			"2.0E10: SINGLE(A) >> SINGLE(A)",
-			"2.0E-10: SINGLE(A) >> SINGLE(A)",
-			"2.5E10: SINGLE(A) >> SINGLE(A)",
-			"2.5E-10: SINGLE(A) >> SINGLE(A)"
+			"0.0: SINGLE(B) >> SINGLE(B)",
+			"0.5: SINGLE(C) >> SINGLE(C)",
+			"999999.0: SINGLE(D) >> SINGLE(D)",
+			"9.999999999E9: SINGLE(E) >> SINGLE(E)",
+			"1.0: SINGLE(F) >> SINGLE(F)",
+			"0.001: SINGLE(G) >> SINGLE(G)",
+			"1.0E-8: SINGLE(H) >> SINGLE(H)",
+			"2.0E10: SINGLE(I) >> SINGLE(I)",
+			"2.0E10: SINGLE(J) >> SINGLE(J)",
+			"2.0E-10: SINGLE(K) >> SINGLE(K)",
+			"2.5E10: SINGLE(L) >> SINGLE(L)",
+			"2.5E-10: SINGLE(M) >> SINGLE(M)"
 		};
 
 		PSLTest.assertModel(dataStore, input, expected);
@@ -266,10 +266,10 @@ public class ModelLoaderTest {
 	public void testImpliedBy() {
 		String input =
 			"1: Single(A) & Double(A, B) >> Single(B) ^2\n" +
-			"1: Single(B) << Single(A) & Double(A, B) ^2\n";
+			"1: Single(D) << Single(C) & Double(C, D) ^2\n";
 		String[] expected = new String[]{
 			"1.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) ^2",
-			"1.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) ^2"
+			"1.0: ( SINGLE(C) & DOUBLE(C, D) ) >> SINGLE(D) ^2"
 		};
 
 		PSLTest.assertModel(dataStore, input, expected);
@@ -351,27 +351,27 @@ public class ModelLoaderTest {
 	public void testAlternativeSyntax() {
 		String input =
 			"1: Single(A) & Double(A, B) >> Single(B)\n" +
-			"1: Single(A) && Double(A, B) >> Single(B)\n" +
-			"1: Single(A) & Double(A, B) >> Single(B)\n" +
-			"1: Single(A) & Double(A, B) -> Single(B)\n" +
-			"1: Single(A) | Single(B) << Double(A, B)\n" +
-			"1: Single(A) || Single(B) << Double(A, B)\n" +
-			"1: Single(A) | Single(B) << Double(A, B)\n" +
-			"1: Single(A) | Single(B) <- Double(A, B)\n" +
-			"1: A != B & Double(A, B) >> Single(B)\n" +
-			"1: A ~= B & Double(A, B) >> Single(B)\n" +
+			"1: Single(C) && Double(C, D) >> Single(D)\n" +
+			"1: Single(E) & Double(E, F) >> Single(F)\n" +
+			"1: Single(G) & Double(G, H) -> Single(H)\n" +
+			"1: Single(K) | Single(L) << Double(K, L)\n" +
+			"1: Single(M) || Single(N) << Double(M, N)\n" +
+			"1: Single(O) | Single(P) << Double(O, P)\n" +
+			"1: Single(Q) | Single(R) <- Double(Q, R)\n" +
+			"1: S != T & Double(S, T) >> Single(T)\n" +
+			"1: U ~= V & Double(U, V) >> Single(V)\n" +
 			"";
 		String[] expected = new String[]{
 			"1.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B)",
-			"1.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B)",
-			"1.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B)",
-			"1.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B)",
-			"1.0: DOUBLE(A, B) >> ( SINGLE(A) | SINGLE(B) )",
-			"1.0: DOUBLE(A, B) >> ( SINGLE(A) | SINGLE(B) )",
-			"1.0: DOUBLE(A, B) >> ( SINGLE(A) | SINGLE(B) )",
-			"1.0: DOUBLE(A, B) >> ( SINGLE(A) | SINGLE(B) )",
-			"1.0: ( (A != B) & DOUBLE(A, B) ) >> SINGLE(B)",
-			"1.0: ( (A != B) & DOUBLE(A, B) ) >> SINGLE(B)"
+			"1.0: ( SINGLE(C) & DOUBLE(C, D) ) >> SINGLE(D)",
+			"1.0: ( SINGLE(E) & DOUBLE(E, F) ) >> SINGLE(F)",
+			"1.0: ( SINGLE(G) & DOUBLE(G, H) ) >> SINGLE(H)",
+			"1.0: DOUBLE(K, L) >> ( SINGLE(K) | SINGLE(L) )",
+			"1.0: DOUBLE(M, N) >> ( SINGLE(M) | SINGLE(N) )",
+			"1.0: DOUBLE(O, P) >> ( SINGLE(O) | SINGLE(P) )",
+			"1.0: DOUBLE(Q, R) >> ( SINGLE(Q) | SINGLE(R) )",
+			"1.0: ( (S != T) & DOUBLE(S, T) ) >> SINGLE(T)",
+			"1.0: ( (U != V) & DOUBLE(U, V) ) >> SINGLE(V)"
 		};
 
 		PSLTest.assertModel(dataStore, input, expected);
@@ -642,11 +642,11 @@ public class ModelLoaderTest {
 	public void testNonSymmetric() {
 		String input =
 			"1: Single(A) & Single(B) & (A % B) >> Double(A, B) ^2\n" +
-			"1: Single(A) & Single(B) & (A ^ B) >> Double(A, B) ^2\n" +
+			"1: Single(C) & Single(D) & (C ^ D) >> Double(C, D) ^2\n" +
 			"";
 		String[] expected = new String[]{
 			"1.0: ( SINGLE(A) & SINGLE(B) & (A % B) ) >> DOUBLE(A, B) ^2",
-			"1.0: ( SINGLE(A) & SINGLE(B) & (A % B) ) >> DOUBLE(A, B) ^2"
+			"1.0: ( SINGLE(C) & SINGLE(D) & (C % D) ) >> DOUBLE(C, D) ^2"
 		};
 
 		PSLTest.assertModel(dataStore, input, expected);
@@ -705,23 +705,23 @@ public class ModelLoaderTest {
 		// Test both syntaxes.
 		String input =
 			"1: A != B & Single(A) & Single(B) >> Double(A, B) ^2\n" +
-			"1: (A != B) & Single(A) & Single(B) >> Double(A, B) ^2\n" +
-			"1: A!=B & Single(A) & Single(B) >> Double(A, B) ^2\n" +
-			"1: (A!=B) & Single(A) & Single(B) >> Double(A, B) ^2\n" +
-			"1: A - B & Single(A) & Single(B) >> Double(A, B) ^2\n" +
-			"1: (A - B) & Single(A) & Single(B) >> Double(A, B) ^2\n" +
-			"1: A-B & Single(A) & Single(B) >> Double(A, B) ^2\n" +
-			"1: (A-B) & Single(A) & Single(B) >> Double(A, B) ^2\n" +
+			"1: (C != D) & Single(C) & Single(D) >> Double(C, D) ^2\n" +
+			"1: E!=F & Single(E) & Single(F) >> Double(E, F) ^2\n" +
+			"1: (G!=H) & Single(G) & Single(H) >> Double(G, H) ^2\n" +
+			"1: I - J & Single(I) & Single(J) >> Double(I, J) ^2\n" +
+			"1: (K - L) & Single(K) & Single(L) >> Double(K, L) ^2\n" +
+			"1: M-N & Single(M) & Single(N) >> Double(M, N) ^2\n" +
+			"1: (O-P) & Single(O) & Single(P) >> Double(O, P) ^2\n" +
 			"";
 		String[] expected = new String[]{
 			"1.0: ( (A != B) & SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B) ^2",
-			"1.0: ( (A != B) & SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B) ^2",
-			"1.0: ( (A != B) & SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B) ^2",
-			"1.0: ( (A != B) & SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B) ^2",
-			"1.0: ( (A != B) & SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B) ^2",
-			"1.0: ( (A != B) & SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B) ^2",
-			"1.0: ( (A != B) & SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B) ^2",
-			"1.0: ( (A != B) & SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B) ^2"
+			"1.0: ( (C != D) & SINGLE(C) & SINGLE(D) ) >> DOUBLE(C, D) ^2",
+			"1.0: ( (E != F) & SINGLE(E) & SINGLE(F) ) >> DOUBLE(E, F) ^2",
+			"1.0: ( (G != H) & SINGLE(G) & SINGLE(H) ) >> DOUBLE(G, H) ^2",
+			"1.0: ( (I != J) & SINGLE(I) & SINGLE(J) ) >> DOUBLE(I, J) ^2",
+			"1.0: ( (K != L) & SINGLE(K) & SINGLE(L) ) >> DOUBLE(K, L) ^2",
+			"1.0: ( (M != N) & SINGLE(M) & SINGLE(N) ) >> DOUBLE(M, N) ^2",
+			"1.0: ( (O != P) & SINGLE(O) & SINGLE(P) ) >> DOUBLE(O, P) ^2"
 		};
 
 		PSLTest.assertModel(dataStore, input, expected);
@@ -787,27 +787,27 @@ public class ModelLoaderTest {
 	public void testLogicalParens() {
 		String input =
 			"1.0: Single(A) & Single(B) >> Double(A, B) ^2\n" +
-			"1.0: Single(A) & Single(B) >> Double(A, B)\n" +
-			"1.0: ( Single(A) && Single(B) ) -> Double(A, B) ^2\n" +
-			"1.0: ( Single(A) && Single(B) ) -> Double(A, B)\n" +
+			"1.0: Single(C) & Single(D) >> Double(C, D)\n" +
+			"1.0: ( Single(E) && Single(F) ) -> Double(E, F) ^2\n" +
+			"1.0: ( Single(G) && Single(H) ) -> Double(G, H)\n" +
 
-			"1.0: (Single(A)) & Single(B) >> Double(A, B)\n" +
-			"1.0: (Single(A)) & (Single(B)) >> Double(A, B)\n" +
-			"1.0: ((Single(A)) & (Single(B))) >> Double(A, B)\n" +
-			"1.0: (Single(A)) & Single(B) >> (Double(A, B))\n" +
-			"1.0: (((Single(A)) & (Single(B))) & Double(B, A)) >> Double(A, B)\n" +
+			"1.0: (Single(I)) & Single(J) >> Double(I, J)\n" +
+			"1.0: (Single(K)) & (Single(L)) >> Double(K, L)\n" +
+			"1.0: ((Single(M)) & (Single(N))) >> Double(M, N)\n" +
+			"1.0: (Single(O)) & Single(P) >> (Double(O, P))\n" +
+			"1.0: (((Single(Q)) & (Single(R))) & Double(R, Q)) >> Double(Q, R)\n" +
 			"";
 		String[] expected = new String[]{
 			"1.0: ( SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B) ^2",
-			"1.0: ( SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B)",
-			"1.0: ( SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B) ^2",
-			"1.0: ( SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B)",
+			"1.0: ( SINGLE(C) & SINGLE(D) ) >> DOUBLE(C, D)",
+			"1.0: ( SINGLE(E) & SINGLE(F) ) >> DOUBLE(E, F) ^2",
+			"1.0: ( SINGLE(G) & SINGLE(H) ) >> DOUBLE(G, H)",
 
-			"1.0: ( SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B)",
-			"1.0: ( SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B)",
-			"1.0: ( SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B)",
-			"1.0: ( SINGLE(A) & SINGLE(B) ) >> DOUBLE(A, B)",
-			"1.0: ( SINGLE(A) & SINGLE(B) & DOUBLE(B, A) ) >> DOUBLE(A, B)",
+			"1.0: ( SINGLE(I) & SINGLE(J) ) >> DOUBLE(I, J)",
+			"1.0: ( SINGLE(K) & SINGLE(L) ) >> DOUBLE(K, L)",
+			"1.0: ( SINGLE(M) & SINGLE(N) ) >> DOUBLE(M, N)",
+			"1.0: ( SINGLE(O) & SINGLE(P) ) >> DOUBLE(O, P)",
+			"1.0: ( SINGLE(Q) & SINGLE(R) & DOUBLE(R, Q) ) >> DOUBLE(Q, R)",
 		};
 
 		PSLTest.assertModel(dataStore, input, expected);

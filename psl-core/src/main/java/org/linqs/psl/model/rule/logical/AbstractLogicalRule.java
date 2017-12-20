@@ -183,6 +183,11 @@ public abstract class AbstractLogicalRule implements Rule {
 	}
 
 	@Override
+	public int hashCode() {
+		return hash;
+	}
+
+	@Override
 	public boolean equals(Object other) {
 		if (this == other) {
 			return true;

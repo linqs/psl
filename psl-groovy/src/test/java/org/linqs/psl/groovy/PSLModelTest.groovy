@@ -255,7 +255,7 @@ public class PSLModelTest {
 			"1: Single(A) & Double(A, B) >> Single(B) ^2\n" +
 			"5: Single(B) & Double(B, A) >> Single(A) ^2\n" +
 			"1: Single(A) & Double(A, \"bar\") & Single(\"bar\") >> Double(A, \"bar\") ^2\n" +
-			"1: Single(A) & Double(A, 'bar') & Single('bar') >> Double(A, 'bar') ^2\n" +
+			"1: Single(B) & Double(B, 'bar') & Single('bar') >> Double(B, 'bar') ^2\n" +
 			"1: 1 Single(A) = 1 ^2\n" +
 			"1: 1.0 Single(A) = 1 ^2\n" +
 			"1: 1.5 Single(A) = 1 ^2\n" +
@@ -278,16 +278,15 @@ public class PSLModelTest {
 			"0.5: Single(A) >> Single(A)\n" +
 			"999999: Single(A) >> Single(A)\n" +
 			"9999999999: Single(A) >> Single(A)\n" +
-			"0000000001: Single(A) >> Single(A)\n" +
+			"0000000001: Single(B) >> Single(B)\n" +
 			"0.001: Single(A) >> Single(A)\n" +
-			"0.00000001: Single(A) >> Single(A)\n" +
+			"0.00001: Single(A) >> Single(A)\n" +
 			"2E10: Single(A) >> Single(A)\n" +
-			"2e10: Single(A) >> Single(A)\n" +
-			"2e-10: Single(A) >> Single(A)\n" +
+			"2e10: Single(B) >> Single(B)\n" +
+			"2e-10: Single(B) >> Single(B)\n" +
 			"2.5e10: Single(A) >> Single(A)\n" +
-			"2.5e-10: Single(A) >> Single(A)\n" +
-			"1: Single(A) & Double(A, B) >> Single(B) ^2\n" +
-			"1: Single(B) << Single(A) & Double(A, B) ^2\n" +
+			"2.5e-10: Single(C) >> Single(C)\n" +
+			"1: Single(D) << Single(C) & Double(C, D) ^2\n" +
 			"1: Single(A) | Double(A, B) << Single(B) & Single(A) ^2\n" +
 			"1: Single(A) & Double(B, C) >> Single(B) | Single(C) ^2\n" +
 			"1: ~Single(A) & Double(A, B) >> ~Single(B) ^2\n" +
@@ -300,17 +299,17 @@ public class PSLModelTest {
 			"1: 'Foo' ~= B & Double(A, B) >> Single(B) ^2\n" +
 			"1: 'Foo' ~= 'Bar' & Double(A, B) >> Single(B) ^2\n" +
 			"1: Single(A) & Double(A, B) >> Single(B)\n" +
-			"1: Single(A) && Double(A, B) >> Single(B)\n" +
-			"1: Single(A) & Double(A, B) >> Single(B)\n" +
-			"1: Single(A) & Double(A, B) -> Single(B)\n" +
+			"1: Single(C) && Double(C, D) >> Single(D)\n" +
+			"1: Single(E) & Double(E, F) >> Single(F)\n" +
+			"1: Single(G) & Double(G, H) -> Single(H)\n" +
 			"1: Single(A) | Single(B) << Double(A, B)\n" +
-			"1: Single(A) || Single(B) << Double(A, B)\n" +
-			"1: Single(A) | Single(B) << Double(A, B)\n" +
-			"1: Single(A) | Single(B) <- Double(A, B)\n" +
+			"1: Single(C) || Single(D) << Double(C, D)\n" +
+			"1: Single(G) | Single(H) << Double(G, H)\n" +
+			"1: Single(I) | Single(J) <- Double(I, J)\n" +
 			"1: A != B & Double(A, B) >> Single(B)\n" +
-			"1: A ~= B & Double(A, B) >> Single(B)\n" +
+			"1: C ~= D & Double(C, D) >> Single(D)\n" +
 			"1: 1 Single(A) = 1 ^2\n" +
-			"1: 1 * Single(A) = 1 ^2\n" +
+			"1: 1 * Single(B) = 1 ^2\n" +
 			"Single(A) + Single(B) = 1 .\n" +
 			"Double(+A, 'Foo') = 1 .\n" +
 			"Single(+A) + Single(+B) = 1 .\n" +
@@ -333,7 +332,7 @@ public class PSLModelTest {
 			"1.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) ^2",
 			"5.0: ( SINGLE(B) & DOUBLE(B, A) ) >> SINGLE(A) ^2",
 			"1.0: ( SINGLE(A) & DOUBLE(A, 'bar') & SINGLE('bar') ) >> DOUBLE(A, 'bar') ^2",
-			"1.0: ( SINGLE(A) & DOUBLE(A, 'bar') & SINGLE('bar') ) >> DOUBLE(A, 'bar') ^2",
+			"1.0: ( SINGLE(B) & DOUBLE(B, 'bar') & SINGLE('bar') ) >> DOUBLE(B, 'bar') ^2",
 			"1.0: 1.0 * SINGLE(A) = 1.0 ^2",
 			"1.0: 1.0 * SINGLE(A) = 1.0 ^2",
 			"1.0: 1.5 * SINGLE(A) = 1.0 ^2",
@@ -356,16 +355,15 @@ public class PSLModelTest {
 			"0.5: SINGLE(A) >> SINGLE(A)",
 			"999999.0: SINGLE(A) >> SINGLE(A)",
 			"9.999999999E9: SINGLE(A) >> SINGLE(A)",
-			"1.0: SINGLE(A) >> SINGLE(A)",
+			"1.0: SINGLE(B) >> SINGLE(B)",
 			"0.001: SINGLE(A) >> SINGLE(A)",
-			"1.0E-8: SINGLE(A) >> SINGLE(A)",
+			"1.0E-5: SINGLE(A) >> SINGLE(A)",
 			"2.0E10: SINGLE(A) >> SINGLE(A)",
-			"2.0E10: SINGLE(A) >> SINGLE(A)",
-			"2.0E-10: SINGLE(A) >> SINGLE(A)",
+			"2.0E10: SINGLE(B) >> SINGLE(B)",
+			"2.0E-10: SINGLE(B) >> SINGLE(B)",
 			"2.5E10: SINGLE(A) >> SINGLE(A)",
-			"2.5E-10: SINGLE(A) >> SINGLE(A)",
-			"1.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) ^2",
-			"1.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"2.5E-10: SINGLE(C) >> SINGLE(C)",
+			"1.0: ( SINGLE(C) & DOUBLE(C, D) ) >> SINGLE(D) ^2",
 			"1.0: ( SINGLE(B) & SINGLE(A) ) >> ( SINGLE(A) | DOUBLE(A, B) ) ^2",
 			"1.0: ( SINGLE(A) & DOUBLE(B, C) ) >> ( SINGLE(B) | SINGLE(C) ) ^2",
 			"1.0: ( ~( SINGLE(A) ) & DOUBLE(A, B) ) >> ~( SINGLE(B) ) ^2",
@@ -378,17 +376,17 @@ public class PSLModelTest {
 			"1.0: ( ('Foo' != B) & DOUBLE(A, B) ) >> SINGLE(B) ^2",
 			"1.0: ( ('Foo' != 'Bar') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
 			"1.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B)",
-			"1.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B)",
-			"1.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B)",
-			"1.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B)",
+			"1.0: ( SINGLE(C) & DOUBLE(C, D) ) >> SINGLE(D)",
+			"1.0: ( SINGLE(E) & DOUBLE(E, F) ) >> SINGLE(F)",
+			"1.0: ( SINGLE(G) & DOUBLE(G, H) ) >> SINGLE(H)",
 			"1.0: DOUBLE(A, B) >> ( SINGLE(A) | SINGLE(B) )",
-			"1.0: DOUBLE(A, B) >> ( SINGLE(A) | SINGLE(B) )",
-			"1.0: DOUBLE(A, B) >> ( SINGLE(A) | SINGLE(B) )",
-			"1.0: DOUBLE(A, B) >> ( SINGLE(A) | SINGLE(B) )",
+			"1.0: DOUBLE(C, D) >> ( SINGLE(C) | SINGLE(D) )",
+			"1.0: DOUBLE(G, H) >> ( SINGLE(G) | SINGLE(H) )",
+			"1.0: DOUBLE(I, J) >> ( SINGLE(I) | SINGLE(J) )",
 			"1.0: ( (A != B) & DOUBLE(A, B) ) >> SINGLE(B)",
-			"1.0: ( (A != B) & DOUBLE(A, B) ) >> SINGLE(B)",
+			"1.0: ( (C != D) & DOUBLE(C, D) ) >> SINGLE(D)",
 			"1.0: 1.0 * SINGLE(A) = 1.0 ^2",
-			"1.0: 1.0 * SINGLE(A) = 1.0 ^2",
+			"1.0: 1.0 * SINGLE(B) = 1.0 ^2",
 			"1.0 * SINGLE(A) + 1.0 * SINGLE(B) = 1.0 .",
 			"1.0 * DOUBLE(+A, 'Foo') = 1.0 .",
 			"1.0 * SINGLE(+A) + 1.0 * SINGLE(+B) = 1.0 .",
