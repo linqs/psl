@@ -43,7 +43,9 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -58,6 +60,8 @@ public class PredicateInfo {
 	private final List<String> argCols;
 	private final String tableName;
 
+	private Map<String, String> cachedSQL;
+
 	public PredicateInfo(Predicate predicate) {
 		assert(predicate != null);
 
@@ -68,6 +72,8 @@ public class PredicateInfo {
 		for (int i = 0; i < predicate.getArity(); i++) {
 			argCols.add(predicate.getArgumentType(i).getName() + "_" + i);
 		}
+
+		cachedSQL = new HashMap<String, String>();
 	}
 
 	public List<String> argumentColumns() {
@@ -164,22 +170,10 @@ public class PredicateInfo {
 	 * The variables left to set in the query are the predciate arguments.
 	 */
 	public PreparedStatement createQueryStatement(Connection connection, List<Integer> readPartitions) {
-		SelectQuery query = new SelectQuery();
-		QueryPreparer.MultiPlaceHolder placeHolder = (new QueryPreparer()).getNewMultiPlaceHolder();
-
-		// Seelct *
-		query.addAllColumns();
-		query.addCustomFromTable(tableName);
-
-		// We only want to query from the read partitions.
-		query.addCondition(new InCondition(new CustomSql(PARTITION_COLUMN_NAME), readPartitions));
-
-		for (String colName : argCols) {
-			query.addCondition(BinaryCondition.equalTo(new CustomSql(colName), placeHolder));
-		}
+		String query = buildQueryStatement(readPartitions);
 
 		try {
-			return connection.prepareStatement(query.validate().toString());
+			return connection.prepareStatement(query);
 		} catch (SQLException ex) {
 			throw new RuntimeException("Could not create prepared statement.", ex);
 		}
@@ -370,6 +364,33 @@ public class PredicateInfo {
 
 		log.debug("Registered {} pre-existing predicates from RDBMS.", predicates.size());
 		return predicates;
+	}
+
+	// TEST
+	// private String buildQueryStatement(List<Integer> readPartitions) {
+	public String buildQueryStatement(List<Integer> readPartitions) {
+		String key = readPartitions.toString();
+		if (cachedSQL.containsKey(key)) {
+			return cachedSQL.get(key);
+		}
+
+		SelectQuery query = new SelectQuery();
+		QueryPreparer.MultiPlaceHolder placeHolder = (new QueryPreparer()).getNewMultiPlaceHolder();
+
+		// Seelct *
+		query.addAllColumns();
+		query.addCustomFromTable(tableName);
+
+		// We only want to query from the read partitions.
+		query.addCondition(new InCondition(new CustomSql(PARTITION_COLUMN_NAME), readPartitions));
+
+		for (String colName : argCols) {
+			query.addCondition(BinaryCondition.equalTo(new CustomSql(colName), placeHolder));
+		}
+
+		String queryString = query.validate().toString();
+		cachedSQL.put(key, queryString);
+		return queryString;
 	}
 
 	/**

@@ -197,6 +197,10 @@ public class RDBMSDatabase implements Database {
 
 	@Override
 	public GroundAtom getAtom(Predicate predicate, Constant... arguments) {
+		if (closed) {
+			throw new IllegalStateException("Cannot query atom from closed database.");
+		}
+
 		/*
 		 * First, check cache to see if the atom exists.
 		 * Yes, return atom.
@@ -591,40 +595,6 @@ public class RDBMSDatabase implements Database {
 		}
 	}
 
-	private ResultSet queryDBForAtom(QueryAtom atom) {
-		if (closed) {
-			throw new IllegalStateException("Cannot query atom from closed database.");
-		}
-
-		Term[] arguments = atom.getArguments();
-
-		// TEST
-		PreparedStatement statement = getAtomQuery(predicates.get(atom.getPredicate()));
-		/*
-		Connection conn = parentDataStore.getConnection();
-		PreparedStatement statement = predicates.get(atom.getPredicate()).createQueryStatement(conn, readIDs);
-		*/
-
-		try {
-			for (int i = 0; i < arguments.length; i++) {
-				setAtomArgument(statement, arguments[i], i + 1);
-			}
-
-			ResultSet rtn = statement.executeQuery();
-
-			// TODO(eriq): HERE
-			// The result set needs the stmt/connection to stay open, but we want to close it for pooling.
-			/* TEST
-			statement.close();
-			conn.close();
-			*/
-
-			return rtn;
-		} catch (SQLException ex) {
-			throw new RuntimeException("Error querying DB for atom.", ex);
-		}
-	}
-
 	/**
 	 * Extract a single ground atom from a ResultSet.
 	 * The ResultSet MUST already be primed (next() should have been already called.
@@ -674,36 +644,77 @@ public class RDBMSDatabase implements Database {
 	 * Get an atom from the database and put it in the cache.
 	 */
 	// TEST(eriq): sync
-	private synchronized GroundAtom fetchAtom(StandardPredicate predicate, boolean create, Constant... arguments) {
+	// private synchronized GroundAtom fetchAtom(StandardPredicate predicate, boolean create, Constant... arguments) {
+	private GroundAtom fetchAtom(StandardPredicate predicate, boolean create, Constant... arguments) {
 		// Ensure this database has this predicate.
 		getPredicateInfo(predicate);
 
-		QueryAtom queryAtom = new QueryAtom(predicate, arguments);
-		GroundAtom result = null;
-
-		try (ResultSet resultSet = queryDBForAtom(queryAtom)) {
-			if (resultSet.next()) {
-				result = extractGroundAtomFromResult(resultSet, predicate, arguments);
-
-		 		if (resultSet.next()) {
-		 			throw new IllegalStateException("Cannot have duplicate atoms, or atoms in multiple partitions in a single database");
-				}
-			}
-		} catch (SQLException ex) {
-			throw new RuntimeException("Error getting atom for " + predicate, ex);
-		}
+		GroundAtom result = queryDBForAtom(predicate, arguments);
 
 		if (result != null || !create) {
 			return result;
 		}
 
-		if (isClosed((StandardPredicate) predicate)) {
+
+		if (isClosed((StandardPredicate)predicate)) {
 			result = cache.instantiateObservedAtom(predicate, arguments, DEFAULT_UNOBSERVED_VALUE);
 		} else {
 			result = cache.instantiateRandomVariableAtom(predicate, arguments, DEFAULT_UNOBSERVED_VALUE);
 		}
 
 		return result;
+	}
+
+	/**
+	 * Get a ground atom from the database.
+	 * Return null if one is not found.
+	 */
+	private GroundAtom queryDBForAtom(StandardPredicate predicate, Constant[] arguments) {
+		// TEST
+		// Term[] arguments = atom.getArguments();
+
+		// TEST
+		// PreparedStatement statement = getAtomQuery(predicates.get(predicate));
+		Connection conn = parentDataStore.getConnection();
+		PreparedStatement statement = predicates.get(predicate).createQueryStatement(conn, readIDs);
+
+		GroundAtom result = null;
+		ResultSet resultSet = null;
+
+		try {
+			for (int i = 0; i < arguments.length; i++) {
+				setAtomArgument(statement, arguments[i], i + 1);
+			}
+
+			resultSet = statement.executeQuery();
+			if (resultSet.next()) {
+				result = extractGroundAtomFromResult(resultSet, predicate, arguments);
+
+				if (resultSet.next()) {
+					throw new IllegalStateException("Cannot have duplicate atoms, or atoms in multiple partitions in a single database");
+				}
+			}
+
+			return result;
+		} catch (SQLException ex) {
+			throw new RuntimeException("Error querying DB for atom.", ex);
+		} finally {
+			try {
+				if (resultSet != null) {
+					resultSet.close();
+				}
+
+				if  (statement != null) {
+					statement.close();
+				}
+
+				if (conn != null) {
+					conn.close();
+				}
+			} catch (SQLException ex) {
+				// TEST(eriq) Ignore
+			}
+		}
 	}
 
 	public boolean hasAtom(StandardPredicate predicate, Constant... arguments) {

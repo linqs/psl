@@ -34,7 +34,11 @@ import java.util.Map;
  *
  * Also serves as the factory for GroundAtoms for a Database.
  *
- * This is thread-safe.
+ * This class is not thread-safe, but does have some guarentees.
+ * All write operations (remove and instantiation) are safe.
+ * Read operations do not attempt any thread safety because of their heavy use.
+ * However, any call to getCachedAtom() returning a null should be follwed up with an instantiation call.
+ * These calls are thread-safe and will check the cache before creation.
  */
 public class AtomCache {
 	protected final Database db;
@@ -48,7 +52,7 @@ public class AtomCache {
 	 */
 	public AtomCache(Database db) {
 		this.db = db;
-		this.cache = Collections.synchronizedMap(new HashMap<QueryAtom, GroundAtom>());
+		this.cache = new HashMap<QueryAtom, GroundAtom>();
 	}
 
 	/**
@@ -58,28 +62,28 @@ public class AtomCache {
 	 * @param atom QueryAtom with all {@link Constant GroundTerms}
 	 * @return the requested GroundAtom, or NULL if it is not cached
 	 */
-	public synchronized GroundAtom getCachedAtom(QueryAtom atom) {
+	public GroundAtom getCachedAtom(QueryAtom atom) {
 		return cache.get(atom);
 	}
 
 	/**
 	 * @return all GroundAtoms in this AtomCache
 	 */
-	public synchronized Iterable<GroundAtom> getCachedAtoms() {
+	public Iterable<GroundAtom> getCachedAtoms() {
 		return cache.values();
 	}
 
 	/**
 	 * Returns all GroundAtoms in this AtomCache with a given Predicate.
 	 *
-	 * @param p the Predicate of Atoms to return
+	 * @param predicate the Predicate of Atoms to return
 	 * @return the cached Atoms
 	 */
-	public synchronized Iterable<GroundAtom> getCachedAtoms(final Predicate p) {
+	public Iterable<GroundAtom> getCachedAtoms(final Predicate predicate) {
 		return Iterables.filter(cache.values(), new com.google.common.base.Predicate<GroundAtom>() {
 			@Override
 			public boolean apply(GroundAtom atom) {
-				return atom.getPredicate().equals(p);
+				return atom.getPredicate().equals(predicate);
 			}
 
 		});
@@ -101,14 +105,14 @@ public class AtomCache {
 	/**
 	 * @return all ObservedAtoms in this AtomCache
 	 */
-	public synchronized Iterable<ObservedAtom> getCachedObservedAtoms() {
+	public Iterable<ObservedAtom> getCachedObservedAtoms() {
 		return Iterables.filter(cache.values(), ObservedAtom.class);
 	}
 
 	/**
 	 * @return all RandomVariableAtoms in this AtomCache
 	 */
-	public synchronized Iterable<RandomVariableAtom> getCachedRandomVariableAtoms() {
+	public Iterable<RandomVariableAtom> getCachedRandomVariableAtoms() {
 		return Iterables.filter(cache.values(), RandomVariableAtom.class);
 	}
 
@@ -122,13 +126,13 @@ public class AtomCache {
 	 * Further, this method should only be called after ensuring that the Atom
 	 * is not already in this AtomCache using {@link #getCachedAtom(QueryAtom)}.
 	 *
-	 * @param p the Predicate of the Atom
+	 * @param predicate the Predicate of the Atom
 	 * @param args the arguments to this Atom
 	 * @param value the Atom's truth value
 	 * @return the new ObservedAtom
 	 */
-	public synchronized ObservedAtom instantiateObservedAtom(Predicate p, Constant[] args, double value) {
-		QueryAtom key = new QueryAtom(p, args);
+	public synchronized ObservedAtom instantiateObservedAtom(Predicate predicate, Constant[] args, double value) {
+		QueryAtom key = new QueryAtom(predicate, args);
 
 		// Always check the cache before making new atoms.
 		if (cache.containsKey(key)) {
@@ -140,7 +144,7 @@ public class AtomCache {
 			return (ObservedAtom)cache.get(key);
 		}
 
-		ObservedAtom atom = new ObservedAtom(p, args, db, value);
+		ObservedAtom atom = new ObservedAtom(predicate, args, db, value);
 		cache.put(key, atom);
 
 		return atom;
@@ -156,13 +160,13 @@ public class AtomCache {
 	 * Further, this method should only be called after ensuring that the Atom
 	 * is not already in this AtomCache using {@link #getCachedAtom(QueryAtom)}.
 	 *
-	 * @param p the Predicate of the Atom
+	 * @param predicate the Predicate of the Atom
 	 * @param args the arguments to this Atom
 	 * @param value the Atom's truth value
 	 * @return the new RandomVariableAtom
 	 */
-	public synchronized RandomVariableAtom instantiateRandomVariableAtom(StandardPredicate p, Constant[] args, double value) {
-		QueryAtom key = new QueryAtom(p, args);
+	public synchronized RandomVariableAtom instantiateRandomVariableAtom(StandardPredicate predicate, Constant[] args, double value) {
+		QueryAtom key = new QueryAtom(predicate, args);
 
 		// Always check the cache before making new atoms.
 		if (cache.containsKey(key)) {
@@ -174,7 +178,7 @@ public class AtomCache {
 			return (RandomVariableAtom)cache.get(key);
 		}
 
-		RandomVariableAtom atom = new RandomVariableAtom(p, args, db, value);
+		RandomVariableAtom atom = new RandomVariableAtom(predicate, args, db, value);
 		cache.put(key, atom);
 
 		return atom;

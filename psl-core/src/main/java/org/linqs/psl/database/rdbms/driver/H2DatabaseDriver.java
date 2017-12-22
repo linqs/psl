@@ -20,6 +20,8 @@ package org.linqs.psl.database.rdbms.driver;
 import org.linqs.psl.model.term.ConstantType;
 
 import com.healthmarketscience.sqlbuilder.CreateTableQuery;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
@@ -38,6 +40,7 @@ public class H2DatabaseDriver implements DatabaseDriver {
 
 	// The connection to the H2 database
 	private final Connection dbConnection;
+	HikariDataSource dataSource;
 
 	/**
 	 * Constructor for the H2 database driver.
@@ -55,15 +58,28 @@ public class H2DatabaseDriver implements DatabaseDriver {
 		}
 
 		// Establish the connection to the specified DB type
+
+		String connectionString = null;
 		switch (dbType) {
-		case Disk:
-			this.dbConnection = getDiskDatabase(path);
-			break;
-		case Memory:
-			this.dbConnection = getMemoryDatabase(path);
-			break;
-		default:
-			throw new IllegalArgumentException("Unknown database type: " + dbType);
+			case Disk:
+				connectionString = "jdbc:h2:" + path;
+				break;
+			case Memory:
+				connectionString = "jdbc:h2:mem:" + path;
+				break;
+			default:
+				throw new IllegalArgumentException("Unknown database type: " + dbType);
+		}
+
+		try {
+			dbConnection = DriverManager.getConnection(connectionString);
+
+			// TEST
+			HikariConfig config = new HikariConfig();
+			config.setJdbcUrl(connectionString);
+			dataSource = new HikariDataSource(config);
+		} catch (SQLException e) {
+			throw new RuntimeException("Could not connect to database: " + path, e);
 		}
 
 		// Clear the database if specified
@@ -72,28 +88,27 @@ public class H2DatabaseDriver implements DatabaseDriver {
 		}
 	}
 
-	public Connection getDiskDatabase(String path) {
+	@Override
+	public void close() {
 		try {
-			return DriverManager.getConnection("jdbc:h2:" + path);
-		} catch (SQLException e) {
-			throw new RuntimeException("Could not connect to database: " + path, e);
+			dbConnection.close();
+			dataSource.close();
+		} catch (SQLException ex) {
+			throw new RuntimeException("Failed to close the database connector.");
 		}
 	}
 
-	public Connection getDiskDatabase(String path, String options) {
-		try {
-			return DriverManager.getConnection("jdbc:h2:" + path + options);
-		} catch (SQLException e) {
-			throw new RuntimeException(
-					"Could not connect to database: " + path, e);
-		}
+	@Override
+	public Connection getConnection() {
+		return dbConnection;
 	}
 
-	public Connection getMemoryDatabase(String path) {
+	// TEST
+	public Connection getNewConnection() {
 		try {
-			return DriverManager.getConnection("jdbc:h2:mem:" + path);
-		} catch (SQLException e) {
-			throw new RuntimeException("Could not connect to database: " + path, e);
+			return dataSource.getConnection();
+		} catch (SQLException ex) {
+			throw new RuntimeException("Failed to get connection from pool.", ex);
 		}
 	}
 
@@ -104,11 +119,6 @@ public class H2DatabaseDriver implements DatabaseDriver {
 		} catch (SQLException e) {
 			throw new RuntimeException("Could not clear database.", e);
 		}
-	}
-
-	@Override
-	public Connection getConnection() {
-		return dbConnection;
 	}
 
 	@Override

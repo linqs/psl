@@ -26,6 +26,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -50,7 +51,16 @@ public final class Parallel {
 		NUM_THREADS = Runtime.getRuntime().availableProcessors();
 		workerQueue = new LinkedBlockingQueue<Worker>(NUM_THREADS);
 		allWorkers = new ArrayList<Worker>(NUM_THREADS);
-		pool = Executors.newFixedThreadPool(NUM_THREADS);
+		// We will make all the threads daemons, so the JVM shutdown will not be held up.
+		pool = Executors.newFixedThreadPool(NUM_THREADS, new DaemonThreadFactory());
+
+		// Close the pool only at JVM shutdown.
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			@Override
+			public void run() {
+				Parallel.shutdown();
+			}
+		});
 	}
 
 	// Static only.
@@ -136,6 +146,21 @@ public final class Parallel {
 		workerQueue.clear();
 	}
 
+	 private static void shutdown() {
+		cleanupWorkers();
+
+		try {
+			pool.shutdownNow();
+			pool.awaitTermination(10, TimeUnit.SECONDS);
+		} catch (InterruptedException ex) {
+			// Do nothing, we are shutting down anyways.
+		}
+
+		workerQueue = null;
+		allWorkers = null;
+		pool = null;
+	 }
+
 	/**
 	 * Signal that a worker is done and ready for more work.
 	 */
@@ -211,5 +236,20 @@ public final class Parallel {
 		 * The index is the item's index in the collection.
 		 */
 		public abstract void work(int index, T item);
+	}
+
+	private static class DaemonThreadFactory implements ThreadFactory {
+		private ThreadFactory defaultThreadFactory;
+
+		public DaemonThreadFactory() {
+			this.defaultThreadFactory = Executors.defaultThreadFactory();
+		}
+
+		@Override
+		public Thread newThread(Runnable r) {
+			Thread thread = defaultThreadFactory.newThread(r);
+			thread.setDaemon(true);
+			return thread;
+		}
 	}
 }

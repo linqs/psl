@@ -54,16 +54,15 @@ public class PostgreSQLDriver implements DatabaseDriver {
 
 	public PostgreSQLDriver(String connectionString, String databaseName, boolean clearDatabase) {
 		try {
+			// TEST(eriq): tighten scope
 			// TEST(eriq): Use the new driver.
 			Class.forName("org.postgresql.Driver");
 
 			// TEST
 			dbConnection = DriverManager.getConnection(connectionString);
-			/* TEST
 			HikariConfig config = new HikariConfig();
 			config.setJdbcUrl(connectionString);
 			dataSource = new HikariDataSource(config);
-			*/
 
 			if (clearDatabase) {
 				executeUpdate("DROP SCHEMA public CASCADE");
@@ -78,11 +77,22 @@ public class PostgreSQLDriver implements DatabaseDriver {
 	}
 
 	@Override
+	public void close() {
+		try {
+			dbConnection.close();
+			dataSource.close();
+		} catch (SQLException ex) {
+			throw new RuntimeException("Failed to close the database connector.");
+		}
+	}
+
+	@Override
 	public Connection getConnection() {
 		// TEST
 		return dbConnection;
 	}
 
+	// TEST
 	public Connection getNewConnection() {
 		try {
 			return dataSource.getConnection();

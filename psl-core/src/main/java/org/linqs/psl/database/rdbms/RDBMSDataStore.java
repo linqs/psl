@@ -74,7 +74,7 @@ public class RDBMSDataStore implements DataStore {
 	/**
 	 * This Database Driver associated to the datastore.
 	 */
-	private final DatabaseDriver dbDriver;
+	private DatabaseDriver dbDriver;
 
 	/**
 	 * Metadata
@@ -241,12 +241,15 @@ public class RDBMSDataStore implements DataStore {
 	public void close() {
 		openDataStores.remove(this);
 
-		if (!openDatabases.isEmpty())
+		if (!openDatabases.isEmpty()) {
 			throw new IllegalStateException("Cannot close data store when databases are still open!");
-		try {
-			connection.close();
-		} catch (SQLException e) {
-			throw new RuntimeException("Could not close database.", e);
+		}
+
+		if (dbDriver != null) {
+			// TEST
+			// connection.close();
+			dbDriver.close();
+			dbDriver = null;
 		}
 	}
 
@@ -292,6 +295,8 @@ public class RDBMSDataStore implements DataStore {
 		// TEST
 		if (dbDriver instanceof org.linqs.psl.database.rdbms.driver.PostgreSQLDriver) {
 			return ((org.linqs.psl.database.rdbms.driver.PostgreSQLDriver)dbDriver).getNewConnection();
+		} else if (dbDriver instanceof org.linqs.psl.database.rdbms.driver.H2DatabaseDriver) {
+			return ((org.linqs.psl.database.rdbms.driver.H2DatabaseDriver)dbDriver).getNewConnection();
 		} else {
 			return dbDriver.getConnection();
 		}

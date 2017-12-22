@@ -25,6 +25,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 
 public interface DatabaseDriver {
+	/**
+	 * Close out any outstanding connections and cleanup.
+	 */
+	public void close();
 
 	/**
 	 * Returns a connection to the database. Database drivers are expected to

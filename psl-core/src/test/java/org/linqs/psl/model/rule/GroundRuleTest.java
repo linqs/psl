@@ -102,6 +102,12 @@ public class GroundRuleTest {
 		initModel(true);
 	}
 
+	@After
+	public void cleanup() {
+		database.close();
+		model.dataStore.close();
+	}
+
 	private void initModel(boolean useNice) {
 		initModel(useNice, false);
 	}
@@ -1610,11 +1616,5 @@ public class GroundRuleTest {
 		);
 		rule.groundAll(manager, store);
 		PSLTest.compareGroundRules(expected, rule, store);
-	}
-
-	@After
-	public void cleanup() {
-		database.close();
-		model.dataStore.close();
 	}
 }
