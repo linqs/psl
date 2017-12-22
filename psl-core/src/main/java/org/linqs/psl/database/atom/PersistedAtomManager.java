@@ -65,6 +65,10 @@ public class PersistedAtomManager extends AtomManager {
 		for (StandardPredicate predicate : db.getRegisteredPredicates()) {
 			// Ignore any closed predicates, they will not return RandomVariableAtoms
 			if (db.isClosed(predicate)) {
+				// Make the database cache all the atoms from the closed predicates,
+				// but don't do anything with them now.
+				db.getAllGroundAtoms(predicate);
+
 				continue;
 			}
 

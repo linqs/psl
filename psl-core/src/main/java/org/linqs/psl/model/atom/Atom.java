@@ -51,6 +51,12 @@ public abstract class Atom implements Formula, SummationAtomOrAtom {
 	protected final int hashcode;
 
 	/**
+	 * The hashcode of the original argument array.
+	 * Since Terms are immutable, we can use this to shortcut deep equality checks.
+	 */
+	private int originArgumentsHashcode;
+
+	/**
 	 * Type mismatches will throw an exception unless
 	 * the types are trivially convertable like UniqueIntID and IntegerAttribute.
 	 */
@@ -59,6 +65,7 @@ public abstract class Atom implements Formula, SummationAtomOrAtom {
 		arguments = Arrays.copyOf(args, args.length);
 		validate();
 		hashcode = new HashCodeBuilder().append(predicate).append(arguments).toHashCode();
+		originArgumentsHashcode = Arrays.hashCode(args);
 	}
 
 	/**
@@ -270,7 +277,8 @@ public abstract class Atom implements Formula, SummationAtomOrAtom {
 
 		// First check the hashcode to reduce the time we have to do a deepEquals() on the arguments.
 		// Note that the hashcode is not perfect, but provides a quick insurance on inequality.
-		return hashCode() == other.hashCode() && predicate.equals(other.predicate) && Arrays.deepEquals(arguments, other.arguments);
+		return hashCode() == other.hashCode() && predicate.equals(other.predicate) &&
+				(this.originArgumentsHashcode == other.originArgumentsHashcode || Arrays.deepEquals(arguments, other.arguments));
 	}
 
 	@Override
