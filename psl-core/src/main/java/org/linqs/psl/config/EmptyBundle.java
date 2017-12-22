@@ -17,6 +17,8 @@
  */
 package org.linqs.psl.config;
 
+import org.linqs.psl.util.Objects;
+
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.List;
@@ -39,7 +41,7 @@ public class EmptyBundle implements ConfigBundle {
 	@Override
 	public void clear() { }
 
-    	@Override
+	 	@Override
 	public Object getProperty(String key){
 		throw new UnsupportedOperationException();
 	}
@@ -151,6 +153,13 @@ public class EmptyBundle implements ConfigBundle {
 
 	@Override
 	public Object getNewObject(String key, String defaultValue) {
-		return ConfigManager.getNewObject(this, key, defaultValue);
+		String className = getString(key, defaultValue);
+
+		// It is not unusual for someone to want no object if the key does not exist.
+		if (className == null) {
+			return null;
+		}
+
+		return Objects.newObject(className, this);
 	}
 }

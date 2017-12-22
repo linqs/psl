@@ -86,6 +86,7 @@ public class RDBMSDatabase implements Database {
 	/**
 	 * The connection to the JDBC database
 	 */
+	// TODO(eriq): TEST
 	private final Connection connection;
 
 	/**
@@ -596,14 +597,29 @@ public class RDBMSDatabase implements Database {
 		}
 
 		Term[] arguments = atom.getArguments();
+
+		// TEST
 		PreparedStatement statement = getAtomQuery(predicates.get(atom.getPredicate()));
+		/*
+		Connection conn = parentDataStore.getConnection();
+		PreparedStatement statement = predicates.get(atom.getPredicate()).createQueryStatement(conn, readIDs);
+		*/
 
 		try {
 			for (int i = 0; i < arguments.length; i++) {
 				setAtomArgument(statement, arguments[i], i + 1);
 			}
 
-			return statement.executeQuery();
+			ResultSet rtn = statement.executeQuery();
+
+			// TODO(eriq): HERE
+			// The result set needs the stmt/connection to stay open, but we want to close it for pooling.
+			/* TEST
+			statement.close();
+			conn.close();
+			*/
+
+			return rtn;
 		} catch (SQLException ex) {
 			throw new RuntimeException("Error querying DB for atom.", ex);
 		}
@@ -645,14 +661,25 @@ public class RDBMSDatabase implements Database {
 	 * @param create Create an atom if one does not exist.
 	 */
 	private GroundAtom getAtom(StandardPredicate predicate, boolean create, Constant... arguments) {
-		// Ensure this database has this predicate.
-		getPredicateInfo(predicate);
-
 		QueryAtom queryAtom = new QueryAtom(predicate, arguments);
 		GroundAtom result = cache.getCachedAtom(queryAtom);
 		if (result != null) {
 			return result;
 		}
+
+		return fetchAtom(predicate, create, arguments);
+	}
+
+	/**
+	 * Get an atom from the database and put it in the cache.
+	 */
+	// TEST(eriq): sync
+	private synchronized GroundAtom fetchAtom(StandardPredicate predicate, boolean create, Constant... arguments) {
+		// Ensure this database has this predicate.
+		getPredicateInfo(predicate);
+
+		QueryAtom queryAtom = new QueryAtom(predicate, arguments);
+		GroundAtom result = null;
 
 		try (ResultSet resultSet = queryDBForAtom(queryAtom)) {
 			if (resultSet.next()) {

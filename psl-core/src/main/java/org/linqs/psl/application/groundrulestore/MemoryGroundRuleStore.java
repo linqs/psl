@@ -29,9 +29,10 @@ import com.google.common.collect.Iterables;
 /**
  * A simple {@link GroundRuleStore} that just stores each {@link GroundRule}
  * in memory.
+ * addGroundRule() is thread-safe and will silently ignore already added rules.
+ * Other methods are not guaranteed safe.
  */
 public class MemoryGroundRuleStore implements GroundRuleStore {
-
 	protected SetValuedMap<Rule, GroundRule> groundRules;
 
 	public MemoryGroundRuleStore() {
@@ -39,10 +40,8 @@ public class MemoryGroundRuleStore implements GroundRuleStore {
 	}
 
 	@Override
-	public void addGroundRule(GroundRule groundRule) {
-		if (!groundRules.put(groundRule.getRule(), groundRule)) {
-			throw new IllegalArgumentException("GroundRule has already been added: " + groundRule);
-		}
+	public synchronized void addGroundRule(GroundRule groundRule) {
+		groundRules.put(groundRule.getRule(), groundRule);
 	}
 
 	@Override
@@ -83,6 +82,11 @@ public class MemoryGroundRuleStore implements GroundRuleStore {
 	@Override
 	public int size() {
 		return groundRules.size();
+	}
+
+	@Override
+	public int count(Rule rule) {
+		return groundRules.get(rule).size();
 	}
 
 	@Override

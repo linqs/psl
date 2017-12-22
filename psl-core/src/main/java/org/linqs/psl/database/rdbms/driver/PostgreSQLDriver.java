@@ -21,6 +21,8 @@ import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.model.term.ConstantType;
 
 import com.healthmarketscience.sqlbuilder.CreateTableQuery;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
@@ -38,8 +40,9 @@ public class PostgreSQLDriver implements DatabaseDriver {
 	public static final String DEFAULT_HOST = "localhost";
 	public static final String DEFAULT_PORT = "5432";
 
-	// The connection to PostgreSQL
+	// TEST(eriq): Abstract class that uses the pool.
 	private final Connection dbConnection;
+	HikariDataSource dataSource;
 
 	public PostgreSQLDriver(String databaseName, boolean clearDatabase) {
 		this(DEFAULT_HOST, DEFAULT_PORT, databaseName, clearDatabase);
@@ -51,8 +54,16 @@ public class PostgreSQLDriver implements DatabaseDriver {
 
 	public PostgreSQLDriver(String connectionString, String databaseName, boolean clearDatabase) {
 		try {
+			// TEST(eriq): Use the new driver.
 			Class.forName("org.postgresql.Driver");
+
+			// TEST
 			dbConnection = DriverManager.getConnection(connectionString);
+			/* TEST
+			HikariConfig config = new HikariConfig();
+			config.setJdbcUrl(connectionString);
+			dataSource = new HikariDataSource(config);
+			*/
 
 			if (clearDatabase) {
 				executeUpdate("DROP SCHEMA public CASCADE");
@@ -68,7 +79,16 @@ public class PostgreSQLDriver implements DatabaseDriver {
 
 	@Override
 	public Connection getConnection() {
+		// TEST
 		return dbConnection;
+	}
+
+	public Connection getNewConnection() {
+		try {
+			return dataSource.getConnection();
+		} catch (SQLException ex) {
+			throw new RuntimeException("Failed to get connection from pool.", ex);
+		}
 	}
 
 	@Override
@@ -135,8 +155,7 @@ public class PostgreSQLDriver implements DatabaseDriver {
 	}
 
 	private void executeUpdate(String query) throws SQLException {
-		Statement stmt = null;
-		stmt = dbConnection.createStatement();
+		Statement stmt = dbConnection.createStatement();
 		stmt.executeUpdate(query);
 		stmt.close();
 	}

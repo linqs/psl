@@ -17,9 +17,6 @@
  */
 package org.linqs.psl.model.atom;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
@@ -27,17 +24,23 @@ import org.linqs.psl.model.term.Constant;
 
 import com.google.common.collect.Iterables;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Storage for {@link GroundAtom GroundAtoms} so that a {@link Database}
  * always returns the same object for a GroundAtom.
- * <p>
+ *
  * Also serves as the factory for GroundAtoms for a Database.
+ *
+ * This is thread-safe.
  */
 public class AtomCache {
-
 	protected final Database db;
 
 	protected final Map<QueryAtom, GroundAtom> cache;
+
 	/**
 	 * Constructs a new AtomCache for a Database.
 	 *
@@ -45,7 +48,7 @@ public class AtomCache {
 	 */
 	public AtomCache(Database db) {
 		this.db = db;
-		this.cache = new HashMap<QueryAtom, GroundAtom>();
+		this.cache = Collections.synchronizedMap(new HashMap<QueryAtom, GroundAtom>());
 	}
 
 	/**
@@ -55,14 +58,14 @@ public class AtomCache {
 	 * @param atom QueryAtom with all {@link Constant GroundTerms}
 	 * @return the requested GroundAtom, or NULL if it is not cached
 	 */
-	public GroundAtom getCachedAtom(QueryAtom atom) {
+	public synchronized GroundAtom getCachedAtom(QueryAtom atom) {
 		return cache.get(atom);
 	}
 
 	/**
 	 * @return all GroundAtoms in this AtomCache
 	 */
-	public Iterable<GroundAtom> getCachedAtoms() {
+	public synchronized Iterable<GroundAtom> getCachedAtoms() {
 		return cache.values();
 	}
 
@@ -72,7 +75,7 @@ public class AtomCache {
 	 * @param p the Predicate of Atoms to return
 	 * @return the cached Atoms
 	 */
-	public Iterable<GroundAtom> getCachedAtoms(final Predicate p) {
+	public synchronized Iterable<GroundAtom> getCachedAtoms(final Predicate p) {
 		return Iterables.filter(cache.values(), new com.google.common.base.Predicate<GroundAtom>() {
 			@Override
 			public boolean apply(GroundAtom atom) {
@@ -86,25 +89,26 @@ public class AtomCache {
 	 * @param qAtom the Atom to remove
 	 * @return whether an atom was removed from the cache
 	 */
-	public boolean removeCachedAtom(QueryAtom qAtom) {
-		if(cache.containsKey(qAtom)){
+	public synchronized boolean removeCachedAtom(QueryAtom qAtom) {
+		if (cache.containsKey(qAtom)) {
 			cache.remove(qAtom);
 			return true;
 		}
+
 		return false;
 	}
 
 	/**
 	 * @return all ObservedAtoms in this AtomCache
 	 */
-	public Iterable<ObservedAtom> getCachedObservedAtoms() {
+	public synchronized Iterable<ObservedAtom> getCachedObservedAtoms() {
 		return Iterables.filter(cache.values(), ObservedAtom.class);
 	}
 
 	/**
 	 * @return all RandomVariableAtoms in this AtomCache
 	 */
-	public Iterable<RandomVariableAtom> getCachedRandomVariableAtoms() {
+	public synchronized Iterable<RandomVariableAtom> getCachedRandomVariableAtoms() {
 		return Iterables.filter(cache.values(), RandomVariableAtom.class);
 	}
 
@@ -123,8 +127,7 @@ public class AtomCache {
 	 * @param value the Atom's truth value
 	 * @return the new ObservedAtom
 	 */
-	public ObservedAtom instantiateObservedAtom(Predicate p, Constant[] args,
-			double value) {
+	public synchronized ObservedAtom instantiateObservedAtom(Predicate p, Constant[] args, double value) {
 		QueryAtom key = new QueryAtom(p, args);
 
 		// Always check the cache before making new atoms.
@@ -158,8 +161,7 @@ public class AtomCache {
 	 * @param value the Atom's truth value
 	 * @return the new RandomVariableAtom
 	 */
-	public RandomVariableAtom instantiateRandomVariableAtom(StandardPredicate p,
-			Constant[] args, double value) {
+	public synchronized RandomVariableAtom instantiateRandomVariableAtom(StandardPredicate p, Constant[] args, double value) {
 		QueryAtom key = new QueryAtom(p, args);
 
 		// Always check the cache before making new atoms.

@@ -37,6 +37,8 @@ import java.util.Set;
  * at instantiation.
  *
  * All other types of Atoms are returned normally.
+ *
+ * getAtom() is thread-safe.
  */
 public class PersistedAtomManager extends AtomManager {
 	/**

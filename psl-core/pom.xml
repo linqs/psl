@@ -100,6 +100,11 @@
 			<artifactId>sqlbuilder</artifactId>
 			<version>2.1.7</version>
 		</dependency>
+		<dependency>
+			<groupId>com.zaxxer</groupId>
+			<artifactId>HikariCP-java7</artifactId>
+			<version>2.4.13</version>
+		</dependency>
 
 		<!-- miscellaneous dependencies -->
 		<dependency>

@@ -110,6 +110,7 @@ public class RDBMSDataStore implements DataStore {
 		this.dbDriver = dbDriver;
 
 		// Connect to the database
+		// TEST(eriq)
 		this.connection = dbDriver.getConnection();
 
 		// Set up the data loader
@@ -285,6 +286,15 @@ public class RDBMSDataStore implements DataStore {
 
 	public DatabaseDriver getDriver() {
 		return dbDriver;
+	}
+
+	public Connection getConnection() {
+		// TEST
+		if (dbDriver instanceof org.linqs.psl.database.rdbms.driver.PostgreSQLDriver) {
+			return ((org.linqs.psl.database.rdbms.driver.PostgreSQLDriver)dbDriver).getNewConnection();
+		} else {
+			return dbDriver.getConnection();
+		}
 	}
 
 	public static Set<RDBMSDataStore> getOpenDataStores() {

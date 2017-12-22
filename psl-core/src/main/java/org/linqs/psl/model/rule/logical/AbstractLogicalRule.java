@@ -38,6 +38,7 @@ import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.FunctionTerm;
 import org.linqs.psl.reasoner.function.FunctionVariable;
+import org.linqs.psl.util.Parallel;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -126,23 +127,46 @@ public abstract class AbstractLogicalRule implements Rule {
 	}
 
 	public void groundAll(ResultList groundVariables, AtomManager atomManager, GroundRuleStore grs) {
-		int numGrounded = groundFormula(atomManager, grs, groundVariables);
-		log.debug("Grounded {} instances of rule {}", numGrounded, this);
+		int initialCount = grs.count(this);
+		Parallel.count(groundVariables.size(), new GroundWorker(atomManager, grs, groundVariables));
+		log.debug("Grounded {} instances of rule {}", grs.count(this) - initialCount, this);
 	}
 
-	protected int groundFormula(AtomManager atomManager, GroundRuleStore grs, ResultList res) {
-		int numGroundingsAdded = 0;
-		List<GroundAtom> posLiterals = new ArrayList<GroundAtom>(4);
-		List<GroundAtom> negLiterals = new ArrayList<GroundAtom>(4);
+	private class GroundWorker extends Parallel.Worker<Object> {
+		private List<GroundAtom> posLiterals;
+		private List<GroundAtom> negLiterals;
+		private Map<FunctionVariable, Double> worstCaseValues;
 
-		// Uses these to check worst-case truth value.
-		Map<FunctionVariable, Double> worstCaseValues = new HashMap<FunctionVariable, Double>(8);
-		double worstCaseValue;
+		private AtomManager atomManager;
+		private GroundRuleStore grs;
+		private ResultList res;
 
-		GroundAtom atom;
-		for (int i = 0; i < res.size(); i++) {
+		public GroundWorker(AtomManager atomManager, GroundRuleStore grs, ResultList res) {
+			this.atomManager = atomManager;
+			this.grs = grs;
+			this.res = res;
+		}
+
+		@Override
+		public void init(int id) {
+			super.init(id);
+
+			posLiterals = new ArrayList<GroundAtom>(4);
+			negLiterals = new ArrayList<GroundAtom>(4);
+			worstCaseValues = new HashMap<FunctionVariable, Double>(8);
+		}
+
+		@Override
+		public Object clone() {
+			return new GroundWorker(atomManager, grs, res);
+		}
+
+		@Override
+		public void work(int index, Object ignore) {
+			GroundAtom atom = null;
+
 			for (int j = 0; j < negatedDNF.getPosLiterals().size(); j++) {
-				atom = ((QueryAtom)negatedDNF.getPosLiterals().get(j)).ground(atomManager, res, i);
+				atom = ((QueryAtom)negatedDNF.getPosLiterals().get(j)).ground(atomManager, res, index);
 				if (atom instanceof RandomVariableAtom) {
 					worstCaseValues.put(atom.getVariable(), 1.0);
 				} else {
@@ -153,7 +177,7 @@ public abstract class AbstractLogicalRule implements Rule {
 			}
 
 			for (int j = 0; j < negatedDNF.getNegLiterals().size(); j++) {
-				atom = ((QueryAtom)negatedDNF.getNegLiterals().get(j)).ground(atomManager, res, i);
+				atom = ((QueryAtom)negatedDNF.getNegLiterals().get(j)).ground(atomManager, res, index);
 				if (atom instanceof RandomVariableAtom) {
 					worstCaseValues.put(atom.getVariable(), 0.0);
 				} else {
@@ -166,20 +190,16 @@ public abstract class AbstractLogicalRule implements Rule {
 			AbstractGroundLogicalRule groundRule = groundFormulaInstance(posLiterals, negLiterals);
 			FunctionTerm function = groundRule.getFunction();
 
-			worstCaseValue = function.getValue(worstCaseValues, false);
+			double worstCaseValue = function.getValue(worstCaseValues, false);
 			if (worstCaseValue > NumericUtilities.strictEpsilon
-					&& (!function.isConstant() || !(groundRule instanceof WeightedGroundRule))
-					&& !grs.containsGroundRule(groundRule)) {
+					&& (!function.isConstant() || !(groundRule instanceof WeightedGroundRule))) {
 				grs.addGroundRule(groundRule);
-				numGroundingsAdded++;
 			}
 
 			posLiterals.clear();
 			negLiterals.clear();
 			worstCaseValues.clear();
 		}
-
-		return numGroundingsAdded;
 	}
 
 	@Override
