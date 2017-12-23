@@ -42,12 +42,12 @@ public class DataStoreMetadata {
 	public static final String PARTITION_NAMESPACE = "partition";
 	public static final String NAME_KEY = "name";
 
-	private Connection conn;
+	private RDBMSDataStore dataStore;
 	private Map<String, Integer> partitions;
 	private int nextPartition;
 
-	public DataStoreMetadata(Connection conn) {
-		this.conn = conn;
+	public DataStoreMetadata(RDBMSDataStore dataStore) {
+		this.dataStore = dataStore;
 		initialize();
 		partitions = fetchPartitions();
 
@@ -73,7 +73,10 @@ public class DataStoreMetadata {
 		sql.add("  PRIMARY KEY(namespace, keytype, keyvalue)");
 		sql.add(")");
 
-		try (PreparedStatement statement = conn.prepareStatement(StringUtils.join(sql, "\n"))) {
+		try (
+			Connection connection = dataStore.getConnection();
+			PreparedStatement statement = connection.prepareStatement(StringUtils.join(sql, "\n"));
+		) {
 			statement.execute();
 		} catch (SQLException ex) {
 			throw new RuntimeException("Error creating metadata table.", ex);
@@ -81,7 +84,10 @@ public class DataStoreMetadata {
 	}
 
 	private boolean exists() {
-		try (ResultSet resultSet = conn.getMetaData().getTables(null, null, METADATA_TABLENAME, null)) {
+		try (
+			Connection connection = dataStore.getConnection();
+			ResultSet resultSet = connection.getMetaData().getTables(null, null, METADATA_TABLENAME, null);
+		) {
 			if (resultSet.next()) {
 				return true;
 			}
@@ -93,7 +99,10 @@ public class DataStoreMetadata {
 	}
 
 	private void addRow(String namespace, String type, String keyvalue, String val) {
-		try (PreparedStatement statement = conn.prepareStatement("INSERT INTO " + METADATA_TABLENAME + " VALUES(?, ?, ?, ?)")) {
+		try (
+			Connection connection = dataStore.getConnection();
+			PreparedStatement statement = connection.prepareStatement("INSERT INTO " + METADATA_TABLENAME + " VALUES(?, ?, ?, ?)");
+		) {
 			statement.setString(1, namespace);
 			statement.setString(2, type);
 			statement.setString(3, keyvalue);
@@ -114,7 +123,10 @@ public class DataStoreMetadata {
 		sql.add("  AND keyvalue = ?");
 
 		ResultSet resultSet = null;
-		try (PreparedStatement statement = conn.prepareStatement(StringUtils.join(sql, "\n"))) {
+		try (
+			Connection connection = dataStore.getConnection();
+			PreparedStatement statement = connection.prepareStatement(StringUtils.join(sql, "\n"));
+		) {
 			statement.setString(1, namespace);
 			statement.setString(2, type);
 			statement.setString(3, keyvalue);
@@ -148,7 +160,10 @@ public class DataStoreMetadata {
 		sql.add("  AND keytype = ?");
 		sql.add("  AND keyvalue = ?");
 
-		try (PreparedStatement statement = conn.prepareStatement(StringUtils.join(sql, "\n"))) {
+		try (
+			Connection connection = dataStore.getConnection();
+			PreparedStatement statement = connection.prepareStatement(StringUtils.join(sql, "\n"));
+		) {
 			statement.setString(1, namespace);
 			statement.setString(2, type);
 			statement.setString(3, keyvalue);
@@ -169,7 +184,10 @@ public class DataStoreMetadata {
 		ResultSet resultSet = null;
 		Map<String, String> vals = new HashMap<String,String>();
 
-		try (PreparedStatement statement = conn.prepareStatement(StringUtils.join(sql, "\n"))) {
+		try (
+			Connection connection = dataStore.getConnection();
+			PreparedStatement statement = connection.prepareStatement(StringUtils.join(sql, "\n"));
+		) {
 			statement.setString(1, namespace);
 			statement.setString(2, type);
 			statement.execute();

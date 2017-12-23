@@ -98,26 +98,7 @@ public class PredicateInfo {
 	 * You can specify no partitions with null or an empty list.
 	 */
 	public PreparedStatement createCountAllStatement(Connection connection, List<Integer> partitions) {
-		SelectQuery query = new SelectQuery();
-
-		query.addCustomColumns(new CustomSql("COUNT(*)"));
-		query.addCustomFromTable(tableName);
-
-		// If there is only 1 partition, just do equality, otherwise use IN.
-		// All DBMSs should optimize a single IN the same as equality, but just in case.
-		if (partitions != null && partitions.size() > 0) {
-			if (partitions.size() == 1) {
-				query.addCondition(BinaryCondition.equalTo(new CustomSql(PARTITION_COLUMN_NAME), partitions.get(0)));
-			} else {
-				query.addCondition(new InCondition(new CustomSql(PARTITION_COLUMN_NAME), partitions));
-			}
-		}
-
-		try {
-			return connection.prepareStatement(query.validate().toString());
-		} catch (SQLException ex) {
-			throw new RuntimeException("Could not create prepared statement.", ex);
-		}
+		return prepareSQL(connection, buildCountAllStatement(partitions));
 	}
 
 	/**
@@ -126,32 +107,7 @@ public class PredicateInfo {
 	 * The columns will ALWAYS be in the following order: partition, value, data columns (determined by getArgumentColumns()).
 	 */
 	public PreparedStatement createQueryAllStatement(Connection connection, List<Integer> partitions) {
-		SelectQuery query = new SelectQuery();
-
-		// Select everything in a predictable order.
-		query.addCustomColumns(new CustomSql(PARTITION_COLUMN_NAME));
-		query.addCustomColumns(new CustomSql(VALUE_COLUMN_NAME));
-		for (String colName : argCols) {
-			query.addCustomColumns(new CustomSql(colName));
-		}
-
-		query.addCustomFromTable(tableName);
-
-		// If there is only 1 partition, just do equality, otherwise use IN.
-		// All DBMSs should optimize a single IN the same as equality, but just in case.
-		if (partitions != null && partitions.size() > 0) {
-			if (partitions.size() == 1) {
-				query.addCondition(BinaryCondition.equalTo(new CustomSql(PARTITION_COLUMN_NAME), partitions.get(0)));
-			} else {
-				query.addCondition(new InCondition(new CustomSql(PARTITION_COLUMN_NAME), partitions));
-			}
-		}
-
-		try {
-			return connection.prepareStatement(query.validate().toString());
-		} catch (SQLException ex) {
-			throw new RuntimeException("Could not create prepared statement.", ex);
-		}
+		return prepareSQL(connection, buildQueryAllStatement(partitions));
 	}
 
 	/**
@@ -170,13 +126,7 @@ public class PredicateInfo {
 	 * The variables left to set in the query are the predciate arguments.
 	 */
 	public PreparedStatement createQueryStatement(Connection connection, List<Integer> readPartitions) {
-		String query = buildQueryStatement(readPartitions);
-
-		try {
-			return connection.prepareStatement(query);
-		} catch (SQLException ex) {
-			throw new RuntimeException("Could not create prepared statement.", ex);
-		}
+		return prepareSQL(connection, buildQueryStatement(readPartitions));
 	}
 
 	/**
@@ -184,23 +134,7 @@ public class PredicateInfo {
 	 * The variables left to set in the query are the partition, value, and predciate arguments.
 	 */
 	public PreparedStatement createUpsertStatement(Connection connection, DatabaseDriver dbDriver) {
-		// Columns with data in them: partition, value, argument.
-		String[] columns = new String[2 + argCols.size()];
-
-		// Columns to treat as a key: partition, arguments.
-		String[] keyColumns = new String[1 + argCols.size()];
-
-		columns[0] = PredicateInfo.PARTITION_COLUMN_NAME;
-		columns[1] = PredicateInfo.VALUE_COLUMN_NAME;
-
-		keyColumns[0] = PredicateInfo.PARTITION_COLUMN_NAME;
-
-		for (int i = 0; i < argCols.size(); i++) {
-			columns[2 + i] = argCols.get(i);
-			keyColumns[1 + i] = argCols.get(i);
-		}
-
-		return dbDriver.getUpsert(connection, tableName, columns, keyColumns);
+		return prepareSQL(connection, buildUpsertStatement(dbDriver));
 	}
 
 	/**
@@ -208,38 +142,14 @@ public class PredicateInfo {
 	 * Note that we will only delete from the write partition.
 	 */
 	public PreparedStatement createDeleteStatement(Connection connection, int writePartition) {
-		DeleteQuery delete = new DeleteQuery(tableName);
-		QueryPreparer.MultiPlaceHolder placeHolder = (new QueryPreparer()).getNewMultiPlaceHolder();
-
-		// Only delete in the write partition.
-		delete.addCondition(BinaryCondition.equalTo(new CustomSql(PARTITION_COLUMN_NAME), writePartition));
-
-		// Set placeholders for the arguments.
-		for (String colName : argCols) {
-			delete.addCondition(BinaryCondition.equalTo(new CustomSql(colName), placeHolder));
-		}
-
-		try {
-			return connection.prepareStatement(delete.toString());
-		} catch (SQLException ex) {
-			throw new RuntimeException("Could not prepare delete for " + tableName, ex);
-		}
+		return prepareSQL(connection, buildDeleteStatement(writePartition));
 	}
 
 	/**
 	 * Create a prepared statement that changes moves atoms from one partition to another.
 	 */
 	public PreparedStatement createPartitionMoveStatement(Connection connection, int oldPartition, int newPartition) {
-		UpdateQuery update = new UpdateQuery(tableName);
-
-		update.addCondition(BinaryCondition.equalTo(new CustomSql(PARTITION_COLUMN_NAME), oldPartition));
-		update.addCustomSetClause(new CustomSql(PARTITION_COLUMN_NAME), newPartition);
-
-		try {
-			return connection.prepareStatement(update.toString());
-		} catch (SQLException ex) {
-			throw new RuntimeException("Could not prepare update for " + tableName, ex);
-		}
+		return prepareSQL(connection, buildPartitionMoveStatement(oldPartition, newPartition));
 	}
 
 	private void createTable(Connection connection, DatabaseDriver dbDriver) {
@@ -366,10 +276,66 @@ public class PredicateInfo {
 		return predicates;
 	}
 
-	// TEST
-	// private String buildQueryStatement(List<Integer> readPartitions) {
-	public String buildQueryStatement(List<Integer> readPartitions) {
-		String key = readPartitions.toString();
+	private String buildCountAllStatement(List<Integer> partitions) {
+		String key = "countAll_" + partitions.toString();
+		if (cachedSQL.containsKey(key)) {
+			return cachedSQL.get(key);
+		}
+
+		SelectQuery query = new SelectQuery();
+
+		query.addCustomColumns(new CustomSql("COUNT(*)"));
+		query.addCustomFromTable(tableName);
+
+		// If there is only 1 partition, just do equality, otherwise use IN.
+		// All DBMSs should optimize a single IN the same as equality, but just in case.
+		if (partitions != null && partitions.size() > 0) {
+			if (partitions.size() == 1) {
+				query.addCondition(BinaryCondition.equalTo(new CustomSql(PARTITION_COLUMN_NAME), partitions.get(0)));
+			} else {
+				query.addCondition(new InCondition(new CustomSql(PARTITION_COLUMN_NAME), partitions));
+			}
+		}
+
+		String sql = query.validate().toString();
+		cachedSQL.put(key, sql);
+		return sql;
+	}
+
+	private String buildQueryAllStatement(List<Integer> partitions) {
+		String key = "queryAll_" + partitions.toString();
+		if (cachedSQL.containsKey(key)) {
+			return cachedSQL.get(key);
+		}
+
+		SelectQuery query = new SelectQuery();
+
+		// Select everything in a predictable order.
+		query.addCustomColumns(new CustomSql(PARTITION_COLUMN_NAME));
+		query.addCustomColumns(new CustomSql(VALUE_COLUMN_NAME));
+		for (String colName : argCols) {
+			query.addCustomColumns(new CustomSql(colName));
+		}
+
+		query.addCustomFromTable(tableName);
+
+		// If there is only 1 partition, just do equality, otherwise use IN.
+		// All DBMSs should optimize a single IN the same as equality, but just in case.
+		if (partitions != null && partitions.size() > 0) {
+			if (partitions.size() == 1) {
+				query.addCondition(BinaryCondition.equalTo(new CustomSql(PARTITION_COLUMN_NAME), partitions.get(0)));
+			} else {
+				query.addCondition(new InCondition(new CustomSql(PARTITION_COLUMN_NAME), partitions));
+			}
+		}
+
+		String sql = query.validate().toString();
+		cachedSQL.put(key, sql);
+		return sql;
+	}
+
+	private String buildQueryStatement(List<Integer> readPartitions) {
+		String key = "query_" + readPartitions.toString();
 		if (cachedSQL.containsKey(key)) {
 			return cachedSQL.get(key);
 		}
@@ -388,9 +354,82 @@ public class PredicateInfo {
 			query.addCondition(BinaryCondition.equalTo(new CustomSql(colName), placeHolder));
 		}
 
-		String queryString = query.validate().toString();
-		cachedSQL.put(key, queryString);
-		return queryString;
+		String sql = query.validate().toString();
+		cachedSQL.put(key, sql);
+		return sql;
+	}
+
+	private String buildUpsertStatement(DatabaseDriver dbDriver) {
+		String key = "upsert";
+		if (cachedSQL.containsKey(key)) {
+			return cachedSQL.get(key);
+		}
+
+		// Columns with data in them: partition, value, argument.
+		String[] columns = new String[2 + argCols.size()];
+
+		// Columns to treat as a key: partition, arguments.
+		String[] keyColumns = new String[1 + argCols.size()];
+
+		columns[0] = PredicateInfo.PARTITION_COLUMN_NAME;
+		columns[1] = PredicateInfo.VALUE_COLUMN_NAME;
+
+		keyColumns[0] = PredicateInfo.PARTITION_COLUMN_NAME;
+
+		for (int i = 0; i < argCols.size(); i++) {
+			columns[2 + i] = argCols.get(i);
+			keyColumns[1 + i] = argCols.get(i);
+		}
+
+		String sql = dbDriver.getUpsert(tableName, columns, keyColumns);
+		cachedSQL.put(key, sql);
+		return sql;
+	}
+
+	private String buildDeleteStatement(int writePartition) {
+		String key = "delete_" + writePartition;
+		if (cachedSQL.containsKey(key)) {
+			return cachedSQL.get(key);
+		}
+
+		DeleteQuery delete = new DeleteQuery(tableName);
+		QueryPreparer.MultiPlaceHolder placeHolder = (new QueryPreparer()).getNewMultiPlaceHolder();
+
+		// Only delete in the write partition.
+		delete.addCondition(BinaryCondition.equalTo(new CustomSql(PARTITION_COLUMN_NAME), writePartition));
+
+		// Set placeholders for the arguments.
+		for (String colName : argCols) {
+			delete.addCondition(BinaryCondition.equalTo(new CustomSql(colName), placeHolder));
+		}
+
+		String sql = delete.validate().toString();
+		cachedSQL.put(key, sql);
+		return sql;
+	}
+
+	private String buildPartitionMoveStatement(int oldPartition, int newPartition) {
+		String key = "movePartition_" + oldPartition + "_" + newPartition;
+		if (cachedSQL.containsKey(key)) {
+			return cachedSQL.get(key);
+		}
+
+		UpdateQuery update = new UpdateQuery(tableName);
+
+		update.addCondition(BinaryCondition.equalTo(new CustomSql(PARTITION_COLUMN_NAME), oldPartition));
+		update.addCustomSetClause(new CustomSql(PARTITION_COLUMN_NAME), newPartition);
+
+		String sql = update.validate().toString();
+		cachedSQL.put(key, sql);
+		return sql;
+	}
+
+	private PreparedStatement prepareSQL(Connection connection, String sql) {
+		try {
+			return connection.prepareStatement(sql);
+		} catch (SQLException ex) {
+			throw new RuntimeException("Could not create prepared statement from (" + sql + ").", ex);
+		}
 	}
 
 	/**

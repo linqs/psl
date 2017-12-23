@@ -24,6 +24,10 @@ import com.healthmarketscience.sqlbuilder.CreateTableQuery;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 
+/**
+ * An interface to a specific RDBMS backend.
+ * All connections from drivers should be from thread-safe connection pools.
+ */
 public interface DatabaseDriver {
 	/**
 	 * Close out any outstanding connections and cleanup.
@@ -31,8 +35,11 @@ public interface DatabaseDriver {
 	public void close();
 
 	/**
-	 * Returns a connection to the database. Database drivers are expected to
-	 * fully connect at instantiation (i.e. in the constructor).
+	 * Returns a connection to the database.
+	 * Database drivers are expected to fully connect at instantiation (i.e. in the constructor).
+	 * Implementation are expected to use connection pools.
+	 * The connections retutned from this methods should be safe to close() without significant performance impact.
+	 *
 	 * @return the connection to the database, as specified in the DatabaseDriver constructor
 	 */
 	public Connection getConnection();
@@ -61,14 +68,13 @@ public interface DatabaseDriver {
 	public String getDoubleTypeName();
 
 	/**
-	 * Get a PreparedStatement for an upsert (merge) on the specified table and columns.
+	 * Get the SQL for an upsert (merge) on the specified table and columns.
 	 * An "upsert" updates existing records and inserts where there is no record.
 	 * Most RDBMSs support some for of upsert, but the syntax is inconsistent.
 	 * The parameters for the statement should the the specified columns in order.
 	 * Some databases (like H2) require knowing the key columns we need to use.
 	 */
-	public PreparedStatement getUpsert(Connection connection, String tableName,
-			String[] columns, String[] keyColumns);
+	public String getUpsert(String tableName, String[] columns, String[] keyColumns);
 
 	/**
 	 * Gives the driver a chance to perform any final

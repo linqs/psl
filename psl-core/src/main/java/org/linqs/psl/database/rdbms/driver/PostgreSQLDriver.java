@@ -19,6 +19,7 @@ package org.linqs.psl.database.rdbms.driver;
 
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.model.term.ConstantType;
+import org.linqs.psl.util.Parallel;
 
 import com.healthmarketscience.sqlbuilder.CreateTableQuery;
 import com.zaxxer.hikari.HikariConfig;
@@ -40,9 +41,7 @@ public class PostgreSQLDriver implements DatabaseDriver {
 	public static final String DEFAULT_HOST = "localhost";
 	public static final String DEFAULT_PORT = "5432";
 
-	// TEST(eriq): Abstract class that uses the pool.
-	private final Connection dbConnection;
-	HikariDataSource dataSource;
+	private final HikariDataSource dataSource;
 
 	public PostgreSQLDriver(String databaseName, boolean clearDatabase) {
 		this(DEFAULT_HOST, DEFAULT_PORT, databaseName, clearDatabase);
@@ -54,46 +53,30 @@ public class PostgreSQLDriver implements DatabaseDriver {
 
 	public PostgreSQLDriver(String connectionString, String databaseName, boolean clearDatabase) {
 		try {
-			// TEST(eriq): tighten scope
-			// TEST(eriq): Use the new driver.
 			Class.forName("org.postgresql.Driver");
-
-			// TEST
-			dbConnection = DriverManager.getConnection(connectionString);
-			HikariConfig config = new HikariConfig();
-			config.setJdbcUrl(connectionString);
-			dataSource = new HikariDataSource(config);
-
-			if (clearDatabase) {
-				executeUpdate("DROP SCHEMA public CASCADE");
-				executeUpdate("CREATE SCHEMA public");
-				executeUpdate("GRANT ALL ON SCHEMA public TO public");
-			}
 		} catch (ClassNotFoundException ex) {
-			throw new RuntimeException("Could not find postgres connector. Please check classpath.", ex);
-		} catch (SQLException ex) {
-			throw new RuntimeException("Database error: " + ex.getMessage(), ex);
+			throw new RuntimeException("Could not find postgres driver. Please check classpath.", ex);
+		}
+
+		HikariConfig config = new HikariConfig();
+		config.setJdbcUrl(connectionString);
+		config.setMaximumPoolSize(Math.min(8, Parallel.NUM_THREADS * 2));
+		dataSource = new HikariDataSource(config);
+
+		if (clearDatabase) {
+			executeUpdate("DROP SCHEMA public CASCADE");
+			executeUpdate("CREATE SCHEMA public");
+			executeUpdate("GRANT ALL ON SCHEMA public TO public");
 		}
 	}
 
 	@Override
 	public void close() {
-		try {
-			dbConnection.close();
-			dataSource.close();
-		} catch (SQLException ex) {
-			throw new RuntimeException("Failed to close the database connector.");
-		}
+		dataSource.close();
 	}
 
 	@Override
 	public Connection getConnection() {
-		// TEST
-		return dbConnection;
-	}
-
-	// TEST
-	public Connection getNewConnection() {
 		try {
 			return dataSource.getConnection();
 		} catch (SQLException ex) {
@@ -139,8 +122,7 @@ public class PostgreSQLDriver implements DatabaseDriver {
 	}
 
 	@Override
-	public PreparedStatement getUpsert(Connection connection, String tableName,
-			String[] columns, String[] keyColumns) {
+	public String getUpsert(String tableName, String[] columns, String[] keyColumns) {
 		List<String> updateValues = new ArrayList<String>();
 		for (String column : columns) {
 			updateValues.add(String.format("%s = EXCLUDED.%s", column, column));
@@ -157,17 +139,18 @@ public class PostgreSQLDriver implements DatabaseDriver {
 		sql.add("DO UPDATE SET");
 		sql.add("	" + StringUtils.join(updateValues, ", "));
 
-		try {
-			return connection.prepareStatement(StringUtils.join(sql, "\n"));
-		} catch (SQLException ex) {
-			throw new RuntimeException("Could not prepare PostgreSQL upsert for " + tableName, ex);
-		}
+		return StringUtils.join(sql, "\n");
 	}
 
-	private void executeUpdate(String query) throws SQLException {
-		Statement stmt = dbConnection.createStatement();
-		stmt.executeUpdate(query);
-		stmt.close();
+	private void executeUpdate(String sql) {
+		try (
+			Connection connection = getConnection();
+			Statement stmt = connection.createStatement();
+		) {
+			stmt.executeUpdate(sql);
+		} catch (SQLException ex) {
+			throw new RuntimeException("Failed to execute a general update: [" + sql + "].", ex);
+		}
 	}
 
 	@Override

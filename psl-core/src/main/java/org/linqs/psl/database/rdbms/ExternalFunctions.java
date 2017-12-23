@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.database.rdbms;
 
-import org.joda.time.DateTime;
 import org.linqs.psl.database.ReadOnlyDatabase;
 import org.linqs.psl.model.function.ExternalFunction;
 import org.linqs.psl.model.term.DateAttribute;
@@ -32,6 +31,7 @@ import org.linqs.psl.model.term.UniqueStringID;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import org.joda.time.DateTime;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -47,16 +47,11 @@ public class ExternalFunctions {
 	private static final BiMap<ExternalFunction, String> externalFunctions = HashBiMap.create();
 
 	public static void registerFunctionAlias(Connection connection) {
-		try {
-			Statement stmt = connection.createStatement();
-			try {
-				stmt.executeUpdate("CREATE ALIAS IF NOT EXISTS "
-						+ ALIAS_FUNCTION_NAME + " FOR \""
-						+ ExternalFunctions.class.getCanonicalName()
-						+ ".registeredExternalFunctionCall\" ");
-			} finally {
-				stmt.close();
-			}
+		try (Statement stmt = connection.createStatement()) {
+         stmt.executeUpdate("CREATE ALIAS IF NOT EXISTS "
+               + ALIAS_FUNCTION_NAME + " FOR \""
+               + ExternalFunctions.class.getCanonicalName()
+               + ".registeredExternalFunctionCall\" ");
 		} catch (SQLException ex) {
 			throw new RuntimeException("Could not register function alias.", ex);
 		}

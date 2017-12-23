@@ -28,6 +28,7 @@ import org.linqs.psl.reasoner.admm.term.LocalVariable;
 import org.linqs.psl.reasoner.inspector.ReasonerInspector;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
+import org.linqs.psl.util.Parallel;
 
 import com.google.common.collect.Iterables;
 import org.slf4j.Logger;
@@ -102,7 +103,7 @@ public class ADMMReasoner extends Reasoner {
 	 * Default value for the number of work threads
 	 * (by default uses the number of processors in the system).
 	 */
-	public static final int NUM_THREADS_DEFAULT = Runtime.getRuntime().availableProcessors();
+	public static final int NUM_THREADS_DEFAULT = Parallel.NUM_THREADS;
 
 	private static final float LOWER_BOUND = 0.0f;
 	private static final float UPPER_BOUND = 1.0f;

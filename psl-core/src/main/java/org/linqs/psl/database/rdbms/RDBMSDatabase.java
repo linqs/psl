@@ -73,6 +73,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * A view on the datastore with specific partitions activated.
+ * Keep in mind that the upstream datstore/driver usere a connection pool and we should close
+ * out connections and statements after we are done with them.
+ */
 public class RDBMSDatabase implements Database {
 	private static final Logger log = LoggerFactory.getLogger(RDBMSDatabase.class);
 
@@ -80,14 +85,9 @@ public class RDBMSDatabase implements Database {
 
 	/**
 	 * The backing data store that created this database.
+	 * Connection are obtained from here.
 	 */
 	private final RDBMSDataStore parentDataStore;
-
-	/**
-	 * The connection to the JDBC database
-	 */
-	// TODO(eriq): TEST
-	private final Connection connection;
 
 	/**
 	 * The partition ID in which this database writes.
@@ -116,26 +116,16 @@ public class RDBMSDatabase implements Database {
 	 */
 	private final AtomCache cache;
 
-	/**
-	 * The following map predicates to pre-compiled SQL statements.
-	 * Do not close these statements until the entire db closes.
-	 */
-	private final Map<Predicate, PreparedStatement> queryStatements;
-	private final Map<Predicate, PreparedStatement> queryAllWriteStatements;
-	private final Map<Predicate, PreparedStatement> upsertStatements;
-	private final Map<Predicate, PreparedStatement> deleteStatements;
-
 	/*
 	 * Keeps track of the open / closed status of this database.
 	 */
 	private boolean closed;
 
-	public RDBMSDatabase(RDBMSDataStore parent, Connection con,
+	public RDBMSDatabase(RDBMSDataStore parent,
 			Partition write, Partition[] read,
 			Map<Predicate, PredicateInfo> predicates,
 			Set<StandardPredicate> closed) {
 		this.parentDataStore = parent;
-		this.connection = con;
 		this.writePartition = write;
 		this.writeID = write.getID();
 
@@ -160,11 +150,6 @@ public class RDBMSDatabase implements Database {
 		}
 
 		this.cache = new AtomCache(this);
-
-		this.queryStatements = new HashMap<Predicate, PreparedStatement>();
-		this.queryAllWriteStatements = new HashMap<Predicate, PreparedStatement>();
-		this.upsertStatements = new HashMap<Predicate, PreparedStatement>();
-		this.deleteStatements = new HashMap<Predicate, PreparedStatement>();
 
 		this.closed = false;
 	}
@@ -232,32 +217,23 @@ public class RDBMSDatabase implements Database {
 
 	@Override
 	public boolean deleteAtom(GroundAtom atom) {
-		boolean deleted = false;
 		QueryAtom queryAtom = new QueryAtom(atom.getPredicate(), atom.getArguments());
-
 		if (cache.getCachedAtom(queryAtom) != null) {
 			cache.removeCachedAtom(queryAtom);
 		}
 
-		PredicateInfo predciate = getPredicateInfo(atom.getPredicate());
-		PreparedStatement statement = getAtomDelete(predicates.get(atom.getPredicate()));
-
-		try {
-			// Fill in all the query parameters (1-indexed).
-			int paramIndex = 1;
-			for (Term argument : atom.getArguments()) {
-				setAtomArgument(statement, argument, paramIndex);
-				paramIndex++;
-			}
-
+		try (
+			Connection connection = getConnection();
+			PreparedStatement statement = getAtomDelete(connection, getPredicateInfo(atom.getPredicate()), atom.getArguments());
+		) {
 			if (statement.executeUpdate() > 0) {
-				deleted = true;
+				return true;
 			}
+
+			return false;
 		} catch (SQLException ex) {
 			throw new RuntimeException("Error deleting atom: " + atom, ex);
 		}
-
-		return deleted;
 	}
 
 	@Override
@@ -334,45 +310,47 @@ public class RDBMSDatabase implements Database {
 			atomsByPredicate.get(atom.getPredicate()).add(atom);
 		}
 
-		// Upsert each predicate batch.
-		for (Map.Entry<Predicate, List<RandomVariableAtom>> entry : atomsByPredicate.entrySet()) {
-			PreparedStatement statement = getAtomUpsert(getPredicateInfo(entry.getKey()));
+		try (Connection connection = getConnection()) {
+			// Upsert each predicate batch.
+			for (Map.Entry<Predicate, List<RandomVariableAtom>> entry : atomsByPredicate.entrySet()) {
+				try (PreparedStatement statement = getAtomUpsert(connection, getPredicateInfo(entry.getKey()))) {
+					int batchSize = 0;
 
-			try {
-				int batchSize = 0;
+					// Set all the upsert params.
+					for (RandomVariableAtom atom : entry.getValue()) {
+						// Partition
+						statement.setInt(1, partitionId);
 
-				// Set all the upsert params.
-				for (RandomVariableAtom atom : entry.getValue()) {
-					// Partition
-					statement.setInt(1, partitionId);
+						// Value
+						statement.setDouble(2, atom.getValue());
 
-					// Value
-					statement.setDouble(2, atom.getValue());
+						// Args
+						Term[] arguments = atom.getArguments();
+						for (int i = 0; i < arguments.length; i++) {
+							setAtomArgument(statement, arguments[i], i + 3);
+						}
 
-					// Args
-					Term[] arguments = atom.getArguments();
-					for (int i = 0; i < arguments.length; i++) {
-						setAtomArgument(statement, arguments[i], i + 3);
+						statement.addBatch();
+						batchSize++;
+
+						if (batchSize >= RDBMSDataLoader.DEFAULT_PAGE_SIZE) {
+							statement.executeBatch();
+							statement.clearBatch();
+							batchSize = 0;
+						}
 					}
 
-					statement.addBatch();
-					batchSize++;
-
-					if (batchSize >= RDBMSDataLoader.DEFAULT_PAGE_SIZE) {
+					if (batchSize > 0) {
 						statement.executeBatch();
 						statement.clearBatch();
-						batchSize = 0;
 					}
+					statement.clearParameters();
+				} catch (SQLException ex) {
+					throw new RuntimeException("Error doing batch commit for: " + entry.getKey(), ex);
 				}
-
-				if (batchSize > 0) {
-					statement.executeBatch();
-					statement.clearBatch();
-				}
-				statement.clearParameters();
-			} catch (SQLException ex) {
-				throw new RuntimeException("Error doing batch commit for: " + entry.getKey(), ex);
 			}
+      } catch (SQLException ex) {
+         throw new RuntimeException("Error doing batch commit.", ex);
 		}
 	}
 
@@ -387,7 +365,10 @@ public class RDBMSDatabase implements Database {
 	public void moveToWritePartition(StandardPredicate predicate, int oldPartitionId) {
 		PredicateInfo predicateInfo = getPredicateInfo(predicate);
 
-		try (PreparedStatement statement = predicateInfo.createPartitionMoveStatement(connection, oldPartitionId, writeID)) {
+		try (
+			Connection connection = getConnection();
+			PreparedStatement statement = predicateInfo.createPartitionMoveStatement(connection, oldPartitionId, writeID);
+		) {
 			statement.executeUpdate();
 		} catch (SQLException ex) {
 			throw new RuntimeException("Error moving partitions for: " + predicate, ex);
@@ -456,7 +437,11 @@ public class RDBMSDatabase implements Database {
 			orderedTypes[index] = varTypes.getType(variable);
 		}
 
-		try (Statement statement = connection.createStatement(); ResultSet resultSet = statement.executeQuery(queryString)) {
+		try (
+			Connection connection = getConnection();
+			Statement statement = connection.createStatement();
+			ResultSet resultSet = statement.executeQuery(queryString)
+		) {
 			while (resultSet.next()) {
 				Constant[] res = new Constant[orderedPartials.length];
 
@@ -502,6 +487,10 @@ public class RDBMSDatabase implements Database {
 		return writePartition;
 	}
 
+	private Connection getConnection() {
+		return parentDataStore.getConnection();
+	}
+
 	@Override
 	public void close() {
 		if (closed) {
@@ -510,59 +499,38 @@ public class RDBMSDatabase implements Database {
 
 		parentDataStore.releasePartitions(this);
 		closed = true;
-
-		// Close all prepared statements
-		try {
-			for (PreparedStatement statement : queryStatements.values()) {
-				statement.close();
-			}
-
-			for (PreparedStatement statement : queryAllWriteStatements.values()) {
-				statement.close();
-			}
-
-			for (PreparedStatement statement : upsertStatements.values()) {
-				statement.close();
-			}
-
-			for (PreparedStatement statement : deleteStatements.values()) {
-				statement.close();
-			}
-		} catch (SQLException e) {
-			throw new RuntimeException("Error closing prepared statements.", e);
-		}
 	}
 
-	private PreparedStatement getAllWriteAtomQuery(PredicateInfo predicate) {
-		if (!queryAllWriteStatements.containsKey(predicate.predicate())) {
-			queryAllWriteStatements.put(predicate.predicate(), predicate.createQueryAllWriteStatement(connection, writeID));
-		}
+	private PreparedStatement getAtomQuery(Connection connection, PredicateInfo predicate, Constant[] arguments) {
+		PreparedStatement statement = predicate.createQueryStatement(connection, readIDs);
 
-		return queryAllWriteStatements.get(predicate.predicate());
+      try {
+         for (int i = 0; i < arguments.length; i++) {
+            setAtomArgument(statement, arguments[i], i + 1);
+         }
+      } catch (SQLException ex) {
+         throw new RuntimeException("Failed to set prepared statement atom arguments for " + predicate.predicate() + ".");
+      }
+
+		return statement;
 	}
 
-	private PreparedStatement getAtomQuery(PredicateInfo predicate) {
-		if (!queryStatements.containsKey(predicate.predicate())) {
-			queryStatements.put(predicate.predicate(), predicate.createQueryStatement(connection, readIDs));
-		}
-
-		return queryStatements.get(predicate.predicate());
+	private PreparedStatement getAtomUpsert(Connection connection, PredicateInfo predicate) {
+		return predicate.createUpsertStatement(connection, parentDataStore.getDriver());
 	}
 
-	private PreparedStatement getAtomUpsert(PredicateInfo predicate) {
-		if (!upsertStatements.containsKey(predicate.predicate())) {
-			upsertStatements.put(predicate.predicate(), predicate.createUpsertStatement(connection, parentDataStore.getDriver()));
-		}
+	private PreparedStatement getAtomDelete(Connection connection, PredicateInfo predicate, Term[] arguments) {
+		PreparedStatement statement = predicate.createDeleteStatement(connection, writeID);
 
-		return upsertStatements.get(predicate.predicate());
-	}
+      try {
+         for (int i = 0; i < arguments.length; i++) {
+            setAtomArgument(statement, arguments[i], i + 1);
+         }
+      } catch (SQLException ex) {
+         throw new RuntimeException("Failed to set prepared statement atom arguments for " + predicate.predicate() + ".");
+      }
 
-	private PreparedStatement getAtomDelete(PredicateInfo predicate) {
-		if (!deleteStatements.containsKey(predicate.predicate())) {
-			deleteStatements.put(predicate.predicate(), predicate.createDeleteStatement(connection, writeID));
-		}
-
-		return deleteStatements.get(predicate.predicate());
+		return statement;
 	}
 
 	/**
@@ -643,8 +611,6 @@ public class RDBMSDatabase implements Database {
 	/**
 	 * Get an atom from the database and put it in the cache.
 	 */
-	// TEST(eriq): sync
-	// private synchronized GroundAtom fetchAtom(StandardPredicate predicate, boolean create, Constant... arguments) {
 	private GroundAtom fetchAtom(StandardPredicate predicate, boolean create, Constant... arguments) {
 		// Ensure this database has this predicate.
 		getPredicateInfo(predicate);
@@ -670,50 +636,24 @@ public class RDBMSDatabase implements Database {
 	 * Return null if one is not found.
 	 */
 	private GroundAtom queryDBForAtom(StandardPredicate predicate, Constant[] arguments) {
-		// TEST
-		// Term[] arguments = atom.getArguments();
-
-		// TEST
-		// PreparedStatement statement = getAtomQuery(predicates.get(predicate));
-		Connection conn = parentDataStore.getConnection();
-		PreparedStatement statement = predicates.get(predicate).createQueryStatement(conn, readIDs);
-
-		GroundAtom result = null;
-		ResultSet resultSet = null;
-
-		try {
-			for (int i = 0; i < arguments.length; i++) {
-				setAtomArgument(statement, arguments[i], i + 1);
+		try (
+			Connection conn = parentDataStore.getConnection();
+			PreparedStatement statement = getAtomQuery(conn, predicates.get(predicate), arguments);
+			ResultSet resultSet = statement.executeQuery();
+		) {
+			if (!resultSet.next()) {
+				return null;
 			}
 
-			resultSet = statement.executeQuery();
-			if (resultSet.next()) {
-				result = extractGroundAtomFromResult(resultSet, predicate, arguments);
+			GroundAtom result = extractGroundAtomFromResult(resultSet, predicate, arguments);
 
-				if (resultSet.next()) {
-					throw new IllegalStateException("Cannot have duplicate atoms, or atoms in multiple partitions in a single database");
-				}
+			if (resultSet.next()) {
+				throw new IllegalStateException("Cannot have duplicate atoms, or atoms in multiple partitions in a single database");
 			}
 
 			return result;
 		} catch (SQLException ex) {
 			throw new RuntimeException("Error querying DB for atom.", ex);
-		} finally {
-			try {
-				if (resultSet != null) {
-					resultSet.close();
-				}
-
-				if  (statement != null) {
-					statement.close();
-				}
-
-				if (conn != null) {
-					conn.close();
-				}
-			} catch (SQLException ex) {
-				// TEST(eriq) Ignore
-			}
 		}
 	}
 
@@ -730,8 +670,10 @@ public class RDBMSDatabase implements Database {
 		Constant[] arguments = new Constant[argumentCols.size()];
 
 		try (
-				PreparedStatement statement = predicateInfo.createQueryAllStatement(connection, partitions);
-				ResultSet results = statement.executeQuery()) {
+			Connection connection = getConnection();
+			PreparedStatement statement = predicateInfo.createQueryAllStatement(connection, partitions);
+			ResultSet results = statement.executeQuery();
+		) {
 			while (results.next()) {
 				for (int i = 0; i < argumentCols.size(); i++) {
 					// As per PredicateInfo.createQueryAllStatement, the data columns are offset by two.
@@ -751,8 +693,10 @@ public class RDBMSDatabase implements Database {
 		PredicateInfo predicateInfo = getPredicateInfo(predicate);
 
 		try (
-				PreparedStatement statement = predicateInfo.createCountAllStatement(connection, partitions);
-				ResultSet results = statement.executeQuery()) {
+			Connection connection = getConnection();
+			PreparedStatement statement = predicateInfo.createCountAllStatement(connection, partitions);
+			ResultSet results = statement.executeQuery();
+		) {
 			if (!results.next()) {
 				throw new RuntimeException("No results from a COUNT(*)");
 			}

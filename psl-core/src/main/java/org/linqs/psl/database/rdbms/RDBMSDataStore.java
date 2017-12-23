@@ -64,11 +64,6 @@ public class RDBMSDataStore implements DataStore {
 	 */
 	public static final boolean USE_STRING_ID_DEFAULT = true;
 
-	/**
-	 * This DataStore's connection to the RDBMS + the data loader associated
-	 * with it.
-	 */
-	private final Connection connection;
 	private final RDBMSDataLoader dataloader;
 
 	/**
@@ -94,9 +89,9 @@ public class RDBMSDataStore implements DataStore {
 	private final Map<Predicate, PredicateInfo> predicates;
 
 	/**
-	 * Returns an RDBMSDataStore that utilizes the connection created by the {@link DatabaseDriver}.
-	 * @param dbDriver	the DatabaseDriver that contains a connection to the backing database.
-	 * @param config	the configuration for this DataStore.
+	 * Returns an RDBMSDataStore that utilizes the connections returned by the {@link DatabaseDriver}.
+	 * @param dbDriver the DatabaseDriver that contains a connection pool to the backing database.
+	 * @param config the configuration for this DataStore.
 	 */
 	public RDBMSDataStore(DatabaseDriver dbDriver, ConfigBundle config) {
 		openDataStores.add(this);
@@ -109,24 +104,28 @@ public class RDBMSDataStore implements DataStore {
 		// Keep database driver locally for generating different query dialets
 		this.dbDriver = dbDriver;
 
-		// Connect to the database
-		// TEST(eriq)
-		this.connection = dbDriver.getConnection();
-
 		// Set up the data loader
-		this.dataloader = new RDBMSDataLoader(connection);
+		this.dataloader = new RDBMSDataLoader(this);
 
 		// Initialize metadata
-		this.metadata = new DataStoreMetadata(connection);
+		this.metadata = new DataStoreMetadata(this);
 
 		// Read in any predicates that exist in the database
-		for (StandardPredicate predicate : PredicateInfo.deserializePredicates(connection)) {
-			registerPredicate(predicate, false);
+		try (Connection connection = getConnection()) {
+			for (StandardPredicate predicate : PredicateInfo.deserializePredicates(connection)) {
+				registerPredicate(predicate, false);
+			}
+		} catch (SQLException ex) {
+			throw new RuntimeException("Unable to attempt to deserialize predicates.", ex);
 		}
 
 		// Register the DataStore class for external functions
 		if (dbDriver.supportsExternalFunctions()) {
-			ExternalFunctions.registerFunctionAlias(connection);
+			try (Connection connection = getConnection()) {
+				ExternalFunctions.registerFunctionAlias(connection);
+			} catch (SQLException ex) {
+				throw new RuntimeException("Unable to register external functions.", ex);
+			}
 		}
 	}
 
@@ -151,7 +150,11 @@ public class RDBMSDataStore implements DataStore {
 		predicates.put(predicate, predicateInfo);
 
 		if (createTable) {
-			predicateInfo.setupTable(connection, dbDriver);
+			try (Connection connection = getConnection()) {
+				predicateInfo.setupTable(connection, dbDriver);
+			} catch (SQLException ex) {
+				throw new RuntimeException("Unable to setup predicate table for: " + predicate + ".", ex);
+			}
 		}
 
 		// Update the data loader with the new predicate
@@ -180,7 +183,7 @@ public class RDBMSDataStore implements DataStore {
 				throw new IllegalArgumentException("Another database is writing to a specified read partition: " + partition);
 
 		// Creates the database and registers the current predicates
-		RDBMSDatabase db = new RDBMSDatabase(this, connection, write, read, Collections.unmodifiableMap(predicates), toClose);
+		RDBMSDatabase db = new RDBMSDatabase(this, write, read, Collections.unmodifiableMap(predicates), toClose);
 
 		// Register the write and read partitions as being associated with this database
 		for (Partition partition : read) {
@@ -219,20 +222,25 @@ public class RDBMSDataStore implements DataStore {
 
 	@Override
 	public int deletePartition(Partition partition) {
-		int deletedEntries = 0;
-		if (writePartitionIDs.contains(partition) || openDatabases.containsKey(partition))
+		if (writePartitionIDs.contains(partition) || openDatabases.containsKey(partition)) {
 			throw new IllegalArgumentException("Cannot delete partition that is in use.");
-		try {
+		}
+
+		int deletedEntries = 0;
+		try (
+			Connection connection = getConnection();
 			Statement stmt = connection.createStatement();
+		) {
 			for (PredicateInfo pred : predicates.values()) {
 				String sql = "DELETE FROM " + pred.tableName() + " WHERE " + PredicateInfo.PARTITION_COLUMN_NAME + " = " + partition.getID();
-				deletedEntries+= stmt.executeUpdate(sql);
+				deletedEntries += stmt.executeUpdate(sql);
 			}
-			stmt.close();
+
 			metadata.removePartition(partition);
-		} catch(SQLException e) {
-			throw new RuntimeException(e);
+		} catch(SQLException ex) {
+			throw new RuntimeException(ex);
 		}
+
 		return deletedEntries;
 	}
 
@@ -246,8 +254,6 @@ public class RDBMSDataStore implements DataStore {
 		}
 
 		if (dbDriver != null) {
-			// TEST
-			// connection.close();
 			dbDriver.close();
 			dbDriver = null;
 		}
@@ -292,14 +298,7 @@ public class RDBMSDataStore implements DataStore {
 	}
 
 	public Connection getConnection() {
-		// TEST
-		if (dbDriver instanceof org.linqs.psl.database.rdbms.driver.PostgreSQLDriver) {
-			return ((org.linqs.psl.database.rdbms.driver.PostgreSQLDriver)dbDriver).getNewConnection();
-		} else if (dbDriver instanceof org.linqs.psl.database.rdbms.driver.H2DatabaseDriver) {
-			return ((org.linqs.psl.database.rdbms.driver.H2DatabaseDriver)dbDriver).getNewConnection();
-		} else {
-			return dbDriver.getConnection();
-		}
+		return dbDriver.getConnection();
 	}
 
 	public static Set<RDBMSDataStore> getOpenDataStores() {
