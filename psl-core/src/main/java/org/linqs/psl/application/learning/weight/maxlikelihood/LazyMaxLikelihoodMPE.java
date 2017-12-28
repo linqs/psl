@@ -75,10 +75,6 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 	 */
 	public LazyMaxLikelihoodMPE(Model model, Database distributionDB, Database labelDB, ConfigBundle config) {
 		super(model, distributionDB, labelDB, config);
-
-		// VotedPerceptron will try to access the training map
-		// (which doesn't exist in this application) if this is true.
-		augmentLoss = false;
 	}
 
 	@Override

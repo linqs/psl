@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.application.learning.weight.maxlikelihood;
 
-import org.linqs.psl.application.learning.weight.LossAugmentingGroundRule;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.ConfigManager;
@@ -37,8 +36,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * TODO: rewrite class documentation to describe general gradient-based learning algorithms
- * TODO: refactor class so loss augmentation is a strategy that can only be applied to inference-based learning objectives
+ * TODO(steve): rewrite class documentation to describe general gradient-based learning algorithms
+ *
  * Learns new weights for the {@link WeightedRule CompatibilityRules}
  * in a {@link Model} using the voted perceptron algorithm.
  *
@@ -74,13 +73,6 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	 * @see ConfigManager
 	 */
 	public static final String CONFIG_PREFIX = "votedperceptron";
-
-	/**
-	 * Key for boolean property for whether to add loss-augmentation for online large margin
-	 */
-	public static final String AUGMENT_LOSS_KEY = CONFIG_PREFIX + ".augmentloss";
-	/** Default value for AUGMENT_LOSS_KEY */
-	public static final boolean AUGMENT_LOSS_DEFAULT = false;
 
 	/**
 	 * Key for positive double property scaling the L2 regularization
@@ -151,7 +143,6 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	protected final int numSteps;
 	protected final double l2Regularization;
 	protected final double l1Regularization;
-	protected boolean augmentLoss;
 	protected final boolean scheduleStepSize;
 	protected final boolean scaleGradient;
 	protected final boolean averageSteps;
@@ -185,43 +176,10 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 			throw new IllegalArgumentException("L1 regularization parameter must be non-negative.");
 		}
 
-		augmentLoss = config.getBoolean(AUGMENT_LOSS_KEY, AUGMENT_LOSS_DEFAULT);
 		scheduleStepSize = config.getBoolean(STEP_SCHEDULE_KEY, STEP_SCHEDULE_DEFAULT);
 		scaleGradient = config.getBoolean(SCALE_GRADIENT_KEY, SCALE_GRADIENT_DEFAULT);
 		averageSteps = config.getBoolean(AVERAGE_STEPS_KEY, AVERAGE_STEPS_DEFAULT);
 		nonnegativeWeights = config.getBoolean(NONNEGATIVE_WEIGHTS_KEY, NONNEGATIVE_WEIGHTS_DEFAULT);
-	}
-
-	/**
-	 * Set up loss augmenting ground rules.
-	 */
-	protected void addLossAugmentedRules() {
-		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
-			double truth = e.getValue().getValue();
-			LossAugmentingGroundRule groundRule = null;
-
-			// If ground truth is at 1.0 or 0.0, set up ground rule without planning to change it.
-			if (truth == 1.0 || truth == 0.0) {
-				groundRule = new LossAugmentingGroundRule(e.getKey(), truth, -1.0);
-			} else {
-				// Otherwie, do a little more to check it and change it later.
-				if (truth >= 0.5) {
-					groundRule = new LossAugmentingGroundRule(e.getKey(), 1.0, -1.0);
-				} else {
-					groundRule = new LossAugmentingGroundRule(e.getKey(), 1.0, 1.0);
-				}
-			}
-
-			groundRuleStore.addGroundRule(groundRule);
-		}
-	}
-
-	protected void removeLossAugmentedRules() {
-		for (GroundRule rule : groundRuleStore.getGroundRules()) {
-			if (rule instanceof LossAugmentingGroundRule) {
-				groundRuleStore.removeGroundRule(rule);
-			}
-		}
 	}
 
 	protected double getStepSize(int iteration) {
@@ -238,9 +196,6 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 
 		// Computes the observed incompatibilities.
 		truthIncompatibility = computeObservedIncomp();
-
-		if (augmentLoss)
-			addLossAugmentedRules();
 
 		// TODO(eriq): If not overwritten, computeObservedIncomp() calls setLabeledRandomVariables(),
 		// which uses trainingMap without checking for null.
@@ -293,10 +248,6 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 				mutableRules.get(i).setWeight(avgWeights[i] / numSteps);
 			}
 			changedRuleWeights = true;
-		}
-
-		if (augmentLoss) {
-			removeLossAugmentedRules();
 		}
 	}
 
