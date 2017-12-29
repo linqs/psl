@@ -52,7 +52,7 @@ public class AtomRegisterGroundRuleStore extends MemoryGroundRuleStore {
 	}
 
 	@Override
-	public void addGroundRule(GroundRule groundRule) {
+	public synchronized void addGroundRule(GroundRule groundRule) {
 		super.addGroundRule(groundRule);
 
 		// Register the ground rule with the atoms involved.

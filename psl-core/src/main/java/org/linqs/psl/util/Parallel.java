@@ -23,9 +23,7 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
@@ -108,7 +106,7 @@ public final class Parallel {
 	/**
 	 * Init the thread pool and supporting structures.
 	 */
-	private static synchronized void init() {
+	private static void initPool() {
 		if (initialized) {
 			return;
 		}
@@ -134,7 +132,7 @@ public final class Parallel {
 	 * Always the first thing called when setting up to run a task in parallel.
 	 */
 	private static <T> void initWorkers(Worker<T> baseWorker) {
-		init();
+		initPool();
 
 		workerQueue.clear();
 		allWorkers.clear();
@@ -152,7 +150,7 @@ public final class Parallel {
 			worker.init(i);
 
 			allWorkers.add(worker);
-			workerQueue.add(worker);
+			workerQueue.offer(worker);
 		}
 	}
 
@@ -184,7 +182,7 @@ public final class Parallel {
 	 * Signal that a worker is done and ready for more work.
 	 */
 	private static void freeWorker(Worker<?> worker) {
-		workerQueue.add(worker);
+		workerQueue.offer(worker);
 	}
 
 	/**
