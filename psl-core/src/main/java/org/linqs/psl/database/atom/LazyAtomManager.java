@@ -24,7 +24,6 @@ import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.ResultList;
 import org.linqs.psl.database.rdbms.RDBMSDatabase;
 import org.linqs.psl.database.rdbms.Formula2SQL;
-import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
@@ -135,9 +134,10 @@ public class LazyAtomManager extends PersistedAtomManager {
 
 	/**
 	 * Activate any lazy atoms above the threshold.
+	 * @param rules the potential rules to look for lazy atoms in.
 	 * @return the number of lazy atoms instantiated.
 	 */
-	public int activateAtoms(Model model, GroundRuleStore groundRuleStore) {
+	public int activateAtoms(List<Rule> rules, GroundRuleStore groundRuleStore) {
 		Set<RandomVariableAtom> toActivate = new HashSet<RandomVariableAtom>();
 
 		Iterator<RandomVariableAtom> lazyAtomIterator = lazyAtoms.iterator();
@@ -150,7 +150,7 @@ public class LazyAtomManager extends PersistedAtomManager {
 			}
 		}
 
-		activate(toActivate, model, groundRuleStore);
+		activate(toActivate, rules, groundRuleStore);
 		return toActivate.size();
 	}
 
@@ -160,7 +160,7 @@ public class LazyAtomManager extends PersistedAtomManager {
 	 * atom set will be ignored.
 	 * @return the number of lazy atoms instantiated.
 	 */
-	public int activateAtoms(Set<RandomVariableAtom> atoms, Model model, GroundRuleStore groundRuleStore) {
+	public int activateAtoms(Set<RandomVariableAtom> atoms, List<Rule> rules, GroundRuleStore groundRuleStore) {
 		// Ensure that all the atoms are valid.
 		Iterator<RandomVariableAtom> atomIterator = atoms.iterator();
 		while (atomIterator.hasNext()) {
@@ -179,11 +179,11 @@ public class LazyAtomManager extends PersistedAtomManager {
 			}
 		}
 
-		activate(atoms, model, groundRuleStore);
+		activate(atoms, rules, groundRuleStore);
 		return atoms.size();
 	}
 
-	private void activate(Set<RandomVariableAtom> toActivate, Model model, GroundRuleStore groundRuleStore) {
+	private void activate(Set<RandomVariableAtom> toActivate, List<Rule> rules, GroundRuleStore groundRuleStore) {
 		// First commit the atoms to the database.
 		db.commit(toActivate, Partition.LAZY_PARTITION_ID);
 
@@ -195,7 +195,7 @@ public class LazyAtomManager extends PersistedAtomManager {
 		// Collect the specific predicates that are targets in this lazy batch
 		// and the rules associated with those predicates.
 		Set<StandardPredicate> lazyPredicates = getLazyPredicates(toActivate);
-		Set<Rule> lazyRules = getLazyRules(model, lazyPredicates);
+		Set<Rule> lazyRules = getLazyRules(rules, lazyPredicates);
 
 		for (Rule lazyRule : lazyRules) {
 			if (lazyRule instanceof AbstractLogicalRule) {
@@ -315,10 +315,10 @@ public class LazyAtomManager extends PersistedAtomManager {
 		return lazyPredicates;
 	}
 
-	private Set<Rule> getLazyRules(Model model, Set<StandardPredicate> lazyPredicates) {
+	private Set<Rule> getLazyRules(List<Rule> rules, Set<StandardPredicate> lazyPredicates) {
 		Set<Rule> lazyRules = new HashSet<Rule>();
 
-		for (Rule rule : model.getRules()) {
+		for (Rule rule : rules) {
 			if (rule instanceof AbstractLogicalRule) {
 				// Note that we check for atoms not in the base formula, but in the
 				// query formula for the DNF because negated atoms will not

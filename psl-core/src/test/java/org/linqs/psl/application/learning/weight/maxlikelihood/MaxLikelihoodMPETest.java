@@ -81,7 +81,7 @@ public class MaxLikelihoodMPETest {
 	 */
 	@Test
 	public void baseTest() {
-      WeightLearningApplication weightLearner = new MaxLikelihoodMPE(info.model, weightLearningTrainDB, weightLearningTruthDB, info.config);
+      WeightLearningApplication weightLearner = new MaxLikelihoodMPE(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB, info.config);
       weightLearner.learn();
 		weightLearner.close();
 	}
@@ -106,7 +106,7 @@ public class MaxLikelihoodMPETest {
 		);
 		info.model.addRule(newRule);
 
-      WeightLearningApplication weightLearner = new MaxLikelihoodMPE(info.model, weightLearningTrainDB, weightLearningTruthDB, info.config);
+      WeightLearningApplication weightLearner = new MaxLikelihoodMPE(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB, info.config);
       weightLearner.learn();
 		weightLearner.close();
 	}

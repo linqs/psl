@@ -40,7 +40,7 @@ public final class Parallel {
 	private static boolean initialized = false;
 
 	// TODO(eriq): Replace with config option once we have global config.
-	public static int NUM_THREADS;
+	public static int NUM_THREADS = Runtime.getRuntime().availableProcessors();
 
 	// Block putting work intot he pool until there are workers ready.
 	private static BlockingQueue<Worker<?>> workerQueue;
@@ -109,11 +109,10 @@ public final class Parallel {
 	 * Init the thread pool and supporting structures.
 	 */
 	private static synchronized void init() {
-		if (initialized == true) {
+		if (initialized) {
 			return;
 		}
 
-		NUM_THREADS = Runtime.getRuntime().availableProcessors();
 		workerQueue = new LinkedBlockingQueue<Worker<?>>(NUM_THREADS);
 		allWorkers = new ArrayList<Worker<?>>(NUM_THREADS);
 

@@ -21,7 +21,6 @@ import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 import org.linqs.psl.database.DatabaseQuery;
 import org.linqs.psl.database.ResultList;
 import org.linqs.psl.database.atom.AtomManager;
-import org.linqs.psl.model.NumericUtilities;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.QueryAtom;
@@ -38,6 +37,7 @@ import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.FunctionTerm;
 import org.linqs.psl.reasoner.function.FunctionVariable;
+import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
 
 import org.apache.commons.lang3.StringUtils;
@@ -121,15 +121,18 @@ public abstract class AbstractLogicalRule implements Rule {
 	}
 
 	@Override
-	public void groundAll(AtomManager atomManager, GroundRuleStore grs) {
+	public int groundAll(AtomManager atomManager, GroundRuleStore grs) {
 		ResultList res = atomManager.executeQuery(new DatabaseQuery(negatedDNF.getQueryFormula(), false));
-		groundAll(res, atomManager, grs);
+		return groundAll(res, atomManager, grs);
 	}
 
-	public void groundAll(ResultList groundVariables, AtomManager atomManager, GroundRuleStore grs) {
+	public int groundAll(ResultList groundVariables, AtomManager atomManager, GroundRuleStore grs) {
 		int initialCount = grs.count(this);
 		Parallel.count(groundVariables.size(), new GroundWorker(atomManager, grs, groundVariables));
-		log.debug("Grounded {} instances of rule {}", grs.count(this) - initialCount, this);
+		int groundCount = grs.count(this) - initialCount;
+
+		log.debug("Grounded {} instances of rule {}", groundCount, this);
+		return groundCount;
 	}
 
 	private class GroundWorker extends Parallel.Worker<Integer> {
@@ -191,7 +194,7 @@ public abstract class AbstractLogicalRule implements Rule {
 			FunctionTerm function = groundRule.getFunction();
 
 			double worstCaseValue = function.getValue(worstCaseValues, false);
-			if (worstCaseValue > NumericUtilities.strictEpsilon
+			if (worstCaseValue > MathUtils.STRICT_EPSILON
 					&& (!function.isConstant() || !(groundRule instanceof WeightedGroundRule))) {
 				grs.addGroundRule(groundRule);
 			}

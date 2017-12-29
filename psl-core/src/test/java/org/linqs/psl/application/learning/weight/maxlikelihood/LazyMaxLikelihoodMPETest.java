@@ -85,7 +85,7 @@ public class LazyMaxLikelihoodMPETest {
 	 */
 	@Test
 	public void baseTest() {
-		WeightLearningApplication weightLearner = new LazyMaxLikelihoodMPE(info.model, weightLearningTrainDB, weightLearningTruthDB, info.config);
+		WeightLearningApplication weightLearner = new LazyMaxLikelihoodMPE(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB, info.config);
 		weightLearner.learn();
 		weightLearner.close();
 	}
@@ -110,7 +110,7 @@ public class LazyMaxLikelihoodMPETest {
 		);
 		info.model.addRule(newRule);
 
-		WeightLearningApplication weightLearner = new LazyMaxLikelihoodMPE(info.model, weightLearningTrainDB, weightLearningTruthDB, info.config);
+		WeightLearningApplication weightLearner = new LazyMaxLikelihoodMPE(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB, info.config);
 		weightLearner.learn();
 		weightLearner.close();
 	}

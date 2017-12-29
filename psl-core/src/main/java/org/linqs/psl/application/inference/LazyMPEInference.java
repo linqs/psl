@@ -170,7 +170,7 @@ public class LazyMPEInference implements ModelApplication {
 			termStore.clear();
 
 			log.debug("Initializing objective terms for {} ground rules.", groundRuleStore.size());
-         @SuppressWarnings("unchecked")
+			@SuppressWarnings("unchecked")
 			int termCount = termGenerator.generateTerms(groundRuleStore, termStore);
 			log.debug("Generated {} objective terms from {} ground rules.", termCount, groundRuleStore.size());
 
@@ -180,7 +180,7 @@ public class LazyMPEInference implements ModelApplication {
 
 			// Only activates if there is another round.
 			if (rounds < maxRounds) {
-				numActivated = lazyAtomManager.activateAtoms(model, groundRuleStore);
+				numActivated = lazyAtomManager.activateAtoms(model.getRules(), groundRuleStore);
 			}
 			log.debug("Completed round {} and activated {} atoms.", rounds, numActivated);
 		} while (numActivated > 0 && rounds < maxRounds);

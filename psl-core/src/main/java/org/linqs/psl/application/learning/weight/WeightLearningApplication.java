@@ -21,13 +21,12 @@ import org.linqs.psl.application.ModelApplication;
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 import org.linqs.psl.application.util.Grounding;
 import org.linqs.psl.config.ConfigBundle;
-import org.linqs.psl.config.ConfigManager;
 import org.linqs.psl.config.Factory;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.TrainingMapAtomManager;
-import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.ReasonerFactory;
@@ -40,6 +39,7 @@ import com.google.common.collect.Iterables;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Abstract class for learning the weights of weighted mutableRules from data for a model.
@@ -47,8 +47,6 @@ import java.util.Map;
 public abstract class WeightLearningApplication implements ModelApplication {
 	/**
 	 * Prefix of property keys used by this class.
-	 *
-	 * @see ConfigManager
 	 */
 	public static final String CONFIG_PREFIX = "weightlearning";
 
@@ -78,38 +76,37 @@ public abstract class WeightLearningApplication implements ModelApplication {
 	public static final String TERM_GENERATOR_KEY = CONFIG_PREFIX + ".termgenerator";
 	public static final String TERM_GENERATOR_DEFAULT = "org.linqs.psl.reasoner.admm.term.ADMMTermGenerator";
 
-	protected Model model;
 	protected Database rvDB;
 	protected Database observedDB;
 	protected ConfigBundle config;
+	protected boolean supportsLatentVariables;
 
+	protected List<Rule> allRules;
 	protected List<WeightedRule> mutableRules;
-	protected List<WeightedRule> immutableRules;
 	protected TrainingMapAtomManager trainingMap;
-
-	/**
-	 * Indicates that the rule weights have been changed and should be updated before optimization.
-	 * This should always be checked before optimization.
-	 */
-	// TODO(eriq): This is suspect. Feels like an indication of a hack.
-	protected boolean changedRuleWeights;
 
 	protected Reasoner reasoner;
 	protected GroundRuleStore groundRuleStore;
 	protected TermStore termStore;
 	protected TermGenerator termGenerator;
 
-	public WeightLearningApplication(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
-		this.model = model;
+	public WeightLearningApplication(List<Rule> rules, Database rvDB, Database observedDB,
+			boolean supportsLatentVariables, ConfigBundle config) {
 		this.rvDB = rvDB;
 		this.observedDB = observedDB;
+		this.supportsLatentVariables = supportsLatentVariables;
 		this.config = config;
 
-		changedRuleWeights = true;
-
-		// TODO(eriq): Why not fill these now? We have the model.
+		allRules = new ArrayList<Rule>();
 		mutableRules = new ArrayList<WeightedRule>();
-		immutableRules = new ArrayList<WeightedRule>();
+
+		for (Rule rule : rules) {
+			allRules.add(rule);
+
+			if (rule instanceof WeightedRule) {
+				mutableRules.add((WeightedRule)rule);
+			}
+		}
 	}
 
 	/**
@@ -124,29 +121,17 @@ public abstract class WeightLearningApplication implements ModelApplication {
 	 * variables.
 	 */
 	public void learn() {
-		// Gathers the CompatibilityRules.
-		for (WeightedRule rule : Iterables.filter(model.getRules(), WeightedRule.class)) {
-			if (rule.isWeightMutable()) {
-				mutableRules.add(rule);
-			} else {
-				immutableRules.add(rule);
-			}
-		}
-
 		// Sets up the ground model.
 		initGroundModel();
 
 		// Learns new weights.
 		doLearn();
-
-		// TODO(eriq): Why clear? And why not clear immutable?
-		mutableRules.clear();
 	}
 
 	protected abstract void doLearn();
 
 	/**
-	 * Constructs a ground model using model and trainingMap, and stores the
+	 * Constructs a ground model using the rules and trainingMap, and stores the
 	 * resulting GroundRules in reasoner.
 	 */
 	protected void initGroundModel() {
@@ -161,14 +146,18 @@ public abstract class WeightLearningApplication implements ModelApplication {
 		}
 
 		trainingMap = new TrainingMapAtomManager(rvDB, observedDB);
-		if (trainingMap.getLatentVariables().size() > 0) {
-			throw new IllegalArgumentException("All RandomVariableAtoms must have " +
-					"corresponding ObservedAtoms. Latent variables are not supported " +
-					"by this WeightLearningApplication. " +
-					"Example latent variable: " + trainingMap.getLatentVariables().iterator().next());
+		if (!supportsLatentVariables && trainingMap.getLatentVariables().size() > 0) {
+			Set<RandomVariableAtom> latentVariables = trainingMap.getLatentVariables();
+			throw new IllegalArgumentException(String.format(
+					"All RandomVariableAtoms must have corresponding ObservedAtoms, found %d latent variables." +
+					" Latent variables are not supported by this WeightLearningApplication (%s)." +
+					" Example latent variable: [%s].",
+					latentVariables.size(),
+					this.getClass().getName(),
+					latentVariables.iterator().next()));
 		}
 
-		Grounding.groundAll(model, trainingMap, groundRuleStore);
+		Grounding.groundAll(allRules, trainingMap, groundRuleStore);
 		termGenerator.generateTerms(groundRuleStore, termStore);
 	}
 
@@ -185,7 +174,6 @@ public abstract class WeightLearningApplication implements ModelApplication {
 		reasoner.close();
 		reasoner = null;
 
-		model = null;
 		rvDB = null;
 		config = null;
 	}
@@ -194,9 +182,8 @@ public abstract class WeightLearningApplication implements ModelApplication {
 	 * Sets RandomVariableAtoms with training labels to their observed values.
 	 */
 	protected void setLabeledRandomVariables() {
-		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
-			e.getKey().setValue(e.getValue().getValue());
+		for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getTrainingMap().entrySet()) {
+			entry.getKey().setValue(entry.getValue().getValue());
 		}
 	}
-
 }

@@ -15,16 +15,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.learning.weight.maxlikelihood;
+package org.linqs.psl.application.learning.weight;
 
-import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.config.ConfigBundle;
-import org.linqs.psl.config.ConfigManager;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
 
@@ -38,11 +36,9 @@ import java.util.Map;
 /**
  * TODO(steve): rewrite class documentation to describe general gradient-based learning algorithms
  *
- * Learns new weights for the {@link WeightedRule CompatibilityRules}
- * in a {@link Model} using the voted perceptron algorithm.
+ * Learns new weights for the weighted rules in a model using the voted perceptron algorithm.
  *
- * The weight-learning objective is to maximize the likelihood according to the
- * distribution:
+ * The weight-learning objective is to maximize the likelihood according to the distribution:
  *
  * p(X) = 1 / Z(w) * exp{-sum[w * f(X)]}
  *
@@ -56,7 +52,7 @@ import java.util.Map;
  * computes the gradient of the objective, takes that step multiplied by a step size
  * (possibly truncated to stay in the region of feasible weights), and
  * saves the new weights. The components of the gradient are each divided by the
- * number of GroundCompatibilityRules from that Rule. The learned weights
+ * number of weighted ground rules from that Rule. The learned weights
  * are the averages of the saved weights.
  *
  * For the gradient of the objective, the expected total incompatibility is
@@ -69,8 +65,6 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 
 	/**
 	 * Prefix of property keys used by this class.
-	 *
-	 * @see ConfigManager
 	 */
 	public static final String CONFIG_PREFIX = "votedperceptron";
 
@@ -79,7 +73,6 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	 * (\lambda / 2) * ||w||^2
 	 */
 	public static final String L2_REGULARIZATION_KEY = CONFIG_PREFIX + ".l2regularization";
-	/** Default value for L2_REGULARIZATION_KEY */
 	public static final double L2_REGULARIZATION_DEFAULT = 0.0;
 
 	/**
@@ -87,7 +80,6 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	 * \gamma * |w|
 	 */
 	public static final String L1_REGULARIZATION_KEY = CONFIG_PREFIX + ".l1regularization";
-	/** Default value for L1_REGULARIZATION_KEY */
 	public static final double L1_REGULARIZATION_DEFAULT = 0.0;
 
 	/**
@@ -95,7 +87,6 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	 * objective gradient to compute a step.
 	 */
 	public static final String STEP_SIZE_KEY = CONFIG_PREFIX + ".stepsize";
-	/** Default value for STEP_SIZE_KEY */
 	public static final double STEP_SIZE_DEFAULT = 1.0;
 
 	/**
@@ -103,7 +94,6 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	 * a 1/t schedule.
 	 */
 	public static final String STEP_SCHEDULE_KEY = CONFIG_PREFIX + ".schedule";
-	/** Default value for STEP_SCHEDULE_KEY */
 	public static final boolean STEP_SCHEDULE_DEFAULT = true;
 
 	/**
@@ -111,7 +101,6 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	 * number of groundings
 	 */
 	public static final String SCALE_GRADIENT_KEY = CONFIG_PREFIX + ".scalegradient";
-	/** Default value for SCALE_GRADIENT_KEY */
 	public static final boolean SCALE_GRADIENT_DEFAULT = true;
 
 	/**
@@ -119,7 +108,6 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	 * weights together for final output.
 	 */
 	public static final String AVERAGE_STEPS_KEY = CONFIG_PREFIX + ".averagesteps";
-	/** Default value for AVERAGE_STEPS_KEY */
 	public static final boolean AVERAGE_STEPS_DEFAULT = true;
 
 	/**
@@ -130,13 +118,6 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	/** Default value for NUM_STEPS_KEY */
 	public static final int NUM_STEPS_DEFAULT = 25;
 
-	/**
-	 * Key for boolean property. If true, only non-negative weights will be learned.
-	 */
-	public static final String NONNEGATIVE_WEIGHTS_KEY = CONFIG_PREFIX + ".nonnegativeweights";
-	/** Default value for NONNEGATIVE_WEIGHTS_KEY */
-	public static final boolean NONNEGATIVE_WEIGHTS_DEFAULT = true;
-
 	protected double[] numGroundings;
 
 	protected final double stepSize;
@@ -146,15 +127,15 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	protected final boolean scheduleStepSize;
 	protected final boolean scaleGradient;
 	protected final boolean averageSteps;
-	protected final boolean nonnegativeWeights;
 	protected double[] truthIncompatibility;
 	protected double[] expectedIncompatibility;
 
 	/** Learning loss at current point */
 	private double loss = Double.POSITIVE_INFINITY;
 
-	public VotedPerceptron(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
-		super(model, rvDB, observedDB, config);
+	public VotedPerceptron(List<Rule> rules, Database rvDB, Database observedDB,
+			boolean supportsLatentVariables, ConfigBundle config) {
+		super(rules, rvDB, observedDB, supportsLatentVariables, config);
 
 		stepSize = config.getDouble(STEP_SIZE_KEY, STEP_SIZE_DEFAULT);
 		if (stepSize <= 0) {
@@ -179,7 +160,6 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 		scheduleStepSize = config.getBoolean(STEP_SCHEDULE_KEY, STEP_SCHEDULE_DEFAULT);
 		scaleGradient = config.getBoolean(SCALE_GRADIENT_KEY, SCALE_GRADIENT_DEFAULT);
 		averageSteps = config.getBoolean(AVERAGE_STEPS_KEY, AVERAGE_STEPS_DEFAULT);
-		nonnegativeWeights = config.getBoolean(NONNEGATIVE_WEIGHTS_KEY, NONNEGATIVE_WEIGHTS_DEFAULT);
 	}
 
 	protected double getStepSize(int iteration) {
@@ -231,15 +211,14 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 				log.debug(" --- Expected incomp.: {}, Truth incomp.: {}", expectedIncompatibility[i], truthIncompatibility[i]);
 
 				weight += currentStep;
-				if (nonnegativeWeights) {
-					weight = Math.max(weight, 0.0);
-				}
+				weight = Math.max(weight, 0.0);
 
 				avgWeights[i] += weight;
 				mutableRules.get(i).setWeight(weight);
 			}
 
-			changedRuleWeights = true;
+			// Update the terms with the new weights.
+			termGenerator.updateWeights(groundRuleStore, termStore);
 		}
 
 		// Sets the weights to their averages.
@@ -247,7 +226,8 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 			for (int i = 0; i < mutableRules.size(); i++) {
 				mutableRules.get(i).setWeight(avgWeights[i] / numSteps);
 			}
-			changedRuleWeights = true;
+
+			termGenerator.updateWeights(groundRuleStore, termStore);
 		}
 	}
 

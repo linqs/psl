@@ -22,43 +22,30 @@ import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
 
+import java.util.List;
+
 /**
  * Static utilities for common {@link Model}-grounding tasks.
  */
 public class Grounding {
-
-	private final static com.google.common.base.Predicate<Rule> all = new com.google.common.base.Predicate<Rule>(){
-		@Override
-		public boolean apply(Rule el) {	return true; }
-	};
-
 	/**
 	 * Calls {@link Rule#groundAll(AtomManager, GroundRuleStore)} on
 	 * each Rule in a Model.
 	 *
-	 * @param m  the Model with the Rules to ground
-	 * @param atomManager  AtomManager to use for grounding
-	 * @param grs  GroundRuleStore to use for grounding
+	 * @param model the Model with the Rules to ground
+	 * @param atomManager AtomManager to use for grounding
+	 * @param groundRuleStore GroundRuleStore to use for grounding
 	 */
-	public static void groundAll(Model m, AtomManager atomManager, GroundRuleStore grs) {
-		groundAll(m, atomManager, grs, all);
+	public static int groundAll(Model model, AtomManager atomManager, GroundRuleStore groundRuleStore) {
+		return groundAll(model.getRules(), atomManager, groundRuleStore);
 	}
 
-	/**
-	 * Calls {@link Rule#groundAll(AtomManager, GroundRuleStore)} on
-	 * each Rule in a Model which passes a filter.
-	 *
-	 * @param m  the Model with the Rules to ground
-	 * @param atomManager  AtomManager to use for grounding
-	 * @param grs  GroundRuleStore to use for grounding
-	 * @param filter  filter for Rules to ground
-	 */
-	public static void groundAll(Model m, AtomManager atomManager, GroundRuleStore grs,
-			com.google.common.base.Predicate<Rule> filter) {
-		for (Rule rule : m.getRules()) {
-			if (filter.apply(rule)) {
-				rule.groundAll(atomManager, grs);
-			}
+	public static int groundAll(List<Rule> rules, AtomManager atomManager, GroundRuleStore groundRuleStore) {
+		int groundCount = 0;
+		for (Rule rule : rules) {
+			groundCount += rule.groundAll(atomManager, groundRuleStore);
 		}
+
+		return groundCount;
 	}
 }

@@ -33,8 +33,9 @@ public interface Rule {
 	 *
 	 * @param atomManager AtomManager on which to base the grounding
 	 * @param groundRuleStore store for new GroundRules
+	 * @return the number of ground rules generated.
 	 */
-	public void groundAll(AtomManager atomManager, GroundRuleStore groundRuleStore);
+	public int groundAll(AtomManager atomManager, GroundRuleStore groundRuleStore);
 
 	public boolean isWeighted();
 }

@@ -110,14 +110,18 @@ public abstract class AbstractArithmeticRule implements Rule {
 	}
 
 	@Override
-	public void groundAll(AtomManager atomManager, GroundRuleStore groundRuleStore) {
+	public int groundAll(AtomManager atomManager, GroundRuleStore groundRuleStore) {
 		validateGroundRule(atomManager);
 
+		int groundCount = 0;
 		if (expression.getSummationVariables().size() == 0) {
-			groundNonSummationRule(atomManager, groundRuleStore);
+			groundCount = groundNonSummationRule(atomManager, groundRuleStore);
 		} else {
-			groundSummationRule(atomManager, groundRuleStore);
+			groundCount = groundSummationRule(atomManager, groundRuleStore);
 		}
+
+		log.debug("Grounded {} instances of rule {}", groundCount, this);
+		return groundCount;
 	}
 
 	/**
@@ -140,13 +144,13 @@ public abstract class AbstractArithmeticRule implements Rule {
 	/**
 	 * Rules without summations are much easier to ground and can do simpler queries.
 	 */
-	private void groundNonSummationRule(AtomManager atomManager, GroundRuleStore groundRuleStore) {
+	private int groundNonSummationRule(AtomManager atomManager, GroundRuleStore groundRuleStore) {
 		// Ground the variables.
 		ResultList groundVariables = atomManager.executeQuery(new DatabaseQuery(expression.getQueryFormula(), false));
-		groundNonSummationRule(groundVariables, atomManager, groundRuleStore);
+		return groundNonSummationRule(groundVariables, atomManager, groundRuleStore);
 	}
 
-	public void groundNonSummationRule(ResultList groundVariables, AtomManager atomManager, GroundRuleStore groundRuleStore) {
+	public int groundNonSummationRule(ResultList groundVariables, AtomManager atomManager, GroundRuleStore groundRuleStore) {
 		List<QueryAtom> queryAtoms = new ArrayList<QueryAtom>();
 		for (SummationAtomOrAtom atom : expression.getAtoms()) {
 			queryAtoms.add((QueryAtom)atom);
@@ -184,13 +188,13 @@ public abstract class AbstractArithmeticRule implements Rule {
 			}
 		}
 
-		log.debug("Grounded {} instances of rule {}", groundCount, this);
+		return groundCount;
 	}
 
 	/**
 	 * Rules with summations are complex and need to be grounded in a special way.
 	 */
-	private void groundSummationRule(AtomManager atomManager, GroundRuleStore groundRuleStore) {
+	private int groundSummationRule(AtomManager atomManager, GroundRuleStore groundRuleStore) {
 		// Most of our work will happen in the database.
 		// For each disjunctive component (conjunction or atom/negation) of each filter, we need to add a union to our query.
 		// We will merge together a query for the body with each disjunctive clause.
@@ -222,9 +226,7 @@ public abstract class AbstractArithmeticRule implements Rule {
 		// Run the actual query and instantiate the results.
 		ResultList groundingResults = relationalDB.executeQuery(
 				new VariableAssignment(), projectionMap, fakeTypes, query.validate().toString());
-		int groundCount = instantiateSumamtionGroundRules(groundingResults, varTypes, atomManager, groundRuleStore);
-
-		log.debug("Grounded {} instances of rule {}", groundCount, this);
+		return instantiateSumamtionGroundRules(groundingResults, varTypes, atomManager, groundRuleStore);
 	}
 
 	private int instantiateSumamtionGroundRules(ResultList groundingResults, VariableTypeMap varTypes,

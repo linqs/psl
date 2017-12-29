@@ -18,12 +18,12 @@
 package org.linqs.psl.application.learning.weight.maxlikelihood;
 
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
+import org.linqs.psl.application.learning.weight.VotedPerceptron;
 import org.linqs.psl.application.util.Grounding;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Queries;
 import org.linqs.psl.database.atom.LazyAtomManager;
-import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
@@ -43,6 +43,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -68,13 +69,12 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 	/**
 	 * Constructs a new weight learner.
 	 *
-	 * @param model  the model for which to learn weights
 	 * @param distributionDB  a Database containing all atoms for the ground distribution
 	 * @param labelDB  a Database containing labels for the unknowns in the distribution
 	 * @param config  configuration bundle
 	 */
-	public LazyMaxLikelihoodMPE(Model model, Database distributionDB, Database labelDB, ConfigBundle config) {
-		super(model, distributionDB, labelDB, config);
+	public LazyMaxLikelihoodMPE(List<Rule> rules, Database distributionDB, Database labelDB, ConfigBundle config) {
+		super(rules, distributionDB, labelDB, false, config);
 	}
 
 	@Override
@@ -92,7 +92,7 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 		lazyAtomManager = new LazyAtomManager(rvDB, config);
 
 		log.debug("Initial grounding.");
-		Grounding.groundAll(model, lazyAtomManager, groundRuleStore);
+		Grounding.groundAll(allRules, lazyAtomManager, groundRuleStore);
 
 		log.debug("Initializing objective terms for {} ground rules.", groundRuleStore.size());
 		termGenerator.generateTerms(groundRuleStore, termStore);
@@ -198,13 +198,11 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 
 		do {
 			// Activate any relevant lazy atoms.
-			int numActivated = lazyAtomManager.activateAtoms(model, groundRuleStore);
+			int numActivated = lazyAtomManager.activateAtoms(allRules, groundRuleStore);
 			log.debug("Iteration {} -- Activated {} atoms.", iteration, numActivated);
 
-			if (changedRuleWeights) {
-				termGenerator.updateWeights(groundRuleStore, termStore);
-				changedRuleWeights = false;
-			}
+			// TODO(eriq): Do we need to do this?
+			termGenerator.updateWeights(groundRuleStore, termStore);
 
 			if (numActivated > 0) {
 				// Regenerate optimization terms.
@@ -254,7 +252,7 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 			}
 		}
 
-		lazyAtomManager.activateAtoms(toActivate, model, groundRuleStore);
+		lazyAtomManager.activateAtoms(toActivate, allRules, groundRuleStore);
 
 		return targetMap;
 	}

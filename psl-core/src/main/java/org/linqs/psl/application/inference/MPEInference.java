@@ -125,13 +125,13 @@ public class MPEInference implements ModelApplication {
 		atomManager = new PersistedAtomManager(db);
 
 		log.info("Grounding out model.");
-		Grounding.groundAll(model, atomManager, groundRuleStore);
+		int groundCount = Grounding.groundAll(model, atomManager, groundRuleStore);
 
 		log.debug("Initializing objective terms for {} ground rules.", groundRuleStore.size());
       @SuppressWarnings("unchecked")
 		int termCount = termGenerator.generateTerms(groundRuleStore, termStore);
 
-		log.debug("Generated {} objective terms from {} ground rules.", termCount, groundRuleStore.size());
+		log.debug("Generated {} objective terms from {} ground rules.", termCount, groundCount);
 	}
 
 	/**
