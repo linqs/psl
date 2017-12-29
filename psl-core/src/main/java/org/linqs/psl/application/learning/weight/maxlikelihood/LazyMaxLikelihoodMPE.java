@@ -88,12 +88,12 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 	}
 
 	@Override
-	protected void computeObservedIncomp() {
+	protected void computeObservedIncompatibility() {
 		// First grow the atom set (which involves computing the MPE state),
 		// and then just do everything else normally.
 		LazyMPEInference.inference(allRules, reasoner, groundRuleStore, termStore, termGenerator, (LazyAtomManager)atomManager, maxRounds);
 
-		super.computeObservedIncomp();
+		super.computeObservedIncompatibility();
 	}
 
 	@Override

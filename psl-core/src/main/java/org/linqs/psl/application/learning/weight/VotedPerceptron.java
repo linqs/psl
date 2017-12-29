@@ -56,7 +56,7 @@ import java.util.Map;
  * are the averages of the saved weights.
  *
  * For the gradient of the objective, the expected total incompatibility is
- * computed by subclasses in {@link #computeExpectedIncomp()}.
+ * computed by subclasses in {@link #computeExpectedIncompatibility()}.
  *
  * Reasonable initial implementations are provided for all methods.
  * Child classes should be able to pick and chose which to override.
@@ -175,7 +175,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 		double[] avgWeights = new double[mutableRules.size()];
 
 		// Computes the observed incompatibilities.
-		computeObservedIncomp();
+		computeObservedIncompatibility();
 
 		// Reset the RVAs to default values.
 		setDefaultRandomVariables();
@@ -187,7 +187,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 			log.debug("Starting iteration {}", step);
 
 			// Computes the expected incompatibility.
-			computeExpectedIncomp();
+			computeExpectedIncompatibility();
 
 			currentLoss = computeLoss();
 
@@ -225,7 +225,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	 *
 	 * The default implementation just calls setLabeledRandomVariables() and sums the incompatibility for each rule.
 	 */
-	protected void computeObservedIncomp() {
+	protected void computeObservedIncompatibility() {
 		setLabeledRandomVariables();
 
 		// Zero out the observed incompatibility first.
@@ -248,7 +248,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	 * The default implementation is the total incompatibility in the MPE state.
 	 * IE, just calls computeMPEState() and then sums the incompatibility for each rule.
 	 */
-	protected void computeExpectedIncomp() {
+	protected void computeExpectedIncompatibility() {
 		computeMPEState();
 
 		// Zero out the expected incompatibility first.

@@ -141,8 +141,8 @@ public abstract class WeightLearningApplication implements ModelApplication {
 	protected void initGroundModel() {
 		try {
 			reasoner = (Reasoner)config.getNewObject(REASONER_KEY, REASONER_DEFAULT);
-			termStore = (TermStore)config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
 			groundRuleStore = (GroundRuleStore)config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
+			termStore = (TermStore)config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
 			termGenerator = (TermGenerator)config.getNewObject(TERM_GENERATOR_KEY, TERM_GENERATOR_DEFAULT);
 		} catch (Exception ex) {
 			// The caller couldn't handle these exception anyways, convert them to runtime ones.
