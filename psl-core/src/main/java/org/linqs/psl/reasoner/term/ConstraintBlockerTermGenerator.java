@@ -40,10 +40,11 @@ import java.util.Set;
  * This is a hacky class to prepare a constraint blocker in our reasoner framework.
  * Typically we have terms that come from ground rules, but here we have structures
  * that are build up around the entire collection of ground rules.
+ * A "term" is equivalent to a "block" here.
  */
 public class ConstraintBlockerTermGenerator implements TermGenerator<Term> {
 	@Override
-	public void generateTerms(GroundRuleStore ruleStore, TermStore<Term> termStore) {
+	public int generateTerms(GroundRuleStore ruleStore, TermStore<Term> termStore) {
 		if (!(ruleStore instanceof AtomRegisterGroundRuleStore)) {
 			throw new IllegalArgumentException("AtomRegisterGroundRuleStore required.");
 		}
@@ -52,15 +53,15 @@ public class ConstraintBlockerTermGenerator implements TermGenerator<Term> {
 			throw new IllegalArgumentException("ConstraintBlockerTermStore required.");
 		}
 
-		generateTermsInternal((AtomRegisterGroundRuleStore)ruleStore, (ConstraintBlockerTermStore)termStore);
+		return generateTermsInternal((AtomRegisterGroundRuleStore)ruleStore, (ConstraintBlockerTermStore)termStore);
 	}
 
 	@Override
 	public void updateWeights(GroundRuleStore ruleStore, TermStore<Term> termStore) {
-		// TODO(eriq): Since we don't keep internal repsentations of the weights, I don't think we need to do anything.
+		// TODO(eriq): Since we don't keep internal representations of the weights, I don't think we need to do anything.
 	}
 
-	private void generateTermsInternal(AtomRegisterGroundRuleStore ruleStore, ConstraintBlockerTermStore termStore) {
+	private int generateTermsInternal(AtomRegisterGroundRuleStore ruleStore, ConstraintBlockerTermStore termStore) {
 		// Collects constraints.
 		Set<UnweightedGroundArithmeticRule> constraintSet = new HashSet<UnweightedGroundArithmeticRule>();
 		Map<RandomVariableAtom, GroundValueConstraint> valueConstraintMap = new HashMap<RandomVariableAtom, GroundValueConstraint>();
@@ -147,6 +148,7 @@ public class ConstraintBlockerTermGenerator implements TermGenerator<Term> {
 		}
 
 		termStore.init(ruleStore, rvBlocks, incidentGRs, exactlyOne, rvMap);
+		return rvBlocks.length;
 	}
 
 	private WeightedGroundRule[][] collectIncidentWeightedGroundRules(

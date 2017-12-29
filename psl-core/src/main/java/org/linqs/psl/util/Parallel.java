@@ -31,37 +31,24 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Utilities to run operations in parallel.
+ * The threads will be started up on the first call, and not shut down until the JVM shuts down.
+ * Since the thread pool (and CPU) is shared, only one task may be run in parallel at a time.
  *
  * TODO(eriq): Implement a foreach with iterators.
  */
 public final class Parallel {
+	private static boolean initialized = false;
+
 	// TODO(eriq): Replace with config option once we have global config.
-	public static final int NUM_THREADS;
+	public static int NUM_THREADS;
 
 	// Block putting work intot he pool until there are workers ready.
-	private static BlockingQueue<Worker> workerQueue;
+	private static BlockingQueue<Worker<?>> workerQueue;
 
 	// Keep all the workers somewhere we can reference them.
-	private static List<Worker> allWorkers;
+	private static List<Worker<?>> allWorkers;
 
 	private static ExecutorService pool;
-
-	// Init
-	static {
-		NUM_THREADS = Runtime.getRuntime().availableProcessors();
-		workerQueue = new LinkedBlockingQueue<Worker>(NUM_THREADS);
-		allWorkers = new ArrayList<Worker>(NUM_THREADS);
-		// We will make all the threads daemons, so the JVM shutdown will not be held up.
-		pool = Executors.newFixedThreadPool(NUM_THREADS, new DaemonThreadFactory());
-
-		// Close the pool only at JVM shutdown.
-		Runtime.getRuntime().addShutdownHook(new Thread() {
-			@Override
-			public void run() {
-				Parallel.shutdown();
-			}
-		});
-	}
 
 	// Static only.
 	private Parallel() {}
@@ -71,7 +58,7 @@ public final class Parallel {
 	 * Inclusive with start, exclusive with end.
 	 * The caller is trusted to provide appropriate numbers.
 	 */
-	public synchronized static <T> void count(int start, int end, int increment, Worker<T> baseWorker) {
+	public synchronized static void count(int start, int end, int increment, Worker<Integer> baseWorker) {
 		initWorkers(baseWorker);
 		countInternal(start, end, increment, baseWorker);
 		cleanupWorkers();
@@ -80,29 +67,31 @@ public final class Parallel {
 	/**
 	 * Convenience count() that increments by 1.
 	 */
-	public static <T> void count(int start, int end, Worker<T> baseWorker) {
+	public static void count(int start, int end, Worker<Integer> baseWorker) {
 		count(start, end, 1, baseWorker);
 	}
 
 	/**
 	 * Convenience count() that starts at 0 and increments by 1.
 	 */
-	public static <T> void count(int end, Worker<T> baseWorker) {
+	public static void count(int end, Worker<Integer> baseWorker) {
 		count(0, end, 1, baseWorker);
 	}
 
-	private static <T> void countInternal(int start, int end, int increment, Worker<T> baseWorker) {
+	private static void countInternal(int start, int end, int increment, Worker<Integer> baseWorker) {
 		for (int i = start; i < end; i += increment) {
-			// Will block if no workers are ready.
-			Worker worker = null;
+			Worker<?> worker = null;
 			try {
+				// Will block if no workers are ready.
 				worker = workerQueue.take();
 			} catch (InterruptedException ex) {
 				throw new RuntimeException("Interrupted waiting for worker (" + i + ").");
 			}
 
-			worker.setWork(i, new Integer(i));
-			pool.execute(worker);
+			@SuppressWarnings("unchecked")
+			Worker<Integer> intWorker = (Worker<Integer>)worker;
+			intWorker.setWork(i, new Integer(i));
+			pool.execute(intWorker);
 		}
 
 		// As workers finish, they will be added to the queue.
@@ -116,12 +105,43 @@ public final class Parallel {
 		}
 	}
 
-	private static void initWorkers(Worker baseWorker) {
+	/**
+	 * Init the thread pool and supporting structures.
+	 */
+	private static synchronized void init() {
+		if (initialized == true) {
+			return;
+		}
+
+		NUM_THREADS = Runtime.getRuntime().availableProcessors();
+		workerQueue = new LinkedBlockingQueue<Worker<?>>(NUM_THREADS);
+		allWorkers = new ArrayList<Worker<?>>(NUM_THREADS);
+
+		// We will make all the threads daemons, so the JVM shutdown will not be held up.
+		pool = Executors.newFixedThreadPool(NUM_THREADS, new DaemonThreadFactory());
+
+		// Close the pool only at JVM shutdown.
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			@Override
+			public void run() {
+				Parallel.shutdown();
+			}
+		});
+
+		initialized = true;
+	}
+
+	/**
+	 * Always the first thing called when setting up to run a task in parallel.
+	 */
+	private static <T> void initWorkers(Worker<T> baseWorker) {
+		init();
+
 		workerQueue.clear();
 		allWorkers.clear();
 
 		for (int i = 0; i < NUM_THREADS; i++) {
-			Worker worker = null;
+			Worker<T> worker = null;
 
 			// The base worker goes in last so we won't call copy() after init().
 			if (i == NUM_THREADS - 1) {
@@ -138,7 +158,7 @@ public final class Parallel {
 	}
 
 	private static void cleanupWorkers() {
-		for (Worker worker : allWorkers) {
+		for (Worker<?> worker : allWorkers) {
 			worker.close();
 		}
 
@@ -164,7 +184,7 @@ public final class Parallel {
 	/**
 	 * Signal that a worker is done and ready for more work.
 	 */
-	private static void freeWorker(Worker worker) {
+	private static void freeWorker(Worker<?> worker) {
 		workerQueue.add(worker);
 	}
 
@@ -194,6 +214,7 @@ public final class Parallel {
 		 * Make a deep copy of this worker.
 		 * Called when the manager is getting the correct number of workers ready.
 		 */
+		@SuppressWarnings("unchecked")
 		public Worker<T> copy() {
 			try {
 				return (Worker<T>)this.clone();

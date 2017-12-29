@@ -128,7 +128,7 @@ public class ConstraintBlockerTermStore implements TermStore<Term> {
 
 	@Override
 	public int size() {
-		return -1;
+		return rvBlocks.length;
 	}
 
 	@Override

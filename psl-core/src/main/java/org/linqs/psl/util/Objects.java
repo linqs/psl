@@ -38,7 +38,7 @@ public final class Objects {
 	}
 
 	public static Object newObject(String className, ConfigBundle config) {
-		Class classObject = null;
+		Class<?> classObject = null;
 		try {
 			classObject = Class.forName(className);
 		} catch (ClassNotFoundException ex) {
@@ -48,11 +48,11 @@ public final class Objects {
 		return newObject(classObject, config);
 	}
 
-	public static Object newObject(Class classObject) {
+	public static Object newObject(Class<?> classObject) {
 		return newObject(classObject, null);
 	}
 
-	public static Object newObject(Class classObject, ConfigBundle config) {
+	public static Object newObject(Class<?> classObject, ConfigBundle config) {
 		Constructor constructor = null;
 		boolean useConfig = true;
 

@@ -132,7 +132,7 @@ public abstract class AbstractLogicalRule implements Rule {
 		log.debug("Grounded {} instances of rule {}", grs.count(this) - initialCount, this);
 	}
 
-	private class GroundWorker extends Parallel.Worker<Object> {
+	private class GroundWorker extends Parallel.Worker<Integer> {
 		private List<GroundAtom> posLiterals;
 		private List<GroundAtom> negLiterals;
 		private Map<FunctionVariable, Double> worstCaseValues;
@@ -162,7 +162,7 @@ public abstract class AbstractLogicalRule implements Rule {
 		}
 
 		@Override
-		public void work(int index, Object ignore) {
+		public void work(int index, Integer ignore) {
 			GroundAtom atom = null;
 
 			for (int j = 0; j < negatedDNF.getPosLiterals().size(); j++) {

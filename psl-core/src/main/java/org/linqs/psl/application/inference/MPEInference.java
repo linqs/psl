@@ -128,9 +128,10 @@ public class MPEInference implements ModelApplication {
 		Grounding.groundAll(model, atomManager, groundRuleStore);
 
 		log.debug("Initializing objective terms for {} ground rules.", groundRuleStore.size());
-		termGenerator.generateTerms(groundRuleStore, termStore);
+      @SuppressWarnings("unchecked")
+		int termCount = termGenerator.generateTerms(groundRuleStore, termStore);
 
-		log.debug("Generated {} objective terms from {} ground rules.", termStore.size(), groundRuleStore.size());
+		log.debug("Generated {} objective terms from {} ground rules.", termCount, groundRuleStore.size());
 	}
 
 	/**

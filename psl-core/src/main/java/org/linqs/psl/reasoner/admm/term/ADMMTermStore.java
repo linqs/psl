@@ -59,6 +59,7 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm> {
 		this(new MemoryTermStore<ADMMObjectiveTerm>());
 	}
 
+	@SuppressWarnings("unchecked")
 	public ADMMTermStore(ConfigBundle config) {
 		this((TermStore<ADMMObjectiveTerm>)config.getNewObject(INTERNAL_STORE_KEY, INTERNAL_STORE_DEFAULT));
 	}

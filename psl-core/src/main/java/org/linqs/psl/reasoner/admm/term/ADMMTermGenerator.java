@@ -45,17 +45,21 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 	public ADMMTermGenerator(ConfigBundle config) {}
 
 	@Override
-	public void generateTerms(GroundRuleStore ruleStore, TermStore<ADMMObjectiveTerm> termStore) {
+	public int generateTerms(GroundRuleStore ruleStore, TermStore<ADMMObjectiveTerm> termStore) {
 		if (!(termStore instanceof ADMMTermStore)) {
 			throw new IllegalArgumentException("ADMMTermGenerator requires an ADMMTermStore");
 		}
 
+		int count = 0;
 		for (GroundRule groundRule : ruleStore.getGroundRules()) {
 			ADMMObjectiveTerm term = createTerm(groundRule, (ADMMTermStore)termStore);
 			if (term.variables.size() > 0) {
 				termStore.add(groundRule, term);
+				count++;
 			}
 		}
+
+		return count;
 	}
 
 	@Override

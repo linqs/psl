@@ -170,8 +170,9 @@ public class LazyMPEInference implements ModelApplication {
 			termStore.clear();
 
 			log.debug("Initializing objective terms for {} ground rules.", groundRuleStore.size());
-			termGenerator.generateTerms(groundRuleStore, termStore);
-			log.debug("Generated {} objective terms from {} ground rules.", termStore.size(), groundRuleStore.size());
+         @SuppressWarnings("unchecked")
+			int termCount = termGenerator.generateTerms(groundRuleStore, termStore);
+			log.debug("Generated {} objective terms from {} ground rules.", termCount, groundRuleStore.size());
 
 			log.info("Beginning inference round {}.", rounds);
 			reasoner.optimize(termStore);
