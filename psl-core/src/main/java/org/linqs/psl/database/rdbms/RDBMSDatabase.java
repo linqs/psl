@@ -25,6 +25,7 @@ import org.linqs.psl.database.ReadOnlyDatabase;
 import org.linqs.psl.database.ResultList;
 import org.linqs.psl.model.atom.AtomCache;
 import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.atom.VariableAssignment;
@@ -283,6 +284,22 @@ public class RDBMSDatabase implements Database {
 		List<RandomVariableAtom> atoms = new ArrayList<RandomVariableAtom>(groundAtoms.size());
 		for (GroundAtom atom : groundAtoms) {
 			atoms.add((RandomVariableAtom)atom);
+		}
+
+		return atoms;
+	}
+
+	@Override
+	public List<ObservedAtom> getAllGroundObservedAtoms(StandardPredicate predicate) {
+		// Note that even open predicates may have observed atoms (partially observed predicates).
+
+		// Only pull from the read partitions.
+		List<GroundAtom> groundAtoms = getAllGroundAtoms(predicate, readIDs);
+
+		// All the atoms will be observed since we are pulling from only read partitions.
+		List<ObservedAtom> atoms = new ArrayList<ObservedAtom>(groundAtoms.size());
+		for (GroundAtom atom : groundAtoms) {
+			atoms.add((ObservedAtom)atom);
 		}
 
 		return atoms;

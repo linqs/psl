@@ -19,8 +19,8 @@ package org.linqs.psl.cli;
 
 import org.linqs.psl.application.inference.MPEInference;
 import org.linqs.psl.application.inference.result.FullInferenceResult;
+import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
-import org.linqs.psl.application.learning.weight.maxlikelihood.VotedPerceptron;
 import org.linqs.psl.cli.dataloader.DataLoader;
 import org.linqs.psl.cli.dataloader.DataLoaderOutput;
 import org.linqs.psl.config.ConfigBundle;
@@ -330,8 +330,9 @@ public class Launcher {
 		Database randomVariableDatabase = dataStore.getDatabase(targetPartition, closedPredicates, observationsPartition);
 		Database observedTruthDatabase = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
 
-		VotedPerceptron vp = new MaxLikelihoodMPE(model, randomVariableDatabase, observedTruthDatabase, config);
-		vp.learn();
+		WeightLearningApplication learner = new MaxLikelihoodMPE(model.getRules(), randomVariableDatabase, observedTruthDatabase, config);
+		learner.learn();
+		learner.close();
 
 		randomVariableDatabase.close();
 		observedTruthDatabase.close();

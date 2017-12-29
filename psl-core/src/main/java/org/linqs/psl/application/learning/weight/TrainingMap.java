@@ -15,20 +15,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.database.atom;
+package org.linqs.psl.application.learning.weight;
 
 import org.linqs.psl.database.Database;
-import org.linqs.psl.database.DatabaseQuery;
-import org.linqs.psl.database.ResultList;
+import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
-import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
-import org.linqs.psl.model.formula.Formula;
-import org.linqs.psl.model.predicate.Predicate;
-import org.linqs.psl.model.predicate.StandardPredicate;
-import org.linqs.psl.model.term.Constant;
-import org.linqs.psl.model.term.Variable;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -37,14 +30,11 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * A PersistedAtomManager that also keeps tracks of the mapping between a random variable
- * atom in one database and an observed atom in another (as well as unmapped (latent) variables).
- *
- * This AtomManager acts on top of the random variable database and only uses the
- * observed database during construction to build the map.
- * All standard rules and assumptions with PersistedAtomManagers apply.
+ * A class that keeps tracks of the mapping between a random variable
+ * atom in one database (atom manager) and an observed atom in another
+ * (as well as unmapped (latent) variables).
  */
-public class TrainingMapAtomManager extends PersistedAtomManager {
+public class TrainingMap {
 	/**
 	 * The mapping between an atom and its observed truth value.
 	 * We are actually trading away some memory in favor of maintainability here
@@ -59,23 +49,19 @@ public class TrainingMapAtomManager extends PersistedAtomManager {
 	private final Set<RandomVariableAtom> latentVariables;
 
 	/**
-	 * Initializes the training map of {@link RandomVariableAtom RandomVariableAtoms}
-	 * to {@link ObservedAtom ObservedAtoms}. Any RandomVariableAtom that does not have
-	 * a matching ObservedAtom in the second Database are stored in the set of latent
-	 * variables.
+	 * Initializes the training map of RandomVariableAtoms ObservedAtoms.
+	 * Any RandomVariableAtom from the atom manager that does not have a matching ObservedAtom
+	 * in the Database are stored in the set of latent variables.
 	 *
-	 * @param rvDB the database containing the RandomVariableAtoms (any other atom types are ignored)
+	 * @param rvAtomManager the atom manager containing the RandomVariableAtoms (any other atom types are ignored)
 	 * @param observedDB the database containing matching ObservedAtoms
 	 */
-	public TrainingMapAtomManager(Database rvDB, Database observedDB) {
-		// We will pass the random variable database to super.
-		super(rvDB);
-
+	public TrainingMap(PersistedAtomManager rvAtomManager, Database observedDB) {
 		this.trainingMap = new HashMap<RandomVariableAtom, ObservedAtom>();
 		this.latentVariables = new HashSet<RandomVariableAtom>();
 
 		// Go through all the atoms that were already persisted and build a mapping.
-		for (RandomVariableAtom rvAtom : persistedCache) {
+		for (RandomVariableAtom rvAtom : rvAtomManager.getPersistedRVAtoms()) {
 			// Query the observed database to see if this is observed or latent.
 			GroundAtom otherAtom = observedDB.getAtom(rvAtom.getPredicate(), rvAtom.getArguments());
 

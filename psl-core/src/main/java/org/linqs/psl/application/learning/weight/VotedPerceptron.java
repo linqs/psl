@@ -58,7 +58,8 @@ import java.util.Map;
  * For the gradient of the objective, the expected total incompatibility is
  * computed by subclasses in {@link #computeExpectedIncomp()}.
  *
- * @author Stephen Bach <bach@cs.umd.edu>
+ * Reasonable initial implementations are provided for all methods.
+ * Child classes should be able to pick and chose which to override.
  */
 public abstract class VotedPerceptron extends WeightLearningApplication {
 	private static final Logger log = LoggerFactory.getLogger(VotedPerceptron.class);
@@ -118,27 +119,31 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	/** Default value for NUM_STEPS_KEY */
 	public static final int NUM_STEPS_DEFAULT = 25;
 
-	protected double[] numGroundings;
-
-	protected final double stepSize;
+	protected final double baseStepSize;
 	protected final int numSteps;
 	protected final double l2Regularization;
 	protected final double l1Regularization;
 	protected final boolean scheduleStepSize;
 	protected final boolean scaleGradient;
 	protected final boolean averageSteps;
-	protected double[] truthIncompatibility;
+
+	/**
+	 * Corresponds 1-1 with mutableRules.
+	 */
+	protected double[] observedIncompatibility;
 	protected double[] expectedIncompatibility;
 
-	/** Learning loss at current point */
-	private double loss = Double.POSITIVE_INFINITY;
+	/**
+	 * Learning loss at the current point
+	 */
+	private double currentLoss = Double.POSITIVE_INFINITY;
 
 	public VotedPerceptron(List<Rule> rules, Database rvDB, Database observedDB,
 			boolean supportsLatentVariables, ConfigBundle config) {
 		super(rules, rvDB, observedDB, supportsLatentVariables, config);
 
-		stepSize = config.getDouble(STEP_SIZE_KEY, STEP_SIZE_DEFAULT);
-		if (stepSize <= 0) {
+		baseStepSize = config.getDouble(STEP_SIZE_KEY, STEP_SIZE_DEFAULT);
+		if (baseStepSize <= 0) {
 			throw new IllegalArgumentException("Step size must be positive.");
 		}
 
@@ -160,14 +165,9 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 		scheduleStepSize = config.getBoolean(STEP_SCHEDULE_KEY, STEP_SCHEDULE_DEFAULT);
 		scaleGradient = config.getBoolean(SCALE_GRADIENT_KEY, SCALE_GRADIENT_DEFAULT);
 		averageSteps = config.getBoolean(AVERAGE_STEPS_KEY, AVERAGE_STEPS_DEFAULT);
-	}
 
-	protected double getStepSize(int iteration) {
-		if (scheduleStepSize) {
-			return stepSize / (double)(iteration + 1);
-		} else {
-			return stepSize;
-		}
+		observedIncompatibility = new double[mutableRules.size()];
+		expectedIncompatibility = new double[mutableRules.size()];
 	}
 
 	@Override
@@ -175,50 +175,39 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 		double[] avgWeights = new double[mutableRules.size()];
 
 		// Computes the observed incompatibilities.
-		truthIncompatibility = computeObservedIncomp();
+		computeObservedIncomp();
 
-		// TODO(eriq): If not overwritten, computeObservedIncomp() calls setLabeledRandomVariables(),
-		// which uses trainingMap without checking for null.
-		if (trainingMap != null) {
-			// Resets random variables to default values for computing expected incompatibility.
-			for (RandomVariableAtom atom : trainingMap.getTrainingMap().keySet()) {
-				atom.setValue(0.0);
-			}
+		// Reset the RVAs to default values.
+		setDefaultRandomVariables();
 
-			for (RandomVariableAtom atom : trainingMap.getLatentVariables()) {
-				atom.setValue(0.0);
-			}
-		}
+		double[] scalingFactor  = computeScalingFactor();
 
 		// Computes the gradient steps.
 		for (int step = 0; step < numSteps; step++) {
-			log.debug("Starting iteration {}", step + 1);
+			log.debug("Starting iteration {}", step);
 
-			// Computes the expected total incompatibility for each CompatibilityRule.
-			expectedIncompatibility = computeExpectedIncomp();
-			double[] scalingFactor  = computeScalingFactor();
-			loss = computeLoss();
+			// Computes the expected incompatibility.
+			computeExpectedIncomp();
+
+			currentLoss = computeLoss();
 
 			// Updates weights.
+			double stepSize = getStepSize(step);
 			for (int i = 0; i < mutableRules.size(); i++) {
 				double weight = mutableRules.get(i).getWeight();
-				double currentStep = (expectedIncompatibility[i] - truthIncompatibility[i]
+				double currentStep = (expectedIncompatibility[i] - observedIncompatibility[i]
 						- l2Regularization * weight
 						- l1Regularization) / scalingFactor[i];
-				currentStep *= getStepSize(step);
+
+				currentStep *= stepSize;
 
 				log.debug("Step of {} for rule {}", currentStep, mutableRules.get(i));
-				log.debug(" --- Expected incomp.: {}, Truth incomp.: {}", expectedIncompatibility[i], truthIncompatibility[i]);
+				log.debug(" --- Expected incomp.: {}, Truth incomp.: {}", expectedIncompatibility[i], observedIncompatibility[i]);
 
-				weight += currentStep;
-				weight = Math.max(weight, 0.0);
-
+				weight = Math.max(weight + currentStep, 0.0);
 				avgWeights[i] += weight;
 				mutableRules.get(i).setWeight(weight);
 			}
-
-			// Update the terms with the new weights.
-			termGenerator.updateWeights(groundRuleStore, termStore);
 		}
 
 		// Sets the weights to their averages.
@@ -226,35 +215,60 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 			for (int i = 0; i < mutableRules.size(); i++) {
 				mutableRules.get(i).setWeight(avgWeights[i] / numSteps);
 			}
-
-			termGenerator.updateWeights(groundRuleStore, termStore);
 		}
-	}
-
-	protected double[] computeObservedIncomp() {
-		numGroundings = new double[mutableRules.size()];
-		double[] truthIncompatibility = new double[mutableRules.size()];
-		setLabeledRandomVariables();
-
-		// Computes the observed incompatibilities and numbers of groundings.
-		for (int i = 0; i < mutableRules.size(); i++) {
-			for (GroundRule groundRule : groundRuleStore.getGroundRules(mutableRules.get(i))) {
-				truthIncompatibility[i] += ((WeightedGroundRule) groundRule).getIncompatibility();
-				numGroundings[i]++;
-			}
-		}
-
-		return truthIncompatibility;
 	}
 
 	/**
-	 * Computes the expected (unweighted) total incompatibility of the
-	 * {@link WeightedGroundRule GroundCompatibilityRules} in groundRuleStore
-	 * for each {@link WeightedRule}.
+	 * Compute the incompatibility in the model using the labels (truth values) from the observed (truth) database.
+	 * This method is responsible for filling the observedIncompatibility member variable.
+	 * This may call setLabeledRandomVariables() and not reset any ground atoms to their original value.
 	 *
-	 * @return expected incompatibilities, ordered according to rules
+	 * The default implementation just calls setLabeledRandomVariables() and sums the incompatibility for each rule.
 	 */
-	protected abstract double[] computeExpectedIncomp();
+	protected void computeObservedIncomp() {
+		setLabeledRandomVariables();
+
+		// Zero out the observed incompatibility first.
+		for (int i = 0; i < observedIncompatibility.length; i++) {
+			observedIncompatibility[i] = 0.0;
+		}
+
+		// Sums up the incompatibilities.
+		for (int i = 0; i < mutableRules.size(); i++) {
+			for (GroundRule groundRule : groundRuleStore.getGroundRules(mutableRules.get(i))) {
+				observedIncompatibility[i] += ((WeightedGroundRule)groundRule).getIncompatibility();
+			}
+		}
+	}
+
+	/**
+	 * Compute the incompatibility in the model.
+	 * This method is responsible for filling the expectedIncompatibility member variable.
+	 *
+	 * The default implementation is the total incompatibility in the MPE state.
+	 * IE, just calls computeMPEState() and then sums the incompatibility for each rule.
+	 */
+	protected void computeExpectedIncomp() {
+		computeMPEState();
+
+		// Zero out the expected incompatibility first.
+		for (int i = 0; i < expectedIncompatibility.length; i++) {
+			expectedIncompatibility[i] = 0.0;
+		}
+
+		// Sums up the incompatibilities.
+		for (int i = 0; i < mutableRules.size(); i++) {
+			for (GroundRule groundRule : groundRuleStore.getGroundRules(mutableRules.get(i))) {
+				expectedIncompatibility[i] += ((WeightedGroundRule)groundRule).getIncompatibility();
+			}
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	protected void computeMPEState() {
+		termGenerator.updateWeights(groundRuleStore, termStore);
+		reasoner.optimize(termStore);
+	}
 
 	protected double computeRegularizer() {
 		if (l1Regularization == 0.0 && l2Regularization == 0.0) {
@@ -273,19 +287,36 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	}
 
 	/**
-	 * Internal method for computing the loss at the current point
-	 * before taking a step.
+	 * Internal method for computing the loss at the current point before taking a step.
+	 * Child methods may override.
 	 *
-	 * Returns 0.0 if not overridden by a subclass
+	 * The default implementation just sums the product of the difference between the expected and observed incompatibility.
 	 *
 	 * @return current learning loss
 	 */
 	protected double computeLoss() {
-		return Double.POSITIVE_INFINITY;
+		if (currentLoss == Double.POSITIVE_INFINITY) {
+			return currentLoss;
+		}
+
+		double loss = 0.0;
+		for (int i = 0; i < mutableRules.size(); i++) {
+			loss += mutableRules.get(i).getWeight() * (observedIncompatibility[i] - expectedIncompatibility[i]);
+		}
+
+		return loss;
 	}
 
 	public double getLoss() {
-		return loss;
+		return currentLoss;
+	}
+
+	protected double getStepSize(int iteration) {
+		if (scheduleStepSize) {
+			return baseStepSize / (double)(iteration + 1);
+		}
+
+		return baseStepSize;
 	}
 
 	/**
@@ -295,10 +326,11 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	 * scales by 1.0.
 	 */
 	protected double[] computeScalingFactor() {
-		double [] factor = new double[numGroundings.length];
-		for (int i = 0; i < numGroundings.length; i++) {
-			factor[i] = (scaleGradient && numGroundings[i] > 0) ? numGroundings[i] : 1.0;
+		double [] factor = new double[mutableRules.size()];
+		for (int i = 0; i < factor.length; i++) {
+			factor[i] = Math.max(1.0, groundRuleStore.count(mutableRules.get(i)));
 		}
+
 		return factor;
 	}
 }

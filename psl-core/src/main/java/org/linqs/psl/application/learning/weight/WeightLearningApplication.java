@@ -21,20 +21,20 @@ import org.linqs.psl.application.ModelApplication;
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 import org.linqs.psl.application.util.Grounding;
 import org.linqs.psl.config.ConfigBundle;
-import org.linqs.psl.config.Factory;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.database.atom.TrainingMapAtomManager;
+import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.model.atom.ObservedAtom;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.Reasoner;
-import org.linqs.psl.reasoner.ReasonerFactory;
-import org.linqs.psl.reasoner.admm.ADMMReasonerFactory;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 
-import com.google.common.collect.Iterables;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,6 +45,8 @@ import java.util.Set;
  * Abstract class for learning the weights of weighted mutableRules from data for a model.
  */
 public abstract class WeightLearningApplication implements ModelApplication {
+	private static final Logger log = LoggerFactory.getLogger(WeightLearningApplication.class);
+
 	/**
 	 * Prefix of property keys used by this class.
 	 */
@@ -76,14 +78,20 @@ public abstract class WeightLearningApplication implements ModelApplication {
 	public static final String TERM_GENERATOR_KEY = CONFIG_PREFIX + ".termgenerator";
 	public static final String TERM_GENERATOR_DEFAULT = "org.linqs.psl.reasoner.admm.term.ADMMTermGenerator";
 
-	protected Database rvDB;
-	protected Database observedDB;
 	protected ConfigBundle config;
 	protected boolean supportsLatentVariables;
 
+	protected Database rvDB;
+	protected Database observedDB;
+
+	/**
+	 * An atom manager on top of the rvDB.
+	 */
+	protected PersistedAtomManager atomManager;
+
 	protected List<Rule> allRules;
 	protected List<WeightedRule> mutableRules;
-	protected TrainingMapAtomManager trainingMap;
+	protected TrainingMap trainingMap;
 
 	protected Reasoner reasoner;
 	protected GroundRuleStore groundRuleStore;
@@ -130,10 +138,6 @@ public abstract class WeightLearningApplication implements ModelApplication {
 
 	protected abstract void doLearn();
 
-	/**
-	 * Constructs a ground model using the rules and trainingMap, and stores the
-	 * resulting GroundRules in reasoner.
-	 */
 	protected void initGroundModel() {
 		try {
 			reasoner = (Reasoner)config.getNewObject(REASONER_KEY, REASONER_DEFAULT);
@@ -145,7 +149,13 @@ public abstract class WeightLearningApplication implements ModelApplication {
 			throw new RuntimeException("Failed to prepare storage for inference.", ex);
 		}
 
-		trainingMap = new TrainingMapAtomManager(rvDB, observedDB);
+		atomManager = createAtomManager();
+
+		// Ensure all targets from the observed (truth) database
+		// exist in the RV database.
+		ensureTargets();
+
+		trainingMap = new TrainingMap(atomManager, observedDB);
 		if (!supportsLatentVariables && trainingMap.getLatentVariables().size() > 0) {
 			Set<RandomVariableAtom> latentVariables = trainingMap.getLatentVariables();
 			throw new IllegalArgumentException(String.format(
@@ -157,13 +167,19 @@ public abstract class WeightLearningApplication implements ModelApplication {
 					latentVariables.iterator().next()));
 		}
 
-		Grounding.groundAll(allRules, trainingMap, groundRuleStore);
-		termGenerator.generateTerms(groundRuleStore, termStore);
+		log.info("Grounding out model.");
+		int groundCount = Grounding.groundAll(allRules, atomManager, groundRuleStore);
+
+		log.debug("Initializing objective terms for {} ground rules.", groundCount);
+		@SuppressWarnings("unchecked")
+		int termCount = termGenerator.generateTerms(groundRuleStore, termStore);
+		log.debug("Generated {} objective terms from {} ground rules.", termCount, groundCount);
 	}
 
 	@Override
 	public void close() {
 		trainingMap = null;
+		atomManager = null;
 
 		termStore.close();
 		termStore = null;
@@ -175,15 +191,66 @@ public abstract class WeightLearningApplication implements ModelApplication {
 		reasoner = null;
 
 		rvDB = null;
+		observedDB = null;
 		config = null;
 	}
 
 	/**
-	 * Sets RandomVariableAtoms with training labels to their observed values.
+	 * Set RandomVariableAtoms with training labels to their observed values.
 	 */
 	protected void setLabeledRandomVariables() {
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getTrainingMap().entrySet()) {
 			entry.getKey().setValue(entry.getValue().getValue());
 		}
+	}
+
+	/**
+	 * Set RandomVariableAtoms with training labels to their default values.
+	 */
+	protected void setDefaultRandomVariables() {
+		for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getTrainingMap().entrySet()) {
+			for (RandomVariableAtom atom : trainingMap.getTrainingMap().keySet()) {
+				atom.setValue(0.0);
+			}
+
+			for (RandomVariableAtom atom : trainingMap.getLatentVariables()) {
+				atom.setValue(0.0);
+			}
+		}
+	}
+
+	/**
+	 * Create an atom manager on top of the RV database.
+	 * This allows an opportunity for subclasses to create a special manager.
+	 */
+	protected PersistedAtomManager createAtomManager() {
+		return new PersistedAtomManager(rvDB);
+	}
+
+	/**
+	 * Make sure that all targets from the observed database exist in the RV database.
+	 */
+	private void ensureTargets() {
+		// Iterate through all of the registered predicates in the observed.
+		for (StandardPredicate predicate : observedDB.getRegisteredPredicates()) {
+			// Ignore any closed predicates.
+			if (observedDB.isClosed(predicate)) {
+				continue;
+			}
+
+			// Commit the atoms into the RV databse with the default value.
+			for (ObservedAtom observedAtom : observedDB.getAllGroundObservedAtoms(predicate)) {
+				GroundAtom otherAtom = atomManager.getAtom(observedAtom.getPredicate(), observedAtom.getArguments());
+
+				if (otherAtom instanceof ObservedAtom) {
+					continue;
+				}
+
+				RandomVariableAtom rvAtom = (RandomVariableAtom)otherAtom;
+				rvAtom.setValue(0.0);
+			}
+		}
+
+		atomManager.commitPersistedAtoms();
 	}
 }

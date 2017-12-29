@@ -162,6 +162,16 @@ public interface Database {
 	public List<RandomVariableAtom> getAllGroundRandomVariableAtoms(StandardPredicate predicate);
 
 	/**
+	 * Fetch all the ground ObservedAtoms for a predicate.
+	 * By "ground", we mean that it exists in the database.
+	 * This will not leverage the closed world assumption for any atoms.
+	 *
+	 * @param predicate the predicate to fetch atoms for
+	 * @return All ground atoms present in the write partition of the database.
+	 */
+	public List<ObservedAtom> getAllGroundObservedAtoms(StandardPredicate predicate);
+
+	/**
 	 * Removes the GroundAtom from the Database, if it exists.
 	 *
 	 *

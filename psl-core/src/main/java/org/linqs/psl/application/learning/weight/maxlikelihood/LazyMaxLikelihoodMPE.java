@@ -18,12 +18,14 @@
 package org.linqs.psl.application.learning.weight.maxlikelihood;
 
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
+import org.linqs.psl.application.inference.LazyMPEInference;
 import org.linqs.psl.application.learning.weight.VotedPerceptron;
 import org.linqs.psl.application.util.Grounding;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Queries;
 import org.linqs.psl.database.atom.LazyAtomManager;
+import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
@@ -48,23 +50,29 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Voted perceptron algorithm that does not require a ground model of pre-specified
- * dimensionality.
+ * Voted perception algorithm that does not require a ground model of pre-specified dimensionality.
  *
- * For the gradient of the objective, the expected total incompatibility is
- * computed by finding the MPE state.
+ * Unlike MaxLikelihoodMPE, this will make changes to your RV database.
+ * The lazy growing process requires committing the new lazy atoms to the database.
  *
- * Note that this class does not support latent variables but will not throw
- * an error if the labelDB does not include a corresponding label for a
- * RandomVariableAtom. All unspecified labels will set to their most probable
- * values conditioned on the observations in distributionDB and the labels in labelDB.
- *
- * @author Stephen Bach <bach@cs.umd.edu>
+ * For the gradient of the objective, the expected total incompatibility is computed by finding the MPE state.
+ * The model is grown using LazyMPEInference.
  */
 public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 	private static final Logger log = LoggerFactory.getLogger(LazyMaxLikelihoodMPE.class);
 
-	private LazyAtomManager lazyAtomManager;
+	/**
+	 * Prefix of property keys used by this class.
+	 */
+	public static final String CONFIG_PREFIX = "lazymaxlikelihoodmpe";
+
+	/**
+	 * Key for int property for the maximum number of rounds of lazy growing.
+	 */
+	public static final String MAX_ROUNDS_KEY = CONFIG_PREFIX + ".maxgrowrounds";
+	public static final int MAX_ROUNDS_DEFAULT = 100;
+
+	private int maxRounds;
 
 	/**
 	 * Constructs a new weight learner.
@@ -75,185 +83,21 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 	 */
 	public LazyMaxLikelihoodMPE(List<Rule> rules, Database distributionDB, Database labelDB, ConfigBundle config) {
 		super(rules, distributionDB, labelDB, false, config);
+
+		maxRounds = config.getInt(MAX_ROUNDS_KEY, MAX_ROUNDS_DEFAULT);
 	}
 
 	@Override
-	protected void initGroundModel() {
-		try {
-			reasoner = (Reasoner)config.getNewObject(REASONER_KEY, REASONER_DEFAULT);
-			termStore = (TermStore)config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
-			groundRuleStore = (GroundRuleStore)config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
-			termGenerator = (TermGenerator)config.getNewObject(TERM_GENERATOR_KEY, TERM_GENERATOR_DEFAULT);
-		} catch (Exception ex) {
-			// The caller couldn't handle these exception anyways, convert them to runtime ones.
-			throw new RuntimeException("Failed to prepare storage for inference.", ex);
-		}
+	protected void computeObservedIncomp() {
+		// First grow the atom set (which involves computing the MPE state),
+		// and then just do everything else normally.
+		LazyMPEInference.inference(allRules, reasoner, groundRuleStore, termStore, termGenerator, (LazyAtomManager)atomManager, maxRounds);
 
-		lazyAtomManager = new LazyAtomManager(rvDB, config);
-
-		log.debug("Initial grounding.");
-		Grounding.groundAll(allRules, lazyAtomManager, groundRuleStore);
-
-		log.debug("Initializing objective terms for {} ground rules.", groundRuleStore.size());
-		termGenerator.generateTerms(groundRuleStore, termStore);
-		log.debug("Generated {} objective terms from {} ground rules.", termStore.size(), groundRuleStore.size());
+		super.computeObservedIncomp();
 	}
 
 	@Override
-	protected double[] computeObservedIncomp() {
-		Map<RandomVariableAtom, GroundValueConstraint> targetMap = activateLabeledAtoms();
-
-		boolean continueGrowing = false;
-
-		// Maintains a temporary set during collection to avoid concurrent modification errors.
-		Set<GroundValueConstraint> toAdd = new HashSet<GroundValueConstraint>();
-
-		// Use a loop to extend the network based on MPE inference and
-		// activation events, and then check for new labeled RandomVariableAtoms
-		// to constrain as necessary.
-		log.debug("Beginning to grow labeled network.");
-		do {
-			continueGrowing = false;
-
-			computeMPEState();
-
-			// Collects existing RandomVariableAtoms and pairs them with label constraints.
-			for (GroundRule groundRule : groundRuleStore.getGroundRules()) {
-				for (Atom atom : groundRule.getAtoms()) {
-					if (atom instanceof RandomVariableAtom) {
-						RandomVariableAtom rv = (RandomVariableAtom) atom;
-						if (!targetMap.containsKey(rv)) {
-							Atom possibleLabel = observedDB.getAtom(rv.getPredicate(), rv.getArguments());
-							if (possibleLabel instanceof ObservedAtom) {
-								GroundValueConstraint con = new GroundValueConstraint(rv, ((ObservedAtom) possibleLabel).getValue());
-								targetMap.put(rv, con);
-								toAdd.add(con);
-								continueGrowing = true;
-							}
-						}
-					}
-				}
-			}
-
-			// Adds new constraints to the ground rule store.
-			for (GroundValueConstraint con : toAdd) {
-				groundRuleStore.addGroundRule(con);
-			}
-			toAdd.clear();
-		} while (continueGrowing);
-		log.debug("Finished growing labeled network.");
-
-		// Computes the observed incompatibilities.
-		double[] truthIncompatibility = new double[mutableRules.size()];
-		for (int i = 0; i < mutableRules.size(); i++) {
-			for (GroundRule groundRule : groundRuleStore.getGroundRules(mutableRules.get(i))) {
-				truthIncompatibility[i] += ((WeightedGroundRule) groundRule).getIncompatibility();
-			}
-		}
-
-		// Removes label value constraints.
-		for (GroundValueConstraint con : targetMap.values()) {
-			groundRuleStore.removeGroundRule(con);
-		}
-
-		return truthIncompatibility;
-	}
-
-	@Override
-	protected double[] computeExpectedIncomp() {
-		double[] expIncomp = new double[mutableRules.size()];
-
-		computeMPEState();
-
-		// Computes incompatibility.
-		for (int i = 0; i < mutableRules.size(); i++) {
-			for (GroundRule groundRule : groundRuleStore.getGroundRules(mutableRules.get(i))) {
-				expIncomp[i] += ((WeightedGroundRule) groundRule).getIncompatibility();
-			}
-		}
-
-		return expIncomp;
-	}
-
-	@Override
-	protected double[] computeScalingFactor() {
-		double[] scalingFactor = new double[mutableRules.size()];
-
-		for (int i = 0; i < mutableRules.size(); i++) {
-			for (GroundRule rule : groundRuleStore.getGroundRules(mutableRules.get(i))) {
-				scalingFactor[i]++;
-			}
-
-			if (scalingFactor[i] == 0.0) {
-				scalingFactor[i]++;
-			}
-		}
-
-		return scalingFactor;
-	}
-
-	// TODO(eriq): This really seems like it should have a max number of iterations like LazyMPEInference.
-	private void computeMPEState() {
-		int iteration = 1;
-
-		do {
-			// Activate any relevant lazy atoms.
-			int numActivated = lazyAtomManager.activateAtoms(allRules, groundRuleStore);
-			log.debug("Iteration {} -- Activated {} atoms.", iteration, numActivated);
-
-			// TODO(eriq): Do we need to do this?
-			termGenerator.updateWeights(groundRuleStore, termStore);
-
-			if (numActivated > 0) {
-				// Regenerate optimization terms.
-				termStore.clear();
-
-				log.debug("Iteration {} -- Initializing objective terms for {} ground rules.",
-						iteration, groundRuleStore.size());
-				termGenerator.generateTerms(groundRuleStore, termStore);
-				log.debug("Iteration {} -- Generated {} objective terms from {} ground rules.",
-						iteration, termStore.size(), groundRuleStore.size());
-			}
-
-			log.debug("Iteration {} -- Begining inference.");
-			reasoner.optimize(termStore);
-			log.debug("Iteration {} -- Inference complete.");
-		} while (lazyAtomManager.countActivatableAtoms() > 0);
-	}
-
-	/**
-	 * In order to ground out the graphical model with the label truth values,
-	 * all labeled atoms with non-zero truth values are activated and constrained.
-	 */
-	private Map<RandomVariableAtom, GroundValueConstraint> activateLabeledAtoms() {
-		Map<RandomVariableAtom, GroundValueConstraint> targetMap = new HashMap<RandomVariableAtom, GroundValueConstraint>();
-
-		Set<RandomVariableAtom> toActivate = new HashSet<RandomVariableAtom>();
-
-		// Collect all non-zero labeled atoms to activate.
-		for (StandardPredicate predicate : observedDB.getRegisteredPredicates()) {
-			for (GroundAtom labeledAtom : Queries.getAllAtoms(observedDB, predicate)) {
-				// Double check that it is observed in observedDB and unobserved in rvDB,
-				// since those are the only atoms in observedDB to be considered.
-				// Also check if the labeled truth value is greater than 0.0,
-				// since activation would be unnecessary until the corresponding atom in rvDB had a non-zero
-				// truth value. If all three conditions are met, activate and constrain the atom.
-				if (labeledAtom instanceof ObservedAtom && labeledAtom.getValue() > 0.0) {
-					GroundAtom correspondingAtom = lazyAtomManager.getAtom(labeledAtom.getPredicate(), labeledAtom.getArguments());
-					if (correspondingAtom instanceof RandomVariableAtom) {
-						RandomVariableAtom rvAtom = (RandomVariableAtom)correspondingAtom;
-						toActivate.add(rvAtom);
-
-						GroundValueConstraint con = new GroundValueConstraint(rvAtom, ((ObservedAtom)labeledAtom).getValue());
-						targetMap.put(rvAtom, con);
-						groundRuleStore.addGroundRule(con);
-					}
-				}
-			}
-		}
-
-		lazyAtomManager.activateAtoms(toActivate, allRules, groundRuleStore);
-
-		return targetMap;
+	protected PersistedAtomManager createAtomManager() {
+		return new LazyAtomManager(rvDB, config);
 	}
 }

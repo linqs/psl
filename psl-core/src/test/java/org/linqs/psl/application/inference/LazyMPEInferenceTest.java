@@ -54,8 +54,6 @@ public class LazyMPEInferenceTest {
 
 	@After
 	public void cleanup() {
-		PSLTest.disableLogger();
-
 		inferDB.close();
 		inferDB = null;
 

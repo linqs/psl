@@ -127,10 +127,9 @@ public class MPEInference implements ModelApplication {
 		log.info("Grounding out model.");
 		int groundCount = Grounding.groundAll(model, atomManager, groundRuleStore);
 
-		log.debug("Initializing objective terms for {} ground rules.", groundRuleStore.size());
-      @SuppressWarnings("unchecked")
+		log.debug("Initializing objective terms for {} ground rules.", groundCount);
+		@SuppressWarnings("unchecked")
 		int termCount = termGenerator.generateTerms(groundRuleStore, termStore);
-
 		log.debug("Generated {} objective terms from {} ground rules.", termCount, groundCount);
 	}
 
@@ -151,13 +150,12 @@ public class MPEInference implements ModelApplication {
 		log.info("Inference complete. Writing results to Database.");
 
 		// Commits the RandomVariableAtoms back to the Database,
-		Set<RandomVariableAtom> atoms = atomManager.getPersistedRVAtoms();
-		db.commit(atoms);
+		atomManager.commitPersistedAtoms();
 
 		double incompatibility = GroundRules.getTotalWeightedIncompatibility(groundRuleStore.getCompatibilityRules());
 		double infeasibility = GroundRules.getInfeasibilityNorm(groundRuleStore.getConstraintRules());
 
-		return new MemoryFullInferenceResult(incompatibility, infeasibility, atoms.size(), groundRuleStore.size());
+		return new MemoryFullInferenceResult(incompatibility, infeasibility, atomManager.getPersistedRVAtoms().size(), groundRuleStore.size());
 	}
 
 	public Reasoner getReasoner() {
@@ -178,5 +176,4 @@ public class MPEInference implements ModelApplication {
 		db = null;
 		config = null;
 	}
-
 }
