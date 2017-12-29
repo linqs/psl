@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.reasoner.term;
+package org.linqs.psl.reasoner.term.blocker;
 
 import org.linqs.psl.application.groundrulestore.AtomRegisterGroundRuleStore;
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
@@ -29,6 +29,8 @@ import org.linqs.psl.model.rule.arithmetic.UnweightedGroundArithmeticRule;
 import org.linqs.psl.model.rule.misc.GroundValueConstraint;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.function.FunctionSum;
+import org.linqs.psl.reasoner.term.TermGenerator;
+import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.MathUtils;
 
 import java.util.HashMap;
@@ -37,14 +39,35 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * This is a hacky class to prepare a constraint blocker in our reasoner framework.
- * Typically we have terms that come from ground rules, but here we have structures
- * that are build up around the entire collection of ground rules.
+ * Prepares blocks.
+ * Typically terms come from ground rules, but here we have structures
+ * that are built up around the entire collection of ground rules.
  * A "term" is equivalent to a "block" here.
+ *
+ * A block is a collection of all random variable atoms (RVAs) that are incident on the same constraint.
+ * All the user imposed constraints (not GroundValueConstraint) are either functional or partial functional.
+ * Because of the constraints imposed on the model, no RVA can touch multiple constraints,
+ * so there are no duplicates in the blocks.
+ * In a block, the values of all atoms sum to at most one.
+ * If exactlyOne is true, then the values must sum to one exactly.
+ * When a block is exactlyOne and one of the atoms is pegged to one, then all the other values
+ * will be set to 0 during the generation process.
+ *
+ * It is possible (and common) to see a block that is actually just a single atom.
+ *
+ * Restrictions:
+ * <ul>
+ *  <li>The GroundRuleStore must be a type of AtomRegisterGroundRuleStore.</li>
+ *  <li>The TermStore must be a type of ConstraintBlockerTermStore.</li>
+ *  <li>The TermStore must be a type of ConstraintBlockerTermStore.</li>
+ *  <li>No unweighted logical rules are allowed.</li>
+ *	 <li>Only functional, partial functional, or GroundValueConstraint constraints are in the model.</li>
+ *  <li>All atoms are involved in at most one (partial) function and at most one GroundValueConstraint constraint.</li>
+ * </ul>
  */
-public class ConstraintBlockerTermGenerator implements TermGenerator<Term> {
+public class ConstraintBlockerTermGenerator implements TermGenerator<ConstraintBlockerTerm> {
 	@Override
-	public int generateTerms(GroundRuleStore ruleStore, TermStore<Term> termStore) {
+	public int generateTerms(GroundRuleStore ruleStore, TermStore<ConstraintBlockerTerm> termStore) {
 		if (!(ruleStore instanceof AtomRegisterGroundRuleStore)) {
 			throw new IllegalArgumentException("AtomRegisterGroundRuleStore required.");
 		}
@@ -57,7 +80,7 @@ public class ConstraintBlockerTermGenerator implements TermGenerator<Term> {
 	}
 
 	@Override
-	public void updateWeights(GroundRuleStore ruleStore, TermStore<Term> termStore) {
+	public void updateWeights(GroundRuleStore ruleStore, TermStore<ConstraintBlockerTerm> termStore) {
 		// TODO(eriq): Since we don't keep internal representations of the weights, I don't think we need to do anything.
 	}
 
@@ -68,8 +91,6 @@ public class ConstraintBlockerTermGenerator implements TermGenerator<Term> {
 		buildConstraints(ruleStore, constraintSet, valueConstraintMap);
 
 		Set<RandomVariableAtom> freeRVSet = buildFreeRVSet(ruleStore);
-
-		Map<RandomVariableAtom, Integer> rvMap = new HashMap<RandomVariableAtom, Integer>();
 
 		// Put RandomVariableAtoms in 2d array by block.
 		RandomVariableAtom[][] rvBlocks = new RandomVariableAtom[constraintSet.size() + freeRVSet.size()][];
@@ -112,7 +133,6 @@ public class ConstraintBlockerTermGenerator implements TermGenerator<Term> {
 				int j = 0;
 				for (RandomVariableAtom atom : constrainedRVSet) {
 					rvBlocks[blockIndex][j++] = atom;
-					rvMap.put(atom, blockIndex);
 				}
 
 				exactlyOne[blockIndex] = con.getConstraintDefinition().getComparator().equals(FunctionComparator.Equality) || constrainedRVSet.size() == 0;
@@ -135,7 +155,6 @@ public class ConstraintBlockerTermGenerator implements TermGenerator<Term> {
 		for (RandomVariableAtom atom : freeRVSet) {
 			rvBlocks[blockIndex] = new RandomVariableAtom[] {atom};
 			exactlyOne[blockIndex] = false;
-			rvMap.put(atom, blockIndex);
 			blockIndex++;
 		}
 
@@ -147,7 +166,7 @@ public class ConstraintBlockerTermGenerator implements TermGenerator<Term> {
 			e.getKey().setValue(e.getValue().getConstraintDefinition().getValue());
 		}
 
-		termStore.init(ruleStore, rvBlocks, incidentGRs, exactlyOne, rvMap);
+		termStore.init(ruleStore, rvBlocks, incidentGRs, exactlyOne);
 		return rvBlocks.length;
 	}
 
@@ -185,20 +204,20 @@ public class ConstraintBlockerTermGenerator implements TermGenerator<Term> {
 					continue;
 				}
 
-				int numDRConstraints = 0;
+				int numDomainConstraints = 0;
 				int numValueConstraints = 0;
 
 				for (GroundRule incidentGR : ruleStore.getRegisteredGroundRules(atom)) {
 					if (incidentGR instanceof UnweightedGroundArithmeticRule) {
-						numDRConstraints++;
+						numDomainConstraints++;
 					} else if (incidentGR instanceof GroundValueConstraint) {
 						numValueConstraints++;
 					}
 				}
 
-				if (numDRConstraints == 0 && numValueConstraints == 0) {
+				if (numDomainConstraints == 0 && numValueConstraints == 0) {
 					freeRVSet.add(((RandomVariableAtom) atom));
-				} else if (numDRConstraints >= 2 || numValueConstraints >= 2) {
+				} else if (numDomainConstraints >= 2 || numValueConstraints >= 2) {
 					throw new IllegalStateException(
 							"RandomVariableAtoms may only participate in one (at-least) 1-of-k" +
 							" and/or GroundValueConstraint.");

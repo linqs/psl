@@ -25,8 +25,9 @@ import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.inspector.ReasonerInspector;
-import org.linqs.psl.reasoner.term.ConstraintBlockerTermStore;
 import org.linqs.psl.reasoner.term.TermStore;
+import org.linqs.psl.reasoner.term.blocker.ConstraintBlockerTerm;
+import org.linqs.psl.reasoner.term.blocker.ConstraintBlockerTermStore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -106,54 +107,50 @@ public class BooleanMCSat extends Reasoner {
 		ConstraintBlockerTermStore blocker = (ConstraintBlockerTermStore)termStore;
 
 		// Randomly initialize the RVs to a feasible state.
-		blocker.randomlyInitializeRVs();
-
-		// Put RandomVariableAtoms in 2d array by block.
-		RandomVariableAtom[][] rvBlocks = blocker.getRVBlocks();
-
-		// If true, exactly one Atom in the RV block must be 1.0. If false, at most one can.
-		boolean[] exactlyOne = blocker.getExactlyOne();
-
-		// Collect GroundCompatibilityRules incident on each block of RandomVariableAtoms
-		WeightedGroundRule[][] incidentGKs = blocker.getIncidentGKs();
+		blocker.randomlyInitialize();
 
 		// Initialize arrays for totaling samples
-		double[][] totals = blocker.getEmptyDouble2DArray();
+		double[][] totals = new double[blocker.size()][];
+		for (int i = 0; i < blocker.size(); i++) {
+			totals[i] = new double[blocker.get(i).size()];
+		}
 
 		log.info("Beginning inference.");
 
 		// Sample RV assignments
 		for (int sampleIndex = 0; sampleIndex < numSamples; sampleIndex++) {
-			for (int blockIndex = 0; blockIndex < rvBlocks.length; blockIndex++) {
-				if (rvBlocks[blockIndex].length == 0) {
+			for (int blockIndex = 0; blockIndex < blocker.size(); blockIndex++) {
+				ConstraintBlockerTerm block = blocker.get(blockIndex);
+
+				if (block.size() == 0) {
 					continue;
 				}
 
 				// Compute the probability for every possible discrete assignment to the block.
-				// The additional spot at the end is for the all zero assignment (when !exactlyOne[blockIndex]).
-				double[] probabilities = new double[(exactlyOne[blockIndex]) ? rvBlocks[blockIndex].length : (rvBlocks[blockIndex].length + 1)];
+				// The additional spot at the end is for the all zero assignment (when !exactlyOne).
+				double[] probabilities = new double[block.getExactlyOne() ? block.size() : (block.size() + 1)];
 
 				// Compute the probability for each possible assignment to the block.
 				// Remember that at most 1 atom in a block can be non-zero.
 				// If all zeros are allowed, then atomIndex will be past the bounds of the block and
 				// no atoms will get activated.
 				for (int atomIndex = 0; atomIndex < probabilities.length; atomIndex++) {
-					for (int i = 0; i < rvBlocks[blockIndex].length; i++) {
+					for (int i = 0; i < block.size(); i++) {
 						if (i == atomIndex) {
-							rvBlocks[blockIndex][i].setValue(1.0);
+							block.getAtoms()[i].setValue(1.0);
 						} else {
-							rvBlocks[blockIndex][i].setValue(0.0);
+							block.getAtoms()[i].setValue(0.0);
 						}
 					}
 
 					// Compute the probability.
-					probabilities[atomIndex] = computeProbability(incidentGKs[blockIndex]);
+					probabilities[atomIndex] = computeProbability(block.getIncidentGRs());
 				}
 
 				// Draw sample.
 				double[] sample = sampleWithProbability(probabilities);
-				for (int atomIndex = 0; atomIndex < rvBlocks[blockIndex].length; atomIndex++) {
-					rvBlocks[blockIndex][atomIndex].setValue(sample[atomIndex]);
+				for (int atomIndex = 0; atomIndex < block.getAtoms().length; atomIndex++) {
+					block.getAtoms()[atomIndex].setValue(sample[atomIndex]);
 
 					if (sampleIndex >= numBurnIn) {
 						totals[blockIndex][atomIndex] += sample[atomIndex];
@@ -164,9 +161,9 @@ public class BooleanMCSat extends Reasoner {
 			// Skip the burn in.
 			if (inspector != null && sampleIndex >= numBurnIn) {
 				// Sets truth values of RandomVariableAtoms to marginal probabilities.
-				for (int blockIndex = 0; blockIndex < rvBlocks.length; blockIndex++) {
-					for (int atomIndex = 0; atomIndex < rvBlocks[blockIndex].length; atomIndex++) {
-						rvBlocks[blockIndex][atomIndex].setValue(totals[blockIndex][atomIndex] / (numSamples - numBurnIn));
+				for (int blockIndex = 0; blockIndex < blocker.size(); blockIndex++) {
+					for (int atomIndex = 0; atomIndex < blocker.get(blockIndex).size(); atomIndex++) {
+						blocker.get(blockIndex).getAtoms()[atomIndex].setValue(totals[blockIndex][atomIndex] / (numSamples - numBurnIn));
 					}
 				}
 
@@ -183,17 +180,17 @@ public class BooleanMCSat extends Reasoner {
 		log.info("Inference complete.");
 
 		// Sets truth values of RandomVariableAtoms to marginal probabilities.
-		for (int blockIndex = 0; blockIndex < rvBlocks.length; blockIndex++) {
-			for (int atomIndex = 0; atomIndex < rvBlocks[blockIndex].length; atomIndex++) {
-				rvBlocks[blockIndex][atomIndex].setValue(totals[blockIndex][atomIndex] / (numSamples - numBurnIn));
+		for (int blockIndex = 0; blockIndex < blocker.size(); blockIndex++) {
+			for (int atomIndex = 0; atomIndex < blocker.get(blockIndex).size(); atomIndex++) {
+				blocker.get(blockIndex).getAtoms()[atomIndex].setValue(totals[blockIndex][atomIndex] / (numSamples - numBurnIn));
 			}
 		}
 	}
 
-	private double computeProbability(WeightedGroundRule incidentGKs[]) {
+	private double computeProbability(WeightedGroundRule incidentGRs[]) {
 		double probability = 0.0;
 
-		for (WeightedGroundRule groundRule : incidentGKs) {
+		for (WeightedGroundRule groundRule : incidentGRs) {
 			probability += groundRule.getWeight() * groundRule.getIncompatibility();
 		}
 
