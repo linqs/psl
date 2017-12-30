@@ -29,6 +29,7 @@ import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
+import org.linqs.psl.model.rule.misc.GroundValueConstraint;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
@@ -95,8 +96,10 @@ public abstract class WeightLearningApplication implements ModelApplication {
 
 	protected Reasoner reasoner;
 	protected GroundRuleStore groundRuleStore;
-	protected TermStore termStore;
+	protected GroundRuleStore latentGroundRuleStore;
 	protected TermGenerator termGenerator;
+	protected TermStore termStore;
+	protected TermStore latentTermStore;
 
 	public WeightLearningApplication(List<Rule> rules, Database rvDB, Database observedDB,
 			boolean supportsLatentVariables, ConfigBundle config) {
@@ -131,6 +134,10 @@ public abstract class WeightLearningApplication implements ModelApplication {
 	public void learn() {
 		// Sets up the ground model.
 		initGroundModel();
+
+		if (supportsLatentVariables) {
+			initLatentGroundModel();
+		}
 
 		// Learns new weights.
 		doLearn();
@@ -176,20 +183,67 @@ public abstract class WeightLearningApplication implements ModelApplication {
 		log.debug("Generated {} objective terms from {} ground rules.", termCount, groundCount);
 	}
 
+	/**
+	 * The same as initGroundModel, but for latent variables.
+	 * Must be called after initGroundModel().
+	 * Sets up a rule/term store stack meant for latent variables.
+	 * The reasoner and TermGenerator can be reused (as they don't hold state).
+	 * All non-latent variables (from the training map) will be pegged to their truth values.
+	 */
+	protected void initLatentGroundModel() {
+		try {
+			latentGroundRuleStore = (GroundRuleStore)config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
+			latentTermStore = (TermStore)config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
+		} catch (Exception ex) {
+			// The caller couldn't handle these exception anyways, convert them to runtime ones.
+			throw new RuntimeException("Failed to prepare storage for inference.", ex);
+		}
+
+		log.info("Grounding out latent model.");
+		int groundCount = Grounding.groundAll(allRules, atomManager, latentGroundRuleStore);
+
+		// Add in some constraints to peg the values of the non-latent variables.
+		for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getTrainingMap().entrySet()) {
+			latentGroundRuleStore.addGroundRule(new GroundValueConstraint(entry.getKey(), entry.getValue().getValue()));
+		}
+		groundCount += trainingMap.getTrainingMap().size();
+
+		log.debug("Initializing latent objective terms for {} ground rules.", groundCount);
+		@SuppressWarnings("unchecked")
+		int termCount = termGenerator.generateTerms(latentGroundRuleStore, latentTermStore);
+		log.debug("Generated {} latent objective terms from {} ground rules.", termCount, groundCount);
+	}
+
 	@Override
 	public void close() {
+		if (groundRuleStore != null) {
+			groundRuleStore.close();
+			groundRuleStore = null;
+		}
+
+		if (latentGroundRuleStore != null) {
+			latentGroundRuleStore.close();
+			latentGroundRuleStore = null;
+		}
+
+		if (termStore != null) {
+			termStore.close();
+			termStore = null;
+		}
+
+		if (latentTermStore != null) {
+			latentTermStore.close();
+			latentTermStore = null;
+		}
+
+		if (reasoner != null) {
+			reasoner.close();
+			reasoner = null;
+		}
+
+		termGenerator = null;
 		trainingMap = null;
 		atomManager = null;
-
-		termStore.close();
-		termStore = null;
-
-		groundRuleStore.close();
-		groundRuleStore = null;
-
-		reasoner.close();
-		reasoner = null;
-
 		rvDB = null;
 		observedDB = null;
 		config = null;

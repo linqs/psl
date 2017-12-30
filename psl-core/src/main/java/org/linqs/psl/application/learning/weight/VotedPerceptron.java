@@ -180,7 +180,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 		// Reset the RVAs to default values.
 		setDefaultRandomVariables();
 
-		double[] scalingFactor  = computeScalingFactor();
+		double[] scalingFactor = computeScalingFactor();
 
 		// Computes the gradient steps.
 		for (int step = 0; step < numSteps; step++) {
@@ -268,6 +268,12 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	protected void computeMPEState() {
 		termGenerator.updateWeights(groundRuleStore, termStore);
 		reasoner.optimize(termStore);
+	}
+
+	@SuppressWarnings("unchecked")
+	protected void computeLatentMPEState() {
+		termGenerator.updateWeights(latentGroundRuleStore, latentTermStore);
+		reasoner.optimize(latentTermStore);
 	}
 
 	protected double computeRegularizer() {
