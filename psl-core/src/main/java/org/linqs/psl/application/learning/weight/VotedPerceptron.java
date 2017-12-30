@@ -19,11 +19,7 @@ package org.linqs.psl.application.learning.weight;
 
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.model.atom.ObservedAtom;
-import org.linqs.psl.model.atom.RandomVariableAtom;
-import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
-import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
 
 import org.slf4j.Logger;
@@ -128,12 +124,6 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	protected final boolean averageSteps;
 
 	/**
-	 * Corresponds 1-1 with mutableRules.
-	 */
-	protected double[] observedIncompatibility;
-	protected double[] expectedIncompatibility;
-
-	/**
 	 * Learning loss at the current point
 	 */
 	private double currentLoss = Double.POSITIVE_INFINITY;
@@ -165,9 +155,6 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 		scheduleStepSize = config.getBoolean(STEP_SCHEDULE_KEY, STEP_SCHEDULE_DEFAULT);
 		scaleGradient = config.getBoolean(SCALE_GRADIENT_KEY, SCALE_GRADIENT_DEFAULT);
 		averageSteps = config.getBoolean(AVERAGE_STEPS_KEY, AVERAGE_STEPS_DEFAULT);
-
-		observedIncompatibility = new double[mutableRules.size()];
-		expectedIncompatibility = new double[mutableRules.size()];
 	}
 
 	@Override
@@ -218,64 +205,6 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 		}
 	}
 
-	/**
-	 * Compute the incompatibility in the model using the labels (truth values) from the observed (truth) database.
-	 * This method is responsible for filling the observedIncompatibility member variable.
-	 * This may call setLabeledRandomVariables() and not reset any ground atoms to their original value.
-	 *
-	 * The default implementation just calls setLabeledRandomVariables() and sums the incompatibility for each rule.
-	 */
-	protected void computeObservedIncompatibility() {
-		setLabeledRandomVariables();
-
-		// Zero out the observed incompatibility first.
-		for (int i = 0; i < observedIncompatibility.length; i++) {
-			observedIncompatibility[i] = 0.0;
-		}
-
-		// Sums up the incompatibilities.
-		for (int i = 0; i < mutableRules.size(); i++) {
-			for (GroundRule groundRule : groundRuleStore.getGroundRules(mutableRules.get(i))) {
-				observedIncompatibility[i] += ((WeightedGroundRule)groundRule).getIncompatibility();
-			}
-		}
-	}
-
-	/**
-	 * Compute the incompatibility in the model.
-	 * This method is responsible for filling the expectedIncompatibility member variable.
-	 *
-	 * The default implementation is the total incompatibility in the MPE state.
-	 * IE, just calls computeMPEState() and then sums the incompatibility for each rule.
-	 */
-	protected void computeExpectedIncompatibility() {
-		computeMPEState();
-
-		// Zero out the expected incompatibility first.
-		for (int i = 0; i < expectedIncompatibility.length; i++) {
-			expectedIncompatibility[i] = 0.0;
-		}
-
-		// Sums up the incompatibilities.
-		for (int i = 0; i < mutableRules.size(); i++) {
-			for (GroundRule groundRule : groundRuleStore.getGroundRules(mutableRules.get(i))) {
-				expectedIncompatibility[i] += ((WeightedGroundRule)groundRule).getIncompatibility();
-			}
-		}
-	}
-
-	@SuppressWarnings("unchecked")
-	protected void computeMPEState() {
-		termGenerator.updateWeights(groundRuleStore, termStore);
-		reasoner.optimize(termStore);
-	}
-
-	@SuppressWarnings("unchecked")
-	protected void computeLatentMPEState() {
-		termGenerator.updateWeights(latentGroundRuleStore, latentTermStore);
-		reasoner.optimize(latentTermStore);
-	}
-
 	protected double computeRegularizer() {
 		if (l1Regularization == 0.0 && l2Regularization == 0.0) {
 			return 0.0;
@@ -290,27 +219,6 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 		}
 
 		return 0.5 * l2Regularization * l2 + l1Regularization * l1;
-	}
-
-	/**
-	 * Internal method for computing the loss at the current point before taking a step.
-	 * Child methods may override.
-	 *
-	 * The default implementation just sums the product of the difference between the expected and observed incompatibility.
-	 *
-	 * @return current learning loss
-	 */
-	protected double computeLoss() {
-		if (currentLoss == Double.POSITIVE_INFINITY) {
-			return currentLoss;
-		}
-
-		double loss = 0.0;
-		for (int i = 0; i < mutableRules.size(); i++) {
-			loss += mutableRules.get(i).getWeight() * (observedIncompatibility[i] - expectedIncompatibility[i]);
-		}
-
-		return loss;
 	}
 
 	public double getLoss() {

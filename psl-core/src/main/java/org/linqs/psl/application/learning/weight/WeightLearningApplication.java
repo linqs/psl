@@ -27,7 +27,9 @@ import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.rule.misc.GroundValueConstraint;
 import org.linqs.psl.reasoner.Reasoner;
@@ -92,6 +94,13 @@ public abstract class WeightLearningApplication implements ModelApplication {
 
 	protected List<Rule> allRules;
 	protected List<WeightedRule> mutableRules;
+
+	/**
+	 * Corresponds 1-1 with mutableRules.
+	 */
+	protected double[] observedIncompatibility;
+	protected double[] expectedIncompatibility;
+
 	protected TrainingMap trainingMap;
 
 	protected Reasoner reasoner;
@@ -118,6 +127,9 @@ public abstract class WeightLearningApplication implements ModelApplication {
 				mutableRules.add((WeightedRule)rule);
 			}
 		}
+
+		observedIncompatibility = new double[mutableRules.size()];
+		expectedIncompatibility = new double[mutableRules.size()];
 	}
 
 	/**
@@ -212,6 +224,81 @@ public abstract class WeightLearningApplication implements ModelApplication {
 		@SuppressWarnings("unchecked")
 		int termCount = termGenerator.generateTerms(latentGroundRuleStore, latentTermStore);
 		log.debug("Generated {} latent objective terms from {} ground rules.", termCount, groundCount);
+	}
+
+	@SuppressWarnings("unchecked")
+	protected void computeMPEState() {
+		termGenerator.updateWeights(groundRuleStore, termStore);
+		reasoner.optimize(termStore);
+	}
+
+	@SuppressWarnings("unchecked")
+	protected void computeLatentMPEState() {
+		termGenerator.updateWeights(latentGroundRuleStore, latentTermStore);
+		reasoner.optimize(latentTermStore);
+	}
+
+	/**
+	 * Compute the incompatibility in the model using the labels (truth values) from the observed (truth) database.
+	 * This method is responsible for filling the observedIncompatibility member variable.
+	 * This may call setLabeledRandomVariables() and not reset any ground atoms to their original value.
+	 *
+	 * The default implementation just calls setLabeledRandomVariables() and sums the incompatibility for each rule.
+	 */
+	protected void computeObservedIncompatibility() {
+		setLabeledRandomVariables();
+
+		// Zero out the observed incompatibility first.
+		for (int i = 0; i < observedIncompatibility.length; i++) {
+			observedIncompatibility[i] = 0.0;
+		}
+
+		// Sums up the incompatibilities.
+		for (int i = 0; i < mutableRules.size(); i++) {
+			for (GroundRule groundRule : groundRuleStore.getGroundRules(mutableRules.get(i))) {
+				observedIncompatibility[i] += ((WeightedGroundRule)groundRule).getIncompatibility();
+			}
+		}
+	}
+
+	/**
+	 * Compute the incompatibility in the model.
+	 * This method is responsible for filling the expectedIncompatibility member variable.
+	 *
+	 * The default implementation is the total incompatibility in the MPE state.
+	 * IE, just calls computeMPEState() and then sums the incompatibility for each rule.
+	 */
+	protected void computeExpectedIncompatibility() {
+		computeMPEState();
+
+		// Zero out the expected incompatibility first.
+		for (int i = 0; i < expectedIncompatibility.length; i++) {
+			expectedIncompatibility[i] = 0.0;
+		}
+
+		// Sums up the incompatibilities.
+		for (int i = 0; i < mutableRules.size(); i++) {
+			for (GroundRule groundRule : groundRuleStore.getGroundRules(mutableRules.get(i))) {
+				expectedIncompatibility[i] += ((WeightedGroundRule)groundRule).getIncompatibility();
+			}
+		}
+	}
+
+	/**
+	 * Internal method for computing the loss at the current point before taking a step.
+	 * Child methods may override.
+	 *
+	 * The default implementation just sums the product of the difference between the expected and observed incompatibility.
+	 *
+	 * @return current learning loss
+	 */
+	protected double computeLoss() {
+		double loss = 0.0;
+		for (int i = 0; i < mutableRules.size(); i++) {
+			loss += mutableRules.get(i).getWeight() * (observedIncompatibility[i] - expectedIncompatibility[i]);
+		}
+
+		return loss;
 	}
 
 	@Override
