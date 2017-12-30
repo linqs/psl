@@ -17,6 +17,17 @@
  */
 package org.linqs.psl.cli.dataloader;
 
+import org.linqs.psl.database.DataStore;
+import org.linqs.psl.database.Partition;
+import org.linqs.psl.database.loading.Inserter;
+import org.linqs.psl.model.predicate.PredicateFactory;
+import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.model.term.ConstantType;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.yaml.snakeyaml.Yaml;
+
 import java.io.InputStream;
 import java.util.HashSet;
 import java.util.List;
@@ -24,22 +35,13 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.linqs.psl.database.DataStore;
-import org.linqs.psl.database.Partition;
-import org.linqs.psl.database.loading.Inserter;
-import org.linqs.psl.model.predicate.PredicateFactory;
-import org.linqs.psl.model.predicate.StandardPredicate;
-import org.linqs.psl.model.term.ConstantType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.yaml.snakeyaml.Yaml;
-
 /**
  * @author jay
  */
 public class DataLoader {
 	private static final Logger log = LoggerFactory.getLogger(DataLoader.class);
 
+	@SuppressWarnings("unchecked")
 	private static Set<StandardPredicate> definePredicates(DataStore datastore, Map yamlMap, boolean useIntIds) {
 		if (!yamlMap.containsKey("predicates")) {
 			throw new IllegalArgumentException("No 'predicates' block defined in data specification");
@@ -81,6 +83,7 @@ public class DataLoader {
 		return closed;
 	}
 
+	@SuppressWarnings("unchecked")
 	private static void loadDataFiles(DataStore datastore, Map yamlMap) {
 		for (String partitionName : ((Map<String,Object>) yamlMap).keySet()) {
 			// Skip special partition predicates

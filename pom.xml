@@ -101,6 +101,7 @@
 					<target>1.7</target>
 					<compilerArgs>
 						<arg>-Xlint:deprecation</arg>
+						<arg>-Xlint:all</arg>
 					</compilerArgs>
 				</configuration>
 			</plugin>
