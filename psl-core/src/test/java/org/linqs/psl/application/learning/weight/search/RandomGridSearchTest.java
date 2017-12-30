@@ -20,12 +20,12 @@ package org.linqs.psl.application.learning.weight.search;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningTest;
 
-public class GridSearchTest extends WeightLearningTest {
+public class RandomGridSearchTest extends WeightLearningTest {
 	@Override
 	protected WeightLearningApplication getWLA() {
 		// Narrow the search space for tests.
-		info.config.setProperty(GridSearch.POSSIBLE_WEIGHTS_KEY, "0.01:1:10");
+		info.config.setProperty(RandomGridSearch.MAX_LOCATIONS_KEY, 50);
 
-		return new GridSearch(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB, info.config);
+		return new RandomGridSearch(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB, info.config);
 	}
 }

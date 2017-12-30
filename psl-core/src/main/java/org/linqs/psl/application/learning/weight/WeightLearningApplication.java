@@ -158,15 +158,10 @@ public abstract class WeightLearningApplication implements ModelApplication {
 	protected abstract void doLearn();
 
 	protected void initGroundModel() {
-		try {
-			reasoner = (Reasoner)config.getNewObject(REASONER_KEY, REASONER_DEFAULT);
-			groundRuleStore = (GroundRuleStore)config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
-			termStore = (TermStore)config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
-			termGenerator = (TermGenerator)config.getNewObject(TERM_GENERATOR_KEY, TERM_GENERATOR_DEFAULT);
-		} catch (Exception ex) {
-			// The caller couldn't handle these exception anyways, convert them to runtime ones.
-			throw new RuntimeException("Failed to prepare storage for inference.", ex);
-		}
+		reasoner = (Reasoner)config.getNewObject(REASONER_KEY, REASONER_DEFAULT);
+		groundRuleStore = (GroundRuleStore)config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
+		termStore = (TermStore)config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
+		termGenerator = (TermGenerator)config.getNewObject(TERM_GENERATOR_KEY, TERM_GENERATOR_DEFAULT);
 
 		atomManager = createAtomManager();
 
@@ -203,13 +198,8 @@ public abstract class WeightLearningApplication implements ModelApplication {
 	 * All non-latent variables (from the training map) will be pegged to their truth values.
 	 */
 	protected void initLatentGroundModel() {
-		try {
-			latentGroundRuleStore = (GroundRuleStore)config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
-			latentTermStore = (TermStore)config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
-		} catch (Exception ex) {
-			// The caller couldn't handle these exception anyways, convert them to runtime ones.
-			throw new RuntimeException("Failed to prepare storage for inference.", ex);
-		}
+		latentGroundRuleStore = (GroundRuleStore)config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
+		latentTermStore = (TermStore)config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
 
 		log.info("Grounding out latent model.");
 		int groundCount = Grounding.groundAll(allRules, atomManager, latentGroundRuleStore);

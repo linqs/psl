@@ -15,17 +15,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.learning.weight.search;
+package org.linqs.psl.application.learning.weight.search.objective;
 
-import org.linqs.psl.application.learning.weight.WeightLearningApplication;
-import org.linqs.psl.application.learning.weight.WeightLearningTest;
+import org.linqs.psl.application.learning.weight.TrainingMap;
+import org.linqs.psl.model.rule.WeightedRule;
 
-public class GridSearchTest extends WeightLearningTest {
-	@Override
-	protected WeightLearningApplication getWLA() {
-		// Narrow the search space for tests.
-		info.config.setProperty(GridSearch.POSSIBLE_WEIGHTS_KEY, "0.01:1:10");
+import java.util.List;
 
-		return new GridSearch(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB, info.config);
-	}
+/**
+ * An objective computation that scores weight configurations for weight learning.
+ */
+public interface ObjectiveFunction {
+	public double compute(List<WeightedRule> mutableRules,
+			double[] observedIncompatibility, double[] expectedIncompatibility,
+			TrainingMap trainingMap);
 }

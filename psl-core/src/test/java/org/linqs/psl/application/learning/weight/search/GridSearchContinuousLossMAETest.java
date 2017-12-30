@@ -19,12 +19,17 @@ package org.linqs.psl.application.learning.weight.search;
 
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningTest;
+import org.linqs.psl.application.learning.weight.search.objective.ContinuousObjective;
 
-public class GridSearchTest extends WeightLearningTest {
+public class GridSearchContinuousLossMAETest extends WeightLearningTest {
 	@Override
 	protected WeightLearningApplication getWLA() {
 		// Narrow the search space for tests.
 		info.config.setProperty(GridSearch.POSSIBLE_WEIGHTS_KEY, "0.01:1:10");
+
+		// Use MAE as an objective.
+		info.config.setProperty(GridSearch.OBJECTIVE_KEY, ContinuousObjective.class.getName());
+		info.config.setProperty(ContinuousObjective.STAT_KEY, ContinuousObjective.STAT_MAE);
 
 		return new GridSearch(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB, info.config);
 	}

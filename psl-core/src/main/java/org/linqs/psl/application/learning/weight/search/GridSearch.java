@@ -17,13 +17,15 @@
  */
 package org.linqs.psl.application.learning.weight.search;
 
+import org.linqs.psl.application.learning.weight.search.objective.LossObjective;
+import org.linqs.psl.application.learning.weight.search.objective.ObjectiveFunction;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.admm.ADMMReasoner;
+import org.linqs.psl.util.StringUtils;
 
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,9 +34,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Grid search for weights.
- *
- * TODO(eriq): More comments once this is more worked out.
+ * An exhaustive grid search for weights.
+ * The weights searched over is set using configuration options.
+ * The number of ADMM iterations can also be controlled.
+ * It is recommended to set ADMM iterations through this class' configuration
+ * rather than through ADMM's configuration so you don't globally change the number of iterations.
  */
 public class GridSearch extends WeightLearningApplication {
 	private static final Logger log = LoggerFactory.getLogger(GridSearch.class);
@@ -44,14 +48,33 @@ public class GridSearch extends WeightLearningApplication {
 	 */
 	public static final String CONFIG_PREFIX = "gridsearch";
 
-	// TEST
-	// private static final double[] POSSIBLE_WEIGHTS = new double[]{0.001, 0.01, 0.1, 1, 10};
-	private static final double[] POSSIBLE_WEIGHTS = new double[]{0.01, 1, 10};
+	/**
+	 * A comma-separated list of possible weights.
+	 */
+	public static final String POSSIBLE_WEIGHTS_KEY = CONFIG_PREFIX + ".weights";
+	public static final String POSSIBLE_WEIGHTS_DEFAULT = "0.001:0.01:0.1:1:10";
 
-	// TODO(eriq): config
-	private static final int ADMM_ITERATIONS = 100;
+	/**
+	 * The objective function to use.
+	 */
+	public static final String OBJECTIVE_KEY = CONFIG_PREFIX + ".objective";
+	public static final String OBJECTIVE_DEFAULT = LossObjective.class.getName();
 
-	private static final char DELIM = ':';
+	/**
+	 * The max number of ADMM iterations to spend on each location.
+	 */
+	public static final String ADMM_ITERATIONS_KEY = CONFIG_PREFIX + ".admmiterations";
+	public static final int ADMM_ITERATIONS_DEFAULT = 100;
+
+	/**
+	 * The delimiter to separate rule weights (and lication ids).
+	 * Note that we cannot use ',' because our configuration infrastructure will try
+	 * interpret it as a list of strings.
+	 */
+	public static final String DELIM = ":";
+
+	protected final double[] possibleWeights;
+	protected final int admmIterations;
 
 	/**
 	 * The current location we are investigating.
@@ -70,22 +93,36 @@ public class GridSearch extends WeightLearningApplication {
 	 */
 	protected int numLocations;
 
+	protected ObjectiveFunction objectiveFunction;
+
 	/**
-	 * The losses at each location.
+	 * The objectives at each location.
 	 * The default implementation does not actually need this, but childen may.
 	 */
-	private Map<String, Double> losses;
+	protected Map<String, Double> objectives;
 
 	// TODO(eriq): Latent variables?
 	public GridSearch(List<Rule> rules, Database rvDB, Database observedDB, ConfigBundle config) {
 		super(rules, rvDB, observedDB, false, config);
 
+		possibleWeights = StringUtils.splitDouble(config.getString(POSSIBLE_WEIGHTS_KEY, POSSIBLE_WEIGHTS_DEFAULT), DELIM);
+		if (possibleWeights.length == 0) {
+			throw new IllegalArgumentException("No weights provided for grid search.");
+		}
+
+		objectiveFunction = (ObjectiveFunction)config.getNewObject(OBJECTIVE_KEY, OBJECTIVE_DEFAULT);
+
+		admmIterations = config.getInt(ADMM_ITERATIONS_KEY, ADMM_ITERATIONS_DEFAULT);
+		if (admmIterations < 1) {
+			throw new IllegalArgumentException("Need at least one iteration for grid search.");
+		}
+
 		currentLocation = null;
 
-		gridSize = (int)Math.pow(POSSIBLE_WEIGHTS.length, mutableRules.size());
+		gridSize = (int)Math.pow(possibleWeights.length, mutableRules.size());
 		numLocations = gridSize;
 
-		losses = new HashMap<String, Double>();
+		objectives = new HashMap<String, Double>();
 	}
 
 	@Override
@@ -94,13 +131,13 @@ public class GridSearch extends WeightLearningApplication {
 
 		// If we are dealing with an ADMMReasoner, then set its max iterations.
 		if (reasoner instanceof ADMMReasoner) {
-			((ADMMReasoner)reasoner).setMaxIter(ADMM_ITERATIONS);
+			((ADMMReasoner)reasoner).setMaxIter(admmIterations);
 		}
 	}
 
 	@Override
 	protected void doLearn() {
-		double bestLoss = -1;
+		double bestObjective = -1;
 		double[] bestWeights = new double[mutableRules.size()];
 
 		// Computes the observed incompatibilities.
@@ -124,17 +161,17 @@ public class GridSearch extends WeightLearningApplication {
 			// Computes the expected incompatibility.
 			computeExpectedIncompatibility();
 
-			double loss = computeLoss();
-			losses.put(currentLocation, new Double(loss));
+			double objective = objectiveFunction.compute(mutableRules, observedIncompatibility, expectedIncompatibility, trainingMap);
+			objectives.put(currentLocation, new Double(objective));
 
-			if (iteration == 0 || loss < bestLoss) {
-				bestLoss = loss;
+			if (iteration == 0 || objective < bestObjective) {
+				bestObjective = objective;
 				for (int i = 0; i < mutableRules.size(); i++) {
 					bestWeights[i] = weights[i];
 				}
 			}
 
-			log.trace("Location {} -- loss: {}", currentLocation, loss);
+			log.trace("Location {} -- objective: {}", currentLocation, objective);
 		}
 
 		// Set the final weights.
@@ -147,11 +184,11 @@ public class GridSearch extends WeightLearningApplication {
 	 * Get the weight configuration at the current location.
 	 */
 	protected void getWeights(double[] weights) {
-		String[] parts = currentLocation.split("" + DELIM);
-		assert(parts.length == mutableRules.size());
+		int[] indexes = StringUtils.splitInt(currentLocation, DELIM);
+		assert(indexes.length == mutableRules.size());
 
 		for (int i = 0; i < mutableRules.size(); i++) {
-			weights[i] = POSSIBLE_WEIGHTS[Integer.parseInt(parts[i])];
+			weights[i] = possibleWeights[indexes[i]];
 		}
 	}
 
@@ -166,20 +203,15 @@ public class GridSearch extends WeightLearningApplication {
 			return;
 		}
 
-		String[] parts = currentLocation.split("" + DELIM);
-		assert(parts.length == mutableRules.size());
-
-		int[] indexes = new int[mutableRules.size()];
-		for (int i = 0; i < mutableRules.size(); i++) {
-			indexes[i] = Integer.parseInt(parts[i]);
-		}
+		int[] indexes = StringUtils.splitInt(currentLocation, DELIM);
+		assert(indexes.length == mutableRules.size());
 
 		// Start at the last weight and move it.
 		// If it rolls over, move the one above it.
 		for (int i = mutableRules.size() - 1; i >= 0; i--) {
 			indexes[i]++;
 
-			if (indexes[i] == POSSIBLE_WEIGHTS.length) {
+			if (indexes[i] == possibleWeights.length) {
 				// Rollover and move to the next rule.
 				indexes[i] = 0;
 			} else {
