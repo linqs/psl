@@ -43,7 +43,7 @@ public class HardEM extends ExpectationMaximization  {
 	public static final String ADAGRAD_KEY = CONFIG_PREFIX + ".adagrad";
 	public static final boolean ADAGRAD_DEFAULT = false;
 
-   public static final double MIN_SCALING_FACTOR = 1e-8;
+	public static final double MIN_SCALING_FACTOR = 1e-8;
 
 	private final boolean useAdaGrad;
 
@@ -56,18 +56,18 @@ public class HardEM extends ExpectationMaximization  {
 	protected double[] computeScalingFactor() {
 		if (!useAdaGrad) {
 			return super.computeScalingFactor();
-      }
+		}
 
 		double [] scalingFactor = new double[mutableRules.size()];
 
 		// Accumulate gradient
-      // TODO(eriq): The old math here was pretty suspect.
-      //  I cleaned what the code actually did, but I think that could have been bugged.
-      //  (Resulting in a a bugged cleaned version.)
+		// TODO(eriq): The old math here was pretty suspect.
+		//  I cleaned what the code actually did, but I think that could have been bugged.
+		//  (Resulting in a a bugged cleaned version.)
 		for (int i = 0; i < mutableRules.size(); i++) {
 			double weight = mutableRules.get(i).getWeight();
 			double gradient = (
-               expectedIncompatibility[i] - observedIncompatibility[i]
+					expectedIncompatibility[i] - observedIncompatibility[i]
 					- l2Regularization * weight
 					- l1Regularization);
 
