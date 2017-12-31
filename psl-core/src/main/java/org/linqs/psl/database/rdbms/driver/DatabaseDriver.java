@@ -17,6 +17,8 @@
  */
 package org.linqs.psl.database.rdbms.driver;
 
+import org.linqs.psl.database.Partition;
+import org.linqs.psl.database.rdbms.PredicateInfo;
 import org.linqs.psl.model.term.ConstantType;
 
 import com.healthmarketscience.sqlbuilder.CreateTableQuery;
@@ -43,6 +45,18 @@ public interface DatabaseDriver {
 	 * @return the connection to the database, as specified in the DatabaseDriver constructor
 	 */
 	public Connection getConnection();
+
+	/**
+	 * Returns whether the underline database supports bulk copying operations.
+	 */
+	public boolean supportsBulkCopy();
+
+	/**
+	 * Perform a bulk copy operation to load the file directly into the database.
+	 * May not be supported by all backends.
+	 */
+	public void bulkCopy(String path, String delimiter, boolean hasTruth,
+			PredicateInfo predicateInfo, Partition partition);
 
 	/**
 	 * Returns whether the underline database supports external java functions.

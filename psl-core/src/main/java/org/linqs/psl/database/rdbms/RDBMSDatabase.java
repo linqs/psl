@@ -350,7 +350,7 @@ public class RDBMSDatabase implements Database {
 						statement.addBatch();
 						batchSize++;
 
-						if (batchSize >= RDBMSDataLoader.DEFAULT_PAGE_SIZE) {
+						if (batchSize >= RDBMSInserter.DEFAULT_PAGE_SIZE) {
 							statement.executeBatch();
 							statement.clearBatch();
 							batchSize = 0;

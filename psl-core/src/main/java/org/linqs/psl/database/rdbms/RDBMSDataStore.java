@@ -64,8 +64,6 @@ public class RDBMSDataStore implements DataStore {
 	 */
 	public static final boolean USE_STRING_ID_DEFAULT = true;
 
-	private final RDBMSDataLoader dataloader;
-
 	/**
 	 * This Database Driver associated to the datastore.
 	 */
@@ -103,9 +101,6 @@ public class RDBMSDataStore implements DataStore {
 
 		// Keep database driver locally for generating different query dialets
 		this.dbDriver = dbDriver;
-
-		// Set up the data loader
-		this.dataloader = new RDBMSDataLoader(this);
 
 		// Initialize metadata
 		this.metadata = new DataStoreMetadata(this);
@@ -156,9 +151,6 @@ public class RDBMSDataStore implements DataStore {
 				throw new RuntimeException("Unable to setup predicate table for: " + predicate + ".", ex);
 			}
 		}
-
-		// Update the data loader with the new predicate
-		dataloader.registerPredicate(predicateInfo);
 	}
 
 	@Override
@@ -174,13 +166,17 @@ public class RDBMSDataStore implements DataStore {
 		 * 2. No other databases are reading from this write partition
 		 * 3. No other database is writing to the specified read partition(s)
 		 */
-		if (writePartitionIDs.contains(write))
+		if (writePartitionIDs.contains(write)) {
 			throw new IllegalArgumentException("The specified write partition ID is already used by another database.");
-		if (openDatabases.containsKey(write))
+		} else if (openDatabases.containsKey(write)) {
 			throw new IllegalArgumentException("The specified write partition ID is also a read partition.");
-		for (Partition partition : read)
-			if (writePartitionIDs.contains(partition))
+		}
+
+		for (Partition partition : read) {
+			if (writePartitionIDs.contains(partition)) {
 				throw new IllegalArgumentException("Another database is writing to a specified read partition: " + partition);
+			}
+		}
 
 		// Creates the database and registers the current predicates
 		RDBMSDatabase db = new RDBMSDatabase(this, write, read, Collections.unmodifiableMap(predicates), toClose);
@@ -200,12 +196,13 @@ public class RDBMSDataStore implements DataStore {
 
 	@Override
 	public Inserter getInserter(StandardPredicate predicate, Partition partition) {
-		if (!predicates.containsKey(predicate))
+		if (!predicates.containsKey(predicate)) {
 			throw new IllegalArgumentException("Unknown predicate specified: " + predicate);
-		if (writePartitionIDs.contains(partition) || openDatabases.containsKey(partition))
+		} else if (writePartitionIDs.contains(partition) || openDatabases.containsKey(partition)) {
 			throw new IllegalStateException("Partition [" + partition + "] is currently in use, cannot insert into it.");
+		}
 
-		return dataloader.getInserter(predicates.get(predicate).predicate(), partition);
+		return new RDBMSInserter(this, predicates.get(predicate), partition);
 	}
 
 	@Override

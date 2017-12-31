@@ -155,9 +155,9 @@ public class PredicateInfo {
 	private void createTable(Connection connection, DatabaseDriver dbDriver) {
 		CreateTableQuery createTable = new CreateTableQuery(tableName);
 
-		// First add non-variable columns: suggogate key, partition, value.
+		// First add non-variable columns: partition and value.
 		createTable.addCustomColumns(PARTITION_COLUMN_NAME + " INT NOT NULL");
-		createTable.addCustomColumns(VALUE_COLUMN_NAME + " " + dbDriver.getDoubleTypeName() + " NOT NULL");
+		createTable.addCustomColumns(VALUE_COLUMN_NAME + " " + dbDriver.getDoubleTypeName() + " NOT NULL DEFAULT 1.0");
 
 		// Now add the variable columns.
 		List<String> uniqueColumns = new ArrayList<String>();

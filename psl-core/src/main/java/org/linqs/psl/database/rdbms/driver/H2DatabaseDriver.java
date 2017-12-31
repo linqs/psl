@@ -17,6 +17,8 @@
  */
 package org.linqs.psl.database.rdbms.driver;
 
+import org.linqs.psl.database.Partition;
+import org.linqs.psl.database.rdbms.PredicateInfo;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.util.Parallel;
 
@@ -106,6 +108,16 @@ public class H2DatabaseDriver implements DatabaseDriver {
 	@Override
 	public boolean supportsExternalFunctions() {
 		return true;
+	}
+
+	@Override
+	public boolean supportsBulkCopy() {
+		return false;
+	}
+
+	public void bulkCopy(String path, String delimiter, boolean hasTruth,
+			PredicateInfo predicateInfo, Partition partition) {
+		throw new UnsupportedOperationException("H2 does not support bulk copy.");
 	}
 
 	@Override
