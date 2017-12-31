@@ -17,6 +17,9 @@
  */
 package org.linqs.psl.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -31,10 +34,10 @@ import java.util.concurrent.TimeUnit;
  * Utilities to run operations in parallel.
  * The threads will be started up on the first call, and not shut down until the JVM shuts down.
  * Since the thread pool (and CPU) is shared, only one task may be run in parallel at a time.
- *
- * TODO(eriq): Implement a foreach with iterators.
  */
 public final class Parallel {
+	private static final Logger log = LoggerFactory.getLogger(Parallel.class);
+
 	private static boolean initialized = false;
 
 	// TODO(eriq): Replace with config option once we have global config.
@@ -58,7 +61,7 @@ public final class Parallel {
 	 */
 	public synchronized static void count(int start, int end, int increment, Worker<Integer> baseWorker) {
 		initWorkers(baseWorker);
-		countInternal(start, end, increment, baseWorker);
+		countInternal(start, end, increment);
 		cleanupWorkers();
 	}
 
@@ -76,7 +79,7 @@ public final class Parallel {
 		count(0, end, 1, baseWorker);
 	}
 
-	private static void countInternal(int start, int end, int increment, Worker<Integer> baseWorker) {
+	private static void countInternal(int start, int end, int increment) {
 		for (int i = start; i < end; i += increment) {
 			Worker<?> worker = null;
 			try {
@@ -90,6 +93,45 @@ public final class Parallel {
 			Worker<Integer> intWorker = (Worker<Integer>)worker;
 			intWorker.setWork(i, new Integer(i));
 			pool.execute(intWorker);
+		}
+
+		// As workers finish, they will be added to the queue.
+		// We can wait for all the workers by emptying out the queue.
+		for (int i = 0; i < NUM_THREADS; i++) {
+			try {
+				workerQueue.take();
+			} catch (InterruptedException ex) {
+				throw new RuntimeException("Interrupted waiting for worker (" + i + ").");
+			}
+		}
+	}
+
+	/**
+	 * Invoke a worker once for each item.
+	 */
+	public synchronized static <T> void foreach(Iterable<T> work, Worker<T> baseWorker) {
+		initWorkers(baseWorker);
+		foreachInternal(work);
+		cleanupWorkers();
+	}
+
+	private static <T> void foreachInternal(Iterable<T> work) {
+		int count = 0;
+		for (T job : work) {
+			Worker<?> worker = null;
+			try {
+				// Will block if no workers are ready.
+				worker = workerQueue.take();
+			} catch (InterruptedException ex) {
+				throw new RuntimeException("Interrupted waiting for worker (" + count + ").");
+			}
+
+			@SuppressWarnings("unchecked")
+			Worker<T> typedWorker = (Worker<T>)worker;
+			typedWorker.setWork(count, job);
+			pool.execute(typedWorker);
+
+			count++;
 		}
 
 		// As workers finish, they will be added to the queue.
@@ -189,7 +231,7 @@ public final class Parallel {
 	 * Extend this class for any work.
 	 * Default implmentation are provided for all non-abstract, non-final methods.
 	 */
-	public static abstract class Worker<T> implements Runnable {
+	public static abstract class Worker<T> implements Runnable, Cloneable {
 		protected int id;
 
 		private int index;
@@ -230,11 +272,12 @@ public final class Parallel {
 
 		@Override
 		public final void run() {
-			if (index == -1) {
-				throw new IllegalStateException("Called run() without first calling setWork().");
-			}
-
 			try {
+				if (index == -1) {
+					log.warn("Called run() without first calling setWork().");
+					return;
+				}
+
 				work(index, item);
 			} finally {
 				index = -1;
