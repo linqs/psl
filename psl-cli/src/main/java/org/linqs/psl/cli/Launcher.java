@@ -21,8 +21,6 @@ import org.linqs.psl.application.inference.MPEInference;
 import org.linqs.psl.application.inference.result.FullInferenceResult;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
-import org.linqs.psl.cli.dataloader.DataLoader;
-import org.linqs.psl.cli.dataloader.DataLoaderOutput;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.ConfigManager;
 import org.linqs.psl.database.DataStore;
@@ -246,8 +244,7 @@ public class Launcher {
 		Set<StandardPredicate> closedPredicates;
 		try {
 			File dataFile = new File(options.getOptionValue(OPTION_DATA));
-			DataLoaderOutput dataLoaderOutput = DataLoader.load(dataStore, new FileInputStream(dataFile), options.hasOption(OPTION_INT_IDS));
-			closedPredicates = dataLoaderOutput.getClosedPredicates();
+			closedPredicates = DataLoader.load(dataStore, new FileInputStream(dataFile), options.hasOption(OPTION_INT_IDS));
 		} catch (FileNotFoundException ex) {
 			throw new RuntimeException("Failed to load data.", ex);
 		}

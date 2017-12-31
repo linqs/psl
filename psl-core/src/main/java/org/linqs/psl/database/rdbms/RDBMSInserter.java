@@ -67,6 +67,8 @@ public class RDBMSInserter extends Inserter {
 	private final String multiInsertSQL;
 
 	public RDBMSInserter(RDBMSDataStore dataStore, PredicateInfo predicateInfo, Partition partition) {
+		super(predicateInfo.argumentColumns().size());
+
 		this.dataStore = dataStore;
 		this.predicateInfo = predicateInfo;
 		this.partition = partition;

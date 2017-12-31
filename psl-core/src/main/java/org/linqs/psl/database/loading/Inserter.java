@@ -33,6 +33,12 @@ public abstract class Inserter {
 
 	public static final String DEFAULT_DELIMITER = "\t";
 
+	private final int arity;
+
+	public Inserter(int arity) {
+		this.arity = arity;
+	}
+
 	/**
 	 * Insert a single object using the default truth value.
 	 */
@@ -120,6 +126,39 @@ public abstract class Inserter {
 		}
 
 		insertAllValues(values, data);
+	}
+
+	/**
+	 * Peek at the first line and then choose loadDelimitedData() or loadDelimitedDataTruth().
+	 * Because of the need to open the file and peek, this will always be slower than either direct option.
+	 */
+	public void loadDelimitedDataAutomatic(String path) {
+		loadDelimitedDataAutomatic(path, DEFAULT_DELIMITER);
+	}
+
+	public void loadDelimitedDataAutomatic(String path, String delimiter) {
+		boolean hasTruth = false;
+		try (BufferedReader reader = new BufferedReader(new FileReader(path))) {
+			String line = null;
+			while ((line = reader.readLine()) != null) {
+				line = line.trim();
+				if (line.isEmpty()) {
+					continue;
+				}
+
+				String[] parts = line.split(delimiter);
+				hasTruth = (parts.length > arity);
+				break;
+			}
+		} catch (IOException ex) {
+			throw new RuntimeException("Unable to parse delimited file.", ex);
+		}
+
+		if (hasTruth) {
+			loadDelimitedDataTruth(path, delimiter);
+		} else {
+			loadDelimitedData(path, delimiter);
+		}
 	}
 
 	/**

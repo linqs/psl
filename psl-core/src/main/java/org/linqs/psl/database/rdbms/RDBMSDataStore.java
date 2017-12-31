@@ -32,6 +32,8 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -51,6 +53,8 @@ import java.util.Set;
  * through the {@link ConfigBundle} can use custom names for its value and partition columns.
  */
 public class RDBMSDataStore implements DataStore {
+	private static final Logger log = LoggerFactory.getLogger(RDBMSDataStore.class);
+
 	private static final Set<RDBMSDataStore> openDataStores = new HashSet<RDBMSDataStore>();
 
 	// Map for database registration
@@ -225,9 +229,12 @@ public class RDBMSDataStore implements DataStore {
 		}
 
 		// Index in parallel.
+		log.debug("Indexing predicates.");
 		Parallel.foreach(toIndex, new Parallel.Worker<PredicateInfo>() {
 			@Override
 			public void work(int index, PredicateInfo predicateInfo) {
+				log.trace("Indexing " + predicateInfo.predicate());
+
 				try (Connection connection = getConnection()) {
 					predicateInfo.index(connection, dbDriver);
 				} catch (SQLException ex) {
@@ -235,6 +242,7 @@ public class RDBMSDataStore implements DataStore {
 				}
 			}
 		});
+		log.debug("Predicate indexing complete.");
 	}
 
 	@Override

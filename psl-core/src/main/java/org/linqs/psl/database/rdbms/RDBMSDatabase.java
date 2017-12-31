@@ -366,8 +366,8 @@ public class RDBMSDatabase implements Database {
 					throw new RuntimeException("Error doing batch commit for: " + entry.getKey(), ex);
 				}
 			}
-      } catch (SQLException ex) {
-         throw new RuntimeException("Error doing batch commit.", ex);
+		} catch (SQLException ex) {
+			throw new RuntimeException("Error doing batch commit.", ex);
 		}
 	}
 
@@ -521,13 +521,13 @@ public class RDBMSDatabase implements Database {
 	private PreparedStatement getAtomQuery(Connection connection, PredicateInfo predicate, Constant[] arguments) {
 		PreparedStatement statement = predicate.createQueryStatement(connection, readIDs);
 
-      try {
-         for (int i = 0; i < arguments.length; i++) {
-            setAtomArgument(statement, arguments[i], i + 1);
-         }
-      } catch (SQLException ex) {
-         throw new RuntimeException("Failed to set prepared statement atom arguments for " + predicate.predicate() + ".");
-      }
+		try {
+			for (int i = 0; i < arguments.length; i++) {
+				setAtomArgument(statement, arguments[i], i + 1);
+			}
+		} catch (SQLException ex) {
+			throw new RuntimeException("Failed to set prepared statement atom arguments for " + predicate.predicate() + ".");
+		}
 
 		return statement;
 	}
@@ -539,13 +539,13 @@ public class RDBMSDatabase implements Database {
 	private PreparedStatement getAtomDelete(Connection connection, PredicateInfo predicate, Term[] arguments) {
 		PreparedStatement statement = predicate.createDeleteStatement(connection, writeID);
 
-      try {
-         for (int i = 0; i < arguments.length; i++) {
-            setAtomArgument(statement, arguments[i], i + 1);
-         }
-      } catch (SQLException ex) {
-         throw new RuntimeException("Failed to set prepared statement atom arguments for " + predicate.predicate() + ".");
-      }
+		try {
+			for (int i = 0; i < arguments.length; i++) {
+				setAtomArgument(statement, arguments[i], i + 1);
+			}
+		} catch (SQLException ex) {
+			throw new RuntimeException("Failed to set prepared statement atom arguments for " + predicate.predicate() + ".");
+		}
 
 		return statement;
 	}
