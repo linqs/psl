@@ -26,6 +26,7 @@ import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.util.Parallel;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
@@ -35,10 +36,12 @@ import com.google.common.collect.Multimap;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -87,6 +90,11 @@ public class RDBMSDataStore implements DataStore {
 	private final Map<Predicate, PredicateInfo> predicates;
 
 	/**
+	 * Indicates that all predicates have been indexed.
+	 */
+	private boolean predicatesIndexed;
+
+	/**
 	 * Returns an RDBMSDataStore that utilizes the connections returned by the {@link DatabaseDriver}.
 	 * @param dbDriver the DatabaseDriver that contains a connection pool to the backing database.
 	 * @param config the configuration for this DataStore.
@@ -104,6 +112,9 @@ public class RDBMSDataStore implements DataStore {
 
 		// Initialize metadata
 		this.metadata = new DataStoreMetadata(this);
+
+		// We start with no predicates to index.
+		predicatesIndexed = true;
 
 		// Read in any predicates that exist in the database
 		try (Connection connection = getConnection()) {
@@ -141,10 +152,13 @@ public class RDBMSDataStore implements DataStore {
 			return;
 		}
 
-		PredicateInfo predicateInfo = new PredicateInfo(predicate);
+		PredicateInfo predicateInfo = new PredicateInfo(predicate, !createTable);
 		predicates.put(predicate, predicateInfo);
 
 		if (createTable) {
+			// We only need to index this predicate if it doesn't already have a table.
+			predicatesIndexed = false;
+
 			try (Connection connection = getConnection()) {
 				predicateInfo.setupTable(connection, dbDriver);
 			} catch (SQLException ex) {
@@ -178,6 +192,10 @@ public class RDBMSDataStore implements DataStore {
 			}
 		}
 
+		// Make sure all the predicates are indexed.
+		// We wait until now, so data can be loaded without needed to update the indexes.
+		indexPredicates();
+
 		// Creates the database and registers the current predicates
 		RDBMSDatabase db = new RDBMSDatabase(this, write, read, Collections.unmodifiableMap(predicates), toClose);
 
@@ -187,6 +205,36 @@ public class RDBMSDataStore implements DataStore {
 		}
 		writePartitionIDs.add(write);
 		return db;
+	}
+
+	public void indexPredicates() {
+		if (predicatesIndexed) {
+			return;
+		}
+		predicatesIndexed = true;
+
+		List<PredicateInfo> toIndex = new ArrayList<PredicateInfo>();
+		for (PredicateInfo predicateInfo : predicates.values()) {
+			if (!predicateInfo.indexed()) {
+				toIndex.add(predicateInfo);
+			}
+		}
+
+		if (toIndex.size() == 0) {
+			return;
+		}
+
+		// Index in parallel.
+		Parallel.foreach(toIndex, new Parallel.Worker<PredicateInfo>() {
+			@Override
+			public void work(int index, PredicateInfo predicateInfo) {
+				try (Connection connection = getConnection()) {
+					predicateInfo.index(connection, dbDriver);
+				} catch (SQLException ex) {
+					throw new RuntimeException("Unable to index predicate: " + predicateInfo.predicate(), ex);
+				}
+			}
+		});
 	}
 
 	@Override

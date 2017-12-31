@@ -83,6 +83,7 @@ public class Formula2SQLTest {
 	@Test
 	/**
 	 * Ensure that ExternalFunctions work with three arguments.
+	 * TODO(eriq): This is a FLAKY test. External functions in general are flaky.
 	 */
 	public void testTernaryExternalFunction() {
 		TestModelFactory.ModelInformation info = TestModelFactory.getModel();

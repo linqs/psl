@@ -61,8 +61,13 @@ public class PredicateInfo {
 	private final String tableName;
 
 	private Map<String, String> cachedSQL;
+	private boolean indexed;
 
 	public PredicateInfo(Predicate predicate) {
+		this(predicate, false);
+	}
+
+	public PredicateInfo(Predicate predicate, boolean indexed) {
 		assert(predicate != null);
 
 		this.predicate = predicate;
@@ -74,6 +79,7 @@ public class PredicateInfo {
 		}
 
 		cachedSQL = new HashMap<String, String>();
+		this.indexed = indexed;
 	}
 
 	public List<String> argumentColumns() {
@@ -88,9 +94,12 @@ public class PredicateInfo {
 		return predicate;
 	}
 
+	public boolean indexed() {
+		return indexed;
+	}
+
 	public void setupTable(Connection connection, DatabaseDriver dbDriver) {
 		createTable(connection, dbDriver);
-		index(connection, dbDriver);
 	}
 
 	/**
@@ -207,7 +216,12 @@ public class PredicateInfo {
 		}
 	}
 
-	private void index(Connection connection, DatabaseDriver dbDriver) {
+	public void index(Connection connection, DatabaseDriver dbDriver) {
+		if (indexed) {
+			return;
+		}
+		indexed = true;
+
 		List<String> indexes = new ArrayList<String>();
 
 		// The primary index used for grounding.
