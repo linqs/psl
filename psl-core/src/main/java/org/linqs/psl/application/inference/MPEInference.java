@@ -151,6 +151,7 @@ public class MPEInference implements ModelApplication {
 
 		// Commits the RandomVariableAtoms back to the Database,
 		atomManager.commitPersistedAtoms();
+		log.info("Results committed to database.");
 
 		double incompatibility = GroundRules.getTotalWeightedIncompatibility(groundRuleStore.getCompatibilityRules());
 		double infeasibility = GroundRules.getInfeasibilityNorm(groundRuleStore.getConstraintRules());

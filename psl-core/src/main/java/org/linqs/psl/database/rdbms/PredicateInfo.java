@@ -227,7 +227,7 @@ public class PredicateInfo {
 		// The primary index used for grounding.
 		CreateIndexQuery createIndex = new CreateIndexQuery(tableName(), "IX_" + tableName() + "_GROUNDING");
 
-		// The column order is very important: data columns, then index.
+		// The column order is very important: data columns, then partition.
 		for (String colName : argCols) {
 			createIndex.addCustomColumns(colName);
 		}
