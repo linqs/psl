@@ -17,23 +17,25 @@
  */
 package org.linqs.psl.reasoner.function;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 /**
  * A numeric function defined as a sum of {@link FunctionSummand FunctionSummands}.
  */
 public class FunctionSum implements Iterable<FunctionSummand>, FunctionTerm {
-
 	protected final List<FunctionSummand> sum;
-	
+
 	public FunctionSum() {
 		sum = new ArrayList<FunctionSummand>();
 	}
-	
+
 	/**
 	 * Adds a {@link FunctionSummand} to the sum.
 	 *
-	 * @param summand  the summand to add
+	 * @param summand the summand to add
 	 */
 	public void add(FunctionSummand summand) {
 		sum.add(summand);
@@ -43,11 +45,11 @@ public class FunctionSum implements Iterable<FunctionSummand>, FunctionTerm {
 	public Iterator<FunctionSummand> iterator() {
 		return sum.iterator();
 	}
-	
+
 	public int size() {
 		return sum.size();
 	}
-	
+
 	public FunctionSummand get(int pos) {
 		return sum.get(pos);
 	}
@@ -55,53 +57,62 @@ public class FunctionSum implements Iterable<FunctionSummand>, FunctionTerm {
 	/**
 	 * Returns the sum of the {@link FunctionSummand} values.
 	 *
-	 * @return  the FunctionSum's value
+	 * @return the FunctionSum's value
 	 */
 	@Override
 	public double getValue() {
 		double val = 0.0;
-		for (FunctionSummand s : sum) val+=s.getValue();
+		// Use numeric for loops instead of iterators in high traffic code.
+		for (int i = 0; i < sum.size(); i++) {
+			val += sum.get(i).getValue();
+		}
 		return val;
 	}
-	
-	
+
 	@Override
 	public double getValue(Map<? extends FunctionVariable,Double> values, boolean useCurrentValues) {
 		double val = 0.0;
-		for (FunctionSummand s : sum) val+=s.getValue(values,useCurrentValues);
+		// Use numeric for loops instead of iterators in high traffic code.
+		for (int i = 0; i < sum.size(); i++) {
+			val += sum.get(i).getValue(values,useCurrentValues);
+		}
 		return val;
 	}
 
 	@Override
 	public boolean isLinear() {
-		for (FunctionSummand s : sum) {
-			if (!s.isLinear()) return false;
+		for (FunctionSummand summand : sum) {
+			if (!summand.isLinear()) {
+				return false;
+			}
 		}
 		return true;
 	}
-	
+
 	@Override
 	public boolean isConstant() {
-		for (FunctionSummand s : sum) {
-			if (!s.isConstant()) return false;
+		for (FunctionSummand summand : sum) {
+			if (!summand.isConstant()) {
+				return false;
+			}
 		}
 		return true;
 	}
-	
+
 	@Override
 	public String toString() {
 		StringBuilder string = new StringBuilder();
 		string.append("(");
 		boolean skip = true;
 		for (FunctionTerm term : sum) {
-			if (skip)
+			if (skip) {
 				skip = false;
-			else
+			} else {
 				string.append("+");
+			}
 			string.append(" " + term.toString() + " ");
 		}
 		string.append(")");
 		return string.toString();
 	}
-	
 }

@@ -31,10 +31,11 @@ import java.util.List;
  * @author Stephen Bach <bach@cs.umd.edu>
  */
 public abstract class HyperplaneTerm extends ADMMObjectiveTerm {
-
 	protected final List<Float> coeffs;
 	protected final List<Float> unitNormal;
 	protected final float constant;
+	// Only allocate once.
+	protected final float[] point;
 
 	HyperplaneTerm(List<LocalVariable> variables, List<Float> coeffs, float constant) {
 		super(variables);
@@ -43,6 +44,7 @@ public abstract class HyperplaneTerm extends ADMMObjectiveTerm {
 
 		this.coeffs = coeffs;
 		this.constant = constant;
+		this.point = new float[variables.size()];
 
 		if (variables.size() >= 3) {
 			/*
@@ -97,7 +99,6 @@ public abstract class HyperplaneTerm extends ADMMObjectiveTerm {
 			return;
 		}
 
-		float[] point = new float[variables.size()];
 		for (int i = 0; i < variables.size(); i++) {
 			point[i] = consensusValues[variables.get(i).getGlobalId()] - variables.get(i).getLagrange() / stepSize;
 		}
