@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,13 +46,13 @@ public class HingeLossTermTest {
 		 * 
 		 * Solution on the hinge
 		 */
-		double[] z = {0.2, 0.5};
-		double[] y = {0.0, 0.0};
-		double[] coeffs = {1.0, -1.0};
-		double constant = -0.95;
-		double weight = 1.0;
-		double stepSize = 1.0;
-		double[] expected = {-.125, 0.825};
+		float[] z = {0.2f, 0.5f};
+		float[] y = {0.0f, 0.0f};
+		float[] coeffs = {1.0f, -1.0f};
+		float constant = -0.95f;
+		float weight = 1.0f;
+		float stepSize = 1.0f;
+		float[] expected = {-0.125f, 0.825f};
 		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
 		
 		/*
@@ -60,13 +60,13 @@ public class HingeLossTermTest {
 		 * 
 		 * Solution on the hinge
 		 */
-		z = new double[] {0.3, 0.5, 0.1};
-		y = new double[] {0.1, 0.0, -0.05};
-		coeffs = new double[] {1.0, -0.5, 0.4};
-		constant = -0.15;
-		weight = 1.0;
-		stepSize = 0.5;
-		expected = new double[] {0.043257, 0.528361, 0.177309};
+		z = new float[] {0.3f, 0.5f, 0.1f};
+		y = new float[] {0.1f, 0.0f, -0.05f};
+		coeffs = new float[] {1.0f, -0.5f, 0.4f};
+		constant = -0.15f;
+		weight = 1.0f;
+		stepSize = 0.5f;
+		expected = new float[] {0.043257f, 0.528361f, 0.177309f};
 		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
 		
 		
@@ -76,13 +76,13 @@ public class HingeLossTermTest {
 		 * 
 		 * Solution on the zero side
 		 */
-		z = new double[] {0.3, 0.5, 0.1};
-		y = new double[] {0.1, 0.0, -0.05};
-		coeffs = new double[] {1.0, -0.5, 0.4};
-		constant = 0.0;
-		weight = 2.0;
-		stepSize = 0.5;
-		expected = new double[] {0.1, 0.5, 0.2};
+		z = new float[] {0.3f, 0.5f, 0.1f};
+		y = new float[] {0.1f, 0.0f, -0.05f};
+		coeffs = new float[] {1.0f, -0.5f, 0.4f};
+		constant = 0.0f;
+		weight = 2.0f;
+		stepSize = 0.5f;
+		expected = new float[] {0.1f, 0.5f, 0.2f};
 		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
 		
 		/*
@@ -90,13 +90,13 @@ public class HingeLossTermTest {
 		 * 
 		 * Solution on the zero side
 		 */
-		z = new double[] {0.1};
-		y = new double[] {0.15};
-		coeffs = new double[] {1.0};
-		constant = 0.0;
-		weight = 2.0;
-		stepSize = 1.0;
-		expected = new double[] {-0.05};
+		z = new float[] {0.1f};
+		y = new float[] {0.15f};
+		coeffs = new float[] {1.0f};
+		constant = 0.0f;
+		weight = 2.0f;
+		stepSize = 1.0f;
+		expected = new float[] {-0.05f};
 		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
 		
 		/*
@@ -104,41 +104,41 @@ public class HingeLossTermTest {
 		 * 
 		 * Solution on the linear side
 		 */
-		z = new double[] {0.7, .5};
-		y = new double[] {0.0, 0.0};
-		coeffs = new double[] {1.0, -1.0};
-		constant = 0.0;
-		weight = 1.0;
-		stepSize = 1.0;
-		expected = new double[] {0.6, 0.6};
+		z = new float[] {0.7f, 0.5f};
+		y = new float[] {0.0f, 0.0f};
+		coeffs = new float[] {1.0f, -1.0f};
+		constant = 0.0f;
+		weight = 1.0f;
+		stepSize = 1.0f;
+		expected = new float[] {0.6f, 0.6f};
 		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
 		
 		/*
 		 * Problem 6
 		 * 
-		 * Solution on the hinge, two variables, non-1.0 stepsize and non-0.0 dual
+		 * Solution on the hinge, two variables, non-1 stepsize and non-0 dual
 		 * variables
 		 */
-		z = new double[] {0.7, 0.5};
-		y = new double[] {0.05, 1.0};
-		coeffs = new double[] {1.0, -1.0};
-		constant = -0.5;
-		weight = 2.0;
-		stepSize = 2.0;
-		expected = new double[] {0.0875, 0.5875};
+		z = new float[] {0.7f, 0.5f};
+		y = new float[] {0.05f, 1.0f};
+		coeffs = new float[] {1.0f, -1.0f};
+		constant = -0.5f;
+		weight = 2.0f;
+		stepSize = 2.0f;
+		expected = new float[] {0.0875f, 0.5875f};
 		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
 	}
 	
-	private void testProblem(double[] z, double[] y, double[] coeffs, double constant,
-			double weight, final double stepSize, double[] expected) {
+	private void testProblem(float[] z, float[] y, float[] coeffs, float constant,
+			float weight, final float stepSize, float[] expected) {
 		List<LocalVariable> variables = new ArrayList<LocalVariable>(z.length);
-		List<Double> coeffsList = new ArrayList<Double>(z.length);
+		List<Float> coeffsList = new ArrayList<Float>(z.length);
 
 		for (int i = 0; i < z.length; i++) {
 			variables.add(new LocalVariable(i, z[i]));
 			variables.get(i).setLagrange(y[i]);
 
-			coeffsList.add(new Double(coeffs[i]));
+			coeffsList.add(new Float(coeffs[i]));
 		}
 		
 		HingeLossTerm term = new HingeLossTerm(variables, coeffsList, constant, weight);

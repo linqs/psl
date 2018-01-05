@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,19 +18,10 @@
 package org.linqs.psl.reasoner;
 
 import org.linqs.psl.config.ConfigBundle;
-import org.linqs.psl.config.ConfigManager;
-import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.model.rule.Rule;
-import org.linqs.psl.model.rule.UnweightedGroundRule;
-import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.term.TermStore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.apache.commons.collections4.SetValuedMap;
-import org.apache.commons.collections4.multimap.HashSetValuedHashMap;
-import com.google.common.collect.Iterables;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -39,115 +30,128 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
  * An abstract superclass for reasoners implemented as command-line executables.
  *
- * Ground models are provided to the executable and results are read via
- * temporary text files.
- *
- * @author Stephen Bach <bach@cs.umd.edu>
+ * Ground models are provided to the executable and results are read via temporary files.
  */
-public abstract class ExecutableReasoner implements Reasoner {
-
+public abstract class ExecutableReasoner extends Reasoner {
 	private static final Logger log = LoggerFactory.getLogger(ExecutableReasoner.class);
 
 	/**
 	 * Prefix of property keys used by this class.
-	 *
-	 * @see ConfigManager
 	 */
 	public static final String CONFIG_PREFIX = "executablereasoner";
 
 	/**
-	 * Key for String property which is path to reasoner executable.
-	 *
-	 * This is the rare PSL property that is mandatory to specify.
+	 * Key for int property for the path of the executable.
 	 */
-	public static final String EXECUTABLE_KEY = CONFIG_PREFIX + ".executable";
+	public static final String EXECUTABLE_PATH_KEY = CONFIG_PREFIX + ".executablepath";
 
-	protected final String executable;
+	/**
+	 * The file that PSL will write for the reasoner.
+	 */
+	protected String executableInputPath;
+
+	/**
+	 * The file that the reasoner will write before temination.
+	 */
+	protected String executableOutputPath;
+
+	/**
+	 * The path the to executable to call.
+	 */
+	protected String executablePath;
+
+	protected String[] args;
 
 	public ExecutableReasoner(ConfigBundle config) {
-		executable = config.getString(EXECUTABLE_KEY, "");
-		if (executable.equals("")) {
-			throw new IllegalArgumentException("Must specify executable.");
-		}
+		super(config);
+
+		this.executablePath = config.getString(EXECUTABLE_PATH_KEY, "");
+	}
+
+	public ExecutableReasoner(ConfigBundle config, String executablePath,
+			String executableInputPath, String executableOutputPath,
+			String... args) {
+		super(config);
+
+		this.executablePath = executablePath;
+		this.executableInputPath = executableInputPath;
+		this.executableOutputPath = executableOutputPath;
+		this.args = args;
 	}
 
 	@Override
 	public void optimize(TermStore termStore) {
-		log.debug("Writing model file.");
-		File modelFile = new File(getModelFileName());
+		log.debug("Writing model file: " + executableInputPath);
+		File modelFile = new File(executableInputPath);
 
 		try {
 			BufferedWriter modelWriter = new BufferedWriter(new FileWriter(modelFile));
-			writeModel(modelWriter);
+			writeModel(modelWriter, termStore);
 			modelWriter.close();
-		} catch (IOException e) {
-			throw new Error("IOException when writing model file.", e);
+		} catch (IOException ex) {
+			throw new RuntimeException("Failed to write model file: " + executableInputPath, ex);
 		}
 
-		log.debug("Finished writing model file. Calling reasoner.");
+		log.debug("Finished writing model file. Calling reasoner: " + executablePath);
 		try {
 			callReasoner();
-		} catch (IOException e) {
-			throw new Error("IOException when calling reasoner.", e);
+		} catch (IOException ex) {
+			throw new RuntimeException("Failed to call external reasoner: " + executablePath, ex);
 		}
 
-		log.debug("Reasoner finished. Reading results file.");
-		File resultsFile = new File(getResultsFileName());
+		log.debug("Reasoner finished. Reading results file: " + executableOutputPath);
+		File resultsFile = new File(executableOutputPath);
 		try {
 			BufferedReader resultsReader = new BufferedReader(new FileReader(resultsFile));
-			readResults(resultsReader);
+			readResults(resultsReader, termStore);
 			resultsReader.close();
-		} catch (IOException e) {
-			throw new Error("IOException when reading results file.", e);
+		} catch (IOException ex) {
+			throw new RuntimeException("Failed to read results file: " + executableOutputPath, ex);
 		}
-
 		log.debug("Finished reading results file.");
-		modelFile.delete();
-		resultsFile.delete();
 	}
 
 	protected void callReasoner() throws IOException {
-		List<String> command = getArgs();
-		command.add(0, executable);
+		// Need extra allocation so the list will be mutable.
+		List<String> command = new ArrayList<String>(Arrays.asList(args));
+		command.add(0, executablePath);
+
 		ProcessBuilder pb = new ProcessBuilder(command);
 		pb.redirectErrorStream(true);
 		Process proc = pb.start();
+
 		BufferedReader stdout = new BufferedReader(new InputStreamReader(proc.getInputStream()));
 		String line;
-		while ((line = stdout.readLine()) != null)
-			log.trace(line);
+		while ((line = stdout.readLine()) != null) {
+			log.debug(line);
+		}
 		stdout.close();
+
 		int exitValue = -1;
 		try {
 			exitValue = proc.waitFor();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
+		} catch (InterruptedException ex) {
+			throw new RuntimeException("Failed to wait for executable reasoner.", ex);
 		}
-		//int exitValue = proc.exitValue();
-		if (exitValue != 0)
-			log.warn("Executable exited with unexpected value: {}", exitValue);
-	}
 
-	abstract protected List<String> getArgs();
-
-	abstract protected void writeModel(BufferedWriter modelWriter) throws IOException;
-
-	abstract protected void readResults(BufferedReader resultsReader) throws IOException;
-
-	protected String getModelFileName() {
-		return "model";
-	}
-
-	protected String getResultsFileName() {
-		return "results";
+		if (exitValue != 0) {
+			throw new RuntimeException("Executable exited with unexpected value: " + exitValue);
+		}
 	}
 
 	@Override
 	public void close() {
+		(new File(executableInputPath)).delete();
+		(new File(executableOutputPath)).delete();
 	}
+
+	protected abstract void writeModel(BufferedWriter modelWriter, TermStore termStore) throws IOException;
+	protected abstract void readResults(BufferedReader resultsReader, TermStore termStore) throws IOException;
 }

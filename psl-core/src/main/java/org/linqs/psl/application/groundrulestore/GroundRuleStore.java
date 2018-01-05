@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,9 +35,10 @@ public interface GroundRuleStore {
 
 	/**
 	 * Adds a GroundRule to this store.
+	 * The behavior on what to do when a rule is already added is up tothe implementation.
+	 * It may ignore it or throw an exception.
 	 *
 	 * @param rule the GroundRule to add
-	 * @throws IllegalArgumentException if rule is already in this store
 	 */
 	public void addGroundRule(GroundRule rule);
 
@@ -98,4 +99,8 @@ public interface GroundRuleStore {
 	 */
 	public int size();
 
+	/**
+	 * @return the number of GroundRules for a specific rule in this store
+	 */
+	public int count(Rule rule);
 }

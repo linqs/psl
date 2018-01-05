@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class DatabaseTestUtil {
-	private static final String DB_NAME = "psl-test";
+	private static final String DB_NAME = "psltest";
 	private static final String DB_BASE_PATH = Paths.get(System.getProperty("java.io.tmpdir"), DB_NAME).toString();
 
 	public static DatabaseDriver getH2Driver() {
@@ -76,7 +76,7 @@ public class DatabaseTestUtil {
 			// Check to see if we failed to connect because the server is down.
 			if (ex.getCause() instanceof org.postgresql.util.PSQLException) {
 				if (ex.getCause().getCause() instanceof java.net.ConnectException) {
-					if (ex.getCause().getCause().getMessage().equals("Connection refused (Connection refused)")) {
+					if (ex.getCause().getCause().getMessage().contains("Connection refused")) {
 						System.out.println("Skipping Postgres test... cannot connect to database.");
 						return null;
 					}

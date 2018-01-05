@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,20 +17,12 @@
  */
 package org.linqs.psl.model.rule;
 
-import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.weight.Weight;
-
-/**
- * A template for {@link WeightedGroundRule WeightedGroundRules},
- * which measure the compatibility of the values of {@link GroundAtom GroundAtoms}.
- */
 public interface WeightedRule extends Rule {
-	
-	public Weight getWeight();
-	
-	public void setWeight(Weight w);
-	
+	public boolean isSquared();
+
+	public double getWeight();
+
+	public void setWeight(double weight);
+
 	public boolean isWeightMutable();
-	
-	public void setWeightMutable(boolean mutable);
 }

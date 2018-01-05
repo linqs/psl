@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ public class StandardPredicate extends Predicate {
 	 * @param types  types for each of the predicate's arguments
 	 * @see PredicateFactory
 	 */
-	StandardPredicate(String name, ConstantType[] types) {
+	public StandardPredicate(String name, ConstantType[] types) {
 		super(name, types);
 
 		for (ConstantType type : types) {

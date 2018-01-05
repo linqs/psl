@@ -32,11 +32,11 @@ import java.util.List;
  */
 public abstract class HyperplaneTerm extends ADMMObjectiveTerm {
 
-	protected final List<Double> coeffs;
-	protected final List<Double> unitNormal;
-	protected final double constant;
+	protected final List<Float> coeffs;
+	protected final List<Float> unitNormal;
+	protected final float constant;
 
-	HyperplaneTerm(List<LocalVariable> variables, List<Double> coeffs, double constant) {
+	HyperplaneTerm(List<LocalVariable> variables, List<Float> coeffs, float constant) {
 		super(variables);
 
 		assert(variables.size() == coeffs.size());
@@ -49,15 +49,15 @@ public abstract class HyperplaneTerm extends ADMMObjectiveTerm {
 			 * Finds a unit vector normal to the hyperplane and a point in the
 			 * hyperplane for future projections
 			 */
-			double length = 0.0;
-			for (Double coeff : coeffs) {
-				length += coeff.doubleValue() * coeff.doubleValue();
+			float length = 0.0f;
+			for (Float coeff : coeffs) {
+				length += coeff.floatValue() * coeff.floatValue();
 			}
-			length = Math.sqrt(length);
+			length = (float)Math.sqrt(length);
 
-			unitNormal = new ArrayList<Double>(coeffs.size());
-			for (Double coeff : coeffs) {
-				unitNormal.add(coeff.doubleValue() / length);
+			unitNormal = new ArrayList<Float>(coeffs.size());
+			for (Float coeff : coeffs) {
+				unitNormal.add(coeff.floatValue() / length);
 			}
 		} else {
 			unitNormal = null;
@@ -71,19 +71,19 @@ public abstract class HyperplaneTerm extends ADMMObjectiveTerm {
 	 * <p>
 	 * Stores the result in x.
 	 */
-	protected void project(double stepSize, double[] consensusValues) {
+	protected void project(float stepSize, float[] consensusValues) {
 		// Deal with short hyperplanes specially.
 		if (variables.size() == 1) {
-			variables.get(0).setValue(constant / coeffs.get(0).doubleValue());
+			variables.get(0).setValue(constant / coeffs.get(0).floatValue());
 			return;
 		}
 
 		// Deal with short hyperplanes specially.
 		if (variables.size() == 2) {
-			double x0;
-			double x1;
-			double coeff0 = coeffs.get(0).doubleValue();
-			double coeff1 = coeffs.get(1).doubleValue();
+			float x0;
+			float x1;
+			float coeff0 = coeffs.get(0).floatValue();
+			float coeff1 = coeffs.get(1).floatValue();
 
 			x0 = stepSize * consensusValues[variables.get(0).getGlobalId()] - variables.get(0).getLagrange();
 			x0 -= stepSize * coeff0 / coeff1 * (-1.0 * constant / coeff1 + consensusValues[variables.get(1).getGlobalId()] - variables.get(1).getLagrange() / stepSize);
@@ -97,20 +97,20 @@ public abstract class HyperplaneTerm extends ADMMObjectiveTerm {
 			return;
 		}
 
-		double[] point = new double[variables.size()];
+		float[] point = new float[variables.size()];
 		for (int i = 0; i < variables.size(); i++) {
 			point[i] = consensusValues[variables.get(i).getGlobalId()] - variables.get(i).getLagrange() / stepSize;
 		}
 
 		/* For point (constant / coeffs[0], 0,...) in hyperplane dotted with unitNormal */
-		double multiplier = -1.0 * constant / coeffs.get(0).doubleValue() * unitNormal.get(0).doubleValue();
+		float multiplier = -1.0f * constant / coeffs.get(0).floatValue() * unitNormal.get(0).floatValue();
 
 		for (int i = 0; i < variables.size(); i++) {
-			multiplier += point[i] * unitNormal.get(i).doubleValue();
+			multiplier += point[i] * unitNormal.get(i).floatValue();
 		}
 
 		for (int i = 0; i < variables.size(); i++) {
-			variables.get(i).setValue(point[i] - multiplier * unitNormal.get(i).doubleValue());
+			variables.get(i).setValue(point[i] - multiplier * unitNormal.get(i).floatValue());
 		}
 	}
 }

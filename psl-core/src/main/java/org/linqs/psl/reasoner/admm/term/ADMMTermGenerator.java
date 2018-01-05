@@ -79,7 +79,7 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 
 		if (groundRule instanceof WeightedGroundRule) {
 			boolean squared;
-			double weight = ((WeightedGroundRule)groundRule).getWeight().getWeight();
+			float weight = (float)((WeightedGroundRule)groundRule).getWeight();
 			FunctionTerm function = ((WeightedGroundRule)groundRule).getFunctionDefinition();
 
 			/* Checks if the function is wrapped in a PowerOfTwo */
@@ -131,7 +131,7 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 			} else if (function instanceof FunctionSum) {
 				Hyperplane hyperplane = processHyperplane((FunctionSum) function, termStore);
 				if (squared) {
-					term = new SquaredLinearLossTerm(hyperplane.variables, hyperplane.coeffs, 0.0, weight);
+					term = new SquaredLinearLossTerm(hyperplane.variables, hyperplane.coeffs, 0.0f, weight);
 				} else {
 					term = new LinearLossTerm(hyperplane.variables, hyperplane.coeffs, weight);
 				}
@@ -144,7 +144,7 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 			if (function instanceof FunctionSum) {
 				Hyperplane hyperplane = processHyperplane((FunctionSum)function, termStore);
 				term = new LinearConstraintTerm(hyperplane.variables, hyperplane.coeffs,
-						constraint.getValue() + hyperplane.constant, constraint.getComparator());
+						(float)(constraint.getValue() + hyperplane.constant), constraint.getComparator());
 			} else {
 				throw new IllegalArgumentException("Unrecognized constraint: " + constraint);
 			}
@@ -170,10 +170,10 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 				int localIndex = hyperplane.variables.indexOf(variable);
 				if (localIndex != -1) {
 					// If it has, just adds the coefficient.
-					hyperplane.coeffs.set(localIndex, hyperplane.coeffs.get(localIndex) + summand.getCoefficient());
+					hyperplane.coeffs.set(localIndex, new Float(hyperplane.coeffs.get(localIndex) + summand.getCoefficient()));
 				} else {
 					hyperplane.variables.add(variable);
-					hyperplane.coeffs.add(summand.getCoefficient());
+					hyperplane.coeffs.add(new Float(summand.getCoefficient()));
 				}
 			} else if (singleton.isConstant()) {
 				// Subtracts because hyperplane is stored as coeffs^T * x = constant.
@@ -188,13 +188,13 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 
 	private static class Hyperplane {
 		public List<LocalVariable> variables;
-		public List<Double> coeffs;
-		public double constant;
+		public List<Float> coeffs;
+		public float constant;
 
 		public Hyperplane() {
 			variables = new ArrayList<LocalVariable>();
-			coeffs = new ArrayList<Double>();
-			constant = 0.0;
+			coeffs = new ArrayList<Float>();
+			constant = 0.0f;
 		}
 	}
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -133,6 +133,23 @@ public class PSLTest {
 		}
 
 		assertRules(rules.toArray(new Rule[0]), expectedRules, alphabetize);
+	}
+
+	public static List<Rule> getRules(DataStore dataStore, String input) {
+		Model model = null;
+
+		try {
+			model = ModelLoader.load(dataStore, input);
+		} catch (IOException ex) {
+			fail("IOException thrown from ModelLoader.load(): " + ex);
+		}
+
+		List<Rule> rules = new ArrayList<Rule>();
+		for (Rule rule : model.getRules()) {
+			rules.add(rule);
+		}
+
+		return rules;
 	}
 
 	/**

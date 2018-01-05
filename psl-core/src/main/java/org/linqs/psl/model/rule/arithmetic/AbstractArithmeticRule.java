@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,6 +73,8 @@ import java.util.Set;
 /**
  * Base class for all (first order, i.e., not ground) arithmetic rules.
  *
+ * Full equality checks (when two rules are the equal, but not the same refernce) are epensive.
+ *
  * @author Stephen Bach
  */
 public abstract class AbstractArithmeticRule implements Rule {
@@ -88,8 +90,6 @@ public abstract class AbstractArithmeticRule implements Rule {
 	protected final Map<SummationVariable, Formula> filters;
 
 	public AbstractArithmeticRule(ArithmeticRuleExpression expression, Map<SummationVariable, Formula> filterClauses) {
-		super();
-
 		this.expression = expression;
 		this.filters = filterClauses;
 
@@ -169,7 +169,9 @@ public abstract class AbstractArithmeticRule implements Rule {
 				groundAtoms[atomIndex] = queryAtoms.get(atomIndex).ground(atomManager, groundVariables, groundingIndex);
 			}
 
-			if (FunctionComparator.Equality.equals(expression.getComparator())) {
+			// Note that unweighed rules will ground an equality, while weighted rules will instead
+			// ground a largerThan and lessThan.
+			if (isWeighted() && FunctionComparator.Equality.equals(expression.getComparator())) {
 				groundRuleStore.addGroundRule(
 						makeGroundRule(coefficients, groundAtoms, FunctionComparator.LargerThan, finalCoefficient));
 				groundRuleStore.addGroundRule(
@@ -270,7 +272,9 @@ public abstract class AbstractArithmeticRule implements Rule {
 
 			double finalCoefficient = expression.getFinalCoefficient().getValue(subCounts);
 
-			if (FunctionComparator.Equality.equals(expression.getComparator())) {
+			// Note that unweighed rules will ground an equality, while weighted rules will instead
+			// ground a largerThan and lessThan.
+			if (isWeighted() && FunctionComparator.Equality.equals(expression.getComparator())) {
 				groundRuleStore.addGroundRule(
 						makeGroundRule(coefficients, groundAtoms, FunctionComparator.LargerThan, finalCoefficient));
 				groundRuleStore.addGroundRule(
@@ -583,5 +587,24 @@ public abstract class AbstractArithmeticRule implements Rule {
 	// TODO(eriq): Remove this once global configuration is implemented.
 	public static void setDelim(String delim) {
 		DELIM = delim;
+	}
+
+	@Override
+	public int hashCode() {
+		return expression.hashCode();
+	}
+
+	@Override
+	public boolean equals(Object other) {
+		if (this == other) {
+			return true;
+		}
+
+		if (other == null || !(other instanceof AbstractArithmeticRule)) {
+			return false;
+		}
+
+		AbstractArithmeticRule otherRule = (AbstractArithmeticRule)other;
+		return this.filters.equals(otherRule.filters) && this.expression.equals(otherRule.expression);
 	}
 }

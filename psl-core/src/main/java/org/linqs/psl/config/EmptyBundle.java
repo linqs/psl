@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
  * limitations under the License.
  */
 package org.linqs.psl.config;
+
+import org.linqs.psl.util.Objects;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -39,7 +41,7 @@ public class EmptyBundle implements ConfigBundle {
 	@Override
 	public void clear() { }
 
-    	@Override
+	 	@Override
 	public Object getProperty(String key){
 		throw new UnsupportedOperationException();
 	}
@@ -151,6 +153,13 @@ public class EmptyBundle implements ConfigBundle {
 
 	@Override
 	public Object getNewObject(String key, String defaultValue) {
-		return ConfigManager.getNewObject(this, key, defaultValue);
+		String className = getString(key, defaultValue);
+
+		// It is not unusual for someone to want no object if the key does not exist.
+		if (className == null) {
+			return null;
+		}
+
+		return Objects.newObject(className, this);
 	}
 }

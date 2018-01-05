@@ -36,7 +36,7 @@ public abstract class ADMMObjectiveTerm implements Term {
 		this.variables = variables;
 	}
 
-	public void updateLagrange(double stepSize, double[] consensusValues) {
+	public void updateLagrange(float stepSize, float[] consensusValues) {
 		// Use index instead of iterator here so we can see clear results in the profiler.
 		// http://psy-lob-saw.blogspot.co.uk/2014/12/the-escape-of-arraylistiterator.html
 		for (int i = 0; i < variables.size(); i++) {
@@ -50,7 +50,7 @@ public abstract class ADMMObjectiveTerm implements Term {
 	 * argmin f(x) + stepSize / 2 * \|x - z + y / stepSize \|_2^2 <br />
 	 * for the objective term f(x)
 	 */
-	public abstract void minimize(double stepSize, double[] consensusValues);
+	public abstract void minimize(float stepSize, float[] consensusValues);
 
 	public List<LocalVariable> getVariables() {
 		return new UnmodifiableList<LocalVariable>(variables);

@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,4 +35,6 @@ public interface Rule {
 	 * @param groundRuleStore store for new GroundRules
 	 */
 	public void groundAll(AtomManager atomManager, GroundRuleStore groundRuleStore);
+
+	public boolean isWeighted();
 }

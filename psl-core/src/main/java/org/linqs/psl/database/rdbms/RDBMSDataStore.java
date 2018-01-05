@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import com.google.common.collect.Multimap;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -47,6 +48,8 @@ import java.util.Set;
  * through the {@link ConfigBundle} can use custom names for its value and partition columns.
  */
 public class RDBMSDataStore implements DataStore {
+	private static final Set<RDBMSDataStore> openDataStores = new HashSet<RDBMSDataStore>();
+
 	// Map for database registration
 	private static final BiMap<ReadOnlyDatabase, String> registeredDatabases = HashBiMap.create();
 	private static int databaseCounter = 0;
@@ -57,26 +60,16 @@ public class RDBMSDataStore implements DataStore {
 	public static final String CONFIG_PREFIX = "rdbmsdatastore";
 
 	/**
-	 * Name of metadata table.
-	 **/
-	public static final String METADATA_TABLENAME = CONFIG_PREFIX + "_metadata";
-
-	/**
 	 * Default value for the USE_STRING_ID_KEY property.
 	 */
 	public static final boolean USE_STRING_ID_DEFAULT = true;
 
-	/**
-	 * This DataStore's connection to the RDBMS + the data loader associated
-	 * with it.
-	 */
-	private final Connection connection;
 	private final RDBMSDataLoader dataloader;
 
 	/**
 	 * This Database Driver associated to the datastore.
 	 */
-	private final DatabaseDriver dbDriver;
+	private DatabaseDriver dbDriver;
 
 	/**
 	 * Metadata
@@ -87,7 +80,7 @@ public class RDBMSDataStore implements DataStore {
 	 * The list of databases matched with their read partitions, and the set of
 	 * all write partitions open in this database.
 	 */
-	private final Multimap<Partition, RDBMSDatabase> openDatabases;
+	private final Multimap<Partition, Database> openDatabases;
 	private final Set<Partition> writePartitionIDs;
 
 	/**
@@ -96,11 +89,13 @@ public class RDBMSDataStore implements DataStore {
 	private final Map<Predicate, PredicateInfo> predicates;
 
 	/**
-	 * Returns an RDBMSDataStore that utilizes the connection created by the {@link DatabaseDriver}.
-	 * @param dbDriver	the DatabaseDriver that contains a connection to the backing database.
-	 * @param config	the configuration for this DataStore.
+	 * Returns an RDBMSDataStore that utilizes the connections returned by the {@link DatabaseDriver}.
+	 * @param dbDriver the DatabaseDriver that contains a connection pool to the backing database.
+	 * @param config the configuration for this DataStore.
 	 */
 	public RDBMSDataStore(DatabaseDriver dbDriver, ConfigBundle config) {
+		openDataStores.add(this);
+
 		// Initialize all private variables
 		this.openDatabases = HashMultimap.create();
 		this.writePartitionIDs = new HashSet<Partition>();
@@ -109,32 +104,29 @@ public class RDBMSDataStore implements DataStore {
 		// Keep database driver locally for generating different query dialets
 		this.dbDriver = dbDriver;
 
-		// Connect to the database
-		this.connection = dbDriver.getConnection();
-
 		// Set up the data loader
-		this.dataloader = new RDBMSDataLoader(connection);
+		this.dataloader = new RDBMSDataLoader(this);
 
 		// Initialize metadata
-		initializeMetadata(connection, METADATA_TABLENAME);
+		this.metadata = new DataStoreMetadata(this);
 
 		// Read in any predicates that exist in the database
-		for (StandardPredicate predicate : PredicateInfo.deserializePredicates(connection)) {
-			registerPredicate(predicate, false);
+		try (Connection connection = getConnection()) {
+			for (StandardPredicate predicate : PredicateInfo.deserializePredicates(connection)) {
+				registerPredicate(predicate, false);
+			}
+		} catch (SQLException ex) {
+			throw new RuntimeException("Unable to attempt to deserialize predicates.", ex);
 		}
 
 		// Register the DataStore class for external functions
 		if (dbDriver.supportsExternalFunctions()) {
-			ExternalFunctions.registerFunctionAlias(connection);
+			try (Connection connection = getConnection()) {
+				ExternalFunctions.registerFunctionAlias(connection);
+			} catch (SQLException ex) {
+				throw new RuntimeException("Unable to register external functions.", ex);
+			}
 		}
-	}
-
-	/**
-	 * Helper method to read from metadata table and store results into metadata object
-	 */
-	private void initializeMetadata(Connection conn, String tblName){
-		this.metadata = new DataStoreMetadata(conn, tblName);
-		metadata.createMetadataTable();
 	}
 
 	@Override
@@ -158,7 +150,11 @@ public class RDBMSDataStore implements DataStore {
 		predicates.put(predicate, predicateInfo);
 
 		if (createTable) {
-			predicateInfo.setupTable(connection, dbDriver);
+			try (Connection connection = getConnection()) {
+				predicateInfo.setupTable(connection, dbDriver);
+			} catch (SQLException ex) {
+				throw new RuntimeException("Unable to setup predicate table for: " + predicate + ".", ex);
+			}
 		}
 
 		// Update the data loader with the new predicate
@@ -187,7 +183,7 @@ public class RDBMSDataStore implements DataStore {
 				throw new IllegalArgumentException("Another database is writing to a specified read partition: " + partition);
 
 		// Creates the database and registers the current predicates
-		RDBMSDatabase db = new RDBMSDatabase(this, connection, write, read, Collections.unmodifiableMap(predicates), toClose);
+		RDBMSDatabase db = new RDBMSDatabase(this, write, read, Collections.unmodifiableMap(predicates), toClose);
 
 		// Register the write and read partitions as being associated with this database
 		for (Partition partition : read) {
@@ -195,6 +191,11 @@ public class RDBMSDataStore implements DataStore {
 		}
 		writePartitionIDs.add(write);
 		return db;
+	}
+
+	@Override
+	public Collection<Database> getOpenDatabases() {
+		return openDatabases.values();
 	}
 
 	@Override
@@ -221,35 +222,42 @@ public class RDBMSDataStore implements DataStore {
 
 	@Override
 	public int deletePartition(Partition partition) {
-		int deletedEntries = 0;
-		if (writePartitionIDs.contains(partition) || openDatabases.containsKey(partition))
+		if (writePartitionIDs.contains(partition) || openDatabases.containsKey(partition)) {
 			throw new IllegalArgumentException("Cannot delete partition that is in use.");
-		try {
+		}
+
+		int deletedEntries = 0;
+		try (
+			Connection connection = getConnection();
 			Statement stmt = connection.createStatement();
+		) {
 			for (PredicateInfo pred : predicates.values()) {
 				String sql = "DELETE FROM " + pred.tableName() + " WHERE " + PredicateInfo.PARTITION_COLUMN_NAME + " = " + partition.getID();
-				deletedEntries+= stmt.executeUpdate(sql);
+				deletedEntries += stmt.executeUpdate(sql);
 			}
-			stmt.close();
+
 			metadata.removePartition(partition);
-		} catch(SQLException e) {
-			throw new RuntimeException(e);
+		} catch(SQLException ex) {
+			throw new RuntimeException(ex);
 		}
+
 		return deletedEntries;
 	}
 
 
 	@Override
 	public void close() {
-		if (!openDatabases.isEmpty())
+		openDataStores.remove(this);
+
+		if (!openDatabases.isEmpty()) {
 			throw new IllegalStateException("Cannot close data store when databases are still open!");
-		try {
-			connection.close();
-		} catch (SQLException e) {
-			throw new RuntimeException("Could not close database.", e);
+		}
+
+		if (dbDriver != null) {
+			dbDriver.close();
+			dbDriver = null;
 		}
 	}
-
 
 	public DataStoreMetadata getMetadata() {
 		return metadata;
@@ -272,25 +280,12 @@ public class RDBMSDataStore implements DataStore {
 	}
 
 	public Partition getNewPartition(){
-		int partnum = getNextPartition();
-		return new Partition(partnum,"AnonymousPartition_"+Integer.toString(partnum));
-	}
-
-	private int getNextPartition() {
-		int maxPartition = 0;
-		maxPartition = metadata.getMaxPartition();
-		return maxPartition + 1;
+		return metadata.getNewPartition();
 	}
 
 	@Override
 	public Partition getPartition(String partitionName) {
-		Partition partition = metadata.getPartitionByName(partitionName);
-		if (partition == null) {
-			partition = new Partition(getNextPartition(), partitionName);
-			metadata.addPartition(partition);
-		}
-
-		return partition;
+		return metadata.getPartition(partitionName);
 	}
 
 	@Override
@@ -300,6 +295,14 @@ public class RDBMSDataStore implements DataStore {
 
 	public DatabaseDriver getDriver() {
 		return dbDriver;
+	}
+
+	public Connection getConnection() {
+		return dbDriver.getConnection();
+	}
+
+	public static Set<RDBMSDataStore> getOpenDataStores() {
+		return Collections.unmodifiableSet(openDataStores);
 	}
 
 	/**

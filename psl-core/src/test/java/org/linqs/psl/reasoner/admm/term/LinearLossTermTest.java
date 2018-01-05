@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,25 +42,25 @@ public class LinearLossTermTest {
 		/*
 		 * Problem 1
 		 */
-		double[] z = {0.4, 0.5};
-		double[] y = {0.0, 0.0};
-		double[] coeffs = {0.3, -1.0};
-		double weight = 1.0;
-		double stepSize = 1.0;
-		double[] expected = {0.1, 1.5};
+		float[] z = {0.4f, 0.5f};
+		float[] y = {0.0f, 0.0f};
+		float[] coeffs = {0.3f, -1.0f};
+		float weight = 1.0f;
+		float stepSize = 1.0f;
+		float[] expected = {0.1f, 1.5f};
 		testProblem(z, y, coeffs, weight, stepSize, expected);
 	}
 	
-	private void testProblem(double[] z, double[] y, double[] coeffs, double weight,
-			final double stepSize, double[] expected) {
+	private void testProblem(float[] z, float[] y, float[] coeffs, float weight,
+			final float stepSize, float[] expected) {
 		List<LocalVariable> variables = new ArrayList<LocalVariable>(z.length);
-		List<Double> coeffsList = new ArrayList<Double>(z.length);
+		List<Float> coeffsList = new ArrayList<Float>(z.length);
 
 		for (int i = 0; i < z.length; i++) {
 			variables.add(new LocalVariable(i, z[i]));
 			variables.get(i).setLagrange(y[i]);
 
-			coeffsList.add(new Double(coeffs[i]));
+			coeffsList.add(new Float(coeffs[i]));
 		}
 		
 		LinearLossTerm term = new LinearLossTerm(variables, coeffsList, weight);

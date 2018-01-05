@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,13 @@
  */
 package org.linqs.psl.application.learning.weight.maxlikelihood;
 
-import java.util.Arrays;
-
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
+
+import java.util.Arrays;
 
 /**
  * Learns weights by optimizing the log likelihood of the data using
@@ -44,7 +44,7 @@ public class MaxLikelihoodMPE extends VotedPerceptron {
 
 	@Override
 	protected double[] computeExpectedIncomp() {
-		fullExpectedIncompatibility = new double[rules.size() + immutableRules.size()];
+		fullExpectedIncompatibility = new double[mutableRules.size() + immutableRules.size()];
 
 		if (changedRuleWeights) {
 			termGenerator.updateWeights(groundRuleStore, termStore);
@@ -55,30 +55,30 @@ public class MaxLikelihoodMPE extends VotedPerceptron {
 		reasoner.optimize(termStore);
 
 		// Computes incompatibility.
-		for (int i = 0; i < rules.size(); i++) {
-			for (GroundRule groundRule : groundRuleStore.getGroundRules(rules.get(i))) {
+		for (int i = 0; i < mutableRules.size(); i++) {
+			for (GroundRule groundRule : groundRuleStore.getGroundRules(mutableRules.get(i))) {
 				fullExpectedIncompatibility[i] += ((WeightedGroundRule) groundRule).getIncompatibility();
 			}
 		}
 
 		for (int i = 0; i < immutableRules.size(); i++) {
 			for (GroundRule groundRule : groundRuleStore.getGroundRules(immutableRules.get(i))) {
-				fullExpectedIncompatibility[rules.size() + i] += ((WeightedGroundRule) groundRule).getIncompatibility();
+				fullExpectedIncompatibility[mutableRules.size() + i] += ((WeightedGroundRule) groundRule).getIncompatibility();
 			}
 		}
 
-		return Arrays.copyOf(fullExpectedIncompatibility, rules.size());
+		return Arrays.copyOf(fullExpectedIncompatibility, mutableRules.size());
 	}
 
 	@Override
 	protected double[] computeObservedIncomp() {
-		numGroundings = new double[rules.size()];
-		fullObservedIncompatibility = new double[rules.size() + immutableRules.size()];
+		numGroundings = new double[mutableRules.size()];
+		fullObservedIncompatibility = new double[mutableRules.size() + immutableRules.size()];
 		setLabeledRandomVariables();
 
 		// Computes the observed incompatibilities and numbers of groundings.
-		for (int i = 0; i < rules.size(); i++) {
-			for (GroundRule groundRule : groundRuleStore.getGroundRules(rules.get(i))) {
+		for (int i = 0; i < mutableRules.size(); i++) {
+			for (GroundRule groundRule : groundRuleStore.getGroundRules(mutableRules.get(i))) {
 				fullObservedIncompatibility[i] += ((WeightedGroundRule) groundRule).getIncompatibility();
 				numGroundings[i]++;
 			}
@@ -86,22 +86,22 @@ public class MaxLikelihoodMPE extends VotedPerceptron {
 
 		for (int i = 0; i < immutableRules.size(); i++) {
 			for (GroundRule groundRule : groundRuleStore.getGroundRules(immutableRules.get(i))) {
-				fullObservedIncompatibility[rules.size() + i] += ((WeightedGroundRule) groundRule).getIncompatibility();
+				fullObservedIncompatibility[mutableRules.size() + i] += ((WeightedGroundRule) groundRule).getIncompatibility();
 			}
 		}
 
-		return Arrays.copyOf(fullObservedIncompatibility, rules.size());
+		return Arrays.copyOf(fullObservedIncompatibility, mutableRules.size());
 	}
 
 	@Override
 	protected double computeLoss() {
 		double loss = 0.0;
-		for (int i = 0; i < rules.size(); i++) {
-			loss += rules.get(i).getWeight().getWeight() * (fullObservedIncompatibility[i] - fullExpectedIncompatibility[i]);
+		for (int i = 0; i < mutableRules.size(); i++) {
+			loss += mutableRules.get(i).getWeight() * (fullObservedIncompatibility[i] - fullExpectedIncompatibility[i]);
 		}
 
 		for (int i = 0; i < immutableRules.size(); i++) {
-			loss += immutableRules.get(i).getWeight().getWeight() * (fullObservedIncompatibility[rules.size() + i] - fullExpectedIncompatibility[rules.size() + i]);
+			loss += immutableRules.get(i).getWeight() * (fullObservedIncompatibility[mutableRules.size() + i] - fullExpectedIncompatibility[mutableRules.size() + i]);
 		}
 
 		return loss;

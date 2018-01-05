@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,136 +17,87 @@
  */
 package org.linqs.psl.evaluation.statistics;
 
-import java.util.Collections;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
-import org.linqs.psl.model.atom.GroundAtom;
-
-import com.google.common.base.Predicate;
-import com.google.common.collect.Iterables;
-
-/**
- * Statistics computed by a {@link PredictionComparator} which discretizes
- * truth values before comparing them.
- */
 public class DiscretePredictionStatistics implements PredictionStatistics {
-	
 	public enum BinaryClass {
 		NEGATIVE,
 		POSITIVE
 	}
-	
+
 	private final int tp;
 	private final int fp;
 	private final int fn;
 	private final int tn;
 	private final double threshold;
-	private final Map<GroundAtom, Double> errors;
-	private final Set<GroundAtom> correctAtoms;
-	
-	public DiscretePredictionStatistics(int tp, int fp, int tn, int fn,
-			double threshold, Map<GroundAtom, Double> errors, Set<GroundAtom> correctAtoms) {
+
+	public DiscretePredictionStatistics(int tp, int fp, int tn, int fn, double threshold) {
 		this.tp = tp;
 		this.fp = fp;
 		this.tn = tn;
 		this.fn = fn;
 		this.threshold = threshold;
-		this.errors=errors;
-		this.correctAtoms = correctAtoms;
 	}
-	
+
 	public double getThreshold() {
 		return threshold;
 	}
-	
-	public Map<GroundAtom, Double> getErrors() {
-		return Collections.unmodifiableMap(errors);
-	}
-	
-	public Set<GroundAtom> getCorrectAtoms() {
-		return Collections.unmodifiableSet(correctAtoms);
-	}
-	
-	public Iterable<Map.Entry<GroundAtom, Double>> getFalsePositives() {
-		return Iterables.filter(errors.entrySet(), new Predicate<Entry<GroundAtom,Double>>(){
 
-			@Override
-			public boolean apply(Entry<GroundAtom, Double> e) {
-				if (e.getValue() > 0.0)
-					return true;
-				else
-					return false;
-			}
-		});
-	}
-	
-	public Iterable<Map.Entry<GroundAtom, Double>> getFalseNegatives() {
-		return Iterables.filter(errors.entrySet(), new Predicate<Entry<GroundAtom,Double>>(){
+	public double getPrecision(BinaryClass binaryClass) {
+		int hits;
+		int misses;
 
-			@Override
-			public boolean apply(Entry<GroundAtom, Double> e) {
-				if (e.getValue() < 0.0) {
-					return true;
-				}
-				else {
-					return false;
-				}
-			}
-		});
-	}
-	
-	public double getPrecision(BinaryClass c) {
-		if (c == BinaryClass.NEGATIVE) {
-			double n = tn + fn;
-			if (n == 0.0) {
-				return 1.0;
-			}
-			return tn / n;
+		if (binaryClass == BinaryClass.POSITIVE) {
+			hits = tp;
+			misses = fp;
+		} else {
+			hits = tn;
+			misses = fn;
 		}
-		else {
-			double p = tp + fp;
-			if (p == 0.0) {
-				return 1.0;
-			}
-			return tp / p;
-		}
-	}
-	
-	public double getRecall(BinaryClass c) {
-		if (c == BinaryClass.NEGATIVE) {
-			double n = tn + fp;
-			if (n == 0.0) {
-				return 1.0;
-			}
-			return tn / n;
-		}
-		else {
-			double p = tp + fn;
-			if (p == 0.0) {
-				return 1.0;
-			}
-			return tp / p;
-		}
-	}
-	
-	public double getF1(BinaryClass c) {
-		double prec = getPrecision(c);
-		double rec = getRecall(c);
-		double sum = prec + rec;
-		if (sum == 0.0) { 
+
+		if (hits + misses == 0) {
 			return 0.0;
 		}
+
+		return hits / (double)(hits + misses);
+	}
+
+	public double getRecall(BinaryClass binaryClass) {
+		int hits;
+		int misses;
+
+		if (binaryClass == BinaryClass.POSITIVE) {
+			hits = tp;
+			misses = fn;
+		} else {
+			hits = tn;
+			misses = fp;
+		}
+
+		if (hits + misses == 0) {
+			return 0.0;
+		}
+
+		return hits / (double)(hits + misses);
+	}
+
+	public double getF1(BinaryClass binaryClass) {
+		double prec = getPrecision(binaryClass);
+		double rec = getRecall(binaryClass);
+
+		double sum = prec + rec;
+		if (sum == 0.0) {
+			return 0.0;
+		}
+
 		return 2 * (prec * rec) / sum;
 	}
-	
+
 	public double getAccuracy() {
-		double numAtoms = getNumAtoms();
-		if (numAtoms == 0.0) {
+		int numAtoms = getNumAtoms();
+		if (numAtoms == 0) {
 			return 0.0;
 		}
-		return (tp + tn) / numAtoms;
+
+		return (tp + tn) / (double)numAtoms;
 	}
 
 	@Override
@@ -158,5 +109,4 @@ public class DiscretePredictionStatistics implements PredictionStatistics {
 	public int getNumAtoms() {
 		return tp + fp + tn + fn;
 	}
-	
 }

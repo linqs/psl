@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,27 +17,23 @@
  */
 package org.linqs.psl.model.rule.logical;
 
-import java.util.List;
-
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
-import org.linqs.psl.model.weight.NegativeWeight;
-import org.linqs.psl.model.weight.PositiveWeight;
-import org.linqs.psl.model.weight.Weight;
+import org.linqs.psl.util.MathUtils;
+
+import java.util.List;
 
 public class WeightedLogicalRule extends AbstractLogicalRule implements WeightedRule {
-	protected Weight weight;
+	protected double weight;
 	protected boolean squared;
-	protected boolean mutable;
 
-	public WeightedLogicalRule(Formula f, double w, boolean squared) {
+	public WeightedLogicalRule(Formula f, double weight, boolean squared) {
 		super(f);
 
-		weight = (w >= 0.0) ? new PositiveWeight(w) : new NegativeWeight(w);
+		this.weight = weight;
 		this.squared = squared;
-		mutable = true;
 	}
 
 	@Override
@@ -46,32 +42,51 @@ public class WeightedLogicalRule extends AbstractLogicalRule implements Weighted
 	}
 
 	@Override
-	public Weight getWeight() {
-		return weight.duplicate();
+	public boolean isSquared() {
+		return squared;
 	}
 
 	@Override
-	public void setWeight(Weight weight) {
-		if (!mutable) {
-			throw new IllegalStateException("Rule weight is not mutable.");
-		}
+	public double getWeight() {
+		return weight;
+	}
 
+	@Override
+	public void setWeight(double weight) {
 		this.weight = weight;
 	}
 
 	@Override
 	public String toString() {
 		String squaredSuffix = (squared) ? " ^2" : "";
-		return "" + weight.getWeight() + ": " + formula + squaredSuffix;
+		return "" + weight + ": " + formula + squaredSuffix;
 	}
 
 	@Override
 	public boolean isWeightMutable() {
-		return mutable;
+		return true;
 	}
 
 	@Override
-	public void setWeightMutable(boolean mutable) {
-		this.mutable = mutable;
+	public boolean isWeighted() {
+		return true;
+	}
+
+	@Override
+	public boolean equals(Object other) {
+		if (this == other) {
+			return true;
+		}
+
+		if (other == null || this.getClass() != other.getClass()) {
+			return false;
+		}
+
+		WeightedLogicalRule otherRule = (WeightedLogicalRule)other;
+		if (this.squared != otherRule.squared || !MathUtils.equals(this.weight, otherRule.weight)) {
+			return false;
+		}
+
+		return super.equals(other);
 	}
 }

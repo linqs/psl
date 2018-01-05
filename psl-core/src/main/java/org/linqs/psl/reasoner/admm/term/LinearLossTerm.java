@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,13 +28,13 @@ import java.util.List;
  * @author Stephen Bach <bach@cs.umd.edu>
  */
 public class LinearLossTerm extends ADMMObjectiveTerm implements WeightedTerm {
-	private final List<Double> coeffs;
-	private double weight;
+	private final List<Float> coeffs;
+	private float weight;
 
 	/**
 	 * Caller releases control of |zIndices| and |coeffs|.
 	 */
-	LinearLossTerm(List<LocalVariable> variables, List<Double> coeffs, double weight) {
+	LinearLossTerm(List<LocalVariable> variables, List<Float> coeffs, float weight) {
 		super(variables);
 
 		assert(variables.size() == coeffs.size());
@@ -44,17 +44,17 @@ public class LinearLossTerm extends ADMMObjectiveTerm implements WeightedTerm {
 	}
 
 	@Override
-	public void setWeight(double weight) {
+	public void setWeight(float weight) {
 		this.weight = weight;
 	}
 
 	@Override
-	public void minimize(double stepSize, double[] consensusValues) {
+	public void minimize(float stepSize, float[] consensusValues) {
 		for (int i = 0; i < variables.size(); i++) {
 			LocalVariable variable = variables.get(i);
 
-			double value = consensusValues[variable.getGlobalId()] - variable.getLagrange() / stepSize;
-			value -= (weight * coeffs.get(i).doubleValue() / stepSize);
+			float value = consensusValues[variable.getGlobalId()] - variable.getLagrange() / stepSize;
+			value -= (weight * coeffs.get(i).floatValue() / stepSize);
 
 			variable.setValue(value);
 		}

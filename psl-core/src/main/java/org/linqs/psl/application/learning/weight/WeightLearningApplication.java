@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.ConfigManager;
 import org.linqs.psl.config.Factory;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.database.atom.TrainingMapAtomManager;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
@@ -41,14 +42,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Abstract class for learning the weights of
- * {@link WeightedRule CompatibilityRules} in a {@link Model}
- * from data.
- *
- * @author Stephen Bach <bach@cs.umd.edu>
+ * Abstract class for learning the weights of weighted mutableRules from data for a model.
  */
 public abstract class WeightLearningApplication implements ModelApplication {
-
 	/**
 	 * Prefix of property keys used by this class.
 	 *
@@ -57,21 +53,10 @@ public abstract class WeightLearningApplication implements ModelApplication {
 	public static final String CONFIG_PREFIX = "weightlearning";
 
 	/**
-	 * Key for {@link Factory} or String property.
-	 * <p>
-	 * Should be set to a {@link ReasonerFactory} or the fully qualified
-	 * name of one. Will be used to instantiate a {@link Reasoner}.
-	 * <p>
-	 * This reasoner will be used when constructing ground models for weight
-	 * learning, unless this behavior is overriden by a subclass.
+	 * The class to use for inference.
 	 */
 	public static final String REASONER_KEY = CONFIG_PREFIX + ".reasoner";
-	/**
-	 * Default value for REASONER_KEY.
-	 * <p>
-	 * Value is instance of {@link ADMMReasonerFactory}.
-	 */
-	public static final ReasonerFactory REASONER_DEFAULT = new ADMMReasonerFactory();
+	public static final String REASONER_DEFAULT = "org.linqs.psl.reasoner.admm.ADMMReasoner";
 
 	/**
 	 * The class to use for ground rule storage.
@@ -94,17 +79,19 @@ public abstract class WeightLearningApplication implements ModelApplication {
 	public static final String TERM_GENERATOR_DEFAULT = "org.linqs.psl.reasoner.admm.term.ADMMTermGenerator";
 
 	protected Model model;
-	protected Database rvDB, observedDB;
+	protected Database rvDB;
+	protected Database observedDB;
 	protected ConfigBundle config;
 
-	protected final List<WeightedRule> rules;
-	protected final List<WeightedRule> immutableRules;
-	protected TrainingMap trainingMap;
+	protected List<WeightedRule> mutableRules;
+	protected List<WeightedRule> immutableRules;
+	protected TrainingMapAtomManager trainingMap;
 
 	/**
 	 * Indicates that the rule weights have been changed and should be updated before optimization.
 	 * This should always be checked before optimization.
 	 */
+	// TODO(eriq): This is suspect. Feels like an indication of a hack.
 	protected boolean changedRuleWeights;
 
 	protected Reasoner reasoner;
@@ -120,7 +107,8 @@ public abstract class WeightLearningApplication implements ModelApplication {
 
 		changedRuleWeights = true;
 
-		rules = new ArrayList<WeightedRule>();
+		// TODO(eriq): Why not fill these now? We have the model.
+		mutableRules = new ArrayList<WeightedRule>();
 		immutableRules = new ArrayList<WeightedRule>();
 	}
 
@@ -139,7 +127,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
 		// Gathers the CompatibilityRules.
 		for (WeightedRule rule : Iterables.filter(model.getRules(), WeightedRule.class)) {
 			if (rule.isWeightMutable()) {
-				rules.add(rule);
+				mutableRules.add(rule);
 			} else {
 				immutableRules.add(rule);
 			}
@@ -151,7 +139,8 @@ public abstract class WeightLearningApplication implements ModelApplication {
 		// Learns new weights.
 		doLearn();
 
-		rules.clear();
+		// TODO(eriq): Why clear? And why not clear immutable?
+		mutableRules.clear();
 	}
 
 	protected abstract void doLearn();
@@ -162,7 +151,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
 	 */
 	protected void initGroundModel() {
 		try {
-			reasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
+			reasoner = (Reasoner)config.getNewObject(REASONER_KEY, REASONER_DEFAULT);
 			termStore = (TermStore)config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
 			groundRuleStore = (GroundRuleStore)config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
 			termGenerator = (TermGenerator)config.getNewObject(TERM_GENERATOR_KEY, TERM_GENERATOR_DEFAULT);
@@ -171,7 +160,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
 			throw new RuntimeException("Failed to prepare storage for inference.", ex);
 		}
 
-		trainingMap = new TrainingMap(rvDB, observedDB);
+		trainingMap = new TrainingMapAtomManager(rvDB, observedDB);
 		if (trainingMap.getLatentVariables().size() > 0) {
 			throw new IllegalArgumentException("All RandomVariableAtoms must have " +
 					"corresponding ObservedAtoms. Latent variables are not supported " +

@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,8 @@ import java.util.Set;
  * at instantiation.
  *
  * All other types of Atoms are returned normally.
+ *
+ * getAtom() is thread-safe.
  */
 public class PersistedAtomManager extends AtomManager {
 	/**
@@ -63,6 +65,10 @@ public class PersistedAtomManager extends AtomManager {
 		for (StandardPredicate predicate : db.getRegisteredPredicates()) {
 			// Ignore any closed predicates, they will not return RandomVariableAtoms
 			if (db.isClosed(predicate)) {
+				// Make the database cache all the atoms from the closed predicates,
+				// but don't do anything with them now.
+				db.getAllGroundAtoms(predicate);
+
 				continue;
 			}
 

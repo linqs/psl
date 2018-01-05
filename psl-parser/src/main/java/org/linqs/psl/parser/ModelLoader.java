@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +17,6 @@
  */
 package org.linqs.psl.parser;
 
-import org.antlr.v4.runtime.ANTLRInputStream;
-import org.antlr.v4.runtime.BailErrorStrategy;
-import org.antlr.v4.runtime.BaseErrorListener;
-import org.antlr.v4.runtime.CommonToken;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.RecognitionException;
-import org.antlr.v4.runtime.Recognizer;
-import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.Atom;
@@ -104,6 +96,15 @@ import org.linqs.psl.parser.antlr.PSLParser.WeightExpressionContext;
 import org.linqs.psl.parser.antlr.PSLParser.WeightedArithmeticRuleContext;
 import org.linqs.psl.parser.antlr.PSLParser.WeightedLogicalRuleContext;
 import org.linqs.psl.reasoner.function.FunctionComparator;
+
+import org.antlr.v4.runtime.ANTLRInputStream;
+import org.antlr.v4.runtime.BailErrorStrategy;
+import org.antlr.v4.runtime.BaseErrorListener;
+import org.antlr.v4.runtime.CommonToken;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.RecognitionException;
+import org.antlr.v4.runtime.Recognizer;
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 
 import java.io.Reader;
 import java.io.IOException;
@@ -553,22 +554,40 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	}
 
 	@Override
-	public SummationAtom visitSummationAtom(SummationAtomContext ctx) {
+	public SummationAtomOrAtom visitSummationAtom(SummationAtomContext ctx) {
 		Predicate p = visitPredicate(ctx.predicate());
+
+		// We have strange numbering because of the predicate, parens, commas.
 		SummationVariableOrTerm[] args = new SummationVariableOrTerm[ctx.getChildCount() / 2 - 1];
 		for (int i = 1; i < ctx.getChildCount() / 2; i++) {
-			if (ctx.getChild(i*2).getPayload() instanceof SummationVariableContext) {
-				args[i - 1] = visitSummationVariable((SummationVariableContext) ctx.getChild(i*2).getPayload());
-			}
-			else if (ctx.getChild(i*2).getPayload() instanceof TermContext) {
-				args[i - 1] = (Term) visit(ctx.getChild(i*2));
-			}
-			else {
+			if (ctx.getChild(i * 2).getPayload() instanceof SummationVariableContext) {
+				args[i - 1] = visitSummationVariable((SummationVariableContext) ctx.getChild(i * 2).getPayload());
+			} else if (ctx.getChild(i * 2).getPayload() instanceof TermContext) {
+				args[i - 1] = (Term) visit(ctx.getChild(i * 2));
+			} else {
 				throw new IllegalStateException();
 			}
 		}
 
-		return new SummationAtom(p, args);
+		// If we have any summation variables, then we have a SummationAtom, otherwise we have a QueryAtom.
+		boolean isSummation = false;
+		for (SummationVariableOrTerm arg : args) {
+			if (arg instanceof SummationVariable) {
+				isSummation = true;
+				break;
+			}
+		}
+
+		if (isSummation) {
+			return new SummationAtom(p, args);
+		} else {
+			Term[] termArgs = new Term[args.length];
+			for (int i = 0; i < termArgs.length; i++) {
+				termArgs[i] = (Term)args[i];
+			}
+
+			return new QueryAtom(p, termArgs);
+		}
 	}
 
 	@Override

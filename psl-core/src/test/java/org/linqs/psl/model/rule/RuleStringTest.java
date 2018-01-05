@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -130,7 +130,7 @@ public class RuleStringTest {
 		inserter.insert(new UniqueStringID("Bob"));
 
 		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
-		database = dataStore.getDatabase(dataStore.getNewPartition(), toClose);
+		database = dataStore.getDatabase(dataStore.getNewPartition(), toClose, obsPartition);
 	}
 
 	@Test
@@ -154,16 +154,6 @@ public class RuleStringTest {
 	@Test
 	public void testArithmeticRuleString() {
 		// Base Rule: SinglePredicate(A) + SinglePredicate(B) = 1
-		List<Coefficient> coefficients = Arrays.asList(
-			(Coefficient)(new ConstantNumber(1)),
-			(Coefficient)(new ConstantNumber(1))
-		);
-
-		List<SummationAtomOrAtom> atoms = Arrays.asList(
-			(SummationAtomOrAtom)(new QueryAtom(singlePredicate, new Variable("A"))),
-			(SummationAtomOrAtom)(new QueryAtom(singlePredicate, new Variable("B")))
-		);
-
 		Rule rule;
 
 		// Unweighted (Not Squared)
@@ -232,16 +222,11 @@ public class RuleStringTest {
 
 		// Unweighted (Not Squared)
 		rule = new UnweightedArithmeticRule(arithmeticBaseRule);
-		// Remember, equality inserts two rules (<= and >=).
 		expected = Arrays.asList(
-			"1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Alice') <= 1.0 .",
-			"1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Alice') >= 1.0 .",
-			"1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Bob') <= 1.0 .",
-			"1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Bob') >= 1.0 .",
-			"1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Alice') <= 1.0 .",
-			"1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Alice') >= 1.0 .",
-			"1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Bob') <= 1.0 .",
-			"1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Bob') >= 1.0 ."
+			"1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Alice') = 1.0 .",
+			"1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Bob') = 1.0 .",
+			"1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Alice') = 1.0 .",
+			"1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Bob') = 1.0 ."
 		);
 		rule.groundAll(manager, store);
 		PSLTest.compareGroundRules(expected, rule, store);

@@ -1,3 +1,20 @@
+/*
+ * This file is part of the PSL software.
+ * Copyright 2011-2015 University of Maryland
+ * Copyright 2013-2018 The Regents of the University of California
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.linqs.psl.application.inference;
 
 import static org.junit.Assert.assertEquals;
@@ -39,15 +56,7 @@ public class MPEInferenceTest {
 
 		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
 		Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-		MPEInference mpe = null;
-
-		try {
-			mpe = new MPEInference(info.model, inferDB, info.config);
-		} catch (Exception ex) {
-			System.out.println(ex);
-			ex.printStackTrace();
-			fail("Exception thrown during MPE constructor.");
-		}
+		MPEInference mpe = new MPEInference(info.model, inferDB, info.config);
 
 		mpe.mpeInference();
 		mpe.close();
@@ -83,15 +92,7 @@ public class MPEInferenceTest {
 		toClose.add(info.predicates.get("Friends"));
 
 		Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-		MPEInference mpe = null;
-
-		try {
-			mpe = new MPEInference(info.model, inferDB, info.config);
-		} catch (Exception ex) {
-			System.out.println(ex);
-			ex.printStackTrace();
-			fail("Exception thrown during MPE constructor.");
-		}
+		MPEInference mpe = new MPEInference(info.model, inferDB, info.config);
 
 		mpe.mpeInference();
 		mpe.close();
@@ -133,15 +134,7 @@ public class MPEInferenceTest {
 		toClose.add(info.predicates.get("Nice"));
 
 		Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-		MPEInference mpe = null;
-
-		try {
-			mpe = new MPEInference(info.model, inferDB, info.config);
-		} catch (Exception ex) {
-			System.out.println(ex);
-			ex.printStackTrace();
-			fail("Exception thrown during MPE constructor.");
-		}
+		MPEInference mpe = new MPEInference(info.model, inferDB, info.config);
 
 		mpe.mpeInference();
 		mpe.close();

@@ -87,7 +87,7 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm> {
 			localVariables.add(new ArrayList<LocalVariable>());
 		}
 
-		LocalVariable localVariable = new LocalVariable(globalId, atomVariable.getValue());
+		LocalVariable localVariable = new LocalVariable(globalId, (float)atomVariable.getValue());
 		localVariables.get(globalId).add(localVariable);
 
 		return localVariable;
@@ -109,7 +109,7 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm> {
 	 * Update the global variables (AtomFunctionVariables).
 	 * The passed in values in indexed according to global id.
 	 */
-	public void updateVariables(double[] values) {
+	public void updateVariables(float[] values) {
 		for (Map.Entry<AtomFunctionVariable, Integer> entry : variableIndexes.entrySet()) {
 			entry.getKey().setValue(values[entry.getValue().intValue()]);
 		}

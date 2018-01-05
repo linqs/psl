@@ -109,7 +109,7 @@ public class MemoryTermStore<E extends Term> implements TermStore<E> {
 	@Override
 	public void updateWeight(WeightedGroundRule rule) {
 		for (Integer termIndex : ruleMapping.get(rule)) {
-			((WeightedTerm)store.get(termIndex.intValue())).setWeight(rule.getWeight().getWeight());
+			((WeightedTerm)store.get(termIndex.intValue())).setWeight((float)rule.getWeight());
 		}
 	}
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@
  */
 package org.linqs.psl.application.learning.weight.maxlikelihood;
 
+import org.linqs.psl.application.learning.weight.LossAugmentingGroundRule;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
-import org.linqs.psl.application.learning.weight.maxmargin.LossAugmentingGroundRule;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.ConfigManager;
 import org.linqs.psl.database.Database;
@@ -28,11 +28,7 @@ import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
-import org.linqs.psl.model.weight.NegativeWeight;
-import org.linqs.psl.model.weight.PositiveWeight;
-import org.linqs.psl.model.weight.Weight;
 
-import com.google.common.collect.Iterables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,11 +45,13 @@ import java.util.Map;
  * The weight-learning objective is to maximize the likelihood according to the
  * distribution:
  *
- * p(X) = 1 / Z(w)	*	exp{-sum[w * f(X)]}
+ * p(X) = 1 / Z(w) * exp{-sum[w * f(X)]}
  *
- * where X is the set of RandomVariableAtoms, f(X) the incompatibility of
- * each GroundRule, w is the weight of that GroundRule, and Z(w)
- * is a normalization factor.
+ * Where:
+ *  - X is the set of RandomVariableAtoms,
+ *  - f(X) the incompatibility of each GroundRule,
+ *  - w is the weight of that GroundRule,
+ *  - and Z(w) is a normalization factor.
  *
  * The voted perceptron algorithm starts at the current weights and at each step
  * computes the gradient of the objective, takes that step multiplied by a step size
@@ -166,18 +164,27 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 
 	public VotedPerceptron(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
 		super(model, rvDB, observedDB, config);
+
 		stepSize = config.getDouble(STEP_SIZE_KEY, STEP_SIZE_DEFAULT);
-		if (stepSize <= 0)
+		if (stepSize <= 0) {
 			throw new IllegalArgumentException("Step size must be positive.");
+		}
+
 		numSteps = config.getInt(NUM_STEPS_KEY, NUM_STEPS_DEFAULT);
-		if (numSteps <= 0)
+		if (numSteps <= 0) {
 			throw new IllegalArgumentException("Number of steps must be positive.");
+		}
+
 		l2Regularization = config.getDouble(L2_REGULARIZATION_KEY, L2_REGULARIZATION_DEFAULT);
-		if (l2Regularization < 0)
+		if (l2Regularization < 0) {
 			throw new IllegalArgumentException("L2 regularization parameter must be non-negative.");
+		}
+
 		l1Regularization = config.getDouble(L1_REGULARIZATION_KEY, L1_REGULARIZATION_DEFAULT);
-		if (l1Regularization < 0)
+		if (l1Regularization < 0) {
 			throw new IllegalArgumentException("L1 regularization parameter must be non-negative.");
+		}
+
 		augmentLoss = config.getBoolean(AUGMENT_LOSS_KEY, AUGMENT_LOSS_DEFAULT);
 		scheduleStepSize = config.getBoolean(STEP_SCHEDULE_KEY, STEP_SCHEDULE_DEFAULT);
 		scaleGradient = config.getBoolean(SCALE_GRADIENT_KEY, SCALE_GRADIENT_DEFAULT);
@@ -185,58 +192,49 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 		nonnegativeWeights = config.getBoolean(NONNEGATIVE_WEIGHTS_KEY, NONNEGATIVE_WEIGHTS_DEFAULT);
 	}
 
+	/**
+	 * Set up loss augmenting ground rules.
+	 */
 	protected void addLossAugmentedRules() {
-		double obsvTrueWeight, obsvFalseWeight;
-		obsvTrueWeight = -1.0;
-		obsvFalseWeight = -1.0;
-
-		// Sets up loss augmenting ground rules.
-		List<LossAugmentingGroundRule> lossRules = new ArrayList<LossAugmentingGroundRule>(trainingMap.getTrainingMap().size());
-		List<LossAugmentingGroundRule> nonExtremeLossRules = new ArrayList<LossAugmentingGroundRule>();
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
 			double truth = e.getValue().getValue();
-			LossAugmentingGroundRule groundRule;
+			LossAugmentingGroundRule groundRule = null;
 
-			// If ground truth is at 1.0 or 0.0, sets up ground rule without planning to change it.
+			// If ground truth is at 1.0 or 0.0, set up ground rule without planning to change it.
 			if (truth == 1.0 || truth == 0.0) {
-				NegativeWeight weight = new NegativeWeight((truth == 1.0) ? obsvTrueWeight : obsvFalseWeight);
-				groundRule = new LossAugmentingGroundRule(e.getKey(), truth, weight);
-			}
-			// Else, does a little more to check it and change it later.
-			else {
-				if (truth >= 0.5)
-					groundRule = new LossAugmentingGroundRule(e.getKey(), 1.0, new NegativeWeight(obsvTrueWeight));
-				else
-					groundRule = new LossAugmentingGroundRule(e.getKey(), 1.0, new PositiveWeight(-1 * obsvTrueWeight));
-
-				nonExtremeLossRules.add(groundRule);
-				// log.error("Non extreme ground truth found at atom {}. This is not properly supported yet in online max-margin learning.", e.getValue());
+				groundRule = new LossAugmentingGroundRule(e.getKey(), truth, -1.0);
+			} else {
+				// Otherwie, do a little more to check it and change it later.
+				if (truth >= 0.5) {
+					groundRule = new LossAugmentingGroundRule(e.getKey(), 1.0, -1.0);
+				} else {
+					groundRule = new LossAugmentingGroundRule(e.getKey(), 1.0, 1.0);
+				}
 			}
 
 			groundRuleStore.addGroundRule(groundRule);
-			lossRules.add(groundRule);
 		}
 	}
 
 	protected void removeLossAugmentedRules() {
-		for (LossAugmentingGroundRule k : Iterables.filter(groundRuleStore.getGroundRules(), LossAugmentingGroundRule.class)) {
-			groundRuleStore.removeGroundRule(k);
+		for (GroundRule rule : groundRuleStore.getGroundRules()) {
+			if (rule instanceof LossAugmentingGroundRule) {
+				groundRuleStore.removeGroundRule(rule);
+			}
 		}
 	}
 
-	protected double getStepSize(int iter) {
-		if (scheduleStepSize)
-			return stepSize / (double) (iter + 1);
-		else
+	protected double getStepSize(int iteration) {
+		if (scheduleStepSize) {
+			return stepSize / (double)(iteration + 1);
+		} else {
 			return stepSize;
+		}
 	}
 
 	@Override
 	protected void doLearn() {
-		double[] avgWeights;
-		double[] scalingFactor;
-
-		avgWeights = new double[rules.size()];
+		double[] avgWeights = new double[mutableRules.size()];
 
 		// Computes the observed incompatibilities.
 		truthIncompatibility = computeObservedIncomp();
@@ -244,6 +242,8 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 		if (augmentLoss)
 			addLossAugmentedRules();
 
+		// TODO(eriq): If not overwritten, computeObservedIncomp() calls setLabeledRandomVariables(),
+		// which uses trainingMap without checking for null.
 		if (trainingMap != null) {
 			// Resets random variables to default values for computing expected incompatibility.
 			for (RandomVariableAtom atom : trainingMap.getTrainingMap().keySet()) {
@@ -257,29 +257,31 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 
 		// Computes the gradient steps.
 		for (int step = 0; step < numSteps; step++) {
-			log.debug("Starting iter {}", step+1);
+			log.debug("Starting iteration {}", step + 1);
 
 			// Computes the expected total incompatibility for each CompatibilityRule.
 			expectedIncompatibility = computeExpectedIncomp();
-			scalingFactor  = computeScalingFactor();
+			double[] scalingFactor  = computeScalingFactor();
 			loss = computeLoss();
 
 			// Updates weights.
-			for (int i = 0; i < rules.size(); i++) {
-				double weight = rules.get(i).getWeight().getWeight();
+			for (int i = 0; i < mutableRules.size(); i++) {
+				double weight = mutableRules.get(i).getWeight();
 				double currentStep = (expectedIncompatibility[i] - truthIncompatibility[i]
 						- l2Regularization * weight
 						- l1Regularization) / scalingFactor[i];
 				currentStep *= getStepSize(step);
 
-				log.debug("Step of {} for rule {}", currentStep, rules.get(i));
+				log.debug("Step of {} for rule {}", currentStep, mutableRules.get(i));
 				log.debug(" --- Expected incomp.: {}, Truth incomp.: {}", expectedIncompatibility[i], truthIncompatibility[i]);
+
 				weight += currentStep;
-				if (nonnegativeWeights)
+				if (nonnegativeWeights) {
 					weight = Math.max(weight, 0.0);
+				}
+
 				avgWeights[i] += weight;
-				Weight newWeight = (weight >= 0.0) ? new PositiveWeight(weight) : new NegativeWeight(weight);
-				rules.get(i).setWeight(newWeight);
+				mutableRules.get(i).setWeight(weight);
 			}
 
 			changedRuleWeights = true;
@@ -287,25 +289,25 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 
 		// Sets the weights to their averages.
 		if (averageSteps) {
-			for (int i = 0; i < rules.size(); i++) {
-				double avgWeight = avgWeights[i] / numSteps;
-				rules.get(i).setWeight((avgWeight >= 0.0) ? new PositiveWeight(avgWeight) : new NegativeWeight(avgWeight));
+			for (int i = 0; i < mutableRules.size(); i++) {
+				mutableRules.get(i).setWeight(avgWeights[i] / numSteps);
 			}
 			changedRuleWeights = true;
 		}
 
-		if (augmentLoss)
+		if (augmentLoss) {
 			removeLossAugmentedRules();
+		}
 	}
 
 	protected double[] computeObservedIncomp() {
-		numGroundings = new double[rules.size()];
-		double[] truthIncompatibility = new double[rules.size()];
+		numGroundings = new double[mutableRules.size()];
+		double[] truthIncompatibility = new double[mutableRules.size()];
 		setLabeledRandomVariables();
 
 		// Computes the observed incompatibilities and numbers of groundings.
-		for (int i = 0; i < rules.size(); i++) {
-			for (GroundRule groundRule : groundRuleStore.getGroundRules(rules.get(i))) {
+		for (int i = 0; i < mutableRules.size(); i++) {
+			for (GroundRule groundRule : groundRuleStore.getGroundRules(mutableRules.get(i))) {
 				truthIncompatibility[i] += ((WeightedGroundRule) groundRule).getIncompatibility();
 				numGroundings[i]++;
 			}
@@ -324,12 +326,18 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	protected abstract double[] computeExpectedIncomp();
 
 	protected double computeRegularizer() {
-		double l2 = 0;
-		double l1 = 0;
-		for (int i = 0; i < rules.size(); i++) {
-			l2 += Math.pow(rules.get(i).getWeight().getWeight(), 2);
-			l1 += Math.abs(rules.get(i).getWeight().getWeight());
+		if (l1Regularization == 0.0 && l2Regularization == 0.0) {
+			return 0.0;
 		}
+
+		double l2 = 0.0;
+		double l1 = 0.0;
+
+		for (WeightedRule rule : mutableRules) {
+			l2 += Math.pow(rule.getWeight(), 2);
+			l1 += Math.abs(rule.getWeight());
+		}
+
 		return 0.5 * l2Regularization * l2 + l1Regularization * l1;
 	}
 
@@ -350,28 +358,16 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	}
 
 	/**
-	 * Computes the amount to scale gradient for each rule
+	 * Computes the amount to scale gradient for each rule.
 	 * Scales by the number of groundings of each rule
 	 * unless the rule is not grounded in the training set, in which case
-	 * scales by 1.0
+	 * scales by 1.0.
 	 */
 	protected double[] computeScalingFactor() {
 		double [] factor = new double[numGroundings.length];
-		for (int i = 0; i < numGroundings.length; i++)
+		for (int i = 0; i < numGroundings.length; i++) {
 			factor[i] = (scaleGradient && numGroundings[i] > 0) ? numGroundings[i] : 1.0;
-		return factor;
-	}
-
-	/**
-	 * Intermediate state object to notify the registered observers.
-	 */
-	public class IntermediateState {
-		public final int step;
-		public final int maxStep;
-
-		public IntermediateState(int currStep, int numSteps) {
-			this.step = currStep;
-			this.maxStep = numSteps;
 		}
+		return factor;
 	}
 }

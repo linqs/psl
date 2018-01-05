@@ -10,4 +10,4 @@ services:
   - postgresql
 
 before_script:
-  - createdb psl-test
+  - createdb psltest

@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
  */
 package org.linqs.psl.config;
 
+import org.linqs.psl.util.Objects;
+
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.DataConfiguration;
@@ -29,8 +31,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.URL;
@@ -286,7 +286,14 @@ public class ConfigManager {
 
 		@Override
 		public Object getNewObject(String key, String defaultValue) {
-			return ConfigManager.getNewObject(this, key, defaultValue);
+			String className = config.getString(key, defaultValue);
+
+			// It is not unusual for someone to want no object if the key does not exist.
+			if (className == null) {
+				return null;
+			}
+
+			return Objects.newObject(className, this);
 		}
 
 		@Override
@@ -299,54 +306,5 @@ public class ConfigManager {
 			}
 			return string.toString();
 		}
-	}
-
-	/**
-	 * See ConfigBundle.getNewObject.
-	 * This is static so it can be a shared implementation for different types of ConfigBundle.
-	 */
-	protected static Object getNewObject(ConfigBundle config, String key, String defaultValue) {
-		String className = config.getString(key, defaultValue);
-
-		Class classObject;
-		try {
-			classObject = Class.forName(className);
-		} catch (ClassNotFoundException ex) {
-			throw new IllegalArgumentException("Could not find class: " + className);
-		}
-
-		Constructor constructor;
-		boolean useConfig = true;
-		try {
-			// First, try to get a constructor with only a ConfigBundle.
-			constructor = classObject.getConstructor(ConfigBundle.class);
-		} catch (NoSuchMethodException ex) {
-			try {
-				// Now try to get a default (no param) constructor.
-				constructor = classObject.getConstructor();
-				useConfig = false;
-			} catch (NoSuchMethodException ex2) {
-				throw new IllegalArgumentException(
-						"Could not find a suitable constructor (only ConfigBundle or no parameters) for " +
-						className);
-			}
-		}
-
-		Object rtn;
-		try {
-			if (useConfig) {
-				rtn = constructor.newInstance(config);
-			} else {
-				rtn = constructor.newInstance();
-			}
-		} catch (InstantiationException ex) {
-			throw new RuntimeException("Unable to instantiate object (" + className + ")", ex);
-		} catch (IllegalAccessException ex) {
-			throw new RuntimeException("Insufficient access to constructor for " + className, ex);
-		} catch (InvocationTargetException ex) {
-			throw new RuntimeException("Error thrown while constructing " + className, ex);
-		}
-
-		return rtn;
 	}
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import java.util.List;
 /**
  * A place to store terms that are to be optimized.
  */
-public interface TermStore<E extends Term> extends Iterable<E>{
+public interface TermStore<E extends Term> extends Iterable<E> {
 	/**
 	 * Add a term to the store that was generated from the given ground rule.
 	 */

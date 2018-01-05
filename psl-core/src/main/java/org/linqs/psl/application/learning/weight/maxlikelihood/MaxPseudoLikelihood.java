@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,12 +22,14 @@ import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.ConfigManager;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.model.ConstraintBlocker;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
+import org.linqs.psl.reasoner.term.ConstraintBlockerTermGenerator;
+import org.linqs.psl.reasoner.term.ConstraintBlockerTermStore;
+import org.linqs.psl.reasoner.term.TermGenerator;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -89,7 +91,7 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 	 */
 	public static final double MIN_WIDTH_DEFAULT = 1e-2;
 
-	private ConstraintBlocker blocker;
+	private ConstraintBlockerTermStore blocker;
 	private final boolean bool;
 	private final int numSamples;
 	private final double minWidth;
@@ -123,8 +125,9 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 		// Invoke method in the parent class to setup ground model.
 		super.initGroundModel();
 
-		blocker = new ConstraintBlocker((AtomRegisterGroundRuleStore)groundRuleStore);
-		blocker.prepareBlocks(true);
+		blocker = new ConstraintBlockerTermStore();
+		TermGenerator termGenerator = new ConstraintBlockerTermGenerator();
+		termGenerator.generateTerms(groundRuleStore, blocker);
 	}
 
 	/**
@@ -141,7 +144,7 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 		/* Collects GroundCompatibilityRules incident on each block of RandomVariableAtoms */
 		WeightedGroundRule[][] incidentGKs = blocker.getIncidentGKs();
 
-		double[] expInc = new double[rules.size()];
+		double[] expInc = new double[mutableRules.size()];
 
 		// Accumulate the expected incompatibility over all atoms.
 		for (int iBlock = 0; iBlock < rvBlocks.length; iBlock++) {
@@ -213,7 +216,7 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 				for (Map.Entry<WeightedRule,double[]> e2 : incompatibilities.entrySet()) {
 					WeightedRule rule = e2.getKey();
 					double[] inc = e2.getValue();
-					sum -= rule.getWeight().getWeight() * inc[j];
+					sum -= rule.getWeight() * inc[j];
 				}
 				double exp = Math.exp(sum);
 
@@ -233,8 +236,8 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 			}
 
 			// Finally, we add to the exp incomp for each rule.
-			for (int i = 0; i < rules.size(); i++) {
-				WeightedRule rule = rules.get(i);
+			for (int i = 0; i < mutableRules.size(); i++) {
+				WeightedRule rule = mutableRules.get(i);
 				if (expIncAtom.containsKey(rule) && expIncAtom.get(rule) > 0.0) {
 					expInc[i] += expIncAtom.get(rule) / Z;
 				}

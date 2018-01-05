@@ -22,5 +22,5 @@ public interface WeightedTerm extends Term {
 	 * Set the weight of the term.
 	 * Typically called during weight learning.
 	 */
-	public void setWeight(double value);
+	public void setWeight(float value);
 }

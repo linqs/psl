@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,11 +62,11 @@ public class RDBMSDataLoader implements DataLoader {
 
 	private static final Logger log = LoggerFactory.getLogger(RDBMSDataLoader.class);
 
-	private final Connection connection;
+	private final RDBMSDataStore dataStore;
 	private final Map<Predicate, RDBMSTableInserter> inserts;
 
-	public RDBMSDataLoader(Connection connection) {
-		this.connection = connection;
+	public RDBMSDataLoader(RDBMSDataStore dataStore) {
+		this.dataStore = dataStore;
 		inserts = new HashMap<Predicate, RDBMSTableInserter>();
 	}
 
@@ -114,19 +114,19 @@ public class RDBMSDataLoader implements DataLoader {
 	private class RDBMSTableInserter extends OpenInserter {
 		private final PredicateInfo predicateInfo;
 
-		// We will keep two prepared statements:
+		// We will keep two pre-constructed sql statements:
 		//  - one for inserting a single record
 		//  - one for inserting DEFAULT_MULTIROW_COUNT records
-		private final PreparedStatement singleInsertStatement;
-		private final PreparedStatement multiInsertStatement;
+		private final String singleInsertSQL;
+		private final String multiInsertSQL;
 
 		public RDBMSTableInserter(PredicateInfo predicateInfo) {
 			this.predicateInfo = predicateInfo;
-			singleInsertStatement = createSingleInsert();
-			multiInsertStatement = createMultiInsert();
+			singleInsertSQL = createSingleInsert();
+			multiInsertSQL = createMultiInsert();
 		}
 
-		private PreparedStatement createSingleInsert() {
+		private String createSingleInsert() {
 			InsertQuery sqlBuilder = new InsertQuery(predicateInfo.tableName());
 
 			// Core columns (partition, value).
@@ -138,14 +138,10 @@ public class RDBMSDataLoader implements DataLoader {
 				sqlBuilder.addCustomPreparedColumns(new CustomSql(column));
 			}
 
-			try {
-				return connection.prepareStatement(sqlBuilder.validate().toString());
-			} catch (SQLException ex) {
-				throw new RuntimeException(ex);
-			}
+			return sqlBuilder.validate().toString();
 		}
 
-		private PreparedStatement createMultiInsert() {
+		private String createMultiInsert() {
 			List<String> columns = new ArrayList<String>();
 			columns.add(PredicateInfo.PARTITION_COLUMN_NAME);
 			columns.add(PredicateInfo.VALUE_COLUMN_NAME);
@@ -159,11 +155,7 @@ public class RDBMSDataLoader implements DataLoader {
 			multiInsert.add("VALUES");
 			multiInsert.add("	" + StringUtils.repeat("(" + placeholders + ")", ", ", DEFAULT_MULTIROW_COUNT));
 
-			try {
-				return connection.prepareStatement(StringUtils.join(multiInsert, "\n"));
-			} catch (SQLException ex) {
-				throw new RuntimeException(ex);
-			}
+			return StringUtils.join(multiInsert, "\n");
 		}
 
 		@Override
@@ -201,7 +193,11 @@ public class RDBMSDataLoader implements DataLoader {
 				}
 			}
 
-			try {
+			try (
+				Connection connection = dataStore.getConnection();
+				PreparedStatement multiInsertStatement = connection.prepareStatement(multiInsertSQL);
+				PreparedStatement singleInsertStatement = connection.prepareStatement(singleInsertSQL);
+			) {
 				int batchSize = 0;
 
 				// We will go from the multi-insert to the single-insert when we don't have enough data to fill the multi-insert.
@@ -248,7 +244,6 @@ public class RDBMSDataLoader implements DataLoader {
 								activeStatement.setInt(paramIndex++, (Integer)argValue);
 							} else if (argValue instanceof Double) {
 								// The standard JDBC way to insert NaN is using setNull
-								// if not, mysql will complain about any NaNs.
 								if (Double.isNaN((Double)argValue)) {
 									activeStatement.setNull(paramIndex++, java.sql.Types.DOUBLE);
 								} else {

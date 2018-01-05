@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,25 +19,23 @@ package org.linqs.psl.evaluation.statistics;
 
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Queries;
-import org.linqs.psl.evaluation.statistics.filter.AtomFilter;
 import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
-
-import java.util.Iterator;
+import org.linqs.psl.evaluation.statistics.filter.AtomFilter;
 
 public class ContinuousPredictionComparator implements ResultComparator {
 	private final Database result;
 	private Database baseline;
-	private AtomFilter resultFilter = AtomFilter.NoFilter;
-	private Metric metric;
 
 	public ContinuousPredictionComparator(Database result) {
-		this.result=result;
-		baseline = null;
-		resultFilter = AtomFilter.NoFilter;
-		metric = Metric.MSE;
+		this(result, null);
 	}
 
+	public ContinuousPredictionComparator(Database result, Database baseline) {
+		this.result = result;
+		this.baseline = baseline;
+	}
 
 	@Override
 	public void setBaseline(Database db) {
@@ -45,51 +43,30 @@ public class ContinuousPredictionComparator implements ResultComparator {
 	}
 
 	@Override
-	public void setResultFilter(AtomFilter af) {
-		resultFilter = af;
+	public void setResultFilter(AtomFilter filter) {
+		throw new UnsupportedOperationException();
 	}
 
-	public void setMetric(Metric metric) {
-		this.metric = metric;
-	}
+	public ContinuousPredictionStatistics compare(StandardPredicate predicate) {
+		int count = 0;
+		double absoluteError = 0.0;
+		double squaredError = 0.0;
 
-	/**
-	 * For now, assumes the results DB has grounded all relevant instances of the predicate.
-	 * I.e., currently this does not check for missed instances in the baseline DB
-	 * @param predicate
-	 */
-	public double compare(StandardPredicate predicate) {
-		double score = 0.0;
-		int total = 0;
-		/* Result atoms */
-		Iterator<GroundAtom> itr = resultFilter.filter(Queries.getAllAtoms(result, predicate).iterator());
-		while (itr.hasNext()) {
-			GroundAtom pred = itr.next();
-			GroundAtom label = baseline.getAtom(predicate, pred.getArguments());
-			score += accumulate(label.getValue() - pred.getValue());
-			total++;
+		for (GroundAtom truthAtom : Queries.getAllAtoms(baseline, predicate)) {
+			if (!(truthAtom instanceof ObservedAtom)) {
+				continue;
+			}
+
+			GroundAtom resultAtom = result.getAtom(truthAtom.getPredicate(), truthAtom.getArguments());
+			if (resultAtom instanceof ObservedAtom) {
+				continue;
+			}
+
+			count++;
+			absoluteError += Math.abs(truthAtom.getValue() - resultAtom.getValue());
+			squaredError += Math.pow(truthAtom.getValue() - resultAtom.getValue(), 2);
 		}
 
-		return score / total;
+		return new ContinuousPredictionStatistics(count, absoluteError, squaredError);
 	}
-
-	private double accumulate(double difference) {
-		double value;
-		switch (metric) {
-		case MSE: value = difference * difference;
-		break;
-		case MAE: value = Math.abs(difference);
-		break;
-		default: value = 0.0;
-		break;
-		}
-		return value;
-	}
-
-	public enum Metric {
-		MSE, MAE;
-	}
-
-
-
 }

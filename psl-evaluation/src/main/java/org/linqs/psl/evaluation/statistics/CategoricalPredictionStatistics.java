@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,24 +15,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.model.weight;
+package org.linqs.psl.evaluation.statistics;
 
-public class PositiveWeight extends Weight {
+public class CategoricalPredictionStatistics implements PredictionStatistics {
+	private final int hits;
+	private final int misses;
 
-	public PositiveWeight() {
-		super();
+	public CategoricalPredictionStatistics(int hits, int misses) {
+		this.hits = hits;
+		this.misses = misses;
 	}
-	
-	public PositiveWeight(double w) {
-		super(w);
-	}
-	
-	boolean isValidWeight(double w) {
-		return Double.isNaN(w) || w>=0;
+
+	public double getAccuracy() {
+		if (hits + misses == 0) {
+			return 0.0;
+		}
+
+		return hits / (double)(hits + misses);
 	}
 
 	@Override
-	public Weight duplicate() {
-		return new PositiveWeight(getWeight());
+	public double getError() {
+		return misses;
+	}
+
+	@Override
+	public int getNumAtoms() {
+		return hits + misses;
 	}
 }

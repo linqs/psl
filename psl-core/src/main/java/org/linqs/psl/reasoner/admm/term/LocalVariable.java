@@ -24,14 +24,14 @@ package org.linqs.psl.reasoner.admm.term;
  */
 public class LocalVariable {
 	private final int globalId;
-	private double value;
-	private double lagrange;
+	private float value;
+	private float lagrange;
 
 	/**
 	 * In the context of ADMM, local variables should be initialized with the initial value of the
 	 * global variable they are tracking.
 	 */
-	public LocalVariable(int globalId, double value) {
+	public LocalVariable(int globalId, float value) {
 		this.value = value;
 		this.globalId = globalId;
 		lagrange = 0;
@@ -41,19 +41,19 @@ public class LocalVariable {
 		return globalId;
 	}
 
-	public double getLagrange() {
+	public float getLagrange() {
 		return lagrange;
 	}
 
-	public double getValue() {
+	public float getValue() {
 		return value;
 	}
 
-	public void setLagrange(double lagrange) {
+	public void setLagrange(float lagrange) {
 		this.lagrange = lagrange;
 	}
 
-	public void setValue(double value) {
+	public void setValue(float value) {
 		this.value = value;
 	}
 

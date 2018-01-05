@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,7 @@
  */
 package org.linqs.psl.application.learning.weight.maxmargin;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
+import org.linqs.psl.application.learning.weight.LossAugmentingGroundRule;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.ConfigManager;
@@ -30,10 +27,13 @@ import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
-import org.linqs.psl.model.weight.NegativeWeight;
-import org.linqs.psl.model.weight.PositiveWeight;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Implements the batch Frank-Wolfe algorithm for StructSVM
@@ -47,10 +47,8 @@ import org.slf4j.LoggerFactory;
  * to support this claim is still pending.
  *
  * @author blondon
- *
  */
 public class FrankWolfe extends WeightLearningApplication {
-
 	private static final Logger log = LoggerFactory.getLogger(FrankWolfe.class);
 
 	/**
@@ -103,9 +101,6 @@ public class FrankWolfe extends WeightLearningApplication {
 	/** Default value for REG_PARAM_KEY */
 	public static final double REG_PARAM_DEFAULT = 1;
 
-	/**
-	 * Variables
-	 */
 	protected final double tolerance;
 	protected final int maxIter;
 	protected final boolean averageWeights;
@@ -113,13 +108,6 @@ public class FrankWolfe extends WeightLearningApplication {
 	protected final boolean normalize;
 	protected double regParam;
 
-	/**
-	 * Constructor
-	 * @param model
-	 * @param rvDB
-	 * @param observedDB
-	 * @param config
-	 */
 	public FrankWolfe(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
 		super(model, rvDB, observedDB, config);
 		tolerance = config.getDouble(CONVERGENCE_TOLERANCE_KEY, CONVERGENCE_TOLERANCE_DEFAULT);
@@ -132,58 +120,52 @@ public class FrankWolfe extends WeightLearningApplication {
 
 	@Override
 	protected void doLearn() {
-		/*
-		 * INITIALIZATION
-		 */
+		// Inits local copy of weights and avgWeights to user-specified values.
+		double[] weights = new double[mutableRules.size()];
+		double[] avgWeights = new double[mutableRules.size()];
 
-		/* Inits local copy of weights and avgWeights to user-specified values. */
-		double[] weights = new double[rules.size()];
-		double[] avgWeights = new double[rules.size()];
 		for (int i = 0; i < weights.length; i++) {
-			weights[i] = rules.get(i).getWeight().getWeight();
+			weights[i] = mutableRules.get(i).getWeight();
 			avgWeights[i] = weights[i];
 		}
 
-		/* Inits loss to zero. */
+		// Inits loss to zero.
 		double loss = 0;
 
-		/* Computes the observed incompatibilities and number of groundings. */
-		double[] truthIncompatibility = new double[rules.size()];
-		int[] numGroundings = new int[rules.size()];
+		// Computes the observed incompatibilities and number of groundings.
+		double[] truthIncompatibility = new double[mutableRules.size()];
+		int[] numGroundings = new int[mutableRules.size()];
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
 			e.getKey().setValue(e.getValue().getValue());
 		}
-		for (int i = 0; i < rules.size(); i++) {
-			for (GroundRule groundRule : groundRuleStore.getGroundRules(rules.get(i))) {
+
+		for (int i = 0; i < mutableRules.size(); i++) {
+			for (GroundRule groundRule : groundRuleStore.getGroundRules(mutableRules.get(i))) {
 				truthIncompatibility[i] += ((WeightedGroundRule) groundRule).getIncompatibility();
 				++numGroundings[i];
 			}
 		}
+
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
 			e.getKey().setValue(0.0);
 		}
 
-		/* Compute (approximate?) number of labels, for normalizing loss, gradient. */
+		// Compute (approximate?) number of labels, for normalizing loss, gradient.
 		int numLabels = trainingMap.getTrainingMap().entrySet().size();
 
-		/* Sets up loss augmenting ground rules */
-		double obsvTrueWeight = -1.0;
-		double obsvFalseWeight = -1.0;
-		log.debug("Weighting loss of positive (value = 1.0) examples by {} " +
-				  "and negative examples by {}", obsvTrueWeight, obsvFalseWeight);
+		// Sets up loss augmenting ground rules.
+		log.debug("Weighting loss of positive (value = 1.0) examples by {} and negative examples by {}", -1.0, -1.0);
+
 		List<LossAugmentingGroundRule> lossRules = new ArrayList<LossAugmentingGroundRule>(trainingMap.getTrainingMap().size());
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
 			double truth = e.getValue().getValue();
-			NegativeWeight weight = new NegativeWeight((truth == 1.0) ? obsvTrueWeight : obsvFalseWeight);
-			/* If ground truth is not integral, this will throw exception. */
-			LossAugmentingGroundRule groundRule = new LossAugmentingGroundRule(e.getKey(), truth, weight);
+			// If ground truth is not integral, this will throw exception.
+			LossAugmentingGroundRule groundRule = new LossAugmentingGroundRule(e.getKey(), truth, -1.0);
 			groundRuleStore.addGroundRule(groundRule);
 			lossRules.add(groundRule);
 		}
 
-		/**
-		 * MAIN LOOP
-		 */
+		// MAIN LOOP
 
 		boolean converged = false;
 		int iter = 0;
@@ -196,7 +178,7 @@ public class FrankWolfe extends WeightLearningApplication {
 			// Runs loss-augmented inference with current weights.
 			reasoner.optimize(termStore);
 
-			/* Computes L1 distance to ground truth. */
+			// Computes L1 distance to ground truth.
 			double l1Distance = 0.0;
 			for (LossAugmentingGroundRule groundRule : lossRules) {
 				double truth = trainingMap.getTrainingMap().get(groundRule.getAtom()).getValue();
@@ -204,27 +186,26 @@ public class FrankWolfe extends WeightLearningApplication {
 				l1Distance += Math.abs(truth - lossaugValue);
 			}
 
-			/* Computes loss-augmented incompatibilities. */
-			double[] lossaugIncompatibility = new double[rules.size()];
-			for (int i = 0; i < rules.size(); i++) {
-				for (GroundRule groundRule : groundRuleStore.getGroundRules(rules.get(i))) {
+			// Computes loss-augmented incompatibilities.
+			double[] lossaugIncompatibility = new double[mutableRules.size()];
+			for (int i = 0; i < mutableRules.size(); i++) {
+				for (GroundRule groundRule : groundRuleStore.getGroundRules(mutableRules.get(i))) {
 					if (groundRule instanceof LossAugmentingGroundRule)
 						continue;
 					lossaugIncompatibility[i] += ((WeightedGroundRule) groundRule).getIncompatibility();
 				}
 			}
 
-			/* Computes gradient of weights, where:
-			 *   gradient = (-1 / regParam) * (truthIncompatibilities - lossaugIncompatibilities)
-			 * Note: this is the negative of the formula in the paper, because
-			 * these are incompatibilities, not compatibilities.
-			 */
+			// Computes gradient of weights, where:
+			//  gradient = (-1 / regParam) * (truthIncompatibilities - lossaugIncompatibilities)
+			// Note: this is the negative of the formula in the paper,
+			// because these are incompatibilities, not compatibilities.
 			double[] gradient = new double[weights.length];
 			for (int i = 0; i < weights.length; ++i) {
 				gradient[i] = (-1.0 / regParam) * (truthIncompatibility[i] - lossaugIncompatibility[i]);
 			}
 
-			/* Normalizes L1 distance and gradient by numLabels. */
+			// Normalizes L1 distance and gradient by numLabels.
 			if (normalize) {
 				l1Distance /= (double)numLabels;
 				for (int i = 0; i < weights.length; ++i) {
@@ -232,7 +213,7 @@ public class FrankWolfe extends WeightLearningApplication {
 				}
 			}
 
-			/* Computes step size. */
+			// Computes step size.
 			double numerator = 0.0;
 			double denominator = 0.0;
 			double stepSize = 0.0;
@@ -241,31 +222,32 @@ public class FrankWolfe extends WeightLearningApplication {
 				numerator += weights[i] * delta;
 				denominator += delta * delta;
 			}
+
 			numerator += (l1Distance - loss) / regParam;
 			if (denominator != 0.0) {
 				stepSize = numerator / denominator;
-				if (stepSize > 1.0)
+				if (stepSize > 1.0) {
 					stepSize = 1.0;
-				else if (stepSize < 0.0)
+				} else if (stepSize < 0.0) {
 					stepSize = 0.0;
-			}
-			else if (numerator > 0)
+				}
+			} else if (numerator > 0) {
 				stepSize = 1.0;
-			else
+			} else {
 				stepSize = 0.0;
+			}
 
-
-			/* Takes step. */
+			// Takes step.
 			for (int i = 0; i < weights.length; ++i) {
-				/* Updates weights. */
+				// Updates weights.
 				weights[i] = (1.0 - stepSize) * weights[i] + stepSize * gradient[i];
-				if (nonnegativeWeights && weights[i] < 0.0)
+				if (nonnegativeWeights && weights[i] < 0.0) {
 					weights[i] = 0.0;
-				if (weights[i] >= 0.0)
-					rules.get(i).setWeight(new PositiveWeight(weights[i]));
-				else
-					rules.get(i).setWeight(new NegativeWeight(weights[i]));
-				/* Updates average weights. */
+				}
+
+				mutableRules.get(i).setWeight(weights[i]);
+
+				// Updates average weights.
 				avgWeights[i] = (double)iter / ((double)iter + 2.0) * avgWeights[i]
 							  + 2.0 / ((double)iter + 2.0) * weights[i];
 			}
@@ -274,44 +256,40 @@ public class FrankWolfe extends WeightLearningApplication {
 
 			loss = (1.0 - stepSize) * loss + stepSize * l1Distance;
 
-			/* Compute duality gap. */
+			// Compute duality gap.
 			double gap = regParam * numerator;
 			if (gap < tolerance) {
 				converged = true;
 			}
 
-			/* Log */
+			// Log
 			log.debug("Iter {}: L1 distance of worst violator: {}", iter, l1Distance);
 			log.debug("Iter {}: numerator: {}", iter, numerator);
 			log.debug("Iter {}: denominator: {}", iter, denominator);
 			log.debug("Iter {}: stepSize: {}", iter, stepSize);
 			log.debug("Iter {}: duality gap: {}", iter, gap);
+
 			for (int i = 0; i < weights.length; ++i) {
 				log.debug(String.format("Iter %d: i=%d: w_i=%f, g_i=%f", iter, i, weights[i], gradient[i]));
 			}
 		}
 
-		/**
-		 * POST-PROCESSING
-		 */
+		// POST-PROCESSING
 
-		/* If not converged, use average weights. */
+		// If not converged, use average weights.
 		if (!converged) {
 			log.info("Learning did not converge after {} iterations", maxIter);
+
 			if (averageWeights) {
 				log.info("Using average weights");
 				for (int i = 0; i < avgWeights.length; ++i) {
-					if (avgWeights[i] >= 0.0)
-						rules.get(i).setWeight(new PositiveWeight(avgWeights[i]));
-					else
-						rules.get(i).setWeight(new NegativeWeight(avgWeights[i]));
+					mutableRules.get(i).setWeight(avgWeights[i]);
 				}
 
 				changedRuleWeights = true;
 			}
-		}
-		else
+		} else {
 			log.info("Learning converged after {} iterations", iter);
-
+		}
 	}
 }

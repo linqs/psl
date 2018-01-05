@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -100,6 +100,12 @@ public class GroundRuleTest {
 	@Before
 	public void setup() {
 		initModel(true);
+	}
+
+	@After
+	public void cleanup() {
+		database.close();
+		model.dataStore.close();
 	}
 
 	private void initModel(boolean useNice) {
@@ -1488,9 +1494,127 @@ public class GroundRuleTest {
 		}
 	}
 
-	@After
-	public void cleanup() {
-		database.close();
-		model.dataStore.close();
+	// Test rules that look like arithmetic priors.
+	@Test
+	public void testArithmeticPrior() {
+		GroundRuleStore store = new MemoryGroundRuleStore();
+		AtomManager manager = new SimpleAtomManager(database);
+
+		Rule rule;
+		List<String> expected;
+		List<Coefficient> coefficients;
+		List<SummationAtomOrAtom> atoms;
+
+		// 1.0: Friends(A, B) = 0 ^2
+		coefficients = Arrays.asList(
+			(Coefficient)(new ConstantNumber(1))
+		);
+
+		atoms = Arrays.asList(
+			(SummationAtomOrAtom)(new QueryAtom(model.predicates.get("Friends"), new Variable("A"), new Variable("B")))
+		);
+
+		rule = new WeightedArithmeticRule(
+				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1)),
+				0,
+				true
+		);
+
+		// Remember, equality puts in a <= and >= (when weighted).
+		expected = Arrays.asList(
+			"1.0: 1.0 * FRIENDS('Alice', 'Bob') <= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Alice', 'Charlie') <= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Alice', 'Derek') <= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Alice', 'Eugene') <= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Bob', 'Alice') <= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Bob', 'Charlie') <= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Bob', 'Derek') <= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Bob', 'Eugene') <= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Charlie', 'Alice') <= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Charlie', 'Bob') <= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Charlie', 'Derek') <= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Charlie', 'Eugene') <= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Derek', 'Alice') <= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Derek', 'Bob') <= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Derek', 'Charlie') <= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Derek', 'Eugene') <= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Eugene', 'Alice') <= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Eugene', 'Bob') <= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Eugene', 'Charlie') <= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Eugene', 'Derek') <= 0.0 ^2",
+
+			"1.0: 1.0 * FRIENDS('Alice', 'Bob') >= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Alice', 'Charlie') >= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Alice', 'Derek') >= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Alice', 'Eugene') >= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Bob', 'Alice') >= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Bob', 'Charlie') >= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Bob', 'Derek') >= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Bob', 'Eugene') >= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Charlie', 'Alice') >= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Charlie', 'Bob') >= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Charlie', 'Derek') >= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Charlie', 'Eugene') >= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Derek', 'Alice') >= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Derek', 'Bob') >= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Derek', 'Charlie') >= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Derek', 'Eugene') >= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Eugene', 'Alice') >= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Eugene', 'Bob') >= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Eugene', 'Charlie') >= 0.0 ^2",
+			"1.0: 1.0 * FRIENDS('Eugene', 'Derek') >= 0.0 ^2"
+		);
+		rule.groundAll(manager, store);
+		PSLTest.compareGroundRules(expected, rule, store);
+	}
+
+	@Test
+	/**
+	 * Make sure that variables that appear in the head but not the body are fine.
+	 * There was some concern about this before, but once we convert to the DNF,
+	 * there is not head.
+	 */
+	public void testVariablesInHead() {
+		GroundRuleStore store = new MemoryGroundRuleStore();
+		AtomManager manager = new SimpleAtomManager(database);
+
+		Rule rule;
+		List<String> expected;
+
+		// Nice(A) -> !Friends(A, B)
+		rule = new WeightedLogicalRule(
+			new Implication(
+				new QueryAtom(model.predicates.get("Nice"), new Variable("A")),
+				new Negation(new QueryAtom(model.predicates.get("Friends"), new Variable("A"), new Variable("B")))
+			),
+			1.0,
+			true
+		);
+
+		// Remember, all rules will be in DNF.
+		expected = Arrays.asList(
+			"1.0: ( ~( NICE('Alice') ) | ~( FRIENDS('Alice', 'Bob') ) ) ^2",
+			"1.0: ( ~( NICE('Alice') ) | ~( FRIENDS('Alice', 'Charlie') ) ) ^2",
+			"1.0: ( ~( NICE('Alice') ) | ~( FRIENDS('Alice', 'Derek') ) ) ^2",
+			"1.0: ( ~( NICE('Alice') ) | ~( FRIENDS('Alice', 'Eugene') ) ) ^2",
+			"1.0: ( ~( NICE('Bob') ) | ~( FRIENDS('Bob', 'Alice') ) ) ^2",
+			"1.0: ( ~( NICE('Bob') ) | ~( FRIENDS('Bob', 'Charlie') ) ) ^2",
+			"1.0: ( ~( NICE('Bob') ) | ~( FRIENDS('Bob', 'Derek') ) ) ^2",
+			"1.0: ( ~( NICE('Bob') ) | ~( FRIENDS('Bob', 'Eugene') ) ) ^2",
+			"1.0: ( ~( NICE('Charlie') ) | ~( FRIENDS('Charlie', 'Alice') ) ) ^2",
+			"1.0: ( ~( NICE('Charlie') ) | ~( FRIENDS('Charlie', 'Bob') ) ) ^2",
+			"1.0: ( ~( NICE('Charlie') ) | ~( FRIENDS('Charlie', 'Derek') ) ) ^2",
+			"1.0: ( ~( NICE('Charlie') ) | ~( FRIENDS('Charlie', 'Eugene') ) ) ^2",
+			"1.0: ( ~( NICE('Derek') ) | ~( FRIENDS('Derek', 'Alice') ) ) ^2",
+			"1.0: ( ~( NICE('Derek') ) | ~( FRIENDS('Derek', 'Bob') ) ) ^2",
+			"1.0: ( ~( NICE('Derek') ) | ~( FRIENDS('Derek', 'Charlie') ) ) ^2",
+			"1.0: ( ~( NICE('Derek') ) | ~( FRIENDS('Derek', 'Eugene') ) ) ^2",
+			"1.0: ( ~( NICE('Eugene') ) | ~( FRIENDS('Eugene', 'Alice') ) ) ^2",
+			"1.0: ( ~( NICE('Eugene') ) | ~( FRIENDS('Eugene', 'Bob') ) ) ^2",
+			"1.0: ( ~( NICE('Eugene') ) | ~( FRIENDS('Eugene', 'Charlie') ) ) ^2",
+			"1.0: ( ~( NICE('Eugene') ) | ~( FRIENDS('Eugene', 'Derek') ) ) ^2"
+		);
+		rule.groundAll(manager, store);
+		PSLTest.compareGroundRules(expected, rule, store);
 	}
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,8 @@ import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -34,6 +36,8 @@ import java.util.Set;
 
 /**
  * Container for components of an arithmetic rule formula.
+ *
+ * Full equality checks (when two expressions are the equal, but not the same refernce) are epensive.
  *
  * @author Stephen Bach
  */
@@ -44,6 +48,7 @@ public class ArithmeticRuleExpression {
 	protected final Coefficient c;
 	protected final Set<Variable> vars;
 	protected final Set<SummationVariable> sumVars;
+	private final int hash;
 
 	public ArithmeticRuleExpression(List<Coefficient> coeffs, List<SummationAtomOrAtom> atoms,
 			FunctionComparator comparator, Coefficient c) {
@@ -79,8 +84,7 @@ public class ArithmeticRuleExpression {
 				for (Term term : ((Atom) saoa).getArguments()) {
 					if (term instanceof Variable) {
 						vars.add((Variable) term);
-					}
-				}
+					}				}
 			}
 		}
 
@@ -108,6 +112,21 @@ public class ArithmeticRuleExpression {
 
 		this.vars = Collections.unmodifiableSet(vars);
 		this.sumVars = Collections.unmodifiableSet(sumVars);
+
+		HashCodeBuilder hashBuilder = new HashCodeBuilder();
+
+		hashBuilder.append(comparator);
+		hashBuilder.append(c);
+
+		for (Coefficient coeff : coeffs) {
+			hashBuilder.append(coeff);
+		}
+
+		for (SummationAtomOrAtom atom : atoms) {
+			hashBuilder.append(atom);
+		}
+
+		hash = hashBuilder.toHashCode();
 	}
 
 	public List<Coefficient> getAtomCoefficients() {
@@ -186,4 +205,42 @@ public class ArithmeticRuleExpression {
 		return s.toString();
 	}
 
+	@Override
+	public boolean equals(Object other) {
+		if (this == other) {
+			return true;
+		}
+
+		if (other == null || this.getClass() != other.getClass()) {
+			return false;
+		}
+
+		ArithmeticRuleExpression otherExpression = (ArithmeticRuleExpression)other;
+
+		if (this.hash != otherExpression.hash) {
+			return false;
+		}
+
+		if (this.comparator != otherExpression.comparator || this.c != otherExpression.c) {
+			return false;
+		}
+
+		if (this.atoms.size() != otherExpression.atoms.size()) {
+			return false;
+		}
+
+		for (int thisIndex = 0; thisIndex < this.atoms.size(); thisIndex++) {
+			int otherIndex = otherExpression.atoms.indexOf(this.atoms.get(thisIndex));
+			if (otherIndex == -1) {
+				return false;
+			}
+
+			if (!this.atoms.get(thisIndex).equals(otherExpression.atoms.get(otherIndex))
+					|| !this.coeffs.get(thisIndex).equals(otherExpression.coeffs.get(otherIndex))) {
+				return false;
+			}
+		}
+
+		return true;
+	}
 }

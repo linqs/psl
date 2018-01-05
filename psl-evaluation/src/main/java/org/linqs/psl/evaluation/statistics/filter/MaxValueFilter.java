@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,31 +17,29 @@
  */
 package org.linqs.psl.evaluation.statistics.filter;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.term.Term;
 
 import com.google.common.base.Preconditions;
 
-public class MaxValueFilter implements AtomFilter {
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
+public class MaxValueFilter implements AtomFilter {
 	private final Predicate predicate;
 	private final int argPosition;
-	
+
 	public MaxValueFilter(Predicate predicate, int argPosition) {
 		this.predicate=predicate;
 		this.argPosition = argPosition;
 	}
-	
-	
+
 	@Override
 	public Iterator<GroundAtom> filter(Iterator<GroundAtom> input) {
 		Map<ArgumentWrapper,GroundAtom> argMapper = new HashMap<ArgumentWrapper,GroundAtom>();
-		
+
 		while (input.hasNext()) {
 			GroundAtom atom = input.next();
 			Preconditions.checkArgument(atom.getPredicate().equals(predicate),"Predicate of atom does not match filter predicate!");
@@ -49,17 +47,15 @@ public class MaxValueFilter implements AtomFilter {
 			GroundAtom existing = argMapper.get(w);
 			if (existing==null || existing.getValue()<atom.getValue()) {
 				argMapper.put(w, atom);
-			}			
+			}
 		}
 		return argMapper.values().iterator();
 	}
 
-	
 	private class ArgumentWrapper {
-		
 		final Term[] args;
 		final int hashcode;
-		
+
 		ArgumentWrapper(Term[] args) {
 			this.args=args;
 			int hash = 0;
@@ -71,12 +67,12 @@ public class MaxValueFilter implements AtomFilter {
 			}
 			this.hashcode = hash;
 		}
-		
+
 		@Override
 		public int hashCode() {
 			return hashcode;
 		}
-		
+
 		@Override
 		public boolean equals(Object oth) {
 			if (this==oth) return true;
@@ -87,8 +83,5 @@ public class MaxValueFilter implements AtomFilter {
 			}
 			return true;
 		}
-		
-		
 	}
-	
 }
