@@ -26,10 +26,14 @@ import java.util.Map;
  * A numeric function defined as a sum of {@link FunctionSummand FunctionSummands}.
  */
 public class FunctionSum implements Iterable<FunctionSummand>, FunctionTerm {
-	protected final List<FunctionSummand> sum;
+	private final List<FunctionSummand> sum;
+	private boolean isConstant;
+	private boolean isLinear;
 
 	public FunctionSum() {
 		sum = new ArrayList<FunctionSummand>();
+		isConstant = true;
+		isLinear = true;
 	}
 
 	/**
@@ -39,6 +43,9 @@ public class FunctionSum implements Iterable<FunctionSummand>, FunctionTerm {
 	 */
 	public void add(FunctionSummand summand) {
 		sum.add(summand);
+
+		isConstant = isConstant && summand.isConstant();
+		isLinear = isLinear && summand.isLinear();
 	}
 
 	@Override
@@ -81,22 +88,12 @@ public class FunctionSum implements Iterable<FunctionSummand>, FunctionTerm {
 
 	@Override
 	public boolean isLinear() {
-		for (FunctionSummand summand : sum) {
-			if (!summand.isLinear()) {
-				return false;
-			}
-		}
-		return true;
+		return isLinear;
 	}
 
 	@Override
 	public boolean isConstant() {
-		for (FunctionSummand summand : sum) {
-			if (!summand.isConstant()) {
-				return false;
-			}
-		}
-		return true;
+		return isConstant;
 	}
 
 	@Override

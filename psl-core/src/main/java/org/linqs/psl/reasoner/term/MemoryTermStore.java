@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2015 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -108,8 +108,11 @@ public class MemoryTermStore<E extends Term> implements TermStore<E> {
 
 	@Override
 	public void updateWeight(WeightedGroundRule rule) {
-		for (Integer termIndex : ruleMapping.get(rule)) {
-			((WeightedTerm)store.get(termIndex.intValue())).setWeight((float)rule.getWeight());
+		List<Integer> indexes = ruleMapping.get(rule);
+		float weight = (float)rule.getWeight();
+
+		for (int i = 0; i < indexes.size(); i++) {
+			((WeightedTerm)store.get(indexes.get(i).intValue())).setWeight(weight);
 		}
 	}
 

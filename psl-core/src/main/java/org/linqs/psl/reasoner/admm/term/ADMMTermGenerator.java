@@ -162,7 +162,8 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 	private Hyperplane processHyperplane(FunctionSum sum, ADMMTermStore termStore) {
 		Hyperplane hyperplane = new Hyperplane();
 
-		for (FunctionSummand summand : sum) {
+		for (int i = 0; i < sum.size(); i++) {
+			FunctionSummand summand = sum.get(i);
 			FunctionSingleton singleton = summand.getTerm();
 
 			if (singleton instanceof AtomFunctionVariable && !singleton.isConstant()) {

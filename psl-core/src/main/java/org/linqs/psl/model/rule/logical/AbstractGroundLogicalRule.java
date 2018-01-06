@@ -45,34 +45,29 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
 
 	private final int hashcode;
 
-	protected AbstractGroundLogicalRule(AbstractLogicalRule r, List<GroundAtom> posLiterals, List<GroundAtom> negLiterals) {
-		rule = r;
-		this.posLiterals = new ArrayList<GroundAtom>(posLiterals);
-		this.negLiterals = new ArrayList<GroundAtom>(negLiterals);
+	protected AbstractGroundLogicalRule(AbstractLogicalRule rule, List<GroundAtom> posLiterals, List<GroundAtom> negLiterals) {
+		this.rule = rule;
+		this.posLiterals = Collections.unmodifiableList(new ArrayList<GroundAtom>(posLiterals));
+		this.negLiterals = Collections.unmodifiableList(new ArrayList<GroundAtom>(negLiterals));
 
-		// Constructs function definition.
+		// Construct the hash code.
+		HashCodeBuilder hcb = new HashCodeBuilder();
+		hcb.append(rule);
+
+		// Construct function definition.
 		function= new FunctionSum();
 
-		for (GroundAtom atom : posLiterals) {
-			function.add(new FunctionSummand(1.0, atom.getVariable()));
+		for (int i = 0; i < posLiterals.size(); i++) {
+			function.add(new FunctionSummand(1.0, posLiterals.get(i).getVariable()));
+			hcb.append(posLiterals.get(i));
 		}
 
-		for (GroundAtom atom : negLiterals) {
-			function.add(new FunctionSummand(-1.0, atom.getVariable()));
+		for (int i = 0; i < negLiterals.size(); i++) {
+			function.add(new FunctionSummand(-1.0, negLiterals.get(i).getVariable()));
+			hcb.append(negLiterals.get(i));
 		}
 
 		function.add(new FunctionSummand(1.0, new ConstantNumber(1.0 - posLiterals.size())));
-
-		// Constructs the hash code.
-		HashCodeBuilder hcb = new HashCodeBuilder();
-		hcb.append(rule);
-		for (GroundAtom atom : posLiterals) {
-			hcb.append(atom);
-		}
-		for (GroundAtom atom : negLiterals) {
-			hcb.append(atom);
-		}
-
 		hashcode = hcb.toHashCode();
 	}
 
@@ -100,11 +95,11 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
 	}
 
 	public List<GroundAtom> getPositiveAtoms() {
-		return Collections.unmodifiableList(posLiterals);
+		return posLiterals;
 	}
 
 	public List<GroundAtom> getNegativeAtoms() {
-		return Collections.unmodifiableList(negLiterals);
+		return negLiterals;
 	}
 
 	@Override

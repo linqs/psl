@@ -44,8 +44,8 @@ import java.util.Set;
  * and makes the clauses available.
  */
 public class FormulaAnalysis {
-	protected final Formula f;
-	protected final List<DNFClause> clauses;
+	private final Formula f;
+	private final List<DNFClause> clauses;
 
 	public FormulaAnalysis(Formula formula) {
 		f = formula;
@@ -132,16 +132,16 @@ public class FormulaAnalysis {
 	}
 
 	public class DNFClause {
-		protected final List<Atom> posLiterals;
-		protected final List<Atom> negLiterals;
-		protected final Multimap<Predicate,Atom> dependence;
-		protected final Formula query;
-		protected final Set<Variable> unboundVariables;
-		protected final boolean isGround;
+		private List<Atom> posLiterals;
+		private List<Atom> negLiterals;
+		private Multimap<Predicate, Atom> dependence;
+		private Formula query;
+		private Set<Variable> unboundVariables;
+		private boolean isGround;
 
 		public DNFClause(List<Atom> posLiterals, List<Atom> negLiterals) {
-			this.posLiterals = new ArrayList<Atom>(posLiterals);
-			this.negLiterals = new ArrayList<Atom>(negLiterals);
+			this.posLiterals = Collections.unmodifiableList(new ArrayList<Atom>(posLiterals));
+			this.negLiterals = Collections.unmodifiableList(new ArrayList<Atom>(negLiterals));
 			this.unboundVariables = new HashSet<Variable>();
 
 			dependence = ArrayListMultimap.create();
@@ -177,6 +177,9 @@ public class FormulaAnalysis {
 			// Remove any allowed (bound) variables from the list of unbound variables.
 			unboundVariables.removeAll(allowedVariables);
 
+			// The unbound variables has been populated, now pin its contents.
+			unboundVariables = Collections.unmodifiableSet(unboundVariables);
+
 			// Processes the positive literals with StandardPredicates further
 			for (int i = 0; i < posLiterals.size(); i++) {
 				if (posLiterals.get(i).getPredicate() instanceof StandardPredicate) {
@@ -197,14 +200,14 @@ public class FormulaAnalysis {
 		 * @return the positive literals, i.e., Atoms not negated, in the clause
 		 */
 		public List<Atom> getPosLiterals() {
-			return Collections.unmodifiableList(posLiterals);
+			return posLiterals;
 		}
 
 		/**
 		 * @return the negative literals, i.e., negated Atoms, in the clause
 		 */
 		public List<Atom> getNegLiterals() {
-			return Collections.unmodifiableList(negLiterals);
+			return negLiterals;
 		}
 
 		/**
@@ -219,7 +222,7 @@ public class FormulaAnalysis {
 		 * @return an unmodifiable set containing any unbound variables, or an empty set.
 		 */
 		public Set<Variable> getUnboundVariables() {
-			return Collections.unmodifiableSet(unboundVariables);
+			return unboundVariables;
 		}
 
 		public boolean isGround() {
