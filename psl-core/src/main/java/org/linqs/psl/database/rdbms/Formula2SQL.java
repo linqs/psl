@@ -17,10 +17,12 @@
  */
 package org.linqs.psl.database.rdbms;
 
-import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.database.Partition;
+import org.linqs.psl.model.atom.Atom;
+import org.linqs.psl.model.formula.Conjunction;
+import org.linqs.psl.model.formula.Disjunction;
 import org.linqs.psl.model.formula.Formula;
-import org.linqs.psl.model.formula.traversal.AbstractFormulaTraverser;
+import org.linqs.psl.model.formula.Negation;
 import org.linqs.psl.model.predicate.ExternalFunctionalPredicate;
 import org.linqs.psl.model.predicate.FunctionalPredicate;
 import org.linqs.psl.model.predicate.SpecialPredicate;
@@ -44,7 +46,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class Formula2SQL extends AbstractFormulaTraverser {
+public class Formula2SQL {
 	private static final String TABLE_ALIAS_PREFIX = "T";
 
 	private final Set<Variable> projection;
@@ -144,23 +146,6 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 		return Collections.unmodifiableMap(tableAliases);
 	}
 
-	@Override
-	public void afterConjunction(int noFormulas) {
-		// Supported
-	}
-
-	@Override
-	public void afterDisjunction(int noFormulas) {
-		throw new AssertionError(
-				"Disjunction is currently not supported by database");
-	}
-
-	@Override
-	public void afterNegation() {
-		throw new AssertionError(
-				"Negation is currently not supported by database");
-	}
-
 	private void visitFunctionalAtom(Atom atom) {
 		assert(atom.getPredicate() instanceof FunctionalPredicate);
 
@@ -220,8 +205,7 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 		return convert;
 	}
 
-	@Override
-	public void visitAtom(Atom atom) {
+	private void visitAtom(Atom atom) {
 		if (atom.getPredicate() instanceof FunctionalPredicate) {
 			functionalAtoms.add(atom);
 			return;
@@ -292,8 +276,29 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 		tableCounter++;
 	}
 
+	/**
+	 * Recursively traverse a formual to build a query from it.
+	 */
+	private void traverse(Formula formula) {
+		if (formula instanceof Conjunction) {
+			Conjunction conjunction = (Conjunction)formula;
+			for (int i=0; i < conjunction.length(); i++) {
+				traverse(conjunction.get(i));
+			}
+		} else if (formula instanceof Atom) {
+			visitAtom((Atom)formula);
+		} else if (formula instanceof Negation) {
+			throw new IllegalArgumentException("Negations in formula are not supported in database queries.");
+		} else if (formula instanceof Disjunction) {
+			throw new IllegalArgumentException("Disjunctions in formula are not supported in database queries.");
+		} else {
+			throw new IllegalArgumentException("Unsupported Formula: " + formula.getClass().getName());
+		}
+	}
+
 	public SelectQuery getQuery(Formula formula) {
-		AbstractFormulaTraverser.traverse(formula, this);
+		traverse(formula);
+		// Visit all the functional atoms at the end.
 		for (Atom atom : functionalAtoms) {
 			visitFunctionalAtom(atom);
 		}

@@ -53,7 +53,9 @@ public class DatabaseQuery {
 		this.distinct = distinct;
 
 		FormulaAnalysis analysis = new FormulaAnalysis(formula);
-		if (analysis.getNumDNFClauses() > 1 || analysis.getDNFClause(0).getNegLiterals().size() > 0) {
+		// TEST
+      // if (analysis.getNumDNFClauses() > 1 || analysis.getDNFClause(0).getNegLiterals().size() > 0) {
+		if (analysis.getNumDNFClauses() > 1) {
 			throw new IllegalArgumentException("Illegal query formula. " +
 					"Must be a conjunction of atoms or a single atom. " +
 					"Formula: " + formula);
