@@ -375,13 +375,21 @@ public class RDBMSDatabase implements Database {
 	}
 
 	@Override
+	public ResultList executeGroundingQuery(Formula formula) {
+		return executeQuery(OptimalCover.computeOptimalCover(formula, parentDataStore), false);
+	}
+
+	@Override
 	public ResultList executeQuery(DatabaseQuery query) {
-		Formula formula = query.getFormula();
+		return executeQuery(query.getFormula(), query.getDistinct());
+	}
+
+	private ResultList executeQuery(Formula formula, boolean isDistinct) {
 		VariableTypeMap varTypes = formula.collectVariables(new VariableTypeMap());
 		Set<Variable> projectTo = new HashSet<Variable>(varTypes.getVariables());
 
 		// Construct query from formula
-		Formula2SQL sqler = new Formula2SQL(projectTo, this, query.getDistinct());
+		Formula2SQL sqler = new Formula2SQL(projectTo, this, isDistinct);
 		String queryString = sqler.getSQL(formula);
 		Map<Variable, Integer> projectionMap = sqler.getProjectionMap();
 

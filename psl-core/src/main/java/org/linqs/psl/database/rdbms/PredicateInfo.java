@@ -61,6 +61,7 @@ public class PredicateInfo {
 	private final String tableName;
 
 	private Map<String, String> cachedSQL;
+	private int count;
 
 	public PredicateInfo(Predicate predicate) {
 		assert(predicate != null);
@@ -74,6 +75,7 @@ public class PredicateInfo {
 		}
 
 		cachedSQL = new HashMap<String, String>();
+		count = -1;
 	}
 
 	public List<String> argumentColumns() {
@@ -150,6 +152,28 @@ public class PredicateInfo {
 	 */
 	public PreparedStatement createPartitionMoveStatement(Connection connection, int oldPartition, int newPartition) {
 		return prepareSQL(connection, buildPartitionMoveStatement(oldPartition, newPartition));
+	}
+
+	/**
+	 * Get a count of all the rows in the table.
+	 */
+	public int getCount(Connection connection) {
+		if (count != -1) {
+			return count;
+		}
+
+		String sql = "SELECT COUNT(*) FROM " + tableName;
+		try (
+			PreparedStatement statement = connection.prepareStatement(sql);
+			ResultSet result = statement.executeQuery();
+		) {
+			result.next();
+			count = result.getInt(1);
+		} catch (SQLException ex) {
+			throw new RuntimeException("Failed to get count from table: " + tableName, ex);
+		}
+
+		return count;
 	}
 
 	private void createTable(Connection connection, DatabaseDriver dbDriver) {

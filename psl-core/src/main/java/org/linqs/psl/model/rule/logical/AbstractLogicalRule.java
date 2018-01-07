@@ -121,7 +121,7 @@ public abstract class AbstractLogicalRule implements Rule {
 
 	@Override
 	public void groundAll(AtomManager atomManager, GroundRuleStore grs) {
-		ResultList res = atomManager.executeQuery(new DatabaseQuery(negatedDNF.getQueryFormula(), false));
+		ResultList res = atomManager.executeGroundingQuery(negatedDNF.getQueryFormula());
 		groundAll(res, atomManager, grs);
 	}
 

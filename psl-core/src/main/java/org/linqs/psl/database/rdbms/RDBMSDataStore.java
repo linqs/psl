@@ -293,6 +293,14 @@ public class RDBMSDataStore implements DataStore {
 		return metadata.getAllPartitions();
 	}
 
+	public int getPredicateRowCount(StandardPredicate predicate) {
+		try (Connection connection = getConnection()) {
+			return predicates.get(predicate).getCount(connection);
+		} catch (SQLException ex) {
+			throw new RuntimeException("Failed to close connection for count.", ex);
+		}
+	}
+
 	public DatabaseDriver getDriver() {
 		return dbDriver;
 	}

@@ -24,6 +24,7 @@ import org.linqs.psl.model.atom.AtomCache;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
@@ -46,7 +47,7 @@ import org.linqs.psl.model.term.Variable;
  * A Database writes to and reads from one {@link Partition} of a DataStore
  * and can read from additional Partitions. The write Partition of a Database
  * may not be a read (or write) Partition of any other Database managed by the datastore.
- * 
+ *
  * A Database can be instantiated with a set of StandardPredicates
  * to close. (Any StandardPredicate not closed initially remains open.) Whether
  * a StandardPredicate is open or closed affects the behavior of
@@ -211,6 +212,12 @@ public interface Database {
 	 * @throws IllegalArgumentException if the query Formula is invalid
 	 */
 	public ResultList executeQuery(DatabaseQuery query);
+
+	/**
+	 * Like executeQuery(), but specifically for grounding queries.
+	 * This will use extra optimizations.
+	 */
+	public ResultList executeGroundingQuery(Formula formula);
 
 	/**
 	 * Returns whether a StandardPredicate is closed in this Database.

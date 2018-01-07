@@ -146,6 +146,20 @@ public class Formula2SQL {
 		return Collections.unmodifiableMap(tableAliases);
 	}
 
+	public SelectQuery getQuery(Formula formula) {
+		traverse(formula);
+		// Visit all the functional atoms at the end.
+		for (Atom atom : functionalAtoms) {
+			visitFunctionalAtom(atom);
+		}
+
+		return query.validate();
+	}
+
+	public String getSQL(Formula formula) {
+		return getQuery(formula).toString();
+	}
+
 	private void visitFunctionalAtom(Atom atom) {
 		assert(atom.getPredicate() instanceof FunctionalPredicate);
 
@@ -294,20 +308,6 @@ public class Formula2SQL {
 		} else {
 			throw new IllegalArgumentException("Unsupported Formula: " + formula.getClass().getName());
 		}
-	}
-
-	public SelectQuery getQuery(Formula formula) {
-		traverse(formula);
-		// Visit all the functional atoms at the end.
-		for (Atom atom : functionalAtoms) {
-			visitFunctionalAtom(atom);
-		}
-
-		return query.validate();
-	}
-
-	public String getSQL(Formula formula) {
-		return getQuery(formula).toString();
 	}
 
 	private String escapeSingleQuotes(String s) {

@@ -51,11 +51,20 @@ public class DatabaseQuery {
 	public DatabaseQuery(Formula formula, boolean distinct) {
 		this.formula = formula;
 		this.distinct = distinct;
+		validate(formula);
+	}
 
+	public Formula getFormula() {
+		return formula;
+	}
+
+	public boolean getDistinct() {
+		return distinct;
+	}
+
+	public static void validate(Formula formula) {
 		FormulaAnalysis analysis = new FormulaAnalysis(formula);
-		// TEST
-      // if (analysis.getNumDNFClauses() > 1 || analysis.getDNFClause(0).getNegLiterals().size() > 0) {
-		if (analysis.getNumDNFClauses() > 1) {
+		if (analysis.getNumDNFClauses() > 1 || analysis.getDNFClause(0).getNegLiterals().size() > 0) {
 			throw new IllegalArgumentException("Illegal query formula. " +
 					"Must be a conjunction of atoms or a single atom. " +
 					"Formula: " + formula);
@@ -72,13 +81,5 @@ public class DatabaseQuery {
 					" The following variables do not meet this requirement: [" + StringUtils.join(sortedVariables, ", ") + "]."
 			);
 		}
-	}
-
-	public Formula getFormula() {
-		return formula;
-	}
-
-	public boolean getDistinct() {
-		return distinct;
 	}
 }
