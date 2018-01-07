@@ -377,12 +377,8 @@ public class RDBMSDatabase implements Database {
 	@Override
 	public ResultList executeQuery(DatabaseQuery query) {
 		Formula formula = query.getFormula();
-		Set<Variable> projectTo = new HashSet<Variable>(query.getProjectionSubset());
-
 		VariableTypeMap varTypes = formula.collectVariables(new VariableTypeMap());
-		if (projectTo.size() == 0) {
-			projectTo.addAll(varTypes.getVariables());
-		}
+		Set<Variable> projectTo = new HashSet<Variable>(varTypes.getVariables());
 
 		// Construct query from formula
 		Formula2SQL sqler = new Formula2SQL(projectTo, this, query.getDistinct());

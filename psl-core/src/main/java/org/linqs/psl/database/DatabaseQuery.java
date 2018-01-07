@@ -30,8 +30,6 @@ import org.linqs.psl.model.term.Variable;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -40,9 +38,7 @@ import java.util.Set;
  *
  * Semantics
  *
- * A DatabaseQuery has three components: a Formula, a partial grounding,
- * and a set of {@link Variable Variables} onto which the results will be
- * projected.
+ * TODO(eriq): Rewrite.
  *
  * The Formula is given upon initialization and is fixed. It must be
  * a {@link Conjunction} of Atoms or a single Atom. Any {@link Variable}
@@ -53,16 +49,9 @@ import java.util.Set;
  * Database and each GroundAtom with a FunctionalPredicate.
  * in the ground Formula has a non-zero truth value (regardless of whether
  * it is instantiated in memory).
- *
- * The projection subset is a subset of the Variables in the Formula onto
- * which the returned groundings will be projected. An empty subset is
- * the same as including all Variables in the Formula in the subset except those
- * with assignments in the partial grounding. Use addToProjection() to add to it.
- * It is initially empty.
  */
 public class DatabaseQuery {
 	private final Formula formula;
-	private final Set<Variable> projectTo;
 	private final ListOrderedSet<Variable> ordering;
 	private final boolean distinct;
 
@@ -73,8 +62,6 @@ public class DatabaseQuery {
 	public DatabaseQuery(Formula formula, boolean distinct) {
 		this.formula = formula;
 		this.distinct = distinct;
-
-		projectTo = new HashSet<Variable>();
 
 		FormulaAnalysis analysis = new FormulaAnalysis(formula);
 		if (analysis.getNumDNFClauses() > 1 || analysis.getDNFClause(0).getNegLiterals().size() > 0) {
@@ -106,18 +93,6 @@ public class DatabaseQuery {
 
 	public boolean getDistinct() {
 		return distinct;
-	}
-
-	public void addToProjection(Variable var) {
-		if (!ordering.contains(var)) {
-			throw new IllegalArgumentException("Variable not appearing in query cannot be in projection: " + var);
-		}
-
-		projectTo.add(var);
-	}
-
-	public Set<Variable> getProjectionSubset() {
-		return Collections.unmodifiableSet(projectTo);
 	}
 
 	/**
