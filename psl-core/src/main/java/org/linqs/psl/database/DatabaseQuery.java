@@ -19,7 +19,6 @@ package org.linqs.psl.database;
 
 import org.apache.commons.collections4.set.ListOrderedSet;
 import org.linqs.psl.model.atom.Atom;
-import org.linqs.psl.model.atom.VariableAssignment;
 import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.formula.FormulaAnalysis;
@@ -55,10 +54,6 @@ import java.util.Set;
  * in the ground Formula has a non-zero truth value (regardless of whether
  * it is instantiated in memory).
  *
- * The partial grounding is a {@link VariableAssignment} which all returned
- * groundings must match. Use {@link #getPartialGrounding()} to modify the partial
- * grounding. It is initially empty.
- *
  * The projection subset is a subset of the Variables in the Formula onto
  * which the returned groundings will be projected. An empty subset is
  * the same as including all Variables in the Formula in the subset except those
@@ -67,7 +62,6 @@ import java.util.Set;
  */
 public class DatabaseQuery {
 	private final Formula formula;
-	private final VariableAssignment partialGrounding;
 	private final Set<Variable> projectTo;
 	private final ListOrderedSet<Variable> ordering;
 	private final boolean distinct;
@@ -80,7 +74,6 @@ public class DatabaseQuery {
 		this.formula = formula;
 		this.distinct = distinct;
 
-		partialGrounding = new VariableAssignment();
 		projectTo = new HashSet<Variable>();
 
 		FormulaAnalysis analysis = new FormulaAnalysis(formula);
@@ -113,10 +106,6 @@ public class DatabaseQuery {
 
 	public boolean getDistinct() {
 		return distinct;
-	}
-
-	public VariableAssignment getPartialGrounding() {
-		return partialGrounding;
 	}
 
 	public void addToProjection(Variable var) {

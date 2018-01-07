@@ -18,7 +18,6 @@
 package org.linqs.psl.database.rdbms;
 
 import org.linqs.psl.model.atom.Atom;
-import org.linqs.psl.model.atom.VariableAssignment;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.formula.traversal.AbstractFormulaTraverser;
@@ -49,7 +48,6 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 	private static final String TABLE_ALIAS_PREFIX = "T";
 
 	private final Set<Variable> projection;
-	private final VariableAssignment partialGrounding;
 	private final RDBMSDatabase database;
 
 	/**
@@ -80,13 +78,12 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 	 * Convert a formula to a query that will fetch all possible combinations of constants used in that
 	 * formual (aka grounding).
 	 * This variant will enforce unqiue results (DISTINCT).
-	 * @param partialGrounding Populate if some variables are alreay assigned to specific constants.
 	 * @param projection the collection of variables (columns) to return (the variable's name will be used
 	 * as the column alias). If not set, all columns (*) will be retutned.
 	 * @param database the database to query over. The read and write partitions will be picked up from here.
 	 */
-	public Formula2SQL(VariableAssignment partialGrounding, Set<Variable> projection, RDBMSDatabase database) {
-		this(partialGrounding, projection, database, true);
+	public Formula2SQL(Set<Variable> projection, RDBMSDatabase database) {
+		this(projection, database, true);
 	}
 
 	/**
@@ -94,9 +91,8 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 	 * @param isDistinct true if you want to enforce unique results (DISTINCT), false otherwise.
 	 *  Warning: this can be a costly operation.
 	 */
-	public Formula2SQL(VariableAssignment partialGrounding, Set<Variable> projection, RDBMSDatabase database,
-			boolean isDistinct) {
-		this(partialGrounding, projection, database, isDistinct, null);
+	public Formula2SQL(Set<Variable> projection, RDBMSDatabase database, boolean isDistinct) {
+		this(projection, database, isDistinct, null);
 	}
 
 	/**
@@ -106,9 +102,7 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 	 *  will be exclusivley drawn from Partition.LAZY_PARTITION_ID.
 	 *  We will do a DIRECT REFERENCE comparison against atoms in the formual to check for this specific one.
 	 */
-	public Formula2SQL(VariableAssignment partialGrounding, Set<Variable> projection, RDBMSDatabase database,
-			boolean isDistinct, Atom lazyTarget) {
-		this.partialGrounding = partialGrounding;
+	public Formula2SQL(Set<Variable> projection, RDBMSDatabase database, boolean isDistinct, Atom lazyTarget) {
 		this.projection = projection;
 		this.database = database;
 		this.lazyTarget = lazyTarget;
@@ -207,13 +201,9 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 			// If the variable is not in the argument map, just query for that variable.
 			// If it is in the mapping, then pull out the mapped value and convert that.
 			if (arg instanceof Variable) {
-				if (partialGrounding.hasVariable((Variable)arg)) {
-					arg = partialGrounding.getVariable((Variable)arg);
-				} else {
-					assert(joins.containsKey((Variable)arg));
-					convert[i] = new CustomSql(joins.get((Variable)arg));
-					continue;
-				}
+				assert(joins.containsKey((Variable)arg));
+				convert[i] = new CustomSql(joins.get((Variable)arg));
+				continue;
 			}
 
 			if (arg instanceof Attribute) {
@@ -256,21 +246,17 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 
 			if (arg instanceof Variable) {
 				Variable var = (Variable)arg;
-				if (partialGrounding.hasVariable(var)) {
-					arg = partialGrounding.getVariable(var);
+				if (joins.containsKey(var)) {
+					query.addCondition(BinaryCondition.equalTo(
+							new CustomSql(columnReference),
+							new CustomSql(joins.get(var))));
 				} else {
-					if (joins.containsKey(var)) {
-						query.addCondition(BinaryCondition.equalTo(
-								new CustomSql(columnReference),
-								new CustomSql(joins.get(var))));
-					} else {
-						if (projection.contains(var)) {
-							query.addAliasedColumn(new CustomSql(columnReference), var.getName());
-							projectionMap.put(var, projectionMap.size());
-						}
-
-						joins.put(var, columnReference);
+					if (projection.contains(var)) {
+						query.addAliasedColumn(new CustomSql(columnReference), var.getName());
+						projectionMap.put(var, projectionMap.size());
 					}
+
+					joins.put(var, columnReference);
 				}
 			}
 

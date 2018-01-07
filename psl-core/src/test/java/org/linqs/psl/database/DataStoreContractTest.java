@@ -495,16 +495,6 @@ public abstract class DataStoreContractTest {
 		assertEquals(a, results.get(0)[0]);
 		assertEquals(b, results.get(0)[1]);
 
-		// Tests the same query using the partial grounding to specify constants
-		formula = new Conjunction(new QueryAtom(p1, Y, X),
-				new QueryAtom(p4, X, Z));
-		query = new DatabaseQuery(formula);
-		query.getPartialGrounding().assign(Z, new DoubleAttribute(4.0));
-		results = db.executeQuery(query);
-		assertEquals(1, results.size());
-		assertEquals(a, results.get(0)[0]);
-		assertEquals(b, results.get(0)[1]);
-
 		// Tests a multi-atom query with a projection set
 		formula = new Conjunction(new QueryAtom(p1, Y, X),
 				new QueryAtom(p4, X, Z));

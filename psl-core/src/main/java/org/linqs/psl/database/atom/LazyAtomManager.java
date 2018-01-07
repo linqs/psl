@@ -28,7 +28,6 @@ import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
-import org.linqs.psl.model.atom.VariableAssignment;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
@@ -287,12 +286,11 @@ public class LazyAtomManager extends PersistedAtomManager {
 
 		List<SelectQuery> queries = new ArrayList<SelectQuery>();
 
-		VariableAssignment partialGrounding = new VariableAssignment();
 		VariableTypeMap varTypes = formula.collectVariables(new VariableTypeMap());
 		Map<Variable, Integer> projectionMap = null;
 
 		for (Atom lazyTarget : lazyTargets) {
-			Formula2SQL sqler = new Formula2SQL(partialGrounding, varTypes.getVariables(), relationalDB, false, lazyTarget);
+			Formula2SQL sqler = new Formula2SQL(varTypes.getVariables(), relationalDB, false, lazyTarget);
 			queries.add(sqler.getQuery(formula));
 
 			if (projectionMap == null) {
@@ -302,7 +300,7 @@ public class LazyAtomManager extends PersistedAtomManager {
 
 		// This fallbacks to a normal SELECT when there is only one.
 		UnionQuery union = new UnionQuery(SetOperationQuery.Type.UNION, queries.toArray(new SelectQuery[0]));
-		return relationalDB.executeQuery(partialGrounding, projectionMap, varTypes, union.validate().toString());
+		return relationalDB.executeQuery(projectionMap, varTypes, union.validate().toString());
 	}
 
 	private Set<StandardPredicate> getLazyPredicates(Set<RandomVariableAtom> toActivate) {
