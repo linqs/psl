@@ -48,7 +48,7 @@ public class ReadOnlyDatabase {
 				throw new IllegalArgumentException("Can only call getAtom() on a closed or functional predicate.");
 			}
 		} else if (predicate instanceof SpecialPredicate) {
-         throw new IllegalArgumentException("SpecialPredicates do not have tangible atoms.");
+			throw new IllegalArgumentException("SpecialPredicates do not have tangible atoms.");
 		} else {
 			throw new IllegalArgumentException("Unknown predicate type: " + predicate.getClass().getName());
 		}
@@ -58,17 +58,17 @@ public class ReadOnlyDatabase {
 		Set<Atom> atoms = new HashSet<Atom>();
 
 		for (Atom atom : query.getFormula().getAtoms(atoms)) {
-         Predicate predicate = atom.getPredicate();
+			Predicate predicate = atom.getPredicate();
 
 			if (predicate instanceof FunctionalPredicate) {
 				continue;
 			} else if (predicate instanceof StandardPredicate) {
 				if (db.isClosed((StandardPredicate)predicate)) {
-               continue;
-            }
-            throw new IllegalArgumentException("Can only perform queries over closed or functional predicates.");
-         } else if (predicate instanceof SpecialPredicate) {
-            throw new IllegalArgumentException("SpecialPredicates do not have tangible atoms.");
+					continue;
+				}
+				throw new IllegalArgumentException("Can only perform queries over closed or functional predicates.");
+			} else if (predicate instanceof SpecialPredicate) {
+				throw new IllegalArgumentException("SpecialPredicates do not have tangible atoms.");
 			} else {
 				throw new IllegalArgumentException("Unknown predicate type: " + predicate.getClass().getName());
 			}

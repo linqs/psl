@@ -17,14 +17,8 @@
  */
 package org.linqs.psl.database;
 
-import org.apache.commons.collections4.set.ListOrderedSet;
-import org.linqs.psl.model.atom.Atom;
-import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.formula.FormulaAnalysis;
-import org.linqs.psl.model.formula.traversal.AbstractFormulaTraverser;
-import org.linqs.psl.model.predicate.StandardPredicate;
-import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
 
 import org.apache.commons.lang3.StringUtils;
@@ -36,23 +30,18 @@ import java.util.Set;
  * A query to select groundings from a {@link Database}.
  * Groundings that match the query are returned in the form of a {@link ResultList}.
  *
- * Semantics
- *
- * TODO(eriq): Rewrite.
- *
- * The Formula is given upon initialization and is fixed. It must be
- * a {@link Conjunction} of Atoms or a single Atom. Any {@link Variable}
- * in the Formula must be used in an Atom with a {@link StandardPredicate}.
+ * The Formula is given upon initialization and is fixed.
+ * It must be a Conjunction of Atoms or a single Atom.
+ * Any {@link Variable} in the Formula must be used in an Atom with a StandardPredicate.
  * (Then it can be used in others as well.)
  * The query will return any grounding such that each GroundAtom
- * with a {@link StandardPredicate} in the ground Formula is persisted in the
- * Database and each GroundAtom with a FunctionalPredicate.
+ * with a StandardPredicate in the ground Formula is persisted in the
+ * Database and each GroundAtom with a FunctionalPredicate
  * in the ground Formula has a non-zero truth value (regardless of whether
  * it is instantiated in memory).
  */
 public class DatabaseQuery {
 	private final Formula formula;
-	private final ListOrderedSet<Variable> ordering;
 	private final boolean distinct;
 
 	public DatabaseQuery(Formula formula) {
@@ -81,10 +70,6 @@ public class DatabaseQuery {
 					" The following variables do not meet this requirement: [" + StringUtils.join(sortedVariables, ", ") + "]."
 			);
 		}
-
-		ordering = new ListOrderedSet<Variable>();
-
-		AbstractFormulaTraverser.traverse(formula, new VariableOrderer());
 	}
 
 	public Formula getFormula() {
@@ -94,51 +79,4 @@ public class DatabaseQuery {
 	public boolean getDistinct() {
 		return distinct;
 	}
-
-	/**
-	 * @return the number of Variables in this query's Formula
-	 */
-	public int getNumVariables() {
-		return ordering.size();
-	}
-
-	/**
-	 * Returns the Variable at a given index in this Query's formula according
-	 * to a depth-first, left-to-right traversal (starting with 0).
-	 *
-	 * @param index  the index of the Variable to return
-	 * @return the Variable with the given index
-	 */
-	public Variable getVariable(int index) {
-		return ordering.get(index);
-	}
-
-	/**
-	 * Returns the index of a Variable in this Query's formula according to a
-	 * depth-first, left-to-right traversal (starting with 0).
-	 *
-	 * @param var  the Variable in the formula
-	 * @return the Variable's index, or -1 if it is not in the formula
-	 */
-	public int getVariableIndex(Variable var) {
-		return ordering.indexOf(var);
-	}
-
-	/**
-	 * Places the Variables in the query Formula in ordering in order
-	 * of their first appearances in a depth-first, left-to-right traversal.
-	 */
-	private class VariableOrderer extends AbstractFormulaTraverser {
-		@Override
-		public void visitAtom(Atom atom) {
-			for (Term term : atom.getArguments()) {
-				if (term instanceof Variable) {
-					if (!ordering.contains(term)) {
-						ordering.add((Variable) term);
-					}
-				}
-			}
-		}
-	}
-
 }
