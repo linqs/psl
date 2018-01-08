@@ -47,6 +47,11 @@ public class OptimalCover {
 	 */
 	public static final double BLOCK_ADVANTAGE = 100.0;
 
+	/**
+	 * The cost for a JOIN.
+	 */
+	public static final double JOIN_PENALTY = 2.0;
+
 	// Static only.
 	private OptimalCover() {}
 
@@ -102,8 +107,14 @@ public class OptimalCover {
 	/**
 	 * For each variable, choose the atom with the lowest cost.
 	 * This may be suboptimal when there are multiple unused variables per atom.
+	 * We will handle one variable at a time in arbitrary order.
+	 * Each atom will get assigned a cost = (rowCount / BLOCK_ADVANTAGE) * JOIN_PENALTY^(maxSatisfiableVariables - satisfiedVariables).
+	 * Where maxSatisfiableVariables is the most number of variables satisfied by an atom adjacent to the variable.
+	 * The last product with satisfable atoms is done because every variable we do not satisfy needs to be satified with another join.
 	 */
 	private static void greedyCover(List<Formula> atoms, Map<Variable, Set<Atom>> variableUsages, RDBMSDataStore dataStore) {
+		Map<Atom, Integer> satisfiableVariablesMap = new HashMap<Atom, Integer>();
+
 		// We will only compute one variable per pass.
 		while (variableUsages.size() != 0) {
 			Variable variable = variableUsages.keySet().iterator().next();
@@ -117,6 +128,24 @@ public class OptimalCover {
 				double bestCost = -1;
 				Atom bestAtom = null;
 
+				// Before we can score an atom, we need to know what the maximum number of
+				// satisfiable variables across all the atoms adjacent to this variable.
+				int maxSatisfiableVariables = 1;
+				satisfiableVariablesMap.clear();
+				for (Atom potentialAtom : potentialAtoms) {
+					int satisfiableVariables = 0;
+					for (Term term : potentialAtom.getArguments()) {
+						if (term instanceof Variable && variableUsages.containsKey((Variable)term)) {
+							satisfiableVariables++;
+						}
+					}
+
+					satisfiableVariablesMap.put(potentialAtom, new Integer(satisfiableVariables));
+					if (satisfiableVariables > maxSatisfiableVariables) {
+						maxSatisfiableVariables = satisfiableVariables;
+					}
+				}
+
 				for (Atom potentialAtom : potentialAtoms) {
 					// All non-standard predicates were pulled out earlier.
 					StandardPredicate predicate = (StandardPredicate)potentialAtom.getPredicate();
@@ -124,6 +153,8 @@ public class OptimalCover {
 					if (predicate.isBlock()) {
 						cost /= BLOCK_ADVANTAGE;
 					}
+
+					cost *= Math.pow(JOIN_PENALTY, maxSatisfiableVariables - satisfiableVariablesMap.get(potentialAtom).intValue());
 
 					if (bestAtom == null || cost < bestCost) {
 						bestAtom = potentialAtom;
