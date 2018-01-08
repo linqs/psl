@@ -399,7 +399,9 @@ public class RDBMSDatabase implements Database {
 
 	@Override
 	public ResultList executeGroundingQuery(Formula formula) {
-		return executeQuery(OptimalCover.computeOptimalCover(formula, parentDataStore), false);
+		// TODO(eriq): Enable once OC is ready for prime time.
+		// return executeQuery(OptimalCover.computeOptimalCover(formula, parentDataStore), false);
+		return executeQuery(formula, false);
 	}
 
 	@Override

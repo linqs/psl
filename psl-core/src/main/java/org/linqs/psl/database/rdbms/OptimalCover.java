@@ -52,6 +52,12 @@ public class OptimalCover {
 	 */
 	public static final double JOIN_PENALTY = 2.0;
 
+	/**
+	 * Whether or not to always include the blocking predicates.
+	 * This should not be necessary for a proper, non-greedy cover.
+	 */
+	public static final boolean ALWAYS_INCLUDE_BLOCKS = true;
+
 	// Static only.
 	private OptimalCover() {}
 
@@ -78,7 +84,13 @@ public class OptimalCover {
 		filterBaseAtoms(formulaAtoms, usedAtoms);
 
 		Map<Variable, Set<Atom>> variableUsages = getVariableUsages(formulaAtoms, usedAtoms);
+
+		if (ALWAYS_INCLUDE_BLOCKS) {
+			includeBlocks(usedAtoms, variableUsages);
+		}
+
 		collectSingletonVariables(usedAtoms, variableUsages);
+
 		computeOptimalCover(usedAtoms, variableUsages, dataStore);
 
 		Formula optimal = null;
@@ -115,9 +127,30 @@ public class OptimalCover {
 	private static void greedyCover(List<Formula> atoms, Map<Variable, Set<Atom>> variableUsages, RDBMSDataStore dataStore) {
 		Map<Atom, Integer> satisfiableVariablesMap = new HashMap<Atom, Integer>();
 
+		// Collect all variables that use a blocking predicate (and have not been satisfied).
+		// We will examine these first.
+		Set<Variable> blockedVariables = new HashSet<Variable>();
+		/*
+		for (Map.Entry<Variable, Set<Atom>> entry : variableUsages.entrySet()) {
+			for (Atom atom : entry.getValue()) {
+				if (((StandardPredicate)atom.getPredicate()).isBlock()) {
+					blockedVariables.add(entry.getKey());
+					break;
+				}
+			}
+		}
+		*/
+
 		// We will only compute one variable per pass.
 		while (variableUsages.size() != 0) {
-			Variable variable = variableUsages.keySet().iterator().next();
+			Variable variable = null;
+			if (blockedVariables.size() != 0) {
+				variable = blockedVariables.iterator().next();
+				blockedVariables.remove(variable);
+			} else {
+				variable = variableUsages.keySet().iterator().next();
+			}
+
 			Set<Atom> potentialAtoms = variableUsages.get(variable);
 			Atom chosenAtom = null;
 
@@ -171,12 +204,46 @@ public class OptimalCover {
 			for (Term term : chosenAtom.getArguments()) {
 				if (term instanceof Variable) {
 					variableUsages.remove((Variable)term);
+					blockedVariables.remove((Variable)term);
 				}
 			}
 
 			for (Set<Atom> atomUsage : variableUsages.values()) {
 				atomUsage.remove(chosenAtom);
 			}
+		}
+	}
+
+	/**
+	 * Forcefully include a blocking predicates.
+	 * This should not be necessary for non-greedy optimal cover.
+	 * All blocks for a variable will be included.
+	 */
+	private static void includeBlocks(List<Formula> atoms, Map<Variable, Set<Atom>> variableUsages) {
+		Set<Variable> toRemove = new HashSet<Variable>();
+		Set<Atom> toAdd = new HashSet<Atom>();
+
+		for (Map.Entry<Variable, Set<Atom>> entry : variableUsages.entrySet()) {
+			for (Atom atom : entry.getValue()) {
+				if (!((StandardPredicate)atom.getPredicate()).isBlock()) {
+					continue;
+				}
+
+				toAdd.add(atom);
+				for (Term term : atom.getArguments()) {
+					if (term instanceof Variable) {
+						toRemove.add((Variable)term);
+					}
+				}
+
+				break;
+			}
+		}
+
+		atoms.addAll(toAdd);
+
+		for (Variable variable : toRemove) {
+			variableUsages.remove(variable);
 		}
 	}
 
