@@ -29,24 +29,39 @@ import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Implication;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
 import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.model.term.Variable;
+import org.linqs.psl.util.MathUtils;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
  * General tests for all classes that implement WeightLearningApplication.
  */
 public abstract class WeightLearningTest {
+	public static final String RULE_PRIOR = "prior";
+	public static final String RULE_NICE = "nice";
+	public static final String RULE_SYMMETRY = "symmetry";
+
 	protected Database weightLearningTrainDB;
 	protected Database weightLearningTruthDB;
 	protected TestModelFactory.ModelInformation info;
+
+	// Give all the rules a name to make it easier to check weight learning results.
+	protected Map<String, WeightedRule> ruleMap;
 
 	@Before
 	public void setup() {
@@ -90,6 +105,24 @@ public abstract class WeightLearningTest {
 
 		info = TestModelFactory.getModel(useNice);
 
+		// Put all the rules in a map for easier checking later and set all the rule weights to 1.0.
+		ruleMap = new HashMap<String, WeightedRule>();
+		for (Rule rawRule : info.model.getRules()) {
+			WeightedRule rule = (WeightedRule)rawRule;
+
+			if (MathUtils.equals(rule.getWeight(), 1.0)) {
+				ruleMap.put(RULE_PRIOR, rule);
+			} else if (MathUtils.equals(rule.getWeight(), 5.0)) {
+				ruleMap.put(RULE_NICE, rule);
+			} else if (MathUtils.equals(rule.getWeight(), 10.0)) {
+				ruleMap.put(RULE_SYMMETRY, rule);
+			} else {
+				throw new IllegalArgumentException("Unknown rule: " + rule);
+			}
+
+			rule.setWeight(1.0);
+		}
+
 		Set<StandardPredicate> allPredicates = new HashSet<StandardPredicate>(info.predicates.values());
 		Set<StandardPredicate> closedPredicates = new HashSet<StandardPredicate>(info.predicates.values());
 		closedPredicates.remove(info.predicates.get("Friends"));
@@ -107,6 +140,8 @@ public abstract class WeightLearningTest {
 		WeightLearningApplication weightLearner = getWLA();
 		weightLearner.learn();
 		weightLearner.close();
+
+		assertRank(RULE_NICE, RULE_SYMMETRY, RULE_PRIOR);
 	}
 
 	/**
@@ -132,5 +167,24 @@ public abstract class WeightLearningTest {
 		WeightLearningApplication weightLearner = getWLA();
 		weightLearner.learn();
 		weightLearner.close();
+	}
+
+	/**
+	 * Assert that the rules are in the same order as passed in.
+	 * The order should be ascending.
+	 */
+	protected void assertRank(String... rank) {
+		List<Rule> rules = new ArrayList<Rule>(info.model.getRules());
+		Collections.sort(rules, new Comparator<Rule>() {
+			@Override
+			public int compare(Rule a, Rule b) {
+				return MathUtils.compare(((WeightedRule)a).getWeight(), ((WeightedRule)b).getWeight());
+			}
+		});
+
+		assertEquals(rules.size(), rank.length);
+		for (int i = 0; i < rank.length; i++) {
+			assertEquals(ruleMap.get(rank[i]), rules.get(i));
+		}
 	}
 }

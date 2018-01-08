@@ -44,6 +44,25 @@ public final class MathUtils {
 		return Math.abs(a - b) <= EPSILON;
 	}
 
+	public static int compare(double a, double b) {
+		return compare(a, b, EPSILON);
+	}
+
+	/**
+	 * A comparison method with the Comparator integer return semantics.
+	 */
+	public static int compare(double a, double b, double epsilon) {
+		if (equals(a, b, epsilon)) {
+			return 0;
+		}
+
+		if (a < b) {
+			return -1;
+		}
+
+		return 1;
+	}
+
 	public static boolean isZero(double a) {
 		return equals(a, 0.0);
 	}

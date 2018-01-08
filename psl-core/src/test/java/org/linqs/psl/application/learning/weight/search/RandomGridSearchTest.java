@@ -24,7 +24,7 @@ public class RandomGridSearchTest extends WeightLearningTest {
 	@Override
 	protected WeightLearningApplication getWLA() {
 		// Narrow the search space for tests.
-		info.config.setProperty(RandomGridSearch.MAX_LOCATIONS_KEY, 50);
+		info.config.setProperty(RandomGridSearch.MAX_LOCATIONS_KEY, 100);
 
 		return new RandomGridSearch(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB, info.config);
 	}
