@@ -181,7 +181,7 @@ public class Formula2SQLTest {
 			return args;
 		}
 
-		public double getValue(ReadOnlyDatabase db, Constant... args) {
+		public synchronized double getValue(ReadOnlyDatabase db, Constant... args) {
 			callCount++;
 			return 1;
 		}
