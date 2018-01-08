@@ -98,13 +98,12 @@ public class Formula2SQLTest {
 		// put into the cache.
 		// Because these methods are supposed to be deterministic, we will not worry about
 		// slight over calls.
-		assertTrue(5 <= function.getCallCount() && function.getCallCount() <= 10);
+		assertTrue("Got " + function.getCallCount() + ", expected 5 <= x <= 10", 5 <= function.getCallCount() && function.getCallCount() <= 10);
 	}
 
 	@Test
 	/**
 	 * Ensure that ExternalFunctions work with three arguments.
-	 * TODO(eriq): This is a FLAKY test. External functions in general are flaky.
 	 */
 	public void testTernaryExternalFunction() {
 		TestModelFactory.ModelInformation info = TestModelFactory.getModel();
@@ -152,7 +151,7 @@ public class Formula2SQLTest {
 		// put into the cache.
 		// Because these methods are supposed to be deterministic, we will not worry about
 		// slight over calls.
-		assertTrue(20 <= function.getCallCount() && function.getCallCount() <= 40);
+		assertTrue("Got " + function.getCallCount() + ", expected 20 <= x <= 40", 20 <= function.getCallCount() && function.getCallCount() <= 40);
 	}
 
 	/**
