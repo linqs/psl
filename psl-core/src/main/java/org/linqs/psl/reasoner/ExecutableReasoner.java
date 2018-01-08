@@ -53,6 +53,18 @@ public abstract class ExecutableReasoner extends Reasoner {
 	public static final String EXECUTABLE_PATH_KEY = CONFIG_PREFIX + ".executablepath";
 
 	/**
+	 * Key for boolean property for whether to delete the input file to external the reasoner on close.
+	 */
+	public static final String CLEANUP_INPUT_KEY = CONFIG_PREFIX + ".cleanupinput";
+	public static final boolean CLEANUP_INPUT_DEFAULT = true;
+
+	/**
+	 * Key for boolean property for whether to delete the output file to external the reasoner on close.
+	 */
+	public static final String CLEANUP_OUTPUT_KEY = CONFIG_PREFIX + ".cleanupoutput";
+	public static final boolean CLEANUP_OUTPUT_DEFAULT = true;
+
+	/**
 	 * The file that PSL will write for the reasoner.
 	 */
 	protected String executableInputPath;
@@ -67,12 +79,17 @@ public abstract class ExecutableReasoner extends Reasoner {
 	 */
 	protected String executablePath;
 
+	protected boolean cleanupInput;
+	protected boolean cleanupOutput;
+
 	protected String[] args;
 
 	public ExecutableReasoner(ConfigBundle config) {
 		super(config);
 
 		this.executablePath = config.getString(EXECUTABLE_PATH_KEY, "");
+		this.cleanupInput = config.getBoolean(CLEANUP_INPUT_KEY, CLEANUP_INPUT_DEFAULT);
+		this.cleanupOutput = config.getBoolean(CLEANUP_OUTPUT_KEY, CLEANUP_OUTPUT_DEFAULT);
 	}
 
 	public ExecutableReasoner(ConfigBundle config, String executablePath,
@@ -84,6 +101,9 @@ public abstract class ExecutableReasoner extends Reasoner {
 		this.executableInputPath = executableInputPath;
 		this.executableOutputPath = executableOutputPath;
 		this.args = args;
+
+		this.cleanupInput = config.getBoolean(CLEANUP_INPUT_KEY, CLEANUP_INPUT_DEFAULT);
+		this.cleanupOutput = config.getBoolean(CLEANUP_OUTPUT_KEY, CLEANUP_OUTPUT_DEFAULT);
 	}
 
 	@Override
@@ -148,8 +168,13 @@ public abstract class ExecutableReasoner extends Reasoner {
 
 	@Override
 	public void close() {
-		(new File(executableInputPath)).delete();
-		(new File(executableOutputPath)).delete();
+		if (cleanupInput) {
+			(new File(executableInputPath)).delete();
+		}
+
+		if (cleanupOutput) {
+			(new File(executableOutputPath)).delete();
+		}
 	}
 
 	protected abstract void writeModel(BufferedWriter modelWriter, TermStore termStore) throws IOException;

@@ -28,7 +28,6 @@ import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
-import org.linqs.psl.model.atom.VariableAssignment;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.predicate.FunctionalPredicate;
 import org.linqs.psl.model.predicate.Predicate;
@@ -117,7 +116,12 @@ public class RDBMSDatabase implements Database {
 	 */
 	private final AtomCache cache;
 
-	/*
+	/**
+	 * A read-only view of this database for internal use only.
+	 */
+	private ReadOnlyDatabase readOnlyDatabase;
+
+	/**
 	 * Keeps track of the open / closed status of this database.
 	 */
 	private boolean closed;
@@ -153,6 +157,7 @@ public class RDBMSDatabase implements Database {
 		this.cache = new AtomCache(this);
 
 		this.closed = false;
+		this.readOnlyDatabase = new ReadOnlyDatabase(this);
 	}
 
 	@Override
@@ -393,34 +398,35 @@ public class RDBMSDatabase implements Database {
 	}
 
 	@Override
-	public ResultList executeQuery(DatabaseQuery query) {
-		Formula formula = query.getFormula();
-		VariableAssignment partialGrounding = query.getPartialGrounding();
-		Set<Variable> projectTo = new HashSet<Variable>(query.getProjectionSubset());
+	public ResultList executeGroundingQuery(Formula formula) {
+		return executeQuery(OptimalCover.computeOptimalCover(formula, parentDataStore), false);
+	}
 
+	@Override
+	public ResultList executeQuery(DatabaseQuery query) {
+		return executeQuery(query.getFormula(), query.getDistinct());
+	}
+
+	private ResultList executeQuery(Formula formula, boolean isDistinct) {
 		VariableTypeMap varTypes = formula.collectVariables(new VariableTypeMap());
-		if (projectTo.size() == 0) {
-			projectTo.addAll(varTypes.getVariables());
-			projectTo.removeAll(partialGrounding.getVariables());
-		}
+		Set<Variable> projectTo = new HashSet<Variable>(varTypes.getVariables());
 
 		// Construct query from formula
-		Formula2SQL sqler = new Formula2SQL(partialGrounding, projectTo, this, query.getDistinct());
+		Formula2SQL sqler = new Formula2SQL(projectTo, this, isDistinct);
 		String queryString = sqler.getSQL(formula);
 		Map<Variable, Integer> projectionMap = sqler.getProjectionMap();
 
-		return executeQuery(partialGrounding, projectionMap, varTypes, queryString);
+		return executeQuery(projectionMap, varTypes, queryString);
 	}
 
 	/**
 	 * A more general form for executeQuery().
-	 * @param partialGrounding any variables that are already tied to constants.
 	 * @param projectionMap a mapping of each variable we want returned to the
 	 *  order it appears in the select statement.
 	 * @param varTypes the types for each variable in the projection.
 	 * @param queryString the SQL query.
 	 */
-	public ResultList executeQuery(VariableAssignment partialGrounding, Map<Variable, Integer> projectionMap,
+	public ResultList executeQuery(Map<Variable, Integer> projectionMap,
 			VariableTypeMap varTypes, String queryString) {
 		if (closed) {
 			throw new IllegalStateException("Cannot perform query on database that was closed.");
@@ -434,21 +440,11 @@ public class RDBMSDatabase implements Database {
 			results.setVariable(projection.getKey(), projection.getValue().intValue());
 		}
 
-		// Figure out all the partial variables ahead of time.
-		// This will help us reduce memory usage when reading in the result set.
-		// Since there are potentially many results, little boosts help.
-		Constant[] orderedPartials = new Constant[projectionMap.size()];
 		int[] orderedIndexes = new int[projectionMap.size()];
 		ConstantType[] orderedTypes = new ConstantType[projectionMap.size()];
 		for (Map.Entry<Variable, Integer> entry : results.getVariableMap().entrySet()) {
 			Variable variable = entry.getKey();
 			int index = entry.getValue().intValue();
-
-			if (partialGrounding.hasVariable(variable)) {
-				orderedPartials[index] = partialGrounding.getVariable(variable);
-			} else {
-				orderedPartials[index] = null;
-			}
 
 			orderedIndexes[index] = projectionMap.get(variable);
 			orderedTypes[index] = varTypes.getType(variable);
@@ -460,14 +456,10 @@ public class RDBMSDatabase implements Database {
 			ResultSet resultSet = statement.executeQuery(queryString)
 		) {
 			while (resultSet.next()) {
-				Constant[] res = new Constant[orderedPartials.length];
+				Constant[] res = new Constant[projectionMap.size()];
 
-				for (int i = 0; i < orderedPartials.length; i++) {
-					if (orderedPartials[i] != null) {
-						res[i] = orderedPartials[i];
-					} else {
-						res[i] = extractConstantFromResult(resultSet, orderedIndexes[i], orderedTypes[i]);
-					}
+				for (int i = 0; i < res.length; i++) {
+					res[i] = extractConstantFromResult(resultSet, orderedIndexes[i], orderedTypes[i]);
 				}
 
 				results.addResult(res);
@@ -515,6 +507,7 @@ public class RDBMSDatabase implements Database {
 		}
 
 		parentDataStore.releasePartitions(this);
+		readOnlyDatabase = null;
 		closed = true;
 	}
 
@@ -731,7 +724,7 @@ public class RDBMSDatabase implements Database {
 			return result;
 		}
 
-		double value = predicate.computeValue(new ReadOnlyDatabase(this), arguments);
+		double value = predicate.computeValue(readOnlyDatabase, arguments);
 		return cache.instantiateObservedAtom(predicate, arguments, value);
 	}
 

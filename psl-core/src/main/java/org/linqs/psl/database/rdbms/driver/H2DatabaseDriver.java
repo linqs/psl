@@ -106,11 +106,6 @@ public class H2DatabaseDriver implements DatabaseDriver {
 	}
 
 	@Override
-	public boolean supportsExternalFunctions() {
-		return true;
-	}
-
-	@Override
 	public boolean supportsBulkCopy() {
 		return false;
 	}

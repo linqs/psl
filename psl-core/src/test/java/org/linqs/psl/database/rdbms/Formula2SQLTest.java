@@ -90,11 +90,15 @@ public class Formula2SQLTest {
 		mpe.close();
 		inferDB.close();
 
-		// There are 5 people, so we expect the function to be called on the forward and reverse crossproducts.
-		// (5 * 5) * 2
-		// TODO(eriq): It looks like there are some inefficiencies in the grounding process that cause
-		// the function to get called more than the minimum number of time.
-		assertTrue(function.getCallCount() >= 50);
+		// There are 5 people, and the rule chooses 2.
+		// So, we expect 20 ground rules.
+		// But the DB caches the atoms, so we only expect one call per person.
+		// However because of the parallel nature of ground rule instantiation,
+		// it is possible for a function to be called before the previous call is
+		// put into the cache.
+		// Because these methods are supposed to be deterministic, we will not worry about
+		// slight over calls.
+		assertTrue(5 <= function.getCallCount() && function.getCallCount() <= 10);
 	}
 
 	@Test
@@ -141,8 +145,14 @@ public class Formula2SQLTest {
 		mpe.close();
 		inferDB.close();
 
-		// TODO(eriq): Experimentally, this is 40. Is this correct?
-		assertEquals(40, function.getCallCount());
+		// External functions are only called when instantiating ground rules.
+		// So, we should only get one call for each ground rule.
+		// However because of the parallel nature of ground rule instantiation,
+		// it is possible for a function to be called before the previous call is
+		// put into the cache.
+		// Because these methods are supposed to be deterministic, we will not worry about
+		// slight over calls.
+		assertTrue(20 <= function.getCallCount() && function.getCallCount() <= 40);
 	}
 
 	/**

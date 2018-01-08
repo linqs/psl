@@ -17,11 +17,12 @@
  */
 package org.linqs.psl.database.rdbms;
 
-import org.linqs.psl.model.atom.Atom;
-import org.linqs.psl.model.atom.VariableAssignment;
 import org.linqs.psl.database.Partition;
+import org.linqs.psl.model.atom.Atom;
+import org.linqs.psl.model.formula.Conjunction;
+import org.linqs.psl.model.formula.Disjunction;
 import org.linqs.psl.model.formula.Formula;
-import org.linqs.psl.model.formula.traversal.AbstractFormulaTraverser;
+import org.linqs.psl.model.formula.Negation;
 import org.linqs.psl.model.predicate.ExternalFunctionalPredicate;
 import org.linqs.psl.model.predicate.FunctionalPredicate;
 import org.linqs.psl.model.predicate.SpecialPredicate;
@@ -45,11 +46,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class Formula2SQL extends AbstractFormulaTraverser {
+public class Formula2SQL {
 	private static final String TABLE_ALIAS_PREFIX = "T";
 
 	private final Set<Variable> projection;
-	private final VariableAssignment partialGrounding;
 	private final RDBMSDatabase database;
 
 	/**
@@ -80,13 +80,12 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 	 * Convert a formula to a query that will fetch all possible combinations of constants used in that
 	 * formual (aka grounding).
 	 * This variant will enforce unqiue results (DISTINCT).
-	 * @param partialGrounding Populate if some variables are alreay assigned to specific constants.
 	 * @param projection the collection of variables (columns) to return (the variable's name will be used
 	 * as the column alias). If not set, all columns (*) will be retutned.
 	 * @param database the database to query over. The read and write partitions will be picked up from here.
 	 */
-	public Formula2SQL(VariableAssignment partialGrounding, Set<Variable> projection, RDBMSDatabase database) {
-		this(partialGrounding, projection, database, true);
+	public Formula2SQL(Set<Variable> projection, RDBMSDatabase database) {
+		this(projection, database, true);
 	}
 
 	/**
@@ -94,9 +93,8 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 	 * @param isDistinct true if you want to enforce unique results (DISTINCT), false otherwise.
 	 *  Warning: this can be a costly operation.
 	 */
-	public Formula2SQL(VariableAssignment partialGrounding, Set<Variable> projection, RDBMSDatabase database,
-			boolean isDistinct) {
-		this(partialGrounding, projection, database, isDistinct, null);
+	public Formula2SQL(Set<Variable> projection, RDBMSDatabase database, boolean isDistinct) {
+		this(projection, database, isDistinct, null);
 	}
 
 	/**
@@ -106,9 +104,7 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 	 *  will be exclusivley drawn from Partition.LAZY_PARTITION_ID.
 	 *  We will do a DIRECT REFERENCE comparison against atoms in the formual to check for this specific one.
 	 */
-	public Formula2SQL(VariableAssignment partialGrounding, Set<Variable> projection, RDBMSDatabase database,
-			boolean isDistinct, Atom lazyTarget) {
-		this.partialGrounding = partialGrounding;
+	public Formula2SQL(Set<Variable> projection, RDBMSDatabase database, boolean isDistinct, Atom lazyTarget) {
 		this.projection = projection;
 		this.database = database;
 		this.lazyTarget = lazyTarget;
@@ -150,21 +146,18 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 		return Collections.unmodifiableMap(tableAliases);
 	}
 
-	@Override
-	public void afterConjunction(int noFormulas) {
-		// Supported
+	public SelectQuery getQuery(Formula formula) {
+		traverse(formula);
+		// Visit all the functional atoms at the end.
+		for (Atom atom : functionalAtoms) {
+			visitFunctionalAtom(atom);
+		}
+
+		return query.validate();
 	}
 
-	@Override
-	public void afterDisjunction(int noFormulas) {
-		throw new AssertionError(
-				"Disjunction is currently not supported by database");
-	}
-
-	@Override
-	public void afterNegation() {
-		throw new AssertionError(
-				"Negation is currently not supported by database");
+	public String getSQL(Formula formula) {
+		return getQuery(formula).toString();
 	}
 
 	private void visitFunctionalAtom(Atom atom) {
@@ -173,14 +166,7 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 		Object[] convert = convertArguments(atom.getArguments());
 
 		if (atom.getPredicate() instanceof ExternalFunctionalPredicate) {
-			ExternalFunctionalPredicate predicate = (ExternalFunctionalPredicate)atom.getPredicate();
-			FunctionCall fun = new FunctionCall(ExternalFunctions.ALIAS_FUNCTION_NAME);
-
-			fun.addCustomParams(RDBMSDataStore.getDatabaseID(database));
-			fun.addCustomParams(ExternalFunctions.getExternalFunctionID(predicate.getExternalFunction()));
-			fun.addCustomParams(convert);
-
-			query.addCondition(BinaryCondition.greaterThan(fun, 0.0, false));
+			// Skip. All external functions are called when ground rules are instantiated.
 		} else if (atom.getPredicate() instanceof SpecialPredicate) {
 			SpecialPredicate predicate = (SpecialPredicate)atom.getPredicate();
 
@@ -207,13 +193,9 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 			// If the variable is not in the argument map, just query for that variable.
 			// If it is in the mapping, then pull out the mapped value and convert that.
 			if (arg instanceof Variable) {
-				if (partialGrounding.hasVariable((Variable)arg)) {
-					arg = partialGrounding.getVariable((Variable)arg);
-				} else {
-					assert(joins.containsKey((Variable)arg));
-					convert[i] = new CustomSql(joins.get((Variable)arg));
-					continue;
-				}
+				assert(joins.containsKey((Variable)arg));
+				convert[i] = new CustomSql(joins.get((Variable)arg));
+				continue;
 			}
 
 			if (arg instanceof Attribute) {
@@ -230,8 +212,7 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 		return convert;
 	}
 
-	@Override
-	public void visitAtom(Atom atom) {
+	private void visitAtom(Atom atom) {
 		if (atom.getPredicate() instanceof FunctionalPredicate) {
 			functionalAtoms.add(atom);
 			return;
@@ -256,21 +237,17 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 
 			if (arg instanceof Variable) {
 				Variable var = (Variable)arg;
-				if (partialGrounding.hasVariable(var)) {
-					arg = partialGrounding.getVariable(var);
+				if (joins.containsKey(var)) {
+					query.addCondition(BinaryCondition.equalTo(
+							new CustomSql(columnReference),
+							new CustomSql(joins.get(var))));
 				} else {
-					if (joins.containsKey(var)) {
-						query.addCondition(BinaryCondition.equalTo(
-								new CustomSql(columnReference),
-								new CustomSql(joins.get(var))));
-					} else {
-						if (projection.contains(var)) {
-							query.addAliasedColumn(new CustomSql(columnReference), var.getName());
-							projectionMap.put(var, projectionMap.size());
-						}
-
-						joins.put(var, columnReference);
+					if (projection.contains(var)) {
+						query.addAliasedColumn(new CustomSql(columnReference), var.getName());
+						projectionMap.put(var, projectionMap.size());
 					}
+
+					joins.put(var, columnReference);
 				}
 			}
 
@@ -306,17 +283,24 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 		tableCounter++;
 	}
 
-	public SelectQuery getQuery(Formula formula) {
-		AbstractFormulaTraverser.traverse(formula, this);
-		for (Atom atom : functionalAtoms) {
-			visitFunctionalAtom(atom);
+	/**
+	 * Recursively traverse a formual to build a query from it.
+	 */
+	private void traverse(Formula formula) {
+		if (formula instanceof Conjunction) {
+			Conjunction conjunction = (Conjunction)formula;
+			for (int i=0; i < conjunction.length(); i++) {
+				traverse(conjunction.get(i));
+			}
+		} else if (formula instanceof Atom) {
+			visitAtom((Atom)formula);
+		} else if (formula instanceof Negation) {
+			throw new IllegalArgumentException("Negations in formula are not supported in database queries.");
+		} else if (formula instanceof Disjunction) {
+			throw new IllegalArgumentException("Disjunctions in formula are not supported in database queries.");
+		} else {
+			throw new IllegalArgumentException("Unsupported Formula: " + formula.getClass().getName());
 		}
-
-		return query.validate();
-	}
-
-	public String getSQL(Formula formula) {
-		return getQuery(formula).toString();
 	}
 
 	private String escapeSingleQuotes(String s) {

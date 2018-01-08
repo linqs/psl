@@ -90,11 +90,6 @@ public class PostgreSQLDriver implements DatabaseDriver {
 	}
 
 	@Override
-	public boolean supportsExternalFunctions() {
-		return false;
-	}
-
-	@Override
 	public boolean supportsBulkCopy() {
 		return true;
 	}

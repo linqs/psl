@@ -128,20 +128,6 @@ public class RDBMSDataStore implements DataStore {
 		} catch (SQLException ex) {
 			throw new RuntimeException("Unable to attempt to deserialize predicates.", ex);
 		}
-
-		// Register the DataStore class for external functions
-		if (dbDriver.supportsExternalFunctions()) {
-			try (Connection connection = getConnection()) {
-				ExternalFunctions.registerFunctionAlias(connection);
-			} catch (SQLException ex) {
-				throw new RuntimeException("Unable to register external functions.", ex);
-			}
-		}
-	}
-
-	@Override
-	public boolean supportsExternalFunctions() {
-		return dbDriver.supportsExternalFunctions();
 	}
 
 	@Override
@@ -344,6 +330,14 @@ public class RDBMSDataStore implements DataStore {
 	@Override
 	public Set<Partition> getPartitions() {
 		return metadata.getAllPartitions();
+	}
+
+	public int getPredicateRowCount(StandardPredicate predicate) {
+		try (Connection connection = getConnection()) {
+			return predicates.get(predicate).getCount(connection);
+		} catch (SQLException ex) {
+			throw new RuntimeException("Failed to close connection for count.", ex);
+		}
 	}
 
 	public DatabaseDriver getDriver() {

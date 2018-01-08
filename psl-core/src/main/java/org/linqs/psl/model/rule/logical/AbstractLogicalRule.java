@@ -25,7 +25,6 @@ import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
-import org.linqs.psl.model.atom.VariableAssignment;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.formula.FormulaAnalysis;
 import org.linqs.psl.model.formula.Negation;
@@ -122,7 +121,7 @@ public abstract class AbstractLogicalRule implements Rule {
 
 	@Override
 	public int groundAll(AtomManager atomManager, GroundRuleStore grs) {
-		ResultList res = atomManager.executeQuery(new DatabaseQuery(negatedDNF.getQueryFormula(), false));
+		ResultList res = atomManager.executeGroundingQuery(negatedDNF.getQueryFormula());
 		return groundAll(res, atomManager, grs);
 	}
 

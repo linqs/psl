@@ -20,7 +20,6 @@ package org.linqs.psl.model.formula;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseQuery;
 import org.linqs.psl.model.atom.Atom;
-import org.linqs.psl.model.atom.VariableAssignment;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;

@@ -64,7 +64,7 @@ public abstract class DataStoreContractTest {
 	private static StandardPredicate p2;
 	private static StandardPredicate p3;
 	private static StandardPredicate p4;
-	private static FunctionalPredicate fp1;
+	private static FunctionalPredicate functionalPredicate1;
 
 	private DataStore datastore;
 
@@ -88,7 +88,7 @@ public abstract class DataStoreContractTest {
 		p3 = predicateFactory.createStandardPredicate("P3", ConstantType.Double, ConstantType.Double);
 		p4 = predicateFactory.createStandardPredicate("P4", ConstantType.UniqueIntID, ConstantType.Double);
 
-		fp1 = predicateFactory.createExternalFunctionalPredicate("FP1", new ExternalFunction() {
+		functionalPredicate1 = predicateFactory.createExternalFunctionalPredicate("FP1", new ExternalFunction() {
 			@Override
 			public double getValue(ReadOnlyDatabase db, Constant... args) {
 				double a = ((DoubleAttribute) args[0]).getValue();
@@ -362,13 +362,10 @@ public abstract class DataStoreContractTest {
 		assertTrue(registeredPredicates.contains(p2));
 	}
 
+	// Functional predicates should be ignored at the database level.
 	@Test
 	public void testExternalFunctionalPredicate() {
 		if (datastore == null) {
-			return;
-		}
-
-		if (!datastore.supportsExternalFunctions()) {
 			return;
 		}
 
@@ -381,16 +378,14 @@ public abstract class DataStoreContractTest {
 
 		Variable X = new Variable("X");
 		Variable Y = new Variable("Y");
-		Formula f = new Conjunction(new QueryAtom(p3, X, Y), new QueryAtom(fp1, X, Y));
+		Formula f = new Conjunction(new QueryAtom(p3, X, Y), new QueryAtom(functionalPredicate1, X, Y));
 		ResultList results = db.executeQuery(new DatabaseQuery(f));
-		assertEquals(1, results.size());
-		assertEquals(0.5, ((DoubleAttribute) results.get(0, X)).getValue(), 0.0);
-		assertEquals(1.0, ((DoubleAttribute) results.get(0, Y)).getValue(), 0.0);
+		assertEquals(2, results.size());
 
-		GroundAtom atom = db.getAtom(fp1, new DoubleAttribute(0.5), new DoubleAttribute(1.0));
+		GroundAtom atom = db.getAtom(functionalPredicate1, new DoubleAttribute(0.5), new DoubleAttribute(1.0));
 		assertEquals(0.75, atom.getValue(), 0.0);
 
-		atom = db.getAtom(fp1, new DoubleAttribute(0.0), new DoubleAttribute(0.0));
+		atom = db.getAtom(functionalPredicate1, new DoubleAttribute(0.0), new DoubleAttribute(0.0));
 		assertEquals(0.0, atom.getValue(), 0.0);
 	}
 
@@ -494,101 +489,6 @@ public abstract class DataStoreContractTest {
 		assertEquals(1, results.size());
 		assertEquals(a, results.get(0)[0]);
 		assertEquals(b, results.get(0)[1]);
-
-		// Tests the same query using the partial grounding to specify constants
-		formula = new Conjunction(new QueryAtom(p1, Y, X),
-				new QueryAtom(p4, X, Z));
-		query = new DatabaseQuery(formula);
-		query.getPartialGrounding().assign(Z, new DoubleAttribute(4.0));
-		results = db.executeQuery(query);
-		assertEquals(1, results.size());
-		assertEquals(a, results.get(0)[0]);
-		assertEquals(b, results.get(0)[1]);
-
-		// Tests a multi-atom query with a projection set
-		formula = new Conjunction(new QueryAtom(p1, Y, X),
-				new QueryAtom(p4, X, Z));
-		query = new DatabaseQuery(formula);
-		query.addToProjection(Y);
-		query.addToProjection(Z);
-		results = db.executeQuery(query);
-		assertEquals(2, results.size());
-		grounding = results.get(0);
-		if (grounding[0].equals(a)) {
-			assertEquals(new DoubleAttribute(4.0), grounding[1]);
-			grounding = results.get(1);
-			assertEquals(b, grounding[0]);
-			assertEquals(new DoubleAttribute(-0.1), grounding[1]);
-		}
-		else if (grounding[0].equals(b)){
-			assertEquals(new DoubleAttribute(-0.1), grounding[1]);
-			grounding = results.get(1);
-			assertEquals(a, grounding[0]);
-			assertEquals(new DoubleAttribute(4.0), grounding[1]);
-		}
-		else
-			assertTrue(false);
-
-		// Tests a query with a projection set that collapses multiple groundings to one.
-		formula = new QueryAtom(p4, X, Z);
-		query = new DatabaseQuery(formula);
-		query.addToProjection(Z);
-		results = db.executeQuery(query);
-		assertEquals(2, results.size());
-		grounding = results.get(0);
-		if (grounding[0].equals(new DoubleAttribute(4.0))) {
-			grounding = results.get(1);
-			assertEquals(new DoubleAttribute(-0.1), grounding[0]);
-		}
-		else if (grounding[0].equals(new DoubleAttribute(-0.1))) {
-			grounding = results.get(1);
-			assertEquals(new DoubleAttribute(4.0), grounding[0]);
-		}
-		else
-			assertTrue(false);
-	}
-
-	@Test
-	public void testExecuteQueryIllegalProjectionVariable() {
-		if (datastore == null) {
-			return;
-		}
-
-		Inserter inserter;
-		Database db;
-		DatabaseQuery query;
-		Formula formula;
-
-		UniqueIntID a = new UniqueIntID(0);
-		UniqueIntID b = new UniqueIntID(1);
-		UniqueIntID c = new UniqueIntID(2);
-		UniqueIntID d = new UniqueIntID(3);
-		UniqueIntID e = new UniqueIntID(4);
-		UniqueIntID f = new UniqueIntID(5);
-
-		Variable X = new Variable("X");
-		Variable Y = new Variable("Y");
-		Variable Z = new Variable("Z");
-
-		datastore.registerPredicate(p1);
-
-		inserter = datastore.getInserter(p1, datastore.getPartition("0"));
-		inserter.insert(a, b);
-		inserter.insert(c, d);
-		inserter.insert(e, f);
-
-		db = datastore.getDatabase(datastore.getPartition("0"));
-
-		formula = new QueryAtom(p1, X, Y);
-		query = new DatabaseQuery(formula);
-		query.addToProjection(X);
-
-		try {
-			query.addToProjection(Z);
-			fail("IllegalArgumentException not thrown as expected.");
-		} catch (IllegalArgumentException ex) {
-			// Expected
-		}
 	}
 
 	@Test

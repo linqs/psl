@@ -59,13 +59,6 @@ public interface DatabaseDriver {
 			PredicateInfo predicateInfo, Partition partition);
 
 	/**
-	 * Returns whether the underline database supports external java functions.
-	 * Distinguish from H2 Java External Function Support, which is very special.
-	 * @return true if support H2 in memory java method, false if not support
-	 */
-	public boolean supportsExternalFunctions();
-
-	/**
 	 * Get the type name for each argument type.
 	 */
 	public String getTypeName(ConstantType type);

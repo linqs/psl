@@ -25,6 +25,8 @@ import org.linqs.psl.model.term.ConstantType;
  * since the underlying storage type is not known.
  */
 public class StandardPredicate extends Predicate {
+	private boolean isBlock;
+
 	/**
 	 * Sole constructor.
 	 *
@@ -34,6 +36,7 @@ public class StandardPredicate extends Predicate {
 	 */
 	public StandardPredicate(String name, ConstantType[] types) {
 		super(name, types);
+		isBlock = false;
 
 		for (ConstantType type : types) {
 			if (type == ConstantType.DeferredFunctionalUniqueID) {
@@ -42,5 +45,13 @@ public class StandardPredicate extends Predicate {
 						" (and should only be used in rare cases.");
 			}
 		}
+	}
+
+	public void setBlock(boolean isBlock) {
+		this.isBlock = isBlock;
+	}
+
+	public boolean isBlock() {
+		return isBlock;
 	}
 }
