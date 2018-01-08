@@ -64,7 +64,7 @@ public abstract class DataStoreContractTest {
 	private static StandardPredicate p2;
 	private static StandardPredicate p3;
 	private static StandardPredicate p4;
-	private static FunctionalPredicate fp1;
+	private static FunctionalPredicate functionalPredicate1;
 
 	private DataStore datastore;
 
@@ -88,7 +88,7 @@ public abstract class DataStoreContractTest {
 		p3 = predicateFactory.createStandardPredicate("P3", ConstantType.Double, ConstantType.Double);
 		p4 = predicateFactory.createStandardPredicate("P4", ConstantType.UniqueIntID, ConstantType.Double);
 
-		fp1 = predicateFactory.createExternalFunctionalPredicate("FP1", new ExternalFunction() {
+		functionalPredicate1 = predicateFactory.createExternalFunctionalPredicate("FP1", new ExternalFunction() {
 			@Override
 			public double getValue(ReadOnlyDatabase db, Constant... args) {
 				double a = ((DoubleAttribute) args[0]).getValue();
@@ -362,13 +362,10 @@ public abstract class DataStoreContractTest {
 		assertTrue(registeredPredicates.contains(p2));
 	}
 
+	// Functional predicates should be ignored at the database level.
 	@Test
 	public void testExternalFunctionalPredicate() {
 		if (datastore == null) {
-			return;
-		}
-
-		if (!datastore.supportsExternalFunctions()) {
 			return;
 		}
 
@@ -381,16 +378,14 @@ public abstract class DataStoreContractTest {
 
 		Variable X = new Variable("X");
 		Variable Y = new Variable("Y");
-		Formula f = new Conjunction(new QueryAtom(p3, X, Y), new QueryAtom(fp1, X, Y));
+		Formula f = new Conjunction(new QueryAtom(p3, X, Y), new QueryAtom(functionalPredicate1, X, Y));
 		ResultList results = db.executeQuery(new DatabaseQuery(f));
-		assertEquals(1, results.size());
-		assertEquals(0.5, ((DoubleAttribute) results.get(0, X)).getValue(), 0.0);
-		assertEquals(1.0, ((DoubleAttribute) results.get(0, Y)).getValue(), 0.0);
+		assertEquals(2, results.size());
 
-		GroundAtom atom = db.getAtom(fp1, new DoubleAttribute(0.5), new DoubleAttribute(1.0));
+		GroundAtom atom = db.getAtom(functionalPredicate1, new DoubleAttribute(0.5), new DoubleAttribute(1.0));
 		assertEquals(0.75, atom.getValue(), 0.0);
 
-		atom = db.getAtom(fp1, new DoubleAttribute(0.0), new DoubleAttribute(0.0));
+		atom = db.getAtom(functionalPredicate1, new DoubleAttribute(0.0), new DoubleAttribute(0.0));
 		assertEquals(0.0, atom.getValue(), 0.0);
 	}
 

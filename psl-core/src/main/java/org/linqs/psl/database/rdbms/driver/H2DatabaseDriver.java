@@ -104,11 +104,6 @@ public class H2DatabaseDriver implements DatabaseDriver {
 	}
 
 	@Override
-	public boolean supportsExternalFunctions() {
-		return true;
-	}
-
-	@Override
 	public String getTypeName(ConstantType type) {
 		switch (type) {
 			case Double:

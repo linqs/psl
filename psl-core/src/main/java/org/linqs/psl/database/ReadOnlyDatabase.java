@@ -30,7 +30,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class ReadOnlyDatabase {
-
 	// The database this class wraps around
 	private final Database db;
 

@@ -118,20 +118,6 @@ public class RDBMSDataStore implements DataStore {
 		} catch (SQLException ex) {
 			throw new RuntimeException("Unable to attempt to deserialize predicates.", ex);
 		}
-
-		// Register the DataStore class for external functions
-		if (dbDriver.supportsExternalFunctions()) {
-			try (Connection connection = getConnection()) {
-				ExternalFunctions.registerFunctionAlias(connection);
-			} catch (SQLException ex) {
-				throw new RuntimeException("Unable to register external functions.", ex);
-			}
-		}
-	}
-
-	@Override
-	public boolean supportsExternalFunctions() {
-		return dbDriver.supportsExternalFunctions();
 	}
 
 	@Override

@@ -21,6 +21,8 @@ import org.linqs.psl.database.DatabaseQuery;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Formula;
+import org.linqs.psl.model.predicate.ExternalFunctionalPredicate;
+import org.linqs.psl.model.predicate.SpecialPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
@@ -39,6 +41,7 @@ public class OptimalCover {
 	private static final Logger log = LoggerFactory.getLogger(OptimalCover.class);
 
 	// TODO(eriq): Config (global?)
+
 	/**
 	 * The cost for a block is divided by this.
 	 */
@@ -67,7 +70,7 @@ public class OptimalCover {
 		Set<Atom> formulaAtoms = baseFormula.getAtoms(new HashSet<Atom>());
 		List<Formula> usedAtoms = new ArrayList<Formula>();
 
-		passthroughNonStandardPredicates(formulaAtoms, usedAtoms);
+		filterBaseAtoms(formulaAtoms, usedAtoms);
 
 		Map<Variable, Set<Atom>> variableUsages = getVariableUsages(formulaAtoms, usedAtoms);
 		collectSingletonVariables(usedAtoms, variableUsages);
@@ -226,19 +229,25 @@ public class OptimalCover {
 	}
 
 	/**
-	 * Pull functional and special predicates out of the formula so we are only dealing with
-	 * standard predicates.
+	 * Filter the initial set of atoms.
+	 * Remove external functional prediates and pass through special predicates.
 	 */
-	private static void passthroughNonStandardPredicates(Set<Atom> atoms, List<Formula> usedAtoms) {
-		List<Atom> nonStandardAtoms = new ArrayList<Atom>();
+	private static void filterBaseAtoms(Set<Atom> atoms, List<Formula> usedAtoms) {
+		List<Atom> removeAtoms = new ArrayList<Atom>();
 
 		for (Atom atom : atoms) {
-			if (!(atom.getPredicate() instanceof StandardPredicate)) {
-				nonStandardAtoms.add(atom);
+			if (atom.getPredicate() instanceof ExternalFunctionalPredicate) {
+				// Skip. These are handled at instantiation time.
+				removeAtoms.add(atom);
+			} else if (atom.getPredicate() instanceof SpecialPredicate) {
+				// Passthrough.
+				removeAtoms.add(atom);
+				usedAtoms.add(atom);
+			} else if (!(atom.getPredicate() instanceof StandardPredicate)) {
+				throw new IllegalStateException("Unknown predicate type: " + atom.getPredicate().getClass().getName());
 			}
 		}
 
-		atoms.removeAll(nonStandardAtoms);
-		usedAtoms.addAll(nonStandardAtoms);
+		atoms.removeAll(removeAtoms);
 	}
 }

@@ -166,14 +166,7 @@ public class Formula2SQL {
 		Object[] convert = convertArguments(atom.getArguments());
 
 		if (atom.getPredicate() instanceof ExternalFunctionalPredicate) {
-			ExternalFunctionalPredicate predicate = (ExternalFunctionalPredicate)atom.getPredicate();
-			FunctionCall fun = new FunctionCall(ExternalFunctions.ALIAS_FUNCTION_NAME);
-
-			fun.addCustomParams(RDBMSDataStore.getDatabaseID(database));
-			fun.addCustomParams(ExternalFunctions.getExternalFunctionID(predicate.getExternalFunction()));
-			fun.addCustomParams(convert);
-
-			query.addCondition(BinaryCondition.greaterThan(fun, 0.0, false));
+			// Skip. All external functions are called when ground rules are instantiated.
 		} else if (atom.getPredicate() instanceof SpecialPredicate) {
 			SpecialPredicate predicate = (SpecialPredicate)atom.getPredicate();
 

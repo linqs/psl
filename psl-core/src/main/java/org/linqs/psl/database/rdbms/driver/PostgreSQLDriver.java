@@ -85,11 +85,6 @@ public class PostgreSQLDriver implements DatabaseDriver {
 	}
 
 	@Override
-	public boolean supportsExternalFunctions() {
-		return false;
-	}
-
-	@Override
 	public String getTypeName(ConstantType type) {
 		switch (type) {
 			case Double:
