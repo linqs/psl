@@ -25,7 +25,6 @@ import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.function.AtomFunctionVariable;
 import org.linqs.psl.reasoner.function.ConstantNumber;
 import org.linqs.psl.reasoner.function.ConstraintTerm;
-import org.linqs.psl.reasoner.function.FunctionSingleton;
 import org.linqs.psl.reasoner.function.FunctionSum;
 import org.linqs.psl.reasoner.function.FunctionSummand;
 import org.linqs.psl.reasoner.function.FunctionTerm;
@@ -168,7 +167,7 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 
 		for (int i = 0; i < sum.size(); i++) {
 			FunctionSummand summand = sum.get(i);
-			FunctionSingleton singleton = summand.getTerm();
+			FunctionTerm singleton = summand.getTerm();
 
 			if (singleton instanceof AtomFunctionVariable && !singleton.isConstant()) {
 				LocalVariable variable = termStore.createLocalVariable((AtomFunctionVariable)singleton);

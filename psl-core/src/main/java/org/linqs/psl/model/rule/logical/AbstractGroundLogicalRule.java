@@ -55,7 +55,7 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
 		hcb.append(rule);
 
 		// Construct function definition.
-		function= new FunctionSum();
+		function = new FunctionSum();
 
 		for (int i = 0; i < posLiterals.size(); i++) {
 			function.add(new FunctionSummand(1.0, posLiterals.get(i).getVariable()));
