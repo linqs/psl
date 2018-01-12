@@ -52,6 +52,7 @@ public class OptimalCover {
 	 */
 	public static final double JOIN_PENALTY = 2.0;
 
+	// TODO(eriq): May not need if we decide on different strats for full/partial/no blocking.
 	/**
 	 * Whether or not to always include the blocking predicates.
 	 * This should not be necessary for a proper, non-greedy cover.
@@ -85,13 +86,12 @@ public class OptimalCover {
 
 		Map<Variable, Set<Atom>> variableUsages = getVariableUsages(formulaAtoms, usedAtoms);
 
+		boolean foundBlock = false;
 		if (ALWAYS_INCLUDE_BLOCKS) {
-			includeBlocks(usedAtoms, variableUsages);
+			foundBlock = includeBlocks(usedAtoms, variableUsages);
 		}
 
-		collectSingletonVariables(usedAtoms, variableUsages);
-
-		computeOptimalCover(usedAtoms, variableUsages, dataStore);
+		computeOptimalCover(usedAtoms, variableUsages, foundBlock, dataStore);
 
 		Formula optimal = null;
 		if (usedAtoms.size() == 1) {
@@ -107,13 +107,157 @@ public class OptimalCover {
 	/**
 	 * Compute the optimal cover for any remaining variables.
 	 */
-	private static void computeOptimalCover(List<Formula> atoms, Map<Variable, Set<Atom>> variableUsages, RDBMSDataStore dataStore) {
+	private static void computeOptimalCover(List<Formula> atoms, Map<Variable, Set<Atom>> variableUsages, boolean foundBlock, RDBMSDataStore dataStore) {
+		// Full blocking - all variables have already been satisfied.
 		if (variableUsages.size() == 0) {
 			return;
 		}
 
+		// Partial blocking.
+		if (foundBlock) {
+			partialBlockingCover(atoms, variableUsages, dataStore);
+		} else {
+			// No blocking.
+			noBlockingCover(atoms, variableUsages, dataStore);
+		}
+
+		// collectSingletonVariables(atoms, variableUsages);
+
 		// TODO(eriq): For now, we will just compute the greedy cover.
-		greedyCover(atoms, variableUsages, dataStore);
+		// greedyCover(atoms, variableUsages, dataStore);
+	}
+
+	private static void partialBlockingCover(List<Formula> usedAtoms, Map<Variable, Set<Atom>> variableUsages, RDBMSDataStore dataStore) {
+		// First try to grow the cover by including atoms that overlap with the cover.
+		Set<Variable> coveredVariables = new HashSet<Variable>();
+		for (Formula atom : usedAtoms) {
+			for (Term term : ((Atom)atom).getArguments()) {
+				if (term instanceof Variable) {
+					coveredVariables.add((Variable)term);
+				}
+			}
+		}
+
+		// Handle one variable each pass.
+		boolean done = false;
+		while (!done) {
+			done = true;
+			Variable variable = variableUsages.keySet().iterator().next();
+
+			// TODO(eriq): There is probably more to computing the best overlap. Like how many variables overlap.
+			Atom bestAtom = null;
+			int bestCount = -1;
+
+			for (Atom atom : variableUsages.get(variable)) {
+				for (Term term : atom.getArguments()) {
+					if (term instanceof Variable) {
+						if (coveredVariables.contains((Variable)term)) {
+							StandardPredicate predicate = (StandardPredicate)atom.getPredicate();
+							int count = dataStore.getPredicateRowCount(predicate);
+
+							if (bestAtom == null || count < bestCount) {
+								bestAtom = atom;
+								bestCount = count;
+								break;
+							}
+						}
+					}
+				}
+			}
+
+			if (bestAtom != null) {
+				usedAtoms.add(bestAtom);
+				for (Term term : bestAtom.getArguments()) {
+					if (term instanceof Variable) {
+						coveredVariables.add((Variable)term);
+						variableUsages.remove((Variable)term);
+					}
+				}
+			}
+		}
+
+		// If there are still atoms left, then just add by count.
+		// TODO(eriq): This step needs work, probably also needs its own method (addByScore?).
+		while (variableUsages.size() > 0) {
+			Variable variable = variableUsages.keySet().iterator().next();
+
+			Atom bestAtom = null;
+			int bestCount = -1;
+
+			for (Atom atom : variableUsages.get(variable)) {
+				for (Term term : atom.getArguments()) {
+					if (term instanceof Variable) {
+						StandardPredicate predicate = (StandardPredicate)atom.getPredicate();
+						int count = dataStore.getPredicateRowCount(predicate);
+
+						if (bestAtom == null || count < bestCount) {
+							bestAtom = atom;
+							bestCount = count;
+							break;
+						}
+					}
+				}
+			}
+
+			if (bestAtom != null) {
+				usedAtoms.add(bestAtom);
+				for (Term term : bestAtom.getArguments()) {
+					if (term instanceof Variable) {
+						coveredVariables.add((Variable)term);
+						variableUsages.remove((Variable)term);
+					}
+				}
+			}
+		}
+	}
+
+	/**
+	 * Start with all the atoms and see what can be removed.
+	 */
+	private static void noBlockingCover(List<Formula> usedAtoms, Map<Variable, Set<Atom>> variableUsages, RDBMSDataStore dataStore) {
+		Set<Atom> cover = new HashSet<Atom>();
+
+		// Add all the atoms
+		for (Set<Atom> atoms : variableUsages.values()) {
+			cover.addAll(atoms);
+		}
+
+		// Build up a map of atom to variable set.
+		Map<Atom, Set<Variable>> variableSets = new HashMap<Atom, Set<Variable>>(cover.size());
+		for (Atom atom : cover) {
+			Set<Variable> variables = new HashSet<Variable>();
+			for (Term term : atom.getArguments()) {
+				if (term instanceof Variable) {
+					variables.add((Variable)term);
+				}
+			}
+			variableSets.put(atom, variables);
+		}
+
+		// First look for atoms whose variables are subsets of other atoms.
+		// Remove those right awat.
+		Set<Atom> toRemove = new HashSet<Atom>();
+		for (Atom atom1 : cover) {
+			for (Atom atom2 : cover) {
+				if (atom1 == atom2) {
+					continue;
+				}
+
+				Set<Variable> set1 = variableSets.get(atom1);
+				Set<Variable> set2 = variableSets.get(atom2);
+
+				if (set1.size() > set2.size() && set1.containsAll(set2)) {
+					toRemove.add(atom2);
+				}
+			}
+		}
+
+		cover.removeAll(toRemove);
+
+		// TODO(eriq): What about ones that have the same set?
+
+		variableUsages.clear();
+		usedAtoms.addAll(cover);
 	}
 
 	/**
@@ -218,8 +362,9 @@ public class OptimalCover {
 	 * Forcefully include a blocking predicates.
 	 * This should not be necessary for non-greedy optimal cover.
 	 * All blocks for a variable will be included.
+	 * @return true if any blocking predicates were found.
 	 */
-	private static void includeBlocks(List<Formula> atoms, Map<Variable, Set<Atom>> variableUsages) {
+	private static boolean includeBlocks(List<Formula> atoms, Map<Variable, Set<Atom>> variableUsages) {
 		Set<Variable> toRemove = new HashSet<Variable>();
 		Set<Atom> toAdd = new HashSet<Atom>();
 
@@ -235,8 +380,6 @@ public class OptimalCover {
 						toRemove.add((Variable)term);
 					}
 				}
-
-				break;
 			}
 		}
 
@@ -245,6 +388,8 @@ public class OptimalCover {
 		for (Variable variable : toRemove) {
 			variableUsages.remove(variable);
 		}
+
+		return toAdd.size() > 0;
 	}
 
 	/**
