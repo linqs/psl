@@ -339,14 +339,12 @@ public abstract class WeightLearningApplication implements ModelApplication {
 	 * Set RandomVariableAtoms with training labels to their default values.
 	 */
 	protected void setDefaultRandomVariables() {
-		for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getTrainingMap().entrySet()) {
-			for (RandomVariableAtom atom : trainingMap.getTrainingMap().keySet()) {
-				atom.setValue(0.0);
-			}
+		for (RandomVariableAtom atom : trainingMap.getTrainingMap().keySet()) {
+			atom.setValue(0.0);
+		}
 
-			for (RandomVariableAtom atom : trainingMap.getLatentVariables()) {
-				atom.setValue(0.0);
-			}
+		for (RandomVariableAtom atom : trainingMap.getLatentVariables()) {
+			atom.setValue(0.0);
 		}
 	}
 
