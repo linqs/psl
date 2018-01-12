@@ -22,7 +22,7 @@ import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 public interface TermGenerator<E extends Term> {
 	/**
 	 * Use the ground rules in |ruleStore| to generate optimization terms and populate |termStore|.
-    * @return the number of terms added to the term store.
+	 * @return the number of terms added to the term store.
 	 */
 	public int generateTerms(GroundRuleStore ruleStore, TermStore<E> termStore);
 

@@ -66,7 +66,7 @@ public class MemoryTermStore<E extends Term> implements TermStore<E> {
 	}
 
 	@Override
-	public void add(GroundRule rule, E term) {
+	public synchronized void add(GroundRule rule, E term) {
 		if (rule instanceof WeightedGroundRule && term instanceof WeightedTerm) {
 			if (!ruleMapping.containsKey((WeightedGroundRule)rule)) {
 				ruleMapping.put((WeightedGroundRule)rule, new LinkedList<Integer>());

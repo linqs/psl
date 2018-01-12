@@ -74,7 +74,7 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm> {
 	/**
 	 * Create a local variable and ensure that a global copy is registered.
 	 */
-	public LocalVariable createLocalVariable(AtomFunctionVariable atomVariable) {
+	public synchronized LocalVariable createLocalVariable(AtomFunctionVariable atomVariable) {
 		numLocalVariables++;
 
 		int globalId;

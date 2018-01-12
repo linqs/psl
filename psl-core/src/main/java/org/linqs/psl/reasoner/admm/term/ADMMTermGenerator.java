@@ -33,6 +33,7 @@ import org.linqs.psl.reasoner.function.MaxFunction;
 import org.linqs.psl.reasoner.function.PowerOfTwo;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
+import org.linqs.psl.util.Parallel;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,21 +46,24 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 	public ADMMTermGenerator(ConfigBundle config) {}
 
 	@Override
-	public int generateTerms(GroundRuleStore ruleStore, TermStore<ADMMObjectiveTerm> termStore) {
+	public int generateTerms(GroundRuleStore ruleStore, final TermStore<ADMMObjectiveTerm> termStore) {
 		if (!(termStore instanceof ADMMTermStore)) {
 			throw new IllegalArgumentException("ADMMTermGenerator requires an ADMMTermStore");
 		}
 
-		int count = 0;
-		for (GroundRule groundRule : ruleStore.getGroundRules()) {
-			ADMMObjectiveTerm term = createTerm(groundRule, (ADMMTermStore)termStore);
-			if (term.variables.size() > 0) {
-				termStore.add(groundRule, term);
-				count++;
-			}
-		}
+		int initialSize = termStore.size();
 
-		return count;
+		Parallel.foreach(ruleStore.getGroundRules(), new Parallel.Worker<GroundRule>() {
+			@Override
+			public void work(int index, GroundRule rule) {
+				ADMMObjectiveTerm term = createTerm(rule, (ADMMTermStore)termStore);
+				if (term.variables.size() > 0) {
+					termStore.add(rule, term);
+				}
+			}
+		});
+
+		return termStore.size() - initialSize;
 	}
 
 	@Override
