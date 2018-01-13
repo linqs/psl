@@ -64,6 +64,8 @@ public abstract class Atom implements Formula, SummationAtomOrAtom {
 		arguments = Arrays.copyOf(args, args.length);
 		validate();
 		hashcode = HashCode.build(HashCode.build(predicate), arguments);
+		// Note that we are using Arrays.hashCode() instead of args.hashCode().
+		// This will take the shallow hash of the args.
 		originArgumentsHashcode = Arrays.hashCode(args);
 	}
 

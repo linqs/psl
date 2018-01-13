@@ -141,6 +141,10 @@ public abstract class AbstractLogicalRule implements Rule {
 		private GroundRuleStore grs;
 		private ResultList res;
 
+		// Allocate up-front some buffers for grounding QueryAtoms into.
+		private Constant[][] positiveAtomArgs;
+		private Constant[][] negativeAtomArgs;
+
 		public GroundWorker(AtomManager atomManager, GroundRuleStore grs, ResultList res) {
 			this.atomManager = atomManager;
 			this.grs = grs;
@@ -156,6 +160,16 @@ public abstract class AbstractLogicalRule implements Rule {
 
 			int numLiterals = negatedDNF.getPosLiterals().size() + negatedDNF.getNegLiterals().size();
 			worstCaseValues = new double[numLiterals];
+
+			positiveAtomArgs = new Constant[negatedDNF.getPosLiterals().size()][];
+			for (int i = 0; i < negatedDNF.getPosLiterals().size(); i++) {
+				positiveAtomArgs[i] = new Constant[negatedDNF.getPosLiterals().get(i).getArity()];
+			}
+
+			negativeAtomArgs = new Constant[negatedDNF.getNegLiterals().size()][];
+			for (int i = 0; i < negatedDNF.getNegLiterals().size(); i++) {
+				negativeAtomArgs[i] = new Constant[negatedDNF.getNegLiterals().get(i).getArity()];
+			}
 		}
 
 		@Override
@@ -172,7 +186,7 @@ public abstract class AbstractLogicalRule implements Rule {
 			int worstCaseCount = 0;
 
 			for (int j = 0; j < negatedDNF.getPosLiterals().size(); j++) {
-				atom = ((QueryAtom)negatedDNF.getPosLiterals().get(j)).ground(atomManager, res, index);
+				atom = ((QueryAtom)negatedDNF.getPosLiterals().get(j)).ground(atomManager, res, index, positiveAtomArgs[j]);
 				if (atom instanceof RandomVariableAtom) {
 					worstCaseValues[worstCaseCount] = 1.0;
 				} else {
@@ -184,7 +198,7 @@ public abstract class AbstractLogicalRule implements Rule {
 			}
 
 			for (int j = 0; j < negatedDNF.getNegLiterals().size(); j++) {
-				atom = ((QueryAtom)negatedDNF.getNegLiterals().get(j)).ground(atomManager, res, index);
+				atom = ((QueryAtom)negatedDNF.getNegLiterals().get(j)).ground(atomManager, res, index, negativeAtomArgs[j]);
 				if (atom instanceof RandomVariableAtom) {
 					worstCaseValues[worstCaseCount] = 0.0;
 				} else {
