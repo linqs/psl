@@ -76,13 +76,28 @@ public class FunctionSum implements Iterable<FunctionSummand>, FunctionTerm {
 		return val;
 	}
 
-	@Override
-	public double getValue(Map<? extends FunctionVariable, Double> values, boolean useCurrentValues) {
+	/**
+	 * Get the value of this sum, but using the values passed in place of non-constants for the term.
+	 * Note that the constant still applies.
+	 * This is a fragile function that should only be called by the code that constructed
+	 * this FunctionSum in the first place,
+	 * The passed in values must match the order of non-ConstantNumber values added to this sum.
+	 */
+	public double getValue(double[] values) {
 		double val = 0.0;
+
+		int valueIndex = 0;
 		// Use numeric for loops instead of iterators in high traffic code.
 		for (int i = 0; i < sum.size(); i++) {
-			val += sum.get(i).getValue(values, useCurrentValues);
+			FunctionSummand summand = sum.get(i);
+			if (summand.getTerm() instanceof ConstantNumber) {
+				val += summand.getValue();
+			} else{
+				val += summand.getCoefficient() * values[valueIndex];
+				valueIndex++;
+			}
 		}
+
 		return val;
 	}
 

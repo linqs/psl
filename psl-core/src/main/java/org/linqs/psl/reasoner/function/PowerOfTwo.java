@@ -17,19 +17,16 @@
  */
 package org.linqs.psl.reasoner.function;
 
-import java.util.*;
-
 /**
  * A {@link FunctionTerm} raised to the power of two.
  */
 public class PowerOfTwo implements FunctionTerm {
-
 	private final FunctionTerm innerFunction;
-	
+
 	public PowerOfTwo(FunctionTerm innerFunction) {
 		this.innerFunction = innerFunction;
 	}
-	
+
 	public FunctionTerm getInnerFunction() {
 		return innerFunction;
 	}
@@ -39,26 +36,19 @@ public class PowerOfTwo implements FunctionTerm {
 		double val = innerFunction.getValue();
 		return val * val;
 	}
-	
-	@Override
-	public double getValue(Map<? extends FunctionVariable,Double> values, boolean useCurrentValues) {
-		double val = innerFunction.getValue(values, useCurrentValues);
-		return val * val;
-	}
-	
+
 	@Override
 	public boolean isLinear() {
 		return false;
 	}
-	
+
 	@Override
 	public boolean isConstant() {
 		return innerFunction.isConstant();
 	}
-	
+
 	@Override
 	public String toString() {
 		return "( " + innerFunction + " )^2";
 	}
-	
 }

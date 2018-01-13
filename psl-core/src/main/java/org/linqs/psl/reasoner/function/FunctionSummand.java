@@ -48,11 +48,6 @@ public class FunctionSummand implements FunctionTerm {
 		return coefficient * term.getValue();
 	}
 
-	@Override
-	public double getValue(Map<? extends FunctionVariable,Double> values, boolean useCurrentValues) {
-		return coefficient * term.getValue(values, useCurrentValues);
-	}
-
 	public double getCoefficient() {
 		return coefficient;
 	}

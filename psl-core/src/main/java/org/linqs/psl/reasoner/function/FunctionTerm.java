@@ -31,16 +31,6 @@ public interface FunctionTerm {
 	public double getValue();
 
 	/**
-	 * Returns the term's value using provided values for {@link FunctionVariable FunctionVariables}.
-	 *
-	 * @param values values to use
-	 * @param useCurrentValues use a {@link FunctionVariable FunctionVariable's} current value if it is unspecified in values
-	 * @throws IllegalArgumentException if a FunctionVariable is unspecified and assumeDefaultValue is false
-	 * @return the term's value
-	 */
-	public double getValue(Map<? extends FunctionVariable,Double> values, boolean useCurrentValues);
-
-	/**
 	 * Returns whether the term is linear in its {@link FunctionVariable Variables}.
 	 *
 	 * Returns true if the term is a constant.

@@ -22,7 +22,6 @@ package org.linqs.psl.reasoner.function;
  * numeric functions and values.
  */
 public enum FunctionComparator {
-
 	Equality, SmallerThan, LargerThan;
 
 	@Override

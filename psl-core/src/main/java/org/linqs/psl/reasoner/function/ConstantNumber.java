@@ -29,13 +29,9 @@ public class ConstantNumber implements FunctionTerm {
 		value = val;
 	}
 
+	@Override
 	public double getValue() {
 		return value;
-	}
-
-	@Override
-	public double getValue(Map<? extends FunctionVariable,Double> values, boolean useCurrentValues) {
-		return getValue();
 	}
 
 	@Override
