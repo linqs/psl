@@ -25,8 +25,7 @@ import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.reasoner.function.ConstantNumber;
 import org.linqs.psl.reasoner.function.FunctionSum;
 import org.linqs.psl.reasoner.function.FunctionSummand;
-
-import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.linqs.psl.util.HashCode;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -51,24 +50,23 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
 		this.negLiterals = Collections.unmodifiableList(new ArrayList<GroundAtom>(negLiterals));
 
 		// Construct the hash code.
-		HashCodeBuilder hcb = new HashCodeBuilder();
-		hcb.append(rule);
+		int hash = HashCode.build(rule);
 
 		// Construct function definition.
 		function = new FunctionSum();
 
 		for (int i = 0; i < posLiterals.size(); i++) {
 			function.add(new FunctionSummand(1.0, posLiterals.get(i).getVariable()));
-			hcb.append(posLiterals.get(i));
+			hash = HashCode.build(hash, posLiterals.get(i));
 		}
 
 		for (int i = 0; i < negLiterals.size(); i++) {
 			function.add(new FunctionSummand(-1.0, negLiterals.get(i).getVariable()));
-			hcb.append(negLiterals.get(i));
+			hash = HashCode.build(hash, negLiterals.get(i));
 		}
 
 		function.add(new FunctionSummand(1.0, new ConstantNumber(1.0 - posLiterals.size())));
-		hashcode = hcb.toHashCode();
+		hashcode = hash;
 	}
 
 	protected FunctionSum getFunction() {

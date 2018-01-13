@@ -31,8 +31,7 @@ import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.UniqueIntID;
 import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.model.term.Variable;
-
-import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.linqs.psl.util.HashCode;
 
 import java.util.Arrays;
 import java.util.Set;
@@ -64,7 +63,7 @@ public abstract class Atom implements Formula, SummationAtomOrAtom {
 		predicate = p;
 		arguments = Arrays.copyOf(args, args.length);
 		validate();
-		hashcode = new HashCodeBuilder().append(predicate).append(arguments).toHashCode();
+		hashcode = HashCode.build(HashCode.build(predicate), arguments);
 		originArgumentsHashcode = Arrays.hashCode(args);
 	}
 

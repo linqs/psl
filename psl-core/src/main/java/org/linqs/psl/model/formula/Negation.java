@@ -19,8 +19,7 @@ package org.linqs.psl.model.formula;
 
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.term.VariableTypeMap;
-
-import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.linqs.psl.util.HashCode;
 
 import java.util.Set;
 
@@ -42,7 +41,7 @@ public class Negation implements Formula {
 
 		// Note that we are adding a prime to our hash code to avoid
 		// A and !A from conflicting.
-		hash = new HashCodeBuilder().append(f).toHashCode() + 37;
+		hash = HashCode.build(f) + 3;
 	}
 
 	public Formula getFormula() {

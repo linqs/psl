@@ -25,8 +25,7 @@ import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Coefficient;
 import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.FunctionComparator;
-
-import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.linqs.psl.util.HashCode;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -48,7 +47,7 @@ public class ArithmeticRuleExpression {
 	protected final Coefficient c;
 	protected final Set<Variable> vars;
 	protected final Set<SummationVariable> sumVars;
-	private final int hash;
+	private int hash;
 
 	public ArithmeticRuleExpression(List<Coefficient> coeffs, List<SummationAtomOrAtom> atoms,
 			FunctionComparator comparator, Coefficient c) {
@@ -113,20 +112,15 @@ public class ArithmeticRuleExpression {
 		this.vars = Collections.unmodifiableSet(vars);
 		this.sumVars = Collections.unmodifiableSet(sumVars);
 
-		HashCodeBuilder hashBuilder = new HashCodeBuilder();
-
-		hashBuilder.append(comparator);
-		hashBuilder.append(c);
+		hash = HashCode.build(HashCode.build(comparator), c);
 
 		for (Coefficient coeff : coeffs) {
-			hashBuilder.append(coeff);
+			hash = HashCode.build(coeff);
 		}
 
 		for (SummationAtomOrAtom atom : atoms) {
-			hashBuilder.append(atom);
+			hash = HashCode.build(atom);
 		}
-
-		hash = hashBuilder.toHashCode();
 	}
 
 	public List<Coefficient> getAtomCoefficients() {

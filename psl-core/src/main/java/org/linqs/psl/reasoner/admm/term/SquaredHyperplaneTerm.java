@@ -18,11 +18,11 @@
 package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.reasoner.term.WeightedTerm;
+import org.linqs.psl.util.HashCode;
 
 import cern.colt.matrix.tfloat.FloatMatrix2D;
 import cern.colt.matrix.tfloat.algo.decomposition.DenseFloatCholeskyDecomposition;
 import cern.colt.matrix.tfloat.impl.DenseFloatMatrix2D;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.util.HashMap;
 import java.util.List;
@@ -181,7 +181,6 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
 	}
 
 	private class DenseFloatMatrix2DWithHashcode extends DenseFloatMatrix2D {
-
 		private static final long serialVersionUID = -8102931034927566306L;
 		private boolean needsNewHashcode;
 		private int hashcode = 0;
@@ -200,14 +199,16 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
 		@Override
 		public int hashCode() {
 			if (needsNewHashcode) {
-				HashCodeBuilder builder = new HashCodeBuilder();
-				for (int i = 0; i < rows(); i++)
-					for (int j = 0; j < columns(); j++)
-						builder.append(getQuick(i, j));
+				hashcode = HashCode.DEFAULT_INITIAL_NUMBER;
+				for (int i = 0; i < rows(); i++) {
+					for (int j = 0; j < columns(); j++) {
+						hashcode = HashCode.build(hashcode, getQuick(i, j));
+					}
+				}
 
-				hashcode = builder.toHashCode();
 				needsNewHashcode = false;
 			}
+
 			return hashcode;
 		}
 	}

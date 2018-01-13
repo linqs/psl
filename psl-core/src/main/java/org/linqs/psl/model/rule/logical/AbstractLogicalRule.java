@@ -36,11 +36,11 @@ import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.FunctionTerm;
 import org.linqs.psl.reasoner.function.FunctionVariable;
+import org.linqs.psl.util.HashCode;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,17 +98,15 @@ public abstract class AbstractLogicalRule implements Rule {
 		}
 
 		// Build up the hash code from positive and negative literals.
-		HashCodeBuilder hashBuilder = new HashCodeBuilder();
+		hash = HashCode.DEFAULT_INITIAL_NUMBER;
 
 		for (Atom atom : negatedDNF.getPosLiterals()) {
-			hashBuilder.append(atom);
+			hash = HashCode.build(atom);
 		}
 
 		for (Atom atom : negatedDNF.getNegLiterals()) {
-			hashBuilder.append(atom);
+			hash = HashCode.build(atom);
 		}
-
-		hash = hashBuilder.toHashCode();
 	}
 
 	public Formula getFormula() {

@@ -19,8 +19,7 @@ package org.linqs.psl.model.formula;
 
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.term.VariableTypeMap;
-
-import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.linqs.psl.util.HashCode;
 
 import java.util.Set;
 
@@ -44,7 +43,7 @@ public class Implication implements Formula {
 		this.body = body;
 		this.head = head;
 
-		hash = (new HashCodeBuilder()).append(body).append(head).toHashCode();
+		hash = HashCode.build(HashCode.build(body), head);
 	}
 
 	public Formula getBody() {
