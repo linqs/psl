@@ -31,6 +31,7 @@ import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
@@ -74,15 +75,12 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 
 	private int maxRounds;
 
-	/**
-	 * Constructs a new weight learner.
-	 *
-	 * @param distributionDB  a Database containing all atoms for the ground distribution
-	 * @param labelDB  a Database containing labels for the unknowns in the distribution
-	 * @param config  configuration bundle
-	 */
-	public LazyMaxLikelihoodMPE(List<Rule> rules, Database distributionDB, Database labelDB, ConfigBundle config) {
-		super(rules, distributionDB, labelDB, false, config);
+	public LazyMaxLikelihoodMPE(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
+		this(model.getRules(), rvDB, observedDB, config);
+	}
+
+	public LazyMaxLikelihoodMPE(List<Rule> rules, Database rvDB, Database observedDB, ConfigBundle config) {
+		super(rules, rvDB, observedDB, false, config);
 
 		maxRounds = config.getInt(MAX_ROUNDS_KEY, MAX_ROUNDS_DEFAULT);
 	}

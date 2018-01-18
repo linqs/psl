@@ -19,6 +19,7 @@ package org.linqs.psl.application.learning.weight.em;
 
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.admm.ADMMReasoner;
@@ -68,8 +69,11 @@ public class PairedDualLearner extends ExpectationMaximization {
 	private final int warmupRounds;
 	private final int admmIterations;
 
-	public PairedDualLearner(List<Rule> rules, Database rvDB, Database observedDB,
-			ConfigBundle config) {
+	public PairedDualLearner(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
+		this(model.getRules(), rvDB, observedDB, config);
+	}
+
+	public PairedDualLearner(List<Rule> rules, Database rvDB, Database observedDB, ConfigBundle config) {
 		super(rules, rvDB, observedDB, config);
 
 		warmupRounds = config.getInt(WARMUP_ROUNDS_KEY, WARMUP_ROUNDS_DEFAULT);

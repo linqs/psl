@@ -77,6 +77,10 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 	private final int numSamples;
 	private final double minWidth;
 
+	public MaxPseudoLikelihood(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
+		this(model.getRules(), rvDB, observedDB, config);
+	}
+
 	public MaxPseudoLikelihood(List<Rule> rules, Database rvDB, Database observedDB, ConfigBundle config) {
 		super(rules, rvDB, observedDB, false, config);
 

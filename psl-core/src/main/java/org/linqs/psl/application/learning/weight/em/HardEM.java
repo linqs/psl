@@ -19,6 +19,7 @@ package org.linqs.psl.application.learning.weight.em;
 
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
 
 import java.util.List;
@@ -46,6 +47,10 @@ public class HardEM extends ExpectationMaximization  {
 	public static final double MIN_SCALING_FACTOR = 1e-8;
 
 	private final boolean useAdaGrad;
+
+	public HardEM(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
+		this(model.getRules(), rvDB, observedDB, config);
+	}
 
 	public HardEM(List<Rule> rules, Database rvDB, Database observedDB, ConfigBundle config) {
 		super(rules, rvDB, observedDB, config);

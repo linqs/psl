@@ -19,6 +19,7 @@ package org.linqs.psl.application.learning.weight.search;
 
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.util.StringUtils;
 
@@ -49,7 +50,11 @@ public class RandomGridSearch extends GridSearch {
 	public static final String SEED_KEY = CONFIG_PREFIX + ".seed";
 	public static final long SEED_DEFAULT = 4;
 
-   private Random rand;
+	private Random rand;
+
+	public RandomGridSearch(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
+		this(model.getRules(), rvDB, observedDB, config);
+	}
 
 	public RandomGridSearch(List<Rule> rules, Database rvDB, Database observedDB, ConfigBundle config) {
 		super(rules, rvDB, observedDB, config);
@@ -58,24 +63,24 @@ public class RandomGridSearch extends GridSearch {
 		if (maxLocations < 1) {
 			throw new IllegalArgumentException("Need at least one location for grid search.");
 		}
-      numLocations = Math.min(numLocations, maxLocations);
+		numLocations = Math.min(numLocations, maxLocations);
 
 		long seed = config.getLong(SEED_KEY, SEED_DEFAULT);
-      rand = new Random(seed);
+		rand = new Random(seed);
 	}
 
-   @Override
+	@Override
 	protected void chooseNextLocation() {
-      do {
-         currentLocation = randomConfiguration();
-      } while (objectives.containsKey(currentLocation));
+		do {
+			currentLocation = randomConfiguration();
+		} while (objectives.containsKey(currentLocation));
 	}
 
-   private String randomConfiguration() {
-      int[] indexes = new int[mutableRules.size()];
-      for (int i = 0; i < indexes.length; i++) {
-         indexes[i] = rand.nextInt(possibleWeights.length);
-      }
-      return StringUtils.join(indexes, DELIM);
-   }
+	private String randomConfiguration() {
+		int[] indexes = new int[mutableRules.size()];
+		for (int i = 0; i < indexes.length; i++) {
+			indexes[i] = rand.nextInt(possibleWeights.length);
+		}
+		return StringUtils.join(indexes, DELIM);
+	}
 }

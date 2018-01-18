@@ -22,6 +22,7 @@ import org.linqs.psl.application.learning.weight.search.objective.ObjectiveFunct
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.admm.ADMMReasoner;
 import org.linqs.psl.util.StringUtils;
@@ -100,6 +101,10 @@ public class GridSearch extends WeightLearningApplication {
 	 * The default implementation does not actually need this, but childen may.
 	 */
 	protected Map<String, Double> objectives;
+
+	public GridSearch(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
+		this(model.getRules(), rvDB, observedDB, config);
+	}
 
 	// TODO(eriq): Latent variables?
 	public GridSearch(List<Rule> rules, Database rvDB, Database observedDB, ConfigBundle config) {
