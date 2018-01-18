@@ -17,35 +17,36 @@
  */
 package org.linqs.psl.reasoner.function;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * Selects the maximum value among {@link FunctionTerm FunctionTerms}.
  */
 public class MaxFunction implements Iterable<FunctionTerm>, FunctionTerm {
-
 	private final List<FunctionTerm> terms;
-	
+
 	public MaxFunction() {
 		terms = new ArrayList<FunctionTerm>();
 	}
-	
+
 	/**
 	 * Adds a {@link FunctionTerm} to the set of functions to consider.
 	 */
-	public void add(FunctionTerm t) {
-		terms.add(t);
+	public void add(FunctionTerm term) {
+		terms.add(term);
 	}
 
 	@Override
 	public Iterator<FunctionTerm> iterator() {
 		return terms.iterator();
 	}
-	
+
 	public int size() {
 		return terms.size();
 	}
-	
+
 	/**
 	 * Returns a function in the MaxFunction's set.
 	 *
@@ -63,64 +64,65 @@ public class MaxFunction implements Iterable<FunctionTerm>, FunctionTerm {
 	 */
 	@Override
 	public double getValue() {
-		if (terms.isEmpty()) throw new AssertionError("Undefined max value for zero terms!");
+		if (terms.isEmpty()) {
+			throw new AssertionError("Undefined max value for zero terms!");
+		}
+
 		double val = Double.NEGATIVE_INFINITY;
-		for (FunctionTerm t : terms) val = Math.max(val, t.getValue());
-		return val;
-	}
-	
-	@Override
-	public double getValue(Map<? extends FunctionVariable,Double> values, boolean useCurrentValues) {
-		if (terms.isEmpty()) throw new AssertionError("Undefined max value for zero terms!");
-		double val = Double.NEGATIVE_INFINITY;
-		for (FunctionTerm t : terms) val = Math.max(val, t.getValue(values,useCurrentValues));
+		for (FunctionTerm term : terms) {
+			val = Math.max(val, term.getValue());
+		}
 		return val;
 	}
 
-
-	
 	@Override
 	public boolean isLinear() {
-		for (FunctionTerm t : terms) {
-			if (!t.isLinear()) return false;
+		for (FunctionTerm term : terms) {
+			if (!term.isLinear()) {
+				return false;
+			}
 		}
 		return true;
 	}
-	
+
 	@Override
 	public boolean isConstant() {
-		for (FunctionTerm t : terms) {
-			if (!t.isConstant()) return false;
+		for (FunctionTerm term : terms) {
+			if (!term.isConstant()) {
+				return false;
+			}
 		}
 		return true;
 	}
-	
+
 	/**
 	 * Constructs a MaxFunction term containing the specified terms.
 	 *
 	 * @param terms  the terms to add to the MaxFunction
 	 * @return  the MaxFunction
 	 */
-	public static MaxFunction of(FunctionTerm...terms) {
+	public static MaxFunction of(FunctionTerm... terms) {
 		MaxFunction max = new MaxFunction();
-		for (FunctionTerm t : terms) max.add(t);
+		for (FunctionTerm term : terms) {
+			max.add(term);
+		}
 		return max;
 	}
-	
+
 	@Override
 	public String toString() {
 		StringBuilder string = new StringBuilder();
 		string.append("Max{");
 		boolean skip = true;
 		for (FunctionTerm term : terms) {
-			if (skip)
+			if (skip) {
 				skip = false;
-			else
+			} else {
 				string.append(",");
+			}
 			string.append(" " + term.toString() + " ");
 		}
 		string.append("}");
 		return string.toString();
 	}
-	
 }

@@ -139,9 +139,4 @@ public interface DataStore {
 	 * @throws IllegalStateException  if any Partitions are in use
 	 */
 	public void close();
-
-	/**
-	 * Check to see if this DataStore supports external functions.
-	 */
-	public boolean supportsExternalFunctions();
 }

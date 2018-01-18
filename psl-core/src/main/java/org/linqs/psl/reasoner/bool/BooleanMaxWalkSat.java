@@ -27,8 +27,9 @@ import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.inspector.ReasonerInspector;
-import org.linqs.psl.reasoner.term.ConstraintBlockerTermStore;
 import org.linqs.psl.reasoner.term.TermStore;
+import org.linqs.psl.reasoner.term.blocker.ConstraintBlockerTerm;
+import org.linqs.psl.reasoner.term.blocker.ConstraintBlockerTermStore;
 import org.linqs.psl.util.MathUtils;
 
 import org.slf4j.Logger;
@@ -122,23 +123,11 @@ public class BooleanMaxWalkSat extends Reasoner {
 		ConstraintBlockerTermStore blocker = (ConstraintBlockerTermStore)termStore;
 
 		// Randomly initializes the RVs to a feasible state.
-		blocker.randomlyInitializeRVs();
-
-		// Puts RandomVariableAtoms in 2d array by block.
-		RandomVariableAtom[][] rvBlocks = blocker.getRVBlocks();
-
-		// If true, exactly one Atom in the RV block must be 1.0. If false, at most one can.
-		boolean[] exactlyOne = blocker.getExactlyOne();
-
-		// Collects GroundCompatibilityRules incident on each block of RandomVariableAtoms
-		WeightedGroundRule[][] incidentGKs = blocker.getIncidentGKs();
-
-		// Maps RandomVariableAtoms to their block index
-		Map<RandomVariableAtom, Integer> rvMap = blocker.getRVMap();
+		blocker.randomlyInitialize();
 
 		Set<GroundRule> unsatGKs = new HashSet<GroundRule>();
 		Set<RandomVariableAtom> rvasToInclude = new HashSet<RandomVariableAtom>();
-		Set<Integer> blocksToInclude = new HashSet<Integer>(rvasToInclude.size());
+		Set<ConstraintBlockerTerm> blocksToInclude = new HashSet<ConstraintBlockerTerm>();
 
 		RandomVariableAtom[][] candidateRVBlocks;
 		WeightedGroundRule[][] candidateIncidentGKs;
@@ -176,12 +165,12 @@ public class BooleanMaxWalkSat extends Reasoner {
 					continue;
 				}
 
-				Integer blockIndex = rvMap.get(atom);
+				int blockIndex = blocker.getBlockIndex((RandomVariableAtom)atom);
 
 				// RVAs with no block are constrained and cannot be changed without breaking a hard constraint.
-				if (blockIndex != null) {
+				if (blockIndex != -1) {
 					rvasToInclude.add((RandomVariableAtom)atom);
-					blocksToInclude.add(blockIndex);
+					blocksToInclude.add(blocker.get(blockIndex));
 				}
 			}
 
@@ -197,10 +186,10 @@ public class BooleanMaxWalkSat extends Reasoner {
 			candidateExactlyOne = new boolean[blocksToInclude.size()];
 
 			int candidateBlockIndex = 0;
-			for (Integer blockIndex : blocksToInclude) {
-				candidateRVBlocks[candidateBlockIndex] = rvBlocks[blockIndex];
-				candidateExactlyOne[candidateBlockIndex] = exactlyOne[blockIndex];
-				candidateIncidentGKs[candidateBlockIndex] = incidentGKs[blockIndex];
+			for (ConstraintBlockerTerm block : blocksToInclude) {
+				candidateRVBlocks[candidateBlockIndex] = block.getAtoms();
+				candidateExactlyOne[candidateBlockIndex] = block.getExactlyOne();
+				candidateIncidentGKs[candidateBlockIndex] = block.getIncidentGRs();
 				candidateBlockIndex++;
 			}
 

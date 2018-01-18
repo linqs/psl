@@ -17,37 +17,46 @@
  */
 package org.linqs.psl.reasoner.function;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 /**
  * A numeric function defined as a sum of {@link FunctionSummand FunctionSummands}.
  */
 public class FunctionSum implements Iterable<FunctionSummand>, FunctionTerm {
+	private final List<FunctionSummand> sum;
+	private boolean isConstant;
+	private boolean isLinear;
 
-	protected final List<FunctionSummand> sum;
-	
 	public FunctionSum() {
 		sum = new ArrayList<FunctionSummand>();
+		isConstant = true;
+		isLinear = true;
 	}
-	
+
 	/**
 	 * Adds a {@link FunctionSummand} to the sum.
 	 *
-	 * @param summand  the summand to add
+	 * @param summand the summand to add
 	 */
 	public void add(FunctionSummand summand) {
 		sum.add(summand);
+
+		isConstant = isConstant && summand.isConstant();
+		isLinear = isLinear && summand.isLinear();
 	}
 
 	@Override
 	public Iterator<FunctionSummand> iterator() {
 		return sum.iterator();
 	}
-	
+
 	public int size() {
 		return sum.size();
 	}
-	
+
 	public FunctionSummand get(int pos) {
 		return sum.get(pos);
 	}
@@ -55,53 +64,67 @@ public class FunctionSum implements Iterable<FunctionSummand>, FunctionTerm {
 	/**
 	 * Returns the sum of the {@link FunctionSummand} values.
 	 *
-	 * @return  the FunctionSum's value
+	 * @return the FunctionSum's value
 	 */
 	@Override
 	public double getValue() {
 		double val = 0.0;
-		for (FunctionSummand s : sum) val+=s.getValue();
+		// Use numeric for loops instead of iterators in high traffic code.
+		for (int i = 0; i < sum.size(); i++) {
+			val += sum.get(i).getValue();
+		}
 		return val;
 	}
-	
-	
-	@Override
-	public double getValue(Map<? extends FunctionVariable,Double> values, boolean useCurrentValues) {
+
+	/**
+	 * Get the value of this sum, but using the values passed in place of non-constants for the term.
+	 * Note that the constant still applies.
+	 * This is a fragile function that should only be called by the code that constructed
+	 * this FunctionSum in the first place,
+	 * The passed in values must match the order of non-ConstantNumber values added to this sum.
+	 */
+	public double getValue(double[] values) {
 		double val = 0.0;
-		for (FunctionSummand s : sum) val+=s.getValue(values,useCurrentValues);
+
+		int valueIndex = 0;
+		// Use numeric for loops instead of iterators in high traffic code.
+		for (int i = 0; i < sum.size(); i++) {
+			FunctionSummand summand = sum.get(i);
+			if (summand.getTerm() instanceof ConstantNumber) {
+				val += summand.getValue();
+			} else{
+				val += summand.getCoefficient() * values[valueIndex];
+				valueIndex++;
+			}
+		}
+
 		return val;
 	}
 
 	@Override
 	public boolean isLinear() {
-		for (FunctionSummand s : sum) {
-			if (!s.isLinear()) return false;
-		}
-		return true;
+		return isLinear;
 	}
-	
+
 	@Override
 	public boolean isConstant() {
-		for (FunctionSummand s : sum) {
-			if (!s.isConstant()) return false;
-		}
-		return true;
+		return isConstant;
 	}
-	
+
 	@Override
 	public String toString() {
 		StringBuilder string = new StringBuilder();
 		string.append("(");
 		boolean skip = true;
 		for (FunctionTerm term : sum) {
-			if (skip)
+			if (skip) {
 				skip = false;
-			else
+			} else {
 				string.append("+");
+			}
 			string.append(" " + term.toString() + " ");
 		}
 		string.append(")");
 		return string.toString();
 	}
-	
 }

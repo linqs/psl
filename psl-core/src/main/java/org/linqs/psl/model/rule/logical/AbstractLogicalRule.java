@@ -21,12 +21,10 @@ import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 import org.linqs.psl.database.DatabaseQuery;
 import org.linqs.psl.database.ResultList;
 import org.linqs.psl.database.atom.AtomManager;
-import org.linqs.psl.model.NumericUtilities;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
-import org.linqs.psl.model.atom.VariableAssignment;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.formula.FormulaAnalysis;
 import org.linqs.psl.model.formula.Negation;
@@ -36,12 +34,13 @@ import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
-import org.linqs.psl.reasoner.function.FunctionTerm;
+import org.linqs.psl.reasoner.function.FunctionSum;
 import org.linqs.psl.reasoner.function.FunctionVariable;
+import org.linqs.psl.util.HashCode;
+import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -99,17 +98,15 @@ public abstract class AbstractLogicalRule implements Rule {
 		}
 
 		// Build up the hash code from positive and negative literals.
-		HashCodeBuilder hashBuilder = new HashCodeBuilder();
+		hash = HashCode.DEFAULT_INITIAL_NUMBER;
 
 		for (Atom atom : negatedDNF.getPosLiterals()) {
-			hashBuilder.append(atom);
+			hash = HashCode.build(atom);
 		}
 
 		for (Atom atom : negatedDNF.getNegLiterals()) {
-			hashBuilder.append(atom);
+			hash = HashCode.build(atom);
 		}
-
-		hash = hashBuilder.toHashCode();
 	}
 
 	public Formula getFormula() {
@@ -121,25 +118,32 @@ public abstract class AbstractLogicalRule implements Rule {
 	}
 
 	@Override
-	public void groundAll(AtomManager atomManager, GroundRuleStore grs) {
-		ResultList res = atomManager.executeQuery(new DatabaseQuery(negatedDNF.getQueryFormula(), false));
-		groundAll(res, atomManager, grs);
+	public int groundAll(AtomManager atomManager, GroundRuleStore grs) {
+		ResultList res = atomManager.executeGroundingQuery(negatedDNF.getQueryFormula());
+		return groundAll(res, atomManager, grs);
 	}
 
-	public void groundAll(ResultList groundVariables, AtomManager atomManager, GroundRuleStore grs) {
+	public int groundAll(ResultList groundVariables, AtomManager atomManager, GroundRuleStore grs) {
 		int initialCount = grs.count(this);
 		Parallel.count(groundVariables.size(), new GroundWorker(atomManager, grs, groundVariables));
-		log.debug("Grounded {} instances of rule {}", grs.count(this) - initialCount, this);
+		int groundCount = grs.count(this) - initialCount;
+
+		log.debug("Grounded {} instances of rule {}", groundCount, this);
+		return groundCount;
 	}
 
-	private class GroundWorker extends Parallel.Worker<Object> {
+	private class GroundWorker extends Parallel.Worker<Integer> {
 		private List<GroundAtom> posLiterals;
 		private List<GroundAtom> negLiterals;
-		private Map<FunctionVariable, Double> worstCaseValues;
+		private double[] worstCaseValues;
 
 		private AtomManager atomManager;
 		private GroundRuleStore grs;
 		private ResultList res;
+
+		// Allocate up-front some buffers for grounding QueryAtoms into.
+		private Constant[][] positiveAtomArgs;
+		private Constant[][] negativeAtomArgs;
 
 		public GroundWorker(AtomManager atomManager, GroundRuleStore grs, ResultList res) {
 			this.atomManager = atomManager;
@@ -153,7 +157,19 @@ public abstract class AbstractLogicalRule implements Rule {
 
 			posLiterals = new ArrayList<GroundAtom>(4);
 			negLiterals = new ArrayList<GroundAtom>(4);
-			worstCaseValues = new HashMap<FunctionVariable, Double>(8);
+
+			int numLiterals = negatedDNF.getPosLiterals().size() + negatedDNF.getNegLiterals().size();
+			worstCaseValues = new double[numLiterals];
+
+			positiveAtomArgs = new Constant[negatedDNF.getPosLiterals().size()][];
+			for (int i = 0; i < negatedDNF.getPosLiterals().size(); i++) {
+				positiveAtomArgs[i] = new Constant[negatedDNF.getPosLiterals().get(i).getArity()];
+			}
+
+			negativeAtomArgs = new Constant[negatedDNF.getNegLiterals().size()][];
+			for (int i = 0; i < negatedDNF.getNegLiterals().size(); i++) {
+				negativeAtomArgs[i] = new Constant[negatedDNF.getNegLiterals().get(i).getArity()];
+			}
 		}
 
 		@Override
@@ -162,43 +178,48 @@ public abstract class AbstractLogicalRule implements Rule {
 		}
 
 		@Override
-		public void work(int index, Object ignore) {
+		public void work(int index, Integer ignore) {
 			GroundAtom atom = null;
 
+			// We will make sure to collect the worst-case values in the same order
+			// that we add literals to the ground formula instance.
+			int worstCaseCount = 0;
+
 			for (int j = 0; j < negatedDNF.getPosLiterals().size(); j++) {
-				atom = ((QueryAtom)negatedDNF.getPosLiterals().get(j)).ground(atomManager, res, index);
+				atom = ((QueryAtom)negatedDNF.getPosLiterals().get(j)).ground(atomManager, res, index, positiveAtomArgs[j]);
 				if (atom instanceof RandomVariableAtom) {
-					worstCaseValues.put(atom.getVariable(), 1.0);
+					worstCaseValues[worstCaseCount] = 1.0;
 				} else {
-					worstCaseValues.put(atom.getVariable(), atom.getValue());
+					worstCaseValues[worstCaseCount] = atom.getValue();
 				}
+				worstCaseCount++;
 
 				posLiterals.add(atom);
 			}
 
 			for (int j = 0; j < negatedDNF.getNegLiterals().size(); j++) {
-				atom = ((QueryAtom)negatedDNF.getNegLiterals().get(j)).ground(atomManager, res, index);
+				atom = ((QueryAtom)negatedDNF.getNegLiterals().get(j)).ground(atomManager, res, index, negativeAtomArgs[j]);
 				if (atom instanceof RandomVariableAtom) {
-					worstCaseValues.put(atom.getVariable(), 0.0);
+					worstCaseValues[worstCaseCount] = 0.0;
 				} else {
-					worstCaseValues.put(atom.getVariable(), atom.getValue());
+					worstCaseValues[worstCaseCount] = atom.getValue();
 				}
+				worstCaseCount++;
 
 				negLiterals.add(atom);
 			}
 
 			AbstractGroundLogicalRule groundRule = groundFormulaInstance(posLiterals, negLiterals);
-			FunctionTerm function = groundRule.getFunction();
+			FunctionSum function = groundRule.getFunction();
 
-			double worstCaseValue = function.getValue(worstCaseValues, false);
-			if (worstCaseValue > NumericUtilities.strictEpsilon
+			double worstCaseValue = function.getValue(worstCaseValues);
+			if (worstCaseValue > MathUtils.STRICT_EPSILON
 					&& (!function.isConstant() || !(groundRule instanceof WeightedGroundRule))) {
 				grs.addGroundRule(groundRule);
 			}
 
 			posLiterals.clear();
 			negLiterals.clear();
-			worstCaseValues.clear();
 		}
 	}
 

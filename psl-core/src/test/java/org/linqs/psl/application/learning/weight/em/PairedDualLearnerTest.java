@@ -15,25 +15,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.model.formula.traversal;
+package org.linqs.psl.application.learning.weight.em;
 
-import org.linqs.psl.model.atom.Atom;
-/**
- * Interface specifying the methods needed to properly traverse a formula
- */
-public interface FormulaTraverser {
+import org.linqs.psl.application.learning.weight.WeightLearningApplication;
+import org.linqs.psl.application.learning.weight.WeightLearningTest;
 
-	public boolean beforeConjunction();
-	
-	public void afterConjunction(int noFormulas);
-	
-	public boolean beforeDisjunction();
-	
-	public void afterDisjunction(int noFormulas);
-	
-	public boolean beforeNegation();
-	
-	public void afterNegation();
-	
-	public void visitAtom(Atom atom);
+public class PairedDualLearnerTest extends WeightLearningTest {
+	@Override
+	protected WeightLearningApplication getWLA() {
+		return new PairedDualLearner(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB, info.config);
+	}
 }

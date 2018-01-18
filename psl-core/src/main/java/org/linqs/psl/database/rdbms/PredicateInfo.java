@@ -61,8 +61,14 @@ public class PredicateInfo {
 	private final String tableName;
 
 	private Map<String, String> cachedSQL;
+	private boolean indexed;
+	private int count;
 
 	public PredicateInfo(Predicate predicate) {
+		this(predicate, false);
+	}
+
+	public PredicateInfo(Predicate predicate, boolean indexed) {
 		assert(predicate != null);
 
 		this.predicate = predicate;
@@ -74,6 +80,8 @@ public class PredicateInfo {
 		}
 
 		cachedSQL = new HashMap<String, String>();
+		this.indexed = indexed;
+		count = -1;
 	}
 
 	public List<String> argumentColumns() {
@@ -88,9 +96,12 @@ public class PredicateInfo {
 		return predicate;
 	}
 
+	public boolean indexed() {
+		return indexed;
+	}
+
 	public void setupTable(Connection connection, DatabaseDriver dbDriver) {
 		createTable(connection, dbDriver);
-		index(connection, dbDriver);
 	}
 
 	/**
@@ -152,12 +163,34 @@ public class PredicateInfo {
 		return prepareSQL(connection, buildPartitionMoveStatement(oldPartition, newPartition));
 	}
 
+	/**
+	 * Get a count of all the rows in the table.
+	 */
+	public int getCount(Connection connection) {
+		if (count != -1) {
+			return count;
+		}
+
+		String sql = "SELECT COUNT(*) FROM " + tableName;
+		try (
+			PreparedStatement statement = connection.prepareStatement(sql);
+			ResultSet result = statement.executeQuery();
+		) {
+			result.next();
+			count = result.getInt(1);
+		} catch (SQLException ex) {
+			throw new RuntimeException("Failed to get count from table: " + tableName, ex);
+		}
+
+		return count;
+	}
+
 	private void createTable(Connection connection, DatabaseDriver dbDriver) {
 		CreateTableQuery createTable = new CreateTableQuery(tableName);
 
-		// First add non-variable columns: suggogate key, partition, value.
+		// First add non-variable columns: partition and value.
 		createTable.addCustomColumns(PARTITION_COLUMN_NAME + " INT NOT NULL");
-		createTable.addCustomColumns(VALUE_COLUMN_NAME + " " + dbDriver.getDoubleTypeName() + " NOT NULL");
+		createTable.addCustomColumns(VALUE_COLUMN_NAME + " " + dbDriver.getDoubleTypeName() + " NOT NULL DEFAULT 1.0");
 
 		// Now add the variable columns.
 		List<String> uniqueColumns = new ArrayList<String>();
@@ -207,13 +240,18 @@ public class PredicateInfo {
 		}
 	}
 
-	private void index(Connection connection, DatabaseDriver dbDriver) {
+	public void index(Connection connection, DatabaseDriver dbDriver) {
+		if (indexed) {
+			return;
+		}
+		indexed = true;
+
 		List<String> indexes = new ArrayList<String>();
 
 		// The primary index used for grounding.
 		CreateIndexQuery createIndex = new CreateIndexQuery(tableName(), "IX_" + tableName() + "_GROUNDING");
 
-		// The column order is very important: data columns, then index.
+		// The column order is very important: data columns, then partition.
 		for (String colName : argCols) {
 			createIndex.addCustomColumns(colName);
 		}

@@ -18,14 +18,19 @@
 package org.linqs.psl.database.rdbms.driver;
 
 import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.database.Partition;
+import org.linqs.psl.database.rdbms.PredicateInfo;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.util.Parallel;
+import org.linqs.psl.util.StringUtils;
 
 import com.healthmarketscience.sqlbuilder.CreateTableQuery;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import org.apache.commons.lang3.StringUtils;
+import org.postgresql.PGConnection;
 
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.sql.Connection;
@@ -85,8 +90,67 @@ public class PostgreSQLDriver implements DatabaseDriver {
 	}
 
 	@Override
-	public boolean supportsExternalFunctions() {
-		return false;
+	public boolean supportsBulkCopy() {
+		return true;
+	}
+
+	public void bulkCopy(String path, String delimiter, boolean hasTruth,
+			PredicateInfo predicateInfo, Partition partition) {
+		String sql = String.format("COPY %s(%s%s) FROM STDIN WITH DELIMITER '%s'",
+				predicateInfo.tableName(),
+				StringUtils.join(predicateInfo.argumentColumns(), ", "),
+				hasTruth ? (", " + PredicateInfo.VALUE_COLUMN_NAME) : "",
+				delimiter);
+
+		// First change the tables default value for the partition.
+		setColumnDefault(predicateInfo.tableName(), PredicateInfo.PARTITION_COLUMN_NAME, "'" + partition.getID() + "'");
+
+		try (
+			Connection connection = getConnection();
+			FileInputStream inFile = new FileInputStream(path);
+		) {
+			PGConnection pgConnection = connection.unwrap(PGConnection.class);
+			pgConnection.getCopyAPI().copyIn(sql, inFile);
+		} catch (SQLException ex) {
+			throw new RuntimeException("Could not perform bulk insert on " + predicateInfo.predicate(), ex);
+		} catch (IOException ex) {
+			throw new RuntimeException("Error bulk copying file: " + path, ex);
+		} finally {
+			// Make sure to change the table's default partition value back (to nothing).
+			dropColumnDefault(predicateInfo.tableName(), PredicateInfo.PARTITION_COLUMN_NAME);
+		}
+	}
+
+	/**
+	 * Set a default value for a column.
+	 * The passed in default should already be prepped to be put in the query
+	 * (ie string values should already be quoted).
+	 */
+	public void setColumnDefault(String tableName, String columnName, String defaultValue) {
+		String sql = String.format("ALTER TABLE %s ALTER COLUMN %s SET DEFAULT %s", tableName, columnName, defaultValue);
+
+		try (Connection connection = getConnection()) {
+			PreparedStatement statement = connection.prepareStatement(sql);
+			statement.executeUpdate();
+		} catch (SQLException ex) {
+			throw new RuntimeException(String.format("Could not set the column default of %s for %s.%s.",
+					defaultValue, tableName, columnName), ex);
+		}
+	}
+
+	/**
+	 * Remove the default value for a column.
+	 */
+	public void dropColumnDefault(String tableName, String columnName) {
+		String sql = String.format("ALTER TABLE %s ALTER COLUMN %s DROP DEFAULT", tableName, columnName);
+
+		try (Connection connection = getConnection()) {
+			PreparedStatement statement = connection.prepareStatement(sql);
+			statement.executeUpdate();
+		} catch (SQLException ex) {
+			throw new RuntimeException(String.format("Could not drop the column default for %s.%s.",
+					tableName, columnName), ex);
+		}
 	}
 
 	@Override

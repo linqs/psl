@@ -32,7 +32,6 @@ import org.linqs.psl.model.rule.WeightedRule;
  * the original GroundRule and modify it.
  */
 public interface GroundRuleStore {
-
 	/**
 	 * Adds a GroundRule to this store.
 	 * The behavior on what to do when a rule is already added is up tothe implementation.

@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2017 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,19 +15,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.cli.dataloader;
+package org.linqs.psl.application.learning.weight.search;
 
-import java.util.Set;
+import org.linqs.psl.application.learning.weight.WeightLearningApplication;
+import org.linqs.psl.application.learning.weight.WeightLearningTest;
 
-import org.linqs.psl.model.predicate.StandardPredicate;
+public class RandomGridSearchTest extends WeightLearningTest {
+	@Override
+	protected WeightLearningApplication getWLA() {
+		// Narrow the search space for tests.
+		info.config.setProperty(RandomGridSearch.MAX_LOCATIONS_KEY, 50);
 
-public class DataLoaderOutput {
-	private Set<StandardPredicate> closedPredicates;
-
-	public DataLoaderOutput(Set<StandardPredicate> closedPredicates){
-		this.closedPredicates = closedPredicates;
-	}
-	public Set<StandardPredicate> getClosedPredicates(){
-		return closedPredicates;
+		return new RandomGridSearch(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB, info.config);
 	}
 }

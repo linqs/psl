@@ -15,7 +15,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.cli.dataloader;
+package org.linqs.psl.cli;
+
+import org.linqs.psl.database.DataStore;
+import org.linqs.psl.database.Partition;
+import org.linqs.psl.database.loading.Inserter;
+import org.linqs.psl.model.predicate.PredicateFactory;
+import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.model.term.ConstantType;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.yaml.snakeyaml.Yaml;
 
 import java.io.InputStream;
 import java.util.HashSet;
@@ -24,29 +35,20 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.linqs.psl.database.DataStore;
-import org.linqs.psl.database.Partition;
-import org.linqs.psl.database.loading.Inserter;
-import org.linqs.psl.model.predicate.PredicateFactory;
-import org.linqs.psl.model.predicate.StandardPredicate;
-import org.linqs.psl.model.term.ConstantType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.yaml.snakeyaml.Yaml;
-
 /**
  * @author jay
  */
 public class DataLoader {
 	private static final Logger log = LoggerFactory.getLogger(DataLoader.class);
 
+	@SuppressWarnings("unchecked")
 	private static Set<StandardPredicate> definePredicates(DataStore datastore, Map yamlMap, boolean useIntIds) {
 		if (!yamlMap.containsKey("predicates")) {
 			throw new IllegalArgumentException("No 'predicates' block defined in data specification");
 		}
 
 		Set<StandardPredicate> closed = new HashSet<StandardPredicate>();
-		PredicateFactory pf = PredicateFactory.getFactory();
+		PredicateFactory predicateFactory = PredicateFactory.getFactory();
 
 		for (Entry<String, String> predicateSpec : ((Map<String,String>)yamlMap.get("predicates")).entrySet()) {
 			// parse the predicate/args part
@@ -68,19 +70,19 @@ public class DataLoader {
 					args[i] = ConstantType.UniqueStringID;
 				}
 			}
-			StandardPredicate predicate = pf.createStandardPredicate(predicateStr, args);
+			StandardPredicate predicate = predicateFactory.createStandardPredicate(predicateStr, args);
 			datastore.registerPredicate(predicate);
 
 			// check if closed
 			if (predicateSpec.getValue().equalsIgnoreCase("closed")) {
 				closed.add(predicate);
 			}
-
 		}
 
 		return closed;
 	}
 
+	@SuppressWarnings("unchecked")
 	private static void loadDataFiles(DataStore datastore, Map yamlMap) {
 		for (String partitionName : ((Map<String,Object>) yamlMap).keySet()) {
 			// Skip special partition predicates
@@ -93,22 +95,22 @@ public class DataLoader {
 				continue;
 			}
 
-			PredicateFactory pf = PredicateFactory.getFactory();
+			PredicateFactory predicateFactory = PredicateFactory.getFactory();
 
-			//find files to load into this partition
-			Partition p = datastore.getPartition(partitionName);
+			// Find files to load into this partition.
+			Partition partition = datastore.getPartition(partitionName);
 
 			for (Entry<String,Object> loadSpec : ((Map<String,Object>)yamlMap.get(partitionName)).entrySet()) {
 				log.debug("Loading data for {} ({} partition)", loadSpec.getKey(), partitionName);
 
-				StandardPredicate predicate = (StandardPredicate)pf.getPredicate(loadSpec.getKey());
-				Inserter insert = datastore.getInserter(predicate, p);
+				StandardPredicate predicate = (StandardPredicate)predicateFactory.getPredicate(loadSpec.getKey());
+				Inserter insert = datastore.getInserter(predicate, partition);
 
 				if (loadSpec.getValue() instanceof String) {
-					DataInserter.loadDelimitedDataAutomatic(predicate, insert, (String)loadSpec.getValue());
+					insert.loadDelimitedDataAutomatic((String)loadSpec.getValue());
 				} else if (loadSpec.getValue() instanceof List) {
 					for (String filename : ((List<String>)loadSpec.getValue())) {
-						DataInserter.loadDelimitedDataAutomatic(predicate, insert, filename);
+						insert.loadDelimitedDataAutomatic(filename);
 					}
 				} else {
 					throw new IllegalArgumentException("Unknown specification when loading " + partitionName);
@@ -124,15 +126,14 @@ public class DataLoader {
 	 *
 	 * @param datastore the datastore where data will be loaded
 	 * @param inputStream YAML-formatted input for predicate and data definitions
-	 * @return DataLoaderOutput with data loading results, including closed predicates
-	 * @throws Exception
+	 * @return The set of closed predicates.
 	 */
-	public static DataLoaderOutput load(DataStore datastore, InputStream inputStream, boolean useIntIds) {
+	public static Set<StandardPredicate> load(DataStore datastore, InputStream inputStream, boolean useIntIds) {
 		Yaml yaml = new Yaml();
 		Map yamlParse = (Map)yaml.load(inputStream);
 		Set<StandardPredicate> closedPredicates = definePredicates(datastore, yamlParse, useIntIds);
 		loadDataFiles(datastore, yamlParse);
 
-		return new DataLoaderOutput(closedPredicates);
+		return closedPredicates;
 	}
 }

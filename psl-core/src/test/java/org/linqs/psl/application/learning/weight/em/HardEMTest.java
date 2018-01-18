@@ -15,19 +15,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.model;
+package org.linqs.psl.application.learning.weight.em;
 
-public class NumericUtilities {
+import org.linqs.psl.application.learning.weight.VotedPerceptron;
+import org.linqs.psl.application.learning.weight.WeightLearningApplication;
+import org.linqs.psl.application.learning.weight.WeightLearningTest;
 
-	public static final double relaxedEpsilon = 5e-2;
-	public static final double strictEpsilon = 1e-8;
-	
-	public static boolean equalsRelaxed(double val1, double val2) {
-		return Math.abs(val1-val2)<relaxedEpsilon;
+public class HardEMTest extends WeightLearningTest {
+	@Override
+	protected WeightLearningApplication getWLA() {
+		// Do less steps for tests.
+		info.config.setProperty(VotedPerceptron.NUM_STEPS_KEY, 5);
+
+		return new HardEM(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB, info.config);
 	}
-	
-	public static boolean equalsStrict(double val1, double val2) {
-		return Math.abs(val1-val2)<strictEpsilon;
-	}
-	
 }

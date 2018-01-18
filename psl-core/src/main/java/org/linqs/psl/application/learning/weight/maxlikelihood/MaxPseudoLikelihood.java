@@ -18,33 +18,33 @@
 package org.linqs.psl.application.learning.weight.maxlikelihood;
 
 import org.linqs.psl.application.groundrulestore.AtomRegisterGroundRuleStore;
-import org.linqs.psl.application.learning.weight.WeightLearningApplication;
+import org.linqs.psl.application.learning.weight.VotedPerceptron;
 import org.linqs.psl.config.ConfigBundle;
-import org.linqs.psl.config.ConfigManager;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
-import org.linqs.psl.reasoner.term.ConstraintBlockerTermGenerator;
-import org.linqs.psl.reasoner.term.ConstraintBlockerTermStore;
-import org.linqs.psl.reasoner.term.TermGenerator;
+import org.linqs.psl.reasoner.term.blocker.ConstraintBlockerTerm;
+import org.linqs.psl.reasoner.term.blocker.ConstraintBlockerTermGenerator;
+import org.linqs.psl.reasoner.term.blocker.ConstraintBlockerTermStore;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
  * Learns weights by optimizing the pseudo-log-likelihood of the data using
  * the voted perceptron algorithm.
  *
- * @author Ben London <blondon@cs.umd.edu>
+ * This learning uses a ConstraintBlocker, which forces several conditions on the model.
+ * See {@link org.linqs.psl.reasoner.term.blocker.ConstraintBlockerTermGenerator ConstraintBlockerTermGenerator} for details on those restrictions.
  */
 public class MaxPseudoLikelihood extends VotedPerceptron {
 	/**
 	 * Prefix of property keys used by this class.
-	 *
-	 * @see ConfigManager
 	 */
 	public static final String CONFIG_PREFIX = "maxspeudolikelihood";
 
@@ -64,41 +64,26 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 	 * the integrals in the marginal computation.
 	 */
 	public static final String NUM_SAMPLES_KEY = CONFIG_PREFIX + ".numsamples";
-
-	/**
-	 * Default value for NUM_SAMPLES_KEY
-	 */
 	public static final int NUM_SAMPLES_DEFAULT = 10;
-
-	/**
-	 * Key for constraint violation tolerance
-	 */
-	public static final String CONSTRAINT_TOLERANCE_KEY = CONFIG_PREFIX + ".constrainttolerance";
-
-	/**
-	 * Default value for CONSTRAINT_TOLERANCE
-	 */
-	public static final double CONSTRAINT_TOLERANCE_DEFAULT = 1e-5;
 
 	/**
 	 * Key for positive double property.
 	 * Used as minimum width for bounds of integration.
 	 */
 	public static final String MIN_WIDTH_KEY = CONFIG_PREFIX + ".minwidth";
-
-	/**
-	 * Default value for MIN_WIDTH_KEY
-	 */
 	public static final double MIN_WIDTH_DEFAULT = 1e-2;
 
-	private ConstraintBlockerTermStore blocker;
 	private final boolean bool;
 	private final int numSamples;
 	private final double minWidth;
-	private final double constraintTol;
 
 	public MaxPseudoLikelihood(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
-		super(model, rvDB, observedDB, config);
+		this(model.getRules(), rvDB, observedDB, config);
+	}
+
+	public MaxPseudoLikelihood(List<Rule> rules, Database rvDB, Database observedDB, ConfigBundle config) {
+		super(rules, rvDB, observedDB, false, config);
+
 		bool = config.getBoolean(BOOLEAN_KEY, BOOLEAN_DEFAULT);
 
 		numSamples = config.getInt(NUM_SAMPLES_KEY, NUM_SAMPLES_DEFAULT);
@@ -110,24 +95,16 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 		if (minWidth <= 0) {
 			throw new IllegalArgumentException("Minimum width must be positive double.");
 		}
-
-		constraintTol = config.getDouble(CONSTRAINT_TOLERANCE_KEY, CONSTRAINT_TOLERANCE_DEFAULT);
-		if (constraintTol <= 0) {
-			throw new IllegalArgumentException("Minimum width must be positive double.");
-		}
 	}
 
 	@Override
 	public void initGroundModel() {
-		// Force super to use a AtomRegisterGroundRuleStore.
-		config.setProperty(GROUND_RULE_STORE_KEY, "org.linqs.psl.application.groundrulestore.AtomRegisterGroundRuleStore");
+		// Force super to use a constraint blocker.
+		config.setProperty(GROUND_RULE_STORE_KEY, AtomRegisterGroundRuleStore.class.getName());
+		config.setProperty(TERM_STORE_KEY, ConstraintBlockerTermStore.class.getName());
+		config.setProperty(TERM_GENERATOR_KEY, ConstraintBlockerTermGenerator.class.getName());
 
-		// Invoke method in the parent class to setup ground model.
 		super.initGroundModel();
-
-		blocker = new ConstraintBlockerTermStore();
-		TermGenerator termGenerator = new ConstraintBlockerTermGenerator();
-		termGenerator.generateTerms(groundRuleStore, blocker);
 	}
 
 	/**
@@ -136,81 +113,83 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 	 * since they do not admit a closed-form antiderivative.
 	 */
 	@Override
-	protected double[] computeExpectedIncomp() {
-		/* Puts RandomVariableAtoms in 2d array by block */
-		RandomVariableAtom[][] rvBlocks = blocker.getRVBlocks();
-		/* If true, exactly one Atom in the RV block must be 1.0. If false, at most one can. */
-		boolean[] exactlyOne = blocker.getExactlyOne();
-		/* Collects GroundCompatibilityRules incident on each block of RandomVariableAtoms */
-		WeightedGroundRule[][] incidentGKs = blocker.getIncidentGKs();
+	protected void computeExpectedIncompatibility() {
+		if (!(termStore instanceof ConstraintBlockerTermStore)) {
+			throw new IllegalArgumentException("ConstraintBlockerTermStore required.");
+		}
+		ConstraintBlockerTermStore blocker = (ConstraintBlockerTermStore)termStore;
 
-		double[] expInc = new double[mutableRules.size()];
+		// Zero out the expected incompatibility first.
+		for (int i = 0; i < expectedIncompatibility.length; i++) {
+			expectedIncompatibility[i] = 0.0;
+		}
 
 		// Accumulate the expected incompatibility over all atoms.
-		for (int iBlock = 0; iBlock < rvBlocks.length; iBlock++) {
-
-			if (rvBlocks[iBlock].length == 0) {
+		for (ConstraintBlockerTerm block : blocker) {
+			if (block.size() == 0) {
 				continue;
 			}
 
 			// Sample numSamples random numbers in the range of integration.
-			double[][] s;
+			double[][] samples;
 			if (!bool) {
-				s = new double[Math.max(numSamples * rvBlocks[iBlock].length, 150)][];
+				samples = new double[Math.max(numSamples * block.size(), 150)][];
 				SimplexSampler simplexSampler = new SimplexSampler();
-				for (int iSample = 0; iSample < s.length; iSample++) {
-					s[iSample] = simplexSampler.getNext(s.length);
+				for (int sampleIndex = 0; sampleIndex < samples.length; sampleIndex++) {
+					samples[sampleIndex] = simplexSampler.getNext(samples.length);
 				}
 			} else {
-				s = new double[(exactlyOne[iBlock]) ? rvBlocks[iBlock].length : rvBlocks[iBlock].length+1][];
-				for (int iRV = 0; iRV < ((exactlyOne[iBlock]) ? s.length : s.length - 1); iRV++) {
-					s[iRV] = new double[rvBlocks[iBlock].length];
-					s[iRV][iRV] = 1.0;
+				samples = new double[block.getExactlyOne() ? block.size() : block.size() + 1][];
+				for (int iRV = 0; iRV < (block.getExactlyOne() ? samples.length : samples.length - 1); iRV++) {
+					samples[iRV] = new double[block.size()];
+					samples[iRV][iRV] = 1.0;
 				}
 
-				if (!exactlyOne[iBlock]) {
-					s[s.length-1] = new double[rvBlocks[iBlock].length];
+				if (!block.getExactlyOne()) {
+					samples[samples.length - 1] = new double[block.size()];
 				}
 			}
 
 			// Compute the incompatibility of each sample for each rule.
-			HashMap<WeightedRule,double[]> incompatibilities = new HashMap<WeightedRule,double[]>();
+			HashMap<WeightedRule, double[]> incompatibilities = new HashMap<WeightedRule, double[]>();
 
 			// Saves original state.
-			double[] originalState = new double[rvBlocks[iBlock].length];
-			for (int iSave = 0; iSave < rvBlocks[iBlock].length; iSave++) {
-				originalState[iSave] = rvBlocks[iBlock][iSave].getValue();
+			double[] originalState = new double[block.size()];
+			for (int i = 0; i < block.size(); i++) {
+				originalState[i] = block.getAtoms()[i].getValue();
 			}
 
 			// Computes the probability.
-			for (GroundRule groundRule : incidentGKs[iBlock]) {
-				if (groundRule instanceof WeightedGroundRule) {
-					WeightedRule rule = (WeightedRule) groundRule.getRule();
-					if (!incompatibilities.containsKey(rule)) {
-						incompatibilities.put(rule, new double[s.length]);
+			for (GroundRule groundRule : block.getIncidentGRs()) {
+				if (!(groundRule instanceof WeightedGroundRule)) {
+					continue;
+				}
+
+				WeightedRule rule = (WeightedRule)groundRule.getRule();
+				if (!incompatibilities.containsKey(rule)) {
+					incompatibilities.put(rule, new double[samples.length]);
+				}
+
+				double[] inc = incompatibilities.get(rule);
+				for (int sampleIndex = 0; sampleIndex < samples.length; sampleIndex++) {
+					// Changes the state of the block to the next point.
+					for (int i = 0; i < block.size(); i++) {
+						block.getAtoms()[i].setValue(samples[sampleIndex][i]);
 					}
 
-					double[] inc = incompatibilities.get(rule);
-					for (int iSample = 0; iSample < s.length; iSample++) {
-						// Changes the state of the block to the next point.
-						for (int iChange = 0; iChange < rvBlocks[iBlock].length; iChange++) {
-							rvBlocks[iBlock][iChange].setValue(s[iSample][iChange]);
-						}
-
-						inc[iSample] += ((WeightedGroundRule) groundRule).getIncompatibility();
-					}
+					inc[sampleIndex] += ((WeightedGroundRule) groundRule).getIncompatibility();
 				}
 			}
 
 			// Remember to return the block to its original state!
-			for (int iChange = 0; iChange < rvBlocks[iBlock].length; iChange++) {
-				rvBlocks[iBlock][iChange].setValue(originalState[iChange]);
+			for (int i = 0; i < block.size(); i++) {
+				block.getAtoms()[i].setValue(originalState[i]);
 			}
 
 			// Compute the exp incomp and accumulate the partition for the current atom.
-			HashMap<WeightedRule,Double> expIncAtom = new HashMap<WeightedRule,Double>();
-			double Z = 0.0;
-			for (int j = 0; j < s.length; j++) {
+			HashMap<WeightedRule, Double> expIncAtom = new HashMap<WeightedRule, Double>();
+			double partition = 0.0;
+			for (int j = 0; j < samples.length; j++) {
 				// Compute the exponent.
 				double sum = 0.0;
 				for (Map.Entry<WeightedRule,double[]> e2 : incompatibilities.entrySet()) {
@@ -221,7 +200,7 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 				double exp = Math.exp(sum);
 
 				// Add to partition.
-				Z += exp;
+				partition += exp;
 
 				// Compute the exp incomp for current atom.
 				for (Map.Entry<WeightedRule,double[]> e2 : incompatibilities.entrySet()) {
@@ -239,11 +218,9 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 			for (int i = 0; i < mutableRules.size(); i++) {
 				WeightedRule rule = mutableRules.get(i);
 				if (expIncAtom.containsKey(rule) && expIncAtom.get(rule) > 0.0) {
-					expInc[i] += expIncAtom.get(rule) / Z;
+					expectedIncompatibility[i] += expIncAtom.get(rule) / partition;
 				}
 			}
 		}
-
-		return expInc;
 	}
 }

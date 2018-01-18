@@ -38,8 +38,8 @@ public class BooleanMCSatTest {
 
 		info.config.setProperty(MPEInference.REASONER_KEY, "org.linqs.psl.reasoner.bool.BooleanMCSat");
 		info.config.setProperty(MPEInference.GROUND_RULE_STORE_KEY, "org.linqs.psl.application.groundrulestore.AtomRegisterGroundRuleStore");
-		info.config.setProperty(MPEInference.TERM_STORE_KEY, "org.linqs.psl.reasoner.term.ConstraintBlockerTermStore");
-		info.config.setProperty(MPEInference.TERM_GENERATOR_KEY, "org.linqs.psl.reasoner.term.ConstraintBlockerTermGenerator");
+		info.config.setProperty(MPEInference.TERM_STORE_KEY, "org.linqs.psl.reasoner.term.blocker.ConstraintBlockerTermStore");
+		info.config.setProperty(MPEInference.TERM_GENERATOR_KEY, "org.linqs.psl.reasoner.term.blocker.ConstraintBlockerTermGenerator");
 	}
 
 	/**

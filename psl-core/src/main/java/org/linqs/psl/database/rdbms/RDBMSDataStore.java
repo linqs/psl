@@ -26,19 +26,24 @@ import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.util.Parallel;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -48,6 +53,8 @@ import java.util.Set;
  * through the {@link ConfigBundle} can use custom names for its value and partition columns.
  */
 public class RDBMSDataStore implements DataStore {
+	private static final Logger log = LoggerFactory.getLogger(RDBMSDataStore.class);
+
 	private static final Set<RDBMSDataStore> openDataStores = new HashSet<RDBMSDataStore>();
 
 	// Map for database registration
@@ -63,8 +70,6 @@ public class RDBMSDataStore implements DataStore {
 	 * Default value for the USE_STRING_ID_KEY property.
 	 */
 	public static final boolean USE_STRING_ID_DEFAULT = true;
-
-	private final RDBMSDataLoader dataloader;
 
 	/**
 	 * This Database Driver associated to the datastore.
@@ -89,6 +94,11 @@ public class RDBMSDataStore implements DataStore {
 	private final Map<Predicate, PredicateInfo> predicates;
 
 	/**
+	 * Indicates that all predicates have been indexed.
+	 */
+	private boolean predicatesIndexed;
+
+	/**
 	 * Returns an RDBMSDataStore that utilizes the connections returned by the {@link DatabaseDriver}.
 	 * @param dbDriver the DatabaseDriver that contains a connection pool to the backing database.
 	 * @param config the configuration for this DataStore.
@@ -104,11 +114,11 @@ public class RDBMSDataStore implements DataStore {
 		// Keep database driver locally for generating different query dialets
 		this.dbDriver = dbDriver;
 
-		// Set up the data loader
-		this.dataloader = new RDBMSDataLoader(this);
-
 		// Initialize metadata
 		this.metadata = new DataStoreMetadata(this);
+
+		// We start with no predicates to index.
+		predicatesIndexed = true;
 
 		// Read in any predicates that exist in the database
 		try (Connection connection = getConnection()) {
@@ -118,20 +128,6 @@ public class RDBMSDataStore implements DataStore {
 		} catch (SQLException ex) {
 			throw new RuntimeException("Unable to attempt to deserialize predicates.", ex);
 		}
-
-		// Register the DataStore class for external functions
-		if (dbDriver.supportsExternalFunctions()) {
-			try (Connection connection = getConnection()) {
-				ExternalFunctions.registerFunctionAlias(connection);
-			} catch (SQLException ex) {
-				throw new RuntimeException("Unable to register external functions.", ex);
-			}
-		}
-	}
-
-	@Override
-	public boolean supportsExternalFunctions() {
-		return dbDriver.supportsExternalFunctions();
 	}
 
 	@Override
@@ -146,19 +142,19 @@ public class RDBMSDataStore implements DataStore {
 			return;
 		}
 
-		PredicateInfo predicateInfo = new PredicateInfo(predicate);
+		PredicateInfo predicateInfo = new PredicateInfo(predicate, !createTable);
 		predicates.put(predicate, predicateInfo);
 
 		if (createTable) {
+			// We only need to index this predicate if it doesn't already have a table.
+			predicatesIndexed = false;
+
 			try (Connection connection = getConnection()) {
 				predicateInfo.setupTable(connection, dbDriver);
 			} catch (SQLException ex) {
 				throw new RuntimeException("Unable to setup predicate table for: " + predicate + ".", ex);
 			}
 		}
-
-		// Update the data loader with the new predicate
-		dataloader.registerPredicate(predicateInfo);
 	}
 
 	@Override
@@ -174,13 +170,21 @@ public class RDBMSDataStore implements DataStore {
 		 * 2. No other databases are reading from this write partition
 		 * 3. No other database is writing to the specified read partition(s)
 		 */
-		if (writePartitionIDs.contains(write))
+		if (writePartitionIDs.contains(write)) {
 			throw new IllegalArgumentException("The specified write partition ID is already used by another database.");
-		if (openDatabases.containsKey(write))
+		} else if (openDatabases.containsKey(write)) {
 			throw new IllegalArgumentException("The specified write partition ID is also a read partition.");
-		for (Partition partition : read)
-			if (writePartitionIDs.contains(partition))
+		}
+
+		for (Partition partition : read) {
+			if (writePartitionIDs.contains(partition)) {
 				throw new IllegalArgumentException("Another database is writing to a specified read partition: " + partition);
+			}
+		}
+
+		// Make sure all the predicates are indexed.
+		// We wait until now, so data can be loaded without needed to update the indexes.
+		indexPredicates();
 
 		// Creates the database and registers the current predicates
 		RDBMSDatabase db = new RDBMSDatabase(this, write, read, Collections.unmodifiableMap(predicates), toClose);
@@ -193,6 +197,40 @@ public class RDBMSDataStore implements DataStore {
 		return db;
 	}
 
+	public void indexPredicates() {
+		if (predicatesIndexed) {
+			return;
+		}
+		predicatesIndexed = true;
+
+		List<PredicateInfo> toIndex = new ArrayList<PredicateInfo>();
+		for (PredicateInfo predicateInfo : predicates.values()) {
+			if (!predicateInfo.indexed()) {
+				toIndex.add(predicateInfo);
+			}
+		}
+
+		if (toIndex.size() == 0) {
+			return;
+		}
+
+		// Index in parallel.
+		log.debug("Indexing predicates.");
+		Parallel.foreach(toIndex, new Parallel.Worker<PredicateInfo>() {
+			@Override
+			public void work(int index, PredicateInfo predicateInfo) {
+				log.trace("Indexing " + predicateInfo.predicate());
+
+				try (Connection connection = getConnection()) {
+					predicateInfo.index(connection, dbDriver);
+				} catch (SQLException ex) {
+					throw new RuntimeException("Unable to index predicate: " + predicateInfo.predicate(), ex);
+				}
+			}
+		});
+		log.debug("Predicate indexing complete.");
+	}
+
 	@Override
 	public Collection<Database> getOpenDatabases() {
 		return openDatabases.values();
@@ -200,12 +238,13 @@ public class RDBMSDataStore implements DataStore {
 
 	@Override
 	public Inserter getInserter(StandardPredicate predicate, Partition partition) {
-		if (!predicates.containsKey(predicate))
+		if (!predicates.containsKey(predicate)) {
 			throw new IllegalArgumentException("Unknown predicate specified: " + predicate);
-		if (writePartitionIDs.contains(partition) || openDatabases.containsKey(partition))
+		} else if (writePartitionIDs.contains(partition) || openDatabases.containsKey(partition)) {
 			throw new IllegalStateException("Partition [" + partition + "] is currently in use, cannot insert into it.");
+		}
 
-		return dataloader.getInserter(predicates.get(predicate).predicate(), partition);
+		return new RDBMSInserter(this, predicates.get(predicate), partition);
 	}
 
 	@Override
@@ -291,6 +330,14 @@ public class RDBMSDataStore implements DataStore {
 	@Override
 	public Set<Partition> getPartitions() {
 		return metadata.getAllPartitions();
+	}
+
+	public int getPredicateRowCount(StandardPredicate predicate) {
+		try (Connection connection = getConnection()) {
+			return predicates.get(predicate).getCount(connection);
+		} catch (SQLException ex) {
+			throw new RuntimeException("Failed to close connection for count.", ex);
+		}
 	}
 
 	public DatabaseDriver getDriver() {

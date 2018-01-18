@@ -39,8 +39,15 @@ public class QueryAtom extends Atom {
 	}
 
 	public GroundAtom ground(AtomManager atomManager, ResultList res, int resultIndex) {
-		Constant[] newArgs = new Constant[arguments.length];
+		return ground(atomManager, res, resultIndex, new Constant[arguments.length]);
+	}
 
+	/**
+	 * Ground using the passed in buffer.
+	 * The buffer cannot be held as member datum or statically for thread-safety.
+	 * It is up to the caller to make sure the buffer is only used on this thread.
+	 */
+	public GroundAtom ground(AtomManager atomManager, ResultList res, int resultIndex, Constant[] newArgs) {
 		for (int i = 0; i < arguments.length; i++) {
 			if (arguments[i] instanceof Variable) {
 				newArgs[i] = res.get(resultIndex, (Variable)arguments[i]);

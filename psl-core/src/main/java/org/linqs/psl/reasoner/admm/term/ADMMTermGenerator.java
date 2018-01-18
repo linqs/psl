@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2015 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@ import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.function.AtomFunctionVariable;
 import org.linqs.psl.reasoner.function.ConstantNumber;
 import org.linqs.psl.reasoner.function.ConstraintTerm;
-import org.linqs.psl.reasoner.function.FunctionSingleton;
 import org.linqs.psl.reasoner.function.FunctionSum;
 import org.linqs.psl.reasoner.function.FunctionSummand;
 import org.linqs.psl.reasoner.function.FunctionTerm;
@@ -33,6 +32,7 @@ import org.linqs.psl.reasoner.function.MaxFunction;
 import org.linqs.psl.reasoner.function.PowerOfTwo;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
+import org.linqs.psl.util.Parallel;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,17 +45,24 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 	public ADMMTermGenerator(ConfigBundle config) {}
 
 	@Override
-	public void generateTerms(GroundRuleStore ruleStore, TermStore<ADMMObjectiveTerm> termStore) {
+	public int generateTerms(GroundRuleStore ruleStore, final TermStore<ADMMObjectiveTerm> termStore) {
 		if (!(termStore instanceof ADMMTermStore)) {
 			throw new IllegalArgumentException("ADMMTermGenerator requires an ADMMTermStore");
 		}
 
-		for (GroundRule groundRule : ruleStore.getGroundRules()) {
-			ADMMObjectiveTerm term = createTerm(groundRule, (ADMMTermStore)termStore);
-			if (term.variables.size() > 0) {
-				termStore.add(groundRule, term);
+		int initialSize = termStore.size();
+
+		Parallel.foreach(ruleStore.getGroundRules(), new Parallel.Worker<GroundRule>() {
+			@Override
+			public void work(int index, GroundRule rule) {
+				ADMMObjectiveTerm term = createTerm(rule, (ADMMTermStore)termStore);
+				if (term.variables.size() > 0) {
+					termStore.add(rule, term);
+				}
 			}
-		}
+		});
+
+		return termStore.size() - initialSize;
 	}
 
 	@Override
@@ -158,8 +165,9 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 	private Hyperplane processHyperplane(FunctionSum sum, ADMMTermStore termStore) {
 		Hyperplane hyperplane = new Hyperplane();
 
-		for (FunctionSummand summand : sum) {
-			FunctionSingleton singleton = summand.getTerm();
+		for (int i = 0; i < sum.size(); i++) {
+			FunctionSummand summand = sum.get(i);
+			FunctionTerm singleton = summand.getTerm();
 
 			if (singleton instanceof AtomFunctionVariable && !singleton.isConstant()) {
 				LocalVariable variable = termStore.createLocalVariable((AtomFunctionVariable)singleton);

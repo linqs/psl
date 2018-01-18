@@ -21,13 +21,46 @@ package org.linqs.psl.util;
  * Various static math utilities.
  */
 public final class MathUtils {
-	public static final double EPSILON = 0.000001;
+	public static final double EPSILON = 1e-6;
+	public static final double RELAXED_EPSILON = 5e-2;
+	public static final double STRICT_EPSILON = 1e-8;
 
 	// Static only.
 	private MathUtils() {}
 
 	public static boolean equals(double a, double b) {
+		return equals(a, b, EPSILON);
+	}
+
+	public static boolean equalsRelaxed(double a, double b) {
+		return equals(a, b, RELAXED_EPSILON);
+	}
+
+	public static boolean equalsStrict(double a, double b) {
+		return equals(a, b, STRICT_EPSILON);
+	}
+
+	public static boolean equals(double a, double b, double epsilon) {
 		return Math.abs(a - b) <= EPSILON;
+	}
+
+	public static int compare(double a, double b) {
+		return compare(a, b, EPSILON);
+	}
+
+	/**
+	 * A comparison method with the Comparator integer return semantics.
+	 */
+	public static int compare(double a, double b, double epsilon) {
+		if (equals(a, b, epsilon)) {
+			return 0;
+		}
+
+		if (a < b) {
+			return -1;
+		}
+
+		return 1;
 	}
 
 	public static boolean isZero(double a) {

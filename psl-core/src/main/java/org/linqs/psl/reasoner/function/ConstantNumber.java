@@ -22,22 +22,16 @@ import java.util.Map;
 /**
  * A {@link FunctionTerm} with constant value.
  */
-public class ConstantNumber implements FunctionSingleton {
-
+public class ConstantNumber implements FunctionTerm {
 	private final double value;
-	
+
 	public ConstantNumber(double val) {
 		value = val;
 	}
-	
+
+	@Override
 	public double getValue() {
 		return value;
-	}
-	
-	
-	@Override
-	public double getValue(Map<? extends FunctionVariable,Double> values, boolean useCurrentValues) {
-		return getValue();
 	}
 
 	@Override
@@ -49,10 +43,9 @@ public class ConstantNumber implements FunctionSingleton {
 	public boolean isConstant() {
 		return true;
 	}
-	
+
 	@Override
 	public String toString() {
 		return String.valueOf(value);
 	}
-	
 }

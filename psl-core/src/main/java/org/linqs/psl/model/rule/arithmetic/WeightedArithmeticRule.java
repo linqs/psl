@@ -73,11 +73,6 @@ public class WeightedArithmeticRule extends AbstractArithmeticRule implements We
 	}
 
 	@Override
-	public boolean isWeightMutable() {
-		return true;
-	}
-
-	@Override
 	public String toString() {
 		StringBuilder s = new StringBuilder();
 		s.append(weight);

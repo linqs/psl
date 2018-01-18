@@ -25,11 +25,10 @@ package org.linqs.psl.reasoner.function;
  * the value of a function and constant value.
  */
 public class ConstraintTerm {
-
 	private final FunctionTerm function;
 	private final FunctionComparator comparator;
 	private final double value;
-	
+
 	public ConstraintTerm(FunctionTerm fun, FunctionComparator comp, double val) {
 		function = fun;
 		comparator = comp;
@@ -47,10 +46,9 @@ public class ConstraintTerm {
 	public double getValue() {
 		return value;
 	}
-	
+
 	@Override
 	public String toString() {
 		return function.toString() + " " + comparator.toString() + " " + value;
 	}
-	
 }

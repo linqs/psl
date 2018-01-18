@@ -15,11 +15,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.reasoner.function;
+package org.linqs.psl.application.learning.weight.search;
 
-/**
- * A {@link FunctionTerm} with at most one {@link FunctionVariable}.
- */
-public interface FunctionSingleton extends FunctionTerm {
+import org.linqs.psl.application.learning.weight.WeightLearningApplication;
+import org.linqs.psl.application.learning.weight.WeightLearningTest;
 
+public class GridSearchTest extends WeightLearningTest {
+	@Override
+	protected WeightLearningApplication getWLA() {
+		// Narrow the search space for tests.
+		info.config.setProperty(GridSearch.POSSIBLE_WEIGHTS_KEY, "0.01:1:10");
+
+		return new GridSearch(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB, info.config);
+	}
 }

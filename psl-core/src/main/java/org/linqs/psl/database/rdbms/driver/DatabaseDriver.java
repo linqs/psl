@@ -17,6 +17,8 @@
  */
 package org.linqs.psl.database.rdbms.driver;
 
+import org.linqs.psl.database.Partition;
+import org.linqs.psl.database.rdbms.PredicateInfo;
 import org.linqs.psl.model.term.ConstantType;
 
 import com.healthmarketscience.sqlbuilder.CreateTableQuery;
@@ -45,11 +47,16 @@ public interface DatabaseDriver {
 	public Connection getConnection();
 
 	/**
-	 * Returns whether the underline database supports external java functions.
-	 * Distinguish from H2 Java External Function Support, which is very special.
-	 * @return true if support H2 in memory java method, false if not support
+	 * Returns whether the underline database supports bulk copying operations.
 	 */
-	public boolean supportsExternalFunctions();
+	public boolean supportsBulkCopy();
+
+	/**
+	 * Perform a bulk copy operation to load the file directly into the database.
+	 * May not be supported by all backends.
+	 */
+	public void bulkCopy(String path, String delimiter, boolean hasTruth,
+			PredicateInfo predicateInfo, Partition partition);
 
 	/**
 	 * Get the type name for each argument type.

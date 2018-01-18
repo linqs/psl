@@ -109,9 +109,15 @@ public class ADMMReasoner extends Reasoner {
 	private static final float UPPER_BOUND = 1.0f;
 
 	/**
-	 * The size of computation blocks for terms and variables.
+	 * The min size of computation blocks for terms and variables.
 	 */
-	private static final int BLOCK_SIZE = 20;
+	private static final int MIN_BLOCK_SIZE = 20;
+
+	/**
+	 * The approximate number of iterations done by workers over the terms
+	 * (used in computation for block size).
+	 */
+	private static final int TERM_ITERATIONS = 1000;
 
 	/**
 	 * Log the residuals once in every period.
@@ -226,8 +232,12 @@ public class ADMMReasoner extends Reasoner {
 		// Also sometimes called 'z'.
 		consensusValues = new float[termStore.getNumGlobalVariables()];
 
-		SyncCounter termCounter = new SyncCounter((int)Math.ceil(termStore.size() / (float)BLOCK_SIZE));
-		SyncCounter variableCounter = new SyncCounter((int)Math.ceil(termStore.getNumGlobalVariables() / (float)BLOCK_SIZE));
+		// Compute the block size by assuming we want each thread to do TERM_ITERATIONS iterations (on terms).
+		int blockSize = Math.max(MIN_BLOCK_SIZE, (int)((double)termStore.size() / numThreads / TERM_ITERATIONS));
+		log.trace("Using a block size of {}.", blockSize);
+
+		SyncCounter termCounter = new SyncCounter((int)Math.ceil(termStore.size() / (float)blockSize));
+		SyncCounter variableCounter = new SyncCounter((int)Math.ceil(termStore.getNumGlobalVariables() / (float)blockSize));
 
 		// Starts up the computation threads
 		ADMMTask[] tasks = new ADMMTask[numThreads];
@@ -244,7 +254,8 @@ public class ADMMReasoner extends Reasoner {
 			tasks[i] = new ADMMTask(i,
 					termUpdateCompleteBarrier, workerStartBarrier, workerEndBarrier,
 					termCounter, variableCounter,
-					termStore, consensusValues);
+					termStore, consensusValues,
+					blockSize);
 			threadPool.submit(tasks[i]);
 		}
 
@@ -352,6 +363,7 @@ public class ADMMReasoner extends Reasoner {
 		public volatile boolean done;
 
 		private final int threadIndex;
+		private final int blockSize;
 
 		private final SyncCounter termCounter;
 		private final SyncCounter variableCounter;
@@ -377,7 +389,8 @@ public class ADMMReasoner extends Reasoner {
 				CyclicBarrier termUpdateCompleteBarrier,
 				CyclicBarrier workerStartBarrier, CyclicBarrier workerEndBarrier,
 				SyncCounter termCounter, SyncCounter variableCounter,
-				ADMMTermStore termStore, float[] consensusValues) {
+				ADMMTermStore termStore, float[] consensusValues,
+				int blockSize) {
 			this.termUpdateCompleteBarrier = termUpdateCompleteBarrier;
 			this.workerStartBarrier = workerStartBarrier;
 			this.workerEndBarrier = workerEndBarrier;
@@ -385,6 +398,7 @@ public class ADMMReasoner extends Reasoner {
 			this.threadIndex = threadIndex;
 			this.termCounter = termCounter;
 			this.variableCounter = variableCounter;
+			this.blockSize = blockSize;
 
 			this.consensusValues = consensusValues;
 			this.termStore = termStore;
@@ -426,8 +440,8 @@ public class ADMMReasoner extends Reasoner {
 				// Instead of dividing up the work ahead of time,
 				// get one block of jobs at a time so the threads will have more even workloads.
 				for (int blockIndex = termCounter.next(); blockIndex != -1; blockIndex = termCounter.next()) {
-					for (int innerBlockIndex = 0; innerBlockIndex < BLOCK_SIZE; innerBlockIndex++) {
-						int termIndex = blockIndex * BLOCK_SIZE + innerBlockIndex;
+					for (int innerBlockIndex = 0; innerBlockIndex < blockSize; innerBlockIndex++) {
+						int termIndex = blockIndex * blockSize + innerBlockIndex;
 
 						if (termIndex >= numTerms) {
 							break;
@@ -452,8 +466,8 @@ public class ADMMReasoner extends Reasoner {
 				// Instead of dividing up the work ahead of time,
 				// get one job at a time so the threads will have more even workloads.
 				for (int blockIndex = variableCounter.next(); blockIndex != -1; blockIndex = variableCounter.next()) {
-					for (int innerBlockIndex = 0; innerBlockIndex < BLOCK_SIZE; innerBlockIndex++) {
-						int variableIndex = blockIndex * BLOCK_SIZE + innerBlockIndex;
+					for (int innerBlockIndex = 0; innerBlockIndex < blockSize; innerBlockIndex++) {
+						int variableIndex = blockIndex * blockSize + innerBlockIndex;
 
 						if (variableIndex >= numVariables) {
 							break;

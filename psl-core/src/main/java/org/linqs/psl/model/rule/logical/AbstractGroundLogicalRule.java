@@ -25,8 +25,7 @@ import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.reasoner.function.ConstantNumber;
 import org.linqs.psl.reasoner.function.FunctionSum;
 import org.linqs.psl.reasoner.function.FunctionSummand;
-
-import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.linqs.psl.util.HashCode;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -45,35 +44,29 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
 
 	private final int hashcode;
 
-	protected AbstractGroundLogicalRule(AbstractLogicalRule r, List<GroundAtom> posLiterals, List<GroundAtom> negLiterals) {
-		rule = r;
-		this.posLiterals = new ArrayList<GroundAtom>(posLiterals);
-		this.negLiterals = new ArrayList<GroundAtom>(negLiterals);
+	protected AbstractGroundLogicalRule(AbstractLogicalRule rule, List<GroundAtom> posLiterals, List<GroundAtom> negLiterals) {
+		this.rule = rule;
+		this.posLiterals = Collections.unmodifiableList(new ArrayList<GroundAtom>(posLiterals));
+		this.negLiterals = Collections.unmodifiableList(new ArrayList<GroundAtom>(negLiterals));
 
-		// Constructs function definition.
-		function= new FunctionSum();
+		// Construct the hash code.
+		int hash = HashCode.build(rule);
 
-		for (GroundAtom atom : posLiterals) {
-			function.add(new FunctionSummand(1.0, atom.getVariable()));
+		// Construct function definition.
+		function = new FunctionSum();
+
+		for (int i = 0; i < posLiterals.size(); i++) {
+			function.add(new FunctionSummand(1.0, posLiterals.get(i).getVariable()));
+			hash = HashCode.build(hash, posLiterals.get(i));
 		}
 
-		for (GroundAtom atom : negLiterals) {
-			function.add(new FunctionSummand(-1.0, atom.getVariable()));
+		for (int i = 0; i < negLiterals.size(); i++) {
+			function.add(new FunctionSummand(-1.0, negLiterals.get(i).getVariable()));
+			hash = HashCode.build(hash, negLiterals.get(i));
 		}
 
 		function.add(new FunctionSummand(1.0, new ConstantNumber(1.0 - posLiterals.size())));
-
-		// Constructs the hash code.
-		HashCodeBuilder hcb = new HashCodeBuilder();
-		hcb.append(rule);
-		for (GroundAtom atom : posLiterals) {
-			hcb.append(atom);
-		}
-		for (GroundAtom atom : negLiterals) {
-			hcb.append(atom);
-		}
-
-		hashcode = hcb.toHashCode();
+		hashcode = hash;
 	}
 
 	protected FunctionSum getFunction() {
@@ -100,11 +93,11 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
 	}
 
 	public List<GroundAtom> getPositiveAtoms() {
-		return Collections.unmodifiableList(posLiterals);
+		return posLiterals;
 	}
 
 	public List<GroundAtom> getNegativeAtoms() {
-		return Collections.unmodifiableList(negLiterals);
+		return negLiterals;
 	}
 
 	@Override

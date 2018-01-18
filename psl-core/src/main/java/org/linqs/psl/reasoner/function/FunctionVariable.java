@@ -20,8 +20,7 @@ package org.linqs.psl.reasoner.function;
 /**
  * A variable in a numeric function.
  */
-public interface FunctionVariable extends FunctionSingleton {
-
+public interface FunctionVariable extends FunctionTerm {
 	public boolean isConstant();
 
 	/**

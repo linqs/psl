@@ -17,93 +17,29 @@
  */
 package org.linqs.psl.application.learning.weight.maxlikelihood;
 
+import org.linqs.psl.application.learning.weight.VotedPerceptron;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
-import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.model.rule.WeightedGroundRule;
+import org.linqs.psl.model.rule.Rule;
 
-import java.util.Arrays;
+import java.util.List;
 
 /**
  * Learns weights by optimizing the log likelihood of the data using
  * the voted perceptron algorithm.
- * <p>
+ *
  * The expected total incompatibility is estimated with the total incompatibility
  * in the MPE state.
  *
- * @author Stephen Bach <bach@cs.umd.edu>
+ * The default implementations in VotedPerceptron are sufficient.
  */
 public class MaxLikelihoodMPE extends VotedPerceptron {
-	double[] fullObservedIncompatibility;
-	double[] fullExpectedIncompatibility;
-
 	public MaxLikelihoodMPE(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
-		super(model, rvDB, observedDB, config);
+		this(model.getRules(), rvDB, observedDB, config);
 	}
 
-	@Override
-	protected double[] computeExpectedIncomp() {
-		fullExpectedIncompatibility = new double[mutableRules.size() + immutableRules.size()];
-
-		if (changedRuleWeights) {
-			termGenerator.updateWeights(groundRuleStore, termStore);
-			changedRuleWeights = false;
-		}
-
-		// Computes the MPE state.
-		reasoner.optimize(termStore);
-
-		// Computes incompatibility.
-		for (int i = 0; i < mutableRules.size(); i++) {
-			for (GroundRule groundRule : groundRuleStore.getGroundRules(mutableRules.get(i))) {
-				fullExpectedIncompatibility[i] += ((WeightedGroundRule) groundRule).getIncompatibility();
-			}
-		}
-
-		for (int i = 0; i < immutableRules.size(); i++) {
-			for (GroundRule groundRule : groundRuleStore.getGroundRules(immutableRules.get(i))) {
-				fullExpectedIncompatibility[mutableRules.size() + i] += ((WeightedGroundRule) groundRule).getIncompatibility();
-			}
-		}
-
-		return Arrays.copyOf(fullExpectedIncompatibility, mutableRules.size());
-	}
-
-	@Override
-	protected double[] computeObservedIncomp() {
-		numGroundings = new double[mutableRules.size()];
-		fullObservedIncompatibility = new double[mutableRules.size() + immutableRules.size()];
-		setLabeledRandomVariables();
-
-		// Computes the observed incompatibilities and numbers of groundings.
-		for (int i = 0; i < mutableRules.size(); i++) {
-			for (GroundRule groundRule : groundRuleStore.getGroundRules(mutableRules.get(i))) {
-				fullObservedIncompatibility[i] += ((WeightedGroundRule) groundRule).getIncompatibility();
-				numGroundings[i]++;
-			}
-		}
-
-		for (int i = 0; i < immutableRules.size(); i++) {
-			for (GroundRule groundRule : groundRuleStore.getGroundRules(immutableRules.get(i))) {
-				fullObservedIncompatibility[mutableRules.size() + i] += ((WeightedGroundRule) groundRule).getIncompatibility();
-			}
-		}
-
-		return Arrays.copyOf(fullObservedIncompatibility, mutableRules.size());
-	}
-
-	@Override
-	protected double computeLoss() {
-		double loss = 0.0;
-		for (int i = 0; i < mutableRules.size(); i++) {
-			loss += mutableRules.get(i).getWeight() * (fullObservedIncompatibility[i] - fullExpectedIncompatibility[i]);
-		}
-
-		for (int i = 0; i < immutableRules.size(); i++) {
-			loss += immutableRules.get(i).getWeight() * (fullObservedIncompatibility[mutableRules.size() + i] - fullExpectedIncompatibility[mutableRules.size() + i]);
-		}
-
-		return loss;
+	public MaxLikelihoodMPE(List<Rule> rules, Database rvDB, Database observedDB, ConfigBundle config) {
+		super(rules, rvDB, observedDB, false, config);
 	}
 }

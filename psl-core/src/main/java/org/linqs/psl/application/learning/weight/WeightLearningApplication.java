@@ -21,34 +21,37 @@ import org.linqs.psl.application.ModelApplication;
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 import org.linqs.psl.application.util.Grounding;
 import org.linqs.psl.config.ConfigBundle;
-import org.linqs.psl.config.ConfigManager;
-import org.linqs.psl.config.Factory;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.database.atom.TrainingMapAtomManager;
-import org.linqs.psl.model.Model;
+import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.model.atom.ObservedAtom;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
+import org.linqs.psl.model.rule.misc.GroundValueConstraint;
 import org.linqs.psl.reasoner.Reasoner;
-import org.linqs.psl.reasoner.ReasonerFactory;
-import org.linqs.psl.reasoner.admm.ADMMReasonerFactory;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 
-import com.google.common.collect.Iterables;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Abstract class for learning the weights of weighted mutableRules from data for a model.
  */
 public abstract class WeightLearningApplication implements ModelApplication {
+	private static final Logger log = LoggerFactory.getLogger(WeightLearningApplication.class);
+
 	/**
 	 * Prefix of property keys used by this class.
-	 *
-	 * @see ConfigManager
 	 */
 	public static final String CONFIG_PREFIX = "weightlearning";
 
@@ -78,38 +81,55 @@ public abstract class WeightLearningApplication implements ModelApplication {
 	public static final String TERM_GENERATOR_KEY = CONFIG_PREFIX + ".termgenerator";
 	public static final String TERM_GENERATOR_DEFAULT = "org.linqs.psl.reasoner.admm.term.ADMMTermGenerator";
 
-	protected Model model;
+	protected ConfigBundle config;
+	protected boolean supportsLatentVariables;
+
 	protected Database rvDB;
 	protected Database observedDB;
-	protected ConfigBundle config;
-
-	protected List<WeightedRule> mutableRules;
-	protected List<WeightedRule> immutableRules;
-	protected TrainingMapAtomManager trainingMap;
 
 	/**
-	 * Indicates that the rule weights have been changed and should be updated before optimization.
-	 * This should always be checked before optimization.
+	 * An atom manager on top of the rvDB.
 	 */
-	// TODO(eriq): This is suspect. Feels like an indication of a hack.
-	protected boolean changedRuleWeights;
+	protected PersistedAtomManager atomManager;
+
+	protected List<Rule> allRules;
+	protected List<WeightedRule> mutableRules;
+
+	/**
+	 * Corresponds 1-1 with mutableRules.
+	 */
+	protected double[] observedIncompatibility;
+	protected double[] expectedIncompatibility;
+
+	protected TrainingMap trainingMap;
 
 	protected Reasoner reasoner;
 	protected GroundRuleStore groundRuleStore;
-	protected TermStore termStore;
+	protected GroundRuleStore latentGroundRuleStore;
 	protected TermGenerator termGenerator;
+	protected TermStore termStore;
+	protected TermStore latentTermStore;
 
-	public WeightLearningApplication(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
-		this.model = model;
+	public WeightLearningApplication(List<Rule> rules, Database rvDB, Database observedDB,
+			boolean supportsLatentVariables, ConfigBundle config) {
 		this.rvDB = rvDB;
 		this.observedDB = observedDB;
+		this.supportsLatentVariables = supportsLatentVariables;
 		this.config = config;
 
-		changedRuleWeights = true;
-
-		// TODO(eriq): Why not fill these now? We have the model.
+		allRules = new ArrayList<Rule>();
 		mutableRules = new ArrayList<WeightedRule>();
-		immutableRules = new ArrayList<WeightedRule>();
+
+		for (Rule rule : rules) {
+			allRules.add(rule);
+
+			if (rule instanceof WeightedRule) {
+				mutableRules.add((WeightedRule)rule);
+			}
+		}
+
+		observedIncompatibility = new double[mutableRules.size()];
+		expectedIncompatibility = new double[mutableRules.size()];
 	}
 
 	/**
@@ -124,79 +144,242 @@ public abstract class WeightLearningApplication implements ModelApplication {
 	 * variables.
 	 */
 	public void learn() {
-		// Gathers the CompatibilityRules.
-		for (WeightedRule rule : Iterables.filter(model.getRules(), WeightedRule.class)) {
-			if (rule.isWeightMutable()) {
-				mutableRules.add(rule);
-			} else {
-				immutableRules.add(rule);
-			}
-		}
-
 		// Sets up the ground model.
 		initGroundModel();
 
+		if (supportsLatentVariables) {
+			initLatentGroundModel();
+		}
+
 		// Learns new weights.
 		doLearn();
-
-		// TODO(eriq): Why clear? And why not clear immutable?
-		mutableRules.clear();
 	}
 
 	protected abstract void doLearn();
 
-	/**
-	 * Constructs a ground model using model and trainingMap, and stores the
-	 * resulting GroundRules in reasoner.
-	 */
 	protected void initGroundModel() {
-		try {
-			reasoner = (Reasoner)config.getNewObject(REASONER_KEY, REASONER_DEFAULT);
-			termStore = (TermStore)config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
-			groundRuleStore = (GroundRuleStore)config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
-			termGenerator = (TermGenerator)config.getNewObject(TERM_GENERATOR_KEY, TERM_GENERATOR_DEFAULT);
-		} catch (Exception ex) {
-			// The caller couldn't handle these exception anyways, convert them to runtime ones.
-			throw new RuntimeException("Failed to prepare storage for inference.", ex);
+		reasoner = (Reasoner)config.getNewObject(REASONER_KEY, REASONER_DEFAULT);
+		groundRuleStore = (GroundRuleStore)config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
+		termStore = (TermStore)config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
+		termGenerator = (TermGenerator)config.getNewObject(TERM_GENERATOR_KEY, TERM_GENERATOR_DEFAULT);
+
+		atomManager = createAtomManager();
+
+		// Ensure all targets from the observed (truth) database
+		// exist in the RV database.
+		ensureTargets();
+
+		trainingMap = new TrainingMap(atomManager, observedDB);
+		if (!supportsLatentVariables && trainingMap.getLatentVariables().size() > 0) {
+			Set<RandomVariableAtom> latentVariables = trainingMap.getLatentVariables();
+			throw new IllegalArgumentException(String.format(
+					"All RandomVariableAtoms must have corresponding ObservedAtoms, found %d latent variables." +
+					" Latent variables are not supported by this WeightLearningApplication (%s)." +
+					" Example latent variable: [%s].",
+					latentVariables.size(),
+					this.getClass().getName(),
+					latentVariables.iterator().next()));
 		}
 
-		trainingMap = new TrainingMapAtomManager(rvDB, observedDB);
-		if (trainingMap.getLatentVariables().size() > 0) {
-			throw new IllegalArgumentException("All RandomVariableAtoms must have " +
-					"corresponding ObservedAtoms. Latent variables are not supported " +
-					"by this WeightLearningApplication. " +
-					"Example latent variable: " + trainingMap.getLatentVariables().iterator().next());
+		log.info("Grounding out model.");
+		int groundCount = Grounding.groundAll(allRules, atomManager, groundRuleStore);
+
+		log.debug("Initializing objective terms for {} ground rules.", groundCount);
+		@SuppressWarnings("unchecked")
+		int termCount = termGenerator.generateTerms(groundRuleStore, termStore);
+		log.debug("Generated {} objective terms from {} ground rules.", termCount, groundCount);
+	}
+
+	/**
+	 * The same as initGroundModel, but for latent variables.
+	 * Must be called after initGroundModel().
+	 * Sets up a rule/term store stack meant for latent variables.
+	 * The reasoner and TermGenerator can be reused (as they don't hold state).
+	 * All non-latent variables (from the training map) will be pegged to their truth values.
+	 */
+	protected void initLatentGroundModel() {
+		latentGroundRuleStore = (GroundRuleStore)config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
+		latentTermStore = (TermStore)config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
+
+		log.info("Grounding out latent model.");
+		int groundCount = Grounding.groundAll(allRules, atomManager, latentGroundRuleStore);
+
+		// Add in some constraints to peg the values of the non-latent variables.
+		for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getTrainingMap().entrySet()) {
+			latentGroundRuleStore.addGroundRule(new GroundValueConstraint(entry.getKey(), entry.getValue().getValue()));
+		}
+		groundCount += trainingMap.getTrainingMap().size();
+
+		log.debug("Initializing latent objective terms for {} ground rules.", groundCount);
+		@SuppressWarnings("unchecked")
+		int termCount = termGenerator.generateTerms(latentGroundRuleStore, latentTermStore);
+		log.debug("Generated {} latent objective terms from {} ground rules.", termCount, groundCount);
+	}
+
+	@SuppressWarnings("unchecked")
+	protected void computeMPEState() {
+		termGenerator.updateWeights(groundRuleStore, termStore);
+		reasoner.optimize(termStore);
+	}
+
+	@SuppressWarnings("unchecked")
+	protected void computeLatentMPEState() {
+		termGenerator.updateWeights(latentGroundRuleStore, latentTermStore);
+		reasoner.optimize(latentTermStore);
+	}
+
+	/**
+	 * Compute the incompatibility in the model using the labels (truth values) from the observed (truth) database.
+	 * This method is responsible for filling the observedIncompatibility member variable.
+	 * This may call setLabeledRandomVariables() and not reset any ground atoms to their original value.
+	 *
+	 * The default implementation just calls setLabeledRandomVariables() and sums the incompatibility for each rule.
+	 */
+	protected void computeObservedIncompatibility() {
+		setLabeledRandomVariables();
+
+		// Zero out the observed incompatibility first.
+		for (int i = 0; i < observedIncompatibility.length; i++) {
+			observedIncompatibility[i] = 0.0;
 		}
 
-		Grounding.groundAll(model, trainingMap, groundRuleStore);
-		termGenerator.generateTerms(groundRuleStore, termStore);
+		// Sums up the incompatibilities.
+		for (int i = 0; i < mutableRules.size(); i++) {
+			for (GroundRule groundRule : groundRuleStore.getGroundRules(mutableRules.get(i))) {
+				observedIncompatibility[i] += ((WeightedGroundRule)groundRule).getIncompatibility();
+			}
+		}
+	}
+
+	/**
+	 * Compute the incompatibility in the model.
+	 * This method is responsible for filling the expectedIncompatibility member variable.
+	 *
+	 * The default implementation is the total incompatibility in the MPE state.
+	 * IE, just calls computeMPEState() and then sums the incompatibility for each rule.
+	 */
+	protected void computeExpectedIncompatibility() {
+		computeMPEState();
+
+		// Zero out the expected incompatibility first.
+		for (int i = 0; i < expectedIncompatibility.length; i++) {
+			expectedIncompatibility[i] = 0.0;
+		}
+
+		// Sums up the incompatibilities.
+		for (int i = 0; i < mutableRules.size(); i++) {
+			for (GroundRule groundRule : groundRuleStore.getGroundRules(mutableRules.get(i))) {
+				expectedIncompatibility[i] += ((WeightedGroundRule)groundRule).getIncompatibility();
+			}
+		}
+	}
+
+	/**
+	 * Internal method for computing the loss at the current point before taking a step.
+	 * Child methods may override.
+	 *
+	 * The default implementation just sums the product of the difference between the expected and observed incompatibility.
+	 *
+	 * @return current learning loss
+	 */
+	protected double computeLoss() {
+		double loss = 0.0;
+		for (int i = 0; i < mutableRules.size(); i++) {
+			loss += mutableRules.get(i).getWeight() * (observedIncompatibility[i] - expectedIncompatibility[i]);
+		}
+
+		return loss;
 	}
 
 	@Override
 	public void close() {
+		if (groundRuleStore != null) {
+			groundRuleStore.close();
+			groundRuleStore = null;
+		}
+
+		if (latentGroundRuleStore != null) {
+			latentGroundRuleStore.close();
+			latentGroundRuleStore = null;
+		}
+
+		if (termStore != null) {
+			termStore.close();
+			termStore = null;
+		}
+
+		if (latentTermStore != null) {
+			latentTermStore.close();
+			latentTermStore = null;
+		}
+
+		if (reasoner != null) {
+			reasoner.close();
+			reasoner = null;
+		}
+
+		termGenerator = null;
 		trainingMap = null;
-
-		termStore.close();
-		termStore = null;
-
-		groundRuleStore.close();
-		groundRuleStore = null;
-
-		reasoner.close();
-		reasoner = null;
-
-		model = null;
+		atomManager = null;
 		rvDB = null;
+		observedDB = null;
 		config = null;
 	}
 
 	/**
-	 * Sets RandomVariableAtoms with training labels to their observed values.
+	 * Set RandomVariableAtoms with training labels to their observed values.
 	 */
 	protected void setLabeledRandomVariables() {
-		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
-			e.getKey().setValue(e.getValue().getValue());
+		for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getTrainingMap().entrySet()) {
+			entry.getKey().setValue(entry.getValue().getValue());
 		}
 	}
 
+	/**
+	 * Set RandomVariableAtoms with training labels to their default values.
+	 */
+	protected void setDefaultRandomVariables() {
+		for (RandomVariableAtom atom : trainingMap.getTrainingMap().keySet()) {
+			atom.setValue(0.0);
+		}
+
+		for (RandomVariableAtom atom : trainingMap.getLatentVariables()) {
+			atom.setValue(0.0);
+		}
+	}
+
+	/**
+	 * Create an atom manager on top of the RV database.
+	 * This allows an opportunity for subclasses to create a special manager.
+	 */
+	protected PersistedAtomManager createAtomManager() {
+		return new PersistedAtomManager(rvDB);
+	}
+
+	/**
+	 * Make sure that all targets from the observed database exist in the RV database.
+	 */
+	private void ensureTargets() {
+		// Iterate through all of the registered predicates in the observed.
+		for (StandardPredicate predicate : observedDB.getRegisteredPredicates()) {
+			// Ignore any closed predicates.
+			if (observedDB.isClosed(predicate)) {
+				continue;
+			}
+
+			// Commit the atoms into the RV databse with the default value.
+			for (ObservedAtom observedAtom : observedDB.getAllGroundObservedAtoms(predicate)) {
+				GroundAtom otherAtom = atomManager.getAtom(observedAtom.getPredicate(), observedAtom.getArguments());
+
+				if (otherAtom instanceof ObservedAtom) {
+					continue;
+				}
+
+				RandomVariableAtom rvAtom = (RandomVariableAtom)otherAtom;
+				rvAtom.setValue(0.0);
+			}
+		}
+
+		atomManager.commitPersistedAtoms();
+	}
 }

@@ -15,13 +15,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.database.loading;
+package org.linqs.psl.application.learning.weight.search.objective;
 
-import org.linqs.psl.database.Partition;
-import org.linqs.psl.model.predicate.Predicate;
+import org.linqs.psl.application.learning.weight.TrainingMap;
+import org.linqs.psl.model.rule.WeightedRule;
 
-public interface DataLoader {
-	public OpenInserter getOpenInserter(Predicate p);
+import java.util.List;
 
-	public Inserter getInserter(Predicate p, Partition partitionID);
+/**
+ * An objective computation that scores weight configurations for weight learning.
+ */
+public interface ObjectiveFunction {
+	public double compute(List<WeightedRule> mutableRules,
+			double[] observedIncompatibility, double[] expectedIncompatibility,
+			TrainingMap trainingMap);
 }

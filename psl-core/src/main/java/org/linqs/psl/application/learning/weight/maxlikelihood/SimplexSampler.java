@@ -23,7 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class SimplexSampler {
-	Logger log = LoggerFactory.getLogger(SimplexSampler.class);
+	private Logger log = LoggerFactory.getLogger(SimplexSampler.class);
 
 	private final Random rand;
 
@@ -69,7 +69,6 @@ public class SimplexSampler {
 
 		return x;
 	}
-
 
 	public static void main(String [] args) {
 		SimplexSampler sampler = new SimplexSampler();

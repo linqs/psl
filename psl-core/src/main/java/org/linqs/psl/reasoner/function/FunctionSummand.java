@@ -20,61 +20,54 @@ package org.linqs.psl.reasoner.function;
 import java.util.Map;
 
 /**
- * Associates a {@link FunctionSingleton} with a coefficient.
+ * Associates a {@link FunctionTerm} with a coefficient.
  */
 public class FunctionSummand implements FunctionTerm {
+	private final double coefficient;
+	private final FunctionTerm term;
 
-	private final double coeff;
-	private final FunctionSingleton term;
-	
 	/**
-	 * Constructs a FunctionSummand from a {@link FunctionSingleton} and a coefficient.
+	 * Constructs a FunctionSummand from a {@link FunctionTerm} and a coefficient.
 	 *
-	 * @param c  the coefficient of the term
-	 * @param t  the term to multiply with the coefficient
+	 * @param c the coefficient of the term
+	 * @param t the term to multiply with the coefficient
 	 */
-	public FunctionSummand(double c, FunctionSingleton t) {
-		term = t;
-		coeff = c;
+	public FunctionSummand(double coefficient, FunctionTerm term) {
+		this.coefficient = coefficient;
+		this.term = term;
 	}
 
 	/**
-	 * Returns the value of the encapsulated {@link FunctionSingleton} multiplied
+	 * Returns the value of the encapsulated {@link FunctionTerm} multiplied
 	 * by the coefficient.
 	 *
-	 * @return  the FunctionSummand's value
+	 * @return the FunctionSummand's value
 	 */
 	@Override
 	public double getValue() {
-		return coeff*term.getValue();
+		return coefficient * term.getValue();
 	}
-	
-	@Override
-	public double getValue(Map<? extends FunctionVariable,Double> values, boolean useCurrentValues) {
-		return coeff*term.getValue(values,useCurrentValues);
-	}
-	
+
 	public double getCoefficient() {
-		return coeff;
+		return coefficient;
 	}
-	
-	public FunctionSingleton getTerm() {
+
+	public FunctionTerm getTerm() {
 		return term;
 	}
-	
+
 	@Override
 	public boolean isLinear() {
 		return term.isLinear();
 	}
-	
+
 	@Override
 	public boolean isConstant() {
 		return term.isConstant();
 	}
-	
+
 	@Override
 	public String toString() {
-		return coeff + " * " + term.toString();
+		return coefficient + " * " + term.toString();
 	}
-	
 }

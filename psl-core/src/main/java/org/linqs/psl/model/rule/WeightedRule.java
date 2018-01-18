@@ -23,6 +23,4 @@ public interface WeightedRule extends Rule {
 	public double getWeight();
 
 	public void setWeight(double weight);
-
-	public boolean isWeightMutable();
 }
