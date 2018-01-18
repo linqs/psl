@@ -163,6 +163,14 @@ public class MPEInference implements ModelApplication {
 		return reasoner;
 	}
 
+	public GroundRuleStore getGroundRuleStore() {
+		return groundRuleStore;
+	}
+
+	public TermStore getTermStore() {
+		return termStore;
+	}
+
 	@Override
 	public void close() {
 		termStore.close();

@@ -213,7 +213,15 @@ public class LazyMPEInference implements ModelApplication {
 		config = null;
 	}
 
+	public Reasoner getReasoner() {
+		return reasoner;
+	}
+
 	public GroundRuleStore getGroundRuleStore() {
 		return groundRuleStore;
+	}
+
+	public TermStore getTermStore() {
+		return termStore;
 	}
 }
