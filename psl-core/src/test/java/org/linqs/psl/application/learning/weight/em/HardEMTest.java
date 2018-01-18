@@ -17,12 +17,16 @@
  */
 package org.linqs.psl.application.learning.weight.em;
 
+import org.linqs.psl.application.learning.weight.VotedPerceptron;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningTest;
 
 public class HardEMTest extends WeightLearningTest {
 	@Override
 	protected WeightLearningApplication getWLA() {
+		// Do less steps for tests.
+		info.config.setProperty(VotedPerceptron.NUM_STEPS_KEY, 5);
+
 		return new HardEM(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB, info.config);
 	}
 }
