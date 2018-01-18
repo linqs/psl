@@ -136,7 +136,7 @@ public abstract class AbstractBranchFormula<T extends AbstractBranchFormula<T>> 
 		} catch (NoSuchMethodException ex) {
 			throw new RuntimeException("AbstractBranchFormula does not have a constructor that takes an Array of Formula.", ex);
 		} catch (InstantiationException | IllegalAccessException | InvocationTargetException ex) {
-			throw new RuntimeException("AbstractBranchFormula could not be constructed.");
+			throw new RuntimeException("AbstractBranchFormula could not be constructed.", ex);
 		}
 	}
 

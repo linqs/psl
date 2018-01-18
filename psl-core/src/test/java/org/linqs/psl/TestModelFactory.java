@@ -281,7 +281,7 @@ public class TestModelFactory {
 		}
 
 		if (truths != null && truths.size() != 0) {
-			allData.put(truthPartition, observations);
+			allData.put(truthPartition, truths);
 		}
 
 		for (Map.Entry<Partition, Map<StandardPredicate, List<PredicateData>>> partition : allData.entrySet()) {

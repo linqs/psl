@@ -33,4 +33,9 @@ public class GridSearchContinuousLossMAETest extends WeightLearningTest {
 
 		return new GridSearch(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB, info.config);
 	}
+
+	@Override
+	public void baseTest() {
+		baseTest(false);
+	}
 }

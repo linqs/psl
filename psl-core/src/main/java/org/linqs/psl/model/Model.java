@@ -82,6 +82,11 @@ public class Model {
 		ruleSet.remove(rule);
 	}
 
+	public void clear() {
+		rules.clear();
+		ruleSet.clear();
+	}
+
 	/**
 	 * Returns a String representation of this Model.
 	 *

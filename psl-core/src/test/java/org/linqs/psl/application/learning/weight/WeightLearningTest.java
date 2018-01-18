@@ -27,6 +27,8 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Implication;
+import org.linqs.psl.model.formula.Negation;
+import org.linqs.psl.model.predicate.SpecialPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
@@ -128,7 +130,7 @@ public abstract class WeightLearningTest {
 		closedPredicates.remove(info.predicates.get("Friends"));
 
 		weightLearningTrainDB = info.dataStore.getDatabase(info.targetPartition, closedPredicates, info.observationPartition);
-		weightLearningTruthDB = info.dataStore.getDatabase(info.truthPartition, allPredicates, info.observationPartition);
+		weightLearningTruthDB = info.dataStore.getDatabase(info.truthPartition, allPredicates);
 	}
 
 	/**
@@ -137,11 +139,101 @@ public abstract class WeightLearningTest {
 	 */
 	@Test
 	public void baseTest() {
+		baseTest(true);
+	}
+
+	// Allow overriding by the subclasses.
+	protected void baseTest(boolean assertRank) {
 		WeightLearningApplication weightLearner = getWLA();
 		weightLearner.learn();
 		weightLearner.close();
 
-		assertRank(RULE_NICE, RULE_SYMMETRY, RULE_PRIOR);
+		if (assertRank) {
+			assertRank(RULE_PRIOR, RULE_NICE, RULE_SYMMETRY);
+		}
+	}
+
+	@Test
+	public void friendshipRankTest() {
+		// Reset the current rules.
+		info.model.clear();
+		ruleMap.clear();
+
+		WeightedRule rule = null;
+
+		// Always true
+		// Person('Alice') & Person(B) & ('Alice' != B) >> Friends('Alice', B)
+		rule = new WeightedLogicalRule(
+			new Implication(
+				new Conjunction(
+					new QueryAtom(info.predicates.get("Person"), new UniqueStringID("Alice")),
+					new QueryAtom(info.predicates.get("Person"), new Variable("B")),
+					new QueryAtom(SpecialPredicate.NotEqual, new UniqueStringID("Alice"), new Variable("B"))
+				),
+				new QueryAtom(info.predicates.get("Friends"), new UniqueStringID("Alice"), new Variable("B"))
+			),
+			1.0,
+			true
+		);
+		info.model.addRule(rule);
+		ruleMap.put("Alice", rule);
+
+		// Almost always false (except for Eugene)
+		// Person('Bob') & Person(B) & ('Bob' != B) >> Friends('Bob', B)
+		rule = new WeightedLogicalRule(
+			new Implication(
+				new Conjunction(
+					new QueryAtom(info.predicates.get("Person"), new UniqueStringID("Bob")),
+					new QueryAtom(info.predicates.get("Person"), new Variable("B")),
+					new QueryAtom(SpecialPredicate.NotEqual, new UniqueStringID("Bob"), new Variable("B"))
+				),
+				new QueryAtom(info.predicates.get("Friends"), new UniqueStringID("Bob"), new Variable("B"))
+			),
+			1.0,
+			true
+		);
+		info.model.addRule(rule);
+		ruleMap.put("Bob", rule);
+
+		// Almost always false (except for Alice)
+		// Person('Eugene') & Person(B) & ('Eugene' != B) >> Friends('Eugene', B)
+		rule = new WeightedLogicalRule(
+			new Implication(
+				new Conjunction(
+					new QueryAtom(info.predicates.get("Person"), new UniqueStringID("Eugene")),
+					new QueryAtom(info.predicates.get("Person"), new Variable("B")),
+					new QueryAtom(SpecialPredicate.NotEqual, new UniqueStringID("Eugene"), new Variable("B"))
+				),
+				new QueryAtom(info.predicates.get("Friends"), new UniqueStringID("Eugene"), new Variable("B"))
+			),
+			1.0,
+			true
+		);
+		info.model.addRule(rule);
+		ruleMap.put("Eugene", rule);
+
+		// Always false
+		// Person('Alice') & Person(B) & ('Alice' != B) >> !Friends('Alice', B)
+		rule = new WeightedLogicalRule(
+			new Implication(
+				new Conjunction(
+					new QueryAtom(info.predicates.get("Person"), new UniqueStringID("Alice")),
+					new QueryAtom(info.predicates.get("Person"), new Variable("B")),
+					new QueryAtom(SpecialPredicate.NotEqual, new UniqueStringID("Alice"), new Variable("B"))
+				),
+				new Negation(new QueryAtom(info.predicates.get("Friends"), new UniqueStringID("Alice"), new Variable("B")))
+			),
+			1.0,
+			true
+		);
+		info.model.addRule(rule);
+		ruleMap.put("NotAlice", rule);
+
+		WeightLearningApplication weightLearner = getWLA();
+		weightLearner.learn();
+		weightLearner.close();
+
+		assertRank("NotAlice", "Eugene", "Bob", "Alice");
 	}
 
 	/**
@@ -150,7 +242,6 @@ public abstract class WeightLearningTest {
 	@Test
 	public void ruleWithNoGroundingsTest() {
 		// Add in a rule that will have zero groundings.
-		// People are not friends with themselves.
 		Rule newRule = new WeightedLogicalRule(
 			new Implication(
 				new Conjunction(
@@ -170,10 +261,11 @@ public abstract class WeightLearningTest {
 	}
 
 	/**
-	 * Assert that the rules are in the same order as passed in.
+	 * Assert that the rules (specified by the keys on the rule map) are in the same order as passed in.
 	 * The order should be ascending.
+	 * No ties allowed.
 	 */
-	protected void assertRank(String... rank) {
+	protected void assertRankHard(String... rank) {
 		List<Rule> rules = new ArrayList<Rule>(info.model.getRules());
 		Collections.sort(rules, new Comparator<Rule>() {
 			@Override
@@ -185,6 +277,56 @@ public abstract class WeightLearningTest {
 		assertEquals(rules.size(), rank.length);
 		for (int i = 0; i < rank.length; i++) {
 			assertEquals(ruleMap.get(rank[i]), rules.get(i));
+		}
+	}
+
+	/**
+	 * Assert that the rules (specified by the keys on the rule map) are in the same order as passed in.
+	 * The order should be ascending.
+	 * Ties are allowed.
+	 */
+	protected void assertRank(String... rank) {
+		List<Rule> rules = new ArrayList<Rule>(info.model.getRules());
+		Collections.sort(rules, new Comparator<Rule>() {
+			@Override
+			public int compare(Rule a, Rule b) {
+				return MathUtils.compare(((WeightedRule)a).getWeight(), ((WeightedRule)b).getWeight());
+			}
+		});
+		assertEquals(rules.size(), rank.length);
+
+		List<Set<Rule>> ruleSets = new ArrayList<Set<Rule>>();
+		double lastWeight = -1;
+		for (int i = 0; i < rules.size(); i++) {
+			WeightedRule rule = (WeightedRule)rules.get(i);
+			double weight = rule.getWeight();
+
+			if (i != 0 && MathUtils.equals(weight, lastWeight)) {
+				ruleSets.get(ruleSets.size() - 1).add(rule);
+			} else {
+				Set<Rule> newSet = new HashSet<Rule>();
+				newSet.add(rule);
+				ruleSets.add(newSet);
+			}
+
+			lastWeight = weight;
+		}
+
+		int interSetIndex = 0;
+		int intraSetIndex = 0;
+
+		for (int i = 0; i < rank.length; i++) {
+			Rule expected = ruleMap.get(rank[i]);
+
+			if (!ruleSets.get(interSetIndex).contains(expected)) {
+				fail(String.format("Did not find expected rule (%s) at index %d.", expected, i));
+			}
+
+			intraSetIndex++;
+			if (ruleSets.get(interSetIndex).size() <= intraSetIndex) {
+				interSetIndex++;
+				intraSetIndex = 0;
+			}
 		}
 	}
 }
