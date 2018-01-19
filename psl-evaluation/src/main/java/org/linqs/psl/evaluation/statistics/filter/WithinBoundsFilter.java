@@ -28,13 +28,13 @@ import com.google.common.collect.Iterators;
 public class WithinBoundsFilter implements AtomFilter {
 
 	private final double[] bounds;
-	
+
 	public WithinBoundsFilter(double[] bounds) {
 		Preconditions.checkArgument(bounds[0]<=bounds[1],"Invalid bounds specified!");
 		this.bounds = bounds;
 	}
-	
-	
+
+
 	@Override
 	public Iterator<GroundAtom> filter(Iterator<GroundAtom> input) {
 		return Iterators.filter(input, new Predicate<GroundAtom>() {
@@ -47,7 +47,7 @@ public class WithinBoundsFilter implements AtomFilter {
 				}
 				return true;
 			}
-			
+
 		});
 	}
 

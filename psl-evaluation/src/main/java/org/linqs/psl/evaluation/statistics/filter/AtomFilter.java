@@ -35,9 +35,9 @@ public interface AtomFilter {
 		public Iterator<GroundAtom> filter(Iterator<GroundAtom> input) {
 			return input;
 		}
-		
+
 	};
-	
+
 	Iterator<GroundAtom> filter(Iterator<GroundAtom> input);
-	
+
 }

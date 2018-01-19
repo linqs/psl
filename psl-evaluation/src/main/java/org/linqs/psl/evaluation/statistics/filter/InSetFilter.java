@@ -26,9 +26,9 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
 
 public class InSetFilter implements AtomFilter {
-	
+
 	private final Set<GroundAtom> atoms;
-	
+
 	public InSetFilter(Set<GroundAtom> atomSet) {
 		atoms = atomSet;
 	}
@@ -40,7 +40,7 @@ public class InSetFilter implements AtomFilter {
 			public boolean apply(GroundAtom atom) {
 				return atoms.contains(atom);
 			}
-			
+
 		});
 	}
 

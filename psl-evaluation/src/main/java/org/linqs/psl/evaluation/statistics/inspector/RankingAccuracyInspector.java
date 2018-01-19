@@ -38,27 +38,27 @@ public class RankingAccuracyInspector extends DatabaseReasonerInspector {
 
 	// TODO(eriq): Use config
 	public static final double DEFAULT_TRUTH_THRESHOLD = 0.5;
-   public static final int DEFAULT_INSPECTION_PERIOD = 10;
+	public static final int DEFAULT_INSPECTION_PERIOD = 10;
 
 	private double truthThreshold;
-   private int callCount;
-   private int inspectionPeriod;
+	private int callCount;
+	private int inspectionPeriod;
 
 	public RankingAccuracyInspector(ConfigBundle config) {
 		super(config);
 
 		truthThreshold = DEFAULT_TRUTH_THRESHOLD;
-      callCount = 0;
-      inspectionPeriod = DEFAULT_INSPECTION_PERIOD;
+		callCount = 0;
+		inspectionPeriod = DEFAULT_INSPECTION_PERIOD;
 	}
 
 	@Override
 	public boolean update(Reasoner reasoner, ReasonerInspector.ReasonerStatus status) {
-      callCount++;
+		callCount++;
 
-      if (!(callCount == 1 || callCount % DEFAULT_INSPECTION_PERIOD == 0)) {
-         return true;
-      }
+		if (!(callCount == 1 || callCount % DEFAULT_INSPECTION_PERIOD == 0)) {
+			return true;
+		}
 
 		log.info("Reasoner inspection update -- " + status);
 
@@ -75,9 +75,9 @@ public class RankingAccuracyInspector extends DatabaseReasonerInspector {
 
 			RankingScore stats = comparator.compare(targetPredicate);
 
-         double auroc = stats.auroc();
-         double auprc = stats.auprc();
-         double negAUPRC = stats.negAUPRC();
+			double auroc = stats.auroc();
+			double auprc = stats.auprc();
+			double negAUPRC = stats.negAUPRC();
 
 			log.info("{} -- AUROC: {}, AUPRC+: {}, AUPRC-: {}",
 				targetPredicate.getName(),	auroc, auprc, negAUPRC);
