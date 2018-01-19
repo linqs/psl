@@ -77,12 +77,12 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
 		float coeff;
 		DenseFloatMatrix2DWithHashcode matrix = new DenseFloatMatrix2DWithHashcode(variables.size(), variables.size());
 		for (int i = 0; i < variables.size(); i++) {
-			for (int j = 0; j < variables.size(); j++) {
+			// Note that the matrix is symmetric.
+			for (int j = i; j < variables.size(); j++) {
 				if (i == j) {
 					coeff = 2 * weight * coeffs.get(i).floatValue() * coeffs.get(i).floatValue() + stepSize;
 					matrix.setQuick(i, i, coeff);
-				}
-				else {
+				} else {
 					coeff = 2 * weight * coeffs.get(i).floatValue() * coeffs.get(j).floatValue();
 					matrix.setQuick(i, j, coeff);
 					matrix.setQuick(j, i, coeff);
