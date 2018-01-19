@@ -100,7 +100,7 @@ public class RulePartial {
 			throw new IllegalArgumentException("The partial is already a full rule, cannot specify weight/squared.");
 		}
 
-		throw new IllegalArgumentException("Either both weight and squared must be non-null, or both must be null");
+		throw new IllegalArgumentException("Either both weight and squared must be non-null, or both must be null. Found weight: " + weight + ", squared: " + squared + ".");
 	}
 
 	private Rule toUnweightedLogicalRule() {
