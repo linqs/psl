@@ -286,6 +286,8 @@ public class ConfigManager {
 
 		@Override
 		public Object getNewObject(String key, String defaultValue) {
+			logAccess(key, defaultValue);
+
 			String className = config.getString(key, defaultValue);
 
 			// It is not unusual for someone to want no object if the key does not exist.

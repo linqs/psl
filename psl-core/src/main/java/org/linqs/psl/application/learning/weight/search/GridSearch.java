@@ -176,7 +176,7 @@ public class GridSearch extends WeightLearningApplication {
 				}
 			}
 
-			log.trace("Location {} -- objective: {}", currentLocation, objective);
+			log.debug("Location {} -- objective: {}", currentLocation, objective);
 		}
 
 		// Set the final weights.

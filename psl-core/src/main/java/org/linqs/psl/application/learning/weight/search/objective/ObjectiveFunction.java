@@ -24,6 +24,7 @@ import java.util.List;
 
 /**
  * An objective computation that scores weight configurations for weight learning.
+ * The lower the objective the better.
  */
 public interface ObjectiveFunction {
 	public double compute(List<WeightedRule> mutableRules,

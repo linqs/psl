@@ -31,8 +31,8 @@ import java.util.Map;
  * The type of error can be changed through the config.
  */
 public class ContinuousObjective implements ObjectiveFunction {
-   public static final String STAT_MAE = "MAE";
-   public static final String STAT_MSE = "MSE";
+	public static final String STAT_MAE = "MAE";
+	public static final String STAT_MSE = "MSE";
 
 	/**
 	 * Prefix of property keys used by this class.
@@ -45,29 +45,36 @@ public class ContinuousObjective implements ObjectiveFunction {
 	public static final String STAT_KEY = CONFIG_PREFIX + ".statistic";
 	public static final String STAT_DEFAULT = STAT_MSE;
 
-   private String stat;
+	private String stat;
 
-   public ContinuousObjective(ConfigBundle config) {
-      stat = config.getString(STAT_KEY, STAT_DEFAULT).toUpperCase();
-      if (!(stat.equals(STAT_MAE) || stat.equals(STAT_MSE))) {
-         throw new IllegalArgumentException("Unknown continuious statistic: " + stat);
-      }
-   }
+	public ContinuousObjective(String stat) {
+		this.stat = stat;
+		if (!(stat.equals(STAT_MAE) || stat.equals(STAT_MSE))) {
+			throw new IllegalArgumentException("Unknown continuious statistic: " + stat);
+		}
+	}
+
+	public ContinuousObjective(ConfigBundle config) {
+		stat = config.getString(STAT_KEY, STAT_DEFAULT).toUpperCase();
+		if (!(stat.equals(STAT_MAE) || stat.equals(STAT_MSE))) {
+			throw new IllegalArgumentException("Unknown continuious statistic: " + stat);
+		}
+	}
 
 	public double compute(List<WeightedRule> mutableRules,
 			double[] observedIncompatibility, double[] expectedIncompatibility,
 			TrainingMap trainingMap) {
-      double error = 0;
-      boolean square = stat.equals(STAT_MSE);
+		double error = 0;
+		boolean square = stat.equals(STAT_MSE);
 
-      for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getTrainingMap().entrySet()) {
-         if (square) {
-            error += Math.pow(entry.getKey().getValue() - entry.getValue().getValue(), 2);
-         } else {
-            error += Math.abs(entry.getKey().getValue() - entry.getValue().getValue());
-         }
-      }
+		for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getTrainingMap().entrySet()) {
+			if (square) {
+				error += Math.pow(entry.getKey().getValue() - entry.getValue().getValue(), 2);
+			} else {
+				error += Math.abs(entry.getKey().getValue() - entry.getValue().getValue());
+			}
+		}
 
-      return error / trainingMap.getTrainingMap().size();
+		return error / trainingMap.getTrainingMap().size();
 	}
 }
