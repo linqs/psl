@@ -69,12 +69,12 @@ public class GuidedRandomGridSearch extends RandomGridSearch {
 	public GuidedRandomGridSearch(List<Rule> rules, Database rvDB, Database observedDB, ConfigBundle config) {
 		super(rules, rvDB, observedDB, config);
 
-		int numSeedLocations = config.getInt(SEED_LOCATIONS_KEY, SEED_LOCATIONS_DEFAULT);
+		numSeedLocations = config.getInt(SEED_LOCATIONS_KEY, SEED_LOCATIONS_DEFAULT);
 		if (numSeedLocations < 1) {
 			throw new IllegalArgumentException("Need at least one location to start the search.");
 		}
 
-		int numExploreLocations = config.getInt(EXPLORE_LOCATIONS_KEY, EXPLORE_LOCATIONS_DEFAULT);
+		numExploreLocations = config.getInt(EXPLORE_LOCATIONS_KEY, EXPLORE_LOCATIONS_DEFAULT);
 		if (numExploreLocations < 1) {
 			throw new IllegalArgumentException("Need at least one explore location.");
 		}
@@ -82,7 +82,7 @@ public class GuidedRandomGridSearch extends RandomGridSearch {
 		// Adjust the number of locations.
 		numLocations = Math.min(
 				numLocations,
-				numSeedLocations + numExploreLocations * (int)(Math.pow(3, mutableRules.size()) - 1));
+				numSeedLocations + numExploreLocations * (int)(Math.pow(2, mutableRules.size())));
 
 		toExplore = new HashSet<String>(numLocations - numSeedLocations);
 	}
@@ -99,8 +99,6 @@ public class GuidedRandomGridSearch extends RandomGridSearch {
 
 			// Initialize the locations to explore.
 			if (objectives.size() == numSeedLocations) {
-				log.debug("Seed phase complete, starting explore phase.");
-
 				// We want only the top locations, so first sort by score.
 				List<Map.Entry<String, Double>> locations =
 						new ArrayList<Map.Entry<String, Double>>(objectives.entrySet());
@@ -113,14 +111,15 @@ public class GuidedRandomGridSearch extends RandomGridSearch {
 				});
 
 				for (int i = 0; i < Math.min(numExploreLocations, objectives.size()); i++) {
-					addNeighbors(locations.get(i).getKey());
-				}
+					log.trace("Adding neighbors for {}.", locations.get(i));
 
-				for (String seedLocation : objectives.keySet()) {
+					addNeighbors(locations.get(i).getKey());
 				}
 
 				// Remove the locations we have already explored.
 				toExplore.removeAll(objectives.keySet());
+
+				log.debug("Seed phase complete, starting explore phase with {} locations.", toExplore.size());
 			}
 
 			// It is possible to run out of locations early because
@@ -140,7 +139,7 @@ public class GuidedRandomGridSearch extends RandomGridSearch {
 	 * Add neightbors to toExplore.
 	 */
 	private void addNeighbors(String location) {
-		int[] indexes = StringUtils.splitInt(currentLocation, DELIM);
+		int[] indexes = StringUtils.splitInt(location, DELIM);
 		assert(indexes.length == mutableRules.size());
 
 		// Go through each weight and move it up and down by one.

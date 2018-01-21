@@ -153,7 +153,7 @@ public class GridSearch extends WeightLearningApplication {
 
 		for (int iteration = 0; iteration < numLocations; iteration++) {
 			if (!chooseNextLocation()) {
-				log.debug("Stopping seach.");
+				log.debug("Stopping search.");
 				break;
 			}
 
