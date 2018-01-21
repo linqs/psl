@@ -51,6 +51,7 @@ public class GridSearch extends WeightLearningApplication {
 
 	/**
 	 * A comma-separated list of possible weights.
+	 * These weights should be in some sorted order.
 	 */
 	public static final String POSSIBLE_WEIGHTS_KEY = CONFIG_PREFIX + ".weights";
 	public static final String POSSIBLE_WEIGHTS_DEFAULT = "0.001:0.01:0.1:1:10";
@@ -151,7 +152,11 @@ public class GridSearch extends WeightLearningApplication {
 		double[] weights = new double[mutableRules.size()];
 
 		for (int iteration = 0; iteration < numLocations; iteration++) {
-			chooseNextLocation();
+			if (!chooseNextLocation()) {
+				log.debug("Stopping seach.");
+				break;
+			}
+
 			log.debug("Iteration {} / {} ({}) -- Inspecting location {}", iteration, numLocations, gridSize, currentLocation);
 
 			// Set the weights for the current round.
@@ -200,12 +205,13 @@ public class GridSearch extends WeightLearningApplication {
 	/**
 	 * Choose the next location we will search.
 	 * This method is responsible for setting currentLocation.
+	 * @return false if the search is to abort.
 	 */
-	protected void chooseNextLocation() {
+	protected boolean chooseNextLocation() {
 		// Start at all zeros.
 		if (currentLocation == null) {
 			currentLocation = StringUtils.join(new int[mutableRules.size()], DELIM);
-			return;
+			return true;
 		}
 
 		int[] indexes = StringUtils.splitInt(currentLocation, DELIM);
@@ -226,5 +232,6 @@ public class GridSearch extends WeightLearningApplication {
 		}
 
 		currentLocation = StringUtils.join(indexes, DELIM);
+		return true;
 	}
 }

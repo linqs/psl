@@ -19,23 +19,18 @@ package org.linqs.psl.application.learning.weight.search;
 
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningTest;
-import org.linqs.psl.application.learning.weight.search.objective.DiscreteObjective;
 
-public class GridSearchDiscreteLossTest extends WeightLearningTest {
+public class GuidedRandomGridSearchTest extends WeightLearningTest {
 	@Override
 	protected WeightLearningApplication getWLA() {
 		// Narrow the search space for tests.
-		info.config.setProperty(GridSearch.POSSIBLE_WEIGHTS_KEY, "0.01:1:10");
+		info.config.setProperty(RandomGridSearch.MAX_LOCATIONS_KEY, 100);
 
-		// Use MAE as an objective.
-		info.config.setProperty(GridSearch.OBJECTIVE_KEY, DiscreteObjective.class.getName());
-		info.config.setProperty(DiscreteObjective.STAT_KEY, DiscreteObjective.STAT_F1);
-
-		return new GridSearch(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB, info.config);
+		return new GuidedRandomGridSearch(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB, info.config);
 	}
 
 	@Override
-	public void baseTest() {
-		baseTest(false);
+	public void friendshipRankTest() {
+		friendshipRankTest(false);
 	}
 }

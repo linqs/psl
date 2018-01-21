@@ -70,13 +70,15 @@ public class RandomGridSearch extends GridSearch {
 	}
 
 	@Override
-	protected void chooseNextLocation() {
+	protected boolean chooseNextLocation() {
 		do {
 			currentLocation = randomConfiguration();
 		} while (objectives.containsKey(currentLocation));
+
+		return true;
 	}
 
-	private String randomConfiguration() {
+	protected String randomConfiguration() {
 		int[] indexes = new int[mutableRules.size()];
 		for (int i = 0; i < indexes.length; i++) {
 			indexes[i] = rand.nextInt(possibleWeights.length);
