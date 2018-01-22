@@ -165,13 +165,9 @@ public class GridSearch extends WeightLearningApplication {
 				mutableRules.get(i).setWeight(weights[i]);
 			}
 
-			// Reset the RVAs to default values.
-			setDefaultRandomVariables();
+			double objective = inspectLocation(weights);
 
-			// Computes the expected incompatibility.
-			computeExpectedIncompatibility();
-
-			double objective = objectiveFunction.compute(mutableRules, observedIncompatibility, expectedIncompatibility, trainingMap);
+			// Log this location.
 			objectives.put(currentLocation, new Double(objective));
 
 			if (iteration == 0 || objective < bestObjective) {
@@ -188,6 +184,24 @@ public class GridSearch extends WeightLearningApplication {
 		for (int i = 0; i < mutableRules.size(); i++) {
 			mutableRules.get(i).setWeight(bestWeights[i]);
 		}
+	}
+
+	/**
+	 * Inspect the location defined by the given weights and give back its score (lower is better).
+	 * This method may modify weights if it wants to store a different set of weights than those initially passed in.
+	 * The rules have already been set with the given weights, they are only passed in so the method
+	 * has a chance to modify them before the result is stored.
+	 * This is a prime method for child classes to override.
+	 * By default, it just computes the expected incompatibility and calls the objective function.
+	 */
+	protected double inspectLocation(double[] weights) {
+			// Reset the RVAs to default values.
+			setDefaultRandomVariables();
+
+			// Computes the expected incompatibility.
+			computeExpectedIncompatibility();
+
+			return objectiveFunction.compute(mutableRules, observedIncompatibility, expectedIncompatibility, trainingMap);
 	}
 
 	/**

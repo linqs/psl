@@ -110,6 +110,8 @@ public abstract class WeightLearningApplication implements ModelApplication {
 	protected TermStore termStore;
 	protected TermStore latentTermStore;
 
+	private boolean groundModelInit;
+
 	public WeightLearningApplication(List<Rule> rules, Database rvDB, Database observedDB,
 			boolean supportsLatentVariables, ConfigBundle config) {
 		this.rvDB = rvDB;
@@ -130,6 +132,8 @@ public abstract class WeightLearningApplication implements ModelApplication {
 
 		observedIncompatibility = new double[mutableRules.size()];
 		expectedIncompatibility = new double[mutableRules.size()];
+
+		groundModelInit = false;
 	}
 
 	/**
@@ -157,7 +161,35 @@ public abstract class WeightLearningApplication implements ModelApplication {
 
 	protected abstract void doLearn();
 
+	/**
+	 * Pass in all the ground model infrastructure.
+	 * The caller should be careful calling this method instead of the other variant.
+	 */
+	public void initGroundModel(Reasoner reasoner, GroundRuleStore groundRuleStore,
+			TermStore termStore, TermGenerator termGenerator,
+			PersistedAtomManager atomManager, TrainingMap trainingMap) {
+		if (groundModelInit) {
+			return;
+		}
+
+		this.reasoner = reasoner;
+		this.groundRuleStore = groundRuleStore;
+		this.termStore = termStore;
+		this.termGenerator = termGenerator;
+		this.atomManager = atomManager;
+		this.trainingMap = trainingMap;
+
+		groundModelInit = true;
+	}
+
+	/**
+	 * Initialize all the infrastructure dealing with the ground model.
+	 */
 	protected void initGroundModel() {
+		if (groundModelInit) {
+			return;
+		}
+
 		reasoner = (Reasoner)config.getNewObject(REASONER_KEY, REASONER_DEFAULT);
 		groundRuleStore = (GroundRuleStore)config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
 		termStore = (TermStore)config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
@@ -188,6 +220,8 @@ public abstract class WeightLearningApplication implements ModelApplication {
 		@SuppressWarnings("unchecked")
 		int termCount = termGenerator.generateTerms(groundRuleStore, termStore);
 		log.debug("Generated {} objective terms from {} ground rules.", termCount, groundCount);
+
+		groundModelInit = true;
 	}
 
 	/**
@@ -282,7 +316,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
 	 *
 	 * @return current learning loss
 	 */
-	protected double computeLoss() {
+	public double computeLoss() {
 		double loss = 0.0;
 		for (int i = 0; i < mutableRules.size(); i++) {
 			loss += mutableRules.get(i).getWeight() * (observedIncompatibility[i] - expectedIncompatibility[i]);
