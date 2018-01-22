@@ -89,6 +89,10 @@ public final class Parallel {
 				throw new RuntimeException("Interrupted waiting for worker (" + i + ").");
 			}
 
+			if (worker.getException() != null) {
+				throw new RuntimeException("Exception on worker.", worker.getException());
+			}
+
 			@SuppressWarnings("unchecked")
 			Worker<Integer> intWorker = (Worker<Integer>)worker;
 			intWorker.setWork(i, new Integer(i));
@@ -99,7 +103,11 @@ public final class Parallel {
 		// We can wait for all the workers by emptying out the queue.
 		for (int i = 0; i < NUM_THREADS; i++) {
 			try {
-				workerQueue.take();
+				Worker<?> worker = workerQueue.take();
+
+				if (worker.getException() != null) {
+					throw new RuntimeException("Exception on worker.", worker.getException());
+				}
 			} catch (InterruptedException ex) {
 				throw new RuntimeException("Interrupted waiting for worker (" + i + ").");
 			}
@@ -126,6 +134,10 @@ public final class Parallel {
 				throw new RuntimeException("Interrupted waiting for worker (" + count + ").");
 			}
 
+			if (worker.getException() != null) {
+				throw new RuntimeException("Exception on worker.", worker.getException());
+			}
+
 			@SuppressWarnings("unchecked")
 			Worker<T> typedWorker = (Worker<T>)worker;
 			typedWorker.setWork(count, job);
@@ -138,7 +150,11 @@ public final class Parallel {
 		// We can wait for all the workers by emptying out the queue.
 		for (int i = 0; i < NUM_THREADS; i++) {
 			try {
-				workerQueue.take();
+				Worker<?> worker = workerQueue.take();
+
+				if (worker.getException() != null) {
+					throw new RuntimeException("Exception on worker.", worker.getException());
+				}
 			} catch (InterruptedException ex) {
 				throw new RuntimeException("Interrupted waiting for worker (" + i + ").");
 			}
@@ -236,11 +252,13 @@ public final class Parallel {
 
 		private int index;
 		private T item;
+		private Exception exception;
 
 		public Worker() {
 			this.id = -1;
 			this.index = -1;
 			this.item = null;
+			this.exception = null;
 		}
 
 		/**
@@ -270,6 +288,14 @@ public final class Parallel {
 			this.id = id;
 		}
 
+		public void clearException() {
+			exception = null;
+		}
+
+		public Exception getException() {
+			return exception;
+		}
+
 		@Override
 		public final void run() {
 			try {
@@ -279,6 +305,9 @@ public final class Parallel {
 				}
 
 				work(index, item);
+			} catch (Exception ex) {
+				log.warn("Caught exception on worker: {}", id);
+				exception = ex;
 			} finally {
 				index = -1;
 				item = null;
