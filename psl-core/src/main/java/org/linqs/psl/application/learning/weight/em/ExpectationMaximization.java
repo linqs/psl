@@ -47,17 +47,6 @@ public abstract class ExpectationMaximization extends VotedPerceptron {
 	public static final int ITER_DEFAULT = 10;
 
 	/**
-	 * Key for Boolean property that indicates whether to reset step-size schedule
-	 * for each EM iteration. If TRUE, schedule will be {@link VotedPerceptron#STEP_SIZE_KEY}
-	 * at start of each iteration. If FALSE, schedule will smoothly decrease across rounds,
-	 * i.e., the schedule will be 1/ (iteration number * num steps + step number).
-	 *
-	 * This property has no effect if {@link VotedPerceptron#STEP_SCHEDULE_KEY} is false.
-	 */
-	public static final String RESET_SCHEDULE_KEY = CONFIG_PREFIX + ".resetschedule";
-	public static final boolean RESET_SCHEDULE_DEFAULT = true;
-
-	/**
 	 * Key for positive double property for the minimum absolute change in weights
 	 * such that EM is considered converged
 	 */
@@ -66,7 +55,6 @@ public abstract class ExpectationMaximization extends VotedPerceptron {
 
 	protected final int iterations;
 	protected final double tolerance;
-	protected final boolean resetSchedule;
 
 	protected int emIteration;
 
@@ -76,7 +64,6 @@ public abstract class ExpectationMaximization extends VotedPerceptron {
 
 		iterations = config.getInt(ITER_KEY, ITER_DEFAULT);
 		tolerance = config.getDouble(TOLERANCE_KEY, TOLERANCE_DEFAULT);
-		resetSchedule = config.getBoolean(RESET_SCHEDULE_KEY, RESET_SCHEDULE_DEFAULT);
 	}
 
 	@Override
@@ -136,14 +123,5 @@ public abstract class ExpectationMaximization extends VotedPerceptron {
 	 */
 	protected void mStep() {
 		super.doLearn();
-	}
-
-	@Override
-	protected double getStepSize(int innerIteration) {
-		if (scheduleStepSize && !resetSchedule) {
-			return baseStepSize / (double) (emIteration * numSteps + innerIteration + 1);
-		}
-
-		return super.getStepSize(emIteration);
 	}
 }

@@ -178,7 +178,6 @@ public class PairedDualLearner extends ExpectationMaximization {
 		}
 
 		double [] avgWeights = new double[mutableRules.size()];
-		double[] scale = new double[mutableRules.size()];
 		double objective = 0;
 
 		for (emIteration = 0; emIteration < iterations; emIteration++) {
@@ -188,23 +187,15 @@ public class PairedDualLearner extends ExpectationMaximization {
 			double change = 0;
 
 			for (int i = 0; i < mutableRules.size(); i++) {
-				if (scheduleStepSize) {
-					scale[i] = Math.pow((double) (emIteration + 1), 2);
-				} else {
-					scale[i] = 1.0;
-				}
-
 				gradNorm += Math.pow(weights[i] - Math.max(0, weights[i] - gradient[i]), 2);
 
-				if (scale[i] > 0.0) {
-					double coeff = baseStepSize / Math.sqrt(scale[i]);
-					double delta = Math.max(-weights[i], -coeff * gradient[i]);
-					weights[i] += delta;
+				double coeff = baseStepSize;
+				double delta = Math.max(-weights[i], -coeff * gradient[i]);
+				weights[i] += delta;
 
-					// use gradient array to store change
-					gradient[i] = delta;
-					change += Math.pow(delta, 2);
-				}
+				// use gradient array to store change
+				gradient[i] = delta;
+				change += Math.pow(delta, 2);
 
 				avgWeights[i] = (1 - (1.0 / (double) (emIteration + 1.0))) * avgWeights[i] + (1.0 / (double) (emIteration + 1.0)) * weights[i];
 			}

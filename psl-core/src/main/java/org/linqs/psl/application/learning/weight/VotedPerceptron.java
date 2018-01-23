@@ -87,13 +87,6 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	public static final double STEP_SIZE_DEFAULT = 1.0;
 
 	/**
-	 * Key for Boolean property that indicates whether to shrink the stepsize by
-	 * a 1/t schedule.
-	 */
-	public static final String STEP_SCHEDULE_KEY = CONFIG_PREFIX + ".schedule";
-	public static final boolean STEP_SCHEDULE_DEFAULT = true;
-
-	/**
 	 * Key for Boolean property that indicates whether to scale gradient by
 	 * number of groundings
 	 */
@@ -119,7 +112,6 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	protected final int numSteps;
 	protected final double l2Regularization;
 	protected final double l1Regularization;
-	protected final boolean scheduleStepSize;
 	protected final boolean scaleGradient;
 	protected final boolean averageSteps;
 
@@ -152,7 +144,6 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 			throw new IllegalArgumentException("L1 regularization parameter must be non-negative.");
 		}
 
-		scheduleStepSize = config.getBoolean(STEP_SCHEDULE_KEY, STEP_SCHEDULE_DEFAULT);
 		scaleGradient = config.getBoolean(SCALE_GRADIENT_KEY, SCALE_GRADIENT_DEFAULT);
 		averageSteps = config.getBoolean(AVERAGE_STEPS_KEY, AVERAGE_STEPS_DEFAULT);
 	}
@@ -179,14 +170,13 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 			currentLoss = computeLoss();
 
 			// Updates weights.
-			double stepSize = getStepSize(step);
 			for (int i = 0; i < mutableRules.size(); i++) {
 				double weight = mutableRules.get(i).getWeight();
 				double currentStep = (expectedIncompatibility[i] - observedIncompatibility[i]
 						- l2Regularization * weight
 						- l1Regularization) / scalingFactor[i];
 
-				currentStep *= stepSize;
+				currentStep *= baseStepSize;
 
 				log.debug("Step of {} for rule {}", currentStep, mutableRules.get(i));
 				log.debug(" --- Expected incomp.: {}, Truth incomp.: {}", expectedIncompatibility[i], observedIncompatibility[i]);
@@ -223,14 +213,6 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 
 	public double getLoss() {
 		return currentLoss;
-	}
-
-	protected double getStepSize(int iteration) {
-		if (scheduleStepSize) {
-			return baseStepSize / (double)(iteration + 1);
-		}
-
-		return baseStepSize;
 	}
 
 	/**
