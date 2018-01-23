@@ -87,6 +87,13 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	public static final double STEP_SIZE_DEFAULT = 1.0;
 
 	/**
+	 * The inertia that is used for adaptive step sizes.
+	 * Should be in (0, 1).
+	 */
+	public static final String INERTIA_KEY = CONFIG_PREFIX + ".inertia";
+	public static final double INERTIA_DEFAULT = 0.50;
+
+	/**
 	 * Key for Boolean property that indicates whether to scale gradient by
 	 * number of groundings
 	 */
@@ -109,6 +116,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	public static final int NUM_STEPS_DEFAULT = 25;
 
 	protected final double baseStepSize;
+	protected final double inertia;
 	protected final int numSteps;
 	protected final double l2Regularization;
 	protected final double l1Regularization;
@@ -127,6 +135,11 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 		baseStepSize = config.getDouble(STEP_SIZE_KEY, STEP_SIZE_DEFAULT);
 		if (baseStepSize <= 0) {
 			throw new IllegalArgumentException("Step size must be positive.");
+		}
+
+		inertia = config.getDouble(INERTIA_KEY, INERTIA_DEFAULT);
+		if (inertia <= 0 || inertia >= 1) {
+			throw new IllegalArgumentException("Inertia must be in (0, 1), found: " + inertia);
 		}
 
 		numSteps = config.getInt(NUM_STEPS_KEY, NUM_STEPS_DEFAULT);
@@ -160,6 +173,9 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 
 		double[] scalingFactor = computeScalingFactor();
 
+		// Keep track of the last steps for each weight so we can apply momentum.
+		double[] lastSteps = new double[mutableRules.size()];
+
 		// Computes the gradient steps.
 		for (int step = 0; step < numSteps; step++) {
 			log.debug("Starting iteration {}", step);
@@ -178,8 +194,14 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 
 				currentStep *= baseStepSize;
 
-				log.debug("Step of {} for rule {}", currentStep, mutableRules.get(i));
-				log.debug(" --- Expected incomp.: {}, Truth incomp.: {}", expectedIncompatibility[i], observedIncompatibility[i]);
+				// Apply momentum.
+				currentStep += inertia * lastSteps[i];
+
+				// TODO(eriq): Should we keep track of the computed step, or actual step (after Max(0)).
+				lastSteps[i] = currentStep;
+
+				log.debug("Step of {} for rule {} --- Expected incomp.: {}, Truth incomp.: {}",
+						currentStep, mutableRules.get(i), expectedIncompatibility[i], observedIncompatibility[i]);
 
 				weight = Math.max(weight + currentStep, 0.0);
 				avgWeights[i] += weight;
