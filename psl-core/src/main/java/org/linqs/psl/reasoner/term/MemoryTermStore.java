@@ -80,13 +80,19 @@ public class MemoryTermStore<E extends Term> implements TermStore<E> {
 
 	@Override
 	public void clear() {
-		store.clear();
-		ruleMapping.clear();
+		if (store != null) {
+			store.clear();
+		}
+
+		if (ruleMapping != null) {
+			ruleMapping.clear();
+		}
 	}
 
 	@Override
 	public void close() {
 		clear();
+
 		store = null;
 		ruleMapping = null;
 	}

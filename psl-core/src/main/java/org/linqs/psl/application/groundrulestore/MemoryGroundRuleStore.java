@@ -91,7 +91,9 @@ public class MemoryGroundRuleStore implements GroundRuleStore {
 
 	@Override
 	public void close() {
-		groundRules.clear();
-		groundRules = null;
+		if (groundRules != null) {
+			groundRules.clear();
+			groundRules = null;
+		}
 	}
 }

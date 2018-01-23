@@ -123,9 +123,17 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm> {
 
 	@Override
 	public void clear() {
-		store.clear();
-		variableIndexes.clear();
-		localVariables.clear();
+		if (store != null) {
+			store.clear();
+		}
+
+		if (variableIndexes != null) {
+			variableIndexes.clear();
+		}
+
+		if (localVariables != null) {
+			localVariables.clear();
+		}
 
 		numLocalVariables = 0;
 	}
@@ -134,8 +142,11 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm> {
 	public void close() {
 		clear();
 
-		store.close();
-		store = null;
+		if (store != null) {
+			store.close();
+			store = null;
+		}
+
 		variableIndexes = null;
 		localVariables = null;
 	}

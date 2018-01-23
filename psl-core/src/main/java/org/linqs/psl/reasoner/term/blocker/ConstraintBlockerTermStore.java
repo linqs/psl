@@ -102,16 +102,22 @@ public class ConstraintBlockerTermStore implements TermStore<ConstraintBlockerTe
 
 	@Override
 	public void clear() {
-		blocks.clear();
-		rvMap.clear();
-		groundRuleStore = null;
+		if (blocks != null) {
+			blocks.clear();
+		}
+
+		if (rvMap != null) {
+			rvMap.clear();
+		}
 	}
 
 	@Override
 	public void close() {
 		clear();
+
 		blocks = null;
 		rvMap = null;
+		groundRuleStore = null;
 	}
 
 	@Override

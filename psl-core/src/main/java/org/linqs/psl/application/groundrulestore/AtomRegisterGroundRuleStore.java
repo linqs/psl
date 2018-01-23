@@ -85,9 +85,11 @@ public class AtomRegisterGroundRuleStore extends MemoryGroundRuleStore {
 
 	@Override
 	public void close() {
-		atomMapping.clear();
-		atomMapping = null;
-
 		super.close();
+
+		if (atomMapping != null) {
+			atomMapping.clear();
+			atomMapping = null;
+		}
 	}
 }
