@@ -29,12 +29,12 @@ public class InitialWeightRandomGridSearchTest extends WeightLearningTest {
 	@Override
 	protected WeightLearningApplication getWLA() {
 		// Narrow the search space for tests.
-		info.config.setProperty(GridSearch.POSSIBLE_WEIGHTS_KEY, "0.01:1:10");
+		info.config.setProperty(GridSearch.POSSIBLE_WEIGHTS_KEY, "1:10:100");
 		info.config.setProperty(RandomGridSearch.MAX_LOCATIONS_KEY, 50);
 
 		// Turn down the number of iterations of both ADMM and VotedPerceptron.
-		info.config.setProperty(VotedPerceptron.NUM_STEPS_KEY, 5);
-		info.config.setProperty(ADMMReasoner.MAX_ITER_KEY, 50);
+		info.config.setProperty(VotedPerceptron.NUM_STEPS_KEY, 3);
+		info.config.setProperty(ADMMReasoner.MAX_ITER_KEY, 20);
 
 		// Use the classic MLE.
 		WeightLearningApplication internalWLA = new MaxLikelihoodMPE(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB, info.config);

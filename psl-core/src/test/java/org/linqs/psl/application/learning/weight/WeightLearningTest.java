@@ -67,6 +67,15 @@ public abstract class WeightLearningTest {
 	// Give all the rules a name to make it easier to check weight learning results.
 	protected Map<String, WeightedRule> ruleMap;
 
+	// Variables thatcan control disabling checking test results.
+	protected boolean assertBaseTest;
+	protected boolean assertFriendshipRankTest;
+
+	public WeightLearningTest() {
+		assertBaseTest = true;
+		assertFriendshipRankTest = true;
+	}
+
 	@Before
 	public void setup() {
 		initModel(true);
@@ -141,26 +150,17 @@ public abstract class WeightLearningTest {
 	 */
 	@Test
 	public void baseTest() {
-		baseTest(true);
-	}
-
-	// Allow overriding by the subclasses.
-	protected void baseTest(boolean assertRank) {
 		WeightLearningApplication weightLearner = getWLA();
 		weightLearner.learn();
 		weightLearner.close();
 
-		if (assertRank) {
+		if (assertBaseTest) {
 			assertRank(RULE_PRIOR, RULE_NICE, RULE_SYMMETRY);
 		}
 	}
 
 	@Test
 	public void friendshipRankTest() {
-		friendshipRankTest(true);
-	}
-
-	public void friendshipRankTest(boolean assertRank) {
 		// Reset the current rules.
 		info.model.clear();
 		ruleMap.clear();
@@ -239,7 +239,7 @@ public abstract class WeightLearningTest {
 		weightLearner.learn();
 		weightLearner.close();
 
-		if (assertRank) {
+		if (assertFriendshipRankTest) {
 			assertRank("NotAlice", "Eugene", "Bob", "Alice");
 		}
 	}

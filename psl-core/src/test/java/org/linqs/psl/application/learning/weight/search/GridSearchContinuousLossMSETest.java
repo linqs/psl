@@ -22,6 +22,11 @@ import org.linqs.psl.application.learning.weight.WeightLearningTest;
 import org.linqs.psl.application.learning.weight.search.objective.ContinuousObjective;
 
 public class GridSearchContinuousLossMSETest extends WeightLearningTest {
+	public GridSearchContinuousLossMSETest() {
+		super();
+		assertBaseTest = false;
+	}
+
 	@Override
 	protected WeightLearningApplication getWLA() {
 		// Narrow the search space for tests.
@@ -32,10 +37,5 @@ public class GridSearchContinuousLossMSETest extends WeightLearningTest {
 		info.config.setProperty(ContinuousObjective.STAT_KEY, ContinuousObjective.STAT_MSE);
 
 		return new GridSearch(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB, info.config);
-	}
-
-	@Override
-	public void baseTest() {
-		baseTest(false);
 	}
 }

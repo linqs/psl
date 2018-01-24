@@ -22,6 +22,11 @@ import org.linqs.psl.application.learning.weight.WeightLearningTest;
 import org.linqs.psl.application.learning.weight.search.objective.DiscreteObjective;
 
 public class GridSearchDiscreteLossTest extends WeightLearningTest {
+	public GridSearchDiscreteLossTest() {
+		super();
+		assertBaseTest = false;
+	}
+
 	@Override
 	protected WeightLearningApplication getWLA() {
 		// Narrow the search space for tests.
@@ -32,10 +37,5 @@ public class GridSearchDiscreteLossTest extends WeightLearningTest {
 		info.config.setProperty(DiscreteObjective.STAT_KEY, DiscreteObjective.STAT_F1);
 
 		return new GridSearch(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB, info.config);
-	}
-
-	@Override
-	public void baseTest() {
-		baseTest(false);
 	}
 }

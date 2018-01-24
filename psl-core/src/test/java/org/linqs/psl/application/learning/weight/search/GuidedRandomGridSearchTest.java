@@ -21,16 +21,16 @@ import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningTest;
 
 public class GuidedRandomGridSearchTest extends WeightLearningTest {
+	public GuidedRandomGridSearchTest() {
+		super();
+		assertFriendshipRankTest = false;
+	}
+
 	@Override
 	protected WeightLearningApplication getWLA() {
 		// Narrow the search space for tests.
 		info.config.setProperty(RandomGridSearch.MAX_LOCATIONS_KEY, 100);
 
 		return new GuidedRandomGridSearch(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB, info.config);
-	}
-
-	@Override
-	public void friendshipRankTest() {
-		friendshipRankTest(false);
 	}
 }
