@@ -73,7 +73,7 @@ public class InitialWeightRandomGridSearch extends RandomGridSearch {
 			weights[i] = mutableRules.get(i).getWeight();
 		}
 
-		return internalWLA.computeLoss();
+		return super.inspectLocation(weights);
 	}
 
 	@Override

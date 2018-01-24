@@ -81,7 +81,7 @@ public class InitialWeightGridSearch extends GridSearch {
 			weights[i] = mutableRules.get(i).getWeight();
 		}
 
-		return internalWLA.computeLoss();
+		return super.inspectLocation(weights);
 	}
 
 	@Override
