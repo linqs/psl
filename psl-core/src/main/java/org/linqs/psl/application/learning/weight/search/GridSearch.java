@@ -137,7 +137,8 @@ public class GridSearch extends WeightLearningApplication {
 
 		// If we are dealing with an ADMMReasoner, then set its max iterations.
 		if (reasoner instanceof ADMMReasoner) {
-			((ADMMReasoner)reasoner).setMaxIter(admmIterations);
+			ADMMReasoner admmReasoner = (ADMMReasoner)reasoner;
+			admmReasoner.setMaxIter(Math.min(admmIterations, admmReasoner.getMaxIter()));
 		}
 	}
 
