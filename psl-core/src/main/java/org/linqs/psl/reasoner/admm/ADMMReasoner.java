@@ -111,7 +111,7 @@ public class ADMMReasoner extends Reasoner {
 	/**
 	 * The min size of computation blocks for terms and variables.
 	 */
-	private static final int MIN_BLOCK_SIZE = 20;
+	private static final int MIN_BLOCK_SIZE = 10;
 
 	/**
 	 * The approximate number of iterations done by workers over the terms
@@ -123,6 +123,11 @@ public class ADMMReasoner extends Reasoner {
 	 * Log the residuals once in every period.
 	 */
 	private static final int LOG_PERIOD = 50;
+
+	/**
+	 * The base size to adjust block sizes on each iteration.
+	 */
+	private static final int BASE_BLOCK_STEP_SIZE = 20;
 
 	/**
 	 * Sometimes called eta or rho,
@@ -141,6 +146,9 @@ public class ADMMReasoner extends Reasoner {
 	private float augmentedLagrangePenalty;
 
 	private int maxIter;
+
+	private volatile int termBlockSize;
+	private volatile int variableBlockSize;
 
 	// Also sometimes called 'z'.
 	// Only populated after inference.
@@ -227,17 +235,23 @@ public class ADMMReasoner extends Reasoner {
 		}
 		ADMMTermStore termStore = (ADMMTermStore)baseTermStore;
 
-		log.debug("Performing optimization with {} variables and {} terms.", termStore.getNumGlobalVariables(), termStore.size());
+		int numTerms = termStore.size();
+		int numVariables = termStore.getNumGlobalVariables();
+
+		log.debug("Performing optimization with {} variables and {} terms.", numVariables, numTerms);
 
 		// Also sometimes called 'z'.
 		consensusValues = new float[termStore.getNumGlobalVariables()];
 
-		// Compute the block size by assuming we want each thread to do TERM_ITERATIONS iterations (on terms).
-		int blockSize = Math.max(MIN_BLOCK_SIZE, (int)((double)termStore.size() / numThreads / TERM_ITERATIONS));
-		log.trace("Using a block size of {}.", blockSize);
+		// Compute the initial block size by assuming we want each thread to do TERM_ITERATIONS iterations (on terms).
+		termBlockSize = Math.max(MIN_BLOCK_SIZE, (int)((double)numTerms / numThreads / TERM_ITERATIONS));
+		// Scale the block size for variables by the number of variables.
+		variableBlockSize = Math.max(MIN_BLOCK_SIZE, (int)((double)termBlockSize * numVariables / numTerms));
 
-		SyncCounter termCounter = new SyncCounter((int)Math.ceil(termStore.size() / (float)blockSize));
-		SyncCounter variableCounter = new SyncCounter((int)Math.ceil(termStore.getNumGlobalVariables() / (float)blockSize));
+		log.trace("Initial Block Size -- Term: {}, Variable: {}.", termBlockSize, variableBlockSize);
+
+		SyncCounter termCounter = new SyncCounter((int)Math.ceil(numTerms / (float)termBlockSize));
+		SyncCounter variableCounter = new SyncCounter((int)Math.ceil(numVariables / (float)variableBlockSize));
 
 		// Starts up the computation threads
 		ADMMTask[] tasks = new ADMMTask[numThreads];
@@ -254,8 +268,7 @@ public class ADMMReasoner extends Reasoner {
 			tasks[i] = new ADMMTask(i,
 					termUpdateCompleteBarrier, workerStartBarrier, workerEndBarrier,
 					termCounter, variableCounter,
-					termStore, consensusValues,
-					blockSize);
+					termStore, consensusValues);
 			threadPool.submit(tasks[i]);
 		}
 
@@ -270,11 +283,18 @@ public class ADMMReasoner extends Reasoner {
 		float AyNorm = 0.0f;
 		int iteration = 1;
 
+		long totalTermWaitTimeNS = 0;
+		long totalVariableWaitTimeNS = 0;
+		long totalTermBarrierWaitTimeNS = 0;
+		long totalVariableBarrierWaitTimeNS = 0;
+
 		while ((primalRes > epsilonPrimal || dualRes > epsilonDual) && iteration <= maxIter) {
 			try {
+				log.trace("Running with block sizes -- Term: {}, Variable: {}", termBlockSize, variableBlockSize);
+
 				// Reset the counters for a new round.
-				termCounter.reset();
-				variableCounter.reset();
+				termCounter.reset((int)Math.ceil(numTerms / (float)termBlockSize));
+				variableCounter.reset((int)Math.ceil(numVariables / (float)variableBlockSize));
 
 				// Startup all the workers.
 				workerStartBarrier.await();
@@ -286,6 +306,45 @@ public class ADMMReasoner extends Reasoner {
 			} catch (BrokenBarrierException e) {
 				throw new RuntimeException(e);
 			}
+
+			long iterationTermWaitTimeNS = 0;
+			long iterationVariableWaitTimeNS = 0;
+			long iterationTermBarrierWaitTimeNS = 0;
+			long iterationVariableBarrierWaitTimeNS = 0;
+			for (ADMMTask task : tasks) {
+				iterationTermWaitTimeNS += task.termWaitTimeNS;
+				iterationVariableWaitTimeNS += task.variableWaitTimeNS;
+				iterationTermBarrierWaitTimeNS += task.termBarrierWaitTimeNS;
+				iterationVariableBarrierWaitTimeNS += task.variableBarrierWaitTimeNS;
+			}
+
+			totalTermWaitTimeNS += iterationTermWaitTimeNS;
+			totalVariableWaitTimeNS += iterationVariableWaitTimeNS;
+			totalTermBarrierWaitTimeNS += iterationTermBarrierWaitTimeNS;
+			totalVariableBarrierWaitTimeNS += iterationVariableBarrierWaitTimeNS;
+
+			// Adjust the block size.
+			// If we have been spending more time at barriers, then reduce the size;
+			// and visa-versa
+			long counterTime = iterationTermWaitTimeNS + iterationVariableWaitTimeNS;
+			long barrierTime = iterationTermBarrierWaitTimeNS + iterationVariableBarrierWaitTimeNS;
+
+			if (counterTime < barrierTime) {
+				variableBlockSize = Math.max(MIN_BLOCK_SIZE, variableBlockSize - BASE_BLOCK_STEP_SIZE);
+				termBlockSize = Math.max(MIN_BLOCK_SIZE, termBlockSize - BASE_BLOCK_STEP_SIZE);
+			} else {
+				termBlockSize += BASE_BLOCK_STEP_SIZE;
+				variableBlockSize += BASE_BLOCK_STEP_SIZE;
+			}
+
+			log.trace(String.format(
+					"Iteration wait times (term / variable) -- Counter: %d (%d, %d), Barrier: %d (%d, %d)",
+					(counterTime / 1000),
+					(iterationTermWaitTimeNS / 1000),
+					(iterationVariableWaitTimeNS / 1000),
+					(barrierTime / 1000),
+					(iterationTermBarrierWaitTimeNS / 1000),
+					(iterationVariableBarrierWaitTimeNS / 1000)));
 
 			primalRes = 0.0f;
 			dualRes = 0.0f;
@@ -350,6 +409,15 @@ public class ADMMReasoner extends Reasoner {
 		log.info("Optimization completed in {} iterations. " +
 				"Primal res.: {}, Dual res.: {}", iteration - 1, primalRes, dualRes);
 
+		log.debug(String.format(
+				"Total wait times (term / variable) -- Counter: %d (%d, %d), Barrier: %d (%d, %d)",
+				((totalTermWaitTimeNS  + totalVariableWaitTimeNS) / 1000),
+				(totalTermWaitTimeNS / 1000),
+				(totalVariableWaitTimeNS / 1000),
+				((totalTermBarrierWaitTimeNS + totalVariableBarrierWaitTimeNS) / 1000),
+				(totalTermBarrierWaitTimeNS / 1000),
+				(totalVariableBarrierWaitTimeNS / 1000)));
+
 		// Updates variables
 		termStore.updateVariables(consensusValues);
 	}
@@ -363,7 +431,6 @@ public class ADMMReasoner extends Reasoner {
 		public volatile boolean done;
 
 		private final int threadIndex;
-		private final int blockSize;
 
 		private final SyncCounter termCounter;
 		private final SyncCounter variableCounter;
@@ -384,13 +451,17 @@ public class ADMMReasoner extends Reasoner {
 		protected float lagrangePenalty;
 		protected float augmentedLagrangePenalty;
 
+		public long termWaitTimeNS;
+		public long variableWaitTimeNS;
+		public long termBarrierWaitTimeNS;
+		public long variableBarrierWaitTimeNS;
+
 		public ADMMTask(
 				int threadIndex,
 				CyclicBarrier termUpdateCompleteBarrier,
 				CyclicBarrier workerStartBarrier, CyclicBarrier workerEndBarrier,
 				SyncCounter termCounter, SyncCounter variableCounter,
-				ADMMTermStore termStore, float[] consensusValues,
-				int blockSize) {
+				ADMMTermStore termStore, float[] consensusValues) {
 			this.termUpdateCompleteBarrier = termUpdateCompleteBarrier;
 			this.workerStartBarrier = workerStartBarrier;
 			this.workerEndBarrier = workerEndBarrier;
@@ -398,7 +469,6 @@ public class ADMMReasoner extends Reasoner {
 			this.threadIndex = threadIndex;
 			this.termCounter = termCounter;
 			this.variableCounter = variableCounter;
-			this.blockSize = blockSize;
 
 			this.consensusValues = consensusValues;
 			this.termStore = termStore;
@@ -424,6 +494,30 @@ public class ADMMReasoner extends Reasoner {
 			}
 		}
 
+		/**
+		 * Get the next index for term blocks.
+		 * This is in another method so we can properly time how long is
+		 * spent at sync waits.
+		 */
+		public int nextTermIndex() {
+			long time = System.nanoTime();
+			int nextIndex = termCounter.next();
+			termWaitTimeNS += (System.nanoTime() - time);
+			return nextIndex;
+		}
+
+		/**
+		 * Get the next index for variable blocks.
+		 * This is in another method so we can properly time how long is
+		 * spent at sync waits.
+		 */
+		public int nextVariableIndex() {
+			long time = System.nanoTime();
+			int nextIndex = variableCounter.next();
+			variableWaitTimeNS += (System.nanoTime() - time);
+			return nextIndex;
+		}
+
 		@Override
 		public void run() {
 			int numTerms = termStore.size();
@@ -436,12 +530,18 @@ public class ADMMReasoner extends Reasoner {
 					break;
 				}
 
+				// Reset wait times for this iteration.
+				termWaitTimeNS = 0;
+				variableWaitTimeNS = 0;
+				termBarrierWaitTimeNS = 0;
+				variableBarrierWaitTimeNS = 0;
+
 				// Minimize each local function (wrt the local variable copies).
 				// Instead of dividing up the work ahead of time,
 				// get one block of jobs at a time so the threads will have more even workloads.
-				for (int blockIndex = termCounter.next(); blockIndex != -1; blockIndex = termCounter.next()) {
-					for (int innerBlockIndex = 0; innerBlockIndex < blockSize; innerBlockIndex++) {
-						int termIndex = blockIndex * blockSize + innerBlockIndex;
+				for (int blockIndex = nextTermIndex(); blockIndex != -1; blockIndex = nextTermIndex()) {
+					for (int innerBlockIndex = 0; innerBlockIndex < termBlockSize; innerBlockIndex++) {
+						int termIndex = blockIndex * termBlockSize + innerBlockIndex;
 
 						if (termIndex >= numTerms) {
 							break;
@@ -453,7 +553,9 @@ public class ADMMReasoner extends Reasoner {
 				}
 
 				// Wait for all the workers to finish minimizing.
+				long time = System.nanoTime();
 				awaitUninterruptibly(termUpdateCompleteBarrier);
+				termBarrierWaitTimeNS += System.nanoTime() - time;
 
 				primalResInc = 0.0f;
 				dualResInc = 0.0f;
@@ -465,9 +567,9 @@ public class ADMMReasoner extends Reasoner {
 
 				// Instead of dividing up the work ahead of time,
 				// get one job at a time so the threads will have more even workloads.
-				for (int blockIndex = variableCounter.next(); blockIndex != -1; blockIndex = variableCounter.next()) {
-					for (int innerBlockIndex = 0; innerBlockIndex < blockSize; innerBlockIndex++) {
-						int variableIndex = blockIndex * blockSize + innerBlockIndex;
+				for (int blockIndex = nextVariableIndex(); blockIndex != -1; blockIndex = nextVariableIndex()) {
+					for (int innerBlockIndex = 0; innerBlockIndex < variableBlockSize; innerBlockIndex++) {
+						int variableIndex = blockIndex * variableBlockSize + innerBlockIndex;
 
 						if (variableIndex >= numVariables) {
 							break;
@@ -512,7 +614,9 @@ public class ADMMReasoner extends Reasoner {
 					}
 				}
 
+				time = System.nanoTime();
 				awaitUninterruptibly(workerEndBarrier);
+				variableBarrierWaitTimeNS += System.nanoTime() - time;
 			}
 		}
 	}
@@ -521,7 +625,7 @@ public class ADMMReasoner extends Reasoner {
 	 * A thread-safe counter that starts at 0 and returns |max| successive numbers.
 	 */
 	private static class SyncCounter {
-		private final int max;
+		private int max;
 		private int count;
 
 		public SyncCounter(int max) {
@@ -542,6 +646,11 @@ public class ADMMReasoner extends Reasoner {
 
 		public synchronized void reset() {
 			count = 0;
+		}
+
+		public synchronized void reset(int max) {
+			count = 0;
+			this.max = max;
 		}
 	}
 
