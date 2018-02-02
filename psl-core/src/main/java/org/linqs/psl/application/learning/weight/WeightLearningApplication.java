@@ -39,6 +39,8 @@ import org.linqs.psl.reasoner.term.TermStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -417,5 +419,41 @@ public abstract class WeightLearningApplication implements ModelApplication {
 		}
 
 		atomManager.commitPersistedAtoms();
+	}
+
+	/**
+	 * Construct a weight learning application given the data.
+	 * Look for a constructor like: (List<Rule>, Database (rv), Database (observed), ConfigBundle).
+	 */
+	public static WeightLearningApplication getWLA(String className, List<Rule> rules,
+			Database randomVariableDatabase, Database observedTruthDatabase, ConfigBundle config) {
+		Class<? extends WeightLearningApplication> classObject = null;
+		try {
+			@SuppressWarnings("unchecked")
+			Class<? extends WeightLearningApplication> uncheckedClassObject = (Class<? extends WeightLearningApplication>)Class.forName(className);
+			classObject = uncheckedClassObject;
+		} catch (ClassNotFoundException ex) {
+			throw new IllegalArgumentException("Could not find class: " + className, ex);
+		}
+
+		Constructor<? extends WeightLearningApplication> constructor = null;
+		try {
+			constructor = classObject.getConstructor(List.class, Database.class, Database.class, ConfigBundle.class);
+		} catch (NoSuchMethodException ex) {
+			throw new IllegalArgumentException("No sutible constructor found for weight learner: " + className + ".", ex);
+		}
+
+		WeightLearningApplication wla = null;
+		try {
+			wla = constructor.newInstance(rules, randomVariableDatabase, observedTruthDatabase, config);
+		} catch (InstantiationException ex) {
+			throw new RuntimeException("Unable to instantiate weight learner (" + className + ")", ex);
+		} catch (IllegalAccessException ex) {
+			throw new RuntimeException("Insufficient access to constructor for " + className, ex);
+		} catch (InvocationTargetException ex) {
+			throw new RuntimeException("Error thrown while constructing " + className, ex);
+		}
+
+		return wla;
 	}
 }

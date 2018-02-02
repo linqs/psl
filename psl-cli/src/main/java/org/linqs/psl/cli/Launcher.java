@@ -59,8 +59,6 @@ import org.apache.log4j.PropertyConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -330,7 +328,8 @@ public class Launcher {
 		Database randomVariableDatabase = dataStore.getDatabase(targetPartition, closedPredicates, observationsPartition);
 		Database observedTruthDatabase = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
 
-		WeightLearningApplication learner = getWLA(wlaName, model, randomVariableDatabase, observedTruthDatabase);
+		WeightLearningApplication learner = WeightLearningApplication.getWLA(wlaName, model.getRules(),
+				randomVariableDatabase, observedTruthDatabase, config);
 		learner.learn();
 		learner.close();
 
@@ -694,57 +693,6 @@ public class Launcher {
 		}
 
 		return commandLineOptions;
-	}
-
-	/**
-	 * Construct a weight learning application given the data.
-	 * First look for a constructor like: (List<Rule>, Database (rv), Database (observed), ConfigBundle).
-	 * If we can't find that, look for: (Model, Database (rv), Database (observed), ConfigBundle).
-	 */
-	private WeightLearningApplication getWLA(String className, Model model,
-			Database randomVariableDatabase, Database observedTruthDatabase) {
-		Class<? extends WeightLearningApplication> classObject = null;
-		try {
-			@SuppressWarnings("unchecked")
-			Class<? extends WeightLearningApplication> uncheckedClassObject = (Class<? extends WeightLearningApplication>)Class.forName(className);
-			classObject = uncheckedClassObject;
-		} catch (ClassNotFoundException ex) {
-			throw new IllegalArgumentException("Could not find class: " + className, ex);
-		}
-
-		Constructor<? extends WeightLearningApplication> constructor = null;
-		boolean useList = true;
-
-		try {
-			constructor = classObject.getConstructor(List.class, Database.class, Database.class, ConfigBundle.class);
-		} catch (NoSuchMethodException ex) {
-			useList = false;
-		}
-
-		if (!useList) {
-			try {
-				constructor = classObject.getConstructor(Model.class, Database.class, Database.class, ConfigBundle.class);
-			} catch (NoSuchMethodException ex) {
-				throw new IllegalArgumentException("No sutible constructor found for weight learner: " + className + ".", ex);
-			}
-		}
-
-		WeightLearningApplication wla = null;
-		try {
-			if (useList) {
-				wla = constructor.newInstance(model.getRules(), randomVariableDatabase, observedTruthDatabase, config);
-			} else {
-				wla = constructor.newInstance(model, randomVariableDatabase, observedTruthDatabase, config);
-			}
-		} catch (InstantiationException ex) {
-			throw new RuntimeException("Unable to instantiate weight learner (" + className + ")", ex);
-		} catch (IllegalAccessException ex) {
-			throw new RuntimeException("Insufficient access to constructor for " + className, ex);
-		} catch (InvocationTargetException ex) {
-			throw new RuntimeException("Error thrown while constructing " + className, ex);
-		}
-
-		return wla;
 	}
 
 	public static void main(String[] args) {
