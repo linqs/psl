@@ -40,7 +40,7 @@ public class MemoryTermStore<E extends Term> implements TermStore<E> {
 	public static final String INITIAL_SIZE_KEY = CONFIG_PREFIX + ".initialsize";
 	public static final int INITIAL_SIZE_DEFAULT = 5000;
 
-	private List<E> store;
+	private ArrayList<E> store;
 
 	/**
 	 * A mapping of ground rule to the term indexes associated with
@@ -105,6 +105,20 @@ public class MemoryTermStore<E extends Term> implements TermStore<E> {
 	@Override
 	public int size() {
 		return store.size();
+	}
+
+	@Override
+	public void ensureCapacity(int capacity) {
+		assert(capacity > 0);
+
+		store.ensureCapacity(capacity);
+
+		// If the map is empty, then just reallocate it
+		// (since we can't add capacity).
+		if (ruleMapping.size() == 0) {
+			// The default load factor for Java HashMaps is 0.75.
+			ruleMapping = new HashMap<WeightedGroundRule, List<Integer>>((int)(capacity / 0.75));
+		}
 	}
 
 	@Override

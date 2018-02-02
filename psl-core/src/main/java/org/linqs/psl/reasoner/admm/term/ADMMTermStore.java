@@ -162,6 +162,11 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm> {
 	}
 
 	@Override
+	public void ensureCapacity(int capacity) {
+		store.ensureCapacity(capacity);
+	}
+
+	@Override
 	public Iterator<ADMMObjectiveTerm> iterator() {
 		return store.iterator();
 	}

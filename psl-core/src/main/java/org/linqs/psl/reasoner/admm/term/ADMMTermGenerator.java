@@ -51,6 +51,7 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 		}
 
 		int initialSize = termStore.size();
+		termStore.ensureCapacity(initialSize + ruleStore.size());
 
 		Parallel.foreach(ruleStore.getGroundRules(), new Parallel.Worker<GroundRule>() {
 			@Override

@@ -46,6 +46,13 @@ public interface TermStore<E extends Term> extends Iterable<E> {
 
 	public int size();
 
+	/**
+	 * Ensure that the underlying stuctures can have the required capacity.
+	 * This is more of a hint to the store about how much memory will be used.
+	 * This is best called on an empty store so it can prepare.
+	 */
+	public void ensureCapacity(int capacity);
+
 	public void updateWeight(WeightedGroundRule rule);
 
 	/**
