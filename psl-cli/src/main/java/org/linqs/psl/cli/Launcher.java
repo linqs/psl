@@ -18,7 +18,6 @@
 package org.linqs.psl.cli;
 
 import org.linqs.psl.application.inference.MPEInference;
-import org.linqs.psl.application.inference.result.FullInferenceResult;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
 import org.linqs.psl.config.ConfigBundle;
@@ -60,6 +59,8 @@ import org.apache.log4j.PropertyConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -72,6 +73,7 @@ import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.file.Paths;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -117,6 +119,7 @@ public class Launcher {
 			"cli_" + System.getProperty("user.name") + "@" + getHostname()).toString();
 	public static final String DEFAULT_POSTGRES_DB_NAME = "psl_cli";
 	public static final String DEFAULT_DISCRETE_THRESHOLD = "0.5";
+	public static final String DEFAULT_WLA = MaxLikelihoodMPE.class.getName();
 
 	// Reserved partition names.
 	public static final String PARTITION_NAME_OBSERVATIONS = "observations";
@@ -264,7 +267,7 @@ public class Launcher {
 		Database database = dataStore.getDatabase(targetPartition, closedPredicates, observationsPartition);
 
 		MPEInference mpe = new MPEInference(model, database, config);
-		FullInferenceResult result = mpe.mpeInference();
+		mpe.mpeInference();
 
 		log.info("Inference Complete");
 
@@ -316,9 +319,9 @@ public class Launcher {
 		}
 	}
 
-	private void learnWeights(Model model, DataStore dataStore, Set<StandardPredicate> closedPredicates)
+	private void learnWeights(Model model, DataStore dataStore, Set<StandardPredicate> closedPredicates, String wlaName)
 			throws ClassNotFoundException, IOException, IllegalAccessException, InstantiationException {
-		log.info("Starting weight learning");
+		log.info("Starting weight learning with learner: " + wlaName);
 
 		Partition targetPartition = dataStore.getPartition(PARTITION_NAME_TARGET);
 		Partition observationsPartition = dataStore.getPartition(PARTITION_NAME_OBSERVATIONS);
@@ -327,7 +330,7 @@ public class Launcher {
 		Database randomVariableDatabase = dataStore.getDatabase(targetPartition, closedPredicates, observationsPartition);
 		Database observedTruthDatabase = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
 
-		WeightLearningApplication learner = new MaxLikelihoodMPE(model.getRules(), randomVariableDatabase, observedTruthDatabase, config);
+		WeightLearningApplication learner = getWLA(wlaName, model, randomVariableDatabase, observedTruthDatabase);
 		learner.learn();
 		learner.close();
 
@@ -457,7 +460,7 @@ public class Launcher {
 		if (options.hasOption(OPERATION_INFER)) {
 			runInference(model, dataStore, closedPredicates);
 		} else if (options.hasOption(OPERATION_LEARN)) {
-			learnWeights(model, dataStore, closedPredicates);
+			learnWeights(model, dataStore, closedPredicates, options.getOptionValue(OPERATION_LEARN, DEFAULT_WLA));
 		} else {
 			throw new IllegalArgumentException("No valid operation provided.");
 		}
@@ -491,8 +494,19 @@ public class Launcher {
 		Options options = new Options();
 
 		OptionGroup mainCommand = new OptionGroup();
+
 		mainCommand.addOption(new Option(OPERATION_INFER, OPERATION_INFER_LONG, false, "Run MAP inference"));
-		mainCommand.addOption(new Option(OPERATION_LEARN, OPERATION_LEARN_LONG, false, "Run weight learning"));
+
+		mainCommand.addOption(Option.builder(OPERATION_LEARN)
+				.longOpt(OPERATION_LEARN_LONG)
+				.desc("Run weight learning." +
+						" You can optionally supply a fully qualified name for a weight learner" +
+						" (defaults to " + DEFAULT_WLA + ").")
+				.hasArg()
+				.argName("learner")
+				.optionalArg(true)
+				.build());
+
 		mainCommand.setRequired(true);
 		options.addOptionGroup(mainCommand);
 
@@ -680,6 +694,57 @@ public class Launcher {
 		}
 
 		return commandLineOptions;
+	}
+
+	/**
+	 * Construct a weight learning application given the data.
+	 * First look for a constructor like: (List<Rule>, Database (rv), Database (observed), ConfigBundle).
+	 * If we can't find that, look for: (Model, Database (rv), Database (observed), ConfigBundle).
+	 */
+	private WeightLearningApplication getWLA(String className, Model model,
+			Database randomVariableDatabase, Database observedTruthDatabase) {
+		Class<? extends WeightLearningApplication> classObject = null;
+		try {
+			@SuppressWarnings("unchecked")
+			Class<? extends WeightLearningApplication> uncheckedClassObject = (Class<? extends WeightLearningApplication>)Class.forName(className);
+			classObject = uncheckedClassObject;
+		} catch (ClassNotFoundException ex) {
+			throw new IllegalArgumentException("Could not find class: " + className, ex);
+		}
+
+		Constructor<? extends WeightLearningApplication> constructor = null;
+		boolean useList = true;
+
+		try {
+			constructor = classObject.getConstructor(List.class, Database.class, Database.class, ConfigBundle.class);
+		} catch (NoSuchMethodException ex) {
+			useList = false;
+		}
+
+		if (!useList) {
+			try {
+				constructor = classObject.getConstructor(Model.class, Database.class, Database.class, ConfigBundle.class);
+			} catch (NoSuchMethodException ex) {
+				throw new IllegalArgumentException("No sutible constructor found for weight learner: " + className + ".", ex);
+			}
+		}
+
+		WeightLearningApplication wla = null;
+		try {
+			if (useList) {
+				wla = constructor.newInstance(model.getRules(), randomVariableDatabase, observedTruthDatabase, config);
+			} else {
+				wla = constructor.newInstance(model, randomVariableDatabase, observedTruthDatabase, config);
+			}
+		} catch (InstantiationException ex) {
+			throw new RuntimeException("Unable to instantiate weight learner (" + className + ")", ex);
+		} catch (IllegalAccessException ex) {
+			throw new RuntimeException("Insufficient access to constructor for " + className, ex);
+		} catch (InvocationTargetException ex) {
+			throw new RuntimeException("Error thrown while constructing " + className, ex);
+		}
+
+		return wla;
 	}
 
 	public static void main(String[] args) {

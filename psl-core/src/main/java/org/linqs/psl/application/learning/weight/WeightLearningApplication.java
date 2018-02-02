@@ -46,6 +46,8 @@ import java.util.Set;
 
 /**
  * Abstract class for learning the weights of weighted mutableRules from data for a model.
+ * All non-abstract children should have a constructor that takes:
+ * (List<Rule>, Database (rv), Database (observed), ConfigBundle).
  */
 public abstract class WeightLearningApplication implements ModelApplication {
 	private static final Logger log = LoggerFactory.getLogger(WeightLearningApplication.class);
