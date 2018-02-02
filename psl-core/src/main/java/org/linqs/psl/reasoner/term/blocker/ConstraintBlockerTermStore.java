@@ -133,7 +133,11 @@ public class ConstraintBlockerTermStore implements TermStore<ConstraintBlockerTe
 
 	@Override
 	public void ensureCapacity(int capacity) {
-		assert(capacity <= 0);
+		assert(capacity >= 0);
+
+		if (capacity == 0) {
+			return;
+		}
 
 		blocks.ensureCapacity(capacity);
 

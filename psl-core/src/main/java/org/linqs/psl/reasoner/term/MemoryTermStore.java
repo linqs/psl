@@ -109,7 +109,11 @@ public class MemoryTermStore<E extends Term> implements TermStore<E> {
 
 	@Override
 	public void ensureCapacity(int capacity) {
-		assert(capacity > 0);
+		assert(capacity >= 0);
+
+		if (capacity == 0) {
+			return;
+		}
 
 		store.ensureCapacity(capacity);
 
