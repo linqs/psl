@@ -200,17 +200,17 @@ public class RDBMSDatabase implements Database {
 		 * Next, query database for atom.
 		 * What partition is it in?
 		 * Read?
-		 * 		- Then instantiate as a persisted ObservedAtom
+		 *		- Then instantiate as a persisted ObservedAtom
 		 * Write?
 		 * 		- Is the predicate closed?
-		 * 		- Yes, instantiate as ObservedAtom.
-		 * 		- No, instantiate as RandomVariableAtom.
+		 *			- Yes, instantiate as ObservedAtom.
+		 *			- No, instantiate as RandomVariableAtom.
 		 * None?
 		 * 		- Is the predicate standard?
-		 * 		- Yes, is the predicate closed?
-		 * 			- Yes, instantiate as ObservedAtom
-		 * 			- No, instantiate as RandomVariableAtom
-		 * 		- No, instantiate as ObservedAtom.
+		 *			- Yes, is the predicate closed?
+		 *				- Yes, instantiate as ObservedAtom
+		 *				- No, instantiate as RandomVariableAtom
+		 *			- No, instantiate as ObservedAtom.
 		 */
 		if (predicate instanceof StandardPredicate) {
 			return getAtom((StandardPredicate)predicate, arguments);

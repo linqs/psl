@@ -18,7 +18,6 @@
 package org.linqs.psl.reasoner.admm;
 
 import org.linqs.psl.config.ConfigBundle;
-import org.linqs.psl.config.ConfigManager;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.Reasoner;
@@ -45,8 +44,6 @@ public class ADMMReasoner extends Reasoner {
 
 	/**
 	 * Prefix of property keys used by this class.
-	 *
-	 * @see ConfigManager
 	 */
 	public static final String CONFIG_PREFIX = "admmreasoner";
 
