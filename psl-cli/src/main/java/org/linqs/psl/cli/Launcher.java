@@ -31,8 +31,7 @@ import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver.Type;
 import org.linqs.psl.database.rdbms.driver.PostgreSQLDriver;
-import org.linqs.psl.evaluation.statistics.ContinuousPredictionComparator;
-import org.linqs.psl.evaluation.statistics.ContinuousPredictionStatistics;
+import org.linqs.psl.evaluation.statistics.ContinuousMetricComputer;
 import org.linqs.psl.evaluation.statistics.DiscreteMetricComputer;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.GroundAtom;
@@ -372,7 +371,7 @@ public class Launcher {
 		Database predictionDatabase = dataStore.getDatabase(targetPartition, closedPredicates);
 		Database truthDatabase = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
 
-		ContinuousPredictionComparator comparator = new ContinuousPredictionComparator(predictionDatabase, truthDatabase);
+		ContinuousMetricComputer computer = new ContinuousMetricComputer();
 
 		for (StandardPredicate targetPredicate : openPredicates) {
 			// Before we run evaluation, ensure that the truth database actaully has instances of the target predicate.
@@ -381,9 +380,10 @@ public class Launcher {
 				continue;
 			}
 
-			ContinuousPredictionStatistics stats = comparator.compare(targetPredicate);
-			double mae = stats.getMAE();
-			double mse = stats.getMSE();
+			computer.compute(predictionDatabase, truthDatabase, targetPredicate);
+
+			double mae = computer.mae();
+			double mse = computer.mse();
 
 			log.info("Continuous evaluation results for {} -- MAE: {}, MSE: {}", targetPredicate.getName(), mae, mse);
 		}
@@ -417,7 +417,7 @@ public class Launcher {
 				continue;
 			}
 
-         computer.compute(predictionDatabase, truthDatabase, targetPredicate);
+			computer.compute(predictionDatabase, truthDatabase, targetPredicate);
 
 			double accuracy = computer.accuracy();
 			double positivePrecision = computer.positivePrecision();

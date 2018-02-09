@@ -96,6 +96,7 @@ public class DiscreteMetricComputer extends MetricComputer {
 		fp = 0;
 	}
 
+	@Override
 	public void compute(TrainingMap trainingMap, StandardPredicate predicate) {
 		tp = 0;
 		fn = 0;
@@ -118,6 +119,7 @@ public class DiscreteMetricComputer extends MetricComputer {
 		}
 	}
 
+	@Override
 	public double getRepresentativeMetric() {
 		switch (representative) {
 			case F1:
@@ -137,6 +139,7 @@ public class DiscreteMetricComputer extends MetricComputer {
 		}
 	}
 
+	@Override
 	public boolean isHigherRepresentativeBetter() {
 		return true;
 	}
