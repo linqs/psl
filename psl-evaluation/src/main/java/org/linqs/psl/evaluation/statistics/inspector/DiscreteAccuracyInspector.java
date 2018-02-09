@@ -20,8 +20,7 @@ package org.linqs.psl.evaluation.statistics.inspector;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Queries;
-import org.linqs.psl.evaluation.statistics.DiscretePredictionComparator;
-import org.linqs.psl.evaluation.statistics.DiscretePredictionStatistics;
+import org.linqs.psl.evaluation.statistics.DiscreteMetricComputer;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.inspector.DatabaseReasonerInspector;
@@ -36,15 +35,11 @@ import org.slf4j.LoggerFactory;
 public class DiscreteAccuracyInspector extends DatabaseReasonerInspector {
 	private static final Logger log = LoggerFactory.getLogger(DiscreteAccuracyInspector.class);
 
-	// TODO(eriq): Use config
-	public static final double DEFAULT_TRUTH_THRESHOLD = 0.5;
-
-	private double truthThreshold;
+	private DiscreteMetricComputer computer;
 
 	public DiscreteAccuracyInspector(ConfigBundle config) {
 		super(config);
-
-		truthThreshold = DEFAULT_TRUTH_THRESHOLD;
+		computer = new DiscreteMetricComputer();
 	}
 
 	@Override
@@ -54,31 +49,26 @@ public class DiscreteAccuracyInspector extends DatabaseReasonerInspector {
 		Database rvDatabase = getRandomVariableDatabase();
 		Database truthDatabase = getTruthDatabase(rvDatabase);
 
-		DiscretePredictionComparator comparator = new DiscretePredictionComparator(rvDatabase);
-		comparator.setThreshold(truthThreshold);
-		comparator.setBaseline(truthDatabase);
-
 		for (StandardPredicate targetPredicate : rvDatabase.getRegisteredPredicates()) {
 			// Before we run evaluation, ensure that the truth database actaully has instances of the target predicate.
 			if (Queries.countAllGroundAtoms(truthDatabase, targetPredicate) == 0) {
 				continue;
 			}
 
-			DiscretePredictionStatistics stats = comparator.compare(targetPredicate);
+			computer.compute(rvDatabase, truthDatabase, targetPredicate);
 
-			double accuracy = stats.getAccuracy();
-			double error = stats.getError();
-			double positivePrecision = stats.getPrecision(DiscretePredictionStatistics.BinaryClass.POSITIVE);
-			double positiveRecall = stats.getRecall(DiscretePredictionStatistics.BinaryClass.POSITIVE);
-			double negativePrecision = stats.getPrecision(DiscretePredictionStatistics.BinaryClass.NEGATIVE);
-			double negativeRecall = stats.getRecall(DiscretePredictionStatistics.BinaryClass.NEGATIVE);
+			double accuracy = computer.accuracy();
+			double positivePrecision = computer.positivePrecision();
+			double positiveRecall = computer.positiveRecall();
+			double negativePrecision = computer.negativePrecision();
+			double negativeRecall = computer.negativeRecall();
 
 			log.info("{} --" +
-				" Accuracy: {}, Error: {}," +
+				" Accuracy: {}," +
 				" Positive Class Precision: {}, Positive Class Recall: {}," +
 				" Negative Class Precision: {}, Negative Class Recall: {},",
 				targetPredicate.getName(),
-				accuracy, error, positivePrecision, positiveRecall, negativePrecision, negativeRecall);
+				accuracy, positivePrecision, positiveRecall, negativePrecision, negativeRecall);
 		}
 
 		truthDatabase.close();

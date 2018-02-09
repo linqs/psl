@@ -33,8 +33,7 @@ import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver.Type;
 import org.linqs.psl.database.rdbms.driver.PostgreSQLDriver;
 import org.linqs.psl.evaluation.statistics.ContinuousPredictionComparator;
 import org.linqs.psl.evaluation.statistics.ContinuousPredictionStatistics;
-import org.linqs.psl.evaluation.statistics.DiscretePredictionComparator;
-import org.linqs.psl.evaluation.statistics.DiscretePredictionStatistics;
+import org.linqs.psl.evaluation.statistics.DiscreteMetricComputer;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
@@ -409,7 +408,7 @@ public class Launcher {
 		Database predictionDatabase = dataStore.getDatabase(targetPartition, closedPredicates);
 		Database truthDatabase = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
 
-		DiscretePredictionComparator comparator = new DiscretePredictionComparator(predictionDatabase, truthDatabase, threshold);
+		DiscreteMetricComputer computer = new DiscreteMetricComputer(threshold);
 
 		for (StandardPredicate targetPredicate : openPredicates) {
 			// Before we run evaluation, ensure that the truth database actaully has instances of the target predicate.
@@ -418,21 +417,20 @@ public class Launcher {
 				continue;
 			}
 
-			DiscretePredictionStatistics stats = comparator.compare(targetPredicate);
+         computer.compute(predictionDatabase, truthDatabase, targetPredicate);
 
-			double accuracy = stats.getAccuracy();
-			double error = stats.getError();
-			double positivePrecision = stats.getPrecision(DiscretePredictionStatistics.BinaryClass.POSITIVE);
-			double positiveRecall = stats.getRecall(DiscretePredictionStatistics.BinaryClass.POSITIVE);
-			double negativePrecision = stats.getPrecision(DiscretePredictionStatistics.BinaryClass.NEGATIVE);
-			double negativeRecall = stats.getRecall(DiscretePredictionStatistics.BinaryClass.NEGATIVE);
+			double accuracy = computer.accuracy();
+			double positivePrecision = computer.positivePrecision();
+			double positiveRecall = computer.positiveRecall();
+			double negativePrecision = computer.negativePrecision();
+			double negativeRecall = computer.negativeRecall();
 
 			log.info("Discrete evaluation results for {} --" +
 					" Accuracy: {}, Error: {}," +
 					" Positive Class Precision: {}, Positive Class Recall: {}," +
 					" Negative Class Precision: {}, Negative Class Recall: {},",
 					targetPredicate.getName(),
-					accuracy, error, positivePrecision, positiveRecall, negativePrecision, negativeRecall);
+					accuracy, positivePrecision, positiveRecall, negativePrecision, negativeRecall);
 		}
 
 		predictionDatabase.close();
