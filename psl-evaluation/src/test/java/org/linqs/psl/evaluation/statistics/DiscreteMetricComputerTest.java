@@ -19,92 +19,14 @@ package org.linqs.psl.evaluation.statistics;
 
 import static org.junit.Assert.assertEquals;
 
-import org.linqs.psl.application.learning.weight.TrainingMap;
-import org.linqs.psl.config.EmptyBundle;
-import org.linqs.psl.database.DataStore;
-import org.linqs.psl.database.Database;
-import org.linqs.psl.database.Partition;
-import org.linqs.psl.database.atom.PersistedAtomManager;
-import org.linqs.psl.database.loading.Inserter;
-import org.linqs.psl.database.rdbms.RDBMSDataStore;
-import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
-import org.linqs.psl.model.atom.RandomVariableAtom;
-import org.linqs.psl.model.predicate.PredicateFactory;
-import org.linqs.psl.model.predicate.StandardPredicate;
-import org.linqs.psl.model.term.Constant;
-import org.linqs.psl.model.term.ConstantType;
-import org.linqs.psl.model.term.UniqueIntID;
+import org.linqs.psl.util.MathUtils;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
-import java.util.HashSet;
-import java.util.Set;
-
-public class DiscreteMetricComputerTest {
-	private DataStore dataStore;
-	private StandardPredicate predicate;
-	private TrainingMap trainingMap;
-
-	@Before
-	public void setUp() throws Exception {
-		dataStore = new RDBMSDataStore(new H2DatabaseDriver(
-				H2DatabaseDriver.Type.Memory, this.getClass().getName(), true), new EmptyBundle());
-
-		PredicateFactory factory = PredicateFactory.getFactory();
-		predicate = factory.createStandardPredicate(
-				"DiscretePredictionComparatorTest_same"
-				, new ConstantType[]{ConstantType.UniqueIntID, ConstantType.UniqueIntID}
-			);
-		dataStore.registerPredicate(predicate);
-
-		Partition targetPartition = dataStore.getPartition("targets");
-		Partition truthPartition = dataStore.getPartition("truth");
-
-		// Create some canned ground inference atoms
-		Constant[][] cannedTerms = new Constant[5][];
-		cannedTerms[0] = new Constant[]{ new UniqueIntID(1), new UniqueIntID(1) };
-		cannedTerms[1] = new Constant[]{ new UniqueIntID(2), new UniqueIntID(2) };
-		cannedTerms[2] = new Constant[]{ new UniqueIntID(3), new UniqueIntID(3) };
-		cannedTerms[3] = new Constant[]{ new UniqueIntID(4), new UniqueIntID(4) };
-		cannedTerms[4] = new Constant[]{ new UniqueIntID(5), new UniqueIntID(5) };
-
-		// Insert the predicated values.
-		Inserter inserter = dataStore.getInserter(predicate, targetPartition);
-		for (Constant[] terms : cannedTerms) {
-			inserter.insertValue(0.8, terms);
-		}
-
-		// create some ground truth atoms
-		Constant[][] baselineTerms = new Constant[4][];
-		baselineTerms[0] = new Constant[]{ new UniqueIntID(1), new UniqueIntID(1) };
-		baselineTerms[1] = new Constant[]{ new UniqueIntID(2), new UniqueIntID(2) };
-		baselineTerms[2] = new Constant[]{ new UniqueIntID(3), new UniqueIntID(3) };
-		baselineTerms[3] = new Constant[]{ new UniqueIntID(4), new UniqueIntID(4) };
-
-		// Insert the truth values.
-		inserter = dataStore.getInserter(predicate, truthPartition);
-		for (Constant[] terms : baselineTerms) {
-			inserter.insertValue(1.0, terms);
-		}
-
-		// Redefine the truth database with no atoms in the write partition.
-		Database results = dataStore.getDatabase(targetPartition);
-		Database truth = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
-
-		PersistedAtomManager atomManager = new PersistedAtomManager(results);
-		trainingMap = new TrainingMap(atomManager, truth);
-
-		// Since we only need the map, we can close all the databases.
-		results.close();
-		truth.close();
-	}
-
-	@After
-	public void cleanup() {
-		trainingMap = null;
-		dataStore.close();
+public class DiscreteMetricComputerTest extends MetricComputerTest<DiscreteMetricComputer> {
+	@Override
+	protected DiscreteMetricComputer getComputer() {
+		return new DiscreteMetricComputer();
 	}
 
 	@Test
@@ -115,9 +37,9 @@ public class DiscreteMetricComputerTest {
 			double precision = computer.positivePrecision();
 
 			if (threshold <= 0.8) {
-				assertEquals("Threshold: " + threshold, 0.8, precision, 1e-5);
+				assertEquals("Threshold: " + threshold, 0.8, precision, MathUtils.EPSILON);
 			} else {
-				assertEquals("Threshold: " + threshold, 0.0, precision, 1e-5);
+				assertEquals("Threshold: " + threshold, 0.0, precision, MathUtils.EPSILON);
 			}
 		}
 	}
@@ -130,9 +52,9 @@ public class DiscreteMetricComputerTest {
 			double recall = computer.positiveRecall();
 
 			if (threshold <= 0.8) {
-				assertEquals("Threshold: " + threshold, 1.0, recall, 1e-5);
+				assertEquals("Threshold: " + threshold, 1.0, recall, MathUtils.EPSILON);
 			} else {
-				assertEquals("Threshold: " + threshold, 0.0, recall, 1e-5);
+				assertEquals("Threshold: " + threshold, 0.0, recall, MathUtils.EPSILON);
 			}
 		}
 	}
@@ -145,9 +67,9 @@ public class DiscreteMetricComputerTest {
 			double f1 = computer.f1();
 
 			if (threshold <= 0.8) {
-				assertEquals(2.0 * 0.8 / 1.8, f1, 1e-5);
+				assertEquals(2.0 * 0.8 / 1.8, f1, MathUtils.EPSILON);
 			} else {
-				assertEquals(0.0, f1, 1e-5);
+				assertEquals(0.0, f1, MathUtils.EPSILON);
 			}
 		}
 	}
@@ -160,9 +82,9 @@ public class DiscreteMetricComputerTest {
 			double accuracy = computer.accuracy();
 
 			if (threshold <= 0.8) {
-				assertEquals(0.8, accuracy, 1e-5);
+				assertEquals(0.8, accuracy, MathUtils.EPSILON);
 			} else {
-				assertEquals(0.2, accuracy, 1e-5);
+				assertEquals(0.2, accuracy, MathUtils.EPSILON);
 			}
 		}
 	}
@@ -175,9 +97,9 @@ public class DiscreteMetricComputerTest {
 			double precision = computer.negativePrecision();
 
 			if (threshold <= 0.8) {
-				assertEquals(0.0, precision, 1e-5);
+				assertEquals(0.0, precision, MathUtils.EPSILON);
 			} else {
-				assertEquals(0.2, precision, 1e-5);
+				assertEquals(0.2, precision, MathUtils.EPSILON);
 			}
 		}
 	}
@@ -190,9 +112,9 @@ public class DiscreteMetricComputerTest {
 			double recall = computer.negativeRecall();
 
 			if (threshold <= 0.8) {
-				assertEquals(0.0, recall, 1e-5);
+				assertEquals(0.0, recall, MathUtils.EPSILON);
 			} else {
-				assertEquals(1.0, recall, 1e-5);
+				assertEquals(1.0, recall, MathUtils.EPSILON);
 			}
 		}
 	}

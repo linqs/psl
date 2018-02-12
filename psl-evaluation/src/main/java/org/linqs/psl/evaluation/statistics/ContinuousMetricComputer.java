@@ -101,7 +101,7 @@ public class ContinuousMetricComputer extends MetricComputer {
 
 	@Override
 	public boolean isHigherRepresentativeBetter() {
-		return true;
+		return false;
 	}
 
 	public double mae() {
