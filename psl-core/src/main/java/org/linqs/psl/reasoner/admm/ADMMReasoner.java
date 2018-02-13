@@ -108,7 +108,7 @@ public class ADMMReasoner extends Reasoner {
 	/**
 	 * The min size of computation blocks for terms and variables.
 	 */
-	private static final int MIN_BLOCK_SIZE = 10;
+	private static final int MIN_BLOCK_SIZE = 20;
 
 	/**
 	 * The approximate number of iterations done by workers over the terms
@@ -124,7 +124,7 @@ public class ADMMReasoner extends Reasoner {
 	/**
 	 * The base size to adjust block sizes on each iteration.
 	 */
-	private static final int BASE_BLOCK_STEP_SIZE = 20;
+	private static final int BASE_BLOCK_STEP_SIZE = 5;
 
 	/**
 	 * Sometimes called eta or rho,
