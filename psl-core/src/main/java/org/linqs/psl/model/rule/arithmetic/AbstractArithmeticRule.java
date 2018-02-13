@@ -72,7 +72,7 @@ import java.util.Set;
 /**
  * Base class for all (first order, i.e., not ground) arithmetic rules.
  *
- * Full equality checks (when two rules are the equal, but not the same refernce) are epensive.
+ * Full equality checks (when two rules are the equal, but not the same reference) are expensive.
  *
  * @author Stephen Bach
  */
