@@ -426,7 +426,7 @@ public class Launcher {
 			double negativeRecall = computer.negativeRecall();
 
 			log.info("Discrete evaluation results for {} --" +
-					" Accuracy: {}, Error: {}," +
+					" Accuracy: {}," +
 					" Positive Class Precision: {}, Positive Class Recall: {}," +
 					" Negative Class Precision: {}, Negative Class Recall: {},",
 					targetPredicate.getName(),
