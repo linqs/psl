@@ -81,6 +81,10 @@ public class ContinuousMetricComputer extends MetricComputer {
 		squaredError = 0.0;
 
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getTrainingMap().entrySet()) {
+			if (entry.getKey().getPredicate() != predicate) {
+				continue;
+			}
+
 			count++;
 			absoluteError += Math.abs(entry.getValue().getValue() - entry.getKey().getValue());
 			squaredError += Math.pow(entry.getValue().getValue() - entry.getKey().getValue(), 2);

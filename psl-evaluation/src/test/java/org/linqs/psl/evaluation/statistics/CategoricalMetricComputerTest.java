@@ -17,30 +17,23 @@
  */
 package org.linqs.psl.evaluation.statistics;
 
-public class CategoricalPredictionStatistics implements PredictionStatistics {
-	private final int hits;
-	private final int misses;
+import static org.junit.Assert.assertEquals;
 
-	public CategoricalPredictionStatistics(int hits, int misses) {
-		this.hits = hits;
-		this.misses = misses;
-	}
+import org.linqs.psl.util.MathUtils;
 
-	public double getAccuracy() {
-		if (hits + misses == 0) {
-			return 0.0;
-		}
+import org.junit.Test;
 
-		return hits / (double)(hits + misses);
-	}
-
+// TODO(eriq): All the data needs to be reworked for this test.
+public class CategoricalMetricComputerTest extends MetricComputerTest<CategoricalMetricComputer> {
 	@Override
-	public double getError() {
-		return misses;
+	protected CategoricalMetricComputer getComputer() {
+		return new CategoricalMetricComputer();
 	}
 
-	@Override
-	public int getNumAtoms() {
-		return hits + misses;
+	@Test
+	public void testAccuracy() {
+		CategoricalMetricComputer computer = new CategoricalMetricComputer();
+		computer.compute(trainingMap, predicate);
+		assertEquals(1.0, computer.accuracy(), MathUtils.EPSILON);
 	}
 }

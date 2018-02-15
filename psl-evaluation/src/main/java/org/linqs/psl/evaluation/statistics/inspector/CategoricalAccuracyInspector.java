@@ -20,8 +20,7 @@ package org.linqs.psl.evaluation.statistics.inspector;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Queries;
-import org.linqs.psl.evaluation.statistics.CategoricalPredictionComparator;
-import org.linqs.psl.evaluation.statistics.CategoricalPredictionStatistics;
+import org.linqs.psl.evaluation.statistics.CategoricalMetricComputer;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.inspector.DatabaseReasonerInspector;
@@ -36,11 +35,14 @@ import org.slf4j.LoggerFactory;
 public class CategoricalAccuracyInspector extends DatabaseReasonerInspector {
 	private static final Logger log = LoggerFactory.getLogger(CategoricalAccuracyInspector.class);
 
+	private CategoricalMetricComputer comparator;
+
 	// TODO(eriq): Config option for desired predicates.
 	// TODO(eriq): We are currently asuming that the last argument is always the category index.
 
 	public CategoricalAccuracyInspector(ConfigBundle config) {
 		super(config);
+		comparator = new CategoricalMetricComputer(config);
 	}
 
 	@Override
@@ -50,24 +52,17 @@ public class CategoricalAccuracyInspector extends DatabaseReasonerInspector {
 		Database rvDatabase = getRandomVariableDatabase();
 		Database truthDatabase = getTruthDatabase(rvDatabase);
 
-		CategoricalPredictionComparator comparator = new CategoricalPredictionComparator(rvDatabase);
-		comparator.setBaseline(truthDatabase);
-
 		for (StandardPredicate targetPredicate : rvDatabase.getRegisteredPredicates()) {
 			// Before we run evaluation, ensure that the truth database actaully has instances of the target predicate.
 			if (Queries.countAllGroundAtoms(truthDatabase, targetPredicate) == 0) {
 				continue;
 			}
 
-			int[] categoryIndexes = new int[]{targetPredicate.getArity() - 1};
-			comparator.setCategoryIndexes(categoryIndexes);
+			comparator.setCategoryIndexes(targetPredicate.getArity() - 1);
+			comparator.compute(rvDatabase, truthDatabase, targetPredicate);
+			double accuracy = comparator.accuracy();
 
-			CategoricalPredictionStatistics stats = comparator.compare(targetPredicate);
-
-			double accuracy = stats.getAccuracy();
-			double error = stats.getError();
-
-			log.info("{} -- Accuracy: {}, Error: {}", targetPredicate.getName(), accuracy, (int)error);
+			log.info("{} -- Accuracy: {}", targetPredicate.getName(), accuracy);
 		}
 
 		truthDatabase.close();

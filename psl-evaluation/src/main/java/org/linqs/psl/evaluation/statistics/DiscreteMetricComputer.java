@@ -104,6 +104,10 @@ public class DiscreteMetricComputer extends MetricComputer {
 		fp = 0;
 
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getTrainingMap().entrySet()) {
+			if (entry.getKey().getPredicate() != predicate) {
+				continue;
+			}
+
 			boolean expected = (entry.getValue().getValue() >= threshold);
 			boolean predicated = (entry.getKey().getValue() >= threshold);
 
