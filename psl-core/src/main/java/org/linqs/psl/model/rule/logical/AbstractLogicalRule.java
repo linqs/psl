@@ -29,7 +29,7 @@ import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.formula.FormulaAnalysis;
 import org.linqs.psl.model.formula.Negation;
 import org.linqs.psl.model.formula.FormulaAnalysis.DNFClause;
-import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.AbstractRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Term;
@@ -55,15 +55,15 @@ import java.util.Set;
 /**
  * Base class for all (first order, i.e., not ground) logical rules.
  */
-public abstract class AbstractLogicalRule implements Rule {
+public abstract class AbstractLogicalRule extends AbstractRule {
 	private static final Logger log = LoggerFactory.getLogger(AbstractLogicalRule.class);
 
 	protected Formula formula;
 	protected final DNFClause negatedDNF;
 	private int hash;
 
-	public AbstractLogicalRule(Formula formula) {
-		super();
+	public AbstractLogicalRule(Formula formula, String name) {
+		super(name);
 
 		this.formula = formula;
 

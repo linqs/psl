@@ -34,12 +34,21 @@ public class WeightedArithmeticRule extends AbstractArithmeticRule implements We
 	protected boolean squared;
 
 	public WeightedArithmeticRule(ArithmeticRuleExpression expression, double weight, boolean squared) {
-		this(expression, new HashMap<SummationVariable, Formula>(), weight, squared);
+		this(expression, weight, squared, expression.toString());
+	}
+
+	public WeightedArithmeticRule(ArithmeticRuleExpression expression, double weight, boolean squared, String name) {
+		this(expression, new HashMap<SummationVariable, Formula>(), weight, squared, name);
 	}
 
 	public WeightedArithmeticRule(ArithmeticRuleExpression expression, Map<SummationVariable, Formula> filterClauses,
 			double weight, boolean squared) {
-		super(expression, filterClauses);
+		this(expression, filterClauses, weight, squared, expression.toString());
+	}
+
+	public WeightedArithmeticRule(ArithmeticRuleExpression expression, Map<SummationVariable, Formula> filterClauses,
+			double weight, boolean squared, String name) {
+		super(expression, filterClauses, name);
 
 		this.weight = weight;
 		this.squared = squared;
