@@ -39,7 +39,7 @@ public class DiscreteAccuracyInspector extends DatabaseReasonerInspector {
 
 	public DiscreteAccuracyInspector(ConfigBundle config) {
 		super(config);
-		computer = new DiscreteMetricComputer();
+		computer = new DiscreteMetricComputer(config);
 	}
 
 	@Override

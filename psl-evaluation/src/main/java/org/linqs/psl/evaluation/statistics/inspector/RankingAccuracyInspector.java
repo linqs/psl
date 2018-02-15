@@ -20,8 +20,7 @@ package org.linqs.psl.evaluation.statistics.inspector;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Queries;
-import org.linqs.psl.evaluation.statistics.RankingComparator;
-import org.linqs.psl.evaluation.statistics.RankingScore;
+import org.linqs.psl.evaluation.statistics.RankingMetricComputer;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.inspector.DatabaseReasonerInspector;
@@ -44,12 +43,16 @@ public class RankingAccuracyInspector extends DatabaseReasonerInspector {
 	private int callCount;
 	private int inspectionPeriod;
 
+	private RankingMetricComputer computer;
+
 	public RankingAccuracyInspector(ConfigBundle config) {
 		super(config);
 
 		truthThreshold = DEFAULT_TRUTH_THRESHOLD;
 		callCount = 0;
 		inspectionPeriod = DEFAULT_INSPECTION_PERIOD;
+
+		computer = new RankingMetricComputer(config);
 	}
 
 	@Override
@@ -65,19 +68,17 @@ public class RankingAccuracyInspector extends DatabaseReasonerInspector {
 		Database rvDatabase = getRandomVariableDatabase();
 		Database truthDatabase = getTruthDatabase(rvDatabase);
 
-		RankingComparator comparator = new RankingComparator(rvDatabase, truthDatabase, truthThreshold);
-
 		for (StandardPredicate targetPredicate : rvDatabase.getRegisteredPredicates()) {
 			// Before we run evaluation, ensure that the truth database actaully has instances of the target predicate.
 			if (Queries.countAllGroundAtoms(truthDatabase, targetPredicate) == 0) {
 				continue;
 			}
 
-			RankingScore stats = comparator.compare(targetPredicate);
+			computer.compute(rvDatabase, truthDatabase, targetPredicate);
 
-			double auroc = stats.auroc();
-			double auprc = stats.auprc();
-			double negAUPRC = stats.negAUPRC();
+			double auroc = computer.auroc();
+			double auprc = computer.positiveAUPRC();
+			double negAUPRC = computer.negativeAUPRC();
 
 			log.info("{} -- AUROC: {}, AUPRC+: {}, AUPRC-: {}",
 				targetPredicate.getName(),	auroc, auprc, negAUPRC);

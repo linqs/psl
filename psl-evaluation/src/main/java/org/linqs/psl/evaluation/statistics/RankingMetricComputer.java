@@ -17,72 +17,123 @@
  */
 package org.linqs.psl.evaluation.statistics;
 
+import org.linqs.psl.application.learning.weight.TrainingMap;
+import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.ObservedAtom;
+import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.util.MathUtils;
 
-import java.util.Iterator;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 /**
- * Methods for scoring a ranking of Atoms against a given ranking.
- * The lists passed in are sorted in DESC order by truth value.
+ * Compute various ranking statistics.
  */
-public class RankingScore {
-	private static final boolean DEFAULT_SKIP_MISSING_TRUTH = true;
+public class RankingMetricComputer extends MetricComputer {
+	public enum RepresentativeMetric {
+		AUROC,
+		POSITIVE_AUPRC,
+		NEGATIVE_AUPRC
+	}
 
+	/**
+	 * Prefix of property keys used by this class.
+	 */
+	public static final String CONFIG_PREFIX = "rankingmetriccomputer";
+
+	/**
+	 * The truth threshold.
+	 */
+	public static final String THRESHOLD_KEY = CONFIG_PREFIX + ".threshold";
+	public static final double DEFAULT_THRESHOLD = 0.5;
+
+	/**
+	 * The representative metric.
+	 * Default to F1.
+	 * Must match a string from the RepresentativeMetric enum.
+	 */
+	public static final String REPRESENTATIVE_KEY = CONFIG_PREFIX + ".representative";
+	public static final String DEFAULT_REPRESENTATIVE = "AUROC";
+
+	private double threshold;
+	private RepresentativeMetric representative;
+
+	// Both sorted DESC by truth value.
 	private List<GroundAtom> truth;
 	private List<GroundAtom> predicted;
-	private double threshold;
 
-	/**
-	 * If true, we will just skip over predictions that do not have an associated truth value.
-	 */
-	private boolean skipMissingTruth;
-
-	public RankingScore(List<GroundAtom> truth, List<GroundAtom> predicted, double threshold) {
-		this(truth, predicted, threshold, DEFAULT_SKIP_MISSING_TRUTH);
+	public RankingMetricComputer(ConfigBundle config) {
+		this(config.getDouble(THRESHOLD_KEY, DEFAULT_THRESHOLD), config.getString(REPRESENTATIVE_KEY, DEFAULT_REPRESENTATIVE));
 	}
 
-	public RankingScore(List<GroundAtom> truth, List<GroundAtom> predicted,
-			double threshold, boolean skipMissingTruth) {
-		this.truth = truth;
-		this.predicted = predicted;
-		this.threshold = threshold;
-		this.skipMissingTruth = skipMissingTruth;
+	public RankingMetricComputer() {
+		this(DEFAULT_THRESHOLD, DEFAULT_REPRESENTATIVE);
 	}
 
-	/**
-	 * Returns the fraction of pairs in the result that are ordered differently
-	 * in the baseline.
-	 *
-	 * TODO(eriq): This is more opaque than it needs to be and should be cleaned up (without iterators).
-	 * We also changed the order of the input lists, but that shouldn't matter.
-	 */
-	public double kendall() {
-		double score = 0.0;
-		int i, j;
-		Iterator<GroundAtom> baseItrI, baseItrJ;
-		GroundAtom baseAtomI, baseAtomJ;
+	public RankingMetricComputer(double threshold) {
+		this(threshold, DEFAULT_REPRESENTATIVE);
+	}
 
-		baseItrI = truth.iterator();
-		baseItrI.next();
-		i = 1;
-		while (baseItrI.hasNext()) {
-			baseAtomI = baseItrI.next();
-			i++;
+	public RankingMetricComputer(double threshold, String representative) {
+		this(threshold, RepresentativeMetric.valueOf(representative.toUpperCase()));
+	}
 
-			baseItrJ = truth.iterator();
-			j = 0;
-			while (j < i) {
-				baseAtomJ = baseItrJ.next();
-				j++;
-
-				if (predicted.indexOf(baseAtomJ) > predicted.indexOf(baseAtomI)) {
-					score++;
-				}
-			}
+	public RankingMetricComputer(double threshold, RepresentativeMetric representative) {
+		if (threshold < 0.0 || threshold > 1.0) {
+			throw new IllegalArgumentException("Threhsold must be in (0, 1). Found: " + threshold);
 		}
 
-		return 0.5 + (1 - 4 * score / (truth.size() * (truth.size() - 1))) / 2;
+		this.threshold = threshold;
+		this.representative = representative;
+
+		truth = new ArrayList<GroundAtom>();
+		predicted = new ArrayList<GroundAtom>();
+	}
+
+	@Override
+	public void compute(TrainingMap trainingMap, StandardPredicate predicate) {
+		truth = new ArrayList<GroundAtom>(trainingMap.getTrainingMap().size());
+		predicted = new ArrayList<GroundAtom>(trainingMap.getTrainingMap().size());
+
+		for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getTrainingMap().entrySet()) {
+			if (entry.getKey().getPredicate() != predicate) {
+				continue;
+			}
+
+			truth.add(entry.getValue());
+			predicted.add(entry.getKey());
+		}
+
+		Collections.sort(truth, new AtomComparator());
+		Collections.sort(predicted, new AtomComparator());
+	}
+
+	@Override
+	public double getRepresentativeMetric() {
+		switch (representative) {
+			case AUROC:
+				return auroc();
+			case POSITIVE_AUPRC:
+				return positiveAUPRC();
+			case NEGATIVE_AUPRC:
+				return negativeAUPRC();
+			default:
+				throw new IllegalStateException("Unknown representative metric: " + representative);
+		}
+	}
+
+	@Override
+	public boolean isHigherRepresentativeBetter() {
+		return true;
+	}
+
+	public double getThreshold() {
+		return threshold;
 	}
 
 	/**
@@ -90,7 +141,7 @@ public class RankingScore {
 	 * This is a simple implementation that assumes all the ground truth is 0/1
 	 * and does not make any effort to approximate the first point.
 	 */
-	public double auprc() {
+	public double positiveAUPRC() {
 		// both lists are sorted
 		int totalPositives = 0;
 		for (GroundAtom atom : truth) {
@@ -115,7 +166,7 @@ public class RankingScore {
 		// Go through the atoms from highest truth value to lowest.
 		for (GroundAtom atom : predicted) {
 			Boolean label = getLabel(atom);
-			if (skipMissingTruth && label == null) {
+			if (label == null) {
 				continue;
 			}
 
@@ -144,7 +195,7 @@ public class RankingScore {
 	 * Returns area under the precision recall curve for the negative class.
 	 * The same stipulations for AUPRC hold here.
 	 */
-	public double negAUPRC() {
+	public double negativeAUPRC() {
 		// both lists are sorted
 		int totalPositives = 0;
 		for (GroundAtom atom : truth) {
@@ -153,13 +204,7 @@ public class RankingScore {
 			}
 		}
 
-		int totalNegatives;
-		if (skipMissingTruth) {
-			totalNegatives = truth.size() - totalPositives;
-		} else {
-			totalNegatives = predicted.size() - totalPositives;
-		}
-
+		int totalNegatives = predicted.size() - totalPositives;
 		if (totalNegatives == 0) {
 			return 0.0;
 		}
@@ -177,7 +222,7 @@ public class RankingScore {
 		// Go through the atoms from highest truth value to lowest.
 		for (GroundAtom atom : predicted) {
 			Boolean label = getLabel(atom);
-			if (skipMissingTruth && label == null) {
+			if (label == null) {
 				continue;
 			}
 
@@ -214,12 +259,7 @@ public class RankingScore {
 			}
 		}
 
-		int totalNegatives;
-		if (skipMissingTruth) {
-			totalNegatives = truth.size() - totalPositives;
-		} else {
-			totalNegatives = predicted.size() - totalPositives;
-		}
+		int totalNegatives = predicted.size() - totalPositives;
 
 		double area = 0.0;
 		int tp = 0;
@@ -233,7 +273,7 @@ public class RankingScore {
 		// Go through the atoms from highest truth value to lowest.
 		for (GroundAtom atom : predicted) {
 			Boolean label = getLabel(atom);
-			if (skipMissingTruth && label == null) {
+			if (label == null) {
 				continue;
 			}
 
@@ -269,5 +309,18 @@ public class RankingScore {
 		}
 
 		return truth.get(index).getValue() > threshold;
+	}
+
+	private class AtomComparator implements Comparator<GroundAtom> {
+		@Override
+		public int compare(GroundAtom a1, GroundAtom a2) {
+			if (a1.getValue() < a2.getValue()) {
+				return 1;
+			} else if (a1.getValue() == a2.getValue()) {
+				return a1.toString().compareTo(a2.toString());
+			} else {
+				return -1;
+			}
+		}
 	}
 }
