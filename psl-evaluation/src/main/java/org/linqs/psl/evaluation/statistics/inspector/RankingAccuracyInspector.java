@@ -20,7 +20,7 @@ package org.linqs.psl.evaluation.statistics.inspector;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Queries;
-import org.linqs.psl.evaluation.statistics.RankingMetricComputer;
+import org.linqs.psl.evaluation.statistics.RankingEvaluator;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.inspector.DatabaseReasonerInspector;
@@ -43,7 +43,7 @@ public class RankingAccuracyInspector extends DatabaseReasonerInspector {
 	private int callCount;
 	private int inspectionPeriod;
 
-	private RankingMetricComputer computer;
+	private RankingEvaluator computer;
 
 	public RankingAccuracyInspector(ConfigBundle config) {
 		super(config);
@@ -52,7 +52,7 @@ public class RankingAccuracyInspector extends DatabaseReasonerInspector {
 		callCount = 0;
 		inspectionPeriod = DEFAULT_INSPECTION_PERIOD;
 
-		computer = new RankingMetricComputer(config);
+		computer = new RankingEvaluator(config);
 	}
 
 	@Override

@@ -31,8 +31,8 @@ import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver.Type;
 import org.linqs.psl.database.rdbms.driver.PostgreSQLDriver;
-import org.linqs.psl.evaluation.statistics.ContinuousMetricComputer;
-import org.linqs.psl.evaluation.statistics.DiscreteMetricComputer;
+import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
+import org.linqs.psl.evaluation.statistics.DiscreteEvaluator;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
@@ -371,7 +371,7 @@ public class Launcher {
 		Database predictionDatabase = dataStore.getDatabase(targetPartition, closedPredicates);
 		Database truthDatabase = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
 
-		ContinuousMetricComputer computer = new ContinuousMetricComputer();
+		ContinuousEvaluator computer = new ContinuousEvaluator();
 
 		for (StandardPredicate targetPredicate : openPredicates) {
 			// Before we run evaluation, ensure that the truth database actaully has instances of the target predicate.
@@ -408,7 +408,7 @@ public class Launcher {
 		Database predictionDatabase = dataStore.getDatabase(targetPartition, closedPredicates);
 		Database truthDatabase = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
 
-		DiscreteMetricComputer computer = new DiscreteMetricComputer(threshold);
+		DiscreteEvaluator computer = new DiscreteEvaluator(threshold);
 
 		for (StandardPredicate targetPredicate : openPredicates) {
 			// Before we run evaluation, ensure that the truth database actaully has instances of the target predicate.

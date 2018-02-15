@@ -23,16 +23,16 @@ import org.linqs.psl.util.MathUtils;
 
 import org.junit.Test;
 
-public class DiscreteMetricComputerTest extends MetricComputerTest<DiscreteMetricComputer> {
+public class DiscreteEvaluatorTest extends EvaluatorTest<DiscreteEvaluator> {
 	@Override
-	protected DiscreteMetricComputer getComputer() {
-		return new DiscreteMetricComputer();
+	protected DiscreteEvaluator getComputer() {
+		return new DiscreteEvaluator();
 	}
 
 	@Test
 	public void testPrecision() {
 		for (double threshold = 0.1; threshold <= 1.0; threshold += 0.1) {
-			DiscreteMetricComputer computer = new DiscreteMetricComputer(threshold);
+			DiscreteEvaluator computer = new DiscreteEvaluator(threshold);
 			computer.compute(trainingMap, predicate);
 			double precision = computer.positivePrecision();
 
@@ -47,7 +47,7 @@ public class DiscreteMetricComputerTest extends MetricComputerTest<DiscreteMetri
 	@Test
 	public void testRecall() {
 		for (double threshold = 0.1; threshold <= 1.0; threshold += 0.1) {
-			DiscreteMetricComputer computer = new DiscreteMetricComputer(threshold);
+			DiscreteEvaluator computer = new DiscreteEvaluator(threshold);
 			computer.compute(trainingMap, predicate);
 			double recall = computer.positiveRecall();
 
@@ -62,7 +62,7 @@ public class DiscreteMetricComputerTest extends MetricComputerTest<DiscreteMetri
 	@Test
 	public void testF1() {
 		for (double threshold = 0.1; threshold <= 1.0; threshold += 0.1) {
-			DiscreteMetricComputer computer = new DiscreteMetricComputer(threshold);
+			DiscreteEvaluator computer = new DiscreteEvaluator(threshold);
 			computer.compute(trainingMap, predicate);
 			double f1 = computer.f1();
 
@@ -77,7 +77,7 @@ public class DiscreteMetricComputerTest extends MetricComputerTest<DiscreteMetri
 	@Test
 	public void testAccuracy() {
 		for (double threshold = 0.1; threshold <= 1.0; threshold += 0.1) {
-			DiscreteMetricComputer computer = new DiscreteMetricComputer(threshold);
+			DiscreteEvaluator computer = new DiscreteEvaluator(threshold);
 			computer.compute(trainingMap, predicate);
 			double accuracy = computer.accuracy();
 
@@ -92,7 +92,7 @@ public class DiscreteMetricComputerTest extends MetricComputerTest<DiscreteMetri
 	@Test
 	public void testPrecisionNegativeClass() {
 		for (double threshold = 0.1; threshold <= 1.0; threshold += 0.1) {
-			DiscreteMetricComputer computer = new DiscreteMetricComputer(threshold);
+			DiscreteEvaluator computer = new DiscreteEvaluator(threshold);
 			computer.compute(trainingMap, predicate);
 			double precision = computer.negativePrecision();
 
@@ -107,7 +107,7 @@ public class DiscreteMetricComputerTest extends MetricComputerTest<DiscreteMetri
 	@Test
 	public void testRecallNegativeClass() {
 		for (double threshold = 0.1; threshold <= 1.0; threshold += 0.1) {
-			DiscreteMetricComputer computer = new DiscreteMetricComputer(threshold);
+			DiscreteEvaluator computer = new DiscreteEvaluator(threshold);
 			computer.compute(trainingMap, predicate);
 			double recall = computer.negativeRecall();
 

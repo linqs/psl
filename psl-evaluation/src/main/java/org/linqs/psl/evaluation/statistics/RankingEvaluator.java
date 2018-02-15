@@ -34,7 +34,7 @@ import java.util.Map;
 /**
  * Compute various ranking statistics.
  */
-public class RankingMetricComputer extends MetricComputer {
+public class RankingEvaluator extends Evaluator {
 	public enum RepresentativeMetric {
 		AUROC,
 		POSITIVE_AUPRC,
@@ -67,23 +67,23 @@ public class RankingMetricComputer extends MetricComputer {
 	private List<GroundAtom> truth;
 	private List<GroundAtom> predicted;
 
-	public RankingMetricComputer(ConfigBundle config) {
+	public RankingEvaluator(ConfigBundle config) {
 		this(config.getDouble(THRESHOLD_KEY, DEFAULT_THRESHOLD), config.getString(REPRESENTATIVE_KEY, DEFAULT_REPRESENTATIVE));
 	}
 
-	public RankingMetricComputer() {
+	public RankingEvaluator() {
 		this(DEFAULT_THRESHOLD, DEFAULT_REPRESENTATIVE);
 	}
 
-	public RankingMetricComputer(double threshold) {
+	public RankingEvaluator(double threshold) {
 		this(threshold, DEFAULT_REPRESENTATIVE);
 	}
 
-	public RankingMetricComputer(double threshold, String representative) {
+	public RankingEvaluator(double threshold, String representative) {
 		this(threshold, RepresentativeMetric.valueOf(representative.toUpperCase()));
 	}
 
-	public RankingMetricComputer(double threshold, RepresentativeMetric representative) {
+	public RankingEvaluator(double threshold, RepresentativeMetric representative) {
 		if (threshold < 0.0 || threshold > 1.0) {
 			throw new IllegalArgumentException("Threhsold must be in (0, 1). Found: " + threshold);
 		}

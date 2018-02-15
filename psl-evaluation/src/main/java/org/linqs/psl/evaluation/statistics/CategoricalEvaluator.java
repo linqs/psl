@@ -44,7 +44,7 @@ import java.util.Set;
  * If the truth atom was chosen as the best category in the predicted data, then that is a hit.
  * Anything else is a miss.
  */
-public class CategoricalMetricComputer extends MetricComputer {
+public class CategoricalEvaluator extends Evaluator {
 	public enum RepresentativeMetric {
 		ACCURACY
 	}
@@ -76,24 +76,24 @@ public class CategoricalMetricComputer extends MetricComputer {
 	private int hits;
 	private int misses;
 
-	public CategoricalMetricComputer(ConfigBundle config) {
+	public CategoricalEvaluator(ConfigBundle config) {
 		this(config.getString(REPRESENTATIVE_KEY, DEFAULT_REPRESENTATIVE),
 			  StringUtils.splitInt(config.getString(CATEGORY_INDEXES_KEY, DEFAULT_CATEGORY_INDEXES), DELIM));
 	}
 
-	public CategoricalMetricComputer() {
+	public CategoricalEvaluator() {
 		this(DEFAULT_REPRESENTATIVE, StringUtils.splitInt(DEFAULT_CATEGORY_INDEXES, DELIM));
 	}
 
-	public CategoricalMetricComputer(int... rawCategoryIndexes) {
+	public CategoricalEvaluator(int... rawCategoryIndexes) {
 		this(DEFAULT_REPRESENTATIVE, rawCategoryIndexes);
 	}
 
-	public CategoricalMetricComputer(String representative, int... rawCategoryIndexes) {
+	public CategoricalEvaluator(String representative, int... rawCategoryIndexes) {
 		this(RepresentativeMetric.valueOf(representative.toUpperCase()), rawCategoryIndexes);
 	}
 
-	public CategoricalMetricComputer(RepresentativeMetric representative, int... rawCategoryIndexes) {
+	public CategoricalEvaluator(RepresentativeMetric representative, int... rawCategoryIndexes) {
 		this.representative = representative;
 		setCategoryIndexes(rawCategoryIndexes);
 

@@ -20,7 +20,7 @@ package org.linqs.psl.evaluation.statistics.inspector;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Queries;
-import org.linqs.psl.evaluation.statistics.DiscreteMetricComputer;
+import org.linqs.psl.evaluation.statistics.DiscreteEvaluator;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.inspector.DatabaseReasonerInspector;
@@ -35,11 +35,11 @@ import org.slf4j.LoggerFactory;
 public class DiscreteAccuracyInspector extends DatabaseReasonerInspector {
 	private static final Logger log = LoggerFactory.getLogger(DiscreteAccuracyInspector.class);
 
-	private DiscreteMetricComputer computer;
+	private DiscreteEvaluator computer;
 
 	public DiscreteAccuracyInspector(ConfigBundle config) {
 		super(config);
-		computer = new DiscreteMetricComputer(config);
+		computer = new DiscreteEvaluator(config);
 	}
 
 	@Override

@@ -23,16 +23,16 @@ import org.linqs.psl.util.MathUtils;
 
 import org.junit.Test;
 
-public class RankingMetricComputerTest extends MetricComputerTest<RankingMetricComputer> {
+public class RankingEvaluatorTest extends EvaluatorTest<RankingEvaluator> {
 	@Override
-	protected RankingMetricComputer getComputer() {
-		return new RankingMetricComputer();
+	protected RankingEvaluator getComputer() {
+		return new RankingEvaluator();
 	}
 
 	@Test
 	public void testAUROC() {
 		for (double threshold = 0.1; threshold <= 1.0; threshold += 0.1) {
-			RankingMetricComputer computer = new RankingMetricComputer(threshold);
+			RankingEvaluator computer = new RankingEvaluator(threshold);
 			computer.compute(trainingMap, predicate);
 			double value = computer.auroc();
 
@@ -47,7 +47,7 @@ public class RankingMetricComputerTest extends MetricComputerTest<RankingMetricC
 	@Test
 	public void testPositiveAUPRC() {
 		for (double threshold = 0.1; threshold <= 1.0; threshold += 0.1) {
-			RankingMetricComputer computer = new RankingMetricComputer(threshold);
+			RankingEvaluator computer = new RankingEvaluator(threshold);
 			computer.compute(trainingMap, predicate);
 			double value = computer.positiveAUPRC();
 
@@ -62,7 +62,7 @@ public class RankingMetricComputerTest extends MetricComputerTest<RankingMetricC
 	@Test
 	public void testNegativeAUPRC() {
 		for (double threshold = 0.1; threshold <= 1.0; threshold += 0.1) {
-			RankingMetricComputer computer = new RankingMetricComputer(threshold);
+			RankingEvaluator computer = new RankingEvaluator(threshold);
 			computer.compute(trainingMap, predicate);
 			double value = computer.negativeAUPRC();
 

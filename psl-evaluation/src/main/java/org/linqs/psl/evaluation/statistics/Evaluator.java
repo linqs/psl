@@ -32,7 +32,7 @@ import org.linqs.psl.model.predicate.StandardPredicate;
  * In addition to the representative metric, subclasses classes will usually
  * provide their own methods to access specific metrics.
  */
-public abstract class MetricComputer {
+public abstract class Evaluator {
 	/**
 	 * The main computation method.
 	 * This must be called before any of the metric retrival methods.

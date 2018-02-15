@@ -29,7 +29,7 @@ import java.util.Map;
 /**
  * Compute various continuous statistics using a threshold.
  */
-public class ContinuousMetricComputer extends MetricComputer {
+public class ContinuousEvaluator extends Evaluator {
 	public enum RepresentativeMetric {
 		MAE,
 		MSE
@@ -54,19 +54,19 @@ public class ContinuousMetricComputer extends MetricComputer {
 	private double absoluteError;
 	private double squaredError;
 
-	public ContinuousMetricComputer(ConfigBundle config) {
+	public ContinuousEvaluator(ConfigBundle config) {
 		this(config.getString(REPRESENTATIVE_KEY, DEFAULT_REPRESENTATIVE));
 	}
 
-	public ContinuousMetricComputer() {
+	public ContinuousEvaluator() {
 		this(DEFAULT_REPRESENTATIVE);
 	}
 
-	public ContinuousMetricComputer(String representative) {
+	public ContinuousEvaluator(String representative) {
 		this(RepresentativeMetric.valueOf(representative.toUpperCase()));
 	}
 
-	public ContinuousMetricComputer(RepresentativeMetric representative) {
+	public ContinuousEvaluator(RepresentativeMetric representative) {
 		this.representative = representative;
 
 		count = 0;

@@ -29,7 +29,7 @@ import java.util.Map;
 /**
  * Compute various discrete statistics using a threshold.
  */
-public class DiscreteMetricComputer extends MetricComputer {
+public class DiscreteEvaluator extends Evaluator {
 	public enum RepresentativeMetric {
 		F1,
 		POSITIVE_PRECISION,
@@ -66,23 +66,23 @@ public class DiscreteMetricComputer extends MetricComputer {
 	private int tn;
 	private int fp;
 
-	public DiscreteMetricComputer(ConfigBundle config) {
+	public DiscreteEvaluator(ConfigBundle config) {
 		this(config.getDouble(THRESHOLD_KEY, DEFAULT_THRESHOLD), config.getString(REPRESENTATIVE_KEY, DEFAULT_REPRESENTATIVE));
 	}
 
-	public DiscreteMetricComputer() {
+	public DiscreteEvaluator() {
 		this(DEFAULT_THRESHOLD, DEFAULT_REPRESENTATIVE);
 	}
 
-	public DiscreteMetricComputer(double threshold) {
+	public DiscreteEvaluator(double threshold) {
 		this(threshold, DEFAULT_REPRESENTATIVE);
 	}
 
-	public DiscreteMetricComputer(double threshold, String representative) {
+	public DiscreteEvaluator(double threshold, String representative) {
 		this(threshold, RepresentativeMetric.valueOf(representative.toUpperCase()));
 	}
 
-	public DiscreteMetricComputer(double threshold, RepresentativeMetric representative) {
+	public DiscreteEvaluator(double threshold, RepresentativeMetric representative) {
 		if (threshold < 0.0 || threshold > 1.0) {
 			throw new IllegalArgumentException("Threhsold must be in (0, 1). Found: " + threshold);
 		}

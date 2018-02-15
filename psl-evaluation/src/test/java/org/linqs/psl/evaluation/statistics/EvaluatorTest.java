@@ -39,7 +39,7 @@ import org.junit.Test;
 /**
  * Base testing functionality for all metric computers.
  */
-public abstract class MetricComputerTest<T extends MetricComputer> {
+public abstract class EvaluatorTest<T extends Evaluator> {
 	protected DataStore dataStore;
 	protected StandardPredicate predicate;
 	protected TrainingMap trainingMap;
@@ -111,7 +111,7 @@ public abstract class MetricComputerTest<T extends MetricComputer> {
 	 */
 	@Test
 	public void baseTest() {
-		MetricComputer computer = getComputer();
+		Evaluator computer = getComputer();
 		computer.compute(trainingMap, predicate);
 
 		boolean higherBetter = computer.isHigherRepresentativeBetter();

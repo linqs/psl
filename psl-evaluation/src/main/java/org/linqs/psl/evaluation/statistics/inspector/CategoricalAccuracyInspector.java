@@ -20,7 +20,7 @@ package org.linqs.psl.evaluation.statistics.inspector;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Queries;
-import org.linqs.psl.evaluation.statistics.CategoricalMetricComputer;
+import org.linqs.psl.evaluation.statistics.CategoricalEvaluator;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.inspector.DatabaseReasonerInspector;
@@ -35,14 +35,14 @@ import org.slf4j.LoggerFactory;
 public class CategoricalAccuracyInspector extends DatabaseReasonerInspector {
 	private static final Logger log = LoggerFactory.getLogger(CategoricalAccuracyInspector.class);
 
-	private CategoricalMetricComputer comparator;
+	private CategoricalEvaluator comparator;
 
 	// TODO(eriq): Config option for desired predicates.
 	// TODO(eriq): We are currently asuming that the last argument is always the category index.
 
 	public CategoricalAccuracyInspector(ConfigBundle config) {
 		super(config);
-		comparator = new CategoricalMetricComputer(config);
+		comparator = new CategoricalEvaluator(config);
 	}
 
 	@Override

@@ -23,17 +23,23 @@ import org.linqs.psl.util.MathUtils;
 
 import org.junit.Test;
 
-// TODO(eriq): All the data needs to be reworked for this test.
-public class CategoricalMetricComputerTest extends MetricComputerTest<CategoricalMetricComputer> {
+public class ContinuousEvaluatorTest extends EvaluatorTest<ContinuousEvaluator> {
 	@Override
-	protected CategoricalMetricComputer getComputer() {
-		return new CategoricalMetricComputer();
+	protected ContinuousEvaluator getComputer() {
+		return new ContinuousEvaluator();
 	}
 
 	@Test
-	public void testAccuracy() {
-		CategoricalMetricComputer computer = new CategoricalMetricComputer();
+	public void testMAE() {
+		ContinuousEvaluator computer = new ContinuousEvaluator();
 		computer.compute(trainingMap, predicate);
-		assertEquals(1.0, computer.accuracy(), MathUtils.EPSILON);
+		assertEquals(0.32, computer.mae(), MathUtils.EPSILON);
+	}
+
+	@Test
+	public void testMSE() {
+		ContinuousEvaluator computer = new ContinuousEvaluator();
+		computer.compute(trainingMap, predicate);
+		assertEquals(0.16, computer.mse(), MathUtils.EPSILON);
 	}
 }
