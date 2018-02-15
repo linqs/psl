@@ -71,9 +71,16 @@ public abstract class DataStoreContractTest {
 	private List<Database> dbs;
 
 	/**
-	 * @return the DataStore to be tested, should always be backed by the same persistence mechanism
+	 * @return the DataStore to be tested, should always be backed by the same persistence mechanism.
 	 */
-	public abstract DataStore getDataStore(boolean clearDB);
+	public abstract DataStore getDataStore(boolean clearDB, boolean persisted);
+
+	/**
+	 * Default to a non-persisted data store (if available).
+	 */
+	public DataStore getDataStore(boolean clearDB) {
+		return getDataStore(clearDB, false);
+	}
 
 	/**
 	 * Deletes any files and releases any resources used by the tested DataStore
@@ -347,6 +354,9 @@ public abstract class DataStoreContractTest {
 			return;
 		}
 
+		datastore.close();
+		datastore = getDataStore(true, true);
+
 		datastore.registerPredicate(p1);
 		datastore.registerPredicate(p2);
 
@@ -355,11 +365,28 @@ public abstract class DataStoreContractTest {
 		assertTrue(registeredPredicates.contains(p2));
 
 		datastore.close();
-		datastore = getDataStore(false);
+		datastore = getDataStore(false, true);
 
 		registeredPredicates = datastore.getRegisteredPredicates();
 		assertTrue(registeredPredicates.contains(p1));
 		assertTrue(registeredPredicates.contains(p2));
+	}
+
+	@Test
+	public void testGetInserterForDeserializedPredicate() {
+		if (datastore == null) {
+			return;
+		}
+
+		datastore.close();
+		datastore = getDataStore(true, true);
+
+		datastore.registerPredicate(p1);
+		datastore.registerPredicate(p2);
+
+		datastore.close();
+		datastore = getDataStore(false, true);
+		datastore.getInserter(p1, datastore.getPartition("0"));
 	}
 
 	// Functional predicates should be ignored at the database level.
@@ -776,20 +803,6 @@ public abstract class DataStoreContractTest {
 		} catch (IllegalArgumentException ex) {
 			// Expected
 		}
-	}
-
-	@Test
-	public void testGetInserterForDeserializedPredicate() {
-		if (datastore == null) {
-			return;
-		}
-
-		datastore.registerPredicate(p1);
-		datastore.registerPredicate(p2);
-
-		datastore.close();
-		datastore = getDataStore(false);
-		datastore.getInserter(p1, datastore.getPartition("0"));
 	}
 
 	@Test

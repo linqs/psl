@@ -26,7 +26,7 @@ import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 
 public class PostgresDataStoreContractTest extends DataStoreContractTest {
 	@Override
-	public DataStore getDataStore(boolean clearDB) {
+	public DataStore getDataStore(boolean clearDB, boolean persisted) {
 		DatabaseDriver driver = DatabaseTestUtil.getPostgresDriver(clearDB);
 		if (driver == null) {
 			return null;

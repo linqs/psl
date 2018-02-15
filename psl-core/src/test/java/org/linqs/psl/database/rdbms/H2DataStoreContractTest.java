@@ -26,8 +26,8 @@ import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 
 public class H2DataStoreContractTest extends DataStoreContractTest {
 	@Override
-	public DataStore getDataStore(boolean clearDB) {
-		DatabaseDriver driver = DatabaseTestUtil.getH2Driver(clearDB);
+	public DataStore getDataStore(boolean clearDB, boolean persisted) {
+		DatabaseDriver driver = DatabaseTestUtil.getH2Driver(clearDB, persisted);
 		return new RDBMSDataStore(driver, new EmptyBundle());
 	}
 

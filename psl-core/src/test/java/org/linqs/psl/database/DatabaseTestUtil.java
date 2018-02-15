@@ -49,15 +49,20 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class DatabaseTestUtil {
+	private static final String PERSISTED_DB_SUFFIX = String.format("%06d", (int)(Math.random() * 1000000));
 	private static final String DB_NAME = "psltest";
-	private static final String DB_BASE_PATH = Paths.get(System.getProperty("java.io.tmpdir"), DB_NAME).toString();
+	private static final String DB_BASE_PATH = Paths.get(System.getProperty("java.io.tmpdir"), DB_NAME + "_" + PERSISTED_DB_SUFFIX).toString();
 
 	public static DatabaseDriver getH2Driver() {
-		return getH2Driver(true);
+		return getH2Driver(true, false);
 	}
 
-	public static DatabaseDriver getH2Driver(boolean clear) {
-		return new H2DatabaseDriver(H2DatabaseDriver.Type.Disk, DB_BASE_PATH, clear);
+	public static DatabaseDriver getH2Driver(boolean clear, boolean persisted) {
+		if (persisted) {
+			return new H2DatabaseDriver(H2DatabaseDriver.Type.Disk, DB_BASE_PATH, clear);
+		} else {
+			return new H2DatabaseDriver(H2DatabaseDriver.Type.Memory, DB_NAME, clear);
+		}
 	}
 
 	public static DatabaseDriver getPostgresDriver() {
