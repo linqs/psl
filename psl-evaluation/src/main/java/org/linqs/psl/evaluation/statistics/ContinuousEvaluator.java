@@ -19,6 +19,7 @@ package org.linqs.psl.evaluation.statistics;
 
 import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
@@ -80,7 +81,7 @@ public class ContinuousEvaluator extends Evaluator {
 		absoluteError = 0.0;
 		squaredError = 0.0;
 
-		for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getTrainingMap().entrySet()) {
+		for (Map.Entry<GroundAtom, GroundAtom> entry : trainingMap.getFullMap()) {
 			if (entry.getKey().getPredicate() != predicate) {
 				continue;
 			}
@@ -122,5 +123,10 @@ public class ContinuousEvaluator extends Evaluator {
 		}
 
 		return squaredError / count;
+	}
+
+	@Override
+	public String getAllStats() {
+		return String.format("MAE: %f, MSE: %f", mae(), mse());
 	}
 }

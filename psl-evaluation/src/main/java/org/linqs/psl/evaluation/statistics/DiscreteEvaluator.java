@@ -19,6 +19,7 @@ package org.linqs.psl.evaluation.statistics;
 
 import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
@@ -103,7 +104,7 @@ public class DiscreteEvaluator extends Evaluator {
 		tn = 0;
 		fp = 0;
 
-		for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getTrainingMap().entrySet()) {
+		for (Map.Entry<GroundAtom, GroundAtom> entry : trainingMap.getFullMap()) {
 			if (entry.getKey().getPredicate() != predicate) {
 				continue;
 			}
@@ -207,5 +208,16 @@ public class DiscreteEvaluator extends Evaluator {
 		}
 
 		return (tp + tn) / (double)numAtoms;
+	}
+
+	@Override
+	public String getAllStats() {
+		return String.format(
+				"Accuracy: %f, F1: %f," +
+				" Positive Class Precision: %f, Positive Class Recall: %f," +
+				" Negative Class Precision: %f, Negative Class Recall: %f",
+				accuracy(), f1(),
+				positivePrecision(), positiveRecall(),
+				negativePrecision(), negativeRecall());
 	}
 }

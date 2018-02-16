@@ -45,11 +45,17 @@ public abstract class Evaluator {
 	public abstract boolean isHigherRepresentativeBetter();
 
 	/**
+	 * Get a string that contains the full range of stats that this Evaluator can provide.
+	 * compute() should have been called first.
+	 */
+	public abstract String getAllStats();
+
+	/**
 	 * A convenience call for those who don't want to create a training map directly.
 	 */
 	public void compute(Database rvDB, Database truthDB, StandardPredicate predicate) {
 		PersistedAtomManager atomManager = new PersistedAtomManager(rvDB);
-		TrainingMap map = new TrainingMap(atomManager, truthDB);
+		TrainingMap map = new TrainingMap(atomManager, truthDB, true);
 		compute(map, predicate);
 	}
 }

@@ -20,6 +20,7 @@ package org.linqs.psl.evaluation.statistics;
 import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.util.StringUtils;
@@ -123,7 +124,7 @@ public class CategoricalEvaluator extends Evaluator {
 
 		Set<GroundAtom> predictedCategories = getPredictedCategories(trainingMap, predicate);
 
-		for (GroundAtom truthAtom : trainingMap.getTrainingMap().values()) {
+		for (GroundAtom truthAtom : trainingMap.getTruthAtoms()) {
 			if (truthAtom.getPredicate() != predicate) {
 				continue;
 			}
@@ -163,6 +164,11 @@ public class CategoricalEvaluator extends Evaluator {
 		return hits / (double)(hits + misses);
 	}
 
+	@Override
+	public String getAllStats() {
+		return String.format("Categorical Accuracy: %f", accuracy());
+	}
+
 	/**
 	 * Build up a set that has all the atoms that represet the best categorical assignments.
 	 */
@@ -174,7 +180,7 @@ public class CategoricalEvaluator extends Evaluator {
 		// or another Map<Constant, Object>, and so on.
 		Map<Constant, Object> predictedCategories = null;
 
-		for (GroundAtom atom : trainingMap.getTrainingMap().keySet()) {
+		for (GroundAtom atom : trainingMap.getTargetAtoms()) {
 			if (atom.getPredicate() != predicate) {
 				continue;
 			}

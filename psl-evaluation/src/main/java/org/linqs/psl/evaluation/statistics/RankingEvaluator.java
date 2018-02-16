@@ -100,7 +100,7 @@ public class RankingEvaluator extends Evaluator {
 		truth = new ArrayList<GroundAtom>(trainingMap.getTrainingMap().size());
 		predicted = new ArrayList<GroundAtom>(trainingMap.getTrainingMap().size());
 
-		for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getTrainingMap().entrySet()) {
+		for (Map.Entry<GroundAtom, GroundAtom> entry : trainingMap.getFullMap()) {
 			if (entry.getKey().getPredicate() != predicate) {
 				continue;
 			}
@@ -296,6 +296,13 @@ public class RankingEvaluator extends Evaluator {
 		area += 0.5 * (1.0 - prevX) * (1.0 + prevY);
 
 		return area;
+	}
+
+	@Override
+	public String getAllStats() {
+		return String.format(
+				"AUROC: %f, Positive Class AUPRC: %f, Negative Class AUPRC: %f",
+				auroc(), positiveAUPRC(), negativeAUPRC());
 	}
 
 	/**

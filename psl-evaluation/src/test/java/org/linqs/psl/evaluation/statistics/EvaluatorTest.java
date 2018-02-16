@@ -93,7 +93,7 @@ public abstract class EvaluatorTest<T extends Evaluator> {
 		Database truth = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
 
 		PersistedAtomManager atomManager = new PersistedAtomManager(results);
-		trainingMap = new TrainingMap(atomManager, truth);
+		trainingMap = new TrainingMap(atomManager, truth, true);
 
 		// Since we only need the map, we can close all the databases.
 		results.close();
