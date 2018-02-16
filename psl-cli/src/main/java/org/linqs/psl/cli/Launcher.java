@@ -31,14 +31,14 @@ import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver.Type;
 import org.linqs.psl.database.rdbms.driver.PostgreSQLDriver;
-import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
-import org.linqs.psl.evaluation.statistics.DiscreteEvaluator;
+import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.parser.ModelLoader;
 import org.linqs.psl.reasoner.admm.ADMMReasonerFactory;
+import org.linqs.psl.util.Reflection;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -92,10 +92,8 @@ public class Launcher {
 	public static final String OPTION_DATA_LONG = "data";
 	public static final String OPTION_DB_H2_PATH = "h2path";
 	public static final String OPTION_DB_POSTGRESQL_NAME = "postgres";
-	public static final String OPTION_EVAL_CONTINUOUS = "ec";
-	public static final String OPTION_EVAL_CONTINUOUS_LONG = "eval-continuous";
-	public static final String OPTION_EVAL_DISCRETE = "ed";
-	public static final String OPTION_EVAL_DISCRETE_LONG = "eval-discrete";
+	public static final String OPTION_EVAL = "e";
+	public static final String OPTION_EVAL_LONG = "eval";
 	public static final String OPTION_INT_IDS = "int";
 	public static final String OPTION_INT_IDS_LONG = "int-ids";
 	public static final String OPTION_LOG4J = "4j";
@@ -114,7 +112,6 @@ public class Launcher {
 			Paths.get(System.getProperty("java.io.tmpdir"),
 			"cli_" + System.getProperty("user.name") + "@" + getHostname()).toString();
 	public static final String DEFAULT_POSTGRES_DB_NAME = "psl_cli";
-	public static final String DEFAULT_DISCRETE_THRESHOLD = "0.5";
 	public static final String DEFAULT_WLA = MaxLikelihoodMPE.class.getName();
 
 	// Reserved partition names.
@@ -357,8 +354,8 @@ public class Launcher {
 		learnedFileWriter.close();
 	}
 
-	private void continuousEval(DataStore dataStore, Set<StandardPredicate> closedPredicates) {
-		log.info("Starting continuous evaluation");
+	private void evaluation(DataStore dataStore, Set<StandardPredicate> closedPredicates, String evalClassName) {
+		log.info("Starting evaluation with class: {}.", evalClassName);
 
 		// Set of open predicates
 		Set<StandardPredicate> openPredicates = dataStore.getRegisteredPredicates();
@@ -366,12 +363,13 @@ public class Launcher {
 
 		// Create database.
 		Partition targetPartition = dataStore.getPartition(PARTITION_NAME_TARGET);
+		Partition observationsPartition = dataStore.getPartition(PARTITION_NAME_OBSERVATIONS);
 		Partition truthPartition = dataStore.getPartition(PARTITION_NAME_LABELS);
 
-		Database predictionDatabase = dataStore.getDatabase(targetPartition, closedPredicates);
+		Database predictionDatabase = dataStore.getDatabase(targetPartition, closedPredicates, observationsPartition);
 		Database truthDatabase = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
 
-		ContinuousEvaluator computer = new ContinuousEvaluator();
+		Evaluator evaluator = (Evaluator)Reflection.newObject(evalClassName, config);
 
 		for (StandardPredicate targetPredicate : openPredicates) {
 			// Before we run evaluation, ensure that the truth database actaully has instances of the target predicate.
@@ -380,63 +378,14 @@ public class Launcher {
 				continue;
 			}
 
-			computer.compute(predictionDatabase, truthDatabase, targetPredicate);
-
-			double mae = computer.mae();
-			double mse = computer.mse();
-
-			log.info("Continuous evaluation results for {} -- MAE: {}, MSE: {}", targetPredicate.getName(), mae, mse);
+			evaluator.compute(predictionDatabase, truthDatabase, targetPredicate);
+			log.info("Evaluation results for {} -- {}", targetPredicate.getName(), evaluator.getAllStats());
 		}
 
 		predictionDatabase.close();
 		truthDatabase.close();
 
-		log.info("Continuous evaluation complete");
-	}
-
-	private void discreteEval(DataStore dataStore, Set<StandardPredicate> closedPredicates, double threshold) {
-		log.info("Starting discrete evaluation");
-
-		// Set of open predicates
-		Set<StandardPredicate> openPredicates = dataStore.getRegisteredPredicates();
-		openPredicates.removeAll(closedPredicates);
-
-		// Create database.
-		Partition targetPartition = dataStore.getPartition(PARTITION_NAME_TARGET);
-		Partition truthPartition = dataStore.getPartition(PARTITION_NAME_LABELS);
-
-		Database predictionDatabase = dataStore.getDatabase(targetPartition, closedPredicates);
-		Database truthDatabase = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
-
-		DiscreteEvaluator computer = new DiscreteEvaluator(threshold);
-
-		for (StandardPredicate targetPredicate : openPredicates) {
-			// Before we run evaluation, ensure that the truth database actaully has instances of the target predicate.
-			if (Queries.countAllGroundAtoms(truthDatabase, targetPredicate) == 0) {
-				log.info("Skipping discrete evaluation for {} since there are no ground truth atoms", targetPredicate);
-				continue;
-			}
-
-			computer.compute(predictionDatabase, truthDatabase, targetPredicate);
-
-			double accuracy = computer.accuracy();
-			double positivePrecision = computer.positivePrecision();
-			double positiveRecall = computer.positiveRecall();
-			double negativePrecision = computer.negativePrecision();
-			double negativeRecall = computer.negativeRecall();
-
-			log.info("Discrete evaluation results for {} --" +
-					" Accuracy: {}," +
-					" Positive Class Precision: {}, Positive Class Recall: {}," +
-					" Negative Class Precision: {}, Negative Class Recall: {},",
-					targetPredicate.getName(),
-					accuracy, positivePrecision, positiveRecall, negativePrecision, negativeRecall);
-		}
-
-		predictionDatabase.close();
-		truthDatabase.close();
-
-		log.info("Discrete evaluation complete");
+		log.info("Evaluation complete.");
 	}
 
 	private void run()
@@ -463,13 +412,8 @@ public class Launcher {
 		}
 
 		// Evaluation
-		if (options.hasOption(OPTION_EVAL_CONTINUOUS)) {
-			continuousEval(dataStore, closedPredicates);
-		}
-
-		if (options.hasOption(OPTION_EVAL_DISCRETE)) {
-			String stringThreshold = options.getOptionValue(OPTION_EVAL_DISCRETE, DEFAULT_DISCRETE_THRESHOLD);
-			discreteEval(dataStore, closedPredicates, Double.valueOf(stringThreshold));
+		if (options.hasOption(OPTION_EVAL)) {
+			evaluation(dataStore, closedPredicates, options.getOptionValue(OPTION_EVAL));
 		}
 
 		dataStore.close();
@@ -533,19 +477,11 @@ public class Launcher {
 				.optionalArg(true)
 				.build());
 
-		options.addOption(Option.builder(OPTION_EVAL_CONTINUOUS)
-				.longOpt(OPTION_EVAL_CONTINUOUS_LONG)
-				.desc("Run evlaution using continuous comparison on any open predicate with a 'truth' partition.")
-				.build());
-
-		options.addOption(Option.builder(OPTION_EVAL_DISCRETE)
-				.longOpt(OPTION_EVAL_DISCRETE_LONG)
-				.desc("Run evlaution using discrete comparison on any open predicate with a 'truth' partition." +
-						" You can optionally supply 'threshold' (defaults to " + DEFAULT_DISCRETE_THRESHOLD + ")." +
-						" Every truth value over the threshold is considered true.")
+		options.addOption(Option.builder(OPTION_EVAL)
+				.longOpt(OPTION_EVAL_LONG)
+				.desc("Run the named evaluator (" + Evaluator.class.getName() + ") on any open predicate with a 'truth' partition.")
 				.hasArg()
-				.argName("threshold")
-				.optionalArg(true)
+				.argName("evaluator")
 				.build());
 
 		options.addOption(Option.builder(OPTION_HELP)
@@ -674,20 +610,6 @@ public class Launcher {
 			System.err.println("Command line error: Options '--" + OPTION_DB_H2_PATH + "' and '--" + OPTION_DB_POSTGRESQL_NAME + "' are not compatible.");
 			getHelpFormatter().printHelp("psl", options, true);
 			System.exit(2);
-		}
-
-		if (commandLineOptions.hasOption(OPTION_EVAL_DISCRETE)) {
-			String stringThreshold = commandLineOptions.getOptionValue(OPTION_EVAL_DISCRETE, DEFAULT_DISCRETE_THRESHOLD);
-			try {
-				double threshold = Double.valueOf(stringThreshold);
-				if (threshold < 0 || threshold > 1) {
-					throw new NumberFormatException();
-				}
-			} catch (NumberFormatException ex) {
-				System.err.println("Command line error: The optional argument to '-" + OPTION_EVAL_DISCRETE + "' must be a double in [0, 1].");
-				getHelpFormatter().printHelp("psl", options, true);
-				System.exit(3);
-			}
 		}
 
 		return commandLineOptions;
