@@ -205,7 +205,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
 		// exist in the RV database.
 		ensureTargets();
 
-		trainingMap = new TrainingMap(atomManager, observedDB);
+		trainingMap = new TrainingMap(atomManager, observedDB, false);
 		if (!supportsLatentVariables && trainingMap.getLatentVariables().size() > 0) {
 			Set<RandomVariableAtom> latentVariables = trainingMap.getLatentVariables();
 			throw new IllegalArgumentException(String.format(

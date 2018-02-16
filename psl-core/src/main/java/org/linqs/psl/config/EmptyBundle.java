@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.config;
 
-import org.linqs.psl.util.Objects;
+import org.linqs.psl.util.Reflection;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -160,6 +160,6 @@ public class EmptyBundle implements ConfigBundle {
 			return null;
 		}
 
-		return Objects.newObject(className, this);
+		return Reflection.newObject(className, this);
 	}
 }

@@ -25,9 +25,9 @@ import java.lang.reflect.InvocationTargetException;
 /**
  * Various utilties around objects and reflection.
  */
-public final class Objects {
+public final class Reflection {
 	// Static only.
-	private Objects() {}
+	private Reflection() {}
 
 	/**
 	 * Try to construct a new object by first looking for the PSL-style constructor with a ConfigBundle,

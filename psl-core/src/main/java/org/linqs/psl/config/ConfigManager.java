@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.config;
 
-import org.linqs.psl.util.Objects;
+import org.linqs.psl.util.Reflection;
 
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.ConfigurationException;
@@ -295,7 +295,7 @@ public class ConfigManager {
 				return null;
 			}
 
-			return Objects.newObject(className, this);
+			return Reflection.newObject(className, this);
 		}
 
 		@Override
