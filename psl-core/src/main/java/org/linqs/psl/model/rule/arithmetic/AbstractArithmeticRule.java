@@ -35,7 +35,7 @@ import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.formula.Negation;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
-import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.AbstractRule;
 import org.linqs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
 import org.linqs.psl.model.rule.arithmetic.expression.SummationAtom;
 import org.linqs.psl.model.rule.arithmetic.expression.SummationAtomOrAtom;
@@ -72,11 +72,11 @@ import java.util.Set;
 /**
  * Base class for all (first order, i.e., not ground) arithmetic rules.
  *
- * Full equality checks (when two rules are the equal, but not the same refernce) are epensive.
+ * Full equality checks (when two rules are the equal, but not the same reference) are expensive.
  *
  * @author Stephen Bach
  */
-public abstract class AbstractArithmeticRule implements Rule {
+public abstract class AbstractArithmeticRule extends AbstractRule {
 	private static final Logger log = LoggerFactory.getLogger(AbstractArithmeticRule.class);
 
 	/**
@@ -88,7 +88,8 @@ public abstract class AbstractArithmeticRule implements Rule {
 	protected final ArithmeticRuleExpression expression;
 	protected final Map<SummationVariable, Formula> filters;
 
-	public AbstractArithmeticRule(ArithmeticRuleExpression expression, Map<SummationVariable, Formula> filterClauses) {
+	public AbstractArithmeticRule(ArithmeticRuleExpression expression, Map<SummationVariable, Formula> filterClauses, String name) {
+		super(name);
 		this.expression = expression;
 		this.filters = filterClauses;
 
