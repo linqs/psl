@@ -55,7 +55,7 @@ public class CategoricalEvaluator extends Evaluator {
 	/**
 	 * Prefix of property keys used by this class.
 	 */
-	public static final String CONFIG_PREFIX = "categoricalmetriccomputer";
+	public static final String CONFIG_PREFIX = "categoricalevaluator";
 
 	/**
 	 * The index of the arguments in the predicate  (delimited by colons).

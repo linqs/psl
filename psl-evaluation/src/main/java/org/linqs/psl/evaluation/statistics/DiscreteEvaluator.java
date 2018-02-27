@@ -43,7 +43,7 @@ public class DiscreteEvaluator extends Evaluator {
 	/**
 	 * Prefix of property keys used by this class.
 	 */
-	public static final String CONFIG_PREFIX = "discretemetriccomputer";
+	public static final String CONFIG_PREFIX = "discreteevaluator";
 
 	/**
 	 * The truth threshold.

@@ -43,7 +43,7 @@ public class RankingAccuracyInspector extends DatabaseReasonerInspector {
 	private int callCount;
 	private int inspectionPeriod;
 
-	private RankingEvaluator computer;
+	private RankingEvaluator evaluator;
 
 	public RankingAccuracyInspector(ConfigBundle config) {
 		super(config);
@@ -52,7 +52,7 @@ public class RankingAccuracyInspector extends DatabaseReasonerInspector {
 		callCount = 0;
 		inspectionPeriod = DEFAULT_INSPECTION_PERIOD;
 
-		computer = new RankingEvaluator(config);
+		evaluator = new RankingEvaluator(config);
 	}
 
 	@Override
@@ -74,11 +74,11 @@ public class RankingAccuracyInspector extends DatabaseReasonerInspector {
 				continue;
 			}
 
-			computer.compute(rvDatabase, truthDatabase, targetPredicate);
+			evaluator.compute(rvDatabase, truthDatabase, targetPredicate);
 
-			double auroc = computer.auroc();
-			double auprc = computer.positiveAUPRC();
-			double negAUPRC = computer.negativeAUPRC();
+			double auroc = evaluator.auroc();
+			double auprc = evaluator.positiveAUPRC();
+			double negAUPRC = evaluator.negativeAUPRC();
 
 			log.info("{} -- AUROC: {}, AUPRC+: {}, AUPRC-: {}",
 				targetPredicate.getName(),	auroc, auprc, negAUPRC);

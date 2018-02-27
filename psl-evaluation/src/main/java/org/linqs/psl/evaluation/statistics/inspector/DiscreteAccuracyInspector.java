@@ -35,11 +35,11 @@ import org.slf4j.LoggerFactory;
 public class DiscreteAccuracyInspector extends DatabaseReasonerInspector {
 	private static final Logger log = LoggerFactory.getLogger(DiscreteAccuracyInspector.class);
 
-	private DiscreteEvaluator computer;
+	private DiscreteEvaluator evaluator;
 
 	public DiscreteAccuracyInspector(ConfigBundle config) {
 		super(config);
-		computer = new DiscreteEvaluator(config);
+		evaluator = new DiscreteEvaluator(config);
 	}
 
 	@Override
@@ -55,13 +55,13 @@ public class DiscreteAccuracyInspector extends DatabaseReasonerInspector {
 				continue;
 			}
 
-			computer.compute(rvDatabase, truthDatabase, targetPredicate);
+			evaluator.compute(rvDatabase, truthDatabase, targetPredicate);
 
-			double accuracy = computer.accuracy();
-			double positivePrecision = computer.positivePrecision();
-			double positiveRecall = computer.positiveRecall();
-			double negativePrecision = computer.negativePrecision();
-			double negativeRecall = computer.negativeRecall();
+			double accuracy = evaluator.accuracy();
+			double positivePrecision = evaluator.positivePrecision();
+			double positiveRecall = evaluator.positiveRecall();
+			double negativePrecision = evaluator.negativePrecision();
+			double negativeRecall = evaluator.negativeRecall();
 
 			log.info("{} --" +
 				" Accuracy: {}," +

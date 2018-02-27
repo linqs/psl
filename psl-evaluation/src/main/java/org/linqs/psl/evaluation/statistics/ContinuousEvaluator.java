@@ -39,7 +39,7 @@ public class ContinuousEvaluator extends Evaluator {
 	/**
 	 * Prefix of property keys used by this class.
 	 */
-	public static final String CONFIG_PREFIX = "continuousmetriccomputer";
+	public static final String CONFIG_PREFIX = "continuousevaluator";
 
 	/**
 	 * The representative metric.

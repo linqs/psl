@@ -44,7 +44,7 @@ public class RankingEvaluator extends Evaluator {
 	/**
 	 * Prefix of property keys used by this class.
 	 */
-	public static final String CONFIG_PREFIX = "rankingmetriccomputer";
+	public static final String CONFIG_PREFIX = "rankingevaluator";
 
 	/**
 	 * The truth threshold.
