@@ -363,8 +363,8 @@ IDENTIFIER
 
 // Constants can have more general content than IDENTIFIERs since they are quoted.
 CONSTANT_VALUE
-    :   SINGLE_QUOTE (LETTER | DIGIT)+ SINGLE_QUOTE
-    |   DOUBLE_QUOTE (LETTER | DIGIT)+ DOUBLE_QUOTE
+    :   SINGLE_QUOTE (LETTER | DIGIT | ' ' | '_')+ SINGLE_QUOTE
+    |   DOUBLE_QUOTE (LETTER | DIGIT | ' ' | '_')+ DOUBLE_QUOTE
     ;
 
 NONNEGATIVE_NUMBER

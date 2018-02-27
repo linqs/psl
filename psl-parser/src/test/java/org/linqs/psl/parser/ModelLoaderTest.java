@@ -155,7 +155,32 @@ public class ModelLoaderTest {
 			// Note that all constants get quotes, but they will get converted into their native types later.
 			"1: Single(E) & Double(E, '1') & Single('1') >> Double(E, '1') ^2\n" +
 			"1: Single(F) & Double(F, '999') & Single('999') >> Double(F, '999') ^2\n" +
-			"1: Single(G) & Double(G, \"999\") & Single(\"999\") >> Double(G, \"999\") ^2\n";
+			"1: Single(G) & Double(G, \"999\") & Single(\"999\") >> Double(G, \"999\") ^2\n" +
+			// Spaces
+			"1: Single(A) & Double(A, ' Z') & Single(' Z') >> Double(A, ' Z') ^2\n" +
+			"1: Single(A) & Double(A, 'Z ') & Single('Z ') >> Double(A, 'Z ') ^2\n" +
+			"1: Single(A) & Double(A, '  Z') & Single('  Z') >> Double(A, '  Z') ^2\n" +
+			"1: Single(A) & Double(A, 'Z  ') & Single('Z  ') >> Double(A, 'Z  ') ^2\n" +
+			"1: Single(A) & Double(A, ' Z ') & Single(' Z ') >> Double(A, ' Z ') ^2\n" +
+			"1: Single(A) & Double(A, '  Z  ') & Single('  Z  ') >> Double(A, '  Z  ') ^2\n" +
+			"1: Single(A) & Double(A, ' ') & Single(' ') >> Double(A, ' ') ^2\n" +
+			"1: Single(A) & Double(A, '  ') & Single('  ') >> Double(A, '  ') ^2\n" +
+			"1: Single(A) & Double(A, 'A B') & Single('A B') >> Double(A, 'A B') ^2\n" +
+			"1: Single(A) & Double(A, 'A  B') & Single('A  B') >> Double(A, 'A  B') ^2\n" +
+			"1: Single(A) & Double(A, ' A B ') & Single(' A B ') >> Double(A, ' A B ') ^2\n" +
+			// Underscores
+			"1: Single(A) & Double(A, '_Z') & Single('_Z') >> Double(A, '_Z') ^2\n" +
+			"1: Single(A) & Double(A, 'Z_') & Single('Z_') >> Double(A, 'Z_') ^2\n" +
+			"1: Single(A) & Double(A, '__Z') & Single('__Z') >> Double(A, '__Z') ^2\n" +
+			"1: Single(A) & Double(A, 'Z__') & Single('Z__') >> Double(A, 'Z__') ^2\n" +
+			"1: Single(A) & Double(A, '_Z_') & Single('_Z_') >> Double(A, '_Z_') ^2\n" +
+			"1: Single(A) & Double(A, '__Z__') & Single('__Z__') >> Double(A, '__Z__') ^2\n" +
+			"1: Single(A) & Double(A, '_') & Single('_') >> Double(A, '_') ^2\n" +
+			"1: Single(A) & Double(A, '__') & Single('__') >> Double(A, '__') ^2\n" +
+			"1: Single(A) & Double(A, 'A_B') & Single('A_B') >> Double(A, 'A_B') ^2\n" +
+			"1: Single(A) & Double(A, 'A__B') & Single('A__B') >> Double(A, 'A__B') ^2\n" +
+			"1: Single(A) & Double(A, '_A_B_') & Single('_A_B_') >> Double(A, '_A_B_') ^2\n" +
+			"";
 		String[] expected = new String[]{
 			"1.0: ( SINGLE(A) & DOUBLE(A, 'bar') & SINGLE('bar') ) >> DOUBLE(A, 'bar') ^2",
 			"1.0: ( SINGLE(B) & DOUBLE(B, 'bar') & SINGLE('bar') ) >> DOUBLE(B, 'bar') ^2",
@@ -163,7 +188,29 @@ public class ModelLoaderTest {
 			"1.0: ( SINGLE(D) & DOUBLE(D, '1BAR') & SINGLE('1BAR') ) >> DOUBLE(D, '1BAR') ^2",
 			"1.0: ( SINGLE(E) & DOUBLE(E, '1') & SINGLE('1') ) >> DOUBLE(E, '1') ^2",
 			"1.0: ( SINGLE(F) & DOUBLE(F, '999') & SINGLE('999') ) >> DOUBLE(F, '999') ^2",
-			"1.0: ( SINGLE(G) & DOUBLE(G, '999') & SINGLE('999') ) >> DOUBLE(G, '999') ^2"
+			"1.0: ( SINGLE(G) & DOUBLE(G, '999') & SINGLE('999') ) >> DOUBLE(G, '999') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, ' Z') & SINGLE(' Z') ) >> DOUBLE(A, ' Z') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, 'Z ') & SINGLE('Z ') ) >> DOUBLE(A, 'Z ') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, '  Z') & SINGLE('  Z') ) >> DOUBLE(A, '  Z') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, 'Z  ') & SINGLE('Z  ') ) >> DOUBLE(A, 'Z  ') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, ' Z ') & SINGLE(' Z ') ) >> DOUBLE(A, ' Z ') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, '  Z  ') & SINGLE('  Z  ') ) >> DOUBLE(A, '  Z  ') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, ' ') & SINGLE(' ') ) >> DOUBLE(A, ' ') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, '  ') & SINGLE('  ') ) >> DOUBLE(A, '  ') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, 'A B') & SINGLE('A B') ) >> DOUBLE(A, 'A B') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, 'A  B') & SINGLE('A  B') ) >> DOUBLE(A, 'A  B') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, ' A B ') & SINGLE(' A B ') ) >> DOUBLE(A, ' A B ') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, '_Z') & SINGLE('_Z') ) >> DOUBLE(A, '_Z') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, 'Z_') & SINGLE('Z_') ) >> DOUBLE(A, 'Z_') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, '__Z') & SINGLE('__Z') ) >> DOUBLE(A, '__Z') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, 'Z__') & SINGLE('Z__') ) >> DOUBLE(A, 'Z__') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, '_Z_') & SINGLE('_Z_') ) >> DOUBLE(A, '_Z_') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, '__Z__') & SINGLE('__Z__') ) >> DOUBLE(A, '__Z__') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, '_') & SINGLE('_') ) >> DOUBLE(A, '_') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, '__') & SINGLE('__') ) >> DOUBLE(A, '__') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, 'A_B') & SINGLE('A_B') ) >> DOUBLE(A, 'A_B') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, 'A__B') & SINGLE('A__B') ) >> DOUBLE(A, 'A__B') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, '_A_B_') & SINGLE('_A_B_') ) >> DOUBLE(A, '_A_B_') ^2"
 		};
 
 		PSLTest.assertModel(dataStore, input, expected);
