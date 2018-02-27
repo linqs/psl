@@ -79,18 +79,19 @@ unweightedLogicalRule
     :   logicalRuleExpression PERIOD
     ;
 
-logicalValue
+logicalNegationValue
     :   atom
-    |   not atom
+    |   not logicalNegationValue
+    |   LPAREN logicalNegationValue RPAREN
     ;
 
 logicalConjunctiveValue
-    :   logicalValue
+    :   logicalNegationValue
     |   LPAREN logicalConjunctiveExpression RPAREN
     ;
 
 logicalDisjunctiveValue
-    :   logicalValue
+    :   logicalNegationValue
     |   LPAREN logicalDisjunctiveExpression RPAREN
     ;
 
@@ -204,7 +205,7 @@ filterClause
     ;
 
 booleanValue
-    :   logicalValue
+    :   logicalNegationValue
     |   LPAREN booleanExpression RPAREN
     ;
 

@@ -78,8 +78,8 @@ import org.linqs.psl.parser.antlr.PSLParser.LogicalConjunctiveValueContext;
 import org.linqs.psl.parser.antlr.PSLParser.LogicalDisjunctiveExpressionContext;
 import org.linqs.psl.parser.antlr.PSLParser.LogicalDisjunctiveValueContext;
 import org.linqs.psl.parser.antlr.PSLParser.LogicalImplicationExpressionContext;
+import org.linqs.psl.parser.antlr.PSLParser.LogicalNegationValueContext;
 import org.linqs.psl.parser.antlr.PSLParser.LogicalRuleExpressionContext;
-import org.linqs.psl.parser.antlr.PSLParser.LogicalValueContext;
 import org.linqs.psl.parser.antlr.PSLParser.NumberContext;
 import org.linqs.psl.parser.antlr.PSLParser.PredicateContext;
 import org.linqs.psl.parser.antlr.PSLParser.ProgramContext;
@@ -337,7 +337,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	@Override
 	public Formula visitLogicalDisjunctiveValue(LogicalDisjunctiveValueContext ctx) {
 		if (ctx.getChildCount() == 1) {
-			return visitLogicalValue(ctx.logicalValue());
+			return visitLogicalNegationValue(ctx.logicalNegationValue());
 		}
 
 		// Parens
@@ -347,7 +347,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	@Override
 	public Formula visitLogicalConjunctiveValue(LogicalConjunctiveValueContext ctx) {
 		if (ctx.getChildCount() == 1) {
-			return visitLogicalValue(ctx.logicalValue());
+			return visitLogicalNegationValue(ctx.logicalNegationValue());
 		}
 
 		// Parens
@@ -355,14 +355,19 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	}
 
 	@Override
-	public Formula visitLogicalValue(LogicalValueContext ctx) {
-		Atom atom = visitAtom(ctx.atom());
-
-		if (ctx.not() != null) {
-			return new Negation(atom);
+	public Formula visitLogicalNegationValue(LogicalNegationValueContext ctx) {
+		// Bare atom
+		if (ctx.getChildCount() == 1) {
+			return visitAtom(ctx.atom());
 		}
 
-		return atom;
+		// Negation
+		if (ctx.getChildCount() == 2) {
+			return new Negation(visitLogicalNegationValue(ctx.logicalNegationValue()));
+		}
+
+		// Parens
+		return visitLogicalNegationValue(ctx.logicalNegationValue());
 	}
 
 	@Override
@@ -714,8 +719,8 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	@Override
 	public Formula visitBooleanValue(BooleanValueContext ctx) {
 		// A logical value.
-		if (ctx.logicalValue() != null) {
-			return visitLogicalValue(ctx.logicalValue());
+		if (ctx.logicalNegationValue() != null) {
+			return visitLogicalNegationValue(ctx.logicalNegationValue());
 		}
 
 		// Bool expression with parens.

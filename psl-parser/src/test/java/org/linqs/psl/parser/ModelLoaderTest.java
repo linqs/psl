@@ -288,35 +288,38 @@ public class ModelLoaderTest {
 		PSLTest.assertModel(dataStore, input, expected);
 	}
 
+	/**
+	 * Negation is only allowed on an atom or another negation.
+	 * This is because we only allow conjunctions in the body and disjunctions in the head.
+	 */
 	@Test
-	// You cannot negate any expression because we only allow conjunctions in the body and disjunctions in the head.
 	public void testNegation() {
 		String input =
-			"1: ~Single(A) & Double(A, B) >> ~Single(B) ^2\n";
+			"1: ~Single(A) & Double(A, B) >> ~Single(B) ^2\n" +
+			"1: ~Single(C) & ~~Double(C, D) >> ~~~Single(D) ^2\n" +
+			"1: !Single(E) & Double(E, F) >> !Single(F) ^2\n" +
+			"1: !Single(G) & !!Double(G, H) >> !!!Single(H) ^2\n" +
+			"";
 		String[] expected = new String[]{
-			"1.0: ( ~( SINGLE(A) ) & DOUBLE(A, B) ) >> ~( SINGLE(B) ) ^2"
+			"1.0: ( ~( SINGLE(A) ) & DOUBLE(A, B) ) >> ~( SINGLE(B) ) ^2",
+			"1.0: ( ~( SINGLE(C) ) & ~( ~( DOUBLE(C, D) ) ) ) >> ~( ~( ~( SINGLE(D) ) ) ) ^2",
+			"1.0: ( ~( SINGLE(E) ) & DOUBLE(E, F) ) >> ~( SINGLE(F) ) ^2",
+			"1.0: ( ~( SINGLE(G) ) & ~( ~( DOUBLE(G, H) ) ) ) >> ~( ~( ~( SINGLE(H) ) ) ) ^2"
 		};
 
 		PSLTest.assertModel(dataStore, input, expected);
 
 		try {
-			PSLTest.assertRule(dataStore, "1: ~Single(A) & ~~Double(A, B) >> ~~~Single(B) ^2", "");
-			fail("Negation allowed on non-atom (negation).");
-		} catch (org.antlr.v4.runtime.NoViableAltException ex) {
-			// Exception expected.
-		}
-
-		try {
 			PSLTest.assertRule(dataStore, "1: ~( Single(A) & Single(B) ) >> Double(A, B) ^2", "");
-			fail("Negation allowed on non-atom (conjunction).");
-		} catch (org.antlr.v4.runtime.NoViableAltException ex) {
+			fail("Negation not allowed on a conjunction.");
+		} catch (org.antlr.v4.runtime.RecognitionException ex) {
 			// Exception expected.
 		}
 
 		try {
 			PSLTest.assertRule(dataStore, "1: Double(A, B) >> ~( Single(A) | Single(B) ) ^2", "");
-			fail("Negation allowed on non-atom (disjunction).");
-		} catch (org.antlr.v4.runtime.NoViableAltException ex) {
+			fail("Negation not allowed on a disjunction.");
+		} catch (org.antlr.v4.runtime.RecognitionException ex) {
 			// Exception expected.
 		}
 	}
