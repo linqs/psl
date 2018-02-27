@@ -26,7 +26,11 @@ import org.linqs.psl.model.rule.UnweightedRule;
 
 public class UnweightedLogicalRule extends AbstractLogicalRule implements UnweightedRule {
 	public UnweightedLogicalRule(Formula f) {
-		super(f);
+		this(f, f.toString());
+	}
+
+	public UnweightedLogicalRule(Formula f, String name) {
+		super(f, name);
 	}
 
 	@Override
