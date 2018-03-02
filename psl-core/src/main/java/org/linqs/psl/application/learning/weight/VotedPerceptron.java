@@ -138,8 +138,8 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 		}
 
 		inertia = config.getDouble(INERTIA_KEY, INERTIA_DEFAULT);
-		if (inertia <= 0 || inertia >= 1) {
-			throw new IllegalArgumentException("Inertia must be in (0, 1), found: " + inertia);
+		if (inertia < 0 || inertia >= 1) {
+			throw new IllegalArgumentException("Inertia must be in [0, 1), found: " + inertia);
 		}
 
 		numSteps = config.getInt(NUM_STEPS_KEY, NUM_STEPS_DEFAULT);
