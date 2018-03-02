@@ -112,21 +112,21 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	 * steps to learn weights.
 	 */
 	public static final String NUM_STEPS_KEY = CONFIG_PREFIX + ".numsteps";
-	/** Default value for NUM_STEPS_KEY */
 	public static final int NUM_STEPS_DEFAULT = 25;
 
 	protected final double baseStepSize;
-	protected final double inertia;
-	protected final int numSteps;
 	protected final double l2Regularization;
 	protected final double l1Regularization;
 	protected final boolean scaleGradient;
-	protected final boolean averageSteps;
+
+	protected boolean averageSteps;
+	protected double inertia;
+	protected int numSteps;
 
 	/**
 	 * Learning loss at the current point
 	 */
-	private double currentLoss = Double.POSITIVE_INFINITY;
+	private double currentLoss;
 
 	public VotedPerceptron(List<Rule> rules, Database rvDB, Database observedDB,
 			boolean supportsLatentVariables, ConfigBundle config) {
@@ -159,6 +159,8 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 
 		scaleGradient = config.getBoolean(SCALE_GRADIENT_KEY, SCALE_GRADIENT_DEFAULT);
 		averageSteps = config.getBoolean(AVERAGE_STEPS_KEY, AVERAGE_STEPS_DEFAULT);
+
+		currentLoss = Double.NaN;
 	}
 
 	@Override
@@ -179,11 +181,10 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 		// Computes the gradient steps.
 		for (int step = 0; step < numSteps; step++) {
 			log.debug("Starting iteration {}", step);
+			currentLoss = Double.NaN;
 
 			// Computes the expected incompatibility.
 			computeExpectedIncompatibility();
-
-			currentLoss = computeLoss();
 
 			// Updates weights.
 			for (int i = 0; i < mutableRules.size(); i++) {
@@ -200,13 +201,22 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 				// TODO(eriq): Should we keep track of the computed step, or actual step (after Max(0)).
 				lastSteps[i] = currentStep;
 
-				log.debug("Step of {} for rule {} --- Expected incomp.: {}, Truth incomp.: {}",
-						currentStep, mutableRules.get(i), expectedIncompatibility[i], observedIncompatibility[i]);
+				log.trace("Gradient: {} (without momentun: {}), Expected Incomp.: {}, Observed Incomp.: {} -- {}",
+						currentStep, currentStep - (inertia * lastSteps[i]),
+						expectedIncompatibility[i], observedIncompatibility[i],
+						mutableRules.get(i));
 
 				weight = Math.max(weight + currentStep, 0.0);
 				avgWeights[i] += weight;
 				mutableRules.get(i).setWeight(weight);
 			}
+
+			if (log.isDebugEnabled()) {
+				getLoss();
+			}
+
+			log.debug("Iteration {} complete. Likelihood: {}.", step, currentLoss);
+			log.trace("Model {} ", mutableRules);
 		}
 
 		// Sets the weights to their averages.
@@ -234,6 +244,10 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	}
 
 	public double getLoss() {
+		if (Double.isNaN(currentLoss)) {
+			currentLoss = computeLoss();
+		}
+
 		return currentLoss;
 	}
 

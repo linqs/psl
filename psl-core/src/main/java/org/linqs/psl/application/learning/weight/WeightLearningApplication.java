@@ -44,6 +44,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 /**
@@ -85,8 +86,23 @@ public abstract class WeightLearningApplication implements ModelApplication {
 	public static final String TERM_GENERATOR_KEY = CONFIG_PREFIX + ".termgenerator";
 	public static final String TERM_GENERATOR_DEFAULT = "org.linqs.psl.reasoner.admm.term.ADMMTermGenerator";
 
+	/**
+	 * Seed for an RNG all childen can use.
+	 */
+	public static final String SEED_KEY = CONFIG_PREFIX + ".seed";
+	public static final long SEED_DEFAULT = 4;
+
+	/**
+	 * Randomize weights before running.
+	 * The randomization will happen during ground model initialization.
+	 */
+	public static final String RANDOM_WEIGHTS_KEY = CONFIG_PREFIX + ".randomweights";
+	public static final boolean RANDOM_WEIGHTS_DEFAULT = false;
+	public static final int MAX_RANDOM_WEIGHT = 100;
+
 	protected ConfigBundle config;
 	protected boolean supportsLatentVariables;
+	protected Random rand;
 
 	protected Database rvDB;
 	protected Database observedDB;
@@ -138,6 +154,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
 		expectedIncompatibility = new double[mutableRules.size()];
 
 		groundModelInit = false;
+		rand = new Random(config.getLong(SEED_KEY, SEED_DEFAULT));
 	}
 
 	/**
@@ -168,6 +185,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
 	/**
 	 * Pass in all the ground model infrastructure.
 	 * The caller should be careful calling this method instead of the other variant.
+	 * Children should favor overriding postInitGroundModel() instead of this.
 	 */
 	public void initGroundModel(Reasoner reasoner, GroundRuleStore groundRuleStore,
 			TermStore termStore, TermGenerator termGenerator,
@@ -183,11 +201,18 @@ public abstract class WeightLearningApplication implements ModelApplication {
 		this.atomManager = atomManager;
 		this.trainingMap = trainingMap;
 
+		if (config.getBoolean(RANDOM_WEIGHTS_KEY, RANDOM_WEIGHTS_DEFAULT)) {
+			initRandomWeights();
+		}
+
+		postInitGroundModel();
+
 		groundModelInit = true;
 	}
 
 	/**
 	 * Initialize all the infrastructure dealing with the ground model.
+	 * Children should favor overriding postInitGroundModel() instead of this.
 	 */
 	protected void initGroundModel() {
 		if (groundModelInit) {
@@ -225,8 +250,27 @@ public abstract class WeightLearningApplication implements ModelApplication {
 		int termCount = termGenerator.generateTerms(groundRuleStore, termStore);
 		log.debug("Generated {} objective terms from {} ground rules.", termCount, groundCount);
 
+		if (config.getBoolean(RANDOM_WEIGHTS_KEY, RANDOM_WEIGHTS_DEFAULT)) {
+			initRandomWeights();
+		}
+
+		postInitGroundModel();
+
 		groundModelInit = true;
 	}
+
+	private void initRandomWeights() {
+		log.trace("Randomly Weighted Rules:");
+		for (WeightedRule rule : mutableRules) {
+			rule.setWeight(rand.nextInt(MAX_RANDOM_WEIGHT) + 1);
+			log.trace("	" + rule.toString());
+		}
+	}
+
+	/**
+	 * A convenient place for children to do additional ground model initialization.
+	 */
+	 protected void postInitGroundModel() {}
 
 	/**
 	 * The same as initGroundModel, but for latent variables.

@@ -17,6 +17,8 @@
  */
 package org.linqs.psl.reasoner.function;
 
+import org.linqs.psl.model.atom.GroundAtom;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -69,10 +71,12 @@ public class FunctionSum implements Iterable<FunctionSummand>, FunctionTerm {
 	@Override
 	public double getValue() {
 		double val = 0.0;
+
 		// Use numeric for loops instead of iterators in high traffic code.
 		for (int i = 0; i < sum.size(); i++) {
 			val += sum.get(i).getValue();
 		}
+
 		return val;
 	}
 
@@ -95,6 +99,31 @@ public class FunctionSum implements Iterable<FunctionSummand>, FunctionTerm {
 			} else{
 				val += summand.getCoefficient() * values[valueIndex];
 				valueIndex++;
+			}
+		}
+
+		return val;
+	}
+
+	/**
+	 * Get the value of the sum, but replace the value of a single RVA with the given value.
+	 * This should only be called by people who really know what they are doing.
+	 * Note that the value of the RVA is NOT used, it is only used to find the matching function term.
+	 * The general version of would be to just have a map,
+	 * However, the common use case is just having one variable change value and this is typically
+	 * very high traffic making the map (and autoboxing double) overhead noticable.
+	 */
+	public double getValue(GroundAtom replacementAtom, double replacementValue) {
+		double val = 0.0;
+
+		// Use numeric for loops instead of iterators in high traffic code.
+		for (int i = 0; i < sum.size(); i++) {
+			// Only one instance of each atom exists and we are not tring to match a query atom.
+			if (sum.get(i).getTerm() instanceof MutableAtomFunctionVariable &&
+					((MutableAtomFunctionVariable)sum.get(i).getTerm()).getAtom() == replacementAtom) {
+				val += sum.get(i).getCoefficient() * replacementValue;
+			} else {
+				val += sum.get(i).getValue();
 			}
 		}
 

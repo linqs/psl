@@ -49,9 +49,7 @@ public class InitialWeightRandomGridSearch extends RandomGridSearch {
 	}
 
 	@Override
-	protected void initGroundModel() {
-		super.initGroundModel();
-
+	protected void postInitGroundModel() {
 		// Init the internal WLA.
 		internalWLA.initGroundModel(
 			this.reasoner,

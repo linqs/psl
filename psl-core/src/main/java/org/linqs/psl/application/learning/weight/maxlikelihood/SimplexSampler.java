@@ -28,11 +28,15 @@ public class SimplexSampler {
 	private final Random rand;
 
 	public SimplexSampler(int seed) {
-		rand = new Random(seed);
+		this(new Random(seed));
 	}
 
 	public SimplexSampler() {
-		rand = new Random();
+		this(new Random());
+	}
+
+	public SimplexSampler(Random rand) {
+		this.rand = rand;
 	}
 
 	/**

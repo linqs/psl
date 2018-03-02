@@ -89,7 +89,14 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
 	}
 
 	public double getTruthValue() {
-		return 1 - Math.max(getFunction().getValue(), 0.0);
+		return 1 - Math.max(function.getValue(), 0.0);
+	}
+
+	/**
+	 * See {@link FunctionSum#getValue(GroundAtom, double)}.
+	 */
+	public double getTruthValue(GroundAtom replacementAtom, double replacementValue) {
+		return 1 - Math.max(function.getValue(replacementAtom, replacementValue), 0.0);
 	}
 
 	public List<GroundAtom> getPositiveAtoms() {

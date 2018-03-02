@@ -95,16 +95,11 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 		if (minWidth <= 0) {
 			throw new IllegalArgumentException("Minimum width must be positive double.");
 		}
-	}
 
-	@Override
-	public void initGroundModel() {
-		// Force super to use a constraint blocker.
+		// Force initGroundModel to use a constraint blocker.
 		config.setProperty(GROUND_RULE_STORE_KEY, AtomRegisterGroundRuleStore.class.getName());
 		config.setProperty(TERM_STORE_KEY, ConstraintBlockerTermStore.class.getName());
 		config.setProperty(TERM_GENERATOR_KEY, ConstraintBlockerTermGenerator.class.getName());
-
-		super.initGroundModel();
 	}
 
 	/**
@@ -134,7 +129,7 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 			double[][] samples;
 			if (!bool) {
 				samples = new double[Math.max(numSamples * block.size(), 150)][];
-				SimplexSampler simplexSampler = new SimplexSampler();
+				SimplexSampler simplexSampler = new SimplexSampler(rand);
 				for (int sampleIndex = 0; sampleIndex < samples.length; sampleIndex++) {
 					samples[sampleIndex] = simplexSampler.getNext(samples.length);
 				}

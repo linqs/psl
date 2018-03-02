@@ -111,6 +111,11 @@ public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule i
 
 	@Override
 	public double getIncompatibility() {
+      return getIncompatibility(null, 0);
+	}
+
+	@Override
+	public double getIncompatibility(GroundAtom replacementAtom, double replacementValue) {
 		double sum = 0.0;
 		for (int i = 0; i < coeffs.length; i++) {
 			// Skip any special predicates.
@@ -118,7 +123,11 @@ public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule i
 				continue;
 			}
 
-			sum += coeffs[i] * atoms[i].getValue();
+			if (atoms[i] == replacementAtom) {
+				sum += coeffs[i] * replacementValue;
+			} else {
+				sum += coeffs[i] * atoms[i].getValue();
+			}
 		}
 		sum -= c;
 

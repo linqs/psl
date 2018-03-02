@@ -44,14 +44,6 @@ public class RandomGridSearch extends GridSearch {
 	public static final String MAX_LOCATIONS_KEY = CONFIG_PREFIX + ".maxlocations";
 	public static final int MAX_LOCATIONS_DEFAULT = 150;
 
-	/**
-	 * The seed to use for the location choosing RNG.
-	 */
-	public static final String SEED_KEY = CONFIG_PREFIX + ".seed";
-	public static final long SEED_DEFAULT = 4;
-
-	private Random rand;
-
 	public RandomGridSearch(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
 		this(model.getRules(), rvDB, observedDB, config);
 	}
@@ -66,7 +58,6 @@ public class RandomGridSearch extends GridSearch {
 		numLocations = Math.min(numLocations, maxLocations);
 
 		long seed = config.getLong(SEED_KEY, SEED_DEFAULT);
-		rand = new Random(seed);
 	}
 
 	@Override

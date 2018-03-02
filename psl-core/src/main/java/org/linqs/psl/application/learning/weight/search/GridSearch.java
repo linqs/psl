@@ -132,9 +132,7 @@ public class GridSearch extends WeightLearningApplication {
 	}
 
 	@Override
-	protected void initGroundModel() {
-		super.initGroundModel();
-
+	protected void postInitGroundModel() {
 		// If we are dealing with an ADMMReasoner, then set its max iterations.
 		if (reasoner instanceof ADMMReasoner) {
 			ADMMReasoner admmReasoner = (ADMMReasoner)reasoner;

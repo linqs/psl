@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.model.rule;
 
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.reasoner.function.FunctionTerm;
 
 public interface WeightedGroundRule extends GroundRule {
@@ -44,4 +45,12 @@ public interface WeightedGroundRule extends GroundRule {
 	 * Incompatibility is always non-negative.
 	 */
 	public double getIncompatibility();
+
+	/**
+	 * Returns the incompatibility of the truth values of this GroundRule's GroundAtoms given
+	 * the replacment of a single atom's value with another value.
+	 * This method should only be used by callers that really know what they are doing.
+	 * Incompatibility is always non-negative.
+	 */
+	public double getIncompatibility(GroundAtom replacementAtom, double replacementValue);
 }

@@ -78,6 +78,12 @@ public class WeightedGroundLogicalRule extends AbstractGroundLogicalRule impleme
 	}
 
 	@Override
+	public double getIncompatibility(GroundAtom replacementAtom, double replacementValue) {
+		double inc = 1.0 - getTruthValue(replacementAtom, replacementValue);
+		return (squared) ? inc * inc : inc;
+	}
+
+	@Override
 	public String toString() {
 		return "" + getWeight() + ": " + super.toString() + ((squared) ? " ^2" : "");
 	}
