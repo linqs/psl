@@ -122,6 +122,7 @@ public class MaxPiecewisePseudoLikelihood extends VotedPerceptron {
 		setLabeledRandomVariables();
 
 		Parallel.count(mutableRules.size(), new Parallel.Worker<Integer>() {
+			@Override
 			public void work(int ruleIndex, Integer ignore) {
 				WeightedRule rule = mutableRules.get(ruleIndex);
 				Map<RandomVariableAtom, List<WeightedGroundRule>> groundRuleMap = ruleRandomVariableMap.get(ruleIndex);
