@@ -71,7 +71,7 @@ public class H2DatabaseDriver implements DatabaseDriver {
 
 		HikariConfig config = new HikariConfig();
 		config.setJdbcUrl(connectionString);
-		config.setMaximumPoolSize(Math.min(8, Parallel.NUM_THREADS * 2));
+		config.setMaximumPoolSize(Math.max(8, Parallel.NUM_THREADS * 2));
 		dataSource = new HikariDataSource(config);
 
 		// Clear the database if specified
