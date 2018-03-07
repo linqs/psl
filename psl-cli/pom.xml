@@ -38,11 +38,6 @@
 		</dependency>
 		<dependency>
 			<groupId>org.linqs</groupId>
-			<artifactId>psl-evaluation</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.linqs</groupId>
 			<artifactId>psl-parser</artifactId>
 			<version>${project.version}</version>
 		</dependency>
