@@ -35,7 +35,6 @@ import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Implication;
 import org.linqs.psl.model.formula.Negation;
 import org.linqs.psl.model.predicate.Predicate;
-import org.linqs.psl.model.predicate.PredicateFactory;
 import org.linqs.psl.model.predicate.SpecialPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
@@ -106,9 +105,8 @@ public class TestModelFactory {
 		predicatesInfo.put("Friends", new ConstantType[]{ConstantType.UniqueStringID, ConstantType.UniqueStringID});
 
 		Map<String, StandardPredicate> predicates = new HashMap<String, StandardPredicate>();
-		PredicateFactory predicateFactory = PredicateFactory.getFactory();
 		for (Map.Entry<String, ConstantType[]> predicateEntry : predicatesInfo.entrySet()) {
-			StandardPredicate predicate = predicateFactory.createStandardPredicate(predicateEntry.getKey(), predicateEntry.getValue());
+			StandardPredicate predicate = StandardPredicate.get(predicateEntry.getKey(), predicateEntry.getValue());
 			predicates.put(predicateEntry.getKey(), predicate);
 		}
 

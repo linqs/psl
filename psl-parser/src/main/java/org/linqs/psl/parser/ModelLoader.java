@@ -27,7 +27,6 @@ import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.formula.Implication;
 import org.linqs.psl.model.formula.Negation;
 import org.linqs.psl.model.predicate.Predicate;
-import org.linqs.psl.model.predicate.PredicateFactory;
 import org.linqs.psl.model.predicate.SpecialPredicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.arithmetic.UnweightedArithmeticRule;
@@ -560,7 +559,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 
 	@Override
 	public SummationAtomOrAtom visitSummationAtom(SummationAtomContext ctx) {
-		Predicate p = visitPredicate(ctx.predicate());
+		Predicate predicate = visitPredicate(ctx.predicate());
 
 		// We have strange numbering because of the predicate, parens, commas.
 		SummationVariableOrTerm[] args = new SummationVariableOrTerm[ctx.getChildCount() / 2 - 1];
@@ -584,14 +583,14 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 		}
 
 		if (isSummation) {
-			return new SummationAtom(p, args);
+			return new SummationAtom(predicate, args);
 		} else {
 			Term[] termArgs = new Term[args.length];
 			for (int i = 0; i < termArgs.length; i++) {
 				termArgs[i] = (Term)args[i];
 			}
 
-			return new QueryAtom(p, termArgs);
+			return new QueryAtom(predicate, termArgs);
 		}
 	}
 
@@ -766,28 +765,28 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	@Override
 	public Atom visitAtom(AtomContext ctx) {
 		if (ctx.predicate() != null) {
-			Predicate p = visitPredicate(ctx.predicate());
+			Predicate predicate = visitPredicate(ctx.predicate());
 			Term[] args = new Term[ctx.term().size()];
 			for (int i = 0; i < args.length; i++) {
 				args[i] = (Term) visit(ctx.term(i));
 			}
-			return new QueryAtom(p, args);
+			return new QueryAtom(predicate, args);
 		}
 		else if (ctx.termOperator() != null) {
-			SpecialPredicate p;
+			SpecialPredicate predicate;
 			if (ctx.termOperator().notEqual() != null) {
-				p = SpecialPredicate.NotEqual;
+				predicate = SpecialPredicate.NotEqual;
 			}
 			else if (ctx.termOperator().termEqual() != null) {
-				p = SpecialPredicate.Equal;
+				predicate = SpecialPredicate.Equal;
 			}
 			else if (ctx.termOperator().nonSymmetric() != null) {
-				p = SpecialPredicate.NonSymmetric;
+				predicate = SpecialPredicate.NonSymmetric;
 			}
 			else {
 				throw new IllegalStateException();
 			}
-			return new QueryAtom(p, (Term) visit(ctx.term(0)), (Term) visit(ctx.term(1)));
+			return new QueryAtom(predicate, (Term) visit(ctx.term(0)), (Term) visit(ctx.term(1)));
 		}
 		else {
 			throw new IllegalStateException();
@@ -796,11 +795,9 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 
 	@Override
 	public Predicate visitPredicate(PredicateContext ctx) {
-		PredicateFactory pf = PredicateFactory.getFactory();
-		Predicate p = pf.getPredicate(ctx.IDENTIFIER().getText());
-
-		if (p != null) {
-			return p;
+		Predicate predicate = Predicate.get(ctx.IDENTIFIER().getText());
+		if (predicate != null) {
+			return predicate;
 		} else {
 			throw new IllegalStateException("Undefined predicate " + ctx.IDENTIFIER().getText());
 		}

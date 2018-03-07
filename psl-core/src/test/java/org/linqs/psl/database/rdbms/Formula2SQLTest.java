@@ -34,7 +34,7 @@ import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.formula.Implication;
 import org.linqs.psl.model.function.ExternalFunction;
 import org.linqs.psl.model.predicate.Predicate;
-import org.linqs.psl.model.predicate.PredicateFactory;
+import org.linqs.psl.model.predicate.ExternalFunctionalPredicate;
 import org.linqs.psl.model.predicate.SpecialPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
@@ -54,9 +54,8 @@ public class Formula2SQLTest {
 	public void testUnaryExternalFunction() {
 		TestModelFactory.ModelInformation info = TestModelFactory.getModel();
 
-		PredicateFactory predicateFactory = PredicateFactory.getFactory();
 		SpyFunction function = new SpyFunction(1);
-		Predicate functionPredicate = predicateFactory.createExternalFunctionalPredicate("UnaryFunction", function);
+		Predicate functionPredicate = ExternalFunctionalPredicate.get("UnaryFunction", function);
 
 		// Add a rule using the new function.
 		// 10: Person(A) & Person(B) & UnaryFunction(A) & UnaryFunction(B) & (A - B) -> Friends(A, B) ^2
@@ -108,9 +107,8 @@ public class Formula2SQLTest {
 	public void testTernaryExternalFunction() {
 		TestModelFactory.ModelInformation info = TestModelFactory.getModel();
 
-		PredicateFactory predicateFactory = PredicateFactory.getFactory();
 		SpyFunction function = new SpyFunction(3);
-		Predicate functionPredicate = predicateFactory.createExternalFunctionalPredicate("TernaryFunction", function);
+		Predicate functionPredicate = ExternalFunctionalPredicate.get("TernaryFunction", function);
 
 		// Add a rule using the new function.
 		// 10: Person(A) & Person(B) & TernaryFunction(A, B, A) & (A - B) -> Friends(A, B) ^2

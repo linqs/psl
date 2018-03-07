@@ -26,7 +26,6 @@ import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
-import org.linqs.psl.model.predicate.PredicateFactory;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
@@ -51,8 +50,7 @@ public abstract class EvaluatorTest<T extends Evaluator> {
 		dataStore = new RDBMSDataStore(new H2DatabaseDriver(
 				H2DatabaseDriver.Type.Memory, this.getClass().getName(), true), new EmptyBundle());
 
-		PredicateFactory factory = PredicateFactory.getFactory();
-		predicate = factory.createStandardPredicate(
+		predicate = StandardPredicate.get(
 				"DiscretePredictionComparatorTest_same"
 				, new ConstantType[]{ConstantType.UniqueIntID, ConstantType.UniqueIntID}
 			);

@@ -20,7 +20,6 @@ package org.linqs.psl.cli;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.loading.Inserter;
-import org.linqs.psl.model.predicate.PredicateFactory;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.ConstantType;
 
@@ -48,7 +47,6 @@ public class DataLoader {
 		}
 
 		Set<StandardPredicate> closed = new HashSet<StandardPredicate>();
-		PredicateFactory predicateFactory = PredicateFactory.getFactory();
 
 		for (Entry<String, String> predicateSpec : ((Map<String,String>)yamlMap.get("predicates")).entrySet()) {
 			// parse the predicate/args part
@@ -70,7 +68,7 @@ public class DataLoader {
 					args[i] = ConstantType.UniqueStringID;
 				}
 			}
-			StandardPredicate predicate = predicateFactory.createStandardPredicate(predicateStr, args);
+			StandardPredicate predicate = StandardPredicate.get(predicateStr, args);
 			datastore.registerPredicate(predicate);
 
 			// check if closed
@@ -95,15 +93,13 @@ public class DataLoader {
 				continue;
 			}
 
-			PredicateFactory predicateFactory = PredicateFactory.getFactory();
-
 			// Find files to load into this partition.
 			Partition partition = datastore.getPartition(partitionName);
 
 			for (Entry<String,Object> loadSpec : ((Map<String,Object>)yamlMap.get(partitionName)).entrySet()) {
 				log.debug("Loading data for {} ({} partition)", loadSpec.getKey(), partitionName);
 
-				StandardPredicate predicate = (StandardPredicate)predicateFactory.getPredicate(loadSpec.getKey());
+				StandardPredicate predicate = StandardPredicate.get(loadSpec.getKey());
 				Inserter insert = datastore.getInserter(predicate, partition);
 
 				if (loadSpec.getValue() instanceof String) {

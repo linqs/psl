@@ -34,9 +34,9 @@ import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.function.ExternalFunction;
+import org.linqs.psl.model.predicate.ExternalFunctionalPredicate;
 import org.linqs.psl.model.predicate.FunctionalPredicate;
 import org.linqs.psl.model.predicate.Predicate;
-import org.linqs.psl.model.predicate.PredicateFactory;
 import org.linqs.psl.model.predicate.SpecialPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
@@ -60,11 +60,11 @@ import java.util.Set;
  * Contract tests for classes that implement {@link DataStore}.
  */
 public abstract class DataStoreContractTest {
-	private static StandardPredicate p1;
-	private static StandardPredicate p2;
-	private static StandardPredicate p3;
-	private static StandardPredicate p4;
-	private static FunctionalPredicate functionalPredicate1;
+	private StandardPredicate p1;
+	private StandardPredicate p2;
+	private StandardPredicate p3;
+	private StandardPredicate p4;
+	private FunctionalPredicate functionalPredicate1;
 
 	private DataStore datastore;
 
@@ -88,14 +88,17 @@ public abstract class DataStoreContractTest {
 	 */
 	public abstract void cleanUp();
 
-	static {
-		PredicateFactory predicateFactory = PredicateFactory.getFactory();
-		p1 = predicateFactory.createStandardPredicate("P1", ConstantType.UniqueIntID, ConstantType.UniqueIntID);
-		p2 = predicateFactory.createStandardPredicate("P2", ConstantType.String, ConstantType.String);
-		p3 = predicateFactory.createStandardPredicate("P3", ConstantType.Double, ConstantType.Double);
-		p4 = predicateFactory.createStandardPredicate("P4", ConstantType.UniqueIntID, ConstantType.Double);
+	@Before
+	public void setUp() throws Exception {
+		datastore = getDataStore(true);
+		dbs = new LinkedList<Database>();
 
-		functionalPredicate1 = predicateFactory.createExternalFunctionalPredicate("FP1", new ExternalFunction() {
+		p1 = StandardPredicate.get("P1", ConstantType.UniqueIntID, ConstantType.UniqueIntID);
+		p2 = StandardPredicate.get("P2", ConstantType.String, ConstantType.String);
+		p3 = StandardPredicate.get("P3", ConstantType.Double, ConstantType.Double);
+		p4 = StandardPredicate.get("P4", ConstantType.UniqueIntID, ConstantType.Double);
+
+		functionalPredicate1 = ExternalFunctionalPredicate.get("FP1", new ExternalFunction() {
 			@Override
 			public double getValue(ReadOnlyDatabase db, Constant... args) {
 				double a = ((DoubleAttribute) args[0]).getValue();
@@ -113,13 +116,13 @@ public abstract class DataStoreContractTest {
 			public ConstantType[] getArgumentTypes() {
 				return new ConstantType[] {ConstantType.Double, ConstantType.Double};
 			}
-		});
-	}
 
-	@Before
-	public void setUp() throws Exception {
-		datastore = getDataStore(true);
-		dbs = new LinkedList<Database>();
+			// Hack for testing.
+			@Override
+			public boolean equals(Object other) {
+				return true;
+			}
+		});
 	}
 
 	@After

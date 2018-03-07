@@ -22,11 +22,9 @@ import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
 
 public interface ExternalFunction {
-
 	public double getValue(ReadOnlyDatabase db, Constant... args);
-	
+
 	public int getArity();
-	
+
 	public ConstantType[] getArgumentTypes();
-	
 }

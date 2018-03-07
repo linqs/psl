@@ -19,34 +19,12 @@ package org.linqs.psl.database;
 
 import static org.junit.Assert.assertEquals;
 
-import org.linqs.psl.config.EmptyBundle;
-import org.linqs.psl.database.DataStore;
-import org.linqs.psl.database.Database;
-import org.linqs.psl.database.DatabasePopulator;
-import org.linqs.psl.database.DatabaseQuery;
-import org.linqs.psl.database.ResultList;
 import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.PostgreSQLDriver;
-import org.linqs.psl.model.atom.QueryAtom;
-import org.linqs.psl.model.formula.Formula;
-import org.linqs.psl.model.predicate.PredicateFactory;
-import org.linqs.psl.model.predicate.StandardPredicate;
-import org.linqs.psl.model.term.Constant;
-import org.linqs.psl.model.term.ConstantType;
-import org.linqs.psl.model.term.DoubleAttribute;
-import org.linqs.psl.model.term.StringAttribute;
-import org.linqs.psl.model.term.UniqueIntID;
-import org.linqs.psl.model.term.Variable;
 
 import java.io.File;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 
 public class DatabaseTestUtil {
 	private static final String PERSISTED_DB_SUFFIX = String.format("%06d", (int)(Math.random() * 1000000));

@@ -31,7 +31,6 @@ import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.PostgreSQLDriver;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.formula.Formula;
-import org.linqs.psl.model.predicate.PredicateFactory;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
@@ -54,9 +53,8 @@ public class DatabasePopulatorTest {
 	private static StandardPredicate p2;
 
 	static {
-		PredicateFactory predicateFactory = PredicateFactory.getFactory();
-		p1 = predicateFactory.createStandardPredicate("DatabasePopulatorTest_P1", ConstantType.UniqueIntID, ConstantType.UniqueIntID);
-		p2 = predicateFactory.createStandardPredicate("DatabasePopulatorTest_P2", ConstantType.String, ConstantType.Double);
+		p1 = StandardPredicate.get("DatabasePopulatorTest_P1", ConstantType.UniqueIntID, ConstantType.UniqueIntID);
+		p2 = StandardPredicate.get("DatabasePopulatorTest_P2", ConstantType.String, ConstantType.Double);
 	}
 
 	@Test

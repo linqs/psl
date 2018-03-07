@@ -25,21 +25,18 @@ import org.linqs.psl.model.term.UniqueIntID;
 import org.linqs.psl.model.term.UniqueStringID;
 
 /**
- * A commonly used FunctionalPredicate.
- *
- * All specific subclasses/instances are provided here.
+ * Commonly used FunctionalPredicates that get special treatment in PSL..
  *
  * A SpecialPredicate should be preferred over a user-made FunctionalPredicate
  * or ExternalFunctionalPredicate because some PSL components can evaluate
- * SpecialPredicates more efficiently. For example, a database backed
- * by a relational database with an SQL interface might translate some
- * SpecialPredicates directly to SQL.
+ * SpecialPredicates more efficiently.
+ * For example, some special predicate may be able to be translated directly into SQL.
  *
  * The names of SpecialPredicates begin with '#'.
  */
 public abstract class SpecialPredicate extends FunctionalPredicate {
 	private SpecialPredicate(String name, ConstantType[] types) {
-		super(name, types);
+		super(name, types, false);
 	}
 
 	/**

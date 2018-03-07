@@ -32,7 +32,6 @@ import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Implication;
 import org.linqs.psl.model.formula.Negation;
-import org.linqs.psl.model.predicate.PredicateFactory;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.Variable;
@@ -59,15 +58,13 @@ public class AbstractLogicalRuleTest {
 		config = new EmptyBundle();
 		dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Memory, this.getClass().getName(), true), config);
 
-		PredicateFactory factory = PredicateFactory.getFactory();
-
-		singleClosed = factory.createStandardPredicate("SingleClosed", ConstantType.UniqueStringID);
+		singleClosed = StandardPredicate.get("SingleClosed", ConstantType.UniqueStringID);
 		dataStore.registerPredicate(singleClosed);
 
-		doubleClosed = factory.createStandardPredicate("DoubleClosed", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
+		doubleClosed = StandardPredicate.get("DoubleClosed", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
 		dataStore.registerPredicate(doubleClosed);
 
-		singleOpened = factory.createStandardPredicate("SingleOpened", ConstantType.UniqueStringID);
+		singleOpened = StandardPredicate.get("SingleOpened", ConstantType.UniqueStringID);
 		dataStore.registerPredicate(singleOpened);
 
 		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
