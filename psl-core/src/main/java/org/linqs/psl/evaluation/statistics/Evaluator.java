@@ -25,8 +25,9 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 /**
  * Compute some metric (or set of matrics) for some predicted and labeled data.
  * Every evaluator will have some "representative metric" that is usually set through config options.
+ * For example, a discrete Evaluator may have F1 as its representative metric.
  * This is so that more automated methods like search-based weight learning and CLI evaluation
- * can easily access all types of metrics.
+ * can easily access all types of metrics through a common interface.
  * The evaluator will also have to provide some indication as to if higher values for the
  * representative metric is better than lower values.
  * In addition to the representative metric, subclasses classes will usually
