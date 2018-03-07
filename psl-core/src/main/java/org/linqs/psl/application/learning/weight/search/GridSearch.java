@@ -194,13 +194,13 @@ public class GridSearch extends WeightLearningApplication {
 	 * By default, it just computes the expected incompatibility and calls the objective function.
 	 */
 	protected double inspectLocation(double[] weights) {
-			// Reset the RVAs to default values.
-			setDefaultRandomVariables();
+		// Reset the RVAs to default values.
+		setDefaultRandomVariables();
 
-			// Computes the expected incompatibility.
-			computeExpectedIncompatibility();
+		// Computes the expected incompatibility.
+		computeExpectedIncompatibility();
 
-			return objectiveFunction.compute(mutableRules, observedIncompatibility, expectedIncompatibility, trainingMap);
+		return objectiveFunction.compute(mutableRules, observedIncompatibility, expectedIncompatibility, trainingMap);
 	}
 
 	/**
