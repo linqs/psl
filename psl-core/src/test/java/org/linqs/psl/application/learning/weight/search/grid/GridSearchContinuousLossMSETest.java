@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2017 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.learning.weight.search;
+package org.linqs.psl.application.learning.weight.search.grid;
 
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningTest;
+import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
 
-public class GridSearchTest extends WeightLearningTest {
+public class GridSearchContinuousLossMSETest extends WeightLearningTest {
+	public GridSearchContinuousLossMSETest() {
+		super();
+		assertBaseTest = false;
+		assertFriendshipRankTest = false;
+	}
+
 	@Override
 	protected WeightLearningApplication getWLA() {
 		// Narrow the search space for tests.
 		info.config.setProperty(GridSearch.POSSIBLE_WEIGHTS_KEY, "0.01:1:10");
+
+		// Use MSE as an objective.
+		info.config.setProperty(GridSearch.OBJECTIVE_KEY, ContinuousEvaluator.class.getName());
+		info.config.setProperty(ContinuousEvaluator.REPRESENTATIVE_KEY, "MSE");
 
 		return new GridSearch(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB, info.config);
 	}

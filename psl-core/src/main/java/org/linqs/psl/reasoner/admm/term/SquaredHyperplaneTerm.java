@@ -113,6 +113,11 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
 		L = null;
 	}
 
+	@Override
+	public float getWeight() {
+		return weight;
+	}
+
 	/**
 	 * Minimizes the weighted, squared hyperplane <br />
 	 * argmin weight * (coeffs^T * x - constant)^2 + stepSize/2 * \|x - z + y / stepSize \|_2^2

@@ -23,4 +23,6 @@ public interface WeightedTerm extends Term {
 	 * Typically called during weight learning.
 	 */
 	public void setWeight(float value);
+
+	public float getWeight();
 }

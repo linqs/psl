@@ -102,6 +102,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
 
 	protected ConfigBundle config;
 	protected boolean supportsLatentVariables;
+	// TODO(eriq): Move all randoms to util.MathUtils.
 	protected Random rand;
 
 	protected Database rvDB;

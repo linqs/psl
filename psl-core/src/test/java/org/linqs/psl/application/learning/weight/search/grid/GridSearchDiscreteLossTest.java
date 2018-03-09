@@ -15,16 +15,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.learning.weight.search;
+package org.linqs.psl.application.learning.weight.search.grid;
 
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningTest;
-import org.linqs.psl.application.learning.weight.search.objective.DiscreteObjective;
+import org.linqs.psl.evaluation.statistics.DiscreteEvaluator;
 
 public class GridSearchDiscreteLossTest extends WeightLearningTest {
 	public GridSearchDiscreteLossTest() {
 		super();
 		assertBaseTest = false;
+		assertFriendshipRankTest = false;
 	}
 
 	@Override
@@ -33,8 +34,7 @@ public class GridSearchDiscreteLossTest extends WeightLearningTest {
 		info.config.setProperty(GridSearch.POSSIBLE_WEIGHTS_KEY, "0.01:1:10");
 
 		// Use MAE as an objective.
-		info.config.setProperty(GridSearch.OBJECTIVE_KEY, DiscreteObjective.class.getName());
-		info.config.setProperty(DiscreteObjective.STAT_KEY, DiscreteObjective.STAT_F1);
+		info.config.setProperty(GridSearch.OBJECTIVE_KEY, DiscreteEvaluator.class.getName());
 
 		return new GridSearch(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB, info.config);
 	}

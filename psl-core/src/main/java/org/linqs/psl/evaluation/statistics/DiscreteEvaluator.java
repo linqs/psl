@@ -98,6 +98,11 @@ public class DiscreteEvaluator extends Evaluator {
 	}
 
 	@Override
+	public void compute(TrainingMap trainingMap) {
+		compute(trainingMap, null);
+	}
+
+	@Override
 	public void compute(TrainingMap trainingMap, StandardPredicate predicate) {
 		tp = 0;
 		fn = 0;
@@ -105,18 +110,18 @@ public class DiscreteEvaluator extends Evaluator {
 		fp = 0;
 
 		for (Map.Entry<GroundAtom, GroundAtom> entry : trainingMap.getFullMap()) {
-			if (entry.getKey().getPredicate() != predicate) {
+			if (predicate != null && entry.getKey().getPredicate() != predicate) {
 				continue;
 			}
 
 			boolean expected = (entry.getValue().getValue() >= threshold);
-			boolean predicated = (entry.getKey().getValue() >= threshold);
+			boolean predicted = (entry.getKey().getValue() >= threshold);
 
-			if (predicated && expected) {
+			if (predicted && expected) {
 				tp++;
-			} else if (!predicated && expected) {
+			} else if (!predicted && expected) {
 				fn++;
-			} else if (predicated && !expected) {
+			} else if (predicted && !expected) {
 				fp++;
 			} else {
 				tn++;

@@ -32,12 +32,21 @@ import org.linqs.psl.model.predicate.StandardPredicate;
  * representative metric is better than lower values.
  * In addition to the representative metric, subclasses classes will usually
  * provide their own methods to access specific metrics.
+ *
+ * One of the compute methods must be called before attempting to get statistics.
  */
 public abstract class Evaluator {
 	/**
-	 * The main computation method.
+	 * One of the main computation method.
 	 * This must be called before any of the metric retrival methods.
 	 * Only values in the TrainingMap are computed over.
+	 */
+	public abstract void compute(TrainingMap data);
+
+	/**
+	 * One of the main computation method.
+	 * This must be called before any of the metric retrival methods.
+	 * Only values in the TrainingMap matching the given predicate are computed over.
 	 */
 	public abstract void compute(TrainingMap data, StandardPredicate predicate);
 

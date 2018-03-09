@@ -96,12 +96,17 @@ public class RankingEvaluator extends Evaluator {
 	}
 
 	@Override
+	public void compute(TrainingMap trainingMap) {
+		compute(trainingMap, null);
+	}
+
+	@Override
 	public void compute(TrainingMap trainingMap, StandardPredicate predicate) {
 		truth = new ArrayList<GroundAtom>(trainingMap.getTrainingMap().size());
 		predicted = new ArrayList<GroundAtom>(trainingMap.getTrainingMap().size());
 
 		for (Map.Entry<GroundAtom, GroundAtom> entry : trainingMap.getFullMap()) {
-			if (entry.getKey().getPredicate() != predicate) {
+			if (predicate != null && entry.getKey().getPredicate() != predicate) {
 				continue;
 			}
 

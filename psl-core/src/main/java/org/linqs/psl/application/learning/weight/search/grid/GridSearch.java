@@ -15,16 +15,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.learning.weight.search;
+package org.linqs.psl.application.learning.weight.search.grid;
 
-import org.linqs.psl.application.learning.weight.search.objective.LossObjective;
-import org.linqs.psl.application.learning.weight.search.objective.ObjectiveFunction;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
+import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.admm.ADMMReasoner;
+import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
 import org.linqs.psl.util.StringUtils;
 
 import org.slf4j.Logger;
@@ -57,10 +58,10 @@ public class GridSearch extends WeightLearningApplication {
 	public static final String POSSIBLE_WEIGHTS_DEFAULT = "0.001:0.01:0.1:1:10";
 
 	/**
-	 * The objective function to use.
+	 * The evaluation method to use as an objective.
 	 */
 	public static final String OBJECTIVE_KEY = CONFIG_PREFIX + ".objective";
-	public static final String OBJECTIVE_DEFAULT = LossObjective.class.getName();
+	public static final String OBJECTIVE_DEFAULT = ContinuousEvaluator.class.getName();
 
 	/**
 	 * The max number of ADMM iterations to spend on each location.
@@ -95,7 +96,7 @@ public class GridSearch extends WeightLearningApplication {
 	 */
 	protected int numLocations;
 
-	protected ObjectiveFunction objectiveFunction;
+	protected Evaluator objectiveFunction;
 
 	/**
 	 * The objectives at each location.
@@ -116,7 +117,7 @@ public class GridSearch extends WeightLearningApplication {
 			throw new IllegalArgumentException("No weights provided for grid search.");
 		}
 
-		objectiveFunction = (ObjectiveFunction)config.getNewObject(OBJECTIVE_KEY, OBJECTIVE_DEFAULT);
+		objectiveFunction = (Evaluator)config.getNewObject(OBJECTIVE_KEY, OBJECTIVE_DEFAULT);
 
 		admmIterations = config.getInt(ADMM_ITERATIONS_KEY, ADMM_ITERATIONS_DEFAULT);
 		if (admmIterations < 1) {
@@ -191,16 +192,26 @@ public class GridSearch extends WeightLearningApplication {
 	 * The rules have already been set with the given weights, they are only passed in so the method
 	 * has a chance to modify them before the result is stored.
 	 * This is a prime method for child classes to override.
-	 * By default, it just computes the expected incompatibility and calls the objective function.
+	 * Implementers should make sure to correct (negate) the value that comes back from the Evaluator
+	 * if lower is better for that evaluator.
 	 */
 	protected double inspectLocation(double[] weights) {
 		// Reset the RVAs to default values.
 		setDefaultRandomVariables();
 
+		if (termStore instanceof ADMMTermStore) {
+			((ADMMTermStore)termStore).resetLocalVairables();
+		}
+
 		// Computes the expected incompatibility.
 		computeExpectedIncompatibility();
 
-		return objectiveFunction.compute(mutableRules, observedIncompatibility, expectedIncompatibility, trainingMap);
+		objectiveFunction.compute(trainingMap);
+
+		double score = objectiveFunction.getRepresentativeMetric();
+		score = objectiveFunction.isHigherRepresentativeBetter() ? score : -1.0 * score;
+
+		return score;
 	}
 
 	/**

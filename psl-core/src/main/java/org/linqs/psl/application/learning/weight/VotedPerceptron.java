@@ -19,6 +19,8 @@ package org.linqs.psl.application.learning.weight;
 
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
+import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 
@@ -114,6 +116,13 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	public static final String NUM_STEPS_KEY = CONFIG_PREFIX + ".numsteps";
 	public static final int NUM_STEPS_DEFAULT = 25;
 
+	/**
+	 * The evaluation method to get stats for each iteration.
+	 * This is only used for logging/information, and not for gradients.
+	 */
+	public static final String EVALUATOR_KEY = CONFIG_PREFIX + ".evaluator";
+	public static final String EVALUATOR_DEFAULT = ContinuousEvaluator.class.getName();
+
 	protected final double baseStepSize;
 	protected final double l2Regularization;
 	protected final double l1Regularization;
@@ -121,7 +130,10 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 
 	protected boolean averageSteps;
 	protected double inertia;
+	protected final int maxNumSteps;
 	protected int numSteps;
+
+	private Evaluator evaluator;
 
 	/**
 	 * Learning loss at the current point
@@ -143,6 +155,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 		}
 
 		numSteps = config.getInt(NUM_STEPS_KEY, NUM_STEPS_DEFAULT);
+		maxNumSteps = numSteps;
 		if (numSteps <= 0) {
 			throw new IllegalArgumentException("Number of steps must be positive.");
 		}
@@ -156,6 +169,8 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 		if (l1Regularization < 0) {
 			throw new IllegalArgumentException("L1 regularization parameter must be non-negative.");
 		}
+
+		evaluator = (Evaluator)config.getNewObject(EVALUATOR_KEY, EVALUATOR_DEFAULT);
 
 		scaleGradient = config.getBoolean(SCALE_GRADIENT_KEY, SCALE_GRADIENT_DEFAULT);
 		averageSteps = config.getBoolean(AVERAGE_STEPS_KEY, AVERAGE_STEPS_DEFAULT);
@@ -217,6 +232,13 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 
 			log.debug("Iteration {} complete. Likelihood: {}.", step, currentLoss);
 			log.trace("Model {} ", mutableRules);
+
+			if (log.isTraceEnabled() && evaluator != null) {
+				evaluator.compute(trainingMap);
+				double score = evaluator.getRepresentativeMetric();
+				score = evaluator.isHigherRepresentativeBetter() ? -1.0 * score : score;
+				log.trace("Objective: {}", score);
+			}
 		}
 
 		// Sets the weights to their averages.
@@ -264,5 +286,9 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 		}
 
 		return factor;
+	}
+
+	public void setBudget(double budget) {
+		numSteps = (int)Math.ceil(budget * maxNumSteps);
 	}
 }

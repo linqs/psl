@@ -15,27 +15,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.learning.weight.search;
+package org.linqs.psl.application.learning.weight.search.grid;
 
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningTest;
-import org.linqs.psl.application.learning.weight.search.objective.ContinuousObjective;
 
-public class GridSearchContinuousLossMAETest extends WeightLearningTest {
-	public GridSearchContinuousLossMAETest() {
+public class GuidedRandomGridSearchTest extends WeightLearningTest {
+	public GuidedRandomGridSearchTest() {
 		super();
 		assertBaseTest = false;
+		assertFriendshipRankTest = false;
 	}
 
 	@Override
 	protected WeightLearningApplication getWLA() {
 		// Narrow the search space for tests.
-		info.config.setProperty(GridSearch.POSSIBLE_WEIGHTS_KEY, "0.01:1:10");
+		info.config.setProperty(RandomGridSearch.MAX_LOCATIONS_KEY, 100);
 
-		// Use MAE as an objective.
-		info.config.setProperty(GridSearch.OBJECTIVE_KEY, ContinuousObjective.class.getName());
-		info.config.setProperty(ContinuousObjective.STAT_KEY, ContinuousObjective.STAT_MAE);
-
-		return new GridSearch(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB, info.config);
+		return new GuidedRandomGridSearch(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB, info.config);
 	}
 }

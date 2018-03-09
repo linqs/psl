@@ -76,13 +76,18 @@ public class ContinuousEvaluator extends Evaluator {
 	}
 
 	@Override
+	public void compute(TrainingMap trainingMap) {
+		compute(trainingMap, null);
+	}
+
+	@Override
 	public void compute(TrainingMap trainingMap, StandardPredicate predicate) {
 		count = 0;
 		absoluteError = 0.0;
 		squaredError = 0.0;
 
 		for (Map.Entry<GroundAtom, GroundAtom> entry : trainingMap.getFullMap()) {
-			if (entry.getKey().getPredicate() != predicate) {
+			if (predicate != null && entry.getKey().getPredicate() != predicate) {
 				continue;
 			}
 

@@ -71,15 +71,22 @@ public class CategoricalEvaluator extends Evaluator {
 	public static final String REPRESENTATIVE_KEY = CONFIG_PREFIX + ".representative";
 	public static final String DEFAULT_REPRESENTATIVE = "ACCURACY";
 
+	/**
+	 * The default predicate to use when none are supplied.
+	 */
+	public static final String DEFAULT_PREDICATE_KEY = CONFIG_PREFIX + ".defaultpredicate";
+
 	private Set<Integer> categoryIndexes;
 	private RepresentativeMetric representative;
+	private String defaultPredicate;
 
 	private int hits;
 	private int misses;
 
 	public CategoricalEvaluator(ConfigBundle config) {
-		this(config.getString(REPRESENTATIVE_KEY, DEFAULT_REPRESENTATIVE),
-			  StringUtils.splitInt(config.getString(CATEGORY_INDEXES_KEY, DEFAULT_CATEGORY_INDEXES), DELIM));
+		this(RepresentativeMetric.valueOf(config.getString(REPRESENTATIVE_KEY, DEFAULT_REPRESENTATIVE)),
+				config,
+				StringUtils.splitInt(config.getString(CATEGORY_INDEXES_KEY, DEFAULT_CATEGORY_INDEXES), DELIM));
 	}
 
 	public CategoricalEvaluator() {
@@ -91,12 +98,17 @@ public class CategoricalEvaluator extends Evaluator {
 	}
 
 	public CategoricalEvaluator(String representative, int... rawCategoryIndexes) {
-		this(RepresentativeMetric.valueOf(representative.toUpperCase()), rawCategoryIndexes);
+		this(RepresentativeMetric.valueOf(representative.toUpperCase()), null, rawCategoryIndexes);
 	}
 
-	public CategoricalEvaluator(RepresentativeMetric representative, int... rawCategoryIndexes) {
+	public CategoricalEvaluator(RepresentativeMetric representative, ConfigBundle config, int... rawCategoryIndexes) {
 		this.representative = representative;
 		setCategoryIndexes(rawCategoryIndexes);
+
+		defaultPredicate = null;
+		if (config != null) {
+			defaultPredicate = config.getString(DEFAULT_PREDICATE_KEY, null);
+		}
 
 		hits = 0;
 		misses = 0;
@@ -118,6 +130,15 @@ public class CategoricalEvaluator extends Evaluator {
 	}
 
 	@Override
+	public void compute(TrainingMap trainingMap) {
+		if (defaultPredicate == null) {
+			throw new UnsupportedOperationException("CategoricalEvaluators must have a default predicate set (through config).");
+		}
+
+		compute(trainingMap, StandardPredicate.get(defaultPredicate));
+	}
+
+	@Override
 	public void compute(TrainingMap trainingMap, StandardPredicate predicate) {
 		hits = 0;
 		misses = 0;
@@ -125,7 +146,7 @@ public class CategoricalEvaluator extends Evaluator {
 		Set<GroundAtom> predictedCategories = getPredictedCategories(trainingMap, predicate);
 
 		for (GroundAtom truthAtom : trainingMap.getTruthAtoms()) {
-			if (truthAtom.getPredicate() != predicate) {
+			if (predicate != null && truthAtom.getPredicate() != predicate) {
 				continue;
 			}
 

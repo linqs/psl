@@ -47,6 +47,11 @@ public class HingeLossTerm extends HyperplaneTerm implements WeightedTerm {
 	}
 
 	@Override
+	public float getWeight() {
+		return weight;
+	}
+
+	@Override
 	public void minimize(float stepSize, float[] consensusValues) {
 		/* Initializes scratch data */
 		float total = 0.0f;

@@ -17,14 +17,15 @@
  */
 package org.linqs.psl.application.learning.weight.search;
 
-import org.linqs.psl.application.learning.weight.search.objective.LossObjective;
-import org.linqs.psl.application.learning.weight.search.objective.ObjectiveFunction;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
+import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.admm.ADMMReasoner;
+import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
 import org.linqs.psl.util.StringUtils;
 
 import org.slf4j.Logger;
@@ -40,6 +41,8 @@ import java.util.Random;
 /**
  * Hyperband.
  * https://arxiv.org/pdf/1603.06560.pdf
+ *
+ * TODO(eriq): Think about inital weights.
  */
 public class Hyperband extends WeightLearningApplication {
 	private static final Logger log = LoggerFactory.getLogger(Hyperband.class);
@@ -56,18 +59,10 @@ public class Hyperband extends WeightLearningApplication {
 	public static final int ADMM_ITERATIONS_DEFAULT = 500;
 
 	/**
-	 * The objective function to use.
+	 * The evaluation method to use as an objective.
 	 */
 	public static final String OBJECTIVE_KEY = CONFIG_PREFIX + ".objective";
-	public static final String OBJECTIVE_DEFAULT = LossObjective.class.getName();
-
-	// TEST
-	/**
-	 * A comma-separated list of possible weights.
-	 * These weights should be in some sorted order.
-	 */
-	public static final String POSSIBLE_WEIGHTS_KEY = CONFIG_PREFIX + ".weights";
-	public static final String POSSIBLE_WEIGHTS_DEFAULT = "0.001:0.01:0.1:1:10";
+	public static final String OBJECTIVE_DEFAULT = ContinuousEvaluator.class.getName();
 
 	/**
 	 * The proportion of configs that survive each round in a brancket.
@@ -75,25 +70,18 @@ public class Hyperband extends WeightLearningApplication {
 	public static final String SURVIVAL_KEY = CONFIG_PREFIX + ".survival";
 	public static final int SURVIVAL_DEFAULT = 3;
 
-	/**
-	 * The delimiter to separate rule weights (and lication ids).
-	 * Note that we cannot use ',' because our configuration infrastructure will try
-	 * interpret it as a list of strings.
-	 */
-	public static final String DELIM = ":";
+	// Make all budgets a percent.
+	public static final double MAX_BUDGET = 100.0;
 
 	private final int survival;
 	private final int maxADMMIterations;
-	private final ObjectiveFunction objectiveFunction;
+	private final Evaluator objectiveFunction;
 
 	private double bestObjective;
 	private double[] bestWeights;
 
-	private int numBrackets;
-	private int maxBudget;
-
-	// TEST
-	private Random rand;
+	private int highestBracket;
+	private double bracketMaxBudget;
 
 	public Hyperband(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
 		this(model.getRules(), rvDB, observedDB, config);
@@ -108,30 +96,20 @@ public class Hyperband extends WeightLearningApplication {
 			throw new IllegalArgumentException("Need at least one iteration for grid search.");
 		}
 
-		objectiveFunction = (ObjectiveFunction)config.getNewObject(OBJECTIVE_KEY, OBJECTIVE_DEFAULT);
-
-		/* TEST
-		possibleWeights = StringUtils.splitDouble(config.getString(POSSIBLE_WEIGHTS_KEY, POSSIBLE_WEIGHTS_DEFAULT), DELIM);
-		if (possibleWeights.length == 0) {
-			throw new IllegalArgumentException("No weights provided for grid search.");
-		}
-		*/
+		objectiveFunction = (Evaluator)config.getNewObject(OBJECTIVE_KEY, OBJECTIVE_DEFAULT);
 
 		survival = config.getInt(SURVIVAL_KEY, SURVIVAL_DEFAULT);
 		if (survival < 1) {
 			throw new IllegalArgumentException("Need at least one survival porportion.");
 		}
 
-		numBrackets = (int)(Math.floor(Math.log(maxADMMIterations) / Math.log(survival)));
-		maxBudget = (numBrackets + 1) * maxADMMIterations;
-
-		// TODO(eriq): Seed
-		rand = new Random(4);
+		highestBracket = (int)(Math.floor(Math.log(MAX_BUDGET) / Math.log(survival)));
+		bracketMaxBudget = (highestBracket + 1) * MAX_BUDGET;
 	}
 
 	@Override
 	protected void postInitGroundModel() {
-		// If we are dealing with an ADMMReasoner, then set its max iterations.
+		// Ensure we have an ADMMReasoner.
 		if (!(reasoner instanceof ADMMReasoner)) {
 			throw new IllegalArgumentException("Hyperband requires an ADMMReasoner.");
 		}
@@ -145,26 +123,33 @@ public class Hyperband extends WeightLearningApplication {
 		// Computes the observed incompatibilities.
 		computeObservedIncompatibility();
 
-		for (int bracket = numBrackets; bracket >= 0; bracket--) {
-			int bracketSize = (int)(Math.ceil((double)maxBudget * Math.pow(survival, bracket) / maxADMMIterations / (bracket + 1)));
-			double bracketBudget = maxADMMIterations * Math.pow(survival, -1.0 * bracket);
+		for (int bracket = highestBracket; bracket >= 0; bracket--) {
+			int bracketSize = (int)(Math.ceil((double)bracketMaxBudget * Math.pow(survival, bracket) / MAX_BUDGET / (bracket + 1)));
+			double bracketBudget = MAX_BUDGET * Math.pow(survival, -1.0 * bracket);
 
-			log.debug("Bracket {} / {}", numBrackets - bracket, numBrackets);
-			log.trace("  Size: {}, Budget: {}", bracketSize, bracketBudget);
+			log.debug("Bracket {} / {} -- Size: {}, Budget: {}%",
+					highestBracket - bracket + 1, highestBracket + 1, bracketSize, String.format("%5.2f", bracketBudget));
 
+			// Note that each config may get adjusted by internal weight learning methods.
+			// (Not in the default behavior, but in child class behavior).
 			List<double[]> configs = chooseConfigs(bracketSize);
 
 			for (int round = 0; round <= bracket; round++) {
 				int roundSize = (int)(Math.floor(bracketSize * Math.pow(survival, -1.0 * round)));
 				double roundBudget = bracketBudget * Math.pow(survival, round);
 
-				log.debug("Round {} / {}", round, bracket);
-				log.trace("  Size: {}, Budget: {}", roundSize, roundBudget);
+				log.debug("Round {} / {} -- Size: {}, Budget: {}%",
+						round + 1, bracket + 1, roundSize, String.format("%5.2f", roundBudget));
 
-				// TODO(eriq): Allocation
 				PriorityQueue<RunResult> results = new PriorityQueue<RunResult>();
 				for (double[] config : configs) {
-					double objective = run(config, Math.min(maxADMMIterations, (int)Math.ceil(roundBudget)));
+
+					// Set the weights for the current round.
+					for (int i = 0; i < mutableRules.size(); i++) {
+						mutableRules.get(i).setWeight(config[i]);
+					}
+
+					double objective = run(config, Math.min(1.0, roundBudget / 100.0));
 					RunResult result = new RunResult(config, objective);
 
 					results.add(result);
@@ -174,7 +159,7 @@ public class Hyperband extends WeightLearningApplication {
 						bestWeights = config;
 					}
 
-					log.trace("	Objective: {}, Weights: {}", objective, config);
+					log.trace("Objective: {}, Weights: {}", objective, config);
 				}
 
 				configs.clear();
@@ -191,15 +176,14 @@ public class Hyperband extends WeightLearningApplication {
 	}
 
 	private List<double[]> chooseConfigs(int bracketSize) {
-		// TEST(eriq): Allocations
 		List<double[]> configs = new ArrayList<double[]>(bracketSize);
 
 		for (int i = 0; i < bracketSize; i++) {
 			double[] config = new double[mutableRules.size()];
 
 			for (int weightIndex = 0; weightIndex < mutableRules.size(); weightIndex++) {
-				// TEST(eriq): Mean, stats
-				config[weightIndex] = rand.nextGaussian() * 10.0 + 5.0;
+				// TODO(eriq): Mean, stats
+				config[weightIndex] = Math.max(0.0, (0.5  + rand.nextGaussian() / 2.0) * 10.0);
 			}
 
 			configs.add(config);
@@ -208,16 +192,31 @@ public class Hyperband extends WeightLearningApplication {
 		return configs;
 	}
 
-	private double run(double[] weights, int admmIterations) {
+	/**
+	 * Run and eval on the given weights using the given budget (ratio of max resources) and give back its score (lower is better).
+	 * This method may modify weights if it wants to store a different set of weights than those initially passed in.
+	 * The rules have already been set with the given weights, they are only passed in so the method
+	 * has a chance to modify them before the result is stored.
+	 * This is a prime method for child classes to override.
+	 * Implementers should make sure to correct (negate) the value that comes back from the Evaluator
+	 * if lower is better for that evaluator.
+	 */
+	protected double run(double[] weights, double budget) {
 		// Reset the RVAs to default values.
 		setDefaultRandomVariables();
 
-		((ADMMReasoner)reasoner).setMaxIter(admmIterations);
+		((ADMMReasoner)reasoner).setMaxIter((int)Math.ceil(maxADMMIterations * budget));
+		((ADMMTermStore)termStore).resetLocalVairables();
 
 		// Computes the expected incompatibility.
 		computeExpectedIncompatibility();
 
-		return objectiveFunction.compute(mutableRules, observedIncompatibility, expectedIncompatibility, trainingMap);
+		objectiveFunction.compute(trainingMap);
+
+		double score = objectiveFunction.getRepresentativeMetric();
+		score = objectiveFunction.isHigherRepresentativeBetter() ? -1.0 * score : score;
+
+		return score;
 	}
 
 	private static class RunResult implements Comparable<RunResult> {

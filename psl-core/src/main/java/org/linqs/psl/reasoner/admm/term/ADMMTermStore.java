@@ -116,6 +116,15 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm> {
 		}
 	}
 
+	public void resetLocalVairables() {
+		for (Map.Entry<AtomFunctionVariable, Integer> entry : variableIndexes.entrySet()) {
+			for (LocalVariable local : localVariables.get(entry.getValue().intValue())) {
+				local.setValue((float)(entry.getKey().getValue()));
+				local.setLagrange(0.0f);
+			}
+		}
+	}
+
 	@Override
 	public void add(GroundRule rule, ADMMObjectiveTerm term) {
 		store.add(rule, term);

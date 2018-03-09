@@ -15,9 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.learning.weight.search.initialweight;
+package org.linqs.psl.application.learning.weight.search.grid;
 
-import org.linqs.psl.application.learning.weight.search.GridSearch;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.database.Database;
@@ -30,27 +29,19 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 
 /**
- * GridSearch over the initial weights and then run weight learning like normal.
- *
- * TODO(eriq): It would be great if we could construct the internal WLA on our side instead
- * of relying on it to be passed in (we have to ensure that the caller uses the same rules and DBs).
+ * Like InitialWeightGridSearch, but use random grid search instead of exhaustive.
+ * See InitialWeightGridSearch for details.
  */
-public class InitialWeightGridSearch extends GridSearch {
-	private static final Logger log = LoggerFactory.getLogger(InitialWeightGridSearch.class);
+public class InitialWeightRandomGridSearch extends RandomGridSearch {
+	private static final Logger log = LoggerFactory.getLogger(InitialWeightRandomGridSearch.class);
 
-	/**
-	 * The weight lerning application that we will invoke at each location.
-	 */
 	private WeightLearningApplication internalWLA;
 
-	public InitialWeightGridSearch(Model model, WeightLearningApplication internalWLA, Database rvDB, Database observedDB, ConfigBundle config) {
+	public InitialWeightRandomGridSearch(Model model, WeightLearningApplication internalWLA, Database rvDB, Database observedDB, ConfigBundle config) {
 		this(model.getRules(), internalWLA, rvDB, observedDB, config);
 	}
 
-	/**
-	 * The WeightLearningApplication should not have had initGroundModel() called yet.
-	 */
-	public InitialWeightGridSearch(List<Rule> rules, WeightLearningApplication internalWLA, Database rvDB, Database observedDB, ConfigBundle config) {
+	public InitialWeightRandomGridSearch(List<Rule> rules, WeightLearningApplication internalWLA, Database rvDB, Database observedDB, ConfigBundle config) {
 		super(rules, rvDB, observedDB, config);
 
 		this.internalWLA = internalWLA;

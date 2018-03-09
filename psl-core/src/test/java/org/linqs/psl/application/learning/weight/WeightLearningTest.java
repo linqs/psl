@@ -327,6 +327,10 @@ public abstract class WeightLearningTest {
 			Rule expected = ruleMap.get(rank[i]);
 
 			if (!ruleSets.get(interSetIndex).contains(expected)) {
+				System.out.println("Rule Ranks:");
+				for (Rule rule : rules) {
+					System.out.println("  " + rule);
+				}
 				fail(String.format("Did not find expected rule (%s) at index %d.", expected, i));
 			}
 

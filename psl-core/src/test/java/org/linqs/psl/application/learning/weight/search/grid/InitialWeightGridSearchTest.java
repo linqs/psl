@@ -15,17 +15,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.learning.weight.search.initialweight;
+package org.linqs.psl.application.learning.weight.search.grid;
 
 import org.linqs.psl.application.learning.weight.VotedPerceptron;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningTest;
 import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
-import org.linqs.psl.application.learning.weight.search.GridSearch;
 import org.linqs.psl.reasoner.admm.ADMMReasoner;
 
 public class InitialWeightGridSearchTest extends WeightLearningTest {
 	public InitialWeightGridSearchTest() {
+		super();
+		assertBaseTest = false;
 		assertFriendshipRankTest = false;
 	}
 

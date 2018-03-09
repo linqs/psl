@@ -49,6 +49,11 @@ public class LinearLossTerm extends ADMMObjectiveTerm implements WeightedTerm {
 	}
 
 	@Override
+	public float getWeight() {
+		return weight;
+	}
+
+	@Override
 	public void minimize(float stepSize, float[] consensusValues) {
 		for (int i = 0; i < variables.size(); i++) {
 			LocalVariable variable = variables.get(i);
