@@ -197,7 +197,10 @@ public abstract class WeightLearningApplication implements ModelApplication {
 		if (reasoner instanceof ADMMReasoner) {
 			int maxIterations = config.getInt(ADMMReasoner.MAX_ITER_KEY, ADMMReasoner.MAX_ITER_DEFAULT);
 			((ADMMReasoner)reasoner).setMaxIter((int)Math.ceil(maxIterations * budget));
-			((ADMMTermStore)termStore).resetLocalVairables();
+
+			if (termStore instanceof ADMMTermStore) {
+				((ADMMTermStore)termStore).resetLocalVairables();
+			}
 		}
 	}
 
