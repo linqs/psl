@@ -58,7 +58,9 @@ public class GuidedRandomGridSearch extends RandomGridSearch {
 	public static final String EXPLORE_LOCATIONS_KEY = CONFIG_PREFIX + ".explorelocations";
 	public static final int EXPLORE_LOCATIONS_DEFAULT = 10;
 
+	private final int maxNumSeedLocations;
 	private int numSeedLocations;
+	private final int maxNumExploreLocations;
 	private int numExploreLocations;
 	private Set<String> toExplore;
 
@@ -69,12 +71,14 @@ public class GuidedRandomGridSearch extends RandomGridSearch {
 	public GuidedRandomGridSearch(List<Rule> rules, Database rvDB, Database observedDB, ConfigBundle config) {
 		super(rules, rvDB, observedDB, config);
 
-		numSeedLocations = config.getInt(SEED_LOCATIONS_KEY, SEED_LOCATIONS_DEFAULT);
+		maxNumSeedLocations = config.getInt(SEED_LOCATIONS_KEY, SEED_LOCATIONS_DEFAULT);
+		numSeedLocations = maxNumSeedLocations;
 		if (numSeedLocations < 1) {
 			throw new IllegalArgumentException("Need at least one location to start the search.");
 		}
 
-		numExploreLocations = config.getInt(EXPLORE_LOCATIONS_KEY, EXPLORE_LOCATIONS_DEFAULT);
+		maxNumExploreLocations = config.getInt(EXPLORE_LOCATIONS_KEY, EXPLORE_LOCATIONS_DEFAULT);
+		numExploreLocations = maxNumExploreLocations;
 		if (numExploreLocations < 1) {
 			throw new IllegalArgumentException("Need at least one explore location.");
 		}
@@ -156,5 +160,17 @@ public class GuidedRandomGridSearch extends RandomGridSearch {
 				indexes[i]++;
 			}
 		}
+	}
+
+	@Override
+	public void setBudget(double budget) {
+		super.setBudget(budget);
+
+		numSeedLocations = (int)Math.ceil(budget * maxNumSeedLocations);
+		numExploreLocations = (int)Math.ceil(budget * maxNumExploreLocations);
+
+		numLocations = Math.min(
+				numLocations,
+				numSeedLocations + numExploreLocations * (int)(Math.pow(2, mutableRules.size())));
 	}
 }

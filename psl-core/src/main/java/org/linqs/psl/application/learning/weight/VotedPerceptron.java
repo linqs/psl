@@ -288,7 +288,10 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 		return factor;
 	}
 
+	@Override
 	public void setBudget(double budget) {
+		super.setBudget(budget);
+
 		numSteps = (int)Math.ceil(budget * maxNumSteps);
 	}
 }

@@ -52,6 +52,7 @@ public class MaxPiecewisePseudoLikelihood extends VotedPerceptron {
 	public static final String NUM_SAMPLES_KEY = CONFIG_PREFIX + ".numsamples";
 	public static final int NUM_SAMPLES_DEFAULT = 100;
 
+	private final int maxNumSamples;
 	private int numSamples;
 	private List<Map<RandomVariableAtom, List<WeightedGroundRule>>> ruleRandomVariableMap;
 
@@ -65,7 +66,8 @@ public class MaxPiecewisePseudoLikelihood extends VotedPerceptron {
 	public MaxPiecewisePseudoLikelihood(List<Rule> rules, Database rvDB, Database observedDB, ConfigBundle config) {
 		super(rules, rvDB, observedDB, false, config);
 
-		numSamples = config.getInt(NUM_SAMPLES_KEY, NUM_SAMPLES_DEFAULT);
+		maxNumSamples = config.getInt(NUM_SAMPLES_KEY, NUM_SAMPLES_DEFAULT);
+		numSamples = maxNumSamples;
 		if (numSamples <= 0) {
 			throw new IllegalArgumentException("Number of samples must be positive.");
 		}
@@ -222,5 +224,12 @@ public class MaxPiecewisePseudoLikelihood extends VotedPerceptron {
 
 			observedIncompatibility[ruleIndex] = obsInc;
 		}
+	}
+
+	@Override
+	public void setBudget(double budget) {
+		super.setBudget(budget);
+
+		numSamples = (int)Math.ceil(budget * maxNumSamples);
 	}
 }

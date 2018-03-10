@@ -24,8 +24,6 @@ import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
 import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
-import org.linqs.psl.reasoner.admm.ADMMReasoner;
-import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
 import org.linqs.psl.util.StringUtils;
 
 import org.slf4j.Logger;
@@ -53,12 +51,6 @@ public class Hyperband extends WeightLearningApplication {
 	public static final String CONFIG_PREFIX = "hyperband";
 
 	/**
-	 * The max number of ADMM iterations.
-	 */
-	public static final String ADMM_ITERATIONS_KEY = CONFIG_PREFIX + ".admmiterations";
-	public static final int ADMM_ITERATIONS_DEFAULT = 500;
-
-	/**
 	 * The evaluation method to use as an objective.
 	 */
 	public static final String OBJECTIVE_KEY = CONFIG_PREFIX + ".objective";
@@ -74,7 +66,6 @@ public class Hyperband extends WeightLearningApplication {
 	public static final double MAX_BUDGET = 100.0;
 
 	private final int survival;
-	private final int maxADMMIterations;
 	private final Evaluator objectiveFunction;
 
 	private double bestObjective;
@@ -91,11 +82,6 @@ public class Hyperband extends WeightLearningApplication {
 		// TODO(eriq): Latent variables?
 		super(rules, rvDB, observedDB, false, config);
 
-		maxADMMIterations = config.getInt(ADMM_ITERATIONS_KEY, ADMM_ITERATIONS_DEFAULT);
-		if (maxADMMIterations < 1) {
-			throw new IllegalArgumentException("Need at least one iteration for grid search.");
-		}
-
 		objectiveFunction = (Evaluator)config.getNewObject(OBJECTIVE_KEY, OBJECTIVE_DEFAULT);
 
 		survival = config.getInt(SURVIVAL_KEY, SURVIVAL_DEFAULT);
@@ -105,14 +91,6 @@ public class Hyperband extends WeightLearningApplication {
 
 		highestBracket = (int)(Math.floor(Math.log(MAX_BUDGET) / Math.log(survival)));
 		bracketMaxBudget = (highestBracket + 1) * MAX_BUDGET;
-	}
-
-	@Override
-	protected void postInitGroundModel() {
-		// Ensure we have an ADMMReasoner.
-		if (!(reasoner instanceof ADMMReasoner)) {
-			throw new IllegalArgumentException("Hyperband requires an ADMMReasoner.");
-		}
 	}
 
 	@Override
@@ -137,6 +115,7 @@ public class Hyperband extends WeightLearningApplication {
 			for (int round = 0; round <= bracket; round++) {
 				int roundSize = (int)(Math.floor(bracketSize * Math.pow(survival, -1.0 * round)));
 				double roundBudget = bracketBudget * Math.pow(survival, round);
+				setBudget(Math.min(1.0, roundBudget / 100.0));
 
 				log.debug("Round {} / {} -- Size: {}, Budget: {}%",
 						round + 1, bracket + 1, roundSize, String.format("%5.2f", roundBudget));
@@ -204,9 +183,6 @@ public class Hyperband extends WeightLearningApplication {
 	protected double run(double[] weights, double budget) {
 		// Reset the RVAs to default values.
 		setDefaultRandomVariables();
-
-		((ADMMReasoner)reasoner).setMaxIter((int)Math.ceil(maxADMMIterations * budget));
-		((ADMMTermStore)termStore).resetLocalVairables();
 
 		// Computes the expected incompatibility.
 		computeExpectedIncompatibility();

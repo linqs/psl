@@ -44,6 +44,8 @@ public class RandomGridSearch extends GridSearch {
 	public static final String MAX_LOCATIONS_KEY = CONFIG_PREFIX + ".maxlocations";
 	public static final int MAX_LOCATIONS_DEFAULT = 150;
 
+	private int maxLocations;
+
 	public RandomGridSearch(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
 		this(model.getRules(), rvDB, observedDB, config);
 	}
@@ -51,7 +53,7 @@ public class RandomGridSearch extends GridSearch {
 	public RandomGridSearch(List<Rule> rules, Database rvDB, Database observedDB, ConfigBundle config) {
 		super(rules, rvDB, observedDB, config);
 
-		int maxLocations = config.getInt(MAX_LOCATIONS_KEY, MAX_LOCATIONS_DEFAULT);
+		maxLocations = config.getInt(MAX_LOCATIONS_KEY, MAX_LOCATIONS_DEFAULT);
 		if (maxLocations < 1) {
 			throw new IllegalArgumentException("Need at least one location for grid search.");
 		}
@@ -75,5 +77,12 @@ public class RandomGridSearch extends GridSearch {
 			indexes[i] = rand.nextInt(possibleWeights.length);
 		}
 		return StringUtils.join(indexes, DELIM);
+	}
+
+	@Override
+	public void setBudget(double budget) {
+		super.setBudget(budget);
+
+		numLocations = Math.min(numLocations, (int)Math.ceil(budget * maxLocations));
 	}
 }

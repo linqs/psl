@@ -33,6 +33,9 @@ import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.rule.misc.GroundValueConstraint;
 import org.linqs.psl.reasoner.Reasoner;
+import org.linqs.psl.reasoner.admm.ADMMReasoner;
+import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
+import org.linqs.psl.reasoner.admm.term.ADMMTermGenerator;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 
@@ -64,7 +67,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
 	 * The class to use for inference.
 	 */
 	public static final String REASONER_KEY = CONFIG_PREFIX + ".reasoner";
-	public static final String REASONER_DEFAULT = "org.linqs.psl.reasoner.admm.ADMMReasoner";
+	public static final String REASONER_DEFAULT = ADMMReasoner.class.getName();
 
 	/**
 	 * The class to use for ground rule storage.
@@ -77,14 +80,14 @@ public abstract class WeightLearningApplication implements ModelApplication {
 	 * Should be compatible with REASONER_KEY.
 	 */
 	public static final String TERM_STORE_KEY = CONFIG_PREFIX + ".termstore";
-	public static final String TERM_STORE_DEFAULT = "org.linqs.psl.reasoner.admm.term.ADMMTermStore";
+	public static final String TERM_STORE_DEFAULT = ADMMTermStore.class.getName();
 
 	/**
 	 * The class to use for term generator.
 	 * Should be compatible with REASONER_KEY and TERM_STORE_KEY.
 	 */
 	public static final String TERM_GENERATOR_KEY = CONFIG_PREFIX + ".termgenerator";
-	public static final String TERM_GENERATOR_DEFAULT = "org.linqs.psl.reasoner.admm.term.ADMMTermGenerator";
+	public static final String TERM_GENERATOR_DEFAULT = ADMMTermGenerator.class.getName();
 
 	/**
 	 * Seed for an RNG all childen can use.
@@ -181,7 +184,22 @@ public abstract class WeightLearningApplication implements ModelApplication {
 		doLearn();
 	}
 
+	/**
+	 * Do the actual learning procedure.
+	 */
 	protected abstract void doLearn();
+
+	/**
+	 * Set a budget (give as a proportion of the max budget).
+	 * Child implementations should make sure to override this and call up the super chain.
+	 */
+	public void setBudget(double budget) {
+		if (reasoner instanceof ADMMReasoner) {
+			int maxIterations = config.getInt(ADMMReasoner.MAX_ITER_KEY, ADMMReasoner.MAX_ITER_DEFAULT);
+			((ADMMReasoner)reasoner).setMaxIter((int)Math.ceil(maxIterations * budget));
+			((ADMMTermStore)termStore).resetLocalVairables();
+		}
+	}
 
 	/**
 	 * Pass in all the ground model infrastructure.
@@ -271,7 +289,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
 	/**
 	 * A convenient place for children to do additional ground model initialization.
 	 */
-	 protected void postInitGroundModel() {}
+	protected void postInitGroundModel() {}
 
 	/**
 	 * The same as initGroundModel, but for latent variables.

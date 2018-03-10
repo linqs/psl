@@ -77,7 +77,6 @@ public class GridSearch extends WeightLearningApplication {
 	public static final String DELIM = ":";
 
 	protected final double[] possibleWeights;
-	protected final int admmIterations;
 
 	/**
 	 * The current location we are investigating.
@@ -119,26 +118,12 @@ public class GridSearch extends WeightLearningApplication {
 
 		objectiveFunction = (Evaluator)config.getNewObject(OBJECTIVE_KEY, OBJECTIVE_DEFAULT);
 
-		admmIterations = config.getInt(ADMM_ITERATIONS_KEY, ADMM_ITERATIONS_DEFAULT);
-		if (admmIterations < 1) {
-			throw new IllegalArgumentException("Need at least one iteration for grid search.");
-		}
-
 		currentLocation = null;
 
 		gridSize = (int)Math.pow(possibleWeights.length, mutableRules.size());
 		numLocations = gridSize;
 
 		objectives = new HashMap<String, Double>();
-	}
-
-	@Override
-	protected void postInitGroundModel() {
-		// If we are dealing with an ADMMReasoner, then set its max iterations.
-		if (reasoner instanceof ADMMReasoner) {
-			ADMMReasoner admmReasoner = (ADMMReasoner)reasoner;
-			admmReasoner.setMaxIter(Math.min(admmIterations, admmReasoner.getMaxIter()));
-		}
 	}
 
 	@Override

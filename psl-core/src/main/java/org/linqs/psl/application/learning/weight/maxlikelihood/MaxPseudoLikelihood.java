@@ -74,8 +74,10 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 	public static final double MIN_WIDTH_DEFAULT = 1e-2;
 
 	private final boolean bool;
-	private final int numSamples;
 	private final double minWidth;
+
+	private final int maxNumSamples;
+	private int numSamples;
 
 	public MaxPseudoLikelihood(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
 		this(model.getRules(), rvDB, observedDB, config);
@@ -86,7 +88,8 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 
 		bool = config.getBoolean(BOOLEAN_KEY, BOOLEAN_DEFAULT);
 
-		numSamples = config.getInt(NUM_SAMPLES_KEY, NUM_SAMPLES_DEFAULT);
+		maxNumSamples = config.getInt(NUM_SAMPLES_KEY, NUM_SAMPLES_DEFAULT);
+		numSamples = maxNumSamples;
 		if (numSamples <= 0) {
 			throw new IllegalArgumentException("Number of samples must be positive integer.");
 		}
@@ -217,5 +220,12 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 				}
 			}
 		}
+	}
+
+	@Override
+	public void setBudget(double budget) {
+		super.setBudget(budget);
+
+		numSamples = (int)Math.ceil(budget * maxNumSamples);
 	}
 }
