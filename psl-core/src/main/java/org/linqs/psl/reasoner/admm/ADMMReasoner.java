@@ -228,7 +228,7 @@ public class ADMMReasoner extends Reasoner {
 	@Override
 	public void optimize(TermStore baseTermStore) {
 		if (!(baseTermStore instanceof ADMMTermStore)) {
-			throw new IllegalArgumentException("ADMMReasoner requires an ADMMTermStore");
+			throw new IllegalArgumentException("ADMMReasoner requires an ADMMTermStore (found " + baseTermStore.getClass().getName() + ").");
 		}
 		ADMMTermStore termStore = (ADMMTermStore)baseTermStore;
 
