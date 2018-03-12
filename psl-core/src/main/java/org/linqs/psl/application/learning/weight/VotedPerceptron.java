@@ -234,6 +234,9 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 			log.trace("Model {} ", mutableRules);
 
 			if (log.isTraceEnabled() && evaluator != null) {
+				// Compute the MPE state before evaluating so variables have assigned values.
+				computeMPEState();
+
 				evaluator.compute(trainingMap);
 				double score = evaluator.getRepresentativeMetric();
 				score = evaluator.isHigherRepresentativeBetter() ? -1.0 * score : score;

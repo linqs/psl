@@ -41,6 +41,8 @@ import java.util.Random;
  * https://arxiv.org/pdf/1603.06560.pdf
  *
  * TODO(eriq): Think about inital weights.
+ *
+ * All extending classes should ensure that values for RVAs are set before evaluators are computed.
  */
 public class Hyperband extends WeightLearningApplication {
 	private static final Logger log = LoggerFactory.getLogger(Hyperband.class);

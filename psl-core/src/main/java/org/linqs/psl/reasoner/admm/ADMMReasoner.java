@@ -232,6 +232,9 @@ public class ADMMReasoner extends Reasoner {
 		}
 		ADMMTermStore termStore = (ADMMTermStore)baseTermStore;
 
+		// TEST
+		termStore.resetLocalVairables();
+
 		int numTerms = termStore.size();
 		int numVariables = termStore.getNumGlobalVariables();
 
@@ -239,6 +242,11 @@ public class ADMMReasoner extends Reasoner {
 
 		// Also sometimes called 'z'.
 		consensusValues = new float[termStore.getNumGlobalVariables()];
+
+		// TEST
+		for (int i = 0; i < consensusValues.length; i++) {
+			consensusValues[i] = (float)Math.random();
+		}
 
 		// Compute the initial block size by assuming we want each thread to do TERM_ITERATIONS iterations (on terms).
 		termBlockSize = Math.max(MIN_BLOCK_SIZE, (int)((double)numTerms / numThreads / TERM_ITERATIONS));
