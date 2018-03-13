@@ -138,11 +138,15 @@ public class GridSearch extends WeightLearningApplication {
 
 		for (int iteration = 0; iteration < numLocations; iteration++) {
 			if (!chooseNextLocation()) {
-				log.debug("Stopping search.");
+				// TEST
+				// log.debug("Stopping search.");
+				log.info("Stopping search.");
 				break;
 			}
 
-			log.debug("Iteration {} / {} ({}) -- Inspecting location {}", iteration, numLocations, gridSize, currentLocation);
+			// TEST
+			// log.debug("Iteration {} / {} ({}) -- Inspecting location {}", iteration, numLocations, gridSize, currentLocation);
+			log.info("Iteration {} / {} ({}) -- Inspecting location {}", iteration, numLocations, gridSize, currentLocation);
 
 			// Set the weights for the current round.
 			getWeights(weights);
@@ -162,7 +166,9 @@ public class GridSearch extends WeightLearningApplication {
 				}
 			}
 
-			log.debug("Location {} -- objective: {}", currentLocation, objective);
+			// TEST
+			// log.debug("Location {} -- objective: {}", currentLocation, objective);
+			log.info("Location {} -- objective: {}", currentLocation, objective);
 		}
 
 		// Set the final weights.

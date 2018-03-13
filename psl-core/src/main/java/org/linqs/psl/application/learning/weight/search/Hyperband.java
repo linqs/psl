@@ -64,8 +64,8 @@ public class Hyperband extends WeightLearningApplication {
 	public static final String SURVIVAL_KEY = CONFIG_PREFIX + ".survival";
 	public static final int SURVIVAL_DEFAULT = 3;
 
-	// Make all budgets a percent.
-	public static final double MAX_BUDGET = 100.0;
+	public static final double MAX_BUDGET = 200.0;
+	public static final double MIN_BUDGET_PROPORTION = 0.001;
 
 	private final int survival;
 	private final Evaluator objectiveFunction;
@@ -108,7 +108,7 @@ public class Hyperband extends WeightLearningApplication {
 			double bracketBudget = MAX_BUDGET * Math.pow(survival, -1.0 * bracket);
 
 			log.debug("Bracket {} / {} -- Size: {}, Budget: {}%",
-					highestBracket - bracket + 1, highestBracket + 1, bracketSize, String.format("%5.2f", bracketBudget));
+					highestBracket - bracket + 1, highestBracket + 1, bracketSize, String.format("%6.3f", bracketBudget / MAX_BUDGET));
 
 			// Note that each config may get adjusted by internal weight learning methods.
 			// (Not in the default behavior, but in child class behavior).
@@ -116,11 +116,11 @@ public class Hyperband extends WeightLearningApplication {
 
 			for (int round = 0; round <= bracket; round++) {
 				int roundSize = (int)(Math.floor(bracketSize * Math.pow(survival, -1.0 * round)));
-				double roundBudget = bracketBudget * Math.pow(survival, round);
-				setBudget(Math.min(1.0, roundBudget / 100.0));
+				double roundBudget = bracketBudget * Math.pow(survival, round) / MAX_BUDGET;
+				setBudget(Math.max(MIN_BUDGET_PROPORTION, Math.min(1.0, roundBudget)));
 
 				log.debug("Round {} / {} -- Size: {}, Budget: {}%",
-						round + 1, bracket + 1, roundSize, String.format("%5.2f", roundBudget));
+						round + 1, bracket + 1, roundSize, String.format("%6.3f", roundBudget));
 
 				PriorityQueue<RunResult> results = new PriorityQueue<RunResult>();
 				for (double[] config : configs) {
@@ -130,7 +130,7 @@ public class Hyperband extends WeightLearningApplication {
 						mutableRules.get(i).setWeight(config[i]);
 					}
 
-					double objective = run(config, Math.min(1.0, roundBudget / 100.0));
+					double objective = run(config);
 					RunResult result = new RunResult(config, objective);
 
 					results.add(result);
@@ -164,7 +164,7 @@ public class Hyperband extends WeightLearningApplication {
 
 			for (int weightIndex = 0; weightIndex < mutableRules.size(); weightIndex++) {
 				// TODO(eriq): Mean, stats
-				config[weightIndex] = Math.max(0.0, (0.5  + rand.nextGaussian() / 2.0) * 10.0);
+				config[weightIndex] = Math.max(0.0, rand.nextGaussian() + 5.0);
 			}
 
 			configs.add(config);
@@ -182,7 +182,7 @@ public class Hyperband extends WeightLearningApplication {
 	 * Implementers should make sure to correct (negate) the value that comes back from the Evaluator
 	 * if lower is better for that evaluator.
 	 */
-	protected double run(double[] weights, double budget) {
+	protected double run(double[] weights) {
 		// Reset the RVAs to default values.
 		setDefaultRandomVariables();
 

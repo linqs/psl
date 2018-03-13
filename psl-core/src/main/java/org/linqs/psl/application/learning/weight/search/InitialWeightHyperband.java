@@ -88,9 +88,14 @@ public class InitialWeightHyperband extends Hyperband {
 	}
 
 	@Override
-	protected double run(double[] weights, double budget) {
-		// Just have the internal WLA learn and run (eval) in those learn weights.
+	public void setBudget(double budget) {
 		internalWLA.setBudget(budget);
+		super.setBudget(budget);
+	}
+
+	@Override
+	protected double run(double[] weights) {
+		// Just have the internal WLA learn and run (eval) in those learn weights.
 		internalWLA.learn();
 
 		// Save the learned weights.
@@ -98,7 +103,7 @@ public class InitialWeightHyperband extends Hyperband {
 			weights[i] = mutableRules.get(i).getWeight();
 		}
 
-		return super.run(weights, budget);
+		return super.run(weights);
 	}
 
 	@Override
