@@ -117,7 +117,7 @@ public class LazyMPEInferenceTest {
 		// There are multiple optimal configuration to the first round of grounding (which snowballs later),
 		// but we know there should be at least 16 ground atoms and less than 20.
 		int groundCount = Queries.countAllGroundRandomVariableAtoms(inferDB, info.predicates.get("Friends"));
-		assertTrue("Expected: >= 16, Found: " + groundCount, groundCount >= 16);
+		assertEquals(20, groundCount);
 
 		mpe.close();
 	}
@@ -136,7 +136,7 @@ public class LazyMPEInferenceTest {
 		// There are multiple optimal configuration to the first round of grounding,
 		// but we know that at least all 'Eugene's grounding will be excluded.
 		int groundCount = Queries.countAllGroundRandomVariableAtoms(inferDB, info.predicates.get("Friends"));
-		assertTrue("Expected: <= 12, Found: " + groundCount, groundCount <= 12);
+		assertEquals(12, groundCount);
 
 		mpe.close();
 	}
@@ -172,7 +172,7 @@ public class LazyMPEInferenceTest {
 		// There are multiple optimal configuration to the first round of grounding (which snowballs later),
 		// but we know there should be at least 16 ground atoms and less than 20.
 		int groundCount = Queries.countAllGroundRandomVariableAtoms(inferDB, info.predicates.get("Friends"));
-		assertTrue("Expected: >= 16, Found: " + groundCount, groundCount >= 16);
+		assertEquals(20, groundCount);
 
 		mpe.close();
 	}
@@ -216,7 +216,7 @@ public class LazyMPEInferenceTest {
 		// There are multiple optimal configuration to the first round of grounding (which snowballs later),
 		// but we know there should be at least 16 ground atoms and less than 20.
 		int groundCount = Queries.countAllGroundRandomVariableAtoms(inferDB, info.predicates.get("Friends"));
-		assertTrue("Expected: >= 16, Found: " + groundCount, groundCount >= 16);
+		assertEquals(20, groundCount);
 
 		mpe.close();
 	}

@@ -78,6 +78,8 @@ public class PersistedAtomManager extends AtomManager {
 		}
 	}
 
+	// This method is currently threadsafe, but if child classes edit the persisted cache,
+	// then they will be responsible for synchronization.
 	@Override
 	public GroundAtom getAtom(Predicate predicate, Constant... arguments) {
 		GroundAtom atom = db.getAtom(predicate, arguments);
