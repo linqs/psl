@@ -187,10 +187,7 @@ public class LazyMPEInference implements ModelApplication {
 			reasoner.optimize(termStore);
 			log.info("Inference round {} complete.", rounds);
 
-			// Only activates if there is another round.
-			if (rounds < maxRounds) {
-				numActivated = lazyAtomManager.activateAtoms(rules, groundRuleStore);
-			}
+			numActivated = lazyAtomManager.activateAtoms(rules, groundRuleStore);
 			log.debug("Completed round {} and activated {} atoms.", rounds, numActivated);
 		} while (numActivated > 0 && rounds < maxRounds);
 

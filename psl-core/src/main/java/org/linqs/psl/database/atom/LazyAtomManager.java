@@ -101,7 +101,7 @@ public class LazyAtomManager extends PersistedAtomManager {
 	}
 
 	@Override
-	public GroundAtom getAtom(Predicate predicate, Constant... arguments) {
+	public synchronized GroundAtom getAtom(Predicate predicate, Constant... arguments) {
 		RandomVariableAtom lazyAtom = null;
 
 		try {
@@ -137,6 +137,10 @@ public class LazyAtomManager extends PersistedAtomManager {
 	 * @return the number of lazy atoms instantiated.
 	 */
 	public int activateAtoms(List<Rule> rules, GroundRuleStore groundRuleStore) {
+		if (lazyAtoms.size() == 0) {
+			return 0;
+		}
+
 		Set<RandomVariableAtom> toActivate = new HashSet<RandomVariableAtom>();
 
 		Iterator<RandomVariableAtom> lazyAtomIterator = lazyAtoms.iterator();
