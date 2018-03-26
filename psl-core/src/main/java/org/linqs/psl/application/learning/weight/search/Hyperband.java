@@ -130,6 +130,10 @@ public class Hyperband extends WeightLearningApplication {
 						mutableRules.get(i).setWeight(config[i]);
 					}
 
+					// The weights have changed, so we are no longer in an MPE state.
+					inMPEState = false;
+					inLatentMPEState = false;
+
 					double objective = run(config);
 					RunResult result = new RunResult(config, objective);
 
@@ -154,6 +158,10 @@ public class Hyperband extends WeightLearningApplication {
 		for (int i = 0; i < mutableRules.size(); i++) {
 			mutableRules.get(i).setWeight(bestWeights[i]);
 		}
+
+		// The weights have changed, so we are no longer in an MPE state.
+		inMPEState = false;
+		inLatentMPEState = false;
 	}
 
 	private List<double[]> chooseConfigs(int bracketSize) {

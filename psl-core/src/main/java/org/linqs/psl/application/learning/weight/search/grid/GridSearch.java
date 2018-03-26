@@ -154,6 +154,10 @@ public class GridSearch extends WeightLearningApplication {
 				mutableRules.get(i).setWeight(weights[i]);
 			}
 
+			// The weights have changed, so we are no longer in an MPE state.
+			inMPEState = false;
+			inLatentMPEState = false;
+
 			double objective = inspectLocation(weights);
 
 			// Log this location.
@@ -175,6 +179,10 @@ public class GridSearch extends WeightLearningApplication {
 		for (int i = 0; i < mutableRules.size(); i++) {
 			mutableRules.get(i).setWeight(bestWeights[i]);
 		}
+
+		// The weights have changed, so we are no longer in an MPE state.
+		inMPEState = false;
+		inLatentMPEState = false;
 	}
 
 	/**

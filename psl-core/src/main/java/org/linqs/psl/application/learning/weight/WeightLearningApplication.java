@@ -103,6 +103,8 @@ public abstract class WeightLearningApplication implements ModelApplication {
 	public static final boolean RANDOM_WEIGHTS_DEFAULT = false;
 	public static final int MAX_RANDOM_WEIGHT = 100;
 
+	public static final int MIN_ADMM_STEPS = 3;
+
 	protected ConfigBundle config;
 	protected boolean supportsLatentVariables;
 	// TODO(eriq): Move all randoms to util.MathUtils.
@@ -136,6 +138,14 @@ public abstract class WeightLearningApplication implements ModelApplication {
 
 	private boolean groundModelInit;
 
+	/**
+	 * Flags to track if the current variable configuration is an MPE state.
+	 * This will get set to true when computeMPEState is called,
+	 * but besides that it is up to children to set to false when weights are changed.
+	 */
+	protected boolean inMPEState;
+	protected boolean inLatentMPEState;
+
 	public WeightLearningApplication(List<Rule> rules, Database rvDB, Database observedDB,
 			boolean supportsLatentVariables, ConfigBundle config) {
 		this.rvDB = rvDB;
@@ -158,6 +168,8 @@ public abstract class WeightLearningApplication implements ModelApplication {
 		expectedIncompatibility = new double[mutableRules.size()];
 
 		groundModelInit = false;
+		inMPEState = false;
+		inLatentMPEState = false;
 		rand = new Random(config.getLong(SEED_KEY, SEED_DEFAULT));
 	}
 
@@ -196,7 +208,8 @@ public abstract class WeightLearningApplication implements ModelApplication {
 	public void setBudget(double budget) {
 		if (reasoner instanceof ADMMReasoner) {
 			int maxIterations = config.getInt(ADMMReasoner.MAX_ITER_KEY, ADMMReasoner.MAX_ITER_DEFAULT);
-			((ADMMReasoner)reasoner).setMaxIter((int)Math.ceil(maxIterations * budget));
+			int iterations = (int)Math.ceil(maxIterations * budget);
+			((ADMMReasoner)reasoner).setMaxIter((int)Math.max(MIN_ADMM_STEPS, iterations));
 
 			if (termStore instanceof ADMMTermStore) {
 				((ADMMTermStore)termStore).resetLocalVairables();
@@ -322,14 +335,26 @@ public abstract class WeightLearningApplication implements ModelApplication {
 
 	@SuppressWarnings("unchecked")
 	protected void computeMPEState() {
+		if (inMPEState) {
+			return;
+		}
+
 		termGenerator.updateWeights(groundRuleStore, termStore);
 		reasoner.optimize(termStore);
+
+		inMPEState = true;
 	}
 
 	@SuppressWarnings("unchecked")
 	protected void computeLatentMPEState() {
+		if (inLatentMPEState) {
+			return;
+		}
+
 		termGenerator.updateWeights(latentGroundRuleStore, latentTermStore);
 		reasoner.optimize(latentTermStore);
+
+		inLatentMPEState = true;
 	}
 
 	/**

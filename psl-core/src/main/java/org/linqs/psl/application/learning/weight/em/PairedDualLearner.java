@@ -219,6 +219,10 @@ public class PairedDualLearner extends ExpectationMaximization {
 			}
 			mutableRules.get(i).setWeight(weights[i]);
 		}
+
+		// The weights have changed, so we are no longer in an MPE state.
+		inMPEState = false;
+		inLatentMPEState = false;
 	}
 
 	private double getValueAndGradient(double[] gradient, double[] weights) {
@@ -227,6 +231,10 @@ public class PairedDualLearner extends ExpectationMaximization {
 				mutableRules.get(i).setWeight(weights[i]);
 			}
 		}
+
+		// The weights have changed, so we are no longer in an MPE state.
+		inMPEState = false;
+		inLatentMPEState = false;
 
 		ADMMReasoner admmReasoner = (ADMMReasoner)reasoner;
 
