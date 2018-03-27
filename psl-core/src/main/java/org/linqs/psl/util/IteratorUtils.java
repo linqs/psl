@@ -36,6 +36,13 @@ public final class IteratorUtils {
 		return new ConcatenationIterable<T>(collections);
 	}
 
+	/**
+	 * Get an iterator that gives all the permutations of the numbers 0 - size.
+	 */
+	public static Iterator<int[]> permutations(int size) {
+		return new PermutationIterator(size);
+	}
+
 	private static class ConcatenationIterable<T> implements Iterable<T> {
 		private Iterable<? extends T>[] collections;
 
@@ -103,6 +110,108 @@ public final class IteratorUtils {
 		@Override
 		public void remove() {
 			throw new UnsupportedOperationException();
+		}
+	}
+
+	// Taken from: https://stackoverflow.com/a/11916946
+	// TODO(eriq): This could use a lot of cleanup.
+	private static class PermutationIterator implements Iterator<int[]> {
+		private final int size;
+
+		private int[] next = null;
+		private int[] permutations;
+		private int[] directions;
+
+		public PermutationIterator(int size) {
+			if (size < 1) {
+				throw new IllegalArgumentException("Permutation size must be at least 1.");
+			}
+
+			this.size = size;
+
+			permutations = new int[size];
+			directions = new int[size];
+
+			for (int i = 0; i < size; i++) {
+				permutations[i] = i;
+				directions[i] = -1;
+			}
+			directions[0] = 0;
+
+			next = permutations;
+		}
+
+		@Override
+		public int[] next() {
+			int[] rtn = makeNext();
+			next = null;
+
+			return rtn;
+		}
+
+		@Override
+		public boolean hasNext() {
+			return makeNext() != null;
+		}
+
+		@Override
+		public void remove() {
+			throw new UnsupportedOperationException();
+		}
+
+		private int[] makeNext() {
+			if (next != null) {
+				return next;
+			}
+
+			if (permutations == null) {
+				return null;
+			}
+
+			// find the largest element with != 0 direction
+			int i = -1;
+			int e = -1;
+			for (int j = 0; j < size; j++) {
+				if ((directions[j] != 0) && (permutations[j] > e)) {
+					e = permutations[j];
+					i = j;
+				}
+			}
+
+			// no such element -> no more premutations
+			if (i == -1) {
+				next = null;
+				permutations = null;
+				directions = null;
+
+				return next;
+			}
+
+			// swap with the element in its direction
+			int k = i + directions[i];
+			swap(i, k, directions);
+			swap(i, k, permutations);
+			// if it's at the start/end or the next element in the direction
+			// is greater, reset its direction.
+			if ((k == 0) || (k == size-1) || (permutations[k + directions[k]] > e)) {
+				directions[k] = 0;
+			}
+
+			// set directions to all greater elements
+			for (int j = 0; j < size; j++) {
+				if (permutations[j] > e) {
+					directions[j] = (j < k) ? +1 : -1;
+				}
+			}
+
+			next = permutations;
+			return next;
+		}
+
+		private static void swap(int i, int j, int[] data) {
+			int temp = data[i];
+			data[i] = data[j];
+			data[j] = temp;
 		}
 	}
 }

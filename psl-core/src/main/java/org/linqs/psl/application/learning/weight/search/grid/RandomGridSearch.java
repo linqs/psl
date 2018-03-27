@@ -31,6 +31,9 @@ import java.util.List;
 
 /**
  * A random grid search that searches a finite number of locations.
+ * Note that choosing the next random location may be slow if the grid is large
+ * and the maximum number of locations is close to the grid size.
+ * In cases like this, it is better to just use vanilla GridSearch.
  */
 public class RandomGridSearch extends GridSearch {
 	/**

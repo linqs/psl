@@ -17,6 +17,8 @@
  */
 package org.linqs.psl.util;
 
+import java.math.BigInteger;
+
 /**
  * Various static math utilities.
  */
@@ -65,5 +67,29 @@ public final class MathUtils {
 
 	public static boolean isZero(double a) {
 		return equals(a, 0.0);
+	}
+
+	public static int smallFactorial(int number) {
+		if (number >= 16) {
+			throw new IllegalArgumentException("Too large a number for smallFactorial: " + number);
+		}
+
+		int result = 1;
+
+		for (int factor = 2; factor <= number; factor++) {
+			result *= factor;
+		}
+
+		return result;
+	}
+
+	public static BigInteger factorial(BigInteger number) {
+		BigInteger result = BigInteger.valueOf(1);
+
+		for (long factor = 2; factor <= number.longValue(); factor++) {
+			result = result.multiply(BigInteger.valueOf(factor));
+		}
+
+		return result;
 	}
 }
