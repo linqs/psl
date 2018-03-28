@@ -32,7 +32,6 @@ import java.util.List;
  * @author Stephen Bach <bach@cs.umd.edu>
  */
 public class LinearConstraintTerm extends HyperplaneTerm {
-
 	private final FunctionComparator comparator;
 
 	protected LinearConstraintTerm(List<LocalVariable> variables, List<Float> coeffs, float constant, FunctionComparator comparator) {

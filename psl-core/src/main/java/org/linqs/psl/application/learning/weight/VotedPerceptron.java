@@ -21,8 +21,11 @@ import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
 import org.linqs.psl.evaluation.statistics.Evaluator;
+import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
+import org.linqs.psl.model.rule.WeightedGroundRule;
+import org.linqs.psl.util.MathUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -203,9 +206,14 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 
 			// Updates weights.
 			for (int i = 0; i < mutableRules.size(); i++) {
-				double weight = mutableRules.get(i).getWeight();
+				double newWeight = mutableRules.get(i).getWeight();
+				if (MathUtils.isZero(newWeight)) {
+					log.trace("Zero weight, skipping -- ({}) {}", i, mutableRules.get(i));
+					continue;
+				}
+
 				double currentStep = (expectedIncompatibility[i] - observedIncompatibility[i]
-						- l2Regularization * weight
+						- l2Regularization * newWeight
 						- l1Regularization) / scalingFactor[i];
 
 				currentStep *= baseStepSize;
@@ -213,35 +221,50 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 				// Apply momentum.
 				currentStep += inertia * lastSteps[i];
 
-				// TODO(eriq): Should we keep track of the computed step, or actual step (after Max(0)).
-				lastSteps[i] = currentStep;
+				newWeight = Math.max(newWeight + currentStep, 0.0);
 
-				log.trace("Gradient: {} (without momentun: {}), Expected Incomp.: {}, Observed Incomp.: {} -- {}",
+				log.trace("Gradient: {} (without momentun: {}), Expected Incomp.: {}, Observed Incomp.: {} -- ({}) {}",
 						currentStep, currentStep - (inertia * lastSteps[i]),
 						expectedIncompatibility[i], observedIncompatibility[i],
-						mutableRules.get(i));
+						i, mutableRules.get(i));
 
-				weight = Math.max(weight + currentStep, 0.0);
-				avgWeights[i] += weight;
-				mutableRules.get(i).setWeight(weight);
+				if (MathUtils.isZero(newWeight) && MathUtils.isZero(lastSteps[i]) && step != 0) {
+					// This rule failed its chance at redemption, set to zero.
+					mutableRules.get(i).setWeight(0.0);
+					log.trace("Rule {} failed redemption, setting to zero.", i);
+
+					// TODO(eriq): Remove terms and ground rules.
+				} else if (MathUtils.isZero(newWeight)) {
+					// Try to redem the weight by keeping the current weight, but settings its inertia to zero.
+					log.trace("Rule {} getting a redemption chance.", i);
+					lastSteps[i] = 0.0;
+					avgWeights[i] += mutableRules.get(i).getWeight();
+				} else {
+					mutableRules.get(i).setWeight(newWeight);
+					lastSteps[i] = currentStep;
+					avgWeights[i] += newWeight;
+				}
 			}
+
+			inMPEState = false;
+			inLatentMPEState = false;
 
 			if (log.isDebugEnabled()) {
 				getLoss();
 			}
 
-			log.debug("Iteration {} complete. Likelihood: {}.", step, currentLoss);
-			log.trace("Model {} ", mutableRules);
-
-			if (log.isTraceEnabled() && evaluator != null) {
+			double objective = -1.0;
+			if (log.isDebugEnabled() && evaluator != null) {
 				// Compute the MPE state before evaluating so variables have assigned values.
 				computeMPEState();
 
 				evaluator.compute(trainingMap);
-				double score = evaluator.getRepresentativeMetric();
-				score = evaluator.isHigherRepresentativeBetter() ? -1.0 * score : score;
-				log.trace("Objective: {}", score);
+				objective = evaluator.getRepresentativeMetric();
+				objective = evaluator.isHigherRepresentativeBetter() ? -1.0 * objective : objective;
 			}
+
+			log.debug("Iteration {} complete. Likelihood: {}. Objective: {}", step, currentLoss, objective);
+			log.trace("Model {} ", mutableRules);
 		}
 
 		// Sets the weights to their averages.

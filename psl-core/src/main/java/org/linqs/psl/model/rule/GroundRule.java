@@ -36,7 +36,7 @@ public interface GroundRule {
 
 	/**
 	 * @return set of {@link GroundAtom GroundAtoms} which determine this
-	 *             GroundRule's incompatibility or infeasibility
+	 *  GroundRule's incompatibility or infeasibility
 	 */
 	public Set<GroundAtom> getAtoms();
 }

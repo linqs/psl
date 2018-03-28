@@ -295,7 +295,8 @@ public class ADMMReasoner extends Reasoner {
 
 		while ((primalRes > epsilonPrimal || dualRes > epsilonDual) && iteration <= maxIter) {
 			try {
-				log.trace("Running with block sizes -- Term: {}, Variable: {}", termBlockSize, variableBlockSize);
+				// TEST
+				// log.trace("Running with block sizes -- Term: {}, Variable: {}", termBlockSize, variableBlockSize);
 
 				// Reset the counters for a new round.
 				termCounter.reset((int)Math.ceil(numTerms / (float)termBlockSize));
@@ -342,6 +343,7 @@ public class ADMMReasoner extends Reasoner {
 				variableBlockSize += BASE_BLOCK_STEP_SIZE;
 			}
 
+			/* TEST
 			log.trace(String.format(
 					"Iteration wait times (term / variable) -- Counter: %d (%d, %d), Barrier: %d (%d, %d)",
 					(counterTime / 1000),
@@ -350,6 +352,7 @@ public class ADMMReasoner extends Reasoner {
 					(barrierTime / 1000),
 					(iterationTermBarrierWaitTimeNS / 1000),
 					(iterationVariableBarrierWaitTimeNS / 1000)));
+			*/
 
 			primalRes = 0.0f;
 			dualRes = 0.0f;

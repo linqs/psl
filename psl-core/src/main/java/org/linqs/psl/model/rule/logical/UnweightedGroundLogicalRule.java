@@ -27,7 +27,7 @@ import org.linqs.psl.reasoner.function.FunctionComparator;
 
 public class UnweightedGroundLogicalRule extends AbstractGroundLogicalRule
 		implements UnweightedGroundRule {
-	
+
 	protected UnweightedGroundLogicalRule(UnweightedLogicalRule r, List<GroundAtom> posLiterals, List<GroundAtom> negLiterals) {
 		super(r, posLiterals, negLiterals);
 	}
@@ -36,7 +36,7 @@ public class UnweightedGroundLogicalRule extends AbstractGroundLogicalRule
 	public UnweightedRule getRule() {
 		return (UnweightedRule) rule;
 	}
-	
+
 	@Override
 	public double getInfeasibility() {
 		return Math.abs(getTruthValue() - 1);
@@ -46,7 +46,7 @@ public class UnweightedGroundLogicalRule extends AbstractGroundLogicalRule
 	public ConstraintTerm getConstraintDefinition() {
 		return new ConstraintTerm(getFunction(), FunctionComparator.SmallerThan, 0.0);
 	}
-	
+
 	@Override
 	public String toString() {
 		return super.toString() + " .";
