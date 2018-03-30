@@ -207,11 +207,6 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 			// Updates weights.
 			for (int i = 0; i < mutableRules.size(); i++) {
 				double newWeight = mutableRules.get(i).getWeight();
-				if (MathUtils.isZero(newWeight)) {
-					log.trace("Zero weight, skipping -- ({}) {}", i, mutableRules.get(i));
-					continue;
-				}
-
 				double currentStep = (expectedIncompatibility[i] - observedIncompatibility[i]
 						- l2Regularization * newWeight
 						- l1Regularization) / scalingFactor[i];
@@ -221,29 +216,18 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 				// Apply momentum.
 				currentStep += inertia * lastSteps[i];
 
-				newWeight = Math.max(newWeight + currentStep, 0.0);
+				// TEST
+            // newWeight = newWeight + currentStep;
+				newWeight = Math.max(0.0, newWeight + currentStep);
 
 				log.trace("Gradient: {} (without momentun: {}), Expected Incomp.: {}, Observed Incomp.: {} -- ({}) {}",
 						currentStep, currentStep - (inertia * lastSteps[i]),
 						expectedIncompatibility[i], observedIncompatibility[i],
 						i, mutableRules.get(i));
 
-				if (MathUtils.isZero(newWeight) && MathUtils.isZero(lastSteps[i]) && step != 0) {
-					// This rule failed its chance at redemption, set to zero.
-					mutableRules.get(i).setWeight(0.0);
-					log.trace("Rule {} failed redemption, setting to zero.", i);
-
-					// TODO(eriq): Remove terms and ground rules.
-				} else if (MathUtils.isZero(newWeight)) {
-					// Try to redem the weight by keeping the current weight, but settings its inertia to zero.
-					log.trace("Rule {} getting a redemption chance.", i);
-					lastSteps[i] = 0.0;
-					avgWeights[i] += mutableRules.get(i).getWeight();
-				} else {
-					mutableRules.get(i).setWeight(newWeight);
-					lastSteps[i] = currentStep;
-					avgWeights[i] += newWeight;
-				}
+				mutableRules.get(i).setWeight(newWeight);
+				lastSteps[i] = currentStep;
+				avgWeights[i] += newWeight;
 			}
 
 			inMPEState = false;

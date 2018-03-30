@@ -43,7 +43,7 @@ public final class MathUtils {
 	}
 
 	public static boolean equals(double a, double b, double epsilon) {
-		return Math.abs(a - b) <= EPSILON;
+		return Math.abs(a - b) <= epsilon;
 	}
 
 	public static int compare(double a, double b) {
@@ -67,6 +67,10 @@ public final class MathUtils {
 
 	public static boolean isZero(double a) {
 		return equals(a, 0.0);
+	}
+
+	public static boolean isZero(double a, double epsilon) {
+		return equals(a, 0.0, epsilon);
 	}
 
 	public static int smallFactorial(int number) {

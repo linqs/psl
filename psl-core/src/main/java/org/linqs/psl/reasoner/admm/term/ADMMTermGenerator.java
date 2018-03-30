@@ -90,7 +90,7 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 			float weight = (float)((WeightedGroundRule)groundRule).getWeight();
 			FunctionTerm function = ((WeightedGroundRule)groundRule).getFunctionDefinition();
 
-			/* Checks if the function is wrapped in a PowerOfTwo */
+			// Checks if the function is wrapped in a PowerOfTwo.
 			if (function instanceof PowerOfTwo) {
 				squared = true;
 				function = ((PowerOfTwo)function).getInnerFunction();
@@ -98,10 +98,8 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 				squared = false;
 			}
 
-			/*
-			 * If the FunctionTerm is a MaxFunction, ensures that it has two arguments, a linear
-			 * function and zero, and constructs the objective term (a hinge loss)
-			 */
+			// If the FunctionTerm is a MaxFunction, ensures that it has two arguments, a linear
+			// function and zero, and constructs the objective term (a hinge loss).
 			if (function instanceof MaxFunction) {
 				if (((MaxFunction)function).size() != 2) {
 					throw new IllegalArgumentException("Max function must have one linear function and 0.0 as arguments.");
@@ -135,7 +133,7 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 				} else {
 					throw new IllegalArgumentException("Max function must have one linear function and 0.0 as arguments.");
 				}
-			/* Else, if it's a FunctionSum, constructs the objective term (a linear loss) */
+			// Else, if it's a FunctionSum, constructs the objective term (a linear loss).
 			} else if (function instanceof FunctionSum) {
 				Hyperplane hyperplane = processHyperplane((FunctionSum) function, termStore);
 				if (squared) {
@@ -206,5 +204,4 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 			constant = 0.0f;
 		}
 	}
-
 }

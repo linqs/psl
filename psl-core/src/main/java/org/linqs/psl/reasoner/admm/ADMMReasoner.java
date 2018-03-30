@@ -22,7 +22,9 @@ import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.ThreadPool;
+import org.linqs.psl.reasoner.admm.term.ADMMObjectiveTerm;
 import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
+import org.linqs.psl.reasoner.admm.term.LinearConstraintTerm;
 import org.linqs.psl.reasoner.admm.term.LocalVariable;
 import org.linqs.psl.reasoner.inspector.ReasonerInspector;
 import org.linqs.psl.reasoner.term.TermGenerator;
@@ -380,8 +382,24 @@ public class ADMMReasoner extends Reasoner {
 			epsilonDual = (float)(epsilonAbsTerm + epsilonRel * Math.sqrt(AyNorm));
 
 			if (iteration % LOG_PERIOD == 0) {
-				log.trace("Residuals at iteration {} -- Primal: {} -- Dual: {}", iteration, primalRes, dualRes);
-				log.trace("--------- Epsilon primal: {} -- Epsilon dual: {}", epsilonPrimal, epsilonDual);
+				float objective = 0.0f;
+				boolean feasible = true;
+
+				if (log.isTraceEnabled()) {
+					for (ADMMObjectiveTerm term : termStore) {
+						if (term instanceof LinearConstraintTerm) {
+							if (term.evaluate() > 0.0f) {
+								feasible = false;
+							}
+						} else {
+							objective += (1.0f - term.evaluate());
+						}
+					}
+				}
+
+				log.trace(
+						"Iteration {} -- Objective: {}, Feasible: {}, Primal: {}, Dual: {}, Epsilon Primal: {}, Epsilon Dual: {}.",
+						iteration, objective, feasible, primalRes, dualRes, epsilonPrimal, epsilonDual);
 			}
 
 			if (inspector != null) {

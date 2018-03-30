@@ -24,15 +24,13 @@ import java.util.List;
 /**
  * ADMMReasoner objective term of the form <br />
  * weight * coeffs^T * x
- *
- * @author Stephen Bach <bach@cs.umd.edu>
  */
 public class LinearLossTerm extends ADMMObjectiveTerm implements WeightedTerm {
 	private final List<Float> coeffs;
 	private float weight;
 
 	/**
-	 * Caller releases control of |zIndices| and |coeffs|.
+	 * Caller releases control of |variables| and |coeffs|.
 	 */
 	LinearLossTerm(List<LocalVariable> variables, List<Float> coeffs, float weight) {
 		super(variables);
@@ -63,5 +61,17 @@ public class LinearLossTerm extends ADMMObjectiveTerm implements WeightedTerm {
 
 			variable.setValue(value);
 		}
+	}
+
+	/**
+	 * weight * coeffs^T * x
+	 */
+	@Override
+	public float evaluate() {
+		float value = 0.0f;
+		for (int i = 0; i < variables.size(); i++) {
+			value += coeffs.get(i).floatValue() * variables.get(i).getValue();
+		}
+		return weight * value;
 	}
 }

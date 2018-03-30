@@ -22,13 +22,19 @@ import java.util.List;
 /**
  * ADMMReasoner objective term of the form <br />
  * weight * [max(coeffs^T * x - constant, 0)]^2
- *
- * @author Stephen Bach <bach@cs.umd.edu>
  */
 public class SquaredHingeLossTerm extends SquaredHyperplaneTerm {
 
 	public SquaredHingeLossTerm(List<LocalVariable> variables, List<Float> coeffs, float constant, float weight) {
 		super(variables, coeffs, constant, weight);
+	}
+
+	/**
+	 * weight * [max(coeffs^T * x - constant, 0.0)]^2
+	 */
+	@Override
+	public float evaluate() {
+		return weight * (float)Math.pow(Math.max(0.0f, super.evaluate()), 2);
 	}
 
 	@Override

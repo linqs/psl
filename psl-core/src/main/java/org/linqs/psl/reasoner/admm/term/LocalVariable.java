@@ -72,4 +72,8 @@ public class LocalVariable {
 
 		return this.globalId == ((LocalVariable)other).globalId;
 	}
+
+	public String toString() {
+		return String.format("(%f, %f)", value, lagrange);
+	}
 }
