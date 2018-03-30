@@ -759,7 +759,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 
 	@Override
 	public Double visitWeightExpression(WeightExpressionContext ctx) {
-		return Double.parseDouble(ctx.NONNEGATIVE_NUMBER().getText());
+		return Double.parseDouble(ctx.number().getText());
 	}
 
 	@Override
