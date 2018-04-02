@@ -191,6 +191,18 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 		// Reset the RVAs to default values.
 		setDefaultRandomVariables();
 
+		// Compute the initial objective.
+		if (log.isDebugEnabled() && evaluator != null) {
+			// Compute the MPE state before evaluating so variables have assigned values.
+			computeMPEState();
+
+			evaluator.compute(trainingMap);
+			double objective = evaluator.getRepresentativeMetric();
+			objective = evaluator.isHigherRepresentativeBetter() ? -1.0 * objective : objective;
+
+			log.debug("Initial Training Objective: {}", objective);
+		}
+
 		double[] scalingFactor = computeScalingFactor();
 
 		// Keep track of the last steps for each weight so we can apply momentum.
@@ -217,8 +229,8 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 				currentStep += inertia * lastSteps[i];
 
 				// TEST
-            // newWeight = newWeight + currentStep;
-				newWeight = Math.max(0.0, newWeight + currentStep);
+				newWeight = newWeight + currentStep;
+				// newWeight = Math.max(0.0, newWeight + currentStep);
 
 				log.trace("Gradient: {} (without momentun: {}), Expected Incomp.: {}, Observed Incomp.: {} -- ({}) {}",
 						currentStep, currentStep - (inertia * lastSteps[i]),
@@ -247,7 +259,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 				objective = evaluator.isHigherRepresentativeBetter() ? -1.0 * objective : objective;
 			}
 
-			log.debug("Iteration {} complete. Likelihood: {}. Objective: {}", step, currentLoss, objective);
+			log.debug("Iteration {} complete. Likelihood: {}. Training Objective: {}", step, currentLoss, objective);
 			log.trace("Model {} ", mutableRules);
 		}
 

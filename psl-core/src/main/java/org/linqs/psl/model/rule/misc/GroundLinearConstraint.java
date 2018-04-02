@@ -17,17 +17,19 @@
  */
 package org.linqs.psl.model.rule.misc;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
-
 import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.UnweightedRule;
 import org.linqs.psl.reasoner.function.ConstraintTerm;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.function.FunctionSum;
 import org.linqs.psl.reasoner.function.FunctionSummand;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * A linear constraint on the truth values of {@link GroundAtom GroundAtoms}
@@ -85,4 +87,8 @@ public class GroundLinearConstraint implements UnweightedGroundRule {
 		}
 	}
 
+	@Override
+	public List<GroundRule> negate() {
+		throw new UnsupportedOperationException();
+	}
 }

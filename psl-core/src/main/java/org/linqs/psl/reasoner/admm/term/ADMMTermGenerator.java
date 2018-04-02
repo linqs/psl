@@ -56,9 +56,19 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 		Parallel.foreach(ruleStore.getGroundRules(), new Parallel.Worker<GroundRule>() {
 			@Override
 			public void work(int index, GroundRule rule) {
-				ADMMObjectiveTerm term = createTerm(rule, (ADMMTermStore)termStore);
-				if (term.variables.size() > 0) {
-					termStore.add(rule, term);
+				if (rule instanceof WeightedGroundRule && ((WeightedGroundRule)rule).getWeight() < 0.0) {
+					// Negate (weight and expression) rules that have a negative weight.
+					for (GroundRule negatedRule : rule.negate()) {
+						ADMMObjectiveTerm term = createTerm(negatedRule, (ADMMTermStore)termStore);
+						if (term.variables.size() > 0) {
+							termStore.add(rule, term);
+						}
+					}
+				} else {
+					ADMMObjectiveTerm term = createTerm(rule, (ADMMTermStore)termStore);
+					if (term.variables.size() > 0) {
+						termStore.add(rule, term);
+					}
 				}
 			}
 		});
@@ -68,6 +78,7 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 
 	@Override
 	public void updateWeights(GroundRuleStore ruleStore, TermStore<ADMMObjectiveTerm> termStore) {
+		// TEST(eriq): This is broken for when a rule goes positive/negative.
 		for (GroundRule groundRule : ruleStore.getGroundRules()) {
 			if (groundRule instanceof WeightedGroundRule) {
 				termStore.updateWeight((WeightedGroundRule)groundRule);
