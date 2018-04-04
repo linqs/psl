@@ -32,10 +32,6 @@ public class HingeLossTerm extends HyperplaneTerm implements WeightedTerm {
 
 	HingeLossTerm(List<LocalVariable> variables, List<Float> coeffs, float constant, float weight) {
 		super(variables, coeffs, constant);
-
-		if (weight < 0.0) {
-			throw new IllegalArgumentException("Only non-negative weights are supported.");
-		}
 		setWeight(weight);
 	}
 

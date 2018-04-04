@@ -115,15 +115,11 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
 
 		for (int iteration = 0; iteration < numLocations; iteration++) {
 			if (!chooseNextLocation()) {
-				// TEST
-				// log.debug("Stopping search.");
-				log.info("Stopping search.");
+				log.debug("Stopping search.");
 				break;
 			}
 
-			// TEST
-			// log.debug("Iteration {} / {} ({}) -- Inspecting location {}", iteration, numLocations, maxNumLocations, currentLocation);
-			log.info("Iteration {} / {} ({}) -- Inspecting location {}", iteration, numLocations, maxNumLocations, currentLocation);
+			log.debug("Iteration {} / {} ({}) -- Inspecting location {}", iteration, numLocations, maxNumLocations, currentLocation);
 
 			// Set the weights for the current round.
 			getWeights(weights);
@@ -147,9 +143,7 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
 				}
 			}
 
-			// TEST
-			// log.debug("Location {} -- objective: {}", currentLocation, objective);
-			log.info("Location {} -- objective: {}", currentLocation, objective);
+			log.debug("Location {} -- objective: {}", currentLocation, objective);
 		}
 
 		// Set the final weights.

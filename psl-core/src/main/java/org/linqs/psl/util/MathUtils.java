@@ -24,11 +24,17 @@ import java.math.BigInteger;
  */
 public final class MathUtils {
 	public static final double EPSILON = 1e-6;
-	public static final double RELAXED_EPSILON = 5e-2;
+	public static final double RELAXED_EPSILON = 5e-3;
 	public static final double STRICT_EPSILON = 1e-8;
+
+	public static final double EPSILON_FLOAT = 1e-6f;
+	public static final double RELAXED_EPSILON_FLOAT = 5e-3f;
+	public static final double STRICT_EPSILON_FLOAT = 1e-8f;
 
 	// Static only.
 	private MathUtils() {}
+
+	// double comparison.
 
 	public static boolean equals(double a, double b) {
 		return equals(a, b, EPSILON);
@@ -71,6 +77,51 @@ public final class MathUtils {
 
 	public static boolean isZero(double a, double epsilon) {
 		return equals(a, 0.0, epsilon);
+	}
+
+	// double comparison.
+
+	public static boolean equals(float a, float b) {
+		return equals(a, b, EPSILON_FLOAT);
+	}
+
+	public static boolean equalsRelaxed(float a, float b) {
+		return equals(a, b, RELAXED_EPSILON_FLOAT);
+	}
+
+	public static boolean equalsStrict(float a, float b) {
+		return equals(a, b, STRICT_EPSILON_FLOAT);
+	}
+
+	public static boolean equals(float a, float b, float epsilon) {
+		return Math.abs(a - b) <= epsilon;
+	}
+
+	public static int compare(float a, float b) {
+		return compare(a, b, EPSILON_FLOAT);
+	}
+
+	/**
+	 * A comparison method with the Comparator integer return semantics.
+	 */
+	public static int compare(float a, float b, float epsilon) {
+		if (equals(a, b, epsilon)) {
+			return 0;
+		}
+
+		if (a < b) {
+			return -1;
+		}
+
+		return 1;
+	}
+
+	public static boolean isZero(float a) {
+		return equals(a, 0.0f);
+	}
+
+	public static boolean isZero(float a, float epsilon) {
+		return equals(a, 0.0f, epsilon);
 	}
 
 	public static int smallFactorial(int number) {

@@ -29,6 +29,7 @@ import org.linqs.psl.reasoner.admm.term.LocalVariable;
 import org.linqs.psl.reasoner.inspector.ReasonerInspector;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
+import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
 
 import com.google.common.collect.Iterables;
@@ -244,8 +245,6 @@ public class ADMMReasoner extends Reasoner {
 
 		// Also sometimes called 'z'.
 		consensusValues = new float[termStore.getNumGlobalVariables()];
-
-		// TEST
 		for (int i = 0; i < consensusValues.length; i++) {
 			consensusValues[i] = (float)Math.random();
 		}
@@ -295,11 +294,14 @@ public class ADMMReasoner extends Reasoner {
 		long totalTermBarrierWaitTimeNS = 0;
 		long totalVariableBarrierWaitTimeNS = 0;
 
-		while ((primalRes > epsilonPrimal || dualRes > epsilonDual) && iteration <= maxIter) {
-			try {
-				// TEST
-				// log.trace("Running with block sizes -- Term: {}, Variable: {}", termBlockSize, variableBlockSize);
+		float objective = 0.0f;
+		float oldObjective = 0.0f;
 
+		while (
+				(primalRes > epsilonPrimal || dualRes > epsilonDual)
+				&& (MathUtils.isZero(oldObjective) || !MathUtils.equals(objective, oldObjective))
+				&& iteration <= maxIter) {
+			try {
 				// Reset the counters for a new round.
 				termCounter.reset((int)Math.ceil(numTerms / (float)termBlockSize));
 				variableCounter.reset((int)Math.ceil(numVariables / (float)variableBlockSize));
@@ -345,17 +347,6 @@ public class ADMMReasoner extends Reasoner {
 				variableBlockSize += BASE_BLOCK_STEP_SIZE;
 			}
 
-			/* TEST
-			log.trace(String.format(
-					"Iteration wait times (term / variable) -- Counter: %d (%d, %d), Barrier: %d (%d, %d)",
-					(counterTime / 1000),
-					(iterationTermWaitTimeNS / 1000),
-					(iterationVariableWaitTimeNS / 1000),
-					(barrierTime / 1000),
-					(iterationTermBarrierWaitTimeNS / 1000),
-					(iterationVariableBarrierWaitTimeNS / 1000)));
-			*/
-
 			primalRes = 0.0f;
 			dualRes = 0.0f;
 			AxNorm = 0.0f;
@@ -382,7 +373,9 @@ public class ADMMReasoner extends Reasoner {
 			epsilonDual = (float)(epsilonAbsTerm + epsilonRel * Math.sqrt(AyNorm));
 
 			if (iteration % LOG_PERIOD == 0) {
-				float objective = 0.0f;
+				oldObjective = objective;
+
+				objective = 0.0f;
 				boolean feasible = true;
 
 				if (log.isTraceEnabled()) {
