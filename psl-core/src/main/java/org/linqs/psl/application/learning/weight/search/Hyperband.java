@@ -41,6 +41,10 @@ import java.util.Random;
  * https://arxiv.org/pdf/1603.06560.pdf
  * Some of the math has been adjusted to compute a budget (as a percentage) rather than a number of resources.
  *
+ * Total amount of budget used: BASE_BRACKET_SIZE_KEY * NUM_BRACKETS_KEY
+ * VotedPerceptron methods typically use a total budget of 25.
+ * Number of configurations evaluated: \sum_{i = 0}^{NUM_BRACKETS_KEY} (BASE_BRACKET_SIZE_KEY * SURVIVAL_KEY^i / (i + 1))
+ *
  * TODO(eriq): Think about inital weights.
  *
  * All extending classes should ensure that values for RVAs are set before evaluators are computed.
@@ -66,15 +70,20 @@ public class Hyperband extends WeightLearningApplication {
 	public static final int SURVIVAL_DEFAULT = 4;
 
 	/**
+	 * The base number of weight configurations for each brackets.
+	 */
+	public static final String BASE_BRACKET_SIZE_KEY = CONFIG_PREFIX + ".basebracketsize";
+	public static final int BASE_BRACKET_SIZE_DEFAULT = 10;
+
+	/**
 	 * The number of brackets to consider.
 	 * This is computed in vanilla Hyperband.
 	 */
 	public static final String NUM_BRACKETS_KEY = CONFIG_PREFIX + ".numbrackets";
-	public static final int NUM_BRACKETS_DEFAULT = 5;
+	public static final int NUM_BRACKETS_DEFAULT = 4;
 
 	public static final double MIN_BUDGET_PROPORTION = 0.001;
 	public static final int MIN_BRACKET_SIZE = 1;
-	public static final int BASE_BRACKET_SIZE = 10;
 
 	private final int survival;
 	private final Evaluator objectiveFunction;
@@ -83,6 +92,7 @@ public class Hyperband extends WeightLearningApplication {
 	private double[] bestWeights;
 
 	private int numBrackets;
+	private int baseBracketSize;
 
 	public Hyperband(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
 		this(model.getRules(), rvDB, observedDB, config);
@@ -103,6 +113,11 @@ public class Hyperband extends WeightLearningApplication {
 		if (numBrackets < 1) {
 			throw new IllegalArgumentException("Need at least one bracket.");
 		}
+
+		baseBracketSize = config.getInt(BASE_BRACKET_SIZE_KEY, BASE_BRACKET_SIZE_DEFAULT);
+		if (baseBracketSize < 1) {
+			throw new IllegalArgumentException("Need at least one bracket size.");
+		}
 	}
 
 	@Override
@@ -113,11 +128,16 @@ public class Hyperband extends WeightLearningApplication {
 		// Computes the observed incompatibilities.
 		computeObservedIncompatibility();
 
+		// The total cost used vs one full round of inference.
+		double totalCost = 0.0;
+		int numEvaluatedConfigs = 0;
+
 		for (int bracket = 0; bracket < numBrackets; bracket++) {
 			// TODO(eriq): Swap bracket direction? Start with more?
 
 			double bracketProportion = Math.pow(survival, bracket) / (bracket + 1);
-			int bracketSize = (int)(Math.max(MIN_BRACKET_SIZE, Math.ceil(bracketProportion * BASE_BRACKET_SIZE)));
+			int bracketSize = (int)(Math.max(MIN_BRACKET_SIZE, Math.ceil(bracketProportion * baseBracketSize)));
+			numEvaluatedConfigs += bracketSize;
 
 			double bracketBudget = Math.pow(survival, -1.0 * bracket);
 
@@ -136,6 +156,7 @@ public class Hyperband extends WeightLearningApplication {
 
 				PriorityQueue<RunResult> results = new PriorityQueue<RunResult>();
 				for (double[] config : configs) {
+					totalCost += roundBudget;
 
 					// Set the weights for the current round.
 					for (int i = 0; i < mutableRules.size(); i++) {
@@ -174,6 +195,8 @@ public class Hyperband extends WeightLearningApplication {
 		// The weights have changed, so we are no longer in an MPE state.
 		inMPEState = false;
 		inLatentMPEState = false;
+
+		log.debug("Hyperband complete. Configurations examined: {}. Total budget: {}",  numEvaluatedConfigs, totalCost);
 	}
 
 	private List<double[]> chooseConfigs(int bracketSize) {
@@ -184,7 +207,9 @@ public class Hyperband extends WeightLearningApplication {
 
 			for (int weightIndex = 0; weightIndex < mutableRules.size(); weightIndex++) {
 				// TODO(eriq): Mean, stats
-				config[weightIndex] = Math.max(0.0, rand.nextGaussian() + 5.0);
+				// TEST
+				// config[weightIndex] = Math.max(0.0, rand.nextGaussian() + 5.0);
+				config[weightIndex] = rand.nextDouble() * 10.0;
 			}
 
 			configs.add(config);
