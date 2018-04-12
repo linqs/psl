@@ -19,6 +19,7 @@ package org.linqs.psl.application.learning.weight;
 
 import org.linqs.psl.application.ModelApplication;
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
+import org.linqs.psl.application.groundrulestore.MemoryGroundRuleStore;
 import org.linqs.psl.application.util.Grounding;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.database.Database;
@@ -73,7 +74,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
 	 * The class to use for ground rule storage.
 	 */
 	public static final String GROUND_RULE_STORE_KEY = CONFIG_PREFIX + ".groundrulestore";
-	public static final String GROUND_RULE_STORE_DEFAULT = "org.linqs.psl.application.groundrulestore.MemoryGroundRuleStore";
+	public static final String GROUND_RULE_STORE_DEFAULT = MemoryGroundRuleStore.class.getName();
 
 	/**
 	 * The class to use for term storage.
@@ -218,11 +219,78 @@ public abstract class WeightLearningApplication implements ModelApplication {
 	}
 
 	/**
+	 * Initialize all the infrastructure dealing with the ground model.
+	 * Children should favor overriding postInitGroundModel() instead of this.
+	 */
+	protected void initGroundModel() {
+		if (groundModelInit) {
+			return;
+		}
+
+		PersistedAtomManager atomManager = createAtomManager();
+
+		// Ensure all targets from the observed (truth) database exist in the RV database.
+		ensureTargets(atomManager);
+
+		GroundRuleStore groundRuleStore = (GroundRuleStore)config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
+
+		log.info("Grounding out model.");
+		int groundCount = Grounding.groundAll(allRules, atomManager, groundRuleStore);
+
+		initGroundModel(atomManager, groundRuleStore);
+	}
+
+	/**
+	 * Init the ground model using an already populated ground rule store.
+	 * All the targets from the obserevd database should already exist in the RV database
+	 * before this ground rule store was populated.
+	 * This means that this variant will not call ensureTargets() (unlike the no parameter variant).
+	 */
+	public void initGroundModel(GroundRuleStore groundRuleStore) {
+		if (groundModelInit) {
+			return;
+		}
+
+		initGroundModel(createAtomManager(), groundRuleStore);
+	}
+
+	private void initGroundModel(PersistedAtomManager atomManager, GroundRuleStore groundRuleStore) {
+		if (groundModelInit) {
+			return;
+		}
+
+		TermStore termStore = (TermStore)config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
+		TermGenerator termGenerator = (TermGenerator)config.getNewObject(TERM_GENERATOR_KEY, TERM_GENERATOR_DEFAULT);
+
+		log.debug("Initializing objective terms for {} ground rules.", groundRuleStore.size());
+		@SuppressWarnings("unchecked")
+		int termCount = termGenerator.generateTerms(groundRuleStore, termStore);
+		log.debug("Generated {} objective terms from {} ground rules.", termCount, groundRuleStore.size());
+
+		TrainingMap trainingMap = new TrainingMap(atomManager, observedDB, false);
+		if (!supportsLatentVariables && trainingMap.getLatentVariables().size() > 0) {
+			Set<RandomVariableAtom> latentVariables = trainingMap.getLatentVariables();
+			throw new IllegalArgumentException(String.format(
+					"All RandomVariableAtoms must have corresponding ObservedAtoms, found %d latent variables." +
+					" Latent variables are not supported by this WeightLearningApplication (%s)." +
+					" Example latent variable: [%s].",
+					latentVariables.size(),
+					this.getClass().getName(),
+					latentVariables.iterator().next()));
+		}
+
+		Reasoner reasoner = (Reasoner)config.getNewObject(REASONER_KEY, REASONER_DEFAULT);
+
+		initGroundModel(reasoner, groundRuleStore, termStore, termGenerator, atomManager, trainingMap);
+	}
+
+	/**
 	 * Pass in all the ground model infrastructure.
 	 * The caller should be careful calling this method instead of the other variant.
 	 * Children should favor overriding postInitGroundModel() instead of this.
 	 */
-	public void initGroundModel(Reasoner reasoner, GroundRuleStore groundRuleStore,
+	public void initGroundModel(
+			Reasoner reasoner, GroundRuleStore groundRuleStore,
 			TermStore termStore, TermGenerator termGenerator,
 			PersistedAtomManager atomManager, TrainingMap trainingMap) {
 		if (groundModelInit) {
@@ -235,55 +303,6 @@ public abstract class WeightLearningApplication implements ModelApplication {
 		this.termGenerator = termGenerator;
 		this.atomManager = atomManager;
 		this.trainingMap = trainingMap;
-
-		if (config.getBoolean(RANDOM_WEIGHTS_KEY, RANDOM_WEIGHTS_DEFAULT)) {
-			initRandomWeights();
-		}
-
-		postInitGroundModel();
-
-		groundModelInit = true;
-	}
-
-	/**
-	 * Initialize all the infrastructure dealing with the ground model.
-	 * Children should favor overriding postInitGroundModel() instead of this.
-	 */
-	protected void initGroundModel() {
-		if (groundModelInit) {
-			return;
-		}
-
-		reasoner = (Reasoner)config.getNewObject(REASONER_KEY, REASONER_DEFAULT);
-		groundRuleStore = (GroundRuleStore)config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
-		termStore = (TermStore)config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
-		termGenerator = (TermGenerator)config.getNewObject(TERM_GENERATOR_KEY, TERM_GENERATOR_DEFAULT);
-
-		atomManager = createAtomManager();
-
-		// Ensure all targets from the observed (truth) database
-		// exist in the RV database.
-		ensureTargets();
-
-		trainingMap = new TrainingMap(atomManager, observedDB, false);
-		if (!supportsLatentVariables && trainingMap.getLatentVariables().size() > 0) {
-			Set<RandomVariableAtom> latentVariables = trainingMap.getLatentVariables();
-			throw new IllegalArgumentException(String.format(
-					"All RandomVariableAtoms must have corresponding ObservedAtoms, found %d latent variables." +
-					" Latent variables are not supported by this WeightLearningApplication (%s)." +
-					" Example latent variable: [%s].",
-					latentVariables.size(),
-					this.getClass().getName(),
-					latentVariables.iterator().next()));
-		}
-
-		log.info("Grounding out model.");
-		int groundCount = Grounding.groundAll(allRules, atomManager, groundRuleStore);
-
-		log.debug("Initializing objective terms for {} ground rules.", groundCount);
-		@SuppressWarnings("unchecked")
-		int termCount = termGenerator.generateTerms(groundRuleStore, termStore);
-		log.debug("Generated {} objective terms from {} ground rules.", termCount, groundCount);
 
 		if (config.getBoolean(RANDOM_WEIGHTS_KEY, RANDOM_WEIGHTS_DEFAULT)) {
 			initRandomWeights();
@@ -494,7 +513,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
 	/**
 	 * Make sure that all targets from the observed database exist in the RV database.
 	 */
-	private void ensureTargets() {
+	private void ensureTargets(PersistedAtomManager atomManager) {
 		// Iterate through all of the registered predicates in the observed.
 		for (StandardPredicate predicate : observedDB.getRegisteredPredicates()) {
 			// Ignore any closed predicates.
