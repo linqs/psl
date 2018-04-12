@@ -37,7 +37,6 @@ import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.parser.ModelLoader;
-import org.linqs.psl.reasoner.admm.ADMMReasonerFactory;
 import org.linqs.psl.util.Reflection;
 
 import org.apache.commons.cli.CommandLine;

@@ -260,25 +260,6 @@ public class ConfigManager {
 		}
 
 		@Override
-		public Factory getFactory(String key, Factory defaultValue)
-				throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-			logAccess(key, defaultValue);
-
-			Object value = config.getProperty(key);
-			if (value == null) {
-				return defaultValue;
-			}
-
-			if (value instanceof Factory) {
-				return (Factory) value;
-			} else if (value instanceof String) {
-				return (Factory) ClassLoader.getSystemClassLoader().loadClass((String) value).newInstance();
-			} else {
-				throw new IllegalArgumentException("Value " + value + " is not a Factory nor a String.");
-			}
-		}
-
-		@Override
 		public Enum<?> getEnum(String key, Enum<?> defaultValue) {
 			logAccess(key, defaultValue);
 			return (Enum<?>) config.get(defaultValue.getDeclaringClass(), key, defaultValue);

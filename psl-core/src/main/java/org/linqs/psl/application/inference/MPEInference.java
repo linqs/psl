@@ -25,7 +25,6 @@ import org.linqs.psl.application.util.GroundRules;
 import org.linqs.psl.application.util.Grounding;
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.config.ConfigManager;
-import org.linqs.psl.config.Factory;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.model.Model;
@@ -33,8 +32,6 @@ import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.reasoner.Reasoner;
-import org.linqs.psl.reasoner.ReasonerFactory;
-import org.linqs.psl.reasoner.admm.ADMMReasonerFactory;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 
@@ -66,7 +63,6 @@ public class MPEInference implements ModelApplication {
 
 	/**
 	 * The class to use for a reasoner.
-	 * Should be compatible with REASONER_KEY.
 	 */
 	public static final String REASONER_KEY = CONFIG_PREFIX + ".reasoner";
 	public static final String REASONER_DEFAULT = "org.linqs.psl.reasoner.admm.ADMMReasoner";

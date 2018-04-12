@@ -24,7 +24,6 @@ import org.linqs.psl.application.inference.result.memory.MemoryFullInferenceResu
 import org.linqs.psl.application.util.GroundRules;
 import org.linqs.psl.application.util.Grounding;
 import org.linqs.psl.config.ConfigBundle;
-import org.linqs.psl.config.Factory;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.LazyAtomManager;
 import org.linqs.psl.model.Model;
@@ -33,8 +32,6 @@ import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.Reasoner;
-import org.linqs.psl.reasoner.ReasonerFactory;
-import org.linqs.psl.reasoner.admm.ADMMReasonerFactory;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 
@@ -61,18 +58,10 @@ public class LazyMPEInference implements ModelApplication {
 	public static final String CONFIG_PREFIX = "lazympeinference";
 
 	/**
-	 * Key for {@link Factory} or String property.
-	 *
-	 * Should be set to a {@link ReasonerFactory} or the fully qualified
-	 * name of one. Will be used to instantiate a {@link Reasoner}.
+	 * The class to use for a reasoner.
 	 */
 	public static final String REASONER_KEY = CONFIG_PREFIX + ".reasoner";
-	/**
-	 * Default value for REASONER_KEY.
-	 *
-	 * Value is instance of {@link ADMMReasonerFactory}.
-	 */
-	public static final ReasonerFactory REASONER_DEFAULT = new ADMMReasonerFactory();
+	public static final String REASONER_DEFAULT = "org.linqs.psl.reasoner.admm.ADMMReasoner";
 
 	/**
 	 * The class to use for ground rule storage.
@@ -122,7 +111,7 @@ public class LazyMPEInference implements ModelApplication {
 
 	private void initialize() {
 		try {
-			reasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
+			reasoner = (Reasoner)config.getNewObject(REASONER_KEY, REASONER_DEFAULT);
 			termStore = (TermStore)config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
 			groundRuleStore = (GroundRuleStore)config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
 			termGenerator = (TermGenerator)config.getNewObject(TERM_GENERATOR_KEY, TERM_GENERATOR_DEFAULT);

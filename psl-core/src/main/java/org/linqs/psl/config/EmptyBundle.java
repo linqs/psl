@@ -142,11 +142,6 @@ public class EmptyBundle implements ConfigBundle {
 	}
 
 	@Override
-	public Factory getFactory(String key, Factory defaultValue) {
-		return defaultValue;
-	}
-
-	@Override
 	public Enum<?> getEnum(String key, Enum<?> defaultValue) {
 		return defaultValue;
 	}
