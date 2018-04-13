@@ -104,11 +104,6 @@ public class ADMMReasoner extends Reasoner {
 	private static final float UPPER_BOUND = 1.0f;
 
 	/**
-	 * The size of computation blocks for terms and variables.
-	 */
-	private static final int BLOCK_SIZE = 25;
-
-	/**
 	 * Log the residuals once in every period.
 	 */
 	private static final int LOG_PERIOD = 50;
@@ -142,6 +137,9 @@ public class ADMMReasoner extends Reasoner {
 	// Also sometimes called 'z'.
 	// Only populated after inference.
 	private float[] consensusValues;
+
+	private int termBlockSize;
+	private int variableBlockSize;
 
 	public ADMMReasoner(ConfigBundle config) {
 		super(config);
@@ -238,8 +236,11 @@ public class ADMMReasoner extends Reasoner {
 			consensusValues[i] = (float)Math.random();
 		}
 
-		int numTermBlocks = (int)Math.ceil(numTerms / (float)BLOCK_SIZE);
-		int numVariableBlocks = (int)Math.ceil(numVariables / (float)BLOCK_SIZE);
+		termBlockSize = numTerms / (Parallel.NUM_THREADS * 4) + 1;
+		variableBlockSize = numVariables / (Parallel.NUM_THREADS * 4) + 1;
+
+		int numTermBlocks = (int)Math.ceil(numTerms / (float)termBlockSize);
+		int numVariableBlocks = (int)Math.ceil(numVariables / (float)variableBlockSize);
 
 		// Performs inference.
 		float epsilonAbsTerm = (float)(Math.sqrt(termStore.getNumLocalVariables()) * epsilonAbs);
@@ -262,10 +263,10 @@ public class ADMMReasoner extends Reasoner {
 			augmentedLagrangePenalty = 0.0f;
 
 			// Minimize all the terms.
-			Parallel.count(numTermBlocks, new TermWorker(termStore));
+			Parallel.count(numTermBlocks, new TermWorker(termStore, termBlockSize));
 
 			// Compute new consensus values and residuals.
-			Parallel.count(numVariableBlocks, new VariableWorker(termStore));
+			Parallel.count(numVariableBlocks, new VariableWorker(termStore, variableBlockSize));
 
 			primalRes = (float)Math.sqrt(primalRes);
 			dualRes = (float)(stepSize * Math.sqrt(dualRes));
@@ -336,14 +337,16 @@ public class ADMMReasoner extends Reasoner {
 
 	private class TermWorker extends Parallel.Worker<Integer> {
 		private ADMMTermStore termStore;
+		private int blockSize;
 
-		public TermWorker(ADMMTermStore termStore) {
+		public TermWorker(ADMMTermStore termStore, int blockSize) {
 			super();
 			this.termStore = termStore;
+			this.blockSize = blockSize;
 		}
 
 		public Object clone() {
-			return new TermWorker(termStore);
+			return new TermWorker(termStore, blockSize);
 		}
 
 		@Override
@@ -351,8 +354,8 @@ public class ADMMReasoner extends Reasoner {
 			int numTerms = termStore.size();
 
 			// Minimize each local function (wrt the local variable copies).
-			for (int innerBlockIndex = 0; innerBlockIndex < BLOCK_SIZE; innerBlockIndex++) {
-				int termIndex = blockIndex * BLOCK_SIZE + innerBlockIndex;
+			for (int innerBlockIndex = 0; innerBlockIndex < blockSize; innerBlockIndex++) {
+				int termIndex = blockIndex * blockSize + innerBlockIndex;
 
 				if (termIndex >= numTerms) {
 					break;
@@ -366,14 +369,16 @@ public class ADMMReasoner extends Reasoner {
 
 	private class VariableWorker extends Parallel.Worker<Integer> {
 		private ADMMTermStore termStore;
+		private int blockSize;
 
-		public VariableWorker(ADMMTermStore termStore) {
+		public VariableWorker(ADMMTermStore termStore, int blockSize) {
 			super();
 			this.termStore = termStore;
+			this.blockSize = blockSize;
 		}
 
 		public Object clone() {
-			return new VariableWorker(termStore);
+			return new VariableWorker(termStore, blockSize);
 		}
 
 		@Override
@@ -390,8 +395,8 @@ public class ADMMReasoner extends Reasoner {
 
 			// Instead of dividing up the work ahead of time,
 			// get one job at a time so the threads will have more even workloads.
-			for (int innerBlockIndex = 0; innerBlockIndex < BLOCK_SIZE; innerBlockIndex++) {
-				int variableIndex = blockIndex * BLOCK_SIZE + innerBlockIndex;
+			for (int innerBlockIndex = 0; innerBlockIndex < blockSize; innerBlockIndex++) {
+				int variableIndex = blockIndex * blockSize + innerBlockIndex;
 
 				if (variableIndex >= numVariables) {
 					break;
