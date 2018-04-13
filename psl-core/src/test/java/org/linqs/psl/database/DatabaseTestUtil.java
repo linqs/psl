@@ -57,13 +57,14 @@ public class DatabaseTestUtil {
 			return new PostgreSQLDriver(DB_NAME, clear);
 		} catch (RuntimeException ex) {
 			// Check to see if we failed to connect because the server is down.
-			if (ex.getCause() instanceof org.postgresql.util.PSQLException) {
-				if (ex.getCause().getCause() instanceof java.net.ConnectException) {
-					if (ex.getCause().getCause().getMessage().contains("Connection refused")) {
-						System.out.println("Skipping Postgres test... cannot connect to database.");
-						return null;
-					}
+			Throwable currentException = ex;
+			while (currentException != null) {
+				if (currentException instanceof java.net.ConnectException &&
+						currentException.getMessage().contains("Connection refused")) {
+					System.out.println("Skipping Postgres test... cannot connect to database.");
+					return null;
 				}
+				currentException = currentException.getCause();
 			}
 
 			// We failed to connect, but not because the server is down.
