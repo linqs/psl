@@ -937,4 +937,58 @@ public class ModelLoaderTest {
 
 		PSLTest.assertModel(dataStore, input, expected);
 	}
+
+	@Test
+	public void testNonAlphanumericConstants() {
+		String input =
+			"1: Single('') & Double(A, B) >> Single(B) ^2\n" +
+			"1: Single('\\\\') & Double(A, B) >> Single(B) ^2\n" +
+			"1: Single('\\'') & Double(A, B) >> Single(B) ^2\n" +
+			"1: Single('\"') & Double(A, B) >> Single(B) ^2\n" +
+			"1: Single('a\n\t\rb') & Double(A1, B) >> Single(B) ^2\n" +
+			"1: Single('a\\n\\t\\rb') & Double(A2, B) >> Single(B) ^2\n" +
+			"1: Single('abc') & Double(A, B) >> Single(B) ^2\n" +
+			"1: Single('123') & Double(A, B) >> Single(B) ^2\n" +
+			"1: Single('`~!@#$%^&*()-_=+') & Double(A, B) >> Single(B) ^2\n" +
+			"1: Single('{[}]|;:') & Double(A, B) >> Single(B) ^2\n" +
+			"1: Single('<,>.?/') & Double(A, B) >> Single(B) ^2\n" +
+			"1: Single(\"\") & Double(Z, B) >> Single(B) ^2\n" +
+			"1: Single(\"\\\\\") & Double(Z, B) >> Single(B) ^2\n" +
+			"1: Single(\"'\") & Double(Z, B) >> Single(B) ^2\n" +
+			"1: Single(\"\\\"\") & Double(Z, B) >> Single(B) ^2\n" +
+			"1: Single(\"a\n\t\rb\") & Double(Z1, B) >> Single(B) ^2\n" +
+			"1: Single(\"a\\n\\t\\rb\") & Double(Z2, B) >> Single(B) ^2\n" +
+			"1: Single(\"abc\") & Double(Z, B) >> Single(B) ^2\n" +
+			"1: Single(\"123\") & Double(Z, B) >> Single(B) ^2\n" +
+			"1: Single(\"`~!@#$%^&*()-_=+\") & Double(Z, B) >> Single(B) ^2\n" +
+			"1: Single(\"{[}]|;:\") & Double(Z, B) >> Single(B) ^2\n" +
+			"1: Single(\"<,>.?/\") & Double(Z, B) >> Single(B) ^2\n" +
+			"";
+		String[] expected = new String[]{
+			"1.0: ( SINGLE('') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('\\\\') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('\\'') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('\"') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('a\n\t\rb') & DOUBLE(A1, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('a\n\t\rb') & DOUBLE(A2, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('abc') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('123') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('`~!@#$%^&*()-_=+') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('{[}]|;:') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('<,>.?/') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('') & DOUBLE(Z, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('\\\\') & DOUBLE(Z, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('\\'') & DOUBLE(Z, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('\"') & DOUBLE(Z, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('a\n\t\rb') & DOUBLE(Z1, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('a\n\t\rb') & DOUBLE(Z2, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('abc') & DOUBLE(Z, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('123') & DOUBLE(Z, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('`~!@#$%^&*()-_=+') & DOUBLE(Z, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('{[}]|;:') & DOUBLE(Z, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('<,>.?/') & DOUBLE(Z, B) ) >> SINGLE(B) ^2",
+		};
+
+		PSLTest.assertModel(dataStore, input, expected);
+	}
 }

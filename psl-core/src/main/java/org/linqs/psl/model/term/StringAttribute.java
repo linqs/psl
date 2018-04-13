@@ -21,7 +21,6 @@ package org.linqs.psl.model.term;
  * An {@link Attribute} that encapsulates a String.
  */
 public class StringAttribute implements Attribute {
-
 	private final String value;
 
 	/**
@@ -38,10 +37,14 @@ public class StringAttribute implements Attribute {
 	 */
 	@Override
 	public String toString() {
-		if (value.length() > 28)
-			return "'" + value.substring(0, Math.min(value.length(), 25)) + "...'";
-		else
-			return "'" + value + "'";
+		String text = value;
+		if (value.length() > 28) {
+			text = value.substring(0, Math.min(value.length(), 25)) + "...";
+		}
+
+		// Make the required escapes.
+		text = text.replace("\\", "\\\\").replace("'", "\\'");
+		return "'" + text + "'";
 	}
 
 	@Override

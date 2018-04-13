@@ -57,6 +57,8 @@ public class UniqueStringID implements Constant {
 
 	@Override
 	public String toString() {
-		return "'" + id + "'";
+		// Make the required escapes.
+		String text = id.replace("\\", "\\\\").replace("'", "\\'");
+		return "'" + text + "'";
 	}
 }

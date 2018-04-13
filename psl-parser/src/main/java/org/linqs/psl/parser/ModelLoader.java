@@ -103,6 +103,7 @@ import org.antlr.v4.runtime.CommonToken;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Recognizer;
+import org.antlr.v4.runtime.misc.Interval;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
 
 import java.io.Reader;
@@ -810,15 +811,32 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 
 	@Override
 	public Constant visitConstant(ConstantContext ctx) {
-		// Return the most trival constant type that matches the parsed type.
-		// Note that these values will get promoted to unique identifiers if necessary
-		// by Atom.
+		// We need to jump through these hoops to preserve whitespace.
+		int contextStart = ctx.start.getStartIndex();
+		int contextEnd = ctx.stop.getStopIndex();
+		Interval interval = new Interval(contextStart, contextEnd);
+		String text = ctx.start.getInputStream().getText(interval);
 
-		// Remove the encapsulating single or double quotes.
-		// Make sure not to strip off any extra values.
-		String constantValue = ctx.CONSTANT_VALUE().getText();
-		constantValue = constantValue.replaceFirst("^(['\"])(.*)\\1$", "$2");
-		return new StringAttribute(constantValue);
+		// Strip the quotes (first and last characters).
+		text = text.substring(1, text.length() - 1);
+		text = replaceLiterals(text);
+
+		return new StringAttribute(text);
+	}
+
+	private String replaceLiterals(String text) {
+		if (!text.contains("\\")) {
+			return text;
+		}
+
+		text = text.replace("\\'", "'");
+		text = text.replace("\\\"", "\"");
+		text = text.replace("\\t", "\t");
+		text = text.replace("\\n", "\n");
+		text = text.replace("\\r", "\r");
+		text = text.replace("\\\\", "\\");
+
+		return text;
 	}
 
 	@Override
