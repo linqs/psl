@@ -112,7 +112,7 @@ public class LazyMPEInferenceTest {
 		// The Friends predicate should be empty.
 		assertEquals(0, Queries.countAllGroundRandomVariableAtoms(inferDB, info.predicates.get("Friends")));
 
-		mpe.mpeInference();
+		mpe.inference();
 
 		// There are multiple optimal configuration to the first round of grounding (which snowballs later),
 		// but we know there should be at least 16 ground atoms and less than 20.
@@ -131,7 +131,7 @@ public class LazyMPEInferenceTest {
 		// The Friends predicate should be empty.
 		assertEquals(0, Queries.countAllGroundRandomVariableAtoms(inferDB, info.predicates.get("Friends")));
 
-		mpe.mpeInference();
+		mpe.inference();
 
 		// There are multiple optimal configuration to the first round of grounding,
 		// but we know that at least all 'Eugene's grounding will be excluded.
@@ -167,7 +167,7 @@ public class LazyMPEInferenceTest {
 		// The Friends predicate should be empty.
 		assertEquals(0, Queries.countAllGroundRandomVariableAtoms(inferDB, info.predicates.get("Friends")));
 
-		mpe.mpeInference();
+		mpe.inference();
 
 		// There are multiple optimal configuration to the first round of grounding (which snowballs later),
 		// but we know there should be at least 16 ground atoms and less than 20.
@@ -211,7 +211,7 @@ public class LazyMPEInferenceTest {
 		// The Friends predicate should be empty.
 		assertEquals(0, Queries.countAllGroundRandomVariableAtoms(inferDB, info.predicates.get("Friends")));
 
-		mpe.mpeInference();
+		mpe.inference();
 
 		// There are multiple optimal configuration to the first round of grounding (which snowballs later),
 		// but we know there should be at least 16 ground atoms and less than 20.
@@ -232,7 +232,7 @@ public class LazyMPEInferenceTest {
 		// The Friends predicate should be fully defined.
 		assertEquals(20, Queries.countAllGroundRandomVariableAtoms(fullTargetDB, info.predicates.get("Friends")));
 
-		mpe.mpeInference();
+		mpe.inference();
 
 		assertEquals(20, Queries.countAllGroundRandomVariableAtoms(fullTargetDB, info.predicates.get("Friends")));
 

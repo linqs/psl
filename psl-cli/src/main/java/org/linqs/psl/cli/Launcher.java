@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.cli;
 
+import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.application.inference.MPEInference;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
@@ -111,6 +112,7 @@ public class Launcher {
 			Paths.get(System.getProperty("java.io.tmpdir"),
 			"cli_" + System.getProperty("user.name") + "@" + getHostname()).toString();
 	public static final String DEFAULT_POSTGRES_DB_NAME = "psl_cli";
+	public static final String DEFAULT_IA = MPEInference.class.getName();
 	public static final String DEFAULT_WLA = MaxLikelihoodMPE.class.getName();
 
 	// Reserved partition names.
@@ -249,17 +251,17 @@ public class Launcher {
 		return closedPredicates;
 	}
 
-	private void runInference(Model model, DataStore dataStore, Set<StandardPredicate> closedPredicates)
-			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-		log.info("Starting inference");
+	private void runInference(Model model, DataStore dataStore, Set<StandardPredicate> closedPredicates, String inferenceName) {
+		log.info("Starting inference with class: {}", inferenceName);
 
 		// Create database.
 		Partition targetPartition = dataStore.getPartition(PARTITION_NAME_TARGET);
 		Partition observationsPartition = dataStore.getPartition(PARTITION_NAME_OBSERVATIONS);
 		Database database = dataStore.getDatabase(targetPartition, closedPredicates, observationsPartition);
 
-		MPEInference mpe = new MPEInference(model, database, config);
-		mpe.mpeInference();
+		InferenceApplication inferenceApplication =
+				InferenceApplication.getInferenceApplication(inferenceName, model, database, config);
+		inferenceApplication.inference();
 
 		log.info("Inference Complete");
 
@@ -312,7 +314,7 @@ public class Launcher {
 	}
 
 	private void learnWeights(Model model, DataStore dataStore, Set<StandardPredicate> closedPredicates, String wlaName)
-			throws ClassNotFoundException, IOException, IllegalAccessException, InstantiationException {
+			throws IOException {
 		log.info("Starting weight learning with learner: " + wlaName);
 
 		Partition targetPartition = dataStore.getPartition(PARTITION_NAME_TARGET);
@@ -403,7 +405,7 @@ public class Launcher {
 
 		// Inference
 		if (options.hasOption(OPERATION_INFER)) {
-			runInference(model, dataStore, closedPredicates);
+			runInference(model, dataStore, closedPredicates, options.getOptionValue(OPERATION_INFER, DEFAULT_IA));
 		} else if (options.hasOption(OPERATION_LEARN)) {
 			learnWeights(model, dataStore, closedPredicates, options.getOptionValue(OPERATION_LEARN, DEFAULT_WLA));
 		} else {
@@ -435,7 +437,15 @@ public class Launcher {
 
 		OptionGroup mainCommand = new OptionGroup();
 
-		mainCommand.addOption(new Option(OPERATION_INFER, OPERATION_INFER_LONG, false, "Run MAP inference"));
+		mainCommand.addOption(Option.builder(OPERATION_INFER)
+				.longOpt(OPERATION_INFER_LONG)
+				.desc("Run MAP inference." +
+						" You can optionally supply a fully qualified name for an inference application" +
+						" (defaults to " + DEFAULT_IA + ").")
+				.hasArg()
+				.argName("inferenceMethod")
+				.optionalArg(true)
+				.build());
 
 		mainCommand.addOption(Option.builder(OPERATION_LEARN)
 				.longOpt(OPERATION_LEARN_LONG)

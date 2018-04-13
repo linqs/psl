@@ -52,7 +52,7 @@ public class BooleanMCSatTest {
 		Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
 		MPEInference mpe = new MPEInference(info.model, inferDB, info.config);
 
-		mpe.mpeInference();
+		mpe.inference();
 		mpe.close();
 		inferDB.close();
 	}

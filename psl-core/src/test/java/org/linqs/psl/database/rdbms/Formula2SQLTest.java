@@ -85,7 +85,7 @@ public class Formula2SQLTest {
 			fail("Exception thrown during MPE constructor.");
 		}
 
-		mpe.mpeInference();
+		mpe.inference();
 		mpe.close();
 		inferDB.close();
 
@@ -138,7 +138,7 @@ public class Formula2SQLTest {
 			fail("Exception thrown during MPE constructor.");
 		}
 
-		mpe.mpeInference();
+		mpe.inference();
 		mpe.close();
 		inferDB.close();
 

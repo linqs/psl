@@ -17,15 +17,7 @@
  */
 package org.linqs.psl.application;
 
-import org.linqs.psl.database.Database;
-import org.linqs.psl.model.Model;
-
-/**
- * Combines {@link Model Models} with {@link Database Databases}
- * to perform a task, such as inference or learning.
- */
 public interface ModelApplication {
-	
 	/**
 	 * Releases all resources used by this ModelApplication.
 	 */

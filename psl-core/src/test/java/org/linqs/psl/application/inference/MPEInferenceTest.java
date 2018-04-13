@@ -58,7 +58,7 @@ public class MPEInferenceTest {
 		Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
 		MPEInference mpe = new MPEInference(info.model, inferDB, info.config);
 
-		mpe.mpeInference();
+		mpe.inference();
 		mpe.close();
 		inferDB.close();
 	}
@@ -94,7 +94,7 @@ public class MPEInferenceTest {
 		Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
 		MPEInference mpe = new MPEInference(info.model, inferDB, info.config);
 
-		mpe.mpeInference();
+		mpe.inference();
 		mpe.close();
 		inferDB.close();
 	}
@@ -136,7 +136,7 @@ public class MPEInferenceTest {
 		Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
 		MPEInference mpe = new MPEInference(info.model, inferDB, info.config);
 
-		mpe.mpeInference();
+		mpe.inference();
 		mpe.close();
 		inferDB.close();
 	}
