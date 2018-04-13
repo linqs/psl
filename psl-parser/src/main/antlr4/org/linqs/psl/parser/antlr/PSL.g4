@@ -228,7 +228,7 @@ booleanExpression
 //
 
 weightExpression
-    :   NONNEGATIVE_NUMBER COLON
+    :   number COLON
     ;
 
 EXPONENT_EXPRESSION

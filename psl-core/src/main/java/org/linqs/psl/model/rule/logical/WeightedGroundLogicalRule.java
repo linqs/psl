@@ -18,6 +18,8 @@
 package org.linqs.psl.model.rule.logical;
 
 import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.formula.Formula;
+import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.function.ConstantNumber;
@@ -31,9 +33,10 @@ public class WeightedGroundLogicalRule extends AbstractGroundLogicalRule impleme
 	private double weight;
 	private final boolean squared;
 
-	protected WeightedGroundLogicalRule(WeightedLogicalRule r, List<GroundAtom> posLiterals,
+	protected WeightedGroundLogicalRule(WeightedLogicalRule rule, List<GroundAtom> posLiterals,
 			List<GroundAtom> negLiterals, boolean squared) {
-		super(r, posLiterals, negLiterals);
+		super(rule, posLiterals, negLiterals);
+		// TODO(eriq): I hate this weight deferment. See if it is actually necessary.
 		weight = Double.NaN;
 		this.squared = squared;
 	}
@@ -86,5 +89,13 @@ public class WeightedGroundLogicalRule extends AbstractGroundLogicalRule impleme
 	@Override
 	public String toString() {
 		return "" + getWeight() + ": " + super.toString() + ((squared) ? " ^2" : "");
+	}
+
+	@Override
+	protected GroundRule instantiateNegatedGroundRule(
+			Formula disjunction, List<GroundAtom> positiveAtoms,
+			List<GroundAtom> negativeAtoms, String name) {
+		WeightedLogicalRule newRule = new WeightedLogicalRule(rule.getFormula(), -1.0 * ((WeightedLogicalRule)rule).getWeight(), squared, name);
+		return new WeightedGroundLogicalRule(newRule, positiveAtoms, negativeAtoms, squared);
 	}
 }

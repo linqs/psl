@@ -358,7 +358,12 @@ public abstract class WeightLearningApplication implements ModelApplication {
 			return;
 		}
 
-		termGenerator.updateWeights(groundRuleStore, termStore);
+		// TEST
+		// termGenerator.updateWeights(groundRuleStore, termStore);
+
+		termStore.clear();
+		int count = termGenerator.generateTerms(groundRuleStore, termStore);
+
 		reasoner.optimize(termStore);
 
 		inMPEState = true;

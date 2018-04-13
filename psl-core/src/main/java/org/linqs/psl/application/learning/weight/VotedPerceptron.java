@@ -35,8 +35,6 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * TODO(steve): rewrite class documentation to describe general gradient-based learning algorithms
- *
  * Learns new weights for the weighted rules in a model using the voted perceptron algorithm.
  *
  * The weight-learning objective is to maximize the likelihood according to the distribution:
@@ -120,6 +118,12 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	public static final int NUM_STEPS_DEFAULT = 25;
 
 	/**
+	 * If true, then weight will not be allowed to go negative (clipped at zero).
+	 */
+	public static final String CLIP_NEGATIVE_WEIGHTS_KEY = CONFIG_PREFIX + ".clipnegativeweights";
+	public static final boolean CLIP_NEGATIVE_WEIGHTS_DEFAULT = true;
+
+	/**
 	 * The evaluation method to get stats for each iteration.
 	 * This is only used for logging/information, and not for gradients.
 	 */
@@ -132,6 +136,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	protected final boolean scaleGradient;
 
 	protected boolean averageSteps;
+	protected boolean clipNegativeWeights;
 	protected double inertia;
 	protected final int maxNumSteps;
 	protected int numSteps;
@@ -177,6 +182,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 
 		scaleGradient = config.getBoolean(SCALE_GRADIENT_KEY, SCALE_GRADIENT_DEFAULT);
 		averageSteps = config.getBoolean(AVERAGE_STEPS_KEY, AVERAGE_STEPS_DEFAULT);
+		clipNegativeWeights = config.getBoolean(CLIP_NEGATIVE_WEIGHTS_KEY, CLIP_NEGATIVE_WEIGHTS_DEFAULT);
 
 		currentLoss = Double.NaN;
 	}
@@ -190,6 +196,18 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 
 		// Reset the RVAs to default values.
 		setDefaultRandomVariables();
+
+		// Compute the initial objective.
+		if (log.isDebugEnabled() && evaluator != null) {
+			// Compute the MPE state before evaluating so variables have assigned values.
+			computeMPEState();
+
+			evaluator.compute(trainingMap);
+			double objective = evaluator.getRepresentativeMetric();
+			objective = evaluator.isHigherRepresentativeBetter() ? -1.0 * objective : objective;
+
+			log.debug("Initial Training Objective: {}", objective);
+		}
 
 		double[] scalingFactor = computeScalingFactor();
 
@@ -216,9 +234,11 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 				// Apply momentum.
 				currentStep += inertia * lastSteps[i];
 
-				// TEST
-            // newWeight = newWeight + currentStep;
-				newWeight = Math.max(0.0, newWeight + currentStep);
+				if (clipNegativeWeights) {
+					newWeight = Math.max(0.0, newWeight + currentStep);
+				} else {
+					newWeight = newWeight + currentStep;
+				}
 
 				log.trace("Gradient: {} (without momentun: {}), Expected Incomp.: {}, Observed Incomp.: {} -- ({}) {}",
 						currentStep, currentStep - (inertia * lastSteps[i]),
@@ -247,7 +267,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 				objective = evaluator.isHigherRepresentativeBetter() ? -1.0 * objective : objective;
 			}
 
-			log.debug("Iteration {} complete. Likelihood: {}. Objective: {}", step, currentLoss, objective);
+			log.debug("Iteration {} complete. Likelihood: {}. Training Objective: {}", step, currentLoss, objective);
 			log.trace("Model {} ", mutableRules);
 		}
 

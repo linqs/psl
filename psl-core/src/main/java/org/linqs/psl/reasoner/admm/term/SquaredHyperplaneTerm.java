@@ -60,9 +60,6 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
 
 		L = null;
 
-		if (weight < 0.0) {
-			throw new IllegalArgumentException("Only non-negative weights are supported.");
-		}
 		setWeight(weight);
 	}
 

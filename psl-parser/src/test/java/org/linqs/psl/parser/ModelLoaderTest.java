@@ -924,4 +924,17 @@ public class ModelLoaderTest {
 		assertEquals(1, atoms.size());
 		assertEquals(SummationAtom.class, atoms.get(0).getClass());
 	}
+
+	@Test
+	public void testNegativeWeights() {
+		String input =
+			"-1: Single(A) & Double(A, B) >> Single(B) ^2\n" +
+			"-5.2: Single(B) & Double(B, A) >> Single(A) ^2\n";
+		String[] expected = new String[]{
+			"-1.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"-5.2: ( SINGLE(B) & DOUBLE(B, A) ) >> SINGLE(A) ^2"
+		};
+
+		PSLTest.assertModel(dataStore, input, expected);
+	}
 }

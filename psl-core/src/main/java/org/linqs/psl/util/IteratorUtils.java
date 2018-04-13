@@ -43,6 +43,22 @@ public final class IteratorUtils {
 		return new PermutationIterator(size);
 	}
 
+	/**
+	 * Get an iterator that will go through the powerset of the specified size.
+	 * A true in the array means membership in the subset.
+	 * The iterator retains ownership of the array and will pass back the same
+	 * (but modified) array each time.
+	 */
+	public static Iterable<boolean[]> powerset(int size) {
+		final int finalSize = size;
+		return new Iterable<boolean[]>() {
+			@Override
+			public Iterator<boolean[]> iterator() {
+				return new PowerSetIterator(finalSize);
+			}
+		};
+	}
+
 	private static class ConcatenationIterable<T> implements Iterable<T> {
 		private Iterable<? extends T>[] collections;
 
@@ -105,6 +121,55 @@ public final class IteratorUtils {
 			T rtn = currentIterator.next();
 			primeNext();
 			return rtn;
+		}
+
+		@Override
+		public void remove() {
+			throw new UnsupportedOperationException();
+		}
+	}
+
+	private static class PowerSetIterator implements Iterator<boolean[]> {
+		private final int size;
+		private long count;
+		private boolean[] currentSubset;
+
+		public PowerSetIterator(int size) {
+			if (size < 1) {
+				throw new IllegalArgumentException(
+						"Power sets require a positive int size, found: " + size);
+			}
+
+			if (size > 63) {
+				throw new IllegalArgumentException(
+						"Powersets on sets larger than 63 (a long) are not supported, found: " + size);
+			}
+
+			this.size = size;
+			count = 0;
+			currentSubset = new boolean[size];
+		}
+
+		@Override
+		public boolean[] next() {
+			if (!hasNext()) {
+				throw new java.util.NoSuchElementException();
+			}
+
+			long mask = 1;
+			for (int i = 0; i < size; i++) {
+				currentSubset[i] = ((count & mask) != 0);
+				mask = mask << 1;
+			}
+
+			count++;
+
+			return currentSubset;
+		}
+
+		@Override
+		public boolean hasNext() {
+			return count < (int)Math.pow(2, size);
 		}
 
 		@Override

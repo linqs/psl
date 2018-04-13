@@ -21,7 +21,6 @@ import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.Reasoner;
-import org.linqs.psl.reasoner.ThreadPool;
 import org.linqs.psl.reasoner.admm.term.ADMMObjectiveTerm;
 import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
 import org.linqs.psl.reasoner.admm.term.LinearConstraintTerm;
@@ -29,14 +28,11 @@ import org.linqs.psl.reasoner.admm.term.LocalVariable;
 import org.linqs.psl.reasoner.inspector.ReasonerInspector;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
+import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
 
-import com.google.common.collect.Iterables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.CyclicBarrier;
 
 /**
  * Uses an ADMM optimization method to optimize its GroundRules.
@@ -108,25 +104,14 @@ public class ADMMReasoner extends Reasoner {
 	private static final float UPPER_BOUND = 1.0f;
 
 	/**
-	 * The min size of computation blocks for terms and variables.
+	 * The size of computation blocks for terms and variables.
 	 */
-	private static final int MIN_BLOCK_SIZE = 15;
-
-	/**
-	 * The approximate number of iterations done by workers over the terms
-	 * (used in computation for block size).
-	 */
-	private static final int TERM_ITERATIONS = 1000;
+	private static final int BLOCK_SIZE = 25;
 
 	/**
 	 * Log the residuals once in every period.
 	 */
 	private static final int LOG_PERIOD = 50;
-
-	/**
-	 * The base size to adjust block sizes on each iteration.
-	 */
-	private static final int BASE_BLOCK_STEP_SIZE = 2;
 
 	/**
 	 * Sometimes called eta or rho,
@@ -141,13 +126,18 @@ public class ADMMReasoner extends Reasoner {
 	private float epsilonRel;
 	private float epsilonAbs;
 
+	private float primalRes;
+	private float epsilonPrimal;
+	private float dualRes;
+	private float epsilonDual;
+
+	private float AxNorm;
+	private float AyNorm;
+	private float BzNorm;
 	private float lagrangePenalty;
 	private float augmentedLagrangePenalty;
 
 	private int maxIter;
-
-	private volatile int termBlockSize;
-	private volatile int variableBlockSize;
 
 	// Also sometimes called 'z'.
 	// Only populated after inference.
@@ -244,136 +234,38 @@ public class ADMMReasoner extends Reasoner {
 
 		// Also sometimes called 'z'.
 		consensusValues = new float[termStore.getNumGlobalVariables()];
-
-		// TEST
 		for (int i = 0; i < consensusValues.length; i++) {
 			consensusValues[i] = (float)Math.random();
 		}
 
-		// Compute the initial block size by assuming we want each thread to do TERM_ITERATIONS iterations (on terms).
-		termBlockSize = Math.max(MIN_BLOCK_SIZE, (int)((double)numTerms / numThreads / TERM_ITERATIONS));
-		// Scale the block size for variables by the number of variables.
-		variableBlockSize = Math.max(MIN_BLOCK_SIZE, (int)((double)termBlockSize * numVariables / numTerms));
-
-		log.trace("Initial Block Size -- Term: {}, Variable: {}.", termBlockSize, variableBlockSize);
-
-		SyncCounter termCounter = new SyncCounter((int)Math.ceil(numTerms / (float)termBlockSize));
-		SyncCounter variableCounter = new SyncCounter((int)Math.ceil(numVariables / (float)variableBlockSize));
-
-		// Starts up the computation threads
-		ADMMTask[] tasks = new ADMMTask[numThreads];
-
-		// Only the workers.
-		CyclicBarrier termUpdateCompleteBarrier = new CyclicBarrier(numThreads);
-
-		// Workers and master.
-		CyclicBarrier workerStartBarrier = new CyclicBarrier(numThreads + 1);
-		CyclicBarrier workerEndBarrier = new CyclicBarrier(numThreads + 1);
-
-		ThreadPool threadPool = new ThreadPool();
-		for (int i = 0; i < numThreads; i ++) {
-			tasks[i] = new ADMMTask(i,
-					termUpdateCompleteBarrier, workerStartBarrier, workerEndBarrier,
-					termCounter, variableCounter,
-					termStore, consensusValues);
-			threadPool.submit(tasks[i]);
-		}
+		int numTermBlocks = (int)Math.ceil(numTerms / (float)BLOCK_SIZE);
+		int numVariableBlocks = (int)Math.ceil(numVariables / (float)BLOCK_SIZE);
 
 		// Performs inference.
-		float primalRes = Float.POSITIVE_INFINITY;
-		float dualRes = Float.POSITIVE_INFINITY;
-		float epsilonPrimal = 0.0f;
-		float epsilonDual = 0.0f;
 		float epsilonAbsTerm = (float)(Math.sqrt(termStore.getNumLocalVariables()) * epsilonAbs);
-		float AxNorm = 0.0f;
-		float BzNorm = 0.0f;
-		float AyNorm = 0.0f;
+
+		float objective = 0.0f;
+		float oldObjective = 0.0f;
+
 		int iteration = 1;
-
-		long totalTermWaitTimeNS = 0;
-		long totalVariableWaitTimeNS = 0;
-		long totalTermBarrierWaitTimeNS = 0;
-		long totalVariableBarrierWaitTimeNS = 0;
-
-		while ((primalRes > epsilonPrimal || dualRes > epsilonDual) && iteration <= maxIter) {
-			try {
-				// TEST
-				// log.trace("Running with block sizes -- Term: {}, Variable: {}", termBlockSize, variableBlockSize);
-
-				// Reset the counters for a new round.
-				termCounter.reset((int)Math.ceil(numTerms / (float)termBlockSize));
-				variableCounter.reset((int)Math.ceil(numVariables / (float)variableBlockSize));
-
-				// Startup all the workers.
-				workerStartBarrier.await();
-
-				// Wait for all workers to report in after optimization round.
-				workerEndBarrier.await();
-			} catch (InterruptedException e) {
-				throw new RuntimeException(e);
-			} catch (BrokenBarrierException e) {
-				throw new RuntimeException(e);
-			}
-
-			long iterationTermWaitTimeNS = 0;
-			long iterationVariableWaitTimeNS = 0;
-			long iterationTermBarrierWaitTimeNS = 0;
-			long iterationVariableBarrierWaitTimeNS = 0;
-			for (ADMMTask task : tasks) {
-				iterationTermWaitTimeNS += task.termWaitTimeNS;
-				iterationVariableWaitTimeNS += task.variableWaitTimeNS;
-				iterationTermBarrierWaitTimeNS += task.termBarrierWaitTimeNS;
-				iterationVariableBarrierWaitTimeNS += task.variableBarrierWaitTimeNS;
-			}
-
-			totalTermWaitTimeNS += iterationTermWaitTimeNS;
-			totalVariableWaitTimeNS += iterationVariableWaitTimeNS;
-			totalTermBarrierWaitTimeNS += iterationTermBarrierWaitTimeNS;
-			totalVariableBarrierWaitTimeNS += iterationVariableBarrierWaitTimeNS;
-
-			// Adjust the block size.
-			// If we have been spending more time at barriers, then reduce the size;
-			// and visa-versa
-			long counterTime = iterationTermWaitTimeNS + iterationVariableWaitTimeNS;
-			long barrierTime = iterationTermBarrierWaitTimeNS + iterationVariableBarrierWaitTimeNS;
-
-			if (counterTime < barrierTime) {
-				variableBlockSize = Math.max(MIN_BLOCK_SIZE, variableBlockSize - BASE_BLOCK_STEP_SIZE);
-				termBlockSize = Math.max(MIN_BLOCK_SIZE, termBlockSize - BASE_BLOCK_STEP_SIZE);
-			} else {
-				termBlockSize += BASE_BLOCK_STEP_SIZE;
-				variableBlockSize += BASE_BLOCK_STEP_SIZE;
-			}
-
-			/* TEST
-			log.trace(String.format(
-					"Iteration wait times (term / variable) -- Counter: %d (%d, %d), Barrier: %d (%d, %d)",
-					(counterTime / 1000),
-					(iterationTermWaitTimeNS / 1000),
-					(iterationVariableWaitTimeNS / 1000),
-					(barrierTime / 1000),
-					(iterationTermBarrierWaitTimeNS / 1000),
-					(iterationVariableBarrierWaitTimeNS / 1000)));
-			*/
-
+		while (
+				(iteration == 1 || primalRes > epsilonPrimal || dualRes > epsilonDual)
+				&& (MathUtils.isZero(oldObjective) || !MathUtils.equals(objective, oldObjective))
+				&& iteration <= maxIter) {
+			// Zero out the iteration variables.
 			primalRes = 0.0f;
 			dualRes = 0.0f;
 			AxNorm = 0.0f;
-			BzNorm = 0.0f;
 			AyNorm = 0.0f;
+			BzNorm = 0.0f;
 			lagrangePenalty = 0.0f;
 			augmentedLagrangePenalty = 0.0f;
 
-			// Total values from threads
-			for (ADMMTask task : tasks) {
-				primalRes += task.primalResInc;
-				dualRes += task.dualResInc;
-				AxNorm += task.AxNormInc;
-				BzNorm += task.BzNormInc;
-				AyNorm += task.AyNormInc;
-				lagrangePenalty += task.lagrangePenalty;
-				augmentedLagrangePenalty += task.augmentedLagrangePenalty;
-			}
+			// Minimize all the terms.
+			Parallel.count(numTermBlocks, new TermWorker(termStore));
+
+			// Compute new consensus values and residuals.
+			Parallel.count(numVariableBlocks, new VariableWorker(termStore));
 
 			primalRes = (float)Math.sqrt(primalRes);
 			dualRes = (float)(stepSize * Math.sqrt(dualRes));
@@ -382,7 +274,9 @@ public class ADMMReasoner extends Reasoner {
 			epsilonDual = (float)(epsilonAbsTerm + epsilonRel * Math.sqrt(AyNorm));
 
 			if (iteration % LOG_PERIOD == 0) {
-				float objective = 0.0f;
+				oldObjective = objective;
+
+				objective = 0.0f;
 				boolean feasible = true;
 
 				if (log.isTraceEnabled()) {
@@ -416,33 +310,8 @@ public class ADMMReasoner extends Reasoner {
 			iteration++;
 		}
 
-		// Notify threads the optimization is complete
-		for (ADMMTask task : tasks) {
-			task.done = true;
-		}
-
-		try {
-			// Wake up all threads so they can shutdown.
-			workerStartBarrier.await();
-		} catch (InterruptedException e) {
-			throw new RuntimeException(e);
-		} catch (BrokenBarrierException e) {
-			throw new RuntimeException(e);
-		}
-
-		threadPool.shutdownAndWait();
-
-		log.info("Optimization completed in {} iterations. " +
-				"Primal res.: {}, Dual res.: {}", iteration - 1, primalRes, dualRes);
-
-		log.debug(String.format(
-				"Total wait times (term / variable) -- Counter: %d (%d, %d), Barrier: %d (%d, %d)",
-				((totalTermWaitTimeNS  + totalVariableWaitTimeNS) / 1000),
-				(totalTermWaitTimeNS / 1000),
-				(totalVariableWaitTimeNS / 1000),
-				((totalTermBarrierWaitTimeNS + totalVariableBarrierWaitTimeNS) / 1000),
-				(totalTermBarrierWaitTimeNS / 1000),
-				(totalVariableBarrierWaitTimeNS / 1000)));
+		log.info("Optimization completed in {} iterations. Primal res.: {}, Dual res.: {}",
+				iteration - 1, primalRes, dualRes);
 
 		// Updates variables
 		termStore.updateVariables(consensusValues);
@@ -452,231 +321,121 @@ public class ADMMReasoner extends Reasoner {
 	public void close() {
 	}
 
-	private class ADMMTask implements Runnable {
-		// Set by the parent thread each round of optimization.
-		public volatile boolean done;
+	private synchronized void updateIterationVariables(
+			float primalRes, float dualRes,
+			float AxNorm, float BzNorm, float AyNorm,
+			float lagrangePenalty, float augmentedLagrangePenalty) {
+		this.primalRes += primalRes;
+		this.dualRes += dualRes;
+		this.AxNorm += AxNorm;
+		this.AyNorm += AyNorm;
+		this.BzNorm += BzNorm;
+		this.lagrangePenalty += lagrangePenalty;
+		this.augmentedLagrangePenalty += augmentedLagrangePenalty;
+	}
 
-		private final int threadIndex;
+	private class TermWorker extends Parallel.Worker<Integer> {
+		private ADMMTermStore termStore;
 
-		private final SyncCounter termCounter;
-		private final SyncCounter variableCounter;
-
-		private float[] consensusValues;
-		private final ADMMTermStore termStore;
-
-		private final CyclicBarrier termUpdateCompleteBarrier;
-		private final CyclicBarrier workerStartBarrier;
-		private final CyclicBarrier workerEndBarrier;
-
-		public float primalResInc;
-		public float dualResInc;
-		public float AxNormInc;
-		public float BzNormInc;
-		public float AyNormInc;
-
-		protected float lagrangePenalty;
-		protected float augmentedLagrangePenalty;
-
-		public long termWaitTimeNS;
-		public long variableWaitTimeNS;
-		public long termBarrierWaitTimeNS;
-		public long variableBarrierWaitTimeNS;
-
-		public ADMMTask(
-				int threadIndex,
-				CyclicBarrier termUpdateCompleteBarrier,
-				CyclicBarrier workerStartBarrier, CyclicBarrier workerEndBarrier,
-				SyncCounter termCounter, SyncCounter variableCounter,
-				ADMMTermStore termStore, float[] consensusValues) {
-			this.termUpdateCompleteBarrier = termUpdateCompleteBarrier;
-			this.workerStartBarrier = workerStartBarrier;
-			this.workerEndBarrier = workerEndBarrier;
-
-			this.threadIndex = threadIndex;
-			this.termCounter = termCounter;
-			this.variableCounter = variableCounter;
-
-			this.consensusValues = consensusValues;
+		public TermWorker(ADMMTermStore termStore) {
+			super();
 			this.termStore = termStore;
-
-			this.done = false;
-
-			primalResInc = 0.0f;
-			dualResInc = 0.0f;
-			AxNormInc = 0.0f;
-			BzNormInc = 0.0f;
-			AyNormInc = 0.0f;
-			lagrangePenalty = 0.0f;
-			augmentedLagrangePenalty = 0.0f;
 		}
 
-		private void awaitUninterruptibly(CyclicBarrier b) {
-			try {
-				b.await();
-			} catch (InterruptedException e) {
-				throw new RuntimeException(e);
-			} catch (BrokenBarrierException e) {
-				throw new RuntimeException(e);
-			}
-		}
-
-		/**
-		 * Get the next index for term blocks.
-		 * This is in another method so we can properly time how long is
-		 * spent at sync waits.
-		 */
-		public int nextTermIndex() {
-			long time = System.nanoTime();
-			int nextIndex = termCounter.next();
-			termWaitTimeNS += (System.nanoTime() - time);
-			return nextIndex;
-		}
-
-		/**
-		 * Get the next index for variable blocks.
-		 * This is in another method so we can properly time how long is
-		 * spent at sync waits.
-		 */
-		public int nextVariableIndex() {
-			long time = System.nanoTime();
-			int nextIndex = variableCounter.next();
-			variableWaitTimeNS += (System.nanoTime() - time);
-			return nextIndex;
+		public Object clone() {
+			return new TermWorker(termStore);
 		}
 
 		@Override
-		public void run() {
+		public void work(int blockIndex, Integer ignore) {
 			int numTerms = termStore.size();
-			int numVariables = termStore.getNumGlobalVariables();
 
-			int iteration = 1;
-			while (true) {
-				awaitUninterruptibly(workerStartBarrier);
-				if (done) {
+			// Minimize each local function (wrt the local variable copies).
+			for (int innerBlockIndex = 0; innerBlockIndex < BLOCK_SIZE; innerBlockIndex++) {
+				int termIndex = blockIndex * BLOCK_SIZE + innerBlockIndex;
+
+				if (termIndex >= numTerms) {
 					break;
 				}
 
-				// Reset wait times for this iteration.
-				termWaitTimeNS = 0;
-				variableWaitTimeNS = 0;
-				termBarrierWaitTimeNS = 0;
-				variableBarrierWaitTimeNS = 0;
-
-				// Minimize each local function (wrt the local variable copies).
-				// Instead of dividing up the work ahead of time,
-				// get one block of jobs at a time so the threads will have more even workloads.
-				for (int blockIndex = nextTermIndex(); blockIndex != -1; blockIndex = nextTermIndex()) {
-					for (int innerBlockIndex = 0; innerBlockIndex < termBlockSize; innerBlockIndex++) {
-						int termIndex = blockIndex * termBlockSize + innerBlockIndex;
-
-						if (termIndex >= numTerms) {
-							break;
-						}
-
-						termStore.get(termIndex).updateLagrange(stepSize, consensusValues);
-						termStore.get(termIndex).minimize(stepSize, consensusValues);
-					}
-				}
-
-				// Wait for all the workers to finish minimizing.
-				long time = System.nanoTime();
-				awaitUninterruptibly(termUpdateCompleteBarrier);
-				termBarrierWaitTimeNS += System.nanoTime() - time;
-
-				primalResInc = 0.0f;
-				dualResInc = 0.0f;
-				AxNormInc = 0.0f;
-				BzNormInc = 0.0f;
-				AyNormInc = 0.0f;
-				lagrangePenalty = 0.0f;
-				augmentedLagrangePenalty = 0.0f;
-
-				// Instead of dividing up the work ahead of time,
-				// get one job at a time so the threads will have more even workloads.
-				for (int blockIndex = nextVariableIndex(); blockIndex != -1; blockIndex = nextVariableIndex()) {
-					for (int innerBlockIndex = 0; innerBlockIndex < variableBlockSize; innerBlockIndex++) {
-						int variableIndex = blockIndex * variableBlockSize + innerBlockIndex;
-
-						if (variableIndex >= numVariables) {
-							break;
-						}
-
-						float total = 0.0f;
-						int numLocalVariables = termStore.getLocalVariables(variableIndex).size();
-
-						// First pass computes newConsensusValue and dual residual fom all local copies.
-						// Use indexes instead of iterators for profiling purposes: http://psy-lob-saw.blogspot.co.uk/2014/12/the-escape-of-arraylistiterator.html
-						for (int localVarIndex = 0; localVarIndex < numLocalVariables; localVarIndex++) {
-							LocalVariable localVariable = termStore.getLocalVariables(variableIndex).get(localVarIndex);
-							total += localVariable.getValue() + localVariable.getLagrange() / stepSize;
-
-							AxNormInc += localVariable.getValue() * localVariable.getValue();
-							AyNormInc += localVariable.getLagrange() * localVariable.getLagrange();
-						}
-
-						float newConsensusValue = total / numLocalVariables;
-						newConsensusValue = Math.max(Math.min(newConsensusValue, UPPER_BOUND), LOWER_BOUND);
-
-						float diff = consensusValues[variableIndex] - newConsensusValue;
-						// Residual is diff^2 * number of local variables mapped to consensusValues element.
-						dualResInc += diff * diff * numLocalVariables;
-						BzNormInc += newConsensusValue * newConsensusValue * numLocalVariables;
-
-						consensusValues[variableIndex] = newConsensusValue;
-
-						// Second pass computes primal residuals.
-
-						// Use indexes instead of iterators for profiling purposes: http://psy-lob-saw.blogspot.co.uk/2014/12/the-escape-of-arraylistiterator.html
-						for (int localVarIndex = 0; localVarIndex < numLocalVariables; localVarIndex++) {
-							LocalVariable localVariable = termStore.getLocalVariables(variableIndex).get(localVarIndex);
-
-							diff = localVariable.getValue() - newConsensusValue;
-							primalResInc += diff * diff;
-
-							// compute Lagrangian penalties
-							lagrangePenalty += localVariable.getLagrange() * (localVariable.getValue() - consensusValues[variableIndex]);
-							augmentedLagrangePenalty += 0.5 * stepSize * Math.pow(localVariable.getValue() - consensusValues[variableIndex], 2);
-						}
-					}
-				}
-
-				time = System.nanoTime();
-				awaitUninterruptibly(workerEndBarrier);
-				variableBarrierWaitTimeNS += System.nanoTime() - time;
+				termStore.get(termIndex).updateLagrange(stepSize, consensusValues);
+				termStore.get(termIndex).minimize(stepSize, consensusValues);
 			}
 		}
 	}
 
-	/**
-	 * A thread-safe counter that starts at 0 and returns |max| successive numbers.
-	 */
-	private static class SyncCounter {
-		private int max;
-		private int count;
+	private class VariableWorker extends Parallel.Worker<Integer> {
+		private ADMMTermStore termStore;
 
-		public SyncCounter(int max) {
-			this.max = max;
-			count = 0;
+		public VariableWorker(ADMMTermStore termStore) {
+			super();
+			this.termStore = termStore;
 		}
 
-		/**
-		 * Returns the next int, or -1 if there are no more.
-		 */
-		public synchronized int next() {
-			if (count >= max) {
-				return -1;
+		public Object clone() {
+			return new VariableWorker(termStore);
+		}
+
+		@Override
+		public void work(int blockIndex, Integer ignore) {
+			int numVariables = termStore.getNumGlobalVariables();
+
+			float primalResInc = 0.0f;
+			float dualResInc = 0.0f;
+			float AxNormInc = 0.0f;
+			float BzNormInc = 0.0f;
+			float AyNormInc = 0.0f;
+			float lagrangePenaltyInc = 0.0f;
+			float augmentedLagrangePenaltyInc = 0.0f;
+
+			// Instead of dividing up the work ahead of time,
+			// get one job at a time so the threads will have more even workloads.
+			for (int innerBlockIndex = 0; innerBlockIndex < BLOCK_SIZE; innerBlockIndex++) {
+				int variableIndex = blockIndex * BLOCK_SIZE + innerBlockIndex;
+
+				if (variableIndex >= numVariables) {
+					break;
+				}
+
+				float total = 0.0f;
+				int numLocalVariables = termStore.getLocalVariables(variableIndex).size();
+
+				// First pass computes newConsensusValue and dual residual fom all local copies.
+				// Use indexes instead of iterators for profiling purposes: http://psy-lob-saw.blogspot.co.uk/2014/12/the-escape-of-arraylistiterator.html
+				for (int localVarIndex = 0; localVarIndex < numLocalVariables; localVarIndex++) {
+					LocalVariable localVariable = termStore.getLocalVariables(variableIndex).get(localVarIndex);
+					total += localVariable.getValue() + localVariable.getLagrange() / stepSize;
+
+					AxNormInc += localVariable.getValue() * localVariable.getValue();
+					AyNormInc += localVariable.getLagrange() * localVariable.getLagrange();
+				}
+
+				float newConsensusValue = total / numLocalVariables;
+				newConsensusValue = Math.max(Math.min(newConsensusValue, UPPER_BOUND), LOWER_BOUND);
+
+				float diff = consensusValues[variableIndex] - newConsensusValue;
+				// Residual is diff^2 * number of local variables mapped to consensusValues element.
+				dualResInc += diff * diff * numLocalVariables;
+				BzNormInc += newConsensusValue * newConsensusValue * numLocalVariables;
+
+				consensusValues[variableIndex] = newConsensusValue;
+
+				// Second pass computes primal residuals.
+
+				// Use indexes instead of iterators for profiling purposes: http://psy-lob-saw.blogspot.co.uk/2014/12/the-escape-of-arraylistiterator.html
+				for (int localVarIndex = 0; localVarIndex < numLocalVariables; localVarIndex++) {
+					LocalVariable localVariable = termStore.getLocalVariables(variableIndex).get(localVarIndex);
+
+					diff = localVariable.getValue() - newConsensusValue;
+					primalResInc += diff * diff;
+
+					// compute Lagrangian penalties
+					lagrangePenaltyInc += localVariable.getLagrange() * (localVariable.getValue() - consensusValues[variableIndex]);
+					augmentedLagrangePenaltyInc += 0.5 * stepSize * Math.pow(localVariable.getValue() - consensusValues[variableIndex], 2);
+				}
 			}
 
-			return count++;
-		}
-
-		public synchronized void reset() {
-			count = 0;
-		}
-
-		public synchronized void reset(int max) {
-			count = 0;
-			this.max = max;
+			updateIterationVariables(primalResInc, dualResInc, AxNormInc, BzNormInc, AyNormInc, lagrangePenaltyInc, augmentedLagrangePenaltyInc);
 		}
 	}
 
