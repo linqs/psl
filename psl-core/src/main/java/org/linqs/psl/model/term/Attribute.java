@@ -22,8 +22,6 @@ package org.linqs.psl.model.term;
  * For example, people in a social network should probably be represented as
  * unique identifiers, but their properties, such as names or ages, should probably
  * be Attributes.
- *
- * @author Matthias Broecheler
  */
 public interface Attribute extends Constant {
 	/**

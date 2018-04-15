@@ -27,7 +27,6 @@ import org.linqs.psl.util.MathUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -114,8 +113,8 @@ public class RankingEvaluator extends Evaluator {
 			predicted.add(entry.getKey());
 		}
 
-		Collections.sort(truth, new AtomComparator());
-		Collections.sort(predicted, new AtomComparator());
+		Collections.sort(truth);
+		Collections.sort(predicted);
 	}
 
 	@Override
@@ -321,18 +320,5 @@ public class RankingEvaluator extends Evaluator {
 		}
 
 		return truth.get(index).getValue() > threshold;
-	}
-
-	private class AtomComparator implements Comparator<GroundAtom> {
-		@Override
-		public int compare(GroundAtom a1, GroundAtom a2) {
-			if (a1.getValue() < a2.getValue()) {
-				return 1;
-			} else if (a1.getValue() == a2.getValue()) {
-				return a1.toString().compareTo(a2.toString());
-			} else {
-				return -1;
-			}
-		}
 	}
 }

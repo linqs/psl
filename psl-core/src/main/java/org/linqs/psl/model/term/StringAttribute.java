@@ -63,17 +63,27 @@ public class StringAttribute implements Attribute {
 	 */
 	@Override
 	public boolean equals(Object oth) {
-		if (oth==this) return true;
-		if (oth==null || !(oth instanceof StringAttribute) ) return false;
-		return value.equals(((StringAttribute) oth).getValue());
+		if (oth == this) {
+			return true;
+		}
+
+		if (oth == null || !(oth instanceof StringAttribute)) {
+			return false;
+		}
+
+		return value.equals(((StringAttribute)oth).getValue());
 	}
 
 	@Override
-	public int compareTo(Constant o) {
-		if (o instanceof StringAttribute)
-			return value.compareTo(((StringAttribute) o).value);
-		else
-			return this.getClass().getSimpleName().compareTo(o.getClass().getSimpleName());
-	}
+	public int compareTo(Term other) {
+		if (other == null) {
+			return -1;
+		}
 
+		if (!(other instanceof StringAttribute)) {
+			return this.getClass().getName().compareTo(other.getClass().getName());
+		}
+
+		return value.compareTo(((StringAttribute)other).value);
+	}
 }
