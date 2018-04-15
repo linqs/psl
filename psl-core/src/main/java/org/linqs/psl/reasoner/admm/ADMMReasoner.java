@@ -157,7 +157,6 @@ public class ADMMReasoner extends Reasoner {
 			throw new IllegalArgumentException("Property " + EPSILON_REL_KEY + " must be positive.");
 		}
 
-		// Multithreading
 		numThreads = config.getInt(NUM_THREADS_KEY, NUM_THREADS_DEFAULT);
 		if (numThreads <= 0) {
 			throw new IllegalArgumentException("Property " + NUM_THREADS_KEY + " must be positive.");
