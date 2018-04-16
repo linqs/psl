@@ -28,6 +28,7 @@ import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.application.learning.weight.VotedPerceptron;
 import org.linqs.psl.util.Parallel;
+import org.linqs.psl.util.RandUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -74,7 +75,7 @@ public class MaxPiecewisePseudoLikelihood extends VotedPerceptron {
 
 		rands = new Random[Parallel.NUM_THREADS];
 		for (int i = 0; i < Parallel.NUM_THREADS; i++) {
-			rands[i] = new Random(rand.nextLong());
+			rands[i] = new Random(RandUtils.nextLong());
 		}
 
 		ruleRandomVariableMap = null;

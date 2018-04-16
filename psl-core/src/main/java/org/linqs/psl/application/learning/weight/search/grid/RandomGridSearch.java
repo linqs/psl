@@ -21,12 +21,12 @@ import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.util.RandUtils;
 import org.linqs.psl.util.StringUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Random;
 import java.util.List;
 
 /**
@@ -61,8 +61,6 @@ public class RandomGridSearch extends GridSearch {
 			throw new IllegalArgumentException("Need at least one location for grid search.");
 		}
 		numLocations = Math.min(numLocations, maxLocations);
-
-		long seed = Config.getLong(SEED_KEY, SEED_DEFAULT);
 	}
 
 	@Override
@@ -77,7 +75,7 @@ public class RandomGridSearch extends GridSearch {
 	protected String randomConfiguration() {
 		int[] indexes = new int[mutableRules.size()];
 		for (int i = 0; i < indexes.length; i++) {
-			indexes[i] = rand.nextInt(possibleWeights.length);
+			indexes[i] = RandUtils.nextInt(possibleWeights.length);
 		}
 		return StringUtils.join(indexes, DELIM);
 	}

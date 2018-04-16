@@ -30,6 +30,7 @@ import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.reasoner.term.blocker.ConstraintBlockerTerm;
 import org.linqs.psl.reasoner.term.blocker.ConstraintBlockerTermStore;
 import org.linqs.psl.util.MathUtils;
+import org.linqs.psl.util.RandUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +38,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 
 /**
@@ -92,14 +92,11 @@ public class BooleanMaxWalkSat extends Reasoner {
 	 */
 	public static final double NOISE_DEFAULT = 0.01;
 
-	private Random rand;
 	private final int maxFlips;
 	private final double noise;
 
 	public BooleanMaxWalkSat() {
 		super();
-
-		rand = new Random();
 
 		maxFlips = Config.getInt(MAX_FLIPS_KEY, MAX_FLIPS_DEFAULT);
 		if (maxFlips <= 0 ) {
@@ -191,15 +188,15 @@ public class BooleanMaxWalkSat extends Reasoner {
 			}
 
 			// With probability noise, change an RV block in groundRule at random.
-			if (rand.nextDouble() <= noise) {
-				blockToChange = rand.nextInt(candidateRVBlocks.length);
+			if (RandUtils.nextDouble() <= noise) {
+				blockToChange = RandUtils.nextInt(candidateRVBlocks.length);
 				int blockSize = candidateRVBlocks[blockToChange].length;
 
 				// Choose a random RVA in this block to flip on.
 				// If one value in this block must be one, then keep going until we pick an atom that is
 				// currently not active.
 				do {
-					positiveRVAIndex = rand.nextInt(blockSize);
+					positiveRVAIndex = RandUtils.nextInt(blockSize);
 				} while (candidateExactlyOne[blockToChange] && candidateRVBlocks[blockToChange][positiveRVAIndex].getValue() == 1.0);
 
 				// If we want to flip an active RVA (value == 1.0), then set the target index to -1.
@@ -315,7 +312,7 @@ public class BooleanMaxWalkSat extends Reasoner {
 
 	private Object selectAtRandom(Collection<? extends Object> collection) {
 		int i = 0;
-		int selection = rand.nextInt(collection.size());
+		int selection = RandUtils.nextInt(collection.size());
 
 		for (Object o : collection) {
 			if (i++ == selection) {

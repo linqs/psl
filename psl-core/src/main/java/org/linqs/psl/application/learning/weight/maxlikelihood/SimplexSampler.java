@@ -17,27 +17,13 @@
  */
 package org.linqs.psl.application.learning.weight.maxlikelihood;
 
-import java.util.Random;
+import org.linqs.psl.util.RandUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class SimplexSampler {
 	private Logger log = LoggerFactory.getLogger(SimplexSampler.class);
-
-	private final Random rand;
-
-	public SimplexSampler(int seed) {
-		this(new Random(seed));
-	}
-
-	public SimplexSampler() {
-		this(new Random());
-	}
-
-	public SimplexSampler(Random rand) {
-		this.rand = rand;
-	}
 
 	/**
 	 * Samples a uniform point on the simplex of dimension d
@@ -49,7 +35,7 @@ public class SimplexSampler {
 		double sum = 0.0;
 
 		for (int i = 0; i < d; i++) {
-			x[i] = -Math.log(rand.nextDouble());
+			x[i] = -Math.log(RandUtils.nextDouble());
 			sum += x[i];
 		}
 

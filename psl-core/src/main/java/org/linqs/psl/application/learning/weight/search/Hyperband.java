@@ -24,6 +24,7 @@ import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
 import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.util.RandUtils;
 import org.linqs.psl.util.StringUtils;
 
 import org.slf4j.Logger;
@@ -34,7 +35,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
-import java.util.Random;
 
 /**
  * Hyperband.
@@ -208,8 +208,8 @@ public class Hyperband extends WeightLearningApplication {
 			for (int weightIndex = 0; weightIndex < mutableRules.size(); weightIndex++) {
 				// TODO(eriq): Mean, stats
 				// TEST
-				// config[weightIndex] = Math.max(0.0, rand.nextGaussian() + 5.0);
-				config[weightIndex] = rand.nextDouble() * 10.0;
+				// config[weightIndex] = Math.max(0.0, RandUtils.nextGaussian() + 5.0);
+				config[weightIndex] = RandUtils.nextDouble() * 10.0;
 			}
 
 			configs.add(config);

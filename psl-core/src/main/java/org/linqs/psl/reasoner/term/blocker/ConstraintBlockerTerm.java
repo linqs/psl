@@ -24,11 +24,11 @@ import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.arithmetic.UnweightedGroundArithmeticRule;
 import org.linqs.psl.model.rule.misc.GroundValueConstraint;
 import org.linqs.psl.reasoner.term.Term;
+import org.linqs.psl.util.RandUtils;
 
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 
 /**
  * A Term to hold blocks.
@@ -67,13 +67,13 @@ public class ConstraintBlockerTerm implements Term {
 	/**
 	 * Randomly initializes the RandomVariableAtoms to a feasible state.
 	 */
-	public void randomlyInitialize(Random rand) {
+	public void randomlyInitialize() {
 		for (RandomVariableAtom atom : atoms) {
 			atom.setValue(0.0);
 		}
 
 		if (atoms.length > 0 && exactlyOne) {
-			atoms[rand.nextInt(atoms.length)].setValue(1.0);
+			atoms[RandUtils.nextInt(atoms.length)].setValue(1.0);
 		}
 	}
 }

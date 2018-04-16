@@ -39,6 +39,7 @@ import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
 import org.linqs.psl.reasoner.admm.term.ADMMTermGenerator;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
+import org.linqs.psl.util.RandUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,7 +49,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 
 /**
@@ -91,12 +91,6 @@ public abstract class WeightLearningApplication implements ModelApplication {
 	public static final String TERM_GENERATOR_DEFAULT = ADMMTermGenerator.class.getName();
 
 	/**
-	 * Seed for an RNG all childen can use.
-	 */
-	public static final String SEED_KEY = CONFIG_PREFIX + ".seed";
-	public static final long SEED_DEFAULT = 4;
-
-	/**
 	 * Randomize weights before running.
 	 * The randomization will happen during ground model initialization.
 	 */
@@ -107,8 +101,6 @@ public abstract class WeightLearningApplication implements ModelApplication {
 	public static final int MIN_ADMM_STEPS = 3;
 
 	protected boolean supportsLatentVariables;
-	// TODO(eriq): Move all randoms to util.MathUtils.
-	protected Random rand;
 
 	protected Database rvDB;
 	protected Database observedDB;
@@ -169,8 +161,6 @@ public abstract class WeightLearningApplication implements ModelApplication {
 		groundModelInit = false;
 		inMPEState = false;
 		inLatentMPEState = false;
-		// TODO(eriq): Global random
-		rand = new Random(Config.getLong(SEED_KEY, SEED_DEFAULT));
 	}
 
 	/**
@@ -315,7 +305,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
 	private void initRandomWeights() {
 		log.trace("Randomly Weighted Rules:");
 		for (WeightedRule rule : mutableRules) {
-			rule.setWeight(rand.nextInt(MAX_RANDOM_WEIGHT) + 1);
+			rule.setWeight(RandUtils.nextInt(MAX_RANDOM_WEIGHT) + 1);
 			log.trace("	" + rule.toString());
 		}
 	}

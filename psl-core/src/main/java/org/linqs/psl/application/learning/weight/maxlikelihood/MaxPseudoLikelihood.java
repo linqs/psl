@@ -133,7 +133,7 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 			double[][] samples;
 			if (!bool) {
 				samples = new double[Math.max(numSamples * block.size(), 150)][];
-				SimplexSampler simplexSampler = new SimplexSampler(rand);
+				SimplexSampler simplexSampler = new SimplexSampler();
 				for (int sampleIndex = 0; sampleIndex < samples.length; sampleIndex++) {
 					samples[sampleIndex] = simplexSampler.getNext(samples.length);
 				}

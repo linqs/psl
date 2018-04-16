@@ -27,11 +27,10 @@ import org.linqs.psl.reasoner.inspector.ReasonerInspector;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.reasoner.term.blocker.ConstraintBlockerTerm;
 import org.linqs.psl.reasoner.term.blocker.ConstraintBlockerTermStore;
+import org.linqs.psl.util.RandUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Random;
 
 /**
  * Implementation of MC-Sat, which approximates the marginal probability that each
@@ -74,14 +73,11 @@ public class BooleanMCSat extends Reasoner {
 	 */
 	public static final int NUM_BURN_IN_DEFAULT = 500;
 
-	private final Random rand;
 	private final int numSamples;
 	private final int numBurnIn;
 
 	public BooleanMCSat() {
 		super();
-
-		rand = new Random();
 
 		numSamples = Config.getInt(NUM_SAMPLES_KEY, NUM_SAMPLES_DEFAULT);
 		if (numSamples <= 0) {
@@ -207,7 +203,7 @@ public class BooleanMCSat extends Reasoner {
 
 		// Draws sample.
 		double[] sample = new double[distribution.length];
-		double cutoff = rand.nextDouble();
+		double cutoff = RandUtils.nextDouble();
 
 		total = 0.0;
 		for (int i = 0; i < distribution.length; i++) {
