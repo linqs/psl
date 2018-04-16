@@ -64,7 +64,7 @@ public class PostgreSQLDriver implements DatabaseDriver {
 
 		HikariConfig config = new HikariConfig();
 		config.setJdbcUrl(connectionString);
-		config.setMaximumPoolSize(Math.max(8, Parallel.NUM_THREADS * 2));
+		config.setMaximumPoolSize(Math.max(8, Parallel.getNumThreads() * 2));
 		config.setMaxLifetime(0);
 		dataSource = new HikariDataSource(config);
 

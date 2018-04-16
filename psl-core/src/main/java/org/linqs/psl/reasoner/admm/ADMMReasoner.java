@@ -89,17 +89,6 @@ public class ADMMReasoner extends Reasoner {
 	 */
 	public static final float EPSILON_REL_DEFAULT = 1e-3f;
 
-	/**
-	 * Key for positive integer. Number of threads to run the optimization in.
-	 */
-	public static final String NUM_THREADS_KEY = CONFIG_PREFIX + ".numthreads";
-
-	/**
-	 * Default value for the number of work threads
-	 * (by default uses the number of processors in the system).
-	 */
-	public static final int NUM_THREADS_DEFAULT = Parallel.NUM_THREADS;
-
 	private static final float LOWER_BOUND = 0.0f;
 	private static final float UPPER_BOUND = 1.0f;
 
@@ -112,11 +101,6 @@ public class ADMMReasoner extends Reasoner {
 	 * Sometimes called eta or rho,
 	 */
 	private final float stepSize;
-
-	/**
-	 * Multithreading variables
-	 */
-	private final int numThreads;
 
 	private float epsilonRel;
 	private float epsilonAbs;
@@ -155,11 +139,6 @@ public class ADMMReasoner extends Reasoner {
 		epsilonRel = Config.getFloat(EPSILON_REL_KEY, EPSILON_REL_DEFAULT);
 		if (epsilonRel <= 0) {
 			throw new IllegalArgumentException("Property " + EPSILON_REL_KEY + " must be positive.");
-		}
-
-		numThreads = Config.getInt(NUM_THREADS_KEY, NUM_THREADS_DEFAULT);
-		if (numThreads <= 0) {
-			throw new IllegalArgumentException("Property " + NUM_THREADS_KEY + " must be positive.");
 		}
 	}
 
@@ -235,8 +214,8 @@ public class ADMMReasoner extends Reasoner {
 			consensusValues[i] = (float)Math.random();
 		}
 
-		termBlockSize = numTerms / (Parallel.NUM_THREADS * 4) + 1;
-		variableBlockSize = numVariables / (Parallel.NUM_THREADS * 4) + 1;
+		termBlockSize = numTerms / (Parallel.getNumThreads() * 4) + 1;
+		variableBlockSize = numVariables / (Parallel.getNumThreads() * 4) + 1;
 
 		int numTermBlocks = (int)Math.ceil(numTerms / (float)termBlockSize);
 		int numVariableBlocks = (int)Math.ceil(numVariables / (float)variableBlockSize);

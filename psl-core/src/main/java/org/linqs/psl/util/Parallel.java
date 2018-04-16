@@ -17,6 +17,8 @@
  */
 package org.linqs.psl.util;
 
+import org.linqs.psl.config.Config;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,10 +40,15 @@ import java.util.concurrent.TimeUnit;
 public final class Parallel {
 	private static final Logger log = LoggerFactory.getLogger(Parallel.class);
 
+	public static final String CONFIG_PREFIX = "parallel";
+
+	public static final String NUM_THREADS_KEY = CONFIG_PREFIX + ".numthreads";
+	public static final int NUM_THREADS_DEFAULT = Runtime.getRuntime().availableProcessors();
+
 	private static boolean initialized = false;
 
-	// TODO(eriq): Replace with config option once we have global config.
-	public static int NUM_THREADS = Runtime.getRuntime().availableProcessors();
+	// Defer assignment until a request is actually made to let the config get initialized.
+	private static int numThreads = -1;
 
 	// Block putting work intot he pool until there are workers ready.
 	private static BlockingQueue<Worker<?>> workerQueue;
@@ -53,6 +60,14 @@ public final class Parallel {
 
 	// Static only.
 	private Parallel() {}
+
+	public synchronized static int getNumThreads() {
+		if (numThreads == -1) {
+			numThreads = Config.getInt(NUM_THREADS_KEY, NUM_THREADS_DEFAULT);
+		}
+
+		return numThreads;
+	}
 
 	/**
 	 * Count and call a worker with each number in [start, end).
@@ -107,7 +122,7 @@ public final class Parallel {
 			pool.execute(intWorker);
 		}
 
-		for (int i = 0; i < NUM_THREADS; i++) {
+		for (int i = 0; i < numThreads; i++) {
 			try {
 				long time = System.currentTimeMillis();
 				Worker<?> worker = workerQueue.take();
@@ -169,7 +184,7 @@ public final class Parallel {
 
 		// As workers finish, they will be added to the queue.
 		// We can wait for all the workers by emptying out the queue.
-		for (int i = 0; i < NUM_THREADS; i++) {
+		for (int i = 0; i < numThreads; i++) {
 			try {
 				long time = System.currentTimeMillis();
 				Worker<?> worker = workerQueue.take();
@@ -192,7 +207,7 @@ public final class Parallel {
 	/**
 	 * Init the thread pool and supporting structures.
 	 */
-	private static void initPool() {
+	private static synchronized void initPool() {
 		if (initialized) {
 			return;
 		}
@@ -200,10 +215,10 @@ public final class Parallel {
 		// We can use an unbounded queue (no initial size given) since the parent
 		// thread is disciplined when giving out work.
 		workerQueue = new LinkedBlockingQueue<Worker<?>>();
-		allWorkers = new ArrayList<Worker<?>>(NUM_THREADS);
+		allWorkers = new ArrayList<Worker<?>>(numThreads);
 
 		// We will make all the threads daemons, so the JVM shutdown will not be held up.
-		pool = Executors.newFixedThreadPool(NUM_THREADS, new DaemonThreadFactory());
+		pool = Executors.newFixedThreadPool(numThreads, new DaemonThreadFactory());
 
 		// Close the pool only at JVM shutdown.
 		Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -225,11 +240,11 @@ public final class Parallel {
 		workerQueue.clear();
 		allWorkers.clear();
 
-		for (int i = 0; i < NUM_THREADS; i++) {
+		for (int i = 0; i < numThreads; i++) {
 			Worker<T> worker = null;
 
 			// The base worker goes in last so we won't call copy() after init().
-			if (i == NUM_THREADS - 1) {
+			if (i == numThreads - 1) {
 				worker = baseWorker;
 			} else {
 				worker = baseWorker.copy();

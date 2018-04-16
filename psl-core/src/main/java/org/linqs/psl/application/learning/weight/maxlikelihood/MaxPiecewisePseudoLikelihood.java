@@ -73,8 +73,8 @@ public class MaxPiecewisePseudoLikelihood extends VotedPerceptron {
 			throw new IllegalArgumentException("Number of samples must be positive.");
 		}
 
-		rands = new Random[Parallel.NUM_THREADS];
-		for (int i = 0; i < Parallel.NUM_THREADS; i++) {
+		rands = new Random[Parallel.getNumThreads()];
+		for (int i = 0; i < Parallel.getNumThreads(); i++) {
 			rands[i] = new Random(RandUtils.nextLong());
 		}
 
