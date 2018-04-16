@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.application.learning.weight;
 
-import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
 import org.linqs.psl.evaluation.statistics.Evaluator;
@@ -156,41 +156,41 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	private double currentLoss;
 
 	public VotedPerceptron(List<Rule> rules, Database rvDB, Database observedDB,
-			boolean supportsLatentVariables, ConfigBundle config) {
-		super(rules, rvDB, observedDB, supportsLatentVariables, config);
+			boolean supportsLatentVariables) {
+		super(rules, rvDB, observedDB, supportsLatentVariables);
 
-		baseStepSize = config.getDouble(STEP_SIZE_KEY, STEP_SIZE_DEFAULT);
+		baseStepSize = Config.getDouble(STEP_SIZE_KEY, STEP_SIZE_DEFAULT);
 		if (baseStepSize <= 0) {
 			throw new IllegalArgumentException("Step size must be positive.");
 		}
 
-		inertia = config.getDouble(INERTIA_KEY, INERTIA_DEFAULT);
+		inertia = Config.getDouble(INERTIA_KEY, INERTIA_DEFAULT);
 		if (inertia < 0 || inertia >= 1) {
 			throw new IllegalArgumentException("Inertia must be in [0, 1), found: " + inertia);
 		}
 
-		numSteps = config.getInt(NUM_STEPS_KEY, NUM_STEPS_DEFAULT);
+		numSteps = Config.getInt(NUM_STEPS_KEY, NUM_STEPS_DEFAULT);
 		maxNumSteps = numSteps;
 		if (numSteps <= 0) {
 			throw new IllegalArgumentException("Number of steps must be positive.");
 		}
 
-		l2Regularization = config.getDouble(L2_REGULARIZATION_KEY, L2_REGULARIZATION_DEFAULT);
+		l2Regularization = Config.getDouble(L2_REGULARIZATION_KEY, L2_REGULARIZATION_DEFAULT);
 		if (l2Regularization < 0) {
 			throw new IllegalArgumentException("L2 regularization parameter must be non-negative.");
 		}
 
-		l1Regularization = config.getDouble(L1_REGULARIZATION_KEY, L1_REGULARIZATION_DEFAULT);
+		l1Regularization = Config.getDouble(L1_REGULARIZATION_KEY, L1_REGULARIZATION_DEFAULT);
 		if (l1Regularization < 0) {
 			throw new IllegalArgumentException("L1 regularization parameter must be non-negative.");
 		}
 
-		evaluator = (Evaluator)config.getNewObject(EVALUATOR_KEY, EVALUATOR_DEFAULT);
+		evaluator = (Evaluator)Config.getNewObject(EVALUATOR_KEY, EVALUATOR_DEFAULT);
 
-		scaleGradient = config.getBoolean(SCALE_GRADIENT_KEY, SCALE_GRADIENT_DEFAULT);
-		averageSteps = config.getBoolean(AVERAGE_STEPS_KEY, AVERAGE_STEPS_DEFAULT);
-		clipNegativeWeights = config.getBoolean(CLIP_NEGATIVE_WEIGHTS_KEY, CLIP_NEGATIVE_WEIGHTS_DEFAULT);
-		cutObjective = config.getBoolean(CUT_OBJECTIVE_KEY, CUT_OBJECTIVE_DEFAULT);
+		scaleGradient = Config.getBoolean(SCALE_GRADIENT_KEY, SCALE_GRADIENT_DEFAULT);
+		averageSteps = Config.getBoolean(AVERAGE_STEPS_KEY, AVERAGE_STEPS_DEFAULT);
+		clipNegativeWeights = Config.getBoolean(CLIP_NEGATIVE_WEIGHTS_KEY, CLIP_NEGATIVE_WEIGHTS_DEFAULT);
+		cutObjective = Config.getBoolean(CUT_OBJECTIVE_KEY, CUT_OBJECTIVE_DEFAULT);
 
 		currentLoss = Double.NaN;
 	}

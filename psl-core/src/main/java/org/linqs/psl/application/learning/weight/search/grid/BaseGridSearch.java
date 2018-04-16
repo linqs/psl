@@ -18,7 +18,7 @@
 package org.linqs.psl.application.learning.weight.search.grid;
 
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
-import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
 import org.linqs.psl.evaluation.statistics.Evaluator;
@@ -85,15 +85,15 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
 	 */
 	protected Map<String, Double> objectives;
 
-	public BaseGridSearch(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
-		this(model.getRules(), rvDB, observedDB, config);
+	public BaseGridSearch(Model model, Database rvDB, Database observedDB) {
+		this(model.getRules(), rvDB, observedDB);
 	}
 
 	// TODO(eriq): Latent variables?
-	public BaseGridSearch(List<Rule> rules, Database rvDB, Database observedDB, ConfigBundle config) {
-		super(rules, rvDB, observedDB, false, config);
+	public BaseGridSearch(List<Rule> rules, Database rvDB, Database observedDB) {
+		super(rules, rvDB, observedDB, false);
 
-		objectiveFunction = (Evaluator)config.getNewObject(OBJECTIVE_KEY, OBJECTIVE_DEFAULT);
+		objectiveFunction = (Evaluator)Config.getNewObject(OBJECTIVE_KEY, OBJECTIVE_DEFAULT);
 
 		currentLocation = null;
 

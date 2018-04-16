@@ -18,7 +18,7 @@
 package org.linqs.psl.application.learning.weight.em;
 
 import org.linqs.psl.application.learning.weight.VotedPerceptron;
-import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.rule.Rule;
 
@@ -59,11 +59,11 @@ public abstract class ExpectationMaximization extends VotedPerceptron {
 	protected int emIteration;
 
 	public ExpectationMaximization(List<Rule> rules, Database rvDB,
-			Database observedDB, ConfigBundle config) {
-		super(rules, rvDB, observedDB, true, config);
+			Database observedDB) {
+		super(rules, rvDB, observedDB, true);
 
-		iterations = config.getInt(ITER_KEY, ITER_DEFAULT);
-		tolerance = config.getDouble(TOLERANCE_KEY, TOLERANCE_DEFAULT);
+		iterations = Config.getInt(ITER_KEY, ITER_DEFAULT);
+		tolerance = Config.getDouble(TOLERANCE_KEY, TOLERANCE_DEFAULT);
 	}
 
 	@Override

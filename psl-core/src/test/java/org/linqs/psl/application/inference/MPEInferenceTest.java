@@ -56,7 +56,7 @@ public class MPEInferenceTest {
 
 		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
 		Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-		MPEInference mpe = new MPEInference(info.model, inferDB, info.config);
+		MPEInference mpe = new MPEInference(info.model, inferDB);
 
 		mpe.inference();
 		mpe.close();
@@ -92,7 +92,7 @@ public class MPEInferenceTest {
 		toClose.add(info.predicates.get("Friends"));
 
 		Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-		MPEInference mpe = new MPEInference(info.model, inferDB, info.config);
+		MPEInference mpe = new MPEInference(info.model, inferDB);
 
 		mpe.inference();
 		mpe.close();
@@ -134,7 +134,7 @@ public class MPEInferenceTest {
 		toClose.add(info.predicates.get("Nice"));
 
 		Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-		MPEInference mpe = new MPEInference(info.model, inferDB, info.config);
+		MPEInference mpe = new MPEInference(info.model, inferDB);
 
 		mpe.inference();
 		mpe.close();

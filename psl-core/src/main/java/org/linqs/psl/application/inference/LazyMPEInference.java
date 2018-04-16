@@ -22,7 +22,7 @@ import org.linqs.psl.application.inference.result.FullInferenceResult;
 import org.linqs.psl.application.inference.result.memory.MemoryFullInferenceResult;
 import org.linqs.psl.application.util.GroundRules;
 import org.linqs.psl.application.util.Grounding;
-import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.LazyAtomManager;
 import org.linqs.psl.model.Model;
@@ -62,15 +62,15 @@ public class LazyMPEInference extends InferenceApplication {
 
 	protected LazyAtomManager lazyAtomManager;
 
-	public LazyMPEInference(Model model, Database db, ConfigBundle config) {
-		super(model, db, config);
-		maxRounds = config.getInt(MAX_ROUNDS_KEY, MAX_ROUNDS_DEFAULT);
+	public LazyMPEInference(Model model, Database db) {
+		super(model, db);
+		maxRounds = Config.getInt(MAX_ROUNDS_KEY, MAX_ROUNDS_DEFAULT);
 	}
 
 	@Override
 	protected void completeInitialize() {
 		log.debug("Creating lazy atom mannager.");
-		lazyAtomManager = new LazyAtomManager(db, config);
+		lazyAtomManager = new LazyAtomManager(db);
 
 		log.debug("Initial grounding.");
 		Grounding.groundAll(model, lazyAtomManager, groundRuleStore);

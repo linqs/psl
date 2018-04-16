@@ -19,8 +19,7 @@ package org.linqs.psl.reasoner.bool;
 
 import org.linqs.psl.application.groundrulestore.AtomRegisterGroundRuleStore;
 import org.linqs.psl.application.util.GroundRules;
-import org.linqs.psl.config.ConfigBundle;
-import org.linqs.psl.config.ConfigManager;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
@@ -68,8 +67,6 @@ public class BooleanMaxWalkSat extends Reasoner {
 
 	/**
 	 * Prefix of property keys used by this class.
-	 *
-	 * @see ConfigManager
 	 */
 	public static final String CONFIG_PREFIX = "booleanmaxwalksat";
 
@@ -99,17 +96,17 @@ public class BooleanMaxWalkSat extends Reasoner {
 	private final int maxFlips;
 	private final double noise;
 
-	public BooleanMaxWalkSat(ConfigBundle config) {
-		super(config);
+	public BooleanMaxWalkSat() {
+		super();
 
 		rand = new Random();
 
-		maxFlips = config.getInt(MAX_FLIPS_KEY, MAX_FLIPS_DEFAULT);
+		maxFlips = Config.getInt(MAX_FLIPS_KEY, MAX_FLIPS_DEFAULT);
 		if (maxFlips <= 0 ) {
 			throw new IllegalArgumentException("Max flips must be positive.");
 		}
 
-		noise = config.getDouble(NOISE_KEY, NOISE_DEFAULT);
+		noise = Config.getDouble(NOISE_KEY, NOISE_DEFAULT);
 		if (noise < 0.0 || noise > 1.0) {
 			throw new IllegalArgumentException("Noise must be in [0,1].");
 		}

@@ -18,7 +18,7 @@
 package org.linqs.psl.evaluation.statistics;
 
 import org.linqs.psl.application.learning.weight.TrainingMap;
-import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
@@ -66,12 +66,10 @@ public class RankingEvaluator extends Evaluator {
 	private List<GroundAtom> truth;
 	private List<GroundAtom> predicted;
 
-	public RankingEvaluator(ConfigBundle config) {
-		this(config.getDouble(THRESHOLD_KEY, DEFAULT_THRESHOLD), config.getString(REPRESENTATIVE_KEY, DEFAULT_REPRESENTATIVE));
-	}
-
 	public RankingEvaluator() {
-		this(DEFAULT_THRESHOLD, DEFAULT_REPRESENTATIVE);
+		this(
+				Config.getDouble(THRESHOLD_KEY, DEFAULT_THRESHOLD),
+				Config.getString(REPRESENTATIVE_KEY, DEFAULT_REPRESENTATIVE));
 	}
 
 	public RankingEvaluator(double threshold) {

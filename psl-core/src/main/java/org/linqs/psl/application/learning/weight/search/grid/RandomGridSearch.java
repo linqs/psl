@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.application.learning.weight.search.grid;
 
-import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
@@ -49,20 +49,20 @@ public class RandomGridSearch extends GridSearch {
 
 	private int maxLocations;
 
-	public RandomGridSearch(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
-		this(model.getRules(), rvDB, observedDB, config);
+	public RandomGridSearch(Model model, Database rvDB, Database observedDB) {
+		this(model.getRules(), rvDB, observedDB);
 	}
 
-	public RandomGridSearch(List<Rule> rules, Database rvDB, Database observedDB, ConfigBundle config) {
-		super(rules, rvDB, observedDB, config);
+	public RandomGridSearch(List<Rule> rules, Database rvDB, Database observedDB) {
+		super(rules, rvDB, observedDB);
 
-		maxLocations = config.getInt(MAX_LOCATIONS_KEY, MAX_LOCATIONS_DEFAULT);
+		maxLocations = Config.getInt(MAX_LOCATIONS_KEY, MAX_LOCATIONS_DEFAULT);
 		if (maxLocations < 1) {
 			throw new IllegalArgumentException("Need at least one location for grid search.");
 		}
 		numLocations = Math.min(numLocations, maxLocations);
 
-		long seed = config.getLong(SEED_KEY, SEED_DEFAULT);
+		long seed = Config.getLong(SEED_KEY, SEED_DEFAULT);
 	}
 
 	@Override

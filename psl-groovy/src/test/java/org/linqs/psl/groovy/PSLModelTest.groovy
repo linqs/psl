@@ -20,8 +20,6 @@ package org.linqs.psl.groovy;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-import org.linqs.psl.config.ConfigBundle;
-import org.linqs.psl.config.EmptyBundle;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
@@ -43,8 +41,7 @@ public class PSLModelTest {
 
 	@Before
 	public void setup() {
-		ConfigBundle config = new EmptyBundle();
-		dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Memory, this.getClass().getName(), true), config);
+		dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Memory, this.getClass().getName(), true));
 
 		model = new PSLModel(this, dataStore);
 

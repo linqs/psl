@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.reasoner.inspector;
 
-import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
@@ -39,7 +39,7 @@ public abstract class DatabaseReasonerInspector implements ReasonerInspector {
 
 	private String truthPartitionName;
 
-	public DatabaseReasonerInspector(ConfigBundle config) {
+	public DatabaseReasonerInspector() {
 		truthPartitionName = DEFAULT_TRUTH_PARTITION_NAME;
 	}
 

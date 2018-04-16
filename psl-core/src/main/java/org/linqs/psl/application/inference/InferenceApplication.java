@@ -20,7 +20,7 @@ package org.linqs.psl.application.inference;
 import org.linqs.psl.application.ModelApplication;
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 import org.linqs.psl.application.inference.result.FullInferenceResult;
-import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.reasoner.Reasoner;
@@ -64,17 +64,15 @@ public abstract class InferenceApplication implements ModelApplication {
 
 	protected Model model;
 	protected Database db;
-	protected ConfigBundle config;
 	protected Reasoner reasoner;
 
 	protected GroundRuleStore groundRuleStore;
 	protected TermStore termStore;
 	protected TermGenerator termGenerator;
 
-	public InferenceApplication(Model model, Database db, ConfigBundle config) {
+	public InferenceApplication(Model model, Database db) {
 		this.model = model;
 		this.db = db;
-		this.config = config;
 
 		initialize();
 	}
@@ -85,10 +83,10 @@ public abstract class InferenceApplication implements ModelApplication {
 	 */
 	protected void initialize() {
 		try {
-			reasoner = (Reasoner)config.getNewObject(REASONER_KEY, REASONER_DEFAULT);
-			termStore = (TermStore)config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
-			groundRuleStore = (GroundRuleStore)config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
-			termGenerator = (TermGenerator)config.getNewObject(TERM_GENERATOR_KEY, TERM_GENERATOR_DEFAULT);
+			reasoner = (Reasoner)Config.getNewObject(REASONER_KEY, REASONER_DEFAULT);
+			termStore = (TermStore)Config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
+			groundRuleStore = (GroundRuleStore)Config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
+			termGenerator = (TermGenerator)Config.getNewObject(TERM_GENERATOR_KEY, TERM_GENERATOR_DEFAULT);
 		} catch (Exception ex) {
 			// The caller couldn't handle these exception anyways, convert them to runtime ones.
 			throw new RuntimeException("Failed to prepare storage for inference.", ex);
@@ -137,14 +135,13 @@ public abstract class InferenceApplication implements ModelApplication {
 
 		model=null;
 		db = null;
-		config = null;
 	}
 
 	/**
 	 * Construct an inference application given the data.
-	 * Look for a constructor like: (Model, Database, ConfigBundle).
+	 * Look for a constructor like: (Model, Database).
 	 */
-	public static InferenceApplication getInferenceApplication(String className, Model model, Database db, ConfigBundle config) {
+	public static InferenceApplication getInferenceApplication(String className, Model model, Database db) {
 		Class<? extends InferenceApplication> classObject = null;
 		try {
 			@SuppressWarnings("unchecked")
@@ -156,14 +153,14 @@ public abstract class InferenceApplication implements ModelApplication {
 
 		Constructor<? extends InferenceApplication> constructor = null;
 		try {
-			constructor = classObject.getConstructor(Model.class, Database.class, ConfigBundle.class);
+			constructor = classObject.getConstructor(Model.class, Database.class);
 		} catch (NoSuchMethodException ex) {
 			throw new IllegalArgumentException("No sutible constructor found for inference application: " + className + ".", ex);
 		}
 
 		InferenceApplication inferenceApplication = null;
 		try {
-			inferenceApplication = constructor.newInstance(model, db, config);
+			inferenceApplication = constructor.newInstance(model, db);
 		} catch (InstantiationException ex) {
 			throw new RuntimeException("Unable to instantiate inference application (" + className + ")", ex);
 		} catch (IllegalAccessException ex) {

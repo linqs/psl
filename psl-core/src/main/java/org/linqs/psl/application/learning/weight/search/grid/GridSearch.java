@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.application.learning.weight.search.grid;
 
-import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
@@ -56,14 +56,14 @@ public class GridSearch extends BaseGridSearch {
 
 	protected final double[] possibleWeights;
 
-	public GridSearch(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
-		this(model.getRules(), rvDB, observedDB, config);
+	public GridSearch(Model model, Database rvDB, Database observedDB) {
+		this(model.getRules(), rvDB, observedDB);
 	}
 
-	public GridSearch(List<Rule> rules, Database rvDB, Database observedDB, ConfigBundle config) {
-		super(rules, rvDB, observedDB, config);
+	public GridSearch(List<Rule> rules, Database rvDB, Database observedDB) {
+		super(rules, rvDB, observedDB);
 
-		possibleWeights = StringUtils.splitDouble(config.getString(POSSIBLE_WEIGHTS_KEY, POSSIBLE_WEIGHTS_DEFAULT), DELIM);
+		possibleWeights = StringUtils.splitDouble(Config.getString(POSSIBLE_WEIGHTS_KEY, POSSIBLE_WEIGHTS_DEFAULT), DELIM);
 		if (possibleWeights.length == 0) {
 			throw new IllegalArgumentException("No weights provided for grid search.");
 		}

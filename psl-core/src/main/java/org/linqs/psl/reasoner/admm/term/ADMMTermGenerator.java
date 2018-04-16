@@ -18,7 +18,7 @@
 package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
-import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
@@ -52,8 +52,8 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 
 	private boolean invertNegativeWeight;
 
-	public ADMMTermGenerator(ConfigBundle config) {
-		invertNegativeWeight = config.getBoolean(INVERT_NEGATIVE_WEIGHTS_KEY, INVERT_NEGATIVE_WEIGHTS_DEFAULT);
+	public ADMMTermGenerator() {
+		invertNegativeWeight = Config.getBoolean(INVERT_NEGATIVE_WEIGHTS_KEY, INVERT_NEGATIVE_WEIGHTS_DEFAULT);
 	}
 
 	@Override

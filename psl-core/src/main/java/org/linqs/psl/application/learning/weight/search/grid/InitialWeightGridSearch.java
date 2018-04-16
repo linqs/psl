@@ -18,7 +18,6 @@
 package org.linqs.psl.application.learning.weight.search.grid;
 
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
-import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
@@ -42,15 +41,15 @@ public class InitialWeightGridSearch extends GridSearch {
 	 */
 	private WeightLearningApplication internalWLA;
 
-	public InitialWeightGridSearch(Model model, WeightLearningApplication internalWLA, Database rvDB, Database observedDB, ConfigBundle config) {
-		this(model.getRules(), internalWLA, rvDB, observedDB, config);
+	public InitialWeightGridSearch(Model model, WeightLearningApplication internalWLA, Database rvDB, Database observedDB) {
+		this(model.getRules(), internalWLA, rvDB, observedDB);
 	}
 
 	/**
 	 * The WeightLearningApplication should not have had initGroundModel() called yet.
 	 */
-	public InitialWeightGridSearch(List<Rule> rules, WeightLearningApplication internalWLA, Database rvDB, Database observedDB, ConfigBundle config) {
-		super(rules, rvDB, observedDB, config);
+	public InitialWeightGridSearch(List<Rule> rules, WeightLearningApplication internalWLA, Database rvDB, Database observedDB) {
+		super(rules, rvDB, observedDB);
 
 		this.internalWLA = internalWLA;
 	}

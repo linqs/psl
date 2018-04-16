@@ -78,7 +78,7 @@ public class Formula2SQLTest {
 		MPEInference mpe = null;
 
 		try {
-			mpe = new MPEInference(info.model, inferDB, info.config);
+			mpe = new MPEInference(info.model, inferDB);
 		} catch (Exception ex) {
 			System.out.println(ex);
 			ex.printStackTrace();
@@ -131,7 +131,7 @@ public class Formula2SQLTest {
 		MPEInference mpe = null;
 
 		try {
-			mpe = new MPEInference(info.model, inferDB, info.config);
+			mpe = new MPEInference(info.model, inferDB);
 		} catch (Exception ex) {
 			System.out.println(ex);
 			ex.printStackTrace();

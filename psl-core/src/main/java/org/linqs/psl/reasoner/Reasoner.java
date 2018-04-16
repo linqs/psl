@@ -18,7 +18,7 @@
 package org.linqs.psl.reasoner;
 
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
-import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.reasoner.inspector.ReasonerInspector;
 import org.linqs.psl.reasoner.term.TermStore;
 
@@ -44,8 +44,8 @@ public abstract class Reasoner {
 	 */
 	protected ReasonerInspector inspector;
 
-	public Reasoner(ConfigBundle config) {
-		inspector = (ReasonerInspector)config.getNewObject(REASONER_INSPECTOR_KEY, null);
+	public Reasoner() {
+		inspector = (ReasonerInspector)Config.getNewObject(REASONER_INSPECTOR_KEY, null);
 	}
 
 	/**

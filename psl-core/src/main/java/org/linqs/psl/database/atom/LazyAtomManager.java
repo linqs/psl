@@ -18,7 +18,7 @@
 package org.linqs.psl.database.atom;
 
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
-import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.ResultList;
@@ -83,7 +83,7 @@ public class LazyAtomManager extends PersistedAtomManager {
 	private final Set<RandomVariableAtom> lazyAtoms;
 	private final double activation;
 
-	public LazyAtomManager(Database db, ConfigBundle config) {
+	public LazyAtomManager(Database db) {
 		super(db);
 
 		if (!(db instanceof RDBMSDatabase)) {
@@ -91,7 +91,7 @@ public class LazyAtomManager extends PersistedAtomManager {
 		}
 
 		lazyAtoms = new HashSet<RandomVariableAtom>();
-		activation = config.getDouble(ACTIVATION_THRESHOLD_KEY, ACTIVATION_THRESHOLD_DEFAULT);
+		activation = Config.getDouble(ACTIVATION_THRESHOLD_KEY, ACTIVATION_THRESHOLD_DEFAULT);
 
 		if (activation <= 0 || activation > 1) {
 			throw new IllegalArgumentException(

@@ -18,7 +18,7 @@
 package org.linqs.psl.application.learning.weight.search;
 
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
-import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
 import org.linqs.psl.evaluation.statistics.Evaluator;
@@ -94,27 +94,27 @@ public class Hyperband extends WeightLearningApplication {
 	private int numBrackets;
 	private int baseBracketSize;
 
-	public Hyperband(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
-		this(model.getRules(), rvDB, observedDB, config);
+	public Hyperband(Model model, Database rvDB, Database observedDB) {
+		this(model.getRules(), rvDB, observedDB);
 	}
 
-	public Hyperband(List<Rule> rules, Database rvDB, Database observedDB, ConfigBundle config) {
+	public Hyperband(List<Rule> rules, Database rvDB, Database observedDB) {
 		// TODO(eriq): Latent variables?
-		super(rules, rvDB, observedDB, false, config);
+		super(rules, rvDB, observedDB, false);
 
-		objectiveFunction = (Evaluator)config.getNewObject(OBJECTIVE_KEY, OBJECTIVE_DEFAULT);
+		objectiveFunction = (Evaluator)Config.getNewObject(OBJECTIVE_KEY, OBJECTIVE_DEFAULT);
 
-		survival = config.getInt(SURVIVAL_KEY, SURVIVAL_DEFAULT);
+		survival = Config.getInt(SURVIVAL_KEY, SURVIVAL_DEFAULT);
 		if (survival < 1) {
 			throw new IllegalArgumentException("Need at least one survival porportion.");
 		}
 
-		numBrackets = config.getInt(NUM_BRACKETS_KEY, NUM_BRACKETS_DEFAULT);
+		numBrackets = Config.getInt(NUM_BRACKETS_KEY, NUM_BRACKETS_DEFAULT);
 		if (numBrackets < 1) {
 			throw new IllegalArgumentException("Need at least one bracket.");
 		}
 
-		baseBracketSize = config.getInt(BASE_BRACKET_SIZE_KEY, BASE_BRACKET_SIZE_DEFAULT);
+		baseBracketSize = Config.getInt(BASE_BRACKET_SIZE_KEY, BASE_BRACKET_SIZE_DEFAULT);
 		if (baseBracketSize < 1) {
 			throw new IllegalArgumentException("Need at least one bracket size.");
 		}

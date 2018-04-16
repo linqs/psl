@@ -19,7 +19,7 @@
 /**
  * Provides interfaces and classes for performing probabilistic inference over
  * {@link org.linqs.psl.model.atom.Atom Atoms}.
- * 
+ *
  * {@link org.linqs.psl.reasoner.Reasoner} and its implementations are the main
  * tools for inference. See the function subpackage provides interfaces and classes
  * for defining functions that {@link org.linqs.psl.model.rule.GroundRule GroundRules}

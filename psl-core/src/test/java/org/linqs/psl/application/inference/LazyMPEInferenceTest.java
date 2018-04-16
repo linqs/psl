@@ -107,7 +107,7 @@ public class LazyMPEInferenceTest {
 	 */
 	@Test
 	public void testBase() {
-		LazyMPEInference mpe = new LazyMPEInference(info.model, inferDB, info.config);
+		LazyMPEInference mpe = new LazyMPEInference(info.model, inferDB);
 
 		// The Friends predicate should be empty.
 		assertEquals(0, Queries.countAllGroundRandomVariableAtoms(inferDB, info.predicates.get("Friends")));
@@ -126,7 +126,7 @@ public class LazyMPEInferenceTest {
 	public void testBaseNotNice() {
 		initModel(false);
 
-		LazyMPEInference mpe = new LazyMPEInference(info.model, inferDB, info.config);
+		LazyMPEInference mpe = new LazyMPEInference(info.model, inferDB);
 
 		// The Friends predicate should be empty.
 		assertEquals(0, Queries.countAllGroundRandomVariableAtoms(inferDB, info.predicates.get("Friends")));
@@ -162,7 +162,7 @@ public class LazyMPEInferenceTest {
 		);
 		info.model.addRule(rule);
 
-		LazyMPEInference mpe = new LazyMPEInference(info.model, inferDB, info.config);
+		LazyMPEInference mpe = new LazyMPEInference(info.model, inferDB);
 
 		// The Friends predicate should be empty.
 		assertEquals(0, Queries.countAllGroundRandomVariableAtoms(inferDB, info.predicates.get("Friends")));
@@ -206,7 +206,7 @@ public class LazyMPEInferenceTest {
 		);
 		info.model.addRule(rule);
 
-		LazyMPEInference mpe = new LazyMPEInference(info.model, inferDB, info.config);
+		LazyMPEInference mpe = new LazyMPEInference(info.model, inferDB);
 
 		// The Friends predicate should be empty.
 		assertEquals(0, Queries.countAllGroundRandomVariableAtoms(inferDB, info.predicates.get("Friends")));
@@ -227,7 +227,7 @@ public class LazyMPEInferenceTest {
 	@Test
 	public void testFullySpecified() {
 		Database fullTargetDB = info.dataStore.getDatabase(info.targetPartition, closedPredicates, info.observationPartition);
-		LazyMPEInference mpe = new LazyMPEInference(info.model, fullTargetDB, info.config);
+		LazyMPEInference mpe = new LazyMPEInference(info.model, fullTargetDB);
 
 		// The Friends predicate should be fully defined.
 		assertEquals(20, Queries.countAllGroundRandomVariableAtoms(fullTargetDB, info.predicates.get("Friends")));

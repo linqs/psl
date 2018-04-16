@@ -22,7 +22,6 @@ import org.linqs.psl.application.inference.result.FullInferenceResult;
 import org.linqs.psl.application.inference.result.memory.MemoryFullInferenceResult;
 import org.linqs.psl.application.util.GroundRules;
 import org.linqs.psl.application.util.Grounding;
-import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.model.Model;
@@ -43,8 +42,8 @@ public class MPEInference extends InferenceApplication {
 
 	protected PersistedAtomManager atomManager;
 
-	public MPEInference(Model model, Database db, ConfigBundle config) {
-		super(model, db, config);
+	public MPEInference(Model model, Database db) {
+		super(model, db);
 	}
 
 	@Override

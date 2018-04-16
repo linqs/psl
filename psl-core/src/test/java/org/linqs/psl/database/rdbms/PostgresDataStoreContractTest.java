@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.database.rdbms;
 
-import org.linqs.psl.config.EmptyBundle;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.DataStoreContractTest;
 import org.linqs.psl.database.DatabaseTestUtil;
@@ -32,7 +31,7 @@ public class PostgresDataStoreContractTest extends DataStoreContractTest {
 			return null;
 		}
 
-		return new RDBMSDataStore(driver, new EmptyBundle());
+		return new RDBMSDataStore(driver);
 	}
 
 	@Override

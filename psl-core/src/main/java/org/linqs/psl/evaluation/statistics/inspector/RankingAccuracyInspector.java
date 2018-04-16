@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.evaluation.statistics.inspector;
 
-import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Queries;
 import org.linqs.psl.evaluation.statistics.RankingEvaluator;
@@ -45,14 +44,14 @@ public class RankingAccuracyInspector extends DatabaseReasonerInspector {
 
 	private RankingEvaluator evaluator;
 
-	public RankingAccuracyInspector(ConfigBundle config) {
-		super(config);
+	public RankingAccuracyInspector() {
+		super();
 
 		truthThreshold = DEFAULT_TRUTH_THRESHOLD;
 		callCount = 0;
 		inspectionPeriod = DEFAULT_INSPECTION_PERIOD;
 
-		evaluator = new RankingEvaluator(config);
+		evaluator = new RankingEvaluator();
 	}
 
 	@Override

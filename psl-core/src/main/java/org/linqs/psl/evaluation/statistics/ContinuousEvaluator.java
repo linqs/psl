@@ -18,7 +18,7 @@
 package org.linqs.psl.evaluation.statistics;
 
 import org.linqs.psl.application.learning.weight.TrainingMap;
-import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
@@ -55,12 +55,8 @@ public class ContinuousEvaluator extends Evaluator {
 	private double absoluteError;
 	private double squaredError;
 
-	public ContinuousEvaluator(ConfigBundle config) {
-		this(config.getString(REPRESENTATIVE_KEY, DEFAULT_REPRESENTATIVE));
-	}
-
 	public ContinuousEvaluator() {
-		this(DEFAULT_REPRESENTATIVE);
+		this(Config.getString(REPRESENTATIVE_KEY, DEFAULT_REPRESENTATIVE));
 	}
 
 	public ContinuousEvaluator(String representative) {

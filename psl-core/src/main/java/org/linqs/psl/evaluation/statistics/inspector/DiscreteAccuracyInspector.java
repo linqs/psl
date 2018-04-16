@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.evaluation.statistics.inspector;
 
-import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Queries;
 import org.linqs.psl.evaluation.statistics.DiscreteEvaluator;
@@ -37,9 +36,9 @@ public class DiscreteAccuracyInspector extends DatabaseReasonerInspector {
 
 	private DiscreteEvaluator evaluator;
 
-	public DiscreteAccuracyInspector(ConfigBundle config) {
-		super(config);
-		evaluator = new DiscreteEvaluator(config);
+	public DiscreteAccuracyInspector() {
+		super();
+		evaluator = new DiscreteEvaluator();
 	}
 
 	@Override

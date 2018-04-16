@@ -21,7 +21,7 @@ import org.linqs.psl.application.ModelApplication;
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 import org.linqs.psl.application.groundrulestore.MemoryGroundRuleStore;
 import org.linqs.psl.application.util.Grounding;
-import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.model.atom.ObservedAtom;
@@ -54,7 +54,7 @@ import java.util.Set;
 /**
  * Abstract class for learning the weights of weighted mutableRules from data for a model.
  * All non-abstract children should have a constructor that takes:
- * (List<Rule>, Database (rv), Database (observed), ConfigBundle).
+ * (List<Rule>, Database (rv), Database (observed)).
  */
 public abstract class WeightLearningApplication implements ModelApplication {
 	private static final Logger log = LoggerFactory.getLogger(WeightLearningApplication.class);
@@ -106,7 +106,6 @@ public abstract class WeightLearningApplication implements ModelApplication {
 
 	public static final int MIN_ADMM_STEPS = 3;
 
-	protected ConfigBundle config;
 	protected boolean supportsLatentVariables;
 	// TODO(eriq): Move all randoms to util.MathUtils.
 	protected Random rand;
@@ -148,11 +147,10 @@ public abstract class WeightLearningApplication implements ModelApplication {
 	protected boolean inLatentMPEState;
 
 	public WeightLearningApplication(List<Rule> rules, Database rvDB, Database observedDB,
-			boolean supportsLatentVariables, ConfigBundle config) {
+			boolean supportsLatentVariables) {
 		this.rvDB = rvDB;
 		this.observedDB = observedDB;
 		this.supportsLatentVariables = supportsLatentVariables;
-		this.config = config;
 
 		allRules = new ArrayList<Rule>();
 		mutableRules = new ArrayList<WeightedRule>();
@@ -171,7 +169,8 @@ public abstract class WeightLearningApplication implements ModelApplication {
 		groundModelInit = false;
 		inMPEState = false;
 		inLatentMPEState = false;
-		rand = new Random(config.getLong(SEED_KEY, SEED_DEFAULT));
+		// TODO(eriq): Global random
+		rand = new Random(Config.getLong(SEED_KEY, SEED_DEFAULT));
 	}
 
 	/**
@@ -208,7 +207,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
 	 */
 	public void setBudget(double budget) {
 		if (reasoner instanceof ADMMReasoner) {
-			int maxIterations = config.getInt(ADMMReasoner.MAX_ITER_KEY, ADMMReasoner.MAX_ITER_DEFAULT);
+			int maxIterations = Config.getInt(ADMMReasoner.MAX_ITER_KEY, ADMMReasoner.MAX_ITER_DEFAULT);
 			int iterations = (int)Math.ceil(maxIterations * budget);
 			((ADMMReasoner)reasoner).setMaxIter((int)Math.max(MIN_ADMM_STEPS, iterations));
 
@@ -232,7 +231,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
 		// Ensure all targets from the observed (truth) database exist in the RV database.
 		ensureTargets(atomManager);
 
-		GroundRuleStore groundRuleStore = (GroundRuleStore)config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
+		GroundRuleStore groundRuleStore = (GroundRuleStore)Config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
 
 		log.info("Grounding out model.");
 		int groundCount = Grounding.groundAll(allRules, atomManager, groundRuleStore);
@@ -259,8 +258,8 @@ public abstract class WeightLearningApplication implements ModelApplication {
 			return;
 		}
 
-		TermStore termStore = (TermStore)config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
-		TermGenerator termGenerator = (TermGenerator)config.getNewObject(TERM_GENERATOR_KEY, TERM_GENERATOR_DEFAULT);
+		TermStore termStore = (TermStore)Config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
+		TermGenerator termGenerator = (TermGenerator)Config.getNewObject(TERM_GENERATOR_KEY, TERM_GENERATOR_DEFAULT);
 
 		log.debug("Initializing objective terms for {} ground rules.", groundRuleStore.size());
 		@SuppressWarnings("unchecked")
@@ -279,7 +278,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
 					latentVariables.iterator().next()));
 		}
 
-		Reasoner reasoner = (Reasoner)config.getNewObject(REASONER_KEY, REASONER_DEFAULT);
+		Reasoner reasoner = (Reasoner)Config.getNewObject(REASONER_KEY, REASONER_DEFAULT);
 
 		initGroundModel(reasoner, groundRuleStore, termStore, termGenerator, atomManager, trainingMap);
 	}
@@ -304,7 +303,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
 		this.atomManager = atomManager;
 		this.trainingMap = trainingMap;
 
-		if (config.getBoolean(RANDOM_WEIGHTS_KEY, RANDOM_WEIGHTS_DEFAULT)) {
+		if (Config.getBoolean(RANDOM_WEIGHTS_KEY, RANDOM_WEIGHTS_DEFAULT)) {
 			initRandomWeights();
 		}
 
@@ -334,8 +333,8 @@ public abstract class WeightLearningApplication implements ModelApplication {
 	 * All non-latent variables (from the training map) will be pegged to their truth values.
 	 */
 	protected void initLatentGroundModel() {
-		latentGroundRuleStore = (GroundRuleStore)config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
-		latentTermStore = (TermStore)config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
+		latentGroundRuleStore = (GroundRuleStore)Config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
+		latentTermStore = (TermStore)Config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
 
 		log.info("Grounding out latent model.");
 		int groundCount = Grounding.groundAll(allRules, atomManager, latentGroundRuleStore);
@@ -476,7 +475,6 @@ public abstract class WeightLearningApplication implements ModelApplication {
 		atomManager = null;
 		rvDB = null;
 		observedDB = null;
-		config = null;
 	}
 
 	/**
@@ -544,10 +542,10 @@ public abstract class WeightLearningApplication implements ModelApplication {
 
 	/**
 	 * Construct a weight learning application given the data.
-	 * Look for a constructor like: (List<Rule>, Database (rv), Database (observed), ConfigBundle).
+	 * Look for a constructor like: (List<Rule>, Database (rv), Database (observed)).
 	 */
 	public static WeightLearningApplication getWLA(String className, List<Rule> rules,
-			Database randomVariableDatabase, Database observedTruthDatabase, ConfigBundle config) {
+			Database randomVariableDatabase, Database observedTruthDatabase) {
 		Class<? extends WeightLearningApplication> classObject = null;
 		try {
 			@SuppressWarnings("unchecked")
@@ -559,14 +557,14 @@ public abstract class WeightLearningApplication implements ModelApplication {
 
 		Constructor<? extends WeightLearningApplication> constructor = null;
 		try {
-			constructor = classObject.getConstructor(List.class, Database.class, Database.class, ConfigBundle.class);
+			constructor = classObject.getConstructor(List.class, Database.class, Database.class);
 		} catch (NoSuchMethodException ex) {
 			throw new IllegalArgumentException("No sutible constructor found for weight learner: " + className + ".", ex);
 		}
 
 		WeightLearningApplication wla = null;
 		try {
-			wla = constructor.newInstance(rules, randomVariableDatabase, observedTruthDatabase, config);
+			wla = constructor.newInstance(rules, randomVariableDatabase, observedTruthDatabase);
 		} catch (InstantiationException ex) {
 			throw new RuntimeException("Unable to instantiate weight learner (" + className + ")", ex);
 		} catch (IllegalAccessException ex) {

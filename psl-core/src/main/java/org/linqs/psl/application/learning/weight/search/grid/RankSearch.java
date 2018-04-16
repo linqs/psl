@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.application.learning.weight.search.grid;
 
-import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
@@ -60,14 +60,14 @@ public class RankSearch extends BaseGridSearch {
 	private int[] scaleFactors;
 	private int scaleIndex;
 
-	public RankSearch(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
-		this(model.getRules(), rvDB, observedDB, config);
+	public RankSearch(Model model, Database rvDB, Database observedDB) {
+		this(model.getRules(), rvDB, observedDB);
 	}
 
-	public RankSearch(List<Rule> rules, Database rvDB, Database observedDB, ConfigBundle config) {
-		super(rules, rvDB, observedDB, config);
+	public RankSearch(List<Rule> rules, Database rvDB, Database observedDB) {
+		super(rules, rvDB, observedDB);
 
-		scaleFactors = StringUtils.splitInt(config.getString(SCALING_FACTORS_KEY, SCALING_FACTORS_DEFAULT), DELIM);
+		scaleFactors = StringUtils.splitInt(Config.getString(SCALING_FACTORS_KEY, SCALING_FACTORS_DEFAULT), DELIM);
 		if (scaleFactors.length == 0) {
 			throw new IllegalArgumentException("No scaling factors provided.");
 		}

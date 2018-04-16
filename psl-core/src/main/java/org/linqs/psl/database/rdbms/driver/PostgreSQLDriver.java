@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.database.rdbms.driver;
 
-import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.rdbms.PredicateInfo;
 import org.linqs.psl.model.term.ConstantType;

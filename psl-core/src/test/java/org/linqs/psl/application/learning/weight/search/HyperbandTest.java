@@ -31,6 +31,6 @@ public class HyperbandTest extends WeightLearningTest {
 
 	@Override
 	protected WeightLearningApplication getWLA() {
-		return new Hyperband(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB, info.config);
+		return new Hyperband(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
 	}
 }

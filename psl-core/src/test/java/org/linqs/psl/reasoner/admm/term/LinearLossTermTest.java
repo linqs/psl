@@ -19,10 +19,6 @@ package org.linqs.psl.reasoner.admm.term;
 
 import static org.junit.Assert.assertEquals;
 
-import org.linqs.psl.config.ConfigBundle;
-import org.linqs.psl.config.ConfigManager;
-
-import org.apache.commons.configuration.ConfigurationException;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -30,13 +26,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class LinearLossTermTest {
-	private ConfigBundle config;
-	
-	@Before
-	public final void setUp() throws ConfigurationException {
-		config = ConfigManager.getManager().getBundle("dummy");
-	}
-
 	@Test
 	public void testMinimize() {
 		/*
@@ -50,7 +39,7 @@ public class LinearLossTermTest {
 		float[] expected = {0.1f, 1.5f};
 		testProblem(z, y, coeffs, weight, stepSize, expected);
 	}
-	
+
 	private void testProblem(float[] z, float[] y, float[] coeffs, float weight,
 			final float stepSize, float[] expected) {
 		List<LocalVariable> variables = new ArrayList<LocalVariable>(z.length);
@@ -62,10 +51,10 @@ public class LinearLossTermTest {
 
 			coeffsList.add(new Float(coeffs[i]));
 		}
-		
+
 		LinearLossTerm term = new LinearLossTerm(variables, coeffsList, weight);
 		term.minimize(stepSize, z);
-		
+
 		for (int i = 0; i < z.length; i++) {
 			assertEquals(expected[i], variables.get(i).getValue(), 5e-5);
 		}

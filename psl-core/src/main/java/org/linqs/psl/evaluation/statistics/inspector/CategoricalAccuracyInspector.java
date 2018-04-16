@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.evaluation.statistics.inspector;
 
-import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Queries;
 import org.linqs.psl.evaluation.statistics.CategoricalEvaluator;
@@ -40,9 +39,9 @@ public class CategoricalAccuracyInspector extends DatabaseReasonerInspector {
 	// TODO(eriq): Config option for desired predicates.
 	// TODO(eriq): We are currently asuming that the last argument is always the category index.
 
-	public CategoricalAccuracyInspector(ConfigBundle config) {
-		super(config);
-		comparator = new CategoricalEvaluator(config);
+	public CategoricalAccuracyInspector() {
+		super();
+		comparator = new CategoricalEvaluator();
 	}
 
 	@Override

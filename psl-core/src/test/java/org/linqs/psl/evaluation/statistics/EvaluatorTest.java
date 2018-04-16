@@ -18,7 +18,6 @@
 package org.linqs.psl.evaluation.statistics;
 
 import org.linqs.psl.application.learning.weight.TrainingMap;
-import org.linqs.psl.config.EmptyBundle;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
@@ -48,7 +47,7 @@ public abstract class EvaluatorTest<T extends Evaluator> {
 	@Before
 	public void setUp() {
 		dataStore = new RDBMSDataStore(new H2DatabaseDriver(
-				H2DatabaseDriver.Type.Memory, this.getClass().getName(), true), new EmptyBundle());
+				H2DatabaseDriver.Type.Memory, this.getClass().getName(), true));
 
 		predicate = StandardPredicate.get(
 				"DiscretePredictionComparatorTest_same"

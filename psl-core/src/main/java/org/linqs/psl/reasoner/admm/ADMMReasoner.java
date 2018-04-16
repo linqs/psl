@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.reasoner.admm;
 
-import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.Reasoner;
@@ -141,23 +141,23 @@ public class ADMMReasoner extends Reasoner {
 	private int termBlockSize;
 	private int variableBlockSize;
 
-	public ADMMReasoner(ConfigBundle config) {
-		super(config);
+	public ADMMReasoner() {
+		super();
 
-		maxIter = config.getInt(MAX_ITER_KEY, MAX_ITER_DEFAULT);
-		stepSize = config.getFloat(STEP_SIZE_KEY, STEP_SIZE_DEFAULT);
+		maxIter = Config.getInt(MAX_ITER_KEY, MAX_ITER_DEFAULT);
+		stepSize = Config.getFloat(STEP_SIZE_KEY, STEP_SIZE_DEFAULT);
 
-		epsilonAbs = config.getFloat(EPSILON_ABS_KEY, EPSILON_ABS_DEFAULT);
+		epsilonAbs = Config.getFloat(EPSILON_ABS_KEY, EPSILON_ABS_DEFAULT);
 		if (epsilonAbs <= 0) {
 			throw new IllegalArgumentException("Property " + EPSILON_ABS_KEY + " must be positive.");
 		}
 
-		epsilonRel = config.getFloat(EPSILON_REL_KEY, EPSILON_REL_DEFAULT);
+		epsilonRel = Config.getFloat(EPSILON_REL_KEY, EPSILON_REL_DEFAULT);
 		if (epsilonRel <= 0) {
 			throw new IllegalArgumentException("Property " + EPSILON_REL_KEY + " must be positive.");
 		}
 
-		numThreads = config.getInt(NUM_THREADS_KEY, NUM_THREADS_DEFAULT);
+		numThreads = Config.getInt(NUM_THREADS_KEY, NUM_THREADS_DEFAULT);
 		if (numThreads <= 0) {
 			throw new IllegalArgumentException("Property " + NUM_THREADS_KEY + " must be positive.");
 		}

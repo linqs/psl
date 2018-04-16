@@ -19,6 +19,7 @@ package org.linqs.psl.application.learning.weight.search;
 
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningTest;
+import org.linqs.psl.config.Config;
 
 public class InitialWeightHyperbandTest extends WeightLearningTest {
 	public InitialWeightHyperbandTest() {
@@ -31,6 +32,8 @@ public class InitialWeightHyperbandTest extends WeightLearningTest {
 
 	@Override
 	protected WeightLearningApplication getWLA() {
-		return new InitialWeightHyperband(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB, info.config);
+		Config.setProperty(Hyperband.NUM_BRACKETS_KEY, 1);
+
+		return new InitialWeightHyperband(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
 	}
 }
