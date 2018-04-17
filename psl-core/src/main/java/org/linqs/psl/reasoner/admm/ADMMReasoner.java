@@ -45,49 +45,38 @@ public class ADMMReasoner implements Reasoner {
 	public static final String CONFIG_PREFIX = "admmreasoner";
 
 	/**
-	 * Key for int property for the maximum number of iterations of ADMM to
-	 * perform in a round of inference
+	 * The maximum number of iterations of ADMM to perform in a round of inference.
 	 */
 	public static final String MAX_ITER_KEY = CONFIG_PREFIX + ".maxiterations";
-
-	/**
-	 * Default value for MAX_ITER_KEY property
-	 */
 	public static final int MAX_ITER_DEFAULT = 25000;
 
 	/**
-	 * Key for non-negative float property.
-	 * Controls step size.
+	 * Step size.
 	 * Higher values result in larger steps.
+	 * Should be positive.
 	 */
 	public static final String STEP_SIZE_KEY = CONFIG_PREFIX + ".stepsize";
-
-	/**
-	 * Default value for STEP_SIZE_KEY property
-	 */
 	public static final float STEP_SIZE_DEFAULT = 1.0f;
 
 	/**
-	 * Key for positive float property.
 	 * Absolute error component of stopping criteria.
+	 * Should be positive.
 	 */
 	public static final String EPSILON_ABS_KEY = CONFIG_PREFIX + ".epsilonabs";
-
-	/**
-	 * Default value for EPSILON_ABS_KEY property
-	 */
 	public static final float EPSILON_ABS_DEFAULT = 1e-5f;
 
 	/**
-	 * Key for positive float property.
 	 * Relative error component of stopping criteria.
+	 * Should be positive.
 	 */
 	public static final String EPSILON_REL_KEY = CONFIG_PREFIX + ".epsilonrel";
+	public static final float EPSILON_REL_DEFAULT = 1e-3f;
 
 	/**
-	 * Default value for EPSILON_ABS_KEY property
+	 * Stop if the objective has not changed since the last logging period (see LOG_PERIOD).
 	 */
-	public static final float EPSILON_REL_DEFAULT = 1e-3f;
+	public static final String OBJECTIVE_BREAK_KEY = CONFIG_PREFIX + ".objectivebreak";
+	public static final boolean OBJECTIVE_BREAK_DEFAULT = true;
 
 	private static final float LOWER_BOUND = 0.0f;
 	private static final float UPPER_BOUND = 1.0f;
@@ -124,10 +113,12 @@ public class ADMMReasoner implements Reasoner {
 
 	private int termBlockSize;
 	private int variableBlockSize;
+	private boolean objectiveBreak;
 
 	public ADMMReasoner() {
 		maxIter = Config.getInt(MAX_ITER_KEY, MAX_ITER_DEFAULT);
 		stepSize = Config.getFloat(STEP_SIZE_KEY, STEP_SIZE_DEFAULT);
+		objectiveBreak = Config.getBoolean(OBJECTIVE_BREAK_KEY, OBJECTIVE_BREAK_DEFAULT);
 
 		epsilonAbs = Config.getFloat(EPSILON_ABS_KEY, EPSILON_ABS_DEFAULT);
 		if (epsilonAbs <= 0) {
@@ -227,7 +218,7 @@ public class ADMMReasoner implements Reasoner {
 		int iteration = 1;
 		while (
 				(iteration == 1 || primalRes > epsilonPrimal || dualRes > epsilonDual)
-				&& (MathUtils.isZero(oldObjective) || !MathUtils.equals(objective, oldObjective))
+				&& (objectiveBreak && (MathUtils.isZero(oldObjective) || !MathUtils.equals(objective, oldObjective)))
 				&& iteration <= maxIter) {
 			// Zero out the iteration variables.
 			primalRes = 0.0f;
@@ -251,26 +242,32 @@ public class ADMMReasoner implements Reasoner {
 			epsilonDual = (float)(epsilonAbsTerm + epsilonRel * Math.sqrt(AyNorm));
 
 			if (iteration % LOG_PERIOD == 0) {
-				oldObjective = objective;
+				if (!objectiveBreak) {
+					log.trace(
+							"Iteration {} -- Primal: {}, Dual: {}, Epsilon Primal: {}, Epsilon Dual: {}.",
+							iteration, primalRes, dualRes, epsilonPrimal, epsilonDual);
+				} else {
+					oldObjective = objective;
 
-				objective = 0.0f;
-				boolean feasible = true;
+					objective = 0.0f;
+					boolean feasible = true;
 
-				if (log.isTraceEnabled()) {
-					for (ADMMObjectiveTerm term : termStore) {
-						if (term instanceof LinearConstraintTerm) {
-							if (term.evaluate() > 0.0f) {
-								feasible = false;
+					if (log.isTraceEnabled()) {
+						for (ADMMObjectiveTerm term : termStore) {
+							if (term instanceof LinearConstraintTerm) {
+								if (term.evaluate() > 0.0f) {
+									feasible = false;
+								}
+							} else {
+								objective += (1.0f - term.evaluate());
 							}
-						} else {
-							objective += (1.0f - term.evaluate());
 						}
 					}
-				}
 
-				log.trace(
-						"Iteration {} -- Objective: {}, Feasible: {}, Primal: {}, Dual: {}, Epsilon Primal: {}, Epsilon Dual: {}.",
-						iteration, objective, feasible, primalRes, dualRes, epsilonPrimal, epsilonDual);
+					log.trace(
+							"Iteration {} -- Objective: {}, Feasible: {}, Primal: {}, Dual: {}, Epsilon Primal: {}, Epsilon Dual: {}.",
+							iteration, objective, feasible, primalRes, dualRes, epsilonPrimal, epsilonDual);
+				}
 			}
 
 			iteration++;
