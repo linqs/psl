@@ -17,45 +17,21 @@
  */
 package org.linqs.psl.reasoner;
 
-import org.linqs.psl.application.groundrulestore.GroundRuleStore;
-import org.linqs.psl.config.Config;
-import org.linqs.psl.reasoner.inspector.ReasonerInspector;
 import org.linqs.psl.reasoner.term.TermStore;
 
 /**
  * An oprimizer to minimize the total weighted incompatibility
  * of the terms provided by a TermStore.
  */
-public abstract class Reasoner {
-	/**
-	 * Prefix of property keys used by this class.
-	 */
-	public static final String CONFIG_PREFIX = "reasoner";
-
-	/**
-	 * Key for the ReasonerInspector to use.
-	 * Defaults to no inspector.
-	 */
-	public static final String REASONER_INSPECTOR_KEY = CONFIG_PREFIX + ".inspector";
-
-	/**
-	 * The reasoner to give status updates to.
-	 * May be null.
-	 */
-	protected ReasonerInspector inspector;
-
-	public Reasoner() {
-		inspector = (ReasonerInspector)Config.getNewObject(REASONER_INSPECTOR_KEY, null);
-	}
-
+public interface Reasoner {
 	/**
 	 * Minimizes the total weighted incompatibility of the terms in the provided
 	 * TermStore.
 	 */
-	public abstract void optimize(TermStore termStore);
+	public void optimize(TermStore termStore);
 
 	/**
 	 * Releases all resources acquired by this Reasoner.
 	 */
-	public abstract void close();
+	public void close();
 }

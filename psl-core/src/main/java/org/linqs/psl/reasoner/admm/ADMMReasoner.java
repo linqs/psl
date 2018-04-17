@@ -25,7 +25,6 @@ import org.linqs.psl.reasoner.admm.term.ADMMObjectiveTerm;
 import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
 import org.linqs.psl.reasoner.admm.term.LinearConstraintTerm;
 import org.linqs.psl.reasoner.admm.term.LocalVariable;
-import org.linqs.psl.reasoner.inspector.ReasonerInspector;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.MathUtils;
@@ -37,7 +36,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Uses an ADMM optimization method to optimize its GroundRules.
  */
-public class ADMMReasoner extends Reasoner {
+public class ADMMReasoner implements Reasoner {
 	private static final Logger log = LoggerFactory.getLogger(ADMMReasoner.class);
 
 	/**
@@ -57,8 +56,9 @@ public class ADMMReasoner extends Reasoner {
 	public static final int MAX_ITER_DEFAULT = 25000;
 
 	/**
-	 * Key for non-negative float property. Controls step size. Higher
-	 * values result in larger steps.
+	 * Key for non-negative float property.
+	 * Controls step size.
+	 * Higher values result in larger steps.
 	 */
 	public static final String STEP_SIZE_KEY = CONFIG_PREFIX + ".stepsize";
 
@@ -68,8 +68,8 @@ public class ADMMReasoner extends Reasoner {
 	public static final float STEP_SIZE_DEFAULT = 1.0f;
 
 	/**
-	 * Key for positive float property. Absolute error component of stopping
-	 * criteria.
+	 * Key for positive float property.
+	 * Absolute error component of stopping criteria.
 	 */
 	public static final String EPSILON_ABS_KEY = CONFIG_PREFIX + ".epsilonabs";
 
@@ -79,8 +79,8 @@ public class ADMMReasoner extends Reasoner {
 	public static final float EPSILON_ABS_DEFAULT = 1e-5f;
 
 	/**
-	 * Key for positive float property. Relative error component of stopping
-	 * criteria.
+	 * Key for positive float property.
+	 * Relative error component of stopping criteria.
 	 */
 	public static final String EPSILON_REL_KEY = CONFIG_PREFIX + ".epsilonrel";
 
@@ -126,8 +126,6 @@ public class ADMMReasoner extends Reasoner {
 	private int variableBlockSize;
 
 	public ADMMReasoner() {
-		super();
-
 		maxIter = Config.getInt(MAX_ITER_KEY, MAX_ITER_DEFAULT);
 		stepSize = Config.getFloat(STEP_SIZE_KEY, STEP_SIZE_DEFAULT);
 
@@ -275,17 +273,6 @@ public class ADMMReasoner extends Reasoner {
 						iteration, objective, feasible, primalRes, dualRes, epsilonPrimal, epsilonDual);
 			}
 
-			if (inspector != null) {
-				// Updating the variables is a costly operation, but the inspector may need access to RVA values.
-				log.debug("Updating random variable atoms with consensus values for inspector");
-				termStore.updateVariables(consensusValues);
-
-				if (!inspector.update(this, new ADMMStatus(iteration, primalRes, dualRes))) {
-					log.info("Stopping ADMM iterations on advice from inspector");
-					break;
-				}
-			}
-
 			iteration++;
 		}
 
@@ -419,23 +406,6 @@ public class ADMMReasoner extends Reasoner {
 			}
 
 			updateIterationVariables(primalResInc, dualResInc, AxNormInc, BzNormInc, AyNormInc, lagrangePenaltyInc, augmentedLagrangePenaltyInc);
-		}
-	}
-
-	private static class ADMMStatus extends ReasonerInspector.IterativeReasonerStatus {
-		public double primalResidual;
-		public double dualResidual;
-
-		public ADMMStatus(int iteration, double primalResidual, double dualResidual) {
-			super(iteration);
-
-			this.primalResidual = primalResidual;
-			this.dualResidual = dualResidual;
-		}
-
-		@Override
-		public String toString() {
-			return String.format("%s, primal: %f, dual: %f", super.toString(), primalResidual, dualResidual);
 		}
 	}
 }

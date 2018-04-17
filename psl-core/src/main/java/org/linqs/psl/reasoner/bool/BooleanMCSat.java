@@ -23,7 +23,6 @@ import org.linqs.psl.config.Config;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.Reasoner;
-import org.linqs.psl.reasoner.inspector.ReasonerInspector;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.reasoner.term.blocker.ConstraintBlockerTerm;
 import org.linqs.psl.reasoner.term.blocker.ConstraintBlockerTermStore;
@@ -45,7 +44,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-public class BooleanMCSat extends Reasoner {
+public class BooleanMCSat implements Reasoner {
 	private static final Logger log = LoggerFactory.getLogger(BooleanMCSat.class);
 
 	/**
@@ -77,8 +76,6 @@ public class BooleanMCSat extends Reasoner {
 	private final int numBurnIn;
 
 	public BooleanMCSat() {
-		super();
-
 		numSamples = Config.getInt(NUM_SAMPLES_KEY, NUM_SAMPLES_DEFAULT);
 		if (numSamples <= 0) {
 			throw new IllegalArgumentException("Number of samples must be positive.");
@@ -150,24 +147,6 @@ public class BooleanMCSat extends Reasoner {
 					}
 				}
 			}
-
-			// Skip the burn in.
-			if (inspector != null && sampleIndex >= numBurnIn) {
-				// Sets truth values of RandomVariableAtoms to marginal probabilities.
-				for (int blockIndex = 0; blockIndex < blocker.size(); blockIndex++) {
-					for (int atomIndex = 0; atomIndex < blocker.get(blockIndex).size(); atomIndex++) {
-						blocker.get(blockIndex).getAtoms()[atomIndex].setValue(totals[blockIndex][atomIndex] / (numSamples - numBurnIn));
-					}
-				}
-
-				double incompatibility = GroundRules.getTotalWeightedIncompatibility(blocker.getGroundRuleStore().getCompatibilityRules());
-				double infeasbility = GroundRules.getInfeasibilityNorm(blocker.getGroundRuleStore().getConstraintRules());
-
-				if (!inspector.update(this, new MCSatStatus(sampleIndex, incompatibility, infeasbility))) {
-					log.info("Stopping MCSat iterations on advice from inspector");
-					break;
-				}
-			}
 		}
 
 		log.info("Inference complete.");
@@ -223,23 +202,5 @@ public class BooleanMCSat extends Reasoner {
 	@Override
 	public void close() {
 		// Intentionally blank.
-	}
-
-	private static class MCSatStatus extends ReasonerInspector.IterativeReasonerStatus {
-		public double incompatibility;
-		public double infeasbility;
-
-		public MCSatStatus(int iteration, double incompatibility, double infeasbility) {
-			super(iteration);
-
-			this.incompatibility = incompatibility;
-			this.infeasbility = infeasbility;
-		}
-
-		@Override
-		public String toString() {
-			return String.format("%s, incompatibility: %f, infeasbility: %f",
-					super.toString(), incompatibility, infeasbility);
-		}
 	}
 }
