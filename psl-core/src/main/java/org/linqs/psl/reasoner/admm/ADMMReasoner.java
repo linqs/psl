@@ -100,6 +100,12 @@ public class ADMMReasoner extends Reasoner {
 	 */
 	public static final int NUM_THREADS_DEFAULT = Parallel.NUM_THREADS;
 
+	/**
+	 * Wether to stop if the objective has not changed since the last logging period (see LOG_PERIOD).
+	 */
+	public static final String OBJECTIVE_BREAK_KEY = CONFIG_PREFIX + ".objectivebreak";
+	public static final boolean OBJECTIVE_BREAK_DEFAULT = true;
+
 	private static final float LOWER_BOUND = 0.0f;
 	private static final float UPPER_BOUND = 1.0f;
 
@@ -140,12 +146,14 @@ public class ADMMReasoner extends Reasoner {
 
 	private int termBlockSize;
 	private int variableBlockSize;
+	private boolean objectiveBreak;
 
 	public ADMMReasoner(ConfigBundle config) {
 		super(config);
 
 		maxIter = config.getInt(MAX_ITER_KEY, MAX_ITER_DEFAULT);
 		stepSize = config.getFloat(STEP_SIZE_KEY, STEP_SIZE_DEFAULT);
+		objectiveBreak = config.getBoolean(OBJECTIVE_BREAK_KEY, OBJECTIVE_BREAK_DEFAULT);
 
 		epsilonAbs = config.getFloat(EPSILON_ABS_KEY, EPSILON_ABS_DEFAULT);
 		if (epsilonAbs <= 0) {
@@ -251,7 +259,7 @@ public class ADMMReasoner extends Reasoner {
 		int iteration = 1;
 		while (
 				(iteration == 1 || primalRes > epsilonPrimal || dualRes > epsilonDual)
-				&& (MathUtils.isZero(oldObjective) || !MathUtils.equals(objective, oldObjective))
+				&& (objectiveBreak && (MathUtils.isZero(oldObjective) || !MathUtils.equals(objective, oldObjective)))
 				&& iteration <= maxIter) {
 			// Zero out the iteration variables.
 			primalRes = 0.0f;
