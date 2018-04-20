@@ -347,7 +347,7 @@ public class Launcher {
 		for (StandardPredicate targetPredicate : openPredicates) {
 			// Before we run evaluation, ensure that the truth database actaully has instances of the target predicate.
 			if (Queries.countAllGroundAtoms(truthDatabase, targetPredicate) == 0) {
-				log.info("Skipping continuous evaluation for {} since there are no ground truth atoms", targetPredicate);
+				log.info("Skipping evaluation for {} since there are no ground truth atoms", targetPredicate);
 				continue;
 			}
 
