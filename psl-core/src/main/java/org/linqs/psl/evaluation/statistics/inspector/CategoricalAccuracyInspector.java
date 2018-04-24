@@ -19,7 +19,6 @@ package org.linqs.psl.evaluation.statistics.inspector;
 
 import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.database.Queries;
 import org.linqs.psl.evaluation.statistics.CategoricalEvaluator;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.reasoner.Reasoner;
@@ -52,9 +51,9 @@ public class CategoricalAccuracyInspector extends DatabaseReasonerInspector {
 		Database rvDatabase = getRandomVariableDatabase();
 		Database truthDatabase = getTruthDatabase(rvDatabase);
 
-		for (StandardPredicate targetPredicate : rvDatabase.getRegisteredPredicates()) {
+		for (StandardPredicate targetPredicate : rvDatabase.getDataStore().getRegisteredPredicates()) {
 			// Before we run evaluation, ensure that the truth database actaully has instances of the target predicate.
-			if (Queries.countAllGroundAtoms(truthDatabase, targetPredicate) == 0) {
+			if (truthDatabase.countAllGroundAtoms(targetPredicate) == 0) {
 				continue;
 			}
 

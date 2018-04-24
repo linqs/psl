@@ -21,7 +21,6 @@ import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
-import org.linqs.psl.database.ReadOnlyDatabase;
 import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 import org.linqs.psl.model.predicate.Predicate;
@@ -57,8 +56,6 @@ public class RDBMSDataStore implements DataStore {
 
 	private static final Set<RDBMSDataStore> openDataStores = new HashSet<RDBMSDataStore>();
 
-	// Map for database registration
-	private static final BiMap<ReadOnlyDatabase, String> registeredDatabases = HashBiMap.create();
 	private static int databaseCounter = 0;
 
 	/**
@@ -314,8 +311,6 @@ public class RDBMSDataStore implements DataStore {
 
 		// Release the write partition in use by this database
 		writePartitionIDs.remove(db.getWritePartition());
-
-		registeredDatabases.remove(new ReadOnlyDatabase(db));
 	}
 
 	public Partition getNewPartition(){
@@ -350,33 +345,5 @@ public class RDBMSDataStore implements DataStore {
 
 	public static Set<RDBMSDataStore> getOpenDataStores() {
 		return Collections.unmodifiableSet(openDataStores);
-	}
-
-	/**
-	 * Registers and returns an ID for a given RDBMSDatabase.
-	 * If this database was already registered, returns the same ID that was returned initially.
-	 * @param db	the RDBMSDatabase to register
-	 * @return		the String ID for this database
-	 */
-	public static String getDatabaseID(RDBMSDatabase db) {
-		ReadOnlyDatabase roDB = new ReadOnlyDatabase(db);
-		if (registeredDatabases.containsKey(roDB)) {
-			return registeredDatabases.get(roDB);
-		}
-
-		String id = "database" + (databaseCounter++);
-		registeredDatabases.put(roDB, id);
-		return id;
-	}
-
-	/**
-	 * Get a read-only database given the id from getDatabaseID().
-	 */
-	public static ReadOnlyDatabase getDatabase(String databaseID) {
-		if (registeredDatabases.containsValue(databaseID)) {
-			return registeredDatabases.inverse().get(databaseID);
-		}
-
-		throw new IllegalArgumentException("No database registerd for id: " + databaseID);
 	}
 }

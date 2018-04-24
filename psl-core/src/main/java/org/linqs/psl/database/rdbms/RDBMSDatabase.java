@@ -21,7 +21,6 @@ import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseQuery;
 import org.linqs.psl.database.Partition;
-import org.linqs.psl.database.ReadOnlyDatabase;
 import org.linqs.psl.database.ResultList;
 import org.linqs.psl.model.atom.AtomCache;
 import org.linqs.psl.model.atom.GroundAtom;
@@ -79,7 +78,7 @@ import java.util.Set;
  * Keep in mind that the upstream datstore/driver usere a connection pool and we should close
  * out connections and statements after we are done with them.
  */
-public class RDBMSDatabase implements Database {
+public class RDBMSDatabase extends Database {
 	private static final Logger log = LoggerFactory.getLogger(RDBMSDatabase.class);
 
 	private static final double DEFAULT_UNOBSERVED_VALUE = 0.0;
@@ -118,11 +117,6 @@ public class RDBMSDatabase implements Database {
 	private final AtomCache cache;
 
 	/**
-	 * A read-only view of this database for internal use only.
-	 */
-	private ReadOnlyDatabase readOnlyDatabase;
-
-	/**
 	 * Keeps track of the open / closed status of this database.
 	 */
 	private boolean closed;
@@ -158,19 +152,6 @@ public class RDBMSDatabase implements Database {
 		this.cache = new AtomCache(this);
 
 		this.closed = false;
-		this.readOnlyDatabase = new ReadOnlyDatabase(this);
-	}
-
-	@Override
-	public Set<StandardPredicate> getRegisteredPredicates() {
-		Set<StandardPredicate> standardPredicates = new HashSet<StandardPredicate>();
-		for (Predicate predicate : predicates.keySet()) {
-			if (predicate instanceof StandardPredicate) {
-				standardPredicates.add((StandardPredicate) predicate);
-			}
-		}
-
-		return standardPredicates;
 	}
 
 	/**
@@ -486,11 +467,6 @@ public class RDBMSDatabase implements Database {
 		return parentDataStore;
 	}
 
-	@Override
-	public AtomCache getAtomCache() {
-		return cache;
-	}
-
 	public List<Partition> getReadPartitions() {
 		return Collections.unmodifiableList(readPartitions);
 	}
@@ -510,7 +486,6 @@ public class RDBMSDatabase implements Database {
 		}
 
 		parentDataStore.releasePartitions(this);
-		readOnlyDatabase = null;
 		closed = true;
 	}
 
@@ -727,7 +702,7 @@ public class RDBMSDatabase implements Database {
 			return result;
 		}
 
-		double value = predicate.computeValue(readOnlyDatabase, arguments);
+		double value = predicate.computeValue(this, arguments);
 		return cache.instantiateObservedAtom(predicate, arguments, value);
 	}
 

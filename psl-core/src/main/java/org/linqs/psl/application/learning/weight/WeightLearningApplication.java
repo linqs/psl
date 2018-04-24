@@ -465,7 +465,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
 	 */
 	private void ensureTargets() {
 		// Iterate through all of the registered predicates in the observed.
-		for (StandardPredicate predicate : observedDB.getRegisteredPredicates()) {
+		for (StandardPredicate predicate : observedDB.getDataStore().getRegisteredPredicates()) {
 			// Ignore any closed predicates.
 			if (observedDB.isClosed(predicate)) {
 				continue;

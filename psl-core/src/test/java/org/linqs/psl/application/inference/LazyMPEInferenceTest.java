@@ -25,7 +25,6 @@ import org.linqs.psl.PSLTest;
 import org.linqs.psl.TestModelFactory;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
-import org.linqs.psl.database.Queries;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.formula.Conjunction;
@@ -110,13 +109,13 @@ public class LazyMPEInferenceTest {
 		LazyMPEInference mpe = new LazyMPEInference(info.model, inferDB, info.config);
 
 		// The Friends predicate should be empty.
-		assertEquals(0, Queries.countAllGroundRandomVariableAtoms(inferDB, info.predicates.get("Friends")));
+		assertEquals(0, inferDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends")));
 
 		mpe.mpeInference();
 
 		// There are multiple optimal configuration to the first round of grounding (which snowballs later),
 		// but we know there should be at least 16 ground atoms and less than 20.
-		int groundCount = Queries.countAllGroundRandomVariableAtoms(inferDB, info.predicates.get("Friends"));
+		int groundCount = inferDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends"));
 		assertTrue("Expected: >= 16, Found: " + groundCount, groundCount >= 16);
 
 		mpe.close();
@@ -129,13 +128,13 @@ public class LazyMPEInferenceTest {
 		LazyMPEInference mpe = new LazyMPEInference(info.model, inferDB, info.config);
 
 		// The Friends predicate should be empty.
-		assertEquals(0, Queries.countAllGroundRandomVariableAtoms(inferDB, info.predicates.get("Friends")));
+		assertEquals(0, inferDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends")));
 
 		mpe.mpeInference();
 
 		// There are multiple optimal configuration to the first round of grounding,
 		// but we know that at least all 'Eugene's grounding will be excluded.
-		int groundCount = Queries.countAllGroundRandomVariableAtoms(inferDB, info.predicates.get("Friends"));
+		int groundCount = inferDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends"));
 		assertTrue("Expected: <= 12, Found: " + groundCount, groundCount <= 12);
 
 		mpe.close();
@@ -165,13 +164,13 @@ public class LazyMPEInferenceTest {
 		LazyMPEInference mpe = new LazyMPEInference(info.model, inferDB, info.config);
 
 		// The Friends predicate should be empty.
-		assertEquals(0, Queries.countAllGroundRandomVariableAtoms(inferDB, info.predicates.get("Friends")));
+		assertEquals(0, inferDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends")));
 
 		mpe.mpeInference();
 
 		// There are multiple optimal configuration to the first round of grounding (which snowballs later),
 		// but we know there should be at least 16 ground atoms and less than 20.
-		int groundCount = Queries.countAllGroundRandomVariableAtoms(inferDB, info.predicates.get("Friends"));
+		int groundCount = inferDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends"));
 		assertTrue("Expected: >= 16, Found: " + groundCount, groundCount >= 16);
 
 		mpe.close();
@@ -209,13 +208,13 @@ public class LazyMPEInferenceTest {
 		LazyMPEInference mpe = new LazyMPEInference(info.model, inferDB, info.config);
 
 		// The Friends predicate should be empty.
-		assertEquals(0, Queries.countAllGroundRandomVariableAtoms(inferDB, info.predicates.get("Friends")));
+		assertEquals(0, inferDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends")));
 
 		mpe.mpeInference();
 
 		// There are multiple optimal configuration to the first round of grounding (which snowballs later),
 		// but we know there should be at least 16 ground atoms and less than 20.
-		int groundCount = Queries.countAllGroundRandomVariableAtoms(inferDB, info.predicates.get("Friends"));
+		int groundCount = inferDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends"));
 		assertTrue("Expected: >= 16, Found: " + groundCount, groundCount >= 16);
 
 		mpe.close();
@@ -230,11 +229,11 @@ public class LazyMPEInferenceTest {
 		LazyMPEInference mpe = new LazyMPEInference(info.model, fullTargetDB, info.config);
 
 		// The Friends predicate should be fully defined.
-		assertEquals(20, Queries.countAllGroundRandomVariableAtoms(fullTargetDB, info.predicates.get("Friends")));
+		assertEquals(20, fullTargetDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends")));
 
 		mpe.mpeInference();
 
-		assertEquals(20, Queries.countAllGroundRandomVariableAtoms(fullTargetDB, info.predicates.get("Friends")));
+		assertEquals(20, fullTargetDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends")));
 
 		mpe.close();
 		fullTargetDB.close();

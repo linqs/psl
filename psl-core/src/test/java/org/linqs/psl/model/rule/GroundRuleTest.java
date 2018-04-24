@@ -32,7 +32,6 @@ import org.linqs.psl.config.EmptyBundle;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
-import org.linqs.psl.database.Queries;
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.database.atom.SimpleAtomManager;
 import org.linqs.psl.database.loading.Inserter;

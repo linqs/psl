@@ -68,7 +68,7 @@ public abstract class DatabaseReasonerInspector implements ReasonerInspector {
 
 		// Collect all the open predicates.
 		Set<StandardPredicate> openPredicates = new HashSet<StandardPredicate>();
-		for (StandardPredicate predicate : rvDatabase.getRegisteredPredicates()) {
+		for (StandardPredicate predicate : rvDatabase.getDataStore().getRegisteredPredicates()) {
 			if (!rvDatabase.isClosed(predicate)) {
 				openPredicates.add(predicate);
 			}
