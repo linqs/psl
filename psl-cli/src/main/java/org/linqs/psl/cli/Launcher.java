@@ -251,7 +251,7 @@ public class Launcher {
 		// If we are just writing to the console, use a more human-readable format.
 		if (!options.hasOption(OPTION_OUTPUT_DIR)) {
 			for (StandardPredicate openPredicate : openPredicates) {
-				for (GroundAtom atom : Queries.getAllAtoms(database, openPredicate)) {
+				for (GroundAtom atom : Queries.getAllRandomVariableAtoms(database, openPredicate)) {
 					System.out.println(atom.toString() + " = " + atom.getValue());
 				}
 			}

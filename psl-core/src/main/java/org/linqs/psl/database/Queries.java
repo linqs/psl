@@ -19,6 +19,7 @@ package org.linqs.psl.database;
 
 import org.joda.time.DateTime;
 import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
@@ -71,6 +72,17 @@ public class Queries {
 	 */
 	public static List<GroundAtom> getAllAtoms(Database db, StandardPredicate predicate) {
 		return db.getAllGroundAtoms(predicate);
+	}
+
+	/**
+	 * Returns all RandomVariableAtoms of a Predicate persisted in a Database.
+	 *
+	 * @param db the Database to query for RandomVariableAtoms
+	 * @param predicate the Predicate of the RandomVariableAtoms to return
+	 * @return all GroundAtoms of predicate in db
+	 */
+	public static List<RandomVariableAtom> getAllRandomVariableAtoms(Database db, StandardPredicate predicate) {
+		return db.getAllGroundRandomVariableAtoms(predicate);
 	}
 
 	/**
