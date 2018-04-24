@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.database.rdbms;
 
-import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
@@ -48,8 +47,7 @@ import java.util.Set;
 
 /**
  * The RDMBSDataStore is an RDBMS implementation of the DataStore interface.
- * It will connect to any RDBMS that has a supporting {@link DatabaseDriver} implementation, and
- * through the {@link ConfigBundle} can use custom names for its value and partition columns.
+ * It will connect to any RDBMS that has a supporting {@link DatabaseDriver} implementation.
  */
 public class RDBMSDataStore implements DataStore {
 	private static final Logger log = LoggerFactory.getLogger(RDBMSDataStore.class);
@@ -98,9 +96,8 @@ public class RDBMSDataStore implements DataStore {
 	/**
 	 * Returns an RDBMSDataStore that utilizes the connections returned by the {@link DatabaseDriver}.
 	 * @param dbDriver the DatabaseDriver that contains a connection pool to the backing database.
-	 * @param config the configuration for this DataStore.
 	 */
-	public RDBMSDataStore(DatabaseDriver dbDriver, ConfigBundle config) {
+	public RDBMSDataStore(DatabaseDriver dbDriver) {
 		openDataStores.add(this);
 
 		// Initialize all private variables

@@ -19,10 +19,6 @@ package org.linqs.psl.reasoner.admm.term;
 
 import static org.junit.Assert.assertEquals;
 
-import org.linqs.psl.config.ConfigBundle;
-import org.linqs.psl.config.ConfigManager;
-
-import org.apache.commons.configuration.ConfigurationException;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -30,14 +26,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SquaredLinearLossTermTest {
-	
-	private ConfigBundle config;
-	
-	@Before
-	public final void setUp() throws ConfigurationException {
-		config = ConfigManager.getManager().getBundle("dummy");
-	}
-
 	@Test
 	public void testMinimize() {
 		/*
@@ -52,7 +40,7 @@ public class SquaredLinearLossTermTest {
 		float[] expected = {-1.41569f, 6.55231f, -2.29593f};
 		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
 	}
-	
+
 	private void testProblem(float[] z, float[] y, float[] coeffs, float constant,
 			float weight, final float stepSize, float[] expected) {
 		List<LocalVariable> variables = new ArrayList<LocalVariable>(z.length);
@@ -64,10 +52,10 @@ public class SquaredLinearLossTermTest {
 
 			coeffsList.add(new Float(coeffs[i]));
 		}
-		
+
 		SquaredLinearLossTerm term = new SquaredLinearLossTerm(variables, coeffsList, constant, weight);
 		term.minimize(stepSize, z);
-		
+
 		for (int i = 0; i < z.length; i++) {
 			assertEquals(expected[i], variables.get(i).getValue(), 5e-5);
 		}

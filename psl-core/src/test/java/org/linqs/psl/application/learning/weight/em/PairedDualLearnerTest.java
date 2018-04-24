@@ -23,6 +23,6 @@ import org.linqs.psl.application.learning.weight.WeightLearningTest;
 public class PairedDualLearnerTest extends WeightLearningTest {
 	@Override
 	protected WeightLearningApplication getWLA() {
-		return new PairedDualLearner(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB, info.config);
+		return new PairedDualLearner(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
 	}
 }

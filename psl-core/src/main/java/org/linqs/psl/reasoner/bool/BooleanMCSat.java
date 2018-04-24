@@ -19,20 +19,17 @@ package org.linqs.psl.reasoner.bool;
 
 import org.linqs.psl.application.groundrulestore.AtomRegisterGroundRuleStore;
 import org.linqs.psl.application.util.GroundRules;
-import org.linqs.psl.config.ConfigBundle;
-import org.linqs.psl.config.ConfigManager;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.Reasoner;
-import org.linqs.psl.reasoner.inspector.ReasonerInspector;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.reasoner.term.blocker.ConstraintBlockerTerm;
 import org.linqs.psl.reasoner.term.blocker.ConstraintBlockerTermStore;
+import org.linqs.psl.util.RandUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Random;
 
 /**
  * Implementation of MC-Sat, which approximates the marginal probability that each
@@ -47,13 +44,11 @@ import java.util.Random;
  *
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-public class BooleanMCSat extends Reasoner {
+public class BooleanMCSat implements Reasoner {
 	private static final Logger log = LoggerFactory.getLogger(BooleanMCSat.class);
 
 	/**
 	 * Prefix of property keys used by this class.
-	 *
-	 * @see ConfigManager
 	 */
 	public static final String CONFIG_PREFIX = "booleanmcsat";
 
@@ -77,21 +72,16 @@ public class BooleanMCSat extends Reasoner {
 	 */
 	public static final int NUM_BURN_IN_DEFAULT = 500;
 
-	private final Random rand;
 	private final int numSamples;
 	private final int numBurnIn;
 
-	public BooleanMCSat(ConfigBundle config) {
-		super(config);
-
-		rand = new Random();
-
-		numSamples = config.getInt(NUM_SAMPLES_KEY, NUM_SAMPLES_DEFAULT);
+	public BooleanMCSat() {
+		numSamples = Config.getInt(NUM_SAMPLES_KEY, NUM_SAMPLES_DEFAULT);
 		if (numSamples <= 0) {
 			throw new IllegalArgumentException("Number of samples must be positive.");
 		}
 
-		numBurnIn = config.getInt(NUM_BURN_IN_KEY, NUM_BURN_IN_DEFAULT);
+		numBurnIn = Config.getInt(NUM_BURN_IN_KEY, NUM_BURN_IN_DEFAULT);
 		if (numSamples <= 0) {
 			throw new IllegalArgumentException("Number of burn in samples must be positive.");
 		} else if (numBurnIn >= numSamples) {
@@ -157,24 +147,6 @@ public class BooleanMCSat extends Reasoner {
 					}
 				}
 			}
-
-			// Skip the burn in.
-			if (inspector != null && sampleIndex >= numBurnIn) {
-				// Sets truth values of RandomVariableAtoms to marginal probabilities.
-				for (int blockIndex = 0; blockIndex < blocker.size(); blockIndex++) {
-					for (int atomIndex = 0; atomIndex < blocker.get(blockIndex).size(); atomIndex++) {
-						blocker.get(blockIndex).getAtoms()[atomIndex].setValue(totals[blockIndex][atomIndex] / (numSamples - numBurnIn));
-					}
-				}
-
-				double incompatibility = GroundRules.getTotalWeightedIncompatibility(blocker.getGroundRuleStore().getCompatibilityRules());
-				double infeasbility = GroundRules.getInfeasibilityNorm(blocker.getGroundRuleStore().getConstraintRules());
-
-				if (!inspector.update(this, new MCSatStatus(sampleIndex, incompatibility, infeasbility))) {
-					log.info("Stopping MCSat iterations on advice from inspector");
-					break;
-				}
-			}
 		}
 
 		log.info("Inference complete.");
@@ -210,7 +182,7 @@ public class BooleanMCSat extends Reasoner {
 
 		// Draws sample.
 		double[] sample = new double[distribution.length];
-		double cutoff = rand.nextDouble();
+		double cutoff = RandUtils.nextDouble();
 
 		total = 0.0;
 		for (int i = 0; i < distribution.length; i++) {
@@ -230,23 +202,5 @@ public class BooleanMCSat extends Reasoner {
 	@Override
 	public void close() {
 		// Intentionally blank.
-	}
-
-	private static class MCSatStatus extends ReasonerInspector.IterativeReasonerStatus {
-		public double incompatibility;
-		public double infeasbility;
-
-		public MCSatStatus(int iteration, double incompatibility, double infeasbility) {
-			super(iteration);
-
-			this.incompatibility = incompatibility;
-			this.infeasbility = infeasbility;
-		}
-
-		@Override
-		public String toString() {
-			return String.format("%s, incompatibility: %f, infeasbility: %f",
-					super.toString(), incompatibility, infeasbility);
-		}
 	}
 }

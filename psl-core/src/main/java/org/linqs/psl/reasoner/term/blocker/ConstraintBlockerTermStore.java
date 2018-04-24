@@ -24,13 +24,13 @@ import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.arithmetic.UnweightedGroundArithmeticRule;
 import org.linqs.psl.model.rule.misc.GroundValueConstraint;
 import org.linqs.psl.reasoner.term.TermStore;
+import org.linqs.psl.util.RandUtils;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 
 /**
  * A TermStore to hold blocks.
@@ -90,9 +90,8 @@ public class ConstraintBlockerTermStore implements TermStore<ConstraintBlockerTe
 	 * Randomly initializes the RandomVariableAtoms to a feasible state.
 	 */
 	public void randomlyInitialize() {
-		Random rand = new Random();
 		for (ConstraintBlockerTerm block : blocks) {
-			block.randomlyInitialize(rand);
+			block.randomlyInitialize();
 		}
 	}
 

@@ -21,7 +21,7 @@ import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 import org.linqs.psl.application.inference.LazyMPEInference;
 import org.linqs.psl.application.learning.weight.VotedPerceptron;
 import org.linqs.psl.application.util.Grounding;
-import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.LazyAtomManager;
 import org.linqs.psl.database.atom.PersistedAtomManager;
@@ -74,14 +74,14 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 
 	private int maxRounds;
 
-	public LazyMaxLikelihoodMPE(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
-		this(model.getRules(), rvDB, observedDB, config);
+	public LazyMaxLikelihoodMPE(Model model, Database rvDB, Database observedDB) {
+		this(model.getRules(), rvDB, observedDB);
 	}
 
-	public LazyMaxLikelihoodMPE(List<Rule> rules, Database rvDB, Database observedDB, ConfigBundle config) {
-		super(rules, rvDB, observedDB, false, config);
+	public LazyMaxLikelihoodMPE(List<Rule> rules, Database rvDB, Database observedDB) {
+		super(rules, rvDB, observedDB, false);
 
-		maxRounds = config.getInt(MAX_ROUNDS_KEY, MAX_ROUNDS_DEFAULT);
+		maxRounds = Config.getInt(MAX_ROUNDS_KEY, MAX_ROUNDS_DEFAULT);
 	}
 
 	@Override
@@ -95,6 +95,6 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
 
 	@Override
 	protected PersistedAtomManager createAtomManager() {
-		return new LazyAtomManager(rvDB, config);
+		return new LazyAtomManager(rvDB);
 	}
 }

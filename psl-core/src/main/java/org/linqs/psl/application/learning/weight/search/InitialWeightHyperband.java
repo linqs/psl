@@ -20,7 +20,7 @@ package org.linqs.psl.application.learning.weight.search;
 import org.linqs.psl.application.learning.weight.VotedPerceptron;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
-import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
 import org.linqs.psl.evaluation.statistics.Evaluator;
@@ -37,7 +37,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
-import java.util.Random;
 
 /**
  * Hyperband, but the weights chosen are used as initial weights for further weight learning.
@@ -59,17 +58,17 @@ public class InitialWeightHyperband extends Hyperband {
 
 	private VotedPerceptron internalWLA;
 
-	public InitialWeightHyperband(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
-		this(model.getRules(), rvDB, observedDB, config);
+	public InitialWeightHyperband(Model model, Database rvDB, Database observedDB) {
+		this(model.getRules(), rvDB, observedDB);
 	}
 
-	public InitialWeightHyperband(List<Rule> rules, Database rvDB, Database observedDB, ConfigBundle config) {
+	public InitialWeightHyperband(List<Rule> rules, Database rvDB, Database observedDB) {
 		// TODO(eriq): Latent variables?
-		super(rules, rvDB, observedDB, config);
+		super(rules, rvDB, observedDB);
 
 		// TODO(eriq): Can we generalizse to actual WLA?
-		String wlaName = config.getString(INTERNAL_WLA_KEY, INTERNAL_WLA_DEFAULT);
-		this.internalWLA = (VotedPerceptron)WeightLearningApplication.getWLA(wlaName, rules, rvDB, observedDB, config);
+		String wlaName = Config.getString(INTERNAL_WLA_KEY, INTERNAL_WLA_DEFAULT);
+		this.internalWLA = (VotedPerceptron)WeightLearningApplication.getWLA(wlaName, rules, rvDB, observedDB);
 	}
 
 	@Override

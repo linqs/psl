@@ -21,8 +21,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import org.linqs.psl.PSLTest;
-import org.linqs.psl.config.ConfigBundle;
-import org.linqs.psl.config.EmptyBundle;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
@@ -47,7 +45,6 @@ import java.util.Set;
 public class AbstractLogicalRuleTest {
 	private DataStore dataStore;
 	private Database database;
-	private ConfigBundle config;
 
 	private StandardPredicate singleClosed;
 	private StandardPredicate doubleClosed;
@@ -55,8 +52,7 @@ public class AbstractLogicalRuleTest {
 
 	@Before
 	public void setup() {
-		config = new EmptyBundle();
-		dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Memory, this.getClass().getName(), true), config);
+		dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Memory, this.getClass().getName(), true));
 
 		singleClosed = StandardPredicate.get("SingleClosed", ConstantType.UniqueStringID);
 		dataStore.registerPredicate(singleClosed);

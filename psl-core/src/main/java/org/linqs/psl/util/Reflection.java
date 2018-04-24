@@ -17,8 +17,6 @@
  */
 package org.linqs.psl.util;
 
-import org.linqs.psl.config.ConfigBundle;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
@@ -29,15 +27,7 @@ public final class Reflection {
 	// Static only.
 	private Reflection() {}
 
-	/**
-	 * Try to construct a new object by first looking for the PSL-style constructor with a ConfigBundle,
-	 * and then a default constructor.
-	 */
 	public static Object newObject(String className) {
-		return newObject(className, null);
-	}
-
-	public static Object newObject(String className, ConfigBundle config) {
 		Class<?> classObject = null;
 		try {
 			classObject = Class.forName(className);
@@ -45,44 +35,21 @@ public final class Reflection {
 			throw new IllegalArgumentException("Could not find class: " + className, ex);
 		}
 
-		return newObject(classObject, config);
+		return newObject(classObject);
 	}
 
 	public static Object newObject(Class<?> classObject) {
-		return newObject(classObject, null);
-	}
-
-	public static Object newObject(Class<?> classObject, ConfigBundle config) {
 		Constructor constructor = null;
-		boolean useConfig = true;
-
 		try {
-			// First, try to get a constructor with only a ConfigBundle.
-			constructor = classObject.getConstructor(ConfigBundle.class);
-		} catch (NoSuchMethodException ex) {
-			useConfig = false;
-		}
-
-		// If we couldn't find a constructor with a config, or we don't have a config,
-		// then try to find a default one.
-		if (!useConfig || config == null) {
-			try {
-				constructor = classObject.getConstructor();
-				useConfig = false;
-			} catch (NoSuchMethodException ex2) {
-				throw new IllegalArgumentException(
-						"Could not find a suitable constructor (only ConfigBundle or no parameters) for " +
-						classObject.getName());
-			}
+			constructor = classObject.getConstructor();
+		} catch (NoSuchMethodException ex2) {
+			throw new IllegalArgumentException(
+					"Could not find a default constructor for " + classObject.getName());
 		}
 
 		Object rtn = null;
 		try {
-			if (useConfig) {
-				rtn = constructor.newInstance(config);
-			} else {
-				rtn = constructor.newInstance();
-			}
+			rtn = constructor.newInstance();
 		} catch (InstantiationException ex) {
 			throw new RuntimeException("Unable to instantiate object (" + classObject.getName() + ")", ex);
 		} catch (IllegalAccessException ex) {

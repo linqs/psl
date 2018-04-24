@@ -15,23 +15,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.reasoner.bool;
+package org.linqs.psl.application.learning.weight.search.grid;
 
-import org.linqs.psl.config.ConfigBundle;
-import org.linqs.psl.reasoner.Reasoner;
-import org.linqs.psl.reasoner.ReasonerFactory;
+import org.linqs.psl.application.learning.weight.WeightLearningApplication;
+import org.linqs.psl.application.learning.weight.WeightLearningTest;
+import org.linqs.psl.config.Config;
 
-/**
- * Factory for a {@link BooleanMCSat}.
- *
- * @author Stephen Bach <bach@cs.umd.edu>
- */
-public class BooleanMCSatFactory implements ReasonerFactory {
-
+public class RankSearchTest extends WeightLearningTest {
 	@Override
-	public Reasoner getReasoner(ConfigBundle config)
-			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-		return new BooleanMCSat(config);
+	protected WeightLearningApplication getWLA() {
+		return new RankSearch(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
 	}
-
 }

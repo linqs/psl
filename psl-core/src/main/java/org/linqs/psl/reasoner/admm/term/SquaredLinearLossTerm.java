@@ -22,8 +22,6 @@ import java.util.List;
 /**
  * ADMMReasoner objective term of the form <br />
  * weight * (coeffs^T * x - constant)^2
- *
- * @author Stephen Bach <bach@cs.umd.edu>
  */
 public class SquaredLinearLossTerm extends SquaredHyperplaneTerm {
 	SquaredLinearLossTerm(List<LocalVariable> variables, List<Float> coeffs, float constant, float weight) {
@@ -33,5 +31,13 @@ public class SquaredLinearLossTerm extends SquaredHyperplaneTerm {
 	@Override
 	public void minimize(float stepSize, float[] consensusValues) {
 		minWeightedSquaredHyperplane(stepSize, consensusValues);
+	}
+
+	/**
+	 * weight * (coeffs^T * x - constant)^2
+	 */
+	@Override
+	public float evaluate() {
+		return weight * (float)Math.pow(super.evaluate(), 2);
 	}
 }

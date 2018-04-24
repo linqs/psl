@@ -19,11 +19,8 @@ package org.linqs.psl.reasoner.admm.term;
 
 import static org.junit.Assert.assertEquals;
 
-import org.linqs.psl.config.ConfigBundle;
-import org.linqs.psl.config.ConfigManager;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 
-import org.apache.commons.configuration.ConfigurationException;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -31,19 +28,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class LinearConstraintTermTest {
-	private ConfigBundle config;
-	
-	@Before
-	public final void setUp() throws ConfigurationException {
-		config = ConfigManager.getManager().getBundle("dummy");
-	}
-	
 	@Test
 	public void testMinimize() {
-		
 		/*
 		 * Problem 1
-		 * 
+		 *
 		 * Constraint inactive at solution
 		 */
 		float[] z = {0.2f, 0.5f};
@@ -54,10 +43,10 @@ public class LinearConstraintTermTest {
 		float stepSize = 1.0f;
 		float[] expected = {0.2f, 0.5f};
 		testProblem(z, y, coeffs, constant, comparator, stepSize, expected);
-		
+
 		/*
 		 * Problem 2
-		 * 
+		 *
 		 * Constraint active at solution
 		 */
 		z = new float[] {0.7f, 0.5f};
@@ -68,10 +57,10 @@ public class LinearConstraintTermTest {
 		stepSize = 1.0f;
 		expected = new float[] {0.6f, 0.4f};
 		testProblem(z, y, coeffs, constant, comparator, stepSize, expected);
-		
+
 		/*
 		 * Problem 3
-		 * 
+		 *
 		 * Equality constraint
 		 */
 		z = new float[] {0.7f, 0.5f};
@@ -83,7 +72,7 @@ public class LinearConstraintTermTest {
 		expected = new float[] {0.6f, 0.6f};
 		testProblem(z, y, coeffs, constant, comparator, stepSize, expected);
 	}
-	
+
 	private void testProblem(float[] z, float[] y, float[] coeffs, float constant,
 			FunctionComparator comparator, final float stepSize, float[] expected) {
 		List<LocalVariable> variables = new ArrayList<LocalVariable>(z.length);
@@ -95,10 +84,10 @@ public class LinearConstraintTermTest {
 
 			coeffsList.add(new Float(coeffs[i]));
 		}
-		
+
 		LinearConstraintTerm term = new LinearConstraintTerm(variables, coeffsList, constant, comparator);
 		term.minimize(stepSize, z);
-		
+
 		for (int i = 0; i < z.length; i++) {
 			assertEquals(expected[i], variables.get(i).getValue(), 5e-5);
 		}

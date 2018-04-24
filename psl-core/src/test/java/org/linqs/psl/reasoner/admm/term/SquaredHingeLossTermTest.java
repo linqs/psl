@@ -19,10 +19,6 @@ package org.linqs.psl.reasoner.admm.term;
 
 import static org.junit.Assert.assertEquals;
 
-import org.linqs.psl.config.ConfigBundle;
-import org.linqs.psl.config.ConfigManager;
-
-import org.apache.commons.configuration.ConfigurationException;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -30,20 +26,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SquaredHingeLossTermTest {
-	
-	private ConfigBundle config;
-	
-	@Before
-	public final void setUp() throws ConfigurationException {
-		config = ConfigManager.getManager().getBundle("dummy");
-	}
-	
 	@Test
 	public void testMinimize() {
-		
 		/*
 		 * Problem 1
-		 * 
+		 *
 		 * Solution on the quadratic side
 		 */
 		float[] z = {0.2f, 0.5f};
@@ -54,10 +41,10 @@ public class SquaredHingeLossTermTest {
 		float stepSize = 1.0f;
 		float[] expected = {-0.06f, 0.76f};
 		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
-		
+
 		/*
 		 * Problem 2
-		 * 
+		 *
 		 * Solution on the quadratic side
 		 */
 		z = new float[] {0.3f, 0.5f, 0.1f};
@@ -68,10 +55,10 @@ public class SquaredHingeLossTermTest {
 		stepSize = 0.5f;
 		expected = new float[] {0.051798f, 0.524096f, 0.180720f};
 		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
-		
+
 		/*
 		 * Problem 3
-		 * 
+		 *
 		 * Solution on the zero side
 		 */
 		z = new float[] {0.3f, 0.5f, 0.1f};
@@ -82,10 +69,10 @@ public class SquaredHingeLossTermTest {
 		stepSize = 0.5f;
 		expected = new float[] {0.1f, 0.5f, 0.2f};
 		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
-		
+
 		/*
 		 * Problem 4
-		 * 
+		 *
 		 * Solution on the quadratic side
 		 */
 		z = new float[] {0.1f};
@@ -96,10 +83,10 @@ public class SquaredHingeLossTermTest {
 		stepSize = 1.0f;
 		expected = new float[] {0.05f};
 		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
-		
+
 		/*
 		 * Problem 5
-		 * 
+		 *
 		 * Solution on the quadratic side
 		 */
 		z = new float[] {0.7f, 0.5f};
@@ -110,12 +97,12 @@ public class SquaredHingeLossTermTest {
 		stepSize = 1.0f;
 		expected = new float[] {0.62f, 0.58f};
 		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
-		
+
 		/*
 		 * Problem 6
-		 * 
+		 *
 		 * Solution on the quadratic side
-		 * 
+		 *
 		 * Tests factorization caching by repeating the test three times
 		 */
 		z = new float[] {3.7f, -0.5f, 0.5f};
@@ -129,7 +116,7 @@ public class SquaredHingeLossTermTest {
 		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
 		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
 	}
-	
+
 	private void testProblem(float[] z, float[] y,float[] coeffs, float constant,
 			float weight, final float stepSize , float[] expected) {
 		List<LocalVariable> variables = new ArrayList<LocalVariable>(z.length);
@@ -141,10 +128,10 @@ public class SquaredHingeLossTermTest {
 
 			coeffsList.add(new Float(coeffs[i]));
 		}
-		
+
 		SquaredHingeLossTerm term = new SquaredHingeLossTerm(variables, coeffsList, constant, weight);
 		term.minimize(stepSize, z);
-		
+
 		for (int i = 0; i < z.length; i++) {
 			assertEquals(expected[i], variables.get(i).getValue(), 5e-5);
 		}

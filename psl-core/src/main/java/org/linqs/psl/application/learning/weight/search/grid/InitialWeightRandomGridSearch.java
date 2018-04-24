@@ -18,7 +18,6 @@
 package org.linqs.psl.application.learning.weight.search.grid;
 
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
-import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
@@ -37,12 +36,12 @@ public class InitialWeightRandomGridSearch extends RandomGridSearch {
 
 	private WeightLearningApplication internalWLA;
 
-	public InitialWeightRandomGridSearch(Model model, WeightLearningApplication internalWLA, Database rvDB, Database observedDB, ConfigBundle config) {
-		this(model.getRules(), internalWLA, rvDB, observedDB, config);
+	public InitialWeightRandomGridSearch(Model model, WeightLearningApplication internalWLA, Database rvDB, Database observedDB) {
+		this(model.getRules(), internalWLA, rvDB, observedDB);
 	}
 
-	public InitialWeightRandomGridSearch(List<Rule> rules, WeightLearningApplication internalWLA, Database rvDB, Database observedDB, ConfigBundle config) {
-		super(rules, rvDB, observedDB, config);
+	public InitialWeightRandomGridSearch(List<Rule> rules, WeightLearningApplication internalWLA, Database rvDB, Database observedDB) {
+		super(rules, rvDB, observedDB);
 
 		this.internalWLA = internalWLA;
 	}

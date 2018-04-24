@@ -106,17 +106,17 @@ public class LazyMPEInferenceTest {
 	 */
 	@Test
 	public void testBase() {
-		LazyMPEInference mpe = new LazyMPEInference(info.model, inferDB, info.config);
+		LazyMPEInference mpe = new LazyMPEInference(info.model, inferDB);
 
 		// The Friends predicate should be empty.
 		assertEquals(0, inferDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends")));
 
-		mpe.mpeInference();
+		mpe.inference();
 
 		// There are multiple optimal configuration to the first round of grounding (which snowballs later),
 		// but we know there should be at least 16 ground atoms and less than 20.
 		int groundCount = inferDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends"));
-		assertTrue("Expected: >= 16, Found: " + groundCount, groundCount >= 16);
+		assertEquals(20, groundCount);
 
 		mpe.close();
 	}
@@ -125,17 +125,17 @@ public class LazyMPEInferenceTest {
 	public void testBaseNotNice() {
 		initModel(false);
 
-		LazyMPEInference mpe = new LazyMPEInference(info.model, inferDB, info.config);
+		LazyMPEInference mpe = new LazyMPEInference(info.model, inferDB);
 
 		// The Friends predicate should be empty.
 		assertEquals(0, inferDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends")));
 
-		mpe.mpeInference();
+		mpe.inference();
 
 		// There are multiple optimal configuration to the first round of grounding,
 		// but we know that at least all 'Eugene's grounding will be excluded.
 		int groundCount = inferDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends"));
-		assertTrue("Expected: <= 12, Found: " + groundCount, groundCount <= 12);
+		assertEquals(12, groundCount);
 
 		mpe.close();
 	}
@@ -161,17 +161,17 @@ public class LazyMPEInferenceTest {
 		);
 		info.model.addRule(rule);
 
-		LazyMPEInference mpe = new LazyMPEInference(info.model, inferDB, info.config);
+		LazyMPEInference mpe = new LazyMPEInference(info.model, inferDB);
 
 		// The Friends predicate should be empty.
 		assertEquals(0, inferDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends")));
 
-		mpe.mpeInference();
+		mpe.inference();
 
 		// There are multiple optimal configuration to the first round of grounding (which snowballs later),
 		// but we know there should be at least 16 ground atoms and less than 20.
 		int groundCount = inferDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends"));
-		assertTrue("Expected: >= 16, Found: " + groundCount, groundCount >= 16);
+		assertEquals(20, groundCount);
 
 		mpe.close();
 	}
@@ -205,17 +205,17 @@ public class LazyMPEInferenceTest {
 		);
 		info.model.addRule(rule);
 
-		LazyMPEInference mpe = new LazyMPEInference(info.model, inferDB, info.config);
+		LazyMPEInference mpe = new LazyMPEInference(info.model, inferDB);
 
 		// The Friends predicate should be empty.
 		assertEquals(0, inferDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends")));
 
-		mpe.mpeInference();
+		mpe.inference();
 
 		// There are multiple optimal configuration to the first round of grounding (which snowballs later),
 		// but we know there should be at least 16 ground atoms and less than 20.
 		int groundCount = inferDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends"));
-		assertTrue("Expected: >= 16, Found: " + groundCount, groundCount >= 16);
+		assertEquals(20, groundCount);
 
 		mpe.close();
 	}
@@ -226,12 +226,12 @@ public class LazyMPEInferenceTest {
 	@Test
 	public void testFullySpecified() {
 		Database fullTargetDB = info.dataStore.getDatabase(info.targetPartition, closedPredicates, info.observationPartition);
-		LazyMPEInference mpe = new LazyMPEInference(info.model, fullTargetDB, info.config);
+		LazyMPEInference mpe = new LazyMPEInference(info.model, fullTargetDB);
 
 		// The Friends predicate should be fully defined.
 		assertEquals(20, fullTargetDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends")));
 
-		mpe.mpeInference();
+		mpe.inference();
 
 		assertEquals(20, fullTargetDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends")));
 

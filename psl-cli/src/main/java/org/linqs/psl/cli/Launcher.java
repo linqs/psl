@@ -17,11 +17,11 @@
  */
 package org.linqs.psl.cli;
 
+import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.application.inference.MPEInference;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
-import org.linqs.psl.config.ConfigBundle;
-import org.linqs.psl.config.ConfigManager;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
@@ -37,7 +37,6 @@ import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.parser.ModelLoader;
-import org.linqs.psl.reasoner.admm.ADMMReasonerFactory;
 import org.linqs.psl.util.Reflection;
 
 import org.apache.commons.cli.CommandLine;
@@ -48,7 +47,6 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.configuration.ConfigurationException;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.PatternLayout;
@@ -106,12 +104,12 @@ public class Launcher {
 	public static final String OPTION_PROPERTIES_FILE = "p";
 	public static final String OPTION_PROPERTIES_FILE_LONG = "properties";
 
-	public static final String CONFIG_PREFIX = "cli";
 	public static final String MODEL_FILE_EXTENSION = ".psl";
 	public static final String DEFAULT_H2_DB_PATH =
 			Paths.get(System.getProperty("java.io.tmpdir"),
 			"cli_" + System.getProperty("user.name") + "@" + getHostname()).toString();
 	public static final String DEFAULT_POSTGRES_DB_NAME = "psl_cli";
+	public static final String DEFAULT_IA = MPEInference.class.getName();
 	public static final String DEFAULT_WLA = MaxLikelihoodMPE.class.getName();
 
 	// Reserved partition names.
@@ -120,13 +118,12 @@ public class Launcher {
 	public static final String PARTITION_NAME_LABELS = "truth";
 
 	private CommandLine options;
-	private ConfigBundle config;
 	private Logger log;
 
 	private Launcher(CommandLine options) {
 		this.options = options;
 		this.log = initLogger();
-		this.config = initConfig();
+		initConfig();
 	}
 
 	/**
@@ -153,12 +150,6 @@ public class Launcher {
 		for (Map.Entry<Object, Object> entry : options.getOptionProperties("D").entrySet()) {
 			String key = entry.getKey().toString();
 
-			// If the key is prefixed woth CONFIG_PREFIX, then add another key without the prefix.
-			// The user may have been confused.
-			if (key.startsWith(CONFIG_PREFIX + ".")) {
-				key = key.replaceFirst(CONFIG_PREFIX + ".", "");
-			}
-
 			if (!key.startsWith("log4j.")) {
 				continue;
 			}
@@ -178,36 +169,18 @@ public class Launcher {
 	/**
 	 * Loads configuration.
 	 */
-	private ConfigBundle initConfig() {
-		ConfigManager cm = null;
-
-		try {
-			cm = ConfigManager.getManager();
-
-			// Load a properties file that was specified on the command line.
-			if (options.hasOption(OPTION_PROPERTIES_FILE)) {
-				String propertiesPath = options.getOptionValue(OPTION_PROPERTIES_FILE);
-				cm.loadResource(propertiesPath);
-			}
-		} catch (ConfigurationException ex) {
-			throw new RuntimeException("Failed to initialize configuration for CLI.", ex);
+	private void initConfig() {
+		// Load a properties file that was specified on the command line.
+		if (options.hasOption(OPTION_PROPERTIES_FILE)) {
+			String propertiesPath = options.getOptionValue(OPTION_PROPERTIES_FILE);
+			Config.loadResource(propertiesPath);
 		}
-
-		ConfigBundle bundle = cm.getBundle(CONFIG_PREFIX);
 
 		// Load any options specified directly on the command line (override standing options).
 		for (Map.Entry<Object, Object> entry : options.getOptionProperties("D").entrySet()) {
 			String key = entry.getKey().toString();
-			bundle.setProperty(key, entry.getValue());
-
-			// If the key is prefixed woth CONFIG_PREFIX, then add another key without the prefix.
-			// The user may have been confused.
-			if (key.startsWith(CONFIG_PREFIX + ".")) {
-				bundle.setProperty(key.replaceFirst(CONFIG_PREFIX + ".", ""), entry.getValue());
-			}
+			Config.setProperty(key, entry.getValue());
 		}
-
-		return bundle;
 	}
 
 	/**
@@ -231,7 +204,7 @@ public class Launcher {
 			driver = new PostgreSQLDriver(dbPath, true);
 		}
 
-		return new RDBMSDataStore(driver, config);
+		return new RDBMSDataStore(driver);
 	}
 
 	private Set<StandardPredicate> loadData(DataStore dataStore) {
@@ -250,17 +223,17 @@ public class Launcher {
 		return closedPredicates;
 	}
 
-	private void runInference(Model model, DataStore dataStore, Set<StandardPredicate> closedPredicates)
-			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-		log.info("Starting inference");
+	private void runInference(Model model, DataStore dataStore, Set<StandardPredicate> closedPredicates, String inferenceName) {
+		log.info("Starting inference with class: {}", inferenceName);
 
 		// Create database.
 		Partition targetPartition = dataStore.getPartition(PARTITION_NAME_TARGET);
 		Partition observationsPartition = dataStore.getPartition(PARTITION_NAME_OBSERVATIONS);
 		Database database = dataStore.getDatabase(targetPartition, closedPredicates, observationsPartition);
 
-		MPEInference mpe = new MPEInference(model, database, config);
-		mpe.mpeInference();
+		InferenceApplication inferenceApplication =
+				InferenceApplication.getInferenceApplication(inferenceName, model, database);
+		inferenceApplication.inference();
 
 		log.info("Inference Complete");
 
@@ -278,7 +251,7 @@ public class Launcher {
 		// If we are just writing to the console, use a more human-readable format.
 		if (!options.hasOption(OPTION_OUTPUT_DIR)) {
 			for (StandardPredicate openPredicate : openPredicates) {
-				for (GroundAtom atom : Queries.getAllAtoms(database, openPredicate)) {
+				for (GroundAtom atom : Queries.getAllRandomVariableAtoms(database, openPredicate)) {
 					System.out.println(atom.toString() + " = " + atom.getValue());
 				}
 			}
@@ -297,7 +270,7 @@ public class Launcher {
 			try {
 				FileWriter predFileWriter = new FileWriter(new File(outputDirectory, openPredicate.getName() + ".txt"));
 
-				for (GroundAtom atom : Queries.getAllAtoms(database, openPredicate)) {
+				for (GroundAtom atom : Queries.getAllRandomVariableAtoms(database, openPredicate)) {
 					for (Constant term : atom.getArguments()) {
 						predFileWriter.write(term.toString() + "\t");
 					}
@@ -313,7 +286,7 @@ public class Launcher {
 	}
 
 	private void learnWeights(Model model, DataStore dataStore, Set<StandardPredicate> closedPredicates, String wlaName)
-			throws ClassNotFoundException, IOException, IllegalAccessException, InstantiationException {
+			throws IOException {
 		log.info("Starting weight learning with learner: " + wlaName);
 
 		Partition targetPartition = dataStore.getPartition(PARTITION_NAME_TARGET);
@@ -324,7 +297,7 @@ public class Launcher {
 		Database observedTruthDatabase = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
 
 		WeightLearningApplication learner = WeightLearningApplication.getWLA(wlaName, model.getRules(),
-				randomVariableDatabase, observedTruthDatabase, config);
+				randomVariableDatabase, observedTruthDatabase);
 		learner.learn();
 		learner.close();
 
@@ -369,12 +342,12 @@ public class Launcher {
 		Database predictionDatabase = dataStore.getDatabase(targetPartition, closedPredicates, observationsPartition);
 		Database truthDatabase = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
 
-		Evaluator evaluator = (Evaluator)Reflection.newObject(evalClassName, config);
+		Evaluator evaluator = (Evaluator)Reflection.newObject(evalClassName);
 
 		for (StandardPredicate targetPredicate : openPredicates) {
 			// Before we run evaluation, ensure that the truth database actaully has instances of the target predicate.
 			if (Queries.countAllGroundAtoms(truthDatabase, targetPredicate) == 0) {
-				log.info("Skipping continuous evaluation for {} since there are no ground truth atoms", targetPredicate);
+				log.info("Skipping evaluation for {} since there are no ground truth atoms", targetPredicate);
 				continue;
 			}
 
@@ -389,7 +362,7 @@ public class Launcher {
 	}
 
 	private void run()
-			throws IOException, ConfigurationException, ClassNotFoundException, IllegalAccessException, InstantiationException {
+			throws IOException, ClassNotFoundException, IllegalAccessException, InstantiationException {
 		DataStore dataStore = initDataStore();
 
 		// Loads data
@@ -404,7 +377,7 @@ public class Launcher {
 
 		// Inference
 		if (options.hasOption(OPERATION_INFER)) {
-			runInference(model, dataStore, closedPredicates);
+			runInference(model, dataStore, closedPredicates, options.getOptionValue(OPERATION_INFER, DEFAULT_IA));
 		} else if (options.hasOption(OPERATION_LEARN)) {
 			learnWeights(model, dataStore, closedPredicates, options.getOptionValue(OPERATION_LEARN, DEFAULT_WLA));
 		} else {
@@ -436,7 +409,15 @@ public class Launcher {
 
 		OptionGroup mainCommand = new OptionGroup();
 
-		mainCommand.addOption(new Option(OPERATION_INFER, OPERATION_INFER_LONG, false, "Run MAP inference"));
+		mainCommand.addOption(Option.builder(OPERATION_INFER)
+				.longOpt(OPERATION_INFER_LONG)
+				.desc("Run MAP inference." +
+						" You can optionally supply a fully qualified name for an inference application" +
+						" (defaults to " + DEFAULT_IA + ").")
+				.hasArg()
+				.argName("inferenceMethod")
+				.optionalArg(true)
+				.build());
 
 		mainCommand.addOption(Option.builder(OPERATION_LEARN)
 				.longOpt(OPERATION_LEARN_LONG)

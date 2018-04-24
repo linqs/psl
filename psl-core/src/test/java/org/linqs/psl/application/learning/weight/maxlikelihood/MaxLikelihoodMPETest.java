@@ -23,6 +23,6 @@ import org.linqs.psl.application.learning.weight.WeightLearningTest;
 public class MaxLikelihoodMPETest extends WeightLearningTest {
 	@Override
 	protected WeightLearningApplication getWLA() {
-		return new MaxLikelihoodMPE(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB, info.config);
+		return new MaxLikelihoodMPE(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
 	}
 }

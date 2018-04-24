@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.application.learning.weight.maxlikelihood;
 
-import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.RandomVariableAtom;
@@ -28,6 +28,7 @@ import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.application.learning.weight.VotedPerceptron;
 import org.linqs.psl.util.Parallel;
+import org.linqs.psl.util.RandUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -59,22 +60,22 @@ public class MaxPiecewisePseudoLikelihood extends VotedPerceptron {
 	// We need an RNG for each thread.
 	private Random[] rands;
 
-	public MaxPiecewisePseudoLikelihood(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
-		this(model.getRules(), rvDB, observedDB, config);
+	public MaxPiecewisePseudoLikelihood(Model model, Database rvDB, Database observedDB) {
+		this(model.getRules(), rvDB, observedDB);
 	}
 
-	public MaxPiecewisePseudoLikelihood(List<Rule> rules, Database rvDB, Database observedDB, ConfigBundle config) {
-		super(rules, rvDB, observedDB, false, config);
+	public MaxPiecewisePseudoLikelihood(List<Rule> rules, Database rvDB, Database observedDB) {
+		super(rules, rvDB, observedDB, false);
 
-		maxNumSamples = config.getInt(NUM_SAMPLES_KEY, NUM_SAMPLES_DEFAULT);
+		maxNumSamples = Config.getInt(NUM_SAMPLES_KEY, NUM_SAMPLES_DEFAULT);
 		numSamples = maxNumSamples;
 		if (numSamples <= 0) {
 			throw new IllegalArgumentException("Number of samples must be positive.");
 		}
 
-		rands = new Random[Parallel.NUM_THREADS];
-		for (int i = 0; i < Parallel.NUM_THREADS; i++) {
-			rands[i] = new Random(rand.nextLong());
+		rands = new Random[Parallel.getNumThreads()];
+		for (int i = 0; i < Parallel.getNumThreads(); i++) {
+			rands[i] = new Random(RandUtils.nextLong());
 		}
 
 		ruleRandomVariableMap = null;

@@ -18,7 +18,7 @@
 package org.linqs.psl.evaluation.statistics;
 
 import org.linqs.psl.application.learning.weight.TrainingMap;
-import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
@@ -83,14 +83,9 @@ public class CategoricalEvaluator extends Evaluator {
 	private int hits;
 	private int misses;
 
-	public CategoricalEvaluator(ConfigBundle config) {
-		this(RepresentativeMetric.valueOf(config.getString(REPRESENTATIVE_KEY, DEFAULT_REPRESENTATIVE)),
-				config,
-				StringUtils.splitInt(config.getString(CATEGORY_INDEXES_KEY, DEFAULT_CATEGORY_INDEXES), DELIM));
-	}
-
 	public CategoricalEvaluator() {
-		this(DEFAULT_REPRESENTATIVE, StringUtils.splitInt(DEFAULT_CATEGORY_INDEXES, DELIM));
+		this(RepresentativeMetric.valueOf(Config.getString(REPRESENTATIVE_KEY, DEFAULT_REPRESENTATIVE)),
+				StringUtils.splitInt(Config.getString(CATEGORY_INDEXES_KEY, DEFAULT_CATEGORY_INDEXES), DELIM));
 	}
 
 	public CategoricalEvaluator(int... rawCategoryIndexes) {
@@ -98,17 +93,14 @@ public class CategoricalEvaluator extends Evaluator {
 	}
 
 	public CategoricalEvaluator(String representative, int... rawCategoryIndexes) {
-		this(RepresentativeMetric.valueOf(representative.toUpperCase()), null, rawCategoryIndexes);
+		this(RepresentativeMetric.valueOf(representative.toUpperCase()), rawCategoryIndexes);
 	}
 
-	public CategoricalEvaluator(RepresentativeMetric representative, ConfigBundle config, int... rawCategoryIndexes) {
+	public CategoricalEvaluator(RepresentativeMetric representative, int... rawCategoryIndexes) {
 		this.representative = representative;
 		setCategoryIndexes(rawCategoryIndexes);
 
-		defaultPredicate = null;
-		if (config != null) {
-			defaultPredicate = config.getString(DEFAULT_PREDICATE_KEY, null);
-		}
+		defaultPredicate = Config.getString(DEFAULT_PREDICATE_KEY, null);
 
 		hits = 0;
 		misses = 0;

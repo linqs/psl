@@ -78,14 +78,14 @@ public class Formula2SQLTest {
 		MPEInference mpe = null;
 
 		try {
-			mpe = new MPEInference(info.model, inferDB, info.config);
+			mpe = new MPEInference(info.model, inferDB);
 		} catch (Exception ex) {
 			System.out.println(ex);
 			ex.printStackTrace();
 			fail("Exception thrown during MPE constructor.");
 		}
 
-		mpe.mpeInference();
+		mpe.inference();
 		mpe.close();
 		inferDB.close();
 
@@ -131,14 +131,14 @@ public class Formula2SQLTest {
 		MPEInference mpe = null;
 
 		try {
-			mpe = new MPEInference(info.model, inferDB, info.config);
+			mpe = new MPEInference(info.model, inferDB);
 		} catch (Exception ex) {
 			System.out.println(ex);
 			ex.printStackTrace();
 			fail("Exception thrown during MPE constructor.");
 		}
 
-		mpe.mpeInference();
+		mpe.inference();
 		mpe.close();
 		inferDB.close();
 

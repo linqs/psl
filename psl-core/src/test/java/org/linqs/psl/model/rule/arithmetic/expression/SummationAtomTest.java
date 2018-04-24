@@ -22,8 +22,6 @@ import static org.junit.Assert.fail;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.linqs.psl.config.ConfigBundle;
-import org.linqs.psl.config.EmptyBundle;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
@@ -36,15 +34,13 @@ import org.linqs.psl.model.term.ConstantType;
 
 public class SummationAtomTest {
 	private DataStore dataStore;
-	private ConfigBundle config;
 
 	private StandardPredicate singlePredicate;
 	private StandardPredicate doublePredicate;
 
 	@Before
 	public void setup() {
-		config = new EmptyBundle();
-		dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Memory, this.getClass().getName(), true), config);
+		dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Memory, this.getClass().getName(), true));
 
 		singlePredicate = StandardPredicate.get("SingleClosed", ConstantType.UniqueStringID);
 		dataStore.registerPredicate(singlePredicate);
@@ -52,7 +48,7 @@ public class SummationAtomTest {
 		doublePredicate = StandardPredicate.get("DoubleClosed", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
 		dataStore.registerPredicate(doublePredicate);
 	}
-	
+
 	@Test
 	public void testValidateArgLength1() {
 		try {
@@ -72,7 +68,7 @@ public class SummationAtomTest {
 			// Exception is expected.
 		}
 	}
-	
+
 	@Test
 	public void testValidateArgLength2() {
 		try {

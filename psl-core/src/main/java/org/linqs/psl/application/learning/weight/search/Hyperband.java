@@ -18,12 +18,13 @@
 package org.linqs.psl.application.learning.weight.search;
 
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
-import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
 import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.util.RandUtils;
 import org.linqs.psl.util.StringUtils;
 
 import org.slf4j.Logger;
@@ -34,11 +35,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
-import java.util.Random;
 
 /**
  * Hyperband.
  * https://arxiv.org/pdf/1603.06560.pdf
+ * Some of the math has been adjusted to compute a budget (as a percentage) rather than a number of resources.
+ *
+ * Total amount of budget used: BASE_BRACKET_SIZE_KEY * NUM_BRACKETS_KEY
+ * VotedPerceptron methods typically use a total budget of 25.
+ * Number of configurations evaluated: \sum_{i = 0}^{NUM_BRACKETS_KEY} (BASE_BRACKET_SIZE_KEY * SURVIVAL_KEY^i / (i + 1))
  *
  * TODO(eriq): Think about inital weights.
  *
@@ -62,10 +67,23 @@ public class Hyperband extends WeightLearningApplication {
 	 * The proportion of configs that survive each round in a brancket.
 	 */
 	public static final String SURVIVAL_KEY = CONFIG_PREFIX + ".survival";
-	public static final int SURVIVAL_DEFAULT = 3;
+	public static final int SURVIVAL_DEFAULT = 4;
 
-	public static final double MAX_BUDGET = 200.0;
+	/**
+	 * The base number of weight configurations for each brackets.
+	 */
+	public static final String BASE_BRACKET_SIZE_KEY = CONFIG_PREFIX + ".basebracketsize";
+	public static final int BASE_BRACKET_SIZE_DEFAULT = 10;
+
+	/**
+	 * The number of brackets to consider.
+	 * This is computed in vanilla Hyperband.
+	 */
+	public static final String NUM_BRACKETS_KEY = CONFIG_PREFIX + ".numbrackets";
+	public static final int NUM_BRACKETS_DEFAULT = 4;
+
 	public static final double MIN_BUDGET_PROPORTION = 0.001;
+	public static final int MIN_BRACKET_SIZE = 1;
 
 	private final int survival;
 	private final Evaluator objectiveFunction;
@@ -73,26 +91,33 @@ public class Hyperband extends WeightLearningApplication {
 	private double bestObjective;
 	private double[] bestWeights;
 
-	private int highestBracket;
-	private double bracketMaxBudget;
+	private int numBrackets;
+	private int baseBracketSize;
 
-	public Hyperband(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
-		this(model.getRules(), rvDB, observedDB, config);
+	public Hyperband(Model model, Database rvDB, Database observedDB) {
+		this(model.getRules(), rvDB, observedDB);
 	}
 
-	public Hyperband(List<Rule> rules, Database rvDB, Database observedDB, ConfigBundle config) {
+	public Hyperband(List<Rule> rules, Database rvDB, Database observedDB) {
 		// TODO(eriq): Latent variables?
-		super(rules, rvDB, observedDB, false, config);
+		super(rules, rvDB, observedDB, false);
 
-		objectiveFunction = (Evaluator)config.getNewObject(OBJECTIVE_KEY, OBJECTIVE_DEFAULT);
+		objectiveFunction = (Evaluator)Config.getNewObject(OBJECTIVE_KEY, OBJECTIVE_DEFAULT);
 
-		survival = config.getInt(SURVIVAL_KEY, SURVIVAL_DEFAULT);
+		survival = Config.getInt(SURVIVAL_KEY, SURVIVAL_DEFAULT);
 		if (survival < 1) {
 			throw new IllegalArgumentException("Need at least one survival porportion.");
 		}
 
-		highestBracket = (int)(Math.floor(Math.log(MAX_BUDGET) / Math.log(survival)));
-		bracketMaxBudget = (highestBracket + 1) * MAX_BUDGET;
+		numBrackets = Config.getInt(NUM_BRACKETS_KEY, NUM_BRACKETS_DEFAULT);
+		if (numBrackets < 1) {
+			throw new IllegalArgumentException("Need at least one bracket.");
+		}
+
+		baseBracketSize = Config.getInt(BASE_BRACKET_SIZE_KEY, BASE_BRACKET_SIZE_DEFAULT);
+		if (baseBracketSize < 1) {
+			throw new IllegalArgumentException("Need at least one bracket size.");
+		}
 	}
 
 	@Override
@@ -103,32 +128,44 @@ public class Hyperband extends WeightLearningApplication {
 		// Computes the observed incompatibilities.
 		computeObservedIncompatibility();
 
-		for (int bracket = highestBracket; bracket >= 0; bracket--) {
-			int bracketSize = (int)(Math.ceil((double)bracketMaxBudget * Math.pow(survival, bracket) / MAX_BUDGET / (bracket + 1)));
-			double bracketBudget = MAX_BUDGET * Math.pow(survival, -1.0 * bracket);
+		// The total cost used vs one full round of inference.
+		double totalCost = 0.0;
+		int numEvaluatedConfigs = 0;
 
-			log.debug("Bracket {} / {} -- Size: {}, Budget: {}%",
-					highestBracket - bracket + 1, highestBracket + 1, bracketSize, String.format("%6.3f", bracketBudget / MAX_BUDGET));
+		for (int bracket = 0; bracket < numBrackets; bracket++) {
+			// TODO(eriq): Swap bracket direction? Start with more?
+
+			double bracketProportion = Math.pow(survival, bracket) / (bracket + 1);
+			int bracketSize = (int)(Math.max(MIN_BRACKET_SIZE, Math.ceil(bracketProportion * baseBracketSize)));
+			numEvaluatedConfigs += bracketSize;
+
+			double bracketBudget = Math.pow(survival, -1.0 * bracket);
+
+			log.debug("Bracket {} / {} -- Size: {} ({}), Budget: {}", bracket + 1, numBrackets, bracketSize, bracketProportion, bracketBudget);
 
 			// Note that each config may get adjusted by internal weight learning methods.
 			// (Not in the default behavior, but in child class behavior).
 			List<double[]> configs = chooseConfigs(bracketSize);
 
 			for (int round = 0; round <= bracket; round++) {
-				int roundSize = (int)(Math.floor(bracketSize * Math.pow(survival, -1.0 * round)));
-				double roundBudget = bracketBudget * Math.pow(survival, round) / MAX_BUDGET;
+				int roundSize = configs.size();
+				double roundBudget = bracketBudget * Math.pow(survival, round);
 				setBudget(Math.max(MIN_BUDGET_PROPORTION, Math.min(1.0, roundBudget)));
 
-				log.debug("Round {} / {} -- Size: {}, Budget: {}%",
-						round + 1, bracket + 1, roundSize, String.format("%6.3f", roundBudget));
+				log.debug("  Round {} / {} -- Size: {}, Budget: {}", round + 1, bracket + 1, roundSize, roundBudget);
 
 				PriorityQueue<RunResult> results = new PriorityQueue<RunResult>();
 				for (double[] config : configs) {
+					totalCost += roundBudget;
 
 					// Set the weights for the current round.
 					for (int i = 0; i < mutableRules.size(); i++) {
 						mutableRules.get(i).setWeight(config[i]);
 					}
+
+					// The weights have changed, so we are no longer in an MPE state.
+					inMPEState = false;
+					inLatentMPEState = false;
 
 					double objective = run(config);
 					RunResult result = new RunResult(config, objective);
@@ -140,7 +177,7 @@ public class Hyperband extends WeightLearningApplication {
 						bestWeights = config;
 					}
 
-					log.trace("Objective: {}, Weights: {}", objective, config);
+					log.debug("Training Objective: {}, Weights: {}", objective, config);
 				}
 
 				configs.clear();
@@ -154,6 +191,12 @@ public class Hyperband extends WeightLearningApplication {
 		for (int i = 0; i < mutableRules.size(); i++) {
 			mutableRules.get(i).setWeight(bestWeights[i]);
 		}
+
+		// The weights have changed, so we are no longer in an MPE state.
+		inMPEState = false;
+		inLatentMPEState = false;
+
+		log.debug("Hyperband complete. Configurations examined: {}. Total budget: {}",  numEvaluatedConfigs, totalCost);
 	}
 
 	private List<double[]> chooseConfigs(int bracketSize) {
@@ -164,7 +207,9 @@ public class Hyperband extends WeightLearningApplication {
 
 			for (int weightIndex = 0; weightIndex < mutableRules.size(); weightIndex++) {
 				// TODO(eriq): Mean, stats
-				config[weightIndex] = Math.max(0.0, rand.nextGaussian() + 5.0);
+				// TEST
+				// config[weightIndex] = Math.max(0.0, RandUtils.nextGaussian() + 5.0);
+				config[weightIndex] = RandUtils.nextDouble() * 10.0;
 			}
 
 			configs.add(config);

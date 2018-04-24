@@ -18,7 +18,7 @@
 package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
-import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
@@ -41,8 +41,20 @@ import java.util.List;
  * A TermGenerator for ADMM objective terms.
  */
 public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
-	public ADMMTermGenerator() {}
-	public ADMMTermGenerator(ConfigBundle config) {}
+	public static final String CONFIG_PREFIX = "admmtermgenerator";
+
+	/**
+	 * If true, then invert negative weight rules into their positive weight counterparts
+	 * (negate the weight and expression).
+	 */
+	public static final String INVERT_NEGATIVE_WEIGHTS_KEY = CONFIG_PREFIX + ".invertnegativeweights";
+	public static final boolean INVERT_NEGATIVE_WEIGHTS_DEFAULT = false;
+
+	private boolean invertNegativeWeight;
+
+	public ADMMTermGenerator() {
+		invertNegativeWeight = Config.getBoolean(INVERT_NEGATIVE_WEIGHTS_KEY, INVERT_NEGATIVE_WEIGHTS_DEFAULT);
+	}
 
 	@Override
 	public int generateTerms(GroundRuleStore ruleStore, final TermStore<ADMMObjectiveTerm> termStore) {
@@ -56,9 +68,19 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 		Parallel.foreach(ruleStore.getGroundRules(), new Parallel.Worker<GroundRule>() {
 			@Override
 			public void work(int index, GroundRule rule) {
-				ADMMObjectiveTerm term = createTerm(rule, (ADMMTermStore)termStore);
-				if (term.variables.size() > 0) {
-					termStore.add(rule, term);
+				if (invertNegativeWeight && rule instanceof WeightedGroundRule && ((WeightedGroundRule)rule).getWeight() < 0.0) {
+					// Negate (weight and expression) rules that have a negative weight.
+					for (GroundRule negatedRule : rule.negate()) {
+						ADMMObjectiveTerm term = createTerm(negatedRule, (ADMMTermStore)termStore);
+						if (term.variables.size() > 0) {
+							termStore.add(rule, term);
+						}
+					}
+				} else {
+					ADMMObjectiveTerm term = createTerm(rule, (ADMMTermStore)termStore);
+					if (term.variables.size() > 0) {
+						termStore.add(rule, term);
+					}
 				}
 			}
 		});
@@ -68,6 +90,7 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 
 	@Override
 	public void updateWeights(GroundRuleStore ruleStore, TermStore<ADMMObjectiveTerm> termStore) {
+		// TEST(eriq): This is broken for when a rule switches sign.
 		for (GroundRule groundRule : ruleStore.getGroundRules()) {
 			if (groundRule instanceof WeightedGroundRule) {
 				termStore.updateWeight((WeightedGroundRule)groundRule);
@@ -90,7 +113,7 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 			float weight = (float)((WeightedGroundRule)groundRule).getWeight();
 			FunctionTerm function = ((WeightedGroundRule)groundRule).getFunctionDefinition();
 
-			/* Checks if the function is wrapped in a PowerOfTwo */
+			// Checks if the function is wrapped in a PowerOfTwo.
 			if (function instanceof PowerOfTwo) {
 				squared = true;
 				function = ((PowerOfTwo)function).getInnerFunction();
@@ -98,10 +121,8 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 				squared = false;
 			}
 
-			/*
-			 * If the FunctionTerm is a MaxFunction, ensures that it has two arguments, a linear
-			 * function and zero, and constructs the objective term (a hinge loss)
-			 */
+			// If the FunctionTerm is a MaxFunction, ensures that it has two arguments, a linear
+			// function and zero, and constructs the objective term (a hinge loss).
 			if (function instanceof MaxFunction) {
 				if (((MaxFunction)function).size() != 2) {
 					throw new IllegalArgumentException("Max function must have one linear function and 0.0 as arguments.");
@@ -135,7 +156,7 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 				} else {
 					throw new IllegalArgumentException("Max function must have one linear function and 0.0 as arguments.");
 				}
-			/* Else, if it's a FunctionSum, constructs the objective term (a linear loss) */
+			// Else, if it's a FunctionSum, constructs the objective term (a linear loss).
 			} else if (function instanceof FunctionSum) {
 				Hyperplane hyperplane = processHyperplane((FunctionSum) function, termStore);
 				if (squared) {
@@ -206,5 +227,4 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 			constant = 0.0f;
 		}
 	}
-
 }

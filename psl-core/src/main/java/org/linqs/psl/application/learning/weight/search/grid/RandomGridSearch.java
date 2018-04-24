@@ -17,20 +17,23 @@
  */
 package org.linqs.psl.application.learning.weight.search.grid;
 
-import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.util.RandUtils;
 import org.linqs.psl.util.StringUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Random;
 import java.util.List;
 
 /**
  * A random grid search that searches a finite number of locations.
+ * Note that choosing the next random location may be slow if the grid is large
+ * and the maximum number of locations is close to the grid size.
+ * In cases like this, it is better to just use vanilla GridSearch.
  */
 public class RandomGridSearch extends GridSearch {
 	/**
@@ -46,20 +49,18 @@ public class RandomGridSearch extends GridSearch {
 
 	private int maxLocations;
 
-	public RandomGridSearch(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
-		this(model.getRules(), rvDB, observedDB, config);
+	public RandomGridSearch(Model model, Database rvDB, Database observedDB) {
+		this(model.getRules(), rvDB, observedDB);
 	}
 
-	public RandomGridSearch(List<Rule> rules, Database rvDB, Database observedDB, ConfigBundle config) {
-		super(rules, rvDB, observedDB, config);
+	public RandomGridSearch(List<Rule> rules, Database rvDB, Database observedDB) {
+		super(rules, rvDB, observedDB);
 
-		maxLocations = config.getInt(MAX_LOCATIONS_KEY, MAX_LOCATIONS_DEFAULT);
+		maxLocations = Config.getInt(MAX_LOCATIONS_KEY, MAX_LOCATIONS_DEFAULT);
 		if (maxLocations < 1) {
 			throw new IllegalArgumentException("Need at least one location for grid search.");
 		}
 		numLocations = Math.min(numLocations, maxLocations);
-
-		long seed = config.getLong(SEED_KEY, SEED_DEFAULT);
 	}
 
 	@Override
@@ -74,7 +75,7 @@ public class RandomGridSearch extends GridSearch {
 	protected String randomConfiguration() {
 		int[] indexes = new int[mutableRules.size()];
 		for (int i = 0; i < indexes.length; i++) {
-			indexes[i] = rand.nextInt(possibleWeights.length);
+			indexes[i] = RandUtils.nextInt(possibleWeights.length);
 		}
 		return StringUtils.join(indexes, DELIM);
 	}

@@ -21,6 +21,7 @@ import org.linqs.psl.application.learning.weight.VotedPerceptron;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningTest;
 import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.reasoner.admm.ADMMReasoner;
 
 public class InitialWeightRandomGridSearchTest extends WeightLearningTest {
@@ -33,16 +34,16 @@ public class InitialWeightRandomGridSearchTest extends WeightLearningTest {
 	@Override
 	protected WeightLearningApplication getWLA() {
 		// Narrow the search space for tests.
-		info.config.setProperty(GridSearch.POSSIBLE_WEIGHTS_KEY, "1:10:100");
-		info.config.setProperty(RandomGridSearch.MAX_LOCATIONS_KEY, 50);
+		Config.setProperty(GridSearch.POSSIBLE_WEIGHTS_KEY, "1:10:100");
+		Config.setProperty(RandomGridSearch.MAX_LOCATIONS_KEY, 50);
 
 		// Turn down the number of iterations of both ADMM and VotedPerceptron.
-		info.config.setProperty(VotedPerceptron.NUM_STEPS_KEY, 3);
-		info.config.setProperty(ADMMReasoner.MAX_ITER_KEY, 20);
+		Config.setProperty(VotedPerceptron.NUM_STEPS_KEY, 3);
+		Config.setProperty(ADMMReasoner.MAX_ITER_KEY, 20);
 
 		// Use the classic MLE.
-		WeightLearningApplication internalWLA = new MaxLikelihoodMPE(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB, info.config);
+		WeightLearningApplication internalWLA = new MaxLikelihoodMPE(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
 
-		return new InitialWeightRandomGridSearch(info.model.getRules(), internalWLA, weightLearningTrainDB, weightLearningTruthDB, info.config);
+		return new InitialWeightRandomGridSearch(info.model.getRules(), internalWLA, weightLearningTrainDB, weightLearningTruthDB);
 	}
 }

@@ -17,12 +17,15 @@
  */
 package org.linqs.psl.application.learning.weight;
 
-import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
 import org.linqs.psl.evaluation.statistics.Evaluator;
+import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
+import org.linqs.psl.model.rule.WeightedGroundRule;
+import org.linqs.psl.util.MathUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,8 +35,6 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * TODO(steve): rewrite class documentation to describe general gradient-based learning algorithms
- *
  * Learns new weights for the weighted rules in a model using the voted perceptron algorithm.
  *
  * The weight-learning objective is to maximize the likelihood according to the distribution:
@@ -107,7 +108,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	 * weights together for final output.
 	 */
 	public static final String AVERAGE_STEPS_KEY = CONFIG_PREFIX + ".averagesteps";
-	public static final boolean AVERAGE_STEPS_DEFAULT = true;
+	public static final boolean AVERAGE_STEPS_DEFAULT = false;
 
 	/**
 	 * Key for positive integer property. VotedPerceptron will take this many
@@ -117,18 +118,32 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	public static final int NUM_STEPS_DEFAULT = 25;
 
 	/**
+	 * If true, then weight will not be allowed to go negative (clipped at zero).
+	 */
+	public static final String CLIP_NEGATIVE_WEIGHTS_KEY = CONFIG_PREFIX + ".clipnegativeweights";
+	public static final boolean CLIP_NEGATIVE_WEIGHTS_DEFAULT = true;
+
+	/**
+	 * If true, then cut the step size in half whenever the objective increases.
+	 */
+	public static final String CUT_OBJECTIVE_KEY = CONFIG_PREFIX + ".cutobjective";
+	public static final boolean CUT_OBJECTIVE_DEFAULT = true;
+
+	/**
 	 * The evaluation method to get stats for each iteration.
 	 * This is only used for logging/information, and not for gradients.
 	 */
 	public static final String EVALUATOR_KEY = CONFIG_PREFIX + ".evaluator";
 	public static final String EVALUATOR_DEFAULT = ContinuousEvaluator.class.getName();
 
-	protected final double baseStepSize;
 	protected final double l2Regularization;
 	protected final double l1Regularization;
 	protected final boolean scaleGradient;
 
+	protected double baseStepSize;
 	protected boolean averageSteps;
+	protected boolean clipNegativeWeights;
+	protected boolean cutObjective;
 	protected double inertia;
 	protected final int maxNumSteps;
 	protected int numSteps;
@@ -141,39 +156,41 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	private double currentLoss;
 
 	public VotedPerceptron(List<Rule> rules, Database rvDB, Database observedDB,
-			boolean supportsLatentVariables, ConfigBundle config) {
-		super(rules, rvDB, observedDB, supportsLatentVariables, config);
+			boolean supportsLatentVariables) {
+		super(rules, rvDB, observedDB, supportsLatentVariables);
 
-		baseStepSize = config.getDouble(STEP_SIZE_KEY, STEP_SIZE_DEFAULT);
+		baseStepSize = Config.getDouble(STEP_SIZE_KEY, STEP_SIZE_DEFAULT);
 		if (baseStepSize <= 0) {
 			throw new IllegalArgumentException("Step size must be positive.");
 		}
 
-		inertia = config.getDouble(INERTIA_KEY, INERTIA_DEFAULT);
+		inertia = Config.getDouble(INERTIA_KEY, INERTIA_DEFAULT);
 		if (inertia < 0 || inertia >= 1) {
 			throw new IllegalArgumentException("Inertia must be in [0, 1), found: " + inertia);
 		}
 
-		numSteps = config.getInt(NUM_STEPS_KEY, NUM_STEPS_DEFAULT);
+		numSteps = Config.getInt(NUM_STEPS_KEY, NUM_STEPS_DEFAULT);
 		maxNumSteps = numSteps;
 		if (numSteps <= 0) {
 			throw new IllegalArgumentException("Number of steps must be positive.");
 		}
 
-		l2Regularization = config.getDouble(L2_REGULARIZATION_KEY, L2_REGULARIZATION_DEFAULT);
+		l2Regularization = Config.getDouble(L2_REGULARIZATION_KEY, L2_REGULARIZATION_DEFAULT);
 		if (l2Regularization < 0) {
 			throw new IllegalArgumentException("L2 regularization parameter must be non-negative.");
 		}
 
-		l1Regularization = config.getDouble(L1_REGULARIZATION_KEY, L1_REGULARIZATION_DEFAULT);
+		l1Regularization = Config.getDouble(L1_REGULARIZATION_KEY, L1_REGULARIZATION_DEFAULT);
 		if (l1Regularization < 0) {
 			throw new IllegalArgumentException("L1 regularization parameter must be non-negative.");
 		}
 
-		evaluator = (Evaluator)config.getNewObject(EVALUATOR_KEY, EVALUATOR_DEFAULT);
+		evaluator = (Evaluator)Config.getNewObject(EVALUATOR_KEY, EVALUATOR_DEFAULT);
 
-		scaleGradient = config.getBoolean(SCALE_GRADIENT_KEY, SCALE_GRADIENT_DEFAULT);
-		averageSteps = config.getBoolean(AVERAGE_STEPS_KEY, AVERAGE_STEPS_DEFAULT);
+		scaleGradient = Config.getBoolean(SCALE_GRADIENT_KEY, SCALE_GRADIENT_DEFAULT);
+		averageSteps = Config.getBoolean(AVERAGE_STEPS_KEY, AVERAGE_STEPS_DEFAULT);
+		clipNegativeWeights = Config.getBoolean(CLIP_NEGATIVE_WEIGHTS_KEY, CLIP_NEGATIVE_WEIGHTS_DEFAULT);
+		cutObjective = Config.getBoolean(CUT_OBJECTIVE_KEY, CUT_OBJECTIVE_DEFAULT);
 
 		currentLoss = Double.NaN;
 	}
@@ -188,10 +205,28 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 		// Reset the RVAs to default values.
 		setDefaultRandomVariables();
 
+		// Compute the initial objective.
+		if (log.isDebugEnabled() && evaluator != null) {
+			// Compute the MPE state before evaluating so variables have assigned values.
+			computeMPEState();
+
+			evaluator.compute(trainingMap);
+			double objective = evaluator.getRepresentativeMetric();
+			objective = evaluator.isHigherRepresentativeBetter() ? -1.0 * objective : objective;
+
+			log.debug("Initial Training Objective: {}", objective);
+		}
+
 		double[] scalingFactor = computeScalingFactor();
 
 		// Keep track of the last steps for each weight so we can apply momentum.
 		double[] lastSteps = new double[mutableRules.size()];
+		double lastObjective = -1.0;
+
+		double[] lastWeights = new double[mutableRules.size()];
+		for (int i = 0; i < mutableRules.size(); i++) {
+			lastWeights[i] = mutableRules.get(i).getWeight();
+		}
 
 		// Computes the gradient steps.
 		for (int step = 0; step < numSteps; step++) {
@@ -203,9 +238,9 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 
 			// Updates weights.
 			for (int i = 0; i < mutableRules.size(); i++) {
-				double weight = mutableRules.get(i).getWeight();
+				double newWeight = mutableRules.get(i).getWeight();
 				double currentStep = (expectedIncompatibility[i] - observedIncompatibility[i]
-						- l2Regularization * weight
+						- l2Regularization * newWeight
 						- l1Regularization) / scalingFactor[i];
 
 				currentStep *= baseStepSize;
@@ -213,35 +248,62 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 				// Apply momentum.
 				currentStep += inertia * lastSteps[i];
 
-				// TODO(eriq): Should we keep track of the computed step, or actual step (after Max(0)).
-				lastSteps[i] = currentStep;
+				if (clipNegativeWeights) {
+					newWeight = Math.max(0.0, newWeight + currentStep);
+				} else {
+					newWeight = newWeight + currentStep;
+				}
 
-				log.trace("Gradient: {} (without momentun: {}), Expected Incomp.: {}, Observed Incomp.: {} -- {}",
+				log.trace("Gradient: {} (without momentun: {}), Expected Incomp.: {}, Observed Incomp.: {} -- ({}) {}",
 						currentStep, currentStep - (inertia * lastSteps[i]),
 						expectedIncompatibility[i], observedIncompatibility[i],
-						mutableRules.get(i));
+						i, mutableRules.get(i));
 
-				weight = Math.max(weight + currentStep, 0.0);
-				avgWeights[i] += weight;
-				mutableRules.get(i).setWeight(weight);
+				mutableRules.get(i).setWeight(newWeight);
+				lastSteps[i] = currentStep;
+				avgWeights[i] += newWeight;
 			}
+
+			inMPEState = false;
+			inLatentMPEState = false;
 
 			if (log.isDebugEnabled()) {
 				getLoss();
 			}
 
-			log.debug("Iteration {} complete. Likelihood: {}.", step, currentLoss);
-			log.trace("Model {} ", mutableRules);
-
-			if (log.isTraceEnabled() && evaluator != null) {
+			double objective = -1.0;
+			if ((cutObjective || log.isDebugEnabled()) && evaluator != null) {
 				// Compute the MPE state before evaluating so variables have assigned values.
 				computeMPEState();
 
 				evaluator.compute(trainingMap);
-				double score = evaluator.getRepresentativeMetric();
-				score = evaluator.isHigherRepresentativeBetter() ? -1.0 * score : score;
-				log.trace("Objective: {}", score);
+				objective = evaluator.getRepresentativeMetric();
+				objective = evaluator.isHigherRepresentativeBetter() ? -1.0 * objective : objective;
+
+				if (step > 0 && objective > lastObjective) {
+					log.trace("Objective increased: {} -> {}, cutting step size: {} -> {}.",
+							lastObjective, objective, baseStepSize, baseStepSize / 2.0);
+					baseStepSize /= 2.0;
+					objective = lastObjective;
+
+					// Set the weights back to the previous ones.
+					for (int i = 0; i < mutableRules.size(); i++) {
+						lastSteps[i] = 0.0;
+						avgWeights[i] -= mutableRules.get(i).getWeight();
+
+						mutableRules.get(i).setWeight(lastWeights[i]);
+					}
+				} else {
+					lastObjective = objective;
+				}
 			}
+
+			for (int i = 0; i < mutableRules.size(); i++) {
+				lastWeights[i] = mutableRules.get(i).getWeight();
+			}
+
+			log.debug("Iteration {} complete. Likelihood: {}. Training Objective: {}", step, currentLoss, objective);
+			log.trace("Model {} ", mutableRules);
 		}
 
 		// Sets the weights to their averages.

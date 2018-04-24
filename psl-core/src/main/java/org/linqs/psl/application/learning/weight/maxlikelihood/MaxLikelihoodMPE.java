@@ -18,7 +18,6 @@
 package org.linqs.psl.application.learning.weight.maxlikelihood;
 
 import org.linqs.psl.application.learning.weight.VotedPerceptron;
-import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
@@ -35,11 +34,11 @@ import java.util.List;
  * The default implementations in VotedPerceptron are sufficient.
  */
 public class MaxLikelihoodMPE extends VotedPerceptron {
-	public MaxLikelihoodMPE(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
-		this(model.getRules(), rvDB, observedDB, config);
+	public MaxLikelihoodMPE(Model model, Database rvDB, Database observedDB) {
+		this(model.getRules(), rvDB, observedDB);
 	}
 
-	public MaxLikelihoodMPE(List<Rule> rules, Database rvDB, Database observedDB, ConfigBundle config) {
-		super(rules, rvDB, observedDB, false, config);
+	public MaxLikelihoodMPE(List<Rule> rules, Database rvDB, Database observedDB) {
+		super(rules, rvDB, observedDB, false);
 	}
 }

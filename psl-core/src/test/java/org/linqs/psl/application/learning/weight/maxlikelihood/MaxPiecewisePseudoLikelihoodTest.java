@@ -30,6 +30,6 @@ public class MaxPiecewisePseudoLikelihoodTest extends WeightLearningTest {
 
 	@Override
 	protected WeightLearningApplication getWLA() {
-		return new MaxPseudoLikelihood(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB, info.config);
+		return new MaxPiecewisePseudoLikelihood(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
 	}
 }

@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.application.learning.weight.search.grid;
 
-import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
@@ -64,20 +64,20 @@ public class GuidedRandomGridSearch extends RandomGridSearch {
 	private int numExploreLocations;
 	private Set<String> toExplore;
 
-	public GuidedRandomGridSearch(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
-		this(model.getRules(), rvDB, observedDB, config);
+	public GuidedRandomGridSearch(Model model, Database rvDB, Database observedDB) {
+		this(model.getRules(), rvDB, observedDB);
 	}
 
-	public GuidedRandomGridSearch(List<Rule> rules, Database rvDB, Database observedDB, ConfigBundle config) {
-		super(rules, rvDB, observedDB, config);
+	public GuidedRandomGridSearch(List<Rule> rules, Database rvDB, Database observedDB) {
+		super(rules, rvDB, observedDB);
 
-		maxNumSeedLocations = config.getInt(SEED_LOCATIONS_KEY, SEED_LOCATIONS_DEFAULT);
+		maxNumSeedLocations = Config.getInt(SEED_LOCATIONS_KEY, SEED_LOCATIONS_DEFAULT);
 		numSeedLocations = maxNumSeedLocations;
 		if (numSeedLocations < 1) {
 			throw new IllegalArgumentException("Need at least one location to start the search.");
 		}
 
-		maxNumExploreLocations = config.getInt(EXPLORE_LOCATIONS_KEY, EXPLORE_LOCATIONS_DEFAULT);
+		maxNumExploreLocations = Config.getInt(EXPLORE_LOCATIONS_KEY, EXPLORE_LOCATIONS_DEFAULT);
 		numExploreLocations = maxNumExploreLocations;
 		if (numExploreLocations < 1) {
 			throw new IllegalArgumentException("Need at least one explore location.");

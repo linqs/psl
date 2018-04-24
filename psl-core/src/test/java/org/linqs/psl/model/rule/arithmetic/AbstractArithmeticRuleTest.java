@@ -28,8 +28,6 @@ import org.junit.Test;
 import org.linqs.psl.PSLTest;
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 import org.linqs.psl.application.groundrulestore.MemoryGroundRuleStore;
-import org.linqs.psl.config.ConfigBundle;
-import org.linqs.psl.config.EmptyBundle;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.SimpleAtomManager;
@@ -67,7 +65,6 @@ import java.util.Set;
 public class AbstractArithmeticRuleTest {
 	private DataStore dataStore;
 	private Database database;
-	private ConfigBundle config;
 
 	private StandardPredicate singleClosed;
 	private StandardPredicate doubleClosed;
@@ -75,8 +72,7 @@ public class AbstractArithmeticRuleTest {
 
 	@Before
 	public void setup() {
-		config = new EmptyBundle();
-		dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Memory, this.getClass().getName(), true), config);
+		dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Memory, this.getClass().getName(), true));
 
 		singleClosed = StandardPredicate.get("SingleClosed", ConstantType.UniqueStringID);
 		dataStore.registerPredicate(singleClosed);

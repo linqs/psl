@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.database.rdbms;
 
+import org.linqs.psl.config.Config;
 import org.linqs.psl.database.DatabaseQuery;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.formula.Conjunction;
@@ -40,17 +41,19 @@ import java.util.Set;
 public class OptimalCover {
 	private static final Logger log = LoggerFactory.getLogger(OptimalCover.class);
 
-	// TODO(eriq): Config (global?)
+	public static final String CONFIG_PREFIX = "optimalcover";
 
 	/**
-	 * The cost for a block is divided by this.
+	 * The cost for a blocking predicate is divided by this.
 	 */
-	public static final double BLOCK_ADVANTAGE = 100.0;
+	public static final String BLOCK_ADVANTAGE_KEY = CONFIG_PREFIX + ".blockadvantage";
+	public static final double BLOCK_ADVANTAGE_DEFAULT = 100.0;
 
 	/**
 	 * The cost for a JOIN.
 	 */
-	public static final double JOIN_PENALTY = 2.0;
+	public static final String JOIN_PENALTY_KEY = CONFIG_PREFIX + ".joinadvantage";
+	public static final double JOIN_PENALTY_DEFAULT = 2.0;
 
 	// TODO(eriq): May not need if we decide on different strats for full/partial/no blocking.
 	/**
@@ -328,10 +331,12 @@ public class OptimalCover {
 					StandardPredicate predicate = (StandardPredicate)potentialAtom.getPredicate();
 					double cost = dataStore.getPredicateRowCount(predicate);
 					if (predicate.isBlock()) {
-						cost /= BLOCK_ADVANTAGE;
+						cost /= Config.getDouble(BLOCK_ADVANTAGE_KEY, BLOCK_ADVANTAGE_DEFAULT);
 					}
 
-					cost *= Math.pow(JOIN_PENALTY, maxSatisfiableVariables - satisfiableVariablesMap.get(potentialAtom).intValue());
+					cost *= Math.pow(
+							Config.getDouble(JOIN_PENALTY_KEY, JOIN_PENALTY_DEFAULT),
+							maxSatisfiableVariables - satisfiableVariablesMap.get(potentialAtom).intValue());
 
 					if (bestAtom == null || cost < bestCost) {
 						bestAtom = potentialAtom;

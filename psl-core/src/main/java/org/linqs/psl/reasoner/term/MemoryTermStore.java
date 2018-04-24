@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.reasoner.term;
 
-import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 
@@ -53,11 +53,7 @@ public class MemoryTermStore<E extends Term> implements TermStore<E> {
 	private Map<WeightedGroundRule, List<Integer>> ruleMapping;
 
 	public MemoryTermStore() {
-		this(INITIAL_SIZE_DEFAULT);
-	}
-
-	public MemoryTermStore(ConfigBundle config) {
-		this(config.getInt(INITIAL_SIZE_KEY, INITIAL_SIZE_DEFAULT));
+		this(Config.getInt(INITIAL_SIZE_KEY, INITIAL_SIZE_DEFAULT));
 	}
 
 	public MemoryTermStore(int initialSize) {

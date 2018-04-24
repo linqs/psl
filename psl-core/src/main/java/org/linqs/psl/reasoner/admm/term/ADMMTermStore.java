@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
-import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.function.AtomFunctionVariable;
@@ -55,13 +55,9 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm> {
 	 */
 	private int numLocalVariables;
 
-	public ADMMTermStore() {
-		this(new MemoryTermStore<ADMMObjectiveTerm>());
-	}
-
 	@SuppressWarnings("unchecked")
-	public ADMMTermStore(ConfigBundle config) {
-		this((TermStore<ADMMObjectiveTerm>)config.getNewObject(INTERNAL_STORE_KEY, INTERNAL_STORE_DEFAULT));
+	public ADMMTermStore() {
+		this((TermStore<ADMMObjectiveTerm>)Config.getNewObject(INTERNAL_STORE_KEY, INTERNAL_STORE_DEFAULT));
 	}
 
 	public ADMMTermStore(TermStore<ADMMObjectiveTerm> store) {
@@ -117,12 +113,18 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm> {
 	}
 
 	public void resetLocalVairables() {
+		resetLocalVairables(true);
+	}
+
+	public void resetLocalVairables(boolean randomize) {
 		for (Map.Entry<AtomFunctionVariable, Integer> entry : variableIndexes.entrySet()) {
 			for (LocalVariable local : localVariables.get(entry.getValue().intValue())) {
-				// TEST
-				// local.setValue((float)(entry.getKey().getValue()));
-				local.setValue((float)(Math.random()));
-				local.setLagrange(0.0f);
+				if (randomize) {
+					local.setValue((float)(Math.random()));
+					local.setLagrange(0.0f);
+				} else {
+					local.setValue((float)(entry.getKey().getValue()));
+				}
 			}
 		}
 	}

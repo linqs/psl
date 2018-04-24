@@ -20,6 +20,8 @@ package org.linqs.psl.model.rule.logical;
 import java.util.List;
 
 import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.formula.Formula;
+import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.UnweightedRule;
 import org.linqs.psl.reasoner.function.ConstraintTerm;
@@ -27,16 +29,16 @@ import org.linqs.psl.reasoner.function.FunctionComparator;
 
 public class UnweightedGroundLogicalRule extends AbstractGroundLogicalRule
 		implements UnweightedGroundRule {
-	
+
 	protected UnweightedGroundLogicalRule(UnweightedLogicalRule r, List<GroundAtom> posLiterals, List<GroundAtom> negLiterals) {
 		super(r, posLiterals, negLiterals);
 	}
 
 	@Override
 	public UnweightedRule getRule() {
-		return (UnweightedRule) rule;
+		return (UnweightedRule)rule;
 	}
-	
+
 	@Override
 	public double getInfeasibility() {
 		return Math.abs(getTruthValue() - 1);
@@ -46,9 +48,17 @@ public class UnweightedGroundLogicalRule extends AbstractGroundLogicalRule
 	public ConstraintTerm getConstraintDefinition() {
 		return new ConstraintTerm(getFunction(), FunctionComparator.SmallerThan, 0.0);
 	}
-	
+
 	@Override
 	public String toString() {
 		return super.toString() + " .";
+	}
+
+	@Override
+	protected GroundRule instantiateNegatedGroundRule(
+			Formula disjunction, List<GroundAtom> positiveAtoms,
+			List<GroundAtom> negativeAtoms, String name) {
+		UnweightedLogicalRule newRule = new UnweightedLogicalRule(rule.getFormula(), name);
+		return new UnweightedGroundLogicalRule(newRule, positiveAtoms, negativeAtoms);
 	}
 }

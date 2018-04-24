@@ -21,8 +21,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import org.linqs.psl.PSLTest;
-import org.linqs.psl.config.ConfigBundle;
-import org.linqs.psl.config.EmptyBundle;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
@@ -52,8 +50,7 @@ public class ModelLoaderTest {
 
 	@Before
 	public void setup() {
-		ConfigBundle config = new EmptyBundle();
-		dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Memory, this.getClass().getName(), true), config);
+		dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Memory, this.getClass().getName(), true));
 
 		singlePredicate = StandardPredicate.get("Single", ConstantType.UniqueStringID);
 		dataStore.registerPredicate(singlePredicate);
@@ -923,5 +920,72 @@ public class ModelLoaderTest {
 		atoms = rule.getExpression().getAtoms();
 		assertEquals(1, atoms.size());
 		assertEquals(SummationAtom.class, atoms.get(0).getClass());
+	}
+
+	@Test
+	public void testNegativeWeights() {
+		String input =
+			"-1: Single(A) & Double(A, B) >> Single(B) ^2\n" +
+			"-5.2: Single(B) & Double(B, A) >> Single(A) ^2\n";
+		String[] expected = new String[]{
+			"-1.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"-5.2: ( SINGLE(B) & DOUBLE(B, A) ) >> SINGLE(A) ^2"
+		};
+
+		PSLTest.assertModel(dataStore, input, expected);
+	}
+
+	@Test
+	public void testNonAlphanumericConstants() {
+		String input =
+			"1: Single('') & Double(A, B) >> Single(B) ^2\n" +
+			"1: Single('\\\\') & Double(A, B) >> Single(B) ^2\n" +
+			"1: Single('\\'') & Double(A, B) >> Single(B) ^2\n" +
+			"1: Single('\"') & Double(A, B) >> Single(B) ^2\n" +
+			"1: Single('a\n\t\rb') & Double(A1, B) >> Single(B) ^2\n" +
+			"1: Single('a\\n\\t\\rb') & Double(A2, B) >> Single(B) ^2\n" +
+			"1: Single('abc') & Double(A, B) >> Single(B) ^2\n" +
+			"1: Single('123') & Double(A, B) >> Single(B) ^2\n" +
+			"1: Single('`~!@#$%^&*()-_=+') & Double(A, B) >> Single(B) ^2\n" +
+			"1: Single('{[}]|;:') & Double(A, B) >> Single(B) ^2\n" +
+			"1: Single('<,>.?/') & Double(A, B) >> Single(B) ^2\n" +
+			"1: Single(\"\") & Double(Z, B) >> Single(B) ^2\n" +
+			"1: Single(\"\\\\\") & Double(Z, B) >> Single(B) ^2\n" +
+			"1: Single(\"'\") & Double(Z, B) >> Single(B) ^2\n" +
+			"1: Single(\"\\\"\") & Double(Z, B) >> Single(B) ^2\n" +
+			"1: Single(\"a\n\t\rb\") & Double(Z1, B) >> Single(B) ^2\n" +
+			"1: Single(\"a\\n\\t\\rb\") & Double(Z2, B) >> Single(B) ^2\n" +
+			"1: Single(\"abc\") & Double(Z, B) >> Single(B) ^2\n" +
+			"1: Single(\"123\") & Double(Z, B) >> Single(B) ^2\n" +
+			"1: Single(\"`~!@#$%^&*()-_=+\") & Double(Z, B) >> Single(B) ^2\n" +
+			"1: Single(\"{[}]|;:\") & Double(Z, B) >> Single(B) ^2\n" +
+			"1: Single(\"<,>.?/\") & Double(Z, B) >> Single(B) ^2\n" +
+			"";
+		String[] expected = new String[]{
+			"1.0: ( SINGLE('') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('\\\\') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('\\'') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('\"') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('a\n\t\rb') & DOUBLE(A1, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('a\n\t\rb') & DOUBLE(A2, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('abc') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('123') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('`~!@#$%^&*()-_=+') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('{[}]|;:') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('<,>.?/') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('') & DOUBLE(Z, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('\\\\') & DOUBLE(Z, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('\\'') & DOUBLE(Z, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('\"') & DOUBLE(Z, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('a\n\t\rb') & DOUBLE(Z1, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('a\n\t\rb') & DOUBLE(Z2, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('abc') & DOUBLE(Z, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('123') & DOUBLE(Z, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('`~!@#$%^&*()-_=+') & DOUBLE(Z, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('{[}]|;:') & DOUBLE(Z, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('<,>.?/') & DOUBLE(Z, B) ) >> SINGLE(B) ^2",
+		};
+
+		PSLTest.assertModel(dataStore, input, expected);
 	}
 }

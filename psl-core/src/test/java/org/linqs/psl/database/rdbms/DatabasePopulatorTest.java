@@ -19,7 +19,6 @@ package org.linqs.psl.database.rdbms;
 
 import static org.junit.Assert.assertEquals;
 
-import org.linqs.psl.config.EmptyBundle;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseTestUtil;
@@ -94,7 +93,7 @@ public class DatabasePopulatorTest {
 	}
 
 	private void simplePopulateDatabase(DatabaseDriver driver) {
-		DataStore datastore = new RDBMSDataStore(driver, new EmptyBundle());
+		DataStore datastore = new RDBMSDataStore(driver);
 		datastore.registerPredicate(p1);
 		datastore.registerPredicate(p2);
 
@@ -145,7 +144,7 @@ public class DatabasePopulatorTest {
 	}
 
 	private void complexPopulateDatabase(DatabaseDriver driver) {
-		DataStore datastore = new RDBMSDataStore(driver, new EmptyBundle());
+		DataStore datastore = new RDBMSDataStore(driver);
 		datastore.registerPredicate(p1);
 		datastore.registerPredicate(p2);
 

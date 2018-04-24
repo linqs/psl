@@ -18,7 +18,7 @@
 package org.linqs.psl.evaluation.statistics;
 
 import org.linqs.psl.application.learning.weight.TrainingMap;
-import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
@@ -27,7 +27,6 @@ import org.linqs.psl.util.MathUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -67,12 +66,10 @@ public class RankingEvaluator extends Evaluator {
 	private List<GroundAtom> truth;
 	private List<GroundAtom> predicted;
 
-	public RankingEvaluator(ConfigBundle config) {
-		this(config.getDouble(THRESHOLD_KEY, DEFAULT_THRESHOLD), config.getString(REPRESENTATIVE_KEY, DEFAULT_REPRESENTATIVE));
-	}
-
 	public RankingEvaluator() {
-		this(DEFAULT_THRESHOLD, DEFAULT_REPRESENTATIVE);
+		this(
+				Config.getDouble(THRESHOLD_KEY, DEFAULT_THRESHOLD),
+				Config.getString(REPRESENTATIVE_KEY, DEFAULT_REPRESENTATIVE));
 	}
 
 	public RankingEvaluator(double threshold) {
@@ -114,8 +111,8 @@ public class RankingEvaluator extends Evaluator {
 			predicted.add(entry.getKey());
 		}
 
-		Collections.sort(truth, new AtomComparator());
-		Collections.sort(predicted, new AtomComparator());
+		Collections.sort(truth);
+		Collections.sort(predicted);
 	}
 
 	@Override
@@ -321,18 +318,5 @@ public class RankingEvaluator extends Evaluator {
 		}
 
 		return truth.get(index).getValue() > threshold;
-	}
-
-	private class AtomComparator implements Comparator<GroundAtom> {
-		@Override
-		public int compare(GroundAtom a1, GroundAtom a2) {
-			if (a1.getValue() < a2.getValue()) {
-				return 1;
-			} else if (a1.getValue() == a2.getValue()) {
-				return a1.toString().compareTo(a2.toString());
-			} else {
-				return -1;
-			}
-		}
 	}
 }

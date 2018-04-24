@@ -19,6 +19,7 @@ package org.linqs.psl.application.learning.weight.search.grid;
 
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningTest;
+import org.linqs.psl.config.Config;
 
 public class GuidedRandomGridSearchTest extends WeightLearningTest {
 	public GuidedRandomGridSearchTest() {
@@ -30,8 +31,8 @@ public class GuidedRandomGridSearchTest extends WeightLearningTest {
 	@Override
 	protected WeightLearningApplication getWLA() {
 		// Narrow the search space for tests.
-		info.config.setProperty(RandomGridSearch.MAX_LOCATIONS_KEY, 100);
+		Config.setProperty(RandomGridSearch.MAX_LOCATIONS_KEY, 100);
 
-		return new GuidedRandomGridSearch(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB, info.config);
+		return new GuidedRandomGridSearch(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
 	}
 }

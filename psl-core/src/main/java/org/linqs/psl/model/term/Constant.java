@@ -20,16 +20,5 @@ package org.linqs.psl.model.term;
 /**
  * An element in the universe over which a PSL program is grounded.
  */
-public interface Constant extends Term, Comparable<Constant> {
-
-	/**
-	 * Inherited from {@link Comparable#compareTo(Object)}.
-	 * <p>
-	 * Implementations should compare to Constants without a parent implementation
-	 * in common using
-	 * <p>
-	 * this.getClass().getSimpleName().compareTo(o.getClass().getSimpleName());
-	 */
-	@Override
-	public int compareTo(Constant o);
+public interface Constant extends Term {
 }

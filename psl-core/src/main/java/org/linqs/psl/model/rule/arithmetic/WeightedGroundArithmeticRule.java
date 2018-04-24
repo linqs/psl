@@ -111,7 +111,7 @@ public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule i
 
 	@Override
 	public double getIncompatibility() {
-      return getIncompatibility(null, 0);
+		return getIncompatibility(null, 0);
 	}
 
 	@Override

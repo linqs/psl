@@ -18,6 +18,7 @@
 package org.linqs.psl.model.rule.arithmetic;
 
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.database.DatabaseQuery;
 import org.linqs.psl.database.ResultList;
 import org.linqs.psl.database.atom.AtomManager;
@@ -80,18 +81,28 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 	private static final Logger log = LoggerFactory.getLogger(AbstractArithmeticRule.class);
 
 	/**
-	 * The delimiter  to use when building summation substitutions.
+	 * Prefix of property keys used by this class.
+	 */
+	public static final String CONFIG_PREFIX = "arithmeticrule";
+
+	/**
+	 * The delimiter to use when building summation substitutions.
 	 * Make sure the value for this key does not appear in ground atoms that use a summation.
 	 */
-	private static String DELIM = ";";
+	public static final String DELIM_KEY = CONFIG_PREFIX + ".delim";
+	public static final String DELIM_DEFAULT = ";";
 
 	protected final ArithmeticRuleExpression expression;
 	protected final Map<SummationVariable, Formula> filters;
+
+	protected String delim;
 
 	public AbstractArithmeticRule(ArithmeticRuleExpression expression, Map<SummationVariable, Formula> filterClauses, String name) {
 		super(name);
 		this.expression = expression;
 		this.filters = filterClauses;
+
+		delim = Config.getString(DELIM_KEY, DELIM_DEFAULT);
 
 		// Ensures that all filter Formulas are in DNF
 		for (Map.Entry<SummationVariable, Formula> entry : this.filters.entrySet()) {
@@ -245,7 +256,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 
 			for (SummationVariable summationVar : expression.getSummationVariables()) {
 				Constant rawSubs = groundingResults.get(groundingIndex, summationVar.getVariable());
-				String[] stringSubs = ((StringAttribute)rawSubs).getValue().split(DELIM);
+				String[] stringSubs = ((StringAttribute)rawSubs).getValue().split(delim);
 
 				Constant[] constantSubs = new Constant[stringSubs.length];
 				for (int i = 0; i < stringSubs.length; i++) {
@@ -344,7 +355,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 		// Add all the summation columns as aggregates.
 		for (SummationVariable summationVar : expression.getSummationVariables()) {
 			Variable var = summationVar.getVariable();
-			String aggExpression = driver.getStringAggregate(var.getName(), DELIM, true);
+			String aggExpression = driver.getStringAggregate(var.getName(), delim, true);
 			String column = aggExpression + " AS " + var.getName();
 			columns[projectionMap.get(var).intValue()] = column;
 		}
@@ -581,11 +592,6 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 
 	protected abstract AbstractGroundArithmeticRule makeGroundRule(List<Double> coeffs,
 			List<GroundAtom> atoms, FunctionComparator comparator, double c);
-
-	// TODO(eriq): Remove this once global configuration is implemented.
-	public static void setDelim(String delim) {
-		DELIM = delim;
-	}
 
 	@Override
 	public int hashCode() {
