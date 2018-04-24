@@ -270,7 +270,7 @@ public class Launcher {
 			try {
 				FileWriter predFileWriter = new FileWriter(new File(outputDirectory, openPredicate.getName() + ".txt"));
 
-				for (GroundAtom atom : Queries.getAllAtoms(database, openPredicate)) {
+				for (GroundAtom atom : Queries.getAllRandomVariableAtoms(database, openPredicate)) {
 					for (Constant term : atom.getArguments()) {
 						predFileWriter.write(term.toString() + "\t");
 					}
