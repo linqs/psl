@@ -55,9 +55,9 @@ public class ReadableTest {
 	/**
 	 * Helper function for testing the ReadableDatabase interface functions.
 	 */
-	private void testHelper(DatabaseFunction function) {
+	private void testHelper(DatabaseFunction function, String name) {
 		TestModelFactory.ModelInformation info = TestModelFactory.getModel();
-		Predicate functionPredicate = ExternalFunctionalPredicate.get("TestFun", function);
+		Predicate functionPredicate = ExternalFunctionalPredicate.get(name + "_test", function);
 
 		// Add a rule using the new function.
 		// 10: Person(A) & Person(B) & UnaryFunction(A) & (A != B) -> Friends(A, B) ^2
@@ -80,14 +80,14 @@ public class ReadableTest {
 		MPEInference mpe = null;
 
 		try {
-			mpe = new MPEInference(info.model, inferDB, info.config);
+			mpe = new MPEInference(info.model, inferDB);
 		} catch (Exception ex) {
 			System.out.println(ex);
 			ex.printStackTrace();
 			fail("Exception thrown during MPE constructor.");
 		}
 
-		mpe.mpeInference();
+		mpe.inference();
 		mpe.close();
 		inferDB.close();
 	}
@@ -105,7 +105,7 @@ public class ReadableTest {
 				GroundAtom atom = db.getAtom(p1, arg);
 			}
 		};
-		testHelper(function);
+		testHelper(function, "getAtom");
 	}
 
 	@Test
@@ -121,7 +121,7 @@ public class ReadableTest {
 				db.hasAtom(p1, arg);
 			}
 		};
-		testHelper(function);
+		testHelper(function, "hasAtom");
 	}
 
 	@Test
@@ -138,7 +138,7 @@ public class ReadableTest {
 				assertTrue("Got " + count + ", expected 5", 5 == count);
 			}
 		};
-		testHelper(function);
+		testHelper(function, "countAllGroundAtoms");
 	}
 
 	@Test
@@ -155,7 +155,7 @@ public class ReadableTest {
 				assertTrue("Got " + count + ", expected 20", 20 == count);
 			}
 		};
-		testHelper(function);
+		testHelper(function, "countAllGroundRandomVariableAtoms");
 	}
 
 	@Test
@@ -172,7 +172,7 @@ public class ReadableTest {
 				assertTrue("Got " + l1.size() + ", expected 5", 5 == l1.size());
 			}
 		};
-		testHelper(function);
+		testHelper(function, "getAllGroundAtoms");
 	}
 
 	@Test
@@ -189,7 +189,7 @@ public class ReadableTest {
 				assertTrue("Got " + l1.size() + ", expected 20", 20 == l1.size());
 			}
 		};
-		testHelper(function);
+		testHelper(function, "getAllGroundRandomVariableAtoms");
 	}
 
 	@Test
@@ -206,7 +206,7 @@ public class ReadableTest {
 				assertTrue("Got " + l1.size() + ", expected 5", 5 == l1.size());
 			}
 		};
-		testHelper(function);
+		testHelper(function, "getAllGroundObservedAtoms");
 	}
 
 
@@ -223,7 +223,7 @@ public class ReadableTest {
 				ResultList results = db.executeQuery(query);
 			}
 		};
-		testHelper(function);
+		testHelper(function, "executeQuery");
 	}
 
 	@Test
@@ -238,7 +238,7 @@ public class ReadableTest {
 				ResultList results = db.executeGroundingQuery(new QueryAtom(p1, arg, new Variable("A")));
 			}
 		};
-		testHelper(function);
+		testHelper(function, "executeGroundingQuery");
 	}
 
 	@Test
@@ -254,7 +254,7 @@ public class ReadableTest {
 				db.isClosed(p1);
 			}
 		};
-		testHelper(function);
+		testHelper(function, "isClosed");
 	}
 
 	/**
