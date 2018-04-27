@@ -54,12 +54,6 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
 	public static final String OBJECTIVE_DEFAULT = ContinuousEvaluator.class.getName();
 
 	/**
-	 * The max number of ADMM iterations to spend on each location.
-	 */
-	public static final String ADMM_ITERATIONS_KEY = CONFIG_PREFIX + ".admmiterations";
-	public static final int ADMM_ITERATIONS_DEFAULT = 100;
-
-	/**
 	 * The current location we are investigating.
 	 * The exact representation is up to the implementing child class.
 	 */
@@ -126,6 +120,8 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
 			for (int i = 0; i < mutableRules.size(); i++) {
 				mutableRules.get(i).setWeight(weights[i]);
 			}
+
+			log.trace("Weights: {}", weights);
 
 			// The weights have changed, so we are no longer in an MPE state.
 			inMPEState = false;
