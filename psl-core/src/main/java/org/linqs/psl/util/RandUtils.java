@@ -36,7 +36,7 @@ public final class RandUtils {
 	// Static only.
 	private RandUtils() {}
 
-	private static void ensureRNG() {
+	private static synchronized void ensureRNG() {
 		if (rng != null) {
 			return;
 		}
@@ -44,42 +44,42 @@ public final class RandUtils {
 		rng = new Random(Config.getInt(SEED_KEY, SEED_DEFAULT));
 	}
 
-	public static void seed(int seed) {
+	public static synchronized void seed(int seed) {
 		ensureRNG();
 		rng.setSeed(seed);
 	}
 
-	public static boolean nextBoolean() {
+	public static synchronized boolean nextBoolean() {
 		ensureRNG();
 		return rng.nextBoolean();
 	}
 
-	public static double nextDouble() {
+	public static synchronized double nextDouble() {
 		ensureRNG();
 		return rng.nextDouble();
 	}
 
-	public static float nextFloat() {
+	public static synchronized float nextFloat() {
 		ensureRNG();
 		return rng.nextFloat();
 	}
 
-	public static double nextGaussian() {
+	public static synchronized double nextGaussian() {
 		ensureRNG();
 		return rng.nextGaussian();
 	}
 
-	public static int nextInt() {
+	public static synchronized int nextInt() {
 		ensureRNG();
 		return rng.nextInt();
 	}
 
-	public static int nextInt(int max) {
+	public static synchronized int nextInt(int max) {
 		ensureRNG();
 		return rng.nextInt(max);
 	}
 
-	public static long nextLong() {
+	public static synchronized long nextLong() {
 		ensureRNG();
 		return rng.nextLong();
 	}
