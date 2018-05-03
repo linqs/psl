@@ -22,12 +22,13 @@ import static org.junit.Assert.assertEquals;
 import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.PostgreSQLDriver;
+import org.linqs.psl.util.RandUtils;
 
 import java.io.File;
 import java.nio.file.Paths;
 
 public class DatabaseTestUtil {
-	private static final String PERSISTED_DB_SUFFIX = String.format("%06d", (int)(Math.random() * 1000000));
+	private static final String PERSISTED_DB_SUFFIX = String.format("%012d", RandUtils.nextInt());
 	private static final String DB_NAME = "psltest";
 	private static final String DB_BASE_PATH = Paths.get(System.getProperty("java.io.tmpdir"), DB_NAME + "_" + PERSISTED_DB_SUFFIX).toString();
 

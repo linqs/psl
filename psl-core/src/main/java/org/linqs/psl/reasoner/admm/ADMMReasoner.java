@@ -29,6 +29,7 @@ import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
+import org.linqs.psl.util.RandUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -200,7 +201,7 @@ public class ADMMReasoner implements Reasoner {
 		// Also sometimes called 'z'.
 		consensusValues = new float[termStore.getNumGlobalVariables()];
 		for (int i = 0; i < consensusValues.length; i++) {
-			consensusValues[i] = (float)Math.random();
+			consensusValues[i] = RandUtils.nextFloat();
 		}
 
 		termBlockSize = numTerms / (Parallel.getNumThreads() * 4) + 1;
