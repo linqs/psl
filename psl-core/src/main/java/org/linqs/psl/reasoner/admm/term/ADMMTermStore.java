@@ -23,6 +23,7 @@ import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.function.AtomFunctionVariable;
 import org.linqs.psl.reasoner.term.MemoryTermStore;
 import org.linqs.psl.reasoner.term.TermStore;
+import org.linqs.psl.util.RandUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -120,7 +121,7 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm> {
 		for (Map.Entry<AtomFunctionVariable, Integer> entry : variableIndexes.entrySet()) {
 			for (LocalVariable local : localVariables.get(entry.getValue().intValue())) {
 				if (randomize) {
-					local.setValue((float)(Math.random()));
+					local.setValue(RandUtils.nextFloat());
 					local.setLagrange(0.0f);
 				} else {
 					local.setValue((float)(entry.getKey().getValue()));

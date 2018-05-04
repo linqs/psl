@@ -87,14 +87,14 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	 * objective gradient to compute a step.
 	 */
 	public static final String STEP_SIZE_KEY = CONFIG_PREFIX + ".stepsize";
-	public static final double STEP_SIZE_DEFAULT = 1.0;
+	public static final double STEP_SIZE_DEFAULT = 0.2;
 
 	/**
 	 * The inertia that is used for adaptive step sizes.
-	 * Should be in (0, 1).
+	 * Should be in [0, 1).
 	 */
 	public static final String INERTIA_KEY = CONFIG_PREFIX + ".inertia";
-	public static final double INERTIA_DEFAULT = 0.50;
+	public static final double INERTIA_DEFAULT = 0.00;
 
 	/**
 	 * Key for Boolean property that indicates whether to scale gradient by
@@ -127,7 +127,19 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	 * If true, then cut the step size in half whenever the objective increases.
 	 */
 	public static final String CUT_OBJECTIVE_KEY = CONFIG_PREFIX + ".cutobjective";
-	public static final boolean CUT_OBJECTIVE_DEFAULT = true;
+	public static final boolean CUT_OBJECTIVE_DEFAULT = false;
+
+	/**
+	 * If true, then scale the step size down by the iteration.
+	 */
+	public static final String SCALE_STEP_SIZE_KEY = CONFIG_PREFIX + ".scalestepsize";
+	public static final boolean SCALE_STEP_SIZE_DEFAULT = true;
+
+	/**
+	 * If true, then start all weights at zero for learning.
+	 */
+	public static final String ZERO_INITIAL_WEIGHTS_KEY = CONFIG_PREFIX + ".zeroinitialweights";
+	public static final boolean ZERO_INITIAL_WEIGHTS_DEFAULT = true;
 
 	/**
 	 * The evaluation method to get stats for each iteration.
@@ -141,7 +153,9 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	protected final boolean scaleGradient;
 
 	protected double baseStepSize;
+	protected boolean scaleStepSize;
 	protected boolean averageSteps;
+	protected boolean zeroInitialWeights;
 	protected boolean clipNegativeWeights;
 	protected boolean cutObjective;
 	protected double inertia;
@@ -189,6 +203,8 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 
 		scaleGradient = Config.getBoolean(SCALE_GRADIENT_KEY, SCALE_GRADIENT_DEFAULT);
 		averageSteps = Config.getBoolean(AVERAGE_STEPS_KEY, AVERAGE_STEPS_DEFAULT);
+		scaleStepSize = Config.getBoolean(SCALE_STEP_SIZE_KEY, SCALE_STEP_SIZE_DEFAULT);
+		zeroInitialWeights = Config.getBoolean(ZERO_INITIAL_WEIGHTS_KEY, ZERO_INITIAL_WEIGHTS_DEFAULT);
 		clipNegativeWeights = Config.getBoolean(CLIP_NEGATIVE_WEIGHTS_KEY, CLIP_NEGATIVE_WEIGHTS_DEFAULT);
 		cutObjective = Config.getBoolean(CUT_OBJECTIVE_KEY, CUT_OBJECTIVE_DEFAULT);
 
@@ -204,6 +220,12 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 
 		// Reset the RVAs to default values.
 		setDefaultRandomVariables();
+
+		if (zeroInitialWeights) {
+			for (WeightedRule rule : mutableRules) {
+				rule.setWeight(0.0);
+			}
+		}
 
 		// Compute the initial objective.
 		if (log.isDebugEnabled() && evaluator != null) {
@@ -236,6 +258,8 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 			// Computes the expected incompatibility.
 			computeExpectedIncompatibility();
 
+			double norm = 0.0;
+
 			// Updates weights.
 			for (int i = 0; i < mutableRules.size(); i++) {
 				double newWeight = mutableRules.get(i).getWeight();
@@ -244,6 +268,10 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 						- l1Regularization) / scalingFactor[i];
 
 				currentStep *= baseStepSize;
+
+				if (scaleStepSize) {
+					currentStep /= (step + 1);
+				}
 
 				// Apply momentum.
 				currentStep += inertia * lastSteps[i];
@@ -262,10 +290,13 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 				mutableRules.get(i).setWeight(newWeight);
 				lastSteps[i] = currentStep;
 				avgWeights[i] += newWeight;
+				norm += Math.pow(expectedIncompatibility[i] - observedIncompatibility[i], 2);
 			}
 
 			inMPEState = false;
 			inLatentMPEState = false;
+
+			norm = Math.sqrt(norm);
 
 			if (log.isDebugEnabled()) {
 				getLoss();
@@ -280,7 +311,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 				objective = evaluator.getRepresentativeMetric();
 				objective = evaluator.isHigherRepresentativeBetter() ? -1.0 * objective : objective;
 
-				if (step > 0 && objective > lastObjective) {
+				if (cutObjective && step > 0 && objective > lastObjective) {
 					log.trace("Objective increased: {} -> {}, cutting step size: {} -> {}.",
 							lastObjective, objective, baseStepSize, baseStepSize / 2.0);
 					baseStepSize /= 2.0;
@@ -302,7 +333,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 				lastWeights[i] = mutableRules.get(i).getWeight();
 			}
 
-			log.debug("Iteration {} complete. Likelihood: {}. Training Objective: {}", step, currentLoss, objective);
+			log.debug("Iteration {} complete. Likelihood: {}. Training Objective: {}, Icomp. L2-norm: {}", step, currentLoss, objective, norm);
 			log.trace("Model {} ", mutableRules);
 		}
 

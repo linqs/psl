@@ -29,6 +29,7 @@ import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
+import org.linqs.psl.util.RandUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -200,7 +201,7 @@ public class ADMMReasoner implements Reasoner {
 		// Also sometimes called 'z'.
 		consensusValues = new float[termStore.getNumGlobalVariables()];
 		for (int i = 0; i < consensusValues.length; i++) {
-			consensusValues[i] = (float)Math.random();
+			consensusValues[i] = RandUtils.nextFloat();
 		}
 
 		termBlockSize = numTerms / (Parallel.getNumThreads() * 4) + 1;
@@ -368,7 +369,6 @@ public class ADMMReasoner implements Reasoner {
 				int numLocalVariables = termStore.getLocalVariables(variableIndex).size();
 
 				// First pass computes newConsensusValue and dual residual fom all local copies.
-				// Use indexes instead of iterators for profiling purposes: http://psy-lob-saw.blogspot.co.uk/2014/12/the-escape-of-arraylistiterator.html
 				for (int localVarIndex = 0; localVarIndex < numLocalVariables; localVarIndex++) {
 					LocalVariable localVariable = termStore.getLocalVariables(variableIndex).get(localVarIndex);
 					total += localVariable.getValue() + localVariable.getLagrange() / stepSize;
@@ -389,7 +389,6 @@ public class ADMMReasoner implements Reasoner {
 
 				// Second pass computes primal residuals.
 
-				// Use indexes instead of iterators for profiling purposes: http://psy-lob-saw.blogspot.co.uk/2014/12/the-escape-of-arraylistiterator.html
 				for (int localVarIndex = 0; localVarIndex < numLocalVariables; localVarIndex++) {
 					LocalVariable localVariable = termStore.getLocalVariables(variableIndex).get(localVarIndex);
 

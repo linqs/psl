@@ -22,6 +22,7 @@ import org.linqs.psl.config.Config;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
+import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.function.AtomFunctionVariable;
 import org.linqs.psl.reasoner.function.ConstantNumber;
 import org.linqs.psl.reasoner.function.ConstraintTerm;
@@ -34,13 +35,20 @@ import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.Parallel;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * A TermGenerator for ADMM objective terms.
  */
 public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
+	private static final Logger log = LoggerFactory.getLogger(ADMMTermGenerator.class);
+
 	public static final String CONFIG_PREFIX = "admmtermgenerator";
 
 	/**
@@ -65,10 +73,32 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 		int initialSize = termStore.size();
 		termStore.ensureCapacity(initialSize + ruleStore.size());
 
+		Set<WeightedRule> rules = new HashSet<WeightedRule>();
+		for (GroundRule rule : ruleStore.getGroundRules()) {
+			if (rule instanceof WeightedGroundRule) {
+				rules.add((WeightedRule)rule.getRule());
+			}
+		}
+
+		for (WeightedRule rule : rules) {
+			if (rule.getWeight() < 0.0) {
+				log.warn("Found a rule with a negative weight, but config says not to invert it... skipping: " + rule);
+			}
+		}
+
 		Parallel.foreach(ruleStore.getGroundRules(), new Parallel.Worker<GroundRule>() {
 			@Override
 			public void work(int index, GroundRule rule) {
-				if (invertNegativeWeight && rule instanceof WeightedGroundRule && ((WeightedGroundRule)rule).getWeight() < 0.0) {
+				boolean negativeWeight =
+						rule instanceof WeightedGroundRule
+						&& ((WeightedGroundRule)rule).getWeight() < 0.0;
+
+				if (negativeWeight) {
+					// Skip
+					if (!invertNegativeWeight) {
+						return;
+					}
+
 					// Negate (weight and expression) rules that have a negative weight.
 					for (GroundRule negatedRule : rule.negate()) {
 						ADMMObjectiveTerm term = createTerm(negatedRule, (ADMMTermStore)termStore);
