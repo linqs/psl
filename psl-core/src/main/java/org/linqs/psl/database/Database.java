@@ -20,15 +20,25 @@ package org.linqs.psl.database;
 import org.linqs.psl.model.atom.AtomCache;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
+import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
+import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -76,191 +86,144 @@ import java.util.Set;
  * Note that queries only act on the GroundAtoms persisted in Partitions and
  * GroundAtoms with FunctionalPredicates.
  */
-public interface Database {
+public abstract class Database implements ReadableDatabase, WritableDatabase {
+	/**
+	 * The backing data store that created this database.
+	 * Connection are obtained from here.
+	 */
+	protected final DataStore parentDataStore;
 
 	/**
-	 * Returns the GroundAtom for the given Predicate and GroundTerms.
-	 *
-	 * Any GroundAtom with a {@link StandardPredicate} can be retrieved if and only
-	 * if its Predicate was registered with the DataStore at the time of the Database's
-	 * instantiation. Any GroundAtom with an ExternalFunctionalPredicate} can also be retrieved.
-	 * This method first checks the {@link AtomCache} to see if the GroundAtom already
-	 * exists in memory. If it does, then that object is returned. (The AtomCache is
-	 * accessible via {@link #getAtomCache()}.)
-	 *
-	 * If the GroundAtom does not exist in memory, then it will be instantiated and
-	 * stored in the AtomCache before being returned. The subtype and state of the
-	 * instantiated GroundAtom depends on several factors:
-	 * <ul>
-	 *	<li>If the GroundAtom is persisted in a read Partition, then it will be
-	 *	instantiated as an {@link ObservedAtom} with the persisted state.</li>
-	 *	<li>If the GroundAtom is persisted in the write Partition, then it will be
-	 *	instantiated with the persisted state. It will be instantiated as an
-	 *	ObservedAtom if its Predicate is closed and as a {@link RandomVariableAtom}
-	 *	if it is open.</li>
-	 *	<li>If the GroundAtom has a StandardPredicate but is not persisted
-	 *	in any of the Database's partitions, it will be instantiated with a truth
-	 *	value of 0.0. It will be instantiated as an ObservedAtom if its Predicate
-	 *	is closed and as a RandomVariableAtom
-	 *	if it is open.</li>
-	 *	<li>If the GroundAtom has an ExternalFunctionalPredicate, then it will be
-	 *	instantiated as an ObservedAtom with the functionally defined
-	 *	truth value.</li>
-	 * </ul>
-	 *
-	 * @param predicate the Predicate of the Atom
-	 * @param arguments the GroundTerms of the Atom
-	 * @return the Atom
-	 * @throws IllegalArgumentException if predicate is not registered or arguments are not valid
-	 * @throws IllegalStateException if the Atom is persisted in multiple read Partitions
+	 * The partition ID in which this database writes.
 	 */
-	public GroundAtom getAtom(Predicate predicate, Constant... arguments);
+	protected final Partition writePartition;
+	protected final int writeID;
 
 	/**
-	 * Check to see if a ground atom exists in the database.
-	 * This looks for a real ground atom and ignores the closed-world assumption.
-	 * If found, the atom will be cached for subsequent requests to this or getAtom().
+	 * The partition IDs that this database reads from.
 	 */
-	public boolean hasAtom(StandardPredicate predicate, Constant... arguments);
+	protected final List<Partition> readPartitions;
+	protected final List<Integer> readIDs;
 
 	/**
-	 * Get a count of all the ground atoms for a predicate.
-	 * By "ground", we mean that it exists in the database.
-	 * This will not leverage the closed world assumption for any atoms.
-	 *
-	 * @param predicate the predicate to get a count for
-	 * @return The count of all ground atoms present in any partition of the database.
+	 * The atom cache for this database.
 	 */
-	public int countAllGroundAtoms(StandardPredicate predicate);
+	protected final AtomCache cache;
 
 	/**
-	 * Get a count of all the ground RandomVariableAtoms for a predicate.
-	 * By "ground", we mean that it exists in the database.
-	 * This will not leverage the closed world assumption for any atoms.
-	 *
-	 * @param predicate the predicate to get a count for
-	 * @return The count of all ground atoms present in the write partition of the database.
+	 * Keeps track of the open / closed status of this database.
 	 */
-	public int countAllGroundRandomVariableAtoms(StandardPredicate predicate);
+	protected boolean closed;
 
-	/**
-	 * Fetch all the ground atoms for a predicate.
-	 * By "ground", we mean that it exists in the database.
-	 * This will not leverage the closed world assumption for any atoms.
-	 *
-	 * @param predicate the predicate to fetch atoms for
-	 * @return All ground atoms present in any partition of the database.
-	 */
-	public List<GroundAtom> getAllGroundAtoms(StandardPredicate predicate);
+	public Database(DataStore parent, Partition write, Partition[] read){
+		this.parentDataStore = parent;
+		this.writePartition = write;
+		this.writeID = write.getID();
 
-	/**
-	 * Fetch all the ground RandomVariableAtoms for a predicate.
-	 * By "ground", we mean that it exists in the database.
-	 * This will not leverage the closed world assumption for any atoms.
-	 *
-	 * @param predicate the predicate to fetch atoms for
-	 * @return All ground atoms present in the write partition of the database.
-	 */
-	public List<RandomVariableAtom> getAllGroundRandomVariableAtoms(StandardPredicate predicate);
+		this.readPartitions = Arrays.asList(read);
+		this.readIDs = new ArrayList<Integer>(read.length);
+		for (int i = 0; i < read.length; i ++) {
+			this.readIDs.add(read[i].getID());
+		}
 
-	/**
-	 * Fetch all the ground ObservedAtoms for a predicate.
-	 * By "ground", we mean that it exists in the database.
-	 * This will not leverage the closed world assumption for any atoms.
-	 *
-	 * @param predicate the predicate to fetch atoms for
-	 * @return All ground atoms present in the write partition of the database.
-	 */
-	public List<ObservedAtom> getAllGroundObservedAtoms(StandardPredicate predicate);
+		if (!this.readIDs.contains(writeID)) {
+			this.readIDs.add(writeID);
+		}
 
-	/**
-	 * Removes the GroundAtom from the Database, if it exists.
-	 *
-	 *
-	 * @param a the GroundAtom to delete
-	 * @return If an atom was removed
-	 * @throws IllegalArgumentException if predicate is not registered or arguments are not valid
-	 */
-	public boolean deleteAtom(GroundAtom a);
+		this.cache = new AtomCache(this);
+	}
 
-	/**
-	 * Persists a RandomVariableAtom in this Database's write Partition.
-	 *
-	 * If the RandomVariableAtom has already been persisted in the write Partition,
-	 * it will be updated.
-	 *
-	 * @param atom the Atom to persist
-	 * @throws IllegalArgumentException if atom does not belong to this Database
-	 */
-	public void commit(RandomVariableAtom atom);
+	public abstract GroundAtom getAtom(StandardPredicate predicate, boolean create, Constant... arguments);
 
-	/**
-	 * A batch form or commit().
-	 * When possible, this commit should be used.
-	 */
-	public void commit(Collection<RandomVariableAtom> atoms);
+	public boolean hasAtom(StandardPredicate predicate, Constant... arguments) {
+		return getAtom(predicate, false, arguments) != null;
+	}
 
-	/**
-	 * A form of commit() that allows the caller to choose the specific partition
-	 * the atoms are comitted to.
-	 * Should only be used if you REALLY know what you are doing.
-	 */
-	public void commit(Collection<RandomVariableAtom> atoms, int partitionId);
+	public int countAllGroundAtoms(StandardPredicate predicate) {
+		List<Integer> partitions = new ArrayList<Integer>();
+		partitions.addAll(readIDs);
+		partitions.add(writeID);
 
-	/**
-	 * Move all ground atoms of a predicate/partition combination into
-	 * the write partition.
-	 * Be careful not to call this while the database is in use.
-	 */
-	public void moveToWritePartition(StandardPredicate predicate, int oldPartitionId);
+		return countAllGroundAtoms(predicate, partitions);
+	}
 
-	/**
-	 * Returns all groundings of a Formula that match a DatabaseQuery.
-	 *
-	 * @param query the query to match
-	 * @return a list of lists of substitutions of {@link Constant GroundTerms}
-	 *				 for {@link Variable Variables}
-	 * @throws IllegalArgumentException if the query Formula is invalid
-	 */
-	public ResultList executeQuery(DatabaseQuery query);
+	public abstract int countAllGroundAtoms(StandardPredicate predicate, List<Integer> partitions);
 
-	/**
-	 * Like executeQuery(), but specifically for grounding queries.
-	 * This will use extra optimizations.
-	 */
-	public ResultList executeGroundingQuery(Formula formula);
+	public int countAllGroundRandomVariableAtoms(StandardPredicate predicate) {
+		// Closed predicates have no random variable atoms.
+		if (isClosed(predicate)) {
+			return 0;
+		}
 
-	/**
-	 * Returns whether a StandardPredicate is closed in this Database.
-	 *
-	 * @param predicate the Predicate to check
-	 * @return TRUE if predicate is closed
-	 */
-	public boolean isClosed(StandardPredicate predicate);
+		// All the atoms should be random vairable, since we are pulling from the write parition of an open predicate.
+		List<Integer> partitions = new ArrayList<Integer>(1);
+		partitions.add(writeID);
 
-	/**
-	 * Returns the set of StandardPredicates registered with this Database.
-	 * Note that the result can differ from calling
-	 * {@link DataStore#getRegisteredPredicates()} on this Database's backing
-	 * DataStore, since additional predicates might have been registered since
-	 * this Database was created.
-	 *
-	 * @return the set of StandardPredicates registered with this Database
-	 */
-	public Set<StandardPredicate> getRegisteredPredicates();
+		return countAllGroundAtoms(predicate, partitions);
+	}
+
+	public List<GroundAtom> getAllGroundAtoms(StandardPredicate predicate) {
+		List<Integer> partitions = new ArrayList<Integer>();
+		partitions.addAll(readIDs);
+		partitions.add(writeID);
+
+		return getAllGroundAtoms(predicate, partitions);
+	}
+
+	public abstract List<GroundAtom> getAllGroundAtoms(StandardPredicate predicate, List<Integer> partitions);
+
+	public List<RandomVariableAtom> getAllGroundRandomVariableAtoms(StandardPredicate predicate) {
+		// Closed predicates have no random variable atoms.
+		if (isClosed(predicate)) {
+			return new ArrayList<RandomVariableAtom>();
+		}
+
+		// All the atoms should be random vairable, since we are pulling from the write parition of an open predicate.
+		List<Integer> partitions = new ArrayList<Integer>(1);
+		partitions.add(writeID);
+		List<GroundAtom> groundAtoms = getAllGroundAtoms(predicate, partitions);
+
+		List<RandomVariableAtom> atoms = new ArrayList<RandomVariableAtom>(groundAtoms.size());
+		for (GroundAtom atom : groundAtoms) {
+			atoms.add((RandomVariableAtom)atom);
+		}
+
+		return atoms;
+	}
+
+	public List<ObservedAtom> getAllGroundObservedAtoms(StandardPredicate predicate) {
+		// Note that even open predicates may have observed atoms (partially observed predicates).
+
+		// Only pull from the read partitions.
+		List<GroundAtom> groundAtoms = getAllGroundAtoms(predicate, readIDs);
+
+		// All the atoms will be observed since we are pulling from only read partitions.
+		List<ObservedAtom> atoms = new ArrayList<ObservedAtom>(groundAtoms.size());
+		for (GroundAtom atom : groundAtoms) {
+			atoms.add((ObservedAtom)atom);
+		}
+
+		return atoms;
+	}
+
+	public void commit(RandomVariableAtom atom) {
+		List<RandomVariableAtom> atoms = new ArrayList<RandomVariableAtom>(1);
+		atoms.add(atom);
+		commit(atoms);
+	}
 
 	/**
 	 * @return the DataStore backing this Database
 	 */
-	public DataStore getDataStore();
+	public DataStore getDataStore(){
+		return parentDataStore;
+	}
 
-	/**
-	 * @return the Database's AtomCache
-	 */
-	public AtomCache getAtomCache();
+	public List<Partition> getReadPartitions() {
+		return Collections.unmodifiableList(readPartitions);
+	}
 
-	/**
-	 * Releases the {@link Partition Partitions} used by this Database.
-	 */
-	public void close();
+	public Partition getWritePartition() {
+		return writePartition;
+	}
 }

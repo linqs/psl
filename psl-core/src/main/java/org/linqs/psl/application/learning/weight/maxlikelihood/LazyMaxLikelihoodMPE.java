@@ -23,7 +23,6 @@ import org.linqs.psl.application.learning.weight.VotedPerceptron;
 import org.linqs.psl.application.util.Grounding;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.database.Queries;
 import org.linqs.psl.database.atom.LazyAtomManager;
 import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.model.atom.Atom;

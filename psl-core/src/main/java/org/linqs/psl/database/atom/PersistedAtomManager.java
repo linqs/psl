@@ -62,7 +62,7 @@ public class PersistedAtomManager extends AtomManager {
 
 	private void buildPersistedAtomCache() {
 		// Iterate through all of the registered predicates in this database
-		for (StandardPredicate predicate : db.getRegisteredPredicates()) {
+		for (StandardPredicate predicate : db.getDataStore().getRegisteredPredicates()) {
 			// Ignore any closed predicates, they will not return RandomVariableAtoms
 			if (db.isClosed(predicate)) {
 				// Make the database cache all the atoms from the closed predicates,

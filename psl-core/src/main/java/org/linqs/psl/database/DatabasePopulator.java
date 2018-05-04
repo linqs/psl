@@ -77,7 +77,7 @@ public class DatabasePopulator {
 	 * @param p			{@link Predicate} to be populated
 	 */
 	public void populateFromDB(Database sourceDB, StandardPredicate p) {
-		for (GroundAtom ga : Queries.getAllAtoms(sourceDB, p)) {
+		for (GroundAtom ga : sourceDB.getAllGroundAtoms(p)) {
 			Constant[] arguments = ga.getArguments();
 			GroundAtom rv = db.getAtom(p, arguments);
 			if (rv instanceof RandomVariableAtom)

@@ -24,7 +24,7 @@ import static org.junit.Assert.fail;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseQuery;
-import org.linqs.psl.database.ReadOnlyDatabase;
+import org.linqs.psl.database.ReadableDatabase;
 import org.linqs.psl.database.ResultList;
 import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.model.atom.GroundAtom;
@@ -100,7 +100,7 @@ public abstract class DataStoreContractTest {
 
 		functionalPredicate1 = ExternalFunctionalPredicate.get("FP1", new ExternalFunction() {
 			@Override
-			public double getValue(ReadOnlyDatabase db, Constant... args) {
+			public double getValue(ReadableDatabase db, Constant... args) {
 				double a = ((DoubleAttribute) args[0]).getValue();
 				double b = ((DoubleAttribute) args[1]).getValue();
 
@@ -977,7 +977,7 @@ public abstract class DataStoreContractTest {
 		Database db = datastore.getDatabase(datastore.getPartition("0"));
 
 		// Check all the terms in all the atoms
-		for (GroundAtom atom : Queries.getAllAtoms(db, p2)) {
+		for (GroundAtom atom : db.getAllGroundAtoms(p2)) {
 			if (!values.contains(((StringAttribute)atom.getArguments()[0]).getValue())) {
 				fail("First argument of atom (" + atom + ") is an unseen value.");
 			}

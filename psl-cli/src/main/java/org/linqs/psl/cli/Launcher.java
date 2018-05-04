@@ -25,7 +25,6 @@ import org.linqs.psl.config.Config;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
-import org.linqs.psl.database.Queries;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
@@ -251,7 +250,7 @@ public class Launcher {
 		// If we are just writing to the console, use a more human-readable format.
 		if (!options.hasOption(OPTION_OUTPUT_DIR)) {
 			for (StandardPredicate openPredicate : openPredicates) {
-				for (GroundAtom atom : Queries.getAllRandomVariableAtoms(database, openPredicate)) {
+				for (GroundAtom atom : database.getAllGroundRandomVariableAtoms(openPredicate)) {
 					System.out.println(atom.toString() + " = " + atom.getValue());
 				}
 			}
@@ -270,7 +269,7 @@ public class Launcher {
 			try {
 				FileWriter predFileWriter = new FileWriter(new File(outputDirectory, openPredicate.getName() + ".txt"));
 
-				for (GroundAtom atom : Queries.getAllRandomVariableAtoms(database, openPredicate)) {
+				for (GroundAtom atom : database.getAllGroundRandomVariableAtoms(openPredicate)) {
 					for (Constant term : atom.getArguments()) {
 						predFileWriter.write(term.toString() + "\t");
 					}
@@ -346,7 +345,7 @@ public class Launcher {
 
 		for (StandardPredicate targetPredicate : openPredicates) {
 			// Before we run evaluation, ensure that the truth database actaully has instances of the target predicate.
-			if (Queries.countAllGroundAtoms(truthDatabase, targetPredicate) == 0) {
+			if (truthDatabase.countAllGroundAtoms(targetPredicate) == 0) {
 				log.info("Skipping evaluation for {} since there are no ground truth atoms", targetPredicate);
 				continue;
 			}

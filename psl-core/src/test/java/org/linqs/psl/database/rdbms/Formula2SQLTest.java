@@ -27,7 +27,7 @@ import org.junit.Test;
 import org.linqs.psl.TestModelFactory;
 import org.linqs.psl.application.inference.MPEInference;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.database.ReadOnlyDatabase;
+import org.linqs.psl.database.ReadableDatabase;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Formula;
@@ -179,7 +179,7 @@ public class Formula2SQLTest {
 			return args;
 		}
 
-		public synchronized double getValue(ReadOnlyDatabase db, Constant... args) {
+		public synchronized double getValue(ReadableDatabase db, Constant... args) {
 			callCount++;
 			return 1;
 		}
