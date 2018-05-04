@@ -34,19 +34,13 @@ import java.util.Set;
 import java.util.*;
 
 /**
- * A data model for persisting {@link GroundAtom GroundAtoms}.
+ * A database for persisting {@link GroundAtom GroundAtoms}.
  *
- * To retrieve {@link GroundAtom GroundAtoms} use the ReadableDatabase.
+ * To retrieve {@link GroundAtom GroundAtoms} use a ReadableDatabase.
  */
 public interface WritableDatabase {
-
 	/**
 	 * Removes the GroundAtom from the Database, if it exists.
-	 *
-	 *
-	 * @param a the GroundAtom to delete
-	 * @return If an atom was removed
-	 * @throws IllegalArgumentException if predicate is not registered or arguments are not valid
 	 */
 	public boolean deleteAtom(GroundAtom a);
 
@@ -55,9 +49,6 @@ public interface WritableDatabase {
 	 *
 	 * If the RandomVariableAtom has already been persisted in the write Partition,
 	 * it will be updated.
-	 *
-	 * @param atom the Atom to persist
-	 * @throws IllegalArgumentException if atom does not belong to this Database
 	 */
 	public void commit(RandomVariableAtom atom);
 

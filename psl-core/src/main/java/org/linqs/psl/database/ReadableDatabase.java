@@ -35,12 +35,11 @@ import java.util.Set;
 import java.util.*;
 
 /**
- * A data model for retrieving {@link GroundAtom GroundAtoms}.
+ * A database for retrieving {@link GroundAtom GroundAtoms}.
  *
- * To persist {@link GroundAtom GroundAtoms} use the WritableDatabase.
+ * To persist {@link GroundAtom GroundAtoms} use a WritableDatabase.
  */
 public interface ReadableDatabase {
-	
 	/**
 	 * Returns the GroundAtom for the given Predicate and GroundTerms.
 	 *
@@ -71,10 +70,6 @@ public interface ReadableDatabase {
 	 *	truth value.</li>
 	 * </ul>
 	 *
-	 * @param predicate the Predicate of the Atom
-	 * @param arguments the GroundTerms of the Atom
-	 * @return the Atom
-	 * @throws IllegalArgumentException if predicate is not registered or arguments are not valid
 	 * @throws IllegalStateException if the Atom is persisted in multiple read Partitions
 	 */
 	public GroundAtom getAtom(Predicate predicate, Constant... arguments);
@@ -90,9 +85,6 @@ public interface ReadableDatabase {
 	 * Get a count of all the ground atoms for a predicate.
 	 * By "ground", we mean that it exists in the database.
 	 * This will not leverage the closed world assumption for any atoms.
-	 *
-	 * @param predicate the predicate to get a count for
-	 * @return The count of all ground atoms present in any partition of the database.
 	 */
 	public int countAllGroundAtoms(StandardPredicate predicate);
 
@@ -100,9 +92,6 @@ public interface ReadableDatabase {
 	 * Get a count of all the ground RandomVariableAtoms for a predicate.
 	 * By "ground", we mean that it exists in the database.
 	 * This will not leverage the closed world assumption for any atoms.
-	 *
-	 * @param predicate the predicate to get a count for
-	 * @return The count of all ground atoms present in the write partition of the database.
 	 */
 	public int countAllGroundRandomVariableAtoms(StandardPredicate predicate);
 
@@ -110,9 +99,6 @@ public interface ReadableDatabase {
 	 * Fetch all the ground atoms for a predicate.
 	 * By "ground", we mean that it exists in the database.
 	 * This will not leverage the closed world assumption for any atoms.
-	 *
-	 * @param predicate the predicate to fetch atoms for
-	 * @return All ground atoms present in any partition of the database.
 	 */
 	public List<GroundAtom> getAllGroundAtoms(StandardPredicate predicate);
 
@@ -120,9 +106,6 @@ public interface ReadableDatabase {
 	 * Fetch all the ground RandomVariableAtoms for a predicate.
 	 * By "ground", we mean that it exists in the database.
 	 * This will not leverage the closed world assumption for any atoms.
-	 *
-	 * @param predicate the predicate to fetch atoms for
-	 * @return All ground atoms present in the write partition of the database.
 	 */
 	public List<RandomVariableAtom> getAllGroundRandomVariableAtoms(StandardPredicate predicate);
 
@@ -130,19 +113,11 @@ public interface ReadableDatabase {
 	 * Fetch all the ground ObservedAtoms for a predicate.
 	 * By "ground", we mean that it exists in the database.
 	 * This will not leverage the closed world assumption for any atoms.
-	 *
-	 * @param predicate the predicate to fetch atoms for
-	 * @return All ground atoms present in the write partition of the database.
 	 */
 	public List<ObservedAtom> getAllGroundObservedAtoms(StandardPredicate predicate);
 
 	/**
 	 * Returns all groundings of a Formula that match a DatabaseQuery.
-	 *
-	 * @param query the query to match
-	 * @return a list of lists of substitutions of {@link Constant GroundTerms}
-	 *				 for {@link Variable Variables}
-	 * @throws IllegalArgumentException if the query Formula is invalid
 	 */
 	public ResultList executeQuery(DatabaseQuery query);
 
@@ -154,10 +129,6 @@ public interface ReadableDatabase {
 
 	/**
 	 * Returns whether a StandardPredicate is closed in this Database.
-	 *
-	 * @param predicate the Predicate to check
-	 * @return TRUE if predicate is closed
 	 */
 	public boolean isClosed(StandardPredicate predicate);
-
 }

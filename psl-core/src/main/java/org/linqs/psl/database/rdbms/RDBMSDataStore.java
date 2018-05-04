@@ -54,8 +54,6 @@ public class RDBMSDataStore implements DataStore {
 
 	private static final Set<RDBMSDataStore> openDataStores = new HashSet<RDBMSDataStore>();
 
-	private static int databaseCounter = 0;
-
 	/**
 	 * Prefix of property keys used by this class.
 	 */
@@ -95,7 +93,6 @@ public class RDBMSDataStore implements DataStore {
 
 	/**
 	 * Returns an RDBMSDataStore that utilizes the connections returned by the {@link DatabaseDriver}.
-	 * @param dbDriver the DatabaseDriver that contains a connection pool to the backing database.
 	 */
 	public RDBMSDataStore(DatabaseDriver dbDriver) {
 		openDataStores.add(this);
@@ -181,7 +178,7 @@ public class RDBMSDataStore implements DataStore {
 		indexPredicates();
 
 		// Creates the database and registers the current predicates
-		RDBMSDatabase db = new RDBMSDatabase(this, write, read, Collections.unmodifiableMap(predicates), toClose);
+		RDBMSDatabase db = new RDBMSDatabase(this, write, read, toClose);
 
 		// Register the write and read partitions as being associated with this database
 		for (Partition partition : read) {
@@ -342,5 +339,17 @@ public class RDBMSDataStore implements DataStore {
 
 	public static Set<RDBMSDataStore> getOpenDataStores() {
 		return Collections.unmodifiableSet(openDataStores);
+	}
+
+	/**
+	 * Helper method for getting a predicate handle
+	 */
+	public PredicateInfo getPredicateInfo(Predicate predicate) {
+		PredicateInfo info = predicates.get(predicate);
+		if (info == null) {
+			throw new IllegalArgumentException("Predicate not registered with data store.");
+		}
+
+		return info;
 	}
 }

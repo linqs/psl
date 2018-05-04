@@ -18,7 +18,9 @@
 package org.linqs.psl.database;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
 
 import org.junit.After;
@@ -50,7 +52,131 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.List;
 
-public class ReadableTest {
+public class ReadableDatabaseTest {
+	@Test
+	public void testGetAtom() {
+		DatabaseFunction function = new DatabaseFunction() {
+			@Override
+			public void doWork(ReadableDatabase db, Constant arg) {
+				StandardPredicate predicate = StandardPredicate.get("Nice", ConstantType.UniqueStringID);
+				assertNotNull(db.getAtom(predicate, arg));
+			}
+		};
+		testHelper(function, "getAtom");
+	}
+
+	@Test
+	public void testHasAtom() {
+		DatabaseFunction function = new DatabaseFunction() {
+			@Override
+			public void doWork(ReadableDatabase db, Constant arg){
+				StandardPredicate predicate = StandardPredicate.get("Nice", ConstantType.UniqueStringID);
+				assertTrue(db.hasAtom(predicate, arg));
+			}
+		};
+		testHelper(function, "hasAtom");
+	}
+
+	@Test
+	public void testCountAllGroundAtoms() {
+		DatabaseFunction function = new DatabaseFunction() {
+			@Override
+			public void doWork(ReadableDatabase db, Constant arg) {
+				StandardPredicate predicate = StandardPredicate.get("Nice", ConstantType.UniqueStringID);
+				assertEquals(5, db.countAllGroundAtoms(predicate));
+			}
+		};
+		testHelper(function, "countAllGroundAtoms");
+	}
+
+	@Test
+	public void testCountAllGroundRandomVariableAtoms() {
+		DatabaseFunction function = new DatabaseFunction() {
+			@Override
+			public void doWork(ReadableDatabase db, Constant arg) {
+				StandardPredicate predicate = StandardPredicate.get("Friends", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
+				assertEquals(20, db.countAllGroundRandomVariableAtoms(predicate));
+			}
+		};
+		testHelper(function, "countAllGroundRandomVariableAtoms");
+	}
+
+	@Test
+	public void testGetAllGroundAtoms() {
+		DatabaseFunction function = new DatabaseFunction() {
+			@Override
+			public void doWork(ReadableDatabase db, Constant arg) {
+				StandardPredicate predicate = StandardPredicate.get("Nice", ConstantType.UniqueStringID);
+				assertEquals(5, db.getAllGroundAtoms(predicate).size());
+			}
+		};
+		testHelper(function, "getAllGroundAtoms");
+	}
+
+	@Test
+	public void testGetAllGroundRandomVariableAtoms() {
+		DatabaseFunction function = new DatabaseFunction() {
+			@Override
+			public void doWork(ReadableDatabase db, Constant arg) {
+				StandardPredicate predicate = StandardPredicate.get("Friends", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
+				assertEquals(20, db.getAllGroundRandomVariableAtoms(predicate).size());
+			}
+		};
+		testHelper(function, "getAllGroundRandomVariableAtoms");
+	}
+
+	@Test
+	public void testGetAllGroundObservedAtoms() {
+		DatabaseFunction function = new DatabaseFunction() {
+			@Override
+			public void doWork(ReadableDatabase db, Constant arg) {
+				StandardPredicate predicate = StandardPredicate.get("Nice", ConstantType.UniqueStringID);
+				assertEquals(5, db.getAllGroundObservedAtoms(predicate).size());
+			}
+		};
+		testHelper(function, "getAllGroundObservedAtoms");
+	}
+
+	@Test
+	public void testExecuteQuery() {
+		DatabaseFunction function = new DatabaseFunction() {
+			@Override
+			public void doWork(ReadableDatabase db, Constant arg) {
+				StandardPredicate predicate = StandardPredicate.get("Friends");
+				DatabaseQuery query = new DatabaseQuery(new QueryAtom(predicate, arg, new Variable("A")));
+				ResultList results = db.executeQuery(query);
+				assertNotNull(results);
+				assertEquals(4, results.size());
+			}
+		};
+		testHelper(function, "executeQuery");
+	}
+
+	@Test
+	public void testExecuteGroundingQuery() {
+		DatabaseFunction function = new DatabaseFunction() {
+			@Override
+			public void doWork(ReadableDatabase db, Constant arg) {
+				StandardPredicate predicate = StandardPredicate.get("Friends");
+				ResultList results = db.executeGroundingQuery(new QueryAtom(predicate, arg, new Variable("A")));
+				assertNotNull(results);
+				assertEquals(4, results.size());
+			}
+		};
+		testHelper(function, "executeGroundingQuery");
+	}
+
+	@Test
+	public void testIsClosed() {
+		DatabaseFunction function = new DatabaseFunction() {
+			@Override
+			public void doWork(ReadableDatabase db, Constant arg) {
+				StandardPredicate predicate = StandardPredicate.get("Friends", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
+				assertFalse(db.isClosed(predicate));
+			}
+		};
+		testHelper(function, "isClosed");
+	}
 
 	/**
 	 * Helper function for testing the ReadableDatabase interface functions.
@@ -60,7 +186,7 @@ public class ReadableTest {
 		Predicate functionPredicate = ExternalFunctionalPredicate.get(name + "_test", function);
 
 		// Add a rule using the new function.
-		// 10: Person(A) & Person(B) & UnaryFunction(A) & (A != B) -> Friends(A, B) ^2
+		// 10: Person(A) & Person(B) & Function(A) & (A != B) -> Friends(A, B) ^2
 		Formula ruleFormula = new Implication(
 			new Conjunction(
 				new QueryAtom(info.predicates.get("Person"), new Variable("A")),
@@ -79,182 +205,10 @@ public class ReadableTest {
 
 		MPEInference mpe = null;
 
-		try {
-			mpe = new MPEInference(info.model, inferDB);
-		} catch (Exception ex) {
-			System.out.println(ex);
-			ex.printStackTrace();
-			fail("Exception thrown during MPE constructor.");
-		}
-
+		mpe = new MPEInference(info.model, inferDB);
 		mpe.inference();
 		mpe.close();
 		inferDB.close();
-	}
-
-	@Test
-	/**
-	 * Ensure that getAtom() works with the ReadableDatabase interface.
-	 */
-	public void testGetAtom() {
-		DatabaseFunction function = new DatabaseFunction() {
-			@Override
-			public void doWork(ReadableDatabase db, Constant arg) {
-				StandardPredicate p1;
-				p1 = StandardPredicate.get("Nice", ConstantType.UniqueStringID);
-				GroundAtom atom = db.getAtom(p1, arg);
-			}
-		};
-		testHelper(function, "getAtom");
-	}
-
-	@Test
-	/**
-	 * Ensure that hasAtom() works with the ReadableDatabase interface.
-	 */
-	public void testHasAtom() {
-		DatabaseFunction function = new DatabaseFunction() {
-			@Override
-			public void doWork(ReadableDatabase db, Constant arg){
-				StandardPredicate p1;
-				p1 = StandardPredicate.get("Nice", ConstantType.UniqueStringID);
-				db.hasAtom(p1, arg);
-			}
-		};
-		testHelper(function, "hasAtom");
-	}
-
-	@Test
-	/**
-	 * Ensure that countAllGroundAtoms() works with the ReadableDatabase interface.
-	 */
-	public void testCountAllGroundAtoms() {
-		DatabaseFunction function = new DatabaseFunction() {
-			@Override
-			public void doWork(ReadableDatabase db, Constant arg) {
-				StandardPredicate p1;
-				p1 = StandardPredicate.get("Nice", ConstantType.UniqueStringID);
-				int count = db.countAllGroundAtoms(p1);
-				assertTrue("Got " + count + ", expected 5", 5 == count);
-			}
-		};
-		testHelper(function, "countAllGroundAtoms");
-	}
-
-	@Test
-	/**
-	 * Ensure that countAllGroundRandomVariableAtoms() works with the ReadableDatabase interface.
-	 */
-	public void testCountAllGroundRandomVariableAtoms() {
-		DatabaseFunction function = new DatabaseFunction() {
-			@Override
-			public void doWork(ReadableDatabase db, Constant arg) {
-				StandardPredicate p1;
-				p1 = StandardPredicate.get("Friends", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
-				int count = db.countAllGroundRandomVariableAtoms(p1);
-				assertTrue("Got " + count + ", expected 20", 20 == count);
-			}
-		};
-		testHelper(function, "countAllGroundRandomVariableAtoms");
-	}
-
-	@Test
-	/**
-	 * Ensure that getAllGroundAtoms() works with the ReadableDatabase interface.
-	 */
-	public void testGetAllGroundAtoms() {
-		DatabaseFunction function = new DatabaseFunction() {
-			@Override
-			public void doWork(ReadableDatabase db, Constant arg) {
-				StandardPredicate p1;
-				p1 = StandardPredicate.get("Nice", ConstantType.UniqueStringID);
-				List<GroundAtom> l1 = db.getAllGroundAtoms(p1);
-				assertTrue("Got " + l1.size() + ", expected 5", 5 == l1.size());
-			}
-		};
-		testHelper(function, "getAllGroundAtoms");
-	}
-
-	@Test
-	/**
-	 * Ensure that getAllGroundRandomVariableAtoms() works with the ReadableDatabase interface.
-	 */
-	public void testGetAllGroundRandomVariableAtoms() {
-		DatabaseFunction function = new DatabaseFunction() {
-			@Override
-			public void doWork(ReadableDatabase db, Constant arg) {
-				StandardPredicate p1;
-				p1 = StandardPredicate.get("Friends", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
-				List<RandomVariableAtom> l1 = db.getAllGroundRandomVariableAtoms(p1);
-				assertTrue("Got " + l1.size() + ", expected 20", 20 == l1.size());
-			}
-		};
-		testHelper(function, "getAllGroundRandomVariableAtoms");
-	}
-
-	@Test
-	/**
-	 * Ensure that getAllGroundObservedAtoms() works with the ReadableDatabase interface.
-	 */
-	public void testGetAllGroundObservedAtoms() {
-		DatabaseFunction function = new DatabaseFunction() {
-			@Override
-			public void doWork(ReadableDatabase db, Constant arg) {
-				StandardPredicate p1;
-				p1 = StandardPredicate.get("Nice", ConstantType.UniqueStringID);
-				List<ObservedAtom> l1 = db.getAllGroundObservedAtoms(p1);
-				assertTrue("Got " + l1.size() + ", expected 5", 5 == l1.size());
-			}
-		};
-		testHelper(function, "getAllGroundObservedAtoms");
-	}
-
-
-	@Test
-	/**
-	 * Ensure that executeQuery() works with the ReadableDatabase interface.
-	 */
-	public void testExecuteQuery() {
-		DatabaseFunction function = new DatabaseFunction() {
-			@Override
-			public void doWork(ReadableDatabase db, Constant arg) {
-				StandardPredicate p1 = StandardPredicate.get("Friends");
-				DatabaseQuery query = new DatabaseQuery(new QueryAtom(p1, arg, new Variable("A")));
-				ResultList results = db.executeQuery(query);
-			}
-		};
-		testHelper(function, "executeQuery");
-	}
-
-	@Test
-	/**
-	 * Ensure that executeGroundingQuery() works with the ReadableDatabase interface.
-	 */
-	public void testExecuteGroundingQuery() {
-		DatabaseFunction function = new DatabaseFunction() {
-			@Override
-			public void doWork(ReadableDatabase db, Constant arg) {
-				StandardPredicate p1 = StandardPredicate.get("Friends");
-				ResultList results = db.executeGroundingQuery(new QueryAtom(p1, arg, new Variable("A")));
-			}
-		};
-		testHelper(function, "executeGroundingQuery");
-	}
-
-	@Test
-	/**
-	 * Ensure that isClosed() works with the ReadableDatabase interface.
-	 */
-	public void testIsClosed() {
-		DatabaseFunction function = new DatabaseFunction() {
-			@Override
-			public void doWork(ReadableDatabase db, Constant arg) {
-				StandardPredicate p1;
-				p1 = StandardPredicate.get("Friends", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
-				db.isClosed(p1);
-			}
-		};
-		testHelper(function, "isClosed");
 	}
 
 	/**
@@ -276,7 +230,7 @@ public class ReadableTest {
 		@Override
 		public double getValue(ReadableDatabase db, Constant... args) {
 			doWork(db, args[0]);
-			return 1;
+			return 1.0;
 		}
 
 		public abstract void doWork(ReadableDatabase db, Constant arg);
