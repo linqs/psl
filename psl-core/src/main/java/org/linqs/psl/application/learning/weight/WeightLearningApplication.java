@@ -24,6 +24,8 @@ import org.linqs.psl.application.util.Grounding;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.PersistedAtomManager;
+import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
+import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
@@ -91,6 +93,14 @@ public abstract class WeightLearningApplication implements ModelApplication {
 	public static final String TERM_GENERATOR_DEFAULT = ADMMTermGenerator.class.getName();
 
 	/**
+	 * An evalautor capable of producing a score for the current weight configuration.
+	 * Child methods may use this at their own discrection.
+	 * This is only used for logging/information, and not for gradients.
+	 */
+	public static final String EVALUATOR_KEY = CONFIG_PREFIX + ".evaluator";
+	public static final String EVALUATOR_DEFAULT = ContinuousEvaluator.class.getName();
+
+	/**
 	 * Randomize weights before running.
 	 * The randomization will happen during ground model initialization.
 	 */
@@ -128,6 +138,8 @@ public abstract class WeightLearningApplication implements ModelApplication {
 	protected TermStore termStore;
 	protected TermStore latentTermStore;
 
+	protected Evaluator evaluator;
+
 	private boolean groundModelInit;
 
 	/**
@@ -161,6 +173,8 @@ public abstract class WeightLearningApplication implements ModelApplication {
 		groundModelInit = false;
 		inMPEState = false;
 		inLatentMPEState = false;
+
+		evaluator = (Evaluator)Config.getNewObject(EVALUATOR_KEY, EVALUATOR_DEFAULT);
 	}
 
 	/**

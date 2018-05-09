@@ -20,8 +20,6 @@ package org.linqs.psl.application.learning.weight.search.grid;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
-import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
@@ -48,12 +46,6 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
 	public static final String CONFIG_PREFIX = "basegridsearch";
 
 	/**
-	 * The evaluation method to use as an objective.
-	 */
-	public static final String OBJECTIVE_KEY = CONFIG_PREFIX + ".objective";
-	public static final String OBJECTIVE_DEFAULT = ContinuousEvaluator.class.getName();
-
-	/**
 	 * The current location we are investigating.
 	 * The exact representation is up to the implementing child class.
 	 */
@@ -71,8 +63,6 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
 	 */
 	protected int numLocations;
 
-	protected Evaluator objectiveFunction;
-
 	/**
 	 * The objectives at each location.
 	 * The default implementation does not actually need this, but childen may.
@@ -86,8 +76,6 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
 	// TODO(eriq): Latent variables?
 	public BaseGridSearch(List<Rule> rules, Database rvDB, Database observedDB) {
 		super(rules, rvDB, observedDB, false);
-
-		objectiveFunction = (Evaluator)Config.getNewObject(OBJECTIVE_KEY, OBJECTIVE_DEFAULT);
 
 		currentLocation = null;
 
@@ -172,10 +160,10 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
 		// Computes the expected incompatibility.
 		computeExpectedIncompatibility();
 
-		objectiveFunction.compute(trainingMap);
+		evaluator.compute(trainingMap);
 
-		double score = objectiveFunction.getRepresentativeMetric();
-		score = objectiveFunction.isHigherRepresentativeBetter() ? -1.0 * score : score;
+		double score = evaluator.getRepresentativeMetric();
+		score = evaluator.isHigherRepresentativeBetter() ? -1.0 * score : score;
 
 		return score;
 	}

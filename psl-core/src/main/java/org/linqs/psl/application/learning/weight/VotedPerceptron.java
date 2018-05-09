@@ -19,8 +19,6 @@ package org.linqs.psl.application.learning.weight;
 
 import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
-import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
@@ -141,13 +139,6 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	public static final String ZERO_INITIAL_WEIGHTS_KEY = CONFIG_PREFIX + ".zeroinitialweights";
 	public static final boolean ZERO_INITIAL_WEIGHTS_DEFAULT = true;
 
-	/**
-	 * The evaluation method to get stats for each iteration.
-	 * This is only used for logging/information, and not for gradients.
-	 */
-	public static final String EVALUATOR_KEY = CONFIG_PREFIX + ".evaluator";
-	public static final String EVALUATOR_DEFAULT = ContinuousEvaluator.class.getName();
-
 	protected final double l2Regularization;
 	protected final double l1Regularization;
 	protected final boolean scaleGradient;
@@ -161,8 +152,6 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	protected double inertia;
 	protected final int maxNumSteps;
 	protected int numSteps;
-
-	private Evaluator evaluator;
 
 	/**
 	 * Learning loss at the current point
@@ -198,8 +187,6 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 		if (l1Regularization < 0) {
 			throw new IllegalArgumentException("L1 regularization parameter must be non-negative.");
 		}
-
-		evaluator = (Evaluator)Config.getNewObject(EVALUATOR_KEY, EVALUATOR_DEFAULT);
 
 		scaleGradient = Config.getBoolean(SCALE_GRADIENT_KEY, SCALE_GRADIENT_DEFAULT);
 		averageSteps = Config.getBoolean(AVERAGE_STEPS_KEY, AVERAGE_STEPS_DEFAULT);

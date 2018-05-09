@@ -35,7 +35,7 @@ public class GridSearchContinuousLossMSETest extends WeightLearningTest {
 		Config.setProperty(GridSearch.POSSIBLE_WEIGHTS_KEY, "0.01:1:10");
 
 		// Use MSE as an objective.
-		Config.setProperty(GridSearch.OBJECTIVE_KEY, ContinuousEvaluator.class.getName());
+		Config.setProperty(WeightLearningApplication.EVALUATOR_KEY, ContinuousEvaluator.class.getName());
 		Config.setProperty(ContinuousEvaluator.REPRESENTATIVE_KEY, "MSE");
 
 		return new GridSearch(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);

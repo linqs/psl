@@ -20,8 +20,6 @@ package org.linqs.psl.application.learning.weight.search;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
-import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.util.RandUtils;
@@ -58,12 +56,6 @@ public class Hyperband extends WeightLearningApplication {
 	public static final String CONFIG_PREFIX = "hyperband";
 
 	/**
-	 * The evaluation method to use as an objective.
-	 */
-	public static final String OBJECTIVE_KEY = CONFIG_PREFIX + ".objective";
-	public static final String OBJECTIVE_DEFAULT = ContinuousEvaluator.class.getName();
-
-	/**
 	 * The proportion of configs that survive each round in a brancket.
 	 */
 	public static final String SURVIVAL_KEY = CONFIG_PREFIX + ".survival";
@@ -85,8 +77,11 @@ public class Hyperband extends WeightLearningApplication {
 	public static final double MIN_BUDGET_PROPORTION = 0.001;
 	public static final int MIN_BRACKET_SIZE = 1;
 
+	// TODO(eriq): Config
+	public static final double MEAN = 0.50;
+	public static final double VARIANCE = 0.10;
+
 	private final int survival;
-	private final Evaluator objectiveFunction;
 
 	private double bestObjective;
 	private double[] bestWeights;
@@ -101,8 +96,6 @@ public class Hyperband extends WeightLearningApplication {
 	public Hyperband(List<Rule> rules, Database rvDB, Database observedDB) {
 		// TODO(eriq): Latent variables?
 		super(rules, rvDB, observedDB, false);
-
-		objectiveFunction = (Evaluator)Config.getNewObject(OBJECTIVE_KEY, OBJECTIVE_DEFAULT);
 
 		survival = Config.getInt(SURVIVAL_KEY, SURVIVAL_DEFAULT);
 		if (survival < 1) {
@@ -206,10 +199,8 @@ public class Hyperband extends WeightLearningApplication {
 			double[] config = new double[mutableRules.size()];
 
 			for (int weightIndex = 0; weightIndex < mutableRules.size(); weightIndex++) {
-				// TODO(eriq): Mean, stats
-				// TEST
-				// config[weightIndex] = Math.max(0.0, RandUtils.nextGaussian() + 5.0);
-				config[weightIndex] = RandUtils.nextDouble() * 10.0;
+				// Rand give Gaussian with mean = 0.0 and variance = 1.0.
+				config[weightIndex] = RandUtils.nextDouble() * Math.sqrt(VARIANCE) + MEAN;
 			}
 
 			configs.add(config);
@@ -234,10 +225,10 @@ public class Hyperband extends WeightLearningApplication {
 		// Computes the expected incompatibility.
 		computeExpectedIncompatibility();
 
-		objectiveFunction.compute(trainingMap);
+		evaluator.compute(trainingMap);
 
-		double score = objectiveFunction.getRepresentativeMetric();
-		score = objectiveFunction.isHigherRepresentativeBetter() ? -1.0 * score : score;
+		double score = evaluator.getRepresentativeMetric();
+		score = evaluator.isHigherRepresentativeBetter() ? -1.0 * score : score;
 
 		return score;
 	}
