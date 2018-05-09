@@ -18,7 +18,7 @@
 package org.linqs.psl.model.predicate;
 
 import org.linqs.psl.database.Database;
-import org.linqs.psl.database.ReadOnlyDatabase;
+import org.linqs.psl.database.ReadableDatabase;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.UniqueIntID;
@@ -47,7 +47,7 @@ public abstract class SpecialPredicate extends FunctionalPredicate {
 				new ConstantType[] {ConstantType.DeferredFunctionalUniqueID, ConstantType.DeferredFunctionalUniqueID}) {
 
 		@Override
-		public double computeValue(ReadOnlyDatabase db, Constant... args) {
+		public double computeValue(ReadableDatabase db, Constant... args) {
 			checkArguments(getName(), args);
 			return (args[0].equals(args[1])) ? 1.0 : 0.0;
 		}
@@ -61,7 +61,7 @@ public abstract class SpecialPredicate extends FunctionalPredicate {
 				new ConstantType[] {ConstantType.DeferredFunctionalUniqueID, ConstantType.DeferredFunctionalUniqueID}) {
 
 		@Override
-		public double computeValue(ReadOnlyDatabase db, Constant... args) {
+		public double computeValue(ReadableDatabase db, Constant... args) {
 			checkArguments(getName(), args);
 			return (!args[0].equals(args[1])) ? 1.0 : 0.0;
 		}
@@ -76,7 +76,7 @@ public abstract class SpecialPredicate extends FunctionalPredicate {
 				new ConstantType[] {ConstantType.DeferredFunctionalUniqueID, ConstantType.DeferredFunctionalUniqueID}) {
 
 		@Override
-		public double computeValue(ReadOnlyDatabase db, Constant... args) {
+		public double computeValue(ReadableDatabase db, Constant... args) {
 			checkArguments(getName(), args);
 			return (args[0].compareTo(args[1]) < 0) ? 1.0 : 0.0;
 		}

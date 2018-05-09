@@ -220,7 +220,7 @@ public class Formula2SQL {
 
 		// Each standard atom brings a new table join.
 		assert(atom.getPredicate() instanceof StandardPredicate);
-		PredicateInfo predicateInfo = database.getPredicateInfo(atom.getPredicate());
+		PredicateInfo predicateInfo = ((RDBMSDataStore)database.getDataStore()).getPredicateInfo(atom.getPredicate());
 
 		String tableAlias = String.format("%s_%03d", TABLE_ALIAS_PREFIX, tableCounter);
 		tableAliases.put(atom, tableAlias);
