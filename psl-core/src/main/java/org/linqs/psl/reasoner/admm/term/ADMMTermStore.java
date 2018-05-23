@@ -20,6 +20,7 @@ package org.linqs.psl.reasoner.admm.term;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
+import org.linqs.psl.reasoner.admm.ADMMReasoner;
 import org.linqs.psl.reasoner.function.AtomFunctionVariable;
 import org.linqs.psl.reasoner.term.MemoryTermStore;
 import org.linqs.psl.reasoner.term.TermStore;
@@ -113,19 +114,34 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm> {
 		}
 	}
 
-	public void resetLocalVairables() {
-		resetLocalVairables(true);
+	/**
+	 * Get the values from the atoms corresponding to global (consensus)
+	 * variables and put them in the output array.
+	 */
+	public void getAtomValues(float[] values) {
+		for (Map.Entry<AtomFunctionVariable, Integer> entry : variableIndexes.entrySet()) {
+			values[entry.getValue().intValue()] = (float)entry.getKey().getValue();
+		}
 	}
 
-	public void resetLocalVairables(boolean randomize) {
+	public void resetLocalVairables() {
+		resetLocalVairables(ADMMReasoner.InitialValue.RANDOM);
+	}
+
+	public void resetLocalVairables(ADMMReasoner.InitialValue initialValue) {
 		for (Map.Entry<AtomFunctionVariable, Integer> entry : variableIndexes.entrySet()) {
 			for (LocalVariable local : localVariables.get(entry.getValue().intValue())) {
-				if (randomize) {
+				if (initialValue == ADMMReasoner.InitialValue.ZERO) {
+					local.setValue(0.0f);
+				} else if (initialValue == ADMMReasoner.InitialValue.RANDOM) {
 					local.setValue(RandUtils.nextFloat());
-					local.setLagrange(0.0f);
-				} else {
+				} else if (initialValue == ADMMReasoner.InitialValue.ATOM) {
 					local.setValue((float)(entry.getKey().getValue()));
+				} else {
+					throw new IllegalStateException("Unknown initial consensus value: " + initialValue);
 				}
+
+				local.setLagrange(0.0f);
 			}
 		}
 	}

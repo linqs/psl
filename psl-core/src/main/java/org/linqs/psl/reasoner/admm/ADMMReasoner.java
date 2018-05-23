@@ -79,6 +79,28 @@ public class ADMMReasoner implements Reasoner {
 	public static final String OBJECTIVE_BREAK_KEY = CONFIG_PREFIX + ".objectivebreak";
 	public static final boolean OBJECTIVE_BREAK_DEFAULT = true;
 
+	/**
+	 * Possible starting values for the consensus values.
+	 *  - ZERO - 0.
+	 *  - RANDOM - Uniform sample in [0, 1].
+	 *  - ATOM - The value of the RVA that backs this global variable.
+	 */
+	public static enum InitialValue { ZERO, RANDOM, ATOM }
+
+	/**
+	 * The starting value for consensus variables.
+	 * Values should come from the InitialValue enum.
+	 */
+	public static final String INITIAL_CONSENSUS_VALUE_KEY = CONFIG_PREFIX + ".initialconsensusvalue";
+	public static final String INITIAL_CONSENSUS_VALUE_DEFAULT = InitialValue.RANDOM.toString();
+
+	/**
+	 * The starting value for local variables.
+	 * Values should come from the InitialValue enum.
+	 */
+	public static final String INITIAL_LOCAL_VALUE_KEY = CONFIG_PREFIX + ".initiallocalvalue";
+	public static final String INITIAL_LOCAL_VALUE_DEFAULT = InitialValue.RANDOM.toString();
+
 	private static final float LOWER_BOUND = 0.0f;
 	private static final float UPPER_BOUND = 1.0f;
 
@@ -185,24 +207,28 @@ public class ADMMReasoner implements Reasoner {
 
 	@Override
 	public void optimize(TermStore baseTermStore) {
+		InitialValue initialConsensus = InitialValue.valueOf(
+				Config.getString(INITIAL_CONSENSUS_VALUE_KEY, INITIAL_CONSENSUS_VALUE_DEFAULT).toUpperCase());
+		InitialValue initialLocal = InitialValue.valueOf(
+				Config.getString(INITIAL_LOCAL_VALUE_KEY, INITIAL_LOCAL_VALUE_DEFAULT).toUpperCase());
+
+		optimize(baseTermStore, initialConsensus, initialLocal);
+	}
+
+	public void optimize(TermStore baseTermStore, InitialValue initialConsensus, InitialValue initialLocal) {
 		if (!(baseTermStore instanceof ADMMTermStore)) {
 			throw new IllegalArgumentException("ADMMReasoner requires an ADMMTermStore (found " + baseTermStore.getClass().getName() + ").");
 		}
 		ADMMTermStore termStore = (ADMMTermStore)baseTermStore;
 
-		// TEST
-		termStore.resetLocalVairables();
+		termStore.resetLocalVairables(initialLocal);
 
 		int numTerms = termStore.size();
 		int numVariables = termStore.getNumGlobalVariables();
 
 		log.debug("Performing optimization with {} variables and {} terms.", numVariables, numTerms);
 
-		// Also sometimes called 'z'.
-		consensusValues = new float[termStore.getNumGlobalVariables()];
-		for (int i = 0; i < consensusValues.length; i++) {
-			consensusValues[i] = RandUtils.nextFloat();
-		}
+		initConsensusValues(termStore, initialConsensus);
 
 		termBlockSize = numTerms / (Parallel.getNumThreads() * 4) + 1;
 		variableBlockSize = numVariables / (Parallel.getNumThreads() * 4) + 1;
@@ -283,6 +309,24 @@ public class ADMMReasoner implements Reasoner {
 
 	@Override
 	public void close() {
+	}
+
+	private void initConsensusValues(ADMMTermStore termStore, InitialValue initialConsensus) {
+		consensusValues = new float[termStore.getNumGlobalVariables()];
+
+		if (initialConsensus == InitialValue.ZERO) {
+			for (int i = 0; i < consensusValues.length; i++) {
+				consensusValues[i] = 0.0f;
+			}
+		} else if (initialConsensus == InitialValue.RANDOM) {
+			for (int i = 0; i < consensusValues.length; i++) {
+				consensusValues[i] = RandUtils.nextFloat();
+			}
+		} else if (initialConsensus == InitialValue.ATOM) {
+			termStore.getAtomValues(consensusValues);
+		} else {
+			throw new IllegalStateException("Unknown initial consensus value: " + initialConsensus);
+		}
 	}
 
 	private synchronized void updateIterationVariables(
