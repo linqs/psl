@@ -45,6 +45,7 @@ import org.linqs.psl.model.term.UniqueIntID;
 import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.model.term.VariableTypeMap;
+import org.linqs.psl.util.Parallel;
 
 import com.healthmarketscience.sqlbuilder.BinaryCondition;
 import com.healthmarketscience.sqlbuilder.CustomSql;
@@ -82,6 +83,8 @@ public class RDBMSDatabase extends Database {
 	private static final Logger log = LoggerFactory.getLogger(RDBMSDatabase.class);
 
 	private static final double DEFAULT_UNOBSERVED_VALUE = 0.0;
+
+	private static final String THREAD_QUERY_ATOM_KEY = QueryAtom.class.getName();
 
 	/**
 	 * Predicates that, for the purpose of this database, are closed.
@@ -433,7 +436,15 @@ public class RDBMSDatabase extends Database {
 	 */
 	@Override
 	public GroundAtom getAtom(StandardPredicate predicate, boolean create, Constant... arguments) {
-		QueryAtom queryAtom = new QueryAtom(predicate, arguments);
+		QueryAtom queryAtom = null;
+		if (!Parallel.hasThreadObject(THREAD_QUERY_ATOM_KEY)) {
+			queryAtom = new QueryAtom(predicate, arguments);
+			Parallel.putThreadObject(THREAD_QUERY_ATOM_KEY, queryAtom);
+		} else {
+			queryAtom = (QueryAtom)(Parallel.getThreadObject(THREAD_QUERY_ATOM_KEY));
+			queryAtom.assume(predicate, arguments);
+		}
+
 		GroundAtom result = cache.getCachedAtom(queryAtom);
 		if (result != null) {
 			return result;

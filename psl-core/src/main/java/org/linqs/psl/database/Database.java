@@ -122,7 +122,7 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
 
 		this.readPartitions = Arrays.asList(read);
 		this.readIDs = new ArrayList<Integer>(read.length);
-		for (int i = 0; i < read.length; i ++) {
+		for (int i = 0; i < read.length; i++) {
 			this.readIDs.add(read[i].getID());
 		}
 

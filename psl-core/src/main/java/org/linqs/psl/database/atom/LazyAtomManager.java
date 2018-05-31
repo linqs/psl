@@ -102,16 +102,18 @@ public class LazyAtomManager extends PersistedAtomManager {
 
 	@Override
 	public synchronized GroundAtom getAtom(Predicate predicate, Constant... arguments) {
-		RandomVariableAtom lazyAtom = null;
+		GroundAtom atom = db.getAtom(predicate, arguments);
+		if (!(atom instanceof RandomVariableAtom)) {
+			return atom;
+		}
+		RandomVariableAtom rvAtom = (RandomVariableAtom)atom;
 
-		try {
-			return super.getAtom(predicate, arguments);
-		} catch (PersistedAtomManager.PersistedAccessException ex) {
-			lazyAtom = ex.atom;
+		// If this atom has not been persisted, it is lazy.
+		if (!persistedCache.contains(rvAtom)) {
+			lazyAtoms.add(rvAtom);
 		}
 
-		lazyAtoms.add(lazyAtom);
-		return lazyAtom;
+		return rvAtom;
 	}
 
 	public Set<RandomVariableAtom> getLazyAtoms() {

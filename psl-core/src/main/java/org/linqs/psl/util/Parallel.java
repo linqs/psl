@@ -24,8 +24,11 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -58,6 +61,11 @@ public final class Parallel {
 
 	private static ExecutorService pool;
 
+	/**
+	 * Objects that are specific to each thread.
+	 */
+	private static Map<Thread, Map<String, Object>> threadObjects = new ConcurrentHashMap<Thread, Map<String, Object>>();
+
 	// Static only.
 	private Parallel() {}
 
@@ -67,6 +75,30 @@ public final class Parallel {
 		}
 
 		return numThreads;
+	}
+
+	public static boolean hasThreadObject(String key) {
+		if (!threadObjects.containsKey(Thread.currentThread())) {
+			threadObjects.put(Thread.currentThread(), new HashMap<String, Object>());
+		}
+
+		return threadObjects.get(Thread.currentThread()).containsKey(key);
+	}
+
+	public static Object getThreadObject(String key) {
+		if (!threadObjects.containsKey(Thread.currentThread())) {
+			threadObjects.put(Thread.currentThread(), new HashMap<String, Object>());
+		}
+
+		return threadObjects.get(Thread.currentThread()).get(key);
+	}
+
+	public static void putThreadObject(String key, Object value) {
+		if (!threadObjects.containsKey(Thread.currentThread())) {
+			threadObjects.put(Thread.currentThread(), new HashMap<String, Object>());
+		}
+
+		threadObjects.get(Thread.currentThread()).put(key, value);
 	}
 
 	/**
