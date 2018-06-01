@@ -24,20 +24,20 @@ import org.linqs.psl.model.rule.arithmetic.expression.SummationVariable;
 import org.linqs.psl.model.term.Constant;
 
 public class Max extends Coefficient {
-	
+
 	protected final Coefficient c1;
 	protected final Coefficient c2;
-	
+
 	public Max(Coefficient c1, Coefficient c2) {
 		this.c1 = c1;
 		this.c2 = c2;
 	}
-	
+
 	@Override
 	public double getValue(Map<SummationVariable, Integer> subs) {
 		return Math.max(c1.getValue(subs), c2.getValue(subs));
 	}
-	
+
 	@Override
 	public String toString() {
 		return "@Max[" + c1.toString() + ", " + c2.toString() + "]";

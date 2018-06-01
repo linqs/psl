@@ -21,13 +21,8 @@ import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.SpecialPredicate;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
-import org.linqs.psl.reasoner.function.ConstantNumber;
 import org.linqs.psl.reasoner.function.FunctionComparator;
-import org.linqs.psl.reasoner.function.FunctionSum;
-import org.linqs.psl.reasoner.function.FunctionSummand;
-import org.linqs.psl.reasoner.function.FunctionTerm;
-import org.linqs.psl.reasoner.function.MaxFunction;
-import org.linqs.psl.reasoner.function.PowerOfTwo;
+import org.linqs.psl.reasoner.function.GeneralFunction;
 
 import java.util.List;
 
@@ -36,8 +31,8 @@ public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule i
 	private final boolean squared;
 
 	protected WeightedGroundArithmeticRule(WeightedArithmeticRule rule, List<Double> coeffs,
-			List<GroundAtom> atoms, FunctionComparator comparator, double c, boolean squared) {
-		super(rule, coeffs, atoms, comparator, c);
+			List<GroundAtom> atoms, FunctionComparator comparator, double constant, boolean squared) {
+		super(rule, coeffs, atoms, comparator, constant);
 
 		weight = Double.NaN;
 		this.squared = squared;
@@ -46,8 +41,8 @@ public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule i
 	}
 
 	protected WeightedGroundArithmeticRule(WeightedArithmeticRule rule, double[] coeffs, GroundAtom[] atoms,
-			FunctionComparator comparator, double c, boolean squared) {
-		super(rule, coeffs, atoms, comparator, c);
+			FunctionComparator comparator, double constant, boolean squared) {
+		super(rule, coeffs, atoms, comparator, constant);
 
 		weight = Double.NaN;
 		this.squared = squared;
@@ -89,24 +84,21 @@ public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule i
 	}
 
 	@Override
-	public FunctionTerm getFunctionDefinition() {
-		FunctionSum sum = new FunctionSum();
+	public GeneralFunction getFunctionDefinition() {
+		GeneralFunction sum = new GeneralFunction(true, squared);
+
+		double termSign = FunctionComparator.LargerThan.equals(comparator) ? -1.0 : 1.0;
 		for (int i = 0; i < coeffs.length; i++) {
 			// Skip any special predicates.
 			if (atoms[i].getPredicate() instanceof SpecialPredicate) {
 				continue;
 			}
 
-			sum.add(new FunctionSummand(
-					(FunctionComparator.LargerThan.equals(comparator)) ? -1 * coeffs[i] : coeffs[i],
-					atoms[i].getVariable()));
+			sum.add(termSign * coeffs[i], atoms[i].getVariable());
 		}
-		sum.add(new FunctionSummand((FunctionComparator.LargerThan.equals(comparator)) ? 1 : -1, new ConstantNumber(c)));
+		sum.add(-1.0 * termSign * constant);
 
-		MaxFunction fun = new MaxFunction();
-		fun.add(sum);
-		fun.add(new ConstantNumber(0.0));
-		return (squared) ? new PowerOfTwo(fun) : fun;
+		return sum;
 	}
 
 	@Override
@@ -129,7 +121,7 @@ public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule i
 				sum += coeffs[i] * atoms[i].getValue();
 			}
 		}
-		sum -= c;
+		sum -= constant;
 
 		if (FunctionComparator.LargerThan.equals(comparator)) {
 			sum *= -1;

@@ -17,8 +17,6 @@
  */
 package org.linqs.psl.model.rule.logical;
 
-import java.util.List;
-
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.rule.GroundRule;
@@ -26,6 +24,8 @@ import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.UnweightedRule;
 import org.linqs.psl.reasoner.function.ConstraintTerm;
 import org.linqs.psl.reasoner.function.FunctionComparator;
+
+import java.util.List;
 
 public class UnweightedGroundLogicalRule extends AbstractGroundLogicalRule
 		implements UnweightedGroundRule {
@@ -41,12 +41,12 @@ public class UnweightedGroundLogicalRule extends AbstractGroundLogicalRule
 
 	@Override
 	public double getInfeasibility() {
-		return Math.abs(getTruthValue() - 1);
+		return Math.abs(function.getValue() - 1.0);
 	}
 
 	@Override
 	public ConstraintTerm getConstraintDefinition() {
-		return new ConstraintTerm(getFunction(), FunctionComparator.SmallerThan, 0.0);
+		return new ConstraintTerm(function, FunctionComparator.SmallerThan, 0.0);
 	}
 
 	@Override

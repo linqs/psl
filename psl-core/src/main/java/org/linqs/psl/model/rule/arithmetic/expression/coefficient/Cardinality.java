@@ -27,9 +27,9 @@ import org.linqs.psl.model.term.Constant;
  * The number of substitutions made for a {@link SummationVariable} in a grounding.
  */
 public class Cardinality extends Coefficient {
-	
+
 	protected final SummationVariable v;
-	
+
 	public Cardinality(SummationVariable v) {
 		this.v = v;
 	}
@@ -42,7 +42,7 @@ public class Cardinality extends Coefficient {
 	public double getValue(Map<SummationVariable, Integer> subs) {
 		return subs.get(v).intValue();
 	}
-	
+
 	@Override
 	public String toString() {
 		return "|" + v.getVariable().toString() + "|";

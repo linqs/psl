@@ -28,7 +28,7 @@ import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.arithmetic.UnweightedGroundArithmeticRule;
 import org.linqs.psl.model.rule.misc.GroundValueConstraint;
 import org.linqs.psl.reasoner.function.FunctionComparator;
-import org.linqs.psl.reasoner.function.FunctionSum;
+import org.linqs.psl.reasoner.function.GeneralFunction;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.MathUtils;
@@ -258,16 +258,14 @@ public class ConstraintBlockerTermGenerator implements TermGenerator<ConstraintB
 					// -Foo(A, +B) >= -1.0 .
 					|| (comparator == FunctionComparator.LargerThan && MathUtils.equals(rhsValue, -1.0)))) {
 				categorical = false;
-			} else if (gar.getConstraintDefinition().getFunction() instanceof FunctionSum) {
-				FunctionSum sum = (FunctionSum) gar.getConstraintDefinition().getFunction();
+			} else {
+				GeneralFunction sum = gar.getConstraintDefinition().getFunction();
 				for (int i = 0; i < sum.size(); i++) {
-					if (Math.abs(sum.get(i).getCoefficient() - gar.getConstraintDefinition().getValue()) > 1e-8) {
+					if (Math.abs(sum.getCoefficient(i) - gar.getConstraintDefinition().getValue()) > 1e-8) {
 						categorical = false;
 						break;
 					}
 				}
-			} else {
-				categorical = false;
 			}
 
 			if (!categorical) {

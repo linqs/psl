@@ -24,8 +24,7 @@ import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.UnweightedRule;
 import org.linqs.psl.reasoner.function.ConstraintTerm;
 import org.linqs.psl.reasoner.function.FunctionComparator;
-import org.linqs.psl.reasoner.function.FunctionSum;
-import org.linqs.psl.reasoner.function.FunctionSummand;
+import org.linqs.psl.reasoner.function.GeneralFunction;
 
 import java.util.List;
 import java.util.HashSet;
@@ -33,8 +32,6 @@ import java.util.Set;
 
 /**
  * A simple constraint that fixes the truth value of a {@link RandomVariableAtom}
- *
- * @author Stephen Bach <bach@cs.umd.edu>
  */
 public class GroundValueConstraint implements UnweightedGroundRule {
 	private final RandomVariableAtom atom;
@@ -64,8 +61,8 @@ public class GroundValueConstraint implements UnweightedGroundRule {
 
 	@Override
 	public ConstraintTerm getConstraintDefinition() {
-		FunctionSum sum = new FunctionSum();
-		sum.add(new FunctionSummand(1.0, atom.getVariable()));
+		GeneralFunction sum = new GeneralFunction(false, false);
+		sum.add(1.0, atom.getVariable());
 		return new ConstraintTerm(sum, FunctionComparator.Equality, value);
 	}
 

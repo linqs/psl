@@ -53,11 +53,15 @@ public abstract class AtomFunctionVariable implements FunctionVariable {
 
 	@Override
 	public boolean equals(Object oth) {
-		if (oth==this)
+		if (oth == this) {
 			return true;
-		if (oth==null || !(getClass().isInstance(oth)) )
+		}
+
+		if (oth == null || !(getClass().isInstance(oth))) {
 			return false;
-		AtomFunctionVariable other = (AtomFunctionVariable) oth;
+		}
+
+		AtomFunctionVariable other = (AtomFunctionVariable)oth;
 		return getAtom().equals(other.getAtom());
 	}
 

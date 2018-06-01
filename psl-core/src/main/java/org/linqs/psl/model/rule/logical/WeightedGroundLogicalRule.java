@@ -22,10 +22,8 @@ import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
-import org.linqs.psl.reasoner.function.ConstantNumber;
 import org.linqs.psl.reasoner.function.FunctionTerm;
-import org.linqs.psl.reasoner.function.MaxFunction;
-import org.linqs.psl.reasoner.function.PowerOfTwo;
+import org.linqs.psl.reasoner.function.GeneralFunction;
 
 import java.util.List;
 
@@ -39,6 +37,7 @@ public class WeightedGroundLogicalRule extends AbstractGroundLogicalRule impleme
 		// TODO(eriq): I hate this weight deferment. See if it is actually necessary.
 		weight = Double.NaN;
 		this.squared = squared;
+		function.setSquared(squared);
 	}
 
 	@Override
@@ -65,25 +64,18 @@ public class WeightedGroundLogicalRule extends AbstractGroundLogicalRule impleme
 	}
 
 	@Override
-	public FunctionTerm getFunctionDefinition() {
-		if (posLiterals.size() + negLiterals.size() == 1) {
-			return (squared) ? new PowerOfTwo(getFunction()) : getFunction();
-		} else {
-			return (squared) ? new PowerOfTwo(MaxFunction.of(getFunction(), new ConstantNumber(0.0)))
-					: MaxFunction.of(getFunction(), new ConstantNumber(0.0));
-		}
+	public GeneralFunction getFunctionDefinition() {
+		return function;
 	}
 
 	@Override
 	public double getIncompatibility() {
-		double inc = 1.0 - getTruthValue();
-		return (squared) ? inc * inc : inc;
+		return function.getValue();
 	}
 
 	@Override
 	public double getIncompatibility(GroundAtom replacementAtom, double replacementValue) {
-		double inc = 1.0 - getTruthValue(replacementAtom, replacementValue);
-		return (squared) ? inc * inc : inc;
+		return function.getValue(replacementAtom, replacementValue);
 	}
 
 	@Override

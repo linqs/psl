@@ -25,8 +25,6 @@ import java.util.Map;
 public interface FunctionTerm {
 	/**
 	 * Returns the term's value
-	 *
-	 * @return  the term's value
 	 */
 	public double getValue();
 
@@ -34,15 +32,11 @@ public interface FunctionTerm {
 	 * Returns whether the term is linear in its {@link FunctionVariable Variables}.
 	 *
 	 * Returns true if the term is a constant.
-	 *
-	 * @return  whether the term is linear
 	 */
 	public boolean isLinear();
 
 	/**
 	 * Returns whether the term is constant.
-	 *
-	 * @return  whether the term is constant
 	 */
 	public boolean isConstant();
 }

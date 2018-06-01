@@ -39,25 +39,25 @@ public abstract class AbstractGroundArithmeticRule implements GroundRule {
 	protected final double[] coeffs;
 	protected final GroundAtom[] atoms;
 	protected final FunctionComparator comparator;
-	protected final double c;
+	protected final double constant;
 
 	protected AbstractGroundArithmeticRule(AbstractArithmeticRule rule,
-			List<Double> coeffs, List<GroundAtom> atoms, FunctionComparator comparator, double c) {
+			List<Double> coeffs, List<GroundAtom> atoms, FunctionComparator comparator, double constant) {
 		this(rule, ArrayUtils.toPrimitive(coeffs.toArray(new Double[0])),
-				atoms.toArray(new GroundAtom[0]), comparator, c, false);
+				atoms.toArray(new GroundAtom[0]), comparator, constant, false);
 	}
 
 	protected AbstractGroundArithmeticRule(AbstractArithmeticRule rule,
-			double[] coeffs, GroundAtom[] atoms, FunctionComparator comparator, double c) {
-		this(rule, coeffs, atoms, comparator, c, true);
+			double[] coeffs, GroundAtom[] atoms, FunctionComparator comparator, double constant) {
+		this(rule, coeffs, atoms, comparator, constant, true);
 	}
 
 	protected AbstractGroundArithmeticRule(AbstractArithmeticRule rule,
-			double[] coeffs, GroundAtom[] atoms, FunctionComparator comparator, double c,
+			double[] coeffs, GroundAtom[] atoms, FunctionComparator comparator, double constant,
 			boolean copy) {
 		this.rule = rule;
 		this.comparator = comparator;
-		this.c = c;
+		this.constant = constant;
 
 		if (copy) {
 			this.coeffs = Arrays.copyOf(coeffs, coeffs.length);
@@ -126,7 +126,7 @@ public abstract class AbstractGroundArithmeticRule implements GroundRule {
 		}
 
 		sb.append(" ");
-		sb.append(c);
+		sb.append(constant);
 
 		return sb.toString();
 	}
@@ -144,6 +144,6 @@ public abstract class AbstractGroundArithmeticRule implements GroundRule {
 	}
 
 	public double getConstant() {
-		return c;
+		return constant;
 	}
 }

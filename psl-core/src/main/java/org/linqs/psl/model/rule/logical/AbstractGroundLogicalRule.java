@@ -22,9 +22,7 @@ import org.linqs.psl.model.formula.Disjunction;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.formula.Negation;
 import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.reasoner.function.ConstantNumber;
-import org.linqs.psl.reasoner.function.FunctionSum;
-import org.linqs.psl.reasoner.function.FunctionSummand;
+import org.linqs.psl.reasoner.function.GeneralFunction;
 import org.linqs.psl.util.HashCode;
 import org.linqs.psl.util.IteratorUtils;
 
@@ -42,7 +40,7 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
 	protected final AbstractLogicalRule rule;
 	protected final List<GroundAtom> posLiterals;
 	protected final List<GroundAtom> negLiterals;
-	protected final FunctionSum function;
+	protected final GeneralFunction function;
 
 	private final int hashcode;
 
@@ -55,23 +53,24 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
 		int hash = HashCode.build(rule);
 
 		// Construct function definition.
-		function = new FunctionSum();
+		boolean nonNegative = (posLiterals.size() + negLiterals.size() > 1);
+		function = new GeneralFunction(nonNegative, false);
 
 		for (int i = 0; i < posLiterals.size(); i++) {
-			function.add(new FunctionSummand(1.0, posLiterals.get(i).getVariable()));
+			function.add(1.0, posLiterals.get(i).getVariable());
 			hash = HashCode.build(hash, posLiterals.get(i));
 		}
 
 		for (int i = 0; i < negLiterals.size(); i++) {
-			function.add(new FunctionSummand(-1.0, negLiterals.get(i).getVariable()));
+			function.add(-1.0, negLiterals.get(i).getVariable());
 			hash = HashCode.build(hash, negLiterals.get(i));
 		}
 
-		function.add(new FunctionSummand(1.0, new ConstantNumber(1.0 - posLiterals.size())));
+		function.add(1.0 - posLiterals.size());
 		hashcode = hash;
 	}
 
-	protected FunctionSum getFunction() {
+	protected GeneralFunction getFunction() {
 		return function;
 	}
 
@@ -88,17 +87,6 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
 		}
 
 		return atoms;
-	}
-
-	public double getTruthValue() {
-		return 1 - Math.max(function.getValue(), 0.0);
-	}
-
-	/**
-	 * See {@link FunctionSum#getValue(GroundAtom, double)}.
-	 */
-	public double getTruthValue(GroundAtom replacementAtom, double replacementValue) {
-		return 1 - Math.max(function.getValue(replacementAtom, replacementValue), 0.0);
 	}
 
 	public List<GroundAtom> getPositiveAtoms() {
