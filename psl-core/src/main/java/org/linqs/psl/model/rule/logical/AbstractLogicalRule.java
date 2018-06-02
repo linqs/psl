@@ -133,9 +133,9 @@ public abstract class AbstractLogicalRule extends AbstractRule {
 	}
 
 	private class GroundWorker extends Parallel.Worker<Integer> {
+		// Remember that these are positive/negative in the CNF.
 		private List<GroundAtom> posLiterals;
 		private List<GroundAtom> negLiterals;
-		private double[] worstCaseValues;
 
 		private AtomManager atomManager;
 		private GroundRuleStore grs;
@@ -159,7 +159,6 @@ public abstract class AbstractLogicalRule extends AbstractRule {
 			negLiterals = new ArrayList<GroundAtom>(4);
 
 			int numLiterals = negatedDNF.getPosLiterals().size() + negatedDNF.getNegLiterals().size();
-			worstCaseValues = new double[numLiterals];
 
 			positiveAtomArgs = new Constant[negatedDNF.getPosLiterals().size()][];
 			for (int i = 0; i < negatedDNF.getPosLiterals().size(); i++) {
@@ -181,15 +180,17 @@ public abstract class AbstractLogicalRule extends AbstractRule {
 		public void work(int index, Integer ignore) {
 			GroundAtom atom = null;
 
-			// We will make sure to collect the worst-case values in the same order
-			// that we add literals to the ground formula instance.
-			int worstCaseCount = 0;
+			int rvaCount = 0;
 
 			for (int j = 0; j < negatedDNF.getPosLiterals().size(); j++) {
 				atom = ((QueryAtom)negatedDNF.getPosLiterals().get(j)).ground(atomManager, res, index, positiveAtomArgs[j]);
 				if (atom instanceof RandomVariableAtom) {
-					worstCaseValues[worstCaseCount] = 1.0;
-					worstCaseCount++;
+					rvaCount++;
+				} else if (MathUtils.equals(atom.getValue(), 0.0)) {
+					// This rule is trivially satisfied by a constant, do not ground it.
+					posLiterals.clear();
+					negLiterals.clear();
+					return;
 				}
 
 				posLiterals.add(atom);
@@ -198,21 +199,19 @@ public abstract class AbstractLogicalRule extends AbstractRule {
 			for (int j = 0; j < negatedDNF.getNegLiterals().size(); j++) {
 				atom = ((QueryAtom)negatedDNF.getNegLiterals().get(j)).ground(atomManager, res, index, negativeAtomArgs[j]);
 				if (atom instanceof RandomVariableAtom) {
-					worstCaseValues[worstCaseCount] = 0.0;
-					worstCaseCount++;
+					rvaCount++;
+				} else if (MathUtils.equals(atom.getValue(), 1.0)) {
+					// This rule is trivially satisfied by a constant, do not ground it.
+					posLiterals.clear();
+					negLiterals.clear();
+					return;
 				}
 
 				negLiterals.add(atom);
 			}
 
 			AbstractGroundLogicalRule groundRule = groundFormulaInstance(posLiterals, negLiterals);
-			GeneralFunction function = groundRule.getFunction();
-
-			double worstCaseValue = function.getValue(worstCaseValues);
-			if (worstCaseValue > MathUtils.STRICT_EPSILON
-					&& (!function.isConstant() || !(groundRule instanceof WeightedGroundRule))) {
-				grs.addGroundRule(groundRule);
-			}
+			grs.addGroundRule(groundRule);
 
 			posLiterals.clear();
 			negLiterals.clear();
