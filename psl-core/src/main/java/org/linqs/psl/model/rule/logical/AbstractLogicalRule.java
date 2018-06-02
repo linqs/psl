@@ -210,7 +210,7 @@ public abstract class AbstractLogicalRule extends AbstractRule {
 				negLiterals.add(atom);
 			}
 
-			AbstractGroundLogicalRule groundRule = groundFormulaInstance(posLiterals, negLiterals);
+			AbstractGroundLogicalRule groundRule = groundFormulaInstance(posLiterals, negLiterals, rvaCount);
 			grs.addGroundRule(groundRule);
 
 			posLiterals.clear();
@@ -257,5 +257,5 @@ public abstract class AbstractLogicalRule extends AbstractRule {
 				(new HashSet<Atom>(thisNegLiterals)).equals(new HashSet<Atom>(otherNegLiterals));
 	}
 
-	protected abstract AbstractGroundLogicalRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals);
+	protected abstract AbstractGroundLogicalRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals, int rvaCount);
 }

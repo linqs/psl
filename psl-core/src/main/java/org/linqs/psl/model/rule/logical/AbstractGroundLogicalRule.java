@@ -44,7 +44,10 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
 
 	private final int hashcode;
 
-	protected AbstractGroundLogicalRule(AbstractLogicalRule rule, List<GroundAtom> posLiterals, List<GroundAtom> negLiterals) {
+	/**
+	 * @param rvaCount the number of RandomVariableAtoms (non-constants) in the literals.
+	 */
+	protected AbstractGroundLogicalRule(AbstractLogicalRule rule, List<GroundAtom> posLiterals, List<GroundAtom> negLiterals, int rvaCount) {
 		this.rule = rule;
 		this.posLiterals = Collections.unmodifiableList(new ArrayList<GroundAtom>(posLiterals));
 		this.negLiterals = Collections.unmodifiableList(new ArrayList<GroundAtom>(negLiterals));
@@ -54,7 +57,7 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
 
 		// Construct function definition.
 		boolean nonNegative = (posLiterals.size() + negLiterals.size() > 1);
-		function = new GeneralFunction(nonNegative, false);
+		function = new GeneralFunction(nonNegative, false, rvaCount);
 
 		for (int i = 0; i < posLiterals.size(); i++) {
 			function.add(1.0, posLiterals.get(i).getVariable());

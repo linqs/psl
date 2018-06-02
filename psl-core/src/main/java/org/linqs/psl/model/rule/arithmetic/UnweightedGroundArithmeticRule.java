@@ -77,7 +77,7 @@ public class UnweightedGroundArithmeticRule extends AbstractGroundArithmeticRule
 
 	@Override
 	public ConstraintTerm getConstraintDefinition() {
-		GeneralFunction sum = new GeneralFunction(false, false);
+		GeneralFunction sum = new GeneralFunction(false, false, coeffs.length);
 		for (int i = 0; i < coeffs.length; i++) {
 			// Skip any special predicates.
 			if (atoms[i].getPredicate() instanceof SpecialPredicate) {

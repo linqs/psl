@@ -19,9 +19,6 @@ package org.linqs.psl.reasoner.function;
 
 import org.linqs.psl.model.atom.GroundAtom;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * A general function that can handle various cases.
  * The function is some linear combination of terms,
@@ -30,8 +27,9 @@ import java.util.List;
  * allocations at grounding time.
  */
 public class GeneralFunction implements FunctionTerm {
-	private final List<Double> coefficients;
-	private final List<FunctionTerm> terms;
+	private final double[] coefficients;
+	private final FunctionTerm[] terms;
+	private int size;
 
 	// All constants will get merged into this.
 	private double constant;
@@ -42,9 +40,10 @@ public class GeneralFunction implements FunctionTerm {
 	private boolean nonNegative;
 	private boolean squared;
 
-	public GeneralFunction(boolean nonNegative, boolean squared) {
-		coefficients = new ArrayList<Double>();
-		terms = new ArrayList<FunctionTerm>();
+	public GeneralFunction(boolean nonNegative, boolean squared, int maxSize) {
+		coefficients = new double[maxSize];
+		terms = new FunctionTerm[maxSize];
+		size = 0;
 		constant = 0.0;
 
 		this.nonNegative = nonNegative;
@@ -53,9 +52,9 @@ public class GeneralFunction implements FunctionTerm {
 		linearTerms = true;
 	}
 
-   public double getConstant() {
-      return constant;
-   }
+	public double getConstant() {
+		return constant;
+	}
 
 	public boolean isSquared() {
 		return squared;
@@ -100,31 +99,37 @@ public class GeneralFunction implements FunctionTerm {
 			return;
 		}
 
-		terms.add(term);
-		coefficients.add(coefficient);
+		if (size == terms.length) {
+			throw new IllegalStateException(
+					"More than the max terms added to the function. Max: " + terms.length);
+		}
+
+		terms[size] = term;
+		coefficients[size] = coefficient;
+		size++;
 
 		constantTerms = constantTerms && term.isConstant();
 		linearTerms = linearTerms && term.isLinear();
 	}
 
 	public int size() {
-		return terms.size();
+		return size;
 	}
 
 	public double getCoefficient(int index) {
-		return coefficients.get(index);
+		return coefficients[index];
 	}
 
 	public FunctionTerm getTerm(int index) {
-		return terms.get(index);
+		return terms[index];
 	}
 
 	@Override
 	public double getValue() {
 		double val = constant;
 
-		for (int i = 0; i < terms.size(); i++) {
-			val += terms.get(i).getValue() * coefficients.get(i).doubleValue();
+		for (int i = 0; i < size; i++) {
+			val += terms[i].getValue() * coefficients[i];
 		}
 
 		if (nonNegative && val < 0.0) {
@@ -140,14 +145,13 @@ public class GeneralFunction implements FunctionTerm {
 	 * This is a fragile function that should only be called by the code that constructed
 	 * this function in the first place,
 	 * The passed in values must only contains entries for non-constant atoms (all constants get merged).
-    * The passed in values may be larger than the number of values actually used.
+	 * The passed in values may be larger than the number of values actually used.
 	 */
 	public double getValue(double[] values) {
 		double val = constant;
 
-		for (int i = 0; i < terms.size(); i++) {
-			double coefficient = coefficients.get(i);
-			val += coefficient * values[i];
+		for (int i = 0; i < size; i++) {
+			val += coefficients[i] * values[i];
 		}
 
 		if (nonNegative && val < 0.0) {
@@ -169,9 +173,9 @@ public class GeneralFunction implements FunctionTerm {
 		double val = constant;
 
 		// Use numeric for loops instead of iterators in high traffic code.
-		for (int i = 0; i < terms.size(); i++) {
-			FunctionTerm term = terms.get(i);
-			double coefficient = coefficients.get(i);
+		for (int i = 0; i < size; i++) {
+			FunctionTerm term = terms[i];
+			double coefficient = coefficients[i];
 
 			// Only one instance of each atom exists and we are not tring to match a query atom.
 			if (term instanceof AtomFunctionVariable &&
@@ -201,9 +205,9 @@ public class GeneralFunction implements FunctionTerm {
 
 		string.append(constant);
 
-		for (int i = 0; i < terms.size(); i++) {
-			FunctionTerm term = terms.get(i);
-			double coefficient = coefficients.get(i);
+		for (int i = 0; i < size; i++) {
+			FunctionTerm term = terms[i];
+			double coefficient = coefficients[i];
 
 			string.append(" + ");
 			string.append("" + coefficient + " * " + term.toString());

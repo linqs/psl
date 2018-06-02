@@ -18,12 +18,14 @@
 package org.linqs.psl.model.rule.logical;
 
 import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.function.FunctionTerm;
 import org.linqs.psl.reasoner.function.GeneralFunction;
+import org.linqs.psl.util.IteratorUtils;
 
 import java.util.List;
 
@@ -32,8 +34,8 @@ public class WeightedGroundLogicalRule extends AbstractGroundLogicalRule impleme
 	private final boolean squared;
 
 	protected WeightedGroundLogicalRule(WeightedLogicalRule rule, List<GroundAtom> posLiterals,
-			List<GroundAtom> negLiterals, boolean squared) {
-		super(rule, posLiterals, negLiterals);
+			List<GroundAtom> negLiterals, int rvaCount, boolean squared) {
+		super(rule, posLiterals, negLiterals, rvaCount);
 		// TODO(eriq): I hate this weight deferment. See if it is actually necessary.
 		weight = Double.NaN;
 		this.squared = squared;
@@ -87,7 +89,14 @@ public class WeightedGroundLogicalRule extends AbstractGroundLogicalRule impleme
 	protected GroundRule instantiateNegatedGroundRule(
 			Formula disjunction, List<GroundAtom> positiveAtoms,
 			List<GroundAtom> negativeAtoms, String name) {
+		int rvaCount = 0;
+		for (GroundAtom atom : IteratorUtils.join(positiveAtoms, negativeAtoms)) {
+			if (atom instanceof RandomVariableAtom) {
+				rvaCount++;
+			}
+		}
+
 		WeightedLogicalRule newRule = new WeightedLogicalRule(rule.getFormula(), -1.0 * ((WeightedLogicalRule)rule).getWeight(), squared, name);
-		return new WeightedGroundLogicalRule(newRule, positiveAtoms, negativeAtoms, squared);
+		return new WeightedGroundLogicalRule(newRule, positiveAtoms, negativeAtoms, rvaCount, squared);
 	}
 }

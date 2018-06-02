@@ -85,7 +85,7 @@ public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule i
 
 	@Override
 	public GeneralFunction getFunctionDefinition() {
-		GeneralFunction sum = new GeneralFunction(true, squared);
+		GeneralFunction sum = new GeneralFunction(true, squared, coeffs.length);
 
 		double termSign = FunctionComparator.LargerThan.equals(comparator) ? -1.0 : 1.0;
 		for (int i = 0; i < coeffs.length; i++) {
