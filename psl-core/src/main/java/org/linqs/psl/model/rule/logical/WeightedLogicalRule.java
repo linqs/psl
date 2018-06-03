@@ -30,15 +30,19 @@ public class WeightedLogicalRule extends AbstractLogicalRule implements Weighted
 	protected boolean squared;
 
 	public WeightedLogicalRule(Formula f, double weight, boolean squared) {
-		super(f);
+		this(f, weight, squared, f.toString());
+	}
+
+	public WeightedLogicalRule(Formula f, double weight, boolean squared, String name) {
+		super(f, name);
 
 		this.weight = weight;
 		this.squared = squared;
 	}
 
 	@Override
-	protected WeightedGroundLogicalRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals) {
-		return new WeightedGroundLogicalRule(this, posLiterals, negLiterals, squared);
+	protected WeightedGroundLogicalRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals, int rvaCount) {
+		return new WeightedGroundLogicalRule(this, posLiterals, negLiterals, rvaCount, squared);
 	}
 
 	@Override

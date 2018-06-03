@@ -27,14 +27,14 @@ import org.junit.Test;
 import org.linqs.psl.TestModelFactory;
 import org.linqs.psl.application.inference.MPEInference;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.database.ReadOnlyDatabase;
+import org.linqs.psl.database.ReadableDatabase;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.formula.Implication;
 import org.linqs.psl.model.function.ExternalFunction;
 import org.linqs.psl.model.predicate.Predicate;
-import org.linqs.psl.model.predicate.PredicateFactory;
+import org.linqs.psl.model.predicate.ExternalFunctionalPredicate;
 import org.linqs.psl.model.predicate.SpecialPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
@@ -54,9 +54,8 @@ public class Formula2SQLTest {
 	public void testUnaryExternalFunction() {
 		TestModelFactory.ModelInformation info = TestModelFactory.getModel();
 
-		PredicateFactory predicateFactory = PredicateFactory.getFactory();
 		SpyFunction function = new SpyFunction(1);
-		Predicate functionPredicate = predicateFactory.createExternalFunctionalPredicate("UnaryFunction", function);
+		Predicate functionPredicate = ExternalFunctionalPredicate.get("UnaryFunction", function);
 
 		// Add a rule using the new function.
 		// 10: Person(A) & Person(B) & UnaryFunction(A) & UnaryFunction(B) & (A - B) -> Friends(A, B) ^2
@@ -79,14 +78,14 @@ public class Formula2SQLTest {
 		MPEInference mpe = null;
 
 		try {
-			mpe = new MPEInference(info.model, inferDB, info.config);
+			mpe = new MPEInference(info.model, inferDB);
 		} catch (Exception ex) {
 			System.out.println(ex);
 			ex.printStackTrace();
 			fail("Exception thrown during MPE constructor.");
 		}
 
-		mpe.mpeInference();
+		mpe.inference();
 		mpe.close();
 		inferDB.close();
 
@@ -108,9 +107,8 @@ public class Formula2SQLTest {
 	public void testTernaryExternalFunction() {
 		TestModelFactory.ModelInformation info = TestModelFactory.getModel();
 
-		PredicateFactory predicateFactory = PredicateFactory.getFactory();
 		SpyFunction function = new SpyFunction(3);
-		Predicate functionPredicate = predicateFactory.createExternalFunctionalPredicate("TernaryFunction", function);
+		Predicate functionPredicate = ExternalFunctionalPredicate.get("TernaryFunction", function);
 
 		// Add a rule using the new function.
 		// 10: Person(A) & Person(B) & TernaryFunction(A, B, A) & (A - B) -> Friends(A, B) ^2
@@ -133,14 +131,14 @@ public class Formula2SQLTest {
 		MPEInference mpe = null;
 
 		try {
-			mpe = new MPEInference(info.model, inferDB, info.config);
+			mpe = new MPEInference(info.model, inferDB);
 		} catch (Exception ex) {
 			System.out.println(ex);
 			ex.printStackTrace();
 			fail("Exception thrown during MPE constructor.");
 		}
 
-		mpe.mpeInference();
+		mpe.inference();
 		mpe.close();
 		inferDB.close();
 
@@ -181,7 +179,7 @@ public class Formula2SQLTest {
 			return args;
 		}
 
-		public synchronized double getValue(ReadOnlyDatabase db, Constant... args) {
+		public synchronized double getValue(ReadableDatabase db, Constant... args) {
 			callCount++;
 			return 1;
 		}

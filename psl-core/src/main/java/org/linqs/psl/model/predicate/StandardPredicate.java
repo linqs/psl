@@ -27,14 +27,7 @@ import org.linqs.psl.model.term.ConstantType;
 public class StandardPredicate extends Predicate {
 	private boolean isBlock;
 
-	/**
-	 * Sole constructor.
-	 *
-	 * @param name  name for this predicate
-	 * @param types  types for each of the predicate's arguments
-	 * @see PredicateFactory
-	 */
-	public StandardPredicate(String name, ConstantType[] types) {
+	private StandardPredicate(String name, ConstantType[] types) {
 		super(name, types);
 		isBlock = false;
 
@@ -53,5 +46,48 @@ public class StandardPredicate extends Predicate {
 
 	public boolean isBlock() {
 		return isBlock;
+	}
+
+	/**
+	 * The an existing standard predicate (or null if none with this name exists).
+	 * If the predicate exists, but is not a StandardPredicate, an exception will be thrown.
+	 */
+	public static StandardPredicate get(String name) {
+		Predicate predicate = Predicate.get(name);
+		if (predicate == null) {
+			return null;
+		}
+
+		if (!(predicate instanceof StandardPredicate)) {
+			throw new ClassCastException("Predicate (" + name + ") is not a StandardPredicate.");
+		}
+
+		return (StandardPredicate)predicate;
+	}
+
+	/**
+	 * Get a predicate if one already exists, othereise create a new one.
+	 */
+	public static StandardPredicate get(String name, ConstantType... types) {
+		StandardPredicate predicate = get(name);
+		if (predicate == null) {
+			return new StandardPredicate(name, types);
+		}
+
+		if (predicate.getArity() != types.length) {
+			throw new IllegalArgumentException(
+					"Size mismatch for predicate types. Existing predicate: " +
+					predicate.getArity() + ", Query Predicate: " + types.length);
+		}
+
+		for (int i = 0; i < types.length; i++) {
+			if (!predicate.getArgumentType(i).equals(types[i])) {
+				throw new IllegalArgumentException(
+						"Type mismatch on " + i + ". Existing predicate: " +
+						predicate.getArgumentType(i) + ", Query Predicate: " + types[i]);
+			}
+		}
+
+		return predicate;
 	}
 }

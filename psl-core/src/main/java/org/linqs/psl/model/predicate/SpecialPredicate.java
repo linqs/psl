@@ -18,28 +18,25 @@
 package org.linqs.psl.model.predicate;
 
 import org.linqs.psl.database.Database;
-import org.linqs.psl.database.ReadOnlyDatabase;
+import org.linqs.psl.database.ReadableDatabase;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.UniqueIntID;
 import org.linqs.psl.model.term.UniqueStringID;
 
 /**
- * A commonly used FunctionalPredicate.
- *
- * All specific subclasses/instances are provided here.
+ * Commonly used FunctionalPredicates that get special treatment in PSL..
  *
  * A SpecialPredicate should be preferred over a user-made FunctionalPredicate
  * or ExternalFunctionalPredicate because some PSL components can evaluate
- * SpecialPredicates more efficiently. For example, a database backed
- * by a relational database with an SQL interface might translate some
- * SpecialPredicates directly to SQL.
+ * SpecialPredicates more efficiently.
+ * For example, some special predicate may be able to be translated directly into SQL.
  *
  * The names of SpecialPredicates begin with '#'.
  */
 public abstract class SpecialPredicate extends FunctionalPredicate {
 	private SpecialPredicate(String name, ConstantType[] types) {
-		super(name, types);
+		super(name, types, false);
 	}
 
 	/**
@@ -50,7 +47,7 @@ public abstract class SpecialPredicate extends FunctionalPredicate {
 				new ConstantType[] {ConstantType.DeferredFunctionalUniqueID, ConstantType.DeferredFunctionalUniqueID}) {
 
 		@Override
-		public double computeValue(ReadOnlyDatabase db, Constant... args) {
+		public double computeValue(ReadableDatabase db, Constant... args) {
 			checkArguments(getName(), args);
 			return (args[0].equals(args[1])) ? 1.0 : 0.0;
 		}
@@ -64,7 +61,7 @@ public abstract class SpecialPredicate extends FunctionalPredicate {
 				new ConstantType[] {ConstantType.DeferredFunctionalUniqueID, ConstantType.DeferredFunctionalUniqueID}) {
 
 		@Override
-		public double computeValue(ReadOnlyDatabase db, Constant... args) {
+		public double computeValue(ReadableDatabase db, Constant... args) {
 			checkArguments(getName(), args);
 			return (!args[0].equals(args[1])) ? 1.0 : 0.0;
 		}
@@ -79,7 +76,7 @@ public abstract class SpecialPredicate extends FunctionalPredicate {
 				new ConstantType[] {ConstantType.DeferredFunctionalUniqueID, ConstantType.DeferredFunctionalUniqueID}) {
 
 		@Override
-		public double computeValue(ReadOnlyDatabase db, Constant... args) {
+		public double computeValue(ReadableDatabase db, Constant... args) {
 			checkArguments(getName(), args);
 			return (args[0].compareTo(args[1]) < 0) ? 1.0 : 0.0;
 		}

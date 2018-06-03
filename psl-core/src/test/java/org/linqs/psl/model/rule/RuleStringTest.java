@@ -26,8 +26,6 @@ import org.junit.Test;
 import org.linqs.psl.PSLTest;
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 import org.linqs.psl.application.groundrulestore.MemoryGroundRuleStore;
-import org.linqs.psl.config.ConfigBundle;
-import org.linqs.psl.config.EmptyBundle;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
@@ -45,7 +43,6 @@ import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.formula.Implication;
-import org.linqs.psl.model.predicate.PredicateFactory;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
@@ -74,7 +71,6 @@ import java.util.Set;
 public class RuleStringTest {
 	private DataStore dataStore;
 	private Database database;
-	private ConfigBundle config;
 	private Partition obsPartition;
 
 	private StandardPredicate singlePredicate;
@@ -86,16 +82,13 @@ public class RuleStringTest {
 
 	@Before
 	public void setup() {
-		config = new EmptyBundle();
-		dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Memory, this.getClass().getName(), true), config);
+		dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Memory, this.getClass().getName(), true));
 
 		// Predicates
-		PredicateFactory factory = PredicateFactory.getFactory();
-
-		singlePredicate = factory.createStandardPredicate("SinglePredicate", ConstantType.UniqueStringID);
+		singlePredicate = StandardPredicate.get("SinglePredicate", ConstantType.UniqueStringID);
 		dataStore.registerPredicate(singlePredicate);
 
-		doublePredicate = factory.createStandardPredicate("DoublePredicate", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
+		doublePredicate = StandardPredicate.get("DoublePredicate", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
 		dataStore.registerPredicate(doublePredicate);
 
 		// Rules

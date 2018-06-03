@@ -29,13 +29,13 @@ import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.formula.FormulaAnalysis;
 import org.linqs.psl.model.formula.Negation;
 import org.linqs.psl.model.formula.FormulaAnalysis.DNFClause;
-import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.AbstractRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
-import org.linqs.psl.reasoner.function.FunctionSum;
 import org.linqs.psl.reasoner.function.FunctionVariable;
+import org.linqs.psl.reasoner.function.GeneralFunction;
 import org.linqs.psl.util.HashCode;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
@@ -55,15 +55,15 @@ import java.util.Set;
 /**
  * Base class for all (first order, i.e., not ground) logical rules.
  */
-public abstract class AbstractLogicalRule implements Rule {
+public abstract class AbstractLogicalRule extends AbstractRule {
 	private static final Logger log = LoggerFactory.getLogger(AbstractLogicalRule.class);
 
 	protected Formula formula;
 	protected final DNFClause negatedDNF;
 	private int hash;
 
-	public AbstractLogicalRule(Formula formula) {
-		super();
+	public AbstractLogicalRule(Formula formula, String name) {
+		super(name);
 
 		this.formula = formula;
 
@@ -133,9 +133,9 @@ public abstract class AbstractLogicalRule implements Rule {
 	}
 
 	private class GroundWorker extends Parallel.Worker<Integer> {
+		// Remember that these are positive/negative in the CNF.
 		private List<GroundAtom> posLiterals;
 		private List<GroundAtom> negLiterals;
-		private double[] worstCaseValues;
 
 		private AtomManager atomManager;
 		private GroundRuleStore grs;
@@ -159,7 +159,6 @@ public abstract class AbstractLogicalRule implements Rule {
 			negLiterals = new ArrayList<GroundAtom>(4);
 
 			int numLiterals = negatedDNF.getPosLiterals().size() + negatedDNF.getNegLiterals().size();
-			worstCaseValues = new double[numLiterals];
 
 			positiveAtomArgs = new Constant[negatedDNF.getPosLiterals().size()][];
 			for (int i = 0; i < negatedDNF.getPosLiterals().size(); i++) {
@@ -181,18 +180,18 @@ public abstract class AbstractLogicalRule implements Rule {
 		public void work(int index, Integer ignore) {
 			GroundAtom atom = null;
 
-			// We will make sure to collect the worst-case values in the same order
-			// that we add literals to the ground formula instance.
-			int worstCaseCount = 0;
+			int rvaCount = 0;
 
 			for (int j = 0; j < negatedDNF.getPosLiterals().size(); j++) {
 				atom = ((QueryAtom)negatedDNF.getPosLiterals().get(j)).ground(atomManager, res, index, positiveAtomArgs[j]);
 				if (atom instanceof RandomVariableAtom) {
-					worstCaseValues[worstCaseCount] = 1.0;
-				} else {
-					worstCaseValues[worstCaseCount] = atom.getValue();
+					rvaCount++;
+				} else if (MathUtils.equals(atom.getValue(), 0.0)) {
+					// This rule is trivially satisfied by a constant, do not ground it.
+					posLiterals.clear();
+					negLiterals.clear();
+					return;
 				}
-				worstCaseCount++;
 
 				posLiterals.add(atom);
 			}
@@ -200,23 +199,19 @@ public abstract class AbstractLogicalRule implements Rule {
 			for (int j = 0; j < negatedDNF.getNegLiterals().size(); j++) {
 				atom = ((QueryAtom)negatedDNF.getNegLiterals().get(j)).ground(atomManager, res, index, negativeAtomArgs[j]);
 				if (atom instanceof RandomVariableAtom) {
-					worstCaseValues[worstCaseCount] = 0.0;
-				} else {
-					worstCaseValues[worstCaseCount] = atom.getValue();
+					rvaCount++;
+				} else if (MathUtils.equals(atom.getValue(), 1.0)) {
+					// This rule is trivially satisfied by a constant, do not ground it.
+					posLiterals.clear();
+					negLiterals.clear();
+					return;
 				}
-				worstCaseCount++;
 
 				negLiterals.add(atom);
 			}
 
-			AbstractGroundLogicalRule groundRule = groundFormulaInstance(posLiterals, negLiterals);
-			FunctionSum function = groundRule.getFunction();
-
-			double worstCaseValue = function.getValue(worstCaseValues);
-			if (worstCaseValue > MathUtils.STRICT_EPSILON
-					&& (!function.isConstant() || !(groundRule instanceof WeightedGroundRule))) {
-				grs.addGroundRule(groundRule);
-			}
+			AbstractGroundLogicalRule groundRule = groundFormulaInstance(posLiterals, negLiterals, rvaCount);
+			grs.addGroundRule(groundRule);
 
 			posLiterals.clear();
 			negLiterals.clear();
@@ -262,5 +257,5 @@ public abstract class AbstractLogicalRule implements Rule {
 				(new HashSet<Atom>(thisNegLiterals)).equals(new HashSet<Atom>(otherNegLiterals));
 	}
 
-	protected abstract AbstractGroundLogicalRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals);
+	protected abstract AbstractGroundLogicalRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals, int rvaCount);
 }

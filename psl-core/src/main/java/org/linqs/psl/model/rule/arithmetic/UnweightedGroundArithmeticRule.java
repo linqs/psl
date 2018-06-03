@@ -23,8 +23,7 @@ import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.UnweightedRule;
 import org.linqs.psl.reasoner.function.ConstraintTerm;
 import org.linqs.psl.reasoner.function.FunctionComparator;
-import org.linqs.psl.reasoner.function.FunctionSum;
-import org.linqs.psl.reasoner.function.FunctionSummand;
+import org.linqs.psl.reasoner.function.GeneralFunction;
 
 import java.util.List;
 
@@ -38,13 +37,13 @@ public class UnweightedGroundArithmeticRule extends AbstractGroundArithmeticRule
 		implements UnweightedGroundRule {
 
 	protected UnweightedGroundArithmeticRule(UnweightedArithmeticRule rule, List<Double> coeffs,
-			List<GroundAtom> atoms, FunctionComparator comparator, double c) {
-		super(rule, coeffs, atoms, comparator, c);
+			List<GroundAtom> atoms, FunctionComparator comparator, double constant) {
+		super(rule, coeffs, atoms, comparator, constant);
 	}
 
 	protected UnweightedGroundArithmeticRule(UnweightedArithmeticRule rule, double[] coeffs,
-			GroundAtom[] atoms, FunctionComparator comparator, double c) {
-		super(rule, coeffs, atoms, comparator, c);
+			GroundAtom[] atoms, FunctionComparator comparator, double constant) {
+		super(rule, coeffs, atoms, comparator, constant);
 	}
 
 	@Override
@@ -66,11 +65,11 @@ public class UnweightedGroundArithmeticRule extends AbstractGroundArithmeticRule
 
 		switch (comparator) {
 		case Equality:
-			return Math.abs(sum - c);
+			return Math.abs(sum - constant);
 		case LargerThan:
-			return -1 * Math.min(sum - c, 0);
+			return -1.0 * Math.min(sum - constant, 0.0);
 		case SmallerThan:
-			return Math.max(sum - c, 0);
+			return Math.max(sum - constant, 0.0);
 		default:
 			throw new IllegalStateException("Unrecognized comparator: " + comparator);
 		}
@@ -78,21 +77,21 @@ public class UnweightedGroundArithmeticRule extends AbstractGroundArithmeticRule
 
 	@Override
 	public ConstraintTerm getConstraintDefinition() {
-		FunctionSum sum = new FunctionSum();
+		GeneralFunction sum = new GeneralFunction(false, false, coeffs.length);
 		for (int i = 0; i < coeffs.length; i++) {
 			// Skip any special predicates.
 			if (atoms[i].getPredicate() instanceof SpecialPredicate) {
 				continue;
 			}
 
-			sum.add(new FunctionSummand(coeffs[i], atoms[i].getVariable()));
+			sum.add(coeffs[i], atoms[i].getVariable());
 		}
-		return new ConstraintTerm(sum, comparator, c);
+
+		return new ConstraintTerm(sum, comparator, constant);
 	}
 
 	@Override
 	public String toString() {
 		return super.toString() + " .";
 	}
-
 }

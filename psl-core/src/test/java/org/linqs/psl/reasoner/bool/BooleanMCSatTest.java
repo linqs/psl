@@ -20,9 +20,11 @@ package org.linqs.psl.reasoner.bool;
 
 import org.linqs.psl.TestModelFactory;
 import org.linqs.psl.application.inference.MPEInference;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.predicate.StandardPredicate;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -34,12 +36,18 @@ public class BooleanMCSatTest {
 
 	@Before
 	public void setup() {
+		Config.clear();
 		info = TestModelFactory.getModel();
 
-		info.config.setProperty(MPEInference.REASONER_KEY, "org.linqs.psl.reasoner.bool.BooleanMCSat");
-		info.config.setProperty(MPEInference.GROUND_RULE_STORE_KEY, "org.linqs.psl.application.groundrulestore.AtomRegisterGroundRuleStore");
-		info.config.setProperty(MPEInference.TERM_STORE_KEY, "org.linqs.psl.reasoner.term.blocker.ConstraintBlockerTermStore");
-		info.config.setProperty(MPEInference.TERM_GENERATOR_KEY, "org.linqs.psl.reasoner.term.blocker.ConstraintBlockerTermGenerator");
+		Config.setProperty(MPEInference.REASONER_KEY, "org.linqs.psl.reasoner.bool.BooleanMCSat");
+		Config.setProperty(MPEInference.GROUND_RULE_STORE_KEY, "org.linqs.psl.application.groundrulestore.AtomRegisterGroundRuleStore");
+		Config.setProperty(MPEInference.TERM_STORE_KEY, "org.linqs.psl.reasoner.term.blocker.ConstraintBlockerTermStore");
+		Config.setProperty(MPEInference.TERM_GENERATOR_KEY, "org.linqs.psl.reasoner.term.blocker.ConstraintBlockerTermGenerator");
+	}
+
+	@After
+	public void clear() {
+		Config.clear();
 	}
 
 	/**
@@ -50,9 +58,9 @@ public class BooleanMCSatTest {
 	public void baseTest() {
 		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
 		Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-		MPEInference mpe = new MPEInference(info.model, inferDB, info.config);
+		MPEInference mpe = new MPEInference(info.model, inferDB);
 
-		mpe.mpeInference();
+		mpe.inference();
 		mpe.close();
 		inferDB.close();
 	}

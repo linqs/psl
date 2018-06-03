@@ -17,11 +17,9 @@
  */
 package org.linqs.psl.database.rdbms;
 
-import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
-import org.linqs.psl.database.ReadOnlyDatabase;
 import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 import org.linqs.psl.model.predicate.Predicate;
@@ -49,17 +47,12 @@ import java.util.Set;
 
 /**
  * The RDMBSDataStore is an RDBMS implementation of the DataStore interface.
- * It will connect to any RDBMS that has a supporting {@link DatabaseDriver} implementation, and
- * through the {@link ConfigBundle} can use custom names for its value and partition columns.
+ * It will connect to any RDBMS that has a supporting {@link DatabaseDriver} implementation.
  */
 public class RDBMSDataStore implements DataStore {
 	private static final Logger log = LoggerFactory.getLogger(RDBMSDataStore.class);
 
 	private static final Set<RDBMSDataStore> openDataStores = new HashSet<RDBMSDataStore>();
-
-	// Map for database registration
-	private static final BiMap<ReadOnlyDatabase, String> registeredDatabases = HashBiMap.create();
-	private static int databaseCounter = 0;
 
 	/**
 	 * Prefix of property keys used by this class.
@@ -100,10 +93,8 @@ public class RDBMSDataStore implements DataStore {
 
 	/**
 	 * Returns an RDBMSDataStore that utilizes the connections returned by the {@link DatabaseDriver}.
-	 * @param dbDriver the DatabaseDriver that contains a connection pool to the backing database.
-	 * @param config the configuration for this DataStore.
 	 */
-	public RDBMSDataStore(DatabaseDriver dbDriver, ConfigBundle config) {
+	public RDBMSDataStore(DatabaseDriver dbDriver) {
 		openDataStores.add(this);
 
 		// Initialize all private variables
@@ -187,7 +178,7 @@ public class RDBMSDataStore implements DataStore {
 		indexPredicates();
 
 		// Creates the database and registers the current predicates
-		RDBMSDatabase db = new RDBMSDatabase(this, write, read, Collections.unmodifiableMap(predicates), toClose);
+		RDBMSDatabase db = new RDBMSDatabase(this, write, read, toClose);
 
 		// Register the write and read partitions as being associated with this database
 		for (Partition partition : read) {
@@ -314,8 +305,6 @@ public class RDBMSDataStore implements DataStore {
 
 		// Release the write partition in use by this database
 		writePartitionIDs.remove(db.getWritePartition());
-
-		registeredDatabases.remove(new ReadOnlyDatabase(db));
 	}
 
 	public Partition getNewPartition(){
@@ -353,30 +342,14 @@ public class RDBMSDataStore implements DataStore {
 	}
 
 	/**
-	 * Registers and returns an ID for a given RDBMSDatabase.
-	 * If this database was already registered, returns the same ID that was returned initially.
-	 * @param db	the RDBMSDatabase to register
-	 * @return		the String ID for this database
+	 * Helper method for getting a predicate handle
 	 */
-	public static String getDatabaseID(RDBMSDatabase db) {
-		ReadOnlyDatabase roDB = new ReadOnlyDatabase(db);
-		if (registeredDatabases.containsKey(roDB)) {
-			return registeredDatabases.get(roDB);
+	public PredicateInfo getPredicateInfo(Predicate predicate) {
+		PredicateInfo info = predicates.get(predicate);
+		if (info == null) {
+			throw new IllegalArgumentException("Predicate not registered with data store.");
 		}
 
-		String id = "database" + (databaseCounter++);
-		registeredDatabases.put(roDB, id);
-		return id;
-	}
-
-	/**
-	 * Get a read-only database given the id from getDatabaseID().
-	 */
-	public static ReadOnlyDatabase getDatabase(String databaseID) {
-		if (registeredDatabases.containsValue(databaseID)) {
-			return registeredDatabases.inverse().get(databaseID);
-		}
-
-		throw new IllegalArgumentException("No database registerd for id: " + databaseID);
+		return info;
 	}
 }

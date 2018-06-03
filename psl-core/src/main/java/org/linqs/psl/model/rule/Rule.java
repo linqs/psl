@@ -38,4 +38,6 @@ public interface Rule {
 	public int groundAll(AtomManager atomManager, GroundRuleStore groundRuleStore);
 
 	public boolean isWeighted();
+
+	public String getName();
 }

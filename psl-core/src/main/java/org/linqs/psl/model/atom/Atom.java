@@ -45,9 +45,9 @@ import java.util.Set;
  * {@link QueryAtom}.
  */
 public abstract class Atom implements Formula, SummationAtomOrAtom {
-	protected final Predicate predicate;
-	protected final Term[] arguments;
-	protected final int hashcode;
+	protected Predicate predicate;
+	protected Term[] arguments;
+	protected int hashcode;
 
 	/**
 	 * The hashcode of the original argument array.
@@ -59,10 +59,23 @@ public abstract class Atom implements Formula, SummationAtomOrAtom {
 	 * Type mismatches will throw an exception unless
 	 * the types are trivially convertable like UniqueIntID and IntegerAttribute.
 	 */
-	protected Atom(Predicate p, Term[] args) {
-		predicate = p;
-		arguments = Arrays.copyOf(args, args.length);
-		validate();
+	protected Atom(Predicate predicate, Term[] args) {
+		init(true, true, predicate, args);
+	}
+
+	protected void init(boolean copyArgs, boolean doValidation, Predicate predicate, Term[] args) {
+		this.predicate = predicate;
+
+		if (copyArgs) {
+			arguments = Arrays.copyOf(args, args.length);
+		} else {
+			arguments = args;
+		}
+
+		if (doValidation) {
+			validate();
+		}
+
 		hashcode = HashCode.build(HashCode.build(predicate), arguments);
 		// Note that we are using Arrays.hashCode() instead of args.hashCode().
 		// This will take the shallow hash of the args.

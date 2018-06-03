@@ -26,18 +26,12 @@ import java.util.List;
  * weight * max(coeffs^T * x - constant, 0)
  *
  * All coeffs must be non-zero.
- *
- * @author Stephen Bach <bach@cs.umd.edu>
  */
 public class HingeLossTerm extends HyperplaneTerm implements WeightedTerm {
 	private float weight;
 
 	HingeLossTerm(List<LocalVariable> variables, List<Float> coeffs, float constant, float weight) {
 		super(variables, coeffs, constant);
-
-		if (weight < 0.0) {
-			throw new IllegalArgumentException("Only non-negative weights are supported.");
-		}
 		setWeight(weight);
 	}
 
@@ -47,29 +41,30 @@ public class HingeLossTerm extends HyperplaneTerm implements WeightedTerm {
 	}
 
 	@Override
+	public float getWeight() {
+		return weight;
+	}
+
+	@Override
 	public void minimize(float stepSize, float[] consensusValues) {
-		/* Initializes scratch data */
+		// Initializes scratch data,
 		float total = 0.0f;
 
-		/*
-		 * Minimizes without the linear loss, i.e., solves
-		 * argmin stepSize/2 * \|x - z + y / stepSize \|_2^2
-		 */
+		// Minimizes without the linear loss, i.e., solves
+		// argmin stepSize/2 * \|x - z + y / stepSize \|_2^2
 		for (int i = 0; i < variables.size(); i++) {
 			LocalVariable variable = variables.get(i);
 			variable.setValue(consensusValues[variable.getGlobalId()] - variable.getLagrange() / stepSize);
 			total += (coeffs.get(i).floatValue() * variable.getValue());
 		}
 
-		/* If the linear loss is NOT active at the computed point, it is the solution... */
+		// If the linear loss is NOT active at the computed point, it is the solution...
 		if (total <= constant) {
 			return;
 		}
 
-		/*
-		 * Else, minimizes with the linear loss, i.e., solves
-		 * argmin weight * coeffs^T * x + stepSize/2 * \|x - z + y / stepSize \|_2^2
-		 */
+		// Else, minimizes with the linear loss, i.e., solves
+		// argmin weight * coeffs^T * x + stepSize/2 * \|x - z + y / stepSize \|_2^2
 		total = 0.0f;
 		for (int i = 0; i < variables.size(); i++) {
 			LocalVariable variable = variables.get(i);
@@ -81,12 +76,20 @@ public class HingeLossTerm extends HyperplaneTerm implements WeightedTerm {
 			total += coeffs.get(i).floatValue() * variable.getValue();
 		}
 
-		/* If the linear loss IS active at the computed point, it is the solution... */
+		// If the linear loss IS active at the computed point, it is the solution...
 		if (total >= constant) {
 			return;
 		}
 
-		/* Else, the solution is on the hinge */
+		// Else, the solution is on the hinge.
 		project(stepSize, consensusValues);
+	}
+
+	/**
+	 * weight * max(coeffs^T * x - constant, 0)
+	 */
+	@Override
+	public float evaluate() {
+		return weight * Math.max(super.evaluate(), 0.0f);
 	}
 }

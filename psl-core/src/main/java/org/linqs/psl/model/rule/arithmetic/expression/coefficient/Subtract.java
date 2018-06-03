@@ -25,20 +25,20 @@ import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.util.MathUtils;
 
 public class Subtract extends Coefficient {
-	
+
 	protected final Coefficient c1;
 	protected final Coefficient c2;
-	
+
 	public Subtract(Coefficient c1, Coefficient c2) {
 		this.c1 = c1;
 		this.c2 = c2;
 	}
-	
+
 	@Override
 	public double getValue(Map<SummationVariable, Integer> subs) {
 		return c1.getValue(subs) - c2.getValue(subs);
 	}
-	
+
 	@Override
 	public String toString() {
 		return "(" + c1.toString() + " - " + c2.toString() + ")";

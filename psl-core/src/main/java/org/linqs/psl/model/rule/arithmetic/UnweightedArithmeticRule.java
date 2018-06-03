@@ -37,11 +37,19 @@ public class UnweightedArithmeticRule extends AbstractArithmeticRule
 		implements UnweightedRule {
 
 	public UnweightedArithmeticRule(ArithmeticRuleExpression expression) {
-		this(expression, new HashMap<SummationVariable, Formula>());
+		this(expression, expression.toString());
+	}
+
+	public UnweightedArithmeticRule(ArithmeticRuleExpression expression, String name) {
+		this(expression, new HashMap<SummationVariable, Formula>(), name);
 	}
 
 	public UnweightedArithmeticRule(ArithmeticRuleExpression expression, Map<SummationVariable, Formula> filterClauses) {
-		super(expression, filterClauses);
+		this(expression, filterClauses, expression.toString());
+	}
+
+	public UnweightedArithmeticRule(ArithmeticRuleExpression expression, Map<SummationVariable, Formula> filterClauses, String name) {
+		super(expression, filterClauses, name);
 	}
 
 	@Override

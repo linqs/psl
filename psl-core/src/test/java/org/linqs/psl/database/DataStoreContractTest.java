@@ -24,7 +24,7 @@ import static org.junit.Assert.fail;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseQuery;
-import org.linqs.psl.database.ReadOnlyDatabase;
+import org.linqs.psl.database.ReadableDatabase;
 import org.linqs.psl.database.ResultList;
 import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.model.atom.GroundAtom;
@@ -34,9 +34,9 @@ import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.function.ExternalFunction;
+import org.linqs.psl.model.predicate.ExternalFunctionalPredicate;
 import org.linqs.psl.model.predicate.FunctionalPredicate;
 import org.linqs.psl.model.predicate.Predicate;
-import org.linqs.psl.model.predicate.PredicateFactory;
 import org.linqs.psl.model.predicate.SpecialPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
@@ -60,20 +60,27 @@ import java.util.Set;
  * Contract tests for classes that implement {@link DataStore}.
  */
 public abstract class DataStoreContractTest {
-	private static StandardPredicate p1;
-	private static StandardPredicate p2;
-	private static StandardPredicate p3;
-	private static StandardPredicate p4;
-	private static FunctionalPredicate functionalPredicate1;
+	private StandardPredicate p1;
+	private StandardPredicate p2;
+	private StandardPredicate p3;
+	private StandardPredicate p4;
+	private FunctionalPredicate functionalPredicate1;
 
 	private DataStore datastore;
 
 	private List<Database> dbs;
 
 	/**
-	 * @return the DataStore to be tested, should always be backed by the same persistence mechanism
+	 * @return the DataStore to be tested, should always be backed by the same persistence mechanism.
 	 */
-	public abstract DataStore getDataStore(boolean clearDB);
+	public abstract DataStore getDataStore(boolean clearDB, boolean persisted);
+
+	/**
+	 * Default to a non-persisted data store (if available).
+	 */
+	public DataStore getDataStore(boolean clearDB) {
+		return getDataStore(clearDB, false);
+	}
 
 	/**
 	 * Deletes any files and releases any resources used by the tested DataStore
@@ -81,16 +88,19 @@ public abstract class DataStoreContractTest {
 	 */
 	public abstract void cleanUp();
 
-	static {
-		PredicateFactory predicateFactory = PredicateFactory.getFactory();
-		p1 = predicateFactory.createStandardPredicate("P1", ConstantType.UniqueIntID, ConstantType.UniqueIntID);
-		p2 = predicateFactory.createStandardPredicate("P2", ConstantType.String, ConstantType.String);
-		p3 = predicateFactory.createStandardPredicate("P3", ConstantType.Double, ConstantType.Double);
-		p4 = predicateFactory.createStandardPredicate("P4", ConstantType.UniqueIntID, ConstantType.Double);
+	@Before
+	public void setUp() throws Exception {
+		datastore = getDataStore(true);
+		dbs = new LinkedList<Database>();
 
-		functionalPredicate1 = predicateFactory.createExternalFunctionalPredicate("FP1", new ExternalFunction() {
+		p1 = StandardPredicate.get("P1", ConstantType.UniqueIntID, ConstantType.UniqueIntID);
+		p2 = StandardPredicate.get("P2", ConstantType.String, ConstantType.String);
+		p3 = StandardPredicate.get("P3", ConstantType.Double, ConstantType.Double);
+		p4 = StandardPredicate.get("P4", ConstantType.UniqueIntID, ConstantType.Double);
+
+		functionalPredicate1 = ExternalFunctionalPredicate.get("FP1", new ExternalFunction() {
 			@Override
-			public double getValue(ReadOnlyDatabase db, Constant... args) {
+			public double getValue(ReadableDatabase db, Constant... args) {
 				double a = ((DoubleAttribute) args[0]).getValue();
 				double b = ((DoubleAttribute) args[1]).getValue();
 
@@ -106,13 +116,13 @@ public abstract class DataStoreContractTest {
 			public ConstantType[] getArgumentTypes() {
 				return new ConstantType[] {ConstantType.Double, ConstantType.Double};
 			}
-		});
-	}
 
-	@Before
-	public void setUp() throws Exception {
-		datastore = getDataStore(true);
-		dbs = new LinkedList<Database>();
+			// Hack for testing.
+			@Override
+			public boolean equals(Object other) {
+				return true;
+			}
+		});
 	}
 
 	@After
@@ -347,6 +357,9 @@ public abstract class DataStoreContractTest {
 			return;
 		}
 
+		datastore.close();
+		datastore = getDataStore(true, true);
+
 		datastore.registerPredicate(p1);
 		datastore.registerPredicate(p2);
 
@@ -355,11 +368,28 @@ public abstract class DataStoreContractTest {
 		assertTrue(registeredPredicates.contains(p2));
 
 		datastore.close();
-		datastore = getDataStore(false);
+		datastore = getDataStore(false, true);
 
 		registeredPredicates = datastore.getRegisteredPredicates();
 		assertTrue(registeredPredicates.contains(p1));
 		assertTrue(registeredPredicates.contains(p2));
+	}
+
+	@Test
+	public void testGetInserterForDeserializedPredicate() {
+		if (datastore == null) {
+			return;
+		}
+
+		datastore.close();
+		datastore = getDataStore(true, true);
+
+		datastore.registerPredicate(p1);
+		datastore.registerPredicate(p2);
+
+		datastore.close();
+		datastore = getDataStore(false, true);
+		datastore.getInserter(p1, datastore.getPartition("0"));
 	}
 
 	// Functional predicates should be ignored at the database level.
@@ -779,20 +809,6 @@ public abstract class DataStoreContractTest {
 	}
 
 	@Test
-	public void testGetInserterForDeserializedPredicate() {
-		if (datastore == null) {
-			return;
-		}
-
-		datastore.registerPredicate(p1);
-		datastore.registerPredicate(p2);
-
-		datastore.close();
-		datastore = getDataStore(false);
-		datastore.getInserter(p1, datastore.getPartition("0"));
-	}
-
-	@Test
 	public void testGetAtomAfterClose() {
 		if (datastore == null) {
 			return;
@@ -961,7 +977,7 @@ public abstract class DataStoreContractTest {
 		Database db = datastore.getDatabase(datastore.getPartition("0"));
 
 		// Check all the terms in all the atoms
-		for (GroundAtom atom : Queries.getAllAtoms(db, p2)) {
+		for (GroundAtom atom : db.getAllGroundAtoms(p2)) {
 			if (!values.contains(((StringAttribute)atom.getArguments()[0]).getValue())) {
 				fail("First argument of atom (" + atom + ") is an unseen value.");
 			}

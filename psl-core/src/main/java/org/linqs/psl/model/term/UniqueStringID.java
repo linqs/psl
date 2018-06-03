@@ -47,16 +47,22 @@ public class UniqueStringID implements Constant {
 	}
 
 	@Override
-	public int compareTo(Constant other) {
-		if (other instanceof UniqueStringID) {
-			return id.compareTo(((UniqueStringID)other).id);
+	public int compareTo(Term other) {
+		if (other == null) {
+			return -1;
 		}
 
-		return this.getClass().getSimpleName().compareTo(other.getClass().getSimpleName());
+		if (!(other instanceof UniqueStringID)) {
+			return this.getClass().getName().compareTo(other.getClass().getName());
+		}
+
+		return id.compareTo(((UniqueStringID)other).id);
 	}
 
 	@Override
 	public String toString() {
-		return "'" + id + "'";
+		// Make the required escapes.
+		String text = id.replace("\\", "\\\\").replace("'", "\\'");
+		return "'" + text + "'";
 	}
 }

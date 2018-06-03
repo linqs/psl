@@ -21,7 +21,6 @@ package org.linqs.psl.model.term;
  * An {@link Attribute} that encapsulates an Integer.
  */
 public class IntegerAttribute implements Attribute {
-
 	private final Integer value;
 
 	/**
@@ -57,17 +56,27 @@ public class IntegerAttribute implements Attribute {
 	 */
 	@Override
 	public boolean equals(Object oth) {
-		if (oth==this) return true;
-		if (oth==null || !(oth instanceof IntegerAttribute)) return false;
+		if (oth == this) {
+			return true;
+		}
+
+		if (oth == null || !(oth instanceof IntegerAttribute)) {
+			return false;
+		}
+
 		return value.equals(((IntegerAttribute)oth).getValue());
 	}
 
 	@Override
-	public int compareTo(Constant o) {
-		if (o instanceof IntegerAttribute)
-			return value - ((IntegerAttribute) o).value;
-		else
-			return this.getClass().getSimpleName().compareTo(o.getClass().getSimpleName());
-	}
+	public int compareTo(Term other) {
+		if (other == null) {
+			return -1;
+		}
 
+		if (!(other instanceof IntegerAttribute)) {
+			return this.getClass().getName().compareTo(other.getClass().getName());
+		}
+
+		return value.compareTo(((IntegerAttribute)other).value);
+	}
 }

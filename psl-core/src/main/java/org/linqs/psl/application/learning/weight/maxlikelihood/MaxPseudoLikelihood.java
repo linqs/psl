@@ -19,7 +19,7 @@ package org.linqs.psl.application.learning.weight.maxlikelihood;
 
 import org.linqs.psl.application.groundrulestore.AtomRegisterGroundRuleStore;
 import org.linqs.psl.application.learning.weight.VotedPerceptron;
-import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.RandomVariableAtom;
@@ -74,37 +74,36 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 	public static final double MIN_WIDTH_DEFAULT = 1e-2;
 
 	private final boolean bool;
-	private final int numSamples;
 	private final double minWidth;
 
-	public MaxPseudoLikelihood(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
-		this(model.getRules(), rvDB, observedDB, config);
+	private final int maxNumSamples;
+	private int numSamples;
+
+	public MaxPseudoLikelihood(Model model, Database rvDB, Database observedDB) {
+		this(model.getRules(), rvDB, observedDB);
 	}
 
-	public MaxPseudoLikelihood(List<Rule> rules, Database rvDB, Database observedDB, ConfigBundle config) {
-		super(rules, rvDB, observedDB, false, config);
+	public MaxPseudoLikelihood(List<Rule> rules, Database rvDB, Database observedDB) {
+		super(rules, rvDB, observedDB, false);
 
-		bool = config.getBoolean(BOOLEAN_KEY, BOOLEAN_DEFAULT);
+		bool = Config.getBoolean(BOOLEAN_KEY, BOOLEAN_DEFAULT);
 
-		numSamples = config.getInt(NUM_SAMPLES_KEY, NUM_SAMPLES_DEFAULT);
+		maxNumSamples = Config.getInt(NUM_SAMPLES_KEY, NUM_SAMPLES_DEFAULT);
+		numSamples = maxNumSamples;
 		if (numSamples <= 0) {
 			throw new IllegalArgumentException("Number of samples must be positive integer.");
 		}
 
-		minWidth = config.getDouble(MIN_WIDTH_KEY, MIN_WIDTH_DEFAULT);
+		minWidth = Config.getDouble(MIN_WIDTH_KEY, MIN_WIDTH_DEFAULT);
 		if (minWidth <= 0) {
 			throw new IllegalArgumentException("Minimum width must be positive double.");
 		}
-	}
 
-	@Override
-	public void initGroundModel() {
-		// Force super to use a constraint blocker.
-		config.setProperty(GROUND_RULE_STORE_KEY, AtomRegisterGroundRuleStore.class.getName());
-		config.setProperty(TERM_STORE_KEY, ConstraintBlockerTermStore.class.getName());
-		config.setProperty(TERM_GENERATOR_KEY, ConstraintBlockerTermGenerator.class.getName());
-
-		super.initGroundModel();
+		// Force initGroundModel to use a constraint blocker.
+		Config.setProperty(GROUND_RULE_STORE_KEY, AtomRegisterGroundRuleStore.class.getName());
+		Config.setProperty(TERM_STORE_KEY, ConstraintBlockerTermStore.class.getName());
+		Config.setProperty(TERM_GENERATOR_KEY, ConstraintBlockerTermGenerator.class.getName());
+		cutObjective = false;
 	}
 
 	/**
@@ -222,5 +221,12 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 				}
 			}
 		}
+	}
+
+	@Override
+	public void setBudget(double budget) {
+		super.setBudget(budget);
+
+		numSamples = (int)Math.ceil(budget * maxNumSamples);
 	}
 }

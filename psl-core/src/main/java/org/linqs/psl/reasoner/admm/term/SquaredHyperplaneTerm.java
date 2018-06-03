@@ -35,8 +35,6 @@ import java.util.concurrent.Semaphore;
  *
  * Stores the characterization of the hyperplane as coeffs^T * x = constant
  * and minimizes with the weighted, squared hyperplane in the objective.
- *
- * @author Stephen Bach <bach@cs.umd.edu>
  */
 public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements WeightedTerm {
 	protected final List<Float> coeffs;
@@ -62,9 +60,6 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
 
 		L = null;
 
-		if (weight < 0.0) {
-			throw new IllegalArgumentException("Only non-negative weights are supported.");
-		}
 		setWeight(weight);
 	}
 
@@ -77,12 +72,12 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
 		float coeff;
 		DenseFloatMatrix2DWithHashcode matrix = new DenseFloatMatrix2DWithHashcode(variables.size(), variables.size());
 		for (int i = 0; i < variables.size(); i++) {
-			for (int j = 0; j < variables.size(); j++) {
+			// Note that the matrix is symmetric.
+			for (int j = i; j < variables.size(); j++) {
 				if (i == j) {
 					coeff = 2 * weight * coeffs.get(i).floatValue() * coeffs.get(i).floatValue() + stepSize;
 					matrix.setQuick(i, i, coeff);
-				}
-				else {
+				} else {
 					coeff = 2 * weight * coeffs.get(i).floatValue() * coeffs.get(j).floatValue();
 					matrix.setQuick(i, j, coeff);
 					matrix.setQuick(j, i, coeff);
@@ -111,6 +106,23 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
 		this.weight = weight;
 		// Recompute L.
 		L = null;
+	}
+
+	@Override
+	public float getWeight() {
+		return weight;
+	}
+
+	/**
+	 * coeffs^T * x - constant
+	 */
+	@Override
+	public float evaluate() {
+		float value = 0.0f;
+		for (int i = 0; i < variables.size(); i++) {
+			value += coeffs.get(i).floatValue() * variables.get(i).getValue();
+		}
+		return value - constant;
 	}
 
 	/**

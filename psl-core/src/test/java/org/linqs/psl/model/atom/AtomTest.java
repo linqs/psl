@@ -50,12 +50,12 @@ public class AtomTest {
 	 */
 	@Test
 	public void testConversions() {
-		Predicate predicateDouble = new StandardPredicate("Double", new ConstantType[]{ConstantType.Double});
-		Predicate predicateInteger = new StandardPredicate("Integer", new ConstantType[]{ConstantType.Integer});
-		Predicate predicateLong = new StandardPredicate("Long", new ConstantType[]{ConstantType.Long});
-		Predicate predicateString = new StandardPredicate("String", new ConstantType[]{ConstantType.String});
-		Predicate predicateUniqueIntID = new StandardPredicate("UniqueIntID", new ConstantType[]{ConstantType.UniqueIntID});
-		Predicate predicateUniqueStringID = new StandardPredicate("UniqueStringID", new ConstantType[]{ConstantType.UniqueStringID});
+		Predicate predicateDouble = StandardPredicate.get("Double", new ConstantType[]{ConstantType.Double});
+		Predicate predicateInteger = StandardPredicate.get("Integer", new ConstantType[]{ConstantType.Integer});
+		Predicate predicateLong = StandardPredicate.get("Long", new ConstantType[]{ConstantType.Long});
+		Predicate predicateString = StandardPredicate.get("String", new ConstantType[]{ConstantType.String});
+		Predicate predicateUniqueIntID = StandardPredicate.get("UniqueIntID", new ConstantType[]{ConstantType.UniqueIntID});
+		Predicate predicateUniqueStringID = StandardPredicate.get("UniqueStringID", new ConstantType[]{ConstantType.UniqueStringID});
 
 		Predicate[] predicates = new Predicate[]{
 			predicateDouble,
@@ -148,12 +148,12 @@ public class AtomTest {
 	 */
 	@Test
 	public void testStringConversions() {
-		Predicate predicateDouble = new StandardPredicate("Double", new ConstantType[]{ConstantType.Double});
-		Predicate predicateInteger = new StandardPredicate("Integer", new ConstantType[]{ConstantType.Integer});
-		Predicate predicateLong = new StandardPredicate("Long", new ConstantType[]{ConstantType.Long});
-		Predicate predicateString = new StandardPredicate("String", new ConstantType[]{ConstantType.String});
-		Predicate predicateUniqueIntID = new StandardPredicate("UniqueIntID", new ConstantType[]{ConstantType.UniqueIntID});
-		Predicate predicateUniqueStringID = new StandardPredicate("UniqueStringID", new ConstantType[]{ConstantType.UniqueStringID});
+		Predicate predicateDouble = StandardPredicate.get("Double", new ConstantType[]{ConstantType.Double});
+		Predicate predicateInteger = StandardPredicate.get("Integer", new ConstantType[]{ConstantType.Integer});
+		Predicate predicateLong = StandardPredicate.get("Long", new ConstantType[]{ConstantType.Long});
+		Predicate predicateString = StandardPredicate.get("String", new ConstantType[]{ConstantType.String});
+		Predicate predicateUniqueIntID = StandardPredicate.get("UniqueIntID", new ConstantType[]{ConstantType.UniqueIntID});
+		Predicate predicateUniqueStringID = StandardPredicate.get("UniqueStringID", new ConstantType[]{ConstantType.UniqueStringID});
 
 		Predicate[] predicates = new Predicate[]{
 			predicateDouble,
@@ -220,8 +220,8 @@ public class AtomTest {
 	 */
 	@Test
 	public void testEqualityBase() {
-		Predicate singleInt = new StandardPredicate("SingleInt", new ConstantType[]{ConstantType.Integer});
-		Predicate doubleInt = new StandardPredicate("DoubleInt", new ConstantType[]{ConstantType.Integer, ConstantType.Integer});
+		Predicate singleInt = StandardPredicate.get("SingleInt", new ConstantType[]{ConstantType.Integer});
+		Predicate doubleInt = StandardPredicate.get("DoubleInt", new ConstantType[]{ConstantType.Integer, ConstantType.Integer});
 
 		Atom[] atoms = new Atom[]{
 			new QueryAtom(singleInt, new IntegerAttribute(1)),
@@ -262,8 +262,8 @@ public class AtomTest {
 	 */
 	@Test
 	public void testEqualityArgs() {
-		Predicate singleInt = new StandardPredicate("SingleInt", new ConstantType[]{ConstantType.Integer});
-		Predicate doubleInt = new StandardPredicate("DoubleInt", new ConstantType[]{ConstantType.Integer, ConstantType.Integer});
+		Predicate singleInt = StandardPredicate.get("SingleInt", new ConstantType[]{ConstantType.Integer});
+		Predicate doubleInt = StandardPredicate.get("DoubleInt", new ConstantType[]{ConstantType.Integer, ConstantType.Integer});
 
 		Term[] singleArray1 = new Term[1];
 		Term[] singleArray2 = new Term[1];
@@ -362,8 +362,8 @@ public class AtomTest {
 	 */
 	@Test
 	public void testInequalityArgs() {
-		Predicate singleInt = new StandardPredicate("SingleInt", new ConstantType[]{ConstantType.Integer});
-		Predicate doubleInt = new StandardPredicate("DoubleInt", new ConstantType[]{ConstantType.Integer, ConstantType.Integer});
+		Predicate singleInt = StandardPredicate.get("SingleInt", new ConstantType[]{ConstantType.Integer});
+		Predicate doubleInt = StandardPredicate.get("DoubleInt", new ConstantType[]{ConstantType.Integer, ConstantType.Integer});
 
 		Term[] singleArray1 = new Term[1];
 		Term[] singleArray2 = new Term[1];

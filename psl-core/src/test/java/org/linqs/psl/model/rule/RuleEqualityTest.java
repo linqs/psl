@@ -24,8 +24,6 @@ import static org.junit.Assert.fail;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.linqs.psl.config.ConfigBundle;
-import org.linqs.psl.config.EmptyBundle;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
@@ -34,7 +32,6 @@ import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.formula.Implication;
-import org.linqs.psl.model.predicate.PredicateFactory;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.arithmetic.UnweightedArithmeticRule;
@@ -56,7 +53,6 @@ import java.util.List;
 
 public class RuleEqualityTest {
 	private DataStore dataStore;
-	private ConfigBundle config;
 
 	private StandardPredicate singlePredicate;
 	private StandardPredicate doublePredicate;
@@ -66,16 +62,13 @@ public class RuleEqualityTest {
 
 	@Before
 	public void setup() {
-		config = new EmptyBundle();
-		dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Memory, this.getClass().getName(), true), config);
+		dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Memory, this.getClass().getName(), true));
 
 		// Predicates
-		PredicateFactory factory = PredicateFactory.getFactory();
-
-		singlePredicate = factory.createStandardPredicate("SinglePredicate", ConstantType.UniqueStringID);
+		singlePredicate = StandardPredicate.get("SinglePredicate", ConstantType.UniqueStringID);
 		dataStore.registerPredicate(singlePredicate);
 
-		doublePredicate = factory.createStandardPredicate("DoublePredicate", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
+		doublePredicate = StandardPredicate.get("DoublePredicate", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
 		dataStore.registerPredicate(doublePredicate);
 
 		// Rules

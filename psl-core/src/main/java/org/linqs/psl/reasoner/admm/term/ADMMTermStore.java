@@ -17,12 +17,14 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
-import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
+import org.linqs.psl.reasoner.admm.ADMMReasoner;
 import org.linqs.psl.reasoner.function.AtomFunctionVariable;
 import org.linqs.psl.reasoner.term.MemoryTermStore;
 import org.linqs.psl.reasoner.term.TermStore;
+import org.linqs.psl.util.RandUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,13 +57,9 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm> {
 	 */
 	private int numLocalVariables;
 
-	public ADMMTermStore() {
-		this(new MemoryTermStore<ADMMObjectiveTerm>());
-	}
-
 	@SuppressWarnings("unchecked")
-	public ADMMTermStore(ConfigBundle config) {
-		this((TermStore<ADMMObjectiveTerm>)config.getNewObject(INTERNAL_STORE_KEY, INTERNAL_STORE_DEFAULT));
+	public ADMMTermStore() {
+		this((TermStore<ADMMObjectiveTerm>)Config.getNewObject(INTERNAL_STORE_KEY, INTERNAL_STORE_DEFAULT));
 	}
 
 	public ADMMTermStore(TermStore<ADMMObjectiveTerm> store) {
@@ -116,6 +114,38 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm> {
 		}
 	}
 
+	/**
+	 * Get the values from the atoms corresponding to global (consensus)
+	 * variables and put them in the output array.
+	 */
+	public void getAtomValues(float[] values) {
+		for (Map.Entry<AtomFunctionVariable, Integer> entry : variableIndexes.entrySet()) {
+			values[entry.getValue().intValue()] = (float)entry.getKey().getValue();
+		}
+	}
+
+	public void resetLocalVairables() {
+		resetLocalVairables(ADMMReasoner.InitialValue.RANDOM);
+	}
+
+	public void resetLocalVairables(ADMMReasoner.InitialValue initialValue) {
+		for (Map.Entry<AtomFunctionVariable, Integer> entry : variableIndexes.entrySet()) {
+			for (LocalVariable local : localVariables.get(entry.getValue().intValue())) {
+				if (initialValue == ADMMReasoner.InitialValue.ZERO) {
+					local.setValue(0.0f);
+				} else if (initialValue == ADMMReasoner.InitialValue.RANDOM) {
+					local.setValue(RandUtils.nextFloat());
+				} else if (initialValue == ADMMReasoner.InitialValue.ATOM) {
+					local.setValue((float)(entry.getKey().getValue()));
+				} else {
+					throw new IllegalStateException("Unknown initial consensus value: " + initialValue);
+				}
+
+				local.setLagrange(0.0f);
+			}
+		}
+	}
+
 	@Override
 	public void add(GroundRule rule, ADMMObjectiveTerm term) {
 		store.add(rule, term);
@@ -123,9 +153,17 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm> {
 
 	@Override
 	public void clear() {
-		store.clear();
-		variableIndexes.clear();
-		localVariables.clear();
+		if (store != null) {
+			store.clear();
+		}
+
+		if (variableIndexes != null) {
+			variableIndexes.clear();
+		}
+
+		if (localVariables != null) {
+			localVariables.clear();
+		}
 
 		numLocalVariables = 0;
 	}
@@ -134,8 +172,11 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm> {
 	public void close() {
 		clear();
 
-		store.close();
-		store = null;
+		if (store != null) {
+			store.close();
+			store = null;
+		}
+
 		variableIndexes = null;
 		localVariables = null;
 	}
@@ -148,6 +189,11 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm> {
 	@Override
 	public int size() {
 		return store.size();
+	}
+
+	@Override
+	public void ensureCapacity(int capacity) {
+		store.ensureCapacity(capacity);
 	}
 
 	@Override

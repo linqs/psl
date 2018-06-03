@@ -18,7 +18,7 @@
 package org.linqs.psl.database.atom;
 
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
-import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.ResultList;
@@ -83,7 +83,7 @@ public class LazyAtomManager extends PersistedAtomManager {
 	private final Set<RandomVariableAtom> lazyAtoms;
 	private final double activation;
 
-	public LazyAtomManager(Database db, ConfigBundle config) {
+	public LazyAtomManager(Database db) {
 		super(db);
 
 		if (!(db instanceof RDBMSDatabase)) {
@@ -91,7 +91,7 @@ public class LazyAtomManager extends PersistedAtomManager {
 		}
 
 		lazyAtoms = new HashSet<RandomVariableAtom>();
-		activation = config.getDouble(ACTIVATION_THRESHOLD_KEY, ACTIVATION_THRESHOLD_DEFAULT);
+		activation = Config.getDouble(ACTIVATION_THRESHOLD_KEY, ACTIVATION_THRESHOLD_DEFAULT);
 
 		if (activation <= 0 || activation > 1) {
 			throw new IllegalArgumentException(
@@ -101,17 +101,19 @@ public class LazyAtomManager extends PersistedAtomManager {
 	}
 
 	@Override
-	public GroundAtom getAtom(Predicate predicate, Constant... arguments) {
-		RandomVariableAtom lazyAtom = null;
+	public synchronized GroundAtom getAtom(Predicate predicate, Constant... arguments) {
+		GroundAtom atom = db.getAtom(predicate, arguments);
+		if (!(atom instanceof RandomVariableAtom)) {
+			return atom;
+		}
+		RandomVariableAtom rvAtom = (RandomVariableAtom)atom;
 
-		try {
-			return super.getAtom(predicate, arguments);
-		} catch (PersistedAtomManager.PersistedAccessException ex) {
-			lazyAtom = ex.atom;
+		// If this atom has not been persisted, it is lazy.
+		if (!persistedCache.contains(rvAtom)) {
+			lazyAtoms.add(rvAtom);
 		}
 
-		lazyAtoms.add(lazyAtom);
-		return lazyAtom;
+		return rvAtom;
 	}
 
 	public Set<RandomVariableAtom> getLazyAtoms() {
@@ -137,6 +139,10 @@ public class LazyAtomManager extends PersistedAtomManager {
 	 * @return the number of lazy atoms instantiated.
 	 */
 	public int activateAtoms(List<Rule> rules, GroundRuleStore groundRuleStore) {
+		if (lazyAtoms.size() == 0) {
+			return 0;
+		}
+
 		Set<RandomVariableAtom> toActivate = new HashSet<RandomVariableAtom>();
 
 		Iterator<RandomVariableAtom> lazyAtomIterator = lazyAtoms.iterator();

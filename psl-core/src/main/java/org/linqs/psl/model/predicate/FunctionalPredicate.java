@@ -17,44 +17,28 @@
  */
 package org.linqs.psl.model.predicate;
 
-import org.linqs.psl.database.ReadOnlyDatabase;
-import org.linqs.psl.model.atom.Atom;
-import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.atom.ObservedAtom;
+import org.linqs.psl.database.ReadableDatabase;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
 
 /**
- * A Predicate with {@link GroundAtom GroundAtoms} that have truth values defined
- * by a function of their arguments and the {@link ObservedAtom ObservedAtoms}
- * of the closed {@link StandardPredicate StandardPredicates} of the GroundAtoms'
- * Databases.
- * <p>
- * Before extending this class, users should consider using a
- * {@link SpecialPredicate} or an {@link ExternalFunctionalPredicate}.
- *
- * @author Matthias Broecheler
+ * A Predicate with truth values defined by some function.
  */
 public abstract class FunctionalPredicate extends Predicate {
-	/**
-	 * Sole constructor.
-	 *
-	 * @param name  name for this predicate
-	 * @param types  types for each of the predicate's arguments
-	 * @see PredicateFactory
-	 */
-	FunctionalPredicate(String name, ConstantType[] types) {
-		super(name, types);
+	protected FunctionalPredicate(String name, ConstantType[] types) {
+		super(name, types, true);
+	}
+
+	protected FunctionalPredicate(String name, ConstantType[] types, boolean checkName) {
+		super(name, types, checkName);
 	}
 
 	/**
-	 * Computes the truth value of the {@link Atom} of this Predicate
-	 * with the given arguments.
+	 * Computes the truth value of this Predicate with the given arguments.
 	 *
-	 * @param db	the connection to the database which is running this query
-	 * @param args  the arguments for which the truth value will be computed
+	 * @param db the connection to the database which is running this query
+	 * @param args the arguments for which the truth value will be computed
 	 * @return the computed truth value
-	 * @throws IllegalArgumentException  if args is not valid
 	 */
-	public abstract double computeValue(ReadOnlyDatabase db, Constant... args);
+	public abstract double computeValue(ReadableDatabase db, Constant... args);
 }

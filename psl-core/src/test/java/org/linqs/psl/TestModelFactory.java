@@ -18,9 +18,6 @@
 package org.linqs.psl;
 
 import org.linqs.psl.application.inference.MPEInference;
-import org.linqs.psl.config.ConfigBundle;
-import org.linqs.psl.config.ConfigManager;
-import org.linqs.psl.config.EmptyBundle;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
@@ -35,7 +32,6 @@ import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Implication;
 import org.linqs.psl.model.formula.Negation;
 import org.linqs.psl.model.predicate.Predicate;
-import org.linqs.psl.model.predicate.PredicateFactory;
 import org.linqs.psl.model.predicate.SpecialPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
@@ -60,8 +56,6 @@ public class TestModelFactory {
 	public static final String PARTITION_TRUTH = "truth";
 	// This class promises not to use this partition, so tests can guarantee it will be empty.
 	public static final String PARTITION_UNUSED = "unused";
-
-	public static final String CONFIG_PREFIX = "testmodel";
 
 	// Give each model a unique identifier.
 	private static int modelId = 0;
@@ -106,9 +100,8 @@ public class TestModelFactory {
 		predicatesInfo.put("Friends", new ConstantType[]{ConstantType.UniqueStringID, ConstantType.UniqueStringID});
 
 		Map<String, StandardPredicate> predicates = new HashMap<String, StandardPredicate>();
-		PredicateFactory predicateFactory = PredicateFactory.getFactory();
 		for (Map.Entry<String, ConstantType[]> predicateEntry : predicatesInfo.entrySet()) {
-			StandardPredicate predicate = predicateFactory.createStandardPredicate(predicateEntry.getKey(), predicateEntry.getValue());
+			StandardPredicate predicate = StandardPredicate.get(predicateEntry.getKey(), predicateEntry.getValue());
 			predicates.put(predicateEntry.getKey(), predicate);
 		}
 
@@ -239,18 +232,11 @@ public class TestModelFactory {
 			Map<String, StandardPredicate> predicates, List<Rule> rules,
 			Map<StandardPredicate, List<PredicateData>> observations, Map<StandardPredicate, List<PredicateData>> targets,
 			Map<StandardPredicate, List<PredicateData>> truths) {
-		ConfigBundle config = null;
-		try {
-			config = ConfigManager.getManager().getBundle(CONFIG_PREFIX);
-		} catch (Exception ex) {
-			throw new RuntimeException(ex);
-		}
-
 		String identifier = String.format("%s-%03d", TestModelFactory.class.getName(), modelId);
 		DataStore dataStore = new RDBMSDataStore(new H2DatabaseDriver(
 				Type.Memory,
 				Paths.get(System.getProperty("java.io.tmpdir"), identifier).toString(),
-				true), config);
+				true));
 
 		Model model = new Model();
 
@@ -293,7 +279,7 @@ public class TestModelFactory {
 			}
 		}
 
-		return new ModelInformation(modelId++, config, dataStore, model, predicates, obsPartition, targetPartition, truthPartition);
+		return new ModelInformation(modelId++, dataStore, model, predicates, obsPartition, targetPartition, truthPartition);
 	}
 
 	/**
@@ -304,7 +290,6 @@ public class TestModelFactory {
 	 */
 	public static class ModelInformation {
 		public int id;
-		public ConfigBundle config;
 		public DataStore dataStore;
 		public Model model;
 		public Map<String, StandardPredicate> predicates;
@@ -313,11 +298,10 @@ public class TestModelFactory {
 		public Partition truthPartition;
 
 		public ModelInformation(
-				int id, ConfigBundle config, DataStore dataStore, Model model,
+				int id, DataStore dataStore, Model model,
 				Map<String, StandardPredicate> predicates,
 				Partition observationPartition, Partition targetPartition, Partition truthPartition) {
 			this.id = id;
-			this.config = config;
 			this.dataStore = dataStore;
 			this.model = model;
 			this.predicates = predicates;

@@ -19,7 +19,6 @@ package org.linqs.psl.database.rdbms;
 
 import static org.junit.Assert.assertEquals;
 
-import org.linqs.psl.config.EmptyBundle;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseTestUtil;
@@ -31,7 +30,6 @@ import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.PostgreSQLDriver;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.formula.Formula;
-import org.linqs.psl.model.predicate.PredicateFactory;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
@@ -54,9 +52,8 @@ public class DatabasePopulatorTest {
 	private static StandardPredicate p2;
 
 	static {
-		PredicateFactory predicateFactory = PredicateFactory.getFactory();
-		p1 = predicateFactory.createStandardPredicate("DatabasePopulatorTest_P1", ConstantType.UniqueIntID, ConstantType.UniqueIntID);
-		p2 = predicateFactory.createStandardPredicate("DatabasePopulatorTest_P2", ConstantType.String, ConstantType.Double);
+		p1 = StandardPredicate.get("DatabasePopulatorTest_P1", ConstantType.UniqueIntID, ConstantType.UniqueIntID);
+		p2 = StandardPredicate.get("DatabasePopulatorTest_P2", ConstantType.String, ConstantType.Double);
 	}
 
 	@Test
@@ -96,7 +93,7 @@ public class DatabasePopulatorTest {
 	}
 
 	private void simplePopulateDatabase(DatabaseDriver driver) {
-		DataStore datastore = new RDBMSDataStore(driver, new EmptyBundle());
+		DataStore datastore = new RDBMSDataStore(driver);
 		datastore.registerPredicate(p1);
 		datastore.registerPredicate(p2);
 
@@ -147,7 +144,7 @@ public class DatabasePopulatorTest {
 	}
 
 	private void complexPopulateDatabase(DatabaseDriver driver) {
-		DataStore datastore = new RDBMSDataStore(driver, new EmptyBundle());
+		DataStore datastore = new RDBMSDataStore(driver);
 		datastore.registerPredicate(p1);
 		datastore.registerPredicate(p2);
 

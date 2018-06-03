@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.database.rdbms;
 
-import org.linqs.psl.config.EmptyBundle;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.DataStoreContractTest;
 import org.linqs.psl.database.DatabaseTestUtil;
@@ -26,13 +25,13 @@ import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 
 public class PostgresDataStoreContractTest extends DataStoreContractTest {
 	@Override
-	public DataStore getDataStore(boolean clearDB) {
+	public DataStore getDataStore(boolean clearDB, boolean persisted) {
 		DatabaseDriver driver = DatabaseTestUtil.getPostgresDriver(clearDB);
 		if (driver == null) {
 			return null;
 		}
 
-		return new RDBMSDataStore(driver, new EmptyBundle());
+		return new RDBMSDataStore(driver);
 	}
 
 	@Override

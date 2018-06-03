@@ -24,5 +24,4 @@ import org.linqs.psl.model.atom.GroundAtom;
  * which constrain the values that {@link GroundAtom GroundAtoms} can take.
  */
 public interface UnweightedRule extends Rule {
-	
 }

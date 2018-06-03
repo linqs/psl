@@ -24,9 +24,9 @@ import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.function.ExternalFunction;
+import org.linqs.psl.model.predicate.ExternalFunctionalPredicate;
 import org.linqs.psl.model.predicate.FunctionalPredicate;
 import org.linqs.psl.model.predicate.Predicate;
-import org.linqs.psl.model.predicate.PredicateFactory;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.arithmetic.UnweightedArithmeticRule;
@@ -61,8 +61,6 @@ public class PSLModel extends Model {
 	// Storage for set comparisons
 	private int auxPredicateCounter = 0;
 
-	// Local PredicateFactory
-	private PredicateFactory pf = PredicateFactory.getFactory();
 	private DataStore ds;
 
 	// TODO: Documentation
@@ -88,7 +86,7 @@ public class PSLModel extends Model {
 		if (name.equals("out"))
 			return System.out;
 
-		Predicate predicate = pf.getPredicate(name);
+		Predicate predicate = Predicate.get(name);
 
 		if (predicate != null)
 			return predicate;
@@ -108,7 +106,7 @@ public class PSLModel extends Model {
 	 * @return			a FormulaContainer
 	 */
 	public Object createFormulaContainer(String name, Object[] args) {
-		Predicate pred = pf.getPredicate(name);
+		Predicate pred = Predicate.get(name);
 
 		if (pred != null) {
 			Term[] terms = new Term[args.size()];
@@ -179,7 +177,7 @@ public class PSLModel extends Model {
 					"Include multiple arguments as a list wrapped in [...].");
 			}
 
-			StandardPredicate pred = pf.createStandardPredicate(name, predArgs);
+			StandardPredicate pred = StandardPredicate.get(name, predArgs);
 			ds.registerPredicate(pred);
 			return pred;
 		} else {
@@ -189,7 +187,7 @@ public class PSLModel extends Model {
 	}
 
 	private FunctionalPredicate addFunction(String name, Map args) {
-		if (pf.getPredicate(name) != null) {
+		if (Predicate.get(name) != null) {
 			throw new IllegalArgumentException("A similarity function with the name [${name}] has already been defined.");
 		}
 
@@ -203,7 +201,7 @@ public class PSLModel extends Model {
 			args.remove 'implementation';
 		}
 
-		return pf.createExternalFunctionalPredicate(name, implementation);
+		return ExternalFunctionalPredicate.get(name, implementation);
 	}
 
 	private StandardPredicate getBasicPredicate(Map args, String key) {
@@ -326,6 +324,6 @@ public class PSLModel extends Model {
 	}
 
 	public Predicate getPredicate(String name) {
-		return pf.getPredicate(name);
+		return Predicate.get(name);
 	}
 }

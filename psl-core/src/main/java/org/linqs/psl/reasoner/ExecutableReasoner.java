@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.reasoner;
 
-import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.reasoner.term.TermStore;
 
 import org.slf4j.Logger;
@@ -39,7 +39,7 @@ import java.util.List;
  *
  * Ground models are provided to the executable and results are read via temporary files.
  */
-public abstract class ExecutableReasoner extends Reasoner {
+public abstract class ExecutableReasoner implements Reasoner {
 	private static final Logger log = LoggerFactory.getLogger(ExecutableReasoner.class);
 
 	/**
@@ -84,26 +84,22 @@ public abstract class ExecutableReasoner extends Reasoner {
 
 	protected String[] args;
 
-	public ExecutableReasoner(ConfigBundle config) {
-		super(config);
-
-		this.executablePath = config.getString(EXECUTABLE_PATH_KEY, "");
-		this.cleanupInput = config.getBoolean(CLEANUP_INPUT_KEY, CLEANUP_INPUT_DEFAULT);
-		this.cleanupOutput = config.getBoolean(CLEANUP_OUTPUT_KEY, CLEANUP_OUTPUT_DEFAULT);
+	public ExecutableReasoner() {
+		this.executablePath = Config.getString(EXECUTABLE_PATH_KEY, "");
+		this.cleanupInput = Config.getBoolean(CLEANUP_INPUT_KEY, CLEANUP_INPUT_DEFAULT);
+		this.cleanupOutput = Config.getBoolean(CLEANUP_OUTPUT_KEY, CLEANUP_OUTPUT_DEFAULT);
 	}
 
-	public ExecutableReasoner(ConfigBundle config, String executablePath,
+	public ExecutableReasoner(String executablePath,
 			String executableInputPath, String executableOutputPath,
 			String... args) {
-		super(config);
-
 		this.executablePath = executablePath;
 		this.executableInputPath = executableInputPath;
 		this.executableOutputPath = executableOutputPath;
 		this.args = args;
 
-		this.cleanupInput = config.getBoolean(CLEANUP_INPUT_KEY, CLEANUP_INPUT_DEFAULT);
-		this.cleanupOutput = config.getBoolean(CLEANUP_OUTPUT_KEY, CLEANUP_OUTPUT_DEFAULT);
+		this.cleanupInput = Config.getBoolean(CLEANUP_INPUT_KEY, CLEANUP_INPUT_DEFAULT);
+		this.cleanupOutput = Config.getBoolean(CLEANUP_OUTPUT_KEY, CLEANUP_OUTPUT_DEFAULT);
 	}
 
 	@Override

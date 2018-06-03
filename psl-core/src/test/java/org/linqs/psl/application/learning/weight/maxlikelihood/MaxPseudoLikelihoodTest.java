@@ -20,19 +20,23 @@ package org.linqs.psl.application.learning.weight.maxlikelihood;
 import org.linqs.psl.application.learning.weight.VotedPerceptron;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningTest;
+import org.linqs.psl.config.Config;
+
+import org.junit.After;
 
 public class MaxPseudoLikelihoodTest extends WeightLearningTest {
+	public MaxPseudoLikelihoodTest() {
+		super();
+
+		// TODO(eriq): MPLE is broken, fix it.
+		assertBaseTest = false;
+	}
+
 	@Override
 	protected WeightLearningApplication getWLA() {
 		// Do less steps for tests.
-		info.config.setProperty(VotedPerceptron.NUM_STEPS_KEY, 5);
+		Config.setProperty(VotedPerceptron.NUM_STEPS_KEY, 5);
 
-		return new MaxPseudoLikelihood(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB, info.config);
-	}
-
-	// TODO(eriq): MPLE is broken, fix it.
-	@Override
-	public void baseTest() {
-		baseTest(false);
+		return new MaxPseudoLikelihood(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
 	}
 }

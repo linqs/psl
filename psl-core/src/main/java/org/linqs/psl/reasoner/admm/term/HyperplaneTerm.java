@@ -27,8 +27,6 @@ import java.util.List;
  * and projects onto the hyperplane.
  *
  * All coeffs must be non-zero.
- *
- * @author Stephen Bach <bach@cs.umd.edu>
  */
 public abstract class HyperplaneTerm extends ADMMObjectiveTerm {
 	protected final List<Float> coeffs;
@@ -113,5 +111,17 @@ public abstract class HyperplaneTerm extends ADMMObjectiveTerm {
 		for (int i = 0; i < variables.size(); i++) {
 			variables.get(i).setValue(point[i] - multiplier * unitNormal.get(i).floatValue());
 		}
+	}
+
+	/**
+	 * coeffs^T * x - constant
+	 */
+	@Override
+	public float evaluate() {
+		float value = 0.0f;
+		for (int i = 0; i < variables.size(); i++) {
+			value += coeffs.get(i).floatValue() * variables.get(i).getValue();
+		}
+		return value - constant;
 	}
 }

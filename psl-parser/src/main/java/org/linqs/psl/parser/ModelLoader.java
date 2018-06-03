@@ -27,7 +27,6 @@ import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.formula.Implication;
 import org.linqs.psl.model.formula.Negation;
 import org.linqs.psl.model.predicate.Predicate;
-import org.linqs.psl.model.predicate.PredicateFactory;
 import org.linqs.psl.model.predicate.SpecialPredicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.arithmetic.UnweightedArithmeticRule;
@@ -78,8 +77,8 @@ import org.linqs.psl.parser.antlr.PSLParser.LogicalConjunctiveValueContext;
 import org.linqs.psl.parser.antlr.PSLParser.LogicalDisjunctiveExpressionContext;
 import org.linqs.psl.parser.antlr.PSLParser.LogicalDisjunctiveValueContext;
 import org.linqs.psl.parser.antlr.PSLParser.LogicalImplicationExpressionContext;
+import org.linqs.psl.parser.antlr.PSLParser.LogicalNegationValueContext;
 import org.linqs.psl.parser.antlr.PSLParser.LogicalRuleExpressionContext;
-import org.linqs.psl.parser.antlr.PSLParser.LogicalValueContext;
 import org.linqs.psl.parser.antlr.PSLParser.NumberContext;
 import org.linqs.psl.parser.antlr.PSLParser.PredicateContext;
 import org.linqs.psl.parser.antlr.PSLParser.ProgramContext;
@@ -104,6 +103,7 @@ import org.antlr.v4.runtime.CommonToken;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Recognizer;
+import org.antlr.v4.runtime.misc.Interval;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
 
 import java.io.Reader;
@@ -337,7 +337,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	@Override
 	public Formula visitLogicalDisjunctiveValue(LogicalDisjunctiveValueContext ctx) {
 		if (ctx.getChildCount() == 1) {
-			return visitLogicalValue(ctx.logicalValue());
+			return visitLogicalNegationValue(ctx.logicalNegationValue());
 		}
 
 		// Parens
@@ -347,7 +347,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	@Override
 	public Formula visitLogicalConjunctiveValue(LogicalConjunctiveValueContext ctx) {
 		if (ctx.getChildCount() == 1) {
-			return visitLogicalValue(ctx.logicalValue());
+			return visitLogicalNegationValue(ctx.logicalNegationValue());
 		}
 
 		// Parens
@@ -355,14 +355,19 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	}
 
 	@Override
-	public Formula visitLogicalValue(LogicalValueContext ctx) {
-		Atom atom = visitAtom(ctx.atom());
-
-		if (ctx.not() != null) {
-			return new Negation(atom);
+	public Formula visitLogicalNegationValue(LogicalNegationValueContext ctx) {
+		// Bare atom
+		if (ctx.getChildCount() == 1) {
+			return visitAtom(ctx.atom());
 		}
 
-		return atom;
+		// Negation
+		if (ctx.getChildCount() == 2) {
+			return new Negation(visitLogicalNegationValue(ctx.logicalNegationValue()));
+		}
+
+		// Parens
+		return visitLogicalNegationValue(ctx.logicalNegationValue());
 	}
 
 	@Override
@@ -555,7 +560,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 
 	@Override
 	public SummationAtomOrAtom visitSummationAtom(SummationAtomContext ctx) {
-		Predicate p = visitPredicate(ctx.predicate());
+		Predicate predicate = visitPredicate(ctx.predicate());
 
 		// We have strange numbering because of the predicate, parens, commas.
 		SummationVariableOrTerm[] args = new SummationVariableOrTerm[ctx.getChildCount() / 2 - 1];
@@ -579,14 +584,14 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 		}
 
 		if (isSummation) {
-			return new SummationAtom(p, args);
+			return new SummationAtom(predicate, args);
 		} else {
 			Term[] termArgs = new Term[args.length];
 			for (int i = 0; i < termArgs.length; i++) {
 				termArgs[i] = (Term)args[i];
 			}
 
-			return new QueryAtom(p, termArgs);
+			return new QueryAtom(predicate, termArgs);
 		}
 	}
 
@@ -714,8 +719,8 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	@Override
 	public Formula visitBooleanValue(BooleanValueContext ctx) {
 		// A logical value.
-		if (ctx.logicalValue() != null) {
-			return visitLogicalValue(ctx.logicalValue());
+		if (ctx.logicalNegationValue() != null) {
+			return visitLogicalNegationValue(ctx.logicalNegationValue());
 		}
 
 		// Bool expression with parens.
@@ -755,34 +760,34 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 
 	@Override
 	public Double visitWeightExpression(WeightExpressionContext ctx) {
-		return Double.parseDouble(ctx.NONNEGATIVE_NUMBER().getText());
+		return Double.parseDouble(ctx.number().getText());
 	}
 
 	@Override
 	public Atom visitAtom(AtomContext ctx) {
 		if (ctx.predicate() != null) {
-			Predicate p = visitPredicate(ctx.predicate());
+			Predicate predicate = visitPredicate(ctx.predicate());
 			Term[] args = new Term[ctx.term().size()];
 			for (int i = 0; i < args.length; i++) {
 				args[i] = (Term) visit(ctx.term(i));
 			}
-			return new QueryAtom(p, args);
+			return new QueryAtom(predicate, args);
 		}
 		else if (ctx.termOperator() != null) {
-			SpecialPredicate p;
+			SpecialPredicate predicate;
 			if (ctx.termOperator().notEqual() != null) {
-				p = SpecialPredicate.NotEqual;
+				predicate = SpecialPredicate.NotEqual;
 			}
 			else if (ctx.termOperator().termEqual() != null) {
-				p = SpecialPredicate.Equal;
+				predicate = SpecialPredicate.Equal;
 			}
 			else if (ctx.termOperator().nonSymmetric() != null) {
-				p = SpecialPredicate.NonSymmetric;
+				predicate = SpecialPredicate.NonSymmetric;
 			}
 			else {
 				throw new IllegalStateException();
 			}
-			return new QueryAtom(p, (Term) visit(ctx.term(0)), (Term) visit(ctx.term(1)));
+			return new QueryAtom(predicate, (Term) visit(ctx.term(0)), (Term) visit(ctx.term(1)));
 		}
 		else {
 			throw new IllegalStateException();
@@ -791,11 +796,9 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 
 	@Override
 	public Predicate visitPredicate(PredicateContext ctx) {
-		PredicateFactory pf = PredicateFactory.getFactory();
-		Predicate p = pf.getPredicate(ctx.IDENTIFIER().getText());
-
-		if (p != null) {
-			return p;
+		Predicate predicate = Predicate.get(ctx.IDENTIFIER().getText());
+		if (predicate != null) {
+			return predicate;
 		} else {
 			throw new IllegalStateException("Undefined predicate " + ctx.IDENTIFIER().getText());
 		}
@@ -808,15 +811,32 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 
 	@Override
 	public Constant visitConstant(ConstantContext ctx) {
-		// Return the most trival constant type that matches the parsed type.
-		// Note that these values will get promoted to unique identifiers if necessary
-		// by Atom.
+		// We need to jump through these hoops to preserve whitespace.
+		int contextStart = ctx.start.getStartIndex();
+		int contextEnd = ctx.stop.getStopIndex();
+		Interval interval = new Interval(contextStart, contextEnd);
+		String text = ctx.start.getInputStream().getText(interval);
 
-		// Remove the encapsulating single or double quotes.
-		// Make sure not to strip off any extra values.
-		String constantValue = ctx.CONSTANT_VALUE().getText();
-		constantValue = constantValue.replaceFirst("^(['\"])(.*)\\1$", "$2");
-		return new StringAttribute(constantValue);
+		// Strip the quotes (first and last characters).
+		text = text.substring(1, text.length() - 1);
+		text = replaceLiterals(text);
+
+		return new StringAttribute(text);
+	}
+
+	private String replaceLiterals(String text) {
+		if (!text.contains("\\")) {
+			return text;
+		}
+
+		text = text.replace("\\'", "'");
+		text = text.replace("\\\"", "\"");
+		text = text.replace("\\t", "\t");
+		text = text.replace("\\n", "\n");
+		text = text.replace("\\r", "\r");
+		text = text.replace("\\\\", "\\");
+
+		return text;
 	}
 
 	@Override

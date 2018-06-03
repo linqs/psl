@@ -23,27 +23,11 @@ import org.linqs.psl.model.rule.arithmetic.expression.SummationVariableOrTerm;
 /**
  * An argument to a {@link Predicate}.
  * All terms are immutable.
- *
- * @author Matthias Broecheler
  */
-public interface Term extends SummationVariableOrTerm {
-	/**
-	 * @return a human-friendly String identifier
-	 */
+public interface Term extends Comparable<Term>, SummationVariableOrTerm {
 	public String toString();
 
-	/**
-	 * @return hash code
-	 */
 	public int hashCode();
 
-	/**
-	 * Checks equality with an Object.
-	 * <p>
-	 * Equality semantics are implementation specific.
-	 *
-	 * @param oth  Object to compare to
-	 * @return TRUE if equal, FALSE otherwise
-	 */
-	public boolean equals(Object oth);
+	public boolean equals(Object other);
 }

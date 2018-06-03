@@ -18,31 +18,47 @@
 package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
-import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
+import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.function.AtomFunctionVariable;
-import org.linqs.psl.reasoner.function.ConstantNumber;
 import org.linqs.psl.reasoner.function.ConstraintTerm;
-import org.linqs.psl.reasoner.function.FunctionSum;
-import org.linqs.psl.reasoner.function.FunctionSummand;
 import org.linqs.psl.reasoner.function.FunctionTerm;
-import org.linqs.psl.reasoner.function.MaxFunction;
-import org.linqs.psl.reasoner.function.PowerOfTwo;
+import org.linqs.psl.reasoner.function.GeneralFunction;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.Parallel;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * A TermGenerator for ADMM objective terms.
  */
 public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
-	public ADMMTermGenerator() {}
-	public ADMMTermGenerator(ConfigBundle config) {}
+	private static final Logger log = LoggerFactory.getLogger(ADMMTermGenerator.class);
+
+	public static final String CONFIG_PREFIX = "admmtermgenerator";
+
+	/**
+	 * If true, then invert negative weight rules into their positive weight counterparts
+	 * (negate the weight and expression).
+	 */
+	public static final String INVERT_NEGATIVE_WEIGHTS_KEY = CONFIG_PREFIX + ".invertnegativeweights";
+	public static final boolean INVERT_NEGATIVE_WEIGHTS_DEFAULT = false;
+
+	private boolean invertNegativeWeight;
+
+	public ADMMTermGenerator() {
+		invertNegativeWeight = Config.getBoolean(INVERT_NEGATIVE_WEIGHTS_KEY, INVERT_NEGATIVE_WEIGHTS_DEFAULT);
+	}
 
 	@Override
 	public int generateTerms(GroundRuleStore ruleStore, final TermStore<ADMMObjectiveTerm> termStore) {
@@ -51,13 +67,46 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 		}
 
 		int initialSize = termStore.size();
+		termStore.ensureCapacity(initialSize + ruleStore.size());
+
+		Set<WeightedRule> rules = new HashSet<WeightedRule>();
+		for (GroundRule rule : ruleStore.getGroundRules()) {
+			if (rule instanceof WeightedGroundRule) {
+				rules.add((WeightedRule)rule.getRule());
+			}
+		}
+
+		for (WeightedRule rule : rules) {
+			if (rule.getWeight() < 0.0) {
+				log.warn("Found a rule with a negative weight, but config says not to invert it... skipping: " + rule);
+			}
+		}
 
 		Parallel.foreach(ruleStore.getGroundRules(), new Parallel.Worker<GroundRule>() {
 			@Override
 			public void work(int index, GroundRule rule) {
-				ADMMObjectiveTerm term = createTerm(rule, (ADMMTermStore)termStore);
-				if (term.variables.size() > 0) {
-					termStore.add(rule, term);
+				boolean negativeWeight =
+						rule instanceof WeightedGroundRule
+						&& ((WeightedGroundRule)rule).getWeight() < 0.0;
+
+				if (negativeWeight) {
+					// Skip
+					if (!invertNegativeWeight) {
+						return;
+					}
+
+					// Negate (weight and expression) rules that have a negative weight.
+					for (GroundRule negatedRule : rule.negate()) {
+						ADMMObjectiveTerm term = createTerm(negatedRule, (ADMMTermStore)termStore);
+						if (term.variables.size() > 0) {
+							termStore.add(rule, term);
+						}
+					}
+				} else {
+					ADMMObjectiveTerm term = createTerm(rule, (ADMMTermStore)termStore);
+					if (term.variables.size() > 0) {
+						termStore.add(rule, term);
+					}
 				}
 			}
 		});
@@ -67,6 +116,7 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 
 	@Override
 	public void updateWeights(GroundRuleStore ruleStore, TermStore<ADMMObjectiveTerm> termStore) {
+		// TEST(eriq): This is broken for when a rule switches sign.
 		for (GroundRule groundRule : ruleStore.getGroundRules()) {
 			if (groundRule instanceof WeightedGroundRule) {
 				termStore.updateWeight((WeightedGroundRule)groundRule);
@@ -85,76 +135,26 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 		ADMMObjectiveTerm term;
 
 		if (groundRule instanceof WeightedGroundRule) {
-			boolean squared;
 			float weight = (float)((WeightedGroundRule)groundRule).getWeight();
-			FunctionTerm function = ((WeightedGroundRule)groundRule).getFunctionDefinition();
+			GeneralFunction function = ((WeightedGroundRule)groundRule).getFunctionDefinition();
+			Hyperplane hyperplane = processHyperplane(function, termStore);
 
-			/* Checks if the function is wrapped in a PowerOfTwo */
-			if (function instanceof PowerOfTwo) {
-				squared = true;
-				function = ((PowerOfTwo)function).getInnerFunction();
+			// Non-negative functions have a hinge.
+			if (function.isNonNegative() && function.isSquared()) {
+				term = new SquaredHingeLossTerm(hyperplane.variables, hyperplane.coeffs, hyperplane.constant, weight);
+			} else if (function.isNonNegative() && !function.isSquared()) {
+				term = new HingeLossTerm(hyperplane.variables, hyperplane.coeffs, hyperplane.constant, weight);
+			} else if (!function.isNonNegative() && function.isSquared()) {
+				term = new SquaredLinearLossTerm(hyperplane.variables, hyperplane.coeffs, 0.0f, weight);
 			} else {
-				squared = false;
-			}
-
-			/*
-			 * If the FunctionTerm is a MaxFunction, ensures that it has two arguments, a linear
-			 * function and zero, and constructs the objective term (a hinge loss)
-			 */
-			if (function instanceof MaxFunction) {
-				if (((MaxFunction)function).size() != 2) {
-					throw new IllegalArgumentException("Max function must have one linear function and 0.0 as arguments.");
-				}
-
-				FunctionTerm innerFunction = null;
-				FunctionTerm zeroTerm = null;
-
-				FunctionTerm innerFunction0 = ((MaxFunction)function).get(0);
-				FunctionTerm innerFunction1 = ((MaxFunction)function).get(1);
-
-				if (innerFunction0 instanceof ConstantNumber && innerFunction0.getValue() == 0.0) {
-					zeroTerm = innerFunction0;
-					innerFunction = innerFunction1;
-				} else if (innerFunction1 instanceof ConstantNumber && innerFunction1.getValue() == 0.0) {
-					zeroTerm = innerFunction1;
-					innerFunction = innerFunction0;
-				}
-
-				if (zeroTerm == null) {
-					throw new IllegalArgumentException("Max function must have one linear function and 0.0 as arguments.");
-				}
-
-				if (innerFunction instanceof FunctionSum) {
-					Hyperplane hyperplane = processHyperplane((FunctionSum) innerFunction, termStore);
-					if (squared) {
-						term = new SquaredHingeLossTerm(hyperplane.variables, hyperplane.coeffs, hyperplane.constant, weight);
-					} else {
-						term = new HingeLossTerm(hyperplane.variables, hyperplane.coeffs, hyperplane.constant, weight);
-					}
-				} else {
-					throw new IllegalArgumentException("Max function must have one linear function and 0.0 as arguments.");
-				}
-			/* Else, if it's a FunctionSum, constructs the objective term (a linear loss) */
-			} else if (function instanceof FunctionSum) {
-				Hyperplane hyperplane = processHyperplane((FunctionSum) function, termStore);
-				if (squared) {
-					term = new SquaredLinearLossTerm(hyperplane.variables, hyperplane.coeffs, 0.0f, weight);
-				} else {
-					term = new LinearLossTerm(hyperplane.variables, hyperplane.coeffs, weight);
-				}
-			} else {
-				throw new IllegalArgumentException("Unrecognized function: " + function);
+				term = new LinearLossTerm(hyperplane.variables, hyperplane.coeffs, weight);
 			}
 		} else if (groundRule instanceof UnweightedGroundRule) {
 			ConstraintTerm constraint = ((UnweightedGroundRule)groundRule).getConstraintDefinition();
-			FunctionTerm function = constraint.getFunction();
-			if (function instanceof FunctionSum) {
-				Hyperplane hyperplane = processHyperplane((FunctionSum)function, termStore);
-				term = new LinearConstraintTerm(hyperplane.variables, hyperplane.coeffs,
-						(float)(constraint.getValue() + hyperplane.constant), constraint.getComparator());
-			} else {
-				throw new IllegalArgumentException("Unrecognized constraint: " + constraint);
-			}
+			GeneralFunction function = constraint.getFunction();
+			Hyperplane hyperplane = processHyperplane(function, termStore);
+			term = new LinearConstraintTerm(hyperplane.variables, hyperplane.coeffs,
+					(float)(constraint.getValue() + hyperplane.constant), constraint.getComparator());
 		} else {
 			throw new IllegalArgumentException("Unsupported ground rule: " + groundRule);
 		}
@@ -162,15 +162,16 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 		return term;
 	}
 
-	private Hyperplane processHyperplane(FunctionSum sum, ADMMTermStore termStore) {
+	private Hyperplane processHyperplane(GeneralFunction sum, ADMMTermStore termStore) {
 		Hyperplane hyperplane = new Hyperplane();
+		hyperplane.constant = -1.0f * (float)sum.getConstant();
 
 		for (int i = 0; i < sum.size(); i++) {
-			FunctionSummand summand = sum.get(i);
-			FunctionTerm singleton = summand.getTerm();
+			double coefficient = sum.getCoefficient(i);
+			FunctionTerm term = sum.getTerm(i);
 
-			if (singleton instanceof AtomFunctionVariable && !singleton.isConstant()) {
-				LocalVariable variable = termStore.createLocalVariable((AtomFunctionVariable)singleton);
+			if (term instanceof AtomFunctionVariable && !term.isConstant()) {
+				LocalVariable variable = termStore.createLocalVariable((AtomFunctionVariable)term);
 
 				// Check to see if we have seen this variable before in this hyperplane.
 				// Note that we checking for existance in a List (O(n)), but there are usually a small number of
@@ -178,16 +179,16 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 				int localIndex = hyperplane.variables.indexOf(variable);
 				if (localIndex != -1) {
 					// If it has, just adds the coefficient.
-					hyperplane.coeffs.set(localIndex, new Float(hyperplane.coeffs.get(localIndex) + summand.getCoefficient()));
+					hyperplane.coeffs.set(localIndex, new Float(hyperplane.coeffs.get(localIndex) + coefficient));
 				} else {
 					hyperplane.variables.add(variable);
-					hyperplane.coeffs.add(new Float(summand.getCoefficient()));
+					hyperplane.coeffs.add(new Float(coefficient));
 				}
-			} else if (singleton.isConstant()) {
+			} else if (term.isConstant()) {
 				// Subtracts because hyperplane is stored as coeffs^T * x = constant.
-				hyperplane.constant -= summand.getValue();
+				hyperplane.constant -= (coefficient * term.getValue());
 			} else {
-				throw new IllegalArgumentException("Unexpected summand.");
+				throw new IllegalArgumentException("Unexpected summand: " + sum + "[" + i + "] (" + term + ").");
 			}
 		}
 
@@ -205,5 +206,4 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 			constant = 0.0f;
 		}
 	}
-
 }

@@ -19,23 +19,21 @@ package org.linqs.psl.reasoner.function;
 
 /**
  * A numeric constraint.
- *
- * A ConstraintTerm encapsulates a {@link FunctionTerm}, a {@link FunctionComparator},
- * and a value. Together these define an equality or inequality statement between
- * the value of a function and constant value.
+ * A ConstraintTerm encapsulates a {@link GeneralFunction}, a {@link FunctionComparator}, and a value.
+ * Together these define an equality or inequality statement between the value of a function and constant value.
  */
 public class ConstraintTerm {
-	private final FunctionTerm function;
+	private final GeneralFunction function;
 	private final FunctionComparator comparator;
 	private final double value;
 
-	public ConstraintTerm(FunctionTerm fun, FunctionComparator comp, double val) {
-		function = fun;
-		comparator = comp;
-		value = val;
+	public ConstraintTerm(GeneralFunction function, FunctionComparator comparator, double value) {
+		this.function = function;
+		this.comparator = comparator;
+		this.value = value;
 	}
 
-	public FunctionTerm getFunction() {
+	public GeneralFunction getFunction() {
 		return function;
 	}
 

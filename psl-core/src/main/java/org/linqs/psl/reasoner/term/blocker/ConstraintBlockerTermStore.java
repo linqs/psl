@@ -24,20 +24,20 @@ import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.arithmetic.UnweightedGroundArithmeticRule;
 import org.linqs.psl.model.rule.misc.GroundValueConstraint;
 import org.linqs.psl.reasoner.term.TermStore;
+import org.linqs.psl.util.RandUtils;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 
 /**
  * A TermStore to hold blocks.
  * See {@link ConstraintBlockerTermGenerator} for details on the constraint blocking process.
  */
 public class ConstraintBlockerTermStore implements TermStore<ConstraintBlockerTerm> {
-	private List<ConstraintBlockerTerm> blocks;
+	private ArrayList<ConstraintBlockerTerm> blocks;
 	private Map<RandomVariableAtom, Integer> rvMap;
 	private GroundRuleStore groundRuleStore;
 
@@ -54,6 +54,7 @@ public class ConstraintBlockerTermStore implements TermStore<ConstraintBlockerTe
 		assert(rvBlocks.length == exactlyOne.length);
 
 		this.groundRuleStore = groundRuleStore;
+		ensureCapacity(blocks.size() + rvBlocks.length);
 
 		for (int i = 0; i < rvBlocks.length; i++) {
 			Integer blockIndex = new Integer(blocks.size());
@@ -89,9 +90,8 @@ public class ConstraintBlockerTermStore implements TermStore<ConstraintBlockerTe
 	 * Randomly initializes the RandomVariableAtoms to a feasible state.
 	 */
 	public void randomlyInitialize() {
-		Random rand = new Random();
 		for (ConstraintBlockerTerm block : blocks) {
-			block.randomlyInitialize(rand);
+			block.randomlyInitialize();
 		}
 	}
 
@@ -102,16 +102,22 @@ public class ConstraintBlockerTermStore implements TermStore<ConstraintBlockerTe
 
 	@Override
 	public void clear() {
-		blocks.clear();
-		rvMap.clear();
-		groundRuleStore = null;
+		if (blocks != null) {
+			blocks.clear();
+		}
+
+		if (rvMap != null) {
+			rvMap.clear();
+		}
 	}
 
 	@Override
 	public void close() {
 		clear();
+
 		blocks = null;
 		rvMap = null;
+		groundRuleStore = null;
 	}
 
 	@Override
@@ -122,6 +128,25 @@ public class ConstraintBlockerTermStore implements TermStore<ConstraintBlockerTe
 	@Override
 	public int size() {
 		return blocks.size();
+	}
+
+	@Override
+	public void ensureCapacity(int capacity) {
+		assert(capacity >= 0);
+
+		if (capacity == 0) {
+			return;
+		}
+
+		blocks.ensureCapacity(capacity);
+
+		// If the map is empty, then just reallocate it
+		// (since we can't add capacity).
+		if (rvMap.size() == 0) {
+			// The default load factor for Java HashMaps is 0.75.
+			// Assume 2 atoms per block.
+			rvMap = new HashMap<RandomVariableAtom, Integer>((int)(capacity * 2 / 0.75));
+		}
 	}
 
 	@Override

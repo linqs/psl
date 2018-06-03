@@ -29,7 +29,7 @@ import org.linqs.psl.model.term.Constant;
  * <p>
  * Coefficient and its subclasses are composable to represent complex definitions.
  * Its subclasses are defined as inner classes, because there are
- * a lot of them and they are simple. 
+ * a lot of them and they are simple.
  */
 public abstract class Coefficient {
 	/**

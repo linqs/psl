@@ -21,7 +21,6 @@ import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseQuery;
 import org.linqs.psl.database.Partition;
-import org.linqs.psl.database.ReadOnlyDatabase;
 import org.linqs.psl.database.ResultList;
 import org.linqs.psl.model.atom.AtomCache;
 import org.linqs.psl.model.atom.GroundAtom;
@@ -46,6 +45,7 @@ import org.linqs.psl.model.term.UniqueIntID;
 import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.model.term.VariableTypeMap;
+import org.linqs.psl.util.Parallel;
 
 import com.healthmarketscience.sqlbuilder.BinaryCondition;
 import com.healthmarketscience.sqlbuilder.CustomSql;
@@ -66,6 +66,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -78,112 +79,29 @@ import java.util.Set;
  * Keep in mind that the upstream datstore/driver usere a connection pool and we should close
  * out connections and statements after we are done with them.
  */
-public class RDBMSDatabase implements Database {
+public class RDBMSDatabase extends Database {
 	private static final Logger log = LoggerFactory.getLogger(RDBMSDatabase.class);
 
 	private static final double DEFAULT_UNOBSERVED_VALUE = 0.0;
 
-	/**
-	 * The backing data store that created this database.
-	 * Connection are obtained from here.
-	 */
-	private final RDBMSDataStore parentDataStore;
-
-	/**
-	 * The partition ID in which this database writes.
-	 */
-	private final Partition writePartition;
-	private final int writeID;
-
-	/**
-	 * The partition IDs that this database reads from.
-	 */
-	private final List<Partition> readPartitions;
-	private final List<Integer> readIDs;
+	private static final String THREAD_QUERY_ATOM_KEY = QueryAtom.class.getName();
 
 	/**
 	 * Predicates that, for the purpose of this database, are closed.
 	 */
 	private final Set<Predicate> closedPredicates;
 
-	/**
-	 * Mapping from a predicate to its database handle.
-	 */
-	private final Map<Predicate, PredicateInfo> predicates;
-
-	/**
-	 * The atom cache for this database.
-	 */
-	private final AtomCache cache;
-
-	/**
-	 * A read-only view of this database for internal use only.
-	 */
-	private ReadOnlyDatabase readOnlyDatabase;
-
-	/**
-	 * Keeps track of the open / closed status of this database.
-	 */
-	private boolean closed;
-
 	public RDBMSDatabase(RDBMSDataStore parent,
 			Partition write, Partition[] read,
-			Map<Predicate, PredicateInfo> predicates,
 			Set<StandardPredicate> closed) {
-		this.parentDataStore = parent;
-		this.writePartition = write;
-		this.writeID = write.getID();
-
-		this.readPartitions = Arrays.asList(read);
-		this.readIDs = new ArrayList<Integer>(read.length);
-		for (int i = 0; i < read.length; i ++) {
-			this.readIDs.add(read[i].getID());
-		}
-
-		if (!this.readIDs.contains(writeID)) {
-			this.readIDs.add(writeID);
-		}
-
-		this.predicates = new HashMap<Predicate, PredicateInfo>();
-		for (Map.Entry<Predicate, PredicateInfo> entry : predicates.entrySet()) {
-			this.predicates.put(entry.getKey(), entry.getValue());
-		}
+		super(parent, write, read);
 
 		this.closedPredicates = new HashSet<Predicate>();
 		if (closed != null) {
 			this.closedPredicates.addAll(closed);
 		}
 
-		this.cache = new AtomCache(this);
-
 		this.closed = false;
-		this.readOnlyDatabase = new ReadOnlyDatabase(this);
-	}
-
-	@Override
-	public Set<StandardPredicate> getRegisteredPredicates() {
-		Set<StandardPredicate> standardPredicates = new HashSet<StandardPredicate>();
-		for (Predicate predicate : predicates.keySet()) {
-			if (predicate instanceof StandardPredicate) {
-				standardPredicates.add((StandardPredicate) predicate);
-			}
-		}
-
-		return standardPredicates;
-	}
-
-	/**
-	 * Helper method for getting a predicate handle
-	 * @param predicate	The predicate to lookup
-	 * @return	The handle associated with the predicate
-	 */
-	public PredicateInfo getPredicateInfo(Predicate predicate) {
-		PredicateInfo info = predicates.get(predicate);
-		if (info == null) {
-			throw new IllegalArgumentException("Predicate not registered with database.");
-		}
-
-		return info;
 	}
 
 	@Override
@@ -200,17 +118,17 @@ public class RDBMSDatabase implements Database {
 		 * Next, query database for atom.
 		 * What partition is it in?
 		 * Read?
-		 * 		- Then instantiate as a persisted ObservedAtom
+		 *		- Then instantiate as a persisted ObservedAtom
 		 * Write?
 		 * 		- Is the predicate closed?
-		 * 		- Yes, instantiate as ObservedAtom.
-		 * 		- No, instantiate as RandomVariableAtom.
+		 *			- Yes, instantiate as ObservedAtom.
+		 *			- No, instantiate as RandomVariableAtom.
 		 * None?
 		 * 		- Is the predicate standard?
-		 * 		- Yes, is the predicate closed?
-		 * 			- Yes, instantiate as ObservedAtom
-		 * 			- No, instantiate as RandomVariableAtom
-		 * 		- No, instantiate as ObservedAtom.
+		 *			- Yes, is the predicate closed?
+		 *				- Yes, instantiate as ObservedAtom
+		 *				- No, instantiate as RandomVariableAtom
+		 *			- No, instantiate as ObservedAtom.
 		 */
 		if (predicate instanceof StandardPredicate) {
 			return getAtom((StandardPredicate)predicate, arguments);
@@ -230,7 +148,7 @@ public class RDBMSDatabase implements Database {
 
 		try (
 			Connection connection = getConnection();
-			PreparedStatement statement = getAtomDelete(connection, getPredicateInfo(atom.getPredicate()), atom.getArguments());
+			PreparedStatement statement = getAtomDelete(connection, ((RDBMSDataStore)parentDataStore).getPredicateInfo(atom.getPredicate()), atom.getArguments());
 		) {
 			if (statement.executeUpdate() > 0) {
 				return true;
@@ -243,80 +161,12 @@ public class RDBMSDatabase implements Database {
 	}
 
 	@Override
-	public int countAllGroundAtoms(StandardPredicate predicate) {
-		List<Integer> partitions = new ArrayList<Integer>();
-		partitions.addAll(readIDs);
-		partitions.add(writeID);
-
-		return countAllGroundAtoms(predicate, partitions);
-	}
-
-	@Override
-	public int countAllGroundRandomVariableAtoms(StandardPredicate predicate) {
-		// Closed predicates have no random variable atoms.
-		if (isClosed(predicate)) {
-			return 0;
-		}
-
-		// All the atoms should be random vairable, since we are pulling from the write parition of an open predicate.
-		List<Integer> partitions = new ArrayList<Integer>(1);
-		partitions.add(writeID);
-
-		return countAllGroundAtoms(predicate, partitions);
-	}
-
-	@Override
-	public List<GroundAtom> getAllGroundAtoms(StandardPredicate predicate) {
-		List<Integer> partitions = new ArrayList<Integer>();
-		partitions.addAll(readIDs);
-		partitions.add(writeID);
-
-		return getAllGroundAtoms(predicate, partitions);
-	}
-
-	@Override
-	public List<RandomVariableAtom> getAllGroundRandomVariableAtoms(StandardPredicate predicate) {
-		// Closed predicates have no random variable atoms.
-		if (isClosed(predicate)) {
-			return new ArrayList<RandomVariableAtom>();
-		}
-
-		// All the atoms should be random vairable, since we are pulling from the write parition of an open predicate.
-		List<Integer> partitions = new ArrayList<Integer>(1);
-		partitions.add(writeID);
-		List<GroundAtom> groundAtoms = getAllGroundAtoms(predicate, partitions);
-
-		List<RandomVariableAtom> atoms = new ArrayList<RandomVariableAtom>(groundAtoms.size());
-		for (GroundAtom atom : groundAtoms) {
-			atoms.add((RandomVariableAtom)atom);
-		}
-
-		return atoms;
-	}
-
-	@Override
-	public List<ObservedAtom> getAllGroundObservedAtoms(StandardPredicate predicate) {
-		// Note that even open predicates may have observed atoms (partially observed predicates).
-
-		// Only pull from the read partitions.
-		List<GroundAtom> groundAtoms = getAllGroundAtoms(predicate, readIDs);
-
-		// All the atoms will be observed since we are pulling from only read partitions.
-		List<ObservedAtom> atoms = new ArrayList<ObservedAtom>(groundAtoms.size());
-		for (GroundAtom atom : groundAtoms) {
-			atoms.add((ObservedAtom)atom);
-		}
-
-		return atoms;
-	}
-
-	@Override
-	public void commit(Iterable<RandomVariableAtom> atoms) {
+	public void commit(Collection<RandomVariableAtom> atoms) {
 		commit(atoms, writeID);
 	}
 
 	@Override
-	public void commit(Iterable<RandomVariableAtom> atoms, int partitionId) {
+	public void commit(Collection<RandomVariableAtom> atoms, int partitionId) {
 		if (closed) {
 			throw new IllegalStateException("Cannot commit on a closed database.");
 		}
@@ -326,7 +176,7 @@ public class RDBMSDatabase implements Database {
 
 		for (RandomVariableAtom atom : atoms) {
 			if (!atomsByPredicate.containsKey(atom.getPredicate())) {
-				atomsByPredicate.put(atom.getPredicate(), new ArrayList<RandomVariableAtom>());
+				atomsByPredicate.put(atom.getPredicate(), new ArrayList<RandomVariableAtom>(atoms.size()));
 			}
 
 			atomsByPredicate.get(atom.getPredicate()).add(atom);
@@ -335,7 +185,7 @@ public class RDBMSDatabase implements Database {
 		try (Connection connection = getConnection()) {
 			// Upsert each predicate batch.
 			for (Map.Entry<Predicate, List<RandomVariableAtom>> entry : atomsByPredicate.entrySet()) {
-				try (PreparedStatement statement = getAtomUpsert(connection, getPredicateInfo(entry.getKey()))) {
+				try (PreparedStatement statement = getAtomUpsert(connection, ((RDBMSDataStore)parentDataStore).getPredicateInfo(entry.getKey()))) {
 					int batchSize = 0;
 
 					// Set all the upsert params.
@@ -377,15 +227,8 @@ public class RDBMSDatabase implements Database {
 	}
 
 	@Override
-	public void commit(RandomVariableAtom atom) {
-		List<RandomVariableAtom> atoms = new ArrayList<RandomVariableAtom>(1);
-		atoms.add(atom);
-		commit(atoms);
-	}
-
-	@Override
 	public void moveToWritePartition(StandardPredicate predicate, int oldPartitionId) {
-		PredicateInfo predicateInfo = getPredicateInfo(predicate);
+		PredicateInfo predicateInfo = ((RDBMSDataStore)parentDataStore).getPredicateInfo(predicate);
 
 		try (
 			Connection connection = getConnection();
@@ -480,26 +323,8 @@ public class RDBMSDatabase implements Database {
 		return closedPredicates.contains(predicate);
 	}
 
-	@Override
-	public DataStore getDataStore() {
-		return parentDataStore;
-	}
-
-	@Override
-	public AtomCache getAtomCache() {
-		return cache;
-	}
-
-	public List<Partition> getReadPartitions() {
-		return Collections.unmodifiableList(readPartitions);
-	}
-
-	public Partition getWritePartition() {
-		return writePartition;
-	}
-
 	private Connection getConnection() {
-		return parentDataStore.getConnection();
+		return ((RDBMSDataStore)parentDataStore).getConnection();
 	}
 
 	@Override
@@ -508,8 +333,7 @@ public class RDBMSDatabase implements Database {
 			throw new IllegalStateException("Cannot close database after it has been closed.");
 		}
 
-		parentDataStore.releasePartitions(this);
-		readOnlyDatabase = null;
+		((RDBMSDataStore)parentDataStore).releasePartitions(this);
 		closed = true;
 	}
 
@@ -528,7 +352,7 @@ public class RDBMSDatabase implements Database {
 	}
 
 	private PreparedStatement getAtomUpsert(Connection connection, PredicateInfo predicate) {
-		return predicate.createUpsertStatement(connection, parentDataStore.getDriver());
+		return predicate.createUpsertStatement(connection, ((RDBMSDataStore)parentDataStore).getDriver());
 	}
 
 	private PreparedStatement getAtomDelete(Connection connection, PredicateInfo predicate, Term[] arguments) {
@@ -610,8 +434,17 @@ public class RDBMSDatabase implements Database {
 	/**
 	 * @param create Create an atom if one does not exist.
 	 */
-	private GroundAtom getAtom(StandardPredicate predicate, boolean create, Constant... arguments) {
-		QueryAtom queryAtom = new QueryAtom(predicate, arguments);
+	@Override
+	public GroundAtom getAtom(StandardPredicate predicate, boolean create, Constant... arguments) {
+		QueryAtom queryAtom = null;
+		if (!Parallel.hasThreadObject(THREAD_QUERY_ATOM_KEY)) {
+			queryAtom = new QueryAtom(predicate, arguments);
+			Parallel.putThreadObject(THREAD_QUERY_ATOM_KEY, queryAtom);
+		} else {
+			queryAtom = (QueryAtom)(Parallel.getThreadObject(THREAD_QUERY_ATOM_KEY));
+			queryAtom.assume(predicate, arguments);
+		}
+
 		GroundAtom result = cache.getCachedAtom(queryAtom);
 		if (result != null) {
 			return result;
@@ -625,7 +458,7 @@ public class RDBMSDatabase implements Database {
 	 */
 	private GroundAtom fetchAtom(StandardPredicate predicate, boolean create, Constant... arguments) {
 		// Ensure this database has this predicate.
-		getPredicateInfo(predicate);
+		((RDBMSDataStore)parentDataStore).getPredicateInfo(predicate);
 
 		GroundAtom result = queryDBForAtom(predicate, arguments);
 
@@ -649,8 +482,8 @@ public class RDBMSDatabase implements Database {
 	 */
 	private GroundAtom queryDBForAtom(StandardPredicate predicate, Constant[] arguments) {
 		try (
-			Connection conn = parentDataStore.getConnection();
-			PreparedStatement statement = getAtomQuery(conn, predicates.get(predicate), arguments);
+			Connection conn = getConnection();
+			PreparedStatement statement = getAtomQuery(conn, ((RDBMSDataStore)parentDataStore).getPredicateInfo(predicate), arguments);
 			ResultSet resultSet = statement.executeQuery();
 		) {
 			if (!resultSet.next()) {
@@ -669,13 +502,10 @@ public class RDBMSDatabase implements Database {
 		}
 	}
 
-	public boolean hasAtom(StandardPredicate predicate, Constant... arguments) {
-		return getAtom(predicate, false, arguments) != null;
-	}
-
-	private List<GroundAtom> getAllGroundAtoms(StandardPredicate predicate, List<Integer> partitions) {
+	@Override
+	public List<GroundAtom> getAllGroundAtoms(StandardPredicate predicate, List<Integer> partitions) {
 		List<GroundAtom> atoms = new ArrayList<GroundAtom>();
-		PredicateInfo predicateInfo = getPredicateInfo(predicate);
+		PredicateInfo predicateInfo = ((RDBMSDataStore)parentDataStore).getPredicateInfo(predicate);
 
 		// Columns for each argument to the predicate.
 		List<String> argumentCols = predicateInfo.argumentColumns();
@@ -701,8 +531,9 @@ public class RDBMSDatabase implements Database {
 		return atoms;
 	}
 
-	private int countAllGroundAtoms(StandardPredicate predicate, List<Integer> partitions) {
-		PredicateInfo predicateInfo = getPredicateInfo(predicate);
+	@Override
+	public int countAllGroundAtoms(StandardPredicate predicate, List<Integer> partitions) {
+		PredicateInfo predicateInfo = ((RDBMSDataStore)parentDataStore).getPredicateInfo(predicate);
 
 		try (
 			Connection connection = getConnection();
@@ -726,7 +557,7 @@ public class RDBMSDatabase implements Database {
 			return result;
 		}
 
-		double value = predicate.computeValue(readOnlyDatabase, arguments);
+		double value = predicate.computeValue(this, arguments);
 		return cache.instantiateObservedAtom(predicate, arguments, value);
 	}
 

@@ -19,11 +19,8 @@ package org.linqs.psl.reasoner.admm.term;
 
 import static org.junit.Assert.assertEquals;
 
-import org.linqs.psl.config.ConfigBundle;
-import org.linqs.psl.config.ConfigManager;
 import org.linqs.psl.reasoner.function.ConstantAtomFunctionVariable;
 
-import org.apache.commons.configuration.ConfigurationException;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -31,19 +28,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class HingeLossTermTest {
-	private ConfigBundle config;
-	
-	@Before
-	public final void setUp() throws ConfigurationException {
-		config = ConfigManager.getManager().getBundle("dummy");
-	}
-	
 	@Test
 	public void testMinimize() {
-		
 		/*
 		 * Problem 1
-		 * 
+		 *
 		 * Solution on the hinge
 		 */
 		float[] z = {0.2f, 0.5f};
@@ -54,10 +43,10 @@ public class HingeLossTermTest {
 		float stepSize = 1.0f;
 		float[] expected = {-0.125f, 0.825f};
 		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
-		
+
 		/*
 		 * Problem 2
-		 * 
+		 *
 		 * Solution on the hinge
 		 */
 		z = new float[] {0.3f, 0.5f, 0.1f};
@@ -68,12 +57,12 @@ public class HingeLossTermTest {
 		stepSize = 0.5f;
 		expected = new float[] {0.043257f, 0.528361f, 0.177309f};
 		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
-		
-		
-		
+
+
+
 		/*
 		 * Problem 3
-		 * 
+		 *
 		 * Solution on the zero side
 		 */
 		z = new float[] {0.3f, 0.5f, 0.1f};
@@ -84,10 +73,10 @@ public class HingeLossTermTest {
 		stepSize = 0.5f;
 		expected = new float[] {0.1f, 0.5f, 0.2f};
 		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
-		
+
 		/*
 		 * Problem 4
-		 * 
+		 *
 		 * Solution on the zero side
 		 */
 		z = new float[] {0.1f};
@@ -98,10 +87,10 @@ public class HingeLossTermTest {
 		stepSize = 1.0f;
 		expected = new float[] {-0.05f};
 		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
-		
+
 		/*
 		 * Problem 5
-		 * 
+		 *
 		 * Solution on the linear side
 		 */
 		z = new float[] {0.7f, 0.5f};
@@ -112,10 +101,10 @@ public class HingeLossTermTest {
 		stepSize = 1.0f;
 		expected = new float[] {0.6f, 0.6f};
 		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
-		
+
 		/*
 		 * Problem 6
-		 * 
+		 *
 		 * Solution on the hinge, two variables, non-1 stepsize and non-0 dual
 		 * variables
 		 */
@@ -128,7 +117,7 @@ public class HingeLossTermTest {
 		expected = new float[] {0.0875f, 0.5875f};
 		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
 	}
-	
+
 	private void testProblem(float[] z, float[] y, float[] coeffs, float constant,
 			float weight, final float stepSize, float[] expected) {
 		List<LocalVariable> variables = new ArrayList<LocalVariable>(z.length);
@@ -140,10 +129,10 @@ public class HingeLossTermTest {
 
 			coeffsList.add(new Float(coeffs[i]));
 		}
-		
+
 		HingeLossTerm term = new HingeLossTerm(variables, coeffsList, constant, weight);
 		term.minimize(stepSize, z);
-		
+
 		for (int i = 0; i < z.length; i++) {
 			assertEquals(expected[i], variables.get(i).getValue(), 5e-5);
 		}

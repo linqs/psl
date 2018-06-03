@@ -22,7 +22,7 @@ package org.linqs.psl.model.term;
  * Variables are immutable.
  * Variables are wildcards used to match {@link Constant GroundTerms}.
  */
-public class Variable implements Comparable<Variable>, Term {
+public class Variable implements Term {
 	private final String name;
 	private final int hashcode;
 
@@ -81,11 +81,15 @@ public class Variable implements Comparable<Variable>, Term {
 	 * Just use the name for comparison.
 	 */
 	 @Override
-	public int compareTo(Variable other) {
+	public int compareTo(Term other) {
 		if (other == null) {
 			return -1;
 		}
 
-		return name.compareTo(other.name);
+		if (!(other instanceof Variable)) {
+			return this.getClass().getName().compareTo(other.getClass().getName());
+		}
+
+		return name.compareTo(((Variable)other).name);
 	}
 }

@@ -242,6 +242,7 @@ public class RDBMSInserter extends Inserter {
 				batchSize = 0;
 			}
 			activeStatement.clearParameters();
+			activeStatement = null;
 		} catch (SQLException ex) {
 			log.error(ex.getMessage());
 			throw new RuntimeException("Error inserting into RDBMS.", ex);

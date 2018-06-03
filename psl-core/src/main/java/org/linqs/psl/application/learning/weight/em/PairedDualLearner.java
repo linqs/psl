@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.application.learning.weight.em;
 
-import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.GroundRule;
@@ -69,19 +69,19 @@ public class PairedDualLearner extends ExpectationMaximization {
 	private final int warmupRounds;
 	private final int admmIterations;
 
-	public PairedDualLearner(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
-		this(model.getRules(), rvDB, observedDB, config);
+	public PairedDualLearner(Model model, Database rvDB, Database observedDB) {
+		this(model.getRules(), rvDB, observedDB);
 	}
 
-	public PairedDualLearner(List<Rule> rules, Database rvDB, Database observedDB, ConfigBundle config) {
-		super(rules, rvDB, observedDB, config);
+	public PairedDualLearner(List<Rule> rules, Database rvDB, Database observedDB) {
+		super(rules, rvDB, observedDB);
 
-		warmupRounds = config.getInt(WARMUP_ROUNDS_KEY, WARMUP_ROUNDS_DEFAULT);
+		warmupRounds = Config.getInt(WARMUP_ROUNDS_KEY, WARMUP_ROUNDS_DEFAULT);
 		if (warmupRounds < 0) {
 			throw new IllegalArgumentException(WARMUP_ROUNDS_KEY + " must be a nonnegative integer.");
 		}
 
-		admmIterations = config.getInt(ADMM_STEPS_KEY, ADMM_STEPS_DEFAULT);
+		admmIterations = Config.getInt(ADMM_STEPS_KEY, ADMM_STEPS_DEFAULT);
 		if (admmIterations < 1) {
 			throw new IllegalArgumentException(ADMM_STEPS_KEY + " must be a positive integer.");
 		}
@@ -178,7 +178,6 @@ public class PairedDualLearner extends ExpectationMaximization {
 		}
 
 		double [] avgWeights = new double[mutableRules.size()];
-		double[] scale = new double[mutableRules.size()];
 		double objective = 0;
 
 		for (emIteration = 0; emIteration < iterations; emIteration++) {
@@ -188,23 +187,15 @@ public class PairedDualLearner extends ExpectationMaximization {
 			double change = 0;
 
 			for (int i = 0; i < mutableRules.size(); i++) {
-				if (scheduleStepSize) {
-					scale[i] = Math.pow((double) (emIteration + 1), 2);
-				} else {
-					scale[i] = 1.0;
-				}
-
 				gradNorm += Math.pow(weights[i] - Math.max(0, weights[i] - gradient[i]), 2);
 
-				if (scale[i] > 0.0) {
-					double coeff = baseStepSize / Math.sqrt(scale[i]);
-					double delta = Math.max(-weights[i], -coeff * gradient[i]);
-					weights[i] += delta;
+				double coeff = baseStepSize;
+				double delta = Math.max(-weights[i], -coeff * gradient[i]);
+				weights[i] += delta;
 
-					// use gradient array to store change
-					gradient[i] = delta;
-					change += Math.pow(delta, 2);
-				}
+				// use gradient array to store change
+				gradient[i] = delta;
+				change += Math.pow(delta, 2);
 
 				avgWeights[i] = (1 - (1.0 / (double) (emIteration + 1.0))) * avgWeights[i] + (1.0 / (double) (emIteration + 1.0)) * weights[i];
 			}
@@ -228,6 +219,10 @@ public class PairedDualLearner extends ExpectationMaximization {
 			}
 			mutableRules.get(i).setWeight(weights[i]);
 		}
+
+		// The weights have changed, so we are no longer in an MPE state.
+		inMPEState = false;
+		inLatentMPEState = false;
 	}
 
 	private double getValueAndGradient(double[] gradient, double[] weights) {
@@ -236,6 +231,10 @@ public class PairedDualLearner extends ExpectationMaximization {
 				mutableRules.get(i).setWeight(weights[i]);
 			}
 		}
+
+		// The weights have changed, so we are no longer in an MPE state.
+		inMPEState = false;
+		inLatentMPEState = false;
 
 		ADMMReasoner admmReasoner = (ADMMReasoner)reasoner;
 

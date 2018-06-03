@@ -17,31 +17,26 @@
  */
 package org.linqs.psl.cli;
 
+import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.application.inference.MPEInference;
-import org.linqs.psl.application.inference.result.FullInferenceResult;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
-import org.linqs.psl.config.ConfigBundle;
-import org.linqs.psl.config.ConfigManager;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
-import org.linqs.psl.database.Queries;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver.Type;
 import org.linqs.psl.database.rdbms.driver.PostgreSQLDriver;
-import org.linqs.psl.evaluation.statistics.ContinuousPredictionComparator;
-import org.linqs.psl.evaluation.statistics.ContinuousPredictionStatistics;
-import org.linqs.psl.evaluation.statistics.DiscretePredictionComparator;
-import org.linqs.psl.evaluation.statistics.DiscretePredictionStatistics;
+import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.parser.ModelLoader;
-import org.linqs.psl.reasoner.admm.ADMMReasonerFactory;
+import org.linqs.psl.util.Reflection;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -51,7 +46,6 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.configuration.ConfigurationException;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.PatternLayout;
@@ -72,6 +66,7 @@ import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.file.Paths;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -94,10 +89,8 @@ public class Launcher {
 	public static final String OPTION_DATA_LONG = "data";
 	public static final String OPTION_DB_H2_PATH = "h2path";
 	public static final String OPTION_DB_POSTGRESQL_NAME = "postgres";
-	public static final String OPTION_EVAL_CONTINUOUS = "ec";
-	public static final String OPTION_EVAL_CONTINUOUS_LONG = "eval-continuous";
-	public static final String OPTION_EVAL_DISCRETE = "ed";
-	public static final String OPTION_EVAL_DISCRETE_LONG = "eval-discrete";
+	public static final String OPTION_EVAL = "e";
+	public static final String OPTION_EVAL_LONG = "eval";
 	public static final String OPTION_INT_IDS = "int";
 	public static final String OPTION_INT_IDS_LONG = "int-ids";
 	public static final String OPTION_LOG4J = "4j";
@@ -110,13 +103,13 @@ public class Launcher {
 	public static final String OPTION_PROPERTIES_FILE = "p";
 	public static final String OPTION_PROPERTIES_FILE_LONG = "properties";
 
-	public static final String CONFIG_PREFIX = "cli";
 	public static final String MODEL_FILE_EXTENSION = ".psl";
 	public static final String DEFAULT_H2_DB_PATH =
 			Paths.get(System.getProperty("java.io.tmpdir"),
 			"cli_" + System.getProperty("user.name") + "@" + getHostname()).toString();
 	public static final String DEFAULT_POSTGRES_DB_NAME = "psl_cli";
-	public static final String DEFAULT_DISCRETE_THRESHOLD = "0.5";
+	public static final String DEFAULT_IA = MPEInference.class.getName();
+	public static final String DEFAULT_WLA = MaxLikelihoodMPE.class.getName();
 
 	// Reserved partition names.
 	public static final String PARTITION_NAME_OBSERVATIONS = "observations";
@@ -124,13 +117,12 @@ public class Launcher {
 	public static final String PARTITION_NAME_LABELS = "truth";
 
 	private CommandLine options;
-	private ConfigBundle config;
 	private Logger log;
 
 	private Launcher(CommandLine options) {
 		this.options = options;
 		this.log = initLogger();
-		this.config = initConfig();
+		initConfig();
 	}
 
 	/**
@@ -157,12 +149,6 @@ public class Launcher {
 		for (Map.Entry<Object, Object> entry : options.getOptionProperties("D").entrySet()) {
 			String key = entry.getKey().toString();
 
-			// If the key is prefixed woth CONFIG_PREFIX, then add another key without the prefix.
-			// The user may have been confused.
-			if (key.startsWith(CONFIG_PREFIX + ".")) {
-				key = key.replaceFirst(CONFIG_PREFIX + ".", "");
-			}
-
 			if (!key.startsWith("log4j.")) {
 				continue;
 			}
@@ -182,36 +168,18 @@ public class Launcher {
 	/**
 	 * Loads configuration.
 	 */
-	private ConfigBundle initConfig() {
-		ConfigManager cm = null;
-
-		try {
-			cm = ConfigManager.getManager();
-
-			// Load a properties file that was specified on the command line.
-			if (options.hasOption(OPTION_PROPERTIES_FILE)) {
-				String propertiesPath = options.getOptionValue(OPTION_PROPERTIES_FILE);
-				cm.loadResource(propertiesPath);
-			}
-		} catch (ConfigurationException ex) {
-			throw new RuntimeException("Failed to initialize configuration for CLI.", ex);
+	private void initConfig() {
+		// Load a properties file that was specified on the command line.
+		if (options.hasOption(OPTION_PROPERTIES_FILE)) {
+			String propertiesPath = options.getOptionValue(OPTION_PROPERTIES_FILE);
+			Config.loadResource(propertiesPath);
 		}
-
-		ConfigBundle bundle = cm.getBundle(CONFIG_PREFIX);
 
 		// Load any options specified directly on the command line (override standing options).
 		for (Map.Entry<Object, Object> entry : options.getOptionProperties("D").entrySet()) {
 			String key = entry.getKey().toString();
-			bundle.setProperty(key, entry.getValue());
-
-			// If the key is prefixed woth CONFIG_PREFIX, then add another key without the prefix.
-			// The user may have been confused.
-			if (key.startsWith(CONFIG_PREFIX + ".")) {
-				bundle.setProperty(key.replaceFirst(CONFIG_PREFIX + ".", ""), entry.getValue());
-			}
+			Config.setProperty(key, entry.getValue());
 		}
-
-		return bundle;
 	}
 
 	/**
@@ -235,7 +203,7 @@ public class Launcher {
 			driver = new PostgreSQLDriver(dbPath, true);
 		}
 
-		return new RDBMSDataStore(driver, config);
+		return new RDBMSDataStore(driver);
 	}
 
 	private Set<StandardPredicate> loadData(DataStore dataStore) {
@@ -254,17 +222,17 @@ public class Launcher {
 		return closedPredicates;
 	}
 
-	private void runInference(Model model, DataStore dataStore, Set<StandardPredicate> closedPredicates)
-			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-		log.info("Starting inference");
+	private void runInference(Model model, DataStore dataStore, Set<StandardPredicate> closedPredicates, String inferenceName) {
+		log.info("Starting inference with class: {}", inferenceName);
 
 		// Create database.
 		Partition targetPartition = dataStore.getPartition(PARTITION_NAME_TARGET);
 		Partition observationsPartition = dataStore.getPartition(PARTITION_NAME_OBSERVATIONS);
 		Database database = dataStore.getDatabase(targetPartition, closedPredicates, observationsPartition);
 
-		MPEInference mpe = new MPEInference(model, database, config);
-		FullInferenceResult result = mpe.mpeInference();
+		InferenceApplication inferenceApplication =
+				InferenceApplication.getInferenceApplication(inferenceName, model, database);
+		inferenceApplication.inference();
 
 		log.info("Inference Complete");
 
@@ -282,7 +250,7 @@ public class Launcher {
 		// If we are just writing to the console, use a more human-readable format.
 		if (!options.hasOption(OPTION_OUTPUT_DIR)) {
 			for (StandardPredicate openPredicate : openPredicates) {
-				for (GroundAtom atom : Queries.getAllAtoms(database, openPredicate)) {
+				for (GroundAtom atom : database.getAllGroundRandomVariableAtoms(openPredicate)) {
 					System.out.println(atom.toString() + " = " + atom.getValue());
 				}
 			}
@@ -301,7 +269,7 @@ public class Launcher {
 			try {
 				FileWriter predFileWriter = new FileWriter(new File(outputDirectory, openPredicate.getName() + ".txt"));
 
-				for (GroundAtom atom : Queries.getAllAtoms(database, openPredicate)) {
+				for (GroundAtom atom : database.getAllGroundRandomVariableAtoms(openPredicate)) {
 					for (Constant term : atom.getArguments()) {
 						predFileWriter.write(term.toString() + "\t");
 					}
@@ -316,9 +284,9 @@ public class Launcher {
 		}
 	}
 
-	private void learnWeights(Model model, DataStore dataStore, Set<StandardPredicate> closedPredicates)
-			throws ClassNotFoundException, IOException, IllegalAccessException, InstantiationException {
-		log.info("Starting weight learning");
+	private void learnWeights(Model model, DataStore dataStore, Set<StandardPredicate> closedPredicates, String wlaName)
+			throws IOException {
+		log.info("Starting weight learning with learner: " + wlaName);
 
 		Partition targetPartition = dataStore.getPartition(PARTITION_NAME_TARGET);
 		Partition observationsPartition = dataStore.getPartition(PARTITION_NAME_OBSERVATIONS);
@@ -327,7 +295,8 @@ public class Launcher {
 		Database randomVariableDatabase = dataStore.getDatabase(targetPartition, closedPredicates, observationsPartition);
 		Database observedTruthDatabase = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
 
-		WeightLearningApplication learner = new MaxLikelihoodMPE(model.getRules(), randomVariableDatabase, observedTruthDatabase, config);
+		WeightLearningApplication learner = WeightLearningApplication.getWLA(wlaName, model.getRules(),
+				randomVariableDatabase, observedTruthDatabase);
 		learner.learn();
 		learner.close();
 
@@ -357,8 +326,8 @@ public class Launcher {
 		learnedFileWriter.close();
 	}
 
-	private void continuousEval(DataStore dataStore, Set<StandardPredicate> closedPredicates) {
-		log.info("Starting continuous evaluation");
+	private void evaluation(DataStore dataStore, Set<StandardPredicate> closedPredicates, String evalClassName) {
+		log.info("Starting evaluation with class: {}.", evalClassName);
 
 		// Set of open predicates
 		Set<StandardPredicate> openPredicates = dataStore.getRegisteredPredicates();
@@ -366,81 +335,33 @@ public class Launcher {
 
 		// Create database.
 		Partition targetPartition = dataStore.getPartition(PARTITION_NAME_TARGET);
+		Partition observationsPartition = dataStore.getPartition(PARTITION_NAME_OBSERVATIONS);
 		Partition truthPartition = dataStore.getPartition(PARTITION_NAME_LABELS);
 
-		Database predictionDatabase = dataStore.getDatabase(targetPartition, closedPredicates);
+		Database predictionDatabase = dataStore.getDatabase(targetPartition, closedPredicates, observationsPartition);
 		Database truthDatabase = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
 
-		ContinuousPredictionComparator comparator = new ContinuousPredictionComparator(predictionDatabase, truthDatabase);
+		Evaluator evaluator = (Evaluator)Reflection.newObject(evalClassName);
 
 		for (StandardPredicate targetPredicate : openPredicates) {
 			// Before we run evaluation, ensure that the truth database actaully has instances of the target predicate.
-			if (Queries.countAllGroundAtoms(truthDatabase, targetPredicate) == 0) {
-				log.info("Skipping continuous evaluation for {} since there are no ground truth atoms", targetPredicate);
+			if (truthDatabase.countAllGroundAtoms(targetPredicate) == 0) {
+				log.info("Skipping evaluation for {} since there are no ground truth atoms", targetPredicate);
 				continue;
 			}
 
-			ContinuousPredictionStatistics stats = comparator.compare(targetPredicate);
-			double mae = stats.getMAE();
-			double mse = stats.getMSE();
-
-			log.info("Continuous evaluation results for {} -- MAE: {}, MSE: {}", targetPredicate.getName(), mae, mse);
+			evaluator.compute(predictionDatabase, truthDatabase, targetPredicate);
+			log.info("Evaluation results for {} -- {}", targetPredicate.getName(), evaluator.getAllStats());
 		}
 
 		predictionDatabase.close();
 		truthDatabase.close();
 
-		log.info("Continuous evaluation complete");
-	}
-
-	private void discreteEval(DataStore dataStore, Set<StandardPredicate> closedPredicates, double threshold) {
-		log.info("Starting discrete evaluation");
-
-		// Set of open predicates
-		Set<StandardPredicate> openPredicates = dataStore.getRegisteredPredicates();
-		openPredicates.removeAll(closedPredicates);
-
-		// Create database.
-		Partition targetPartition = dataStore.getPartition(PARTITION_NAME_TARGET);
-		Partition truthPartition = dataStore.getPartition(PARTITION_NAME_LABELS);
-
-		Database predictionDatabase = dataStore.getDatabase(targetPartition, closedPredicates);
-		Database truthDatabase = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
-
-		DiscretePredictionComparator comparator = new DiscretePredictionComparator(predictionDatabase, truthDatabase, threshold);
-
-		for (StandardPredicate targetPredicate : openPredicates) {
-			// Before we run evaluation, ensure that the truth database actaully has instances of the target predicate.
-			if (Queries.countAllGroundAtoms(truthDatabase, targetPredicate) == 0) {
-				log.info("Skipping discrete evaluation for {} since there are no ground truth atoms", targetPredicate);
-				continue;
-			}
-
-			DiscretePredictionStatistics stats = comparator.compare(targetPredicate);
-
-			double accuracy = stats.getAccuracy();
-			double error = stats.getError();
-			double positivePrecision = stats.getPrecision(DiscretePredictionStatistics.BinaryClass.POSITIVE);
-			double positiveRecall = stats.getRecall(DiscretePredictionStatistics.BinaryClass.POSITIVE);
-			double negativePrecision = stats.getPrecision(DiscretePredictionStatistics.BinaryClass.NEGATIVE);
-			double negativeRecall = stats.getRecall(DiscretePredictionStatistics.BinaryClass.NEGATIVE);
-
-			log.info("Discrete evaluation results for {} --" +
-					" Accuracy: {}, Error: {}," +
-					" Positive Class Precision: {}, Positive Class Recall: {}," +
-					" Negative Class Precision: {}, Negative Class Recall: {},",
-					targetPredicate.getName(),
-					accuracy, error, positivePrecision, positiveRecall, negativePrecision, negativeRecall);
-		}
-
-		predictionDatabase.close();
-		truthDatabase.close();
-
-		log.info("Discrete evaluation complete");
+		log.info("Evaluation complete.");
 	}
 
 	private void run()
-			throws IOException, ConfigurationException, ClassNotFoundException, IllegalAccessException, InstantiationException {
+			throws IOException, ClassNotFoundException, IllegalAccessException, InstantiationException {
 		DataStore dataStore = initDataStore();
 
 		// Loads data
@@ -455,21 +376,16 @@ public class Launcher {
 
 		// Inference
 		if (options.hasOption(OPERATION_INFER)) {
-			runInference(model, dataStore, closedPredicates);
+			runInference(model, dataStore, closedPredicates, options.getOptionValue(OPERATION_INFER, DEFAULT_IA));
 		} else if (options.hasOption(OPERATION_LEARN)) {
-			learnWeights(model, dataStore, closedPredicates);
+			learnWeights(model, dataStore, closedPredicates, options.getOptionValue(OPERATION_LEARN, DEFAULT_WLA));
 		} else {
 			throw new IllegalArgumentException("No valid operation provided.");
 		}
 
 		// Evaluation
-		if (options.hasOption(OPTION_EVAL_CONTINUOUS)) {
-			continuousEval(dataStore, closedPredicates);
-		}
-
-		if (options.hasOption(OPTION_EVAL_DISCRETE)) {
-			String stringThreshold = options.getOptionValue(OPTION_EVAL_DISCRETE, DEFAULT_DISCRETE_THRESHOLD);
-			discreteEval(dataStore, closedPredicates, Double.valueOf(stringThreshold));
+		if (options.hasOption(OPTION_EVAL)) {
+			evaluation(dataStore, closedPredicates, options.getOptionValue(OPTION_EVAL));
 		}
 
 		dataStore.close();
@@ -491,8 +407,27 @@ public class Launcher {
 		Options options = new Options();
 
 		OptionGroup mainCommand = new OptionGroup();
-		mainCommand.addOption(new Option(OPERATION_INFER, OPERATION_INFER_LONG, false, "Run MAP inference"));
-		mainCommand.addOption(new Option(OPERATION_LEARN, OPERATION_LEARN_LONG, false, "Run weight learning"));
+
+		mainCommand.addOption(Option.builder(OPERATION_INFER)
+				.longOpt(OPERATION_INFER_LONG)
+				.desc("Run MAP inference." +
+						" You can optionally supply a fully qualified name for an inference application" +
+						" (defaults to " + DEFAULT_IA + ").")
+				.hasArg()
+				.argName("inferenceMethod")
+				.optionalArg(true)
+				.build());
+
+		mainCommand.addOption(Option.builder(OPERATION_LEARN)
+				.longOpt(OPERATION_LEARN_LONG)
+				.desc("Run weight learning." +
+						" You can optionally supply a fully qualified name for a weight learner" +
+						" (defaults to " + DEFAULT_WLA + ").")
+				.hasArg()
+				.argName("learner")
+				.optionalArg(true)
+				.build());
+
 		mainCommand.setRequired(true);
 		options.addOptionGroup(mainCommand);
 
@@ -522,19 +457,11 @@ public class Launcher {
 				.optionalArg(true)
 				.build());
 
-		options.addOption(Option.builder(OPTION_EVAL_CONTINUOUS)
-				.longOpt(OPTION_EVAL_CONTINUOUS_LONG)
-				.desc("Run evlaution using continuous comparison on any open predicate with a 'truth' partition.")
-				.build());
-
-		options.addOption(Option.builder(OPTION_EVAL_DISCRETE)
-				.longOpt(OPTION_EVAL_DISCRETE_LONG)
-				.desc("Run evlaution using discrete comparison on any open predicate with a 'truth' partition." +
-						" You can optionally supply 'threshold' (defaults to " + DEFAULT_DISCRETE_THRESHOLD + ")." +
-						" Every truth value over the threshold is considered true.")
+		options.addOption(Option.builder(OPTION_EVAL)
+				.longOpt(OPTION_EVAL_LONG)
+				.desc("Run the named evaluator (" + Evaluator.class.getName() + ") on any open predicate with a 'truth' partition.")
 				.hasArg()
-				.argName("threshold")
-				.optionalArg(true)
+				.argName("evaluator")
 				.build());
 
 		options.addOption(Option.builder(OPTION_HELP)
@@ -663,20 +590,6 @@ public class Launcher {
 			System.err.println("Command line error: Options '--" + OPTION_DB_H2_PATH + "' and '--" + OPTION_DB_POSTGRESQL_NAME + "' are not compatible.");
 			getHelpFormatter().printHelp("psl", options, true);
 			System.exit(2);
-		}
-
-		if (commandLineOptions.hasOption(OPTION_EVAL_DISCRETE)) {
-			String stringThreshold = commandLineOptions.getOptionValue(OPTION_EVAL_DISCRETE, DEFAULT_DISCRETE_THRESHOLD);
-			try {
-				double threshold = Double.valueOf(stringThreshold);
-				if (threshold < 0 || threshold > 1) {
-					throw new NumberFormatException();
-				}
-			} catch (NumberFormatException ex) {
-				System.err.println("Command line error: The optional argument to '-" + OPTION_EVAL_DISCRETE + "' must be a double in [0, 1].");
-				getHelpFormatter().printHelp("psl", options, true);
-				System.exit(3);
-			}
 		}
 
 		return commandLineOptions;

@@ -34,8 +34,17 @@ import org.linqs.psl.model.term.VariableTypeMap;
  * ground and can be used for matching GroundAtoms in a query.
  */
 public class QueryAtom extends Atom {
-	public QueryAtom(Predicate p, Term... args) {
-		super(p, args);
+	public QueryAtom(Predicate predicate, Term... args) {
+		super(predicate, args);
+	}
+
+	/**
+	 * Have this QueryAtom assume new values.
+	 * Do not use unless you really know what you are doing.
+	 * Typical usage would just create a new QueryAtom.
+	 */
+	public void assume(Predicate predicate, Term... args) {
+		init(false, false, predicate, args);
 	}
 
 	public GroundAtom ground(AtomManager atomManager, ResultList res, int resultIndex) {

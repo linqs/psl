@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.database.rdbms.driver;
 
-import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.rdbms.PredicateInfo;
 import org.linqs.psl.model.term.ConstantType;
@@ -65,7 +64,8 @@ public class PostgreSQLDriver implements DatabaseDriver {
 
 		HikariConfig config = new HikariConfig();
 		config.setJdbcUrl(connectionString);
-		config.setMaximumPoolSize(Math.min(8, Parallel.NUM_THREADS * 2));
+		config.setMaximumPoolSize(Math.max(8, Parallel.getNumThreads() * 2));
+		config.setMaxLifetime(0);
 		dataSource = new HikariDataSource(config);
 
 		if (clearDatabase) {

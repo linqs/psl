@@ -19,45 +19,29 @@ package org.linqs.psl.database;
 
 import static org.junit.Assert.assertEquals;
 
-import org.linqs.psl.config.EmptyBundle;
-import org.linqs.psl.database.DataStore;
-import org.linqs.psl.database.Database;
-import org.linqs.psl.database.DatabasePopulator;
-import org.linqs.psl.database.DatabaseQuery;
-import org.linqs.psl.database.ResultList;
 import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.PostgreSQLDriver;
-import org.linqs.psl.model.atom.QueryAtom;
-import org.linqs.psl.model.formula.Formula;
-import org.linqs.psl.model.predicate.PredicateFactory;
-import org.linqs.psl.model.predicate.StandardPredicate;
-import org.linqs.psl.model.term.Constant;
-import org.linqs.psl.model.term.ConstantType;
-import org.linqs.psl.model.term.DoubleAttribute;
-import org.linqs.psl.model.term.StringAttribute;
-import org.linqs.psl.model.term.UniqueIntID;
-import org.linqs.psl.model.term.Variable;
+import org.linqs.psl.util.RandUtils;
 
 import java.io.File;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 
 public class DatabaseTestUtil {
+	private static final String PERSISTED_DB_SUFFIX = String.format("%012d", RandUtils.nextInt());
 	private static final String DB_NAME = "psltest";
-	private static final String DB_BASE_PATH = Paths.get(System.getProperty("java.io.tmpdir"), DB_NAME).toString();
+	private static final String DB_BASE_PATH = Paths.get(System.getProperty("java.io.tmpdir"), DB_NAME + "_" + PERSISTED_DB_SUFFIX).toString();
 
 	public static DatabaseDriver getH2Driver() {
-		return getH2Driver(true);
+		return getH2Driver(true, false);
 	}
 
-	public static DatabaseDriver getH2Driver(boolean clear) {
-		return new H2DatabaseDriver(H2DatabaseDriver.Type.Disk, DB_BASE_PATH, clear);
+	public static DatabaseDriver getH2Driver(boolean clear, boolean persisted) {
+		if (persisted) {
+			return new H2DatabaseDriver(H2DatabaseDriver.Type.Disk, DB_BASE_PATH, clear);
+		} else {
+			return new H2DatabaseDriver(H2DatabaseDriver.Type.Memory, DB_NAME, clear);
+		}
 	}
 
 	public static DatabaseDriver getPostgresDriver() {
@@ -74,13 +58,14 @@ public class DatabaseTestUtil {
 			return new PostgreSQLDriver(DB_NAME, clear);
 		} catch (RuntimeException ex) {
 			// Check to see if we failed to connect because the server is down.
-			if (ex.getCause() instanceof org.postgresql.util.PSQLException) {
-				if (ex.getCause().getCause() instanceof java.net.ConnectException) {
-					if (ex.getCause().getCause().getMessage().contains("Connection refused")) {
-						System.out.println("Skipping Postgres test... cannot connect to database.");
-						return null;
-					}
+			Throwable currentException = ex;
+			while (currentException != null) {
+				if (currentException instanceof java.net.ConnectException &&
+						currentException.getMessage().contains("Connection refused")) {
+					System.out.println("Skipping Postgres test... cannot connect to database.");
+					return null;
 				}
+				currentException = currentException.getCause();
 			}
 
 			// We failed to connect, but not because the server is down.

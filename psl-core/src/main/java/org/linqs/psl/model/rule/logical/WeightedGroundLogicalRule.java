@@ -18,12 +18,14 @@
 package org.linqs.psl.model.rule.logical;
 
 import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.formula.Formula;
+import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
-import org.linqs.psl.reasoner.function.ConstantNumber;
 import org.linqs.psl.reasoner.function.FunctionTerm;
-import org.linqs.psl.reasoner.function.MaxFunction;
-import org.linqs.psl.reasoner.function.PowerOfTwo;
+import org.linqs.psl.reasoner.function.GeneralFunction;
+import org.linqs.psl.util.IteratorUtils;
 
 import java.util.List;
 
@@ -31,11 +33,13 @@ public class WeightedGroundLogicalRule extends AbstractGroundLogicalRule impleme
 	private double weight;
 	private final boolean squared;
 
-	protected WeightedGroundLogicalRule(WeightedLogicalRule r, List<GroundAtom> posLiterals,
-			List<GroundAtom> negLiterals, boolean squared) {
-		super(r, posLiterals, negLiterals);
+	protected WeightedGroundLogicalRule(WeightedLogicalRule rule, List<GroundAtom> posLiterals,
+			List<GroundAtom> negLiterals, int rvaCount, boolean squared) {
+		super(rule, posLiterals, negLiterals, rvaCount);
+		// TODO(eriq): I hate this weight deferment. See if it is actually necessary.
 		weight = Double.NaN;
 		this.squared = squared;
+		function.setSquared(squared);
 	}
 
 	@Override
@@ -62,23 +66,37 @@ public class WeightedGroundLogicalRule extends AbstractGroundLogicalRule impleme
 	}
 
 	@Override
-	public FunctionTerm getFunctionDefinition() {
-		if (posLiterals.size() + negLiterals.size() == 1) {
-			return (squared) ? new PowerOfTwo(getFunction()) : getFunction();
-		} else {
-			return (squared) ? new PowerOfTwo(MaxFunction.of(getFunction(), new ConstantNumber(0.0)))
-					: MaxFunction.of(getFunction(), new ConstantNumber(0.0));
-		}
+	public GeneralFunction getFunctionDefinition() {
+		return function;
 	}
 
 	@Override
 	public double getIncompatibility() {
-		double inc = 1.0 - getTruthValue();
-		return (squared) ? inc * inc : inc;
+		return function.getValue();
+	}
+
+	@Override
+	public double getIncompatibility(GroundAtom replacementAtom, double replacementValue) {
+		return function.getValue(replacementAtom, replacementValue);
 	}
 
 	@Override
 	public String toString() {
 		return "" + getWeight() + ": " + super.toString() + ((squared) ? " ^2" : "");
+	}
+
+	@Override
+	protected GroundRule instantiateNegatedGroundRule(
+			Formula disjunction, List<GroundAtom> positiveAtoms,
+			List<GroundAtom> negativeAtoms, String name) {
+		int rvaCount = 0;
+		for (GroundAtom atom : IteratorUtils.join(positiveAtoms, negativeAtoms)) {
+			if (atom instanceof RandomVariableAtom) {
+				rvaCount++;
+			}
+		}
+
+		WeightedLogicalRule newRule = new WeightedLogicalRule(rule.getFormula(), -1.0 * ((WeightedLogicalRule)rule).getWeight(), squared, name);
+		return new WeightedGroundLogicalRule(newRule, positiveAtoms, negativeAtoms, rvaCount, squared);
 	}
 }

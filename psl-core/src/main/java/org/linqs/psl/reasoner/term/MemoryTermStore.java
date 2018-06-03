@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.reasoner.term;
 
-import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 
@@ -40,7 +40,7 @@ public class MemoryTermStore<E extends Term> implements TermStore<E> {
 	public static final String INITIAL_SIZE_KEY = CONFIG_PREFIX + ".initialsize";
 	public static final int INITIAL_SIZE_DEFAULT = 5000;
 
-	private List<E> store;
+	private ArrayList<E> store;
 
 	/**
 	 * A mapping of ground rule to the term indexes associated with
@@ -53,11 +53,7 @@ public class MemoryTermStore<E extends Term> implements TermStore<E> {
 	private Map<WeightedGroundRule, List<Integer>> ruleMapping;
 
 	public MemoryTermStore() {
-		this(INITIAL_SIZE_DEFAULT);
-	}
-
-	public MemoryTermStore(ConfigBundle config) {
-		this(config.getInt(INITIAL_SIZE_KEY, INITIAL_SIZE_DEFAULT));
+		this(Config.getInt(INITIAL_SIZE_KEY, INITIAL_SIZE_DEFAULT));
 	}
 
 	public MemoryTermStore(int initialSize) {
@@ -80,13 +76,19 @@ public class MemoryTermStore<E extends Term> implements TermStore<E> {
 
 	@Override
 	public void clear() {
-		store.clear();
-		ruleMapping.clear();
+		if (store != null) {
+			store.clear();
+		}
+
+		if (ruleMapping != null) {
+			ruleMapping.clear();
+		}
 	}
 
 	@Override
 	public void close() {
 		clear();
+
 		store = null;
 		ruleMapping = null;
 	}
@@ -99,6 +101,24 @@ public class MemoryTermStore<E extends Term> implements TermStore<E> {
 	@Override
 	public int size() {
 		return store.size();
+	}
+
+	@Override
+	public void ensureCapacity(int capacity) {
+		assert(capacity >= 0);
+
+		if (capacity == 0) {
+			return;
+		}
+
+		store.ensureCapacity(capacity);
+
+		// If the map is empty, then just reallocate it
+		// (since we can't add capacity).
+		if (ruleMapping.size() == 0) {
+			// The default load factor for Java HashMaps is 0.75.
+			ruleMapping = new HashMap<WeightedGroundRule, List<Integer>>((int)(capacity / 0.75));
+		}
 	}
 
 	@Override

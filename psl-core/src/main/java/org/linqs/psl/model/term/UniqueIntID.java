@@ -47,12 +47,16 @@ public class UniqueIntID implements Constant {
 	}
 
 	@Override
-	public int compareTo(Constant other) {
-		if (other instanceof UniqueIntID) {
-			return id - ((UniqueIntID)other).id;
+	public int compareTo(Term other) {
+		if (other == null) {
+			return -1;
 		}
 
-		return this.getClass().getSimpleName().compareTo(other.getClass().getSimpleName());
+		if (!(other instanceof UniqueIntID)) {
+			return this.getClass().getName().compareTo(other.getClass().getName());
+		}
+
+		return id - ((UniqueIntID)other).id;
 	}
 
 	@Override

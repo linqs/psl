@@ -52,6 +52,8 @@ public abstract class ADMMObjectiveTerm implements Term {
 	 */
 	public abstract void minimize(float stepSize, float[] consensusValues);
 
+	public abstract float evaluate();
+
 	public List<LocalVariable> getVariables() {
 		return new UnmodifiableList<LocalVariable>(variables);
 	}

@@ -19,18 +19,17 @@ package org.linqs.psl.reasoner.bool;
 
 import org.linqs.psl.application.groundrulestore.AtomRegisterGroundRuleStore;
 import org.linqs.psl.application.util.GroundRules;
-import org.linqs.psl.config.ConfigBundle;
-import org.linqs.psl.config.ConfigManager;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.Reasoner;
-import org.linqs.psl.reasoner.inspector.ReasonerInspector;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.reasoner.term.blocker.ConstraintBlockerTerm;
 import org.linqs.psl.reasoner.term.blocker.ConstraintBlockerTermStore;
 import org.linqs.psl.util.MathUtils;
+import org.linqs.psl.util.RandUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +37,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 
 /**
@@ -63,13 +61,11 @@ import java.util.Set;
  *
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-public class BooleanMaxWalkSat extends Reasoner {
+public class BooleanMaxWalkSat implements Reasoner {
 	private static final Logger log = LoggerFactory.getLogger(BooleanMaxWalkSat.class);
 
 	/**
 	 * Prefix of property keys used by this class.
-	 *
-	 * @see ConfigManager
 	 */
 	public static final String CONFIG_PREFIX = "booleanmaxwalksat";
 
@@ -95,21 +91,16 @@ public class BooleanMaxWalkSat extends Reasoner {
 	 */
 	public static final double NOISE_DEFAULT = 0.01;
 
-	private Random rand;
 	private final int maxFlips;
 	private final double noise;
 
-	public BooleanMaxWalkSat(ConfigBundle config) {
-		super(config);
-
-		rand = new Random();
-
-		maxFlips = config.getInt(MAX_FLIPS_KEY, MAX_FLIPS_DEFAULT);
+	public BooleanMaxWalkSat() {
+		maxFlips = Config.getInt(MAX_FLIPS_KEY, MAX_FLIPS_DEFAULT);
 		if (maxFlips <= 0 ) {
 			throw new IllegalArgumentException("Max flips must be positive.");
 		}
 
-		noise = config.getDouble(NOISE_KEY, NOISE_DEFAULT);
+		noise = Config.getDouble(NOISE_KEY, NOISE_DEFAULT);
 		if (noise < 0.0 || noise > 1.0) {
 			throw new IllegalArgumentException("Noise must be in [0,1].");
 		}
@@ -194,15 +185,15 @@ public class BooleanMaxWalkSat extends Reasoner {
 			}
 
 			// With probability noise, change an RV block in groundRule at random.
-			if (rand.nextDouble() <= noise) {
-				blockToChange = rand.nextInt(candidateRVBlocks.length);
+			if (RandUtils.nextDouble() <= noise) {
+				blockToChange = RandUtils.nextInt(candidateRVBlocks.length);
 				int blockSize = candidateRVBlocks[blockToChange].length;
 
 				// Choose a random RVA in this block to flip on.
 				// If one value in this block must be one, then keep going until we pick an atom that is
 				// currently not active.
 				do {
-					positiveRVAIndex = rand.nextInt(blockSize);
+					positiveRVAIndex = RandUtils.nextInt(blockSize);
 				} while (candidateExactlyOne[blockToChange] && candidateRVBlocks[blockToChange][positiveRVAIndex].getValue() == 1.0);
 
 				// If we want to flip an active RVA (value == 1.0), then set the target index to -1.
@@ -303,22 +294,12 @@ public class BooleanMaxWalkSat extends Reasoner {
 						GroundRules.getTotalWeightedIncompatibility(blocker.getGroundRuleStore().getCompatibilityRules()),
 						GroundRules.getInfeasibilityNorm(blocker.getGroundRuleStore().getConstraintRules()));
 			}
-
-			if (inspector != null) {
-				double incompatibility = GroundRules.getTotalWeightedIncompatibility(blocker.getGroundRuleStore().getCompatibilityRules());
-				double infeasbility = GroundRules.getInfeasibilityNorm(blocker.getGroundRuleStore().getConstraintRules());
-
-				if (!inspector.update(this, new MaxWalkSatStatus(flip, incompatibility, infeasbility))) {
-					log.info("Stopping MaxWalkSat iterations on advice from inspector");
-					break;
-				}
-			}
 		}
 	}
 
 	private Object selectAtRandom(Collection<? extends Object> collection) {
 		int i = 0;
-		int selection = rand.nextInt(collection.size());
+		int selection = RandUtils.nextInt(collection.size());
 
 		for (Object o : collection) {
 			if (i++ == selection) {
@@ -332,23 +313,5 @@ public class BooleanMaxWalkSat extends Reasoner {
 	@Override
 	public void close() {
 		// Intentionally blank
-	}
-
-	private static class MaxWalkSatStatus extends ReasonerInspector.IterativeReasonerStatus {
-		public double incompatibility;
-		public double infeasbility;
-
-		public MaxWalkSatStatus(int iteration, double incompatibility, double infeasbility) {
-			super(iteration);
-
-			this.incompatibility = incompatibility;
-			this.infeasbility = infeasbility;
-		}
-
-		@Override
-		public String toString() {
-			return String.format("%s, incompatibility: %f, infeasbility: %f",
-					super.toString(), incompatibility, infeasbility);
-		}
 	}
 }

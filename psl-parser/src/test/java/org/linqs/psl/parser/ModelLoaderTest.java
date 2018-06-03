@@ -21,14 +21,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import org.linqs.psl.PSLTest;
-import org.linqs.psl.config.ConfigBundle;
-import org.linqs.psl.config.EmptyBundle;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver.Type;
 import org.linqs.psl.model.atom.QueryAtom;
-import org.linqs.psl.model.predicate.PredicateFactory;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.arithmetic.WeightedArithmeticRule;
@@ -53,15 +50,12 @@ public class ModelLoaderTest {
 
 	@Before
 	public void setup() {
-		ConfigBundle config = new EmptyBundle();
-		dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Memory, this.getClass().getName(), true), config);
+		dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Memory, this.getClass().getName(), true));
 
-		PredicateFactory factory = PredicateFactory.getFactory();
-
-		singlePredicate = factory.createStandardPredicate("Single", ConstantType.UniqueStringID);
+		singlePredicate = StandardPredicate.get("Single", ConstantType.UniqueStringID);
 		dataStore.registerPredicate(singlePredicate);
 
-		doublePredicate = factory.createStandardPredicate("Double", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
+		doublePredicate = StandardPredicate.get("Double", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
 		dataStore.registerPredicate(doublePredicate);
 	}
 
@@ -155,7 +149,32 @@ public class ModelLoaderTest {
 			// Note that all constants get quotes, but they will get converted into their native types later.
 			"1: Single(E) & Double(E, '1') & Single('1') >> Double(E, '1') ^2\n" +
 			"1: Single(F) & Double(F, '999') & Single('999') >> Double(F, '999') ^2\n" +
-			"1: Single(G) & Double(G, \"999\") & Single(\"999\") >> Double(G, \"999\") ^2\n";
+			"1: Single(G) & Double(G, \"999\") & Single(\"999\") >> Double(G, \"999\") ^2\n" +
+			// Spaces
+			"1: Single(A) & Double(A, ' Z') & Single(' Z') >> Double(A, ' Z') ^2\n" +
+			"1: Single(A) & Double(A, 'Z ') & Single('Z ') >> Double(A, 'Z ') ^2\n" +
+			"1: Single(A) & Double(A, '  Z') & Single('  Z') >> Double(A, '  Z') ^2\n" +
+			"1: Single(A) & Double(A, 'Z  ') & Single('Z  ') >> Double(A, 'Z  ') ^2\n" +
+			"1: Single(A) & Double(A, ' Z ') & Single(' Z ') >> Double(A, ' Z ') ^2\n" +
+			"1: Single(A) & Double(A, '  Z  ') & Single('  Z  ') >> Double(A, '  Z  ') ^2\n" +
+			"1: Single(A) & Double(A, ' ') & Single(' ') >> Double(A, ' ') ^2\n" +
+			"1: Single(A) & Double(A, '  ') & Single('  ') >> Double(A, '  ') ^2\n" +
+			"1: Single(A) & Double(A, 'A B') & Single('A B') >> Double(A, 'A B') ^2\n" +
+			"1: Single(A) & Double(A, 'A  B') & Single('A  B') >> Double(A, 'A  B') ^2\n" +
+			"1: Single(A) & Double(A, ' A B ') & Single(' A B ') >> Double(A, ' A B ') ^2\n" +
+			// Underscores
+			"1: Single(A) & Double(A, '_Z') & Single('_Z') >> Double(A, '_Z') ^2\n" +
+			"1: Single(A) & Double(A, 'Z_') & Single('Z_') >> Double(A, 'Z_') ^2\n" +
+			"1: Single(A) & Double(A, '__Z') & Single('__Z') >> Double(A, '__Z') ^2\n" +
+			"1: Single(A) & Double(A, 'Z__') & Single('Z__') >> Double(A, 'Z__') ^2\n" +
+			"1: Single(A) & Double(A, '_Z_') & Single('_Z_') >> Double(A, '_Z_') ^2\n" +
+			"1: Single(A) & Double(A, '__Z__') & Single('__Z__') >> Double(A, '__Z__') ^2\n" +
+			"1: Single(A) & Double(A, '_') & Single('_') >> Double(A, '_') ^2\n" +
+			"1: Single(A) & Double(A, '__') & Single('__') >> Double(A, '__') ^2\n" +
+			"1: Single(A) & Double(A, 'A_B') & Single('A_B') >> Double(A, 'A_B') ^2\n" +
+			"1: Single(A) & Double(A, 'A__B') & Single('A__B') >> Double(A, 'A__B') ^2\n" +
+			"1: Single(A) & Double(A, '_A_B_') & Single('_A_B_') >> Double(A, '_A_B_') ^2\n" +
+			"";
 		String[] expected = new String[]{
 			"1.0: ( SINGLE(A) & DOUBLE(A, 'bar') & SINGLE('bar') ) >> DOUBLE(A, 'bar') ^2",
 			"1.0: ( SINGLE(B) & DOUBLE(B, 'bar') & SINGLE('bar') ) >> DOUBLE(B, 'bar') ^2",
@@ -163,7 +182,29 @@ public class ModelLoaderTest {
 			"1.0: ( SINGLE(D) & DOUBLE(D, '1BAR') & SINGLE('1BAR') ) >> DOUBLE(D, '1BAR') ^2",
 			"1.0: ( SINGLE(E) & DOUBLE(E, '1') & SINGLE('1') ) >> DOUBLE(E, '1') ^2",
 			"1.0: ( SINGLE(F) & DOUBLE(F, '999') & SINGLE('999') ) >> DOUBLE(F, '999') ^2",
-			"1.0: ( SINGLE(G) & DOUBLE(G, '999') & SINGLE('999') ) >> DOUBLE(G, '999') ^2"
+			"1.0: ( SINGLE(G) & DOUBLE(G, '999') & SINGLE('999') ) >> DOUBLE(G, '999') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, ' Z') & SINGLE(' Z') ) >> DOUBLE(A, ' Z') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, 'Z ') & SINGLE('Z ') ) >> DOUBLE(A, 'Z ') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, '  Z') & SINGLE('  Z') ) >> DOUBLE(A, '  Z') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, 'Z  ') & SINGLE('Z  ') ) >> DOUBLE(A, 'Z  ') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, ' Z ') & SINGLE(' Z ') ) >> DOUBLE(A, ' Z ') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, '  Z  ') & SINGLE('  Z  ') ) >> DOUBLE(A, '  Z  ') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, ' ') & SINGLE(' ') ) >> DOUBLE(A, ' ') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, '  ') & SINGLE('  ') ) >> DOUBLE(A, '  ') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, 'A B') & SINGLE('A B') ) >> DOUBLE(A, 'A B') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, 'A  B') & SINGLE('A  B') ) >> DOUBLE(A, 'A  B') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, ' A B ') & SINGLE(' A B ') ) >> DOUBLE(A, ' A B ') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, '_Z') & SINGLE('_Z') ) >> DOUBLE(A, '_Z') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, 'Z_') & SINGLE('Z_') ) >> DOUBLE(A, 'Z_') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, '__Z') & SINGLE('__Z') ) >> DOUBLE(A, '__Z') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, 'Z__') & SINGLE('Z__') ) >> DOUBLE(A, 'Z__') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, '_Z_') & SINGLE('_Z_') ) >> DOUBLE(A, '_Z_') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, '__Z__') & SINGLE('__Z__') ) >> DOUBLE(A, '__Z__') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, '_') & SINGLE('_') ) >> DOUBLE(A, '_') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, '__') & SINGLE('__') ) >> DOUBLE(A, '__') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, 'A_B') & SINGLE('A_B') ) >> DOUBLE(A, 'A_B') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, 'A__B') & SINGLE('A__B') ) >> DOUBLE(A, 'A__B') ^2",
+			"1.0: ( SINGLE(A) & DOUBLE(A, '_A_B_') & SINGLE('_A_B_') ) >> DOUBLE(A, '_A_B_') ^2"
 		};
 
 		PSLTest.assertModel(dataStore, input, expected);
@@ -288,35 +329,38 @@ public class ModelLoaderTest {
 		PSLTest.assertModel(dataStore, input, expected);
 	}
 
+	/**
+	 * Negation is only allowed on an atom or another negation.
+	 * This is because we only allow conjunctions in the body and disjunctions in the head.
+	 */
 	@Test
-	// You cannot negate any expression because we only allow conjunctions in the body and disjunctions in the head.
 	public void testNegation() {
 		String input =
-			"1: ~Single(A) & Double(A, B) >> ~Single(B) ^2\n";
+			"1: ~Single(A) & Double(A, B) >> ~Single(B) ^2\n" +
+			"1: ~Single(C) & ~~Double(C, D) >> ~~~Single(D) ^2\n" +
+			"1: !Single(E) & Double(E, F) >> !Single(F) ^2\n" +
+			"1: !Single(G) & !!Double(G, H) >> !!!Single(H) ^2\n" +
+			"";
 		String[] expected = new String[]{
-			"1.0: ( ~( SINGLE(A) ) & DOUBLE(A, B) ) >> ~( SINGLE(B) ) ^2"
+			"1.0: ( ~( SINGLE(A) ) & DOUBLE(A, B) ) >> ~( SINGLE(B) ) ^2",
+			"1.0: ( ~( SINGLE(C) ) & ~( ~( DOUBLE(C, D) ) ) ) >> ~( ~( ~( SINGLE(D) ) ) ) ^2",
+			"1.0: ( ~( SINGLE(E) ) & DOUBLE(E, F) ) >> ~( SINGLE(F) ) ^2",
+			"1.0: ( ~( SINGLE(G) ) & ~( ~( DOUBLE(G, H) ) ) ) >> ~( ~( ~( SINGLE(H) ) ) ) ^2"
 		};
 
 		PSLTest.assertModel(dataStore, input, expected);
 
 		try {
-			PSLTest.assertRule(dataStore, "1: ~Single(A) & ~~Double(A, B) >> ~~~Single(B) ^2", "");
-			fail("Negation allowed on non-atom (negation).");
-		} catch (org.antlr.v4.runtime.NoViableAltException ex) {
-			// Exception expected.
-		}
-
-		try {
 			PSLTest.assertRule(dataStore, "1: ~( Single(A) & Single(B) ) >> Double(A, B) ^2", "");
-			fail("Negation allowed on non-atom (conjunction).");
-		} catch (org.antlr.v4.runtime.NoViableAltException ex) {
+			fail("Negation not allowed on a conjunction.");
+		} catch (org.antlr.v4.runtime.RecognitionException ex) {
 			// Exception expected.
 		}
 
 		try {
 			PSLTest.assertRule(dataStore, "1: Double(A, B) >> ~( Single(A) | Single(B) ) ^2", "");
-			fail("Negation allowed on non-atom (disjunction).");
-		} catch (org.antlr.v4.runtime.NoViableAltException ex) {
+			fail("Negation not allowed on a disjunction.");
+		} catch (org.antlr.v4.runtime.RecognitionException ex) {
 			// Exception expected.
 		}
 	}
@@ -876,5 +920,72 @@ public class ModelLoaderTest {
 		atoms = rule.getExpression().getAtoms();
 		assertEquals(1, atoms.size());
 		assertEquals(SummationAtom.class, atoms.get(0).getClass());
+	}
+
+	@Test
+	public void testNegativeWeights() {
+		String input =
+			"-1: Single(A) & Double(A, B) >> Single(B) ^2\n" +
+			"-5.2: Single(B) & Double(B, A) >> Single(A) ^2\n";
+		String[] expected = new String[]{
+			"-1.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"-5.2: ( SINGLE(B) & DOUBLE(B, A) ) >> SINGLE(A) ^2"
+		};
+
+		PSLTest.assertModel(dataStore, input, expected);
+	}
+
+	@Test
+	public void testNonAlphanumericConstants() {
+		String input =
+			"1: Single('') & Double(A, B) >> Single(B) ^2\n" +
+			"1: Single('\\\\') & Double(A, B) >> Single(B) ^2\n" +
+			"1: Single('\\'') & Double(A, B) >> Single(B) ^2\n" +
+			"1: Single('\"') & Double(A, B) >> Single(B) ^2\n" +
+			"1: Single('a\n\t\rb') & Double(A1, B) >> Single(B) ^2\n" +
+			"1: Single('a\\n\\t\\rb') & Double(A2, B) >> Single(B) ^2\n" +
+			"1: Single('abc') & Double(A, B) >> Single(B) ^2\n" +
+			"1: Single('123') & Double(A, B) >> Single(B) ^2\n" +
+			"1: Single('`~!@#$%^&*()-_=+') & Double(A, B) >> Single(B) ^2\n" +
+			"1: Single('{[}]|;:') & Double(A, B) >> Single(B) ^2\n" +
+			"1: Single('<,>.?/') & Double(A, B) >> Single(B) ^2\n" +
+			"1: Single(\"\") & Double(Z, B) >> Single(B) ^2\n" +
+			"1: Single(\"\\\\\") & Double(Z, B) >> Single(B) ^2\n" +
+			"1: Single(\"'\") & Double(Z, B) >> Single(B) ^2\n" +
+			"1: Single(\"\\\"\") & Double(Z, B) >> Single(B) ^2\n" +
+			"1: Single(\"a\n\t\rb\") & Double(Z1, B) >> Single(B) ^2\n" +
+			"1: Single(\"a\\n\\t\\rb\") & Double(Z2, B) >> Single(B) ^2\n" +
+			"1: Single(\"abc\") & Double(Z, B) >> Single(B) ^2\n" +
+			"1: Single(\"123\") & Double(Z, B) >> Single(B) ^2\n" +
+			"1: Single(\"`~!@#$%^&*()-_=+\") & Double(Z, B) >> Single(B) ^2\n" +
+			"1: Single(\"{[}]|;:\") & Double(Z, B) >> Single(B) ^2\n" +
+			"1: Single(\"<,>.?/\") & Double(Z, B) >> Single(B) ^2\n" +
+			"";
+		String[] expected = new String[]{
+			"1.0: ( SINGLE('') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('\\\\') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('\\'') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('\"') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('a\n\t\rb') & DOUBLE(A1, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('a\n\t\rb') & DOUBLE(A2, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('abc') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('123') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('`~!@#$%^&*()-_=+') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('{[}]|;:') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('<,>.?/') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('') & DOUBLE(Z, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('\\\\') & DOUBLE(Z, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('\\'') & DOUBLE(Z, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('\"') & DOUBLE(Z, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('a\n\t\rb') & DOUBLE(Z1, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('a\n\t\rb') & DOUBLE(Z2, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('abc') & DOUBLE(Z, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('123') & DOUBLE(Z, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('`~!@#$%^&*()-_=+') & DOUBLE(Z, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('{[}]|;:') & DOUBLE(Z, B) ) >> SINGLE(B) ^2",
+			"1.0: ( SINGLE('<,>.?/') & DOUBLE(Z, B) ) >> SINGLE(B) ^2",
+		};
+
+		PSLTest.assertModel(dataStore, input, expected);
 	}
 }
