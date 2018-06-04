@@ -461,11 +461,9 @@ public class RDBMSDatabase extends Database {
 		((RDBMSDataStore)parentDataStore).getPredicateInfo(predicate);
 
 		GroundAtom result = queryDBForAtom(predicate, arguments);
-
 		if (result != null || !create) {
 			return result;
 		}
-
 
 		if (isClosed((StandardPredicate)predicate)) {
 			result = cache.instantiateObservedAtom(predicate, arguments, DEFAULT_UNOBSERVED_VALUE);
