@@ -18,8 +18,6 @@
 package org.linqs.psl.application.inference;
 
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
-import org.linqs.psl.application.inference.result.FullInferenceResult;
-import org.linqs.psl.application.inference.result.memory.MemoryFullInferenceResult;
 import org.linqs.psl.application.util.GroundRules;
 import org.linqs.psl.application.util.Grounding;
 import org.linqs.psl.config.Config;
@@ -77,14 +75,8 @@ public class LazyMPEInference extends InferenceApplication {
 	}
 
 	@Override
-	public FullInferenceResult inference() {
+	public void inference() {
 		inference(model.getRules(), reasoner, groundRuleStore, termStore, termGenerator, lazyAtomManager, maxRounds);
-
-		double incompatibility = GroundRules.getTotalWeightedIncompatibility(groundRuleStore.getCompatibilityRules());
-		double infeasibility = GroundRules.getInfeasibilityNorm(groundRuleStore.getConstraintRules());
-
-		return new MemoryFullInferenceResult(incompatibility, infeasibility,
-				lazyAtomManager.getPersistedRVAtoms().size(), groundRuleStore.size());
 	}
 
 	/**
