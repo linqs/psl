@@ -9,6 +9,9 @@ import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.util.RandUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -17,15 +20,16 @@ import java.util.List;
  */
 public class GaussianProcessPrior extends WeightLearningApplication {
 
+    private static final Logger log = LoggerFactory.getLogger(GaussianProcessPrior.class);
     private static final String CONFIG_PREFIX = "gpp";
     private static final String KERNEL = ".kernel";
     private static final String NUM_ITER = ".maxiter";
     private static final String MAX_CONFIGS_STR = ".maxconfigs";
     private static final String EXPLORATION = ".explore";
     private static final String DEFAULT_KERNEL = "squaredExp";
-    private static final int MAX_CONFIGS = 100000;
-    private static final int MAX_NUM_ITER = 25;
-    private static final float EXPLORATION_VAL = 2.0f;
+    private static final int MAX_CONFIGS = 1000000;
+    private static final int MAX_NUM_ITER = 50;
+    private static final float EXPLORATION_VAL = 1.0f;
     private FloatMatrix knownDataStdInv;
     private GaussianProcessKernels.Kernel kernel;
     private int maxIterNum;
@@ -67,6 +71,9 @@ public class GaussianProcessPrior extends WeightLearningApplication {
             exploredConfigs.add(config);
             configs.remove(nextPoint);
             exploredFnVal.add(getFunctionValue(config));
+            log.info("Round " + (iter+1) +
+                    "- config picked - " + ArrayUtils.toString(exploredConfigs.get(iter)) +
+                    "- Value: " + exploredFnVal.get(iter));
             final int numKnown = exploredFnVal.size();
             knownDataStdInv = new FloatMatrix(numKnown, numKnown);
             for (int i = 0; i < numKnown; i++) {
@@ -96,6 +103,8 @@ public class GaussianProcessPrior extends WeightLearningApplication {
             }
         }
         setWeights(bestConfig);
+        log.info("Best config is: " + ArrayUtils.toString(bestConfig) +
+                ", Value: " + getFunctionValue(bestConfig));
         
     }
 
@@ -112,6 +121,12 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         float max = 1.0f;
         float min = 0.0f;
         int numPerSplit = (int)Math.exp(Math.log(maxConfigs)/numMutableRules);
+        //If systematic generation of points will lead to not a reasonable exploration of space.
+        //then just pick random points in space and hope it is better than being systematic.
+        if (numPerSplit < 5) {
+            log.info("Not enough slots to generate config systematically. Using random.");
+            return getRandomConfigs();
+        }
         float inc = max/numPerSplit;
         float[] config = new float[numMutableRules];
         boolean done = false;
@@ -130,6 +145,19 @@ public class GaussianProcessPrior extends WeightLearningApplication {
                     j++;
                 }
             }
+        }
+        return configs;
+    }
+
+    private List<float[]> getRandomConfigs(){
+        int numMutableRules = this.mutableRules.size();
+        List<float[]> configs = Lists.newArrayList();
+        for (int i = 0; i < maxConfigs; i++) {
+            float [] curConfig = new float[numMutableRules];
+            for (int j = 0; j < numMutableRules; j++) {
+                curConfig[j] = RandUtils.nextFloat();
+            }
+            configs.add(curConfig);
         }
         return configs;
     }
