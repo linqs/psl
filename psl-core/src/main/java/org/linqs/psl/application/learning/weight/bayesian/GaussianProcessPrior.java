@@ -21,13 +21,16 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     private static final String KERNEL = ".kernel";
     private static final String NUM_ITER = ".maxiter";
     private static final String MAX_CONFIGS_STR = ".maxconfigs";
+    private static final String EXPLORATION = ".explore";
     private static final String DEFAULT_KERNEL = "squaredExp";
-    private static int MAX_CONFIGS = 100000;
-    private static int MAX_NUM_ITER = 25;
+    private static final int MAX_CONFIGS = 100000;
+    private static final int MAX_NUM_ITER = 25;
+    private static final float EXPLORATION_VAL = 2.0f;
     private FloatMatrix knownDataStdInv;
     private GaussianProcessKernels.Kernel kernel;
     private int maxIterNum;
     private int maxConfigs;
+    private float exploration;
 
     public GaussianProcessPrior(List<Rule> rules, Database rvDB, Database observedDB) {
         super(rules, rvDB, observedDB, false);
@@ -39,6 +42,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         kernel = GaussianProcessKernels.KERNELS.get(kernel_name);
         maxIterNum = Config.getInt(CONFIG_PREFIX+NUM_ITER, MAX_NUM_ITER);
         maxConfigs = Config.getInt(CONFIG_PREFIX+MAX_CONFIGS_STR, MAX_CONFIGS);
+        exploration = Config.getFloat(CONFIG_PREFIX+EXPLORATION, EXPLORATION_VAL);
     }
 
     public GaussianProcessPrior(Model model, Database rvDB, Database observedDB) {
@@ -82,9 +86,9 @@ public class GaussianProcessPrior extends WeightLearningApplication {
             }
 
             iter++;
-        }while(iter < maxIterNum);
+        }while(iter < maxIterNum && configs.size() > 0);
         float[] bestConfig = null;
-        float bestVal = Float.MIN_VALUE;
+        float bestVal = -Float.MAX_VALUE;
         for (int i = 0; i < exploredFnVal.size(); i++) {
             if (bestVal < exploredFnVal.get(i)){
                 bestVal = exploredFnVal.get(i);
@@ -162,9 +166,9 @@ def predict(x, data, kernel, params, sigma, t):
     //Exploration strategy
     protected int getNextPoint(List<Float> yPred, List<Float> yStd){
         int bestConfig = -1;
-        float curBestVal = Float.MIN_VALUE;
+        float curBestVal = -Float.MAX_VALUE;
         for (int i = 0; i < yPred.size(); i++) {
-            float curVal = (float)((yPred.get(i)/2.0) + yStd.get(i));
+            float curVal = (float)((yPred.get(i)/exploration) + yStd.get(i));
             if(curBestVal < curVal){
                 curBestVal = curVal;
                 bestConfig = i;

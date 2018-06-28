@@ -8,6 +8,9 @@ import org.junit.Test;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningTest;
 import org.linqs.psl.config.Config;
+import org.linqs.psl.database.Database;
+import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.WeightedRule;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -21,6 +24,9 @@ public class GaussianProcessPriorTest extends WeightLearningTest {
     @Override
     protected WeightLearningApplication getWLA() {
         return new GaussianProcessPrior(this.info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
+    }
+    protected WeightLearningApplication getWLALocal(){
+        return new GPPTest(this.info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
     }
     @Test
     public void testGetNext(){
@@ -81,5 +87,34 @@ public class GaussianProcessPriorTest extends WeightLearningTest {
         GaussianProcessPrior.ValueAndStd fnAndStd = wl.predictFnValAndStd(x, xKnown, yknown);
         Assert.assertEquals(0.84939,fnAndStd.value, 1e-5);
         Assert.assertEquals(0.99656, fnAndStd.std, 1e-5);
+    }
+    @Test
+    public void testDoLearn(){
+        Config.addProperty("gppker.reldep", 1);
+        Config.addProperty("gpp.maxconfigs", 5);
+        Config.addProperty("gpp.maxiter", 3);
+        GaussianProcessPrior wl = (GaussianProcessPrior) getWLALocal();
+        wl.doLearn();
+        for (int i = 0; i < 3; i++) {
+            Assert.assertEquals(1.0f, ((WeightedRule)this.info.model.getRules().get(i)).getWeight(), 1e-30);
+        }
+
+    }
+    private class GPPTest extends GaussianProcessPrior{
+
+        public GPPTest(List<Rule> rules, Database rvDB, Database observedDB) {
+            super(rules, rvDB, observedDB);
+        }
+
+        @Override
+        public float getFunctionValue(float[] config){
+            if (config[0] == 1.0 && config[1] == 1.0 && config[2] == 1.0){
+                return 0.5f;
+            }
+            if (config[0] == 0.0 && config[1] == 1.0 && config[2] == 1.0){
+                return 0.6f;
+            }
+            return 0.3f;
+        }
     }
 }
