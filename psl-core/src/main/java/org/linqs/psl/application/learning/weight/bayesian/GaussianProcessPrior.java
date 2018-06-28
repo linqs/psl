@@ -1,7 +1,9 @@
 package org.linqs.psl.application.learning.weight.bayesian;
 
 import com.google.common.collect.Lists;
+import org.apache.commons.lang.ArrayUtils;
 import org.jblas.FloatMatrix;
+import org.jblas.Solve;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
@@ -16,11 +18,13 @@ public class GaussianProcessPrior extends WeightLearningApplication {
 
     private static String CONFIG_PREFIX = "gpp";
     private static String KERNEL = ".kernel";
-    private static String DEFAULT_KERNEL = "gaussian";
+    private static final String NUM_ITER = ".maxiter";
+    private static String DEFAULT_KERNEL = "squaredExp";
     private static int MAX_CONFIGS = 100000;
     private static int MAX_NUM_ITER = 25;
     FloatMatrix knownDataStdInv;
     private GaussianProcessKernels.Kernel kernel;
+    private int maxIterNum;
 
     public GaussianProcessPrior(List<Rule> rules, Database rvDB, Database observedDB, boolean supportsLatentVariables) {
         super(rules, rvDB, observedDB, supportsLatentVariables);
@@ -29,14 +33,51 @@ public class GaussianProcessPrior extends WeightLearningApplication {
             throw new IllegalArgumentException("No kernel named - " + kernel_name + ", exists.");
         }
         kernel = GaussianProcessKernels.KERNELS.get(kernel_name);
+        maxIterNum = Config.getInt(NUM_ITER, MAX_NUM_ITER);
     }
 
     @Override
     protected void doLearn() {
-        int numMutableRules = this.mutableRules.size();
         List<float[]> configs = getConfigs();
+        List<float[]> exploredConfigs = Lists.newArrayList();
+        List<Float> exploredFnVal = Lists.newArrayList();
+        int iter = 0;
+        List<Float> yPred = Lists.newArrayList();
+        List<Float> yStd = Lists.newArrayList();
+        for (int i = 0; i < configs.size(); i++) {
+            yPred.add(0f);
+            yStd.add(1f);
+        }
+        do{
+            int nextPoint = getNextPoint(yPred, yStd);
+            float[] config = configs.get(nextPoint);
+            exploredConfigs.add(config);
+            configs.remove(nextPoint);
+            exploredFnVal.add(getFunctionValue(config));
+            final int numKnown = exploredFnVal.size();
+            knownDataStdInv = new FloatMatrix(numKnown, numKnown);
+            for (int i = 0; i < numKnown; i++) {
+                for (int j = 0; j < numKnown; j++) {
+                    knownDataStdInv.put(i, j, kernel.kernel(exploredConfigs.get(i), exploredConfigs.get(j)));
+                }
+            }
+            knownDataStdInv = Solve.solve(knownDataStdInv, FloatMatrix.eye(numKnown));
+            for (int i = 0; i < configs.size(); i++) {
+                float[] yKnown = ArrayUtils.toPrimitive(
+                        exploredFnVal.toArray(new Float[numKnown]));
+                predictFnValAndStd(configs.get(i), exploredConfigs, yKnown);
+            }
 
+            iter++;
+        }while(iter < maxIterNum);
         
+    }
+
+    private void setWeights(float[] config) {
+        for (int i = 0; i < mutableRules.size(); i++) {
+            mutableRules.get(i).setWeight(config[i]);
+        }
+        inMPEState = false;
     }
 
     private List<float[]> getConfigs(){
@@ -87,15 +128,17 @@ def predict(x, data, kernel, params, sigma, t):
     }
 
     //Get metric value like accuracy.
-    protected double getFunctionValue(){
+    protected float getFunctionValue(float[] config){
+        setWeights(config);
+        computeMPEState();
         evaluator.compute(trainingMap);
         double score = evaluator.getRepresentativeMetric();
         score = (evaluator.isHigherRepresentativeBetter())?score:-1*score;
-        return score;
+        return (float)score;
     }
 
     //Exploration strategy
-    protected int getNextPoint(){
+    protected int getNextPoint(List<Float> yPred, List<Float> yStd){
         return 0;
     }
 
