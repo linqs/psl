@@ -7,6 +7,7 @@ import org.jblas.Solve;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
 
 import java.util.List;
@@ -16,24 +17,32 @@ import java.util.List;
  */
 public class GaussianProcessPrior extends WeightLearningApplication {
 
-    private static String CONFIG_PREFIX = "gpp";
-    private static String KERNEL = ".kernel";
+    private static final String CONFIG_PREFIX = "gpp";
+    private static final String KERNEL = ".kernel";
     private static final String NUM_ITER = ".maxiter";
-    private static String DEFAULT_KERNEL = "squaredExp";
+    private static final String MAX_CONFIGS_STR = ".maxconfigs";
+    private static final String DEFAULT_KERNEL = "squaredExp";
     private static int MAX_CONFIGS = 100000;
     private static int MAX_NUM_ITER = 25;
-    FloatMatrix knownDataStdInv;
+    private FloatMatrix knownDataStdInv;
     private GaussianProcessKernels.Kernel kernel;
     private int maxIterNum;
+    private int maxConfigs;
 
-    public GaussianProcessPrior(List<Rule> rules, Database rvDB, Database observedDB, boolean supportsLatentVariables) {
-        super(rules, rvDB, observedDB, supportsLatentVariables);
+    public GaussianProcessPrior(List<Rule> rules, Database rvDB, Database observedDB) {
+        super(rules, rvDB, observedDB, false);
         String kernel_name = Config.getString(CONFIG_PREFIX+KERNEL, DEFAULT_KERNEL);
         if (!GaussianProcessKernels.KERNELS.keySet().contains(kernel_name)){
             throw new IllegalArgumentException("No kernel named - " + kernel_name + ", exists.");
         }
+        //Very important to define a good kernel.
         kernel = GaussianProcessKernels.KERNELS.get(kernel_name);
-        maxIterNum = Config.getInt(NUM_ITER, MAX_NUM_ITER);
+        maxIterNum = Config.getInt(CONFIG_PREFIX+NUM_ITER, MAX_NUM_ITER);
+        maxConfigs = Config.getInt(CONFIG_PREFIX+MAX_CONFIGS_STR, MAX_CONFIGS);
+    }
+
+    public GaussianProcessPrior(Model model, Database rvDB, Database observedDB) {
+        this(model.getRules(), rvDB, observedDB);
     }
 
     @Override
@@ -62,14 +71,27 @@ public class GaussianProcessPrior extends WeightLearningApplication {
                 }
             }
             knownDataStdInv = Solve.solve(knownDataStdInv, FloatMatrix.eye(numKnown));
+            yPred.clear();
+            yStd.clear();
             for (int i = 0; i < configs.size(); i++) {
                 float[] yKnown = ArrayUtils.toPrimitive(
                         exploredFnVal.toArray(new Float[numKnown]));
-                predictFnValAndStd(configs.get(i), exploredConfigs, yKnown);
+                ValueAndStd valAndStd = predictFnValAndStd(configs.get(i), exploredConfigs, yKnown);
+                yPred.add(valAndStd.value);
+                yStd.add(valAndStd.std);
             }
 
             iter++;
         }while(iter < maxIterNum);
+        float[] bestConfig = null;
+        float bestVal = Float.MIN_VALUE;
+        for (int i = 0; i < exploredFnVal.size(); i++) {
+            if (bestVal < exploredFnVal.get(i)){
+                bestVal = exploredFnVal.get(i);
+                bestConfig = exploredConfigs.get(i);
+            }
+        }
+        setWeights(bestConfig);
         
     }
 
@@ -85,7 +107,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         List<float[]> configs = Lists.newArrayList();
         float max = 1.0f;
         float min = 0.0f;
-        int numPerSplit = (int)Math.exp(Math.log(MAX_CONFIGS)/numMutableRules);
+        int numPerSplit = (int)Math.exp(Math.log(maxConfigs)/numMutableRules);
         float inc = max/numPerSplit;
         float[] config = new float[numMutableRules];
         boolean done = false;
@@ -115,15 +137,15 @@ def predict(x, data, kernel, params, sigma, t):
     sigma_new = kernel(x, x, params) - np.dot(k, Sinv).dot(k)
     return y_pred, sigma_new
  */
-    protected float[] predictFnValAndStd(float[] x, List<float[]> xKnown, float[] yKnown){
-        float[] fnAndStd = {0,0};
+    protected ValueAndStd predictFnValAndStd(float[] x, List<float[]> xKnown, float[] yKnown){
+        ValueAndStd fnAndStd = new ValueAndStd();
         FloatMatrix blasYKnown = new FloatMatrix(yKnown);
         FloatMatrix xyStd = FloatMatrix.zeros(yKnown.length);
         for (int i = 0; i < yKnown.length; i++) {
             xyStd.put(i, kernel.kernel(x, xKnown.get(i)));
         }
-        fnAndStd[0] = knownDataStdInv.mmul(xyStd).dot(blasYKnown);
-        fnAndStd[1] = kernel.kernel(x,x) - knownDataStdInv.mmul(xyStd).dot(xyStd);
+        fnAndStd.value = xyStd.transpose().mmul(knownDataStdInv).dot(blasYKnown);
+        fnAndStd.std = kernel.kernel(x,x) - xyStd.transpose().mmul(knownDataStdInv).dot(xyStd);
         return fnAndStd;
     }
 
@@ -139,8 +161,21 @@ def predict(x, data, kernel, params, sigma, t):
 
     //Exploration strategy
     protected int getNextPoint(List<Float> yPred, List<Float> yStd){
-        return 0;
+        int bestConfig = -1;
+        float curBestVal = Float.MIN_VALUE;
+        for (int i = 0; i < yPred.size(); i++) {
+            float curVal = (float)((yPred.get(i)/2.0) + yStd.get(i));
+            if(curBestVal < curVal){
+                curBestVal = curVal;
+                bestConfig = i;
+            }
+        }
+        return bestConfig;
     }
 
-    //Very important to define a good kernel.
+    class ValueAndStd{
+        float value;
+        float std;
+    }
+
 }
