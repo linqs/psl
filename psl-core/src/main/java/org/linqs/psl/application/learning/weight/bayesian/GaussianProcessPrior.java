@@ -29,12 +29,14 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     private static final String DEFAULT_KERNEL = "squaredExp";
     private static final int MAX_CONFIGS = 1000000;
     private static final int MAX_NUM_ITER = 50;
-    private static final float EXPLORATION_VAL = 1.0f;
+    private static final float EXPLORATION_VAL = 2.0f;
+    private static final String RANDOM_CONFIGS_ONLY = ".randomConfigsOnly";
     private FloatMatrix knownDataStdInv;
     private GaussianProcessKernels.Kernel kernel;
     private int maxIterNum;
     private int maxConfigs;
     private float exploration;
+    private boolean randomConfigsOnly;
 
     public GaussianProcessPrior(List<Rule> rules, Database rvDB, Database observedDB) {
         super(rules, rvDB, observedDB, false);
@@ -47,6 +49,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         maxIterNum = Config.getInt(CONFIG_PREFIX+NUM_ITER, MAX_NUM_ITER);
         maxConfigs = Config.getInt(CONFIG_PREFIX+MAX_CONFIGS_STR, MAX_CONFIGS);
         exploration = Config.getFloat(CONFIG_PREFIX+EXPLORATION, EXPLORATION_VAL);
+        randomConfigsOnly = Config.getBoolean(CONFIG_PREFIX+RANDOM_CONFIGS_ONLY, true);
     }
 
     public GaussianProcessPrior(Model model, Database rvDB, Database observedDB) {
@@ -123,7 +126,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         int numPerSplit = (int)Math.exp(Math.log(maxConfigs)/numMutableRules);
         //If systematic generation of points will lead to not a reasonable exploration of space.
         //then just pick random points in space and hope it is better than being systematic.
-        if (numPerSplit < 5) {
+        if (numPerSplit < 5 || randomConfigsOnly) {
             log.info("Not enough slots to generate config systematically. Using random.");
             return getRandomConfigs();
         }
