@@ -28,7 +28,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     private static final String EXPLORATION = ".explore";
     private static final String DEFAULT_KERNEL = "squaredExp";
     private static final int MAX_CONFIGS = 1000000;
-    private static final int MAX_NUM_ITER = 50;
+    private static final int MAX_NUM_ITER = 25;
     private static final float EXPLORATION_VAL = 2.0f;
     private static final String RANDOM_CONFIGS_ONLY = ".randomConfigsOnly";
     private FloatMatrix knownDataStdInv;
@@ -107,7 +107,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         }
         setWeights(bestConfig);
         log.info("Best config is: " + ArrayUtils.toString(bestConfig) +
-                ", Value: " + getFunctionValue(bestConfig));
+                ", Value: " + getFunctionValue(bestConfig) + ", bestValue:" + bestVal);
         
     }
 

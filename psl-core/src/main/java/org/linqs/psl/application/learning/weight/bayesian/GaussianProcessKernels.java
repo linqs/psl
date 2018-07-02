@@ -16,7 +16,7 @@ public class GaussianProcessKernels {
     private static final String CONFIG_PREFIX = "gppker";
     private static final String SCALE_PARAM = ".scale";
     private static final String REL_DEP_PARAM = ".reldep";
-    private static float SCALE = 2.0f;
+    private static float SCALE = 1.0f;
     private static float REL_DEP = 100.0f;
 
     static {
