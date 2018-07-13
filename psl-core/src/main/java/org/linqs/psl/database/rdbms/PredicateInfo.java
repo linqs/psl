@@ -239,7 +239,7 @@ public class PredicateInfo {
 		}
 	}
 
-	public void index(Connection connection, DatabaseDriver dbDriver) {
+	public synchronized void index(Connection connection, DatabaseDriver dbDriver) {
 		if (indexed) {
 			return;
 		}
@@ -313,7 +313,7 @@ public class PredicateInfo {
 		return predicates;
 	}
 
-	private String buildCountAllStatement(List<Integer> partitions) {
+	private synchronized String buildCountAllStatement(List<Integer> partitions) {
 		String key = "countAll_" + partitions.toString();
 		if (cachedSQL.containsKey(key)) {
 			return cachedSQL.get(key);
@@ -339,7 +339,7 @@ public class PredicateInfo {
 		return sql;
 	}
 
-	private String buildQueryAllStatement(List<Integer> partitions) {
+	private synchronized String buildQueryAllStatement(List<Integer> partitions) {
 		String key = "queryAll_" + partitions.toString();
 		if (cachedSQL.containsKey(key)) {
 			return cachedSQL.get(key);
@@ -371,7 +371,7 @@ public class PredicateInfo {
 		return sql;
 	}
 
-	private String buildQueryStatement(List<Integer> readPartitions) {
+	private synchronized String buildQueryStatement(List<Integer> readPartitions) {
 		String key = "query_" + readPartitions.toString();
 		if (cachedSQL.containsKey(key)) {
 			return cachedSQL.get(key);
@@ -396,7 +396,7 @@ public class PredicateInfo {
 		return sql;
 	}
 
-	private String buildUpsertStatement(DatabaseDriver dbDriver) {
+	private synchronized String buildUpsertStatement(DatabaseDriver dbDriver) {
 		String key = "upsert";
 		if (cachedSQL.containsKey(key)) {
 			return cachedSQL.get(key);
@@ -423,7 +423,7 @@ public class PredicateInfo {
 		return sql;
 	}
 
-	private String buildDeleteStatement(int writePartition) {
+	private synchronized String buildDeleteStatement(int writePartition) {
 		String key = "delete_" + writePartition;
 		if (cachedSQL.containsKey(key)) {
 			return cachedSQL.get(key);
@@ -445,7 +445,7 @@ public class PredicateInfo {
 		return sql;
 	}
 
-	private String buildPartitionMoveStatement(int oldPartition, int newPartition) {
+	private synchronized String buildPartitionMoveStatement(int oldPartition, int newPartition) {
 		String key = "movePartition_" + oldPartition + "_" + newPartition;
 		if (cachedSQL.containsKey(key)) {
 			return cachedSQL.get(key);

@@ -344,7 +344,7 @@ public class RDBMSDataStore implements DataStore {
 	/**
 	 * Helper method for getting a predicate handle
 	 */
-	public PredicateInfo getPredicateInfo(Predicate predicate) {
+	public synchronized PredicateInfo getPredicateInfo(Predicate predicate) {
 		PredicateInfo info = predicates.get(predicate);
 		if (info == null) {
 			throw new IllegalArgumentException("Predicate not registered with data store.");
