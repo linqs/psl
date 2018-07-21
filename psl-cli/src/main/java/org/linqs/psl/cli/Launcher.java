@@ -55,7 +55,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -211,8 +210,8 @@ public class Launcher {
 
 		Set<StandardPredicate> closedPredicates;
 		try {
-			File dataFile = new File(options.getOptionValue(OPTION_DATA));
-			closedPredicates = DataLoader.load(dataStore, new FileInputStream(dataFile), options.hasOption(OPTION_INT_IDS));
+			String path = options.getOptionValue(OPTION_DATA);
+			closedPredicates = DataLoader.load(dataStore, path, options.hasOption(OPTION_INT_IDS));
 		} catch (FileNotFoundException ex) {
 			throw new RuntimeException("Failed to load data.", ex);
 		}

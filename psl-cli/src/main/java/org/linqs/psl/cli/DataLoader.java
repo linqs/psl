@@ -27,7 +27,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.InputStream;
+import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -81,7 +85,7 @@ public class DataLoader {
 	}
 
 	@SuppressWarnings("unchecked")
-	private static void loadDataFiles(DataStore datastore, Map yamlMap) {
+	private static void loadDataFiles(DataStore datastore, Map yamlMap, String dataFilePath) {
 		for (String partitionName : ((Map<String,Object>) yamlMap).keySet()) {
 			// Skip special partition predicates
 			if (partitionName.equalsIgnoreCase("predicates")) {
@@ -96,23 +100,40 @@ public class DataLoader {
 			// Find files to load into this partition.
 			Partition partition = datastore.getPartition(partitionName);
 
+			// All non-absolute paths should be relative to the data file.
+			String relativeDir = (new File(dataFilePath)).getParentFile().getAbsolutePath();
+
 			for (Entry<String,Object> loadSpec : ((Map<String,Object>)yamlMap.get(partitionName)).entrySet()) {
 				log.debug("Loading data for {} ({} partition)", loadSpec.getKey(), partitionName);
 
 				StandardPredicate predicate = StandardPredicate.get(loadSpec.getKey());
 				Inserter insert = datastore.getInserter(predicate, partition);
 
+				// TODO(eriq): Clean this up in the new loader.
+
 				if (loadSpec.getValue() instanceof String) {
-					insert.loadDelimitedDataAutomatic((String)loadSpec.getValue());
+					insert.loadDelimitedDataAutomatic(makePath(relativeDir, (String)loadSpec.getValue()));
 				} else if (loadSpec.getValue() instanceof List) {
 					for (String filename : ((List<String>)loadSpec.getValue())) {
-						insert.loadDelimitedDataAutomatic(filename);
+						insert.loadDelimitedDataAutomatic(makePath(relativeDir, filename));
 					}
 				} else {
 					throw new IllegalArgumentException("Unknown specification when loading " + partitionName);
 				}
 			}
 		}
+	}
+
+	/**
+	 * Construct a path to the given file relative to the data file.
+	 * If the given path is absolute, then don't change it.
+	 */
+	private static String makePath(String relativeDir, String basePath) {
+		if (Paths.get(basePath).isAbsolute()) {
+			return basePath;
+		}
+
+		return Paths.get(relativeDir, basePath).toString();
 	}
 
 	/**
@@ -124,11 +145,14 @@ public class DataLoader {
 	 * @param inputStream YAML-formatted input for predicate and data definitions
 	 * @return The set of closed predicates.
 	 */
-	public static Set<StandardPredicate> load(DataStore datastore, InputStream inputStream, boolean useIntIds) {
+	public static Set<StandardPredicate> load(DataStore datastore, String path, boolean useIntIds) throws FileNotFoundException {
+		InputStream inputStream = new FileInputStream(path);
+
 		Yaml yaml = new Yaml();
 		Map yamlParse = (Map)yaml.load(inputStream);
+
 		Set<StandardPredicate> closedPredicates = definePredicates(datastore, yamlParse, useIntIds);
-		loadDataFiles(datastore, yamlParse);
+		loadDataFiles(datastore, yamlParse, path);
 
 		return closedPredicates;
 	}
