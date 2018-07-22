@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.database.rdbms;
 
+import org.linqs.psl.config.Config;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseQuery;
@@ -82,6 +83,14 @@ import java.util.Set;
 public class RDBMSDatabase extends Database {
 	private static final Logger log = LoggerFactory.getLogger(RDBMSDatabase.class);
 
+	public static final String CONFIG_PREFIX = "rdbmsdatabase";
+
+	/**
+	 * Use optimal cover grounding.
+	 */
+	public static final String OPTIMAL_COVER_KEY = CONFIG_PREFIX + ".optimalcover";
+	public static final boolean OPTIMAL_COVER_DEFAULT = false;
+
 	private static final double DEFAULT_UNOBSERVED_VALUE = 0.0;
 
 	private static final String THREAD_QUERY_ATOM_KEY = QueryAtom.class.getName();
@@ -91,10 +100,14 @@ public class RDBMSDatabase extends Database {
 	 */
 	private final Set<Predicate> closedPredicates;
 
+	private boolean useOptimalCover;
+
 	public RDBMSDatabase(RDBMSDataStore parent,
 			Partition write, Partition[] read,
 			Set<StandardPredicate> closed) {
 		super(parent, write, read);
+
+		useOptimalCover = Config.getBoolean(OPTIMAL_COVER_KEY, OPTIMAL_COVER_DEFAULT);
 
 		this.closedPredicates = new HashSet<Predicate>();
 		if (closed != null) {
@@ -242,9 +255,11 @@ public class RDBMSDatabase extends Database {
 
 	@Override
 	public ResultList executeGroundingQuery(Formula formula) {
-		// TODO(eriq): Enable once OC is ready for prime time.
-		// return executeQuery(OptimalCover.computeOptimalCover(formula, parentDataStore), false);
-		return executeQuery(formula, false);
+		if (useOptimalCover) {
+			return executeQuery(OptimalCover.computeOptimalCover(formula, (RDBMSDataStore)parentDataStore), false);
+		} else {
+			return executeQuery(formula, false);
+		}
 	}
 
 	@Override

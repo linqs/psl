@@ -64,6 +64,9 @@ public class DataLoader {
 		YAMLConfiguration yaml = new YAMLConfiguration();
 		yaml.read(inputStream);
 
+		// Make sure to get the absolute path so we can take the parent.
+		path = (new File(path)).getAbsolutePath();
+
 		// All non-absolute paths should be relative to the data file.
 		String relativeDir = (new File(path)).getParentFile().getAbsolutePath();
 
