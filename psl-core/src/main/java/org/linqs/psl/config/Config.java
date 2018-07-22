@@ -19,16 +19,18 @@ package org.linqs.psl.config;
 
 import org.linqs.psl.util.Reflection;
 
-import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.DataConfiguration;
-import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.configuration2.BaseConfiguration;
+import org.apache.commons.configuration2.DataConfiguration;
+import org.apache.commons.configuration2.PropertiesConfiguration;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.log4j.helpers.Loader;
 import org.apache.log4j.helpers.OptionConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.URL;
@@ -69,7 +71,7 @@ public class Config {
 		// Try to get a resource URL from the system (if we have a property key instead of a path).
 		URL resourceURL = Loader.getResource(path);
 		if (resourceURL != null) {
-			loadResource(resourceURL);
+			loadResource(resourceURL.getFile());
 			return;
 		}
 
@@ -81,22 +83,14 @@ public class Config {
 
 	public static void loadResource(String path) {
 		try {
-			config.append(new PropertiesConfiguration(path));
-		} catch (ConfigurationException ex) {
+			PropertiesConfiguration props = new PropertiesConfiguration();
+			props.read(new FileReader(path));
+			config.append(props);
+		} catch (IOException | ConfigurationException ex) {
 			throw new RuntimeException("Failed to load config resource: " + path, ex);
 		}
 
 		log.debug("Configuration file loaded: {}", path);
-	}
-
-	public static void loadResource(URL url) {
-		try {
-			config.append(new PropertiesConfiguration(url));
-		} catch (ConfigurationException ex) {
-			throw new RuntimeException("Failed to load config resource: " + url, ex);
-		}
-
-		log.debug("Configuration URL loaded: {}", url);
 	}
 
 	/**
@@ -269,11 +263,6 @@ public class Config {
 		}
 
 		return toReturn;
-	}
-
-	public static Enum<?> getEnum(String key, Enum<?> defaultValue) {
-		logAccess(key, defaultValue);
-		return (Enum<?>)config.get(defaultValue.getDeclaringClass(), key, defaultValue);
 	}
 
 	/**
