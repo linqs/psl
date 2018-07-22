@@ -53,6 +53,7 @@ public class DataLoader {
 	public static final String PROPERTY_OPEN = "open";
 	public static final String PROPERTY_CLOSED = "closed";
 	public static final String PROPERTY_TYPES = "types";
+	public static final String PROPERTY_BLOCK = "block";
 
 	private static final Logger log = LoggerFactory.getLogger(DataLoader.class);
 
@@ -156,6 +157,7 @@ public class DataLoader {
 	private static void parsePredicate(String name, List<Object> properties, boolean useIntIds, DataStore dataStore, Set<StandardPredicate> closedPredicates) {
 		int arity = -1;
 		Boolean isClosed = null;
+		boolean isBlock = false;
 		List<ConstantType> types = new ArrayList<ConstantType>();
 
 		if (name.contains("/")) {
@@ -175,6 +177,8 @@ public class DataLoader {
 					isClosed = new Boolean(false);
 				} else if (stringProperty.equals(PROPERTY_CLOSED)) {
 					isClosed = new Boolean(true);
+				} else if (stringProperty.equals(PROPERTY_BLOCK)) {
+					isBlock = true;
 				} else {
 					throw new IllegalStateException(String.format("Predicate, %s, has an unknown property: '%s'.", name, stringProperty));
 				}
@@ -223,6 +227,7 @@ public class DataLoader {
 		}
 
 		StandardPredicate predicate = StandardPredicate.get(name, types.toArray(new ConstantType[0]));
+		predicate.setBlock(isBlock);
 		dataStore.registerPredicate(predicate);
 
 		if (isClosed.booleanValue()) {

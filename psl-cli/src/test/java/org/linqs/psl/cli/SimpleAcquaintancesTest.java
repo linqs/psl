@@ -45,4 +45,12 @@ public class SimpleAcquaintancesTest extends CLITest {
 
 		run(modelPath, dataPath);
 	}
+
+	@Test
+	public void testBlock() {
+		String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
+		String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base_block.data").toString();
+
+		run(modelPath, dataPath);
+	}
 }
