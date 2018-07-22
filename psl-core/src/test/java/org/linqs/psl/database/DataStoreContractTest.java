@@ -351,47 +351,6 @@ public abstract class DataStoreContractTest {
 		assertTrue(registeredPredicates.contains(p1));
 	}
 
-	@Test
-	public void testPredicateSerialization() {
-		if (datastore == null) {
-			return;
-		}
-
-		datastore.close();
-		datastore = getDataStore(true, true);
-
-		datastore.registerPredicate(p1);
-		datastore.registerPredicate(p2);
-
-		Set<StandardPredicate> registeredPredicates = datastore.getRegisteredPredicates();
-		assertTrue(registeredPredicates.contains(p1));
-		assertTrue(registeredPredicates.contains(p2));
-
-		datastore.close();
-		datastore = getDataStore(false, true);
-
-		registeredPredicates = datastore.getRegisteredPredicates();
-		assertTrue(registeredPredicates.contains(p1));
-		assertTrue(registeredPredicates.contains(p2));
-	}
-
-	@Test
-	public void testGetInserterForDeserializedPredicate() {
-		if (datastore == null) {
-			return;
-		}
-
-		datastore.close();
-		datastore = getDataStore(true, true);
-
-		datastore.registerPredicate(p1);
-		datastore.registerPredicate(p2);
-
-		datastore.close();
-		datastore = getDataStore(false, true);
-		datastore.getInserter(p1, datastore.getPartition("0"));
-	}
-
 	// Functional predicates should be ignored at the database level.
 	@Test
 	public void testExternalFunctionalPredicate() {

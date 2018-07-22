@@ -64,10 +64,6 @@ public class PredicateInfo {
 	private int count;
 
 	public PredicateInfo(Predicate predicate) {
-		this(predicate, false);
-	}
-
-	public PredicateInfo(Predicate predicate, boolean indexed) {
 		assert(predicate != null);
 
 		this.predicate = predicate;
@@ -79,7 +75,7 @@ public class PredicateInfo {
 		}
 
 		cachedSQL = new HashMap<String, String>();
-		this.indexed = indexed;
+		this.indexed = false;
 		count = -1;
 	}
 
@@ -277,40 +273,6 @@ public class PredicateInfo {
 		} catch(SQLException ex) {
 			throw new RuntimeException("Error creating index on table for predicate: " + predicate.getName(), ex);
 		}
-	}
-
-	/**
-	 * Look through the database's tables and columns and construct predicates tables that look like predicate tables.
-	 */
-	public static List<StandardPredicate> deserializePredicates(Connection connection) {
-		List<StandardPredicate> predicates = new ArrayList<StandardPredicate>();
-
-		try (ResultSet resultSet = connection.getMetaData().getTables(null, null, null, null)) {
-			while (resultSet.next()) {
-				String tableName = resultSet.getString("TABLE_NAME");
-				String tableSchema = resultSet.getString("TABLE_SCHEM");
-
-				// We always create predicate tables in the public schema.
-				if (!tableSchema.equalsIgnoreCase("public")) {
-					continue;
-				}
-
-				// Extract the predicate name from a matching table name
-				if (tableName.toLowerCase().endsWith(PredicateInfo.PREDICATE_TABLE_SUFFIX.toLowerCase())) {
-					String predicateName = tableName.toLowerCase().replaceFirst(PredicateInfo.PREDICATE_TABLE_SUFFIX.toLowerCase() + "$", "");
-
-					StandardPredicate predicate = createPredicateFromTable(connection, tableName, predicateName);
-					if (predicate != null) {
-						predicates.add(predicate);
-					}
-				}
-			}
-		} catch (SQLException ex) {
-			throw new RuntimeException("Error reading database metadata.", ex);
-		}
-
-		log.debug("Registered {} pre-existing predicates from RDBMS.", predicates.size());
-		return predicates;
 	}
 
 	private synchronized String buildCountAllStatement(List<Integer> partitions) {
