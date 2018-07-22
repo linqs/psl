@@ -27,6 +27,7 @@ import org.linqs.psl.database.DatabaseQuery;
 import org.linqs.psl.database.ReadableDatabase;
 import org.linqs.psl.database.ResultList;
 import org.linqs.psl.database.loading.Inserter;
+import org.linqs.psl.database.rdbms.PredicateInfo;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.QueryAtom;
@@ -947,5 +948,32 @@ public abstract class DataStoreContractTest {
 		}
 
 		db.close();
+	}
+
+	@Test
+	public void testLongPredicateName() {
+		if (datastore == null) {
+			return;
+		}
+
+		StringBuilder builder = new StringBuilder();
+		for (int i = 0; i < PredicateInfo.MAX_TABLE_NAME_LENGTH; i++) {
+			builder.append("A");
+		}
+
+		// Largest allowed size.
+		String name = builder.toString();
+		StandardPredicate predicate = StandardPredicate.get(name, ConstantType.UniqueIntID, ConstantType.UniqueIntID);
+		datastore.registerPredicate(predicate);
+
+		// One too large.
+		name = name + "A";
+		predicate = StandardPredicate.get(name, ConstantType.UniqueIntID, ConstantType.UniqueIntID);
+		datastore.registerPredicate(predicate);
+
+		// Much too large.
+		name = name + "_" + name;
+		predicate = StandardPredicate.get(name, ConstantType.UniqueIntID, ConstantType.UniqueIntID);
+		datastore.registerPredicate(predicate);
 	}
 }
