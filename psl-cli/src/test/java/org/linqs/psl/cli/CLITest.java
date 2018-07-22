@@ -17,6 +17,8 @@
  */
 package org.linqs.psl.cli;
 
+import org.linqs.psl.model.predicate.Predicate;
+
 import org.junit.After;
 import org.junit.Before;
 
@@ -53,6 +55,7 @@ public abstract class CLITest {
 	@After
 	public void tearDown() {
 		(new File(outDir)).delete();
+		Predicate.clearForTesting();
 	}
 
 	public void run(String modelPath, String dataPath) {
@@ -70,7 +73,7 @@ public abstract class CLITest {
 			"-" + Launcher.OPTION_PROPERTIES, "log4j.threshold=" + loggingLevel
 		};
 
-		Launcher.main(args);
+		Launcher.main(args, true);
 
 		validate();
 	}

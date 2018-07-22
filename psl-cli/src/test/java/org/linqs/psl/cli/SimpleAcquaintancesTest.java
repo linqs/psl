@@ -29,4 +29,20 @@ public class SimpleAcquaintancesTest extends CLITest {
 
 		run(modelPath, dataPath);
 	}
+
+	@Test
+	public void testTypes() {
+		String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
+		String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base_types.data").toString();
+
+		run(modelPath, dataPath);
+	}
+
+	@Test
+	public void testMixedTypes() {
+		String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
+		String dataPath = Paths.get(baseDataDir, "simple-acquaintances-mixed", "base.data").toString();
+
+		run(modelPath, dataPath);
+	}
 }

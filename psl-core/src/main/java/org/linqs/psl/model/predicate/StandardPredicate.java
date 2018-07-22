@@ -34,7 +34,7 @@ public class StandardPredicate extends Predicate {
 		for (ConstantType type : types) {
 			if (type == ConstantType.DeferredFunctionalUniqueID) {
 				throw new IllegalArgumentException(
-						"DeferredFunctionalUniqueID can only be used with FunctionalPredicates" +
+						name + " -- DeferredFunctionalUniqueID can only be used with FunctionalPredicates" +
 						" (and should only be used in rare cases.");
 			}
 		}
@@ -76,14 +76,14 @@ public class StandardPredicate extends Predicate {
 
 		if (predicate.getArity() != types.length) {
 			throw new IllegalArgumentException(
-					"Size mismatch for predicate types. Existing predicate: " +
+					name + " -- Size mismatch for predicate types. Existing predicate: " +
 					predicate.getArity() + ", Query Predicate: " + types.length);
 		}
 
 		for (int i = 0; i < types.length; i++) {
 			if (!predicate.getArgumentType(i).equals(types[i])) {
 				throw new IllegalArgumentException(
-						"Type mismatch on " + i + ". Existing predicate: " +
+						name + " -- Type mismatch on " + i + ". Existing predicate: " +
 						predicate.getArgumentType(i) + ", Query Predicate: " + types[i]);
 			}
 		}

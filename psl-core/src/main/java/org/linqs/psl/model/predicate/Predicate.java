@@ -106,4 +106,12 @@ public abstract class Predicate {
 	public static Predicate get(String name)  {
 		return predicates.get(name.toUpperCase());
 	}
+
+	/**
+	 * Clear out all active predicates.
+	 * This should ONLY be used in testing to set up for subsequent tests.
+	 */
+	public static void clearForTesting() {
+		predicates.clear();
+	}
 }

@@ -46,6 +46,7 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.PatternLayout;
@@ -212,7 +213,7 @@ public class Launcher {
 		try {
 			String path = options.getOptionValue(OPTION_DATA);
 			closedPredicates = DataLoader.load(dataStore, path, options.hasOption(OPTION_INT_IDS));
-		} catch (FileNotFoundException ex) {
+		} catch (ConfigurationException | FileNotFoundException ex) {
 			throw new RuntimeException("Failed to load data.", ex);
 		}
 
@@ -595,13 +596,22 @@ public class Launcher {
 	}
 
 	public static void main(String[] args) {
+		main(args, false);
+	}
+
+	public static void main(String[] args, boolean rethrow) {
 		try {
 			CommandLine commandLineOptions = parseOptions(args);
 			Launcher pslLauncher = new Launcher(commandLineOptions);
 			pslLauncher.run();
 		} catch (Exception ex) {
-			System.err.println("Unexpected exception!");
-			ex.printStackTrace(System.err);
+			if (rethrow) {
+				throw new RuntimeException("Failed to run CLI.", ex);
+			} else {
+				System.err.println("Unexpected exception!");
+				ex.printStackTrace(System.err);
+				System.exit(1);
+			}
 		}
 	}
 }
