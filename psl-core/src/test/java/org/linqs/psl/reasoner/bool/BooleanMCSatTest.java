@@ -36,7 +36,7 @@ public class BooleanMCSatTest {
 
 	@Before
 	public void setup() {
-		Config.clear();
+		Config.init();
 		info = TestModelFactory.getModel();
 
 		Config.setProperty(MPEInference.REASONER_KEY, "org.linqs.psl.reasoner.bool.BooleanMCSat");
@@ -47,7 +47,7 @@ public class BooleanMCSatTest {
 
 	@After
 	public void clear() {
-		Config.clear();
+		Config.init();
 	}
 
 	/**

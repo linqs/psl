@@ -48,7 +48,7 @@ public class BooleanMaxWalkSatTest {
 
 	@Before
 	public void setup() {
-		Config.clear();
+		Config.init();
 		info = TestModelFactory.getModel();
 
 		Config.setProperty(MPEInference.REASONER_KEY, "org.linqs.psl.reasoner.bool.BooleanMaxWalkSat");
@@ -59,7 +59,7 @@ public class BooleanMaxWalkSatTest {
 
 	@After
 	public void clear() {
-		Config.clear();
+		Config.init();
 	}
 
 	/**

@@ -31,6 +31,8 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.URL;
@@ -50,6 +52,10 @@ import java.util.List;
  * system property ("psl.properties" by default.
  */
 public class Config {
+	public static final String PROJECT_PROPS = "project.properties";
+	public static final String PSL_CONFIG = "psl.configuration";
+	public static final String PSL_CONFIG_DEFAULT = "psl.properties";
+
 	private static final Logger log = LoggerFactory.getLogger(Config.class);
 
 	private static DataConfiguration config = null;
@@ -58,20 +64,29 @@ public class Config {
 		init();
 	}
 
-	private static void init() {
+	/**
+	 * (Re)create and populate the initial config.
+	 */
+	public static void init() {
 		config = new DataConfiguration(new BaseConfiguration());
-		String path = OptionConverter.getSystemProperty("psl.configuration", "psl.properties");
+
+		// Load maven project properties.
+		InputStream stream = ClassLoader.getSystemClassLoader().getResourceAsStream(PROJECT_PROPS);
+		if (stream != null) {
+			loadResource(stream, PROJECT_PROPS);
+		}
 
 		// Load the configuration file directly if the path exists.
+		String path = OptionConverter.getSystemProperty(PSL_CONFIG, PSL_CONFIG_DEFAULT);
 		if ((new File(path)).isFile()) {
 			loadResource(path);
 			return;
 		}
 
 		// Try to get a resource URL from the system (if we have a property key instead of a path).
-		URL resourceURL = Loader.getResource(path);
-		if (resourceURL != null) {
-			loadResource(resourceURL.getFile());
+		stream = ClassLoader.getSystemClassLoader().getResourceAsStream(path);
+		if (stream != null) {
+			loadResource(stream, PSL_CONFIG);
 			return;
 		}
 
@@ -79,6 +94,18 @@ public class Config {
 				"PSL configuration {} file not found." +
 				" Only default values will be used unless additional properties are specified.",
 				path);
+	}
+
+	public static void loadResource(InputStream stream, String resourceName) {
+		try {
+			PropertiesConfiguration props = new PropertiesConfiguration();
+			props.read(new InputStreamReader(stream));
+			config.append(props);
+		} catch (IOException | ConfigurationException ex) {
+			throw new RuntimeException("Failed to load config resource: " + resourceName, ex);
+		}
+
+		log.debug("Configuration stream loaded: {}", resourceName);
 	}
 
 	public static void loadResource(String path) {
