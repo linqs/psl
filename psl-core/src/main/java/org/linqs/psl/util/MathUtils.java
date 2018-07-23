@@ -34,7 +34,17 @@ public final class MathUtils {
 	// Static only.
 	private MathUtils() {}
 
-	// double comparison.
+	public static boolean signsMatch(int a, int b) {
+		return (a > 0 && b > 0) || (a < 0 && b < 0) || (a == 0 && b == 0);
+	}
+
+	public static boolean signsMatch(float a, float b) {
+		return (a > 0 && b > 0) || (a < 0 && b < 0) || (isZero(a) && isZero(b));
+	}
+
+	public static boolean signsMatch(double a, double b) {
+		return (a > 0 && b > 0) || (a < 0 && b < 0) || (isZero(a) && isZero(b));
+	}
 
 	public static boolean equals(double a, double b) {
 		return equals(a, b, EPSILON);
@@ -78,8 +88,6 @@ public final class MathUtils {
 	public static boolean isZero(double a, double epsilon) {
 		return equals(a, 0.0, epsilon);
 	}
-
-	// double comparison.
 
 	public static boolean equals(float a, float b) {
 		return equals(a, b, EPSILON_FLOAT);

@@ -21,7 +21,7 @@ import org.linqs.psl.model.atom.GroundAtom;
 
 /**
  * A general function that can handle various cases.
- * The function is some linear combination of terms,
+ * The function is some linear combination of terms.
  * All constant values are merged together into a single constant.
  * Note that the design of this function is to reduce the number of
  * allocations at grounding time.

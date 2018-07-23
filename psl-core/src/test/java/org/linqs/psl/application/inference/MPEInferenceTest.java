@@ -140,4 +140,35 @@ public class MPEInferenceTest {
 		mpe.close();
 		inferDB.close();
 	}
+
+	/**
+	 * Make sure that we remove terms that cause a tautology from logical rules.
+	 */
+	@Test
+	public void testLogicalTautologyTrivial() {
+		TestModelFactory.ModelInformation info = TestModelFactory.getModel();
+
+		// Friends(A, B) -> Friends(A, B)
+		info.model.addRule(new WeightedLogicalRule(
+			new Implication(
+				new QueryAtom(info.predicates.get("Friends"), new Variable("A"), new Variable("B")),
+				new QueryAtom(info.predicates.get("Friends"), new Variable("A"), new Variable("B"))
+			),
+			1.0,
+			true
+		));
+
+		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
+		Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
+		MPEInference mpe = new MPEInference(info.model, inferDB);
+
+		mpe.inference();
+
+		// There are 20 trivial rules.
+		assertEquals(72, mpe.getGroundRuleStore().size());
+		assertEquals(52, mpe.getTermStore().size());
+
+		mpe.close();
+		inferDB.close();
+	}
 }
