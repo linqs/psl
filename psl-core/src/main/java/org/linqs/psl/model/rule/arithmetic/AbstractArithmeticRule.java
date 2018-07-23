@@ -187,15 +187,13 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 			// Note that unweighed rules will ground an equality, while weighted rules will instead
 			// ground a largerThan and lessThan.
 			if (isWeighted() && FunctionComparator.Equality.equals(expression.getComparator())) {
-				groundRuleStore.addGroundRule(
-						makeGroundRule(coefficients, groundAtoms, FunctionComparator.LargerThan, finalCoefficient));
-				groundRuleStore.addGroundRule(
-						makeGroundRule(coefficients, groundAtoms, FunctionComparator.SmallerThan, finalCoefficient));
-				groundCount += 2;
+				groundCount += addGroundRule(
+						groundRuleStore, makeGroundRule(coefficients, groundAtoms, FunctionComparator.LargerThan, finalCoefficient));
+				groundCount += addGroundRule(
+						groundRuleStore, makeGroundRule(coefficients, groundAtoms, FunctionComparator.SmallerThan, finalCoefficient));
 			} else {
-				groundRuleStore.addGroundRule(
-						makeGroundRule(coefficients, groundAtoms, expression.getComparator(), finalCoefficient));
-				groundCount++;
+				groundCount += addGroundRule(
+						groundRuleStore, makeGroundRule(coefficients, groundAtoms, expression.getComparator(), finalCoefficient));
 			}
 		}
 
@@ -287,14 +285,13 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 			// Note that unweighed rules will ground an equality, while weighted rules will instead
 			// ground a largerThan and lessThan.
 			if (isWeighted() && FunctionComparator.Equality.equals(expression.getComparator())) {
-				groundRuleStore.addGroundRule(
-						makeGroundRule(coefficients, groundAtoms, FunctionComparator.LargerThan, finalCoefficient));
-				groundRuleStore.addGroundRule(
-						makeGroundRule(coefficients, groundAtoms, FunctionComparator.SmallerThan, finalCoefficient));
-				groundCount += 2;
+				groundCount += addGroundRule(
+						groundRuleStore, makeGroundRule(coefficients, groundAtoms, FunctionComparator.LargerThan, finalCoefficient));
+				groundCount += addGroundRule(
+						groundRuleStore, makeGroundRule(coefficients, groundAtoms, FunctionComparator.SmallerThan, finalCoefficient));
 			} else {
-				groundRuleStore.addGroundRule(
-						makeGroundRule(coefficients, groundAtoms, expression.getComparator(), finalCoefficient));
+				groundCount += addGroundRule(
+						groundRuleStore, makeGroundRule(coefficients, groundAtoms, expression.getComparator(), finalCoefficient));
 				groundCount++;
 			}
 		}
@@ -525,6 +522,44 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 		} else {
 			throw new IllegalStateException("Unexpected formula type: " + filterFormula.getClass().getName());
 		}
+	}
+
+	/**
+	 * Check a rule for triviality and add it to the GRS if it is non-trivial.
+	 * @return the number of ground rules added to the store (1 or 0).
+	 */
+	private int addGroundRule(GroundRuleStore groundRuleStore, AbstractGroundArithmeticRule rule) {
+		// Start simple and just look for rules with a single atom.
+		if (rule.getOrderedAtoms().length == 1) {
+			if (FunctionComparator.LargerThan.equals(rule.getComparator())) {
+				double constantMax = 0.0;
+				if (rule.getCoefficients()[0] < 0.0) {
+					constantMax = -1.0;
+				}
+
+				// Trivial if either of the below situations:
+				//  +x >= y (y <= 0.0)
+				//  -x >= y (y <= -1.0)
+				if (rule.getConstant() <= constantMax) {
+					return 0;
+				}
+			} else if (FunctionComparator.SmallerThan.equals(rule.getComparator())) {
+				double constantMin = 1.0;
+				if (rule.getCoefficients()[0] < 0.0) {
+					constantMin = 0.0;
+				}
+
+				// Trivial if either of the below situations:
+				//  +x <= y (y >= 1.0)
+				//  -x <= y (y >= 0.0)
+				if (rule.getConstant() >= constantMin) {
+					return 0;
+				}
+			}
+		}
+
+		groundRuleStore.addGroundRule(rule);
+		return 1;
 	}
 
 	/**
