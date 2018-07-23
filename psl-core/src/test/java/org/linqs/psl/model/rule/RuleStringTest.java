@@ -57,6 +57,7 @@ import org.linqs.psl.model.rule.logical.UnweightedLogicalRule;
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
+import org.linqs.psl.model.term.UniqueIntID;
 import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.FunctionComparator;
@@ -74,6 +75,7 @@ public class RuleStringTest {
 	private Partition obsPartition;
 
 	private StandardPredicate singlePredicate;
+	private StandardPredicate singleIntPredicate;
 	private StandardPredicate doublePredicate;
 	private StandardPredicate singleOpened;
 
@@ -87,6 +89,9 @@ public class RuleStringTest {
 		// Predicates
 		singlePredicate = StandardPredicate.get("SinglePredicate", ConstantType.UniqueStringID);
 		dataStore.registerPredicate(singlePredicate);
+
+		singleIntPredicate = StandardPredicate.get("SingleIntPredicate", ConstantType.UniqueIntID);
+		dataStore.registerPredicate(singleIntPredicate);
 
 		doublePredicate = StandardPredicate.get("DoublePredicate", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
 		dataStore.registerPredicate(doublePredicate);
@@ -253,6 +258,33 @@ public class RuleStringTest {
 		);
 		rule.groundAll(manager, store);
 		PSLTest.compareGroundRules(expected, rule, store);
+	}
+
+	@Test
+	public void testLogicalIntRule() {
+		// Base Rule: SingleIntPredicate('1') & SinglePredicate(A) & SinglePredicate(B) -> DoublePredicate(A, B)
+		Rule rule;
+
+		Formula baseRule = new Implication(
+				new Conjunction(
+					new QueryAtom(singleIntPredicate, new UniqueIntID(1)),
+					new QueryAtom(singlePredicate, new Variable("A")),
+					new QueryAtom(singlePredicate, new Variable("B"))
+				),
+				new QueryAtom(doublePredicate, new Variable("A"), new Variable("B"))
+		);
+
+		// Unweighted (Not Squared)
+		rule = new UnweightedLogicalRule(baseRule);
+		assertEquals("( SINGLEINTPREDICATE('1') & SINGLEPREDICATE(A) & SINGLEPREDICATE(B) ) >> DOUBLEPREDICATE(A, B) .", rule.toString());
+
+		// Weighted, Squared
+		rule = new WeightedLogicalRule(baseRule, 10.0, true);
+		assertEquals("10.0: ( SINGLEINTPREDICATE('1') & SINGLEPREDICATE(A) & SINGLEPREDICATE(B) ) >> DOUBLEPREDICATE(A, B) ^2", rule.toString());
+
+		// Weighted, Not Squared
+		rule = new WeightedLogicalRule(baseRule, 10.0, false);
+		assertEquals("10.0: ( SINGLEINTPREDICATE('1') & SINGLEPREDICATE(A) & SINGLEPREDICATE(B) ) >> DOUBLEPREDICATE(A, B)", rule.toString());
 	}
 
 	@After
