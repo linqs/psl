@@ -18,8 +18,6 @@
 package org.linqs.psl.application.inference;
 
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
-import org.linqs.psl.application.inference.result.FullInferenceResult;
-import org.linqs.psl.application.inference.result.memory.MemoryFullInferenceResult;
 import org.linqs.psl.application.util.GroundRules;
 import org.linqs.psl.application.util.Grounding;
 import org.linqs.psl.database.Database;
@@ -61,7 +59,7 @@ public class MPEInference extends InferenceApplication {
 	}
 
 	@Override
-	public FullInferenceResult inference() {
+	public void inference() {
 		log.info("Beginning inference.");
 		reasoner.optimize(termStore);
 		log.info("Inference complete. Writing results to Database.");
@@ -69,10 +67,5 @@ public class MPEInference extends InferenceApplication {
 		// Commits the RandomVariableAtoms back to the Database,
 		atomManager.commitPersistedAtoms();
 		log.info("Results committed to database.");
-
-		double incompatibility = GroundRules.getTotalWeightedIncompatibility(groundRuleStore.getCompatibilityRules());
-		double infeasibility = GroundRules.getInfeasibilityNorm(groundRuleStore.getConstraintRules());
-
-		return new MemoryFullInferenceResult(incompatibility, infeasibility, atomManager.getPersistedRVAtoms().size(), groundRuleStore.size());
 	}
 }

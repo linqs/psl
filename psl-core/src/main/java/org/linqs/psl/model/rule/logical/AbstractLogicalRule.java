@@ -182,6 +182,16 @@ public abstract class AbstractLogicalRule extends AbstractRule {
 
 			int rvaCount = 0;
 
+			// Note that there is a class of trivial groundings that we choose not to remove at this point for
+			// computational reasons.
+			// It is possible for both a ground atoms and it's negation to appear in the DNF.
+			// This obviously causes a tautology.
+			// Removing it here would require checking the positive atoms against the negative ones.
+			// Even if we already had a mapping of possiblities (perhaps created in FormulaAnalysis),
+			// it would still be non-trivial (and complex rules can cause the mapping to blow up).
+			// Instead they will be removed as they are turned into hyperplane terms,
+			// since we will have to keep track of variables there anyway.
+
 			for (int j = 0; j < negatedDNF.getPosLiterals().size(); j++) {
 				atom = ((QueryAtom)negatedDNF.getPosLiterals().get(j)).ground(atomManager, res, index, positiveAtomArgs[j]);
 				if (atom instanceof RandomVariableAtom) {

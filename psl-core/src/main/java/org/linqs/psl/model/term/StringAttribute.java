@@ -33,17 +33,12 @@ public class StringAttribute implements Attribute {
 	}
 
 	/**
-	 * @return the encapsulated String in single quotes, truncated to 30 characters
+	 * @return the encapsulated String in single quotes.
 	 */
 	@Override
 	public String toString() {
-		String text = value;
-		if (value.length() > 28) {
-			text = value.substring(0, Math.min(value.length(), 25)) + "...";
-		}
-
 		// Make the required escapes.
-		text = text.replace("\\", "\\\\").replace("'", "\\'");
+		String text = value.replace("\\", "\\\\").replace("'", "\\'");
 		return "'" + text + "'";
 	}
 

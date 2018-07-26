@@ -61,6 +61,6 @@ public class UniqueIntID implements Constant {
 
 	@Override
 	public String toString() {
-		return String.valueOf(id);
+		return "'" + id + "'";
 	}
 }

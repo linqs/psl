@@ -21,6 +21,7 @@ import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.ConstantType;
+import org.linqs.psl.util.Hash;
 
 import com.healthmarketscience.sqlbuilder.BinaryCondition;
 import com.healthmarketscience.sqlbuilder.CreateIndexQuery;
@@ -55,6 +56,14 @@ public class PredicateInfo {
 	public static final String PARTITION_COLUMN_NAME = "partition_id";
 	public static final String VALUE_COLUMN_NAME = "value";
 
+	// Postgres has a compile-time limit set on identifiers (64 including null).
+	public static final int MAX_TABLE_NAME_LENGTH = 63;
+
+	// Prefix any hashed table names with this.
+	// Most DBMS don't like starting an identifier with a number, so prefix an alpha to be safe.
+	// "H" for hash.
+	public static final String HASH_PREFIX = "H";
+
 	private final Predicate predicate;
 	private final List<String> argCols;
 	private final String tableName;
@@ -64,14 +73,10 @@ public class PredicateInfo {
 	private int count;
 
 	public PredicateInfo(Predicate predicate) {
-		this(predicate, false);
-	}
-
-	public PredicateInfo(Predicate predicate, boolean indexed) {
 		assert(predicate != null);
 
 		this.predicate = predicate;
-		this.tableName = predicate.getName() + PREDICATE_TABLE_SUFFIX;
+		this.tableName = constructTableName(predicate.getName());
 
 		argCols = new ArrayList<String>(predicate.getArity());
 		for (int i = 0; i < predicate.getArity(); i++) {
@@ -79,7 +84,7 @@ public class PredicateInfo {
 		}
 
 		cachedSQL = new HashMap<String, String>();
-		this.indexed = indexed;
+		this.indexed = false;
 		count = -1;
 	}
 
@@ -239,7 +244,7 @@ public class PredicateInfo {
 		}
 	}
 
-	public void index(Connection connection, DatabaseDriver dbDriver) {
+	public synchronized void index(Connection connection, DatabaseDriver dbDriver) {
 		if (indexed) {
 			return;
 		}
@@ -248,7 +253,7 @@ public class PredicateInfo {
 		List<String> indexes = new ArrayList<String>();
 
 		// The primary index used for grounding.
-		CreateIndexQuery createIndex = new CreateIndexQuery(tableName(), "IX_" + tableName() + "_GROUNDING");
+		CreateIndexQuery createIndex = new CreateIndexQuery(tableName, "IX_" + tableName + "_GROUNDING");
 
 		// The column order is very important: data columns, then partition.
 		for (String colName : argCols) {
@@ -260,13 +265,13 @@ public class PredicateInfo {
 		// Create simple index on each column.
 		// Often the query planner will choose a small index over the full one for specific parts of the query.
 		for (String colName : argCols) {
-			createIndex = new CreateIndexQuery(tableName(), "IX_" + tableName() + "_" + colName);
+			createIndex = new CreateIndexQuery(tableName, "IX_" + tableName + "_" + colName);
 			createIndex.addCustomColumns(colName);
 			indexes.add(createIndex.validate().toString());
 		}
 
 		// Include the partition.
-		createIndex = new CreateIndexQuery(tableName(), "IX_" + tableName() + "_" + PARTITION_COLUMN_NAME);
+		createIndex = new CreateIndexQuery(tableName, "IX_" + tableName + "_" + PARTITION_COLUMN_NAME);
 		createIndex.addCustomColumns(PARTITION_COLUMN_NAME);
 		indexes.add(createIndex.validate().toString());
 
@@ -279,41 +284,7 @@ public class PredicateInfo {
 		}
 	}
 
-	/**
-	 * Look through the database's tables and columns and construct predicates tables that look like predicate tables.
-	 */
-	public static List<StandardPredicate> deserializePredicates(Connection connection) {
-		List<StandardPredicate> predicates = new ArrayList<StandardPredicate>();
-
-		try (ResultSet resultSet = connection.getMetaData().getTables(null, null, null, null)) {
-			while (resultSet.next()) {
-				String tableName = resultSet.getString("TABLE_NAME");
-				String tableSchema = resultSet.getString("TABLE_SCHEM");
-
-				// We always create predicate tables in the public schema.
-				if (!tableSchema.equalsIgnoreCase("public")) {
-					continue;
-				}
-
-				// Extract the predicate name from a matching table name
-				if (tableName.toLowerCase().endsWith(PredicateInfo.PREDICATE_TABLE_SUFFIX.toLowerCase())) {
-					String predicateName = tableName.toLowerCase().replaceFirst(PredicateInfo.PREDICATE_TABLE_SUFFIX.toLowerCase() + "$", "");
-
-					StandardPredicate predicate = createPredicateFromTable(connection, tableName, predicateName);
-					if (predicate != null) {
-						predicates.add(predicate);
-					}
-				}
-			}
-		} catch (SQLException ex) {
-			throw new RuntimeException("Error reading database metadata.", ex);
-		}
-
-		log.debug("Registered {} pre-existing predicates from RDBMS.", predicates.size());
-		return predicates;
-	}
-
-	private String buildCountAllStatement(List<Integer> partitions) {
+	private synchronized String buildCountAllStatement(List<Integer> partitions) {
 		String key = "countAll_" + partitions.toString();
 		if (cachedSQL.containsKey(key)) {
 			return cachedSQL.get(key);
@@ -339,7 +310,7 @@ public class PredicateInfo {
 		return sql;
 	}
 
-	private String buildQueryAllStatement(List<Integer> partitions) {
+	private synchronized String buildQueryAllStatement(List<Integer> partitions) {
 		String key = "queryAll_" + partitions.toString();
 		if (cachedSQL.containsKey(key)) {
 			return cachedSQL.get(key);
@@ -371,7 +342,7 @@ public class PredicateInfo {
 		return sql;
 	}
 
-	private String buildQueryStatement(List<Integer> readPartitions) {
+	private synchronized String buildQueryStatement(List<Integer> readPartitions) {
 		String key = "query_" + readPartitions.toString();
 		if (cachedSQL.containsKey(key)) {
 			return cachedSQL.get(key);
@@ -396,7 +367,7 @@ public class PredicateInfo {
 		return sql;
 	}
 
-	private String buildUpsertStatement(DatabaseDriver dbDriver) {
+	private synchronized String buildUpsertStatement(DatabaseDriver dbDriver) {
 		String key = "upsert";
 		if (cachedSQL.containsKey(key)) {
 			return cachedSQL.get(key);
@@ -423,7 +394,7 @@ public class PredicateInfo {
 		return sql;
 	}
 
-	private String buildDeleteStatement(int writePartition) {
+	private synchronized String buildDeleteStatement(int writePartition) {
 		String key = "delete_" + writePartition;
 		if (cachedSQL.containsKey(key)) {
 			return cachedSQL.get(key);
@@ -445,7 +416,7 @@ public class PredicateInfo {
 		return sql;
 	}
 
-	private String buildPartitionMoveStatement(int oldPartition, int newPartition) {
+	private synchronized String buildPartitionMoveStatement(int oldPartition, int newPartition) {
 		String key = "movePartition_" + oldPartition + "_" + newPartition;
 		if (cachedSQL.containsKey(key)) {
 			return cachedSQL.get(key);
@@ -470,52 +441,23 @@ public class PredicateInfo {
 	}
 
 	/**
-	 * Construct a predicate given a specific table.
-	 * If this table is not actually a predicate table, the null will be returned.
+	 * Construct the name that will be used for a predicate.
+	 * This will typically be just appending the table suffix.
+	 * However if the name length exceeds MAX_TABLE_NAME_LENGTH,
+	 * then instead a truncated hash of the predicate name will be used.
 	 */
-	private static StandardPredicate createPredicateFromTable(Connection connection, String tableName, String name) {
-		Pattern argumentPattern = Pattern.compile("(\\w+)_(\\d)");
-
-		try (ResultSet resultSet = connection.getMetaData().getColumns(null, null, tableName, null)) {
-			ArrayList<ConstantType> args = new ArrayList<ConstantType>();
-
-			boolean hasPartitionColumn = false;
-			boolean hasValueColumn = false;
-
-			while (resultSet.next()) {
-				String columnName = resultSet.getString("COLUMN_NAME");
-
-				Matcher match = argumentPattern.matcher(columnName);
-				if (columnName.equalsIgnoreCase(PredicateInfo.PARTITION_COLUMN_NAME)) {
-					hasPartitionColumn = true;
-				} else if (columnName.equalsIgnoreCase(PredicateInfo.VALUE_COLUMN_NAME)) {
-					hasValueColumn = true;
-				} else if (match.find()) {
-					String argumentName = match.group(1).toLowerCase();
-					int argumentLocation = Integer.parseInt(match.group(2));
-
-					if (argumentName.equals("string")) {
-						args.add(argumentLocation, ConstantType.String);
-					} else if (argumentName.equals("integer")) {
-						args.add(argumentLocation, ConstantType.Integer);
-					} else if (argumentName.equals("double")) {
-						args.add(argumentLocation, ConstantType.Double);
-					} else if (argumentName.equals("uniqueintid")) {
-						args.add(argumentLocation, ConstantType.UniqueIntID);
-					} else if (argumentName.equals("uniquestringid")) {
-						args.add(argumentLocation, ConstantType.UniqueStringID);
-					}
-				}
-			}
-
-			// Check if we found all the required columns and some argument columns were found.
-			if (!hasPartitionColumn || !hasValueColumn || args.size() == 0) {
-				return null;
-			}
-
-			return StandardPredicate.get(name, args.toArray(new ConstantType[args.size()]));
-		} catch (SQLException ex) {
-			throw new RuntimeException("Failed to create predicate (" + name + ") from table (" + tableName + ").", ex);
+	private static String constructTableName(String predicateName) {
+		String tableName = predicateName + PREDICATE_TABLE_SUFFIX;
+		if (tableName.length() <= MAX_TABLE_NAME_LENGTH) {
+			return tableName;
 		}
+
+		tableName = HASH_PREFIX + Hash.sha(predicateName) + PREDICATE_TABLE_SUFFIX;
+		if (tableName.length() > MAX_TABLE_NAME_LENGTH) {
+			int truncateSize = tableName.length() - MAX_TABLE_NAME_LENGTH + HASH_PREFIX.length();
+			tableName = HASH_PREFIX + tableName.substring(truncateSize, tableName.length());
+		}
+
+		return tableName;
 	}
 }

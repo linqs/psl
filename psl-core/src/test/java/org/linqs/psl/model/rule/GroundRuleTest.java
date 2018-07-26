@@ -1490,9 +1490,8 @@ public class GroundRuleTest {
 		}
 	}
 
-	// Test rules that look like arithmetic priors.
 	@Test
-	public void testArithmeticPrior() {
+	public void testArithmeticNegativePrior() {
 		GroundRuleStore store = new MemoryGroundRuleStore();
 		AtomManager manager = new SimpleAtomManager(database);
 
@@ -1503,7 +1502,7 @@ public class GroundRuleTest {
 
 		// 1.0: Friends(A, B) = 0 ^2
 		coefficients = Arrays.asList(
-			(Coefficient)(new ConstantNumber(1))
+			(Coefficient)(new ConstantNumber(1.0))
 		);
 
 		atoms = Arrays.asList(
@@ -1511,8 +1510,8 @@ public class GroundRuleTest {
 		);
 
 		rule = new WeightedArithmeticRule(
-				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1)),
-				0,
+				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(0.0)),
+				1.0,
 				true
 		);
 
@@ -1537,31 +1536,11 @@ public class GroundRuleTest {
 			"1.0: 1.0 * FRIENDS('Eugene', 'Alice') <= 0.0 ^2",
 			"1.0: 1.0 * FRIENDS('Eugene', 'Bob') <= 0.0 ^2",
 			"1.0: 1.0 * FRIENDS('Eugene', 'Charlie') <= 0.0 ^2",
-			"1.0: 1.0 * FRIENDS('Eugene', 'Derek') <= 0.0 ^2",
-
-			"1.0: 1.0 * FRIENDS('Alice', 'Bob') >= 0.0 ^2",
-			"1.0: 1.0 * FRIENDS('Alice', 'Charlie') >= 0.0 ^2",
-			"1.0: 1.0 * FRIENDS('Alice', 'Derek') >= 0.0 ^2",
-			"1.0: 1.0 * FRIENDS('Alice', 'Eugene') >= 0.0 ^2",
-			"1.0: 1.0 * FRIENDS('Bob', 'Alice') >= 0.0 ^2",
-			"1.0: 1.0 * FRIENDS('Bob', 'Charlie') >= 0.0 ^2",
-			"1.0: 1.0 * FRIENDS('Bob', 'Derek') >= 0.0 ^2",
-			"1.0: 1.0 * FRIENDS('Bob', 'Eugene') >= 0.0 ^2",
-			"1.0: 1.0 * FRIENDS('Charlie', 'Alice') >= 0.0 ^2",
-			"1.0: 1.0 * FRIENDS('Charlie', 'Bob') >= 0.0 ^2",
-			"1.0: 1.0 * FRIENDS('Charlie', 'Derek') >= 0.0 ^2",
-			"1.0: 1.0 * FRIENDS('Charlie', 'Eugene') >= 0.0 ^2",
-			"1.0: 1.0 * FRIENDS('Derek', 'Alice') >= 0.0 ^2",
-			"1.0: 1.0 * FRIENDS('Derek', 'Bob') >= 0.0 ^2",
-			"1.0: 1.0 * FRIENDS('Derek', 'Charlie') >= 0.0 ^2",
-			"1.0: 1.0 * FRIENDS('Derek', 'Eugene') >= 0.0 ^2",
-			"1.0: 1.0 * FRIENDS('Eugene', 'Alice') >= 0.0 ^2",
-			"1.0: 1.0 * FRIENDS('Eugene', 'Bob') >= 0.0 ^2",
-			"1.0: 1.0 * FRIENDS('Eugene', 'Charlie') >= 0.0 ^2",
-			"1.0: 1.0 * FRIENDS('Eugene', 'Derek') >= 0.0 ^2"
+			"1.0: 1.0 * FRIENDS('Eugene', 'Derek') <= 0.0 ^2"
 		);
 		rule.groundAll(manager, store);
-		PSLTest.compareGroundRules(expected, rule, store);
+		// No need for order with one atom.
+		PSLTest.compareGroundRules(expected, rule, store, false);
 	}
 
 	@Test
@@ -1610,6 +1589,100 @@ public class GroundRuleTest {
 			"1.0: ( ~( NICE('Eugene') ) | ~( FRIENDS('Eugene', 'Charlie') ) ) ^2",
 			"1.0: ( ~( NICE('Eugene') ) | ~( FRIENDS('Eugene', 'Derek') ) ) ^2"
 		);
+		rule.groundAll(manager, store);
+		PSLTest.compareGroundRules(expected, rule, store);
+	}
+
+	/**
+	 * Test for situations where rules with a single atom are trivial.
+	 */
+	@Test
+	public void testArithmeticSingleTrivials() {
+		GroundRuleStore store = new MemoryGroundRuleStore();
+		AtomManager manager = new SimpleAtomManager(database);
+
+		Rule rule;
+		List<String> expected;
+		List<Coefficient> coefficients;
+		List<SummationAtomOrAtom> atoms;
+
+		// All trivial.
+		// 1.0: Friends(A, B) >= 0.0 ^2
+		coefficients = Arrays.asList(
+			(Coefficient)(new ConstantNumber(1.0))
+		);
+
+		atoms = Arrays.asList(
+			(SummationAtomOrAtom)(new QueryAtom(model.predicates.get("Friends"), new Variable("A"), new Variable("B")))
+		);
+
+		rule = new WeightedArithmeticRule(
+				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(0.0)),
+				1.0,
+				true
+		);
+
+		expected = Arrays.asList();
+		rule.groundAll(manager, store);
+		PSLTest.compareGroundRules(expected, rule, store);
+
+		// All trivial.
+		// 1.0: Friends(A, B) <= 1.0 ^2
+		coefficients = Arrays.asList(
+			(Coefficient)(new ConstantNumber(1.0))
+		);
+
+		atoms = Arrays.asList(
+			(SummationAtomOrAtom)(new QueryAtom(model.predicates.get("Friends"), new Variable("A"), new Variable("B")))
+		);
+
+		rule = new WeightedArithmeticRule(
+				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.SmallerThan, new ConstantNumber(1.0)),
+				1.0,
+				true
+		);
+
+		expected = Arrays.asList();
+		rule.groundAll(manager, store);
+		PSLTest.compareGroundRules(expected, rule, store);
+
+		// All trivial.
+		// 1.0: -1.0 * Friends(A, B) >= -1.0 ^2
+		coefficients = Arrays.asList(
+			(Coefficient)(new ConstantNumber(-1.0))
+		);
+
+		atoms = Arrays.asList(
+			(SummationAtomOrAtom)(new QueryAtom(model.predicates.get("Friends"), new Variable("A"), new Variable("B")))
+		);
+
+		rule = new WeightedArithmeticRule(
+				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(-1.0)),
+				1.0,
+				true
+		);
+
+		expected = Arrays.asList();
+		rule.groundAll(manager, store);
+		PSLTest.compareGroundRules(expected, rule, store);
+
+		// All trivial.
+		// 1.0: -1.0 * Friends(A, B) <= 0.0 ^2
+		coefficients = Arrays.asList(
+			(Coefficient)(new ConstantNumber(-1.0))
+		);
+
+		atoms = Arrays.asList(
+			(SummationAtomOrAtom)(new QueryAtom(model.predicates.get("Friends"), new Variable("A"), new Variable("B")))
+		);
+
+		rule = new WeightedArithmeticRule(
+				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.SmallerThan, new ConstantNumber(0.0)),
+				1.0,
+				true
+		);
+
+		expected = Arrays.asList();
 		rule.groundAll(manager, store);
 		PSLTest.compareGroundRules(expected, rule, store);
 	}

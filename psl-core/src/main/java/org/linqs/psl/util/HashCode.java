@@ -31,7 +31,7 @@ public class HashCode {
 	public static final int DEFAULT_INITIAL_NUMBER = 17;
 	public static final int DEFAULT_MULTIPLIER = 37;
 
-	// Static only,
+	// Static only.
 	private HashCode() {}
 
 	public static int build(Object obj) {

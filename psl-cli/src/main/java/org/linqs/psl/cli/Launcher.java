@@ -37,6 +37,7 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.parser.ModelLoader;
 import org.linqs.psl.util.Reflection;
+import org.linqs.psl.util.Version;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -46,6 +47,7 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.PatternLayout;
@@ -55,7 +57,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -102,6 +103,8 @@ public class Launcher {
 	public static final String OPTION_PROPERTIES = "D";
 	public static final String OPTION_PROPERTIES_FILE = "p";
 	public static final String OPTION_PROPERTIES_FILE_LONG = "properties";
+	public static final String OPTION_VERSION = "v";
+	public static final String OPTION_VERSION_LONG = "version";
 
 	public static final String MODEL_FILE_EXTENSION = ".psl";
 	public static final String DEFAULT_H2_DB_PATH =
@@ -166,6 +169,21 @@ public class Launcher {
 	}
 
 	/**
+	 * Initialize log4j with a default logger.
+	 * Only to be used with short CLI runs: --version or --help.
+	 */
+	private static void initDefaultLogger() {
+		Properties props = new Properties();
+
+		props.setProperty("log4j.rootLogger", "INFO, A1");
+		props.setProperty("log4j.appender.A1", "org.apache.log4j.ConsoleAppender");
+		props.setProperty("log4j.appender.A1.layout", "org.apache.log4j.PatternLayout");
+		props.setProperty("log4j.appender.A1.layout.ConversionPattern", "%-4r [%t] %-5p %c %x - %m%n");
+
+		PropertyConfigurator.configure(props);
+	}
+
+	/**
 	 * Loads configuration.
 	 */
 	private void initConfig() {
@@ -211,9 +229,9 @@ public class Launcher {
 
 		Set<StandardPredicate> closedPredicates;
 		try {
-			File dataFile = new File(options.getOptionValue(OPTION_DATA));
-			closedPredicates = DataLoader.load(dataStore, new FileInputStream(dataFile), options.hasOption(OPTION_INT_IDS));
-		} catch (FileNotFoundException ex) {
+			String path = options.getOptionValue(OPTION_DATA);
+			closedPredicates = DataLoader.load(dataStore, path, options.hasOption(OPTION_INT_IDS));
+		} catch (ConfigurationException | FileNotFoundException ex) {
 			throw new RuntimeException("Failed to load data.", ex);
 		}
 
@@ -428,12 +446,23 @@ public class Launcher {
 				.optionalArg(true)
 				.build());
 
+		// Make sure that help and version are in the main group so a successful run can use them.
+
+		mainCommand.addOption(Option.builder(OPTION_HELP)
+				.longOpt(OPTION_HELP_LONG)
+				.desc("Print this help message and exit")
+				.build());
+
+		mainCommand.addOption(Option.builder(OPTION_VERSION)
+				.longOpt(OPTION_VERSION_LONG)
+				.desc("Print the PSL version and exit")
+				.build());
+
 		mainCommand.setRequired(true);
 		options.addOptionGroup(mainCommand);
 
 		options.addOption(Option.builder(OPTION_DATA)
 				.longOpt(OPTION_DATA_LONG)
-				.required()
 				.desc("Path to PSL data file")
 				.hasArg()
 				.argName("path")
@@ -464,11 +493,6 @@ public class Launcher {
 				.argName("evaluator")
 				.build());
 
-		options.addOption(Option.builder(OPTION_HELP)
-				.longOpt(OPTION_HELP_LONG)
-				.desc("Print this help message and exit")
-				.build());
-
 		options.addOption(Option.builder(OPTION_INT_IDS)
 				.longOpt(OPTION_INT_IDS_LONG)
 				.desc("Use integer identifiers (UniqueIntID) instead of string identifiers (UniqueStringID).")
@@ -483,7 +507,6 @@ public class Launcher {
 
 		options.addOption(Option.builder(OPTION_MODEL)
 				.longOpt(OPTION_MODEL_LONG)
-				.required()
 				.desc("Path to PSL model file")
 				.hasArg()
 				.argName("path")
@@ -568,6 +591,10 @@ public class Launcher {
 		return helpFormatter;
 	}
 
+	/**
+	 * Parse the options on the command line.
+	 * Will exit on error, but Will return null if the CLI should not be run (like if we are doing a help/version run).
+	 */
 	private static CommandLine parseOptions(String[] args) {
 		Options options = setupOptions();
 		CommandLineParser parser = new DefaultParser();
@@ -582,10 +609,33 @@ public class Launcher {
 		}
 
 		if (commandLineOptions.hasOption(OPTION_HELP)) {
+			initDefaultLogger();
 			getHelpFormatter().printHelp("psl", options, true);
-			System.exit(0);
+			return null;
 		}
 
+		if (commandLineOptions.hasOption(OPTION_VERSION)) {
+			initDefaultLogger();
+			System.out.println("PSL CLI Version " + Version.get());
+			return null;
+		}
+
+		// Data and model are required.
+		// (We don't enforce them earlier so we can have successful runs with help and version.)
+
+		if (!commandLineOptions.hasOption(OPTION_DATA)) {
+			System.out.println(String.format("Missing required option: --%s/-%s.", OPTION_DATA_LONG, OPTION_DATA));
+			getHelpFormatter().printHelp("psl", options, true);
+			System.exit(1);
+		}
+
+		if (!commandLineOptions.hasOption(OPTION_MODEL)) {
+			System.out.println(String.format("Missing required option: --%s/-%s.", OPTION_MODEL_LONG, OPTION_MODEL));
+			getHelpFormatter().printHelp("psl", options, true);
+			System.exit(1);
+		}
+
+		// Can't have both an H2 and Postgres database.
 		if (commandLineOptions.hasOption(OPTION_DB_H2_PATH) && commandLineOptions.hasOption(OPTION_DB_POSTGRESQL_NAME)) {
 			System.err.println("Command line error: Options '--" + OPTION_DB_H2_PATH + "' and '--" + OPTION_DB_POSTGRESQL_NAME + "' are not compatible.");
 			getHelpFormatter().printHelp("psl", options, true);
@@ -596,13 +646,26 @@ public class Launcher {
 	}
 
 	public static void main(String[] args) {
+		main(args, false);
+	}
+
+	public static void main(String[] args, boolean rethrow) {
 		try {
 			CommandLine commandLineOptions = parseOptions(args);
+			if (commandLineOptions == null) {
+				return;
+			}
+
 			Launcher pslLauncher = new Launcher(commandLineOptions);
 			pslLauncher.run();
 		} catch (Exception ex) {
-			System.err.println("Unexpected exception!");
-			ex.printStackTrace(System.err);
+			if (rethrow) {
+				throw new RuntimeException("Failed to run CLI.", ex);
+			} else {
+				System.err.println("Unexpected exception!");
+				ex.printStackTrace(System.err);
+				System.exit(1);
+			}
 		}
 	}
 }

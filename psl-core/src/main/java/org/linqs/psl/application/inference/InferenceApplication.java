@@ -19,7 +19,6 @@ package org.linqs.psl.application.inference;
 
 import org.linqs.psl.application.ModelApplication;
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
-import org.linqs.psl.application.inference.result.FullInferenceResult;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
@@ -109,7 +108,7 @@ public abstract class InferenceApplication implements ModelApplication {
 	 * The RandomVariableAtoms to be inferred are those persisted in the Database when this method is called.
 	 * All RandomVariableAtoms which the Model might access must be persisted in the Database.
 	 */
-	public abstract FullInferenceResult inference();
+	public abstract void inference();
 
 	public Reasoner getReasoner() {
 		return reasoner;

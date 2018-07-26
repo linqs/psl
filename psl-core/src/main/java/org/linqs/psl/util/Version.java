@@ -15,18 +15,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.inference.result;
+package org.linqs.psl.util;
 
-public interface FullInferenceResult extends InferenceResult {
+import org.linqs.psl.config.Config;
 
-	public double getTotalWeightedIncompatibility();
-	
-	public double getInfeasibilityNorm();
+/**
+ * Get versioning information about the project.
+ */
+public class Version {
+	// Property set by maven.
+	public static final String VERSION_KEY = "project.version";
+	public static final String VERSION_DEFAULT = "UNKNOWN";
 
-	public int getNumGroundAtoms();
+	// Static only.
+	private Version() {}
 
-	public int getNumGroundEvidence();
-	
-	
-	
+	public static String get() {
+		return Config.getString(VERSION_KEY, VERSION_DEFAULT);
+	}
 }

@@ -80,7 +80,7 @@ public abstract class WeightLearningTest {
 
 	@Before
 	public void setup() {
-		Config.clear();
+		Config.init();
 		initModel(true);
 	}
 
@@ -97,7 +97,7 @@ public abstract class WeightLearningTest {
 		info.dataStore.close();
 		info = null;
 
-		Config.clear();
+		Config.init();
 	}
 
 	/**

@@ -19,16 +19,20 @@ package org.linqs.psl.config;
 
 import org.linqs.psl.util.Reflection;
 
-import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.DataConfiguration;
-import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.configuration2.BaseConfiguration;
+import org.apache.commons.configuration2.DataConfiguration;
+import org.apache.commons.configuration2.PropertiesConfiguration;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.log4j.helpers.Loader;
 import org.apache.log4j.helpers.OptionConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.URL;
@@ -48,6 +52,10 @@ import java.util.List;
  * system property ("psl.properties" by default.
  */
 public class Config {
+	public static final String PROJECT_PROPS = "project.properties";
+	public static final String PSL_CONFIG = "psl.configuration";
+	public static final String PSL_CONFIG_DEFAULT = "psl.properties";
+
 	private static final Logger log = LoggerFactory.getLogger(Config.class);
 
 	private static DataConfiguration config = null;
@@ -56,20 +64,29 @@ public class Config {
 		init();
 	}
 
-	private static void init() {
+	/**
+	 * (Re)create and populate the initial config.
+	 */
+	public static void init() {
 		config = new DataConfiguration(new BaseConfiguration());
-		String path = OptionConverter.getSystemProperty("psl.configuration", "psl.properties");
+
+		// Load maven project properties.
+		InputStream stream = ClassLoader.getSystemClassLoader().getResourceAsStream(PROJECT_PROPS);
+		if (stream != null) {
+			loadResource(stream, PROJECT_PROPS);
+		}
 
 		// Load the configuration file directly if the path exists.
+		String path = OptionConverter.getSystemProperty(PSL_CONFIG, PSL_CONFIG_DEFAULT);
 		if ((new File(path)).isFile()) {
 			loadResource(path);
 			return;
 		}
 
 		// Try to get a resource URL from the system (if we have a property key instead of a path).
-		URL resourceURL = Loader.getResource(path);
-		if (resourceURL != null) {
-			loadResource(resourceURL);
+		stream = ClassLoader.getSystemClassLoader().getResourceAsStream(path);
+		if (stream != null) {
+			loadResource(stream, PSL_CONFIG);
 			return;
 		}
 
@@ -79,24 +96,28 @@ public class Config {
 				path);
 	}
 
+	public static void loadResource(InputStream stream, String resourceName) {
+		try {
+			PropertiesConfiguration props = new PropertiesConfiguration();
+			props.read(new InputStreamReader(stream));
+			config.append(props);
+		} catch (IOException | ConfigurationException ex) {
+			throw new RuntimeException("Failed to load config resource: " + resourceName, ex);
+		}
+
+		log.debug("Configuration stream loaded: {}", resourceName);
+	}
+
 	public static void loadResource(String path) {
 		try {
-			config.append(new PropertiesConfiguration(path));
-		} catch (ConfigurationException ex) {
+			PropertiesConfiguration props = new PropertiesConfiguration();
+			props.read(new FileReader(path));
+			config.append(props);
+		} catch (IOException | ConfigurationException ex) {
 			throw new RuntimeException("Failed to load config resource: " + path, ex);
 		}
 
 		log.debug("Configuration file loaded: {}", path);
-	}
-
-	public static void loadResource(URL url) {
-		try {
-			config.append(new PropertiesConfiguration(url));
-		} catch (ConfigurationException ex) {
-			throw new RuntimeException("Failed to load config resource: " + url, ex);
-		}
-
-		log.debug("Configuration URL loaded: {}", url);
 	}
 
 	/**
@@ -269,11 +290,6 @@ public class Config {
 		}
 
 		return toReturn;
-	}
-
-	public static Enum<?> getEnum(String key, Enum<?> defaultValue) {
-		logAccess(key, defaultValue);
-		return (Enum<?>)config.get(defaultValue.getDeclaringClass(), key, defaultValue);
 	}
 
 	/**

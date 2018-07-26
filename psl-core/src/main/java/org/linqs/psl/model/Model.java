@@ -100,6 +100,9 @@ public class Model {
 		return s.toString();
 	}
 
+	/**
+	 * Create a model string that can be directly interpreted by the parser.
+	 */
 	public String asString() {
 		StringBuilder s = new StringBuilder();
 		if (rules.size() > 0) {

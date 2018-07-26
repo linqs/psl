@@ -15,8 +15,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.inference.result;
+package org.linqs.psl.cli;
 
-public interface InferenceResult {
-	
+import org.junit.Test;
+
+public class VersionTest {
+	@Test
+	public void testBase() {
+		String[] args = {
+			"--" + Launcher.OPTION_VERSION_LONG,
+			"-" + Launcher.OPTION_PROPERTIES, "log4j.threshold=OFF"
+		};
+
+		Launcher.main(args, true);
+	}
 }

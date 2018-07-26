@@ -110,41 +110,24 @@ public class RDBMSDataStore implements DataStore {
 
 		// We start with no predicates to index.
 		predicatesIndexed = true;
-
-		// Read in any predicates that exist in the database
-		try (Connection connection = getConnection()) {
-			for (StandardPredicate predicate : PredicateInfo.deserializePredicates(connection)) {
-				registerPredicate(predicate, false);
-			}
-		} catch (SQLException ex) {
-			throw new RuntimeException("Unable to attempt to deserialize predicates.", ex);
-		}
 	}
 
 	@Override
 	public void registerPredicate(StandardPredicate predicate) {
-		// All registered predicates are new predicates, because the
-		// database reads in any predicates that already existed.
-		registerPredicate(predicate, true);
-	}
-
-	private void registerPredicate(StandardPredicate predicate, boolean createTable) {
 		if (predicates.containsKey(predicate)) {
 			return;
 		}
 
-		PredicateInfo predicateInfo = new PredicateInfo(predicate, !createTable);
+		PredicateInfo predicateInfo = new PredicateInfo(predicate);
 		predicates.put(predicate, predicateInfo);
 
-		if (createTable) {
-			// We only need to index this predicate if it doesn't already have a table.
-			predicatesIndexed = false;
+		// If we add a table, we need to index.
+		predicatesIndexed = false;
 
-			try (Connection connection = getConnection()) {
-				predicateInfo.setupTable(connection, dbDriver);
-			} catch (SQLException ex) {
-				throw new RuntimeException("Unable to setup predicate table for: " + predicate + ".", ex);
-			}
+		try (Connection connection = getConnection()) {
+			predicateInfo.setupTable(connection, dbDriver);
+		} catch (SQLException ex) {
+			throw new RuntimeException("Unable to setup predicate table for: " + predicate + ".", ex);
 		}
 	}
 
@@ -344,7 +327,7 @@ public class RDBMSDataStore implements DataStore {
 	/**
 	 * Helper method for getting a predicate handle
 	 */
-	public PredicateInfo getPredicateInfo(Predicate predicate) {
+	public synchronized PredicateInfo getPredicateInfo(Predicate predicate) {
 		PredicateInfo info = predicates.get(predicate);
 		if (info == null) {
 			throw new IllegalArgumentException("Predicate not registered with data store.");
