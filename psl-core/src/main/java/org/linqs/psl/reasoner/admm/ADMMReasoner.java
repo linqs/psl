@@ -186,25 +186,6 @@ public class ADMMReasoner implements Reasoner {
 		return this.augmentedLagrangePenalty;
 	}
 
-	/**
-	 * Computes the incompatibility of the local variable copies corresponding to GroundRule groundRule.
-	 * @param groundRule
-	 * @return local (dual) incompatibility
-	 */
-	public double getDualIncompatibility(GroundRule groundRule, ADMMTermStore termStore) {
-		// Set the global variables to the value of the local variables for this rule.
-		for (Integer termIndex : termStore.getTermIndices((WeightedGroundRule)groundRule)) {
-			for (LocalVariable localVariable : termStore.get(termIndex).getVariables()) {
-				consensusValues[localVariable.getGlobalId()] = localVariable.getValue();
-			}
-		}
-
-		// Updates variables
-		termStore.updateVariables(consensusValues);
-
-		return ((WeightedGroundRule)groundRule).getIncompatibility();
-	}
-
 	@Override
 	public void optimize(TermStore baseTermStore) {
 		InitialValue initialConsensus = InitialValue.valueOf(
@@ -309,6 +290,36 @@ public class ADMMReasoner implements Reasoner {
 
 	@Override
 	public void close() {
+	}
+
+	/**
+	 * Computes the incompatibility of the local variable copies corresponding to GroundRule groundRule.
+	 * The caller should provide a buffer that will be used to keep copies of the consensus values.
+	 * It should be sized: termStore().getNumGlobalVariables().
+	 * Null may be passed instead, but it will cause an allocation.
+	 */
+	public double getDualIncompatibility(GroundRule groundRule, ADMMTermStore termStore, float[] consensusBuffer) {
+		if (consensusBuffer == null) {
+			consensusBuffer = new float[termStore.getNumGlobalVariables()];
+		}
+
+		assert(consensusBuffer.length == consensusValues.length);
+
+		// Set the global variables to the value of the local variables for this rule.
+		for (Integer termIndex : termStore.getTermIndices((WeightedGroundRule)groundRule)) {
+			for (LocalVariable localVariable : termStore.get(termIndex).getVariables()) {
+				consensusBuffer[localVariable.getGlobalId()] = localVariable.getValue();
+			}
+		}
+
+		// Updates variables
+		termStore.updateVariables(consensusBuffer);
+		double incompatibility = ((WeightedGroundRule)groundRule).getIncompatibility();
+
+		// Reset the variables to the correct values.
+		termStore.updateVariables(consensusValues);
+
+		return incompatibility;
 	}
 
 	private void initConsensusValues(ADMMTermStore termStore, InitialValue initialConsensus) {

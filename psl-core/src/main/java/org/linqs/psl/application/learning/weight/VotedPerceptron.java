@@ -137,7 +137,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	 * If true, then start all weights at zero for learning.
 	 */
 	public static final String ZERO_INITIAL_WEIGHTS_KEY = CONFIG_PREFIX + ".zeroinitialweights";
-	public static final boolean ZERO_INITIAL_WEIGHTS_DEFAULT = true;
+	public static final boolean ZERO_INITIAL_WEIGHTS_DEFAULT = false;
 
 	protected final double l2Regularization;
 	protected final double l1Regularization;

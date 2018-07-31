@@ -72,7 +72,6 @@ import java.util.Set;
  *
  * A Database contains an {@link AtomCache} which is used to store GroundAtoms
  * that have been instantiated in memory and ensure these objects are unique.
- * The AtomCache is accessible via {@link #getAtomCache()}.
  *
  * <h2>Persisting RandomVariableAtoms</h2>
  *

@@ -97,11 +97,12 @@ public class PairedDualLearner extends ExpectationMaximization {
 		}
 
 		ADMMReasoner admmReasoner = (ADMMReasoner)reasoner;
+		float[] consensusBuffer = new float[((ADMMTermStore)termStore).getNumGlobalVariables()];
 
 		// Compute the dual incompatbility for each ground rule.
 		for (int i = 0; i < mutableRules.size(); i++) {
 			for (GroundRule groundRule : groundRuleStore.getGroundRules(mutableRules.get(i))) {
-				expectedIncompatibility[i] += admmReasoner.getDualIncompatibility(groundRule, (ADMMTermStore)termStore);
+				expectedIncompatibility[i] += admmReasoner.getDualIncompatibility(groundRule, (ADMMTermStore)termStore, consensusBuffer);
 			}
 		}
 	}
@@ -117,11 +118,12 @@ public class PairedDualLearner extends ExpectationMaximization {
 		}
 
 		ADMMReasoner admmReasoner = (ADMMReasoner)reasoner;
+		float[] consensusBuffer = new float[((ADMMTermStore)latentTermStore).getNumGlobalVariables()];
 
 		// Computes the observed incompatibilities.
 		for (int i = 0; i < mutableRules.size(); i++) {
 			for (GroundRule groundRule : latentGroundRuleStore.getGroundRules(mutableRules.get(i))) {
-				observedIncompatibility[i] += admmReasoner.getDualIncompatibility(groundRule, (ADMMTermStore)latentTermStore);
+				observedIncompatibility[i] += admmReasoner.getDualIncompatibility(groundRule, (ADMMTermStore)latentTermStore, consensusBuffer);
 			}
 		}
 	}
