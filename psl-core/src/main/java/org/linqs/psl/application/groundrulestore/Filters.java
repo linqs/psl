@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,22 +23,17 @@ import org.linqs.psl.model.rule.WeightedRule;
 
 public class Filters {
 
-	public static final com.google.common.base.Predicate<Rule> CompatibilityKernel = new com.google.common.base.Predicate<Rule>() {
-
+	public static final com.google.common.base.Predicate<Rule> CompatibilityRule = new com.google.common.base.Predicate<Rule>() {
 		@Override
-		public boolean apply(Rule k) {
-			return k instanceof WeightedRule;
+		public boolean apply(Rule rule) {
+			return rule instanceof WeightedRule;
 		}
-		
 	};
 	
-	public static final com.google.common.base.Predicate<Rule> ConstraintKernel = new com.google.common.base.Predicate<Rule>() {
-
+	public static final com.google.common.base.Predicate<Rule> ConstraintRule = new com.google.common.base.Predicate<Rule>() {
 		@Override
-		public boolean apply(Rule k) {
-			return k instanceof UnweightedRule;
+		public boolean apply(Rule rule) {
+			return rule instanceof UnweightedRule;
 		}
-		
 	};
-	
 }

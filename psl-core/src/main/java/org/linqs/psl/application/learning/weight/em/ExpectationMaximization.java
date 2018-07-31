@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,232 +17,111 @@
  */
 package org.linqs.psl.application.learning.weight.em;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.linqs.psl.application.learning.weight.TrainingMap;
-import org.linqs.psl.application.learning.weight.maxlikelihood.VotedPerceptron;
-import org.linqs.psl.application.util.Grounding;
-import org.linqs.psl.config.ConfigBundle;
-import org.linqs.psl.config.ConfigManager;
+import org.linqs.psl.application.learning.weight.VotedPerceptron;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.model.Model;
-import org.linqs.psl.model.atom.ObservedAtom;
-import org.linqs.psl.model.atom.RandomVariableAtom;
-import org.linqs.psl.model.rule.WeightedRule;
-import org.linqs.psl.model.rule.misc.GroundValueConstraint;
-import org.linqs.psl.model.weight.PositiveWeight;
-import org.linqs.psl.reasoner.Reasoner;
-import org.linqs.psl.reasoner.ReasonerFactory;
+import org.linqs.psl.model.rule.Rule;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 /**
  * Abstract superclass for implementations of the expectation-maximization
  * algorithm for learning with latent variables.
- * <p>
- * This class extends {@link VotedPerceptron}, which is used during the M-step
- * to update the weights.
- * 
- * @author Stephen Bach <bach@cs.umd.edu>
  */
-abstract public class ExpectationMaximization extends VotedPerceptron {
-
+public abstract class ExpectationMaximization extends VotedPerceptron {
 	private static final Logger log = LoggerFactory.getLogger(ExpectationMaximization.class);
-	
+
 	/**
 	 * Prefix of property keys used by this class.
-	 * 
-	 * @see ConfigManager
 	 */
 	public static final String CONFIG_PREFIX = "em";
-	
+
 	/**
 	 * Key for positive int property for the number of iterations of expectation
 	 * maximization to perform
 	 */
 	public static final String ITER_KEY = CONFIG_PREFIX + ".iterations";
-	/** Default value for ITER_KEY property */
 	public static final int ITER_DEFAULT = 10;
-	
-	/**
-	 * Key for Boolean property that indicates whether to reset step-size schedule
-	 * for each EM round. If TRUE, schedule will be {@link VotedPerceptron#STEP_SIZE_KEY}
-	 * at start of each round. If FALSE, schedule will smoothly decrease across rounds,
-	 * i.e., the schedule will be 1/ (round number * num steps + step number).
-	 * 
-	 * This property has no effect if {@link VotedPerceptron#STEP_SCHEDULE_KEY} is false.
-	 */
-	public static final String RESET_SCHEDULE_KEY = CONFIG_PREFIX + ".resetschedule";
-	/** Default value for STORE_WEIGHTS_KEY */
-	public static final boolean RESET_SCHEDULE_DEFAULT = true;
-	
-	/**
-	 * Key for Boolean property that indicates whether to store weights along entire optimization path
-	 */
-	public static final String STORE_WEIGHTS_KEY = CONFIG_PREFIX + ".storeweights";
-	/** Default value for STORE_WEIGHTS_KEY */
-	public static final boolean STORE_WEIGHTS_DEFAULT = false;
-	
+
 	/**
 	 * Key for positive double property for the minimum absolute change in weights
 	 * such that EM is considered converged
 	 */
 	public static final String TOLERANCE_KEY = CONFIG_PREFIX + ".tolerance";
-	/** Default value for TOLERANCE_KEY property */
 	public static final double TOLERANCE_DEFAULT = 1e-3;
-	
+
 	protected final int iterations;
 	protected final double tolerance;
-	protected final boolean resetSchedule;
-	
-	private int round;
-	
-	protected final boolean storeWeights;
-	protected ArrayList<Map<WeightedRule, Double>> storedWeights;
 
-	
-	/**
-	 * A reasoner for inferring the latent variables conditioned on
-	 * the observations and labels
-	 */
-	protected Reasoner latentVariableReasoner;
-	
-	public ExpectationMaximization(Model model, Database rvDB,
-			Database observedDB, ConfigBundle config) {
-		super(model, rvDB, observedDB, config);
+	protected int emIteration;
 
-		iterations = config.getInt(ITER_KEY, ITER_DEFAULT);
+	public ExpectationMaximization(List<Rule> rules, Database rvDB,
+			Database observedDB) {
+		super(rules, rvDB, observedDB, true);
 
-		tolerance = config.getDouble(TOLERANCE_KEY, TOLERANCE_DEFAULT);
-		
-		resetSchedule = config.getBoolean(RESET_SCHEDULE_KEY, RESET_SCHEDULE_DEFAULT);
-		
-		latentVariableReasoner = null;
-		
-		storeWeights = config.getBoolean(STORE_WEIGHTS_KEY, STORE_WEIGHTS_DEFAULT);
-		if (storeWeights) 
-			storedWeights = new ArrayList<Map<WeightedRule, Double>>();
+		iterations = Config.getInt(ITER_KEY, ITER_DEFAULT);
+		tolerance = Config.getDouble(TOLERANCE_KEY, TOLERANCE_DEFAULT);
 	}
 
 	@Override
 	protected void doLearn() {
-		double[] weights = new double[kernels.size()];
-		for (int i = 0; i < weights.length; i++)
-			weights[i] = kernels.get(i).getWeight().getWeight();
-		double [] avgWeights = new double[kernels.size()];
-		
-		round = 0;
-		while (round++ < iterations) {
-			log.debug("Beginning EM round {} of {}", round, iterations);
-			/* E-step */
-			minimizeKLDivergence();
-			/* M-step */
-			super.doLearn();
-			
-			double change = 0;
-			for (int i = 0; i < kernels.size(); i++) {
-				change += Math.pow(weights[i] - kernels.get(i).getWeight().getWeight(), 2);
-				weights[i] = kernels.get(i).getWeight().getWeight();
+		double[] previousWeights = new double[mutableRules.size()];
+		for (int i = 0; i < previousWeights.length; i++) {
+			previousWeights[i] = mutableRules.get(i).getWeight();
+		}
 
-				avgWeights[i] = (1 - (1.0 / (double) round)) * avgWeights[i] + (1.0 / (double) round) * weights[i];		
+		for (emIteration = 0; emIteration < iterations; emIteration++) {
+			log.debug("Beginning EM iteration {} of {}", emIteration, iterations);
+
+			eStep();
+			mStep();
+
+			// Check if we need to stop (if the weights did not change enough).
+
+			double change = 0;
+			for (int i = 0; i < mutableRules.size(); i++) {
+				change += Math.pow(previousWeights[i] - mutableRules.get(i).getWeight(), 2);
+				previousWeights[i] = mutableRules.get(i).getWeight();
 			}
-			
-			if (storeWeights) {
-				Map<WeightedRule,Double> weightMap = new HashMap<WeightedRule, Double>();
-				for (int i = 0; i < kernels.size(); i++) {
-					double weight = (averageSteps)? avgWeights[i] : weights[i];
-					if (weight > 0.0)
-						weightMap.put(kernels.get(i), weight);
-				}
-				storedWeights.add(weightMap);
-			}
+			change = Math.sqrt(change);
 
 			double loss = getLoss();
 			double regularizer = computeRegularizer();
 			double objective = loss + regularizer;
-			
-			change = Math.sqrt(change);
+
+			log.info("Finished EM iteration {} with m-step norm {}. Loss: {}, regularizer: {}, objective: {}",
+					emIteration, change, loss, regularizer, objective);
+
 			if (change <= tolerance) {
-				log.info("EM converged with m-step norm {} in {} rounds. Loss: " + loss, change, round);
+				log.info("EM converged.");
 				break;
-			} else
-				log.info("Finished EM round {} with m-step norm {}. Loss: " + loss + ", regularizer: " + regularizer + ", objective: " + objective, round, change);
+			}
 		}
-		
-		if (averageSteps) 
-			for (int i = 0; i < kernels.size(); i++)
-				kernels.get(i).setWeight(new PositiveWeight(avgWeights[i]));
 	}
 
-	abstract protected void minimizeKLDivergence();
-
-	@Override
-	protected void initGroundModel()
-			throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-		trainingMap = new TrainingMap(rvDB, observedDB);
-		
-		reasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
-		Grounding.groundAll(model, trainingMap, reasoner);
-		
-		/* 
-		 * The latentVariableReasoner should be cleaned up in close(), not
-		 * cleanUpGroundModel(), so that calls to inferLatentVariables() still
-		 * work
-		 */
-		if (latentVariableReasoner != null)
-			latentVariableReasoner.close();
-		latentVariableReasoner = ((ReasonerFactory) config.getFactory(REASONER_KEY, REASONER_DEFAULT)).getReasoner(config);
-		Grounding.groundAll(model, trainingMap, latentVariableReasoner);
-		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet())
-			latentVariableReasoner.addGroundRule(new GroundValueConstraint(e.getKey(), e.getValue().getValue()));
-	}
-	
 	/**
-	 * Infers the most probable assignment to the latent variables conditioned
-	 * on the observations and labeled unknowns using the most recently learned
-	 * model.
-	 * 
-	 * The atoms with corresponding labels will be set to their label values.
-	 * 
-	 * @throws IllegalStateException  if no model has been learned
+	 * The Expectation step in the EM algorithm.
+	 * This is a prime target for child override.
+	 *
+	 * The default implementation just inferring the latent variables.
+	 * IE, Minimizes the KL divergence by setting the latent variables to their
+	 * most probable state conditioned on the evidence and the labeled random variables.
 	 */
-	public void inferLatentVariables() {
-		if (latentVariableReasoner == null)
-			throw new IllegalStateException("A model must have been learned " +
-					"before latent variables can be inferred.");
-		
-		/* 
-		 * Infers most probable assignment latent variables
-		 * 
-		 * (Called changedGroundKernelWeights() might be unnecessary, but this is
-		 * the easiest way to be sure latentVariableReasoner is updated.)
-		 */
-		latentVariableReasoner.changedGroundKernelWeights();
-		latentVariableReasoner.optimize();
-	}
-	
-	@Override
-	protected double getStepSize(int iter) {
-		if (scheduleStepSize && !resetSchedule) {
-			return stepSize / (double) ((round-1) * numSteps + iter + 1);
-		}
-		else
-			return super.getStepSize(iter);
-	}
-	
-	public ArrayList<Map<WeightedRule, Double>> getStoredWeights() {
-		return (storeWeights)? storedWeights : null;
-	}
-	
-	@Override
-	public void close() {
-		super.close();
-		if (latentVariableReasoner != null) {
-			latentVariableReasoner.close();
-			latentVariableReasoner = null;
-		}
+	protected void eStep() {
+		computeLatentMPEState();
 	}
 
+	/**
+	 * The Maximization step in the EM algorithm.
+	 * This is a prime target for child override.
+	 * The M step is expected to change the weights in mutableRules.
+	 *
+	 * The default implementation just calls super.doLearn(), which learns over the non-latent variables.
+	 */
+	protected void mStep() {
+		super.doLearn();
+	}
 }

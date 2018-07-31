@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,43 +18,39 @@
 package org.linqs.psl.model.rule;
 
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.weight.Weight;
-import org.linqs.psl.reasoner.function.FunctionTerm;
+import org.linqs.psl.reasoner.function.GeneralFunction;
 
 public interface WeightedGroundRule extends GroundRule {
-	
 	@Override
 	public WeightedRule getRule();
-	
-	/**
-	 * Returns the Weight of this WeightedGroundRule.
-	 * <p>
-	 * Until {@link #setWeight(Weight)} is called, this GroundRule's weight
-	 * is the current weight of its parent Rule. After it is called, it remains
-	 * the most recent Weight set by {@link #setWeight(Weight)}.
-	 * 
-	 * @return this GroundRule's Weight
-	 * @see WeightedRule#getWeight()
-	 */
-	public Weight getWeight();
-	
-	/**
-	 * Sets a weight for this WeightedGroundRule.
-	 * 
-	 * @param w  new weight
-	 */
-	public void setWeight(Weight w);
-	
-	public FunctionTerm getFunctionDefinition();
+
+	public boolean isSquared();
 
 	/**
-	 * Returns the incompatibility of the truth values of this GroundRule's
-	 * {@link GroundAtom GroundAtoms}.
-	 * <p>
+	 * Returns the Weight of this WeightedGroundRule.
+	 * Until setWeight() is called, this GroundRule's weight is the current weight of its parent Rule.
+	 * After it is called, it remains the most recent Weight set by setWeight().
+	 */
+	public double getWeight();
+
+	/**
+	 * Sets a weight for this WeightedGroundRule.
+	 */
+	public void setWeight(double weight);
+
+	public GeneralFunction getFunctionDefinition();
+
+	/**
+	 * Returns the incompatibility of the truth values of this GroundRule's GroundAtoms.
 	 * Incompatibility is always non-negative.
-	 * 
-	 * @return the incompatibility of the current truth values
 	 */
 	public double getIncompatibility();
-	
+
+	/**
+	 * Returns the incompatibility of the truth values of this GroundRule's GroundAtoms given
+	 * the replacment of a single atom's value with another value.
+	 * This method should only be used by callers that really know what they are doing.
+	 * Incompatibility is always non-negative.
+	 */
+	public double getIncompatibility(GroundAtom replacementAtom, double replacementValue);
 }

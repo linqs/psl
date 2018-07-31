@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -100,7 +100,7 @@ public class RulePartial {
 			throw new IllegalArgumentException("The partial is already a full rule, cannot specify weight/squared.");
 		}
 
-		throw new IllegalArgumentException("Either both weight and squared must be non-null, or both must be null");
+		throw new IllegalArgumentException("Either both weight and squared must be non-null, or both must be null. Found weight: " + weight + ", squared: " + squared + ".");
 	}
 
 	private Rule toUnweightedLogicalRule() {

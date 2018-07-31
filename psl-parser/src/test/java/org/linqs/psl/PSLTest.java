@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,20 +37,38 @@ public class PSLTest {
 	/**
 	 * Convenience call for the common functionality of assertRule() (alphabetize).
 	 */
-	public static void assertRule(Rule rule, String expected) {
-		assertRule(rule, expected, true);
+	public static void assertRule(DataStore dataStore, String input, String expectedRule) {
+		assertRule(dataStore, input, expectedRule, true);
 	}
 
 	/**
-	 * Assert that a rule has the given string representation.
+	 * Load a rule into a model from a string.
+	 * All rule assertion methods should go through here.
 	 *
 	 * If, for some reason, the exact format of the output is not known (like with summations which
 	 * may order the summation terms in different ways), then you can use |alphabetize| to sort all
 	 * characters in both strings (actual and expected) before comparing.
 	 * Only alphabetize if it is really necessary since it makes the output much harder to interpret.
 	 */
-	public static void assertRule(Rule rule, String expected, boolean alphabetize) {
-		assertStringEquals(expected, rule.toString(), alphabetize, "Rule mismatch");
+	public static void assertRule(DataStore dataStore, String input, String expectedRule, boolean alphabetize) {
+		Rule rule = null;
+
+		try {
+			rule = ModelLoader.loadRule(dataStore, input);
+		} catch (IOException ex) {
+			fail("IOException thrown from ModelLoader.loadRule(): " + ex);
+		}
+
+		assertRule(rule, expectedRule, alphabetize);
+
+		// Now ensure that we can load the string version of the created rule.
+		try {
+			rule = ModelLoader.loadRule(dataStore, rule.toString());
+		} catch (IOException ex) {
+			fail("IOException thrown from ModelLoader.loadRule(): " + ex);
+		}
+
+		assertRule(rule, expectedRule, alphabetize);
 	}
 
 	/**
@@ -133,33 +151,50 @@ public class PSLTest {
 		}
 
 		assertRules(rules.toArray(new Rule[0]), expectedRules, alphabetize);
+
+		// Try again with each rule, but use the generated text for each rule.
+		for (int i = 0; i < rules.size(); i++) {
+			try {
+				assertRule(dataStore, rules.get(i).toString(), expectedRules[i], alphabetize);
+			} catch (org.antlr.v4.runtime.RecognitionException ex) {
+				throw new RuntimeException("toString() rule did not parse: " + rules.get(i).toString(), ex);
+			}
+		}
 	}
 
+	public static List<Rule> getRules(DataStore dataStore, String input) {
+		Model model = null;
+
+		try {
+			model = ModelLoader.load(dataStore, input);
+		} catch (IOException ex) {
+			fail("IOException thrown from ModelLoader.load(): " + ex);
+		}
+
+		List<Rule> rules = new ArrayList<Rule>();
+		for (Rule rule : model.getRules()) {
+			rules.add(rule);
+		}
+
+		return rules;
+	}
 	/**
 	 * Convenience call for the common functionality of assertRule() (alphabetize).
 	 */
-	public static void assertRule(DataStore dataStore, String input, String expectedRule) {
-		assertRule(dataStore, input, expectedRule, true);
+	private static void assertRule(Rule rule, String expected) {
+		assertRule(rule, expected, true);
 	}
 
 	/**
-	 * Load a rule into a model from a string.
+	 * Assert that a rule has the given string representation.
 	 *
 	 * If, for some reason, the exact format of the output is not known (like with summations which
 	 * may order the summation terms in different ways), then you can use |alphabetize| to sort all
 	 * characters in both strings (actual and expected) before comparing.
 	 * Only alphabetize if it is really necessary since it makes the output much harder to interpret.
 	 */
-	public static void assertRule(DataStore dataStore, String input, String expectedRule, boolean alphabetize) {
-		Rule rule = null;
-
-		try {
-			rule = ModelLoader.loadRule(dataStore, input);
-		} catch (IOException ex) {
-			fail("IOException thrown from ModelLoader.loadRule(): " + ex);
-		}
-
-		assertRule(rule, expectedRule, alphabetize);
+	private static void assertRule(Rule rule, String expected, boolean alphabetize) {
+		assertStringEquals(expected, rule.toString(), alphabetize, "Rule mismatch");
 	}
 
 	private static String sort(String string) {

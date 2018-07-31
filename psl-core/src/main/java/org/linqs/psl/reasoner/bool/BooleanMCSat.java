@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,163 +17,173 @@
  */
 package org.linqs.psl.reasoner.bool;
 
-import java.util.Random;
-
-import org.linqs.psl.application.groundrulestore.MemoryGroundKernelStore;
-import org.linqs.psl.config.ConfigBundle;
-import org.linqs.psl.config.ConfigManager;
-import org.linqs.psl.model.ConstraintBlocker;
+import org.linqs.psl.application.groundrulestore.AtomRegisterGroundRuleStore;
+import org.linqs.psl.application.util.GroundRules;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.Reasoner;
+import org.linqs.psl.reasoner.term.TermStore;
+import org.linqs.psl.reasoner.term.blocker.ConstraintBlockerTerm;
+import org.linqs.psl.reasoner.term.blocker.ConstraintBlockerTermStore;
+import org.linqs.psl.util.RandUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Implementation of MC-Sat, which approximates the marginal probability that each
  * atom has value 1 in a Boolean domain.
- * <p>
+ *
  * Marginal probabilities will be set as the atoms' truth values.
- * <p>
+ *
  * This class supports free {@link RandomVariableAtom RandomVariableAtoms}
  * and RandomVariableAtoms that are each constrained by a single
- * {@link GroundDomainRangeConstraint}. It also assumes that all ObservedAtoms
+ * GroundValueConstraint. It also assumes that all ObservedAtoms
  * have Boolean truth values. Its behavior is not defined otherwise.
- * 
+ *
  * @author Stephen Bach <bach@cs.umd.edu>
  */
-public class BooleanMCSat extends MemoryGroundKernelStore implements Reasoner {
-	
+public class BooleanMCSat implements Reasoner {
 	private static final Logger log = LoggerFactory.getLogger(BooleanMCSat.class);
-	
+
 	/**
 	 * Prefix of property keys used by this class.
-	 * 
-	 * @see ConfigManager
 	 */
 	public static final String CONFIG_PREFIX = "booleanmcsat";
-	
+
 	/**
 	 * Key for length of Markov chain
 	 */
 	public static final String NUM_SAMPLES_KEY = CONFIG_PREFIX + ".numsamples";
-	/** Default value for NUM_SAMPLES_KEY */
+
+	/**
+	 * Default value for NUM_SAMPLES_KEY
+	 */
 	public static final int NUM_SAMPLES_DEFAULT = 2500;
-	
+
 	/**
 	 * Number of burn-in samples
 	 */
 	public static final String NUM_BURN_IN_KEY = CONFIG_PREFIX + ".numburnin";
-	/** Default value for NUM_BURN_IN_KEY */
+
+	/**
+	 * Default value for NUM_BURN_IN_KEY
+	 */
 	public static final int NUM_BURN_IN_DEFAULT = 500;
-	
-	private final Random rand;
+
 	private final int numSamples;
 	private final int numBurnIn;
-	
-	public BooleanMCSat(ConfigBundle config) {
-		super();
-		rand = new Random();
-		numSamples = config.getInt(NUM_SAMPLES_KEY, NUM_SAMPLES_DEFAULT);
-		if (numSamples <= 0)
+
+	public BooleanMCSat() {
+		numSamples = Config.getInt(NUM_SAMPLES_KEY, NUM_SAMPLES_DEFAULT);
+		if (numSamples <= 0) {
 			throw new IllegalArgumentException("Number of samples must be positive.");
-		numBurnIn = config.getInt(NUM_BURN_IN_KEY, NUM_BURN_IN_DEFAULT);
-		if (numSamples <= 0)
+		}
+
+		numBurnIn = Config.getInt(NUM_BURN_IN_KEY, NUM_BURN_IN_DEFAULT);
+		if (numSamples <= 0) {
 			throw new IllegalArgumentException("Number of burn in samples must be positive.");
-		if (numBurnIn >= numSamples)
+		} else if (numBurnIn >= numSamples) {
 			throw new IllegalArgumentException("Number of burn in samples must be less than number of samples.");
+		}
 	}
-	
+
 	@Override
-	public void optimize() {
-		ConstraintBlocker blocker = new ConstraintBlocker(this);
-		blocker.prepareBlocks(false);
-		
-		/* Puts RandomVariableAtoms in 2d array by block */
-		RandomVariableAtom[][] rvBlocks = blocker.getRVBlocks();
-		/* If true, exactly one Atom in the RV block must be 1.0. If false, at most one can. */
-		boolean[] exactlyOne = blocker.getExactlyOne();
-		/* Collects GroundCompatibilityKernels incident on each block of RandomVariableAtoms */
-		WeightedGroundRule[][] incidentGKs = blocker.getIncidentGKs();
-		/* Initializes arrays for totaling samples */
-		double[][] totals = blocker.getEmptyDouble2DArray();
-		
-		/* Randomly initializes the RVs to a feasible state */
-		blocker.randomlyInitializeRVs();
-		
-		/* Samples RV assignments */
+	public void optimize(TermStore termStore) {
+		if (!(termStore instanceof ConstraintBlockerTermStore)) {
+			throw new IllegalArgumentException("ConstraintBlockerTermStore required.");
+		}
+		ConstraintBlockerTermStore blocker = (ConstraintBlockerTermStore)termStore;
+
+		// Randomly initialize the RVs to a feasible state.
+		blocker.randomlyInitialize();
+
+		// Initialize arrays for totaling samples
+		double[][] totals = new double[blocker.size()][];
+		for (int i = 0; i < blocker.size(); i++) {
+			totals[i] = new double[blocker.get(i).size()];
+		}
+
 		log.info("Beginning inference.");
-		double[] p;
+
+		// Sample RV assignments
 		for (int sampleIndex = 0; sampleIndex < numSamples; sampleIndex++) {
-			for (int i = 0; i < rvBlocks.length; i++) {
-				if (rvBlocks.length == 0)
+			for (int blockIndex = 0; blockIndex < blocker.size(); blockIndex++) {
+				ConstraintBlockerTerm block = blocker.get(blockIndex);
+
+				if (block.size() == 0) {
 					continue;
-				
-				p = new double[(exactlyOne[i]) ? rvBlocks[i].length : (rvBlocks[i].length + 1)];
-				
-				/* Computes probability for assignment of 1.0 to each RV */
-				for (int j = 0; j < rvBlocks[i].length; j++) {
-					/* Sets RVs */
-					for (int k = 0; k < rvBlocks[i].length; k++)
-						rvBlocks[i][k].setValue((k == j) ? 1.0 : 0.0);
-					
-					/* Computes probability */
-					p[j] = computeProbability(incidentGKs[i]);
 				}
-				
-				/* If all RVs in block assigned 0.0 is valid, computes probability */
-				if (!exactlyOne[i]) {
-					/* Sets all RVs to 0.0 */
-					for (RandomVariableAtom atom : rvBlocks[i])
-						atom.setValue(0.0);
-					
-					/* Computes probability */
-					p[p.length - 1] = computeProbability(incidentGKs[i]);
+
+				// Compute the probability for every possible discrete assignment to the block.
+				// The additional spot at the end is for the all zero assignment (when !exactlyOne).
+				double[] probabilities = new double[block.getExactlyOne() ? block.size() : (block.size() + 1)];
+
+				// Compute the probability for each possible assignment to the block.
+				// Remember that at most 1 atom in a block can be non-zero.
+				// If all zeros are allowed, then atomIndex will be past the bounds of the block and
+				// no atoms will get activated.
+				for (int atomIndex = 0; atomIndex < probabilities.length; atomIndex++) {
+					for (int i = 0; i < block.size(); i++) {
+						if (i == atomIndex) {
+							block.getAtoms()[i].setValue(1.0);
+						} else {
+							block.getAtoms()[i].setValue(0.0);
+						}
+					}
+
+					// Compute the probability.
+					probabilities[atomIndex] = computeProbability(block.getIncidentGRs());
 				}
-				
-				/* Draws sample */
-				double[] sample = sampleWithProbability(p);
-				for (int j = 0; j < rvBlocks[i].length; j++) {
-					rvBlocks[i][j].setValue(sample[j]);
-					
-					if (sampleIndex >= numBurnIn)
-						totals[i][j] += sample[j];
+
+				// Draw sample.
+				double[] sample = sampleWithProbability(probabilities);
+				for (int atomIndex = 0; atomIndex < block.getAtoms().length; atomIndex++) {
+					block.getAtoms()[atomIndex].setValue(sample[atomIndex]);
+
+					if (sampleIndex >= numBurnIn) {
+						totals[blockIndex][atomIndex] += sample[atomIndex];
+					}
 				}
 			}
 		}
-		
+
 		log.info("Inference complete.");
-		
-		/* Sets truth values of RandomVariableAtoms to marginal probabilities */
-		for (int i = 0; i < rvBlocks.length; i++)
-			for (int j = 0; j < rvBlocks[i].length; j++)
-				rvBlocks[i][j].setValue(totals[i][j] / (numSamples - numBurnIn));
-	}
-	
-	private double computeProbability(WeightedGroundRule incidentGKs[]) {
-		double probability = 0.0;
-		for (WeightedGroundRule gk : incidentGKs) {
-			probability += ((WeightedGroundRule) gk).getWeight().getWeight()
-					* ((WeightedGroundRule) gk).getIncompatibility();
+
+		// Sets truth values of RandomVariableAtoms to marginal probabilities.
+		for (int blockIndex = 0; blockIndex < blocker.size(); blockIndex++) {
+			for (int atomIndex = 0; atomIndex < blocker.get(blockIndex).size(); atomIndex++) {
+				blocker.get(blockIndex).getAtoms()[atomIndex].setValue(totals[blockIndex][atomIndex] / (numSamples - numBurnIn));
+			}
 		}
+	}
+
+	private double computeProbability(WeightedGroundRule incidentGRs[]) {
+		double probability = 0.0;
+
+		for (WeightedGroundRule groundRule : incidentGRs) {
+			probability += groundRule.getWeight() * groundRule.getIncompatibility();
+		}
+
 		return Math.exp(-1 * probability);
 	}
-	
+
 	private double[] sampleWithProbability(double[] distribution) {
-		/* Just in case an RV block is empty */
-		if (distribution.length == 0)
-			return new double[0];
-		
-		/* Normalizes distribution */
+		// Normalize the distribution.
 		double total = 0.0;
-		for (double pValue : distribution)
+		for (double pValue : distribution) {
 			total += pValue;
-		for (int i = 0; i < distribution.length; i++)
+		}
+
+		for (int i = 0; i < distribution.length; i++) {
 			distribution[i] /= total;
-		
-		/* Draws sample */
+		}
+
+		// Draws sample.
 		double[] sample = new double[distribution.length];
-		double cutoff = rand.nextDouble();
+		double cutoff = RandUtils.nextDouble();
+
 		total = 0.0;
 		for (int i = 0; i < distribution.length; i++) {
 			total += distribution[i];
@@ -183,17 +193,14 @@ public class BooleanMCSat extends MemoryGroundKernelStore implements Reasoner {
 			}
 		}
 
-		/*
-		 * Just in case a rounding error and a very high cutoff prevents the loop
-		 * from returning, returns the last assignment
-		 */
-		sample[sample.length-1] = 1.0;
+		// Just in case a rounding error and a very high cutoff prevents the loop
+		// from returning, return the last assignment.
+		sample[sample.length - 1] = 1.0;
 		return sample;
 	}
-	
+
 	@Override
 	public void close() {
-		/* Intentionally blank */
+		// Intentionally blank.
 	}
-
 }

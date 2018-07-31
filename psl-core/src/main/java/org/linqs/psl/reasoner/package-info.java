@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,10 @@
 /**
  * Provides interfaces and classes for performing probabilistic inference over
  * {@link org.linqs.psl.model.atom.Atom Atoms}.
- * 
+ *
  * {@link org.linqs.psl.reasoner.Reasoner} and its implementations are the main
  * tools for inference. See the function subpackage provides interfaces and classes
- * for defining functions that {@link org.linqs.psl.model.rule.GroundRule GroundKernels}
+ * for defining functions that {@link org.linqs.psl.model.rule.GroundRule GroundRules}
  * should use.
  */
 package org.linqs.psl.reasoner;

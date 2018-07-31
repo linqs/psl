@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@
  * Provides interfaces and classes for defining functions that
  * {@link org.linqs.psl.reasoner.Reasoner Reasoners} can interpret.
  *
- * {@link org.linqs.psl.model.rule.GroundRule GroundKernels} use these
+ * {@link org.linqs.psl.model.rule.GroundRule GroundRules} use these
  * to define their incompatibility and constraint functions.
  */
 package org.linqs.psl.reasoner.function;

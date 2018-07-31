@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,9 +26,8 @@ import org.linqs.psl.model.atom.GroundAtom;
  * for use in numeric functions.
  */
 public abstract class AtomFunctionVariable implements FunctionVariable {
-	
 	protected final GroundAtom atom;
-	
+
 	public AtomFunctionVariable(GroundAtom atom) {
 		this.atom = atom;
 	}
@@ -37,50 +36,37 @@ public abstract class AtomFunctionVariable implements FunctionVariable {
 	public boolean isLinear() {
 		return true;
 	}
-	
+
 	public GroundAtom getAtom() {
 		return atom;
-	}
-
-	@Override
-	public double getConfidence() {
-		return atom.getConfidenceValue();
 	}
 
 	@Override
 	public double getValue() {
 		return atom.getValue();
 	}
-	
-	@Override
-	public double getValue(Map<? extends FunctionVariable,Double> values, boolean useCurrentValues) {
-		Double val = values.get(this);
-		if (val==null) {
-			if (useCurrentValues) return getValue();
-			else throw new IllegalArgumentException("Given map does not contain a value for the variable: " + this);
-		} else {
-			return val;
-		}
-	}
-	
+
 	@Override
 	public int hashCode() {
 		return atom.hashCode() + 97;
 	}
-	
+
 	@Override
 	public boolean equals(Object oth) {
-		if (oth==this)
+		if (oth == this) {
 			return true;
-		if (oth==null || !(getClass().isInstance(oth)) )
+		}
+
+		if (oth == null || !(getClass().isInstance(oth))) {
 			return false;
-		AtomFunctionVariable other = (AtomFunctionVariable) oth;
+		}
+
+		AtomFunctionVariable other = (AtomFunctionVariable)oth;
 		return getAtom().equals(other.getAtom());
 	}
-	
+
 	@Override
 	public String toString() {
 		return atom.toString();
 	}
-	
 }

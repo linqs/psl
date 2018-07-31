@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,87 +17,89 @@
  */
 package org.linqs.psl.database.rdbms.driver;
 
+import org.linqs.psl.database.Partition;
+import org.linqs.psl.database.rdbms.PredicateInfo;
+import org.linqs.psl.model.term.ConstantType;
+import org.linqs.psl.util.Parallel;
+
+import com.healthmarketscience.sqlbuilder.CreateTableQuery;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+import org.apache.commons.lang3.StringUtils;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 
 public class H2DatabaseDriver implements DatabaseDriver {
-
 	public enum Type {
 		Disk, Memory
 	}
 
-	// The connection to the H2 database
-	private final Connection dbConnection;
+	private final HikariDataSource dataSource;
 
 	/**
 	 * Constructor for the H2 database driver.
-	 * @param dbType	Type of database, either Disk or Memory.
-	 * @param path		Path to database on disk, or name if type is Memory.
-	 * @param clearDB	Whether to perform a DROP ALL on the database after connecting.
+	 * @param dbType Type of database, either Disk or Memory.
+	 * @param path Path to database on disk, or name if type is Memory.
+	 * @param clearDB Whether to perform a DROP ALL on the database after connecting.
 	 */
 	public H2DatabaseDriver(Type dbType, String path, boolean clearDB) {
-		// Attempt to load H2 class files
+		// Load the driver class.
 		try {
 			Class.forName("org.h2.Driver");
-		} catch (ClassNotFoundException e1) {
-			throw new RuntimeException(
-					"Could not find database drivers for H2 database. Please add H2 library to class path.");
+		} catch (ClassNotFoundException ex) {
+			throw new RuntimeException("Could not find H2 driver. Please check classpath", ex);
 		}
 
 		// Establish the connection to the specified DB type
+		String connectionString = null;
 		switch (dbType) {
-		case Disk:
-			this.dbConnection = getDiskDatabase(path);
-			break;
-		case Memory:
-			this.dbConnection = getMemoryDatabase(path);
-			break;
-		default:
-			throw new IllegalArgumentException("Unknown database type: "
-					+ dbType);
+			case Disk:
+				connectionString = "jdbc:h2:" + path;
+				break;
+			case Memory:
+				connectionString = "jdbc:h2:mem:" + path;
+				break;
+			default:
+				throw new IllegalArgumentException("Unknown database type: " + dbType);
 		}
+
+		HikariConfig config = new HikariConfig();
+		config.setJdbcUrl(connectionString);
+		config.setMaximumPoolSize(Math.max(8, Parallel.getNumThreads() * 2));
+		config.setMaxLifetime(0);
+		dataSource = new HikariDataSource(config);
 
 		// Clear the database if specified
-		if (clearDB)
+		if (clearDB) {
 			clearDB();
-	}
-
-	public Connection getDiskDatabase(String path) {
-		try {
-			return DriverManager.getConnection("jdbc:h2:" + path );
-			//return DriverManager.getConnection("jdbc:h2:" + path);
-		} catch (SQLException e) {
-			throw new RuntimeException(
-					"Could not connect to database: " + path, e);
 		}
 	}
 
-	public Connection getDiskDatabase(String path, String options) {
-		try {
-			return DriverManager.getConnection("jdbc:h2:" + path + options);
-			//return DriverManager.getConnection("jdbc:h2:" + path);
-		} catch (SQLException e) {
-			throw new RuntimeException(
-					"Could not connect to database: " + path, e);
-		}
+	@Override
+	public void close() {
+		dataSource.close();
 	}
 
-	
-	
-	public Connection getMemoryDatabase(String path) {
+	@Override
+	public Connection getConnection() {
 		try {
-			return DriverManager.getConnection("jdbc:h2:mem:" + path);
-		} catch (SQLException e) {
-			throw new RuntimeException(
-					"Could not connect to database: " + path, e);
+			return dataSource.getConnection();
+		} catch (SQLException ex) {
+			throw new RuntimeException("Failed to get connection from pool.", ex);
 		}
 	}
 
 	private void clearDB() {
-		try {
-			Statement stmt = dbConnection.createStatement();
+		try (
+			Connection connection = getConnection();
+			Statement stmt = connection.createStatement();
+		) {
 			stmt.executeUpdate("DROP ALL OBJECTS");
 		} catch (SQLException e) {
 			throw new RuntimeException("Could not clear database.", e);
@@ -105,27 +107,73 @@ public class H2DatabaseDriver implements DatabaseDriver {
 	}
 
 	@Override
-	public Connection getConnection() {
-		return dbConnection;
+	public boolean supportsBulkCopy() {
+		return false;
 	}
 
-  @Override
-  public boolean isSupportExternalFunction() {
-    return true;
-  }
+	public void bulkCopy(String path, String delimiter, boolean hasTruth,
+			PredicateInfo predicateInfo, Partition partition) {
+		throw new UnsupportedOperationException("H2 does not support bulk copy.");
+	}
 
-  @Override
-  public String createHashIndex(String index_name, String table_name, String column_name) {
-  	return "CREATE HASH INDEX " + index_name + " ON " + table_name + " (" + column_name + " ) ";
-  }
+	@Override
+	public String getTypeName(ConstantType type) {
+		switch (type) {
+			case Double:
+				return "DOUBLE";
+			case Integer:
+				return "INT";
+			case String:
+				return "VARCHAR";
+			case Long:
+				return "BIGINT";
+			case Date:
+				return "DATE";
+			case UniqueIntID:
+				return "INT";
+			case UniqueStringID:
+				return "VARCHAR(255)";
+			default:
+				throw new IllegalStateException("Unknown ConstantType: " + type);
+		}
+	}
 
-  @Override
-  public String castStringWithModifiersForIndexing(String column_name) {
-  	return column_name;
-  }
+	@Override
+	public String getSurrogateKeyColumnDefinition(String columnName) {
+		return columnName + " BIGINT IDENTITY PRIMARY KEY";
+	}
 
-  @Override
-  public String createPrimaryKey(String table_name, String columns) {
-  	return "CREATE PRIMARY KEY HASH ON " + table_name + " (" + columns + " ) ";	
-  }
+	@Override
+	public String getDoubleTypeName() {
+		return "DOUBLE";
+	}
+
+	@Override
+	public String getUpsert(String tableName, String[] columns, String[] keyColumns) {
+		// H2 uses a "MERGE" syntax and requires a specified key.
+		List<String> sql = new ArrayList<String>();
+		sql.add("MERGE INTO " + tableName + "");
+		sql.add("	(" + StringUtils.join(columns, ", ") + ")");
+		sql.add("KEY");
+		sql.add("	(" + StringUtils.join(keyColumns, ", ") + ")");
+		sql.add("VALUES");
+		sql.add("	(" + StringUtils.repeat("?", ", ", columns.length) + ")");
+
+		return StringUtils.join(sql, "\n");
+	}
+
+	@Override
+	public String finalizeCreateTable(CreateTableQuery createTable) {
+		return createTable.validate().toString();
+	}
+
+	@Override
+	public String getStringAggregate(String columnName, String delimiter, boolean distinct) {
+		if (delimiter.contains("'")) {
+			throw new IllegalArgumentException("Delimiter (" + delimiter + ") may not contain a single quote.");
+		}
+
+		return String.format("GROUP_CONCAT(DISTINCT CAST(%s AS TEXT) SEPARATOR '%s')",
+				columnName, delimiter);
+	}
 }

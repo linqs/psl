@@ -1,8 +1,23 @@
+/*
+ * This file is part of the PSL software.
+ * Copyright 2011-2015 University of Maryland
+ * Copyright 2013-2018 The Regents of the University of California
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.linqs.psl;
 
 import org.linqs.psl.application.inference.MPEInference;
-import org.linqs.psl.config.ConfigBundle;
-import org.linqs.psl.config.EmptyBundle;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
@@ -17,7 +32,6 @@ import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Implication;
 import org.linqs.psl.model.formula.Negation;
 import org.linqs.psl.model.predicate.Predicate;
-import org.linqs.psl.model.predicate.PredicateFactory;
 import org.linqs.psl.model.predicate.SpecialPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
@@ -40,6 +54,8 @@ public class TestModelFactory {
 	public static final String PARTITION_OBSERVATIONS = "observations";
 	public static final String PARTITION_TARGETS = "targets";
 	public static final String PARTITION_TRUTH = "truth";
+	// This class promises not to use this partition, so tests can guarantee it will be empty.
+	public static final String PARTITION_UNUSED = "unused";
 
 	// Give each model a unique identifier.
 	private static int modelId = 0;
@@ -52,20 +68,20 @@ public class TestModelFactory {
 	 * Get a default model.
 	 * The caller owns everything that is returned and should make sure to close the datastore.
 	 * Predicates:
-	 *    Nice(UniqueID)
-	 *    Person(UniqueID)
-	 *    Friends(UniqueID, UniqueID)
+	 *	 Nice(UniqueStringID)
+	 *	 Person(UniqueStringID)
+	 *	 Friends(UniqueStringID, UniqueStringID)
 	 *
 	 * Rules:
-	 *    5: Nice(A) & Nice(B) & (A - B) -> Friends(A, B) ^2
-	 *    10: Person(A) & Person(B) & Friends(A, B) & (A - B) -> Friends(B, A) ^2
-	 *    1: ~Friends(A, B) ^2
+	 *	 5: Nice(A) & Nice(B) & (A - B) -> Friends(A, B) ^2
+	 *	 10: Person(A) & Person(B) & Friends(A, B) & (A - B) -> Friends(B, A) ^2
+	 *	 1: ~Friends(A, B) ^2
 	 *
 	 * Data:
-	 *    - There are 5 people.
-	 *    - Every person has a Nice value. Alice starts at 0.8 then is decreases by 0.2 alphabetically (Eugue is 0.0).
-	 *    - All Friendships are in the target partition.
-	 *    - All Friendships have a binary truth value in the truth partition.
+	 *	 - There are 5 people.
+	 *	 - Every person has a Nice value. Alice starts at 0.8 then is decreases by 0.2 alphabetically (Eugue is 0.0).
+	 *	 - All Friendships are in the target partition.
+	 *	 - All Friendships have a binary truth value in the truth partition.
 	 *
 	 * Data is added as well and can be seen in the code.
 	 */
@@ -79,14 +95,13 @@ public class TestModelFactory {
 	public static ModelInformation getModel(boolean nicePeople) {
 		// Define Predicates
 		Map<String, ConstantType[]> predicatesInfo = new HashMap<String, ConstantType[]>();
-		predicatesInfo.put("Nice", new ConstantType[]{ConstantType.UniqueID});
-		predicatesInfo.put("Person", new ConstantType[]{ConstantType.UniqueID});
-		predicatesInfo.put("Friends", new ConstantType[]{ConstantType.UniqueID, ConstantType.UniqueID});
+		predicatesInfo.put("Nice", new ConstantType[]{ConstantType.UniqueStringID});
+		predicatesInfo.put("Person", new ConstantType[]{ConstantType.UniqueStringID});
+		predicatesInfo.put("Friends", new ConstantType[]{ConstantType.UniqueStringID, ConstantType.UniqueStringID});
 
 		Map<String, StandardPredicate> predicates = new HashMap<String, StandardPredicate>();
-		PredicateFactory predicateFactory = PredicateFactory.getFactory();
 		for (Map.Entry<String, ConstantType[]> predicateEntry : predicatesInfo.entrySet()) {
-			StandardPredicate predicate = predicateFactory.createStandardPredicate(predicateEntry.getKey(), predicateEntry.getValue());
+			StandardPredicate predicate = StandardPredicate.get(predicateEntry.getKey(), predicateEntry.getValue());
 			predicates.put(predicateEntry.getKey(), predicate);
 		}
 
@@ -149,10 +164,10 @@ public class TestModelFactory {
 			)));
 		} else {
 			observations.put(predicates.get("Nice"), new ArrayList<PredicateData>(Arrays.asList(
-				new PredicateData(0.8, new Object[]{"Alice"}),
-				new PredicateData(0.6, new Object[]{"Bob"}),
-				new PredicateData(0.4, new Object[]{"Charlie"}),
-				new PredicateData(0.2, new Object[]{"Derek"}),
+				new PredicateData(0.9, new Object[]{"Alice"}),
+				new PredicateData(0.8, new Object[]{"Bob"}),
+				new PredicateData(0.7, new Object[]{"Charlie"}),
+				new PredicateData(0.6, new Object[]{"Derek"}),
 				new PredicateData(0.0, new Object[]{"Eugene"})
 			)));
 		}
@@ -217,12 +232,12 @@ public class TestModelFactory {
 			Map<String, StandardPredicate> predicates, List<Rule> rules,
 			Map<StandardPredicate, List<PredicateData>> observations, Map<StandardPredicate, List<PredicateData>> targets,
 			Map<StandardPredicate, List<PredicateData>> truths) {
-		ConfigBundle config = new EmptyBundle();
-      String identifier = String.format("%s-%03d", TestModelFactory.class.getName(), modelId);
+		String identifier = String.format("%s-%03d", TestModelFactory.class.getName(), modelId);
 		DataStore dataStore = new RDBMSDataStore(new H2DatabaseDriver(
 				Type.Memory,
-            Paths.get(System.getProperty("java.io.tmpdir"), identifier).toString(),
-            true), config);
+				Paths.get(System.getProperty("java.io.tmpdir"), identifier).toString(),
+				true));
+
 		Model model = new Model();
 
 		// Predicates
@@ -252,7 +267,7 @@ public class TestModelFactory {
 		}
 
 		if (truths != null && truths.size() != 0) {
-			allData.put(truthPartition, observations);
+			allData.put(truthPartition, truths);
 		}
 
 		for (Map.Entry<Partition, Map<StandardPredicate, List<PredicateData>>> partition : allData.entrySet()) {
@@ -264,7 +279,7 @@ public class TestModelFactory {
 			}
 		}
 
-		return new ModelInformation(modelId++, config, dataStore, model, predicates, obsPartition, targetPartition, truthPartition);
+		return new ModelInformation(modelId++, dataStore, model, predicates, obsPartition, targetPartition, truthPartition);
 	}
 
 	/**
@@ -275,7 +290,6 @@ public class TestModelFactory {
 	 */
 	public static class ModelInformation {
 		public int id;
-		public ConfigBundle config;
 		public DataStore dataStore;
 		public Model model;
 		public Map<String, StandardPredicate> predicates;
@@ -284,11 +298,10 @@ public class TestModelFactory {
 		public Partition truthPartition;
 
 		public ModelInformation(
-				int id, ConfigBundle config, DataStore dataStore, Model model,
+				int id, DataStore dataStore, Model model,
 				Map<String, StandardPredicate> predicates,
 				Partition observationPartition, Partition targetPartition, Partition truthPartition) {
 			this.id = id;
-			this.config = config;
 			this.dataStore = dataStore;
 			this.model = model;
 			this.predicates = predicates;

@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,35 +17,45 @@
  */
 package org.linqs.psl.model.formula;
 
-import java.util.*;
-
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.model.term.VariableTypeMap;
 
+import java.util.Set;
+
 /**
  * A logical formula composed of {@link Atom Atoms} and logical operators.
- * 
- * @author Matthias Broecheler
  */
 public interface Formula {
-	
 	/**
 	 * @return a logically equivalent Formula in disjunctive normal form
 	 */
 	public Formula getDNF();
-	
+
 	/**
 	 * @return Atoms in the Formula
 	 */
 	public Set<Atom> getAtoms(Set<Atom> atoms);
-	
+
 	/**
 	 * Adds the {@link Variable Variables}
-	 * 
+	 *
 	 * @param varMap
-	 * @return
+	 * @return the passed in VariableTypeMap filled with the variables this formula uses.
 	 */
 	public VariableTypeMap collectVariables(VariableTypeMap varMap);
-	
+
+	/**
+	 * Collapses nested formulas of the same type and remove duplicates at the top level.
+	 * Does not change the context object.
+	 * Order is not guarenteed.
+	 * Ex: (A ^ B) ^ !!C ^ (D v E) becomes A ^ B ^ C ^ (D v E).
+	 *
+	 * Note that most formulas will return an object of the same type (eg a Conjunction will
+	 * always return a Conjunction).
+	 * However, it is possible for some types (like Negation) the return a different type.
+	 *
+	 * @return the flattened Formula.
+	 */
+	public Formula flatten();
 }

@@ -1,3 +1,20 @@
+/*
+ * This file is part of the PSL software.
+ * Copyright 2011-2015 University of Maryland
+ * Copyright 2013-2018 The Regents of the University of California
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.linqs.psl.database.rdbms;
 
 import static org.junit.Assert.assertEquals;
@@ -10,14 +27,14 @@ import org.junit.Test;
 import org.linqs.psl.TestModelFactory;
 import org.linqs.psl.application.inference.MPEInference;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.database.ReadOnlyDatabase;
+import org.linqs.psl.database.ReadableDatabase;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.formula.Implication;
 import org.linqs.psl.model.function.ExternalFunction;
 import org.linqs.psl.model.predicate.Predicate;
-import org.linqs.psl.model.predicate.PredicateFactory;
+import org.linqs.psl.model.predicate.ExternalFunctionalPredicate;
 import org.linqs.psl.model.predicate.SpecialPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
@@ -37,9 +54,8 @@ public class Formula2SQLTest {
 	public void testUnaryExternalFunction() {
 		TestModelFactory.ModelInformation info = TestModelFactory.getModel();
 
-		PredicateFactory predicateFactory = PredicateFactory.getFactory();
 		SpyFunction function = new SpyFunction(1);
-		Predicate functionPredicate = predicateFactory.createFunctionalPredicate("UnaryFunction", function);
+		Predicate functionPredicate = ExternalFunctionalPredicate.get("UnaryFunction", function);
 
 		// Add a rule using the new function.
 		// 10: Person(A) & Person(B) & UnaryFunction(A) & UnaryFunction(B) & (A - B) -> Friends(A, B) ^2
@@ -62,22 +78,26 @@ public class Formula2SQLTest {
 		MPEInference mpe = null;
 
 		try {
-			mpe = new MPEInference(info.model, inferDB, info.config);
+			mpe = new MPEInference(info.model, inferDB);
 		} catch (Exception ex) {
 			System.out.println(ex);
 			ex.printStackTrace();
 			fail("Exception thrown during MPE constructor.");
 		}
 
-		mpe.mpeInference();
+		mpe.inference();
 		mpe.close();
 		inferDB.close();
 
-		// There are 5 people, so we expect the function to be called on the forward and reverse crossproducts.
-		// (5 * 5) * 2
-		// TODO(eriq): It looks like there are some inefficiencies in the grounding process that cause
-		// the function to get called more than the minimum number of time.
-		assertTrue(function.getCallCount() >= 50);
+		// There are 5 people, and the rule chooses 2.
+		// So, we expect 20 ground rules.
+		// But the DB caches the atoms, so we only expect one call per person.
+		// However because of the parallel nature of ground rule instantiation,
+		// it is possible for a function to be called before the previous call is
+		// put into the cache.
+		// Because these methods are supposed to be deterministic, we will not worry about
+		// slight over calls.
+		assertTrue("Got " + function.getCallCount() + ", expected 5 <= x <= 10", 5 <= function.getCallCount() && function.getCallCount() <= 10);
 	}
 
 	@Test
@@ -87,9 +107,8 @@ public class Formula2SQLTest {
 	public void testTernaryExternalFunction() {
 		TestModelFactory.ModelInformation info = TestModelFactory.getModel();
 
-		PredicateFactory predicateFactory = PredicateFactory.getFactory();
 		SpyFunction function = new SpyFunction(3);
-		Predicate functionPredicate = predicateFactory.createFunctionalPredicate("TernaryFunction", function);
+		Predicate functionPredicate = ExternalFunctionalPredicate.get("TernaryFunction", function);
 
 		// Add a rule using the new function.
 		// 10: Person(A) & Person(B) & TernaryFunction(A, B, A) & (A - B) -> Friends(A, B) ^2
@@ -112,19 +131,25 @@ public class Formula2SQLTest {
 		MPEInference mpe = null;
 
 		try {
-			mpe = new MPEInference(info.model, inferDB, info.config);
+			mpe = new MPEInference(info.model, inferDB);
 		} catch (Exception ex) {
 			System.out.println(ex);
 			ex.printStackTrace();
 			fail("Exception thrown during MPE constructor.");
 		}
 
-		mpe.mpeInference();
+		mpe.inference();
 		mpe.close();
 		inferDB.close();
 
-		// TODO(eriq): Experimentally, this is 40. Is this correct?
-		assertEquals(40, function.getCallCount());
+		// External functions are only called when instantiating ground rules.
+		// So, we should only get one call for each ground rule.
+		// However because of the parallel nature of ground rule instantiation,
+		// it is possible for a function to be called before the previous call is
+		// put into the cache.
+		// Because these methods are supposed to be deterministic, we will not worry about
+		// slight over calls.
+		assertTrue("Got " + function.getCallCount() + ", expected 20 <= x <= 40", 20 <= function.getCallCount() && function.getCallCount() <= 40);
 	}
 
 	/**
@@ -148,13 +173,13 @@ public class Formula2SQLTest {
 		public ConstantType[] getArgumentTypes() {
 			ConstantType[] args = new ConstantType[arity];
 			for (int i = 0; i < arity; i++) {
-				args[i] = ConstantType.UniqueID;
+				args[i] = ConstantType.UniqueStringID;
 			}
 
 			return args;
 		}
 
-		public double getValue(ReadOnlyDatabase db, Constant... args) {
+		public synchronized double getValue(ReadableDatabase db, Constant... args) {
 			callCount++;
 			return 1;
 		}

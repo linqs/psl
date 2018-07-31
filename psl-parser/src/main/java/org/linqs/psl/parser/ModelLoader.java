@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +17,6 @@
  */
 package org.linqs.psl.parser;
 
-import org.antlr.v4.runtime.ANTLRInputStream;
-import org.antlr.v4.runtime.BailErrorStrategy;
-import org.antlr.v4.runtime.BaseErrorListener;
-import org.antlr.v4.runtime.CommonToken;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.RecognitionException;
-import org.antlr.v4.runtime.Recognizer;
-import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.Atom;
@@ -35,7 +27,6 @@ import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.formula.Implication;
 import org.linqs.psl.model.formula.Negation;
 import org.linqs.psl.model.predicate.Predicate;
-import org.linqs.psl.model.predicate.PredicateFactory;
 import org.linqs.psl.model.predicate.SpecialPredicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.arithmetic.UnweightedArithmeticRule;
@@ -56,8 +47,9 @@ import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Multiply;
 import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Subtract;
 import org.linqs.psl.model.rule.logical.UnweightedLogicalRule;
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
+import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Term;
-import org.linqs.psl.model.term.UniqueID;
+import org.linqs.psl.model.term.StringAttribute;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.parser.antlr.PSLBaseVisitor;
 import org.linqs.psl.parser.antlr.PSLLexer;
@@ -85,8 +77,8 @@ import org.linqs.psl.parser.antlr.PSLParser.LogicalConjunctiveValueContext;
 import org.linqs.psl.parser.antlr.PSLParser.LogicalDisjunctiveExpressionContext;
 import org.linqs.psl.parser.antlr.PSLParser.LogicalDisjunctiveValueContext;
 import org.linqs.psl.parser.antlr.PSLParser.LogicalImplicationExpressionContext;
+import org.linqs.psl.parser.antlr.PSLParser.LogicalNegationValueContext;
 import org.linqs.psl.parser.antlr.PSLParser.LogicalRuleExpressionContext;
-import org.linqs.psl.parser.antlr.PSLParser.LogicalValueContext;
 import org.linqs.psl.parser.antlr.PSLParser.NumberContext;
 import org.linqs.psl.parser.antlr.PSLParser.PredicateContext;
 import org.linqs.psl.parser.antlr.PSLParser.ProgramContext;
@@ -103,6 +95,16 @@ import org.linqs.psl.parser.antlr.PSLParser.WeightExpressionContext;
 import org.linqs.psl.parser.antlr.PSLParser.WeightedArithmeticRuleContext;
 import org.linqs.psl.parser.antlr.PSLParser.WeightedLogicalRuleContext;
 import org.linqs.psl.reasoner.function.FunctionComparator;
+
+import org.antlr.v4.runtime.ANTLRInputStream;
+import org.antlr.v4.runtime.BailErrorStrategy;
+import org.antlr.v4.runtime.BaseErrorListener;
+import org.antlr.v4.runtime.CommonToken;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.RecognitionException;
+import org.antlr.v4.runtime.Recognizer;
+import org.antlr.v4.runtime.misc.Interval;
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 
 import java.io.Reader;
 import java.io.IOException;
@@ -335,7 +337,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	@Override
 	public Formula visitLogicalDisjunctiveValue(LogicalDisjunctiveValueContext ctx) {
 		if (ctx.getChildCount() == 1) {
-			return visitLogicalValue(ctx.logicalValue());
+			return visitLogicalNegationValue(ctx.logicalNegationValue());
 		}
 
 		// Parens
@@ -345,7 +347,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	@Override
 	public Formula visitLogicalConjunctiveValue(LogicalConjunctiveValueContext ctx) {
 		if (ctx.getChildCount() == 1) {
-			return visitLogicalValue(ctx.logicalValue());
+			return visitLogicalNegationValue(ctx.logicalNegationValue());
 		}
 
 		// Parens
@@ -353,14 +355,19 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	}
 
 	@Override
-	public Formula visitLogicalValue(LogicalValueContext ctx) {
-		Atom atom = visitAtom(ctx.atom());
-
-		if (ctx.not() != null) {
-			return new Negation(atom);
+	public Formula visitLogicalNegationValue(LogicalNegationValueContext ctx) {
+		// Bare atom
+		if (ctx.getChildCount() == 1) {
+			return visitAtom(ctx.atom());
 		}
 
-		return atom;
+		// Negation
+		if (ctx.getChildCount() == 2) {
+			return new Negation(visitLogicalNegationValue(ctx.logicalNegationValue()));
+		}
+
+		// Parens
+		return visitLogicalNegationValue(ctx.logicalNegationValue());
 	}
 
 	@Override
@@ -552,22 +559,40 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	}
 
 	@Override
-	public SummationAtom visitSummationAtom(SummationAtomContext ctx) {
-		Predicate p = visitPredicate(ctx.predicate());
+	public SummationAtomOrAtom visitSummationAtom(SummationAtomContext ctx) {
+		Predicate predicate = visitPredicate(ctx.predicate());
+
+		// We have strange numbering because of the predicate, parens, commas.
 		SummationVariableOrTerm[] args = new SummationVariableOrTerm[ctx.getChildCount() / 2 - 1];
 		for (int i = 1; i < ctx.getChildCount() / 2; i++) {
-			if (ctx.getChild(i*2).getPayload() instanceof SummationVariableContext) {
-				args[i - 1] = visitSummationVariable((SummationVariableContext) ctx.getChild(i*2).getPayload());
-			}
-			else if (ctx.getChild(i*2).getPayload() instanceof TermContext) {
-				args[i - 1] = (Term) visit(ctx.getChild(i*2));
-			}
-			else {
+			if (ctx.getChild(i * 2).getPayload() instanceof SummationVariableContext) {
+				args[i - 1] = visitSummationVariable((SummationVariableContext) ctx.getChild(i * 2).getPayload());
+			} else if (ctx.getChild(i * 2).getPayload() instanceof TermContext) {
+				args[i - 1] = (Term) visit(ctx.getChild(i * 2));
+			} else {
 				throw new IllegalStateException();
 			}
 		}
 
-		return new SummationAtom(p, args);
+		// If we have any summation variables, then we have a SummationAtom, otherwise we have a QueryAtom.
+		boolean isSummation = false;
+		for (SummationVariableOrTerm arg : args) {
+			if (arg instanceof SummationVariable) {
+				isSummation = true;
+				break;
+			}
+		}
+
+		if (isSummation) {
+			return new SummationAtom(predicate, args);
+		} else {
+			Term[] termArgs = new Term[args.length];
+			for (int i = 0; i < termArgs.length; i++) {
+				termArgs[i] = (Term)args[i];
+			}
+
+			return new QueryAtom(predicate, termArgs);
+		}
 	}
 
 	@Override
@@ -694,8 +719,8 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	@Override
 	public Formula visitBooleanValue(BooleanValueContext ctx) {
 		// A logical value.
-		if (ctx.logicalValue() != null) {
-			return visitLogicalValue(ctx.logicalValue());
+		if (ctx.logicalNegationValue() != null) {
+			return visitLogicalNegationValue(ctx.logicalNegationValue());
 		}
 
 		// Bool expression with parens.
@@ -735,34 +760,34 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 
 	@Override
 	public Double visitWeightExpression(WeightExpressionContext ctx) {
-		return Double.parseDouble(ctx.NONNEGATIVE_NUMBER().getText());
+		return Double.parseDouble(ctx.number().getText());
 	}
 
 	@Override
 	public Atom visitAtom(AtomContext ctx) {
 		if (ctx.predicate() != null) {
-			Predicate p = visitPredicate(ctx.predicate());
+			Predicate predicate = visitPredicate(ctx.predicate());
 			Term[] args = new Term[ctx.term().size()];
 			for (int i = 0; i < args.length; i++) {
 				args[i] = (Term) visit(ctx.term(i));
 			}
-			return new QueryAtom(p, args);
+			return new QueryAtom(predicate, args);
 		}
 		else if (ctx.termOperator() != null) {
-			SpecialPredicate p;
+			SpecialPredicate predicate;
 			if (ctx.termOperator().notEqual() != null) {
-				p = SpecialPredicate.NotEqual;
+				predicate = SpecialPredicate.NotEqual;
 			}
 			else if (ctx.termOperator().termEqual() != null) {
-				p = SpecialPredicate.Equal;
+				predicate = SpecialPredicate.Equal;
 			}
 			else if (ctx.termOperator().nonSymmetric() != null) {
-				p = SpecialPredicate.NonSymmetric;
+				predicate = SpecialPredicate.NonSymmetric;
 			}
 			else {
 				throw new IllegalStateException();
 			}
-			return new QueryAtom(p, (Term) visit(ctx.term(0)), (Term) visit(ctx.term(1)));
+			return new QueryAtom(predicate, (Term) visit(ctx.term(0)), (Term) visit(ctx.term(1)));
 		}
 		else {
 			throw new IllegalStateException();
@@ -771,12 +796,10 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 
 	@Override
 	public Predicate visitPredicate(PredicateContext ctx) {
-		PredicateFactory pf = PredicateFactory.getFactory();
-		Predicate p = pf.getPredicate(ctx.IDENTIFIER().getText());
-		if (p != null) {
-			return p;
-		}
-		else {
+		Predicate predicate = Predicate.get(ctx.IDENTIFIER().getText());
+		if (predicate != null) {
+			return predicate;
+		} else {
 			throw new IllegalStateException("Undefined predicate " + ctx.IDENTIFIER().getText());
 		}
 	}
@@ -787,8 +810,33 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	}
 
 	@Override
-	public UniqueID visitConstant(ConstantContext ctx) {
-		return data.getUniqueID(ctx.IDENTIFIER().getText());
+	public Constant visitConstant(ConstantContext ctx) {
+		// We need to jump through these hoops to preserve whitespace.
+		int contextStart = ctx.start.getStartIndex();
+		int contextEnd = ctx.stop.getStopIndex();
+		Interval interval = new Interval(contextStart, contextEnd);
+		String text = ctx.start.getInputStream().getText(interval);
+
+		// Strip the quotes (first and last characters).
+		text = text.substring(1, text.length() - 1);
+		text = replaceLiterals(text);
+
+		return new StringAttribute(text);
+	}
+
+	private String replaceLiterals(String text) {
+		if (!text.contains("\\")) {
+			return text;
+		}
+
+		text = text.replace("\\'", "'");
+		text = text.replace("\\\"", "\"");
+		text = text.replace("\\t", "\t");
+		text = text.replace("\\n", "\n");
+		text = text.replace("\\r", "\r");
+		text = text.replace("\\\\", "\\");
+
+		return text;
 	}
 
 	@Override

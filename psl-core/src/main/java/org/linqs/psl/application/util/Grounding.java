@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,47 +18,34 @@
 package org.linqs.psl.application.util;
 
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
+import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.model.Model;
-import org.linqs.psl.model.atom.AtomManager;
 import org.linqs.psl.model.rule.Rule;
+
+import java.util.List;
 
 /**
  * Static utilities for common {@link Model}-grounding tasks.
  */
 public class Grounding {
+	/**
+	 * Calls {@link Rule#groundAll(AtomManager, GroundRuleStore)} on
+	 * each Rule in a Model.
+	 *
+	 * @param model the Model with the Rules to ground
+	 * @param atomManager AtomManager to use for grounding
+	 * @param groundRuleStore GroundRuleStore to use for grounding
+	 */
+	public static int groundAll(Model model, AtomManager atomManager, GroundRuleStore groundRuleStore) {
+		return groundAll(model.getRules(), atomManager, groundRuleStore);
+	}
 
-	private final static com.google.common.base.Predicate<Rule> all = new com.google.common.base.Predicate<Rule>(){
-		@Override
-		public boolean apply(Rule el) {	return true; }
-	};
-	
-	/**
-	 * Calls {@link Rule#groundAll(AtomManager, GroundRuleStore)} on
-	 * each Kernel in a Model.
-	 * 
-	 * @param m  the Model with the Kernels to ground
-	 * @param atomManager  AtomManager to use for grounding
-	 * @param gks  GroundKernelStore to use for grounding
-	 */
-	public static void groundAll(Model m, AtomManager atomManager, GroundRuleStore gks) {
-		groundAll(m,atomManager, gks, all);
-	}
-	
-	/**
-	 * Calls {@link Rule#groundAll(AtomManager, GroundRuleStore)} on
-	 * each Kernel in a Model which passes a filter.
-	 * 
-	 * @param m  the Model with the Kernels to ground
-	 * @param atomManager  AtomManager to use for grounding
-	 * @param gks  GroundKernelStore to use for grounding
-	 * @param filter  filter for Kernels to ground
-	 */
-	public static void groundAll(Model m, AtomManager atomManager, GroundRuleStore gks,
-			com.google.common.base.Predicate<Rule> filter) {
-		for (Rule k : m.getRules()) {
-			if (filter.apply(k))
-				k.groundAll(atomManager, gks);
+	public static int groundAll(List<Rule> rules, AtomManager atomManager, GroundRuleStore groundRuleStore) {
+		int groundCount = 0;
+		for (Rule rule : rules) {
+			groundCount += rule.groundAll(atomManager, groundRuleStore);
 		}
+
+		return groundCount;
 	}
-	
 }

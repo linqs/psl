@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,10 +32,10 @@ import org.linqs.psl.util.MathUtils;
  *  - when getting the actual value (using actual values)
  */
 public class Divide extends Coefficient {
-	
+
 	protected final Coefficient c1;
 	protected final Coefficient c2;
-	
+
 	public Divide(Coefficient c1, Coefficient c2) {
 		this.c1 = c1;
 		this.c2 = c2;
@@ -45,9 +45,9 @@ public class Divide extends Coefficient {
 			throw new ArithmeticException("Coefficient divides by zero");
 		}
 	}
-	
+
 	@Override
-	public double getValue(Map<SummationVariable, Set<Constant>> subs) {
+	public double getValue(Map<SummationVariable, Integer> subs) {
 		double lhs = c1.getValue(subs);
 		double rhs = c2.getValue(subs);
 
@@ -58,7 +58,7 @@ public class Divide extends Coefficient {
 
 		return lhs / rhs;
 	}
-	
+
 	@Override
 	public String toString() {
 		return "(" + c1.toString() + " / " + c2.toString() + ")";

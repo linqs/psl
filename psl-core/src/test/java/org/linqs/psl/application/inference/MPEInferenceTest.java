@@ -1,3 +1,20 @@
+/*
+ * This file is part of the PSL software.
+ * Copyright 2011-2015 University of Maryland
+ * Copyright 2013-2018 The Regents of the University of California
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.linqs.psl.application.inference;
 
 import static org.junit.Assert.assertEquals;
@@ -39,17 +56,9 @@ public class MPEInferenceTest {
 
 		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
 		Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-		MPEInference mpe = null;
+		MPEInference mpe = new MPEInference(info.model, inferDB);
 
-		try {
-			mpe = new MPEInference(info.model, inferDB, info.config);
-		} catch (Exception ex) {
-			System.out.println(ex);
-			ex.printStackTrace();
-			fail("Exception thrown during MPE constructor.");
-		}
-
-		mpe.mpeInference();
+		mpe.inference();
 		mpe.close();
 		inferDB.close();
 	}
@@ -83,17 +92,9 @@ public class MPEInferenceTest {
 		toClose.add(info.predicates.get("Friends"));
 
 		Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-		MPEInference mpe = null;
+		MPEInference mpe = new MPEInference(info.model, inferDB);
 
-		try {
-			mpe = new MPEInference(info.model, inferDB, info.config);
-		} catch (Exception ex) {
-			System.out.println(ex);
-			ex.printStackTrace();
-			fail("Exception thrown during MPE constructor.");
-		}
-
-		mpe.mpeInference();
+		mpe.inference();
 		mpe.close();
 		inferDB.close();
 	}
@@ -133,17 +134,40 @@ public class MPEInferenceTest {
 		toClose.add(info.predicates.get("Nice"));
 
 		Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-		MPEInference mpe = null;
+		MPEInference mpe = new MPEInference(info.model, inferDB);
 
-		try {
-			mpe = new MPEInference(info.model, inferDB, info.config);
-		} catch (Exception ex) {
-			System.out.println(ex);
-			ex.printStackTrace();
-			fail("Exception thrown during MPE constructor.");
-		}
+		mpe.inference();
+		mpe.close();
+		inferDB.close();
+	}
 
-		mpe.mpeInference();
+	/**
+	 * Make sure that we remove terms that cause a tautology from logical rules.
+	 */
+	@Test
+	public void testLogicalTautologyTrivial() {
+		TestModelFactory.ModelInformation info = TestModelFactory.getModel();
+
+		// Friends(A, B) -> Friends(A, B)
+		info.model.addRule(new WeightedLogicalRule(
+			new Implication(
+				new QueryAtom(info.predicates.get("Friends"), new Variable("A"), new Variable("B")),
+				new QueryAtom(info.predicates.get("Friends"), new Variable("A"), new Variable("B"))
+			),
+			1.0,
+			true
+		));
+
+		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
+		Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
+		MPEInference mpe = new MPEInference(info.model, inferDB);
+
+		mpe.inference();
+
+		// There are 20 trivial rules.
+		assertEquals(72, mpe.getGroundRuleStore().size());
+		assertEquals(52, mpe.getTermStore().size());
+
 		mpe.close();
 		inferDB.close();
 	}

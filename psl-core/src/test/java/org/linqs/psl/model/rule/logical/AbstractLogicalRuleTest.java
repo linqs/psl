@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import org.linqs.psl.PSLTest;
-import org.linqs.psl.config.ConfigBundle;
-import org.linqs.psl.config.EmptyBundle;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
@@ -32,7 +30,6 @@ import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Implication;
 import org.linqs.psl.model.formula.Negation;
-import org.linqs.psl.model.predicate.PredicateFactory;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.Variable;
@@ -48,7 +45,6 @@ import java.util.Set;
 public class AbstractLogicalRuleTest {
 	private DataStore dataStore;
 	private Database database;
-	private ConfigBundle config;
 
 	private StandardPredicate singleClosed;
 	private StandardPredicate doubleClosed;
@@ -56,18 +52,15 @@ public class AbstractLogicalRuleTest {
 
 	@Before
 	public void setup() {
-		config = new EmptyBundle();
-		dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Memory, this.getClass().getName(), true), config);
+		dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Memory, this.getClass().getName(), true));
 
-		PredicateFactory factory = PredicateFactory.getFactory();
-
-		singleClosed = factory.createStandardPredicate("SingleClosed", ConstantType.UniqueID);
+		singleClosed = StandardPredicate.get("SingleClosed", ConstantType.UniqueStringID);
 		dataStore.registerPredicate(singleClosed);
 
-		doubleClosed = factory.createStandardPredicate("DoubleClosed", ConstantType.UniqueID, ConstantType.UniqueID);
+		doubleClosed = StandardPredicate.get("DoubleClosed", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
 		dataStore.registerPredicate(doubleClosed);
 
-		singleOpened = factory.createStandardPredicate("SingleOpened", ConstantType.UniqueID);
+		singleOpened = StandardPredicate.get("SingleOpened", ConstantType.UniqueStringID);
 		dataStore.registerPredicate(singleOpened);
 
 		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();

@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,18 +21,17 @@ package org.linqs.psl.model.term;
  * An {@link Attribute} that encapsulates an Integer.
  */
 public class IntegerAttribute implements Attribute {
-
 	private final Integer value;
-	
+
 	/**
 	 * Constructs an Integer attribute from an Integer
-	 * 
+	 *
 	 * @param value  Integer to encapsulate
 	 */
 	public IntegerAttribute(Integer value) {
 		this.value = value;
 	}
-	
+
 	/**
 	 * @return the encapsulated Integer as a String in single quotes
 	 */
@@ -40,34 +39,44 @@ public class IntegerAttribute implements Attribute {
 	public String toString() {
 		return "'" + value + "'";
 	}
-	
+
 	@Override
 	public Integer getValue() {
 		return value;
 	}
-	
+
 	@Override
 	public int hashCode() {
 		return value.hashCode();
 	}
-	
+
 	/**
 	 * An IntegerAttribute is equal to another Object if that Object is an IntegerAttribute
 	 * and their values are equal.
 	 */
 	@Override
 	public boolean equals(Object oth) {
-		if (oth==this) return true;
-		if (oth==null || !(oth instanceof IntegerAttribute)) return false;
-		return value.equals(((IntegerAttribute)oth).getValue());  
+		if (oth == this) {
+			return true;
+		}
+
+		if (oth == null || !(oth instanceof IntegerAttribute)) {
+			return false;
+		}
+
+		return value.equals(((IntegerAttribute)oth).getValue());
 	}
 
 	@Override
-	public int compareTo(Constant o) {
-		if (o instanceof IntegerAttribute)
-			return value - ((IntegerAttribute) o).value;
-		else
-			return this.getClass().getSimpleName().compareTo(o.getClass().getSimpleName());
-	}
+	public int compareTo(Term other) {
+		if (other == null) {
+			return -1;
+		}
 
+		if (!(other instanceof IntegerAttribute)) {
+			return this.getClass().getName().compareTo(other.getClass().getName());
+		}
+
+		return value.compareTo(((IntegerAttribute)other).value);
+	}
 }

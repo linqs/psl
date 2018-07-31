@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,46 +17,82 @@
  */
 package org.linqs.psl.database.rdbms.driver;
 
-import java.sql.Connection;
+import org.linqs.psl.database.Partition;
+import org.linqs.psl.database.rdbms.PredicateInfo;
+import org.linqs.psl.model.term.ConstantType;
 
+import com.healthmarketscience.sqlbuilder.CreateTableQuery;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+
+/**
+ * An interface to a specific RDBMS backend.
+ * All connections from drivers should be from thread-safe connection pools.
+ */
 public interface DatabaseDriver {
-	
 	/**
-	 * Returns a connection to the database. Database drivers are expected to
-	 * fully connect at instantiation (i.e. in the constructor).
+	 * Close out any outstanding connections and cleanup.
+	 */
+	public void close();
+
+	/**
+	 * Returns a connection to the database.
+	 * Database drivers are expected to fully connect at instantiation (i.e. in the constructor).
+	 * Implementation are expected to use connection pools.
+	 * The connections retutned from this methods should be safe to close() without significant performance impact.
+	 *
 	 * @return the connection to the database, as specified in the DatabaseDriver constructor
 	 */
 	public Connection getConnection();
 
-  /**
-   * Returns whether the underline database supports external java functions. 
-   * Distinguish from H2 Java External Function Support, which is very special.
-   * @return true if support H2 in memory java method, false if not support
-   */
-  public boolean isSupportExternalFunction();
+	/**
+	 * Returns whether the underline database supports bulk copying operations.
+	 */
+	public boolean supportsBulkCopy();
 
-  /**
-   * Template for hash index creation for different drivers.
-   * Hash index is useful for PSL shared literal joins. 
-   *
-   * JDBC has poor support for index creation DML. Often db schema is not dynamically generated, 
-   * but hand tuned by DBA. PSL is opposite, db schema is generated on the fly.
-   * Configuration bundle is not good place for put index creation queries due to its inflexibility.
-   */
-  public String createHashIndex(String index_name, String table_name, String column_name);
+	/**
+	 * Perform a bulk copy operation to load the file directly into the database.
+	 * May not be supported by all backends.
+	 */
+	public void bulkCopy(String path, String delimiter, boolean hasTruth,
+			PredicateInfo predicateInfo, Partition partition);
 
-  /**
-   * Primary key creation syntax is not friendly in JDBC. 
-   * The template method for each database driver to return the proper clause.
-   */
-  public String createPrimaryKey(String table_name, String columns);
+	/**
+	 * Get the type name for each argument type.
+	 */
+	public String getTypeName(ConstantType type);
 
-  /**
-   * String type is not friendly to index. Different database retreat it 
-   * differently. For example in a hash index, often a prefix of the string
-   * is useful enough for indexing purpose. A full string index, not only 
-   * reduces query time, but also increases inserting time. 
-   * H2 has no complain about string, but mysql does have a limit of string prefix.
-   */
-  public String castStringWithModifiersForIndexing(String column_name);
+	/**
+	 * Get the SQL definition for a primary, surrogate (auto-increment) key
+	 * for use in a CREATE TABLE statement.
+	 */
+	public String getSurrogateKeyColumnDefinition(String columnName);
+
+	/**
+	 * Get the type name for a double type.
+	 */
+	public String getDoubleTypeName();
+
+	/**
+	 * Get the SQL for an upsert (merge) on the specified table and columns.
+	 * An "upsert" updates existing records and inserts where there is no record.
+	 * Most RDBMSs support some for of upsert, but the syntax is inconsistent.
+	 * The parameters for the statement should the the specified columns in order.
+	 * Some databases (like H2) require knowing the key columns we need to use.
+	 */
+	public String getUpsert(String tableName, String[] columns, String[] keyColumns);
+
+	/**
+	 * Gives the driver a chance to perform any final
+	 * manipulations to the CREATE TABLE statement.
+	 */
+	public String finalizeCreateTable(CreateTableQuery createTable);
+
+	/**
+	 * Get a string aggregating expression (one that
+	 * would appear in the SELECT clause of a grouping query.
+	 * Postgres uses STRING_AGG and H2 use GROUP_CONCAT.
+	 */
+	public String getStringAggregate(String columnName, String delimiter, boolean distinct);
 }

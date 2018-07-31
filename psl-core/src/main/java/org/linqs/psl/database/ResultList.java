@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,40 +32,40 @@ public interface ResultList {
 	 * @return the number of sets of substitutions in the list
 	 */
 	public int size();
-	
+
 	/**
 	 * @return the number of distinct {@link Variable Variables} replaced in
-	 *             each substitution
+	 *				 each substitution
 	 */
 	public int getArity();
-	
+
 	/**
 	 * Returns a substitution for a single {@link Variable}
-	 * 
+	 *
 	 * @param resultNo  the index of the substitution (from 0 to size-1)
 	 * @param var  the Variable that is replaced
 	 * @return  the substituted GroundTerm
 	 * @throws IllegalArgumentException  if resultNo is out of range or var is invalid
 	 */
 	public Constant get(int resultNo, Variable var);
-	
+
 	/**
 	 * Returns a substitution for all {@link Variable Variables}.
 	 * <p>
 	 * GroundTerms are ordered according to the Variables' first appearances in
 	 * a depth-first, left-to-right traversal of the Formula in the DatabaseQuery
-	 * that generated this ResultList. 
-	 * 
+	 * that generated this ResultList.
+	 *
 	 * @param resultNo  the index of the substitution (from 0 to size-1)
 	 * @return  the substituted GroundTerms
 	 * @throws IllegalArgumentException  if resultNo is out of range
 	 */
 	public Constant[] get(int resultNo);
-	
+
 	/**
-	 * Returns a Map from {@link Variable Variables} to the indices of 
+	 * Returns a Map from {@link Variable Variables} to the indices of
 	 * substitutions that are returned by {@link #get(int)}.
-	 * 
+	 *
 	 * @return map of Variables to indices
 	 */
 	public Map<Variable, Integer> getVariableMap();

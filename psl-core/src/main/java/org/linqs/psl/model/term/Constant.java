@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,16 +20,5 @@ package org.linqs.psl.model.term;
 /**
  * An element in the universe over which a PSL program is grounded.
  */
-public interface Constant extends Term, Comparable<Constant> {
-	
-	/**
-	 * Inherited from {@link Comparable#compareTo(Object)}.
-	 * <p>
-	 * Implementations should compare to Constants without a parent implementation
-	 * in common using
-	 * <p>
-	 * this.getClass().getSimpleName().compareTo(o.getClass().getSimpleName()); 
-	 */
-	@Override
-	public int compareTo(Constant o);
+public interface Constant extends Term {
 }

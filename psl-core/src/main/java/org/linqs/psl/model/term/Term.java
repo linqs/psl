@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,29 +22,12 @@ import org.linqs.psl.model.rule.arithmetic.expression.SummationVariableOrTerm;
 
 /**
  * An argument to a {@link Predicate}.
- * 
- * @author Matthias Broecheler
+ * All terms are immutable.
  */
-public interface Term extends SummationVariableOrTerm {
-	
-	/**
-	 * @return a human-friendly String identifier
-	 */
+public interface Term extends Comparable<Term>, SummationVariableOrTerm {
 	public String toString();
-	
-	/**
-	 * @return hash code
-	 */
-	public int hashCode();
-	
-	/**
-	 * Checks equality with an Object.
-	 * <p>
-	 * Equality semantics are implementation specific.
-	 * 
-	 * @param oth  Object to compare to
-	 * @return TRUE if equal, FALSE otherwise
-	 */
-	public boolean equals(Object oth);
 
+	public int hashCode();
+
+	public boolean equals(Object other);
 }

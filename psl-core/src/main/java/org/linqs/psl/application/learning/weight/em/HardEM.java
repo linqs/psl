@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,157 +17,68 @@
  */
 package org.linqs.psl.application.learning.weight.em;
 
-import java.util.Arrays;
-
-import org.linqs.psl.application.learning.weight.maxlikelihood.VotedPerceptron;
-import org.linqs.psl.config.ConfigBundle;
-import org.linqs.psl.config.ConfigManager;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
-import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.model.rule.WeightedGroundRule;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.model.rule.Rule;
+
+import java.util.List;
 
 /**
  * EM algorithm which fits a point distribution to the single most probable
- * assignment of truth values to the latent variables during the E-step. 
- * 
- * @author Stephen Bach <bach@cs.umd.edu>
+ * assignment of truth values to the latent variables during the E-step.
  */
 public class HardEM extends ExpectationMaximization  {
-
-	private static final Logger log = LoggerFactory.getLogger(HardEM.class);
-
 	/**
 	 * Prefix of property keys used by this class.
-	 * 
-	 * @see ConfigManager
 	 */
 	public static final String CONFIG_PREFIX = "hardem";
 
-	
 	/**
 	 * Key for Boolean property that indicates whether to use AdaGrad subgradient
 	 * scaling, the adaptive subgradient algorithm of
 	 * John Duchi, Elad Hazan, Yoram Singer (JMLR 2010).
-	 * 
+	 *
 	 * If TRUE, will override other step scheduling options (but not scaling).
 	 */
 	public static final String ADAGRAD_KEY = CONFIG_PREFIX + ".adagrad";
-	/** Default value for ADAGRAD_KEY */
 	public static final boolean ADAGRAD_DEFAULT = false;
+
+	public static final double MIN_SCALING_FACTOR = 1e-8;
 
 	private final boolean useAdaGrad;
 
-	double[] gradientSum;
-	double[] fullObservedIncompatibility, fullExpectedIncompatibility;
-
-	public HardEM(Model model, Database rvDB, Database observedDB,
-			ConfigBundle config) {
-		super(model, rvDB, observedDB, config);
-		useAdaGrad = config.getBoolean(ADAGRAD_KEY, ADAGRAD_DEFAULT);
+	public HardEM(Model model, Database rvDB, Database observedDB) {
+		this(model.getRules(), rvDB, observedDB);
 	}
 
-	/**
-	 * Minimizes the KL divergence by setting the latent variables to their
-	 * most probable state conditioned on the evidence and the labeled
-	 * random variables.
-	 * <p>
-	 * This method assumes that the inferred truth values will be used
-	 * immediately by {@link VotedPerceptron#computeObservedIncomp()}.
-	 */
-	@Override
-	protected void minimizeKLDivergence() {
-		inferLatentVariables();
+	public HardEM(List<Rule> rules, Database rvDB, Database observedDB) {
+		super(rules, rvDB, observedDB);
+		useAdaGrad = Config.getBoolean(ADAGRAD_KEY, ADAGRAD_DEFAULT);
 	}
 
-	@Override
-	protected double[] computeExpectedIncomp() {
-		fullExpectedIncompatibility = new double[kernels.size() + immutableKernels.size()];
-
-		/* Computes the MPE state */
-		reasoner.optimize();
-
-		/* Computes incompatibility */
-		for (int i = 0; i < kernels.size(); i++) {
-			for (GroundRule gk : reasoner.getGroundKernels(kernels.get(i))) {
-				fullExpectedIncompatibility[i] += ((WeightedGroundRule) gk).getIncompatibility();
-			}
-		}
-		for (int i = 0; i < immutableKernels.size(); i++) {
-			for (GroundRule gk : reasoner.getGroundKernels(immutableKernels.get(i))) {
-				fullExpectedIncompatibility[kernels.size() + i] += ((WeightedGroundRule) gk).getIncompatibility();
-			}
-		}
-
-		return Arrays.copyOf(fullExpectedIncompatibility, kernels.size());
-	}
-
-	@Override
-	protected double[] computeObservedIncomp() {
-		numGroundings = new double[kernels.size()];
-		fullObservedIncompatibility = new double[kernels.size() + immutableKernels.size()];
-		setLabeledRandomVariables();
-
-		/* Computes the observed incompatibilities and numbers of groundings */
-		for (int i = 0; i < kernels.size(); i++) {
-			for (GroundRule gk : reasoner.getGroundKernels(kernels.get(i))) {
-				fullObservedIncompatibility[i] += ((WeightedGroundRule) gk).getIncompatibility();
-				numGroundings[i]++;
-			}
-		}
-		for (int i = 0; i < immutableKernels.size(); i++) {
-			for (GroundRule gk : reasoner.getGroundKernels(immutableKernels.get(i))) {
-				fullObservedIncompatibility[kernels.size() + i] += ((WeightedGroundRule) gk).getIncompatibility();
-			}
-		}
-
-		return Arrays.copyOf(fullObservedIncompatibility, kernels.size());
-	}
-
-	@Override
-	protected double computeLoss() {
-		double loss = 0.0;
-		for (int i = 0; i < kernels.size(); i++)
-			loss += kernels.get(i).getWeight().getWeight() * (fullObservedIncompatibility[i] - fullExpectedIncompatibility[i]);
-		for (int i = 0; i < immutableKernels.size(); i++)
-			loss += immutableKernels.get(i).getWeight().getWeight() * (fullObservedIncompatibility[kernels.size() + i] - fullExpectedIncompatibility[kernels.size() + i]);
-		return loss;
-	}
-
-	@Override
-	protected void doLearn() {
-		gradientSum = new double[kernels.size()];
-
-		if (augmentLoss)
-			addLossAugmentedKernels();
-		super.doLearn();
-		if (augmentLoss)
-			removeLossAugmentedKernels();
-	}
-	
 	@Override
 	protected double[] computeScalingFactor() {
-		if (!useAdaGrad)
+		if (!useAdaGrad) {
 			return super.computeScalingFactor();
+		}
 
-		double [] scalingFactor = new double[kernels.size()];
-	
-		// otherwise accumulate gradient
-		for (int i = 0; i < numGroundings.length; i++) {
-			double weight = kernels.get(i).getWeight().getWeight();
-			double gradient =  (expectedIncompatibility[i] - truthIncompatibility[i]
+		double [] scalingFactor = new double[mutableRules.size()];
+
+		// Accumulate gradient
+		// TODO(eriq): The old math here was pretty suspect.
+		//  I cleaned what the code actually did, but I think that could have been bugged.
+		//  (Resulting in a a bugged cleaned version.)
+		for (int i = 0; i < mutableRules.size(); i++) {
+			double weight = mutableRules.get(i).getWeight();
+			double gradient = (
+					expectedIncompatibility[i] - observedIncompatibility[i]
 					- l2Regularization * weight
 					- l1Regularization);
-			gradientSum[i] += gradient * gradient;
-			scalingFactor[i] =  Math.sqrt(gradientSum[i]);
-			
-			// don't allow scaling factor to be too small
-			if (scalingFactor[i] < 1e-8)
-				scalingFactor[i] = 1e-8;
+
+			scalingFactor[i] = Math.max(MIN_SCALING_FACTOR, Math.abs(gradient));
 		}
+
 		return scalingFactor;
 	}
-
 }

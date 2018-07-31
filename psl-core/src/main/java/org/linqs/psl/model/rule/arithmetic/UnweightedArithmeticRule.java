@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,15 +17,16 @@
  */
 package org.linqs.psl.model.rule.arithmetic;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.rule.UnweightedRule;
 import org.linqs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
 import org.linqs.psl.model.rule.arithmetic.expression.SummationVariable;
 import org.linqs.psl.reasoner.function.FunctionComparator;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * A template for {@link UnweightedGroundArithmeticRule UnweightedGroundArithmeticRules}.
@@ -36,15 +37,29 @@ public class UnweightedArithmeticRule extends AbstractArithmeticRule
 		implements UnweightedRule {
 
 	public UnweightedArithmeticRule(ArithmeticRuleExpression expression) {
-		this(expression, new HashMap<SummationVariable, Formula>());
+		this(expression, expression.toString());
+	}
+
+	public UnweightedArithmeticRule(ArithmeticRuleExpression expression, String name) {
+		this(expression, new HashMap<SummationVariable, Formula>(), name);
 	}
 
 	public UnweightedArithmeticRule(ArithmeticRuleExpression expression, Map<SummationVariable, Formula> filterClauses) {
-		super(expression, filterClauses);
+		this(expression, filterClauses, expression.toString());
+	}
+
+	public UnweightedArithmeticRule(ArithmeticRuleExpression expression, Map<SummationVariable, Formula> filterClauses, String name) {
+		super(expression, filterClauses, name);
 	}
 
 	@Override
 	protected UnweightedGroundArithmeticRule makeGroundRule(double[] coeffs, GroundAtom[] atoms,
+			FunctionComparator comparator, double c) {
+		return new UnweightedGroundArithmeticRule(this, coeffs, atoms, comparator, c);
+	}
+
+	@Override
+	protected UnweightedGroundArithmeticRule makeGroundRule(List<Double> coeffs, List<GroundAtom> atoms,
 			FunctionComparator comparator, double c) {
 		return new UnweightedGroundArithmeticRule(this, coeffs, atoms, comparator, c);
 	}
@@ -65,4 +80,21 @@ public class UnweightedArithmeticRule extends AbstractArithmeticRule
 		return s.toString();
 	}
 
+	@Override
+	public boolean isWeighted() {
+		return false;
+	}
+
+	@Override
+	public boolean equals(Object other) {
+		if (this == other) {
+			return true;
+		}
+
+		if (other == null || this.getClass() != other.getClass()) {
+			return false;
+		}
+
+		return super.equals(other);
+	}
 }

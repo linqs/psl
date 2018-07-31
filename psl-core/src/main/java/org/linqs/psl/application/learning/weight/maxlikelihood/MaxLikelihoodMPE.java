@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,83 +17,28 @@
  */
 package org.linqs.psl.application.learning.weight.maxlikelihood;
 
-import java.util.Arrays;
-
-import org.linqs.psl.config.ConfigBundle;
+import org.linqs.psl.application.learning.weight.VotedPerceptron;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
-import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.model.rule.WeightedGroundRule;
+import org.linqs.psl.model.rule.Rule;
+
+import java.util.List;
 
 /**
  * Learns weights by optimizing the log likelihood of the data using
  * the voted perceptron algorithm.
- * <p>
+ *
  * The expected total incompatibility is estimated with the total incompatibility
  * in the MPE state.
- * 
- * @author Stephen Bach <bach@cs.umd.edu>
+ *
+ * The default implementations in VotedPerceptron are sufficient.
  */
 public class MaxLikelihoodMPE extends VotedPerceptron {
-	
-	double[] fullObservedIncompatibility, fullExpectedIncompatibility;
-
-	public MaxLikelihoodMPE(Model model, Database rvDB, Database observedDB, ConfigBundle config) {
-		super(model, rvDB, observedDB, config);
-	}
-	
-	@Override
-	protected double[] computeExpectedIncomp() {
-		fullExpectedIncompatibility = new double[kernels.size() + immutableKernels.size()];
-		
-		/* Computes the MPE state */
-		reasoner.optimize();
-		
-		/* Computes incompatibility */
-		for (int i = 0; i < kernels.size(); i++) {
-			for (GroundRule gk : reasoner.getGroundKernels(kernels.get(i))) {
-				fullExpectedIncompatibility[i] += ((WeightedGroundRule) gk).getIncompatibility();
-			}
-		}
-		for (int i = 0; i < immutableKernels.size(); i++) {
-			for (GroundRule gk : reasoner.getGroundKernels(immutableKernels.get(i))) {
-				fullExpectedIncompatibility[kernels.size() + i] += ((WeightedGroundRule) gk).getIncompatibility();
-			}
-		}
-		
-		return Arrays.copyOf(fullExpectedIncompatibility, kernels.size());
-	}
-	
-	@Override
-	protected double[] computeObservedIncomp() {
-		numGroundings = new double[kernels.size()];
-		fullObservedIncompatibility = new double[kernels.size() + immutableKernels.size()];
-		setLabeledRandomVariables();
-		
-		/* Computes the observed incompatibilities and numbers of groundings */
-		for (int i = 0; i < kernels.size(); i++) {
-			for (GroundRule gk : reasoner.getGroundKernels(kernels.get(i))) {
-				fullObservedIncompatibility[i] += ((WeightedGroundRule) gk).getIncompatibility();
-				numGroundings[i]++;
-			}
-		}
-		for (int i = 0; i < immutableKernels.size(); i++) {
-			for (GroundRule gk : reasoner.getGroundKernels(immutableKernels.get(i))) {
-				fullObservedIncompatibility[kernels.size() + i] += ((WeightedGroundRule) gk).getIncompatibility();
-			}
-		}
-		
-		return Arrays.copyOf(fullObservedIncompatibility, kernels.size());
-	}
-	
-	@Override
-	protected double computeLoss() {
-		double loss = 0.0;
-		for (int i = 0; i < kernels.size(); i++)
-			loss += kernels.get(i).getWeight().getWeight() * (fullObservedIncompatibility[i] - fullExpectedIncompatibility[i]);
-		for (int i = 0; i < immutableKernels.size(); i++)
-			loss += immutableKernels.get(i).getWeight().getWeight() * (fullObservedIncompatibility[kernels.size() + i] - fullExpectedIncompatibility[kernels.size() + i]);
-		return loss;
+	public MaxLikelihoodMPE(Model model, Database rvDB, Database observedDB) {
+		this(model.getRules(), rvDB, observedDB);
 	}
 
+	public MaxLikelihoodMPE(List<Rule> rules, Database rvDB, Database observedDB) {
+		super(rules, rvDB, observedDB, false);
+	}
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,27 +25,24 @@ import org.junit.Before;
 import org.junit.Test;
 import org.linqs.psl.PSLTest;
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
-import org.linqs.psl.config.ConfigBundle;
-import org.linqs.psl.config.EmptyBundle;
+import org.linqs.psl.application.groundrulestore.MemoryGroundRuleStore;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.loading.Inserter;
+import org.linqs.psl.database.atom.AtomManager;
+import org.linqs.psl.database.atom.SimpleAtomManager;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
-import org.linqs.psl.database.rdbms.RDBMSUniqueStringID;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver.Type;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.AtomCache;
-import org.linqs.psl.model.atom.AtomManager;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.QueryAtom;
-import org.linqs.psl.model.atom.SimpleAtomManager;
 import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.formula.Implication;
-import org.linqs.psl.model.predicate.PredicateFactory;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
@@ -60,9 +57,9 @@ import org.linqs.psl.model.rule.logical.UnweightedLogicalRule;
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
-import org.linqs.psl.model.term.UniqueID;
+import org.linqs.psl.model.term.UniqueIntID;
+import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.model.term.Variable;
-import org.linqs.psl.reasoner.admm.ADMMReasoner;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 
 import java.util.ArrayList;
@@ -75,10 +72,10 @@ import java.util.Set;
 public class RuleStringTest {
 	private DataStore dataStore;
 	private Database database;
-	private ConfigBundle config;
 	private Partition obsPartition;
 
 	private StandardPredicate singlePredicate;
+	private StandardPredicate singleIntPredicate;
 	private StandardPredicate doublePredicate;
 	private StandardPredicate singleOpened;
 
@@ -87,16 +84,16 @@ public class RuleStringTest {
 
 	@Before
 	public void setup() {
-		config = new EmptyBundle();
-		dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Memory, this.getClass().getName(), true), config);
+		dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Memory, this.getClass().getName(), true));
 
 		// Predicates
-		PredicateFactory factory = PredicateFactory.getFactory();
-
-		singlePredicate = factory.createStandardPredicate("SinglePredicate", ConstantType.UniqueID);
+		singlePredicate = StandardPredicate.get("SinglePredicate", ConstantType.UniqueStringID);
 		dataStore.registerPredicate(singlePredicate);
 
-		doublePredicate = factory.createStandardPredicate("DoublePredicate", ConstantType.UniqueID, ConstantType.UniqueID);
+		singleIntPredicate = StandardPredicate.get("SingleIntPredicate", ConstantType.UniqueIntID);
+		dataStore.registerPredicate(singleIntPredicate);
+
+		doublePredicate = StandardPredicate.get("DoublePredicate", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
 		dataStore.registerPredicate(doublePredicate);
 
 		// Rules
@@ -127,11 +124,11 @@ public class RuleStringTest {
 		obsPartition = dataStore.getNewPartition();
 
 		Inserter inserter = dataStore.getInserter(singlePredicate, obsPartition);
-		inserter.insert(dataStore.getUniqueID("Alice"));
-		inserter.insert(dataStore.getUniqueID("Bob"));
+		inserter.insert(new UniqueStringID("Alice"));
+		inserter.insert(new UniqueStringID("Bob"));
 
 		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
-		database = dataStore.getDatabase(dataStore.getNewPartition(), toClose);
+		database = dataStore.getDatabase(dataStore.getNewPartition(), toClose, obsPartition);
 	}
 
 	@Test
@@ -155,16 +152,6 @@ public class RuleStringTest {
 	@Test
 	public void testArithmeticRuleString() {
 		// Base Rule: SinglePredicate(A) + SinglePredicate(B) = 1
-		List<Coefficient> coefficients = Arrays.asList(
-			(Coefficient)(new ConstantNumber(1)),
-			(Coefficient)(new ConstantNumber(1))
-		);
-
-		List<SummationAtomOrAtom> atoms = Arrays.asList(
-			(SummationAtomOrAtom)(new QueryAtom(singlePredicate, new Variable("A"))),
-			(SummationAtomOrAtom)(new QueryAtom(singlePredicate, new Variable("B")))
-		);
-
 		Rule rule;
 
 		// Unweighted (Not Squared)
@@ -182,7 +169,7 @@ public class RuleStringTest {
 
 	@Test
 	public void testGroundLogicalRuleString() {
-		GroundRuleStore store = new ADMMReasoner(config);
+		GroundRuleStore store = new MemoryGroundRuleStore();
 		AtomManager manager = new SimpleAtomManager(database);
 
 		Rule rule;
@@ -225,7 +212,7 @@ public class RuleStringTest {
 
 	@Test
 	public void testGroundArithmeticRuleString() {
-		GroundRuleStore store = new ADMMReasoner(config);
+		GroundRuleStore store = new MemoryGroundRuleStore();
 		AtomManager manager = new SimpleAtomManager(database);
 
 		Rule rule;
@@ -233,16 +220,11 @@ public class RuleStringTest {
 
 		// Unweighted (Not Squared)
 		rule = new UnweightedArithmeticRule(arithmeticBaseRule);
-		// Remember, equality inserts two rules (<= and >=).
 		expected = Arrays.asList(
-			"1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Alice') <= 1.0 .",
-			"1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Alice') >= 1.0 .",
-			"1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Bob') <= 1.0 .",
-			"1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Bob') >= 1.0 .",
-			"1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Alice') <= 1.0 .",
-			"1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Alice') >= 1.0 .",
-			"1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Bob') <= 1.0 .",
-			"1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Bob') >= 1.0 ."
+			"1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Alice') = 1.0 .",
+			"1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Bob') = 1.0 .",
+			"1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Alice') = 1.0 .",
+			"1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Bob') = 1.0 ."
 		);
 		rule.groundAll(manager, store);
 		PSLTest.compareGroundRules(expected, rule, store);
@@ -276,6 +258,33 @@ public class RuleStringTest {
 		);
 		rule.groundAll(manager, store);
 		PSLTest.compareGroundRules(expected, rule, store);
+	}
+
+	@Test
+	public void testLogicalIntRule() {
+		// Base Rule: SingleIntPredicate('1') & SinglePredicate(A) & SinglePredicate(B) -> DoublePredicate(A, B)
+		Rule rule;
+
+		Formula baseRule = new Implication(
+				new Conjunction(
+					new QueryAtom(singleIntPredicate, new UniqueIntID(1)),
+					new QueryAtom(singlePredicate, new Variable("A")),
+					new QueryAtom(singlePredicate, new Variable("B"))
+				),
+				new QueryAtom(doublePredicate, new Variable("A"), new Variable("B"))
+		);
+
+		// Unweighted (Not Squared)
+		rule = new UnweightedLogicalRule(baseRule);
+		assertEquals("( SINGLEINTPREDICATE('1') & SINGLEPREDICATE(A) & SINGLEPREDICATE(B) ) >> DOUBLEPREDICATE(A, B) .", rule.toString());
+
+		// Weighted, Squared
+		rule = new WeightedLogicalRule(baseRule, 10.0, true);
+		assertEquals("10.0: ( SINGLEINTPREDICATE('1') & SINGLEPREDICATE(A) & SINGLEPREDICATE(B) ) >> DOUBLEPREDICATE(A, B) ^2", rule.toString());
+
+		// Weighted, Not Squared
+		rule = new WeightedLogicalRule(baseRule, 10.0, false);
+		assertEquals("10.0: ( SINGLEINTPREDICATE('1') & SINGLEPREDICATE(A) & SINGLEPREDICATE(B) ) >> DOUBLEPREDICATE(A, B)", rule.toString());
 	}
 
 	@After

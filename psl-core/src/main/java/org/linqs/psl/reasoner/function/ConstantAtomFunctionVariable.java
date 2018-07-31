@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2018 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,15 +23,13 @@ import org.linqs.psl.model.atom.GroundAtom;
  * Encapsulates the value of a {@link GroundAtom}
  * for use in numeric functions.
  * <p>
- * This FunctionVariable cannot change the truth value or confidence
- * value of the GroundAtom.
+ * This FunctionVariable cannot change the truth value of the GroundAtom.
  */
 public class ConstantAtomFunctionVariable extends AtomFunctionVariable {
-
 	public ConstantAtomFunctionVariable(GroundAtom atom) {
 		super(atom);
 	}
-	
+
 	@Override
 	public boolean isConstant() {
 		return true;
@@ -41,11 +39,4 @@ public class ConstantAtomFunctionVariable extends AtomFunctionVariable {
 	public void setValue(double val) {
 		throw new UnsupportedOperationException();
 	}
-
-	@Override
-	public void setConfidence(double val) {
-		throw new UnsupportedOperationException();
-
-	}
-
 }
