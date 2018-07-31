@@ -47,8 +47,7 @@ public interface ReadableDatabase {
 	 * if its Predicate was registered with the DataStore at the time of the Database's
 	 * instantiation. Any GroundAtom with an ExternalFunctionalPredicate} can also be retrieved.
 	 * This method first checks the {@link AtomCache} to see if the GroundAtom already
-	 * exists in memory. If it does, then that object is returned. (The AtomCache is
-	 * accessible via {@link #getAtomCache()}.)
+	 * exists in memory. If it does, then that object is returned.
 	 *
 	 * If the GroundAtom does not exist in memory, then it will be instantiated and
 	 * stored in the AtomCache before being returned. The subtype and state of the
