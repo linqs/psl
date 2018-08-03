@@ -226,7 +226,7 @@ public class ADMMReasoner implements Reasoner {
 		int iteration = 1;
 		while (
 				(iteration == 1 || primalRes > epsilonPrimal || dualRes > epsilonDual)
-				&& (objectiveBreak && (MathUtils.isZero(oldObjective) || !MathUtils.equals(objective, oldObjective)))
+				&& (!objectiveBreak || (MathUtils.isZero(oldObjective) || !MathUtils.equals(objective, oldObjective)))
 				&& iteration <= maxIter) {
 			// Zero out the iteration variables.
 			primalRes = 0.0f;
@@ -260,15 +260,13 @@ public class ADMMReasoner implements Reasoner {
 					objective = 0.0f;
 					boolean feasible = true;
 
-					if (log.isTraceEnabled()) {
-						for (ADMMObjectiveTerm term : termStore) {
-							if (term instanceof LinearConstraintTerm) {
-								if (term.evaluate() > 0.0f) {
-									feasible = false;
-								}
-							} else {
-								objective += (1.0f - term.evaluate());
+					for (ADMMObjectiveTerm term : termStore) {
+						if (term instanceof LinearConstraintTerm) {
+							if (term.evaluate() > 0.0f) {
+								feasible = false;
 							}
+						} else {
+							objective += (1.0f - term.evaluate());
 						}
 					}
 
