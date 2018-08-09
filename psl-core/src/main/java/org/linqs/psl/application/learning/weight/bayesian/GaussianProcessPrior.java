@@ -9,6 +9,7 @@ import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.util.Parallel;
 import org.linqs.psl.util.RandUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +30,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     private static final String DEFAULT_KERNEL = "squaredExp";
     private static final int MAX_CONFIGS = 1000000;
     private static final int MAX_NUM_ITER = 25;
-    private static final float EXPLORATION_VAL = 2.0f;
+    private static final float EXPLORATION_VAL = 1.0f;
     private static final String RANDOM_CONFIGS_ONLY = ".randomConfigsOnly";
     private FloatMatrix knownDataStdInv;
     private GaussianProcessKernels.Kernel kernel;
@@ -37,6 +38,9 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     private int maxConfigs;
     private float exploration;
     private boolean randomConfigsOnly;
+    private List<WeightConfig> configs;
+    private List<WeightConfig> exploredConfigs;
+    FloatMatrix blasYKnown;
 
     public GaussianProcessPrior(List<Rule> rules, Database rvDB, Database observedDB) {
         super(rules, rvDB, observedDB, false);
@@ -56,95 +60,103 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         this(model.getRules(), rvDB, observedDB);
     }
 
+    private void reset(){
+        configs = getConfigs();
+        exploredConfigs = Lists.newArrayList();
+    }
     @Override
     protected void doLearn() {
-        List<float[]> configs = getConfigs();
-        List<float[]> exploredConfigs = Lists.newArrayList();
+        reset();
         List<Float> exploredFnVal = Lists.newArrayList();
+        final ComputePredFnValWorker fnValWorker = new ComputePredFnValWorker();
         int iter = 0;
-        List<Float> yPred = Lists.newArrayList();
-        List<Float> yStd = Lists.newArrayList();
-        for (int i = 0; i < configs.size(); i++) {
-            yPred.add(0f);
-            yStd.add(1f);
-        }
+        WeightConfig bestConfig = null;
+        float bestVal = -Float.MAX_VALUE;
         do{
-            int nextPoint = getNextPoint(yPred, yStd);
-            float[] config = configs.get(nextPoint);
+            int nextPoint = getNextPoint(configs);
+            WeightConfig config = configs.get(nextPoint);
             exploredConfigs.add(config);
             configs.remove(nextPoint);
-            exploredFnVal.add(getFunctionValue(config));
+            float fnVal = getFunctionValue(config);
+            exploredFnVal.add(fnVal);
+            config.valueAndStd.value = fnVal;
+            config.valueAndStd.std = 0f;
+            if (bestVal < fnVal) {
+                bestVal = fnVal;
+                bestConfig = config;
+            }
             log.info("Round " + (iter+1) +
-                    "- config picked - " + ArrayUtils.toString(exploredConfigs.get(iter)) +
-                    "- Value: " + exploredFnVal.get(iter));
+                    "- config picked - " + exploredConfigs.get(iter));
+            log.info("Round " + (iter+1) +
+                    "- Best config so far - " + bestConfig);
             final int numKnown = exploredFnVal.size();
             knownDataStdInv = new FloatMatrix(numKnown, numKnown);
             for (int i = 0; i < numKnown; i++) {
                 for (int j = 0; j < numKnown; j++) {
-                    knownDataStdInv.put(i, j, kernel.kernel(exploredConfigs.get(i), exploredConfigs.get(j)));
+                    knownDataStdInv.put(i, j, kernel.kernel(exploredConfigs.get(i).config,
+                            exploredConfigs.get(j).config));
                 }
             }
             knownDataStdInv = Solve.solve(knownDataStdInv, FloatMatrix.eye(numKnown));
-            yPred.clear();
-            yStd.clear();
-            for (int i = 0; i < configs.size(); i++) {
-                float[] yKnown = ArrayUtils.toPrimitive(
-                        exploredFnVal.toArray(new Float[numKnown]));
-                ValueAndStd valAndStd = predictFnValAndStd(configs.get(i), exploredConfigs, yKnown);
-                yPred.add(valAndStd.value);
-                yStd.add(valAndStd.std);
-            }
-
+            float[] yKnown = ArrayUtils.toPrimitive(
+                    exploredFnVal.toArray(new Float[numKnown]));
+            blasYKnown = new FloatMatrix(yKnown);
+            Parallel.foreach(configs, fnValWorker);
             iter++;
         }while(iter < maxIterNum && configs.size() > 0);
-        float[] bestConfig = null;
-        float bestVal = -Float.MAX_VALUE;
-        for (int i = 0; i < exploredFnVal.size(); i++) {
-            if (bestVal < exploredFnVal.get(i)){
-                bestVal = exploredFnVal.get(i);
-                bestConfig = exploredConfigs.get(i);
-            }
-        }
         setWeights(bestConfig);
-        log.info("Best config is: " + ArrayUtils.toString(bestConfig) +
-                ", Value: " + getFunctionValue(bestConfig) + ", bestValue:" + bestVal);
-        
+        log.info("Best config: " + bestConfig);
+
     }
 
-    private void setWeights(float[] config) {
+    private class ComputePredFnValWorker extends Parallel.Worker<WeightConfig>{
+
+        @Override
+        public void work(int index, WeightConfig item) {
+            ValueAndStd valAndStd = predictFnValAndStd(configs.get(index).config, exploredConfigs, blasYKnown);
+            configs.get(index).valueAndStd = valAndStd;
+        }
+    }
+
+    private void setWeights(WeightConfig config) {
         for (int i = 0; i < mutableRules.size(); i++) {
-            mutableRules.get(i).setWeight(config[i]);
+            mutableRules.get(i).setWeight(config.config[i]);
         }
         inMPEState = false;
     }
 
-    private List<float[]> getConfigs(){
+    private List<WeightConfig> getConfigs(){
         int numMutableRules = this.mutableRules.size();
-        List<float[]> configs = Lists.newArrayList();
+        List<WeightConfig> configs = Lists.newArrayList();
         float max = 1.0f;
         float min = 0.0f;
         int numPerSplit = (int)Math.exp(Math.log(maxConfigs)/numMutableRules);
         //If systematic generation of points will lead to not a reasonable exploration of space.
         //then just pick random points in space and hope it is better than being systematic.
-        if (numPerSplit < 5 || randomConfigsOnly) {
-            log.info("Not enough slots to generate config systematically. Using random.");
+
+        if (randomConfigsOnly) {
+            log.info("Generating random configs.");
             return getRandomConfigs();
         }
+        if (numPerSplit < 5){
+            log.warn("Note not picking random points and large number " +
+                    "of rules will yield bad exploration.");
+        }
         float inc = max/numPerSplit;
-        float[] config = new float[numMutableRules];
         boolean done = false;
+        WeightConfig config = new WeightConfig(new float[numMutableRules]);
         while (!done) {
             int j = 0;
-            configs.add(config.clone());
+            configs.add(new WeightConfig(config));
             for (int l = 0; l < numMutableRules; l++) {
-                if(config[j] < max) {
-                    config[j]+=inc;
+                if(config.config[j] < max) {
+                    config.config[j]+=inc;
                     break;
                 } else if(j == numMutableRules-1){
                     done = true;
                     break;
                 } else {
-                    config[j] = min;
+                    config.config[j] = min;
                     j++;
                 }
             }
@@ -152,13 +164,13 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         return configs;
     }
 
-    private List<float[]> getRandomConfigs(){
+    private List<WeightConfig> getRandomConfigs(){
         int numMutableRules = this.mutableRules.size();
-        List<float[]> configs = Lists.newArrayList();
+        List<WeightConfig> configs = Lists.newArrayList();
         for (int i = 0; i < maxConfigs; i++) {
-            float [] curConfig = new float[numMutableRules];
+            WeightConfig curConfig = new WeightConfig(new float[numMutableRules]);
             for (int j = 0; j < numMutableRules; j++) {
-                curConfig[j] = RandUtils.nextFloat();
+                curConfig.config[j] = RandUtils.nextFloat();
             }
             configs.add(curConfig);
         }
@@ -172,12 +184,11 @@ def predict(x, data, kernel, params, sigma, t):
     sigma_new = kernel(x, x, params) - np.dot(k, Sinv).dot(k)
     return y_pred, sigma_new
  */
-    protected ValueAndStd predictFnValAndStd(float[] x, List<float[]> xKnown, float[] yKnown){
+    protected ValueAndStd predictFnValAndStd(float[] x, List<WeightConfig> xKnown, FloatMatrix blasYKnown){
         ValueAndStd fnAndStd = new ValueAndStd();
-        FloatMatrix blasYKnown = new FloatMatrix(yKnown);
-        FloatMatrix xyStd = FloatMatrix.zeros(yKnown.length);
-        for (int i = 0; i < yKnown.length; i++) {
-            xyStd.put(i, kernel.kernel(x, xKnown.get(i)));
+        FloatMatrix xyStd = FloatMatrix.zeros(blasYKnown.length);
+        for (int i = 0; i < blasYKnown.length; i++) {
+            xyStd.put(i, kernel.kernel(x, xKnown.get(i).config));
         }
         fnAndStd.value = xyStd.transpose().mmul(knownDataStdInv).dot(blasYKnown);
         fnAndStd.std = kernel.kernel(x,x) - xyStd.transpose().mmul(knownDataStdInv).dot(xyStd);
@@ -185,7 +196,7 @@ def predict(x, data, kernel, params, sigma, t):
     }
 
     //Get metric value like accuracy.
-    protected float getFunctionValue(float[] config){
+    protected float getFunctionValue(WeightConfig config){
         setWeights(config);
         computeMPEState();
         evaluator.compute(trainingMap);
@@ -195,11 +206,12 @@ def predict(x, data, kernel, params, sigma, t):
     }
 
     //Exploration strategy
-    protected int getNextPoint(List<Float> yPred, List<Float> yStd){
+    protected int getNextPoint(List<WeightConfig> configs){
         int bestConfig = -1;
         float curBestVal = -Float.MAX_VALUE;
-        for (int i = 0; i < yPred.size(); i++) {
-            float curVal = (float)((yPred.get(i)/exploration) + yStd.get(i));
+        for (int i = 0; i < configs.size(); i++) {
+            float curVal = (configs.get(i).valueAndStd.value/exploration) +
+                    configs.get(i).valueAndStd.std;
             if(curBestVal < curVal){
                 curBestVal = curVal;
                 bestConfig = i;
@@ -208,9 +220,42 @@ def predict(x, data, kernel, params, sigma, t):
         return bestConfig;
     }
 
-    class ValueAndStd{
+    static class ValueAndStd{
         float value;
         float std;
+        ValueAndStd(){
+            this(0,1);
+        }
+        ValueAndStd(float value, float std){
+            this.value = value;
+            this.std = std;
+        }
+    }
+
+    static class WeightConfig {
+        float [] config;
+
+        ValueAndStd valueAndStd;
+
+        WeightConfig(float[] config){
+            this(config, 0, 1);
+        }
+
+        WeightConfig(WeightConfig config){
+            this(ArrayUtils.clone(config.config), config.valueAndStd.value, config.valueAndStd.std);
+        }
+
+        WeightConfig(float[] config, float val, float std){
+            this.config = config;
+            this.valueAndStd = new ValueAndStd(val, std);
+
+        }
+
+        @Override
+        public String toString() {
+            return "config= " + ArrayUtils.toString(config) + ", val: " + valueAndStd.value +
+                    ", std: " + valueAndStd.std;
+        }
     }
 
 }
