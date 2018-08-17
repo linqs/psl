@@ -60,7 +60,14 @@ public class OptimalCover {
 	 * Whether or not to always include the blocking predicates.
 	 * This should not be necessary for a proper, non-greedy cover.
 	 */
-	public static final boolean ALWAYS_INCLUDE_BLOCKS = true;
+	public static final String ALWAYS_INCLUDE_BLOCKS_KEY = CONFIG_PREFIX + ".alwaysincludeblocks";
+	public static final boolean ALWAYS_INCLUDE_BLOCKS_DEFAULT = true;
+
+	/**
+	 * If we are including specifically including blocks, always include ALL the blocks.
+	 */
+	public static final String FORCE_ALL_BLOCKS_KEY = CONFIG_PREFIX + ".forceallblocks";
+	public static final boolean FORCE_ALL_BLOCKS_DEFAULT = true;
 
 	// Static only.
 	private OptimalCover() {}
@@ -90,7 +97,7 @@ public class OptimalCover {
 		Map<Variable, Set<Atom>> variableUsages = getVariableUsages(formulaAtoms, usedAtoms);
 
 		boolean foundBlock = false;
-		if (ALWAYS_INCLUDE_BLOCKS) {
+		if (Config.getBoolean(ALWAYS_INCLUDE_BLOCKS_KEY, ALWAYS_INCLUDE_BLOCKS_DEFAULT)) {
 			foundBlock = includeBlocks(usedAtoms, variableUsages);
 		}
 
@@ -238,7 +245,7 @@ public class OptimalCover {
 		}
 
 		// First look for atoms whose variables are subsets of other atoms.
-		// Remove those right awat.
+		// Remove those right away.
 		Set<Atom> toRemove = new HashSet<Atom>();
 		for (Atom atom1 : cover) {
 			for (Atom atom2 : cover) {
@@ -373,18 +380,28 @@ public class OptimalCover {
 		Set<Variable> toRemove = new HashSet<Variable>();
 		Set<Atom> toAdd = new HashSet<Atom>();
 
+		boolean forceAllBlocks = Config.getBoolean(FORCE_ALL_BLOCKS_KEY, FORCE_ALL_BLOCKS_DEFAULT);
+
 		for (Map.Entry<Variable, Set<Atom>> entry : variableUsages.entrySet()) {
 			for (Atom atom : entry.getValue()) {
 				if (!((StandardPredicate)atom.getPredicate()).isBlock()) {
 					continue;
 				}
 
-				toAdd.add(atom);
+				Set<Variable> blockVariables = new HashSet<Variable>();
 				for (Term term : atom.getArguments()) {
 					if (term instanceof Variable) {
-						toRemove.add((Variable)term);
+						blockVariables.add((Variable)term);
 					}
 				}
+
+				// Skip this block if we don't need it (all its variables have already been covered).
+				if (!forceAllBlocks && toRemove.containsAll(blockVariables)) {
+					continue;
+				}
+
+				toAdd.add(atom);
+				toRemove.addAll(blockVariables);
 			}
 		}
 
@@ -393,6 +410,8 @@ public class OptimalCover {
 		for (Variable variable : toRemove) {
 			variableUsages.remove(variable);
 		}
+
+		log.trace("Found blocks: " + toAdd.toString());
 
 		return toAdd.size() > 0;
 	}
