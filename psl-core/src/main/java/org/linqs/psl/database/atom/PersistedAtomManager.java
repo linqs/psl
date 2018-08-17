@@ -55,7 +55,7 @@ public class PersistedAtomManager extends AtomManager {
 	/**
 	 * Whether or not to throw an exception on illegal access.
 	 * Note that in most cases, this indicates incorrectly formed data.
-	 * This should only be set to true when the user understands why these
+	 * This should only be set to false when the user understands why these
 	 * exceptions are thrown in the first place and the grounding implications of
 	 * not having the atom initially in the database.
 	 */

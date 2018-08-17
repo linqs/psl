@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+// TODO(eriq): OC can cause PAM exceptions if our initial set is larger than the stated set.
 public class OptimalCover {
 	private static final Logger log = LoggerFactory.getLogger(OptimalCover.class);
 
