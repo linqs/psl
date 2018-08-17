@@ -128,7 +128,7 @@ public class PersistedAtomManager extends AtomManager {
 			warnOnIllegalAccess = false;
 			log.warn(String.format("Found a non-persisted RVA (%s)." +
 					" If you do not understand the implications of this warning," +
-					" check your configuration and set '%s' to false." +
+					" check your configuration and set '%s' to true." +
 					" This warning will only be logged once.",
 					rvAtom, THROW_ACCESS_EXCEPTION_KEY));
 		}
