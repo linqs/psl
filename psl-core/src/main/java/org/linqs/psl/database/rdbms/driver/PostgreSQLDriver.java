@@ -27,6 +27,8 @@ import com.healthmarketscience.sqlbuilder.CreateTableQuery;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.postgresql.PGConnection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -45,6 +47,8 @@ public class PostgreSQLDriver implements DatabaseDriver {
 	public static final String DEFAULT_HOST = "localhost";
 	public static final String DEFAULT_PORT = "5432";
 
+	private static final Logger log = LoggerFactory.getLogger(PostgreSQLDriver.class);
+
 	private final HikariDataSource dataSource;
 
 	public PostgreSQLDriver(String databaseName, boolean clearDatabase) {
@@ -61,6 +65,8 @@ public class PostgreSQLDriver implements DatabaseDriver {
 		} catch (ClassNotFoundException ex) {
 			throw new RuntimeException("Could not find postgres driver. Please check classpath.", ex);
 		}
+
+		log.debug("Connecting to PostgreSQL database: " + databaseName);
 
 		HikariConfig config = new HikariConfig();
 		config.setJdbcUrl(connectionString);

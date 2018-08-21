@@ -26,6 +26,8 @@ import com.healthmarketscience.sqlbuilder.CreateTableQuery;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +41,8 @@ public class H2DatabaseDriver implements DatabaseDriver {
 	public enum Type {
 		Disk, Memory
 	}
+
+	private static final Logger log = LoggerFactory.getLogger(H2DatabaseDriver.class);
 
 	private final HikariDataSource dataSource;
 
@@ -55,6 +59,8 @@ public class H2DatabaseDriver implements DatabaseDriver {
 		} catch (ClassNotFoundException ex) {
 			throw new RuntimeException("Could not find H2 driver. Please check classpath", ex);
 		}
+
+		log.debug("Connecting to H2 database: " + path);
 
 		// Establish the connection to the specified DB type
 		String connectionString = null;
