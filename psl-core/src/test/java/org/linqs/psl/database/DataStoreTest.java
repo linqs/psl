@@ -58,9 +58,9 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Contract tests for classes that implement {@link DataStore}.
+ * Tests for classes that implement {@link DataStore}.
  */
-public abstract class DataStoreContractTest {
+public abstract class DataStoreTest {
 	private StandardPredicate p1;
 	private StandardPredicate p2;
 	private StandardPredicate p3;
