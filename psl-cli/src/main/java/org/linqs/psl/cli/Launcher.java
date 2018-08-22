@@ -660,7 +660,7 @@ public class Launcher {
 			pslLauncher.run();
 		} catch (Exception ex) {
 			if (rethrow) {
-				throw new RuntimeException("Failed to run CLI.", ex);
+				throw new RuntimeException("Failed to run CLI: " + ex.getMessage(), ex);
 			} else {
 				System.err.println("Unexpected exception!");
 				ex.printStackTrace(System.err);

@@ -60,7 +60,7 @@ public class ExternalFunctionalPredicate extends FunctionalPredicate {
 	}
 
 	/**
-	 * Get a predicate if one already exists, othereise create a new one.
+	 * Get a predicate if one already exists, otherwise create a new one.
 	 */
 	public static ExternalFunctionalPredicate get(String name, ExternalFunction extFun) {
 		ExternalFunctionalPredicate predicate = get(name);

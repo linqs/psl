@@ -20,8 +20,12 @@ package org.linqs.psl.cli;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.loading.Inserter;
+import org.linqs.psl.model.function.ExternalFunction;
+import org.linqs.psl.model.predicate.ExternalFunctionalPredicate;
+import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.ConstantType;
+import org.linqs.psl.util.Reflection;
 
 import org.apache.commons.configuration2.YAMLConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
@@ -54,6 +58,7 @@ public class DataLoader {
 	public static final String PROPERTY_CLOSED = "closed";
 	public static final String PROPERTY_TYPES = "types";
 	public static final String PROPERTY_BLOCK = "block";
+	public static final String PROPERTY_FUNCTION = "function";
 
 	private static final Logger log = LoggerFactory.getLogger(DataLoader.class);
 
@@ -114,6 +119,15 @@ public class DataLoader {
 	}
 
 	private static void loadData(String partitionName, String predicateName, DataStore dataStore, String path, String relativeDir) {
+		Predicate rawPredicate = Predicate.get(predicateName);
+		if (rawPredicate == null) {
+			throw new IllegalArgumentException(String.format("Non-existent predicate (%s) declared in the %s partition without first being defined in the 'predicates' section of the data file.", predicateName, partitionName));
+		}
+
+		if (rawPredicate instanceof ExternalFunctionalPredicate) {
+			throw new IllegalArgumentException(String.format("Cannot load data into a function predicate (%s). See %s partition in the data file.", predicateName, partitionName));
+		}
+
 		Partition partition = dataStore.getPartition(partitionName);
 		StandardPredicate predicate = StandardPredicate.get(predicateName);
 
@@ -161,6 +175,7 @@ public class DataLoader {
 		int arity = -1;
 		Boolean isClosed = null;
 		boolean isBlock = false;
+		String externalFunctionImplementation = null;
 		List<ConstantType> types = new ArrayList<ConstantType>();
 
 		if (name.contains("/")) {
@@ -202,6 +217,13 @@ public class DataLoader {
 						}
 
 						arity = types.size();
+					} else if (key.equals(PROPERTY_FUNCTION)) {
+						Object rawValue = mapProperty.get(key);
+						if (!(rawValue instanceof String)) {
+							throw new IllegalStateException(String.format("Predicate, %s, has a function with an unknown type (%s). Should the target class name (as a string).", name, rawValue.getClass().getName()));
+						}
+
+						externalFunctionImplementation = (String)rawValue;
 					} else {
 						throw new IllegalStateException(String.format("Predicate, %s, has an unknown property: '%s'.", name, key));
 					}
@@ -209,6 +231,16 @@ public class DataLoader {
 			} else {
 				throw new IllegalStateException(String.format("Property of predicate, %s, has an unknown type: %s.", name, property.getClass().getName()));
 			}
+		}
+
+		// If this is a functional predicate, then instantiate it and bail out early.
+		if (externalFunctionImplementation != null) {
+			if (isBlock) {
+				throw new IllegalArgumentException(String.format("Functional predicates (%s) cannot be blocks."));
+			}
+
+			ExternalFunctionalPredicate.get(name, (ExternalFunction)(Reflection.newObject(externalFunctionImplementation)));
+			return;
 		}
 
 		if (arity == -1) {
