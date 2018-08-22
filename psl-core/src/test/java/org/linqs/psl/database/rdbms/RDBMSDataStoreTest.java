@@ -19,20 +19,17 @@ package org.linqs.psl.database.rdbms;
 
 import static org.junit.Assert.assertEquals;
 
-import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.DataStoreTest;
-import org.linqs.psl.database.DatabaseTestUtil;
 import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
+import org.linqs.psl.database.rdbms.driver.TableStats;
 import org.linqs.psl.util.MathUtils;
 
 import org.junit.Test;
 
-import java.util.Map;
-
 public abstract class RDBMSDataStoreTest extends DataStoreTest {
 	@Test
-	public void testGetSelectvity() {
+	public void testGetTableStats() {
 		datastore.registerPredicate(p1);
 		datastore.registerPredicate(p2);
 
@@ -47,12 +44,18 @@ public abstract class RDBMSDataStoreTest extends DataStoreTest {
 		((RDBMSDataStore)datastore).indexPredicates();
 		DatabaseDriver driver = ((RDBMSDataStore)datastore).getDriver();
 
-		Map<String, Float> selectivity = driver.getSelectivity(((RDBMSDataStore)datastore).getPredicateInfo(p1));
-		assertEquals(selectivity.get("UNIQUEINTID_0").floatValue(), 1.0 / 1.0, MathUtils.EPSILON);
-		assertEquals(selectivity.get("UNIQUEINTID_1").floatValue(), 1.0 / 2.0, MathUtils.EPSILON);
+		TableStats stats = driver.getTableStats(((RDBMSDataStore)datastore).getPredicateInfo(p1));
+		assertEquals(stats.getCount(), 1000);
+		assertEquals(stats.getSelectivity("UNIQUEINTID_0"), 1.0 / 1.0, MathUtils.EPSILON);
+		assertEquals(stats.getCardinality("UNIQUEINTID_0"), 1000 / 1);
+		assertEquals(stats.getSelectivity("UNIQUEINTID_1"), 1.0 / 2.0, MathUtils.EPSILON);
+		assertEquals(stats.getCardinality("UNIQUEINTID_1"), 1000 / 2);
 
-		selectivity = driver.getSelectivity(((RDBMSDataStore)datastore).getPredicateInfo(p2));
-		assertEquals(selectivity.get("STRING_0").floatValue(), 1.0 / 1.0, MathUtils.EPSILON);
-		assertEquals(selectivity.get("STRING_1").floatValue(), 1.0 / 4.0, MathUtils.EPSILON);
+		stats = driver.getTableStats(((RDBMSDataStore)datastore).getPredicateInfo(p2));
+		assertEquals(stats.getCount(), 1000);
+		assertEquals(stats.getSelectivity("STRING_0"), 1.0 / 1.0, MathUtils.EPSILON);
+		assertEquals(stats.getCardinality("STRING_0"), 1000 / 1);
+		assertEquals(stats.getSelectivity("STRING_1"), 1.0 / 4.0, MathUtils.EPSILON);
+		assertEquals(stats.getCardinality("STRING_1"), 1000 / 4);
 	}
 }

@@ -36,9 +36,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class H2DatabaseDriver implements DatabaseDriver {
 	public enum Type {
@@ -191,16 +189,17 @@ public class H2DatabaseDriver implements DatabaseDriver {
 	}
 
 	@Override
-	public Map<String, Float> getSelectivity(PredicateInfo predicate) {
+	public TableStats getTableStats(PredicateInfo predicate) {
 		List<String> sql = new ArrayList<String>();
 		sql.add("SELECT");
 		sql.add("	UPPER(COLUMN_NAME) AS col,");
+		sql.add("	(SELECT COUNT(*) FROM " + predicate.tableName() + ") AS tableCount,");
 		sql.add("	SELECTIVITY / 100.0 AS selectivity");
 		sql.add("FROM INFORMATION_SCHEMA.COLUMNS");
 		sql.add("WHERE UPPER(TABLE_NAME) = '" + predicate.tableName().toUpperCase() + "'");
 		sql.add("	AND UPPER(COLUMN_NAME) NOT IN ('PARTITION_ID', 'VALUE')");
 
-		Map<String, Float> selectivity = new HashMap<String, Float>();
+		TableStats stats = null;
 
 		try (
 			Connection connection = getConnection();
@@ -208,13 +207,17 @@ public class H2DatabaseDriver implements DatabaseDriver {
 			ResultSet result = statement.executeQuery();
 		) {
 			while (result.next()) {
-				selectivity.put(result.getString(1), new Float(result.getFloat(2)));
+				if (stats == null) {
+					stats = new TableStats(result.getInt(2));
+				}
+
+				stats.addColumnSelectivity(result.getString(1), result.getDouble(3));
 			}
 		} catch (SQLException ex) {
-			throw new RuntimeException("Failed to get selectivity from table: " + predicate.tableName(), ex);
+			throw new RuntimeException("Failed to get stats from table: " + predicate.tableName(), ex);
 		}
 
-		return selectivity;
+		return stats;
 	}
 
 	@Override

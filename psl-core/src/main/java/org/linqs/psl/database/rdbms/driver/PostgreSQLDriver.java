@@ -39,9 +39,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * PostgreSQL Connection Wrapper.
@@ -243,10 +241,11 @@ public class PostgreSQLDriver implements DatabaseDriver {
 	}
 
 	@Override
-	public Map<String, Float> getSelectivity(PredicateInfo predicate) {
+	public TableStats getTableStats(PredicateInfo predicate) {
 		List<String> sql = new ArrayList<String>();
 		sql.add("SELECT");
 		sql.add("	UPPER(attname) AS col,");
+		sql.add("	(SELECT COUNT(*) FROM " + predicate.tableName() + ") AS tableCount,");
 		sql.add("	CASE WHEN n_distinct >= 0");
 		sql.add("		THEN n_distinct / (SELECT COUNT(*) FROM " + predicate.tableName() + ")");
 		sql.add("		ELSE -1.0 * n_distinct");
@@ -256,7 +255,7 @@ public class PostgreSQLDriver implements DatabaseDriver {
 		sql.add("	UPPER(tablename) = '" + predicate.tableName().toUpperCase() + "'");
 		sql.add("	AND UPPER(attname) NOT IN ('PARTITION_ID', 'VALUE')");
 
-		Map<String, Float> selectivity = new HashMap<String, Float>();
+		TableStats stats = null;
 
 		try (
 			Connection connection = getConnection();
@@ -264,13 +263,17 @@ public class PostgreSQLDriver implements DatabaseDriver {
 			ResultSet result = statement.executeQuery();
 		) {
 			while (result.next()) {
-				selectivity.put(result.getString(1), new Float(result.getFloat(2)));
+				if (stats == null) {
+					stats = new TableStats(result.getInt(2));
+				}
+
+				stats.addColumnSelectivity(result.getString(1), result.getDouble(3));
 			}
 		} catch (SQLException ex) {
-			throw new RuntimeException("Failed to get selectivity from table: " + predicate.tableName(), ex);
+			throw new RuntimeException("Failed to get stats from table: " + predicate.tableName(), ex);
 		}
 
-		return selectivity;
+		return stats;
 	}
 
 	@Override

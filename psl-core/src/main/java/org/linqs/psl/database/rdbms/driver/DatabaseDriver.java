@@ -25,7 +25,6 @@ import com.healthmarketscience.sqlbuilder.CreateTableQuery;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.util.Map;
 
 /**
  * An interface to a specific RDBMS backend.
@@ -98,9 +97,9 @@ public interface DatabaseDriver {
 	public String getStringAggregate(String columnName, String delimiter, boolean distinct);
 
 	/**
-	 * Get the selectivity for all the argument columns of the given predicate.
+	 * Get some statistics for a table.
 	 */
-	public Map<String, Float> getSelectivity(PredicateInfo predicate);
+	public TableStats getTableStats(PredicateInfo predicate);
 
 	/**
 	 * Make sure that all the table statistics are up-to-date.
