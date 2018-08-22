@@ -25,6 +25,7 @@ import com.healthmarketscience.sqlbuilder.CreateTableQuery;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.util.Map;
 
 /**
  * An interface to a specific RDBMS backend.
@@ -95,4 +96,15 @@ public interface DatabaseDriver {
 	 * Postgres uses STRING_AGG and H2 use GROUP_CONCAT.
 	 */
 	public String getStringAggregate(String columnName, String delimiter, boolean distinct);
+
+	/**
+	 * Get the selectivity for all the argument columns of the given predicate.
+	 */
+	public Map<String, Float> getSelectivity(PredicateInfo predicate);
+
+	/**
+	 * Make sure that all the table statistics are up-to-date.
+	 * Is generally called after insertion and indexing.
+	 */
+	public void updateTableStats();
 }

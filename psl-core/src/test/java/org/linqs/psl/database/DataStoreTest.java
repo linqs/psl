@@ -61,15 +61,15 @@ import java.util.Set;
  * Tests for classes that implement {@link DataStore}.
  */
 public abstract class DataStoreTest {
-	private StandardPredicate p1;
-	private StandardPredicate p2;
-	private StandardPredicate p3;
-	private StandardPredicate p4;
-	private FunctionalPredicate functionalPredicate1;
+	protected StandardPredicate p1;
+	protected StandardPredicate p2;
+	protected StandardPredicate p3;
+	protected StandardPredicate p4;
+	protected FunctionalPredicate functionalPredicate1;
 
-	private DataStore datastore;
+	protected DataStore datastore;
 
-	private List<Database> dbs;
+	protected List<Database> dbs;
 
 	/**
 	 * @return the DataStore to be tested, should always be backed by the same persistence mechanism.

@@ -66,7 +66,7 @@ public class LazyAtomManager extends PersistedAtomManager {
 
 	/**
 	 * The minimum value an atom must take for it to be activated.
-	 * Must be a flot in (0,1].
+	 * Must be a float in (0,1].
 	 */
 	public static final String ACTIVATION_THRESHOLD_KEY = CONFIG_PREFIX + ".activation";
 

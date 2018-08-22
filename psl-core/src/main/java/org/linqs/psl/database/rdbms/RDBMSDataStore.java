@@ -202,6 +202,10 @@ public class RDBMSDataStore implements DataStore {
 				}
 			}
 		});
+
+		// Ensure that table stats are up-to-date.
+		dbDriver.updateTableStats();
+
 		log.debug("Predicate indexing complete.");
 	}
 

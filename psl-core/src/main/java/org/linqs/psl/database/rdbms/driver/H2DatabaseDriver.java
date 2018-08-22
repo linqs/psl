@@ -29,13 +29,16 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class H2DatabaseDriver implements DatabaseDriver {
 	public enum Type {
@@ -102,13 +105,17 @@ public class H2DatabaseDriver implements DatabaseDriver {
 	}
 
 	private void clearDB() {
+		executeUpdate("DROP ALL OBJECTS");
+	}
+
+	private void executeUpdate(String sql) {
 		try (
 			Connection connection = getConnection();
 			Statement stmt = connection.createStatement();
 		) {
-			stmt.executeUpdate("DROP ALL OBJECTS");
-		} catch (SQLException e) {
-			throw new RuntimeException("Could not clear database.", e);
+			stmt.executeUpdate(sql);
+		} catch (SQLException ex) {
+			throw new RuntimeException("Failed to execute a general update: [" + sql + "].", ex);
 		}
 	}
 
@@ -181,5 +188,37 @@ public class H2DatabaseDriver implements DatabaseDriver {
 
 		return String.format("GROUP_CONCAT(DISTINCT CAST(%s AS TEXT) SEPARATOR '%s')",
 				columnName, delimiter);
+	}
+
+	@Override
+	public Map<String, Float> getSelectivity(PredicateInfo predicate) {
+		List<String> sql = new ArrayList<String>();
+		sql.add("SELECT");
+		sql.add("	UPPER(COLUMN_NAME) AS col,");
+		sql.add("	SELECTIVITY / 100.0 AS selectivity");
+		sql.add("FROM INFORMATION_SCHEMA.COLUMNS");
+		sql.add("WHERE UPPER(TABLE_NAME) = '" + predicate.tableName().toUpperCase() + "'");
+		sql.add("	AND UPPER(COLUMN_NAME) NOT IN ('PARTITION_ID', 'VALUE')");
+
+		Map<String, Float> selectivity = new HashMap<String, Float>();
+
+		try (
+			Connection connection = getConnection();
+			PreparedStatement statement = connection.prepareStatement(StringUtils.join(sql, "\n"));
+			ResultSet result = statement.executeQuery();
+		) {
+			while (result.next()) {
+				selectivity.put(result.getString(1), new Float(result.getFloat(2)));
+			}
+		} catch (SQLException ex) {
+			throw new RuntimeException("Failed to get selectivity from table: " + predicate.tableName(), ex);
+		}
+
+		return selectivity;
+	}
+
+	@Override
+	public void updateTableStats() {
+		executeUpdate("ANALYZE");
 	}
 }

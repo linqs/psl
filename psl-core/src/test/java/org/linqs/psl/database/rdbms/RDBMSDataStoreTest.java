@@ -17,10 +17,42 @@
  */
 package org.linqs.psl.database.rdbms;
 
+import static org.junit.Assert.assertEquals;
+
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.DataStoreTest;
 import org.linqs.psl.database.DatabaseTestUtil;
+import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
+import org.linqs.psl.util.MathUtils;
+
+import org.junit.Test;
+
+import java.util.Map;
 
 public abstract class RDBMSDataStoreTest extends DataStoreTest {
+	@Test
+	public void testGetSelectvity() {
+		datastore.registerPredicate(p1);
+		datastore.registerPredicate(p2);
+
+		Inserter inserter1 = datastore.getInserter(p1, datastore.getPartition("0"));
+		Inserter inserter2 = datastore.getInserter(p2, datastore.getPartition("0"));
+
+		for (int i = 0; i < 1000; i++) {
+			inserter1.insert("" + (i / 1), "" + (i / 2));
+			inserter2.insert("" + (i / 1), "" + (i / 4));
+		}
+
+		((RDBMSDataStore)datastore).indexPredicates();
+		DatabaseDriver driver = ((RDBMSDataStore)datastore).getDriver();
+
+		Map<String, Float> selectivity = driver.getSelectivity(((RDBMSDataStore)datastore).getPredicateInfo(p1));
+		assertEquals(selectivity.get("UNIQUEINTID_0").floatValue(), 1.0 / 1.0, MathUtils.EPSILON);
+		assertEquals(selectivity.get("UNIQUEINTID_1").floatValue(), 1.0 / 2.0, MathUtils.EPSILON);
+
+		selectivity = driver.getSelectivity(((RDBMSDataStore)datastore).getPredicateInfo(p2));
+		assertEquals(selectivity.get("STRING_0").floatValue(), 1.0 / 1.0, MathUtils.EPSILON);
+		assertEquals(selectivity.get("STRING_1").floatValue(), 1.0 / 4.0, MathUtils.EPSILON);
+	}
 }

@@ -32,13 +32,16 @@ import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * PostgreSQL Connection Wrapper.
@@ -237,5 +240,41 @@ public class PostgreSQLDriver implements DatabaseDriver {
 
 		return String.format("STRING_AGG(DISTINCT CAST(%s AS TEXT), '%s')",
 				columnName, delimiter);
+	}
+
+	@Override
+	public Map<String, Float> getSelectivity(PredicateInfo predicate) {
+		List<String> sql = new ArrayList<String>();
+		sql.add("SELECT");
+		sql.add("	UPPER(attname) AS col,");
+		sql.add("	CASE WHEN n_distinct >= 0");
+		sql.add("		THEN n_distinct / (SELECT COUNT(*) FROM " + predicate.tableName() + ")");
+		sql.add("		ELSE -1.0 * n_distinct");
+		sql.add("	END AS selectivity");
+		sql.add("FROM pg_stats");
+		sql.add("WHERE");
+		sql.add("	UPPER(tablename) = '" + predicate.tableName().toUpperCase() + "'");
+		sql.add("	AND UPPER(attname) NOT IN ('PARTITION_ID', 'VALUE')");
+
+		Map<String, Float> selectivity = new HashMap<String, Float>();
+
+		try (
+			Connection connection = getConnection();
+			PreparedStatement statement = connection.prepareStatement(StringUtils.join(sql, "\n"));
+			ResultSet result = statement.executeQuery();
+		) {
+			while (result.next()) {
+				selectivity.put(result.getString(1), new Float(result.getFloat(2)));
+			}
+		} catch (SQLException ex) {
+			throw new RuntimeException("Failed to get selectivity from table: " + predicate.tableName(), ex);
+		}
+
+		return selectivity;
+	}
+
+	@Override
+	public void updateTableStats() {
+		executeUpdate("VACUUM ANALYZE");
 	}
 }
