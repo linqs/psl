@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
@@ -183,6 +184,10 @@ public final class Parallel {
 		cleanupWorkers();
 
 		return timings;
+	}
+
+	public static <T> RunTimings foreach(Iterator<T> work, Worker<T> baseWorker) {
+		return foreach(IteratorUtils.newIterable(work), baseWorker);
 	}
 
 	private static <T> RunTimings foreachInternal(Iterable<T> work) {

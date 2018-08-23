@@ -30,6 +30,7 @@ import org.linqs.psl.TestModelFactory;
 import org.linqs.psl.application.inference.MPEInference;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.ReadableDatabase;
+import org.linqs.psl.database.QueryResultIterable;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
@@ -158,9 +159,14 @@ public class ReadableDatabaseTest {
 			@Override
 			public void doWork(ReadableDatabase db, Constant arg) {
 				StandardPredicate predicate = StandardPredicate.get("Friends");
-				ResultList results = db.executeGroundingQuery(new QueryAtom(predicate, arg, new Variable("A")));
+				QueryResultIterable results = db.executeGroundingQuery(new QueryAtom(predicate, arg, new Variable("A")));
 				assertNotNull(results);
-				assertEquals(4, results.size());
+
+				int count = 0;
+				for (Constant[] row : results) {
+					count++;
+				}
+				assertEquals(4, count);
 			}
 		};
 		testHelper(function, "executeGroundingQuery");

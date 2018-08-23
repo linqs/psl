@@ -24,6 +24,7 @@ import org.linqs.psl.model.term.Variable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -61,13 +62,13 @@ public class RDBMSResultList implements ResultList {
 	}
 
 	@Override
-	public Constant get(int resultNo, Variable var) {
-		return results.get(resultNo)[getPos(var)];
+	public Constant get(int index, Variable var) {
+		return results.get(index)[getPos(var)];
 	}
 
 	@Override
-	public Constant[] get(int resultNo) {
-		return results.get(resultNo);
+	public Constant[] get(int index) {
+		return results.get(index);
 	}
 
 	@Override
@@ -97,5 +98,10 @@ public class RDBMSResultList implements ResultList {
 		s.append("-------");
 
 		return s.toString();
+	}
+
+	@Override
+	public Iterator<Constant[]> iterator() {
+		return results.iterator();
 	}
 }

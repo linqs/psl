@@ -23,6 +23,7 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseQuery;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.ResultList;
+import org.linqs.psl.database.QueryResultIterable;
 import org.linqs.psl.model.atom.AtomCache;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
@@ -71,6 +72,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -91,6 +93,9 @@ public class RDBMSDatabase extends Database {
 	public static final String OPTIMAL_COVER_KEY = CONFIG_PREFIX + ".optimalcover";
 	public static final boolean OPTIMAL_COVER_DEFAULT = false;
 
+	public static final String FETCH_SIZE_KEY = CONFIG_PREFIX + ".fetchsize";
+	public static final int FETCH_SIZE_DEFAULT = 500;
+
 	private static final double DEFAULT_UNOBSERVED_VALUE = 0.0;
 
 	private static final String THREAD_QUERY_ATOM_KEY = QueryAtom.class.getName();
@@ -101,6 +106,7 @@ public class RDBMSDatabase extends Database {
 	private final Set<Predicate> closedPredicates;
 
 	private boolean useOptimalCover;
+	private int fetchSize;
 
 	public RDBMSDatabase(RDBMSDataStore parent,
 			Partition write, Partition[] read,
@@ -108,6 +114,7 @@ public class RDBMSDatabase extends Database {
 		super(parent, write, read);
 
 		useOptimalCover = Config.getBoolean(OPTIMAL_COVER_KEY, OPTIMAL_COVER_DEFAULT);
+		fetchSize = Config.getInt(FETCH_SIZE_KEY, FETCH_SIZE_DEFAULT);
 
 		this.closedPredicates = new HashSet<Predicate>();
 		if (closed != null) {
@@ -254,13 +261,13 @@ public class RDBMSDatabase extends Database {
 	}
 
 	@Override
-	public ResultList executeGroundingQuery(Formula formula) {
+	public QueryResultIterable executeGroundingQuery(Formula formula) {
 		if (useOptimalCover) {
 			// TEST
-			// return executeQuery(OptimalCover.computeOptimalCover(formula, (RDBMSDataStore)parentDataStore), false);
-			return executeQuery(QueryRewriter.rewrite(formula, (RDBMSDataStore)parentDataStore), false);
+			// return executeQueryIterator(OptimalCover.computeOptimalCover(formula, (RDBMSDataStore)parentDataStore), false);
+			return executeQueryIterator(QueryRewriter.rewrite(formula, (RDBMSDataStore)parentDataStore), false);
 		} else {
-			return executeQuery(formula, false);
+			return executeQueryIterator(formula, false);
 		}
 	}
 
@@ -281,6 +288,18 @@ public class RDBMSDatabase extends Database {
 		return executeQuery(projectionMap, varTypes, queryString);
 	}
 
+	private QueryResultIterable executeQueryIterator(Formula formula, boolean isDistinct) {
+		VariableTypeMap varTypes = formula.collectVariables(new VariableTypeMap());
+		Set<Variable> projectTo = new HashSet<Variable>(varTypes.getVariables());
+
+		// Construct query from formula
+		Formula2SQL sqler = new Formula2SQL(projectTo, this, isDistinct);
+		String queryString = sqler.getSQL(formula);
+		Map<Variable, Integer> projectionMap = sqler.getProjectionMap();
+
+		return executeQueryIterator(projectionMap, varTypes, queryString);
+	}
+
 	/**
 	 * A more general form for executeQuery().
 	 * @param projectionMap a mapping of each variable we want returned to the
@@ -288,22 +307,56 @@ public class RDBMSDatabase extends Database {
 	 * @param varTypes the types for each variable in the projection.
 	 * @param queryString the SQL query.
 	 */
-	public ResultList executeQuery(Map<Variable, Integer> projectionMap,
-			VariableTypeMap varTypes, String queryString) {
+	public ResultList executeQuery(Map<Variable, Integer> projectionMap, VariableTypeMap varTypes, String queryString) {
+		if (closed) {
+			throw new IllegalStateException("Cannot perform query on database that was closed.");
+		}
+
+		int[] orderedIndexes = new int[projectionMap.size()];
+		ConstantType[] orderedTypes = new ConstantType[projectionMap.size()];
+
+		RDBMSResultList results = initQueryResults(projectionMap, varTypes, orderedIndexes, orderedTypes);
+
+		for (Constant[] row : executeQueryIterator(queryString, projectionMap, orderedIndexes, orderedTypes)) {
+			results.addResult(row);
+		}
+
+		log.trace("Number of results: {}", results.size());
+
+		return results;
+	}
+
+	/**
+	 * Note that the constants are in the order specified by the projection map.
+	 */
+	public QueryResultIterable executeQueryIterator(Map<Variable, Integer> projectionMap, VariableTypeMap varTypes, String queryString) {
+		if (closed) {
+			throw new IllegalStateException("Cannot perform query on database that was closed.");
+		}
+
+		int[] orderedIndexes = new int[projectionMap.size()];
+		ConstantType[] orderedTypes = new ConstantType[projectionMap.size()];
+		initQueryResults(projectionMap, varTypes, orderedIndexes, orderedTypes);
+
+		return executeQueryIterator(queryString, projectionMap, orderedIndexes, orderedTypes);
+	}
+
+	public QueryResultIterable executeQueryIterator(String queryString, Map<Variable, Integer> projectionMap, int[] orderedIndexes, ConstantType[] orderedTypes) {
 		if (closed) {
 			throw new IllegalStateException("Cannot perform query on database that was closed.");
 		}
 
 		log.trace(queryString);
 
-		// Create and initialize ResultList
+		return new RDBMSQueryResultIterable(queryString, projectionMap, orderedIndexes, orderedTypes);
+	}
+
+	private RDBMSResultList initQueryResults(Map<Variable, Integer> projectionMap, VariableTypeMap varTypes, int[] orderedIndexes, ConstantType[] orderedTypes) {
 		RDBMSResultList results = new RDBMSResultList(projectionMap.size());
 		for (Map.Entry<Variable, Integer> projection : projectionMap.entrySet()) {
 			results.setVariable(projection.getKey(), projection.getValue().intValue());
 		}
 
-		int[] orderedIndexes = new int[projectionMap.size()];
-		ConstantType[] orderedTypes = new ConstantType[projectionMap.size()];
 		for (Map.Entry<Variable, Integer> entry : results.getVariableMap().entrySet()) {
 			Variable variable = entry.getKey();
 			int index = entry.getValue().intValue();
@@ -311,26 +364,6 @@ public class RDBMSDatabase extends Database {
 			orderedIndexes[index] = projectionMap.get(variable);
 			orderedTypes[index] = varTypes.getType(variable);
 		}
-
-		try (
-			Connection connection = getConnection();
-			Statement statement = connection.createStatement();
-			ResultSet resultSet = statement.executeQuery(queryString)
-		) {
-			while (resultSet.next()) {
-				Constant[] res = new Constant[projectionMap.size()];
-
-				for (int i = 0; i < res.length; i++) {
-					res[i] = extractConstantFromResult(resultSet, orderedIndexes[i], orderedTypes[i]);
-				}
-
-				results.addResult(res);
-			}
-		} catch (SQLException ex) {
-			throw new RuntimeException("Error executing database query: [" + queryString + "]", ex);
-		}
-
-		log.trace("Number of results: {}", results.size());
 
 		return results;
 	}
@@ -596,6 +629,138 @@ public class RDBMSDatabase extends Database {
 			statement.setString(index, ((UniqueStringID)argument).getID());
 		} else {
 			throw new IllegalArgumentException("Unknown argument type: " + argument.getClass());
+		}
+	}
+
+	private class RDBMSQueryResultIterable implements QueryResultIterable {
+		private Map<Variable, Integer> projectionMap;
+		private Iterator<Constant[]> iterator;
+
+		public RDBMSQueryResultIterable(String queryString, Map<Variable, Integer> projectionMap, int[] orderedIndexes, ConstantType[] orderedTypes) {
+			this.projectionMap = Collections.unmodifiableMap(projectionMap);
+			this.iterator = new RDBMSQueryResultIterator(queryString, orderedIndexes, orderedTypes);
+		}
+
+		@Override
+		public Map<Variable, Integer> getVariableMap() {
+			return projectionMap;
+		}
+
+		@Override
+		public Iterator<Constant[]> iterator() {
+			return iterator;
+		}
+	}
+
+	/**
+	 * An iterator that will execute a query and stream back the results.
+	 */
+	private class RDBMSQueryResultIterator implements Iterator<Constant[]> {
+		private String queryString;
+		private int[] orderedIndexes;
+		private ConstantType[] orderedTypes;
+
+		private Connection connection;
+		private Statement statement;
+		private ResultSet resultSet;
+
+		private Constant[] next;
+
+		public RDBMSQueryResultIterator(String queryString, int[] orderedIndexes, ConstantType[] orderedTypes) {
+			this.queryString = queryString;
+			this.orderedIndexes = orderedIndexes;
+			this.orderedTypes = orderedTypes;
+
+			next = null;
+
+			connection = null;
+			statement = null;
+			resultSet = null;
+
+			try {
+				connection = getConnection();
+				connection.setAutoCommit(false);
+
+				statement = connection.createStatement();
+				statement.setFetchSize(fetchSize);
+
+				resultSet = statement.executeQuery(queryString);
+			} catch (SQLException ex) {
+				close();
+				throw new RuntimeException("Error executing query: [" + queryString + "],", ex);
+			}
+
+			// Since ResultSet does not have a hasNext(), we need to get the first result early.
+			fetchNext();
+		}
+
+		@Override
+		public boolean hasNext() {
+			return next != null;
+		}
+
+		@Override
+		public Constant[] next() {
+			Constant[] rtn = next;
+			fetchNext();
+			return rtn;
+		}
+
+		@Override
+		public void remove() {
+			throw new UnsupportedOperationException();
+		}
+
+		private void fetchNext() {
+			boolean hasNext = false;
+			try {
+				hasNext = resultSet.next();
+			} catch (SQLException ex) {
+				throw new RuntimeException("Error while fetching results for query: [" + queryString + "].", ex);
+			}
+
+			if (hasNext) {
+				// Fetch the next result.
+				next = new Constant[orderedIndexes.length];
+
+				for (int i = 0; i < next.length; i++) {
+					next[i] = extractConstantFromResult(resultSet, orderedIndexes[i], orderedTypes[i]);
+				}
+			} else {
+				// There are no more results, clean up!
+				close();
+			}
+		}
+
+		private void close() {
+			next = null;
+
+			if (resultSet != null) {
+				try {
+					resultSet.close();
+				} catch (SQLException ex) {
+					// Ignore.
+				}
+				resultSet = null;
+			}
+
+			if (statement != null) {
+				try {
+					statement.close();
+				} catch (SQLException ex) {
+					// Ignore.
+				}
+				statement = null;
+			}
+
+			if (connection != null) {
+				try {
+					connection.close();
+				} catch (SQLException ex) {
+					// Ignore.
+				}
+				connection = null;
+			}
 		}
 	}
 }

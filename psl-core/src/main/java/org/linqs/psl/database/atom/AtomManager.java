@@ -20,6 +20,7 @@ package org.linqs.psl.database.atom;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseQuery;
 import org.linqs.psl.database.ResultList;
+import org.linqs.psl.database.QueryResultIterable;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.predicate.Predicate;
@@ -81,7 +82,7 @@ public abstract class AtomManager {
 	 * Calls {@link Database#executeGroundingQuery(Formula)} on the
 	 * encapsulated Database.
 	 */
-	public ResultList executeGroundingQuery(Formula formula) {
+	public QueryResultIterable executeGroundingQuery(Formula formula) {
 		return db.executeGroundingQuery(formula);
 	}
 

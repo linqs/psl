@@ -32,8 +32,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
-import java.util.*;
-
 /**
  * A database for retrieving {@link GroundAtom GroundAtoms}.
  *
@@ -124,7 +122,7 @@ public interface ReadableDatabase {
 	 * Like executeQuery(), but specifically for grounding queries.
 	 * This will use extra optimizations.
 	 */
-	public ResultList executeGroundingQuery(Formula formula);
+	public QueryResultIterable executeGroundingQuery(Formula formula);
 
 	/**
 	 * Returns whether a StandardPredicate is closed in this Database.

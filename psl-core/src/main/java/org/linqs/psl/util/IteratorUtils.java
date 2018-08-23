@@ -27,6 +27,20 @@ public final class IteratorUtils {
 	private IteratorUtils() {}
 
 	/**
+	 * Make an Iterable from and Interator.
+	 */
+	public static <T> Iterable<T> newIterable(Iterator<T> items) {
+		final Iterator<T> finalItems = items;
+
+		return new Iterable<T>(){
+			@Override
+			public Iterator<T> iterator() {
+				return finalItems;
+			}
+		};
+	}
+
+	/**
 	 * Get an iterator that iterates over all the given iterables in whatever iteration order each provides.
 	 * It is up to the caller to make sure the underlying iterables are not changed during iteration.
 	 * The benefit of using this is that is does not perform variable allocations.

@@ -26,6 +26,8 @@ import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.model.term.VariableTypeMap;
 
+import java.util.Map;
+
 /**
  * An Atom that can be used in a query, but does not have a truth value.
  * <p>
@@ -60,6 +62,20 @@ public class QueryAtom extends Atom {
 		for (int i = 0; i < arguments.length; i++) {
 			if (arguments[i] instanceof Variable) {
 				newArgs[i] = res.get(resultIndex, (Variable)arguments[i]);
+			} else if (arguments[i] instanceof Constant) {
+				newArgs[i] = (Constant)arguments[i];
+			} else {
+				throw new IllegalArgumentException("Unrecognized type of Term.");
+			}
+		}
+
+		return atomManager.getAtom(predicate, newArgs);
+	}
+
+	public GroundAtom ground(AtomManager atomManager, Constant[] queryResults, Map<Variable, Integer> projectionMap, Constant[] newArgs) {
+		for (int i = 0; i < arguments.length; i++) {
+			if (arguments[i] instanceof Variable) {
+				newArgs[i] = queryResults[projectionMap.get((Variable)arguments[i]).intValue()];
 			} else if (arguments[i] instanceof Constant) {
 				newArgs[i] = (Constant)arguments[i];
 			} else {
