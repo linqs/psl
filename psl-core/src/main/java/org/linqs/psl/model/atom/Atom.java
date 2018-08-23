@@ -34,6 +34,7 @@ import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.util.HashCode;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -107,6 +108,20 @@ public abstract class Atom implements Formula, SummationAtomOrAtom {
 	 */
 	public Term[] getArguments() {
 		return arguments;
+	}
+
+	/**
+	 * Get all the variables used by this atom.
+	 */
+	public Set<Variable> getVariables() {
+		Set<Variable> variables = new HashSet<Variable>();
+		for (Term term : arguments) {
+			if (term instanceof Variable) {
+				variables.add((Variable)term);
+			}
+		}
+
+		return variables;
 	}
 
 	@Override

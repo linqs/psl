@@ -256,7 +256,9 @@ public class RDBMSDatabase extends Database {
 	@Override
 	public ResultList executeGroundingQuery(Formula formula) {
 		if (useOptimalCover) {
-			return executeQuery(OptimalCover.computeOptimalCover(formula, (RDBMSDataStore)parentDataStore), false);
+			// TEST
+			// return executeQuery(OptimalCover.computeOptimalCover(formula, (RDBMSDataStore)parentDataStore), false);
+			return executeQuery(QueryRewriter.rewrite(formula, (RDBMSDataStore)parentDataStore), false);
 		} else {
 			return executeQuery(formula, false);
 		}
