@@ -21,10 +21,13 @@ import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
+import org.linqs.psl.util.IteratorUtils;
 
-import org.apache.commons.collections4.SetValuedMap;
-import org.apache.commons.collections4.multimap.HashSetValuedHashMap;
 import com.google.common.collect.Iterables;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * A simple {@link GroundRuleStore} that just stores each {@link GroundRule}
@@ -33,50 +36,73 @@ import com.google.common.collect.Iterables;
  * Other methods are not guaranteed safe.
  */
 public class MemoryGroundRuleStore implements GroundRuleStore {
-	protected SetValuedMap<Rule, GroundRule> groundRules;
+	protected List<GroundRule> groundRules;
 
 	public MemoryGroundRuleStore() {
-		groundRules = new HashSetValuedHashMap<Rule, GroundRule>();
+		groundRules = new ArrayList<GroundRule>();
 	}
 
 	@Override
 	public synchronized void addGroundRule(GroundRule groundRule) {
-		groundRules.put(groundRule.getRule(), groundRule);
+		groundRules.add(groundRule);
 	}
 
+	/**
+	 * O(n) check for a ground rule.
+	 */
 	@Override
 	public boolean containsGroundRule(GroundRule groundRule) {
-		return groundRules.containsMapping(groundRule.getRule(), groundRule);
+		return groundRules.contains(groundRule);
 	}
 
 	@Override
 	public Iterable<WeightedGroundRule> getCompatibilityRules() {
-		return Iterables.filter(groundRules.values(), WeightedGroundRule.class);
+		return Iterables.filter(groundRules, WeightedGroundRule.class);
 	}
 
 	@Override
 	public Iterable<UnweightedGroundRule> getConstraintRules() {
-		return Iterables.filter(groundRules.values(), UnweightedGroundRule.class);
+		return Iterables.filter(groundRules, UnweightedGroundRule.class);
 	}
 
 	@Override
 	public Iterable<GroundRule> getGroundRules() {
-		return groundRules.values();
+		return groundRules;
 	}
 
 	@Override
 	public Iterable<GroundRule> getGroundRules(Rule rule) {
-		return groundRules.get(rule);
+		final Rule finalRule = rule;
+
+		return IteratorUtils.filter(groundRules, new IteratorUtils.FilterFunction<GroundRule>() {
+			public boolean keep(GroundRule groundRule) {
+				// Note that order is very important because not all GroundRules have a parent.
+				return finalRule.equals(groundRule.getRule());
+			}
+		});
 	}
 
+	/**
+	 * O(n).
+	 */
 	@Override
 	public void removeGroundRule(GroundRule groundRule) {
-		groundRules.removeMapping(groundRule.getRule(), groundRule);
+		groundRules.remove(groundRule);
 	}
 
+	/**
+	 * O(n).
+	 */
 	@Override
 	public void removeGroundRules(Rule rule) {
-		groundRules.remove(rule);
+		Iterator<GroundRule> iterator = groundRules.iterator();
+		while (iterator.hasNext()) {
+			GroundRule groundRule = iterator.next();
+			// Note that order is very important because not all GroundRules have a parent.
+			if (rule.equals(groundRule.getRule())) {
+				iterator.remove();
+			}
+		}
 	}
 
 	@Override
@@ -84,9 +110,19 @@ public class MemoryGroundRuleStore implements GroundRuleStore {
 		return groundRules.size();
 	}
 
+	/**
+	 * O(n).
+	 */
 	@Override
 	public int count(Rule rule) {
-		return groundRules.get(rule).size();
+		int count = 0;
+		for (GroundRule groundRule : groundRules) {
+			// Note that order is very important because not all GroundRules have a parent.
+			if (rule.equals(groundRule.getRule())) {
+				count++;
+			}
+		}
+		return count;
 	}
 
 	@Override

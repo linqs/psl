@@ -118,19 +118,19 @@ public abstract class AbstractLogicalRule extends AbstractRule {
 	}
 
 	@Override
-	public int groundAll(AtomManager atomManager, GroundRuleStore grs) {
+	public int groundAll(AtomManager atomManager, GroundRuleStore groundRuleStore) {
 		QueryResultIterable queryResults = atomManager.executeGroundingQuery(negatedDNF.getQueryFormula());
-		return groundAll(queryResults, atomManager, grs);
+		return groundAll(queryResults, atomManager, groundRuleStore);
 	}
 
-	public int groundAll(QueryResultIterable groundVariables, AtomManager atomManager, GroundRuleStore grs) {
+	public int groundAll(QueryResultIterable groundVariables, AtomManager atomManager, GroundRuleStore groundRuleStore) {
 		// We will manually handle these in the grounding process.
 		// We do not want to throw too early because the ground rule may turn out to be trivial in the end.
 		boolean oldAccessExceptionState = atomManager.enableAccessExceptions(false);
 
-		int initialCount = grs.count(this);
-		Parallel.foreach(groundVariables, new GroundWorker(atomManager, grs, groundVariables.getVariableMap()));
-		int groundCount = grs.count(this) - initialCount;
+		int initialCount = groundRuleStore.count(this);
+		Parallel.foreach(groundVariables, new GroundWorker(atomManager, groundRuleStore, groundVariables.getVariableMap()));
+		int groundCount = groundRuleStore.count(this) - initialCount;
 
 		atomManager.enableAccessExceptions(oldAccessExceptionState);
 
@@ -149,17 +149,17 @@ public abstract class AbstractLogicalRule extends AbstractRule {
 		Set<GroundAtom> accessExceptionAtoms;
 
 		private AtomManager atomManager;
-		private GroundRuleStore grs;
+		private GroundRuleStore groundRuleStore;
 		private Map<Variable, Integer> variableMap;
 
 		// Allocate up-front some buffers for grounding QueryAtoms into.
 		private Constant[][] positiveAtomArgs;
 		private Constant[][] negativeAtomArgs;
 
-		public GroundWorker(AtomManager atomManager, GroundRuleStore grs, Map<Variable, Integer> variableMap) {
+		public GroundWorker(AtomManager atomManager, GroundRuleStore groundRuleStore, Map<Variable, Integer> variableMap) {
 			this.atomManager = atomManager;
 			this.variableMap = variableMap;
-			this.grs = grs;
+			this.groundRuleStore = groundRuleStore;
 		}
 
 		@Override
@@ -185,7 +185,7 @@ public abstract class AbstractLogicalRule extends AbstractRule {
 
 		@Override
 		public Object clone() {
-			return new GroundWorker(atomManager, grs, variableMap);
+			return new GroundWorker(atomManager, groundRuleStore, variableMap);
 		}
 
 		@Override
@@ -234,7 +234,7 @@ public abstract class AbstractLogicalRule extends AbstractRule {
 			}
 
 			AbstractGroundLogicalRule groundRule = groundFormulaInstance(positiveAtoms, negativeAtoms, rvaCount);
-			grs.addGroundRule(groundRule);
+			groundRuleStore.addGroundRule(groundRule);
 		}
 
 

@@ -27,6 +27,13 @@ public final class IteratorUtils {
 	private IteratorUtils() {}
 
 	/**
+	 * Given an Iterable, return a new Iterable that filters baseed off of some function.
+	 */
+	public static <T> Iterable<T> filter(Iterable<T> baseIterable, FilterFunction<T> filter) {
+		return new FilterIterable<T>(baseIterable, filter);
+	}
+
+	/**
 	 * Make an Iterable from and Interator.
 	 */
 	public static <T> Iterable<T> newIterable(Iterator<T> items) {
@@ -71,6 +78,71 @@ public final class IteratorUtils {
 				return new PowerSetIterator(finalSize);
 			}
 		};
+	}
+
+	private static class FilterIterable<T> implements Iterable<T> {
+		private Iterable<T> baseIterable;
+		private FilterFunction<T> filter;
+
+		public FilterIterable(Iterable<T> baseIterable, FilterFunction<T> filter) {
+			this.baseIterable = baseIterable;
+			this.filter = filter;
+		}
+
+		@Override
+		public Iterator<T> iterator() {
+			return new FilterIterator<T>(baseIterable, filter);
+		}
+	}
+
+	private static class FilterIterator<T> implements Iterator<T> {
+		private Iterator<T> baseIterator;
+		private FilterFunction<T> filter;
+		private T nextValue;
+
+		public FilterIterator(Iterable<T> baseIterable, FilterFunction<T> filter) {
+			this.baseIterator = baseIterable.iterator();
+			this.filter = filter;
+
+			primeNext();
+		}
+
+		private void primeNext() {
+			while (baseIterator.hasNext()) {
+				nextValue = baseIterator.next();
+
+				if (filter.keep(nextValue)) {
+					return;
+				}
+			}
+
+			nextValue = null;
+		}
+
+		@Override
+		public boolean hasNext() {
+			return nextValue != null;
+		}
+
+		@Override
+		public T next() {
+			if (!hasNext()) {
+				throw new IllegalStateException("Called next() when hasNext() == false.");
+			}
+
+			T rtn = nextValue;
+			primeNext();
+			return rtn;
+		}
+
+		@Override
+		public void remove() {
+			throw new UnsupportedOperationException();
+		}
+	}
+
+	public interface FilterFunction<T> {
+		public boolean keep(T value);
 	}
 
 	private static class ConcatenationIterable<T> implements Iterable<T> {

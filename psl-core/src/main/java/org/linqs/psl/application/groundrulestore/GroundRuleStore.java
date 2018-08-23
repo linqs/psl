@@ -49,6 +49,7 @@ public interface GroundRuleStore {
 
 	/**
 	 * Removes a GroundRule from this store.
+	 * Check with the implementation on the runtime.
 	 *
 	 * @param rule the GroundRule to remove
 	 * @throws IllegalArgumentException if rule is not in this store
@@ -57,6 +58,7 @@ public interface GroundRuleStore {
 
 	/**
 	 * Removes all GroundRules that was instantiated by a given rule.
+	 * Check with the implementation on the runtime.
 	 *
 	 * @param rule the originator of the ground rules
 	 */
@@ -64,6 +66,7 @@ public interface GroundRuleStore {
 
 	/**
 	 * Checks whether a GroundRule is in this store.
+	 * Check with the implementation on the runtime.
 	 *
 	 * @param rule the GroundRule to check
 	 * @return true if rule is in this store
