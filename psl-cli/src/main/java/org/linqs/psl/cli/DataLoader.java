@@ -58,7 +58,7 @@ public class DataLoader {
 	public static final String PROPERTY_CLOSED = "closed";
 	public static final String PROPERTY_TYPES = "types";
 	public static final String PROPERTY_BLOCK = "block";
-	public static final String PROPERTY_FUNCTION = "function";
+	public static final String PROPERTY_FUNCTION = "implementation";
 
 	private static final Logger log = LoggerFactory.getLogger(DataLoader.class);
 
