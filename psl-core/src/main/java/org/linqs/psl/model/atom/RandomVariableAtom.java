@@ -28,43 +28,41 @@ import org.linqs.psl.reasoner.function.MutableAtomFunctionVariable;
  * A GroundAtom is instantiated as a RandomVariableAtom is BOTH of the following
  * conditions are met:
  * <ul>
- *   <li>it has a {@link StandardPredicate} that is open in the Atom's Database</li>
- *   <li>it is not persisted in one of its Database's read-only Partitions</li>
+ *  <li>it has a {@link StandardPredicate} that is open in the Atom's Database</li>
+ *  <li>it is not persisted in one of its Database's read-only Partitions</li>
  * </ul>
  */
 public class RandomVariableAtom extends GroundAtom {
-	protected RandomVariableAtom(StandardPredicate p, Constant[] args,
-			Database db, double value) {
-		super(p, args, db, value);
+	/**
+	 * Whether this atom is in violation of an AtomManager's access policy.
+	 * Typically an AtomManager (like the PersistedAtomManager) would just throw an exception,
+	 * but exceptions may have been disabled for performance reasons.
+	 */
+	private boolean isAccessException;
+
+	protected RandomVariableAtom(StandardPredicate p, Constant[] args, double value) {
+		super(p, args, value);
+		isAccessException = false;
 	}
 
 	@Override
 	public StandardPredicate getPredicate() {
-		return (StandardPredicate) predicate;
+		return (StandardPredicate)predicate;
 	}
 
 	/**
 	 * Sets the truth value of this Atom.
-	 *
-	 * @param value  a truth value in [0,1]
-	 * @return this for convenience
-	 * @throws IllegalArgumentException  if value is not in [0,1]
 	 */
-	public RandomVariableAtom setValue(double value) {
-		//		if (0.0 <= value && value <= 1.0)
+	public void setValue(double value) {
 		this.value = value;
-		//		else
-		//			throw new IllegalArgumentException("Value should be in [0,1] but is " + value);
-
-		return this;
 	}
 
-	/**
-	 * Calls {@link Database#commit(RandomVariableAtom)} with this Atom
-	 * on the Database that instantiated it.
-	 */
-	public void commitToDB() {
-		db.commit(this);
+	public void setAccessException(boolean isAccessException) {
+		this.isAccessException = isAccessException;
+	}
+
+	public boolean getAccessException() {
+		return isAccessException;
 	}
 
 	@Override

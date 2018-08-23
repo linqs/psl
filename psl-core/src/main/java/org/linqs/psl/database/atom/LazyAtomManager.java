@@ -116,6 +116,11 @@ public class LazyAtomManager extends PersistedAtomManager {
 		return rvAtom;
 	}
 
+	@Override
+	public void reportAccessException(RuntimeException ex, GroundAtom offendingAtom) {
+		// LazyAtomManger does not have access exceptions.
+	}
+
 	public Set<RandomVariableAtom> getLazyAtoms() {
 		return Collections.unmodifiableSet(lazyAtoms);
 	}
@@ -161,8 +166,8 @@ public class LazyAtomManager extends PersistedAtomManager {
 
 	/**
 	 * Activate a specific set of lazy atoms.
-	 * Any passed in atom that is not part of this manager's lazy
-	 * atom set will be ignored.
+	 * Any passed in atom that is not part of this manager's lazy atom set will be ignored.
+	 * The caller must be sure that these given atoms came from the same database managed by this AtomManager.
 	 * @return the number of lazy atoms instantiated.
 	 */
 	public int activateAtoms(Set<RandomVariableAtom> atoms, List<Rule> rules, GroundRuleStore groundRuleStore) {
@@ -170,13 +175,6 @@ public class LazyAtomManager extends PersistedAtomManager {
 		Iterator<RandomVariableAtom> atomIterator = atoms.iterator();
 		while (atomIterator.hasNext()) {
 			RandomVariableAtom atom = atomIterator.next();
-
-			// Make sure we manage this atom.
-			if (!db.equals(atom.getDatabase())) {
-				throw new IllegalArgumentException(String.format(
-						"Atom (%s) did not come from the database managed by this AtomManager.",
-						atom));
-			}
 
 			// Remove atoms that are not lazy.
 			if (!lazyAtoms.contains(atom)) {

@@ -144,7 +144,7 @@ public class AtomCache {
 			return (ObservedAtom)cache.get(key);
 		}
 
-		ObservedAtom atom = new ObservedAtom(predicate, args, db, value);
+		ObservedAtom atom = new ObservedAtom(predicate, args, value);
 		cache.put(key, atom);
 
 		return atom;
@@ -178,7 +178,7 @@ public class AtomCache {
 			return (RandomVariableAtom)cache.get(key);
 		}
 
-		RandomVariableAtom atom = new RandomVariableAtom(predicate, args, db, value);
+		RandomVariableAtom atom = new RandomVariableAtom(predicate, args, value);
 		cache.put(key, atom);
 
 		return atom;

@@ -43,8 +43,15 @@ import org.linqs.psl.model.term.Constant;
 public abstract class AtomManager {
 	protected final Database db;
 
+	/**
+	 * If the specific AtomManager supports access exceptions,
+	 * then this will control if they are actually thrown.
+	 */
+	protected boolean enableAccessExceptions;
+
 	public AtomManager(Database db) {
 		this.db = db;
+		this.enableAccessExceptions = true;
 	}
 
 	/**
@@ -92,4 +99,20 @@ public abstract class AtomManager {
 	public Database getDatabase() {
 		return db;
 	}
+
+	/**
+	 * Set whether or not to throw access exceptions.
+	 * @return the old setting for this value.
+	 */
+	public boolean enableAccessExceptions(boolean newValue) {
+		boolean oldValue = enableAccessExceptions;
+		enableAccessExceptions = newValue;
+		return oldValue;
+	}
+
+	/**
+	 * Decide whether or not to throw an access exception.
+	 * This will bypass |enableAccessExceptions|.
+	 */
+	public abstract void reportAccessException(RuntimeException ex, GroundAtom offendingAtom);
 }

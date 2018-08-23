@@ -118,19 +118,13 @@ public class PersistedAtomManager extends AtomManager {
 		}
 		RandomVariableAtom rvAtom = (RandomVariableAtom)atom;
 
+		if (!persistedCache.contains(rvAtom)) {
+			rvAtom.setAccessException(true);
+		}
 
 		// Only check against the persisted cache if we need to warn or throw.
-		if ((throwOnIllegalAccess || warnOnIllegalAccess) && !persistedCache.contains(rvAtom)) {
-			if (throwOnIllegalAccess) {
-				throw new PersistedAccessException(rvAtom);
-			}
-
-			warnOnIllegalAccess = false;
-			log.warn(String.format("Found a non-persisted RVA (%s)." +
-					" If you do not understand the implications of this warning," +
-					" check your configuration and set '%s' to true." +
-					" This warning will only be logged once.",
-					rvAtom, THROW_ACCESS_EXCEPTION_KEY));
+		if (enableAccessExceptions && (throwOnIllegalAccess || warnOnIllegalAccess) && rvAtom.getAccessException()) {
+			reportAccessException(null, rvAtom);
 		}
 
 		return rvAtom;
@@ -149,6 +143,26 @@ public class PersistedAtomManager extends AtomManager {
 
 	protected void addToPersistedCache(Set<RandomVariableAtom> atoms) {
 		persistedCache.addAll(atoms);
+	}
+
+	@Override
+	public void reportAccessException(RuntimeException ex, GroundAtom offendingAtom) {
+		if (throwOnIllegalAccess) {
+			if (ex == null) {
+				ex = new PersistedAccessException((RandomVariableAtom)offendingAtom);
+			}
+
+			throw ex;
+		}
+
+		if (warnOnIllegalAccess) {
+			warnOnIllegalAccess = false;
+			log.warn(String.format("Found a non-persisted RVA (%s)." +
+					" If you do not understand the implications of this warning," +
+					" check your configuration and set '%s' to true." +
+					" This warning will only be logged once.",
+					offendingAtom, THROW_ACCESS_EXCEPTION_KEY));
+		}
 	}
 
 	public static class PersistedAccessException extends IllegalArgumentException {

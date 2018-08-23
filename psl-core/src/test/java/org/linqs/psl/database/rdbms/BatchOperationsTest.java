@@ -61,7 +61,7 @@ public class BatchOperationsTest {
 		}
 
 		for (RandomVariableAtom atom : atoms) {
-			atom.commitToDB();
+			database.commit(atom);
 		}
 	}
 

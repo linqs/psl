@@ -280,18 +280,18 @@ public abstract class DataStoreTest {
 		Database db = datastore.getDatabase(datastore.getPartition("0"));
 		RandomVariableAtom atom = (RandomVariableAtom) db.getAtom(p1, a, b);
 		atom.setValue(0.25);
-		atom.commitToDB();
+		db.commit(atom);
 		atom.setValue(0.5);
-		atom.commitToDB();
+		db.commit(atom);
 		db.close();
 
 		db = datastore.getDatabase(datastore.getPartition("0"));
 		atom = (RandomVariableAtom) db.getAtom(p1, a, b);
 		assertEquals(0.5, atom.getValue(), 0.0);
 		atom.setValue(0.75);
-		atom.commitToDB();
+		db.commit(atom);
 		atom.setValue(1.0);
-		atom.commitToDB();
+		db.commit(atom);
 		db.close();
 
 		db = datastore.getDatabase(datastore.getPartition("0"));
@@ -319,8 +319,8 @@ public abstract class DataStoreTest {
 		RandomVariableAtom atom2 = (RandomVariableAtom) db.getAtom(p1, c, d);
 		atom1.setValue(0.25);
 		atom2.setValue(0.75);
-		atom1.commitToDB();
-		atom2.commitToDB();
+		db.commit(atom1);
+		db.commit(atom2);
 		DatabaseQuery query = new DatabaseQuery(new QueryAtom(p1,  new Variable("X"), new Variable("Y")));
 		ResultList results = db.executeQuery(query);
 		assertEquals(2, results.size());

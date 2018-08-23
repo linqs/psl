@@ -76,8 +76,7 @@ import java.util.Set;
  * <h2>Persisting RandomVariableAtoms</h2>
  *
  * A RandomVariableAtom can be persisted (including updated) in the write
- * Partition via {@link #commit(RandomVariableAtom)} or
- * {@link RandomVariableAtom#commitToDB()}.
+ * Partition via {@link #commit(RandomVariableAtom)}.
  *
  * <h2>Querying for Groundings</h2>
  *

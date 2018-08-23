@@ -36,4 +36,9 @@ public class SimpleAtomManager extends AtomManager {
 	public GroundAtom getAtom(Predicate predicate, Constant... arguments) {
 		return db.getAtom(predicate, arguments);
 	}
+
+	@Override
+	public void reportAccessException(RuntimeException ex, GroundAtom offendingAtom) {
+		throw ex;
+	}
 }

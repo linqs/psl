@@ -41,17 +41,11 @@ import java.util.Set;
 public abstract class GroundAtom extends Atom implements Comparable<GroundAtom> {
 	private static final Set<GroundRule> emptyGroundRules = ImmutableSet.of();
 
-	protected final Database db;
 	protected double value;
 
-	protected GroundAtom(Predicate predicate, Constant[] args, Database db, double value) {
+	protected GroundAtom(Predicate predicate, Constant[] args, double value) {
 		super(predicate, args);
-		this.db = db;
 		this.value = value;
-	}
-
-	public Database getDatabase() {
-		return db;
 	}
 
 	@Override
