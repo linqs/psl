@@ -76,4 +76,8 @@ public class ConstraintBlockerTerm implements Term {
 			atoms[RandUtils.nextInt(atoms.length)].setValue(1.0);
 		}
 	}
+
+	public GroundRule getGroundRule() {
+		throw new UnsupportedOperationException();
+	}
 }

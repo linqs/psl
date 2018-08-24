@@ -207,7 +207,7 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm> {
 	}
 
 	@Override
-	public List<Integer> getTermIndices(WeightedGroundRule rule) {
-		return store.getTermIndices(rule);
+	public Iterable<ADMMObjectiveTerm> getTerms(GroundRule groundRule) {
+		return store.getTerms(groundRule);
 	}
 }

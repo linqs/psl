@@ -17,6 +17,8 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
+import org.linqs.psl.model.rule.GroundRule;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,8 +37,8 @@ public abstract class HyperplaneTerm extends ADMMObjectiveTerm {
 	// Only allocate once.
 	protected final float[] point;
 
-	HyperplaneTerm(List<LocalVariable> variables, List<Float> coeffs, float constant) {
-		super(variables);
+	HyperplaneTerm(GroundRule groundRule, List<LocalVariable> variables, List<Float> coeffs, float constant) {
+		super(variables, groundRule);
 
 		assert(variables.size() == coeffs.size());
 

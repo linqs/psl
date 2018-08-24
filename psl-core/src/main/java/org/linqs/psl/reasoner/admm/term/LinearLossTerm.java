@@ -18,6 +18,7 @@
 package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.reasoner.term.WeightedTerm;
+import org.linqs.psl.model.rule.GroundRule;
 
 import java.util.List;
 
@@ -32,8 +33,8 @@ public class LinearLossTerm extends ADMMObjectiveTerm implements WeightedTerm {
 	/**
 	 * Caller releases control of |variables| and |coeffs|.
 	 */
-	LinearLossTerm(List<LocalVariable> variables, List<Float> coeffs, float weight) {
-		super(variables);
+	LinearLossTerm(GroundRule groundRule, List<LocalVariable> variables, List<Float> coeffs, float weight) {
+		super(variables, groundRule);
 
 		assert(variables.size() == coeffs.size());
 

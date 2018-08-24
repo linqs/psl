@@ -129,7 +129,7 @@ public class SquaredHingeLossTermTest {
 			coeffsList.add(new Float(coeffs[i]));
 		}
 
-		SquaredHingeLossTerm term = new SquaredHingeLossTerm(variables, coeffsList, constant, weight);
+		SquaredHingeLossTerm term = new SquaredHingeLossTerm(null, variables, coeffsList, constant, weight);
 		term.minimize(stepSize, z);
 
 		for (int i = 0; i < z.length; i++) {

@@ -18,6 +18,7 @@
 package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.reasoner.term.WeightedTerm;
+import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.util.HashCode;
 
 import cern.colt.matrix.tfloat.FloatMatrix2D;
@@ -50,8 +51,8 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
 	// TODO(eriq): All the matrix work is suspect.
 	// The old code was using some cache that didn't seem too useful. Could it have been?
 
-	SquaredHyperplaneTerm(List<LocalVariable> variables, List<Float> coeffs, float constant, float weight) {
-		super(variables);
+	SquaredHyperplaneTerm(GroundRule groundRule, List<LocalVariable> variables, List<Float> coeffs, float constant, float weight) {
+		super(variables, groundRule);
 
 		assert(variables.size() == coeffs.size());
 

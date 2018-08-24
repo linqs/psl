@@ -17,5 +17,8 @@
  */
 package org.linqs.psl.reasoner.term;
 
+import org.linqs.psl.model.rule.GroundRule;
+
 public interface Term {
+	public GroundRule getGroundRule();
 }

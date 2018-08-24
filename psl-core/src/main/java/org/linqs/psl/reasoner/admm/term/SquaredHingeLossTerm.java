@@ -17,6 +17,8 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
+import org.linqs.psl.model.rule.GroundRule;
+
 import java.util.List;
 
 /**
@@ -24,9 +26,8 @@ import java.util.List;
  * weight * [max(coeffs^T * x - constant, 0)]^2
  */
 public class SquaredHingeLossTerm extends SquaredHyperplaneTerm {
-
-	public SquaredHingeLossTerm(List<LocalVariable> variables, List<Float> coeffs, float constant, float weight) {
-		super(variables, coeffs, constant, weight);
+	public SquaredHingeLossTerm(GroundRule groundRule, List<LocalVariable> variables, List<Float> coeffs, float constant, float weight) {
+		super(groundRule, variables, coeffs, constant, weight);
 	}
 
 	/**

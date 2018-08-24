@@ -85,7 +85,7 @@ public class LinearConstraintTermTest {
 			coeffsList.add(new Float(coeffs[i]));
 		}
 
-		LinearConstraintTerm term = new LinearConstraintTerm(variables, coeffsList, constant, comparator);
+		LinearConstraintTerm term = new LinearConstraintTerm(null, variables, coeffsList, constant, comparator);
 		term.minimize(stepSize, z);
 
 		for (int i = 0; i < z.length; i++) {

@@ -304,8 +304,8 @@ public class ADMMReasoner implements Reasoner {
 		assert(consensusBuffer.length == consensusValues.length);
 
 		// Set the global variables to the value of the local variables for this rule.
-		for (Integer termIndex : termStore.getTermIndices((WeightedGroundRule)groundRule)) {
-			for (LocalVariable localVariable : termStore.get(termIndex).getVariables()) {
+		for (ADMMObjectiveTerm term : termStore.getTerms(groundRule)) {
+			for (LocalVariable localVariable : term.getVariables()) {
 				consensusBuffer[localVariable.getGlobalId()] = localVariable.getValue();
 			}
 		}

@@ -144,13 +144,13 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 
 			// Non-negative functions have a hinge.
 			if (function.isNonNegative() && function.isSquared()) {
-				term = new SquaredHingeLossTerm(hyperplane.variables, hyperplane.coeffs, hyperplane.constant, weight);
+				term = new SquaredHingeLossTerm(groundRule, hyperplane.variables, hyperplane.coeffs, hyperplane.constant, weight);
 			} else if (function.isNonNegative() && !function.isSquared()) {
-				term = new HingeLossTerm(hyperplane.variables, hyperplane.coeffs, hyperplane.constant, weight);
+				term = new HingeLossTerm(groundRule, hyperplane.variables, hyperplane.coeffs, hyperplane.constant, weight);
 			} else if (!function.isNonNegative() && function.isSquared()) {
-				term = new SquaredLinearLossTerm(hyperplane.variables, hyperplane.coeffs, 0.0f, weight);
+				term = new SquaredLinearLossTerm(groundRule, hyperplane.variables, hyperplane.coeffs, 0.0f, weight);
 			} else {
-				term = new LinearLossTerm(hyperplane.variables, hyperplane.coeffs, weight);
+				term = new LinearLossTerm(groundRule, hyperplane.variables, hyperplane.coeffs, weight);
 			}
 		} else if (groundRule instanceof UnweightedGroundRule) {
 			ConstraintTerm constraint = ((UnweightedGroundRule)groundRule).getConstraintDefinition();
@@ -160,7 +160,7 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 				return null;
 			}
 
-			term = new LinearConstraintTerm(hyperplane.variables, hyperplane.coeffs,
+			term = new LinearConstraintTerm(groundRule, hyperplane.variables, hyperplane.coeffs,
 					(float)(constraint.getValue() + hyperplane.constant), constraint.getComparator());
 		} else {
 			throw new IllegalArgumentException("Unsupported ground rule: " + groundRule);

@@ -18,6 +18,7 @@
 package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.reasoner.term.WeightedTerm;
+import org.linqs.psl.model.rule.GroundRule;
 
 import java.util.List;
 
@@ -30,8 +31,8 @@ import java.util.List;
 public class HingeLossTerm extends HyperplaneTerm implements WeightedTerm {
 	private float weight;
 
-	HingeLossTerm(List<LocalVariable> variables, List<Float> coeffs, float constant, float weight) {
-		super(variables, coeffs, constant);
+	HingeLossTerm(GroundRule groundRule, List<LocalVariable> variables, List<Float> coeffs, float constant, float weight) {
+		super(groundRule, variables, coeffs, constant);
 		setWeight(weight);
 	}
 

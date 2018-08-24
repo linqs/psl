@@ -130,7 +130,7 @@ public class HingeLossTermTest {
 			coeffsList.add(new Float(coeffs[i]));
 		}
 
-		HingeLossTerm term = new HingeLossTerm(variables, coeffsList, constant, weight);
+		HingeLossTerm term = new HingeLossTerm(null, variables, coeffsList, constant, weight);
 		term.minimize(stepSize, z);
 
 		for (int i = 0; i < z.length; i++) {

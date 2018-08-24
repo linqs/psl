@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
+import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.reasoner.term.Term;
 
 import java.util.List;
@@ -27,13 +28,15 @@ import org.apache.commons.collections4.list.UnmodifiableList;
  * A term in the objective to be optimized by an ADMMReasoner.
  */
 public abstract class ADMMObjectiveTerm implements Term {
+	private final GroundRule groundRule;
 	protected final List<LocalVariable> variables;
 
 	/**
 	 * Caller releases control of |variables|.
 	 */
-	public ADMMObjectiveTerm(List<LocalVariable> variables) {
+	public ADMMObjectiveTerm(List<LocalVariable> variables, GroundRule groundRule) {
 		this.variables = variables;
+      this.groundRule = groundRule;
 	}
 
 	public void updateLagrange(float stepSize, float[] consensusValues) {
@@ -56,5 +59,9 @@ public abstract class ADMMObjectiveTerm implements Term {
 
 	public List<LocalVariable> getVariables() {
 		return new UnmodifiableList<LocalVariable>(variables);
+	}
+
+	public GroundRule getGroundRule() {
+		return groundRule;
 	}
 }

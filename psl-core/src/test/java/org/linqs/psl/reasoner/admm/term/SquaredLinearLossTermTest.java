@@ -53,7 +53,7 @@ public class SquaredLinearLossTermTest {
 			coeffsList.add(new Float(coeffs[i]));
 		}
 
-		SquaredLinearLossTerm term = new SquaredLinearLossTerm(variables, coeffsList, constant, weight);
+		SquaredLinearLossTerm term = new SquaredLinearLossTerm(null, variables, coeffsList, constant, weight);
 		term.minimize(stepSize, z);
 
 		for (int i = 0; i < z.length; i++) {

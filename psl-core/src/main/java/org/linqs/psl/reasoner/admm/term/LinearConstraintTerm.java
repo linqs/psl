@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
+import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.util.MathUtils;
 
@@ -33,8 +34,8 @@ import java.util.List;
 public class LinearConstraintTerm extends HyperplaneTerm {
 	private final FunctionComparator comparator;
 
-	protected LinearConstraintTerm(List<LocalVariable> variables, List<Float> coeffs, float constant, FunctionComparator comparator) {
-		super(variables, coeffs, constant);
+	protected LinearConstraintTerm(GroundRule groundRule, List<LocalVariable> variables, List<Float> coeffs, float constant, FunctionComparator comparator) {
+		super(groundRule, variables, coeffs, constant);
 		this.comparator = comparator;
 	}
 

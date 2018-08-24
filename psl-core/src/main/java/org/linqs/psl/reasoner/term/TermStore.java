@@ -55,8 +55,5 @@ public interface TermStore<E extends Term> extends Iterable<E> {
 
 	public void updateWeight(WeightedGroundRule rule);
 
-	/**
-	 * Get the indicies for all terms related to a specific rule.
-	 */
-	public List<Integer> getTermIndices(WeightedGroundRule rule);
+	public Iterable<E> getTerms(GroundRule groundRule);
 }

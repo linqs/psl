@@ -52,7 +52,7 @@ public class LinearLossTermTest {
 			coeffsList.add(new Float(coeffs[i]));
 		}
 
-		LinearLossTerm term = new LinearLossTerm(variables, coeffsList, weight);
+		LinearLossTerm term = new LinearLossTerm(null, variables, coeffsList, weight);
 		term.minimize(stepSize, z);
 
 		for (int i = 0; i < z.length; i++) {

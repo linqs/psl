@@ -17,6 +17,8 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
+import org.linqs.psl.model.rule.GroundRule;
+
 import java.util.List;
 
 /**
@@ -24,8 +26,8 @@ import java.util.List;
  * weight * (coeffs^T * x - constant)^2
  */
 public class SquaredLinearLossTerm extends SquaredHyperplaneTerm {
-	SquaredLinearLossTerm(List<LocalVariable> variables, List<Float> coeffs, float constant, float weight) {
-		super(variables, coeffs, constant, weight);
+	SquaredLinearLossTerm(GroundRule groundRule, List<LocalVariable> variables, List<Float> coeffs, float constant, float weight) {
+		super(groundRule, variables, coeffs, constant, weight);
 	}
 
 	@Override

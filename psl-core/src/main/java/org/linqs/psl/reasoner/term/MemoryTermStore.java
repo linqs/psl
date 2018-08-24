@@ -20,6 +20,7 @@ package org.linqs.psl.reasoner.term;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
+import org.linqs.psl.util.IteratorUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -42,35 +43,16 @@ public class MemoryTermStore<E extends Term> implements TermStore<E> {
 
 	private ArrayList<E> store;
 
-	/**
-	 * A mapping of ground rule to the term indexes associated with
-	 * that ground rule.
-	 * This is used for updating weights, so we only track weighted
-	 * ground rules and terms.
-	 * Note that it could be possible to generate multiple terms
-	 * for a single ground rule.
-	 */
-	private Map<WeightedGroundRule, List<Integer>> ruleMapping;
-
 	public MemoryTermStore() {
 		this(Config.getInt(INITIAL_SIZE_KEY, INITIAL_SIZE_DEFAULT));
 	}
 
 	public MemoryTermStore(int initialSize) {
 		store = new ArrayList<E>(initialSize);
-		ruleMapping = new HashMap<WeightedGroundRule, List<Integer>>(initialSize);
 	}
 
 	@Override
 	public synchronized void add(GroundRule rule, E term) {
-		if (rule instanceof WeightedGroundRule && term instanceof WeightedTerm) {
-			if (!ruleMapping.containsKey((WeightedGroundRule)rule)) {
-				ruleMapping.put((WeightedGroundRule)rule, new LinkedList<Integer>());
-			}
-
-			ruleMapping.get((WeightedGroundRule)rule).add(new Integer(store.size()));
-		}
-
 		store.add(term);
 	}
 
@@ -79,10 +61,6 @@ public class MemoryTermStore<E extends Term> implements TermStore<E> {
 		if (store != null) {
 			store.clear();
 		}
-
-		if (ruleMapping != null) {
-			ruleMapping.clear();
-		}
 	}
 
 	@Override
@@ -90,7 +68,6 @@ public class MemoryTermStore<E extends Term> implements TermStore<E> {
 		clear();
 
 		store = null;
-		ruleMapping = null;
 	}
 
 	@Override
@@ -112,13 +89,6 @@ public class MemoryTermStore<E extends Term> implements TermStore<E> {
 		}
 
 		store.ensureCapacity(capacity);
-
-		// If the map is empty, then just reallocate it
-		// (since we can't add capacity).
-		if (ruleMapping.size() == 0) {
-			// The default load factor for Java HashMaps is 0.75.
-			ruleMapping = new HashMap<WeightedGroundRule, List<Integer>>((int)(capacity / 0.75));
-		}
 	}
 
 	@Override
@@ -126,18 +96,29 @@ public class MemoryTermStore<E extends Term> implements TermStore<E> {
 		return store.iterator();
 	}
 
+	/**
+	 * O(n)
+	 */
 	@Override
 	public void updateWeight(WeightedGroundRule rule) {
-		List<Integer> indexes = ruleMapping.get(rule);
 		float weight = (float)rule.getWeight();
 
-		for (int i = 0; i < indexes.size(); i++) {
-			((WeightedTerm)store.get(indexes.get(i).intValue())).setWeight(weight);
+		for (int i = 0; i < store.size(); i++) {
+			Term term = store.get(i);
+			if (term instanceof WeightedTerm) {
+				((WeightedTerm)term).setWeight(weight);
+			}
 		}
 	}
 
 	@Override
-	public List<Integer> getTermIndices(WeightedGroundRule rule) {
-		return new UnmodifiableList<Integer>(ruleMapping.get(rule));
+	public Iterable<E> getTerms(GroundRule groundRule) {
+		final GroundRule finalGroundRule = groundRule;
+
+		return IteratorUtils.filter(store, new IteratorUtils.FilterFunction<E>() {
+			public boolean keep(E term) {
+				return finalGroundRule.equals(term.getGroundRule());
+			}
+		});
 	}
 }

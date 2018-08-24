@@ -30,6 +30,10 @@ import org.junit.Test;
 public abstract class RDBMSDataStoreTest extends DataStoreTest {
 	@Test
 	public void testGetTableStats() {
+		if (datastore == null) {
+			return;
+		}
+
 		datastore.registerPredicate(p1);
 		datastore.registerPredicate(p2);
 
