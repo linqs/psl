@@ -20,7 +20,6 @@ package org.linqs.psl.model.atom;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
-import org.linqs.psl.reasoner.function.MutableAtomFunctionVariable;
 
 /**
  * A {@link GroundAtom} with a truth value which can be modified.
@@ -50,6 +49,11 @@ public class RandomVariableAtom extends GroundAtom {
 		return (StandardPredicate)predicate;
 	}
 
+	@Override
+	public boolean isConstant() {
+		return false;
+	}
+
 	/**
 	 * Sets the truth value of this Atom.
 	 */
@@ -63,10 +67,5 @@ public class RandomVariableAtom extends GroundAtom {
 
 	public boolean getAccessException() {
 		return isAccessException;
-	}
-
-	@Override
-	public MutableAtomFunctionVariable getVariable() {
-		return new MutableAtomFunctionVariable(this);
 	}
 }

@@ -23,7 +23,7 @@ import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.VariableTypeMap;
-import org.linqs.psl.reasoner.function.AtomFunctionVariable;
+import org.linqs.psl.reasoner.function.FunctionTerm;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
@@ -38,9 +38,7 @@ import java.util.Set;
  *
  * A GroundAtom has a truth value.
  */
-public abstract class GroundAtom extends Atom implements Comparable<GroundAtom> {
-	private static final Set<GroundRule> emptyGroundRules = ImmutableSet.of();
-
+public abstract class GroundAtom extends Atom implements Comparable<GroundAtom>, FunctionTerm {
 	protected double value;
 
 	protected GroundAtom(Predicate predicate, Constant[] args, double value) {
@@ -56,15 +54,19 @@ public abstract class GroundAtom extends Atom implements Comparable<GroundAtom> 
 	/**
 	 * @return the truth value of this Atom
 	 */
+	@Override
 	public double getValue() {
 		return value;
+	}
+
+	@Override
+	public boolean isLinear() {
+		return true;
 	}
 
 	public String toStringWithValue() {
 		return super.toString() + " = " + getValue();
 	}
-
-	public abstract AtomFunctionVariable getVariable();
 
 	public VariableTypeMap collectVariables(VariableTypeMap varMap) {
 		// No Variables in GroundAtoms.

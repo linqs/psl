@@ -20,7 +20,6 @@ package org.linqs.psl.model.atom;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.term.Constant;
-import org.linqs.psl.reasoner.function.ConstantAtomFunctionVariable;
 
 /**
  * A {@link GroundAtom} with a fixed truth value.
@@ -35,12 +34,12 @@ import org.linqs.psl.reasoner.function.ConstantAtomFunctionVariable;
  * Other reasons may exist for specific Database implementations.
  */
 public class ObservedAtom extends GroundAtom {
-	protected ObservedAtom(Predicate p, Constant[] args, double value) {
-		super(p, args, value);
+	protected ObservedAtom(Predicate predicate, Constant[] args, double value) {
+		super(predicate, args, value);
 	}
 
 	@Override
-	public ConstantAtomFunctionVariable getVariable() {
-		return new ConstantAtomFunctionVariable(this);
+	public boolean isConstant() {
+		return true;
 	}
 }

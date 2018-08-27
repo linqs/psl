@@ -34,7 +34,6 @@ import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
-import org.linqs.psl.reasoner.function.FunctionVariable;
 import org.linqs.psl.reasoner.function.GeneralFunction;
 import org.linqs.psl.util.HashCode;
 import org.linqs.psl.util.MathUtils;

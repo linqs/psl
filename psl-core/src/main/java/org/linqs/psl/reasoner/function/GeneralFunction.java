@@ -177,9 +177,8 @@ public class GeneralFunction implements FunctionTerm {
 			FunctionTerm term = terms[i];
 			double coefficient = coefficients[i];
 
-			// Only one instance of each atom exists and we are not tring to match a query atom.
-			if (term instanceof AtomFunctionVariable &&
-					((AtomFunctionVariable)term).getAtom() == replacementAtom) {
+			// Only one instance of each atom exists and we are trying to match it directly.
+			if (term == replacementAtom) {
 				val += coefficient * replacementValue;
 			} else {
 				val += coefficient * term.getValue();

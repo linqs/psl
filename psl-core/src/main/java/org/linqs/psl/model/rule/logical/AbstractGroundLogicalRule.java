@@ -56,20 +56,20 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
 		int hash = HashCode.build(rule);
 
 		// Construct function definition.
-		boolean nonNegative = (posLiterals.size() + negLiterals.size() > 1);
+		boolean nonNegative = (this.posLiterals.size() + this.negLiterals.size() > 1);
 		function = new GeneralFunction(nonNegative, false, rvaCount);
 
-		for (int i = 0; i < posLiterals.size(); i++) {
-			function.add(1.0, posLiterals.get(i).getVariable());
-			hash = HashCode.build(hash, posLiterals.get(i));
+		for (int i = 0; i < this.posLiterals.size(); i++) {
+			function.add(1.0, this.posLiterals.get(i));
+			hash = HashCode.build(hash, this.posLiterals.get(i));
 		}
 
-		for (int i = 0; i < negLiterals.size(); i++) {
-			function.add(-1.0, negLiterals.get(i).getVariable());
-			hash = HashCode.build(hash, negLiterals.get(i));
+		for (int i = 0; i < this.negLiterals.size(); i++) {
+			function.add(-1.0, this.negLiterals.get(i));
+			hash = HashCode.build(hash, this.negLiterals.get(i));
 		}
 
-		function.add(1.0 - posLiterals.size());
+		function.add(1.0 - this.posLiterals.size());
 		hashcode = hash;
 	}
 

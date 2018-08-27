@@ -19,11 +19,11 @@ package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 import org.linqs.psl.config.Config;
+import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
-import org.linqs.psl.reasoner.function.AtomFunctionVariable;
 import org.linqs.psl.reasoner.function.ConstraintTerm;
 import org.linqs.psl.reasoner.function.FunctionTerm;
 import org.linqs.psl.reasoner.function.GeneralFunction;
@@ -181,8 +181,8 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 			float coefficient = (float)sum.getCoefficient(i);
 			FunctionTerm term = sum.getTerm(i);
 
-			if (term instanceof AtomFunctionVariable && !term.isConstant()) {
-				LocalVariable variable = termStore.createLocalVariable((AtomFunctionVariable)term);
+			if (term instanceof RandomVariableAtom) {
+				LocalVariable variable = termStore.createLocalVariable((RandomVariableAtom)term);
 
 				// Check to see if we have seen this variable before in this hyperplane.
 				// Note that we are checking for existence in a List (O(n)), but there are usually a small number of

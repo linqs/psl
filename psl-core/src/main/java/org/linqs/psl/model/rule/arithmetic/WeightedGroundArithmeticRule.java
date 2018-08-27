@@ -94,7 +94,7 @@ public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule i
 				continue;
 			}
 
-			sum.add(termSign * coeffs[i], atoms[i].getVariable());
+			sum.add(termSign * coeffs[i], atoms[i]);
 		}
 		sum.add(-1.0 * termSign * constant);
 

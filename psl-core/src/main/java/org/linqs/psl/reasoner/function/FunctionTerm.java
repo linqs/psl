@@ -29,9 +29,7 @@ public interface FunctionTerm {
 	public double getValue();
 
 	/**
-	 * Returns whether the term is linear in its {@link FunctionVariable Variables}.
-	 *
-	 * Returns true if the term is a constant.
+	 * Returns whether the term is linear.
 	 */
 	public boolean isLinear();
 

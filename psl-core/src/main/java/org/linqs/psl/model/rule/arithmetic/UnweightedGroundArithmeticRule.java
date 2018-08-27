@@ -30,8 +30,6 @@ import java.util.List;
 /**
  * An {@link AbstractGroundArithmeticRule} that is unweighted, i.e., it is a hard
  * constraint that must always hold.
- *
- * @author Stephen Bach
  */
 public class UnweightedGroundArithmeticRule extends AbstractGroundArithmeticRule
 		implements UnweightedGroundRule {
@@ -84,7 +82,7 @@ public class UnweightedGroundArithmeticRule extends AbstractGroundArithmeticRule
 				continue;
 			}
 
-			sum.add(coeffs[i], atoms[i].getVariable());
+			sum.add(coeffs[i], atoms[i]);
 		}
 
 		return new ConstraintTerm(sum, comparator, constant);

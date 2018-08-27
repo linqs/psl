@@ -66,7 +66,7 @@ public class GroundLinearConstraint implements UnweightedGroundRule {
 	public ConstraintTerm getConstraintDefinition() {
 		GeneralFunction sum = new GeneralFunction(false, false, atoms.length);
 		for (int i = 0; i < atoms.length; i++) {
-			sum.add(coeffs[i], atoms[i].getVariable());
+			sum.add(coeffs[i], atoms[i]);
 		}
 		return new ConstraintTerm(sum, comp, value);
 	}

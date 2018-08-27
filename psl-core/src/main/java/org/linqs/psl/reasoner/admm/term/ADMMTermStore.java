@@ -18,10 +18,10 @@
 package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.config.Config;
+import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.admm.ADMMReasoner;
-import org.linqs.psl.reasoner.function.AtomFunctionVariable;
 import org.linqs.psl.reasoner.term.MemoryTermStore;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.RandUtils;
@@ -49,7 +49,7 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm> {
 	// Keep an internal store to hold the terms while this class focus on variables.
 	private TermStore<ADMMObjectiveTerm> store;
 
-	private Map<AtomFunctionVariable, Integer> variableIndexes;
+	private Map<RandomVariableAtom, Integer> variableIndexes;
 	private List<List<LocalVariable>> localVariables;
 
 	/**
@@ -64,7 +64,7 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm> {
 
 	public ADMMTermStore(TermStore<ADMMObjectiveTerm> store) {
 		this.store = store;
-		variableIndexes = new HashMap<AtomFunctionVariable, Integer>();
+		variableIndexes = new HashMap<RandomVariableAtom, Integer>();
 		localVariables = new ArrayList<List<LocalVariable>>();
 		numLocalVariables = 0;
 	}
@@ -72,21 +72,21 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm> {
 	/**
 	 * Create a local variable and ensure that a global copy is registered.
 	 */
-	public synchronized LocalVariable createLocalVariable(AtomFunctionVariable atomVariable) {
+	public synchronized LocalVariable createLocalVariable(RandomVariableAtom atom) {
 		numLocalVariables++;
 
 		int globalId;
 		// Check if the global copy has already been registered.
-		if (variableIndexes.containsKey(atomVariable)) {
-			globalId = variableIndexes.get(atomVariable).intValue();
+		if (variableIndexes.containsKey(atom)) {
+			globalId = variableIndexes.get(atom).intValue();
 		} else {
-			// If the global copy has not been registered, register it and prep it's local copies.
+			// If the global copy has not been registered, register it and prep its local copies.
 			globalId = variableIndexes.size();
-			variableIndexes.put(atomVariable, globalId);
+			variableIndexes.put(atom, globalId);
 			localVariables.add(new ArrayList<LocalVariable>());
 		}
 
-		LocalVariable localVariable = new LocalVariable(globalId, (float)atomVariable.getValue());
+		LocalVariable localVariable = new LocalVariable(globalId, (float)atom.getValue());
 		localVariables.get(globalId).add(localVariable);
 
 		return localVariable;
@@ -105,11 +105,11 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm> {
 	}
 
 	/**
-	 * Update the global variables (AtomFunctionVariables).
+	 * Update the global variables (RVAs).
 	 * The passed in values in indexed according to global id.
 	 */
 	public void updateVariables(float[] values) {
-		for (Map.Entry<AtomFunctionVariable, Integer> entry : variableIndexes.entrySet()) {
+		for (Map.Entry<RandomVariableAtom, Integer> entry : variableIndexes.entrySet()) {
 			entry.getKey().setValue(values[entry.getValue().intValue()]);
 		}
 	}
@@ -119,7 +119,7 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm> {
 	 * variables and put them in the output array.
 	 */
 	public void getAtomValues(float[] values) {
-		for (Map.Entry<AtomFunctionVariable, Integer> entry : variableIndexes.entrySet()) {
+		for (Map.Entry<RandomVariableAtom, Integer> entry : variableIndexes.entrySet()) {
 			values[entry.getValue().intValue()] = (float)entry.getKey().getValue();
 		}
 	}
@@ -129,7 +129,7 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm> {
 	}
 
 	public void resetLocalVairables(ADMMReasoner.InitialValue initialValue) {
-		for (Map.Entry<AtomFunctionVariable, Integer> entry : variableIndexes.entrySet()) {
+		for (Map.Entry<RandomVariableAtom, Integer> entry : variableIndexes.entrySet()) {
 			for (LocalVariable local : localVariables.get(entry.getValue().intValue())) {
 				if (initialValue == ADMMReasoner.InitialValue.ZERO) {
 					local.setValue(0.0f);
