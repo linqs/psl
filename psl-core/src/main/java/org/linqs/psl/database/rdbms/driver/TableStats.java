@@ -38,6 +38,9 @@ public class TableStats {
 	 * The boundaries in a historgram of values for each column.
 	 * Although start/end boundaries are specified,
 	 * any values past those extremes will be moved into the first/last bucket.
+	 * Assume that the bounds are [inclusive, exclusive).
+	 * Except for the very last bound, which will be included in the last bucket.
+	 * This find distinction will only actually apply when working with int bounds.
 	 */
 	private Map<String, List<Comparable>> histogramBounds;
 
@@ -59,7 +62,7 @@ public class TableStats {
 	}
 
 	public void addColumnHistogram(String column, List<Comparable> bounds, List<Integer> counts) {
-      assert(bounds.size() == counts.size() + 1);
+		assert(bounds.size() == counts.size() + 1);
 
 		column = column.toUpperCase();
 		histogramBounds.put(column, bounds);
@@ -68,6 +71,11 @@ public class TableStats {
 
 	public int getCount() {
 		return count;
+	}
+
+	public List<Comparable> getHistogramBounts(String column) {
+		column = column.toUpperCase();
+		return histogramBounds.get(column);
 	}
 
 	/**
@@ -101,6 +109,8 @@ public class TableStats {
 			upperValue = bounds.get(bounds.size() - 1);
 		}
 
+		// If we are only dealing with ints, then do a special computation that factors in
+		// the spot of the value within the bucket.
 		if (lowerValue instanceof Integer) {
 			return getHistogramSelectivity(column, ((Integer)lowerValue).intValue(), ((Integer)upperValue).intValue());
 		}
@@ -108,12 +118,21 @@ public class TableStats {
 		int totalCount = 0;
 		Comparable currentValue = lowerValue;
 
-		for (int bucket = 1; bucket < bounds.size(); bucket++) {
-			// If the current value is in this bucket, than add the count to the total.
-			// Note that we started at index 1 and are only looking at the end.
-			if (uncheckedCompare(currentValue, bounds.get(bucket)) < 0) {
-				totalCount += counts.get(bucket).intValue();
+		for (int bucket = 0; bucket < bounds.size() - 1; bucket++) {
+			Comparable bucketStart = bounds.get(bucket);
+			Comparable bucketEnd = bounds.get(bucket + 1);
+
+			// Skip to the next bucket if we have not yet hit our range.
+			if (uncheckedCompare(lowerValue, bucketEnd) > 0) {
+				continue;
 			}
+
+			// Break if we are past the end of our range.
+			if (uncheckedCompare(upperValue, bucketStart) < 0) {
+				break;
+			}
+
+			totalCount += counts.get(bucket).intValue();
 		}
 
 		return (double)totalCount / count;
@@ -125,19 +144,33 @@ public class TableStats {
 		List<Comparable> bounds = histogramBounds.get(column);
 		List<Integer> counts = histogramCounts.get(column);
 
-		int totalCount = 0;
-		int currentValue = lowerValue;
+		double totalCount = 0.0;
 
 		for (int bucket = 0; bucket < bounds.size() - 1; bucket++) {
 			int bucketStart = ((Integer)bounds.get(bucket)).intValue();
-			int bucketEnd = ((Integer)bounds.get(bucket + 1)).intValue();
+			int bucketEnd = ((Integer)bounds.get(bucket + 1)).intValue() - 1;
 
-			if (currentValue > bucketEnd) {
+			// If this is the last bucket, then make the upper bound inclusive.
+			if (bucket == bounds.size() - 2) {
+				bucketEnd++;
+			}
+
+			// Skip to the next bucket if we have not yet hit our range.
+			if (lowerValue > bucketEnd) {
+				continue;
+			}
+
+			// Break if we are past the end of our range.
+			if (upperValue < bucketStart) {
 				break;
 			}
 
-			// Assume a uniform distribution within the bucket.
-			totalCount += (double)(currentValue - bucketStart) / (bucketEnd - bucket) * counts.get(bucket);
+			// Get the adjusted ranges within this bucket.
+			int inRangeStart = (lowerValue < bucketStart) ? bucketStart : lowerValue;
+			int inRangeEnd = (upperValue > bucketEnd) ? bucketEnd : upperValue;
+
+			// Compute how many values are in the bucket assuming a uniform distribution within the bucket.
+			totalCount += (double)(inRangeEnd - inRangeStart + 1) / (bucketEnd - bucketStart + 1) * counts.get(bucket);
 		}
 
 		return (double)totalCount / count;

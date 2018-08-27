@@ -251,12 +251,12 @@ public class PostgreSQLDriver implements DatabaseDriver {
 		sql.add("	CASE WHEN n_distinct >= 0");
 		sql.add("		THEN n_distinct / (SELECT COUNT(*) FROM " + predicate.tableName() + ")");
 		sql.add("		ELSE -1.0 * n_distinct");
-		sql.add("	   END AS selectivity,");
-		// TEST
-      // sql.add("	histogram_bounds AS histogram");
-      sql.add("	array_to_json(histogram_bounds) AS histogram");
-      // sql.add("	array_to_string(histogram_bounds, ';;;') AS histogram");
-		// sql.add("	string_agg(histogram_bounds, ';;;') AS histogram");
+		sql.add("		END AS selectivity,");
+		// Because pg_stats is a special system table,
+		// it does not have entries that specify what type of array it is (what delim it has).
+		// This means that many normal array methods will crash on it.
+		// So instead, we convert it to JSON and parse it outside the DB.
+		sql.add("	array_to_json(histogram_bounds) AS histogram");
 		sql.add("FROM pg_stats");
 		sql.add("WHERE");
 		sql.add("	UPPER(tablename) = '" + predicate.tableName().toUpperCase() + "'");
@@ -277,90 +277,42 @@ public class PostgreSQLDriver implements DatabaseDriver {
 				String columnName = result.getString(1);
 				stats.addColumnSelectivity(columnName, result.getDouble(3));
 
-            // Because pg_stats is a special system table,
-            // it does not have entries that specify what type of
-            // array (what delim it has).
-            // So many normal array methods will crash on it.
+				Object parsed = JSONValue.parse(result.getString(4));
+				if (!(parsed instanceof JSONArray)) {
+					throw new IllegalStateException("Histogram in unexpected format. Expected JSON array, got: " + parsed.getClass().getName());
+				}
+				JSONArray histogram = (JSONArray)parsed;
 
-            // 
+				List<Comparable> bounds = new ArrayList<Comparable>();
+				List<Integer> counts = new ArrayList<Integer>();
 
-            // TEST
-            System.out.println("---");
-            System.out.println(result.getMetaData().getColumnType(4));
-            System.out.println(result.getMetaData().getColumnTypeName(4));
-            System.out.println(result.getString(4));
+				if (histogram.size() > 0) {
+					int bucketCount = stats.getCount() / (histogram.size() - 1);
+					bounds.add(convertHistogramBound(histogram.get(0)));
 
-            // TEST
-            Object raw = result.getObject(4);
-            System.out.println("*****");
-            System.out.println(raw.getClass().getName());
-            System.out.println(raw);
+					for (int i = 1; i < histogram.size(); i++) {
+						bounds.add(convertHistogramBound(histogram.get(i)));
+						counts.add(new Integer(bucketCount));
+					}
 
-            // TEST
-            System.out.println("$$$$$$");
-            Object parsed = JSONValue.parse(result.getString(4));
-            System.out.println(parsed.getClass().getName());
-            if (!(parsed instanceof JSONArray)) {
-               throw new IllegalStateException("Histogram in unexpected format. Expected JSON array, got: " + parsed.getClass().getName());
-            }
-            JSONArray histogram = (JSONArray)parsed;
-
-            for (Object val : histogram) {
-               System.out.println(val.getClass().getName() + " -- " + val);
-            }
-
-            // TODO(eriq): They all come out as String or Longs.
-            //  Convert them, compute the sizes, and stash them away.
-
-            List<Comparable> bounds = new ArrayList<Comparable>();
-            List<Integer> counts = new ArrayList<Integer>();
-
-            if (histogram.size() > 0) {
-               int bucketCount = stats.getCount() / histogram.size();
-               bounds.add(histogram.get(0));
-
-               for (int i = 1; i < histogram.size(); i++) {
-                  Object bound = histogram.get(i);
-                  if (bound instanceof Long) {
-                     bound = new Integer(((Long)bound).intValue());
-                  } else if (bound instanceof Integer) {
-                     bound = new Integer(((Integer)bound).intValue());
-                  } else {
-                     bound = bound.toString();
-                  }
-
-                  bounds.add((Comparable)bound);
-                  counts.add(new Integer(bucketCount));
-               }
-
-               stats.addColumnHistogram(columnName, bounds, counts);
-            }
-
-
-            // System.out.println(((org.postgresql.jdbc.PgResultSet)result).getPGType(4));
-            // System.out.println(result.getArray(4).getArray().getClass().getName());
-            // System.out.println(result.getString(4));
-            // java.sql.Array array = result.getArray(4);
-            // System.out.println(result.getArray(4));
-            // System.out.println(array);
-            // System.out.println(array.getBaseTypeName());
-            // System.out.println(result.getObject(4));
-            // System.out.println(result.getObject(4).getClass().getName());
-
-            // TEST
-            /*
-            System.out.println("#######");
-            ResultSet rs = array.getResultSet();
-            while (rs.next()) {
-               System.out.println(rs.getString(1));
-            }
-            */
+					stats.addColumnHistogram(columnName, bounds, counts);
+				}
 			}
 		} catch (SQLException ex) {
 			throw new RuntimeException("Failed to get stats from table: " + predicate.tableName(), ex);
 		}
 
 		return stats;
+	}
+
+	private Comparable convertHistogramBound(Object bound) {
+		if (bound instanceof Long) {
+			return new Integer(((Long)bound).intValue());
+		} else if (bound instanceof Integer) {
+			return new Integer(((Integer)bound).intValue());
+		} else {
+			return bound.toString();
+		}
 	}
 
 	@Override

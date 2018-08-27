@@ -40,7 +40,11 @@ public abstract class RDBMSDataStoreTest extends DataStoreTest {
 		Inserter inserter1 = datastore.getInserter(p1, datastore.getPartition("0"));
 		Inserter inserter2 = datastore.getInserter(p2, datastore.getPartition("0"));
 
-		for (int i = 0; i < 1000; i++) {
+		final int MIN = 0;
+		final int COUNT = 1000;
+		final int MAX = MIN + COUNT - 1;
+
+		for (int i = MIN; i < COUNT; i++) {
 			inserter1.insert("" + (i / 1), "" + (i / 2));
 			inserter2.insert("" + (i / 1), "" + (i / 4));
 		}
@@ -49,17 +53,30 @@ public abstract class RDBMSDataStoreTest extends DataStoreTest {
 		DatabaseDriver driver = ((RDBMSDataStore)datastore).getDriver();
 
 		TableStats stats = driver.getTableStats(((RDBMSDataStore)datastore).getPredicateInfo(p1));
-		assertEquals(stats.getCount(), 1000);
+		assertEquals(stats.getCount(), COUNT);
 		assertEquals(stats.getSelectivity("UNIQUEINTID_0"), 1.0 / 1.0, MathUtils.EPSILON);
-		assertEquals(stats.getCardinality("UNIQUEINTID_0"), 1000 / 1);
+		assertEquals(stats.getCardinality("UNIQUEINTID_0"), COUNT / 1);
 		assertEquals(stats.getSelectivity("UNIQUEINTID_1"), 1.0 / 2.0, MathUtils.EPSILON);
-		assertEquals(stats.getCardinality("UNIQUEINTID_1"), 1000 / 2);
+		assertEquals(stats.getCardinality("UNIQUEINTID_1"), COUNT / 2);
+
+		// TODO(eriq): Implement H2 histograms.
+		if (driver instanceof org.linqs.psl.database.rdbms.driver.PostgreSQLDriver) {
+			assertEquals(stats.getHistogramSelectivity("UNIQUEINTID_0", new Integer(MIN), new Integer(MAX)), 1.0, 0.01);
+			assertEquals(stats.getHistogramSelectivity("UNIQUEINTID_0", new Integer(MIN), new Integer(MIN + (COUNT / 2))), 0.50, 0.01);
+		}
 
 		stats = driver.getTableStats(((RDBMSDataStore)datastore).getPredicateInfo(p2));
-		assertEquals(stats.getCount(), 1000);
+		assertEquals(stats.getCount(), COUNT);
 		assertEquals(stats.getSelectivity("STRING_0"), 1.0 / 1.0, MathUtils.EPSILON);
-		assertEquals(stats.getCardinality("STRING_0"), 1000 / 1);
+		assertEquals(stats.getCardinality("STRING_0"), COUNT / 1);
 		assertEquals(stats.getSelectivity("STRING_1"), 1.0 / 4.0, MathUtils.EPSILON);
-		assertEquals(stats.getCardinality("STRING_1"), 1000 / 4);
+		assertEquals(stats.getCardinality("STRING_1"), COUNT / 4);
+
+		// TODO(eriq): Implement H2 histograms.
+		if (driver instanceof org.linqs.psl.database.rdbms.driver.PostgreSQLDriver) {
+			assertEquals(stats.getHistogramSelectivity("STRING_0", "" + MIN, "" + MAX), 1.0, 0.01);
+			// The discrete (string) buckets are a lot more hit-or-miss.
+			assertEquals(stats.getHistogramSelectivity("STRING_0", "" + MIN, "" + (MIN + (COUNT / 2))), 0.50, 0.05);
+		}
 	}
 }
