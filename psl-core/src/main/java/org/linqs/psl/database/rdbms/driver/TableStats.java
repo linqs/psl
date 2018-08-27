@@ -59,6 +59,8 @@ public class TableStats {
 	}
 
 	public void addColumnHistogram(String column, List<Comparable> bounds, List<Integer> counts) {
+      assert(bounds.size() == counts.size() + 1);
+
 		column = column.toUpperCase();
 		histogramBounds.put(column, bounds);
 		histogramCounts.put(column, counts);
