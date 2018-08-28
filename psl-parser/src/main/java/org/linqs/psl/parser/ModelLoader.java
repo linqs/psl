@@ -410,14 +410,14 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 
 		// Add in the RHS terms, negating the coefficients.
 		for (int i = 0; i < rhs.atoms.size(); i++) {
-			coefficients.add(new Multiply(new ConstantNumber(-1.0), rhs.coefficients.get(i)));
+			coefficients.add(new Multiply(new ConstantNumber(-1.0f), rhs.coefficients.get(i)));
 			atoms.add(rhs.atoms.get(i));
 		}
 
 		// Now the final coefficient which will appearon the RHS.
 		// Note that we could start the coefficient at 0 and just add terms in, but we want to match legacy behavior.
 		if (lhs.nonAtomCoefficient != null) {
-			finalCoefficient = new Multiply(new ConstantNumber(-1.0), lhs.nonAtomCoefficient);
+			finalCoefficient = new Multiply(new ConstantNumber(-1.0f), lhs.nonAtomCoefficient);
 		}
 
 		if (rhs.nonAtomCoefficient != null) {
@@ -429,7 +429,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 		}
 
 		if (finalCoefficient == null) {
-			finalCoefficient = new ConstantNumber(0.0);
+			finalCoefficient = new ConstantNumber(0.0f);
 		}
 
 		// Finally, simplify all coefficients.
@@ -463,7 +463,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 		for (int i = 0; i < rhs.atoms.size(); i++) {
 			Coefficient coefficient = rhs.coefficients.get(i);
 			if (!isAddition) {
-				coefficient = new Multiply(new ConstantNumber(-1.0), coefficient);
+				coefficient = new Multiply(new ConstantNumber(-1.0f), coefficient);
 			}
 
 			expression.atoms.add(rhs.atoms.get(i));
@@ -508,7 +508,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 		LinearArithmeticExpression expression = new LinearArithmeticExpression();
 
 		ArithmeticCoefficientOperand operand = visitArithmeticCoefficientOperand((ArithmeticCoefficientOperandContext)ctx.getChild(0));
-		Coefficient coefficient = new ConstantNumber(1.0);
+		Coefficient coefficient = new ConstantNumber(1.0f);
 		if (operand.coefficient != null) {
 			coefficient = operand.coefficient;
 		}
@@ -549,7 +549,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 		if (ctx.getChildCount() > atomIndex + 1) {
 			Coefficient divisor = visitCoefficientExpression((CoefficientExpressionContext)ctx.getChild(atomIndex + 2));
 			if (operand.coefficient == null) {
-				operand.coefficient = new Divide(new ConstantNumber(1.0), divisor);
+				operand.coefficient = new Divide(new ConstantNumber(1.0f), divisor);
 			} else {
 				operand.coefficient = new Divide(operand.coefficient, divisor);
 			}
@@ -645,7 +645,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	public Coefficient visitCoefficient(CoefficientContext ctx) {
 		// Just a number
 		if (ctx.number() != null) {
-			return new ConstantNumber(visitNumber(ctx.number()));
+			return new ConstantNumber(visitNumber(ctx.number()).floatValue());
 		}
 
 		// Coefficient surrounded by parens.

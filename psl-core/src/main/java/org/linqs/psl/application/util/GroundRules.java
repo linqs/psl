@@ -30,7 +30,6 @@ import java.util.List;
  * Static utilities for common {@link GroundRule} tasks.
  */
 public class GroundRules {
-
 	/**
 	 * Sums the total weighted incompatibility of an iterable container of
 	 * {@link WeightedGroundRule GroundCompatibilityRules}.
@@ -42,8 +41,9 @@ public class GroundRules {
 	 */
 	public static double getTotalWeightedIncompatibility(Iterable<WeightedGroundRule> groundRules) {
 		double totalInc = 0.0;
-		for (WeightedGroundRule groundRule : groundRules)
+		for (WeightedGroundRule groundRule : groundRules) {
 			totalInc += groundRule.getIncompatibility() * groundRule.getWeight();
+		}
 		return totalInc;
 	}
 
@@ -61,8 +61,9 @@ public class GroundRules {
 	 */
 	public static double getTotalWeightedCompatibility(Iterable<WeightedGroundRule> groundRules) {
 		double totalInc = 0.0;
-		for (WeightedGroundRule groundRule : groundRules)
+		for (WeightedGroundRule groundRule : groundRules) {
 			totalInc += (1 - groundRule.getIncompatibility()) * groundRule.getWeight();
+		}
 		return totalInc;
 	}
 
@@ -86,38 +87,42 @@ public class GroundRules {
 		for (WeightedGroundRule groundRule : groundRules) {
 			double inc = 0.0;
 
-			/* Collects RandomVariableAtoms */
-			for (GroundAtom atom : groundRule.getAtoms())
-				if (atom instanceof RandomVariableAtom)
+			// Collect RandomVariableAtoms,
+			for (GroundAtom atom : groundRule.getAtoms()) {
+				if (atom instanceof RandomVariableAtom) {
 					atoms.add((RandomVariableAtom) atom);
+				}
+			}
 
-			/* Collects truth values */
-			double[] truthValues = new double[atoms.size()];
-			for (int i = 0; i < truthValues.length; i++)
+			// Collect truth values,
+			float[] truthValues = new float[atoms.size()];
+			for (int i = 0; i < truthValues.length; i++) {
 				truthValues[i] = atoms.get(i).getValue();
+			}
 
-			/* Sums over settings */
+			// Sums over settings.
 			for (int i = 0; i < Math.pow(2, atoms.size()); i++) {
-				double assignmentProb = 1.0;
+				float assignmentProb = 1.0f;
 
-				/* Sets assignment and computes probability */
+				// Sets assignment and computes probability.
 				for (int j = 0; j < atoms.size(); j++) {
 					int assignment = ((i >> j) & 1);
-					atoms.get(j).setValue(assignment);
+					atoms.get(j).setValue((float)assignment);
 					assignmentProb *= (assignment == 1) ? truthValues[j] : 1 - truthValues[j];
 				}
 
 				inc += assignmentProb * groundRule.getIncompatibility();
 			}
 
-			/* Restores truth values */
-			for (int i = 0; i < atoms.size(); i++)
+			// Restores truth values.
+			for (int i = 0; i < atoms.size(); i++) {
 				atoms.get(i).setValue(truthValues[i]);
+			}
 
-			/* Clears atom list */
+			// Clears atom list,
 			atoms.clear();
 
-			/* Weights and adds to total */
+			// Weights and adds to total,
 			inc *= groundRule.getWeight();
 			totalInc += inc;
 		}
@@ -161,35 +166,39 @@ public class GroundRules {
 		double inc = 0.0;
 		List<RandomVariableAtom> atoms = new ArrayList<RandomVariableAtom>();
 
-		/* Collects RandomVariableAtoms */
-		for (GroundAtom atom : groundRule.getAtoms())
-			if (atom instanceof RandomVariableAtom)
+		// Collect RandomVariableAtoms,
+		for (GroundAtom atom : groundRule.getAtoms()) {
+			if (atom instanceof RandomVariableAtom) {
 				atoms.add((RandomVariableAtom) atom);
+			}
+		}
 
-		/* Collects truth values */
-		double[] truthValues = new double[atoms.size()];
-		for (int i = 0; i < truthValues.length; i++)
+		// Collect truth values.
+		float[] truthValues = new float[atoms.size()];
+		for (int i = 0; i < truthValues.length; i++) {
 			truthValues[i] = atoms.get(i).getValue();
+		}
 
-		/* Sums over settings */
+		// Sum over settings.
 		for (int i = 0; i < Math.pow(2, atoms.size()); i++) {
-			double assignmentProb = 1.0;
+			float assignmentProb = 1.0f;
 
-			/* Sets assignment and computes probability */
+			// Set assignment and compute probability.
 			for (int j = 0; j < atoms.size(); j++) {
 				int assignment = ((i >> j) & 1);
-				atoms.get(j).setValue(assignment);
+				atoms.get(j).setValue((float)assignment);
 				assignmentProb *= (assignment == 1) ? truthValues[j] : 1 - truthValues[j];
 			}
 
 			inc += assignmentProb * (1 - groundRule.getIncompatibility());
 		}
 
-		/* Restores truth values */
-		for (int i = 0; i < atoms.size(); i++)
+		// Restore truth values,
+		for (int i = 0; i < atoms.size(); i++) {
 			atoms.get(i).setValue(truthValues[i]);
+		}
 
-		/* Weights and returns */
+		// Weight and return.
 		return inc * groundRule.getWeight();
 	}
 

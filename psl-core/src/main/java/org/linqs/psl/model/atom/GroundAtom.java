@@ -39,9 +39,9 @@ import java.util.Set;
  * A GroundAtom has a truth value.
  */
 public abstract class GroundAtom extends Atom implements Comparable<GroundAtom>, FunctionTerm {
-	protected double value;
+	protected float value;
 
-	protected GroundAtom(Predicate predicate, Constant[] args, double value) {
+	protected GroundAtom(Predicate predicate, Constant[] args, float value) {
 		super(predicate, args);
 		this.value = value;
 	}
@@ -55,7 +55,7 @@ public abstract class GroundAtom extends Atom implements Comparable<GroundAtom>,
 	 * @return the truth value of this Atom
 	 */
 	@Override
-	public double getValue() {
+	public float getValue() {
 		return value;
 	}
 

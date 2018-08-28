@@ -30,7 +30,7 @@ import java.util.List;
 
 public class WeightedGroundLogicalRule extends AbstractGroundLogicalRule implements WeightedGroundRule {
 	protected WeightedGroundLogicalRule(WeightedLogicalRule rule, List<GroundAtom> posLiterals,
-			List<GroundAtom> negLiterals, int rvaCount) {
+			List<GroundAtom> negLiterals, short rvaCount) {
 		super(rule, posLiterals, negLiterals, rvaCount);
 		function.setSquared(rule.isSquared());
 	}
@@ -66,7 +66,7 @@ public class WeightedGroundLogicalRule extends AbstractGroundLogicalRule impleme
 	}
 
 	@Override
-	public double getIncompatibility(GroundAtom replacementAtom, double replacementValue) {
+	public double getIncompatibility(GroundAtom replacementAtom, float replacementValue) {
 		return function.getValue(replacementAtom, replacementValue);
 	}
 
@@ -79,7 +79,7 @@ public class WeightedGroundLogicalRule extends AbstractGroundLogicalRule impleme
 	protected GroundRule instantiateNegatedGroundRule(
 			Formula disjunction, List<GroundAtom> positiveAtoms,
 			List<GroundAtom> negativeAtoms, String name) {
-		int rvaCount = 0;
+		short rvaCount = 0;
 		for (GroundAtom atom : IteratorUtils.join(positiveAtoms, negativeAtoms)) {
 			if (atom instanceof RandomVariableAtom) {
 				rvaCount++;

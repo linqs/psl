@@ -26,7 +26,7 @@ public interface FunctionTerm {
 	/**
 	 * Returns the term's value
 	 */
-	public double getValue();
+	public float getValue();
 
 	/**
 	 * Returns whether the term is linear.

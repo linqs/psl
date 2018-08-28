@@ -39,7 +39,7 @@ public class RandomVariableAtom extends GroundAtom {
 	 */
 	private boolean isAccessException;
 
-	protected RandomVariableAtom(StandardPredicate p, Constant[] args, double value) {
+	protected RandomVariableAtom(StandardPredicate p, Constant[] args, float value) {
 		super(p, args, value);
 		isAccessException = false;
 	}
@@ -57,7 +57,7 @@ public class RandomVariableAtom extends GroundAtom {
 	/**
 	 * Sets the truth value of this Atom.
 	 */
-	public void setValue(double value) {
+	public void setValue(float value) {
 		this.value = value;
 	}
 

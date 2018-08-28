@@ -1454,12 +1454,12 @@ public class GroundRuleTest {
 		Map<SummationVariable, Formula> filters;
 
 		coefficients = Arrays.asList(
-			(Coefficient)(new ConstantNumber(1.0)),
+			(Coefficient)(new ConstantNumber(1.0f)),
 			(Coefficient)(new Divide(
-				new ConstantNumber(1.0),
+				new ConstantNumber(1.0f),
 				new Subtract(
 					new Cardinality(new SummationVariable("B")),
-					new ConstantNumber(4.0)
+					new ConstantNumber(4.0f)
 				)
 			))
 		);
@@ -1502,7 +1502,7 @@ public class GroundRuleTest {
 
 		// 1.0: Friends(A, B) = 0 ^2
 		coefficients = Arrays.asList(
-			(Coefficient)(new ConstantNumber(1.0))
+			(Coefficient)(new ConstantNumber(1.0f))
 		);
 
 		atoms = Arrays.asList(
@@ -1510,7 +1510,7 @@ public class GroundRuleTest {
 		);
 
 		rule = new WeightedArithmeticRule(
-				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(0.0)),
+				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(0.0f)),
 				1.0,
 				true
 		);
@@ -1609,7 +1609,7 @@ public class GroundRuleTest {
 		// All trivial.
 		// 1.0: Friends(A, B) >= 0.0 ^2
 		coefficients = Arrays.asList(
-			(Coefficient)(new ConstantNumber(1.0))
+			(Coefficient)(new ConstantNumber(1.0f))
 		);
 
 		atoms = Arrays.asList(
@@ -1617,7 +1617,7 @@ public class GroundRuleTest {
 		);
 
 		rule = new WeightedArithmeticRule(
-				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(0.0)),
+				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(0.0f)),
 				1.0,
 				true
 		);
@@ -1629,7 +1629,7 @@ public class GroundRuleTest {
 		// All trivial.
 		// 1.0: Friends(A, B) <= 1.0 ^2
 		coefficients = Arrays.asList(
-			(Coefficient)(new ConstantNumber(1.0))
+			(Coefficient)(new ConstantNumber(1.0f))
 		);
 
 		atoms = Arrays.asList(
@@ -1637,7 +1637,7 @@ public class GroundRuleTest {
 		);
 
 		rule = new WeightedArithmeticRule(
-				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.SmallerThan, new ConstantNumber(1.0)),
+				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.SmallerThan, new ConstantNumber(1.0f)),
 				1.0,
 				true
 		);
@@ -1649,7 +1649,7 @@ public class GroundRuleTest {
 		// All trivial.
 		// 1.0: -1.0 * Friends(A, B) >= -1.0 ^2
 		coefficients = Arrays.asList(
-			(Coefficient)(new ConstantNumber(-1.0))
+			(Coefficient)(new ConstantNumber(-1.0f))
 		);
 
 		atoms = Arrays.asList(
@@ -1657,7 +1657,7 @@ public class GroundRuleTest {
 		);
 
 		rule = new WeightedArithmeticRule(
-				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(-1.0)),
+				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(-1.0f)),
 				1.0,
 				true
 		);
@@ -1669,7 +1669,7 @@ public class GroundRuleTest {
 		// All trivial.
 		// 1.0: -1.0 * Friends(A, B) <= 0.0 ^2
 		coefficients = Arrays.asList(
-			(Coefficient)(new ConstantNumber(-1.0))
+			(Coefficient)(new ConstantNumber(-1.0f))
 		);
 
 		atoms = Arrays.asList(
@@ -1677,7 +1677,7 @@ public class GroundRuleTest {
 		);
 
 		rule = new WeightedArithmeticRule(
-				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.SmallerThan, new ConstantNumber(0.0)),
+				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.SmallerThan, new ConstantNumber(0.0f)),
 				1.0,
 				true
 		);

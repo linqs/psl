@@ -113,8 +113,8 @@ public class MPEInferenceTest {
 		List<SummationAtomOrAtom> atoms;
 
 		coefficients = Arrays.asList(
-			(Coefficient)(new ConstantNumber(1.0)),
-			(Coefficient)(new ConstantNumber(1.0))
+			(Coefficient)(new ConstantNumber(1.0f)),
+			(Coefficient)(new ConstantNumber(1.0f))
 		);
 
 		atoms = Arrays.asList(

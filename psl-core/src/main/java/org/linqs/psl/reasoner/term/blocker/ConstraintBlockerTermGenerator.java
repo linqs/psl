@@ -144,7 +144,7 @@ public class ConstraintBlockerTermGenerator implements TermGenerator<ConstraintB
 
 				// Set all the RVs in this block to 0.0 since there is a observed/constrained value.
 				for (RandomVariableAtom atom : constrainedRVSet) {
-					atom.setValue(0.0);
+					atom.setValue(0.0f);
 				}
 			}
 

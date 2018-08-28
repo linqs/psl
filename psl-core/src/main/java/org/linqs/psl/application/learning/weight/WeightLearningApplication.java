@@ -501,11 +501,11 @@ public abstract class WeightLearningApplication implements ModelApplication {
 		inLatentMPEState = false;
 
 		for (RandomVariableAtom atom : trainingMap.getTrainingMap().keySet()) {
-			atom.setValue(0.0);
+			atom.setValue(0.0f);
 		}
 
 		for (RandomVariableAtom atom : trainingMap.getLatentVariables()) {
-			atom.setValue(0.0);
+			atom.setValue(0.0f);
 		}
 	}
 
@@ -537,7 +537,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
 				}
 
 				RandomVariableAtom rvAtom = (RandomVariableAtom)otherAtom;
-				rvAtom.setValue(0.0);
+				rvAtom.setValue(0.0f);
 			}
 		}
 

@@ -24,7 +24,6 @@ import org.linqs.psl.model.rule.arithmetic.expression.SummationVariable;
 import org.linqs.psl.model.term.Constant;
 
 public class Min extends Coefficient {
-
 	protected final Coefficient c1;
 	protected final Coefficient c2;
 
@@ -34,8 +33,8 @@ public class Min extends Coefficient {
 	}
 
 	@Override
-	public double getValue(Map<SummationVariable, Integer> subs) {
-		return Math.min(c1.getValue(subs), c2.getValue(subs));
+	public float getValue(Map<SummationVariable, Integer> subs) {
+		return (float)Math.min(c1.getValue(subs), c2.getValue(subs));
 	}
 
 	@Override

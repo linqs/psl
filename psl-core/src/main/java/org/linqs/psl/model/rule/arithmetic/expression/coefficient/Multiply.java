@@ -17,16 +17,16 @@
  */
 package org.linqs.psl.model.rule.arithmetic.expression.coefficient;
 
-import java.util.Map;
-import java.util.Set;
-
 import org.linqs.psl.model.rule.arithmetic.expression.SummationVariable;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.util.MathUtils;
 
-public class Multiply extends Coefficient {
+import java.util.Map;
+import java.util.Set;
 
-	protected final Coefficient c1, c2;
+public class Multiply extends Coefficient {
+	protected final Coefficient c1;
+	protected final Coefficient c2;
 
 	public Multiply(Coefficient c1, Coefficient c2) {
 		this.c1 = c1;
@@ -34,7 +34,7 @@ public class Multiply extends Coefficient {
 	}
 
 	@Override
-	public double getValue(Map<SummationVariable, Integer> subs) {
+	public float getValue(Map<SummationVariable, Integer> subs) {
 		return c1.getValue(subs) * c2.getValue(subs);
 	}
 
@@ -50,19 +50,19 @@ public class Multiply extends Coefficient {
 
 		// If one of the sides is 0, then return 0.
 		if (lhs instanceof ConstantNumber && MathUtils.isZero(((ConstantNumber)lhs).value)) {
-			return new ConstantNumber(0.0);
+			return new ConstantNumber(0.0f);
 		}
 
 		if (rhs instanceof ConstantNumber && MathUtils.isZero(((ConstantNumber)rhs).value)) {
-			return new ConstantNumber(0.0);
+			return new ConstantNumber(0.0f);
 		}
 
 		// If one of the sides is 1, then return the other size.
-		if (lhs instanceof ConstantNumber && MathUtils.equals(((ConstantNumber)lhs).value, 1.0)) {
+		if (lhs instanceof ConstantNumber && MathUtils.equals(((ConstantNumber)lhs).value, 1.0f)) {
 			return rhs;
 		}
 
-		if (rhs instanceof ConstantNumber && MathUtils.equals(((ConstantNumber)rhs).value, 1.0)) {
+		if (rhs instanceof ConstantNumber && MathUtils.equals(((ConstantNumber)rhs).value, 1.0f)) {
 			return lhs;
 		}
 

@@ -25,9 +25,9 @@ package org.linqs.psl.reasoner.function;
 public class ConstraintTerm {
 	private final GeneralFunction function;
 	private final FunctionComparator comparator;
-	private final double value;
+	private final float value;
 
-	public ConstraintTerm(GeneralFunction function, FunctionComparator comparator, double value) {
+	public ConstraintTerm(GeneralFunction function, FunctionComparator comparator, float value) {
 		this.function = function;
 		this.comparator = comparator;
 		this.value = value;
@@ -41,7 +41,7 @@ public class ConstraintTerm {
 		return comparator;
 	}
 
-	public double getValue() {
+	public float getValue() {
 		return value;
 	}
 

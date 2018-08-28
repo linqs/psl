@@ -52,5 +52,5 @@ public interface WeightedGroundRule extends GroundRule {
 	 * This method should only be used by callers that really know what they are doing.
 	 * Incompatibility is always non-negative.
 	 */
-	public double getIncompatibility(GroundAtom replacementAtom, double replacementValue);
+	public double getIncompatibility(GroundAtom replacementAtom, float replacementValue);
 }

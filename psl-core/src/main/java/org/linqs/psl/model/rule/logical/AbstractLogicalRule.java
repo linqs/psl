@@ -138,7 +138,7 @@ public abstract class AbstractLogicalRule extends AbstractRule {
 	}
 
 	private class GroundWorker extends Parallel.Worker<Constant[]> {
-		private static final int ERROR_TRIVIAL = -1;
+		private static final short ERROR_TRIVIAL = -1;
 
 		// Remember that these are positive/negative in the CNF.
 		private List<GroundAtom> positiveAtoms;
@@ -193,7 +193,7 @@ public abstract class AbstractLogicalRule extends AbstractRule {
 			negativeAtoms.clear();
 			accessExceptionAtoms.clear();
 
-			int rvaCount = 0;
+			short rvaCount = 0;
 
 			// Note that there is a class of trivial groundings that we choose not to remove at this point for
 			// computational reasons.
@@ -205,14 +205,14 @@ public abstract class AbstractLogicalRule extends AbstractRule {
 			// Instead they will be removed as they are turned into hyperplane terms,
 			// since we will have to keep track of variables there anyway.
 
-			int positiveRVACount = createAtoms(negatedDNF.getPosLiterals(), row, positiveAtomArgs, positiveAtoms, 0.0);
+			short positiveRVACount = createAtoms(negatedDNF.getPosLiterals(), row, positiveAtomArgs, positiveAtoms, 0.0);
 			if (positiveRVACount == ERROR_TRIVIAL) {
 				// Trivial.
 				return;
 			}
 			rvaCount += positiveRVACount;
 
-			int negativeRVACount = createAtoms(negatedDNF.getNegLiterals(), row, negativeAtomArgs, negativeAtoms, 1.0);
+			short negativeRVACount = createAtoms(negatedDNF.getNegLiterals(), row, negativeAtomArgs, negativeAtoms, 1.0);
 			if (negativeRVACount == ERROR_TRIVIAL) {
 				// Trivial.
 				return;
@@ -236,9 +236,9 @@ public abstract class AbstractLogicalRule extends AbstractRule {
 			groundRuleStore.addGroundRule(groundRule);
 		}
 
-		private int createAtoms(List<Atom> literals, Constant[] row, Constant[][] argumentBuffer, List<GroundAtom> groundAtoms, double trivialValue) {
+		private short createAtoms(List<Atom> literals, Constant[] row, Constant[][] argumentBuffer, List<GroundAtom> groundAtoms, double trivialValue) {
 			GroundAtom atom = null;
-			int rvaCount = 0;
+			short rvaCount = 0;
 
 			for (int j = 0; j < literals.size(); j++) {
 				atom = ((QueryAtom)literals.get(j)).ground(atomManager, row, variableMap, argumentBuffer[j]);
@@ -302,5 +302,5 @@ public abstract class AbstractLogicalRule extends AbstractRule {
 				(new HashSet<Atom>(thisNegLiterals)).equals(new HashSet<Atom>(otherNegLiterals));
 	}
 
-	protected abstract AbstractGroundLogicalRule groundFormulaInstance(List<GroundAtom> positiveAtoms, List<GroundAtom> negativeAtoms, int rvaCount);
+	protected abstract AbstractGroundLogicalRule groundFormulaInstance(List<GroundAtom> positiveAtoms, List<GroundAtom> negativeAtoms, short rvaCount);
 }

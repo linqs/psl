@@ -17,15 +17,14 @@
  */
 package org.linqs.psl.model.rule.arithmetic.expression.coefficient;
 
-import java.util.Map;
-import java.util.Set;
-
 import org.linqs.psl.model.rule.arithmetic.expression.SummationVariable;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.util.MathUtils;
 
-public class Subtract extends Coefficient {
+import java.util.Map;
+import java.util.Set;
 
+public class Subtract extends Coefficient {
 	protected final Coefficient c1;
 	protected final Coefficient c2;
 
@@ -35,7 +34,7 @@ public class Subtract extends Coefficient {
 	}
 
 	@Override
-	public double getValue(Map<SummationVariable, Integer> subs) {
+	public float getValue(Map<SummationVariable, Integer> subs) {
 		return c1.getValue(subs) - c2.getValue(subs);
 	}
 

@@ -27,15 +27,15 @@ import org.linqs.psl.reasoner.function.GeneralFunction;
 import java.util.List;
 
 public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule implements WeightedGroundRule {
-	protected WeightedGroundArithmeticRule(WeightedArithmeticRule rule, List<Double> coeffs,
-			List<GroundAtom> atoms, FunctionComparator comparator, double constant) {
-		super(rule, coeffs, atoms, comparator, constant);
+	protected WeightedGroundArithmeticRule(WeightedArithmeticRule rule, List<Float> coefficients,
+			List<GroundAtom> atoms, FunctionComparator comparator, float constant) {
+		super(rule, coefficients, atoms, comparator, constant);
 		validate();
 	}
 
-	protected WeightedGroundArithmeticRule(WeightedArithmeticRule rule, double[] coeffs, GroundAtom[] atoms,
-			FunctionComparator comparator, double constant) {
-		super(rule, coeffs, atoms, comparator, constant);
+	protected WeightedGroundArithmeticRule(WeightedArithmeticRule rule, float[] coefficients, GroundAtom[] atoms,
+			FunctionComparator comparator, float constant) {
+		super(rule, coefficients, atoms, comparator, constant);
 		validate();
 	}
 
@@ -71,40 +71,40 @@ public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule i
 
 	@Override
 	public GeneralFunction getFunctionDefinition() {
-		GeneralFunction sum = new GeneralFunction(true, isSquared(), coeffs.length);
+		GeneralFunction sum = new GeneralFunction(true, isSquared(), (short)coefficients.length);
 
-		double termSign = FunctionComparator.LargerThan.equals(comparator) ? -1.0 : 1.0;
-		for (int i = 0; i < coeffs.length; i++) {
+		float termSign = FunctionComparator.LargerThan.equals(comparator) ? -1.0f : 1.0f;
+		for (int i = 0; i < coefficients.length; i++) {
 			// Skip any special predicates.
 			if (atoms[i].getPredicate() instanceof SpecialPredicate) {
 				continue;
 			}
 
-			sum.add(termSign * coeffs[i], atoms[i]);
+			sum.add(termSign * coefficients[i], atoms[i]);
 		}
-		sum.add(-1.0 * termSign * constant);
+		sum.add(-1.0f * termSign * constant);
 
 		return sum;
 	}
 
 	@Override
 	public double getIncompatibility() {
-		return getIncompatibility(null, 0);
+		return getIncompatibility(null, 0.0f);
 	}
 
 	@Override
-	public double getIncompatibility(GroundAtom replacementAtom, double replacementValue) {
-		double sum = 0.0;
-		for (int i = 0; i < coeffs.length; i++) {
+	public double getIncompatibility(GroundAtom replacementAtom, float replacementValue) {
+		float sum = 0.0f;
+		for (int i = 0; i < coefficients.length; i++) {
 			// Skip any special predicates.
 			if (atoms[i].getPredicate() instanceof SpecialPredicate) {
 				continue;
 			}
 
 			if (atoms[i] == replacementAtom) {
-				sum += coeffs[i] * replacementValue;
+				sum += coefficients[i] * replacementValue;
 			} else {
-				sum += coeffs[i] * atoms[i].getValue();
+				sum += coefficients[i] * atoms[i].getValue();
 			}
 		}
 		sum -= constant;
@@ -113,7 +113,7 @@ public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule i
 			sum *= -1;
 		}
 
-		return (isSquared()) ? Math.pow(Math.max(sum, 0.0), 2) : Math.max(sum, 0.0);
+		return (isSquared()) ? Math.pow(Math.max(sum, 0.0f), 2) : Math.max(sum, 0.0f);
 	}
 
 	@Override

@@ -35,11 +35,11 @@ import java.util.Set;
  */
 public class GroundLinearConstraint implements UnweightedGroundRule {
 	private final GroundAtom[] atoms;
-	private final double[] coeffs;
+	private final float[] coeffs;
 	private final FunctionComparator comp;
-	private final double value;
+	private final float value;
 
-	public GroundLinearConstraint(GroundAtom[] atoms, double[] coeffs, FunctionComparator comp, double value) {
+	public GroundLinearConstraint(GroundAtom[] atoms, float[] coeffs, FunctionComparator comp, float value) {
 		if (atoms.length != coeffs.length) {
 			throw new IllegalArgumentException("Same number of atoms and coefficients must be provided.");
 		}
@@ -64,7 +64,7 @@ public class GroundLinearConstraint implements UnweightedGroundRule {
 
 	@Override
 	public ConstraintTerm getConstraintDefinition() {
-		GeneralFunction sum = new GeneralFunction(false, false, atoms.length);
+		GeneralFunction sum = new GeneralFunction(false, false, (short)atoms.length);
 		for (int i = 0; i < atoms.length; i++) {
 			sum.add(coeffs[i], atoms[i]);
 		}

@@ -127,9 +127,9 @@ public class BooleanMCSat implements Reasoner {
 				for (int atomIndex = 0; atomIndex < probabilities.length; atomIndex++) {
 					for (int i = 0; i < block.size(); i++) {
 						if (i == atomIndex) {
-							block.getAtoms()[i].setValue(1.0);
+							block.getAtoms()[i].setValue(1.0f);
 						} else {
-							block.getAtoms()[i].setValue(0.0);
+							block.getAtoms()[i].setValue(0.0f);
 						}
 					}
 
@@ -140,7 +140,7 @@ public class BooleanMCSat implements Reasoner {
 				// Draw sample.
 				double[] sample = sampleWithProbability(probabilities);
 				for (int atomIndex = 0; atomIndex < block.getAtoms().length; atomIndex++) {
-					block.getAtoms()[atomIndex].setValue(sample[atomIndex]);
+					block.getAtoms()[atomIndex].setValue((float)sample[atomIndex]);
 
 					if (sampleIndex >= numBurnIn) {
 						totals[blockIndex][atomIndex] += sample[atomIndex];
@@ -154,7 +154,7 @@ public class BooleanMCSat implements Reasoner {
 		// Sets truth values of RandomVariableAtoms to marginal probabilities.
 		for (int blockIndex = 0; blockIndex < blocker.size(); blockIndex++) {
 			for (int atomIndex = 0; atomIndex < blocker.get(blockIndex).size(); atomIndex++) {
-				blocker.get(blockIndex).getAtoms()[atomIndex].setValue(totals[blockIndex][atomIndex] / (numSamples - numBurnIn));
+				blocker.get(blockIndex).getAtoms()[atomIndex].setValue((float)(totals[blockIndex][atomIndex] / (numSamples - numBurnIn)));
 			}
 		}
 	}

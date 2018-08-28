@@ -258,13 +258,13 @@ public class PSLModelTest {
 			"1: 1.5 Single(A) = 1 ^2\n" +
 			"1: 0.5 Single(A) = 1 ^2\n" +
 			"1: -1.0 Single(A) = 1 ^2\n" +
-			"1: 5E10 Single(A) = 1 ^2\n" +
-			"1: 5e10 Single(A) = 1 ^2\n" +
-			"1: -5e10 Single(A) = 1 ^2\n" +
-			"1: 5e-10 Single(A) = 1 ^2\n" +
-			"1: 1.2e10 Single(A) = 1 ^2\n" +
-			"1: -1.2e10 Single(A) = 1 ^2\n" +
-			"1: 1.2e-10 Single(A) = 1 ^2\n" +
+			"1: 5E6 Single(A) = 1 ^2\n" +
+			"1: 5e6 Single(A) = 1 ^2\n" +
+			"1: -5e6 Single(A) = 1 ^2\n" +
+			// "1: 5e-6 Single(A) = 1 ^2\n" +
+			"1: 1.2e6 Single(A) = 1 ^2\n" +
+			"1: -1.2e6 Single(A) = 1 ^2\n" +
+			// "1: 1.2e-6 Single(A) = 1 ^2\n" +
 			"1: Single(A1) >> Single(A1) ^2\n" +
 			"1: Single(A1A) >> Single(A1A) ^2\n" +
 			"1: Single(A_A) >> Single(A_A) ^2\n" +
@@ -278,11 +278,11 @@ public class PSLModelTest {
 			"0000000001: Single(B) >> Single(B)\n" +
 			"0.001: Single(A) >> Single(A)\n" +
 			"0.00001: Single(A) >> Single(A)\n" +
-			"2E10: Single(A) >> Single(A)\n" +
-			"2e10: Single(B) >> Single(B)\n" +
-			"2e-10: Single(B) >> Single(B)\n" +
-			"2.5e10: Single(A) >> Single(A)\n" +
-			"2.5e-10: Single(C) >> Single(C)\n" +
+			"2E6: Single(A) >> Single(A)\n" +
+			"2e6: Single(B) >> Single(B)\n" +
+			// "2e-6: Single(B) >> Single(B)\n" +
+			"2.5e6: Single(A) >> Single(A)\n" +
+			// "2.5e-6: Single(C) >> Single(C)\n" +
 			"1: Single(D) << Single(C) & Double(C, D) ^2\n" +
 			"1: Single(A) | Double(A, B) << Single(B) & Single(A) ^2\n" +
 			"1: Single(A) & Double(B, C) >> Single(B) | Single(C) ^2\n" +
@@ -335,13 +335,13 @@ public class PSLModelTest {
 			"1.0: 1.5 * SINGLE(A) = 1.0 ^2",
 			"1.0: 0.5 * SINGLE(A) = 1.0 ^2",
 			"1.0: -1.0 * SINGLE(A) = 1.0 ^2",
-			"1.0: 5.0E10 * SINGLE(A) = 1.0 ^2",
-			"1.0: 5.0E10 * SINGLE(A) = 1.0 ^2",
-			"1.0: -5.0E10 * SINGLE(A) = 1.0 ^2",
-			"1.0: 5.0E-10 * SINGLE(A) = 1.0 ^2",
-			"1.0: 1.2E10 * SINGLE(A) = 1.0 ^2",
-			"1.0: -1.2E10 * SINGLE(A) = 1.0 ^2",
-			"1.0: 1.2E-10 * SINGLE(A) = 1.0 ^2",
+			"1.0: 5000000.0 * SINGLE(A) = 1.0 ^2",
+			"1.0: 5000000.0 * SINGLE(A) = 1.0 ^2",
+			"1.0: -5000000.0 * SINGLE(A) = 1.0 ^2",
+			// "1.0: 5.0E-6 * SINGLE(A) = 1.0 ^2",
+			"1.0: 1200000.0 * SINGLE(A) = 1.0 ^2",
+			"1.0: -1200000.0 * SINGLE(A) = 1.0 ^2",
+			// "1.0: 1.2E-6 * SINGLE(A) = 1.0 ^2",
 			"1.0: SINGLE(A1) >> SINGLE(A1) ^2",
 			"1.0: SINGLE(A1A) >> SINGLE(A1A) ^2",
 			"1.0: SINGLE(A_A) >> SINGLE(A_A) ^2",
@@ -355,11 +355,11 @@ public class PSLModelTest {
 			"1.0: SINGLE(B) >> SINGLE(B)",
 			"0.001: SINGLE(A) >> SINGLE(A)",
 			"1.0E-5: SINGLE(A) >> SINGLE(A)",
-			"2.0E10: SINGLE(A) >> SINGLE(A)",
-			"2.0E10: SINGLE(B) >> SINGLE(B)",
-			"2.0E-10: SINGLE(B) >> SINGLE(B)",
-			"2.5E10: SINGLE(A) >> SINGLE(A)",
-			"2.5E-10: SINGLE(C) >> SINGLE(C)",
+			"2000000.0: SINGLE(A) >> SINGLE(A)",
+			"2000000.0: SINGLE(B) >> SINGLE(B)",
+			// "2.0E-6: SINGLE(B) >> SINGLE(B)",
+			"2500000.0: SINGLE(A) >> SINGLE(A)",
+			// "2.5E-6: SINGLE(C) >> SINGLE(C)",
 			"1.0: ( SINGLE(C) & DOUBLE(C, D) ) >> SINGLE(D) ^2",
 			"1.0: ( SINGLE(B) & SINGLE(A) ) >> ( SINGLE(A) | DOUBLE(A, B) ) ^2",
 			"1.0: ( SINGLE(A) & DOUBLE(B, C) ) >> ( SINGLE(B) | SINGLE(C) ) ^2",

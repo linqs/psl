@@ -96,7 +96,7 @@ public class RDBMSDatabase extends Database {
 	public static final String FETCH_SIZE_KEY = CONFIG_PREFIX + ".fetchsize";
 	public static final int FETCH_SIZE_DEFAULT = 500;
 
-	private static final double DEFAULT_UNOBSERVED_VALUE = 0.0;
+	private static final float DEFAULT_UNOBSERVED_VALUE = 0.0f;
 
 	private static final String THREAD_QUERY_ATOM_KEY = QueryAtom.class.getName();
 
@@ -456,9 +456,9 @@ public class RDBMSDatabase extends Database {
 	 */
 	private GroundAtom extractGroundAtomFromResult(ResultSet resultSet, StandardPredicate predicate, Constant[] arguments)
 			throws SQLException {
-		double value = resultSet.getDouble(PredicateInfo.VALUE_COLUMN_NAME);
+		float value = resultSet.getFloat(PredicateInfo.VALUE_COLUMN_NAME);
 		if (resultSet.wasNull()) {
-			value = Double.NaN;
+			value = Float.NaN;
 		}
 
 		int partition = resultSet.getInt(PredicateInfo.PARTITION_COLUMN_NAME);
@@ -606,7 +606,7 @@ public class RDBMSDatabase extends Database {
 			return result;
 		}
 
-		double value = predicate.computeValue(this, arguments);
+		float value = (float)predicate.computeValue(this, arguments);
 		return cache.instantiateObservedAtom(predicate, arguments, value);
 	}
 

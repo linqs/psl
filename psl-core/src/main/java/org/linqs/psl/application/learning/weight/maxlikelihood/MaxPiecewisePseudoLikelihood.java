@@ -140,7 +140,7 @@ public class MaxPiecewisePseudoLikelihood extends VotedPerceptron {
 					double denominator = 1e-6;
 
 					for (int sampleIndex = 0; sampleIndex < numSamples; sampleIndex++) {
-						double sample = rands[id].nextDouble();
+						float sample = rands[id].nextFloat();
 
 						double energy = 0;
 						for (int i = 0; i < groundRules.size(); i++) {
@@ -175,7 +175,7 @@ public class MaxPiecewisePseudoLikelihood extends VotedPerceptron {
 
 					double expInc = 0;
 					for (int sampleIndex = 0; sampleIndex < numSamples; sampleIndex++) {
-						double sample = rands[id].nextDouble();
+						float sample = rands[id].nextFloat();
 
 						double energy = 0;
 						for (int i = 0; i < groundRules.size(); i++) {

@@ -25,16 +25,16 @@ import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.UnweightedRule;
 
 public class UnweightedLogicalRule extends AbstractLogicalRule implements UnweightedRule {
-	public UnweightedLogicalRule(Formula f) {
-		this(f, f.toString());
+	public UnweightedLogicalRule(Formula formula) {
+		this(formula, formula.toString());
 	}
 
-	public UnweightedLogicalRule(Formula f, String name) {
-		super(f, name);
+	public UnweightedLogicalRule(Formula formula, String name) {
+		super(formula, name);
 	}
 
 	@Override
-	protected AbstractGroundLogicalRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals, int rvaCount) {
+	protected AbstractGroundLogicalRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals, short rvaCount) {
 		return new UnweightedGroundLogicalRule(this, posLiterals, negLiterals, rvaCount);
 	}
 

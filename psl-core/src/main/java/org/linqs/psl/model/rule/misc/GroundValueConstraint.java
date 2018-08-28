@@ -36,9 +36,9 @@ import java.util.Set;
 public class GroundValueConstraint implements UnweightedGroundRule {
 	private final RandomVariableAtom atom;
 
-	private final double value;
+	private final float value;
 
-	public GroundValueConstraint(RandomVariableAtom atom, double value) {
+	public GroundValueConstraint(RandomVariableAtom atom, float value) {
 		this.atom = atom;
 		this.value = value;
 	}
@@ -61,8 +61,8 @@ public class GroundValueConstraint implements UnweightedGroundRule {
 
 	@Override
 	public ConstraintTerm getConstraintDefinition() {
-		GeneralFunction sum = new GeneralFunction(false, false, 1);
-		sum.add(1.0, atom);
+		GeneralFunction sum = new GeneralFunction(false, false, (short)1);
+		sum.add(1.0f, atom);
 		return new ConstraintTerm(sum, FunctionComparator.Equality, value);
 	}
 

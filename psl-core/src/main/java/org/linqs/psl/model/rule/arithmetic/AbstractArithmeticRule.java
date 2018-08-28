@@ -171,11 +171,11 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 
 		// Since there are no summations, we only need to calculate the coefficients once,
 		// and we don't need to pass any substitution information.
-		double[] coefficients = new double[queryAtoms.size()];
+		float[] coefficients = new float[queryAtoms.size()];
 		for (int i = 0; i < coefficients.length; i++) {
 			coefficients[i] = expression.getAtomCoefficients().get(i).getValue(null);
 		}
-		double finalCoefficient = expression.getFinalCoefficient().getValue(null);
+		float finalCoefficient = expression.getFinalCoefficient().getValue(null);
 
 		// Instantiate the ground rules with the correct constants.
 		int groundCount = 0;
@@ -242,7 +242,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 		int groundCount = 0;
 
 		List<GroundAtom> groundAtoms = new ArrayList<GroundAtom>();
-		List<Double> coefficients = new ArrayList<Double>();
+		List<Float> coefficients = new ArrayList<Float>();
 
 		for (int groundingIndex = 0; groundingIndex < groundingResults.size(); groundingIndex++) {
 			groundAtoms.clear();
@@ -268,7 +268,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 			// Ground out all the atoms.
 			for (int i = 0; i < expression.getAtoms().size(); i++) {
 				SummationAtomOrAtom atom = expression.getAtoms().get(i);
-				double coefficientValue = expression.getAtomCoefficients().get(i).getValue(subCounts);
+				float coefficientValue = expression.getAtomCoefficients().get(i).getValue(subCounts);
 
 				if (atom instanceof SummationAtom) {
 					// Recursively replace each summation variable.
@@ -280,7 +280,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 				}
 			}
 
-			double finalCoefficient = expression.getFinalCoefficient().getValue(subCounts);
+			float finalCoefficient = expression.getFinalCoefficient().getValue(subCounts);
 
 			// Note that unweighed rules will ground an equality, while weighted rules will instead
 			// ground a largerThan and lessThan.
@@ -300,9 +300,9 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 	}
 
 	private void instantiateSummationVariables(SummationAtom atom, Constant[] args,
-			int argIndex, double coefficientValue, Map<SummationVariable, Constant[]> subs,
+			int argIndex, float coefficientValue, Map<SummationVariable, Constant[]> subs,
 			AtomManager atomManager, ResultList groundingResults, int groundingIndex,
-			List<GroundAtom> groundAtoms, List<Double> coefficients) {
+			List<GroundAtom> groundAtoms, List<Float> coefficients) {
 		if (argIndex == args.length) {
 			// Before we add the substituted atom, we need to make sure it actually exists.
 			// Double (or more) summations can make it possible to make substitutions for atoms that
@@ -532,9 +532,9 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 		// Start simple and just look for rules with a single atom.
 		if (rule.getOrderedAtoms().length == 1) {
 			if (FunctionComparator.LargerThan.equals(rule.getComparator())) {
-				double constantMax = 0.0;
-				if (rule.getCoefficients()[0] < 0.0) {
-					constantMax = -1.0;
+				float constantMax = 0.0f;
+				if (rule.getCoefficients()[0] < 0.0f) {
+					constantMax = -1.0f;
 				}
 
 				// Trivial if either of the below situations:
@@ -544,9 +544,9 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 					return 0;
 				}
 			} else if (FunctionComparator.SmallerThan.equals(rule.getComparator())) {
-				double constantMin = 1.0;
-				if (rule.getCoefficients()[0] < 0.0) {
-					constantMin = 0.0;
+				float constantMin = 1.0f;
+				if (rule.getCoefficients()[0] < 0.0f) {
+					constantMin = 0.0f;
 				}
 
 				// Trivial if either of the below situations:
@@ -622,11 +622,11 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 		}
 	}
 
-	protected abstract AbstractGroundArithmeticRule makeGroundRule(double[] coeffs,
-			GroundAtom[] atoms, FunctionComparator comparator, double c);
+	protected abstract AbstractGroundArithmeticRule makeGroundRule(float[] coefficients,
+			GroundAtom[] atoms, FunctionComparator comparator, float constant);
 
-	protected abstract AbstractGroundArithmeticRule makeGroundRule(List<Double> coeffs,
-			List<GroundAtom> atoms, FunctionComparator comparator, double c);
+	protected abstract AbstractGroundArithmeticRule makeGroundRule(List<Float> coefficients,
+			List<GroundAtom> atoms, FunctionComparator comparator, float constant);
 
 	@Override
 	public int hashCode() {

@@ -39,7 +39,7 @@ public abstract class Coefficient {
 	 * This may need to change in the future,
 	 * but the cost is too high to justify unless it is necessary.
 	 */
-	public abstract double getValue(Map<SummationVariable, Integer> subs);
+	public abstract float getValue(Map<SummationVariable, Integer> subs);
 
 	/**
 	 * Get a simplified version of this Coefficient, the Coefficient itself if it cannot be simplified further.

@@ -31,39 +31,37 @@ import java.util.Set;
 
 /**
  * Base class for all ground arithmetic rules.
- *
- * @author Stephen Bach
  */
 public abstract class AbstractGroundArithmeticRule implements GroundRule {
 	protected final AbstractArithmeticRule rule;
-	protected final double[] coeffs;
+	protected final float[] coefficients;
 	protected final GroundAtom[] atoms;
 	protected final FunctionComparator comparator;
-	protected final double constant;
+	protected final float constant;
 
 	protected AbstractGroundArithmeticRule(AbstractArithmeticRule rule,
-			List<Double> coeffs, List<GroundAtom> atoms, FunctionComparator comparator, double constant) {
-		this(rule, ArrayUtils.toPrimitive(coeffs.toArray(new Double[0])),
+			List<Float> coefficients, List<GroundAtom> atoms, FunctionComparator comparator, float constant) {
+		this(rule, ArrayUtils.toPrimitive(coefficients.toArray(new Float[0])),
 				atoms.toArray(new GroundAtom[0]), comparator, constant, false);
 	}
 
 	protected AbstractGroundArithmeticRule(AbstractArithmeticRule rule,
-			double[] coeffs, GroundAtom[] atoms, FunctionComparator comparator, double constant) {
-		this(rule, coeffs, atoms, comparator, constant, true);
+			float[] coefficients, GroundAtom[] atoms, FunctionComparator comparator, float constant) {
+		this(rule, coefficients, atoms, comparator, constant, true);
 	}
 
 	protected AbstractGroundArithmeticRule(AbstractArithmeticRule rule,
-			double[] coeffs, GroundAtom[] atoms, FunctionComparator comparator, double constant,
+			float[] coefficients, GroundAtom[] atoms, FunctionComparator comparator, float constant,
 			boolean copy) {
 		this.rule = rule;
 		this.comparator = comparator;
 		this.constant = constant;
 
 		if (copy) {
-			this.coeffs = Arrays.copyOf(coeffs, coeffs.length);
+			this.coefficients = Arrays.copyOf(coefficients, coefficients.length);
 			this.atoms = Arrays.copyOf(atoms, atoms.length);
 		} else {
-			this.coeffs = coeffs;
+			this.coefficients = coefficients;
 			this.atoms = atoms;
 		}
 	}
@@ -93,13 +91,13 @@ public abstract class AbstractGroundArithmeticRule implements GroundRule {
 		StringBuilder sb = new StringBuilder();
 
 		// If there are coefficients, print each one.
-		if (coeffs.length > 0) {
-			for (int i = 0; i < coeffs.length; i++) {
+		if (coefficients.length > 0) {
+			for (int i = 0; i < coefficients.length; i++) {
 				if (i != 0) {
 					sb.append(" + ");
 				}
 
-				sb.append(coeffs[i]);
+				sb.append(coefficients[i]);
 				sb.append(" * ");
 				sb.append(atoms[i]);
 			}
@@ -131,8 +129,8 @@ public abstract class AbstractGroundArithmeticRule implements GroundRule {
 		return sb.toString();
 	}
 
-	public double[] getCoefficients() {
-		return coeffs;
+	public float[] getCoefficients() {
+		return coefficients;
 	}
 
 	public GroundAtom[] getOrderedAtoms() {
@@ -143,7 +141,7 @@ public abstract class AbstractGroundArithmeticRule implements GroundRule {
 		return comparator;
 	}
 
-	public double getConstant() {
+	public float getConstant() {
 		return constant;
 	}
 }

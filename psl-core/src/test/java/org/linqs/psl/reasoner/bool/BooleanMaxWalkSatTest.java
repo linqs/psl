@@ -84,7 +84,7 @@ public class BooleanMaxWalkSatTest {
 	public void functionalConstraintTest() {
 		// Friends(A, +B) = 1.0
 		List<Coefficient> coefficients = Arrays.asList(
-			(Coefficient)(new ConstantNumber(1.0))
+			(Coefficient)(new ConstantNumber(1.0f))
 		);
 
 		List<SummationAtomOrAtom> atoms = Arrays.asList(
@@ -95,7 +95,7 @@ public class BooleanMaxWalkSatTest {
 		);
 
 		info.model.addRule(new UnweightedArithmeticRule(
-			new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1.0))
+			new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1.0f))
 		));
 
 		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
@@ -114,7 +114,7 @@ public class BooleanMaxWalkSatTest {
 	public void partialFunctionalConstraintTest() {
 		// Friends(A, +B) <= 1.0
 		List<Coefficient> coefficients = Arrays.asList(
-			(Coefficient)(new ConstantNumber(1.0))
+			(Coefficient)(new ConstantNumber(1.0f))
 		);
 
 		List<SummationAtomOrAtom> atoms = Arrays.asList(
@@ -125,7 +125,7 @@ public class BooleanMaxWalkSatTest {
 		);
 
 		info.model.addRule(new UnweightedArithmeticRule(
-			new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.SmallerThan, new ConstantNumber(1.0))
+			new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.SmallerThan, new ConstantNumber(1.0f))
 		));
 
 		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();

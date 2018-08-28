@@ -206,14 +206,14 @@ public class BooleanMaxWalkSat implements Reasoner {
 				blockToChange = -1;
 				positiveRVAIndex = -1;
 				double bestIncompatibility = Double.POSITIVE_INFINITY;
-				double[] savedState;
-				double savedStateTotal;
+				float[] savedState;
+				float savedStateTotal;
 
 				// Consider each block.
 				for (int blockIndex = 0; blockIndex < candidateRVBlocks.length; blockIndex++) {
 					// Save the current state of the block.
-					savedState = new double[candidateRVBlocks[blockIndex].length];
-					savedStateTotal = 0.0;
+					savedState = new float[candidateRVBlocks[blockIndex].length];
+					savedStateTotal = 0.0f;
 					for (int i = 0; i < candidateRVBlocks[blockIndex].length; i++) {
 						savedState[i] = candidateRVBlocks[blockIndex][i].getValue();
 						savedStateTotal += savedState[i];
@@ -235,9 +235,9 @@ public class BooleanMaxWalkSat implements Reasoner {
 						// Change to the current setting to consider.
 						for (int i = 0; i < candidateRVBlocks[blockIndex].length; i++) {
 							if (i == currentPositiveRVA) {
-								candidateRVBlocks[blockIndex][i].setValue(1.0);
+								candidateRVBlocks[blockIndex][i].setValue(1.0f);
 							} else {
-								candidateRVBlocks[blockIndex][i].setValue(0.0);
+								candidateRVBlocks[blockIndex][i].setValue(0.0f);
 							}
 						}
 
@@ -274,9 +274,9 @@ public class BooleanMaxWalkSat implements Reasoner {
 			// Update with block with the decided change.
 			for (int i = 0; i < candidateRVBlocks[blockToChange].length; i++) {
 				if (i == positiveRVAIndex) {
-					candidateRVBlocks[blockToChange][i].setValue(1.0);
+					candidateRVBlocks[blockToChange][i].setValue(1.0f);
 				} else {
-					candidateRVBlocks[blockToChange][i].setValue(0.0);
+					candidateRVBlocks[blockToChange][i].setValue(0.0f);
 				}
 			}
 

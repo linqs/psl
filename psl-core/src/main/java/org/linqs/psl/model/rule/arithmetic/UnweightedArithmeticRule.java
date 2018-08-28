@@ -30,12 +30,8 @@ import java.util.Map;
 
 /**
  * A template for {@link UnweightedGroundArithmeticRule UnweightedGroundArithmeticRules}.
- *
- * @author Stephen Bach
  */
-public class UnweightedArithmeticRule extends AbstractArithmeticRule
-		implements UnweightedRule {
-
+public class UnweightedArithmeticRule extends AbstractArithmeticRule implements UnweightedRule {
 	public UnweightedArithmeticRule(ArithmeticRuleExpression expression) {
 		this(expression, expression.toString());
 	}
@@ -53,15 +49,15 @@ public class UnweightedArithmeticRule extends AbstractArithmeticRule
 	}
 
 	@Override
-	protected UnweightedGroundArithmeticRule makeGroundRule(double[] coeffs, GroundAtom[] atoms,
-			FunctionComparator comparator, double c) {
-		return new UnweightedGroundArithmeticRule(this, coeffs, atoms, comparator, c);
+	protected UnweightedGroundArithmeticRule makeGroundRule(float[] coefficients, GroundAtom[] atoms,
+			FunctionComparator comparator, float constant) {
+		return new UnweightedGroundArithmeticRule(this, coefficients, atoms, comparator, constant);
 	}
 
 	@Override
-	protected UnweightedGroundArithmeticRule makeGroundRule(List<Double> coeffs, List<GroundAtom> atoms,
-			FunctionComparator comparator, double c) {
-		return new UnweightedGroundArithmeticRule(this, coeffs, atoms, comparator, c);
+	protected UnweightedGroundArithmeticRule makeGroundRule(List<Float> coefficients, List<GroundAtom> atoms,
+			FunctionComparator comparator, float constant) {
+		return new UnweightedGroundArithmeticRule(this, coefficients, atoms, comparator, constant);
 	}
 
 	@Override

@@ -25,7 +25,6 @@ import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.util.MathUtils;
 
 public class Add extends Coefficient {
-
 	protected final Coefficient c1;
 	protected final Coefficient c2;
 
@@ -35,7 +34,7 @@ public class Add extends Coefficient {
 	}
 
 	@Override
-	public double getValue(Map<SummationVariable, Integer> subs) {
+	public float getValue(Map<SummationVariable, Integer> subs) {
 		return c1.getValue(subs) + c2.getValue(subs);
 	}
 

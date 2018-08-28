@@ -24,21 +24,20 @@ import org.linqs.psl.model.rule.arithmetic.expression.SummationVariable;
 import org.linqs.psl.model.term.Constant;
 
 public class ConstantNumber extends Coefficient {
+	protected final float value;
 
-	protected final double value;
-
-	public ConstantNumber(double value) {
+	public ConstantNumber(float value) {
 		this.value = value;
 	}
 
 	@Override
-	public double getValue(Map<SummationVariable, Integer> subs) {
+	public float getValue(Map<SummationVariable, Integer> subs) {
 		return value;
 	}
 
 	@Override
 	public String toString() {
-		return Double.toString(value);
+		return Float.toString(value);
 	}
 
 	@Override

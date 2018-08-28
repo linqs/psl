@@ -131,7 +131,7 @@ public class AtomCache {
 	 * @param value the Atom's truth value
 	 * @return the new ObservedAtom
 	 */
-	public synchronized ObservedAtom instantiateObservedAtom(Predicate predicate, Constant[] args, double value) {
+	public synchronized ObservedAtom instantiateObservedAtom(Predicate predicate, Constant[] args, float value) {
 		QueryAtom key = new QueryAtom(predicate, args);
 
 		// Always check the cache before making new atoms.
@@ -165,7 +165,7 @@ public class AtomCache {
 	 * @param value the Atom's truth value
 	 * @return the new RandomVariableAtom
 	 */
-	public synchronized RandomVariableAtom instantiateRandomVariableAtom(StandardPredicate predicate, Constant[] args, double value) {
+	public synchronized RandomVariableAtom instantiateRandomVariableAtom(StandardPredicate predicate, Constant[] args, float value) {
 		QueryAtom key = new QueryAtom(predicate, args);
 
 		// Always check the cache before making new atoms.

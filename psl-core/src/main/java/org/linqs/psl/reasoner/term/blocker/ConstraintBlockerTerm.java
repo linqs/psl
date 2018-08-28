@@ -69,11 +69,11 @@ public class ConstraintBlockerTerm implements Term {
 	 */
 	public void randomlyInitialize() {
 		for (RandomVariableAtom atom : atoms) {
-			atom.setValue(0.0);
+			atom.setValue(0.0f);
 		}
 
 		if (atoms.length > 0 && exactlyOne) {
-			atoms[RandUtils.nextInt(atoms.length)].setValue(1.0);
+			atoms[RandUtils.nextInt(atoms.length)].setValue(1.0f);
 		}
 	}
 

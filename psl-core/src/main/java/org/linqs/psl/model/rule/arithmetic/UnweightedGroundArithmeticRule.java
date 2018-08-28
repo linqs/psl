@@ -34,14 +34,14 @@ import java.util.List;
 public class UnweightedGroundArithmeticRule extends AbstractGroundArithmeticRule
 		implements UnweightedGroundRule {
 
-	protected UnweightedGroundArithmeticRule(UnweightedArithmeticRule rule, List<Double> coeffs,
-			List<GroundAtom> atoms, FunctionComparator comparator, double constant) {
-		super(rule, coeffs, atoms, comparator, constant);
+	protected UnweightedGroundArithmeticRule(UnweightedArithmeticRule rule, List<Float> coefficients,
+			List<GroundAtom> atoms, FunctionComparator comparator, float constant) {
+		super(rule, coefficients, atoms, comparator, constant);
 	}
 
-	protected UnweightedGroundArithmeticRule(UnweightedArithmeticRule rule, double[] coeffs,
-			GroundAtom[] atoms, FunctionComparator comparator, double constant) {
-		super(rule, coeffs, atoms, comparator, constant);
+	protected UnweightedGroundArithmeticRule(UnweightedArithmeticRule rule, float[] coefficients,
+			GroundAtom[] atoms, FunctionComparator comparator, float constant) {
+		super(rule, coefficients, atoms, comparator, constant);
 	}
 
 	@Override
@@ -51,23 +51,23 @@ public class UnweightedGroundArithmeticRule extends AbstractGroundArithmeticRule
 
 	@Override
 	public double getInfeasibility() {
-		double sum = 0.0;
-		for (int i = 0; i < coeffs.length; i++) {
+		float sum = 0.0f;
+		for (int i = 0; i < coefficients.length; i++) {
 			// Skip any special predicates.
 			if (atoms[i].getPredicate() instanceof SpecialPredicate) {
 				continue;
 			}
 
-			sum += coeffs[i] * atoms[i].getValue();
+			sum += coefficients[i] * atoms[i].getValue();
 		}
 
 		switch (comparator) {
 		case Equality:
 			return Math.abs(sum - constant);
 		case LargerThan:
-			return -1.0 * Math.min(sum - constant, 0.0);
+			return -1.0f * Math.min(sum - constant, 0.0f);
 		case SmallerThan:
-			return Math.max(sum - constant, 0.0);
+			return Math.max(sum - constant, 0.0f);
 		default:
 			throw new IllegalStateException("Unrecognized comparator: " + comparator);
 		}
@@ -75,14 +75,14 @@ public class UnweightedGroundArithmeticRule extends AbstractGroundArithmeticRule
 
 	@Override
 	public ConstraintTerm getConstraintDefinition() {
-		GeneralFunction sum = new GeneralFunction(false, false, coeffs.length);
-		for (int i = 0; i < coeffs.length; i++) {
+		GeneralFunction sum = new GeneralFunction(false, false, (short)coefficients.length);
+		for (int i = 0; i < coefficients.length; i++) {
 			// Skip any special predicates.
 			if (atoms[i].getPredicate() instanceof SpecialPredicate) {
 				continue;
 			}
 
-			sum.add(coeffs[i], atoms[i]);
+			sum.add(coefficients[i], atoms[i]);
 		}
 
 		return new ConstraintTerm(sum, comparator, constant);

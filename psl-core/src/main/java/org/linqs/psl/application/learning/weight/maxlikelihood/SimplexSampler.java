@@ -27,7 +27,6 @@ public class SimplexSampler {
 
 	/**
 	 * Samples a uniform point on the simplex of dimension d
-	 * @param d
 	 */
 	public double [] getNext(int d) {
 		double[] x = new double[d];

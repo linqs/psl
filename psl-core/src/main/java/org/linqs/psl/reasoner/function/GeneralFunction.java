@@ -27,12 +27,12 @@ import org.linqs.psl.model.atom.GroundAtom;
  * allocations at grounding time.
  */
 public class GeneralFunction implements FunctionTerm {
-	private final double[] coefficients;
+	private final float[] coefficients;
 	private final FunctionTerm[] terms;
-	private int size;
+	private short size;
 
 	// All constants will get merged into this.
-	private double constant;
+	private float constant;
 
 	private boolean constantTerms;
 	private boolean linearTerms;
@@ -40,11 +40,11 @@ public class GeneralFunction implements FunctionTerm {
 	private boolean nonNegative;
 	private boolean squared;
 
-	public GeneralFunction(boolean nonNegative, boolean squared, int maxSize) {
-		coefficients = new double[maxSize];
+	public GeneralFunction(boolean nonNegative, boolean squared, short maxSize) {
+		coefficients = new float[maxSize];
 		terms = new FunctionTerm[maxSize];
 		size = 0;
-		constant = 0.0;
+		constant = 0.0f;
 
 		this.nonNegative = nonNegative;
 		this.squared = squared;
@@ -52,7 +52,7 @@ public class GeneralFunction implements FunctionTerm {
 		linearTerms = true;
 	}
 
-	public double getConstant() {
+	public float getConstant() {
 		return constant;
 	}
 
@@ -85,14 +85,14 @@ public class GeneralFunction implements FunctionTerm {
 	/**
 	 * Add a constant to the sum.
 	 */
-	public void add(double value) {
+	public void add(float value) {
 		constant += value;
 	}
 
 	/**
 	 * Add a general term to the sum.
 	 */
-	public void add(double coefficient, FunctionTerm term) {
+	public void add(float coefficient, FunctionTerm term) {
 		// Merge constants.
 		if (term.isConstant()) {
 			constant += (coefficient * term.getValue());
@@ -116,7 +116,7 @@ public class GeneralFunction implements FunctionTerm {
 		return size;
 	}
 
-	public double getCoefficient(int index) {
+	public float getCoefficient(int index) {
 		return coefficients[index];
 	}
 
@@ -125,15 +125,15 @@ public class GeneralFunction implements FunctionTerm {
 	}
 
 	@Override
-	public double getValue() {
-		double val = constant;
+	public float getValue() {
+		float val = constant;
 
 		for (int i = 0; i < size; i++) {
 			val += terms[i].getValue() * coefficients[i];
 		}
 
 		if (nonNegative && val < 0.0) {
-			return 0.0;
+			return 0.0f;
 		}
 
 		return squared ? (val * val) : val;
@@ -147,15 +147,15 @@ public class GeneralFunction implements FunctionTerm {
 	 * The passed in values must only contains entries for non-constant atoms (all constants get merged).
 	 * The passed in values may be larger than the number of values actually used.
 	 */
-	public double getValue(double[] values) {
-		double val = constant;
+	public float getValue(float[] values) {
+		float val = constant;
 
 		for (int i = 0; i < size; i++) {
 			val += coefficients[i] * values[i];
 		}
 
 		if (nonNegative && val < 0.0) {
-			return 0.0;
+			return 0.0f;
 		}
 
 		return squared ? (val * val) : val;
@@ -167,15 +167,15 @@ public class GeneralFunction implements FunctionTerm {
 	 * Note that the value of the RVA is NOT used, it is only used to find the matching function term.
 	 * The general version of would be to just have a map,
 	 * However, the common use case is just having one variable change value and this is typically
-	 * very high traffic making the map (and autoboxing double) overhead noticable.
+	 * very high traffic making the map (and autoboxing float) overhead noticable.
 	 */
-	public double getValue(GroundAtom replacementAtom, double replacementValue) {
-		double val = constant;
+	public float getValue(GroundAtom replacementAtom, float replacementValue) {
+		float val = constant;
 
 		// Use numeric for loops instead of iterators in high traffic code.
 		for (int i = 0; i < size; i++) {
 			FunctionTerm term = terms[i];
-			double coefficient = coefficients[i];
+			float coefficient = coefficients[i];
 
 			// Only one instance of each atom exists and we are trying to match it directly.
 			if (term == replacementAtom) {
@@ -186,7 +186,7 @@ public class GeneralFunction implements FunctionTerm {
 		}
 
 		if (nonNegative && val < 0.0) {
-			return 0.0;
+			return 0.0f;
 		}
 
 		return squared ? (val * val) : val;
@@ -206,7 +206,7 @@ public class GeneralFunction implements FunctionTerm {
 
 		for (int i = 0; i < size; i++) {
 			FunctionTerm term = terms[i];
-			double coefficient = coefficients[i];
+			float coefficient = coefficients[i];
 
 			string.append(" + ");
 			string.append("" + coefficient + " * " + term.toString());

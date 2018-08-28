@@ -32,7 +32,6 @@ import org.linqs.psl.util.MathUtils;
  *  - when getting the actual value (using actual values)
  */
 public class Divide extends Coefficient {
-
 	protected final Coefficient c1;
 	protected final Coefficient c2;
 
@@ -47,9 +46,9 @@ public class Divide extends Coefficient {
 	}
 
 	@Override
-	public double getValue(Map<SummationVariable, Integer> subs) {
-		double lhs = c1.getValue(subs);
-		double rhs = c2.getValue(subs);
+	public float getValue(Map<SummationVariable, Integer> subs) {
+		float lhs = c1.getValue(subs);
+		float rhs = c2.getValue(subs);
 
 		// If the denoinator is 0, then throw an exception.
 		if (MathUtils.isZero(rhs)) {
@@ -76,11 +75,11 @@ public class Divide extends Coefficient {
 
 		// If the numerator is 0, then just return zero.
 		if (lhs instanceof ConstantNumber && MathUtils.isZero(((ConstantNumber)lhs).value)) {
-			return new ConstantNumber(0.0);
+			return new ConstantNumber(0.0f);
 		}
 
 		// If the denoinator is 1, then just reutrn the numerator.
-		if (rhs instanceof ConstantNumber && MathUtils.equals(((ConstantNumber)rhs).value, 1.0)) {
+		if (rhs instanceof ConstantNumber && MathUtils.equals(((ConstantNumber)rhs).value, 1.0f)) {
 			return lhs;
 		}
 

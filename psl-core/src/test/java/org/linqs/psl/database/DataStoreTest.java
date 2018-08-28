@@ -249,20 +249,20 @@ public abstract class DataStoreTest {
 		Database db = datastore.getDatabase(datastore.getPartition("0"));
 
 		RandomVariableAtom atom = (RandomVariableAtom) db.getAtom(p1, a, b);
-		atom.setValue(.5);
+		atom.setValue(0.5f);
 		db.commit(atom);
 		db.close();
 
 		db = datastore.getDatabase(datastore.getPartition("0"));
 		atom = (RandomVariableAtom) db.getAtom(p1, a, b);
-		assertEquals(.5, atom.getValue(), 0.0);
-		atom.setValue(1.0);
+		assertEquals(0.5f, atom.getValue(), 0.0f);
+		atom.setValue(1.0f);
 		db.commit(atom);
 		db.close();
 
 		db = datastore.getDatabase(datastore.getPartition("0"));
 		atom = (RandomVariableAtom) db.getAtom(p1, a, b);
-		assertEquals(1.0, atom.getValue(), 0.0);
+		assertEquals(1.0f, atom.getValue(), 0.0f);
 		db.close();
 	}
 
@@ -279,26 +279,25 @@ public abstract class DataStoreTest {
 
 		Database db = datastore.getDatabase(datastore.getPartition("0"));
 		RandomVariableAtom atom = (RandomVariableAtom) db.getAtom(p1, a, b);
-		atom.setValue(0.25);
+		atom.setValue(0.25f);
 		db.commit(atom);
-		atom.setValue(0.5);
-		db.commit(atom);
-		db.close();
-
-		db = datastore.getDatabase(datastore.getPartition("0"));
-		atom = (RandomVariableAtom) db.getAtom(p1, a, b);
-		assertEquals(0.5, atom.getValue(), 0.0);
-		atom.setValue(0.75);
-		db.commit(atom);
-		atom.setValue(1.0);
+		atom.setValue(0.5f);
 		db.commit(atom);
 		db.close();
 
 		db = datastore.getDatabase(datastore.getPartition("0"));
 		atom = (RandomVariableAtom) db.getAtom(p1, a, b);
-		assertEquals(1.0, atom.getValue(), 0.0);
+		assertEquals(0.5f, atom.getValue(), 0.0f);
+		atom.setValue(0.75f);
+		db.commit(atom);
+		atom.setValue(1.0f);
+		db.commit(atom);
 		db.close();
 
+		db = datastore.getDatabase(datastore.getPartition("0"));
+		atom = (RandomVariableAtom) db.getAtom(p1, a, b);
+		assertEquals(1.0f, atom.getValue(), 0.0f);
+		db.close();
 	}
 
 	@Test
@@ -317,8 +316,8 @@ public abstract class DataStoreTest {
 		Database db = datastore.getDatabase(datastore.getPartition("0"));
 		RandomVariableAtom atom1 = (RandomVariableAtom) db.getAtom(p1, a, b);
 		RandomVariableAtom atom2 = (RandomVariableAtom) db.getAtom(p1, c, d);
-		atom1.setValue(0.25);
-		atom2.setValue(0.75);
+		atom1.setValue(0.25f);
+		atom2.setValue(0.75f);
 		db.commit(atom1);
 		db.commit(atom2);
 		DatabaseQuery query = new DatabaseQuery(new QueryAtom(p1,  new Variable("X"), new Variable("Y")));
@@ -373,10 +372,10 @@ public abstract class DataStoreTest {
 		assertEquals(2, results.size());
 
 		GroundAtom atom = db.getAtom(functionalPredicate1, new DoubleAttribute(0.5), new DoubleAttribute(1.0));
-		assertEquals(0.75, atom.getValue(), 0.0);
+		assertEquals(0.75f, atom.getValue(), 0.0f);
 
 		atom = db.getAtom(functionalPredicate1, new DoubleAttribute(0.0), new DoubleAttribute(0.0));
-		assertEquals(0.0, atom.getValue(), 0.0);
+		assertEquals(0.0f, atom.getValue(), 0.0f);
 	}
 
 	@Test

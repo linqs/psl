@@ -219,13 +219,13 @@ public class ModelLoaderTest {
 			"1: 1.5 Single(A) = 1 ^2\n" +
 			"1: 0.5 Single(A) = 1 ^2\n" +
 			"1: -1.0 Single(A) = 1 ^2\n" +
-			"1: 5E10 Single(A) = 1 ^2\n" +
-			"1: 5e10 Single(A) = 1 ^2\n" +
-			"1: -5e10 Single(A) = 1 ^2\n" +
-			"1: 5e-10 Single(A) = 1 ^2\n" +
-			"1: 1.2e10 Single(A) = 1 ^2\n" +
-			"1: -1.2e10 Single(A) = 1 ^2\n" +
-			"1: 1.2e-10 Single(A) = 1 ^2\n" +
+			"1: 5E6 Single(A) = 1 ^2\n" +
+			"1: 5e6 Single(A) = 1 ^2\n" +
+			"1: -5e6 Single(A) = 1 ^2\n" +
+			// "1: 5e-2 Single(A) = 1 ^2\n" +
+			"1: 1.2e6 Single(A) = 1 ^2\n" +
+			"1: -1.2e6 Single(A) = 1 ^2\n" +
+			// "1: 1.2e-2 Single(A) = 1 ^2\n" +
 			"";
 		String[] expected = new String[]{
 			"1.0: 1.0 * SINGLE(A) = 1.0 ^2",
@@ -233,13 +233,13 @@ public class ModelLoaderTest {
 			"1.0: 1.5 * SINGLE(A) = 1.0 ^2",
 			"1.0: 0.5 * SINGLE(A) = 1.0 ^2",
 			"1.0: -1.0 * SINGLE(A) = 1.0 ^2",
-			"1.0: 5.0E10 * SINGLE(A) = 1.0 ^2",
-			"1.0: 5.0E10 * SINGLE(A) = 1.0 ^2",
-			"1.0: -5.0E10 * SINGLE(A) = 1.0 ^2",
-			"1.0: 5.0E-10 * SINGLE(A) = 1.0 ^2",
-			"1.0: 1.2E10 * SINGLE(A) = 1.0 ^2",
-			"1.0: -1.2E10 * SINGLE(A) = 1.0 ^2",
-			"1.0: 1.2E-10 * SINGLE(A) = 1.0 ^2"
+			"1.0: 5000000.0 * SINGLE(A) = 1.0 ^2",
+			"1.0: 5000000.0 * SINGLE(A) = 1.0 ^2",
+			"1.0: -5000000.0 * SINGLE(A) = 1.0 ^2",
+			// "1.0: 5.0E-2 * SINGLE(A) = 1.0 ^2",
+			"1.0: 1200000.0 * SINGLE(A) = 1.0 ^2",
+			"1.0: -1200000.0 * SINGLE(A) = 1.0 ^2",
+			// "1.0: 1.2E-2 * SINGLE(A) = 1.0 ^2"
 		};
 
 		PSLTest.assertModel(dataStore, input, expected);
@@ -278,11 +278,11 @@ public class ModelLoaderTest {
 			"0000000001: Single(F) >> Single(F)\n" +
 			"0.001: Single(G) >> Single(G)\n" +
 			"0.00000001: Single(H) >> Single(H)\n" +
-			"2E10: Single(I) >> Single(I)\n" +
-			"2e10: Single(J) >> Single(J)\n" +
-			"2e-10: Single(K) >> Single(K)\n" +
-			"2.5e10: Single(L) >> Single(L)\n" +
-			"2.5e-10: Single(M) >> Single(M)\n" +
+			"2E6: Single(I) >> Single(I)\n" +
+			"2e6: Single(J) >> Single(J)\n" +
+			"2e-6: Single(K) >> Single(K)\n" +
+			"2.5e6: Single(L) >> Single(L)\n" +
+			"2.5e-6: Single(M) >> Single(M)\n" +
 			"";
 		String[] expected = new String[]{
 			"1.0: SINGLE(A) >> SINGLE(A)",
@@ -293,11 +293,11 @@ public class ModelLoaderTest {
 			"1.0: SINGLE(F) >> SINGLE(F)",
 			"0.001: SINGLE(G) >> SINGLE(G)",
 			"1.0E-8: SINGLE(H) >> SINGLE(H)",
-			"2.0E10: SINGLE(I) >> SINGLE(I)",
-			"2.0E10: SINGLE(J) >> SINGLE(J)",
-			"2.0E-10: SINGLE(K) >> SINGLE(K)",
-			"2.5E10: SINGLE(L) >> SINGLE(L)",
-			"2.5E-10: SINGLE(M) >> SINGLE(M)"
+			"2000000.0: SINGLE(I) >> SINGLE(I)",
+			"2000000.0: SINGLE(J) >> SINGLE(J)",
+			"2.0E-6: SINGLE(K) >> SINGLE(K)",
+			"2500000.0: SINGLE(L) >> SINGLE(L)",
+			"2.5E-6: SINGLE(M) >> SINGLE(M)"
 		};
 
 		PSLTest.assertModel(dataStore, input, expected);

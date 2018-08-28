@@ -153,7 +153,7 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 			HashMap<WeightedRule, double[]> incompatibilities = new HashMap<WeightedRule, double[]>();
 
 			// Saves original state.
-			double[] originalState = new double[block.size()];
+			float[] originalState = new float[block.size()];
 			for (int i = 0; i < block.size(); i++) {
 				originalState[i] = block.getAtoms()[i].getValue();
 			}
@@ -173,7 +173,7 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
 				for (int sampleIndex = 0; sampleIndex < samples.length; sampleIndex++) {
 					// Changes the state of the block to the next point.
 					for (int i = 0; i < block.size(); i++) {
-						block.getAtoms()[i].setValue(samples[sampleIndex][i]);
+						block.getAtoms()[i].setValue((float)(samples[sampleIndex][i]));
 					}
 
 					inc[sampleIndex] += ((WeightedGroundRule) groundRule).getIncompatibility();

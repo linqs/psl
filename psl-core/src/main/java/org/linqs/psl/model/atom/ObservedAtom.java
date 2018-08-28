@@ -34,7 +34,7 @@ import org.linqs.psl.model.term.Constant;
  * Other reasons may exist for specific Database implementations.
  */
 public class ObservedAtom extends GroundAtom {
-	protected ObservedAtom(Predicate predicate, Constant[] args, double value) {
+	protected ObservedAtom(Predicate predicate, Constant[] args, float value) {
 		super(predicate, args, value);
 	}
 

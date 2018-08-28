@@ -32,8 +32,8 @@ import java.util.List;
 public class UnweightedGroundLogicalRule extends AbstractGroundLogicalRule
 		implements UnweightedGroundRule {
 
-	protected UnweightedGroundLogicalRule(UnweightedLogicalRule r, List<GroundAtom> posLiterals, List<GroundAtom> negLiterals, int rvaCount) {
-		super(r, posLiterals, negLiterals, rvaCount);
+	protected UnweightedGroundLogicalRule(UnweightedLogicalRule rule, List<GroundAtom> posLiterals, List<GroundAtom> negLiterals, short rvaCount) {
+		super(rule, posLiterals, negLiterals, rvaCount);
 	}
 
 	@Override
@@ -48,7 +48,7 @@ public class UnweightedGroundLogicalRule extends AbstractGroundLogicalRule
 
 	@Override
 	public ConstraintTerm getConstraintDefinition() {
-		return new ConstraintTerm(function, FunctionComparator.SmallerThan, 0.0);
+		return new ConstraintTerm(function, FunctionComparator.SmallerThan, 0.0f);
 	}
 
 	@Override
@@ -60,7 +60,7 @@ public class UnweightedGroundLogicalRule extends AbstractGroundLogicalRule
 	protected GroundRule instantiateNegatedGroundRule(
 			Formula disjunction, List<GroundAtom> positiveAtoms,
 			List<GroundAtom> negativeAtoms, String name) {
-		int rvaCount = 0;
+		short rvaCount = 0;
 		for (GroundAtom atom : IteratorUtils.join(positiveAtoms, negativeAtoms)) {
 			if (atom instanceof RandomVariableAtom) {
 				rvaCount++;
