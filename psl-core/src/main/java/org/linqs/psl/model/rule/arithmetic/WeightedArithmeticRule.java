@@ -56,14 +56,14 @@ public class WeightedArithmeticRule extends AbstractArithmeticRule implements We
 
 	@Override
 	protected AbstractGroundArithmeticRule makeGroundRule(double[] coeffs, GroundAtom[] atoms,
-			FunctionComparator comparator, double c) {
-		return new WeightedGroundArithmeticRule(this, coeffs, atoms, comparator, c, squared);
+			FunctionComparator comparator, double constant) {
+		return new WeightedGroundArithmeticRule(this, coeffs, atoms, comparator, constant);
 	}
 
 	@Override
 	protected AbstractGroundArithmeticRule makeGroundRule(List<Double> coeffs, List<GroundAtom> atoms,
-			FunctionComparator comparator, double c) {
-		return new WeightedGroundArithmeticRule(this, coeffs, atoms, comparator, c, squared);
+			FunctionComparator comparator, double constant) {
+		return new WeightedGroundArithmeticRule(this, coeffs, atoms, comparator, constant);
 	}
 
 	@Override

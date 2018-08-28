@@ -27,26 +27,15 @@ import org.linqs.psl.reasoner.function.GeneralFunction;
 import java.util.List;
 
 public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule implements WeightedGroundRule {
-	private double weight;
-	private final boolean squared;
-
 	protected WeightedGroundArithmeticRule(WeightedArithmeticRule rule, List<Double> coeffs,
-			List<GroundAtom> atoms, FunctionComparator comparator, double constant, boolean squared) {
+			List<GroundAtom> atoms, FunctionComparator comparator, double constant) {
 		super(rule, coeffs, atoms, comparator, constant);
-
-		weight = Double.NaN;
-		this.squared = squared;
-
 		validate();
 	}
 
 	protected WeightedGroundArithmeticRule(WeightedArithmeticRule rule, double[] coeffs, GroundAtom[] atoms,
-			FunctionComparator comparator, double constant, boolean squared) {
+			FunctionComparator comparator, double constant) {
 		super(rule, coeffs, atoms, comparator, constant);
-
-		weight = Double.NaN;
-		this.squared = squared;
-
 		validate();
 	}
 
@@ -67,25 +56,22 @@ public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule i
 
 	@Override
 	public boolean isSquared() {
-		return squared;
+		return ((WeightedRule)rule).isSquared();
 	}
 
 	@Override
 	public double getWeight() {
-		if (Double.isNaN(weight)) {
-			return getRule().getWeight();
-		}
-		return weight;
+		return ((WeightedRule)rule).getWeight();
 	}
 
 	@Override
 	public void setWeight(double weight) {
-		this.weight = weight;
+		((WeightedRule)rule).setWeight(weight);
 	}
 
 	@Override
 	public GeneralFunction getFunctionDefinition() {
-		GeneralFunction sum = new GeneralFunction(true, squared, coeffs.length);
+		GeneralFunction sum = new GeneralFunction(true, isSquared(), coeffs.length);
 
 		double termSign = FunctionComparator.LargerThan.equals(comparator) ? -1.0 : 1.0;
 		for (int i = 0; i < coeffs.length; i++) {
@@ -127,11 +113,11 @@ public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule i
 			sum *= -1;
 		}
 
-		return (squared) ? Math.pow(Math.max(sum, 0.0), 2) : Math.max(sum, 0.0);
+		return (isSquared()) ? Math.pow(Math.max(sum, 0.0), 2) : Math.max(sum, 0.0);
 	}
 
 	@Override
 	public String toString() {
-		return "" + getWeight() + ": " + super.toString() + ((squared) ? " ^2" : "");
+		return "" + getWeight() + ": " + super.toString() + ((isSquared()) ? " ^2" : "");
 	}
 }
