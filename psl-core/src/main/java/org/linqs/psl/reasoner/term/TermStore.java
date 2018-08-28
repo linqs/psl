@@ -53,7 +53,7 @@ public interface TermStore<E extends Term> extends Iterable<E> {
 	 */
 	public void ensureCapacity(int capacity);
 
-	public void updateWeight(WeightedGroundRule rule);
+	public void updateWeights();
 
 	public Iterable<E> getTerms(GroundRule groundRule);
 }

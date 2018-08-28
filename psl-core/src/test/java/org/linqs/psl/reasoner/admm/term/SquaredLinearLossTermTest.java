@@ -48,7 +48,7 @@ public class SquaredLinearLossTermTest {
 			variables[i].setLagrange(y[i]);
 		}
 
-		SquaredLinearLossTerm term = new SquaredLinearLossTerm(null, new Hyperplane(variables, coeffs, constant, z.length), weight);
+		SquaredLinearLossTerm term = new SquaredLinearLossTerm(new FakeGroundRule(weight), new Hyperplane(variables, coeffs, constant, z.length));
 		term.minimize(stepSize, z);
 
 		for (int i = 0; i < z.length; i++) {

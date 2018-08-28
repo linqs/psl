@@ -98,7 +98,7 @@ public class HingeLossTermTest {
 			variables[i].setLagrange(y[i]);
 		}
 
-		HingeLossTerm term = new HingeLossTerm(null, new Hyperplane(variables, coeffs, constant, z.length), weight);
+		HingeLossTerm term = new HingeLossTerm(new FakeGroundRule(weight), new Hyperplane(variables, coeffs, constant, z.length));
 		term.minimize(stepSize, z);
 
 		for (int i = 0; i < z.length; i++) {

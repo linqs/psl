@@ -19,6 +19,7 @@ package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.reasoner.term.WeightedTerm;
 import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.model.rule.WeightedGroundRule;
 
 /**
  * ADMMReasoner objective term of the form <br />
@@ -26,30 +27,19 @@ import org.linqs.psl.model.rule.GroundRule;
  */
 public class LinearLossTerm extends ADMMObjectiveTerm implements WeightedTerm {
 	private final float[] coefficients;
-	private float weight;
 
 	/**
 	 * Caller releases control of |variables| and |coefficients|.
 	 */
-	LinearLossTerm(GroundRule groundRule, Hyperplane hyperplane, float weight) {
+	LinearLossTerm(GroundRule groundRule, Hyperplane hyperplane) {
 		super(hyperplane, groundRule);
 
 		this.coefficients = hyperplane.getCoefficients();
-		setWeight(weight);
-	}
-
-	@Override
-	public void setWeight(float weight) {
-		this.weight = weight;
-	}
-
-	@Override
-	public float getWeight() {
-		return weight;
 	}
 
 	@Override
 	public void minimize(float stepSize, float[] consensusValues) {
+		float weight = (float)((WeightedGroundRule)groundRule).getWeight();
 		for (int i = 0; i < size; i++) {
 			LocalVariable variable = variables[i];
 
@@ -65,6 +55,7 @@ public class LinearLossTerm extends ADMMObjectiveTerm implements WeightedTerm {
 	 */
 	@Override
 	public float evaluate() {
+		float weight = (float)((WeightedGroundRule)groundRule).getWeight();
 		float value = 0.0f;
 		for (int i = 0; i < size; i++) {
 			value += coefficients[i] * variables[i].getValue();

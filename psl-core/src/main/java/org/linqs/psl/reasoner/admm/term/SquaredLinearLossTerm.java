@@ -18,14 +18,15 @@
 package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.model.rule.WeightedGroundRule;
 
 /**
  * ADMMReasoner objective term of the form <br />
  * weight * (coeffs^T * x - constant)^2
  */
 public class SquaredLinearLossTerm extends SquaredHyperplaneTerm {
-	public SquaredLinearLossTerm(GroundRule groundRule, Hyperplane hyperplane, float weight) {
-		super(groundRule, hyperplane, weight);
+	public SquaredLinearLossTerm(GroundRule groundRule, Hyperplane hyperplane) {
+		super(groundRule, hyperplane);
 	}
 
 	@Override
@@ -38,6 +39,7 @@ public class SquaredLinearLossTerm extends SquaredHyperplaneTerm {
 	 */
 	@Override
 	public float evaluate() {
+		float weight = (float)((WeightedGroundRule)groundRule).getWeight();
 		return weight * (float)Math.pow(super.evaluate(), 2);
 	}
 }

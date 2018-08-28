@@ -18,14 +18,15 @@
 package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.model.rule.WeightedGroundRule;
 
 /**
  * ADMMReasoner objective term of the form <br />
  * weight * [max(coefficients^T * x - constant, 0)]^2
  */
 public class SquaredHingeLossTerm extends SquaredHyperplaneTerm {
-	public SquaredHingeLossTerm(GroundRule groundRule, Hyperplane hyperplane, float weight) {
-		super(groundRule, hyperplane, weight);
+	public SquaredHingeLossTerm(GroundRule groundRule, Hyperplane hyperplane) {
+		super(groundRule, hyperplane);
 	}
 
 	/**
@@ -33,6 +34,7 @@ public class SquaredHingeLossTerm extends SquaredHyperplaneTerm {
 	 */
 	@Override
 	public float evaluate() {
+		float weight = (float)((WeightedGroundRule)groundRule).getWeight();
 		return weight * (float)Math.pow(Math.max(0.0f, super.evaluate()), 2);
 	}
 

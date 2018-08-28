@@ -101,7 +101,7 @@ public class SquaredHingeLossTermTest {
 			variables[i].setLagrange(y[i]);
 		}
 
-		SquaredHingeLossTerm term = new SquaredHingeLossTerm(null, new Hyperplane(variables, coeffs, constant, z.length), weight);
+		SquaredHingeLossTerm term = new SquaredHingeLossTerm(new FakeGroundRule(weight), new Hyperplane(variables, coeffs, constant, z.length));
 		term.minimize(stepSize, z);
 
 		for (int i = 0; i < z.length; i++) {

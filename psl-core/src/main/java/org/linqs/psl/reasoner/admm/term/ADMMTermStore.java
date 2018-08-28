@@ -202,8 +202,8 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm> {
 	}
 
 	@Override
-	public void updateWeight(WeightedGroundRule rule) {
-		store.updateWeight(rule);
+	public void updateWeights() {
+		store.updateWeights();
 	}
 
 	@Override

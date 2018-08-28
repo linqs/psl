@@ -47,7 +47,7 @@ public class LinearLossTermTest {
 			variables[i].setLagrange(y[i]);
 		}
 
-		LinearLossTerm term = new LinearLossTerm(null, new Hyperplane(variables, coeffs, 0.0f, z.length), weight);
+		LinearLossTerm term = new LinearLossTerm(new FakeGroundRule(weight), new Hyperplane(variables, coeffs, 0.0f, z.length));
 		term.minimize(stepSize, z);
 
 		for (int i = 0; i < z.length; i++) {

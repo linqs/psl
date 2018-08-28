@@ -19,6 +19,7 @@ package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.reasoner.term.WeightedTerm;
 import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.model.rule.WeightedGroundRule;
 
 /**
  * ADMMReasoner objective term of the form <br />
@@ -27,26 +28,13 @@ import org.linqs.psl.model.rule.GroundRule;
  * All coefficients must be non-zero.
  */
 public class HingeLossTerm extends HyperplaneTerm implements WeightedTerm {
-	private float weight;
-
-	public HingeLossTerm(GroundRule groundRule, Hyperplane hyperplane, float weight) {
+	public HingeLossTerm(GroundRule groundRule, Hyperplane hyperplane) {
 		super(groundRule, hyperplane);
-		setWeight(weight);
-	}
-
-	@Override
-	public void setWeight(float weight) {
-		this.weight = weight;
-	}
-
-	@Override
-	public float getWeight() {
-		return weight;
 	}
 
 	@Override
 	public void minimize(float stepSize, float[] consensusValues) {
-		// Initializes scratch data.
+		float weight = (float)((WeightedGroundRule)groundRule).getWeight();
 		float total = 0.0f;
 
 		// Minimizes without the linear loss, i.e., solves
@@ -89,6 +77,7 @@ public class HingeLossTerm extends HyperplaneTerm implements WeightedTerm {
 	 */
 	@Override
 	public float evaluate() {
+		float weight = (float)((WeightedGroundRule)groundRule).getWeight();
 		return weight * Math.max(super.evaluate(), 0.0f);
 	}
 }

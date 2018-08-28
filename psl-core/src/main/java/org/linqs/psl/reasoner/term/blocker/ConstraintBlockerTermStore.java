@@ -150,7 +150,7 @@ public class ConstraintBlockerTermStore implements TermStore<ConstraintBlockerTe
 	}
 
 	@Override
-	public void updateWeight(WeightedGroundRule rule) {
+	public void updateWeights() {
 		// The blocks don't care about weights.
 	}
 

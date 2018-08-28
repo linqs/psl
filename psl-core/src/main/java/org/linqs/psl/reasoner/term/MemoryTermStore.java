@@ -100,14 +100,9 @@ public class MemoryTermStore<E extends Term> implements TermStore<E> {
 	 * O(n)
 	 */
 	@Override
-	public void updateWeight(WeightedGroundRule rule) {
-		float weight = (float)rule.getWeight();
-
+	public void updateWeights() {
 		for (int i = 0; i < store.size(); i++) {
-			Term term = store.get(i);
-			if (term instanceof WeightedTerm) {
-				((WeightedTerm)term).setWeight(weight);
-			}
+			store.get(i).weightChanged();
 		}
 	}
 

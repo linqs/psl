@@ -19,6 +19,7 @@ package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.reasoner.term.WeightedTerm;
 import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.util.HashCode;
 
 import cern.colt.matrix.tfloat.FloatMatrix2D;
@@ -39,7 +40,6 @@ import java.util.concurrent.Semaphore;
 public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements WeightedTerm {
 	protected final float[] coefficients;
 	protected final float constant;
-	protected float weight;
 
 	private FloatMatrix2D L;
 
@@ -50,15 +50,13 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
 	// TODO(eriq): All the matrix work is suspect.
 	// The old code was using some cache that didn't seem too useful. Could it have been?
 
-	public SquaredHyperplaneTerm(GroundRule groundRule, Hyperplane hyperplane, float weight) {
+	public SquaredHyperplaneTerm(GroundRule groundRule, Hyperplane hyperplane) {
 		super(hyperplane, groundRule);
 
 		this.coefficients = hyperplane.getCoefficients();
 		this.constant = hyperplane.getConstant();
 
 		L = null;
-
-		setWeight(weight);
 	}
 
 	private void computeL(float stepSize) {
@@ -66,6 +64,8 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
 		if (L != null) {
 			return;
 		}
+
+		float weight = (float)((WeightedGroundRule)groundRule).getWeight();
 
 		float coeff;
 		DenseFloatMatrix2DWithHashcode matrix = new DenseFloatMatrix2DWithHashcode(size, size);
@@ -100,15 +100,9 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
 	}
 
 	@Override
-	public void setWeight(float weight) {
-		this.weight = weight;
+	public void weightChanged() {
 		// Recompute L.
 		L = null;
-	}
-
-	@Override
-	public float getWeight() {
-		return weight;
 	}
 
 	/**
@@ -130,6 +124,8 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
 	 * Stores the result in x.
 	 */
 	protected void minWeightedSquaredHyperplane(float stepSize, float[] consensusValues) {
+		float weight = (float)((WeightedGroundRule)groundRule).getWeight();
+
 		// Constructs constant term in the gradient (moved to right-hand side).
 		for (int i = 0; i < size; i++) {
 			LocalVariable variable = variables[i];

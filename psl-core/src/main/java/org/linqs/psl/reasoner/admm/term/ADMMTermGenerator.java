@@ -116,11 +116,7 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 	@Override
 	public void updateWeights(GroundRuleStore ruleStore, TermStore<ADMMObjectiveTerm> termStore) {
 		// TODO(eriq): This is broken for when a rule switches sign.
-		for (GroundRule groundRule : ruleStore.getGroundRules()) {
-			if (groundRule instanceof WeightedGroundRule) {
-				termStore.updateWeight((WeightedGroundRule)groundRule);
-			}
-		}
+		termStore.updateWeights();
 	}
 
 	/**
@@ -133,7 +129,6 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 		ADMMObjectiveTerm term;
 
 		if (groundRule instanceof WeightedGroundRule) {
-			float weight = (float)((WeightedGroundRule)groundRule).getWeight();
 			GeneralFunction function = ((WeightedGroundRule)groundRule).getFunctionDefinition();
 			Hyperplane hyperplane = processHyperplane(function, termStore);
 			if (hyperplane == null) {
@@ -142,14 +137,14 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 
 			// Non-negative functions have a hinge.
 			if (function.isNonNegative() && function.isSquared()) {
-				term = new SquaredHingeLossTerm(groundRule, hyperplane, weight);
+				term = new SquaredHingeLossTerm(groundRule, hyperplane);
 			} else if (function.isNonNegative() && !function.isSquared()) {
-				term = new HingeLossTerm(groundRule, hyperplane, weight);
+				term = new HingeLossTerm(groundRule, hyperplane);
 			} else if (!function.isNonNegative() && function.isSquared()) {
 				hyperplane.setConstant(0.0f);
-				term = new SquaredLinearLossTerm(groundRule, hyperplane, weight);
+				term = new SquaredLinearLossTerm(groundRule, hyperplane);
 			} else {
-				term = new LinearLossTerm(groundRule, hyperplane, weight);
+				term = new LinearLossTerm(groundRule, hyperplane);
 			}
 		} else if (groundRule instanceof UnweightedGroundRule) {
 			ConstraintTerm constraint = ((UnweightedGroundRule)groundRule).getConstraintDefinition();
