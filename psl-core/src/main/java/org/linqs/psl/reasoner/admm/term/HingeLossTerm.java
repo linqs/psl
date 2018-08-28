@@ -20,19 +20,17 @@ package org.linqs.psl.reasoner.admm.term;
 import org.linqs.psl.reasoner.term.WeightedTerm;
 import org.linqs.psl.model.rule.GroundRule;
 
-import java.util.List;
-
 /**
  * ADMMReasoner objective term of the form <br />
- * weight * max(coeffs^T * x - constant, 0)
+ * weight * max(coefficients^T * x - constant, 0)
  *
- * All coeffs must be non-zero.
+ * All coefficients must be non-zero.
  */
 public class HingeLossTerm extends HyperplaneTerm implements WeightedTerm {
 	private float weight;
 
-	HingeLossTerm(GroundRule groundRule, List<LocalVariable> variables, List<Float> coeffs, float constant, float weight) {
-		super(groundRule, variables, coeffs, constant);
+	public HingeLossTerm(GroundRule groundRule, Hyperplane hyperplane, float weight) {
+		super(groundRule, hyperplane);
 		setWeight(weight);
 	}
 
@@ -48,15 +46,15 @@ public class HingeLossTerm extends HyperplaneTerm implements WeightedTerm {
 
 	@Override
 	public void minimize(float stepSize, float[] consensusValues) {
-		// Initializes scratch data,
+		// Initializes scratch data.
 		float total = 0.0f;
 
 		// Minimizes without the linear loss, i.e., solves
 		// argmin stepSize/2 * \|x - z + y / stepSize \|_2^2
-		for (int i = 0; i < variables.size(); i++) {
-			LocalVariable variable = variables.get(i);
+		for (int i = 0; i < size; i++) {
+			LocalVariable variable = variables[i];
 			variable.setValue(consensusValues[variable.getGlobalId()] - variable.getLagrange() / stepSize);
-			total += (coeffs.get(i).floatValue() * variable.getValue());
+			total += (coefficients[i] * variable.getValue());
 		}
 
 		// If the linear loss is NOT active at the computed point, it is the solution...
@@ -65,16 +63,16 @@ public class HingeLossTerm extends HyperplaneTerm implements WeightedTerm {
 		}
 
 		// Else, minimizes with the linear loss, i.e., solves
-		// argmin weight * coeffs^T * x + stepSize/2 * \|x - z + y / stepSize \|_2^2
+		// argmin weight * coefficients^T * x + stepSize/2 * \|x - z + y / stepSize \|_2^2
 		total = 0.0f;
-		for (int i = 0; i < variables.size(); i++) {
-			LocalVariable variable = variables.get(i);
+		for (int i = 0; i < size; i++) {
+			LocalVariable variable = variables[i];
 
 			// TODO(eriq): We just took this step above. Is ADMM accidentally taking two steps?
 			variable.setValue(consensusValues[variable.getGlobalId()] - variable.getLagrange() / stepSize);
-			variable.setValue(variable.getValue() - weight * coeffs.get(i).floatValue() / stepSize);
+			variable.setValue(variable.getValue() - weight * coefficients[i] / stepSize);
 
-			total += coeffs.get(i).floatValue() * variable.getValue();
+			total += coefficients[i] * variable.getValue();
 		}
 
 		// If the linear loss IS active at the computed point, it is the solution...
@@ -87,7 +85,7 @@ public class HingeLossTerm extends HyperplaneTerm implements WeightedTerm {
 	}
 
 	/**
-	 * weight * max(coeffs^T * x - constant, 0)
+	 * weight * max(coefficients^T * x - constant, 0)
 	 */
 	@Override
 	public float evaluate() {

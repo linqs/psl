@@ -236,7 +236,6 @@ public abstract class AbstractLogicalRule extends AbstractRule {
 			groundRuleStore.addGroundRule(groundRule);
 		}
 
-
 		private int createAtoms(List<Atom> literals, Constant[] row, Constant[][] argumentBuffer, List<GroundAtom> groundAtoms, double trivialValue) {
 			GroundAtom atom = null;
 			int rvaCount = 0;

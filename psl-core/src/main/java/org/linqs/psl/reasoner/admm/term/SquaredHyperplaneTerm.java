@@ -26,7 +26,6 @@ import cern.colt.matrix.tfloat.algo.decomposition.DenseFloatCholeskyDecompositio
 import cern.colt.matrix.tfloat.impl.DenseFloatMatrix2D;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
 
@@ -34,11 +33,11 @@ import java.util.concurrent.Semaphore;
  * Objective term for an ADMMReasoner that is based on a squared
  * hyperplane in some way.
  *
- * Stores the characterization of the hyperplane as coeffs^T * x = constant
+ * Stores the characterization of the hyperplane as coefficients^T * x = constant
  * and minimizes with the weighted, squared hyperplane in the objective.
  */
 public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements WeightedTerm {
-	protected final List<Float> coeffs;
+	protected final float[] coefficients;
 	protected final float constant;
 	protected float weight;
 
@@ -51,13 +50,11 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
 	// TODO(eriq): All the matrix work is suspect.
 	// The old code was using some cache that didn't seem too useful. Could it have been?
 
-	SquaredHyperplaneTerm(GroundRule groundRule, List<LocalVariable> variables, List<Float> coeffs, float constant, float weight) {
-		super(variables, groundRule);
+	public SquaredHyperplaneTerm(GroundRule groundRule, Hyperplane hyperplane, float weight) {
+		super(hyperplane, groundRule);
 
-		assert(variables.size() == coeffs.size());
-
-		this.coeffs = coeffs;
-		this.constant = constant;
+		this.coefficients = hyperplane.getCoefficients();
+		this.constant = hyperplane.getConstant();
 
 		L = null;
 
@@ -71,15 +68,15 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
 		}
 
 		float coeff;
-		DenseFloatMatrix2DWithHashcode matrix = new DenseFloatMatrix2DWithHashcode(variables.size(), variables.size());
-		for (int i = 0; i < variables.size(); i++) {
+		DenseFloatMatrix2DWithHashcode matrix = new DenseFloatMatrix2DWithHashcode(size, size);
+		for (int i = 0; i < size; i++) {
 			// Note that the matrix is symmetric.
-			for (int j = i; j < variables.size(); j++) {
+			for (int j = i; j < size; j++) {
 				if (i == j) {
-					coeff = 2 * weight * coeffs.get(i).floatValue() * coeffs.get(i).floatValue() + stepSize;
+					coeff = 2 * weight * coefficients[i] * coefficients[i] + stepSize;
 					matrix.setQuick(i, i, coeff);
 				} else {
-					coeff = 2 * weight * coeffs.get(i).floatValue() * coeffs.get(j).floatValue();
+					coeff = 2 * weight * coefficients[i] * coefficients[j];
 					matrix.setQuick(i, j, coeff);
 					matrix.setQuick(j, i, coeff);
 				}
@@ -115,30 +112,30 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
 	}
 
 	/**
-	 * coeffs^T * x - constant
+	 * coefficients^T * x - constant
 	 */
 	@Override
 	public float evaluate() {
 		float value = 0.0f;
-		for (int i = 0; i < variables.size(); i++) {
-			value += coeffs.get(i).floatValue() * variables.get(i).getValue();
+		for (int i = 0; i < size; i++) {
+			value += coefficients[i] * variables[i].getValue();
 		}
 		return value - constant;
 	}
 
 	/**
 	 * Minimizes the weighted, squared hyperplane <br />
-	 * argmin weight * (coeffs^T * x - constant)^2 + stepSize/2 * \|x - z + y / stepSize \|_2^2
+	 * argmin weight * (coefficients^T * x - constant)^2 + stepSize/2 * \|x - z + y / stepSize \|_2^2
 	 * <p>
 	 * Stores the result in x.
 	 */
 	protected void minWeightedSquaredHyperplane(float stepSize, float[] consensusValues) {
 		// Constructs constant term in the gradient (moved to right-hand side).
-		for (int i = 0; i < variables.size(); i++) {
-			LocalVariable variable = variables.get(i);
+		for (int i = 0; i < size; i++) {
+			LocalVariable variable = variables[i];
 
 			float value = stepSize * (consensusValues[variable.getGlobalId()] - variable.getLagrange() / stepSize);
-			value += 2 * weight * coeffs.get(i).floatValue() * constant;
+			value += 2 * weight * coefficients[i] * constant;
 
 			variable.setValue(value);
 		}
@@ -146,20 +143,20 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
 		// Solve for x
 
 		// Handle small hyperplanes specially.
-		if (variables.size() == 1) {
-			LocalVariable variable = variables.get(0);
-			float coeff = coeffs.get(0).floatValue();
+		if (size == 1) {
+			LocalVariable variable = variables[0];
+			float coeff = coefficients[0];
 
 			variable.setValue(variable.getValue() / (2 * weight * coeff * coeff + stepSize));
 			return;
 		}
 
 		// Handle small hyperplanes specially.
-		if (variables.size() == 2) {
-			LocalVariable variable0 = variables.get(0);
-			LocalVariable variable1 = variables.get(1);
-			float coeff0 = coeffs.get(0).floatValue();
-			float coeff1 = coeffs.get(1).floatValue();
+		if (size == 2) {
+			LocalVariable variable0 = variables[0];
+			LocalVariable variable1 = variables[1];
+			float coeff0 = coefficients[0];
+			float coeff1 = coefficients[1];
 
 			float a0 = 2 * weight * coeff0 * coeff0 + stepSize;
 			float b1 = 2 * weight * coeff1 * coeff1 + stepSize;
@@ -178,18 +175,18 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
 			computeL(stepSize);
 		}
 
-		for (int i = 0; i < variables.size(); i++) {
+		for (int i = 0; i < size; i++) {
 			for (int j = 0; j < i; j++) {
-				variables.get(i).setValue(variables.get(i).getValue() - L.getQuick(i, j) * variables.get(j).getValue());
+				variables[i].setValue(variables[i].getValue() - L.getQuick(i, j) * variables[j].getValue());
 			}
-			variables.get(i).setValue(variables.get(i).getValue() / L.getQuick(i, i));
+			variables[i].setValue(variables[i].getValue() / L.getQuick(i, i));
 		}
 
-		for (int i = variables.size() - 1; i >= 0; i--) {
-			for (int j = variables.size() - 1; j > i; j--) {
-				variables.get(i).setValue(variables.get(i).getValue() - L.getQuick(j, i) * variables.get(j).getValue());
+		for (int i = size - 1; i >= 0; i--) {
+			for (int j = size - 1; j > i; j--) {
+				variables[i].setValue(variables[i].getValue() - L.getQuick(j, i) * variables[j].getValue());
 			}
-			variables.get(i).setValue(variables.get(i).getValue() / L.getQuick(i, i));
+			variables[i].setValue(variables[i].getValue() / L.getQuick(i, i));
 		}
 	}
 

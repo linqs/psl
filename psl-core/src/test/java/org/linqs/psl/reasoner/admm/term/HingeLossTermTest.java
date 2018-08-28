@@ -28,11 +28,7 @@ import java.util.List;
 public class HingeLossTermTest {
 	@Test
 	public void testMinimize() {
-		/*
-		 * Problem 1
-		 *
-		 * Solution on the hinge
-		 */
+		// Problem 1: Solution on the hinge
 		float[] z = {0.2f, 0.5f};
 		float[] y = {0.0f, 0.0f};
 		float[] coeffs = {1.0f, -1.0f};
@@ -42,11 +38,7 @@ public class HingeLossTermTest {
 		float[] expected = {-0.125f, 0.825f};
 		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
 
-		/*
-		 * Problem 2
-		 *
-		 * Solution on the hinge
-		 */
+		// Problem 2: Solution on the hinge
 		z = new float[] {0.3f, 0.5f, 0.1f};
 		y = new float[] {0.1f, 0.0f, -0.05f};
 		coeffs = new float[] {1.0f, -0.5f, 0.4f};
@@ -56,13 +48,7 @@ public class HingeLossTermTest {
 		expected = new float[] {0.043257f, 0.528361f, 0.177309f};
 		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
 
-
-
-		/*
-		 * Problem 3
-		 *
-		 * Solution on the zero side
-		 */
+		// Problem 3: Solution on the zero side
 		z = new float[] {0.3f, 0.5f, 0.1f};
 		y = new float[] {0.1f, 0.0f, -0.05f};
 		coeffs = new float[] {1.0f, -0.5f, 0.4f};
@@ -72,11 +58,7 @@ public class HingeLossTermTest {
 		expected = new float[] {0.1f, 0.5f, 0.2f};
 		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
 
-		/*
-		 * Problem 4
-		 *
-		 * Solution on the zero side
-		 */
+		// Problem 4: Solution on the zero side
 		z = new float[] {0.1f};
 		y = new float[] {0.15f};
 		coeffs = new float[] {1.0f};
@@ -86,11 +68,7 @@ public class HingeLossTermTest {
 		expected = new float[] {-0.05f};
 		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
 
-		/*
-		 * Problem 5
-		 *
-		 * Solution on the linear side
-		 */
+		// Problem 5: Solution on the linear side
 		z = new float[] {0.7f, 0.5f};
 		y = new float[] {0.0f, 0.0f};
 		coeffs = new float[] {1.0f, -1.0f};
@@ -100,12 +78,7 @@ public class HingeLossTermTest {
 		expected = new float[] {0.6f, 0.6f};
 		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
 
-		/*
-		 * Problem 6
-		 *
-		 * Solution on the hinge, two variables, non-1 stepsize and non-0 dual
-		 * variables
-		 */
+		// Problem 6: Solution on the hinge, two variables, non-1 stepsize and non-0 dual variables
 		z = new float[] {0.7f, 0.5f};
 		y = new float[] {0.05f, 1.0f};
 		coeffs = new float[] {1.0f, -1.0f};
@@ -118,21 +91,18 @@ public class HingeLossTermTest {
 
 	private void testProblem(float[] z, float[] y, float[] coeffs, float constant,
 			float weight, final float stepSize, float[] expected) {
-		List<LocalVariable> variables = new ArrayList<LocalVariable>(z.length);
-		List<Float> coeffsList = new ArrayList<Float>(z.length);
+		LocalVariable[] variables = new LocalVariable[z.length];
 
 		for (int i = 0; i < z.length; i++) {
-			variables.add(new LocalVariable(i, z[i]));
-			variables.get(i).setLagrange(y[i]);
-
-			coeffsList.add(new Float(coeffs[i]));
+			variables[i] = new LocalVariable(i, z[i]);
+			variables[i].setLagrange(y[i]);
 		}
 
-		HingeLossTerm term = new HingeLossTerm(null, variables, coeffsList, constant, weight);
+		HingeLossTerm term = new HingeLossTerm(null, new Hyperplane(variables, coeffs, constant, z.length), weight);
 		term.minimize(stepSize, z);
 
 		for (int i = 0; i < z.length; i++) {
-			assertEquals(expected[i], variables.get(i).getValue(), 5e-5);
+			assertEquals(expected[i], variables[i].getValue(), 5e-5);
 		}
 	}
 }

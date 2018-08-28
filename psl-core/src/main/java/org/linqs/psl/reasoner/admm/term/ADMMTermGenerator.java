@@ -35,9 +35,7 @@ import org.linqs.psl.util.Parallel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -99,13 +97,13 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 					// Negate (weight and expression) rules that have a negative weight.
 					for (GroundRule negatedRule : rule.negate()) {
 						ADMMObjectiveTerm term = createTerm(negatedRule, (ADMMTermStore)termStore);
-						if (term != null && term.variables.size() > 0) {
+						if (term != null && term.size() > 0) {
 							termStore.add(rule, term);
 						}
 					}
 				} else {
 					ADMMObjectiveTerm term = createTerm(rule, (ADMMTermStore)termStore);
-					if (term != null && term.variables.size() > 0) {
+					if (term != null && term.size() > 0) {
 						termStore.add(rule, term);
 					}
 				}
@@ -144,13 +142,14 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 
 			// Non-negative functions have a hinge.
 			if (function.isNonNegative() && function.isSquared()) {
-				term = new SquaredHingeLossTerm(groundRule, hyperplane.variables, hyperplane.coeffs, hyperplane.constant, weight);
+				term = new SquaredHingeLossTerm(groundRule, hyperplane, weight);
 			} else if (function.isNonNegative() && !function.isSquared()) {
-				term = new HingeLossTerm(groundRule, hyperplane.variables, hyperplane.coeffs, hyperplane.constant, weight);
+				term = new HingeLossTerm(groundRule, hyperplane, weight);
 			} else if (!function.isNonNegative() && function.isSquared()) {
-				term = new SquaredLinearLossTerm(groundRule, hyperplane.variables, hyperplane.coeffs, 0.0f, weight);
+				hyperplane.setConstant(0.0f);
+				term = new SquaredLinearLossTerm(groundRule, hyperplane, weight);
 			} else {
-				term = new LinearLossTerm(groundRule, hyperplane.variables, hyperplane.coeffs, weight);
+				term = new LinearLossTerm(groundRule, hyperplane, weight);
 			}
 		} else if (groundRule instanceof UnweightedGroundRule) {
 			ConstraintTerm constraint = ((UnweightedGroundRule)groundRule).getConstraintDefinition();
@@ -160,8 +159,8 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 				return null;
 			}
 
-			term = new LinearConstraintTerm(groundRule, hyperplane.variables, hyperplane.coeffs,
-					(float)(constraint.getValue() + hyperplane.constant), constraint.getComparator());
+			hyperplane.setConstant((float)(constraint.getValue() + hyperplane.getConstant()));
+			term = new LinearConstraintTerm(groundRule, hyperplane, constraint.getComparator());
 		} else {
 			throw new IllegalArgumentException("Unsupported ground rule: " + groundRule);
 		}
@@ -174,8 +173,7 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 	 * Will return null if the term is trivial and should be abandoned.
 	 */
 	private Hyperplane processHyperplane(GeneralFunction sum, ADMMTermStore termStore) {
-		Hyperplane hyperplane = new Hyperplane();
-		hyperplane.constant = -1.0f * (float)sum.getConstant();
+		Hyperplane hyperplane = new Hyperplane(sum.size(), -1.0f * (float)sum.getConstant());
 
 		for (int i = 0; i < sum.size(); i++) {
 			float coefficient = (float)sum.getCoefficient(i);
@@ -187,46 +185,31 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 				// Check to see if we have seen this variable before in this hyperplane.
 				// Note that we are checking for existence in a List (O(n)), but there are usually a small number of
 				// variables per hyperplane.
-				int localIndex = hyperplane.variables.indexOf(variable);
+				int localIndex = hyperplane.indexOfVariable(variable);
 				if (localIndex != -1) {
-					// If the local variable already exists, just add to its coefficient.
-					float currentCoefficient = hyperplane.coeffs.get(localIndex).floatValue();
-
 					// If this function came from a logical rule
 					// and the sign of the current coefficient and the coefficient of this variable do not match,
-					// this this term is trivial.
+					// then this term is trivial.
 					// Recall that all logical rules are disjunctions with only +1 and -1 as coefficients.
 					// A mismatch in signs for the same variable means that a ground atom appeared twice,
 					// once as a positive atom and once as a negative atom: Foo('a') || !Foo('a').
-					if (sum.isNonNegative() && !MathUtils.signsMatch(currentCoefficient, coefficient)) {
+					if (sum.isNonNegative() && !MathUtils.signsMatch(hyperplane.getCoefficient(localIndex), coefficient)) {
 						return null;
 					}
 
-					hyperplane.coeffs.set(localIndex, new Float(hyperplane.coeffs.get(localIndex) + coefficient));
+					// If the local variable already exists, just add to its coefficient.
+					hyperplane.appendCoefficient(localIndex, coefficient);
 				} else {
-					hyperplane.variables.add(variable);
-					hyperplane.coeffs.add(new Float(coefficient));
+					hyperplane.addTerm(variable, coefficient);
 				}
 			} else if (term.isConstant()) {
 				// Subtracts because hyperplane is stored as coeffs^T * x = constant.
-				hyperplane.constant -= (coefficient * term.getValue());
+				hyperplane.setConstant(hyperplane.getConstant() - (float)(coefficient * term.getValue()));
 			} else {
 				throw new IllegalArgumentException("Unexpected summand: " + sum + "[" + i + "] (" + term + ").");
 			}
 		}
 
 		return hyperplane;
-	}
-
-	private static class Hyperplane {
-		public List<LocalVariable> variables;
-		public List<Float> coeffs;
-		public float constant;
-
-		public Hyperplane() {
-			variables = new ArrayList<LocalVariable>();
-			coeffs = new ArrayList<Float>();
-			constant = 0.0f;
-		}
 	}
 }

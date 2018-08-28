@@ -486,6 +486,7 @@ public class RDBMSDatabase extends Database {
 	 */
 	@Override
 	public GroundAtom getAtom(StandardPredicate predicate, boolean create, Constant... arguments) {
+		// Only allocate one QueryAtom per thread.
 		QueryAtom queryAtom = null;
 		if (!Parallel.hasThreadObject(THREAD_QUERY_ATOM_KEY)) {
 			queryAtom = new QueryAtom(predicate, arguments);

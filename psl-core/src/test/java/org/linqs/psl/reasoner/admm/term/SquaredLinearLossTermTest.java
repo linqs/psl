@@ -28,9 +28,7 @@ import java.util.List;
 public class SquaredLinearLossTermTest {
 	@Test
 	public void testMinimize() {
-		/*
-		 * Problem 1
-		 */
+		// Problem 1
 		float[] z = {0.4f, 0.5f, 0.1f};
 		float[] y = {0.0f, 0.0f, -0.05f};
 		float[] coeffs = {0.3f, -1.0f, 0.4f};
@@ -43,21 +41,18 @@ public class SquaredLinearLossTermTest {
 
 	private void testProblem(float[] z, float[] y, float[] coeffs, float constant,
 			float weight, final float stepSize, float[] expected) {
-		List<LocalVariable> variables = new ArrayList<LocalVariable>(z.length);
-		List<Float> coeffsList = new ArrayList<Float>(z.length);
+		LocalVariable[] variables = new LocalVariable[z.length];
 
 		for (int i = 0; i < z.length; i++) {
-			variables.add(new LocalVariable(i, z[i]));
-			variables.get(i).setLagrange(y[i]);
-
-			coeffsList.add(new Float(coeffs[i]));
+			variables[i] = new LocalVariable(i, z[i]);
+			variables[i].setLagrange(y[i]);
 		}
 
-		SquaredLinearLossTerm term = new SquaredLinearLossTerm(null, variables, coeffsList, constant, weight);
+		SquaredLinearLossTerm term = new SquaredLinearLossTerm(null, new Hyperplane(variables, coeffs, constant, z.length), weight);
 		term.minimize(stepSize, z);
 
 		for (int i = 0; i < z.length; i++) {
-			assertEquals(expected[i], variables.get(i).getValue(), 5e-5);
+			assertEquals(expected[i], variables[i].getValue(), 5e-5);
 		}
 	}
 }

@@ -21,26 +21,24 @@ import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.util.MathUtils;
 
-import java.util.List;
-
 /**
  * ADMMReasoner objective term of the form <br />
- * 0 if coeffs^T * x [?] constant <br />
+ * 0 if coefficients^T * x [?] constant <br />
  * infinity otherwise <br />
  * where [?] is ==, >=, or <= <br />
  *
- * All coeffs must be non-zero.
+ * All coefficients must be non-zero.
  */
 public class LinearConstraintTerm extends HyperplaneTerm {
 	private final FunctionComparator comparator;
 
-	protected LinearConstraintTerm(GroundRule groundRule, List<LocalVariable> variables, List<Float> coeffs, float constant, FunctionComparator comparator) {
-		super(groundRule, variables, coeffs, constant);
+	protected LinearConstraintTerm(GroundRule groundRule, Hyperplane hyperplane, FunctionComparator comparator) {
+		super(groundRule, hyperplane);
 		this.comparator = comparator;
 	}
 
 	/**
-	 * if (coeffs^T * x [comparator] constant) { 0.0 }
+	 * if (coefficients^T * x [comparator] constant) { 0.0 }
 	 * else { infinity }
 	 */
 	@Override
@@ -75,11 +73,11 @@ public class LinearConstraintTerm extends HyperplaneTerm {
 
 			// Minimizes without regard for the constraint, i.e., solves
 			// argmin stepSize/2 * \|x - z + y / stepSize \|_2^2
-			for (int i = 0; i < variables.size(); i++) {
-				LocalVariable variable = variables.get(i);
+			for (int i = 0; i < size; i++) {
+				LocalVariable variable = variables[i];
 				variable.setValue(consensusValues[variable.getGlobalId()] - variable.getLagrange() / stepSize);
 
-				total += coeffs.get(i).floatValue() * variable.getValue();
+				total += coefficients[i] * variable.getValue();
 			}
 
 			// Checks if the solution satisfies the constraint. If so, updates

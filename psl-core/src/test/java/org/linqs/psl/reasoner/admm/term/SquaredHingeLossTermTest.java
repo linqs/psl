@@ -28,11 +28,7 @@ import java.util.List;
 public class SquaredHingeLossTermTest {
 	@Test
 	public void testMinimize() {
-		/*
-		 * Problem 1
-		 *
-		 * Solution on the quadratic side
-		 */
+		// Problem 1: Solution on the quadratic side
 		float[] z = {0.2f, 0.5f};
 		float[] y = {0.0f, 0.0f};
 		float[] coeffs = {1.0f, -1.0f};
@@ -42,11 +38,7 @@ public class SquaredHingeLossTermTest {
 		float[] expected = {-0.06f, 0.76f};
 		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
 
-		/*
-		 * Problem 2
-		 *
-		 * Solution on the quadratic side
-		 */
+		// Problem 2: Solution on the quadratic side
 		z = new float[] {0.3f, 0.5f, 0.1f};
 		y = new float[] {0.1f, 0.0f, -0.05f};
 		coeffs = new float[] {1.0f, -0.5f, 0.4f};
@@ -56,11 +48,7 @@ public class SquaredHingeLossTermTest {
 		expected = new float[] {0.051798f, 0.524096f, 0.180720f};
 		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
 
-		/*
-		 * Problem 3
-		 *
-		 * Solution on the zero side
-		 */
+		// Problem 3: Solution on the zero side
 		z = new float[] {0.3f, 0.5f, 0.1f};
 		y = new float[] {0.1f, 0.0f, -0.05f};
 		coeffs = new float[] {1.0f, -0.5f, 0.4f};
@@ -70,11 +58,7 @@ public class SquaredHingeLossTermTest {
 		expected = new float[] {0.1f, 0.5f, 0.2f};
 		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
 
-		/*
-		 * Problem 4
-		 *
-		 * Solution on the quadratic side
-		 */
+		// Problem 4: Solution on the quadratic side
 		z = new float[] {0.1f};
 		y = new float[] {-0.15f};
 		coeffs = new float[] {1.0f};
@@ -84,11 +68,7 @@ public class SquaredHingeLossTermTest {
 		expected = new float[] {0.05f};
 		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
 
-		/*
-		 * Problem 5
-		 *
-		 * Solution on the quadratic side
-		 */
+		// Problem 5: Solution on the quadratic side
 		z = new float[] {0.7f, 0.5f};
 		y = new float[] {0.0f, 0.0f};
 		coeffs = new float[] {1.0f, -1.0f};
@@ -98,13 +78,8 @@ public class SquaredHingeLossTermTest {
 		expected = new float[] {0.62f, 0.58f};
 		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
 
-		/*
-		 * Problem 6
-		 *
-		 * Solution on the quadratic side
-		 *
-		 * Tests factorization caching by repeating the test three times
-		 */
+		// Problem 6: Solution on the quadratic side
+		// Tests factorization caching by repeating the test three times
 		z = new float[] {3.7f, -0.5f, 0.5f};
 		y = new float[] {0.0f, 0.0f, 0.0f};
 		coeffs = new float[] {1.0f, -1.0f, 0.5f};
@@ -117,23 +92,20 @@ public class SquaredHingeLossTermTest {
 		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
 	}
 
-	private void testProblem(float[] z, float[] y,float[] coeffs, float constant,
+	private void testProblem(float[] z, float[] y, float[] coeffs, float constant,
 			float weight, final float stepSize , float[] expected) {
-		List<LocalVariable> variables = new ArrayList<LocalVariable>(z.length);
-		List<Float> coeffsList = new ArrayList<Float>(z.length);
+		LocalVariable[] variables = new LocalVariable[z.length];
 
 		for (int i = 0; i < z.length; i++) {
-			variables.add(new LocalVariable(i, z[i]));
-			variables.get(i).setLagrange(y[i]);
-
-			coeffsList.add(new Float(coeffs[i]));
+			variables[i] = new LocalVariable(i, z[i]);
+			variables[i].setLagrange(y[i]);
 		}
 
-		SquaredHingeLossTerm term = new SquaredHingeLossTerm(null, variables, coeffsList, constant, weight);
+		SquaredHingeLossTerm term = new SquaredHingeLossTerm(null, new Hyperplane(variables, coeffs, constant, z.length), weight);
 		term.minimize(stepSize, z);
 
 		for (int i = 0; i < z.length; i++) {
-			assertEquals(expected[i], variables.get(i).getValue(), 5e-5);
+			assertEquals(expected[i], variables[i].getValue(), 5e-5);
 		}
 	}
 }

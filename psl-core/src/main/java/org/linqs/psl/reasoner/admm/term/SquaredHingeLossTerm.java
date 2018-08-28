@@ -19,19 +19,17 @@ package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.model.rule.GroundRule;
 
-import java.util.List;
-
 /**
  * ADMMReasoner objective term of the form <br />
- * weight * [max(coeffs^T * x - constant, 0)]^2
+ * weight * [max(coefficients^T * x - constant, 0)]^2
  */
 public class SquaredHingeLossTerm extends SquaredHyperplaneTerm {
-	public SquaredHingeLossTerm(GroundRule groundRule, List<LocalVariable> variables, List<Float> coeffs, float constant, float weight) {
-		super(groundRule, variables, coeffs, constant, weight);
+	public SquaredHingeLossTerm(GroundRule groundRule, Hyperplane hyperplane, float weight) {
+		super(groundRule, hyperplane, weight);
 	}
 
 	/**
-	 * weight * [max(coeffs^T * x - constant, 0.0)]^2
+	 * weight * [max(coefficients^T * x - constant, 0.0)]^2
 	 */
 	@Override
 	public float evaluate() {
@@ -45,10 +43,10 @@ public class SquaredHingeLossTerm extends SquaredHyperplaneTerm {
 
 		// Minimizes without the quadratic loss, i.e., solves
 		// argmin stepSize/2 * \|x - z + y / stepSize \|_2^2
-		for (int i = 0; i < variables.size(); i++) {
-			LocalVariable variable = variables.get(i);
+		for (int i = 0; i < size; i++) {
+			LocalVariable variable = variables[i];
 			variable.setValue(consensusValues[variable.getGlobalId()] - variable.getLagrange() / stepSize);
-			total += coeffs.get(i).floatValue() * variable.getValue();
+			total += coefficients[i] * variable.getValue();
 		}
 
 		// If the quadratic loss is NOT active at the computed point, it is the solution...
@@ -57,7 +55,7 @@ public class SquaredHingeLossTerm extends SquaredHyperplaneTerm {
 		}
 
 		// Else, minimizes with the quadratic loss, i.e., solves
-		// argmin weight * (coeffs^T * x - constant)^2 + stepSize/2 * \|x - z + y / stepSize \|_2^2
+		// argmin weight * (coefficients^T * x - constant)^2 + stepSize/2 * \|x - z + y / stepSize \|_2^2
 		minWeightedSquaredHyperplane(stepSize, consensusValues);
 	}
 }

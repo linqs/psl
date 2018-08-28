@@ -30,11 +30,7 @@ import java.util.List;
 public class LinearConstraintTermTest {
 	@Test
 	public void testMinimize() {
-		/*
-		 * Problem 1
-		 *
-		 * Constraint inactive at solution
-		 */
+		// Problem 1: Constraint inactive at solution
 		float[] z = {0.2f, 0.5f};
 		float[] y = {0.0f, 0.0f};
 		float[] coeffs = {1.0f, 1.0f};
@@ -44,11 +40,7 @@ public class LinearConstraintTermTest {
 		float[] expected = {0.2f, 0.5f};
 		testProblem(z, y, coeffs, constant, comparator, stepSize, expected);
 
-		/*
-		 * Problem 2
-		 *
-		 * Constraint active at solution
-		 */
+		// Problem 2: Constraint active at solution
 		z = new float[] {0.7f, 0.5f};
 		y = new float[] {0.0f, 0.0f};
 		coeffs = new float[] {1.0f, 1.0f};
@@ -58,11 +50,7 @@ public class LinearConstraintTermTest {
 		expected = new float[] {0.6f, 0.4f};
 		testProblem(z, y, coeffs, constant, comparator, stepSize, expected);
 
-		/*
-		 * Problem 3
-		 *
-		 * Equality constraint
-		 */
+		// Problem 3: Equality constraint
 		z = new float[] {0.7f, 0.5f};
 		y = new float[] {0.0f, 0.0f};
 		coeffs = new float[] {1.0f, -1.0f};
@@ -75,21 +63,18 @@ public class LinearConstraintTermTest {
 
 	private void testProblem(float[] z, float[] y, float[] coeffs, float constant,
 			FunctionComparator comparator, final float stepSize, float[] expected) {
-		List<LocalVariable> variables = new ArrayList<LocalVariable>(z.length);
-		List<Float> coeffsList = new ArrayList<Float>(z.length);
+		LocalVariable[] variables = new LocalVariable[z.length];
 
 		for (int i = 0; i < z.length; i++) {
-			variables.add(new LocalVariable(i, z[i]));
-			variables.get(i).setLagrange(y[i]);
-
-			coeffsList.add(new Float(coeffs[i]));
+			variables[i] = new LocalVariable(i, z[i]);
+			variables[i].setLagrange(y[i]);
 		}
 
-		LinearConstraintTerm term = new LinearConstraintTerm(null, variables, coeffsList, constant, comparator);
+		LinearConstraintTerm term = new LinearConstraintTerm(null, new Hyperplane(variables, coeffs, constant, z.length), comparator);
 		term.minimize(stepSize, z);
 
 		for (int i = 0; i < z.length; i++) {
-			assertEquals(expected[i], variables.get(i).getValue(), 5e-5);
+			assertEquals(expected[i], variables[i].getValue(), 5e-5);
 		}
 	}
 }
