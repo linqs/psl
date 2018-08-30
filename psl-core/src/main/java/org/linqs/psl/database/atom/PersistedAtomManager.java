@@ -26,6 +26,7 @@ import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Variable;
+import org.linqs.psl.util.IteratorUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,11 +62,6 @@ public class PersistedAtomManager extends AtomManager {
 	 */
 	public static final String THROW_ACCESS_EXCEPTION_KEY = CONFIG_PREFIX + ".throwaccessexception";
 	public static final boolean THROW_ACCESS_EXCEPTION_DEFAULT = true;
-	/**
-	 * The set of all persisted RandomVariableAtoms at the time of this AtomManager's
-	 * instantiation.
-	 */
-	protected final Set<RandomVariableAtom> persistedCache;
 
 	/**
 	 * If false, ignore any atoms that would otherwise throw a PersistedAccessException.
@@ -73,6 +69,8 @@ public class PersistedAtomManager extends AtomManager {
 	 */
 	private final boolean throwOnIllegalAccess;
 	private boolean warnOnIllegalAccess;
+
+	private int persistedAtomCount;
 
 	/**
 	 * Constructs a PersistedAtomManager with a built-in set of all the database's
@@ -82,7 +80,6 @@ public class PersistedAtomManager extends AtomManager {
 	 */
 	public PersistedAtomManager(Database db) {
 		super(db);
-		this.persistedCache = new HashSet<RandomVariableAtom>();
 
 		throwOnIllegalAccess = Config.getBoolean(THROW_ACCESS_EXCEPTION_KEY, THROW_ACCESS_EXCEPTION_DEFAULT);
 		warnOnIllegalAccess = !throwOnIllegalAccess;
@@ -91,6 +88,8 @@ public class PersistedAtomManager extends AtomManager {
 	}
 
 	private void buildPersistedAtomCache() {
+		persistedAtomCount = 0;
+
 		// Iterate through all of the registered predicates in this database
 		for (StandardPredicate predicate : db.getDataStore().getRegisteredPredicates()) {
 			// Ignore any closed predicates, they will not return RandomVariableAtoms
@@ -103,7 +102,8 @@ public class PersistedAtomManager extends AtomManager {
 			}
 
 			for (RandomVariableAtom atom : db.getAllGroundRandomVariableAtoms(predicate)) {
-				persistedCache.add(atom);
+				atom.setPersisted(true);
+				persistedAtomCount++;
 			}
 		}
 	}
@@ -118,11 +118,10 @@ public class PersistedAtomManager extends AtomManager {
 		}
 		RandomVariableAtom rvAtom = (RandomVariableAtom)atom;
 
-		if (!persistedCache.contains(rvAtom)) {
+		if (!rvAtom.getPersisted()) {
 			rvAtom.setAccessException(true);
 		}
 
-		// Only check against the persisted cache if we need to warn or throw.
 		if (enableAccessExceptions && (throwOnIllegalAccess || warnOnIllegalAccess) && rvAtom.getAccessException()) {
 			reportAccessException(null, rvAtom);
 		}
@@ -134,15 +133,29 @@ public class PersistedAtomManager extends AtomManager {
 	 * Commit all the atoms in this manager's persisted cache.
 	 */
 	public void commitPersistedAtoms() {
-		db.commit(persistedCache);
+		db.commitCachedAtoms(true);
 	}
 
-	public Set<RandomVariableAtom> getPersistedRVAtoms() {
-		return Collections.unmodifiableSet(persistedCache);
+	public int getPersistedCount() {
+		return persistedAtomCount;
+	}
+
+	public Iterable<RandomVariableAtom> getPersistedRVAtoms() {
+		return IteratorUtils.filter(db.getAllCachedRandomVariableAtoms(), new IteratorUtils.FilterFunction<RandomVariableAtom>() {
+			@Override
+			public boolean keep(RandomVariableAtom atom) {
+				return atom.getPersisted();
+			}
+		});
 	}
 
 	protected void addToPersistedCache(Set<RandomVariableAtom> atoms) {
-		persistedCache.addAll(atoms);
+		for (RandomVariableAtom atom : atoms) {
+			if (!atom.getPersisted()) {
+				atom.setPersisted(true);
+				persistedAtomCount++;
+			}
+		}
 	}
 
 	@Override

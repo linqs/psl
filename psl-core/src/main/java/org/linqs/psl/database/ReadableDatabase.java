@@ -100,6 +100,16 @@ public interface ReadableDatabase {
 	public List<GroundAtom> getAllGroundAtoms(StandardPredicate predicate);
 
 	/**
+	 * Fetch all the GroundAtoms in this database's cache.
+	 */
+	public Iterable<GroundAtom> getAllCachedAtoms();
+
+	/**
+	 * Fetch all the RandomVariableAtoms in this database's cache.
+	 */
+	public Iterable<RandomVariableAtom> getAllCachedRandomVariableAtoms();
+
+	/**
 	 * Fetch all the ground RandomVariableAtoms for a predicate.
 	 * By "ground", we mean that it exists in the database.
 	 * This will not leverage the closed world assumption for any atoms.

@@ -33,6 +33,11 @@ import org.linqs.psl.model.term.Constant;
  */
 public class RandomVariableAtom extends GroundAtom {
 	/**
+	 * Whether this atom is backed by a DataStore.
+	 */
+	private boolean isPersisted;
+
+	/**
 	 * Whether this atom is in violation of an AtomManager's access policy.
 	 * Typically an AtomManager (like the PersistedAtomManager) would just throw an exception,
 	 * but exceptions may have been disabled for performance reasons.
@@ -41,6 +46,7 @@ public class RandomVariableAtom extends GroundAtom {
 
 	protected RandomVariableAtom(StandardPredicate p, Constant[] args, float value) {
 		super(p, args, value);
+		isPersisted = false;
 		isAccessException = false;
 	}
 
@@ -59,6 +65,14 @@ public class RandomVariableAtom extends GroundAtom {
 	 */
 	public void setValue(float value) {
 		this.value = value;
+	}
+
+	public void setPersisted(boolean isPersisted) {
+		this.isPersisted = isPersisted;
+	}
+
+	public boolean getPersisted() {
+		return isPersisted;
 	}
 
 	public void setAccessException(boolean isAccessException) {

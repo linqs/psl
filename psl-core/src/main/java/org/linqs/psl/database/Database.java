@@ -28,6 +28,7 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
+import org.linqs.psl.util.IteratorUtils;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -160,6 +161,32 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
 		return countAllGroundAtoms(predicate, partitions);
 	}
 
+	public Iterable<GroundAtom> getAllCachedAtoms() {
+		return cache.getCachedAtoms();
+	}
+
+	public Iterable<RandomVariableAtom> getAllCachedRandomVariableAtoms() {
+		// First map the ground atoms to RVA/null, then filter out the nulls.
+
+		Iterable<RandomVariableAtom> atoms = IteratorUtils.map(getAllCachedAtoms(), new IteratorUtils.MapFunction<GroundAtom, RandomVariableAtom>() {
+			@Override
+			public RandomVariableAtom map(GroundAtom atom) {
+				if (atom instanceof RandomVariableAtom) {
+					return (RandomVariableAtom)atom;
+				}
+
+				return null;
+			}
+		});
+
+		return IteratorUtils.filter(atoms, new IteratorUtils.FilterFunction<RandomVariableAtom>() {
+			@Override
+			public boolean keep(RandomVariableAtom atom) {
+				return atom != null;
+			}
+		});
+	}
+
 	public List<GroundAtom> getAllGroundAtoms(StandardPredicate predicate) {
 		List<Integer> partitions = new ArrayList<Integer>();
 		partitions.addAll(readIDs);
@@ -208,6 +235,23 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
 		List<RandomVariableAtom> atoms = new ArrayList<RandomVariableAtom>(1);
 		atoms.add(atom);
 		commit(atoms);
+	}
+
+	public void commitCachedAtoms() {
+		commitCachedAtoms(false);
+	}
+
+	public void commitCachedAtoms(boolean onlyPersisted) {
+		if (!onlyPersisted) {
+			commit(getAllCachedRandomVariableAtoms());
+		} else {
+			commit(IteratorUtils.filter(getAllCachedRandomVariableAtoms(), new IteratorUtils.FilterFunction<RandomVariableAtom>() {
+				@Override
+				public boolean keep(RandomVariableAtom atom) {
+					return atom.getPersisted();
+				}
+			}));
+		}
 	}
 
 	/**

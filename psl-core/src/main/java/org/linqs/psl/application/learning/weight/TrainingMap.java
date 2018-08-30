@@ -73,13 +73,13 @@ public class TrainingMap {
 	 *  have an associated RVA.
 	 */
 	public TrainingMap(PersistedAtomManager rvAtomManager, Database observedDB, boolean fetchObservedPairs) {
-		Map<RandomVariableAtom, ObservedAtom> tempTrainingMap = new HashMap<RandomVariableAtom, ObservedAtom>(rvAtomManager.getPersistedRVAtoms().size());
+		Map<RandomVariableAtom, ObservedAtom> tempTrainingMap = new HashMap<RandomVariableAtom, ObservedAtom>(rvAtomManager.getPersistedCount());
 		Map<ObservedAtom, ObservedAtom> tempObservedMap = new HashMap<ObservedAtom, ObservedAtom>();
 		Set<RandomVariableAtom> tempLatentVariables = new HashSet<RandomVariableAtom>();
 
 		Set<ObservedAtom> seenTruthAtoms = null;
 		if (fetchObservedPairs) {
-			seenTruthAtoms = new HashSet<ObservedAtom>(rvAtomManager.getPersistedRVAtoms().size());
+			seenTruthAtoms = new HashSet<ObservedAtom>(rvAtomManager.getPersistedCount());
 		}
 
 		// Go through all the atoms that were already persisted and build a mapping.

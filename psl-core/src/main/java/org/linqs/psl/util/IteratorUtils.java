@@ -27,6 +27,13 @@ public final class IteratorUtils {
 	private IteratorUtils() {}
 
 	/**
+	 * Given an Iterable, return a new Iterable that invokes the function once on each item.
+	 */
+	public static <T, S> Iterable<S> map(Iterable<T> baseIterable, MapFunction<T, S> mapFunction) {
+		return new MapIterable<T, S>(baseIterable, mapFunction);
+	}
+
+	/**
 	 * Given an Iterable, return a new Iterable that filters baseed off of some function.
 	 */
 	public static <T> Iterable<T> filter(Iterable<T> baseIterable, FilterFunction<T> filter) {
@@ -78,6 +85,68 @@ public final class IteratorUtils {
 				return new PowerSetIterator(finalSize);
 			}
 		};
+	}
+
+	private static class MapIterable<T, S> implements Iterable<S> {
+		private Iterable<T> baseIterable;
+		private MapFunction<T, S> mapFunction;
+
+		public MapIterable(Iterable<T> baseIterable, MapFunction<T, S> mapFunction) {
+			this.baseIterable = baseIterable;
+			this.mapFunction = mapFunction;
+		}
+
+		@Override
+		public Iterator<S> iterator() {
+			return new MapIterator<T, S>(baseIterable, mapFunction);
+		}
+	}
+
+	private static class MapIterator<T, S> implements Iterator<S> {
+		private Iterator<T> baseIterator;
+		private MapFunction<T, S> mapFunction;
+		private S nextValue;
+
+		public MapIterator(Iterable<T> baseIterable, MapFunction<T, S> mapFunction) {
+			this.baseIterator = baseIterable.iterator();
+			this.mapFunction = mapFunction;
+
+			primeNext();
+		}
+
+		private void primeNext() {
+			if (baseIterator.hasNext()) {
+				nextValue = mapFunction.map(baseIterator.next());
+				return;
+			}
+
+			nextValue = null;
+		}
+
+		@Override
+		public boolean hasNext() {
+			return nextValue != null;
+		}
+
+		@Override
+		public S next() {
+			if (!hasNext()) {
+				throw new IllegalStateException("Called next() when hasNext() == false.");
+			}
+
+			S rtn = nextValue;
+			primeNext();
+			return rtn;
+		}
+
+		@Override
+		public void remove() {
+			throw new UnsupportedOperationException();
+		}
+	}
+
+	public interface MapFunction<T, S> {
+		public S map(T value);
 	}
 
 	private static class FilterIterable<T> implements Iterable<T> {

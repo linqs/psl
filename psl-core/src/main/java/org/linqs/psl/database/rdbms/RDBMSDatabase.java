@@ -68,7 +68,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -181,12 +180,12 @@ public class RDBMSDatabase extends Database {
 	}
 
 	@Override
-	public void commit(Collection<RandomVariableAtom> atoms) {
+	public void commit(Iterable<RandomVariableAtom> atoms) {
 		commit(atoms, writeID);
 	}
 
 	@Override
-	public void commit(Collection<RandomVariableAtom> atoms, int partitionId) {
+	public void commit(Iterable<RandomVariableAtom> atoms, int partitionId) {
 		if (closed) {
 			throw new IllegalStateException("Cannot commit on a closed database.");
 		}
@@ -196,7 +195,7 @@ public class RDBMSDatabase extends Database {
 
 		for (RandomVariableAtom atom : atoms) {
 			if (!atomsByPredicate.containsKey(atom.getPredicate())) {
-				atomsByPredicate.put(atom.getPredicate(), new ArrayList<RandomVariableAtom>(atoms.size()));
+				atomsByPredicate.put(atom.getPredicate(), new ArrayList<RandomVariableAtom>());
 			}
 
 			atomsByPredicate.get(atom.getPredicate()).add(atom);

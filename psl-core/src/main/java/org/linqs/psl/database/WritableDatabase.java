@@ -17,21 +17,9 @@
  */
 package org.linqs.psl.database;
 
-import org.linqs.psl.model.atom.AtomCache;
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
-import org.linqs.psl.model.formula.Formula;
-import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
-import org.linqs.psl.model.term.Constant;
-import org.linqs.psl.model.term.Variable;
-
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
-
-import java.util.*;
 
 /**
  * A database for persisting {@link GroundAtom GroundAtoms}.
@@ -56,14 +44,25 @@ public interface WritableDatabase {
 	 * A batch form or commit().
 	 * When possible, this commit should be used.
 	 */
-	public void commit(Collection<RandomVariableAtom> atoms);
+	public void commit(Iterable<RandomVariableAtom> atoms);
+
+	/**
+	 * Commit all RandomVariableAtoms in the database's cache.
+	 * This defaults to all cached atoms.
+	 */
+	public void commitCachedAtoms();
+
+	/**
+	 * Commit all RandomVariableAtoms in the database's cache.
+	 */
+	public void commitCachedAtoms(boolean onlyPersisted);
 
 	/**
 	 * A form of commit() that allows the caller to choose the specific partition
 	 * the atoms are comitted to.
 	 * Should only be used if you REALLY know what you are doing.
 	 */
-	public void commit(Collection<RandomVariableAtom> atoms, int partitionId);
+	public void commit(Iterable<RandomVariableAtom> atoms, int partitionId);
 
 	/**
 	 * Move all ground atoms of a predicate/partition combination into

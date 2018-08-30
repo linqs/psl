@@ -109,7 +109,7 @@ public class LazyAtomManager extends PersistedAtomManager {
 		RandomVariableAtom rvAtom = (RandomVariableAtom)atom;
 
 		// If this atom has not been persisted, it is lazy.
-		if (!persistedCache.contains(rvAtom)) {
+		if (!rvAtom.getPersisted()) {
 			lazyAtoms.add(rvAtom);
 		}
 
