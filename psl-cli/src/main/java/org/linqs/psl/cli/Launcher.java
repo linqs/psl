@@ -378,19 +378,32 @@ public class Launcher {
 		log.info("Evaluation complete.");
 	}
 
+	private Model loadModel(DataStore dataStore) {
+		log.info("Loading model");
+
+		Model model = null;
+		File modelFile = new File(options.getOptionValue(OPTION_MODEL));
+		try (FileReader reader = new FileReader(modelFile)) {
+			model = ModelLoader.load(dataStore, new FileReader(modelFile));
+		} catch (IOException ex) {
+			throw new RuntimeException("Error reading model file.", ex);
+		}
+
+		log.debug(model.toString());
+		log.info("Model loading complete");
+
+		return model;
+	}
+
 	private void run()
 			throws IOException, ClassNotFoundException, IllegalAccessException, InstantiationException {
 		DataStore dataStore = initDataStore();
 
-		// Loads data
+		// Load data
 		Set<StandardPredicate> closedPredicates = loadData(dataStore);
 
-		// Loads model
-		log.info("Loading model");
-		File modelFile = new File(options.getOptionValue(OPTION_MODEL));
-		Model model = ModelLoader.load(dataStore, new FileReader(modelFile));
-		log.debug(model.toString());
-		log.info("Model loading complete");
+		// Load model
+		Model model = loadModel(dataStore);
 
 		// Inference
 		if (options.hasOption(OPERATION_INFER)) {

@@ -96,19 +96,22 @@ import org.linqs.psl.parser.antlr.PSLParser.WeightedArithmeticRuleContext;
 import org.linqs.psl.parser.antlr.PSLParser.WeightedLogicalRuleContext;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 
-import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.BailErrorStrategy;
 import org.antlr.v4.runtime.BaseErrorListener;
+import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonToken;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Recognizer;
+import org.antlr.v4.runtime.atn.ParserATNSimulator;
+import org.antlr.v4.runtime.atn.PredictionContextCache;
 import org.antlr.v4.runtime.misc.Interval;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
 
 import java.io.Reader;
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -188,7 +191,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 	 * Get a parser over the given input.
 	 */
 	private static PSLParser getParser(Reader input) throws IOException {
-		PSLLexer lexer = new PSLLexer(new ANTLRInputStream(input));
+		PSLLexer lexer = new PSLLexer(CharStreams.fromReader(input));
 
 		// We need to add a error listener to the lexer so we halt on lex errors.
 		lexer.addErrorListener(new BaseErrorListener() {
