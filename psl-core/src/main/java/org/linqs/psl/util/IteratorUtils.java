@@ -27,6 +27,33 @@ public final class IteratorUtils {
 	private IteratorUtils() {}
 
 	/**
+	 * Given an Iterable, return a new Iterable that only returns values that are an instance of the provided class.
+	 */
+	public static <T, S> Iterable<S> filterClass(Iterable<T> baseIterable, Class<S> targetClass) {
+		final Class<S> finalTargetClass = targetClass;
+
+		Iterable<S> classMatch = map(baseIterable, new MapFunction<T, S>() {
+			@Override
+			public S map(T obj) {
+				if (finalTargetClass.isInstance(obj)) {
+					@SuppressWarnings("unchecked")
+					S ignoreException = (S)obj;
+					return ignoreException;
+				}
+
+				return null;
+			}
+		});
+
+		return filter(classMatch, new FilterFunction<S>() {
+			@Override
+			public boolean keep(S obj) {
+				return obj != null;
+			}
+		});
+	}
+
+	/**
 	 * Given an Iterable, return a new Iterable that invokes the function once on each item.
 	 */
 	public static <T, S> Iterable<S> map(Iterable<T> baseIterable, MapFunction<T, S> mapFunction) {

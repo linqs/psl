@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.database;
 
-import org.linqs.psl.model.atom.AtomCache;
+import org.linqs.psl.database.atom.AtomCache;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.QueryAtom;
@@ -166,25 +166,7 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
 	}
 
 	public Iterable<RandomVariableAtom> getAllCachedRandomVariableAtoms() {
-		// First map the ground atoms to RVA/null, then filter out the nulls.
-
-		Iterable<RandomVariableAtom> atoms = IteratorUtils.map(getAllCachedAtoms(), new IteratorUtils.MapFunction<GroundAtom, RandomVariableAtom>() {
-			@Override
-			public RandomVariableAtom map(GroundAtom atom) {
-				if (atom instanceof RandomVariableAtom) {
-					return (RandomVariableAtom)atom;
-				}
-
-				return null;
-			}
-		});
-
-		return IteratorUtils.filter(atoms, new IteratorUtils.FilterFunction<RandomVariableAtom>() {
-			@Override
-			public boolean keep(RandomVariableAtom atom) {
-				return atom != null;
-			}
-		});
+		return cache.getCachedRandomVariableAtoms();
 	}
 
 	public List<GroundAtom> getAllGroundAtoms(StandardPredicate predicate) {
@@ -267,5 +249,9 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
 
 	public Partition getWritePartition() {
 		return writePartition;
+	}
+
+	public int getCachedRVACount() {
+		return cache.getRVACount();
 	}
 }

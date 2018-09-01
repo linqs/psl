@@ -26,10 +26,6 @@ import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.util.Parallel;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +33,6 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -75,10 +70,13 @@ public class RDBMSDataStore implements DataStore {
 	private DataStoreMetadata metadata;
 
 	/**
-	 * The list of databases matched with their read partitions, and the set of
-	 * all write partitions open in this database.
+	 * All the read partitions mapped to the databases that are using them.
 	 */
-	private final Multimap<Partition, Database> openDatabases;
+	private final Map<Partition, List<Database>> openDatabases;
+
+	/**
+	 * All write partitions open in this DataStore.
+	 */
 	private final Set<Partition> writePartitionIDs;
 
 	/**
@@ -98,7 +96,7 @@ public class RDBMSDataStore implements DataStore {
 		openDataStores.add(this);
 
 		// Initialize all private variables
-		this.openDatabases = HashMultimap.create();
+		this.openDatabases = new HashMap<Partition, List<Database>>();
 		this.writePartitionIDs = new HashSet<Partition>();
 		this.predicates = new HashMap<Predicate, PredicateInfo>();
 
@@ -165,9 +163,15 @@ public class RDBMSDataStore implements DataStore {
 
 		// Register the write and read partitions as being associated with this database
 		for (Partition partition : read) {
-			openDatabases.put(partition, db);
+			if (!openDatabases.containsKey(partition)) {
+				openDatabases.put(partition, new ArrayList<Database>());
+			}
+
+			openDatabases.get(partition).add(db);
 		}
+
 		writePartitionIDs.add(write);
+
 		return db;
 	}
 
@@ -210,8 +214,13 @@ public class RDBMSDataStore implements DataStore {
 	}
 
 	@Override
-	public Collection<Database> getOpenDatabases() {
-		return openDatabases.values();
+	public Iterable<Database> getOpenDatabases() {
+		Set<Database> databases = new HashSet<Database>();
+		for (List<Database> partitionDatabases : openDatabases.values()) {
+			databases.addAll(partitionDatabases);
+		}
+
+		return databases;
 	}
 
 	@Override
@@ -287,7 +296,11 @@ public class RDBMSDataStore implements DataStore {
 
 		// Release the read partition(s) in use by this database
 		for (Partition partition : db.getReadPartitions()) {
-			openDatabases.remove(partition, db);
+			openDatabases.get(partition).remove(db);
+
+			if (openDatabases.get(partition).isEmpty()) {
+				openDatabases.remove(partition);
+			}
 		}
 
 		// Release the write partition in use by this database

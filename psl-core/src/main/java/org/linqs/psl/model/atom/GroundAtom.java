@@ -25,10 +25,6 @@ import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.VariableTypeMap;
 import org.linqs.psl.reasoner.function.FunctionTerm;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.SetMultimap;
-
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Set;

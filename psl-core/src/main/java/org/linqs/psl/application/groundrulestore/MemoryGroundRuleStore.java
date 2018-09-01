@@ -23,8 +23,6 @@ import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.util.IteratorUtils;
 
-import com.google.common.collect.Iterables;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -57,12 +55,12 @@ public class MemoryGroundRuleStore implements GroundRuleStore {
 
 	@Override
 	public Iterable<WeightedGroundRule> getCompatibilityRules() {
-		return Iterables.filter(groundRules, WeightedGroundRule.class);
+		return IteratorUtils.filterClass(groundRules, WeightedGroundRule.class);
 	}
 
 	@Override
 	public Iterable<UnweightedGroundRule> getConstraintRules() {
-		return Iterables.filter(groundRules, UnweightedGroundRule.class);
+		return IteratorUtils.filterClass(groundRules, UnweightedGroundRule.class);
 	}
 
 	@Override

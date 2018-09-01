@@ -28,8 +28,6 @@ import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
 
 import org.apache.commons.lang.StringUtils;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -133,7 +131,6 @@ public class FormulaAnalysis {
 	public class DNFClause {
 		private List<Atom> posLiterals;
 		private List<Atom> negLiterals;
-		private Multimap<Predicate, Atom> dependence;
 		private Formula query;
 		private Set<Variable> unboundVariables;
 		private boolean isGround;
@@ -143,7 +140,6 @@ public class FormulaAnalysis {
 			this.negLiterals = Collections.unmodifiableList(new ArrayList<Atom>(negLiterals));
 			this.unboundVariables = new HashSet<Variable>();
 
-			dependence = ArrayListMultimap.create();
 			Set<Variable> allowedVariables = new HashSet<Variable>();
 
 			// Checks if all Variables in the clause appear in a positive literal with a StandardPredicate.
@@ -178,13 +174,6 @@ public class FormulaAnalysis {
 
 			// The unbound variables has been populated, now pin its contents.
 			unboundVariables = Collections.unmodifiableSet(unboundVariables);
-
-			// Processes the positive literals with StandardPredicates further
-			for (int i = 0; i < posLiterals.size(); i++) {
-				if (posLiterals.get(i).getPredicate() instanceof StandardPredicate) {
-					dependence.put(posLiterals.get(i).getPredicate(), posLiterals.get(i));
-				}
-			}
 
 			if (posLiterals.size() == 0) {
 				query = null;

@@ -60,13 +60,6 @@
 			<version>1.7.21</version>
 		</dependency>
 
-		<!-- guava dependencies -->
-		<dependency>
-			<groupId>com.google.guava</groupId>
-			<artifactId>guava</artifactId>
-			<version>20.0</version>
-		</dependency>
-
 		<!-- commons dependencies -->
 		<dependency>
 			<groupId>org.apache.commons</groupId>
