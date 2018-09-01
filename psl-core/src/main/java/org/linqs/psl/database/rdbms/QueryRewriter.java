@@ -81,6 +81,10 @@ public class QueryRewriter {
 		double baseCost = computeQueryCost(usedAtoms, null, tableStats, dataStore);
 		double currentCost = baseCost;
 
+		log.trace("Starting cost: " + baseCost);
+
+		// TODO(eriq): A DP approach should be better than a greedy one.
+
 		while (true) {
 			// The estimated query cost after removing the target atom.
 			double bestCost = -1;
@@ -110,6 +114,8 @@ public class QueryRewriter {
 
 			usedAtoms.remove(bestAtom);
 			currentCost = bestCost;
+
+			log.trace("Choose plan for iteration: " + usedAtoms + ": " + bestCost);
 		}
 
 		usedAtoms.addAll(passthrough);

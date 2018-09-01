@@ -37,6 +37,7 @@ import org.linqs.psl.model.formula.Negation;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.AbstractRule;
+import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
 import org.linqs.psl.model.rule.arithmetic.expression.SummationAtom;
 import org.linqs.psl.model.rule.arithmetic.expression.SummationAtomOrAtom;
@@ -74,8 +75,6 @@ import java.util.Set;
  * Base class for all (first order, i.e., not ground) arithmetic rules.
  *
  * Full equality checks (when two rules are the equal, but not the same reference) are expensive.
- *
- * @author Stephen Bach
  */
 public abstract class AbstractArithmeticRule extends AbstractRule {
 	private static final Logger log = LoggerFactory.getLogger(AbstractArithmeticRule.class);
@@ -118,6 +117,26 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 
 	public ArithmeticRuleExpression getExpression() {
 		return expression;
+	}
+
+	@Override
+	public boolean supportsIndividualGrounding() {
+		// TODO(eriq): Non-summation does support.
+		return false;
+	}
+
+	@Override
+	public Formula getGroundingFormula() {
+		// TODO(eriq): Non-summation does support.
+		// return null;
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public GroundRule ground(Constant[] constants, Map<Variable, Integer> variableMap, AtomManager atomManager) {
+		// TODO(eriq)
+		// return null;
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
