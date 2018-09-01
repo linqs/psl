@@ -265,6 +265,10 @@ public abstract class WeightLearningApplication implements ModelApplication {
 		TermStore termStore = (TermStore)Config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
 		TermGenerator termGenerator = (TermGenerator)Config.getNewObject(TERM_GENERATOR_KEY, TERM_GENERATOR_DEFAULT);
 
+		if (termStore instanceof ADMMTermStore) {
+			((ADMMTermStore)termStore).ensureVariableCapacity(atomManager.getCachedRVACount());
+		}
+
 		log.debug("Initializing objective terms for {} ground rules.", groundRuleStore.size());
 		@SuppressWarnings("unchecked")
 		int termCount = termGenerator.generateTerms(groundRuleStore, termStore);

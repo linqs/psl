@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.database;
 
-import org.linqs.psl.model.atom.AtomCache;
+import org.linqs.psl.database.atom.AtomCache;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
@@ -138,4 +138,9 @@ public interface ReadableDatabase {
 	 * Returns whether a StandardPredicate is closed in this Database.
 	 */
 	public boolean isClosed(StandardPredicate predicate);
+
+	/**
+	 * Get the number of RandomVariableAtoms in the database's cache.
+	 */
+	public int getCachedRVACount();
 }

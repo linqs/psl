@@ -50,6 +50,8 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm> {
 	private TermStore<ADMMObjectiveTerm> store;
 
 	private Map<RandomVariableAtom, Integer> variableIndexes;
+
+	// Global variable index to local variables.
 	private List<List<LocalVariable>> localVariables;
 
 	/**
@@ -67,6 +69,22 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm> {
 		variableIndexes = new HashMap<RandomVariableAtom, Integer>();
 		localVariables = new ArrayList<List<LocalVariable>>();
 		numLocalVariables = 0;
+	}
+
+	/**
+	 * Make sure we allocate the right amount of memory for global variables.
+	 */
+	public void ensureVariableCapacity(int capacity) {
+		if (capacity == 0) {
+			return;
+		}
+
+		((ArrayList)localVariables).ensureCapacity(capacity);
+
+		if (variableIndexes.size() == 0) {
+			// The default load factor for Java HashMaps is 0.75.
+			variableIndexes = new HashMap<RandomVariableAtom, Integer>((int)Math.ceil(capacity / 0.75));
+		}
 	}
 
 	/**

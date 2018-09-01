@@ -26,14 +26,14 @@ import org.linqs.psl.reasoner.term.Term;
 public abstract class ADMMObjectiveTerm implements Term {
 	protected final GroundRule groundRule;
 	protected final LocalVariable[] variables;
-	protected final int size;
+	protected final short size;
 
 	/**
 	 * Caller releases control of |variables|.
 	 */
 	public ADMMObjectiveTerm(Hyperplane hyperplane, GroundRule groundRule) {
 		this.variables = hyperplane.getVariables();
-		this.size = hyperplane.size();
+		this.size = (short)hyperplane.size();
 		this.groundRule = groundRule;
 	}
 
@@ -67,7 +67,7 @@ public abstract class ADMMObjectiveTerm implements Term {
 	 * Get the number of variables in this term.
 	 */
 	public int size() {
-		return size;
+		return (short)size;
 	}
 
 	@Override

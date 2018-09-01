@@ -23,6 +23,7 @@ import org.linqs.psl.application.util.Grounding;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.model.Model;
+import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +52,10 @@ public class MPEInference extends InferenceApplication {
 
 		log.info("Grounding out model.");
 		int groundCount = Grounding.groundAll(model, atomManager, groundRuleStore);
+
+		if (termStore instanceof ADMMTermStore) {
+			((ADMMTermStore)termStore).ensureVariableCapacity(atomManager.getCachedRVACount());
+		}
 
 		log.debug("Initializing objective terms for {} ground rules.", groundCount);
 		@SuppressWarnings("unchecked")

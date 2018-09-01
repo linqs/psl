@@ -61,12 +61,17 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 
 	@Override
 	public int generateTerms(GroundRuleStore ruleStore, final TermStore<ADMMObjectiveTerm> termStore) {
+		return generateTerms(ruleStore, termStore, 0);
+	}
+
+	public int generateTerms(GroundRuleStore ruleStore, final TermStore<ADMMObjectiveTerm> termStore, int rvaCount) {
 		if (!(termStore instanceof ADMMTermStore)) {
 			throw new IllegalArgumentException("ADMMTermGenerator requires an ADMMTermStore");
 		}
 
 		int initialSize = termStore.size();
 		termStore.ensureCapacity(initialSize + ruleStore.size());
+		((ADMMTermStore)termStore).ensureVariableCapacity(rvaCount);
 
 		Set<WeightedRule> rules = new HashSet<WeightedRule>();
 		for (GroundRule rule : ruleStore.getGroundRules()) {
