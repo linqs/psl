@@ -106,6 +106,7 @@ public final class IteratorUtils {
 		private Iterator<T> baseIterator;
 		private MapFunction<T, S> mapFunction;
 		private S nextValue;
+		private boolean hasNextValue;
 
 		public MapIterator(Iterable<T> baseIterable, MapFunction<T, S> mapFunction) {
 			this.baseIterator = baseIterable.iterator();
@@ -117,15 +118,16 @@ public final class IteratorUtils {
 		private void primeNext() {
 			if (baseIterator.hasNext()) {
 				nextValue = mapFunction.map(baseIterator.next());
+				hasNextValue = true;
 				return;
 			}
 
-			nextValue = null;
+			hasNextValue = false;
 		}
 
 		@Override
 		public boolean hasNext() {
-			return nextValue != null;
+			return hasNextValue;
 		}
 
 		@Override
