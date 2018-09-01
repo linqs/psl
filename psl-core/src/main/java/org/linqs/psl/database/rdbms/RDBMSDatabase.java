@@ -24,7 +24,7 @@ import org.linqs.psl.database.DatabaseQuery;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.ResultList;
 import org.linqs.psl.database.QueryResultIterable;
-import org.linqs.psl.model.atom.AtomCache;
+import org.linqs.psl.database.atom.AtomCache;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.QueryAtom;

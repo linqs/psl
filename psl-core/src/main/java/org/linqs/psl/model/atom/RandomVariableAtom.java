@@ -44,7 +44,10 @@ public class RandomVariableAtom extends GroundAtom {
 	 */
 	private boolean isAccessException;
 
-	protected RandomVariableAtom(StandardPredicate p, Constant[] args, float value) {
+	/**
+	 * Instantiation of GrondAtoms should typically be left to the Database so it can maintain a cache.
+	 */
+	public RandomVariableAtom(StandardPredicate p, Constant[] args, float value) {
 		super(p, args, value);
 		isPersisted = false;
 		isAccessException = false;

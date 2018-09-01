@@ -15,14 +15,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.model.atom;
+package org.linqs.psl.database.atom;
 
 import org.linqs.psl.database.Database;
+import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.ObservedAtom;
+import org.linqs.psl.model.atom.QueryAtom;
+import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
-
-import com.google.common.collect.Iterables;
+import org.linqs.psl.util.IteratorUtils;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -45,6 +48,9 @@ public class AtomCache {
 
 	protected final Map<QueryAtom, GroundAtom> cache;
 
+	// The number of random variable atoms that have been instantiated.
+	private int rvaCount;
+
 	/**
 	 * Constructs a new AtomCache for a Database.
 	 *
@@ -53,6 +59,7 @@ public class AtomCache {
 	public AtomCache(Database db) {
 		this.db = db;
 		this.cache = new HashMap<QueryAtom, GroundAtom>();
+		this.rvaCount = 0;
 	}
 
 	/**
@@ -73,6 +80,10 @@ public class AtomCache {
 		return cache.values();
 	}
 
+	public int getRVACount() {
+		return rvaCount;
+	}
+
 	/**
 	 * Returns all GroundAtoms in this AtomCache with a given Predicate.
 	 *
@@ -80,14 +91,14 @@ public class AtomCache {
 	 * @return the cached Atoms
 	 */
 	public Iterable<GroundAtom> getCachedAtoms(final Predicate predicate) {
-		return Iterables.filter(cache.values(), new com.google.common.base.Predicate<GroundAtom>() {
+		return IteratorUtils.filter(cache.values(), new IteratorUtils.FilterFunction<GroundAtom>() {
 			@Override
-			public boolean apply(GroundAtom atom) {
+			public boolean keep(GroundAtom atom) {
 				return atom.getPredicate().equals(predicate);
 			}
-
 		});
 	}
+
 	/**
 	 * Removes an atom from the AtomCache
 	 * @param qAtom the Atom to remove
@@ -95,7 +106,12 @@ public class AtomCache {
 	 */
 	public synchronized boolean removeCachedAtom(QueryAtom qAtom) {
 		if (cache.containsKey(qAtom)) {
-			cache.remove(qAtom);
+			GroundAtom atom = cache.remove(qAtom);
+
+			if (atom instanceof RandomVariableAtom) {
+				rvaCount--;
+			}
+
 			return true;
 		}
 
@@ -106,14 +122,14 @@ public class AtomCache {
 	 * @return all ObservedAtoms in this AtomCache
 	 */
 	public Iterable<ObservedAtom> getCachedObservedAtoms() {
-		return Iterables.filter(cache.values(), ObservedAtom.class);
+		return IteratorUtils.filterClass(cache.values(), ObservedAtom.class);
 	}
 
 	/**
 	 * @return all RandomVariableAtoms in this AtomCache
 	 */
 	public Iterable<RandomVariableAtom> getCachedRandomVariableAtoms() {
-		return Iterables.filter(cache.values(), RandomVariableAtom.class);
+		return IteratorUtils.filterClass(cache.values(), RandomVariableAtom.class);
 	}
 
 	/**
@@ -180,6 +196,7 @@ public class AtomCache {
 
 		RandomVariableAtom atom = new RandomVariableAtom(predicate, args, value);
 		cache.put(key, atom);
+		rvaCount++;
 
 		return atom;
 	}

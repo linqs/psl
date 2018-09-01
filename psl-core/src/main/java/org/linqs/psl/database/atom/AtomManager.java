@@ -112,6 +112,13 @@ public abstract class AtomManager {
 	}
 
 	/**
+	 * Get the number of RandomVariableAtoms cached by the database.
+	 */
+	public int getCachedRVACount() {
+		return db.getCachedRVACount();
+	}
+
+	/**
 	 * Decide whether or not to throw an access exception.
 	 * This will bypass |enableAccessExceptions|.
 	 */
