@@ -19,10 +19,14 @@ package org.linqs.psl.application.inference;
 
 import org.linqs.psl.application.ModelApplication;
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
+import org.linqs.psl.application.groundrulestore.MemoryGroundRuleStore;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.reasoner.Reasoner;
+import org.linqs.psl.reasoner.admm.ADMMReasoner;
+import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
+import org.linqs.psl.reasoner.admm.term.ADMMTermGenerator;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 
@@ -39,27 +43,27 @@ public abstract class InferenceApplication implements ModelApplication {
 	 * The class to use for a reasoner.
 	 */
 	public static final String REASONER_KEY = CONFIG_PREFIX + ".reasoner";
-	public static final String REASONER_DEFAULT = "org.linqs.psl.reasoner.admm.ADMMReasoner";
+	public static final String REASONER_DEFAULT = ADMMReasoner.class.getName();
 
 	/**
 	 * The class to use for ground rule storage.
 	 */
 	public static final String GROUND_RULE_STORE_KEY = CONFIG_PREFIX + ".groundrulestore";
-	public static final String GROUND_RULE_STORE_DEFAULT = "org.linqs.psl.application.groundrulestore.MemoryGroundRuleStore";
+	public static final String GROUND_RULE_STORE_DEFAULT = MemoryGroundRuleStore.class.getName();
 
 	/**
 	 * The class to use for term storage.
 	 * Should be compatible with REASONER_KEY.
 	 */
 	public static final String TERM_STORE_KEY = CONFIG_PREFIX + ".termstore";
-	public static final String TERM_STORE_DEFAULT = "org.linqs.psl.reasoner.admm.term.ADMMTermStore";
+	public static final String TERM_STORE_DEFAULT = ADMMTermStore.class.getName();
 
 	/**
 	 * The class to use for term generator.
 	 * Should be compatible with REASONER_KEY and TERM_STORE_KEY.
 	 */
 	public static final String TERM_GENERATOR_KEY = CONFIG_PREFIX + ".termgenerator";
-	public static final String TERM_GENERATOR_DEFAULT = "org.linqs.psl.reasoner.admm.term.ADMMTermGenerator";
+	public static final String TERM_GENERATOR_DEFAULT = ADMMTermGenerator.class.getName();
 
 	protected Model model;
 	protected Database db;

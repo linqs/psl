@@ -50,8 +50,11 @@ public class QueryRewriter {
 
 	public static final String CONFIG_PREFIX = "queryrewriter";
 
-	// TODO(eriq): Config and experimentation.
-	public static final double ALLOWED_INCREASE = 2.0;
+	/**
+	 * How much we allow the query cost (number of rows) to for new plans.
+	 */
+	public static final String ALLOWED_INCREASE_KEY = "allowedcostincrease";
+	public static final double ALLOWED_INCREASE_DEFAULT = 2.0;
 
 	// Static only.
 	private QueryRewriter() {}
@@ -68,6 +71,8 @@ public class QueryRewriter {
 			return baseFormula;
 		}
 
+		double allowedCostIncrease = Config.getDouble(ALLOWED_INCREASE_KEY, ALLOWED_INCREASE_DEFAULT);
+
 		Set<Atom> usedAtoms = baseFormula.getAtoms(new HashSet<Atom>());
 		Set<Atom> passthrough = filterBaseAtoms(usedAtoms);
 
@@ -81,18 +86,11 @@ public class QueryRewriter {
 			double bestCost = -1;
 			Atom bestAtom = null;
 
-			// TEST
-			System.out.println(usedAtoms);
-
 			for (Atom atom : usedAtoms) {
-				// TEST
-				System.out.println("	" + atom);
-
 				if (canRemove(atom, usedAtoms)) {
 					double cost = computeQueryCost(usedAtoms, atom, tableStats, dataStore);
 
-					// TEST
-					System.out.println("		Remove: " + atom + " -- " + cost);
+					log.trace("Planned Cost for (" + usedAtoms + " - " + atom + "): " + cost);
 
 					if (bestAtom == null || cost < bestCost) {
 						bestAtom = atom;
@@ -106,7 +104,7 @@ public class QueryRewriter {
 			}
 
 			// We expect the cost to go up, but will cut it off at some point.
-			if (bestCost > (baseCost * ALLOWED_INCREASE)) {
+			if (bestCost > (baseCost * allowedCostIncrease)) {
 				break;
 			}
 
