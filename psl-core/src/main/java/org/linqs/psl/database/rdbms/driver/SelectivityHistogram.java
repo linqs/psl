@@ -17,6 +17,8 @@
  */
 package org.linqs.psl.database.rdbms.driver;
 
+import org.linqs.psl.util.StringUtils;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -145,6 +147,46 @@ public class SelectivityHistogram<T extends Comparable<? super T>> {
 		return computeBucketJoinSize(other);
 	}
 
+	public String toString() {
+		if (!isValid()) {
+			return "Empty Histogram";
+		}
+
+		StringBuilder builder = new StringBuilder();
+
+		if (exactHistogram != null) {
+			for (int i = 0; i < sortedExactHistogramKeys.size(); i++) {
+				T exactValue = sortedExactHistogramKeys.get(i);
+
+				if (i != 0) {
+					builder.append(", ");
+				}
+
+				builder.append(exactValue);
+				builder.append(" (" + exactHistogram.get(exactValue) + ")");
+			}
+
+			if (histogramBounds != null) {
+				builder.append("\n");
+			}
+		}
+
+		if (histogramBounds != null) {
+			for (int i = 0; i < histogramCounts.size(); i++) {
+				if (i != 0) {
+					builder.append(", ");
+				}
+
+				T bucketStart = histogramBounds.get(i + 0);
+				T bucketEnd = histogramBounds.get(i + 1);
+
+				builder.append("[" + bucketStart + ", " + bucketEnd + "): " + histogramCounts.get(i));
+			}
+		}
+
+		return builder.toString();
+	}
+
 	/**
 	 * Estimate the join size where both histograms are exact ones.
 	 */
@@ -170,38 +212,49 @@ public class SelectivityHistogram<T extends Comparable<? super T>> {
 	private int computeExactBucketJoinSize(SelectivityHistogram<T> other) {
 		int totalCount = 0;
 
-		// Start at the first bucket.
+		int currentExactIndex = 0;
 		int bucketIndex = 0;
-		T bucketStartValue = other.histogramBounds.get(bucketIndex + 0);
-		T bucketEndValue = other.histogramBounds.get(bucketIndex + 1);
 
-		// Go through all the exact values.
-		for (T exactColumnValue : sortedExactHistogramKeys) {
-			// If we are before the start of the bucket, then just skip this exact value.
-			if (exactColumnValue.compareTo(bucketStartValue) < 0) {
+		while (true) {
+			// If we examined all the exact values, then we are done.
+			if (currentExactIndex == sortedExactHistogramKeys.size()) {
+				break;
+			}
+			T currentExactValue = sortedExactHistogramKeys.get(currentExactIndex);
+
+			// If there are no more buckets, then the exact value must be in the last bucket.
+			if (bucketIndex == other.histogramCounts.size()) {
+				currentExactIndex++;
+				int bucketCount = other.bucketOverlap(
+						currentExactValue, currentExactValue,
+						other.histogramBounds.get(bucketIndex - 1), other.histogramBounds.get(bucketIndex - 0),
+						other.histogramCounts.get(bucketIndex).intValue());
+
+				totalCount += bucketCount * exactHistogram.get(currentExactValue).intValue();
+
 				continue;
 			}
 
-			// If we are past the current bucket, then move the bucket up.
-			while (exactColumnValue.compareTo(bucketEndValue) > 0) {
+			T bucketStartValue = other.histogramBounds.get(bucketIndex + 0);
+			T bucketEndValue = other.histogramBounds.get(bucketIndex + 1);
+
+			// If the current value is past this bucket, then move the bucket forward.
+			if (currentExactValue.compareTo(bucketEndValue) > 0) {
 				bucketIndex++;
-
-				// If there are no more buckets, then we are done.
-				if (bucketIndex == other.histogramBounds.size() - 1) {
-					break;
-				}
-
-				bucketStartValue = other.histogramBounds.get(bucketIndex + 0);
-				bucketEndValue = other.histogramBounds.get(bucketIndex + 1);
+				continue;
 			}
 
-			// Now that we are in the right bucket, estimate how much of the bucket we match.
+			// Now the exact value must be either before or in this bucket.
+			// It is only possible to be before this bucket if this is the first bucket.
+			// Either way, put the exact value in this bucekt.
+
+			currentExactIndex++;
 			int bucketCount = other.bucketOverlap(
-					exactColumnValue, exactColumnValue,
+					currentExactValue, currentExactValue,
 					bucketStartValue, bucketEndValue,
 					other.histogramCounts.get(bucketIndex).intValue());
 
-			totalCount += bucketCount * exactHistogram.get(exactColumnValue).intValue();
+			totalCount += bucketCount * exactHistogram.get(currentExactValue).intValue();
 		}
 
 		return totalCount;

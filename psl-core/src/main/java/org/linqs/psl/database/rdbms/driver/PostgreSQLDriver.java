@@ -41,7 +41,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * PostgreSQL Connection Wrapper.
@@ -256,7 +259,9 @@ public class PostgreSQLDriver implements DatabaseDriver {
 		// it does not have entries that specify what type of array it is (what delim it has).
 		// This means that many normal array methods will crash on it.
 		// So instead, we convert it to JSON and parse it outside the DB.
-		sql.add("	array_to_json(histogram_bounds) AS histogram");
+		sql.add("	array_to_json(histogram_bounds) AS histogram,");
+		sql.add("	array_to_json(most_common_vals) AS most_common_vals,");
+		sql.add("	array_to_json(most_common_freqs) AS most_common_freqs");
 		sql.add("FROM pg_stats");
 		sql.add("WHERE");
 		sql.add("	UPPER(tablename) = '" + predicate.tableName().toUpperCase() + "'");
@@ -265,9 +270,6 @@ public class PostgreSQLDriver implements DatabaseDriver {
 		TableStats stats = null;
 
 		// TODO(eriq): Increase the sampling rate of the table (ALTER TABLE SET STATISTICS) before indexing.
-
-		// TEST
-		// System.out.println(StringUtils.join(sql, "\n"));
 
 		try (
 			Connection connection = getConnection();
@@ -279,53 +281,131 @@ public class PostgreSQLDriver implements DatabaseDriver {
 					stats = new TableStats(result.getInt(2));
 				}
 
-				String columnName = result.getString(1);
+				String columnName = result.getString(1).toUpperCase();
 				stats.addColumnSelectivity(columnName, result.getDouble(3));
 
-				/*
-
-				// TEST
-				if (result.getString(4) == null) {
-					continue;
+				SelectivityHistogram histogram = parseHistogram(result.getString(4), result.getString(5), result.getString(6), stats.getCount());
+				if (histogram != null) {
+					stats.addColumnHistogram(columnName, histogram);
 				}
-
-				// TEST
-				System.out.println("--- " + predicate.tableName() + "." + columnName + " ---");
-				System.out.println(result.getString(4));
-				System.out.println("---");
-
-				// TODO(eriq): If the histogram is null, then we have exact values in most_common_vals/most_common_freqs.
-				//  We will need to build an exact historgram.
-				// TODO(eriq): We should put the values in most_common_vals back into the historgram to get a more
-				//  accurate distribution.
-
-				Object parsed = JSONValue.parse(result.getString(4));
-				if (!(parsed instanceof JSONArray)) {
-					throw new IllegalStateException("Histogram in unexpected format. Expected JSON array, got: " + parsed.getClass().getName());
-				}
-				JSONArray histogram = (JSONArray)parsed;
-
-				List<Comparable> bounds = new ArrayList<Comparable>();
-				List<Integer> counts = new ArrayList<Integer>();
-
-				if (histogram.size() > 0) {
-					int bucketCount = stats.getCount() / (histogram.size() - 1);
-					bounds.add(convertHistogramBound(histogram.get(0)));
-
-					for (int i = 1; i < histogram.size(); i++) {
-						bounds.add(convertHistogramBound(histogram.get(i)));
-						counts.add(new Integer(bucketCount));
-					}
-
-					stats.addColumnHistogram(columnName, bounds, counts);
-				}
-				*/
 			}
 		} catch (SQLException ex) {
 			throw new RuntimeException("Failed to get stats from table: " + predicate.tableName(), ex);
 		}
 
 		return stats;
+	}
+
+	// Because we do not know what column type we will be dealing with ahead of times, we have some unchecked calls.
+	@SuppressWarnings("unchecked")
+	private SelectivityHistogram parseHistogram(String rawBounds, String rawMostCommonVals, String rawMostCommonCounts, int rowCount) {
+		List<Comparable> bounds = null;
+		List<Integer> counts = null;
+		Map<Comparable, Integer> mostCommonHistogram = null;
+
+		// Try to parse the bucket histogram.
+		if (rawBounds != null) {
+			JSONArray histogram = parseJSONArray(rawBounds);
+
+			if (histogram.size() > 0) {
+				bounds = new ArrayList<Comparable>();
+				counts = new ArrayList<Integer>();
+
+				int bucketCount = rowCount / (histogram.size() - 1);
+				bounds.add(convertHistogramBound(histogram.get(0)));
+
+				for (int i = 1; i < histogram.size(); i++) {
+					bounds.add(convertHistogramBound(histogram.get(i)));
+					counts.add(new Integer(bucketCount));
+				}
+			}
+		}
+
+		// Check if the most common values were supplied.
+		if (rawMostCommonVals != null) {
+			JSONArray mostCommonVals = parseJSONArray(rawMostCommonVals);
+			JSONArray mostCommonCounts = parseJSONArray(rawMostCommonCounts);
+
+			if (mostCommonVals.size() > 0) {
+				mostCommonHistogram = new HashMap<Comparable, Integer>();
+
+				for (int i = 0; i < mostCommonVals.size(); i++) {
+					mostCommonHistogram.put(convertHistogramBound(mostCommonVals.get(i)), ((Number)mostCommonCounts.get(i)).intValue());
+				}
+			}
+		}
+
+		SelectivityHistogram histogram = null;
+
+		if (bounds != null) {
+			histogram = new SelectivityHistogram();
+
+			if (mostCommonHistogram != null) {
+				// If we got both, then put the most common vals back into the buckets.
+				addMostCommonValsToBuckets(bounds, counts, mostCommonHistogram);
+			}
+
+			histogram.addHistogramBounds(bounds, counts);
+		} else if (mostCommonHistogram != null) {
+			histogram = new SelectivityHistogram();
+			histogram.addHistogramExact(mostCommonHistogram);
+		}
+
+		return histogram;
+	}
+
+	// Because we do not know what column type we will be dealing with ahead of times, we have some unchecked calls.
+	@SuppressWarnings("unchecked")
+	private void addMostCommonValsToBuckets(List<Comparable> bounds, List<Integer> counts, Map<Comparable, Integer> mostCommonHistogram) {
+		List<Comparable> sortedKeys = new ArrayList<Comparable>(mostCommonHistogram.keySet());
+		Collections.sort(sortedKeys);
+
+		  int currentCommonIndex = 0;
+		  int bucketIndex = 0;
+
+		  while (true) {
+				// If we examined all the common values, then we are done.
+				if (currentCommonIndex == sortedKeys.size()) {
+					 break;
+				}
+				Comparable currentCommonValue = sortedKeys.get(currentCommonIndex);
+
+				// If there are no more buckets, then the common value must be in the last bucket.
+				if (bucketIndex == counts.size()) {
+					 currentCommonIndex++;
+
+				int index = counts.size() - 1;
+				counts.set(index, new Integer(counts.get(index).intValue() + mostCommonHistogram.get(currentCommonValue).intValue()));
+
+					 continue;
+				}
+
+				Comparable bucketStartValue = bounds.get(bucketIndex + 0);
+				Comparable bucketEndValue = bounds.get(bucketIndex + 1);
+
+				// If the current value is past this bucket, then move the bucket forward.
+				if (currentCommonValue.compareTo(bucketEndValue) > 0) {
+					 bucketIndex++;
+					 continue;
+				}
+
+				// Now the common value must be either before or in this bucket.
+				// It is only possible to be before this bucket if this is the first bucket.
+				// Either way, put the common value in this bucekt.
+
+				currentCommonIndex++;
+
+			counts.set(bucketIndex, new Integer(counts.get(bucketIndex).intValue() + mostCommonHistogram.get(currentCommonValue).intValue()));
+		  }
+	}
+
+	private JSONArray parseJSONArray(String text) {
+		Object parsed = JSONValue.parse(text);
+		if (!(parsed instanceof JSONArray)) {
+			throw new IllegalStateException("Text in unexpected format. Expected JSON array, got: " + parsed.getClass().getName());
+		}
+
+		return (JSONArray)parsed;
 	}
 
 	private Comparable convertHistogramBound(Object bound) {
