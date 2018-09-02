@@ -264,6 +264,11 @@ public class PostgreSQLDriver implements DatabaseDriver {
 
 		TableStats stats = null;
 
+		// TODO(eriq): Increase the sampling rate of the table (ALTER TABLE SET STATISTICS) before indexing.
+
+		// TEST
+		// System.out.println(StringUtils.join(sql, "\n"));
+
 		try (
 			Connection connection = getConnection();
 			PreparedStatement statement = connection.prepareStatement(StringUtils.join(sql, "\n"));
@@ -276,6 +281,23 @@ public class PostgreSQLDriver implements DatabaseDriver {
 
 				String columnName = result.getString(1);
 				stats.addColumnSelectivity(columnName, result.getDouble(3));
+
+				/*
+
+				// TEST
+				if (result.getString(4) == null) {
+					continue;
+				}
+
+				// TEST
+				System.out.println("--- " + predicate.tableName() + "." + columnName + " ---");
+				System.out.println(result.getString(4));
+				System.out.println("---");
+
+				// TODO(eriq): If the histogram is null, then we have exact values in most_common_vals/most_common_freqs.
+				//  We will need to build an exact historgram.
+				// TODO(eriq): We should put the values in most_common_vals back into the historgram to get a more
+				//  accurate distribution.
 
 				Object parsed = JSONValue.parse(result.getString(4));
 				if (!(parsed instanceof JSONArray)) {
@@ -297,6 +319,7 @@ public class PostgreSQLDriver implements DatabaseDriver {
 
 					stats.addColumnHistogram(columnName, bounds, counts);
 				}
+				*/
 			}
 		} catch (SQLException ex) {
 			throw new RuntimeException("Failed to get stats from table: " + predicate.tableName(), ex);
