@@ -113,11 +113,11 @@ public abstract class Inserter {
 			try {
 				truth = Double.parseDouble((String)row.get(row.size() - 1));
 			} catch (NumberFormatException ex) {
-				throw new IllegalArgumentException("Could not read truth value for row " + (i + 1) + ": " + row.get(row.size() - 1), ex);
+				throw new IllegalArgumentException("Could not read truth value for row " + (i + 1) + ": " + row.get(row.size() - 1) + " -- " + path, ex);
 			}
 
 			if (truth < 0.0 || truth > 1.0) {
-				throw new IllegalArgumentException("Illegal truth value encountered on row " + (i + 1) + ": " + truth);
+				throw new IllegalArgumentException("Illegal truth value encountered on row " + (i + 1) + ": " + truth + " -- " + path);
 			}
 
 			// Remove the truth value from the list by taking a sublist (should not cause any additional allocation).
@@ -151,7 +151,7 @@ public abstract class Inserter {
 				break;
 			}
 		} catch (IOException ex) {
-			throw new RuntimeException("Unable to parse delimited file.", ex);
+			throw new RuntimeException("Unable to parse delimited file: " + path, ex);
 		}
 
 		if (hasTruth) {
@@ -184,7 +184,7 @@ public abstract class Inserter {
 				rows.add(Arrays.asList(data));
 			}
 		} catch (IOException ex) {
-			throw new RuntimeException("Unable to parse delimited file.", ex);
+			throw new RuntimeException("Unable to parse delimited file: " + path, ex);
 		}
 
 		return rows;
