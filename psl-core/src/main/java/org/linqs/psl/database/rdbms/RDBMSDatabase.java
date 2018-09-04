@@ -86,12 +86,6 @@ public class RDBMSDatabase extends Database {
 
 	public static final String CONFIG_PREFIX = "rdbmsdatabase";
 
-	/**
-	 * Use optimal cover grounding.
-	 */
-	public static final String OPTIMAL_COVER_KEY = CONFIG_PREFIX + ".optimalcover";
-	public static final boolean OPTIMAL_COVER_DEFAULT = false;
-
 	public static final String FETCH_SIZE_KEY = CONFIG_PREFIX + ".fetchsize";
 	public static final int FETCH_SIZE_DEFAULT = 500;
 
@@ -104,7 +98,6 @@ public class RDBMSDatabase extends Database {
 	 */
 	private final Set<Predicate> closedPredicates;
 
-	private boolean useOptimalCover;
 	private int fetchSize;
 
 	public RDBMSDatabase(RDBMSDataStore parent,
@@ -112,7 +105,6 @@ public class RDBMSDatabase extends Database {
 			Set<StandardPredicate> closed) {
 		super(parent, write, read);
 
-		useOptimalCover = Config.getBoolean(OPTIMAL_COVER_KEY, OPTIMAL_COVER_DEFAULT);
 		fetchSize = Config.getInt(FETCH_SIZE_KEY, FETCH_SIZE_DEFAULT);
 
 		this.closedPredicates = new HashSet<Predicate>();
@@ -261,13 +253,7 @@ public class RDBMSDatabase extends Database {
 
 	@Override
 	public QueryResultIterable executeGroundingQuery(Formula formula) {
-		if (useOptimalCover) {
-			// TEST
-			// return executeQueryIterator(OptimalCover.computeOptimalCover(formula, (RDBMSDataStore)parentDataStore), false);
-			return executeQueryIterator(QueryRewriter.rewrite(formula, (RDBMSDataStore)parentDataStore), false);
-		} else {
-			return executeQueryIterator(formula, false);
-		}
+		return executeQueryIterator(formula, false);
 	}
 
 	@Override
