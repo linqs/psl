@@ -130,6 +130,7 @@ public final class Parallel {
 	}
 
 	private static RunTimings countInternal(int start, int end, int increment) {
+		long iterations = 0;
 		long parentWaitTimeMS = 0;
 		long workerWaitTimeMS = 0;
 		long workerWorkTimeMS = 0;
@@ -141,6 +142,7 @@ public final class Parallel {
 				long time = System.currentTimeMillis();
 				worker = workerQueue.take();
 				parentWaitTimeMS += (System.currentTimeMillis() - time);
+				iterations++;
 			} catch (InterruptedException ex) {
 				throw new RuntimeException("Interrupted waiting for worker (" + i + ").");
 			}
@@ -172,7 +174,7 @@ public final class Parallel {
 			}
 		}
 
-		return new RunTimings(parentWaitTimeMS, workerWaitTimeMS, workerWorkTimeMS);
+		return new RunTimings(iterations, parentWaitTimeMS, workerWaitTimeMS, workerWorkTimeMS);
 	}
 
 	/**
@@ -191,6 +193,7 @@ public final class Parallel {
 	}
 
 	private static <T> RunTimings foreachInternal(Iterable<T> work) {
+		long iterations = 0;
 		long parentWaitTimeMS = 0;
 		long workerWaitTimeMS = 0;
 		long workerWorkTimeMS = 0;
@@ -203,6 +206,7 @@ public final class Parallel {
 				long time = System.currentTimeMillis();
 				worker = workerQueue.take();
 				parentWaitTimeMS += (System.currentTimeMillis() - time);
+				iterations++;
 			} catch (InterruptedException ex) {
 				throw new RuntimeException("Interrupted waiting for worker (" + count + ").");
 			}
@@ -238,7 +242,7 @@ public final class Parallel {
 			}
 		}
 
-		return new RunTimings(parentWaitTimeMS, workerWaitTimeMS, workerWorkTimeMS);
+		return new RunTimings(iterations, parentWaitTimeMS, workerWaitTimeMS, workerWorkTimeMS);
 	}
 
 	/**
@@ -442,19 +446,21 @@ public final class Parallel {
 	}
 
 	public static class RunTimings {
+		public final long iterations;
 		public final long parentWaitTimeMS;
 		public final long workerWaitTimeMS;
 		public final long workerWorkTimeMS;
 
-		public RunTimings(long parentWaitTimeMS, long workerWaitTimeMS, long workerWorkTimeMS) {
+		public RunTimings(long iterations, long parentWaitTimeMS, long workerWaitTimeMS, long workerWorkTimeMS) {
+			this.iterations = iterations;
 			this.parentWaitTimeMS = parentWaitTimeMS;
 			this.workerWaitTimeMS = workerWaitTimeMS;
 			this.workerWorkTimeMS = workerWorkTimeMS;
 		}
 
 		public String toString() {
-			return String.format("Parent Wait Time: %d, Worker Wait Time: %d, Worker Work Time: %d",
-					parentWaitTimeMS, workerWaitTimeMS, workerWorkTimeMS);
+			return String.format("Iterations: %d, Parent Wait Time: %d, Worker Wait Time: %d, Worker Work Time: %d",
+					iterations, parentWaitTimeMS, workerWaitTimeMS, workerWorkTimeMS);
 		}
 	}
 }

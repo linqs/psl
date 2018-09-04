@@ -22,7 +22,6 @@ import static org.junit.Assert.assertEquals;
 import org.linqs.psl.database.DataStoreTest;
 import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
-import org.linqs.psl.database.rdbms.driver.TableStats;
 import org.linqs.psl.util.MathUtils;
 
 import org.junit.Test;

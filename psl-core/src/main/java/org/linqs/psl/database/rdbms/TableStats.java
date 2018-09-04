@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.database.rdbms.driver;
+package org.linqs.psl.database.rdbms;
 
 import java.util.HashMap;
 import java.util.List;

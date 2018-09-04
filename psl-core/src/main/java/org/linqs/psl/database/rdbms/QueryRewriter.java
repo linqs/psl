@@ -19,7 +19,6 @@ package org.linqs.psl.database.rdbms;
 
 import org.linqs.psl.config.Config;
 import org.linqs.psl.database.DatabaseQuery;
-import org.linqs.psl.database.rdbms.driver.TableStats;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Formula;
@@ -56,6 +55,12 @@ public class QueryRewriter {
 	public static final String ALLOWED_INCREASE_KEY = "allowedcostincrease";
 	public static final double ALLOWED_INCREASE_DEFAULT = 2.0;
 
+	/**
+	 * Whether we should use histograms or column selectivity to estimate the join size.
+	 */
+	public static final String USE_HISTOGRAMS_KEY = "usehistograms";
+	public static final boolean USE_HISTOGRAMS_DEFAULT = true;
+
 	// Static only.
 	private QueryRewriter() {}
 
@@ -72,13 +77,14 @@ public class QueryRewriter {
 		}
 
 		double allowedCostIncrease = Config.getDouble(ALLOWED_INCREASE_KEY, ALLOWED_INCREASE_DEFAULT);
+		boolean useHistograms = Config.getBoolean(USE_HISTOGRAMS_KEY, USE_HISTOGRAMS_DEFAULT);
 
 		Set<Atom> usedAtoms = baseFormula.getAtoms(new HashSet<Atom>());
 		Set<Atom> passthrough = filterBaseAtoms(usedAtoms);
 
 		Map<Predicate, TableStats> tableStats = fetchTableStats(usedAtoms, dataStore);
 
-		double baseCost = computeQueryCost(usedAtoms, null, tableStats, dataStore);
+		double baseCost = estimateQuerySize(useHistograms, usedAtoms, null, tableStats, dataStore);
 		double currentCost = baseCost;
 
 		log.trace("Starting cost: " + baseCost);
@@ -92,7 +98,7 @@ public class QueryRewriter {
 
 			for (Atom atom : usedAtoms) {
 				if (canRemove(atom, usedAtoms)) {
-					double cost = computeQueryCost(usedAtoms, atom, tableStats, dataStore);
+					double cost = estimateQuerySize(useHistograms, usedAtoms, atom, tableStats, dataStore);
 
 					log.trace("Planned Cost for (" + usedAtoms + " - " + atom + "): " + cost);
 
@@ -131,12 +137,76 @@ public class QueryRewriter {
 		return query;
 	}
 
+	private static double estimateQuerySize(boolean useHistograms, Set<Atom> atoms, Atom ignore, Map<Predicate, TableStats> tableStats, RDBMSDataStore dataStore) {
+		if (useHistograms) {
+			return estimateHistorgramQuerySize(atoms, ignore, tableStats, dataStore);
+		}
+
+		return estimateSelectivityQuerySize(atoms, ignore, tableStats, dataStore);
+	}
+
+	/**
+	 * Estimate the cost of the query (conjunctive query over the given atoms) using histogram stats.
+	 * Based off of: http://consystlab.unl.edu/Documents/StudentReports/Working-Note2-2008.pdf
+	 * @param ignore if not null, then do not include it in the cost computation.
+	 */
+	private static double estimateHistorgramQuerySize(Set<Atom> atoms, Atom ignore, Map<Predicate, TableStats> tableStats, RDBMSDataStore dataStore) {
+		double cost = 1.0;
+
+		// Start with the product of the joins.
+		for (Atom atom : atoms) {
+			if (atom == ignore) {
+				continue;
+			}
+
+			cost *= tableStats.get(atom.getPredicate()).getCount();
+		}
+
+		// Now compute for each variable.
+		for (Map.Entry<Variable, Set<Atom>> entry : getAllUsedVariables(atoms, null).entrySet()) {
+			Variable variable = entry.getKey();
+			Set<Atom> involvedAtoms = entry.getValue();
+
+			// Only worry about join columns.
+			if (involvedAtoms.size() <= 1) {
+				continue;
+			}
+
+			// The histogram that we will chain together using all the involved atoms.
+			SelectivityHistogram joinHistogram = null;
+			double crossProductSize = 1.0;
+
+			for (Atom atom : involvedAtoms) {
+				if (atom == ignore) {
+					continue;
+				}
+
+				crossProductSize *= tableStats.get(atom.getPredicate()).getCount();
+
+				String columnName = getColumnName(dataStore, atom, variable);
+				SelectivityHistogram histogram = tableStats.get(atom.getPredicate()).getHistogram(columnName);
+
+				if (joinHistogram == null) {
+					joinHistogram = histogram;
+				} else {
+					@SuppressWarnings("unchecked")
+					SelectivityHistogram ignoreUnchecked = joinHistogram.join(histogram);
+					joinHistogram = ignoreUnchecked;
+				}
+			}
+
+			cost *= (joinHistogram.size() / crossProductSize);
+		}
+
+		return cost;
+	}
+
 	/**
 	 * Estimate the cost of the query (conjunctive query over the given atoms).
 	 * Based off of: http://users.csc.calpoly.edu/~dekhtyar/468-Spring2016/lectures/lec17.468.pdf
 	 * @param ignore if not null, then do not include it in the cost computation.
 	 */
-	private static double computeQueryCost(Set<Atom> atoms, Atom ignore, Map<Predicate, TableStats> tableStats, RDBMSDataStore dataStore) {
+	private static double estimateSelectivityQuerySize(Set<Atom> atoms, Atom ignore, Map<Predicate, TableStats> tableStats, RDBMSDataStore dataStore) {
 		double cost = 1.0;
 
 		// Start with the product of the joins.
@@ -149,8 +219,7 @@ public class QueryRewriter {
 		}
 
 		// Now take out the join factor for each join attribute.
-		Set<Variable> variables = getAllUsedVariables(atoms, null);
-		for (Variable variable : variables) {
+		for (Variable variable : getAllUsedVariables(atoms, null).keySet()) {
 			int cardinalitiesCount = 0;
 			int minCardinality = 0;
 
@@ -163,17 +232,7 @@ public class QueryRewriter {
 					continue;
 				}
 
-				// Get the position of this argument so we can look up the cardinality of the column.
-				int columnIndex = -1;
-				Term[] args = atom.getArguments();
-				for (int i = 0; i < args.length; i++) {
-					if (variable.equals(args[i])) {
-						columnIndex = i;
-						break;
-					}
-				}
-
-				String columnName = dataStore.getPredicateInfo(atom.getPredicate()).argumentColumns().get(columnIndex);
+				String columnName = getColumnName(dataStore, atom, variable);
 				int cardinality = tableStats.get(atom.getPredicate()).getCardinality(columnName);
 
 				if (cardinalitiesCount == 0 || cardinality < minCardinality) {
@@ -193,26 +252,49 @@ public class QueryRewriter {
 		return cost;
 	}
 
+	private static String getColumnName(RDBMSDataStore dataStore, Atom atom, Variable variable) {
+		int columnIndex = -1;
+		Term[] args = atom.getArguments();
+		for (int i = 0; i < args.length; i++) {
+			if (variable.equals(args[i])) {
+				columnIndex = i;
+				break;
+			}
+		}
+
+		if (columnIndex == -1) {
+			throw new java.util.NoSuchElementException(String.format("Could not find column name for variable %s in atom %s.", variable, atom));
+		}
+
+		return dataStore.getPredicateInfo(atom.getPredicate()).argumentColumns().get(columnIndex);
+	}
+
 	/**
 	 * Is it safe to remove the given atom from the given query?
 	 */
 	private static boolean canRemove(Atom atom, Set<Atom> usedAtoms) {
 		// Make sure that we do not remove any variables (ie there is at least one other atom that uses the variable)..
 		Set<Variable> remainingVariables = atom.getVariables();
-		remainingVariables.removeAll(getAllUsedVariables(usedAtoms, atom));
+		remainingVariables.removeAll(getAllUsedVariables(usedAtoms, atom).keySet());
 
 		return remainingVariables.size() == 0;
 	}
 
-	private static Set<Variable> getAllUsedVariables(Set<Atom> atoms, Atom ignore) {
-		Set<Variable> variables = new HashSet<Variable>();
+	private static Map<Variable, Set<Atom>> getAllUsedVariables(Set<Atom> atoms, Atom ignore) {
+		Map<Variable, Set<Atom>> variables = new HashMap<Variable, Set<Atom>>();
 
 		for (Atom atom : atoms) {
 			if (atom == ignore) {
 				continue;
 			}
 
-			variables.addAll(atom.getVariables());
+			for (Variable variable : atom.getVariables()) {
+				if (!variables.containsKey(variable)) {
+					variables.put(variable, new HashSet<Atom>());
+				}
+
+				variables.get(variable).add(atom);
+			}
 		}
 
 		return variables;
@@ -226,7 +308,7 @@ public class QueryRewriter {
 
 		Map<Predicate, TableStats> stats = new HashMap<Predicate, TableStats>();
 		for (Predicate predicate : predicates) {
-			stats.put(predicate, dataStore.getDriver().getTableStats(dataStore.getPredicateInfo(predicate)));
+			stats.put(predicate, dataStore.getPredicateInfo(predicate).getTableStats(dataStore.getDriver()));
 		}
 
 		return stats;

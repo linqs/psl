@@ -19,6 +19,8 @@ package org.linqs.psl.database.rdbms.driver;
 
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.rdbms.PredicateInfo;
+import org.linqs.psl.database.rdbms.SelectivityHistogram;
+import org.linqs.psl.database.rdbms.TableStats;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.util.Parallel;
 import org.linqs.psl.util.StringUtils;
@@ -330,7 +332,12 @@ public class PostgreSQLDriver implements DatabaseDriver {
 				mostCommonHistogram = new HashMap<Comparable, Integer>();
 
 				for (int i = 0; i < mostCommonVals.size(); i++) {
-					mostCommonHistogram.put(convertHistogramBound(mostCommonVals.get(i)), ((Number)mostCommonCounts.get(i)).intValue());
+					// The most common values come in as proportion of the total rows in the table.
+					// So, we will normalize them to raw counts.
+					double proportion = ((Number)mostCommonCounts.get(i)).doubleValue();
+					int count = Math.max(1, (int)(proportion * rowCount));
+
+					mostCommonHistogram.put(convertHistogramBound(mostCommonVals.get(i)), new Integer(count));
 				}
 			}
 		}
@@ -360,43 +367,43 @@ public class PostgreSQLDriver implements DatabaseDriver {
 		List<Comparable> sortedKeys = new ArrayList<Comparable>(mostCommonHistogram.keySet());
 		Collections.sort(sortedKeys);
 
-		  int currentCommonIndex = 0;
-		  int bucketIndex = 0;
+		int currentCommonIndex = 0;
+		int bucketIndex = 0;
 
-		  while (true) {
-				// If we examined all the common values, then we are done.
-				if (currentCommonIndex == sortedKeys.size()) {
-					 break;
-				}
-				Comparable currentCommonValue = sortedKeys.get(currentCommonIndex);
+		while (true) {
+			// If we examined all the common values, then we are done.
+			if (currentCommonIndex == sortedKeys.size()) {
+				break;
+			}
+			Comparable currentCommonValue = sortedKeys.get(currentCommonIndex);
 
-				// If there are no more buckets, then the common value must be in the last bucket.
-				if (bucketIndex == counts.size()) {
-					 currentCommonIndex++;
+			// If there are no more buckets, then the common value must be in the last bucket.
+			if (bucketIndex == counts.size()) {
+				currentCommonIndex++;
 
 				int index = counts.size() - 1;
 				counts.set(index, new Integer(counts.get(index).intValue() + mostCommonHistogram.get(currentCommonValue).intValue()));
 
-					 continue;
-				}
+				continue;
+			}
 
-				Comparable bucketStartValue = bounds.get(bucketIndex + 0);
-				Comparable bucketEndValue = bounds.get(bucketIndex + 1);
+			Comparable bucketStartValue = bounds.get(bucketIndex + 0);
+			Comparable bucketEndValue = bounds.get(bucketIndex + 1);
 
-				// If the current value is past this bucket, then move the bucket forward.
-				if (currentCommonValue.compareTo(bucketEndValue) > 0) {
-					 bucketIndex++;
-					 continue;
-				}
+			// If the current value is past this bucket, then move the bucket forward.
+			if (currentCommonValue.compareTo(bucketEndValue) > 0) {
+				bucketIndex++;
+				continue;
+			}
 
-				// Now the common value must be either before or in this bucket.
-				// It is only possible to be before this bucket if this is the first bucket.
-				// Either way, put the common value in this bucekt.
+			// Now the common value must be either before or in this bucket.
+			// It is only possible to be before this bucket if this is the first bucket.
+			// Either way, put the common value in this bucekt.
 
-				currentCommonIndex++;
+			currentCommonIndex++;
 
 			counts.set(bucketIndex, new Integer(counts.get(bucketIndex).intValue() + mostCommonHistogram.get(currentCommonValue).intValue()));
-		  }
+		}
 	}
 
 	private JSONArray parseJSONArray(String text) {

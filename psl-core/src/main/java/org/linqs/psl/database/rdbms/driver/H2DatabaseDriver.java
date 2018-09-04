@@ -19,6 +19,7 @@ package org.linqs.psl.database.rdbms.driver;
 
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.rdbms.PredicateInfo;
+import org.linqs.psl.database.rdbms.TableStats;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.util.Parallel;
 

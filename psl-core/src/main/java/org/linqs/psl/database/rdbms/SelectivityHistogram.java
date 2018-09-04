@@ -15,10 +15,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.database.rdbms.driver;
+package org.linqs.psl.database.rdbms;
 
 import org.linqs.psl.util.StringUtils;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -32,6 +35,9 @@ import java.util.Map;
  *
  * If the conlumn type is an int, then a bucket will be assumed to be uniformly distributed.
  * This will typically result in more accurate estimates.
+ *
+ * Internally, this class will use BigInteger.
+ * However, all APIs will use primitive or wrapper types to make it easy on the user.
  */
 public class SelectivityHistogram<T extends Comparable<? super T>> {
 	/**
@@ -46,6 +52,11 @@ public class SelectivityHistogram<T extends Comparable<? super T>> {
 	private Class columnType;
 
 	/**
+	 * Valid histograms may be no entries in them (especially after joins).
+	 */
+	private boolean isEmpty;
+
+	/**
 	 * The boundaries in a historgram of values for each column.
 	 * Although start/end boundaries are specified,
 	 * any values past those extremes will be moved into the first/last bucket.
@@ -54,17 +65,22 @@ public class SelectivityHistogram<T extends Comparable<? super T>> {
 	 * This find distinction will only actually apply when working with int bounds.
 	 */
 	private List<T> histogramBounds;
-	private List<Integer> histogramCounts;
+	private List<BigInteger> histogramCounts;
 
 	/**
 	 * If the cardinality of a column is low, then the database may just report those unique values.
 	 * In this case, we can build a exact distribution of the column.
 	 */
-	private Map<T, Integer> exactHistogram;
+	private Map<T, BigInteger> exactHistogram;
 	private List<T> sortedExactHistogramKeys;
 
 	public SelectivityHistogram() {
+		this(false);
+	}
+
+	private SelectivityHistogram(boolean isEmpty) {
 		columnType = null;
+		this.isEmpty = isEmpty;
 
 		histogramBounds = null;
 		histogramCounts = null;
@@ -73,20 +89,50 @@ public class SelectivityHistogram<T extends Comparable<? super T>> {
 		sortedExactHistogramKeys = null;
 	}
 
-	public void addHistogramBounds(List<T> bounds, List<Integer> counts) {
+	public void addHistogramBounds(List<T> bounds, List<? extends Number> counts) {
+		if (bounds.size() == 0 && counts.size() == 0) {
+			isEmpty = true;
+			return;
+		}
+
 		assert(bounds.size() == counts.size() + 1);
 		assert(bounds.size() >= 2);
 
 		histogramBounds = new ArrayList<T>(bounds);
-		histogramCounts = new ArrayList<Integer>(counts);
+		histogramCounts = new ArrayList<BigInteger>(counts.size());
+
+		for (Number count : counts) {
+			if (count instanceof BigInteger) {
+				histogramCounts.add((BigInteger)count);
+			} else {
+				histogramCounts.add(BigInteger.valueOf(count.longValue()));
+			}
+		}
 
 		checkTypes(histogramBounds);
 	}
 
-	public void addHistogramExact(Map<T, Integer> histogram) {
+	public void addHistogramExact(Map<T, ? extends Number> histogram) {
+		if (histogram.size() == 0) {
+			isEmpty = true;
+			return;
+		}
+
 		assert(histogram.size() > 0);
 
-		exactHistogram = new HashMap<T, Integer>(histogram);
+		exactHistogram = new HashMap<T, BigInteger>();
+
+		for (Map.Entry<T, ? extends Number> entry : histogram.entrySet()) {
+			T key = entry.getKey();
+			Number count = entry.getValue();
+
+			if (count instanceof BigInteger) {
+				exactHistogram.put(key, (BigInteger)count);
+			} else {
+				exactHistogram.put(key, BigInteger.valueOf(count.longValue()));
+			}
+		}
+
 		sortedExactHistogramKeys = new ArrayList<T>(histogram.keySet());
 		Collections.sort(sortedExactHistogramKeys);
 
@@ -108,20 +154,49 @@ public class SelectivityHistogram<T extends Comparable<? super T>> {
 	}
 
 	/**
-	 * A histogram is not valid until either addHistogramBounds() or addHistogramExact() is called.
+	 * Get the number of rows represented by this histogram.
+	 * For histograms created directly from database tables, the size should be equal to the table count.
+	 * Note that this method is O(n).
+	 * Overflows will return Long.MAX_VALUE.
 	 */
-	public boolean isValid() {
-		return (columnType != null);
+	public long size() {
+		if (!isValid() || isEmpty) {
+			return 0;
+		}
+
+		BigInteger count = BigInteger.ZERO;
+
+		if (exactHistogram != null) {
+			for (BigInteger bucketCount : exactHistogram.values()) {
+				count = count.add(bucketCount);
+			}
+		} else {
+			for (BigInteger bucketCount : histogramCounts) {
+				count = count.add(bucketCount);
+			}
+		}
+
+		return count.min(BigInteger.valueOf(Long.MAX_VALUE)).longValue();
 	}
 
 	/**
-	 * Estimate how many rows will result in a join across the columns
-	 * represented by these two histograms.
-	 * @return -1 on error.
+	 * A histogram is not valid until either addHistogramBounds() or addHistogramExact() is called.
+	 * Unless it is empty, empty histograms are always valid.
 	 */
-	public int computeEstimatedJoinSize(SelectivityHistogram<T> other) {
+	public boolean isValid() {
+		return isEmpty || (columnType != null);
+	}
+
+	/**
+	 * Get a new histogram that represents the join of this histogram with another.
+	 */
+	public SelectivityHistogram<T> join(SelectivityHistogram<T> other) {
 		if (!isValid() || !other.isValid()) {
-			return -1;
+			throw new IllegalArgumentException("Connot compute join on invalid histograms.");
+		}
+
+		if (isEmpty || other.isEmpty) {
+			return new SelectivityHistogram<T>(true);
 		}
 
 		// Make sure the classes match exactly (referential equality works on Class).
@@ -133,23 +208,27 @@ public class SelectivityHistogram<T extends Comparable<? super T>> {
 		}
 
 		if (exactHistogram != null && other.exactHistogram != null) {
-			return computeExactJoinSize(other);
+			return computeExactJoin(other);
 		}
 
 		if (exactHistogram != null) {
-			return computeExactBucketJoinSize(other);
+			return computeExactBucketJoin(other);
 		}
 
 		if (other.exactHistogram != null) {
-			return other.computeExactBucketJoinSize(this);
+			return other.computeExactBucketJoin(this);
 		}
 
-		return computeBucketJoinSize(other);
+		return computeBucketJoin(other);
 	}
 
 	public String toString() {
-		if (!isValid()) {
+		if (isEmpty) {
 			return "Empty Histogram";
+		}
+
+		if (!isValid()) {
+			return "Invalid Histogram";
 		}
 
 		StringBuilder builder = new StringBuilder();
@@ -190,27 +269,29 @@ public class SelectivityHistogram<T extends Comparable<? super T>> {
 	/**
 	 * Estimate the join size where both histograms are exact ones.
 	 */
-	private int computeExactJoinSize(SelectivityHistogram<T> other) {
-		int totalCount = 0;
+	private SelectivityHistogram<T> computeExactJoin(SelectivityHistogram<T> other) {
+		Map<T, BigInteger> result = new HashMap<T, BigInteger>();
 
-		for (Map.Entry<T, Integer> entry : exactHistogram.entrySet()) {
+		for (Map.Entry<T, BigInteger> entry : exactHistogram.entrySet()) {
 			T columnValue = entry.getKey();
-			int count = entry.getValue().intValue();
+			BigInteger count = entry.getValue();
 
 			if (other.exactHistogram.containsKey(columnValue)) {
-				totalCount += count * other.exactHistogram.get(columnValue).intValue();
+				result.put(columnValue, count.multiply(other.exactHistogram.get(columnValue)));
 			}
 		}
 
-		return totalCount;
+		SelectivityHistogram<T> histogram = new SelectivityHistogram<T>();
+		histogram.addHistogramExact(result);
+		return histogram;
 	}
 
 	/**
 	 * Estimate the join size where the context histogram (this) is an exact one
 	 * and the other histogram is a bucket histogram.
 	 */
-	private int computeExactBucketJoinSize(SelectivityHistogram<T> other) {
-		int totalCount = 0;
+	private SelectivityHistogram<T> computeExactBucketJoin(SelectivityHistogram<T> other) {
+		Map<T, BigInteger> result = new HashMap<T, BigInteger>();
 
 		int currentExactIndex = 0;
 		int bucketIndex = 0;
@@ -225,12 +306,12 @@ public class SelectivityHistogram<T extends Comparable<? super T>> {
 			// If there are no more buckets, then the exact value must be in the last bucket.
 			if (bucketIndex == other.histogramCounts.size()) {
 				currentExactIndex++;
-				int bucketCount = other.bucketOverlap(
+				BigInteger bucketCount = other.bucketOverlap(
 						currentExactValue, currentExactValue,
 						other.histogramBounds.get(bucketIndex - 1), other.histogramBounds.get(bucketIndex - 0),
-						other.histogramCounts.get(bucketIndex).intValue());
+						other.histogramCounts.get(bucketIndex));
 
-				totalCount += bucketCount * exactHistogram.get(currentExactValue).intValue();
+				result.put(currentExactValue, bucketCount.multiply(exactHistogram.get(currentExactValue)));
 
 				continue;
 			}
@@ -249,23 +330,27 @@ public class SelectivityHistogram<T extends Comparable<? super T>> {
 			// Either way, put the exact value in this bucekt.
 
 			currentExactIndex++;
-			int bucketCount = other.bucketOverlap(
+			BigInteger bucketCount = other.bucketOverlap(
 					currentExactValue, currentExactValue,
 					bucketStartValue, bucketEndValue,
-					other.histogramCounts.get(bucketIndex).intValue());
+					other.histogramCounts.get(bucketIndex));
 
-			totalCount += bucketCount * exactHistogram.get(currentExactValue).intValue();
+			result.put(currentExactValue, bucketCount.multiply(exactHistogram.get(currentExactValue)));
 		}
 
-		return totalCount;
+		SelectivityHistogram<T> histogram = new SelectivityHistogram<T>();
+		histogram.addHistogramExact(result);
+		return histogram;
 	}
 
 	/**
 	 * Estimate the join size where both histograms are bucket ones.
 	 */
-	private int computeBucketJoinSize(SelectivityHistogram<T> other) {
-		// TODO(eriq): Special computation for ints.
-		int totalCount = 0;
+	private SelectivityHistogram<T> computeBucketJoin(SelectivityHistogram<T> other) {
+		// The buckets are required to be contiguous, so we may have some buckets with zero counts.
+		List<T> bounds = new ArrayList<T>();
+		List<BigInteger> counts = new ArrayList<BigInteger>();
+		boolean emptyBucket = false;
 
 		int contextBucketIndex = 0;
 		int otherBucketIndex = 0;
@@ -286,9 +371,11 @@ public class SelectivityHistogram<T extends Comparable<? super T>> {
 
 			T contextBucketStart = histogramBounds.get(contextBucketIndex + 0);
 			T contextBucketEnd = histogramBounds.get(contextBucketIndex + 1);
+			BigInteger contextCount = histogramCounts.get(contextBucketIndex);
 
 			T otherBucketStart = other.histogramBounds.get(otherBucketIndex + 0);
 			T otherBucketEnd = other.histogramBounds.get(otherBucketIndex + 1);
+			BigInteger otherCount = other.histogramCounts.get(otherBucketIndex);
 
 			// Start at the further forward of the bucket starts.
 			int startComparison = contextBucketStart.compareTo(otherBucketStart);
@@ -319,31 +406,44 @@ public class SelectivityHistogram<T extends Comparable<? super T>> {
 
 			// If there is no overlap, just move to the next range.
 			if (currentRangeStart.compareTo(currentRangeEnd) > 0) {
+				emptyBucket = true;
 				continue;
 			}
 
 			// Compute how much of each bucket the range is overlapping.
-			int contextBucketCount = bucketOverlap(
+			BigInteger contextBucketCount = bucketOverlap(
 					currentRangeStart, currentRangeEnd,
 					contextBucketStart, contextBucketEnd,
-					histogramCounts.get(contextBucketIndex).intValue());
+					contextCount);
 
-			int otherBucketCount = other.bucketOverlap(
+			BigInteger otherBucketCount = other.bucketOverlap(
 					currentRangeStart, currentRangeEnd,
 					otherBucketStart, otherBucketEnd,
-					other.histogramCounts.get(otherBucketIndex).intValue());
+					otherCount);
 
-			totalCount += (contextBucketCount * otherBucketCount);
+			// Make sure to add in the first bound.
+			// We also want to make sure that we explicitly add in buckets that are empty,
+			// so we can make out non-empty buckets as small as possible.
+			if (bounds.size() == 0 || emptyBucket) {
+				emptyBucket = false;
+				bounds.add(currentRangeStart);
+			}
+
+			bounds.add(currentRangeEnd);
+			counts.add(contextBucketCount.multiply(otherBucketCount));
 		}
 
-		return totalCount;
+		SelectivityHistogram<T> histogram = new SelectivityHistogram<T>();
+		histogram.addHistogramBounds(bounds, counts);
+		return histogram;
 	}
 
 	/**
 	 * Estimate how much a bucket overlaps with some range.
 	 */
-	private int bucketOverlap(T rangeStart, T rangeEnd, T bucketStart, T bucketEnd, int bucketCount) {
+	private BigInteger bucketOverlap(T rangeStart, T rangeEnd, T bucketStart, T bucketEnd, BigInteger bucketCount) {
 		// We have two general cases: the entire bucket is used or a portion of the bucket is being used.
+		BigDecimal floatBucketCount = new BigDecimal(bucketCount);
 
 		// All the bucket is being used.
 		if (rangeStart.compareTo(bucketStart) < 0 && rangeEnd.compareTo(bucketEnd) > 0) {
@@ -367,12 +467,14 @@ public class SelectivityHistogram<T extends Comparable<? super T>> {
 				overlapSize = 1;
 			}
 
-			return (int)Math.ceil(bucketCount * ((double)overlapSize / bucketSize));
+			BigDecimal count = floatBucketCount.multiply(BigDecimal.valueOf((double)overlapSize / bucketSize));
+			return count.setScale(0, RoundingMode.CEILING).toBigInteger();
 		}
 
 		// If we are using strings, then we cannot make any assumptions about the width
 		// of the bucket and we will just use our standard load factor.
 
-		return (int)Math.ceil(bucketCount * BUCKET_USAGE_GUESS);
+		BigDecimal count = floatBucketCount.multiply(BigDecimal.valueOf(BUCKET_USAGE_GUESS));
+		return count.setScale(0, RoundingMode.CEILING).toBigInteger();
 	}
 }
