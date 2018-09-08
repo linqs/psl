@@ -252,6 +252,11 @@ public abstract class AbstractLogicalRule extends AbstractRule {
 		}
 		rvaCount += negativeRVACount;
 
+		if (rvaCount == 0) {
+			// Trivial.
+			return null;
+		}
+
 		// We got an access error and the ground rule was not trivial.
 		if (resources.accessExceptionAtoms.size() != 0) {
 			RuntimeException ex = new RuntimeException(String.format(
