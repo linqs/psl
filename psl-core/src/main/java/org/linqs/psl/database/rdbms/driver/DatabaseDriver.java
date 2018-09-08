@@ -49,6 +49,7 @@ public interface DatabaseDriver {
 
 	/**
 	 * Returns whether the underline database supports bulk copying operations.
+	 * Any driver returning true to this must also support UPDATE FROM.
 	 */
 	public boolean supportsBulkCopy();
 
@@ -58,6 +59,8 @@ public interface DatabaseDriver {
 	 */
 	public void bulkCopy(String path, String delimiter, boolean hasTruth,
 			PredicateInfo predicateInfo, Partition partition);
+
+	public void bulkCopy(String tablename, String[] columns, String delimiter, Iterable<String> rows);
 
 	/**
 	 * Get the type name for each argument type.

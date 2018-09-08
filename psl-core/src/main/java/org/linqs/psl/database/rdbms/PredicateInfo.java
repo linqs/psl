@@ -28,6 +28,7 @@ import com.healthmarketscience.sqlbuilder.CreateIndexQuery;
 import com.healthmarketscience.sqlbuilder.CreateTableQuery;
 import com.healthmarketscience.sqlbuilder.CustomSql;
 import com.healthmarketscience.sqlbuilder.DeleteQuery;
+import com.healthmarketscience.sqlbuilder.DropQuery;
 import com.healthmarketscience.sqlbuilder.InCondition;
 import com.healthmarketscience.sqlbuilder.QueryPreparer;
 import com.healthmarketscience.sqlbuilder.SelectQuery;
@@ -53,6 +54,7 @@ public class PredicateInfo {
 	private static final Logger log = LoggerFactory.getLogger(PredicateInfo.class);
 
 	public static final String PREDICATE_TABLE_SUFFIX = "_PREDICATE";
+	public static final String TEMP_TABLE_SUFFIX = PREDICATE_TABLE_SUFFIX + "_TEMP";
 	public static final String PARTITION_COLUMN_NAME = "partition_id";
 	public static final String VALUE_COLUMN_NAME = "value";
 
@@ -67,9 +69,11 @@ public class PredicateInfo {
 	private final Predicate predicate;
 	private final List<String> argCols;
 	private final String tableName;
+	private final String tempTableName;
 
 	private Map<String, String> cachedSQL;
-	private boolean indexed;
+	// The names of the active indexes.
+	private List<String> indexes;
 	private int count;
 
 	private TableStats tableStats;
@@ -78,7 +82,8 @@ public class PredicateInfo {
 		assert(predicate != null);
 
 		this.predicate = predicate;
-		this.tableName = constructTableName(predicate.getName());
+		this.tableName = constructTableName(predicate.getName(), PREDICATE_TABLE_SUFFIX);
+		this.tempTableName = constructTableName(predicate.getName(), TEMP_TABLE_SUFFIX);
 
 		argCols = new ArrayList<String>(predicate.getArity());
 		for (int i = 0; i < predicate.getArity(); i++) {
@@ -86,7 +91,7 @@ public class PredicateInfo {
 		}
 
 		cachedSQL = new HashMap<String, String>();
-		this.indexed = false;
+		this.indexes = new ArrayList<String>();
 		count = -1;
 		tableStats = null;
 	}
@@ -95,8 +100,38 @@ public class PredicateInfo {
 		return Collections.unmodifiableList(argCols);
 	}
 
+	/**
+	 * Get all the columns in the table that represents this predicate (in order).
+	 */
+	public String[] allTableColumns() {
+		String[] columns = new String[argCols.size() + 2];
+
+		columns[0] = PARTITION_COLUMN_NAME;
+		columns[1] = VALUE_COLUMN_NAME;
+		for (int i = 0; i < argCols.size(); i++) {
+			columns[i + 2] = argCols.get(i);
+		}
+
+		return columns;
+	}
+
+	public String[] allTempTableColumns() {
+		String[] columns = new String[argCols.size() + 1];
+
+		columns[0] = VALUE_COLUMN_NAME;
+		for (int i = 0; i < argCols.size(); i++) {
+			columns[i + 1] = argCols.get(i);
+		}
+
+		return columns;
+	}
+
 	public String tableName() {
 		return tableName;
+	}
+
+	public String tempTableName() {
+		return tempTableName;
 	}
 
 	public Predicate predicate() {
@@ -104,7 +139,7 @@ public class PredicateInfo {
 	}
 
 	public boolean indexed() {
-		return indexed;
+		return indexes.size() > 0;
 	}
 
 	public synchronized TableStats getTableStats(DatabaseDriver dbDriver) {
@@ -201,30 +236,62 @@ public class PredicateInfo {
 		return count;
 	}
 
-	private void createTable(Connection connection, DatabaseDriver dbDriver) {
-		CreateTableQuery createTable = new CreateTableQuery(tableName);
+	public void createTempTable(Connection connection, DatabaseDriver dbDriver) {
+		// Skip the partition, since we use this for inserts and we always know our write partition.
+		CreateTableQuery createTable = makeBaseCreateTable(tempTableName, dbDriver, null, false);
 
-		// First add non-variable columns: partition and value.
-		createTable.addCustomColumns(PARTITION_COLUMN_NAME + " INT NOT NULL");
-		createTable.addCustomColumns(VALUE_COLUMN_NAME + " " + dbDriver.getDoubleTypeName() + " NOT NULL DEFAULT 1.0");
+		try (Statement statement = connection.createStatement()) {
+			statement.executeUpdate(dbDriver.finalizeCreateTable(createTable));
+		} catch(SQLException ex) {
+			throw new RuntimeException(
+					String.format("Error creating temp table (%s) for predicate %s.",
+					tempTableName, predicate.getName(), ex));
+		}
+	}
 
-		// Now add the variable columns.
-		List<String> uniqueColumns = new ArrayList<String>();
+	public void dropTempTable(Connection connection, DatabaseDriver dbDriver) {
+		String sql = "DROP TABLE IF EXISTS " + tempTableName;
 
-		// Add columns for each predicate argument
+		try (Statement statement = connection.createStatement()) {
+			statement.executeUpdate(sql);
+		} catch(SQLException ex) {
+			throw new RuntimeException(
+					String.format("Error dropping temp table (%s) for predicate %s.",
+					tempTableName, predicate.getName(), ex));
+		}
+	}
+
+	/**
+	 * Update the primary table with values located in the temp table.
+	 */
+	public void updateFromTempTable(Connection connection, DatabaseDriver dbDriver, int writePartition) {
+		// We will join with all attributes except the value.
+		List<String> whereConditions = new ArrayList<String>();
+		whereConditions.add("R." + PARTITION_COLUMN_NAME + " = " + writePartition);
+
 		for (int i = 0; i < argCols.size(); i++) {
 			String colName = argCols.get(i);
-
-			ConstantType type = predicate.getArgumentType(i);
-			String typeName = dbDriver.getTypeName(type);
-
-			// All unique columns get added to a unique constraint.
-			if (type == ConstantType.UniqueIntID || type == ConstantType.UniqueStringID) {
-				uniqueColumns.add(colName);
-			}
-
-			createTable.addCustomColumns(colName + " " + typeName + " NOT NULL");
+			whereConditions.add("R." + colName + " = T." + colName);
 		}
+
+		List<String> sql = new ArrayList<String>();
+		sql.add("UPDATE " + tableName + " R");
+		sql.add("SET " + VALUE_COLUMN_NAME + " = T." + VALUE_COLUMN_NAME);
+		sql.add("FROM " + tempTableName + " T");
+		sql.add("WHERE " + StringUtils.join(whereConditions, " AND "));
+
+		try (Statement statement = connection.createStatement()) {
+			statement.executeUpdate(StringUtils.join(sql, "\n"));
+		} catch(SQLException ex) {
+			throw new RuntimeException(
+					String.format("Error updating table with temp table for predicate %s.",
+					predicate.getName(), ex));
+		}
+	}
+
+	private void createTable(Connection connection, DatabaseDriver dbDriver) {
+		List<String> uniqueColumns = new ArrayList<String>();
+		CreateTableQuery createTable = makeBaseCreateTable(tableName, dbDriver, uniqueColumns, true);
 
 		// Add a unique constraint for all the unique ids (and partition).
 		// The partition column MUST be the last one (since H2 is super picky).
@@ -252,47 +319,109 @@ public class PredicateInfo {
 		try (Statement statement = connection.createStatement()) {
 			statement.executeUpdate(dbDriver.finalizeCreateTable(createTable));
 		} catch(SQLException ex) {
-			throw new RuntimeException("Error creating table for predicate: " + predicate.getName(), ex);
+			throw new RuntimeException(
+					String.format("Error creating table (%s) for predicate %s.",
+					tableName, predicate.getName(), ex));
 		}
 	}
 
+	/**
+	 * Make a base CreateTableQuery that does not include any constraints.
+	 * If |uniqueColumns| is not null, then fill it with columns that are unique ids.
+	 */
+	private CreateTableQuery makeBaseCreateTable(String name, DatabaseDriver dbDriver, List<String> uniqueColumns, boolean includePartition) {
+		CreateTableQuery createTable = new CreateTableQuery(name);
+
+		// First add non-variable columns: partition and value.
+		if (includePartition) {
+			createTable.addCustomColumns(PARTITION_COLUMN_NAME + " INT NOT NULL");
+		}
+		createTable.addCustomColumns(VALUE_COLUMN_NAME + " " + dbDriver.getDoubleTypeName() + " NOT NULL DEFAULT 1.0");
+
+		// Add columns for each predicate argument
+		for (int i = 0; i < argCols.size(); i++) {
+			String colName = argCols.get(i);
+
+			ConstantType type = predicate.getArgumentType(i);
+			String typeName = dbDriver.getTypeName(type);
+
+			// All unique columns get added to a unique constraint.
+			if (type == ConstantType.UniqueIntID || type == ConstantType.UniqueStringID) {
+				if (uniqueColumns != null) {
+					uniqueColumns.add(colName);
+				}
+			}
+
+			createTable.addCustomColumns(colName + " " + typeName + " NOT NULL");
+		}
+
+		return createTable;
+	}
+
+	public synchronized void dropIndexes(Connection connection, DatabaseDriver dbDriver) {
+		List<String> updates = new ArrayList<String>();
+		for (String indexName : indexes) {
+			DropQuery dropIndex = DropQuery.dropIndex(indexName);
+			updates.add(dropIndex.validate().toString());
+		}
+
+		try (Statement statement = connection.createStatement()) {
+			for (String sql : updates) {
+				statement.executeUpdate(sql);
+			}
+		} catch(SQLException ex) {
+			throw new RuntimeException(
+					String.format("Error dropping index on table (%s) for predicate %s.",
+					tempTableName, predicate.getName(), ex));
+		}
+
+		indexes.clear();
+	}
+
 	public synchronized void index(Connection connection, DatabaseDriver dbDriver) {
-		if (indexed) {
+		if (indexes.size() > 0) {
 			return;
 		}
-		indexed = true;
 
-		List<String> indexes = new ArrayList<String>();
+		List<String> indexesSQL = new ArrayList<String>();
 
 		// The primary index used for grounding.
-		CreateIndexQuery createIndex = new CreateIndexQuery(tableName, "IX_" + tableName + "_GROUNDING");
+		String indexName = "IX_" + tableName + "_GROUNDING";
+		CreateIndexQuery createIndex = new CreateIndexQuery(tableName, indexName);
 
 		// The column order is very important: data columns, then partition.
 		for (String colName : argCols) {
 			createIndex.addCustomColumns(colName);
 		}
 		createIndex.addCustomColumns(PARTITION_COLUMN_NAME);
-		indexes.add(createIndex.validate().toString());
+		indexesSQL.add(createIndex.validate().toString());
+		indexes.add(indexName);
 
 		// Create simple index on each column.
 		// Often the query planner will choose a small index over the full one for specific parts of the query.
 		for (String colName : argCols) {
-			createIndex = new CreateIndexQuery(tableName, "IX_" + tableName + "_" + colName);
+			indexName = "IX_" + tableName + "_" + colName;
+			createIndex = new CreateIndexQuery(tableName, indexName);
 			createIndex.addCustomColumns(colName);
-			indexes.add(createIndex.validate().toString());
+			indexesSQL.add(createIndex.validate().toString());
+			indexes.add(indexName);
 		}
 
 		// Include the partition.
-		createIndex = new CreateIndexQuery(tableName, "IX_" + tableName + "_" + PARTITION_COLUMN_NAME);
+		indexName = "IX_" + tableName + "_" + PARTITION_COLUMN_NAME;
+		createIndex = new CreateIndexQuery(tableName, indexName);
 		createIndex.addCustomColumns(PARTITION_COLUMN_NAME);
-		indexes.add(createIndex.validate().toString());
+		indexesSQL.add(createIndex.validate().toString());
+		indexes.add(indexName);
 
 		try (Statement statement = connection.createStatement()) {
-			for (String index : indexes) {
+			for (String index : indexesSQL) {
 				statement.executeUpdate(index);
 			}
 		} catch(SQLException ex) {
-			throw new RuntimeException("Error creating index on table for predicate: " + predicate.getName(), ex);
+			throw new RuntimeException(
+					String.format("Error creating index on table (%s) for predicate %s.",
+					tableName, predicate.getName(), ex));
 		}
 	}
 
@@ -458,18 +587,19 @@ public class PredicateInfo {
 	 * However if the name length exceeds MAX_TABLE_NAME_LENGTH,
 	 * then instead a truncated hash of the predicate name will be used.
 	 */
-	private static String constructTableName(String predicateName) {
-		String tableName = predicateName + PREDICATE_TABLE_SUFFIX;
+	private static String constructTableName(String predicateName, String suffix) {
+		String tableName = predicateName + suffix;
 		if (tableName.length() <= MAX_TABLE_NAME_LENGTH) {
 			return tableName;
 		}
 
-		tableName = HASH_PREFIX + Hash.sha(predicateName) + PREDICATE_TABLE_SUFFIX;
-		if (tableName.length() > MAX_TABLE_NAME_LENGTH) {
-			int truncateSize = tableName.length() - MAX_TABLE_NAME_LENGTH + HASH_PREFIX.length();
-			tableName = HASH_PREFIX + tableName.substring(truncateSize, tableName.length());
+		int maxHashSize = MAX_TABLE_NAME_LENGTH - HASH_PREFIX.length() - suffix.length();
+
+		String hash = Hash.sha(predicateName);
+		if (hash.length() > maxHashSize) {
+			hash = hash.substring(0, maxHashSize);
 		}
 
-		return tableName;
+		return HASH_PREFIX + hash + suffix;
 	}
 }

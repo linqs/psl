@@ -128,6 +128,10 @@ public class H2DatabaseDriver implements DatabaseDriver {
 		throw new UnsupportedOperationException("H2 does not support bulk copy.");
 	}
 
+	public void bulkCopy(String tablename, String[] columns, String delimiter, Iterable<String> rows) {
+		throw new UnsupportedOperationException("H2 does not support bulk copy.");
+	}
+
 	@Override
 	public String getTypeName(ConstantType type) {
 		switch (type) {

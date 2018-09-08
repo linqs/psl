@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.linqs.psl.TestModelFactory;
 import org.linqs.psl.application.inference.MPEInference;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.database.DatabaseTestUtil;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.formula.Conjunction;
@@ -51,8 +52,24 @@ public class MPEInferenceTest {
 	 * This is not a targeted or exhaustive test, just a starting point.
 	 */
 	@Test
-	public void baseTest() {
+	public void testBase() {
 		TestModelFactory.ModelInformation info = TestModelFactory.getModel();
+
+		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
+		Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
+		MPEInference mpe = new MPEInference(info.model, inferDB);
+
+		mpe.inference();
+		mpe.close();
+		inferDB.close();
+	}
+
+	/**
+	 * Same as testBase(), but using postgres.
+	 */
+	@Test
+	public void testBasePostgres() {
+		TestModelFactory.ModelInformation info = TestModelFactory.getModel(false, DatabaseTestUtil.getPostgresDriver());
 
 		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
 		Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);

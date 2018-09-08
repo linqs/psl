@@ -20,9 +20,11 @@ package org.linqs.psl;
 import org.linqs.psl.application.inference.MPEInference;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.database.DatabaseTestUtil;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
+import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver.Type;
 import org.linqs.psl.model.Model;
@@ -93,6 +95,10 @@ public class TestModelFactory {
 	 * Same as getModel(), but if specified all people have a nice truth value of 1.0.
 	 */
 	public static ModelInformation getModel(boolean nicePeople) {
+		return getModel(nicePeople, DatabaseTestUtil.getH2Driver());
+	}
+
+	public static ModelInformation getModel(boolean nicePeople, DatabaseDriver driver) {
 		// Define Predicates
 		Map<String, ConstantType[]> predicatesInfo = new HashMap<String, ConstantType[]>();
 		predicatesInfo.put("Nice", new ConstantType[]{ConstantType.UniqueStringID});
@@ -219,7 +225,7 @@ public class TestModelFactory {
 			new PredicateData(0, new Object[]{"Eugene", "Derek"})
 		)));
 
-		return getModel(predicates, rules, observations, targets, truths);
+		return getModel(driver, predicates, rules, observations, targets, truths);
 	}
 
 	/**
@@ -229,14 +235,11 @@ public class TestModelFactory {
 	 * Any of the data maps can be null or empty to represent to data present.
 	 */
 	public static ModelInformation getModel(
+			DatabaseDriver driver,
 			Map<String, StandardPredicate> predicates, List<Rule> rules,
 			Map<StandardPredicate, List<PredicateData>> observations, Map<StandardPredicate, List<PredicateData>> targets,
 			Map<StandardPredicate, List<PredicateData>> truths) {
-		String identifier = String.format("%s-%03d", TestModelFactory.class.getName(), modelId);
-		DataStore dataStore = new RDBMSDataStore(new H2DatabaseDriver(
-				Type.Memory,
-				Paths.get(System.getProperty("java.io.tmpdir"), identifier).toString(),
-				true));
+		DataStore dataStore = new RDBMSDataStore(driver);
 
 		Model model = new Model();
 

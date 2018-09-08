@@ -50,10 +50,16 @@ public class QueryRewriter {
 	public static final String CONFIG_PREFIX = "queryrewriter";
 
 	/**
-	 * How much we allow the query cost (number of rows) to for new plans.
+	 * How much we allow the query cost (number of rows) to increase overall.
 	 */
-	public static final String ALLOWED_INCREASE_KEY = "allowedcostincrease";
-	public static final double ALLOWED_INCREASE_DEFAULT = 2.0;
+	public static final String ALLOWED_TOTAL_INCREASE_KEY = "allowedtotalcostincrease";
+	public static final double ALLOWED_TOTAL_INCREASE_DEFAULT = 2.0;
+
+	/**
+	 * How much we allow the query cost (number of rows) to increase at each step.
+	 */
+	public static final String ALLOWED_STEP_INCREASE_KEY = "allowedstepcostincrease";
+	public static final double ALLOWED_STEP_INCREASE_DEFAULT = 1.5;
 
 	/**
 	 * Whether we should use histograms or column selectivity to estimate the join size.
@@ -76,7 +82,8 @@ public class QueryRewriter {
 			return baseFormula;
 		}
 
-		double allowedCostIncrease = Config.getDouble(ALLOWED_INCREASE_KEY, ALLOWED_INCREASE_DEFAULT);
+		double allowedTotalCostIncrease = Config.getDouble(ALLOWED_TOTAL_INCREASE_KEY, ALLOWED_TOTAL_INCREASE_DEFAULT);
+		double allowedStepCostIncrease = Config.getDouble(ALLOWED_STEP_INCREASE_KEY, ALLOWED_STEP_INCREASE_DEFAULT);
 		boolean useHistograms = Config.getBoolean(USE_HISTOGRAMS_KEY, USE_HISTOGRAMS_DEFAULT);
 
 		Set<Atom> usedAtoms = baseFormula.getAtoms(new HashSet<Atom>());
@@ -114,7 +121,7 @@ public class QueryRewriter {
 			}
 
 			// We expect the cost to go up, but will cut it off at some point.
-			if (bestCost > (baseCost * allowedCostIncrease)) {
+			if (bestCost > (baseCost * allowedTotalCostIncrease) || bestCost > (currentCost * allowedStepCostIncrease)) {
 				break;
 			}
 

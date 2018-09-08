@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -114,7 +115,12 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
 	 */
 	protected boolean closed;
 
-	public Database(DataStore parent, Partition write, Partition[] read){
+	/**
+	 * Predicates that, for the purpose of this database, are closed.
+	 */
+	protected final Set<Predicate> closedPredicates;
+
+	public Database(DataStore parent, Partition write, Partition[] read, Set<StandardPredicate> closedPredicates) {
 		this.parentDataStore = parent;
 		this.writePartition = write;
 		this.writeID = write.getID();
@@ -129,6 +135,11 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
 			this.readIDs.add(writeID);
 		}
 
+		this.closedPredicates = new HashSet<Predicate>();
+		if (closedPredicates != null) {
+			this.closedPredicates.addAll(closedPredicates);
+		}
+
 		this.cache = new AtomCache(this);
 	}
 
@@ -136,6 +147,11 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
 
 	public boolean hasAtom(StandardPredicate predicate, Constant... arguments) {
 		return getAtom(predicate, false, arguments) != null;
+	}
+
+	@Override
+	public boolean isClosed(StandardPredicate predicate) {
+		return closedPredicates.contains(predicate);
 	}
 
 	public int countAllGroundAtoms(StandardPredicate predicate) {
@@ -166,7 +182,20 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
 	}
 
 	public Iterable<RandomVariableAtom> getAllCachedRandomVariableAtoms() {
-		return cache.getCachedRandomVariableAtoms();
+		return getAllCachedRandomVariableAtoms(false);
+	}
+
+	public Iterable<RandomVariableAtom> getAllCachedRandomVariableAtoms(boolean onlyPersisted) {
+		if (!onlyPersisted) {
+			return cache.getCachedRandomVariableAtoms();
+		}
+
+		return IteratorUtils.filter(cache.getCachedRandomVariableAtoms(), new IteratorUtils.FilterFunction<RandomVariableAtom>() {
+			@Override
+			public boolean keep(RandomVariableAtom atom) {
+				return atom.getPersisted();
+			}
+		});
 	}
 
 	public List<GroundAtom> getAllGroundAtoms(StandardPredicate predicate) {
@@ -224,16 +253,8 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
 	}
 
 	public void commitCachedAtoms(boolean onlyPersisted) {
-		if (!onlyPersisted) {
-			commit(getAllCachedRandomVariableAtoms());
-		} else {
-			commit(IteratorUtils.filter(getAllCachedRandomVariableAtoms(), new IteratorUtils.FilterFunction<RandomVariableAtom>() {
-				@Override
-				public boolean keep(RandomVariableAtom atom) {
-					return atom.getPersisted();
-				}
-			}));
-		}
+		Iterable<RandomVariableAtom> atoms = getAllCachedRandomVariableAtoms(onlyPersisted);
+		commit(atoms);
 	}
 
 	/**
