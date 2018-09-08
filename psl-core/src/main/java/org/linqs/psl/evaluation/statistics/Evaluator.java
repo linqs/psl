@@ -64,7 +64,7 @@ public abstract class Evaluator {
 	 * A convenience call for those who don't want to create a training map directly.
 	 */
 	public void compute(Database rvDB, Database truthDB, StandardPredicate predicate) {
-		PersistedAtomManager atomManager = new PersistedAtomManager(rvDB);
+		PersistedAtomManager atomManager = new PersistedAtomManager(rvDB, false);
 		TrainingMap map = new TrainingMap(atomManager, truthDB, true);
 		compute(map, predicate);
 	}
