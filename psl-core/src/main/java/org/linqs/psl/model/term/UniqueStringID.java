@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.model.term;
 
-public class UniqueStringID implements Constant {
+public class UniqueStringID extends Constant {
 	private final String id;
 
 	public UniqueStringID(String id) {
@@ -60,9 +60,9 @@ public class UniqueStringID implements Constant {
 	}
 
 	@Override
-	public String toString() {
+	public String rawToString() {
 		// Make the required escapes.
 		String text = id.replace("\\", "\\\\").replace("'", "\\'");
-		return "'" + text + "'";
+		return text;
 	}
 }

@@ -20,7 +20,7 @@ package org.linqs.psl.model.term;
 /**
  * An {@link Attribute} that encapsulates an Integer.
  */
-public class IntegerAttribute implements Attribute {
+public class IntegerAttribute extends Attribute {
 	private final Integer value;
 
 	/**
@@ -32,12 +32,9 @@ public class IntegerAttribute implements Attribute {
 		this.value = value;
 	}
 
-	/**
-	 * @return the encapsulated Integer as a String in single quotes
-	 */
 	@Override
-	public String toString() {
-		return "'" + value + "'";
+	public String rawToString() {
+		return value.toString();
 	}
 
 	@Override

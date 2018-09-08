@@ -22,7 +22,7 @@ import org.joda.time.DateTime;
 /**
  * An {@link Attribute} that encapsulates a Date.
  */
-public class DateAttribute implements Attribute{
+public class DateAttribute extends Attribute {
 	private final DateTime value;
 
 	/**
@@ -34,12 +34,9 @@ public class DateAttribute implements Attribute{
 		this.value = value;
 	}
 
-	/**
-	 * @return the encapsulated Date as a String in single quotes
-	 */
 	@Override
-	public String toString() {
-		return "'" + value.toString() + "'";
+	public String rawToString() {
+		return value.toString();
 	}
 
 	@Override

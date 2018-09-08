@@ -20,7 +20,7 @@ package org.linqs.psl.model.term;
 /**
  * An {@link Attribute} that encapsulates a Double.
  */
-public class DoubleAttribute implements Attribute {
+public class DoubleAttribute extends Attribute {
 	private final Double value;
 
 	/**
@@ -32,12 +32,9 @@ public class DoubleAttribute implements Attribute {
 		this.value = value;
 	}
 
-	/**
-	 * @return the encapsulated Double as a String in single quotes
-	 */
 	@Override
-	public String toString() {
-		return "'" + value + "'";
+	public String rawToString() {
+		return value.toString();
 	}
 
 	@Override

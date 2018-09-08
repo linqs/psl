@@ -20,5 +20,13 @@ package org.linqs.psl.model.term;
 /**
  * An element in the universe over which a PSL program is grounded.
  */
-public interface Constant extends Term {
+public abstract class Constant implements Term {
+	public String toString() {
+		return "'" + rawToString() + "'";
+	}
+
+	/**
+	 * Get a string representation of the internal constant value.
+	 */
+	public abstract String rawToString();
 }

@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.model.term;
 
-public class UniqueIntID implements Constant {
+public class UniqueIntID extends Constant {
 	private final int id;
 
 	public UniqueIntID(int id) {
@@ -60,7 +60,7 @@ public class UniqueIntID implements Constant {
 	}
 
 	@Override
-	public String toString() {
-		return "'" + id + "'";
+	public String rawToString() {
+		return "" + id;
 	}
 }

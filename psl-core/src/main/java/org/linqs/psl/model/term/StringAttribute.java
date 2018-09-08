@@ -20,7 +20,7 @@ package org.linqs.psl.model.term;
 /**
  * An {@link Attribute} that encapsulates a String.
  */
-public class StringAttribute implements Attribute {
+public class StringAttribute extends Attribute {
 	private final String value;
 
 	/**
@@ -32,14 +32,11 @@ public class StringAttribute implements Attribute {
 		this.value = value;
 	}
 
-	/**
-	 * @return the encapsulated String in single quotes.
-	 */
 	@Override
-	public String toString() {
+	public String rawToString() {
 		// Make the required escapes.
 		String text = value.replace("\\", "\\\\").replace("'", "\\'");
-		return "'" + text + "'";
+		return text;
 	}
 
 	@Override
