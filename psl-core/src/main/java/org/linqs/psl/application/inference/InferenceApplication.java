@@ -22,6 +22,7 @@ import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 import org.linqs.psl.application.groundrulestore.MemoryGroundRuleStore;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.admm.ADMMReasoner;
@@ -72,6 +73,7 @@ public abstract class InferenceApplication implements ModelApplication {
 	protected GroundRuleStore groundRuleStore;
 	protected TermStore termStore;
 	protected TermGenerator termGenerator;
+	protected AtomManager atomManager;
 
 	public InferenceApplication(Model model, Database db) {
 		this.model = model;
@@ -100,8 +102,9 @@ public abstract class InferenceApplication implements ModelApplication {
 
 	/**
 	 * Complete the initialization process.
-	 * All infrastructure will have been constructued, but the ground rule store
-	 * and term store must be populated.
+	 * Most of the infrastructure will have been constructued.
+	 * The child is responsible for constructing the AtomManager
+	 * and populating the ground rule store.
 	 */
 	protected abstract void completeInitialize();
 
@@ -124,6 +127,10 @@ public abstract class InferenceApplication implements ModelApplication {
 
 	public TermStore getTermStore() {
 		return termStore;
+	}
+
+	public AtomManager getAtomManager() {
+		return atomManager;
 	}
 
 	@Override

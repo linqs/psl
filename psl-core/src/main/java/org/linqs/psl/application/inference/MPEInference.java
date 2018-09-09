@@ -39,8 +39,6 @@ import org.slf4j.LoggerFactory;
 public class MPEInference extends InferenceApplication {
 	private static final Logger log = LoggerFactory.getLogger(MPEInference.class);
 
-	protected PersistedAtomManager atomManager;
-
 	public MPEInference(Model model, Database db) {
 		super(model, db);
 	}
@@ -70,7 +68,7 @@ public class MPEInference extends InferenceApplication {
 		log.info("Inference complete. Writing results to Database.");
 
 		// Commits the RandomVariableAtoms back to the Database,
-		atomManager.commitPersistedAtoms();
+		((PersistedAtomManager)atomManager).commitPersistedAtoms();
 		log.info("Results committed to database.");
 	}
 }

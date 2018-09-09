@@ -58,8 +58,6 @@ public class LazyMPEInference extends InferenceApplication {
 
 	protected final int maxRounds;
 
-	protected LazyAtomManager lazyAtomManager;
-
 	public LazyMPEInference(Model model, Database db) {
 		super(model, db);
 		maxRounds = Config.getInt(MAX_ROUNDS_KEY, MAX_ROUNDS_DEFAULT);
@@ -68,15 +66,16 @@ public class LazyMPEInference extends InferenceApplication {
 	@Override
 	protected void completeInitialize() {
 		log.debug("Creating lazy atom mannager.");
-		lazyAtomManager = new LazyAtomManager(db);
+		atomManager = new LazyAtomManager(db);
 
 		log.debug("Initial grounding.");
-		Grounding.groundAll(model, lazyAtomManager, groundRuleStore);
+		Grounding.groundAll(model, atomManager, groundRuleStore);
 	}
 
 	@Override
 	public void inference() {
-		inference(model.getRules(), reasoner, groundRuleStore, termStore, termGenerator, lazyAtomManager, maxRounds);
+		inference(model.getRules(), reasoner, groundRuleStore, termStore, termGenerator,
+				(LazyAtomManager)atomManager, maxRounds);
 	}
 
 	/**

@@ -240,7 +240,11 @@ public class Launcher {
 		return closedPredicates;
 	}
 
-	private void runInference(Model model, DataStore dataStore, Set<StandardPredicate> closedPredicates, String inferenceName) {
+	/**
+	 * Run inference.
+	 * The caller is responsible for closing the database.
+	 */
+	private Database runInference(Model model, DataStore dataStore, Set<StandardPredicate> closedPredicates, String inferenceName) {
 		log.info("Starting inference with class: {}", inferenceName);
 
 		// Create database.
@@ -257,7 +261,7 @@ public class Launcher {
 		// Output the results.
 		outputResults(database, dataStore, closedPredicates);
 
-		database.close();
+		return database;
 	}
 
 	private void outputResults(Database database, DataStore dataStore, Set<StandardPredicate> closedPredicates) {
@@ -344,7 +348,11 @@ public class Launcher {
 		learnedFileWriter.close();
 	}
 
-	private void evaluation(DataStore dataStore, Set<StandardPredicate> closedPredicates, String evalClassName) {
+	/**
+	 * Run eval.
+	 * @param predictionDatabase can be passed in to speed up evaluation. If null, one will be created and closed internally.
+	 */
+	private void evaluation(DataStore dataStore, Database predictionDatabase, Set<StandardPredicate> closedPredicates, String evalClassName) {
 		log.info("Starting evaluation with class: {}.", evalClassName);
 
 		// Set of open predicates
@@ -356,7 +364,12 @@ public class Launcher {
 		Partition observationsPartition = dataStore.getPartition(PARTITION_NAME_OBSERVATIONS);
 		Partition truthPartition = dataStore.getPartition(PARTITION_NAME_LABELS);
 
-		Database predictionDatabase = dataStore.getDatabase(targetPartition, closedPredicates, observationsPartition);
+		boolean closePredictionDB = false;
+		if (predictionDatabase == null) {
+			closePredictionDB = true;
+			predictionDatabase = dataStore.getDatabase(targetPartition, closedPredicates, observationsPartition);
+		}
+
 		Database truthDatabase = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
 
 		Evaluator evaluator = (Evaluator)Reflection.newObject(evalClassName);
@@ -368,11 +381,13 @@ public class Launcher {
 				continue;
 			}
 
-			evaluator.compute(predictionDatabase, truthDatabase, targetPredicate);
+			evaluator.compute(predictionDatabase, truthDatabase, targetPredicate, !closePredictionDB);
 			log.info("Evaluation results for {} -- {}", targetPredicate.getName(), evaluator.getAllStats());
 		}
 
-		predictionDatabase.close();
+		if (closePredictionDB) {
+			predictionDatabase.close();
+		}
 		truthDatabase.close();
 
 		log.info("Evaluation complete.");
@@ -406,8 +421,9 @@ public class Launcher {
 		Model model = loadModel(dataStore);
 
 		// Inference
+		Database evalDB = null;
 		if (options.hasOption(OPERATION_INFER)) {
-			runInference(model, dataStore, closedPredicates, options.getOptionValue(OPERATION_INFER, DEFAULT_IA));
+			evalDB = runInference(model, dataStore, closedPredicates, options.getOptionValue(OPERATION_INFER, DEFAULT_IA));
 		} else if (options.hasOption(OPERATION_LEARN)) {
 			learnWeights(model, dataStore, closedPredicates, options.getOptionValue(OPERATION_LEARN, DEFAULT_WLA));
 		} else {
@@ -416,7 +432,11 @@ public class Launcher {
 
 		// Evaluation
 		if (options.hasOption(OPTION_EVAL)) {
-			evaluation(dataStore, closedPredicates, options.getOptionValue(OPTION_EVAL));
+			evaluation(dataStore, evalDB, closedPredicates, options.getOptionValue(OPTION_EVAL));
+		}
+
+		if (evalDB != null) {
+			evalDB.close();
 		}
 
 		dataStore.close();

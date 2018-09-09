@@ -73,25 +73,27 @@ public class PersistedAtomManager extends AtomManager {
 	private int persistedAtomCount;
 
 	public PersistedAtomManager(Database db) {
-		this(db, true);
+		this(db, false);
 	}
 
 	/**
-	 * Constructs a PersistedAtomManager with a built-in set of all the database's
-	 * persisted RandomVariableAtoms.
-	 *
-	 * @param db  the Database to query for all getAtom() calls.
+	 * Constructs a PersistedAtomManager with a built-in set of all the database's persisted RandomVariableAtoms.
+	 * @param prebuiltCache the database already has a populated atom cache, no need to build it again.
 	 */
-	public PersistedAtomManager(Database db, boolean cacheClosedPredicates) {
+	public PersistedAtomManager(Database db, boolean prebuiltCache) {
 		super(db);
 
 		throwOnIllegalAccess = Config.getBoolean(THROW_ACCESS_EXCEPTION_KEY, THROW_ACCESS_EXCEPTION_DEFAULT);
 		warnOnIllegalAccess = !throwOnIllegalAccess;
 
-		buildPersistedAtomCache(cacheClosedPredicates);
+		if (prebuiltCache) {
+			persistedAtomCount = db.getCachedRVACount();
+		} else {
+			buildPersistedAtomCache();
+		}
 	}
 
-	private void buildPersistedAtomCache(boolean cacheClosedPredicates) {
+	private void buildPersistedAtomCache() {
 		persistedAtomCount = 0;
 
 		// Iterate through all of the registered predicates in this database
@@ -100,9 +102,7 @@ public class PersistedAtomManager extends AtomManager {
 			if (db.isClosed(predicate)) {
 				// Make the database cache all the atoms from the closed predicates,
 				// but don't do anything with them now.
-				if (cacheClosedPredicates) {
-					db.getAllGroundAtoms(predicate);
-				}
+				db.getAllGroundAtoms(predicate);
 
 				continue;
 			}

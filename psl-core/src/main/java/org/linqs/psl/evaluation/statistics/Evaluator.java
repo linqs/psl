@@ -62,9 +62,12 @@ public abstract class Evaluator {
 
 	/**
 	 * A convenience call for those who don't want to create a training map directly.
+	 * If the random variable database is already fully cached
+	 * (ie a PAM has already been used on it (like if it has been used in inference))
+	 * then don't rebuild the cache.
 	 */
-	public void compute(Database rvDB, Database truthDB, StandardPredicate predicate) {
-		PersistedAtomManager atomManager = new PersistedAtomManager(rvDB, false);
+	public void compute(Database rvDB, Database truthDB, StandardPredicate predicate, boolean rvDBCached) {
+		PersistedAtomManager atomManager = new PersistedAtomManager(rvDB, rvDBCached);
 		TrainingMap map = new TrainingMap(atomManager, truthDB, true);
 		compute(map, predicate);
 	}
