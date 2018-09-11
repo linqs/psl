@@ -412,6 +412,7 @@ public class Launcher {
 
 	private void run()
 			throws IOException, ClassNotFoundException, IllegalAccessException, InstantiationException {
+		log.info("Running PSL CLI Version {}", Version.getFull());
 		DataStore dataStore = initDataStore();
 
 		// Load data
@@ -649,7 +650,7 @@ public class Launcher {
 
 		if (commandLineOptions.hasOption(OPTION_VERSION)) {
 			initDefaultLogger();
-			System.out.println("PSL CLI Version " + Version.get());
+			System.out.println("PSL CLI Version " + Version.getFull());
 			return null;
 		}
 

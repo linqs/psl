@@ -53,6 +53,7 @@ import java.util.List;
  */
 public class Config {
 	public static final String PROJECT_PROPS = "project.properties";
+	public static final String GIT_PROPS = "git.properties";
 	public static final String PSL_CONFIG = "psl.configuration";
 	public static final String PSL_CONFIG_DEFAULT = "psl.properties";
 
@@ -74,6 +75,12 @@ public class Config {
 		InputStream stream = ClassLoader.getSystemClassLoader().getResourceAsStream(PROJECT_PROPS);
 		if (stream != null) {
 			loadResource(stream, PROJECT_PROPS);
+		}
+
+		// Load git project properties.
+		stream = ClassLoader.getSystemClassLoader().getResourceAsStream(GIT_PROPS);
+		if (stream != null) {
+			loadResource(stream, GIT_PROPS);
 		}
 
 		// Load the configuration file directly if the path exists.
