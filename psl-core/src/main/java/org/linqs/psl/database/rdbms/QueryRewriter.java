@@ -52,20 +52,25 @@ public class QueryRewriter {
 	/**
 	 * How much we allow the query cost (number of rows) to increase overall.
 	 */
-	public static final String ALLOWED_TOTAL_INCREASE_KEY = "allowedtotalcostincrease";
+	public static final String ALLOWED_TOTAL_INCREASE_KEY = CONFIG_PREFIX + ".allowedtotalcostincrease";
 	public static final double ALLOWED_TOTAL_INCREASE_DEFAULT = 2.0;
 
 	/**
 	 * How much we allow the query cost (number of rows) to increase at each step.
 	 */
-	public static final String ALLOWED_STEP_INCREASE_KEY = "allowedstepcostincrease";
+	public static final String ALLOWED_STEP_INCREASE_KEY = CONFIG_PREFIX + ".allowedstepcostincrease";
 	public static final double ALLOWED_STEP_INCREASE_DEFAULT = 1.5;
+
+	/**
+	 * The different methods for estimating the join cost.
+	 */
+	public static enum CostEstimator { SIZE, SELECTIVITY, HISTOGRAM }
 
 	/**
 	 * Whether we should use histograms or column selectivity to estimate the join size.
 	 */
-	public static final String USE_HISTOGRAMS_KEY = "usehistograms";
-	public static final boolean USE_HISTOGRAMS_DEFAULT = true;
+	public static final String COST_ESTIMATOR_KEY = CONFIG_PREFIX + ".costestimator";
+	public static final String COST_ESTIMATOR_DEFAULT = CostEstimator.HISTOGRAM.toString();
 
 	// Static only.
 	private QueryRewriter() {}
@@ -84,14 +89,15 @@ public class QueryRewriter {
 
 		double allowedTotalCostIncrease = Config.getDouble(ALLOWED_TOTAL_INCREASE_KEY, ALLOWED_TOTAL_INCREASE_DEFAULT);
 		double allowedStepCostIncrease = Config.getDouble(ALLOWED_STEP_INCREASE_KEY, ALLOWED_STEP_INCREASE_DEFAULT);
-		boolean useHistograms = Config.getBoolean(USE_HISTOGRAMS_KEY, USE_HISTOGRAMS_DEFAULT);
+
+		CostEstimator costEstimator = CostEstimator.valueOf(Config.getString(COST_ESTIMATOR_KEY, COST_ESTIMATOR_DEFAULT).toUpperCase());
 
 		Set<Atom> usedAtoms = baseFormula.getAtoms(new HashSet<Atom>());
 		Set<Atom> passthrough = filterBaseAtoms(usedAtoms);
 
 		Map<Predicate, TableStats> tableStats = fetchTableStats(usedAtoms, dataStore);
 
-		double baseCost = estimateQuerySize(useHistograms, usedAtoms, null, tableStats, dataStore);
+		double baseCost = estimateQuerySize(costEstimator, usedAtoms, null, tableStats, dataStore);
 		double currentCost = baseCost;
 
 		log.trace("Starting cost: " + baseCost);
@@ -105,7 +111,7 @@ public class QueryRewriter {
 
 			for (Atom atom : usedAtoms) {
 				if (canRemove(atom, usedAtoms)) {
-					double cost = estimateQuerySize(useHistograms, usedAtoms, atom, tableStats, dataStore);
+					double cost = estimateQuerySize(costEstimator, usedAtoms, atom, tableStats, dataStore);
 
 					log.trace("Planned Cost for (" + usedAtoms + " - " + atom + "): " + cost);
 
@@ -144,12 +150,16 @@ public class QueryRewriter {
 		return query;
 	}
 
-	private static double estimateQuerySize(boolean useHistograms, Set<Atom> atoms, Atom ignore, Map<Predicate, TableStats> tableStats, RDBMSDataStore dataStore) {
-		if (useHistograms) {
-			return estimateHistorgramQuerySize(atoms, ignore, tableStats, dataStore);
+	private static double estimateQuerySize(CostEstimator costEstimator, Set<Atom> atoms, Atom ignore, Map<Predicate, TableStats> tableStats, RDBMSDataStore dataStore) {
+		if (costEstimator == CostEstimator.HISTOGRAM) {
+			return estimateQuerySizeWithHistorgram(atoms, ignore, tableStats, dataStore);
+		} else if (costEstimator == CostEstimator.SELECTIVITY) {
+			return estimateQuerySizeWithSelectivity(atoms, ignore, tableStats, dataStore);
+		} else if (costEstimator == CostEstimator.SIZE) {
+			return estimateQuerySizeWithSize(atoms, ignore, tableStats, dataStore);
 		}
 
-		return estimateSelectivityQuerySize(atoms, ignore, tableStats, dataStore);
+		throw new IllegalStateException("Unknown CostEstimator value: " + costEstimator);
 	}
 
 	/**
@@ -157,7 +167,7 @@ public class QueryRewriter {
 	 * Based off of: http://consystlab.unl.edu/Documents/StudentReports/Working-Note2-2008.pdf
 	 * @param ignore if not null, then do not include it in the cost computation.
 	 */
-	private static double estimateHistorgramQuerySize(Set<Atom> atoms, Atom ignore, Map<Predicate, TableStats> tableStats, RDBMSDataStore dataStore) {
+	private static double estimateQuerySizeWithHistorgram(Set<Atom> atoms, Atom ignore, Map<Predicate, TableStats> tableStats, RDBMSDataStore dataStore) {
 		double cost = 1.0;
 
 		// Start with the product of the joins.
@@ -213,7 +223,7 @@ public class QueryRewriter {
 	 * Based off of: http://users.csc.calpoly.edu/~dekhtyar/468-Spring2016/lectures/lec17.468.pdf
 	 * @param ignore if not null, then do not include it in the cost computation.
 	 */
-	private static double estimateSelectivityQuerySize(Set<Atom> atoms, Atom ignore, Map<Predicate, TableStats> tableStats, RDBMSDataStore dataStore) {
+	private static double estimateQuerySizeWithSelectivity(Set<Atom> atoms, Atom ignore, Map<Predicate, TableStats> tableStats, RDBMSDataStore dataStore) {
 		double cost = 1.0;
 
 		// Start with the product of the joins.
@@ -254,6 +264,25 @@ public class QueryRewriter {
 			}
 
 			cost /= (double)minCardinality;
+		}
+
+		return cost;
+	}
+
+	/**
+	 * Estimate the cost of the query (conjunctive query over the given atoms) using just the size of the involved tables.
+	 * @param ignore if not null, then do not include it in the cost computation.
+	 */
+	private static double estimateQuerySizeWithSize(Set<Atom> atoms, Atom ignore, Map<Predicate, TableStats> tableStats, RDBMSDataStore dataStore) {
+		double cost = 1.0;
+
+		// Just use the product of the joins.
+		for (Atom atom : atoms) {
+			if (atom == ignore) {
+				continue;
+			}
+
+			cost *= tableStats.get(atom.getPredicate()).getCount();
 		}
 
 		return cost;
