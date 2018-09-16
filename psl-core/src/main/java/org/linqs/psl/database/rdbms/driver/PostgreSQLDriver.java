@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.database.rdbms.driver;
 
+import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.rdbms.PredicateInfo;
 import org.linqs.psl.database.rdbms.SelectivityHistogram;
@@ -56,9 +57,17 @@ public class PostgreSQLDriver implements DatabaseDriver {
 	public static final String DEFAULT_HOST = "localhost";
 	public static final String DEFAULT_PORT = "5432";
 
+	public static final String CONFIG_PREFIX = "postgres";
+
+	public static final String KEY_STATS_PERCENTAGE = CONFIG_PREFIX + ".statspercentage";
+	public static final double DEFAULT_STATS_PERCENTAGE = 0.25;
+
+	private static final int MAX_STATS = 10000;
+
 	private static final Logger log = LoggerFactory.getLogger(PostgreSQLDriver.class);
 
 	private final HikariDataSource dataSource;
+	private final double statsPercentage;
 
 	public PostgreSQLDriver(String databaseName, boolean clearDatabase) {
 		this(DEFAULT_HOST, DEFAULT_PORT, databaseName, clearDatabase);
@@ -76,6 +85,8 @@ public class PostgreSQLDriver implements DatabaseDriver {
 		}
 
 		log.debug("Connecting to PostgreSQL database: " + databaseName);
+
+		statsPercentage = Config.getDouble(KEY_STATS_PERCENTAGE, DEFAULT_STATS_PERCENTAGE);
 
 		HikariConfig config = new HikariConfig();
 		config.setJdbcUrl(connectionString);
@@ -450,7 +461,26 @@ public class PostgreSQLDriver implements DatabaseDriver {
 	}
 
 	@Override
-	public void updateTableStats() {
+	public void updateDBStats() {
 		executeUpdate("VACUUM ANALYZE");
+	}
+
+	@Override
+	public void updateTableStats(PredicateInfo predicate) {
+		int count = 0;
+		try (Connection connection = getConnection()) {
+			count = predicate.getCount(connection);
+		} catch (SQLException ex) {
+			throw new RuntimeException(String.format("Could not get table count for stats update: " + predicate));
+		}
+
+		int statsCount = (int)Math.min(MAX_STATS, count * statsPercentage);
+		if (statsCount == 0) {
+			return;
+		}
+
+		for (String col : predicate.argumentColumns()) {
+			executeUpdate(String.format("ALTER TABLE %s ALTER COLUMN %s SET STATISTICS %d", predicate.tableName(), col, statsCount));
+		}
 	}
 }

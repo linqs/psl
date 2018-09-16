@@ -226,7 +226,11 @@ public class H2DatabaseDriver implements DatabaseDriver {
 	}
 
 	@Override
-	public void updateTableStats() {
+	public void updateDBStats() {
 		executeUpdate("ANALYZE");
+	}
+
+	@Override
+	public void updateTableStats(PredicateInfo predicate) {
 	}
 }

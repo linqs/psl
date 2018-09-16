@@ -106,8 +106,14 @@ public interface DatabaseDriver {
 	public TableStats getTableStats(PredicateInfo predicate);
 
 	/**
+	 * Make sure that all the database-level stats are up-to-date.
+	 * Is generally called after insertion and indexing.
+	 */
+	public void updateDBStats();
+
+	/**
 	 * Make sure that all the table statistics are up-to-date.
 	 * Is generally called after insertion and indexing.
 	 */
-	public void updateTableStats();
+	public void updateTableStats(PredicateInfo predicate);
 }
