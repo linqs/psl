@@ -304,7 +304,7 @@ public class SelectivityHistogram<T extends Comparable<? super T>> {
 			T currentExactValue = sortedExactHistogramKeys.get(currentExactIndex);
 
 			// If there are no more buckets, then the exact value must be in the last bucket.
-			if (bucketIndex == other.histogramCounts.size()) {
+			if (bucketIndex == other.histogramCounts.size() - 1) {
 				currentExactIndex++;
 				BigInteger bucketCount = other.bucketOverlap(
 						currentExactValue, currentExactValue,
