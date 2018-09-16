@@ -112,6 +112,10 @@ public class QueryRewriter {
 			for (Atom atom : usedAtoms) {
 				if (canRemove(atom, usedAtoms)) {
 					double cost = estimateQuerySize(costEstimator, usedAtoms, atom, tableStats, dataStore);
+					if (cost < 0.0) {
+						log.trace("Planned Cost for (" + usedAtoms + " - " + atom + "): MAX");
+						continue;
+					}
 
 					log.trace("Planned Cost for (" + usedAtoms + " - " + atom + "): " + cost);
 
@@ -122,6 +126,11 @@ public class QueryRewriter {
 				}
 			}
 
+			if (bestAtom == null) {
+				break;
+			}
+
+			// We couldn't find any viable plans.
 			if (bestAtom == null) {
 				break;
 			}
@@ -166,6 +175,7 @@ public class QueryRewriter {
 	 * Estimate the cost of the query (conjunctive query over the given atoms) using histogram stats.
 	 * Based off of: http://consystlab.unl.edu/Documents/StudentReports/Working-Note2-2008.pdf
 	 * @param ignore if not null, then do not include it in the cost computation.
+	 * @return negative if we exceed max size and should just discard this plan.
 	 */
 	private static double estimateQuerySizeWithHistorgram(Set<Atom> atoms, Atom ignore, Map<Predicate, TableStats> tableStats, RDBMSDataStore dataStore) {
 		double cost = 1.0;
@@ -210,6 +220,11 @@ public class QueryRewriter {
 					SelectivityHistogram ignoreUnchecked = joinHistogram.join(histogram);
 					joinHistogram = ignoreUnchecked;
 				}
+			}
+
+			long joinSize = joinHistogram.size();
+			if (joinSize == Long.MAX_VALUE) {
+				return -1.0;
 			}
 
 			cost *= (joinHistogram.size() / crossProductSize);
