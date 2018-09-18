@@ -455,7 +455,7 @@ public class SelectivityHistogram<T extends Comparable<? super T>> {
 		// If we are dealing with ints, then we can compute the portion of the bucket being used.
 		// Just assume a uniform distribution over the bucket.
 		if (columnType == Integer.class) {
-			int bucketSize = ((Integer)bucketEnd).intValue() - ((Integer)bucketStart).intValue();
+			int bucketSize = ((Integer)bucketEnd).intValue() - ((Integer)bucketStart).intValue() + 1;
 
 			int overlapStart = Math.max(((Integer)rangeStart).intValue(), ((Integer)bucketStart).intValue());
 			int overlapEnd = Math.min(((Integer)rangeEnd).intValue(), ((Integer)bucketEnd).intValue());
