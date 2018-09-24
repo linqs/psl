@@ -90,7 +90,7 @@ public class SelectivityHistogram<T extends Comparable<? super T>> {
 	}
 
 	public void addHistogramBounds(List<T> bounds, List<? extends Number> counts) {
-		if (bounds.size() == 0 && counts.size() == 0) {
+		if (bounds.size() == 0 || counts.size() == 0) {
 			isEmpty = true;
 			return;
 		}
@@ -308,7 +308,7 @@ public class SelectivityHistogram<T extends Comparable<? super T>> {
 				currentExactIndex++;
 				BigInteger bucketCount = other.bucketOverlap(
 						currentExactValue, currentExactValue,
-						other.histogramBounds.get(bucketIndex - 1), other.histogramBounds.get(bucketIndex - 0),
+						other.histogramBounds.get(bucketIndex + 0), other.histogramBounds.get(bucketIndex + 1),
 						other.histogramCounts.get(bucketIndex));
 
 				result.put(currentExactValue, bucketCount.multiply(exactHistogram.get(currentExactValue)));
