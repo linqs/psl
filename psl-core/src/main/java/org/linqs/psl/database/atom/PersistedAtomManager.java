@@ -137,10 +137,9 @@ public class PersistedAtomManager extends AtomManager {
 
 	/**
 	 * Commit all the atoms in this manager's persisted cache.
-	 * This is the most common atom update use case.
 	 */
 	public void commitPersistedAtoms() {
-		db.updateCachedAtoms();
+		db.commitCachedAtoms(true);
 	}
 
 	public int getPersistedCount() {

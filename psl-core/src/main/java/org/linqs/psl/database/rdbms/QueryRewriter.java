@@ -50,7 +50,7 @@ public class QueryRewriter {
 	public static final String CONFIG_PREFIX = "queryrewriter";
 
 	/**
-	 * How much we allow the query cost (number of rows) to increase overall.
+	 * How much we allow the query cost (number of rows) to for new plans.
 	 */
 	public static final String ALLOWED_TOTAL_INCREASE_KEY = CONFIG_PREFIX + ".allowedtotalcostincrease";
 	public static final double ALLOWED_TOTAL_INCREASE_DEFAULT = 2.0;
@@ -136,7 +136,7 @@ public class QueryRewriter {
 			}
 
 			// We expect the cost to go up, but will cut it off at some point.
-			if (bestCost > (baseCost * allowedTotalCostIncrease) || bestCost > (currentCost * allowedStepCostIncrease)) {
+         if (bestCost > (baseCost * allowedTotalCostIncrease) || bestCost > (currentCost * allowedStepCostIncrease)) {
 				break;
 			}
 

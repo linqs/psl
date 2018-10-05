@@ -25,7 +25,6 @@ import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.ResultList;
 import org.linqs.psl.database.QueryResultIterable;
 import org.linqs.psl.database.atom.AtomCache;
-import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.QueryAtom;
@@ -48,7 +47,6 @@ import org.linqs.psl.model.term.UniqueIntID;
 import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.model.term.VariableTypeMap;
-import org.linqs.psl.util.IteratorUtils;
 import org.linqs.psl.util.Parallel;
 
 import com.healthmarketscience.sqlbuilder.BinaryCondition;
@@ -95,14 +93,24 @@ public class RDBMSDatabase extends Database {
 
 	private static final String THREAD_QUERY_ATOM_KEY = QueryAtom.class.getName();
 
+	/**
+	 * Predicates that, for the purpose of this database, are closed.
+	 */
+	private final Set<Predicate> closedPredicates;
+
 	private int fetchSize;
 
 	public RDBMSDatabase(RDBMSDataStore parent,
 			Partition write, Partition[] read,
-			Set<StandardPredicate> closedPredicates) {
-		super(parent, write, read, closedPredicates);
+			Set<StandardPredicate> closed) {
+		super(parent, write, read);
 
 		fetchSize = Config.getInt(FETCH_SIZE_KEY, FETCH_SIZE_DEFAULT);
+
+		this.closedPredicates = new HashSet<Predicate>();
+		if (closed != null) {
+			this.closedPredicates.addAll(closed);
+		}
 
 		this.closed = false;
 	}
@@ -160,85 +168,6 @@ public class RDBMSDatabase extends Database {
 			return false;
 		} catch (SQLException ex) {
 			throw new RuntimeException("Error deleting atom: " + atom, ex);
-		}
-	}
-
-	@Override
-	public void updateCachedAtoms() {
-		if (closed) {
-			throw new IllegalStateException("Cannot update atoms on a closed database.");
-		}
-
-		// If the driver does not support any bulk operations, just fall back to commit().
-		if (!((RDBMSDataStore)parentDataStore).getDriver().supportsBulkCopy()) {
-			commitCachedAtoms(true);
-			return;
-		}
-
-		// Split up by predicate, but only bother with open predicates.
-		for (Predicate predicate : parentDataStore.getRegisteredPredicates()) {
-			if (closedPredicates.contains(predicate)) {
-				continue;
-			}
-
-			final Predicate finalPredicate = predicate;
-			update(predicate, IteratorUtils.filter(getAllCachedRandomVariableAtoms(true), new IteratorUtils.FilterFunction<RandomVariableAtom>() {
-				@Override
-				public boolean keep(RandomVariableAtom atom) {
-					return atom.getPredicate().equals(finalPredicate);
-				}
-			}));
-		}
-	}
-
-	private void update(Predicate predicate, Iterable<RandomVariableAtom> atoms) {
-		if (!atoms.iterator().hasNext()) {
-			return;
-		}
-
-		PredicateInfo predicateInfo = ((RDBMSDataStore)parentDataStore).getPredicateInfo(predicate);
-		DatabaseDriver driver = ((RDBMSDataStore)parentDataStore).getDriver();
-
-		try (Connection connection = getConnection()) {
-			// In general cases, we would drop the index before the bulk update,
-			// however we are only updating the value column which is in no index.
-
-			// Prep the temp table.
-			predicateInfo.dropTempTable(connection, driver);
-			predicateInfo.createTempTable(connection, driver);
-
-			final StringBuilder builder = new StringBuilder();
-			final String delim = "\t";
-			final int writePartitionId = writeID;
-
-			// Fill the temp table.
-			Iterable<String> rowIterable = IteratorUtils.map(atoms, new IteratorUtils.MapFunction<RandomVariableAtom, String>() {
-				@Override
-				public String map(RandomVariableAtom atom) {
-					// Clear the builder.
-					builder.setLength(0);
-
-					// Truth value first.
-					builder.append(atom.getValue());
-
-					// Now args in order.
-					for (Constant arg : atom.getArguments()) {
-						builder.append(delim);
-						builder.append(arg.rawToString());
-					}
-
-					builder.append("\n");
-
-					return builder.toString();
-				}
-			});
-
-			driver.bulkCopy(predicateInfo.tempTableName(), predicateInfo.allTempTableColumns(), delim, rowIterable);
-
-			// Update the real table with a join against the temp table.
-			predicateInfo.updateFromTempTable(connection, driver, writePartitionId);
-		} catch (SQLException ex) {
-			throw new RuntimeException("Error doing update for: " + predicate);
 		}
 	}
 
@@ -422,6 +351,11 @@ public class RDBMSDatabase extends Database {
 		}
 
 		return results;
+	}
+
+	@Override
+	public boolean isClosed(StandardPredicate predicate) {
+		return closedPredicates.contains(predicate);
 	}
 
 	private Connection getConnection() {

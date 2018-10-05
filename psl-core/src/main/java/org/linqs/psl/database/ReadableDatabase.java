@@ -108,7 +108,6 @@ public interface ReadableDatabase {
 	 * Fetch all the RandomVariableAtoms in this database's cache.
 	 */
 	public Iterable<RandomVariableAtom> getAllCachedRandomVariableAtoms();
-	public Iterable<RandomVariableAtom> getAllCachedRandomVariableAtoms(boolean onlyPersisted);
 
 	/**
 	 * Fetch all the ground RandomVariableAtoms for a predicate.

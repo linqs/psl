@@ -32,7 +32,6 @@ import com.zaxxer.hikari.HikariDataSource;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONValue;
 import org.postgresql.PGConnection;
-import org.postgresql.copy.CopyIn;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -144,29 +143,6 @@ public class PostgreSQLDriver implements DatabaseDriver {
 		} finally {
 			// Make sure to change the table's default partition value back (to nothing).
 			dropColumnDefault(predicateInfo.tableName(), PredicateInfo.PARTITION_COLUMN_NAME);
-		}
-	}
-
-	public void bulkCopy(String tableName, String[] columns, String delimiter, Iterable<String> rows) {
-		String sql = String.format("COPY %s(%s) FROM STDIN WITH DELIMITER '%s'",
-				tableName,
-				StringUtils.join(columns, ", "),
-				delimiter);
-
-		try (
-			Connection connection = getConnection();
-		) {
-			PGConnection pgConnection = connection.unwrap(PGConnection.class);
-			CopyIn copyIn = pgConnection.getCopyAPI().copyIn(sql);
-
-			for (String row : rows) {
-				byte[] bytes = row.getBytes();
-				copyIn.writeToCopy(bytes, 0, bytes.length);
-			}
-
-			copyIn.endCopy();
-		} catch (SQLException ex) {
-			throw new RuntimeException(String.format("Could not perform bulk insert on %s.", tableName), ex);
 		}
 	}
 

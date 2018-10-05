@@ -65,13 +65,6 @@ public interface WritableDatabase {
 	public void commit(Iterable<RandomVariableAtom> atoms, int partitionId);
 
 	/**
-	 * Like commitCachedAtoms(true), but ONLY for updates (no inserts).
-	 * Any atom in the cache marked as persisted that does not alreadt exist in the database's write partition will be silently ignored/
-	 * This should be considered the common use case and be optimized by the underlying database.
-	 */
-	public void updateCachedAtoms();
-
-	/**
 	 * Move all ground atoms of a predicate/partition combination into
 	 * the write partition.
 	 * Be careful not to call this while the database is in use.

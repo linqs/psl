@@ -53,7 +53,7 @@ public class MPEInferenceTest {
 	 * This is not a targeted or exhaustive test, just a starting point.
 	 */
 	@Test
-	public void testBase() {
+	public void baseTest() {
 		TestModelFactory.ModelInformation info = TestModelFactory.getModel();
 
 		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
