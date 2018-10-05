@@ -279,8 +279,24 @@ public class ADMMReasoner implements Reasoner {
 			iteration++;
 		}
 
-		log.info("Optimization completed in {} iterations. Primal res.: {}, Dual res.: {}",
-				iteration - 1, primalRes, dualRes);
+		objective = 0.0f;
+		int infeasibleCount = 0;
+		for (ADMMObjectiveTerm term : termStore) {
+			if (term instanceof LinearConstraintTerm) {
+				if (term.evaluate() > 0.0f) {
+					infeasibleCount++;
+				}
+			} else {
+				objective += (1.0f - term.evaluate());
+			}
+		}
+
+		if (infeasibleCount > 0) {
+			log.warn("No feasible solution found. {} constraints violated.", infeasibleCount);
+		}
+
+		log.info("Optimization completed in {} iterations. Objective: {}, Feasible: {}, Primal res.: {}, Dual res.: {}",
+				iteration - 1, objective, (infeasibleCount == 0), primalRes, dualRes);
 
 		// Updates variables
 		termStore.updateVariables(consensusValues);
