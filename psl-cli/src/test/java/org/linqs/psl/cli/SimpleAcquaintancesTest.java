@@ -20,6 +20,8 @@ package org.linqs.psl.cli;
 import static org.junit.Assert.fail;
 
 import org.linqs.psl.database.ReadableDatabase;
+import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
+import org.linqs.psl.evaluation.statistics.DiscreteEvaluator;
 import org.linqs.psl.model.function.ExternalFunction;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
@@ -28,12 +30,40 @@ import org.linqs.psl.model.term.UniqueStringID;
 import org.junit.Test;
 
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.List;
 
 public class SimpleAcquaintancesTest extends CLITest {
 	@Test
 	public void testBase() {
 		String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
 		String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base.data").toString();
+
+		run(modelPath, dataPath);
+	}
+
+	@Test
+	public void testEval() {
+		String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
+		String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base.data").toString();
+
+		List<String> additionalArgs = Arrays.asList(
+			"--" + Launcher.OPTION_EVAL_LONG, ContinuousEvaluator.class.getName()
+		);
+
+		run(modelPath, dataPath, additionalArgs);
+	}
+
+	@Test
+	public void testMultipleEval() {
+		String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
+		String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base.data").toString();
+
+		List<String> additionalArgs = Arrays.asList(
+			"--" + Launcher.OPTION_EVAL_LONG,
+			ContinuousEvaluator.class.getName(),
+			DiscreteEvaluator.class.getName()
+		);
 
 		run(modelPath, dataPath);
 	}

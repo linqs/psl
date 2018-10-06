@@ -389,8 +389,6 @@ public class Launcher {
 			predictionDatabase.close();
 		}
 		truthDatabase.close();
-
-		log.info("Evaluation complete.");
 	}
 
 	private Model loadModel(DataStore dataStore) {
@@ -433,7 +431,11 @@ public class Launcher {
 
 		// Evaluation
 		if (options.hasOption(OPTION_EVAL)) {
-			evaluation(dataStore, evalDB, closedPredicates, options.getOptionValue(OPTION_EVAL));
+			for (String evaluator : options.getOptionValues(OPTION_EVAL)) {
+				evaluation(dataStore, evalDB, closedPredicates, evaluator);
+			}
+
+			log.info("Evaluation complete.");
 		}
 
 		if (evalDB != null) {
@@ -522,9 +524,10 @@ public class Launcher {
 
 		options.addOption(Option.builder(OPTION_EVAL)
 				.longOpt(OPTION_EVAL_LONG)
-				.desc("Run the named evaluator (" + Evaluator.class.getName() + ") on any open predicate with a 'truth' partition.")
-				.hasArg()
-				.argName("evaluator")
+				.desc("Run the named evaluator (" + Evaluator.class.getName() + ") on any open predicate with a 'truth' partition." +
+						" If multiple evaluators are specific, they will each be run.")
+				.hasArgs()
+				.argName("evaluator ...")
 				.build());
 
 		options.addOption(Option.builder(OPTION_INT_IDS)
