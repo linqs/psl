@@ -25,6 +25,7 @@
 	<version>2.2.0-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<description>The PSL software from the LINQS research group.</description>
+	<url>https://psl.linqs.org</url>
 	<licenses>
 		<license>
 			<name>Apache 2</name>
@@ -37,6 +38,19 @@
 		<name>University of California, Santa Cruz</name>
 		<url>https://www.ucsc.edu</url>
 	</organization>
+	<developers>
+		<developer>
+			<name>LINQS</name>
+			<email>psl-users@googlegroups.com</email>
+			<organization>LINQS</organization>
+			<organizationUrl>https://www.linqs.org</organizationUrl>
+		</developer>
+	</developers>
+	<scm>
+		<connection>scm:git:git://github.com/linqs/psl.git</connection>
+		<developerConnection>scm:git:ssh://github.com:linqs/psl.git</developerConnection>
+		<url>http://github.com/linqs/psl/tree/master</url>
+	</scm>
 	<modules>
 		<module>psl-cli</module>
 		<module>psl-core</module>
@@ -79,7 +93,6 @@
 			<layout>default</layout>
 		</repository>
 	</distributionManagement>
-
 	<dependencies>
 		<dependency>
 			<groupId>junit</groupId>
@@ -88,7 +101,6 @@
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
-
 	<build>
 		<plugins>
 			<plugin>
