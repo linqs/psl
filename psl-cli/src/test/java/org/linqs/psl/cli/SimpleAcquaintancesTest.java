@@ -126,6 +126,19 @@ public class SimpleAcquaintancesTest extends CLITest {
 		run(modelPath, dataPath);
 	}
 
+	@Test
+	public void testErrorBadTopLevelKey() {
+		String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
+		String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "error_bad_top_key.data").toString();
+
+		try {
+			run(modelPath, dataPath);
+			fail("Error not thrown on bad top level key.");
+		} catch (RuntimeException ex) {
+			// Expected.
+		}
+	}
+
 	// Not an actual similarity.
 	public static class SimNameExternalFunction implements ExternalFunction {
 		@Override

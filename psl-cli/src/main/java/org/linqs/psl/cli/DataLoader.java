@@ -38,6 +38,7 @@ import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -60,6 +61,9 @@ public class DataLoader {
 	public static final String PROPERTY_BLOCK = "block";
 	public static final String PROPERTY_FUNCTION = "implementation";
 
+	public static final Set<String> TOP_LEVEL_PROPS = new HashSet<String>(Arrays.asList(
+			new String[]{KEY_PREDICATE, KEY_PARTITION_OBS, KEY_PARTITION_TARGETS, KEY_PARTITION_TRUTH}));
+
 	private static final Logger log = LoggerFactory.getLogger(DataLoader.class);
 
 	public static Set<StandardPredicate> load(DataStore dataStore, String path, boolean useIntIds)
@@ -75,6 +79,8 @@ public class DataLoader {
 		// All non-absolute paths should be relative to the data file.
 		String relativeDir = (new File(path)).getParentFile().getAbsolutePath();
 
+		validate(yaml);
+
 		// Fetch the predicates.
 		Set<StandardPredicate> closedPredicates = parsePredicates(yaml, useIntIds, dataStore);
 
@@ -82,6 +88,26 @@ public class DataLoader {
 		loadPartitions(yaml, dataStore, relativeDir);
 
 		return closedPredicates;
+	}
+
+	/**
+	 * Top level validations of the YAML.
+	 */
+	private static void validate(YAMLConfiguration yaml) {
+		Iterator<String> keyIterator = yaml.getKeys();
+		while (keyIterator.hasNext()) {
+			String key = keyIterator.next();
+
+			String[] parts = key.split("\\.", 2);
+			if (parts.length < 2) {
+				throw new IllegalArgumentException("Bad key in data file: " + key);
+			}
+
+			String prefix = parts[0];
+			if (!TOP_LEVEL_PROPS.contains(prefix)) {
+				throw new IllegalArgumentException("Unknown top-level key in data file: " + prefix);
+			}
+		}
 	}
 
 	private static void loadPartitions(YAMLConfiguration yaml, DataStore dataStore, String relativeDir) {
