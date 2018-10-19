@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.cli;
 
+import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.application.inference.MPEInference;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
@@ -34,6 +35,7 @@ import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.parser.ModelLoader;
 import org.linqs.psl.util.Reflection;
@@ -62,6 +64,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintStream;
 import java.net.InetAddress;
 import java.net.URL;
 import java.net.UnknownHostException;
@@ -100,6 +103,8 @@ public class Launcher {
 	public static final String OPTION_MODEL_LONG = "model";
 	public static final String OPTION_OUTPUT_DIR = "o";
 	public static final String OPTION_OUTPUT_DIR_LONG = "output";
+	public static final String OPTION_OUTPUT_GROUND_RULES = "gr";
+	public static final String OPTION_OUTPUT_GROUND_RULES_LONG = "groundrules";
 	public static final String OPTION_PROPERTIES = "D";
 	public static final String OPTION_PROPERTIES_FILE = "p";
 	public static final String OPTION_PROPERTIES_FILE_LONG = "properties";
@@ -241,6 +246,36 @@ public class Launcher {
 	}
 
 	/**
+	 * Possible output the ground rules.
+	 */
+	private void outputGroundRules(GroundRuleStore groundRuleStore) {
+		if (!options.hasOption(OPTION_OUTPUT_GROUND_RULES)) {
+			return;
+		}
+
+		PrintStream stream = System.out;
+		boolean closeStream = false;
+
+		String groundRulesPath = options.getOptionValue(OPTION_OUTPUT_GROUND_RULES);
+		if (groundRulesPath != null) {
+			try {
+				stream = new PrintStream(groundRulesPath);
+				closeStream = true;
+			} catch (IOException ex) {
+				log.error("Unable to open file for ground rules, using stdout instead.", ex);
+			}
+		}
+
+		for (GroundRule groundRule : groundRuleStore.getGroundRules()) {
+			stream.println(groundRule);
+		}
+
+		if (closeStream) {
+			stream.close();
+		}
+	}
+
+	/**
 	 * Run inference.
 	 * The caller is responsible for closing the database.
 	 */
@@ -254,6 +289,9 @@ public class Launcher {
 
 		InferenceApplication inferenceApplication =
 				InferenceApplication.getInferenceApplication(inferenceName, model, database);
+
+		outputGroundRules(inferenceApplication.getGroundRuleStore());
+
 		inferenceApplication.inference();
 
 		log.info("Inference Complete");
@@ -320,6 +358,9 @@ public class Launcher {
 		WeightLearningApplication learner = WeightLearningApplication.getWLA(wlaName, model.getRules(),
 				randomVariableDatabase, observedTruthDatabase);
 		learner.learn();
+
+		outputGroundRules(learner.getGroundRuleStore());
+
 		learner.close();
 
 		randomVariableDatabase.close();
@@ -554,6 +595,16 @@ public class Launcher {
 				.desc("Optional path for writing results to filesystem (default is STDOUT)")
 				.hasArg()
 				.argName("path")
+				.build());
+
+		options.addOption(Option.builder(OPTION_OUTPUT_GROUND_RULES)
+				.longOpt(OPTION_OUTPUT_GROUND_RULES_LONG)
+				.desc("Output the program's ground rules." +
+						" If a path is specified, the ground rules will be output there." +
+						" Otherwise, output them to stdout (not the logger).")
+				.hasArg()
+				.argName("path")
+				.optionalArg(true)
 				.build());
 
 		options.addOption(Option.builder(OPTION_PROPERTIES_FILE)

@@ -221,6 +221,10 @@ public abstract class WeightLearningApplication implements ModelApplication {
 		}
 	}
 
+	public GroundRuleStore getGroundRuleStore() {
+		return groundRuleStore;
+	}
+
 	/**
 	 * Initialize all the infrastructure dealing with the ground model.
 	 * Children should favor overriding postInitGroundModel() instead of this.
