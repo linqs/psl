@@ -373,7 +373,7 @@ public class RDBMSDatabase extends Database {
 	}
 
 	private PreparedStatement getAtomQuery(Connection connection, PredicateInfo predicate, Constant[] arguments) {
-		PreparedStatement statement = predicate.createQueryStatement(connection, readIDs);
+		PreparedStatement statement = predicate.createQueryStatement(connection, allPartitionIDs);
 
 		try {
 			for (int i = 0; i < arguments.length; i++) {
@@ -497,6 +497,7 @@ public class RDBMSDatabase extends Database {
 		((RDBMSDataStore)parentDataStore).getPredicateInfo(predicate);
 
 		GroundAtom result = queryDBForAtom(predicate, arguments);
+
 		if (result != null || !create) {
 			return result;
 		}

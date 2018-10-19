@@ -139,6 +139,19 @@ public class SimpleAcquaintancesTest extends CLITest {
 		}
 	}
 
+	@Test
+	public void testErrorObservedTargets() {
+		String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
+		String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "error_obs_targets.data").toString();
+
+		try {
+			run(modelPath, dataPath);
+			fail("Error not thrown on atoms that are observed and targets.");
+		} catch (RuntimeException ex) {
+			// Expected.
+		}
+	}
+
 	// Not an actual similarity.
 	public static class SimNameExternalFunction implements ExternalFunction {
 		@Override

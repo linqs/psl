@@ -153,8 +153,8 @@ public class AtomCache {
 		// Always check the cache before making new atoms.
 		if (cache.containsKey(key)) {
 			if (!(cache.get(key) instanceof ObservedAtom)) {
-				throw new IllegalArgumentException("Asked to instantiate an observed" +
-						" atom that already exists as a random variable atom: " + key);
+				throw new IllegalStateException("Asked to instantiate an observed" +
+						" atom that already exists as a random variable atom (target): " + key);
 			}
 
 			return (ObservedAtom)cache.get(key);
@@ -187,8 +187,8 @@ public class AtomCache {
 		// Always check the cache before making new atoms.
 		if (cache.containsKey(key)) {
 			if (!(cache.get(key) instanceof RandomVariableAtom)) {
-				throw new IllegalArgumentException("Asked to instantiate a random variable" +
-						" atom that already exists as an observed atom: " + key);
+				throw new IllegalStateException("Asked to instantiate a random variable" +
+						" atom (target) that already exists as an observed atom: " + key);
 			}
 
 			return (RandomVariableAtom)cache.get(key);

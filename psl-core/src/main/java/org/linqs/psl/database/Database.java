@@ -99,10 +99,12 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
 	protected final int writeID;
 
 	/**
-	 * The partition IDs that this database reads from.
+	 * The partition IDs that this database only reads from.
 	 */
 	protected final List<Partition> readPartitions;
 	protected final List<Integer> readIDs;
+
+	protected final List<Integer> allPartitionIDs;
 
 	/**
 	 * The atom cache for this database.
@@ -114,7 +116,7 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
 	 */
 	protected boolean closed;
 
-	public Database(DataStore parent, Partition write, Partition[] read){
+	public Database(DataStore parent, Partition write, Partition[] read) {
 		this.parentDataStore = parent;
 		this.writePartition = write;
 		this.writeID = write.getID();
@@ -125,9 +127,13 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
 			this.readIDs.add(read[i].getID());
 		}
 
-		if (!this.readIDs.contains(writeID)) {
-			this.readIDs.add(writeID);
+		if (readIDs.contains(new Integer(writeID))) {
+			readIDs.remove(new Integer(writeID));
 		}
+
+		allPartitionIDs = new ArrayList<Integer>(readIDs.size() + 1);
+		allPartitionIDs.addAll(readIDs);
+		allPartitionIDs.add(writeID);
 
 		this.cache = new AtomCache(this);
 	}
@@ -139,11 +145,7 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
 	}
 
 	public int countAllGroundAtoms(StandardPredicate predicate) {
-		List<Integer> partitions = new ArrayList<Integer>();
-		partitions.addAll(readIDs);
-		partitions.add(writeID);
-
-		return countAllGroundAtoms(predicate, partitions);
+		return countAllGroundAtoms(predicate, allPartitionIDs);
 	}
 
 	public abstract int countAllGroundAtoms(StandardPredicate predicate, List<Integer> partitions);
@@ -170,11 +172,7 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
 	}
 
 	public List<GroundAtom> getAllGroundAtoms(StandardPredicate predicate) {
-		List<Integer> partitions = new ArrayList<Integer>();
-		partitions.addAll(readIDs);
-		partitions.add(writeID);
-
-		return getAllGroundAtoms(predicate, partitions);
+		return getAllGroundAtoms(predicate, allPartitionIDs);
 	}
 
 	public abstract List<GroundAtom> getAllGroundAtoms(StandardPredicate predicate, List<Integer> partitions);
@@ -192,6 +190,15 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
 
 		List<RandomVariableAtom> atoms = new ArrayList<RandomVariableAtom>(groundAtoms.size());
 		for (GroundAtom atom : groundAtoms) {
+			// This is only possible if the predicate is partially observed and this ground atom
+			// was specified as a target and an observation/
+			if (atom instanceof ObservedAtom) {
+				throw new IllegalStateException(String.format(
+						"Found a ground atom (%s) that is both observed and a target." +
+						" An atom can only be one at a time. Check your data files.",
+						atom));
+			}
+
 			atoms.add((RandomVariableAtom)atom);
 		}
 
@@ -201,12 +208,26 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
 	public List<ObservedAtom> getAllGroundObservedAtoms(StandardPredicate predicate) {
 		// Note that even open predicates may have observed atoms (partially observed predicates).
 
+		// Can't have observed atoms without read partitions.
+		if (readIDs.size() == 0) {
+			return new ArrayList<ObservedAtom>();
+		}
+
 		// Only pull from the read partitions.
 		List<GroundAtom> groundAtoms = getAllGroundAtoms(predicate, readIDs);
 
 		// All the atoms will be observed since we are pulling from only read partitions.
 		List<ObservedAtom> atoms = new ArrayList<ObservedAtom>(groundAtoms.size());
 		for (GroundAtom atom : groundAtoms) {
+			// This is only possible if the predicate is partially observed and this ground atom
+			// was specified as a target and an observation/
+			if (atom instanceof RandomVariableAtom) {
+				throw new IllegalStateException(String.format(
+						"Found a ground atom (%s) that is both observed and a target." +
+						" An atom can only be one at a time. Check your data files.",
+						atom));
+			}
+
 			atoms.add((ObservedAtom)atom);
 		}
 

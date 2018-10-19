@@ -107,10 +107,15 @@ public class PersistedAtomManager extends AtomManager {
 				continue;
 			}
 
+			// First pull all the random variable atoms and mark them as persisted.
 			for (RandomVariableAtom atom : db.getAllGroundRandomVariableAtoms(predicate)) {
 				atom.setPersisted(true);
 				persistedAtomCount++;
 			}
+
+			// Now pull all the observed atoms so they will get cached.
+			// This will throw if any observed atoms were previously seen as RVAs.
+			db.getAllGroundObservedAtoms(predicate);
 		}
 	}
 
