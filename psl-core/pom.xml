@@ -155,6 +155,21 @@
 					</gitDescribe>
 				</configuration>
 			</plugin>
+
+			<!-- Get a list of classes for the config to use, -->
+			<plugin>
+				<groupId>org.linqs</groupId>
+				<artifactId>list-classes-maven-plugin</artifactId>
+				<version>1.0.1</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>list</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
 		</plugins>
 	</build>
 </project>

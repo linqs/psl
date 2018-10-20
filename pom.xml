@@ -16,8 +16,7 @@
   - See the License for the specific language governing permissions and
   - limitations under the License.
   -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.linqs</groupId>
 	<artifactId>psl</artifactId>
@@ -26,6 +25,7 @@
 	<packaging>pom</packaging>
 	<description>The PSL software from the LINQS research group.</description>
 	<url>https://psl.linqs.org</url>
+
 	<licenses>
 		<license>
 			<name>Apache 2</name>
@@ -34,10 +34,12 @@
 			<comments>A business-friendly OSS license.</comments>
 		</license>
 	</licenses>
+
 	<organization>
 		<name>University of California, Santa Cruz</name>
 		<url>https://www.ucsc.edu</url>
 	</organization>
+
 	<developers>
 		<developer>
 			<name>LINQS</name>
@@ -46,20 +48,24 @@
 			<organizationUrl>https://www.linqs.org</organizationUrl>
 		</developer>
 	</developers>
+
 	<scm>
 		<connection>scm:git:git://github.com/linqs/psl.git</connection>
 		<developerConnection>scm:git:ssh://github.com:linqs/psl.git</developerConnection>
 		<url>http://github.com/linqs/psl/tree/master</url>
 	</scm>
+
 	<modules>
 		<module>psl-cli</module>
 		<module>psl-core</module>
 		<module>psl-groovy</module>
 		<module>psl-parser</module>
 	</modules>
+
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
+
 	<repositories>
 		<repository>
 			<releases>
@@ -84,6 +90,7 @@
 			<layout>default</layout>
 		</repository>
 	</repositories>
+
 	<distributionManagement>
 		<repository>
 			<uniqueVersion>false</uniqueVersion>
@@ -93,6 +100,7 @@
 			<layout>default</layout>
 		</repository>
 	</distributionManagement>
+
 	<dependencies>
 		<dependency>
 			<groupId>junit</groupId>
@@ -101,6 +109,7 @@
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
+
 	<build>
 		<plugins>
 			<plugin>
@@ -115,11 +124,6 @@
 						<arg>-Xlint:all</arg>
 					</compilerArgs>
 				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-eclipse-plugin</artifactId>
-				<version>2.10</version>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -142,121 +146,4 @@
 			</plugin>
 		</plugins>
 	</build>
-	<!-- Configurations for specific profiles -->
-	<profiles>
-		<!--
-		  - This profile is for generating release artifacts. It includes the
-		  - psl-addon module (and therefore its modules). It copies the LICENSE
-		  - and NOTICE files from the top-level project and makes them resources.
-		  - It generates source and javadoc artifacts during the package phase.
-		  -
-		  - This profile should be used when running Maven on the top-level
-		  - project, so that the ${session.executionRootDirectory} property has
-		  - the correct value.
-		  -->
-		<profile>
-			<id>release</id>
-			<modules>
-				<module>psl-addon</module>
-			</modules>
-			<build>
-				<resources>
-					<resource>
-						<directory>${project.build.directory}/license-resources</directory>
-						<includes>
-							<include>META-INF/*</include>
-						</includes>
-						<filtering>false</filtering>
-					</resource>
-				</resources>
-				<plugins>
-					<!-- Plugin for copying license files from parent project -->
-					<plugin>
-						<artifactId>maven-resources-plugin</artifactId>
-						<version>3.0.0</version>
-						<executions>
-							<!-- We first force the default behavior -->
-							<execution>
-								<id>default-cli</id>
-								<phase>generate-resources</phase>
-								<goals>
-									<goal>copy-resources</goal>
-								</goals>
-								<configuration>
-									<outputDirectory>${project.build.outputDirectory}</outputDirectory>
-									<resources>
-										<resource>
-											<directory>src/main/resources</directory>
-											<includes>
-												<include>**/*</include>
-											</includes>
-											<filtering>false</filtering>
-										</resource>
-									</resources>
-								</configuration>
-							</execution>
-							<!-- Then we do another execution specifically for license files -->
-							<execution>
-								<id>copy-license-resources</id>
-								<phase>generate-resources</phase>
-								<goals>
-									<goal>copy-resources</goal>
-								</goals>
-								<configuration>
-									<outputDirectory>${project.build.directory}/license-resources/META-INF</outputDirectory>
-									<resources>
-										<resource>
-											<directory>${session.executionRootDirectory}</directory>
-											<includes>
-												<include>LICENSE</include>
-												<include>NOTICE</include>
-											</includes>
-											<filtering>false</filtering>
-										</resource>
-									</resources>
-								</configuration>
-							</execution>
-						</executions>
-					</plugin>
-					<!-- Plugin for packaging and deploying source artifacts -->
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-source-plugin</artifactId>
-						<version>3.0.0</version>
-						<executions>
-							<execution>
-								<id>package-sources</id>
-								<phase>package</phase>
-								<goals>
-									<goal>jar</goal>
-								</goals>
-								<configuration>
-									<includePom>true</includePom>
-								</configuration>
-							</execution>
-						</executions>
-					</plugin>
-					<!-- Plugin for packaging and deploying javadoc artifacts -->
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-javadoc-plugin</artifactId>
-						<version>2.10.4</version>
-						<executions>
-							<execution>
-								<id>package-javadocs</id>
-								<phase>package</phase>
-								<goals>
-									<goal>jar</goal>
-								</goals>
-								<configuration>
-									<bottom>Copyright &#169; {inceptionYear}-{currentYear} {organizationName}.</bottom>
-									<failOnError>false</failOnError>
-								</configuration>
-							</execution>
-						</executions>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
-	</profiles>
 </project>
