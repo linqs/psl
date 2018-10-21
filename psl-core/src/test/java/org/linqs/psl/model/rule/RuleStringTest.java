@@ -159,11 +159,11 @@ public class RuleStringTest {
 		assertEquals("1.0 * SINGLEPREDICATE(A) + 1.0 * SINGLEPREDICATE(B) = 1.0 .", rule.toString());
 
 		// Weighted, Squared
-		rule = new WeightedArithmeticRule(arithmeticBaseRule,	10.0, true);
+		rule = new WeightedArithmeticRule(arithmeticBaseRule, 10.0, true);
 		assertEquals("10.0: 1.0 * SINGLEPREDICATE(A) + 1.0 * SINGLEPREDICATE(B) = 1.0 ^2", rule.toString());
 
 		// Weighted, Not Squared
-		rule = new WeightedArithmeticRule(arithmeticBaseRule,	10.0, false);
+		rule = new WeightedArithmeticRule(arithmeticBaseRule, 10.0, false);
 		assertEquals("10.0: 1.0 * SINGLEPREDICATE(A) + 1.0 * SINGLEPREDICATE(B) = 1.0", rule.toString());
 	}
 
@@ -230,7 +230,7 @@ public class RuleStringTest {
 		PSLTest.compareGroundRules(expected, rule, store);
 
 		// Weighted, Squared
-		rule = new WeightedArithmeticRule(arithmeticBaseRule,	10.0, true);
+		rule = new WeightedArithmeticRule(arithmeticBaseRule, 10.0, true);
 		expected = Arrays.asList(
 			"10.0: 1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Alice') <= 1.0 ^2",
 			"10.0: 1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Alice') >= 1.0 ^2",
@@ -245,7 +245,7 @@ public class RuleStringTest {
 		PSLTest.compareGroundRules(expected, rule, store);
 
 		// Weighted, Not Squared
-		rule = new WeightedArithmeticRule(arithmeticBaseRule,	10.0, false);
+		rule = new WeightedArithmeticRule(arithmeticBaseRule, 10.0, false);
 		expected = Arrays.asList(
 			"10.0: 1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Alice') <= 1.0",
 			"10.0: 1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Alice') >= 1.0",

@@ -140,13 +140,9 @@ public abstract class Atom implements Formula, SummationAtomOrAtom {
 	 * This will also convert arguments of the incorrect type into the declared type if they are trivially similar
 	 * (eg. StringAttribute and UniqueStringID).
 	 *
-	 * @throws IllegalArgumentException
-	 *				 if the number of arguments doesn't match the number of arguments
-	 *				 of the predicate
-	 * @throws IllegalArgumentException  if any argument is null
-	 * @throws IllegalArgumentException
-	 *				 if any argument is a {@link Constant} and does not match
-	 *				 the Predicate's {@link ConstantType}.
+	 * @throws IllegalArgumentException if the number of arguments doesn't match the number of arguments of the predicate.
+	 * @throws IllegalArgumentException if any argument is null.
+	 * @throws IllegalArgumentException if any argument is a {@link Constant} and does not match the Predicate's {@link ConstantType}.
 	 */
 	private void validate() {
 		if (predicate.getArity() != arguments.length) {

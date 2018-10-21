@@ -83,7 +83,8 @@ public class ArithmeticRuleExpression {
 				for (Term term : ((Atom) saoa).getArguments()) {
 					if (term instanceof Variable) {
 						vars.add((Variable) term);
-					}				}
+					}
+				}
 			}
 		}
 

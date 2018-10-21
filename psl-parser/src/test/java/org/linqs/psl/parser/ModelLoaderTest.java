@@ -104,12 +104,12 @@ public class ModelLoaderTest {
 			"# This is a comment!\n" +
 			"#This is a comment!\n" +
 			"## This is another comment (but actually the same form).\n" +
-			"		# This is a comment!\n" +
+			"    # This is a comment!\n" +
 			"\n" +
 			"//This is a comment!\n" +
 			"// This is a comment!\n" +
 			"//// This is another comment (but actually the same form).\n" +
-			"		// This is a comment!\n" +
+			"    // This is a comment!\n" +
 			"\n" +
 			"/* Block time! */\n" +
 			"/* Block time!\n" +

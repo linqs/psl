@@ -220,13 +220,13 @@ public class PostgreSQLDriver implements DatabaseDriver {
 		// PostgreSQL uses the "INSERT ... ON CONFLICT" syntax.
 		List<String> sql = new ArrayList<String>();
 		sql.add("INSERT INTO " + tableName + "");
-		sql.add("	(" + StringUtils.join(columns, ", ") + ")");
+		sql.add("    (" + StringUtils.join(columns, ", ") + ")");
 		sql.add("VALUES");
-		sql.add("	(" + StringUtils.repeat("?", ", ", columns.length) + ")");
+		sql.add("    (" + StringUtils.repeat("?", ", ", columns.length) + ")");
 		sql.add("ON CONFLICT");
-		sql.add("	(" + StringUtils.join(keyColumns, ", ") + ")");
+		sql.add("    (" + StringUtils.join(keyColumns, ", ") + ")");
 		sql.add("DO UPDATE SET");
-		sql.add("	" + StringUtils.join(updateValues, ", "));
+		sql.add("    " + StringUtils.join(updateValues, ", "));
 
 		return StringUtils.join(sql, "\n");
 	}
@@ -262,23 +262,23 @@ public class PostgreSQLDriver implements DatabaseDriver {
 	public TableStats getTableStats(PredicateInfo predicate) {
 		List<String> sql = new ArrayList<String>();
 		sql.add("SELECT");
-		sql.add("	UPPER(attname) AS col,");
-		sql.add("	(SELECT COUNT(*) FROM " + predicate.tableName() + ") AS tableCount,");
-		sql.add("	CASE WHEN n_distinct >= 0");
-		sql.add("		THEN n_distinct / (SELECT COUNT(*) FROM " + predicate.tableName() + ")");
-		sql.add("		ELSE -1.0 * n_distinct");
-		sql.add("		END AS selectivity,");
+		sql.add("    UPPER(attname) AS col,");
+		sql.add("    (SELECT COUNT(*) FROM " + predicate.tableName() + ") AS tableCount,");
+		sql.add("    CASE WHEN n_distinct >= 0");
+		sql.add("        THEN n_distinct / (SELECT COUNT(*) FROM " + predicate.tableName() + ")");
+		sql.add("        ELSE -1.0 * n_distinct");
+		sql.add("        END AS selectivity,");
 		// Because pg_stats is a special system table,
 		// it does not have entries that specify what type of array it is (what delim it has).
 		// This means that many normal array methods will crash on it.
 		// So instead, we convert it to JSON and parse it outside the DB.
-		sql.add("	array_to_json(histogram_bounds) AS histogram,");
-		sql.add("	array_to_json(most_common_vals) AS most_common_vals,");
-		sql.add("	array_to_json(most_common_freqs) AS most_common_freqs");
+		sql.add("    array_to_json(histogram_bounds) AS histogram,");
+		sql.add("    array_to_json(most_common_vals) AS most_common_vals,");
+		sql.add("    array_to_json(most_common_freqs) AS most_common_freqs");
 		sql.add("FROM pg_stats");
 		sql.add("WHERE");
-		sql.add("	UPPER(tablename) = '" + predicate.tableName().toUpperCase() + "'");
-		sql.add("	AND UPPER(attname) NOT IN ('PARTITION_ID', 'VALUE')");
+		sql.add("    UPPER(tablename) = '" + predicate.tableName().toUpperCase() + "'");
+		sql.add("    AND UPPER(attname) NOT IN ('PARTITION_ID', 'VALUE')");
 
 		TableStats stats = null;
 

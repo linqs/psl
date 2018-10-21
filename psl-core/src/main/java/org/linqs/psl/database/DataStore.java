@@ -33,7 +33,6 @@ import java.util.Set;
  * {@link #registerPredicate(StandardPredicate)}.
  */
 public interface DataStore {
-
 	/**
 	 * Registers a StandardPredicate so that {@link GroundAtom GroundAtoms} of that
 	 * StandardPredicate can be persisted in this DataStore.
@@ -57,11 +56,11 @@ public interface DataStore {
 	 * Creates a Database that can read from and write to a {@link Partition} and
 	 * optionally read from additional Partitions.
 	 *
-	 * @param write  the Partition to write to and read from
-	 * @param read  additional Partitions to read from
+	 * @param write the Partition to write to and read from
+	 * @param read additional Partitions to read from
 	 * @return a new Database backed by this DataStore
-	 * @throws IllegalArgumentException  if write is in use or if read is the
-	 *													write Partition of another Database
+	 * @throws IllegalArgumentException if write is in use or if read is the write
+	 *  Partition of another Database
 	 */
 	public Database getDatabase(Partition write, Partition... read);
 
@@ -72,12 +71,12 @@ public interface DataStore {
 	 * Additionally, defines a set of StandardPredicates as closed in the Database,
 	 * meaning that all GroundAtoms of that Predicate are ObservedAtoms.
 	 *
-	 * @param write  the Partition to write to and read from
-	 * @param toClose  set of StandardPredicates to close
-	 * @param read  additional Partitions to read from
+	 * @param write the Partition to write to and read from
+	 * @param toClose set of StandardPredicates to close
+	 * @param read additional Partitions to read from
 	 * @return a new Database backed by this DataStore
 	 * @throws IllegalArgumentException  if write is in use or if read is the
-	 *													write Partition of another Database
+	 *  write Partition of another Database
 	 */
 	public Database getDatabase(Partition write, Set<StandardPredicate> toClose, Partition... read);
 
@@ -90,11 +89,11 @@ public interface DataStore {
 	 * Creates an Inserter for persisting new {@link GroundAtom GroundAtoms}
 	 * in a {@link Partition}.
 	 *
-	 * @param predicate  the Predicate of the Atoms to be inserted
-	 * @param partition  the Partition into which Atoms will be inserted
+	 * @param predicate the Predicate of the Atoms to be inserted
+	 * @param partition the Partition into which Atoms will be inserted
 	 * @return the Inserter
-	 * @throws IllegalArgumentException  if partition is in use or predicate is
-	 *													not registered
+	 * @throws IllegalArgumentException if partition is in use or predicate is
+	 *  not registered
 	 */
 	public Inserter getInserter(StandardPredicate predicate, Partition partition);
 

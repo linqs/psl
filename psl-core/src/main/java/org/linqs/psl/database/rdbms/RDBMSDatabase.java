@@ -129,24 +129,27 @@ public class RDBMSDatabase extends Database {
 		 * Next, query database for atom.
 		 * What partition is it in?
 		 * Read?
-		 *		- Then instantiate as a persisted ObservedAtom
+		 *     - Then instantiate as a persisted ObservedAtom
 		 * Write?
-		 * 		- Is the predicate closed?
-		 *			- Yes, instantiate as ObservedAtom.
-		 *			- No, instantiate as RandomVariableAtom.
+		 *     - Is the predicate closed?
+		 *         - Yes, instantiate as ObservedAtom.
+		 *         - No, instantiate as RandomVariableAtom.
 		 * None?
-		 * 		- Is the predicate standard?
-		 *			- Yes, is the predicate closed?
-		 *				- Yes, instantiate as ObservedAtom
-		 *				- No, instantiate as RandomVariableAtom
-		 *			- No, instantiate as ObservedAtom.
+		 *     - Is the predicate standard?
+		 *         - Yes, is the predicate closed?
+		 *             - Yes, instantiate as ObservedAtom
+		 *             - No, instantiate as RandomVariableAtom
+		 *         - No, instantiate as ObservedAtom.
+		 *     - Is the predicate functional?
+		 *         - Yes, call the function and instantiate as an ObservedAtom.
+		 *         - No, unknown state.
 		 */
 		if (predicate instanceof StandardPredicate) {
 			return getAtom((StandardPredicate)predicate, arguments);
 		} else if (predicate instanceof FunctionalPredicate) {
 			return getAtom((FunctionalPredicate)predicate, arguments);
 		} else {
-			throw new IllegalArgumentException("Unknown predicate type: " + predicate.getClass().toString());
+			throw new IllegalStateException("Unknown predicate type: " + predicate.getClass().toString());
 		}
 	}
 

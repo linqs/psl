@@ -165,11 +165,11 @@ public class H2DatabaseDriver implements DatabaseDriver {
 		// H2 uses a "MERGE" syntax and requires a specified key.
 		List<String> sql = new ArrayList<String>();
 		sql.add("MERGE INTO " + tableName + "");
-		sql.add("	(" + StringUtils.join(columns, ", ") + ")");
+		sql.add("    (" + StringUtils.join(columns, ", ") + ")");
 		sql.add("KEY");
-		sql.add("	(" + StringUtils.join(keyColumns, ", ") + ")");
+		sql.add("    (" + StringUtils.join(keyColumns, ", ") + ")");
 		sql.add("VALUES");
-		sql.add("	(" + StringUtils.repeat("?", ", ", columns.length) + ")");
+		sql.add("    (" + StringUtils.repeat("?", ", ", columns.length) + ")");
 
 		return StringUtils.join(sql, "\n");
 	}
@@ -193,12 +193,13 @@ public class H2DatabaseDriver implements DatabaseDriver {
 	public TableStats getTableStats(PredicateInfo predicate) {
 		List<String> sql = new ArrayList<String>();
 		sql.add("SELECT");
-		sql.add("	UPPER(COLUMN_NAME) AS col,");
-		sql.add("	(SELECT COUNT(*) FROM " + predicate.tableName() + ") AS tableCount,");
-		sql.add("	SELECTIVITY / 100.0 AS selectivity");
+		sql.add("    UPPER(COLUMN_NAME) AS col,");
+		sql.add("    (SELECT COUNT(*) FROM " + predicate.tableName() + ") AS tableCount,");
+		sql.add("    SELECTIVITY / 100.0 AS selectivity");
 		sql.add("FROM INFORMATION_SCHEMA.COLUMNS");
-		sql.add("WHERE UPPER(TABLE_NAME) = '" + predicate.tableName().toUpperCase() + "'");
-		sql.add("	AND UPPER(COLUMN_NAME) NOT IN ('PARTITION_ID', 'VALUE')");
+		sql.add("WHERE");
+		sql.add("    UPPER(TABLE_NAME) = '" + predicate.tableName().toUpperCase() + "'");
+		sql.add("    AND UPPER(COLUMN_NAME) NOT IN ('PARTITION_ID', 'VALUE')");
 
 		TableStats stats = null;
 

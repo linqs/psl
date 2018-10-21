@@ -129,7 +129,7 @@ public class Grounding {
 	private static int groundParallel(Formula query, List<Rule> rules, AtomManager atomManager, GroundRuleStore groundRuleStore) {
 		log.debug("Grounding {} rules with query: [{}].", rules.size(), query);
 		for (Rule rule : rules) {
-			log.trace("	" + rule);
+			log.trace("    " + rule);
 		}
 
 		// We will manually handle these in the grounding process.

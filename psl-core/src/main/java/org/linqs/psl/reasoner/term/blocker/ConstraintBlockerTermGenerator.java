@@ -57,12 +57,12 @@ import java.util.Set;
  *
  * Restrictions:
  * <ul>
- *  <li>The GroundRuleStore must be a type of AtomRegisterGroundRuleStore.</li>
- *  <li>The TermStore must be a type of ConstraintBlockerTermStore.</li>
- *  <li>The TermStore must be a type of ConstraintBlockerTermStore.</li>
- *  <li>No unweighted logical rules are allowed.</li>
- *	 <li>Only functional, partial functional, or GroundValueConstraint constraints are in the model.</li>
- *  <li>All atoms are involved in at most one (partial) function and at most one GroundValueConstraint constraint.</li>
+ *     <li>The GroundRuleStore must be a type of AtomRegisterGroundRuleStore.</li>
+ *     <li>The TermStore must be a type of ConstraintBlockerTermStore.</li>
+ *     <li>The TermStore must be a type of ConstraintBlockerTermStore.</li>
+ *     <li>No unweighted logical rules are allowed.</li>
+ *     <li>Only functional, partial functional, or GroundValueConstraint constraints are in the model.</li>
+ *     <li>All atoms are involved in at most one (partial) function and at most one GroundValueConstraint constraint.</li>
  * </ul>
  */
 public class ConstraintBlockerTermGenerator implements TermGenerator<ConstraintBlockerTerm> {

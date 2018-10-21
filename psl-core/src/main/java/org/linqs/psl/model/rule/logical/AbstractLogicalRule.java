@@ -265,7 +265,7 @@ public abstract class AbstractLogicalRule extends AbstractRule {
 					" Offending atom(s): %s." +
 					" This typically means that your specified target set is insufficient." +
 					" This was encountered during the grounding of the rule: [%s].",
-					resources.accessExceptionAtoms,	this));
+					resources.accessExceptionAtoms, this));
 			atomManager.reportAccessException(ex, resources.accessExceptionAtoms.iterator().next());
 		}
 

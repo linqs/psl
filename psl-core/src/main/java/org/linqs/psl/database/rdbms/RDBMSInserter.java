@@ -102,9 +102,9 @@ public class RDBMSInserter extends Inserter {
 
 		List<String> multiInsert = new ArrayList<String>();
 		multiInsert.add("INSERT INTO " + predicateInfo.tableName());
-		multiInsert.add("	(" + StringUtils.join(columns, ", ") + ")");
+		multiInsert.add("    (" + StringUtils.join(columns, ", ") + ")");
 		multiInsert.add("VALUES");
-		multiInsert.add("	" + StringUtils.repeat("(" + placeholders + ")", ", ", DEFAULT_MULTIROW_COUNT));
+		multiInsert.add("    " + StringUtils.repeat("(" + placeholders + ")", ", ", DEFAULT_MULTIROW_COUNT));
 
 		return StringUtils.join(multiInsert, "\n");
 	}
@@ -250,9 +250,9 @@ public class RDBMSInserter extends Inserter {
 	}
 
 	/**
-		* Take in the value to be inserted as a string and convert it to the appropriate Java type
-		* for PreparedStatement.setObject().
-		*/
+	 * Take in the value to be inserted as a string and convert it to the appropriate Java type
+	 * for PreparedStatement.setObject().
+	 */
 	private Object convertString(String value, int argumentIndex) {
 		switch (predicateInfo.predicate().getArgumentType(argumentIndex)) {
 			case Double:

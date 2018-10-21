@@ -51,20 +51,27 @@ public interface ReadableDatabase {
 	 * stored in the AtomCache before being returned. The subtype and state of the
 	 * instantiated GroundAtom depends on several factors:
 	 * <ul>
-	 *	<li>If the GroundAtom is persisted in a read Partition, then it will be
-	 *	instantiated as an {@link ObservedAtom} with the persisted state.</li>
-	 *	<li>If the GroundAtom is persisted in the write Partition, then it will be
-	 *	instantiated with the persisted state. It will be instantiated as an
-	 *	ObservedAtom if its Predicate is closed and as a {@link RandomVariableAtom}
-	 *	if it is open.</li>
-	 *	<li>If the GroundAtom has a StandardPredicate but is not persisted
-	 *	in any of the Database's partitions, it will be instantiated with a truth
-	 *	value of 0.0. It will be instantiated as an ObservedAtom if its Predicate
-	 *	is closed and as a RandomVariableAtom
-	 *	if it is open.</li>
-	 *	<li>If the GroundAtom has an ExternalFunctionalPredicate, then it will be
-	 *	instantiated as an ObservedAtom with the functionally defined
-	 *	truth value.</li>
+	 *     <li>
+	 *         If the GroundAtom is persisted in a read Partition, then it will be
+	 *         instantiated as an {@link ObservedAtom} with the persisted state.
+	 *     </li>
+	 *     <li>
+	 *         If the GroundAtom is persisted in the write Partition, then it will be
+	 *         instantiated with the persisted state. It will be instantiated as an
+	 *         ObservedAtom if its Predicate is closed and as a {@link RandomVariableAtom}
+	 *         if it is open.
+	 *     </li>
+	 *     <li>
+	 *         If the GroundAtom has a StandardPredicate but is not persisted
+	 *         in any of the Database's partitions, it will be instantiated with a truth
+	 *         value of 0.0. It will be instantiated as an ObservedAtom if its Predicate
+	 *         is closed and as a RandomVariableAtom if it is open.
+	 *     </li>
+	 *     <li>
+	 *         If the GroundAtom has an ExternalFunctionalPredicate, then it will be
+	 *         instantiated as an ObservedAtom with the functionally defined
+	 *         truth value.
+	 *     </li>
 	 * </ul>
 	 *
 	 * @throws IllegalStateException if the Atom is persisted in multiple read Partitions

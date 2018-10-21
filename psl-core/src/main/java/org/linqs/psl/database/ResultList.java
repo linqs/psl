@@ -35,7 +35,7 @@ public interface ResultList extends QueryResultIterable {
 
 	/**
 	 * @return the number of distinct {@link Variable Variables} replaced in
-	 *				 each substitution
+	 *     each substitution
 	 */
 	public int getArity();
 

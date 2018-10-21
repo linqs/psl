@@ -583,9 +583,9 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 
 	/**
 	 * Validate what we can about an abstract rule at creation:
-	 *	 - An argument to a filter must appear in the arithmetic expression.
-	 *	 - All variables used in a filter are either the argument to the filter or
-	 *	  appear in the arithmetic expression.
+	 *     - An argument to a filter must appear in the arithmetic expression.
+	 *     - All variables used in a filter are either the argument to the filter or
+	 *        appear in the arithmetic expression.
 	 */
 	private void validateRule() {
 		// Ensure all filter arguments appear in the arithmetic expression.
