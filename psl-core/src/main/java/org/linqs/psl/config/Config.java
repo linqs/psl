@@ -52,10 +52,14 @@ import java.util.List;
  * system property ("psl.properties" by default.
  */
 public class Config {
-	public static final String PROJECT_PROPS = "project.properties";
+	public static final String CLASS_LIST_PROPS = "classlist.properties";
 	public static final String GIT_PROPS = "git.properties";
+	public static final String PROJECT_PROPS = "project.properties";
+
 	public static final String PSL_CONFIG = "psl.configuration";
 	public static final String PSL_CONFIG_DEFAULT = "psl.properties";
+
+	public static final String CLASS_LIST_KEY = "classlist.classes";
 
 	private static final Logger log = LoggerFactory.getLogger(Config.class);
 
@@ -81,6 +85,12 @@ public class Config {
 		stream = ClassLoader.getSystemClassLoader().getResourceAsStream(GIT_PROPS);
 		if (stream != null) {
 			loadResource(stream, GIT_PROPS);
+		}
+
+		// Load list of classes build at compile time.
+		stream = ClassLoader.getSystemClassLoader().getResourceAsStream(CLASS_LIST_PROPS);
+		if (stream != null) {
+			loadResource(stream, CLASS_LIST_PROPS);
 		}
 
 		// Load the configuration file directly if the path exists.
@@ -287,8 +297,14 @@ public class Config {
 		return config.getBigInteger(key, defaultValue);
 	}
 
-	public static List<String> getList(String key, List<String> defaultValue) {
-		logAccess(key, defaultValue);
+	 /**
+	  * Because list options can be quite large, we allow them to be suppressed on request.
+	  */
+	public static List<String> getList(String key, List<String> defaultValue, boolean suppressLogging) {
+		  if (!suppressLogging) {
+			 logAccess(key, defaultValue);
+		  }
+
 		List<?> configList = config.getList(key, defaultValue);
 
 		List<String> toReturn = new ArrayList<String>(configList.size());
@@ -297,6 +313,18 @@ public class Config {
 		}
 
 		return toReturn;
+	}
+
+	public static List<String> getList(String key, List<String> defaultValue) {
+		  return getList(key, defaultValue, false);
+	 }
+
+	public static List<String> getList(String key, boolean suppressLogging) {
+		return getList(key, new ArrayList<String>(0), suppressLogging);
+	 }
+
+	public static List<String> getList(String key) {
+		return getList(key, new ArrayList<String>(0));
 	}
 
 	/**

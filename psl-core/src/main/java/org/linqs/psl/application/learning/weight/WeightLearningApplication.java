@@ -42,6 +42,7 @@ import org.linqs.psl.reasoner.admm.term.ADMMTermGenerator;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.RandUtils;
+import org.linqs.psl.util.Reflection;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -556,8 +557,13 @@ public abstract class WeightLearningApplication implements ModelApplication {
 	 * Construct a weight learning application given the data.
 	 * Look for a constructor like: (List<Rule>, Database (rv), Database (observed)).
 	 */
-	public static WeightLearningApplication getWLA(String className, List<Rule> rules,
+	public static WeightLearningApplication getWLA(String name, List<Rule> rules,
 			Database randomVariableDatabase, Database observedTruthDatabase) {
+		String className = Reflection.resolveClassName(name);
+		if (className == null) {
+			throw new IllegalArgumentException("Could not find class: " + name);
+		}
+
 		Class<? extends WeightLearningApplication> classObject = null;
 		try {
 			@SuppressWarnings("unchecked")
