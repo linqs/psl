@@ -26,7 +26,7 @@ import static org.junit.Assert.fail;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.linqs.psl.TestModelFactory;
+import org.linqs.psl.TestModel;
 import org.linqs.psl.application.inference.MPEInference;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.ReadableDatabase;
@@ -188,7 +188,7 @@ public class ReadableDatabaseTest {
 	 * Helper function for testing the ReadableDatabase interface functions.
 	 */
 	private void testHelper(DatabaseFunction function, String name) {
-		TestModelFactory.ModelInformation info = TestModelFactory.getModel();
+		TestModel.ModelInformation info = TestModel.getModel();
 		Predicate functionPredicate = ExternalFunctionalPredicate.get(name + "_test", function);
 
 		// Add a rule using the new function.

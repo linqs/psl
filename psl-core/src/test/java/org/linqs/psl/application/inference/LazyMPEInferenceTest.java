@@ -22,7 +22,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import org.linqs.psl.PSLTest;
-import org.linqs.psl.TestModelFactory;
+import org.linqs.psl.TestModel;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.model.Model;
@@ -61,7 +61,7 @@ public class LazyMPEInferenceTest {
 	private Partition targetPartition;
 	private Set<StandardPredicate> allPredicates;
 	private Set<StandardPredicate> closedPredicates;
-	private TestModelFactory.ModelInformation info;
+	private TestModel.ModelInformation info;
 
 	@Before
 	public void setup() {
@@ -88,10 +88,10 @@ public class LazyMPEInferenceTest {
 			info = null;
 		}
 
-		info = TestModelFactory.getModel(useNice);
+		info = TestModel.getModel(useNice);
 
 		// Get an empty partition so that no targets will exist in it and we will have to lazily instantiate them all.
-		targetPartition = info.dataStore.getPartition(TestModelFactory.PARTITION_UNUSED);
+		targetPartition = info.dataStore.getPartition(TestModel.PARTITION_UNUSED);
 
 		allPredicates = new HashSet<StandardPredicate>(info.predicates.values());
 		closedPredicates = new HashSet<StandardPredicate>(info.predicates.values());

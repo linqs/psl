@@ -18,7 +18,7 @@
 
 package org.linqs.psl.reasoner.bool;
 
-import org.linqs.psl.TestModelFactory;
+import org.linqs.psl.TestModel;
 import org.linqs.psl.application.inference.MPEInference;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
@@ -44,12 +44,12 @@ import java.util.List;
 import java.util.Set;
 
 public class BooleanMaxWalkSatTest {
-	private TestModelFactory.ModelInformation info;
+	private TestModel.ModelInformation info;
 
 	@Before
 	public void setup() {
 		Config.init();
-		info = TestModelFactory.getModel();
+		info = TestModel.getModel();
 
 		Config.setProperty(MPEInference.REASONER_KEY, "org.linqs.psl.reasoner.bool.BooleanMaxWalkSat");
 		Config.setProperty(MPEInference.GROUND_RULE_STORE_KEY, "org.linqs.psl.application.groundrulestore.AtomRegisterGroundRuleStore");

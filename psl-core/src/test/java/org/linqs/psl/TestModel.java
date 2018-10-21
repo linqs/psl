@@ -52,7 +52,7 @@ import java.util.Map;
  * An easy interface for loading models to test.
  * This is not for testing the model itself, but for integration tests where models are required.
  */
-public class TestModelFactory {
+public class TestModel {
 	public static final String PARTITION_OBSERVATIONS = "observations";
 	public static final String PARTITION_TARGETS = "targets";
 	public static final String PARTITION_TRUTH = "truth";
@@ -63,7 +63,7 @@ public class TestModelFactory {
 	private static int modelId = 0;
 
 	// Static only.
-	private TestModelFactory() {
+	private TestModel() {
 	}
 
 	/**

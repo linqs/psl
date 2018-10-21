@@ -23,7 +23,7 @@ import static org.junit.Assert.fail;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.linqs.psl.TestModelFactory;
+import org.linqs.psl.TestModel;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.RandomVariableAtom;
@@ -36,12 +36,12 @@ import java.util.List;
 import java.util.Set;
 
 public class BatchOperationsTest {
-	private TestModelFactory.ModelInformation model;
+	private TestModel.ModelInformation model;
 	private Database database;
 
 	@Before
 	public void setup() {
-		model = TestModelFactory.getModel();
+		model = TestModel.getModel();
 		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
 		toClose.add(model.predicates.get("Nice"));
 		toClose.add(model.predicates.get("Person"));

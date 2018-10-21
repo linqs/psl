@@ -22,7 +22,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import org.junit.Test;
-import org.linqs.psl.TestModelFactory;
+import org.linqs.psl.TestModel;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.model.atom.GroundAtom;
@@ -41,7 +41,7 @@ public class PersistedAtomManagerTest {
 	 */
 	@Test
 	public void baseTest() {
-		TestModelFactory.ModelInformation info = TestModelFactory.getModel();
+		TestModel.ModelInformation info = TestModel.getModel();
 
 		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
 		Database database = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
@@ -64,7 +64,7 @@ public class PersistedAtomManagerTest {
 	 */
 	@Test
 	public void testErrorOnObservedTargets() {
-		TestModelFactory.ModelInformation info = TestModelFactory.getModel();
+		TestModel.ModelInformation info = TestModel.getModel();
 
 		Inserter inserter = info.dataStore.getInserter(info.predicates.get("Friends"), info.observationPartition);
 		inserter.insert(new UniqueStringID("Alice"), new UniqueStringID("Bob"));

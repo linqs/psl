@@ -24,7 +24,7 @@ import static org.junit.Assert.fail;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.linqs.psl.TestModelFactory;
+import org.linqs.psl.TestModel;
 import org.linqs.psl.application.inference.MPEInference;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.ReadableDatabase;
@@ -52,7 +52,7 @@ public class Formula2SQLTest {
 	 * Ensure that ExternalFunctions work with only one argument.
 	 */
 	public void testUnaryExternalFunction() {
-		TestModelFactory.ModelInformation info = TestModelFactory.getModel();
+		TestModel.ModelInformation info = TestModel.getModel();
 
 		SpyFunction function = new SpyFunction(1);
 		Predicate functionPredicate = ExternalFunctionalPredicate.get("UnaryFunction", function);
@@ -105,7 +105,7 @@ public class Formula2SQLTest {
 	 * Ensure that ExternalFunctions work with three arguments.
 	 */
 	public void testTernaryExternalFunction() {
-		TestModelFactory.ModelInformation info = TestModelFactory.getModel();
+		TestModel.ModelInformation info = TestModel.getModel();
 
 		SpyFunction function = new SpyFunction(3);
 		Predicate functionPredicate = ExternalFunctionalPredicate.get("TernaryFunction", function);

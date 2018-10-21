@@ -24,7 +24,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.linqs.psl.PSLTest;
-import org.linqs.psl.TestModelFactory;
+import org.linqs.psl.TestModel;
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 import org.linqs.psl.application.groundrulestore.MemoryGroundRuleStore;
 import org.linqs.psl.database.DataStore;
@@ -90,7 +90,7 @@ import java.util.Set;
  */
 public class GroundRuleTest {
 	private static final double EPSILON = 0.00001;
-	private TestModelFactory.ModelInformation model;
+	private TestModel.ModelInformation model;
 	private Database database;
 
 	@Before
@@ -119,7 +119,7 @@ public class GroundRuleTest {
 			model = null;
 		}
 
-		model = TestModelFactory.getModel(useNice);
+		model = TestModel.getModel(useNice);
 
 		// Add in self friendship ground atoms so we can get more groundings on some tests.
 		// (Specifically arithmetic tests where we query for even negative atoms.)

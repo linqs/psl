@@ -25,7 +25,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.linqs.psl.PSLTest;
-import org.linqs.psl.TestModelFactory;
+import org.linqs.psl.TestModel;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.term.Variable;
 
@@ -33,11 +33,11 @@ import org.linqs.psl.model.term.Variable;
  * Check that getDNF() is working properly for a variety of formulas.
  */
 public class DNFTest {
-	private TestModelFactory.ModelInformation model;
+	private TestModel.ModelInformation model;
 
 	@Before
 	public void setup() {
-		model = TestModelFactory.getModel();
+		model = TestModel.getModel();
 	}
 
 	@After

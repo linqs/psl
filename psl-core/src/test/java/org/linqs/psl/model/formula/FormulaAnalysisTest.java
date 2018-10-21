@@ -25,7 +25,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.linqs.psl.PSLTest;
-import org.linqs.psl.TestModelFactory;
+import org.linqs.psl.TestModel;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.term.Variable;
 
@@ -35,11 +35,11 @@ import java.util.List;
 import org.apache.commons.lang.StringUtils;
 
 public class FormulaAnalysisTest {
-	private TestModelFactory.ModelInformation model;
+	private TestModel.ModelInformation model;
 
 	@Before
 	public void setup() {
-		model = TestModelFactory.getModel();
+		model = TestModel.getModel();
 	}
 
 	@After

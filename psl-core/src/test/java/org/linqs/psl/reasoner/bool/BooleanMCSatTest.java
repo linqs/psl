@@ -18,7 +18,7 @@
 
 package org.linqs.psl.reasoner.bool;
 
-import org.linqs.psl.TestModelFactory;
+import org.linqs.psl.TestModel;
 import org.linqs.psl.application.inference.MPEInference;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
@@ -32,12 +32,12 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class BooleanMCSatTest {
-	private TestModelFactory.ModelInformation info;
+	private TestModel.ModelInformation info;
 
 	@Before
 	public void setup() {
 		Config.init();
-		info = TestModelFactory.getModel();
+		info = TestModel.getModel();
 
 		Config.setProperty(MPEInference.REASONER_KEY, "org.linqs.psl.reasoner.bool.BooleanMCSat");
 		Config.setProperty(MPEInference.GROUND_RULE_STORE_KEY, "org.linqs.psl.application.groundrulestore.AtomRegisterGroundRuleStore");

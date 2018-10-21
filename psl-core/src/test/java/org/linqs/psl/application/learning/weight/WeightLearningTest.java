@@ -21,7 +21,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import org.linqs.psl.PSLTest;
-import org.linqs.psl.TestModelFactory;
+import org.linqs.psl.TestModel;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
@@ -63,7 +63,7 @@ public abstract class WeightLearningTest {
 
 	protected Database weightLearningTrainDB;
 	protected Database weightLearningTruthDB;
-	protected TestModelFactory.ModelInformation info;
+	protected TestModel.ModelInformation info;
 
 	// Give all the rules a name to make it easier to check weight learning results.
 	protected Map<String, WeightedRule> ruleMap;
@@ -121,7 +121,7 @@ public abstract class WeightLearningTest {
 			info = null;
 		}
 
-		info = TestModelFactory.getModel(useNice);
+		info = TestModel.getModel(useNice);
 
 		// Put all the rules in a map for easier checking later and set all the rule weights to 1.0.
 		ruleMap = new HashMap<String, WeightedRule>();

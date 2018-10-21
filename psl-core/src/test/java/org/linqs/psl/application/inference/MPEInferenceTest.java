@@ -23,7 +23,7 @@ import static org.junit.Assert.fail;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.linqs.psl.TestModelFactory;
+import org.linqs.psl.TestModel;
 import org.linqs.psl.application.inference.MPEInference;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseTestUtil;
@@ -54,7 +54,7 @@ public class MPEInferenceTest {
 	 */
 	@Test
 	public void baseTest() {
-		TestModelFactory.ModelInformation info = TestModelFactory.getModel();
+		TestModel.ModelInformation info = TestModel.getModel();
 
 		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
 		Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
@@ -75,7 +75,7 @@ public class MPEInferenceTest {
 			return;
 		}
 
-		TestModelFactory.ModelInformation info = TestModelFactory.getModel(false, driver);
+		TestModel.ModelInformation info = TestModel.getModel(false, driver);
 
 		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
 		Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
@@ -91,7 +91,7 @@ public class MPEInferenceTest {
 	 */
 	@Test
 	public void testLogicalNoOpenPredicates() {
-		TestModelFactory.ModelInformation info = TestModelFactory.getModel();
+		TestModel.ModelInformation info = TestModel.getModel();
 
 		// Reset the model with only a single rule.
 		info.model = new Model();
@@ -127,7 +127,7 @@ public class MPEInferenceTest {
 	 */
 	@Test
 	public void testArithmeticNoOpenPredicates() {
-		TestModelFactory.ModelInformation info = TestModelFactory.getModel();
+		TestModel.ModelInformation info = TestModel.getModel();
 
 		// Reset the model with only a single rule.
 		// info.model = new Model();
@@ -169,7 +169,7 @@ public class MPEInferenceTest {
 	 */
 	@Test
 	public void testLogicalTautologyTrivial() {
-		TestModelFactory.ModelInformation info = TestModelFactory.getModel();
+		TestModel.ModelInformation info = TestModel.getModel();
 
 		// Friends(A, B) -> Friends(A, B)
 		info.model.addRule(new WeightedLogicalRule(

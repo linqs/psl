@@ -20,7 +20,7 @@ package org.linqs.psl.database.rdbms;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertEquals;
 
-import org.linqs.psl.TestModelFactory;
+import org.linqs.psl.TestModel;
 import org.linqs.psl.database.Partition;
 
 import org.junit.After;
@@ -31,11 +31,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class DataStoreMetadataTest {
-	private TestModelFactory.ModelInformation model;
+	private TestModel.ModelInformation model;
 
 	@Before
 	public void setup() {
-		model = TestModelFactory.getModel();
+		model = TestModel.getModel();
 	}
 
 	@Test
@@ -44,9 +44,9 @@ public class DataStoreMetadataTest {
 		Map<String, String> actual = metadata.getAllValuesByType(DataStoreMetadata.PARTITION_NAMESPACE, DataStoreMetadata.NAME_KEY);
 
 		Map<String, String> expected = new HashMap<String, String>();
-		expected.put(TestModelFactory.PARTITION_OBSERVATIONS, "1");
-		expected.put(TestModelFactory.PARTITION_TARGETS, "2");
-		expected.put(TestModelFactory.PARTITION_TRUTH, "3");
+		expected.put(TestModel.PARTITION_OBSERVATIONS, "1");
+		expected.put(TestModel.PARTITION_TARGETS, "2");
+		expected.put(TestModel.PARTITION_TRUTH, "3");
 
 		assertEquals(expected, actual);
 	}
