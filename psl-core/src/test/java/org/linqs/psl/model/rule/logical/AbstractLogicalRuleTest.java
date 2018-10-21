@@ -43,96 +43,96 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class AbstractLogicalRuleTest {
-	private DataStore dataStore;
-	private Database database;
+    private DataStore dataStore;
+    private Database database;
 
-	private StandardPredicate singleClosed;
-	private StandardPredicate doubleClosed;
-	private StandardPredicate singleOpened;
+    private StandardPredicate singleClosed;
+    private StandardPredicate doubleClosed;
+    private StandardPredicate singleOpened;
 
-	@Before
-	public void setup() {
-		dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Memory, this.getClass().getName(), true));
+    @Before
+    public void setup() {
+        dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Memory, this.getClass().getName(), true));
 
-		singleClosed = StandardPredicate.get("SingleClosed", ConstantType.UniqueStringID);
-		dataStore.registerPredicate(singleClosed);
+        singleClosed = StandardPredicate.get("SingleClosed", ConstantType.UniqueStringID);
+        dataStore.registerPredicate(singleClosed);
 
-		doubleClosed = StandardPredicate.get("DoubleClosed", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
-		dataStore.registerPredicate(doubleClosed);
+        doubleClosed = StandardPredicate.get("DoubleClosed", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
+        dataStore.registerPredicate(doubleClosed);
 
-		singleOpened = StandardPredicate.get("SingleOpened", ConstantType.UniqueStringID);
-		dataStore.registerPredicate(singleOpened);
+        singleOpened = StandardPredicate.get("SingleOpened", ConstantType.UniqueStringID);
+        dataStore.registerPredicate(singleOpened);
 
-		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
-		toClose.add(singleClosed);
-		toClose.add(doubleClosed);
-		database = dataStore.getDatabase(dataStore.getNewPartition(), toClose);
-	}
+        Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
+        toClose.add(singleClosed);
+        toClose.add(doubleClosed);
+        database = dataStore.getDatabase(dataStore.getNewPartition(), toClose);
+    }
 
-	@Test
-	public void testBase() {
-		// SingleClosed(A) & DoubleClosed(A, B) -> SingleOpen(B)
-		AbstractLogicalRule rule = new WeightedLogicalRule(
-			new Implication(
-				new Conjunction(
-					new QueryAtom(singleClosed, new Variable("A")),
-					new QueryAtom(doubleClosed, new Variable("A"), new Variable("B"))
-				),
-				new QueryAtom(singleOpened, new Variable("B"))
-			),
-			1.0,
-			true
-		);
+    @Test
+    public void testBase() {
+        // SingleClosed(A) & DoubleClosed(A, B) -> SingleOpen(B)
+        AbstractLogicalRule rule = new WeightedLogicalRule(
+            new Implication(
+                new Conjunction(
+                    new QueryAtom(singleClosed, new Variable("A")),
+                    new QueryAtom(doubleClosed, new Variable("A"), new Variable("B"))
+                ),
+                new QueryAtom(singleOpened, new Variable("B"))
+            ),
+            1.0,
+            true
+        );
 
-		PSLTest.assertRule(rule, "1.0: ( SINGLECLOSED(A) & DOUBLECLOSED(A, B) ) >> SINGLEOPENED(B) ^2");
-	}
+        PSLTest.assertRule(rule, "1.0: ( SINGLECLOSED(A) & DOUBLECLOSED(A, B) ) >> SINGLEOPENED(B) ^2");
+    }
 
-	@Test
-	public void testUnboundVariable() {
-		// SingleClosed(A) & !DoubleClosed(A, B) -> SingleOpen(B)
-		// B is unbound.
-		try {
-			AbstractLogicalRule rule = new WeightedLogicalRule(
-				new Implication(
-					new Conjunction(
-						new QueryAtom(singleClosed, new Variable("A")),
-						new Negation(new QueryAtom(doubleClosed, new Variable("A"), new Variable("B")))
-					),
-					new QueryAtom(singleOpened, new Variable("B"))
-				),
-				1.0,
-				true
-			);
+    @Test
+    public void testUnboundVariable() {
+        // SingleClosed(A) & !DoubleClosed(A, B) -> SingleOpen(B)
+        // B is unbound.
+        try {
+            AbstractLogicalRule rule = new WeightedLogicalRule(
+                new Implication(
+                    new Conjunction(
+                        new QueryAtom(singleClosed, new Variable("A")),
+                        new Negation(new QueryAtom(doubleClosed, new Variable("A"), new Variable("B")))
+                    ),
+                    new QueryAtom(singleOpened, new Variable("B"))
+                ),
+                1.0,
+                true
+            );
 
-			fail("An exception was not thrown when a single unbound variable was encountered.");
-		} catch (IllegalArgumentException ex) {
-			assertTrue("Error message does not contain unbound variable.", ex.getMessage().contains("[B]"));
-		}
+            fail("An exception was not thrown when a single unbound variable was encountered.");
+        } catch (IllegalArgumentException ex) {
+            assertTrue("Error message does not contain unbound variable.", ex.getMessage().contains("[B]"));
+        }
 
-		// !SingleClosed(A) & !DoubleClosed(A, B) -> SingleOpen(B)
-		// A, B are unbound.
-		try {
-			AbstractLogicalRule rule = new WeightedLogicalRule(
-				new Implication(
-					new Conjunction(
-						new Negation(new QueryAtom(singleClosed, new Variable("A"))),
-						new Negation(new QueryAtom(doubleClosed, new Variable("A"), new Variable("B")))
-					),
-					new QueryAtom(singleOpened, new Variable("B"))
-				),
-				1.0,
-				true
-			);
+        // !SingleClosed(A) & !DoubleClosed(A, B) -> SingleOpen(B)
+        // A, B are unbound.
+        try {
+            AbstractLogicalRule rule = new WeightedLogicalRule(
+                new Implication(
+                    new Conjunction(
+                        new Negation(new QueryAtom(singleClosed, new Variable("A"))),
+                        new Negation(new QueryAtom(doubleClosed, new Variable("A"), new Variable("B")))
+                    ),
+                    new QueryAtom(singleOpened, new Variable("B"))
+                ),
+                1.0,
+                true
+            );
 
-			fail("An exception was not thrown when two unbound variables were encountered.");
-		} catch (IllegalArgumentException ex) {
-			assertTrue("Error message does not contain unbound variables.", ex.getMessage().contains("[A, B]"));
-		}
-	}
+            fail("An exception was not thrown when two unbound variables were encountered.");
+        } catch (IllegalArgumentException ex) {
+            assertTrue("Error message does not contain unbound variables.", ex.getMessage().contains("[A, B]"));
+        }
+    }
 
-	@After
-	public void cleanup() {
-		database.close();
-		dataStore.close();
-	}
+    @After
+    public void cleanup() {
+        database.close();
+        dataStore.close();
+    }
 }

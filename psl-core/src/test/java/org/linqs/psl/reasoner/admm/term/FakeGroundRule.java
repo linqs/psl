@@ -28,54 +28,54 @@ import java.util.List;
 import java.util.Set;
 
 public class FakeGroundRule implements WeightedGroundRule {
-	private double weight;
+    private double weight;
 
-	public FakeGroundRule(double weight) {
-		this.weight = weight;
-	}
+    public FakeGroundRule(double weight) {
+        this.weight = weight;
+    }
 
-	@Override
-	public Set<GroundAtom> getAtoms() {
-		return null;
-	}
+    @Override
+    public Set<GroundAtom> getAtoms() {
+        return null;
+    }
 
-	@Override
-	public List<GroundRule> negate() {
-		return null;
-	}
+    @Override
+    public List<GroundRule> negate() {
+        return null;
+    }
 
-	@Override
-	public WeightedRule getRule() {
-		return null;
-	}
+    @Override
+    public WeightedRule getRule() {
+        return null;
+    }
 
-	@Override
-	public boolean isSquared() {
-		return false;
-	}
+    @Override
+    public boolean isSquared() {
+        return false;
+    }
 
-	@Override
-	public double getWeight() {
-		return weight;
-	}
+    @Override
+    public double getWeight() {
+        return weight;
+    }
 
-	@Override
-	public void setWeight(double weight) {
-		this.weight = weight;
-	}
+    @Override
+    public void setWeight(double weight) {
+        this.weight = weight;
+    }
 
-	@Override
-	public GeneralFunction getFunctionDefinition() {
-		return null;
-	}
+    @Override
+    public GeneralFunction getFunctionDefinition() {
+        return null;
+    }
 
-	@Override
-	public double getIncompatibility() {
-		return 0.0;
-	}
+    @Override
+    public double getIncompatibility() {
+        return 0.0;
+    }
 
-	@Override
-	public double getIncompatibility(GroundAtom replacementAtom, float replacementValue) {
-		return 0.0;
-	}
+    @Override
+    public double getIncompatibility(GroundAtom replacementAtom, float replacementValue) {
+        return 0.0;
+    }
 }

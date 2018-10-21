@@ -48,150 +48,150 @@ import java.util.List;
 import java.util.Set;
 
 public class MPEInferenceTest {
-	/**
-	 * A quick test that only checks to see if MPEInference is running.
-	 * This is not a targeted or exhaustive test, just a starting point.
-	 */
-	@Test
-	public void baseTest() {
-		TestModel.ModelInformation info = TestModel.getModel();
+    /**
+     * A quick test that only checks to see if MPEInference is running.
+     * This is not a targeted or exhaustive test, just a starting point.
+     */
+    @Test
+    public void baseTest() {
+        TestModel.ModelInformation info = TestModel.getModel();
 
-		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
-		Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-		MPEInference mpe = new MPEInference(info.model, inferDB);
+        Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
+        Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
+        MPEInference mpe = new MPEInference(info.model, inferDB);
 
-		mpe.inference();
-		mpe.close();
-		inferDB.close();
-	}
+        mpe.inference();
+        mpe.close();
+        inferDB.close();
+    }
 
-	/**
-	 * Same as testBase(), but using postgres.
-	 */
-	@Test
-	public void testBasePostgres() {
-		DatabaseDriver driver = DatabaseTestUtil.getPostgresDriver();
-		if (driver == null) {
-			return;
-		}
+    /**
+     * Same as testBase(), but using postgres.
+     */
+    @Test
+    public void testBasePostgres() {
+        DatabaseDriver driver = DatabaseTestUtil.getPostgresDriver();
+        if (driver == null) {
+            return;
+        }
 
-		TestModel.ModelInformation info = TestModel.getModel(false, driver);
+        TestModel.ModelInformation info = TestModel.getModel(false, driver);
 
-		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
-		Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-		MPEInference mpe = new MPEInference(info.model, inferDB);
+        Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
+        Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
+        MPEInference mpe = new MPEInference(info.model, inferDB);
 
-		mpe.inference();
-		mpe.close();
-		inferDB.close();
-	}
+        mpe.inference();
+        mpe.close();
+        inferDB.close();
+    }
 
-	/**
-	 * Make sure we do not crash on a logical rule with no open predicates.
-	 */
-	@Test
-	public void testLogicalNoOpenPredicates() {
-		TestModel.ModelInformation info = TestModel.getModel();
+    /**
+     * Make sure we do not crash on a logical rule with no open predicates.
+     */
+    @Test
+    public void testLogicalNoOpenPredicates() {
+        TestModel.ModelInformation info = TestModel.getModel();
 
-		// Reset the model with only a single rule.
-		info.model = new Model();
+        // Reset the model with only a single rule.
+        info.model = new Model();
 
-		// Nice(A) & Nice(B) -> Friends(A, B)
-		info.model.addRule(new WeightedLogicalRule(
-			new Implication(
-				new Conjunction(
-					new QueryAtom(info.predicates.get("Nice"), new Variable("A")),
-					new QueryAtom(info.predicates.get("Nice"), new Variable("B"))
-				),
-				new QueryAtom(info.predicates.get("Friends"), new Variable("A"), new Variable("B"))
-			),
-			1.0,
-			true
-		));
+        // Nice(A) & Nice(B) -> Friends(A, B)
+        info.model.addRule(new WeightedLogicalRule(
+            new Implication(
+                new Conjunction(
+                    new QueryAtom(info.predicates.get("Nice"), new Variable("A")),
+                    new QueryAtom(info.predicates.get("Nice"), new Variable("B"))
+                ),
+                new QueryAtom(info.predicates.get("Friends"), new Variable("A"), new Variable("B"))
+            ),
+            1.0,
+            true
+        ));
 
-		// Close the predicates we are using.
-		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
-		toClose.add(info.predicates.get("Nice"));
-		toClose.add(info.predicates.get("Friends"));
+        // Close the predicates we are using.
+        Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
+        toClose.add(info.predicates.get("Nice"));
+        toClose.add(info.predicates.get("Friends"));
 
-		Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-		MPEInference mpe = new MPEInference(info.model, inferDB);
+        Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
+        MPEInference mpe = new MPEInference(info.model, inferDB);
 
-		mpe.inference();
-		mpe.close();
-		inferDB.close();
-	}
+        mpe.inference();
+        mpe.close();
+        inferDB.close();
+    }
 
-	/**
-	 * Make sure we do not crash on an arithmetic rule with no open predicates.
-	 */
-	@Test
-	public void testArithmeticNoOpenPredicates() {
-		TestModel.ModelInformation info = TestModel.getModel();
+    /**
+     * Make sure we do not crash on an arithmetic rule with no open predicates.
+     */
+    @Test
+    public void testArithmeticNoOpenPredicates() {
+        TestModel.ModelInformation info = TestModel.getModel();
 
-		// Reset the model with only a single rule.
-		// info.model = new Model();
+        // Reset the model with only a single rule.
+        // info.model = new Model();
 
-		List<Coefficient> coefficients;
-		List<SummationAtomOrAtom> atoms;
+        List<Coefficient> coefficients;
+        List<SummationAtomOrAtom> atoms;
 
-		coefficients = Arrays.asList(
-			(Coefficient)(new ConstantNumber(1.0f)),
-			(Coefficient)(new ConstantNumber(1.0f))
-		);
+        coefficients = Arrays.asList(
+            (Coefficient)(new ConstantNumber(1.0f)),
+            (Coefficient)(new ConstantNumber(1.0f))
+        );
 
-		atoms = Arrays.asList(
-			(SummationAtomOrAtom)(new QueryAtom(info.predicates.get("Nice"), new Variable("A"))),
-			(SummationAtomOrAtom)(new QueryAtom(info.predicates.get("Nice"), new Variable("B")))
-		);
+        atoms = Arrays.asList(
+            (SummationAtomOrAtom)(new QueryAtom(info.predicates.get("Nice"), new Variable("A"))),
+            (SummationAtomOrAtom)(new QueryAtom(info.predicates.get("Nice"), new Variable("B")))
+        );
 
-		// Nice(A) + Nice(B) >= 1.0
-		info.model.addRule(new WeightedArithmeticRule(
-				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
-				1.0,
-				true
-		));
+        // Nice(A) + Nice(B) >= 1.0
+        info.model.addRule(new WeightedArithmeticRule(
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                1.0,
+                true
+        ));
 
-		// Close the predicates we are using.
-		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
-		toClose.add(info.predicates.get("Nice"));
+        // Close the predicates we are using.
+        Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
+        toClose.add(info.predicates.get("Nice"));
 
-		Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-		MPEInference mpe = new MPEInference(info.model, inferDB);
+        Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
+        MPEInference mpe = new MPEInference(info.model, inferDB);
 
-		mpe.inference();
-		mpe.close();
-		inferDB.close();
-	}
+        mpe.inference();
+        mpe.close();
+        inferDB.close();
+    }
 
-	/**
-	 * Make sure that we remove terms that cause a tautology from logical rules.
-	 */
-	@Test
-	public void testLogicalTautologyTrivial() {
-		TestModel.ModelInformation info = TestModel.getModel();
+    /**
+     * Make sure that we remove terms that cause a tautology from logical rules.
+     */
+    @Test
+    public void testLogicalTautologyTrivial() {
+        TestModel.ModelInformation info = TestModel.getModel();
 
-		// Friends(A, B) -> Friends(A, B)
-		info.model.addRule(new WeightedLogicalRule(
-			new Implication(
-				new QueryAtom(info.predicates.get("Friends"), new Variable("A"), new Variable("B")),
-				new QueryAtom(info.predicates.get("Friends"), new Variable("A"), new Variable("B"))
-			),
-			1.0,
-			true
-		));
+        // Friends(A, B) -> Friends(A, B)
+        info.model.addRule(new WeightedLogicalRule(
+            new Implication(
+                new QueryAtom(info.predicates.get("Friends"), new Variable("A"), new Variable("B")),
+                new QueryAtom(info.predicates.get("Friends"), new Variable("A"), new Variable("B"))
+            ),
+            1.0,
+            true
+        ));
 
-		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
-		Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-		MPEInference mpe = new MPEInference(info.model, inferDB);
+        Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
+        Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
+        MPEInference mpe = new MPEInference(info.model, inferDB);
 
-		mpe.inference();
+        mpe.inference();
 
-		// There are 20 trivial rules.
-		assertEquals(72, mpe.getGroundRuleStore().size());
-		assertEquals(52, mpe.getTermStore().size());
+        // There are 20 trivial rules.
+        assertEquals(72, mpe.getGroundRuleStore().size());
+        assertEquals(52, mpe.getTermStore().size());
 
-		mpe.close();
-		inferDB.close();
-	}
+        mpe.close();
+        inferDB.close();
+    }
 }

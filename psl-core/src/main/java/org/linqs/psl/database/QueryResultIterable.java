@@ -23,8 +23,8 @@ import org.linqs.psl.model.term.Variable;
 import java.util.Map;
 
 public interface QueryResultIterable extends Iterable<Constant[]> {
-	/**
-	 * Get the mapping between variables and their index in the results.
-	 */
-	public Map<Variable, Integer> getVariableMap();
+    /**
+     * Get the mapping between variables and their index in the results.
+     */
+    public Map<Variable, Integer> getVariableMap();
 }

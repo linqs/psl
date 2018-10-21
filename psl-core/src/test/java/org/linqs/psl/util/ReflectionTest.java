@@ -24,21 +24,21 @@ import static org.junit.Assert.fail;
 import org.junit.Test;
 
 public class ReflectionTest {
-	@Test
-	public void testResolveClassNameBase() {
-		  assertEquals("org.linqs.psl.util.Reflection", Reflection.resolveClassName("Reflection"));
-		  assertEquals("org.linqs.psl.util.Reflection", Reflection.resolveClassName("org.linqs.psl.util.Reflection"));
+    @Test
+    public void testResolveClassNameBase() {
+          assertEquals("org.linqs.psl.util.Reflection", Reflection.resolveClassName("Reflection"));
+          assertEquals("org.linqs.psl.util.Reflection", Reflection.resolveClassName("org.linqs.psl.util.Reflection"));
 
-		  assertNull("org.linqs.psl.util.Reflection", Reflection.resolveClassName("eflection"));
-		  assertNull("org.linqs.psl.util.Reflection", Reflection.resolveClassName("abs"));
+          assertNull("org.linqs.psl.util.Reflection", Reflection.resolveClassName("eflection"));
+          assertNull("org.linqs.psl.util.Reflection", Reflection.resolveClassName("abs"));
 
-		  assertEquals("org.linqs.psl.reasoner.admm.ADMMReasoner", Reflection.resolveClassName("ADMMReasoner"));
+          assertEquals("org.linqs.psl.reasoner.admm.ADMMReasoner", Reflection.resolveClassName("ADMMReasoner"));
 
-		  try {
-				Reflection.resolveClassName("Term");
-				fail("No exception thrown on ambiguous class.");
-		  } catch (IllegalArgumentException ex) {
-				// Expected.
-		  }
-	}
+          try {
+                Reflection.resolveClassName("Term");
+                fail("No exception thrown on ambiguous class.");
+          } catch (IllegalArgumentException ex) {
+                // Expected.
+          }
+    }
 }

@@ -32,65 +32,65 @@ import java.util.Map;
  * A template for {@link UnweightedGroundArithmeticRule UnweightedGroundArithmeticRules}.
  */
 public class UnweightedArithmeticRule extends AbstractArithmeticRule implements UnweightedRule {
-	public UnweightedArithmeticRule(ArithmeticRuleExpression expression) {
-		this(expression, expression.toString());
-	}
+    public UnweightedArithmeticRule(ArithmeticRuleExpression expression) {
+        this(expression, expression.toString());
+    }
 
-	public UnweightedArithmeticRule(ArithmeticRuleExpression expression, String name) {
-		this(expression, new HashMap<SummationVariable, Formula>(), name);
-	}
+    public UnweightedArithmeticRule(ArithmeticRuleExpression expression, String name) {
+        this(expression, new HashMap<SummationVariable, Formula>(), name);
+    }
 
-	public UnweightedArithmeticRule(ArithmeticRuleExpression expression, Map<SummationVariable, Formula> filterClauses) {
-		this(expression, filterClauses, expression.toString());
-	}
+    public UnweightedArithmeticRule(ArithmeticRuleExpression expression, Map<SummationVariable, Formula> filterClauses) {
+        this(expression, filterClauses, expression.toString());
+    }
 
-	public UnweightedArithmeticRule(ArithmeticRuleExpression expression, Map<SummationVariable, Formula> filterClauses, String name) {
-		super(expression, filterClauses, name);
-	}
+    public UnweightedArithmeticRule(ArithmeticRuleExpression expression, Map<SummationVariable, Formula> filterClauses, String name) {
+        super(expression, filterClauses, name);
+    }
 
-	@Override
-	protected UnweightedGroundArithmeticRule makeGroundRule(float[] coefficients, GroundAtom[] atoms,
-			FunctionComparator comparator, float constant) {
-		return new UnweightedGroundArithmeticRule(this, coefficients, atoms, comparator, constant);
-	}
+    @Override
+    protected UnweightedGroundArithmeticRule makeGroundRule(float[] coefficients, GroundAtom[] atoms,
+            FunctionComparator comparator, float constant) {
+        return new UnweightedGroundArithmeticRule(this, coefficients, atoms, comparator, constant);
+    }
 
-	@Override
-	protected UnweightedGroundArithmeticRule makeGroundRule(List<Float> coefficients, List<GroundAtom> atoms,
-			FunctionComparator comparator, float constant) {
-		return new UnweightedGroundArithmeticRule(this, coefficients, atoms, comparator, constant);
-	}
+    @Override
+    protected UnweightedGroundArithmeticRule makeGroundRule(List<Float> coefficients, List<GroundAtom> atoms,
+            FunctionComparator comparator, float constant) {
+        return new UnweightedGroundArithmeticRule(this, coefficients, atoms, comparator, constant);
+    }
 
-	@Override
-	public String toString() {
-		StringBuilder s = new StringBuilder();
-		s.append(expression);
-		s.append(" .");
-		for (Map.Entry<SummationVariable, Formula> e : filters.entrySet()) {
-			s.append("\n{");
-			// Appends the corresponding Variable, not the SummationVariable, to leave out the '+'
-			s.append(e.getKey().getVariable());
-			s.append(" : ");
-			s.append(e.getValue());
-			s.append("}");
-		}
-		return s.toString();
-	}
+    @Override
+    public String toString() {
+        StringBuilder s = new StringBuilder();
+        s.append(expression);
+        s.append(" .");
+        for (Map.Entry<SummationVariable, Formula> e : filters.entrySet()) {
+            s.append("\n{");
+            // Appends the corresponding Variable, not the SummationVariable, to leave out the '+'
+            s.append(e.getKey().getVariable());
+            s.append(" : ");
+            s.append(e.getValue());
+            s.append("}");
+        }
+        return s.toString();
+    }
 
-	@Override
-	public boolean isWeighted() {
-		return false;
-	}
+    @Override
+    public boolean isWeighted() {
+        return false;
+    }
 
-	@Override
-	public boolean equals(Object other) {
-		if (this == other) {
-			return true;
-		}
+    @Override
+    public boolean equals(Object other) {
+        if (this == other) {
+            return true;
+        }
 
-		if (other == null || this.getClass() != other.getClass()) {
-			return false;
-		}
+        if (other == null || this.getClass() != other.getClass()) {
+            return false;
+        }
 
-		return super.equals(other);
-	}
+        return super.equals(other);
+    }
 }

@@ -22,11 +22,11 @@ import static org.junit.Assert.assertNotEquals;
 import org.junit.Test;
 
 public class VersionTest {
-	/**
-	 * Just make sure we don't pick up the default.
-	 */
-	@Test
-	public void testBase() {
-		assertNotEquals(Version.VERSION_DEFAULT, Version.get());
-	}
+    /**
+     * Just make sure we don't pick up the default.
+     */
+    @Test
+    public void testBase() {
+        assertNotEquals(Version.VERSION_DEFAULT, Version.get());
+    }
 }

@@ -32,64 +32,64 @@ import java.util.List;
  * constraint that must always hold.
  */
 public class UnweightedGroundArithmeticRule extends AbstractGroundArithmeticRule
-		implements UnweightedGroundRule {
+        implements UnweightedGroundRule {
 
-	protected UnweightedGroundArithmeticRule(UnweightedArithmeticRule rule, List<Float> coefficients,
-			List<GroundAtom> atoms, FunctionComparator comparator, float constant) {
-		super(rule, coefficients, atoms, comparator, constant);
-	}
+    protected UnweightedGroundArithmeticRule(UnweightedArithmeticRule rule, List<Float> coefficients,
+            List<GroundAtom> atoms, FunctionComparator comparator, float constant) {
+        super(rule, coefficients, atoms, comparator, constant);
+    }
 
-	protected UnweightedGroundArithmeticRule(UnweightedArithmeticRule rule, float[] coefficients,
-			GroundAtom[] atoms, FunctionComparator comparator, float constant) {
-		super(rule, coefficients, atoms, comparator, constant);
-	}
+    protected UnweightedGroundArithmeticRule(UnweightedArithmeticRule rule, float[] coefficients,
+            GroundAtom[] atoms, FunctionComparator comparator, float constant) {
+        super(rule, coefficients, atoms, comparator, constant);
+    }
 
-	@Override
-	public UnweightedRule getRule() {
-		return (UnweightedRule) rule;
-	}
+    @Override
+    public UnweightedRule getRule() {
+        return (UnweightedRule) rule;
+    }
 
-	@Override
-	public double getInfeasibility() {
-		float sum = 0.0f;
-		for (int i = 0; i < coefficients.length; i++) {
-			// Skip any special predicates.
-			if (atoms[i].getPredicate() instanceof SpecialPredicate) {
-				continue;
-			}
+    @Override
+    public double getInfeasibility() {
+        float sum = 0.0f;
+        for (int i = 0; i < coefficients.length; i++) {
+            // Skip any special predicates.
+            if (atoms[i].getPredicate() instanceof SpecialPredicate) {
+                continue;
+            }
 
-			sum += coefficients[i] * atoms[i].getValue();
-		}
+            sum += coefficients[i] * atoms[i].getValue();
+        }
 
-		switch (comparator) {
-		case Equality:
-			return Math.abs(sum - constant);
-		case LargerThan:
-			return -1.0f * Math.min(sum - constant, 0.0f);
-		case SmallerThan:
-			return Math.max(sum - constant, 0.0f);
-		default:
-			throw new IllegalStateException("Unrecognized comparator: " + comparator);
-		}
-	}
+        switch (comparator) {
+        case Equality:
+            return Math.abs(sum - constant);
+        case LargerThan:
+            return -1.0f * Math.min(sum - constant, 0.0f);
+        case SmallerThan:
+            return Math.max(sum - constant, 0.0f);
+        default:
+            throw new IllegalStateException("Unrecognized comparator: " + comparator);
+        }
+    }
 
-	@Override
-	public ConstraintTerm getConstraintDefinition() {
-		GeneralFunction sum = new GeneralFunction(false, false, (short)coefficients.length);
-		for (int i = 0; i < coefficients.length; i++) {
-			// Skip any special predicates.
-			if (atoms[i].getPredicate() instanceof SpecialPredicate) {
-				continue;
-			}
+    @Override
+    public ConstraintTerm getConstraintDefinition() {
+        GeneralFunction sum = new GeneralFunction(false, false, (short)coefficients.length);
+        for (int i = 0; i < coefficients.length; i++) {
+            // Skip any special predicates.
+            if (atoms[i].getPredicate() instanceof SpecialPredicate) {
+                continue;
+            }
 
-			sum.add(coefficients[i], atoms[i]);
-		}
+            sum.add(coefficients[i], atoms[i]);
+        }
 
-		return new ConstraintTerm(sum, comparator, constant);
-	}
+        return new ConstraintTerm(sum, comparator, constant);
+    }
 
-	@Override
-	public String toString() {
-		return super.toString() + " .";
-	}
+    @Override
+    public String toString() {
+        return super.toString() + " .";
+    }
 }

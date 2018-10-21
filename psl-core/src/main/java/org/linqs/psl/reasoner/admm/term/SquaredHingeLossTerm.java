@@ -25,39 +25,39 @@ import org.linqs.psl.model.rule.WeightedGroundRule;
  * weight * [max(coefficients^T * x - constant, 0)]^2
  */
 public class SquaredHingeLossTerm extends SquaredHyperplaneTerm {
-	public SquaredHingeLossTerm(GroundRule groundRule, Hyperplane hyperplane) {
-		super(groundRule, hyperplane);
-	}
+    public SquaredHingeLossTerm(GroundRule groundRule, Hyperplane hyperplane) {
+        super(groundRule, hyperplane);
+    }
 
-	/**
-	 * weight * [max(coefficients^T * x - constant, 0.0)]^2
-	 */
-	@Override
-	public float evaluate() {
-		float weight = (float)((WeightedGroundRule)groundRule).getWeight();
-		return weight * (float)Math.pow(Math.max(0.0f, super.evaluate()), 2);
-	}
+    /**
+     * weight * [max(coefficients^T * x - constant, 0.0)]^2
+     */
+    @Override
+    public float evaluate() {
+        float weight = (float)((WeightedGroundRule)groundRule).getWeight();
+        return weight * (float)Math.pow(Math.max(0.0f, super.evaluate()), 2);
+    }
 
-	@Override
-	public void minimize(float stepSize, float[] consensusValues) {
-		// Initializes scratch data.
-		float total = 0.0f;
+    @Override
+    public void minimize(float stepSize, float[] consensusValues) {
+        // Initializes scratch data.
+        float total = 0.0f;
 
-		// Minimizes without the quadratic loss, i.e., solves
-		// argmin stepSize/2 * \|x - z + y / stepSize \|_2^2
-		for (int i = 0; i < size; i++) {
-			LocalVariable variable = variables[i];
-			variable.setValue(consensusValues[variable.getGlobalId()] - variable.getLagrange() / stepSize);
-			total += coefficients[i] * variable.getValue();
-		}
+        // Minimizes without the quadratic loss, i.e., solves
+        // argmin stepSize/2 * \|x - z + y / stepSize \|_2^2
+        for (int i = 0; i < size; i++) {
+            LocalVariable variable = variables[i];
+            variable.setValue(consensusValues[variable.getGlobalId()] - variable.getLagrange() / stepSize);
+            total += coefficients[i] * variable.getValue();
+        }
 
-		// If the quadratic loss is NOT active at the computed point, it is the solution...
-		if (total <= constant) {
-			return;
-		}
+        // If the quadratic loss is NOT active at the computed point, it is the solution...
+        if (total <= constant) {
+            return;
+        }
 
-		// Else, minimizes with the quadratic loss, i.e., solves
-		// argmin weight * (coefficients^T * x - constant)^2 + stepSize/2 * \|x - z + y / stepSize \|_2^2
-		minWeightedSquaredHyperplane(stepSize, consensusValues);
-	}
+        // Else, minimizes with the quadratic loss, i.e., solves
+        // argmin weight * (coefficients^T * x - constant)^2 + stepSize/2 * \|x - z + y / stepSize \|_2^2
+        minWeightedSquaredHyperplane(stepSize, consensusValues);
+    }
 }

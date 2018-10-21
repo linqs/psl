@@ -32,62 +32,62 @@ import org.linqs.psl.util.MathUtils;
  *  - when getting the actual value (using actual values)
  */
 public class Divide extends Coefficient {
-	protected final Coefficient c1;
-	protected final Coefficient c2;
+    protected final Coefficient c1;
+    protected final Coefficient c2;
 
-	public Divide(Coefficient c1, Coefficient c2) {
-		this.c1 = c1;
-		this.c2 = c2;
+    public Divide(Coefficient c1, Coefficient c2) {
+        this.c1 = c1;
+        this.c2 = c2;
 
-		// If the denoinator is 0, then throw an exception.
-		if (c2 instanceof ConstantNumber && MathUtils.isZero(((ConstantNumber)c2).value)) {
-			throw new ArithmeticException("Coefficient divides by zero");
-		}
-	}
+        // If the denoinator is 0, then throw an exception.
+        if (c2 instanceof ConstantNumber && MathUtils.isZero(((ConstantNumber)c2).value)) {
+            throw new ArithmeticException("Coefficient divides by zero");
+        }
+    }
 
-	@Override
-	public float getValue(Map<SummationVariable, Integer> subs) {
-		float lhs = c1.getValue(subs);
-		float rhs = c2.getValue(subs);
+    @Override
+    public float getValue(Map<SummationVariable, Integer> subs) {
+        float lhs = c1.getValue(subs);
+        float rhs = c2.getValue(subs);
 
-		// If the denoinator is 0, then throw an exception.
-		if (MathUtils.isZero(rhs)) {
-			throw new ArithmeticException("Coefficient divides by zero");
-		}
+        // If the denoinator is 0, then throw an exception.
+        if (MathUtils.isZero(rhs)) {
+            throw new ArithmeticException("Coefficient divides by zero");
+        }
 
-		return lhs / rhs;
-	}
+        return lhs / rhs;
+    }
 
-	@Override
-	public String toString() {
-		return "(" + c1.toString() + " / " + c2.toString() + ")";
-	}
+    @Override
+    public String toString() {
+        return "(" + c1.toString() + " / " + c2.toString() + ")";
+    }
 
-	@Override
-	public Coefficient simplify() {
-		Coefficient lhs = c1.simplify();
-		Coefficient rhs = c2.simplify();
+    @Override
+    public Coefficient simplify() {
+        Coefficient lhs = c1.simplify();
+        Coefficient rhs = c2.simplify();
 
-		// If the denoinator is 0, then throw an exception.
-		if (rhs instanceof ConstantNumber && MathUtils.isZero(((ConstantNumber)rhs).value)) {
-			throw new ArithmeticException("Coefficient divides by zero");
-		}
+        // If the denoinator is 0, then throw an exception.
+        if (rhs instanceof ConstantNumber && MathUtils.isZero(((ConstantNumber)rhs).value)) {
+            throw new ArithmeticException("Coefficient divides by zero");
+        }
 
-		// If the numerator is 0, then just return zero.
-		if (lhs instanceof ConstantNumber && MathUtils.isZero(((ConstantNumber)lhs).value)) {
-			return new ConstantNumber(0.0f);
-		}
+        // If the numerator is 0, then just return zero.
+        if (lhs instanceof ConstantNumber && MathUtils.isZero(((ConstantNumber)lhs).value)) {
+            return new ConstantNumber(0.0f);
+        }
 
-		// If the denoinator is 1, then just reutrn the numerator.
-		if (rhs instanceof ConstantNumber && MathUtils.equals(((ConstantNumber)rhs).value, 1.0f)) {
-			return lhs;
-		}
+        // If the denoinator is 1, then just reutrn the numerator.
+        if (rhs instanceof ConstantNumber && MathUtils.equals(((ConstantNumber)rhs).value, 1.0f)) {
+            return lhs;
+        }
 
-		// If both sides are constants, then just do the math.
-		if (lhs instanceof ConstantNumber && rhs instanceof ConstantNumber) {
-			return new ConstantNumber(getValue(null));
-		}
+        // If both sides are constants, then just do the math.
+        if (lhs instanceof ConstantNumber && rhs instanceof ConstantNumber) {
+            return new ConstantNumber(getValue(null));
+        }
 
-		return new Divide(lhs, rhs);
-	}
+        return new Divide(lhs, rhs);
+    }
 }

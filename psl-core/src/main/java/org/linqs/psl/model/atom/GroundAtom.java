@@ -35,64 +35,64 @@ import java.util.Set;
  * A GroundAtom has a truth value.
  */
 public abstract class GroundAtom extends Atom implements Comparable<GroundAtom>, FunctionTerm {
-	protected float value;
+    protected float value;
 
-	protected GroundAtom(Predicate predicate, Constant[] args, float value) {
-		super(predicate, args);
-		this.value = value;
-	}
+    protected GroundAtom(Predicate predicate, Constant[] args, float value) {
+        super(predicate, args);
+        this.value = value;
+    }
 
-	@Override
-	public Constant[] getArguments() {
-		return (Constant[])arguments;
-	}
+    @Override
+    public Constant[] getArguments() {
+        return (Constant[])arguments;
+    }
 
-	/**
-	 * @return the truth value of this Atom
-	 */
-	@Override
-	public float getValue() {
-		return value;
-	}
+    /**
+     * @return the truth value of this Atom
+     */
+    @Override
+    public float getValue() {
+        return value;
+    }
 
-	@Override
-	public boolean isLinear() {
-		return true;
-	}
+    @Override
+    public boolean isLinear() {
+        return true;
+    }
 
-	public String toStringWithValue() {
-		return super.toString() + " = " + getValue();
-	}
+    public String toStringWithValue() {
+        return super.toString() + " = " + getValue();
+    }
 
-	public VariableTypeMap collectVariables(VariableTypeMap varMap) {
-		// No Variables in GroundAtoms.
-		return varMap;
-	}
+    public VariableTypeMap collectVariables(VariableTypeMap varMap) {
+        // No Variables in GroundAtoms.
+        return varMap;
+    }
 
-	/**
-	 * First order by value (descending), the predicate name (natural),
-	 * and then the arguments (in order).
-	 */
-	@Override
-	public int compareTo(GroundAtom other) {
-		if (this.getValue() < other.getValue()) {
-			return 1;
-		} else if (this.getValue() > other.getValue()) {
-			return -1;
-		} else {
-			int val = this.predicate.getName().compareTo(other.predicate.getName());
-			if (val != 0) {
-				return val;
-			}
+    /**
+     * First order by value (descending), the predicate name (natural),
+     * and then the arguments (in order).
+     */
+    @Override
+    public int compareTo(GroundAtom other) {
+        if (this.getValue() < other.getValue()) {
+            return 1;
+        } else if (this.getValue() > other.getValue()) {
+            return -1;
+        } else {
+            int val = this.predicate.getName().compareTo(other.predicate.getName());
+            if (val != 0) {
+                return val;
+            }
 
-			for (int i = 0; i < this.arguments.length; i++) {
-				val = this.arguments[i].compareTo(other.arguments[i]);
-				if (val != 0) {
-					return val;
-				}
-			}
+            for (int i = 0; i < this.arguments.length; i++) {
+                val = this.arguments[i].compareTo(other.arguments[i]);
+                if (val != 0) {
+                    return val;
+                }
+            }
 
-			return 0;
-		}
-	}
+            return 0;
+        }
+    }
 }

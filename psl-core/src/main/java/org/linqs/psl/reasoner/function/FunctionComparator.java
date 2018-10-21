@@ -22,15 +22,15 @@ package org.linqs.psl.reasoner.function;
  * numeric functions and values.
  */
 public enum FunctionComparator {
-	Equality, SmallerThan, LargerThan;
+    Equality, SmallerThan, LargerThan;
 
-	@Override
-	public String toString() {
-		switch(this) {
-		case Equality: return "=";
-		case SmallerThan: return "<=";
-		case LargerThan: return ">=";
-		default: throw new IllegalStateException();
-		}
-	}
+    @Override
+    public String toString() {
+        switch(this) {
+        case Equality: return "=";
+        case SmallerThan: return "<=";
+        case LargerThan: return ">=";
+        default: throw new IllegalStateException();
+        }
+    }
 }

@@ -32,57 +32,57 @@ import org.linqs.psl.model.term.Constant;
  * </ul>
  */
 public class RandomVariableAtom extends GroundAtom {
-	/**
-	 * Whether this atom is backed by a DataStore.
-	 */
-	private boolean isPersisted;
+    /**
+     * Whether this atom is backed by a DataStore.
+     */
+    private boolean isPersisted;
 
-	/**
-	 * Whether this atom is in violation of an AtomManager's access policy.
-	 * Typically an AtomManager (like the PersistedAtomManager) would just throw an exception,
-	 * but exceptions may have been disabled for performance reasons.
-	 */
-	private boolean isAccessException;
+    /**
+     * Whether this atom is in violation of an AtomManager's access policy.
+     * Typically an AtomManager (like the PersistedAtomManager) would just throw an exception,
+     * but exceptions may have been disabled for performance reasons.
+     */
+    private boolean isAccessException;
 
-	/**
-	 * Instantiation of GrondAtoms should typically be left to the Database so it can maintain a cache.
-	 */
-	public RandomVariableAtom(StandardPredicate p, Constant[] args, float value) {
-		super(p, args, value);
-		isPersisted = false;
-		isAccessException = false;
-	}
+    /**
+     * Instantiation of GrondAtoms should typically be left to the Database so it can maintain a cache.
+     */
+    public RandomVariableAtom(StandardPredicate p, Constant[] args, float value) {
+        super(p, args, value);
+        isPersisted = false;
+        isAccessException = false;
+    }
 
-	@Override
-	public StandardPredicate getPredicate() {
-		return (StandardPredicate)predicate;
-	}
+    @Override
+    public StandardPredicate getPredicate() {
+        return (StandardPredicate)predicate;
+    }
 
-	@Override
-	public boolean isConstant() {
-		return false;
-	}
+    @Override
+    public boolean isConstant() {
+        return false;
+    }
 
-	/**
-	 * Sets the truth value of this Atom.
-	 */
-	public void setValue(float value) {
-		this.value = value;
-	}
+    /**
+     * Sets the truth value of this Atom.
+     */
+    public void setValue(float value) {
+        this.value = value;
+    }
 
-	public void setPersisted(boolean isPersisted) {
-		this.isPersisted = isPersisted;
-	}
+    public void setPersisted(boolean isPersisted) {
+        this.isPersisted = isPersisted;
+    }
 
-	public boolean getPersisted() {
-		return isPersisted;
-	}
+    public boolean getPersisted() {
+        return isPersisted;
+    }
 
-	public void setAccessException(boolean isAccessException) {
-		this.isAccessException = isAccessException;
-	}
+    public void setAccessException(boolean isAccessException) {
+        this.isAccessException = isAccessException;
+    }
 
-	public boolean getAccessException() {
-		return isAccessException;
-	}
+    public boolean getAccessException() {
+        return isAccessException;
+    }
 }

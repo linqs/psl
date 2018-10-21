@@ -36,49 +36,49 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class PersistedAtomManagerTest {
-	/**
-	 * Base test to see if the PAM gets populated and can get atoms.
-	 */
-	@Test
-	public void baseTest() {
-		TestModel.ModelInformation info = TestModel.getModel();
+    /**
+     * Base test to see if the PAM gets populated and can get atoms.
+     */
+    @Test
+    public void baseTest() {
+        TestModel.ModelInformation info = TestModel.getModel();
 
-		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
-		Database database = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
+        Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
+        Database database = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
 
-		PersistedAtomManager atomManager = new PersistedAtomManager(database);
+        PersistedAtomManager atomManager = new PersistedAtomManager(database);
 
-		GroundAtom atom = atomManager.getAtom(info.predicates.get("Friends"), new UniqueStringID("Alice"), new UniqueStringID("Bob"));
-		assertTrue(atom instanceof RandomVariableAtom);
-		assertEquals(atom.getValue(), 1.0, MathUtils.EPSILON);
+        GroundAtom atom = atomManager.getAtom(info.predicates.get("Friends"), new UniqueStringID("Alice"), new UniqueStringID("Bob"));
+        assertTrue(atom instanceof RandomVariableAtom);
+        assertEquals(atom.getValue(), 1.0, MathUtils.EPSILON);
 
-		atom = atomManager.getAtom(info.predicates.get("Nice"), new UniqueStringID("Alice"));
-		assertTrue(atom instanceof ObservedAtom);
-		assertEquals(atom.getValue(), 0.9, MathUtils.EPSILON);
+        atom = atomManager.getAtom(info.predicates.get("Nice"), new UniqueStringID("Alice"));
+        assertTrue(atom instanceof ObservedAtom);
+        assertEquals(atom.getValue(), 0.9, MathUtils.EPSILON);
 
-		database.close();
-	}
+        database.close();
+    }
 
-	/**
-	 * Having an atom as both observed and a target should throw an exception.
-	 */
-	@Test
-	public void testErrorOnObservedTargets() {
-		TestModel.ModelInformation info = TestModel.getModel();
+    /**
+     * Having an atom as both observed and a target should throw an exception.
+     */
+    @Test
+    public void testErrorOnObservedTargets() {
+        TestModel.ModelInformation info = TestModel.getModel();
 
-		Inserter inserter = info.dataStore.getInserter(info.predicates.get("Friends"), info.observationPartition);
-		inserter.insert(new UniqueStringID("Alice"), new UniqueStringID("Bob"));
+        Inserter inserter = info.dataStore.getInserter(info.predicates.get("Friends"), info.observationPartition);
+        inserter.insert(new UniqueStringID("Alice"), new UniqueStringID("Bob"));
 
-		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
-		Database database = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
+        Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
+        Database database = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
 
-		try {
-			PersistedAtomManager atomManager = new PersistedAtomManager(database);
-			fail("No exception thrown on a target atom that is also observed.");
-		} catch (IllegalStateException ex) {
-			// Expected
-		} finally {
-			database.close();
-		}
-	}
+        try {
+            PersistedAtomManager atomManager = new PersistedAtomManager(database);
+            fail("No exception thrown on a target atom that is also observed.");
+        } catch (IllegalStateException ex) {
+            // Expected
+        } finally {
+            database.close();
+        }
+    }
 }

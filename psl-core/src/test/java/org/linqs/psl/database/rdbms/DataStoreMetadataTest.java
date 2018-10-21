@@ -31,55 +31,55 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class DataStoreMetadataTest {
-	private TestModel.ModelInformation model;
+    private TestModel.ModelInformation model;
 
-	@Before
-	public void setup() {
-		model = TestModel.getModel();
-	}
+    @Before
+    public void setup() {
+        model = TestModel.getModel();
+    }
 
-	@Test
-	public void testGetAllPartitions() {
-		DataStoreMetadata metadata = ((RDBMSDataStore)model.dataStore).getMetadata();
-		Map<String, String> actual = metadata.getAllValuesByType(DataStoreMetadata.PARTITION_NAMESPACE, DataStoreMetadata.NAME_KEY);
+    @Test
+    public void testGetAllPartitions() {
+        DataStoreMetadata metadata = ((RDBMSDataStore)model.dataStore).getMetadata();
+        Map<String, String> actual = metadata.getAllValuesByType(DataStoreMetadata.PARTITION_NAMESPACE, DataStoreMetadata.NAME_KEY);
 
-		Map<String, String> expected = new HashMap<String, String>();
-		expected.put(TestModel.PARTITION_OBSERVATIONS, "1");
-		expected.put(TestModel.PARTITION_TARGETS, "2");
-		expected.put(TestModel.PARTITION_TRUTH, "3");
+        Map<String, String> expected = new HashMap<String, String>();
+        expected.put(TestModel.PARTITION_OBSERVATIONS, "1");
+        expected.put(TestModel.PARTITION_TARGETS, "2");
+        expected.put(TestModel.PARTITION_TRUTH, "3");
 
-		assertEquals(expected, actual);
-	}
+        assertEquals(expected, actual);
+    }
 
-	@Test
-	public void testMultiplePartitions() {
-		DataStoreMetadata metadata = ((RDBMSDataStore)model.dataStore).getMetadata();
+    @Test
+    public void testMultiplePartitions() {
+        DataStoreMetadata metadata = ((RDBMSDataStore)model.dataStore).getMetadata();
 
-		Partition partition1;
-		Partition partition2;
+        Partition partition1;
+        Partition partition2;
 
-		partition1 = model.dataStore.getNewPartition();
-		partition2 = model.dataStore.getNewPartition();
-		assertNotEquals(partition1.getID(), partition2.getID());
+        partition1 = model.dataStore.getNewPartition();
+        partition2 = model.dataStore.getNewPartition();
+        assertNotEquals(partition1.getID(), partition2.getID());
 
-		// Check the first partition we get against the model's first partition.
-		assertNotEquals(partition1.getID(), model.observationPartition.getID());
+        // Check the first partition we get against the model's first partition.
+        assertNotEquals(partition1.getID(), model.observationPartition.getID());
 
-		partition1 = model.dataStore.getPartition("testpartition");
-		partition2 = model.dataStore.getPartition("testpartition");
-		assertEquals(partition1.getID(), partition2.getID());
+        partition1 = model.dataStore.getPartition("testpartition");
+        partition2 = model.dataStore.getPartition("testpartition");
+        assertEquals(partition1.getID(), partition2.getID());
 
-		partition1 = model.dataStore.getPartition("testpartition1");
-		partition2 = model.dataStore.getPartition("testpartition2");
-		assertNotEquals(partition1.getID(), partition2.getID());
+        partition1 = model.dataStore.getPartition("testpartition1");
+        partition2 = model.dataStore.getPartition("testpartition2");
+        assertNotEquals(partition1.getID(), partition2.getID());
 
-		partition1 = model.dataStore.getNewPartition();
-		partition2 = model.dataStore.getNewPartition();
-		assertNotEquals(partition1.getID(), partition2.getID());
-	}
+        partition1 = model.dataStore.getNewPartition();
+        partition2 = model.dataStore.getNewPartition();
+        assertNotEquals(partition1.getID(), partition2.getID());
+    }
 
-	@After
-	public void cleanup() {
-		model.dataStore.close();
-	}
+    @After
+    public void cleanup() {
+        model.dataStore.close();
+    }
 }

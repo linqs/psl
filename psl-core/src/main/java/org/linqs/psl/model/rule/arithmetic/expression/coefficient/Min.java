@@ -24,34 +24,34 @@ import org.linqs.psl.model.rule.arithmetic.expression.SummationVariable;
 import org.linqs.psl.model.term.Constant;
 
 public class Min extends Coefficient {
-	protected final Coefficient c1;
-	protected final Coefficient c2;
+    protected final Coefficient c1;
+    protected final Coefficient c2;
 
-	public Min(Coefficient c1, Coefficient c2) {
-		this.c1 = c1;
-		this.c2 = c2;
-	}
+    public Min(Coefficient c1, Coefficient c2) {
+        this.c1 = c1;
+        this.c2 = c2;
+    }
 
-	@Override
-	public float getValue(Map<SummationVariable, Integer> subs) {
-		return (float)Math.min(c1.getValue(subs), c2.getValue(subs));
-	}
+    @Override
+    public float getValue(Map<SummationVariable, Integer> subs) {
+        return (float)Math.min(c1.getValue(subs), c2.getValue(subs));
+    }
 
-	@Override
-	public String toString() {
-		return "@Min[" + c1.toString() + ", " + c2.toString() + "]";
-	}
+    @Override
+    public String toString() {
+        return "@Min[" + c1.toString() + ", " + c2.toString() + "]";
+    }
 
-	@Override
-	public Coefficient simplify() {
-		Coefficient lhs = c1.simplify();
-		Coefficient rhs = c2.simplify();
+    @Override
+    public Coefficient simplify() {
+        Coefficient lhs = c1.simplify();
+        Coefficient rhs = c2.simplify();
 
-		// If both sides are constants, then just do the math.
-		if (lhs instanceof ConstantNumber && rhs instanceof ConstantNumber) {
-			return new ConstantNumber(getValue(null));
-		}
+        // If both sides are constants, then just do the math.
+        if (lhs instanceof ConstantNumber && rhs instanceof ConstantNumber) {
+            return new ConstantNumber(getValue(null));
+        }
 
-		return new Min(lhs, rhs);
-	}
+        return new Min(lhs, rhs);
+    }
 }

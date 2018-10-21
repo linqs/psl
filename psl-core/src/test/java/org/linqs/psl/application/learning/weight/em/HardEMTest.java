@@ -25,11 +25,11 @@ import org.linqs.psl.config.Config;
 import org.junit.After;
 
 public class HardEMTest extends WeightLearningTest {
-	@Override
-	protected WeightLearningApplication getWLA() {
-		// Do less steps for tests.
-		Config.setProperty(VotedPerceptron.NUM_STEPS_KEY, 5);
+    @Override
+    protected WeightLearningApplication getWLA() {
+        // Do less steps for tests.
+        Config.setProperty(VotedPerceptron.NUM_STEPS_KEY, 5);
 
-		return new HardEM(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
-	}
+        return new HardEM(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
+    }
 }

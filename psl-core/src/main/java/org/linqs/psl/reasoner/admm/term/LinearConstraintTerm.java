@@ -30,68 +30,68 @@ import org.linqs.psl.util.MathUtils;
  * All coefficients must be non-zero.
  */
 public class LinearConstraintTerm extends HyperplaneTerm {
-	private final FunctionComparator comparator;
+    private final FunctionComparator comparator;
 
-	protected LinearConstraintTerm(GroundRule groundRule, Hyperplane hyperplane, FunctionComparator comparator) {
-		super(groundRule, hyperplane);
-		this.comparator = comparator;
-	}
+    protected LinearConstraintTerm(GroundRule groundRule, Hyperplane hyperplane, FunctionComparator comparator) {
+        super(groundRule, hyperplane);
+        this.comparator = comparator;
+    }
 
-	/**
-	 * if (coefficients^T * x [comparator] constant) { 0.0 }
-	 * else { infinity }
-	 */
-	@Override
-	public float evaluate() {
-		if (comparator.equals(FunctionComparator.Equality)) {
-			if (MathUtils.isZero(super.evaluate(), MathUtils.RELAXED_EPSILON)) {
-				return 0.0f;
-			}
-			return Float.POSITIVE_INFINITY;
-		} else if (comparator.equals(FunctionComparator.SmallerThan)) {
-			if (super.evaluate() <= 0.0f) {
-				return 0.0f;
-			}
-			return Float.POSITIVE_INFINITY;
-		} else if (comparator.equals(FunctionComparator.LargerThan)) {
-			if (super.evaluate() >= 0.0f) {
-				return 0.0f;
-			}
-			return Float.POSITIVE_INFINITY;
-		} else {
-			throw new IllegalStateException("Unknown comparison function.");
-		}
-	}
+    /**
+     * if (coefficients^T * x [comparator] constant) { 0.0 }
+     * else { infinity }
+     */
+    @Override
+    public float evaluate() {
+        if (comparator.equals(FunctionComparator.Equality)) {
+            if (MathUtils.isZero(super.evaluate(), MathUtils.RELAXED_EPSILON)) {
+                return 0.0f;
+            }
+            return Float.POSITIVE_INFINITY;
+        } else if (comparator.equals(FunctionComparator.SmallerThan)) {
+            if (super.evaluate() <= 0.0f) {
+                return 0.0f;
+            }
+            return Float.POSITIVE_INFINITY;
+        } else if (comparator.equals(FunctionComparator.LargerThan)) {
+            if (super.evaluate() >= 0.0f) {
+                return 0.0f;
+            }
+            return Float.POSITIVE_INFINITY;
+        } else {
+            throw new IllegalStateException("Unknown comparison function.");
+        }
+    }
 
-	@Override
-	public void minimize(float stepSize, float[] consensusValues) {
-		// If it's not an equality constraint, first tries to minimize without the constraint.
-		if (!comparator.equals(FunctionComparator.Equality)) {
+    @Override
+    public void minimize(float stepSize, float[] consensusValues) {
+        // If it's not an equality constraint, first tries to minimize without the constraint.
+        if (!comparator.equals(FunctionComparator.Equality)) {
 
-			// Initializes scratch data.
-			float total = 0.0f;
+            // Initializes scratch data.
+            float total = 0.0f;
 
-			// Minimizes without regard for the constraint, i.e., solves
-			// argmin stepSize/2 * \|x - z + y / stepSize \|_2^2
-			for (int i = 0; i < size; i++) {
-				LocalVariable variable = variables[i];
-				variable.setValue(consensusValues[variable.getGlobalId()] - variable.getLagrange() / stepSize);
+            // Minimizes without regard for the constraint, i.e., solves
+            // argmin stepSize/2 * \|x - z + y / stepSize \|_2^2
+            for (int i = 0; i < size; i++) {
+                LocalVariable variable = variables[i];
+                variable.setValue(consensusValues[variable.getGlobalId()] - variable.getLagrange() / stepSize);
 
-				total += coefficients[i] * variable.getValue();
-			}
+                total += coefficients[i] * variable.getValue();
+            }
 
-			// Checks if the solution satisfies the constraint. If so, updates
-			// the local primal variables and returns.
-			if ( (comparator.equals(FunctionComparator.SmallerThan) && total <= constant)
-					||
-				 (comparator.equals(FunctionComparator.LargerThan) && total >= constant)
-				) {
-				return;
-			}
-		}
+            // Checks if the solution satisfies the constraint. If so, updates
+            // the local primal variables and returns.
+            if ( (comparator.equals(FunctionComparator.SmallerThan) && total <= constant)
+                    ||
+                 (comparator.equals(FunctionComparator.LargerThan) && total >= constant)
+                ) {
+                return;
+            }
+        }
 
-		// If the naive minimization didn't work, or if it's an equality constraint,
-		// projects onto the hyperplane
-		project(stepSize, consensusValues);
-	}
+        // If the naive minimization didn't work, or if it's an equality constraint,
+        // projects onto the hyperplane
+        project(stepSize, consensusValues);
+    }
 }

@@ -22,17 +22,17 @@ import org.linqs.psl.application.learning.weight.WeightLearningTest;
 import org.linqs.psl.config.Config;
 
 public class GuidedRandomGridSearchTest extends WeightLearningTest {
-	public GuidedRandomGridSearchTest() {
-		super();
-		assertBaseTest = false;
-		assertFriendshipRankTest = false;
-	}
+    public GuidedRandomGridSearchTest() {
+        super();
+        assertBaseTest = false;
+        assertFriendshipRankTest = false;
+    }
 
-	@Override
-	protected WeightLearningApplication getWLA() {
-		// Narrow the search space for tests.
-		Config.setProperty(RandomGridSearch.MAX_LOCATIONS_KEY, 100);
+    @Override
+    protected WeightLearningApplication getWLA() {
+        // Narrow the search space for tests.
+        Config.setProperty(RandomGridSearch.MAX_LOCATIONS_KEY, 100);
 
-		return new GuidedRandomGridSearch(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
-	}
+        return new GuidedRandomGridSearch(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
+    }
 }

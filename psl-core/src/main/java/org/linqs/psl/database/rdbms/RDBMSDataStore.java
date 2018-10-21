@@ -45,314 +45,314 @@ import java.util.Set;
  * It will connect to any RDBMS that has a supporting {@link DatabaseDriver} implementation.
  */
 public class RDBMSDataStore implements DataStore {
-	private static final Logger log = LoggerFactory.getLogger(RDBMSDataStore.class);
+    private static final Logger log = LoggerFactory.getLogger(RDBMSDataStore.class);
 
-	private static final Set<RDBMSDataStore> openDataStores = new HashSet<RDBMSDataStore>();
+    private static final Set<RDBMSDataStore> openDataStores = new HashSet<RDBMSDataStore>();
 
-	/**
-	 * Prefix of property keys used by this class.
-	 */
-	public static final String CONFIG_PREFIX = "rdbmsdatastore";
+    /**
+     * Prefix of property keys used by this class.
+     */
+    public static final String CONFIG_PREFIX = "rdbmsdatastore";
 
-	/**
-	 * Default value for the USE_STRING_ID_KEY property.
-	 */
-	public static final boolean USE_STRING_ID_DEFAULT = true;
+    /**
+     * Default value for the USE_STRING_ID_KEY property.
+     */
+    public static final boolean USE_STRING_ID_DEFAULT = true;
 
-	/**
-	 * This Database Driver associated to the datastore.
-	 */
-	private DatabaseDriver dbDriver;
+    /**
+     * This Database Driver associated to the datastore.
+     */
+    private DatabaseDriver dbDriver;
 
-	/**
-	 * Metadata
-	 */
-	private DataStoreMetadata metadata;
+    /**
+     * Metadata
+     */
+    private DataStoreMetadata metadata;
 
-	/**
-	 * All the read partitions mapped to the databases that are using them.
-	 */
-	private final Map<Partition, List<Database>> openDatabases;
+    /**
+     * All the read partitions mapped to the databases that are using them.
+     */
+    private final Map<Partition, List<Database>> openDatabases;
 
-	/**
-	 * All write partitions open in this DataStore.
-	 */
-	private final Set<Partition> writePartitionIDs;
+    /**
+     * All write partitions open in this DataStore.
+     */
+    private final Set<Partition> writePartitionIDs;
 
-	/**
-	 * The predicates registered with this DataStore
-	 */
-	private final Map<Predicate, PredicateInfo> predicates;
+    /**
+     * The predicates registered with this DataStore
+     */
+    private final Map<Predicate, PredicateInfo> predicates;
 
-	/**
-	 * Indicates that all predicates have been indexed.
-	 */
-	private boolean predicatesIndexed;
+    /**
+     * Indicates that all predicates have been indexed.
+     */
+    private boolean predicatesIndexed;
 
-	/**
-	 * Returns an RDBMSDataStore that utilizes the connections returned by the {@link DatabaseDriver}.
-	 */
-	public RDBMSDataStore(DatabaseDriver dbDriver) {
-		openDataStores.add(this);
+    /**
+     * Returns an RDBMSDataStore that utilizes the connections returned by the {@link DatabaseDriver}.
+     */
+    public RDBMSDataStore(DatabaseDriver dbDriver) {
+        openDataStores.add(this);
 
-		// Initialize all private variables
-		this.openDatabases = new HashMap<Partition, List<Database>>();
-		this.writePartitionIDs = new HashSet<Partition>();
-		this.predicates = new HashMap<Predicate, PredicateInfo>();
+        // Initialize all private variables
+        this.openDatabases = new HashMap<Partition, List<Database>>();
+        this.writePartitionIDs = new HashSet<Partition>();
+        this.predicates = new HashMap<Predicate, PredicateInfo>();
 
-		// Keep database driver locally for generating different query dialets
-		this.dbDriver = dbDriver;
+        // Keep database driver locally for generating different query dialets
+        this.dbDriver = dbDriver;
 
-		// Initialize metadata
-		this.metadata = new DataStoreMetadata(this);
+        // Initialize metadata
+        this.metadata = new DataStoreMetadata(this);
 
-		// We start with no predicates to index.
-		predicatesIndexed = true;
-	}
+        // We start with no predicates to index.
+        predicatesIndexed = true;
+    }
 
-	@Override
-	public void registerPredicate(StandardPredicate predicate) {
-		if (predicates.containsKey(predicate)) {
-			return;
-		}
+    @Override
+    public void registerPredicate(StandardPredicate predicate) {
+        if (predicates.containsKey(predicate)) {
+            return;
+        }
 
-		PredicateInfo predicateInfo = new PredicateInfo(predicate);
-		predicates.put(predicate, predicateInfo);
+        PredicateInfo predicateInfo = new PredicateInfo(predicate);
+        predicates.put(predicate, predicateInfo);
 
-		// If we add a table, we need to index.
-		predicatesIndexed = false;
+        // If we add a table, we need to index.
+        predicatesIndexed = false;
 
-		try (Connection connection = getConnection()) {
-			predicateInfo.setupTable(connection, dbDriver);
-		} catch (SQLException ex) {
-			throw new RuntimeException("Unable to setup predicate table for: " + predicate + ".", ex);
-		}
-	}
+        try (Connection connection = getConnection()) {
+            predicateInfo.setupTable(connection, dbDriver);
+        } catch (SQLException ex) {
+            throw new RuntimeException("Unable to setup predicate table for: " + predicate + ".", ex);
+        }
+    }
 
-	@Override
-	public Database getDatabase(Partition write, Partition... read) {
-		return getDatabase(write, null, read);
-	}
+    @Override
+    public Database getDatabase(Partition write, Partition... read) {
+        return getDatabase(write, null, read);
+    }
 
-	@Override
-	public Database getDatabase(Partition write, Set<StandardPredicate> toClose, Partition... read) {
-		/*
-		 * Checks that:
-		 * 1. No other databases are writing to the specified write partition
-		 * 2. No other databases are reading from this write partition
-		 * 3. No other database is writing to the specified read partition(s)
-		 */
-		if (writePartitionIDs.contains(write)) {
-			throw new IllegalArgumentException("The specified write partition ID is already used by another database.");
-		} else if (openDatabases.containsKey(write)) {
-			throw new IllegalArgumentException("The specified write partition ID is also a read partition.");
-		}
+    @Override
+    public Database getDatabase(Partition write, Set<StandardPredicate> toClose, Partition... read) {
+        /*
+         * Checks that:
+         * 1. No other databases are writing to the specified write partition
+         * 2. No other databases are reading from this write partition
+         * 3. No other database is writing to the specified read partition(s)
+         */
+        if (writePartitionIDs.contains(write)) {
+            throw new IllegalArgumentException("The specified write partition ID is already used by another database.");
+        } else if (openDatabases.containsKey(write)) {
+            throw new IllegalArgumentException("The specified write partition ID is also a read partition.");
+        }
 
-		for (Partition partition : read) {
-			if (writePartitionIDs.contains(partition)) {
-				throw new IllegalArgumentException("Another database is writing to a specified read partition: " + partition);
-			}
-		}
+        for (Partition partition : read) {
+            if (writePartitionIDs.contains(partition)) {
+                throw new IllegalArgumentException("Another database is writing to a specified read partition: " + partition);
+            }
+        }
 
-		// Make sure all the predicates are indexed.
-		// We wait until now, so data can be loaded without needed to update the indexes.
-		indexPredicates();
+        // Make sure all the predicates are indexed.
+        // We wait until now, so data can be loaded without needed to update the indexes.
+        indexPredicates();
 
-		// Creates the database and registers the current predicates
-		RDBMSDatabase db = new RDBMSDatabase(this, write, read, toClose);
+        // Creates the database and registers the current predicates
+        RDBMSDatabase db = new RDBMSDatabase(this, write, read, toClose);
 
-		// Register the write and read partitions as being associated with this database
-		for (Partition partition : read) {
-			if (!openDatabases.containsKey(partition)) {
-				openDatabases.put(partition, new ArrayList<Database>());
-			}
+        // Register the write and read partitions as being associated with this database
+        for (Partition partition : read) {
+            if (!openDatabases.containsKey(partition)) {
+                openDatabases.put(partition, new ArrayList<Database>());
+            }
 
-			openDatabases.get(partition).add(db);
-		}
+            openDatabases.get(partition).add(db);
+        }
 
-		writePartitionIDs.add(write);
+        writePartitionIDs.add(write);
 
-		return db;
-	}
+        return db;
+    }
 
-	public void indexPredicates() {
-		if (predicatesIndexed) {
-			return;
-		}
-		predicatesIndexed = true;
+    public void indexPredicates() {
+        if (predicatesIndexed) {
+            return;
+        }
+        predicatesIndexed = true;
 
-		List<PredicateInfo> toIndex = new ArrayList<PredicateInfo>();
-		for (PredicateInfo predicateInfo : predicates.values()) {
-			if (!predicateInfo.indexed()) {
-				toIndex.add(predicateInfo);
-			}
-		}
+        List<PredicateInfo> toIndex = new ArrayList<PredicateInfo>();
+        for (PredicateInfo predicateInfo : predicates.values()) {
+            if (!predicateInfo.indexed()) {
+                toIndex.add(predicateInfo);
+            }
+        }
 
-		if (toIndex.size() == 0) {
-			return;
-		}
+        if (toIndex.size() == 0) {
+            return;
+        }
 
-		// Index in parallel.
-		log.debug("Indexing predicates.");
-		Parallel.foreach(toIndex, new Parallel.Worker<PredicateInfo>() {
-			@Override
-			public void work(int index, PredicateInfo predicateInfo) {
-				log.trace("Indexing " + predicateInfo.predicate());
+        // Index in parallel.
+        log.debug("Indexing predicates.");
+        Parallel.foreach(toIndex, new Parallel.Worker<PredicateInfo>() {
+            @Override
+            public void work(int index, PredicateInfo predicateInfo) {
+                log.trace("Indexing " + predicateInfo.predicate());
 
-				try (Connection connection = getConnection()) {
-					predicateInfo.index(connection, dbDriver);
-				} catch (SQLException ex) {
-					throw new RuntimeException("Unable to index predicate: " + predicateInfo.predicate(), ex);
-				}
+                try (Connection connection = getConnection()) {
+                    predicateInfo.index(connection, dbDriver);
+                } catch (SQLException ex) {
+                    throw new RuntimeException("Unable to index predicate: " + predicateInfo.predicate(), ex);
+                }
 
-				// Ensure that table stats are up-to-date.
-				dbDriver.updateTableStats(predicateInfo);
-			}
-		});
+                // Ensure that table stats are up-to-date.
+                dbDriver.updateTableStats(predicateInfo);
+            }
+        });
 
-		// Ensure that DB stats are up-to-date.
-		dbDriver.updateDBStats();
+        // Ensure that DB stats are up-to-date.
+        dbDriver.updateDBStats();
 
-		log.debug("Predicate indexing complete.");
-	}
+        log.debug("Predicate indexing complete.");
+    }
 
-	@Override
-	public Iterable<Database> getOpenDatabases() {
-		Set<Database> databases = new HashSet<Database>();
-		for (List<Database> partitionDatabases : openDatabases.values()) {
-			databases.addAll(partitionDatabases);
-		}
+    @Override
+    public Iterable<Database> getOpenDatabases() {
+        Set<Database> databases = new HashSet<Database>();
+        for (List<Database> partitionDatabases : openDatabases.values()) {
+            databases.addAll(partitionDatabases);
+        }
 
-		return databases;
-	}
+        return databases;
+    }
 
-	@Override
-	public Inserter getInserter(StandardPredicate predicate, Partition partition) {
-		if (!predicates.containsKey(predicate)) {
-			throw new IllegalArgumentException("Unknown predicate specified: " + predicate);
-		} else if (writePartitionIDs.contains(partition) || openDatabases.containsKey(partition)) {
-			throw new IllegalStateException("Partition [" + partition + "] is currently in use, cannot insert into it.");
-		}
+    @Override
+    public Inserter getInserter(StandardPredicate predicate, Partition partition) {
+        if (!predicates.containsKey(predicate)) {
+            throw new IllegalArgumentException("Unknown predicate specified: " + predicate);
+        } else if (writePartitionIDs.contains(partition) || openDatabases.containsKey(partition)) {
+            throw new IllegalStateException("Partition [" + partition + "] is currently in use, cannot insert into it.");
+        }
 
-		return new RDBMSInserter(this, predicates.get(predicate), partition);
-	}
+        return new RDBMSInserter(this, predicates.get(predicate), partition);
+    }
 
-	@Override
-	public Set<StandardPredicate> getRegisteredPredicates() {
-		Set<StandardPredicate> standardPredicates = new HashSet<StandardPredicate>();
-		for (Predicate predicate : predicates.keySet()) {
-			if (predicate instanceof StandardPredicate) {
-				standardPredicates.add((StandardPredicate) predicate);
-			}
-		}
+    @Override
+    public Set<StandardPredicate> getRegisteredPredicates() {
+        Set<StandardPredicate> standardPredicates = new HashSet<StandardPredicate>();
+        for (Predicate predicate : predicates.keySet()) {
+            if (predicate instanceof StandardPredicate) {
+                standardPredicates.add((StandardPredicate) predicate);
+            }
+        }
 
-		return standardPredicates;
-	}
+        return standardPredicates;
+    }
 
-	@Override
-	public int deletePartition(Partition partition) {
-		if (writePartitionIDs.contains(partition) || openDatabases.containsKey(partition)) {
-			throw new IllegalArgumentException("Cannot delete partition that is in use.");
-		}
+    @Override
+    public int deletePartition(Partition partition) {
+        if (writePartitionIDs.contains(partition) || openDatabases.containsKey(partition)) {
+            throw new IllegalArgumentException("Cannot delete partition that is in use.");
+        }
 
-		int deletedEntries = 0;
-		try (
-			Connection connection = getConnection();
-			Statement stmt = connection.createStatement();
-		) {
-			for (PredicateInfo pred : predicates.values()) {
-				String sql = "DELETE FROM " + pred.tableName() + " WHERE " + PredicateInfo.PARTITION_COLUMN_NAME + " = " + partition.getID();
-				deletedEntries += stmt.executeUpdate(sql);
-			}
+        int deletedEntries = 0;
+        try (
+            Connection connection = getConnection();
+            Statement stmt = connection.createStatement();
+        ) {
+            for (PredicateInfo pred : predicates.values()) {
+                String sql = "DELETE FROM " + pred.tableName() + " WHERE " + PredicateInfo.PARTITION_COLUMN_NAME + " = " + partition.getID();
+                deletedEntries += stmt.executeUpdate(sql);
+            }
 
-			metadata.removePartition(partition);
-		} catch(SQLException ex) {
-			throw new RuntimeException(ex);
-		}
+            metadata.removePartition(partition);
+        } catch(SQLException ex) {
+            throw new RuntimeException(ex);
+        }
 
-		return deletedEntries;
-	}
+        return deletedEntries;
+    }
 
 
-	@Override
-	public void close() {
-		openDataStores.remove(this);
+    @Override
+    public void close() {
+        openDataStores.remove(this);
 
-		if (!openDatabases.isEmpty()) {
-			throw new IllegalStateException("Cannot close data store when databases are still open!");
-		}
+        if (!openDatabases.isEmpty()) {
+            throw new IllegalStateException("Cannot close data store when databases are still open!");
+        }
 
-		if (dbDriver != null) {
-			dbDriver.close();
-			dbDriver = null;
-		}
-	}
+        if (dbDriver != null) {
+            dbDriver.close();
+            dbDriver = null;
+        }
+    }
 
-	public DataStoreMetadata getMetadata() {
-		return metadata;
-	}
+    public DataStoreMetadata getMetadata() {
+        return metadata;
+    }
 
-	public void releasePartitions(RDBMSDatabase db) {
-		if (!db.getDataStore().equals(this)) {
-			throw new IllegalArgumentException("Database has not been opened with this data store.");
-		}
+    public void releasePartitions(RDBMSDatabase db) {
+        if (!db.getDataStore().equals(this)) {
+            throw new IllegalArgumentException("Database has not been opened with this data store.");
+        }
 
-		// Release the read partition(s) in use by this database
-		for (Partition partition : db.getReadPartitions()) {
-			openDatabases.get(partition).remove(db);
+        // Release the read partition(s) in use by this database
+        for (Partition partition : db.getReadPartitions()) {
+            openDatabases.get(partition).remove(db);
 
-			if (openDatabases.get(partition).isEmpty()) {
-				openDatabases.remove(partition);
-			}
-		}
+            if (openDatabases.get(partition).isEmpty()) {
+                openDatabases.remove(partition);
+            }
+        }
 
-		// Release the write partition in use by this database
-		writePartitionIDs.remove(db.getWritePartition());
-	}
+        // Release the write partition in use by this database
+        writePartitionIDs.remove(db.getWritePartition());
+    }
 
-	public Partition getNewPartition(){
-		return metadata.getNewPartition();
-	}
+    public Partition getNewPartition(){
+        return metadata.getNewPartition();
+    }
 
-	@Override
-	public Partition getPartition(String partitionName) {
-		return metadata.getPartition(partitionName);
-	}
+    @Override
+    public Partition getPartition(String partitionName) {
+        return metadata.getPartition(partitionName);
+    }
 
-	@Override
-	public Set<Partition> getPartitions() {
-		return metadata.getAllPartitions();
-	}
+    @Override
+    public Set<Partition> getPartitions() {
+        return metadata.getAllPartitions();
+    }
 
-	public int getPredicateRowCount(StandardPredicate predicate) {
-		try (Connection connection = getConnection()) {
-			return predicates.get(predicate).getCount(connection);
-		} catch (SQLException ex) {
-			throw new RuntimeException("Failed to close connection for count.", ex);
-		}
-	}
+    public int getPredicateRowCount(StandardPredicate predicate) {
+        try (Connection connection = getConnection()) {
+            return predicates.get(predicate).getCount(connection);
+        } catch (SQLException ex) {
+            throw new RuntimeException("Failed to close connection for count.", ex);
+        }
+    }
 
-	public DatabaseDriver getDriver() {
-		return dbDriver;
-	}
+    public DatabaseDriver getDriver() {
+        return dbDriver;
+    }
 
-	public Connection getConnection() {
-		return dbDriver.getConnection();
-	}
+    public Connection getConnection() {
+        return dbDriver.getConnection();
+    }
 
-	public static Set<RDBMSDataStore> getOpenDataStores() {
-		return Collections.unmodifiableSet(openDataStores);
-	}
+    public static Set<RDBMSDataStore> getOpenDataStores() {
+        return Collections.unmodifiableSet(openDataStores);
+    }
 
-	/**
-	 * Helper method for getting a predicate handle
-	 */
-	public synchronized PredicateInfo getPredicateInfo(Predicate predicate) {
-		PredicateInfo info = predicates.get(predicate);
-		if (info == null) {
-			throw new IllegalArgumentException("Predicate not registered with data store.");
-		}
+    /**
+     * Helper method for getting a predicate handle
+     */
+    public synchronized PredicateInfo getPredicateInfo(Predicate predicate) {
+        PredicateInfo info = predicates.get(predicate);
+        if (info == null) {
+            throw new IllegalArgumentException("Predicate not registered with data store.");
+        }
 
-		return info;
-	}
+        return info;
+    }
 }

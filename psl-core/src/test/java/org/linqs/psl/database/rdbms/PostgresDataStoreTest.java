@@ -22,18 +22,18 @@ import org.linqs.psl.database.DatabaseTestUtil;
 import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 
 public class PostgresDataStoreTest extends RDBMSDataStoreTest {
-	@Override
-	public DataStore getDataStore(boolean clearDB, boolean persisted) {
-		DatabaseDriver driver = DatabaseTestUtil.getPostgresDriver(clearDB);
-		if (driver == null) {
-			return null;
-		}
+    @Override
+    public DataStore getDataStore(boolean clearDB, boolean persisted) {
+        DatabaseDriver driver = DatabaseTestUtil.getPostgresDriver(clearDB);
+        if (driver == null) {
+            return null;
+        }
 
-		return new RDBMSDataStore(driver);
-	}
+        return new RDBMSDataStore(driver);
+    }
 
-	@Override
-	public void cleanUp() {
-		DatabaseTestUtil.cleanPostgresDriver();
-	}
+    @Override
+    public void cleanUp() {
+        DatabaseTestUtil.cleanPostgresDriver();
+    }
 }

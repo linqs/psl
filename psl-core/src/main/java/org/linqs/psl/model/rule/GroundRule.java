@@ -29,19 +29,19 @@ import org.linqs.psl.model.atom.GroundAtom;
  * GroundRules are templated by a parent {@link Rule}.
  */
 public interface GroundRule {
-	/**
-	 * @return this GroundRule's parent {@link Rule}
-	 */
-	public Rule getRule();
+    /**
+     * @return this GroundRule's parent {@link Rule}
+     */
+    public Rule getRule();
 
-	/**
-	 * @return set of {@link GroundAtom GroundAtoms} which determine this
-	 *  GroundRule's incompatibility or infeasibility
-	 */
-	public Set<GroundAtom> getAtoms();
+    /**
+     * @return set of {@link GroundAtom GroundAtoms} which determine this
+     *  GroundRule's incompatibility or infeasibility
+     */
+    public Set<GroundAtom> getAtoms();
 
-	/**
-	 * Negate this ground rule and get the corresponding ground rule(s).
-	 */
-	public List<GroundRule> negate();
+    /**
+     * Negate this ground rule and get the corresponding ground rule(s).
+     */
+    public List<GroundRule> negate();
 }

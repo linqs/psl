@@ -33,87 +33,87 @@ import java.util.Set;
 import org.apache.commons.collections4.list.UnmodifiableList;
 
 public class MemoryTermStore<E extends Term> implements TermStore<E> {
-	public static final String CONFIG_PREFIX = "memorytermstore";
+    public static final String CONFIG_PREFIX = "memorytermstore";
 
-	/**
-	 * Initial size for the memory store.
-	 */
-	public static final String INITIAL_SIZE_KEY = CONFIG_PREFIX + ".initialsize";
-	public static final int INITIAL_SIZE_DEFAULT = 5000;
+    /**
+     * Initial size for the memory store.
+     */
+    public static final String INITIAL_SIZE_KEY = CONFIG_PREFIX + ".initialsize";
+    public static final int INITIAL_SIZE_DEFAULT = 5000;
 
-	private ArrayList<E> store;
+    private ArrayList<E> store;
 
-	public MemoryTermStore() {
-		this(Config.getInt(INITIAL_SIZE_KEY, INITIAL_SIZE_DEFAULT));
-	}
+    public MemoryTermStore() {
+        this(Config.getInt(INITIAL_SIZE_KEY, INITIAL_SIZE_DEFAULT));
+    }
 
-	public MemoryTermStore(int initialSize) {
-		store = new ArrayList<E>(initialSize);
-	}
+    public MemoryTermStore(int initialSize) {
+        store = new ArrayList<E>(initialSize);
+    }
 
-	@Override
-	public synchronized void add(GroundRule rule, E term) {
-		store.add(term);
-	}
+    @Override
+    public synchronized void add(GroundRule rule, E term) {
+        store.add(term);
+    }
 
-	@Override
-	public void clear() {
-		if (store != null) {
-			store.clear();
-		}
-	}
+    @Override
+    public void clear() {
+        if (store != null) {
+            store.clear();
+        }
+    }
 
-	@Override
-	public void close() {
-		clear();
+    @Override
+    public void close() {
+        clear();
 
-		store = null;
-	}
+        store = null;
+    }
 
-	@Override
-	public E get(int index) {
-		return store.get(index);
-	}
+    @Override
+    public E get(int index) {
+        return store.get(index);
+    }
 
-	@Override
-	public int size() {
-		return store.size();
-	}
+    @Override
+    public int size() {
+        return store.size();
+    }
 
-	@Override
-	public void ensureCapacity(int capacity) {
-		assert(capacity >= 0);
+    @Override
+    public void ensureCapacity(int capacity) {
+        assert(capacity >= 0);
 
-		if (capacity == 0) {
-			return;
-		}
+        if (capacity == 0) {
+            return;
+        }
 
-		store.ensureCapacity(capacity);
-	}
+        store.ensureCapacity(capacity);
+    }
 
-	@Override
-	public Iterator<E> iterator() {
-		return store.iterator();
-	}
+    @Override
+    public Iterator<E> iterator() {
+        return store.iterator();
+    }
 
-	/**
-	 * O(n)
-	 */
-	@Override
-	public void updateWeights() {
-		for (int i = 0; i < store.size(); i++) {
-			store.get(i).weightChanged();
-		}
-	}
+    /**
+     * O(n)
+     */
+    @Override
+    public void updateWeights() {
+        for (int i = 0; i < store.size(); i++) {
+            store.get(i).weightChanged();
+        }
+    }
 
-	@Override
-	public Iterable<E> getTerms(GroundRule groundRule) {
-		final GroundRule finalGroundRule = groundRule;
+    @Override
+    public Iterable<E> getTerms(GroundRule groundRule) {
+        final GroundRule finalGroundRule = groundRule;
 
-		return IteratorUtils.filter(store, new IteratorUtils.FilterFunction<E>() {
-			public boolean keep(E term) {
-				return finalGroundRule.equals(term.getGroundRule());
-			}
-		});
-	}
+        return IteratorUtils.filter(store, new IteratorUtils.FilterFunction<E>() {
+            public boolean keep(E term) {
+                return finalGroundRule.equals(term.getGroundRule());
+            }
+        });
+    }
 }

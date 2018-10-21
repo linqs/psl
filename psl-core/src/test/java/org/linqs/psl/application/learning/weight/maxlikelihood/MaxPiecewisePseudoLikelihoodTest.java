@@ -22,14 +22,14 @@ import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningTest;
 
 public class MaxPiecewisePseudoLikelihoodTest extends WeightLearningTest {
-	public MaxPiecewisePseudoLikelihoodTest() {
-		super();
+    public MaxPiecewisePseudoLikelihoodTest() {
+        super();
 
-		assertBaseTest = false;
-	}
+        assertBaseTest = false;
+    }
 
-	@Override
-	protected WeightLearningApplication getWLA() {
-		return new MaxPiecewisePseudoLikelihood(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
-	}
+    @Override
+    protected WeightLearningApplication getWLA() {
+        return new MaxPiecewisePseudoLikelihood(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
+    }
 }

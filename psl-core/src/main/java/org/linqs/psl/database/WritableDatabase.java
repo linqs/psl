@@ -27,52 +27,52 @@ import org.linqs.psl.model.predicate.StandardPredicate;
  * To retrieve {@link GroundAtom GroundAtoms} use a ReadableDatabase.
  */
 public interface WritableDatabase {
-	/**
-	 * Removes the GroundAtom from the Database, if it exists.
-	 */
-	public boolean deleteAtom(GroundAtom a);
+    /**
+     * Removes the GroundAtom from the Database, if it exists.
+     */
+    public boolean deleteAtom(GroundAtom a);
 
-	/**
-	 * Persists a RandomVariableAtom in this Database's write Partition.
-	 *
-	 * If the RandomVariableAtom has already been persisted in the write Partition,
-	 * it will be updated.
-	 */
-	public void commit(RandomVariableAtom atom);
+    /**
+     * Persists a RandomVariableAtom in this Database's write Partition.
+     *
+     * If the RandomVariableAtom has already been persisted in the write Partition,
+     * it will be updated.
+     */
+    public void commit(RandomVariableAtom atom);
 
-	/**
-	 * A batch form or commit().
-	 * When possible, this commit should be used.
-	 */
-	public void commit(Iterable<RandomVariableAtom> atoms);
+    /**
+     * A batch form or commit().
+     * When possible, this commit should be used.
+     */
+    public void commit(Iterable<RandomVariableAtom> atoms);
 
-	/**
-	 * Commit all RandomVariableAtoms in the database's cache.
-	 * This defaults to all cached atoms.
-	 */
-	public void commitCachedAtoms();
+    /**
+     * Commit all RandomVariableAtoms in the database's cache.
+     * This defaults to all cached atoms.
+     */
+    public void commitCachedAtoms();
 
-	/**
-	 * Commit all RandomVariableAtoms in the database's cache.
-	 */
-	public void commitCachedAtoms(boolean onlyPersisted);
+    /**
+     * Commit all RandomVariableAtoms in the database's cache.
+     */
+    public void commitCachedAtoms(boolean onlyPersisted);
 
-	/**
-	 * A form of commit() that allows the caller to choose the specific partition
-	 * the atoms are comitted to.
-	 * Should only be used if you REALLY know what you are doing.
-	 */
-	public void commit(Iterable<RandomVariableAtom> atoms, int partitionId);
+    /**
+     * A form of commit() that allows the caller to choose the specific partition
+     * the atoms are comitted to.
+     * Should only be used if you REALLY know what you are doing.
+     */
+    public void commit(Iterable<RandomVariableAtom> atoms, int partitionId);
 
-	/**
-	 * Move all ground atoms of a predicate/partition combination into
-	 * the write partition.
-	 * Be careful not to call this while the database is in use.
-	 */
-	public void moveToWritePartition(StandardPredicate predicate, int oldPartitionId);
+    /**
+     * Move all ground atoms of a predicate/partition combination into
+     * the write partition.
+     * Be careful not to call this while the database is in use.
+     */
+    public void moveToWritePartition(StandardPredicate predicate, int oldPartitionId);
 
-	/**
-	 * Releases the {@link Partition Partitions} used by this Database.
-	 */
-	public void close();
+    /**
+     * Releases the {@link Partition Partitions} used by this Database.
+     */
+    public void close();
 }

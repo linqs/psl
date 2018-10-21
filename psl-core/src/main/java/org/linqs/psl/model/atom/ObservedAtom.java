@@ -34,15 +34,15 @@ import org.linqs.psl.model.term.Constant;
  * Other reasons may exist for specific Database implementations.
  */
 public class ObservedAtom extends GroundAtom {
-	/**
-	 * Instantiation of GrondAtoms should typically be left to the Database so it can maintain a cache.
-	 */
-	public ObservedAtom(Predicate predicate, Constant[] args, float value) {
-		super(predicate, args, value);
-	}
+    /**
+     * Instantiation of GrondAtoms should typically be left to the Database so it can maintain a cache.
+     */
+    public ObservedAtom(Predicate predicate, Constant[] args, float value) {
+        super(predicate, args, value);
+    }
 
-	@Override
-	public boolean isConstant() {
-		return true;
-	}
+    @Override
+    public boolean isConstant() {
+        return true;
+    }
 }

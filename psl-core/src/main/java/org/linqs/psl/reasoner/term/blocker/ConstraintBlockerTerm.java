@@ -35,54 +35,54 @@ import java.util.Map;
  * See {@link ConstraintBlockerTermGenerator} for details on the constraint blocking process.
  */
 public class ConstraintBlockerTerm implements Term {
-	private RandomVariableAtom[] atoms;
-	private WeightedGroundRule[] incidentGRs;
-	private boolean exactlyOne;
+    private RandomVariableAtom[] atoms;
+    private WeightedGroundRule[] incidentGRs;
+    private boolean exactlyOne;
 
-	/**
-	 * Takes ownership of all the passed in arrays.
-	 */
-	public ConstraintBlockerTerm(RandomVariableAtom[] atoms, WeightedGroundRule[] incidentGRs, boolean exactlyOne) {
-		this.atoms = atoms;
-		this.incidentGRs = incidentGRs;
-		this.exactlyOne = exactlyOne;
-	}
+    /**
+     * Takes ownership of all the passed in arrays.
+     */
+    public ConstraintBlockerTerm(RandomVariableAtom[] atoms, WeightedGroundRule[] incidentGRs, boolean exactlyOne) {
+        this.atoms = atoms;
+        this.incidentGRs = incidentGRs;
+        this.exactlyOne = exactlyOne;
+    }
 
-	public RandomVariableAtom[] getAtoms() {
-		return atoms;
-	}
+    public RandomVariableAtom[] getAtoms() {
+        return atoms;
+    }
 
-	public WeightedGroundRule[] getIncidentGRs() {
-		return incidentGRs;
-	}
+    public WeightedGroundRule[] getIncidentGRs() {
+        return incidentGRs;
+    }
 
-	public boolean getExactlyOne() {
-		return exactlyOne;
-	}
+    public boolean getExactlyOne() {
+        return exactlyOne;
+    }
 
-	public int size() {
-		return atoms.length;
-	}
+    public int size() {
+        return atoms.length;
+    }
 
-	/**
-	 * Randomly initializes the RandomVariableAtoms to a feasible state.
-	 */
-	public void randomlyInitialize() {
-		for (RandomVariableAtom atom : atoms) {
-			atom.setValue(0.0f);
-		}
+    /**
+     * Randomly initializes the RandomVariableAtoms to a feasible state.
+     */
+    public void randomlyInitialize() {
+        for (RandomVariableAtom atom : atoms) {
+            atom.setValue(0.0f);
+        }
 
-		if (atoms.length > 0 && exactlyOne) {
-			atoms[RandUtils.nextInt(atoms.length)].setValue(1.0f);
-		}
-	}
+        if (atoms.length > 0 && exactlyOne) {
+            atoms[RandUtils.nextInt(atoms.length)].setValue(1.0f);
+        }
+    }
 
-	@Override
-	public GroundRule getGroundRule() {
-		throw new UnsupportedOperationException();
-	}
+    @Override
+    public GroundRule getGroundRule() {
+        throw new UnsupportedOperationException();
+    }
 
-	@Override
-	public void weightChanged() {
-	}
+    @Override
+    public void weightChanged() {
+    }
 }

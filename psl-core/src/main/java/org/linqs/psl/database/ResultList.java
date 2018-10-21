@@ -28,37 +28,37 @@ import java.util.Map;
  */
 public interface ResultList extends QueryResultIterable {
 
-	/**
-	 * @return the number of sets of substitutions in the list
-	 */
-	public int size();
+    /**
+     * @return the number of sets of substitutions in the list
+     */
+    public int size();
 
-	/**
-	 * @return the number of distinct {@link Variable Variables} replaced in
-	 *     each substitution
-	 */
-	public int getArity();
+    /**
+     * @return the number of distinct {@link Variable Variables} replaced in
+     *     each substitution
+     */
+    public int getArity();
 
-	/**
-	 * Returns a substitution for a single {@link Variable}
-	 *
-	 * @param index the index of the substitution (from 0 to size-1)
-	 * @param var the Variable that is replaced
-	 * @return the substituted GroundTerm
-	 * @throws IllegalArgumentException  if index is out of range or var is invalid
-	 */
-	public Constant get(int index, Variable var);
+    /**
+     * Returns a substitution for a single {@link Variable}
+     *
+     * @param index the index of the substitution (from 0 to size-1)
+     * @param var the Variable that is replaced
+     * @return the substituted GroundTerm
+     * @throws IllegalArgumentException  if index is out of range or var is invalid
+     */
+    public Constant get(int index, Variable var);
 
-	/**
-	 * Returns a substitution for all {@link Variable Variables}.
-	 * <p>
-	 * GroundTerms are ordered according to the Variables' first appearances in
-	 * a depth-first, left-to-right traversal of the Formula in the DatabaseQuery
-	 * that generated this ResultList.
-	 *
-	 * @param index the index of the substitution (from 0 to size-1)
-	 * @return the substituted GroundTerms
-	 * @throws IllegalArgumentException  if index is out of range
-	 */
-	public Constant[] get(int index);
+    /**
+     * Returns a substitution for all {@link Variable Variables}.
+     * <p>
+     * GroundTerms are ordered according to the Variables' first appearances in
+     * a depth-first, left-to-right traversal of the Formula in the DatabaseQuery
+     * that generated this ResultList.
+     *
+     * @param index the index of the substitution (from 0 to size-1)
+     * @return the substituted GroundTerms
+     * @throws IllegalArgumentException  if index is out of range
+     */
+    public Constant[] get(int index);
 }

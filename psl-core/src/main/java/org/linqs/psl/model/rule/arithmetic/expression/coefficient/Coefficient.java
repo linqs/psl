@@ -32,17 +32,17 @@ import org.linqs.psl.model.term.Constant;
  * a lot of them and they are simple.
  */
 public abstract class Coefficient {
-	/**
-	 * Get the value of a coefficient (which may require a reqursive descent).
-	 * For performance reasons, instead of passing the full subtitution set this the method,
-	 * we are only passing the number of substitutions there are.
-	 * This may need to change in the future,
-	 * but the cost is too high to justify unless it is necessary.
-	 */
-	public abstract float getValue(Map<SummationVariable, Integer> subs);
+    /**
+     * Get the value of a coefficient (which may require a reqursive descent).
+     * For performance reasons, instead of passing the full subtitution set this the method,
+     * we are only passing the number of substitutions there are.
+     * This may need to change in the future,
+     * but the cost is too high to justify unless it is necessary.
+     */
+    public abstract float getValue(Map<SummationVariable, Integer> subs);
 
-	/**
-	 * Get a simplified version of this Coefficient, the Coefficient itself if it cannot be simplified further.
-	 */
-	public abstract Coefficient simplify();
+    /**
+     * Get a simplified version of this Coefficient, the Coefficient itself if it cannot be simplified further.
+     */
+    public abstract Coefficient simplify();
 }

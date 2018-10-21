@@ -22,14 +22,14 @@ import org.linqs.psl.database.DatabaseTestUtil;
 import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 
 public class H2DataStoreTest extends RDBMSDataStoreTest {
-	@Override
-	public DataStore getDataStore(boolean clearDB, boolean persisted) {
-		DatabaseDriver driver = DatabaseTestUtil.getH2Driver(clearDB, persisted);
-		return new RDBMSDataStore(driver);
-	}
+    @Override
+    public DataStore getDataStore(boolean clearDB, boolean persisted) {
+        DatabaseDriver driver = DatabaseTestUtil.getH2Driver(clearDB, persisted);
+        return new RDBMSDataStore(driver);
+    }
 
-	@Override
-	public void cleanUp() {
-		DatabaseTestUtil.cleanH2Driver();
-	}
+    @Override
+    public void cleanUp() {
+        DatabaseTestUtil.cleanH2Driver();
+    }
 }

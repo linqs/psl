@@ -23,73 +23,73 @@ import org.linqs.psl.util.ArrayUtils;
  * Information representing a raw hyperplane.
  */
 public class Hyperplane {
-	private LocalVariable[] variables;
-	private float[] coefficients;
-	private int size = 0;
-	private float constant;
+    private LocalVariable[] variables;
+    private float[] coefficients;
+    private int size = 0;
+    private float constant;
 
-	public Hyperplane(int maxSize, float constant) {
-		this(new LocalVariable[maxSize], new float[maxSize], constant, 0);
-	}
+    public Hyperplane(int maxSize, float constant) {
+        this(new LocalVariable[maxSize], new float[maxSize], constant, 0);
+    }
 
-	public Hyperplane(LocalVariable[] variables, float[] coefficients, float constant, int size) {
-		this.variables = variables;
-		this.coefficients = coefficients;
-		this.constant = constant;
-		this.size = size;
-	}
+    public Hyperplane(LocalVariable[] variables, float[] coefficients, float constant, int size) {
+        this.variables = variables;
+        this.coefficients = coefficients;
+        this.constant = constant;
+        this.size = size;
+    }
 
-	public void addTerm(LocalVariable variable, float coefficient) {
-		variables[size] = variable;
-		coefficients[size] = coefficient;
-		size++;
-	}
+    public void addTerm(LocalVariable variable, float coefficient) {
+        variables[size] = variable;
+        coefficients[size] = coefficient;
+        size++;
+    }
 
-	public int size() {
-		return size;
-	}
+    public int size() {
+        return size;
+    }
 
-	public LocalVariable getVariable(int index) {
-		if (index >= size) {
-			throw new IndexOutOfBoundsException("Tried to access variable at index " + index + ", but only " + size + " exist.");
-		}
+    public LocalVariable getVariable(int index) {
+        if (index >= size) {
+            throw new IndexOutOfBoundsException("Tried to access variable at index " + index + ", but only " + size + " exist.");
+        }
 
-		return variables[index];
-	}
+        return variables[index];
+    }
 
-	public float getCoefficient(int index) {
-		if (index >= size) {
-			throw new IndexOutOfBoundsException("Tried to access coefficient at index " + index + ", but only " + size + " exist.");
-		}
+    public float getCoefficient(int index) {
+        if (index >= size) {
+            throw new IndexOutOfBoundsException("Tried to access coefficient at index " + index + ", but only " + size + " exist.");
+        }
 
-		return coefficients[index];
-	}
+        return coefficients[index];
+    }
 
-	public void appendCoefficient(int index, float value) {
-		if (index >= size) {
-			throw new IndexOutOfBoundsException("Tried to access coefficient at index " + index + ", but only " + size + " exist.");
-		}
+    public void appendCoefficient(int index, float value) {
+        if (index >= size) {
+            throw new IndexOutOfBoundsException("Tried to access coefficient at index " + index + ", but only " + size + " exist.");
+        }
 
-		coefficients[index] += value;
-	}
+        coefficients[index] += value;
+    }
 
-	public float getConstant() {
-		return constant;
-	}
+    public float getConstant() {
+        return constant;
+    }
 
-	public void setConstant(float constant) {
-		this.constant = constant;
-	}
+    public void setConstant(float constant) {
+        this.constant = constant;
+    }
 
-	public int indexOfVariable(LocalVariable needle) {
-		return ArrayUtils.indexOf(variables, size, needle);
-	}
+    public int indexOfVariable(LocalVariable needle) {
+        return ArrayUtils.indexOf(variables, size, needle);
+    }
 
-	public LocalVariable[] getVariables() {
-		return variables;
-	}
+    public LocalVariable[] getVariables() {
+        return variables;
+    }
 
-	public float[] getCoefficients() {
-		return coefficients;
-	}
+    public float[] getCoefficients() {
+        return coefficients;
+    }
 }

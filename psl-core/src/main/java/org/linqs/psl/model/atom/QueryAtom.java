@@ -36,64 +36,64 @@ import java.util.Map;
  * ground and can be used for matching GroundAtoms in a query.
  */
 public class QueryAtom extends Atom {
-	public QueryAtom(Predicate predicate, Term... args) {
-		super(predicate, args);
-	}
+    public QueryAtom(Predicate predicate, Term... args) {
+        super(predicate, args);
+    }
 
-	/**
-	 * Have this QueryAtom assume new values.
-	 * Do not use unless you really know what you are doing.
-	 * Typical usage would just create a new QueryAtom.
-	 */
-	public void assume(Predicate predicate, Term... args) {
-		init(false, false, predicate, args);
-	}
+    /**
+     * Have this QueryAtom assume new values.
+     * Do not use unless you really know what you are doing.
+     * Typical usage would just create a new QueryAtom.
+     */
+    public void assume(Predicate predicate, Term... args) {
+        init(false, false, predicate, args);
+    }
 
-	public GroundAtom ground(AtomManager atomManager, ResultList res, int resultIndex) {
-		return ground(atomManager, res, resultIndex, new Constant[arguments.length]);
-	}
+    public GroundAtom ground(AtomManager atomManager, ResultList res, int resultIndex) {
+        return ground(atomManager, res, resultIndex, new Constant[arguments.length]);
+    }
 
-	/**
-	 * Ground using the passed in buffer.
-	 * The buffer cannot be held as member datum or statically for thread-safety.
-	 * It is up to the caller to make sure the buffer is only used on this thread.
-	 */
-	public GroundAtom ground(AtomManager atomManager, ResultList res, int resultIndex, Constant[] newArgs) {
-		for (int i = 0; i < arguments.length; i++) {
-			if (arguments[i] instanceof Variable) {
-				newArgs[i] = res.get(resultIndex, (Variable)arguments[i]);
-			} else if (arguments[i] instanceof Constant) {
-				newArgs[i] = (Constant)arguments[i];
-			} else {
-				throw new IllegalArgumentException("Unrecognized type of Term.");
-			}
-		}
+    /**
+     * Ground using the passed in buffer.
+     * The buffer cannot be held as member datum or statically for thread-safety.
+     * It is up to the caller to make sure the buffer is only used on this thread.
+     */
+    public GroundAtom ground(AtomManager atomManager, ResultList res, int resultIndex, Constant[] newArgs) {
+        for (int i = 0; i < arguments.length; i++) {
+            if (arguments[i] instanceof Variable) {
+                newArgs[i] = res.get(resultIndex, (Variable)arguments[i]);
+            } else if (arguments[i] instanceof Constant) {
+                newArgs[i] = (Constant)arguments[i];
+            } else {
+                throw new IllegalArgumentException("Unrecognized type of Term.");
+            }
+        }
 
-		return atomManager.getAtom(predicate, newArgs);
-	}
+        return atomManager.getAtom(predicate, newArgs);
+    }
 
-	public GroundAtom ground(AtomManager atomManager, Constant[] queryResults, Map<Variable, Integer> projectionMap, Constant[] newArgs) {
-		for (int i = 0; i < arguments.length; i++) {
-			if (arguments[i] instanceof Variable) {
-				newArgs[i] = queryResults[projectionMap.get((Variable)arguments[i]).intValue()];
-			} else if (arguments[i] instanceof Constant) {
-				newArgs[i] = (Constant)arguments[i];
-			} else {
-				throw new IllegalArgumentException("Unrecognized type of Term.");
-			}
-		}
+    public GroundAtom ground(AtomManager atomManager, Constant[] queryResults, Map<Variable, Integer> projectionMap, Constant[] newArgs) {
+        for (int i = 0; i < arguments.length; i++) {
+            if (arguments[i] instanceof Variable) {
+                newArgs[i] = queryResults[projectionMap.get((Variable)arguments[i]).intValue()];
+            } else if (arguments[i] instanceof Constant) {
+                newArgs[i] = (Constant)arguments[i];
+            } else {
+                throw new IllegalArgumentException("Unrecognized type of Term.");
+            }
+        }
 
-		return atomManager.getAtom(predicate, newArgs);
-	}
+        return atomManager.getAtom(predicate, newArgs);
+    }
 
-	public VariableTypeMap collectVariables(VariableTypeMap varMap) {
-		for (int i=0;i<arguments.length;i++) {
-			if (arguments[i] instanceof Variable) {
-				ConstantType t = predicate.getArgumentType(i);
-				varMap.addVariable((Variable)arguments[i], t);
-			}
-		}
+    public VariableTypeMap collectVariables(VariableTypeMap varMap) {
+        for (int i=0;i<arguments.length;i++) {
+            if (arguments[i] instanceof Variable) {
+                ConstantType t = predicate.getArgumentType(i);
+                varMap.addVariable((Variable)arguments[i], t);
+            }
+        }
 
-		return varMap;
-	}
+        return varMap;
+    }
 }

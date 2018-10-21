@@ -38,194 +38,194 @@ import java.util.Map;
  * This class will focus on keeping track of the variables in the terms.
  */
 public class ADMMTermStore implements TermStore<ADMMObjectiveTerm> {
-	public static final String CONFIG_PREFIX = "admmmemorytermstore";
+    public static final String CONFIG_PREFIX = "admmmemorytermstore";
 
-	/**
-	 * Initial size for the memory store.
-	 */
-	public static final String INTERNAL_STORE_KEY = CONFIG_PREFIX + ".internalstore";
-	public static final String INTERNAL_STORE_DEFAULT = "org.linqs.psl.reasoner.term.MemoryTermStore";
+    /**
+     * Initial size for the memory store.
+     */
+    public static final String INTERNAL_STORE_KEY = CONFIG_PREFIX + ".internalstore";
+    public static final String INTERNAL_STORE_DEFAULT = "org.linqs.psl.reasoner.term.MemoryTermStore";
 
-	// Keep an internal store to hold the terms while this class focus on variables.
-	private TermStore<ADMMObjectiveTerm> store;
+    // Keep an internal store to hold the terms while this class focus on variables.
+    private TermStore<ADMMObjectiveTerm> store;
 
-	private Map<RandomVariableAtom, Integer> variableIndexes;
+    private Map<RandomVariableAtom, Integer> variableIndexes;
 
-	// Global variable index to local variables.
-	private List<List<LocalVariable>> localVariables;
+    // Global variable index to local variables.
+    private List<List<LocalVariable>> localVariables;
 
-	/**
-	 * The total number of all local variables (the sum of the sizes of each listin |localVariables|.
-	 */
-	private int numLocalVariables;
+    /**
+     * The total number of all local variables (the sum of the sizes of each listin |localVariables|.
+     */
+    private int numLocalVariables;
 
-	@SuppressWarnings("unchecked")
-	public ADMMTermStore() {
-		this((TermStore<ADMMObjectiveTerm>)Config.getNewObject(INTERNAL_STORE_KEY, INTERNAL_STORE_DEFAULT));
-	}
+    @SuppressWarnings("unchecked")
+    public ADMMTermStore() {
+        this((TermStore<ADMMObjectiveTerm>)Config.getNewObject(INTERNAL_STORE_KEY, INTERNAL_STORE_DEFAULT));
+    }
 
-	public ADMMTermStore(TermStore<ADMMObjectiveTerm> store) {
-		this.store = store;
-		variableIndexes = new HashMap<RandomVariableAtom, Integer>();
-		localVariables = new ArrayList<List<LocalVariable>>();
-		numLocalVariables = 0;
-	}
+    public ADMMTermStore(TermStore<ADMMObjectiveTerm> store) {
+        this.store = store;
+        variableIndexes = new HashMap<RandomVariableAtom, Integer>();
+        localVariables = new ArrayList<List<LocalVariable>>();
+        numLocalVariables = 0;
+    }
 
-	/**
-	 * Make sure we allocate the right amount of memory for global variables.
-	 */
-	public void ensureVariableCapacity(int capacity) {
-		if (capacity == 0) {
-			return;
-		}
+    /**
+     * Make sure we allocate the right amount of memory for global variables.
+     */
+    public void ensureVariableCapacity(int capacity) {
+        if (capacity == 0) {
+            return;
+        }
 
-		((ArrayList)localVariables).ensureCapacity(capacity);
+        ((ArrayList)localVariables).ensureCapacity(capacity);
 
-		if (variableIndexes.size() == 0) {
-			// The default load factor for Java HashMaps is 0.75.
-			variableIndexes = new HashMap<RandomVariableAtom, Integer>((int)Math.ceil(capacity / 0.75));
-		}
-	}
+        if (variableIndexes.size() == 0) {
+            // The default load factor for Java HashMaps is 0.75.
+            variableIndexes = new HashMap<RandomVariableAtom, Integer>((int)Math.ceil(capacity / 0.75));
+        }
+    }
 
-	/**
-	 * Create a local variable and ensure that a global copy is registered.
-	 */
-	public synchronized LocalVariable createLocalVariable(RandomVariableAtom atom) {
-		numLocalVariables++;
+    /**
+     * Create a local variable and ensure that a global copy is registered.
+     */
+    public synchronized LocalVariable createLocalVariable(RandomVariableAtom atom) {
+        numLocalVariables++;
 
-		int globalId;
-		// Check if the global copy has already been registered.
-		if (variableIndexes.containsKey(atom)) {
-			globalId = variableIndexes.get(atom).intValue();
-		} else {
-			// If the global copy has not been registered, register it and prep its local copies.
-			globalId = variableIndexes.size();
-			variableIndexes.put(atom, globalId);
-			localVariables.add(new ArrayList<LocalVariable>());
-		}
+        int globalId;
+        // Check if the global copy has already been registered.
+        if (variableIndexes.containsKey(atom)) {
+            globalId = variableIndexes.get(atom).intValue();
+        } else {
+            // If the global copy has not been registered, register it and prep its local copies.
+            globalId = variableIndexes.size();
+            variableIndexes.put(atom, globalId);
+            localVariables.add(new ArrayList<LocalVariable>());
+        }
 
-		LocalVariable localVariable = new LocalVariable(globalId, (float)atom.getValue());
-		localVariables.get(globalId).add(localVariable);
+        LocalVariable localVariable = new LocalVariable(globalId, (float)atom.getValue());
+        localVariables.get(globalId).add(localVariable);
 
-		return localVariable;
-	}
+        return localVariable;
+    }
 
-	public int getNumLocalVariables() {
-		return numLocalVariables;
-	}
+    public int getNumLocalVariables() {
+        return numLocalVariables;
+    }
 
-	public int getNumGlobalVariables() {
-		return variableIndexes.size();
-	}
+    public int getNumGlobalVariables() {
+        return variableIndexes.size();
+    }
 
-	public List<LocalVariable> getLocalVariables(int globalId) {
-		return localVariables.get(globalId);
-	}
+    public List<LocalVariable> getLocalVariables(int globalId) {
+        return localVariables.get(globalId);
+    }
 
-	/**
-	 * Update the global variables (RVAs).
-	 * The passed in values in indexed according to global id.
-	 */
-	public void updateVariables(float[] values) {
-		for (Map.Entry<RandomVariableAtom, Integer> entry : variableIndexes.entrySet()) {
-			entry.getKey().setValue(values[entry.getValue().intValue()]);
-		}
-	}
+    /**
+     * Update the global variables (RVAs).
+     * The passed in values in indexed according to global id.
+     */
+    public void updateVariables(float[] values) {
+        for (Map.Entry<RandomVariableAtom, Integer> entry : variableIndexes.entrySet()) {
+            entry.getKey().setValue(values[entry.getValue().intValue()]);
+        }
+    }
 
-	/**
-	 * Get the values from the atoms corresponding to global (consensus)
-	 * variables and put them in the output array.
-	 */
-	public void getAtomValues(float[] values) {
-		for (Map.Entry<RandomVariableAtom, Integer> entry : variableIndexes.entrySet()) {
-			values[entry.getValue().intValue()] = (float)entry.getKey().getValue();
-		}
-	}
+    /**
+     * Get the values from the atoms corresponding to global (consensus)
+     * variables and put them in the output array.
+     */
+    public void getAtomValues(float[] values) {
+        for (Map.Entry<RandomVariableAtom, Integer> entry : variableIndexes.entrySet()) {
+            values[entry.getValue().intValue()] = (float)entry.getKey().getValue();
+        }
+    }
 
-	public void resetLocalVairables() {
-		resetLocalVairables(ADMMReasoner.InitialValue.RANDOM);
-	}
+    public void resetLocalVairables() {
+        resetLocalVairables(ADMMReasoner.InitialValue.RANDOM);
+    }
 
-	public void resetLocalVairables(ADMMReasoner.InitialValue initialValue) {
-		for (Map.Entry<RandomVariableAtom, Integer> entry : variableIndexes.entrySet()) {
-			for (LocalVariable local : localVariables.get(entry.getValue().intValue())) {
-				if (initialValue == ADMMReasoner.InitialValue.ZERO) {
-					local.setValue(0.0f);
-				} else if (initialValue == ADMMReasoner.InitialValue.RANDOM) {
-					local.setValue(RandUtils.nextFloat());
-				} else if (initialValue == ADMMReasoner.InitialValue.ATOM) {
-					local.setValue((float)(entry.getKey().getValue()));
-				} else {
-					throw new IllegalStateException("Unknown initial consensus value: " + initialValue);
-				}
+    public void resetLocalVairables(ADMMReasoner.InitialValue initialValue) {
+        for (Map.Entry<RandomVariableAtom, Integer> entry : variableIndexes.entrySet()) {
+            for (LocalVariable local : localVariables.get(entry.getValue().intValue())) {
+                if (initialValue == ADMMReasoner.InitialValue.ZERO) {
+                    local.setValue(0.0f);
+                } else if (initialValue == ADMMReasoner.InitialValue.RANDOM) {
+                    local.setValue(RandUtils.nextFloat());
+                } else if (initialValue == ADMMReasoner.InitialValue.ATOM) {
+                    local.setValue((float)(entry.getKey().getValue()));
+                } else {
+                    throw new IllegalStateException("Unknown initial consensus value: " + initialValue);
+                }
 
-				local.setLagrange(0.0f);
-			}
-		}
-	}
+                local.setLagrange(0.0f);
+            }
+        }
+    }
 
-	@Override
-	public void add(GroundRule rule, ADMMObjectiveTerm term) {
-		store.add(rule, term);
-	}
+    @Override
+    public void add(GroundRule rule, ADMMObjectiveTerm term) {
+        store.add(rule, term);
+    }
 
-	@Override
-	public void clear() {
-		if (store != null) {
-			store.clear();
-		}
+    @Override
+    public void clear() {
+        if (store != null) {
+            store.clear();
+        }
 
-		if (variableIndexes != null) {
-			variableIndexes.clear();
-		}
+        if (variableIndexes != null) {
+            variableIndexes.clear();
+        }
 
-		if (localVariables != null) {
-			localVariables.clear();
-		}
+        if (localVariables != null) {
+            localVariables.clear();
+        }
 
-		numLocalVariables = 0;
-	}
+        numLocalVariables = 0;
+    }
 
-	@Override
-	public void close() {
-		clear();
+    @Override
+    public void close() {
+        clear();
 
-		if (store != null) {
-			store.close();
-			store = null;
-		}
+        if (store != null) {
+            store.close();
+            store = null;
+        }
 
-		variableIndexes = null;
-		localVariables = null;
-	}
+        variableIndexes = null;
+        localVariables = null;
+    }
 
-	@Override
-	public ADMMObjectiveTerm get(int index) {
-		return store.get(index);
-	}
+    @Override
+    public ADMMObjectiveTerm get(int index) {
+        return store.get(index);
+    }
 
-	@Override
-	public int size() {
-		return store.size();
-	}
+    @Override
+    public int size() {
+        return store.size();
+    }
 
-	@Override
-	public void ensureCapacity(int capacity) {
-		store.ensureCapacity(capacity);
-	}
+    @Override
+    public void ensureCapacity(int capacity) {
+        store.ensureCapacity(capacity);
+    }
 
-	@Override
-	public Iterator<ADMMObjectiveTerm> iterator() {
-		return store.iterator();
-	}
+    @Override
+    public Iterator<ADMMObjectiveTerm> iterator() {
+        return store.iterator();
+    }
 
-	@Override
-	public void updateWeights() {
-		store.updateWeights();
-	}
+    @Override
+    public void updateWeights() {
+        store.updateWeights();
+    }
 
-	@Override
-	public Iterable<ADMMObjectiveTerm> getTerms(GroundRule groundRule) {
-		return store.getTerms(groundRule);
-	}
+    @Override
+    public Iterable<ADMMObjectiveTerm> getTerms(GroundRule groundRule) {
+        return store.getTerms(groundRule);
+    }
 }

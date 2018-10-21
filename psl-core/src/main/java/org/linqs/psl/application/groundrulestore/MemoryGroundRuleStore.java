@@ -34,100 +34,100 @@ import java.util.List;
  * Other methods are not guaranteed safe.
  */
 public class MemoryGroundRuleStore implements GroundRuleStore {
-	protected List<GroundRule> groundRules;
+    protected List<GroundRule> groundRules;
 
-	public MemoryGroundRuleStore() {
-		groundRules = new ArrayList<GroundRule>();
-	}
+    public MemoryGroundRuleStore() {
+        groundRules = new ArrayList<GroundRule>();
+    }
 
-	@Override
-	public synchronized void addGroundRule(GroundRule groundRule) {
-		groundRules.add(groundRule);
-	}
+    @Override
+    public synchronized void addGroundRule(GroundRule groundRule) {
+        groundRules.add(groundRule);
+    }
 
-	/**
-	 * O(n) check for a ground rule.
-	 */
-	@Override
-	public boolean containsGroundRule(GroundRule groundRule) {
-		return groundRules.contains(groundRule);
-	}
+    /**
+     * O(n) check for a ground rule.
+     */
+    @Override
+    public boolean containsGroundRule(GroundRule groundRule) {
+        return groundRules.contains(groundRule);
+    }
 
-	@Override
-	public Iterable<WeightedGroundRule> getCompatibilityRules() {
-		return IteratorUtils.filterClass(groundRules, WeightedGroundRule.class);
-	}
+    @Override
+    public Iterable<WeightedGroundRule> getCompatibilityRules() {
+        return IteratorUtils.filterClass(groundRules, WeightedGroundRule.class);
+    }
 
-	@Override
-	public Iterable<UnweightedGroundRule> getConstraintRules() {
-		return IteratorUtils.filterClass(groundRules, UnweightedGroundRule.class);
-	}
+    @Override
+    public Iterable<UnweightedGroundRule> getConstraintRules() {
+        return IteratorUtils.filterClass(groundRules, UnweightedGroundRule.class);
+    }
 
-	@Override
-	public Iterable<GroundRule> getGroundRules() {
-		return groundRules;
-	}
+    @Override
+    public Iterable<GroundRule> getGroundRules() {
+        return groundRules;
+    }
 
-	@Override
-	public Iterable<GroundRule> getGroundRules(Rule rule) {
-		final Rule finalRule = rule;
+    @Override
+    public Iterable<GroundRule> getGroundRules(Rule rule) {
+        final Rule finalRule = rule;
 
-		return IteratorUtils.filter(groundRules, new IteratorUtils.FilterFunction<GroundRule>() {
-			public boolean keep(GroundRule groundRule) {
-				// Note that order is very important because not all GroundRules have a parent.
-				return finalRule.equals(groundRule.getRule());
-			}
-		});
-	}
+        return IteratorUtils.filter(groundRules, new IteratorUtils.FilterFunction<GroundRule>() {
+            public boolean keep(GroundRule groundRule) {
+                // Note that order is very important because not all GroundRules have a parent.
+                return finalRule.equals(groundRule.getRule());
+            }
+        });
+    }
 
-	/**
-	 * O(n).
-	 */
-	@Override
-	public void removeGroundRule(GroundRule groundRule) {
-		groundRules.remove(groundRule);
-	}
+    /**
+     * O(n).
+     */
+    @Override
+    public void removeGroundRule(GroundRule groundRule) {
+        groundRules.remove(groundRule);
+    }
 
-	/**
-	 * O(n).
-	 */
-	@Override
-	public void removeGroundRules(Rule rule) {
-		Iterator<GroundRule> iterator = groundRules.iterator();
-		while (iterator.hasNext()) {
-			GroundRule groundRule = iterator.next();
-			// Note that order is very important because not all GroundRules have a parent.
-			if (rule.equals(groundRule.getRule())) {
-				iterator.remove();
-			}
-		}
-	}
+    /**
+     * O(n).
+     */
+    @Override
+    public void removeGroundRules(Rule rule) {
+        Iterator<GroundRule> iterator = groundRules.iterator();
+        while (iterator.hasNext()) {
+            GroundRule groundRule = iterator.next();
+            // Note that order is very important because not all GroundRules have a parent.
+            if (rule.equals(groundRule.getRule())) {
+                iterator.remove();
+            }
+        }
+    }
 
-	@Override
-	public int size() {
-		return groundRules.size();
-	}
+    @Override
+    public int size() {
+        return groundRules.size();
+    }
 
-	/**
-	 * O(n).
-	 */
-	@Override
-	public int count(Rule rule) {
-		int count = 0;
-		for (GroundRule groundRule : groundRules) {
-			// Note that order is very important because not all GroundRules have a parent.
-			if (rule.equals(groundRule.getRule())) {
-				count++;
-			}
-		}
-		return count;
-	}
+    /**
+     * O(n).
+     */
+    @Override
+    public int count(Rule rule) {
+        int count = 0;
+        for (GroundRule groundRule : groundRules) {
+            // Note that order is very important because not all GroundRules have a parent.
+            if (rule.equals(groundRule.getRule())) {
+                count++;
+            }
+        }
+        return count;
+    }
 
-	@Override
-	public void close() {
-		if (groundRules != null) {
-			groundRules.clear();
-			groundRules = null;
-		}
-	}
+    @Override
+    public void close() {
+        if (groundRules != null) {
+            groundRules.clear();
+            groundRules = null;
+        }
+    }
 }

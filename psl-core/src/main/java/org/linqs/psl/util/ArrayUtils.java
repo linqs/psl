@@ -23,56 +23,56 @@ import java.util.List;
  * Various static array utilities.
  */
 public final class ArrayUtils {
-	// Static only.
-	private ArrayUtils() {}
+    // Static only.
+    private ArrayUtils() {}
 
-	public static <T> int indexOf(T[] haystack, T needle) {
-		if (haystack == null) {
-			return -1;
-		}
+    public static <T> int indexOf(T[] haystack, T needle) {
+        if (haystack == null) {
+            return -1;
+        }
 
-		return indexOf(haystack, haystack.length, needle);
-	}
+        return indexOf(haystack, haystack.length, needle);
+    }
 
-	/**
-	 * Same semantics as List.indexOf().
-	 */
-	public static <T> int indexOf(T[] haystack, int size, T needle) {
-		if (haystack == null) {
-			return -1;
-		}
+    /**
+     * Same semantics as List.indexOf().
+     */
+    public static <T> int indexOf(T[] haystack, int size, T needle) {
+        if (haystack == null) {
+            return -1;
+        }
 
-		for (int i = 0; i < size; i++) {
-			if (haystack[i] != null && haystack[i].equals(needle)) {
-				return i;
-			}
-		}
+        for (int i = 0; i < size; i++) {
+            if (haystack[i] != null && haystack[i].equals(needle)) {
+                return i;
+            }
+        }
 
-		return -1;
-	}
+        return -1;
+    }
 
-	public static <T> int indexOfReference(T[] haystack, T needle) {
-		if (haystack == null) {
-			return -1;
-		}
+    public static <T> int indexOfReference(T[] haystack, T needle) {
+        if (haystack == null) {
+            return -1;
+        }
 
-		return indexOfReference(haystack, haystack.length, needle);
-	}
+        return indexOfReference(haystack, haystack.length, needle);
+    }
 
-	/**
-	 * Like indexOf(), but only checks for referential equality.
-	 */
-	public static <T> int indexOfReference(T[] haystack, int size, T needle) {
-		if (haystack == null) {
-			return -1;
-		}
+    /**
+     * Like indexOf(), but only checks for referential equality.
+     */
+    public static <T> int indexOfReference(T[] haystack, int size, T needle) {
+        if (haystack == null) {
+            return -1;
+        }
 
-		for (int i = 0; i < size; i++) {
-			if (haystack[i] != null && haystack[i] == needle) {
-				return i;
-			}
-		}
+        for (int i = 0; i < size; i++) {
+            if (haystack[i] != null && haystack[i] == needle) {
+                return i;
+            }
+        }
 
-		return -1;
-	}
+        return -1;
+    }
 }

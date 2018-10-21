@@ -42,85 +42,85 @@ import org.linqs.psl.model.term.Constant;
  * Atoms.
  */
 public abstract class AtomManager {
-	protected final Database db;
+    protected final Database db;
 
-	/**
-	 * If the specific AtomManager supports access exceptions,
-	 * then this will control if they are actually thrown.
-	 */
-	protected boolean enableAccessExceptions;
+    /**
+     * If the specific AtomManager supports access exceptions,
+     * then this will control if they are actually thrown.
+     */
+    protected boolean enableAccessExceptions;
 
-	public AtomManager(Database db) {
-		this.db = db;
-		this.enableAccessExceptions = true;
-	}
+    public AtomManager(Database db) {
+        this.db = db;
+        this.enableAccessExceptions = true;
+    }
 
-	/**
-	 * Returns the GroundAtom for the given Predicate and GroundTerms.
-	 *
-	 * This method must call {@link Database#getAtom(Predicate, Constant...)}
-	 * to actually retrieve the GroundAtom.
-	 *
-	 * @param predicate the Predicate of the Atom
-	 * @param arguments the GroundTerms of the Atom
-	 * @return the Atom
-	 */
-	public abstract GroundAtom getAtom(Predicate predicate, Constant... arguments);
+    /**
+     * Returns the GroundAtom for the given Predicate and GroundTerms.
+     *
+     * This method must call {@link Database#getAtom(Predicate, Constant...)}
+     * to actually retrieve the GroundAtom.
+     *
+     * @param predicate the Predicate of the Atom
+     * @param arguments the GroundTerms of the Atom
+     * @return the Atom
+     */
+    public abstract GroundAtom getAtom(Predicate predicate, Constant... arguments);
 
-	/**
-	 * Calls {@link Database#executeQuery(DatabaseQuery)} on the
-	 * encapsulated Database.
-	 *
-	 * @param query the query to execute
-	 * @return the query results exactly as returned by the Database
-	 */
-	public ResultList executeQuery(DatabaseQuery query) {
-		return db.executeQuery(query);
-	}
+    /**
+     * Calls {@link Database#executeQuery(DatabaseQuery)} on the
+     * encapsulated Database.
+     *
+     * @param query the query to execute
+     * @return the query results exactly as returned by the Database
+     */
+    public ResultList executeQuery(DatabaseQuery query) {
+        return db.executeQuery(query);
+    }
 
-	/**
-	 * Calls {@link Database#executeGroundingQuery(Formula)} on the
-	 * encapsulated Database.
-	 */
-	public QueryResultIterable executeGroundingQuery(Formula formula) {
-		return db.executeGroundingQuery(formula);
-	}
+    /**
+     * Calls {@link Database#executeGroundingQuery(Formula)} on the
+     * encapsulated Database.
+     */
+    public QueryResultIterable executeGroundingQuery(Formula formula) {
+        return db.executeGroundingQuery(formula);
+    }
 
-	/**
-	 * Calls {@link Database#isClosed(StandardPredicate)} on the
-	 * encapsulated Database.
-	 *
-	 * @param predicate the predicate to check
-	 * @return TRUE if predicate is closed in the Database
-	 */
-	public boolean isClosed(StandardPredicate predicate) {
-		return db.isClosed(predicate);
-	}
+    /**
+     * Calls {@link Database#isClosed(StandardPredicate)} on the
+     * encapsulated Database.
+     *
+     * @param predicate the predicate to check
+     * @return TRUE if predicate is closed in the Database
+     */
+    public boolean isClosed(StandardPredicate predicate) {
+        return db.isClosed(predicate);
+    }
 
-	public Database getDatabase() {
-		return db;
-	}
+    public Database getDatabase() {
+        return db;
+    }
 
-	/**
-	 * Set whether or not to throw access exceptions.
-	 * @return the old setting for this value.
-	 */
-	public boolean enableAccessExceptions(boolean newValue) {
-		boolean oldValue = enableAccessExceptions;
-		enableAccessExceptions = newValue;
-		return oldValue;
-	}
+    /**
+     * Set whether or not to throw access exceptions.
+     * @return the old setting for this value.
+     */
+    public boolean enableAccessExceptions(boolean newValue) {
+        boolean oldValue = enableAccessExceptions;
+        enableAccessExceptions = newValue;
+        return oldValue;
+    }
 
-	/**
-	 * Get the number of RandomVariableAtoms cached by the database.
-	 */
-	public int getCachedRVACount() {
-		return db.getCachedRVACount();
-	}
+    /**
+     * Get the number of RandomVariableAtoms cached by the database.
+     */
+    public int getCachedRVACount() {
+        return db.getCachedRVACount();
+    }
 
-	/**
-	 * Decide whether or not to throw an access exception.
-	 * This will bypass |enableAccessExceptions|.
-	 */
-	public abstract void reportAccessException(RuntimeException ex, GroundAtom offendingAtom);
+    /**
+     * Decide whether or not to throw an access exception.
+     * This will bypass |enableAccessExceptions|.
+     */
+    public abstract void reportAccessException(RuntimeException ex, GroundAtom offendingAtom);
 }

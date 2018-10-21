@@ -23,59 +23,59 @@ import org.joda.time.DateTime;
  * An {@link Attribute} that encapsulates a Date.
  */
 public class DateAttribute extends Attribute {
-	private final DateTime value;
+    private final DateTime value;
 
-	/**
-	 * Constructs a Date attribute from a Date
-	 *
-	 * @param value  Date to encapsulate
-	 */
-	public DateAttribute(DateTime value) {
-		this.value = value;
-	}
+    /**
+     * Constructs a Date attribute from a Date
+     *
+     * @param value  Date to encapsulate
+     */
+    public DateAttribute(DateTime value) {
+        this.value = value;
+    }
 
-	@Override
-	public String rawToString() {
-		return value.toString();
-	}
+    @Override
+    public String rawToString() {
+        return value.toString();
+    }
 
-	@Override
-	public DateTime getValue() {
-		return value;
-	}
+    @Override
+    public DateTime getValue() {
+        return value;
+    }
 
-	@Override
-	public int hashCode() {
-		return value.hashCode();
-	}
+    @Override
+    public int hashCode() {
+        return value.hashCode();
+    }
 
-	/**
-	 * A DateAttribute is equal to another Object if that Object is a DateAttribute
-	 * and their values are equal.
-	 */
-	@Override
-	public boolean equals(Object oth) {
-		if (oth == this) {
-			return true;
-		}
+    /**
+     * A DateAttribute is equal to another Object if that Object is a DateAttribute
+     * and their values are equal.
+     */
+    @Override
+    public boolean equals(Object oth) {
+        if (oth == this) {
+            return true;
+        }
 
-		if (oth==null || !(oth instanceof DateAttribute)) {
-			return false;
-		}
+        if (oth==null || !(oth instanceof DateAttribute)) {
+            return false;
+        }
 
-		return value.equals(((DateAttribute)oth).value);
-	}
+        return value.equals(((DateAttribute)oth).value);
+    }
 
-	@Override
-	public int compareTo(Term other) {
-		if (other == null) {
-			return -1;
-		}
+    @Override
+    public int compareTo(Term other) {
+        if (other == null) {
+            return -1;
+        }
 
-		if (!(other instanceof DateAttribute)) {
-			return this.getClass().getName().compareTo(other.getClass().getName());
-		}
+        if (!(other instanceof DateAttribute)) {
+            return this.getClass().getName().compareTo(other.getClass().getName());
+        }
 
-		return value.compareTo(((DateAttribute)other).value);
-	}
+        return value.compareTo(((DateAttribute)other).value);
+    }
 }

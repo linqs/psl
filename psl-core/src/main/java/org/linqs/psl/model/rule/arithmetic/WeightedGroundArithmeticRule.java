@@ -27,97 +27,97 @@ import org.linqs.psl.reasoner.function.GeneralFunction;
 import java.util.List;
 
 public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule implements WeightedGroundRule {
-	protected WeightedGroundArithmeticRule(WeightedArithmeticRule rule, List<Float> coefficients,
-			List<GroundAtom> atoms, FunctionComparator comparator, float constant) {
-		super(rule, coefficients, atoms, comparator, constant);
-		validate();
-	}
+    protected WeightedGroundArithmeticRule(WeightedArithmeticRule rule, List<Float> coefficients,
+            List<GroundAtom> atoms, FunctionComparator comparator, float constant) {
+        super(rule, coefficients, atoms, comparator, constant);
+        validate();
+    }
 
-	protected WeightedGroundArithmeticRule(WeightedArithmeticRule rule, float[] coefficients, GroundAtom[] atoms,
-			FunctionComparator comparator, float constant) {
-		super(rule, coefficients, atoms, comparator, constant);
-		validate();
-	}
+    protected WeightedGroundArithmeticRule(WeightedArithmeticRule rule, float[] coefficients, GroundAtom[] atoms,
+            FunctionComparator comparator, float constant) {
+        super(rule, coefficients, atoms, comparator, constant);
+        validate();
+    }
 
-	private void validate() {
-		if (FunctionComparator.Equality.equals(comparator)) {
-			throw new IllegalArgumentException("WeightedGroundArithmeticRules do not support equality comparators. "
-					+ "Create two ground rules instead, one with " + FunctionComparator.SmallerThan + " and one with "
-					+ FunctionComparator.LargerThan + ".");
-		} else if (!FunctionComparator.SmallerThan.equals(comparator) && !FunctionComparator.LargerThan.equals(comparator)) {
-			throw new IllegalArgumentException("Unrecognized comparator: " + comparator);
-		}
-	}
+    private void validate() {
+        if (FunctionComparator.Equality.equals(comparator)) {
+            throw new IllegalArgumentException("WeightedGroundArithmeticRules do not support equality comparators. "
+                    + "Create two ground rules instead, one with " + FunctionComparator.SmallerThan + " and one with "
+                    + FunctionComparator.LargerThan + ".");
+        } else if (!FunctionComparator.SmallerThan.equals(comparator) && !FunctionComparator.LargerThan.equals(comparator)) {
+            throw new IllegalArgumentException("Unrecognized comparator: " + comparator);
+        }
+    }
 
-	@Override
-	public WeightedRule getRule() {
-		return (WeightedRule)rule;
-	}
+    @Override
+    public WeightedRule getRule() {
+        return (WeightedRule)rule;
+    }
 
-	@Override
-	public boolean isSquared() {
-		return ((WeightedRule)rule).isSquared();
-	}
+    @Override
+    public boolean isSquared() {
+        return ((WeightedRule)rule).isSquared();
+    }
 
-	@Override
-	public double getWeight() {
-		return ((WeightedRule)rule).getWeight();
-	}
+    @Override
+    public double getWeight() {
+        return ((WeightedRule)rule).getWeight();
+    }
 
-	@Override
-	public void setWeight(double weight) {
-		((WeightedRule)rule).setWeight(weight);
-	}
+    @Override
+    public void setWeight(double weight) {
+        ((WeightedRule)rule).setWeight(weight);
+    }
 
-	@Override
-	public GeneralFunction getFunctionDefinition() {
-		GeneralFunction sum = new GeneralFunction(true, isSquared(), (short)coefficients.length);
+    @Override
+    public GeneralFunction getFunctionDefinition() {
+        GeneralFunction sum = new GeneralFunction(true, isSquared(), (short)coefficients.length);
 
-		float termSign = FunctionComparator.LargerThan.equals(comparator) ? -1.0f : 1.0f;
-		for (int i = 0; i < coefficients.length; i++) {
-			// Skip any special predicates.
-			if (atoms[i].getPredicate() instanceof SpecialPredicate) {
-				continue;
-			}
+        float termSign = FunctionComparator.LargerThan.equals(comparator) ? -1.0f : 1.0f;
+        for (int i = 0; i < coefficients.length; i++) {
+            // Skip any special predicates.
+            if (atoms[i].getPredicate() instanceof SpecialPredicate) {
+                continue;
+            }
 
-			sum.add(termSign * coefficients[i], atoms[i]);
-		}
-		sum.add(-1.0f * termSign * constant);
+            sum.add(termSign * coefficients[i], atoms[i]);
+        }
+        sum.add(-1.0f * termSign * constant);
 
-		return sum;
-	}
+        return sum;
+    }
 
-	@Override
-	public double getIncompatibility() {
-		return getIncompatibility(null, 0.0f);
-	}
+    @Override
+    public double getIncompatibility() {
+        return getIncompatibility(null, 0.0f);
+    }
 
-	@Override
-	public double getIncompatibility(GroundAtom replacementAtom, float replacementValue) {
-		float sum = 0.0f;
-		for (int i = 0; i < coefficients.length; i++) {
-			// Skip any special predicates.
-			if (atoms[i].getPredicate() instanceof SpecialPredicate) {
-				continue;
-			}
+    @Override
+    public double getIncompatibility(GroundAtom replacementAtom, float replacementValue) {
+        float sum = 0.0f;
+        for (int i = 0; i < coefficients.length; i++) {
+            // Skip any special predicates.
+            if (atoms[i].getPredicate() instanceof SpecialPredicate) {
+                continue;
+            }
 
-			if (atoms[i] == replacementAtom) {
-				sum += coefficients[i] * replacementValue;
-			} else {
-				sum += coefficients[i] * atoms[i].getValue();
-			}
-		}
-		sum -= constant;
+            if (atoms[i] == replacementAtom) {
+                sum += coefficients[i] * replacementValue;
+            } else {
+                sum += coefficients[i] * atoms[i].getValue();
+            }
+        }
+        sum -= constant;
 
-		if (FunctionComparator.LargerThan.equals(comparator)) {
-			sum *= -1;
-		}
+        if (FunctionComparator.LargerThan.equals(comparator)) {
+            sum *= -1;
+        }
 
-		return (isSquared()) ? Math.pow(Math.max(sum, 0.0f), 2) : Math.max(sum, 0.0f);
-	}
+        return (isSquared()) ? Math.pow(Math.max(sum, 0.0f), 2) : Math.max(sum, 0.0f);
+    }
 
-	@Override
-	public String toString() {
-		return "" + getWeight() + ": " + super.toString() + ((isSquared()) ? " ^2" : "");
-	}
+    @Override
+    public String toString() {
+        return "" + getWeight() + ": " + super.toString() + ((isSquared()) ? " ^2" : "");
+    }
 }

@@ -35,69 +35,69 @@ import org.linqs.psl.model.term.UniqueStringID;
  * The names of SpecialPredicates begin with '#'.
  */
 public abstract class SpecialPredicate extends FunctionalPredicate {
-	private SpecialPredicate(String name, ConstantType[] types) {
-		super(name, types, false);
-	}
+    private SpecialPredicate(String name, ConstantType[] types) {
+        super(name, types, false);
+    }
 
-	/**
-	 * True if arguments are equal.
-	 */
-	public static final SpecialPredicate Equal
-		= new SpecialPredicate("#Equal",
-				new ConstantType[] {ConstantType.DeferredFunctionalUniqueID, ConstantType.DeferredFunctionalUniqueID}) {
+    /**
+     * True if arguments are equal.
+     */
+    public static final SpecialPredicate Equal
+        = new SpecialPredicate("#Equal",
+                new ConstantType[] {ConstantType.DeferredFunctionalUniqueID, ConstantType.DeferredFunctionalUniqueID}) {
 
-		@Override
-		public double computeValue(ReadableDatabase db, Constant... args) {
-			checkArguments(getName(), args);
-			return (args[0].equals(args[1])) ? 1.0 : 0.0;
-		}
-	};
+        @Override
+        public double computeValue(ReadableDatabase db, Constant... args) {
+            checkArguments(getName(), args);
+            return (args[0].equals(args[1])) ? 1.0 : 0.0;
+        }
+    };
 
-	/**
-	 * True if arguments are not equal.
-	 */
-	public static final SpecialPredicate NotEqual
-		= new SpecialPredicate("#NotEqual",
-				new ConstantType[] {ConstantType.DeferredFunctionalUniqueID, ConstantType.DeferredFunctionalUniqueID}) {
+    /**
+     * True if arguments are not equal.
+     */
+    public static final SpecialPredicate NotEqual
+        = new SpecialPredicate("#NotEqual",
+                new ConstantType[] {ConstantType.DeferredFunctionalUniqueID, ConstantType.DeferredFunctionalUniqueID}) {
 
-		@Override
-		public double computeValue(ReadableDatabase db, Constant... args) {
-			checkArguments(getName(), args);
-			return (!args[0].equals(args[1])) ? 1.0 : 0.0;
-		}
-	};
+        @Override
+        public double computeValue(ReadableDatabase db, Constant... args) {
+            checkArguments(getName(), args);
+            return (!args[0].equals(args[1])) ? 1.0 : 0.0;
+        }
+    };
 
-	/**
-	 * True if the first argument is less than the second.
-	 * Used to ground only one of a symmetric pair of ground rules.
-	 */
-	public static final SpecialPredicate NonSymmetric
-		= new SpecialPredicate("#NonSymmetric",
-				new ConstantType[] {ConstantType.DeferredFunctionalUniqueID, ConstantType.DeferredFunctionalUniqueID}) {
+    /**
+     * True if the first argument is less than the second.
+     * Used to ground only one of a symmetric pair of ground rules.
+     */
+    public static final SpecialPredicate NonSymmetric
+        = new SpecialPredicate("#NonSymmetric",
+                new ConstantType[] {ConstantType.DeferredFunctionalUniqueID, ConstantType.DeferredFunctionalUniqueID}) {
 
-		@Override
-		public double computeValue(ReadableDatabase db, Constant... args) {
-			checkArguments(getName(), args);
-			return (args[0].compareTo(args[1]) < 0) ? 1.0 : 0.0;
-		}
-	};
+        @Override
+        public double computeValue(ReadableDatabase db, Constant... args) {
+            checkArguments(getName(), args);
+            return (args[0].compareTo(args[1]) < 0) ? 1.0 : 0.0;
+        }
+    };
 
-	private static final void checkArguments(String functionName, Constant[] args) {
-		if (args.length != 2) {
-			throw new IllegalArgumentException(functionName + " expects two arguments, got " + args.length + ".");
-		}
+    private static final void checkArguments(String functionName, Constant[] args) {
+        if (args.length != 2) {
+            throw new IllegalArgumentException(functionName + " expects two arguments, got " + args.length + ".");
+        }
 
-		if (!(args[0] instanceof UniqueIntID || args[0] instanceof UniqueStringID) ||
-			 !(args[1] instanceof UniqueIntID || args[1] instanceof UniqueStringID)) {
-			throw new IllegalArgumentException(
-					String.format("%s expects both arguments to be a Unique*ID. Instead, got: (%s, %s).",
-					functionName, args[0].getClass().getName(), args[1].getClass().getName()));
-		}
+        if (!(args[0] instanceof UniqueIntID || args[0] instanceof UniqueStringID) ||
+             !(args[1] instanceof UniqueIntID || args[1] instanceof UniqueStringID)) {
+            throw new IllegalArgumentException(
+                    String.format("%s expects both arguments to be a Unique*ID. Instead, got: (%s, %s).",
+                    functionName, args[0].getClass().getName(), args[1].getClass().getName()));
+        }
 
-		if (args[0].getClass() != args[1].getClass()) {
-			throw new IllegalArgumentException(
-					String.format("%s expects both arguments to be Unique*IDs of the same type. Instead, got: (%s, %s).",
-					functionName, args[0].getClass().getName(), args[1].getClass().getName()));
-		}
-	}
+        if (args[0].getClass() != args[1].getClass()) {
+            throw new IllegalArgumentException(
+                    String.format("%s expects both arguments to be Unique*IDs of the same type. Instead, got: (%s, %s).",
+                    functionName, args[0].getClass().getName(), args[1].getClass().getName()));
+        }
+    }
 }

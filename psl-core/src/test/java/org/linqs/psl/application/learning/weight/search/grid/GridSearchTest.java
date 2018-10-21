@@ -22,17 +22,17 @@ import org.linqs.psl.application.learning.weight.WeightLearningTest;
 import org.linqs.psl.config.Config;
 
 public class GridSearchTest extends WeightLearningTest {
-	public GridSearchTest() {
-		super();
-		assertBaseTest = false;
-		assertFriendshipRankTest = false;
-	}
+    public GridSearchTest() {
+        super();
+        assertBaseTest = false;
+        assertFriendshipRankTest = false;
+    }
 
-	@Override
-	protected WeightLearningApplication getWLA() {
-		// Narrow the search space for tests.
-		Config.setProperty(GridSearch.POSSIBLE_WEIGHTS_KEY, "0.01:1:10");
+    @Override
+    protected WeightLearningApplication getWLA() {
+        // Narrow the search space for tests.
+        Config.setProperty(GridSearch.POSSIBLE_WEIGHTS_KEY, "0.01:1:10");
 
-		return new GridSearch(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
-	}
+        return new GridSearch(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
+    }
 }

@@ -26,40 +26,40 @@ import org.linqs.psl.model.rule.WeightedGroundRule;
  * weight * coefficients^T * x
  */
 public class LinearLossTerm extends ADMMObjectiveTerm implements WeightedTerm {
-	private final float[] coefficients;
+    private final float[] coefficients;
 
-	/**
-	 * Caller releases control of |variables| and |coefficients|.
-	 */
-	LinearLossTerm(GroundRule groundRule, Hyperplane hyperplane) {
-		super(hyperplane, groundRule);
+    /**
+     * Caller releases control of |variables| and |coefficients|.
+     */
+    LinearLossTerm(GroundRule groundRule, Hyperplane hyperplane) {
+        super(hyperplane, groundRule);
 
-		this.coefficients = hyperplane.getCoefficients();
-	}
+        this.coefficients = hyperplane.getCoefficients();
+    }
 
-	@Override
-	public void minimize(float stepSize, float[] consensusValues) {
-		float weight = (float)((WeightedGroundRule)groundRule).getWeight();
-		for (int i = 0; i < size; i++) {
-			LocalVariable variable = variables[i];
+    @Override
+    public void minimize(float stepSize, float[] consensusValues) {
+        float weight = (float)((WeightedGroundRule)groundRule).getWeight();
+        for (int i = 0; i < size; i++) {
+            LocalVariable variable = variables[i];
 
-			float value = consensusValues[variable.getGlobalId()] - variable.getLagrange() / stepSize;
-			value -= (weight * coefficients[i] / stepSize);
+            float value = consensusValues[variable.getGlobalId()] - variable.getLagrange() / stepSize;
+            value -= (weight * coefficients[i] / stepSize);
 
-			variable.setValue(value);
-		}
-	}
+            variable.setValue(value);
+        }
+    }
 
-	/**
-	 * weight * coefficients^T * x
-	 */
-	@Override
-	public float evaluate() {
-		float weight = (float)((WeightedGroundRule)groundRule).getWeight();
-		float value = 0.0f;
-		for (int i = 0; i < size; i++) {
-			value += coefficients[i] * variables[i].getValue();
-		}
-		return weight * value;
-	}
+    /**
+     * weight * coefficients^T * x
+     */
+    @Override
+    public float evaluate() {
+        float weight = (float)((WeightedGroundRule)groundRule).getWeight();
+        float value = 0.0f;
+        for (int i = 0; i < size; i++) {
+            value += coefficients[i] * variables[i].getValue();
+        }
+        return weight * value;
+    }
 }

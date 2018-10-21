@@ -27,44 +27,44 @@ import org.linqs.psl.util.MathUtils;
 import org.junit.Test;
 
 public abstract class RDBMSDataStoreTest extends DataStoreTest {
-	@Test
-	public void testGetTableStats() {
-		if (datastore == null) {
-			return;
-		}
+    @Test
+    public void testGetTableStats() {
+        if (datastore == null) {
+            return;
+        }
 
-		datastore.registerPredicate(p1);
-		datastore.registerPredicate(p2);
+        datastore.registerPredicate(p1);
+        datastore.registerPredicate(p2);
 
-		Inserter inserter1 = datastore.getInserter(p1, datastore.getPartition("0"));
-		Inserter inserter2 = datastore.getInserter(p2, datastore.getPartition("0"));
+        Inserter inserter1 = datastore.getInserter(p1, datastore.getPartition("0"));
+        Inserter inserter2 = datastore.getInserter(p2, datastore.getPartition("0"));
 
-		final int MIN = 0;
-		final int COUNT = 1000;
-		final int MAX = MIN + COUNT - 1;
+        final int MIN = 0;
+        final int COUNT = 1000;
+        final int MAX = MIN + COUNT - 1;
 
-		for (int i = MIN; i < COUNT; i++) {
-			inserter1.insert("" + (i / 1), "" + (i / 2));
-			inserter2.insert("" + (i / 1), "" + (i / 4));
-		}
+        for (int i = MIN; i < COUNT; i++) {
+            inserter1.insert("" + (i / 1), "" + (i / 2));
+            inserter2.insert("" + (i / 1), "" + (i / 4));
+        }
 
-		((RDBMSDataStore)datastore).indexPredicates();
-		DatabaseDriver driver = ((RDBMSDataStore)datastore).getDriver();
+        ((RDBMSDataStore)datastore).indexPredicates();
+        DatabaseDriver driver = ((RDBMSDataStore)datastore).getDriver();
 
-		TableStats stats = driver.getTableStats(((RDBMSDataStore)datastore).getPredicateInfo(p1));
-		assertEquals(stats.getCount(), COUNT);
-		assertEquals(stats.getSelectivity("UNIQUEINTID_0"), 1.0 / 1.0, MathUtils.EPSILON);
-		assertEquals(stats.getCardinality("UNIQUEINTID_0"), COUNT / 1);
-		assertEquals(stats.getSelectivity("UNIQUEINTID_1"), 1.0 / 2.0, MathUtils.EPSILON);
-		assertEquals(stats.getCardinality("UNIQUEINTID_1"), COUNT / 2);
+        TableStats stats = driver.getTableStats(((RDBMSDataStore)datastore).getPredicateInfo(p1));
+        assertEquals(stats.getCount(), COUNT);
+        assertEquals(stats.getSelectivity("UNIQUEINTID_0"), 1.0 / 1.0, MathUtils.EPSILON);
+        assertEquals(stats.getCardinality("UNIQUEINTID_0"), COUNT / 1);
+        assertEquals(stats.getSelectivity("UNIQUEINTID_1"), 1.0 / 2.0, MathUtils.EPSILON);
+        assertEquals(stats.getCardinality("UNIQUEINTID_1"), COUNT / 2);
 
-		stats = driver.getTableStats(((RDBMSDataStore)datastore).getPredicateInfo(p2));
-		assertEquals(stats.getCount(), COUNT);
-		assertEquals(stats.getSelectivity("STRING_0"), 1.0 / 1.0, MathUtils.EPSILON);
-		assertEquals(stats.getCardinality("STRING_0"), COUNT / 1);
-		assertEquals(stats.getSelectivity("STRING_1"), 1.0 / 4.0, MathUtils.EPSILON);
-		assertEquals(stats.getCardinality("STRING_1"), COUNT / 4);
-	}
+        stats = driver.getTableStats(((RDBMSDataStore)datastore).getPredicateInfo(p2));
+        assertEquals(stats.getCount(), COUNT);
+        assertEquals(stats.getSelectivity("STRING_0"), 1.0 / 1.0, MathUtils.EPSILON);
+        assertEquals(stats.getCardinality("STRING_0"), COUNT / 1);
+        assertEquals(stats.getSelectivity("STRING_1"), 1.0 / 4.0, MathUtils.EPSILON);
+        assertEquals(stats.getCardinality("STRING_1"), COUNT / 4);
+    }
 
    // TODO(eriq): Add a test that estimates join sizes with histograms.
 }

@@ -26,52 +26,52 @@ import java.util.Map;
  * This container is NOT case sensitive, do not rely on case for anything.
  */
 public class TableStats {
-	private int count;
+    private int count;
 
-	/**
-	 * Selectivity by column.
-	 * [0, 1].
-	 */
-	private Map<String, Double> selectivity;
+    /**
+     * Selectivity by column.
+     * [0, 1].
+     */
+    private Map<String, Double> selectivity;
 
-	private Map<String, SelectivityHistogram> histograms;
+    private Map<String, SelectivityHistogram> histograms;
 
-	public TableStats(int count) {
-		this.count = count;
-		this.selectivity = new HashMap<String, Double>();
-		this.histograms = new HashMap<String, SelectivityHistogram>();
-	}
+    public TableStats(int count) {
+        this.count = count;
+        this.selectivity = new HashMap<String, Double>();
+        this.histograms = new HashMap<String, SelectivityHistogram>();
+    }
 
-	public void addColumnSelectivity(String column, double columnSelectivity) {
-		column = column.toUpperCase();
-		selectivity.put(column, new Double(columnSelectivity));
-	}
+    public void addColumnSelectivity(String column, double columnSelectivity) {
+        column = column.toUpperCase();
+        selectivity.put(column, new Double(columnSelectivity));
+    }
 
-	public void addColumnHistogram(String column, SelectivityHistogram histogram) {
-		column = column.toUpperCase();
-		histograms.put(column, histogram);
-	}
+    public void addColumnHistogram(String column, SelectivityHistogram histogram) {
+        column = column.toUpperCase();
+        histograms.put(column, histogram);
+    }
 
-	public int getCount() {
-		return count;
-	}
+    public int getCount() {
+        return count;
+    }
 
-	public SelectivityHistogram getHistogram(String column) {
-		column = column.toUpperCase();
-		return histograms.get(column);
-	}
+    public SelectivityHistogram getHistogram(String column) {
+        column = column.toUpperCase();
+        return histograms.get(column);
+    }
 
-	/**
-	 * Get the selectivity (cardinality / total rows) of a specific column.
-	 */
-	public double getSelectivity(String column) {
-		return selectivity.get(column.toUpperCase()).doubleValue();
-	}
+    /**
+     * Get the selectivity (cardinality / total rows) of a specific column.
+     */
+    public double getSelectivity(String column) {
+        return selectivity.get(column.toUpperCase()).doubleValue();
+    }
 
-	/**
-	 * Get the cardinality (number of unique rows) of a specific column.
-	 */
-	public int getCardinality(String column) {
-		return (int)(selectivity.get(column.toUpperCase()).doubleValue() * count);
-	}
+    /**
+     * Get the cardinality (number of unique rows) of a specific column.
+     */
+    public int getCardinality(String column) {
+        return (int)(selectivity.get(column.toUpperCase()).doubleValue() * count);
+    }
 }

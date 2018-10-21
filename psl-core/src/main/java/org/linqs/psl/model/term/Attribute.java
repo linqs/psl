@@ -24,8 +24,8 @@ package org.linqs.psl.model.term;
  * be Attributes.
  */
 public abstract class Attribute extends Constant {
-	/**
-	 * @return Java representation of the Attribute's value
-	 */
-	public abstract Object getValue();
+    /**
+     * @return Java representation of the Attribute's value
+     */
+    public abstract Object getValue();
 }

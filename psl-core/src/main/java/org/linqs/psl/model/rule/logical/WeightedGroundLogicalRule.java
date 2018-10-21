@@ -29,64 +29,64 @@ import org.linqs.psl.util.IteratorUtils;
 import java.util.List;
 
 public class WeightedGroundLogicalRule extends AbstractGroundLogicalRule implements WeightedGroundRule {
-	protected WeightedGroundLogicalRule(WeightedLogicalRule rule, List<GroundAtom> posLiterals,
-			List<GroundAtom> negLiterals, short rvaCount) {
-		super(rule, posLiterals, negLiterals, rvaCount);
-		function.setSquared(rule.isSquared());
-	}
+    protected WeightedGroundLogicalRule(WeightedLogicalRule rule, List<GroundAtom> posLiterals,
+            List<GroundAtom> negLiterals, short rvaCount) {
+        super(rule, posLiterals, negLiterals, rvaCount);
+        function.setSquared(rule.isSquared());
+    }
 
-	@Override
-	public WeightedRule getRule() {
-		return (WeightedRule)rule;
-	}
+    @Override
+    public WeightedRule getRule() {
+        return (WeightedRule)rule;
+    }
 
-	@Override
-	public boolean isSquared() {
-		return ((WeightedRule)rule).isSquared();
-	}
+    @Override
+    public boolean isSquared() {
+        return ((WeightedRule)rule).isSquared();
+    }
 
-	@Override
-	public double getWeight() {
-		return ((WeightedRule)rule).getWeight();
-	}
+    @Override
+    public double getWeight() {
+        return ((WeightedRule)rule).getWeight();
+    }
 
-	@Override
-	public void setWeight(double weight) {
-		((WeightedRule)rule).setWeight(weight);
-	}
+    @Override
+    public void setWeight(double weight) {
+        ((WeightedRule)rule).setWeight(weight);
+    }
 
-	@Override
-	public GeneralFunction getFunctionDefinition() {
-		return function;
-	}
+    @Override
+    public GeneralFunction getFunctionDefinition() {
+        return function;
+    }
 
-	@Override
-	public double getIncompatibility() {
-		return function.getValue();
-	}
+    @Override
+    public double getIncompatibility() {
+        return function.getValue();
+    }
 
-	@Override
-	public double getIncompatibility(GroundAtom replacementAtom, float replacementValue) {
-		return function.getValue(replacementAtom, replacementValue);
-	}
+    @Override
+    public double getIncompatibility(GroundAtom replacementAtom, float replacementValue) {
+        return function.getValue(replacementAtom, replacementValue);
+    }
 
-	@Override
-	public String toString() {
-		return "" + getWeight() + ": " + super.toString() + ((isSquared()) ? " ^2" : "");
-	}
+    @Override
+    public String toString() {
+        return "" + getWeight() + ": " + super.toString() + ((isSquared()) ? " ^2" : "");
+    }
 
-	@Override
-	protected GroundRule instantiateNegatedGroundRule(
-			Formula disjunction, List<GroundAtom> positiveAtoms,
-			List<GroundAtom> negativeAtoms, String name) {
-		short rvaCount = 0;
-		for (GroundAtom atom : IteratorUtils.join(positiveAtoms, negativeAtoms)) {
-			if (atom instanceof RandomVariableAtom) {
-				rvaCount++;
-			}
-		}
+    @Override
+    protected GroundRule instantiateNegatedGroundRule(
+            Formula disjunction, List<GroundAtom> positiveAtoms,
+            List<GroundAtom> negativeAtoms, String name) {
+        short rvaCount = 0;
+        for (GroundAtom atom : IteratorUtils.join(positiveAtoms, negativeAtoms)) {
+            if (atom instanceof RandomVariableAtom) {
+                rvaCount++;
+            }
+        }
 
-		WeightedLogicalRule newRule = new WeightedLogicalRule(rule.getFormula(), -1.0 * ((WeightedLogicalRule)rule).getWeight(), isSquared(), name);
-		return new WeightedGroundLogicalRule(newRule, positiveAtoms, negativeAtoms, rvaCount);
-	}
+        WeightedLogicalRule newRule = new WeightedLogicalRule(rule.getFormula(), -1.0 * ((WeightedLogicalRule)rule).getWeight(), isSquared(), name);
+        return new WeightedGroundLogicalRule(newRule, positiveAtoms, negativeAtoms, rvaCount);
+    }
 }

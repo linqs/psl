@@ -25,21 +25,21 @@ import org.linqs.psl.model.rule.WeightedGroundRule;
  * weight * (coeffs^T * x - constant)^2
  */
 public class SquaredLinearLossTerm extends SquaredHyperplaneTerm {
-	public SquaredLinearLossTerm(GroundRule groundRule, Hyperplane hyperplane) {
-		super(groundRule, hyperplane);
-	}
+    public SquaredLinearLossTerm(GroundRule groundRule, Hyperplane hyperplane) {
+        super(groundRule, hyperplane);
+    }
 
-	@Override
-	public void minimize(float stepSize, float[] consensusValues) {
-		minWeightedSquaredHyperplane(stepSize, consensusValues);
-	}
+    @Override
+    public void minimize(float stepSize, float[] consensusValues) {
+        minWeightedSquaredHyperplane(stepSize, consensusValues);
+    }
 
-	/**
-	 * weight * (coeffs^T * x - constant)^2
-	 */
-	@Override
-	public float evaluate() {
-		float weight = (float)((WeightedGroundRule)groundRule).getWeight();
-		return weight * (float)Math.pow(super.evaluate(), 2);
-	}
+    /**
+     * weight * (coeffs^T * x - constant)^2
+     */
+    @Override
+    public float evaluate() {
+        float weight = (float)((WeightedGroundRule)groundRule).getWeight();
+        return weight * (float)Math.pow(super.evaluate(), 2);
+    }
 }
