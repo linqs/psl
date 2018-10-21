@@ -100,7 +100,12 @@ public class TrainingMap {
 
 		if (fetchObservedPairs) {
 			for (StandardPredicate predicate : observedDB.getDataStore().getRegisteredPredicates()) {
-				for (ObservedAtom truthAtom : observedDB.getAllGroundObservedAtoms(predicate)) {
+				for (GroundAtom atom : observedDB.getAllGroundAtoms(predicate)) {
+					if (!(atom instanceof ObservedAtom)) {
+						continue;
+					}
+					ObservedAtom truthAtom = (ObservedAtom)atom;
+
 					if (seenTruthAtoms.contains(truthAtom)) {
 						continue;
 					}
