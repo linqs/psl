@@ -27,7 +27,7 @@ import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.formula.Implication;
 import org.linqs.psl.model.formula.Negation;
 import org.linqs.psl.model.predicate.Predicate;
-import org.linqs.psl.model.predicate.SpecialPredicate;
+import org.linqs.psl.model.predicate.GroundingOnlyPredicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.arithmetic.UnweightedArithmeticRule;
 import org.linqs.psl.model.rule.arithmetic.WeightedArithmeticRule;
@@ -777,15 +777,15 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
             return new QueryAtom(predicate, args);
         }
         else if (ctx.termOperator() != null) {
-            SpecialPredicate predicate;
+            GroundingOnlyPredicate predicate;
             if (ctx.termOperator().notEqual() != null) {
-                predicate = SpecialPredicate.NotEqual;
+                predicate = GroundingOnlyPredicate.NotEqual;
             }
             else if (ctx.termOperator().termEqual() != null) {
-                predicate = SpecialPredicate.Equal;
+                predicate = GroundingOnlyPredicate.Equal;
             }
             else if (ctx.termOperator().nonSymmetric() != null) {
-                predicate = SpecialPredicate.NonSymmetric;
+                predicate = GroundingOnlyPredicate.NonSymmetric;
             }
             else {
                 throw new IllegalStateException();

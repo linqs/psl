@@ -25,7 +25,7 @@ import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.formula.Negation;
 import org.linqs.psl.model.predicate.ExternalFunctionalPredicate;
 import org.linqs.psl.model.predicate.FunctionalPredicate;
-import org.linqs.psl.model.predicate.SpecialPredicate;
+import org.linqs.psl.model.predicate.GroundingOnlyPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Attribute;
 import org.linqs.psl.model.term.Term;
@@ -167,17 +167,17 @@ public class Formula2SQL {
 
         if (atom.getPredicate() instanceof ExternalFunctionalPredicate) {
             // Skip. All external functions are called when ground rules are instantiated.
-        } else if (atom.getPredicate() instanceof SpecialPredicate) {
-            SpecialPredicate predicate = (SpecialPredicate)atom.getPredicate();
+        } else if (atom.getPredicate() instanceof GroundingOnlyPredicate) {
+            GroundingOnlyPredicate predicate = (GroundingOnlyPredicate)atom.getPredicate();
 
-            if (predicate == SpecialPredicate.NotEqual) {
+            if (predicate == GroundingOnlyPredicate.NotEqual) {
                 query.addCondition(BinaryCondition.notEqualTo(convert[0], convert[1]));
-            } else if (predicate == SpecialPredicate.Equal) {
+            } else if (predicate == GroundingOnlyPredicate.Equal) {
                 query.addCondition(BinaryCondition.equalTo(convert[0], convert[1]));
-            } else if (predicate == SpecialPredicate.NonSymmetric) {
+            } else if (predicate == GroundingOnlyPredicate.NonSymmetric) {
                 query.addCondition(BinaryCondition.lessThan(convert[0], convert[1], false));
             } else {
-                throw new UnsupportedOperationException("Unrecognized SpecialPredicate: " + predicate);
+                throw new UnsupportedOperationException("Unrecognized GroundingOnlyPredicate: " + predicate);
             }
         } else {
             throw new UnsupportedOperationException("Unrecognized FunctionalPredicate: " + atom.getPredicate());

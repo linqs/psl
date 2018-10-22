@@ -19,7 +19,7 @@ package org.linqs.psl.model.atom;
 
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.predicate.Predicate;
-import org.linqs.psl.model.predicate.SpecialPredicate;
+import org.linqs.psl.model.predicate.GroundingOnlyPredicate;
 import org.linqs.psl.model.rule.arithmetic.expression.SummationAtomOrAtom;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
@@ -251,23 +251,23 @@ public abstract class Atom implements Formula, SummationAtomOrAtom {
     @Override
     public String toString() {
         StringBuilder s = new StringBuilder();
-        if (predicate instanceof SpecialPredicate)  {
+        if (predicate instanceof GroundingOnlyPredicate)  {
             s.append("(");
-            if (predicate == SpecialPredicate.NotEqual) {
+            if (predicate == GroundingOnlyPredicate.NotEqual) {
                 s.append(arguments[0]);
                 s.append(" != ");
                 s.append(arguments[1]);
-            } else if (predicate == SpecialPredicate.Equal) {
+            } else if (predicate == GroundingOnlyPredicate.Equal) {
                 s.append(arguments[0]);
                 s.append(" == ");
                 s.append(arguments[1]);
-            } else if (predicate == SpecialPredicate.NonSymmetric) {
+            } else if (predicate == GroundingOnlyPredicate.NonSymmetric) {
                 s.append(arguments[0]);
                 s.append(" % ");
                 s.append(arguments[1]);
             } else {
                 throw new UnsupportedOperationException(
-                        "Unrecognized SpecialPredicate: " + predicate);
+                        "Unrecognized GroundingOnlyPredicate: " + predicate);
             }
             s.append(")");
         } else {

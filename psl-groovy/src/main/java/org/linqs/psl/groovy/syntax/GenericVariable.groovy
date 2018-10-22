@@ -20,7 +20,7 @@ package org.linqs.psl.groovy.syntax;
 import org.linqs.psl.groovy.PSLModel;
 
 import org.linqs.psl.model.atom.QueryAtom
-import org.linqs.psl.model.predicate.SpecialPredicate
+import org.linqs.psl.model.predicate.GroundingOnlyPredicate
 import org.linqs.psl.model.term.Variable
 
 public class GenericVariable {
@@ -57,13 +57,13 @@ public class GenericVariable {
 			throw new IllegalArgumentException("Can only compare variables to variables! ${this} compared to ${other}");
 		}
 		assert other instanceof GenericVariable
-		return new FormulaContainer(new QueryAtom(SpecialPredicate.NonSymmetric, this.toAtomVariable(), other.toAtomVariable()));
+		return new FormulaContainer(new QueryAtom(GroundingOnlyPredicate.NonSymmetric, this.toAtomVariable(), other.toAtomVariable()));
 	}
 
 	def minus(other) {
 		if (!(other instanceof GenericVariable)) {
 			throw new IllegalArgumentException("Can only compare variables to variables! ${this} compared to ${other}");
 		}
-		return new FormulaContainer(new QueryAtom(SpecialPredicate.NotEqual, this.toAtomVariable(), other.toAtomVariable()));
+		return new FormulaContainer(new QueryAtom(GroundingOnlyPredicate.NotEqual, this.toAtomVariable(), other.toAtomVariable()));
 	}
 }

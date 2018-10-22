@@ -46,7 +46,7 @@ import org.linqs.psl.model.formula.Disjunction;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.formula.Implication;
 import org.linqs.psl.model.formula.Negation;
-import org.linqs.psl.model.predicate.SpecialPredicate;
+import org.linqs.psl.model.predicate.GroundingOnlyPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
@@ -191,8 +191,14 @@ public class GroundRuleTest {
         PSLTest.compareGroundRules(expected, rule, store);
     }
 
+    /**
+     * Test that rules with grounding only predicates obey the predicates.
+     * Note that gronding only predicates are handled at the grounding query level
+     * and don't actually make it into the ground rule.
+     * Remember, all rules will be in DNF.
+     */
     @Test
-    public void testLogicalSpecialPredicates() {
+    public void testLogicalGroundingOnlyPredicates() {
         GroundRuleStore store = new MemoryGroundRuleStore();
         AtomManager manager = new SimpleAtomManager(database);
 
@@ -205,7 +211,7 @@ public class GroundRuleTest {
                 new Conjunction(
                     new QueryAtom(model.predicates.get("Nice"), new Variable("A")),
                     new QueryAtom(model.predicates.get("Nice"), new Variable("B")),
-                    new QueryAtom(SpecialPredicate.Equal, new Variable("A"), new Variable("B"))
+                    new QueryAtom(GroundingOnlyPredicate.Equal, new Variable("A"), new Variable("B"))
                 ),
                 new QueryAtom(model.predicates.get("Friends"), new Variable("A"), new Variable("B"))
             ),
@@ -213,13 +219,12 @@ public class GroundRuleTest {
             true
         );
 
-        // Remember, all rules will be in DNF.
         expected = Arrays.asList(
-            "1.0: ( ~( NICE('Alice') ) | ~( NICE('Alice') ) | ~( ('Alice' == 'Alice') ) | FRIENDS('Alice', 'Alice') ) ^2",
-            "1.0: ( ~( NICE('Bob') ) | ~( NICE('Bob') ) | ~( ('Bob' == 'Bob') ) | FRIENDS('Bob', 'Bob') ) ^2",
-            "1.0: ( ~( NICE('Charlie') ) | ~( NICE('Charlie') ) | ~( ('Charlie' == 'Charlie') ) | FRIENDS('Charlie', 'Charlie') ) ^2",
-            "1.0: ( ~( NICE('Derek') ) | ~( NICE('Derek') ) | ~( ('Derek' == 'Derek') ) | FRIENDS('Derek', 'Derek') ) ^2",
-            "1.0: ( ~( NICE('Eugene') ) | ~( NICE('Eugene') ) | ~( ('Eugene' == 'Eugene') ) | FRIENDS('Eugene', 'Eugene') ) ^2"
+            "1.0: ( ~( NICE('Alice') ) | ~( NICE('Alice') ) | FRIENDS('Alice', 'Alice') ) ^2",
+            "1.0: ( ~( NICE('Bob') ) | ~( NICE('Bob') ) | FRIENDS('Bob', 'Bob') ) ^2",
+            "1.0: ( ~( NICE('Charlie') ) | ~( NICE('Charlie') ) | FRIENDS('Charlie', 'Charlie') ) ^2",
+            "1.0: ( ~( NICE('Derek') ) | ~( NICE('Derek') ) | FRIENDS('Derek', 'Derek') ) ^2",
+            "1.0: ( ~( NICE('Eugene') ) | ~( NICE('Eugene') ) | FRIENDS('Eugene', 'Eugene') ) ^2"
         );
         rule.groundAll(manager, store);
         PSLTest.compareGroundRules(expected, rule, store);
@@ -230,7 +235,7 @@ public class GroundRuleTest {
                 new Conjunction(
                     new QueryAtom(model.predicates.get("Nice"), new Variable("A")),
                     new QueryAtom(model.predicates.get("Nice"), new Variable("B")),
-                    new QueryAtom(SpecialPredicate.NotEqual, new Variable("A"), new Variable("B"))
+                    new QueryAtom(GroundingOnlyPredicate.NotEqual, new Variable("A"), new Variable("B"))
                 ),
                 new QueryAtom(model.predicates.get("Friends"), new Variable("A"), new Variable("B"))
             ),
@@ -238,28 +243,27 @@ public class GroundRuleTest {
             true
         );
 
-        // Remember, all rules will be in DNF.
         expected = Arrays.asList(
-            "1.0: ( ~( NICE('Alice') ) | ~( NICE('Bob') ) | ~( ('Alice' != 'Bob') ) | FRIENDS('Alice', 'Bob') ) ^2",
-            "1.0: ( ~( NICE('Alice') ) | ~( NICE('Charlie') ) | ~( ('Alice' != 'Charlie') ) | FRIENDS('Alice', 'Charlie') ) ^2",
-            "1.0: ( ~( NICE('Alice') ) | ~( NICE('Derek') ) | ~( ('Alice' != 'Derek') ) | FRIENDS('Alice', 'Derek') ) ^2",
-            "1.0: ( ~( NICE('Alice') ) | ~( NICE('Eugene') ) | ~( ('Alice' != 'Eugene') ) | FRIENDS('Alice', 'Eugene') ) ^2",
-            "1.0: ( ~( NICE('Bob') ) | ~( NICE('Alice') ) | ~( ('Bob' != 'Alice') ) | FRIENDS('Bob', 'Alice') ) ^2",
-            "1.0: ( ~( NICE('Bob') ) | ~( NICE('Charlie') ) | ~( ('Bob' != 'Charlie') ) | FRIENDS('Bob', 'Charlie') ) ^2",
-            "1.0: ( ~( NICE('Bob') ) | ~( NICE('Derek') ) | ~( ('Bob' != 'Derek') ) | FRIENDS('Bob', 'Derek') ) ^2",
-            "1.0: ( ~( NICE('Bob') ) | ~( NICE('Eugene') ) | ~( ('Bob' != 'Eugene') ) | FRIENDS('Bob', 'Eugene') ) ^2",
-            "1.0: ( ~( NICE('Charlie') ) | ~( NICE('Alice') ) | ~( ('Charlie' != 'Alice') ) | FRIENDS('Charlie', 'Alice') ) ^2",
-            "1.0: ( ~( NICE('Charlie') ) | ~( NICE('Bob') ) | ~( ('Charlie' != 'Bob') ) | FRIENDS('Charlie', 'Bob') ) ^2",
-            "1.0: ( ~( NICE('Charlie') ) | ~( NICE('Derek') ) | ~( ('Charlie' != 'Derek') ) | FRIENDS('Charlie', 'Derek') ) ^2",
-            "1.0: ( ~( NICE('Charlie') ) | ~( NICE('Eugene') ) | ~( ('Charlie' != 'Eugene') ) | FRIENDS('Charlie', 'Eugene') ) ^2",
-            "1.0: ( ~( NICE('Derek') ) | ~( NICE('Alice') ) | ~( ('Derek' != 'Alice') ) | FRIENDS('Derek', 'Alice') ) ^2",
-            "1.0: ( ~( NICE('Derek') ) | ~( NICE('Bob') ) | ~( ('Derek' != 'Bob') ) | FRIENDS('Derek', 'Bob') ) ^2",
-            "1.0: ( ~( NICE('Derek') ) | ~( NICE('Charlie') ) | ~( ('Derek' != 'Charlie') ) | FRIENDS('Derek', 'Charlie') ) ^2",
-            "1.0: ( ~( NICE('Derek') ) | ~( NICE('Eugene') ) | ~( ('Derek' != 'Eugene') ) | FRIENDS('Derek', 'Eugene') ) ^2",
-            "1.0: ( ~( NICE('Eugene') ) | ~( NICE('Alice') ) | ~( ('Eugene' != 'Alice') ) | FRIENDS('Eugene', 'Alice') ) ^2",
-            "1.0: ( ~( NICE('Eugene') ) | ~( NICE('Bob') ) | ~( ('Eugene' != 'Bob') ) | FRIENDS('Eugene', 'Bob') ) ^2",
-            "1.0: ( ~( NICE('Eugene') ) | ~( NICE('Charlie') ) | ~( ('Eugene' != 'Charlie') ) | FRIENDS('Eugene', 'Charlie') ) ^2",
-            "1.0: ( ~( NICE('Eugene') ) | ~( NICE('Derek') ) | ~( ('Eugene' != 'Derek') ) | FRIENDS('Eugene', 'Derek') ) ^2"
+            "1.0: ( ~( NICE('Alice') ) | ~( NICE('Bob') ) | FRIENDS('Alice', 'Bob') ) ^2",
+            "1.0: ( ~( NICE('Alice') ) | ~( NICE('Charlie') ) | FRIENDS('Alice', 'Charlie') ) ^2",
+            "1.0: ( ~( NICE('Alice') ) | ~( NICE('Derek') ) | FRIENDS('Alice', 'Derek') ) ^2",
+            "1.0: ( ~( NICE('Alice') ) | ~( NICE('Eugene') ) | FRIENDS('Alice', 'Eugene') ) ^2",
+            "1.0: ( ~( NICE('Bob') ) | ~( NICE('Alice') ) | FRIENDS('Bob', 'Alice') ) ^2",
+            "1.0: ( ~( NICE('Bob') ) | ~( NICE('Charlie') ) | FRIENDS('Bob', 'Charlie') ) ^2",
+            "1.0: ( ~( NICE('Bob') ) | ~( NICE('Derek') ) | FRIENDS('Bob', 'Derek') ) ^2",
+            "1.0: ( ~( NICE('Bob') ) | ~( NICE('Eugene') ) | FRIENDS('Bob', 'Eugene') ) ^2",
+            "1.0: ( ~( NICE('Charlie') ) | ~( NICE('Alice') ) | FRIENDS('Charlie', 'Alice') ) ^2",
+            "1.0: ( ~( NICE('Charlie') ) | ~( NICE('Bob') ) | FRIENDS('Charlie', 'Bob') ) ^2",
+            "1.0: ( ~( NICE('Charlie') ) | ~( NICE('Derek') ) | FRIENDS('Charlie', 'Derek') ) ^2",
+            "1.0: ( ~( NICE('Charlie') ) | ~( NICE('Eugene') ) | FRIENDS('Charlie', 'Eugene') ) ^2",
+            "1.0: ( ~( NICE('Derek') ) | ~( NICE('Alice') ) | FRIENDS('Derek', 'Alice') ) ^2",
+            "1.0: ( ~( NICE('Derek') ) | ~( NICE('Bob') ) | FRIENDS('Derek', 'Bob') ) ^2",
+            "1.0: ( ~( NICE('Derek') ) | ~( NICE('Charlie') ) | FRIENDS('Derek', 'Charlie') ) ^2",
+            "1.0: ( ~( NICE('Derek') ) | ~( NICE('Eugene') ) | FRIENDS('Derek', 'Eugene') ) ^2",
+            "1.0: ( ~( NICE('Eugene') ) | ~( NICE('Alice') ) | FRIENDS('Eugene', 'Alice') ) ^2",
+            "1.0: ( ~( NICE('Eugene') ) | ~( NICE('Bob') ) | FRIENDS('Eugene', 'Bob') ) ^2",
+            "1.0: ( ~( NICE('Eugene') ) | ~( NICE('Charlie') ) | FRIENDS('Eugene', 'Charlie') ) ^2",
+            "1.0: ( ~( NICE('Eugene') ) | ~( NICE('Derek') ) | FRIENDS('Eugene', 'Derek') ) ^2"
         );
         rule.groundAll(manager, store);
         PSLTest.compareGroundRules(expected, rule, store);
@@ -270,7 +274,7 @@ public class GroundRuleTest {
                 new Conjunction(
                     new QueryAtom(model.predicates.get("Nice"), new Variable("A")),
                     new QueryAtom(model.predicates.get("Nice"), new Variable("B")),
-                    new QueryAtom(SpecialPredicate.NonSymmetric, new Variable("A"), new Variable("B"))
+                    new QueryAtom(GroundingOnlyPredicate.NonSymmetric, new Variable("A"), new Variable("B"))
                 ),
                 new QueryAtom(model.predicates.get("Friends"), new Variable("A"), new Variable("B"))
             ),
@@ -278,25 +282,24 @@ public class GroundRuleTest {
             true
         );
 
-        // Remember, all rules will be in DNF.
         expected = Arrays.asList(
-            "1.0: ( ~( NICE('Alice') ) | ~( NICE('Bob') ) | ~( ('Alice' % 'Bob') ) | FRIENDS('Alice', 'Bob') ) ^2",
-            "1.0: ( ~( NICE('Alice') ) | ~( NICE('Charlie') ) | ~( ('Alice' % 'Charlie') ) | FRIENDS('Alice', 'Charlie') ) ^2",
-            "1.0: ( ~( NICE('Alice') ) | ~( NICE('Derek') ) | ~( ('Alice' % 'Derek') ) | FRIENDS('Alice', 'Derek') ) ^2",
-            "1.0: ( ~( NICE('Alice') ) | ~( NICE('Eugene') ) | ~( ('Alice' % 'Eugene') ) | FRIENDS('Alice', 'Eugene') ) ^2",
-            "1.0: ( ~( NICE('Bob') ) | ~( NICE('Charlie') ) | ~( ('Bob' % 'Charlie') ) | FRIENDS('Bob', 'Charlie') ) ^2",
-            "1.0: ( ~( NICE('Bob') ) | ~( NICE('Derek') ) | ~( ('Bob' % 'Derek') ) | FRIENDS('Bob', 'Derek') ) ^2",
-            "1.0: ( ~( NICE('Bob') ) | ~( NICE('Eugene') ) | ~( ('Bob' % 'Eugene') ) | FRIENDS('Bob', 'Eugene') ) ^2",
-            "1.0: ( ~( NICE('Charlie') ) | ~( NICE('Derek') ) | ~( ('Charlie' % 'Derek') ) | FRIENDS('Charlie', 'Derek') ) ^2",
-            "1.0: ( ~( NICE('Charlie') ) | ~( NICE('Eugene') ) | ~( ('Charlie' % 'Eugene') ) | FRIENDS('Charlie', 'Eugene') ) ^2",
-            "1.0: ( ~( NICE('Derek') ) | ~( NICE('Eugene') ) | ~( ('Derek' % 'Eugene') ) | FRIENDS('Derek', 'Eugene') ) ^2"
+            "1.0: ( ~( NICE('Alice') ) | ~( NICE('Bob') ) | FRIENDS('Alice', 'Bob') ) ^2",
+            "1.0: ( ~( NICE('Alice') ) | ~( NICE('Charlie') ) | FRIENDS('Alice', 'Charlie') ) ^2",
+            "1.0: ( ~( NICE('Alice') ) | ~( NICE('Derek') ) | FRIENDS('Alice', 'Derek') ) ^2",
+            "1.0: ( ~( NICE('Alice') ) | ~( NICE('Eugene') ) | FRIENDS('Alice', 'Eugene') ) ^2",
+            "1.0: ( ~( NICE('Bob') ) | ~( NICE('Charlie') ) | FRIENDS('Bob', 'Charlie') ) ^2",
+            "1.0: ( ~( NICE('Bob') ) | ~( NICE('Derek') ) | FRIENDS('Bob', 'Derek') ) ^2",
+            "1.0: ( ~( NICE('Bob') ) | ~( NICE('Eugene') ) | FRIENDS('Bob', 'Eugene') ) ^2",
+            "1.0: ( ~( NICE('Charlie') ) | ~( NICE('Derek') ) | FRIENDS('Charlie', 'Derek') ) ^2",
+            "1.0: ( ~( NICE('Charlie') ) | ~( NICE('Eugene') ) | FRIENDS('Charlie', 'Eugene') ) ^2",
+            "1.0: ( ~( NICE('Derek') ) | ~( NICE('Eugene') ) | FRIENDS('Derek', 'Eugene') ) ^2"
         );
         rule.groundAll(manager, store);
         PSLTest.compareGroundRules(expected, rule, store);
     }
 
     @Test
-    public void testArithmeticSpecialPredicates() {
+    public void testArithmeticGroundingOnlyPredicates() {
         initModel(true, true);
 
         GroundRuleStore store = new MemoryGroundRuleStore();
@@ -319,7 +322,7 @@ public class GroundRuleTest {
         atoms = Arrays.asList(
             (SummationAtomOrAtom)(new QueryAtom(model.predicates.get("Nice"), new Variable("A"))),
             (SummationAtomOrAtom)(new QueryAtom(model.predicates.get("Nice"), new Variable("B"))),
-            (SummationAtomOrAtom)(new QueryAtom(SpecialPredicate.Equal, new Variable("A"), new Variable("B"))),
+            (SummationAtomOrAtom)(new QueryAtom(GroundingOnlyPredicate.Equal, new Variable("A"), new Variable("B"))),
             (SummationAtomOrAtom)(new QueryAtom(model.predicates.get("Friends"), new Variable("A"), new Variable("B")))
         );
 
@@ -339,7 +342,7 @@ public class GroundRuleTest {
         rule.groundAll(manager, store);
         PSLTest.compareGroundRules(expected, rule, store);
 
-        // Ensure that the special predicate is not contributing to the value (incompatibility) of the rule.
+        // Ensure that the grounding only predicate is not contributing to the value (incompatibility) of the rule.
         for (GroundRule groundRule : store.getGroundRules(rule)) {
             // All should gave the value of 1.0: Both Nice values are 1,0, and the Friends starts at 1.0 (with -1 coefficient).
             assertEquals(1.0, ((WeightedGroundRule)groundRule).getIncompatibility(), EPSILON);
@@ -357,7 +360,7 @@ public class GroundRuleTest {
         atoms = Arrays.asList(
             (SummationAtomOrAtom)(new QueryAtom(model.predicates.get("Nice"), new Variable("A"))),
             (SummationAtomOrAtom)(new QueryAtom(model.predicates.get("Nice"), new Variable("B"))),
-            (SummationAtomOrAtom)(new QueryAtom(SpecialPredicate.NotEqual, new Variable("A"), new Variable("B"))),
+            (SummationAtomOrAtom)(new QueryAtom(GroundingOnlyPredicate.NotEqual, new Variable("A"), new Variable("B"))),
             (SummationAtomOrAtom)(new QueryAtom(model.predicates.get("Friends"), new Variable("A"), new Variable("B")))
         );
 
@@ -404,7 +407,7 @@ public class GroundRuleTest {
         atoms = Arrays.asList(
             (SummationAtomOrAtom)(new QueryAtom(model.predicates.get("Nice"), new Variable("A"))),
             (SummationAtomOrAtom)(new QueryAtom(model.predicates.get("Nice"), new Variable("B"))),
-            (SummationAtomOrAtom)(new QueryAtom(SpecialPredicate.NonSymmetric, new Variable("A"), new Variable("B"))),
+            (SummationAtomOrAtom)(new QueryAtom(GroundingOnlyPredicate.NonSymmetric, new Variable("A"), new Variable("B"))),
             (SummationAtomOrAtom)(new QueryAtom(model.predicates.get("Friends"), new Variable("A"), new Variable("B")))
         );
 

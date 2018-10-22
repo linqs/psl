@@ -29,7 +29,7 @@ import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Implication;
 import org.linqs.psl.model.formula.Negation;
-import org.linqs.psl.model.predicate.SpecialPredicate;
+import org.linqs.psl.model.predicate.GroundingOnlyPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
@@ -179,7 +179,7 @@ public abstract class WeightLearningTest {
                 new Conjunction(
                     new QueryAtom(info.predicates.get("Person"), new UniqueStringID("Alice")),
                     new QueryAtom(info.predicates.get("Person"), new Variable("B")),
-                    new QueryAtom(SpecialPredicate.NotEqual, new UniqueStringID("Alice"), new Variable("B"))
+                    new QueryAtom(GroundingOnlyPredicate.NotEqual, new UniqueStringID("Alice"), new Variable("B"))
                 ),
                 new QueryAtom(info.predicates.get("Friends"), new UniqueStringID("Alice"), new Variable("B"))
             ),
@@ -196,7 +196,7 @@ public abstract class WeightLearningTest {
                 new Conjunction(
                     new QueryAtom(info.predicates.get("Person"), new UniqueStringID("Bob")),
                     new QueryAtom(info.predicates.get("Person"), new Variable("B")),
-                    new QueryAtom(SpecialPredicate.NotEqual, new UniqueStringID("Bob"), new Variable("B"))
+                    new QueryAtom(GroundingOnlyPredicate.NotEqual, new UniqueStringID("Bob"), new Variable("B"))
                 ),
                 new QueryAtom(info.predicates.get("Friends"), new UniqueStringID("Bob"), new Variable("B"))
             ),
@@ -213,7 +213,7 @@ public abstract class WeightLearningTest {
                 new Conjunction(
                     new QueryAtom(info.predicates.get("Person"), new UniqueStringID("Eugene")),
                     new QueryAtom(info.predicates.get("Person"), new Variable("B")),
-                    new QueryAtom(SpecialPredicate.NotEqual, new UniqueStringID("Eugene"), new Variable("B"))
+                    new QueryAtom(GroundingOnlyPredicate.NotEqual, new UniqueStringID("Eugene"), new Variable("B"))
                 ),
                 new QueryAtom(info.predicates.get("Friends"), new UniqueStringID("Eugene"), new Variable("B"))
             ),
@@ -230,7 +230,7 @@ public abstract class WeightLearningTest {
                 new Conjunction(
                     new QueryAtom(info.predicates.get("Person"), new UniqueStringID("Alice")),
                     new QueryAtom(info.predicates.get("Person"), new Variable("B")),
-                    new QueryAtom(SpecialPredicate.NotEqual, new UniqueStringID("Alice"), new Variable("B"))
+                    new QueryAtom(GroundingOnlyPredicate.NotEqual, new UniqueStringID("Alice"), new Variable("B"))
                 ),
                 new Negation(new QueryAtom(info.predicates.get("Friends"), new UniqueStringID("Alice"), new Variable("B")))
             ),

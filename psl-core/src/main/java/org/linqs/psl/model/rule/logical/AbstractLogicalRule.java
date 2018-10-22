@@ -29,6 +29,7 @@ import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.formula.FormulaAnalysis;
 import org.linqs.psl.model.formula.Negation;
 import org.linqs.psl.model.formula.FormulaAnalysis.DNFClause;
+import org.linqs.psl.model.predicate.GroundingOnlyPredicate;
 import org.linqs.psl.model.rule.AbstractRule;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
@@ -278,8 +279,14 @@ public abstract class AbstractLogicalRule extends AbstractRule {
         GroundAtom atom = null;
         short rvaCount = 0;
 
-        for (int j = 0; j < literals.size(); j++) {
-            atom = ((QueryAtom)literals.get(j)).ground(atomManager, row, variableMap, argumentBuffer[j]);
+        for (int i = 0; i < literals.size(); i++) {
+            // Grounding only predicates are evaluated during the grounding query, skip evaluation (and caching) here.
+            if (literals.get(i).getPredicate() instanceof GroundingOnlyPredicate) {
+                continue;
+            }
+
+            atom = ((QueryAtom)literals.get(i)).ground(atomManager, row, variableMap, argumentBuffer[i]);
+
             if (atom instanceof RandomVariableAtom) {
                 // If we got an atom that is in violation of an access policy, then we may need to throw an exception.
                 // First we will check to see if the ground rule is trivial,

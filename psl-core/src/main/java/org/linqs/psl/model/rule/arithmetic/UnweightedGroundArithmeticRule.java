@@ -18,7 +18,7 @@
 package org.linqs.psl.model.rule.arithmetic;
 
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.predicate.SpecialPredicate;
+import org.linqs.psl.model.predicate.GroundingOnlyPredicate;
 import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.UnweightedRule;
 import org.linqs.psl.reasoner.function.ConstraintTerm;
@@ -53,8 +53,8 @@ public class UnweightedGroundArithmeticRule extends AbstractGroundArithmeticRule
     public double getInfeasibility() {
         float sum = 0.0f;
         for (int i = 0; i < coefficients.length; i++) {
-            // Skip any special predicates.
-            if (atoms[i].getPredicate() instanceof SpecialPredicate) {
+            // Skip any grounding only predicates.
+            if (atoms[i].getPredicate() instanceof GroundingOnlyPredicate) {
                 continue;
             }
 
@@ -77,8 +77,8 @@ public class UnweightedGroundArithmeticRule extends AbstractGroundArithmeticRule
     public ConstraintTerm getConstraintDefinition() {
         GeneralFunction sum = new GeneralFunction(false, false, (short)coefficients.length);
         for (int i = 0; i < coefficients.length; i++) {
-            // Skip any special predicates.
-            if (atoms[i].getPredicate() instanceof SpecialPredicate) {
+            // Skip any grounding only predicates.
+            if (atoms[i].getPredicate() instanceof GroundingOnlyPredicate) {
                 continue;
             }
 

@@ -35,7 +35,7 @@ import org.linqs.psl.model.formula.Implication;
 import org.linqs.psl.model.function.ExternalFunction;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.ExternalFunctionalPredicate;
-import org.linqs.psl.model.predicate.SpecialPredicate;
+import org.linqs.psl.model.predicate.GroundingOnlyPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
@@ -65,7 +65,7 @@ public class Formula2SQLTest {
                 new QueryAtom(info.predicates.get("Person"), new Variable("B")),
                 new QueryAtom(functionPredicate, new Variable("A")),
                 new QueryAtom(functionPredicate, new Variable("B")),
-                new QueryAtom(SpecialPredicate.NotEqual, new Variable("A"), new Variable("B"))
+                new QueryAtom(GroundingOnlyPredicate.NotEqual, new Variable("A"), new Variable("B"))
             ),
             new QueryAtom(info.predicates.get("Friends"), new Variable("A"), new Variable("B"))
         );
@@ -118,7 +118,7 @@ public class Formula2SQLTest {
                         new QueryAtom(info.predicates.get("Person"), new Variable("A")),
                         new QueryAtom(info.predicates.get("Person"), new Variable("B")),
                         new QueryAtom(functionPredicate, new Variable("A"), new Variable("B"), new Variable("A")),
-                        new QueryAtom(SpecialPredicate.NotEqual, new Variable("A"), new Variable("B"))
+                        new QueryAtom(GroundingOnlyPredicate.NotEqual, new Variable("A"), new Variable("B"))
                     ),
                     new QueryAtom(info.predicates.get("Friends"), new Variable("A"), new Variable("B"))
                 ),

@@ -38,7 +38,7 @@ import org.linqs.psl.model.function.ExternalFunction;
 import org.linqs.psl.model.predicate.ExternalFunctionalPredicate;
 import org.linqs.psl.model.predicate.FunctionalPredicate;
 import org.linqs.psl.model.predicate.Predicate;
-import org.linqs.psl.model.predicate.SpecialPredicate;
+import org.linqs.psl.model.predicate.GroundingOnlyPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
@@ -481,7 +481,7 @@ public abstract class DataStoreTest {
     }
 
     @Test
-    public void testSpecialPredicates() {
+    public void testGroundingOnlyPredicates() {
         if (datastore == null) {
             return;
         }
@@ -506,46 +506,46 @@ public abstract class DataStoreTest {
         // Tests equality
         f = new Conjunction(
                 new QueryAtom(p1, X, Y),
-                new QueryAtom(SpecialPredicate.Equal, X, Y));
+                new QueryAtom(GroundingOnlyPredicate.Equal, X, Y));
         results = db.executeQuery(new DatabaseQuery(f));
         assertEquals(1, results.size());
         assertEquals(a, results.get(0, X));
         assertEquals(a, results.get(0, Y));
 
-        atom = db.getAtom(SpecialPredicate.Equal, a, a);
+        atom = db.getAtom(GroundingOnlyPredicate.Equal, a, a);
         assertEquals(1.0, atom.getValue(), 0.0);
 
-        atom = db.getAtom(SpecialPredicate.Equal, a, b);
+        atom = db.getAtom(GroundingOnlyPredicate.Equal, a, b);
         assertEquals(0.0, atom.getValue(), 0.0);
 
         // Tests inequality
         f = new Conjunction(
                 new QueryAtom(p1, X, Y),
-                new QueryAtom(SpecialPredicate.NotEqual, X, Y));
+                new QueryAtom(GroundingOnlyPredicate.NotEqual, X, Y));
         results = db.executeQuery(new DatabaseQuery(f));
         assertEquals(1, results.size());
         assertEquals(a, results.get(0, X));
         assertEquals(b, results.get(0, Y));
 
-        atom = db.getAtom(SpecialPredicate.NotEqual, a, a);
+        atom = db.getAtom(GroundingOnlyPredicate.NotEqual, a, a);
         assertEquals(0.0, atom.getValue(), 0.0);
 
-        atom = db.getAtom(SpecialPredicate.NotEqual, a, b);
+        atom = db.getAtom(GroundingOnlyPredicate.NotEqual, a, b);
         assertEquals(1.0, atom.getValue(), 0.0);
 
         // Tests non-symmetry
         f = new Conjunction(
                 new QueryAtom(p1, X, Y),
-                new QueryAtom(SpecialPredicate.NonSymmetric, X, Y));
+                new QueryAtom(GroundingOnlyPredicate.NonSymmetric, X, Y));
         results = db.executeQuery(new DatabaseQuery(f));
         assertEquals(1, results.size());
         assertEquals(a, results.get(0, X));
         assertEquals(b, results.get(0, Y));
 
-        atom = db.getAtom(SpecialPredicate.NonSymmetric, b, a);
+        atom = db.getAtom(GroundingOnlyPredicate.NonSymmetric, b, a);
         assertEquals(0.0, atom.getValue(), 0.0);
 
-        atom = db.getAtom(SpecialPredicate.NonSymmetric, a, b);
+        atom = db.getAtom(GroundingOnlyPredicate.NonSymmetric, a, b);
         assertEquals(1.0, atom.getValue(), 0.0);
     }
 

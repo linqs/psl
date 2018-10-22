@@ -34,7 +34,7 @@ import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Implication;
 import org.linqs.psl.model.formula.Negation;
 import org.linqs.psl.model.predicate.Predicate;
-import org.linqs.psl.model.predicate.SpecialPredicate;
+import org.linqs.psl.model.predicate.GroundingOnlyPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
@@ -118,7 +118,7 @@ public class TestModel {
                     new Conjunction(
                         new QueryAtom(predicates.get("Nice"), new Variable("A")),
                         new QueryAtom(predicates.get("Nice"), new Variable("B")),
-                        new QueryAtom(SpecialPredicate.NotEqual, new Variable("A"), new Variable("B"))
+                        new QueryAtom(GroundingOnlyPredicate.NotEqual, new Variable("A"), new Variable("B"))
                     ),
                     new QueryAtom(predicates.get("Friends"), new Variable("A"), new Variable("B"))
                 ),
@@ -131,7 +131,7 @@ public class TestModel {
                         new QueryAtom(predicates.get("Person"), new Variable("A")),
                         new QueryAtom(predicates.get("Person"), new Variable("B")),
                         new QueryAtom(predicates.get("Friends"), new Variable("A"), new Variable("B")),
-                        new QueryAtom(SpecialPredicate.NotEqual, new Variable("A"), new Variable("B"))
+                        new QueryAtom(GroundingOnlyPredicate.NotEqual, new Variable("A"), new Variable("B"))
                     ),
                     new QueryAtom(predicates.get("Friends"), new Variable("B"), new Variable("A"))
                 ),

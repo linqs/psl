@@ -25,25 +25,27 @@ import org.linqs.psl.model.term.UniqueIntID;
 import org.linqs.psl.model.term.UniqueStringID;
 
 /**
- * Commonly used FunctionalPredicates that get special treatment in PSL..
+ * Commonly used FunctionalPredicates that get special treatment in PSL.
+ * These predicates are not backed by physical data (hence the extension of FunctionalPredicate),
+ * and they are only worked with at the grounding-query level.
+ * This means that they will never need to be actually evaluated in Java and never actually make it into a ground rule.
  *
- * A SpecialPredicate should be preferred over a user-made FunctionalPredicate
- * or ExternalFunctionalPredicate because some PSL components can evaluate
- * SpecialPredicates more efficiently.
- * For example, some special predicate may be able to be translated directly into SQL.
+ * A GroundingOnlyPredicate should be preferred over a user-made FunctionalPredicate
+ * or ExternalFunctionalPredicate because they can be evaluated more efficiently
+ * (via the translation to SQL).
  *
- * The names of SpecialPredicates begin with '#'.
+ * The names of GroundingOnlyPredicates begin with '#'.
  */
-public abstract class SpecialPredicate extends FunctionalPredicate {
-    private SpecialPredicate(String name, ConstantType[] types) {
+public abstract class GroundingOnlyPredicate extends FunctionalPredicate {
+    private GroundingOnlyPredicate(String name, ConstantType[] types) {
         super(name, types, false);
     }
 
     /**
      * True if arguments are equal.
      */
-    public static final SpecialPredicate Equal
-        = new SpecialPredicate("#Equal",
+    public static final GroundingOnlyPredicate Equal
+        = new GroundingOnlyPredicate("#Equal",
                 new ConstantType[] {ConstantType.DeferredFunctionalUniqueID, ConstantType.DeferredFunctionalUniqueID}) {
 
         @Override
@@ -56,8 +58,8 @@ public abstract class SpecialPredicate extends FunctionalPredicate {
     /**
      * True if arguments are not equal.
      */
-    public static final SpecialPredicate NotEqual
-        = new SpecialPredicate("#NotEqual",
+    public static final GroundingOnlyPredicate NotEqual
+        = new GroundingOnlyPredicate("#NotEqual",
                 new ConstantType[] {ConstantType.DeferredFunctionalUniqueID, ConstantType.DeferredFunctionalUniqueID}) {
 
         @Override
@@ -71,8 +73,8 @@ public abstract class SpecialPredicate extends FunctionalPredicate {
      * True if the first argument is less than the second.
      * Used to ground only one of a symmetric pair of ground rules.
      */
-    public static final SpecialPredicate NonSymmetric
-        = new SpecialPredicate("#NonSymmetric",
+    public static final GroundingOnlyPredicate NonSymmetric
+        = new GroundingOnlyPredicate("#NonSymmetric",
                 new ConstantType[] {ConstantType.DeferredFunctionalUniqueID, ConstantType.DeferredFunctionalUniqueID}) {
 
         @Override

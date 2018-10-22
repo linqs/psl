@@ -18,7 +18,7 @@
 package org.linqs.psl.model.rule.arithmetic;
 
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.predicate.SpecialPredicate;
+import org.linqs.psl.model.predicate.GroundingOnlyPredicate;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
@@ -75,8 +75,8 @@ public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule i
 
         float termSign = FunctionComparator.LargerThan.equals(comparator) ? -1.0f : 1.0f;
         for (int i = 0; i < coefficients.length; i++) {
-            // Skip any special predicates.
-            if (atoms[i].getPredicate() instanceof SpecialPredicate) {
+            // Skip any grounding only predicates.
+            if (atoms[i].getPredicate() instanceof GroundingOnlyPredicate) {
                 continue;
             }
 
@@ -96,8 +96,8 @@ public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule i
     public double getIncompatibility(GroundAtom replacementAtom, float replacementValue) {
         float sum = 0.0f;
         for (int i = 0; i < coefficients.length; i++) {
-            // Skip any special predicates.
-            if (atoms[i].getPredicate() instanceof SpecialPredicate) {
+            // Skip any grounding only predicates.
+            if (atoms[i].getPredicate() instanceof GroundingOnlyPredicate) {
                 continue;
             }
 

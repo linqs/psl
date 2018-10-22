@@ -24,7 +24,7 @@ import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.predicate.ExternalFunctionalPredicate;
 import org.linqs.psl.model.predicate.Predicate;
-import org.linqs.psl.model.predicate.SpecialPredicate;
+import org.linqs.psl.model.predicate.GroundingOnlyPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
@@ -367,7 +367,7 @@ public class QueryRewriter {
 
     /**
      * Filter the initial set of atoms.
-     * Remove external functional prediates and pass through special predicates.
+     * Remove external functional prediates and pass through grounding only predicates.
     */
     private static Set<Atom> filterBaseAtoms(Set<Atom> atoms) {
         Set<Atom> passthrough = new HashSet<Atom>();
@@ -377,7 +377,7 @@ public class QueryRewriter {
             if (atom.getPredicate() instanceof ExternalFunctionalPredicate) {
                 // Skip. These are handled at instantiation time.
                 removeAtoms.add(atom);
-            } else if (atom.getPredicate() instanceof SpecialPredicate) {
+            } else if (atom.getPredicate() instanceof GroundingOnlyPredicate) {
                 // Passthrough.
                 removeAtoms.add(atom);
                 passthrough.add(atom);
