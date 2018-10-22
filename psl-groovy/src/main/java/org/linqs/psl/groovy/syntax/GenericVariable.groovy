@@ -25,45 +25,45 @@ import org.linqs.psl.model.term.Variable
 
 public class GenericVariable {
 
-	private final String name;
-	private final PSLModel model;
+    private final String name;
+    private final PSLModel model;
 
-	public GenericVariable(String s, PSLModel m) {
-		name = s;
-		model = m;
-	}
+    public GenericVariable(String s, PSLModel m) {
+        name = s;
+        model = m;
+    }
 
-	public String toString() {
-		return name;
-	}
+    public String toString() {
+        return name;
+    }
 
-	public String getName() {
-		return name;
-	}
+    public String getName() {
+        return name;
+    }
 
-	public Variable toAtomVariable() {
-		return new Variable(name);
-	}
+    public Variable toAtomVariable() {
+        return new Variable(name);
+    }
 
-	/**
-	 * Alias for xor (non-symmetric).
-	 */
-	def mod(other) {
-		return xor(other);
-	}
+    /**
+     * Alias for xor (non-symmetric).
+     */
+    def mod(other) {
+        return xor(other);
+    }
 
-	def xor(other) {
-		if (!(other instanceof GenericVariable)) {
-			throw new IllegalArgumentException("Can only compare variables to variables! ${this} compared to ${other}");
-		}
-		assert other instanceof GenericVariable
-		return new FormulaContainer(new QueryAtom(GroundingOnlyPredicate.NonSymmetric, this.toAtomVariable(), other.toAtomVariable()));
-	}
+    def xor(other) {
+        if (!(other instanceof GenericVariable)) {
+            throw new IllegalArgumentException("Can only compare variables to variables! ${this} compared to ${other}");
+        }
+        assert other instanceof GenericVariable
+        return new FormulaContainer(new QueryAtom(GroundingOnlyPredicate.NonSymmetric, this.toAtomVariable(), other.toAtomVariable()));
+    }
 
-	def minus(other) {
-		if (!(other instanceof GenericVariable)) {
-			throw new IllegalArgumentException("Can only compare variables to variables! ${this} compared to ${other}");
-		}
-		return new FormulaContainer(new QueryAtom(GroundingOnlyPredicate.NotEqual, this.toAtomVariable(), other.toAtomVariable()));
-	}
+    def minus(other) {
+        if (!(other instanceof GenericVariable)) {
+            throw new IllegalArgumentException("Can only compare variables to variables! ${this} compared to ${other}");
+        }
+        return new FormulaContainer(new QueryAtom(GroundingOnlyPredicate.NotEqual, this.toAtomVariable(), other.toAtomVariable()));
+    }
 }
