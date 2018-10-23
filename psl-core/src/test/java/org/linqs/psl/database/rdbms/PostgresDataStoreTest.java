@@ -15,18 +15,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.reasoner.function;
+package org.linqs.psl.database.rdbms;
 
-/**
- * A variable in a numeric function.
- */
-public interface FunctionVariable extends FunctionTerm {
-	public boolean isConstant();
+import org.linqs.psl.database.DataStore;
+import org.linqs.psl.database.DatabaseTestUtil;
+import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 
-	/**
-	 * Sets the variable's value
-	 *
-	 * @param val  the value to set
-	 */
-	public void setValue(double val);
+public class PostgresDataStoreTest extends RDBMSDataStoreTest {
+    @Override
+    public DataStore getDataStore(boolean clearDB, boolean persisted) {
+        DatabaseDriver driver = DatabaseTestUtil.getPostgresDriver(clearDB);
+        if (driver == null) {
+            return null;
+        }
+
+        return new RDBMSDataStore(driver);
+    }
+
+    @Override
+    public void cleanUp() {
+        DatabaseTestUtil.cleanPostgresDriver();
+    }
 }

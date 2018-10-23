@@ -25,9 +25,9 @@ import org.linqs.psl.model.rule.arithmetic.expression.SummationVariableOrTerm;
  * All terms are immutable.
  */
 public interface Term extends Comparable<Term>, SummationVariableOrTerm {
-	public String toString();
+    public String toString();
 
-	public int hashCode();
+    public int hashCode();
 
-	public boolean equals(Object other);
+    public boolean equals(Object other);
 }

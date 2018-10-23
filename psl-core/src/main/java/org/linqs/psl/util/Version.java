@@ -23,14 +23,30 @@ import org.linqs.psl.config.Config;
  * Get versioning information about the project.
  */
 public class Version {
-	// Property set by maven.
-	public static final String VERSION_KEY = "project.version";
-	public static final String VERSION_DEFAULT = "UNKNOWN";
+    // Properties set by maven.
+    public static final String VERSION_KEY = "project.version";
+    public static final String VERSION_DEFAULT = "UNKNOWN";
 
-	// Static only.
-	private Version() {}
+    public static final String GIT_COMMIT_SHORT_KEY = "git.commit.id.abbrev";
+    public static final String GIT_COMMIT_SHORT_DEFAULT = "xxxxxxx";
 
-	public static String get() {
-		return Config.getString(VERSION_KEY, VERSION_DEFAULT);
-	}
+    public static final String GIT_DIRTY_KEY = "git.dirty";
+
+    // Static only.
+    private Version() {}
+
+    public static String get() {
+        return Config.getString(VERSION_KEY, VERSION_DEFAULT);
+    }
+
+    public static String getFull() {
+        String version = Config.getString(VERSION_KEY, VERSION_DEFAULT);
+        version += "-" + Config.getString(GIT_COMMIT_SHORT_KEY, GIT_COMMIT_SHORT_DEFAULT);
+
+        if (Config.getBoolean(GIT_DIRTY_KEY, false)) {
+            version += "-dirty";
+        }
+
+        return version;
+    }
 }

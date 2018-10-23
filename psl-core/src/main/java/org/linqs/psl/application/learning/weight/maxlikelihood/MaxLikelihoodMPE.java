@@ -34,11 +34,11 @@ import java.util.List;
  * The default implementations in VotedPerceptron are sufficient.
  */
 public class MaxLikelihoodMPE extends VotedPerceptron {
-	public MaxLikelihoodMPE(Model model, Database rvDB, Database observedDB) {
-		this(model.getRules(), rvDB, observedDB);
-	}
+    public MaxLikelihoodMPE(Model model, Database rvDB, Database observedDB) {
+        this(model.getRules(), rvDB, observedDB);
+    }
 
-	public MaxLikelihoodMPE(List<Rule> rules, Database rvDB, Database observedDB) {
-		super(rules, rvDB, observedDB, false);
-	}
+    public MaxLikelihoodMPE(List<Rule> rules, Database rvDB, Database observedDB) {
+        super(rules, rvDB, observedDB, false);
+    }
 }

@@ -21,13 +21,13 @@ package org.linqs.psl.model.rule;
  * Base class for all (first order, i.e., not ground) rules.
  */
 public abstract class AbstractRule implements Rule {
-	protected final String name;
+    protected final String name;
 
-	public AbstractRule(String name) {
-		this.name = name;
-	}
+    public AbstractRule(String name) {
+        this.name = name;
+    }
 
-	public String getName() {
-		return this.name;
-	}
+    public String getName() {
+        return this.name;
+    }
 }

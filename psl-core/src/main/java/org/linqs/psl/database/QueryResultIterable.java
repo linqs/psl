@@ -15,12 +15,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.linqs.psl.database;
 
-/**
- * Provides interfaces and classes for defining functions that
- * {@link org.linqs.psl.reasoner.Reasoner Reasoners} can interpret.
- *
- * {@link org.linqs.psl.model.rule.GroundRule GroundRules} use these
- * to define their incompatibility and constraint functions.
- */
-package org.linqs.psl.reasoner.function;
+import org.linqs.psl.model.term.Constant;
+import org.linqs.psl.model.term.Variable;
+
+import java.util.Map;
+
+public interface QueryResultIterable extends Iterable<Constant[]> {
+    /**
+     * Get the mapping between variables and their index in the results.
+     */
+    public Map<Variable, Integer> getVariableMap();
+}

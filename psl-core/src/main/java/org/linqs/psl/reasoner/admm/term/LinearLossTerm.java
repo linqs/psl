@@ -18,60 +18,48 @@
 package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.reasoner.term.WeightedTerm;
-
-import java.util.List;
+import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.model.rule.WeightedGroundRule;
 
 /**
  * ADMMReasoner objective term of the form <br />
- * weight * coeffs^T * x
+ * weight * coefficients^T * x
  */
 public class LinearLossTerm extends ADMMObjectiveTerm implements WeightedTerm {
-	private final List<Float> coeffs;
-	private float weight;
+    private final float[] coefficients;
 
-	/**
-	 * Caller releases control of |variables| and |coeffs|.
-	 */
-	LinearLossTerm(List<LocalVariable> variables, List<Float> coeffs, float weight) {
-		super(variables);
+    /**
+     * Caller releases control of |variables| and |coefficients|.
+     */
+    LinearLossTerm(GroundRule groundRule, Hyperplane hyperplane) {
+        super(hyperplane, groundRule);
 
-		assert(variables.size() == coeffs.size());
+        this.coefficients = hyperplane.getCoefficients();
+    }
 
-		this.coeffs = coeffs;
-		setWeight(weight);
-	}
+    @Override
+    public void minimize(float stepSize, float[] consensusValues) {
+        float weight = (float)((WeightedGroundRule)groundRule).getWeight();
+        for (int i = 0; i < size; i++) {
+            LocalVariable variable = variables[i];
 
-	@Override
-	public void setWeight(float weight) {
-		this.weight = weight;
-	}
+            float value = consensusValues[variable.getGlobalId()] - variable.getLagrange() / stepSize;
+            value -= (weight * coefficients[i] / stepSize);
 
-	@Override
-	public float getWeight() {
-		return weight;
-	}
+            variable.setValue(value);
+        }
+    }
 
-	@Override
-	public void minimize(float stepSize, float[] consensusValues) {
-		for (int i = 0; i < variables.size(); i++) {
-			LocalVariable variable = variables.get(i);
-
-			float value = consensusValues[variable.getGlobalId()] - variable.getLagrange() / stepSize;
-			value -= (weight * coeffs.get(i).floatValue() / stepSize);
-
-			variable.setValue(value);
-		}
-	}
-
-	/**
-	 * weight * coeffs^T * x
-	 */
-	@Override
-	public float evaluate() {
-		float value = 0.0f;
-		for (int i = 0; i < variables.size(); i++) {
-			value += coeffs.get(i).floatValue() * variables.get(i).getValue();
-		}
-		return weight * value;
-	}
+    /**
+     * weight * coefficients^T * x
+     */
+    @Override
+    public float evaluate() {
+        float weight = (float)((WeightedGroundRule)groundRule).getWeight();
+        float value = 0.0f;
+        for (int i = 0; i < size; i++) {
+            value += coefficients[i] * variables[i].getValue();
+        }
+        return weight * value;
+    }
 }

@@ -18,8 +18,8 @@
 package org.linqs.psl.application;
 
 public interface ModelApplication {
-	/**
-	 * Releases all resources used by this ModelApplication.
-	 */
-	public void close();
+    /**
+     * Releases all resources used by this ModelApplication.
+     */
+    public void close();
 }

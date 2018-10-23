@@ -36,36 +36,39 @@ import org.linqs.psl.model.predicate.StandardPredicate;
  * One of the compute methods must be called before attempting to get statistics.
  */
 public abstract class Evaluator {
-	/**
-	 * One of the main computation method.
-	 * This must be called before any of the metric retrival methods.
-	 * Only values in the TrainingMap are computed over.
-	 */
-	public abstract void compute(TrainingMap data);
+    /**
+     * One of the main computation method.
+     * This must be called before any of the metric retrival methods.
+     * Only values in the TrainingMap are computed over.
+     */
+    public abstract void compute(TrainingMap data);
 
-	/**
-	 * One of the main computation method.
-	 * This must be called before any of the metric retrival methods.
-	 * Only values in the TrainingMap matching the given predicate are computed over.
-	 */
-	public abstract void compute(TrainingMap data, StandardPredicate predicate);
+    /**
+     * One of the main computation method.
+     * This must be called before any of the metric retrival methods.
+     * Only values in the TrainingMap matching the given predicate are computed over.
+     */
+    public abstract void compute(TrainingMap data, StandardPredicate predicate);
 
-	public abstract double getRepresentativeMetric();
+    public abstract double getRepresentativeMetric();
 
-	public abstract boolean isHigherRepresentativeBetter();
+    public abstract boolean isHigherRepresentativeBetter();
 
-	/**
-	 * Get a string that contains the full range of stats that this Evaluator can provide.
-	 * compute() should have been called first.
-	 */
-	public abstract String getAllStats();
+    /**
+     * Get a string that contains the full range of stats that this Evaluator can provide.
+     * compute() should have been called first.
+     */
+    public abstract String getAllStats();
 
-	/**
-	 * A convenience call for those who don't want to create a training map directly.
-	 */
-	public void compute(Database rvDB, Database truthDB, StandardPredicate predicate) {
-		PersistedAtomManager atomManager = new PersistedAtomManager(rvDB);
-		TrainingMap map = new TrainingMap(atomManager, truthDB, true);
-		compute(map, predicate);
-	}
+    /**
+     * A convenience call for those who don't want to create a training map directly.
+     * If the random variable database is already fully cached
+     * (ie a PAM has already been used on it (like if it has been used in inference))
+     * then don't rebuild the cache.
+     */
+    public void compute(Database rvDB, Database truthDB, StandardPredicate predicate, boolean rvDBCached) {
+        PersistedAtomManager atomManager = new PersistedAtomManager(rvDB, rvDBCached);
+        TrainingMap map = new TrainingMap(atomManager, truthDB, true);
+        compute(map, predicate);
+    }
 }

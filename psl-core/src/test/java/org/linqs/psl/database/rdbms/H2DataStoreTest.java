@@ -15,28 +15,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.reasoner.function;
+package org.linqs.psl.database.rdbms;
 
-import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.database.DataStore;
+import org.linqs.psl.database.DatabaseTestUtil;
+import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 
-/**
- * Encapsulates the value of a {@link RandomVariableAtom}
- * for use in numeric functions.
- * <p>
- * This FunctionVariable can change the truth value of the RandomVariableAtom.
- */
-public class MutableAtomFunctionVariable extends AtomFunctionVariable {
-	public MutableAtomFunctionVariable(RandomVariableAtom atom) {
-		super(atom);
-	}
+public class H2DataStoreTest extends RDBMSDataStoreTest {
+    @Override
+    public DataStore getDataStore(boolean clearDB, boolean persisted) {
+        DatabaseDriver driver = DatabaseTestUtil.getH2Driver(clearDB, persisted);
+        return new RDBMSDataStore(driver);
+    }
 
-	@Override
-	public boolean isConstant() {
-		return false;
-	}
-
-	@Override
-	public void setValue(double val) {
-		((RandomVariableAtom) atom).setValue(val);
-	}
+    @Override
+    public void cleanUp() {
+        DatabaseTestUtil.cleanH2Driver();
+    }
 }

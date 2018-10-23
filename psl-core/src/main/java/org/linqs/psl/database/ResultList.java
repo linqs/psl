@@ -17,56 +17,48 @@
  */
 package org.linqs.psl.database;
 
-import java.util.Map;
-
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Variable;
 
+import java.util.Map;
+
 /**
  * List of substitutions for {@link Variable Variables} in a {@link Formula}.
  */
-public interface ResultList {
+public interface ResultList extends QueryResultIterable {
 
-	/**
-	 * @return the number of sets of substitutions in the list
-	 */
-	public int size();
+    /**
+     * @return the number of sets of substitutions in the list
+     */
+    public int size();
 
-	/**
-	 * @return the number of distinct {@link Variable Variables} replaced in
-	 *				 each substitution
-	 */
-	public int getArity();
+    /**
+     * @return the number of distinct {@link Variable Variables} replaced in
+     *     each substitution
+     */
+    public int getArity();
 
-	/**
-	 * Returns a substitution for a single {@link Variable}
-	 *
-	 * @param resultNo  the index of the substitution (from 0 to size-1)
-	 * @param var  the Variable that is replaced
-	 * @return  the substituted GroundTerm
-	 * @throws IllegalArgumentException  if resultNo is out of range or var is invalid
-	 */
-	public Constant get(int resultNo, Variable var);
+    /**
+     * Returns a substitution for a single {@link Variable}
+     *
+     * @param index the index of the substitution (from 0 to size-1)
+     * @param var the Variable that is replaced
+     * @return the substituted GroundTerm
+     * @throws IllegalArgumentException  if index is out of range or var is invalid
+     */
+    public Constant get(int index, Variable var);
 
-	/**
-	 * Returns a substitution for all {@link Variable Variables}.
-	 * <p>
-	 * GroundTerms are ordered according to the Variables' first appearances in
-	 * a depth-first, left-to-right traversal of the Formula in the DatabaseQuery
-	 * that generated this ResultList.
-	 *
-	 * @param resultNo  the index of the substitution (from 0 to size-1)
-	 * @return  the substituted GroundTerms
-	 * @throws IllegalArgumentException  if resultNo is out of range
-	 */
-	public Constant[] get(int resultNo);
-
-	/**
-	 * Returns a Map from {@link Variable Variables} to the indices of
-	 * substitutions that are returned by {@link #get(int)}.
-	 *
-	 * @return map of Variables to indices
-	 */
-	public Map<Variable, Integer> getVariableMap();
+    /**
+     * Returns a substitution for all {@link Variable Variables}.
+     * <p>
+     * GroundTerms are ordered according to the Variables' first appearances in
+     * a depth-first, left-to-right traversal of the Formula in the DatabaseQuery
+     * that generated this ResultList.
+     *
+     * @param index the index of the substitution (from 0 to size-1)
+     * @return the substituted GroundTerms
+     * @throws IllegalArgumentException  if index is out of range
+     */
+    public Constant[] get(int index);
 }

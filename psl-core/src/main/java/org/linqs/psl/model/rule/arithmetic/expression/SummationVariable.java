@@ -32,32 +32,32 @@ import org.linqs.psl.model.term.Variable;
  * @author Stephen Bach
  */
 public class SummationVariable implements SummationVariableOrTerm {
-	
-	private final Variable v;
+    
+    private final Variable v;
 
-	public SummationVariable(String name) {
-		v = new Variable(name);
-	}
-	
-	public Variable getVariable() {
-		return v;
-	}
-	
-	@Override
-	public String toString() {
-		return "+" + v.toString();
-	}
-	
-	@Override
-	public int hashCode() {
-		return v.hashCode();
-	}
-	
-	@Override
-	public boolean equals(Object oth) {
-		if (oth==this) return true;
-		if (oth==null || !(oth instanceof SummationVariable)) return false;
-		return getVariable().equals(((SummationVariable) oth).getVariable());  
-	}	
+    public SummationVariable(String name) {
+        v = new Variable(name);
+    }
+    
+    public Variable getVariable() {
+        return v;
+    }
+    
+    @Override
+    public String toString() {
+        return "+" + v.toString();
+    }
+    
+    @Override
+    public int hashCode() {
+        return v.hashCode();
+    }
+    
+    @Override
+    public boolean equals(Object oth) {
+        if (oth==this) return true;
+        if (oth==null || !(oth instanceof SummationVariable)) return false;
+        return getVariable().equals(((SummationVariable) oth).getVariable());  
+    }    
 
 }

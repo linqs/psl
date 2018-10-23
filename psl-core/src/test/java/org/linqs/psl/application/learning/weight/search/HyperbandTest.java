@@ -21,16 +21,16 @@ import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningTest;
 
 public class HyperbandTest extends WeightLearningTest {
-	public HyperbandTest() {
-		super();
+    public HyperbandTest() {
+        super();
 
-		// TODO(eriq)
-		assertBaseTest = false;
-		assertFriendshipRankTest = false;
-	}
+        // TODO(eriq)
+        assertBaseTest = false;
+        assertFriendshipRankTest = false;
+    }
 
-	@Override
-	protected WeightLearningApplication getWLA() {
-		return new Hyperband(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
-	}
+    @Override
+    protected WeightLearningApplication getWLA() {
+        return new Hyperband(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
+    }
 }

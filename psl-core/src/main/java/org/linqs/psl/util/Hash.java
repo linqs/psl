@@ -32,61 +32,61 @@ import java.nio.charset.StandardCharsets;
  * int myHashCode = HashCode.build(HashCode.build(a), b);
  */
 public class Hash {
-	// Static only.
-	private Hash() {}
+    // Static only.
+    private Hash() {}
 
-	public static String md5(String data) {
-		return bytesToHex(compute(data, "MD5"));
-	}
+    public static String md5(String data) {
+        return bytesToHex(compute(data, "MD5"));
+    }
 
-	public static String md5(byte[] data) {
-		return bytesToHex(compute(data, "MD5"));
-	}
+    public static String md5(byte[] data) {
+        return bytesToHex(compute(data, "MD5"));
+    }
 
-	public static String sha(String data) {
-		return bytesToHex(compute(data, "SHA-1"));
-	}
+    public static String sha(String data) {
+        return bytesToHex(compute(data, "SHA-1"));
+    }
 
-	public static String sha(byte[] data) {
-		return bytesToHex(compute(data, "SHA-1"));
-	}
+    public static String sha(byte[] data) {
+        return bytesToHex(compute(data, "SHA-1"));
+    }
 
-	public static String sha256(String data) {
-		return bytesToHex(compute(data, "SHA-256"));
-	}
+    public static String sha256(String data) {
+        return bytesToHex(compute(data, "SHA-256"));
+    }
 
-	public static String sha256(byte[] data) {
-		return bytesToHex(compute(data, "SHA-256"));
-	}
+    public static String sha256(byte[] data) {
+        return bytesToHex(compute(data, "SHA-256"));
+    }
 
-	// Taken from: http://www.baeldung.com/sha-256-hashing-java
-	public static String bytesToHex(byte[] data) {
-		StringBuffer builder = new StringBuffer();
+    // Taken from: http://www.baeldung.com/sha-256-hashing-java
+    public static String bytesToHex(byte[] data) {
+        StringBuffer builder = new StringBuffer();
 
-		for (int i = 0; i < data.length; i++) {
-			String hex = Integer.toHexString(0xff & data[i]);
-			if (hex.length() == 1) {
-				builder.append('0');
-			}
-			builder.append(hex);
-		}
+        for (int i = 0; i < data.length; i++) {
+            String hex = Integer.toHexString(0xff & data[i]);
+            if (hex.length() == 1) {
+                builder.append('0');
+            }
+            builder.append(hex);
+        }
 
-		return builder.toString();
-	}
+        return builder.toString();
+    }
 
-	public static byte[] compute(String data, String algorithm) {
-		return compute(data.getBytes(StandardCharsets.UTF_8), algorithm);
-	}
+    public static byte[] compute(String data, String algorithm) {
+        return compute(data.getBytes(StandardCharsets.UTF_8), algorithm);
+    }
 
-	public static byte[] compute(byte[] data, String algorithm) {
-		MessageDigest digest = null;
+    public static byte[] compute(byte[] data, String algorithm) {
+        MessageDigest digest = null;
 
-		try {
-			digest = MessageDigest.getInstance(algorithm);
-		} catch (NoSuchAlgorithmException ex) {
-			throw new RuntimeException(ex);
-		}
+        try {
+            digest = MessageDigest.getInstance(algorithm);
+        } catch (NoSuchAlgorithmException ex) {
+            throw new RuntimeException(ex);
+        }
 
-		return digest.digest(data);
-	}
+        return digest.digest(data);
+    }
 }

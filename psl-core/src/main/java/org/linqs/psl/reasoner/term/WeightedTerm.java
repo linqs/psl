@@ -18,11 +18,4 @@
 package org.linqs.psl.reasoner.term;
 
 public interface WeightedTerm extends Term {
-	/**
-	 * Set the weight of the term.
-	 * Typically called during weight learning.
-	 */
-	public void setWeight(float value);
-
-	public float getWeight();
 }
