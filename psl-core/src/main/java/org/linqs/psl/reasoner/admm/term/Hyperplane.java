@@ -25,7 +25,7 @@ import org.linqs.psl.util.ArrayUtils;
 public class Hyperplane {
     private LocalVariable[] variables;
     private float[] coefficients;
-    private int size = 0;
+    private int size;
     private float constant;
 
     public Hyperplane(int maxSize, float constant) {

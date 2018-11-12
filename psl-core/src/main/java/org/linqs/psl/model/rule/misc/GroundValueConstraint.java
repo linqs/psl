@@ -61,7 +61,7 @@ public class GroundValueConstraint implements UnweightedGroundRule {
 
     @Override
     public ConstraintTerm getConstraintDefinition() {
-        GeneralFunction sum = new GeneralFunction(false, false, (short)1);
+        GeneralFunction sum = new GeneralFunction(false, false, 1);
         sum.add(1.0f, atom);
         return new ConstraintTerm(sum, FunctionComparator.Equality, value);
     }
