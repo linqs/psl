@@ -23,14 +23,8 @@ import java.util.List;
  * Various static String utilities.
  */
 public final class StringUtils {
-    public static final char DEFAULT_DELIM = ',';
-
     // Static only.
     private StringUtils() {}
-
-    public static int[] splitInt(String text) {
-        return splitInt(text, DEFAULT_DELIM);
-    }
 
     public static int[] splitInt(String text, char delim) {
         return splitInt(text, "" + delim);
@@ -45,10 +39,6 @@ public final class StringUtils {
         }
 
         return ints;
-    }
-
-    public static double[] splitDouble(String text) {
-        return splitDouble(text, DEFAULT_DELIM);
     }
 
     public static double[] splitDouble(String text, char delim) {
@@ -66,15 +56,11 @@ public final class StringUtils {
         return doubles;
     }
 
-    public static String join(List<?> parts) {
-        return join(parts, DEFAULT_DELIM);
+    public static String join(char delim, List<?> parts) {
+        return join("" + delim, parts);
     }
 
-    public static String join(List<?> parts, char delim) {
-        return join(parts, "" + delim);
-    }
-
-    public static String join(List<?> parts, String delim) {
+    public static String join(String delim, List<?> parts) {
         StringBuilder builder = new StringBuilder(parts.size() * 2 - 1);
 
         for (int i = 0; i < parts.size(); i++) {
@@ -88,15 +74,11 @@ public final class StringUtils {
         return builder.toString();
     }
 
-    public static String join(Object[] parts) {
-        return join(parts, DEFAULT_DELIM);
+    public static String join(char delim, Object... parts) {
+        return join("" + delim, parts);
     }
 
-    public static String join(Object[] parts, char delim) {
-        return join(parts, "" + delim);
-    }
-
-    public static String join(Object[] parts, String delim) {
+    public static String join(String delim, Object... parts) {
         StringBuilder builder = new StringBuilder(parts.length * 2 - 1);
 
         for (int i = 0; i < parts.length; i++) {
@@ -110,15 +92,11 @@ public final class StringUtils {
         return builder.toString();
     }
 
-    public static String join(int[] parts) {
-        return join(parts, DEFAULT_DELIM);
+    public static String join(char delim, int... parts) {
+        return join("" + delim, parts);
     }
 
-    public static String join(int[] parts, char delim) {
-        return join(parts, "" + delim);
-    }
-
-    public static String join(int[] parts, String delim) {
+    public static String join(String delim, int... parts) {
         StringBuilder builder = new StringBuilder(parts.length * 2 - 1);
 
         for (int i = 0; i < parts.length; i++) {
@@ -132,15 +110,11 @@ public final class StringUtils {
         return builder.toString();
     }
 
-    public static String join(double[] parts) {
-        return join(parts, DEFAULT_DELIM);
+    public static String join(char delim, double... parts) {
+        return join("" + delim, parts);
     }
 
-    public static String join(double[] parts, char delim) {
-        return join(parts, "" + delim);
-    }
-
-    public static String join(double[] parts, String delim) {
+    public static String join(String delim, double... parts) {
         StringBuilder builder = new StringBuilder(parts.length * 2 - 1);
 
         for (int i = 0; i < parts.length; i++) {

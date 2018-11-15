@@ -86,7 +86,7 @@ public class GridSearch extends BaseGridSearch {
     protected boolean chooseNextLocation() {
         // Start at all zeros.
         if (currentLocation == null) {
-            currentLocation = StringUtils.join(new int[mutableRules.size()], DELIM);
+            currentLocation = StringUtils.join(DELIM, new int[mutableRules.size()]);
             return true;
         }
 
@@ -107,7 +107,7 @@ public class GridSearch extends BaseGridSearch {
             }
         }
 
-        currentLocation = StringUtils.join(indexes, DELIM);
+        currentLocation = StringUtils.join(DELIM, indexes);
         return true;
     }
 }

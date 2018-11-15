@@ -28,11 +28,10 @@ import org.linqs.psl.PSLTest;
 import org.linqs.psl.TestModel;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.term.Variable;
+import org.linqs.psl.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import org.apache.commons.lang.StringUtils;
 
 public class FormulaAnalysisTest {
     private TestModel.ModelInformation model;
@@ -320,7 +319,7 @@ public class FormulaAnalysisTest {
             for (int j = 0; j < analysis.getNumDNFClauses(); j++) {
                 clauses.add(analysis.getDNFClause(j).toString());
             }
-            actual[i] = StringUtils.join(clauses, " | ");
+            actual[i] = StringUtils.join(" | ", clauses);
         }
 
         PSLTest.assertStringsEquals(expected, actual, true);

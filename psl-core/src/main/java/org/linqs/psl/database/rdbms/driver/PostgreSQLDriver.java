@@ -123,7 +123,7 @@ public class PostgreSQLDriver implements DatabaseDriver {
             PredicateInfo predicateInfo, Partition partition) {
         String sql = String.format("COPY %s(%s%s) FROM STDIN WITH DELIMITER '%s'",
                 predicateInfo.tableName(),
-                StringUtils.join(predicateInfo.argumentColumns(), ", "),
+                StringUtils.join(", ", predicateInfo.argumentColumns()),
                 hasTruth ? (", " + PredicateInfo.VALUE_COLUMN_NAME) : "",
                 delimiter);
 
@@ -220,15 +220,15 @@ public class PostgreSQLDriver implements DatabaseDriver {
         // PostgreSQL uses the "INSERT ... ON CONFLICT" syntax.
         List<String> sql = new ArrayList<String>();
         sql.add("INSERT INTO " + tableName + "");
-        sql.add("    (" + StringUtils.join(columns, ", ") + ")");
+        sql.add("    (" + StringUtils.join(", ", columns) + ")");
         sql.add("VALUES");
         sql.add("    (" + StringUtils.repeat("?", ", ", columns.length) + ")");
         sql.add("ON CONFLICT");
-        sql.add("    (" + StringUtils.join(keyColumns, ", ") + ")");
+        sql.add("    (" + StringUtils.join(", ", keyColumns) + ")");
         sql.add("DO UPDATE SET");
-        sql.add("    " + StringUtils.join(updateValues, ", "));
+        sql.add("    " + StringUtils.join(", ", updateValues));
 
-        return StringUtils.join(sql, "\n");
+        return StringUtils.join("\n", sql);
     }
 
     private void executeUpdate(String sql) {
@@ -286,7 +286,7 @@ public class PostgreSQLDriver implements DatabaseDriver {
 
         try (
             Connection connection = getConnection();
-            PreparedStatement statement = connection.prepareStatement(StringUtils.join(sql, "\n"));
+            PreparedStatement statement = connection.prepareStatement(StringUtils.join("\n", sql));
             ResultSet result = statement.executeQuery();
         ) {
             while (result.next()) {

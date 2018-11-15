@@ -150,13 +150,13 @@ public class GuidedRandomGridSearch extends RandomGridSearch {
         for (int i = 0; i < mutableRules.size(); i++) {
             if (indexes[i] != possibleWeights.length - 1) {
                 indexes[i]++;
-                toExplore.add(StringUtils.join(indexes, DELIM));
+                toExplore.add(StringUtils.join(DELIM, indexes));
                 indexes[i]--;
             }
 
             if (indexes[i] != 0) {
                 indexes[i]--;
-                toExplore.add(StringUtils.join(indexes, DELIM));
+                toExplore.add(StringUtils.join(DELIM, indexes));
                 indexes[i]++;
             }
         }

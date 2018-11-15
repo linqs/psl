@@ -18,8 +18,8 @@
 package org.linqs.psl.database.rdbms;
 
 import org.linqs.psl.database.Partition;
+import org.linqs.psl.util.StringUtils;
 
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,7 +75,7 @@ public class DataStoreMetadata {
 
         try (
             Connection connection = dataStore.getConnection();
-            PreparedStatement statement = connection.prepareStatement(StringUtils.join(sql, "\n"));
+            PreparedStatement statement = connection.prepareStatement(StringUtils.join("\n", sql));
         ) {
             statement.execute();
         } catch (SQLException ex) {
@@ -125,7 +125,7 @@ public class DataStoreMetadata {
         ResultSet resultSet = null;
         try (
             Connection connection = dataStore.getConnection();
-            PreparedStatement statement = connection.prepareStatement(StringUtils.join(sql, "\n"));
+            PreparedStatement statement = connection.prepareStatement(StringUtils.join("\n", sql));
         ) {
             statement.setString(1, namespace);
             statement.setString(2, type);
@@ -162,7 +162,7 @@ public class DataStoreMetadata {
 
         try (
             Connection connection = dataStore.getConnection();
-            PreparedStatement statement = connection.prepareStatement(StringUtils.join(sql, "\n"));
+            PreparedStatement statement = connection.prepareStatement(StringUtils.join("\n", sql));
         ) {
             statement.setString(1, namespace);
             statement.setString(2, type);
@@ -186,7 +186,7 @@ public class DataStoreMetadata {
 
         try (
             Connection connection = dataStore.getConnection();
-            PreparedStatement statement = connection.prepareStatement(StringUtils.join(sql, "\n"));
+            PreparedStatement statement = connection.prepareStatement(StringUtils.join("\n", sql));
         ) {
             statement.setString(1, namespace);
             statement.setString(2, type);

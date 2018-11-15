@@ -20,8 +20,7 @@ package org.linqs.psl.database;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.formula.FormulaAnalysis;
 import org.linqs.psl.model.term.Variable;
-
-import org.apache.commons.lang3.StringUtils;
+import org.linqs.psl.util.StringUtils;
 
 import java.util.Arrays;
 import java.util.Set;
@@ -78,7 +77,7 @@ public class DatabaseQuery {
             throw new IllegalArgumentException(
                     "Any variable used in a negated (non-functional) predicate must also participate" +
                     " in a positive (non-functional) predicate." +
-                    " The following variables do not meet this requirement: [" + StringUtils.join(sortedVariables, ", ") + "]."
+                    " The following variables do not meet this requirement: [" + StringUtils.join(", ", sortedVariables) + "]."
             );
         }
     }

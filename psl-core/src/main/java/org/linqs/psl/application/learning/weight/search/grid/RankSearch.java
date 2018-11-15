@@ -104,7 +104,7 @@ public class RankSearch extends BaseGridSearch {
         }
 
         int[] indexes = permutationIterator.next();
-        currentLocation = "" + scaleIndex + DELIM + StringUtils.join(indexes, DELIM);
+        currentLocation = "" + scaleIndex + DELIM + StringUtils.join(DELIM, indexes);
 
         return true;
     }

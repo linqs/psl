@@ -77,7 +77,7 @@ public class RandomGridSearch extends GridSearch {
         for (int i = 0; i < indexes.length; i++) {
             indexes[i] = RandUtils.nextInt(possibleWeights.length);
         }
-        return StringUtils.join(indexes, DELIM);
+        return StringUtils.join(DELIM, indexes);
     }
 
     @Override

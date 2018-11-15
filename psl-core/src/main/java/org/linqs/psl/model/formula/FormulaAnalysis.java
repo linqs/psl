@@ -26,8 +26,7 @@ import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
-
-import org.apache.commons.lang.StringUtils;
+import org.linqs.psl.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -240,7 +239,7 @@ public class FormulaAnalysis {
                 allLiterals.add("~" + negLit.toString());
             }
 
-            return StringUtils.join(allLiterals, " & ");
+            return StringUtils.join(" & ", allLiterals);
         }
     }
 }

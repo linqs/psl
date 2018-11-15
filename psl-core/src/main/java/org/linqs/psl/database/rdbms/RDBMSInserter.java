@@ -23,10 +23,10 @@ import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.UniqueIntID;
 import org.linqs.psl.model.term.UniqueStringID;
+import org.linqs.psl.util.StringUtils;
 
 import com.healthmarketscience.sqlbuilder.CustomSql;
 import com.healthmarketscience.sqlbuilder.InsertQuery;
-import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -102,11 +102,11 @@ public class RDBMSInserter extends Inserter {
 
         List<String> multiInsert = new ArrayList<String>();
         multiInsert.add("INSERT INTO " + predicateInfo.tableName());
-        multiInsert.add("    (" + StringUtils.join(columns, ", ") + ")");
+        multiInsert.add("    (" + StringUtils.join(", ", columns) + ")");
         multiInsert.add("VALUES");
         multiInsert.add("    " + StringUtils.repeat("(" + placeholders + ")", ", ", DEFAULT_MULTIROW_COUNT));
 
-        return StringUtils.join(multiInsert, "\n");
+        return StringUtils.join("\n", multiInsert);
     }
 
     @Override

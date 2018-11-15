@@ -40,8 +40,8 @@ import org.linqs.psl.reasoner.function.GeneralFunction;
 import org.linqs.psl.util.HashCode;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
+import org.linqs.psl.util.StringUtils;
 
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -92,7 +92,7 @@ public abstract class AbstractLogicalRule extends AbstractRule {
             throw new IllegalArgumentException(
                     "Any variable used in a negated (non-functional) predicate must also participate" +
                     " in a positive (non-functional) predicate." +
-                    " The following variables do not meet this requirement: [" + StringUtils.join(sortedVariables, ", ") + "]."
+                    " The following variables do not meet this requirement: [" + StringUtils.join(", ", sortedVariables) + "]."
             );
         }
 
