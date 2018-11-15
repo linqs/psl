@@ -218,8 +218,8 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
     }
 
     @Override
-    public String toString() {
-        /* Negates the clause again to show clause to maximize truth of */
+    public String baseToString() {
+        // Negate the clause again to show clause to maximize truth of.
         Formula[] literals = new Formula[posLiterals.size() + negLiterals.size()];
         int i;
 
@@ -232,5 +232,10 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
         }
 
         return (literals.length > 1) ? new Disjunction(literals).toString() : literals[0].toString();
+    }
+
+    @Override
+    public String toString() {
+        return baseToString();
     }
 }

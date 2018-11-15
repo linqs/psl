@@ -87,7 +87,7 @@ public abstract class AbstractGroundArithmeticRule implements GroundRule {
     }
 
     @Override
-    public String toString() {
+    public String baseToString() {
         StringBuilder sb = new StringBuilder();
 
         // If there are coefficients, print each one.
@@ -127,6 +127,11 @@ public abstract class AbstractGroundArithmeticRule implements GroundRule {
         sb.append(constant);
 
         return sb.toString();
+    }
+
+    @Override
+    public String toString() {
+        return baseToString();
     }
 
     public float[] getCoefficients() {

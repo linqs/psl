@@ -89,4 +89,9 @@ public class GroundLinearConstraint implements UnweightedGroundRule {
     public List<GroundRule> negate() {
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public String baseToString() {
+        return getConstraintDefinition().toString();
+    }
 }

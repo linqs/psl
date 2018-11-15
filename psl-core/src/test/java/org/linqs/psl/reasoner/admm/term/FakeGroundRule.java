@@ -78,4 +78,9 @@ public class FakeGroundRule implements WeightedGroundRule {
     public double getIncompatibility(GroundAtom replacementAtom, float replacementValue) {
         return 0.0;
     }
+
+    @Override
+    public String baseToString() {
+        return "fake";
+    }
 }
