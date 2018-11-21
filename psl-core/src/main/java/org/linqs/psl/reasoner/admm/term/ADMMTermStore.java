@@ -27,6 +27,7 @@ import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.RandUtils;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -120,6 +121,13 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm> {
 
     public List<LocalVariable> getLocalVariables(int globalId) {
         return localVariables.get(globalId);
+    }
+
+    /**
+     * Get the RVAs managed by this term store.
+     */
+    public Map<RandomVariableAtom, Integer> getGlobalVariables() {
+        return Collections.unmodifiableMap(variableIndexes);
     }
 
     /**

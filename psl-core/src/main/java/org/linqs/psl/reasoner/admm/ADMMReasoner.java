@@ -52,6 +52,13 @@ public class ADMMReasoner implements Reasoner {
     public static final int MAX_ITER_DEFAULT = 25000;
 
     /**
+     * Compute some stats about the optimization and log them to TRACE once for each period.
+     * Note that gathering the information takes about an iteration's worth of time.
+     */
+    public static final String COMPUTE_PERIOD_KEY = CONFIG_PREFIX + ".computeperiod";
+    public static final int COMPUTE_PERIOD_DEFAULT = 50;
+
+    /**
      * Step size.
      * Higher values result in larger steps.
      * Should be positive.
@@ -74,7 +81,7 @@ public class ADMMReasoner implements Reasoner {
     public static final float EPSILON_REL_DEFAULT = 1e-3f;
 
     /**
-     * Stop if the objective has not changed since the last logging period (see LOG_PERIOD).
+     * Stop if the objective has not changed since the last logging period (see LOG_PERIOD_KEY).
      */
     public static final String OBJECTIVE_BREAK_KEY = CONFIG_PREFIX + ".objectivebreak";
     public static final boolean OBJECTIVE_BREAK_DEFAULT = true;
@@ -104,10 +111,7 @@ public class ADMMReasoner implements Reasoner {
     private static final float LOWER_BOUND = 0.0f;
     private static final float UPPER_BOUND = 1.0f;
 
-    /**
-     * Log the residuals once in every period.
-     */
-    private static final int LOG_PERIOD = 50;
+    private int computePeriod;
 
     /**
      * Sometimes called eta or rho,
@@ -141,6 +145,7 @@ public class ADMMReasoner implements Reasoner {
     public ADMMReasoner() {
         maxIter = Config.getInt(MAX_ITER_KEY, MAX_ITER_DEFAULT);
         stepSize = Config.getFloat(STEP_SIZE_KEY, STEP_SIZE_DEFAULT);
+        computePeriod = Config.getInt(COMPUTE_PERIOD_KEY, COMPUTE_PERIOD_DEFAULT);
         objectiveBreak = Config.getBoolean(OBJECTIVE_BREAK_KEY, OBJECTIVE_BREAK_DEFAULT);
 
         epsilonAbs = Config.getFloat(EPSILON_ABS_KEY, EPSILON_ABS_DEFAULT);
@@ -249,7 +254,7 @@ public class ADMMReasoner implements Reasoner {
             epsilonPrimal = (float)(epsilonAbsTerm + epsilonRel * Math.max(Math.sqrt(AxNorm), Math.sqrt(BzNorm)));
             epsilonDual = (float)(epsilonAbsTerm + epsilonRel * Math.sqrt(AyNorm));
 
-            if (iteration % LOG_PERIOD == 0) {
+            if (iteration % computePeriod == 0) {
                 if (!objectiveBreak) {
                     log.trace(
                             "Iteration {} -- Primal: {}, Dual: {}, Epsilon Primal: {}, Epsilon Dual: {}.",
