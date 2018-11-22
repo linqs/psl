@@ -59,6 +59,8 @@ public class CategoricalEvaluator extends Evaluator {
 
     /**
      * The index of the arguments in the predicate  (delimited by colons).
+     * The other arguments are treated as identifiers.
+     * Zero-indexed.
      */
     public static final String CATEGORY_INDEXES_KEY = CONFIG_PREFIX + ".categoryindexes";
     public static final String DEFAULT_CATEGORY_INDEXES = "1";
