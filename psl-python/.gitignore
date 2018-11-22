@@ -2,5 +2,6 @@
 *.swp
 __pycache__
 *.egg-info 
+/pslpython/cli/psl-cli.jar
 /dist/
 /build/

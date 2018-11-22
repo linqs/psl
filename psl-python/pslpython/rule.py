@@ -16,6 +16,76 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
-class Rule:
-    def __init__(self):
+class Rule(object):
+    """
+    A PSL rule.
+    For details on rule syntax, see https://github.com/linqs/psl/wiki/Rule-Specification
+    """
+
+    def __init__(self, rule_string, weighted = None, weight = None, squared = None):
+        """
+        Create a new PSL rule from a string.
+        The string can optionally specify the weight and squred of a rule.
+        If these properties are not specified in the string,
+        then they must be specified using the parameters.
+        A weighted rule can change its weight or squared status,
+        however a weighted rule cannot convert into an unweighted rule
+        and visa-versa.
+
+        Args:
+            rule_string: The text of the rule.
+            weighted: A boolean representing if the rule is weighted.
+                      Unweighted rules are constraints.
+            weight: The weight of this rule.
+            squared: A boolean representing if this rule's potential is squared.
+        """
+
+        pass
+
+    @staticmethod
+    def load_from_file(path):
+        """
+        Load a collection of rules from a file.
+
+        Returns:
+            A list of rules.
+        """
+
+        pass
+
+    def set_weight(self, weight):
+        """
+        Set the weight of this rule.
+
+        Args:
+            weight: The new weight for this rule.
+                    Must be non-negative.
+
+        Returns:
+            This rule.
+        """
+
+        pass
+
+    def set_squared(self, squared):
+        """
+        Set the squared stats of this rule.
+
+        Args:
+            squared: The new squared status for this rule.
+
+        Returns:
+            This rule.
+        """
+
+        pass
+
+    def __str__(self):
+        """
+        Create a PSL CLI compliant string representation of this string.
+
+        Returns:
+            A string representation of this rule.
+        """
+
         pass
