@@ -14,6 +14,7 @@ import org.linqs.psl.util.RandUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -27,11 +28,13 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     private static final String NUM_ITER = ".maxiter";
     private static final String MAX_CONFIGS_STR = ".maxconfigs";
     private static final String EXPLORATION = ".explore";
-    private static final String DEFAULT_KERNEL = "squaredExp";
+    private static final String DEFAULT_KERNEL = GaussianProcessKernels.SQUARED_EXP;
     private static final int MAX_CONFIGS = 1000000;
     private static final int MAX_NUM_ITER = 25;
-    private static final float EXPLORATION_VAL = 1.0f;
+    private static final float EXPLORATION_VAL = 2.0f;
     private static final String RANDOM_CONFIGS_ONLY = ".randomConfigsOnly";
+    private static final int MAX_RAND_INT_VAL = 100000000;
+    private String kernel_name;
     private FloatMatrix knownDataStdInv;
     private GaussianProcessKernels.Kernel kernel;
     private int maxIterNum;
@@ -40,20 +43,20 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     private boolean randomConfigsOnly;
     private List<WeightConfig> configs;
     private List<WeightConfig> exploredConfigs;
-    FloatMatrix blasYKnown;
+    private FloatMatrix blasYKnown;
+    private float minConfigVal;
 
     public GaussianProcessPrior(List<Rule> rules, Database rvDB, Database observedDB) {
         super(rules, rvDB, observedDB, false);
-        String kernel_name = Config.getString(CONFIG_PREFIX+KERNEL, DEFAULT_KERNEL);
-        if (!GaussianProcessKernels.KERNELS.keySet().contains(kernel_name)){
+        kernel_name = Config.getString(CONFIG_PREFIX+KERNEL, DEFAULT_KERNEL);
+        if (!GaussianProcessKernels.KERNELS.contains(kernel_name)){
             throw new IllegalArgumentException("No kernel named - " + kernel_name + ", exists.");
         }
-        //Very important to define a good kernel.
-        kernel = GaussianProcessKernels.KERNELS.get(kernel_name);
         maxIterNum = Config.getInt(CONFIG_PREFIX+NUM_ITER, MAX_NUM_ITER);
         maxConfigs = Config.getInt(CONFIG_PREFIX+MAX_CONFIGS_STR, MAX_CONFIGS);
         exploration = Config.getFloat(CONFIG_PREFIX+EXPLORATION, EXPLORATION_VAL);
         randomConfigsOnly = Config.getBoolean(CONFIG_PREFIX+RANDOM_CONFIGS_ONLY, true);
+        minConfigVal = 1/(float)MAX_RAND_INT_VAL;
     }
 
     public GaussianProcessPrior(Model model, Database rvDB, Database observedDB) {
@@ -66,6 +69,8 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     }
     @Override
     protected void doLearn() {
+        //Very important to define a good kernel.
+        kernel = GaussianProcessKernels.kernelProvider(kernel_name, this);
         reset();
         List<Float> exploredFnVal = Lists.newArrayList();
         final ComputePredFnValWorker fnValWorker = new ComputePredFnValWorker();
@@ -73,7 +78,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         WeightConfig bestConfig = null;
         float bestVal = -Float.MAX_VALUE;
         do{
-            int nextPoint = getNextPoint(configs);
+            int nextPoint = getNextPoint(configs, iter);
             WeightConfig config = configs.get(nextPoint);
             exploredConfigs.add(config);
             configs.remove(nextPoint);
@@ -106,6 +111,17 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         }while(iter < maxIterNum && configs.size() > 0);
         setWeights(bestConfig);
         log.info("Best config: " + bestConfig);
+//        try{
+//            BufferedWriter writer = new BufferedWriter(new FileWriter("/Users/sriramsrinivasan/Documents/gpp_weight_learning_psl/srinivasan-aaai19b/randomRes/expanded_space_10lr.txt"));
+//            for (WeightConfig c: exploredConfigs) {
+//                writer.write(c.config[0]+","+c.config[1]+","+c.valueAndStd.value+","+c.valueAndStd.std+"\n");
+//            }
+//            for (WeightConfig c: configs){
+//                writer.write(c.config[0]+","+c.config[1]+","+c.valueAndStd.value+","+c.valueAndStd.std+"\n");
+//            }
+//        } catch (IOException e){
+//            System.exit(1);
+//        }
 
     }
 
@@ -129,7 +145,12 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         int numMutableRules = this.mutableRules.size();
         List<WeightConfig> configs = Lists.newArrayList();
         float max = 1.0f;
-        float min = 0.0f;
+        float min = 1/((float)MAX_RAND_INT_VAL);
+        if (GaussianProcessKernels.Spaces.OS.toString().equals(
+                Config.getString(GaussianProcessKernels.CONFIG_PREFIX+GaussianProcessKernels.SPACE,
+                        GaussianProcessKernels.Spaces.SS.toString()))) {
+            min = 0.0f;
+        }
         int numPerSplit = (int)Math.exp(Math.log(maxConfigs)/numMutableRules);
         //If systematic generation of points will lead to not a reasonable exploration of space.
         //then just pick random points in space and hope it is better than being systematic.
@@ -144,7 +165,9 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         }
         float inc = max/numPerSplit;
         boolean done = false;
-        WeightConfig config = new WeightConfig(new float[numMutableRules]);
+        final float[] configArray = new float[numMutableRules];
+        Arrays.fill(configArray,min);
+        WeightConfig config = new WeightConfig(configArray);
         while (!done) {
             int j = 0;
             configs.add(new WeightConfig(config));
@@ -164,13 +187,28 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         return configs;
     }
 
+    /**
+     * Computes the amount to scale gradient for each rule.
+     * Scales by the number of groundings of each rule
+     * unless the rule is not grounded in the training set, in which case
+     * scales by 1.0.
+     */
+    protected int[] computeScalingFactor() {
+        int [] factor = new int[mutableRules.size()];
+        for (int i = 0; i < factor.length; i++) {
+            factor[i] = (int) Math.max(1.0, groundRuleStore.count(mutableRules.get(i)));
+        }
+
+        return factor;
+    }
+
     private List<WeightConfig> getRandomConfigs(){
         int numMutableRules = this.mutableRules.size();
         List<WeightConfig> configs = Lists.newArrayList();
         for (int i = 0; i < maxConfigs; i++) {
             WeightConfig curConfig = new WeightConfig(new float[numMutableRules]);
             for (int j = 0; j < numMutableRules; j++) {
-                curConfig.config[j] = RandUtils.nextFloat();
+                curConfig.config[j] = (RandUtils.nextInt(MAX_RAND_INT_VAL)+1)/(float)(MAX_RAND_INT_VAL + 1);
             }
             configs.add(curConfig);
         }
@@ -206,7 +244,7 @@ def predict(x, data, kernel, params, sigma, t):
     }
 
     //Exploration strategy
-    protected int getNextPoint(List<WeightConfig> configs){
+    protected int getNextPoint(List<WeightConfig> configs, int iter){
         int bestConfig = -1;
         float curBestVal = -Float.MAX_VALUE;
         for (int i = 0; i < configs.size(); i++) {

@@ -37,7 +37,7 @@ public class GaussianProcessPriorTest extends WeightLearningTest {
         for (int i = 0; i < yPred.size(); i++) {
             weightConfigs.add(new GaussianProcessPrior.WeightConfig(null, yPred.get(i), yStd.get(i)));
         }
-        Assert.assertEquals(1, wl.getNextPoint(weightConfigs));
+        Assert.assertEquals(1, wl.getNextPoint(weightConfigs, 1));
     }
     @Test
     public void testGetConfigs() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
@@ -66,6 +66,7 @@ public class GaussianProcessPriorTest extends WeightLearningTest {
     public void testPredictFnValAndStd() throws NoSuchFieldException, IllegalAccessException {
         Config.addProperty("gppker.reldep", 100);
         Config.addProperty("gppker.scale", 1.0);
+        Config.addProperty("gppker.space", "OS");
         GaussianProcessPrior wl = (GaussianProcessPrior) getWLA();
         Field field = wl.getClass().getDeclaredField("knownDataStdInv");
         field.setAccessible(true);
@@ -90,6 +91,9 @@ public class GaussianProcessPriorTest extends WeightLearningTest {
         xKnown.add(new GaussianProcessPrior.WeightConfig(new float[]{.4f,.3f,.2f}));
         float[] yKnown = new float[]{.5f,.6f,.7f};
         FloatMatrix blasYKnown = new FloatMatrix(yKnown);
+        Field kernel = wl.getClass().getDeclaredField("kernel");
+        kernel.setAccessible(true);
+        kernel.set(wl, GaussianProcessKernels.kernelProvider(GaussianProcessKernels.SQUARED_EXP, wl));
         GaussianProcessPrior.ValueAndStd fnAndStd = wl.predictFnValAndStd(x, xKnown, blasYKnown);
         Assert.assertEquals(0.84939,fnAndStd.value, 1e-5);
         Assert.assertEquals(0.99656, fnAndStd.std, 1e-5);
@@ -97,8 +101,10 @@ public class GaussianProcessPriorTest extends WeightLearningTest {
     @Test
     public void testDoLearn(){
         Config.addProperty("gppker.reldep", 1);
+        Config.addProperty("gppker.space", "OS");
         Config.addProperty("gpp.maxconfigs", 5);
         Config.addProperty("gpp.maxiter", 3);
+        Config.addProperty("gpp.kernel", GaussianProcessKernels.SQUARED_EXP);
         Config.addProperty("gpp.randomConfigsOnly", false);
         GaussianProcessPrior wl = (GaussianProcessPrior) getWLALocal();
         wl.doLearn();
