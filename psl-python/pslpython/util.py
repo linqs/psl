@@ -17,6 +17,7 @@ limitations under the License.
 """
 
 import asyncio
+import shlex
 
 # Heavily inspiried by https://kevinmccarthy.org/2016/07/25/streaming-subprocess-stdin-and-stdout-with-asyncio-in-python/
 
@@ -26,7 +27,7 @@ async def _read_stream(stream, callback):
         if not line:
             break
 
-        callback(line)
+        callback(line.decode("utf-8"))
 
 async def _stream_subprocess(command_args, stdout_callback, stderr_callback):
     process = await asyncio.create_subprocess_exec(*command_args,
@@ -55,3 +56,10 @@ def execute(command_args, stdout_callback, stderr_callback):
     loop.close()
 
     return result
+
+def shell_join(command_args):
+    """
+    Get a shell command that is properly escaped.
+    """
+
+    return ' '.join([shlex.quote(str(arg)) for arg in command_args])

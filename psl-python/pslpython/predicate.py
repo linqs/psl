@@ -45,7 +45,7 @@ class Predicate(object):
     # Predicates must have unique names.
     _used_names = set()
 
-    def __init__(self, raw_name, size = None, arg_types = None):
+    def __init__(self, raw_name: str, closed: bool, size: int = None, arg_types = None):
         """
         Construct a new predicate.
 
@@ -68,9 +68,10 @@ class Predicate(object):
         # {partition: dataframe, ...}
         # Note that the dataframes have a spot for the truth value.
         self._data = {}
-        self._name = _normalize_name(raw_name)
+        self._name = Predicate._normalize_name(raw_name)
+        self._closed = closed
 
-        if (self._name in _used_names):
+        if (self._name in Predicate._used_names):
             raise ValueError("Predciates must have unique names. Got duplicate: %s (%s)." % (name, raw_name))
 
         if (size is None and (arg_tpes is None or len(arg_types) == 0)):
@@ -79,7 +80,7 @@ class Predicate(object):
         if (size is not None and size < 1):
             raise ValueError("Predicates must have a positive size. Got: %d." % (size))
 
-        if (size is not None and args is not None and len(args) != size):
+        if (size is not None and arg_types is not None and len(arg_types) != size):
             raise ValueError("Mismatch between supplied predicate size (%d) and size of supplied argument types (%d)." % (size, len(arg_types)))
 
         # Arg checking complete, not make the types.
@@ -88,10 +89,10 @@ class Predicate(object):
             size = len(arg_types)
 
         if (arg_types is None):
-            arg_types = [DEFAULT_ARG_TYPE] * size
+            arg_types = [Predicate.DEFAULT_ARG_TYPE] * size
 
-        for (arg_type in arg_types):
-            if (not isinstance(arg_type, ArgType)):
+        for arg_type in arg_types:
+            if (not isinstance(arg_type, Predicate.ArgType)):
                 raise ValueError("Supplied argument type was not a Predicate.ArgType: %s (%s)." % (arg_type, str(type(arg_type))))
             self._types.append(arg_type)
 
@@ -99,6 +100,8 @@ class Predicate(object):
             # Column names don't matter, only order.
             # +1 for truth value.
             self._data[partition] = pandas.DataFrame(columns = list(range(size + 1)))
+
+        Predicate._used_names.add(self._name)
 
     def add_data_file(self, partition, path, has_header = False, delim = DEFAULT_FILE_DELIMITER):
         """
@@ -138,6 +141,7 @@ class Predicate(object):
             This predicate.
         """
 
+        size = len(self._types)
         data = pandas.DataFrame([args + [truth_value]], columns = list(range(size + 1)))
         return self.add_data(partition, data)
 
@@ -157,8 +161,8 @@ class Predicate(object):
         if (not isinstance(partition, Partition)):
             raise ValueError("Supplied partition is not a pslpython.partition.Partition: %s (%s)." % (partition, type(partition)))
 
-        data = pandas.DataFrame(data, columns = list(range(size + 1)))
         size = len(self._types)
+        data = pandas.DataFrame(data, columns = list(range(size + 1)))
 
         if (len(data.columns) not in (size, size + 1)):
             raise ValueError("Data was not formatted properly for the %s predicate. Expecting %d or %d columns, got %d." % (self._name, size, size + 1, len(data.columns)))
@@ -171,5 +175,21 @@ class Predicate(object):
 
         return self
 
+    def closed(self):
+        return self._closed
+
+    def name(self):
+        return self._name
+
+    def types(self):
+        return self._types
+
+    def __len__(self):
+        return len(self._types)
+
+    def data(self):
+        return self._data
+
+    @staticmethod
     def _normalize_name(name):
         return name.upper()

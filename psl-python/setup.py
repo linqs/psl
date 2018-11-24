@@ -60,7 +60,7 @@ def main():
         },
 
         install_requires = [
-            'pandas', 'psutil'
+            'pandas', 'psutil', 'pyyaml'
         ],
 
         python_requires = '>=3.6',

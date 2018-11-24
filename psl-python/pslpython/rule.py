@@ -28,7 +28,7 @@ class Rule(object):
     The rule weight and squared will be parsed out of the rule string, but the actual body of the rule will be left alone.
     """
 
-    WEIGHT_REGEX = r'^(\d+(\.\d+)):\s*'
+    WEIGHT_REGEX = r'^(\d+(\.\d+)?):\s*'
     UNWEIGHTED_REGEX = r'\s+\.\s*$'
     SQUARED_REGEX = r'\s+(\^[12])\s*$'
 
@@ -59,7 +59,7 @@ class Rule(object):
 
         # First check for an unweighted rule.
 
-        match = re.search(UNWEIGHTED_REGEX, rule_string)
+        match = re.search(Rule.UNWEIGHTED_REGEX, rule_string)
         if (match is not None):
             if (weighted is not None and weighted):
                 raise ValueError("Rule string has an unweighted marker, but the passed in argument says the rule is weighted. Rule: '%s'." % (raw_rule_string))
@@ -67,16 +67,17 @@ class Rule(object):
             weighted = False
 
             # Remove the unweight marker from the string.
-            rule_string = re.sub(UNWEIGHTED_REGEX, '', rule_string)
-
-        if (weighted is None):
-            raise ValueError("Weighted/Unweighted status of rule not specified through parameters or rule string. Rule: '%s'." % (raw_rule_string))
+            rule_string = re.sub(Rule.UNWEIGHTED_REGEX, '', rule_string)
+        elif (weighted is None):
+            # Note that in the absence of an unweighted specifier or argument, we will assume that the rule is weighted.
+            # So, if we don't get a weight later we will raise an error.
+            weighted = True
 
         self._weighted = weighted
 
         # Now check the weight.
 
-        match = re.search(WEIGHT_REGEX, rule_string)
+        match = re.search(Rule.WEIGHT_REGEX, rule_string)
         if (match is not None):
             parsed_weight = float(match.group(1))
 
@@ -86,7 +87,7 @@ class Rule(object):
             weight = parsed_weight
 
             # Remove the weight from the string.
-            rule_string = re.sub(WEIGHT_REGEX, '', rule_string)
+            rule_string = re.sub(Rule.WEIGHT_REGEX, '', rule_string)
 
         if (weight is not None and not self._weighted):
             raise ValueError("Rule was declared as unweighted, but a weight was supplied. Rule: '%s'." % (raw_rule_string))
@@ -101,7 +102,7 @@ class Rule(object):
 
         # Check the squared status.
 
-        match = re.search(SQUARED_REGEX, rule_string)
+        match = re.search(Rule.SQUARED_REGEX, rule_string)
         if (match is not None):
             # Note that '^1' is also allowed.
             parsed_squared = match.group(1) == '^2'
@@ -112,10 +113,12 @@ class Rule(object):
             squared = parsed_squared
 
             # Remove the square from the string.
-            rule_string = re.sub(SQUARED_REGEX, '', rule_string)
+            rule_string = re.sub(Rule.SQUARED_REGEX, '', rule_string)
+        elif (squared is None):
+            squared = False
 
-        if (squared is None):
-            raise ValueError("Squared status of rule not specified through parameters or rule string. Rule: '%s'." % (raw_rule_string))
+        if (squared and not self._weighted):
+            raise ValueError("A rule cannot be both squared and unweighted. Rule: '%s'." % (raw_rule_string))
 
         self._squared = squared
 
