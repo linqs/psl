@@ -27,7 +27,7 @@ async def _read_stream(stream, callback):
         if not line:
             break
 
-        callback(line.decode("utf-8"))
+        callback(line.decode("utf-8").rstrip('\r\n'))
 
 async def _stream_subprocess(command_args, stdout_callback, stderr_callback):
     process = await asyncio.create_subprocess_exec(*command_args,
