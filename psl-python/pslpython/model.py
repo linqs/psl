@@ -18,6 +18,7 @@ limitations under the License.
 
 import pslpython.partition
 import pslpython.predicate
+import pslpython.rule
 import pslpython.util
 
 import pandas
@@ -78,7 +79,7 @@ class Model(object):
         self._rules = []
         self._predicates = set()
 
-    def add_predicate(self, predicate):
+    def add_predicate(self, predicate: pslpython.predicate.Predicate):
         """
         Add a predicate to the model.
 
@@ -89,10 +90,13 @@ class Model(object):
             This model.
         """
 
+        if (predicate is None):
+            raise ModelError('Cannot add a None predicate.')
+
         self._predicates.add(predicate)
         return self
 
-    def add_rule(self, rule):
+    def add_rule(self, rule: pslpython.rule.Rule):
         """
         Add a rule to the model.
 
