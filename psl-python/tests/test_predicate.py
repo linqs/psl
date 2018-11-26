@@ -22,6 +22,7 @@ import pandas
 
 from pslpython.partition import Partition
 from pslpython.predicate import Predicate
+from pslpython.predicate import PredicateError
 from tests.base_test import PSLTest
 
 class TestPredicate(PSLTest):
@@ -47,14 +48,14 @@ class TestPredicate(PSLTest):
         try:
             b = Predicate(name, closed = True, size = 2)
             self.fail('Duplicate predicate name did not raise an exception.')
-        except ValueError:
+        except PredicateError:
             # Expected
             pass
 
         try:
             b = Predicate(name, closed = True, size = 3)
             self.fail('Duplicate predicate name did not raise an exception.')
-        except ValueError:
+        except PredicateError:
             # Expected
             pass
 
@@ -71,7 +72,7 @@ class TestPredicate(PSLTest):
             try:
                 predicate = Predicate(**args)
                 self.fail('Failed to raise exception on: ' + reason)
-            except ValueError as ex:
+            except PredicateError as ex:
                 # Expected
                 pass
 
@@ -173,7 +174,7 @@ class TestPredicate(PSLTest):
         try:
             predicate.add_data_file(Partition.OBSERVATIONS, path)
             self.fail('Failed to raise exception when too few columns.')
-        except ValueError as ex:
+        except PredicateError as ex:
             # Expected
             pass
 
@@ -183,6 +184,6 @@ class TestPredicate(PSLTest):
         try:
             predicate.add_data_file(Partition.OBSERVATIONS, path)
             self.fail('Failed to raise exception when too many columns.')
-        except ValueError as ex:
+        except PredicateError as ex:
             # Expected
             pass

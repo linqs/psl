@@ -76,16 +76,16 @@ class Predicate(object):
         self._closed = closed
 
         if (self._name in Predicate._used_names):
-            raise ValueError("Predciates must have unique names. Got duplicate: %s (%s)." % (self._name, raw_name))
+            raise PredicateError("Predciates must have unique names. Got duplicate: %s (%s)." % (self._name, raw_name))
 
         if (size is None and (arg_types is None or len(arg_types) == 0)):
-            raise ValueError("Predicates must have a size and/or type infornation, neither supplied.")
+            raise PredicateError("Predicates must have a size and/or type infornation, neither supplied.")
 
         if (size is not None and size < 1):
-            raise ValueError("Predicates must have a positive size. Got: %d." % (size))
+            raise PredicateError("Predicates must have a positive size. Got: %d." % (size))
 
         if (size is not None and arg_types is not None and len(arg_types) != size):
-            raise ValueError("Mismatch between supplied predicate size (%d) and size of supplied argument types (%d)." % (size, len(arg_types)))
+            raise PredicateError("Mismatch between supplied predicate size (%d) and size of supplied argument types (%d)." % (size, len(arg_types)))
 
         # Arg checking complete, now construct the types.
 
@@ -97,7 +97,7 @@ class Predicate(object):
 
         for arg_type in arg_types:
             if (not isinstance(arg_type, Predicate.ArgType)):
-                raise ValueError("Supplied argument type was not a Predicate.ArgType: %s (%s)." % (arg_type, str(type(arg_type))))
+                raise PredicateError("Supplied argument type was not a Predicate.ArgType: %s (%s)." % (arg_type, str(type(arg_type))))
             self._types.append(arg_type)
 
         for partition in Partition:
@@ -129,7 +129,7 @@ class Predicate(object):
         try:
             return self.add_data(partition, data)
         except Exception as ex:
-            error = ValueError("File (%s) was not formatted properly for the %s predicate (used delimiter '%s')." % (path, self._name, delim))
+            error = PredicateError("File (%s) was not formatted properly for the %s predicate (used delimiter '%s')." % (path, self._name, delim))
             raise error from ex
 
     def add_data_row(self, partition: Partition, args, truth_value: float = 1.0):
@@ -163,13 +163,13 @@ class Predicate(object):
         """
 
         if (not isinstance(partition, Partition)):
-            raise ValueError("Supplied partition is not a pslpython.partition.Partition: %s (%s)." % (partition, type(partition)))
+            raise PredicateError("Supplied partition is not a pslpython.partition.Partition: %s (%s)." % (partition, type(partition)))
 
         size = len(self._types)
         data = pandas.DataFrame(data)
 
         if (len(data.columns) not in (size, size + 1)):
-            raise ValueError("Data was not formatted properly for the %s predicate. Expecting %d or %d columns, got %d." % (self._name, size, size + 1, len(data.columns)))
+            raise PredicateError("Data was not formatted properly for the %s predicate. Expecting %d or %d columns, got %d." % (self._name, size, size + 1, len(data.columns)))
 
         if (len(data.columns) == size):
             # Missing the truth value.
@@ -205,3 +205,6 @@ class Predicate(object):
     @staticmethod
     def _normalize_name(name):
         return name.upper()
+
+class PredicateError(ValueError):
+    pass
