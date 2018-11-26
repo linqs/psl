@@ -244,6 +244,6 @@ class Rule(object):
 
         return rules
 
-class RuleError(ValueError):
+class RuleError(Exception):
     def __init__(self, raw_rule_string, message):
         super().__init__(message + " Rule: \"%s\"." % (raw_rule_string))

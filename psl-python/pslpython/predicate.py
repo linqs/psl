@@ -206,5 +206,5 @@ class Predicate(object):
     def _normalize_name(name):
         return name.upper()
 
-class PredicateError(ValueError):
+class PredicateError(Exception):
     pass

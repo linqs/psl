@@ -69,7 +69,7 @@ class Model(object):
 
         self._java_path = shutil.which('java')
         if (self._java_path is None):
-            raise FileNotFoundError("Could not locate a java runtime (via https://docs.python.org/dev/library/shutil.html#shutil.which). Make sure that java exists within your path.")
+            raise ModelError("Could not locate a java runtime (via https://docs.python.org/dev/library/shutil.html#shutil.which). Make sure that java exists within your path.")
 
         self._name = name
         if (self._name is None):
@@ -135,7 +135,7 @@ class Model(object):
         """
 
         if (len(self._rules) == 0):
-            raise ArgumentException("No rules specified to the model.")
+            raise ModelError("No rules specified to the model.")
 
         if (logger is None or logger == False):
             level = logging.INFO
@@ -222,7 +222,7 @@ class Model(object):
                     break
 
             if (predicate is None):
-                raise ValueError("Unable to find predicate that matches name if inferred data file. Predicate name: '%s'. Inferred file path: '%s'." % (predicate_name, path))
+                raise ModelError("Unable to find predicate that matches name if inferred data file. Predicate name: '%s'. Inferred file path: '%s'." % (predicate_name, path))
 
             columns = list(range(len(predicate))) + [Model.TRUTH_COLUMN_NAME]
             data = pandas.read_csv(path, delimiter = Model.CLI_DELIM, names = columns, header = None, skiprows = None)
@@ -376,7 +376,7 @@ class Model(object):
         exit_status = pslpython.util.execute(command, stdout_callback, stderr_callback)
 
         if (exit_status != 0):
-            raise RuntimeError("PSL returned a non-zero exit status: %d." % (exit_status))
+            raise ModelError("PSL returned a non-zero exit status: %d." % (exit_status))
 
     @staticmethod
     def _log_stdout(logger, line):
@@ -403,3 +403,6 @@ class Model(object):
     @staticmethod
     def _log_stderr(logger, line):
         logger.error('(PSL stderr) -- ' + line)
+
+class ModelError(Exception):
+    pass
