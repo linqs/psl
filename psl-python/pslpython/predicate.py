@@ -76,7 +76,7 @@ class Predicate(object):
         self._closed = closed
 
         if (self._name in Predicate._used_names):
-            raise ValueError("Predciates must have unique names. Got duplicate: %s (%s)." % (name, raw_name))
+            raise ValueError("Predciates must have unique names. Got duplicate: %s (%s)." % (self._name, raw_name))
 
         if (size is None and (arg_tpes is None or len(arg_types) == 0)):
             raise ValueError("Predicates must have a size and/or type infornation, neither supplied.")
@@ -193,6 +193,14 @@ class Predicate(object):
 
     def data(self):
         return self._data
+
+    @staticmethod
+    def _clear_used_predicates():
+        """
+        Meant for testing only.
+        """
+
+        Predicate._used_names.clear()
 
     @staticmethod
     def _normalize_name(name):
