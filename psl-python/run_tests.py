@@ -50,7 +50,7 @@ def _load_args(args):
         sys.exit(1)
 
     pattern = None
-    if (len(args) < 0):
+    if (len(args) > 0):
         pattern = args.pop(0)
 
     return (pattern, )

@@ -78,7 +78,7 @@ class Predicate(object):
         if (self._name in Predicate._used_names):
             raise ValueError("Predciates must have unique names. Got duplicate: %s (%s)." % (self._name, raw_name))
 
-        if (size is None and (arg_tpes is None or len(arg_types) == 0)):
+        if (size is None and (arg_types is None or len(arg_types) == 0)):
             raise ValueError("Predicates must have a size and/or type infornation, neither supplied.")
 
         if (size is not None and size < 1):
@@ -87,7 +87,7 @@ class Predicate(object):
         if (size is not None and arg_types is not None and len(arg_types) != size):
             raise ValueError("Mismatch between supplied predicate size (%d) and size of supplied argument types (%d)." % (size, len(arg_types)))
 
-        # Arg checking complete, not make the types.
+        # Arg checking complete, now construct the types.
 
         if (size is None):
             size = len(arg_types)
@@ -107,7 +107,7 @@ class Predicate(object):
 
         Predicate._used_names.add(self._name)
 
-    def add_data_file(self, partition, path, has_header = False, delim = DEFAULT_FILE_DELIMITER):
+    def add_data_file(self, partition: Partition, path, has_header = False, delim = DEFAULT_FILE_DELIMITER):
         """
         Add an entire file to the predicate.
 
@@ -122,7 +122,7 @@ class Predicate(object):
 
         skiprows = None
         if (has_header):
-            skiprows = 0
+            skiprows = 1
 
         data = pandas.read_csv(path, delimiter = delim, header = None, skiprows = skiprows)
 
@@ -132,7 +132,7 @@ class Predicate(object):
             error = ValueError("File (%s) was not formatted properly for the %s predicate (used delimiter '%s')." % (path, self._name, delim))
             raise error from ex
 
-    def add_data_row(self, partition, args, truth_value = 1.0):
+    def add_data_row(self, partition: Partition, args, truth_value: float = 1.0):
         """
         Add a single record to the predicate.
 
@@ -149,7 +149,7 @@ class Predicate(object):
         data = pandas.DataFrame([args + [truth_value]], columns = list(range(size + 1)))
         return self.add_data(partition, data)
 
-    def add_data(self, partition, data):
+    def add_data(self, partition: Partition, data):
         """
         Add several records to the predciate.
         The data can be in the form of a list of lists or a dataframe.
@@ -166,14 +166,14 @@ class Predicate(object):
             raise ValueError("Supplied partition is not a pslpython.partition.Partition: %s (%s)." % (partition, type(partition)))
 
         size = len(self._types)
-        data = pandas.DataFrame(data, columns = list(range(size + 1)))
+        data = pandas.DataFrame(data)
 
         if (len(data.columns) not in (size, size + 1)):
             raise ValueError("Data was not formatted properly for the %s predicate. Expecting %d or %d columns, got %d." % (self._name, size, size + 1, len(data.columns)))
 
         if (len(data.columns) == size):
             # Missing the truth value.
-            data[size] = DEFAULT_TRUTH_VALUE
+            data[size] = Predicate.DEFAULT_TRUTH_VALUE
             
         self._data[partition] = self._data[partition].append(data, ignore_index = True)
 

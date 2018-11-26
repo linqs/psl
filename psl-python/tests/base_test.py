@@ -16,6 +16,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
+import os
 import unittest
 
 from pslpython.predicate import Predicate
@@ -24,6 +25,8 @@ class PSLTest(unittest.TestCase):
     """
     All PSL tests need a base for standard setup and teardown.
     """
+
+    TEST_DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
 
     def setUp(self):
         # Remove any knowledge of previous predicates.
