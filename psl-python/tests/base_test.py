@@ -28,6 +28,9 @@ class PSLTest(unittest.TestCase):
 
     TEST_DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
 
+    SIMPLE_ACQUAINTANCES_PSL_DIR = os.path.join(TEST_DATA_DIR, 'simple-acquaintances')
+    SIMPLE_ACQUAINTANCES_DATA_DIR = os.path.join(SIMPLE_ACQUAINTANCES_PSL_DIR, 'data')
+
     def setUp(self):
         # Remove any knowledge of previous predicates.
         Predicate._clear_used_predicates()

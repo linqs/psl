@@ -1,0 +1,15 @@
+predicates:
+  Knows/2: open
+  Likes/2: closed
+  Lived/2: closed
+
+observations:
+  Knows : ../data/knows_obs.txt
+  Lived : ../data/lived_obs.txt
+  Likes : ../data/likes_obs.txt
+
+targets:
+  Knows : ../data/knows_targets.txt
+
+truth:
+  Knows : ../data/knows_truth.txt

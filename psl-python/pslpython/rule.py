@@ -28,7 +28,7 @@ class Rule(object):
     The rule weight and squared will be parsed out of the rule string, but the actual body of the rule will be left alone.
     """
 
-    WEIGHT_REGEX = r'^(\d+(\.\d+)?):\s*'
+    WEIGHT_REGEX = r'^(-?\d+(\.\d+)?):\s*'
     UNWEIGHTED_REGEX = r'\s+\.\s*$'
     SQUARED_REGEX = r'\s+(\^[12])\s*$'
 
@@ -62,12 +62,18 @@ class Rule(object):
         match = re.search(Rule.UNWEIGHTED_REGEX, rule_string)
         if (match is not None):
             if (weighted is not None and weighted):
-                raise ValueError("Rule string has an unweighted marker, but the passed in argument says the rule is weighted. Rule: '%s'." % (raw_rule_string))
+                raise RuleError(raw_rule_string, 'Rule string has an unweighted marker, but the passed in argument says the rule is weighted.')
 
             weighted = False
 
             # Remove the unweight marker from the string.
             rule_string = re.sub(Rule.UNWEIGHTED_REGEX, '', rule_string)
+
+            # Make sure there is not also a squared.
+            match = re.search(Rule.SQUARED_REGEX, rule_string)
+            if (match is not None):
+                raise RuleError(raw_rule_string, 'Rule string is squared (implying weighted) and has an unweighted marker.')
+
         elif (weighted is None):
             # Note that in the absence of an unweighted specifier or argument, we will assume that the rule is weighted.
             # So, if we don't get a weight later we will raise an error.
@@ -82,7 +88,7 @@ class Rule(object):
             parsed_weight = float(match.group(1))
 
             if (weight is not None and not math.isclose(parsed_weight, weight)):
-                raise ValueError("Weight from rule string (%s) and passed in weight (%f) do not match. Rule: '%s'." % (match.group(1), weight, raw_rule_string))
+                raise RuleError(raw_rule_string, "Weight from rule string (%s) and passed in weight (%f) do not match." % (match.group(1), weight))
 
             weight = parsed_weight
 
@@ -90,13 +96,13 @@ class Rule(object):
             rule_string = re.sub(Rule.WEIGHT_REGEX, '', rule_string)
 
         if (weight is not None and not self._weighted):
-            raise ValueError("Rule was declared as unweighted, but a weight was supplied. Rule: '%s'." % (raw_rule_string))
+            raise RuleError(raw_rule_string, 'Rule was declared as unweighted, but a weight was supplied.')
 
         if (weight is None and self._weighted):
-            raise ValueError("Rule was declared as weighted, but no weight was supplied through parameters or rule string. Rule: '%s'." % (raw_rule_string))
+            raise RuleError(raw_rule_string, 'Rule was declared as weighted, but no weight was supplied through parameters or rule string.')
 
         if (weight is not None and weight < 0):
-            raise ValueError("Negative weights (%f) are not allowed. Rule: '%s'." % (weight, raw_rule_string))
+            raise RuleError(raw_rule_string, "Negative weights (%f) are not allowed." % (weight))
 
         self._weight = weight
 
@@ -108,22 +114,111 @@ class Rule(object):
             parsed_squared = match.group(1) == '^2'
 
             if (squared is not None and (parsed_squared != squared)):
-                raise ValueError("Squred status from rule string (%s) does not match argument (%s). Rule: '%s'." % (parsed_squred, squared, raw_rule_string))
+                raise RuleError(raw_rule_string, "Squred status from rule string (%s) does not match argument (%s)." % (parsed_squared, squared))
 
             squared = parsed_squared
 
             # Remove the square from the string.
             rule_string = re.sub(Rule.SQUARED_REGEX, '', rule_string)
+
+            # Make sure there is not also an unweighted marker.
+            match = re.search(Rule.UNWEIGHTED_REGEX, rule_string)
+            if (match is not None):
+                raise RuleError(raw_rule_string, 'Rule string is squared (implying weighted) and has an unweighted marker.')
+
         elif (squared is None):
             squared = False
 
         if (squared and not self._weighted):
-            raise ValueError("A rule cannot be both squared and unweighted. Rule: '%s'." % (raw_rule_string))
+            raise RuleError(raw_rule_string, 'A rule cannot be both squared and unweighted.')
 
         self._squared = squared
 
         # All information parsed.
         self._rule_body = rule_string
+
+    def set_weight(self, weight: float):
+        """
+        Set the weight of this rule.
+
+        Args:
+            weight: The new weight for this rule.
+                    Must be non-negative.
+
+        Returns:
+            This rule.
+        """
+
+        if (weight < 0):
+            raise RuleError(self._rule_body, "Negative weights (%f) are not allowed." % (weight))
+
+        if (not self._weighted):
+            raise RuleError(self._rule_body, 'Unweighted rules cannot take a weight.')
+
+        self._weight = weight
+
+        return self
+
+    def set_squared(self, squared: bool):
+        """
+        Set the squared stats of this rule.
+
+        Args:
+            squared: The new squared status for this rule.
+
+        Returns:
+            This rule.
+        """
+
+        if (not self._weighted):
+            raise RuleError(self._rule_body, 'Unweighted rules cannot be squared.')
+
+        self._squared = squared
+
+        return self
+
+    def weight(self):
+        return self._weight
+
+    def weighted(self):
+        return self._weighted
+
+    def squared(self):
+        return self._squared
+
+    def __str__(self):
+        return self.to_string()
+
+    def to_string(self, weight_places: int = None):
+        """
+        Create a PSL CLI compliant string representation of this string.
+        Most non-testing people will just use str().
+
+        Args:
+            weight_places: The number of decimal places to use.
+                           Defaults to not caring and doing whatever "%f" does.
+
+        Returns:
+            A string representation of this rule.
+        """
+
+        text = []
+
+        if (self._weighted):
+            if (weight_places is None):
+                text.append("%f:" % (self._weight))
+            else:
+                format_string = "%%.%df:" % (weight_places)
+                text.append(format_string % (self._weight))
+
+        text.append(self._rule_body)
+
+        if (self._squared):
+            text.append('^2')
+        elif (not self._weighted):
+            text.append('.')
+
+        return ' '.join(text)
 
     @staticmethod
     def load_from_file(path):
@@ -149,64 +244,6 @@ class Rule(object):
 
         return rules
 
-    def set_weight(self, weight: float):
-        """
-        Set the weight of this rule.
-
-        Args:
-            weight: The new weight for this rule.
-                    Must be non-negative.
-
-        Returns:
-            This rule.
-        """
-
-        if (weight < 0):
-            raise ValueError("Negative weights (%f) are not allowed." % (weight))
-
-        if (not self._weighted):
-            raise ValueError("Unweighted rules cannot take a weight.")
-
-        self._weight = weight
-
-        return self
-
-    def set_squared(self, squared: bool):
-        """
-        Set the squared stats of this rule.
-
-        Args:
-            squared: The new squared status for this rule.
-
-        Returns:
-            This rule.
-        """
-
-        if (not self._weighted):
-            raise ValueError("Unweighted rules cannot be squared.")
-
-        self._squared = squared
-
-        return self
-
-    def __str__(self):
-        """
-        Create a PSL CLI compliant string representation of this string.
-
-        Returns:
-            A string representation of this rule.
-        """
-
-        text = []
-
-        if (self._weighted):
-            text.append("%f:" % (self._weight))
-
-        text.append(self._rule_body)
-
-        if (self._squared):
-            text.append('^2')
-        elif (not self._weighted):
-            text.append('.')
-
-        return ' '.join(text)
+class RuleError(ValueError):
+    def __init__(self, raw_rule_string, message):
+        super().__init__(message + " Rule: \"%s\"." % (raw_rule_string))

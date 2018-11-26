@@ -24,7 +24,7 @@ from pslpython.partition import Partition
 from pslpython.predicate import Predicate
 from tests.base_test import PSLTest
 
-class TestRelationalTimeseries(PSLTest):
+class TestPredicate(PSLTest):
     def test_name_normalization(self):
         # [(input, expected), ...]
         names = [
@@ -58,7 +58,7 @@ class TestRelationalTimeseries(PSLTest):
             # Expected
             pass
 
-    def test_args(self):
+    def test_init_args(self):
         failing_configs = [
             ({'raw_name': 'Foo', 'closed': False}, 'No size supplied.'),
             ({'raw_name': 'Foo', 'closed': False, 'size': -1}, 'Negative size.'),
