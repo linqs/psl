@@ -39,6 +39,10 @@ class Predicate(object):
         LONG = 'Long'
         DOUBLE = 'Double'
 
+    STRING_TYPES = {ArgType.UNIQUE_STRING_ID, ArgType.STRING}
+    INT_TYPES = {ArgType.UNIQUE_INT_ID, ArgType.INT, ArgType.LONG}
+    FLOAT_TYPES = {ArgType.DOUBLE}
+
     DEFAULT_ARG_TYPE = ArgType.UNIQUE_STRING_ID
     DEFAULT_TRUTH_VALUE = 1.0
 

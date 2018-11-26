@@ -17,7 +17,10 @@ limitations under the License.
 """
 
 import pslpython.partition
+import pslpython.predicate
 import pslpython.util
+
+import pandas
 
 import logging
 import os
@@ -40,6 +43,7 @@ class Model(object):
     CLI_DELIM = "\t"
     TEMP_DIR_SUBDIR = 'psl-python'
     DATA_STORAGE_DIR = 'data'
+    TRUTH_COLUMN_NAME = 'truth'
     CLI_JAR_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), 'cli', 'psl-cli.jar'))
 
     PSL_LOGGING_OPTION = 'log4j.threshold'
@@ -105,21 +109,29 @@ class Model(object):
         self._rules.append(rule)
         return self
 
-    # TODO(eriq): Comment params when stable.
-    # TODO(eriq): Should cleanup by default.
-    def infer(self, method = '', psl_config = {}, logger = None, temp_dir = None, cleanup_temp = False):
+    def infer(self, method = '', psl_config = {}, jvm_options = [], logger = None, temp_dir = None, cleanup_temp = True):
         """
         Run inference on this model.
 
         Args:
             method: The inference method to use.
+            psl_config: Configuration passed directly to the PSL core code.
+                        https://github.com/eriq-augustine/psl/wiki/Configuration-Options
+            jvm_options: Options passed to the JVM.
+                         Most commonly '-Xmx' and '-Xms'.
             logger: An optional logger to send the output of PSL to.
-                    If not specified (None), then stdout/stderr will be used.
+                    If not specified (None), then a default INFO logger is used.
                     If False, only fatal PSL output will be passed on.
+                    If no logging levels are sent via psl_config, PSL's logging level will be set
+                    to match this logger's level.
+            temp_dir: Where to write PSL files to for calling the CLI.
+                      Defaults to Model.TEMP_DIR_SUBDIR inside the system's temp directory (tempfile.gettempdir()).
+            cleanup_temp: Remove the files in temp_dir after running.
 
         Returns:
             The inferred values as a map to dataframe.
-            The keys of the map are the predicate being inferred.
+            {predicate: frame, ...}
+            The frame will have columns names that match the index of the argument and 'truth'.
         """
 
         if (len(self._rules) == 0):
@@ -152,15 +164,13 @@ class Model(object):
         cli_options.append('--output')
         cli_options.append(inferred_dir)
 
-        self._run_psl(data_file_path, rules_file_path, cli_options, psl_config, logger)
-
-        # TODO(eriq): Collect the inference results.
+        self._run_psl(data_file_path, rules_file_path, cli_options, psl_config, jvm_options, logger)
+        results = self._collect_inference_results(inferred_dir)
 
         if (cleanup_temp):
             self._cleanup_temp(temp_dir)
 
-        # TODO(eriq): Inference results.
-        return None
+        return results
 
     def learn(self, method = '', logger = None):
         """
@@ -185,6 +195,53 @@ class Model(object):
 
     def get_name(self):
         return self._name
+
+    def _collect_inference_results(self, inferred_dir):
+        """
+        Get the inferred data written by PSL.
+
+        Returns:
+            A dict with the keys being the predicate and the value being a dataframe with the data.
+            {predicate: frame, ...}
+            The frame will have columns names that match the index of the argument and 'truth'.
+        """
+
+        results = {}
+
+        for dirent in os.listdir(inferred_dir):
+            path = os.path.join(inferred_dir, dirent)
+
+            if (not os.path.isfile(path)):
+                continue
+
+            predicate_name = os.path.splitext(dirent)[0]
+            predicate = None
+            for possible_predicate in self._predicates:
+                if (possible_predicate.name() == predicate_name):
+                    predicate = possible_predicate
+                    break
+
+            if (predicate is None):
+                raise ValueError("Unable to find predicate that matches name if inferred data file. Predicate name: '%s'. Inferred file path: '%s'." % (predicate_name, path))
+
+            columns = list(range(len(predicate))) + [Model.TRUTH_COLUMN_NAME]
+            data = pandas.read_csv(path, delimiter = Model.CLI_DELIM, names = columns, header = None, skiprows = None)
+
+            # Clean up and convert types.
+            for i in range(len(data.columns) - 1):
+                # First, always string the single quotes that come from constants.
+                data[data.columns[i]] = data[data.columns[i]].apply(lambda val: re.sub(r"^'|'$", '', val))
+
+                if (predicate.types()[i] in pslpython.predicate.Predicate.INT_TYPES):
+                    data[data.columns[i]] = data[data.columns[i]].apply(lambda val: int(val))
+                elif (predicate.types()[i] in pslpython.predicate.Predicate.FLOAT_TYPES):
+                    data[data.columns[i]] = data[data.columns[i]].apply(lambda val: float(val))
+
+            data[Model.TRUTH_COLUMN_NAME] = pandas.to_numeric(data[Model.TRUTH_COLUMN_NAME])
+
+            results[predicate] = data
+
+        return results
 
     def _cleanup_temp(self, temp_dir):
         shutil.rmtree(temp_dir)
@@ -284,33 +341,42 @@ class Model(object):
 
         return rules_file_path
 
-    # TODO(eriq): JVM options (xms)
-    def _run_psl(self, data_file_path, rules_file_path, cli_options, psl_config, logger):
-        cli_options.append('--model')
-        cli_options.append(rules_file_path)
+    def _run_psl(self, data_file_path, rules_file_path, cli_options, psl_config, jvm_options, logger):
+        command = [
+            self._java_path
+        ]
 
-        cli_options.append('--data')
-        cli_options.append(data_file_path)
+        for option in jvm_options:
+            command.append(str(option))
+
+        command += [
+            '-jar',
+            Model.CLI_JAR_PATH,
+            '--model',
+            rules_file_path,
+            '--data',
+            data_file_path,
+        ]
 
         # Set the PSL logging level to match the logger (if not explicitly set in the additional options).
         if (Model.PSL_LOGGING_OPTION not in psl_config):
             psl_config[Model.PSL_LOGGING_OPTION] = Model.PYTHON_TO_PSL_LOGGING_LEVELS[logger.level]
 
-        for (key, value) in psl_config.items():
-            cli_options.append('-D')
-            cli_options.append("%s=%s" % (key, value))
+        for option in cli_options:
+            command.append(str(option))
 
-        cli_options.insert(0, self._java_path)
-        cli_options.insert(1, '-jar')
-        cli_options.insert(2, Model.CLI_JAR_PATH)
+        for (key, value) in psl_config.items():
+            command.append('-D')
+            command.append("%s=%s" % (key, value))
 
         stdout_callback = lambda line: Model._log_stdout(logger, line)
         stderr_callback = lambda line: Model._log_stderr(logger, line)
 
-        logger.debug("Running: `%s`." % (pslpython.util.shell_join(cli_options)))
-        exit_status = pslpython.util.execute(cli_options, stdout_callback, stderr_callback)
+        logger.debug("Running: `%s`." % (pslpython.util.shell_join(command)))
+        exit_status = pslpython.util.execute(command, stdout_callback, stderr_callback)
 
-        # TODO(eriq): Yell if bad exit status.
+        if (exit_status != 0):
+            raise RuntimeError("PSL returned a non-zero exit status: %d." % (exit_status))
 
     @staticmethod
     def _log_stdout(logger, line):
