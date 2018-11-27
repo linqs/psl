@@ -113,12 +113,14 @@ class Model(object):
         self._rules.append(rule)
         return self
 
-    def infer(self, method = '', psl_config = {}, jvm_options = [], logger = None, temp_dir = None, cleanup_temp = True):
+    def infer(self, method = '', additional_cli_optons = [], psl_config = {}, jvm_options = [], logger = None, temp_dir = None, cleanup_temp = True):
         """
         Run inference on this model.
 
         Args:
             method: The inference method to use.
+            additional_cli_optons: Additional options to pass direcly to the CLI.
+                                   Here you would do things like select a database backend.
             psl_config: Configuration passed directly to the PSL core code.
                         https://github.com/eriq-augustine/psl/wiki/Configuration-Options
             jvm_options: Options passed to the JVM.
@@ -138,25 +140,7 @@ class Model(object):
             The frame will have columns names that match the index of the argument and 'truth'.
         """
 
-        if (len(self._rules) == 0):
-            raise ModelError("No rules specified to the model.")
-
-        if (logger is None or logger == False):
-            level = logging.INFO
-            if (logger == False):
-                level = logging.CRITICAL
-
-            logging.basicConfig(format = Model.PYTHON_LOGGING_FORMAT_STRING)
-            logger = logging.getLogger(__name__)
-            logger.setLevel(level)
-
-        if (temp_dir is None):
-            temp_dir = os.path.join(tempfile.gettempdir(), Model.TEMP_DIR_SUBDIR)
-        temp_dir = os.path.join(temp_dir, self._name)
-        os.makedirs(temp_dir, exist_ok = True)
-
-        data_file_path = self._write_data(temp_dir)
-        rules_file_path = self._write_rules(temp_dir)
+        logger, temp_dir, data_file_path, rules_file_path = self._prep_run(logger, temp_dir)
 
         cli_options = []
 
@@ -168,6 +152,8 @@ class Model(object):
         cli_options.append('--output')
         cli_options.append(inferred_dir)
 
+        cli_options += additional_cli_optons
+
         self._run_psl(data_file_path, rules_file_path, cli_options, psl_config, jvm_options, logger)
         results = self._collect_inference_results(inferred_dir)
 
@@ -176,26 +162,55 @@ class Model(object):
 
         return results
 
-    def learn(self, method = '', logger = None):
+    def learn(self, method = '', additional_cli_optons = [], psl_config = {}, jvm_options = [], logger = None, temp_dir = None, cleanup_temp = True):
         """
         Run weight learning on this model.
         The new weights will be applied to this model.
 
         Args:
             method: The weight learning method to use.
+            additional_cli_optons: Additional options to pass direcly to the CLI.
+                                   Here you would do things like select a database backend.
+            psl_config: Configuration passed directly to the PSL core code.
+                        https://github.com/eriq-augustine/psl/wiki/Configuration-Options
+            jvm_options: Options passed to the JVM.
+                         Most commonly '-Xmx' and '-Xms'.
             logger: An optional logger to send the output of PSL to.
-                    If not specified (None), then stdout/stderr will be used.
-                    If False, then no output from PSL will be passed on.
+                    If not specified (None), then a default INFO logger is used.
+                    If False, only fatal PSL output will be passed on.
+                    If no logging levels are sent via psl_config, PSL's logging level will be set
+                    to match this logger's level.
+            temp_dir: Where to write PSL files to for calling the CLI.
+                      Defaults to Model.TEMP_DIR_SUBDIR inside the system's temp directory (tempfile.gettempdir()).
+            cleanup_temp: Remove the files in temp_dir after running.
 
         Returns:
             This model.
         """
 
-        # TODO(eriq)
-        pass
+        logger, temp_dir, data_file_path, rules_file_path = self._prep_run(logger, temp_dir)
+
+        cli_options = []
+
+        cli_options.append('--learn')
+        if (method != ''):
+            cli_options.append(method)
+
+        cli_options += additional_cli_optons
+
+        self._run_psl(data_file_path, rules_file_path, cli_options, psl_config, jvm_options, logger)
+        self._fetch_new_weights(rules_file_path)
+
+        if (cleanup_temp):
+            self._cleanup_temp(temp_dir)
+
+        return self
 
     def get_rules(self):
         return self._rules
+
+    def get_predicates(self):
+        return self._predicates
 
     def get_name(self):
         return self._name
@@ -246,6 +261,31 @@ class Model(object):
             results[predicate] = data
 
         return results
+
+    def _fetch_new_weights(self, base_rules_file_path):
+        new_weights = []
+
+        learned_rules_path = re.sub(r'\.psl$', '-learned.psl', base_rules_file_path)
+        with open(learned_rules_path, 'r') as file:
+            for line in file:
+                line = line.strip()
+                if (line == ''):
+                    continue
+
+                # Unweighted
+                if (line.endswith('.')):
+                    new_weights.append(None)
+                    continue
+
+                parts = line.split(':')
+                new_weights.append(float(parts[0]))
+
+        if (len(new_weights) != len(self._rules)):
+            raise ModelError("Mismatch between the number of base rules and the number of weighted rules. Base rules: '%s', learned rules: '%s'." % (base_rules_file_path, learned_rules_path))
+
+        for i in range(len(self._rules)):
+            if (self._rules[i].weighted()):
+                self._rules[i].set_weight(new_weights[i])
 
     def _cleanup_temp(self, temp_dir):
         shutil.rmtree(temp_dir)
@@ -344,6 +384,44 @@ class Model(object):
                 file.write(str(rule) + "\n")
 
         return rules_file_path
+
+    def _prep_run(self, logger = None, temp_dir = None):
+        """
+        Run weight learning on this model.
+        The new weights will be applied to this model.
+
+        Args:
+            logger: An optional logger to send the output of PSL to.
+                    If not specified (None), then a default INFO logger is used.
+                    If False, only fatal PSL output will be passed on.
+            temp_dir: Where to write PSL files to for calling the CLI.
+                      Defaults to Model.TEMP_DIR_SUBDIR inside the system's temp directory (tempfile.gettempdir()).
+
+        Returns:
+            A prepped logger, a usable temp_dir, the path to the CLI data file, and the path to the CLI rules file.
+        """
+
+        if (len(self._rules) == 0):
+            raise ModelError("No rules specified to the model.")
+
+        if (logger is None or logger == False):
+            level = logging.INFO
+            if (logger == False):
+                level = logging.CRITICAL
+
+            logging.basicConfig(format = Model.PYTHON_LOGGING_FORMAT_STRING)
+            logger = logging.getLogger(__name__)
+            logger.setLevel(level)
+
+        if (temp_dir is None):
+            temp_dir = os.path.join(tempfile.gettempdir(), Model.TEMP_DIR_SUBDIR)
+        temp_dir = os.path.join(temp_dir, self._name)
+        os.makedirs(temp_dir, exist_ok = True)
+
+        data_file_path = self._write_data(temp_dir)
+        rules_file_path = self._write_rules(temp_dir)
+
+        return logger, temp_dir, data_file_path, rules_file_path
 
     def _run_psl(self, data_file_path, rules_file_path, cli_options, psl_config, jvm_options, logger):
         command = [

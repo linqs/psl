@@ -100,11 +100,7 @@ class Predicate(object):
                 raise PredicateError("Supplied argument type was not a Predicate.ArgType: %s (%s)." % (arg_type, str(type(arg_type))))
             self._types.append(arg_type)
 
-        for partition in Partition:
-            # Column names don't matter, only order.
-            # +1 for truth value.
-            self._data[partition] = pandas.DataFrame(columns = list(range(size + 1)))
-
+        self.clear_data()
         Predicate._used_names.add(self._name)
 
     def add_data_file(self, partition: Partition, path, has_header = False, delim = DEFAULT_FILE_DELIMITER):
@@ -176,6 +172,22 @@ class Predicate(object):
             data[size] = Predicate.DEFAULT_TRUTH_VALUE
             
         self._data[partition] = self._data[partition].append(data, ignore_index = True)
+
+        return self
+
+    def clear_data(self):
+        """
+        Clear and initialize the predicate's data.
+
+        Returns:
+            This predicate.
+        """
+
+        self._data.clear()
+        for partition in Partition:
+            # Column names don't matter, only order.
+            # +1 for truth value.
+            self._data[partition] = pandas.DataFrame(columns = list(range(len(self._types) + 1)))
 
         return self
 

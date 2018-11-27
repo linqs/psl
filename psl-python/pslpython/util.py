@@ -45,6 +45,9 @@ def execute(command_args, stdout_callback, stderr_callback):
     Exec an external process specified by the args (list).
     """
 
+    # Using asyncio.run() would be better, but it is new in 3.7.
+    # https://docs.python.org/3/library/asyncio-task.html#asyncio.run
+
     loop = asyncio.get_event_loop()
     result = loop.run_until_complete(
         _stream_subprocess(
@@ -53,7 +56,6 @@ def execute(command_args, stdout_callback, stderr_callback):
             stderr_callback,
         )
     )
-    loop.close()
 
     return result
 
