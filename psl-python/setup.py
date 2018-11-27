@@ -23,11 +23,11 @@ def get_pom_info():
 # The build depends on having the psl-cli project built.
 # Fetch the jar from there.
 def copy_cli_jar(version):
-    jar_path = os.path.join(BASE_DIR, '..', 'psl-cli', 'target', "psl-cli-%s.jar" % (version))
+    jar_path = os.path.abspath(os.path.join(BASE_DIR, '..', 'psl-cli', 'target', "psl-cli-%s.jar" % (version)))
     dest_path = os.path.join('pslpython', 'cli', 'psl-cli.jar')
 
     if (not os.path.isfile(jar_path)):
-        raise FileNotFoundError("Could not locate psl-cli jar file (%s). The psl-cli project should be built prior this project." % (os.path.abspath(jar_path)))
+        raise FileNotFoundError("Could not locate psl-cli jar file (%s). The psl-cli project should be built prior this project." % (jar_path))
 
     shutil.copyfile(jar_path, dest_path)
 
