@@ -133,6 +133,7 @@
                 <configuration>
                     <enableAssertions>true</enableAssertions>
                     <trimStackTrace>false</trimStackTrace>
+                    <useSystemClassLoader>false</useSystemClassLoader>
                 </configuration>
             </plugin>
             <plugin>
