@@ -16,6 +16,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
+import csv
 import enum
 import pandas
 
@@ -72,7 +73,7 @@ class Predicate(object):
         # {partition: dataframe, ...}
         # Note that the dataframes have a spot for the truth value.
         self._data = {}
-        self._name = Predicate._normalize_name(raw_name)
+        self._name = Predicate.normalize_name(raw_name)
         self._closed = closed
 
         if (self._name in Predicate._used_names):
@@ -120,7 +121,7 @@ class Predicate(object):
         if (has_header):
             skiprows = 1
 
-        data = pandas.read_csv(path, delimiter = delim, header = None, skiprows = skiprows)
+        data = pandas.read_csv(path, delimiter = delim, header = None, skiprows = skiprows, quoting = csv.QUOTE_NONE)
 
         try:
             return self.add_data(partition, data)
@@ -215,7 +216,7 @@ class Predicate(object):
         Predicate._used_names.clear()
 
     @staticmethod
-    def _normalize_name(name):
+    def normalize_name(name):
         return name.upper()
 
 class PredicateError(Exception):

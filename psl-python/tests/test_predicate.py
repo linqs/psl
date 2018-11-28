@@ -187,3 +187,16 @@ class TestPredicate(PSLTest):
         except PredicateError as ex:
             # Expected
             pass
+
+    def test_no_quoting(self):
+        predicate = Predicate('1', closed = True, size = 2)
+        path = os.path.join(PSLTest.TEST_DATA_DIR, 'misc', 'binary_small_quoted.txt')
+        predicate.add_data_file(Partition.OBSERVATIONS, path)
+        expected = pandas.DataFrame([
+            ['A', 'B', 1.0],
+            ['\'C\'', '"D"', 1.0],
+            ['1  ', '   2   ', 1.0],
+            ['"3  "', '\'   4   \'', 1.0],
+            ['\'\'5\'\'', '""6""', 1.0],
+        ])
+        pandas.testing.assert_frame_equal(predicate._data[Partition.OBSERVATIONS], expected)

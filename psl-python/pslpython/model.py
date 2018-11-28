@@ -16,13 +16,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import pslpython.partition
-import pslpython.predicate
-import pslpython.rule
-import pslpython.util
-
-import pandas
-
+import csv
 import logging
 import os
 import re
@@ -30,6 +24,13 @@ import shutil
 import tempfile
 import uuid
 import yaml
+
+import pandas
+
+import pslpython.util
+from pslpython.partition import Partition
+from pslpython.predicate import Predicate
+from pslpython.rule import Rule
 
 class Model(object):
     """
@@ -77,9 +78,10 @@ class Model(object):
             self._name = uuid.uuid4()
 
         self._rules = []
-        self._predicates = set()
+        # {normalized_name: predicate, ...}
+        self._predicates = {}
 
-    def add_predicate(self, predicate: pslpython.predicate.Predicate):
+    def add_predicate(self, predicate: Predicate):
         """
         Add a predicate to the model.
 
@@ -93,10 +95,10 @@ class Model(object):
         if (predicate is None):
             raise ModelError('Cannot add a None predicate.')
 
-        self._predicates.add(predicate)
+        self._predicates[predicate.name()] = predicate
         return self
 
-    def add_rule(self, rule: pslpython.rule.Rule):
+    def add_rule(self, rule: Rule):
         """
         Add a rule to the model.
 
@@ -210,7 +212,27 @@ class Model(object):
         return self._rules
 
     def get_predicates(self):
+        """
+        Get all the predicates keyed by their normalized name.
+        If you are trying to get a specific predicate by name you should use Predicate.normalize_name(),
+        or just use get_predicate() instead.
+
+        Returns:
+            A dict of predicates keyed by their normalized name.
+        """
+
         return self._predicates
+
+    def get_predicate(self, name):
+        """
+        Get a specific predicate or None if one does not exist.
+        Name normalization will be handled internally.
+
+        Returns:
+            A predicate matching the name, or None.
+        """
+
+        return self._predicates[Predicate.normalize_name(name)]
 
     def get_name(self):
         return self._name
@@ -235,7 +257,7 @@ class Model(object):
 
             predicate_name = os.path.splitext(dirent)[0]
             predicate = None
-            for possible_predicate in self._predicates:
+            for possible_predicate in self._predicates.values():
                 if (possible_predicate.name() == predicate_name):
                     predicate = possible_predicate
                     break
@@ -244,16 +266,16 @@ class Model(object):
                 raise ModelError("Unable to find predicate that matches name if inferred data file. Predicate name: '%s'. Inferred file path: '%s'." % (predicate_name, path))
 
             columns = list(range(len(predicate))) + [Model.TRUTH_COLUMN_NAME]
-            data = pandas.read_csv(path, delimiter = Model.CLI_DELIM, names = columns, header = None, skiprows = None)
+            data = pandas.read_csv(path, delimiter = Model.CLI_DELIM, names = columns, header = None, skiprows = None, quoting = csv.QUOTE_NONE)
 
             # Clean up and convert types.
             for i in range(len(data.columns) - 1):
                 # First, always string the single quotes that come from constants.
                 data[data.columns[i]] = data[data.columns[i]].apply(lambda val: re.sub(r"^'|'$", '', val))
 
-                if (predicate.types()[i] in pslpython.predicate.Predicate.INT_TYPES):
+                if (predicate.types()[i] in Predicate.INT_TYPES):
                     data[data.columns[i]] = data[data.columns[i]].apply(lambda val: int(val))
-                elif (predicate.types()[i] in pslpython.predicate.Predicate.FLOAT_TYPES):
+                elif (predicate.types()[i] in Predicate.FLOAT_TYPES):
                     data[data.columns[i]] = data[data.columns[i]].apply(lambda val: float(val))
 
             data[Model.TRUTH_COLUMN_NAME] = pandas.to_numeric(data[Model.TRUTH_COLUMN_NAME])
@@ -311,8 +333,8 @@ class Model(object):
         return data_file_path
 
     def _write_cli_data(self, data_storage_path):
-        for partition in pslpython.partition.Partition:
-            for predicate in self._predicates:
+        for partition in Partition:
+            for predicate in self._predicates.values():
                 if (partition not in predicate.data()):
                     continue
 
@@ -329,7 +351,7 @@ class Model(object):
         data_file_contents = {}
 
         predicates = {}
-        for predicate in self._predicates:
+        for predicate in self._predicates.values():
             predicate_id = predicate.name() + '/' + str(len(predicate))
 
             types = []
@@ -347,10 +369,10 @@ class Model(object):
 
         data_file_contents['predicates'] = predicates
 
-        for partition in pslpython.partition.Partition:
+        for partition in Partition:
             partition_data = {}
 
-            for predicate in self._predicates:
+            for predicate in self._predicates.values():
                 if (partition not in predicate.data()):
                     continue
 

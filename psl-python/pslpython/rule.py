@@ -55,6 +55,7 @@ class Rule(object):
         self._weight = None
         self._squared = None
 
+        rule_string = rule_string.strip()
         raw_rule_string = rule_string
 
         # First check for an unweighted rule.
