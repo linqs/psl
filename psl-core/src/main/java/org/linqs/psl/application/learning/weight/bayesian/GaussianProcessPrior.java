@@ -1,6 +1,5 @@
 package org.linqs.psl.application.learning.weight.bayesian;
 
-import com.google.common.collect.Lists;
 import org.apache.commons.lang.ArrayUtils;
 import org.jblas.FloatMatrix;
 import org.jblas.Solve;
@@ -14,6 +13,7 @@ import org.linqs.psl.util.RandUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -68,14 +68,14 @@ public class GaussianProcessPrior extends WeightLearningApplication {
 
     private void reset(){
         configs = getConfigs();
-        exploredConfigs = Lists.newArrayList();
+        exploredConfigs = new ArrayList<>();
     }
     @Override
     protected void doLearn() {
         //Very important to define a good kernel.
         kernel = GaussianProcessKernels.kernelProvider(kernel_name, this);
         reset();
-        List<Float> exploredFnVal = Lists.newArrayList();
+        List<Float> exploredFnVal = new ArrayList();
         final ComputePredFnValWorker fnValWorker = new ComputePredFnValWorker();
         int iter = 0;
         WeightConfig bestConfig = null;
@@ -159,7 +159,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
 
     private List<WeightConfig> getConfigs(){
         int numMutableRules = this.mutableRules.size();
-        List<WeightConfig> configs = Lists.newArrayList();
+        List<WeightConfig> configs = new ArrayList();
         float max = 1.0f;
         float min = 1/((float)MAX_RAND_INT_VAL);
         if (GaussianProcessKernels.Spaces.OS.toString().equals(
@@ -220,7 +220,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
 
     private List<WeightConfig> getRandomConfigs(){
         int numMutableRules = this.mutableRules.size();
-        List<WeightConfig> configs = Lists.newArrayList();
+        List<WeightConfig> configs = new ArrayList();
         for (int i = 0; i < maxConfigs; i++) {
             WeightConfig curConfig = new WeightConfig(new float[numMutableRules]);
             for (int j = 0; j < numMutableRules; j++) {

@@ -1,11 +1,11 @@
 package org.linqs.psl.application.learning.weight.bayesian;
 
-import com.google.common.collect.Sets;
 import org.jblas.FloatMatrix;
 import org.jblas.MatrixFunctions;
 import org.linqs.psl.config.Config;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -30,7 +30,10 @@ public class GaussianProcessKernels {
     }
 
     static {
-        KERNELS = Collections.unmodifiableSet(Sets.newHashSet(SQUARED_EXP, WEIGHTED_SQUARED_EXP));
+        Set<String> temp = new HashSet<String>();
+        temp.add(SQUARED_EXP);
+        temp.add(WEIGHTED_SQUARED_EXP);
+        KERNELS = Collections.unmodifiableSet(temp);
     }
 
     static Kernel kernelProvider(String name, GaussianProcessPrior method){
