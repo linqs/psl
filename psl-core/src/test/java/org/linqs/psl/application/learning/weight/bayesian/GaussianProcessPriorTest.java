@@ -42,8 +42,8 @@ public class GaussianProcessPriorTest extends WeightLearningTest {
 
     @Test
     public void testGetConfigs() {
-        Config.addProperty("gpp.maxconfigs", 5);
-        Config.addProperty("gpp.randomConfigsOnly", false);
+        Config.addProperty(GaussianProcessPrior.MAX_CONFIGS_KEY, 5);
+        Config.addProperty(GaussianProcessPrior.RANDOM_CONFIGS_ONLY_KEY, false);
 
         GaussianProcessPrior wl = (GaussianProcessPrior)getWLA();
         List<GaussianProcessPrior.WeightConfig> configs = wl.getConfigs();
@@ -106,10 +106,10 @@ public class GaussianProcessPriorTest extends WeightLearningTest {
     public void testDoLearn(){
         Config.addProperty(GaussianProcessKernels.REL_DEP_KEY, 1);
         Config.addProperty(GaussianProcessKernels.SPACE_KEY, GaussianProcessKernels.Space.OS);
-        Config.addProperty("gpp.maxconfigs", 5);
-        Config.addProperty("gpp.maxiter", 3);
-        Config.addProperty("gpp.kernel", GaussianProcessKernels.KernelType.SQUARED_EXP);
-        Config.addProperty("gpp.randomConfigsOnly", false);
+        Config.addProperty(GaussianProcessPrior.MAX_CONFIGS_KEY, 5);
+        Config.addProperty(GaussianProcessPrior.MAX_ITERATIONS_KEY, 3);
+        Config.addProperty(GaussianProcessPrior.KERNEL_KEY, GaussianProcessKernels.KernelType.SQUARED_EXP);
+        Config.addProperty(GaussianProcessPrior.RANDOM_CONFIGS_ONLY_KEY, false);
 
         GaussianProcessPrior wl = (GaussianProcessPrior) getWLALocal();
         wl.doLearn();

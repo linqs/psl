@@ -17,56 +17,65 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Created by sriramsrinivasan on 6/22/18.
- */
 public class GaussianProcessPrior extends WeightLearningApplication {
-
     private static final Logger log = LoggerFactory.getLogger(GaussianProcessPrior.class);
-    private static final String CONFIG_PREFIX = "gpp";
-    private static final String KERNEL = ".kernel";
-    private static final String NUM_ITER = ".maxiter";
-    private static final String MAX_CONFIGS_STR = ".maxconfigs";
-    private static final String EXPLORATION = ".explore";
-    private static final String DEFAULT_KERNEL = GaussianProcessKernels.KernelType.SQUARED_EXP.toString();
-    private static final int MAX_CONFIGS = 1000000;
-    private static final int MAX_NUM_ITER = 25;
-    private static final float EXPLORATION_VAL = 2.0f;
-    private static final String RANDOM_CONFIGS_ONLY = ".randomConfigsOnly";
-    private static final int MAX_RAND_INT_VAL = 100000000;
-    private static final String EARLY_STOPPING = ".earlyStopping";
-    private boolean earlyStopping;
+
+    public static final String CONFIG_PREFIX = "gpp";
+
+    public static final String KERNEL_KEY = CONFIG_PREFIX + ".kernel";
+    public static final String KERNEL_DEFAULT = GaussianProcessKernels.KernelType.SQUARED_EXP.toString();
+
+    public static final String MAX_ITERATIONS_KEY = CONFIG_PREFIX + ".maxiterations";
+    public static final int MAX_ITERATIONS_DEFAULT = 25;
+
+    public static final String MAX_CONFIGS_KEY = CONFIG_PREFIX + ".maxconfigs";
+    public static final int MAX_CONFIGS_DEFAULT = 1000000;
+
+    public static final String EXPLORATION_KEY = CONFIG_PREFIX + ".explore";
+    public static final float EXPLORATION_DEFAULT = 2.0f;
+
+    public static final String RANDOM_CONFIGS_ONLY_KEY = CONFIG_PREFIX + ".randomConfigsOnly";
+    public static final boolean RANDOM_CONFIGS_ONLY_DEFAULT = true;
+
+    public static final String EARLY_STOPPING_KEY = CONFIG_PREFIX + ".earlyStopping";
+    public static final boolean EARLY_STOPPING_DEFAULT = true;
+
+    public static final int MAX_RAND_INT_VAL = 100000000;
+
     private GaussianProcessKernels.KernelType kernelType;
-    private FloatMatrix knownDataStdInv;
-    private GaussianProcessKernels.Kernel kernel;
-    private int maxIterNum;
+    private int maxIterations;
     private int maxConfigs;
     private float exploration;
     private boolean randomConfigsOnly;
+    private boolean earlyStopping;
+
+    private float minConfigVal;
+    private FloatMatrix knownDataStdInv;
+    private GaussianProcessKernels.Kernel kernel;
     private List<WeightConfig> configs;
     private List<WeightConfig> exploredConfigs;
     private FloatMatrix blasYKnown;
-    private float minConfigVal;
 
     public GaussianProcessPrior(List<Rule> rules, Database rvDB, Database observedDB) {
         super(rules, rvDB, observedDB, false);
 
         kernelType = GaussianProcessKernels.KernelType.valueOf(
-                Config.getString(CONFIG_PREFIX+KERNEL, DEFAULT_KERNEL).toUpperCase());
+                Config.getString(KERNEL_KEY, KERNEL_DEFAULT).toUpperCase());
 
-        maxIterNum = Config.getInt(CONFIG_PREFIX+NUM_ITER, MAX_NUM_ITER);
-        maxConfigs = Config.getInt(CONFIG_PREFIX+MAX_CONFIGS_STR, MAX_CONFIGS);
-        exploration = Config.getFloat(CONFIG_PREFIX+EXPLORATION, EXPLORATION_VAL);
-        randomConfigsOnly = Config.getBoolean(CONFIG_PREFIX+RANDOM_CONFIGS_ONLY, true);
-        earlyStopping = Config.getBoolean(EARLY_STOPPING, true);
-        minConfigVal = 1/(float)MAX_RAND_INT_VAL;
+        maxIterations = Config.getInt(MAX_ITERATIONS_KEY, MAX_ITERATIONS_DEFAULT);
+        maxConfigs = Config.getInt(MAX_CONFIGS_KEY, MAX_CONFIGS_DEFAULT);
+        exploration = Config.getFloat(EXPLORATION_KEY, EXPLORATION_DEFAULT);
+        randomConfigsOnly = Config.getBoolean(RANDOM_CONFIGS_ONLY_KEY, RANDOM_CONFIGS_ONLY_DEFAULT);
+        earlyStopping = Config.getBoolean(EARLY_STOPPING_KEY, EARLY_STOPPING_DEFAULT);
+
+        minConfigVal = 1.0f / MAX_RAND_INT_VAL;
     }
 
     public GaussianProcessPrior(Model model, Database rvDB, Database observedDB) {
         this(model.getRules(), rvDB, observedDB);
     }
 
-    private void reset(){
+    private void reset() {
         configs = getConfigs();
         exploredConfigs = new ArrayList<>();
     }
@@ -146,7 +155,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
             if (earlyStopping && allStdSmall){
                 break;
             }
-        }while((iter < maxIterNum && configs.size() > 0));
+        }while((iter < maxIterations && configs.size() > 0));
         setWeights(bestConfig);
         log.info("Total number of iterations completed: " + iter + ", Early stopping: " + allStdSmall);
         log.info("Best config: " + bestConfig);
