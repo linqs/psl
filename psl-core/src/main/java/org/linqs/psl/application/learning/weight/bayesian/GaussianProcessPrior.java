@@ -28,7 +28,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     private static final String NUM_ITER = ".maxiter";
     private static final String MAX_CONFIGS_STR = ".maxconfigs";
     private static final String EXPLORATION = ".explore";
-    private static final String DEFAULT_KERNEL = GaussianProcessKernels.SQUARED_EXP;
+    private static final String DEFAULT_KERNEL = GaussianProcessKernels.KernelType.SQUARED_EXP.toString();
     private static final int MAX_CONFIGS = 1000000;
     private static final int MAX_NUM_ITER = 25;
     private static final float EXPLORATION_VAL = 2.0f;
@@ -36,7 +36,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     private static final int MAX_RAND_INT_VAL = 100000000;
     private static final String EARLY_STOPPING = ".earlyStopping";
     private boolean earlyStopping;
-    private String kernel_name;
+    private GaussianProcessKernels.KernelType kernelType;
     private FloatMatrix knownDataStdInv;
     private GaussianProcessKernels.Kernel kernel;
     private int maxIterNum;
@@ -50,10 +50,10 @@ public class GaussianProcessPrior extends WeightLearningApplication {
 
     public GaussianProcessPrior(List<Rule> rules, Database rvDB, Database observedDB) {
         super(rules, rvDB, observedDB, false);
-        kernel_name = Config.getString(CONFIG_PREFIX+KERNEL, DEFAULT_KERNEL);
-        if (!GaussianProcessKernels.KERNELS.contains(kernel_name)){
-            throw new IllegalArgumentException("No kernel named - " + kernel_name + ", exists.");
-        }
+
+        kernelType = GaussianProcessKernels.KernelType.valueOf(
+                Config.getString(CONFIG_PREFIX+KERNEL, DEFAULT_KERNEL).toUpperCase());
+
         maxIterNum = Config.getInt(CONFIG_PREFIX+NUM_ITER, MAX_NUM_ITER);
         maxConfigs = Config.getInt(CONFIG_PREFIX+MAX_CONFIGS_STR, MAX_CONFIGS);
         exploration = Config.getFloat(CONFIG_PREFIX+EXPLORATION, EXPLORATION_VAL);
@@ -70,10 +70,33 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         configs = getConfigs();
         exploredConfigs = new ArrayList<>();
     }
+
+    protected FloatMatrix getKnownDataStdInv() {
+        if (knownDataStdInv == null) {
+            return null;
+        }
+
+        return knownDataStdInv.dup();
+    }
+
+    /**
+     * Only for testing.
+     */
+    protected void setKnownDataStdInvForTest(FloatMatrix data) {
+        knownDataStdInv = data;
+    }
+
+    /**
+     * Only for testing.
+     */
+    protected void setKernel(GaussianProcessKernels.Kernel kernel) {
+        this.kernel = kernel;
+    }
+
     @Override
     protected void doLearn() {
         //Very important to define a good kernel.
-        kernel = GaussianProcessKernels.kernelProvider(kernel_name, this);
+        kernel = GaussianProcessKernels.makeKernel(kernelType, this);
         reset();
         List<Float> exploredFnVal = new ArrayList();
         final ComputePredFnValWorker fnValWorker = new ComputePredFnValWorker();
@@ -157,14 +180,14 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         inMPEState = false;
     }
 
-    private List<WeightConfig> getConfigs(){
+    protected List<WeightConfig> getConfigs(){
         int numMutableRules = this.mutableRules.size();
         List<WeightConfig> configs = new ArrayList();
         float max = 1.0f;
         float min = 1/((float)MAX_RAND_INT_VAL);
-        if (GaussianProcessKernels.Spaces.OS.toString().equals(
-                Config.getString(GaussianProcessKernels.CONFIG_PREFIX+GaussianProcessKernels.SPACE,
-                        GaussianProcessKernels.Spaces.SS.toString()))) {
+        if (GaussianProcessKernels.Space.OS.toString().equals(
+                Config.getString(GaussianProcessKernels.SPACE_KEY,
+                        GaussianProcessKernels.Space.SS.toString()))) {
             min = 0.0f;
         }
         int numPerSplit = (int)Math.exp(Math.log(maxConfigs)/numMutableRules);

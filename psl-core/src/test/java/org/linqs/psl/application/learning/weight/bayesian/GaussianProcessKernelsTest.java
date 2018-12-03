@@ -1,37 +1,50 @@
 package org.linqs.psl.application.learning.weight.bayesian;
 
-import org.junit.Assert;
-import org.junit.Test;
 import org.linqs.psl.config.Config;
 
-/**
- * Created by sriramsrinivasan on 6/27/18.
- */
+import org.junit.Assert;
+import org.junit.Test;
+
 public class GaussianProcessKernelsTest {
+    public static final double EPSILON = 1e-5;
+
     @Test
-    public void testSquaredExpKernel(){
-        GaussianProcessKernels.Kernel kernel = GaussianProcessKernels.kernelProvider("squaredExp", null);
-        Config.addProperty("gppker.reldep", 1f);
-        Config.addProperty("gppker.space", "OS");
-        float[] x = {1,2,3,4};
-        float[] y = {3,4,5,6};
-        Assert.assertEquals(0.1353352832366127, kernel.kernel(x,y), 1e-5);
-        Config.clearProperty("gppker.space");
-        Config.addProperty("gppker.space", "SS");
-        Assert.assertEquals(0.60799952264954815, kernel.kernel(x,y), 1e-5);
-        Config.clearProperty("gppker.space");
-        Config.addProperty("gppker.space", "LS");
-        Assert.assertEquals(0.48347071575068623, kernel.kernel(x,y), 1e-5);
+    public void testSquaredExpKernel() {
+        Config.setProperty(GaussianProcessKernels.REL_DEP_KEY, 1.0f);
+
+        float[] x = {1.0f, 2.0f, 3.0f, 4.0f};
+        float[] y = {3.0f, 4.0f, 5.0f, 6.0f};
+
+        GaussianProcessKernels.Kernel kernel = null;
+
+        // Note that config values are fetched on construction.
+        // Therefore, a new kernel should be constructed each time the config changes.
+
+        Config.setProperty(GaussianProcessKernels.SPACE_KEY, GaussianProcessKernels.Space.OS);
+        kernel = GaussianProcessKernels.makeKernel(GaussianProcessKernels.KernelType.SQUARED_EXP, null);
+        Assert.assertEquals(0.1353352832366127, kernel.kernel(x, y), EPSILON);
+
+        Config.setProperty(GaussianProcessKernels.SPACE_KEY, GaussianProcessKernels.Space.SS);
+        kernel = GaussianProcessKernels.makeKernel(GaussianProcessKernels.KernelType.SQUARED_EXP, null);
+        Assert.assertEquals(0.60799952264954815, kernel.kernel(x, y), EPSILON);
+
+        Config.setProperty(GaussianProcessKernels.SPACE_KEY, GaussianProcessKernels.Space.LS);
+        kernel = GaussianProcessKernels.makeKernel(GaussianProcessKernels.KernelType.SQUARED_EXP, null);
+        Assert.assertEquals(0.48347071575068623, kernel.kernel(x, y), EPSILON);
+
         float[] weights = {1.0f, 0.5f, 1.0f, 0.1f};
-        GaussianProcessKernels.Kernel weightedKernel = new GaussianProcessKernels.SquaredExpKernel(weights);
-        Config.clearProperty("gppker.space");
-        Config.addProperty("gppker.space", "OS");
-        Assert.assertEquals(0.22238845301786575, weightedKernel.kernel(x,y), 1e-5);
-        Config.clearProperty("gppker.space");
-        Config.addProperty("gppker.space", "SS");
-        Assert.assertEquals(0.60799952264954815, weightedKernel.kernel(x,y), 1e-5);
-        Config.clearProperty("gppker.space");
-        Config.addProperty("gppker.space", "LS");
-        Assert.assertEquals(0.48347071575068623, weightedKernel.kernel(x,y), 1e-5);
+        GaussianProcessKernels.Kernel weightedKernel = null;
+
+        Config.setProperty(GaussianProcessKernels.SPACE_KEY, GaussianProcessKernels.Space.OS);
+        weightedKernel = new GaussianProcessKernels.SquaredExpKernel(weights);
+        Assert.assertEquals(0.22238845301786575, weightedKernel.kernel(x, y), EPSILON);
+
+        Config.setProperty(GaussianProcessKernels.SPACE_KEY, GaussianProcessKernels.Space.SS);
+        weightedKernel = new GaussianProcessKernels.SquaredExpKernel(weights);
+        Assert.assertEquals(0.60799952264954815, weightedKernel.kernel(x, y), EPSILON);
+
+        Config.setProperty(GaussianProcessKernels.SPACE_KEY, GaussianProcessKernels.Space.LS);
+        weightedKernel = new GaussianProcessKernels.SquaredExpKernel(weights);
+        Assert.assertEquals(0.48347071575068623, weightedKernel.kernel(x, y), EPSILON);
     }
 }
