@@ -20,6 +20,7 @@ package org.linqs.psl.reasoner.term;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
+import org.linqs.psl.util.IteratorUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,112 +33,87 @@ import java.util.Set;
 import org.apache.commons.collections4.list.UnmodifiableList;
 
 public class MemoryTermStore<E extends Term> implements TermStore<E> {
-	public static final String CONFIG_PREFIX = "memorytermstore";
+    public static final String CONFIG_PREFIX = "memorytermstore";
 
-	/**
-	 * Initial size for the memory store.
-	 */
-	public static final String INITIAL_SIZE_KEY = CONFIG_PREFIX + ".initialsize";
-	public static final int INITIAL_SIZE_DEFAULT = 5000;
+    /**
+     * Initial size for the memory store.
+     */
+    public static final String INITIAL_SIZE_KEY = CONFIG_PREFIX + ".initialsize";
+    public static final int INITIAL_SIZE_DEFAULT = 5000;
 
-	private ArrayList<E> store;
+    private ArrayList<E> store;
 
-	/**
-	 * A mapping of ground rule to the term indexes associated with
-	 * that ground rule.
-	 * This is used for updating weights, so we only track weighted
-	 * ground rules and terms.
-	 * Note that it could be possible to generate multiple terms
-	 * for a single ground rule.
-	 */
-	private Map<WeightedGroundRule, List<Integer>> ruleMapping;
+    public MemoryTermStore() {
+        this(Config.getInt(INITIAL_SIZE_KEY, INITIAL_SIZE_DEFAULT));
+    }
 
-	public MemoryTermStore() {
-		this(Config.getInt(INITIAL_SIZE_KEY, INITIAL_SIZE_DEFAULT));
-	}
+    public MemoryTermStore(int initialSize) {
+        store = new ArrayList<E>(initialSize);
+    }
 
-	public MemoryTermStore(int initialSize) {
-		store = new ArrayList<E>(initialSize);
-		ruleMapping = new HashMap<WeightedGroundRule, List<Integer>>(initialSize);
-	}
+    @Override
+    public synchronized void add(GroundRule rule, E term) {
+        store.add(term);
+    }
 
-	@Override
-	public synchronized void add(GroundRule rule, E term) {
-		if (rule instanceof WeightedGroundRule && term instanceof WeightedTerm) {
-			if (!ruleMapping.containsKey((WeightedGroundRule)rule)) {
-				ruleMapping.put((WeightedGroundRule)rule, new LinkedList<Integer>());
-			}
+    @Override
+    public void clear() {
+        if (store != null) {
+            store.clear();
+        }
+    }
 
-			ruleMapping.get((WeightedGroundRule)rule).add(new Integer(store.size()));
-		}
+    @Override
+    public void close() {
+        clear();
 
-		store.add(term);
-	}
+        store = null;
+    }
 
-	@Override
-	public void clear() {
-		if (store != null) {
-			store.clear();
-		}
+    @Override
+    public E get(int index) {
+        return store.get(index);
+    }
 
-		if (ruleMapping != null) {
-			ruleMapping.clear();
-		}
-	}
+    @Override
+    public int size() {
+        return store.size();
+    }
 
-	@Override
-	public void close() {
-		clear();
+    @Override
+    public void ensureCapacity(int capacity) {
+        assert(capacity >= 0);
 
-		store = null;
-		ruleMapping = null;
-	}
+        if (capacity == 0) {
+            return;
+        }
 
-	@Override
-	public E get(int index) {
-		return store.get(index);
-	}
+        store.ensureCapacity(capacity);
+    }
 
-	@Override
-	public int size() {
-		return store.size();
-	}
+    @Override
+    public Iterator<E> iterator() {
+        return store.iterator();
+    }
 
-	@Override
-	public void ensureCapacity(int capacity) {
-		assert(capacity >= 0);
+    /**
+     * O(n)
+     */
+    @Override
+    public void updateWeights() {
+        for (int i = 0; i < store.size(); i++) {
+            store.get(i).weightChanged();
+        }
+    }
 
-		if (capacity == 0) {
-			return;
-		}
+    @Override
+    public Iterable<E> getTerms(GroundRule groundRule) {
+        final GroundRule finalGroundRule = groundRule;
 
-		store.ensureCapacity(capacity);
-
-		// If the map is empty, then just reallocate it
-		// (since we can't add capacity).
-		if (ruleMapping.size() == 0) {
-			// The default load factor for Java HashMaps is 0.75.
-			ruleMapping = new HashMap<WeightedGroundRule, List<Integer>>((int)(capacity / 0.75));
-		}
-	}
-
-	@Override
-	public Iterator<E> iterator() {
-		return store.iterator();
-	}
-
-	@Override
-	public void updateWeight(WeightedGroundRule rule) {
-		List<Integer> indexes = ruleMapping.get(rule);
-		float weight = (float)rule.getWeight();
-
-		for (int i = 0; i < indexes.size(); i++) {
-			((WeightedTerm)store.get(indexes.get(i).intValue())).setWeight(weight);
-		}
-	}
-
-	@Override
-	public List<Integer> getTermIndices(WeightedGroundRule rule) {
-		return new UnmodifiableList<Integer>(ruleMapping.get(rule));
-	}
+        return IteratorUtils.filter(store, new IteratorUtils.FilterFunction<E>() {
+            public boolean keep(E term) {
+                return finalGroundRule.equals(term.getGroundRule());
+            }
+        });
+    }
 }

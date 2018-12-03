@@ -25,15 +25,15 @@ import org.junit.Test;
 
 // TODO(eriq): All the data needs to be reworked for this test.
 public class CategoricalEvaluatorTest extends EvaluatorTest<CategoricalEvaluator> {
-	@Override
-	protected CategoricalEvaluator getComputer() {
-		return new CategoricalEvaluator();
-	}
+    @Override
+    protected CategoricalEvaluator getComputer() {
+        return new CategoricalEvaluator();
+    }
 
-	@Test
-	public void testAccuracy() {
-		CategoricalEvaluator computer = new CategoricalEvaluator();
-		computer.compute(trainingMap, predicate);
-		assertEquals(1.0, computer.accuracy(), MathUtils.EPSILON);
-	}
+    @Test
+    public void testAccuracy() {
+        CategoricalEvaluator computer = new CategoricalEvaluator();
+        computer.compute(trainingMap, predicate);
+        assertEquals(1.0, computer.accuracy(), MathUtils.EPSILON);
+    }
 }

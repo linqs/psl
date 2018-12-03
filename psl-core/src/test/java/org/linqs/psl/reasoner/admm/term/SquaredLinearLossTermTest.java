@@ -26,38 +26,33 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SquaredLinearLossTermTest {
-	@Test
-	public void testMinimize() {
-		/*
-		 * Problem 1
-		 */
-		float[] z = {0.4f, 0.5f, 0.1f};
-		float[] y = {0.0f, 0.0f, -0.05f};
-		float[] coeffs = {0.3f, -1.0f, 0.4f};
-		float constant = -20.0f;
-		float weight = 0.5f;
-		float stepSize = 2.0f;
-		float[] expected = {-1.41569f, 6.55231f, -2.29593f};
-		testProblem(z, y, coeffs, constant, weight, stepSize, expected);
-	}
+    @Test
+    public void testMinimize() {
+        // Problem 1
+        float[] z = {0.4f, 0.5f, 0.1f};
+        float[] y = {0.0f, 0.0f, -0.05f};
+        float[] coeffs = {0.3f, -1.0f, 0.4f};
+        float constant = -20.0f;
+        float weight = 0.5f;
+        float stepSize = 2.0f;
+        float[] expected = {-1.41569f, 6.55231f, -2.29593f};
+        testProblem(z, y, coeffs, constant, weight, stepSize, expected);
+    }
 
-	private void testProblem(float[] z, float[] y, float[] coeffs, float constant,
-			float weight, final float stepSize, float[] expected) {
-		List<LocalVariable> variables = new ArrayList<LocalVariable>(z.length);
-		List<Float> coeffsList = new ArrayList<Float>(z.length);
+    private void testProblem(float[] z, float[] y, float[] coeffs, float constant,
+            float weight, final float stepSize, float[] expected) {
+        LocalVariable[] variables = new LocalVariable[z.length];
 
-		for (int i = 0; i < z.length; i++) {
-			variables.add(new LocalVariable(i, z[i]));
-			variables.get(i).setLagrange(y[i]);
+        for (int i = 0; i < z.length; i++) {
+            variables[i] = new LocalVariable(i, z[i]);
+            variables[i].setLagrange(y[i]);
+        }
 
-			coeffsList.add(new Float(coeffs[i]));
-		}
+        SquaredLinearLossTerm term = new SquaredLinearLossTerm(new FakeGroundRule(weight), new Hyperplane(variables, coeffs, constant, z.length));
+        term.minimize(stepSize, z);
 
-		SquaredLinearLossTerm term = new SquaredLinearLossTerm(variables, coeffsList, constant, weight);
-		term.minimize(stepSize, z);
-
-		for (int i = 0; i < z.length; i++) {
-			assertEquals(expected[i], variables.get(i).getValue(), 5e-5);
-		}
-	}
+        for (int i = 0; i < z.length; i++) {
+            assertEquals(expected[i], variables[i].getValue(), 5e-5);
+        }
+    }
 }

@@ -35,61 +35,61 @@ import java.util.Set;
  * you don't need the mapping functionality.
  */
 public class AtomRegisterGroundRuleStore extends MemoryGroundRuleStore {
-	private SetValuedMap<GroundAtom, GroundRule> atomMapping;
+    private SetValuedMap<GroundAtom, GroundRule> atomMapping;
 
-	public AtomRegisterGroundRuleStore() {
-		super();
+    public AtomRegisterGroundRuleStore() {
+        super();
 
-		atomMapping = new HashSetValuedHashMap<GroundAtom, GroundRule>();
-	}
+        atomMapping = new HashSetValuedHashMap<GroundAtom, GroundRule>();
+    }
 
-	public Set<GroundRule> getRegisteredGroundRules(GroundAtom atom) {
-		if (!atomMapping.containsKey(atom)) {
-			return Collections.emptySet();
-		}
+    public Set<GroundRule> getRegisteredGroundRules(GroundAtom atom) {
+        if (!atomMapping.containsKey(atom)) {
+            return Collections.emptySet();
+        }
 
-		return Collections.unmodifiableSet(atomMapping.get(atom));
-	}
+        return Collections.unmodifiableSet(atomMapping.get(atom));
+    }
 
-	@Override
-	public synchronized void addGroundRule(GroundRule groundRule) {
-		super.addGroundRule(groundRule);
+    @Override
+    public synchronized void addGroundRule(GroundRule groundRule) {
+        super.addGroundRule(groundRule);
 
-		// Register the ground rule with the atoms involved.
-		for (GroundAtom atom : groundRule.getAtoms()) {
-			atomMapping.put(atom, groundRule);
-		}
-	}
+        // Register the ground rule with the atoms involved.
+        for (GroundAtom atom : groundRule.getAtoms()) {
+            atomMapping.put(atom, groundRule);
+        }
+    }
 
-	@Override
-	public void removeGroundRule(GroundRule groundRule) {
-		super.removeGroundRule(groundRule);
+    @Override
+    public void removeGroundRule(GroundRule groundRule) {
+        super.removeGroundRule(groundRule);
 
-		// Unregister the ground rule with all the atoms involved.
-		for (GroundAtom atom : groundRule.getAtoms()) {
-			atomMapping.removeMapping(atom, groundRule);
-		}
-	}
+        // Unregister the ground rule with all the atoms involved.
+        for (GroundAtom atom : groundRule.getAtoms()) {
+            atomMapping.removeMapping(atom, groundRule);
+        }
+    }
 
-	@Override
-	public void removeGroundRules(Rule rule) {
-		// Unregister the atoms before we loose the mapping of rule to ground rules.
-		for (GroundRule groundRule : getGroundRules(rule)) {
-			for (GroundAtom atom : groundRule.getAtoms()) {
-				atomMapping.removeMapping(atom, groundRule);
-			}
-		}
+    @Override
+    public void removeGroundRules(Rule rule) {
+        // Unregister the atoms before we loose the mapping of rule to ground rules.
+        for (GroundRule groundRule : getGroundRules(rule)) {
+            for (GroundAtom atom : groundRule.getAtoms()) {
+                atomMapping.removeMapping(atom, groundRule);
+            }
+        }
 
-		super.removeGroundRules(rule);
-	}
+        super.removeGroundRules(rule);
+    }
 
-	@Override
-	public void close() {
-		super.close();
+    @Override
+    public void close() {
+        super.close();
 
-		if (atomMapping != null) {
-			atomMapping.clear();
-			atomMapping = null;
-		}
-	}
+        if (atomMapping != null) {
+            atomMapping.clear();
+            atomMapping = null;
+        }
+    }
 }

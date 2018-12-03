@@ -23,20 +23,18 @@ import java.util.Map;
  * A numeric function.
  */
 public interface FunctionTerm {
-	/**
-	 * Returns the term's value
-	 */
-	public double getValue();
+    /**
+     * Returns the term's value
+     */
+    public float getValue();
 
-	/**
-	 * Returns whether the term is linear in its {@link FunctionVariable Variables}.
-	 *
-	 * Returns true if the term is a constant.
-	 */
-	public boolean isLinear();
+    /**
+     * Returns whether the term is linear.
+     */
+    public boolean isLinear();
 
-	/**
-	 * Returns whether the term is constant.
-	 */
-	public boolean isConstant();
+    /**
+     * Returns whether the term is constant.
+     */
+    public boolean isConstant();
 }

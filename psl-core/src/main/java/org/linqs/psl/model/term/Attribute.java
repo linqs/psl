@@ -23,9 +23,9 @@ package org.linqs.psl.model.term;
  * unique identifiers, but their properties, such as names or ages, should probably
  * be Attributes.
  */
-public interface Attribute extends Constant {
-	/**
-	 * @return Java representation of the Attribute's value
-	 */
-	public Object getValue();
+public abstract class Attribute extends Constant {
+    /**
+     * @return Java representation of the Attribute's value
+     */
+    public abstract Object getValue();
 }

@@ -18,7 +18,7 @@
 package org.linqs.psl.model.rule.arithmetic;
 
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.predicate.SpecialPredicate;
+import org.linqs.psl.model.predicate.GroundingOnlyPredicate;
 import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.UnweightedRule;
 import org.linqs.psl.reasoner.function.ConstraintTerm;
@@ -30,68 +30,66 @@ import java.util.List;
 /**
  * An {@link AbstractGroundArithmeticRule} that is unweighted, i.e., it is a hard
  * constraint that must always hold.
- *
- * @author Stephen Bach
  */
 public class UnweightedGroundArithmeticRule extends AbstractGroundArithmeticRule
-		implements UnweightedGroundRule {
+        implements UnweightedGroundRule {
 
-	protected UnweightedGroundArithmeticRule(UnweightedArithmeticRule rule, List<Double> coeffs,
-			List<GroundAtom> atoms, FunctionComparator comparator, double constant) {
-		super(rule, coeffs, atoms, comparator, constant);
-	}
+    protected UnweightedGroundArithmeticRule(UnweightedArithmeticRule rule, List<Float> coefficients,
+            List<GroundAtom> atoms, FunctionComparator comparator, float constant) {
+        super(rule, coefficients, atoms, comparator, constant);
+    }
 
-	protected UnweightedGroundArithmeticRule(UnweightedArithmeticRule rule, double[] coeffs,
-			GroundAtom[] atoms, FunctionComparator comparator, double constant) {
-		super(rule, coeffs, atoms, comparator, constant);
-	}
+    protected UnweightedGroundArithmeticRule(UnweightedArithmeticRule rule, float[] coefficients,
+            GroundAtom[] atoms, FunctionComparator comparator, float constant) {
+        super(rule, coefficients, atoms, comparator, constant);
+    }
 
-	@Override
-	public UnweightedRule getRule() {
-		return (UnweightedRule) rule;
-	}
+    @Override
+    public UnweightedRule getRule() {
+        return (UnweightedRule) rule;
+    }
 
-	@Override
-	public double getInfeasibility() {
-		double sum = 0.0;
-		for (int i = 0; i < coeffs.length; i++) {
-			// Skip any special predicates.
-			if (atoms[i].getPredicate() instanceof SpecialPredicate) {
-				continue;
-			}
+    @Override
+    public double getInfeasibility() {
+        float sum = 0.0f;
+        for (int i = 0; i < coefficients.length; i++) {
+            // Skip any grounding only predicates.
+            if (atoms[i].getPredicate() instanceof GroundingOnlyPredicate) {
+                continue;
+            }
 
-			sum += coeffs[i] * atoms[i].getValue();
-		}
+            sum += coefficients[i] * atoms[i].getValue();
+        }
 
-		switch (comparator) {
-		case Equality:
-			return Math.abs(sum - constant);
-		case LargerThan:
-			return -1.0 * Math.min(sum - constant, 0.0);
-		case SmallerThan:
-			return Math.max(sum - constant, 0.0);
-		default:
-			throw new IllegalStateException("Unrecognized comparator: " + comparator);
-		}
-	}
+        switch (comparator) {
+        case Equality:
+            return Math.abs(sum - constant);
+        case LargerThan:
+            return -1.0f * Math.min(sum - constant, 0.0f);
+        case SmallerThan:
+            return Math.max(sum - constant, 0.0f);
+        default:
+            throw new IllegalStateException("Unrecognized comparator: " + comparator);
+        }
+    }
 
-	@Override
-	public ConstraintTerm getConstraintDefinition() {
-		GeneralFunction sum = new GeneralFunction(false, false, coeffs.length);
-		for (int i = 0; i < coeffs.length; i++) {
-			// Skip any special predicates.
-			if (atoms[i].getPredicate() instanceof SpecialPredicate) {
-				continue;
-			}
+    @Override
+    public ConstraintTerm getConstraintDefinition() {
+        GeneralFunction sum = new GeneralFunction(false, false, coefficients.length);
+        for (int i = 0; i < coefficients.length; i++) {
+            // Skip any grounding only predicates.
+            if (atoms[i].getPredicate() instanceof GroundingOnlyPredicate) {
+                continue;
+            }
 
-			sum.add(coeffs[i], atoms[i].getVariable());
-		}
+            sum.add(coefficients[i], atoms[i]);
+        }
 
-		return new ConstraintTerm(sum, comparator, constant);
-	}
+        return new ConstraintTerm(sum, comparator, constant);
+    }
 
-	@Override
-	public String toString() {
-		return super.toString() + " .";
-	}
+    @Override
+    public String toString() {
+        return super.toString() + " .";
+    }
 }

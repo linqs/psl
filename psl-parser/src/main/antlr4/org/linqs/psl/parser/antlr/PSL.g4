@@ -451,7 +451,7 @@ SINGLE_QUOTE
     ;
 
 DOUBLE_QUOTE
-    :   '\"'
+    :   '"'
     ;
 
 MOD

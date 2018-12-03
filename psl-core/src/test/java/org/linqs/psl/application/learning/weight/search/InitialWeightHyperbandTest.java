@@ -23,20 +23,20 @@ import org.linqs.psl.application.learning.weight.WeightLearningTest;
 import org.linqs.psl.config.Config;
 
 public class InitialWeightHyperbandTest extends WeightLearningTest {
-	public InitialWeightHyperbandTest() {
-		super();
+    public InitialWeightHyperbandTest() {
+        super();
 
-		// TODO(eriq)
-		assertBaseTest = false;
-		assertFriendshipRankTest = false;
-	}
+        // TODO(eriq)
+        assertBaseTest = false;
+        assertFriendshipRankTest = false;
+    }
 
-	@Override
-	protected WeightLearningApplication getWLA() {
-		Config.setProperty(Hyperband.NUM_BRACKETS_KEY, 1);
-		Config.setProperty(Hyperband.BASE_BRACKET_SIZE_KEY, 2);
-		Config.setProperty(VotedPerceptron.NUM_STEPS_KEY, 5);
+    @Override
+    protected WeightLearningApplication getWLA() {
+        Config.setProperty(Hyperband.NUM_BRACKETS_KEY, 1);
+        Config.setProperty(Hyperband.BASE_BRACKET_SIZE_KEY, 2);
+        Config.setProperty(VotedPerceptron.NUM_STEPS_KEY, 5);
 
-		return new InitialWeightHyperband(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
-	}
+        return new InitialWeightHyperband(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
+    }
 }

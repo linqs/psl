@@ -19,6 +19,11 @@ package org.linqs.psl.model.rule;
 
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 import org.linqs.psl.database.atom.AtomManager;
+import org.linqs.psl.model.formula.Formula;
+import org.linqs.psl.model.term.Constant;
+import org.linqs.psl.model.term.Variable;
+
+import java.util.Map;
 
 /**
  * A template for functions that either constrain or measure the compatibility
@@ -27,17 +32,35 @@ import org.linqs.psl.database.atom.AtomManager;
  * A Rule must instantiate only WeightedGroundRules or only UnweightedGroundRules.
  */
 public interface Rule {
-	/**
-	 * Adds all GroundRules to a GroundRuleStore using the AtomManager
-	 * to instantiate ground atoms.
-	 *
-	 * @param atomManager AtomManager on which to base the grounding
-	 * @param groundRuleStore store for new GroundRules
-	 * @return the number of ground rules generated.
-	 */
-	public int groundAll(AtomManager atomManager, GroundRuleStore groundRuleStore);
+    /**
+     * Adds all GroundRules to a GroundRuleStore using the AtomManager
+     * to instantiate ground atoms.
+     *
+     * @param atomManager AtomManager on which to base the grounding
+     * @param groundRuleStore store for new GroundRules
+     * @return the number of ground rules generated.
+     */
+    public int groundAll(AtomManager atomManager, GroundRuleStore groundRuleStore);
 
-	public boolean isWeighted();
+    public boolean isWeighted();
 
-	public String getName();
+    public String getName();
+
+    /**
+     * Does this rule support grounding out single instances at a time.
+     * Rules that do can take advantage of some more advanced grounding techniques.
+     */
+    public boolean supportsIndividualGrounding();
+
+    /**
+     * Get the formual that we can use for grounding.
+     * Will throw if supportsIndividualGrounding() == false.
+     */
+    public Formula getGroundingFormula();
+
+    /**
+     * Get the formual that we can use for grounding.
+     * Will throw if supportsIndividualGrounding() == false.
+     */
+    public GroundRule ground(Constant[] constants, Map<Variable, Integer> variableMap, AtomManager atomManager);
 }

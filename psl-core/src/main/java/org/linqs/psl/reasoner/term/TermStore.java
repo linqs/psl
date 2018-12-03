@@ -27,36 +27,33 @@ import java.util.List;
  * A place to store terms that are to be optimized.
  */
 public interface TermStore<E extends Term> extends Iterable<E> {
-	/**
-	 * Add a term to the store that was generated from the given ground rule.
-	 */
-	public void add(GroundRule rule, E term);
+    /**
+     * Add a term to the store that was generated from the given ground rule.
+     */
+    public void add(GroundRule rule, E term);
 
-	/**
-	 * Remove any existing terms and prepare for a new set.
-	 */
-	public void clear();
+    /**
+     * Remove any existing terms and prepare for a new set.
+     */
+    public void clear();
 
-	/**
-	 * Close down the term store, it will not be used any more.
-	 */
-	public void close();
+    /**
+     * Close down the term store, it will not be used any more.
+     */
+    public void close();
 
-	public E get(int index);
+    public E get(int index);
 
-	public int size();
+    public int size();
 
-	/**
-	 * Ensure that the underlying stuctures can have the required capacity.
-	 * This is more of a hint to the store about how much memory will be used.
-	 * This is best called on an empty store so it can prepare.
-	 */
-	public void ensureCapacity(int capacity);
+    /**
+     * Ensure that the underlying stuctures can have the required capacity.
+     * This is more of a hint to the store about how much memory will be used.
+     * This is best called on an empty store so it can prepare.
+     */
+    public void ensureCapacity(int capacity);
 
-	public void updateWeight(WeightedGroundRule rule);
+    public void updateWeights();
 
-	/**
-	 * Get the indicies for all terms related to a specific rule.
-	 */
-	public List<Integer> getTermIndices(WeightedGroundRule rule);
+    public Iterable<E> getTerms(GroundRule groundRule);
 }

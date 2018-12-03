@@ -20,22 +20,22 @@ package org.linqs.psl.model.formula;
 import java.util.ArrayList;
 
 public class Disjunction extends AbstractBranchFormula<Disjunction> {
-	public Disjunction(Formula... f) {
-		super(f);
-	}
+    public Disjunction(Formula... f) {
+        super(f);
+    }
 
-	@Override
-	public Formula getDNF() {
-		Formula[] components = new Formula[length()];
-		for (int i = 0; i < components.length; i++) {
-			components[i] = get(i).getDNF();
-		}
+    @Override
+    public Formula getDNF() {
+        Formula[] components = new Formula[length()];
+        for (int i = 0; i < components.length; i++) {
+            components[i] = get(i).getDNF();
+        }
 
-		return new Disjunction(components).flatten();
-	}
+        return new Disjunction(components).flatten();
+    }
 
-	@Override
-	protected String separatorString() {
-		return "|";
-	}
+    @Override
+    protected String separatorString() {
+        return "|";
+    }
 }

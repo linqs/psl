@@ -27,35 +27,35 @@ import java.util.Set;
  * A logical formula composed of {@link Atom Atoms} and logical operators.
  */
 public interface Formula {
-	/**
-	 * @return a logically equivalent Formula in disjunctive normal form
-	 */
-	public Formula getDNF();
+    /**
+     * @return a logically equivalent Formula in disjunctive normal form
+     */
+    public Formula getDNF();
 
-	/**
-	 * @return Atoms in the Formula
-	 */
-	public Set<Atom> getAtoms(Set<Atom> atoms);
+    /**
+     * @return Atoms in the Formula
+     */
+    public Set<Atom> getAtoms(Set<Atom> atoms);
 
-	/**
-	 * Adds the {@link Variable Variables}
-	 *
-	 * @param varMap
-	 * @return the passed in VariableTypeMap filled with the variables this formula uses.
-	 */
-	public VariableTypeMap collectVariables(VariableTypeMap varMap);
+    /**
+     * Adds the {@link Variable Variables}
+     *
+     * @param varMap
+     * @return the passed in VariableTypeMap filled with the variables this formula uses.
+     */
+    public VariableTypeMap collectVariables(VariableTypeMap varMap);
 
-	/**
-	 * Collapses nested formulas of the same type and remove duplicates at the top level.
-	 * Does not change the context object.
-	 * Order is not guarenteed.
-	 * Ex: (A ^ B) ^ !!C ^ (D v E) becomes A ^ B ^ C ^ (D v E).
-	 *
-	 * Note that most formulas will return an object of the same type (eg a Conjunction will
-	 * always return a Conjunction).
-	 * However, it is possible for some types (like Negation) the return a different type.
-	 *
-	 * @return the flattened Formula.
-	 */
-	public Formula flatten();
+    /**
+     * Collapses nested formulas of the same type and remove duplicates at the top level.
+     * Does not change the context object.
+     * Order is not guarenteed.
+     * Ex: (A ^ B) ^ !!C ^ (D v E) becomes A ^ B ^ C ^ (D v E).
+     *
+     * Note that most formulas will return an object of the same type (eg a Conjunction will
+     * always return a Conjunction).
+     * However, it is possible for some types (like Negation) the return a different type.
+     *
+     * @return the flattened Formula.
+     */
+    public Formula flatten();
 }

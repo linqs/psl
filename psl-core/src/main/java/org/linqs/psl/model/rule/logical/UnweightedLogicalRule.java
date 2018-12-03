@@ -25,39 +25,39 @@ import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.UnweightedRule;
 
 public class UnweightedLogicalRule extends AbstractLogicalRule implements UnweightedRule {
-	public UnweightedLogicalRule(Formula f) {
-		this(f, f.toString());
-	}
+    public UnweightedLogicalRule(Formula formula) {
+        this(formula, formula.toString());
+    }
 
-	public UnweightedLogicalRule(Formula f, String name) {
-		super(f, name);
-	}
+    public UnweightedLogicalRule(Formula formula, String name) {
+        super(formula, name);
+    }
 
-	@Override
-	protected AbstractGroundLogicalRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals, int rvaCount) {
-		return new UnweightedGroundLogicalRule(this, posLiterals, negLiterals, rvaCount);
-	}
+    @Override
+    protected AbstractGroundLogicalRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals, short rvaCount) {
+        return new UnweightedGroundLogicalRule(this, posLiterals, negLiterals, rvaCount);
+    }
 
-	@Override
-	public String toString() {
-		return formula.toString() + " .";
-	}
+    @Override
+    public String toString() {
+        return formula.toString() + " .";
+    }
 
-	@Override
-	public boolean isWeighted() {
-		return false;
-	}
+    @Override
+    public boolean isWeighted() {
+        return false;
+    }
 
-	@Override
-	public boolean equals(Object other) {
-		if (this == other) {
-			return true;
-		}
+    @Override
+    public boolean equals(Object other) {
+        if (this == other) {
+            return true;
+        }
 
-		if (other == null || this.getClass() != other.getClass()) {
-			return false;
-		}
+        if (other == null || this.getClass() != other.getClass()) {
+            return false;
+        }
 
-		return super.equals(other);
-	}
+        return super.equals(other);
+    }
 }

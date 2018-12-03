@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.database;
 
-import org.linqs.psl.model.atom.AtomCache;
+import org.linqs.psl.database.atom.AtomCache;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.QueryAtom;
@@ -28,6 +28,7 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
+import org.linqs.psl.util.IteratorUtils;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -72,13 +73,11 @@ import java.util.Set;
  *
  * A Database contains an {@link AtomCache} which is used to store GroundAtoms
  * that have been instantiated in memory and ensure these objects are unique.
- * The AtomCache is accessible via {@link #getAtomCache()}.
  *
  * <h2>Persisting RandomVariableAtoms</h2>
  *
  * A RandomVariableAtom can be persisted (including updated) in the write
- * Partition via {@link #commit(RandomVariableAtom)} or
- * {@link RandomVariableAtom#commitToDB()}.
+ * Partition via {@link #commit(RandomVariableAtom)}.
  *
  * <h2>Querying for Groundings</h2>
  *
@@ -87,143 +86,193 @@ import java.util.Set;
  * GroundAtoms with FunctionalPredicates.
  */
 public abstract class Database implements ReadableDatabase, WritableDatabase {
-	/**
-	 * The backing data store that created this database.
-	 * Connection are obtained from here.
-	 */
-	protected final DataStore parentDataStore;
+    /**
+     * The backing data store that created this database.
+     * Connection are obtained from here.
+     */
+    protected final DataStore parentDataStore;
 
-	/**
-	 * The partition ID in which this database writes.
-	 */
-	protected final Partition writePartition;
-	protected final int writeID;
+    /**
+     * The partition ID in which this database writes.
+     */
+    protected final Partition writePartition;
+    protected final int writeID;
 
-	/**
-	 * The partition IDs that this database reads from.
-	 */
-	protected final List<Partition> readPartitions;
-	protected final List<Integer> readIDs;
+    /**
+     * The partition IDs that this database only reads from.
+     */
+    protected final List<Partition> readPartitions;
+    protected final List<Integer> readIDs;
 
-	/**
-	 * The atom cache for this database.
-	 */
-	protected final AtomCache cache;
+    protected final List<Integer> allPartitionIDs;
 
-	/**
-	 * Keeps track of the open / closed status of this database.
-	 */
-	protected boolean closed;
+    /**
+     * The atom cache for this database.
+     */
+    protected final AtomCache cache;
 
-	public Database(DataStore parent, Partition write, Partition[] read){
-		this.parentDataStore = parent;
-		this.writePartition = write;
-		this.writeID = write.getID();
+    /**
+     * Keeps track of the open / closed status of this database.
+     */
+    protected boolean closed;
 
-		this.readPartitions = Arrays.asList(read);
-		this.readIDs = new ArrayList<Integer>(read.length);
-		for (int i = 0; i < read.length; i++) {
-			this.readIDs.add(read[i].getID());
-		}
+    public Database(DataStore parent, Partition write, Partition[] read) {
+        this.parentDataStore = parent;
+        this.writePartition = write;
+        this.writeID = write.getID();
 
-		if (!this.readIDs.contains(writeID)) {
-			this.readIDs.add(writeID);
-		}
+        this.readPartitions = Arrays.asList(read);
+        this.readIDs = new ArrayList<Integer>(read.length);
+        for (int i = 0; i < read.length; i++) {
+            this.readIDs.add(read[i].getID());
+        }
 
-		this.cache = new AtomCache(this);
-	}
+        if (readIDs.contains(new Integer(writeID))) {
+            readIDs.remove(new Integer(writeID));
+        }
 
-	public abstract GroundAtom getAtom(StandardPredicate predicate, boolean create, Constant... arguments);
+        allPartitionIDs = new ArrayList<Integer>(readIDs.size() + 1);
+        allPartitionIDs.addAll(readIDs);
+        allPartitionIDs.add(writeID);
 
-	public boolean hasAtom(StandardPredicate predicate, Constant... arguments) {
-		return getAtom(predicate, false, arguments) != null;
-	}
+        this.cache = new AtomCache(this);
+    }
 
-	public int countAllGroundAtoms(StandardPredicate predicate) {
-		List<Integer> partitions = new ArrayList<Integer>();
-		partitions.addAll(readIDs);
-		partitions.add(writeID);
+    public abstract GroundAtom getAtom(StandardPredicate predicate, boolean create, Constant... arguments);
 
-		return countAllGroundAtoms(predicate, partitions);
-	}
+    public boolean hasAtom(StandardPredicate predicate, Constant... arguments) {
+        return getAtom(predicate, false, arguments) != null;
+    }
 
-	public abstract int countAllGroundAtoms(StandardPredicate predicate, List<Integer> partitions);
+    public int countAllGroundAtoms(StandardPredicate predicate) {
+        return countAllGroundAtoms(predicate, allPartitionIDs);
+    }
 
-	public int countAllGroundRandomVariableAtoms(StandardPredicate predicate) {
-		// Closed predicates have no random variable atoms.
-		if (isClosed(predicate)) {
-			return 0;
-		}
+    public abstract int countAllGroundAtoms(StandardPredicate predicate, List<Integer> partitions);
 
-		// All the atoms should be random vairable, since we are pulling from the write parition of an open predicate.
-		List<Integer> partitions = new ArrayList<Integer>(1);
-		partitions.add(writeID);
+    public int countAllGroundRandomVariableAtoms(StandardPredicate predicate) {
+        // Closed predicates have no random variable atoms.
+        if (isClosed(predicate)) {
+            return 0;
+        }
 
-		return countAllGroundAtoms(predicate, partitions);
-	}
+        // All the atoms should be random vairable, since we are pulling from the write parition of an open predicate.
+        List<Integer> partitions = new ArrayList<Integer>(1);
+        partitions.add(writeID);
 
-	public List<GroundAtom> getAllGroundAtoms(StandardPredicate predicate) {
-		List<Integer> partitions = new ArrayList<Integer>();
-		partitions.addAll(readIDs);
-		partitions.add(writeID);
+        return countAllGroundAtoms(predicate, partitions);
+    }
 
-		return getAllGroundAtoms(predicate, partitions);
-	}
+    public Iterable<GroundAtom> getAllCachedAtoms() {
+        return cache.getCachedAtoms();
+    }
 
-	public abstract List<GroundAtom> getAllGroundAtoms(StandardPredicate predicate, List<Integer> partitions);
+    public Iterable<RandomVariableAtom> getAllCachedRandomVariableAtoms() {
+        return cache.getCachedRandomVariableAtoms();
+    }
 
-	public List<RandomVariableAtom> getAllGroundRandomVariableAtoms(StandardPredicate predicate) {
-		// Closed predicates have no random variable atoms.
-		if (isClosed(predicate)) {
-			return new ArrayList<RandomVariableAtom>();
-		}
+    public List<GroundAtom> getAllGroundAtoms(StandardPredicate predicate) {
+        return getAllGroundAtoms(predicate, allPartitionIDs);
+    }
 
-		// All the atoms should be random vairable, since we are pulling from the write parition of an open predicate.
-		List<Integer> partitions = new ArrayList<Integer>(1);
-		partitions.add(writeID);
-		List<GroundAtom> groundAtoms = getAllGroundAtoms(predicate, partitions);
+    public abstract List<GroundAtom> getAllGroundAtoms(StandardPredicate predicate, List<Integer> partitions);
 
-		List<RandomVariableAtom> atoms = new ArrayList<RandomVariableAtom>(groundAtoms.size());
-		for (GroundAtom atom : groundAtoms) {
-			atoms.add((RandomVariableAtom)atom);
-		}
+    public List<RandomVariableAtom> getAllGroundRandomVariableAtoms(StandardPredicate predicate) {
+        // Closed predicates have no random variable atoms.
+        if (isClosed(predicate)) {
+            return new ArrayList<RandomVariableAtom>();
+        }
 
-		return atoms;
-	}
+        // All the atoms should be random vairable, since we are pulling from the write parition of an open predicate.
+        List<Integer> partitions = new ArrayList<Integer>(1);
+        partitions.add(writeID);
+        List<GroundAtom> groundAtoms = getAllGroundAtoms(predicate, partitions);
 
-	public List<ObservedAtom> getAllGroundObservedAtoms(StandardPredicate predicate) {
-		// Note that even open predicates may have observed atoms (partially observed predicates).
+        List<RandomVariableAtom> atoms = new ArrayList<RandomVariableAtom>(groundAtoms.size());
+        for (GroundAtom atom : groundAtoms) {
+            // This is only possible if the predicate is partially observed and this ground atom
+            // was specified as a target and an observation/
+            if (atom instanceof ObservedAtom) {
+                throw new IllegalStateException(String.format(
+                        "Found a ground atom (%s) that is both observed and a target." +
+                        " An atom can only be one at a time. Check your data files.",
+                        atom));
+            }
 
-		// Only pull from the read partitions.
-		List<GroundAtom> groundAtoms = getAllGroundAtoms(predicate, readIDs);
+            atoms.add((RandomVariableAtom)atom);
+        }
 
-		// All the atoms will be observed since we are pulling from only read partitions.
-		List<ObservedAtom> atoms = new ArrayList<ObservedAtom>(groundAtoms.size());
-		for (GroundAtom atom : groundAtoms) {
-			atoms.add((ObservedAtom)atom);
-		}
+        return atoms;
+    }
 
-		return atoms;
-	}
+    public List<ObservedAtom> getAllGroundObservedAtoms(StandardPredicate predicate) {
+        // Note that even open predicates may have observed atoms (partially observed predicates).
 
-	public void commit(RandomVariableAtom atom) {
-		List<RandomVariableAtom> atoms = new ArrayList<RandomVariableAtom>(1);
-		atoms.add(atom);
-		commit(atoms);
-	}
+        // Can't have observed atoms without read partitions.
+        if (readIDs.size() == 0) {
+            return new ArrayList<ObservedAtom>();
+        }
 
-	/**
-	 * @return the DataStore backing this Database
-	 */
-	public DataStore getDataStore(){
-		return parentDataStore;
-	}
+        // Only pull from the read partitions.
+        List<GroundAtom> groundAtoms = getAllGroundAtoms(predicate, readIDs);
 
-	public List<Partition> getReadPartitions() {
-		return Collections.unmodifiableList(readPartitions);
-	}
+        // All the atoms will be observed since we are pulling from only read partitions.
+        List<ObservedAtom> atoms = new ArrayList<ObservedAtom>(groundAtoms.size());
+        for (GroundAtom atom : groundAtoms) {
+            // This is only possible if the predicate is partially observed and this ground atom
+            // was specified as a target and an observation/
+            if (atom instanceof RandomVariableAtom) {
+                throw new IllegalStateException(String.format(
+                        "Found a ground atom (%s) that is both observed and a target." +
+                        " An atom can only be one at a time. Check your data files.",
+                        atom));
+            }
 
-	public Partition getWritePartition() {
-		return writePartition;
-	}
+            atoms.add((ObservedAtom)atom);
+        }
+
+        return atoms;
+    }
+
+    public void commit(RandomVariableAtom atom) {
+        List<RandomVariableAtom> atoms = new ArrayList<RandomVariableAtom>(1);
+        atoms.add(atom);
+        commit(atoms);
+    }
+
+    public void commitCachedAtoms() {
+        commitCachedAtoms(false);
+    }
+
+    public void commitCachedAtoms(boolean onlyPersisted) {
+        if (!onlyPersisted) {
+            commit(getAllCachedRandomVariableAtoms());
+        } else {
+            commit(IteratorUtils.filter(getAllCachedRandomVariableAtoms(), new IteratorUtils.FilterFunction<RandomVariableAtom>() {
+                @Override
+                public boolean keep(RandomVariableAtom atom) {
+                    return atom.getPersisted();
+                }
+            }));
+        }
+    }
+
+    /**
+     * @return the DataStore backing this Database
+     */
+    public DataStore getDataStore(){
+        return parentDataStore;
+    }
+
+    public List<Partition> getReadPartitions() {
+        return Collections.unmodifiableList(readPartitions);
+    }
+
+    public Partition getWritePartition() {
+        return writePartition;
+    }
+
+    public int getCachedRVACount() {
+        return cache.getRVACount();
+    }
 }

@@ -25,44 +25,43 @@ import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.util.MathUtils;
 
 public class Add extends Coefficient {
+    protected final Coefficient c1;
+    protected final Coefficient c2;
 
-	protected final Coefficient c1;
-	protected final Coefficient c2;
+    public Add(Coefficient c1, Coefficient c2) {
+        this.c1 = c1;
+        this.c2 = c2;
+    }
 
-	public Add(Coefficient c1, Coefficient c2) {
-		this.c1 = c1;
-		this.c2 = c2;
-	}
+    @Override
+    public float getValue(Map<SummationVariable, Integer> subs) {
+        return c1.getValue(subs) + c2.getValue(subs);
+    }
 
-	@Override
-	public double getValue(Map<SummationVariable, Integer> subs) {
-		return c1.getValue(subs) + c2.getValue(subs);
-	}
+    @Override
+    public String toString() {
+        return "(" + c1.toString() + " + " + c2.toString() + ")";
+    }
 
-	@Override
-	public String toString() {
-		return "(" + c1.toString() + " + " + c2.toString() + ")";
-	}
+    @Override
+    public Coefficient simplify() {
+        Coefficient lhs = c1.simplify();
+        Coefficient rhs = c2.simplify();
 
-	@Override
-	public Coefficient simplify() {
-		Coefficient lhs = c1.simplify();
-		Coefficient rhs = c2.simplify();
+        // If both sides are constants, then just do the math.
+        if (lhs instanceof ConstantNumber && rhs instanceof ConstantNumber) {
+            return new ConstantNumber(getValue(null));
+        }
 
-		// If both sides are constants, then just do the math.
-		if (lhs instanceof ConstantNumber && rhs instanceof ConstantNumber) {
-			return new ConstantNumber(getValue(null));
-		}
+        // If one side is a zero, then just return the other.
+        if (lhs instanceof ConstantNumber && MathUtils.isZero(((ConstantNumber)lhs).value)) {
+            return rhs;
+        }
 
-		// If one side is a zero, then just return the other.
-		if (lhs instanceof ConstantNumber && MathUtils.isZero(((ConstantNumber)lhs).value)) {
-			return rhs;
-		}
+        if (rhs instanceof ConstantNumber && MathUtils.isZero(((ConstantNumber)rhs).value)) {
+            return lhs;
+        }
 
-		if (rhs instanceof ConstantNumber && MathUtils.isZero(((ConstantNumber)rhs).value)) {
-			return lhs;
-		}
-
-		return new Add(lhs, rhs);
-	}
+        return new Add(lhs, rhs);
+    }
 }

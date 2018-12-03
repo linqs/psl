@@ -31,119 +31,122 @@ import java.util.Set;
 
 /**
  * Base class for all ground arithmetic rules.
- *
- * @author Stephen Bach
  */
 public abstract class AbstractGroundArithmeticRule implements GroundRule {
-	protected final AbstractArithmeticRule rule;
-	protected final double[] coeffs;
-	protected final GroundAtom[] atoms;
-	protected final FunctionComparator comparator;
-	protected final double constant;
+    protected final AbstractArithmeticRule rule;
+    protected final float[] coefficients;
+    protected final GroundAtom[] atoms;
+    protected final FunctionComparator comparator;
+    protected final float constant;
 
-	protected AbstractGroundArithmeticRule(AbstractArithmeticRule rule,
-			List<Double> coeffs, List<GroundAtom> atoms, FunctionComparator comparator, double constant) {
-		this(rule, ArrayUtils.toPrimitive(coeffs.toArray(new Double[0])),
-				atoms.toArray(new GroundAtom[0]), comparator, constant, false);
-	}
+    protected AbstractGroundArithmeticRule(AbstractArithmeticRule rule,
+            List<Float> coefficients, List<GroundAtom> atoms, FunctionComparator comparator, float constant) {
+        this(rule, ArrayUtils.toPrimitive(coefficients.toArray(new Float[0])),
+                atoms.toArray(new GroundAtom[0]), comparator, constant, false);
+    }
 
-	protected AbstractGroundArithmeticRule(AbstractArithmeticRule rule,
-			double[] coeffs, GroundAtom[] atoms, FunctionComparator comparator, double constant) {
-		this(rule, coeffs, atoms, comparator, constant, true);
-	}
+    protected AbstractGroundArithmeticRule(AbstractArithmeticRule rule,
+            float[] coefficients, GroundAtom[] atoms, FunctionComparator comparator, float constant) {
+        this(rule, coefficients, atoms, comparator, constant, true);
+    }
 
-	protected AbstractGroundArithmeticRule(AbstractArithmeticRule rule,
-			double[] coeffs, GroundAtom[] atoms, FunctionComparator comparator, double constant,
-			boolean copy) {
-		this.rule = rule;
-		this.comparator = comparator;
-		this.constant = constant;
+    protected AbstractGroundArithmeticRule(AbstractArithmeticRule rule,
+            float[] coefficients, GroundAtom[] atoms, FunctionComparator comparator, float constant,
+            boolean copy) {
+        this.rule = rule;
+        this.comparator = comparator;
+        this.constant = constant;
 
-		if (copy) {
-			this.coeffs = Arrays.copyOf(coeffs, coeffs.length);
-			this.atoms = Arrays.copyOf(atoms, atoms.length);
-		} else {
-			this.coeffs = coeffs;
-			this.atoms = atoms;
-		}
-	}
+        if (copy) {
+            this.coefficients = Arrays.copyOf(coefficients, coefficients.length);
+            this.atoms = Arrays.copyOf(atoms, atoms.length);
+        } else {
+            this.coefficients = coefficients;
+            this.atoms = atoms;
+        }
+    }
 
-	@Override
-	public Rule getRule() {
-		return rule;
-	}
+    @Override
+    public Rule getRule() {
+        return rule;
+    }
 
-	@Override
-	public Set<GroundAtom> getAtoms() {
-		Set<GroundAtom> atomSet = new HashSet<GroundAtom>();
-		for (GroundAtom atom : atoms) {
-			atomSet.add(atom);
-		}
-		return atomSet;
-	}
+    @Override
+    public Set<GroundAtom> getAtoms() {
+        Set<GroundAtom> atomSet = new HashSet<GroundAtom>();
+        for (GroundAtom atom : atoms) {
+            atomSet.add(atom);
+        }
+        return atomSet;
+    }
 
-	@Override
-	public List<GroundRule> negate() {
-		// TODO(eriq)
-		throw new UnsupportedOperationException("Negating arithmetic rules not yet supported.");
-	}
+    @Override
+    public List<GroundRule> negate() {
+        // TODO(eriq)
+        throw new UnsupportedOperationException("Negating arithmetic rules not yet supported.");
+    }
 
-	@Override
-	public String toString() {
-		StringBuilder sb = new StringBuilder();
+    @Override
+    public String baseToString() {
+        StringBuilder sb = new StringBuilder();
 
-		// If there are coefficients, print each one.
-		if (coeffs.length > 0) {
-			for (int i = 0; i < coeffs.length; i++) {
-				if (i != 0) {
-					sb.append(" + ");
-				}
+        // If there are coefficients, print each one.
+        if (coefficients.length > 0) {
+            for (int i = 0; i < coefficients.length; i++) {
+                if (i != 0) {
+                    sb.append(" + ");
+                }
 
-				sb.append(coeffs[i]);
-				sb.append(" * ");
-				sb.append(atoms[i]);
-			}
-		} else {
-			// Otherwise, just put in a zero.
-			sb.append("0.0");
-		}
+                sb.append(coefficients[i]);
+                sb.append(" * ");
+                sb.append(atoms[i]);
+            }
+        } else {
+            // Otherwise, just put in a zero.
+            sb.append("0.0");
+        }
 
-		sb.append(" ");
+        sb.append(" ");
 
-		switch (comparator) {
-		case Equality:
-			sb.append("=");
-			break;
-		case LargerThan:
-			sb.append(">=");
-			break;
-		case SmallerThan:
-			sb.append("<=");
-			break;
-		default:
-			throw new IllegalStateException("Unrecognized comparator: " + comparator);
+        switch (comparator) {
+        case Equality:
+            sb.append("=");
+            break;
+        case LargerThan:
+            sb.append(">=");
+            break;
+        case SmallerThan:
+            sb.append("<=");
+            break;
+        default:
+            throw new IllegalStateException("Unrecognized comparator: " + comparator);
 
-		}
+        }
 
-		sb.append(" ");
-		sb.append(constant);
+        sb.append(" ");
+        sb.append(constant);
 
-		return sb.toString();
-	}
+        return sb.toString();
+    }
 
-	public double[] getCoefficients() {
-		return coeffs;
-	}
+    @Override
+    public String toString() {
+        return baseToString();
+    }
 
-	public GroundAtom[] getOrderedAtoms() {
-		return atoms;
-	}
+    public float[] getCoefficients() {
+        return coefficients;
+    }
 
-	public FunctionComparator getComparator() {
-		return comparator;
-	}
+    public GroundAtom[] getOrderedAtoms() {
+        return atoms;
+    }
 
-	public double getConstant() {
-		return constant;
-	}
+    public FunctionComparator getComparator() {
+        return comparator;
+    }
+
+    public float getConstant() {
+        return constant;
+    }
 }

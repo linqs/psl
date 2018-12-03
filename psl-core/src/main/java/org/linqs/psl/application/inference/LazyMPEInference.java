@@ -43,76 +43,75 @@ import java.util.List;
  * See LazyAtomManager for details on lazy atoms.
  */
 public class LazyMPEInference extends InferenceApplication {
-	private static final Logger log = LoggerFactory.getLogger(LazyMPEInference.class);
+    private static final Logger log = LoggerFactory.getLogger(LazyMPEInference.class);
 
-	/**
-	 * Prefix of property keys used by this class.
-	 */
-	public static final String CONFIG_PREFIX = "lazympeinference";
+    /**
+     * Prefix of property keys used by this class.
+     */
+    public static final String CONFIG_PREFIX = "lazympeinference";
 
-	/**
-	 * Key for int property for the maximum number of rounds of inference.
-	 */
-	public static final String MAX_ROUNDS_KEY = CONFIG_PREFIX + ".maxrounds";
-	public static final int MAX_ROUNDS_DEFAULT = 100;
+    /**
+     * Key for int property for the maximum number of rounds of inference.
+     */
+    public static final String MAX_ROUNDS_KEY = CONFIG_PREFIX + ".maxrounds";
+    public static final int MAX_ROUNDS_DEFAULT = 100;
 
-	protected final int maxRounds;
+    protected final int maxRounds;
 
-	protected LazyAtomManager lazyAtomManager;
+    public LazyMPEInference(Model model, Database db) {
+        super(model, db);
+        maxRounds = Config.getInt(MAX_ROUNDS_KEY, MAX_ROUNDS_DEFAULT);
+    }
 
-	public LazyMPEInference(Model model, Database db) {
-		super(model, db);
-		maxRounds = Config.getInt(MAX_ROUNDS_KEY, MAX_ROUNDS_DEFAULT);
-	}
+    @Override
+    protected void completeInitialize() {
+        log.debug("Creating lazy atom mannager.");
+        atomManager = new LazyAtomManager(db);
 
-	@Override
-	protected void completeInitialize() {
-		log.debug("Creating lazy atom mannager.");
-		lazyAtomManager = new LazyAtomManager(db);
+        log.debug("Initial grounding.");
+        Grounding.groundAll(model, atomManager, groundRuleStore);
+    }
 
-		log.debug("Initial grounding.");
-		Grounding.groundAll(model, lazyAtomManager, groundRuleStore);
-	}
+    @Override
+    public void inference() {
+        inference(model.getRules(), reasoner, groundRuleStore, termStore, termGenerator,
+                (LazyAtomManager)atomManager, maxRounds);
+    }
 
-	@Override
-	public void inference() {
-		inference(model.getRules(), reasoner, groundRuleStore, termStore, termGenerator, lazyAtomManager, maxRounds);
-	}
+    /**
+     * Do the full MPE inference process.
+     * We move the implementation to a static method so it can be accessed
+     * from outsude methods.
+     * Unlike MPEInference which just calls the reasoner, this process is more involved.
+     */
+    public static void inference(List<Rule> rules, Reasoner reasoner, GroundRuleStore groundRuleStore,
+            TermStore termStore, TermGenerator termGenerator, LazyAtomManager lazyAtomManager,
+            int maxRounds) {
+        // Performs rounds of inference until the ground model stops growing.
+        int rounds = 0;
+        int numActivated = 0;
 
-	/**
-	 * Do the full MPE inference process.
-	 * We move the implementation to a static method so it can be accessed
-	 * from outsude methods.
-	 * Unlike MPEInference which just calls the reasoner, this process is more involved.
-	 */
-	public static void inference(List<Rule> rules, Reasoner reasoner, GroundRuleStore groundRuleStore,
-			TermStore termStore, TermGenerator termGenerator, LazyAtomManager lazyAtomManager,
-			int maxRounds) {
-		// Performs rounds of inference until the ground model stops growing.
-		int rounds = 0;
-		int numActivated = 0;
+        do {
+            rounds++;
+            log.debug("Starting round {} of inference.", rounds);
 
-		do {
-			rounds++;
-			log.debug("Starting round {} of inference.", rounds);
+            // Regenerate optimization terms.
+            termStore.clear();
 
-			// Regenerate optimization terms.
-			termStore.clear();
+            log.debug("Initializing objective terms for {} ground rules.", groundRuleStore.size());
+            @SuppressWarnings("unchecked")
+            int termCount = termGenerator.generateTerms(groundRuleStore, termStore);
+            log.debug("Generated {} objective terms from {} ground rules.", termCount, groundRuleStore.size());
 
-			log.debug("Initializing objective terms for {} ground rules.", groundRuleStore.size());
-			@SuppressWarnings("unchecked")
-			int termCount = termGenerator.generateTerms(groundRuleStore, termStore);
-			log.debug("Generated {} objective terms from {} ground rules.", termCount, groundRuleStore.size());
+            log.info("Beginning inference round {}.", rounds);
+            reasoner.optimize(termStore);
+            log.info("Inference round {} complete.", rounds);
 
-			log.info("Beginning inference round {}.", rounds);
-			reasoner.optimize(termStore);
-			log.info("Inference round {} complete.", rounds);
+            numActivated = lazyAtomManager.activateAtoms(rules, groundRuleStore);
+            log.debug("Completed round {} and activated {} atoms.", rounds, numActivated);
+        } while (numActivated > 0 && rounds < maxRounds);
 
-			numActivated = lazyAtomManager.activateAtoms(rules, groundRuleStore);
-			log.debug("Completed round {} and activated {} atoms.", rounds, numActivated);
-		} while (numActivated > 0 && rounds < maxRounds);
-
-		// Commits the RandomVariableAtoms back to the Database.
-		lazyAtomManager.commitPersistedAtoms();
-	}
+        // Commits the RandomVariableAtoms back to the Database.
+        lazyAtomManager.commitPersistedAtoms();
+    }
 }

@@ -24,14 +24,14 @@ import org.linqs.psl.reasoner.term.TermStore;
  * of the terms provided by a TermStore.
  */
 public interface Reasoner {
-	/**
-	 * Minimizes the total weighted incompatibility of the terms in the provided
-	 * TermStore.
-	 */
-	public void optimize(TermStore termStore);
+    /**
+     * Minimizes the total weighted incompatibility of the terms in the provided
+     * TermStore.
+     */
+    public void optimize(TermStore termStore);
 
-	/**
-	 * Releases all resources acquired by this Reasoner.
-	 */
-	public void close();
+    /**
+     * Releases all resources acquired by this Reasoner.
+     */
+    public void close();
 }

@@ -35,114 +35,114 @@ import org.linqs.psl.model.term.Term;
  * @author Stephen Bach
  */
 public class SummationAtom implements SummationAtomOrAtom {
-	protected final Predicate p;
-	protected final SummationVariableOrTerm[] args;
+    protected final Predicate p;
+    protected final SummationVariableOrTerm[] args;
 
-	public SummationAtom(Predicate p, SummationVariableOrTerm[] args) {
-		this.p = p;
-		this.args = args;
+    public SummationAtom(Predicate p, SummationVariableOrTerm[] args) {
+        this.p = p;
+        this.args = args;
 
-		checkSchema();
-	}
+        checkSchema();
+    }
 
-	/**
-	 * Verifies that this atom has valid arguments.
-	 *
-	 * @throws IllegalArgumentException if the number of arguments doesn't match the
-	 *  number of arguments of the predicate
-	 * @throws IllegalArgumentException if any argument is null
-	 */
-	protected void checkSchema() {
-		if (p.getArity() != args.length) {
-			throw new IllegalArgumentException("Length of Schema does not match the number of args.");
-		}
+    /**
+     * Verifies that this atom has valid arguments.
+     *
+     * @throws IllegalArgumentException if the number of arguments doesn't match the
+     *  number of arguments of the predicate
+     * @throws IllegalArgumentException if any argument is null
+     */
+    protected void checkSchema() {
+        if (p.getArity() != args.length) {
+            throw new IllegalArgumentException("Length of Schema does not match the number of args.");
+        }
 
-		for (SummationVariableOrTerm arg : args) {
-			if (arg == null) {
-				throw new IllegalArgumentException("Arguments must not be null.");
-			}
-		}
-	}
+        for (SummationVariableOrTerm arg : args) {
+            if (arg == null) {
+                throw new IllegalArgumentException("Arguments must not be null.");
+            }
+        }
+    }
 
-	public QueryAtom getQueryAtom() {
-		Term[] queryAtomArgs = new Term[args.length];
-		for (int i = 0; i < args.length; i++) {
-			if (args[i] instanceof Term) {
-				queryAtomArgs[i] = (Term) args[i];
-			}
-			else {
-				queryAtomArgs[i] = ((SummationVariable) args[i]).getVariable();
-			}
-		}
-		return new QueryAtom(p, queryAtomArgs);
-	}
+    public QueryAtom getQueryAtom() {
+        Term[] queryAtomArgs = new Term[args.length];
+        for (int i = 0; i < args.length; i++) {
+            if (args[i] instanceof Term) {
+                queryAtomArgs[i] = (Term) args[i];
+            }
+            else {
+                queryAtomArgs[i] = ((SummationVariable) args[i]).getVariable();
+            }
+        }
+        return new QueryAtom(p, queryAtomArgs);
+    }
 
-	/**
-	 * Returns the predicate associated with this SummationAtom.
-	 *
-	 * @return A predicate
-	 */
-	public Predicate getPredicate() {
-		return p;
-	}
+    /**
+     * Returns the predicate associated with this SummationAtom.
+     *
+     * @return A predicate
+     */
+    public Predicate getPredicate() {
+        return p;
+    }
 
-	/**
-	 * Returns the number of arguments to the associated Predicate.
-	 *
-	 * @return The number of arguments
-	 */
-	public int getArity() {
-		return p.getArity();
-	}
+    /**
+     * Returns the number of arguments to the associated Predicate.
+     *
+     * @return The number of arguments
+     */
+    public int getArity() {
+        return p.getArity();
+    }
 
-	/**
-	 * Returns the arguments associated with this SummationAtom.
-	 *
-	 * @return The arguments associated with this SummationAtom
-	 */
-	public SummationVariableOrTerm[] getArguments() {
-		return args;
-	}
+    /**
+     * Returns the arguments associated with this SummationAtom.
+     *
+     * @return The arguments associated with this SummationAtom
+     */
+    public SummationVariableOrTerm[] getArguments() {
+        return args;
+    }
 
-	@Override
-	public String toString() {
-		StringBuilder s = new StringBuilder();
-		s.append(p.getName());
-		s.append("(");
-		for (int i = 0; i < args.length; i++) {
-			if (i > 0) {
-				s.append(", ");
-			}
-			s.append(args[i]);
-		}
-		s.append(")");
-		return s.toString();
-	}
+    @Override
+    public String toString() {
+        StringBuilder s = new StringBuilder();
+        s.append(p.getName());
+        s.append("(");
+        for (int i = 0; i < args.length; i++) {
+            if (i > 0) {
+                s.append(", ");
+            }
+            s.append(args[i]);
+        }
+        s.append(")");
+        return s.toString();
+    }
 
-	@Override
-	public int hashCode() {
-		return getQueryAtom().hashCode();
-	}
+    @Override
+    public int hashCode() {
+        return getQueryAtom().hashCode();
+    }
 
-	@Override
-	public boolean equals(Object oth) {
-		if (oth==this) return true;
-		if (oth==null || !(oth instanceof SummationAtom)) return false;
+    @Override
+    public boolean equals(Object oth) {
+        if (oth==this) return true;
+        if (oth==null || !(oth instanceof SummationAtom)) return false;
 
-		if (!p.equals(((SummationAtom) oth).p)) {
-			return false;
-		}
+        if (!p.equals(((SummationAtom) oth).p)) {
+            return false;
+        }
 
-		if (args.length != ((SummationAtom) oth).args.length) {
-			return false;
-		}
+        if (args.length != ((SummationAtom) oth).args.length) {
+            return false;
+        }
 
-		for (int i = 0; i < args.length; i++) {
-			if (!args[i].equals(((SummationAtom) oth).args[i])) {
-				return false;
-			}
-		}
+        for (int i = 0; i < args.length; i++) {
+            if (!args[i].equals(((SummationAtom) oth).args[i])) {
+                return false;
+            }
+        }
 
-		return true;
-	}
+        return true;
+    }
 }

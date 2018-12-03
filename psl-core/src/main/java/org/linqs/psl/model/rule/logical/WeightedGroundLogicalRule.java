@@ -23,80 +23,70 @@ import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
-import org.linqs.psl.reasoner.function.FunctionTerm;
 import org.linqs.psl.reasoner.function.GeneralFunction;
 import org.linqs.psl.util.IteratorUtils;
 
 import java.util.List;
 
 public class WeightedGroundLogicalRule extends AbstractGroundLogicalRule implements WeightedGroundRule {
-	private double weight;
-	private final boolean squared;
+    protected WeightedGroundLogicalRule(WeightedLogicalRule rule, List<GroundAtom> posLiterals,
+            List<GroundAtom> negLiterals, short rvaCount) {
+        super(rule, posLiterals, negLiterals, rvaCount);
+        function.setSquared(rule.isSquared());
+    }
 
-	protected WeightedGroundLogicalRule(WeightedLogicalRule rule, List<GroundAtom> posLiterals,
-			List<GroundAtom> negLiterals, int rvaCount, boolean squared) {
-		super(rule, posLiterals, negLiterals, rvaCount);
-		// TODO(eriq): I hate this weight deferment. See if it is actually necessary.
-		weight = Double.NaN;
-		this.squared = squared;
-		function.setSquared(squared);
-	}
+    @Override
+    public WeightedRule getRule() {
+        return (WeightedRule)rule;
+    }
 
-	@Override
-	public WeightedRule getRule() {
-		return (WeightedRule)rule;
-	}
+    @Override
+    public boolean isSquared() {
+        return ((WeightedRule)rule).isSquared();
+    }
 
-	@Override
-	public boolean isSquared() {
-		return squared;
-	}
+    @Override
+    public double getWeight() {
+        return ((WeightedRule)rule).getWeight();
+    }
 
-	@Override
-	public double getWeight() {
-		if (Double.isNaN(weight)) {
-			return getRule().getWeight();
-		}
-		return weight;
-	}
+    @Override
+    public void setWeight(double weight) {
+        ((WeightedRule)rule).setWeight(weight);
+    }
 
-	@Override
-	public void setWeight(double weight) {
-		this.weight = weight;
-	}
+    @Override
+    public GeneralFunction getFunctionDefinition() {
+        return function;
+    }
 
-	@Override
-	public GeneralFunction getFunctionDefinition() {
-		return function;
-	}
+    @Override
+    public double getIncompatibility() {
+        return function.getValue();
+    }
 
-	@Override
-	public double getIncompatibility() {
-		return function.getValue();
-	}
+    @Override
+    public double getIncompatibility(GroundAtom replacementAtom, float replacementValue) {
+        return function.getValue(replacementAtom, replacementValue);
+    }
 
-	@Override
-	public double getIncompatibility(GroundAtom replacementAtom, double replacementValue) {
-		return function.getValue(replacementAtom, replacementValue);
-	}
+    @Override
+    public String toString() {
+        return "" + getWeight() + ": " + baseToString() + ((isSquared()) ? " ^2" : "");
+    }
 
-	@Override
-	public String toString() {
-		return "" + getWeight() + ": " + super.toString() + ((squared) ? " ^2" : "");
-	}
+    @Override
+    protected GroundRule instantiateNegatedGroundRule(
+            Formula disjunction, List<GroundAtom> positiveAtoms,
+            List<GroundAtom> negativeAtoms, String name) {
+        short rvaCount = 0;
+        for (GroundAtom atom : IteratorUtils.join(positiveAtoms, negativeAtoms)) {
+            if (atom instanceof RandomVariableAtom) {
+                rvaCount++;
+            }
+        }
 
-	@Override
-	protected GroundRule instantiateNegatedGroundRule(
-			Formula disjunction, List<GroundAtom> positiveAtoms,
-			List<GroundAtom> negativeAtoms, String name) {
-		int rvaCount = 0;
-		for (GroundAtom atom : IteratorUtils.join(positiveAtoms, negativeAtoms)) {
-			if (atom instanceof RandomVariableAtom) {
-				rvaCount++;
-			}
-		}
-
-		WeightedLogicalRule newRule = new WeightedLogicalRule(rule.getFormula(), -1.0 * ((WeightedLogicalRule)rule).getWeight(), squared, name);
-		return new WeightedGroundLogicalRule(newRule, positiveAtoms, negativeAtoms, rvaCount, squared);
-	}
+        WeightedLogicalRule newRule = new WeightedLogicalRule(rule.getFormula(), -1.0 * ((WeightedLogicalRule)rule).getWeight(), isSquared(), name);
+        return new WeightedGroundLogicalRule(newRule, positiveAtoms, negativeAtoms, rvaCount);
+    }
 }

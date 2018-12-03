@@ -33,83 +33,86 @@ import org.linqs.psl.model.rule.Rule;
  * can be used to combine a Model with data to perform inference or learn.
  */
 public class Model {
-	protected final List<Rule> rules;
+    protected final List<Rule> rules;
 
-	/**
-	 * Redundant set for fast membership checks
-	 */
-	protected final Set<Rule> ruleSet;
+    /**
+     * Redundant set for fast membership checks
+     */
+    protected final Set<Rule> ruleSet;
 
-	public Model() {
-		rules = new LinkedList<Rule>();
-		ruleSet = new HashSet<Rule>();
-	}
+    public Model() {
+        rules = new LinkedList<Rule>();
+        ruleSet = new HashSet<Rule>();
+    }
 
-	/**
-	 * @return the rules contained in this model
-	 */
-	public List<Rule> getRules() {
-		return Collections.unmodifiableList(rules);
-	}
+    /**
+     * @return the rules contained in this model
+     */
+    public List<Rule> getRules() {
+        return Collections.unmodifiableList(rules);
+    }
 
-	/**
-	 * Adds a Rule to this Model.
-	 *
-	 * @param rule Rule to add
-	 * @throws IllegalArgumentException if the Rule is already in this Model
-	 */
-	public void addRule(Rule rule) {
-		if (ruleSet.contains(rule)) {
-			throw new IllegalArgumentException("Rule already added to this model.");
-		}
+    /**
+     * Adds a Rule to this Model.
+     *
+     * @param rule Rule to add
+     * @throws IllegalArgumentException if the Rule is already in this Model
+     */
+    public void addRule(Rule rule) {
+        if (ruleSet.contains(rule)) {
+            throw new IllegalArgumentException("Rule already added to this model.");
+        }
 
-		rules.add(rule);
-		ruleSet.add(rule);
-	}
+        rules.add(rule);
+        ruleSet.add(rule);
+    }
 
-	/**
-	 * Removes a Rule from this Model.
-	 *
-	 * @param rule Rule to remove
-	 * @throws IllegalArgumentException if the Rule is not in this Model
-	 */
-	public void removeRule(Rule rule) {
-		if (!ruleSet.contains(rule)) {
-			throw new IllegalArgumentException("Rule not in this model.");
-		}
+    /**
+     * Removes a Rule from this Model.
+     *
+     * @param rule Rule to remove
+     * @throws IllegalArgumentException if the Rule is not in this Model
+     */
+    public void removeRule(Rule rule) {
+        if (!ruleSet.contains(rule)) {
+            throw new IllegalArgumentException("Rule not in this model.");
+        }
 
-		rules.remove(rule);
-		ruleSet.remove(rule);
-	}
+        rules.remove(rule);
+        ruleSet.remove(rule);
+    }
 
-	public void clear() {
-		rules.clear();
-		ruleSet.clear();
-	}
+    public void clear() {
+        rules.clear();
+        ruleSet.clear();
+    }
 
-	/**
-	 * Returns a String representation of this Model.
-	 *
-	 * @return the String representation
-	 */
-	@Override
-	public String toString() {
-		StringBuilder s = new StringBuilder();
-		s.append("Model:\n");
-		s.append(asString());
-		return s.toString();
-	}
+    /**
+     * Returns a String representation of this Model.
+     *
+     * @return the String representation
+     */
+    @Override
+    public String toString() {
+        StringBuilder s = new StringBuilder();
+        s.append("Model:\n");
+        s.append(asString());
+        return s.toString();
+    }
 
-	public String asString() {
-		StringBuilder s = new StringBuilder();
-		if (rules.size() > 0) {
-			s.append(rules.get(0));
-		}
+    /**
+     * Create a model string that can be directly interpreted by the parser.
+     */
+    public String asString() {
+        StringBuilder s = new StringBuilder();
+        if (rules.size() > 0) {
+            s.append(rules.get(0));
+        }
 
-		for (int i = 1; i < rules.size(); i++) {
-			s.append("\n").append(rules.get(i));
-		}
+        for (int i = 1; i < rules.size(); i++) {
+            s.append("\n").append(rules.get(i));
+        }
 
-		return s.toString();
-	}
+        return s.toString();
+    }
 }

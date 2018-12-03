@@ -20,8 +20,7 @@ package org.linqs.psl.database;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.formula.FormulaAnalysis;
 import org.linqs.psl.model.term.Variable;
-
-import org.apache.commons.lang3.StringUtils;
+import org.linqs.psl.util.StringUtils;
 
 import java.util.Arrays;
 import java.util.Set;
@@ -41,45 +40,45 @@ import java.util.Set;
  * it is instantiated in memory).
  */
 public class DatabaseQuery {
-	private final Formula formula;
-	private final boolean distinct;
+    private final Formula formula;
+    private final boolean distinct;
 
-	public DatabaseQuery(Formula formula) {
-		this(formula, true);
-	}
+    public DatabaseQuery(Formula formula) {
+        this(formula, true);
+    }
 
-	public DatabaseQuery(Formula formula, boolean distinct) {
-		this.formula = formula;
-		this.distinct = distinct;
-		validate(formula);
-	}
+    public DatabaseQuery(Formula formula, boolean distinct) {
+        this.formula = formula;
+        this.distinct = distinct;
+        validate(formula);
+    }
 
-	public Formula getFormula() {
-		return formula;
-	}
+    public Formula getFormula() {
+        return formula;
+    }
 
-	public boolean getDistinct() {
-		return distinct;
-	}
+    public boolean getDistinct() {
+        return distinct;
+    }
 
-	public static void validate(Formula formula) {
-		FormulaAnalysis analysis = new FormulaAnalysis(formula);
-		if (analysis.getNumDNFClauses() > 1 || analysis.getDNFClause(0).getNegLiterals().size() > 0) {
-			throw new IllegalArgumentException("Illegal query formula. " +
-					"Must be a conjunction of atoms or a single atom. " +
-					"Formula: " + formula);
-		}
+    public static void validate(Formula formula) {
+        FormulaAnalysis analysis = new FormulaAnalysis(formula);
+        if (analysis.getNumDNFClauses() > 1 || analysis.getDNFClause(0).getNegLiterals().size() > 0) {
+            throw new IllegalArgumentException("Illegal query formula. " +
+                    "Must be a conjunction of atoms or a single atom. " +
+                    "Formula: " + formula);
+        }
 
-		Set<Variable> unboundVariables = analysis.getDNFClause(0).getUnboundVariables();
-		if (unboundVariables.size() > 0) {
-			Variable[] sortedVariables = unboundVariables.toArray(new Variable[unboundVariables.size()]);
-			Arrays.sort(sortedVariables);
+        Set<Variable> unboundVariables = analysis.getDNFClause(0).getUnboundVariables();
+        if (unboundVariables.size() > 0) {
+            Variable[] sortedVariables = unboundVariables.toArray(new Variable[unboundVariables.size()]);
+            Arrays.sort(sortedVariables);
 
-			throw new IllegalArgumentException(
-					"Any variable used in a negated (non-functional) predicate must also participate" +
-					" in a positive (non-functional) predicate." +
-					" The following variables do not meet this requirement: [" + StringUtils.join(sortedVariables, ", ") + "]."
-			);
-		}
-	}
+            throw new IllegalArgumentException(
+                    "Any variable used in a negated (non-functional) predicate must also participate" +
+                    " in a positive (non-functional) predicate." +
+                    " The following variables do not meet this requirement: [" + StringUtils.join(", ", sortedVariables) + "]."
+            );
+        }
+    }
 }

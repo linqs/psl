@@ -28,28 +28,28 @@ import org.linqs.psl.model.term.Constant;
  */
 public class Cardinality extends Coefficient {
 
-	protected final SummationVariable v;
+    protected final SummationVariable v;
 
-	public Cardinality(SummationVariable v) {
-		this.v = v;
-	}
+    public Cardinality(SummationVariable v) {
+        this.v = v;
+    }
 
-	public SummationVariable getSummationVariable() {
-		return v;
-	}
+    public SummationVariable getSummationVariable() {
+        return v;
+    }
 
-	@Override
-	public double getValue(Map<SummationVariable, Integer> subs) {
-		return subs.get(v).intValue();
-	}
+    @Override
+    public float getValue(Map<SummationVariable, Integer> subs) {
+        return subs.get(v).intValue();
+    }
 
-	@Override
-	public String toString() {
-		return "|" + v.getVariable().toString() + "|";
-	}
+    @Override
+    public String toString() {
+        return "|" + v.getVariable().toString() + "|";
+    }
 
-	@Override
-	public Coefficient simplify() {
-		return this;
-	}
+    @Override
+    public Coefficient simplify() {
+        return this;
+    }
 }

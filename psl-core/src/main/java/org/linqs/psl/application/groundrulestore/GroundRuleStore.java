@@ -32,74 +32,77 @@ import org.linqs.psl.model.rule.WeightedRule;
  * the original GroundRule and modify it.
  */
 public interface GroundRuleStore {
-	/**
-	 * Adds a GroundRule to this store.
-	 * The behavior on what to do when a rule is already added is up tothe implementation.
-	 * It may ignore it or throw an exception.
-	 *
-	 * @param rule the GroundRule to add
-	 */
-	public void addGroundRule(GroundRule rule);
+    /**
+     * Adds a GroundRule to this store.
+     * The behavior on what to do when a rule is already added is up tothe implementation.
+     * It may ignore it or throw an exception.
+     *
+     * @param rule the GroundRule to add
+     */
+    public void addGroundRule(GroundRule rule);
 
-	/**
-	 * Release any memory held by the store.
-	 * A store that has been closed cannot be used again.
-	 */
-	public void close();
+    /**
+     * Release any memory held by the store.
+     * A store that has been closed cannot be used again.
+     */
+    public void close();
 
-	/**
-	 * Removes a GroundRule from this store.
-	 *
-	 * @param rule the GroundRule to remove
-	 * @throws IllegalArgumentException if rule is not in this store
-	 */
-	public void removeGroundRule(GroundRule rule);
+    /**
+     * Removes a GroundRule from this store.
+     * Check with the implementation on the runtime.
+     *
+     * @param rule the GroundRule to remove
+     * @throws IllegalArgumentException if rule is not in this store
+     */
+    public void removeGroundRule(GroundRule rule);
 
-	/**
-	 * Removes all GroundRules that was instantiated by a given rule.
-	 *
-	 * @param rule the originator of the ground rules
-	 */
-	public void removeGroundRules(Rule rule);
+    /**
+     * Removes all GroundRules that was instantiated by a given rule.
+     * Check with the implementation on the runtime.
+     *
+     * @param rule the originator of the ground rules
+     */
+    public void removeGroundRules(Rule rule);
 
-	/**
-	 * Checks whether a GroundRule is in this store.
-	 *
-	 * @param rule the GroundRule to check
-	 * @return true if rule is in this store
-	 */
-	public boolean containsGroundRule(GroundRule rule);
+    /**
+     * Checks whether a GroundRule is in this store.
+     * Check with the implementation on the runtime.
+     *
+     * @param rule the GroundRule to check
+     * @return true if rule is in this store
+     */
+    public boolean containsGroundRule(GroundRule rule);
 
-	/**
-	 * @return every GroundRule in this store
-	 */
-	public Iterable<GroundRule> getGroundRules();
+    /**
+     * @return every GroundRule in this store
+     */
+    public Iterable<GroundRule> getGroundRules();
 
-	/**
-	 * @return every {@link WeightedGroundRule} in this store
-	 */
-	public Iterable<WeightedGroundRule> getCompatibilityRules();
+    /**
+     * @return every {@link WeightedGroundRule} in this store
+     */
+    public Iterable<WeightedGroundRule> getCompatibilityRules();
 
-	/**
-	 * @return every {@link UnweightedGroundRule} in this store
-	 */
-	public Iterable<UnweightedGroundRule> getConstraintRules();
+    /**
+     * @return every {@link UnweightedGroundRule} in this store
+     */
+    public Iterable<UnweightedGroundRule> getConstraintRules();
 
-	/**
-	 * Returns every GroundRule that was instantiated by a given Rule.
-	 *
-	 * @param rule the Rule of the GroundRules to return
-	 * @return the Rule's GroundRules
-	 */
-	public Iterable<GroundRule> getGroundRules(Rule rule);
+    /**
+     * Returns every GroundRule that was instantiated by a given Rule.
+     *
+     * @param rule the Rule of the GroundRules to return
+     * @return the Rule's GroundRules
+     */
+    public Iterable<GroundRule> getGroundRules(Rule rule);
 
-	/**
-	 * @return the number of GroundRules in this store
-	 */
-	public int size();
+    /**
+     * @return the number of GroundRules in this store
+     */
+    public int size();
 
-	/**
-	 * @return the number of GroundRules for a specific rule in this store
-	 */
-	public int count(Rule rule);
+    /**
+     * @return the number of GroundRules for a specific rule in this store
+     */
+    public int count(Rule rule);
 }

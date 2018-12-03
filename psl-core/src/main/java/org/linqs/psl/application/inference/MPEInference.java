@@ -23,6 +23,7 @@ import org.linqs.psl.application.util.Grounding;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.model.Model;
+import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,36 +37,38 @@ import org.slf4j.LoggerFactory;
  * This set must contain all RandomVariableAtoms the Model might access.
  */
 public class MPEInference extends InferenceApplication {
-	private static final Logger log = LoggerFactory.getLogger(MPEInference.class);
+    private static final Logger log = LoggerFactory.getLogger(MPEInference.class);
 
-	protected PersistedAtomManager atomManager;
+    public MPEInference(Model model, Database db) {
+        super(model, db);
+    }
 
-	public MPEInference(Model model, Database db) {
-		super(model, db);
-	}
+    @Override
+    protected void completeInitialize() {
+        log.debug("Creating persisted atom mannager.");
+        atomManager = new PersistedAtomManager(db);
 
-	@Override
-	protected void completeInitialize() {
-		log.debug("Creating persisted atom mannager.");
-		atomManager = new PersistedAtomManager(db);
+        log.info("Grounding out model.");
+        int groundCount = Grounding.groundAll(model, atomManager, groundRuleStore);
 
-		log.info("Grounding out model.");
-		int groundCount = Grounding.groundAll(model, atomManager, groundRuleStore);
+        if (termStore instanceof ADMMTermStore) {
+            ((ADMMTermStore)termStore).ensureVariableCapacity(atomManager.getCachedRVACount());
+        }
 
-		log.debug("Initializing objective terms for {} ground rules.", groundCount);
-		@SuppressWarnings("unchecked")
-		int termCount = termGenerator.generateTerms(groundRuleStore, termStore);
-		log.debug("Generated {} objective terms from {} ground rules.", termCount, groundCount);
-	}
+        log.debug("Initializing objective terms for {} ground rules.", groundCount);
+        @SuppressWarnings("unchecked")
+        int termCount = termGenerator.generateTerms(groundRuleStore, termStore);
+        log.debug("Generated {} objective terms from {} ground rules.", termCount, groundCount);
+    }
 
-	@Override
-	public void inference() {
-		log.info("Beginning inference.");
-		reasoner.optimize(termStore);
-		log.info("Inference complete. Writing results to Database.");
+    @Override
+    public void inference() {
+        log.info("Beginning inference.");
+        reasoner.optimize(termStore);
+        log.info("Inference complete. Writing results to Database.");
 
-		// Commits the RandomVariableAtoms back to the Database,
-		atomManager.commitPersistedAtoms();
-		log.info("Results committed to database.");
-	}
+        // Commits the RandomVariableAtoms back to the Database,
+        ((PersistedAtomManager)atomManager).commitPersistedAtoms();
+        log.info("Results committed to database.");
+    }
 }

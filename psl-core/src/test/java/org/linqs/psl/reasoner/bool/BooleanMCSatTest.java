@@ -18,7 +18,7 @@
 
 package org.linqs.psl.reasoner.bool;
 
-import org.linqs.psl.TestModelFactory;
+import org.linqs.psl.TestModel;
 import org.linqs.psl.application.inference.MPEInference;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
@@ -32,36 +32,36 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class BooleanMCSatTest {
-	private TestModelFactory.ModelInformation info;
+    private TestModel.ModelInformation info;
 
-	@Before
-	public void setup() {
-		Config.clear();
-		info = TestModelFactory.getModel();
+    @Before
+    public void setup() {
+        Config.init();
+        info = TestModel.getModel();
 
-		Config.setProperty(MPEInference.REASONER_KEY, "org.linqs.psl.reasoner.bool.BooleanMCSat");
-		Config.setProperty(MPEInference.GROUND_RULE_STORE_KEY, "org.linqs.psl.application.groundrulestore.AtomRegisterGroundRuleStore");
-		Config.setProperty(MPEInference.TERM_STORE_KEY, "org.linqs.psl.reasoner.term.blocker.ConstraintBlockerTermStore");
-		Config.setProperty(MPEInference.TERM_GENERATOR_KEY, "org.linqs.psl.reasoner.term.blocker.ConstraintBlockerTermGenerator");
-	}
+        Config.setProperty(MPEInference.REASONER_KEY, "org.linqs.psl.reasoner.bool.BooleanMCSat");
+        Config.setProperty(MPEInference.GROUND_RULE_STORE_KEY, "org.linqs.psl.application.groundrulestore.AtomRegisterGroundRuleStore");
+        Config.setProperty(MPEInference.TERM_STORE_KEY, "org.linqs.psl.reasoner.term.blocker.ConstraintBlockerTermStore");
+        Config.setProperty(MPEInference.TERM_GENERATOR_KEY, "org.linqs.psl.reasoner.term.blocker.ConstraintBlockerTermGenerator");
+    }
 
-	@After
-	public void clear() {
-		Config.clear();
-	}
+    @After
+    public void clear() {
+        Config.init();
+    }
 
-	/**
-	 * A quick test that only checks to see if MPEInference works with BooleanMCSat.
-	 * This is not a targeted or exhaustive test, just a starting point.
-	 */
-	@Test
-	public void baseTest() {
-		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
-		Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-		MPEInference mpe = new MPEInference(info.model, inferDB);
+    /**
+     * A quick test that only checks to see if MPEInference works with BooleanMCSat.
+     * This is not a targeted or exhaustive test, just a starting point.
+     */
+    @Test
+    public void baseTest() {
+        Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
+        Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
+        MPEInference mpe = new MPEInference(info.model, inferDB);
 
-		mpe.inference();
-		mpe.close();
-		inferDB.close();
-	}
+        mpe.inference();
+        mpe.close();
+        inferDB.close();
+    }
 }

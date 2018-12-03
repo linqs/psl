@@ -59,42 +59,42 @@ import java.util.Set;
  * The model is grown using LazyMPEInference.
  */
 public class LazyMaxLikelihoodMPE extends VotedPerceptron {
-	private static final Logger log = LoggerFactory.getLogger(LazyMaxLikelihoodMPE.class);
+    private static final Logger log = LoggerFactory.getLogger(LazyMaxLikelihoodMPE.class);
 
-	/**
-	 * Prefix of property keys used by this class.
-	 */
-	public static final String CONFIG_PREFIX = "lazymaxlikelihoodmpe";
+    /**
+     * Prefix of property keys used by this class.
+     */
+    public static final String CONFIG_PREFIX = "lazymaxlikelihoodmpe";
 
-	/**
-	 * Key for int property for the maximum number of rounds of lazy growing.
-	 */
-	public static final String MAX_ROUNDS_KEY = CONFIG_PREFIX + ".maxgrowrounds";
-	public static final int MAX_ROUNDS_DEFAULT = 100;
+    /**
+     * Key for int property for the maximum number of rounds of lazy growing.
+     */
+    public static final String MAX_ROUNDS_KEY = CONFIG_PREFIX + ".maxgrowrounds";
+    public static final int MAX_ROUNDS_DEFAULT = 100;
 
-	private int maxRounds;
+    private int maxRounds;
 
-	public LazyMaxLikelihoodMPE(Model model, Database rvDB, Database observedDB) {
-		this(model.getRules(), rvDB, observedDB);
-	}
+    public LazyMaxLikelihoodMPE(Model model, Database rvDB, Database observedDB) {
+        this(model.getRules(), rvDB, observedDB);
+    }
 
-	public LazyMaxLikelihoodMPE(List<Rule> rules, Database rvDB, Database observedDB) {
-		super(rules, rvDB, observedDB, false);
+    public LazyMaxLikelihoodMPE(List<Rule> rules, Database rvDB, Database observedDB) {
+        super(rules, rvDB, observedDB, false);
 
-		maxRounds = Config.getInt(MAX_ROUNDS_KEY, MAX_ROUNDS_DEFAULT);
-	}
+        maxRounds = Config.getInt(MAX_ROUNDS_KEY, MAX_ROUNDS_DEFAULT);
+    }
 
-	@Override
-	protected void computeObservedIncompatibility() {
-		// First grow the atom set (which involves computing the MPE state),
-		// and then just do everything else normally.
-		LazyMPEInference.inference(allRules, reasoner, groundRuleStore, termStore, termGenerator, (LazyAtomManager)atomManager, maxRounds);
+    @Override
+    protected void computeObservedIncompatibility() {
+        // First grow the atom set (which involves computing the MPE state),
+        // and then just do everything else normally.
+        LazyMPEInference.inference(allRules, reasoner, groundRuleStore, termStore, termGenerator, (LazyAtomManager)atomManager, maxRounds);
 
-		super.computeObservedIncompatibility();
-	}
+        super.computeObservedIncompatibility();
+    }
 
-	@Override
-	protected PersistedAtomManager createAtomManager() {
-		return new LazyAtomManager(rvDB);
-	}
+    @Override
+    protected PersistedAtomManager createAtomManager() {
+        return new LazyAtomManager(rvDB);
+    }
 }
