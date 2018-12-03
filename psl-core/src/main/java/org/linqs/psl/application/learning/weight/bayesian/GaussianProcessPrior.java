@@ -34,6 +34,8 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     private static final float EXPLORATION_VAL = 2.0f;
     private static final String RANDOM_CONFIGS_ONLY = ".randomConfigsOnly";
     private static final int MAX_RAND_INT_VAL = 100000000;
+    private static final String EARLY_STOPPING = ".earlyStopping";
+    private boolean earlyStopping;
     private String kernel_name;
     private FloatMatrix knownDataStdInv;
     private GaussianProcessKernels.Kernel kernel;
@@ -56,6 +58,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         maxConfigs = Config.getInt(CONFIG_PREFIX+MAX_CONFIGS_STR, MAX_CONFIGS);
         exploration = Config.getFloat(CONFIG_PREFIX+EXPLORATION, EXPLORATION_VAL);
         randomConfigsOnly = Config.getBoolean(CONFIG_PREFIX+RANDOM_CONFIGS_ONLY, true);
+        earlyStopping = Config.getBoolean(EARLY_STOPPING, true);
         minConfigVal = 1/(float)MAX_RAND_INT_VAL;
     }
 
@@ -77,6 +80,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         int iter = 0;
         WeightConfig bestConfig = null;
         float bestVal = -Float.MAX_VALUE;
+        boolean allStdSmall = true;
         do{
             int nextPoint = getNextPoint(configs, iter);
             WeightConfig config = configs.get(nextPoint);
@@ -107,9 +111,21 @@ public class GaussianProcessPrior extends WeightLearningApplication {
                     exploredFnVal.toArray(new Float[numKnown]));
             blasYKnown = new FloatMatrix(yKnown);
             Parallel.foreach(configs, fnValWorker);
+            //early stopping
+            allStdSmall = true;
+            for (int i = 0; i < configs.size(); i++) {
+                if (configs.get(i).valueAndStd.std > 0.4 ){
+                    allStdSmall = false;
+                    break;
+                }
+            }
             iter++;
-        }while(iter < maxIterNum && configs.size() > 0);
+            if (earlyStopping && allStdSmall){
+                break;
+            }
+        }while((iter < maxIterNum && configs.size() > 0));
         setWeights(bestConfig);
+        log.info("Total number of iterations completed: " + iter + ", Early stopping: " + allStdSmall);
         log.info("Best config: " + bestConfig);
 //        try{
 //            BufferedWriter writer = new BufferedWriter(new FileWriter("/Users/sriramsrinivasan/Documents/gpp_weight_learning_psl/srinivasan-aaai19b/randomRes/expanded_space_10lr.txt"));
