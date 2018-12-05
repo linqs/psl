@@ -104,7 +104,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     /**
      * Only for testing.
      */
-    protected void setKernel(GaussianProcessKernels.Kernel kernel) {
+    protected void setKernelForTest(GaussianProcessKernels.Kernel kernel) {
         this.kernel = kernel;
     }
 
@@ -122,9 +122,9 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         float bestVal = 0.0f;
         boolean allStdSmall = false;
 
-        int iter = 0;
-        while (iter < maxIterations && configs.size() > 0 && !(earlyStopping && allStdSmall)) {
-            int nextPoint = getNextPoint(configs, iter);
+        int iteration = 0;
+        while (iteration < maxIterations && configs.size() > 0 && !(earlyStopping && allStdSmall)) {
+            int nextPoint = getNextPoint(configs, iteration);
             WeightConfig config = configs.get(nextPoint);
 
             exploredConfigs.add(config);
@@ -140,7 +140,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
                 bestConfig = config;
             }
 
-            log.info(String.format("Iteration %d -- Config Picked: %s, Curent Best Config: %s.", (iter + 1), exploredConfigs.get(iter), bestConfig));
+            log.info(String.format("Iteration %d -- Config Picked: %s, Curent Best Config: %s.", (iteration + 1), exploredConfigs.get(iteration), bestConfig));
 
             int numKnown = exploredFnVal.size();
             knownDataStdInv = new FloatMatrix(numKnown, numKnown);
@@ -151,7 +151,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
             }
 
             knownDataStdInv = Solve.solve(knownDataStdInv, FloatMatrix.eye(numKnown));
-            // TEST(eriq): Is the dup necessary?
+            // TODO(eriq): Is the dup necessary?
             blasYKnown = (new FloatMatrix(exploredFnVal)).dup();
 
             Parallel.foreach(configs, fnValWorker);
@@ -165,11 +165,12 @@ public class GaussianProcessPrior extends WeightLearningApplication {
                 }
             }
 
-            iter++;
+            iteration++;
         }
 
         setWeights(bestConfig);
-        log.info("Total number of iterations completed: " + iter + ", Early stopping: " + allStdSmall);
+        log.info(String.format("Total number of iterations completed: %d. Stopped early: %s.",
+                iteration, (earlyStopping && allStdSmall)));
         log.info("Best config: " + bestConfig);
     }
 
@@ -189,7 +190,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         inMPEState = false;
     }
 
-    protected List<WeightConfig> getConfigs(){
+    protected List<WeightConfig> getConfigs() {
         int numMutableRules = this.mutableRules.size();
         List<WeightConfig> configs = new ArrayList();
 
@@ -199,9 +200,10 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         if (space == GaussianProcessKernels.Space.OS) {
             min = 0.0f;
         }
+
         int numPerSplit = (int)Math.exp(Math.log(maxConfigs) / numMutableRules);
 
-        // If systematic generation of points will lead to not a reasonable exploration of space.
+        // If systematic generation of points will lead to not a reasonable exploration of space,
         // then just pick random points in space and hope it is better than being systematic.
 
         if (randomConfigsOnly) {
@@ -209,32 +211,32 @@ public class GaussianProcessPrior extends WeightLearningApplication {
             return getRandomConfigs();
         }
 
-        if (numPerSplit < 5){
+        if (numPerSplit < 5) {
             log.warn("Note not picking random points and large number of rules will yield bad exploration.");
         }
 
         float inc = max / numPerSplit;
-        final float[] configArray = new float[numMutableRules];
+        float[] configArray = new float[numMutableRules];
         Arrays.fill(configArray, min);
         WeightConfig config = new WeightConfig(configArray);
 
         boolean done = false;
         while (!done) {
-            int j = 0;
+            int i = 0;
             configs.add(new WeightConfig(config));
-            for (int l = 0; l < numMutableRules; l++) {
-                if (config.config[j] < max) {
-                    config.config[j] += inc;
+            for (int j = 0; j < numMutableRules; j++) {
+                if (config.config[i] < max) {
+                    config.config[i] += inc;
                     break;
                 }
 
-                if (j == numMutableRules - 1) {
+                if (i == numMutableRules - 1) {
                     done = true;
                     break;
                 }
 
-                config.config[j] = min;
-                j++;
+                config.config[i] = min;
+                i++;
             }
         }
 
@@ -256,7 +258,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         return factor;
     }
 
-    private List<WeightConfig> getRandomConfigs(){
+    private List<WeightConfig> getRandomConfigs() {
         int numMutableRules = this.mutableRules.size();
         List<WeightConfig> configs = new ArrayList();
         for (int i = 0; i < maxConfigs; i++) {
@@ -281,7 +283,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         return fnAndStd;
     }
 
-    //Get metric value like accuracy.
+    // Get metric value like accuracy.
     protected float getFunctionValue(WeightConfig config) {
         setWeights(config);
         computeMPEState();
@@ -291,8 +293,8 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         return (float)score;
     }
 
-    //Exploration strategy
-    protected int getNextPoint(List<WeightConfig> configs, int iter) {
+    // Exploration strategy
+    protected int getNextPoint(List<WeightConfig> configs, int iteration) {
         int bestConfig = -1;
         float curBestVal = -Float.MAX_VALUE;
         for (int i = 0; i < configs.size(); i++) {
@@ -332,7 +334,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
             this(Arrays.copyOf(config.config, config.config.length), config.valueAndStd.value, config.valueAndStd.std);
         }
 
-        public WeightConfig(float[] config, float val, float std){
+        public WeightConfig(float[] config, float val, float std) {
             this.config = config;
             this.valueAndStd = new ValueAndStd(val, std);
         }
@@ -342,5 +344,4 @@ public class GaussianProcessPrior extends WeightLearningApplication {
             return String.format("(config: '%s', val: %f, std: %f)", StringUtils.join(", ", config), valueAndStd.value, valueAndStd.std);
         }
     }
-
 }

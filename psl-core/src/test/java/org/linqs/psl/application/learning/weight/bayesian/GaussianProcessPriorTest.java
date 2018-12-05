@@ -95,7 +95,7 @@ public class GaussianProcessPriorTest extends WeightLearningTest {
         float[] yKnown = new float[]{0.5f, 0.6f, 0.7f};
         FloatMatrix blasYKnown = new FloatMatrix(yKnown);
 
-        wl.setKernel(GaussianProcessKernels.makeKernel(GaussianProcessKernels.KernelType.SQUARED_EXP, wl));
+        wl.setKernelForTest(GaussianProcessKernels.makeKernel(GaussianProcessKernels.KernelType.SQUARED_EXP, wl));
 
         GaussianProcessPrior.ValueAndStd fnAndStd = wl.predictFnValAndStd(x, xKnown, blasYKnown);
         Assert.assertEquals(0.84939, fnAndStd.value, 1e-5);

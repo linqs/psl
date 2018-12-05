@@ -41,7 +41,6 @@
 			<artifactId>jplasma</artifactId>
 			<version>1.2</version>
 		</dependency>
-		<!-- https://mvnrepository.com/artifact/org.jblas/jblas -->
 		<dependency>
 			<groupId>org.jblas</groupId>
 			<artifactId>jblas</artifactId>
