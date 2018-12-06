@@ -192,7 +192,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
 
     protected List<WeightConfig> getConfigs() {
         int numMutableRules = this.mutableRules.size();
-        List<WeightConfig> configs = new ArrayList();
+        List<WeightConfig> configs = new ArrayList<WeightConfig>();
 
         float max = 1.0f;
         float min = 1.0f / MAX_RAND_INT_VAL;
@@ -260,7 +260,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
 
     private List<WeightConfig> getRandomConfigs() {
         int numMutableRules = this.mutableRules.size();
-        List<WeightConfig> configs = new ArrayList();
+        List<WeightConfig> configs = new ArrayList<WeightConfig>();
         for (int i = 0; i < maxConfigs; i++) {
             WeightConfig curConfig = new WeightConfig(new float[numMutableRules]);
             for (int j = 0; j < numMutableRules; j++) {
@@ -341,7 +341,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
 
         @Override
         public String toString() {
-            return String.format("(config: '%s', val: %f, std: %f)", StringUtils.join(", ", config), valueAndStd.value, valueAndStd.std);
+            return String.format("(weights: [%s], val: %f, std: %f)", StringUtils.join(", ", config), valueAndStd.value, valueAndStd.std);
         }
     }
 }
