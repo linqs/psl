@@ -41,6 +41,36 @@ public final class StringUtils {
         return ints;
     }
 
+    public static long[] splitLong(String text, char delim) {
+        return splitLong(text, "" + delim);
+    }
+
+    public static long[] splitLong(String text, String delim) {
+        String[] parts = text.split(delim);
+
+        long[] longs = new long[parts.length];
+        for (int i = 0; i < parts.length; i++) {
+            longs[i] = Long.parseLong(parts[i]);
+        }
+
+        return longs;
+    }
+
+    public static float[] splitFloat(String text, char delim) {
+        return splitFloat(text, "" + delim);
+    }
+
+    public static float[] splitFloat(String text, String delim) {
+        String[] parts = text.split(delim);
+
+        float[] floats = new float[parts.length];
+        for (int i = 0; i < parts.length; i++) {
+            floats[i] = Float.parseFloat(parts[i]);
+        }
+
+        return floats;
+    }
+
     public static double[] splitDouble(String text, char delim) {
         return splitDouble(text, "" + delim);
     }
@@ -97,6 +127,42 @@ public final class StringUtils {
     }
 
     public static String join(String delim, int... parts) {
+        StringBuilder builder = new StringBuilder(parts.length * 2 - 1);
+
+        for (int i = 0; i < parts.length; i++) {
+            builder.append(parts[i]);
+
+            if (i != parts.length - 1) {
+                builder.append(delim);
+            }
+        }
+
+        return builder.toString();
+    }
+
+    public static String join(char delim, long... parts) {
+        return join("" + delim, parts);
+    }
+
+    public static String join(String delim, long... parts) {
+        StringBuilder builder = new StringBuilder(parts.length * 2 - 1);
+
+        for (int i = 0; i < parts.length; i++) {
+            builder.append(parts[i]);
+
+            if (i != parts.length - 1) {
+                builder.append(delim);
+            }
+        }
+
+        return builder.toString();
+    }
+
+    public static String join(char delim, float... parts) {
+        return join("" + delim, parts);
+    }
+
+    public static String join(String delim, float... parts) {
         StringBuilder builder = new StringBuilder(parts.length * 2 - 1);
 
         for (int i = 0; i < parts.length; i++) {
