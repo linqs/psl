@@ -43,14 +43,35 @@ public class ContinuousRandomGridSearch extends BaseGridSearch {
     public static final String MAX_LOCATIONS_KEY = CONFIG_PREFIX + ".maxlocations";
     public static final int MAX_LOCATIONS_DEFAULT = 250;
 
-    // TODO(eriq): Config
-    public static final double BASE_WEIGHT = 0.20;
-    public static final double VARIANCE = 0.10;
+    /**
+     * The base weight of a rule.
+     * The exact use of this value depends on UNIFORM_BASE.
+     * This will either be used as the mean of the Gaussian from which a weight will be sampled,
+     * or as the smallest weight that all rules will be started from.
+     */
+    public static final String BASE_WEIGHT_KEY = CONFIG_PREFIX + ".baseweight";
+    public static final double BASE_WEIGHT_DEFAULT = 0.40;
+
+    /**
+     * The variance used when sampling the weights from a Gaussian.
+     */
+    public static final String VARIANCE_KEY = CONFIG_PREFIX + ".variance";
+    public static final double VARIANCE_DEFAULT = 0.20;
+
+    /**
+     * The variance used when sampling the weights from a Gaussian.
+     */
+    public static final String UNIFORM_BASE_KEY = CONFIG_PREFIX + ".uniformbase";
+    public static final boolean UNIFORM_BASE_DEFAULT = false;
 
     /**
      * Means for the Gaussian's that we will sample rule weights from.
      */
     private double[] weightMeans;
+
+    private double baseWeight;
+    private double variance;
+    private boolean uniformBase;
 
     public ContinuousRandomGridSearch(Model model, Database rvDB, Database observedDB) {
         this(model.getRules(), rvDB, observedDB);
@@ -60,6 +81,10 @@ public class ContinuousRandomGridSearch extends BaseGridSearch {
         super(rules, rvDB, observedDB);
 
         numLocations = Config.getInt(MAX_LOCATIONS_KEY, MAX_LOCATIONS_DEFAULT);
+        baseWeight = Config.getDouble(BASE_WEIGHT_KEY, BASE_WEIGHT_DEFAULT);
+        variance = Config.getDouble(VARIANCE_KEY, VARIANCE_DEFAULT);
+        uniformBase = Config.getBoolean(UNIFORM_BASE_KEY, UNIFORM_BASE_DEFAULT);
+
         weightMeans = null;
     }
 
@@ -72,7 +97,7 @@ public class ContinuousRandomGridSearch extends BaseGridSearch {
     protected void getWeights(double[] weights) {
         for (int i = 0; i < mutableRules.size(); i++) {
             // Rand give Gaussian with mean = 0.0 and variance = 1.0.
-            weights[i] = RandUtils.nextDouble() * Math.sqrt(VARIANCE) + weightMeans[i];
+            weights[i] = RandUtils.nextDouble() * Math.sqrt(variance) + weightMeans[i];
         }
     }
 
@@ -88,6 +113,16 @@ public class ContinuousRandomGridSearch extends BaseGridSearch {
      * and scale all others by that smallest.
      */
     private void computeWeightMeans() {
+        weightMeans = new double[mutableRules.size()];
+
+        if (uniformBase) {
+            for (int i = 0; i < mutableRules.size(); i++) {
+                weightMeans[i] = baseWeight;
+            }
+
+            return;
+        }
+
         // Set all the weights to 1.0 to get a baseline on the number of satisfied ground rules.
         for (WeightedRule rule : mutableRules) {
             rule.setWeight(1.0);
@@ -95,8 +130,6 @@ public class ContinuousRandomGridSearch extends BaseGridSearch {
 
         inMPEState = false;
         computeMPEState();
-
-        weightMeans = new double[mutableRules.size()];
 
         double smallestCompatability = 1.0;
 
@@ -124,7 +157,7 @@ public class ContinuousRandomGridSearch extends BaseGridSearch {
         }
 
         for (int i = 0; i < mutableRules.size(); i++) {
-            weightMeans[i] = BASE_WEIGHT * weightMeans[i] / smallestCompatability;
+            weightMeans[i] = baseWeight * weightMeans[i] / smallestCompatability;
         }
     }
 }
