@@ -66,7 +66,7 @@ public class UnweightedArithmeticRule extends AbstractArithmeticRule implements 
         s.append(expression);
         s.append(" .");
         for (Map.Entry<SummationVariable, Formula> e : filters.entrySet()) {
-            s.append("\n{");
+            s.append("   {");
             // Appends the corresponding Variable, not the SummationVariable, to leave out the '+'
             s.append(e.getKey().getVariable());
             s.append(" : ");
