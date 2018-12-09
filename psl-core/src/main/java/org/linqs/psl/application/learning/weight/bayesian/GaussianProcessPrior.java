@@ -5,12 +5,13 @@ import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.util.FloatMatrix;
+import org.linqs.psl.util.ListUtils;
+import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
 import org.linqs.psl.util.RandUtils;
 import org.linqs.psl.util.StringUtils;
 
-import org.jblas.FloatMatrix;
-import org.jblas.Solve;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,14 +87,6 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         exploredConfigs = new ArrayList<>();
     }
 
-    protected FloatMatrix getKnownDataStdInv() {
-        if (knownDataStdInv == null) {
-            return null;
-        }
-
-        return knownDataStdInv.dup();
-    }
-
     /**
      * Only for testing.
      */
@@ -108,6 +101,13 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         this.kernel = kernel;
     }
 
+    /**
+     * Only for testing.
+     */
+    protected void setBlasYKnownForTest(FloatMatrix blasYKnown) {
+        this.blasYKnown = blasYKnown;
+    }
+
     @Override
     protected void doLearn() {
         // Very important to define a good kernel.
@@ -116,7 +116,6 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         reset();
 
         List<Float> exploredFnVal = new ArrayList<Float>();
-        final ComputePredictionFunctionValueWorker fnValWorker = new ComputePredictionFunctionValueWorker();
 
         WeightConfig bestConfig = null;
         float bestVal = 0.0f;
@@ -143,18 +142,31 @@ public class GaussianProcessPrior extends WeightLearningApplication {
             log.info(String.format("Iteration %d -- Config Picked: %s, Curent Best Config: %s.", (iteration + 1), exploredConfigs.get(iteration), bestConfig));
 
             int numKnown = exploredFnVal.size();
-            knownDataStdInv = new FloatMatrix(numKnown, numKnown);
+            knownDataStdInv = FloatMatrix.zeroes(numKnown, numKnown);
             for (int i = 0; i < numKnown; i++) {
                 for (int j = 0; j < numKnown; j++) {
-                    knownDataStdInv.put(i, j, kernel.kernel(exploredConfigs.get(i).config, exploredConfigs.get(j).config));
+                    knownDataStdInv.set(i, j, kernel.kernel(exploredConfigs.get(i).config, exploredConfigs.get(j).config));
                 }
             }
 
-            knownDataStdInv = Solve.solve(knownDataStdInv, FloatMatrix.eye(numKnown));
-            // TODO(eriq): Is the dup necessary?
-            blasYKnown = (new FloatMatrix(exploredFnVal)).dup();
+            // TEST(eriq): Do we really need an inverse here?
+            //  (Finding the inverse is relativley expensive and it is usually better to just solve an actualy equation
+            //  that will intermitently use an inverse.)
+            //  https://www.johndcook.com/blog/2010/01/19/dont-invert-that-matrix/
+            knownDataStdInv = knownDataStdInv.inverse();
 
-            Parallel.foreach(configs, fnValWorker);
+            // TODO(eriq): Is the allocation necessary?
+            blasYKnown = FloatMatrix.columnVector(ListUtils.toPrimitiveFloatArray(exploredFnVal), false);
+
+            // Re-construct the worker each iteration so the data buffer is sized correctly.
+            ComputePredictionFunctionValueWorker fnValWorker = new ComputePredictionFunctionValueWorker();
+            // TEST(eriq): Test with no threading first.
+            // Parallel.foreach(configs, fnValWorker);
+            int index = 0;
+            for (WeightConfig weightConfig : configs) {
+                fnValWorker.work(index, weightConfig);
+                index++;
+            }
 
             // Early stopping check.
             allStdSmall = true;
@@ -175,9 +187,20 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     }
 
     private class ComputePredictionFunctionValueWorker extends Parallel.Worker<WeightConfig> {
+        private float[] xyStdData;
+
+        public ComputePredictionFunctionValueWorker() {
+            xyStdData = new float[blasYKnown.numRows()];
+        }
+
+        @Override
+        public Object clone() {
+            return new ComputePredictionFunctionValueWorker();
+        }
+
         @Override
         public void work(int index, WeightConfig item) {
-            ValueAndStd valAndStd = predictFnValAndStd(configs.get(index).config, exploredConfigs, blasYKnown);
+            ValueAndStd valAndStd = predictFnValAndStd(configs.get(index).config, exploredConfigs, xyStdData);
             configs.get(index).valueAndStd = valAndStd;
         }
     }
@@ -271,15 +294,23 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         return configs;
     }
 
-    protected ValueAndStd predictFnValAndStd(float[] x, List<WeightConfig> xKnown, FloatMatrix blasYKnown) {
+    /**
+     * Do the prediction.
+     *
+     * @param xyStdData A correctly-sized buffer to perform computations with.
+     *  Will get modified.
+     */
+    protected ValueAndStd predictFnValAndStd(float[] x, List<WeightConfig> xKnown, float[] xyStdData) {
         ValueAndStd fnAndStd = new ValueAndStd();
-        FloatMatrix xyStd = FloatMatrix.zeros(blasYKnown.length);
-        for (int i = 0; i < blasYKnown.length; i++) {
-            xyStd.put(i, kernel.kernel(x, xKnown.get(i).config));
-        }
 
-        fnAndStd.value = xyStd.transpose().mmul(knownDataStdInv).dot(blasYKnown);
-        fnAndStd.std = kernel.kernel(x,x) - xyStd.transpose().mmul(knownDataStdInv).dot(xyStd);
+        for (int i = 0; i < xyStdData.length; i++) {
+            xyStdData[i] = kernel.kernel(x, xKnown.get(i).config);
+        }
+        FloatMatrix xyStd = FloatMatrix.rowVector(xyStdData, false);
+
+        fnAndStd.value = xyStd.mul(knownDataStdInv).dot(blasYKnown);
+        fnAndStd.std = kernel.kernel(x, x) - xyStd.mul(knownDataStdInv).dot(xyStd);
+
         return fnAndStd;
     }
 

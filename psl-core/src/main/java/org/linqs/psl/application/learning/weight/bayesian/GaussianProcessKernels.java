@@ -1,8 +1,7 @@
 package org.linqs.psl.application.learning.weight.bayesian;
 
-import org.jblas.FloatMatrix;
-import org.jblas.MatrixFunctions;
 import org.linqs.psl.config.Config;
+import org.linqs.psl.util.FloatMatrix;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -58,28 +57,35 @@ public class GaussianProcessKernels {
     }
 
     public interface Kernel {
+        /**
+         * Compute the kernel function.
+         * The passed in points will be untouched and caller keeps ownership.
+         */
         public float kernel(float[] point1, float[] point2);
     }
 
     public static class SquaredExpKernel implements Kernel {
-        private FloatMatrix weights;
+        private FloatMatrix scalingWeights;
         private boolean weighted;
         private float scale;
         private float relDep;
         private Space space;
 
-        // Weights are the number of groundings for a rule divided by total number of groundings.
-        // The idea is that rules with lesser grounding will need bigger jumps to make a difference.
-        public SquaredExpKernel(float[] weights) {
-            this(new FloatMatrix(weights), true);
+        /**
+         * Weights are the number of groundings for a rule divided by total number of groundings.
+         * The idea is that rules with lesser grounding will need bigger jumps to make a difference.
+         * Caller loses ownership of the weights.
+         */
+        public SquaredExpKernel(float[] scalingWeights) {
+            this(FloatMatrix.columnVector(scalingWeights), true);
         }
 
         public SquaredExpKernel() {
             this(null, false);
         }
 
-        public SquaredExpKernel(FloatMatrix weights, boolean weighted) {
-            this.weights = weights;
+        private SquaredExpKernel(FloatMatrix scalingWeights, boolean weighted) {
+            this.scalingWeights = scalingWeights;
             this.weighted = weighted;
 
             scale = Config.getFloat(SCALE_KEY, SCALE_DEFAULT);
@@ -90,29 +96,41 @@ public class GaussianProcessKernels {
         // scale * np.exp( -0.5 * relDep * ||wx - wy||_2)
         @Override
         public float kernel(float[] point1, float[] point2) {
-            FloatMatrix pt1 = new FloatMatrix(point1);
-            FloatMatrix pt2 = new FloatMatrix(point2);
+            assert(point1.length == point2.length);
+
+            // TEST(eriq): Can we do this without allocation (make the points matrices?)?
+            //  Would mean possible allocations later in method (eg space = LS).
+
+            FloatMatrix pt1 = FloatMatrix.columnVector(point1);
+            FloatMatrix pt2 = FloatMatrix.columnVector(point2);
 
             if (this.weighted) {
-                pt1 = pt1.mul(this.weights);
-                pt2 = pt2.mul(this.weights);
+                pt1.elementMul(scalingWeights, true);
+                pt2.elementMul(scalingWeights, true);
             }
 
-            FloatMatrix diff = null;
+            FloatMatrix diff;
 
             switch (space) {
                 case OS:
-                    diff = pt1.sub(pt2);
+                    diff = pt1.elementSub(pt2, false);
                     break;
 
                 case LS:
-                    diff = MatrixFunctions.log(pt1).sub(MatrixFunctions.log(pt2));
+                    diff = pt1.elementLog(true).elementSub(pt2.elementLog(true));
                     break;
 
                 case SS:
-                    pt1 = MatrixFunctions.log(pt1).sub((float)Math.log(pt1.get(0)));
-                    pt2 = MatrixFunctions.log(pt2).sub((float)Math.log(pt2.get(0)));
-                    diff = pt1.sub(pt2);
+                    // [log(x[i]) - log(x[0]) for i in range(len(point))]
+
+                    float pt1LogBaseline = (float)Math.log(pt1.get(0, 0));
+                    float pt2LogBaseline = (float)Math.log(pt2.get(0, 0));
+
+                    pt1.elementLog(true).sub(pt1LogBaseline);
+                    pt2.elementLog(true).sub(pt2LogBaseline);
+
+                    diff = pt1.elementSub(pt2);
+
                     break;
 
                 default:
