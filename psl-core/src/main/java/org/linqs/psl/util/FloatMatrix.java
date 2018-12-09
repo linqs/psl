@@ -122,6 +122,16 @@ public final class FloatMatrix {
     }
 
     /**
+     * Take on all the given information.
+     * This is just like calling the constructor, except no allocation will occur.
+     */
+    public void assume(float[] data, int numRows, int numCols) {
+        this.data = data;
+        this.numRows = numRows;
+        this.numCols = numCols;
+    }
+
+    /**
      * Make a zero matrix.
      */
     public static FloatMatrix zeroes(int numRows, int numCols) {

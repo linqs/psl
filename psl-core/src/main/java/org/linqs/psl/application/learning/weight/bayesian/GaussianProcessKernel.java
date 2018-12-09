@@ -7,6 +7,9 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * All kernel methods MUST be threadsafe.
+ */
 public abstract class GaussianProcessKernel {
     public static final String CONFIG_PREFIX = "gppker";
 
@@ -69,8 +72,9 @@ public abstract class GaussianProcessKernel {
       * The use of the buffers must be theadsafe and there are no requirements or guarentees on the
       * contents of the buffers before/after invocation (except that they are sized
       * the same as the points).
+      * The matrices will be modified.
       */
-    public float kernel(float[] point1, float[] point2, float[] buffer1, float[] buffer2) {
+    public float kernel(float[] point1, float[] point2, float[] buffer1, float[] buffer2, FloatMatrix matrixShell1, FloatMatrix matrixShell2) {
         assert(point1.length == point2.length);
         assert(buffer1.length == buffer2.length);
         assert(point1.length == buffer1.length);
@@ -80,17 +84,17 @@ public abstract class GaussianProcessKernel {
             buffer2[i] = point2[i];
         }
 
-        FloatMatrix pt1 = new FloatMatrix(buffer1, buffer1.length, 1, false);
-        FloatMatrix pt2 = new FloatMatrix(buffer2, buffer2.length, 1, false);
+        matrixShell1.assume(buffer1, buffer1.length, 1);
+        matrixShell2.assume(buffer2, buffer2.length, 1);
 
-        return kernel(pt1, pt2);
+        return kernel(matrixShell1, matrixShell2);
     }
 
     /**
       * Compute the kernels, but allocate new buffer for the computation.
       */
     public float kernel(float[] point1, float[] point2) {
-        return kernel(point1, point2, new float[point1.length], new float[point2.length]);
+        return kernel(point1, point2, new float[point1.length], new float[point2.length], new FloatMatrix(), new FloatMatrix());
     }
 
     public static GaussianProcessKernel makeKernel(KernelType type, GaussianProcessPrior method) {
