@@ -69,9 +69,9 @@ public class GaussianProcessPriorTest extends WeightLearningTest {
 
     @Test
     public void testPredictFnValAndStd() {
-        Config.addProperty(GaussianProcessKernels.REL_DEP_KEY, 100);
-        Config.addProperty(GaussianProcessKernels.SCALE_KEY, 1.0);
-        Config.addProperty(GaussianProcessKernels.SPACE_KEY, GaussianProcessKernels.Space.OS);
+        Config.addProperty(GaussianProcessKernel.REL_DEP_KEY, 100);
+        Config.addProperty(GaussianProcessKernel.SCALE_KEY, 1.0);
+        Config.addProperty(GaussianProcessKernel.SPACE_KEY, GaussianProcessKernel.Space.OS);
 
         GaussianProcessPrior wl = (GaussianProcessPrior) getWLA();
 
@@ -97,7 +97,7 @@ public class GaussianProcessPriorTest extends WeightLearningTest {
         float[] yKnown = new float[]{0.5f, 0.6f, 0.7f};
         FloatMatrix blasYKnown = FloatMatrix.columnVector(yKnown);
 
-        wl.setKernelForTest(GaussianProcessKernels.makeKernel(GaussianProcessKernels.KernelType.SQUARED_EXP, wl));
+        wl.setKernelForTest(GaussianProcessKernel.makeKernel(GaussianProcessKernel.KernelType.SQUARED_EXP, wl));
         wl.setBlasYKnownForTest(blasYKnown);
 
         GaussianProcessPrior.ValueAndStd fnAndStd = wl.predictFnValAndStd(x, xKnown, new float[blasYKnown.size()]);
@@ -107,11 +107,11 @@ public class GaussianProcessPriorTest extends WeightLearningTest {
 
     @Test
     public void testDoLearn() {
-        Config.addProperty(GaussianProcessKernels.REL_DEP_KEY, 1);
-        Config.addProperty(GaussianProcessKernels.SPACE_KEY, GaussianProcessKernels.Space.OS);
+        Config.addProperty(GaussianProcessKernel.REL_DEP_KEY, 1);
+        Config.addProperty(GaussianProcessKernel.SPACE_KEY, GaussianProcessKernel.Space.OS);
         Config.addProperty(GaussianProcessPrior.MAX_CONFIGS_KEY, 5);
         Config.addProperty(GaussianProcessPrior.MAX_ITERATIONS_KEY, 3);
-        Config.addProperty(GaussianProcessPrior.KERNEL_KEY, GaussianProcessKernels.KernelType.SQUARED_EXP);
+        Config.addProperty(GaussianProcessPrior.KERNEL_KEY, GaussianProcessKernel.KernelType.SQUARED_EXP);
         Config.addProperty(GaussianProcessPrior.RANDOM_CONFIGS_ONLY_KEY, false);
 
         GaussianProcessPrior wl = (GaussianProcessPrior) getWLALocal();

@@ -25,7 +25,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     public static final String CONFIG_PREFIX = "gpp";
 
     public static final String KERNEL_KEY = CONFIG_PREFIX + ".kernel";
-    public static final String KERNEL_DEFAULT = GaussianProcessKernels.KernelType.SQUARED_EXP.toString();
+    public static final String KERNEL_DEFAULT = GaussianProcessKernel.KernelType.SQUARED_EXP.toString();
 
     public static final String MAX_ITERATIONS_KEY = CONFIG_PREFIX + ".maxiterations";
     public static final int MAX_ITERATIONS_DEFAULT = 25;
@@ -45,7 +45,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     public static final int MAX_RAND_INT_VAL = 100000000;
     public static final float SMALL_VALUE = 0.4f;
 
-    private GaussianProcessKernels.KernelType kernelType;
+    private GaussianProcessKernel.KernelType kernelType;
     private int maxIterations;
     private int maxConfigs;
     private float exploration;
@@ -54,8 +54,8 @@ public class GaussianProcessPrior extends WeightLearningApplication {
 
     private float minConfigVal;
     private FloatMatrix knownDataStdInv;
-    private GaussianProcessKernels.Kernel kernel;
-    private GaussianProcessKernels.Space space;
+    private GaussianProcessKernel kernel;
+    private GaussianProcessKernel.Space space;
     private List<WeightConfig> configs;
     private List<WeightConfig> exploredConfigs;
     private FloatMatrix blasYKnown;
@@ -63,7 +63,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     public GaussianProcessPrior(List<Rule> rules, Database rvDB, Database observedDB) {
         super(rules, rvDB, observedDB, false);
 
-        kernelType = GaussianProcessKernels.KernelType.valueOf(
+        kernelType = GaussianProcessKernel.KernelType.valueOf(
                 Config.getString(KERNEL_KEY, KERNEL_DEFAULT).toUpperCase());
 
         maxIterations = Config.getInt(MAX_ITERATIONS_KEY, MAX_ITERATIONS_DEFAULT);
@@ -72,8 +72,8 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         randomConfigsOnly = Config.getBoolean(RANDOM_CONFIGS_ONLY_KEY, RANDOM_CONFIGS_ONLY_DEFAULT);
         earlyStopping = Config.getBoolean(EARLY_STOPPING_KEY, EARLY_STOPPING_DEFAULT);
 
-        space = GaussianProcessKernels.Space.valueOf(
-                Config.getString(GaussianProcessKernels.SPACE_KEY, GaussianProcessKernels.SPACE_DEFAULT));
+        space = GaussianProcessKernel.Space.valueOf(
+                Config.getString(GaussianProcessKernel.SPACE_KEY, GaussianProcessKernel.SPACE_DEFAULT));
 
         minConfigVal = 1.0f / MAX_RAND_INT_VAL;
     }
@@ -97,7 +97,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     /**
      * Only for testing.
      */
-    protected void setKernelForTest(GaussianProcessKernels.Kernel kernel) {
+    protected void setKernelForTest(GaussianProcessKernel kernel) {
         this.kernel = kernel;
     }
 
@@ -111,7 +111,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     @Override
     protected void doLearn() {
         // Very important to define a good kernel.
-        kernel = GaussianProcessKernels.makeKernel(kernelType, this);
+        kernel = GaussianProcessKernel.makeKernel(kernelType, this);
 
         reset();
 
@@ -158,6 +158,9 @@ public class GaussianProcessPrior extends WeightLearningApplication {
             // TODO(eriq): Is the allocation necessary?
             blasYKnown = FloatMatrix.columnVector(ListUtils.toPrimitiveFloatArray(exploredFnVal), false);
 
+            // TEST
+            log.info("TEST2: -- NumKnown: {}, Explored: {}, Configs: {}", numKnown, exploredFnVal.size(), configs.size());
+
             // Re-construct the worker each iteration so the data buffer is sized correctly.
             ComputePredictionFunctionValueWorker fnValWorker = new ComputePredictionFunctionValueWorker();
             // TEST(eriq): Test with no threading first.
@@ -188,9 +191,13 @@ public class GaussianProcessPrior extends WeightLearningApplication {
 
     private class ComputePredictionFunctionValueWorker extends Parallel.Worker<WeightConfig> {
         private float[] xyStdData;
+        private float[] kernelBuffer1;
+        private float[] kernelBuffer2;
 
         public ComputePredictionFunctionValueWorker() {
             xyStdData = new float[blasYKnown.numRows()];
+            kernelBuffer1 = new float[mutableRules.size()];
+            kernelBuffer2 = new float[mutableRules.size()];
         }
 
         @Override
@@ -200,7 +207,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
 
         @Override
         public void work(int index, WeightConfig item) {
-            ValueAndStd valAndStd = predictFnValAndStd(configs.get(index).config, exploredConfigs, xyStdData);
+            ValueAndStd valAndStd = predictFnValAndStd(configs.get(index).config, exploredConfigs, xyStdData, kernelBuffer1, kernelBuffer2);
             configs.get(index).valueAndStd = valAndStd;
         }
     }
@@ -220,7 +227,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         float max = 1.0f;
         float min = 1.0f / MAX_RAND_INT_VAL;
 
-        if (space == GaussianProcessKernels.Space.OS) {
+        if (space == GaussianProcessKernel.Space.OS) {
             min = 0.0f;
         }
 
@@ -294,22 +301,34 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         return configs;
     }
 
+    protected ValueAndStd predictFnValAndStd(float[] x, List<WeightConfig> xKnown, float[] xyStdData) {
+        return predictFnValAndStd(x, xKnown, xyStdData, new float[x.length], new float[x.length]);
+    }
+
     /**
      * Do the prediction.
      *
      * @param xyStdData A correctly-sized buffer to perform computations with.
      *  Will get modified.
      */
-    protected ValueAndStd predictFnValAndStd(float[] x, List<WeightConfig> xKnown, float[] xyStdData) {
+    protected ValueAndStd predictFnValAndStd(float[] x, List<WeightConfig> xKnown, float[] xyStdData, float[] kernelBuffer1, float[] kernelBuffer2) {
         ValueAndStd fnAndStd = new ValueAndStd();
 
         for (int i = 0; i < xyStdData.length; i++) {
-            xyStdData[i] = kernel.kernel(x, xKnown.get(i).config);
+            xyStdData[i] = kernel.kernel(x, xKnown.get(i).config, kernelBuffer1, kernelBuffer2);
         }
         FloatMatrix xyStd = FloatMatrix.rowVector(xyStdData, false);
 
-        fnAndStd.value = xyStd.mul(knownDataStdInv).dot(blasYKnown);
-        fnAndStd.std = kernel.kernel(x, x) - xyStd.mul(knownDataStdInv).dot(xyStd);
+        // TEST
+        // log.info("TEST3a -- ({} x {}) X ({} x {})", xyStd.numRows(), xyStd.numCols(), knownDataStdInv.numRows(), knownDataStdInv.numCols());
+
+        FloatMatrix product = xyStd.mul(knownDataStdInv);
+
+        // TEST
+        // log.info("TEST3b");
+
+        fnAndStd.value = product.dot(blasYKnown);
+        fnAndStd.std = kernel.kernel(x, x, kernelBuffer1, kernelBuffer2) - product.dot(xyStd);
 
         return fnAndStd;
     }
