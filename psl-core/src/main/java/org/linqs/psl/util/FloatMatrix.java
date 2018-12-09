@@ -649,7 +649,20 @@ public final class FloatMatrix {
      * Both A and B can be transposed.
      */
     public FloatMatrix mul(FloatMatrix b, boolean transposeA, boolean transposeB, float alpha) {
-        return blas_sgemm(b, null, transposeA, transposeB, alpha, 0.0f);
+        return mul(b, null, transposeA, transposeB, alpha, 0.0f);
+    }
+
+    /**
+     * Matrix multiplication.
+     * Performs: alpha * AB + beta * C.
+     * Both A and B can be transposed.
+     * The result will be written INTO C (and returned).
+     *
+     * @param c This matrix is used to store the result from BLAS, and it will be returned.
+     *  If null, a new matrix will be allocated for the result.
+     */
+    public FloatMatrix mul(FloatMatrix b, FloatMatrix c, boolean transposeA, boolean transposeB, float alpha, float beta) {
+        return blas_sgemm(b, c, transposeA, transposeB, alpha, beta);
     }
 
     /**
