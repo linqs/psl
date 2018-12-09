@@ -18,9 +18,6 @@ import java.util.List;
 public class GaussianProcessPriorTest extends WeightLearningTest {
     @Override
     protected WeightLearningApplication getWLA() {
-        // TEST
-        org.linqs.psl.PSLTest.initLogger("TRACE");
-
         return new GaussianProcessPrior(this.info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
     }
 

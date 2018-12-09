@@ -274,14 +274,14 @@ public final class FloatMatrix {
     @Override
     public String toString() {
         if (data == null || numRows == 0) {
-            return "{}";
+            return "[]";
         }
 
         StringBuilder builder = new StringBuilder();
 
-        builder.append("{");
+        builder.append("[");
         for (int i = 0; i < numRows; i++) {
-            builder.append("{");
+            builder.append("[");
 
             for (int j = 0; j < numCols; j++) {
                 builder.append(get(i, j));
@@ -291,13 +291,13 @@ public final class FloatMatrix {
                 }
             }
 
-            builder.append("}");
+            builder.append("]");
 
             if (i != (numRows - 1)) {
                 builder.append(", ");
             }
         }
-        builder.append("}");
+        builder.append("]");
 
         return builder.toString();
     }

@@ -149,21 +149,15 @@ public class GaussianProcessPrior extends WeightLearningApplication {
                 }
             }
 
-            // TEST(eriq): Do we really need an inverse here?
-            //  (Finding the inverse is relativley expensive and it is usually better to just solve an actualy equation
-            //  that will intermitently use an inverse.)
-            //  https://www.johndcook.com/blog/2010/01/19/dont-invert-that-matrix/
             knownDataStdInv = knownDataStdInv.inverse();
 
-            // TODO(eriq): Is the allocation necessary?
             blasYKnown = FloatMatrix.columnVector(ListUtils.toPrimitiveFloatArray(exploredFnVal), false);
-
-            // TEST
-            log.info("TEST2: -- NumKnown: {}, Explored: {}, Configs: {}", numKnown, exploredFnVal.size(), configs.size());
 
             // Re-construct the worker each iteration so the data buffer is sized correctly.
             ComputePredictionFunctionValueWorker fnValWorker = new ComputePredictionFunctionValueWorker();
-            // TEST(eriq): Test with no threading first.
+
+            // TODO(eriq): Because most of the time is taken by BLAS methods (multiply and dot),
+            // parallelism will not help here.
             // Parallel.foreach(configs, fnValWorker);
             int index = 0;
             for (WeightConfig weightConfig : configs) {
@@ -337,18 +331,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
 
         FloatMatrix xyStd = xyStdMatrixShell;
 
-        // TEST
-        /*
-        if (xyStd.numRows() > 1 || xyStd.numCols() > 1) {
-            log.info("TEST3a -- ({} x {}) X ({} x {})", xyStd.numRows(), xyStd.numCols(), knownDataStdInv.numRows(), knownDataStdInv.numCols());
-            log.info("TEST3b -- mulBuffer: ({} x {})", mulBuffer.numRows(), mulBuffer.numCols());
-        }
-        */
-
         FloatMatrix product = xyStd.mul(knownDataStdInv, mulBuffer, false, false, 1.0f, 0.0f);
-
-        // TEST
-        // log.info("TEST3b");
 
         fnAndStd.value = product.dot(blasYKnown);
         fnAndStd.std = kernel.kernel(x, x, kernelBuffer1, kernelBuffer2, kernelMatrixShell1, kernelMatrixShell2) - product.dot(xyStd);

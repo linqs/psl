@@ -19,7 +19,7 @@ public abstract class GaussianProcessKernel {
     // Smaller means longer dependence. Smaller better when number of rules large
     // TODO(sriram): learn this from data.
     public static final String REL_DEP_KEY = CONFIG_PREFIX + ".reldep";
-    public static float REL_DEP_DEFAULT = 1.0f;
+    public static float REL_DEP_DEFAULT = 0.01f;
 
     public static enum Space {
         SS, OS, LS
