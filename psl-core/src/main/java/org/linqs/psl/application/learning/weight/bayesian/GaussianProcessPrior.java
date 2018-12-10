@@ -193,13 +193,13 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         private FloatMatrix mulBuffer;
 
         public ComputePredictionFunctionValueWorker() {
-            xyStdData = new float[blasYKnown.numRows()];
+            xyStdData = new float[blasYKnown.size()];
             xyStdMatrixShell = new FloatMatrix();
             kernelBuffer1 = new float[mutableRules.size()];
             kernelBuffer2 = new float[mutableRules.size()];
             kernelMatrixShell1 = new FloatMatrix();
             kernelMatrixShell2 = new FloatMatrix();
-            mulBuffer = FloatMatrix.zeroes(1, blasYKnown.numRows());
+            mulBuffer = FloatMatrix.zeroes(1, blasYKnown.size());
         }
 
         @Override
@@ -307,10 +307,10 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     /**
      * predictFnValAndStd, but no memory sharing.
      */
-    protected ValueAndStd predictFnValAndStd(float[] x, List<WeightConfig> xKnown, float[] xyStdData) {
-        return predictFnValAndStd(x, xKnown, xyStdData,
+    protected ValueAndStd predictFnValAndStd(float[] x, List<WeightConfig> xKnown) {
+        return predictFnValAndStd(x, xKnown, new float[blasYKnown.size()],
                 new float[x.length], new float[x.length], new FloatMatrix(), new FloatMatrix(),
-                new FloatMatrix(), FloatMatrix.zeroes(x.length, 1));
+                new FloatMatrix(), FloatMatrix.zeroes(1, x.length));
     }
 
     /**

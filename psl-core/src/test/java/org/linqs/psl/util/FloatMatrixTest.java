@@ -129,13 +129,13 @@ public class FloatMatrixTest {
        FloatMatrix matrix;
 
        matrix = new FloatMatrix();
-       assertEquals("{}", matrix.toString());
+       assertEquals("[]", matrix.toString());
 
        matrix = FloatMatrix.zeroes(1, 2);
-       assertEquals("{{0.0, 0.0}}", matrix.toString());
+       assertEquals("[[0.0, 0.0]]", matrix.toString());
 
        matrix = FloatMatrix.eye(3);
-       assertEquals("{{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}}", matrix.toString());
+       assertEquals("[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]", matrix.toString());
     }
 
     @Test

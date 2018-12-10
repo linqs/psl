@@ -18,10 +18,16 @@ import java.util.List;
 public class GaussianProcessPriorTest extends WeightLearningTest {
     @Override
     protected WeightLearningApplication getWLA() {
+        // Do less steps for tests.
+        Config.setProperty(GaussianProcessPrior.MAX_ITERATIONS_KEY, 2);
+
         return new GaussianProcessPrior(this.info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
     }
 
     protected WeightLearningApplication getWLALocal() {
+        // Do less steps for tests.
+        Config.setProperty(GaussianProcessPrior.MAX_ITERATIONS_KEY, 2);
+
         return new GPPTest(this.info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
     }
 
@@ -41,8 +47,8 @@ public class GaussianProcessPriorTest extends WeightLearningTest {
 
     @Test
     public void testGetConfigs() {
-        Config.addProperty(GaussianProcessPrior.MAX_CONFIGS_KEY, 5);
-        Config.addProperty(GaussianProcessPrior.RANDOM_CONFIGS_ONLY_KEY, false);
+        Config.setProperty(GaussianProcessPrior.MAX_CONFIGS_KEY, 5);
+        Config.setProperty(GaussianProcessPrior.RANDOM_CONFIGS_ONLY_KEY, false);
 
         GaussianProcessPrior wl = (GaussianProcessPrior)getWLA();
         List<GaussianProcessPrior.WeightConfig> configs = wl.getConfigs();
@@ -66,9 +72,9 @@ public class GaussianProcessPriorTest extends WeightLearningTest {
 
     @Test
     public void testPredictFnValAndStd() {
-        Config.addProperty(GaussianProcessKernel.REL_DEP_KEY, 100);
-        Config.addProperty(GaussianProcessKernel.SCALE_KEY, 1.0);
-        Config.addProperty(GaussianProcessKernel.SPACE_KEY, GaussianProcessKernel.Space.OS);
+        Config.setProperty(GaussianProcessKernel.REL_DEP_KEY, 100);
+        Config.setProperty(GaussianProcessKernel.SCALE_KEY, 1.0);
+        Config.setProperty(GaussianProcessKernel.SPACE_KEY, GaussianProcessKernel.Space.OS);
 
         GaussianProcessPrior wl = (GaussianProcessPrior) getWLA();
 
@@ -97,19 +103,19 @@ public class GaussianProcessPriorTest extends WeightLearningTest {
         wl.setKernelForTest(GaussianProcessKernel.makeKernel(GaussianProcessKernel.KernelType.SQUARED_EXP, wl));
         wl.setBlasYKnownForTest(blasYKnown);
 
-        GaussianProcessPrior.ValueAndStd fnAndStd = wl.predictFnValAndStd(x, xKnown, new float[blasYKnown.size()]);
+        GaussianProcessPrior.ValueAndStd fnAndStd = wl.predictFnValAndStd(x, xKnown);
         Assert.assertEquals(0.84939, fnAndStd.value, 1e-5);
         Assert.assertEquals(0.99656, fnAndStd.std, 1e-5);
     }
 
     @Test
     public void testDoLearn() {
-        Config.addProperty(GaussianProcessKernel.REL_DEP_KEY, 1);
-        Config.addProperty(GaussianProcessKernel.SPACE_KEY, GaussianProcessKernel.Space.OS);
-        Config.addProperty(GaussianProcessPrior.MAX_CONFIGS_KEY, 5);
-        Config.addProperty(GaussianProcessPrior.MAX_ITERATIONS_KEY, 3);
-        Config.addProperty(GaussianProcessPrior.KERNEL_KEY, GaussianProcessKernel.KernelType.SQUARED_EXP);
-        Config.addProperty(GaussianProcessPrior.RANDOM_CONFIGS_ONLY_KEY, false);
+        Config.setProperty(GaussianProcessKernel.REL_DEP_KEY, 1);
+        Config.setProperty(GaussianProcessKernel.SPACE_KEY, GaussianProcessKernel.Space.OS);
+        Config.setProperty(GaussianProcessPrior.MAX_CONFIGS_KEY, 5);
+        Config.setProperty(GaussianProcessPrior.MAX_ITERATIONS_KEY, 3);
+        Config.setProperty(GaussianProcessPrior.KERNEL_KEY, GaussianProcessKernel.KernelType.SQUARED_EXP);
+        Config.setProperty(GaussianProcessPrior.RANDOM_CONFIGS_ONLY_KEY, false);
 
         GaussianProcessPrior wl = (GaussianProcessPrior) getWLALocal();
         wl.doLearn();
