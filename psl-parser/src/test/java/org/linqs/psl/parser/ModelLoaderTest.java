@@ -458,10 +458,10 @@ public class ModelLoaderTest {
             "1.0 * SINGLE(A) + 1.0 * SINGLE(B) = 1.0 .",
             "1.0 * DOUBLE(+A, 'Foo') = 1.0 .",
             "1.0 * SINGLE(+A) + 1.0 * SINGLE(+B) = 1.0 .",
-            "1.0 * SINGLE(+A) = 1.0 .\n{A : SINGLE(A)}",
-            "1.0 * SINGLE(+A) = 1.0 .\n{A : ( SINGLE(A) | DOUBLE(A, A) )}",
-            "1.0 * DOUBLE(+A, B) = 1.0 .\n{A : SINGLE(B)}",
-            "1.0 * SINGLE(+A) + 1.0 * SINGLE(+B) = 1.0 .\n{A : SINGLE(A)}\n{B : SINGLE(B)}",
+            "1.0 * SINGLE(+A) = 1.0 .   {A : SINGLE(A)}",
+            "1.0 * SINGLE(+A) = 1.0 .   {A : ( SINGLE(A) | DOUBLE(A, A) )}",
+            "1.0 * DOUBLE(+A, B) = 1.0 .   {A : SINGLE(B)}",
+            "1.0 * SINGLE(+A) + 1.0 * SINGLE(+B) = 1.0 .   {A : SINGLE(A)}   {B : SINGLE(B)}",
             "|A| * SINGLE(+A) = 1.0 .",
             "|A| * SINGLE(+A) = |A| .",
             "|A| * SINGLE(+A) + |B| * SINGLE(+B) = 1.0 .",
@@ -612,9 +612,9 @@ public class ModelLoaderTest {
             "( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) .",
             "1.0: 1.0 * SINGLE(A) = 1.0 ^2",
             "1.0 * SINGLE(A) = 1.0 .",
-            "1.0 * SINGLE(+A) = 1.0 .\n{A : SINGLE(A)}",
-            "1.0: 1.0 * SINGLE(+A) = 1.0\n{A : SINGLE(A)}",
-            "1.0: 1.0 * SINGLE(+A) = 1.0 ^2\n{A : SINGLE(A)}",
+            "1.0 * SINGLE(+A) = 1.0 .   {A : SINGLE(A)}",
+            "1.0: 1.0 * SINGLE(+A) = 1.0   {A : SINGLE(A)}",
+            "1.0: 1.0 * SINGLE(+A) = 1.0 ^2   {A : SINGLE(A)}",
         };
 
         try {
@@ -648,16 +648,16 @@ public class ModelLoaderTest {
         String[] unweightedExpected = new String[]{
             "( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) .",
             "1.0 * SINGLE(A) = 1.0 .",
-            "1.0 * SINGLE(+A) = 1.0 .\n{A : SINGLE(A)}",
-            "1.0 * SINGLE(+A) + 1.0 * SINGLE(+B) = 1.0 .\n{A : SINGLE(A)}\n{B : SINGLE(B)}"
+            "1.0 * SINGLE(+A) = 1.0 .   {A : SINGLE(A)}",
+            "1.0 * SINGLE(+A) + 1.0 * SINGLE(+B) = 1.0 .   {A : SINGLE(A)}   {B : SINGLE(B)}"
         };
 
         // Weight all the variants with 5 and square them.
         String[] weightedExpected = new String[]{
             "5.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) ^2",
             "5.0: 1.0 * SINGLE(A) = 1.0 ^2",
-            "5.0: 1.0 * SINGLE(+A) = 1.0 ^2\n{A : SINGLE(A)}",
-            "5.0: 1.0 * SINGLE(+A) + 1.0 * SINGLE(+B) = 1.0 ^2\n{A : SINGLE(A)}\n{B : SINGLE(B)}"
+            "5.0: 1.0 * SINGLE(+A) = 1.0 ^2   {A : SINGLE(A)}",
+            "5.0: 1.0 * SINGLE(+A) + 1.0 * SINGLE(+B) = 1.0 ^2   {A : SINGLE(A)}   {B : SINGLE(B)}"
         };
 
         try {
@@ -790,20 +790,20 @@ public class ModelLoaderTest {
             "Single(+A) + Double(B, C) = 1 . {A: Single(A) && (Single(B) || Single(C))}\n" +
             "";
         String[] expected = new String[]{
-            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( SINGLE(A) | SINGLE(B) | SINGLE(C) )}",
-            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( SINGLE(A) & SINGLE(B) & SINGLE(C) )}",
-            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( SINGLE(A) | ( SINGLE(B) & SINGLE(C) ) )}",
-            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( ( SINGLE(A) & SINGLE(B) ) | SINGLE(C) )}",
+            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .   {A : ( SINGLE(A) | SINGLE(B) | SINGLE(C) )}",
+            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .   {A : ( SINGLE(A) & SINGLE(B) & SINGLE(C) )}",
+            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .   {A : ( SINGLE(A) | ( SINGLE(B) & SINGLE(C) ) )}",
+            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .   {A : ( ( SINGLE(A) & SINGLE(B) ) | SINGLE(C) )}",
 
-            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( SINGLE(A) | SINGLE(B) | SINGLE(C) )}",
-            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( SINGLE(A) | SINGLE(B) | SINGLE(C) )}",
-            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( SINGLE(A) & SINGLE(B) & SINGLE(C) )}",
-            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( SINGLE(A) & SINGLE(B) & SINGLE(C) )}",
+            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .   {A : ( SINGLE(A) | SINGLE(B) | SINGLE(C) )}",
+            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .   {A : ( SINGLE(A) | SINGLE(B) | SINGLE(C) )}",
+            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .   {A : ( SINGLE(A) & SINGLE(B) & SINGLE(C) )}",
+            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .   {A : ( SINGLE(A) & SINGLE(B) & SINGLE(C) )}",
 
-            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( ( SINGLE(A) & SINGLE(C) ) | ( SINGLE(B) & SINGLE(C) ) )}",
-            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( SINGLE(A) | ( SINGLE(B) & SINGLE(C) ) )}",
-            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( ( SINGLE(A) & SINGLE(B) ) | SINGLE(C) )}",
-            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( ( SINGLE(A) & SINGLE(B) ) | ( SINGLE(A) & SINGLE(C) ) )}"
+            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .   {A : ( ( SINGLE(A) & SINGLE(C) ) | ( SINGLE(B) & SINGLE(C) ) )}",
+            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .   {A : ( SINGLE(A) | ( SINGLE(B) & SINGLE(C) ) )}",
+            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .   {A : ( ( SINGLE(A) & SINGLE(B) ) | SINGLE(C) )}",
+            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .   {A : ( ( SINGLE(A) & SINGLE(B) ) | ( SINGLE(A) & SINGLE(C) ) )}"
         };
 
         PSLTest.assertModel(dataStore, input, expected);
