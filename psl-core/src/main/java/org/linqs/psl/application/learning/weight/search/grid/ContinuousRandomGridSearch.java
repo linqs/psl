@@ -59,10 +59,11 @@ public class ContinuousRandomGridSearch extends BaseGridSearch {
     public static final double VARIANCE_DEFAULT = 0.20;
 
     /**
-     * The variance used when sampling the weights from a Gaussian.
+     * If true, then use the same base weight as the Gaussian's mean when sampling the weight.
+     * Otherwise, use different base weights depending on the inital satisfaction of each rule.
      */
     public static final String UNIFORM_BASE_KEY = CONFIG_PREFIX + ".uniformbase";
-    public static final boolean UNIFORM_BASE_DEFAULT = false;
+    public static final boolean UNIFORM_BASE_DEFAULT = true;
 
     /**
      * Means for the Gaussian's that we will sample rule weights from.
