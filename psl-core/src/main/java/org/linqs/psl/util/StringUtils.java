@@ -86,24 +86,6 @@ public final class StringUtils {
         return doubles;
     }
 
-    public static String join(char delim, List<?> parts) {
-        return join("" + delim, parts);
-    }
-
-    public static String join(String delim, List<?> parts) {
-        StringBuilder builder = new StringBuilder(parts.size() * 2 - 1);
-
-        for (int i = 0; i < parts.size(); i++) {
-            builder.append(parts.get(i));
-
-            if (i != parts.size() - 1) {
-                builder.append(delim);
-            }
-        }
-
-        return builder.toString();
-    }
-
     public static String join(char delim, Object... parts) {
         return join("" + delim, parts);
     }

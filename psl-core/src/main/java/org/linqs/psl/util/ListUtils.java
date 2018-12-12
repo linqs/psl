@@ -57,4 +57,22 @@ public final class ListUtils {
         }
         return result;
     }
+
+    public static String join(char delim, List<? extends Object> parts) {
+        return join("" + delim, parts);
+    }
+
+    public static String join(String delim, List<? extends Object> parts) {
+        StringBuilder builder = new StringBuilder(parts.size() * 2 - 1);
+
+        for (int i = 0; i < parts.size(); i++) {
+            builder.append(parts.get(i));
+
+            if (i != parts.size() - 1) {
+                builder.append(delim);
+            }
+        }
+
+        return builder.toString();
+    }
 }

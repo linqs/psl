@@ -32,7 +32,7 @@ import org.linqs.psl.model.rule.arithmetic.WeightedArithmeticRule;
 import org.linqs.psl.model.rule.arithmetic.expression.SummationAtom;
 import org.linqs.psl.model.rule.arithmetic.expression.SummationAtomOrAtom;
 import org.linqs.psl.model.term.ConstantType;
-import org.linqs.psl.util.StringUtils;
+import org.linqs.psl.util.ListUtils;
 
 import org.junit.After;
 import org.junit.Before;
@@ -91,8 +91,8 @@ public class ModelLoaderTest {
         for (char i = 'A'; i < 'Z'; i++) {
             parts.add(String.format("Single(%c) & Double(%c, Z)", i, i));
         }
-        String input = String.format("1: %s >> Single(Z) ^2", StringUtils.join(" & ", parts));
-        String expected = String.format("1.0: ( %s ) >> SINGLE(Z) ^2", StringUtils.join(" & ", parts).toUpperCase());
+        String input = String.format("1: %s >> Single(Z) ^2", ListUtils.join(" & ", parts));
+        String expected = String.format("1.0: ( %s ) >> SINGLE(Z) ^2", ListUtils.join(" & ", parts).toUpperCase());
 
         PSLTest.assertModel(dataStore, input, new String[]{expected});
     }

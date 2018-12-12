@@ -22,6 +22,7 @@ import org.linqs.psl.database.rdbms.PredicateInfo;
 import org.linqs.psl.database.rdbms.TableStats;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.util.Parallel;
+import org.linqs.psl.util.ListUtils;
 import org.linqs.psl.util.StringUtils;
 
 import com.healthmarketscience.sqlbuilder.CreateTableQuery;
@@ -171,7 +172,7 @@ public class H2DatabaseDriver implements DatabaseDriver {
         sql.add("VALUES");
         sql.add("    (" + StringUtils.repeat("?", ", ", columns.length) + ")");
 
-        return StringUtils.join("\n", sql);
+        return ListUtils.join("\n", sql);
     }
 
     @Override
@@ -205,7 +206,7 @@ public class H2DatabaseDriver implements DatabaseDriver {
 
         try (
             Connection connection = getConnection();
-            PreparedStatement statement = connection.prepareStatement(StringUtils.join("\n", sql));
+            PreparedStatement statement = connection.prepareStatement(ListUtils.join("\n", sql));
             ResultSet result = statement.executeQuery();
         ) {
             while (result.next()) {
