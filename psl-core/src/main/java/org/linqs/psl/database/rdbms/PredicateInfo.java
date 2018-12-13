@@ -22,6 +22,7 @@ import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.util.Hash;
+import org.linqs.psl.util.ListUtils;
 import org.linqs.psl.util.StringUtils;
 
 import com.healthmarketscience.sqlbuilder.BinaryCondition;
@@ -230,7 +231,7 @@ public class PredicateInfo {
         // The partition column MUST be the last one (since H2 is super picky).
         uniqueColumns.add(PARTITION_COLUMN_NAME);
         if (uniqueColumns.size() > 1) {
-            createTable.addCustomConstraints("UNIQUE(" + StringUtils.join(", ", uniqueColumns) + ")");
+            createTable.addCustomConstraints("UNIQUE(" + ListUtils.join(", ", uniqueColumns) + ")");
         }
 
         // We have an additional constraint that all atoms in a partition must be unique.
@@ -246,7 +247,7 @@ public class PredicateInfo {
             }
             uniqueColumns.add(0, PARTITION_COLUMN_NAME);
 
-            createTable.addCustomConstraints("UNIQUE(" + StringUtils.join(", ", uniqueColumns) + ")");
+            createTable.addCustomConstraints("UNIQUE(" + ListUtils.join(", ", uniqueColumns) + ")");
         }
 
         try (Statement statement = connection.createStatement()) {

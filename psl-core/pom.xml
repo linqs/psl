@@ -29,17 +29,23 @@
         <version>2.2.0-SNAPSHOT</version>
     </parent>
 
-    <dependencies>
-        <!-- linear algebra dependencies -->
+	<dependencies>
+		<!-- linear algebra dependencies -->
+		<dependency>
+			<groupId>edu.emory.mathcs</groupId>
+			<artifactId>parallelcolt</artifactId>
+			<version>0.9.4</version>
+		</dependency>
+		<dependency>
+			<groupId>edu.emory.mathcs</groupId>
+			<artifactId>jplasma</artifactId>
+			<version>1.2</version>
+		</dependency>
         <dependency>
-            <groupId>edu.emory.mathcs</groupId>
-            <artifactId>parallelcolt</artifactId>
-            <version>0.9.4</version>
-        </dependency>
-        <dependency>
-            <groupId>edu.emory.mathcs</groupId>
-            <artifactId>jplasma</artifactId>
-            <version>1.2</version>
+            <groupId>com.github.fommil.netlib</groupId>
+            <artifactId>all</artifactId>
+            <version>1.1.2</version>
+            <type>pom</type>
         </dependency>
 
         <!-- logging dependencies -->

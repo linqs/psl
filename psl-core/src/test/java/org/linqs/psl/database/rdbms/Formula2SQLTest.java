@@ -97,7 +97,7 @@ public class Formula2SQLTest {
         // put into the cache.
         // Because these methods are supposed to be deterministic, we will not worry about
         // slight over calls.
-        assertTrue("Got " + function.getCallCount() + ", expected 5 <= x <= 10", 5 <= function.getCallCount() && function.getCallCount() <= 10);
+        assertTrue("Got " + function.getCallCount() + ", expected 5 <= x <= 15", 5 <= function.getCallCount() && function.getCallCount() <= 15);
     }
 
     @Test

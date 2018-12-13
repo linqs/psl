@@ -1689,4 +1689,114 @@ public class GroundRuleTest {
         rule.groundAll(manager, store);
         PSLTest.compareGroundRules(expected, rule, store);
     }
+
+    /**
+     * Test a select caluse that has no atoms.
+     * Friends(A, +B) >= 1 {B: B == 'Alice'}
+     * Friends(A, +B) >= 1 {B: B != 'Alice'}
+     * Friends(A, +B) >= 1 {B: A == 'Alice'}
+     */
+    @Test
+    public void testSelectWithoutAtoms() {
+        GroundRuleStore store = new MemoryGroundRuleStore();
+        AtomManager manager = new SimpleAtomManager(database);
+
+        Rule rule;
+        List<String> expected;
+        List<Coefficient> coefficients;
+        List<SummationAtomOrAtom> atoms;
+        Map<SummationVariable, Formula> filters;
+
+        coefficients = Arrays.asList(
+            (Coefficient)(new ConstantNumber(1.0f))
+        );
+
+        atoms = Arrays.asList(
+            (SummationAtomOrAtom)(new SummationAtom(
+                model.predicates.get("Friends"),
+                new SummationVariableOrTerm[]{new Variable("A"), new SummationVariable("B")}
+            ))
+        );
+
+        filters = new HashMap<SummationVariable, Formula>();
+        filters.put(new SummationVariable("B"), new QueryAtom(GroundingOnlyPredicate.Equal, new Variable("B"), new UniqueStringID("Alice")));
+
+        rule = new WeightedArithmeticRule(
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                filters,
+                1.0,
+                true
+        );
+
+        expected = Arrays.asList(
+            "1.0: 1.0 * FRIENDS('Bob', 'Alice') >= 1.0 ^2",
+            "1.0: 1.0 * FRIENDS('Charlie', 'Alice') >= 1.0 ^2",
+            "1.0: 1.0 * FRIENDS('Derek', 'Alice') >= 1.0 ^2",
+            "1.0: 1.0 * FRIENDS('Eugene', 'Alice') >= 1.0 ^2"
+        );
+        rule.groundAll(manager, store);
+        PSLTest.compareGroundRules(expected, rule, store);
+
+        // Now swap the equality to not equals.
+
+        coefficients = Arrays.asList(
+            (Coefficient)(new ConstantNumber(1.0f))
+        );
+
+        atoms = Arrays.asList(
+            (SummationAtomOrAtom)(new SummationAtom(
+                model.predicates.get("Friends"),
+                new SummationVariableOrTerm[]{new Variable("A"), new SummationVariable("B")}
+            ))
+        );
+
+        filters = new HashMap<SummationVariable, Formula>();
+        filters.put(new SummationVariable("B"), new QueryAtom(GroundingOnlyPredicate.NotEqual, new Variable("B"), new UniqueStringID("Alice")));
+
+        rule = new WeightedArithmeticRule(
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                filters,
+                1.0,
+                true
+        );
+
+        expected = Arrays.asList(
+            "1.0: 1.0 * FRIENDS('Alice', 'Bob') + 1.0 * FRIENDS('Alice', 'Charlie') + 1.0 * FRIENDS('Alice', 'Derek') + 1.0 * FRIENDS('Alice', 'Eugene') >= 1.0 ^2",
+            "1.0: 1.0 * FRIENDS('Bob', 'Charlie') + 1.0 * FRIENDS('Bob', 'Derek') + 1.0 * FRIENDS('Bob', 'Eugene') >= 1.0 ^2",
+            "1.0: 1.0 * FRIENDS('Charlie', 'Bob') + 1.0 * FRIENDS('Charlie', 'Derek') + 1.0 * FRIENDS('Charlie', 'Eugene') >= 1.0 ^2",
+            "1.0: 1.0 * FRIENDS('Derek', 'Bob') + 1.0 * FRIENDS('Derek', 'Charlie') + 1.0 * FRIENDS('Derek', 'Eugene') >= 1.0 ^2",
+            "1.0: 1.0 * FRIENDS('Eugene', 'Bob') + 1.0 * FRIENDS('Eugene', 'Charlie') + 1.0 * FRIENDS('Eugene', 'Derek') >= 1.0 ^2"
+        );
+        rule.groundAll(manager, store);
+        PSLTest.compareGroundRules(expected, rule, store);
+
+        // Now use another variable in the equality check.
+
+        coefficients = Arrays.asList(
+            (Coefficient)(new ConstantNumber(1.0f))
+        );
+
+        atoms = Arrays.asList(
+            (SummationAtomOrAtom)(new SummationAtom(
+                model.predicates.get("Friends"),
+                new SummationVariableOrTerm[]{new Variable("A"), new SummationVariable("B")}
+            ))
+        );
+
+        filters = new HashMap<SummationVariable, Formula>();
+        filters.put(new SummationVariable("B"), new QueryAtom(GroundingOnlyPredicate.Equal, new Variable("A"), new UniqueStringID("Alice")));
+
+        rule = new WeightedArithmeticRule(
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                filters,
+                1.0,
+                true
+        );
+
+        expected = Arrays.asList(
+            "1.0: 1.0 * FRIENDS('Alice', 'Bob') + 1.0 * FRIENDS('Alice', 'Charlie') + 1.0 * FRIENDS('Alice', 'Derek') + 1.0 * FRIENDS('Alice', 'Eugene') >= 1.0 ^2"
+        );
+        rule.groundAll(manager, store);
+        PSLTest.compareGroundRules(expected, rule, store);
+    }
 }

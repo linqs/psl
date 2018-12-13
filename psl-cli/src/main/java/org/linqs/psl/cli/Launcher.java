@@ -137,7 +137,7 @@ public class Launcher {
     }
 
     /**
-     * Initializes log4j.
+     * Initializes logging.
      */
     private Logger initLogger() {
         Properties props = new Properties();
@@ -170,6 +170,13 @@ public class Launcher {
         // Log4j is pretty picky about it's thresholds, so we will specially set one option.
         if (props.containsKey("log4j.threshold")) {
             props.setProperty("log4j.rootLogger", props.getProperty("log4j.threshold") + ", A1");
+        }
+
+        // Some deps use java.util.logging, so we will silence their loggers.
+        java.util.logging.Logger rootJavaLogger = java.util.logging.LogManager.getLogManager().getLogger("");
+        rootJavaLogger.setLevel(java.util.logging.Level.SEVERE);
+        for (java.util.logging.Handler handler : rootJavaLogger.getHandlers()) {
+            handler.setLevel(java.util.logging.Level.SEVERE);
         }
 
         PropertyConfigurator.configure(props);
