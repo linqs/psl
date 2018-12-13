@@ -66,6 +66,17 @@ public class ContinuousRandomGridSearch extends BaseGridSearch {
     public static final boolean UNIFORM_BASE_DEFAULT = true;
 
     /**
+     * If > 0, then various different scaled versions of the weights will be tested.
+     * For example, if set to 3 then 10x, 100x, and 1000x will also be tested.
+     * These additional tests DO NOT count against MAX_LOCATIONS_KEY.
+     * IE, MAX_LOCATIONS_KEY * (SCALE_ORDERS_KEY + 1) configurations will be tested.
+     */
+    public static final String SCALE_ORDERS_KEY = CONFIG_PREFIX + ".scaleorders";
+    public static final int SCALE_ORDERS_DEFAULT = 0;
+
+    public static final int SCALE_FACTOR = 10;
+
+    /**
      * Means for the Gaussian's that we will sample rule weights from.
      */
     private double[] weightMeans;
@@ -74,6 +85,9 @@ public class ContinuousRandomGridSearch extends BaseGridSearch {
     private double variance;
     private boolean uniformBase;
 
+    private int scaleOrder;
+    private int currentScale;
+
     public ContinuousRandomGridSearch(Model model, Database rvDB, Database observedDB) {
         this(model.getRules(), rvDB, observedDB);
     }
@@ -81,7 +95,14 @@ public class ContinuousRandomGridSearch extends BaseGridSearch {
     public ContinuousRandomGridSearch(List<Rule> rules, Database rvDB, Database observedDB) {
         super(rules, rvDB, observedDB);
 
+        scaleOrder = Math.max(0, Config.getInt(SCALE_ORDERS_KEY, SCALE_ORDERS_DEFAULT));
+        currentScale = 0;
+
         numLocations = Config.getInt(MAX_LOCATIONS_KEY, MAX_LOCATIONS_DEFAULT);
+        if (scaleOrder > 0) {
+            numLocations *= (scaleOrder + 1);
+        }
+
         baseWeight = Config.getDouble(BASE_WEIGHT_KEY, BASE_WEIGHT_DEFAULT);
         variance = Config.getDouble(VARIANCE_KEY, VARIANCE_DEFAULT);
         uniformBase = Config.getBoolean(UNIFORM_BASE_KEY, UNIFORM_BASE_DEFAULT);
@@ -96,9 +117,23 @@ public class ContinuousRandomGridSearch extends BaseGridSearch {
 
     @Override
     protected void getWeights(double[] weights) {
-        for (int i = 0; i < mutableRules.size(); i++) {
-            // Rand give Gaussian with mean = 0.0 and variance = 1.0.
-            weights[i] = RandUtils.nextDouble() * Math.sqrt(variance) + weightMeans[i];
+        if (currentScale == 0) {
+            // Random choice.
+            for (int i = 0; i < mutableRules.size(); i++) {
+                // Rand give Gaussian with mean = 0.0 and variance = 1.0.
+                weights[i] = RandUtils.nextDouble() * Math.sqrt(variance) + weightMeans[i];
+            }
+        } else {
+            // Scale current by SCALE_FACTOR.
+            for (int i = 0; i < mutableRules.size(); i++) {
+                // Rand give Gaussian with mean = 0.0 and variance = 1.0.
+                weights[i] *= 10;
+            }
+        }
+
+        currentScale++;
+        if (currentScale > scaleOrder) {
+            currentScale = 0;
         }
     }
 
