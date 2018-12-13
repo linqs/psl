@@ -6,7 +6,7 @@ import xml.etree.ElementTree
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__)))
 
 def get_description():
-    with open('README.md', 'r') as file:
+    with open('PYPI_README.md', 'r') as file:
         return file.read()
 
 # Get information from the parent POM.

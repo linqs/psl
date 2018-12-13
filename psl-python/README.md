@@ -13,6 +13,9 @@ However, special executions have been added to the following phases:
     - `pip install --user --upgrade dist/pslpython-*.whl`
  - integration-test
     - `./run_tests.py`
+ - deploy
+    - `twine upload --repository-url https://test.pypi.org/legacy/ dist/pslpython-*.whl`
+    - The `TWINE_USERNAME` and `TWINE_PASSWORD` environment variables MUST be set.
 
 Instead of `compile` and `test`, `package` and `integration-test` are used.
 This is because building the package relies on the jar from the `package` phase of psl-cli,

@@ -108,9 +108,37 @@
                             <goal>exec</goal>
                         </goals>
                     </execution>
+
+                    <!-- Deploy the package to PyPI -->
+                    <!-- We are cheating a bit by calling sh so we can pipe and glob. -->
+                    <execution>
+                        <id>python-deploy</id>
+                        <phase>deploy</phase>
+                        <configuration>
+                            <executable>sh</executable>
+                            <workingDirectory>.</workingDirectory>
+                            <commandlineArgs>-c '[ ! -z $TWINE_USERNAME ] &amp;&amp; [ ! -z $TWINE_PASSWORD ] &amp;&amp; twine upload dist/pslpython-*.whl'</commandlineArgs>
+                        </configuration>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                    </execution>
                 </executions>
             </plugin>
         </plugins>
+
+    <pluginManagement>
+        <plugins>
+            <!-- Disable the deploy plugin for this project. -->
+            <plugin>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+        </plugins>
+    </pluginManagement>
+
     </build>
 
 </project>
