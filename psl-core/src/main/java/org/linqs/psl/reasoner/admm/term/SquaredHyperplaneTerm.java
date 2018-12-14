@@ -126,7 +126,7 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
     protected void minWeightedSquaredHyperplane(float stepSize, float[] consensusValues) {
         float weight = (float)((WeightedGroundRule)groundRule).getWeight();
 
-        // Constructs constant term in the gradient (moved to right-hand side).
+        // Construct constant term in the gradient (moved to right-hand side).
         for (int i = 0; i < size; i++) {
             LocalVariable variable = variables[i];
 
@@ -138,7 +138,7 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
 
         // Solve for x
 
-        // Handle small hyperplanes specially.
+        // Handle very small hyperplanes specially.
         if (size == 1) {
             LocalVariable variable = variables[0];
             float coeff = coefficients[0];
@@ -172,17 +172,23 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
         }
 
         for (int i = 0; i < size; i++) {
+            float newValue = variables[i].getValue();
+
             for (int j = 0; j < i; j++) {
-                variables[i].setValue(variables[i].getValue() - L.getQuick(i, j) * variables[j].getValue());
+                newValue -= L.getQuick(i, j) * variables[j].getValue();
             }
-            variables[i].setValue(variables[i].getValue() / L.getQuick(i, i));
+
+            variables[i].setValue(newValue / L.getQuick(i, i));
         }
 
         for (int i = size - 1; i >= 0; i--) {
+            float newValue = variables[i].getValue();
+
             for (int j = size - 1; j > i; j--) {
-                variables[i].setValue(variables[i].getValue() - L.getQuick(j, i) * variables[j].getValue());
+                newValue -= L.getQuick(j, i) * variables[j].getValue();
             }
-            variables[i].setValue(variables[i].getValue() / L.getQuick(i, i));
+
+            variables[i].setValue(newValue / L.getQuick(i, i));
         }
     }
 
