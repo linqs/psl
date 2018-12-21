@@ -71,4 +71,8 @@ public abstract class Evaluator {
         TrainingMap map = new TrainingMap(atomManager, truthDB, true);
         compute(map, predicate);
     }
+
+    public void compute(Database rvDB, Database truthDB, StandardPredicate predicate) {
+        compute(rvDB, truthDB, predicate, false);
+    }
 }
