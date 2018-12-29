@@ -131,7 +131,21 @@ public class RDBMSDataStore implements DataStore {
 
     @Override
     public Database getDatabase(Partition write, Partition... read) {
-        return getDatabase(write, null, read);
+        return getDatabase(write, (Set<StandardPredicate>)null, read);
+    }
+
+    @Override
+    public Database getDatabase(Partition write, StandardPredicate[] toClose, Partition... read) {
+        if (toClose == null) {
+            return getDatabase(write, (Set<StandardPredicate>)null, read);
+        }
+
+        Set<StandardPredicate> closeSet = new HashSet<StandardPredicate>();
+        for (StandardPredicate predicate : toClose) {
+            closeSet.add(predicate);
+        }
+
+        return getDatabase(write, closeSet, read);
     }
 
     @Override

@@ -64,6 +64,8 @@ public interface DataStore {
      */
     public Database getDatabase(Partition write, Partition... read);
 
+    public Database getDatabase(Partition write, StandardPredicate[] toClose, Partition... read);
+
     /**
      * Creates a Database that can read from and write to a {@link Partition} and
      * optionally read from additional Partitions.
