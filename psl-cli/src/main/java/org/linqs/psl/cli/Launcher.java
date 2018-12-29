@@ -383,8 +383,7 @@ public class Launcher {
         }
     }
 
-    private void learnWeights(Model model, DataStore dataStore, Set<StandardPredicate> closedPredicates, String wlaName)
-            throws IOException {
+    private void learnWeights(Model model, DataStore dataStore, Set<StandardPredicate> closedPredicates, String wlaName) {
         log.info("Starting weight learning with learner: " + wlaName);
 
         Partition targetPartition = dataStore.getPartition(PARTITION_NAME_TARGET);
@@ -426,14 +425,17 @@ public class Launcher {
         }
         log.info("Writing learned model to {}", learnedFilename);
 
-        FileWriter learnedFileWriter = new FileWriter(new File(learnedFilename));
         String outModel = model.asString();
 
         // Remove excess parens.
         outModel = outModel.replaceAll("\\( | \\)", "");
 
-        learnedFileWriter.write(outModel);
-        learnedFileWriter.close();
+        try (FileWriter learnedFileWriter = new FileWriter(new File(learnedFilename))) {
+            learnedFileWriter.write(outModel);
+        } catch (IOException ex) {
+            log.error("Failed to write learned model:\n" + outModel);
+            throw new RuntimeException("Failed to write learned model to: " + learnedFilename, ex);
+        }
     }
 
     /**
@@ -480,14 +482,14 @@ public class Launcher {
     }
 
     private Model loadModel(DataStore dataStore) {
-        log.info("Loading model");
+        log.info("Loading model from {}", options.getOptionValue(OPTION_MODEL));
 
         Model model = null;
-        File modelFile = new File(options.getOptionValue(OPTION_MODEL));
-        try (FileReader reader = new FileReader(modelFile)) {
-            model = ModelLoader.load(dataStore, new FileReader(modelFile));
+
+        try (FileReader reader = new FileReader(new File(options.getOptionValue(OPTION_MODEL)))) {
+            model = ModelLoader.load(dataStore, reader);
         } catch (IOException ex) {
-            throw new RuntimeException("Error reading model file.", ex);
+            throw new RuntimeException("Failed to load model from file: " + options.getOptionValue(OPTION_MODEL), ex);
         }
 
         log.debug(model.toString());
@@ -496,8 +498,7 @@ public class Launcher {
         return model;
     }
 
-    private void run()
-            throws IOException, ClassNotFoundException, IllegalAccessException, InstantiationException {
+    private void run() {
         log.info("Running PSL CLI Version {}", Version.getFull());
         DataStore dataStore = initDataStore();
 

@@ -22,7 +22,7 @@
     <artifactId>psl-groovy</artifactId>
     <name>psl-groovy</name>
     <packaging>jar</packaging>
-    <description>The groovy user interface module of the PSL software from the LINQS research group.</description>
+    <description>The Groovy interface module of the PSL software from the LINQS research group.</description>
     <parent>
         <groupId>org.linqs</groupId>
         <artifactId>psl</artifactId>

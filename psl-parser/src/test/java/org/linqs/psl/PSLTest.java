@@ -25,7 +25,6 @@ import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.parser.ModelLoader;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -53,21 +52,11 @@ public class PSLTest {
     public static void assertRule(DataStore dataStore, String input, String expectedRule, boolean alphabetize) {
         Rule rule = null;
 
-        try {
-            rule = ModelLoader.loadRule(dataStore, input);
-        } catch (IOException ex) {
-            fail("IOException thrown from ModelLoader.loadRule(): " + ex);
-        }
-
+        rule = ModelLoader.loadRule(dataStore, input);
         assertRule(rule, expectedRule, alphabetize);
 
         // Now ensure that we can load the string version of the created rule.
-        try {
-            rule = ModelLoader.loadRule(dataStore, rule.toString());
-        } catch (IOException ex) {
-            fail("IOException thrown from ModelLoader.loadRule(): " + ex);
-        }
-
+        rule = ModelLoader.loadRule(dataStore, rule.toString());
         assertRule(rule, expectedRule, alphabetize);
     }
 
@@ -137,13 +126,7 @@ public class PSLTest {
      * Only alphabetize if it is really necessary since it makes the output much harder to interpret.
      */
     public static void assertModel(DataStore dataStore, String input, String[] expectedRules, boolean alphabetize) {
-        Model model = null;
-
-        try {
-            model = ModelLoader.load(dataStore, input);
-        } catch (IOException ex) {
-            fail("IOException thrown from ModelLoader.load(): " + ex);
-        }
+        Model model = ModelLoader.load(dataStore, input);
 
         List<Rule> rules = new ArrayList<Rule>();
         for (Rule rule : model.getRules()) {
@@ -163,13 +146,7 @@ public class PSLTest {
     }
 
     public static List<Rule> getRules(DataStore dataStore, String input) {
-        Model model = null;
-
-        try {
-            model = ModelLoader.load(dataStore, input);
-        } catch (IOException ex) {
-            fail("IOException thrown from ModelLoader.load(): " + ex);
-        }
+        Model model = ModelLoader.load(dataStore, input);
 
         List<Rule> rules = new ArrayList<Rule>();
         for (Rule rule : model.getRules()) {

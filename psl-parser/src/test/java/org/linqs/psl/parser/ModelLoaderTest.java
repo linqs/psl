@@ -38,7 +38,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -617,21 +616,17 @@ public class ModelLoaderTest {
             "1.0: 1.0 * SINGLE(+A) = 1.0 ^2   {A : SINGLE(A)}",
         };
 
-        try {
-            for (int i = 0; i < inputs.length; i++) {
-                RulePartial partial = ModelLoader.loadRulePartial(dataStore, inputs[i]);
-                assertEquals(
-                        String.format("Expected RulePartial #%d to be a rule, but was not.", i),
-                        true,
-                        partial.isRule()
-                );
+        for (int i = 0; i < inputs.length; i++) {
+            RulePartial partial = ModelLoader.loadRulePartial(dataStore, inputs[i]);
+            assertEquals(
+                    String.format("Expected RulePartial #%d to be a rule, but was not.", i),
+                    true,
+                    partial.isRule()
+            );
 
-                Rule rule = partial.toRule();
-                PSLTest.assertStringEquals(expected[i], rule.toString(), true,
-                        String.format("Rule %d string mismatch", i));
-            }
-        } catch (IOException ex) {
-            fail("Unexpected IOException thrown from ModelLoader.loadRulePartial(): " + ex);
+            Rule rule = partial.toRule();
+            PSLTest.assertStringEquals(expected[i], rule.toString(), true,
+                    String.format("Rule %d string mismatch", i));
         }
     }
 
@@ -660,25 +655,21 @@ public class ModelLoaderTest {
             "5.0: 1.0 * SINGLE(+A) + 1.0 * SINGLE(+B) = 1.0 ^2   {A : SINGLE(A)}   {B : SINGLE(B)}"
         };
 
-        try {
-            for (int i = 0; i < inputs.length; i++) {
-                RulePartial partial = ModelLoader.loadRulePartial(dataStore, inputs[i]);
-                assertEquals(
-                        String.format("Expected RulePartial #%d to not a rule, but was.", i),
-                        false,
-                        partial.isRule()
-                );
+        for (int i = 0; i < inputs.length; i++) {
+            RulePartial partial = ModelLoader.loadRulePartial(dataStore, inputs[i]);
+            assertEquals(
+                    String.format("Expected RulePartial #%d to not a rule, but was.", i),
+                    false,
+                    partial.isRule()
+            );
 
-                Rule unweightedRule = partial.toRule();
-                PSLTest.assertStringEquals(unweightedExpected[i], unweightedRule.toString(), true,
-                        String.format("Unweighted rule %d string mismatch", i));
+            Rule unweightedRule = partial.toRule();
+            PSLTest.assertStringEquals(unweightedExpected[i], unweightedRule.toString(), true,
+                    String.format("Unweighted rule %d string mismatch", i));
 
-                Rule weightedRule = partial.toRule(5.0, true);
-                PSLTest.assertStringEquals(weightedExpected[i], weightedRule.toString(), true,
-                        String.format("Weighted rule %d string mismatch", i));
-            }
-        } catch (IOException ex) {
-            fail("Unexpected IOException thrown from ModelLoader.loadRulePartial(): " + ex);
+            Rule weightedRule = partial.toRule(5.0, true);
+            PSLTest.assertStringEquals(weightedExpected[i], weightedRule.toString(), true,
+                    String.format("Weighted rule %d string mismatch", i));
         }
     }
 
