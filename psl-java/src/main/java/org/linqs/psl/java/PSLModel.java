@@ -128,4 +128,12 @@ public class PSLModel extends Model {
     public Predicate getPredicate(String name) {
         return Predicate.get(name);
     }
+
+    public StandardPredicate getStandardPredicate(String name) {
+        return StandardPredicate.get(name);
+    }
+
+    public FunctionalPredicate getFunctionalPredicate(String name) {
+        return ExternalFunctionalPredicate.get(name);
+    }
 }
