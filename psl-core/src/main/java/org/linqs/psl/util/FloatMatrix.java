@@ -710,6 +710,34 @@ public final class FloatMatrix {
     }
 
     /**
+     * Cholesky factorization (not in-place).
+     */
+    public FloatMatrix choleskyDecomposition() {
+        return choleskyDecomposition(false);
+    }
+
+    /**
+     * Compute the Cholesky factorization of this real symmetric positive definite matrix.
+     * A = L * L**T
+     * The lower triangular result will be returned.
+     * Will throw if the matrix is not symmetric positive definite.
+     * The unused portion of the matrix is to be ignored and no guarantees are given on it values.
+     *
+     * @param inPlace If true, then this matrix will be used and no copies made.
+     * @return A matrix (new or this) expressing the result.
+     */
+    public FloatMatrix choleskyDecomposition(boolean inPlace) {
+        FloatMatrix result = this;
+        if (!inPlace) {
+            result = copy();
+        }
+
+        result.lapack_spotrf(false);
+
+        return result;
+    }
+
+    /**
      * Call sgesv from LAPACK.
      * http://www.netlib.org/lapack/explore-html/d7/de8/sgesv_8f.html
      *
@@ -763,6 +791,59 @@ public final class FloatMatrix {
         }
 
         return pivots;
+    }
+
+    /**
+     * Call spotrf from LAPACK.
+     * http://www.netlib.org/lapack/explore-html/dd/d7e/spotrf2_8f.html
+     *
+     * It is strongly discouraged to call BLAS/LAPACK methods directly.
+     * Instead, use other higher level methods.
+     *
+     * Computes the Cholesky factorization of a real symmetric positive definite matrix A.
+     *
+     * The factorization has the form:
+     *  A = U**T * U, if |upper| = true, or
+     *  A = L  * L**T, if |upper| = false,
+     * where U is an upper triangular matrix and L is lower triangular.
+     *
+     * @param this The matrix used as A.
+     *  Upon successful completion, this matrix will have U/L in it (depending on |upper|).
+     * @param upper True if the upper triangle is to be used, false for the lower.
+     */
+    public void lapack_spotrf(boolean upper) {
+        if (numRows != numCols) {
+            throw new IllegalArgumentException(String.format(
+                    "spotrf requires a square A matrix, got (%d x %d).",
+                    numRows, numCols));
+        }
+
+        String uplo = "U";
+        if (!upper) {
+            uplo = "L";
+        }
+
+        intW result = new intW(0);
+
+        LAPACK.getInstance().spotrf(
+                uplo,  // UPLO - Upper or lower?
+                numRows,  // N - Dimension of A.
+                data,  // A
+                numRows,  // LDA
+                result  // INFO - Result
+        );
+
+        if (result.val < 0) {
+            throw new IllegalArgumentException(String.format(
+                    "Error in the %d argument to spotrf.",
+                    result.val * -1));
+        }
+
+        if (result.val > 0) {
+            throw new ArithmeticException(String.format(
+                    "Error in spotrf (%d). Matrix is not positive definite.",
+                    result.val));
+        }
     }
 
     /**

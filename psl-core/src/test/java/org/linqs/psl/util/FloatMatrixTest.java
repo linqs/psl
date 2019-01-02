@@ -400,4 +400,22 @@ public class FloatMatrixTest {
             // Expected.
         }
     }
+
+    @Test
+    public void testCholeskyDecomposition() {
+        FloatMatrix matrix;
+        FloatMatrix solution;
+
+        matrix = new FloatMatrix(new float[][]{{4.0f, 12.0f, -16.0f}, {12.0f, 37.0f, -43.0f}, {-16.0f, -43.0f, 98.0f}});
+        solution = new FloatMatrix(new float[][]{{2.0f, 0.0f, 0.0f}, {6.0f, 1.0f, 0.0f}, {-8.0f, 5.0f, 3.0f}});
+
+        FloatMatrix result = matrix.choleskyDecomposition();
+
+        // Zero out the unused portion of the matrix so we can test it.
+        result.set(0, 1, 0.0f);
+        result.set(0, 2, 0.0f);
+        result.set(1, 2, 0.0f);
+
+        assertEquals(solution, result);
+    }
 }
