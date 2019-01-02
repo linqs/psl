@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
-import org.linqs.psl.reasoner.term.WeightedTerm;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.util.HashCode;
@@ -37,7 +36,7 @@ import java.util.concurrent.Semaphore;
  * Stores the characterization of the hyperplane as coefficients^T * x = constant
  * and minimizes with the weighted, squared hyperplane in the objective.
  */
-public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements WeightedTerm {
+public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm {
     protected final float[] coefficients;
     protected final float constant;
 

@@ -150,11 +150,6 @@ public class ConstraintBlockerTermStore implements TermStore<ConstraintBlockerTe
     }
 
     @Override
-    public Iterable<ConstraintBlockerTerm> getTerms(GroundRule groundRule) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public Iterator<ConstraintBlockerTerm> iterator() {
         return blocks.iterator();
     }

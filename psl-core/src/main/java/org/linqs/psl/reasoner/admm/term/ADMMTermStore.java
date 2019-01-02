@@ -20,10 +20,10 @@ package org.linqs.psl.reasoner.admm.term;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.admm.ADMMReasoner;
 import org.linqs.psl.reasoner.term.MemoryTermStore;
 import org.linqs.psl.reasoner.term.TermStore;
+import org.linqs.psl.util.IteratorUtils;
 import org.linqs.psl.util.RandUtils;
 
 import java.util.ArrayList;
@@ -45,7 +45,7 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm> {
      * Initial size for the memory store.
      */
     public static final String INTERNAL_STORE_KEY = CONFIG_PREFIX + ".internalstore";
-    public static final String INTERNAL_STORE_DEFAULT = "org.linqs.psl.reasoner.term.MemoryTermStore";
+    public static final String INTERNAL_STORE_DEFAULT = MemoryTermStore.class.getName();
 
     // Keep an internal store to hold the terms while this class focus on variables.
     private TermStore<ADMMObjectiveTerm> store;
@@ -227,8 +227,13 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm> {
         return store.iterator();
     }
 
-    @Override
     public Iterable<ADMMObjectiveTerm> getTerms(GroundRule groundRule) {
-        return store.getTerms(groundRule);
+        final GroundRule finalGroundRule = groundRule;
+
+        return IteratorUtils.filter(store, new IteratorUtils.FilterFunction<ADMMObjectiveTerm>() {
+            public boolean keep(ADMMObjectiveTerm term) {
+                return finalGroundRule.equals(term.getGroundRule());
+            }
+        });
     }
 }

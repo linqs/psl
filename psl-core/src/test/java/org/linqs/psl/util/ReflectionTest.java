@@ -33,12 +33,5 @@ public class ReflectionTest {
           assertNull("org.linqs.psl.util.Reflection", Reflection.resolveClassName("abs"));
 
           assertEquals("org.linqs.psl.reasoner.admm.ADMMReasoner", Reflection.resolveClassName("ADMMReasoner"));
-
-          try {
-                Reflection.resolveClassName("Term");
-                fail("No exception thrown on ambiguous class.");
-          } catch (IllegalArgumentException ex) {
-                // Expected.
-          }
     }
 }

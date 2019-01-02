@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
-import org.linqs.psl.reasoner.term.WeightedTerm;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 
@@ -25,7 +24,7 @@ import org.linqs.psl.model.rule.WeightedGroundRule;
  * ADMMReasoner objective term of the form <br />
  * weight * coefficients^T * x
  */
-public class LinearLossTerm extends ADMMObjectiveTerm implements WeightedTerm {
+public class LinearLossTerm extends ADMMObjectiveTerm {
     private final float[] coefficients;
 
     /**

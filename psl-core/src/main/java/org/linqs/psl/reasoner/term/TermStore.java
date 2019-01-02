@@ -26,7 +26,7 @@ import java.util.List;
 /**
  * A place to store terms that are to be optimized.
  */
-public interface TermStore<E extends Term> extends Iterable<E> {
+public interface TermStore<E extends ReasonerTerm> extends Iterable<E> {
     /**
      * Add a term to the store that was generated from the given ground rule.
      */
@@ -52,6 +52,4 @@ public interface TermStore<E extends Term> extends Iterable<E> {
      * This is best called on an empty store so it can prepare.
      */
     public void ensureCapacity(int capacity);
-
-    public Iterable<E> getTerms(GroundRule groundRule);
 }

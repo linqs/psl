@@ -19,20 +19,13 @@ package org.linqs.psl.reasoner.term;
 
 import org.linqs.psl.config.Config;
 import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.model.rule.WeightedGroundRule;
-import org.linqs.psl.util.IteratorUtils;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import org.apache.commons.collections4.list.UnmodifiableList;
 
-public class MemoryTermStore<E extends Term> implements TermStore<E> {
+public class MemoryTermStore<E extends ReasonerTerm> implements TermStore<E> {
     public static final String CONFIG_PREFIX = "memorytermstore";
 
     /**
@@ -94,16 +87,5 @@ public class MemoryTermStore<E extends Term> implements TermStore<E> {
     @Override
     public Iterator<E> iterator() {
         return store.iterator();
-    }
-
-    @Override
-    public Iterable<E> getTerms(GroundRule groundRule) {
-        final GroundRule finalGroundRule = groundRule;
-
-        return IteratorUtils.filter(store, new IteratorUtils.FilterFunction<E>() {
-            public boolean keep(E term) {
-                return finalGroundRule.equals(term.getGroundRule());
-            }
-        });
     }
 }

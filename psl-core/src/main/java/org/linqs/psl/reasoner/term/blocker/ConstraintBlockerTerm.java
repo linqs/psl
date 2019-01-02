@@ -23,7 +23,7 @@ import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.arithmetic.UnweightedGroundArithmeticRule;
 import org.linqs.psl.model.rule.misc.GroundValueConstraint;
-import org.linqs.psl.reasoner.term.Term;
+import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.util.RandUtils;
 
 import java.util.Iterator;
@@ -34,7 +34,7 @@ import java.util.Map;
  * A Term to hold blocks.
  * See {@link ConstraintBlockerTermGenerator} for details on the constraint blocking process.
  */
-public class ConstraintBlockerTerm implements Term {
+public class ConstraintBlockerTerm implements ReasonerTerm {
     private RandomVariableAtom[] atoms;
     private WeightedGroundRule[] incidentGRs;
     private boolean exactlyOne;
@@ -75,10 +75,5 @@ public class ConstraintBlockerTerm implements Term {
         if (atoms.length > 0 && exactlyOne) {
             atoms[RandUtils.nextInt(atoms.length)].setValue(1.0f);
         }
-    }
-
-    @Override
-    public GroundRule getGroundRule() {
-        throw new UnsupportedOperationException();
     }
 }

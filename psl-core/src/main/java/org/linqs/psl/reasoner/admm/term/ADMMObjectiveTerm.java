@@ -18,12 +18,12 @@
 package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.reasoner.term.Term;
+import org.linqs.psl.reasoner.term.ReasonerTerm;
 
 /**
  * A term in the objective to be optimized by an ADMMReasoner.
  */
-public abstract class ADMMObjectiveTerm implements Term {
+public abstract class ADMMObjectiveTerm implements ReasonerTerm {
     protected final GroundRule groundRule;
     protected final LocalVariable[] variables;
     protected final int size;
@@ -70,7 +70,6 @@ public abstract class ADMMObjectiveTerm implements Term {
         return size;
     }
 
-    @Override
     public GroundRule getGroundRule() {
         return groundRule;
     }
