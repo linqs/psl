@@ -79,11 +79,6 @@ public class ConstraintBlockerTermGenerator implements TermGenerator<ConstraintB
         return generateTermsInternal((AtomRegisterGroundRuleStore)ruleStore, (ConstraintBlockerTermStore)termStore);
     }
 
-    @Override
-    public void updateWeights(GroundRuleStore ruleStore, TermStore<ConstraintBlockerTerm> termStore) {
-        // TODO(eriq): Since we don't keep internal representations of the weights, I don't think we need to do anything.
-    }
-
     private int generateTermsInternal(AtomRegisterGroundRuleStore ruleStore, ConstraintBlockerTermStore termStore) {
         // Collects constraints.
         Set<UnweightedGroundArithmeticRule> constraintSet = new HashSet<UnweightedGroundArithmeticRule>();

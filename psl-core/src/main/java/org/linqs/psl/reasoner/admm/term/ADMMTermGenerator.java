@@ -118,12 +118,6 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
         return termStore.size() - initialSize;
     }
 
-    @Override
-    public void updateWeights(GroundRuleStore ruleStore, TermStore<ADMMObjectiveTerm> termStore) {
-        // TODO(eriq): This is broken for when a rule switches sign.
-        termStore.updateWeights();
-    }
-
     /**
      * Processes a {@link GroundRule} to create a corresponding {@link ADMMObjectiveTerm}.
      *

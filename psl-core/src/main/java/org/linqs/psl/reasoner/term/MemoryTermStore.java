@@ -96,16 +96,6 @@ public class MemoryTermStore<E extends Term> implements TermStore<E> {
         return store.iterator();
     }
 
-    /**
-     * O(n)
-     */
-    @Override
-    public void updateWeights() {
-        for (int i = 0; i < store.size(); i++) {
-            store.get(i).weightChanged();
-        }
-    }
-
     @Override
     public Iterable<E> getTerms(GroundRule groundRule) {
         final GroundRule finalGroundRule = groundRule;

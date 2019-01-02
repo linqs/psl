@@ -150,11 +150,6 @@ public class ConstraintBlockerTermStore implements TermStore<ConstraintBlockerTe
     }
 
     @Override
-    public void updateWeights() {
-        // The blocks don't care about weights.
-    }
-
-    @Override
     public Iterable<ConstraintBlockerTerm> getTerms(GroundRule groundRule) {
         throw new UnsupportedOperationException();
     }

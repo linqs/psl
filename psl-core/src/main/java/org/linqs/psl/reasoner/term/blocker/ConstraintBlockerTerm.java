@@ -81,8 +81,4 @@ public class ConstraintBlockerTerm implements Term {
     public GroundRule getGroundRule() {
         throw new UnsupportedOperationException();
     }
-
-    @Override
-    public void weightChanged() {
-    }
 }

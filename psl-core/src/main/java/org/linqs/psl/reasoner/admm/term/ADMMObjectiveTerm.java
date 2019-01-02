@@ -74,8 +74,4 @@ public abstract class ADMMObjectiveTerm implements Term {
     public GroundRule getGroundRule() {
         return groundRule;
     }
-
-    @Override
-    public void weightChanged() {
-    }
 }

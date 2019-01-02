@@ -25,9 +25,4 @@ public interface TermGenerator<E extends Term> {
      * @return the number of terms added to the term store.
      */
     public int generateTerms(GroundRuleStore ruleStore, TermStore<E> termStore);
-
-    /**
-     * Use the ground rules in |ruleStore| to update the weights in the term store.
-     */
-    public void updateWeights(GroundRuleStore ruleStore, TermStore<E> termStore);
 }

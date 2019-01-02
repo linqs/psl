@@ -59,6 +59,9 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
         L = null;
     }
 
+    /**
+     * Compute the lower triangle of the symmetric matrix formed by M[i, j] = 2 * weight * coefficients[i] * coefficients[j].
+     */
     private void computeL(float stepSize) {
         // Since the method is synchronized, check to see if we have already computed L.
         if (L != null) {
@@ -97,12 +100,6 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
 
             matrixSemaphore.release();
         }
-    }
-
-    @Override
-    public void weightChanged() {
-        // Recompute L.
-        L = null;
     }
 
     /**

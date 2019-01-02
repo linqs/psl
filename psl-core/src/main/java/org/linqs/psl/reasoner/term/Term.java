@@ -21,5 +21,4 @@ import org.linqs.psl.model.rule.GroundRule;
 
 public interface Term {
     public GroundRule getGroundRule();
-    public void weightChanged();
 }

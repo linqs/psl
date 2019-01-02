@@ -370,11 +370,8 @@ public abstract class WeightLearningApplication implements ModelApplication {
             return;
         }
 
-        // TEST
-        // termGenerator.updateWeights(groundRuleStore, termStore);
-
         termStore.clear();
-        int count = termGenerator.generateTerms(groundRuleStore, termStore);
+        termGenerator.generateTerms(groundRuleStore, termStore);
 
         reasoner.optimize(termStore);
 
@@ -387,7 +384,9 @@ public abstract class WeightLearningApplication implements ModelApplication {
             return;
         }
 
-        termGenerator.updateWeights(latentGroundRuleStore, latentTermStore);
+        termStore.clear();
+        termGenerator.generateTerms(groundRuleStore, termStore);
+
         reasoner.optimize(latentTermStore);
 
         inLatentMPEState = true;

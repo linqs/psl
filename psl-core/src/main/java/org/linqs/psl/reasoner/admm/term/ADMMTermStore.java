@@ -228,11 +228,6 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm> {
     }
 
     @Override
-    public void updateWeights() {
-        store.updateWeights();
-    }
-
-    @Override
     public Iterable<ADMMObjectiveTerm> getTerms(GroundRule groundRule) {
         return store.getTerms(groundRule);
     }
