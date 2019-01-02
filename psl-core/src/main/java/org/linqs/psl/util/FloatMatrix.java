@@ -408,14 +408,14 @@ public final class FloatMatrix {
     }
 
     /**
-     * Element-wise divison (not in-place).
+     * Element-wise division (not in-place).
      */
     public FloatMatrix elementDiv(FloatMatrix other) {
         return elementDiv(other, false);
     }
 
     /**
-     * Element-wise divison.
+     * Element-wise division.
      *
      * @param inPlace If true, then this matrix will be used and no copies made.
      * @return A matrix (new or this) expressing the result.
@@ -571,14 +571,14 @@ public final class FloatMatrix {
     }
 
     /**
-     * Scalar divison (not in-place).
+     * Scalar division (not in-place).
      */
     public FloatMatrix div(float val) {
         return div(val, false);
     }
 
     /**
-     * Scalar divison.
+     * Scalar division.
      *
      * @param inPlace If true, then this matrix will be used and no copies made.
      * @return A matrix (new or this) expressing the result.
@@ -616,7 +616,7 @@ public final class FloatMatrix {
     }
 
     /**
-     * Get the 2-norm (Euclidean norm) (squre root of sum of squared values).
+     * Get the 2-norm (Euclidean norm) (square root of sum of squared values).
      */
     public float norm2() {
         float sum = 0;
@@ -630,7 +630,7 @@ public final class FloatMatrix {
 
     /**
      * Transpose.
-     * Note that trasnposition can often be done as part of a BLAS/LAPACK solve.
+     * Note that transposition can often be done as part of a BLAS/LAPACK solve.
      * If you are trying to do a greater solve, then use the transpose options there rather than
      * this method.
      */
@@ -647,7 +647,7 @@ public final class FloatMatrix {
     }
 
     /**
-     * Matrix multiplication without trasnposition or scaling.
+     * Matrix multiplication without transposition or scaling.
      */
     public FloatMatrix mul(FloatMatrix b) {
         return mul(b, false, false, 1.0f);
@@ -683,7 +683,7 @@ public final class FloatMatrix {
     }
 
     /**
-     * Compute the inverion of this matrix.
+     * Compute the inversion of this matrix.
      * There is no in-place variant of this.
      * Note that you typically don't want to compute a direct inversion:
      * https://www.johndcook.com/blog/2010/01/19/dont-invert-that-matrix/
@@ -750,9 +750,9 @@ public final class FloatMatrix {
      * Where P is a permutation matrix, L is unit lower triangular, and U is upper triangular.
      * This (the context matrix) is A and B becomes X on completion.
      *
-     * @param this The maxtrix used as A.
+     * @param this The matrix used as A.
      *  Upon successful completion, A will be factored as documented above.
-     *  Note that A may also be out of order as specified by the standard LAPACK IPIV (retutned).
+     *  Note that A may also be out of order as specified by the standard LAPACK IPIV (returned).
      * @param b The matrix on the LHS in this equation.
      *  X will be put into b on successful completion of this method.
      * @return The LAPACK standard IPIV for A.
@@ -857,7 +857,7 @@ public final class FloatMatrix {
      * Both A and B can be transposed.
      * The result will be put into C (and returned).
      *
-     * @param this The maxtrix used as A.
+     * @param this The matrix used as A.
      * @param b The matrix used as B.
      * @param c The matrix used as C.
      *  May be null, and a new (zero) matrix will get created and used.
@@ -893,7 +893,7 @@ public final class FloatMatrix {
 
         if (aNumCols != bNumRows) {
             throw new IllegalArgumentException(String.format(
-                    "Cannot multiple matricies of (post transposed) dimensions (%d x %d) and (%d x %d).",
+                    "Cannot multiply matrices of (post transposed) dimensions (%d x %d) and (%d x %d).",
                     numRows, numCols, b.numRows, b.numCols));
         }
 
@@ -930,7 +930,7 @@ public final class FloatMatrix {
      *
      * Get the dot product of X and Y.
      *
-     * @param this The maxtrix used as X.
+     * @param this The matrix used as X.
      * @param y The other matrix in this dot product.
      * @return The dot product.
      */
