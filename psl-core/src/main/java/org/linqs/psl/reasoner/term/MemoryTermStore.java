@@ -23,8 +23,6 @@ import org.linqs.psl.model.rule.GroundRule;
 import java.util.ArrayList;
 import java.util.Iterator;
 
-import org.apache.commons.collections4.list.UnmodifiableList;
-
 public class MemoryTermStore<E extends ReasonerTerm> implements TermStore<E> {
     public static final String CONFIG_PREFIX = "memorytermstore";
 

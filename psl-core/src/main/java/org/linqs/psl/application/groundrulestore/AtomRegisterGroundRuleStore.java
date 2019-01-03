@@ -23,10 +23,10 @@ import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 
-import org.apache.commons.collections4.SetValuedMap;
-import org.apache.commons.collections4.multimap.HashSetValuedHashMap;
-
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -35,12 +35,12 @@ import java.util.Set;
  * you don't need the mapping functionality.
  */
 public class AtomRegisterGroundRuleStore extends MemoryGroundRuleStore {
-    private SetValuedMap<GroundAtom, GroundRule> atomMapping;
+    private Map<GroundAtom, Set<GroundRule>> atomMapping;
 
     public AtomRegisterGroundRuleStore() {
         super();
 
-        atomMapping = new HashSetValuedHashMap<GroundAtom, GroundRule>();
+        atomMapping = new HashMap<GroundAtom, Set<GroundRule>>();
     }
 
     public Set<GroundRule> getRegisteredGroundRules(GroundAtom atom) {
@@ -57,7 +57,11 @@ public class AtomRegisterGroundRuleStore extends MemoryGroundRuleStore {
 
         // Register the ground rule with the atoms involved.
         for (GroundAtom atom : groundRule.getAtoms()) {
-            atomMapping.put(atom, groundRule);
+            if (!atomMapping.containsKey(atom)) {
+                atomMapping.put(atom, new HashSet<GroundRule>());
+            }
+
+            atomMapping.get(atom).add(groundRule);
         }
     }
 
@@ -67,7 +71,11 @@ public class AtomRegisterGroundRuleStore extends MemoryGroundRuleStore {
 
         // Unregister the ground rule with all the atoms involved.
         for (GroundAtom atom : groundRule.getAtoms()) {
-            atomMapping.removeMapping(atom, groundRule);
+            if (!atomMapping.containsKey(atom)) {
+                continue;
+            }
+
+            atomMapping.get(atom).remove(groundRule);
         }
     }
 
@@ -76,7 +84,11 @@ public class AtomRegisterGroundRuleStore extends MemoryGroundRuleStore {
         // Unregister the atoms before we loose the mapping of rule to ground rules.
         for (GroundRule groundRule : getGroundRules(rule)) {
             for (GroundAtom atom : groundRule.getAtoms()) {
-                atomMapping.removeMapping(atom, groundRule);
+                if (!atomMapping.containsKey(atom)) {
+                    continue;
+                }
+
+                atomMapping.get(atom).remove(groundRule);
             }
         }
 
