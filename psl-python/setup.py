@@ -1,4 +1,5 @@
 import os
+import re
 import setuptools
 import shutil
 import xml.etree.ElementTree
@@ -35,7 +36,11 @@ def main():
     url, author, email, raw_version = get_pom_info()
 
     # The version requires some normalization for PEP style.
-    version = raw_version.lower().replace('-snapshot', '.dev0')
+    version = raw_version.lower()
+    # Snapshots get a strange-looking name and shouldn't be uploaded.
+    version = version.replace('-snapshot', 'rc0.dev0')
+    # Canaries get a dev version.
+    version = re.sub(r'^canary-(\d+\.\d+)\.(\d+)$', r'\1.0.dev\2', version)
 
     copy_cli_jar(raw_version)
 
