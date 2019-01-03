@@ -22,14 +22,7 @@ import java.security.NoSuchAlgorithmException;
 import java.nio.charset.StandardCharsets;
 
 /**
- * A utility to help build hash codes for objects.
- * This class borrows the methodology from org.apache.commons.lang3.builder.HashCodeBuilder.
- * We do not just directly use that class and instead choose a static class to reduce
- * allocations in high-traffic code like atoms or ground rules.
- *
- * When adding to a hash code, the previous value can be supplied as the |start| parameter.
- * Therefore, calls can be nested:
- * int myHashCode = HashCode.build(HashCode.build(a), b);
+ * Compute hash digests.
  */
 public class Hash {
     // Static only.
