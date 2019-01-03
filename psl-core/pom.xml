@@ -32,16 +32,6 @@
     <dependencies>
         <!-- linear algebra dependencies -->
         <dependency>
-            <groupId>edu.emory.mathcs</groupId>
-            <artifactId>parallelcolt</artifactId>
-            <version>0.9.4</version>
-        </dependency>
-        <dependency>
-            <groupId>edu.emory.mathcs</groupId>
-            <artifactId>jplasma</artifactId>
-            <version>1.2</version>
-        </dependency>
-        <dependency>
             <groupId>com.github.fommil.netlib</groupId>
             <artifactId>all</artifactId>
             <version>1.1.2</version>
