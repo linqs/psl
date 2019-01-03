@@ -39,7 +39,7 @@ def main():
     version = raw_version.lower()
     # Snapshots get a strange-looking name and shouldn't be uploaded.
     version = version.replace('-snapshot', 'rc0.dev0')
-    # Canaries get a dev version.
+    # Canaries get a dev version: <major>.<minor>.0.dev<canary>
     version = re.sub(r'^canary-(\d+\.\d+)\.(\d+)$', r'\1.0.dev\2', version)
 
     copy_cli_jar(raw_version)
