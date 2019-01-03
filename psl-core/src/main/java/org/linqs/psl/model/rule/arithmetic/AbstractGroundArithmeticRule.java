@@ -21,8 +21,7 @@ import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
-
-import org.apache.commons.lang3.ArrayUtils;
+import org.linqs.psl.util.ListUtils;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -41,7 +40,7 @@ public abstract class AbstractGroundArithmeticRule implements GroundRule {
 
     protected AbstractGroundArithmeticRule(AbstractArithmeticRule rule,
             List<Float> coefficients, List<GroundAtom> atoms, FunctionComparator comparator, float constant) {
-        this(rule, ArrayUtils.toPrimitive(coefficients.toArray(new Float[0])),
+        this(rule, ListUtils.toPrimitiveFloatArray(coefficients),
                 atoms.toArray(new GroundAtom[0]), comparator, constant, false);
     }
 
