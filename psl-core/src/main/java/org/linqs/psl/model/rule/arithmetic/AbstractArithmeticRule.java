@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Disjunction;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.formula.Negation;
+import org.linqs.psl.model.predicate.GroundingOnlyPredicate;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.AbstractRule;
@@ -406,6 +407,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
         // Project only variables found in the body.
         // Note that this includes the summation variables.
         Set<Variable> projectionSet = bodyFormula.collectVariables(new VariableTypeMap()).keySet();
+
         // We will need to collect what the mapping looks like.
         Map<Variable, Integer> projectionMap = null;
 
@@ -527,6 +529,11 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 
     private void addFilterConditions(Formula filterFormula, SelectQuery query, Map<Atom, String> tableAliases) {
         if (filterFormula instanceof Atom) {
+            if (((Atom)filterFormula).getPredicate() instanceof GroundingOnlyPredicate) {
+                // GroundindOnlyPredicates don't need to check for a value, they will be evaluated elsewhere in the query.
+                return;
+            }
+
             CustomSql valueColumn = new CustomSql(tableAliases.get((Atom)filterFormula) + "." + PredicateInfo.VALUE_COLUMN_NAME);
             query.addCondition(BinaryCondition.greaterThan(valueColumn, 0.0));
         } else if (filterFormula instanceof Negation) {

@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,14 +22,7 @@ import java.security.NoSuchAlgorithmException;
 import java.nio.charset.StandardCharsets;
 
 /**
- * A utility to help build hash codes for objects.
- * This class borrows the methodology from org.apache.commons.lang3.builder.HashCodeBuilder.
- * We do not just directly use that class and instead choose a static class to reduce
- * allocations in high-traffic code like atoms or ground rules.
- *
- * When adding to a hash code, the previous value can be supplied as the |start| parameter.
- * Therefore, calls can be nested:
- * int myHashCode = HashCode.build(HashCode.build(a), b);
+ * Compute hash digests.
  */
 public class Hash {
     // Static only.

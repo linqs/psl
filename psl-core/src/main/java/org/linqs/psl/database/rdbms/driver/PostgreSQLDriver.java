@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import org.linqs.psl.database.rdbms.SelectivityHistogram;
 import org.linqs.psl.database.rdbms.TableStats;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.util.Parallel;
+import org.linqs.psl.util.ListUtils;
 import org.linqs.psl.util.StringUtils;
 
 import com.healthmarketscience.sqlbuilder.CreateTableQuery;
@@ -123,7 +124,7 @@ public class PostgreSQLDriver implements DatabaseDriver {
             PredicateInfo predicateInfo, Partition partition) {
         String sql = String.format("COPY %s(%s%s) FROM STDIN WITH DELIMITER '%s'",
                 predicateInfo.tableName(),
-                StringUtils.join(predicateInfo.argumentColumns(), ", "),
+                ListUtils.join(", ", predicateInfo.argumentColumns()),
                 hasTruth ? (", " + PredicateInfo.VALUE_COLUMN_NAME) : "",
                 delimiter);
 
@@ -220,15 +221,15 @@ public class PostgreSQLDriver implements DatabaseDriver {
         // PostgreSQL uses the "INSERT ... ON CONFLICT" syntax.
         List<String> sql = new ArrayList<String>();
         sql.add("INSERT INTO " + tableName + "");
-        sql.add("    (" + StringUtils.join(columns, ", ") + ")");
+        sql.add("    (" + StringUtils.join(", ", columns) + ")");
         sql.add("VALUES");
         sql.add("    (" + StringUtils.repeat("?", ", ", columns.length) + ")");
         sql.add("ON CONFLICT");
-        sql.add("    (" + StringUtils.join(keyColumns, ", ") + ")");
+        sql.add("    (" + StringUtils.join(", ", keyColumns) + ")");
         sql.add("DO UPDATE SET");
-        sql.add("    " + StringUtils.join(updateValues, ", "));
+        sql.add("    " + ListUtils.join(", ", updateValues));
 
-        return StringUtils.join(sql, "\n");
+        return ListUtils.join("\n", sql);
     }
 
     private void executeUpdate(String sql) {
@@ -286,7 +287,7 @@ public class PostgreSQLDriver implements DatabaseDriver {
 
         try (
             Connection connection = getConnection();
-            PreparedStatement statement = connection.prepareStatement(StringUtils.join(sql, "\n"));
+            PreparedStatement statement = connection.prepareStatement(ListUtils.join("\n", sql));
             ResultSet result = statement.executeQuery();
         ) {
             while (result.next()) {

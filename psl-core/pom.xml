@@ -2,7 +2,7 @@
 <!--
   - This file is part of the PSL software.
   - Copyright 2011-2015 University of Maryland
-  - Copyright 2013-2018 The Regents of the University of California
+  - Copyright 2013-2019 The Regents of the University of California
   -
   - Licensed under the Apache License, Version 2.0 (the "License");
   - you may not use this file except in compliance with the License.
@@ -32,14 +32,10 @@
     <dependencies>
         <!-- linear algebra dependencies -->
         <dependency>
-            <groupId>edu.emory.mathcs</groupId>
-            <artifactId>parallelcolt</artifactId>
-            <version>0.9.4</version>
-        </dependency>
-        <dependency>
-            <groupId>edu.emory.mathcs</groupId>
-            <artifactId>jplasma</artifactId>
-            <version>1.2</version>
+            <groupId>com.github.fommil.netlib</groupId>
+            <artifactId>all</artifactId>
+            <version>1.1.2</version>
+            <type>pom</type>
         </dependency>
 
         <!-- logging dependencies -->
@@ -60,16 +56,6 @@
         </dependency>
 
         <!-- commons dependencies -->
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
-            <version>3.5</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-collections4</artifactId>
-            <version>4.1</version>
-        </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-configuration2</artifactId>

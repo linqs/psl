@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,11 +28,10 @@ import org.linqs.psl.PSLTest;
 import org.linqs.psl.TestModel;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.term.Variable;
+import org.linqs.psl.util.ListUtils;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import org.apache.commons.lang.StringUtils;
 
 public class FormulaAnalysisTest {
     private TestModel.ModelInformation model;
@@ -320,7 +319,7 @@ public class FormulaAnalysisTest {
             for (int j = 0; j < analysis.getNumDNFClauses(); j++) {
                 clauses.add(analysis.getDNFClause(j).toString());
             }
-            actual[i] = StringUtils.join(clauses, " | ");
+            actual[i] = ListUtils.join(" | ", clauses);
         }
 
         PSLTest.assertStringsEquals(expected, actual, true);

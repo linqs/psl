@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,13 +32,12 @@ import org.linqs.psl.model.rule.arithmetic.WeightedArithmeticRule;
 import org.linqs.psl.model.rule.arithmetic.expression.SummationAtom;
 import org.linqs.psl.model.rule.arithmetic.expression.SummationAtomOrAtom;
 import org.linqs.psl.model.term.ConstantType;
+import org.linqs.psl.util.ListUtils;
 
-import org.apache.commons.lang3.StringUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -91,8 +90,8 @@ public class ModelLoaderTest {
         for (char i = 'A'; i < 'Z'; i++) {
             parts.add(String.format("Single(%c) & Double(%c, Z)", i, i));
         }
-        String input = String.format("1: %s >> Single(Z) ^2", StringUtils.join(parts, " & "));
-        String expected = String.format("1.0: ( %s ) >> SINGLE(Z) ^2", StringUtils.join(parts, " & ").toUpperCase());
+        String input = String.format("1: %s >> Single(Z) ^2", ListUtils.join(" & ", parts));
+        String expected = String.format("1.0: ( %s ) >> SINGLE(Z) ^2", ListUtils.join(" & ", parts).toUpperCase());
 
         PSLTest.assertModel(dataStore, input, new String[]{expected});
     }
@@ -458,10 +457,10 @@ public class ModelLoaderTest {
             "1.0 * SINGLE(A) + 1.0 * SINGLE(B) = 1.0 .",
             "1.0 * DOUBLE(+A, 'Foo') = 1.0 .",
             "1.0 * SINGLE(+A) + 1.0 * SINGLE(+B) = 1.0 .",
-            "1.0 * SINGLE(+A) = 1.0 .\n{A : SINGLE(A)}",
-            "1.0 * SINGLE(+A) = 1.0 .\n{A : ( SINGLE(A) | DOUBLE(A, A) )}",
-            "1.0 * DOUBLE(+A, B) = 1.0 .\n{A : SINGLE(B)}",
-            "1.0 * SINGLE(+A) + 1.0 * SINGLE(+B) = 1.0 .\n{A : SINGLE(A)}\n{B : SINGLE(B)}",
+            "1.0 * SINGLE(+A) = 1.0 .   {A : SINGLE(A)}",
+            "1.0 * SINGLE(+A) = 1.0 .   {A : ( SINGLE(A) | DOUBLE(A, A) )}",
+            "1.0 * DOUBLE(+A, B) = 1.0 .   {A : SINGLE(B)}",
+            "1.0 * SINGLE(+A) + 1.0 * SINGLE(+B) = 1.0 .   {A : SINGLE(A)}   {B : SINGLE(B)}",
             "|A| * SINGLE(+A) = 1.0 .",
             "|A| * SINGLE(+A) = |A| .",
             "|A| * SINGLE(+A) + |B| * SINGLE(+B) = 1.0 .",
@@ -612,26 +611,22 @@ public class ModelLoaderTest {
             "( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) .",
             "1.0: 1.0 * SINGLE(A) = 1.0 ^2",
             "1.0 * SINGLE(A) = 1.0 .",
-            "1.0 * SINGLE(+A) = 1.0 .\n{A : SINGLE(A)}",
-            "1.0: 1.0 * SINGLE(+A) = 1.0\n{A : SINGLE(A)}",
-            "1.0: 1.0 * SINGLE(+A) = 1.0 ^2\n{A : SINGLE(A)}",
+            "1.0 * SINGLE(+A) = 1.0 .   {A : SINGLE(A)}",
+            "1.0: 1.0 * SINGLE(+A) = 1.0   {A : SINGLE(A)}",
+            "1.0: 1.0 * SINGLE(+A) = 1.0 ^2   {A : SINGLE(A)}",
         };
 
-        try {
-            for (int i = 0; i < inputs.length; i++) {
-                RulePartial partial = ModelLoader.loadRulePartial(dataStore, inputs[i]);
-                assertEquals(
-                        String.format("Expected RulePartial #%d to be a rule, but was not.", i),
-                        true,
-                        partial.isRule()
-                );
+        for (int i = 0; i < inputs.length; i++) {
+            RulePartial partial = ModelLoader.loadRulePartial(dataStore, inputs[i]);
+            assertEquals(
+                    String.format("Expected RulePartial #%d to be a rule, but was not.", i),
+                    true,
+                    partial.isRule()
+            );
 
-                Rule rule = partial.toRule();
-                PSLTest.assertStringEquals(expected[i], rule.toString(), true,
-                        String.format("Rule %d string mismatch", i));
-            }
-        } catch (IOException ex) {
-            fail("Unexpected IOException thrown from ModelLoader.loadRulePartial(): " + ex);
+            Rule rule = partial.toRule();
+            PSLTest.assertStringEquals(expected[i], rule.toString(), true,
+                    String.format("Rule %d string mismatch", i));
         }
     }
 
@@ -648,37 +643,33 @@ public class ModelLoaderTest {
         String[] unweightedExpected = new String[]{
             "( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) .",
             "1.0 * SINGLE(A) = 1.0 .",
-            "1.0 * SINGLE(+A) = 1.0 .\n{A : SINGLE(A)}",
-            "1.0 * SINGLE(+A) + 1.0 * SINGLE(+B) = 1.0 .\n{A : SINGLE(A)}\n{B : SINGLE(B)}"
+            "1.0 * SINGLE(+A) = 1.0 .   {A : SINGLE(A)}",
+            "1.0 * SINGLE(+A) + 1.0 * SINGLE(+B) = 1.0 .   {A : SINGLE(A)}   {B : SINGLE(B)}"
         };
 
         // Weight all the variants with 5 and square them.
         String[] weightedExpected = new String[]{
             "5.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) ^2",
             "5.0: 1.0 * SINGLE(A) = 1.0 ^2",
-            "5.0: 1.0 * SINGLE(+A) = 1.0 ^2\n{A : SINGLE(A)}",
-            "5.0: 1.0 * SINGLE(+A) + 1.0 * SINGLE(+B) = 1.0 ^2\n{A : SINGLE(A)}\n{B : SINGLE(B)}"
+            "5.0: 1.0 * SINGLE(+A) = 1.0 ^2   {A : SINGLE(A)}",
+            "5.0: 1.0 * SINGLE(+A) + 1.0 * SINGLE(+B) = 1.0 ^2   {A : SINGLE(A)}   {B : SINGLE(B)}"
         };
 
-        try {
-            for (int i = 0; i < inputs.length; i++) {
-                RulePartial partial = ModelLoader.loadRulePartial(dataStore, inputs[i]);
-                assertEquals(
-                        String.format("Expected RulePartial #%d to not a rule, but was.", i),
-                        false,
-                        partial.isRule()
-                );
+        for (int i = 0; i < inputs.length; i++) {
+            RulePartial partial = ModelLoader.loadRulePartial(dataStore, inputs[i]);
+            assertEquals(
+                    String.format("Expected RulePartial #%d to not a rule, but was.", i),
+                    false,
+                    partial.isRule()
+            );
 
-                Rule unweightedRule = partial.toRule();
-                PSLTest.assertStringEquals(unweightedExpected[i], unweightedRule.toString(), true,
-                        String.format("Unweighted rule %d string mismatch", i));
+            Rule unweightedRule = partial.toRule();
+            PSLTest.assertStringEquals(unweightedExpected[i], unweightedRule.toString(), true,
+                    String.format("Unweighted rule %d string mismatch", i));
 
-                Rule weightedRule = partial.toRule(5.0, true);
-                PSLTest.assertStringEquals(weightedExpected[i], weightedRule.toString(), true,
-                        String.format("Weighted rule %d string mismatch", i));
-            }
-        } catch (IOException ex) {
-            fail("Unexpected IOException thrown from ModelLoader.loadRulePartial(): " + ex);
+            Rule weightedRule = partial.toRule(5.0, true);
+            PSLTest.assertStringEquals(weightedExpected[i], weightedRule.toString(), true,
+                    String.format("Weighted rule %d string mismatch", i));
         }
     }
 
@@ -790,20 +781,20 @@ public class ModelLoaderTest {
             "Single(+A) + Double(B, C) = 1 . {A: Single(A) && (Single(B) || Single(C))}\n" +
             "";
         String[] expected = new String[]{
-            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( SINGLE(A) | SINGLE(B) | SINGLE(C) )}",
-            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( SINGLE(A) & SINGLE(B) & SINGLE(C) )}",
-            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( SINGLE(A) | ( SINGLE(B) & SINGLE(C) ) )}",
-            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( ( SINGLE(A) & SINGLE(B) ) | SINGLE(C) )}",
+            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .   {A : ( SINGLE(A) | SINGLE(B) | SINGLE(C) )}",
+            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .   {A : ( SINGLE(A) & SINGLE(B) & SINGLE(C) )}",
+            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .   {A : ( SINGLE(A) | ( SINGLE(B) & SINGLE(C) ) )}",
+            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .   {A : ( ( SINGLE(A) & SINGLE(B) ) | SINGLE(C) )}",
 
-            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( SINGLE(A) | SINGLE(B) | SINGLE(C) )}",
-            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( SINGLE(A) | SINGLE(B) | SINGLE(C) )}",
-            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( SINGLE(A) & SINGLE(B) & SINGLE(C) )}",
-            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( SINGLE(A) & SINGLE(B) & SINGLE(C) )}",
+            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .   {A : ( SINGLE(A) | SINGLE(B) | SINGLE(C) )}",
+            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .   {A : ( SINGLE(A) | SINGLE(B) | SINGLE(C) )}",
+            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .   {A : ( SINGLE(A) & SINGLE(B) & SINGLE(C) )}",
+            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .   {A : ( SINGLE(A) & SINGLE(B) & SINGLE(C) )}",
 
-            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( ( SINGLE(A) & SINGLE(C) ) | ( SINGLE(B) & SINGLE(C) ) )}",
-            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( SINGLE(A) | ( SINGLE(B) & SINGLE(C) ) )}",
-            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( ( SINGLE(A) & SINGLE(B) ) | SINGLE(C) )}",
-            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .\n{A : ( ( SINGLE(A) & SINGLE(B) ) | ( SINGLE(A) & SINGLE(C) ) )}"
+            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .   {A : ( ( SINGLE(A) & SINGLE(C) ) | ( SINGLE(B) & SINGLE(C) ) )}",
+            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .   {A : ( SINGLE(A) | ( SINGLE(B) & SINGLE(C) ) )}",
+            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .   {A : ( ( SINGLE(A) & SINGLE(B) ) | SINGLE(C) )}",
+            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .   {A : ( ( SINGLE(A) & SINGLE(B) ) | ( SINGLE(A) & SINGLE(C) ) )}"
         };
 
         PSLTest.assertModel(dataStore, input, expected);

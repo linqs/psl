@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -212,7 +212,7 @@ public class AbstractArithmeticRuleTest {
                 coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1));
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, filters);
 
-        PSLTest.assertRule(rule, "1.0 * SINGLECLOSED(+A) = 1.0 .\n{A : SINGLECLOSED(A)}");
+        PSLTest.assertRule(rule, "1.0 * SINGLECLOSED(+A) = 1.0 .   {A : SINGLECLOSED(A)}");
     }
 
     @Test
@@ -238,7 +238,7 @@ public class AbstractArithmeticRuleTest {
                 coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1));
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, filters);
 
-        PSLTest.assertRule(rule, "1.0 * SINGLECLOSED(+A) = 1.0 .\n{A : ( SINGLECLOSED(A) | DOUBLECLOSED(A, A) )}", true);
+        PSLTest.assertRule(rule, "1.0 * SINGLECLOSED(+A) = 1.0 .   {A : ( SINGLECLOSED(A) | DOUBLECLOSED(A, A) )}", true);
     }
 
     @Test
@@ -263,7 +263,7 @@ public class AbstractArithmeticRuleTest {
                 coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1));
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, filters);
 
-        PSLTest.assertRule(rule, "1.0 * DOUBLECLOSED(+A, B) = 1.0 .\n{A : SINGLECLOSED(B)}");
+        PSLTest.assertRule(rule, "1.0 * DOUBLECLOSED(+A, B) = 1.0 .   {A : SINGLECLOSED(B)}");
     }
 
     @Test
@@ -287,7 +287,7 @@ public class AbstractArithmeticRuleTest {
                 coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1));
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, filters);
 
-        PSLTest.assertRule(rule, "1.0 * SINGLECLOSED(+A) + 1.0 * SINGLECLOSED(+B) = 1.0 .\n{A : SINGLECLOSED(A)}\n{B : SINGLECLOSED(B)}", true);
+        PSLTest.assertRule(rule, "1.0 * SINGLECLOSED(+A) + 1.0 * SINGLECLOSED(+B) = 1.0 .   {A : SINGLECLOSED(A)}   {B : SINGLECLOSED(B)}", true);
     }
 
     @Test

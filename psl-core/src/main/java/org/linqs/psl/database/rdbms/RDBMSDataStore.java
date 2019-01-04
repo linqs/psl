@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -131,7 +131,21 @@ public class RDBMSDataStore implements DataStore {
 
     @Override
     public Database getDatabase(Partition write, Partition... read) {
-        return getDatabase(write, null, read);
+        return getDatabase(write, (Set<StandardPredicate>)null, read);
+    }
+
+    @Override
+    public Database getDatabase(Partition write, StandardPredicate[] toClose, Partition... read) {
+        if (toClose == null) {
+            return getDatabase(write, (Set<StandardPredicate>)null, read);
+        }
+
+        Set<StandardPredicate> closeSet = new HashSet<StandardPredicate>();
+        for (StandardPredicate predicate : toClose) {
+            closeSet.add(predicate);
+        }
+
+        return getDatabase(write, closeSet, read);
     }
 
     @Override

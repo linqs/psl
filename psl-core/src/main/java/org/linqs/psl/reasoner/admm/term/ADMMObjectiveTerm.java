@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,22 +18,22 @@
 package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.reasoner.term.Term;
+import org.linqs.psl.reasoner.term.ReasonerTerm;
 
 /**
  * A term in the objective to be optimized by an ADMMReasoner.
  */
-public abstract class ADMMObjectiveTerm implements Term {
+public abstract class ADMMObjectiveTerm implements ReasonerTerm {
     protected final GroundRule groundRule;
     protected final LocalVariable[] variables;
-    protected final short size;
+    protected final int size;
 
     /**
      * Caller releases control of |variables|.
      */
     public ADMMObjectiveTerm(Hyperplane hyperplane, GroundRule groundRule) {
         this.variables = hyperplane.getVariables();
-        this.size = (short)hyperplane.size();
+        this.size = hyperplane.size();
         this.groundRule = groundRule;
     }
 
@@ -67,15 +67,10 @@ public abstract class ADMMObjectiveTerm implements Term {
      * Get the number of variables in this term.
      */
     public int size() {
-        return (short)size;
+        return size;
     }
 
-    @Override
     public GroundRule getGroundRule() {
         return groundRule;
-    }
-
-    @Override
-    public void weightChanged() {
     }
 }

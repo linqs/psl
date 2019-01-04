@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
-import org.linqs.psl.reasoner.term.WeightedTerm;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 
@@ -27,7 +26,7 @@ import org.linqs.psl.model.rule.WeightedGroundRule;
  *
  * All coefficients must be non-zero.
  */
-public class HingeLossTerm extends HyperplaneTerm implements WeightedTerm {
+public class HingeLossTerm extends HyperplaneTerm {
     public HingeLossTerm(GroundRule groundRule, Hyperplane hyperplane) {
         super(groundRule, hyperplane);
     }

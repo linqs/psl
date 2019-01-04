@@ -1,7 +1,8 @@
-dist: trusty
-sudo: false
+dist: xenial
 
 language: java
+
+jdk: openjdk8
 
 addons:
   postgresql: "9.6"
@@ -9,5 +10,15 @@ addons:
 services:
   - postgresql
 
+before_install:
+  - sudo update-java-alternatives -s java-1.8.0-openjdk-amd64
+  - export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64
+  - java -version
+  - sudo apt-get update
+  - sudo apt-get install python3 python3-pip python3-wheel python3-setuptools python3-pandas
+
 before_script:
   - createdb psltest
+
+script:
+  - mvn integration-test -B

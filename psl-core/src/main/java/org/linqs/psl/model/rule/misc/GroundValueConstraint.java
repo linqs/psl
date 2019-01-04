@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ public class GroundValueConstraint implements UnweightedGroundRule {
 
     @Override
     public ConstraintTerm getConstraintDefinition() {
-        GeneralFunction sum = new GeneralFunction(false, false, (short)1);
+        GeneralFunction sum = new GeneralFunction(false, false, 1);
         sum.add(1.0f, atom);
         return new ConstraintTerm(sum, FunctionComparator.Equality, value);
     }
@@ -74,5 +74,10 @@ public class GroundValueConstraint implements UnweightedGroundRule {
     @Override
     public List<GroundRule> negate() {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String baseToString() {
+        return getConstraintDefinition().toString();
     }
 }

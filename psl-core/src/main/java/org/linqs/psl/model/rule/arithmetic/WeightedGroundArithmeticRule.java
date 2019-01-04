@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,7 +71,7 @@ public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule i
 
     @Override
     public GeneralFunction getFunctionDefinition() {
-        GeneralFunction sum = new GeneralFunction(true, isSquared(), (short)coefficients.length);
+        GeneralFunction sum = new GeneralFunction(true, isSquared(), coefficients.length);
 
         float termSign = FunctionComparator.LargerThan.equals(comparator) ? -1.0f : 1.0f;
         for (int i = 0; i < coefficients.length; i++) {
@@ -118,6 +118,6 @@ public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule i
 
     @Override
     public String toString() {
-        return "" + getWeight() + ": " + super.toString() + ((isSquared()) ? " ^2" : "");
+        return "" + getWeight() + ": " + baseToString() + ((isSquared()) ? " ^2" : "");
     }
 }

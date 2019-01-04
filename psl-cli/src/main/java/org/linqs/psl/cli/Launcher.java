@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,9 +36,12 @@ import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.model.rule.UnweightedGroundRule;
+import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.parser.ModelLoader;
 import org.linqs.psl.util.Reflection;
+import org.linqs.psl.util.StringUtils;
 import org.linqs.psl.util.Version;
 
 import org.apache.commons.cli.CommandLine;
@@ -103,8 +106,8 @@ public class Launcher {
     public static final String OPTION_MODEL_LONG = "model";
     public static final String OPTION_OUTPUT_DIR = "o";
     public static final String OPTION_OUTPUT_DIR_LONG = "output";
-    public static final String OPTION_OUTPUT_GROUND_RULES = "gr";
     public static final String OPTION_OUTPUT_GROUND_RULES_LONG = "groundrules";
+    public static final String OPTION_OUTPUT_SATISFACTION_LONG = "satisfaction";
     public static final String OPTION_PROPERTIES = "D";
     public static final String OPTION_PROPERTIES_FILE = "p";
     public static final String OPTION_PROPERTIES_FILE_LONG = "properties";
@@ -134,7 +137,7 @@ public class Launcher {
     }
 
     /**
-     * Initializes log4j.
+     * Initializes logging.
      */
     private Logger initLogger() {
         Properties props = new Properties();
@@ -167,6 +170,13 @@ public class Launcher {
         // Log4j is pretty picky about it's thresholds, so we will specially set one option.
         if (props.containsKey("log4j.threshold")) {
             props.setProperty("log4j.rootLogger", props.getProperty("log4j.threshold") + ", A1");
+        }
+
+        // Some deps use java.util.logging, so we will silence their loggers.
+        java.util.logging.Logger rootJavaLogger = java.util.logging.LogManager.getLogManager().getLogger("");
+        rootJavaLogger.setLevel(java.util.logging.Level.SEVERE);
+        for (java.util.logging.Handler handler : rootJavaLogger.getHandlers()) {
+            handler.setLevel(java.util.logging.Level.SEVERE);
         }
 
         PropertyConfigurator.configure(props);
@@ -247,27 +257,48 @@ public class Launcher {
 
     /**
      * Possible output the ground rules.
+     * @param path where to output the ground rules. Use stdout if null.
      */
-    private void outputGroundRules(GroundRuleStore groundRuleStore) {
-        if (!options.hasOption(OPTION_OUTPUT_GROUND_RULES)) {
-            return;
-        }
-
+    private void outputGroundRules(GroundRuleStore groundRuleStore, String path, boolean includeSatisfaction) {
         PrintStream stream = System.out;
         boolean closeStream = false;
 
-        String groundRulesPath = options.getOptionValue(OPTION_OUTPUT_GROUND_RULES);
-        if (groundRulesPath != null) {
+        if (path != null) {
             try {
-                stream = new PrintStream(groundRulesPath);
+                stream = new PrintStream(path);
                 closeStream = true;
             } catch (IOException ex) {
-                log.error("Unable to open file for ground rules, using stdout instead.", ex);
+                log.error(String.format("Unable to open file (%s) for ground rules, using stdout instead.", path), ex);
             }
         }
 
+        // Write a header.
+        String header = StringUtils.join("\t", "Weight", "Squared?", "Rule");
+        if (includeSatisfaction) {
+            header = StringUtils.join("\t", header, "Satisfaction");
+        }
+        stream.println(header);
+
         for (GroundRule groundRule : groundRuleStore.getGroundRules()) {
-            stream.println(groundRule);
+            String row = "";
+            double satisfaction = 0.0;
+
+            if (groundRule instanceof WeightedGroundRule) {
+                WeightedGroundRule weightedGroundRule = (WeightedGroundRule)groundRule;
+                row = StringUtils.join("\t",
+                        "" + weightedGroundRule.getWeight(), "" + weightedGroundRule.isSquared(), groundRule.baseToString());
+                satisfaction = 1.0 - weightedGroundRule.getIncompatibility();
+            } else {
+                UnweightedGroundRule unweightedGroundRule = (UnweightedGroundRule)groundRule;
+                row = StringUtils.join("\t", ".", "" + false, groundRule.baseToString());
+                satisfaction = 1.0 - unweightedGroundRule.getInfeasibility();
+            }
+
+            if (includeSatisfaction) {
+                row = StringUtils.join("\t", row, "" + satisfaction);
+            }
+
+            stream.println(row);
         }
 
         if (closeStream) {
@@ -290,9 +321,17 @@ public class Launcher {
         InferenceApplication inferenceApplication =
                 InferenceApplication.getInferenceApplication(inferenceName, model, database);
 
-        outputGroundRules(inferenceApplication.getGroundRuleStore());
+        if (options.hasOption(OPTION_OUTPUT_GROUND_RULES_LONG)) {
+            String path = options.getOptionValue(OPTION_OUTPUT_GROUND_RULES_LONG);
+            outputGroundRules(inferenceApplication.getGroundRuleStore(), path, false);
+        }
 
         inferenceApplication.inference();
+
+        if (options.hasOption(OPTION_OUTPUT_SATISFACTION_LONG)) {
+            String path = options.getOptionValue(OPTION_OUTPUT_SATISFACTION_LONG);
+            outputGroundRules(inferenceApplication.getGroundRuleStore(), path, true);
+        }
 
         log.info("Inference Complete");
 
@@ -344,8 +383,7 @@ public class Launcher {
         }
     }
 
-    private void learnWeights(Model model, DataStore dataStore, Set<StandardPredicate> closedPredicates, String wlaName)
-            throws IOException {
+    private void learnWeights(Model model, DataStore dataStore, Set<StandardPredicate> closedPredicates, String wlaName) {
         log.info("Starting weight learning with learner: " + wlaName);
 
         Partition targetPartition = dataStore.getPartition(PARTITION_NAME_TARGET);
@@ -359,9 +397,17 @@ public class Launcher {
                 randomVariableDatabase, observedTruthDatabase);
         learner.learn();
 
-        outputGroundRules(learner.getGroundRuleStore());
+        if (options.hasOption(OPTION_OUTPUT_GROUND_RULES_LONG)) {
+            String path = options.getOptionValue(OPTION_OUTPUT_GROUND_RULES_LONG);
+            outputGroundRules(learner.getGroundRuleStore(), path, false);
+        }
 
         learner.close();
+
+        if (options.hasOption(OPTION_OUTPUT_SATISFACTION_LONG)) {
+            String path = options.getOptionValue(OPTION_OUTPUT_SATISFACTION_LONG);
+            outputGroundRules(learner.getGroundRuleStore(), path, true);
+        }
 
         randomVariableDatabase.close();
         observedTruthDatabase.close();
@@ -379,14 +425,17 @@ public class Launcher {
         }
         log.info("Writing learned model to {}", learnedFilename);
 
-        FileWriter learnedFileWriter = new FileWriter(new File(learnedFilename));
         String outModel = model.asString();
 
         // Remove excess parens.
         outModel = outModel.replaceAll("\\( | \\)", "");
 
-        learnedFileWriter.write(outModel);
-        learnedFileWriter.close();
+        try (FileWriter learnedFileWriter = new FileWriter(new File(learnedFilename))) {
+            learnedFileWriter.write(outModel);
+        } catch (IOException ex) {
+            log.error("Failed to write learned model:\n" + outModel);
+            throw new RuntimeException("Failed to write learned model to: " + learnedFilename, ex);
+        }
     }
 
     /**
@@ -433,14 +482,14 @@ public class Launcher {
     }
 
     private Model loadModel(DataStore dataStore) {
-        log.info("Loading model");
+        log.info("Loading model from {}", options.getOptionValue(OPTION_MODEL));
 
         Model model = null;
-        File modelFile = new File(options.getOptionValue(OPTION_MODEL));
-        try (FileReader reader = new FileReader(modelFile)) {
-            model = ModelLoader.load(dataStore, new FileReader(modelFile));
+
+        try (FileReader reader = new FileReader(new File(options.getOptionValue(OPTION_MODEL)))) {
+            model = ModelLoader.load(dataStore, reader);
         } catch (IOException ex) {
-            throw new RuntimeException("Error reading model file.", ex);
+            throw new RuntimeException("Failed to load model from file: " + options.getOptionValue(OPTION_MODEL), ex);
         }
 
         log.debug(model.toString());
@@ -449,8 +498,7 @@ public class Launcher {
         return model;
     }
 
-    private void run()
-            throws IOException, ClassNotFoundException, IllegalAccessException, InstantiationException {
+    private void run() {
         log.info("Running PSL CLI Version {}", Version.getFull());
         DataStore dataStore = initDataStore();
 
@@ -597,11 +645,21 @@ public class Launcher {
                 .argName("path")
                 .build());
 
-        options.addOption(Option.builder(OPTION_OUTPUT_GROUND_RULES)
+        options.addOption(Option.builder()
                 .longOpt(OPTION_OUTPUT_GROUND_RULES_LONG)
                 .desc("Output the program's ground rules." +
                         " If a path is specified, the ground rules will be output there." +
-                        " Otherwise, output them to stdout (not the logger).")
+                        " Otherwise, they will be output to stdout (not the logger).")
+                .hasArg()
+                .argName("path")
+                .optionalArg(true)
+                .build());
+
+        options.addOption(Option.builder()
+                .longOpt(OPTION_OUTPUT_SATISFACTION_LONG)
+                .desc("Output the program's ground rules along with their satisfaction values after inference." +
+                        " If a path is specified, the ground rules will be output there." +
+                        " Otherwise, they will be output to stdout (not the logger).")
                 .hasArg()
                 .argName("path")
                 .optionalArg(true)

@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@
 package org.linqs.psl.database.rdbms;
 
 import org.linqs.psl.database.Partition;
+import org.linqs.psl.util.ListUtils;
 
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,7 +75,7 @@ public class DataStoreMetadata {
 
         try (
             Connection connection = dataStore.getConnection();
-            PreparedStatement statement = connection.prepareStatement(StringUtils.join(sql, "\n"));
+            PreparedStatement statement = connection.prepareStatement(ListUtils.join("\n", sql));
         ) {
             statement.execute();
         } catch (SQLException ex) {
@@ -125,7 +125,7 @@ public class DataStoreMetadata {
         ResultSet resultSet = null;
         try (
             Connection connection = dataStore.getConnection();
-            PreparedStatement statement = connection.prepareStatement(StringUtils.join(sql, "\n"));
+            PreparedStatement statement = connection.prepareStatement(ListUtils.join("\n", sql));
         ) {
             statement.setString(1, namespace);
             statement.setString(2, type);
@@ -162,7 +162,7 @@ public class DataStoreMetadata {
 
         try (
             Connection connection = dataStore.getConnection();
-            PreparedStatement statement = connection.prepareStatement(StringUtils.join(sql, "\n"));
+            PreparedStatement statement = connection.prepareStatement(ListUtils.join("\n", sql));
         ) {
             statement.setString(1, namespace);
             statement.setString(2, type);
@@ -186,7 +186,7 @@ public class DataStoreMetadata {
 
         try (
             Connection connection = dataStore.getConnection();
-            PreparedStatement statement = connection.prepareStatement(StringUtils.join(sql, "\n"));
+            PreparedStatement statement = connection.prepareStatement(ListUtils.join("\n", sql));
         ) {
             statement.setString(1, namespace);
             statement.setString(2, type);

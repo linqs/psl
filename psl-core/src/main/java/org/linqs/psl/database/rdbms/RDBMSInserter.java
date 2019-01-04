@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,10 +23,11 @@ import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.UniqueIntID;
 import org.linqs.psl.model.term.UniqueStringID;
+import org.linqs.psl.util.ListUtils;
+import org.linqs.psl.util.StringUtils;
 
 import com.healthmarketscience.sqlbuilder.CustomSql;
 import com.healthmarketscience.sqlbuilder.InsertQuery;
-import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -102,11 +103,11 @@ public class RDBMSInserter extends Inserter {
 
         List<String> multiInsert = new ArrayList<String>();
         multiInsert.add("INSERT INTO " + predicateInfo.tableName());
-        multiInsert.add("    (" + StringUtils.join(columns, ", ") + ")");
+        multiInsert.add("    (" + ListUtils.join(", ", columns) + ")");
         multiInsert.add("VALUES");
         multiInsert.add("    " + StringUtils.repeat("(" + placeholders + ")", ", ", DEFAULT_MULTIROW_COUNT));
 
-        return StringUtils.join(multiInsert, "\n");
+        return ListUtils.join("\n", multiInsert);
     }
 
     @Override

@@ -1,0 +1,32 @@
+Elena	Machine Learning	1
+Jay	Machine Learning	1
+Steve	Machine Learning	1
+Ben	Machine Learning	1
+Alex	Machine Learning	1
+Arti	Machine Learning	1
+Dhanya	Machine Learning	1
+Sabina	Machine Learning	1
+Jay	Skeeball	0.8
+Steve	Skeeball	1
+Ben	Skeeball	1
+Jay	Trivia	1
+Steve	Trivia	0.8
+Sabina	Trivia	0.6
+Steve	Sports	1
+Ben	Sports	0.8
+Alex	Veggies	1
+Jay	Veggies	1
+Sabina	Veggies	1
+Arti	Veggies	1
+Dhanya	Veggies	0.6
+Steve	Veggies	0.6
+Elena	Veggies	0.4
+Ben	Veggies	0.4
+Jay	Climbing	0.8
+Sabina	Climbing	1
+Dhanya	Climbing	0.6
+Arti	Education	1
+Sabina	Education	1
+Ben	Hiking	0.8
+Dhanya	Hiking	0.6
+Steve	Hiking	0.6

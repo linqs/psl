@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.util.Hash;
+import org.linqs.psl.util.ListUtils;
+import org.linqs.psl.util.StringUtils;
 
 import com.healthmarketscience.sqlbuilder.BinaryCondition;
 import com.healthmarketscience.sqlbuilder.CreateIndexQuery;
@@ -32,7 +34,6 @@ import com.healthmarketscience.sqlbuilder.InCondition;
 import com.healthmarketscience.sqlbuilder.QueryPreparer;
 import com.healthmarketscience.sqlbuilder.SelectQuery;
 import com.healthmarketscience.sqlbuilder.UpdateQuery;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -230,7 +231,7 @@ public class PredicateInfo {
         // The partition column MUST be the last one (since H2 is super picky).
         uniqueColumns.add(PARTITION_COLUMN_NAME);
         if (uniqueColumns.size() > 1) {
-            createTable.addCustomConstraints("UNIQUE(" + StringUtils.join(uniqueColumns, ", ") + ")");
+            createTable.addCustomConstraints("UNIQUE(" + ListUtils.join(", ", uniqueColumns) + ")");
         }
 
         // We have an additional constraint that all atoms in a partition must be unique.
@@ -246,7 +247,7 @@ public class PredicateInfo {
             }
             uniqueColumns.add(0, PARTITION_COLUMN_NAME);
 
-            createTable.addCustomConstraints("UNIQUE(" + StringUtils.join(uniqueColumns, ", ") + ")");
+            createTable.addCustomConstraints("UNIQUE(" + ListUtils.join(", ", uniqueColumns) + ")");
         }
 
         try (Statement statement = connection.createStatement()) {

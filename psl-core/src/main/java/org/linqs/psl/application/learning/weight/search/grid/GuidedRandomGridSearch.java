@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -150,13 +150,13 @@ public class GuidedRandomGridSearch extends RandomGridSearch {
         for (int i = 0; i < mutableRules.size(); i++) {
             if (indexes[i] != possibleWeights.length - 1) {
                 indexes[i]++;
-                toExplore.add(StringUtils.join(indexes, DELIM));
+                toExplore.add(StringUtils.join(DELIM, indexes));
                 indexes[i]--;
             }
 
             if (indexes[i] != 0) {
                 indexes[i]--;
-                toExplore.add(StringUtils.join(indexes, DELIM));
+                toExplore.add(StringUtils.join(DELIM, indexes));
                 indexes[i]++;
             }
         }

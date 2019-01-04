@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +17,10 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
-import org.linqs.psl.reasoner.term.WeightedTerm;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
+import org.linqs.psl.util.FloatMatrix;
 import org.linqs.psl.util.HashCode;
-
-import cern.colt.matrix.tfloat.FloatMatrix2D;
-import cern.colt.matrix.tfloat.algo.decomposition.DenseFloatCholeskyDecomposition;
-import cern.colt.matrix.tfloat.impl.DenseFloatMatrix2D;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -37,13 +33,17 @@ import java.util.concurrent.Semaphore;
  * Stores the characterization of the hyperplane as coefficients^T * x = constant
  * and minimizes with the weighted, squared hyperplane in the objective.
  */
-public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements WeightedTerm {
+public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm {
     protected final float[] coefficients;
     protected final float constant;
 
-    private FloatMatrix2D L;
+    /**
+     * The lower triangle in the Cholesky decomposition of the symmetric matrix:
+     * M[i, j] = 2 * weight * coefficients[i] * coefficients[j]
+     */
+    private FloatMatrix lowerTriangle;
 
-    private static Map<DenseFloatMatrix2DWithHashcode, FloatMatrix2D> lCache = new HashMap<DenseFloatMatrix2DWithHashcode, FloatMatrix2D>();
+    private static Map<Integer, FloatMatrix> lowerTriangleCache = new HashMap<Integer, FloatMatrix>();
 
     private static final Semaphore matrixSemaphore = new Semaphore(1);
 
@@ -56,53 +56,63 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
         this.coefficients = hyperplane.getCoefficients();
         this.constant = hyperplane.getConstant();
 
-        L = null;
+        lowerTriangle = null;
     }
 
-    private void computeL(float stepSize) {
-        // Since the method is synchronized, check to see if we have already computed L.
-        if (L != null) {
+    private void initLowerTriangle(float stepSize) {
+        // Note that this method will only be called once (and not for every term),
+        // so we will compute the hash here and not save it.
+        int hash = HashCode.build(((WeightedGroundRule)groundRule).getWeight());
+        hash = HashCode.build(hash, stepSize);
+        for (int i = 0; i < size; i++) {
+            hash = HashCode.build(hash, coefficients[i]);
+        }
+
+        // First check the cache.
+        // Each rule (not ground rule) will have its own lowerTriangle.
+        lowerTriangle = lowerTriangleCache.get(hash);
+        if (lowerTriangle != null) {
             return;
         }
 
-        float weight = (float)((WeightedGroundRule)groundRule).getWeight();
+        // If we didn't find it, then synchronize and compute on this thread.
+        lowerTriangle = computeLowerTriangle(stepSize, hash);
+    }
 
-        float coeff;
-        DenseFloatMatrix2DWithHashcode matrix = new DenseFloatMatrix2DWithHashcode(size, size);
+    /**
+     * Actually copute the lower triangle and store it in the cache.
+     * There is one triangle per rule, so most ground rules will just pull off the same cache.
+     */
+    private synchronized FloatMatrix computeLowerTriangle(float stepSize, int hash) {
+        // There is still a race condition in the map fetch before getting here,
+        // so we will check one more time while synchronized.
+        if (lowerTriangleCache.containsKey(hash)) {
+            return lowerTriangleCache.get(hash);
+        }
+
+        float weight = (float)((WeightedGroundRule)groundRule).getWeight();
+        float coeff = 0.0f;
+
+        FloatMatrix matrix = FloatMatrix.zeroes(size, size);
+
         for (int i = 0; i < size; i++) {
             // Note that the matrix is symmetric.
             for (int j = i; j < size; j++) {
                 if (i == j) {
                     coeff = 2 * weight * coefficients[i] * coefficients[i] + stepSize;
-                    matrix.setQuick(i, i, coeff);
+                    matrix.set(i, i, coeff);
                 } else {
                     coeff = 2 * weight * coefficients[i] * coefficients[j];
-                    matrix.setQuick(i, j, coeff);
-                    matrix.setQuick(j, i, coeff);
+                    matrix.set(i, j, coeff);
+                    matrix.set(j, i, coeff);
                 }
             }
         }
 
-        L = lCache.get(matrix);
-        if (L == null) {
-            // The matrix library itself cannot be called concurrently.
-            try {
-                matrixSemaphore.acquire();
-            } catch (InterruptedException ex) {
-                throw new RuntimeException("Interrupted constructing matrix", ex);
-            }
+        matrix.choleskyDecomposition(true);
+        lowerTriangleCache.put(hash, matrix);
 
-            L = new DenseFloatCholeskyDecomposition(matrix).getL();
-            lCache.put(matrix, L);
-
-            matrixSemaphore.release();
-        }
-    }
-
-    @Override
-    public void weightChanged() {
-        // Recompute L.
-        L = null;
+        return matrix;
     }
 
     /**
@@ -126,7 +136,7 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
     protected void minWeightedSquaredHyperplane(float stepSize, float[] consensusValues) {
         float weight = (float)((WeightedGroundRule)groundRule).getWeight();
 
-        // Constructs constant term in the gradient (moved to right-hand side).
+        // Construct constant term in the gradient (moved to right-hand side).
         for (int i = 0; i < size; i++) {
             LocalVariable variable = variables[i];
 
@@ -138,7 +148,7 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
 
         // Solve for x
 
-        // Handle small hyperplanes specially.
+        // Handle very small hyperplanes specially.
         if (size == 1) {
             LocalVariable variable = variables[0];
             float coeff = coefficients[0];
@@ -167,55 +177,28 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm implements
         }
 
         // Fast system solve.
-        if (L == null) {
-            computeL(stepSize);
+        if (lowerTriangle == null) {
+            initLowerTriangle(stepSize);
         }
 
         for (int i = 0; i < size; i++) {
+            float newValue = variables[i].getValue();
+
             for (int j = 0; j < i; j++) {
-                variables[i].setValue(variables[i].getValue() - L.getQuick(i, j) * variables[j].getValue());
+                newValue -= lowerTriangle.get(i, j) * variables[j].getValue();
             }
-            variables[i].setValue(variables[i].getValue() / L.getQuick(i, i));
+
+            variables[i].setValue(newValue / lowerTriangle.get(i, i));
         }
 
         for (int i = size - 1; i >= 0; i--) {
+            float newValue = variables[i].getValue();
+
             for (int j = size - 1; j > i; j--) {
-                variables[i].setValue(variables[i].getValue() - L.getQuick(j, i) * variables[j].getValue());
-            }
-            variables[i].setValue(variables[i].getValue() / L.getQuick(i, i));
-        }
-    }
-
-    private class DenseFloatMatrix2DWithHashcode extends DenseFloatMatrix2D {
-        private static final long serialVersionUID = -8102931034927566306L;
-        private boolean needsNewHashcode;
-        private int hashcode = 0;
-
-        public DenseFloatMatrix2DWithHashcode(int rows, int columns) {
-            super(rows, columns);
-            needsNewHashcode = true;
-        }
-
-        @Override
-        public void setQuick(int row, int column, float value) {
-            needsNewHashcode = true;
-            super.setQuick(row, column, value);
-        }
-
-        @Override
-        public int hashCode() {
-            if (needsNewHashcode) {
-                hashcode = HashCode.DEFAULT_INITIAL_NUMBER;
-                for (int i = 0; i < rows(); i++) {
-                    for (int j = 0; j < columns(); j++) {
-                        hashcode = HashCode.build(hashcode, getQuick(i, j));
-                    }
-                }
-
-                needsNewHashcode = false;
+                newValue -= lowerTriangle.get(j, i) * variables[j].getValue();
             }
 
-            return hashcode;
+            variables[i].setValue(newValue / lowerTriangle.get(i, i));
         }
     }
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
-import org.linqs.psl.reasoner.term.WeightedTerm;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 
@@ -25,7 +24,7 @@ import org.linqs.psl.model.rule.WeightedGroundRule;
  * ADMMReasoner objective term of the form <br />
  * weight * coefficients^T * x
  */
-public class LinearLossTerm extends ADMMObjectiveTerm implements WeightedTerm {
+public class LinearLossTerm extends ADMMObjectiveTerm {
     private final float[] coefficients;
 
     /**

@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -218,8 +218,8 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
     }
 
     @Override
-    public String toString() {
-        /* Negates the clause again to show clause to maximize truth of */
+    public String baseToString() {
+        // Negate the clause again to show clause to maximize truth of.
         Formula[] literals = new Formula[posLiterals.size() + negLiterals.size()];
         int i;
 
@@ -232,5 +232,10 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
         }
 
         return (literals.length > 1) ? new Disjunction(literals).toString() : literals[0].toString();
+    }
+
+    @Override
+    public String toString() {
+        return baseToString();
     }
 }

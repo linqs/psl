@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -387,10 +387,10 @@ public class PSLModelTest {
             "1.0 * SINGLE(A) + 1.0 * SINGLE(B) = 1.0 .",
             "1.0 * DOUBLE(+A, 'Foo') = 1.0 .",
             "1.0 * SINGLE(+A) + 1.0 * SINGLE(+B) = 1.0 .",
-            "1.0 * SINGLE(+A) = 1.0 .\n{A : SINGLE(A)}",
-            "1.0 * SINGLE(+A) = 1.0 .\n{A : ( SINGLE(A) | DOUBLE(A, A) )}",
-            "1.0 * DOUBLE(+A, B) = 1.0 .\n{A : SINGLE(B)}",
-            "1.0 * SINGLE(+A) + 1.0 * SINGLE(+B) = 1.0 .\n{A : SINGLE(A)}\n{B : SINGLE(B)}",
+            "1.0 * SINGLE(+A) = 1.0 .   {A : SINGLE(A)}",
+            "1.0 * SINGLE(+A) = 1.0 .   {A : ( SINGLE(A) | DOUBLE(A, A) )}",
+            "1.0 * DOUBLE(+A, B) = 1.0 .   {A : SINGLE(B)}",
+            "1.0 * SINGLE(+A) + 1.0 * SINGLE(+B) = 1.0 .   {A : SINGLE(A)}   {B : SINGLE(B)}",
             "|A| * SINGLE(+A) = 1.0 .",
             "|A| * SINGLE(+A) = |A| .",
             "|A| * SINGLE(+A) + |B| * SINGLE(+B) = 1.0 .",

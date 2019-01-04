@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ import org.linqs.psl.model.atom.GroundAtom;
 public class GeneralFunction implements FunctionTerm {
     private final float[] coefficients;
     private final FunctionTerm[] terms;
-    private short size;
+    private int size;
 
     // All constants will get merged into this.
     private float constant;
@@ -40,7 +40,7 @@ public class GeneralFunction implements FunctionTerm {
     private boolean nonNegative;
     private boolean squared;
 
-    public GeneralFunction(boolean nonNegative, boolean squared, short maxSize) {
+    public GeneralFunction(boolean nonNegative, boolean squared, int maxSize) {
         coefficients = new float[maxSize];
         terms = new FunctionTerm[maxSize];
         size = 0;

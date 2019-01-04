@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,7 +66,7 @@ public class UnweightedArithmeticRule extends AbstractArithmeticRule implements 
         s.append(expression);
         s.append(" .");
         for (Map.Entry<SummationVariable, Formula> e : filters.entrySet()) {
-            s.append("\n{");
+            s.append("   {");
             // Appends the corresponding Variable, not the SummationVariable, to leave out the '+'
             s.append(e.getKey().getVariable());
             s.append(" : ");

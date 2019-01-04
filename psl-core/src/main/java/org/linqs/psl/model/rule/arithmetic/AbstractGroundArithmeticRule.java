@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,7 @@ import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
-
-import org.apache.commons.lang3.ArrayUtils;
+import org.linqs.psl.util.ListUtils;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -41,7 +40,7 @@ public abstract class AbstractGroundArithmeticRule implements GroundRule {
 
     protected AbstractGroundArithmeticRule(AbstractArithmeticRule rule,
             List<Float> coefficients, List<GroundAtom> atoms, FunctionComparator comparator, float constant) {
-        this(rule, ArrayUtils.toPrimitive(coefficients.toArray(new Float[0])),
+        this(rule, ListUtils.toPrimitiveFloatArray(coefficients),
                 atoms.toArray(new GroundAtom[0]), comparator, constant, false);
     }
 
@@ -87,7 +86,7 @@ public abstract class AbstractGroundArithmeticRule implements GroundRule {
     }
 
     @Override
-    public String toString() {
+    public String baseToString() {
         StringBuilder sb = new StringBuilder();
 
         // If there are coefficients, print each one.
@@ -127,6 +126,11 @@ public abstract class AbstractGroundArithmeticRule implements GroundRule {
         sb.append(constant);
 
         return sb.toString();
+    }
+
+    @Override
+    public String toString() {
+        return baseToString();
     }
 
     public float[] getCoefficients() {

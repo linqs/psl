@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,11 +22,12 @@ import org.linqs.psl.database.rdbms.PredicateInfo;
 import org.linqs.psl.database.rdbms.TableStats;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.util.Parallel;
+import org.linqs.psl.util.ListUtils;
+import org.linqs.psl.util.StringUtils;
 
 import com.healthmarketscience.sqlbuilder.CreateTableQuery;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -165,13 +166,13 @@ public class H2DatabaseDriver implements DatabaseDriver {
         // H2 uses a "MERGE" syntax and requires a specified key.
         List<String> sql = new ArrayList<String>();
         sql.add("MERGE INTO " + tableName + "");
-        sql.add("    (" + StringUtils.join(columns, ", ") + ")");
+        sql.add("    (" + StringUtils.join(", ", columns) + ")");
         sql.add("KEY");
-        sql.add("    (" + StringUtils.join(keyColumns, ", ") + ")");
+        sql.add("    (" + StringUtils.join(", ", keyColumns) + ")");
         sql.add("VALUES");
         sql.add("    (" + StringUtils.repeat("?", ", ", columns.length) + ")");
 
-        return StringUtils.join(sql, "\n");
+        return ListUtils.join("\n", sql);
     }
 
     @Override
@@ -205,7 +206,7 @@ public class H2DatabaseDriver implements DatabaseDriver {
 
         try (
             Connection connection = getConnection();
-            PreparedStatement statement = connection.prepareStatement(StringUtils.join(sql, "\n"));
+            PreparedStatement statement = connection.prepareStatement(ListUtils.join("\n", sql));
             ResultSet result = statement.executeQuery();
         ) {
             while (result.next()) {

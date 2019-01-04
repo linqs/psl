@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,13 +20,14 @@ package org.linqs.psl.reasoner.admm.term;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.admm.ADMMReasoner;
 import org.linqs.psl.reasoner.term.MemoryTermStore;
 import org.linqs.psl.reasoner.term.TermStore;
+import org.linqs.psl.util.IteratorUtils;
 import org.linqs.psl.util.RandUtils;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -44,7 +45,7 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm> {
      * Initial size for the memory store.
      */
     public static final String INTERNAL_STORE_KEY = CONFIG_PREFIX + ".internalstore";
-    public static final String INTERNAL_STORE_DEFAULT = "org.linqs.psl.reasoner.term.MemoryTermStore";
+    public static final String INTERNAL_STORE_DEFAULT = MemoryTermStore.class.getName();
 
     // Keep an internal store to hold the terms while this class focus on variables.
     private TermStore<ADMMObjectiveTerm> store;
@@ -120,6 +121,13 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm> {
 
     public List<LocalVariable> getLocalVariables(int globalId) {
         return localVariables.get(globalId);
+    }
+
+    /**
+     * Get the RVAs managed by this term store.
+     */
+    public Map<RandomVariableAtom, Integer> getGlobalVariables() {
+        return Collections.unmodifiableMap(variableIndexes);
     }
 
     /**
@@ -219,13 +227,13 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm> {
         return store.iterator();
     }
 
-    @Override
-    public void updateWeights() {
-        store.updateWeights();
-    }
-
-    @Override
     public Iterable<ADMMObjectiveTerm> getTerms(GroundRule groundRule) {
-        return store.getTerms(groundRule);
+        final GroundRule finalGroundRule = groundRule;
+
+        return IteratorUtils.filter(store, new IteratorUtils.FilterFunction<ADMMObjectiveTerm>() {
+            public boolean keep(ADMMObjectiveTerm term) {
+                return finalGroundRule.equals(term.getGroundRule());
+            }
+        });
     }
 }

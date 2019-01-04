@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -104,7 +104,7 @@ public class RankSearch extends BaseGridSearch {
         }
 
         int[] indexes = permutationIterator.next();
-        currentLocation = "" + scaleIndex + DELIM + StringUtils.join(indexes, DELIM);
+        currentLocation = "" + scaleIndex + DELIM + StringUtils.join(DELIM, indexes);
 
         return true;
     }

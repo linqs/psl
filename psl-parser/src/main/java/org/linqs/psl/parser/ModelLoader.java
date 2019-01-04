@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -121,10 +121,16 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
     /**
      * Parse a string into either a full PSL Rule or a rule without weight or potential squaring information.
      */
-    public static RulePartial loadRulePartial(DataStore data, String input) throws IOException {
-        PSLParser parser = getParser(input);
-        PslRulePartialContext context = null;
+    public static RulePartial loadRulePartial(DataStore data, String input) {
+        PSLParser parser = null;
+        try {
+            parser = getParser(input);
+        } catch (IOException ex) {
+            // Cancel the lex and rethrow.
+            throw new RuntimeException("Failed to lex rule partial.", ex);
+        }
 
+        PslRulePartialContext context = null;
         try {
             context = parser.pslRulePartial();
         } catch (ParseCancellationException ex) {
@@ -140,7 +146,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
      * Parse and return a single rule.
      * If exactly one rule is not specified, an exception is thrown.
      */
-    public static Rule loadRule(DataStore data, String input) throws IOException {
+    public static Rule loadRule(DataStore data, String input) {
         Model model = load(data, new StringReader(input));
 
         int ruleCount = 0;
@@ -163,7 +169,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
     /**
      * Convenience interface to load().
      */
-    public static Model load(DataStore data, String input) throws IOException {
+    public static Model load(DataStore data, String input) {
         return load(data, new StringReader(input));
     }
 
@@ -172,10 +178,16 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
      * The input should only contain rules and the DataStore should contain all the predicates
      * used by the rules.
      */
-    public static Model load(DataStore data, Reader input) throws IOException {
-        PSLParser parser = getParser(input);
-        ProgramContext program = null;
+    public static Model load(DataStore data, Reader input) {
+        PSLParser parser = null;
+        try {
+            parser = getParser(input);
+        } catch (IOException ex) {
+            // Cancel the lex and rethrow.
+            throw new RuntimeException("Failed to lex rule partial.", ex);
+        }
 
+        ProgramContext program = null;
         try {
             program = parser.program();
         } catch (ParseCancellationException ex) {
