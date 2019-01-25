@@ -102,6 +102,11 @@ public class Grounding {
             rewrite = false;
         }
 
+        QueryRewriter rewriter = null;
+        if (rewrite) {
+            rewriter = new QueryRewriter();
+        }
+
         for (Rule rule : rules) {
             if (!rule.supportsIndividualGrounding()) {
                 bypassRules.add(rule);
@@ -110,7 +115,7 @@ public class Grounding {
 
             Formula query = rule.getGroundingFormula();
             if (rewrite) {
-                query = QueryRewriter.rewrite(query, (RDBMSDataStore)dataStore);
+                query = rewriter.rewrite(query, (RDBMSDataStore)dataStore);
             }
 
             if (!queries.containsKey(query)) {
