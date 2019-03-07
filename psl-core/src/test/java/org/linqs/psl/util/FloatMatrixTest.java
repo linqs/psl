@@ -393,7 +393,7 @@ public class FloatMatrixTest {
         }
 
         try {
-            matrix = new FloatMatrix(new float[][]{{-1.0f, 1.5f}, {(2.0f / 3.0f), -1.0f}});
+            matrix = new FloatMatrix(new float[][]{{-1.0f, 2.0f}, {0.5f, -1.0f}});
             inverse = matrix.inverse();
             fail("Did not throw an exception on trying to invert a non-invertable matrix.");
         } catch (ArithmeticException ex) {
