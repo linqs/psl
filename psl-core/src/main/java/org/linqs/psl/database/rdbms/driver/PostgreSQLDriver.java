@@ -190,8 +190,6 @@ public class PostgreSQLDriver implements DatabaseDriver {
                 return "TEXT";
             case Long:
                 return "BIGINT";
-            case Date:
-                return "DATE";
             case UniqueIntID:
                 return "INT";
             case UniqueStringID:

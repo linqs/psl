@@ -46,7 +46,7 @@ import java.util.Set;
 public class AtomTest {
     /**
      * Make sure that we can to trivial (and numeric string parsing) type conversions.
-     * This test does not include ConstantType.Date and ConstantType.DeferredFunctionalUniqueID.
+     * This test does not include ConstantType.DeferredFunctionalUniqueID.
      */
     @Test
     public void testConversions() {
