@@ -90,6 +90,7 @@
                         <id>python-test</id>
                         <phase>integration-test</phase>
                         <configuration>
+                            <skip>${maven.test.skip}</skip>
                             <executable>python3</executable>
                             <workingDirectory>.</workingDirectory>
                             <arguments>

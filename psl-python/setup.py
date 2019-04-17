@@ -5,6 +5,7 @@ import shutil
 import xml.etree.ElementTree
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__)))
+SNAPSHOT_SUFFIX = 'rc0.dev0'
 
 def get_description():
     with open('PYPI_README.md', 'r') as file:
@@ -38,7 +39,7 @@ def main():
     # The version requires some normalization for PEP style.
     version = raw_version.lower()
     # Snapshots get a strange-looking name and shouldn't be uploaded.
-    version = version.replace('-snapshot', 'rc0.dev0')
+    version = version.replace('-snapshot', SNAPSHOT_SUFFIX)
     # Canaries get a dev version: <major>.<minor>.0.dev<canary>
     version = re.sub(r'^canary-(\d+\.\d+)\.(\d+)$', r'\1.0.dev\2', version)
 
