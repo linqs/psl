@@ -23,7 +23,7 @@ def execute(command, log_callback):
     if (isinstance(command, str)):
         command = shlex.split(command)
 
-    with subprocess.Popen(command, stdout = subprocess.PIPE, stderr = subprocess.STDOUT, text = True) as proc:
+    with subprocess.Popen(command, stdout = subprocess.PIPE, stderr = subprocess.STDOUT, universal_newlines = True) as proc:
         for line in proc.stdout:
             log_callback(line.rstrip())
 
