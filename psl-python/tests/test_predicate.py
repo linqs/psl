@@ -40,25 +40,6 @@ class TestPredicate(PSLTest):
             predicate = Predicate(input_name, closed = True, size = 2)
             self.assertEqual(predicate.name(), expected_name)
 
-    def test_duplicate_name(self):
-        name = 'Foo'
-
-        a = Predicate(name, closed = True, size = 2)
-
-        try:
-            b = Predicate(name, closed = True, size = 2)
-            self.fail('Duplicate predicate name did not raise an exception.')
-        except PredicateError:
-            # Expected
-            pass
-
-        try:
-            b = Predicate(name, closed = True, size = 3)
-            self.fail('Duplicate predicate name did not raise an exception.')
-        except PredicateError:
-            # Expected
-            pass
-
     def test_init_args(self):
         failing_configs = [
             ({'raw_name': 'Foo', 'closed': False}, 'No size supplied.'),

@@ -30,6 +30,7 @@ import pandas
 import pslpython.util
 from pslpython.partition import Partition
 from pslpython.predicate import Predicate
+from pslpython.predicate import PredicateError
 from pslpython.rule import Rule
 
 class Model(object):
@@ -84,6 +85,7 @@ class Model(object):
     def add_predicate(self, predicate: Predicate):
         """
         Add a predicate to the model.
+        Two predicates with the same name should never be added to the same model.
 
         Args:
             predicate: The predicate to add.
@@ -94,6 +96,10 @@ class Model(object):
 
         if (predicate is None):
             raise ModelError('Cannot add a None predicate.')
+
+        name = predicate.name()
+        if (name in self._predicates and predicate != self._predicates[name]):
+            raise PredicateError("Within a model, predciates must have unique names. Got a duplicate: %s." % (name))
 
         self._predicates[predicate.name()] = predicate
         return self
