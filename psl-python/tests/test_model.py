@@ -39,6 +39,9 @@ class TestModel(PSLTest):
         a = Predicate(predicate_name, closed = True, size = 2)
         model.add_predicate(a)
 
+        # Adding the same predicate again should by no issue.
+        model.add_predicate(a)
+
         try:
             b = Predicate(predicate_name, closed = True, size = 2)
             model.add_predicate(b)
