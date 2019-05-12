@@ -36,6 +36,7 @@ import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.term.Constant;
@@ -492,7 +493,11 @@ public class Launcher {
             throw new RuntimeException("Failed to load model from file: " + options.getOptionValue(OPTION_MODEL), ex);
         }
 
-        log.debug(model.toString());
+        log.debug("Model:");
+        for (Rule rule : model.getRules()) {
+            log.debug("   " + rule);
+        }
+
         log.info("Model loading complete");
 
         return model;
