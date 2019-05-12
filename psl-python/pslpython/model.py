@@ -479,11 +479,10 @@ class Model(object):
             command.append('-D')
             command.append("%s=%s" % (key, value))
 
-        stdout_callback = lambda line: Model._log_stdout(logger, line)
-        stderr_callback = lambda line: Model._log_stderr(logger, line)
+        log_callback = lambda line: Model._log_stdout(logger, line)
 
         logger.debug("Running: `%s`." % (pslpython.util.shell_join(command)))
-        exit_status = pslpython.util.execute(command, stdout_callback, stderr_callback)
+        exit_status = pslpython.util.execute(command, log_callback)
 
         if (exit_status != 0):
             raise ModelError("PSL returned a non-zero exit status: %d." % (exit_status))

@@ -16,48 +16,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import asyncio
 import shlex
+import subprocess
 
-# Heavily inspiried by https://kevinmccarthy.org/2016/07/25/streaming-subprocess-stdin-and-stdout-with-asyncio-in-python/
+def execute(command, log_callback):
+    if (isinstance(command, str)):
+        command = shlex.split(command)
 
-async def _read_stream(stream, callback):
-    while True:
-        line = await stream.readline()
-        if not line:
-            break
+    with subprocess.Popen(command, stdout = subprocess.PIPE, stderr = subprocess.STDOUT, text = True) as proc:
+        for line in proc.stdout:
+            log_callback(line.rstrip())
 
-        callback(line.decode("utf-8").rstrip('\r\n'))
-
-async def _stream_subprocess(command_args, stdout_callback, stderr_callback):
-    process = await asyncio.create_subprocess_exec(*command_args,
-            stdout = asyncio.subprocess.PIPE, stderr = asyncio.subprocess.PIPE)
-
-    await asyncio.wait([
-        _read_stream(process.stdout, stdout_callback),
-        _read_stream(process.stderr, stderr_callback)
-    ])
-
-    return await process.wait()
-
-def execute(command_args, stdout_callback, stderr_callback):
-    """
-    Exec an external process specified by the args (list).
-    """
-
-    # Using asyncio.run() would be better, but it is new in 3.7.
-    # https://docs.python.org/3/library/asyncio-task.html#asyncio.run
-
-    loop = asyncio.get_event_loop()
-    result = loop.run_until_complete(
-        _stream_subprocess(
-            command_args,
-            stdout_callback,
-            stderr_callback,
-        )
-    )
-
-    return result
+        proc.wait()
+        return proc.returncode
 
 def shell_join(command_args):
     """
