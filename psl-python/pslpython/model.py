@@ -50,7 +50,7 @@ class Model(object):
     CLI_JAR_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), 'cli', 'psl-cli.jar'))
 
     PSL_LOGGING_OPTION = 'log4j.threshold'
-    PSL_LOGGING_LEVEL_REGEX = r'\] (TRACE|DEBUG|INFO|WARN|ERROR|FATAL)  '
+    PSL_LOGGING_LEVEL_REGEX = r'\] (TRACE|DEBUG|INFO|WARN|ERROR|FATAL) '
     PYTHON_LOGGING_FORMAT_STRING = '%(relativeCreated)d [%(name)s PSL] %(levelname)s --- %(message)s'
     PYTHON_TO_PSL_LOGGING_LEVELS = {
         logging.CRITICAL: 'FATAL',
