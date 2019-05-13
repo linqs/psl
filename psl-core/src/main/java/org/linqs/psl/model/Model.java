@@ -17,14 +17,17 @@
  */
 package org.linqs.psl.model;
 
+import org.linqs.psl.application.ModelApplication;
+import org.linqs.psl.model.rule.Rule;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-
-import org.linqs.psl.application.ModelApplication;
-import org.linqs.psl.model.rule.Rule;
 
 /**
  * A probabilistic soft logic model.
@@ -33,6 +36,8 @@ import org.linqs.psl.model.rule.Rule;
  * can be used to combine a Model with data to perform inference or learn.
  */
 public class Model {
+    private static final Logger log = LoggerFactory.getLogger(Model.class);
+
     protected final List<Rule> rules;
 
     /**
@@ -60,7 +65,8 @@ public class Model {
      */
     public void addRule(Rule rule) {
         if (ruleSet.contains(rule)) {
-            throw new IllegalArgumentException("Rule already added to this model.");
+            log.warn("Rule already added to this model, skipping add: " + rule);
+            return;
         }
 
         rules.add(rule);
