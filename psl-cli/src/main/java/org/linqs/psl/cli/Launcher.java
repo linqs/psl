@@ -368,13 +368,19 @@ public class Launcher {
         for (StandardPredicate openPredicate : openPredicates) {
             try {
                 FileWriter predFileWriter = new FileWriter(new File(outputDirectory, openPredicate.getName() + ".txt"));
+                StringBuilder row = new StringBuilder();
 
                 for (GroundAtom atom : database.getAllGroundRandomVariableAtoms(openPredicate)) {
+                    row.setLength(0);
+
                     for (Constant term : atom.getArguments()) {
-                        predFileWriter.write(term.toString() + "\t");
+                        row.append(term.rawToString());
+                        row.append("\t");
                     }
-                    predFileWriter.write(Double.toString(atom.getValue()));
-                    predFileWriter.write("\n");
+                    row.append(Double.toString(atom.getValue()));
+                    row.append("\n");
+
+                    predFileWriter.write(row.toString());
                 }
 
                 predFileWriter.close();
