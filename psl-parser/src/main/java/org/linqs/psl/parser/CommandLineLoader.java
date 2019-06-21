@@ -27,16 +27,8 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
-import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-//delete below 4 imports? never used in both files?
-/* 
-import org.apache.log4j.BasicConfigurator;
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.PatternLayout;
-import org.apache.log4j.Priority;
-*/
 import org.apache.log4j.PropertyConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,22 +79,25 @@ public class CommandLineLoader {
     public static final String OPTION_VERSION_LONG = "version";
 
     public static final String DEFAULT_H2_DB_PATH =
-    Paths.get(System.getProperty("java.io.tmpdir"),
-    "cli_" + System.getProperty("user.name") + "@" + getHostname()).toString();
+                    Paths.get(System.getProperty("java.io.tmpdir"),
+                    "cli_" + System.getProperty("user.name") + "@" + getHostname()).toString();
     public static final String DEFAULT_POSTGRES_DB_NAME = "psl_cli";
-    public static final String DEFAULT_IA = MPEInference.class.getName();
-    public static final String DEFAULT_WLA = MaxLikelihoodMPE.class.getName();
-
+    private static final String DEFAULT_IA = MPEInference.class.getName();
+    private static final String DEFAULT_WLA = MaxLikelihoodMPE.class.getName();
+    
+    public static Options unparsedOptions;
     public CommandLine options;
     public Logger log;
 
     public CommandLineLoader(String[] args) {
         try {
             options = parseOptions(args);
+            if (options == null) {
+                return;
+            }
         } catch (Exception ex) {
                 System.err.println("Unexpected exception!");
                 ex.printStackTrace(System.err);
-                System.exit(1);
         }
 		this.log = initLogger();
 		initConfig();
@@ -151,9 +146,8 @@ public class CommandLineLoader {
             handler.setLevel(java.util.logging.Level.SEVERE);
         }
 
-        PropertyConfigurator.configure(props);
-        //TODO: test this 
-        return LoggerFactory.getLogger(CommandLineLoader.class);
+        PropertyConfigurator.configure(props); 
+        return LoggerFactory.getLogger(getClass().getName());
     }
 
     /**
@@ -378,6 +372,8 @@ public class CommandLineLoader {
      */
     private static CommandLine parseOptions(String[] args) {
         Options options = setupOptions();
+        // Back up raw options to be looked up while printing help strings
+        unparsedOptions = options;
         CommandLineParser parser = new DefaultParser();
         CommandLine commandLineOptions = null;
 
@@ -386,23 +382,24 @@ public class CommandLineLoader {
         } catch (ParseException ex) {
             System.err.println("Command line error: " + ex.getMessage());
             getHelpFormatter().printHelp("psl", options, true);
-            System.exit(1);
         }
+
         if (commandLineOptions.hasOption(OPTION_HELP)) {
             initDefaultLogger();
             getHelpFormatter().printHelp("psl", options, true);
             return commandLineOptions;
         }
+
         if (commandLineOptions.hasOption(OPTION_VERSION)) {
             initDefaultLogger();
             System.out.println("PSL CLI Version " + Version.getFull());
             return commandLineOptions;
         }
+
         // Can't have both an H2 and Postgres database.
         if (commandLineOptions.hasOption(OPTION_DB_H2_PATH) && commandLineOptions.hasOption(OPTION_DB_POSTGRESQL_NAME)) {
             System.err.println("Command line error: Options '--" + OPTION_DB_H2_PATH + "' and '--" + OPTION_DB_POSTGRESQL_NAME + "' are not compatible.");
             getHelpFormatter().printHelp("psl", options, true);
-            System.exit(2);
         }
         return commandLineOptions;
     }

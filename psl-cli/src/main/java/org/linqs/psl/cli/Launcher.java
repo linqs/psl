@@ -45,8 +45,10 @@ import org.linqs.psl.util.StringUtils;
 import org.linqs.psl.util.Version;
 
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -72,8 +74,6 @@ import java.util.regex.Pattern;
 public class Launcher {
     public static final String OPERATION_INFER = "i";
     public static final String OPERATION_INFER_LONG = "infer";
-    public static final String OPTION_HELP = "h";
-    public static final String OPTION_HELP_LONG = "help";
     public static final String OPERATION_LEARN = "l";
     public static final String OPERATION_LEARN_LONG = "learn";
     
@@ -96,10 +96,10 @@ public class Launcher {
 
     public static final String MODEL_FILE_EXTENSION = ".psl";
     public static final String DEFAULT_H2_DB_PATH =
-            Paths.get(System.getProperty("java.io.tmpdir"),
-            "cli_" + System.getProperty("user.name") + "@" + getHostname()).toString();
+                    Paths.get(System.getProperty("java.io.tmpdir"),
+                    "cli_" + System.getProperty("user.name") + "@" + getHostname()).toString();
     public static final String DEFAULT_POSTGRES_DB_NAME = "psl_cli";
-    public static final String DEFAULT_IA = MPEInference.class.getName();
+    private static final String DEFAULT_IA = MPEInference.class.getName();
     public static final String DEFAULT_WLA = MaxLikelihoodMPE.class.getName();
 
     // Reserved partition names.
@@ -112,7 +112,7 @@ public class Launcher {
 
     private Launcher(CommandLineLoader commandLineLoader) {
         this.options = commandLineLoader.options;
-        this.log = commandLineLoader.log;
+        this.log = LoggerFactory.getLogger(getClass().getName());
     }
 
     /**
@@ -434,7 +434,7 @@ public class Launcher {
         dataStore.close();
     }
 
-    private static boolean isInputSanitized(CommandLineLoader commandLineLoader) {
+    private static boolean isCommandLineValid(CommandLineLoader commandLineLoader) {
         CommandLine options = commandLineLoader.options;
         // if only help or version was queried return
         if ((options.hasOption(CommandLineLoader.OPTION_HELP)) || 
@@ -444,21 +444,21 @@ public class Launcher {
 
         // Data and model are required.
         // (We don't enforce them earlier so we can have successful runs with help and version.)
-
+        HelpFormatter helpFormatter = new HelpFormatter();
         if (!(options.hasOption(OPTION_DATA))) {
             System.out.println(String.format("Missing required option: --%s/-%s.", OPTION_DATA_LONG, OPTION_DATA));
-            //shrbs:FIXME getHelpFormatter().printHelp("psl", options, true);
+            helpFormatter.printHelp("psl", CommandLineLoader.unparsedOptions, true);
             return false;
         }
         if (!(options.hasOption(OPTION_MODEL))) {
             System.out.println(String.format("Missing required option: --%s/-%s.", OPTION_MODEL_LONG, OPTION_MODEL));
-            //shrbs:FIXME getHelpFormatter().printHelp("psl", options, true);
+            helpFormatter.printHelp("psl", CommandLineLoader.unparsedOptions, true);
             return false;
         }
-        //FIXME: learn and infer prints
+
         if (!(options.hasOption(OPERATION_INFER)) && (!(options.hasOption(OPERATION_LEARN)))) {
             System.out.println(String.format("Missing required option: --%s/-%s.", OPERATION_INFER_LONG, OPERATION_INFER));
-            //shrbs:FIXME getHelpFormatter().printHelp("psl", options, true);
+            helpFormatter.printHelp("psl", CommandLineLoader.unparsedOptions, true);
             return false;
         }
         return true;
@@ -483,7 +483,8 @@ public class Launcher {
     public static void main(String[] args, boolean rethrow) {
         try {
             CommandLineLoader commandLineLoader = new CommandLineLoader(args);
-            if (!(isInputSanitized(commandLineLoader))) {
+            // return for commandline parse errors or psl errors
+            if ((commandLineLoader.options == null) || (!(isCommandLineValid(commandLineLoader)))) {
                 return;
             }
             Launcher pslLauncher = new Launcher(commandLineLoader);
