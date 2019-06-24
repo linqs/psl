@@ -84,15 +84,15 @@ public class CommandLineLoader {
     public static final String DEFAULT_POSTGRES_DB_NAME = "psl_cli";
     private static final String DEFAULT_IA = MPEInference.class.getName();
     private static final String DEFAULT_WLA = MaxLikelihoodMPE.class.getName();
-    
-    public static Options unparsedOptions;
-    public CommandLine options;
+
+    private static Options options = setupOptions();
+    private CommandLine parsedOptions;
     public Logger log;
 
     public CommandLineLoader(String[] args) {
         try {
-            options = parseOptions(args);
-            if (options == null) {
+            parsedOptions = parseOptions(args);
+            if (parsedOptions == null) {
                 return;
             }
         } catch (Exception ex) {
@@ -104,14 +104,28 @@ public class CommandLineLoader {
     }
 
     /**
+     * Returns the supported Options object
+     */
+    public static Options getOptions() {
+        return options;
+    }
+
+    /**
+     * Returns the parsedOptions object.
+     */
+    public CommandLine getParsedOptions() {
+        return this.parsedOptions;
+    }
+
+    /**
      * Initializes logging.
      */
     private Logger initLogger() {
         Properties props = new Properties();
 
-        if (options.hasOption(OPTION_LOG4J)) {
+        if (parsedOptions.hasOption(OPTION_LOG4J)) {
             try {
-                props.load(new FileReader(options.getOptionValue(OPTION_LOG4J)));
+                props.load(new FileReader(parsedOptions.getOptionValue(OPTION_LOG4J)));
             } catch (IOException ex) {
                 throw new RuntimeException("Failed to read logger configuration from a file.", ex);
             }
@@ -124,7 +138,7 @@ public class CommandLineLoader {
         }
 
         // Load any options specified directly on the command line (override standing options).
-        for (Map.Entry<Object, Object> entry : options.getOptionProperties("D").entrySet()) {
+        for (Map.Entry<Object, Object> entry : parsedOptions.getOptionProperties("D").entrySet()) {
             String key = entry.getKey().toString();
 
             if (!key.startsWith("log4j.")) {
@@ -168,22 +182,22 @@ public class CommandLineLoader {
      */
     private void initConfig() {
         // Load a properties file that was specified on the command line.
-        if (options.hasOption(OPTION_PROPERTIES_FILE)) {
-            String propertiesPath = options.getOptionValue(OPTION_PROPERTIES_FILE);
+        if (parsedOptions.hasOption(OPTION_PROPERTIES_FILE)) {
+            String propertiesPath = parsedOptions.getOptionValue(OPTION_PROPERTIES_FILE);
             Config.loadResource(propertiesPath);
         }
 
         // Load any options specified directly on the command line (override standing options).
-        for (Map.Entry<Object, Object> entry : options.getOptionProperties("D").entrySet()) {
+        for (Map.Entry<Object, Object> entry : parsedOptions.getOptionProperties("D").entrySet()) {
             String key = entry.getKey().toString();
             Config.setProperty(key, entry.getValue());
         }
     }
 
     private static Options setupOptions() {
-        Options options = new Options();
+        Options newOptions = new Options();
 
-        options.addOption(Option.builder(OPERATION_INFER)
+        newOptions.addOption(Option.builder(OPERATION_INFER)
                 .longOpt(OPERATION_INFER_LONG)
                 .desc("Run MAP inference." +
                         " You can optionally supply a fully qualified name for an inference application" +
@@ -193,7 +207,7 @@ public class CommandLineLoader {
                 .optionalArg(true)
                 .build());
 
-        options.addOption(Option.builder(OPERATION_LEARN)
+        newOptions.addOption(Option.builder(OPERATION_LEARN)
                 .longOpt(OPERATION_LEARN_LONG)
                 .desc("Run weight learning." +
                         " You can optionally supply a fully qualified name for a weight learner" +
@@ -205,24 +219,24 @@ public class CommandLineLoader {
 
         // Make sure that help and version are in the main group so a successful run can use them.
         //TOOD: should it be checked for mandatory?
-        options.addOption(Option.builder(OPTION_HELP)
+        newOptions.addOption(Option.builder(OPTION_HELP)
                 .longOpt(OPTION_HELP_LONG)
                 .desc("Print this help message and exit")
                 .build());
 
-        options.addOption(Option.builder(OPTION_VERSION)
+        newOptions.addOption(Option.builder(OPTION_VERSION)
                 .longOpt(OPTION_VERSION_LONG)
                 .desc("Print the PSL version and exit")
                 .build());
 
-        options.addOption(Option.builder(OPTION_DATA)
+        newOptions.addOption(Option.builder(OPTION_DATA)
                 .longOpt(OPTION_DATA_LONG)
                 .desc("Path to PSL data file")
                 .hasArg()
                 .argName("path")
                 .build());
 
-        options.addOption(Option.builder()
+        newOptions.addOption(Option.builder()
                 .longOpt(OPTION_DB_H2_PATH)
                 .desc("Path for H2 database file (defaults to 'cli_<user name>@<host name>' ('" + DEFAULT_H2_DB_PATH + "'))." +
                         " Not compatible with the '--" + OPTION_DB_POSTGRESQL_NAME + "' option.")
@@ -230,7 +244,7 @@ public class CommandLineLoader {
                 .argName("path")
                 .build());
 
-        options.addOption(Option.builder()
+        newOptions.addOption(Option.builder()
                 .longOpt(OPTION_DB_POSTGRESQL_NAME)
                 .desc("Name for the PostgreSQL database to use (defaults to " + DEFAULT_POSTGRES_DB_NAME + ")." +
                         " Not compatible with the '--" + OPTION_DB_H2_PATH + "' option." +
@@ -240,7 +254,7 @@ public class CommandLineLoader {
                 .optionalArg(true)
                 .build());
 
-        options.addOption(Option.builder(OPTION_EVAL)
+        newOptions.addOption(Option.builder(OPTION_EVAL)
                 .longOpt(OPTION_EVAL_LONG)
                 .desc("Run the named evaluator (" + Evaluator.class.getName() + ") on any open predicate with a 'truth' partition." +
                         " If multiple evaluators are specific, they will each be run.")
@@ -248,33 +262,33 @@ public class CommandLineLoader {
                 .argName("evaluator ...")
                 .build());
 
-        options.addOption(Option.builder(OPTION_INT_IDS)
+        newOptions.addOption(Option.builder(OPTION_INT_IDS)
                 .longOpt(OPTION_INT_IDS_LONG)
                 .desc("Use integer identifiers (UniqueIntID) instead of string identifiers (UniqueStringID).")
                 .build());
 
-        options.addOption(Option.builder(OPTION_LOG4J)
+        newOptions.addOption(Option.builder(OPTION_LOG4J)
                 .longOpt(OPTION_LOG4J_LONG)
                 .desc("Optional log4j properties file path")
                 .hasArg()
                 .argName("path")
                 .build());
 
-        options.addOption(Option.builder(OPTION_MODEL)
+        newOptions.addOption(Option.builder(OPTION_MODEL)
                 .longOpt(OPTION_MODEL_LONG)
                 .desc("Path to PSL model file")
                 .hasArg()
                 .argName("path")
                 .build());
 
-        options.addOption(Option.builder(OPTION_OUTPUT_DIR)
+        newOptions.addOption(Option.builder(OPTION_OUTPUT_DIR)
                 .longOpt(OPTION_OUTPUT_DIR_LONG)
                 .desc("Optional path for writing results to filesystem (default is STDOUT)")
                 .hasArg()
                 .argName("path")
                 .build());
 
-        options.addOption(Option.builder()
+        newOptions.addOption(Option.builder()
                 .longOpt(OPTION_OUTPUT_GROUND_RULES_LONG)
                 .desc("Output the program's ground rules." +
                         " If a path is specified, the ground rules will be output there." +
@@ -284,7 +298,7 @@ public class CommandLineLoader {
                 .optionalArg(true)
                 .build());
 
-        options.addOption(Option.builder()
+        newOptions.addOption(Option.builder()
                 .longOpt(OPTION_OUTPUT_SATISFACTION_LONG)
                 .desc("Output the program's ground rules along with their satisfaction values after inference." +
                         " If a path is specified, the ground rules will be output there." +
@@ -294,14 +308,14 @@ public class CommandLineLoader {
                 .optionalArg(true)
                 .build());
 
-        options.addOption(Option.builder(OPTION_PROPERTIES_FILE)
+        newOptions.addOption(Option.builder(OPTION_PROPERTIES_FILE)
                 .longOpt(OPTION_PROPERTIES_FILE_LONG)
                 .desc("Optional PSL properties file path")
                 .hasArg()
                 .argName("path")
                 .build());
 
-        options.addOption(Option.builder(OPTION_PROPERTIES)
+        newOptions.addOption(Option.builder(OPTION_PROPERTIES)
                 .argName("name=value")
                 .desc("Directly specify PSL properties (overrides options set via --" + OPTION_PROPERTIES_FILE_LONG + ")." +
                         " See https://github.com/linqs/psl/wiki/Configuration-Options for a list of available options." +
@@ -311,8 +325,8 @@ public class CommandLineLoader {
                 .numberOfArgs(2)
                 .valueSeparator('=')
                 .build());
-        return options;
 
+        return newOptions;
     }
 
     private static HelpFormatter getHelpFormatter() {
@@ -368,12 +382,10 @@ public class CommandLineLoader {
 
     /**
      * Parse the options on the command line.
-     * Will exit on error, but Will return null if the CLI should not be run (like if we are doing a help/version run).
+     * Will return null for errors or if the CLI should not be run
+     * (like if we are doing a help/version run).
      */
     private static CommandLine parseOptions(String[] args) {
-        Options options = setupOptions();
-        // Back up raw options to be looked up while printing help strings
-        unparsedOptions = options;
         CommandLineParser parser = new DefaultParser();
         CommandLine commandLineOptions = null;
 
@@ -382,6 +394,7 @@ public class CommandLineLoader {
         } catch (ParseException ex) {
             System.err.println("Command line error: " + ex.getMessage());
             getHelpFormatter().printHelp("psl", options, true);
+            return null;
         }
 
         if (commandLineOptions.hasOption(OPTION_HELP)) {
@@ -392,7 +405,7 @@ public class CommandLineLoader {
 
         if (commandLineOptions.hasOption(OPTION_VERSION)) {
             initDefaultLogger();
-            System.out.println("PSL CLI Version " + Version.getFull());
+            System.out.println("PSL Version " + Version.getFull());
             return commandLineOptions;
         }
 
@@ -401,6 +414,7 @@ public class CommandLineLoader {
             System.err.println("Command line error: Options '--" + OPTION_DB_H2_PATH + "' and '--" + OPTION_DB_POSTGRESQL_NAME + "' are not compatible.");
             getHelpFormatter().printHelp("psl", options, true);
         }
+
         return commandLineOptions;
     }
 

@@ -96,10 +96,10 @@ public class Launcher {
 
     public static final String MODEL_FILE_EXTENSION = ".psl";
     public static final String DEFAULT_H2_DB_PATH =
-                    Paths.get(System.getProperty("java.io.tmpdir"),
-                    "cli_" + System.getProperty("user.name") + "@" + getHostname()).toString();
+            Paths.get(System.getProperty("java.io.tmpdir"),
+            "cli_" + System.getProperty("user.name") + "@" + getHostname()).toString();
     public static final String DEFAULT_POSTGRES_DB_NAME = "psl_cli";
-    private static final String DEFAULT_IA = MPEInference.class.getName();
+    public static final String DEFAULT_IA = MPEInference.class.getName();
     public static final String DEFAULT_WLA = MaxLikelihoodMPE.class.getName();
 
     // Reserved partition names.
@@ -107,12 +107,11 @@ public class Launcher {
     public static final String PARTITION_NAME_TARGET = "targets";
     public static final String PARTITION_NAME_LABELS = "truth";
 
-    private CommandLine options;
-    private Logger log;
+    private CommandLine parsedOptions;
+    private static final Logger log = LoggerFactory.getLogger(Launcher.class);
 
     private Launcher(CommandLineLoader commandLineLoader) {
-        this.options = commandLineLoader.options;
-        this.log = LoggerFactory.getLogger(getClass().getName());
+        this.parsedOptions = commandLineLoader.getParsedOptions();
     }
 
     /**
@@ -122,10 +121,10 @@ public class Launcher {
         String dbPath = DEFAULT_H2_DB_PATH;
         boolean useH2 = true;
 
-        if (options.hasOption(OPTION_DB_H2_PATH)) {
-            dbPath = options.getOptionValue(OPTION_DB_H2_PATH);
-        } else if (options.hasOption(OPTION_DB_POSTGRESQL_NAME)) {
-            dbPath = options.getOptionValue(OPTION_DB_POSTGRESQL_NAME, DEFAULT_POSTGRES_DB_NAME);
+        if (parsedOptions.hasOption(OPTION_DB_H2_PATH)) {
+            dbPath = parsedOptions.getOptionValue(OPTION_DB_H2_PATH);
+        } else if (parsedOptions.hasOption(OPTION_DB_POSTGRESQL_NAME)) {
+            dbPath = parsedOptions.getOptionValue(OPTION_DB_POSTGRESQL_NAME, DEFAULT_POSTGRES_DB_NAME);
             useH2 = false;
         }
 
@@ -144,8 +143,8 @@ public class Launcher {
 
         Set<StandardPredicate> closedPredicates;
         try {
-            String path = options.getOptionValue(OPTION_DATA);
-            closedPredicates = DataLoader.load(dataStore, path, options.hasOption(OPTION_INT_IDS));
+            String path = parsedOptions.getOptionValue(OPTION_DATA);
+            closedPredicates = DataLoader.load(dataStore, path, parsedOptions.hasOption(OPTION_INT_IDS));
         } catch (ConfigurationException | FileNotFoundException ex) {
             throw new RuntimeException("Failed to load data.", ex);
         }
@@ -221,15 +220,15 @@ public class Launcher {
         InferenceApplication inferenceApplication =
                 InferenceApplication.getInferenceApplication(inferenceName, model, database);
 
-        if (options.hasOption(OPTION_OUTPUT_GROUND_RULES_LONG)) {
-            String path = options.getOptionValue(OPTION_OUTPUT_GROUND_RULES_LONG);
+        if (parsedOptions.hasOption(OPTION_OUTPUT_GROUND_RULES_LONG)) {
+            String path = parsedOptions.getOptionValue(OPTION_OUTPUT_GROUND_RULES_LONG);
             outputGroundRules(inferenceApplication.getGroundRuleStore(), path, false);
         }
 
         inferenceApplication.inference();
 
-        if (options.hasOption(OPTION_OUTPUT_SATISFACTION_LONG)) {
-            String path = options.getOptionValue(OPTION_OUTPUT_SATISFACTION_LONG);
+        if (parsedOptions.hasOption(OPTION_OUTPUT_SATISFACTION_LONG)) {
+            String path = parsedOptions.getOptionValue(OPTION_OUTPUT_SATISFACTION_LONG);
             outputGroundRules(inferenceApplication.getGroundRuleStore(), path, true);
         }
 
@@ -247,7 +246,7 @@ public class Launcher {
         openPredicates.removeAll(closedPredicates);
 
         // If we are just writing to the console, use a more human-readable format.
-        if (!options.hasOption(OPTION_OUTPUT_DIR)) {
+        if (!parsedOptions.hasOption(OPTION_OUTPUT_DIR)) {
             for (StandardPredicate openPredicate : openPredicates) {
                 for (GroundAtom atom : database.getAllGroundRandomVariableAtoms(openPredicate)) {
                     System.out.println(atom.toString() + " = " + atom.getValue());
@@ -258,7 +257,7 @@ public class Launcher {
         }
 
         // If we have an output directory, then write a different file for each predicate.
-        String outputDirectoryPath = options.getOptionValue(OPTION_OUTPUT_DIR);
+        String outputDirectoryPath = parsedOptions.getOptionValue(OPTION_OUTPUT_DIR);
         File outputDirectory = new File(outputDirectoryPath);
 
         // mkdir -p
@@ -297,15 +296,15 @@ public class Launcher {
                 randomVariableDatabase, observedTruthDatabase);
         learner.learn();
 
-        if (options.hasOption(OPTION_OUTPUT_GROUND_RULES_LONG)) {
-            String path = options.getOptionValue(OPTION_OUTPUT_GROUND_RULES_LONG);
+        if (parsedOptions.hasOption(OPTION_OUTPUT_GROUND_RULES_LONG)) {
+            String path = parsedOptions.getOptionValue(OPTION_OUTPUT_GROUND_RULES_LONG);
             outputGroundRules(learner.getGroundRuleStore(), path, false);
         }
 
         learner.close();
 
-        if (options.hasOption(OPTION_OUTPUT_SATISFACTION_LONG)) {
-            String path = options.getOptionValue(OPTION_OUTPUT_SATISFACTION_LONG);
+        if (parsedOptions.hasOption(OPTION_OUTPUT_SATISFACTION_LONG)) {
+            String path = parsedOptions.getOptionValue(OPTION_OUTPUT_SATISFACTION_LONG);
             outputGroundRules(learner.getGroundRuleStore(), path, true);
         }
 
@@ -314,7 +313,7 @@ public class Launcher {
 
         log.info("Weight learning complete");
 
-        String modelFilename = options.getOptionValue(OPTION_MODEL);
+        String modelFilename = parsedOptions.getOptionValue(OPTION_MODEL);
 
         String learnedFilename;
         int prefixPos = modelFilename.lastIndexOf(MODEL_FILE_EXTENSION);
@@ -382,14 +381,14 @@ public class Launcher {
     }
 
     private Model loadModel(DataStore dataStore) {
-        log.info("Loading model from {}", options.getOptionValue(OPTION_MODEL));
+        log.info("Loading model from {}", parsedOptions.getOptionValue(OPTION_MODEL));
 
         Model model = null;
 
-        try (FileReader reader = new FileReader(new File(options.getOptionValue(OPTION_MODEL)))) {
+        try (FileReader reader = new FileReader(new File(parsedOptions.getOptionValue(OPTION_MODEL)))) {
             model = ModelLoader.load(dataStore, reader);
         } catch (IOException ex) {
-            throw new RuntimeException("Failed to load model from file: " + options.getOptionValue(OPTION_MODEL), ex);
+            throw new RuntimeException("Failed to load model from file: " + parsedOptions.getOptionValue(OPTION_MODEL), ex);
         }
 
         log.debug(model.toString());
@@ -410,17 +409,17 @@ public class Launcher {
 
         // Inference
         Database evalDB = null;
-        if (options.hasOption(OPERATION_INFER)) {
-            evalDB = runInference(model, dataStore, closedPredicates, options.getOptionValue(OPERATION_INFER, DEFAULT_IA));
-        } else if (options.hasOption(OPERATION_LEARN)) {
-            learnWeights(model, dataStore, closedPredicates, options.getOptionValue(OPERATION_LEARN, DEFAULT_WLA));
+        if (parsedOptions.hasOption(OPERATION_INFER)) {
+            evalDB = runInference(model, dataStore, closedPredicates, parsedOptions.getOptionValue(OPERATION_INFER, DEFAULT_IA));
+        } else if (parsedOptions.hasOption(OPERATION_LEARN)) {
+            learnWeights(model, dataStore, closedPredicates, parsedOptions.getOptionValue(OPERATION_LEARN, DEFAULT_WLA));
         } else {
             throw new IllegalArgumentException("No valid operation provided.");
         }
 
         // Evaluation
-        if (options.hasOption(OPTION_EVAL)) {
-            for (String evaluator : options.getOptionValues(OPTION_EVAL)) {
+        if (parsedOptions.hasOption(OPTION_EVAL)) {
+            for (String evaluator : parsedOptions.getOptionValues(OPTION_EVAL)) {
                 evaluation(dataStore, evalDB, closedPredicates, evaluator);
             }
 
@@ -435,30 +434,30 @@ public class Launcher {
     }
 
     private static boolean isCommandLineValid(CommandLineLoader commandLineLoader) {
-        CommandLine options = commandLineLoader.options;
-        // if only help or version was queried return
-        if ((options.hasOption(CommandLineLoader.OPTION_HELP)) || 
-        (options.hasOption(CommandLineLoader.OPTION_VERSION))) {
+        CommandLine givenOptions = commandLineLoader.getParsedOptions();
+        // Return early in case of help or version option.
+        if (givenOptions.hasOption(CommandLineLoader.OPTION_HELP) ||
+                givenOptions.hasOption(CommandLineLoader.OPTION_VERSION)) {
             return false;
         }
 
         // Data and model are required.
         // (We don't enforce them earlier so we can have successful runs with help and version.)
         HelpFormatter helpFormatter = new HelpFormatter();
-        if (!(options.hasOption(OPTION_DATA))) {
+        if (!givenOptions.hasOption(OPTION_DATA)) {
             System.out.println(String.format("Missing required option: --%s/-%s.", OPTION_DATA_LONG, OPTION_DATA));
-            helpFormatter.printHelp("psl", CommandLineLoader.unparsedOptions, true);
+            helpFormatter.printHelp("psl", CommandLineLoader.getOptions(), true);
             return false;
         }
-        if (!(options.hasOption(OPTION_MODEL))) {
+        if (!givenOptions.hasOption(OPTION_MODEL)) {
             System.out.println(String.format("Missing required option: --%s/-%s.", OPTION_MODEL_LONG, OPTION_MODEL));
-            helpFormatter.printHelp("psl", CommandLineLoader.unparsedOptions, true);
+            helpFormatter.printHelp("psl", CommandLineLoader.getOptions(), true);
             return false;
         }
 
-        if (!(options.hasOption(OPERATION_INFER)) && (!(options.hasOption(OPERATION_LEARN)))) {
+        if (!givenOptions.hasOption(OPERATION_INFER) && (!givenOptions.hasOption(OPERATION_LEARN))) {
             System.out.println(String.format("Missing required option: --%s/-%s.", OPERATION_INFER_LONG, OPERATION_INFER));
-            helpFormatter.printHelp("psl", CommandLineLoader.unparsedOptions, true);
+            helpFormatter.printHelp("psl", CommandLineLoader.getOptions(), true);
             return false;
         }
         return true;
@@ -483,8 +482,8 @@ public class Launcher {
     public static void main(String[] args, boolean rethrow) {
         try {
             CommandLineLoader commandLineLoader = new CommandLineLoader(args);
-            // return for commandline parse errors or psl errors
-            if ((commandLineLoader.options == null) || (!(isCommandLineValid(commandLineLoader)))) {
+            // Return for command line parse errors or PSL errors.
+            if ((commandLineLoader.getParsedOptions() == null) || (!(isCommandLineValid(commandLineLoader)))) {
                 return;
             }
             Launcher pslLauncher = new Launcher(commandLineLoader);
