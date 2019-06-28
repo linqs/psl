@@ -79,15 +79,15 @@ public class CommandLineLoader {
     public static final String OPTION_VERSION_LONG = "version";
 
     public static final String DEFAULT_H2_DB_PATH =
-                    Paths.get(System.getProperty("java.io.tmpdir"),
-                    "cli_" + System.getProperty("user.name") + "@" + getHostname()).toString();
+            Paths.get(System.getProperty("java.io.tmpdir"),
+            "cli_" + System.getProperty("user.name") + "@" + getHostname()).toString();
     public static final String DEFAULT_POSTGRES_DB_NAME = "psl_cli";
     private static final String DEFAULT_IA = MPEInference.class.getName();
     private static final String DEFAULT_WLA = MaxLikelihoodMPE.class.getName();
 
     private static Options options = setupOptions();
     private CommandLine parsedOptions;
-    public Logger log;
+    private static Logger log;
 
     public CommandLineLoader(String[] args) {
         try {
@@ -104,7 +104,7 @@ public class CommandLineLoader {
     }
 
     /**
-     * Returns the supported Options object
+     * Returns the supported Options object.
      */
     public static Options getOptions() {
         return options;
@@ -218,7 +218,6 @@ public class CommandLineLoader {
                 .build());
 
         // Make sure that help and version are in the main group so a successful run can use them.
-        //TOOD: should it be checked for mandatory?
         newOptions.addOption(Option.builder(OPTION_HELP)
                 .longOpt(OPTION_HELP_LONG)
                 .desc("Print this help message and exit")
@@ -418,7 +417,7 @@ public class CommandLineLoader {
         return commandLineOptions;
     }
 
-    private static String getHostname() {
+    public static String getHostname() {
         String hostname = "unknown";
 
         try {
