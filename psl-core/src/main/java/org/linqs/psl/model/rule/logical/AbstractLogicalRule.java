@@ -108,11 +108,11 @@ public abstract class AbstractLogicalRule extends AbstractRule {
         hash = HashCode.DEFAULT_INITIAL_NUMBER;
 
         for (Atom atom : negatedDNF.getPosLiterals()) {
-            hash = HashCode.build(atom);
+            hash = HashCode.build(hash, atom);
         }
 
         for (Atom atom : negatedDNF.getNegLiterals()) {
-            hash = HashCode.build(atom);
+            hash = HashCode.build(hash, atom);
         }
     }
 

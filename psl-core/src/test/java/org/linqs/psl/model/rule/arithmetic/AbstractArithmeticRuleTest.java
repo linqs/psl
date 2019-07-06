@@ -18,6 +18,7 @@
 package org.linqs.psl.model.rule.arithmetic;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -87,6 +88,12 @@ public class AbstractArithmeticRuleTest {
         toClose.add(singleClosed);
         toClose.add(doubleClosed);
         database = dataStore.getDatabase(dataStore.getNewPartition(), toClose);
+    }
+
+    @After
+    public void cleanup() {
+        database.close();
+        dataStore.close();
     }
 
     @Test
@@ -571,9 +578,46 @@ public class AbstractArithmeticRuleTest {
         PSLTest.assertRule(rule, "@Min[1.0, 0.0] * SINGLECLOSED(A) = 1.0 .");
     }
 
-    @After
-    public void cleanup() {
-        database.close();
-        dataStore.close();
+    /**
+     * Test a few instances where the hash should not match.
+     * The rules will use at most one coefficient/atom so the hash ordering is consistent.
+     */
+    @Test
+    public void testHash() {
+        List<Coefficient> coefficients;
+        List<SummationAtomOrAtom> atoms;
+
+        // 1 * SingleClosed(A) = 1
+        coefficients = Arrays.asList((Coefficient)(new ConstantNumber(1)));
+        atoms = Arrays.asList((SummationAtomOrAtom)(new QueryAtom(singleClosed, new Variable("A"))));
+        ArithmeticRuleExpression expression1 = new ArithmeticRuleExpression(
+                coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1));
+
+        // 0 * SingleClosed(A) = 1
+        coefficients = Arrays.asList((Coefficient)(new ConstantNumber(0)));
+        atoms = Arrays.asList((SummationAtomOrAtom)(new QueryAtom(singleClosed, new Variable("A"))));
+        ArithmeticRuleExpression expression2 = new ArithmeticRuleExpression(
+                coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1));
+
+        // 1 * SingleClosed(A) = 0
+        coefficients = Arrays.asList((Coefficient)(new ConstantNumber(1)));
+        atoms = Arrays.asList((SummationAtomOrAtom)(new QueryAtom(singleClosed, new Variable("A"))));
+        ArithmeticRuleExpression expression3 = new ArithmeticRuleExpression(
+                coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(0));
+
+        // 1 * SingleOpened(A) = 1
+        coefficients = Arrays.asList((Coefficient)(new ConstantNumber(1)));
+        atoms = Arrays.asList((SummationAtomOrAtom)(new QueryAtom(singleOpened, new Variable("A"))));
+        ArithmeticRuleExpression expression4 = new ArithmeticRuleExpression(
+                coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1));
+
+        assertNotEquals(expression1.hashCode(), expression2.hashCode());
+        assertNotEquals(expression1.hashCode(), expression3.hashCode());
+        assertNotEquals(expression1.hashCode(), expression4.hashCode());
+
+        assertNotEquals(expression2.hashCode(), expression3.hashCode());
+        assertNotEquals(expression2.hashCode(), expression4.hashCode());
+
+        assertNotEquals(expression3.hashCode(), expression4.hashCode());
     }
 }
