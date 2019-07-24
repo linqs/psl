@@ -40,11 +40,13 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
     protected final AbstractLogicalRule rule;
     protected final List<GroundAtom> posLiterals;
     protected final List<GroundAtom> negLiterals;
-    protected final GeneralFunction function;
+    protected final GeneralFunction dissatisfaction;
 
     private final int hashcode;
 
     /**
+     * @param posLiterals the positive literals (ground atoms) in the negated DNF.
+     * @param negLiterals the negative literals (ground atoms) in the negated DNF.
      * @param rvaCount the number of RandomVariableAtoms (non-constants) in the literals.
      */
     protected AbstractGroundLogicalRule(AbstractLogicalRule rule, List<GroundAtom> posLiterals, List<GroundAtom> negLiterals, short rvaCount) {
@@ -56,25 +58,31 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
         int hash = HashCode.build(rule);
 
         // Construct function definition.
+        // nonNegative refers to having a hinge at 0 (i.e. max(0.0, X)).
+        // If there are at least two literals, then there will be a hinge
+        // (otherwise it will just be linear).
         boolean nonNegative = (this.posLiterals.size() + this.negLiterals.size() > 1);
-        function = new GeneralFunction(nonNegative, false, rvaCount);
+        dissatisfaction = new GeneralFunction(nonNegative, false, rvaCount);
+
+        // Note that the pos/neg qualifier are w.r.t the negated DNF.
+        // This means that the potential function being constructed here is actually the
+        // ground rule's dissatisfaction.
 
         for (int i = 0; i < this.posLiterals.size(); i++) {
-            function.add(1.0f, this.posLiterals.get(i));
+            dissatisfaction.add(1.0f, this.posLiterals.get(i));
             hash = HashCode.build(hash, this.posLiterals.get(i));
         }
 
         for (int i = 0; i < this.negLiterals.size(); i++) {
-            function.add(-1.0f, this.negLiterals.get(i));
+            dissatisfaction.add(-1.0f, this.negLiterals.get(i));
             hash = HashCode.build(hash, this.negLiterals.get(i));
         }
 
-        function.add(1.0f - this.posLiterals.size());
-        hashcode = hash;
-    }
+        // Adding a constant 1.0 overall and subtracting 1.0 for each positive term (in the negated DNF)
+        // will make this potential function the same as the dissatisfaction of the original (non-negated) ground rule.
 
-    protected GeneralFunction getFunction() {
-        return function;
+        dissatisfaction.add(1.0f - this.posLiterals.size());
+        hashcode = hash;
     }
 
     @Override

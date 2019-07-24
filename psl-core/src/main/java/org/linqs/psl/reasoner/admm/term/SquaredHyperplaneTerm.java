@@ -124,6 +124,17 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm {
         for (int i = 0; i < size; i++) {
             value += coefficients[i] * variables[i].getValue();
         }
+
+        return value - constant;
+    }
+
+    @Override
+    public float evaluate(float[] consensusValues) {
+        float value = 0.0f;
+        for (int i = 0; i < size; i++) {
+            value += coefficients[i] * consensusValues[variables[i].getGlobalId()];
+        }
+
         return value - constant;
     }
 

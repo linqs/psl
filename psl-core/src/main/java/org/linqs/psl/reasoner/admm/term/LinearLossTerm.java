@@ -56,9 +56,23 @@ public class LinearLossTerm extends ADMMObjectiveTerm {
     public float evaluate() {
         float weight = (float)((WeightedGroundRule)groundRule).getWeight();
         float value = 0.0f;
+
         for (int i = 0; i < size; i++) {
             value += coefficients[i] * variables[i].getValue();
         }
+
+        return weight * value;
+    }
+
+    @Override
+    public float evaluate(float[] consensusValues) {
+        float weight = (float)((WeightedGroundRule)groundRule).getWeight();
+        float value = 0.0f;
+
+        for (int i = 0; i < size; i++) {
+            value += coefficients[i] * consensusValues[variables[i].getGlobalId()];
+        }
+
         return weight * value;
     }
 }

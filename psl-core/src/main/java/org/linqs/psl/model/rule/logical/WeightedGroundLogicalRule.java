@@ -32,7 +32,7 @@ public class WeightedGroundLogicalRule extends AbstractGroundLogicalRule impleme
     protected WeightedGroundLogicalRule(WeightedLogicalRule rule, List<GroundAtom> posLiterals,
             List<GroundAtom> negLiterals, short rvaCount) {
         super(rule, posLiterals, negLiterals, rvaCount);
-        function.setSquared(rule.isSquared());
+        dissatisfaction.setSquared(rule.isSquared());
     }
 
     @Override
@@ -57,17 +57,17 @@ public class WeightedGroundLogicalRule extends AbstractGroundLogicalRule impleme
 
     @Override
     public GeneralFunction getFunctionDefinition() {
-        return function;
+        return dissatisfaction;
     }
 
     @Override
     public double getIncompatibility() {
-        return function.getValue();
+        return dissatisfaction.getValue();
     }
 
     @Override
     public double getIncompatibility(GroundAtom replacementAtom, float replacementValue) {
-        return function.getValue(replacementAtom, replacementValue);
+        return dissatisfaction.getValue(replacementAtom, replacementValue);
     }
 
     @Override

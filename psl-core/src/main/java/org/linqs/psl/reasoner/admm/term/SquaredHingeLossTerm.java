@@ -39,6 +39,12 @@ public class SquaredHingeLossTerm extends SquaredHyperplaneTerm {
     }
 
     @Override
+    public float evaluate(float[] consensusValues) {
+        float weight = (float)((WeightedGroundRule)groundRule).getWeight();
+        return weight * (float)Math.pow(Math.max(0.0f, super.evaluate(consensusValues)), 2);
+    }
+
+    @Override
     public void minimize(float stepSize, float[] consensusValues) {
         // Initializes scratch data.
         float total = 0.0f;

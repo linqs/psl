@@ -37,24 +37,40 @@ public class LinearConstraintTerm extends HyperplaneTerm {
         this.comparator = comparator;
     }
 
-    /**
-     * if (coefficients^T * x [comparator] constant) { 0.0 }
-     * else { infinity }
-     */
     @Override
     public float evaluate() {
+        return evaluateInternal(null);
+    }
+
+    @Override
+    public float evaluate(float[] consensusValues) {
+        return evaluateInternal(consensusValues);
+    }
+
+    /**
+     * if (coefficients^T * x [comparator] constant) { return 0.0 }
+     * else { return infinity }
+     */
+    private float evaluateInternal(float[] consensusValues) {
+        float value = 0.0f;
+        if (consensusValues == null) {
+            value = super.evaluate();
+        } else {
+            value = super.evaluate(consensusValues);
+        }
+
         if (comparator.equals(FunctionComparator.Equality)) {
-            if (MathUtils.isZero(super.evaluate(), MathUtils.RELAXED_EPSILON)) {
+            if (MathUtils.isZero(value, MathUtils.RELAXED_EPSILON)) {
                 return 0.0f;
             }
             return Float.POSITIVE_INFINITY;
         } else if (comparator.equals(FunctionComparator.SmallerThan)) {
-            if (super.evaluate() <= 0.0f) {
+            if (value <= 0.0f) {
                 return 0.0f;
             }
             return Float.POSITIVE_INFINITY;
         } else if (comparator.equals(FunctionComparator.LargerThan)) {
-            if (super.evaluate() >= 0.0f) {
+            if (value >= 0.0f) {
                 return 0.0f;
             }
             return Float.POSITIVE_INFINITY;

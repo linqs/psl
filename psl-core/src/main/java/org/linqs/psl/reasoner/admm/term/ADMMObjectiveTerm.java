@@ -53,7 +53,15 @@ public abstract class ADMMObjectiveTerm implements ReasonerTerm {
      */
     public abstract void minimize(float stepSize, float[] consensusValues);
 
+    /**
+     * Evaluate this potential using the local variables.
+     */
     public abstract float evaluate();
+
+    /**
+     * Evaluate this potential using the given consensus values.
+     */
+    public abstract float evaluate(float[] consensusValues);
 
     /**
      * Get the variables used in this term.
