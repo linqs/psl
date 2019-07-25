@@ -110,7 +110,7 @@ public class AbstractArithmeticRuleTest {
         );
 
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
-                coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1)));
+                coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
 
         assertEquals("1.0 * SINGLECLOSED(A) + 1.0 * SINGLECLOSED(B) = 1.0 .", rule.toString());
     }
@@ -131,7 +131,7 @@ public class AbstractArithmeticRuleTest {
 
         try {
             AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
-                    coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1)));
+                    coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
             fail("IllegalArgumentException not thrown when duplicate summation variables were used.");
         } catch (IllegalArgumentException ex) {
             // Exception is expected.
@@ -153,7 +153,7 @@ public class AbstractArithmeticRuleTest {
         );
 
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
-                coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1)));
+                coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
 
         assertEquals("1.0 * DOUBLECLOSED(+A, 'Foo') = 1.0 .", rule.toString());
     }
@@ -172,7 +172,7 @@ public class AbstractArithmeticRuleTest {
         );
 
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
-                coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1)));
+                coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
 
         assertEquals("1.0 * SINGLECLOSED(+A) + 1.0 * SINGLECLOSED(+B) = 1.0 .", rule.toString());
     }
@@ -194,7 +194,7 @@ public class AbstractArithmeticRuleTest {
 
         try {
             AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
-                    coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1)));
+                    coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
             fail("IllegalArgumentException not thrown when summation variable is used as a term.");
         } catch (IllegalArgumentException ex) {
             // Exception is expected.
@@ -216,7 +216,7 @@ public class AbstractArithmeticRuleTest {
         filters.put(new SummationVariable("A"), new QueryAtom(singleClosed, new Variable("A")));
 
         ArithmeticRuleExpression expression = new ArithmeticRuleExpression(
-                coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1));
+                coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1));
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, filters);
 
         PSLTest.assertRule(rule, "1.0 * SINGLECLOSED(+A) = 1.0 .   {A : SINGLECLOSED(A)}");
@@ -242,7 +242,7 @@ public class AbstractArithmeticRuleTest {
         );
 
         ArithmeticRuleExpression expression = new ArithmeticRuleExpression(
-                coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1));
+                coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1));
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, filters);
 
         PSLTest.assertRule(rule, "1.0 * SINGLECLOSED(+A) = 1.0 .   {A : ( SINGLECLOSED(A) | DOUBLECLOSED(A, A) )}", true);
@@ -267,7 +267,7 @@ public class AbstractArithmeticRuleTest {
         filters.put(new SummationVariable("A"), new QueryAtom(singleClosed, new Variable("B")));
 
         ArithmeticRuleExpression expression = new ArithmeticRuleExpression(
-                coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1));
+                coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1));
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, filters);
 
         PSLTest.assertRule(rule, "1.0 * DOUBLECLOSED(+A, B) = 1.0 .   {A : SINGLECLOSED(B)}");
@@ -291,7 +291,7 @@ public class AbstractArithmeticRuleTest {
         filters.put(new SummationVariable("B"), new QueryAtom(singleClosed, new Variable("B")));
 
         ArithmeticRuleExpression expression = new ArithmeticRuleExpression(
-                coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1));
+                coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1));
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, filters);
 
         PSLTest.assertRule(rule, "1.0 * SINGLECLOSED(+A) + 1.0 * SINGLECLOSED(+B) = 1.0 .   {A : SINGLECLOSED(A)}   {B : SINGLECLOSED(B)}", true);
@@ -313,7 +313,7 @@ public class AbstractArithmeticRuleTest {
         filters.put(new SummationVariable("B"), new QueryAtom(singleClosed, new Variable("B")));
 
         ArithmeticRuleExpression expression = new ArithmeticRuleExpression(
-                coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1));
+                coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1));
 
         try {
             AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, filters);
@@ -339,7 +339,7 @@ public class AbstractArithmeticRuleTest {
         filters.put(new SummationVariable("A"), new QueryAtom(singleClosed, new Variable("B")));
 
         ArithmeticRuleExpression expression = new ArithmeticRuleExpression(
-                coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1));
+                coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1));
 
         try {
             AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, filters);
@@ -365,7 +365,7 @@ public class AbstractArithmeticRuleTest {
         filters.put(new SummationVariable("A"), new QueryAtom(singleClosed, new Variable("A")));
 
         ArithmeticRuleExpression expression = new ArithmeticRuleExpression(
-                coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1));
+                coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1));
 
         try {
             AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, filters);
@@ -394,7 +394,7 @@ public class AbstractArithmeticRuleTest {
         filters.put(new SummationVariable("B"), new QueryAtom(singleClosed, new Variable("A")));
 
         ArithmeticRuleExpression expression = new ArithmeticRuleExpression(
-                coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1));
+                coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1));
 
         try {
             AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, filters);
@@ -420,7 +420,7 @@ public class AbstractArithmeticRuleTest {
         filters.put(new SummationVariable("A"), new QueryAtom(singleOpened, new Variable("A")));
 
         ArithmeticRuleExpression expression = new ArithmeticRuleExpression(
-                coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1));
+                coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1));
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, filters);
 
         SimpleAtomManager atomManager = new SimpleAtomManager(database);
@@ -446,7 +446,7 @@ public class AbstractArithmeticRuleTest {
         );
 
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
-                coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1)));
+                coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
 
         PSLTest.assertRule(rule, "|A| * SINGLECLOSED(+A) = 1.0 .");
     }
@@ -463,7 +463,7 @@ public class AbstractArithmeticRuleTest {
         );
 
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
-                coefficients, atoms, FunctionComparator.Equality, new Cardinality(new SummationVariable("A"))));
+                coefficients, atoms, FunctionComparator.EQ, new Cardinality(new SummationVariable("A"))));
 
         PSLTest.assertRule(rule, "|A| * SINGLECLOSED(+A) = |A| .");
     }
@@ -482,7 +482,7 @@ public class AbstractArithmeticRuleTest {
         );
 
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
-                coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1)));
+                coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
 
         PSLTest.assertRule(rule, "|A| * SINGLECLOSED(+A) + |B| * SINGLECLOSED(+B) = 1.0 .", true);
     }
@@ -501,7 +501,7 @@ public class AbstractArithmeticRuleTest {
 
         try {
             AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
-                    coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1)));
+                    coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
             fail("IllegalArgumentException not thrown when cardinality used on non-summation variable.");
         } catch (IllegalArgumentException ex) {
             // Exception is expected.
@@ -520,7 +520,7 @@ public class AbstractArithmeticRuleTest {
         );
 
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
-                coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1)));
+                coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
 
         PSLTest.assertRule(rule, "@Max[|A|, 0.0] * SINGLECLOSED(+A) = 1.0 .");
     }
@@ -537,7 +537,7 @@ public class AbstractArithmeticRuleTest {
         );
 
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
-                coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1)));
+                coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
 
         PSLTest.assertRule(rule, "@Max[1.0, 0.0] * SINGLECLOSED(+A) = 1.0 .");
     }
@@ -556,7 +556,7 @@ public class AbstractArithmeticRuleTest {
         );
 
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
-                coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1)));
+                coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
 
         PSLTest.assertRule(rule, "@Max[|A|, |B|] * SINGLECLOSED(+A) + 1.0 * SINGLECLOSED(+B) = 1.0 .", true);
     }
@@ -573,7 +573,7 @@ public class AbstractArithmeticRuleTest {
         );
 
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
-                coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1)));
+                coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
 
         PSLTest.assertRule(rule, "@Min[1.0, 0.0] * SINGLECLOSED(A) = 1.0 .");
     }
@@ -591,25 +591,25 @@ public class AbstractArithmeticRuleTest {
         coefficients = Arrays.asList((Coefficient)(new ConstantNumber(1)));
         atoms = Arrays.asList((SummationAtomOrAtom)(new QueryAtom(singleClosed, new Variable("A"))));
         ArithmeticRuleExpression expression1 = new ArithmeticRuleExpression(
-                coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1));
+                coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1));
 
         // 0 * SingleClosed(A) = 1
         coefficients = Arrays.asList((Coefficient)(new ConstantNumber(0)));
         atoms = Arrays.asList((SummationAtomOrAtom)(new QueryAtom(singleClosed, new Variable("A"))));
         ArithmeticRuleExpression expression2 = new ArithmeticRuleExpression(
-                coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1));
+                coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1));
 
         // 1 * SingleClosed(A) = 0
         coefficients = Arrays.asList((Coefficient)(new ConstantNumber(1)));
         atoms = Arrays.asList((SummationAtomOrAtom)(new QueryAtom(singleClosed, new Variable("A"))));
         ArithmeticRuleExpression expression3 = new ArithmeticRuleExpression(
-                coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(0));
+                coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(0));
 
         // 1 * SingleOpened(A) = 1
         coefficients = Arrays.asList((Coefficient)(new ConstantNumber(1)));
         atoms = Arrays.asList((SummationAtomOrAtom)(new QueryAtom(singleOpened, new Variable("A"))));
         ArithmeticRuleExpression expression4 = new ArithmeticRuleExpression(
-                coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1));
+                coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1));
 
         assertNotEquals(expression1.hashCode(), expression2.hashCode());
         assertNotEquals(expression1.hashCode(), expression3.hashCode());

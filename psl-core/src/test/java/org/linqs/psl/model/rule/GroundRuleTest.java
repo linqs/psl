@@ -327,7 +327,7 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.SmallerThan, new ConstantNumber(0)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LTE, new ConstantNumber(0)),
                 1.0,
                 true
         );
@@ -365,7 +365,7 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.SmallerThan, new ConstantNumber(0)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LTE, new ConstantNumber(0)),
                 1.0,
                 true
         );
@@ -412,7 +412,7 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.SmallerThan, new ConstantNumber(0)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LTE, new ConstantNumber(0)),
                 1.0,
                 true
         );
@@ -455,7 +455,7 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 1.0,
                 true
         );
@@ -502,7 +502,7 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.SmallerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LTE, new ConstantNumber(1)),
                 1.0,
                 true
         );
@@ -549,7 +549,7 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)),
                 1.0,
                 true
         );
@@ -641,7 +641,7 @@ public class GroundRuleTest {
         filters.put(new SummationVariable("B"), new QueryAtom(model.predicates.get("Nice"), new Variable("B")));
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true
@@ -665,7 +665,7 @@ public class GroundRuleTest {
         filters.put(new SummationVariable("B"), new Negation(new QueryAtom(model.predicates.get("Nice"), new Variable("B"))));
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true
@@ -709,7 +709,7 @@ public class GroundRuleTest {
         filters.put(new SummationVariable("B"), new QueryAtom(model.predicates.get("Nice"), new Variable("B")));
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true
@@ -733,7 +733,7 @@ public class GroundRuleTest {
         filters.put(new SummationVariable("B"), new Negation(new QueryAtom(model.predicates.get("Nice"), new Variable("B"))));
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true
@@ -797,7 +797,7 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true
@@ -827,7 +827,7 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true
@@ -871,7 +871,7 @@ public class GroundRuleTest {
         filters = new HashMap<SummationVariable, Formula>();
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true
@@ -919,7 +919,7 @@ public class GroundRuleTest {
         filters = new HashMap<SummationVariable, Formula>();
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true
@@ -946,7 +946,7 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true
@@ -972,7 +972,7 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true
@@ -1028,7 +1028,7 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true
@@ -1054,7 +1054,7 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true
@@ -1080,7 +1080,7 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true
@@ -1106,7 +1106,7 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true
@@ -1132,7 +1132,7 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true
@@ -1158,7 +1158,7 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true
@@ -1221,7 +1221,7 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true
@@ -1275,7 +1275,7 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true
@@ -1429,7 +1429,7 @@ public class GroundRuleTest {
             coefficients.add(testCoefficients[i]);
 
             rule = new WeightedArithmeticRule(
-                    new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                    new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                     filters,
                     1.0,
                     true
@@ -1479,7 +1479,7 @@ public class GroundRuleTest {
         filters.put(new SummationVariable("B"), new QueryAtom(model.predicates.get("Nice"), new Variable("B")));
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true
@@ -1513,7 +1513,7 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(0.0f)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(0.0f)),
                 1.0,
                 true
         );
@@ -1620,7 +1620,7 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(0.0f)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(0.0f)),
                 1.0,
                 true
         );
@@ -1640,7 +1640,7 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.SmallerThan, new ConstantNumber(1.0f)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LTE, new ConstantNumber(1.0f)),
                 1.0,
                 true
         );
@@ -1660,7 +1660,7 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(-1.0f)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(-1.0f)),
                 1.0,
                 true
         );
@@ -1680,7 +1680,7 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.SmallerThan, new ConstantNumber(0.0f)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LTE, new ConstantNumber(0.0f)),
                 1.0,
                 true
         );
@@ -1722,7 +1722,7 @@ public class GroundRuleTest {
         filters.put(new SummationVariable("B"), new QueryAtom(GroundingOnlyPredicate.Equal, new Variable("B"), new UniqueStringID("Alice")));
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true
@@ -1754,7 +1754,7 @@ public class GroundRuleTest {
         filters.put(new SummationVariable("B"), new QueryAtom(GroundingOnlyPredicate.NotEqual, new Variable("B"), new UniqueStringID("Alice")));
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true
@@ -1787,7 +1787,7 @@ public class GroundRuleTest {
         filters.put(new SummationVariable("B"), new QueryAtom(GroundingOnlyPredicate.Equal, new Variable("A"), new UniqueStringID("Alice")));
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true

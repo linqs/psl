@@ -59,17 +59,17 @@ public class LinearConstraintTerm extends HyperplaneTerm {
             value = super.evaluate(consensusValues);
         }
 
-        if (comparator.equals(FunctionComparator.Equality)) {
+        if (comparator.equals(FunctionComparator.EQ)) {
             if (MathUtils.isZero(value, MathUtils.RELAXED_EPSILON)) {
                 return 0.0f;
             }
             return Float.POSITIVE_INFINITY;
-        } else if (comparator.equals(FunctionComparator.SmallerThan)) {
+        } else if (comparator.equals(FunctionComparator.LTE)) {
             if (value <= 0.0f) {
                 return 0.0f;
             }
             return Float.POSITIVE_INFINITY;
-        } else if (comparator.equals(FunctionComparator.LargerThan)) {
+        } else if (comparator.equals(FunctionComparator.GTE)) {
             if (value >= 0.0f) {
                 return 0.0f;
             }
@@ -82,7 +82,7 @@ public class LinearConstraintTerm extends HyperplaneTerm {
     @Override
     public void minimize(float stepSize, float[] consensusValues) {
         // If it's not an equality constraint, first tries to minimize without the constraint.
-        if (!comparator.equals(FunctionComparator.Equality)) {
+        if (!comparator.equals(FunctionComparator.EQ)) {
 
             // Initializes scratch data.
             float total = 0.0f;
@@ -98,9 +98,9 @@ public class LinearConstraintTerm extends HyperplaneTerm {
 
             // Checks if the solution satisfies the constraint. If so, updates
             // the local primal variables and returns.
-            if ( (comparator.equals(FunctionComparator.SmallerThan) && total <= constant)
+            if ( (comparator.equals(FunctionComparator.LTE) && total <= constant)
                     ||
-                 (comparator.equals(FunctionComparator.LargerThan) && total >= constant)
+                 (comparator.equals(FunctionComparator.GTE) && total >= constant)
                 ) {
                 return;
             }

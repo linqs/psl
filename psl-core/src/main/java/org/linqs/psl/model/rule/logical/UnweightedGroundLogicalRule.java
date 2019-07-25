@@ -48,7 +48,7 @@ public class UnweightedGroundLogicalRule extends AbstractGroundLogicalRule
 
     @Override
     public ConstraintTerm getConstraintDefinition() {
-        return new ConstraintTerm(dissatisfaction, FunctionComparator.SmallerThan, 0.0f);
+        return new ConstraintTerm(dissatisfaction, FunctionComparator.LTE, 0.0f);
     }
 
     @Override

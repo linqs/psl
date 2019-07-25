@@ -155,7 +155,7 @@ public class LazyMPEInferenceTest {
         );
 
         Rule rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(0.5f)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(0.5f)),
                 1.0,
                 true
         );
@@ -198,7 +198,7 @@ public class LazyMPEInferenceTest {
         filters.put(new SummationVariable("B"), new QueryAtom(info.predicates.get("Nice"), new Variable("B")));
 
         Rule rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1.0f)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1.0f)),
                 filters,
                 1.0,
                 true
