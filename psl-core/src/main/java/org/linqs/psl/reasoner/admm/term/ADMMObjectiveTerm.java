@@ -75,6 +75,7 @@ public abstract class ADMMObjectiveTerm implements ReasonerTerm {
     /**
      * Get the number of variables in this term.
      */
+    @Override
     public int size() {
         return size;
     }

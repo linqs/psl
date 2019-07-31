@@ -60,6 +60,7 @@ public class ConstraintBlockerTerm implements ReasonerTerm {
         return exactlyOne;
     }
 
+    @Override
     public int size() {
         return atoms.length;
     }

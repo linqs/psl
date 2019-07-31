@@ -18,4 +18,5 @@
 package org.linqs.psl.reasoner.term;
 
 public interface ReasonerTerm {
+    public int size();
 }
