@@ -24,6 +24,10 @@ import java.util.Random;
 /**
  * The canonical source of randomness for all PSL core code.
  * Any code using randomness should use this class.
+ * The seed can be set through config before asking for any random numbers,
+ * or through the seed() method.
+ *
+ * If parallel randomness is required, then use this RNG to seed the per-thread RNGs.
  */
 public final class RandUtils {
     public static final String CONFIG_PREFIX = "random";
@@ -64,16 +68,33 @@ public final class RandUtils {
         return rng.nextFloat();
     }
 
+    public static synchronized float nextFloat(float min, float max) {
+        ensureRNG();
+
+        if (min >= max) {
+            throw new IllegalArgumentException(String.format(
+                    "Min (%f) must be strictly less than max (%f).", min, max));
+        }
+
+        return rng.nextFloat() * (max - min) + min;
+    }
+
     public static synchronized double nextGaussian() {
         ensureRNG();
         return rng.nextGaussian();
     }
 
+    /**
+     * Get an int in the range of a signed int.
+     */
     public static synchronized int nextInt() {
         ensureRNG();
         return rng.nextInt();
     }
 
+    /**
+     * Get an int in the range [0, max).
+     */
     public static synchronized int nextInt(int max) {
         ensureRNG();
         return rng.nextInt(max);
