@@ -20,6 +20,7 @@ package org.linqs.psl.reasoner.admm.term;
 import static org.junit.Assert.assertEquals;
 
 import org.linqs.psl.reasoner.function.FunctionComparator;
+import org.linqs.psl.reasoner.term.Hyperplane;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -70,7 +71,7 @@ public class LinearConstraintTermTest {
             variables[i].setLagrange(y[i]);
         }
 
-        LinearConstraintTerm term = new LinearConstraintTerm(null, new Hyperplane(variables, coeffs, constant, z.length), comparator);
+        LinearConstraintTerm term = new LinearConstraintTerm(null, new Hyperplane<LocalVariable>(variables, coeffs, constant, z.length), comparator);
         term.minimize(stepSize, z);
 
         for (int i = 0; i < z.length; i++) {

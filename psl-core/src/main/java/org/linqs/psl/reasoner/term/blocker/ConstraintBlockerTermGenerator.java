@@ -65,9 +65,9 @@ import java.util.Set;
  *     <li>All atoms are involved in at most one (partial) function and at most one GroundValueConstraint constraint.</li>
  * </ul>
  */
-public class ConstraintBlockerTermGenerator implements TermGenerator<ConstraintBlockerTerm> {
+public class ConstraintBlockerTermGenerator implements TermGenerator<ConstraintBlockerTerm, RandomVariableAtom> {
     @Override
-    public int generateTerms(GroundRuleStore ruleStore, TermStore<ConstraintBlockerTerm> termStore) {
+    public int generateTerms(GroundRuleStore ruleStore, TermStore<ConstraintBlockerTerm, RandomVariableAtom> termStore) {
         if (!(ruleStore instanceof AtomRegisterGroundRuleStore)) {
             throw new IllegalArgumentException("AtomRegisterGroundRuleStore required.");
         }

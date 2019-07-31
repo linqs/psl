@@ -27,6 +27,8 @@ import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.function.ConstraintTerm;
 import org.linqs.psl.reasoner.function.FunctionTerm;
 import org.linqs.psl.reasoner.function.GeneralFunction;
+import org.linqs.psl.reasoner.term.Hyperplane;
+import org.linqs.psl.reasoner.term.ReasonerLocalVariable;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.MathUtils;
@@ -41,7 +43,7 @@ import java.util.Set;
 /**
  * A TermGenerator for ADMM objective terms.
  */
-public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
+public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm, LocalVariable> {
     private static final Logger log = LoggerFactory.getLogger(ADMMTermGenerator.class);
 
     public static final String CONFIG_PREFIX = "admmtermgenerator";
@@ -60,11 +62,11 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
     }
 
     @Override
-    public int generateTerms(GroundRuleStore ruleStore, final TermStore<ADMMObjectiveTerm> termStore) {
+    public int generateTerms(GroundRuleStore ruleStore, final TermStore<ADMMObjectiveTerm, LocalVariable> termStore) {
         return generateTerms(ruleStore, termStore, 0);
     }
 
-    public int generateTerms(GroundRuleStore ruleStore, final TermStore<ADMMObjectiveTerm> termStore, int rvaCount) {
+    public int generateTerms(GroundRuleStore ruleStore, final TermStore<ADMMObjectiveTerm, LocalVariable> termStore, int rvaCount) {
         if (!(termStore instanceof ADMMTermStore)) {
             throw new IllegalArgumentException("ADMMTermGenerator requires an ADMMTermStore");
         }
@@ -129,7 +131,7 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
 
         if (groundRule instanceof WeightedGroundRule) {
             GeneralFunction function = ((WeightedGroundRule)groundRule).getFunctionDefinition();
-            Hyperplane hyperplane = processHyperplane(function, termStore);
+            Hyperplane<LocalVariable> hyperplane = processHyperplane(function, termStore);
             if (hyperplane == null) {
                 return null;
             }
@@ -148,7 +150,7 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
         } else if (groundRule instanceof UnweightedGroundRule) {
             ConstraintTerm constraint = ((UnweightedGroundRule)groundRule).getConstraintDefinition();
             GeneralFunction function = constraint.getFunction();
-            Hyperplane hyperplane = processHyperplane(function, termStore);
+            Hyperplane<LocalVariable> hyperplane = processHyperplane(function, termStore);
             if (hyperplane == null) {
                 return null;
             }
@@ -166,15 +168,15 @@ public class ADMMTermGenerator implements TermGenerator<ADMMObjectiveTerm> {
      * Construct a hyperplane from a general function.
      * Will return null if the term is trivial and should be abandoned.
      */
-    private Hyperplane processHyperplane(GeneralFunction sum, ADMMTermStore termStore) {
-        Hyperplane hyperplane = new Hyperplane(sum.size(), -1.0f * (float)sum.getConstant());
+    private Hyperplane<LocalVariable> processHyperplane(GeneralFunction sum, ADMMTermStore termStore) {
+        Hyperplane<LocalVariable> hyperplane = new Hyperplane<LocalVariable>(LocalVariable.class, sum.size(), -1.0f * (float)sum.getConstant());
 
         for (int i = 0; i < sum.size(); i++) {
             float coefficient = (float)sum.getCoefficient(i);
             FunctionTerm term = sum.getTerm(i);
 
             if (term instanceof RandomVariableAtom) {
-                LocalVariable variable = termStore.createLocalVariable((RandomVariableAtom)term);
+                LocalVariable variable = (LocalVariable)termStore.createLocalVariable((RandomVariableAtom)term);
 
                 // Check to see if we have seen this variable before in this hyperplane.
                 // Note that we are checking for existence in a List (O(n)), but there are usually a small number of

@@ -17,12 +17,14 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
+import org.linqs.psl.reasoner.term.ReasonerLocalVariable;
+
 /**
  * The local context of a variable.
  * A local variable keeps track of what global (consensus) variable it is associated with.
  * Note that local variables are hashed and equated by the global variable they track.
  */
-public class LocalVariable {
+public class LocalVariable implements ReasonerLocalVariable {
     private final int globalId;
     private float value;
     private float lagrange;

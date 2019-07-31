@@ -19,6 +19,7 @@ package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
+import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.util.MathUtils;
 
 /**
@@ -32,7 +33,7 @@ import org.linqs.psl.util.MathUtils;
 public class LinearConstraintTerm extends HyperplaneTerm {
     private final FunctionComparator comparator;
 
-    protected LinearConstraintTerm(GroundRule groundRule, Hyperplane hyperplane, FunctionComparator comparator) {
+    protected LinearConstraintTerm(GroundRule groundRule, Hyperplane<LocalVariable> hyperplane, FunctionComparator comparator) {
         super(groundRule, hyperplane);
         this.comparator = comparator;
     }

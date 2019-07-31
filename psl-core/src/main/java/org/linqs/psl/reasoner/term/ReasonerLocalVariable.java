@@ -17,12 +17,10 @@
  */
 package org.linqs.psl.reasoner.term;
 
-import org.linqs.psl.application.groundrulestore.GroundRuleStore;
-
-public interface TermGenerator<T extends ReasonerTerm, V extends ReasonerLocalVariable> {
-    /**
-     * Use the ground rules in |ruleStore| to generate optimization terms and populate |termStore|.
-     * @return the number of terms added to the term store.
-     */
-    public int generateTerms(GroundRuleStore ruleStore, TermStore<T, V> termStore);
+/**
+ * Local variables are the variables in reasoner terms.
+ * In the simple case, they are the same as the global variables (RVAs).
+ * But, depending on the reasoner (like ADMM), they may have special properties.
+ */
+public interface ReasonerLocalVariable {
 }

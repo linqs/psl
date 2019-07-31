@@ -15,31 +15,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.reasoner.admm.term;
+package org.linqs.psl.reasoner.term;
 
 import org.linqs.psl.util.ArrayUtils;
+
+import java.lang.reflect.Array;
 
 /**
  * Information representing a raw hyperplane.
  */
-public class Hyperplane {
-    private LocalVariable[] variables;
+public class Hyperplane<E extends ReasonerLocalVariable> {
+    private E[] variables;
     private float[] coefficients;
     private int size;
     private float constant;
 
-    public Hyperplane(int maxSize, float constant) {
-        this(new LocalVariable[maxSize], new float[maxSize], constant, 0);
+    @SuppressWarnings("unchecked")
+    public Hyperplane(Class<E> localVariableClass, int maxSize, float constant) {
+        this((E[])Array.newInstance(localVariableClass, maxSize) , new float[maxSize], constant, 0);
     }
 
-    public Hyperplane(LocalVariable[] variables, float[] coefficients, float constant, int size) {
+    public Hyperplane(E[] variables, float[] coefficients, float constant, int size) {
         this.variables = variables;
         this.coefficients = coefficients;
         this.constant = constant;
         this.size = size;
     }
 
-    public void addTerm(LocalVariable variable, float coefficient) {
+    public void addTerm(E variable, float coefficient) {
         variables[size] = variable;
         coefficients[size] = coefficient;
         size++;
@@ -49,7 +52,7 @@ public class Hyperplane {
         return size;
     }
 
-    public LocalVariable getVariable(int index) {
+    public E getVariable(int index) {
         if (index >= size) {
             throw new IndexOutOfBoundsException("Tried to access variable at index " + index + ", but only " + size + " exist.");
         }
@@ -81,11 +84,11 @@ public class Hyperplane {
         this.constant = constant;
     }
 
-    public int indexOfVariable(LocalVariable needle) {
+    public int indexOfVariable(E needle) {
         return ArrayUtils.indexOf(variables, size, needle);
     }
 
-    public LocalVariable[] getVariables() {
+    public E[] getVariables() {
         return variables;
     }
 

@@ -18,6 +18,7 @@
 package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 
 /**
@@ -29,9 +30,9 @@ public abstract class ADMMObjectiveTerm implements ReasonerTerm {
     protected final int size;
 
     /**
-     * Caller releases control of |variables|.
+     * Caller releases control of the hyperplane and all members of it.
      */
-    public ADMMObjectiveTerm(Hyperplane hyperplane, GroundRule groundRule) {
+    public ADMMObjectiveTerm(Hyperplane<LocalVariable> hyperplane, GroundRule groundRule) {
         this.variables = hyperplane.getVariables();
         this.size = hyperplane.size();
         this.groundRule = groundRule;
