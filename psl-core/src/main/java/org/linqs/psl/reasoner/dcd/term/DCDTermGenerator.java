@@ -1,0 +1,75 @@
+/*
+ * This file is part of the PSL software.
+ * Copyright 2011-2015 University of Maryland
+ * Copyright 2013-2019 The Regents of the University of California
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.linqs.psl.reasoner.dcd.term;
+
+import org.linqs.psl.application.groundrulestore.GroundRuleStore;
+import org.linqs.psl.config.Config;
+import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.reasoner.dcd.DCDReasoner;
+import org.linqs.psl.reasoner.function.FunctionComparator;
+import org.linqs.psl.reasoner.term.Hyperplane;
+import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
+import org.linqs.psl.reasoner.term.TermStore;
+
+/**
+ * A TermGenerator for DCD objective terms.
+ */
+public class DCDTermGenerator extends HyperplaneTermGenerator<DCDObjectiveTerm, RandomVariableAtom> {
+    private float c;
+    private boolean truncateEveryStep;
+
+    public DCDTermGenerator() {
+        c = Config.getFloat(DCDReasoner.C, DCDReasoner.C_DEFAULT);
+        truncateEveryStep = Config.getBoolean(DCDReasoner.TRUNCATE_EVERY_STEP, DCDReasoner.TRUNCATE_EVERY_STEP_DEFAULT);
+    }
+
+    @Override
+    public int generateTerms(GroundRuleStore ruleStore, TermStore<DCDObjectiveTerm, RandomVariableAtom> termStore, int rvaCount) {
+        if (!(termStore instanceof DCDTermStore)) {
+            throw new IllegalArgumentException("DCDTermGenerator requires a DCDTermStore");
+        }
+
+        ((DCDTermStore)termStore).ensureVariableCapacity(rvaCount);
+
+        return super.generateTerms(ruleStore, termStore, rvaCount);
+    }
+
+    @Override
+    public Class<RandomVariableAtom> getLocalVariableType() {
+        return RandomVariableAtom.class;
+    }
+
+    @Override
+    public DCDObjectiveTerm createLossTerm(boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane<RandomVariableAtom> hyperplane) {
+        if (isHinge && isSquared) {
+            return new SquaredHingeLossTerm(groundRule, hyperplane, c, truncateEveryStep);
+        } else if (isHinge && !isSquared) {
+            return new HingeLossTerm(groundRule, hyperplane, c, truncateEveryStep);
+        } else if (!isHinge && isSquared) {
+            throw new UnsupportedOperationException("DCD does not support squared linear terms, i.e. " + groundRule);
+        } else {
+            throw new UnsupportedOperationException("DCD does not support linear terms, i.e. " + groundRule);
+        }
+    }
+
+    @Override
+    public DCDObjectiveTerm createLinearConstraintTerm(GroundRule groundRule, Hyperplane<RandomVariableAtom> hyperplane, FunctionComparator comparator) {
+        throw new UnsupportedOperationException("DCD does not support hard constraints, i.e. " + groundRule);
+    }
+}

@@ -33,7 +33,7 @@ public class ADMMTermGenerator extends HyperplaneTermGenerator<ADMMObjectiveTerm
     }
 
     @Override
-    public int generateTerms(GroundRuleStore ruleStore, final TermStore<ADMMObjectiveTerm, LocalVariable> termStore, int rvaCount) {
+    public int generateTerms(GroundRuleStore ruleStore, TermStore<ADMMObjectiveTerm, LocalVariable> termStore, int rvaCount) {
         if (!(termStore instanceof ADMMTermStore)) {
             throw new IllegalArgumentException("ADMMTermGenerator requires an ADMMTermStore");
         }
