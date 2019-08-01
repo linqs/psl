@@ -117,8 +117,6 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
     }
 
     private T createTerm(GroundRule groundRule, TermStore<T, V> termStore) {
-        T term;
-
         if (groundRule instanceof WeightedGroundRule) {
             GeneralFunction function = ((WeightedGroundRule)groundRule).getFunctionDefinition();
             Hyperplane<V> hyperplane = processHyperplane(function, termStore);
@@ -127,7 +125,7 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
             }
 
             // Non-negative functions have a hinge.
-            term = createLossTerm(function.isNonNegative(), function.isSquared(), groundRule, hyperplane);
+            return createLossTerm(function.isNonNegative(), function.isSquared(), groundRule, hyperplane);
         } else if (groundRule instanceof UnweightedGroundRule) {
             ConstraintTerm constraint = ((UnweightedGroundRule)groundRule).getConstraintDefinition();
             GeneralFunction function = constraint.getFunction();
@@ -137,12 +135,10 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
             }
 
             hyperplane.setConstant((float)(constraint.getValue() + hyperplane.getConstant()));
-            term = createLinearConstraintTerm(groundRule, hyperplane, constraint.getComparator());
+            return createLinearConstraintTerm(groundRule, hyperplane, constraint.getComparator());
         } else {
             throw new IllegalArgumentException("Unsupported ground rule: " + groundRule);
         }
-
-        return term;
     }
 
     /**

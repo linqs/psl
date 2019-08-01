@@ -27,10 +27,15 @@ import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * A TermGenerator for DCD objective terms.
  */
 public class DCDTermGenerator extends HyperplaneTermGenerator<DCDObjectiveTerm, RandomVariableAtom> {
+    private static final Logger log = LoggerFactory.getLogger(DCDTermGenerator.class);
+
     private float c;
     private boolean truncateEveryStep;
 
@@ -62,9 +67,11 @@ public class DCDTermGenerator extends HyperplaneTermGenerator<DCDObjectiveTerm, 
         } else if (isHinge && !isSquared) {
             return new HingeLossTerm(groundRule, hyperplane, c, truncateEveryStep);
         } else if (!isHinge && isSquared) {
-            throw new UnsupportedOperationException("DCD does not support squared linear terms, i.e. " + groundRule);
+            log.warn("DCD does not support squared linear terms: " + groundRule);
+            return null;
         } else {
-            throw new UnsupportedOperationException("DCD does not support linear terms, i.e. " + groundRule);
+            log.warn("DCD does not support linear terms: " + groundRule);
+            return null;
         }
     }
 

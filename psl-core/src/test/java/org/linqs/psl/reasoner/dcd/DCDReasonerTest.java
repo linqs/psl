@@ -44,10 +44,6 @@ public class DCDReasonerTest {
 
         TestModel.ModelInformation info = TestModel.getModel();
 
-        // DCD does not currently handle linear rules, so remove the prior,
-        // which is always the last rule (index 2).
-        info.model.removeRule(info.model.getRules().get(2));
-
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
         Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
         MPEInference mpe = new MPEInference(info.model, inferDB);
