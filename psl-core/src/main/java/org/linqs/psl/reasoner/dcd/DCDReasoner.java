@@ -24,6 +24,7 @@ import org.linqs.psl.reasoner.dcd.term.DCDObjectiveTerm;
 import org.linqs.psl.reasoner.dcd.term.DCDTermStore;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.MathUtils;
+import org.linqs.psl.util.RandUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -101,6 +102,16 @@ public class DCDReasoner implements Reasoner {
 
         log.debug("Performing optimization with {} variables and {} terms.", numVariables, numTerms);
 
+        if (numTerms == 0) {
+            log.warn("No terms found. DCD is existing early.");
+            return;
+        }
+
+        // Initialize all variables to a random state.
+        for (RandomVariableAtom variable : termStore.getVariables()) {
+            variable.setValue(RandUtils.nextFloat());
+        }
+
         float objective = computeObjective(termStore);
         float oldObjective = Float.POSITIVE_INFINITY;
 
@@ -112,7 +123,7 @@ public class DCDReasoner implements Reasoner {
 
         float time = 0.0f;
         while (iteration <= maxIter
-                && (objectiveBreak && MathUtils.compare(objective, oldObjective, tol) != 0)) {
+                && (!objectiveBreak || (iteration == 1 || !MathUtils.equals(objective, oldObjective, tol)))) {
             long start = System.currentTimeMillis();
 
             for (DCDObjectiveTerm term : termStore){
@@ -139,15 +150,15 @@ public class DCDReasoner implements Reasoner {
     }
 
     public float computeObjective(DCDTermStore termStore) {
-        float obj = 0.0f;
+        float objective = 0.0f;
         int termCount = 0;
 
         for (DCDObjectiveTerm term : termStore) {
-            obj += term.evaluate() / c;
+            objective += term.evaluate() / c;
             termCount++;
         }
 
-        return obj / termCount;
+        return objective / termCount;
     }
 
     @Override

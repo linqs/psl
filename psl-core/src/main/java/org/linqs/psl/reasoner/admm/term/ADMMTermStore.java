@@ -84,6 +84,7 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm, LocalVariable
         ((ArrayList)localVariables).ensureCapacity(capacity);
 
         if (variableIndexes.size() == 0) {
+            // If there are no variables, then re-allocate the variable storage.
             // The default load factor for Java HashMaps is 0.75.
             variableIndexes = new HashMap<RandomVariableAtom, Integer>((int)Math.ceil(capacity / 0.75));
         }

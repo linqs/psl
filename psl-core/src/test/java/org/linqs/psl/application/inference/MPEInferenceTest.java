@@ -20,9 +20,6 @@ package org.linqs.psl.application.inference;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 import org.linqs.psl.TestModel;
 import org.linqs.psl.application.inference.MPEInference;
 import org.linqs.psl.database.Database;
@@ -41,6 +38,10 @@ import org.linqs.psl.model.rule.arithmetic.expression.coefficient.ConstantNumber
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.FunctionComparator;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.HashSet;

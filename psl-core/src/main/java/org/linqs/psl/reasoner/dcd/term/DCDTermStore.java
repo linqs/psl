@@ -22,10 +22,10 @@ import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.reasoner.term.MemoryTermStore;
 import org.linqs.psl.reasoner.term.TermStore;
 
-import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
+import java.util.Set;
 
 /**
  * A TermStore specifically for ADMM terms.
@@ -36,7 +36,7 @@ public class DCDTermStore implements TermStore<DCDObjectiveTerm, RandomVariableA
     // Keep an internal store to hold the terms while this class focus on variables.
     private TermStore<DCDObjectiveTerm, RandomVariableAtom> store;
 
-    private List<RandomVariableAtom> variables;
+    private Set<RandomVariableAtom> variables;
 
     public DCDTermStore() {
         this(new MemoryTermStore<DCDObjectiveTerm>());
@@ -44,11 +44,17 @@ public class DCDTermStore implements TermStore<DCDObjectiveTerm, RandomVariableA
 
     public DCDTermStore(TermStore<DCDObjectiveTerm, RandomVariableAtom> store) {
         this.store = store;
-        variables = new ArrayList<RandomVariableAtom>();
+        variables = new HashSet<RandomVariableAtom>();
     }
 
     public int getNumVariables() {
         return variables.size();
+    }
+
+    @Override
+    public synchronized RandomVariableAtom createLocalVariable(RandomVariableAtom atom) {
+        variables.add(atom);
+        return atom;
     }
 
     /**
@@ -59,11 +65,15 @@ public class DCDTermStore implements TermStore<DCDObjectiveTerm, RandomVariableA
             return;
         }
 
-        ((ArrayList)variables).ensureCapacity(capacity);
+        if (variables.size() == 0) {
+            // If there are no variables, then re-allocate the variable storage.
+            // The default load factor for Java HashSets is 0.75.
+            variables = new HashSet<RandomVariableAtom>((int)Math.ceil(capacity / 0.75));
+        }
     }
 
-    public List<RandomVariableAtom> getVariables() {
-        return Collections.unmodifiableList(variables);
+    public Set<RandomVariableAtom> getVariables() {
+        return Collections.unmodifiableSet(variables);
     }
 
     @Override
@@ -112,10 +122,5 @@ public class DCDTermStore implements TermStore<DCDObjectiveTerm, RandomVariableA
     @Override
     public Iterator<DCDObjectiveTerm> iterator() {
         return store.iterator();
-    }
-
-    @Override
-    public RandomVariableAtom createLocalVariable(RandomVariableAtom atom) {
-        return atom;
     }
 }
