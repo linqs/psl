@@ -47,9 +47,6 @@ class Predicate(object):
     DEFAULT_ARG_TYPE = ArgType.UNIQUE_STRING_ID
     DEFAULT_TRUTH_VALUE = 1.0
 
-    # Predicates must have unique names.
-    _used_names = set()
-
     def __init__(self, raw_name: str, closed: bool, size: int = None, arg_types = None):
         """
         Construct a new predicate.
@@ -62,6 +59,7 @@ class Predicate(object):
         in which case all arguments will default to the string type.
         No size with types can be supplied (as the size is inferred by the types).
         Both a size and types can be supplied, but the size must match the list size.
+        Two predicates with the same name should never be added to the same model.
 
         Args:
             name: The name of the predicate.
@@ -75,9 +73,6 @@ class Predicate(object):
         self._data = {}
         self._name = Predicate.normalize_name(raw_name)
         self._closed = closed
-
-        if (self._name in Predicate._used_names):
-            raise PredicateError("Predciates must have unique names. Got duplicate: %s (%s)." % (self._name, raw_name))
 
         if (size is None and (arg_types is None or len(arg_types) == 0)):
             raise PredicateError("Predicates must have a size and/or type infornation, neither supplied.")
@@ -102,7 +97,6 @@ class Predicate(object):
             self._types.append(arg_type)
 
         self.clear_data()
-        Predicate._used_names.add(self._name)
 
     def add_data_file(self, partition: Partition, path, has_header = False, delim = DEFAULT_FILE_DELIMITER):
         """
@@ -206,14 +200,6 @@ class Predicate(object):
 
     def data(self):
         return self._data
-
-    @staticmethod
-    def _clear_used_predicates():
-        """
-        Meant for testing only.
-        """
-
-        Predicate._used_names.clear()
 
     @staticmethod
     def normalize_name(name):

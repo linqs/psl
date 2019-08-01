@@ -95,7 +95,7 @@ public class BooleanMaxWalkSatTest {
         );
 
         info.model.addRule(new UnweightedArithmeticRule(
-            new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1.0f))
+            new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1.0f))
         ));
 
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
@@ -125,7 +125,7 @@ public class BooleanMaxWalkSatTest {
         );
 
         info.model.addRule(new UnweightedArithmeticRule(
-            new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.SmallerThan, new ConstantNumber(1.0f))
+            new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LTE, new ConstantNumber(1.0f))
         ));
 
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();

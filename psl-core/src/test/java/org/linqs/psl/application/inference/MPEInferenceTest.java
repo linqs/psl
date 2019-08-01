@@ -147,7 +147,7 @@ public class MPEInferenceTest {
 
         // Nice(A) + Nice(B) >= 1.0
         info.model.addRule(new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 1.0,
                 true
         ));

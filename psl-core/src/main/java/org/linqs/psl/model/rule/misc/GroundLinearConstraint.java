@@ -76,9 +76,9 @@ public class GroundLinearConstraint implements UnweightedGroundRule {
         ConstraintTerm constraint = getConstraintDefinition();
         double functionValue = constraint.getFunction().getValue();
         double conValue = constraint.getValue();
-        if ((constraint.getComparator().equals(FunctionComparator.SmallerThan) && functionValue < value)
+        if ((constraint.getComparator().equals(FunctionComparator.LTE) && functionValue < value)
                 ||
-                (constraint.getComparator().equals(FunctionComparator.LargerThan) && functionValue > value)) {
+                (constraint.getComparator().equals(FunctionComparator.GTE) && functionValue > value)) {
             return 0.0;
         } else {
             return Math.abs(functionValue - conValue);

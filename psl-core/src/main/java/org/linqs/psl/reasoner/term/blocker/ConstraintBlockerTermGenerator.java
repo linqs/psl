@@ -130,7 +130,7 @@ public class ConstraintBlockerTermGenerator implements TermGenerator<ConstraintB
                     rvBlocks[blockIndex][j++] = atom;
                 }
 
-                exactlyOne[blockIndex] = con.getConstraintDefinition().getComparator().equals(FunctionComparator.Equality) || constrainedRVSet.size() == 0;
+                exactlyOne[blockIndex] = con.getConstraintDefinition().getComparator().equals(FunctionComparator.EQ) || constrainedRVSet.size() == 0;
             } else {
                 rvBlocks[blockIndex] = new RandomVariableAtom[0];
                 // Sets to true regardless of constraint type to avoid extra processing steps
@@ -247,11 +247,11 @@ public class ConstraintBlockerTermGenerator implements TermGenerator<ConstraintB
 
             if (!(
                     // Foo(A, +B) = 1.0 .
-                    (comparator == FunctionComparator.Equality && MathUtils.equals(rhsValue, 1.0))
+                    (comparator == FunctionComparator.EQ && MathUtils.equals(rhsValue, 1.0))
                     // Foo(A, +B) <= 1.0 .
-                    || (comparator == FunctionComparator.SmallerThan && MathUtils.equals(rhsValue, 1.0))
+                    || (comparator == FunctionComparator.LTE && MathUtils.equals(rhsValue, 1.0))
                     // -Foo(A, +B) >= -1.0 .
-                    || (comparator == FunctionComparator.LargerThan && MathUtils.equals(rhsValue, -1.0)))) {
+                    || (comparator == FunctionComparator.GTE && MathUtils.equals(rhsValue, -1.0)))) {
                 categorical = false;
             } else {
                 GeneralFunction sum = gar.getConstraintDefinition().getFunction();

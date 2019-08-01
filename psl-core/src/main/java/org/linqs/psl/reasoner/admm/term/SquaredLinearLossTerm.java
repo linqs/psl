@@ -42,4 +42,10 @@ public class SquaredLinearLossTerm extends SquaredHyperplaneTerm {
         float weight = (float)((WeightedGroundRule)groundRule).getWeight();
         return weight * (float)Math.pow(super.evaluate(), 2);
     }
+
+    @Override
+    public float evaluate(float[] consensusValues) {
+        float weight = (float)((WeightedGroundRule)groundRule).getWeight();
+        return weight * (float)Math.pow(super.evaluate(consensusValues), 2);
+    }
 }

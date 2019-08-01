@@ -62,14 +62,14 @@ public class UnweightedGroundArithmeticRule extends AbstractGroundArithmeticRule
         }
 
         switch (comparator) {
-        case Equality:
-            return Math.abs(sum - constant);
-        case LargerThan:
-            return -1.0f * Math.min(sum - constant, 0.0f);
-        case SmallerThan:
-            return Math.max(sum - constant, 0.0f);
-        default:
-            throw new IllegalStateException("Unrecognized comparator: " + comparator);
+            case EQ:
+                return Math.abs(sum - constant);
+            case GTE:
+                return -1.0f * Math.min(sum - constant, 0.0f);
+            case LTE:
+                return Math.max(sum - constant, 0.0f);
+            default:
+                throw new IllegalStateException("Unrecognized comparator: " + comparator);
         }
     }
 

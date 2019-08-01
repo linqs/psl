@@ -140,8 +140,6 @@ public class H2DatabaseDriver implements DatabaseDriver {
                 return "VARCHAR";
             case Long:
                 return "BIGINT";
-            case Date:
-                return "DATE";
             case UniqueIntID:
                 return "INT";
             case UniqueStringID:

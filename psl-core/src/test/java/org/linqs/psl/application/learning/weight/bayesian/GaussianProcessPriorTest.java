@@ -104,8 +104,8 @@ public class GaussianProcessPriorTest extends WeightLearningTest {
         wl.setBlasYKnownForTest(blasYKnown);
 
         GaussianProcessPrior.ValueAndStd fnAndStd = wl.predictFnValAndStd(x, xKnown);
-        Assert.assertEquals(0.84939, fnAndStd.value, 1e-5);
-        Assert.assertEquals(0.99656, fnAndStd.std, 1e-5);
+        Assert.assertEquals(0.84939, fnAndStd.value, 1e-4);
+        Assert.assertEquals(0.99656, fnAndStd.std, 1e-4);
     }
 
     @Test

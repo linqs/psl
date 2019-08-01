@@ -106,21 +106,7 @@ public abstract class AbstractGroundArithmeticRule implements GroundRule {
         }
 
         sb.append(" ");
-
-        switch (comparator) {
-        case Equality:
-            sb.append("=");
-            break;
-        case LargerThan:
-            sb.append(">=");
-            break;
-        case SmallerThan:
-            sb.append("<=");
-            break;
-        default:
-            throw new IllegalStateException("Unrecognized comparator: " + comparator);
-
-        }
+        sb.append(comparator.toString());
 
         sb.append(" ");
         sb.append(constant);

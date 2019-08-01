@@ -36,7 +36,6 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Attribute;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
-import org.linqs.psl.model.term.DateAttribute;
 import org.linqs.psl.model.term.DoubleAttribute;
 import org.linqs.psl.model.term.IntegerAttribute;
 import org.linqs.psl.model.term.LongAttribute;
@@ -56,7 +55,6 @@ import com.healthmarketscience.sqlbuilder.QueryPreparer;
 import com.healthmarketscience.sqlbuilder.SelectQuery;
 import com.healthmarketscience.sqlbuilder.UpdateQuery;
 import com.healthmarketscience.sqlbuilder.DeleteQuery;
-import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -422,8 +420,6 @@ public class RDBMSDatabase extends Database {
                     return new StringAttribute(results.getString(columnIndex + 1));
                 case Long:
                     return new LongAttribute(results.getLong(columnIndex + 1));
-                case Date:
-                    return new DateAttribute(new DateTime(results.getDate(columnIndex + 1).getTime()));
                 case UniqueIntID:
                     return new UniqueIntID(results.getInt(columnIndex + 1));
                 case UniqueStringID:
@@ -610,8 +606,6 @@ public class RDBMSDatabase extends Database {
             statement.setString(index, ((StringAttribute)argument).getValue());
         } else if (argument instanceof LongAttribute) {
             statement.setLong(index, ((LongAttribute) argument).getValue());
-        } else if (argument instanceof DateAttribute) {
-            statement.setDate(index, new java.sql.Date(((DateAttribute) argument).getValue().getMillis()));
         } else if (argument instanceof UniqueIntID) {
             statement.setInt(index, ((UniqueIntID)argument).getID());
         } else if (argument instanceof UniqueStringID) {

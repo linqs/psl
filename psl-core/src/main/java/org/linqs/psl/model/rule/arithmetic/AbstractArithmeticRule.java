@@ -206,11 +206,11 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 
             // Note that unweighed rules will ground an equality, while weighted rules will instead
             // ground a largerThan and lessThan.
-            if (isWeighted() && FunctionComparator.Equality.equals(expression.getComparator())) {
+            if (isWeighted() && FunctionComparator.EQ.equals(expression.getComparator())) {
                 groundCount += addGroundRule(
-                        groundRuleStore, makeGroundRule(coefficients, groundAtoms, FunctionComparator.LargerThan, finalCoefficient));
+                        groundRuleStore, makeGroundRule(coefficients, groundAtoms, FunctionComparator.GTE, finalCoefficient));
                 groundCount += addGroundRule(
-                        groundRuleStore, makeGroundRule(coefficients, groundAtoms, FunctionComparator.SmallerThan, finalCoefficient));
+                        groundRuleStore, makeGroundRule(coefficients, groundAtoms, FunctionComparator.LTE, finalCoefficient));
             } else {
                 groundCount += addGroundRule(
                         groundRuleStore, makeGroundRule(coefficients, groundAtoms, expression.getComparator(), finalCoefficient));
@@ -304,11 +304,11 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 
             // Note that unweighed rules will ground an equality, while weighted rules will instead
             // ground a largerThan and lessThan.
-            if (isWeighted() && FunctionComparator.Equality.equals(expression.getComparator())) {
+            if (isWeighted() && FunctionComparator.EQ.equals(expression.getComparator())) {
                 groundCount += addGroundRule(
-                        groundRuleStore, makeGroundRule(coefficients, groundAtoms, FunctionComparator.LargerThan, finalCoefficient));
+                        groundRuleStore, makeGroundRule(coefficients, groundAtoms, FunctionComparator.GTE, finalCoefficient));
                 groundCount += addGroundRule(
-                        groundRuleStore, makeGroundRule(coefficients, groundAtoms, FunctionComparator.SmallerThan, finalCoefficient));
+                        groundRuleStore, makeGroundRule(coefficients, groundAtoms, FunctionComparator.LTE, finalCoefficient));
             } else {
                 groundCount += addGroundRule(
                         groundRuleStore, makeGroundRule(coefficients, groundAtoms, expression.getComparator(), finalCoefficient));
@@ -557,7 +557,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
     private int addGroundRule(GroundRuleStore groundRuleStore, AbstractGroundArithmeticRule rule) {
         // Start simple and just look for rules with a single atom.
         if (rule.getOrderedAtoms().length == 1) {
-            if (FunctionComparator.LargerThan.equals(rule.getComparator())) {
+            if (FunctionComparator.GTE.equals(rule.getComparator())) {
                 float constantMax = 0.0f;
                 if (rule.getCoefficients()[0] < 0.0f) {
                     constantMax = -1.0f;
@@ -569,7 +569,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
                 if (rule.getConstant() <= constantMax) {
                     return 0;
                 }
-            } else if (FunctionComparator.SmallerThan.equals(rule.getComparator())) {
+            } else if (FunctionComparator.LTE.equals(rule.getComparator())) {
                 float constantMin = 1.0f;
                 if (rule.getCoefficients()[0] < 0.0f) {
                     constantMin = 0.0f;

@@ -72,13 +72,22 @@ public class QueryRewriter {
     public static final String COST_ESTIMATOR_KEY = CONFIG_PREFIX + ".costestimator";
     public static final String COST_ESTIMATOR_DEFAULT = CostEstimator.HISTOGRAM.toString();
 
-    // Static only.
-    private QueryRewriter() {}
+
+    private double allowedTotalCostIncrease;
+    private double allowedStepCostIncrease;
+
+    private CostEstimator costEstimator;
+
+    public QueryRewriter() {
+        allowedTotalCostIncrease = Config.getDouble(ALLOWED_TOTAL_INCREASE_KEY, ALLOWED_TOTAL_INCREASE_DEFAULT);
+        allowedStepCostIncrease = Config.getDouble(ALLOWED_STEP_INCREASE_KEY, ALLOWED_STEP_INCREASE_DEFAULT);
+        costEstimator = CostEstimator.valueOf(Config.getString(COST_ESTIMATOR_KEY, COST_ESTIMATOR_DEFAULT).toUpperCase());
+    }
 
     /**
      * Rewrite the query to minimize the execution time while trading off query size.
      */
-    public static Formula rewrite(Formula baseFormula, RDBMSDataStore dataStore) {
+    public Formula rewrite(Formula baseFormula, RDBMSDataStore dataStore) {
         // Once validated, we know that the formula is a conjunction or single atom.
         DatabaseQuery.validate(baseFormula);
 
@@ -86,11 +95,6 @@ public class QueryRewriter {
         if (baseFormula instanceof Atom) {
             return baseFormula;
         }
-
-        double allowedTotalCostIncrease = Config.getDouble(ALLOWED_TOTAL_INCREASE_KEY, ALLOWED_TOTAL_INCREASE_DEFAULT);
-        double allowedStepCostIncrease = Config.getDouble(ALLOWED_STEP_INCREASE_KEY, ALLOWED_STEP_INCREASE_DEFAULT);
-
-        CostEstimator costEstimator = CostEstimator.valueOf(Config.getString(COST_ESTIMATOR_KEY, COST_ESTIMATOR_DEFAULT).toUpperCase());
 
         Set<Atom> usedAtoms = baseFormula.getAtoms(new HashSet<Atom>());
         Set<Atom> passthrough = filterBaseAtoms(usedAtoms);
@@ -136,7 +140,7 @@ public class QueryRewriter {
             }
 
             // We expect the cost to go up, but will cut it off at some point.
-         if (bestCost > (baseCost * allowedTotalCostIncrease) || bestCost > (currentCost * allowedStepCostIncrease)) {
+            if (bestCost > (baseCost * allowedTotalCostIncrease) || bestCost > (currentCost * allowedStepCostIncrease)) {
                 break;
             }
 
@@ -159,7 +163,7 @@ public class QueryRewriter {
         return query;
     }
 
-    private static double estimateQuerySize(CostEstimator costEstimator, Set<Atom> atoms, Atom ignore, Map<Predicate, TableStats> tableStats, RDBMSDataStore dataStore) {
+    private double estimateQuerySize(CostEstimator costEstimator, Set<Atom> atoms, Atom ignore, Map<Predicate, TableStats> tableStats, RDBMSDataStore dataStore) {
         if (costEstimator == CostEstimator.HISTOGRAM) {
             return estimateQuerySizeWithHistorgram(atoms, ignore, tableStats, dataStore);
         } else if (costEstimator == CostEstimator.SELECTIVITY) {
@@ -177,7 +181,7 @@ public class QueryRewriter {
      * @param ignore if not null, then do not include it in the cost computation.
      * @return negative if we exceed max size and should just discard this plan.
      */
-    private static double estimateQuerySizeWithHistorgram(Set<Atom> atoms, Atom ignore, Map<Predicate, TableStats> tableStats, RDBMSDataStore dataStore) {
+    private double estimateQuerySizeWithHistorgram(Set<Atom> atoms, Atom ignore, Map<Predicate, TableStats> tableStats, RDBMSDataStore dataStore) {
         double cost = 1.0;
 
         // Start with the product of the joins.
@@ -238,7 +242,7 @@ public class QueryRewriter {
      * Based off of: http://users.csc.calpoly.edu/~dekhtyar/468-Spring2016/lectures/lec17.468.pdf
      * @param ignore if not null, then do not include it in the cost computation.
      */
-    private static double estimateQuerySizeWithSelectivity(Set<Atom> atoms, Atom ignore, Map<Predicate, TableStats> tableStats, RDBMSDataStore dataStore) {
+    private double estimateQuerySizeWithSelectivity(Set<Atom> atoms, Atom ignore, Map<Predicate, TableStats> tableStats, RDBMSDataStore dataStore) {
         double cost = 1.0;
 
         // Start with the product of the joins.
@@ -288,7 +292,7 @@ public class QueryRewriter {
      * Estimate the cost of the query (conjunctive query over the given atoms) using just the size of the involved tables.
      * @param ignore if not null, then do not include it in the cost computation.
      */
-    private static double estimateQuerySizeWithSize(Set<Atom> atoms, Atom ignore, Map<Predicate, TableStats> tableStats, RDBMSDataStore dataStore) {
+    private double estimateQuerySizeWithSize(Set<Atom> atoms, Atom ignore, Map<Predicate, TableStats> tableStats, RDBMSDataStore dataStore) {
         double cost = 1.0;
 
         // Just use the product of the joins.
@@ -303,7 +307,7 @@ public class QueryRewriter {
         return cost;
     }
 
-    private static String getColumnName(RDBMSDataStore dataStore, Atom atom, Variable variable) {
+    private String getColumnName(RDBMSDataStore dataStore, Atom atom, Variable variable) {
         int columnIndex = -1;
         Term[] args = atom.getArguments();
         for (int i = 0; i < args.length; i++) {
@@ -323,7 +327,7 @@ public class QueryRewriter {
     /**
      * Is it safe to remove the given atom from the given query?
      */
-    private static boolean canRemove(Atom atom, Set<Atom> usedAtoms) {
+    private boolean canRemove(Atom atom, Set<Atom> usedAtoms) {
         // Make sure that we do not remove any variables (ie there is at least one other atom that uses the variable)..
         Set<Variable> remainingVariables = atom.getVariables();
         remainingVariables.removeAll(getAllUsedVariables(usedAtoms, atom).keySet());
@@ -331,7 +335,7 @@ public class QueryRewriter {
         return remainingVariables.size() == 0;
     }
 
-    private static Map<Variable, Set<Atom>> getAllUsedVariables(Set<Atom> atoms, Atom ignore) {
+    private Map<Variable, Set<Atom>> getAllUsedVariables(Set<Atom> atoms, Atom ignore) {
         Map<Variable, Set<Atom>> variables = new HashMap<Variable, Set<Atom>>();
 
         for (Atom atom : atoms) {
@@ -351,7 +355,7 @@ public class QueryRewriter {
         return variables;
     }
 
-    private static Map<Predicate, TableStats> fetchTableStats(Set<Atom> usedAtoms, RDBMSDataStore dataStore) {
+    private Map<Predicate, TableStats> fetchTableStats(Set<Atom> usedAtoms, RDBMSDataStore dataStore) {
         Set<Predicate> predicates = new HashSet<Predicate>();
         for (Atom atom : usedAtoms) {
             predicates.add(atom.getPredicate());
@@ -369,7 +373,7 @@ public class QueryRewriter {
      * Filter the initial set of atoms.
      * Remove external functional prediates and pass through grounding only predicates.
     */
-    private static Set<Atom> filterBaseAtoms(Set<Atom> atoms) {
+    private Set<Atom> filterBaseAtoms(Set<Atom> atoms) {
         Set<Atom> passthrough = new HashSet<Atom>();
 
         Set<Atom> removeAtoms = new HashSet<Atom>();

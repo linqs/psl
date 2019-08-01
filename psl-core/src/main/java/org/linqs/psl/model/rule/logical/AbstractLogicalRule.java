@@ -108,11 +108,11 @@ public abstract class AbstractLogicalRule extends AbstractRule {
         hash = HashCode.DEFAULT_INITIAL_NUMBER;
 
         for (Atom atom : negatedDNF.getPosLiterals()) {
-            hash = HashCode.build(atom);
+            hash = HashCode.build(hash, atom);
         }
 
         for (Atom atom : negatedDNF.getNegLiterals()) {
-            hash = HashCode.build(atom);
+            hash = HashCode.build(hash, atom);
         }
     }
 
@@ -237,6 +237,9 @@ public abstract class AbstractLogicalRule extends AbstractRule {
         // Instead they will be removed as they are turned into hyperplane terms,
         // since we will have to keep track of variables there anyway.
 
+        // Note that the "positive" and "negative" qualifiers here are with respect to the negated DNF (a conjunction).
+        // This is why a 0.0 for a positive atom is trivial and a 1.0 for a negative atom is trivial.
+
         short positiveRVACount = createAtoms(atomManager, variableMap, resources, negatedDNF.getPosLiterals(), row,
                 resources.positiveAtomArgs, resources.positiveAtoms, 0.0);
         if (positiveRVACount == -1) {
@@ -280,7 +283,8 @@ public abstract class AbstractLogicalRule extends AbstractRule {
         short rvaCount = 0;
 
         for (int i = 0; i < literals.size(); i++) {
-            // Grounding only predicates are evaluated during the grounding query, skip evaluation (and caching) here.
+            // A GroundingOnlyPredicate is only evaluated during the grounding query,
+            // skip evaluating (and caching) those here.
             if (literals.get(i).getPredicate() instanceof GroundingOnlyPredicate) {
                 continue;
             }

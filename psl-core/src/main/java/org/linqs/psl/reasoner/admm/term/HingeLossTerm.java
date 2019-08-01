@@ -72,11 +72,17 @@ public class HingeLossTerm extends HyperplaneTerm {
     }
 
     /**
-     * weight * max(coefficients^T * x - constant, 0)
+     * weight * max(0.0, coefficients^T * x - constant)
      */
     @Override
     public float evaluate() {
         float weight = (float)((WeightedGroundRule)groundRule).getWeight();
         return weight * Math.max(super.evaluate(), 0.0f);
+    }
+
+    @Override
+    public float evaluate(float[] consensusValues) {
+        float weight = (float)((WeightedGroundRule)groundRule).getWeight();
+        return weight * Math.max(super.evaluate(consensusValues), 0.0f);
     }
 }

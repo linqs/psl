@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.util;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -197,5 +198,11 @@ public final class StringUtils {
         }
 
         return builder.toString();
+    }
+
+    public static String sort(String string) {
+        char[] chars = string.toCharArray();
+        Arrays.sort(chars);
+        return new String(chars);
     }
 }

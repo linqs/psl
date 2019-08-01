@@ -37,8 +37,6 @@ import java.util.Set;
  * Container for components of an arithmetic rule formula.
  *
  * Full equality checks (when two expressions are the equal, but not the same refernce) are epensive.
- *
- * @author Stephen Bach
  */
 public class ArithmeticRuleExpression {
     protected final List<Coefficient> coeffs;
@@ -116,12 +114,17 @@ public class ArithmeticRuleExpression {
         hash = HashCode.build(HashCode.build(comparator), c);
 
         for (Coefficient coeff : coeffs) {
-            hash = HashCode.build(coeff);
+            hash = HashCode.build(hash, coeff);
         }
 
         for (SummationAtomOrAtom atom : atoms) {
-            hash = HashCode.build(atom);
+            hash = HashCode.build(hash, atom);
         }
+    }
+
+    @Override
+    public int hashCode() {
+        return hash;
     }
 
     public List<Coefficient> getAtomCoefficients() {

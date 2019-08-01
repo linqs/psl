@@ -37,6 +37,8 @@ public class GeneralFunction implements FunctionTerm {
     private boolean constantTerms;
     private boolean linearTerms;
 
+    // Functions that are "non-negative" are wrapped with a max(0.0, X).
+    // This is the hinge for logical rules.
     private boolean nonNegative;
     private boolean squared;
 

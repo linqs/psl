@@ -17,8 +17,6 @@
  */
 package org.linqs.psl.model.term;
 
-import org.joda.time.DateTime;
-
 /**
  * A type of {@link Constant}.
  * <p>
@@ -84,21 +82,6 @@ public enum ConstantType {
         @Override
         public boolean isInstance(Constant term) {
             return term instanceof LongAttribute;
-        }
-    },
-
-    /**
-     * A {@link org.joda.time.DateTime} argument.
-     */
-    Date {
-        @Override
-        public String getName() {
-            return "Date";
-        }
-
-        @Override
-        public boolean isInstance(Constant term) {
-            return term instanceof DateAttribute;
         }
     },
 
@@ -190,8 +173,6 @@ public enum ConstantType {
                 return new StringAttribute(value);
             case Long:
                 return new LongAttribute(java.lang.Long.parseLong(value));
-            case Date:
-                return new DateAttribute(new DateTime(value));
             case UniqueIntID:
                 return new UniqueIntID(java.lang.Integer.parseInt(value));
             case UniqueStringID:

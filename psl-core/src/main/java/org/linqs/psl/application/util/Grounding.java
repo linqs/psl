@@ -49,10 +49,16 @@ public class Grounding {
     public static final String CONFIG_PREFIX = "grounding";
 
     /**
-     * Use optimal cover grounding.
+     * Potentially rewrite the grounding queries.
      */
     public static final String REWRITE_QUERY_KEY = CONFIG_PREFIX + ".rewritequeries";
     public static final boolean REWRITE_QUERY_DEFAULT = false;
+
+    /**
+     * Whether or not queries are being rewritten, perform the grounding queries one at a time.
+     */
+    public static final String SERIAL_KEY = CONFIG_PREFIX + ".serial";
+    public static final boolean SERIAL_DEFAULT = false;
 
     // Static only.
     private Grounding() {}
@@ -85,6 +91,7 @@ public class Grounding {
      */
     public static int groundAll(List<Rule> rules, AtomManager atomManager, GroundRuleStore groundRuleStore) {
         boolean rewrite = Config.getBoolean(REWRITE_QUERY_KEY, REWRITE_QUERY_DEFAULT);
+        boolean serial = Config.getBoolean(SERIAL_KEY, SERIAL_DEFAULT);
 
         Map<Formula, List<Rule>> queries = new HashMap<Formula, List<Rule>>();
         List<Rule> bypassRules = new ArrayList<Rule>();
@@ -95,6 +102,11 @@ public class Grounding {
             rewrite = false;
         }
 
+        QueryRewriter rewriter = null;
+        if (rewrite) {
+            rewriter = new QueryRewriter();
+        }
+
         for (Rule rule : rules) {
             if (!rule.supportsIndividualGrounding()) {
                 bypassRules.add(rule);
@@ -103,7 +115,7 @@ public class Grounding {
 
             Formula query = rule.getGroundingFormula();
             if (rewrite) {
-                query = QueryRewriter.rewrite(query, (RDBMSDataStore)dataStore);
+                query = rewriter.rewrite(query, (RDBMSDataStore)dataStore);
             }
 
             if (!queries.containsKey(query)) {
@@ -117,7 +129,18 @@ public class Grounding {
 
         // First perform all the rewritten querties.
         for (Map.Entry<Formula, List<Rule>> entry : queries.entrySet()) {
-            groundParallel(entry.getKey(), entry.getValue(), atomManager, groundRuleStore);
+            if (!serial) {
+                // If parallel, ground all the rules that match this formula at once.
+                groundParallel(entry.getKey(), entry.getValue(), atomManager, groundRuleStore);
+            } else {
+                // If serial, ground the rules with this formula one at a time.
+                for (Rule rule : entry.getValue()) {
+                    List<Rule> tempRules = new ArrayList<Rule>();
+                    tempRules.add(rule);
+
+                    groundParallel(entry.getKey(), tempRules, atomManager, groundRuleStore);
+                }
+            }
         }
 
         // Now ground the bypassed rules.
@@ -127,7 +150,7 @@ public class Grounding {
     }
 
     private static int groundParallel(Formula query, List<Rule> rules, AtomManager atomManager, GroundRuleStore groundRuleStore) {
-        log.debug("Grounding {} rules with query: [{}].", rules.size(), query);
+        log.debug("Grounding {} rule(s) with query: [{}].", rules.size(), query);
         for (Rule rule : rules) {
             log.trace("    " + rule);
         }

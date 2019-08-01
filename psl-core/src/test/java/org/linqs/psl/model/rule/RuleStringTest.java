@@ -118,7 +118,7 @@ public class RuleStringTest {
         );
 
         // Base Rule: SinglePredicate(A) + SinglePredicate(B) = 1
-        arithmeticBaseRule = new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1));
+        arithmeticBaseRule = new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1));
 
         // Data
         obsPartition = dataStore.getNewPartition();
