@@ -21,6 +21,7 @@ import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.reasoner.term.MemoryTermStore;
 import org.linqs.psl.reasoner.term.TermStore;
+import org.linqs.psl.util.RandUtils;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -53,7 +54,13 @@ public class DCDTermStore implements TermStore<DCDObjectiveTerm, RandomVariableA
 
     @Override
     public synchronized RandomVariableAtom createLocalVariable(RandomVariableAtom atom) {
+        if (variables.contains(atom)) {
+            return atom;
+        }
+
+        atom.setValue(RandUtils.nextFloat());
         variables.add(atom);
+
         return atom;
     }
 

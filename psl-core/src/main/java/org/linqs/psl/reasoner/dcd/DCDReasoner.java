@@ -24,7 +24,6 @@ import org.linqs.psl.reasoner.dcd.term.DCDObjectiveTerm;
 import org.linqs.psl.reasoner.dcd.term.DCDTermStore;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.MathUtils;
-import org.linqs.psl.util.RandUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -105,11 +104,6 @@ public class DCDReasoner implements Reasoner {
         if (numTerms == 0) {
             log.warn("No terms found. DCD is existing early.");
             return;
-        }
-
-        // Initialize all variables to a random state.
-        for (RandomVariableAtom variable : termStore.getVariables()) {
-            variable.setValue(RandUtils.nextFloat());
         }
 
         float objective = computeObjective(termStore);
