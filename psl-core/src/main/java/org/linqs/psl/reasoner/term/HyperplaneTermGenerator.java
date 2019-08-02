@@ -63,10 +63,6 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
     }
 
     @Override
-    public int generateTerms(GroundRuleStore ruleStore, final TermStore<T, V> termStore) {
-        return generateTerms(ruleStore, termStore, 0);
-    }
-
     public int generateTerms(GroundRuleStore ruleStore, final TermStore<T, V> termStore, int rvaCount) {
         int initialSize = termStore.size();
         termStore.ensureCapacity(initialSize + ruleStore.size());

@@ -100,7 +100,7 @@ public class LazyMPEInference extends InferenceApplication {
 
             log.debug("Initializing objective terms for {} ground rules.", groundRuleStore.size());
             @SuppressWarnings("unchecked")
-            int termCount = termGenerator.generateTerms(groundRuleStore, termStore);
+            int termCount = termGenerator.generateTerms(groundRuleStore, termStore, lazyAtomManager.getCachedRVACount());
             log.debug("Generated {} objective terms from {} ground rules.", termCount, groundRuleStore.size());
 
             log.info("Beginning inference round {}.", rounds);

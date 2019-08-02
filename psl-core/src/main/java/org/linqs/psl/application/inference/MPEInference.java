@@ -51,13 +51,9 @@ public class MPEInference extends InferenceApplication {
         log.info("Grounding out model.");
         int groundCount = Grounding.groundAll(model, atomManager, groundRuleStore);
 
-        if (termStore instanceof ADMMTermStore) {
-            ((ADMMTermStore)termStore).ensureVariableCapacity(atomManager.getCachedRVACount());
-        }
-
         log.debug("Initializing objective terms for {} ground rules.", groundCount);
         @SuppressWarnings("unchecked")
-        int termCount = termGenerator.generateTerms(groundRuleStore, termStore);
+        int termCount = termGenerator.generateTerms(groundRuleStore, termStore, atomManager.getCachedRVACount());
         log.debug("Generated {} objective terms from {} ground rules.", termCount, groundCount);
     }
 

@@ -22,7 +22,10 @@ import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 public interface TermGenerator<T extends ReasonerTerm, V extends ReasonerLocalVariable> {
     /**
      * Use the ground rules in |ruleStore| to generate optimization terms and populate |termStore|.
+     * The number of RandomVariableAtoms is also provided for storage initialization.
+     * If this number is unknown a guess may be provided.
+     *
      * @return the number of terms added to the term store.
      */
-    public int generateTerms(GroundRuleStore ruleStore, TermStore<T, V> termStore);
+    public int generateTerms(GroundRuleStore ruleStore, TermStore<T, V> termStore, int rvaCount);
 }

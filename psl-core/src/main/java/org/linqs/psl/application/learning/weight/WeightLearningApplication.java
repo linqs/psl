@@ -270,13 +270,9 @@ public abstract class WeightLearningApplication implements ModelApplication {
         TermStore termStore = (TermStore)Config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
         TermGenerator termGenerator = (TermGenerator)Config.getNewObject(TERM_GENERATOR_KEY, TERM_GENERATOR_DEFAULT);
 
-        if (termStore instanceof ADMMTermStore) {
-            ((ADMMTermStore)termStore).ensureVariableCapacity(atomManager.getCachedRVACount());
-        }
-
         log.debug("Initializing objective terms for {} ground rules.", groundRuleStore.size());
         @SuppressWarnings("unchecked")
-        int termCount = termGenerator.generateTerms(groundRuleStore, termStore);
+        int termCount = termGenerator.generateTerms(groundRuleStore, termStore, atomManager.getCachedRVACount());
         log.debug("Generated {} objective terms from {} ground rules.", termCount, groundRuleStore.size());
 
         TrainingMap trainingMap = new TrainingMap(atomManager, observedDB, false);
@@ -360,7 +356,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
 
         log.debug("Initializing latent objective terms for {} ground rules.", groundCount);
         @SuppressWarnings("unchecked")
-        int termCount = termGenerator.generateTerms(latentGroundRuleStore, latentTermStore);
+        int termCount = termGenerator.generateTerms(latentGroundRuleStore, latentTermStore, atomManager.getCachedRVACount());
         log.debug("Generated {} latent objective terms from {} ground rules.", termCount, groundCount);
     }
 
@@ -371,7 +367,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
         }
 
         termStore.clear();
-        termGenerator.generateTerms(groundRuleStore, termStore);
+        termGenerator.generateTerms(groundRuleStore, termStore, atomManager.getCachedRVACount());
 
         reasoner.optimize(termStore);
 
@@ -385,7 +381,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
         }
 
         termStore.clear();
-        termGenerator.generateTerms(groundRuleStore, termStore);
+        termGenerator.generateTerms(groundRuleStore, termStore, atomManager.getCachedRVACount());
 
         reasoner.optimize(latentTermStore);
 
