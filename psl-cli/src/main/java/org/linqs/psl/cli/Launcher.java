@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.cli;
 
-import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.application.inference.MPEInference;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
@@ -32,6 +31,7 @@ import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver.Type;
 import org.linqs.psl.database.rdbms.driver.PostgreSQLDriver;
 import org.linqs.psl.evaluation.statistics.Evaluator;
+import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
