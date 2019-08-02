@@ -19,7 +19,7 @@ package org.linqs.psl;
 
 import static org.junit.Assert.assertEquals;
 
-import org.linqs.psl.application.groundrulestore.GroundRuleStore;
+import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 

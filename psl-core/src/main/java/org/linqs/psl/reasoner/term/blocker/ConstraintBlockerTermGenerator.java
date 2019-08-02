@@ -17,8 +17,8 @@
  */
 package org.linqs.psl.reasoner.term.blocker;
 
-import org.linqs.psl.application.groundrulestore.AtomRegisterGroundRuleStore;
-import org.linqs.psl.application.groundrulestore.GroundRuleStore;
+import org.linqs.psl.grounding.AtomRegisterGroundRuleStore;
+import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;

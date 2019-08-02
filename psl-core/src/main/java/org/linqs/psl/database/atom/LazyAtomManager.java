@@ -17,13 +17,13 @@
  */
 package org.linqs.psl.database.atom;
 
-import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.ResultList;
 import org.linqs.psl.database.rdbms.RDBMSDatabase;
 import org.linqs.psl.database.rdbms.Formula2SQL;
+import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;

@@ -22,6 +22,7 @@ import org.linqs.psl.TestModel;
 import org.linqs.psl.application.inference.MPEInference;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.grounding.AtomRegisterGroundRuleStore;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.arithmetic.UnweightedArithmeticRule;
 import org.linqs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
@@ -32,7 +33,10 @@ import org.linqs.psl.model.rule.arithmetic.expression.SummationVariableOrTerm;
 import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Coefficient;
 import org.linqs.psl.model.rule.arithmetic.expression.coefficient.ConstantNumber;
 import org.linqs.psl.model.term.Variable;
+import org.linqs.psl.reasoner.bool.BooleanMaxWalkSat;
 import org.linqs.psl.reasoner.function.FunctionComparator;
+import org.linqs.psl.reasoner.term.blocker.ConstraintBlockerTermStore;
+import org.linqs.psl.reasoner.term.blocker.ConstraintBlockerTermGenerator;
 
 import org.junit.After;
 import org.junit.Before;
@@ -51,10 +55,10 @@ public class BooleanMaxWalkSatTest {
         Config.init();
         info = TestModel.getModel();
 
-        Config.setProperty(MPEInference.REASONER_KEY, "org.linqs.psl.reasoner.bool.BooleanMaxWalkSat");
-        Config.setProperty(MPEInference.GROUND_RULE_STORE_KEY, "org.linqs.psl.application.groundrulestore.AtomRegisterGroundRuleStore");
-        Config.setProperty(MPEInference.TERM_STORE_KEY, "org.linqs.psl.reasoner.term.blocker.ConstraintBlockerTermStore");
-        Config.setProperty(MPEInference.TERM_GENERATOR_KEY, "org.linqs.psl.reasoner.term.blocker.ConstraintBlockerTermGenerator");
+        Config.setProperty(MPEInference.REASONER_KEY, BooleanMaxWalkSat.class.getName());
+        Config.setProperty(MPEInference.GROUND_RULE_STORE_KEY, AtomRegisterGroundRuleStore.class.getName());
+        Config.setProperty(MPEInference.TERM_STORE_KEY, ConstraintBlockerTermStore.class.getName());
+        Config.setProperty(MPEInference.TERM_GENERATOR_KEY, ConstraintBlockerTermGenerator.class.getName());
     }
 
     @After

@@ -15,9 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.util;
+package org.linqs.psl.grounding;
 
-import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.QueryResultIterable;

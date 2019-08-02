@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.model.rule.arithmetic;
 
-import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.database.DatabaseQuery;
 import org.linqs.psl.database.ResultList;
@@ -27,6 +26,7 @@ import org.linqs.psl.database.rdbms.PredicateInfo;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.RDBMSDatabase;
 import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
+import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.QueryAtom;
