@@ -77,6 +77,7 @@ public class DCDTermGenerator extends HyperplaneTermGenerator<DCDObjectiveTerm, 
 
     @Override
     public DCDObjectiveTerm createLinearConstraintTerm(GroundRule groundRule, Hyperplane<RandomVariableAtom> hyperplane, FunctionComparator comparator) {
-        throw new UnsupportedOperationException("DCD does not support hard constraints, i.e. " + groundRule);
+        log.warn("DCD does not support hard constraints, i.e. " + groundRule);
+        return null;
     }
 }
