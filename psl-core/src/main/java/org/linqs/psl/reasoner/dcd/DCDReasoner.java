@@ -72,6 +72,7 @@ public class DCDReasoner implements Reasoner {
     private boolean printObj;
     private boolean objectiveBreak;
     private float c;
+    private boolean truncateEveryStep;
 
     public DCDReasoner() {
         maxIter = Config.getInt(MAX_ITER_KEY, MAX_ITER_DEFAULT);
@@ -79,6 +80,7 @@ public class DCDReasoner implements Reasoner {
         printObj = Config.getBoolean(PRINT_OBJECTIVE, PRINT_OBJECTIVE_DEFAULT);
         tol = Config.getFloat(OBJ_TOL, OBJ_TOL_DEFAULT);
         c = Config.getFloat(C, C_DEFAULT);
+        truncateEveryStep = Config.getBoolean(TRUNCATE_EVERY_STEP, TRUNCATE_EVERY_STEP_DEFAULT);
     }
 
     public int getMaxIter() {
@@ -111,7 +113,7 @@ public class DCDReasoner implements Reasoner {
             long start = System.currentTimeMillis();
 
             for (DCDObjectiveTerm term : termStore) {
-                term.minimize();
+                term.minimize(truncateEveryStep);
             }
 
             for (RandomVariableAtom variable : termStore.getVariables()) {

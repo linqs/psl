@@ -21,6 +21,7 @@ import org.linqs.psl.config.Config;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.dcd.DCDReasoner;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.term.Hyperplane;
@@ -37,11 +38,9 @@ public class DCDTermGenerator extends HyperplaneTermGenerator<DCDObjectiveTerm, 
     private static final Logger log = LoggerFactory.getLogger(DCDTermGenerator.class);
 
     private float c;
-    private boolean truncateEveryStep;
 
     public DCDTermGenerator() {
         c = Config.getFloat(DCDReasoner.C, DCDReasoner.C_DEFAULT);
-        truncateEveryStep = Config.getBoolean(DCDReasoner.TRUNCATE_EVERY_STEP, DCDReasoner.TRUNCATE_EVERY_STEP_DEFAULT);
     }
 
     @Override
@@ -63,9 +62,9 @@ public class DCDTermGenerator extends HyperplaneTermGenerator<DCDObjectiveTerm, 
     @Override
     public DCDObjectiveTerm createLossTerm(boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane<RandomVariableAtom> hyperplane) {
         if (isHinge && isSquared) {
-            return new SquaredHingeLossTerm(groundRule, hyperplane, c, truncateEveryStep);
+            return new SquaredHingeLossTerm((float)((WeightedGroundRule)groundRule).getWeight(), hyperplane, c);
         } else if (isHinge && !isSquared) {
-            return new HingeLossTerm(groundRule, hyperplane, c, truncateEveryStep);
+            return new HingeLossTerm((float)((WeightedGroundRule)groundRule).getWeight(), hyperplane, c);
         } else if (!isHinge && isSquared) {
             log.warn("DCD does not support squared linear terms: " + groundRule);
             return null;

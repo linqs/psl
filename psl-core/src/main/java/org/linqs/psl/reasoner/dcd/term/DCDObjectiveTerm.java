@@ -28,32 +28,23 @@ import org.linqs.psl.util.MathUtils;
  * A term in the objective to be optimized by a DCDReasoner.
  */
 public abstract class DCDObjectiveTerm implements ReasonerTerm  {
-    protected final GroundRule groundRule;
-    protected final float adjustedWeight;
+    protected int size;
+    protected float[] coefficients;
+    protected RandomVariableAtom[] variables;
 
-    protected final int size;
-    protected final float[] coefficients;
-    protected final RandomVariableAtom[] variables;
-
-    protected final float constant;
-
-    protected final boolean truncateEveryStep;
-
-    protected final float qii;
-
+    protected float adjustedWeight;
+    protected float constant;
+    protected float qii;
     protected float lagrange;
 
-    public DCDObjectiveTerm(GroundRule groundRule, Hyperplane<RandomVariableAtom> hyperplane,
-            float c, boolean truncateEveryStep) {
+    public DCDObjectiveTerm(float weight, Hyperplane<RandomVariableAtom> hyperplane,
+            float c) {
         size = hyperplane.size();
         coefficients = hyperplane.getCoefficients();
         variables = hyperplane.getVariables();
         constant = hyperplane.getConstant();
 
-        this.groundRule = groundRule;
-        adjustedWeight = (float)((WeightedGroundRule)groundRule).getWeight() * c;
-
-        this.truncateEveryStep = truncateEveryStep;
+        adjustedWeight = weight * c;
 
         float tempQii = 0f;
         for (int i = 0; i < size; i++) {
@@ -74,7 +65,7 @@ public abstract class DCDObjectiveTerm implements ReasonerTerm  {
         return constant - val;
     }
 
-    protected void minimize(float grad, float lim) {
+    protected void minimize(boolean truncateEveryStep, float grad, float lim) {
         float pg = grad;
         if (MathUtils.isZero(lagrange)) {
             pg = Math.min(grad, 0.0f);
@@ -84,16 +75,18 @@ public abstract class DCDObjectiveTerm implements ReasonerTerm  {
             pg = Math.max(grad, 0.0f);
         }
 
-        if (!MathUtils.isZero(pg)) {
-            float pa = lagrange;
-            lagrange = Math.min(Math.max(lagrange - grad / qii, 0.0f), lim);
-            for (int i = 0; i < size; i++) {
-                float val = variables[i].getValue() - ((lagrange - pa) * coefficients[i]);
-                if (truncateEveryStep) {
-                    val = Math.max(Math.min(val, 1.0f), 0.0f);
-                }
-                variables[i].setValue(val);
+        if (MathUtils.isZero(pg)) {
+            return;
+        }
+
+        float pa = lagrange;
+        lagrange = Math.min(Math.max(lagrange - grad / qii, 0.0f), lim);
+        for (int i = 0; i < size; i++) {
+            float val = variables[i].getValue() - ((lagrange - pa) * coefficients[i]);
+            if (truncateEveryStep) {
+                val = Math.max(Math.min(val, 1.0f), 0.0f);
             }
+            variables[i].setValue(val);
         }
     }
 
@@ -112,5 +105,5 @@ public abstract class DCDObjectiveTerm implements ReasonerTerm  {
         return size;
     }
 
-    public abstract void minimize();
+    public abstract void minimize(boolean truncateEveryStep);
 }

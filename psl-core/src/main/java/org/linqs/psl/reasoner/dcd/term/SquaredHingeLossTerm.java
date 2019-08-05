@@ -25,16 +25,16 @@ import org.linqs.psl.reasoner.term.Hyperplane;
  * Objective term of the form: weight * [max(coeffs^T * x - constant, 0)]^2
  */
 public class SquaredHingeLossTerm extends DCDObjectiveTerm {
-    public SquaredHingeLossTerm(GroundRule groundRule, Hyperplane<RandomVariableAtom> hyperplane,
-            float c, boolean truncateEveryStep) {
-        super(groundRule, hyperplane, c, truncateEveryStep);
+    public SquaredHingeLossTerm(float weight, Hyperplane<RandomVariableAtom> hyperplane,
+            float c) {
+        super(weight, hyperplane, c);
     }
 
     @Override
-    public void minimize() {
+    public void minimize(boolean truncateEveryStep) {
         float gradient = super.computeGradient();
         gradient += lagrange / (2.0f * adjustedWeight);
-        minimize(gradient, Float.POSITIVE_INFINITY);
+        minimize(truncateEveryStep, gradient, Float.POSITIVE_INFINITY);
     }
 
     /**
