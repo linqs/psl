@@ -61,10 +61,12 @@ public class DCDTermGenerator extends HyperplaneTermGenerator<DCDObjectiveTerm, 
 
     @Override
     public DCDObjectiveTerm createLossTerm(boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane<RandomVariableAtom> hyperplane) {
+        float weight = (float)((WeightedGroundRule)groundRule).getWeight();
+
         if (isHinge && isSquared) {
-            return new SquaredHingeLossTerm((float)((WeightedGroundRule)groundRule).getWeight(), hyperplane, c);
+            return new DCDObjectiveTerm(true, hyperplane, weight, c);
         } else if (isHinge && !isSquared) {
-            return new HingeLossTerm((float)((WeightedGroundRule)groundRule).getWeight(), hyperplane, c);
+            return new DCDObjectiveTerm(false, hyperplane, weight, c);
         } else if (!isHinge && isSquared) {
             log.warn("DCD does not support squared linear terms: " + groundRule);
             return null;
