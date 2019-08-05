@@ -24,7 +24,7 @@ import org.linqs.psl.application.inference.MPEInference;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.reasoner.dcd.term.DCDTermGenerator;
-import org.linqs.psl.reasoner.dcd.term.DCDTermStore;
+import org.linqs.psl.reasoner.dcd.term.DCDMemoryTermStore;
 
 import org.junit.Test;
 
@@ -40,7 +40,7 @@ public class DCDReasonerTest {
     public void baseTest() {
         Config.setProperty(InferenceApplication.REASONER_KEY, DCDReasoner.class.getName());
         Config.setProperty(InferenceApplication.TERM_GENERATOR_KEY, DCDTermGenerator.class.getName());
-        Config.setProperty(InferenceApplication.TERM_STORE_KEY, DCDTermStore.class.getName());
+        Config.setProperty(InferenceApplication.TERM_STORE_KEY, DCDMemoryTermStore.class.getName());
 
         TestModel.ModelInformation info = TestModel.getModel();
 
