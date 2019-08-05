@@ -96,16 +96,6 @@ public class DCDReasoner implements Reasoner {
         }
         DCDTermStore termStore = (DCDTermStore)baseTermStore;
 
-        int numTerms = termStore.size();
-        int numVariables = termStore.getNumVariables();
-
-        log.debug("Performing optimization with {} variables and {} terms.", numVariables, numTerms);
-
-        if (numTerms == 0) {
-            log.warn("No terms found. DCD is existing early.");
-            return;
-        }
-
         float objective = computeObjective(termStore);
         float oldObjective = Float.POSITIVE_INFINITY;
 
@@ -120,7 +110,7 @@ public class DCDReasoner implements Reasoner {
                 && (!objectiveBreak || (iteration == 1 || !MathUtils.equals(objective, oldObjective, tol)))) {
             long start = System.currentTimeMillis();
 
-            for (DCDObjectiveTerm term : termStore){
+            for (DCDObjectiveTerm term : termStore) {
                 term.minimize();
             }
 
@@ -141,6 +131,7 @@ public class DCDReasoner implements Reasoner {
         }
 
         log.info("Optimization completed in {} iterations. Objective.: {}", iteration - 1, objective);
+        log.debug("Optimized with {} variables and {} terms.", termStore.getNumVariables(), termStore.size());
     }
 
     public float computeObjective(DCDTermStore termStore) {

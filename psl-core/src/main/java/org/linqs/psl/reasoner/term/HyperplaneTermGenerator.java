@@ -112,7 +112,12 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
         return termStore.size() - initialSize;
     }
 
-    private T createTerm(GroundRule groundRule, TermStore<T, V> termStore) {
+    /**
+     * Create a ReasonerTerm from the ground rule.
+     * Note that the term will NOT be added to the term store.
+     * The store is just needed for creating variables.
+     */
+    public T createTerm(GroundRule groundRule, TermStore<T, V> termStore) {
         if (groundRule instanceof WeightedGroundRule) {
             GeneralFunction function = ((WeightedGroundRule)groundRule).getFunctionDefinition();
             Hyperplane<V> hyperplane = processHyperplane(function, termStore);

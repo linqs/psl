@@ -120,7 +120,7 @@ public abstract class AbstractLogicalRule extends AbstractRule {
         return formula;
     }
 
-    public DNFClause getDNF() {
+    public DNFClause getNegatedDNF() {
         return negatedDNF;
     }
 

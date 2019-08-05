@@ -252,7 +252,7 @@ public class LazyAtomManager extends PersistedAtomManager {
     }
 
     private void lazyLogicalGround(AbstractLogicalRule rule, Set<StandardPredicate> lazyPredicates, GroundRuleStore groundRuleStore) {
-        Formula formula = rule.getDNF().getQueryFormula();
+        Formula formula = rule.getNegatedDNF().getQueryFormula();
         ResultList groundingResults = getLazyGroundingResults(formula, lazyPredicates);
         if (groundingResults == null) {
             return;
@@ -325,7 +325,7 @@ public class LazyAtomManager extends PersistedAtomManager {
                 // Note that we check for atoms not in the base formula, but in the
                 // query formula for the DNF because negated atoms will not
                 // be considered.
-                for (Atom atom : ((AbstractLogicalRule)rule).getDNF().getQueryFormula().getAtoms(new HashSet<Atom>())) {
+                for (Atom atom : ((AbstractLogicalRule)rule).getNegatedDNF().getQueryFormula().getAtoms(new HashSet<Atom>())) {
                     if (lazyPredicates.contains(atom.getPredicate())) {
                         lazyRules.add(rule);
                         break;

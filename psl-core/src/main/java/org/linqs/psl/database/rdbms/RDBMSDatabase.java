@@ -617,7 +617,7 @@ public class RDBMSDatabase extends Database {
 
     private class RDBMSQueryResultIterable implements QueryResultIterable {
         private Map<Variable, Integer> projectionMap;
-        private Iterator<Constant[]> iterator;
+        private RDBMSQueryResultIterator iterator;
 
         public RDBMSQueryResultIterable(String queryString, Map<Variable, Integer> projectionMap, int[] orderedIndexes, ConstantType[] orderedTypes) {
             this.projectionMap = Collections.unmodifiableMap(projectionMap);
@@ -632,6 +632,14 @@ public class RDBMSDatabase extends Database {
         @Override
         public Iterator<Constant[]> iterator() {
             return iterator;
+        }
+
+        @Override
+        public void close() {
+            if (iterator != null) {
+                iterator.close();
+                iterator = null;
+            }
         }
     }
 
@@ -715,7 +723,7 @@ public class RDBMSDatabase extends Database {
             }
         }
 
-        private void close() {
+        public void close() {
             next = null;
 
             if (resultSet != null) {
