@@ -24,26 +24,29 @@ import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.util.MathUtils;
 
+import java.nio.ByteBuffer;
+import java.util.Map;
+
 /**
  * A term in the objective to be optimized by a DCDReasoner.
  */
 public class DCDObjectiveTerm implements ReasonerTerm  {
     private boolean squared;
 
-    private int size;
-    private float[] coefficients;
-    private RandomVariableAtom[] variables;
-
     private float adjustedWeight;
     private float constant;
-    private float qii;
     private float lagrange;
+    private float qii;
+
+    private short size;
+    private float[] coefficients;
+    private RandomVariableAtom[] variables;
 
     public DCDObjectiveTerm(boolean squared, Hyperplane<RandomVariableAtom> hyperplane,
             float weight, float c) {
         this.squared = squared;
 
-        size = hyperplane.size();
+        size = (short)hyperplane.size();
         coefficients = hyperplane.getCoefficients();
         variables = hyperplane.getVariables();
         constant = hyperplane.getConstant();
@@ -101,6 +104,55 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
     @Override
     public int size() {
         return size;
+    }
+
+    /**
+     * The number of bytes that write() will need to represent this term.
+     */
+    public int byteSize() {
+        return
+            Byte.SIZE  // squared
+            + Float.SIZE  // adjustedWeight
+            + Float.SIZE  // constant
+            + Float.SIZE  // lagrange
+            + Float.SIZE  // qii
+            + Short.SIZE  // size
+            + size * (Float.SIZE + Integer.SIZE);  // coefficients + variables
+    }
+
+    /**
+     * Write a binary representation of this term to a buffer.
+     * Note that the variables are written using their Object hashcode.
+     */
+    public void write(ByteBuffer buffer) {
+        buffer.put((byte)(squared ? 1 : 0));
+        buffer.putFloat(adjustedWeight);
+        buffer.putFloat(constant);
+        buffer.putFloat(lagrange);
+        buffer.putFloat(qii);
+        buffer.putShort(size);
+
+        for (int i = 0; i < size; i++) {
+            buffer.putFloat(coefficients[i]);
+            buffer.putInt(System.identityHashCode(variables[i]));
+        }
+    }
+
+    /**
+     * Assume the term that will be next read from the buffer.
+     */
+    public void read(ByteBuffer buffer, Map<Integer, RandomVariableAtom> rvaMap) {
+        squared = (buffer.get() == 1);
+        adjustedWeight = buffer.getFloat();
+        constant = buffer.getFloat();
+        lagrange = buffer.getFloat();
+        qii = buffer.getFloat();
+        size = buffer.getShort();
+
+        for (int i = 0; i < size; i++) {
+            coefficients[i] = buffer.getFloat();
+            variables[i] = rvaMap.get(buffer.getInt());
+        }
     }
 
     private void minimize(boolean truncateEveryStep, float grad, float lim) {

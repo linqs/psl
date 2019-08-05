@@ -34,10 +34,10 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
 /**
  * A term store that iterates over ground queries directly (obviating the GroundRuleStore).
@@ -51,7 +51,8 @@ public class DCDStreamingTermStore implements DCDTermStore {
     private List<WeightedLogicalRule> rules;
     private AtomManager atomManager;
 
-    private Set<RandomVariableAtom> variables;
+    // <Object.hashCode(), RVA>
+    private Map<Integer, RandomVariableAtom> variables;
 
     private boolean initialRound;
     private TermIterator activeIterator;
@@ -101,7 +102,7 @@ public class DCDStreamingTermStore implements DCDTermStore {
 
         this.atomManager = atomManager;
         termGenerator = new DCDTermGenerator();
-        variables = new HashSet<RandomVariableAtom>();
+        variables = new HashMap<Integer, RandomVariableAtom>();
 
         initialRound = true;
         activeIterator = null;
@@ -128,17 +129,19 @@ public class DCDStreamingTermStore implements DCDTermStore {
 
     @Override
     public Iterable<RandomVariableAtom> getVariables() {
-        return Collections.unmodifiableSet(variables);
+        return variables.values();
     }
 
     @Override
     public synchronized RandomVariableAtom createLocalVariable(RandomVariableAtom atom) {
-        if (variables.contains(atom)) {
+        int key = System.identityHashCode(atom);
+
+        if (variables.containsKey(key)) {
             return atom;
         }
 
         atom.setValue(RandUtils.nextFloat());
-        variables.add(atom);
+        variables.put(key, atom);
 
         return atom;
     }
@@ -152,7 +155,7 @@ public class DCDStreamingTermStore implements DCDTermStore {
         if (variables.size() == 0) {
             // If there are no variables, then re-allocate the variable storage.
             // The default load factor for Java HashSets is 0.75.
-            variables = new HashSet<RandomVariableAtom>((int)Math.ceil(capacity / 0.75));
+            variables = new HashMap<Integer, RandomVariableAtom>((int)Math.ceil(capacity / 0.75));
         }
     }
 
@@ -202,7 +205,6 @@ public class DCDStreamingTermStore implements DCDTermStore {
     private class TermIterator implements Iterator<DCDObjectiveTerm> {
         private int currentRule;
         private int nextCachedTermIndex;
-        private int nextCachedGroundRuleIndex;
 
         // The iteratble is kept around for cleanup.
         private QueryResultIterable queryIterable;
@@ -211,13 +213,11 @@ public class DCDStreamingTermStore implements DCDTermStore {
         private DCDObjectiveTerm nextTerm;
 
         private List<DCDObjectiveTerm> termCache;
-        private List<GroundRule> groundRuleCache;
 
         public TermIterator() {
             activeIterator = this;
 
             currentRule = -1;
-            nextCachedGroundRuleIndex = 0;
             nextCachedTermIndex = 0;
 
             queryIterable = null;
@@ -225,7 +225,6 @@ public class DCDStreamingTermStore implements DCDTermStore {
 
             // TEST
             termCache = new ArrayList<DCDObjectiveTerm>(1000);
-            groundRuleCache = new ArrayList<GroundRule>(1000);
 
             // This will either get the next term, or throw if there are no terms.
             nextTerm = fetchNextTerm();
@@ -291,19 +290,6 @@ public class DCDStreamingTermStore implements DCDTermStore {
         }
 
         private GroundRule fetchNextGroundRule() {
-            // First check the ground rule cache.
-            if (nextCachedGroundRuleIndex < groundRuleCache.size()) {
-                GroundRule groundRule = groundRuleCache.get(nextCachedGroundRuleIndex);
-                nextCachedGroundRuleIndex++;
-                return groundRule;
-            }
-
-            groundRuleCache.clear();
-            nextCachedGroundRuleIndex = 0;
-
-            // TODO(eriq): See if the query's cache is exhaused.
-            //  We can fill until that fetch cache is exhaused and put it in the ground rule cache.
-
             // Check if there are any more results pending from the query.
             while (queryResults != null && queryResults.hasNext()) {
                 Constant[] tuple = queryResults.next();
@@ -339,11 +325,6 @@ public class DCDStreamingTermStore implements DCDTermStore {
             if (termCache != null) {
                 termCache.clear();
                 termCache = null;
-            }
-
-            if (groundRuleCache != null) {
-                groundRuleCache.clear();
-                groundRuleCache = null;
             }
         }
     }
