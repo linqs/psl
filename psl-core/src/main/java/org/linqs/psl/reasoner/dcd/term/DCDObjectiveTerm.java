@@ -161,6 +161,39 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         }
     }
 
+    @Override
+    public String toString() {
+        // weight * [max(coeffs^T * x - constant, 0.0)]^2
+
+        StringBuilder builder = new StringBuilder();
+
+        builder.append(adjustedWeight);
+        builder.append(" * max(0.0, ");
+
+        for (int i = 0; i < size; i++) {
+            builder.append("(");
+            builder.append(coefficients[i]);
+            builder.append(" * ");
+            builder.append(variables[i]);
+            builder.append(")");
+
+            if (i != size - 1) {
+                builder.append(" + ");
+            }
+        }
+
+        builder.append(" - ");
+        builder.append(constant);
+
+        builder.append(")");
+
+        if (squared) {
+            builder.append("^2");
+        }
+
+        return builder.toString();
+    }
+
     private void minimize(boolean truncateEveryStep, float grad, float lim) {
         float pg = grad;
         if (MathUtils.isZero(lagrange)) {
