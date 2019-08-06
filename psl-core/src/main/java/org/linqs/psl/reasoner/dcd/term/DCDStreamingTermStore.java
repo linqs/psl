@@ -62,22 +62,28 @@ public class DCDStreamingTermStore implements DCDTermStore {
     public static final String CONFIG_PREFIX = "dcdstreaming";
 
     /**
-     * The number of terms in a single page.
-     */
-    public static final String PAGE_SIZE_KEY = CONFIG_PREFIX + ".pagesize";
-    public static final int PAGE_SIZE_DEFAULT = 10000;
-
-    /**
      * Where on disk to write term pages.
      */
     public static final String PAGE_LOCATION_KEY = CONFIG_PREFIX + ".pagelocation";
     public static final String PAGE_LOCATION_DEFAULT = SystemUtils.getTempDir("term_pages");
 
     /**
+     * The number of terms in a single page.
+     */
+    public static final String PAGE_SIZE_KEY = CONFIG_PREFIX + ".pagesize";
+    public static final int PAGE_SIZE_DEFAULT = 10000;
+
+    /**
      * Whether to shuffle within a page when it is picked up.
      */
     public static final String SHUFFLE_PAGE_KEY = CONFIG_PREFIX + ".shufflepage";
     public static final boolean SHUFFLE_PAGE_DEFAULT = true;
+
+    /**
+     * Whether to pick up pages in a random order.
+     */
+    public static final String RANDOMIZE_PAGE_ACCESS_KEY = CONFIG_PREFIX + ".randomizepageaccess";
+    public static final boolean RANDOMIZE_PAGE_ACCESS_DEFAULT = true;
 
     // How much to over-allocate by.
     private static final double OVERALLOCATION_RATIO = 1.25;
@@ -98,6 +104,7 @@ public class DCDStreamingTermStore implements DCDTermStore {
     private int pageSize;
     private String pageDir;
     private boolean shufflePage;
+    private boolean randomizePageAccess;
 
     private ByteBuffer buffer;
 
@@ -114,8 +121,6 @@ public class DCDStreamingTermStore implements DCDTermStore {
      * After the initial round, terms will bounce between here and the term cache.
      */
     private List<DCDObjectiveTerm> termPool;
-
-    // TODO(eriq): Shuffle page access.
 
     public DCDStreamingTermStore(List<Rule> rules, AtomManager atomManager) {
         this.rules = new ArrayList<WeightedLogicalRule>();
@@ -166,7 +171,12 @@ public class DCDStreamingTermStore implements DCDTermStore {
         pageSize = Config.getInt(PAGE_SIZE_KEY, PAGE_SIZE_DEFAULT);
         pageDir = Config.getString(PAGE_LOCATION_KEY, PAGE_LOCATION_DEFAULT);
         shufflePage = Config.getBoolean(SHUFFLE_PAGE_KEY, SHUFFLE_PAGE_DEFAULT);
+        randomizePageAccess = Config.getBoolean(RANDOMIZE_PAGE_ACCESS_KEY, RANDOMIZE_PAGE_ACCESS_DEFAULT);
         SystemUtils.recursiveDelete(pageDir);
+
+        if (pageSize <= 1) {
+            throw new IllegalArgumentException("Page size is too small.");
+        }
 
         termCache = new ArrayList<DCDObjectiveTerm>(pageSize);
         termPool = new ArrayList<DCDObjectiveTerm>(pageSize);
@@ -301,6 +311,11 @@ public class DCDStreamingTermStore implements DCDTermStore {
 
         private DCDObjectiveTerm nextTerm;
 
+        // When we are reading pages from disk (after the initial round),
+        // this list will tell us the order to read them in.
+        // This may get shuffled depending on configuration.
+        private List<Integer> pageAccessOrder;
+
         public TermIterator() {
             // Note that activeIterator is specifically set here in case there are no terms.
             // (We cannot wait for construction to assign it.)
@@ -315,6 +330,15 @@ public class DCDStreamingTermStore implements DCDTermStore {
             queryResults = null;
 
             termCache.clear();
+
+            pageAccessOrder = new ArrayList<Integer>(numPages);
+            for (int i = 0; i < numPages; i++) {
+                pageAccessOrder.add(i);
+            }
+
+            if (randomizePageAccess) {
+                RandUtils.shuffle(pageAccessOrder);
+            }
 
             // This will either get the next term, or throw if there are no terms.
             nextTerm = fetchNextTerm();
@@ -468,8 +492,10 @@ public class DCDStreamingTermStore implements DCDTermStore {
             int termsSize = 0;
             int numTerms = 0;
 
+            int pageIndex = pageAccessOrder.get(nextPage).intValue();
+
             // Note that the buffer should be at maximum size from the initial round.
-            String pagePath = getPagePath(nextPage);
+            String pagePath = getPagePath(pageIndex);
             try (FileInputStream stream = new FileInputStream(pagePath)) {
                 // First read the size information.
                 stream.read(buffer.array(), 0, Integer.SIZE * 2);
