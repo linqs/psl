@@ -73,6 +73,12 @@ public class DCDStreamingTermStore implements DCDTermStore {
     public static final String PAGE_LOCATION_KEY = CONFIG_PREFIX + ".pagelocation";
     public static final String PAGE_LOCATION_DEFAULT = SystemUtils.getTempDir("term_pages");
 
+    /**
+     * Whether to shuffle within a page when it is picked up.
+     */
+    public static final String SHUFFLE_PAGE_KEY = CONFIG_PREFIX + ".shufflepage";
+    public static final boolean SHUFFLE_PAGE_DEFAULT = true;
+
     // How much to over-allocate by.
     private static final double OVERALLOCATION_RATIO = 1.25;
 
@@ -91,6 +97,8 @@ public class DCDStreamingTermStore implements DCDTermStore {
 
     private int pageSize;
     private String pageDir;
+    private boolean shufflePage;
+
     private ByteBuffer buffer;
 
     /**
@@ -107,7 +115,6 @@ public class DCDStreamingTermStore implements DCDTermStore {
      */
     private List<DCDObjectiveTerm> termPool;
 
-    // TODO(eriq): Shuffle (in-place) pages.
     // TODO(eriq): Shuffle page access.
 
     public DCDStreamingTermStore(List<Rule> rules, AtomManager atomManager) {
@@ -158,6 +165,7 @@ public class DCDStreamingTermStore implements DCDTermStore {
         buffer = null;
         pageSize = Config.getInt(PAGE_SIZE_KEY, PAGE_SIZE_DEFAULT);
         pageDir = Config.getString(PAGE_LOCATION_KEY, PAGE_LOCATION_DEFAULT);
+        shufflePage = Config.getBoolean(SHUFFLE_PAGE_KEY, SHUFFLE_PAGE_DEFAULT);
         SystemUtils.recursiveDelete(pageDir);
 
         termCache = new ArrayList<DCDObjectiveTerm>(pageSize);
@@ -482,6 +490,10 @@ public class DCDStreamingTermStore implements DCDTermStore {
                 DCDObjectiveTerm term = termPool.get(i);
                 term.read(buffer, variables);
                 termCache.add(term);
+            }
+
+            if (shufflePage) {
+                RandUtils.shuffle(termCache);
             }
 
             nextPage++;

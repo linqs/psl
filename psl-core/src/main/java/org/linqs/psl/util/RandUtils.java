@@ -19,6 +19,8 @@ package org.linqs.psl.util;
 
 import org.linqs.psl.config.Config;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -103,5 +105,10 @@ public final class RandUtils {
     public static synchronized long nextLong() {
         ensureRNG();
         return rng.nextLong();
+    }
+
+    public static synchronized void shuffle(List<?> list) {
+        ensureRNG();
+        Collections.shuffle(list, rng);
     }
 }
