@@ -20,6 +20,7 @@ package org.linqs.psl.util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.nio.file.Paths;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -61,4 +62,26 @@ public class SystemUtils {
 
         return hostname;
     }
+
+    public static void recursiveDelete(String path) {
+        recursiveDelete(new File(path));
+    }
+
+    public static void recursiveDelete(File target) {
+        if (!target.exists()) {
+            return;
+        }
+
+        if (!target.isDirectory()) {
+            target.delete();
+            return;
+        }
+
+        for (File child : target.listFiles()) {
+            recursiveDelete(child);
+        }
+
+        target.delete();
+    }
+
 }

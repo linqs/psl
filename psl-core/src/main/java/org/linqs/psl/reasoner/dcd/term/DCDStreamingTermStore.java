@@ -109,7 +109,6 @@ public class DCDStreamingTermStore implements DCDTermStore {
 
     // TODO(eriq): Shuffle (in-place) pages.
     // TODO(eriq): Shuffle page access.
-    // TODO(eriq): Cleanup cache.
 
     public DCDStreamingTermStore(List<Rule> rules, AtomManager atomManager) {
         this.rules = new ArrayList<WeightedLogicalRule>();
@@ -156,9 +155,10 @@ public class DCDStreamingTermStore implements DCDTermStore {
         activeIterator = null;
         numPages = 0;
 
+        buffer = null;
         pageSize = Config.getInt(PAGE_SIZE_KEY, PAGE_SIZE_DEFAULT);
         pageDir = Config.getString(PAGE_LOCATION_KEY, PAGE_LOCATION_DEFAULT);
-        buffer = null;
+        SystemUtils.recursiveDelete(pageDir);
 
         termCache = new ArrayList<DCDObjectiveTerm>(pageSize);
         termPool = new ArrayList<DCDObjectiveTerm>(pageSize);
@@ -217,6 +217,7 @@ public class DCDStreamingTermStore implements DCDTermStore {
     @Override
     public void clear() {
         initialRound = true;
+        numPages = 0;
 
         if (activeIterator != null) {
             activeIterator.close();
@@ -234,6 +235,8 @@ public class DCDStreamingTermStore implements DCDTermStore {
         if (termPool != null) {
             termPool.clear();
         }
+
+        SystemUtils.recursiveDelete(pageDir);
     }
 
     @Override
