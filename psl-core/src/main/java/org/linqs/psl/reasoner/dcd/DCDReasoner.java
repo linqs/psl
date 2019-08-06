@@ -54,16 +54,16 @@ public class DCDReasoner implements Reasoner {
     /**
      * The maximum number of iterations of ADMM to perform in a round of inference.
      */
-    public static final String OBJ_TOL = CONFIG_PREFIX + ".tol";
+    public static final String OBJ_TOL_KEY = CONFIG_PREFIX + ".tol";
     public static final float OBJ_TOL_DEFAULT = 0.000001f;
 
-    public static final String C = CONFIG_PREFIX + ".C";
+    public static final String C_KEY = CONFIG_PREFIX + ".C";
     public static final float C_DEFAULT = 10.0f;
 
-    public static final String TRUNCATE_EVERY_STEP = CONFIG_PREFIX + ".truncateeverystep";
+    public static final String TRUNCATE_EVERY_STEP_KEY = CONFIG_PREFIX + ".truncateeverystep";
     public static final boolean TRUNCATE_EVERY_STEP_DEFAULT = false;
 
-    public static final String PRINT_OBJECTIVE = CONFIG_PREFIX + ".printobj";
+    public static final String PRINT_OBJECTIVE_KEY = CONFIG_PREFIX + ".printobj";
     public static final boolean PRINT_OBJECTIVE_DEFAULT = true;
 
     private int maxIter;
@@ -77,10 +77,10 @@ public class DCDReasoner implements Reasoner {
     public DCDReasoner() {
         maxIter = Config.getInt(MAX_ITER_KEY, MAX_ITER_DEFAULT);
         objectiveBreak = Config.getBoolean(OBJECTIVE_BREAK_KEY, OBJECTIVE_BREAK_DEFAULT);
-        printObj = Config.getBoolean(PRINT_OBJECTIVE, PRINT_OBJECTIVE_DEFAULT);
-        tol = Config.getFloat(OBJ_TOL, OBJ_TOL_DEFAULT);
-        c = Config.getFloat(C, C_DEFAULT);
-        truncateEveryStep = Config.getBoolean(TRUNCATE_EVERY_STEP, TRUNCATE_EVERY_STEP_DEFAULT);
+        printObj = Config.getBoolean(PRINT_OBJECTIVE_KEY, PRINT_OBJECTIVE_DEFAULT);
+        tol = Config.getFloat(OBJ_TOL_KEY, OBJ_TOL_DEFAULT);
+        c = Config.getFloat(C_KEY, C_DEFAULT);
+        truncateEveryStep = Config.getBoolean(TRUNCATE_EVERY_STEP_KEY, TRUNCATE_EVERY_STEP_DEFAULT);
     }
 
     public int getMaxIter() {

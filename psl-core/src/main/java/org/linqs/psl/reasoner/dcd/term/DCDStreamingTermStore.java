@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.reasoner.dcd.term;
 
+import org.linqs.psl.config.Config;
 import org.linqs.psl.database.QueryResultIterable;
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.model.atom.RandomVariableAtom;
@@ -28,10 +29,17 @@ import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.RandUtils;
+import org.linqs.psl.util.SystemUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -48,6 +56,26 @@ import java.util.Map;
 public class DCDStreamingTermStore implements DCDTermStore {
     private static final Logger log = LoggerFactory.getLogger(DCDStreamingTermStore.class);
 
+    /**
+     * Prefix of property keys used by this class.
+     */
+    public static final String CONFIG_PREFIX = "dcdstreaming";
+
+    /**
+     * The number of terms in a single page.
+     */
+    public static final String PAGE_SIZE_KEY = CONFIG_PREFIX + ".pagesize";
+    public static final int PAGE_SIZE_DEFAULT = 10000;
+
+    /**
+     * Where on disk to write term pages.
+     */
+    public static final String PAGE_LOCATION_KEY = CONFIG_PREFIX + ".pagelocation";
+    public static final String PAGE_LOCATION_DEFAULT = SystemUtils.getTempDir("term_pages");
+
+    // How much to over-allocate by.
+    private static final double OVERALLOCATION_RATIO = 1.25;
+
     private List<WeightedLogicalRule> rules;
     private AtomManager atomManager;
 
@@ -57,11 +85,31 @@ public class DCDStreamingTermStore implements DCDTermStore {
     private boolean initialRound;
     private TermIterator activeIterator;
     private int seenTermCount;
+    private int numPages;
 
     private DCDTermGenerator termGenerator;
 
-    // TODO(eriq): Disk paging: write cache and page cache.
-    // TODO(eriq): Technically, we don't need to page ground rules, only terms.
+    private int pageSize;
+    private String pageDir;
+    private ByteBuffer buffer;
+
+    /**
+     * Terms in the current page.
+     * On the initial round, this is filled from DB and flushed to disk.
+     * On subsequent rounds, this is filled from disk.
+     */
+    private List<DCDObjectiveTerm> termCache;
+
+    /**
+     * Terms that we will reuse when we start pulling from the cache.
+     * This should be a fill page's worth.
+     * After the initial round, terms will bounce between here and the term cache.
+     */
+    private List<DCDObjectiveTerm> termPool;
+
+    // TODO(eriq): Shuffle (in-place) pages.
+    // TODO(eriq): Shuffle page access.
+    // TODO(eriq): Cleanup cache.
 
     public DCDStreamingTermStore(List<Rule> rules, AtomManager atomManager) {
         this.rules = new ArrayList<WeightedLogicalRule>();
@@ -106,6 +154,14 @@ public class DCDStreamingTermStore implements DCDTermStore {
 
         initialRound = true;
         activeIterator = null;
+        numPages = 0;
+
+        pageSize = Config.getInt(PAGE_SIZE_KEY, PAGE_SIZE_DEFAULT);
+        pageDir = Config.getString(PAGE_LOCATION_KEY, PAGE_LOCATION_DEFAULT);
+        buffer = null;
+
+        termCache = new ArrayList<DCDObjectiveTerm>(pageSize);
+        termPool = new ArrayList<DCDObjectiveTerm>(pageSize);
     }
 
     public boolean isFirstRound() {
@@ -118,8 +174,7 @@ public class DCDStreamingTermStore implements DCDTermStore {
             throw new IllegalStateException("Iterator already exists for this DCDTermStore. Exhaust the iterator first.");
         }
 
-        activeIterator = new TermIterator();
-        return activeIterator;
+        return new TermIterator();
     }
 
     @Override
@@ -171,6 +226,14 @@ public class DCDStreamingTermStore implements DCDTermStore {
         if (variables != null) {
             variables.clear();
         }
+
+        if (termCache != null) {
+            termCache.clear();
+        }
+
+        if (termPool != null) {
+            termPool.clear();
+        }
     }
 
     @Override
@@ -179,6 +242,19 @@ public class DCDStreamingTermStore implements DCDTermStore {
 
         if (variables != null) {
             variables = null;
+        }
+
+        if (buffer != null) {
+            buffer.clear();
+            buffer = null;
+        }
+
+        if (termCache != null) {
+            termCache = null;
+        }
+
+        if (termPool != null) {
+            termPool = null;
         }
     }
 
@@ -203,7 +279,9 @@ public class DCDStreamingTermStore implements DCDTermStore {
     }
 
     private class TermIterator implements Iterator<DCDObjectiveTerm> {
+        private int termCount;
         private int currentRule;
+        private int nextPage;
         private int nextCachedTermIndex;
 
         // The iteratble is kept around for cleanup.
@@ -212,19 +290,20 @@ public class DCDStreamingTermStore implements DCDTermStore {
 
         private DCDObjectiveTerm nextTerm;
 
-        private List<DCDObjectiveTerm> termCache;
-
         public TermIterator() {
+            // Note that activeIterator is specifically set here in case there are no terms.
+            // (We cannot wait for construction to assign it.)
             activeIterator = this;
 
+            termCount = 0;
             currentRule = -1;
+            nextPage = 0;
             nextCachedTermIndex = 0;
 
             queryIterable = null;
             queryResults = null;
 
-            // TEST
-            termCache = new ArrayList<DCDObjectiveTerm>(1000);
+            termCache.clear();
 
             // This will either get the next term, or throw if there are no terms.
             nextTerm = fetchNextTerm();
@@ -258,17 +337,52 @@ public class DCDStreamingTermStore implements DCDTermStore {
         }
 
         private DCDObjectiveTerm fetchNextTerm() {
-            // First check the cache.
+            DCDObjectiveTerm term;
+            if (initialRound) {
+                term = fetchNextTermFromRule();
+            } else {
+                term = fetchNextTermFromCache();
+            }
+
+            if (term != null) {
+                termCount++;
+            }
+
+            return term;
+        }
+
+        private DCDObjectiveTerm fetchNextTermFromCache() {
+            if (initialRound) {
+                throw new IllegalStateException("Cannot only fetch from the cache on the initial round.");
+            }
+
+            // Check for no more terms right away.
+            if (termCount >= seenTermCount) {
+                return null;
+            }
+
+            // First check the existing page.
+            // Note that because the last term was checked for earlier,
+            // this will even work on the last page.
             if (nextCachedTermIndex < termCache.size()) {
                 DCDObjectiveTerm term = termCache.get(nextCachedTermIndex);
                 nextCachedTermIndex++;
                 return term;
             }
 
-            termCache.clear();
-            nextCachedTermIndex = 0;
+            // This page is up, fetch the next page.
+            if (!fetchPage()) {
+                // There are no more pages.
+                return null;
+            }
 
-            // The cache is expired, generate terms for the next ground rule.
+            return fetchNextTermFromCache();
+        }
+
+        private DCDObjectiveTerm fetchNextTermFromRule() {
+            if (!initialRound) {
+                throw new IllegalStateException("Can only fetch a term from a rule (the DB) on the initial round.");
+            }
 
             // Note that it is possible to not get a term from a ground rule.
             DCDObjectiveTerm term = null;
@@ -282,9 +396,8 @@ public class DCDStreamingTermStore implements DCDTermStore {
                 term = termGenerator.createTerm(groundRule, DCDStreamingTermStore.this);
             }
 
-            if (initialRound) {
-                seenTermCount++;
-            }
+            seenTermCount++;
+            addToCache(term);
 
             return term;
         }
@@ -312,7 +425,116 @@ public class DCDStreamingTermStore implements DCDTermStore {
             return fetchNextGroundRule();
         }
 
+        private void addToCache(DCDObjectiveTerm term) {
+            termCache.add(term);
+
+            // On the first round and page, also set aside these terms for reuse.
+            if (numPages == 0 && initialRound) {
+                termPool.add(term);
+            }
+
+            if (termCache.size() >= pageSize) {
+                flushCache();
+            }
+        }
+
+        /**
+         * Fetch the next page.
+         * @return true if the next page was fetched and loaded.
+         */
+        private boolean fetchPage() {
+            // Clear the existing page cache.
+            termCache.clear();
+
+            if (nextPage >= numPages) {
+                // Out of pages.
+                return false;
+            }
+
+            // Prep for the next read.
+            buffer.clear();
+
+            int termsSize = 0;
+            int numTerms = 0;
+
+            // Note that the buffer should be at maximum size from the initial round.
+            String pagePath = getPagePath(nextPage);
+            try (FileInputStream stream = new FileInputStream(pagePath)) {
+                // First read the size information.
+                stream.read(buffer.array(), 0, Integer.SIZE * 2);
+
+                termsSize = buffer.getInt();
+                numTerms = buffer.getInt();
+
+                // Now read in all the terms.
+                stream.read(buffer.array(), Integer.SIZE * 2, termsSize);
+            } catch (IOException ex) {
+                throw new RuntimeException("Unable to read cache page: " + pagePath, ex);
+            }
+
+            // Convert all the terms from binart to objects.
+            // Use the terms from the pool.
+
+            for (int i = 0; i < numTerms; i++) {
+                DCDObjectiveTerm term = termPool.get(i);
+                term.read(buffer, variables);
+                termCache.add(term);
+            }
+
+            nextPage++;
+            nextCachedTermIndex = 0;
+
+            return true;
+        }
+
+        private void flushCache() {
+            if (!initialRound || termCache.size() == 0) {
+                return;
+            }
+
+            (new File(pageDir)).mkdirs();
+
+            // Allocate an extra two int for the number of terms and size of terms in that page.
+            int size = Integer.SIZE * 2;
+            for (DCDObjectiveTerm term : termCache) {
+                size += term.byteSize();
+            }
+
+            if (buffer == null) {
+                buffer = ByteBuffer.allocate((int)(size * OVERALLOCATION_RATIO));
+            } else if (buffer.capacity() < size) {
+                // Reallocate.
+                buffer.clear();
+                buffer = ByteBuffer.allocate((int)(size * OVERALLOCATION_RATIO));
+            }
+
+            // First put the size of the terms and number of terms.
+            buffer.putInt(size - Integer.SIZE * 2);
+            buffer.putInt(termCache.size());
+
+            // Now put in all the terms.
+            for (DCDObjectiveTerm term : termCache) {
+                term.write(buffer);
+            }
+
+            String pagePath = getPagePath(numPages);
+            try (FileOutputStream stream = new FileOutputStream(pagePath)) {
+                stream.write(buffer.array(), 0, size);
+            } catch (IOException ex) {
+                throw new RuntimeException("Unable to write cache page: " + pagePath, ex);
+            }
+
+            termCache.clear();
+            numPages++;
+        }
+
+        private String getPagePath(int index) {
+            return Paths.get(pageDir, String.format("%08d.page", index)).toString();
+        }
+
         public void close() {
+            flushCache();
+
             activeIterator = null;
             initialRound = false;
 
@@ -320,11 +542,6 @@ public class DCDStreamingTermStore implements DCDTermStore {
                 queryIterable.close();
                 queryIterable = null;
                 queryResults = null;
-            }
-
-            if (termCache != null) {
-                termCache.clear();
-                termCache = null;
             }
         }
     }

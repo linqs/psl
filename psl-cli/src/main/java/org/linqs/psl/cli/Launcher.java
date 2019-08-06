@@ -43,6 +43,7 @@ import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.parser.ModelLoader;
 import org.linqs.psl.util.Reflection;
 import org.linqs.psl.util.StringUtils;
+import org.linqs.psl.util.SystemUtils;
 import org.linqs.psl.util.Version;
 
 import org.apache.commons.cli.CommandLine;
@@ -116,9 +117,7 @@ public class Launcher {
     public static final String OPTION_VERSION_LONG = "version";
 
     public static final String MODEL_FILE_EXTENSION = ".psl";
-    public static final String DEFAULT_H2_DB_PATH =
-            Paths.get(System.getProperty("java.io.tmpdir"),
-            "cli_" + System.getProperty("user.name") + "@" + getHostname()).toString();
+    public static final String DEFAULT_H2_DB_PATH = SystemUtils.getTempDir("cli");
     public static final String DEFAULT_POSTGRES_DB_NAME = "psl_cli";
     public static final String DEFAULT_IA = MPEInference.class.getName();
     public static final String DEFAULT_WLA = MaxLikelihoodMPE.class.getName();
@@ -543,18 +542,6 @@ public class Launcher {
         }
 
         dataStore.close();
-    }
-
-    private static String getHostname() {
-        String hostname = "unknown";
-
-        try {
-            hostname = InetAddress.getLocalHost().getHostName();
-        } catch (UnknownHostException ex) {
-            // log.warn("Hostname can not be resolved, using '" + hostname + "'.");
-        }
-
-        return hostname;
     }
 
     private static Options setupOptions() {

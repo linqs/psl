@@ -40,7 +40,7 @@ public class DCDTermGenerator extends HyperplaneTermGenerator<DCDObjectiveTerm, 
     private float c;
 
     public DCDTermGenerator() {
-        c = Config.getFloat(DCDReasoner.C, DCDReasoner.C_DEFAULT);
+        c = Config.getFloat(DCDReasoner.C_KEY, DCDReasoner.C_DEFAULT);
     }
 
     @Override

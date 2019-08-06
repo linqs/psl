@@ -149,6 +149,12 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         qii = buffer.getFloat();
         size = buffer.getShort();
 
+        // Make sure that there is enough room for all these variables.
+        if (coefficients.length < size) {
+            coefficients = new float[size];
+            variables = new RandomVariableAtom[size];
+        }
+
         for (int i = 0; i < size; i++) {
             coefficients[i] = buffer.getFloat();
             variables[i] = rvaMap.get(buffer.getInt());
