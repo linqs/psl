@@ -18,8 +18,6 @@
 package org.linqs.psl.reasoner.dcd.term;
 
 import org.linqs.psl.model.atom.RandomVariableAtom;
-import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.util.MathUtils;
@@ -60,16 +58,6 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         qii = tempQii;
 
         lagrange = 0.0f;
-    }
-
-    public float computeGradient() {
-        float val = 0.0f;
-
-        for (int i = 0; i < size; i++) {
-            val += variables[i].getValue() * coefficients[i];
-        }
-
-        return constant - val;
     }
 
     public float evaluate() {
@@ -194,14 +182,24 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         return builder.toString();
     }
 
-    private void minimize(boolean truncateEveryStep, float grad, float lim) {
-        float pg = grad;
+    private float computeGradient() {
+        float val = 0.0f;
+
+        for (int i = 0; i < size; i++) {
+            val += variables[i].getValue() * coefficients[i];
+        }
+
+        return constant - val;
+    }
+
+    private void minimize(boolean truncateEveryStep, float gradient, float lim) {
+        float pg = gradient;
         if (MathUtils.isZero(lagrange)) {
-            pg = Math.min(grad, 0.0f);
+            pg = Math.min(gradient, 0.0f);
         }
 
         if (MathUtils.equals(lim, adjustedWeight) && MathUtils.equals(lagrange, adjustedWeight)) {
-            pg = Math.max(grad, 0.0f);
+            pg = Math.max(gradient, 0.0f);
         }
 
         if (MathUtils.isZero(pg)) {
@@ -209,7 +207,7 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         }
 
         float pa = lagrange;
-        lagrange = Math.min(Math.max(lagrange - grad / qii, 0.0f), lim);
+        lagrange = Math.min(Math.max(lagrange - gradient / qii, 0.0f), lim);
         for (int i = 0; i < size; i++) {
             float val = variables[i].getValue() - ((lagrange - pa) * coefficients[i]);
             if (truncateEveryStep) {
