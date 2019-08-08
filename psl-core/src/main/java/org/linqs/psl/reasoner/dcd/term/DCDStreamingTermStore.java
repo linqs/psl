@@ -547,6 +547,8 @@ public class DCDStreamingTermStore implements DCDTermStore {
                 // Reallocate.
                 buffer.clear();
                 buffer = ByteBuffer.allocate((int)(size * OVERALLOCATION_RATIO));
+            } else {
+                buffer.clear();
             }
 
             // First put the size of the terms and number of terms.
