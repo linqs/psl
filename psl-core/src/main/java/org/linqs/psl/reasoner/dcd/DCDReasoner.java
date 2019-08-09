@@ -131,8 +131,11 @@ public class DCDReasoner implements Reasoner {
                 term.minimize(truncateEveryStep);
             }
 
-            for (RandomVariableAtom variable : termStore.getVariables()) {
-                variable.setValue(Math.max(Math.min(variable.getValue(), 1.0f), 0.0f));
+            // If we are truncating every step, then the variables are already in valid state.
+            if (!truncateEveryStep) {
+                for (RandomVariableAtom variable : termStore.getVariables()) {
+                    variable.setValue(Math.max(Math.min(variable.getValue(), 1.0f), 0.0f));
+                }
             }
 
             long end = System.currentTimeMillis();
