@@ -60,6 +60,10 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         lagrange = 0.0f;
     }
 
+    public float getLagrange() {
+        return lagrange;
+    }
+
     public float evaluate() {
         float value = 0.0f;
 
@@ -95,47 +99,45 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
     }
 
     /**
-     * The number of bytes that write() will need to represent this term.
+     * The number of bytes that writeFixedValues() will need to represent this term.
+     * This is just all the member datum minus the lagrange value.
      */
-    public int byteSize() {
+    public int fixedByteSize() {
         return
             Byte.SIZE  // squared
             + Float.SIZE  // adjustedWeight
             + Float.SIZE  // constant
-            + Float.SIZE  // lagrange
             + Float.SIZE  // qii
             + Short.SIZE  // size
             + size * (Float.SIZE + Integer.SIZE);  // coefficients + variables
     }
 
     /**
-     * Write a binary representation of this term to a buffer.
+     * Write a binary representation of the fixed values of this term to a buffer.
      * Note that the variables are written using their Object hashcode.
      */
-    public void write(ByteBuffer buffer) {
-        buffer.put((byte)(squared ? 1 : 0));
-        buffer.putFloat(adjustedWeight);
-        buffer.putFloat(constant);
-        buffer.putFloat(lagrange);
-        buffer.putFloat(qii);
-        buffer.putShort(size);
+    public void writeFixedValues(ByteBuffer fixedBuffer) {
+        fixedBuffer.put((byte)(squared ? 1 : 0));
+        fixedBuffer.putFloat(adjustedWeight);
+        fixedBuffer.putFloat(constant);
+        fixedBuffer.putFloat(qii);
+        fixedBuffer.putShort(size);
 
         for (int i = 0; i < size; i++) {
-            buffer.putFloat(coefficients[i]);
-            buffer.putInt(System.identityHashCode(variables[i]));
+            fixedBuffer.putFloat(coefficients[i]);
+            fixedBuffer.putInt(System.identityHashCode(variables[i]));
         }
     }
 
     /**
-     * Assume the term that will be next read from the buffer.
+     * Assume the term that will be next read from the buffers.
      */
-    public void read(ByteBuffer buffer, Map<Integer, RandomVariableAtom> rvaMap) {
-        squared = (buffer.get() == 1);
-        adjustedWeight = buffer.getFloat();
-        constant = buffer.getFloat();
-        lagrange = buffer.getFloat();
-        qii = buffer.getFloat();
-        size = buffer.getShort();
+    public void read(ByteBuffer fixedBuffer, ByteBuffer lagrangeBuffer, Map<Integer, RandomVariableAtom> rvaMap) {
+        squared = (fixedBuffer.get() == 1);
+        adjustedWeight = fixedBuffer.getFloat();
+        constant = fixedBuffer.getFloat();
+        qii = fixedBuffer.getFloat();
+        size = fixedBuffer.getShort();
 
         // Make sure that there is enough room for all these variables.
         if (coefficients.length < size) {
@@ -144,9 +146,11 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         }
 
         for (int i = 0; i < size; i++) {
-            coefficients[i] = buffer.getFloat();
-            variables[i] = rvaMap.get(buffer.getInt());
+            coefficients[i] = fixedBuffer.getFloat();
+            variables[i] = rvaMap.get(fixedBuffer.getInt());
         }
+
+        lagrange = lagrangeBuffer.getFloat();
     }
 
     @Override

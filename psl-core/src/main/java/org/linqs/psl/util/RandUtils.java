@@ -111,4 +111,35 @@ public final class RandUtils {
         ensureRNG();
         Collections.shuffle(list, rng);
     }
+
+    /**
+     * Shuffle multiple lists, but keep the elements that share indexes together.
+     */
+    @SafeVarargs
+    @SuppressWarnings("unchecked")
+    public static synchronized void pairedShuffle(List... lists) {
+        ensureRNG();
+
+        if (lists.length == 0) {
+            return;
+        }
+
+        for (List list : lists) {
+            if (list.size() != lists[0].size()) {
+                throw new IllegalArgumentException(String.format(
+                        "Lists must all have a matching size, found %d and %d.",
+                        list.size(), lists[0].size()));
+            }
+        }
+
+        for (int i = lists[0].size() - 1; i >= 0; i--) {
+            int swapIndex = nextInt(i + 1);
+
+            for (List list : lists) {
+                Object temp = list.get(i);
+                list.set(i, list.get(swapIndex));
+                list.set(swapIndex, temp);
+            }
+        }
+    }
 }
