@@ -130,11 +130,6 @@ public class DCDStreamingTermStore implements DCDTermStore {
                 continue;
             }
 
-            if (!((WeightedRule)rule).isSquared()) {
-                log.warn("DCD does not support linear rules: " + rule);
-                continue;
-            }
-
             // HACK(eriq): This is not actually true,
             //  but I am putting it in place for efficiency reasons.
             if (((WeightedRule)rule).getWeight() < 0.0) {
