@@ -66,10 +66,20 @@ public class DCDReasoner implements Reasoner {
     public static final String PRINT_OBJECTIVE_KEY = CONFIG_PREFIX + ".printobj";
     public static final boolean PRINT_OBJECTIVE_DEFAULT = true;
 
+    /**
+     * Print the objective before any optimization.
+     * Note that this will require a pass through all the terms,
+     * and therefore may affect performance.
+     * Has no effect if printobj is false.
+     */
+    public static final String PRINT_INITIAL_OBJECTIVE_KEY = CONFIG_PREFIX + ".printinitialobj";
+    public static final boolean PRINT_INITIAL_OBJECTIVE_DEFAULT = false;
+
     private int maxIter;
 
     private float tol;
     private boolean printObj;
+    private boolean printInitialObj;
     private boolean objectiveBreak;
     private float c;
     private boolean truncateEveryStep;
@@ -78,6 +88,7 @@ public class DCDReasoner implements Reasoner {
         maxIter = Config.getInt(MAX_ITER_KEY, MAX_ITER_DEFAULT);
         objectiveBreak = Config.getBoolean(OBJECTIVE_BREAK_KEY, OBJECTIVE_BREAK_DEFAULT);
         printObj = Config.getBoolean(PRINT_OBJECTIVE_KEY, PRINT_OBJECTIVE_DEFAULT);
+        printInitialObj = Config.getBoolean(PRINT_INITIAL_OBJECTIVE_KEY, PRINT_INITIAL_OBJECTIVE_DEFAULT);
         tol = Config.getFloat(OBJ_TOL_KEY, OBJ_TOL_DEFAULT);
         c = Config.getFloat(C_KEY, C_DEFAULT);
         truncateEveryStep = Config.getBoolean(TRUNCATE_EVERY_STEP_KEY, TRUNCATE_EVERY_STEP_DEFAULT);
@@ -98,13 +109,17 @@ public class DCDReasoner implements Reasoner {
         }
         DCDTermStore termStore = (DCDTermStore)baseTermStore;
 
-        float objective = computeObjective(termStore);
+        float objective = -1.0f;
         float oldObjective = Float.POSITIVE_INFINITY;
 
         int iteration = 1;
         if (printObj) {
             log.trace("gretThis:Iterations,Time(ms),Objective");
-            log.trace("grepThis:{},{},{}", iteration - 1, 0, objective);
+
+            if (printInitialObj) {
+                objective = computeObjective(termStore);
+                log.trace("grepThis:{},{},{}", 0, 0, objective);
+            }
         }
 
         long time = 0;
