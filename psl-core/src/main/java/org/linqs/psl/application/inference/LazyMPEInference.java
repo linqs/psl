@@ -65,8 +65,9 @@ public class LazyMPEInference extends InferenceApplication {
 
     @Override
     protected void completeInitialize() {
-        log.debug("Creating lazy atom mannager.");
+        log.debug("Creating lazy atom manager.");
         atomManager = new LazyAtomManager(db);
+        log.trace("Atom manager initialization complete.");
 
         log.debug("Initial grounding.");
         Grounding.groundAll(model, atomManager, groundRuleStore);

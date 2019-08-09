@@ -39,6 +39,7 @@ public class DCDStreamingInference extends InferenceApplication {
 
         log.debug("Creating persisted atom mannager.");
         atomManager = new PersistedAtomManager(db);
+        log.trace("Atom manager initialization complete.");
 
         termStore = new DCDStreamingTermStore(model.getRules(), atomManager);
     }

@@ -47,6 +47,7 @@ public class MPEInference extends InferenceApplication {
     protected void completeInitialize() {
         log.debug("Creating persisted atom mannager.");
         atomManager = new PersistedAtomManager(db);
+        log.trace("Atom manager initialization complete.");
 
         log.info("Grounding out model.");
         int groundCount = Grounding.groundAll(model, atomManager, groundRuleStore);
