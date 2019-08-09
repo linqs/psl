@@ -195,11 +195,11 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
     private void minimize(boolean truncateEveryStep, float gradient, float lim) {
         float pg = gradient;
         if (MathUtils.isZero(lagrange)) {
-            pg = Math.min(gradient, 0.0f);
+            pg = Math.min(0.0f, gradient);
         }
 
         if (MathUtils.equals(lim, adjustedWeight) && MathUtils.equals(lagrange, adjustedWeight)) {
-            pg = Math.max(gradient, 0.0f);
+            pg = Math.max(0.0f, gradient);
         }
 
         if (MathUtils.isZero(pg)) {
@@ -207,11 +207,11 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         }
 
         float pa = lagrange;
-        lagrange = Math.min(Math.max(lagrange - gradient / qii, 0.0f), lim);
+        lagrange = Math.min(lim, Math.max(0.0f, lagrange - gradient / qii));
         for (int i = 0; i < size; i++) {
             float val = variables[i].getValue() - ((lagrange - pa) * coefficients[i]);
             if (truncateEveryStep) {
-                val = Math.max(Math.min(val, 1.0f), 0.0f);
+                val = Math.max(0.0f, Math.min(1.0f, val));
             }
             variables[i].setValue(val);
         }
