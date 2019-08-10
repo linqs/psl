@@ -18,7 +18,6 @@
 package org.linqs.psl.reasoner.dcd.term;
 
 import org.linqs.psl.config.Config;
-import org.linqs.psl.database.QueryResultIterable;
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.arithmetic.AbstractArithmeticRule;
@@ -26,8 +25,6 @@ import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
-import org.linqs.psl.model.term.Constant;
-import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.RandUtils;
 import org.linqs.psl.util.SystemUtils;
 
@@ -35,13 +32,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -86,7 +79,7 @@ public class DCDStreamingTermStore implements DCDTermStore {
     public static final boolean RANDOMIZE_PAGE_ACCESS_DEFAULT = true;
 
     // How much to over-allocate by.
-    private static final double OVERALLOCATION_RATIO = 1.25;
+    public static final double OVERALLOCATION_RATIO = 1.25;
 
     private List<WeightedLogicalRule> rules;
     private AtomManager atomManager;
@@ -95,7 +88,7 @@ public class DCDStreamingTermStore implements DCDTermStore {
     private Map<Integer, RandomVariableAtom> variables;
 
     private boolean initialRound;
-    private TermIterator activeIterator;
+    private DCDStreamingIterator activeIterator;
     private int seenTermCount;
     private int numPages;
 
@@ -195,19 +188,12 @@ public class DCDStreamingTermStore implements DCDTermStore {
         termCache = new ArrayList<DCDObjectiveTerm>(pageSize);
         termPool = new ArrayList<DCDObjectiveTerm>(pageSize);
         shuffleMap = new ArrayList<Integer>(pageSize);
+
+        (new File(pageDir)).mkdirs();
     }
 
     public boolean isFirstRound() {
         return initialRound;
-    }
-
-    @Override
-    public Iterator<DCDObjectiveTerm> iterator() {
-        if (activeIterator != null) {
-            throw new IllegalStateException("Iterator already exists for this DCDTermStore. Exhaust the iterator first.");
-        }
-
-        return new TermIterator();
     }
 
     @Override
@@ -319,404 +305,51 @@ public class DCDStreamingTermStore implements DCDTermStore {
         throw new UnsupportedOperationException();
     }
 
+    public String getTermPagePath(int index) {
+        return Paths.get(pageDir, String.format("%08d_term.page", index)).toString();
+    }
+
+    public String getLagrangePagePath(int index) {
+        return Paths.get(pageDir, String.format("%08d_lagrange.page", index)).toString();
+    }
+
     /**
-     * Iterate over all the terms from grounding/cache.
-     * The order of events here is very precise.
-     * This stems from needing the write the lagrange values every iteration.
-     * We cannot prefetch terms too early, because this may flush the cache.
-     * For example if we prefetch the next term in next(),
-     * then the term we are about to return may be the last of its page.
-     * This means that (pre)fetching the next term will flush the page.
-     * So we will have written a stale lagrange value and
-     * the retutned term will be converted into another one.
-     * To avoid this, we will never prefetch (have two terms at a time)
-     * and we will fetch in hasNext().
-     *
-     * On the first iteration, we will build the term cache up from ground rules and flush to disk.
-     * On subsequent iterations, we will fill the term cache from disk and drain it.
+     * A callback for the initial round iterator.
+     * The ByterBuffers are here because of possible reallocation.
      */
-    private class TermIterator implements Iterator<DCDObjectiveTerm> {
-        private int termCount;
-        private int currentRule;
-        private int nextPage;
-        private int nextCachedTermIndex;
+    public void initialIterationComplete(int termCount, int numPages, ByteBuffer termBuffer, ByteBuffer lagrangeBuffer) {
+        seenTermCount = termCount;
+        this.numPages = numPages;
+        this.termBuffer = termBuffer;
+        this.lagrangeBuffer = lagrangeBuffer;
 
-        // The iteratble is kept around for cleanup.
-        private QueryResultIterable queryIterable;
-        private Iterator<Constant[]> queryResults;
+        initialRound = false;
+        activeIterator = null;
+    }
 
-        private DCDObjectiveTerm nextTerm;
+    /**
+     * A callback for the non-initial round iterator.
+     */
+    public void cacheIterationComplete() {
+        activeIterator = null;
+    }
 
-        // When we are reading pages from disk (after the initial round),
-        // this list will tell us the order to read them in.
-        // This may get shuffled depending on configuration.
-        private List<Integer> pageAccessOrder;
-
-        public TermIterator() {
-            // Note that activeIterator is specifically set here in case there are no terms.
-            // (We cannot wait for construction to assign it.)
-            activeIterator = this;
-
-            termCount = 0;
-            currentRule = -1;
-            nextPage = 0;
-            nextCachedTermIndex = 0;
-
-            queryIterable = null;
-            queryResults = null;
-
-            termCache.clear();
-
-            pageAccessOrder = new ArrayList<Integer>(numPages);
-            for (int i = 0; i < numPages; i++) {
-                pageAccessOrder.add(i);
-            }
-
-            if (randomizePageAccess) {
-                RandUtils.shuffle(pageAccessOrder);
-            }
-
-            // Note that we cannot pre-fetch.
-            nextTerm = null;
+    @Override
+    public Iterator<DCDObjectiveTerm> iterator() {
+        if (activeIterator != null) {
+            throw new IllegalStateException("Iterator already exists for this DCDTermStore. Exhaust the iterator first.");
         }
 
-        /**
-         * Get the next term.
-         * It is critical that every call to hasNext be followed by a call to next
-         * (as long as hasNext returns true).
-         */
-        public boolean hasNext() {
-            if (nextTerm != null) {
-                throw new IllegalStateException("hasNext() was called twice in a row. Call next() directly after hasNext() == true.");
-            }
-
-            nextTerm = fetchNextTerm();
-            if (nextTerm == null) {
-                close();
-                return false;
-            }
-
-            return true;
+        if (initialRound) {
+            activeIterator = new DCDStreamingInitialRoundIterator(
+                    this, rules, atomManager, termGenerator,
+                    termCache, termPool, termBuffer, lagrangeBuffer, pageSize);
+        } else {
+            activeIterator = new DCDStreamingCacheIterator(
+                    this, variables, termCache, termPool,
+                    termBuffer, lagrangeBuffer, shufflePage, shuffleMap, randomizePageAccess, numPages);
         }
 
-        @Override
-        public DCDObjectiveTerm next() {
-            if (nextTerm == null) {
-                throw new IllegalStateException("Called next() when hasNext() == false (or before the first hasNext() call).");
-            }
-
-            DCDObjectiveTerm term = nextTerm;
-            nextTerm = null;
-
-            return term;
-        }
-
-        @Override
-        public void remove() {
-            throw new UnsupportedOperationException();
-        }
-
-        /**
-         * Get the next term from wherever we need to.
-         * We will always settle outstanding pages before trying to get the next term.
-         */
-        private DCDObjectiveTerm fetchNextTerm() {
-            if (initialRound && termCache.size() >= pageSize) {
-                // Cache is full on the first round, drop it to disk.
-                flushCache();
-            } else if (!initialRound && nextCachedTermIndex >= termCache.size()) {
-                // Cache is exhaused not on the initial round, fill it up.
-
-                // First flush the lagrange cache.
-                flushCache();
-
-                fetchPage();
-            }
-
-            DCDObjectiveTerm term;
-            if (initialRound) {
-                term = fetchNextTermFromRule();
-            } else {
-                term = fetchNextTermFromCache();
-            }
-
-            if (term != null) {
-                termCount++;
-            }
-
-            return term;
-        }
-
-        private DCDObjectiveTerm fetchNextTermFromCache() {
-            if (initialRound) {
-                throw new IllegalStateException("Cannot fetch from the cache on the initial round.");
-            }
-
-            // Check for no more terms right away.
-            if (termCount >= seenTermCount) {
-                return null;
-            }
-
-            // The page has already been verified, so there must be a term waiting.
-
-            DCDObjectiveTerm term = termCache.get(nextCachedTermIndex);
-            nextCachedTermIndex++;
-            return term;
-        }
-
-        private DCDObjectiveTerm fetchNextTermFromRule() {
-            if (!initialRound) {
-                throw new IllegalStateException("Can only fetch a term from a rule (the DB) on the initial round.");
-            }
-
-            // Note that it is possible to not get a term from a ground rule.
-            DCDObjectiveTerm term = null;
-            while (term == null) {
-                GroundRule groundRule = fetchNextGroundRule();
-                if (groundRule == null) {
-                    // We are out of ground rules, and therefore out of terms.
-                    return null;
-                }
-
-                term = termGenerator.createTerm(groundRule, DCDStreamingTermStore.this);
-            }
-
-            seenTermCount++;
-            termCache.add(term);
-
-            // If we are on the first round/page, set aside the term for reuse.
-            if (initialRound && numPages == 0) {
-                termPool.add(term);
-            }
-
-            return term;
-        }
-
-        private GroundRule fetchNextGroundRule() {
-            // Check if there are any more results pending from the query.
-            while (queryResults != null && queryResults.hasNext()) {
-                Constant[] tuple = queryResults.next();
-                GroundRule groundRule = rules.get(currentRule).ground(tuple, queryIterable.getVariableMap(), atomManager);
-                if (groundRule != null) {
-                    return groundRule;
-                }
-            }
-
-            currentRule++;
-            if (currentRule >= rules.size()) {
-                // There are no more rules, we are done.
-                return null;
-            }
-
-            // Start grounding the next rule.
-            queryIterable = atomManager.executeGroundingQuery(rules.get(currentRule).getNegatedDNF().getQueryFormula());
-            queryResults = queryIterable.iterator();
-
-            return fetchNextGroundRule();
-        }
-
-        /**
-         * Fetch the next page.
-         * @return true if the next page was fetched and loaded.
-         */
-        private boolean fetchPage() {
-            // Clear the existing page cache.
-            termCache.clear();
-
-            if (nextPage >= numPages) {
-                // Out of pages.
-                return false;
-            }
-
-            // Prep for the next read.
-            // Note that the termBuffer should be at maximum size from the initial round.
-            termBuffer.clear();
-            lagrangeBuffer.clear();
-
-            int termsSize = 0;
-            int numTerms = 0;
-            int headerSize = (Integer.SIZE / 8) * 2;
-            int lagrangesSize = 0;
-
-            int pageIndex = pageAccessOrder.get(nextPage).intValue();
-
-            String termPagePath = getTermPagePath(pageIndex);
-            String lagrangePagePath = getLagrangePagePath(pageIndex);
-
-            try (
-                    FileInputStream termStream = new FileInputStream(termPagePath);
-                    FileInputStream lagrangeStream = new FileInputStream(lagrangePagePath)) {
-                // First read the size information.
-                termStream.read(termBuffer.array(), 0, headerSize);
-
-                termsSize = termBuffer.getInt();
-                numTerms = termBuffer.getInt();
-                lagrangesSize = (Float.SIZE / 8) * numTerms;
-
-                // Now read in all the terms and lagrange values.
-                termStream.read(termBuffer.array(), headerSize, termsSize);
-                lagrangeStream.read(lagrangeBuffer.array(), 0, lagrangesSize);
-            } catch (IOException ex) {
-                throw new RuntimeException(String.format("Unable to read cache pages: [%s ; %s].", termPagePath, lagrangePagePath), ex);
-            }
-
-            // Convert all the terms from binary to objects.
-            // Use the terms from the pool.
-
-            for (int i = 0; i < numTerms; i++) {
-                DCDObjectiveTerm term = termPool.get(i);
-                term.read(termBuffer, lagrangeBuffer, variables);
-                termCache.add(term);
-            }
-
-            if (shufflePage) {
-                shuffleMap.clear();
-                for (int i = 0; i < termCache.size(); i++) {
-                    shuffleMap.add(i);
-                }
-
-                RandUtils.pairedShuffle(termCache, shuffleMap);
-            }
-
-            nextPage++;
-            nextCachedTermIndex = 0;
-
-            return true;
-        }
-
-        private void flushCache() {
-            // If is possible to get two flush requests in a row, so check to see if we actually need it.
-            if (termCache.size() == 0) {
-                return;
-            }
-
-            if (initialRound) {
-                (new File(pageDir)).mkdirs();
-
-                if (termCache.size() == 0) {
-                    return;
-                }
-
-                flushLagrangeCache(numPages);
-                flushTermCache(numPages);
-
-                numPages++;
-            } else if (nextPage > 0) {
-                // We will not flush when the next page is 0 (we have not yet fetched the first page).
-                flushLagrangeCache(nextPage - 1);
-            }
-
-            termCache.clear();
-        }
-
-        private void flushTermCache(int pageNumber) {
-            // Terms (the static components) are only cached on the initial round.
-            // We also don't have to worry about page access randomization or shuffled pages.
-            if (!initialRound) {
-                return;
-            }
-
-            int termsSize = 0;
-            for (DCDObjectiveTerm term : termCache) {
-                termsSize += term.fixedByteSize();
-            }
-
-            // Allocate an extra two ints for the number of terms and size of terms in that page.
-            int termBufferSize = termsSize + (Integer.SIZE / 8) * 2;
-
-            if (termBuffer == null) {
-                termBuffer = ByteBuffer.allocate((int)(termBufferSize * OVERALLOCATION_RATIO));
-            } else if (termBuffer.capacity() < termBufferSize) {
-                // Reallocate.
-                termBuffer.clear();
-                termBuffer = ByteBuffer.allocate((int)(termBufferSize * OVERALLOCATION_RATIO));
-            } else {
-                termBuffer.clear();
-            }
-
-            // First put the size of the terms and number of terms.
-            termBuffer.putInt(termsSize);
-            termBuffer.putInt(termCache.size());
-
-            // Now put in all the terms.
-            for (DCDObjectiveTerm term : termCache) {
-                term.writeFixedValues(termBuffer);
-            }
-
-            String termPagePath = getTermPagePath(pageNumber);
-            try (FileOutputStream stream = new FileOutputStream(termPagePath)) {
-                stream.write(termBuffer.array(), 0, termBufferSize);
-            } catch (IOException ex) {
-                throw new RuntimeException("Unable to write term cache page: " + termPagePath, ex);
-            }
-        }
-
-        private void flushLagrangeCache(int pageNumber) {
-            int lagrangeBufferSize = (Float.SIZE / 8) * termCache.size();
-
-            if (lagrangeBuffer == null) {
-                lagrangeBuffer = ByteBuffer.allocate((int)(lagrangeBufferSize * OVERALLOCATION_RATIO));
-            } else if (lagrangeBuffer.capacity() < lagrangeBufferSize) {
-                // Reallocate.
-                lagrangeBuffer.clear();
-                lagrangeBuffer = ByteBuffer.allocate((int)(lagrangeBufferSize * OVERALLOCATION_RATIO));
-            } else {
-                lagrangeBuffer.clear();
-            }
-
-            // If this page was picked up from the cache (and not from grounding) and shuffled,
-            // then we will need to use the shuffle map to write the lagrange values back in
-            // the same order as the terms.
-            if (shufflePage && !initialRound) {
-                for (int shuffledIndex = 0; shuffledIndex < shuffleMap.size(); shuffledIndex++) {
-                    int writeIndex = shuffleMap.get(shuffledIndex);
-                    DCDObjectiveTerm term = termCache.get(shuffledIndex);
-                    lagrangeBuffer.putFloat(writeIndex * (Float.SIZE / 8), term.getLagrange());
-                }
-            } else {
-                for (DCDObjectiveTerm term : termCache) {
-                    lagrangeBuffer.putFloat(term.getLagrange());
-                }
-            }
-
-            // On non-initial rounds, translate the page access order.
-            int pageIndex = pageNumber;
-            if (!initialRound) {
-                pageIndex = pageAccessOrder.get(pageNumber).intValue();
-            }
-
-            String lagrangePagePath = getLagrangePagePath(pageIndex);
-            try (FileOutputStream stream = new FileOutputStream(lagrangePagePath)) {
-                stream.write(lagrangeBuffer.array(), 0, lagrangeBufferSize);
-            } catch (IOException ex) {
-                throw new RuntimeException("Unable to write lagrange cache page: " + lagrangePagePath, ex);
-            }
-        }
-
-        private String getTermPagePath(int index) {
-            return Paths.get(pageDir, String.format("%08d_term.page", index)).toString();
-        }
-
-        private String getLagrangePagePath(int index) {
-            return Paths.get(pageDir, String.format("%08d_lagrange.page", index)).toString();
-        }
-
-        public void close() {
-            if (activeIterator == null) {
-                // Don't double close.
-                return;
-            }
-
-            flushCache();
-
-            activeIterator = null;
-            initialRound = false;
-
-            if (queryIterable != null) {
-                queryIterable.close();
-                queryIterable = null;
-                queryResults = null;
-            }
-        }
+        return activeIterator;
     }
 }

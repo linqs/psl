@@ -103,13 +103,15 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
      * This is just all the member datum minus the lagrange value.
      */
     public int fixedByteSize() {
-        return
+        int bitSize =
             Byte.SIZE  // squared
             + Float.SIZE  // adjustedWeight
             + Float.SIZE  // constant
             + Float.SIZE  // qii
             + Short.SIZE  // size
             + size * (Float.SIZE + Integer.SIZE);  // coefficients + variables
+
+        return bitSize / 8;
     }
 
     /**
