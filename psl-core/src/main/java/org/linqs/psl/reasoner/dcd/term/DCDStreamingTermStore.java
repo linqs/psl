@@ -192,8 +192,9 @@ public class DCDStreamingTermStore implements DCDTermStore {
         (new File(pageDir)).mkdirs();
     }
 
-    public boolean isFirstRound() {
-        return initialRound;
+    @Override
+    public boolean isLoaded() {
+        return !initialRound;
     }
 
     @Override
@@ -230,58 +231,6 @@ public class DCDStreamingTermStore implements DCDTermStore {
             // If there are no variables, then re-allocate the variable storage.
             // The default load factor for Java HashSets is 0.75.
             variables = new HashMap<Integer, RandomVariableAtom>((int)Math.ceil(capacity / 0.75));
-        }
-    }
-
-    @Override
-    public void clear() {
-        initialRound = true;
-        numPages = 0;
-
-        if (activeIterator != null) {
-            activeIterator.close();
-            activeIterator = null;
-        }
-
-        if (variables != null) {
-            variables.clear();
-        }
-
-        if (termCache != null) {
-            termCache.clear();
-        }
-
-        if (termPool != null) {
-            termPool.clear();
-        }
-
-        SystemUtils.recursiveDelete(pageDir);
-    }
-
-    @Override
-    public void close() {
-        clear();
-
-        if (variables != null) {
-            variables = null;
-        }
-
-        if (termBuffer != null) {
-            termBuffer.clear();
-            termBuffer = null;
-        }
-
-        if (lagrangeBuffer != null) {
-            lagrangeBuffer.clear();
-            lagrangeBuffer = null;
-        }
-
-        if (termCache != null) {
-            termCache = null;
-        }
-
-        if (termPool != null) {
-            termPool = null;
         }
     }
 
@@ -334,6 +283,28 @@ public class DCDStreamingTermStore implements DCDTermStore {
         activeIterator = null;
     }
 
+    /**
+     * Get an iterator that goes over all the terms for only reading.
+     * Before this method can be called, a full iteration must have already been done.
+     * (The cache will need to have been built.)
+     */
+    @Override
+    public Iterator<DCDObjectiveTerm> noWriteIterator() {
+        if (activeIterator != null) {
+            throw new IllegalStateException("Iterator already exists for this DCDTermStore. Exhaust the iterator first.");
+        }
+
+        if (initialRound) {
+            throw new IllegalStateException("A full iteration must have already been completed before asking for a read-only iterator.");
+        }
+
+        activeIterator = new DCDStreamingCacheIterator(
+                this, true, variables, termCache, termPool,
+                termBuffer, lagrangeBuffer, shufflePage, shuffleMap, randomizePageAccess, numPages);
+
+        return activeIterator;
+    }
+
     @Override
     public Iterator<DCDObjectiveTerm> iterator() {
         if (activeIterator != null) {
@@ -346,10 +317,62 @@ public class DCDStreamingTermStore implements DCDTermStore {
                     termCache, termPool, termBuffer, lagrangeBuffer, pageSize);
         } else {
             activeIterator = new DCDStreamingCacheIterator(
-                    this, variables, termCache, termPool,
+                    this, false, variables, termCache, termPool,
                     termBuffer, lagrangeBuffer, shufflePage, shuffleMap, randomizePageAccess, numPages);
         }
 
         return activeIterator;
+    }
+
+    @Override
+    public void clear() {
+        initialRound = true;
+        numPages = 0;
+
+        if (activeIterator != null) {
+            activeIterator.close();
+            activeIterator = null;
+        }
+
+        if (variables != null) {
+            variables.clear();
+        }
+
+        if (termCache != null) {
+            termCache.clear();
+        }
+
+        if (termPool != null) {
+            termPool.clear();
+        }
+
+        SystemUtils.recursiveDelete(pageDir);
+    }
+
+    @Override
+    public void close() {
+        clear();
+
+        if (variables != null) {
+            variables = null;
+        }
+
+        if (termBuffer != null) {
+            termBuffer.clear();
+            termBuffer = null;
+        }
+
+        if (lagrangeBuffer != null) {
+            lagrangeBuffer.clear();
+            lagrangeBuffer = null;
+        }
+
+        if (termCache != null) {
+            termCache = null;
+        }
+
+        if (termPool != null) {
+            termPool = null;
+        }
     }
 }

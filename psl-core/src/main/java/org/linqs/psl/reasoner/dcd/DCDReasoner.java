@@ -23,10 +23,13 @@ import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.dcd.term.DCDObjectiveTerm;
 import org.linqs.psl.reasoner.dcd.term.DCDTermStore;
 import org.linqs.psl.reasoner.term.TermStore;
+import org.linqs.psl.util.IteratorUtils;
 import org.linqs.psl.util.MathUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Iterator;
 
 /**
  * Uses an ADMM optimization method to optimize its GroundRules.
@@ -158,7 +161,15 @@ public class DCDReasoner implements Reasoner {
         float objective = 0.0f;
         int termCount = 0;
 
-        for (DCDObjectiveTerm term : termStore) {
+        // If possible, use a readonly iterator.
+        Iterator<DCDObjectiveTerm> termIterator = null;
+        if (termStore.isLoaded()) {
+            termIterator = termStore.noWriteIterator();
+        } else {
+            termIterator = termStore.iterator();
+        }
+
+        for (DCDObjectiveTerm term : IteratorUtils.newIterable(termIterator)) {
             objective += term.evaluate() / c;
             termCount++;
         }

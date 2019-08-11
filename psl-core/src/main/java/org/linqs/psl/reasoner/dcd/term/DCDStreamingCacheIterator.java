@@ -31,11 +31,16 @@ import java.util.Map;
 /**
  * Iterate over all the terms from the disk cache.
  * On these non-initial iterations, we will fill the term cache from disk and drain it.
+ *
+ * This iterator can be constructed as read-only.
+ * In this case, pages will not be witten to disk.
  */
 public class DCDStreamingCacheIterator implements DCDStreamingIterator {
     private DCDStreamingTermStore parentStore;
     private Map<Integer, RandomVariableAtom> variables;
     private List<Integer> shuffleMap;
+
+    private boolean readonly;
 
     private List<DCDObjectiveTerm> termCache;
     private List<DCDObjectiveTerm> termPool;
@@ -60,7 +65,7 @@ public class DCDStreamingCacheIterator implements DCDStreamingIterator {
     private int numPages;
 
     public DCDStreamingCacheIterator(
-            DCDStreamingTermStore parentStore, Map<Integer, RandomVariableAtom> variables,
+            DCDStreamingTermStore parentStore, boolean readonly, Map<Integer, RandomVariableAtom> variables,
             List<DCDObjectiveTerm> termCache, List<DCDObjectiveTerm> termPool,
             ByteBuffer termBuffer, ByteBuffer lagrangeBuffer,
             boolean shufflePage, List<Integer> shuffleMap, boolean randomizePageAccess,
@@ -68,6 +73,8 @@ public class DCDStreamingCacheIterator implements DCDStreamingIterator {
         this.parentStore = parentStore;
         this.variables = variables;
         this.shuffleMap = shuffleMap;
+
+        this.readonly = readonly;
 
         this.termCache = termCache;
         this.termCache.clear();
@@ -232,6 +239,11 @@ public class DCDStreamingCacheIterator implements DCDStreamingIterator {
     }
 
     private void flushCache() {
+        // We will never do any writes if the iterator is read-only.
+        if (readonly) {
+            return;
+        }
+
         // We don't need to flush if there is nothing to flush.
         if (termCache.size() == 0) {
             return;

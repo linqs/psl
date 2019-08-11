@@ -52,6 +52,11 @@ public class DCDMemoryTermStore implements DCDTermStore {
     }
 
     @Override
+    public boolean isLoaded() {
+        return true;
+    }
+
+    @Override
     public synchronized RandomVariableAtom createLocalVariable(RandomVariableAtom atom) {
         if (variables.contains(atom)) {
             return atom;
@@ -130,5 +135,10 @@ public class DCDMemoryTermStore implements DCDTermStore {
     @Override
     public Iterator<DCDObjectiveTerm> iterator() {
         return store.iterator();
+    }
+
+    @Override
+    public Iterator<DCDObjectiveTerm> noWriteIterator() {
+        return iterator();
     }
 }

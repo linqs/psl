@@ -20,10 +20,22 @@ package org.linqs.psl.reasoner.dcd.term;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.reasoner.term.TermStore;
 
+import java.util.Iterator;
+
 public interface DCDTermStore extends TermStore<DCDObjectiveTerm, RandomVariableAtom> {
     public int getNumVariables();
 
     public Iterable<RandomVariableAtom> getVariables();
 
     public void ensureVariableCapacity(int capacity);
+
+    /**
+     * Is the term store loaded, and can it give an accurate term and variable count.
+     */
+    public boolean isLoaded();
+
+    /**
+     * Get an iterator over the terms in the score that does not write to disk.
+     */
+    public Iterator<DCDObjectiveTerm> noWriteIterator();
 }
