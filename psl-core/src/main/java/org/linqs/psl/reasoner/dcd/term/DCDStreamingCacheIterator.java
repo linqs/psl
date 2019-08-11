@@ -1,4 +1,4 @@
-/*
+/**
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
  * Copyright 2013-2019 The Regents of the University of California
@@ -100,10 +100,10 @@ public class DCDStreamingCacheIterator implements DCDStreamingIterator {
     }
 
     /**
-        * Get the next term.
-        * It is critical that every call to hasNext be followed by a call to next
-        * (as long as hasNext returns true).
-        */
+     * Get the next term.
+     * It is critical that every call to hasNext be followed by a call to next
+     * (as long as hasNext returns true).
+     */
     public boolean hasNext() {
         if (nextTerm != null) {
             throw new IllegalStateException("hasNext() was called twice in a row. Call next() directly after hasNext() == true.");
@@ -140,9 +140,9 @@ public class DCDStreamingCacheIterator implements DCDStreamingIterator {
     }
 
     /**
-        * Get the next term from wherever we need to.
-        * We will always settle outstanding pages before trying to get the next term.
-        */
+     * Get the next term from wherever we need to.
+     * We will always settle outstanding pages before trying to get the next term.
+     */
     private DCDObjectiveTerm fetchNextTerm() {
         // The cache is exhaused, fill it up.
         if (nextCachedTermIndex >= termCache.size()) {
