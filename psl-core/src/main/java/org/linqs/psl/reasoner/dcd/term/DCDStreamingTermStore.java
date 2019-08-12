@@ -19,6 +19,7 @@ package org.linqs.psl.reasoner.dcd.term;
 
 import org.linqs.psl.config.Config;
 import org.linqs.psl.database.atom.AtomManager;
+import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.arithmetic.AbstractArithmeticRule;
 import org.linqs.psl.model.rule.GroundRule;
@@ -36,9 +37,11 @@ import java.nio.ByteBuffer;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * A term store that iterates over ground queries directly (obviating the GroundRuleStore).
@@ -78,6 +81,12 @@ public class DCDStreamingTermStore implements DCDTermStore {
     public static final String RANDOMIZE_PAGE_ACCESS_KEY = CONFIG_PREFIX + ".randomizepageaccess";
     public static final boolean RANDOMIZE_PAGE_ACCESS_DEFAULT = true;
 
+    /**
+     * Warn on rules DCD can't handle.
+     */
+    public static final String WARN_RULES_KEY = CONFIG_PREFIX + ".warnunsupportedrules";
+    public static final boolean WARN_RULES_DEFAULT = true;
+
     // How much to over-allocate by.
     public static final double OVERALLOCATION_RATIO = 1.25;
 
@@ -98,6 +107,8 @@ public class DCDStreamingTermStore implements DCDTermStore {
     private String pageDir;
     private boolean shufflePage;
     private boolean randomizePageAccess;
+
+    private boolean warnRules;
 
     /**
      * The IO buffer for terms.
@@ -134,27 +145,52 @@ public class DCDStreamingTermStore implements DCDTermStore {
     private List<Integer> shuffleMap;
 
     public DCDStreamingTermStore(List<Rule> rules, AtomManager atomManager) {
+        pageSize = Config.getInt(PAGE_SIZE_KEY, PAGE_SIZE_DEFAULT);
+        pageDir = Config.getString(PAGE_LOCATION_KEY, PAGE_LOCATION_DEFAULT);
+        shufflePage = Config.getBoolean(SHUFFLE_PAGE_KEY, SHUFFLE_PAGE_DEFAULT);
+        randomizePageAccess = Config.getBoolean(RANDOMIZE_PAGE_ACCESS_KEY, RANDOMIZE_PAGE_ACCESS_DEFAULT);
+        warnRules = Config.getBoolean(WARN_RULES_KEY, WARN_RULES_DEFAULT);
+
+        Set<Atom> atomSet = new HashSet<Atom>();
+
         this.rules = new ArrayList<WeightedLogicalRule>();
         for (Rule rule : rules) {
             if (!rule.isWeighted()) {
-                log.warn("DCD does not support hard constraints: " + rule);
+                if (warnRules) {
+                    log.warn("DCD does not support hard constraints: " + rule);
+                }
                 continue;
             }
 
             // HACK(eriq): This is not actually true,
             //  but I am putting it in place for efficiency reasons.
             if (((WeightedRule)rule).getWeight() < 0.0) {
-                log.warn("DCD does not support negative weights: " + rule);
+                if (warnRules) {
+                    log.warn("DCD does not support negative weights: " + rule);
+                }
                 continue;
             }
 
             if (rule instanceof AbstractArithmeticRule) {
-                log.warn("DCD does not support arithmetic rules: " + rule);
+                if (warnRules) {
+                    log.warn("DCD does not support arithmetic rules: " + rule);
+                }
                 continue;
             }
 
             if (!(rule instanceof WeightedLogicalRule)) {
-                log.warn("DCD does not support this rule: " + rule);
+                if (warnRules) {
+                    log.warn("DCD does not support this rule: " + rule);
+                }
+                continue;
+            }
+
+            atomSet.clear();
+            atomSet = ((WeightedLogicalRule)rule).getFormula().getAtoms(atomSet);
+            if (atomSet.size() == 1) {
+                if (warnRules) {
+                    log.warn("DCD does not support explicit priors: " + rule);
+                }
                 continue;
             }
 
@@ -175,12 +211,8 @@ public class DCDStreamingTermStore implements DCDTermStore {
 
         termBuffer = null;
         lagrangeBuffer = null;
-        pageSize = Config.getInt(PAGE_SIZE_KEY, PAGE_SIZE_DEFAULT);
-        pageDir = Config.getString(PAGE_LOCATION_KEY, PAGE_LOCATION_DEFAULT);
-        shufflePage = Config.getBoolean(SHUFFLE_PAGE_KEY, SHUFFLE_PAGE_DEFAULT);
-        randomizePageAccess = Config.getBoolean(RANDOMIZE_PAGE_ACCESS_KEY, RANDOMIZE_PAGE_ACCESS_DEFAULT);
-        SystemUtils.recursiveDelete(pageDir);
 
+        SystemUtils.recursiveDelete(pageDir);
         if (pageSize <= 1) {
             throw new IllegalArgumentException("Page size is too small.");
         }
