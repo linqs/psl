@@ -29,6 +29,7 @@ import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
 import org.linqs.psl.util.RandUtils;
 import org.linqs.psl.util.SystemUtils;
 
+import org.apache.commons.lang.mutable.MutableInt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -94,7 +95,9 @@ public class DCDStreamingTermStore implements DCDTermStore {
     private AtomManager atomManager;
 
     // <Object.hashCode(), RVA>
-    private Map<Integer, RandomVariableAtom> variables;
+    // Although the key is mutable, it should NEVER be changed.
+    // This is for efficiency when reading in pages.
+    private Map<MutableInt, RandomVariableAtom> variables;
 
     private boolean initialRound;
     private DCDStreamingIterator activeIterator;
@@ -142,7 +145,7 @@ public class DCDStreamingTermStore implements DCDTermStore {
      * cache can be writtten in the same order.
      * So we will shuffle this list of sequential ints in the same order as the page.
      */
-    private List<Integer> shuffleMap;
+    private int[] shuffleMap;
 
     public DCDStreamingTermStore(List<Rule> rules, AtomManager atomManager) {
         pageSize = Config.getInt(PAGE_SIZE_KEY, PAGE_SIZE_DEFAULT);
@@ -203,7 +206,7 @@ public class DCDStreamingTermStore implements DCDTermStore {
 
         this.atomManager = atomManager;
         termGenerator = new DCDTermGenerator();
-        variables = new HashMap<Integer, RandomVariableAtom>();
+        variables = new HashMap<MutableInt, RandomVariableAtom>();
 
         initialRound = true;
         activeIterator = null;
@@ -219,7 +222,7 @@ public class DCDStreamingTermStore implements DCDTermStore {
 
         termCache = new ArrayList<DCDObjectiveTerm>(pageSize);
         termPool = new ArrayList<DCDObjectiveTerm>(pageSize);
-        shuffleMap = new ArrayList<Integer>(pageSize);
+        shuffleMap = new int[pageSize];
 
         (new File(pageDir)).mkdirs();
     }
@@ -241,7 +244,7 @@ public class DCDStreamingTermStore implements DCDTermStore {
 
     @Override
     public synchronized RandomVariableAtom createLocalVariable(RandomVariableAtom atom) {
-        int key = System.identityHashCode(atom);
+        MutableInt key = new MutableInt(System.identityHashCode(atom));
 
         if (variables.containsKey(key)) {
             return atom;
@@ -262,7 +265,7 @@ public class DCDStreamingTermStore implements DCDTermStore {
         if (variables.size() == 0) {
             // If there are no variables, then re-allocate the variable storage.
             // The default load factor for Java HashSets is 0.75.
-            variables = new HashMap<Integer, RandomVariableAtom>((int)Math.ceil(capacity / 0.75));
+            variables = new HashMap<MutableInt, RandomVariableAtom>((int)Math.ceil(capacity / 0.75));
         }
     }
 

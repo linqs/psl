@@ -142,4 +142,36 @@ public final class RandUtils {
             }
         }
     }
+
+    /**
+     * A version of pairedShuffle() optimized for very specific list types.
+     * This is used in a high-throughput piece of code and needs to be more optimized
+     * than the general variant.
+     * The indexes (array) may be larger than list.
+     */
+    @SuppressWarnings("unchecked")
+    public static synchronized <T> void pairedShuffleIndexes(List<T> list, int[] indexes) {
+        ensureRNG();
+
+        if (list.size() > indexes.length) {
+            throw new IllegalArgumentException(String.format(
+                    "List size (%d) must be greater than or equal to array size (%d).",
+                    list.size(), indexes.length));
+        }
+
+        T temp = null;
+        int tempIndex = -1;
+
+        for (int i = list.size() - 1; i >= 0; i--) {
+            int swapIndex = nextInt(i + 1);
+
+            temp = list.get(i);
+            list.set(i, list.get(swapIndex));
+            list.set(swapIndex, temp);
+
+            tempIndex = indexes[i];
+            indexes[i] = indexes[swapIndex];
+            indexes[swapIndex] = indexes[i];
+        }
+    }
 }

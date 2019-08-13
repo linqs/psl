@@ -22,6 +22,8 @@ import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.util.MathUtils;
 
+import org.apache.commons.lang.mutable.MutableInt;
+
 import java.nio.ByteBuffer;
 import java.util.Map;
 
@@ -134,7 +136,8 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
     /**
      * Assume the term that will be next read from the buffers.
      */
-    public void read(ByteBuffer fixedBuffer, ByteBuffer lagrangeBuffer, Map<Integer, RandomVariableAtom> rvaMap) {
+    public void read(ByteBuffer fixedBuffer, ByteBuffer lagrangeBuffer,
+            Map<MutableInt, RandomVariableAtom> rvaMap, MutableInt intBuffer) {
         squared = (fixedBuffer.get() == 1);
         adjustedWeight = fixedBuffer.getFloat();
         constant = fixedBuffer.getFloat();
@@ -149,7 +152,8 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
 
         for (int i = 0; i < size; i++) {
             coefficients[i] = fixedBuffer.getFloat();
-            variables[i] = rvaMap.get(fixedBuffer.getInt());
+            intBuffer.setValue(fixedBuffer.getInt());
+            variables[i] = rvaMap.get(intBuffer);
         }
 
         lagrange = lagrangeBuffer.getFloat();

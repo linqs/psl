@@ -20,6 +20,8 @@ package org.linqs.psl.reasoner.dcd.term;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.util.RandUtils;
 
+import org.apache.commons.lang.mutable.MutableInt;
+
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -37,8 +39,8 @@ import java.util.Map;
  */
 public class DCDStreamingCacheIterator implements DCDStreamingIterator {
     private DCDStreamingTermStore parentStore;
-    private Map<Integer, RandomVariableAtom> variables;
-    private List<Integer> shuffleMap;
+    private Map<MutableInt, RandomVariableAtom> variables;
+    private int[] shuffleMap;
 
     private boolean readonly;
 
@@ -65,10 +67,10 @@ public class DCDStreamingCacheIterator implements DCDStreamingIterator {
     private int numPages;
 
     public DCDStreamingCacheIterator(
-            DCDStreamingTermStore parentStore, boolean readonly, Map<Integer, RandomVariableAtom> variables,
+            DCDStreamingTermStore parentStore, boolean readonly, Map<MutableInt, RandomVariableAtom> variables,
             List<DCDObjectiveTerm> termCache, List<DCDObjectiveTerm> termPool,
             ByteBuffer termBuffer, ByteBuffer lagrangeBuffer,
-            boolean shufflePage, List<Integer> shuffleMap, boolean randomizePageAccess,
+            boolean shufflePage, int[] shuffleMap, boolean randomizePageAccess,
             int numPages) {
         this.parentStore = parentStore;
         this.variables = variables;
@@ -220,19 +222,20 @@ public class DCDStreamingCacheIterator implements DCDStreamingIterator {
         // Convert all the terms from binary to objects.
         // Use the terms from the pool.
 
+        MutableInt intBuffer = new MutableInt();
         for (int i = 0; i < numTerms; i++) {
             DCDObjectiveTerm term = termPool.get(i);
-            term.read(termBuffer, lagrangeBuffer, variables);
+            term.read(termBuffer, lagrangeBuffer, variables, intBuffer);
             termCache.add(term);
         }
 
         if (shufflePage) {
-            shuffleMap.clear();
+            // Remember that the shuffle map may be larger than the term cache (for not full pages).
             for (int i = 0; i < termCache.size(); i++) {
-                shuffleMap.add(i);
+                shuffleMap[i] = i;
             }
 
-            RandUtils.pairedShuffle(termCache, shuffleMap);
+            RandUtils.pairedShuffleIndexes(termCache, shuffleMap);
         }
 
         return true;
@@ -264,8 +267,8 @@ public class DCDStreamingCacheIterator implements DCDStreamingIterator {
         // then we will need to use the shuffle map to write the lagrange values back in
         // the same order as the terms.
         if (shufflePage) {
-            for (int shuffledIndex = 0; shuffledIndex < shuffleMap.size(); shuffledIndex++) {
-                int writeIndex = shuffleMap.get(shuffledIndex);
+            for (int shuffledIndex = 0; shuffledIndex < termCache.size(); shuffledIndex++) {
+                int writeIndex = shuffleMap[shuffledIndex];
                 DCDObjectiveTerm term = termCache.get(shuffledIndex);
                 lagrangeBuffer.putFloat(writeIndex * (Float.SIZE / 8), term.getLagrange());
             }
