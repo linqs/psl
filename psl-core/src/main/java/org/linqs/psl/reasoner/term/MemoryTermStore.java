@@ -20,6 +20,7 @@ package org.linqs.psl.reasoner.term;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.util.RandUtils;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -91,5 +92,9 @@ public class MemoryTermStore<T extends ReasonerTerm> implements TermStore<T, Ran
     @Override
     public RandomVariableAtom createLocalVariable(RandomVariableAtom atom) {
         return atom;
+    }
+
+    public void shuffle() {
+        RandUtils.shuffle(store);
     }
 }

@@ -17,10 +17,10 @@
  */
 package org.linqs.psl.reasoner.dcd.term;
 
+import org.linqs.psl.config.Config;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.reasoner.term.MemoryTermStore;
-import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.RandUtils;
 
 import java.util.Collections;
@@ -32,18 +32,29 @@ import java.util.Set;
  * A TermStore specifically for DCD terms.
  */
 public class DCDMemoryTermStore implements DCDTermStore {
+    /**
+     * Prefix of property keys used by this class.
+     */
+    public static final String CONFIG_PREFIX = "dcdmemory";
+
+    /**
+     * Where on disk to write term pages.
+     */
+    public static final String SHUFFLE_KEY = CONFIG_PREFIX + ".shuffle";
+    public static final boolean SHUFFLE_DEFAULT = true;
+
     // Keep an internal store to hold the terms while this class focus on variables.
-    private TermStore<DCDObjectiveTerm, RandomVariableAtom> store;
+    private MemoryTermStore<DCDObjectiveTerm> store;
 
     private Set<RandomVariableAtom> variables;
 
-    public DCDMemoryTermStore() {
-        this(new MemoryTermStore<DCDObjectiveTerm>());
-    }
+    private boolean shuffle;
 
-    public DCDMemoryTermStore(TermStore<DCDObjectiveTerm, RandomVariableAtom> store) {
-        this.store = store;
+    public DCDMemoryTermStore() {
+        store = new MemoryTermStore<DCDObjectiveTerm>();
         variables = new HashSet<RandomVariableAtom>();
+
+        shuffle = Config.getBoolean(SHUFFLE_KEY, SHUFFLE_DEFAULT);
     }
 
     @Override
@@ -134,6 +145,10 @@ public class DCDMemoryTermStore implements DCDTermStore {
 
     @Override
     public Iterator<DCDObjectiveTerm> iterator() {
+        if (shuffle) {
+            store.shuffle();
+        }
+
         return store.iterator();
     }
 
