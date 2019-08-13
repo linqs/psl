@@ -91,6 +91,8 @@ public class DCDStreamingTermStore implements DCDTermStore {
     // How much to over-allocate by.
     public static final double OVERALLOCATION_RATIO = 1.25;
 
+    public static final int INITIAL_PATH_CACHE_SIZE = 100;
+
     private List<WeightedLogicalRule> rules;
     private AtomManager atomManager;
 
@@ -98,6 +100,9 @@ public class DCDStreamingTermStore implements DCDTermStore {
     // Although the key is mutable, it should NEVER be changed.
     // This is for efficiency when reading in pages.
     private Map<MutableInt, RandomVariableAtom> variables;
+
+    private List<String> termPagePaths;
+    private List<String> lagrangePagePaths;
 
     private boolean initialRound;
     private DCDStreamingIterator activeIterator;
@@ -208,6 +213,9 @@ public class DCDStreamingTermStore implements DCDTermStore {
         termGenerator = new DCDTermGenerator();
         variables = new HashMap<MutableInt, RandomVariableAtom>();
 
+        termPagePaths = new ArrayList<String>(INITIAL_PATH_CACHE_SIZE);
+        lagrangePagePaths = new ArrayList<String>(INITIAL_PATH_CACHE_SIZE);
+
         initialRound = true;
         activeIterator = null;
         numPages = 0;
@@ -290,11 +298,21 @@ public class DCDStreamingTermStore implements DCDTermStore {
     }
 
     public String getTermPagePath(int index) {
-        return Paths.get(pageDir, String.format("%08d_term.page", index)).toString();
+        // Make sure the path is built.
+        for (int i = termPagePaths.size(); i <= index; i++) {
+            termPagePaths.add(Paths.get(pageDir, String.format("%08d_term.page", i)).toString());
+        }
+
+        return termPagePaths.get(index);
     }
 
     public String getLagrangePagePath(int index) {
-        return Paths.get(pageDir, String.format("%08d_lagrange.page", index)).toString();
+        // Make sure the path is built.
+        for (int i = lagrangePagePaths.size(); i <= index; i++) {
+            lagrangePagePaths.add(Paths.get(pageDir, String.format("%08d_lagrange.page", i)).toString());
+        }
+
+        return lagrangePagePaths.get(index);
     }
 
     /**
