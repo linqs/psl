@@ -17,6 +17,8 @@
  */
 package org.linqs.psl.model.rule;
 
+import java.util.List;
+
 /**
  * Base class for all (first order, i.e., not ground) rules.
  */
@@ -29,5 +31,15 @@ public abstract class AbstractRule implements Rule {
 
     public String getName() {
         return this.name;
+    }
+
+    @Override
+    public boolean requiresSplit() {
+        return false;
+    }
+
+    @Override
+    public List<Rule> split() {
+        throw new UnsupportedOperationException();
     }
 }

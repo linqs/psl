@@ -23,6 +23,7 @@ import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Variable;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -63,4 +64,17 @@ public interface Rule {
      * Will throw if supportsIndividualGrounding() == false.
      */
     public GroundRule ground(Constant[] constants, Map<Variable, Integer> variableMap, AtomManager atomManager);
+
+    /**
+     * Check if this rule needs to be broken up into multiple rules.
+     * This may be because of language semantics or performance.
+     */
+    public boolean requiresSplit();
+
+    /**
+     * Split this rule into multiple rules.
+     * The net effect of all the rules should be the same
+     * as the pre-split rule.
+     */
+    public List<Rule> split();
 }

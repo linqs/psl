@@ -39,6 +39,7 @@ import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.AbstractRule;
 import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
 import org.linqs.psl.model.rule.arithmetic.expression.SummationAtom;
 import org.linqs.psl.model.rule.arithmetic.expression.SummationAtomOrAtom;
@@ -120,6 +121,78 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
         return expression;
     }
 
+    @Override
+    public boolean requiresSplit() {
+        // Arithmetic rules will need to split if there is a filter with a disjunction.
+        for (Formula filter : filters.values()) {
+            if (filter instanceof Disjunction) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    @Override
+    public List<Rule> split() {
+        List<Rule> splitRules = new ArrayList<Rule>();
+
+        if (!requiresSplit()) {
+            splitRules.add(this);
+            return splitRules;
+        }
+
+        // Note that we prime this with an empty filter.
+        List<Map<SummationVariable, Formula>> splitFilters = new ArrayList<Map<SummationVariable, Formula>>();
+        splitFilters.add(new HashMap<SummationVariable, Formula>());
+
+        // Go over one filter at a time, and either break it up (if it is a disjunction)
+        // or distribute over the existing formuals (if it is not a disjunction).
+
+        for (Map.Entry<SummationVariable, Formula> entry : filters.entrySet()) {
+            if (!(entry.getValue() instanceof Disjunction)) {
+                // Non-disjunctions just get added to all existing splits.
+                for (Map<SummationVariable, Formula> splitFilter : splitFilters) {
+                    splitFilter.put(entry.getKey(), entry.getValue());
+                }
+
+                continue;
+            }
+
+            // The disjunction is already in DNF.
+            Disjunction disjunction = (Disjunction)entry.getValue();
+
+            // For every existing split filter, make a copy for each disjunct.
+            List<Map<SummationVariable, Formula>> tempFilters = new ArrayList<Map<SummationVariable, Formula>>();
+
+            for (Map<SummationVariable, Formula> splitFilter : splitFilters) {
+                for (int i = 0; i < disjunction.length(); i++) {
+                    // A shallow copy is fine, since we will not be modifying formulas.
+                    Map<SummationVariable, Formula> newFilter = new HashMap<SummationVariable, Formula>(splitFilter);
+                    newFilter.put(entry.getKey(), disjunction.get(i));
+                    tempFilters.add(newFilter);
+                }
+            }
+
+            splitFilters = tempFilters;
+        }
+
+        for (Map<SummationVariable, Formula> splitFilter : splitFilters) {
+            if (getClass() == WeightedArithmeticRule.class) {
+                WeightedArithmeticRule weightedRule = (WeightedArithmeticRule)this;
+                splitRules.add(new WeightedArithmeticRule(expression, splitFilter,
+                        weightedRule.getWeight(), weightedRule.isSquared(), name));
+            } else if (getClass() == UnweightedArithmeticRule.class) {
+                splitRules.add(new UnweightedArithmeticRule(expression, splitFilter, name));
+            } else {
+                throw new IllegalStateException("Unknown arithmetic rule class: " + getClass());
+            }
+        }
+
+        return splitRules;
+    }
+
+    // TODO(eriq): Remove when everyone supports individual grounding.
     @Override
     public boolean supportsIndividualGrounding() {
         // TODO(eriq): Non-summation does support.

@@ -38,9 +38,6 @@ public class SGDReasonerTest {
      */
     @Test
     public void baseTest() {
-        // TEST
-        org.linqs.psl.PSLTest.initLogger("TRACE");
-
         Config.setProperty(InferenceApplication.REASONER_KEY, SGDReasoner.class.getName());
         Config.setProperty(InferenceApplication.TERM_GENERATOR_KEY, SGDTermGenerator.class.getName());
         Config.setProperty(InferenceApplication.TERM_STORE_KEY, SGDTermStore.class.getName());

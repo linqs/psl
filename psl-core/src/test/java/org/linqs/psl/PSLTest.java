@@ -65,7 +65,7 @@ public class PSLTest {
         assertEquals("Size mismatch.", expected.length, rules.length);
 
         for (int i = 0; i < expected.length; i++) {
-            assertStringEquals(expected[i], rules[i].toString(), alphabetize, String.format("Rule %d mismatch"));
+            assertStringEquals(expected[i], rules[i].toString(), alphabetize, String.format("Rule %d mismatch", i));
         }
     }
 
