@@ -130,6 +130,9 @@ public class PersistedAtomManager extends AtomManager {
         RandomVariableAtom rvAtom = (RandomVariableAtom)atom;
 
         if (!rvAtom.getPersisted()) {
+            // TEST
+            System.out.println("TEST -- access exception - " + atom);
+
             rvAtom.setAccessException(true);
         }
 

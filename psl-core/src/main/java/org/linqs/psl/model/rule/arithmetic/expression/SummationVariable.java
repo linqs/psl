@@ -23,41 +23,40 @@ import org.linqs.psl.model.term.Variable;
 
 /**
  * Special argument to a {@link Predicate} in an {@link SummationAtom}.
- * <p>
- * It is a placeholder for {@link Constant Constants} that are allowed to vary in
- * a summation.
- * <p>
- * Note that SummationVariable is not a subclass of {@link Variable}.
- * 
- * @author Stephen Bach
+ * It is a placeholder for constants that are allowed to vary in a summation.
+ * Note that SummationVariable is not a subclass of Variable.
  */
 public class SummationVariable implements SummationVariableOrTerm {
-    
-    private final Variable v;
+    private final Variable variable;
 
     public SummationVariable(String name) {
-        v = new Variable(name);
+        variable = new Variable(name);
     }
-    
+
     public Variable getVariable() {
-        return v;
+        return variable;
     }
-    
+
     @Override
     public String toString() {
-        return "+" + v.toString();
+        return "+" + variable.toString();
     }
-    
+
     @Override
     public int hashCode() {
-        return v.hashCode();
+        return variable.hashCode();
     }
-    
-    @Override
-    public boolean equals(Object oth) {
-        if (oth==this) return true;
-        if (oth==null || !(oth instanceof SummationVariable)) return false;
-        return getVariable().equals(((SummationVariable) oth).getVariable());  
-    }    
 
+    @Override
+    public boolean equals(Object other) {
+        if (other == null || !(other instanceof SummationVariable)) {
+            return false;
+        }
+
+        if (other == this) {
+            return true;
+        }
+
+        return getVariable().equals(((SummationVariable)other).getVariable());
+    }
 }

@@ -33,6 +33,7 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.model.term.VariableTypeMap;
+import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.arithmetic.AbstractArithmeticRule;
 import org.linqs.psl.model.rule.logical.AbstractLogicalRule;
@@ -202,12 +203,12 @@ public class LazyAtomManager extends PersistedAtomManager {
 
         for (Rule lazyRule : lazyRules) {
             if (lazyRule instanceof AbstractLogicalRule) {
-                lazyLogicalGround((AbstractLogicalRule)lazyRule, lazyPredicates, groundRuleStore);
+                lazySimpleGround(lazyRule, lazyPredicates, groundRuleStore);
             } else if (lazyRule instanceof AbstractArithmeticRule) {
                 if (((AbstractArithmeticRule)lazyRule).hasSummation()) {
                     // We will deal with these rules after we move the lazy atoms to the write partition.
                 } else {
-                    lazySimpleArithmeticGround((AbstractArithmeticRule)lazyRule, lazyPredicates, groundRuleStore);
+                    lazySimpleGround(lazyRule, lazyPredicates, groundRuleStore);
                 }
             } else {
                 throw new IllegalStateException("Unknown rule type: " + lazyRule.getClass().getName());
@@ -242,22 +243,23 @@ public class LazyAtomManager extends PersistedAtomManager {
         rule.groundAll(this, groundRuleStore);
     }
 
-    private void lazySimpleArithmeticGround(AbstractArithmeticRule rule, Set<StandardPredicate> lazyPredicates, GroundRuleStore groundRuleStore) {
-        Formula formula = rule.getExpression().getQueryFormula();
-        ResultList groundingResults = getLazyGroundingResults(formula, lazyPredicates);
-        if (groundingResults == null) {
-            return;
+    private void lazySimpleGround(Rule rule, Set<StandardPredicate> lazyPredicates, GroundRuleStore groundRuleStore) {
+        if (!rule.supportsIndividualGrounding()) {
+            throw new UnsupportedOperationException("Rule requires full regrounding: " + rule);
         }
-        rule.groundNonSummationRule(groundingResults, this, groundRuleStore);
-    }
 
-    private void lazyLogicalGround(AbstractLogicalRule rule, Set<StandardPredicate> lazyPredicates, GroundRuleStore groundRuleStore) {
-        Formula formula = rule.getNegatedDNF().getQueryFormula();
+        Formula formula = rule.getGroundingFormula();
         ResultList groundingResults = getLazyGroundingResults(formula, lazyPredicates);
         if (groundingResults == null) {
             return;
         }
-        rule.groundAll(groundingResults, this, groundRuleStore);
+
+        for (int i = 0; i < groundingResults.size(); i++) {
+            GroundRule groundRule = rule.ground(groundingResults.get(i), groundingResults.getVariableMap(), this);
+            if (groundRule != null) {
+                groundRuleStore.addGroundRule(groundRule);
+            }
+        }
     }
 
     private ResultList getLazyGroundingResults(Formula formula, Set<StandardPredicate> lazyPredicates) {

@@ -29,8 +29,10 @@ import org.linqs.psl.util.HashCode;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -39,46 +41,53 @@ import java.util.Set;
  * Full equality checks (when two expressions are the equal, but not the same refernce) are epensive.
  */
 public class ArithmeticRuleExpression {
-    protected final List<Coefficient> coeffs;
+    protected final List<Coefficient> coefficients;
     protected final List<SummationAtomOrAtom> atoms;
     protected final FunctionComparator comparator;
-    protected final Coefficient c;
+    protected final Coefficient constant;
     protected final Set<Variable> vars;
-    protected final Set<SummationVariable> sumVars;
+    protected final Map<SummationVariable, SummationAtom> summationMapping;
     private int hash;
 
-    public ArithmeticRuleExpression(List<Coefficient> coeffs, List<SummationAtomOrAtom> atoms,
-            FunctionComparator comparator, Coefficient c) {
-        this.coeffs = Collections.unmodifiableList(coeffs);
+    public ArithmeticRuleExpression(List<Coefficient> coefficients, List<SummationAtomOrAtom> atoms,
+            FunctionComparator comparator, Coefficient constant) {
+        this(coefficients, atoms, comparator, constant, false);
+    }
+
+    // Only skip cardinality validation if you know what you are doing and already validated the input.
+    public ArithmeticRuleExpression(List<Coefficient> coefficients, List<SummationAtomOrAtom> atoms,
+            FunctionComparator comparator, Coefficient constant,
+            boolean skipCardinalityValidation) {
+        this.coefficients = Collections.unmodifiableList(coefficients);
         this.atoms = Collections.unmodifiableList(atoms);
         this.comparator = comparator;
-        this.c = c;
+        this.constant = constant;
 
         Set<Variable> vars = new HashSet<Variable>();
-        Set<SummationVariable> sumVars = new HashSet<SummationVariable>();
         Set<String> sumVarNames = new HashSet<String>();
+        Map<SummationVariable, SummationAtom> summationMapping = new HashMap<SummationVariable, SummationAtom>();
 
         if (atoms.size() == 0) {
             throw new IllegalArgumentException("Cannot have an arithmetic rule without atoms.");
         }
 
-        for (SummationAtomOrAtom saoa : getAtoms()) {
-            if (saoa instanceof SummationAtom) {
-                for (SummationVariableOrTerm svot : ((SummationAtom)saoa).getArguments()) {
-                    if (svot instanceof Variable) {
-                        vars.add((Variable) svot);
-                    } else if (svot instanceof SummationVariable) {
-                        if (sumVars.contains((SummationVariable) svot)) {
+        for (SummationAtomOrAtom atom : getAtoms()) {
+            if (atom instanceof SummationAtom) {
+                for (SummationVariableOrTerm argument : ((SummationAtom)atom).getArguments()) {
+                    if (argument instanceof Variable) {
+                        vars.add((Variable) argument);
+                    } else if (argument instanceof SummationVariable) {
+                        if (summationMapping.containsKey((SummationVariable) argument)) {
                             throw new IllegalArgumentException(
                                     "Each summation variable in an ArithmeticRuleExpression must be unique.");
                         }
 
-                        sumVars.add((SummationVariable) svot);
-                        sumVarNames.add(((SummationVariable)svot).getVariable().getName());
+                        sumVarNames.add(((SummationVariable)argument).getVariable().getName());
+                        summationMapping.put((SummationVariable)argument, (SummationAtom)atom);
                     }
                 }
             } else {
-                for (Term term : ((Atom) saoa).getArguments()) {
+                for (Term term : ((Atom)atom).getArguments()) {
                     if (term instanceof Variable) {
                         vars.add((Variable) term);
                     }
@@ -96,25 +105,27 @@ public class ArithmeticRuleExpression {
         }
 
         // Check for cardinality being used on non-summation variables.
-        for (Coefficient coefficient : coeffs) {
-            if (coefficient instanceof Cardinality) {
-                String name = ((Cardinality)coefficient).getSummationVariable().getVariable().getName();
-                if (!sumVarNames.contains(name)) {
-                    throw new IllegalArgumentException(String.format(
-                            "Cannot use variable (%s) in cardinality. " +
-                            "Only summation variables can be used in cardinality.",
-                            name));
+        if (!skipCardinalityValidation) {
+            for (Coefficient coefficient : coefficients) {
+                if (coefficient instanceof Cardinality) {
+                    String name = ((Cardinality)coefficient).getSummationVariable().getVariable().getName();
+                    if (!sumVarNames.contains(name)) {
+                        throw new IllegalArgumentException(String.format(
+                                "Cannot use variable (%s) in cardinality. " +
+                                "Only summation variables can be used in cardinality.",
+                                name));
+                    }
                 }
             }
         }
 
         this.vars = Collections.unmodifiableSet(vars);
-        this.sumVars = Collections.unmodifiableSet(sumVars);
+        this.summationMapping = Collections.unmodifiableMap(summationMapping);
 
-        hash = HashCode.build(HashCode.build(comparator), c);
+        hash = HashCode.build(HashCode.build(comparator), constant);
 
-        for (Coefficient coeff : coeffs) {
-            hash = HashCode.build(hash, coeff);
+        for (Coefficient coefficient : coefficients) {
+            hash = HashCode.build(hash, coefficient);
         }
 
         for (SummationAtomOrAtom atom : atoms) {
@@ -128,7 +139,7 @@ public class ArithmeticRuleExpression {
     }
 
     public List<Coefficient> getAtomCoefficients() {
-        return coeffs;
+        return coefficients;
     }
 
     public List<SummationAtomOrAtom> getAtoms() {
@@ -140,7 +151,7 @@ public class ArithmeticRuleExpression {
     }
 
     public Coefficient getFinalCoefficient() {
-        return c;
+        return constant;
     }
 
     /**
@@ -151,7 +162,11 @@ public class ArithmeticRuleExpression {
     }
 
     public Set<SummationVariable> getSummationVariables() {
-        return sumVars;
+        return summationMapping.keySet();
+    }
+
+    public Map<SummationVariable, SummationAtom> getSummationMapping() {
+        return summationMapping;
     }
 
     /**
@@ -181,13 +196,13 @@ public class ArithmeticRuleExpression {
         StringBuilder s = new StringBuilder();
 
         // If there are coefficients, print each one.
-        if (coeffs.size() > 0) {
-            for (int i = 0; i < coeffs.size(); i++) {
+        if (coefficients.size() > 0) {
+            for (int i = 0; i < coefficients.size(); i++) {
                 if (i != 0) {
                     s.append(" + ");
                 }
 
-                s.append(coeffs.get(i));
+                s.append(coefficients.get(i));
                 s.append(" * ");
                 s.append(atoms.get(i));
             }
@@ -199,7 +214,7 @@ public class ArithmeticRuleExpression {
         s.append(" ");
         s.append(comparator);
         s.append(" ");
-        s.append(c);
+        s.append(constant);
         return s.toString();
     }
 
@@ -219,7 +234,7 @@ public class ArithmeticRuleExpression {
             return false;
         }
 
-        if (this.comparator != otherExpression.comparator || this.c != otherExpression.c) {
+        if (this.comparator != otherExpression.comparator || this.constant != otherExpression.constant) {
             return false;
         }
 
@@ -234,7 +249,7 @@ public class ArithmeticRuleExpression {
             }
 
             if (!this.atoms.get(thisIndex).equals(otherExpression.atoms.get(otherIndex))
-                    || !this.coeffs.get(thisIndex).equals(otherExpression.coeffs.get(otherIndex))) {
+                    || !this.coefficients.get(thisIndex).equals(otherExpression.coefficients.get(otherIndex))) {
                 return false;
             }
         }

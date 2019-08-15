@@ -20,6 +20,7 @@ package org.linqs.psl.model.atom;
 import org.linqs.psl.database.ResultList;
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.model.predicate.Predicate;
+import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.Term;
@@ -59,6 +60,10 @@ public class QueryAtom extends Atom {
      * It is up to the caller to make sure the buffer is only used on this thread.
      */
     public GroundAtom ground(AtomManager atomManager, ResultList res, int resultIndex, Constant[] newArgs) {
+        return ground(atomManager, res, resultIndex, newArgs, false);
+    }
+
+    public GroundAtom ground(AtomManager atomManager, ResultList res, int resultIndex, Constant[] newArgs, boolean checkDBCache) {
         for (int i = 0; i < arguments.length; i++) {
             if (arguments[i] instanceof Variable) {
                 newArgs[i] = res.get(resultIndex, (Variable)arguments[i]);
@@ -66,6 +71,12 @@ public class QueryAtom extends Atom {
                 newArgs[i] = (Constant)arguments[i];
             } else {
                 throw new IllegalArgumentException("Unrecognized type of Term.");
+            }
+        }
+
+        if (checkDBCache) {
+            if (!atomManager.getDatabase().hasCachedAtom((StandardPredicate)predicate, newArgs)) {
+                return null;
             }
         }
 
