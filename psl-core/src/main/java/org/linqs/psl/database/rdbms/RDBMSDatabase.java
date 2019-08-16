@@ -287,6 +287,14 @@ public class RDBMSDatabase extends Database {
         return executeQueryIterator(projectionMap, varTypes, queryString);
     }
 
+    public ResultList executeQuery(RawQuery rawQuery) {
+        return executeQuery(rawQuery.getProjectionMap(), rawQuery.getVariableTypes(), rawQuery.getSQL());
+    }
+
+    public QueryResultIterable executeQueryIterator(RawQuery rawQuery) {
+        return executeQueryIterator(rawQuery.getProjectionMap(), rawQuery.getVariableTypes(), rawQuery.getSQL());
+    }
+
     /**
      * A more general form for executeQuery().
      * @param projectionMap a mapping of each variable we want returned to the

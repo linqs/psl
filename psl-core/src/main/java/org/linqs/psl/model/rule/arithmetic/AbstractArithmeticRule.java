@@ -25,6 +25,7 @@ import org.linqs.psl.database.rdbms.Formula2SQL;
 import org.linqs.psl.database.rdbms.PredicateInfo;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.RDBMSDatabase;
+import org.linqs.psl.database.rdbms.RawQuery;
 import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.atom.Atom;
@@ -92,6 +93,8 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
      */
     private final String groundingResourcesKey;
 
+    private volatile boolean validatedByAtomManager;
+
     public AbstractArithmeticRule(ArithmeticRuleExpression expression, Map<SummationVariable, Formula> filterClauses, String name) {
         super(name);
         this.expression = expression;
@@ -104,6 +107,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
             entry.setValue(entry.getValue().getDNF());
         }
 
+        validatedByAtomManager = false;
         validateRule();
     }
 
@@ -231,50 +235,92 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
             List<GroundAtom> atoms, FunctionComparator comparator, float constant);
 
     @Override
-    public boolean supportsIndividualGrounding() {
-        if (expression.getSummationVariables().size() == 0) {
-            return true;
-        }
-
-        return false;
+    public boolean supportsGroundingQueryRewriting() {
+        // Only non-summation rules can be rewritten.
+        return !hasSummation();
     }
 
     @Override
-    public Formula getGroundingFormula() {
-        if (expression.getSummationVariables().size() == 0) {
+    public Formula getRewritableGroundingFormula(AtomManager atomManager) {
+        if (!hasSummation()) {
             return expression.getQueryFormula();
         }
 
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("Rule does not support query rewriting: " + this);
+    }
+
+    @Override
+    public boolean supportsIndividualGrounding() {
+        return true;
+    }
+
+    @Override
+    public RawQuery getGroundingQuery(AtomManager atomManager) {
+        if (!(atomManager.getDatabase() instanceof RDBMSDatabase)) {
+            throw new IllegalArgumentException("Can only ground arithmetic rules with a relational database.");
+        }
+        RDBMSDatabase database = ((RDBMSDatabase)atomManager.getDatabase());
+
+        if (!hasSummation()) {
+            return new RawQuery(database, expression.getQueryFormula());
+        } else {
+            return getSummationRawQuery(database);
+        }
     }
 
     @Override
     public GroundRule ground(Constant[] constants, Map<Variable, Integer> variableMap, AtomManager atomManager) {
-        if (expression.getSummationVariables().size() == 0) {
-            // Get the grounding resources for this thread,
-            if (!Parallel.hasThreadObject(groundingResourcesKey)) {
-                Parallel.putThreadObject(groundingResourcesKey, new GroundingResources(expression));
-            }
-            GroundingResources resources = (GroundingResources)Parallel.getThreadObject(groundingResourcesKey);
+        if (!validatedByAtomManager) {
+            validateForGrounding(atomManager);
+        }
 
-            if (resources.groundRules.size() > 0) {
-                return resources.groundRules.remove(resources.groundRules.size() - 1);
-            }
+        if (!hasSummation()) {
+            return groundForNonSummation(constants, variableMap, atomManager);
+        } else {
+            return groundForSummation(constants, variableMap, atomManager);
+        }
+    }
 
-            groundSingleNonSummationRule(constants, variableMap, atomManager, resources);
-
+    private GroundRule groundForNonSummation(Constant[] constants, Map<Variable, Integer> variableMap, AtomManager atomManager) {
+        GroundingResources resources = getGroundingResources(expression);
+        if (resources.groundRules.size() > 0) {
             return resources.groundRules.remove(resources.groundRules.size() - 1);
         }
 
-        throw new UnsupportedOperationException();
+        groundSingleNonSummationRule(constants, variableMap, atomManager, resources);
+
+        return resources.groundRules.remove(resources.groundRules.size() - 1);
+    }
+
+    private GroundRule groundForSummation(Constant[] constants, Map<Variable, Integer> variableMap, AtomManager atomManager) {
+        if (!(atomManager.getDatabase() instanceof RDBMSDatabase)) {
+            throw new IllegalArgumentException("Can only ground summation arithmetic rules with a relational database.");
+        }
+        RDBMSDatabase database = ((RDBMSDatabase)atomManager.getDatabase());
+
+        GroundingResources resources = prepSummationGroundingResources(database);
+        if (resources.groundRules.size() > 0) {
+            return resources.groundRules.remove(resources.groundRules.size() - 1);
+        }
+
+        // Bail if there are no groundings.
+        if (resources.flatExpression == null) {
+            return null;
+        }
+
+        groundSingleSummationRule(constants, variableMap, atomManager, resources);
+
+        return resources.groundRules.remove(resources.groundRules.size() - 1);
     }
 
     @Override
     public int groundAll(AtomManager atomManager, GroundRuleStore groundRuleStore) {
-        validateForGrounding(atomManager);
+        if (!validatedByAtomManager) {
+            validateForGrounding(atomManager);
+        }
 
         int groundCount = 0;
-        if (expression.getSummationVariables().size() == 0) {
+        if (!hasSummation()) {
             groundCount = groundAllNonSummationRule(atomManager, groundRuleStore);
         } else {
             groundCount = groundAllSummationRule(atomManager, groundRuleStore);
@@ -285,11 +331,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
     }
 
     private int groundAllNonSummationRule(AtomManager atomManager, GroundRuleStore groundRuleStore) {
-        // Get the grounding resources for this thread,
-        if (!Parallel.hasThreadObject(groundingResourcesKey)) {
-            Parallel.putThreadObject(groundingResourcesKey, new GroundingResources(expression));
-        }
-        GroundingResources resources = (GroundingResources)Parallel.getThreadObject(groundingResourcesKey);
+        GroundingResources resources = getGroundingResources(expression);
 
         ResultList results = atomManager.executeQuery(new DatabaseQuery(expression.getQueryFormula(), false));
         Map<Variable, Integer> variableMap = results.getVariableMap();
@@ -302,6 +344,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
         for (GroundRule groundRule : resources.groundRules) {
             groundRuleStore.addGroundRule(groundRule);
         }
+        resources.groundRules.clear();
 
         return count;
     }
@@ -342,311 +385,134 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
      * Ground by first expanding summation atoms into normal ones and then calling the non-summation grounding.
      */
     private int groundAllSummationRule(AtomManager atomManager, GroundRuleStore groundRuleStore) {
-        // Expand any summation atoms into normal atoms.
-
         if (!(atomManager.getDatabase() instanceof RDBMSDatabase)) {
             throw new IllegalArgumentException("Can only ground summation arithmetic rules with a relational database.");
         }
         RDBMSDatabase database = ((RDBMSDatabase)atomManager.getDatabase());
 
-        Map<SummationVariable, SummationAtom> summationMapping = expression.getSummationMapping();
-        Map<SummationVariable, ResultList> summationConstants = new HashMap<SummationVariable, ResultList>();
+        GroundingResources resources = prepSummationGroundingResources(database);
 
-        for (Map.Entry<SummationVariable, SummationAtom> entry : summationMapping.entrySet()) {
-            ResultList results = fetchSummationValues(database, entry.getKey(), entry.getValue());
-
-            summationConstants.put(entry.getKey(), results);
-        }
-
-        // Start with all the current atoms, and expand the variables of each summation atom one at a time.
-        List<SummationAtomOrAtom> flatAtoms = new ArrayList<SummationAtomOrAtom>(expression.getAtoms());
-        List<Coefficient> flatCoefficients = new ArrayList<Coefficient>(expression.getAtomCoefficients());
-        List<SummationVariable[]> flatSummationVariables = new ArrayList<SummationVariable[]>();
-
-        // This list will tell is which arguments came from summation variables.
-        // We can build it now, and just move/copy elements along with the atoms.
-        for (SummationAtomOrAtom atom : flatAtoms) {
-            SummationVariable[] variables = new SummationVariable[atom.getArity()];
-
-            if (atom instanceof SummationAtom) {
-                SummationAtom summationAtom = (SummationAtom)atom;
-                for (int i = 0; i < summationAtom.getArity(); i++) {
-                    if (summationAtom.getArguments()[i] instanceof SummationVariable) {
-                        variables[i] = (SummationVariable)summationAtom.getArguments()[i];
-                    }
-                }
-            }
-
-            flatSummationVariables.add(variables);
-        }
-
-        boolean done = false;
-        while (!done) {
-            done = true;
-
-            for (int atomIndex = flatAtoms.size() - 1; atomIndex >= 0; atomIndex--) {
-                if (!(flatAtoms.get(atomIndex) instanceof SummationAtom)) {
-                    continue;
-                }
-
-                done = false;
-
-                SummationAtom atom = (SummationAtom)flatAtoms.remove(atomIndex);
-                Coefficient coefficient = flatCoefficients.remove(atomIndex);
-                SummationVariable[] variables = flatSummationVariables.remove(atomIndex);
-
-                boolean convertToQueryAtom = (atom.getNumSummationVariables() == 1);
-
-                for (int argumentIndex = 0; argumentIndex < atom.getArity(); argumentIndex++) {
-                    SummationVariableOrTerm argument = atom.getArguments()[argumentIndex];
-
-                    if (!(argument instanceof SummationVariable)) {
-                        continue;
-                    }
-
-                    // Replace this atom using the constants for this summation variable.
-                    ResultList replacements = summationConstants.get((SummationVariable)argument);
-                    for (int resultIndex = 0; resultIndex < replacements.size(); resultIndex++) {
-                        flatCoefficients.add(coefficient);
-                        flatSummationVariables.add(variables);
-
-                        if (convertToQueryAtom) {
-                            Term[] newArgs = new Term[atom.getArity()];
-                            for (int i = 0; i < atom.getArity(); i++) {
-                                if (i == argumentIndex) {
-                                    newArgs[i] = replacements.get(resultIndex)[0];
-                                } else {
-                                    newArgs[i] = (Term)atom.getArguments()[i];
-                                }
-                            }
-
-                            flatAtoms.add(new QueryAtom(atom.getPredicate(), newArgs));
-                        } else {
-                            SummationVariableOrTerm[] newArgs = Arrays.copyOf(atom.getArguments(), atom.getArity());
-                            newArgs[argumentIndex] = replacements.get(resultIndex)[0];
-                            flatAtoms.add(new SummationAtom(atom.getPredicate(), newArgs));
-                        }
-                    }
-
-                    // Only make one replacement per atom, per iteration.
-                    break;
-                }
-            }
-        }
-
-        // Bail if there are no atoms to ground.
-        if (flatAtoms.size() == 0) {
+        // Bail if there are no groundings.
+        if (resources.flatExpression == null) {
             return 0;
         }
 
-        ArithmeticRuleExpression flatExpression = new ArithmeticRuleExpression(
-                flatCoefficients, flatAtoms,
-                expression.getComparator(), expression.getFinalCoefficient(),
-                true);
+        RawQuery rawQuery = getSummationRawQuery(database);
 
-        // Count all the appearences of a summation variable so we can correctly compute coefficients.
-        Map<SummationVariable, Integer> summationCounts = new HashMap<SummationVariable, Integer>();
-        for (SummationVariable variable : summationMapping.keySet()) {
-            summationCounts.put(variable, 0);
+        ResultList results = database.executeQuery(rawQuery);
+        Map<Variable, Integer> variableMap = results.getVariableMap();
+
+        for (int groundingIndex = 0; groundingIndex < results.size(); groundingIndex++) {
+            groundSingleSummationRule(results.get(groundingIndex), variableMap, atomManager, resources);
         }
 
-        for (SummationVariable[] variables : flatSummationVariables) {
-            for (SummationVariable variable : variables) {
-                if (variable != null) {
-                    summationCounts.put(variable, summationCounts.get(variable).intValue() + 1);
-                }
-            }
+        int count = resources.groundRules.size();
+        for (GroundRule groundRule : resources.groundRules) {
+            groundRuleStore.addGroundRule(groundRule);
         }
+        resources.groundRules.clear();
 
-        // For the actual query, just use the normal expression.
-        // We can't use the flat expression, since the flat summation will guarentee no results in most cases.
-        // But, we can just ground normally and ignore the summation variables to get the variable replacments.
-        // Then, we can use those replacements in the flat expression.
-        Formula queryFormula = expression.getQueryFormula();
-
-        // In the query, ignore the summation variables (since we already queried for those).
-        Set<Variable> ignoreVariables = new HashSet<Variable>();
-        for (SummationVariable summationVariable : summationMapping.keySet()) {
-            ignoreVariables.add(summationVariable.getVariable());
-        }
-
-        // The distinct here is unfortunate, but we need it since we are ignoring the summation variables.
-        Formula2SQL sqler = new Formula2SQL(expression.getVariables(), database, true);
-        SelectQuery query = sqler.getQuery(queryFormula);
-
-        VariableTypeMap variableTypes = new VariableTypeMap();
-        queryFormula.collectVariables(variableTypes);
-
-        Map<Variable, Integer> projectionMap = sqler.getProjectionMap();
-
-        // If there are only summation atoms in this rule, then only get one result from the database.
-        // The rule will be fully grounded, so we won't use any variable replacements.
-        if (projectionMap.size() == 0) {
-            query.setFetchNext(1);
-        }
-
-        ResultList groundVariables = database.executeQuery(projectionMap, variableTypes, query.validate().toString());
-        return groundNonSummationRuleWithSummationsTest(
-                flatExpression,
-                flatSummationVariables, summationCounts,
-                groundVariables, atomManager, groundRuleStore);
+        return count;
     }
 
-    private ResultList fetchSummationValues(RDBMSDatabase database, SummationVariable variable, SummationAtom atom) {
-        QueryAtom queryAtom = atom.getQueryAtom();
-
-        VariableTypeMap variableTypes = new VariableTypeMap();
-        queryAtom.collectVariables(variableTypes);
-
-        Set<Variable> projectionSet = new HashSet<Variable>();
-        projectionSet.add(variable.getVariable());
-
-        Formula2SQL sqler = new Formula2SQL(projectionSet, database, true);
-
-        SelectQuery query = sqler.getQuery(queryAtom);
-        Map<Variable, Integer> projectionMap = sqler.getProjectionMap();
-
-        return database.executeQuery(projectionMap, variableTypes, query.validate().toString());
-    }
-
-    private int groundNonSummationRuleWithSummationsTest(
-            ArithmeticRuleExpression targetExpression,
-            List<SummationVariable[]> summationVariables, Map<SummationVariable, Integer> totalSummationCounts,
-            ResultList groundVariables, AtomManager atomManager, GroundRuleStore groundRuleStore) {
-        List<QueryAtom> queryAtoms = new ArrayList<QueryAtom>();
-        for (SummationAtomOrAtom atom : targetExpression.getAtoms()) {
-            queryAtoms.add((QueryAtom)atom);
+    private void groundSingleSummationRule(
+            Constant[] queryRow, Map<Variable, Integer> variableMap,
+            AtomManager atomManager, GroundingResources gr) {
+        // First reset the summation counts.
+        for (Map.Entry<SummationVariable, Integer> entry : gr.totalSummationCounts.entrySet()) {
+            gr.summationCounts.put(entry.getKey(), entry.getValue());
         }
 
-        // Mark all the summation atoms.
-        boolean[] summationAtoms = new boolean[summationVariables.size()];
-        for (int i = 0; i < summationVariables.size(); i++) {
-            for (SummationVariable variable : summationVariables.get(i)) {
-                if (variable != null) {
-                    summationAtoms[i] = true;
-                }
-            }
-        }
+        int skippedAtoms = 0;
+        for (int atomIndex = 0; atomIndex < gr.groundAtoms.length; atomIndex++) {
+            gr.groundAtoms[atomIndex] = null;
 
-        // Prepare a buffer for coefficients.
-        float[] coefficients = new float[queryAtoms.size()];
-        float finalCoefficient = 0.0f;
+            // We will need to check the database for existance if we have an open summation atom.
+            boolean checkDatabase =
+                    gr.flatSummationAtoms[atomIndex] &&
+                    !atomManager.isClosed((StandardPredicate)gr.queryAtoms.get(atomIndex).getPredicate());
 
-        // Make a copy of the summation counts that we can edit every grounding.
-        // If we filter out an atom, we can mark it there.
-        // This will allow us to make accurate coefficient computations.
-        Map<SummationVariable, Integer> summationCounts = new HashMap<SummationVariable, Integer>(totalSummationCounts);
+            boolean skip = false;
+            SummationVariable[] variables = gr.flatSummationVariables.get(atomIndex);
 
-        GroundAtom[] groundAtoms = new GroundAtom[queryAtoms.size()];
+            // Check the DB cache for summation atoms.
+            GroundAtom groundAtom = gr.queryAtoms.get(atomIndex).ground(
+                    atomManager, queryRow, variableMap, gr.argumentBuffer[atomIndex], checkDatabase);
 
-        // Note that the bellow buffer would need to be per-thread if this was parallalized.
-        Constant[][] argumentBuffer = new Constant[queryAtoms.size()][];
-        for (int i = 0; i < queryAtoms.size(); i++) {
-            argumentBuffer[i] = new Constant[queryAtoms.get(i).getArity()];
-        }
-
-        // Instantiate the ground rules with the correct constants.
-        int groundCount = 0;
-        for (int groundingIndex = 0; groundingIndex < groundVariables.size(); groundingIndex++) {
-            // First reset the summation counts.
-            for (Map.Entry<SummationVariable, Integer> entry : totalSummationCounts.entrySet()) {
-                summationCounts.put(entry.getKey(), entry.getValue());
+            // This atom does not exist in the DB cache, skip it.
+            // Non-summation atoms will throw an access exception in this case.
+            if (groundAtom == null) {
+                skip = true;
             }
 
-            int skippedAtoms = 0;
-            for (int atomIndex = 0; atomIndex < groundAtoms.length; atomIndex++) {
-                groundAtoms[atomIndex] = null;
+            // Check if this atom is removed by a filter.
+            if (!skip) {
+                for (int variableIndex = 0; variableIndex < variables.length; variableIndex++) {
+                    SummationVariable variable = variables[variableIndex];
 
-                // We will need to check the database for existance if we have an open summation atom.
-                boolean checkDatabase =
-                        summationAtoms[atomIndex] &&
-                        !atomManager.isClosed((StandardPredicate)queryAtoms.get(atomIndex).getPredicate());
+                    if (variable == null || !filters.containsKey(variable)) {
+                        continue;
+                    }
 
-                boolean skip = false;
-                SummationVariable[] variables = summationVariables.get(atomIndex);
-
-                // Check the DB cache for summation atoms.
-                GroundAtom groundAtom = queryAtoms.get(atomIndex).ground(
-                        atomManager, groundVariables, groundingIndex,
-                        argumentBuffer[atomIndex], checkDatabase);
-
-                // This atom does not exist in the DB cache, skip it.
-                // Non-summation atoms will throw an access exception in this case.
-                if (groundAtom == null) {
-                    skip = true;
+                    if (!evalFilter(
+                            filters.get(variable), variable,
+                            groundAtom.getArguments()[variableIndex],
+                            atomManager, queryRow, variableMap)) {
+                        skip = true;
+                        break;
+                    }
                 }
+            }
 
-                // Check if this atom is removed by a filter.
-                if (!skip) {
-                    for (int variableIndex = 0; variableIndex < variables.length; variableIndex++) {
-                        SummationVariable variable = variables[variableIndex];
+            if (!skip) {
+                gr.groundAtoms[atomIndex] = groundAtom;
+            } else {
+                skippedAtoms++;
 
-                        if (variable == null || !filters.containsKey(variable)) {
+                // If this is a summation atom, then subtract this from the counts.
+                if (gr.flatSummationAtoms[atomIndex]) {
+                    for (SummationVariable variable : variables) {
+                        if (variable == null) {
                             continue;
                         }
 
-                        if (!evalFilter(
-                                filters.get(variable), variable,
-                                groundAtom.getArguments()[variableIndex],
-                                atomManager, groundVariables, groundingIndex)) {
-                            skip = true;
-                            break;
-                        }
+                        gr.summationCounts.put(variable, gr.summationCounts.get(variable).intValue() - 1);
                     }
-                }
-
-                if (!skip) {
-                    groundAtoms[atomIndex] = groundAtom;
-                } else {
-                    skippedAtoms++;
-
-                    // If this is a summation atom, then subtract this from the counts.
-                    if (summationAtoms[atomIndex]) {
-                        for (SummationVariable variable : variables) {
-                            if (variable == null) {
-                                continue;
-                            }
-
-                            summationCounts.put(variable, summationCounts.get(variable).intValue() - 1);
-                        }
-                    }
-                }
-            }
-
-            if (skippedAtoms >= groundAtoms.length) {
-                // There are no atoms to ground with.
-                continue;
-            }
-
-            // Compute the coefficients.
-            // and we don't need to pass any substitution information.
-            for (int i = 0; i < coefficients.length; i++) {
-                coefficients[i] = targetExpression.getAtomCoefficients().get(i).getValue(summationCounts);
-            }
-            finalCoefficient = targetExpression.getFinalCoefficient().getValue(summationCounts);
-
-            // Note that unweighed rules will ground an equality, while weighted rules will instead
-            // ground a largerThan and lessThan.
-            GroundRule groundRule = null;
-            if (isWeighted() && FunctionComparator.EQ.equals(targetExpression.getComparator())) {
-                groundRule = makeGroundRule(coefficients, groundAtoms, FunctionComparator.GTE, finalCoefficient);
-                if (verifyGroundRule(groundRule)) {
-                    groundRuleStore.addGroundRule(groundRule);
-                }
-
-                groundRule = makeGroundRule(coefficients, groundAtoms, FunctionComparator.LTE, finalCoefficient);
-                if (verifyGroundRule(groundRule)) {
-                    groundRuleStore.addGroundRule(groundRule);
-                }
-            } else {
-                groundRule = makeGroundRule(coefficients, groundAtoms, targetExpression.getComparator(), finalCoefficient);
-                if (verifyGroundRule(groundRule)) {
-                    groundRuleStore.addGroundRule(groundRule);
                 }
             }
         }
 
-        return groundCount;
+        if (skippedAtoms >= gr.groundAtoms.length) {
+            // There are no atoms to ground with.
+            return;
+        }
+
+        // Compute the coefficients.
+        // and we don't need to pass any substitution information.
+        for (int i = 0; i < gr.coefficients.length; i++) {
+            gr.coefficients[i] = gr.flatExpression.getAtomCoefficients().get(i).getValue(gr.summationCounts);
+        }
+        gr.finalCoefficient = gr.flatExpression.getFinalCoefficient().getValue(gr.summationCounts);
+
+        // Note that unweighed rules will ground an equality, while weighted rules will instead
+        // ground a largerThan and lessThan.
+        GroundRule groundRule = null;
+        if (isWeighted() && FunctionComparator.EQ.equals(gr.flatExpression.getComparator())) {
+            groundRule = makeGroundRule(gr.coefficients, gr.groundAtoms, FunctionComparator.GTE, gr.finalCoefficient);
+            if (verifyGroundRule(groundRule)) {
+                gr.groundRules.add(groundRule);
+            }
+
+            groundRule = makeGroundRule(gr.coefficients, gr.groundAtoms, FunctionComparator.LTE, gr.finalCoefficient);
+            if (verifyGroundRule(groundRule)) {
+                gr.groundRules.add(groundRule);
+            }
+        } else {
+            groundRule = makeGroundRule(gr.coefficients, gr.groundAtoms, gr.flatExpression.getComparator(), gr.finalCoefficient);
+            if (verifyGroundRule(groundRule)) {
+                gr.groundRules.add(groundRule);
+            }
+        }
     }
 
     /**
@@ -658,9 +524,8 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
      */
     private boolean evalFilter(
             Formula filter,
-            SummationVariable summationVariable,
-            Constant variableValue,
-            AtomManager atomManager, ResultList groundVariables, int groundingIndex) {
+            SummationVariable summationVariable, Constant variableValue,
+            AtomManager atomManager, Constant[] queryRow, Map<Variable, Integer> variableMap) {
         if (filter instanceof Atom) {
             // If the summation variable is in this atom, then replace its value and then ground.
             QueryAtom atom = (QueryAtom)filter;
@@ -681,20 +546,20 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
                 atom = new QueryAtom(atom.getPredicate(), newArguments);
             }
 
-            GroundAtom groundAtom = atom.ground(atomManager, groundVariables, groundingIndex);
+            GroundAtom groundAtom = atom.ground(atomManager, queryRow, variableMap);
             return groundAtom.getValue() > 0.0f;
         } else if (filter instanceof Negation) {
             return !evalFilter(
                 ((Negation)filter).getFormula(),
                 summationVariable, variableValue,
-                atomManager, groundVariables, groundingIndex);
+                atomManager, queryRow, variableMap);
         } else if (filter instanceof Conjunction) {
             Conjunction conjunction = (Conjunction)filter;
             for (int i = 0; i < conjunction.length(); i++) {
                 boolean value = evalFilter(
                     conjunction.get(i),
                     summationVariable, variableValue,
-                    atomManager, groundVariables, groundingIndex);
+                    atomManager, queryRow, variableMap);
 
                 if (!value) {
                     return false;
@@ -787,8 +652,13 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
     /**
      * Validate the abstract rule in the context of of grounding.
      * Ensure that no open predicates are being used in a filter.
+     * This is syncronized because we set a variable that multiple threads will look at.
      */
-    private void validateForGrounding(AtomManager atomManager) {
+    private synchronized void validateForGrounding(AtomManager atomManager) {
+        if (validatedByAtomManager) {
+            return;
+        }
+
         if (requiresSplit()) {
             throw new IllegalStateException("This rule should be split() before attemting grounding.");
         }
@@ -807,23 +677,288 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
                         filterAtom.getPredicate().getName()));
             }
         }
+
+        validatedByAtomManager = true;
+    }
+
+    /**
+     * Get a raw query that represents the grounding query for a rule with summations.
+     */
+    private RawQuery getSummationRawQuery(RDBMSDatabase database) {
+        // For the actual query, just use the normal expression.
+        // We can't use the flat expression, since the flat summation will guarentee no results in most cases.
+        // But, we can just ground normally and ignore the summation variables to get the variable replacments.
+        // Then, we can use those replacements in the flat expression.
+        Formula queryFormula = expression.getQueryFormula();
+
+        // In the query, ignore the summation variables (since we already queried for those).
+        Set<Variable> ignoreVariables = new HashSet<Variable>();
+        for (SummationVariable summationVariable : expression.getSummationMapping().keySet()) {
+            ignoreVariables.add(summationVariable.getVariable());
+        }
+
+        // The distinct here is unfortunate, but we need it since we are ignoring the summation variables.
+        Formula2SQL sqler = new Formula2SQL(expression.getVariables(), database, true);
+        SelectQuery query = sqler.getQuery(queryFormula);
+
+        VariableTypeMap variableTypes = new VariableTypeMap();
+        queryFormula.collectVariables(variableTypes);
+
+        Map<Variable, Integer> projectionMap = sqler.getProjectionMap();
+
+        // If there are only summation atoms in this rule, then only get one result from the database.
+        // The rule will be fully grounded, so we won't use any variable replacements.
+        if (projectionMap.size() == 0) {
+            query.setFetchNext(1);
+        }
+
+        return new RawQuery(query.validate().toString(),  projectionMap, variableTypes);
+    }
+
+    private GroundingResources prepSummationGroundingResources(RDBMSDatabase database) {
+        GroundingResources resources = getGroundingResources(null);
+        if (resources.summationDataLoaded) {
+            return resources;
+        }
+
+        List<SummationAtomOrAtom> flatAtoms = new ArrayList<SummationAtomOrAtom>();
+        List<Coefficient> flatCoefficients = new ArrayList<Coefficient>();
+        List<SummationVariable[]> flatSummationVariables = new ArrayList<SummationVariable[]>();
+
+        flattenAtoms(database, flatAtoms, flatCoefficients, flatSummationVariables);
+
+        if (flatAtoms.size() == 0) {
+            // There are no atoms, this rule has no groundings.
+            resources.summationDataLoaded = true;
+            return resources;
+        }
+
+        // Count all the appearences of a summation variable so we can correctly compute coefficients.
+        Map<SummationVariable, Integer> summationCounts = new HashMap<SummationVariable, Integer>();
+        for (SummationVariable variable : expression.getSummationMapping().keySet()) {
+            summationCounts.put(variable, 0);
+        }
+
+        for (SummationVariable[] variables : flatSummationVariables) {
+            for (SummationVariable variable : variables) {
+                if (variable != null) {
+                    summationCounts.put(variable, summationCounts.get(variable).intValue() + 1);
+                }
+            }
+        }
+
+        // Mark which atoms are summation atoms.
+        boolean[] flatSummationAtoms = new boolean[flatSummationVariables.size()];
+        for (int i = 0; i < flatSummationVariables.size(); i++) {
+            for (SummationVariable variable : flatSummationVariables.get(i)) {
+                if (variable != null) {
+                    flatSummationAtoms[i] = true;
+                }
+            }
+        }
+
+        ArithmeticRuleExpression flatExpression = new ArithmeticRuleExpression(
+                flatCoefficients, flatAtoms,
+                expression.getComparator(), expression.getFinalCoefficient(),
+                true);
+
+
+        resources.parseExpression(flatExpression, false);
+
+        resources.summationDataLoaded = true;
+        resources.flatExpression = flatExpression;
+        resources.totalSummationCounts = summationCounts;
+        resources.summationCounts = new HashMap<SummationVariable, Integer>(summationCounts);
+        resources.flatSummationVariables = flatSummationVariables;
+        resources.flatSummationAtoms = flatSummationAtoms;
+
+        return resources;
+    }
+
+    /**
+     * Query the database for the possible replacements for summation variables.
+     */
+    private Map<SummationVariable, ResultList> fetchSummationConstants(
+            Map<SummationVariable, SummationAtom> summationMapping, RDBMSDatabase database) {
+        Map<SummationVariable, ResultList> summationConstants = new HashMap<SummationVariable, ResultList>();
+
+        for (Map.Entry<SummationVariable, SummationAtom> entry : summationMapping.entrySet()) {
+            ResultList results = fetchSummationValues(database, entry.getKey(), entry.getValue());
+            summationConstants.put(entry.getKey(), results);
+        }
+
+        return summationConstants;
+    }
+
+    /**
+     * Take the context expression and flatten out any summation atoms into non-summation atoms by expanding the summation variables.
+     * The three output lists will all be the same size and indexes will match up.
+     */
+    private void flattenAtoms(RDBMSDatabase database,
+            List<SummationAtomOrAtom> flatAtoms,
+            List<Coefficient> flatCoefficients,
+            List<SummationVariable[]> flatSummationVariables) {
+        // All the summation variables mapped to their possible constants.
+        Map<SummationVariable, ResultList> summationConstants = fetchSummationConstants(expression.getSummationMapping(), database);
+
+        flatAtoms.clear();
+        flatCoefficients.clear();
+        flatSummationVariables.clear();
+
+        // Start with all the current atoms, and expand the variables of each summation atom one at a time.
+        flatAtoms.addAll(expression.getAtoms());
+        flatCoefficients.addAll(expression.getAtomCoefficients());
+
+        // Build up the initial summation variables.
+        // This list will tell is which arguments came from summation variables.
+        // We can build it now, and just move/copy elements along with the atoms.
+        for (SummationAtomOrAtom atom : flatAtoms) {
+            SummationVariable[] variables = new SummationVariable[atom.getArity()];
+
+            if (atom instanceof SummationAtom) {
+                SummationAtom summationAtom = (SummationAtom)atom;
+                for (int i = 0; i < summationAtom.getArity(); i++) {
+                    if (summationAtom.getArguments()[i] instanceof SummationVariable) {
+                        variables[i] = (SummationVariable)summationAtom.getArguments()[i];
+                    }
+                }
+            }
+
+            flatSummationVariables.add(variables);
+        }
+
+        boolean done = false;
+        while (!done) {
+            done = true;
+
+            for (int atomIndex = flatAtoms.size() - 1; atomIndex >= 0; atomIndex--) {
+                if (!(flatAtoms.get(atomIndex) instanceof SummationAtom)) {
+                    continue;
+                }
+
+                done = false;
+
+                SummationAtom atom = (SummationAtom)flatAtoms.remove(atomIndex);
+                Coefficient coefficient = flatCoefficients.remove(atomIndex);
+                SummationVariable[] variables = flatSummationVariables.remove(atomIndex);
+
+                // If this is the last summation variable in this atom, then convert it.
+                boolean convertToQueryAtom = (atom.getNumSummationVariables() == 1);
+
+                for (int argumentIndex = 0; argumentIndex < atom.getArity(); argumentIndex++) {
+                    SummationVariableOrTerm argument = atom.getArguments()[argumentIndex];
+
+                    if (!(argument instanceof SummationVariable)) {
+                        continue;
+                    }
+
+                    // Replace this atom using the constants for this summation variable.
+                    ResultList replacements = summationConstants.get((SummationVariable)argument);
+                    for (int resultIndex = 0; resultIndex < replacements.size(); resultIndex++) {
+                        flatCoefficients.add(coefficient);
+                        flatSummationVariables.add(variables);
+
+                        if (convertToQueryAtom) {
+                            Term[] newArgs = new Term[atom.getArity()];
+                            for (int i = 0; i < atom.getArity(); i++) {
+                                if (i == argumentIndex) {
+                                    newArgs[i] = replacements.get(resultIndex)[0];
+                                } else {
+                                    newArgs[i] = (Term)atom.getArguments()[i];
+                                }
+                            }
+
+                            flatAtoms.add(new QueryAtom(atom.getPredicate(), newArgs));
+                        } else {
+                            SummationVariableOrTerm[] newArgs = Arrays.copyOf(atom.getArguments(), atom.getArity());
+                            newArgs[argumentIndex] = replacements.get(resultIndex)[0];
+                            flatAtoms.add(new SummationAtom(atom.getPredicate(), newArgs));
+                        }
+                    }
+
+                    // Only make one replacement per atom, per iteration.
+                    break;
+                }
+            }
+        }
+    }
+
+    private ResultList fetchSummationValues(RDBMSDatabase database, SummationVariable variable, SummationAtom atom) {
+        QueryAtom queryAtom = atom.getQueryAtom();
+
+        VariableTypeMap variableTypes = new VariableTypeMap();
+        queryAtom.collectVariables(variableTypes);
+
+        Set<Variable> projectionSet = new HashSet<Variable>();
+        projectionSet.add(variable.getVariable());
+
+        Formula2SQL sqler = new Formula2SQL(projectionSet, database, true);
+
+        SelectQuery query = sqler.getQuery(queryAtom);
+        Map<Variable, Integer> projectionMap = sqler.getProjectionMap();
+
+        return database.executeQuery(projectionMap, variableTypes, query.validate().toString());
+    }
+
+    private GroundingResources getGroundingResources(ArithmeticRuleExpression expression) {
+        GroundingResources resources = null;
+        if (!Parallel.hasThreadObject(groundingResourcesKey)) {
+            resources = new GroundingResources();
+
+            if (expression != null) {
+                resources.parseExpression(expression, !hasSummation());
+            }
+
+            Parallel.putThreadObject(groundingResourcesKey, resources);
+        } else {
+            resources = (GroundingResources)Parallel.getThreadObject(groundingResourcesKey);
+        }
+
+        return resources;
     }
 
     /**
      * Resources that every grounding thread and use and reuse.
      */
     private static class GroundingResources {
+        // Because multiple ground rules can be generated from a single rule,
+        // we need a place to hold onto ground rules until we pass them back.
+        public List<GroundRule> groundRules;
+
+        // Shared resources.
+
         public List<QueryAtom> queryAtoms;
         public GroundAtom[] groundAtoms;
         public Constant[][] argumentBuffer;
         public float[] coefficients;
         public float finalCoefficient;
 
-        // Because multiple ground rules can be generated from a single rule,
-        // we need a place to hold onto ground rules until we pass them back.
-        public List<GroundRule> groundRules;
+        // More resources necessary for summations.
 
-        public GroundingResources(ArithmeticRuleExpression expression) {
+        public boolean summationDataLoaded;
+
+        // The constext expression with all summation variables expanded.
+        public ArithmeticRuleExpression flatExpression;
+
+        // The maximum counts of all summation variable replacements.
+        public Map<SummationVariable, Integer> totalSummationCounts;
+
+        // A buffer for counting actual replacements.
+        // If we filter out an atom, we can mark it here.
+        // This will allow us to make accurate coefficient computations.
+        public Map<SummationVariable, Integer> summationCounts;
+
+        // A marker for every variables that shows which are summation variables.
+        public List<SummationVariable[]> flatSummationVariables;
+
+        // True for each summation atom.
+        boolean[] flatSummationAtoms;
+
+        public GroundingResources() {
+            groundRules = new ArrayList<GroundRule>();
+        }
+
+        public void parseExpression(ArithmeticRuleExpression expression, boolean computeCoefficients) {
             queryAtoms = new ArrayList<QueryAtom>();
             for (SummationAtomOrAtom atom : expression.getAtoms()) {
                 queryAtoms.add((QueryAtom)atom);
@@ -836,16 +971,16 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
                 argumentBuffer[i] = new Constant[queryAtoms.get(i).getArity()];
             }
 
-            // Non-summation rules will be able to compute the coefficients early.
-            // Summation rules will have to modifiy these.
             coefficients = new float[queryAtoms.size()];
-            for (int i = 0; i < coefficients.length; i++) {
-                coefficients[i] = expression.getAtomCoefficients().get(i).getValue(null);
+            finalCoefficient = 0.0f;
+
+            if (computeCoefficients) {
+                for (int i = 0; i < coefficients.length; i++) {
+                    coefficients[i] = expression.getAtomCoefficients().get(i).getValue(null);
+                }
+
+                finalCoefficient = expression.getFinalCoefficient().getValue(null);
             }
-
-            finalCoefficient = expression.getFinalCoefficient().getValue(null);
-
-            groundRules = new ArrayList<GroundRule>();
         }
     }
 }

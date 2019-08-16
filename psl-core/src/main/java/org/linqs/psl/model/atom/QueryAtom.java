@@ -31,10 +31,10 @@ import java.util.Map;
 
 /**
  * An Atom that can be used in a query, but does not have a truth value.
- * <p>
- * Arguments to a QueryAtom can be a mix of {@link Variable Variables} and
- * {@link Constant GroundTerms}. In other words, they are not necessarily
- * ground and can be used for matching GroundAtoms in a query.
+ *
+ * Arguments to a QueryAtom can be a mix of Variables and Constants.
+ * In other words, they are not necessarily ground
+ * and can be used for matching GroundAtoms in a query.
  */
 public class QueryAtom extends Atom {
     public QueryAtom(Predicate predicate, Term... args) {
@@ -83,7 +83,15 @@ public class QueryAtom extends Atom {
         return atomManager.getAtom(predicate, newArgs);
     }
 
+    public GroundAtom ground(AtomManager atomManager, Constant[] queryResults, Map<Variable, Integer> projectionMap) {
+        return ground(atomManager, queryResults, projectionMap, new Constant[arguments.length]);
+    }
+
     public GroundAtom ground(AtomManager atomManager, Constant[] queryResults, Map<Variable, Integer> projectionMap, Constant[] newArgs) {
+        return ground(atomManager, queryResults, projectionMap, newArgs, false);
+    }
+
+    public GroundAtom ground(AtomManager atomManager, Constant[] queryResults, Map<Variable, Integer> projectionMap, Constant[] newArgs, boolean checkDBCache) {
         for (int i = 0; i < arguments.length; i++) {
             if (arguments[i] instanceof Variable) {
                 newArgs[i] = queryResults[projectionMap.get((Variable)arguments[i]).intValue()];
@@ -91,6 +99,12 @@ public class QueryAtom extends Atom {
                 newArgs[i] = (Constant)arguments[i];
             } else {
                 throw new IllegalArgumentException("Unrecognized type of Term.");
+            }
+        }
+
+        if (checkDBCache) {
+            if (!atomManager.getDatabase().hasCachedAtom((StandardPredicate)predicate, newArgs)) {
+                return null;
             }
         }
 

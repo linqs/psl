@@ -38,7 +38,6 @@ public abstract class AbstractGroundArithmeticRule implements GroundRule {
     protected final FunctionComparator comparator;
     protected final float constant;
 
-    // TEST(eriq): Remove this constructor.
     protected AbstractGroundArithmeticRule(AbstractArithmeticRule rule,
             List<Float> coefficients, List<GroundAtom> atoms, FunctionComparator comparator, float constant) {
         this(rule, ListUtils.toPrimitiveFloatArray(coefficients),

@@ -107,12 +107,12 @@ public class Grounding {
         }
 
         for (Rule rule : rules) {
-            if (!rule.supportsIndividualGrounding()) {
+            if (!rule.supportsGroundingQueryRewriting()) {
                 bypassRules.add(rule);
                 continue;
             }
 
-            Formula query = rule.getGroundingFormula();
+            Formula query = rule.getRewritableGroundingFormula(atomManager);
             if (rewrite) {
                 query = rewriter.rewrite(query, (RDBMSDataStore)dataStore);
             }

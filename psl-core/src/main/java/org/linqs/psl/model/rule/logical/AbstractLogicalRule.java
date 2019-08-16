@@ -20,6 +20,8 @@ package org.linqs.psl.model.rule.logical;
 import org.linqs.psl.database.DatabaseQuery;
 import org.linqs.psl.database.QueryResultIterable;
 import org.linqs.psl.database.atom.AtomManager;
+import org.linqs.psl.database.rdbms.RDBMSDatabase;
+import org.linqs.psl.database.rdbms.RawQuery;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
@@ -131,13 +133,23 @@ public abstract class AbstractLogicalRule extends AbstractRule {
     }
 
     @Override
+    public boolean supportsGroundingQueryRewriting() {
+        return true;
+    }
+
+    @Override
+    public Formula getRewritableGroundingFormula(AtomManager atomManager) {
+        return negatedDNF.getQueryFormula();
+    }
+
+    @Override
     public boolean supportsIndividualGrounding() {
         return true;
     }
 
     @Override
-    public Formula getGroundingFormula() {
-        return negatedDNF.getQueryFormula();
+    public RawQuery getGroundingQuery(AtomManager atomManager) {
+        return new RawQuery((RDBMSDatabase)atomManager.getDatabase(), getRewritableGroundingFormula(atomManager));
     }
 
     @Override

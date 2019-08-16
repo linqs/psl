@@ -22,10 +22,12 @@ import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Cardinality;
 import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Coefficient;
+import org.linqs.psl.model.rule.arithmetic.expression.coefficient.ConstantNumber;
 import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.util.HashCode;
+import org.linqs.psl.util.MathUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -167,6 +169,14 @@ public class ArithmeticRuleExpression {
 
     public Map<SummationVariable, SummationAtom> getSummationMapping() {
         return summationMapping;
+    }
+
+    public boolean looksLikeNegativePrior() {
+        return summationMapping.size() == 0
+                && atoms.size() == 1
+                && FunctionComparator.EQ.equals(comparator)
+                && constant instanceof ConstantNumber
+                && MathUtils.isZero(constant.getValue(null));
     }
 
     /**

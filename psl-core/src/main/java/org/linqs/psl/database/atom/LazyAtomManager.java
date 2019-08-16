@@ -202,16 +202,9 @@ public class LazyAtomManager extends PersistedAtomManager {
         Set<Rule> lazyRules = getLazyRules(rules, lazyPredicates);
 
         for (Rule lazyRule : lazyRules) {
-            if (lazyRule instanceof AbstractLogicalRule) {
+            // We will deal with these rules after we move the lazy atoms to the write partition.
+            if (lazyRule.supportsGroundingQueryRewriting()) {
                 lazySimpleGround(lazyRule, lazyPredicates, groundRuleStore);
-            } else if (lazyRule instanceof AbstractArithmeticRule) {
-                if (((AbstractArithmeticRule)lazyRule).hasSummation()) {
-                    // We will deal with these rules after we move the lazy atoms to the write partition.
-                } else {
-                    lazySimpleGround(lazyRule, lazyPredicates, groundRuleStore);
-                }
-            } else {
-                throw new IllegalStateException("Unknown rule type: " + lazyRule.getClass().getName());
             }
         }
 
@@ -223,10 +216,8 @@ public class LazyAtomManager extends PersistedAtomManager {
         // Since complex aritmetic rules require a full regound, we need to do them
         // after we move the atoms to the write partition.
         for (Rule lazyRule : lazyRules) {
-            if (lazyRule instanceof AbstractArithmeticRule) {
-                if (((AbstractArithmeticRule)lazyRule).hasSummation()) {
-                    lazyComplexArithmeticGround((AbstractArithmeticRule)lazyRule, groundRuleStore);
-                }
+            if (!lazyRule.supportsGroundingQueryRewriting()) {
+                lazyComplexGround((AbstractArithmeticRule)lazyRule, groundRuleStore);
             }
         }
     }
@@ -235,7 +226,7 @@ public class LazyAtomManager extends PersistedAtomManager {
      * Complex arithmetic rules (ones with summations) require FULL regrounding.
      * Will will drop all the ground rules originating from this rule and reground.
      */
-    private void lazyComplexArithmeticGround(AbstractArithmeticRule rule, GroundRuleStore groundRuleStore) {
+    private void lazyComplexGround(AbstractArithmeticRule rule, GroundRuleStore groundRuleStore) {
         // Remove all existing ground rules.
         groundRuleStore.removeGroundRules(rule);
 
@@ -244,11 +235,11 @@ public class LazyAtomManager extends PersistedAtomManager {
     }
 
     private void lazySimpleGround(Rule rule, Set<StandardPredicate> lazyPredicates, GroundRuleStore groundRuleStore) {
-        if (!rule.supportsIndividualGrounding()) {
+        if (!rule.supportsGroundingQueryRewriting()) {
             throw new UnsupportedOperationException("Rule requires full regrounding: " + rule);
         }
 
-        Formula formula = rule.getGroundingFormula();
+        Formula formula = rule.getRewritableGroundingFormula(this);
         ResultList groundingResults = getLazyGroundingResults(formula, lazyPredicates);
         if (groundingResults == null) {
             return;

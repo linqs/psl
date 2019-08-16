@@ -19,8 +19,9 @@ package org.linqs.psl.reasoner.dcd.term;
 
 import org.linqs.psl.database.QueryResultIterable;
 import org.linqs.psl.database.atom.AtomManager;
+import org.linqs.psl.database.rdbms.RDBMSDatabase;
 import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
+import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.term.Constant;
 
 import java.io.FileOutputStream;
@@ -39,7 +40,7 @@ public class DCDStreamingInitialRoundIterator implements DCDStreamingIterator {
     private DCDTermGenerator termGenerator;
     private AtomManager atomManager;
 
-    private List<WeightedLogicalRule> rules;
+    private List<WeightedRule> rules;
     private int currentRule;
 
     private List<DCDObjectiveTerm> termCache;
@@ -62,7 +63,7 @@ public class DCDStreamingInitialRoundIterator implements DCDStreamingIterator {
     private int numPages;
 
     public DCDStreamingInitialRoundIterator(
-            DCDStreamingTermStore parentStore, List<WeightedLogicalRule> rules,
+            DCDStreamingTermStore parentStore, List<WeightedRule> rules,
             AtomManager atomManager, DCDTermGenerator termGenerator,
             List<DCDObjectiveTerm> termCache, List<DCDObjectiveTerm> termPool,
             ByteBuffer termBuffer, ByteBuffer lagrangeBuffer,
@@ -195,7 +196,7 @@ public class DCDStreamingInitialRoundIterator implements DCDStreamingIterator {
         }
 
         // Start grounding the next rule.
-        queryIterable = atomManager.executeGroundingQuery(rules.get(currentRule).getNegatedDNF().getQueryFormula());
+        queryIterable = ((RDBMSDatabase)atomManager.getDatabase()).executeQueryIterator(rules.get(currentRule).getGroundingQuery(atomManager));
         queryResults = queryIterable.iterator();
 
         return fetchNextGroundRule();

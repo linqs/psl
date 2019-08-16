@@ -21,10 +21,11 @@ import org.linqs.psl.config.Config;
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
-import org.linqs.psl.model.rule.arithmetic.AbstractArithmeticRule;
+import org.linqs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
+import org.linqs.psl.model.rule.arithmetic.WeightedArithmeticRule;
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
 import org.linqs.psl.util.RandUtils;
 import org.linqs.psl.util.SystemUtils;
@@ -93,7 +94,7 @@ public class DCDStreamingTermStore implements DCDTermStore {
 
     public static final int INITIAL_PATH_CACHE_SIZE = 100;
 
-    private List<WeightedLogicalRule> rules;
+    private List<WeightedRule> rules;
     private AtomManager atomManager;
 
     // <Object.hashCode(), RVA>
@@ -161,7 +162,7 @@ public class DCDStreamingTermStore implements DCDTermStore {
 
         Set<Atom> atomSet = new HashSet<Atom>();
 
-        this.rules = new ArrayList<WeightedLogicalRule>();
+        this.rules = new ArrayList<WeightedRule>();
         for (Rule rule : rules) {
             if (!rule.isWeighted()) {
                 if (warnRules) {
@@ -179,30 +180,34 @@ public class DCDStreamingTermStore implements DCDTermStore {
                 continue;
             }
 
-            if (rule instanceof AbstractArithmeticRule) {
+            if (!rule.supportsIndividualGrounding()) {
                 if (warnRules) {
-                    log.warn("DCD does not support arithmetic rules: " + rule);
+                    log.warn("DCD does not support rules that cannot individually ground (arithmetic rules with summations): " + rule);
                 }
                 continue;
             }
 
-            if (!(rule instanceof WeightedLogicalRule)) {
-                if (warnRules) {
-                    log.warn("DCD does not support this rule: " + rule);
+            // Don't allow explicit priors.
+            if (rule instanceof WeightedLogicalRule) {
+                atomSet.clear();
+                atomSet = ((WeightedLogicalRule)rule).getFormula().getAtoms(atomSet);
+                if (atomSet.size() == 1) {
+                    if (warnRules) {
+                        log.warn("DCD does not support explicit priors: " + rule);
+                    }
+                    continue;
                 }
-                continue;
+            } else if (rule instanceof WeightedArithmeticRule) {
+                ArithmeticRuleExpression expression = ((WeightedArithmeticRule)rule).getExpression();
+                if (expression.looksLikeNegativePrior()) {
+                    if (warnRules) {
+                        log.warn("DCD does not support explicit priors: " + rule);
+                    }
+                    continue;
+                }
             }
 
-            atomSet.clear();
-            atomSet = ((WeightedLogicalRule)rule).getFormula().getAtoms(atomSet);
-            if (atomSet.size() == 1) {
-                if (warnRules) {
-                    log.warn("DCD does not support explicit priors: " + rule);
-                }
-                continue;
-            }
-
-            this.rules.add((WeightedLogicalRule)rule);
+            this.rules.add((WeightedRule)rule);
         }
 
         if (rules.size() == 0) {
