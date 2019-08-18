@@ -119,11 +119,11 @@ public class DCDReasoner implements Reasoner {
 
         int iteration = 1;
         if (printObj) {
-            log.trace("grepThis:Iterations,Time(ms),Objective");
+            log.trace("objective:Iterations,Time(ms),Objective");
 
             if (printInitialObj) {
                 objective = computeObjective(termStore);
-                log.trace("grepThis:{},{},{}", 0, 0, objective);
+                log.trace("objective:{},{},{}", 0, 0, objective);
             }
         }
 
@@ -149,7 +149,7 @@ public class DCDReasoner implements Reasoner {
             time += end - start;
 
             if (printObj) {
-                log.trace("grepThis:{},{},{}", iteration, time, objective);
+                log.trace("objective:{},{},{}", iteration, time, objective);
             }
 
             iteration++;
