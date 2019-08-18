@@ -64,9 +64,9 @@ public class SGDTermGenerator extends HyperplaneTermGenerator<SGDObjectiveTerm, 
         float weight = (float)((WeightedGroundRule)groundRule).getWeight();
 
         if (isHinge && isSquared) {
-            return new SquaredHingeLossTerm(hyperplane, weight, learningRate);
+            return new SGDObjectiveTerm(true, hyperplane, weight, learningRate);
         } else if (isHinge && !isSquared) {
-            return new HingeLossTerm(hyperplane, weight, learningRate);
+            return new SGDObjectiveTerm(false, hyperplane, weight, learningRate);
         } else if (!isHinge && isSquared) {
             log.warn("SGD does not support squared linear terms: " + groundRule);
             return null;

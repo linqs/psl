@@ -24,32 +24,43 @@ import org.linqs.psl.reasoner.term.ReasonerTerm;
 /**
  * A term in the objective to be optimized by an ADMMReasoner.
  */
-public abstract class SGDObjectiveTerm implements ReasonerTerm  {
-    protected float weight;
-    protected float learningRate;
+public class SGDObjectiveTerm implements ReasonerTerm  {
+    private boolean squared;
+    private float weight;
 
-    protected float constant;
-    protected short size;
-    protected float[] coefficients;
-    protected RandomVariableAtom[] variables;
+    private float constant;
+    private float learningRate;
 
-    public SGDObjectiveTerm(Hyperplane<RandomVariableAtom> hyperplane, float weight, float learningRate) {
+    private short size;
+    private float[] coefficients;
+    private RandomVariableAtom[] variables;
+
+    public SGDObjectiveTerm(boolean squared, Hyperplane<RandomVariableAtom> hyperplane,
+            float weight, float learningRate) {
+        this.squared = squared;
         this.weight = weight;
+
         this.learningRate = learningRate;
 
-        constant = hyperplane.getConstant();
         size = (short)hyperplane.size();
         coefficients = hyperplane.getCoefficients();
         variables = hyperplane.getVariables();
+        constant = hyperplane.getConstant();
     }
-
-    public abstract float evaluate();
-
-    protected abstract float computeGradient(int iteration, int varId, float dot);
 
     @Override
     public int size() {
         return size;
+    }
+
+    public float evaluate() {
+        if (squared) {
+            // weight * [max(0.0, coeffs^T * x - constant)]^2
+            return weight * (float)Math.pow(Math.max(0.0f, dot()), 2);
+        } else {
+            // weight * max(0.0, coeffs^T * x - constant)
+            return weight * Math.max(0.0f, dot());
+        }
     }
 
     public void minimize(int iteration) {
@@ -65,7 +76,15 @@ public abstract class SGDObjectiveTerm implements ReasonerTerm  {
         }
     }
 
-    protected float dot() {
+    private float computeGradient(int iteration, int varId, float dot) {
+        if (squared) {
+            return weight * (learningRate / iteration) * 2.0f * dot * coefficients[varId];
+        } else {
+            return weight * (learningRate / iteration) * coefficients[varId];
+        }
+    }
+
+    private float dot() {
         float value = 0.0f;
 
         for (int i = 0; i < size; i++) {
