@@ -23,6 +23,7 @@ import org.linqs.psl.database.rdbms.RDBMSDatabase;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.term.Constant;
+import org.linqs.psl.reasoner.term.streaming.StreamingIterator;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -35,7 +36,7 @@ import java.util.List;
  * On this first iteration, we will build the term cache up from ground rules
  * and flush the terms to disk.
  */
-public class DCDStreamingInitialRoundIterator implements DCDStreamingIterator {
+public class DCDStreamingInitialRoundIterator implements StreamingIterator<DCDObjectiveTerm> {
     private DCDStreamingTermStore parentStore;
     private DCDTermGenerator termGenerator;
     private AtomManager atomManager;

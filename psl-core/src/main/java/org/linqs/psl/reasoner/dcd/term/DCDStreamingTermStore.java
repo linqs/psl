@@ -27,6 +27,8 @@ import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.rule.arithmetic.WeightedArithmeticRule;
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
+import org.linqs.psl.reasoner.term.streaming.StreamingIterator;
+import org.linqs.psl.reasoner.term.streaming.StreamingTermStore;
 import org.linqs.psl.util.RandUtils;
 import org.linqs.psl.util.SystemUtils;
 
@@ -51,7 +53,7 @@ import java.util.Set;
  * Remember that this class will internally iterate over an unknown number of groundings.
  * So interrupting the iteration can cause the term count to be incorrect.
  */
-public class DCDStreamingTermStore implements DCDTermStore {
+public class DCDStreamingTermStore implements DCDTermStore, StreamingTermStore {
     private static final Logger log = LoggerFactory.getLogger(DCDStreamingTermStore.class);
 
     /**
@@ -106,7 +108,7 @@ public class DCDStreamingTermStore implements DCDTermStore {
     private List<String> lagrangePagePaths;
 
     private boolean initialRound;
-    private DCDStreamingIterator activeIterator;
+    private StreamingIterator<DCDObjectiveTerm> activeIterator;
     private int seenTermCount;
     private int numPages;
 
