@@ -58,7 +58,7 @@ public class SGDReasoner implements Reasoner {
      * The maximum number of iterations of SGD to perform in a round of inference.
      */
     public static final String OBJ_TOL_KEY = CONFIG_PREFIX + ".tolerance";
-    public static final float OBJ_TOL_DEFAULT = 0.000001f;
+    public static final float OBJ_TOL_DEFAULT = 0.00001f;
 
 
     public static final String LEARNING_RATE_KEY = CONFIG_PREFIX + ".learningrate";
