@@ -53,7 +53,7 @@ import java.util.Set;
  * Remember that this class will internally iterate over an unknown number of groundings.
  * So interrupting the iteration can cause the term count to be incorrect.
  */
-public class DCDStreamingTermStore implements DCDTermStore, StreamingTermStore {
+public class DCDStreamingTermStore implements DCDTermStore, StreamingTermStore<DCDObjectiveTerm> {
     private static final Logger log = LoggerFactory.getLogger(DCDStreamingTermStore.class);
 
     /**
@@ -90,9 +90,6 @@ public class DCDStreamingTermStore implements DCDTermStore, StreamingTermStore {
      */
     public static final String WARN_RULES_KEY = CONFIG_PREFIX + ".warnunsupportedrules";
     public static final boolean WARN_RULES_DEFAULT = true;
-
-    // How much to over-allocate by.
-    public static final double OVERALLOCATION_RATIO = 1.25;
 
     public static final int INITIAL_PATH_CACHE_SIZE = 100;
 
