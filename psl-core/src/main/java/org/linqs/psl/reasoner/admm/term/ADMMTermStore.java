@@ -229,6 +229,11 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm, LocalVariable
         return store.iterator();
     }
 
+    @Override
+    public Iterator<ADMMObjectiveTerm> noWriteIterator() {
+        return iterator();
+    }
+
     public Iterable<ADMMObjectiveTerm> getTerms(GroundRule groundRule) {
         final GroundRule finalGroundRule = groundRule;
 

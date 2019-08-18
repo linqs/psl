@@ -15,17 +15,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.reasoner.dcd.term;
+package org.linqs.psl.reasoner.term;
 
-import org.linqs.psl.model.atom.RandomVariableAtom;
-import org.linqs.psl.reasoner.term.TermStore;
-
-import java.util.Iterator;
-
-public interface DCDTermStore extends TermStore<DCDObjectiveTerm, RandomVariableAtom> {
+/**
+ * An interface for term stores that can handle some variable operations.
+ */
+public interface VariableTermStore<T extends ReasonerTerm, V extends ReasonerLocalVariable> extends TermStore<T, V> {
     public int getNumVariables();
 
-    public Iterable<RandomVariableAtom> getVariables();
+    public Iterable<V> getVariables();
 
     public void ensureVariableCapacity(int capacity);
 
@@ -33,9 +31,4 @@ public interface DCDTermStore extends TermStore<DCDObjectiveTerm, RandomVariable
      * Is the term store loaded, and can it give an accurate term and variable count.
      */
     public boolean isLoaded();
-
-    /**
-     * Get an iterator over the terms in the score that does not write to disk.
-     */
-    public Iterator<DCDObjectiveTerm> noWriteIterator();
 }

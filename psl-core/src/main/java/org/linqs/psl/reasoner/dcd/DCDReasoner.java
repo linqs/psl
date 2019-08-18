@@ -21,8 +21,8 @@ import org.linqs.psl.config.Config;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.dcd.term.DCDObjectiveTerm;
-import org.linqs.psl.reasoner.dcd.term.DCDTermStore;
 import org.linqs.psl.reasoner.term.TermStore;
+import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.linqs.psl.util.IteratorUtils;
 import org.linqs.psl.util.MathUtils;
 
@@ -107,10 +107,11 @@ public class DCDReasoner implements Reasoner {
 
     @Override
     public void optimize(TermStore baseTermStore) {
-        if (!(baseTermStore instanceof DCDTermStore)) {
-            throw new IllegalArgumentException("DCDReasoner requires an DCDTermStore (found " + baseTermStore.getClass().getName() + ").");
+        if (!(baseTermStore instanceof VariableTermStore)) {
+            throw new IllegalArgumentException("DCDReasoner requires an VariableTermStore (found " + baseTermStore.getClass().getName() + ").");
         }
-        DCDTermStore termStore = (DCDTermStore)baseTermStore;
+        @SuppressWarnings("unchecked")
+        VariableTermStore<DCDObjectiveTerm, RandomVariableAtom> termStore = (VariableTermStore<DCDObjectiveTerm, RandomVariableAtom>)baseTermStore;
 
         float objective = -1.0f;
         float oldObjective = Float.POSITIVE_INFINITY;
@@ -157,7 +158,7 @@ public class DCDReasoner implements Reasoner {
         log.debug("Optimized with {} variables and {} terms.", termStore.getNumVariables(), termStore.size());
     }
 
-    public float computeObjective(DCDTermStore termStore) {
+    private float computeObjective(VariableTermStore<DCDObjectiveTerm, RandomVariableAtom> termStore) {
         float objective = 0.0f;
         int termCount = 0;
 

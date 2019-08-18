@@ -90,6 +90,11 @@ public class MemoryTermStore<T extends ReasonerTerm> implements TermStore<T, Ran
     }
 
     @Override
+    public Iterator<T> noWriteIterator() {
+        return iterator();
+    }
+
+    @Override
     public RandomVariableAtom createLocalVariable(RandomVariableAtom atom) {
         return atom;
     }

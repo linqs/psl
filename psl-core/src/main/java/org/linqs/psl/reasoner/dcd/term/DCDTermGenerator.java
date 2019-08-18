@@ -27,6 +27,7 @@ import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
+import org.linqs.psl.reasoner.term.VariableTermStore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,11 +46,11 @@ public class DCDTermGenerator extends HyperplaneTermGenerator<DCDObjectiveTerm, 
 
     @Override
     public int generateTerms(GroundRuleStore ruleStore, TermStore<DCDObjectiveTerm, RandomVariableAtom> termStore, int rvaCount) {
-        if (!(termStore instanceof DCDTermStore)) {
-            throw new IllegalArgumentException("DCDTermGenerator requires a DCDTermStore");
+        if (!(termStore instanceof VariableTermStore)) {
+            throw new IllegalArgumentException("DCDTermGenerator requires a VariableTermStore");
         }
 
-        ((DCDTermStore)termStore).ensureVariableCapacity(rvaCount);
+        ((VariableTermStore<DCDObjectiveTerm, RandomVariableAtom>)termStore).ensureVariableCapacity(rvaCount);
 
         return super.generateTerms(ruleStore, termStore, rvaCount);
     }

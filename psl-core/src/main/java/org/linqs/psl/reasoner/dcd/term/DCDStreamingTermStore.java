@@ -36,7 +36,7 @@ import java.util.Set;
  * Remember that this class will internally iterate over an unknown number of groundings.
  * So interrupting the iteration can cause the term count to be incorrect.
  */
-public class DCDStreamingTermStore extends StreamingTermStore<DCDObjectiveTerm> implements DCDTermStore {
+public class DCDStreamingTermStore extends StreamingTermStore<DCDObjectiveTerm> {
     public DCDStreamingTermStore(List<Rule> rules, AtomManager atomManager) {
         super(rules, atomManager, new DCDTermGenerator());
     }

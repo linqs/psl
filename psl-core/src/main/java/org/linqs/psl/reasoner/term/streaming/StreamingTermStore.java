@@ -25,7 +25,7 @@ import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
-import org.linqs.psl.reasoner.term.TermStore;
+import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.linqs.psl.util.RandUtils;
 import org.linqs.psl.util.SystemUtils;
 
@@ -42,7 +42,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-public abstract class StreamingTermStore<T extends ReasonerTerm> implements TermStore<T, RandomVariableAtom> {
+public abstract class StreamingTermStore<T extends ReasonerTerm> implements VariableTermStore<T, RandomVariableAtom> {
     private static final Logger log = LoggerFactory.getLogger(StreamingTermStore.class);
 
     /**

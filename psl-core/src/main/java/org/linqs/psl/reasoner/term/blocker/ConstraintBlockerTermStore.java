@@ -156,6 +156,11 @@ public class ConstraintBlockerTermStore implements TermStore<ConstraintBlockerTe
     }
 
     @Override
+    public Iterator<ConstraintBlockerTerm> noWriteIterator() {
+        return iterator();
+    }
+
+    @Override
     public RandomVariableAtom createLocalVariable(RandomVariableAtom atom) {
         throw new UnsupportedOperationException("ConstraintBlockerTermStore does not use the concept of local variables.");
     }

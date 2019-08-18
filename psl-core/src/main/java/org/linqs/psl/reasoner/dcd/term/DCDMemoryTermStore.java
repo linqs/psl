@@ -21,6 +21,7 @@ import org.linqs.psl.config.Config;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.reasoner.term.MemoryTermStore;
+import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.linqs.psl.util.RandUtils;
 
 import java.util.Collections;
@@ -31,7 +32,7 @@ import java.util.Set;
 /**
  * A TermStore specifically for DCD terms.
  */
-public class DCDMemoryTermStore implements DCDTermStore {
+public class DCDMemoryTermStore implements VariableTermStore<DCDObjectiveTerm, RandomVariableAtom> {
     /**
      * Prefix of property keys used by this class.
      */

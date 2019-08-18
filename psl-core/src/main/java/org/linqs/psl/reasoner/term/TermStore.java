@@ -22,6 +22,7 @@ import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -58,4 +59,9 @@ public interface TermStore<T extends ReasonerTerm, V extends ReasonerLocalVariab
      * Create a variable local to a specific term.
      */
     public V createLocalVariable(RandomVariableAtom atom);
+
+    /**
+     * Get an iterator over the terms in the store that does not write to disk.
+     */
+    public Iterator<T> noWriteIterator();
 }
