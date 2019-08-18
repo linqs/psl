@@ -91,7 +91,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     protected Map<MutableInt, RandomVariableAtom> variables;
 
     protected List<String> termPagePaths;
-    protected List<String> lagrangePagePaths;
+    protected List<String> volatilePagePaths;
 
     protected boolean initialRound;
     protected StreamingIterator<T> activeIterator;
@@ -115,10 +115,10 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     protected ByteBuffer termBuffer;
 
     /**
-     * The IO buffer for lagrange values.
+     * The IO buffer for volatile values.
      * These values change every iteration, and need to be updated.
      */
-    protected ByteBuffer lagrangeBuffer;
+    protected ByteBuffer volatileBuffer;
 
     /**
      * Terms in the current page.
@@ -135,7 +135,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     protected List<T> termPool;
 
     /**
-     * When we shuffle pages, we need to know how they were shuffled so the lagrange
+     * When we shuffle pages, we need to know how they were shuffled so the volatile
      * cache can be writtten in the same order.
      * So we will shuffle this list of sequential ints in the same order as the page.
      */
@@ -194,14 +194,14 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         variables = new HashMap<MutableInt, RandomVariableAtom>();
 
         termPagePaths = new ArrayList<String>(INITIAL_PATH_CACHE_SIZE);
-        lagrangePagePaths = new ArrayList<String>(INITIAL_PATH_CACHE_SIZE);
+        volatilePagePaths = new ArrayList<String>(INITIAL_PATH_CACHE_SIZE);
 
         initialRound = true;
         activeIterator = null;
         numPages = 0;
 
         termBuffer = null;
-        lagrangeBuffer = null;
+        volatileBuffer = null;
 
         SystemUtils.recursiveDelete(pageDir);
         if (pageSize <= 1) {
@@ -282,24 +282,24 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         return termPagePaths.get(index);
     }
 
-    public String getLagrangePagePath(int index) {
+    public String getVolatilePagePath(int index) {
         // Make sure the path is built.
-        for (int i = lagrangePagePaths.size(); i <= index; i++) {
-            lagrangePagePaths.add(Paths.get(pageDir, String.format("%08d_lagrange.page", i)).toString());
+        for (int i = volatilePagePaths.size(); i <= index; i++) {
+            volatilePagePaths.add(Paths.get(pageDir, String.format("%08d_volatile.page", i)).toString());
         }
 
-        return lagrangePagePaths.get(index);
+        return volatilePagePaths.get(index);
     }
 
     /**
      * A callback for the initial round iterator.
      * The ByterBuffers are here because of possible reallocation.
      */
-    public void initialIterationComplete(int termCount, int numPages, ByteBuffer termBuffer, ByteBuffer lagrangeBuffer) {
+    public void initialIterationComplete(int termCount, int numPages, ByteBuffer termBuffer, ByteBuffer volatileBuffer) {
         seenTermCount = termCount;
         this.numPages = numPages;
         this.termBuffer = termBuffer;
-        this.lagrangeBuffer = lagrangeBuffer;
+        this.volatileBuffer = volatileBuffer;
 
         initialRound = false;
         activeIterator = null;
@@ -384,9 +384,9 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
             termBuffer = null;
         }
 
-        if (lagrangeBuffer != null) {
-            lagrangeBuffer.clear();
-            lagrangeBuffer = null;
+        if (volatileBuffer != null) {
+            volatileBuffer.clear();
+            volatileBuffer = null;
         }
 
         if (termCache != null) {

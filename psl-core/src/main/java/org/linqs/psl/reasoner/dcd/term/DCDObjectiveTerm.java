@@ -100,6 +100,41 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         return size;
     }
 
+    private float computeGradient() {
+        float val = 0.0f;
+
+        for (int i = 0; i < size; i++) {
+            val += variables[i].getValue() * coefficients[i];
+        }
+
+        return constant - val;
+    }
+
+    private void minimize(boolean truncateEveryStep, float gradient, float lim) {
+        float pg = gradient;
+        if (MathUtils.isZero(lagrange)) {
+            pg = Math.min(0.0f, gradient);
+        }
+
+        if (MathUtils.equals(lim, adjustedWeight) && MathUtils.equals(lagrange, adjustedWeight)) {
+            pg = Math.max(0.0f, gradient);
+        }
+
+        if (MathUtils.isZero(pg)) {
+            return;
+        }
+
+        float pa = lagrange;
+        lagrange = Math.min(lim, Math.max(0.0f, lagrange - gradient / qii));
+        for (int i = 0; i < size; i++) {
+            float val = variables[i].getValue() - ((lagrange - pa) * coefficients[i]);
+            if (truncateEveryStep) {
+                val = Math.max(0.0f, Math.min(1.0f, val));
+            }
+            variables[i].setValue(val);
+        }
+    }
+
     /**
      * The number of bytes that writeFixedValues() will need to represent this term.
      * This is just all the member datum minus the lagrange value.
@@ -136,7 +171,7 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
     /**
      * Assume the term that will be next read from the buffers.
      */
-    public void read(ByteBuffer fixedBuffer, ByteBuffer lagrangeBuffer,
+    public void read(ByteBuffer fixedBuffer, ByteBuffer volatileBuffer,
             Map<MutableInt, RandomVariableAtom> rvaMap, MutableInt intBuffer) {
         squared = (fixedBuffer.get() == 1);
         adjustedWeight = fixedBuffer.getFloat();
@@ -156,7 +191,7 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
             variables[i] = rvaMap.get(intBuffer);
         }
 
-        lagrange = lagrangeBuffer.getFloat();
+        lagrange = volatileBuffer.getFloat();
     }
 
     @Override
@@ -190,40 +225,5 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         }
 
         return builder.toString();
-    }
-
-    private float computeGradient() {
-        float val = 0.0f;
-
-        for (int i = 0; i < size; i++) {
-            val += variables[i].getValue() * coefficients[i];
-        }
-
-        return constant - val;
-    }
-
-    private void minimize(boolean truncateEveryStep, float gradient, float lim) {
-        float pg = gradient;
-        if (MathUtils.isZero(lagrange)) {
-            pg = Math.min(0.0f, gradient);
-        }
-
-        if (MathUtils.equals(lim, adjustedWeight) && MathUtils.equals(lagrange, adjustedWeight)) {
-            pg = Math.max(0.0f, gradient);
-        }
-
-        if (MathUtils.isZero(pg)) {
-            return;
-        }
-
-        float pa = lagrange;
-        lagrange = Math.min(lim, Math.max(0.0f, lagrange - gradient / qii));
-        for (int i = 0; i < size; i++) {
-            float val = variables[i].getValue() - ((lagrange - pa) * coefficients[i]);
-            if (truncateEveryStep) {
-                val = Math.max(0.0f, Math.min(1.0f, val));
-            }
-            variables[i].setValue(val);
-        }
     }
 }

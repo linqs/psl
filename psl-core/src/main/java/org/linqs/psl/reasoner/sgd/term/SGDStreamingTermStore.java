@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.reasoner.dcd.term;
+package org.linqs.psl.reasoner.sgd.term;
 
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.model.atom.Atom;
@@ -36,9 +36,9 @@ import java.util.Set;
  * Remember that this class will internally iterate over an unknown number of groundings.
  * So interrupting the iteration can cause the term count to be incorrect.
  */
-public class DCDStreamingTermStore extends StreamingTermStore<DCDObjectiveTerm> {
-    public DCDStreamingTermStore(List<Rule> rules, AtomManager atomManager) {
-        super(rules, atomManager, new DCDTermGenerator());
+public class SGDStreamingTermStore extends StreamingTermStore<SGDObjectiveTerm> {
+    public SGDStreamingTermStore(List<Rule> rules, AtomManager atomManager) {
+        super(rules, atomManager, new SGDTermGenerator());
     }
 
     @Override
@@ -60,22 +60,22 @@ public class DCDStreamingTermStore extends StreamingTermStore<DCDObjectiveTerm> 
     }
 
     @Override
-    protected StreamingIterator<DCDObjectiveTerm> getInitialRoundIterator() {
-        return new DCDStreamingInitialRoundIterator(
+    protected StreamingIterator<SGDObjectiveTerm> getInitialRoundIterator() {
+        return new SGDStreamingInitialRoundIterator(
                 this, rules, atomManager, termGenerator,
                 termCache, termPool, termBuffer, volatileBuffer, pageSize);
     }
 
     @Override
-    protected StreamingIterator<DCDObjectiveTerm> getCacheIterator() {
-        return new DCDStreamingCacheIterator(
+    protected StreamingIterator<SGDObjectiveTerm> getCacheIterator() {
+        return new SGDStreamingCacheIterator(
                 this, false, variables, termCache, termPool,
                 termBuffer, volatileBuffer, shufflePage, shuffleMap, randomizePageAccess, numPages);
     }
 
     @Override
-    protected StreamingIterator<DCDObjectiveTerm> getNoWriteIterator() {
-        return new DCDStreamingCacheIterator(
+    protected StreamingIterator<SGDObjectiveTerm> getNoWriteIterator() {
+        return new SGDStreamingCacheIterator(
                 this, true, variables, termCache, termPool,
                 termBuffer, volatileBuffer, shufflePage, shuffleMap, randomizePageAccess, numPages);
     }

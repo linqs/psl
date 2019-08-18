@@ -49,7 +49,7 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
     protected List<T> termPool;
 
     protected ByteBuffer termBuffer;
-    protected ByteBuffer lagrangeBuffer;
+    protected ByteBuffer volatileBuffer;
 
     protected int currentPage;
     protected int nextCachedTermIndex;
@@ -70,7 +70,7 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
     public StreamingCacheIterator(
             StreamingTermStore<T> parentStore, boolean readonly, Map<MutableInt, RandomVariableAtom> variables,
             List<T> termCache, List<T> termPool,
-            ByteBuffer termBuffer, ByteBuffer lagrangeBuffer,
+            ByteBuffer termBuffer, ByteBuffer volatileBuffer,
             boolean shufflePage, int[] shuffleMap, boolean randomizePageAccess,
             int numPages) {
         this.parentStore = parentStore;
@@ -85,7 +85,7 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
         this.termPool = termPool;
 
         this.termBuffer = termBuffer;
-        this.lagrangeBuffer = lagrangeBuffer;
+        this.volatileBuffer = volatileBuffer;
 
         nextCachedTermIndex = 0;
 
@@ -156,7 +156,7 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
     private T fetchNextTerm() {
         // The cache is exhaused, fill it up.
         if (nextCachedTermIndex >= termCache.size()) {
-            // Flush all the lagrange terms.
+            // Flush all the volatile terms.
             flushCache();
 
             // Check if there is another page, and load it if it exists.
@@ -191,14 +191,14 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
 
         int pageIndex = pageAccessOrder.get(currentPage).intValue();
         String termPagePath = parentStore.getTermPagePath(pageIndex);
-        String lagrangePagePath = parentStore.getLagrangePagePath(pageIndex);
+        String volatilePagePath = parentStore.getVolatilePagePath(pageIndex);
 
         // Prep for the next read.
         // Note that the termBuffer should be at maximum size from the initial round.
         termBuffer.clear();
-        lagrangeBuffer.clear();
+        volatileBuffer.clear();
 
-        readPage(termPagePath, lagrangePagePath);
+        readPage(termPagePath, volatilePagePath);
 
         if (shufflePage) {
             // Remember that the shuffle map may be larger than the term cache (for not full pages).
@@ -224,18 +224,18 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
         }
 
         // We will clear the termCache when we fetch a new page, not on flush.
-        flushLagrangeCache();
+        flushVolatileCache();
     }
 
-    private void flushLagrangeCache() {
+    private void flushVolatileCache() {
         // The buffer has already grown to maximum size in the initial round,
         // no need to reallocate.
-        lagrangeBuffer.clear();
+        volatileBuffer.clear();
 
         int pageIndex = pageAccessOrder.get(currentPage).intValue();
-        String lagrangePagePath = parentStore.getLagrangePagePath(pageIndex);
+        String volatilePagePath = parentStore.getVolatilePagePath(pageIndex);
 
-        writePage(lagrangePagePath);
+        writeVolatilePage(volatilePagePath);
     }
 
     @Override
@@ -254,11 +254,11 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
      * Read a page and fill the termCache using freed terms from the termPool.
      * The child is responsible for all IO, but shuffling will be handled by the parent.
      */
-    protected abstract void readPage(String termPagePath, String lagrangePagePath);
+    protected abstract void readPage(String termPagePath, String volatilePagePath);
 
     /**
      * Write a cache page to disk.
      * Unlike readPage, the child is responsible for undoing any shuffling via shuffleMap.
      */
-    protected abstract void writePage(String lagrangePagePath);
+    protected abstract void writeVolatilePage(String volatilePagePath);
 }

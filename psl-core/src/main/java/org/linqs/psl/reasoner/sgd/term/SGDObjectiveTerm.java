@@ -21,8 +21,13 @@ import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 
+import org.apache.commons.lang.mutable.MutableInt;
+
+import java.nio.ByteBuffer;
+import java.util.Map;
+
 /**
- * A term in the objective to be optimized by an ADMMReasoner.
+ * A term in the objective to be optimized by a SGDReasoner.
  */
 public class SGDObjectiveTerm implements ReasonerTerm  {
     private boolean squared;
@@ -92,5 +97,95 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         }
 
         return value - constant;
+    }
+
+    /**
+     * The number of bytes that writeFixedValues() will need to represent this term.
+     * This is just all the member datum.
+     */
+    public int fixedByteSize() {
+        int bitSize =
+            Byte.SIZE  // squared
+            + Float.SIZE  // weight
+            + Float.SIZE  // constant
+            + Float.SIZE  // learningRate
+            + Short.SIZE  // size
+            + size * (Float.SIZE + Integer.SIZE);  // coefficients + variables
+
+        return bitSize / 8;
+    }
+
+    /**
+     * Write a binary representation of the fixed values of this term to a buffer.
+     * Note that the variables are written using their Object hashcode.
+     */
+    public void writeFixedValues(ByteBuffer fixedBuffer) {
+        fixedBuffer.put((byte)(squared ? 1 : 0));
+        fixedBuffer.putFloat(weight);
+        fixedBuffer.putFloat(constant);
+        fixedBuffer.putFloat(learningRate);
+        fixedBuffer.putShort(size);
+
+        for (int i = 0; i < size; i++) {
+            fixedBuffer.putFloat(coefficients[i]);
+            fixedBuffer.putInt(System.identityHashCode(variables[i]));
+        }
+    }
+
+    /**
+     * Assume the term that will be next read from the buffers.
+     */
+    public void read(ByteBuffer fixedBuffer, ByteBuffer volatileBuffer,
+            Map<MutableInt, RandomVariableAtom> rvaMap, MutableInt intBuffer) {
+        squared = (fixedBuffer.get() == 1);
+        weight = fixedBuffer.getFloat();
+        constant = fixedBuffer.getFloat();
+        learningRate = fixedBuffer.getFloat();
+        size = fixedBuffer.getShort();
+
+        // Make sure that there is enough room for all these variables.
+        if (coefficients.length < size) {
+            coefficients = new float[size];
+            variables = new RandomVariableAtom[size];
+        }
+
+        for (int i = 0; i < size; i++) {
+            coefficients[i] = fixedBuffer.getFloat();
+            intBuffer.setValue(fixedBuffer.getInt());
+            variables[i] = rvaMap.get(intBuffer);
+        }
+    }
+
+    @Override
+    public String toString() {
+        // weight * [max(coeffs^T * x - constant, 0.0)]^2
+
+        StringBuilder builder = new StringBuilder();
+
+        builder.append(weight);
+        builder.append(" * max(0.0, ");
+
+        for (int i = 0; i < size; i++) {
+            builder.append("(");
+            builder.append(coefficients[i]);
+            builder.append(" * ");
+            builder.append(variables[i]);
+            builder.append(")");
+
+            if (i != size - 1) {
+                builder.append(" + ");
+            }
+        }
+
+        builder.append(" - ");
+        builder.append(constant);
+
+        builder.append(")");
+
+        if (squared) {
+            builder.append("^2");
+        }
+
+        return builder.toString();
     }
 }

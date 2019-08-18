@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.reasoner.dcd.term;
+package org.linqs.psl.reasoner.sgd.term;
 
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.reasoner.term.streaming.StreamingCacheIterator;
@@ -23,16 +23,15 @@ import org.linqs.psl.reasoner.term.streaming.StreamingCacheIterator;
 import org.apache.commons.lang.mutable.MutableInt;
 
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 
-public class DCDStreamingCacheIterator extends StreamingCacheIterator<DCDObjectiveTerm> {
-    public DCDStreamingCacheIterator(
-            DCDStreamingTermStore parentStore, boolean readonly, Map<MutableInt, RandomVariableAtom> variables,
-            List<DCDObjectiveTerm> termCache, List<DCDObjectiveTerm> termPool,
+public class SGDStreamingCacheIterator extends StreamingCacheIterator<SGDObjectiveTerm> {
+    public SGDStreamingCacheIterator(
+            SGDStreamingTermStore parentStore, boolean readonly, Map<MutableInt, RandomVariableAtom> variables,
+            List<SGDObjectiveTerm> termCache, List<SGDObjectiveTerm> termPool,
             ByteBuffer termBuffer, ByteBuffer volatileBuffer,
             boolean shufflePage, int[] shuffleMap, boolean randomizePageAccess,
             int numPages) {
@@ -45,23 +44,18 @@ public class DCDStreamingCacheIterator extends StreamingCacheIterator<DCDObjecti
         int termsSize = 0;
         int numTerms = 0;
         int headerSize = (Integer.SIZE / 8) * 2;
-        int volatilesSize = 0;
 
-        try (
-                FileInputStream termStream = new FileInputStream(termPagePath);
-                FileInputStream volatileStream = new FileInputStream(volatilePagePath)) {
+        try (FileInputStream termStream = new FileInputStream(termPagePath)) {
             // First read the term size information.
             termStream.read(termBuffer.array(), 0, headerSize);
 
             termsSize = termBuffer.getInt();
             numTerms = termBuffer.getInt();
-            volatilesSize = (Float.SIZE / 8) * numTerms;
 
-            // Now read in all the terms and volatile values.
+            // Now read in all the terms.
             termStream.read(termBuffer.array(), headerSize, termsSize);
-            volatileStream.read(volatileBuffer.array(), 0, volatilesSize);
         } catch (IOException ex) {
-            throw new RuntimeException(String.format("Unable to read cache pages: [%s ; %s].", termPagePath, volatilePagePath), ex);
+            throw new RuntimeException(String.format("Unable to read cache page: [%s].", termPagePath), ex);
         }
 
         // Convert all the terms from binary to objects.
@@ -69,7 +63,7 @@ public class DCDStreamingCacheIterator extends StreamingCacheIterator<DCDObjecti
 
         MutableInt intBuffer = new MutableInt();
         for (int i = 0; i < numTerms; i++) {
-            DCDObjectiveTerm term = termPool.get(i);
+            SGDObjectiveTerm term = termPool.get(i);
             term.read(termBuffer, volatileBuffer, variables, intBuffer);
             termCache.add(term);
         }
@@ -77,27 +71,6 @@ public class DCDStreamingCacheIterator extends StreamingCacheIterator<DCDObjecti
 
     @Override
     protected void writeVolatilePage(String volatilePagePath) {
-        int volatileBufferSize = (Float.SIZE / 8) * termCache.size();
-
-        // If this page was picked up from the cache (and not from grounding) and shuffled,
-        // then we will need to use the shuffle map to write the volatile values back in
-        // the same order as the terms.
-        if (shufflePage) {
-            for (int shuffledIndex = 0; shuffledIndex < termCache.size(); shuffledIndex++) {
-                int writeIndex = shuffleMap[shuffledIndex];
-                DCDObjectiveTerm term = termCache.get(shuffledIndex);
-                volatileBuffer.putFloat(writeIndex * (Float.SIZE / 8), term.getLagrange());
-            }
-        } else {
-            for (DCDObjectiveTerm term : termCache) {
-                volatileBuffer.putFloat(term.getLagrange());
-            }
-        }
-
-        try (FileOutputStream stream = new FileOutputStream(volatilePagePath)) {
-            stream.write(volatileBuffer.array(), 0, volatileBufferSize);
-        } catch (IOException ex) {
-            throw new RuntimeException("Unable to write volatile cache page: " + volatilePagePath, ex);
-        }
+        // SGD doesn't need write pages.
     }
 }

@@ -53,7 +53,7 @@ public abstract class StreamingInitialRoundIterator<T extends ReasonerTerm> impl
     protected List<T> termPool;
 
     protected ByteBuffer termBuffer;
-    protected ByteBuffer lagrangeBuffer;
+    protected ByteBuffer volatileBuffer;
 
     protected int termCount;
 
@@ -72,7 +72,7 @@ public abstract class StreamingInitialRoundIterator<T extends ReasonerTerm> impl
             StreamingTermStore<T> parentStore, List<WeightedRule> rules,
             AtomManager atomManager, HyperplaneTermGenerator<T, RandomVariableAtom> termGenerator,
             List<T> termCache, List<T> termPool,
-            ByteBuffer termBuffer, ByteBuffer lagrangeBuffer,
+            ByteBuffer termBuffer, ByteBuffer volatileBuffer,
             int pageSize) {
         this.parentStore = parentStore;
         this.termGenerator = termGenerator;
@@ -88,7 +88,7 @@ public abstract class StreamingInitialRoundIterator<T extends ReasonerTerm> impl
         this.termPool.clear();
 
         this.termBuffer = termBuffer;
-        this.lagrangeBuffer = lagrangeBuffer;
+        this.volatileBuffer = volatileBuffer;
 
         this.pageSize = pageSize;
         numPages = 0;
@@ -215,9 +215,9 @@ public abstract class StreamingInitialRoundIterator<T extends ReasonerTerm> impl
         }
 
         String termPagePath = parentStore.getTermPagePath(numPages);
-        String lagrangePagePath = parentStore.getLagrangePagePath(numPages);
+        String volatilePagePath = parentStore.getVolatilePagePath(numPages);
 
-        writePage(termPagePath, lagrangePagePath);
+        writeFullPage(termPagePath, volatilePagePath);
 
         // Move on to the next page.
         numPages++;
@@ -238,11 +238,12 @@ public abstract class StreamingInitialRoundIterator<T extends ReasonerTerm> impl
             queryResults = null;
         }
 
-        parentStore.initialIterationComplete(termCount, numPages, termBuffer, lagrangeBuffer);
+        parentStore.initialIterationComplete(termCount, numPages, termBuffer, volatileBuffer);
     }
 
     /**
-     * Write a full page (including any write page that the child may use).
+     * Write a full page (including any volatile page that the child may use).
+     * This is responsible for creating/reallocating both the term buffer and volatile buffer.
      */
-    protected abstract void writePage(String termPagePath, String lagrangePagePath);
+    protected abstract void writeFullPage(String termPagePath, String volatilePagePath);
 }
