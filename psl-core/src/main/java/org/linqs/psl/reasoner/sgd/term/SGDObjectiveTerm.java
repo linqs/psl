@@ -64,10 +64,6 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
     public float evaluate() {
         float dot = dot();
 
-        if (hinge && dot <= 0.0f) {
-            return 0.0f;
-        }
-
         if (squared && hinge) {
             // weight * [max(0.0, coeffs^T * x - constant)]^2
             return weight * (float)Math.pow(Math.max(0.0f, dot), 2);
@@ -90,12 +86,15 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
 
             gradient *= (learningRate / iteration);
 
-
             variables[i].setValue(Math.max(0.0f, Math.min(1.0f, variables[i].getValue() - gradient)));
         }
     }
 
     private float computeGradient(int iteration, int varId, float dot) {
+        if (hinge && dot <= 0.0f) {
+            return 0.0f;
+        }
+
         if (squared && hinge) {
             return weight * 2.0f * dot * coefficients[varId];
         } else if (squared && !hinge) {
