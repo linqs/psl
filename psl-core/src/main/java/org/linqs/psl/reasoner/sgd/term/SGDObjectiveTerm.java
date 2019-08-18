@@ -80,10 +80,10 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
     }
 
     public void minimize(int iteration) {
-        for (int i = 0 ; i < size; i++) {
-            float dot = dot();
-            float gradient = computeGradient(iteration, i, dot);
+        float dot = dot();
 
+        for (int i = 0 ; i < size; i++) {
+            float gradient = computeGradient(iteration, i, dot);
             gradient *= (learningRate / iteration);
 
             variables[i].setValue(Math.max(0.0f, Math.min(1.0f, variables[i].getValue() - gradient)));
