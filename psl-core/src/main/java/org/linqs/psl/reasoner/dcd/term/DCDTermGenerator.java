@@ -50,7 +50,7 @@ public class DCDTermGenerator extends HyperplaneTermGenerator<DCDObjectiveTerm, 
             throw new IllegalArgumentException("DCDTermGenerator requires a VariableTermStore");
         }
 
-        ((VariableTermStore<DCDObjectiveTerm, RandomVariableAtom>)termStore).ensureVariableCapacity(rvaCount);
+        ((VariableTermStore)termStore).ensureVariableCapacity(rvaCount);
 
         return super.generateTerms(ruleStore, termStore, rvaCount);
     }

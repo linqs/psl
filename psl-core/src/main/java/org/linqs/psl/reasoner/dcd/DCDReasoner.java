@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Iterator;
 
 /**
- * Uses an ADMM optimization method to optimize its GroundRules.
+ * Uses an SGD optimization method to optimize its GroundRules.
  */
 public class DCDReasoner implements Reasoner {
     private static final Logger log = LoggerFactory.getLogger(DCDReasoner.class);
@@ -43,7 +43,7 @@ public class DCDReasoner implements Reasoner {
     public static final String CONFIG_PREFIX = "dcd";
 
     /**
-     * The maximum number of iterations of ADMM to perform in a round of inference.
+     * The maximum number of iterations of SGD to perform in a round of inference.
      */
     public static final String MAX_ITER_KEY = CONFIG_PREFIX + ".maxiterations";
     public static final int MAX_ITER_DEFAULT = 200;
@@ -55,9 +55,9 @@ public class DCDReasoner implements Reasoner {
     public static final boolean OBJECTIVE_BREAK_DEFAULT = true;
 
     /**
-     * The maximum number of iterations of ADMM to perform in a round of inference.
+     * The maximum number of iterations of SGD to perform in a round of inference.
      */
-    public static final String OBJ_TOL_KEY = CONFIG_PREFIX + ".tol";
+    public static final String OBJ_TOL_KEY = CONFIG_PREFIX + ".tolerance";
     public static final float OBJ_TOL_DEFAULT = 0.000001f;
 
     public static final String C_KEY = CONFIG_PREFIX + ".C";
@@ -80,7 +80,7 @@ public class DCDReasoner implements Reasoner {
 
     private int maxIter;
 
-    private float tol;
+    private float tolerance;
     private boolean printObj;
     private boolean printInitialObj;
     private boolean objectiveBreak;
@@ -92,7 +92,7 @@ public class DCDReasoner implements Reasoner {
         objectiveBreak = Config.getBoolean(OBJECTIVE_BREAK_KEY, OBJECTIVE_BREAK_DEFAULT);
         printObj = Config.getBoolean(PRINT_OBJECTIVE_KEY, PRINT_OBJECTIVE_DEFAULT);
         printInitialObj = Config.getBoolean(PRINT_INITIAL_OBJECTIVE_KEY, PRINT_INITIAL_OBJECTIVE_DEFAULT);
-        tol = Config.getFloat(OBJ_TOL_KEY, OBJ_TOL_DEFAULT);
+        tolerance = Config.getFloat(OBJ_TOL_KEY, OBJ_TOL_DEFAULT);
         c = Config.getFloat(C_KEY, C_DEFAULT);
         truncateEveryStep = Config.getBoolean(TRUNCATE_EVERY_STEP_KEY, TRUNCATE_EVERY_STEP_DEFAULT);
     }
@@ -110,6 +110,7 @@ public class DCDReasoner implements Reasoner {
         if (!(baseTermStore instanceof VariableTermStore)) {
             throw new IllegalArgumentException("DCDReasoner requires an VariableTermStore (found " + baseTermStore.getClass().getName() + ").");
         }
+
         @SuppressWarnings("unchecked")
         VariableTermStore<DCDObjectiveTerm, RandomVariableAtom> termStore = (VariableTermStore<DCDObjectiveTerm, RandomVariableAtom>)baseTermStore;
 
@@ -118,7 +119,7 @@ public class DCDReasoner implements Reasoner {
 
         int iteration = 1;
         if (printObj) {
-            log.trace("gretThis:Iterations,Time(ms),Objective");
+            log.trace("grepThis:Iterations,Time(ms),Objective");
 
             if (printInitialObj) {
                 objective = computeObjective(termStore);
@@ -128,7 +129,7 @@ public class DCDReasoner implements Reasoner {
 
         long time = 0;
         while (iteration <= maxIter
-                && (!objectiveBreak || (iteration == 1 || !MathUtils.equals(objective, oldObjective, tol)))) {
+                && (!objectiveBreak || (iteration == 1 || !MathUtils.equals(objective, oldObjective, tolerance)))) {
             long start = System.currentTimeMillis();
 
             for (DCDObjectiveTerm term : termStore) {

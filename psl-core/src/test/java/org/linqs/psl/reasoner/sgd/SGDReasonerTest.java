@@ -24,7 +24,7 @@ import org.linqs.psl.application.inference.MPEInference;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.reasoner.sgd.term.SGDTermGenerator;
-import org.linqs.psl.reasoner.sgd.term.SGDTermStore;
+import org.linqs.psl.reasoner.sgd.term.SGDMemoryTermStore;
 
 import org.junit.Test;
 
@@ -40,7 +40,7 @@ public class SGDReasonerTest {
     public void baseTest() {
         Config.setProperty(InferenceApplication.REASONER_KEY, SGDReasoner.class.getName());
         Config.setProperty(InferenceApplication.TERM_GENERATOR_KEY, SGDTermGenerator.class.getName());
-        Config.setProperty(InferenceApplication.TERM_STORE_KEY, SGDTermStore.class.getName());
+        Config.setProperty(InferenceApplication.TERM_STORE_KEY, SGDMemoryTermStore.class.getName());
 
         TestModel.ModelInformation info = TestModel.getModel();
 

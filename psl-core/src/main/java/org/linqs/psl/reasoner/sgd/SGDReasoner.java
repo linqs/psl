@@ -18,16 +18,21 @@
 package org.linqs.psl.reasoner.sgd;
 
 import org.linqs.psl.config.Config;
-import org.linqs.psl.reasoner.sgd.term.SGDObjectiveTerm;
-import org.linqs.psl.reasoner.sgd.term.SGDTermStore;
+import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.reasoner.Reasoner;
+import org.linqs.psl.reasoner.sgd.term.SGDObjectiveTerm;
 import org.linqs.psl.reasoner.term.TermStore;
+import org.linqs.psl.reasoner.term.VariableTermStore;
+import org.linqs.psl.util.IteratorUtils;
 import org.linqs.psl.util.MathUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Iterator;
+
 /**
- * Uses an ADMM optimization method to optimize its GroundRules.
+ * Uses an SGD optimization method to optimize its GroundRules.
  */
 public class SGDReasoner implements Reasoner {
     private static final Logger log = LoggerFactory.getLogger(SGDReasoner.class);
@@ -38,7 +43,7 @@ public class SGDReasoner implements Reasoner {
     public static final String CONFIG_PREFIX = "sgd";
 
     /**
-     * The maximum number of iterations of ADMM to perform in a round of inference.
+     * The maximum number of iterations of SGD to perform in a round of inference.
      */
     public static final String MAX_ITER_KEY = CONFIG_PREFIX + ".maxiterations";
     public static final int MAX_ITER_DEFAULT = 200;
@@ -50,7 +55,7 @@ public class SGDReasoner implements Reasoner {
     public static final boolean OBJECTIVE_BREAK_DEFAULT = true;
 
     /**
-     * The maximum number of iterations of ADMM to perform in a round of inference.
+     * The maximum number of iterations of SGD to perform in a round of inference.
      */
     public static final String OBJ_TOL_KEY = CONFIG_PREFIX + ".tolerance";
     public static final float OBJ_TOL_DEFAULT = 0.000001f;
@@ -62,15 +67,27 @@ public class SGDReasoner implements Reasoner {
     public static final String PRINT_OBJECTIVE = CONFIG_PREFIX + ".printobj";
     public static final boolean PRINT_OBJECTIVE_DEFAULT = true;
 
+    /**
+     * Print the objective before any optimization.
+     * Note that this will require a pass through all the terms,
+     * and therefore may affect performance.
+     * Has no effect if printobj is false.
+     */
+    public static final String PRINT_INITIAL_OBJECTIVE_KEY = CONFIG_PREFIX + ".printinitialobj";
+    public static final boolean PRINT_INITIAL_OBJECTIVE_DEFAULT = false;
+
     private int maxIter;
+
     private float tolerance;
     private boolean printObj;
+    private boolean printInitialObj;
     private boolean objectiveBreak;
 
     public SGDReasoner() {
         maxIter = Config.getInt(MAX_ITER_KEY, MAX_ITER_DEFAULT);
         objectiveBreak = Config.getBoolean(OBJECTIVE_BREAK_KEY, OBJECTIVE_BREAK_DEFAULT);
         printObj = Config.getBoolean(PRINT_OBJECTIVE, PRINT_OBJECTIVE_DEFAULT);
+        printInitialObj = Config.getBoolean(PRINT_INITIAL_OBJECTIVE_KEY, PRINT_INITIAL_OBJECTIVE_DEFAULT);
         tolerance = Config.getFloat(OBJ_TOL_KEY, OBJ_TOL_DEFAULT);
     }
 
@@ -84,25 +101,29 @@ public class SGDReasoner implements Reasoner {
 
     @Override
     public void optimize(TermStore baseTermStore) {
-        if (!(baseTermStore instanceof SGDTermStore)) {
-            throw new IllegalArgumentException("SGDReasoner requires an SGDTermStore (found " + baseTermStore.getClass().getName() + ").");
+        if (!(baseTermStore instanceof VariableTermStore)) {
+            throw new IllegalArgumentException("SGDReasoner requires an VariableTermStore (found " + baseTermStore.getClass().getName() + ").");
         }
-        SGDTermStore termStore = (SGDTermStore)baseTermStore;
 
-        log.debug("Performing optimization with {} terms.", termStore.size());
+        @SuppressWarnings("unchecked")
+        VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore = (VariableTermStore<SGDObjectiveTerm, RandomVariableAtom>)baseTermStore;
 
-        float objective = computeObjective(termStore);
+        float objective = -1.0f;
         float oldObjective = Float.POSITIVE_INFINITY;
 
         int iteration = 1;
         if (printObj) {
-            log.info("Iterations, Time(ms), Objective");
-            log.info("grepThis:{},{},{}", iteration - 1, 0, objective);
+            log.trace("grepThis:Iterations,Time(ms),Objective");
+
+            if (printInitialObj) {
+                objective = computeObjective(termStore);
+                log.trace("grepThis:{},{},{}", 0, 0, objective);
+            }
         }
 
         long time = 0;
-        while ((objectiveBreak && MathUtils.compare(objective, oldObjective, tolerance) != 0)
-                && iteration <= maxIter) {
+        while (iteration <= maxIter
+                && (!objectiveBreak || (iteration == 1 || !MathUtils.equals(objective, oldObjective, tolerance)))) {
             long start = System.currentTimeMillis();
 
             for (SGDObjectiveTerm term: termStore) {
@@ -122,16 +143,26 @@ public class SGDReasoner implements Reasoner {
         }
 
         log.info("Optimization completed in {} iterations. Objective.: {}", iteration - 1, objective);
+        log.debug("Optimized with {} variables and {} terms.", termStore.getNumVariables(), termStore.size());
     }
 
-    public float computeObjective(SGDTermStore termStore){
+    public float computeObjective(VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore) {
         float objective = 0.0f;
         int termCount = 0;
 
-        for (SGDObjectiveTerm term : termStore) {
+        // If possible, use a readonly iterator.
+        Iterator<SGDObjectiveTerm> termIterator = null;
+        if (termStore.isLoaded()) {
+            termIterator = termStore.noWriteIterator();
+        } else {
+            termIterator = termStore.iterator();
+        }
+
+        for (SGDObjectiveTerm term : IteratorUtils.newIterable(termIterator)) {
             objective += term.evaluate();
             termCount++;
         }
+
         return objective / termCount;
     }
 
