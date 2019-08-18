@@ -269,48 +269,46 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
     }
 
     @Override
-    public GroundRule ground(Constant[] constants, Map<Variable, Integer> variableMap, AtomManager atomManager) {
+    public void ground(Constant[] constants, Map<Variable, Integer> variableMap, AtomManager atomManager,
+            List<GroundRule> results) {
         if (!validatedByAtomManager) {
             validateForGrounding(atomManager);
         }
 
         if (!hasSummation()) {
-            return groundForNonSummation(constants, variableMap, atomManager);
+            groundForNonSummation(constants, variableMap, atomManager, results);
         } else {
-            return groundForSummation(constants, variableMap, atomManager);
+            groundForSummation(constants, variableMap, atomManager, results);
         }
     }
 
-    private GroundRule groundForNonSummation(Constant[] constants, Map<Variable, Integer> variableMap, AtomManager atomManager) {
+    private void groundForNonSummation(Constant[] constants, Map<Variable, Integer> variableMap, AtomManager atomManager,
+            List<GroundRule> results) {
         GroundingResources resources = getGroundingResources(expression);
-        if (resources.groundRules.size() > 0) {
-            return resources.groundRules.remove(resources.groundRules.size() - 1);
-        }
-
         groundSingleNonSummationRule(constants, variableMap, atomManager, resources);
 
-        return resources.groundRules.remove(resources.groundRules.size() - 1);
+        results.addAll(resources.groundRules);
+        resources.groundRules.clear();
     }
 
-    private GroundRule groundForSummation(Constant[] constants, Map<Variable, Integer> variableMap, AtomManager atomManager) {
+    private void groundForSummation(Constant[] constants, Map<Variable, Integer> variableMap, AtomManager atomManager,
+            List<GroundRule> results) {
         if (!(atomManager.getDatabase() instanceof RDBMSDatabase)) {
             throw new IllegalArgumentException("Can only ground summation arithmetic rules with a relational database.");
         }
         RDBMSDatabase database = ((RDBMSDatabase)atomManager.getDatabase());
 
         GroundingResources resources = prepSummationGroundingResources(database);
-        if (resources.groundRules.size() > 0) {
-            return resources.groundRules.remove(resources.groundRules.size() - 1);
-        }
 
         // Bail if there are no groundings.
         if (resources.flatExpression == null) {
-            return null;
+            return;
         }
 
         groundSingleSummationRule(constants, variableMap, atomManager, resources);
 
-        return resources.groundRules.remove(resources.groundRules.size() - 1);
+        results.addAll(resources.groundRules);
+        resources.groundRules.clear();
     }
 
     @Override

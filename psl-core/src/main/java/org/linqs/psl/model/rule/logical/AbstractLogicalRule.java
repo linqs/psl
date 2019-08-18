@@ -153,7 +153,11 @@ public abstract class AbstractLogicalRule extends AbstractRule {
     }
 
     @Override
-    public GroundRule ground(Constant[] constants, Map<Variable, Integer> variableMap, AtomManager atomManager) {
+    public void ground(Constant[] constants, Map<Variable, Integer> variableMap, AtomManager atomManager, List<GroundRule> results) {
+        results.add(ground(constants, variableMap, atomManager));
+    }
+
+    private GroundRule ground(Constant[] constants, Map<Variable, Integer> variableMap, AtomManager atomManager) {
         // Get the grounding resources for this thread,
         if (!Parallel.hasThreadObject(groundingResourcesKey)) {
             Parallel.putThreadObject(groundingResourcesKey, new GroundingResources(negatedDNF));

@@ -79,7 +79,7 @@ public interface Rule {
      * Get the formual that we can use for grounding.
      * Should throw if supportsIndividualGrounding() == false.
      */
-    public GroundRule ground(Constant[] constants, Map<Variable, Integer> variableMap, AtomManager atomManager);
+    public void ground(Constant[] constants, Map<Variable, Integer> variableMap, AtomManager atomManager, List<GroundRule> results);
 
     /**
      * Check if this rule needs to be broken up into multiple rules.

@@ -30,6 +30,7 @@ import org.linqs.psl.reasoner.term.ReasonerTerm;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -48,6 +49,10 @@ public abstract class StreamingInitialRoundIterator<T extends ReasonerTerm> impl
 
     protected List<WeightedRule> rules;
     protected int currentRule;
+
+    // Because arithmetic rules can create multiple groundings per query result,
+    // we have to keep track of doubles and make sure they get returned.
+    protected List<GroundRule> pendingGroundRules;
 
     protected List<T> termCache;
     protected List<T> termPool;
@@ -80,6 +85,8 @@ public abstract class StreamingInitialRoundIterator<T extends ReasonerTerm> impl
 
         this.rules = rules;
         currentRule = -1;
+
+        pendingGroundRules = new ArrayList<GroundRule>();
 
         this.termCache = termCache;
         this.termCache.clear();
@@ -186,12 +193,24 @@ public abstract class StreamingInitialRoundIterator<T extends ReasonerTerm> impl
     }
 
     private GroundRule fetchNextGroundRule() {
+        // First check for ground rules still pending from the last query tuple.
+        while (pendingGroundRules.size() > 0) {
+            GroundRule groundRule = pendingGroundRules.remove(pendingGroundRules.size() - 1);
+            if (groundRule != null) {
+                return groundRule;
+            }
+        }
+
         // Check if there are any more results pending from the query.
         while (queryResults != null && queryResults.hasNext()) {
             Constant[] tuple = queryResults.next();
-            GroundRule groundRule = rules.get(currentRule).ground(tuple, queryIterable.getVariableMap(), atomManager);
-            if (groundRule != null) {
-                return groundRule;
+            rules.get(currentRule).ground(tuple, queryIterable.getVariableMap(), atomManager, pendingGroundRules);
+
+            while (pendingGroundRules.size() > 0) {
+                GroundRule groundRule = pendingGroundRules.remove(pendingGroundRules.size() - 1);
+                if (groundRule != null) {
+                    return groundRule;
+                }
             }
         }
 

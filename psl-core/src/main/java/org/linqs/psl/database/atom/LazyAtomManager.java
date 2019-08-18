@@ -245,10 +245,13 @@ public class LazyAtomManager extends PersistedAtomManager {
             return;
         }
 
+        List<GroundRule> groundRules = new ArrayList<GroundRule>();
         for (int i = 0; i < groundingResults.size(); i++) {
-            GroundRule groundRule = rule.ground(groundingResults.get(i), groundingResults.getVariableMap(), this);
-            if (groundRule != null) {
-                groundRuleStore.addGroundRule(groundRule);
+            rule.ground(groundingResults.get(i), groundingResults.getVariableMap(), this, groundRules);
+            for (GroundRule groundRule : groundRules) {
+                if (groundRule != null) {
+                    groundRuleStore.addGroundRule(groundRule);
+                }
             }
         }
     }
