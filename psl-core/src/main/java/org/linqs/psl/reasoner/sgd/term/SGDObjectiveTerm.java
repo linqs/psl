@@ -31,8 +31,9 @@ import java.util.Map;
  */
 public class SGDObjectiveTerm implements ReasonerTerm  {
     private boolean squared;
-    private float weight;
+    private boolean hinge;
 
+    private float weight;
     private float constant;
     private float learningRate;
 
@@ -40,11 +41,13 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
     private float[] coefficients;
     private RandomVariableAtom[] variables;
 
-    public SGDObjectiveTerm(boolean squared, Hyperplane<RandomVariableAtom> hyperplane,
+    public SGDObjectiveTerm(boolean squared, boolean hinge,
+            Hyperplane<RandomVariableAtom> hyperplane,
             float weight, float learningRate) {
         this.squared = squared;
-        this.weight = weight;
+        this.hinge = hinge;
 
+        this.weight = weight;
         this.learningRate = learningRate;
 
         size = (short)hyperplane.size();
@@ -59,33 +62,48 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
     }
 
     public float evaluate() {
-        if (squared) {
+        float dot = dot();
+
+        if (hinge && dot <= 0.0f) {
+            return 0.0f;
+        }
+
+        if (squared && hinge) {
             // weight * [max(0.0, coeffs^T * x - constant)]^2
-            return weight * (float)Math.pow(Math.max(0.0f, dot()), 2);
-        } else {
+            return weight * (float)Math.pow(Math.max(0.0f, dot), 2);
+        } else if (squared && !hinge) {
+            // weight * [coeffs^T * x - constant]^2
+            return weight * (float)Math.pow(dot, 2);
+        } else if (!squared && hinge) {
             // weight * max(0.0, coeffs^T * x - constant)
-            return weight * Math.max(0.0f, dot());
+            return weight * Math.max(0.0f, dot);
+        } else {
+            // weight * (coeffs^T * x - constant)
+            return weight * dot;
         }
     }
 
     public void minimize(int iteration) {
         for (int i = 0 ; i < size; i++) {
             float dot = dot();
-            float gradient = 0.0f;
+            float gradient = computeGradient(iteration, i, dot);
 
-            if (dot >= 0.0f) {
-                gradient = computeGradient(iteration, i, dot);
-            }
+            gradient *= (learningRate / iteration);
+
 
             variables[i].setValue(Math.max(0.0f, Math.min(1.0f, variables[i].getValue() - gradient)));
         }
     }
 
     private float computeGradient(int iteration, int varId, float dot) {
-        if (squared) {
-            return weight * (learningRate / iteration) * 2.0f * dot * coefficients[varId];
+        if (squared && hinge) {
+            return weight * 2.0f * dot * coefficients[varId];
+        } else if (squared && !hinge) {
+            return weight * 2.0f * dot * coefficients[varId];
+        } else if (!squared && hinge) {
+            return weight * coefficients[varId];
         } else {
-            return weight * (learningRate / iteration) * coefficients[varId];
+            return weight * coefficients[varId];
         }
     }
 
@@ -106,6 +124,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
     public int fixedByteSize() {
         int bitSize =
             Byte.SIZE  // squared
+            + Byte.SIZE  // hinge
             + Float.SIZE  // weight
             + Float.SIZE  // constant
             + Float.SIZE  // learningRate
@@ -121,6 +140,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
      */
     public void writeFixedValues(ByteBuffer fixedBuffer) {
         fixedBuffer.put((byte)(squared ? 1 : 0));
+        fixedBuffer.put((byte)(hinge ? 1 : 0));
         fixedBuffer.putFloat(weight);
         fixedBuffer.putFloat(constant);
         fixedBuffer.putFloat(learningRate);
@@ -138,6 +158,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
     public void read(ByteBuffer fixedBuffer, ByteBuffer volatileBuffer,
             Map<MutableInt, RandomVariableAtom> rvaMap, MutableInt intBuffer) {
         squared = (fixedBuffer.get() == 1);
+        hinge = (fixedBuffer.get() == 1);
         weight = fixedBuffer.getFloat();
         constant = fixedBuffer.getFloat();
         learningRate = fixedBuffer.getFloat();
@@ -163,7 +184,11 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         StringBuilder builder = new StringBuilder();
 
         builder.append(weight);
-        builder.append(" * max(0.0, ");
+        builder.append(" * ");
+
+        if (hinge) {
+            builder.append(" * max(0.0, ");
+        }
 
         for (int i = 0; i < size; i++) {
             builder.append("(");
@@ -180,7 +205,9 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         builder.append(" - ");
         builder.append(constant);
 
-        builder.append(")");
+        if (hinge) {
+            builder.append(")");
+        }
 
         if (squared) {
             builder.append("^2");

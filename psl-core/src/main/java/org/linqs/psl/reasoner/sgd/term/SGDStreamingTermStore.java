@@ -43,19 +43,7 @@ public class SGDStreamingTermStore extends StreamingTermStore<SGDObjectiveTerm> 
 
     @Override
     protected boolean supportsRule(Rule rule) {
-        // Don't allow explicit priors.
-        if (rule instanceof WeightedLogicalRule) {
-            Set<Atom> atomSet = ((WeightedLogicalRule)rule).getFormula().getAtoms(new HashSet<Atom>());
-            if (atomSet.size() == 1) {
-                return false;
-            }
-        } else if (rule instanceof WeightedArithmeticRule) {
-            ArithmeticRuleExpression expression = ((WeightedArithmeticRule)rule).getExpression();
-            if (expression.looksLikeNegativePrior()) {
-                return false;
-            }
-        }
-
+        // No special requirements for rules.
         return true;
     }
 
