@@ -159,92 +159,120 @@ public abstract class Atom implements Formula, SummationAtomOrAtom {
                 continue;
             }
 
-            ConstantType declaredType = predicate.getArgumentType(i);
+            validateConstant(i);
+        }
+    }
 
-            // No conversion necessary.
-            if (predicate.getArgumentType(i).isInstance((Constant)arguments[i])) {
-                continue;
-            }
+    private void validateConstant(int argumentIndex) {
+        ConstantType declaredType = predicate.getArgumentType(argumentIndex);
 
-            // Perform safe conversions.
-            if (arguments[i] instanceof DoubleAttribute) {
-                Double arg = ((DoubleAttribute)arguments[i]).getValue();
+        // No conversion necessary.
+        if (predicate.getArgumentType(argumentIndex).isInstance((Constant)arguments[argumentIndex])) {
+            return;
+        }
 
-                // Doubles will not be truncated/rounded.
-                if (declaredType == ConstantType.String) {
-                    arguments[i] = new StringAttribute(arg.toString());
-                } else if (declaredType == ConstantType.UniqueStringID) {
-                    arguments[i] = new UniqueStringID(arg.toString());
-                }
-            } else if (arguments[i] instanceof IntegerAttribute) {
-                Integer arg = ((IntegerAttribute)arguments[i]).getValue();
+        // Perform safe conversions.
+        if (arguments[argumentIndex] instanceof DoubleAttribute) {
+            arguments[argumentIndex] = safeDoubleConversion(declaredType, (DoubleAttribute)arguments[argumentIndex]);
+        } else if (arguments[argumentIndex] instanceof IntegerAttribute) {
+            arguments[argumentIndex] = safeIntConversion(declaredType, (IntegerAttribute)arguments[argumentIndex]);
+        } else if (arguments[argumentIndex] instanceof LongAttribute) {
+            arguments[argumentIndex] = safeLongConversion(declaredType, (LongAttribute)arguments[argumentIndex]);
+        } else if (arguments[argumentIndex] instanceof StringAttribute) {
+            arguments[argumentIndex] = safeStringConversion(declaredType, (StringAttribute)arguments[argumentIndex]);
+        } else if (arguments[argumentIndex] instanceof UniqueIntID) {
+            // Unique ids will not be converted to anything else (even though it may be safe).
+            throw new IllegalArgumentException(
+                    String.format("Expected type %s at position %d but was given: %s (%s) for predicate %s -- %s",
+                    predicate.getArgumentType(argumentIndex), argumentIndex, arguments[argumentIndex], arguments[argumentIndex].getClass().getName(), predicate,
+                    "Unique identifiers cannot be converted to any other type."));
+        } else if (arguments[argumentIndex] instanceof UniqueStringID) {
+            // Unique ids will not be converted to anything else (even though it may be safe).
+            throw new IllegalArgumentException(
+                    String.format("Expected type %s at position %d but was given: %s (%s) for predicate %s -- %s",
+                    predicate.getArgumentType(argumentIndex), argumentIndex, arguments[argumentIndex], arguments[argumentIndex].getClass().getName(), predicate,
+                    "Unique identifiers cannot be converted to any other type."));
+        }
 
-                // Integers are safe to convert to anything.
-                if (declaredType == ConstantType.Double) {
-                    arguments[i] = new DoubleAttribute(arg.doubleValue());
-                } else if (declaredType == ConstantType.Long) {
-                    arguments[i] = new LongAttribute(arg.longValue());
-                } else if (declaredType == ConstantType.String) {
-                    arguments[i] = new StringAttribute(arg.toString());
-                } else if (declaredType == ConstantType.UniqueIntID) {
-                    arguments[i] = new UniqueIntID(arg.intValue());
-                } else if (declaredType == ConstantType.UniqueStringID) {
-                    arguments[i] = new UniqueStringID(arg.toString());
-                } else if (declaredType == ConstantType.DeferredFunctionalUniqueID) {
-                    arguments[i] = new UniqueIntID(arg.intValue());
-                }
-            } else if (arguments[i] instanceof LongAttribute) {
-                Long arg = ((LongAttribute)arguments[i]).getValue();
+        // Check if conversion failed.
+        if (!(predicate.getArgumentType(argumentIndex).isInstance((Constant)arguments[argumentIndex]))) {
+            throw new IllegalArgumentException(
+                    String.format("Expected type %s at position %d but was given: %s (%s) for predicate %s",
+                    predicate.getArgumentType(argumentIndex), argumentIndex, arguments[argumentIndex], arguments[argumentIndex].getClass().getName(), predicate));
+        }
+    }
 
-                // Longs are safe to convert to anything.
-                if (declaredType == ConstantType.Double) {
-                    arguments[i] = new DoubleAttribute(arg.doubleValue());
-                } else if (declaredType == ConstantType.Integer) {
-                    arguments[i] = new IntegerAttribute(arg.intValue());
-                } else if (declaredType == ConstantType.String) {
-                    arguments[i] = new StringAttribute(arg.toString());
-                } else if (declaredType == ConstantType.UniqueIntID) {
-                    arguments[i] = new UniqueIntID(arg.intValue());
-                } else if (declaredType == ConstantType.UniqueStringID) {
-                    arguments[i] = new UniqueStringID(arg.toString());
-                }
-            } else if (arguments[i] instanceof StringAttribute) {
-                String arg = ((StringAttribute)arguments[i]).getValue();
+    private Term safeDoubleConversion(ConstantType declaredType, DoubleAttribute attribute) {
+        Double arg = attribute.getValue();
 
-                // Strings can be parsed to anything.
-                if (declaredType == ConstantType.Double) {
-                    arguments[i] = new DoubleAttribute(Double.valueOf(arg));
-                } else if (declaredType == ConstantType.Integer) {
-                    arguments[i] = new IntegerAttribute(Integer.valueOf(arg));
-                } else if (declaredType == ConstantType.Long) {
-                    arguments[i] = new LongAttribute(Long.valueOf(arg));
-                } else if (declaredType == ConstantType.UniqueIntID) {
-                    arguments[i] = new UniqueIntID(Integer.parseInt(arg));
-                } else if (declaredType == ConstantType.UniqueStringID) {
-                    arguments[i] = new UniqueStringID(arg);
-                } else if (declaredType == ConstantType.DeferredFunctionalUniqueID) {
-                    arguments[i] = new UniqueStringID(arg);
-                }
-            } else if (arguments[i] instanceof UniqueIntID) {
-                // Unique ids will not be converted to anything else (even though it may be safe).
-                throw new IllegalArgumentException(
-                        String.format("Expected type %s at position %d but was given: %s (%s) for predicate %s -- %s",
-                        predicate.getArgumentType(i), i, arguments[i], arguments[i].getClass().getName(), predicate,
-                        "Unique identifiers cannot be converted to any other type."));
-            } else if (arguments[i] instanceof UniqueStringID) {
-                // Unique ids will not be converted to anything else (even though it may be safe).
-                throw new IllegalArgumentException(
-                        String.format("Expected type %s at position %d but was given: %s (%s) for predicate %s -- %s",
-                        predicate.getArgumentType(i), i, arguments[i], arguments[i].getClass().getName(), predicate,
-                        "Unique identifiers cannot be converted to any other type."));
-            }
+        // Doubles will not be truncated/rounded.
+        if (declaredType == ConstantType.String) {
+            return new StringAttribute(arg.toString());
+        } else if (declaredType == ConstantType.UniqueStringID) {
+            return new UniqueStringID(arg.toString());
+        } else {
+            return attribute;
+        }
+    }
 
-            // Check if conversion failed.
-            if (!(predicate.getArgumentType(i).isInstance((Constant)arguments[i]))) {
-                throw new IllegalArgumentException(
-                        String.format("Expected type %s at position %d but was given: %s (%s) for predicate %s",
-                        predicate.getArgumentType(i), i, arguments[i], arguments[i].getClass().getName(), predicate));
-            }
+    private Term safeIntConversion(ConstantType declaredType, IntegerAttribute attribute) {
+        Integer arg = attribute.getValue();
+
+        // Integers are safe to convert to anything.
+        if (declaredType == ConstantType.Double) {
+            return new DoubleAttribute(arg.doubleValue());
+        } else if (declaredType == ConstantType.Long) {
+            return new LongAttribute(arg.longValue());
+        } else if (declaredType == ConstantType.String) {
+            return new StringAttribute(arg.toString());
+        } else if (declaredType == ConstantType.UniqueIntID) {
+            return new UniqueIntID(arg.intValue());
+        } else if (declaredType == ConstantType.UniqueStringID) {
+            return new UniqueStringID(arg.toString());
+        } else if (declaredType == ConstantType.DeferredFunctionalUniqueID) {
+            return new UniqueIntID(arg.intValue());
+        } else {
+            return attribute;
+        }
+    }
+
+    private Term safeLongConversion(ConstantType declaredType, LongAttribute attribute) {
+        Long arg = attribute.getValue();
+
+        // Longs are safe to convert to anything.
+        if (declaredType == ConstantType.Double) {
+            return new DoubleAttribute(arg.doubleValue());
+        } else if (declaredType == ConstantType.Integer) {
+            return new IntegerAttribute(arg.intValue());
+        } else if (declaredType == ConstantType.String) {
+            return new StringAttribute(arg.toString());
+        } else if (declaredType == ConstantType.UniqueIntID) {
+            return new UniqueIntID(arg.intValue());
+        } else if (declaredType == ConstantType.UniqueStringID) {
+            return new UniqueStringID(arg.toString());
+        } else {
+            return attribute;
+        }
+    }
+
+    private Term safeStringConversion(ConstantType declaredType, StringAttribute attribute) {
+        String arg = attribute.getValue();
+
+        // Strings can be parsed to anything.
+        if (declaredType == ConstantType.Double) {
+            return new DoubleAttribute(Double.valueOf(arg));
+        } else if (declaredType == ConstantType.Integer) {
+            return new IntegerAttribute(Integer.valueOf(arg));
+        } else if (declaredType == ConstantType.Long) {
+            return new LongAttribute(Long.valueOf(arg));
+        } else if (declaredType == ConstantType.UniqueIntID) {
+            return new UniqueIntID(Integer.parseInt(arg));
+        } else if (declaredType == ConstantType.UniqueStringID) {
+            return new UniqueStringID(arg);
+        } else if (declaredType == ConstantType.DeferredFunctionalUniqueID) {
+            return new UniqueStringID(arg);
+        } else {
+            return attribute;
         }
     }
 
