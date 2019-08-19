@@ -82,12 +82,12 @@ public class CommandLineLoader {
             Paths.get(System.getProperty("java.io.tmpdir"),
             "cli_" + System.getProperty("user.name") + "@" + getHostname()).toString();
     public static final String DEFAULT_POSTGRES_DB_NAME = "psl_cli";
-    private static final String DEFAULT_IA = MPEInference.class.getName();
-    private static final String DEFAULT_WLA = MaxLikelihoodMPE.class.getName();
+    public static final String DEFAULT_IA = MPEInference.class.getName();
+    public static final String DEFAULT_WLA = MaxLikelihoodMPE.class.getName();
 
     private static Options options = setupOptions();
-    private CommandLine parsedOptions;
     private static Logger log;
+    private CommandLine parsedOptions;
 
     public CommandLineLoader(String[] args) {
         try {

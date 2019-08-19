@@ -73,12 +73,6 @@ import java.util.regex.Pattern;
  */
 public class Launcher {
     public static final String MODEL_FILE_EXTENSION = ".psl";
-    public static final String DEFAULT_H2_DB_PATH =
-            Paths.get(System.getProperty("java.io.tmpdir"),
-            "cli_" + System.getProperty("user.name") + "@" + CommandLineLoader.getHostname()).toString();
-    public static final String DEFAULT_POSTGRES_DB_NAME = "psl_cli";
-    public static final String DEFAULT_IA = MPEInference.class.getName();
-    public static final String DEFAULT_WLA = MaxLikelihoodMPE.class.getName();
 
     // Reserved partition names.
     public static final String PARTITION_NAME_OBSERVATIONS = "observations";
@@ -96,13 +90,13 @@ public class Launcher {
      * Set up the DataStore.
      */
     private DataStore initDataStore() {
-        String dbPath = DEFAULT_H2_DB_PATH;
+        String dbPath = CommandLineLoader.DEFAULT_H2_DB_PATH;
         boolean useH2 = true;
 
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_DB_H2_PATH)) {
             dbPath = parsedOptions.getOptionValue(CommandLineLoader.OPTION_DB_H2_PATH);
         } else if (parsedOptions.hasOption(CommandLineLoader.OPTION_DB_POSTGRESQL_NAME)) {
-            dbPath = parsedOptions.getOptionValue(CommandLineLoader.OPTION_DB_POSTGRESQL_NAME, DEFAULT_POSTGRES_DB_NAME);
+            dbPath = parsedOptions.getOptionValue(CommandLineLoader.OPTION_DB_POSTGRESQL_NAME, CommandLineLoader.DEFAULT_POSTGRES_DB_NAME);
             useH2 = false;
         }
 
@@ -388,9 +382,9 @@ public class Launcher {
         // Inference
         Database evalDB = null;
         if (parsedOptions.hasOption(CommandLineLoader.OPERATION_INFER)) {
-            evalDB = runInference(model, dataStore, closedPredicates, parsedOptions.getOptionValue(CommandLineLoader.OPERATION_INFER, DEFAULT_IA));
+            evalDB = runInference(model, dataStore, closedPredicates, parsedOptions.getOptionValue(CommandLineLoader.OPERATION_INFER, CommandLineLoader.DEFAULT_IA));
         } else if (parsedOptions.hasOption(CommandLineLoader.OPERATION_LEARN)) {
-            learnWeights(model, dataStore, closedPredicates, parsedOptions.getOptionValue(CommandLineLoader.OPERATION_LEARN, DEFAULT_WLA));
+            learnWeights(model, dataStore, closedPredicates, parsedOptions.getOptionValue(CommandLineLoader.OPERATION_LEARN, CommandLineLoader.DEFAULT_WLA));
         } else {
             throw new IllegalArgumentException("No valid operation provided.");
         }
