@@ -33,23 +33,13 @@ public class ADMMTermGenerator extends HyperplaneTermGenerator<ADMMObjectiveTerm
     }
 
     @Override
-    public int generateTerms(GroundRuleStore ruleStore, TermStore<ADMMObjectiveTerm, LocalVariable> termStore, int rvaCount) {
-        if (!(termStore instanceof ADMMTermStore)) {
-            throw new IllegalArgumentException("ADMMTermGenerator requires an ADMMTermStore");
-        }
-
-        ((ADMMTermStore)termStore).ensureVariableCapacity(rvaCount);
-
-        return super.generateTerms(ruleStore, termStore, rvaCount);
-    }
-
-    @Override
     public Class<LocalVariable> getLocalVariableType() {
         return LocalVariable.class;
     }
 
     @Override
-    public ADMMObjectiveTerm createLossTerm(boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane<LocalVariable> hyperplane) {
+    public ADMMObjectiveTerm createLossTerm(TermStore<ADMMObjectiveTerm, LocalVariable> termStore,
+            boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane<LocalVariable> hyperplane) {
         if (isHinge && isSquared) {
             return new SquaredHingeLossTerm(groundRule, hyperplane);
         } else if (isHinge && !isSquared) {
@@ -63,7 +53,8 @@ public class ADMMTermGenerator extends HyperplaneTermGenerator<ADMMObjectiveTerm
     }
 
     @Override
-    public ADMMObjectiveTerm createLinearConstraintTerm(GroundRule groundRule, Hyperplane<LocalVariable> hyperplane, FunctionComparator comparator) {
+    public ADMMObjectiveTerm createLinearConstraintTerm(TermStore<ADMMObjectiveTerm, LocalVariable> termStore,
+            GroundRule groundRule, Hyperplane<LocalVariable> hyperplane, FunctionComparator comparator) {
         return new LinearConstraintTerm(groundRule, hyperplane, comparator);
     }
 }

@@ -57,14 +57,14 @@ public class SGDStreamingTermStore extends StreamingTermStore<SGDObjectiveTerm> 
     @Override
     protected StreamingIterator<SGDObjectiveTerm> getCacheIterator() {
         return new SGDStreamingCacheIterator(
-                this, false, variables, termCache, termPool,
+                this, false, termCache, termPool,
                 termBuffer, volatileBuffer, shufflePage, shuffleMap, randomizePageAccess, numPages);
     }
 
     @Override
     protected StreamingIterator<SGDObjectiveTerm> getNoWriteIterator() {
         return new SGDStreamingCacheIterator(
-                this, true, variables, termCache, termPool,
+                this, true, termCache, termPool,
                 termBuffer, volatileBuffer, shufflePage, shuffleMap, randomizePageAccess, numPages);
     }
 }

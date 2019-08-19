@@ -108,6 +108,10 @@ public class SGDReasoner implements Reasoner {
         @SuppressWarnings("unchecked")
         VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore = (VariableTermStore<SGDObjectiveTerm, RandomVariableAtom>)baseTermStore;
 
+        // This must be called after the term store has to correct variable capacity.
+        // A reallocation can cause this array to become out-of-date.
+        float[] variableValues = termStore.getVariableValues();
+
         float objective = -1.0f;
         float oldObjective = Float.POSITIVE_INFINITY;
 
@@ -116,7 +120,7 @@ public class SGDReasoner implements Reasoner {
             log.trace("objective:Iterations,Time(ms),Objective");
 
             if (printInitialObj) {
-                objective = computeObjective(termStore);
+                objective = computeObjective(termStore, variableValues);
                 log.trace("objective:{},{},{}", 0, 0, objective);
             }
         }
@@ -126,13 +130,13 @@ public class SGDReasoner implements Reasoner {
                 && (!objectiveBreak || (iteration == 1 || !MathUtils.equals(objective, oldObjective, tolerance)))) {
             long start = System.currentTimeMillis();
 
-            for (SGDObjectiveTerm term: termStore) {
-                term.minimize(iteration);
+            for (SGDObjectiveTerm term : termStore) {
+                term.minimize(iteration, variableValues);
             }
 
             long end = System.currentTimeMillis();
             oldObjective = objective;
-            objective = computeObjective(termStore);
+            objective = computeObjective(termStore, variableValues);
             time += end - start;
 
             if (printObj) {
@@ -142,13 +146,14 @@ public class SGDReasoner implements Reasoner {
             iteration++;
         }
 
+        termStore.syncAtoms();
+
         log.info("Optimization completed in {} iterations. Objective.: {}", iteration - 1, objective);
         log.debug("Optimized with {} variables and {} terms.", termStore.getNumVariables(), termStore.size());
     }
 
-    public float computeObjective(VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore) {
+    public float computeObjective(VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore, float[] variableValues) {
         float objective = 0.0f;
-        int termCount = 0;
 
         // If possible, use a readonly iterator.
         Iterator<SGDObjectiveTerm> termIterator = null;
@@ -159,11 +164,10 @@ public class SGDReasoner implements Reasoner {
         }
 
         for (SGDObjectiveTerm term : IteratorUtils.newIterable(termIterator)) {
-            objective += term.evaluate();
-            termCount++;
+            objective += term.evaluate(variableValues);
         }
 
-        return objective / termCount;
+        return objective / termStore.size();
     }
 
     @Override

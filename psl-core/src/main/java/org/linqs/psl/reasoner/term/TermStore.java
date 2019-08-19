@@ -49,11 +49,19 @@ public interface TermStore<T extends ReasonerTerm, V extends ReasonerLocalVariab
     public int size();
 
     /**
-     * Ensure that the underlying stuctures can have the required capacity.
+     * Ensure that the underlying stuctures can have the required term capacity.
      * This is more of a hint to the store about how much memory will be used.
      * This is best called on an empty store so it can prepare.
      */
     public void ensureCapacity(int capacity);
+
+    /**
+     * Ensure that the underlying stuctures can have the required variable capacity.
+     * This is more of a hint to the store about how much memory will be used.
+     * This is best called on an empty store so it can prepare.
+     * Not all term stores will even manage variables.
+     */
+    public void ensureVariableCapacity(int capacity);
 
     /**
      * Create a variable local to a specific term.

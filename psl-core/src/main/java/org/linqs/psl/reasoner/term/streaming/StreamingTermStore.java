@@ -29,7 +29,6 @@ import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.linqs.psl.util.RandUtils;
 import org.linqs.psl.util.SystemUtils;
 
-import org.apache.commons.lang.mutable.MutableInt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +36,7 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -85,10 +85,12 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     protected List<WeightedRule> rules;
     protected AtomManager atomManager;
 
-    // <Object.hashCode(), RVA>
-    // Although the key is mutable, it should NEVER be changed.
-    // This is for efficiency when reading in pages.
-    protected Map<MutableInt, RandomVariableAtom> variables;
+    // Keep track of variable indexes.
+    protected Map<RandomVariableAtom, Integer> variables;
+
+    // Matching arrays for variables values and atoms.
+    private float[] variableValues;
+    private RandomVariableAtom[] variableAtoms;
 
     protected List<String> termPagePaths;
     protected List<String> volatilePagePaths;
@@ -191,7 +193,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
 
         this.atomManager = atomManager;
         this.termGenerator = termGenerator;
-        variables = new HashMap<MutableInt, RandomVariableAtom>();
+        ensureVariableCapacity(atomManager.getCachedRVACount());
 
         termPagePaths = new ArrayList<String>(INITIAL_PATH_CACHE_SIZE);
         volatilePagePaths = new ArrayList<String>(INITIAL_PATH_CACHE_SIZE);
@@ -224,32 +226,72 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     }
 
     public Iterable<RandomVariableAtom> getVariables() {
-        return variables.values();
+        return variables.keySet();
+    }
+
+    @Override
+    public float[] getVariableValues() {
+        return variableValues;
+    }
+
+    @Override
+    public int getVariableIndex(RandomVariableAtom variable) {
+        return variables.get(variable).intValue();
+    }
+
+    @Override
+    public void syncAtoms() {
+        for (int i = 0; i < variables.size(); i++) {
+            variableAtoms[i].setValue(variableValues[i]);
+        }
     }
 
     @Override
     public synchronized RandomVariableAtom createLocalVariable(RandomVariableAtom atom) {
-        MutableInt key = new MutableInt(System.identityHashCode(atom));
-
-        if (variables.containsKey(key)) {
+        if (variables.containsKey(atom)) {
             return atom;
         }
 
-        atom.setValue(RandUtils.nextFloat());
-        variables.put(key, atom);
+        // Got a new variable.
+
+        if (variables.size() >= variableAtoms.length) {
+            ensureVariableCapacity(variables.size() * 2);
+        }
+
+        int index = variables.size();
+
+        variables.put(atom, index);
+        variableValues[index] = RandUtils.nextFloat();
+        variableAtoms[index] = atom;
 
         return atom;
     }
 
     public void ensureVariableCapacity(int capacity) {
-        if (capacity == 0) {
-            return;
+        if (capacity < 0) {
+            throw new IllegalArgumentException("Variable capacity must be non-negative. Got: " + capacity);
         }
 
-        if (variables.size() == 0) {
-            // If there are no variables, then re-allocate the variable storage.
+        if (variables == null || variables.size() == 0) {
+            // If there are no variables, then (re-)allocate the variable storage.
             // The default load factor for Java HashSets is 0.75.
-            variables = new HashMap<MutableInt, RandomVariableAtom>((int)Math.ceil(capacity / 0.75));
+            variables = new HashMap<RandomVariableAtom, Integer>((int)Math.ceil(capacity / 0.75));
+
+            variableValues = new float[capacity];
+            variableAtoms = new RandomVariableAtom[capacity];
+        } else if (variables.size() < capacity) {
+            // Don't bother with small reallocations, if we are reallocating make a lot of room.
+            if (capacity < variables.size() * 2) {
+                capacity = variables.size() * 2;
+            }
+
+            // Reallocate and copy over variables.
+            Map<RandomVariableAtom, Integer> newVariables = new HashMap<RandomVariableAtom, Integer>((int)Math.ceil(capacity / 0.75));
+            newVariables.putAll(variables);
+            variables = newVariables;
+
+            variableValues = Arrays.copyOf(variableValues, capacity);
+            variableAtoms = Arrays.copyOf(variableAtoms, capacity);
         }
     }
 

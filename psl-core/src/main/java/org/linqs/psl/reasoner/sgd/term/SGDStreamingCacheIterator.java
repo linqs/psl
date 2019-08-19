@@ -20,8 +20,6 @@ package org.linqs.psl.reasoner.sgd.term;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.reasoner.term.streaming.StreamingCacheIterator;
 
-import org.apache.commons.lang.mutable.MutableInt;
-
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -30,12 +28,12 @@ import java.util.Map;
 
 public class SGDStreamingCacheIterator extends StreamingCacheIterator<SGDObjectiveTerm> {
     public SGDStreamingCacheIterator(
-            SGDStreamingTermStore parentStore, boolean readonly, Map<MutableInt, RandomVariableAtom> variables,
+            SGDStreamingTermStore parentStore, boolean readonly,
             List<SGDObjectiveTerm> termCache, List<SGDObjectiveTerm> termPool,
             ByteBuffer termBuffer, ByteBuffer volatileBuffer,
             boolean shufflePage, int[] shuffleMap, boolean randomizePageAccess,
             int numPages) {
-        super(parentStore, readonly, variables, termCache, termPool, termBuffer,
+        super(parentStore, readonly, termCache, termPool, termBuffer,
                 volatileBuffer, shufflePage, shuffleMap, randomizePageAccess, numPages);
     }
 
@@ -61,10 +59,9 @@ public class SGDStreamingCacheIterator extends StreamingCacheIterator<SGDObjecti
         // Convert all the terms from binary to objects.
         // Use the terms from the pool.
 
-        MutableInt intBuffer = new MutableInt();
         for (int i = 0; i < numTerms; i++) {
             SGDObjectiveTerm term = termPool.get(i);
-            term.read(termBuffer, volatileBuffer, variables, intBuffer);
+            term.read(termBuffer, volatileBuffer);
             termCache.add(term);
         }
     }

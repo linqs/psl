@@ -69,14 +69,14 @@ public class DCDStreamingTermStore extends StreamingTermStore<DCDObjectiveTerm> 
     @Override
     protected StreamingIterator<DCDObjectiveTerm> getCacheIterator() {
         return new DCDStreamingCacheIterator(
-                this, false, variables, termCache, termPool,
+                this, false, termCache, termPool,
                 termBuffer, volatileBuffer, shufflePage, shuffleMap, randomizePageAccess, numPages);
     }
 
     @Override
     protected StreamingIterator<DCDObjectiveTerm> getNoWriteIterator() {
         return new DCDStreamingCacheIterator(
-                this, true, variables, termCache, termPool,
+                this, true, termCache, termPool,
                 termBuffer, volatileBuffer, shufflePage, shuffleMap, randomizePageAccess, numPages);
     }
 }

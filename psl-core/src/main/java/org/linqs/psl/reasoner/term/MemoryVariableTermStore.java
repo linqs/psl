@@ -24,13 +24,15 @@ import org.linqs.psl.reasoner.term.MemoryTermStore;
 import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.linqs.psl.util.RandUtils;
 
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Set;
+import java.util.Map;
 
 /**
  * A general TermStore that handles terms and variables all in memory.
+ * Variables are stored in an array along with their values.
  */
 public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends ReasonerLocalVariable> implements VariableTermStore<T, V> {
     /**
@@ -44,18 +46,48 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     public static final String SHUFFLE_KEY = CONFIG_PREFIX + ".shuffle";
     public static final boolean SHUFFLE_DEFAULT = true;
 
+    /**
+     * The default size in terms of number of variables.
+     */
+    public static final String DEFAULT_SIZE_KEY = CONFIG_PREFIX + ".defaultsize";
+    public static final int DEFAULT_SIZE_DEFAULT = 1000;
+
     // Keep an internal store to hold the terms while this class focuses on variables.
     private MemoryTermStore<T> store;
 
-    private Set<V> variables;
+    // Keep track of variable indexes.
+    private Map<V, Integer> variables;
+
+    // Matching arrays for variables values and atoms.
+    private float[] variableValues;
+    private RandomVariableAtom[] variableAtoms;
 
     private boolean shuffle;
+    private int defaultSize;
 
     public MemoryVariableTermStore() {
-        store = new MemoryTermStore<T>();
-        variables = new HashSet<V>();
-
         shuffle = Config.getBoolean(SHUFFLE_KEY, SHUFFLE_DEFAULT);
+        defaultSize = Config.getInt(DEFAULT_SIZE_KEY, DEFAULT_SIZE_DEFAULT);
+
+        store = new MemoryTermStore<T>();
+        ensureVariableCapacity(defaultSize);
+    }
+
+    @Override
+    public int getVariableIndex(V variable) {
+        return variables.get(variable).intValue();
+    }
+
+    @Override
+    public float[] getVariableValues() {
+        return variableValues;
+    }
+
+    @Override
+    public void syncAtoms() {
+        for (int i = 0; i < variables.size(); i++) {
+            variableAtoms[i].setValue(variableValues[i]);
+        }
     }
 
     @Override
@@ -72,12 +104,21 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     public synchronized V createLocalVariable(RandomVariableAtom atom) {
         V variable = convertAtomToVariable(atom);
 
-        if (variables.contains(variable)) {
+        if (variables.containsKey(variable)) {
             return variable;
         }
 
-        atom.setValue(RandUtils.nextFloat());
-        variables.add(variable);
+        // Got a new variable.
+
+        if (variables.size() >= variableAtoms.length) {
+            ensureVariableCapacity(variables.size() * 2);
+        }
+
+        int index = variables.size();
+
+        variables.put(variable, index);
+        variableValues[index] = RandUtils.nextFloat();
+        variableAtoms[index] = atom;
 
         return variable;
     }
@@ -87,20 +128,36 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
      */
     @Override
     public void ensureVariableCapacity(int capacity) {
-        if (capacity == 0) {
-            return;
+        if (capacity < 0) {
+            throw new IllegalArgumentException("Variable capacity must be non-negative. Got: " + capacity);
         }
 
-        if (variables.size() == 0) {
-            // If there are no variables, then re-allocate the variable storage.
+        if (variables == null || variables.size() == 0) {
+            // If there are no variables, then (re-)allocate the variable storage.
             // The default load factor for Java HashSets is 0.75.
-            variables = new HashSet<V>((int)Math.ceil(capacity / 0.75));
+            variables = new HashMap<V, Integer>((int)Math.ceil(capacity / 0.75));
+
+            variableValues = new float[capacity];
+            variableAtoms = new RandomVariableAtom[capacity];
+        } else if (variables.size() < capacity) {
+            // Don't bother with small reallocations, if we are reallocating make a lot of room.
+            if (capacity < variables.size() * 2) {
+                capacity = variables.size() * 2;
+            }
+
+            // Reallocate and copy over variables.
+            Map<V, Integer> newVariables = new HashMap<V, Integer>((int)Math.ceil(capacity / 0.75));
+            newVariables.putAll(variables);
+            variables = newVariables;
+
+            variableValues = Arrays.copyOf(variableValues, capacity);
+            variableAtoms = Arrays.copyOf(variableAtoms, capacity);
         }
     }
 
     @Override
     public Iterable<V> getVariables() {
-        return Collections.unmodifiableSet(variables);
+        return variables.keySet();
     }
 
     @Override

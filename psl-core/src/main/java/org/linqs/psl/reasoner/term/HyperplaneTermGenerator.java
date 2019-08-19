@@ -63,7 +63,7 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
     }
 
     @Override
-    public int generateTerms(GroundRuleStore ruleStore, final TermStore<T, V> termStore, int rvaCount) {
+    public int generateTerms(GroundRuleStore ruleStore, final TermStore<T, V> termStore) {
         int initialSize = termStore.size();
         termStore.ensureCapacity(initialSize + ruleStore.size());
 
@@ -126,7 +126,7 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
             }
 
             // Non-negative functions have a hinge.
-            return createLossTerm(function.isNonNegative(), function.isSquared(), groundRule, hyperplane);
+            return createLossTerm(termStore, function.isNonNegative(), function.isSquared(), groundRule, hyperplane);
         } else if (groundRule instanceof UnweightedGroundRule) {
             ConstraintTerm constraint = ((UnweightedGroundRule)groundRule).getConstraintDefinition();
             GeneralFunction function = constraint.getFunction();
@@ -136,7 +136,7 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
             }
 
             hyperplane.setConstant((float)(constraint.getValue() + hyperplane.getConstant()));
-            return createLinearConstraintTerm(groundRule, hyperplane, constraint.getComparator());
+            return createLinearConstraintTerm(termStore, groundRule, hyperplane, constraint.getComparator());
         } else {
             throw new IllegalArgumentException("Unsupported ground rule: " + groundRule);
         }
@@ -198,10 +198,10 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
      * Non-hinge terms are linear combinations (ala arithmetic rules).
      * Non-squared terms are linear.
      */
-    public abstract T createLossTerm(boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane<V> hyperplane);
+    public abstract T createLossTerm(TermStore<T, V> termStore, boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane<V> hyperplane);
 
     /**
      * Create a hard constraint term,
      */
-    public abstract T createLinearConstraintTerm(GroundRule groundRule, Hyperplane<V> hyperplane, FunctionComparator comparator);
+    public abstract T createLinearConstraintTerm(TermStore<T, V> termStore, GroundRule groundRule, Hyperplane<V> hyperplane, FunctionComparator comparator);
 }

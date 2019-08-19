@@ -21,8 +21,6 @@ import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.util.RandUtils;
 
-import org.apache.commons.lang.mutable.MutableInt;
-
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -40,7 +38,6 @@ import java.util.Map;
  */
 public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements StreamingIterator<T> {
     protected StreamingTermStore<T> parentStore;
-    protected Map<MutableInt, RandomVariableAtom> variables;
     protected int[] shuffleMap;
 
     protected boolean readonly;
@@ -68,13 +65,12 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
     protected int numPages;
 
     public StreamingCacheIterator(
-            StreamingTermStore<T> parentStore, boolean readonly, Map<MutableInt, RandomVariableAtom> variables,
+            StreamingTermStore<T> parentStore, boolean readonly,
             List<T> termCache, List<T> termPool,
             ByteBuffer termBuffer, ByteBuffer volatileBuffer,
             boolean shufflePage, int[] shuffleMap, boolean randomizePageAccess,
             int numPages) {
         this.parentStore = parentStore;
-        this.variables = variables;
         this.shuffleMap = shuffleMap;
 
         this.readonly = readonly;

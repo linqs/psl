@@ -67,7 +67,7 @@ import java.util.Set;
  */
 public class ConstraintBlockerTermGenerator implements TermGenerator<ConstraintBlockerTerm, RandomVariableAtom> {
     @Override
-    public int generateTerms(GroundRuleStore ruleStore, TermStore<ConstraintBlockerTerm, RandomVariableAtom> termStore, int rvaCount) {
+    public int generateTerms(GroundRuleStore ruleStore, TermStore<ConstraintBlockerTerm, RandomVariableAtom> termStore) {
         if (!(ruleStore instanceof AtomRegisterGroundRuleStore)) {
             throw new IllegalArgumentException("AtomRegisterGroundRuleStore required.");
         }

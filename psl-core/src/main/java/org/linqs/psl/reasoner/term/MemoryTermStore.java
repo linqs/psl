@@ -99,6 +99,10 @@ public class MemoryTermStore<T extends ReasonerTerm> implements TermStore<T, Ran
         return atom;
     }
 
+    @Override
+    public void ensureVariableCapacity(int capacity) {
+    }
+
     public void shuffle() {
         RandUtils.shuffle(store);
     }

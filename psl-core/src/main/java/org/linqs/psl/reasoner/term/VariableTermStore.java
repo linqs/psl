@@ -25,10 +25,24 @@ public interface VariableTermStore<T extends ReasonerTerm, V extends ReasonerLoc
 
     public Iterable<V> getVariables();
 
-    public void ensureVariableCapacity(int capacity);
-
     /**
      * Is the term store loaded, and can it give an accurate term and variable count.
      */
     public boolean isLoaded();
+
+    /**
+     * Get the truth values for variabe atoms.
+     * Changing a value in this array and calling syncAtoms() will change the actual atom's value.
+     */
+    public float[] getVariableValues();
+
+    /**
+     * Get the index that matches up to getVariableValues().
+     */
+    public int getVariableIndex(V variable);
+
+    /**
+     * Ensure that all the variable atoms have the same value as the array returned by getVariableValues().
+     */
+    public void syncAtoms();
 }

@@ -114,6 +114,10 @@ public class DCDReasoner implements Reasoner {
         @SuppressWarnings("unchecked")
         VariableTermStore<DCDObjectiveTerm, RandomVariableAtom> termStore = (VariableTermStore<DCDObjectiveTerm, RandomVariableAtom>)baseTermStore;
 
+        // This must be called after the term store has to correct variable capacity.
+        // A reallocation can cause this array to become out-of-date.
+        float[] variableValues = termStore.getVariableValues();
+
         float objective = -1.0f;
         float oldObjective = Float.POSITIVE_INFINITY;
 
@@ -122,7 +126,7 @@ public class DCDReasoner implements Reasoner {
             log.trace("objective:Iterations,Time(ms),Objective");
 
             if (printInitialObj) {
-                objective = computeObjective(termStore);
+                objective = computeObjective(termStore, variableValues);
                 log.trace("objective:{},{},{}", 0, 0, objective);
             }
         }
@@ -133,7 +137,7 @@ public class DCDReasoner implements Reasoner {
             long start = System.currentTimeMillis();
 
             for (DCDObjectiveTerm term : termStore) {
-                term.minimize(truncateEveryStep);
+                term.minimize(truncateEveryStep, variableValues);
             }
 
             // If we are truncating every step, then the variables are already in valid state.
@@ -145,7 +149,7 @@ public class DCDReasoner implements Reasoner {
 
             long end = System.currentTimeMillis();
             oldObjective = objective;
-            objective = computeObjective(termStore);
+            objective = computeObjective(termStore, variableValues);
             time += end - start;
 
             if (printObj) {
@@ -155,11 +159,13 @@ public class DCDReasoner implements Reasoner {
             iteration++;
         }
 
+        termStore.syncAtoms();
+
         log.info("Optimization completed in {} iterations. Objective.: {}", iteration - 1, objective);
         log.debug("Optimized with {} variables and {} terms.", termStore.getNumVariables(), termStore.size());
     }
 
-    private float computeObjective(VariableTermStore<DCDObjectiveTerm, RandomVariableAtom> termStore) {
+    private float computeObjective(VariableTermStore<DCDObjectiveTerm, RandomVariableAtom> termStore, float[] variableValues) {
         float objective = 0.0f;
         int termCount = 0;
 
@@ -172,7 +178,7 @@ public class DCDReasoner implements Reasoner {
         }
 
         for (DCDObjectiveTerm term : IteratorUtils.newIterable(termIterator)) {
-            objective += term.evaluate() / c;
+            objective += term.evaluate(variableValues) / c;
             termCount++;
         }
 

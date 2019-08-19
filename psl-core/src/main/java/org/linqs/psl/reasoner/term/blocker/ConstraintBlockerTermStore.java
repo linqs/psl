@@ -164,4 +164,8 @@ public class ConstraintBlockerTermStore implements TermStore<ConstraintBlockerTe
     public RandomVariableAtom createLocalVariable(RandomVariableAtom atom) {
         throw new UnsupportedOperationException("ConstraintBlockerTermStore does not use the concept of local variables.");
     }
+
+    @Override
+    public void ensureVariableCapacity(int capacity) {
+    }
 }

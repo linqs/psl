@@ -42,6 +42,7 @@ public class DCDStreamingInference extends InferenceApplication {
         log.trace("Atom manager initialization complete.");
 
         termStore = new DCDStreamingTermStore(model.getRules(), atomManager);
+        termStore.ensureVariableCapacity(atomManager.getCachedRVACount());
     }
 
     @Override
