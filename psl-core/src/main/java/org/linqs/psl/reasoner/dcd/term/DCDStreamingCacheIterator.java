@@ -19,6 +19,7 @@ package org.linqs.psl.reasoner.dcd.term;
 
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.reasoner.term.streaming.StreamingCacheIterator;
+import org.linqs.psl.util.RuntimeStats;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -62,6 +63,10 @@ public class DCDStreamingCacheIterator extends StreamingCacheIterator<DCDObjecti
             throw new RuntimeException(String.format("Unable to read cache pages: [%s ; %s].", termPagePath, volatilePagePath), ex);
         }
 
+        // Log io.
+        RuntimeStats.logDiskRead(headerSize + termsSize);
+        RuntimeStats.logDiskRead(volatilesSize);
+
         // Convert all the terms from binary to objects.
         // Use the terms from the pool.
 
@@ -96,5 +101,8 @@ public class DCDStreamingCacheIterator extends StreamingCacheIterator<DCDObjecti
         } catch (IOException ex) {
             throw new RuntimeException("Unable to write volatile cache page: " + volatilePagePath, ex);
         }
+
+        // Log io.
+        RuntimeStats.logDiskWrite(volatileBufferSize);
     }
 }

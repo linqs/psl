@@ -19,6 +19,7 @@ package org.linqs.psl.reasoner.sgd.term;
 
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.reasoner.term.streaming.StreamingCacheIterator;
+import org.linqs.psl.util.RuntimeStats;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -55,6 +56,9 @@ public class SGDStreamingCacheIterator extends StreamingCacheIterator<SGDObjecti
         } catch (IOException ex) {
             throw new RuntimeException(String.format("Unable to read cache page: [%s].", termPagePath), ex);
         }
+
+        // Log io.
+        RuntimeStats.logDiskRead(headerSize + termsSize);
 
         // Convert all the terms from binary to objects.
         // Use the terms from the pool.

@@ -22,6 +22,7 @@ import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
 import org.linqs.psl.reasoner.term.streaming.StreamingInitialRoundIterator;
+import org.linqs.psl.util.RuntimeStats;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -84,5 +85,8 @@ public class SGDStreamingInitialRoundIterator extends StreamingInitialRoundItera
         } catch (IOException ex) {
             throw new RuntimeException("Unable to write term cache page: " + termPagePath, ex);
         }
+
+        // Log io.
+        RuntimeStats.logDiskWrite(termBufferSize);
     }
 }

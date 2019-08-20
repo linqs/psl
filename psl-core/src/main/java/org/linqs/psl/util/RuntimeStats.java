@@ -52,6 +52,9 @@ public final class RuntimeStats {
     private static MeanStats usedMemory = new MeanStats();
     private static MeanStats maxMemory = new MeanStats();
 
+    private static AccumulatingStats reads = new AccumulatingStats();
+    private static AccumulatingStats writes = new AccumulatingStats();
+
     private static Runtime runtime = null;
     private static Timer collectionTimer = null;
 
@@ -103,13 +106,22 @@ public final class RuntimeStats {
      * Tell the RuntimeStats about an io operation.
      * Since we can't just monitor all IO like memory, we rely on self reporting.
      */
-    public static synchronized void io(long bytes, boolean isRead) {
+    public static synchronized void logDiskRead(long bytes) {
+        reads.add(bytes);
+    }
+
+    /**
+     * Tell the RuntimeStats about an io operation.
+     * Since we can't just monitor all IO like memory, we rely on self reporting.
+     */
+    public static synchronized void logDiskWrite(long bytes) {
+        writes.add(bytes);
     }
 
     /**
      * Ouput collected stats.
      */
-    public static void logStats() {
+    public static void outputStats() {
         if (runtime == null) {
             return;
         }
@@ -118,12 +130,14 @@ public final class RuntimeStats {
         log.info("Free Memory KB  -- " + freeMemory);
         log.info("Used Memory KB  -- " + usedMemory);
         log.info("Max Memory KB   -- " + maxMemory);
+        log.info("IO Reads KB     -- " + reads);
+        log.info("IO Writes KB    -- " + writes);
     }
 
     private static class ShutdownHook extends Thread {
         @Override
         public void run() {
-            logStats();
+            outputStats();
         }
     }
 
@@ -173,6 +187,28 @@ public final class RuntimeStats {
             return String.format(
                     "Min: %9d, Max: %9d, Mean: %9d, Count: %6d",
                     min / 1024, max / 1024, mean / 1024, count);
+        }
+    }
+
+    private static class AccumulatingStats extends MeanStats {
+        private long total;
+
+        public AccumulatingStats() {
+            super();
+            total = 0;
+        }
+
+        @Override
+        public void add(long value) {
+            super.add(value);
+            total += value;
+        }
+
+        @Override
+        public String toString() {
+            return String.format(
+                    "%s, Total: %9d",
+                    super.toString(), total / 1024);
         }
     }
 }
