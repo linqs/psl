@@ -308,9 +308,9 @@ public class Config {
       * Because list options can be quite large, we allow them to be suppressed on request.
       */
     public static List<String> getList(String key, List<String> defaultValue, boolean suppressLogging) {
-          if (!suppressLogging) {
-             logAccess(key, defaultValue);
-          }
+        if (!suppressLogging) {
+            logAccess(key, defaultValue);
+        }
 
         List<?> configList = config.getList(key, defaultValue);
 
@@ -323,12 +323,12 @@ public class Config {
     }
 
     public static List<String> getList(String key, List<String> defaultValue) {
-          return getList(key, defaultValue, false);
-     }
+        return getList(key, defaultValue, false);
+    }
 
     public static List<String> getList(String key, boolean suppressLogging) {
         return getList(key, new ArrayList<String>(0), suppressLogging);
-     }
+    }
 
     public static List<String> getList(String key) {
         return getList(key, new ArrayList<String>(0));
