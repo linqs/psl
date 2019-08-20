@@ -185,7 +185,7 @@ public final class RuntimeStats {
         @Override
         public String toString() {
             return String.format(
-                    "Min: %9d, Max: %9d, Mean: %9d, Count: %6d",
+                    "Min: %10d, Max: %10d, Mean: %10d, Count: %10d",
                     min / 1024, max / 1024, mean / 1024, count);
         }
     }
@@ -207,7 +207,7 @@ public final class RuntimeStats {
         @Override
         public String toString() {
             return String.format(
-                    "%s, Total: %9d",
+                    "%s, Total: %10d",
                     super.toString(), total / 1024);
         }
     }
