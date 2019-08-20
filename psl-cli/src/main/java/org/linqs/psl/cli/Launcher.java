@@ -43,7 +43,6 @@ import org.linqs.psl.parser.ModelLoader;
 import org.linqs.psl.parser.CommandLineLoader;
 import org.linqs.psl.util.Reflection;
 import org.linqs.psl.util.StringUtils;
-import org.linqs.psl.util.SystemUtils;
 import org.linqs.psl.util.Version;
 
 import org.apache.commons.cli.CommandLine;

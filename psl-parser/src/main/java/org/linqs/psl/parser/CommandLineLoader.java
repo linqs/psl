@@ -21,7 +21,9 @@ import org.linqs.psl.application.inference.MPEInference;
 import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.evaluation.statistics.Evaluator;
+import org.linqs.psl.util.SystemUtils;
 import org.linqs.psl.util.Version;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -78,9 +80,7 @@ public class CommandLineLoader {
     public static final String OPTION_VERSION = "v";
     public static final String OPTION_VERSION_LONG = "version";
 
-    public static final String DEFAULT_H2_DB_PATH =
-            Paths.get(System.getProperty("java.io.tmpdir"),
-            "cli_" + System.getProperty("user.name") + "@" + getHostname()).toString();
+    public static final String DEFAULT_H2_DB_PATH = SystemUtils.getTempDir("cli");
     public static final String DEFAULT_POSTGRES_DB_NAME = "psl_cli";
     public static final String DEFAULT_IA = MPEInference.class.getName();
     public static final String DEFAULT_WLA = MaxLikelihoodMPE.class.getName();
@@ -96,9 +96,10 @@ public class CommandLineLoader {
                 return;
             }
         } catch (Exception ex) {
-                System.err.println("Unexpected exception!");
-                ex.printStackTrace(System.err);
+            System.err.println("Unexpected exception!");
+            ex.printStackTrace(System.err);
         }
+
 		this.log = initLogger();
 		initConfig();
     }
@@ -415,17 +416,5 @@ public class CommandLineLoader {
         }
 
         return commandLineOptions;
-    }
-
-    public static String getHostname() {
-        String hostname = "unknown";
-
-        try {
-            hostname = InetAddress.getLocalHost().getHostName();
-        } catch (UnknownHostException ex) {
-            // log.warn("Hostname can not be resolved, using '" + hostname + "'.");
-        }
-
-        return hostname;
     }
 }
