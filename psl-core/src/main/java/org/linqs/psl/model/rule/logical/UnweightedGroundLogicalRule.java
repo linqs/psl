@@ -43,12 +43,12 @@ public class UnweightedGroundLogicalRule extends AbstractGroundLogicalRule
 
     @Override
     public double getInfeasibility() {
-        return Math.abs(function.getValue() - 1.0);
+        return dissatisfaction.getValue();
     }
 
     @Override
     public ConstraintTerm getConstraintDefinition() {
-        return new ConstraintTerm(function, FunctionComparator.SmallerThan, 0.0f);
+        return new ConstraintTerm(dissatisfaction, FunctionComparator.LTE, 0.0f);
     }
 
     @Override

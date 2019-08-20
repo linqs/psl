@@ -17,6 +17,9 @@ limitations under the License.
 '''
 
 import tests.data.models.simpleacquaintances
+from pslpython.model import Model
+from pslpython.predicate import Predicate
+from pslpython.predicate import PredicateError
 from tests.base_test import PSLTest
 
 class TestModel(PSLTest):
@@ -28,3 +31,29 @@ class TestModel(PSLTest):
         predicate, frame = list(results.items())[0]
         self.assertEquals(predicate.name(), 'KNOWS')
         self.assertEquals(len(frame), 52)
+
+    def test_duplicate_predicate_name(self):
+        model = Model('test-predicate')
+        predicate_name = 'Foo'
+
+        a = Predicate(predicate_name, closed = True, size = 2)
+        model.add_predicate(a)
+
+        # Adding the same predicate again should by no issue.
+        model.add_predicate(a)
+
+        try:
+            b = Predicate(predicate_name, closed = True, size = 2)
+            model.add_predicate(b)
+            self.fail('Duplicate predicate name did not raise an exception.')
+        except PredicateError:
+            # Expected
+            pass
+
+        try:
+            b = Predicate(predicate_name, closed = True, size = 3)
+            model.add_predicate(b)
+            self.fail('Duplicate predicate name did not raise an exception.')
+        except PredicateError:
+            # Expected
+            pass

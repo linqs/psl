@@ -18,11 +18,11 @@
 package org.linqs.psl.application.inference;
 
 import org.linqs.psl.application.ModelApplication;
-import org.linqs.psl.application.groundrulestore.GroundRuleStore;
-import org.linqs.psl.application.groundrulestore.MemoryGroundRuleStore;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.AtomManager;
+import org.linqs.psl.grounding.GroundRuleStore;
+import org.linqs.psl.grounding.MemoryGroundRuleStore;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.admm.ADMMReasoner;
@@ -30,6 +30,7 @@ import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
 import org.linqs.psl.reasoner.admm.term.ADMMTermGenerator;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
+import org.linqs.psl.util.Reflection;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -152,6 +153,8 @@ public abstract class InferenceApplication implements ModelApplication {
      * Look for a constructor like: (Model, Database).
      */
     public static InferenceApplication getInferenceApplication(String className, Model model, Database db) {
+        className = Reflection.resolveClassName(className);
+
         Class<? extends InferenceApplication> classObject = null;
         try {
             @SuppressWarnings("unchecked")

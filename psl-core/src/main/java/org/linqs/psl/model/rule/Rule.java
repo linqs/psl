@@ -17,12 +17,14 @@
  */
 package org.linqs.psl.model.rule;
 
-import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 import org.linqs.psl.database.atom.AtomManager;
+import org.linqs.psl.database.rdbms.RawQuery;
+import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Variable;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -47,6 +49,21 @@ public interface Rule {
     public String getName();
 
     /**
+     * Does this rule support rewriting the grounding formual.
+     * Rules that do can take advantage of some more advanced grounding techniques.
+     * However, they will have to suply their grounding queries as a Formula
+     * instead of a raw query.
+     * Rules that return true here must also return true for supportsIndividualGrounding().
+     */
+    public boolean supportsGroundingQueryRewriting();
+
+    /**
+     * Get a grounding formual that can be rewritten.
+     * Should throw if supportsGroundingQueryRewriting() == false.
+     */
+    public Formula getRewritableGroundingFormula(AtomManager atomManager);
+
+    /**
      * Does this rule support grounding out single instances at a time.
      * Rules that do can take advantage of some more advanced grounding techniques.
      */
@@ -54,13 +71,26 @@ public interface Rule {
 
     /**
      * Get the formual that we can use for grounding.
-     * Will throw if supportsIndividualGrounding() == false.
+     * Should throw if supportsIndividualGrounding() == false.
      */
-    public Formula getGroundingFormula();
+    public RawQuery getGroundingQuery(AtomManager atomManager);
 
     /**
      * Get the formual that we can use for grounding.
-     * Will throw if supportsIndividualGrounding() == false.
+     * Should throw if supportsIndividualGrounding() == false.
      */
-    public GroundRule ground(Constant[] constants, Map<Variable, Integer> variableMap, AtomManager atomManager);
+    public void ground(Constant[] constants, Map<Variable, Integer> variableMap, AtomManager atomManager, List<GroundRule> results);
+
+    /**
+     * Check if this rule needs to be broken up into multiple rules.
+     * This may be because of language semantics or performance.
+     */
+    public boolean requiresSplit();
+
+    /**
+     * Split this rule into multiple rules.
+     * The net effect of all the rules should be the same
+     * as the pre-split rule.
+     */
+    public List<Rule> split();
 }

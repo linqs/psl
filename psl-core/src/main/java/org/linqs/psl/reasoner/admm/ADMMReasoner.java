@@ -225,13 +225,20 @@ public class ADMMReasoner implements Reasoner {
         // Performs inference.
         float epsilonAbsTerm = (float)(Math.sqrt(termStore.getNumLocalVariables()) * epsilonAbs);
 
-        float objective = 0.0f;
-        float oldObjective = 0.0f;
+        ObjectiveResult objective = null;
+        ObjectiveResult oldObjective = null;
+
+        if (log.isTraceEnabled()) {
+            objective = computeObjective(termStore);
+            log.trace(
+                    "Iteration {} -- Objective: {}, Feasible: {}.",
+                    0, objective.objective, (objective.violatedConstraints == 0));
+        }
 
         int iteration = 1;
         while (
                 (iteration == 1 || primalRes > epsilonPrimal || dualRes > epsilonDual)
-                && (!objectiveBreak || (MathUtils.isZero(oldObjective) || !MathUtils.equals(objective, oldObjective)))
+                && (!objectiveBreak || (oldObjective == null || !MathUtils.equals(objective.objective, oldObjective.objective)))
                 && iteration <= maxIter) {
             // Zero out the iteration variables.
             primalRes = 0.0f;
@@ -261,47 +268,26 @@ public class ADMMReasoner implements Reasoner {
                             iteration, primalRes, dualRes, epsilonPrimal, epsilonDual);
                 } else {
                     oldObjective = objective;
-
-                    objective = 0.0f;
-                    boolean feasible = true;
-
-                    for (ADMMObjectiveTerm term : termStore) {
-                        if (term instanceof LinearConstraintTerm) {
-                            if (term.evaluate() > 0.0f) {
-                                feasible = false;
-                            }
-                        } else {
-                            objective += (1.0f - term.evaluate());
-                        }
-                    }
+                    objective = computeObjective(termStore);
 
                     log.trace(
                             "Iteration {} -- Objective: {}, Feasible: {}, Primal: {}, Dual: {}, Epsilon Primal: {}, Epsilon Dual: {}.",
-                            iteration, objective, feasible, primalRes, dualRes, epsilonPrimal, epsilonDual);
+                            iteration, objective.objective, (objective.violatedConstraints == 0),
+                            primalRes, dualRes, epsilonPrimal, epsilonDual);
                 }
             }
 
             iteration++;
         }
 
-        objective = 0.0f;
-        int infeasibleCount = 0;
-        for (ADMMObjectiveTerm term : termStore) {
-            if (term instanceof LinearConstraintTerm) {
-                if (term.evaluate() > 0.0f) {
-                    infeasibleCount++;
-                }
-            } else {
-                objective += (1.0f - term.evaluate());
-            }
-        }
+        objective = computeObjective(termStore);
 
-        if (infeasibleCount > 0) {
-            log.warn("No feasible solution found. {} constraints violated.", infeasibleCount);
+        if (objective.violatedConstraints > 0) {
+            log.warn("No feasible solution found. {} constraints violated.", objective.violatedConstraints);
         }
 
         log.info("Optimization completed in {} iterations. Objective: {}, Feasible: {}, Primal res.: {}, Dual res.: {}",
-                iteration - 1, objective, (infeasibleCount == 0), primalRes, dualRes);
+                iteration - 1, objective.objective, (objective.violatedConstraints == 0), primalRes, dualRes);
 
         // Updates variables
         termStore.updateVariables(consensusValues);
@@ -357,6 +343,23 @@ public class ADMMReasoner implements Reasoner {
         } else {
             throw new IllegalStateException("Unknown initial consensus value: " + initialConsensus);
         }
+    }
+
+    private ObjectiveResult computeObjective(ADMMTermStore termStore) {
+        float objective = 0.0f;
+        int violatedConstraints = 0;
+
+        for (ADMMObjectiveTerm term : termStore) {
+            if (term instanceof LinearConstraintTerm) {
+                if (term.evaluate(consensusValues) > 0.0f) {
+                    violatedConstraints++;
+                }
+            } else {
+                objective += term.evaluate(consensusValues);
+            }
+        }
+
+        return new ObjectiveResult(objective, violatedConstraints);
     }
 
     private synchronized void updateIterationVariables(
@@ -476,6 +479,16 @@ public class ADMMReasoner implements Reasoner {
             }
 
             updateIterationVariables(primalResInc, dualResInc, AxNormInc, BzNormInc, AyNormInc, lagrangePenaltyInc, augmentedLagrangePenaltyInc);
+        }
+    }
+
+    private static class ObjectiveResult {
+        public final float objective;
+        public final int violatedConstraints;
+
+        public ObjectiveResult(float objective, int violatedConstraints) {
+            this.objective = objective;
+            this.violatedConstraints = violatedConstraints;
         }
     }
 }

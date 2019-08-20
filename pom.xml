@@ -68,41 +68,6 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
-    <repositories>
-        <repository>
-            <releases>
-                <enabled>true</enabled>
-                <updatePolicy>daily</updatePolicy>
-                <checksumPolicy>fail</checksumPolicy>
-            </releases>
-            <id>psl-releases</id>
-            <name>PSL Releases</name>
-            <url>http://maven.linqs.org/maven/repositories/psl-releases/</url>
-            <layout>default</layout>
-        </repository>
-        <repository>
-            <releases>
-                <enabled>true</enabled>
-                <updatePolicy>daily</updatePolicy>
-                <checksumPolicy>fail</checksumPolicy>
-            </releases>
-            <id>psl-thirdparty</id>
-            <name>PSL Third Party</name>
-            <url>http://maven.linqs.org/maven/repositories/psl-thirdparty/</url>
-            <layout>default</layout>
-        </repository>
-    </repositories>
-
-    <distributionManagement>
-        <repository>
-            <uniqueVersion>false</uniqueVersion>
-            <id>psl-releases</id>
-            <name>PSL Releases</name>
-            <url>file:///projects/linqs/www/maven/repositories/psl-releases/</url>
-            <layout>default</layout>
-        </repository>
-    </distributionManagement>
-
     <dependencies>
         <dependency>
             <groupId>junit</groupId>
@@ -155,4 +120,90 @@
             </plugin>
         </plugins>
     </build>
+
+
+    <!-- Necessary steps for releasing the Maven central. -->
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+    </distributionManagement>
+
+    <profiles>
+        <profile>
+            <id>linqs-release</id>
+
+            <distributionManagement>
+                <repository>
+                    <uniqueVersion>false</uniqueVersion>
+                    <id>psl-releases</id>
+                    <name>PSL Releases</name>
+                    <url>file:///projects/linqs/www/maven/repositories/psl-releases/</url>
+                    <layout>default</layout>
+                </repository>
+            </distributionManagement>
+        </profile>
+
+        <profile>
+            <id>central-release</id>
+
+            <activation>
+                <property>
+                    <name>performRelease</name>
+                    <value>true</value>
+                </property>
+            </activation>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <version>2.2.1</version>
+                        <executions>
+                        <execution>
+                            <id>attach-sources</id>
+                            <goals>
+                                <goal>jar-no-fork</goal>
+                            </goals>
+                        </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>1.5</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.sonatype.plugins</groupId>
+                        <artifactId>nexus-staging-maven-plugin</artifactId>
+                        <version>1.6.7</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <serverId>ossrh</serverId>
+                            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                            <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+
+            <distributionManagement>
+                <repository>
+                    <id>ossrh</id>
+                    <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+                </repository>
+            </distributionManagement>
+        </profile>
+    </profiles>
 </project>

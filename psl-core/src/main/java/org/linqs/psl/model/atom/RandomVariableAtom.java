@@ -20,6 +20,7 @@ package org.linqs.psl.model.atom;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
+import org.linqs.psl.reasoner.term.ReasonerLocalVariable;
 
 /**
  * A {@link GroundAtom} with a truth value which can be modified.
@@ -31,7 +32,7 @@ import org.linqs.psl.model.term.Constant;
  *  <li>it is not persisted in one of its Database's read-only Partitions</li>
  * </ul>
  */
-public class RandomVariableAtom extends GroundAtom {
+public class RandomVariableAtom extends GroundAtom implements ReasonerLocalVariable {
     /**
      * Whether this atom is backed by a DataStore.
      */

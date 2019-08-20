@@ -17,14 +17,14 @@
  */
 package org.linqs.psl.application.learning.weight.maxlikelihood;
 
-import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 import org.linqs.psl.application.inference.LazyMPEInference;
 import org.linqs.psl.application.learning.weight.VotedPerceptron;
-import org.linqs.psl.application.util.Grounding;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.LazyAtomManager;
 import org.linqs.psl.database.atom.PersistedAtomManager;
+import org.linqs.psl.grounding.GroundRuleStore;
+import org.linqs.psl.grounding.Grounding;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;

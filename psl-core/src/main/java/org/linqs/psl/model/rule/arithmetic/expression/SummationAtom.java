@@ -35,11 +35,11 @@ import org.linqs.psl.model.term.Term;
  * @author Stephen Bach
  */
 public class SummationAtom implements SummationAtomOrAtom {
-    protected final Predicate p;
+    protected final Predicate predicate;
     protected final SummationVariableOrTerm[] args;
 
-    public SummationAtom(Predicate p, SummationVariableOrTerm[] args) {
-        this.p = p;
+    public SummationAtom(Predicate predicate, SummationVariableOrTerm[] args) {
+        this.predicate = predicate;
         this.args = args;
 
         checkSchema();
@@ -53,7 +53,7 @@ public class SummationAtom implements SummationAtomOrAtom {
      * @throws IllegalArgumentException if any argument is null
      */
     protected void checkSchema() {
-        if (p.getArity() != args.length) {
+        if (predicate.getArity() != args.length) {
             throw new IllegalArgumentException("Length of Schema does not match the number of args.");
         }
 
@@ -68,46 +68,51 @@ public class SummationAtom implements SummationAtomOrAtom {
         Term[] queryAtomArgs = new Term[args.length];
         for (int i = 0; i < args.length; i++) {
             if (args[i] instanceof Term) {
-                queryAtomArgs[i] = (Term) args[i];
-            }
-            else {
-                queryAtomArgs[i] = ((SummationVariable) args[i]).getVariable();
+                queryAtomArgs[i] = (Term)args[i];
+            } else {
+                queryAtomArgs[i] = ((SummationVariable)args[i]).getVariable();
             }
         }
-        return new QueryAtom(p, queryAtomArgs);
+        return new QueryAtom(predicate, queryAtomArgs);
     }
 
     /**
      * Returns the predicate associated with this SummationAtom.
-     *
-     * @return A predicate
      */
     public Predicate getPredicate() {
-        return p;
+        return predicate;
     }
 
     /**
      * Returns the number of arguments to the associated Predicate.
-     *
-     * @return The number of arguments
      */
     public int getArity() {
-        return p.getArity();
+        return predicate.getArity();
     }
 
     /**
      * Returns the arguments associated with this SummationAtom.
-     *
-     * @return The arguments associated with this SummationAtom
      */
     public SummationVariableOrTerm[] getArguments() {
         return args;
     }
 
+    public int getNumSummationVariables() {
+        int count = 0;
+
+        for (SummationVariableOrTerm arg : args) {
+            if (arg instanceof SummationVariable) {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
     @Override
     public String toString() {
         StringBuilder s = new StringBuilder();
-        s.append(p.getName());
+        s.append(predicate.getName());
         s.append("(");
         for (int i = 0; i < args.length; i++) {
             if (i > 0) {
@@ -129,7 +134,7 @@ public class SummationAtom implements SummationAtomOrAtom {
         if (oth==this) return true;
         if (oth==null || !(oth instanceof SummationAtom)) return false;
 
-        if (!p.equals(((SummationAtom) oth).p)) {
+        if (!predicate.equals(((SummationAtom) oth).predicate)) {
             return false;
         }
 

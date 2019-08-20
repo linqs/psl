@@ -19,6 +19,7 @@ package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
+import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.util.FloatMatrix;
 import org.linqs.psl.util.HashCode;
 
@@ -50,7 +51,7 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm {
     // TODO(eriq): All the matrix work is suspect.
     // The old code was using some cache that didn't seem too useful. Could it have been?
 
-    public SquaredHyperplaneTerm(GroundRule groundRule, Hyperplane hyperplane) {
+    public SquaredHyperplaneTerm(GroundRule groundRule, Hyperplane<LocalVariable> hyperplane) {
         super(hyperplane, groundRule);
 
         this.coefficients = hyperplane.getCoefficients();
@@ -124,6 +125,17 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm {
         for (int i = 0; i < size; i++) {
             value += coefficients[i] * variables[i].getValue();
         }
+
+        return value - constant;
+    }
+
+    @Override
+    public float evaluate(float[] consensusValues) {
+        float value = 0.0f;
+        for (int i = 0; i < size; i++) {
+            value += coefficients[i] * consensusValues[variables[i].getGlobalId()];
+        }
+
         return value - constant;
     }
 

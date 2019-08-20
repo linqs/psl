@@ -25,18 +25,19 @@ import org.junit.Before;
 import org.junit.Test;
 import org.linqs.psl.PSLTest;
 import org.linqs.psl.TestModel;
-import org.linqs.psl.application.groundrulestore.GroundRuleStore;
-import org.linqs.psl.application.groundrulestore.MemoryGroundRuleStore;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.atom.AtomCache;
 import org.linqs.psl.database.atom.AtomManager;
+import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.database.atom.SimpleAtomManager;
 import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver.Type;
+import org.linqs.psl.grounding.GroundRuleStore;
+import org.linqs.psl.grounding.MemoryGroundRuleStore;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
@@ -141,6 +142,7 @@ public class GroundRuleTest {
     @Test
     public void testLogicalBase() {
         GroundRuleStore store = new MemoryGroundRuleStore();
+        // Use a simple atom manager so we don't throw a PAM exception.
         AtomManager manager = new SimpleAtomManager(database);
 
         Rule rule;
@@ -200,6 +202,7 @@ public class GroundRuleTest {
     @Test
     public void testLogicalGroundingOnlyPredicates() {
         GroundRuleStore store = new MemoryGroundRuleStore();
+        // Use a simple atom manager so we don't throw a PAM exception.
         AtomManager manager = new SimpleAtomManager(database);
 
         Rule rule;
@@ -303,7 +306,7 @@ public class GroundRuleTest {
         initModel(true, true);
 
         GroundRuleStore store = new MemoryGroundRuleStore();
-        AtomManager manager = new SimpleAtomManager(database);
+        AtomManager manager = new PersistedAtomManager(database);
 
         Rule rule;
         List<String> expected;
@@ -327,7 +330,7 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.SmallerThan, new ConstantNumber(0)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LTE, new ConstantNumber(0)),
                 1.0,
                 true
         );
@@ -365,7 +368,7 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.SmallerThan, new ConstantNumber(0)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LTE, new ConstantNumber(0)),
                 1.0,
                 true
         );
@@ -412,7 +415,7 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.SmallerThan, new ConstantNumber(0)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LTE, new ConstantNumber(0)),
                 1.0,
                 true
         );
@@ -436,7 +439,7 @@ public class GroundRuleTest {
     @Test
     public void testArithmeticBase() {
         GroundRuleStore store = new MemoryGroundRuleStore();
-        AtomManager manager = new SimpleAtomManager(database);
+        AtomManager manager = new PersistedAtomManager(database);
 
         Rule rule;
         List<String> expected;
@@ -455,7 +458,7 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 1.0,
                 true
         );
@@ -502,7 +505,7 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.SmallerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LTE, new ConstantNumber(1)),
                 1.0,
                 true
         );
@@ -549,7 +552,7 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)),
                 1.0,
                 true
         );
@@ -618,7 +621,7 @@ public class GroundRuleTest {
     // |B| * Friends(A, +B) >= 1 {B: !Nice(B)}
     public void testSelectBaseNice() {
         GroundRuleStore store = new MemoryGroundRuleStore();
-        AtomManager manager = new SimpleAtomManager(database);
+        AtomManager manager = new PersistedAtomManager(database);
 
         Rule rule;
         List<String> expected;
@@ -641,7 +644,7 @@ public class GroundRuleTest {
         filters.put(new SummationVariable("B"), new QueryAtom(model.predicates.get("Nice"), new Variable("B")));
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true
@@ -665,7 +668,7 @@ public class GroundRuleTest {
         filters.put(new SummationVariable("B"), new Negation(new QueryAtom(model.predicates.get("Nice"), new Variable("B"))));
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true
@@ -686,7 +689,7 @@ public class GroundRuleTest {
         initModel(false);
 
         GroundRuleStore store = new MemoryGroundRuleStore();
-        AtomManager manager = new SimpleAtomManager(database);
+        AtomManager manager = new PersistedAtomManager(database);
 
         Rule rule;
         List<String> expected;
@@ -709,7 +712,7 @@ public class GroundRuleTest {
         filters.put(new SummationVariable("B"), new QueryAtom(model.predicates.get("Nice"), new Variable("B")));
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true
@@ -733,7 +736,7 @@ public class GroundRuleTest {
         filters.put(new SummationVariable("B"), new Negation(new QueryAtom(model.predicates.get("Nice"), new Variable("B"))));
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true
@@ -768,7 +771,7 @@ public class GroundRuleTest {
         database = model.dataStore.getDatabase(model.targetPartition, toClose, model.observationPartition);
 
         GroundRuleStore store = new MemoryGroundRuleStore();
-        AtomManager manager = new SimpleAtomManager(database);
+        AtomManager manager = new PersistedAtomManager(database);
 
         Rule rule;
         List<String> expected;
@@ -792,23 +795,24 @@ public class GroundRuleTest {
             new SummationVariable("B"),
             new Conjunction(
                 new QueryAtom(model.predicates.get("Friends"), new Variable("B"), new UniqueStringID("Alice")),
-                new QueryAtom(model.predicates.get("Nice"), new UniqueStringID("Alice"))
+                new QueryAtom(model.predicates.get("Nice"), new Variable("B"))
             )
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true
         );
 
-        // Note that 'Alice' is not friends with herself.
+        // Note that 'Alice' is not friends with herself (in the filter), but others can because of the closed predicate.
+        // |B| * Friends(A, +B) >= 1 {B: Friends(B, 'Alice') && Nice(B)}
         expected = Arrays.asList(
-            "1.0: 4.0 * FRIENDS('Alice', 'Bob') + 4.0 * FRIENDS('Alice', 'Charlie') + 4.0 * FRIENDS('Alice', 'Derek') + 4.0 * FRIENDS('Alice', 'Eugene') >= 1.0 ^2",
-            "1.0: 3.0 * FRIENDS('Bob', 'Charlie') + 3.0 * FRIENDS('Bob', 'Derek') + 3.0 * FRIENDS('Bob', 'Eugene') >= 1.0 ^2",
-            "1.0: 3.0 * FRIENDS('Charlie', 'Bob') + 3.0 * FRIENDS('Charlie', 'Derek') + 3.0 * FRIENDS('Charlie', 'Eugene') >= 1.0 ^2",
-            "1.0: 3.0 * FRIENDS('Derek', 'Bob') + 3.0 * FRIENDS('Derek', 'Charlie') + 3.0 * FRIENDS('Derek', 'Eugene') >= 1.0 ^2",
+            "1.0: 3.0 * FRIENDS('Alice', 'Bob') + 3.0 * FRIENDS('Alice', 'Charlie') + 3.0 * FRIENDS('Alice', 'Derek') >= 1.0 ^2",
+            "1.0: 3.0 * FRIENDS('Bob', 'Charlie') + 3.0 * FRIENDS('Bob', 'Derek') + 3.0 * FRIENDS('Bob', 'Bob') >= 1.0 ^2",
+            "1.0: 3.0 * FRIENDS('Charlie', 'Bob') + 3.0 * FRIENDS('Charlie', 'Derek') + 3.0 * FRIENDS('Charlie', 'Charlie') >= 1.0 ^2",
+            "1.0: 3.0 * FRIENDS('Derek', 'Bob') + 3.0 * FRIENDS('Derek', 'Charlie') + 3.0 * FRIENDS('Derek', 'Derek') >= 1.0 ^2",
             "1.0: 3.0 * FRIENDS('Eugene', 'Bob') + 3.0 * FRIENDS('Eugene', 'Charlie') + 3.0 * FRIENDS('Eugene', 'Derek') >= 1.0 ^2"
         );
         rule.groundAll(manager, store);
@@ -827,29 +831,25 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true
         );
 
-        // Note that 'Alice' is not friends with herself.
-        expected = Arrays.asList(
-            "1.0: 4.0 * FRIENDS('Alice', 'Bob') + 4.0 * FRIENDS('Alice', 'Charlie') + 4.0 * FRIENDS('Alice', 'Derek') + 4.0 * FRIENDS('Alice', 'Eugene') >= 1.0 ^2",
-            "1.0: 4.0 * FRIENDS('Bob', 'Alice') + 4.0 * FRIENDS('Bob', 'Charlie') + 4.0 * FRIENDS('Bob', 'Derek') + 4.0 * FRIENDS('Bob', 'Eugene') >= 1.0 ^2",
-            "1.0: 4.0 * FRIENDS('Charlie', 'Alice') + 4.0 * FRIENDS('Charlie', 'Bob') + 4.0 * FRIENDS('Charlie', 'Derek') + 4.0 * FRIENDS('Charlie', 'Eugene') >= 1.0 ^2",
-            "1.0: 4.0 * FRIENDS('Derek', 'Alice') + 4.0 * FRIENDS('Derek', 'Bob') + 4.0 * FRIENDS('Derek', 'Charlie') + 4.0 * FRIENDS('Derek', 'Eugene') >= 1.0 ^2",
-            "1.0: 4.0 * FRIENDS('Eugene', 'Alice') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Derek') >= 1.0 ^2"
-        );
-        rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        try {
+            rule.groundAll(manager, store);
+            fail("Attempting to ground a disjunction without a split did not throw.");
+        } catch (IllegalStateException ex) {
+            // Expected
+        }
     }
 
     @Test
     // |B| * Friends(A, +B) >= 1
     public void testSummationNoSelect() {
         GroundRuleStore store = new MemoryGroundRuleStore();
-        AtomManager manager = new SimpleAtomManager(database);
+        AtomManager manager = new PersistedAtomManager(database);
 
         Rule rule;
         List<String> expected;
@@ -871,7 +871,7 @@ public class GroundRuleTest {
         filters = new HashMap<SummationVariable, Formula>();
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true
@@ -897,7 +897,7 @@ public class GroundRuleTest {
         initModel(false);
 
         GroundRuleStore store = new MemoryGroundRuleStore();
-        AtomManager manager = new SimpleAtomManager(database);
+        AtomManager manager = new PersistedAtomManager(database);
 
         Rule rule;
         List<String> expected;
@@ -919,7 +919,7 @@ public class GroundRuleTest {
         filters = new HashMap<SummationVariable, Formula>();
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true
@@ -946,7 +946,7 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true
@@ -972,7 +972,7 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true
@@ -1002,7 +1002,7 @@ public class GroundRuleTest {
         initModel(false);
 
         GroundRuleStore store = new MemoryGroundRuleStore();
-        AtomManager manager = new SimpleAtomManager(database);
+        AtomManager manager = new PersistedAtomManager(database);
 
         Rule rule;
         List<String> expected;
@@ -1028,19 +1028,20 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true
         );
 
+        // |A|
         expected = Arrays.asList(
             "1.0: " +
-                "5.0 * FRIENDS('Alice', 'Bob') + 5.0 * FRIENDS('Alice', 'Charlie') + 5.0 * FRIENDS('Alice', 'Derek') + " +
-                "5.0 * FRIENDS('Bob', 'Alice') + 5.0 * FRIENDS('Bob', 'Charlie') + 5.0 * FRIENDS('Bob', 'Derek') + " +
-                "5.0 * FRIENDS('Charlie', 'Alice') + 5.0 * FRIENDS('Charlie', 'Bob') + 5.0 * FRIENDS('Charlie', 'Derek') + " +
-                "5.0 * FRIENDS('Derek', 'Alice') + 5.0 * FRIENDS('Derek', 'Bob') + 5.0 * FRIENDS('Derek', 'Charlie') + " +
-                "5.0 * FRIENDS('Eugene', 'Alice') + 5.0 * FRIENDS('Eugene', 'Bob') + 5.0 * FRIENDS('Eugene', 'Charlie') + 5.0 * FRIENDS('Eugene', 'Derek') " +
+                "16.0 * FRIENDS('Alice', 'Bob') + 16.0 * FRIENDS('Alice', 'Charlie') + 16.0 * FRIENDS('Alice', 'Derek') + " +
+                "16.0 * FRIENDS('Bob', 'Alice') + 16.0 * FRIENDS('Bob', 'Charlie') + 16.0 * FRIENDS('Bob', 'Derek') + " +
+                "16.0 * FRIENDS('Charlie', 'Alice') + 16.0 * FRIENDS('Charlie', 'Bob') + 16.0 * FRIENDS('Charlie', 'Derek') + " +
+                "16.0 * FRIENDS('Derek', 'Alice') + 16.0 * FRIENDS('Derek', 'Bob') + 16.0 * FRIENDS('Derek', 'Charlie') + " +
+                "16.0 * FRIENDS('Eugene', 'Alice') + 16.0 * FRIENDS('Eugene', 'Bob') + 16.0 * FRIENDS('Eugene', 'Charlie') + 16.0 * FRIENDS('Eugene', 'Derek') " +
                 ">= 1.0 ^2"
         );
         rule.groundAll(manager, store);
@@ -1054,7 +1055,7 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true
@@ -1062,11 +1063,11 @@ public class GroundRuleTest {
 
         expected = Arrays.asList(
             "1.0: " +
-                "4.0 * FRIENDS('Alice', 'Bob') + 4.0 * FRIENDS('Alice', 'Charlie') + 4.0 * FRIENDS('Alice', 'Derek') + " +
-                "4.0 * FRIENDS('Bob', 'Alice') + 4.0 * FRIENDS('Bob', 'Charlie') + 4.0 * FRIENDS('Bob', 'Derek') + " +
-                "4.0 * FRIENDS('Charlie', 'Alice') + 4.0 * FRIENDS('Charlie', 'Bob') + 4.0 * FRIENDS('Charlie', 'Derek') + " +
-                "4.0 * FRIENDS('Derek', 'Alice') + 4.0 * FRIENDS('Derek', 'Bob') + 4.0 * FRIENDS('Derek', 'Charlie') + " +
-                "4.0 * FRIENDS('Eugene', 'Alice') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Derek') " +
+                "16.0 * FRIENDS('Alice', 'Bob') + 16.0 * FRIENDS('Alice', 'Charlie') + 16.0 * FRIENDS('Alice', 'Derek') + " +
+                "16.0 * FRIENDS('Bob', 'Alice') + 16.0 * FRIENDS('Bob', 'Charlie') + 16.0 * FRIENDS('Bob', 'Derek') + " +
+                "16.0 * FRIENDS('Charlie', 'Alice') + 16.0 * FRIENDS('Charlie', 'Bob') + 16.0 * FRIENDS('Charlie', 'Derek') + " +
+                "16.0 * FRIENDS('Derek', 'Alice') + 16.0 * FRIENDS('Derek', 'Bob') + 16.0 * FRIENDS('Derek', 'Charlie') + " +
+                "16.0 * FRIENDS('Eugene', 'Alice') + 16.0 * FRIENDS('Eugene', 'Bob') + 16.0 * FRIENDS('Eugene', 'Charlie') + 16.0 * FRIENDS('Eugene', 'Derek') " +
                 ">= 1.0 ^2"
         );
         rule.groundAll(manager, store);
@@ -1080,7 +1081,7 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true
@@ -1088,11 +1089,11 @@ public class GroundRuleTest {
 
         expected = Arrays.asList(
             "1.0: " +
-                "9.0 * FRIENDS('Alice', 'Bob') + 9.0 * FRIENDS('Alice', 'Charlie') + 9.0 * FRIENDS('Alice', 'Derek') + " +
-                "9.0 * FRIENDS('Bob', 'Alice') + 9.0 * FRIENDS('Bob', 'Charlie') + 9.0 * FRIENDS('Bob', 'Derek') + " +
-                "9.0 * FRIENDS('Charlie', 'Alice') + 9.0 * FRIENDS('Charlie', 'Bob') + 9.0 * FRIENDS('Charlie', 'Derek') + " +
-                "9.0 * FRIENDS('Derek', 'Alice') + 9.0 * FRIENDS('Derek', 'Bob') + 9.0 * FRIENDS('Derek', 'Charlie') + " +
-                "9.0 * FRIENDS('Eugene', 'Alice') + 9.0 * FRIENDS('Eugene', 'Bob') + 9.0 * FRIENDS('Eugene', 'Charlie') + 9.0 * FRIENDS('Eugene', 'Derek') " +
+                "32.0 * FRIENDS('Alice', 'Bob') + 32.0 * FRIENDS('Alice', 'Charlie') + 32.0 * FRIENDS('Alice', 'Derek') + " +
+                "32.0 * FRIENDS('Bob', 'Alice') + 32.0 * FRIENDS('Bob', 'Charlie') + 32.0 * FRIENDS('Bob', 'Derek') + " +
+                "32.0 * FRIENDS('Charlie', 'Alice') + 32.0 * FRIENDS('Charlie', 'Bob') + 32.0 * FRIENDS('Charlie', 'Derek') + " +
+                "32.0 * FRIENDS('Derek', 'Alice') + 32.0 * FRIENDS('Derek', 'Bob') + 32.0 * FRIENDS('Derek', 'Charlie') + " +
+                "32.0 * FRIENDS('Eugene', 'Alice') + 32.0 * FRIENDS('Eugene', 'Bob') + 32.0 * FRIENDS('Eugene', 'Charlie') + 32.0 * FRIENDS('Eugene', 'Derek') " +
                 ">= 1.0 ^2"
         );
         rule.groundAll(manager, store);
@@ -1106,7 +1107,7 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true
@@ -1114,11 +1115,11 @@ public class GroundRuleTest {
 
         expected = Arrays.asList(
             "1.0: " +
-                "1.0 * FRIENDS('Alice', 'Bob') + 1.0 * FRIENDS('Alice', 'Charlie') + 1.0 * FRIENDS('Alice', 'Derek') + " +
-                "1.0 * FRIENDS('Bob', 'Alice') + 1.0 * FRIENDS('Bob', 'Charlie') + 1.0 * FRIENDS('Bob', 'Derek') + " +
-                "1.0 * FRIENDS('Charlie', 'Alice') + 1.0 * FRIENDS('Charlie', 'Bob') + 1.0 * FRIENDS('Charlie', 'Derek') + " +
-                "1.0 * FRIENDS('Derek', 'Alice') + 1.0 * FRIENDS('Derek', 'Bob') + 1.0 * FRIENDS('Derek', 'Charlie') + " +
-                "1.0 * FRIENDS('Eugene', 'Alice') + 1.0 * FRIENDS('Eugene', 'Bob') + 1.0 * FRIENDS('Eugene', 'Charlie') + 1.0 * FRIENDS('Eugene', 'Derek') " +
+                "0.0 * FRIENDS('Alice', 'Bob') + 0.0 * FRIENDS('Alice', 'Charlie') + 0.0 * FRIENDS('Alice', 'Derek') + " +
+                "0.0 * FRIENDS('Bob', 'Alice') + 0.0 * FRIENDS('Bob', 'Charlie') + 0.0 * FRIENDS('Bob', 'Derek') + " +
+                "0.0 * FRIENDS('Charlie', 'Alice') + 0.0 * FRIENDS('Charlie', 'Bob') + 0.0 * FRIENDS('Charlie', 'Derek') + " +
+                "0.0 * FRIENDS('Derek', 'Alice') + 0.0 * FRIENDS('Derek', 'Bob') + 0.0 * FRIENDS('Derek', 'Charlie') + " +
+                "0.0 * FRIENDS('Eugene', 'Alice') + 0.0 * FRIENDS('Eugene', 'Bob') + 0.0 * FRIENDS('Eugene', 'Charlie') + 0.0 * FRIENDS('Eugene', 'Derek') " +
                 ">= 1.0 ^2"
         );
         rule.groundAll(manager, store);
@@ -1132,7 +1133,7 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true
@@ -1140,11 +1141,11 @@ public class GroundRuleTest {
 
         expected = Arrays.asList(
             "1.0: " +
-                "20.0 * FRIENDS('Alice', 'Bob') + 20.0 * FRIENDS('Alice', 'Charlie') + 20.0 * FRIENDS('Alice', 'Derek') + " +
-                "20.0 * FRIENDS('Bob', 'Alice') + 20.0 * FRIENDS('Bob', 'Charlie') + 20.0 * FRIENDS('Bob', 'Derek') + " +
-                "20.0 * FRIENDS('Charlie', 'Alice') + 20.0 * FRIENDS('Charlie', 'Bob') + 20.0 * FRIENDS('Charlie', 'Derek') + " +
-                "20.0 * FRIENDS('Derek', 'Alice') + 20.0 * FRIENDS('Derek', 'Bob') + 20.0 * FRIENDS('Derek', 'Charlie') + " +
-                "20.0 * FRIENDS('Eugene', 'Alice') + 20.0 * FRIENDS('Eugene', 'Bob') + 20.0 * FRIENDS('Eugene', 'Charlie') + 20.0 * FRIENDS('Eugene', 'Derek') " +
+                "256.0 * FRIENDS('Alice', 'Bob') + 256.0 * FRIENDS('Alice', 'Charlie') + 256.0 * FRIENDS('Alice', 'Derek') + " +
+                "256.0 * FRIENDS('Bob', 'Alice') + 256.0 * FRIENDS('Bob', 'Charlie') + 256.0 * FRIENDS('Bob', 'Derek') + " +
+                "256.0 * FRIENDS('Charlie', 'Alice') + 256.0 * FRIENDS('Charlie', 'Bob') + 256.0 * FRIENDS('Charlie', 'Derek') + " +
+                "256.0 * FRIENDS('Derek', 'Alice') + 256.0 * FRIENDS('Derek', 'Bob') + 256.0 * FRIENDS('Derek', 'Charlie') + " +
+                "256.0 * FRIENDS('Eugene', 'Alice') + 256.0 * FRIENDS('Eugene', 'Bob') + 256.0 * FRIENDS('Eugene', 'Charlie') + 256.0 * FRIENDS('Eugene', 'Derek') " +
                 ">= 1.0 ^2"
         );
         rule.groundAll(manager, store);
@@ -1158,7 +1159,7 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true
@@ -1166,11 +1167,11 @@ public class GroundRuleTest {
 
         expected = Arrays.asList(
             "1.0: " +
-                "1.25 * FRIENDS('Alice', 'Bob') + 1.25 * FRIENDS('Alice', 'Charlie') + 1.25 * FRIENDS('Alice', 'Derek') + " +
-                "1.25 * FRIENDS('Bob', 'Alice') + 1.25 * FRIENDS('Bob', 'Charlie') + 1.25 * FRIENDS('Bob', 'Derek') + " +
-                "1.25 * FRIENDS('Charlie', 'Alice') + 1.25 * FRIENDS('Charlie', 'Bob') + 1.25 * FRIENDS('Charlie', 'Derek') + " +
-                "1.25 * FRIENDS('Derek', 'Alice') + 1.25 * FRIENDS('Derek', 'Bob') + 1.25 * FRIENDS('Derek', 'Charlie') + " +
-                "1.25 * FRIENDS('Eugene', 'Alice') + 1.25 * FRIENDS('Eugene', 'Bob') + 1.25 * FRIENDS('Eugene', 'Charlie') + 1.25 * FRIENDS('Eugene', 'Derek') " +
+                "1.0 * FRIENDS('Alice', 'Bob') + 1.0 * FRIENDS('Alice', 'Charlie') + 1.0 * FRIENDS('Alice', 'Derek') + " +
+                "1.0 * FRIENDS('Bob', 'Alice') + 1.0 * FRIENDS('Bob', 'Charlie') + 1.0 * FRIENDS('Bob', 'Derek') + " +
+                "1.0 * FRIENDS('Charlie', 'Alice') + 1.0 * FRIENDS('Charlie', 'Bob') + 1.0 * FRIENDS('Charlie', 'Derek') + " +
+                "1.0 * FRIENDS('Derek', 'Alice') + 1.0 * FRIENDS('Derek', 'Bob') + 1.0 * FRIENDS('Derek', 'Charlie') + " +
+                "1.0 * FRIENDS('Eugene', 'Alice') + 1.0 * FRIENDS('Eugene', 'Bob') + 1.0 * FRIENDS('Eugene', 'Charlie') + 1.0 * FRIENDS('Eugene', 'Derek') " +
                 ">= 1.0 ^2"
         );
         rule.groundAll(manager, store);
@@ -1193,7 +1194,7 @@ public class GroundRuleTest {
         database = model.dataStore.getDatabase(model.targetPartition, toClose, model.observationPartition);
 
         GroundRuleStore store = new MemoryGroundRuleStore();
-        AtomManager manager = new SimpleAtomManager(database);
+        AtomManager manager = new PersistedAtomManager(database);
 
         Rule rule;
         List<String> expected;
@@ -1221,42 +1222,43 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true
         );
 
         // |B| * Friends(A, +B) + Person(C) >= 1 {B: Friends(C, B)}
+        // Note that self friendship is allowed here since Friends is a closed predicate.
         expected = Arrays.asList(
             "1.0: 4.0 * FRIENDS('Alice', 'Bob') + 4.0 * FRIENDS('Alice', 'Charlie') + 4.0 * FRIENDS('Alice', 'Derek') + 4.0 * FRIENDS('Alice', 'Eugene') + 1.0 * PERSON('Alice') >= 1.0 ^2",
-            "1.0: 3.0 * FRIENDS('Alice', 'Charlie') + 3.0 * FRIENDS('Alice', 'Derek') + 3.0 * FRIENDS('Alice', 'Eugene') + 1.0 * PERSON('Bob') >= 1.0 ^2",
-            "1.0: 3.0 * FRIENDS('Alice', 'Bob') + 3.0 * FRIENDS('Alice', 'Derek') + 3.0 * FRIENDS('Alice', 'Eugene') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
-            "1.0: 3.0 * FRIENDS('Alice', 'Bob') + 3.0 * FRIENDS('Alice', 'Charlie') + 3.0 * FRIENDS('Alice', 'Eugene') + 1.0 * PERSON('Derek') >= 1.0 ^2",
-            "1.0: 3.0 * FRIENDS('Alice', 'Bob') + 3.0 * FRIENDS('Alice', 'Charlie') + 3.0 * FRIENDS('Alice', 'Derek') + 1.0 * PERSON('Eugene') >= 1.0 ^2",
+            "1.0: 4.0 * FRIENDS('Alice', 'Alice') + 4.0 * FRIENDS('Alice', 'Charlie') + 4.0 * FRIENDS('Alice', 'Derek') + 4.0 * FRIENDS('Alice', 'Eugene') + 1.0 * PERSON('Bob') >= 1.0 ^2",
+            "1.0: 4.0 * FRIENDS('Alice', 'Alice') + 4.0 * FRIENDS('Alice', 'Bob') + 4.0 * FRIENDS('Alice', 'Derek') + 4.0 * FRIENDS('Alice', 'Eugene') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
+            "1.0: 4.0 * FRIENDS('Alice', 'Alice') + 4.0 * FRIENDS('Alice', 'Bob') + 4.0 * FRIENDS('Alice', 'Charlie') + 4.0 * FRIENDS('Alice', 'Eugene') + 1.0 * PERSON('Derek') >= 1.0 ^2",
+            "1.0: 4.0 * FRIENDS('Alice', 'Alice') + 4.0 * FRIENDS('Alice', 'Bob') + 4.0 * FRIENDS('Alice', 'Charlie') + 4.0 * FRIENDS('Alice', 'Derek') + 1.0 * PERSON('Eugene') >= 1.0 ^2",
 
-            "1.0: 3.0 * FRIENDS('Bob', 'Charlie') + 3.0 * FRIENDS('Bob', 'Derek') + 3.0 * FRIENDS('Bob', 'Eugene') + 1.0 * PERSON('Alice') >= 1.0 ^2",
+            "1.0: 4.0 * FRIENDS('Bob', 'Bob') + 4.0 * FRIENDS('Bob', 'Charlie') + 4.0 * FRIENDS('Bob', 'Derek') + 4.0 * FRIENDS('Bob', 'Eugene') + 1.0 * PERSON('Alice') >= 1.0 ^2",
             "1.0: 4.0 * FRIENDS('Bob', 'Alice') + 4.0 * FRIENDS('Bob', 'Charlie') + 4.0 * FRIENDS('Bob', 'Derek') + 4.0 * FRIENDS('Bob', 'Eugene') + 1.0 * PERSON('Bob') >= 1.0 ^2",
-            "1.0: 3.0 * FRIENDS('Bob', 'Alice') + 3.0 * FRIENDS('Bob', 'Derek') + 3.0 * FRIENDS('Bob', 'Eugene') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
-            "1.0: 3.0 * FRIENDS('Bob', 'Alice') + 3.0 * FRIENDS('Bob', 'Charlie') + 3.0 * FRIENDS('Bob', 'Eugene') + 1.0 * PERSON('Derek') >= 1.0 ^2",
-            "1.0: 3.0 * FRIENDS('Bob', 'Alice') + 3.0 * FRIENDS('Bob', 'Charlie') + 3.0 * FRIENDS('Bob', 'Derek') + 1.0 * PERSON('Eugene') >= 1.0 ^2",
+            "1.0: 4.0 * FRIENDS('Bob', 'Bob') + 4.0 * FRIENDS('Bob', 'Alice') + 4.0 * FRIENDS('Bob', 'Derek') + 4.0 * FRIENDS('Bob', 'Eugene') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
+            "1.0: 4.0 * FRIENDS('Bob', 'Bob') + 4.0 * FRIENDS('Bob', 'Alice') + 4.0 * FRIENDS('Bob', 'Charlie') + 4.0 * FRIENDS('Bob', 'Eugene') + 1.0 * PERSON('Derek') >= 1.0 ^2",
+            "1.0: 4.0 * FRIENDS('Bob', 'Bob') + 4.0 * FRIENDS('Bob', 'Alice') + 4.0 * FRIENDS('Bob', 'Charlie') + 4.0 * FRIENDS('Bob', 'Derek') + 1.0 * PERSON('Eugene') >= 1.0 ^2",
 
-            "1.0: 3.0 * FRIENDS('Charlie', 'Bob') + 3.0 * FRIENDS('Charlie', 'Derek') + 3.0 * FRIENDS('Charlie', 'Eugene') + 1.0 * PERSON('Alice') >= 1.0 ^2",
-            "1.0: 3.0 * FRIENDS('Charlie', 'Alice') + 3.0 * FRIENDS('Charlie', 'Derek') + 3.0 * FRIENDS('Charlie', 'Eugene') + 1.0 * PERSON('Bob') >= 1.0 ^2",
+            "1.0: 4.0 * FRIENDS('Charlie', 'Charlie') + 4.0 * FRIENDS('Charlie', 'Bob') + 4.0 * FRIENDS('Charlie', 'Derek') + 4.0 * FRIENDS('Charlie', 'Eugene') + 1.0 * PERSON('Alice') >= 1.0 ^2",
+            "1.0: 4.0 * FRIENDS('Charlie', 'Charlie') + 4.0 * FRIENDS('Charlie', 'Alice') + 4.0 * FRIENDS('Charlie', 'Derek') + 4.0 * FRIENDS('Charlie', 'Eugene') + 1.0 * PERSON('Bob') >= 1.0 ^2",
             "1.0: 4.0 * FRIENDS('Charlie', 'Bob') + 4.0 * FRIENDS('Charlie', 'Alice') + 4.0 * FRIENDS('Charlie', 'Derek') + 4.0 * FRIENDS('Charlie', 'Eugene') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
-            "1.0: 3.0 * FRIENDS('Charlie', 'Bob') + 3.0 * FRIENDS('Charlie', 'Alice') + 3.0 * FRIENDS('Charlie', 'Eugene') + 1.0 * PERSON('Derek') >= 1.0 ^2",
-            "1.0: 3.0 * FRIENDS('Charlie', 'Bob') + 3.0 * FRIENDS('Charlie', 'Alice') + 3.0 * FRIENDS('Charlie', 'Derek') + 1.0 * PERSON('Eugene') >= 1.0 ^2",
+            "1.0: 4.0 * FRIENDS('Charlie', 'Charlie') + 4.0 * FRIENDS('Charlie', 'Bob') + 4.0 * FRIENDS('Charlie', 'Alice') + 4.0 * FRIENDS('Charlie', 'Eugene') + 1.0 * PERSON('Derek') >= 1.0 ^2",
+            "1.0: 4.0 * FRIENDS('Charlie', 'Charlie') + 4.0 * FRIENDS('Charlie', 'Bob') + 4.0 * FRIENDS('Charlie', 'Alice') + 4.0 * FRIENDS('Charlie', 'Derek') + 1.0 * PERSON('Eugene') >= 1.0 ^2",
 
-            "1.0: 3.0 * FRIENDS('Derek', 'Bob') + 3.0 * FRIENDS('Derek', 'Charlie') + 3.0 * FRIENDS('Derek', 'Eugene') + 1.0 * PERSON('Alice') >= 1.0 ^2",
-            "1.0: 3.0 * FRIENDS('Derek', 'Charlie') + 3.0 * FRIENDS('Derek', 'Alice') + 3.0 * FRIENDS('Derek', 'Eugene') + 1.0 * PERSON('Bob') >= 1.0 ^2",
-            "1.0: 3.0 * FRIENDS('Derek', 'Bob') + 3.0 * FRIENDS('Derek', 'Alice') + 3.0 * FRIENDS('Derek', 'Eugene') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
+            "1.0: 4.0 * FRIENDS('Derek', 'Derek') + 4.0 * FRIENDS('Derek', 'Bob') + 4.0 * FRIENDS('Derek', 'Charlie') + 4.0 * FRIENDS('Derek', 'Eugene') + 1.0 * PERSON('Alice') >= 1.0 ^2",
+            "1.0: 4.0 * FRIENDS('Derek', 'Derek') + 4.0 * FRIENDS('Derek', 'Charlie') + 4.0 * FRIENDS('Derek', 'Alice') + 4.0 * FRIENDS('Derek', 'Eugene') + 1.0 * PERSON('Bob') >= 1.0 ^2",
+            "1.0: 4.0 * FRIENDS('Derek', 'Derek') + 4.0 * FRIENDS('Derek', 'Bob') + 4.0 * FRIENDS('Derek', 'Alice') + 4.0 * FRIENDS('Derek', 'Eugene') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
             "1.0: 4.0 * FRIENDS('Derek', 'Bob') + 4.0 * FRIENDS('Derek', 'Charlie') + 4.0 * FRIENDS('Derek', 'Alice') + 4.0 * FRIENDS('Derek', 'Eugene') + 1.0 * PERSON('Derek') >= 1.0 ^2",
-            "1.0: 3.0 * FRIENDS('Derek', 'Bob') + 3.0 * FRIENDS('Derek', 'Charlie') + 3.0 * FRIENDS('Derek', 'Alice') + 1.0 * PERSON('Eugene') >= 1.0 ^2",
+            "1.0: 4.0 * FRIENDS('Derek', 'Derek') + 4.0 * FRIENDS('Derek', 'Bob') + 4.0 * FRIENDS('Derek', 'Charlie') + 4.0 * FRIENDS('Derek', 'Alice') + 1.0 * PERSON('Eugene') >= 1.0 ^2",
 
-            "1.0: 3.0 * FRIENDS('Eugene', 'Bob') + 3.0 * FRIENDS('Eugene', 'Charlie') + 3.0 * FRIENDS('Eugene', 'Derek') + 1.0 * PERSON('Alice') >= 1.0 ^2",
-            "1.0: 3.0 * FRIENDS('Eugene', 'Charlie') + 3.0 * FRIENDS('Eugene', 'Derek') + 3.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Bob') >= 1.0 ^2",
-            "1.0: 3.0 * FRIENDS('Eugene', 'Bob') + 3.0 * FRIENDS('Eugene', 'Derek') + 3.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
-            "1.0: 3.0 * FRIENDS('Eugene', 'Bob') + 3.0 * FRIENDS('Eugene', 'Charlie') + 3.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Derek') >= 1.0 ^2",
+            "1.0: 4.0 * FRIENDS('Eugene', 'Eugene') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Derek') + 1.0 * PERSON('Alice') >= 1.0 ^2",
+            "1.0: 4.0 * FRIENDS('Eugene', 'Eugene') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Derek') + 4.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Bob') >= 1.0 ^2",
+            "1.0: 4.0 * FRIENDS('Eugene', 'Eugene') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Derek') + 4.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
+            "1.0: 4.0 * FRIENDS('Eugene', 'Eugene') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Derek') >= 1.0 ^2",
             "1.0: 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Derek') + 4.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Eugene') >= 1.0 ^2"
         );
         rule.groundAll(manager, store);
@@ -1275,47 +1277,44 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true
         );
 
-        // Note that 'Alice' is not friends with herself.
+        // |B| * Friends(A, +B) + Person(C) >= 1 {B: Friends(C, B) & Nice(C)}
         expected = Arrays.asList(
             "1.0: 4.0 * FRIENDS('Alice', 'Bob') + 4.0 * FRIENDS('Alice', 'Charlie') + 4.0 * FRIENDS('Alice', 'Derek') + 4.0 * FRIENDS('Alice', 'Eugene') + 1.0 * PERSON('Alice') >= 1.0 ^2",
-            "1.0: 3.0 * FRIENDS('Alice', 'Charlie') + 3.0 * FRIENDS('Alice', 'Derek') + 3.0 * FRIENDS('Alice', 'Eugene') + 1.0 * PERSON('Bob') >= 1.0 ^2",
-            "1.0: 3.0 * FRIENDS('Alice', 'Bob') + 3.0 * FRIENDS('Alice', 'Derek') + 3.0 * FRIENDS('Alice', 'Eugene') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
-            "1.0: 3.0 * FRIENDS('Alice', 'Bob') + 3.0 * FRIENDS('Alice', 'Charlie') + 3.0 * FRIENDS('Alice', 'Eugene') + 1.0 * PERSON('Derek') >= 1.0 ^2",
+            "1.0: 4.0 * FRIENDS('Alice', 'Alice') + 4.0 * FRIENDS('Alice', 'Charlie') + 4.0 * FRIENDS('Alice', 'Derek') + 4.0 * FRIENDS('Alice', 'Eugene') + 1.0 * PERSON('Bob') >= 1.0 ^2",
+            "1.0: 4.0 * FRIENDS('Alice', 'Alice') + 4.0 * FRIENDS('Alice', 'Bob') + 4.0 * FRIENDS('Alice', 'Derek') + 4.0 * FRIENDS('Alice', 'Eugene') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
+            "1.0: 4.0 * FRIENDS('Alice', 'Alice') + 4.0 * FRIENDS('Alice', 'Bob') + 4.0 * FRIENDS('Alice', 'Charlie') + 4.0 * FRIENDS('Alice', 'Eugene') + 1.0 * PERSON('Derek') >= 1.0 ^2",
 
-            "1.0: 3.0 * FRIENDS('Bob', 'Charlie') + 3.0 * FRIENDS('Bob', 'Derek') + 3.0 * FRIENDS('Bob', 'Eugene') + 1.0 * PERSON('Alice') >= 1.0 ^2",
+            "1.0: 4.0 * FRIENDS('Bob', 'Bob') + 4.0 * FRIENDS('Bob', 'Charlie') + 4.0 * FRIENDS('Bob', 'Derek') + 4.0 * FRIENDS('Bob', 'Eugene') + 1.0 * PERSON('Alice') >= 1.0 ^2",
             "1.0: 4.0 * FRIENDS('Bob', 'Alice') + 4.0 * FRIENDS('Bob', 'Charlie') + 4.0 * FRIENDS('Bob', 'Derek') + 4.0 * FRIENDS('Bob', 'Eugene') + 1.0 * PERSON('Bob') >= 1.0 ^2",
-            "1.0: 3.0 * FRIENDS('Bob', 'Alice') + 3.0 * FRIENDS('Bob', 'Derek') + 3.0 * FRIENDS('Bob', 'Eugene') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
-            "1.0: 3.0 * FRIENDS('Bob', 'Alice') + 3.0 * FRIENDS('Bob', 'Charlie') + 3.0 * FRIENDS('Bob', 'Eugene') + 1.0 * PERSON('Derek') >= 1.0 ^2",
+            "1.0: 4.0 * FRIENDS('Bob', 'Bob') + 4.0 * FRIENDS('Bob', 'Alice') + 4.0 * FRIENDS('Bob', 'Derek') + 4.0 * FRIENDS('Bob', 'Eugene') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
+            "1.0: 4.0 * FRIENDS('Bob', 'Bob') + 4.0 * FRIENDS('Bob', 'Alice') + 4.0 * FRIENDS('Bob', 'Charlie') + 4.0 * FRIENDS('Bob', 'Eugene') + 1.0 * PERSON('Derek') >= 1.0 ^2",
 
-            "1.0: 3.0 * FRIENDS('Charlie', 'Bob') + 3.0 * FRIENDS('Charlie', 'Derek') + 3.0 * FRIENDS('Charlie', 'Eugene') + 1.0 * PERSON('Alice') >= 1.0 ^2",
-            "1.0: 3.0 * FRIENDS('Charlie', 'Alice') + 3.0 * FRIENDS('Charlie', 'Derek') + 3.0 * FRIENDS('Charlie', 'Eugene') + 1.0 * PERSON('Bob') >= 1.0 ^2",
+            "1.0: 4.0 * FRIENDS('Charlie', 'Charlie') + 4.0 * FRIENDS('Charlie', 'Bob') + 4.0 * FRIENDS('Charlie', 'Derek') + 4.0 * FRIENDS('Charlie', 'Eugene') + 1.0 * PERSON('Alice') >= 1.0 ^2",
+            "1.0: 4.0 * FRIENDS('Charlie', 'Charlie') + 4.0 * FRIENDS('Charlie', 'Alice') + 4.0 * FRIENDS('Charlie', 'Derek') + 4.0 * FRIENDS('Charlie', 'Eugene') + 1.0 * PERSON('Bob') >= 1.0 ^2",
             "1.0: 4.0 * FRIENDS('Charlie', 'Bob') + 4.0 * FRIENDS('Charlie', 'Alice') + 4.0 * FRIENDS('Charlie', 'Derek') + 4.0 * FRIENDS('Charlie', 'Eugene') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
-            "1.0: 3.0 * FRIENDS('Charlie', 'Bob') + 3.0 * FRIENDS('Charlie', 'Alice') + 3.0 * FRIENDS('Charlie', 'Eugene') + 1.0 * PERSON('Derek') >= 1.0 ^2",
+            "1.0: 4.0 * FRIENDS('Charlie', 'Charlie') + 4.0 * FRIENDS('Charlie', 'Bob') + 4.0 * FRIENDS('Charlie', 'Alice') + 4.0 * FRIENDS('Charlie', 'Eugene') + 1.0 * PERSON('Derek') >= 1.0 ^2",
 
-            "1.0: 3.0 * FRIENDS('Derek', 'Bob') + 3.0 * FRIENDS('Derek', 'Charlie') + 3.0 * FRIENDS('Derek', 'Eugene') + 1.0 * PERSON('Alice') >= 1.0 ^2",
-            "1.0: 3.0 * FRIENDS('Derek', 'Charlie') + 3.0 * FRIENDS('Derek', 'Alice') + 3.0 * FRIENDS('Derek', 'Eugene') + 1.0 * PERSON('Bob') >= 1.0 ^2",
-            "1.0: 3.0 * FRIENDS('Derek', 'Bob') + 3.0 * FRIENDS('Derek', 'Alice') + 3.0 * FRIENDS('Derek', 'Eugene') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
+            "1.0: 4.0 * FRIENDS('Derek', 'Derek') + 4.0 * FRIENDS('Derek', 'Bob') + 4.0 * FRIENDS('Derek', 'Charlie') + 4.0 * FRIENDS('Derek', 'Eugene') + 1.0 * PERSON('Alice') >= 1.0 ^2",
+            "1.0: 4.0 * FRIENDS('Derek', 'Derek') + 4.0 * FRIENDS('Derek', 'Charlie') + 4.0 * FRIENDS('Derek', 'Alice') + 4.0 * FRIENDS('Derek', 'Eugene') + 1.0 * PERSON('Bob') >= 1.0 ^2",
+            "1.0: 4.0 * FRIENDS('Derek', 'Derek') + 4.0 * FRIENDS('Derek', 'Bob') + 4.0 * FRIENDS('Derek', 'Alice') + 4.0 * FRIENDS('Derek', 'Eugene') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
             "1.0: 4.0 * FRIENDS('Derek', 'Bob') + 4.0 * FRIENDS('Derek', 'Charlie') + 4.0 * FRIENDS('Derek', 'Alice') + 4.0 * FRIENDS('Derek', 'Eugene') + 1.0 * PERSON('Derek') >= 1.0 ^2",
 
-            "1.0: 3.0 * FRIENDS('Eugene', 'Bob') + 3.0 * FRIENDS('Eugene', 'Charlie') + 3.0 * FRIENDS('Eugene', 'Derek') + 1.0 * PERSON('Alice') >= 1.0 ^2",
-            "1.0: 3.0 * FRIENDS('Eugene', 'Charlie') + 3.0 * FRIENDS('Eugene', 'Derek') + 3.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Bob') >= 1.0 ^2",
-            "1.0: 3.0 * FRIENDS('Eugene', 'Bob') + 3.0 * FRIENDS('Eugene', 'Derek') + 3.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
-            "1.0: 3.0 * FRIENDS('Eugene', 'Bob') + 3.0 * FRIENDS('Eugene', 'Charlie') + 3.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Derek') >= 1.0 ^2"
+            "1.0: 4.0 * FRIENDS('Eugene', 'Eugene') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Derek') + 1.0 * PERSON('Alice') >= 1.0 ^2",
+            "1.0: 4.0 * FRIENDS('Eugene', 'Eugene') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Derek') + 4.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Bob') >= 1.0 ^2",
+            "1.0: 4.0 * FRIENDS('Eugene', 'Eugene') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Derek') + 4.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
+            "1.0: 4.0 * FRIENDS('Eugene', 'Eugene') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Derek') >= 1.0 ^2",
 
-            // Note that these grounding will not happen because the summation has no substitutions.
-            /*
             "1.0: 1.0 * PERSON('Eugene') >= 1.0 ^2",
             "1.0: 1.0 * PERSON('Eugene') >= 1.0 ^2",
             "1.0: 1.0 * PERSON('Eugene') >= 1.0 ^2",
             "1.0: 1.0 * PERSON('Eugene') >= 1.0 ^2",
             "1.0: 1.0 * PERSON('Eugene') >= 1.0 ^2"
-            */
         );
         rule.groundAll(manager, store);
         PSLTest.compareGroundRules(expected, rule, store);
@@ -1346,7 +1345,7 @@ public class GroundRuleTest {
         initModel(false);
 
         GroundRuleStore store;
-        AtomManager manager = new SimpleAtomManager(database);
+        AtomManager manager = new PersistedAtomManager(database);
 
         Rule rule;
         List<String> expected;
@@ -1405,10 +1404,10 @@ public class GroundRuleTest {
             "1.0",
             "2.0",
 
-            "4.0",
-            "5.0",
-            "4.0",
-            "5.0",
+            "16.0",
+            "16.0",
+            "16.0",
+            "16.0",
 
             "1.0",
             "3.0",
@@ -1416,9 +1415,9 @@ public class GroundRuleTest {
             "3.0",
 
             "1.0",
-            "9.0",
+            "32.0",
             "1.0",
-            "9.0"
+            "32.0"
         };
 
         for (int i = 0; i < testCoefficients.length; i++) {
@@ -1429,7 +1428,7 @@ public class GroundRuleTest {
             coefficients.add(testCoefficients[i]);
 
             rule = new WeightedArithmeticRule(
-                    new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                    new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                     filters,
                     1.0,
                     true
@@ -1448,7 +1447,7 @@ public class GroundRuleTest {
     @Test
     public void testArithmeticDivdeByZero() {
         GroundRuleStore store = new MemoryGroundRuleStore();
-        AtomManager manager = new SimpleAtomManager(database);
+        AtomManager manager = new PersistedAtomManager(database);
 
         Rule rule;
         List<String> expected;
@@ -1479,7 +1478,7 @@ public class GroundRuleTest {
         filters.put(new SummationVariable("B"), new QueryAtom(model.predicates.get("Nice"), new Variable("B")));
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true
@@ -1496,7 +1495,7 @@ public class GroundRuleTest {
     @Test
     public void testArithmeticNegativePrior() {
         GroundRuleStore store = new MemoryGroundRuleStore();
-        AtomManager manager = new SimpleAtomManager(database);
+        AtomManager manager = new PersistedAtomManager(database);
 
         Rule rule;
         List<String> expected;
@@ -1513,7 +1512,7 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(0.0f)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(0.0f)),
                 1.0,
                 true
         );
@@ -1554,7 +1553,7 @@ public class GroundRuleTest {
      */
     public void testVariablesInHead() {
         GroundRuleStore store = new MemoryGroundRuleStore();
-        AtomManager manager = new SimpleAtomManager(database);
+        AtomManager manager = new PersistedAtomManager(database);
 
         Rule rule;
         List<String> expected;
@@ -1602,7 +1601,7 @@ public class GroundRuleTest {
     @Test
     public void testArithmeticSingleTrivials() {
         GroundRuleStore store = new MemoryGroundRuleStore();
-        AtomManager manager = new SimpleAtomManager(database);
+        AtomManager manager = new PersistedAtomManager(database);
 
         Rule rule;
         List<String> expected;
@@ -1620,7 +1619,7 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(0.0f)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(0.0f)),
                 1.0,
                 true
         );
@@ -1640,7 +1639,7 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.SmallerThan, new ConstantNumber(1.0f)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LTE, new ConstantNumber(1.0f)),
                 1.0,
                 true
         );
@@ -1660,7 +1659,7 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(-1.0f)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(-1.0f)),
                 1.0,
                 true
         );
@@ -1680,7 +1679,7 @@ public class GroundRuleTest {
         );
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.SmallerThan, new ConstantNumber(0.0f)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LTE, new ConstantNumber(0.0f)),
                 1.0,
                 true
         );
@@ -1699,7 +1698,7 @@ public class GroundRuleTest {
     @Test
     public void testSelectWithoutAtoms() {
         GroundRuleStore store = new MemoryGroundRuleStore();
-        AtomManager manager = new SimpleAtomManager(database);
+        AtomManager manager = new PersistedAtomManager(database);
 
         Rule rule;
         List<String> expected;
@@ -1722,7 +1721,7 @@ public class GroundRuleTest {
         filters.put(new SummationVariable("B"), new QueryAtom(GroundingOnlyPredicate.Equal, new Variable("B"), new UniqueStringID("Alice")));
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true
@@ -1754,7 +1753,7 @@ public class GroundRuleTest {
         filters.put(new SummationVariable("B"), new QueryAtom(GroundingOnlyPredicate.NotEqual, new Variable("B"), new UniqueStringID("Alice")));
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true
@@ -1787,7 +1786,7 @@ public class GroundRuleTest {
         filters.put(new SummationVariable("B"), new QueryAtom(GroundingOnlyPredicate.Equal, new Variable("A"), new UniqueStringID("Alice")));
 
         rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1)),
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
                 1.0,
                 true

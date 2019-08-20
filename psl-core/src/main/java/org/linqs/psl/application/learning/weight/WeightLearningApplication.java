@@ -18,14 +18,14 @@
 package org.linqs.psl.application.learning.weight;
 
 import org.linqs.psl.application.ModelApplication;
-import org.linqs.psl.application.groundrulestore.GroundRuleStore;
-import org.linqs.psl.application.groundrulestore.MemoryGroundRuleStore;
-import org.linqs.psl.application.util.Grounding;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
 import org.linqs.psl.evaluation.statistics.Evaluator;
+import org.linqs.psl.grounding.GroundRuleStore;
+import org.linqs.psl.grounding.Grounding;
+import org.linqs.psl.grounding.MemoryGroundRuleStore;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
@@ -270,11 +270,8 @@ public abstract class WeightLearningApplication implements ModelApplication {
         TermStore termStore = (TermStore)Config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
         TermGenerator termGenerator = (TermGenerator)Config.getNewObject(TERM_GENERATOR_KEY, TERM_GENERATOR_DEFAULT);
 
-        if (termStore instanceof ADMMTermStore) {
-            ((ADMMTermStore)termStore).ensureVariableCapacity(atomManager.getCachedRVACount());
-        }
-
         log.debug("Initializing objective terms for {} ground rules.", groundRuleStore.size());
+        termStore.ensureVariableCapacity(atomManager.getCachedRVACount());
         @SuppressWarnings("unchecked")
         int termCount = termGenerator.generateTerms(groundRuleStore, termStore);
         log.debug("Generated {} objective terms from {} ground rules.", termCount, groundRuleStore.size());
@@ -359,6 +356,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
         groundCount += trainingMap.getTrainingMap().size();
 
         log.debug("Initializing latent objective terms for {} ground rules.", groundCount);
+        termStore.ensureVariableCapacity(atomManager.getCachedRVACount());
         @SuppressWarnings("unchecked")
         int termCount = termGenerator.generateTerms(latentGroundRuleStore, latentTermStore);
         log.debug("Generated {} latent objective terms from {} ground rules.", termCount, groundCount);
@@ -371,6 +369,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
         }
 
         termStore.clear();
+        termStore.ensureVariableCapacity(atomManager.getCachedRVACount());
         termGenerator.generateTerms(groundRuleStore, termStore);
 
         reasoner.optimize(termStore);
@@ -385,6 +384,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
         }
 
         termStore.clear();
+        termStore.ensureVariableCapacity(atomManager.getCachedRVACount());
         termGenerator.generateTerms(groundRuleStore, termStore);
 
         reasoner.optimize(latentTermStore);

@@ -17,37 +17,31 @@
  */
 package org.linqs.psl.model;
 
+import org.linqs.psl.application.ModelApplication;
+import org.linqs.psl.model.rule.Rule;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-import org.linqs.psl.application.ModelApplication;
-import org.linqs.psl.model.rule.Rule;
-
 /**
  * A probabilistic soft logic model.
- *
- * Encapsulates a set of {@link Rule Rules}. A {@link ModelApplication}
- * can be used to combine a Model with data to perform inference or learn.
+ * Encapsulates a set of {@link Rule Rules}.
  */
 public class Model {
-    protected final List<Rule> rules;
+    private static final Logger log = LoggerFactory.getLogger(Model.class);
 
-    /**
-     * Redundant set for fast membership checks
-     */
-    protected final Set<Rule> ruleSet;
+    protected final List<Rule> rules;
 
     public Model() {
         rules = new LinkedList<Rule>();
-        ruleSet = new HashSet<Rule>();
     }
 
-    /**
-     * @return the rules contained in this model
-     */
     public List<Rule> getRules() {
         return Collections.unmodifiableList(rules);
     }
@@ -55,43 +49,44 @@ public class Model {
     /**
      * Adds a Rule to this Model.
      *
-     * @param rule Rule to add
-     * @throws IllegalArgumentException if the Rule is already in this Model
+     * @throws IllegalArgumentException if the Rule is already in this Model.
      */
     public void addRule(Rule rule) {
-        if (ruleSet.contains(rule)) {
-            throw new IllegalArgumentException("Rule already added to this model.");
+        if (rules.contains(rule)) {
+            log.warn("Rule already added to this model, skipping add: " + rule);
+            return;
         }
 
-        rules.add(rule);
-        ruleSet.add(rule);
+        if (!rule.requiresSplit()) {
+            rules.add(rule);
+            return;
+        }
+
+        log.info("Rule is being split into multiple rules: {}", rule);
+
+        // This rule needs to be split into multiple rules.
+        for (Rule splitRule : rule.split()) {
+            rules.add(splitRule);
+        }
     }
 
     /**
      * Removes a Rule from this Model.
      *
-     * @param rule Rule to remove
-     * @throws IllegalArgumentException if the Rule is not in this Model
+     * @throws IllegalArgumentException if the Rule is not in this Model.
      */
     public void removeRule(Rule rule) {
-        if (!ruleSet.contains(rule)) {
-            throw new IllegalArgumentException("Rule not in this model.");
+        if (!rules.contains(rule)) {
+            throw new IllegalArgumentException("Rule (" + rule + ") not in this model.");
         }
 
         rules.remove(rule);
-        ruleSet.remove(rule);
     }
 
     public void clear() {
         rules.clear();
-        ruleSet.clear();
     }
 
-    /**
-     * Returns a String representation of this Model.
-     *
-     * @return the String representation
-     */
     @Override
     public String toString() {
         StringBuilder s = new StringBuilder();

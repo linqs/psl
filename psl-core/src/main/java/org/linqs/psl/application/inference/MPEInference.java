@@ -17,11 +17,11 @@
  */
 package org.linqs.psl.application.inference;
 
-import org.linqs.psl.application.groundrulestore.GroundRuleStore;
-import org.linqs.psl.application.util.GroundRules;
-import org.linqs.psl.application.util.Grounding;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.PersistedAtomManager;
+import org.linqs.psl.grounding.GroundRuleStore;
+import org.linqs.psl.grounding.GroundRules;
+import org.linqs.psl.grounding.Grounding;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
 
@@ -47,13 +47,13 @@ public class MPEInference extends InferenceApplication {
     protected void completeInitialize() {
         log.debug("Creating persisted atom mannager.");
         atomManager = new PersistedAtomManager(db);
+        log.trace("Atom manager initialization complete.");
 
         log.info("Grounding out model.");
         int groundCount = Grounding.groundAll(model, atomManager, groundRuleStore);
+        log.info("Grounding complete.");
 
-        if (termStore instanceof ADMMTermStore) {
-            ((ADMMTermStore)termStore).ensureVariableCapacity(atomManager.getCachedRVACount());
-        }
+        termStore.ensureVariableCapacity(atomManager.getCachedRVACount());
 
         log.debug("Initializing objective terms for {} ground rules.", groundCount);
         @SuppressWarnings("unchecked")

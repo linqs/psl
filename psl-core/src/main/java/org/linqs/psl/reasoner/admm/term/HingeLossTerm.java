@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
+import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 
@@ -27,7 +28,7 @@ import org.linqs.psl.model.rule.WeightedGroundRule;
  * All coefficients must be non-zero.
  */
 public class HingeLossTerm extends HyperplaneTerm {
-    public HingeLossTerm(GroundRule groundRule, Hyperplane hyperplane) {
+    public HingeLossTerm(GroundRule groundRule, Hyperplane<LocalVariable> hyperplane) {
         super(groundRule, hyperplane);
     }
 
@@ -72,11 +73,17 @@ public class HingeLossTerm extends HyperplaneTerm {
     }
 
     /**
-     * weight * max(coefficients^T * x - constant, 0)
+     * weight * max(0.0, coefficients^T * x - constant)
      */
     @Override
     public float evaluate() {
         float weight = (float)((WeightedGroundRule)groundRule).getWeight();
         return weight * Math.max(super.evaluate(), 0.0f);
+    }
+
+    @Override
+    public float evaluate(float[] consensusValues) {
+        float weight = (float)((WeightedGroundRule)groundRule).getWeight();
+        return weight * Math.max(super.evaluate(consensusValues), 0.0f);
     }
 }

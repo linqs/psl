@@ -20,6 +20,7 @@ package org.linqs.psl.reasoner.admm.term;
 import static org.junit.Assert.assertEquals;
 
 import org.linqs.psl.reasoner.function.FunctionComparator;
+import org.linqs.psl.reasoner.term.Hyperplane;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -35,7 +36,7 @@ public class LinearConstraintTermTest {
         float[] y = {0.0f, 0.0f};
         float[] coeffs = {1.0f, 1.0f};
         float constant = 1.0f;
-        FunctionComparator comparator = FunctionComparator.SmallerThan;
+        FunctionComparator comparator = FunctionComparator.LTE;
         float stepSize = 1.0f;
         float[] expected = {0.2f, 0.5f};
         testProblem(z, y, coeffs, constant, comparator, stepSize, expected);
@@ -45,7 +46,7 @@ public class LinearConstraintTermTest {
         y = new float[] {0.0f, 0.0f};
         coeffs = new float[] {1.0f, 1.0f};
         constant = 1.0f;
-        comparator = FunctionComparator.SmallerThan;
+        comparator = FunctionComparator.LTE;
         stepSize = 1.0f;
         expected = new float[] {0.6f, 0.4f};
         testProblem(z, y, coeffs, constant, comparator, stepSize, expected);
@@ -55,7 +56,7 @@ public class LinearConstraintTermTest {
         y = new float[] {0.0f, 0.0f};
         coeffs = new float[] {1.0f, -1.0f};
         constant = 0.0f;
-        comparator = FunctionComparator.Equality;
+        comparator = FunctionComparator.EQ;
         stepSize = 1.0f;
         expected = new float[] {0.6f, 0.6f};
         testProblem(z, y, coeffs, constant, comparator, stepSize, expected);
@@ -70,7 +71,7 @@ public class LinearConstraintTermTest {
             variables[i].setLagrange(y[i]);
         }
 
-        LinearConstraintTerm term = new LinearConstraintTerm(null, new Hyperplane(variables, coeffs, constant, z.length), comparator);
+        LinearConstraintTerm term = new LinearConstraintTerm(null, new Hyperplane<LocalVariable>(variables, coeffs, constant, z.length), comparator);
         term.minimize(stepSize, z);
 
         for (int i = 0; i < z.length; i++) {

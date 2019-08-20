@@ -30,6 +30,7 @@ import pandas
 import pslpython.util
 from pslpython.partition import Partition
 from pslpython.predicate import Predicate
+from pslpython.predicate import PredicateError
 from pslpython.rule import Rule
 
 class Model(object):
@@ -49,7 +50,7 @@ class Model(object):
     CLI_JAR_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), 'cli', 'psl-cli.jar'))
 
     PSL_LOGGING_OPTION = 'log4j.threshold'
-    PSL_LOGGING_LEVEL_REGEX = r'\] (TRACE|DEBUG|INFO|WARN|ERROR|FATAL)  '
+    PSL_LOGGING_LEVEL_REGEX = r'\] (TRACE|DEBUG|INFO|WARN|ERROR|FATAL) '
     PYTHON_LOGGING_FORMAT_STRING = '%(relativeCreated)d [%(name)s PSL] %(levelname)s --- %(message)s'
     PYTHON_TO_PSL_LOGGING_LEVELS = {
         logging.CRITICAL: 'FATAL',
@@ -84,6 +85,7 @@ class Model(object):
     def add_predicate(self, predicate: Predicate):
         """
         Add a predicate to the model.
+        Two predicates with the same name should never be added to the same model.
 
         Args:
             predicate: The predicate to add.
@@ -94,6 +96,10 @@ class Model(object):
 
         if (predicate is None):
             raise ModelError('Cannot add a None predicate.')
+
+        name = predicate.name()
+        if (name in self._predicates and predicate != self._predicates[name]):
+            raise PredicateError("Within a model, predciates must have unique names. Got a duplicate: %s." % (name))
 
         self._predicates[predicate.name()] = predicate
         return self
@@ -473,11 +479,10 @@ class Model(object):
             command.append('-D')
             command.append("%s=%s" % (key, value))
 
-        stdout_callback = lambda line: Model._log_stdout(logger, line)
-        stderr_callback = lambda line: Model._log_stderr(logger, line)
+        log_callback = lambda line: Model._log_stdout(logger, line)
 
         logger.debug("Running: `%s`." % (pslpython.util.shell_join(command)))
-        exit_status = pslpython.util.execute(command, stdout_callback, stderr_callback)
+        exit_status = pslpython.util.execute(command, log_callback)
 
         if (exit_status != 0):
             raise ModelError("PSL returned a non-zero exit status: %d." % (exit_status))

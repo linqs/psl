@@ -315,7 +315,7 @@ public class TestModel {
     }
 
     /**
-     * A sinple tuple-like object for data to be inserted.
+     * A simple tuple-like object for data to be inserted.
      */
     public static class PredicateData {
         public double truthValue;

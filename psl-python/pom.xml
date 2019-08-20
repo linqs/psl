@@ -46,14 +46,12 @@
                 <version>1.6.0</version>
                 <executions>
                     <!-- Cleanup all the python build artifacts -->
-                    <!-- We are cheating a bit by calling sh so we can pipe and glob. -->
                     <execution>
                         <id>python-clean</id>
                         <phase>clean</phase>
                         <configuration>
-                            <executable>sh</executable>
+                            <executable>.build/clean.sh</executable>
                             <workingDirectory>.</workingDirectory>
-                            <commandlineArgs>-c 'rm -Rf build dist pslpython.egg-info ; find . -name __pycache__ | xargs rm -Rf'</commandlineArgs>
                         </configuration>
                         <goals>
                             <goal>exec</goal>
@@ -65,12 +63,8 @@
                         <id>python-package</id>
                         <phase>package</phase>
                         <configuration>
-                            <executable>python3</executable>
+                            <executable>.build/package.sh</executable>
                             <workingDirectory>.</workingDirectory>
-                            <arguments>
-                                <argument>setup.py</argument>
-                                <argument>bdist_wheel</argument>
-                            </arguments>
                         </configuration>
                         <goals>
                             <goal>exec</goal>
@@ -78,14 +72,12 @@
                     </execution>
 
                     <!-- Install the binary wheel -->
-                    <!-- We are cheating a bit by calling sh so we can pipe and glob. -->
                     <execution>
                         <id>python-install</id>
                         <phase>install</phase>
                         <configuration>
-                            <executable>sh</executable>
+                            <executable>.build/install.sh</executable>
                             <workingDirectory>.</workingDirectory>
-                            <commandlineArgs>-c 'pip3 install --user --upgrade dist/pslpython-*.whl'</commandlineArgs>
                         </configuration>
                         <goals>
                             <goal>exec</goal>
@@ -98,6 +90,7 @@
                         <id>python-test</id>
                         <phase>integration-test</phase>
                         <configuration>
+                            <skip>${maven.test.skip}</skip>
                             <executable>python3</executable>
                             <workingDirectory>.</workingDirectory>
                             <arguments>
@@ -109,15 +102,16 @@
                         </goals>
                     </execution>
 
-                    <!-- Deploy the package to PyPI -->
-                    <!-- We are cheating a bit by calling sh so we can pipe and glob. -->
+                    <!-- Deploy the package to test PyPI -->
                     <execution>
                         <id>python-deploy</id>
                         <phase>deploy</phase>
                         <configuration>
-                            <executable>sh</executable>
+                            <executable>.build/deploy.sh</executable>
                             <workingDirectory>.</workingDirectory>
-                            <commandlineArgs>-c '[ ! -z $TWINE_USERNAME ] &amp;&amp; [ ! -z $TWINE_PASSWORD ] &amp;&amp; twine upload dist/pslpython-*.whl'</commandlineArgs>
+                            <arguments>
+                                <argument>test</argument>
+                            </arguments>
                         </configuration>
                         <goals>
                             <goal>exec</goal>
@@ -127,18 +121,70 @@
             </plugin>
         </plugins>
 
-    <pluginManagement>
-        <plugins>
-            <!-- Disable the deploy plugin for this project. -->
-            <plugin>
-                <artifactId>maven-deploy-plugin</artifactId>
-                <configuration>
-                    <skip>true</skip>
-                </configuration>
-            </plugin>
-        </plugins>
-    </pluginManagement>
-
+        <pluginManagement>
+            <plugins>
+                <!-- Disable the deploy plugin for this project. -->
+                <!-- Instead, we will inject specific steps into the deploy phase. -->
+                <plugin>
+                    <artifactId>maven-deploy-plugin</artifactId>
+                    <configuration>
+                        <skip>true</skip>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
     </build>
+
+    <profiles>
+        <profile>
+            <id>central-release</id>
+            <activation>
+                <property>
+                    <name>performRelease</name>
+                    <value>true</value>
+                </property>
+            </activation>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>1.6.0</version>
+                        <executions>
+                            <!-- Deploy the package to PyPI -->
+                            <execution>
+                                <id>python-deploy</id>
+                                <phase>deploy</phase>
+                                <configuration>
+                                    <executable>.build/deploy.sh</executable>
+                                    <workingDirectory>.</workingDirectory>
+                                    <arguments>
+                                        <argument>release</argument>
+                                    </arguments>
+                                </configuration>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+
+                <pluginManagement>
+                    <plugins>
+                        <!-- Disable the deploy plugin for this project. -->
+                        <!-- Instead, we will inject specific steps into the deploy phase. -->
+                        <plugin>
+                            <artifactId>maven-deploy-plugin</artifactId>
+                            <configuration>
+                                <skip>true</skip>
+                            </configuration>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
+            </build>
+        </profile>
+    </profiles>
 
 </project>

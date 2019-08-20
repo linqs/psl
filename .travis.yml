@@ -15,7 +15,8 @@ before_install:
   - export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64
   - java -version
   - sudo apt-get update
-  - sudo apt-get install python3 python3-pip python3-wheel python3-setuptools python3-pandas
+  - sudo apt-get install python3 python3-pip python3-setuptools
+  - pip3 install --user -r psl-python/requirements.txt
 
 before_script:
   - createdb psltest

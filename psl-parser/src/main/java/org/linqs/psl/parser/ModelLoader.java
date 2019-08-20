@@ -701,11 +701,11 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
     @Override
     public FunctionComparator visitArithmeticRuleRelation(ArithmeticRuleRelationContext ctx) {
         if (ctx.EQUAL() != null) {
-            return FunctionComparator.Equality;
+            return FunctionComparator.EQ;
         } else if (ctx.LESS_THAN_EQUAL() != null) {
-            return FunctionComparator.SmallerThan;
+            return FunctionComparator.LTE;
         } else if (ctx.GREATER_THAN_EQUAL() != null) {
-            return FunctionComparator.LargerThan;
+            return FunctionComparator.GTE;
         } else {
             throw new IllegalStateException();
         }

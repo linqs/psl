@@ -27,4 +27,9 @@ public interface QueryResultIterable extends Iterable<Constant[]> {
      * Get the mapping between variables and their index in the results.
      */
     public Map<Variable, Integer> getVariableMap();
+
+    /**
+     * Close the associated iterator and any open queries.
+     */
+    public void close();
 }

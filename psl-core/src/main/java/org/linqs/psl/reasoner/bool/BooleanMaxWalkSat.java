@@ -17,9 +17,9 @@
  */
 package org.linqs.psl.reasoner.bool;
 
-import org.linqs.psl.application.groundrulestore.AtomRegisterGroundRuleStore;
-import org.linqs.psl.application.util.GroundRules;
 import org.linqs.psl.config.Config;
+import org.linqs.psl.grounding.AtomRegisterGroundRuleStore;
+import org.linqs.psl.grounding.GroundRules;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;

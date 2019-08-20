@@ -17,12 +17,13 @@
  */
 package org.linqs.psl.reasoner.term.blocker;
 
-import org.linqs.psl.application.groundrulestore.GroundRuleStore;
+import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.arithmetic.UnweightedGroundArithmeticRule;
 import org.linqs.psl.model.rule.misc.GroundValueConstraint;
+import org.linqs.psl.reasoner.term.ReasonerLocalVariable;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.RandUtils;
 
@@ -36,7 +37,7 @@ import java.util.Map;
  * A TermStore to hold blocks.
  * See {@link ConstraintBlockerTermGenerator} for details on the constraint blocking process.
  */
-public class ConstraintBlockerTermStore implements TermStore<ConstraintBlockerTerm> {
+public class ConstraintBlockerTermStore implements TermStore<ConstraintBlockerTerm, RandomVariableAtom> {
     private ArrayList<ConstraintBlockerTerm> blocks;
     private Map<RandomVariableAtom, Integer> rvMap;
     private GroundRuleStore groundRuleStore;
@@ -152,5 +153,19 @@ public class ConstraintBlockerTermStore implements TermStore<ConstraintBlockerTe
     @Override
     public Iterator<ConstraintBlockerTerm> iterator() {
         return blocks.iterator();
+    }
+
+    @Override
+    public Iterator<ConstraintBlockerTerm> noWriteIterator() {
+        return iterator();
+    }
+
+    @Override
+    public RandomVariableAtom createLocalVariable(RandomVariableAtom atom) {
+        throw new UnsupportedOperationException("ConstraintBlockerTermStore does not use the concept of local variables.");
+    }
+
+    @Override
+    public void ensureVariableCapacity(int capacity) {
     }
 }

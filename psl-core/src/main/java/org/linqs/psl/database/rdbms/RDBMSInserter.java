@@ -28,7 +28,6 @@ import org.linqs.psl.util.StringUtils;
 
 import com.healthmarketscience.sqlbuilder.CustomSql;
 import com.healthmarketscience.sqlbuilder.InsertQuery;
-import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -266,8 +265,6 @@ public class RDBMSInserter extends Inserter {
                 return value;
             case Long:
                 return new Long(Long.parseLong(value));
-            case Date:
-                return new DateTime(value);
             default:
                 throw new IllegalArgumentException("Unknown argument type: " + predicateInfo.predicate().getArgumentType(argumentIndex));
         }

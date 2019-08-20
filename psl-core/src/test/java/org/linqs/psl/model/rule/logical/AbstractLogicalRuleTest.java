@@ -17,6 +17,8 @@
  */
 package org.linqs.psl.model.rule.logical;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -67,6 +69,12 @@ public class AbstractLogicalRuleTest {
         toClose.add(singleClosed);
         toClose.add(doubleClosed);
         database = dataStore.getDatabase(dataStore.getNewPartition(), toClose);
+    }
+
+    @After
+    public void cleanup() {
+        database.close();
+        dataStore.close();
     }
 
     @Test
@@ -130,9 +138,44 @@ public class AbstractLogicalRuleTest {
         }
     }
 
-    @After
-    public void cleanup() {
-        database.close();
-        dataStore.close();
+    /**
+     * Test a few instances where the hash should match or not match.
+     * The rules will use at most one positive and negative atom so the hash ordering is consistent.
+     */
+    @Test
+    public void testHash() {
+        // SingleClosed(A) -> SingleOpen(A)
+        AbstractLogicalRule rule1 = new WeightedLogicalRule(
+            new Implication(
+                new QueryAtom(singleClosed, new Variable("A")),
+                new QueryAtom(singleOpened, new Variable("A"))
+            ),
+            1.0,
+            true
+        );
+
+        // SingleOpen(A) -> SingleClosed(A)
+        AbstractLogicalRule rule2 = new WeightedLogicalRule(
+            new Implication(
+                new QueryAtom(singleOpened, new Variable("A")),
+                new QueryAtom(singleClosed, new Variable("A"))
+            ),
+            1.0,
+            true
+        );
+
+        // !SingleOpen(A) -> !SingleClosed(A)
+        AbstractLogicalRule rule3 = new WeightedLogicalRule(
+            new Implication(
+                new Negation(new QueryAtom(singleOpened, new Variable("A"))),
+                new Negation(new QueryAtom(singleClosed, new Variable("A")))
+            ),
+            1.0,
+            true
+        );
+
+        assertNotEquals(rule1.hashCode(), rule2.hashCode());
+        assertEquals(rule1.hashCode(), rule3.hashCode());
+        assertNotEquals(rule2.hashCode(), rule3.hashCode());
     }
 }

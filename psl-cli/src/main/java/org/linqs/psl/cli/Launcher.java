@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.cli;
 
-import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.application.inference.MPEInference;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
@@ -31,10 +30,12 @@ import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver.Type;
 import org.linqs.psl.database.rdbms.driver.PostgreSQLDriver;
 import org.linqs.psl.evaluation.statistics.Evaluator;
+import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.term.Constant;
@@ -42,6 +43,7 @@ import org.linqs.psl.parser.ModelLoader;
 import org.linqs.psl.parser.CommandLineLoader;
 import org.linqs.psl.util.Reflection;
 import org.linqs.psl.util.StringUtils;
+import org.linqs.psl.util.SystemUtils;
 import org.linqs.psl.util.Version;
 
 import org.apache.commons.cli.CommandLine;
@@ -238,13 +240,19 @@ public class Launcher {
         for (StandardPredicate openPredicate : openPredicates) {
             try {
                 FileWriter predFileWriter = new FileWriter(new File(outputDirectory, openPredicate.getName() + ".txt"));
+                StringBuilder row = new StringBuilder();
 
                 for (GroundAtom atom : database.getAllGroundRandomVariableAtoms(openPredicate)) {
+                    row.setLength(0);
+
                     for (Constant term : atom.getArguments()) {
-                        predFileWriter.write(term.toString() + "\t");
+                        row.append(term.rawToString());
+                        row.append("\t");
                     }
-                    predFileWriter.write(Double.toString(atom.getValue()));
-                    predFileWriter.write("\n");
+                    row.append(Double.toString(atom.getValue()));
+                    row.append("\n");
+
+                    predFileWriter.write(row.toString());
                 }
 
                 predFileWriter.close();
@@ -363,7 +371,11 @@ public class Launcher {
             throw new RuntimeException("Failed to load model from file: " + parsedOptions.getOptionValue(CommandLineLoader.OPTION_MODEL), ex);
         }
 
-        log.debug(model.toString());
+        log.debug("Model:");
+        for (Rule rule : model.getRules()) {
+            log.debug("   " + rule);
+        }
+
         log.info("Model loading complete");
 
         return model;

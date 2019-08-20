@@ -145,6 +145,37 @@ public class PSLTest {
         }
     }
 
+    /**
+     * A weaker variant of assertModel() that only uses sorted strings for comparison.
+     * Use when you can't give guarentees on both the order of rules and format of each rule.
+     */
+    public static void assertStringModel(DataStore dataStore, String input, String[] expectedRules, boolean alphabetize) {
+        Model model = ModelLoader.load(dataStore, input);
+
+        List<String> rules = new ArrayList<String>();
+        for (Rule rule : model.getRules()) {
+            rules.add(rule.toString());
+        }
+
+        assertEquals("Size mismatch.", expectedRules.length, rules.size());
+
+        String[] stringRules = rules.toArray(new String[0]);
+
+        if (alphabetize) {
+            for (int i = 0; i < expectedRules.length; i++) {
+                stringRules[i] = sort(stringRules[i]);
+                expectedRules[i] = sort(expectedRules[i]);
+            }
+        }
+
+        Arrays.sort(stringRules);
+        Arrays.sort(expectedRules);
+
+        for (int i = 0; i < expectedRules.length; i++) {
+            assertStringEquals(expectedRules[i], stringRules[i], false, "Rule mismatch");
+        }
+    }
+
     public static List<Rule> getRules(DataStore dataStore, String input) {
         Model model = ModelLoader.load(dataStore, input);
 

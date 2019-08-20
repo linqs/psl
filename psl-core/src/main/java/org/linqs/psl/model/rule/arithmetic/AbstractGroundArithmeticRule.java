@@ -56,10 +56,33 @@ public abstract class AbstractGroundArithmeticRule implements GroundRule {
         this.comparator = comparator;
         this.constant = constant;
 
-        if (copy) {
+        // Because of the semantics of arithmetic rules, it is possible to get to this point with a null atom.
+        // In that case, remove the null atoms and re-allocate the atoms,
+        int missingAtoms = 0;
+        for (int i = 0; i < atoms.length; i++) {
+            if (atoms[i] == null) {
+                missingAtoms++;
+            }
+        }
+
+        if (missingAtoms > 0) {
+            this.coefficients = new float[coefficients.length - missingAtoms];
+            this.atoms = new GroundAtom[atoms.length - missingAtoms];
+
+            int tempIndex = 0;
+            for (int i = 0; i < atoms.length; i++) {
+                if (atoms[i] != null) {
+                    this.coefficients[tempIndex] = coefficients[i];
+                    this.atoms[tempIndex] = atoms[i];
+                    tempIndex++;
+                }
+            }
+        } else if (copy) {
+            // No atoms are missing and we want to copy over the data.
             this.coefficients = Arrays.copyOf(coefficients, coefficients.length);
             this.atoms = Arrays.copyOf(atoms, atoms.length);
         } else {
+            // No missing atoms, and no copying.
             this.coefficients = coefficients;
             this.atoms = atoms;
         }
@@ -106,21 +129,7 @@ public abstract class AbstractGroundArithmeticRule implements GroundRule {
         }
 
         sb.append(" ");
-
-        switch (comparator) {
-        case Equality:
-            sb.append("=");
-            break;
-        case LargerThan:
-            sb.append(">=");
-            break;
-        case SmallerThan:
-            sb.append("<=");
-            break;
-        default:
-            throw new IllegalStateException("Unrecognized comparator: " + comparator);
-
-        }
+        sb.append(comparator.toString());
 
         sb.append(" ");
         sb.append(constant);

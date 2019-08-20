@@ -23,6 +23,7 @@ import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.util.StringUtils;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -42,14 +43,21 @@ import java.util.Set;
 public class DatabaseQuery {
     private final Formula formula;
     private final boolean distinct;
+    private final Set<Variable> ignoreVariables;
 
     public DatabaseQuery(Formula formula) {
         this(formula, true);
     }
 
     public DatabaseQuery(Formula formula, boolean distinct) {
+        this(formula, distinct, new HashSet<Variable>());
+    }
+
+    public DatabaseQuery(Formula formula, boolean distinct, Set<Variable> ignoreVariables) {
         this.formula = formula;
         this.distinct = distinct;
+        this.ignoreVariables = ignoreVariables;
+
         validate(formula);
     }
 
@@ -59,6 +67,10 @@ public class DatabaseQuery {
 
     public boolean getDistinct() {
         return distinct;
+    }
+
+    public Set<Variable> getIgnoreVariables() {
+        return ignoreVariables;
     }
 
     public static void validate(Formula formula) {

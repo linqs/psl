@@ -34,7 +34,7 @@ import org.linqs.psl.model.term.Constant;
 public abstract class Coefficient {
     /**
      * Get the value of a coefficient (which may require a reqursive descent).
-     * For performance reasons, instead of passing the full subtitution set this the method,
+     * For performance reasons, instead of passing the full subtitution set to this method,
      * we are only passing the number of substitutions there are.
      * This may need to change in the future,
      * but the cost is too high to justify unless it is necessary.

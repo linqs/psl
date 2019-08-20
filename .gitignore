@@ -16,3 +16,5 @@ classpath.out
 # Editor Temporary #
 ####################
 *.swp
+
+.secrets

@@ -40,11 +40,11 @@ public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule i
     }
 
     private void validate() {
-        if (FunctionComparator.Equality.equals(comparator)) {
+        if (FunctionComparator.EQ.equals(comparator)) {
             throw new IllegalArgumentException("WeightedGroundArithmeticRules do not support equality comparators. "
-                    + "Create two ground rules instead, one with " + FunctionComparator.SmallerThan + " and one with "
-                    + FunctionComparator.LargerThan + ".");
-        } else if (!FunctionComparator.SmallerThan.equals(comparator) && !FunctionComparator.LargerThan.equals(comparator)) {
+                    + "Create two ground rules instead, one with " + FunctionComparator.LTE + " and one with "
+                    + FunctionComparator.GTE + ".");
+        } else if (!FunctionComparator.LTE.equals(comparator) && !FunctionComparator.GTE.equals(comparator)) {
             throw new IllegalArgumentException("Unrecognized comparator: " + comparator);
         }
     }
@@ -73,7 +73,7 @@ public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule i
     public GeneralFunction getFunctionDefinition() {
         GeneralFunction sum = new GeneralFunction(true, isSquared(), coefficients.length);
 
-        float termSign = FunctionComparator.LargerThan.equals(comparator) ? -1.0f : 1.0f;
+        float termSign = FunctionComparator.GTE.equals(comparator) ? -1.0f : 1.0f;
         for (int i = 0; i < coefficients.length; i++) {
             // Skip any grounding only predicates.
             if (atoms[i].getPredicate() instanceof GroundingOnlyPredicate) {
@@ -109,7 +109,7 @@ public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule i
         }
         sum -= constant;
 
-        if (FunctionComparator.LargerThan.equals(comparator)) {
+        if (FunctionComparator.GTE.equals(comparator)) {
             sum *= -1;
         }
 

@@ -24,8 +24,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.linqs.psl.PSLTest;
-import org.linqs.psl.application.groundrulestore.GroundRuleStore;
-import org.linqs.psl.application.groundrulestore.MemoryGroundRuleStore;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
@@ -36,6 +34,8 @@ import org.linqs.psl.database.atom.SimpleAtomManager;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver.Type;
+import org.linqs.psl.grounding.GroundRuleStore;
+import org.linqs.psl.grounding.MemoryGroundRuleStore;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
@@ -118,7 +118,7 @@ public class RuleStringTest {
         );
 
         // Base Rule: SinglePredicate(A) + SinglePredicate(B) = 1
-        arithmeticBaseRule = new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1));
+        arithmeticBaseRule = new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1));
 
         // Data
         obsPartition = dataStore.getNewPartition();
