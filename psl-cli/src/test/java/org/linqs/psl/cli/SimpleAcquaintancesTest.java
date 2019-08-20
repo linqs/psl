@@ -26,6 +26,7 @@ import org.linqs.psl.model.function.ExternalFunction;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.UniqueStringID;
+import org.linqs.psl.parser.CommandLineLoader;
 
 import org.junit.Test;
 
@@ -48,7 +49,7 @@ public class SimpleAcquaintancesTest extends CLITest {
         String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base.data").toString();
 
         List<String> additionalArgs = Arrays.asList(
-            "--" + Launcher.OPTION_EVAL_LONG, ContinuousEvaluator.class.getName()
+            "--" + CommandLineLoader.OPTION_EVAL_LONG, ContinuousEvaluator.class.getName()
         );
 
         run(modelPath, dataPath, additionalArgs);
@@ -60,7 +61,7 @@ public class SimpleAcquaintancesTest extends CLITest {
         String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base.data").toString();
 
         List<String> additionalArgs = Arrays.asList(
-            "--" + Launcher.OPTION_EVAL_LONG,
+            "--" + CommandLineLoader.OPTION_EVAL_LONG,
             ContinuousEvaluator.class.getName(),
             DiscreteEvaluator.class.getName()
         );

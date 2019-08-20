@@ -17,14 +17,15 @@
  */
 package org.linqs.psl.cli;
 
+import org.linqs.psl.parser.CommandLineLoader;
 import org.junit.Test;
 
 public class VersionTest {
     @Test
     public void testBase() {
         String[] args = {
-            "--" + Launcher.OPTION_VERSION_LONG,
-            "-" + Launcher.OPTION_PROPERTIES, "log4j.threshold=OFF"
+            "--" + CommandLineLoader.OPTION_VERSION_LONG,
+            "-" + CommandLineLoader.OPTION_PROPERTIES, "log4j.threshold=OFF"
         };
 
         Launcher.main(args, true);
