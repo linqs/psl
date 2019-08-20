@@ -47,16 +47,10 @@ public final class RuntimeStats {
     public static final String COLLECTION_PERIOD_KEY = CONFIG_PREFIX + ".period";
     public static final long COLLECTION_PERIOD_DEFAULT = 250;
 
-    private static final int MIN = 0;
-    private static final int MAX = 1;
-    private static final int MEAN = 2;
-    private static final int COUNT = 3;
-    private static final int STATS_SIZE = 4;
-
-    private static long[] totalMemory = new long[STATS_SIZE];
-    private static long[] freeMemory = new long[STATS_SIZE];
-    private static long[] usedMemory = new long[STATS_SIZE];
-    private static long[] maxMemory = new long[STATS_SIZE];
+    private static MeanStats totalMemory = new MeanStats();
+    private static MeanStats freeMemory = new MeanStats();
+    private static MeanStats usedMemory = new MeanStats();
+    private static MeanStats maxMemory = new MeanStats();
 
     private static Runtime runtime = null;
     private static Timer collectionTimer = null;
@@ -106,6 +100,13 @@ public final class RuntimeStats {
     }
 
     /**
+     * Tell the RuntimeStats about an io operation.
+     * Since we can't just monitor all IO like memory, we rely on self reporting.
+     */
+    public static synchronized void io(long bytes, boolean isRead) {
+    }
+
+    /**
      * Ouput collected stats.
      */
     public static void logStats() {
@@ -113,16 +114,10 @@ public final class RuntimeStats {
             return;
         }
 
-        log.info("Total Memory KB -- " + formatStats(totalMemory));
-        log.info("Free Memory KB  -- " + formatStats(freeMemory));
-        log.info("Used Memory KB  -- " + formatStats(usedMemory));
-        log.info("Max Memory KB   -- " + formatStats(maxMemory));
-    }
-
-    private static String formatStats(long[] stats) {
-        return String.format(
-                "Min: %9d, Max: %9d, Mean: %9d, Count: %6d",
-                stats[MIN] / 1024, stats[MAX] / 1024, stats[MEAN] / 1024, stats[COUNT]);
+        log.info("Total Memory KB -- " + totalMemory);
+        log.info("Free Memory KB  -- " + freeMemory);
+        log.info("Used Memory KB  -- " + usedMemory);
+        log.info("Max Memory KB   -- " + maxMemory);
     }
 
     private static class ShutdownHook extends Thread {
@@ -140,24 +135,44 @@ public final class RuntimeStats {
             long usedMemoryValue = Math.max(0, totalMemoryValue - freeMemoryValue);
             long maxMemoryValue = runtime.maxMemory();
 
-            updateStats(totalMemory, totalMemoryValue);
-            updateStats(freeMemory, freeMemoryValue);
-            updateStats(usedMemory, usedMemoryValue);
-            updateStats(maxMemory, maxMemoryValue);
+            totalMemory.add(totalMemoryValue);
+            freeMemory.add(freeMemoryValue);
+            usedMemory.add(usedMemoryValue);
+            maxMemory.add(maxMemoryValue);
+        }
+    }
+
+    private static class MeanStats {
+        private long min;
+        private long max;
+        private long mean;
+        private long count;
+
+        public MeanStats() {
+            min = 0;
+            max = 0;
+            mean = 0;
+            count = 0;
         }
 
-        private void updateStats(long[] stats, long value) {
-            if (stats[COUNT] == 0 || value < stats[MIN]) {
-                stats[MIN] = value;
+        public void add(long value) {
+            if (count == 0 || value < min) {
+                min = value;
             }
 
-            if (stats[COUNT] == 0 || value > stats[MAX]) {
-                stats[MAX] = value;
+            if (count == 0 || value > max) {
+                max = value;
             }
 
-            stats[MEAN] = (stats[MEAN] * stats[COUNT] + value) / (stats[COUNT] + 1);
+            mean = (mean * count + value) / (count + 1);
+            count++;
+        }
 
-            stats[COUNT]++;
+        @Override
+        public String toString() {
+            return String.format(
+                    "Min: %9d, Max: %9d, Mean: %9d, Count: %6d",
+                    min / 1024, max / 1024, mean / 1024, count);
         }
     }
 }

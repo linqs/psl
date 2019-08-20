@@ -17,17 +17,12 @@
  */
 package org.linqs.psl.reasoner.term.streaming;
 
-import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.util.RandUtils;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Iterate over all the terms from the disk cache.
