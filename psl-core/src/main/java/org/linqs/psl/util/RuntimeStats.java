@@ -126,12 +126,12 @@ public final class RuntimeStats {
             return;
         }
 
-        log.info("Total Memory KB -- " + totalMemory);
-        log.info("Free Memory KB  -- " + freeMemory);
-        log.info("Used Memory KB  -- " + usedMemory);
-        log.info("Max Memory KB   -- " + maxMemory);
-        log.info("IO Reads KB     -- " + reads);
-        log.info("IO Writes KB    -- " + writes);
+        log.info("Total Memory (bytes) -- " + totalMemory);
+        log.info("Free Memory (bytes)  -- " + freeMemory);
+        log.info("Used Memory (bytes)  -- " + usedMemory);
+        log.info("Max Memory (bytes)   -- " + maxMemory);
+        log.info("IO Reads (bytes)     -- " + reads);
+        log.info("IO Writes (bytes)    -- " + writes);
     }
 
     private static class ShutdownHook extends Thread {
@@ -185,8 +185,8 @@ public final class RuntimeStats {
         @Override
         public String toString() {
             return String.format(
-                    "Min: %10d, Max: %10d, Mean: %10d, Count: %10d",
-                    min / 1024, max / 1024, mean / 1024, count);
+                    "Min: %12d, Max: %12d, Mean: %12d, Count: %12d",
+                    min, max, mean, count);
         }
     }
 
@@ -207,8 +207,8 @@ public final class RuntimeStats {
         @Override
         public String toString() {
             return String.format(
-                    "%s, Total: %10d",
-                    super.toString(), total / 1024);
+                    "%s, Total: %12d",
+                    super.toString(), total);
         }
     }
 }
