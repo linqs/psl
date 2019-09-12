@@ -21,7 +21,7 @@
     <groupId>org.linqs</groupId>
     <artifactId>psl</artifactId>
     <name>psl</name>
-    <version>2.2.0-SNAPSHOT</version>
+    <version>CANARY-2.2.3</version>
     <packaging>pom</packaging>
     <description>The PSL software from the LINQS research group.</description>
     <url>https://psl.linqs.org</url>
@@ -117,6 +117,14 @@
                         <link>https://docs.oracle.com/javase/7/docs/api/</link>
                     </links>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
