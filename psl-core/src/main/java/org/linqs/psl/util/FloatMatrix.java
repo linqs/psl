@@ -748,11 +748,9 @@ public final class FloatMatrix {
      * Also factors A using a LU decomposition.
      * The factored A takes the form: A = P * L * U.
      * Where P is a permutation matrix, L is unit lower triangular, and U is upper triangular.
-     * This (the context matrix) is A and B becomes X on completion.
+     * This (the context matrix) is A and B becomes X on successful completion.
+     * Note that A may also be out of order as specified by the standard LAPACK IPIV (returned).
      *
-     * @param this The matrix used as A.
-     *  Upon successful completion, A will be factored as documented above.
-     *  Note that A may also be out of order as specified by the standard LAPACK IPIV (returned).
      * @param b The matrix on the LHS in this equation.
      *  X will be put into b on successful completion of this method.
      * @return The LAPACK standard IPIV for A.
@@ -807,8 +805,9 @@ public final class FloatMatrix {
      *  A = L  * L**T, if |upper| = false,
      * where U is an upper triangular matrix and L is lower triangular.
      *
-     * @param this The matrix used as A.
-     *  Upon successful completion, this matrix will have U/L in it (depending on |upper|).
+     * This (the context matrix) is A.
+     * Upon successful completion, this matrix will have U/L in it (depending on |upper|).
+     *
      * @param upper True if the upper triangle is to be used, false for the lower.
      */
     public void lapack_spotrf(boolean upper) {
@@ -857,7 +856,8 @@ public final class FloatMatrix {
      * Both A and B can be transposed.
      * The result will be put into C (and returned).
      *
-     * @param this The matrix used as A.
+     * This (the context matrix) is A.
+     *
      * @param b The matrix used as B.
      * @param c The matrix used as C.
      *  May be null, and a new (zero) matrix will get created and used.
@@ -929,8 +929,8 @@ public final class FloatMatrix {
      * Instead, use other higher level methods.
      *
      * Get the dot product of X and Y.
+     * This (the context matrix) is X.
      *
-     * @param this The matrix used as X.
      * @param y The other matrix in this dot product.
      * @return The dot product.
      */
