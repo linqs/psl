@@ -1,6 +1,7 @@
 #!/bin/bash
 
-# Build and deploy (if the correct conditions are met) the API docs for PSL.
+# Build and deploy the API docs for PSL.
+# The docs are only deployed for tag pushes.
 
 THIS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 REPO_ROOT_DIR="${THIS_DIR}/.."
