@@ -11,7 +11,6 @@ services:
 before_install:
   - sudo apt-get update
   - sudo apt install openjdk-8-jdk openjdk-8-jre
-  - sudo update-java-alternatives -l
   - sudo update-java-alternatives -s java-1.8.0-openjdk-amd64
   - export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64
   - java -version
