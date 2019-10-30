@@ -1,25 +1,21 @@
 PSL
 ===
 
-### Master
-[![Build Status](https://travis-ci.org/linqs/psl.svg?branch=master)](https://travis-ci.org/linqs/psl)
-[![Stable Docs](https://img.shields.io/badge/docs-stable-brightgreen.svg)](https://linqs-data.soe.ucsc.edu/psl-docs/docs/psl/master-head/index.html)
-
-### Develop
-[![Build Status](https://travis-ci.org/eriq-augustine/psl.svg?branch=develop)](https://travis-ci.org/eriq-augustine/psl)
-[![Develop Docs](https://img.shields.io/badge/docs-develop-orange.svg)](https://linqs-data.soe.ucsc.edu/psl-docs/docs/psl/develop-head/index.html)
+### Build Status
+[![Master](https://travis-ci.org/linqs/psl.svg?branch=master)](https://travis-ci.org/linqs/psl)
+[![Develop](https://travis-ci.org/linqs/psl.svg?branch=develop)](https://travis-ci.org/linqs/psl)
 
 Probabilistic soft logic (PSL) is a machine learning framework for developing probabilistic models.
 PSL models are easy to use and fast.
 You can define models using a straightforward logical syntax and solve them with fast convex optimization.
 PSL has produced state-of-the-art results in many areas spanning natural language processing, social-network analysis, knowledge graphs, recommender system, and computational biology.
-More information about PSL is available at the [PSL homepage](http://psl.linqs.org).
+More information about PSL is available at the [PSL homepage](https://psl.linqs.org).
 
 Getting Started with PSL
 ------------------------
 
 If you want to use PSL to build models, you probably do not need this source code.
-Instead, visit the [Getting Started guide](../../wiki/Core-Topics) to learn how to create PSL projects that will automatically install a stable version of these libraries.
+Instead, visit the [Getting Started guide](https://psl.linqs.org/blog/2018/07/15/getting-started-with-psl.html) to learn how to create PSL projects that will automatically install a stable version of these libraries.
 
 Installing PSL from Source
 --------------------------
@@ -46,13 +42,10 @@ If you have, please consider citing PSL in any related publications as
 
 Additional Resources
 ====================
-- [PSL Homepage](http://psl.linqs.org)
+- [PSL Homepage](https://psl.linqs.org)
 - [PSL Examples](https://github.com/linqs/psl-examples)
-- [API Reference](https://linqs-data.soe.ucsc.edu/psl-docs/)
+- [API Reference](https://psl.linqs.org/api/)
 - [PSL Source Repository](https://github.com/linqs/psl)
-- [PSL Development Repository](https://github.com/eriq-augustine/psl)
-- [PSL Utils Repository](https://github.com/linqs/psl-utils)
-- [PSL Experimental Repository](https://github.com/linqs/psl-experimental)
-- [PSL Wiki](../../wiki)
-- [Getting Started Guide](../../wiki/Using-the-CLI)
+- [PSL Wiki](https://psl.linqs.org/wiki/)
+- [Getting Started Guide](https://psl.linqs.org/blog/2018/07/15/getting-started-with-psl.html)
 - [User Group](https://groups.google.com/forum/#!forum/psl-users)
