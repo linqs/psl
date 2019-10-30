@@ -20,7 +20,7 @@ package org.linqs.psl.application.inference;
 import org.linqs.psl.application.ModelApplication;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.database.atom.AtomManager;
+import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.grounding.MemoryGroundRuleStore;
 import org.linqs.psl.model.Model;
@@ -32,10 +32,15 @@ import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.Reflection;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
 public abstract class InferenceApplication implements ModelApplication {
+    private static final Logger log = LoggerFactory.getLogger(InferenceApplication.class);
+    
     /**
      * Prefix of property keys used by this class.
      */
@@ -74,7 +79,7 @@ public abstract class InferenceApplication implements ModelApplication {
     protected GroundRuleStore groundRuleStore;
     protected TermStore termStore;
     protected TermGenerator termGenerator;
-    protected AtomManager atomManager;
+    protected PersistedAtomManager atomManager;
 
     public InferenceApplication(Model model, Database db) {
         this.model = model;
@@ -88,17 +93,38 @@ public abstract class InferenceApplication implements ModelApplication {
      * This will call into the abstract method completeInitialize().
      */
     protected void initialize() {
-        try {
-            reasoner = (Reasoner)Config.getNewObject(REASONER_KEY, REASONER_DEFAULT);
-            termStore = (TermStore)Config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
-            groundRuleStore = (GroundRuleStore)Config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
-            termGenerator = (TermGenerator)Config.getNewObject(TERM_GENERATOR_KEY, TERM_GENERATOR_DEFAULT);
-        } catch (Exception ex) {
-            // The caller couldn't handle these exception anyways, convert them to runtime ones.
-            throw new RuntimeException("Failed to prepare storage for inference.", ex);
-        }
+        log.debug("Creating persisted atom mannager.");
+        atomManager = createAtomManager(db);
+        log.debug("Atom manager initialization complete.");
+
+        reasoner = createReasoner();
+        termStore = createTermStore();
+        groundRuleStore = createGroundRuleStore();
+        termGenerator = createTermGenerator();
+
+        termStore.ensureVariableCapacity(atomManager.getCachedRVACount());
 
         completeInitialize();
+    }
+
+    protected PersistedAtomManager createAtomManager(Database db) {
+        return new PersistedAtomManager(db);
+    }
+
+    protected GroundRuleStore createGroundRuleStore() {
+        return (GroundRuleStore)Config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
+    }
+
+    protected Reasoner createReasoner() {
+        return (Reasoner)Config.getNewObject(REASONER_KEY, REASONER_DEFAULT);
+    }
+
+    protected TermGenerator createTermGenerator() {
+        return (TermGenerator)Config.getNewObject(TERM_GENERATOR_KEY, TERM_GENERATOR_DEFAULT);
+    }
+
+    protected TermStore createTermStore() {
+        return (TermStore)Config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
     }
 
     /**
@@ -107,16 +133,40 @@ public abstract class InferenceApplication implements ModelApplication {
      * The child is responsible for constructing the AtomManager
      * and populating the ground rule store.
      */
-    protected abstract void completeInitialize();
+    protected void completeInitialize() {}
+
+    /**
+     * Alias for inference() with committing atoms.
+     */
+    public void inference() {
+        inference(true);
+    }
 
     /**
      * Minimizes the total weighted incompatibility of the GroundAtoms in the Database
      * according to the Model and commits the updated truth values back to the Database.
      *
-     * The RandomVariableAtoms to be inferred are those persisted in the Database when this method is called.
      * All RandomVariableAtoms which the Model might access must be persisted in the Database.
      */
-    public abstract void inference();
+    public void inference(boolean commitAtoms) {
+        log.info("Beginning inference.");
+        internalInference();
+        log.info("Inference complete.");
+
+        // Commits the RandomVariableAtoms back to the Database.
+        if (commitAtoms) {
+            log.info("Writing results to Database.");
+            atomManager.commitPersistedAtoms();
+            log.info("Results committed to database.");
+        }
+    }
+
+    /**
+     * The implementation of the full inference by each class.
+     */
+    protected void internalInference() {
+        reasoner.optimize(termStore);
+    }
 
     public Reasoner getReasoner() {
         return reasoner;
@@ -130,7 +180,7 @@ public abstract class InferenceApplication implements ModelApplication {
         return termStore;
     }
 
-    public AtomManager getAtomManager() {
+    public PersistedAtomManager getAtomManager() {
         return atomManager;
     }
 
@@ -144,7 +194,7 @@ public abstract class InferenceApplication implements ModelApplication {
         groundRuleStore = null;
         reasoner = null;
 
-        model=null;
+        model = null;
         db = null;
     }
 
