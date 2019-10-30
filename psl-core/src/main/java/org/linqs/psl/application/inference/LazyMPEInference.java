@@ -20,6 +20,7 @@ package org.linqs.psl.application.inference;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.LazyAtomManager;
+import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.grounding.GroundRules;
 import org.linqs.psl.grounding.Grounding;
@@ -65,18 +66,19 @@ public class LazyMPEInference extends InferenceApplication {
 
     @Override
     protected void completeInitialize() {
-        log.debug("Creating lazy atom manager.");
-        atomManager = new LazyAtomManager(db);
-        log.trace("Atom manager initialization complete.");
-
         log.debug("Initial grounding.");
         Grounding.groundAll(model, atomManager, groundRuleStore);
     }
 
     @Override
-    public void inference() {
-        inference(model.getRules(), reasoner, groundRuleStore, termStore, termGenerator,
-                (LazyAtomManager)atomManager, maxRounds);
+    protected PersistedAtomManager createAtomManager(Database db) {
+        return new LazyAtomManager(db);
+    }
+
+    @Override
+    protected void internalInference() {
+        inference(model.getRules(), reasoner, groundRuleStore, termStore, termGenerator, (LazyAtomManager)atomManager,
+                maxRounds);
     }
 
     /**
@@ -112,8 +114,5 @@ public class LazyMPEInference extends InferenceApplication {
             numActivated = lazyAtomManager.activateAtoms(rules, groundRuleStore);
             log.debug("Completed round {} and activated {} atoms.", rounds, numActivated);
         } while (numActivated > 0 && rounds < maxRounds);
-
-        // Commits the RandomVariableAtoms back to the Database.
-        lazyAtomManager.commitPersistedAtoms();
     }
 }

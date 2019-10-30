@@ -77,6 +77,7 @@ public class CommandLineLoader {
     public static final String OPTION_PROPERTIES = "D";
     public static final String OPTION_PROPERTIES_FILE = "p";
     public static final String OPTION_PROPERTIES_FILE_LONG = "properties";
+    public static final String OPTION_SKIP_ATOM_COMMIT_LONG = "skipCommitAtoms";
     public static final String OPTION_VERSION = "v";
     public static final String OPTION_VERSION_LONG = "version";
 
@@ -161,7 +162,7 @@ public class CommandLineLoader {
             handler.setLevel(java.util.logging.Level.SEVERE);
         }
 
-        PropertyConfigurator.configure(props); 
+        PropertyConfigurator.configure(props);
         return LoggerFactory.getLogger(getClass().getName());
     }
 
@@ -324,6 +325,12 @@ public class CommandLineLoader {
                 .hasArg()
                 .numberOfArgs(2)
                 .valueSeparator('=')
+                .build());
+
+        newOptions.addOption(Option.builder()
+                .longOpt(OPTION_SKIP_ATOM_COMMIT_LONG)
+                .desc("Skip persisting atoms to database after inference.")
+                .optionalArg(true)
                 .build());
 
         return newOptions;

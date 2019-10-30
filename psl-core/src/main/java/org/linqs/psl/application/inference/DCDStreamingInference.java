@@ -19,9 +19,13 @@ package org.linqs.psl.application.inference;
 
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.PersistedAtomManager;
+import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.Model;
+import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.dcd.DCDReasoner;
 import org.linqs.psl.reasoner.dcd.term.DCDStreamingTermStore;
+import org.linqs.psl.reasoner.term.TermGenerator;
+import org.linqs.psl.reasoner.term.TermStore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,31 +38,23 @@ public class DCDStreamingInference extends InferenceApplication {
     }
 
     @Override
-    protected void initialize() {
-        reasoner = new DCDReasoner();
-
-        log.debug("Creating persisted atom mannager.");
-        atomManager = new PersistedAtomManager(db);
-        log.trace("Atom manager initialization complete.");
-
-        termStore = new DCDStreamingTermStore(model.getRules(), atomManager);
-        termStore.ensureVariableCapacity(atomManager.getCachedRVACount());
+    protected Reasoner createReasoner() {
+        return new DCDReasoner();
     }
 
     @Override
-    protected void completeInitialize() {
-        // Handled in initialize() override.
+    protected TermStore createTermStore() {
+        return new DCDStreamingTermStore(model.getRules(), atomManager);
     }
 
     @Override
-    public void inference() {
-        log.info("Beginning inference.");
-        reasoner.optimize(termStore);
-        log.info("Inference complete. Writing results to Database.");
+    protected GroundRuleStore createGroundRuleStore() {
+        return null;
+    }
 
-        // Commits the RandomVariableAtoms back to the Database,
-        ((PersistedAtomManager)atomManager).commitPersistedAtoms();
-        log.info("Results committed to database.");
+    @Override
+    protected TermGenerator createTermGenerator() {
+        return null;
     }
 
     @Override
@@ -69,7 +65,7 @@ public class DCDStreamingInference extends InferenceApplication {
         termStore = null;
         reasoner = null;
 
-        model=null;
+        model = null;
         db = null;
     }
 }
