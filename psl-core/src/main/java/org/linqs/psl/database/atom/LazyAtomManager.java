@@ -17,13 +17,13 @@
  */
 package org.linqs.psl.database.atom;
 
-import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.ResultList;
 import org.linqs.psl.database.rdbms.RDBMSDatabase;
 import org.linqs.psl.database.rdbms.Formula2SQL;
+import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
@@ -33,6 +33,7 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.model.term.VariableTypeMap;
+import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.arithmetic.AbstractArithmeticRule;
 import org.linqs.psl.model.rule.logical.AbstractLogicalRule;
@@ -201,16 +202,9 @@ public class LazyAtomManager extends PersistedAtomManager {
         Set<Rule> lazyRules = getLazyRules(rules, lazyPredicates);
 
         for (Rule lazyRule : lazyRules) {
-            if (lazyRule instanceof AbstractLogicalRule) {
-                lazyLogicalGround((AbstractLogicalRule)lazyRule, lazyPredicates, groundRuleStore);
-            } else if (lazyRule instanceof AbstractArithmeticRule) {
-                if (((AbstractArithmeticRule)lazyRule).hasSummation()) {
-                    // We will deal with these rules after we move the lazy atoms to the write partition.
-                } else {
-                    lazySimpleArithmeticGround((AbstractArithmeticRule)lazyRule, lazyPredicates, groundRuleStore);
-                }
-            } else {
-                throw new IllegalStateException("Unknown rule type: " + lazyRule.getClass().getName());
+            // We will deal with these rules after we move the lazy atoms to the write partition.
+            if (lazyRule.supportsGroundingQueryRewriting()) {
+                lazySimpleGround(lazyRule, lazyPredicates, groundRuleStore);
             }
         }
 
@@ -222,10 +216,8 @@ public class LazyAtomManager extends PersistedAtomManager {
         // Since complex aritmetic rules require a full regound, we need to do them
         // after we move the atoms to the write partition.
         for (Rule lazyRule : lazyRules) {
-            if (lazyRule instanceof AbstractArithmeticRule) {
-                if (((AbstractArithmeticRule)lazyRule).hasSummation()) {
-                    lazyComplexArithmeticGround((AbstractArithmeticRule)lazyRule, groundRuleStore);
-                }
+            if (!lazyRule.supportsGroundingQueryRewriting()) {
+                lazyComplexGround((AbstractArithmeticRule)lazyRule, groundRuleStore);
             }
         }
     }
@@ -234,7 +226,7 @@ public class LazyAtomManager extends PersistedAtomManager {
      * Complex arithmetic rules (ones with summations) require FULL regrounding.
      * Will will drop all the ground rules originating from this rule and reground.
      */
-    private void lazyComplexArithmeticGround(AbstractArithmeticRule rule, GroundRuleStore groundRuleStore) {
+    private void lazyComplexGround(AbstractArithmeticRule rule, GroundRuleStore groundRuleStore) {
         // Remove all existing ground rules.
         groundRuleStore.removeGroundRules(rule);
 
@@ -242,22 +234,26 @@ public class LazyAtomManager extends PersistedAtomManager {
         rule.groundAll(this, groundRuleStore);
     }
 
-    private void lazySimpleArithmeticGround(AbstractArithmeticRule rule, Set<StandardPredicate> lazyPredicates, GroundRuleStore groundRuleStore) {
-        Formula formula = rule.getExpression().getQueryFormula();
-        ResultList groundingResults = getLazyGroundingResults(formula, lazyPredicates);
-        if (groundingResults == null) {
-            return;
+    private void lazySimpleGround(Rule rule, Set<StandardPredicate> lazyPredicates, GroundRuleStore groundRuleStore) {
+        if (!rule.supportsGroundingQueryRewriting()) {
+            throw new UnsupportedOperationException("Rule requires full regrounding: " + rule);
         }
-        rule.groundNonSummationRule(groundingResults, this, groundRuleStore);
-    }
 
-    private void lazyLogicalGround(AbstractLogicalRule rule, Set<StandardPredicate> lazyPredicates, GroundRuleStore groundRuleStore) {
-        Formula formula = rule.getDNF().getQueryFormula();
+        Formula formula = rule.getRewritableGroundingFormula(this);
         ResultList groundingResults = getLazyGroundingResults(formula, lazyPredicates);
         if (groundingResults == null) {
             return;
         }
-        rule.groundAll(groundingResults, this, groundRuleStore);
+
+        List<GroundRule> groundRules = new ArrayList<GroundRule>();
+        for (int i = 0; i < groundingResults.size(); i++) {
+            rule.ground(groundingResults.get(i), groundingResults.getVariableMap(), this, groundRules);
+            for (GroundRule groundRule : groundRules) {
+                if (groundRule != null) {
+                    groundRuleStore.addGroundRule(groundRule);
+                }
+            }
+        }
     }
 
     private ResultList getLazyGroundingResults(Formula formula, Set<StandardPredicate> lazyPredicates) {
@@ -325,7 +321,7 @@ public class LazyAtomManager extends PersistedAtomManager {
                 // Note that we check for atoms not in the base formula, but in the
                 // query formula for the DNF because negated atoms will not
                 // be considered.
-                for (Atom atom : ((AbstractLogicalRule)rule).getDNF().getQueryFormula().getAtoms(new HashSet<Atom>())) {
+                for (Atom atom : ((AbstractLogicalRule)rule).getNegatedDNF().getQueryFormula().getAtoms(new HashSet<Atom>())) {
                     if (lazyPredicates.contains(atom.getPredicate())) {
                         lazyRules.add(rule);
                         break;

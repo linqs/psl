@@ -15,9 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.util;
+package org.linqs.psl.grounding;
 
-import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.QueryResultIterable;
@@ -108,12 +107,12 @@ public class Grounding {
         }
 
         for (Rule rule : rules) {
-            if (!rule.supportsIndividualGrounding()) {
+            if (!rule.supportsGroundingQueryRewriting()) {
                 bypassRules.add(rule);
                 continue;
             }
 
-            Formula query = rule.getGroundingFormula();
+            Formula query = rule.getRewritableGroundingFormula(atomManager);
             if (rewrite) {
                 query = rewriter.rewrite(query, (RDBMSDataStore)dataStore);
             }
@@ -176,6 +175,7 @@ public class Grounding {
         private GroundRuleStore groundRuleStore;
         private Map<Variable, Integer> variableMap;
         private List<Rule> rules;
+        private List<GroundRule> groundRules;
 
         public GroundWorker(AtomManager atomManager, GroundRuleStore groundRuleStore,
                 Map<Variable, Integer> variableMap, List<Rule> rules) {
@@ -183,6 +183,7 @@ public class Grounding {
             this.groundRuleStore = groundRuleStore;
             this.variableMap = variableMap;
             this.rules = rules;
+            this.groundRules = new ArrayList<GroundRule>();
         }
 
         @Override
@@ -193,10 +194,15 @@ public class Grounding {
         @Override
         public void work(int index, Constant[] row) {
             for (Rule rule : rules) {
-                GroundRule groundRule = rule.ground(row, variableMap, atomManager);
-                if (groundRule != null) {
-                    groundRuleStore.addGroundRule(groundRule);
+                rule.ground(row, variableMap, atomManager, groundRules);
+
+                for (GroundRule groundRule : groundRules) {
+                    if (groundRule != null) {
+                        groundRuleStore.addGroundRule(groundRule);
+                    }
                 }
+
+                groundRules.clear();
             }
         }
     }

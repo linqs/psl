@@ -17,11 +17,11 @@
  */
 package org.linqs.psl.application.inference;
 
-import org.linqs.psl.application.groundrulestore.GroundRuleStore;
-import org.linqs.psl.application.util.GroundRules;
-import org.linqs.psl.application.util.Grounding;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.PersistedAtomManager;
+import org.linqs.psl.grounding.GroundRuleStore;
+import org.linqs.psl.grounding.GroundRules;
+import org.linqs.psl.grounding.Grounding;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
 
@@ -45,30 +45,13 @@ public class MPEInference extends InferenceApplication {
 
     @Override
     protected void completeInitialize() {
-        log.debug("Creating persisted atom mannager.");
-        atomManager = new PersistedAtomManager(db);
-
         log.info("Grounding out model.");
         int groundCount = Grounding.groundAll(model, atomManager, groundRuleStore);
-
-        if (termStore instanceof ADMMTermStore) {
-            ((ADMMTermStore)termStore).ensureVariableCapacity(atomManager.getCachedRVACount());
-        }
+        log.info("Grounding complete.");
 
         log.debug("Initializing objective terms for {} ground rules.", groundCount);
         @SuppressWarnings("unchecked")
         int termCount = termGenerator.generateTerms(groundRuleStore, termStore);
         log.debug("Generated {} objective terms from {} ground rules.", termCount, groundCount);
-    }
-
-    @Override
-    public void inference() {
-        log.info("Beginning inference.");
-        reasoner.optimize(termStore);
-        log.info("Inference complete. Writing results to Database.");
-
-        // Commits the RandomVariableAtoms back to the Database,
-        ((PersistedAtomManager)atomManager).commitPersistedAtoms();
-        log.info("Results committed to database.");
     }
 }

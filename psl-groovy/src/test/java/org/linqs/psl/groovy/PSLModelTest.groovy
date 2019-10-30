@@ -311,7 +311,6 @@ public class PSLModelTest {
             "Double(+A, 'Foo') = 1 .\n" +
             "Single(+A) + Single(+B) = 1 .\n" +
             "Single(+A) = 1 . {A: Single(A)}\n" +
-            "Single(+A) = 1 . {A: Single(A) || Double(A, A) }\n" +
             "Double(+A, B) = 1 . {A: Single(B)}\n" +
             "Single(+A) + Single(+B) = 1 . {A: Single(A)} {B: Single(B)}\n" +
             "|A| Single(+A) = 1 .\n" +
@@ -321,6 +320,7 @@ public class PSLModelTest {
             "@Max[1, 0] Single(+A) = 1 .\n" +
             "@Max[|A|, |B|] Single(+A) + Single(+B) = 1 .\n" +
             "@Min[1, 0] Single(A) = 1 .\n" +
+            "Single(+A) = 1 . {A: Single(A) || Double(A, A) }\n" +
             ""
         ;
 
@@ -388,7 +388,6 @@ public class PSLModelTest {
             "1.0 * DOUBLE(+A, 'Foo') = 1.0 .",
             "1.0 * SINGLE(+A) + 1.0 * SINGLE(+B) = 1.0 .",
             "1.0 * SINGLE(+A) = 1.0 .   {A : SINGLE(A)}",
-            "1.0 * SINGLE(+A) = 1.0 .   {A : ( SINGLE(A) | DOUBLE(A, A) )}",
             "1.0 * DOUBLE(+A, B) = 1.0 .   {A : SINGLE(B)}",
             "1.0 * SINGLE(+A) + 1.0 * SINGLE(+B) = 1.0 .   {A : SINGLE(A)}   {B : SINGLE(B)}",
             "|A| * SINGLE(+A) = 1.0 .",
@@ -397,10 +396,21 @@ public class PSLModelTest {
             "@Max[|A|, 0.0] * SINGLE(+A) = 1.0 .",
             "1.0 * SINGLE(+A) = 1.0 .",
             "@Max[|A|, |B|] * SINGLE(+A) + 1.0 * SINGLE(+B) = 1.0 .",
-            "0.0 * SINGLE(A) = 1.0 ."
+            "0.0 * SINGLE(A) = 1.0 .",
+            "1.0 * SINGLE(+A) = 1.0 .   {A : SINGLE(A)}",
+            "1.0 * SINGLE(+A) = 1.0 .   {A : DOUBLE(A, A)}",
         ];
 
         model.addRules(input);
+
+        // We may need to swap a pair of expected rules.
+        List<Rule> rules = model.getRules();
+        if (rules.get(rules.size() - 1).toString().contains("SINGLE(A)")) {
+            String temp = expected[rules.size() - 1];
+            expected[rules.size() - 1] = expected[rules.size() - 2];
+            expected[rules.size() - 2] = temp;
+        }
+
         assertModel(expected, true);
     }
 

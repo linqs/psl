@@ -31,28 +31,17 @@ import java.util.Set;
 
 /**
  * A probabilistic soft logic model.
- *
- * Encapsulates a set of {@link Rule Rules}. A {@link ModelApplication}
- * can be used to combine a Model with data to perform inference or learn.
+ * Encapsulates a set of {@link Rule Rules}.
  */
 public class Model {
     private static final Logger log = LoggerFactory.getLogger(Model.class);
 
     protected final List<Rule> rules;
 
-    /**
-     * Redundant set for fast membership checks
-     */
-    protected final Set<Rule> ruleSet;
-
     public Model() {
         rules = new LinkedList<Rule>();
-        ruleSet = new HashSet<Rule>();
     }
 
-    /**
-     * @return the rules contained in this model
-     */
     public List<Rule> getRules() {
         return Collections.unmodifiableList(rules);
     }
@@ -60,44 +49,44 @@ public class Model {
     /**
      * Adds a Rule to this Model.
      *
-     * @param rule Rule to add
-     * @throws IllegalArgumentException if the Rule is already in this Model
+     * @throws IllegalArgumentException if the Rule is already in this Model.
      */
     public void addRule(Rule rule) {
-        if (ruleSet.contains(rule)) {
+        if (rules.contains(rule)) {
             log.warn("Rule already added to this model, skipping add: " + rule);
             return;
         }
 
-        rules.add(rule);
-        ruleSet.add(rule);
+        if (!rule.requiresSplit()) {
+            rules.add(rule);
+            return;
+        }
+
+        log.info("Rule is being split into multiple rules: {}", rule);
+
+        // This rule needs to be split into multiple rules.
+        for (Rule splitRule : rule.split()) {
+            rules.add(splitRule);
+        }
     }
 
     /**
      * Removes a Rule from this Model.
      *
-     * @param rule Rule to remove
-     * @throws IllegalArgumentException if the Rule is not in this Model
+     * @throws IllegalArgumentException if the Rule is not in this Model.
      */
     public void removeRule(Rule rule) {
-        if (!ruleSet.contains(rule)) {
-            throw new IllegalArgumentException("Rule not in this model.");
+        if (!rules.contains(rule)) {
+            throw new IllegalArgumentException("Rule (" + rule + ") not in this model.");
         }
 
         rules.remove(rule);
-        ruleSet.remove(rule);
     }
 
     public void clear() {
         rules.clear();
-        ruleSet.clear();
     }
 
-    /**
-     * Returns a String representation of this Model.
-     *
-     * @return the String representation
-     */
     @Override
     public String toString() {
         StringBuilder s = new StringBuilder();

@@ -18,6 +18,7 @@
 package org.linqs.psl.config;
 
 import org.linqs.psl.util.Reflection;
+import org.linqs.psl.util.RuntimeStats;
 
 import org.apache.commons.configuration2.BaseConfiguration;
 import org.apache.commons.configuration2.DataConfiguration;
@@ -49,7 +50,9 @@ import java.util.List;
  * loadResource(), addProperty(), setProperty(), clearProperty(), clear().
  *
  * PSL will statically try to load a properties file pointed to by the "psl.configuration"
- * system property ("psl.properties" by default.
+ * system property ("psl.properties") by default.
+ *
+ * When a property is put, RuntimeStats will get called to try collecting stats.
  */
 public class Config {
     public static final String CLASS_LIST_PROPS = "classlist.properties";
@@ -123,6 +126,7 @@ public class Config {
         }
 
         log.debug("Configuration stream loaded: {}", resourceName);
+        RuntimeStats.collect();
     }
 
     public static void loadResource(String path) {
@@ -135,6 +139,7 @@ public class Config {
         }
 
         log.debug("Configuration file loaded: {}", path);
+        RuntimeStats.collect();
     }
 
     /**
@@ -164,6 +169,7 @@ public class Config {
     public static void addProperty(String key, Object value) {
         config.addProperty(key, value);
         log.debug("Added {} to option {}.", value, key);
+        RuntimeStats.collect();
     }
 
     /**
@@ -175,6 +181,7 @@ public class Config {
     public static void setProperty(String key, Object value) {
         config.setProperty(key, value);
         log.debug("Set option {} to {}.", key, value);
+        RuntimeStats.collect();
     }
 
     /**
@@ -301,9 +308,9 @@ public class Config {
       * Because list options can be quite large, we allow them to be suppressed on request.
       */
     public static List<String> getList(String key, List<String> defaultValue, boolean suppressLogging) {
-          if (!suppressLogging) {
-             logAccess(key, defaultValue);
-          }
+        if (!suppressLogging) {
+            logAccess(key, defaultValue);
+        }
 
         List<?> configList = config.getList(key, defaultValue);
 
@@ -316,15 +323,27 @@ public class Config {
     }
 
     public static List<String> getList(String key, List<String> defaultValue) {
-          return getList(key, defaultValue, false);
-     }
+        return getList(key, defaultValue, false);
+    }
 
     public static List<String> getList(String key, boolean suppressLogging) {
         return getList(key, new ArrayList<String>(0), suppressLogging);
-     }
+    }
 
     public static List<String> getList(String key) {
         return getList(key, new ArrayList<String>(0));
+    }
+
+    /**
+     * Get a property, but don't log the access.
+     * This should only be used in rare cases.
+     */
+    public static Object getUnloggedProperty(String key) {
+        if (config.containsKey(key)) {
+            return config.getProperty(key);
+        }
+
+        return null;
     }
 
     /**

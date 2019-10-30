@@ -17,10 +17,12 @@
  */
 package org.linqs.psl.model.rule.logical;
 
-import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 import org.linqs.psl.database.DatabaseQuery;
 import org.linqs.psl.database.QueryResultIterable;
 import org.linqs.psl.database.atom.AtomManager;
+import org.linqs.psl.database.rdbms.RDBMSDatabase;
+import org.linqs.psl.database.rdbms.RawQuery;
+import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.QueryAtom;
@@ -120,7 +122,7 @@ public abstract class AbstractLogicalRule extends AbstractRule {
         return formula;
     }
 
-    public DNFClause getDNF() {
+    public DNFClause getNegatedDNF() {
         return negatedDNF;
     }
 
@@ -131,17 +133,31 @@ public abstract class AbstractLogicalRule extends AbstractRule {
     }
 
     @Override
+    public boolean supportsGroundingQueryRewriting() {
+        return true;
+    }
+
+    @Override
+    public Formula getRewritableGroundingFormula(AtomManager atomManager) {
+        return negatedDNF.getQueryFormula();
+    }
+
+    @Override
     public boolean supportsIndividualGrounding() {
         return true;
     }
 
     @Override
-    public Formula getGroundingFormula() {
-        return negatedDNF.getQueryFormula();
+    public RawQuery getGroundingQuery(AtomManager atomManager) {
+        return new RawQuery((RDBMSDatabase)atomManager.getDatabase(), getRewritableGroundingFormula(atomManager));
     }
 
     @Override
-    public GroundRule ground(Constant[] constants, Map<Variable, Integer> variableMap, AtomManager atomManager) {
+    public void ground(Constant[] constants, Map<Variable, Integer> variableMap, AtomManager atomManager, List<GroundRule> results) {
+        results.add(ground(constants, variableMap, atomManager));
+    }
+
+    private GroundRule ground(Constant[] constants, Map<Variable, Integer> variableMap, AtomManager atomManager) {
         // Get the grounding resources for this thread,
         if (!Parallel.hasThreadObject(groundingResourcesKey)) {
             Parallel.putThreadObject(groundingResourcesKey, new GroundingResources(negatedDNF));

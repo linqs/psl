@@ -43,6 +43,9 @@ import org.linqs.psl.model.term.Term;
 import org.linqs.psl.parser.ModelLoader;
 import org.linqs.psl.parser.RulePartial;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Groovy class representing a PSL model.
  *
@@ -50,6 +53,8 @@ import org.linqs.psl.parser.RulePartial;
  * @author Eric Norris <enorris@cs.umd.edu>
  */
 public class PSLModel extends Model {
+    private static final Logger log = LoggerFactory.getLogger(PSLModel.class);
+
     // Keys for Groovy syntactic sugar
     private static final String predicateKey = 'predicate';
     private static final String predicateArgsKey = 'types';
@@ -65,6 +70,8 @@ public class PSLModel extends Model {
 
     // TODO: Documentation
     public PSLModel(Object context, DataStore ds) {
+        log.warn("The PSL Groovy interface has been deprecated, please use the Java interface instead.");
+
         this.ds = ds;
         context.metaClass.propertyMissing = { String name ->
             return lookupProperty(name);

@@ -17,12 +17,13 @@
  */
 package org.linqs.psl.application.inference;
 
-import org.linqs.psl.application.groundrulestore.GroundRuleStore;
-import org.linqs.psl.application.util.GroundRules;
-import org.linqs.psl.application.util.Grounding;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.LazyAtomManager;
+import org.linqs.psl.database.atom.PersistedAtomManager;
+import org.linqs.psl.grounding.GroundRuleStore;
+import org.linqs.psl.grounding.GroundRules;
+import org.linqs.psl.grounding.Grounding;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.Reasoner;
@@ -65,17 +66,19 @@ public class LazyMPEInference extends InferenceApplication {
 
     @Override
     protected void completeInitialize() {
-        log.debug("Creating lazy atom mannager.");
-        atomManager = new LazyAtomManager(db);
-
         log.debug("Initial grounding.");
         Grounding.groundAll(model, atomManager, groundRuleStore);
     }
 
     @Override
-    public void inference() {
-        inference(model.getRules(), reasoner, groundRuleStore, termStore, termGenerator,
-                (LazyAtomManager)atomManager, maxRounds);
+    protected PersistedAtomManager createAtomManager(Database db) {
+        return new LazyAtomManager(db);
+    }
+
+    @Override
+    protected void internalInference() {
+        inference(model.getRules(), reasoner, groundRuleStore, termStore, termGenerator, (LazyAtomManager)atomManager,
+                maxRounds);
     }
 
     /**
@@ -99,6 +102,7 @@ public class LazyMPEInference extends InferenceApplication {
             termStore.clear();
 
             log.debug("Initializing objective terms for {} ground rules.", groundRuleStore.size());
+            termStore.ensureVariableCapacity(lazyAtomManager.getCachedRVACount());
             @SuppressWarnings("unchecked")
             int termCount = termGenerator.generateTerms(groundRuleStore, termStore);
             log.debug("Generated {} objective terms from {} ground rules.", termCount, groundRuleStore.size());
@@ -110,8 +114,5 @@ public class LazyMPEInference extends InferenceApplication {
             numActivated = lazyAtomManager.activateAtoms(rules, groundRuleStore);
             log.debug("Completed round {} and activated {} atoms.", rounds, numActivated);
         } while (numActivated > 0 && rounds < maxRounds);
-
-        // Commits the RandomVariableAtoms back to the Database.
-        lazyAtomManager.commitPersistedAtoms();
     }
 }

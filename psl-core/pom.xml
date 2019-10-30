@@ -136,7 +136,7 @@
                 </configuration>
             </plugin>
 
-            <!-- Get a list of classes for the config to use, -->
+            <!-- Get a list of classes for the config to use. -->
             <plugin>
                 <groupId>org.linqs</groupId>
                 <artifactId>list-classes-maven-plugin</artifactId>

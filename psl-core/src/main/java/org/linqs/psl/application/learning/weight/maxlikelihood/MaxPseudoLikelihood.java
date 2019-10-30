@@ -17,10 +17,10 @@
  */
 package org.linqs.psl.application.learning.weight.maxlikelihood;
 
-import org.linqs.psl.application.groundrulestore.AtomRegisterGroundRuleStore;
 import org.linqs.psl.application.learning.weight.VotedPerceptron;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.grounding.AtomRegisterGroundRuleStore;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;

@@ -29,6 +29,7 @@ import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.util.IteratorUtils;
+import org.linqs.psl.util.Parallel;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -86,6 +87,8 @@ import java.util.Set;
  * GroundAtoms with FunctionalPredicates.
  */
 public abstract class Database implements ReadableDatabase, WritableDatabase {
+    private static final String THREAD_QUERY_ATOM_KEY = Database.class.getName() + "::" + QueryAtom.class.getName();
+
     /**
      * The backing data store that created this database.
      * Connection are obtained from here.
@@ -142,6 +145,24 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
 
     public boolean hasAtom(StandardPredicate predicate, Constant... arguments) {
         return getAtom(predicate, false, arguments) != null;
+    }
+
+    public boolean hasCachedAtom(StandardPredicate predicate, Constant... arguments) {
+        // Only allocate one QueryAtom per thread.
+        QueryAtom queryAtom = null;
+        if (!Parallel.hasThreadObject(THREAD_QUERY_ATOM_KEY)) {
+            queryAtom = new QueryAtom(predicate, arguments);
+            Parallel.putThreadObject(THREAD_QUERY_ATOM_KEY, queryAtom);
+        } else {
+            queryAtom = (QueryAtom)(Parallel.getThreadObject(THREAD_QUERY_ATOM_KEY));
+            queryAtom.assume(predicate, arguments);
+        }
+
+        return hasCachedAtom(queryAtom);
+    }
+
+    public boolean hasCachedAtom(QueryAtom atom) {
+        return cache.getCachedAtom(atom) != null;
     }
 
     public int countAllGroundAtoms(StandardPredicate predicate) {

@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
+import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 
@@ -27,7 +28,7 @@ import org.linqs.psl.model.rule.WeightedGroundRule;
  * All coefficients must be non-zero.
  */
 public class HingeLossTerm extends HyperplaneTerm {
-    public HingeLossTerm(GroundRule groundRule, Hyperplane hyperplane) {
+    public HingeLossTerm(GroundRule groundRule, Hyperplane<LocalVariable> hyperplane) {
         super(groundRule, hyperplane);
     }
 

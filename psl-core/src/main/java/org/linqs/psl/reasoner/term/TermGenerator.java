@@ -17,12 +17,12 @@
  */
 package org.linqs.psl.reasoner.term;
 
-import org.linqs.psl.application.groundrulestore.GroundRuleStore;
+import org.linqs.psl.grounding.GroundRuleStore;
 
-public interface TermGenerator<E extends ReasonerTerm> {
+public interface TermGenerator<T extends ReasonerTerm, V extends ReasonerLocalVariable> {
     /**
      * Use the ground rules in |ruleStore| to generate optimization terms and populate |termStore|.
      * @return the number of terms added to the term store.
      */
-    public int generateTerms(GroundRuleStore ruleStore, TermStore<E> termStore);
+    public int generateTerms(GroundRuleStore ruleStore, TermStore<T, V> termStore);
 }

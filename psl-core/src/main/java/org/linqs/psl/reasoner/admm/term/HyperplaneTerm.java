@@ -18,6 +18,7 @@
 package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.reasoner.term.Hyperplane;
 
 /**
  * Objective term for an ADMMReasoner that is based on a hyperplane in some way.
@@ -34,7 +35,7 @@ public abstract class HyperplaneTerm extends ADMMObjectiveTerm {
     // Only allocate once.
     protected final float[] point;
 
-    public HyperplaneTerm(GroundRule groundRule, Hyperplane hyperplane) {
+    public HyperplaneTerm(GroundRule groundRule, Hyperplane<LocalVariable> hyperplane) {
         super(hyperplane, groundRule);
 
         this.coefficients = hyperplane.getCoefficients();

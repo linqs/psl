@@ -23,7 +23,7 @@ import org.linqs.psl.model.atom.Atom;
  * Either a {@link SummationAtom} or {@link Atom}.
  * <p>
  * Hack for a union type (which is not directly supported in Java).
- * 
- * @author Stephen Bach
  */
-public interface SummationAtomOrAtom { }
+public interface SummationAtomOrAtom {
+    public int getArity();
+}

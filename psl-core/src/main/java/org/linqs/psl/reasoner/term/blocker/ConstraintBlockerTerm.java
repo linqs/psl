@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.reasoner.term.blocker;
 
-import org.linqs.psl.application.groundrulestore.GroundRuleStore;
+import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
@@ -60,6 +60,7 @@ public class ConstraintBlockerTerm implements ReasonerTerm {
         return exactlyOne;
     }
 
+    @Override
     public int size() {
         return atoms.length;
     }

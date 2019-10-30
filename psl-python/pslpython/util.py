@@ -19,13 +19,14 @@ limitations under the License.
 import shlex
 import subprocess
 
-def execute(command, log_callback):
+def execute(command, log_callback = lambda line: print(line)):
     if (isinstance(command, str)):
         command = shlex.split(command)
 
     with subprocess.Popen(command, stdout = subprocess.PIPE, stderr = subprocess.STDOUT, universal_newlines = True) as proc:
-        for line in proc.stdout:
-            log_callback(line.rstrip())
+        if (log_callback is not None):
+            for line in proc.stdout:
+                log_callback(line.rstrip())
 
         proc.wait()
         return proc.returncode

@@ -19,6 +19,7 @@ package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
+import org.linqs.psl.reasoner.term.Hyperplane;
 
 /**
  * ADMMReasoner objective term of the form <br />
@@ -30,7 +31,7 @@ public class LinearLossTerm extends ADMMObjectiveTerm {
     /**
      * Caller releases control of |variables| and |coefficients|.
      */
-    LinearLossTerm(GroundRule groundRule, Hyperplane hyperplane) {
+    LinearLossTerm(GroundRule groundRule, Hyperplane<LocalVariable> hyperplane) {
         super(hyperplane, groundRule);
 
         this.coefficients = hyperplane.getCoefficients();

@@ -88,7 +88,7 @@ public class RDBMSDatabase extends Database {
 
     private static final float DEFAULT_UNOBSERVED_VALUE = 0.0f;
 
-    private static final String THREAD_QUERY_ATOM_KEY = QueryAtom.class.getName();
+    private static final String THREAD_QUERY_ATOM_KEY = RDBMSDatabase.class.getName() + "::" + QueryAtom.class.getName();
 
     /**
      * Predicates that, for the purpose of this database, are closed.
@@ -258,12 +258,14 @@ public class RDBMSDatabase extends Database {
 
     @Override
     public ResultList executeQuery(DatabaseQuery query) {
-        return executeQuery(query.getFormula(), query.getDistinct());
+        return executeQuery(query.getFormula(), query.getDistinct(), query.getIgnoreVariables());
     }
 
-    private ResultList executeQuery(Formula formula, boolean isDistinct) {
+    private ResultList executeQuery(Formula formula, boolean isDistinct, Set<Variable> ignoreVariables) {
         VariableTypeMap varTypes = formula.collectVariables(new VariableTypeMap());
         Set<Variable> projectTo = new HashSet<Variable>(varTypes.getVariables());
+
+        projectTo.removeAll(ignoreVariables);
 
         // Construct query from formula
         Formula2SQL sqler = new Formula2SQL(projectTo, this, isDistinct);
@@ -283,6 +285,14 @@ public class RDBMSDatabase extends Database {
         Map<Variable, Integer> projectionMap = sqler.getProjectionMap();
 
         return executeQueryIterator(projectionMap, varTypes, queryString);
+    }
+
+    public ResultList executeQuery(RawQuery rawQuery) {
+        return executeQuery(rawQuery.getProjectionMap(), rawQuery.getVariableTypes(), rawQuery.getSQL());
+    }
+
+    public QueryResultIterable executeQueryIterator(RawQuery rawQuery) {
+        return executeQueryIterator(rawQuery.getProjectionMap(), rawQuery.getVariableTypes(), rawQuery.getSQL());
     }
 
     /**
@@ -617,7 +627,7 @@ public class RDBMSDatabase extends Database {
 
     private class RDBMSQueryResultIterable implements QueryResultIterable {
         private Map<Variable, Integer> projectionMap;
-        private Iterator<Constant[]> iterator;
+        private RDBMSQueryResultIterator iterator;
 
         public RDBMSQueryResultIterable(String queryString, Map<Variable, Integer> projectionMap, int[] orderedIndexes, ConstantType[] orderedTypes) {
             this.projectionMap = Collections.unmodifiableMap(projectionMap);
@@ -632,6 +642,14 @@ public class RDBMSDatabase extends Database {
         @Override
         public Iterator<Constant[]> iterator() {
             return iterator;
+        }
+
+        @Override
+        public void close() {
+            if (iterator != null) {
+                iterator.close();
+                iterator = null;
+            }
         }
     }
 
@@ -715,7 +733,7 @@ public class RDBMSDatabase extends Database {
             }
         }
 
-        private void close() {
+        public void close() {
             next = null;
 
             if (resultSet != null) {

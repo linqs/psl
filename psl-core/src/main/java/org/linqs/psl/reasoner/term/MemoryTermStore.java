@@ -18,12 +18,14 @@
 package org.linqs.psl.reasoner.term;
 
 import org.linqs.psl.config.Config;
+import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.util.RandUtils;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 
-public class MemoryTermStore<E extends ReasonerTerm> implements TermStore<E> {
+public class MemoryTermStore<T extends ReasonerTerm> implements TermStore<T, RandomVariableAtom> {
     public static final String CONFIG_PREFIX = "memorytermstore";
 
     /**
@@ -32,18 +34,18 @@ public class MemoryTermStore<E extends ReasonerTerm> implements TermStore<E> {
     public static final String INITIAL_SIZE_KEY = CONFIG_PREFIX + ".initialsize";
     public static final int INITIAL_SIZE_DEFAULT = 5000;
 
-    private ArrayList<E> store;
+    private ArrayList<T> store;
 
     public MemoryTermStore() {
         this(Config.getInt(INITIAL_SIZE_KEY, INITIAL_SIZE_DEFAULT));
     }
 
     public MemoryTermStore(int initialSize) {
-        store = new ArrayList<E>(initialSize);
+        store = new ArrayList<T>(initialSize);
     }
 
     @Override
-    public synchronized void add(GroundRule rule, E term) {
+    public synchronized void add(GroundRule rule, T term) {
         store.add(term);
     }
 
@@ -62,7 +64,7 @@ public class MemoryTermStore<E extends ReasonerTerm> implements TermStore<E> {
     }
 
     @Override
-    public E get(int index) {
+    public T get(int index) {
         return store.get(index);
     }
 
@@ -83,7 +85,25 @@ public class MemoryTermStore<E extends ReasonerTerm> implements TermStore<E> {
     }
 
     @Override
-    public Iterator<E> iterator() {
+    public Iterator<T> iterator() {
         return store.iterator();
+    }
+
+    @Override
+    public Iterator<T> noWriteIterator() {
+        return iterator();
+    }
+
+    @Override
+    public RandomVariableAtom createLocalVariable(RandomVariableAtom atom) {
+        return atom;
+    }
+
+    @Override
+    public void ensureVariableCapacity(int capacity) {
+    }
+
+    public void shuffle() {
+        RandUtils.shuffle(store);
     }
 }

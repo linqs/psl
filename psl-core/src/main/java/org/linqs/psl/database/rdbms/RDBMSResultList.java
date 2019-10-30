@@ -29,9 +29,9 @@ import java.util.List;
 import java.util.Map;
 
 public class RDBMSResultList implements ResultList {
-    private final Map<Variable, Integer> varMap;
-    private final List<Constant[]> results;
-    private final int arity;
+    private Map<Variable, Integer> varMap;
+    private List<Constant[]> results;
+    private int arity;
 
     public RDBMSResultList(int arity) {
         varMap = new HashMap<Variable,Integer>();
@@ -103,5 +103,18 @@ public class RDBMSResultList implements ResultList {
     @Override
     public Iterator<Constant[]> iterator() {
         return results.iterator();
+    }
+
+    @Override
+    public void close() {
+        if (varMap != null) {
+            varMap.clear();
+            varMap = null;
+        }
+
+        if (results != null) {
+            results.clear();
+            results = null;
+        }
     }
 }

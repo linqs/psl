@@ -73,7 +73,7 @@ public abstract class WeightLearningTest {
     protected boolean assertFriendshipRankTest;
 
     public WeightLearningTest() {
-        // TEST(eriq): Disable until weight learning is in a stable place.
+        // TODO(eriq): Disable until weight learning is in a stable place.
         assertBaseTest = false;
         assertFriendshipRankTest = false;
     }

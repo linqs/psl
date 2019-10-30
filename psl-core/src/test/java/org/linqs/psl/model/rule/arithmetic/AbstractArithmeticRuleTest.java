@@ -22,23 +22,20 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
 import org.linqs.psl.PSLTest;
-import org.linqs.psl.application.groundrulestore.GroundRuleStore;
-import org.linqs.psl.application.groundrulestore.MemoryGroundRuleStore;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.SimpleAtomManager;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver.Type;
+import org.linqs.psl.grounding.GroundRuleStore;
+import org.linqs.psl.grounding.MemoryGroundRuleStore;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.formula.Disjunction;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.arithmetic.AbstractArithmeticRule;
 import org.linqs.psl.model.rule.arithmetic.UnweightedArithmeticRule;
 import org.linqs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
@@ -55,6 +52,10 @@ import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.FunctionComparator;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -619,5 +620,96 @@ public class AbstractArithmeticRuleTest {
         assertNotEquals(expression2.hashCode(), expression4.hashCode());
 
         assertNotEquals(expression3.hashCode(), expression4.hashCode());
+    }
+
+    @Test
+    public void testSimpleSplit() {
+        // SingleClosed(+A) = 1 . {A: SingleClosed(A) || DoubleClosed(A, A) }
+        List<Coefficient> coefficients = Arrays.asList(
+            (Coefficient)(new ConstantNumber(1))
+        );
+
+        List<SummationAtomOrAtom> atoms = Arrays.asList(
+            (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")}))
+        );
+
+        Map<SummationVariable, Formula> filters = new HashMap<SummationVariable, Formula>();
+        filters.put(new SummationVariable("A"),
+                new Disjunction(
+                        new QueryAtom(singleClosed, new Variable("A")),
+                        new QueryAtom(doubleClosed, new Variable("A"), new Variable("A"))
+                )
+        );
+
+        ArithmeticRuleExpression expression = new ArithmeticRuleExpression(
+                coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1));
+        AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, filters);
+
+        // Expected split:
+        // SingleClosed(+A) = 1 . {A: SingleClosed(A) }
+        // SingleClosed(+A) = 1 . {A: DoubleClosed(A, A) }
+        String[] expected = new String[]{
+            "1.0 * SINGLECLOSED(+A) = 1.0 .   {A : SINGLECLOSED(A)}",
+            "1.0 * SINGLECLOSED(+A) = 1.0 .   {A : DOUBLECLOSED(A, A)}",
+        };
+
+        assertTrue(rule.requiresSplit());
+        List<Rule> splitRules = rule.split();
+
+        // Swap expected order if necessary.
+        if (splitRules.get(0).toString().contains("DOUBLECLOSED")) {
+            String temp = expected[0];
+            expected[0] = expected[1];
+            expected[1] = temp;
+        }
+
+        PSLTest.assertRules(splitRules.toArray(new Rule[0]), expected, false);
+    }
+
+    @Test
+    public void testConjunctiveSplit() {
+        // SingleClosed(+A) + SingleClosed(+B) = 1 . {A: SingleClosed(A) || DoubleClosed(A, A) } {B: SingleClosed(B)}
+        List<Coefficient> coefficients = Arrays.asList(
+            (Coefficient)(new ConstantNumber(1)),
+            (Coefficient)(new ConstantNumber(1))
+        );
+
+        List<SummationAtomOrAtom> atoms = Arrays.asList(
+            (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")})),
+            (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("B")}))
+        );
+
+        Map<SummationVariable, Formula> filters = new HashMap<SummationVariable, Formula>();
+        filters.put(new SummationVariable("A"),
+                new Disjunction(
+                        new QueryAtom(singleClosed, new Variable("A")),
+                        new QueryAtom(doubleClosed, new Variable("A"), new Variable("A"))
+                )
+        );
+        filters.put(new SummationVariable("B"), new QueryAtom(singleClosed, new Variable("B")));
+
+        ArithmeticRuleExpression expression = new ArithmeticRuleExpression(
+                coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1));
+        AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, filters);
+
+        // Expected split:
+        // SingleClosed(+A) = 1 . {A: SingleClosed(A) } {B: SingleClosed(B)}
+        // SingleClosed(+A) = 1 . {A: DoubleClosed(A, A) } {B: SingleClosed(B)}
+        String[] expected = new String[]{
+            "1.0 * SINGLECLOSED(+A) + 1.0 * SINGLECLOSED(+B) = 1.0 .   {A : SINGLECLOSED(A)}   {B : SINGLECLOSED(B)}",
+            "1.0 * SINGLECLOSED(+A) + 1.0 * SINGLECLOSED(+B) = 1.0 .   {A : DOUBLECLOSED(A, A)}   {B : SINGLECLOSED(B)}",
+        };
+
+        assertTrue(rule.requiresSplit());
+        List<Rule> splitRules = rule.split();
+
+        // Swap expected order if necessary.
+        if (splitRules.get(0).toString().contains("DOUBLECLOSED")) {
+            String temp = expected[0];
+            expected[0] = expected[1];
+            expected[1] = temp;
+        }
+
+        PSLTest.assertRules(splitRules.toArray(new Rule[0]), expected, true);
     }
 }

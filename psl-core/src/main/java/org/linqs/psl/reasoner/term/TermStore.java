@@ -17,20 +17,22 @@
  */
 package org.linqs.psl.reasoner.term;
 
+import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 /**
  * A place to store terms that are to be optimized.
  */
-public interface TermStore<E extends ReasonerTerm> extends Iterable<E> {
+public interface TermStore<T extends ReasonerTerm, V extends ReasonerLocalVariable> extends Iterable<T> {
     /**
      * Add a term to the store that was generated from the given ground rule.
      */
-    public void add(GroundRule rule, E term);
+    public void add(GroundRule rule, T term);
 
     /**
      * Remove any existing terms and prepare for a new set.
@@ -42,14 +44,32 @@ public interface TermStore<E extends ReasonerTerm> extends Iterable<E> {
      */
     public void close();
 
-    public E get(int index);
+    public T get(int index);
 
     public int size();
 
     /**
-     * Ensure that the underlying stuctures can have the required capacity.
+     * Ensure that the underlying stuctures can have the required term capacity.
      * This is more of a hint to the store about how much memory will be used.
      * This is best called on an empty store so it can prepare.
      */
     public void ensureCapacity(int capacity);
+
+    /**
+     * Ensure that the underlying stuctures can have the required variable capacity.
+     * This is more of a hint to the store about how much memory will be used.
+     * This is best called on an empty store so it can prepare.
+     * Not all term stores will even manage variables.
+     */
+    public void ensureVariableCapacity(int capacity);
+
+    /**
+     * Create a variable local to a specific term.
+     */
+    public V createLocalVariable(RandomVariableAtom atom);
+
+    /**
+     * Get an iterator over the terms in the store that does not write to disk.
+     */
+    public Iterator<T> noWriteIterator();
 }

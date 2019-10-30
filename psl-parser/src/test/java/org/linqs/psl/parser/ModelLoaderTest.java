@@ -458,7 +458,8 @@ public class ModelLoaderTest {
             "1.0 * DOUBLE(+A, 'Foo') = 1.0 .",
             "1.0 * SINGLE(+A) + 1.0 * SINGLE(+B) = 1.0 .",
             "1.0 * SINGLE(+A) = 1.0 .   {A : SINGLE(A)}",
-            "1.0 * SINGLE(+A) = 1.0 .   {A : ( SINGLE(A) | DOUBLE(A, A) )}",
+            "1.0 * SINGLE(+A) = 1.0 .   {A : SINGLE(A)}",
+            "1.0 * SINGLE(+A) = 1.0 .   {A : DOUBLE(A, A)}",
             "1.0 * DOUBLE(+A, B) = 1.0 .   {A : SINGLE(B)}",
             "1.0 * SINGLE(+A) + 1.0 * SINGLE(+B) = 1.0 .   {A : SINGLE(A)}   {B : SINGLE(B)}",
             "|A| * SINGLE(+A) = 1.0 .",
@@ -470,7 +471,7 @@ public class ModelLoaderTest {
             "0.0 * SINGLE(A) = 1.0 ."
         };
 
-        PSLTest.assertModel(dataStore, input, expected);
+        PSLTest.assertStringModel(dataStore, input, expected, true);
     }
 
     @Test
@@ -765,39 +766,60 @@ public class ModelLoaderTest {
     @Test
     public void testFilterOperatorOrder() {
         String input =
-            "Single(+A) + Double(B, C) = 1 . {A: Single(A) || Single(B) || Single(C)}\n" +
-            "Single(+A) + Double(B, C) = 1 . {A: Single(A) && Single(B) && Single(C)}\n" +
-            "Single(+A) + Double(B, C) = 1 . {A: Single(A) || Single(B) && Single(C)}\n" +
-            "Single(+A) + Double(B, C) = 1 . {A: Single(A) && Single(B) || Single(C)}\n" +
+            "10 * Single(+A) + 10 * Double(B, C) = 1 . {A: Single(A) || Single(B) || Single(C)}\n" +
+            "11 * Single(+A) + 11 * Double(B, C) = 1 . {A: Single(A) && Single(B) && Single(C)}\n" +
+            "12 * Single(+A) + 12 * Double(B, C) = 1 . {A: Single(A) || Single(B) && Single(C)}\n" +
+            "13 * Single(+A) + 13 * Double(B, C) = 1 . {A: Single(A) && Single(B) || Single(C)}\n" +
 
-            "Single(+A) + Double(B, C) = 1 . {A: (Single(A) || Single(B)) || Single(C)}\n" +
-            "Single(+A) + Double(B, C) = 1 . {A: Single(A) || (Single(B) || Single(C))}\n" +
-            "Single(+A) + Double(B, C) = 1 . {A: (Single(A) && Single(B)) && Single(C)}\n" +
-            "Single(+A) + Double(B, C) = 1 . {A: Single(A) && (Single(B) && Single(C))}\n" +
+            "14 * Single(+A) + 14 * Double(B, C) = 1 . {A: (Single(A) || Single(B)) || Single(C)}\n" +
+            "15 * Single(+A) + 15 * Double(B, C) = 1 . {A: Single(A) || (Single(B) || Single(C))}\n" +
+            "16 * Single(+A) + 16 * Double(B, C) = 1 . {A: (Single(A) && Single(B)) && Single(C)}\n" +
+            "17 * Single(+A) + 17 * Double(B, C) = 1 . {A: Single(A) && (Single(B) && Single(C))}\n" +
 
-            "Single(+A) + Double(B, C) = 1 . {A: (Single(A) || Single(B)) && Single(C)}\n" +
-            "Single(+A) + Double(B, C) = 1 . {A: Single(A) || (Single(B) && Single(C))}\n" +
-            "Single(+A) + Double(B, C) = 1 . {A: (Single(A) && Single(B)) || Single(C)}\n" +
-            "Single(+A) + Double(B, C) = 1 . {A: Single(A) && (Single(B) || Single(C))}\n" +
+            "18 * Single(+A) + 18 * Double(B, C) = 1 . {A: (Single(A) || Single(B)) && Single(C)}\n" +
+            "19 * Single(+A) + 19 * Double(B, C) = 1 . {A: Single(A) || (Single(B) && Single(C))}\n" +
+            "20 * Single(+A) + 20 * Double(B, C) = 1 . {A: (Single(A) && Single(B)) || Single(C)}\n" +
+            "21 * Single(+A) + 21 * Double(B, C) = 1 . {A: Single(A) && (Single(B) || Single(C))}\n" +
             "";
         String[] expected = new String[]{
-            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .   {A : ( SINGLE(A) | SINGLE(B) | SINGLE(C) )}",
-            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .   {A : ( SINGLE(A) & SINGLE(B) & SINGLE(C) )}",
-            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .   {A : ( SINGLE(A) | ( SINGLE(B) & SINGLE(C) ) )}",
-            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .   {A : ( ( SINGLE(A) & SINGLE(B) ) | SINGLE(C) )}",
+            "10.0 * SINGLE(+A) + 10.0 * DOUBLE(B, C) = 1.0 .   {A : SINGLE(A)}",
+            "10.0 * SINGLE(+A) + 10.0 * DOUBLE(B, C) = 1.0 .   {A : SINGLE(B)}",
+            "10.0 * SINGLE(+A) + 10.0 * DOUBLE(B, C) = 1.0 .   {A : SINGLE(C)}",
 
-            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .   {A : ( SINGLE(A) | SINGLE(B) | SINGLE(C) )}",
-            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .   {A : ( SINGLE(A) | SINGLE(B) | SINGLE(C) )}",
-            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .   {A : ( SINGLE(A) & SINGLE(B) & SINGLE(C) )}",
-            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .   {A : ( SINGLE(A) & SINGLE(B) & SINGLE(C) )}",
+            "11.0 * SINGLE(+A) + 11.0 * DOUBLE(B, C) = 1.0 .   {A : ( SINGLE(A) & SINGLE(B) & SINGLE(C) )}",
 
-            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .   {A : ( ( SINGLE(A) & SINGLE(C) ) | ( SINGLE(B) & SINGLE(C) ) )}",
-            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .   {A : ( SINGLE(A) | ( SINGLE(B) & SINGLE(C) ) )}",
-            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .   {A : ( ( SINGLE(A) & SINGLE(B) ) | SINGLE(C) )}",
-            "1.0 * SINGLE(+A) + 1.0 * DOUBLE(B, C) = 1.0 .   {A : ( ( SINGLE(A) & SINGLE(B) ) | ( SINGLE(A) & SINGLE(C) ) )}"
+            "12.0 * SINGLE(+A) + 12.0 * DOUBLE(B, C) = 1.0 .   {A : SINGLE(A)}",
+            "12.0 * SINGLE(+A) + 12.0 * DOUBLE(B, C) = 1.0 .   {A : ( SINGLE(B) & SINGLE(C) )}",
+
+            "13.0 * SINGLE(+A) + 13.0 * DOUBLE(B, C) = 1.0 .   {A : ( SINGLE(A) & SINGLE(B) )}",
+            "13.0 * SINGLE(+A) + 13.0 * DOUBLE(B, C) = 1.0 .   {A : SINGLE(C)}",
+
+            "14.0 * SINGLE(+A) + 14.0 * DOUBLE(B, C) = 1.0 .   {A : SINGLE(A)}",
+            "14.0 * SINGLE(+A) + 14.0 * DOUBLE(B, C) = 1.0 .   {A : SINGLE(B)}",
+            "14.0 * SINGLE(+A) + 14.0 * DOUBLE(B, C) = 1.0 .   {A : SINGLE(C)}",
+
+            "15.0 * SINGLE(+A) + 15.0 * DOUBLE(B, C) = 1.0 .   {A : SINGLE(A)}",
+            "15.0 * SINGLE(+A) + 15.0 * DOUBLE(B, C) = 1.0 .   {A : SINGLE(B)}",
+            "15.0 * SINGLE(+A) + 15.0 * DOUBLE(B, C) = 1.0 .   {A : SINGLE(C)}",
+
+            "16.0 * SINGLE(+A) + 16.0 * DOUBLE(B, C) = 1.0 .   {A : ( SINGLE(A) & SINGLE(B) & SINGLE(C) )}",
+
+            "17.0 * SINGLE(+A) + 17.0 * DOUBLE(B, C) = 1.0 .   {A : ( SINGLE(A) & SINGLE(B) & SINGLE(C) )}",
+
+            "18.0 * SINGLE(+A) + 18.0 * DOUBLE(B, C) = 1.0 .   {A : ( SINGLE(A) & SINGLE(C) )}",
+            "18.0 * SINGLE(+A) + 18.0 * DOUBLE(B, C) = 1.0 .   {A : ( SINGLE(B) & SINGLE(C) )}",
+
+            "19.0 * SINGLE(+A) + 19.0 * DOUBLE(B, C) = 1.0 .   {A : SINGLE(A)}",
+            "19.0 * SINGLE(+A) + 19.0 * DOUBLE(B, C) = 1.0 .   {A : ( SINGLE(B) & SINGLE(C) )}",
+
+            "20.0 * SINGLE(+A) + 20.0 * DOUBLE(B, C) = 1.0 .   {A : ( SINGLE(A) & SINGLE(B) )}",
+            "20.0 * SINGLE(+A) + 20.0 * DOUBLE(B, C) = 1.0 .   {A : SINGLE(C)}",
+
+            "21.0 * SINGLE(+A) + 21.0 * DOUBLE(B, C) = 1.0 .   {A : ( SINGLE(A) & SINGLE(B) )}",
+            "21.0 * SINGLE(+A) + 21.0 * DOUBLE(B, C) = 1.0 .   {A : ( SINGLE(A) & SINGLE(C) )}",
         };
 
-        PSLTest.assertModel(dataStore, input, expected);
+        PSLTest.assertStringModel(dataStore, input, expected, true);
     }
 
     @Test

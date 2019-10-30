@@ -18,6 +18,7 @@
 package org.linqs.psl.cli;
 
 import org.linqs.psl.model.predicate.Predicate;
+import org.linqs.psl.parser.CommandLineLoader;
 
 import org.junit.After;
 import org.junit.Before;
@@ -70,19 +71,19 @@ public abstract class CLITest {
 
     public void run(String modelPath, String dataPath, String loggingLevel, List<String> additionalArgs) {
         List<String> args = new ArrayList<String>();
-        args.add("--" + Launcher.OPERATION_INFER_LONG);
+        args.add("--" + CommandLineLoader.OPERATION_INFER_LONG);
 
-        args.add("--" + Launcher.OPTION_MODEL_LONG);
+        args.add("--" + CommandLineLoader.OPTION_MODEL_LONG);
         args.add(modelPath);
 
-        args.add("--" + Launcher.OPTION_DATA_LONG);
+        args.add("--" + CommandLineLoader.OPTION_DATA_LONG);
         args.add(dataPath);
 
-        args.add("--" + Launcher.OPTION_OUTPUT_DIR_LONG);
+        args.add("--" + CommandLineLoader.OPTION_OUTPUT_DIR_LONG);
         args.add(outDir);
 
         // Set the logging level.
-        args.add("-" + Launcher.OPTION_PROPERTIES);
+        args.add("-" + CommandLineLoader.OPTION_PROPERTIES);
         args.add("log4j.threshold=" + loggingLevel);
 
         if (additionalArgs != null) {

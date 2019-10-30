@@ -17,8 +17,8 @@
  */
 package org.linqs.psl.reasoner.term.blocker;
 
-import org.linqs.psl.application.groundrulestore.AtomRegisterGroundRuleStore;
-import org.linqs.psl.application.groundrulestore.GroundRuleStore;
+import org.linqs.psl.grounding.AtomRegisterGroundRuleStore;
+import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
@@ -65,9 +65,9 @@ import java.util.Set;
  *     <li>All atoms are involved in at most one (partial) function and at most one GroundValueConstraint constraint.</li>
  * </ul>
  */
-public class ConstraintBlockerTermGenerator implements TermGenerator<ConstraintBlockerTerm> {
+public class ConstraintBlockerTermGenerator implements TermGenerator<ConstraintBlockerTerm, RandomVariableAtom> {
     @Override
-    public int generateTerms(GroundRuleStore ruleStore, TermStore<ConstraintBlockerTerm> termStore) {
+    public int generateTerms(GroundRuleStore ruleStore, TermStore<ConstraintBlockerTerm, RandomVariableAtom> termStore) {
         if (!(ruleStore instanceof AtomRegisterGroundRuleStore)) {
             throw new IllegalArgumentException("AtomRegisterGroundRuleStore required.");
         }
