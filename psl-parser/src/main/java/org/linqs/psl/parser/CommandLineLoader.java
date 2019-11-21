@@ -77,7 +77,7 @@ public class CommandLineLoader {
     public static final String OPTION_PROPERTIES = "D";
     public static final String OPTION_PROPERTIES_FILE = "p";
     public static final String OPTION_PROPERTIES_FILE_LONG = "properties";
-    public static final String OPTION_SKIP_ATOM_COMMIT_LONG = "skipCommitAtoms";
+    public static final String OPTION_SKIP_ATOM_COMMIT_LONG = "skipAtomCommit";
     public static final String OPTION_VERSION = "v";
     public static final String OPTION_VERSION_LONG = "version";
 
