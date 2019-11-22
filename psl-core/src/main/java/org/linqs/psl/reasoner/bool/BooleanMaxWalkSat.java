@@ -58,8 +58,6 @@ import java.util.Set;
  *
  * It also assumes that all ObservedAtoms have values in {0.0, 1.0}.
  * Its behavior is not defined otherwise.
- *
- * @author Stephen Bach <bach@cs.umd.edu>
  */
 public class BooleanMaxWalkSat implements Reasoner {
     private static final Logger log = LoggerFactory.getLogger(BooleanMaxWalkSat.class);

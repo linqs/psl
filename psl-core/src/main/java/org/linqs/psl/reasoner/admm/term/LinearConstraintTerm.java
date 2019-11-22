@@ -23,10 +23,10 @@ import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.util.MathUtils;
 
 /**
- * ADMMReasoner objective term of the form <br />
- * 0 if coefficients^T * x [?] constant <br />
- * infinity otherwise <br />
- * where [?] is ==, >=, or <= <br />
+ * ADMMReasoner objective term of the form:
+ * (0 if coefficients^T * x OP constant)
+ * or (infinity otherwise).
+ * Where OP is equals, less than or eqauls, or greater than or equals.
  *
  * All coefficients must be non-zero.
  */

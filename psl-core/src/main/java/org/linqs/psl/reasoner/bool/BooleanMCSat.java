@@ -41,8 +41,6 @@ import org.slf4j.LoggerFactory;
  * and RandomVariableAtoms that are each constrained by a single
  * GroundValueConstraint. It also assumes that all ObservedAtoms
  * have Boolean truth values. Its behavior is not defined otherwise.
- *
- * @author Stephen Bach <bach@cs.umd.edu>
  */
 public class BooleanMCSat implements Reasoner {
     private static final Logger log = LoggerFactory.getLogger(BooleanMCSat.class);

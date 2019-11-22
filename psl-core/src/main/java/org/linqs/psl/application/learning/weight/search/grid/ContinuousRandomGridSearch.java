@@ -66,7 +66,7 @@ public class ContinuousRandomGridSearch extends BaseGridSearch {
     public static final boolean UNIFORM_BASE_DEFAULT = true;
 
     /**
-     * If > 0, then various different scaled versions of the weights will be tested.
+     * If greater than 0, then various different scaled versions of the weights will be tested.
      * For example, if set to 3 then 10x, 100x, and 1000x will also be tested.
      * These additional tests DO NOT count against MAX_LOCATIONS_KEY.
      * IE, MAX_LOCATIONS_KEY * (SCALE_ORDERS_KEY + 1) configurations will be tested.

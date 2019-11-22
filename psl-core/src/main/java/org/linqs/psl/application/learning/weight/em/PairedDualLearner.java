@@ -39,9 +39,6 @@ import java.util.List;
  * Stephen H. Bach, Bert Huang, Jordan Boyd-Graber, and Lise Getoor
  * International Conference on Machine Learning (ICML) 2015
  * for details.
- *
- * @author Stephen Bach <bach@cs.umd.edu>
- * @author Bert Huang <bhuang@vt.edu>
  */
 public class PairedDualLearner extends ExpectationMaximization {
     private static final Logger log = LoggerFactory.getLogger(PairedDualLearner.class);
