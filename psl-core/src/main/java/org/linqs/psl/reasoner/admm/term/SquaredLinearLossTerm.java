@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,27 +17,36 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
-import java.util.List;
+import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.model.rule.WeightedGroundRule;
+import org.linqs.psl.reasoner.term.Hyperplane;
 
 /**
  * ADMMReasoner objective term of the form <br />
  * weight * (coeffs^T * x - constant)^2
  */
 public class SquaredLinearLossTerm extends SquaredHyperplaneTerm {
-	SquaredLinearLossTerm(List<LocalVariable> variables, List<Float> coeffs, float constant, float weight) {
-		super(variables, coeffs, constant, weight);
-	}
+    public SquaredLinearLossTerm(GroundRule groundRule, Hyperplane<LocalVariable> hyperplane) {
+        super(groundRule, hyperplane);
+    }
 
-	@Override
-	public void minimize(float stepSize, float[] consensusValues) {
-		minWeightedSquaredHyperplane(stepSize, consensusValues);
-	}
+    @Override
+    public void minimize(float stepSize, float[] consensusValues) {
+        minWeightedSquaredHyperplane(stepSize, consensusValues);
+    }
 
-	/**
-	 * weight * (coeffs^T * x - constant)^2
-	 */
-	@Override
-	public float evaluate() {
-		return weight * (float)Math.pow(super.evaluate(), 2);
-	}
+    /**
+     * weight * (coeffs^T * x - constant)^2
+     */
+    @Override
+    public float evaluate() {
+        float weight = (float)((WeightedGroundRule)groundRule).getWeight();
+        return weight * (float)Math.pow(super.evaluate(), 2);
+    }
+
+    @Override
+    public float evaluate(float[] consensusValues) {
+        float weight = (float)((WeightedGroundRule)groundRule).getWeight();
+        return weight * (float)Math.pow(super.evaluate(consensusValues), 2);
+    }
 }

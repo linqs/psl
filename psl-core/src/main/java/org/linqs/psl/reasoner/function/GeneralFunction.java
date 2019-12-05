@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,198 +27,199 @@ import org.linqs.psl.model.atom.GroundAtom;
  * allocations at grounding time.
  */
 public class GeneralFunction implements FunctionTerm {
-	private final double[] coefficients;
-	private final FunctionTerm[] terms;
-	private int size;
+    private final float[] coefficients;
+    private final FunctionTerm[] terms;
+    private int size;
 
-	// All constants will get merged into this.
-	private double constant;
+    // All constants will get merged into this.
+    private float constant;
 
-	private boolean constantTerms;
-	private boolean linearTerms;
+    private boolean constantTerms;
+    private boolean linearTerms;
 
-	private boolean nonNegative;
-	private boolean squared;
+    // Functions that are "non-negative" are wrapped with a max(0.0, X).
+    // This is the hinge for logical rules.
+    private boolean nonNegative;
+    private boolean squared;
 
-	public GeneralFunction(boolean nonNegative, boolean squared, int maxSize) {
-		coefficients = new double[maxSize];
-		terms = new FunctionTerm[maxSize];
-		size = 0;
-		constant = 0.0;
+    public GeneralFunction(boolean nonNegative, boolean squared, int maxSize) {
+        coefficients = new float[maxSize];
+        terms = new FunctionTerm[maxSize];
+        size = 0;
+        constant = 0.0f;
 
-		this.nonNegative = nonNegative;
-		this.squared = squared;
-		constantTerms = true;
-		linearTerms = true;
-	}
+        this.nonNegative = nonNegative;
+        this.squared = squared;
+        constantTerms = true;
+        linearTerms = true;
+    }
 
-	public double getConstant() {
-		return constant;
-	}
+    public float getConstant() {
+        return constant;
+    }
 
-	public boolean isSquared() {
-		return squared;
-	}
+    public boolean isSquared() {
+        return squared;
+    }
 
-	public boolean isNonNegative() {
-		return nonNegative;
-	}
+    public boolean isNonNegative() {
+        return nonNegative;
+    }
 
-	@Override
-	public boolean isLinear() {
-		return !squared && linearTerms;
-	}
+    @Override
+    public boolean isLinear() {
+        return !squared && linearTerms;
+    }
 
-	@Override
-	public boolean isConstant() {
-		return constantTerms;
-	}
+    @Override
+    public boolean isConstant() {
+        return constantTerms;
+    }
 
-	public void setSquared(boolean squared) {
-		this.squared = squared;
-	}
+    public void setSquared(boolean squared) {
+        this.squared = squared;
+    }
 
-	public void setNonNegative(boolean nonNegative) {
-		this.nonNegative = nonNegative;
-	}
+    public void setNonNegative(boolean nonNegative) {
+        this.nonNegative = nonNegative;
+    }
 
-	/**
-	 * Add a constant to the sum.
-	 */
-	public void add(double value) {
-		constant += value;
-	}
+    /**
+     * Add a constant to the sum.
+     */
+    public void add(float value) {
+        constant += value;
+    }
 
-	/**
-	 * Add a general term to the sum.
-	 */
-	public void add(double coefficient, FunctionTerm term) {
-		// Merge constants.
-		if (term.isConstant()) {
-			constant += (coefficient * term.getValue());
-			return;
-		}
+    /**
+     * Add a general term to the sum.
+     */
+    public void add(float coefficient, FunctionTerm term) {
+        // Merge constants.
+        if (term.isConstant()) {
+            constant += (coefficient * term.getValue());
+            return;
+        }
 
-		if (size == terms.length) {
-			throw new IllegalStateException(
-					"More than the max terms added to the function. Max: " + terms.length);
-		}
+        if (size == terms.length) {
+            throw new IllegalStateException(
+                    "More than the max terms added to the function. Max: " + terms.length);
+        }
 
-		terms[size] = term;
-		coefficients[size] = coefficient;
-		size++;
+        terms[size] = term;
+        coefficients[size] = coefficient;
+        size++;
 
-		constantTerms = constantTerms && term.isConstant();
-		linearTerms = linearTerms && term.isLinear();
-	}
+        constantTerms = constantTerms && term.isConstant();
+        linearTerms = linearTerms && term.isLinear();
+    }
 
-	public int size() {
-		return size;
-	}
+    public int size() {
+        return size;
+    }
 
-	public double getCoefficient(int index) {
-		return coefficients[index];
-	}
+    public float getCoefficient(int index) {
+        return coefficients[index];
+    }
 
-	public FunctionTerm getTerm(int index) {
-		return terms[index];
-	}
+    public FunctionTerm getTerm(int index) {
+        return terms[index];
+    }
 
-	@Override
-	public double getValue() {
-		double val = constant;
+    @Override
+    public float getValue() {
+        float val = constant;
 
-		for (int i = 0; i < size; i++) {
-			val += terms[i].getValue() * coefficients[i];
-		}
+        for (int i = 0; i < size; i++) {
+            val += terms[i].getValue() * coefficients[i];
+        }
 
-		if (nonNegative && val < 0.0) {
-			return 0.0;
-		}
+        if (nonNegative && val < 0.0) {
+            return 0.0f;
+        }
 
-		return squared ? (val * val) : val;
-	}
+        return squared ? (val * val) : val;
+    }
 
-	/**
-	 * Get the value of this sum, but using the values passed in place of non-constants for the term.
-	 * Note that the constants still apply.
-	 * This is a fragile function that should only be called by the code that constructed
-	 * this function in the first place,
-	 * The passed in values must only contains entries for non-constant atoms (all constants get merged).
-	 * The passed in values may be larger than the number of values actually used.
-	 */
-	public double getValue(double[] values) {
-		double val = constant;
+    /**
+     * Get the value of this sum, but using the values passed in place of non-constants for the term.
+     * Note that the constants still apply.
+     * This is a fragile function that should only be called by the code that constructed
+     * this function in the first place,
+     * The passed in values must only contains entries for non-constant atoms (all constants get merged).
+     * The passed in values may be larger than the number of values actually used.
+     */
+    public float getValue(float[] values) {
+        float val = constant;
 
-		for (int i = 0; i < size; i++) {
-			val += coefficients[i] * values[i];
-		}
+        for (int i = 0; i < size; i++) {
+            val += coefficients[i] * values[i];
+        }
 
-		if (nonNegative && val < 0.0) {
-			return 0.0;
-		}
+        if (nonNegative && val < 0.0) {
+            return 0.0f;
+        }
 
-		return squared ? (val * val) : val;
-	}
+        return squared ? (val * val) : val;
+    }
 
-	/**
-	 * Get the value of the sum, but replace the value of a single RVA with the given value.
-	 * This should only be called by people who really know what they are doing.
-	 * Note that the value of the RVA is NOT used, it is only used to find the matching function term.
-	 * The general version of would be to just have a map,
-	 * However, the common use case is just having one variable change value and this is typically
-	 * very high traffic making the map (and autoboxing double) overhead noticable.
-	 */
-	public double getValue(GroundAtom replacementAtom, double replacementValue) {
-		double val = constant;
+    /**
+     * Get the value of the sum, but replace the value of a single RVA with the given value.
+     * This should only be called by people who really know what they are doing.
+     * Note that the value of the RVA is NOT used, it is only used to find the matching function term.
+     * The general version of would be to just have a map,
+     * However, the common use case is just having one variable change value and this is typically
+     * very high traffic making the map (and autoboxing float) overhead noticable.
+     */
+    public float getValue(GroundAtom replacementAtom, float replacementValue) {
+        float val = constant;
 
-		// Use numeric for loops instead of iterators in high traffic code.
-		for (int i = 0; i < size; i++) {
-			FunctionTerm term = terms[i];
-			double coefficient = coefficients[i];
+        // Use numeric for loops instead of iterators in high traffic code.
+        for (int i = 0; i < size; i++) {
+            FunctionTerm term = terms[i];
+            float coefficient = coefficients[i];
 
-			// Only one instance of each atom exists and we are not tring to match a query atom.
-			if (term instanceof AtomFunctionVariable &&
-					((AtomFunctionVariable)term).getAtom() == replacementAtom) {
-				val += coefficient * replacementValue;
-			} else {
-				val += coefficient * term.getValue();
-			}
-		}
+            // Only one instance of each atom exists and we are trying to match it directly.
+            if (term == replacementAtom) {
+                val += coefficient * replacementValue;
+            } else {
+                val += coefficient * term.getValue();
+            }
+        }
 
-		if (nonNegative && val < 0.0) {
-			return 0.0;
-		}
+        if (nonNegative && val < 0.0) {
+            return 0.0f;
+        }
 
-		return squared ? (val * val) : val;
-	}
+        return squared ? (val * val) : val;
+    }
 
-	@Override
-	public String toString() {
-		StringBuilder string = new StringBuilder();
+    @Override
+    public String toString() {
+        StringBuilder string = new StringBuilder();
 
-		if (nonNegative) {
-			string.append("max(0.0, ");
-		} else {
-			string.append("(");
-		}
+        if (nonNegative) {
+            string.append("max(0.0, ");
+        } else {
+            string.append("(");
+        }
 
-		string.append(constant);
+        string.append(constant);
 
-		for (int i = 0; i < size; i++) {
-			FunctionTerm term = terms[i];
-			double coefficient = coefficients[i];
+        for (int i = 0; i < size; i++) {
+            FunctionTerm term = terms[i];
+            float coefficient = coefficients[i];
 
-			string.append(" + ");
-			string.append("" + coefficient + " * " + term.toString());
-		}
+            string.append(" + ");
+            string.append("" + coefficient + " * " + term.toString());
+        }
 
-		string.append(")");
+        string.append(")");
 
-		if (squared) {
-			string.append("^2");
-		}
+        if (squared) {
+            string.append("^2");
+        }
 
-		return string.toString();
-	}
+        return string.toString();
+    }
 }

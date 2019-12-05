@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
  */
 package org.linqs.psl.model.rule.logical;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -43,96 +45,137 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class AbstractLogicalRuleTest {
-	private DataStore dataStore;
-	private Database database;
+    private DataStore dataStore;
+    private Database database;
 
-	private StandardPredicate singleClosed;
-	private StandardPredicate doubleClosed;
-	private StandardPredicate singleOpened;
+    private StandardPredicate singleClosed;
+    private StandardPredicate doubleClosed;
+    private StandardPredicate singleOpened;
 
-	@Before
-	public void setup() {
-		dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Memory, this.getClass().getName(), true));
+    @Before
+    public void setup() {
+        dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Memory, this.getClass().getName(), true));
 
-		singleClosed = StandardPredicate.get("SingleClosed", ConstantType.UniqueStringID);
-		dataStore.registerPredicate(singleClosed);
+        singleClosed = StandardPredicate.get("SingleClosed", ConstantType.UniqueStringID);
+        dataStore.registerPredicate(singleClosed);
 
-		doubleClosed = StandardPredicate.get("DoubleClosed", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
-		dataStore.registerPredicate(doubleClosed);
+        doubleClosed = StandardPredicate.get("DoubleClosed", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
+        dataStore.registerPredicate(doubleClosed);
 
-		singleOpened = StandardPredicate.get("SingleOpened", ConstantType.UniqueStringID);
-		dataStore.registerPredicate(singleOpened);
+        singleOpened = StandardPredicate.get("SingleOpened", ConstantType.UniqueStringID);
+        dataStore.registerPredicate(singleOpened);
 
-		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
-		toClose.add(singleClosed);
-		toClose.add(doubleClosed);
-		database = dataStore.getDatabase(dataStore.getNewPartition(), toClose);
-	}
+        Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
+        toClose.add(singleClosed);
+        toClose.add(doubleClosed);
+        database = dataStore.getDatabase(dataStore.getNewPartition(), toClose);
+    }
 
-	@Test
-	public void testBase() {
-		// SingleClosed(A) & DoubleClosed(A, B) -> SingleOpen(B)
-		AbstractLogicalRule rule = new WeightedLogicalRule(
-			new Implication(
-				new Conjunction(
-					new QueryAtom(singleClosed, new Variable("A")),
-					new QueryAtom(doubleClosed, new Variable("A"), new Variable("B"))
-				),
-				new QueryAtom(singleOpened, new Variable("B"))
-			),
-			1.0,
-			true
-		);
+    @After
+    public void cleanup() {
+        database.close();
+        dataStore.close();
+    }
 
-		PSLTest.assertRule(rule, "1.0: ( SINGLECLOSED(A) & DOUBLECLOSED(A, B) ) >> SINGLEOPENED(B) ^2");
-	}
+    @Test
+    public void testBase() {
+        // SingleClosed(A) & DoubleClosed(A, B) -> SingleOpen(B)
+        AbstractLogicalRule rule = new WeightedLogicalRule(
+            new Implication(
+                new Conjunction(
+                    new QueryAtom(singleClosed, new Variable("A")),
+                    new QueryAtom(doubleClosed, new Variable("A"), new Variable("B"))
+                ),
+                new QueryAtom(singleOpened, new Variable("B"))
+            ),
+            1.0,
+            true
+        );
 
-	@Test
-	public void testUnboundVariable() {
-		// SingleClosed(A) & !DoubleClosed(A, B) -> SingleOpen(B)
-		// B is unbound.
-		try {
-			AbstractLogicalRule rule = new WeightedLogicalRule(
-				new Implication(
-					new Conjunction(
-						new QueryAtom(singleClosed, new Variable("A")),
-						new Negation(new QueryAtom(doubleClosed, new Variable("A"), new Variable("B")))
-					),
-					new QueryAtom(singleOpened, new Variable("B"))
-				),
-				1.0,
-				true
-			);
+        PSLTest.assertRule(rule, "1.0: ( SINGLECLOSED(A) & DOUBLECLOSED(A, B) ) >> SINGLEOPENED(B) ^2");
+    }
 
-			fail("An exception was not thrown when a single unbound variable was encountered.");
-		} catch (IllegalArgumentException ex) {
-			assertTrue("Error message does not contain unbound variable.", ex.getMessage().contains("[B]"));
-		}
+    @Test
+    public void testUnboundVariable() {
+        // SingleClosed(A) & !DoubleClosed(A, B) -> SingleOpen(B)
+        // B is unbound.
+        try {
+            AbstractLogicalRule rule = new WeightedLogicalRule(
+                new Implication(
+                    new Conjunction(
+                        new QueryAtom(singleClosed, new Variable("A")),
+                        new Negation(new QueryAtom(doubleClosed, new Variable("A"), new Variable("B")))
+                    ),
+                    new QueryAtom(singleOpened, new Variable("B"))
+                ),
+                1.0,
+                true
+            );
 
-		// !SingleClosed(A) & !DoubleClosed(A, B) -> SingleOpen(B)
-		// A, B are unbound.
-		try {
-			AbstractLogicalRule rule = new WeightedLogicalRule(
-				new Implication(
-					new Conjunction(
-						new Negation(new QueryAtom(singleClosed, new Variable("A"))),
-						new Negation(new QueryAtom(doubleClosed, new Variable("A"), new Variable("B")))
-					),
-					new QueryAtom(singleOpened, new Variable("B"))
-				),
-				1.0,
-				true
-			);
+            fail("An exception was not thrown when a single unbound variable was encountered.");
+        } catch (IllegalArgumentException ex) {
+            assertTrue("Error message does not contain unbound variable.", ex.getMessage().contains("[B]"));
+        }
 
-			fail("An exception was not thrown when two unbound variables were encountered.");
-		} catch (IllegalArgumentException ex) {
-			assertTrue("Error message does not contain unbound variables.", ex.getMessage().contains("[A, B]"));
-		}
-	}
+        // !SingleClosed(A) & !DoubleClosed(A, B) -> SingleOpen(B)
+        // A, B are unbound.
+        try {
+            AbstractLogicalRule rule = new WeightedLogicalRule(
+                new Implication(
+                    new Conjunction(
+                        new Negation(new QueryAtom(singleClosed, new Variable("A"))),
+                        new Negation(new QueryAtom(doubleClosed, new Variable("A"), new Variable("B")))
+                    ),
+                    new QueryAtom(singleOpened, new Variable("B"))
+                ),
+                1.0,
+                true
+            );
 
-	@After
-	public void cleanup() {
-		database.close();
-		dataStore.close();
-	}
+            fail("An exception was not thrown when two unbound variables were encountered.");
+        } catch (IllegalArgumentException ex) {
+            assertTrue("Error message does not contain unbound variables.", ex.getMessage().contains("[A, B]"));
+        }
+    }
+
+    /**
+     * Test a few instances where the hash should match or not match.
+     * The rules will use at most one positive and negative atom so the hash ordering is consistent.
+     */
+    @Test
+    public void testHash() {
+        // SingleClosed(A) -> SingleOpen(A)
+        AbstractLogicalRule rule1 = new WeightedLogicalRule(
+            new Implication(
+                new QueryAtom(singleClosed, new Variable("A")),
+                new QueryAtom(singleOpened, new Variable("A"))
+            ),
+            1.0,
+            true
+        );
+
+        // SingleOpen(A) -> SingleClosed(A)
+        AbstractLogicalRule rule2 = new WeightedLogicalRule(
+            new Implication(
+                new QueryAtom(singleOpened, new Variable("A")),
+                new QueryAtom(singleClosed, new Variable("A"))
+            ),
+            1.0,
+            true
+        );
+
+        // !SingleOpen(A) -> !SingleClosed(A)
+        AbstractLogicalRule rule3 = new WeightedLogicalRule(
+            new Implication(
+                new Negation(new QueryAtom(singleOpened, new Variable("A"))),
+                new Negation(new QueryAtom(singleClosed, new Variable("A")))
+            ),
+            1.0,
+            true
+        );
+
+        assertNotEquals(rule1.hashCode(), rule2.hashCode());
+        assertEquals(rule1.hashCode(), rule3.hashCode());
+        assertNotEquals(rule2.hashCode(), rule3.hashCode());
+    }
 }

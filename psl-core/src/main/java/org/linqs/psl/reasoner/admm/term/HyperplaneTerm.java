@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,111 +17,117 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
-import java.util.ArrayList;
-import java.util.List;
+import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.reasoner.term.Hyperplane;
 
 /**
  * Objective term for an ADMMReasoner that is based on a hyperplane in some way.
  *
- * Stores the characterization of the hyperplane as coeffs^T * x = constant
+ * Stores the characterization of the hyperplane as coefficients^T * x = constant
  * and projects onto the hyperplane.
  *
- * All coeffs must be non-zero.
+ * All coefficients must be non-zero.
  */
 public abstract class HyperplaneTerm extends ADMMObjectiveTerm {
-	protected final List<Float> coeffs;
-	protected final List<Float> unitNormal;
-	protected final float constant;
-	// Only allocate once.
-	protected final float[] point;
+    protected final float[] coefficients;
+    protected final float[] unitNormal;
+    protected final float constant;
+    // Only allocate once.
+    protected final float[] point;
 
-	HyperplaneTerm(List<LocalVariable> variables, List<Float> coeffs, float constant) {
-		super(variables);
+    public HyperplaneTerm(GroundRule groundRule, Hyperplane<LocalVariable> hyperplane) {
+        super(hyperplane, groundRule);
 
-		assert(variables.size() == coeffs.size());
+        this.coefficients = hyperplane.getCoefficients();
+        this.constant = hyperplane.getConstant();
+        this.point = new float[size];
 
-		this.coeffs = coeffs;
-		this.constant = constant;
-		this.point = new float[variables.size()];
+        if (size >= 3) {
+            // Finds a unit vector normal to the hyperplane and a point in the hyperplane for future projections.
+            float length = 0.0f;
+            for (int i = 0; i < size; i++) {
+                length += coefficients[i] * coefficients[i];
+            }
+            length = (float)Math.sqrt(length);
 
-		if (variables.size() >= 3) {
-			/*
-			 * Finds a unit vector normal to the hyperplane and a point in the
-			 * hyperplane for future projections
-			 */
-			float length = 0.0f;
-			for (Float coeff : coeffs) {
-				length += coeff.floatValue() * coeff.floatValue();
-			}
-			length = (float)Math.sqrt(length);
+            unitNormal = new float[size];
+            for (int i = 0; i < size; i++) {
+                unitNormal[i] = coefficients[i] / length;
+            }
+        } else {
+            unitNormal = null;
+        }
+    }
 
-			unitNormal = new ArrayList<Float>(coeffs.size());
-			for (Float coeff : coeffs) {
-				unitNormal.add(coeff.floatValue() / length);
-			}
-		} else {
-			unitNormal = null;
-		}
-	}
+    /**
+     * Finds the orthogonal projection onto the hyperplane <br />
+     * argmin stepSize/2 * \|x - z + y / stepSize \|_2^2 <br />
+     * such that coefficients^T * x = constant.
+     * <p>
+     * Stores the result in x.
+     */
+    protected void project(float stepSize, float[] consensusValues) {
+        // Deal with short hyperplanes specially.
+        if (size == 1) {
+            variables[0].setValue(constant / coefficients[0]);
+            return;
+        }
 
-	/**
-	 * Finds the orthogonal projection onto the hyperplane <br />
-	 * argmin stepSize/2 * \|x - z + y / stepSize \|_2^2 <br />
-	 * such that coeffs^T * x = constant.
-	 * <p>
-	 * Stores the result in x.
-	 */
-	protected void project(float stepSize, float[] consensusValues) {
-		// Deal with short hyperplanes specially.
-		if (variables.size() == 1) {
-			variables.get(0).setValue(constant / coeffs.get(0).floatValue());
-			return;
-		}
+        // Deal with short hyperplanes specially.
+        if (size == 2) {
+            float x0;
+            float x1;
+            float coeff0 = coefficients[0];
+            float coeff1 = coefficients[1];
 
-		// Deal with short hyperplanes specially.
-		if (variables.size() == 2) {
-			float x0;
-			float x1;
-			float coeff0 = coeffs.get(0).floatValue();
-			float coeff1 = coeffs.get(1).floatValue();
+            x0 = stepSize * consensusValues[variables[0].getGlobalId()] - variables[0].getLagrange();
+            x0 -= stepSize * coeff0 / coeff1 * (-1.0 * constant / coeff1 + consensusValues[variables[1].getGlobalId()] - variables[1].getLagrange() / stepSize);
+            x0 /= stepSize * (1.0 + coeff0 * coeff0 / coeff1 / coeff1);
 
-			x0 = stepSize * consensusValues[variables.get(0).getGlobalId()] - variables.get(0).getLagrange();
-			x0 -= stepSize * coeff0 / coeff1 * (-1.0 * constant / coeff1 + consensusValues[variables.get(1).getGlobalId()] - variables.get(1).getLagrange() / stepSize);
-			x0 /= stepSize * (1.0 + coeff0 * coeff0 / coeff1 / coeff1);
+            x1 = (constant - coeff0 * x0) / coeff1;
 
-			x1 = (constant - coeff0 * x0) / coeff1;
+            variables[0].setValue(x0);
+            variables[1].setValue(x1);
 
-			variables.get(0).setValue(x0);
-			variables.get(1).setValue(x1);
+            return;
+        }
 
-			return;
-		}
+        for (int i = 0; i < size; i++) {
+            point[i] = consensusValues[variables[i].getGlobalId()] - variables[i].getLagrange() / stepSize;
+        }
 
-		for (int i = 0; i < variables.size(); i++) {
-			point[i] = consensusValues[variables.get(i).getGlobalId()] - variables.get(i).getLagrange() / stepSize;
-		}
+        // For point (constant / coefficients[0], 0,...) in hyperplane dotted with unitNormal,
+        float multiplier = -1.0f * constant / coefficients[0] * unitNormal[0];
 
-		/* For point (constant / coeffs[0], 0,...) in hyperplane dotted with unitNormal */
-		float multiplier = -1.0f * constant / coeffs.get(0).floatValue() * unitNormal.get(0).floatValue();
+        for (int i = 0; i < size; i++) {
+            multiplier += point[i] * unitNormal[i];
+        }
 
-		for (int i = 0; i < variables.size(); i++) {
-			multiplier += point[i] * unitNormal.get(i).floatValue();
-		}
+        for (int i = 0; i < size; i++) {
+            variables[i].setValue(point[i] - multiplier * unitNormal[i]);
+        }
+    }
 
-		for (int i = 0; i < variables.size(); i++) {
-			variables.get(i).setValue(point[i] - multiplier * unitNormal.get(i).floatValue());
-		}
-	}
+    /**
+     * coefficients^T * x - constant
+     */
+    @Override
+    public float evaluate() {
+        float value = 0.0f;
+        for (int i = 0; i < size; i++) {
+            value += coefficients[i] * variables[i].getValue();
+        }
 
-	/**
-	 * coeffs^T * x - constant
-	 */
-	@Override
-	public float evaluate() {
-		float value = 0.0f;
-		for (int i = 0; i < variables.size(); i++) {
-			value += coeffs.get(i).floatValue() * variables.get(i).getValue();
-		}
-		return value - constant;
-	}
+        return value - constant;
+    }
+
+    @Override
+    public float evaluate(float[] consensusValues) {
+        float value = 0.0f;
+        for (int i = 0; i < size; i++) {
+            value += coefficients[i] * consensusValues[variables[i].getGlobalId()];
+        }
+
+        return value - constant;
+    }
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,59 +25,59 @@ import org.junit.Test;
 import java.util.Arrays;
 
 public class IteratorUtilsTest {
-	@Test
-	public void testPowersetOne() {
-		boolean[][] expected = new boolean[][]{
-			new boolean[]{false},
-			new boolean[]{true},
-		};
+    @Test
+    public void testPowersetOne() {
+        boolean[][] expected = new boolean[][]{
+            new boolean[]{false},
+            new boolean[]{true},
+        };
 
-		int count = 0;
-		for (boolean[] subset : IteratorUtils.powerset(1)) {
-			assertEquals(Arrays.toString(expected[count]), Arrays.toString(subset));
-			count++;
-		}
+        int count = 0;
+        for (boolean[] subset : IteratorUtils.powerset(1)) {
+            assertEquals(Arrays.toString(expected[count]), Arrays.toString(subset));
+            count++;
+        }
 
-		assertEquals(expected.length, count);
-	}
+        assertEquals(expected.length, count);
+    }
 
-	@Test
-	public void testPowersetTwo() {
-		boolean[][] expected = new boolean[][]{
-			new boolean[]{false, false},
-			new boolean[]{true, false},
-			new boolean[]{false, true},
-			new boolean[]{true, true},
-		};
+    @Test
+    public void testPowersetTwo() {
+        boolean[][] expected = new boolean[][]{
+            new boolean[]{false, false},
+            new boolean[]{true, false},
+            new boolean[]{false, true},
+            new boolean[]{true, true},
+        };
 
-		int count = 0;
-		for (boolean[] subset : IteratorUtils.powerset(2)) {
-			assertEquals(Arrays.toString(expected[count]), Arrays.toString(subset));
-			count++;
-		}
+        int count = 0;
+        for (boolean[] subset : IteratorUtils.powerset(2)) {
+            assertEquals(Arrays.toString(expected[count]), Arrays.toString(subset));
+            count++;
+        }
 
-		assertEquals(expected.length, count);
-	}
+        assertEquals(expected.length, count);
+    }
 
-	@Test
-	public void testPowersetThree() {
-		boolean[][] expected = new boolean[][]{
-			new boolean[]{false, false, false},
-			new boolean[]{true, false, false},
-			new boolean[]{false, true, false},
-			new boolean[]{true, true, false},
-			new boolean[]{false, false, true},
-			new boolean[]{true, false, true},
-			new boolean[]{false, true, true},
-			new boolean[]{true, true, true},
-		};
+    @Test
+    public void testPowersetThree() {
+        boolean[][] expected = new boolean[][]{
+            new boolean[]{false, false, false},
+            new boolean[]{true, false, false},
+            new boolean[]{false, true, false},
+            new boolean[]{true, true, false},
+            new boolean[]{false, false, true},
+            new boolean[]{true, false, true},
+            new boolean[]{false, true, true},
+            new boolean[]{true, true, true},
+        };
 
-		int count = 0;
-		for (boolean[] subset : IteratorUtils.powerset(3)) {
-			assertEquals(Arrays.toString(expected[count]), Arrays.toString(subset));
-			count++;
-		}
+        int count = 0;
+        for (boolean[] subset : IteratorUtils.powerset(3)) {
+            assertEquals(Arrays.toString(expected[count]), Arrays.toString(subset));
+            count++;
+        }
 
-		assertEquals(expected.length, count);
-	}
+        assertEquals(expected.length, count);
+    }
 }

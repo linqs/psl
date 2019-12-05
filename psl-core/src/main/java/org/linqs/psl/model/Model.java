@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,102 +17,97 @@
  */
 package org.linqs.psl.model;
 
+import org.linqs.psl.application.ModelApplication;
+import org.linqs.psl.model.rule.Rule;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-import org.linqs.psl.application.ModelApplication;
-import org.linqs.psl.model.rule.Rule;
-
 /**
  * A probabilistic soft logic model.
- *
- * Encapsulates a set of {@link Rule Rules}. A {@link ModelApplication}
- * can be used to combine a Model with data to perform inference or learn.
+ * Encapsulates a set of {@link Rule Rules}.
  */
 public class Model {
-	protected final List<Rule> rules;
+    private static final Logger log = LoggerFactory.getLogger(Model.class);
 
-	/**
-	 * Redundant set for fast membership checks
-	 */
-	protected final Set<Rule> ruleSet;
+    protected final List<Rule> rules;
 
-	public Model() {
-		rules = new LinkedList<Rule>();
-		ruleSet = new HashSet<Rule>();
-	}
+    public Model() {
+        rules = new LinkedList<Rule>();
+    }
 
-	/**
-	 * @return the rules contained in this model
-	 */
-	public List<Rule> getRules() {
-		return Collections.unmodifiableList(rules);
-	}
+    public List<Rule> getRules() {
+        return Collections.unmodifiableList(rules);
+    }
 
-	/**
-	 * Adds a Rule to this Model.
-	 *
-	 * @param rule Rule to add
-	 * @throws IllegalArgumentException if the Rule is already in this Model
-	 */
-	public void addRule(Rule rule) {
-		if (ruleSet.contains(rule)) {
-			throw new IllegalArgumentException("Rule already added to this model.");
-		}
+    /**
+     * Adds a Rule to this Model.
+     *
+     * @throws IllegalArgumentException if the Rule is already in this Model.
+     */
+    public void addRule(Rule rule) {
+        if (rules.contains(rule)) {
+            log.warn("Rule already added to this model, skipping add: " + rule);
+            return;
+        }
 
-		rules.add(rule);
-		ruleSet.add(rule);
-	}
+        if (!rule.requiresSplit()) {
+            rules.add(rule);
+            return;
+        }
 
-	/**
-	 * Removes a Rule from this Model.
-	 *
-	 * @param rule Rule to remove
-	 * @throws IllegalArgumentException if the Rule is not in this Model
-	 */
-	public void removeRule(Rule rule) {
-		if (!ruleSet.contains(rule)) {
-			throw new IllegalArgumentException("Rule not in this model.");
-		}
+        log.info("Rule is being split into multiple rules: {}", rule);
 
-		rules.remove(rule);
-		ruleSet.remove(rule);
-	}
+        // This rule needs to be split into multiple rules.
+        for (Rule splitRule : rule.split()) {
+            rules.add(splitRule);
+        }
+    }
 
-	public void clear() {
-		rules.clear();
-		ruleSet.clear();
-	}
+    /**
+     * Removes a Rule from this Model.
+     *
+     * @throws IllegalArgumentException if the Rule is not in this Model.
+     */
+    public void removeRule(Rule rule) {
+        if (!rules.contains(rule)) {
+            throw new IllegalArgumentException("Rule (" + rule + ") not in this model.");
+        }
 
-	/**
-	 * Returns a String representation of this Model.
-	 *
-	 * @return the String representation
-	 */
-	@Override
-	public String toString() {
-		StringBuilder s = new StringBuilder();
-		s.append("Model:\n");
-		s.append(asString());
-		return s.toString();
-	}
+        rules.remove(rule);
+    }
 
-	/**
-	 * Create a model string that can be directly interpreted by the parser.
-	 */
-	public String asString() {
-		StringBuilder s = new StringBuilder();
-		if (rules.size() > 0) {
-			s.append(rules.get(0));
-		}
+    public void clear() {
+        rules.clear();
+    }
 
-		for (int i = 1; i < rules.size(); i++) {
-			s.append("\n").append(rules.get(i));
-		}
+    @Override
+    public String toString() {
+        StringBuilder s = new StringBuilder();
+        s.append("Model:\n");
+        s.append(asString());
+        return s.toString();
+    }
 
-		return s.toString();
-	}
+    /**
+     * Create a model string that can be directly interpreted by the parser.
+     */
+    public String asString() {
+        StringBuilder s = new StringBuilder();
+        if (rules.size() > 0) {
+            s.append(rules.get(0));
+        }
+
+        for (int i = 1; i < rules.size(); i++) {
+            s.append("\n").append(rules.get(i));
+        }
+
+        return s.toString();
+    }
 }

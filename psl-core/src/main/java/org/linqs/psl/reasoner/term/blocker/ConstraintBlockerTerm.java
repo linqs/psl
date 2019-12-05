@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,13 @@
  */
 package org.linqs.psl.reasoner.term.blocker;
 
-import org.linqs.psl.application.groundrulestore.GroundRuleStore;
+import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.arithmetic.UnweightedGroundArithmeticRule;
 import org.linqs.psl.model.rule.misc.GroundValueConstraint;
-import org.linqs.psl.reasoner.term.Term;
+import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.util.RandUtils;
 
 import java.util.Iterator;
@@ -34,46 +34,47 @@ import java.util.Map;
  * A Term to hold blocks.
  * See {@link ConstraintBlockerTermGenerator} for details on the constraint blocking process.
  */
-public class ConstraintBlockerTerm implements Term {
-	private RandomVariableAtom[] atoms;
-	private WeightedGroundRule[] incidentGRs;
-	private boolean exactlyOne;
+public class ConstraintBlockerTerm implements ReasonerTerm {
+    private RandomVariableAtom[] atoms;
+    private WeightedGroundRule[] incidentGRs;
+    private boolean exactlyOne;
 
-	/**
-	 * Takes ownership of all the passed in arrays.
-	 */
-	public ConstraintBlockerTerm(RandomVariableAtom[] atoms, WeightedGroundRule[] incidentGRs, boolean exactlyOne) {
-		this.atoms = atoms;
-		this.incidentGRs = incidentGRs;
-		this.exactlyOne = exactlyOne;
-	}
+    /**
+     * Takes ownership of all the passed in arrays.
+     */
+    public ConstraintBlockerTerm(RandomVariableAtom[] atoms, WeightedGroundRule[] incidentGRs, boolean exactlyOne) {
+        this.atoms = atoms;
+        this.incidentGRs = incidentGRs;
+        this.exactlyOne = exactlyOne;
+    }
 
-	public RandomVariableAtom[] getAtoms() {
-		return atoms;
-	}
+    public RandomVariableAtom[] getAtoms() {
+        return atoms;
+    }
 
-	public WeightedGroundRule[] getIncidentGRs() {
-		return incidentGRs;
-	}
+    public WeightedGroundRule[] getIncidentGRs() {
+        return incidentGRs;
+    }
 
-	public boolean getExactlyOne() {
-		return exactlyOne;
-	}
+    public boolean getExactlyOne() {
+        return exactlyOne;
+    }
 
-	public int size() {
-		return atoms.length;
-	}
+    @Override
+    public int size() {
+        return atoms.length;
+    }
 
-	/**
-	 * Randomly initializes the RandomVariableAtoms to a feasible state.
-	 */
-	public void randomlyInitialize() {
-		for (RandomVariableAtom atom : atoms) {
-			atom.setValue(0.0);
-		}
+    /**
+     * Randomly initializes the RandomVariableAtoms to a feasible state.
+     */
+    public void randomlyInitialize() {
+        for (RandomVariableAtom atom : atoms) {
+            atom.setValue(0.0f);
+        }
 
-		if (atoms.length > 0 && exactlyOne) {
-			atoms[RandUtils.nextInt(atoms.length)].setValue(1.0);
-		}
-	}
+        if (atoms.length > 0 && exactlyOne) {
+            atoms[RandUtils.nextInt(atoms.length)].setValue(1.0f);
+        }
+    }
 }

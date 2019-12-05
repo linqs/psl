@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,219 +17,445 @@
  */
 package org.linqs.psl.database.rdbms.driver;
 
+import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.rdbms.PredicateInfo;
+import org.linqs.psl.database.rdbms.SelectivityHistogram;
+import org.linqs.psl.database.rdbms.TableStats;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.util.Parallel;
+import org.linqs.psl.util.ListUtils;
 import org.linqs.psl.util.StringUtils;
 
 import com.healthmarketscience.sqlbuilder.CreateTableQuery;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONValue;
 import org.postgresql.PGConnection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * PostgreSQL Connection Wrapper.
  */
 public class PostgreSQLDriver implements DatabaseDriver {
-	public static final String DEFAULT_HOST = "localhost";
-	public static final String DEFAULT_PORT = "5432";
+    public static final String DEFAULT_HOST = "localhost";
+    public static final String DEFAULT_PORT = "5432";
 
-	private final HikariDataSource dataSource;
+    public static final String CONFIG_PREFIX = "postgres";
 
-	public PostgreSQLDriver(String databaseName, boolean clearDatabase) {
-		this(DEFAULT_HOST, DEFAULT_PORT, databaseName, clearDatabase);
-	}
+    public static final String KEY_STATS_PERCENTAGE = CONFIG_PREFIX + ".statspercentage";
+    public static final double DEFAULT_STATS_PERCENTAGE = 0.25;
 
-	public PostgreSQLDriver(String host, String port, String databaseName, boolean clearDatabase) {
-		this(String.format("jdbc:postgresql://%s:%s/%s?loggerLevel=OFF", host, port, databaseName), databaseName, clearDatabase);
-	}
+    private static final int MAX_STATS = 10000;
 
-	public PostgreSQLDriver(String connectionString, String databaseName, boolean clearDatabase) {
-		try {
-			Class.forName("org.postgresql.Driver");
-		} catch (ClassNotFoundException ex) {
-			throw new RuntimeException("Could not find postgres driver. Please check classpath.", ex);
-		}
+    private static final Logger log = LoggerFactory.getLogger(PostgreSQLDriver.class);
 
-		HikariConfig config = new HikariConfig();
-		config.setJdbcUrl(connectionString);
-		config.setMaximumPoolSize(Math.max(8, Parallel.getNumThreads() * 2));
-		config.setMaxLifetime(0);
-		dataSource = new HikariDataSource(config);
+    private final HikariDataSource dataSource;
+    private final double statsPercentage;
 
-		if (clearDatabase) {
-			executeUpdate("DROP SCHEMA public CASCADE");
-			executeUpdate("CREATE SCHEMA public");
-			executeUpdate("GRANT ALL ON SCHEMA public TO public");
-		}
-	}
+    public PostgreSQLDriver(String databaseName, boolean clearDatabase) {
+        this(DEFAULT_HOST, DEFAULT_PORT, databaseName, clearDatabase);
+    }
 
-	@Override
-	public void close() {
-		dataSource.close();
-	}
+    public PostgreSQLDriver(String host, String port, String databaseName, boolean clearDatabase) {
+        this(String.format("jdbc:postgresql://%s:%s/%s?loggerLevel=OFF", host, port, databaseName), databaseName, clearDatabase);
+    }
 
-	@Override
-	public Connection getConnection() {
-		try {
-			return dataSource.getConnection();
-		} catch (SQLException ex) {
-			throw new RuntimeException("Failed to get connection from pool.", ex);
-		}
-	}
+    public PostgreSQLDriver(String connectionString, String databaseName, boolean clearDatabase) {
+        try {
+            Class.forName("org.postgresql.Driver");
+        } catch (ClassNotFoundException ex) {
+            throw new RuntimeException("Could not find postgres driver. Please check classpath.", ex);
+        }
 
-	@Override
-	public boolean supportsBulkCopy() {
-		return true;
-	}
+        log.debug("Connecting to PostgreSQL database: " + databaseName);
 
-	public void bulkCopy(String path, String delimiter, boolean hasTruth,
-			PredicateInfo predicateInfo, Partition partition) {
-		String sql = String.format("COPY %s(%s%s) FROM STDIN WITH DELIMITER '%s'",
-				predicateInfo.tableName(),
-				StringUtils.join(predicateInfo.argumentColumns(), ", "),
-				hasTruth ? (", " + PredicateInfo.VALUE_COLUMN_NAME) : "",
-				delimiter);
+        statsPercentage = Config.getDouble(KEY_STATS_PERCENTAGE, DEFAULT_STATS_PERCENTAGE);
 
-		// First change the tables default value for the partition.
-		setColumnDefault(predicateInfo.tableName(), PredicateInfo.PARTITION_COLUMN_NAME, "'" + partition.getID() + "'");
+        HikariConfig config = new HikariConfig();
+        config.setJdbcUrl(connectionString);
+        config.setMaximumPoolSize(Math.max(8, Parallel.getNumThreads() * 2));
+        config.setMaxLifetime(0);
+        dataSource = new HikariDataSource(config);
 
-		try (
-			Connection connection = getConnection();
-			FileInputStream inFile = new FileInputStream(path);
-		) {
-			PGConnection pgConnection = connection.unwrap(PGConnection.class);
-			pgConnection.getCopyAPI().copyIn(sql, inFile);
-		} catch (SQLException ex) {
-			throw new RuntimeException("Could not perform bulk insert on " + predicateInfo.predicate(), ex);
-		} catch (IOException ex) {
-			throw new RuntimeException("Error bulk copying file: " + path, ex);
-		} finally {
-			// Make sure to change the table's default partition value back (to nothing).
-			dropColumnDefault(predicateInfo.tableName(), PredicateInfo.PARTITION_COLUMN_NAME);
-		}
-	}
+        if (clearDatabase) {
+            executeUpdate("DROP SCHEMA public CASCADE");
+            executeUpdate("CREATE SCHEMA public");
+            executeUpdate("GRANT ALL ON SCHEMA public TO public");
+        }
+    }
 
-	/**
-	 * Set a default value for a column.
-	 * The passed in default should already be prepped to be put in the query
-	 * (ie string values should already be quoted).
-	 */
-	public void setColumnDefault(String tableName, String columnName, String defaultValue) {
-		String sql = String.format("ALTER TABLE %s ALTER COLUMN %s SET DEFAULT %s", tableName, columnName, defaultValue);
+    @Override
+    public void close() {
+        dataSource.close();
+    }
 
-		try (Connection connection = getConnection()) {
-			PreparedStatement statement = connection.prepareStatement(sql);
-			statement.executeUpdate();
-		} catch (SQLException ex) {
-			throw new RuntimeException(String.format("Could not set the column default of %s for %s.%s.",
-					defaultValue, tableName, columnName), ex);
-		}
-	}
+    @Override
+    public Connection getConnection() {
+        try {
+            return dataSource.getConnection();
+        } catch (SQLException ex) {
+            throw new RuntimeException("Failed to get connection from pool.", ex);
+        }
+    }
 
-	/**
-	 * Remove the default value for a column.
-	 */
-	public void dropColumnDefault(String tableName, String columnName) {
-		String sql = String.format("ALTER TABLE %s ALTER COLUMN %s DROP DEFAULT", tableName, columnName);
+    @Override
+    public boolean supportsBulkCopy() {
+        return true;
+    }
 
-		try (Connection connection = getConnection()) {
-			PreparedStatement statement = connection.prepareStatement(sql);
-			statement.executeUpdate();
-		} catch (SQLException ex) {
-			throw new RuntimeException(String.format("Could not drop the column default for %s.%s.",
-					tableName, columnName), ex);
-		}
-	}
+    public void bulkCopy(String path, String delimiter, boolean hasTruth,
+            PredicateInfo predicateInfo, Partition partition) {
+        String sql = String.format("COPY %s(%s%s) FROM STDIN WITH DELIMITER '%s'",
+                predicateInfo.tableName(),
+                ListUtils.join(", ", predicateInfo.argumentColumns()),
+                hasTruth ? (", " + PredicateInfo.VALUE_COLUMN_NAME) : "",
+                delimiter);
 
-	@Override
-	public String getTypeName(ConstantType type) {
-		switch (type) {
-			case Double:
-				return "DOUBLE PRECISION";
-			case Integer:
-				return "INT";
-			case String:
-				return "TEXT";
-			case Long:
-				return "BIGINT";
-			case Date:
-				return "DATE";
-			case UniqueIntID:
-				return "INT";
-			case UniqueStringID:
-				return "TEXT";
-			default:
-				throw new IllegalStateException("Unknown ConstantType: " + type);
-		}
-	}
+        // First change the tables default value for the partition.
+        setColumnDefault(predicateInfo.tableName(), PredicateInfo.PARTITION_COLUMN_NAME, "'" + partition.getID() + "'");
 
-	@Override
-	public String getSurrogateKeyColumnDefinition(String columnName) {
-		return columnName + " SERIAL PRIMARY KEY";
-	}
+        try (
+            Connection connection = getConnection();
+            FileInputStream inFile = new FileInputStream(path);
+        ) {
+            PGConnection pgConnection = connection.unwrap(PGConnection.class);
+            pgConnection.getCopyAPI().copyIn(sql, inFile);
+        } catch (SQLException ex) {
+            throw new RuntimeException("Could not perform bulk insert on " + predicateInfo.predicate(), ex);
+        } catch (IOException ex) {
+            throw new RuntimeException("Error bulk copying file: " + path, ex);
+        } finally {
+            // Make sure to change the table's default partition value back (to nothing).
+            dropColumnDefault(predicateInfo.tableName(), PredicateInfo.PARTITION_COLUMN_NAME);
+        }
+    }
 
-	@Override
-	public String getDoubleTypeName() {
-		return "DOUBLE PRECISION";
-	}
+    /**
+     * Set a default value for a column.
+     * The passed in default should already be prepped to be put in the query
+     * (ie string values should already be quoted).
+     */
+    public void setColumnDefault(String tableName, String columnName, String defaultValue) {
+        String sql = String.format("ALTER TABLE %s ALTER COLUMN %s SET DEFAULT %s", tableName, columnName, defaultValue);
 
-	@Override
-	public String getUpsert(String tableName, String[] columns, String[] keyColumns) {
-		List<String> updateValues = new ArrayList<String>();
-		for (String column : columns) {
-			updateValues.add(String.format("%s = EXCLUDED.%s", column, column));
-		}
+        try (Connection connection = getConnection()) {
+            PreparedStatement statement = connection.prepareStatement(sql);
+            statement.executeUpdate();
+        } catch (SQLException ex) {
+            throw new RuntimeException(String.format("Could not set the column default of %s for %s.%s.",
+                    defaultValue, tableName, columnName), ex);
+        }
+    }
 
-		// PostgreSQL uses the "INSERT ... ON CONFLICT" syntax.
-		List<String> sql = new ArrayList<String>();
-		sql.add("INSERT INTO " + tableName + "");
-		sql.add("	(" + StringUtils.join(columns, ", ") + ")");
-		sql.add("VALUES");
-		sql.add("	(" + StringUtils.repeat("?", ", ", columns.length) + ")");
-		sql.add("ON CONFLICT");
-		sql.add("	(" + StringUtils.join(keyColumns, ", ") + ")");
-		sql.add("DO UPDATE SET");
-		sql.add("	" + StringUtils.join(updateValues, ", "));
+    /**
+     * Remove the default value for a column.
+     */
+    public void dropColumnDefault(String tableName, String columnName) {
+        String sql = String.format("ALTER TABLE %s ALTER COLUMN %s DROP DEFAULT", tableName, columnName);
 
-		return StringUtils.join(sql, "\n");
-	}
+        try (Connection connection = getConnection()) {
+            PreparedStatement statement = connection.prepareStatement(sql);
+            statement.executeUpdate();
+        } catch (SQLException ex) {
+            throw new RuntimeException(String.format("Could not drop the column default for %s.%s.",
+                    tableName, columnName), ex);
+        }
+    }
 
-	private void executeUpdate(String sql) {
-		try (
-			Connection connection = getConnection();
-			Statement stmt = connection.createStatement();
-		) {
-			stmt.executeUpdate(sql);
-		} catch (SQLException ex) {
-			throw new RuntimeException("Failed to execute a general update: [" + sql + "].", ex);
-		}
-	}
+    @Override
+    public String getTypeName(ConstantType type) {
+        switch (type) {
+            case Double:
+                return "DOUBLE PRECISION";
+            case Integer:
+                return "INT";
+            case String:
+                return "TEXT";
+            case Long:
+                return "BIGINT";
+            case UniqueIntID:
+                return "INT";
+            case UniqueStringID:
+                return "TEXT";
+            default:
+                throw new IllegalStateException("Unknown ConstantType: " + type);
+        }
+    }
 
-	@Override
-	public String finalizeCreateTable(CreateTableQuery createTable) {
-		// Use unlogged tables.
-		return createTable.validate().toString().replace("CREATE TABLE", "CREATE UNLOGGED TABLE");
-	}
+    @Override
+    public String getSurrogateKeyColumnDefinition(String columnName) {
+        return columnName + " SERIAL PRIMARY KEY";
+    }
 
-	@Override
-	public String getStringAggregate(String columnName, String delimiter, boolean distinct) {
-		if (delimiter.contains("'")) {
-			throw new IllegalArgumentException("Delimiter (" + delimiter + ") may not contain a single quote.");
-		}
+    @Override
+    public String getDoubleTypeName() {
+        return "DOUBLE PRECISION";
+    }
 
-		return String.format("STRING_AGG(DISTINCT CAST(%s AS TEXT), '%s')",
-				columnName, delimiter);
-	}
+    @Override
+    public String getUpsert(String tableName, String[] columns, String[] keyColumns) {
+        List<String> updateValues = new ArrayList<String>();
+        for (String column : columns) {
+            updateValues.add(String.format("%s = EXCLUDED.%s", column, column));
+        }
+
+        // PostgreSQL uses the "INSERT ... ON CONFLICT" syntax.
+        List<String> sql = new ArrayList<String>();
+        sql.add("INSERT INTO " + tableName + "");
+        sql.add("    (" + StringUtils.join(", ", columns) + ")");
+        sql.add("VALUES");
+        sql.add("    (" + StringUtils.repeat("?", ", ", columns.length) + ")");
+        sql.add("ON CONFLICT");
+        sql.add("    (" + StringUtils.join(", ", keyColumns) + ")");
+        sql.add("DO UPDATE SET");
+        sql.add("    " + ListUtils.join(", ", updateValues));
+
+        return ListUtils.join("\n", sql);
+    }
+
+    private void executeUpdate(String sql) {
+        try (
+            Connection connection = getConnection();
+            Statement stmt = connection.createStatement();
+        ) {
+            stmt.executeUpdate(sql);
+        } catch (SQLException ex) {
+            throw new RuntimeException("Failed to execute a general update: [" + sql + "].", ex);
+        }
+    }
+
+    @Override
+    public String finalizeCreateTable(CreateTableQuery createTable) {
+        // Use unlogged tables.
+        return createTable.validate().toString().replace("CREATE TABLE", "CREATE UNLOGGED TABLE");
+    }
+
+    @Override
+    public String getStringAggregate(String columnName, String delimiter, boolean distinct) {
+        if (delimiter.contains("'")) {
+            throw new IllegalArgumentException("Delimiter (" + delimiter + ") may not contain a single quote.");
+        }
+
+        return String.format("STRING_AGG(DISTINCT CAST(%s AS TEXT), '%s')",
+                columnName, delimiter);
+    }
+
+    @Override
+    public TableStats getTableStats(PredicateInfo predicate) {
+        List<String> sql = new ArrayList<String>();
+        sql.add("SELECT");
+        sql.add("    UPPER(attname) AS col,");
+        sql.add("    (SELECT COUNT(*) FROM " + predicate.tableName() + ") AS tableCount,");
+        sql.add("    CASE WHEN n_distinct >= 0");
+        sql.add("        THEN n_distinct / (SELECT COUNT(*) FROM " + predicate.tableName() + ")");
+        sql.add("        ELSE -1.0 * n_distinct");
+        sql.add("        END AS selectivity,");
+        // Because pg_stats is a special system table,
+        // it does not have entries that specify what type of array it is (what delim it has).
+        // This means that many normal array methods will crash on it.
+        // So instead, we convert it to JSON and parse it outside the DB.
+        sql.add("    array_to_json(histogram_bounds) AS histogram,");
+        sql.add("    array_to_json(most_common_vals) AS most_common_vals,");
+        sql.add("    array_to_json(most_common_freqs) AS most_common_freqs");
+        sql.add("FROM pg_stats");
+        sql.add("WHERE");
+        sql.add("    UPPER(tablename) = '" + predicate.tableName().toUpperCase() + "'");
+        sql.add("    AND UPPER(attname) NOT IN ('PARTITION_ID', 'VALUE')");
+
+        TableStats stats = null;
+
+        // TODO(eriq): Increase the sampling rate of the table (ALTER TABLE SET STATISTICS) before indexing.
+
+        try (
+            Connection connection = getConnection();
+            PreparedStatement statement = connection.prepareStatement(ListUtils.join("\n", sql));
+            ResultSet result = statement.executeQuery();
+        ) {
+            while (result.next()) {
+                if (stats == null) {
+                    stats = new TableStats(result.getInt(2));
+                }
+
+                String columnName = result.getString(1).toUpperCase();
+                stats.addColumnSelectivity(columnName, result.getDouble(3));
+
+                SelectivityHistogram histogram = parseHistogram(result.getString(4), result.getString(5), result.getString(6), stats.getCount());
+                if (histogram != null) {
+                    stats.addColumnHistogram(columnName, histogram);
+                }
+            }
+        } catch (SQLException ex) {
+            throw new RuntimeException("Failed to get stats from table: " + predicate.tableName(), ex);
+        }
+
+        return stats;
+    }
+
+    // Because we do not know what column type we will be dealing with ahead of times, we have some unchecked calls.
+    @SuppressWarnings("unchecked")
+    private SelectivityHistogram parseHistogram(String rawBounds, String rawMostCommonVals, String rawMostCommonCounts, int rowCount) {
+        List<Comparable> bounds = null;
+        List<Integer> counts = null;
+        Map<Comparable, Integer> mostCommonHistogram = null;
+
+        // Try to parse the bucket histogram.
+        if (rawBounds != null) {
+            JSONArray histogram = parseJSONArray(rawBounds);
+
+            if (histogram.size() > 0) {
+                bounds = new ArrayList<Comparable>();
+                counts = new ArrayList<Integer>();
+
+                int bucketCount = rowCount / (histogram.size() - 1);
+                bounds.add(convertHistogramBound(histogram.get(0)));
+
+                for (int i = 1; i < histogram.size(); i++) {
+                    bounds.add(convertHistogramBound(histogram.get(i)));
+                    counts.add(new Integer(bucketCount));
+                }
+            }
+        }
+
+        // Check if the most common values were supplied.
+        if (rawMostCommonVals != null) {
+            JSONArray mostCommonVals = parseJSONArray(rawMostCommonVals);
+            JSONArray mostCommonCounts = parseJSONArray(rawMostCommonCounts);
+
+            if (mostCommonVals.size() > 0) {
+                mostCommonHistogram = new HashMap<Comparable, Integer>();
+
+                for (int i = 0; i < mostCommonVals.size(); i++) {
+                    // The most common values come in as proportion of the total rows in the table.
+                    // So, we will normalize them to raw counts.
+                    double proportion = ((Number)mostCommonCounts.get(i)).doubleValue();
+                    int count = Math.max(1, (int)(proportion * rowCount));
+
+                    mostCommonHistogram.put(convertHistogramBound(mostCommonVals.get(i)), new Integer(count));
+                }
+            }
+        }
+
+        SelectivityHistogram histogram = null;
+
+        if (bounds != null) {
+            histogram = new SelectivityHistogram();
+
+            if (mostCommonHistogram != null) {
+                // If we got both, then put the most common vals back into the buckets.
+                addMostCommonValsToBuckets(bounds, counts, mostCommonHistogram);
+            }
+
+            histogram.addHistogramBounds(bounds, counts);
+        } else if (mostCommonHistogram != null) {
+            histogram = new SelectivityHistogram();
+            histogram.addHistogramExact(mostCommonHistogram);
+        }
+
+        return histogram;
+    }
+
+    // Because we do not know what column type we will be dealing with ahead of times, we have some unchecked calls.
+    @SuppressWarnings("unchecked")
+    private void addMostCommonValsToBuckets(List<Comparable> bounds, List<Integer> counts, Map<Comparable, Integer> mostCommonHistogram) {
+        List<Comparable> sortedKeys = new ArrayList<Comparable>(mostCommonHistogram.keySet());
+        Collections.sort(sortedKeys);
+
+        int currentCommonIndex = 0;
+        int bucketIndex = 0;
+
+        while (true) {
+            // If we examined all the common values, then we are done.
+            if (currentCommonIndex == sortedKeys.size()) {
+                break;
+            }
+            Comparable currentCommonValue = sortedKeys.get(currentCommonIndex);
+
+            // If there are no more buckets, then the common value must be in the last bucket.
+            if (bucketIndex == counts.size()) {
+                currentCommonIndex++;
+
+                int index = counts.size() - 1;
+                counts.set(index, new Integer(counts.get(index).intValue() + mostCommonHistogram.get(currentCommonValue).intValue()));
+
+                continue;
+            }
+
+            Comparable bucketStartValue = bounds.get(bucketIndex + 0);
+            Comparable bucketEndValue = bounds.get(bucketIndex + 1);
+
+            // If the current value is past this bucket, then move the bucket forward.
+            if (currentCommonValue.compareTo(bucketEndValue) > 0) {
+                bucketIndex++;
+                continue;
+            }
+
+            // Now the common value must be either before or in this bucket.
+            // It is only possible to be before this bucket if this is the first bucket.
+            // Either way, put the common value in this bucekt.
+
+            currentCommonIndex++;
+
+            counts.set(bucketIndex, new Integer(counts.get(bucketIndex).intValue() + mostCommonHistogram.get(currentCommonValue).intValue()));
+        }
+    }
+
+    private JSONArray parseJSONArray(String text) {
+        Object parsed = JSONValue.parse(text);
+        if (!(parsed instanceof JSONArray)) {
+            throw new IllegalStateException("Text in unexpected format. Expected JSON array, got: " + parsed.getClass().getName());
+        }
+
+        return (JSONArray)parsed;
+    }
+
+    private Comparable convertHistogramBound(Object bound) {
+        if (bound instanceof Long) {
+            return new Integer(((Long)bound).intValue());
+        } else if (bound instanceof Integer) {
+            return new Integer(((Integer)bound).intValue());
+        } else {
+            return bound.toString();
+        }
+    }
+
+    @Override
+    public void updateDBStats() {
+        executeUpdate("VACUUM ANALYZE");
+    }
+
+    @Override
+    public void updateTableStats(PredicateInfo predicate) {
+        int count = 0;
+        try (Connection connection = getConnection()) {
+            count = predicate.getCount(connection);
+        } catch (SQLException ex) {
+            throw new RuntimeException(String.format("Could not get table count for stats update: " + predicate));
+        }
+
+        int statsCount = (int)Math.min(MAX_STATS, count * statsPercentage);
+        if (statsCount == 0) {
+            return;
+        }
+
+        for (String col : predicate.argumentColumns()) {
+            executeUpdate(String.format("ALTER TABLE %s ALTER COLUMN %s SET STATISTICS %d", predicate.tableName(), col, statsCount));
+        }
+    }
 }

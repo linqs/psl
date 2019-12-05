@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,16 +17,17 @@
  */
 package org.linqs.psl.cli;
 
+import org.linqs.psl.parser.CommandLineLoader;
 import org.junit.Test;
 
 public class VersionTest {
-	@Test
-	public void testBase() {
-		String[] args = {
-			"--" + Launcher.OPTION_VERSION_LONG,
-			"-" + Launcher.OPTION_PROPERTIES, "log4j.threshold=OFF"
-		};
+    @Test
+    public void testBase() {
+        String[] args = {
+            "--" + CommandLineLoader.OPTION_VERSION_LONG,
+            "-" + CommandLineLoader.OPTION_PROPERTIES, "log4j.threshold=OFF"
+        };
 
-		Launcher.main(args, true);
-	}
+        Launcher.main(args, true);
+    }
 }

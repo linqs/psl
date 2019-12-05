@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,56 +29,56 @@ import java.util.List;
  * assignment of truth values to the latent variables during the E-step.
  */
 public class HardEM extends ExpectationMaximization  {
-	/**
-	 * Prefix of property keys used by this class.
-	 */
-	public static final String CONFIG_PREFIX = "hardem";
+    /**
+     * Prefix of property keys used by this class.
+     */
+    public static final String CONFIG_PREFIX = "hardem";
 
-	/**
-	 * Key for Boolean property that indicates whether to use AdaGrad subgradient
-	 * scaling, the adaptive subgradient algorithm of
-	 * John Duchi, Elad Hazan, Yoram Singer (JMLR 2010).
-	 *
-	 * If TRUE, will override other step scheduling options (but not scaling).
-	 */
-	public static final String ADAGRAD_KEY = CONFIG_PREFIX + ".adagrad";
-	public static final boolean ADAGRAD_DEFAULT = false;
+    /**
+     * Key for Boolean property that indicates whether to use AdaGrad subgradient
+     * scaling, the adaptive subgradient algorithm of
+     * John Duchi, Elad Hazan, Yoram Singer (JMLR 2010).
+     *
+     * If TRUE, will override other step scheduling options (but not scaling).
+     */
+    public static final String ADAGRAD_KEY = CONFIG_PREFIX + ".adagrad";
+    public static final boolean ADAGRAD_DEFAULT = false;
 
-	public static final double MIN_SCALING_FACTOR = 1e-8;
+    public static final double MIN_SCALING_FACTOR = 1e-8;
 
-	private final boolean useAdaGrad;
+    private final boolean useAdaGrad;
 
-	public HardEM(Model model, Database rvDB, Database observedDB) {
-		this(model.getRules(), rvDB, observedDB);
-	}
+    public HardEM(Model model, Database rvDB, Database observedDB) {
+        this(model.getRules(), rvDB, observedDB);
+    }
 
-	public HardEM(List<Rule> rules, Database rvDB, Database observedDB) {
-		super(rules, rvDB, observedDB);
-		useAdaGrad = Config.getBoolean(ADAGRAD_KEY, ADAGRAD_DEFAULT);
-	}
+    public HardEM(List<Rule> rules, Database rvDB, Database observedDB) {
+        super(rules, rvDB, observedDB);
+        useAdaGrad = Config.getBoolean(ADAGRAD_KEY, ADAGRAD_DEFAULT);
+    }
 
-	@Override
-	protected double[] computeScalingFactor() {
-		if (!useAdaGrad) {
-			return super.computeScalingFactor();
-		}
+    @Override
+    protected double[] computeScalingFactor() {
+        if (!useAdaGrad) {
+            return super.computeScalingFactor();
+        }
 
-		double [] scalingFactor = new double[mutableRules.size()];
+        double [] scalingFactor = new double[mutableRules.size()];
 
-		// Accumulate gradient
-		// TODO(eriq): The old math here was pretty suspect.
-		//  I cleaned what the code actually did, but I think that could have been bugged.
-		//  (Resulting in a a bugged cleaned version.)
-		for (int i = 0; i < mutableRules.size(); i++) {
-			double weight = mutableRules.get(i).getWeight();
-			double gradient = (
-					expectedIncompatibility[i] - observedIncompatibility[i]
-					- l2Regularization * weight
-					- l1Regularization);
+        // Accumulate gradient
+        // TODO(eriq): The old math here was pretty suspect.
+        //  I cleaned what the code actually did, but I think that could have been bugged.
+        //  (Resulting in a a bugged cleaned version.)
+        for (int i = 0; i < mutableRules.size(); i++) {
+            double weight = mutableRules.get(i).getWeight();
+            double gradient = (
+                    expectedIncompatibility[i] - observedIncompatibility[i]
+                    - l2Regularization * weight
+                    - l1Regularization);
 
-			scalingFactor[i] = Math.max(MIN_SCALING_FACTOR, Math.abs(gradient));
-		}
+            scalingFactor[i] = Math.max(MIN_SCALING_FACTOR, Math.abs(gradient));
+        }
 
-		return scalingFactor;
-	}
+        return scalingFactor;
+    }
 }

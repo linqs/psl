@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,21 +22,21 @@ import org.linqs.psl.reasoner.function.ConstraintTerm;
 
 public interface UnweightedGroundRule extends GroundRule {
 
-	@Override
-	public UnweightedRule getRule();
+    @Override
+    public UnweightedRule getRule();
 
-	public ConstraintTerm getConstraintDefinition();
+    public ConstraintTerm getConstraintDefinition();
 
-	/**
-	 * Returns the infeasibility of the truth values of this GroundRule's
-	 * {@link GroundAtom GroundAtoms}.
-	 * <p>
-	 * Specifically, returns the distance between the value of the constraint's
-	 * functional definition and that function's nearest feasible value.
-	 * <p>
-	 * Infeasibility is always non-negative.
-	 *
-	 * @return the infeasibility of the current truth values
-	 */
-	public double getInfeasibility();
+    /**
+     * Returns the infeasibility of the truth values of this GroundRule's
+     * {@link GroundAtom GroundAtoms}.
+     * <p>
+     * Specifically, returns the distance between the value of the constraint's
+     * functional definition and that function's nearest feasible value.
+     * <p>
+     * Infeasibility is always non-negative.
+     *
+     * @return the infeasibility of the current truth values
+     */
+    public double getInfeasibility();
 }

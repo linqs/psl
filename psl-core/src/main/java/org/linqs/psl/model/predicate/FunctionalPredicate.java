@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,20 +25,20 @@ import org.linqs.psl.model.term.ConstantType;
  * A Predicate with truth values defined by some function.
  */
 public abstract class FunctionalPredicate extends Predicate {
-	protected FunctionalPredicate(String name, ConstantType[] types) {
-		super(name, types, true);
-	}
+    protected FunctionalPredicate(String name, ConstantType[] types) {
+        super(name, types, true);
+    }
 
-	protected FunctionalPredicate(String name, ConstantType[] types, boolean checkName) {
-		super(name, types, checkName);
-	}
+    protected FunctionalPredicate(String name, ConstantType[] types, boolean checkName) {
+        super(name, types, checkName);
+    }
 
-	/**
-	 * Computes the truth value of this Predicate with the given arguments.
-	 *
-	 * @param db the connection to the database which is running this query
-	 * @param args the arguments for which the truth value will be computed
-	 * @return the computed truth value
-	 */
-	public abstract double computeValue(ReadableDatabase db, Constant... args);
+    /**
+     * Computes the truth value of this Predicate with the given arguments.
+     *
+     * @param db the connection to the database which is running this query
+     * @param args the arguments for which the truth value will be computed
+     * @return the computed truth value
+     */
+    public abstract double computeValue(ReadableDatabase db, Constant... args);
 }

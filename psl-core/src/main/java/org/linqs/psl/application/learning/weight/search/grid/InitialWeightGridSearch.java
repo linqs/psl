@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,55 +34,55 @@ import java.util.List;
  * of relying on it to be passed in (we have to ensure that the caller uses the same rules and DBs).
  */
 public class InitialWeightGridSearch extends GridSearch {
-	private static final Logger log = LoggerFactory.getLogger(InitialWeightGridSearch.class);
+    private static final Logger log = LoggerFactory.getLogger(InitialWeightGridSearch.class);
 
-	/**
-	 * The weight lerning application that we will invoke at each location.
-	 */
-	private WeightLearningApplication internalWLA;
+    /**
+     * The weight lerning application that we will invoke at each location.
+     */
+    private WeightLearningApplication internalWLA;
 
-	public InitialWeightGridSearch(Model model, WeightLearningApplication internalWLA, Database rvDB, Database observedDB) {
-		this(model.getRules(), internalWLA, rvDB, observedDB);
-	}
+    public InitialWeightGridSearch(Model model, WeightLearningApplication internalWLA, Database rvDB, Database observedDB) {
+        this(model.getRules(), internalWLA, rvDB, observedDB);
+    }
 
-	/**
-	 * The WeightLearningApplication should not have had initGroundModel() called yet.
-	 */
-	public InitialWeightGridSearch(List<Rule> rules, WeightLearningApplication internalWLA, Database rvDB, Database observedDB) {
-		super(rules, rvDB, observedDB);
+    /**
+     * The WeightLearningApplication should not have had initGroundModel() called yet.
+     */
+    public InitialWeightGridSearch(List<Rule> rules, WeightLearningApplication internalWLA, Database rvDB, Database observedDB) {
+        super(rules, rvDB, observedDB);
 
-		this.internalWLA = internalWLA;
-	}
+        this.internalWLA = internalWLA;
+    }
 
-	@Override
-	protected void postInitGroundModel() {
-		// Init the internal WLA.
-		internalWLA.initGroundModel(
-			this.reasoner,
-			this.groundRuleStore,
-			this.termStore,
-			this.termGenerator,
-			this.atomManager,
-			this.trainingMap
-		);
-	}
+    @Override
+    protected void postInitGroundModel() {
+        // Init the internal WLA.
+        internalWLA.initGroundModel(
+            this.reasoner,
+            this.groundRuleStore,
+            this.termStore,
+            this.termGenerator,
+            this.atomManager,
+            this.trainingMap
+        );
+    }
 
-	@Override
-	protected double inspectLocation(double[] weights) {
-		// Just have the internal WLA learn and then get the loss as the score.
-		internalWLA.learn();
+    @Override
+    protected double inspectLocation(double[] weights) {
+        // Just have the internal WLA learn and then get the loss as the score.
+        internalWLA.learn();
 
-		// Save the learned weights.
-		for (int i = 0; i < mutableRules.size(); i++) {
-			weights[i] = mutableRules.get(i).getWeight();
-		}
+        // Save the learned weights.
+        for (int i = 0; i < mutableRules.size(); i++) {
+            weights[i] = mutableRules.get(i).getWeight();
+        }
 
-		return super.inspectLocation(weights);
-	}
+        return super.inspectLocation(weights);
+    }
 
-	@Override
-	public void close() {
-		super.close();
-		internalWLA.close();
-	}
+    @Override
+    public void close() {
+        super.close();
+        internalWLA.close();
+    }
 }

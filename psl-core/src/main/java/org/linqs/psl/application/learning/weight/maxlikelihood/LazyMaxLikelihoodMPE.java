@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +17,14 @@
  */
 package org.linqs.psl.application.learning.weight.maxlikelihood;
 
-import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 import org.linqs.psl.application.inference.LazyMPEInference;
 import org.linqs.psl.application.learning.weight.VotedPerceptron;
-import org.linqs.psl.application.util.Grounding;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.LazyAtomManager;
 import org.linqs.psl.database.atom.PersistedAtomManager;
+import org.linqs.psl.grounding.GroundRuleStore;
+import org.linqs.psl.grounding.Grounding;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
@@ -59,42 +59,42 @@ import java.util.Set;
  * The model is grown using LazyMPEInference.
  */
 public class LazyMaxLikelihoodMPE extends VotedPerceptron {
-	private static final Logger log = LoggerFactory.getLogger(LazyMaxLikelihoodMPE.class);
+    private static final Logger log = LoggerFactory.getLogger(LazyMaxLikelihoodMPE.class);
 
-	/**
-	 * Prefix of property keys used by this class.
-	 */
-	public static final String CONFIG_PREFIX = "lazymaxlikelihoodmpe";
+    /**
+     * Prefix of property keys used by this class.
+     */
+    public static final String CONFIG_PREFIX = "lazymaxlikelihoodmpe";
 
-	/**
-	 * Key for int property for the maximum number of rounds of lazy growing.
-	 */
-	public static final String MAX_ROUNDS_KEY = CONFIG_PREFIX + ".maxgrowrounds";
-	public static final int MAX_ROUNDS_DEFAULT = 100;
+    /**
+     * Key for int property for the maximum number of rounds of lazy growing.
+     */
+    public static final String MAX_ROUNDS_KEY = CONFIG_PREFIX + ".maxgrowrounds";
+    public static final int MAX_ROUNDS_DEFAULT = 100;
 
-	private int maxRounds;
+    private int maxRounds;
 
-	public LazyMaxLikelihoodMPE(Model model, Database rvDB, Database observedDB) {
-		this(model.getRules(), rvDB, observedDB);
-	}
+    public LazyMaxLikelihoodMPE(Model model, Database rvDB, Database observedDB) {
+        this(model.getRules(), rvDB, observedDB);
+    }
 
-	public LazyMaxLikelihoodMPE(List<Rule> rules, Database rvDB, Database observedDB) {
-		super(rules, rvDB, observedDB, false);
+    public LazyMaxLikelihoodMPE(List<Rule> rules, Database rvDB, Database observedDB) {
+        super(rules, rvDB, observedDB, false);
 
-		maxRounds = Config.getInt(MAX_ROUNDS_KEY, MAX_ROUNDS_DEFAULT);
-	}
+        maxRounds = Config.getInt(MAX_ROUNDS_KEY, MAX_ROUNDS_DEFAULT);
+    }
 
-	@Override
-	protected void computeObservedIncompatibility() {
-		// First grow the atom set (which involves computing the MPE state),
-		// and then just do everything else normally.
-		LazyMPEInference.inference(allRules, reasoner, groundRuleStore, termStore, termGenerator, (LazyAtomManager)atomManager, maxRounds);
+    @Override
+    protected void computeObservedIncompatibility() {
+        // First grow the atom set (which involves computing the MPE state),
+        // and then just do everything else normally.
+        LazyMPEInference.inference(allRules, reasoner, groundRuleStore, termStore, termGenerator, (LazyAtomManager)atomManager, maxRounds);
 
-		super.computeObservedIncompatibility();
-	}
+        super.computeObservedIncompatibility();
+    }
 
-	@Override
-	protected PersistedAtomManager createAtomManager() {
-		return new LazyAtomManager(rvDB);
-	}
+    @Override
+    protected PersistedAtomManager createAtomManager() {
+        return new LazyAtomManager(rvDB);
+    }
 }

@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  - This file is part of the PSL software.
+  - Copyright 2011-2015 University of Maryland
+  - Copyright 2013-2019 The Regents of the University of California
+  -
+  - Licensed under the Apache License, Version 2.0 (the "License");
+  - you may not use this file except in compliance with the License.
+  - You may obtain a copy of the License at
+  -
+  - http://www.apache.org/licenses/LICENSE-2.0
+  -
+  - Unless required by applicable law or agreed to in writing, software
+  - distributed under the License is distributed on an "AS IS" BASIS,
+  - WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  - See the License for the specific language governing permissions and
+  - limitations under the License.
+  -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>org.linqs</groupId>
+    <artifactId>psl-python</artifactId>
+    <name>psl-python</name>
+    <packaging>pom</packaging>
+    <description>The Python inferface to the PSL software.</description>
+
+    <parent>
+        <groupId>org.linqs</groupId>
+        <artifactId>psl</artifactId>
+        <version>2.2.0-SNAPSHOT</version>
+    </parent>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.linqs</groupId>
+            <artifactId>psl-cli</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.6.0</version>
+                <executions>
+                    <!-- Cleanup all the python build artifacts -->
+                    <execution>
+                        <id>python-clean</id>
+                        <phase>clean</phase>
+                        <configuration>
+                            <executable>.build/clean.sh</executable>
+                            <workingDirectory>.</workingDirectory>
+                        </configuration>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                    </execution>
+
+                    <!-- Package into a binary wheel -->
+                    <execution>
+                        <id>python-package</id>
+                        <phase>package</phase>
+                        <configuration>
+                            <executable>.build/package.sh</executable>
+                            <workingDirectory>.</workingDirectory>
+                        </configuration>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                    </execution>
+
+                    <!-- Install the binary wheel -->
+                    <execution>
+                        <id>python-install</id>
+                        <phase>install</phase>
+                        <configuration>
+                            <executable>.build/install.sh</executable>
+                            <workingDirectory>.</workingDirectory>
+                        </configuration>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                    </execution>
+
+                    <!-- Run all the tests -->
+                    <!-- These are actually integration tests since they rely on the packaging. -->
+                    <execution>
+                        <id>python-test</id>
+                        <phase>integration-test</phase>
+                        <configuration>
+                            <skip>${maven.test.skip}</skip>
+                            <executable>python3</executable>
+                            <workingDirectory>.</workingDirectory>
+                            <arguments>
+                                <argument>run_tests.py</argument>
+                            </arguments>
+                        </configuration>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                    </execution>
+
+                    <!-- Deploy the package to test PyPI -->
+                    <execution>
+                        <id>python-deploy</id>
+                        <phase>deploy</phase>
+                        <configuration>
+                            <executable>.build/deploy.sh</executable>
+                            <workingDirectory>.</workingDirectory>
+                            <arguments>
+                                <argument>test</argument>
+                            </arguments>
+                        </configuration>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+
+        <pluginManagement>
+            <plugins>
+                <!-- Disable the deploy plugin for this project. -->
+                <!-- Instead, we will inject specific steps into the deploy phase. -->
+                <plugin>
+                    <artifactId>maven-deploy-plugin</artifactId>
+                    <configuration>
+                        <skip>true</skip>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>central-release</id>
+            <activation>
+                <property>
+                    <name>performRelease</name>
+                    <value>true</value>
+                </property>
+            </activation>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>1.6.0</version>
+                        <executions>
+                            <!-- Deploy the package to PyPI -->
+                            <execution>
+                                <id>python-deploy</id>
+                                <phase>deploy</phase>
+                                <configuration>
+                                    <executable>.build/deploy.sh</executable>
+                                    <workingDirectory>.</workingDirectory>
+                                    <arguments>
+                                        <argument>release</argument>
+                                    </arguments>
+                                </configuration>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+
+                <pluginManagement>
+                    <plugins>
+                        <!-- Disable the deploy plugin for this project. -->
+                        <!-- Instead, we will inject specific steps into the deploy phase. -->
+                        <plugin>
+                            <artifactId>maven-deploy-plugin</artifactId>
+                            <configuration>
+                                <skip>true</skip>
+                            </configuration>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
+            </build>
+        </profile>
+    </profiles>
+
+</project>

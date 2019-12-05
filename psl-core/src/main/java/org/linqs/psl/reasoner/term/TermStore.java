@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,46 +17,59 @@
  */
 package org.linqs.psl.reasoner.term;
 
+import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 /**
  * A place to store terms that are to be optimized.
  */
-public interface TermStore<E extends Term> extends Iterable<E> {
-	/**
-	 * Add a term to the store that was generated from the given ground rule.
-	 */
-	public void add(GroundRule rule, E term);
+public interface TermStore<T extends ReasonerTerm, V extends ReasonerLocalVariable> extends Iterable<T> {
+    /**
+     * Add a term to the store that was generated from the given ground rule.
+     */
+    public void add(GroundRule rule, T term);
 
-	/**
-	 * Remove any existing terms and prepare for a new set.
-	 */
-	public void clear();
+    /**
+     * Remove any existing terms and prepare for a new set.
+     */
+    public void clear();
 
-	/**
-	 * Close down the term store, it will not be used any more.
-	 */
-	public void close();
+    /**
+     * Close down the term store, it will not be used any more.
+     */
+    public void close();
 
-	public E get(int index);
+    public T get(int index);
 
-	public int size();
+    public int size();
 
-	/**
-	 * Ensure that the underlying stuctures can have the required capacity.
-	 * This is more of a hint to the store about how much memory will be used.
-	 * This is best called on an empty store so it can prepare.
-	 */
-	public void ensureCapacity(int capacity);
+    /**
+     * Ensure that the underlying stuctures can have the required term capacity.
+     * This is more of a hint to the store about how much memory will be used.
+     * This is best called on an empty store so it can prepare.
+     */
+    public void ensureCapacity(int capacity);
 
-	public void updateWeight(WeightedGroundRule rule);
+    /**
+     * Ensure that the underlying stuctures can have the required variable capacity.
+     * This is more of a hint to the store about how much memory will be used.
+     * This is best called on an empty store so it can prepare.
+     * Not all term stores will even manage variables.
+     */
+    public void ensureVariableCapacity(int capacity);
 
-	/**
-	 * Get the indicies for all terms related to a specific rule.
-	 */
-	public List<Integer> getTermIndices(WeightedGroundRule rule);
+    /**
+     * Create a variable local to a specific term.
+     */
+    public V createLocalVariable(RandomVariableAtom atom);
+
+    /**
+     * Get an iterator over the terms in the store that does not write to disk.
+     */
+    public Iterator<T> noWriteIterator();
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,402 +36,412 @@ import org.linqs.psl.groovy.PSLModel;
 import java.util.Arrays;
 
 public class PSLModelTest {
-	private PSLModel model;
-	private DataStore dataStore;
+    private PSLModel model;
+    private DataStore dataStore;
 
-	@Before
-	public void setup() {
-		dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Memory, this.getClass().getName(), true));
+    @Before
+    public void setup() {
+        dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Memory, this.getClass().getName(), true));
 
-		model = new PSLModel(this, dataStore);
+        model = new PSLModel(this, dataStore);
 
-		model.add(predicate: "Single", types: [ConstantType.UniqueStringID]);
-		model.add(predicate: "Double", types: [ConstantType.UniqueStringID, ConstantType.UniqueStringID]);
-		model.add(predicate: "Sim", types: [ConstantType.UniqueStringID, ConstantType.UniqueStringID]);
-	}
+        model.add(predicate: "Single", types: [ConstantType.UniqueStringID]);
+        model.add(predicate: "Double", types: [ConstantType.UniqueStringID, ConstantType.UniqueStringID]);
+        model.add(predicate: "Sim", types: [ConstantType.UniqueStringID, ConstantType.UniqueStringID]);
+    }
 
-	/**
-	 * Convenience call for the common functionality of assertModel() (alphabetize).
-	 */
-	public void assertModel(String[] expectedRules) {
-		assertModel(expectedRules, true);
-	}
+    /**
+     * Convenience call for the common functionality of assertModel() (alphabetize).
+     */
+    public void assertModel(String[] expectedRules) {
+        assertModel(expectedRules, true);
+    }
 
-	/**
-	 * Assert that the current model has the given rules.
-	 *
-	 * If, for some reason, the exact format of the output is not known (like with summations which
-	 * may order the summation terms in different ways), then you can use |alphabetize| to sort all
-	 * characters in both strings (actual and expected) before comparing.
-	 * Only alphabetize if it is really necessary since it makes the output much harder to interpret.
-	 */
-	public void assertModel(String[] expectedRules, boolean alphabetize) {
-		int ruleCount = 0;
+    /**
+     * Assert that the current model has the given rules.
+     *
+     * If, for some reason, the exact format of the output is not known (like with summations which
+     * may order the summation terms in different ways), then you can use |alphabetize| to sort all
+     * characters in both strings (actual and expected) before comparing.
+     * Only alphabetize if it is really necessary since it makes the output much harder to interpret.
+     */
+    public void assertModel(String[] expectedRules, boolean alphabetize) {
+        int ruleCount = 0;
 
-		if (alphabetize) {
-			for (Rule rule : model.getRules()) {
-				String alphaRule = sort(rule.toString());
-				String alphaExpected = sort(expectedRules[ruleCount]);
+        if (alphabetize) {
+            for (Rule rule : model.getRules()) {
+                String alphaRule = sort(rule.toString());
+                String alphaExpected = sort(expectedRules[ruleCount]);
 
-				assertEquals(
-						String.format("Rule %d mismatch. Expected (before alphabetizing): [%s], found [%s].", ruleCount, expectedRules[ruleCount], rule.toString()),
-						alphaExpected,
-						alphaRule
-				);
-				ruleCount++;
-			}
-		} else {
-			for (Rule rule : model.getRules()) {
-				assertEquals(
-						String.format("Rule %d mismatch. Expected: [%s], found [%s].", ruleCount, expectedRules[ruleCount], rule.toString()),
-						expectedRules[ruleCount],
-						rule.toString()
-				);
-				ruleCount++;
-			}
-		}
+                assertEquals(
+                        String.format("Rule %d mismatch. Expected (before alphabetizing): [%s], found [%s].", ruleCount, expectedRules[ruleCount], rule.toString()),
+                        alphaExpected,
+                        alphaRule
+                );
+                ruleCount++;
+            }
+        } else {
+            for (Rule rule : model.getRules()) {
+                assertEquals(
+                        String.format("Rule %d mismatch. Expected: [%s], found [%s].", ruleCount, expectedRules[ruleCount], rule.toString()),
+                        expectedRules[ruleCount],
+                        rule.toString()
+                );
+                ruleCount++;
+            }
+        }
 
-		assertEquals("Mismatch in expected rule count.", expectedRules.length, ruleCount);
-	}
+        assertEquals("Mismatch in expected rule count.", expectedRules.length, ruleCount);
+    }
 
-	/**
-	 * Compare two Arrays of strings for equality.
-	 *
-	 * If, for some reason, the content but not exact format of the output is not known;
-	 * then you can use |alphabetize| to sort all
-	 * characters in both strings (actual and expected) before comparing.
-	 * Only alphabetize if it is really necessary because it can hide errors in order that are expected.
-	 */
-	public static void compareStrings(String[] expected, String[] actual, boolean alphabetize) {
-		assertEquals("Size mismatch.", expected.length, actual.length);
+    /**
+     * Compare two Arrays of strings for equality.
+     *
+     * If, for some reason, the content but not exact format of the output is not known;
+     * then you can use |alphabetize| to sort all
+     * characters in both strings (actual and expected) before comparing.
+     * Only alphabetize if it is really necessary because it can hide errors in order that are expected.
+     */
+    public static void compareStrings(String[] expected, String[] actual, boolean alphabetize) {
+        assertEquals("Size mismatch.", expected.length, actual.length);
 
-		for (int i = 0; i < expected.length; i++) {
-			if (alphabetize) {
-				assertEquals(
-					String.format("String %d mismatch. (Before alphabetize) expected: [%s], found [%s].", i, expected[i], actual[i]),
-					sort(expected[i]),
-					sort(actual[i])
-				);
-			} else {
-				assertEquals(
-					String.format("String %d mismatch. Expected: [%s], found [%s].", i, expected[i], actual[i]),
-					expected[i],
-					actual[i]
-				);
-			}
-		}
-	}
+        for (int i = 0; i < expected.length; i++) {
+            if (alphabetize) {
+                assertEquals(
+                    String.format("String %d mismatch. (Before alphabetize) expected: [%s], found [%s].", i, expected[i], actual[i]),
+                    sort(expected[i]),
+                    sort(actual[i])
+                );
+            } else {
+                assertEquals(
+                    String.format("String %d mismatch. Expected: [%s], found [%s].", i, expected[i], actual[i]),
+                    expected[i],
+                    actual[i]
+                );
+            }
+        }
+    }
 
-	private static String sort(String string) {
-		char[] chars = string.toCharArray();
-		Arrays.sort(chars);
-		return new String(chars);
-	}
+    private static String sort(String string) {
+        char[] chars = string.toCharArray();
+        Arrays.sort(chars);
+        return new String(chars);
+    }
 
-	@Test
-	// We already added predicates in setup(), but we will duplicate it for those just reading test lists.
-	public void testBaseAddPredicate() {
-		model.add(predicate: "TestSingle", types: [ConstantType.UniqueStringID]);
-		model.add(predicate: "TestSim", types: [ConstantType.UniqueStringID, ConstantType.UniqueStringID]);
-	}
+    @Test
+    // We already added predicates in setup(), but we will duplicate it for those just reading test lists.
+    public void testBaseAddPredicate() {
+        model.add(predicate: "TestSingle", types: [ConstantType.UniqueStringID]);
+        model.add(predicate: "TestSim", types: [ConstantType.UniqueStringID, ConstantType.UniqueStringID]);
+    }
 
-	@Test
-	public void testBaseAddRuleSyntactic() {
-		model.add(
-			rule: (Single(A) & Sim(A, B)) >> Single(B),
-			squared: true,
-			weight: 1
-		);
+    @Test
+    public void testBaseAddRuleSyntactic() {
+        model.add(
+            rule: (Single(A) & Sim(A, B)) >> Single(B),
+            squared: true,
+            weight: 1
+        );
 
-		String[] expected = [
-			"1.0: ( SINGLE(A) & SIM(A, B) ) >> SINGLE(B) ^2"
-		];
+        String[] expected = [
+            "1.0: ( SINGLE(A) & SIM(A, B) ) >> SINGLE(B) ^2"
+        ];
 
-		assertModel(expected);
-	}
+        assertModel(expected);
+    }
 
-	@Test
-	public void testBaseAddRuleString() {
-		model.add(
-			rule: "1: Single(A) & Sim(A, B) >> Single(B) ^2"
-		);
+    @Test
+    public void testBaseAddRuleString() {
+        model.add(
+            rule: "1: Single(A) & Sim(A, B) >> Single(B) ^2"
+        );
 
-		String[] expected = [
-			"1.0: ( SINGLE(A) & SIM(A, B) ) >> SINGLE(B) ^2"
-		];
+        String[] expected = [
+            "1.0: ( SINGLE(A) & SIM(A, B) ) >> SINGLE(B) ^2"
+        ];
 
-		assertModel(expected);
-	}
+        assertModel(expected);
+    }
 
-	@Test
-	public void testStringRuleBadArgs() {
-		try {
-			model.add(
-				rule: "1: Single(A) & Sim(A, B) >> Single(B) ^2",
-				squared: true,
-				weight: 1
-			);
-			fail("IllegalArgumentException not thrown when more than just string rule is supplied to add.");
-		} catch (IllegalArgumentException ex) {
-			// Exception expected.
-		}
+    @Test
+    public void testStringRuleBadArgs() {
+        try {
+            model.add(
+                rule: "1: Single(A) & Sim(A, B) >> Single(B) ^2",
+                squared: true,
+                weight: 1
+            );
+            fail("IllegalArgumentException not thrown when more than just string rule is supplied to add.");
+        } catch (IllegalArgumentException ex) {
+            // Exception expected.
+        }
 
-		try {
-			model.add(
-				rule: "1: Single(A) & Sim(A, B) >> Single(B) ^2",
-				squared: true
-			);
-			fail("IllegalArgumentException not thrown when more than just string rule is supplied to add.");
-		} catch (IllegalArgumentException ex) {
-			// Exception expected.
-		}
+        try {
+            model.add(
+                rule: "1: Single(A) & Sim(A, B) >> Single(B) ^2",
+                squared: true
+            );
+            fail("IllegalArgumentException not thrown when more than just string rule is supplied to add.");
+        } catch (IllegalArgumentException ex) {
+            // Exception expected.
+        }
 
-		try {
-			model.add(
-				rule: "1: Single(A) & Sim(A, B) >> Single(B) ^2",
-				weight: 1
-			);
-			fail("IllegalArgumentException not thrown when more than just string rule is supplied to add.");
-		} catch (IllegalArgumentException ex) {
-			// Exception expected.
-		}
+        try {
+            model.add(
+                rule: "1: Single(A) & Sim(A, B) >> Single(B) ^2",
+                weight: 1
+            );
+            fail("IllegalArgumentException not thrown when more than just string rule is supplied to add.");
+        } catch (IllegalArgumentException ex) {
+            // Exception expected.
+        }
 
-		try {
-			model.add(
-				rule: "Single(A) & Sim(A, B) >> Single(B)",
-				weight: 1
-			);
-			fail("IllegalArgumentException not thrown when only one argument was supplied to a partial.");
-		} catch (IllegalArgumentException ex) {
-			// Exception expected.
-		}
+        try {
+            model.add(
+                rule: "Single(A) & Sim(A, B) >> Single(B)",
+                weight: 1
+            );
+            fail("IllegalArgumentException not thrown when only one argument was supplied to a partial.");
+        } catch (IllegalArgumentException ex) {
+            // Exception expected.
+        }
 
-		try {
-			model.add(
-				rule: "Single(A) & Sim(A, B) >> Single(B)",
-				squared: true
-			);
-			fail("IllegalArgumentException not thrown when only one argument was supplied to a partial.");
-		} catch (IllegalArgumentException ex) {
-			// Exception expected.
-		}
-	}
+        try {
+            model.add(
+                rule: "Single(A) & Sim(A, B) >> Single(B)",
+                squared: true
+            );
+            fail("IllegalArgumentException not thrown when only one argument was supplied to a partial.");
+        } catch (IllegalArgumentException ex) {
+            // Exception expected.
+        }
+    }
 
-	@Test
-	// String rules take no arguments except for the rule itself.
-	public void testStringRuleArgs() {
-		model.add(
-			rule: "Single(A) & Sim(A, B) >> Single(B)",
-			squared: true,
-			weight: 1
-		);
+    @Test
+    // String rules take no arguments except for the rule itself.
+    public void testStringRuleArgs() {
+        model.add(
+            rule: "Single(A) & Sim(A, B) >> Single(B)",
+            squared: true,
+            weight: 1
+        );
 
-		model.add(
-			rule: "Single(A) & Sim(A, B) >> Single(B)",
-			squared: false,
-			weight: 5
-		);
+        model.add(
+            rule: "Single(A) & Sim(A, B) >> Single(B)",
+            squared: false,
+            weight: 5
+        );
 
-		model.add(
-			rule: "Single(A) & Sim(A, B) >> Single(B) ."
-		);
+        model.add(
+            rule: "Single(A) & Sim(A, B) >> Single(B) ."
+        );
 
-		String[] expected = [
-			"1.0: ( SINGLE(A) & SIM(A, B) ) >> SINGLE(B) ^2",
-			"5.0: ( SINGLE(A) & SIM(A, B) ) >> SINGLE(B)",
-			"( SINGLE(A) & SIM(A, B) ) >> SINGLE(B) ."
-		];
+        String[] expected = [
+            "1.0: ( SINGLE(A) & SIM(A, B) ) >> SINGLE(B) ^2",
+            "5.0: ( SINGLE(A) & SIM(A, B) ) >> SINGLE(B)",
+            "( SINGLE(A) & SIM(A, B) ) >> SINGLE(B) ."
+        ];
 
-		assertModel(expected);
-	}
+        assertModel(expected);
+    }
 
-	@Test
-	public void testAddRules() {
-		String input =
-			"~Single(A) .\n" +
-			"1: Single(A) & Double(A, B) >> Single(B) ^2\n" +
-			"5: Single(B) & Double(B, A) >> Single(A) ^2\n" +
-			"1: Single(A) & Double(A, \"bar\") & Single(\"bar\") >> Double(A, \"bar\") ^2\n" +
-			"1: Single(B) & Double(B, 'bar') & Single('bar') >> Double(B, 'bar') ^2\n" +
-			"1: 1 Single(A) = 1 ^2\n" +
-			"1: 1.0 Single(A) = 1 ^2\n" +
-			"1: 1.5 Single(A) = 1 ^2\n" +
-			"1: 0.5 Single(A) = 1 ^2\n" +
-			"1: -1.0 Single(A) = 1 ^2\n" +
-			"1: 5E10 Single(A) = 1 ^2\n" +
-			"1: 5e10 Single(A) = 1 ^2\n" +
-			"1: -5e10 Single(A) = 1 ^2\n" +
-			"1: 5e-10 Single(A) = 1 ^2\n" +
-			"1: 1.2e10 Single(A) = 1 ^2\n" +
-			"1: -1.2e10 Single(A) = 1 ^2\n" +
-			"1: 1.2e-10 Single(A) = 1 ^2\n" +
-			"1: Single(A1) >> Single(A1) ^2\n" +
-			"1: Single(A1A) >> Single(A1A) ^2\n" +
-			"1: Single(A_A) >> Single(A_A) ^2\n" +
-			"1: Single(A_1) >> Single(A_1) ^2\n" +
-			"1: Single(A__) >> Single(A__) ^2\n" +
-			"1: Single(A) >> Single(A)\n" +
-			"0: Single(A) >> Single(A)\n" +
-			"0.5: Single(A) >> Single(A)\n" +
-			"999999: Single(A) >> Single(A)\n" +
-			"9999999999: Single(A) >> Single(A)\n" +
-			"0000000001: Single(B) >> Single(B)\n" +
-			"0.001: Single(A) >> Single(A)\n" +
-			"0.00001: Single(A) >> Single(A)\n" +
-			"2E10: Single(A) >> Single(A)\n" +
-			"2e10: Single(B) >> Single(B)\n" +
-			"2e-10: Single(B) >> Single(B)\n" +
-			"2.5e10: Single(A) >> Single(A)\n" +
-			"2.5e-10: Single(C) >> Single(C)\n" +
-			"1: Single(D) << Single(C) & Double(C, D) ^2\n" +
-			"1: Single(A) | Double(A, B) << Single(B) & Single(A) ^2\n" +
-			"1: Single(A) & Double(B, C) >> Single(B) | Single(C) ^2\n" +
-			"1: ~Single(A) & Double(A, B) >> ~Single(B) ^2\n" +
-			"1: A == B & Double(A, B) >> Single(B) ^2\n" +
-			"1: A == 'Bar' & Double(A, B) >> Single(B) ^2\n" +
-			"1: 'Foo' == B & Double(A, B) >> Single(B) ^2\n" +
-			"1: 'Foo' == 'Bar' & Double(A, B) >> Single(B) ^2\n" +
-			"1: A ~= B & Double(A, B) >> Single(B) ^2\n" +
-			"1: A ~= 'Bar' & Double(A, B) >> Single(B) ^2\n" +
-			"1: 'Foo' ~= B & Double(A, B) >> Single(B) ^2\n" +
-			"1: 'Foo' ~= 'Bar' & Double(A, B) >> Single(B) ^2\n" +
-			"1: Single(A) & Double(A, B) >> Single(B)\n" +
-			"1: Single(C) && Double(C, D) >> Single(D)\n" +
-			"1: Single(E) & Double(E, F) >> Single(F)\n" +
-			"1: Single(G) & Double(G, H) -> Single(H)\n" +
-			"1: Single(A) | Single(B) << Double(A, B)\n" +
-			"1: Single(C) || Single(D) << Double(C, D)\n" +
-			"1: Single(G) | Single(H) << Double(G, H)\n" +
-			"1: Single(I) | Single(J) <- Double(I, J)\n" +
-			"1: A != B & Double(A, B) >> Single(B)\n" +
-			"1: C ~= D & Double(C, D) >> Single(D)\n" +
-			"1: 1 Single(A) = 1 ^2\n" +
-			"1: 1 * Single(B) = 1 ^2\n" +
-			"Single(A) + Single(B) = 1 .\n" +
-			"Double(+A, 'Foo') = 1 .\n" +
-			"Single(+A) + Single(+B) = 1 .\n" +
-			"Single(+A) = 1 . {A: Single(A)}\n" +
-			"Single(+A) = 1 . {A: Single(A) || Double(A, A) }\n" +
-			"Double(+A, B) = 1 . {A: Single(B)}\n" +
-			"Single(+A) + Single(+B) = 1 . {A: Single(A)} {B: Single(B)}\n" +
-			"|A| Single(+A) = 1 .\n" +
-			"|A| Single(+A) = |A| .\n" +
-			"|A| Single(+A) + |B| Single(+B) = 1 .\n" +
-			"@Max[|A|, 0] Single(+A) = 1 .\n" +
-			"@Max[1, 0] Single(+A) = 1 .\n" +
-			"@Max[|A|, |B|] Single(+A) + Single(+B) = 1 .\n" +
-			"@Min[1, 0] Single(A) = 1 .\n" +
-			""
-		;
+    @Test
+    public void testAddRules() {
+        String input =
+            "~Single(A) .\n" +
+            "1: Single(A) & Double(A, B) >> Single(B) ^2\n" +
+            "5: Single(B) & Double(B, A) >> Single(A) ^2\n" +
+            "1: Single(A) & Double(A, \"bar\") & Single(\"bar\") >> Double(A, \"bar\") ^2\n" +
+            "1: Single(B) & Double(B, 'bar') & Single('bar') >> Double(B, 'bar') ^2\n" +
+            "1: 1 Single(A) = 1 ^2\n" +
+            "1: 1.0 Single(A) = 1 ^2\n" +
+            "1: 1.5 Single(A) = 1 ^2\n" +
+            "1: 0.5 Single(A) = 1 ^2\n" +
+            "1: -1.0 Single(A) = 1 ^2\n" +
+            "1: 5E6 Single(A) = 1 ^2\n" +
+            "1: 5e6 Single(A) = 1 ^2\n" +
+            "1: -5e6 Single(A) = 1 ^2\n" +
+            // "1: 5e-6 Single(A) = 1 ^2\n" +
+            "1: 1.2e6 Single(A) = 1 ^2\n" +
+            "1: -1.2e6 Single(A) = 1 ^2\n" +
+            // "1: 1.2e-6 Single(A) = 1 ^2\n" +
+            "1: Single(A1) >> Single(A1) ^2\n" +
+            "1: Single(A1A) >> Single(A1A) ^2\n" +
+            "1: Single(A_A) >> Single(A_A) ^2\n" +
+            "1: Single(A_1) >> Single(A_1) ^2\n" +
+            "1: Single(A__) >> Single(A__) ^2\n" +
+            "1: Single(A) >> Single(A)\n" +
+            "0: Single(A) >> Single(A)\n" +
+            "0.5: Single(A) >> Single(A)\n" +
+            "999999: Single(A) >> Single(A)\n" +
+            "9999999999: Single(A) >> Single(A)\n" +
+            "0000000001: Single(B) >> Single(B)\n" +
+            "0.001: Single(A) >> Single(A)\n" +
+            "0.00001: Single(A) >> Single(A)\n" +
+            "2E6: Single(A) >> Single(A)\n" +
+            "2e6: Single(B) >> Single(B)\n" +
+            // "2e-6: Single(B) >> Single(B)\n" +
+            "2.5e6: Single(A) >> Single(A)\n" +
+            // "2.5e-6: Single(C) >> Single(C)\n" +
+            "1: Single(D) << Single(C) & Double(C, D) ^2\n" +
+            "1: Single(A) | Double(A, B) << Single(B) & Single(A) ^2\n" +
+            "1: Single(A) & Double(B, C) >> Single(B) | Single(C) ^2\n" +
+            "1: ~Single(A) & Double(A, B) >> ~Single(B) ^2\n" +
+            "1: A == B & Double(A, B) >> Single(B) ^2\n" +
+            "1: A == 'Bar' & Double(A, B) >> Single(B) ^2\n" +
+            "1: 'Foo' == B & Double(A, B) >> Single(B) ^2\n" +
+            "1: 'Foo' == 'Bar' & Double(A, B) >> Single(B) ^2\n" +
+            "1: A ~= B & Double(A, B) >> Single(B) ^2\n" +
+            "1: A ~= 'Bar' & Double(A, B) >> Single(B) ^2\n" +
+            "1: 'Foo' ~= B & Double(A, B) >> Single(B) ^2\n" +
+            "1: 'Foo' ~= 'Bar' & Double(A, B) >> Single(B) ^2\n" +
+            "1: Single(A) & Double(A, B) >> Single(B)\n" +
+            "1: Single(C) && Double(C, D) >> Single(D)\n" +
+            "1: Single(E) & Double(E, F) >> Single(F)\n" +
+            "1: Single(G) & Double(G, H) -> Single(H)\n" +
+            "1: Single(A) | Single(B) << Double(A, B)\n" +
+            "1: Single(C) || Single(D) << Double(C, D)\n" +
+            "1: Single(G) | Single(H) << Double(G, H)\n" +
+            "1: Single(I) | Single(J) <- Double(I, J)\n" +
+            "1: A != B & Double(A, B) >> Single(B)\n" +
+            "1: C ~= D & Double(C, D) >> Single(D)\n" +
+            "1: 1 Single(A) = 1 ^2\n" +
+            "1: 1 * Single(B) = 1 ^2\n" +
+            "Single(A) + Single(B) = 1 .\n" +
+            "Double(+A, 'Foo') = 1 .\n" +
+            "Single(+A) + Single(+B) = 1 .\n" +
+            "Single(+A) = 1 . {A: Single(A)}\n" +
+            "Double(+A, B) = 1 . {A: Single(B)}\n" +
+            "Single(+A) + Single(+B) = 1 . {A: Single(A)} {B: Single(B)}\n" +
+            "|A| Single(+A) = 1 .\n" +
+            "|A| Single(+A) = |A| .\n" +
+            "|A| Single(+A) + |B| Single(+B) = 1 .\n" +
+            "@Max[|A|, 0] Single(+A) = 1 .\n" +
+            "@Max[1, 0] Single(+A) = 1 .\n" +
+            "@Max[|A|, |B|] Single(+A) + Single(+B) = 1 .\n" +
+            "@Min[1, 0] Single(A) = 1 .\n" +
+            "Single(+A) = 1 . {A: Single(A) || Double(A, A) }\n" +
+            ""
+        ;
 
-		String[] expected = [
-			"~( SINGLE(A) ) .",
-			"1.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) ^2",
-			"5.0: ( SINGLE(B) & DOUBLE(B, A) ) >> SINGLE(A) ^2",
-			"1.0: ( SINGLE(A) & DOUBLE(A, 'bar') & SINGLE('bar') ) >> DOUBLE(A, 'bar') ^2",
-			"1.0: ( SINGLE(B) & DOUBLE(B, 'bar') & SINGLE('bar') ) >> DOUBLE(B, 'bar') ^2",
-			"1.0: 1.0 * SINGLE(A) = 1.0 ^2",
-			"1.0: 1.0 * SINGLE(A) = 1.0 ^2",
-			"1.0: 1.5 * SINGLE(A) = 1.0 ^2",
-			"1.0: 0.5 * SINGLE(A) = 1.0 ^2",
-			"1.0: -1.0 * SINGLE(A) = 1.0 ^2",
-			"1.0: 5.0E10 * SINGLE(A) = 1.0 ^2",
-			"1.0: 5.0E10 * SINGLE(A) = 1.0 ^2",
-			"1.0: -5.0E10 * SINGLE(A) = 1.0 ^2",
-			"1.0: 5.0E-10 * SINGLE(A) = 1.0 ^2",
-			"1.0: 1.2E10 * SINGLE(A) = 1.0 ^2",
-			"1.0: -1.2E10 * SINGLE(A) = 1.0 ^2",
-			"1.0: 1.2E-10 * SINGLE(A) = 1.0 ^2",
-			"1.0: SINGLE(A1) >> SINGLE(A1) ^2",
-			"1.0: SINGLE(A1A) >> SINGLE(A1A) ^2",
-			"1.0: SINGLE(A_A) >> SINGLE(A_A) ^2",
-			"1.0: SINGLE(A_1) >> SINGLE(A_1) ^2",
-			"1.0: SINGLE(A__) >> SINGLE(A__) ^2",
-			"1.0: SINGLE(A) >> SINGLE(A)",
-			"0.0: SINGLE(A) >> SINGLE(A)",
-			"0.5: SINGLE(A) >> SINGLE(A)",
-			"999999.0: SINGLE(A) >> SINGLE(A)",
-			"9.999999999E9: SINGLE(A) >> SINGLE(A)",
-			"1.0: SINGLE(B) >> SINGLE(B)",
-			"0.001: SINGLE(A) >> SINGLE(A)",
-			"1.0E-5: SINGLE(A) >> SINGLE(A)",
-			"2.0E10: SINGLE(A) >> SINGLE(A)",
-			"2.0E10: SINGLE(B) >> SINGLE(B)",
-			"2.0E-10: SINGLE(B) >> SINGLE(B)",
-			"2.5E10: SINGLE(A) >> SINGLE(A)",
-			"2.5E-10: SINGLE(C) >> SINGLE(C)",
-			"1.0: ( SINGLE(C) & DOUBLE(C, D) ) >> SINGLE(D) ^2",
-			"1.0: ( SINGLE(B) & SINGLE(A) ) >> ( SINGLE(A) | DOUBLE(A, B) ) ^2",
-			"1.0: ( SINGLE(A) & DOUBLE(B, C) ) >> ( SINGLE(B) | SINGLE(C) ) ^2",
-			"1.0: ( ~( SINGLE(A) ) & DOUBLE(A, B) ) >> ~( SINGLE(B) ) ^2",
-			"1.0: ( (A == B) & DOUBLE(A, B) ) >> SINGLE(B) ^2",
-			"1.0: ( (A == 'Bar') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
-			"1.0: ( ('Foo' == B) & DOUBLE(A, B) ) >> SINGLE(B) ^2",
-			"1.0: ( ('Foo' == 'Bar') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
-			"1.0: ( (A != B) & DOUBLE(A, B) ) >> SINGLE(B) ^2",
-			"1.0: ( (A != 'Bar') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
-			"1.0: ( ('Foo' != B) & DOUBLE(A, B) ) >> SINGLE(B) ^2",
-			"1.0: ( ('Foo' != 'Bar') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
-			"1.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B)",
-			"1.0: ( SINGLE(C) & DOUBLE(C, D) ) >> SINGLE(D)",
-			"1.0: ( SINGLE(E) & DOUBLE(E, F) ) >> SINGLE(F)",
-			"1.0: ( SINGLE(G) & DOUBLE(G, H) ) >> SINGLE(H)",
-			"1.0: DOUBLE(A, B) >> ( SINGLE(A) | SINGLE(B) )",
-			"1.0: DOUBLE(C, D) >> ( SINGLE(C) | SINGLE(D) )",
-			"1.0: DOUBLE(G, H) >> ( SINGLE(G) | SINGLE(H) )",
-			"1.0: DOUBLE(I, J) >> ( SINGLE(I) | SINGLE(J) )",
-			"1.0: ( (A != B) & DOUBLE(A, B) ) >> SINGLE(B)",
-			"1.0: ( (C != D) & DOUBLE(C, D) ) >> SINGLE(D)",
-			"1.0: 1.0 * SINGLE(A) = 1.0 ^2",
-			"1.0: 1.0 * SINGLE(B) = 1.0 ^2",
-			"1.0 * SINGLE(A) + 1.0 * SINGLE(B) = 1.0 .",
-			"1.0 * DOUBLE(+A, 'Foo') = 1.0 .",
-			"1.0 * SINGLE(+A) + 1.0 * SINGLE(+B) = 1.0 .",
-			"1.0 * SINGLE(+A) = 1.0 .\n{A : SINGLE(A)}",
-			"1.0 * SINGLE(+A) = 1.0 .\n{A : ( SINGLE(A) | DOUBLE(A, A) )}",
-			"1.0 * DOUBLE(+A, B) = 1.0 .\n{A : SINGLE(B)}",
-			"1.0 * SINGLE(+A) + 1.0 * SINGLE(+B) = 1.0 .\n{A : SINGLE(A)}\n{B : SINGLE(B)}",
-			"|A| * SINGLE(+A) = 1.0 .",
-			"|A| * SINGLE(+A) = |A| .",
-			"|A| * SINGLE(+A) + |B| * SINGLE(+B) = 1.0 .",
-			"@Max[|A|, 0.0] * SINGLE(+A) = 1.0 .",
-			"1.0 * SINGLE(+A) = 1.0 .",
-			"@Max[|A|, |B|] * SINGLE(+A) + 1.0 * SINGLE(+B) = 1.0 .",
-			"0.0 * SINGLE(A) = 1.0 ."
-		];
+        String[] expected = [
+            "~( SINGLE(A) ) .",
+            "1.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+            "5.0: ( SINGLE(B) & DOUBLE(B, A) ) >> SINGLE(A) ^2",
+            "1.0: ( SINGLE(A) & DOUBLE(A, 'bar') & SINGLE('bar') ) >> DOUBLE(A, 'bar') ^2",
+            "1.0: ( SINGLE(B) & DOUBLE(B, 'bar') & SINGLE('bar') ) >> DOUBLE(B, 'bar') ^2",
+            "1.0: 1.0 * SINGLE(A) = 1.0 ^2",
+            "1.0: 1.0 * SINGLE(A) = 1.0 ^2",
+            "1.0: 1.5 * SINGLE(A) = 1.0 ^2",
+            "1.0: 0.5 * SINGLE(A) = 1.0 ^2",
+            "1.0: -1.0 * SINGLE(A) = 1.0 ^2",
+            "1.0: 5000000.0 * SINGLE(A) = 1.0 ^2",
+            "1.0: 5000000.0 * SINGLE(A) = 1.0 ^2",
+            "1.0: -5000000.0 * SINGLE(A) = 1.0 ^2",
+            // "1.0: 5.0E-6 * SINGLE(A) = 1.0 ^2",
+            "1.0: 1200000.0 * SINGLE(A) = 1.0 ^2",
+            "1.0: -1200000.0 * SINGLE(A) = 1.0 ^2",
+            // "1.0: 1.2E-6 * SINGLE(A) = 1.0 ^2",
+            "1.0: SINGLE(A1) >> SINGLE(A1) ^2",
+            "1.0: SINGLE(A1A) >> SINGLE(A1A) ^2",
+            "1.0: SINGLE(A_A) >> SINGLE(A_A) ^2",
+            "1.0: SINGLE(A_1) >> SINGLE(A_1) ^2",
+            "1.0: SINGLE(A__) >> SINGLE(A__) ^2",
+            "1.0: SINGLE(A) >> SINGLE(A)",
+            "0.0: SINGLE(A) >> SINGLE(A)",
+            "0.5: SINGLE(A) >> SINGLE(A)",
+            "999999.0: SINGLE(A) >> SINGLE(A)",
+            "9.999999999E9: SINGLE(A) >> SINGLE(A)",
+            "1.0: SINGLE(B) >> SINGLE(B)",
+            "0.001: SINGLE(A) >> SINGLE(A)",
+            "1.0E-5: SINGLE(A) >> SINGLE(A)",
+            "2000000.0: SINGLE(A) >> SINGLE(A)",
+            "2000000.0: SINGLE(B) >> SINGLE(B)",
+            // "2.0E-6: SINGLE(B) >> SINGLE(B)",
+            "2500000.0: SINGLE(A) >> SINGLE(A)",
+            // "2.5E-6: SINGLE(C) >> SINGLE(C)",
+            "1.0: ( SINGLE(C) & DOUBLE(C, D) ) >> SINGLE(D) ^2",
+            "1.0: ( SINGLE(B) & SINGLE(A) ) >> ( SINGLE(A) | DOUBLE(A, B) ) ^2",
+            "1.0: ( SINGLE(A) & DOUBLE(B, C) ) >> ( SINGLE(B) | SINGLE(C) ) ^2",
+            "1.0: ( ~( SINGLE(A) ) & DOUBLE(A, B) ) >> ~( SINGLE(B) ) ^2",
+            "1.0: ( (A == B) & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+            "1.0: ( (A == 'Bar') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+            "1.0: ( ('Foo' == B) & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+            "1.0: ( ('Foo' == 'Bar') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+            "1.0: ( (A != B) & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+            "1.0: ( (A != 'Bar') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+            "1.0: ( ('Foo' != B) & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+            "1.0: ( ('Foo' != 'Bar') & DOUBLE(A, B) ) >> SINGLE(B) ^2",
+            "1.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B)",
+            "1.0: ( SINGLE(C) & DOUBLE(C, D) ) >> SINGLE(D)",
+            "1.0: ( SINGLE(E) & DOUBLE(E, F) ) >> SINGLE(F)",
+            "1.0: ( SINGLE(G) & DOUBLE(G, H) ) >> SINGLE(H)",
+            "1.0: DOUBLE(A, B) >> ( SINGLE(A) | SINGLE(B) )",
+            "1.0: DOUBLE(C, D) >> ( SINGLE(C) | SINGLE(D) )",
+            "1.0: DOUBLE(G, H) >> ( SINGLE(G) | SINGLE(H) )",
+            "1.0: DOUBLE(I, J) >> ( SINGLE(I) | SINGLE(J) )",
+            "1.0: ( (A != B) & DOUBLE(A, B) ) >> SINGLE(B)",
+            "1.0: ( (C != D) & DOUBLE(C, D) ) >> SINGLE(D)",
+            "1.0: 1.0 * SINGLE(A) = 1.0 ^2",
+            "1.0: 1.0 * SINGLE(B) = 1.0 ^2",
+            "1.0 * SINGLE(A) + 1.0 * SINGLE(B) = 1.0 .",
+            "1.0 * DOUBLE(+A, 'Foo') = 1.0 .",
+            "1.0 * SINGLE(+A) + 1.0 * SINGLE(+B) = 1.0 .",
+            "1.0 * SINGLE(+A) = 1.0 .   {A : SINGLE(A)}",
+            "1.0 * DOUBLE(+A, B) = 1.0 .   {A : SINGLE(B)}",
+            "1.0 * SINGLE(+A) + 1.0 * SINGLE(+B) = 1.0 .   {A : SINGLE(A)}   {B : SINGLE(B)}",
+            "|A| * SINGLE(+A) = 1.0 .",
+            "|A| * SINGLE(+A) = |A| .",
+            "|A| * SINGLE(+A) + |B| * SINGLE(+B) = 1.0 .",
+            "@Max[|A|, 0.0] * SINGLE(+A) = 1.0 .",
+            "1.0 * SINGLE(+A) = 1.0 .",
+            "@Max[|A|, |B|] * SINGLE(+A) + 1.0 * SINGLE(+B) = 1.0 .",
+            "0.0 * SINGLE(A) = 1.0 .",
+            "1.0 * SINGLE(+A) = 1.0 .   {A : SINGLE(A)}",
+            "1.0 * SINGLE(+A) = 1.0 .   {A : DOUBLE(A, A)}",
+        ];
 
-		model.addRules(input);
-		assertModel(expected, true);
-	}
+        model.addRules(input);
 
-	@Test
-	public void testDNFResolution() {
-		Formula[] formulas = [
-			(~(Single(A) & Single(B) & Sim(A, B))).getFormula(),
-			((Single(A) & Single(B)) >> ~Sim(A, B)).getFormula()
-		];
+        // We may need to swap a pair of expected rules.
+        List<Rule> rules = model.getRules();
+        if (rules.get(rules.size() - 1).toString().contains("SINGLE(A)")) {
+            String temp = expected[rules.size() - 1];
+            expected[rules.size() - 1] = expected[rules.size() - 2];
+            expected[rules.size() - 2] = temp;
+        }
 
-		String[] actualToString = new String[formulas.length];
-		for (int i = 0; i < formulas.length; i++) {
-			actualToString[i] = formulas[i].toString();
-		}
+        assertModel(expected, true);
+    }
 
-		String[] actualDNF = new String[formulas.length];
-		for (int i = 0; i < formulas.length; i++) {
-			actualDNF[i] = formulas[i].getDNF().toString();
-		}
+    @Test
+    public void testDNFResolution() {
+        Formula[] formulas = [
+            (~(Single(A) & Single(B) & Sim(A, B))).getFormula(),
+            ((Single(A) & Single(B)) >> ~Sim(A, B)).getFormula()
+        ];
 
-		String[] expectedToString = [
-			"~( ( ( SINGLE(A) & SINGLE(B) ) & SIM(A, B) ) )",
-			"( SINGLE(A) & SINGLE(B) ) >> ~( SIM(A, B) )"
-		];
+        String[] actualToString = new String[formulas.length];
+        for (int i = 0; i < formulas.length; i++) {
+            actualToString[i] = formulas[i].toString();
+        }
 
-		String[] expectedDNF = [
-			"( ~( SINGLE(A) ) | ~( SINGLE(B) ) | ~( SIM(A, B) ) )",
-			"( ~( SINGLE(A) ) | ~( SINGLE(B) ) | ~( SIM(A, B) ) )"
-		];
+        String[] actualDNF = new String[formulas.length];
+        for (int i = 0; i < formulas.length; i++) {
+            actualDNF[i] = formulas[i].getDNF().toString();
+        }
 
-		compareStrings(expectedToString, actualToString, true);
-		compareStrings(expectedDNF, actualDNF, true);
-	}
+        String[] expectedToString = [
+            "~( ( ( SINGLE(A) & SINGLE(B) ) & SIM(A, B) ) )",
+            "( SINGLE(A) & SINGLE(B) ) >> ~( SIM(A, B) )"
+        ];
+
+        String[] expectedDNF = [
+            "( ~( SINGLE(A) ) | ~( SINGLE(B) ) | ~( SIM(A, B) ) )",
+            "( ~( SINGLE(A) ) | ~( SINGLE(B) ) | ~( SIM(A, B) ) )"
+        ];
+
+        compareStrings(expectedToString, actualToString, true);
+        compareStrings(expectedDNF, actualDNF, true);
+    }
 }

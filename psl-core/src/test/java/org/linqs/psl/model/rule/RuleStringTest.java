@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,19 +24,19 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.linqs.psl.PSLTest;
-import org.linqs.psl.application.groundrulestore.GroundRuleStore;
-import org.linqs.psl.application.groundrulestore.MemoryGroundRuleStore;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
+import org.linqs.psl.database.atom.AtomCache;
 import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.database.atom.SimpleAtomManager;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver.Type;
+import org.linqs.psl.grounding.GroundRuleStore;
+import org.linqs.psl.grounding.MemoryGroundRuleStore;
 import org.linqs.psl.model.atom.Atom;
-import org.linqs.psl.model.atom.AtomCache;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.QueryAtom;
@@ -70,226 +70,226 @@ import java.util.List;
 import java.util.Set;
 
 public class RuleStringTest {
-	private DataStore dataStore;
-	private Database database;
-	private Partition obsPartition;
+    private DataStore dataStore;
+    private Database database;
+    private Partition obsPartition;
 
-	private StandardPredicate singlePredicate;
-	private StandardPredicate singleIntPredicate;
-	private StandardPredicate doublePredicate;
-	private StandardPredicate singleOpened;
+    private StandardPredicate singlePredicate;
+    private StandardPredicate singleIntPredicate;
+    private StandardPredicate doublePredicate;
+    private StandardPredicate singleOpened;
 
-	private ArithmeticRuleExpression arithmeticBaseRule;
-	private Formula logicalBaseRule;
+    private ArithmeticRuleExpression arithmeticBaseRule;
+    private Formula logicalBaseRule;
 
-	@Before
-	public void setup() {
-		dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Memory, this.getClass().getName(), true));
+    @Before
+    public void setup() {
+        dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Memory, this.getClass().getName(), true));
 
-		// Predicates
-		singlePredicate = StandardPredicate.get("SinglePredicate", ConstantType.UniqueStringID);
-		dataStore.registerPredicate(singlePredicate);
+        // Predicates
+        singlePredicate = StandardPredicate.get("SinglePredicate", ConstantType.UniqueStringID);
+        dataStore.registerPredicate(singlePredicate);
 
-		singleIntPredicate = StandardPredicate.get("SingleIntPredicate", ConstantType.UniqueIntID);
-		dataStore.registerPredicate(singleIntPredicate);
+        singleIntPredicate = StandardPredicate.get("SingleIntPredicate", ConstantType.UniqueIntID);
+        dataStore.registerPredicate(singleIntPredicate);
 
-		doublePredicate = StandardPredicate.get("DoublePredicate", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
-		dataStore.registerPredicate(doublePredicate);
+        doublePredicate = StandardPredicate.get("DoublePredicate", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
+        dataStore.registerPredicate(doublePredicate);
 
-		// Rules
+        // Rules
 
-		// The base expression for all the logicalrules: SinglePredicate(A) & SinglePredicate(B) -> DoublePredicate(A, B)
-		logicalBaseRule = new Implication(
-				new Conjunction(
-					new QueryAtom(singlePredicate, new Variable("A")),
-					new QueryAtom(singlePredicate, new Variable("B"))
-				),
-				new QueryAtom(doublePredicate, new Variable("A"), new Variable("B"))
-		);
+        // The base expression for all the logicalrules: SinglePredicate(A) & SinglePredicate(B) -> DoublePredicate(A, B)
+        logicalBaseRule = new Implication(
+                new Conjunction(
+                    new QueryAtom(singlePredicate, new Variable("A")),
+                    new QueryAtom(singlePredicate, new Variable("B"))
+                ),
+                new QueryAtom(doublePredicate, new Variable("A"), new Variable("B"))
+        );
 
-		List<Coefficient> coefficients = Arrays.asList(
-			(Coefficient)(new ConstantNumber(1)),
-			(Coefficient)(new ConstantNumber(1))
-		);
+        List<Coefficient> coefficients = Arrays.asList(
+            (Coefficient)(new ConstantNumber(1)),
+            (Coefficient)(new ConstantNumber(1))
+        );
 
-		List<SummationAtomOrAtom> atoms = Arrays.asList(
-			(SummationAtomOrAtom)(new QueryAtom(singlePredicate, new Variable("A"))),
-			(SummationAtomOrAtom)(new QueryAtom(singlePredicate, new Variable("B")))
-		);
+        List<SummationAtomOrAtom> atoms = Arrays.asList(
+            (SummationAtomOrAtom)(new QueryAtom(singlePredicate, new Variable("A"))),
+            (SummationAtomOrAtom)(new QueryAtom(singlePredicate, new Variable("B")))
+        );
 
-		// Base Rule: SinglePredicate(A) + SinglePredicate(B) = 1
-		arithmeticBaseRule = new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.Equality, new ConstantNumber(1));
+        // Base Rule: SinglePredicate(A) + SinglePredicate(B) = 1
+        arithmeticBaseRule = new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1));
 
-		// Data
-		obsPartition = dataStore.getNewPartition();
+        // Data
+        obsPartition = dataStore.getNewPartition();
 
-		Inserter inserter = dataStore.getInserter(singlePredicate, obsPartition);
-		inserter.insert(new UniqueStringID("Alice"));
-		inserter.insert(new UniqueStringID("Bob"));
+        Inserter inserter = dataStore.getInserter(singlePredicate, obsPartition);
+        inserter.insert(new UniqueStringID("Alice"));
+        inserter.insert(new UniqueStringID("Bob"));
 
-		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
-		database = dataStore.getDatabase(dataStore.getNewPartition(), toClose, obsPartition);
-	}
+        Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
+        database = dataStore.getDatabase(dataStore.getNewPartition(), toClose, obsPartition);
+    }
 
-	@Test
-	public void testLogicalRuleString() {
-		// Base Rule: SinglePredicate(A) & SinglePredicate(B) -> DoublePredicate(A, B)
-		Rule rule;
+    @Test
+    public void testLogicalRuleString() {
+        // Base Rule: SinglePredicate(A) & SinglePredicate(B) -> DoublePredicate(A, B)
+        Rule rule;
 
-		// Unweighted (Not Squared)
-		rule = new UnweightedLogicalRule(logicalBaseRule);
-		assertEquals("( SINGLEPREDICATE(A) & SINGLEPREDICATE(B) ) >> DOUBLEPREDICATE(A, B) .", rule.toString());
+        // Unweighted (Not Squared)
+        rule = new UnweightedLogicalRule(logicalBaseRule);
+        assertEquals("( SINGLEPREDICATE(A) & SINGLEPREDICATE(B) ) >> DOUBLEPREDICATE(A, B) .", rule.toString());
 
-		// Weighted, Squared
-		rule = new WeightedLogicalRule(logicalBaseRule, 10.0, true);
-		assertEquals("10.0: ( SINGLEPREDICATE(A) & SINGLEPREDICATE(B) ) >> DOUBLEPREDICATE(A, B) ^2", rule.toString());
+        // Weighted, Squared
+        rule = new WeightedLogicalRule(logicalBaseRule, 10.0, true);
+        assertEquals("10.0: ( SINGLEPREDICATE(A) & SINGLEPREDICATE(B) ) >> DOUBLEPREDICATE(A, B) ^2", rule.toString());
 
-		// Weighted, Not Squared
-		rule = new WeightedLogicalRule(logicalBaseRule, 10.0, false);
-		assertEquals("10.0: ( SINGLEPREDICATE(A) & SINGLEPREDICATE(B) ) >> DOUBLEPREDICATE(A, B)", rule.toString());
-	}
+        // Weighted, Not Squared
+        rule = new WeightedLogicalRule(logicalBaseRule, 10.0, false);
+        assertEquals("10.0: ( SINGLEPREDICATE(A) & SINGLEPREDICATE(B) ) >> DOUBLEPREDICATE(A, B)", rule.toString());
+    }
 
-	@Test
-	public void testArithmeticRuleString() {
-		// Base Rule: SinglePredicate(A) + SinglePredicate(B) = 1
-		Rule rule;
+    @Test
+    public void testArithmeticRuleString() {
+        // Base Rule: SinglePredicate(A) + SinglePredicate(B) = 1
+        Rule rule;
 
-		// Unweighted (Not Squared)
-		rule = new UnweightedArithmeticRule(arithmeticBaseRule);
-		assertEquals("1.0 * SINGLEPREDICATE(A) + 1.0 * SINGLEPREDICATE(B) = 1.0 .", rule.toString());
+        // Unweighted (Not Squared)
+        rule = new UnweightedArithmeticRule(arithmeticBaseRule);
+        assertEquals("1.0 * SINGLEPREDICATE(A) + 1.0 * SINGLEPREDICATE(B) = 1.0 .", rule.toString());
 
-		// Weighted, Squared
-		rule = new WeightedArithmeticRule(arithmeticBaseRule,	10.0, true);
-		assertEquals("10.0: 1.0 * SINGLEPREDICATE(A) + 1.0 * SINGLEPREDICATE(B) = 1.0 ^2", rule.toString());
+        // Weighted, Squared
+        rule = new WeightedArithmeticRule(arithmeticBaseRule, 10.0, true);
+        assertEquals("10.0: 1.0 * SINGLEPREDICATE(A) + 1.0 * SINGLEPREDICATE(B) = 1.0 ^2", rule.toString());
 
-		// Weighted, Not Squared
-		rule = new WeightedArithmeticRule(arithmeticBaseRule,	10.0, false);
-		assertEquals("10.0: 1.0 * SINGLEPREDICATE(A) + 1.0 * SINGLEPREDICATE(B) = 1.0", rule.toString());
-	}
+        // Weighted, Not Squared
+        rule = new WeightedArithmeticRule(arithmeticBaseRule, 10.0, false);
+        assertEquals("10.0: 1.0 * SINGLEPREDICATE(A) + 1.0 * SINGLEPREDICATE(B) = 1.0", rule.toString());
+    }
 
-	@Test
-	public void testGroundLogicalRuleString() {
-		GroundRuleStore store = new MemoryGroundRuleStore();
-		AtomManager manager = new SimpleAtomManager(database);
+    @Test
+    public void testGroundLogicalRuleString() {
+        GroundRuleStore store = new MemoryGroundRuleStore();
+        AtomManager manager = new SimpleAtomManager(database);
 
-		Rule rule;
-		List<String> expected;
+        Rule rule;
+        List<String> expected;
 
-		// Unweighted (Not Squared)
-		rule = new UnweightedLogicalRule(logicalBaseRule);
-		// Remember, all rules will be in DNF.
-		expected = Arrays.asList(
-			"( ~( SINGLEPREDICATE('Alice') ) | ~( SINGLEPREDICATE('Alice') ) | DOUBLEPREDICATE('Alice', 'Alice') ) .",
-			"( ~( SINGLEPREDICATE('Alice') ) | ~( SINGLEPREDICATE('Bob') ) | DOUBLEPREDICATE('Alice', 'Bob') ) .",
-			"( ~( SINGLEPREDICATE('Bob') ) | ~( SINGLEPREDICATE('Alice') ) | DOUBLEPREDICATE('Bob', 'Alice') ) .",
-			"( ~( SINGLEPREDICATE('Bob') ) | ~( SINGLEPREDICATE('Bob') ) | DOUBLEPREDICATE('Bob', 'Bob') ) ."
-		);
-		rule.groundAll(manager, store);
-		PSLTest.compareGroundRules(expected, rule, store);
+        // Unweighted (Not Squared)
+        rule = new UnweightedLogicalRule(logicalBaseRule);
+        // Remember, all rules will be in DNF.
+        expected = Arrays.asList(
+            "( ~( SINGLEPREDICATE('Alice') ) | ~( SINGLEPREDICATE('Alice') ) | DOUBLEPREDICATE('Alice', 'Alice') ) .",
+            "( ~( SINGLEPREDICATE('Alice') ) | ~( SINGLEPREDICATE('Bob') ) | DOUBLEPREDICATE('Alice', 'Bob') ) .",
+            "( ~( SINGLEPREDICATE('Bob') ) | ~( SINGLEPREDICATE('Alice') ) | DOUBLEPREDICATE('Bob', 'Alice') ) .",
+            "( ~( SINGLEPREDICATE('Bob') ) | ~( SINGLEPREDICATE('Bob') ) | DOUBLEPREDICATE('Bob', 'Bob') ) ."
+        );
+        rule.groundAll(manager, store);
+        PSLTest.compareGroundRules(expected, rule, store);
 
-		// Weighted, Squared
-		rule = new WeightedLogicalRule(logicalBaseRule, 10.0, true);
-		expected = Arrays.asList(
-			"10.0: ( ~( SINGLEPREDICATE('Alice') ) | ~( SINGLEPREDICATE('Alice') ) | DOUBLEPREDICATE('Alice', 'Alice') ) ^2",
-			"10.0: ( ~( SINGLEPREDICATE('Alice') ) | ~( SINGLEPREDICATE('Bob') ) | DOUBLEPREDICATE('Alice', 'Bob') ) ^2",
-			"10.0: ( ~( SINGLEPREDICATE('Bob') ) | ~( SINGLEPREDICATE('Alice') ) | DOUBLEPREDICATE('Bob', 'Alice') ) ^2",
-			"10.0: ( ~( SINGLEPREDICATE('Bob') ) | ~( SINGLEPREDICATE('Bob') ) | DOUBLEPREDICATE('Bob', 'Bob') ) ^2"
-		);
-		rule.groundAll(manager, store);
-		PSLTest.compareGroundRules(expected, rule, store);
+        // Weighted, Squared
+        rule = new WeightedLogicalRule(logicalBaseRule, 10.0, true);
+        expected = Arrays.asList(
+            "10.0: ( ~( SINGLEPREDICATE('Alice') ) | ~( SINGLEPREDICATE('Alice') ) | DOUBLEPREDICATE('Alice', 'Alice') ) ^2",
+            "10.0: ( ~( SINGLEPREDICATE('Alice') ) | ~( SINGLEPREDICATE('Bob') ) | DOUBLEPREDICATE('Alice', 'Bob') ) ^2",
+            "10.0: ( ~( SINGLEPREDICATE('Bob') ) | ~( SINGLEPREDICATE('Alice') ) | DOUBLEPREDICATE('Bob', 'Alice') ) ^2",
+            "10.0: ( ~( SINGLEPREDICATE('Bob') ) | ~( SINGLEPREDICATE('Bob') ) | DOUBLEPREDICATE('Bob', 'Bob') ) ^2"
+        );
+        rule.groundAll(manager, store);
+        PSLTest.compareGroundRules(expected, rule, store);
 
-		// Weighted, Not Squared
-		rule = new WeightedLogicalRule(logicalBaseRule, 10.0, false);
-		expected = Arrays.asList(
-			"10.0: ( ~( SINGLEPREDICATE('Alice') ) | ~( SINGLEPREDICATE('Alice') ) | DOUBLEPREDICATE('Alice', 'Alice') )",
-			"10.0: ( ~( SINGLEPREDICATE('Alice') ) | ~( SINGLEPREDICATE('Bob') ) | DOUBLEPREDICATE('Alice', 'Bob') )",
-			"10.0: ( ~( SINGLEPREDICATE('Bob') ) | ~( SINGLEPREDICATE('Alice') ) | DOUBLEPREDICATE('Bob', 'Alice') )",
-			"10.0: ( ~( SINGLEPREDICATE('Bob') ) | ~( SINGLEPREDICATE('Bob') ) | DOUBLEPREDICATE('Bob', 'Bob') )"
-		);
-		rule.groundAll(manager, store);
-		PSLTest.compareGroundRules(expected, rule, store);
-	}
+        // Weighted, Not Squared
+        rule = new WeightedLogicalRule(logicalBaseRule, 10.0, false);
+        expected = Arrays.asList(
+            "10.0: ( ~( SINGLEPREDICATE('Alice') ) | ~( SINGLEPREDICATE('Alice') ) | DOUBLEPREDICATE('Alice', 'Alice') )",
+            "10.0: ( ~( SINGLEPREDICATE('Alice') ) | ~( SINGLEPREDICATE('Bob') ) | DOUBLEPREDICATE('Alice', 'Bob') )",
+            "10.0: ( ~( SINGLEPREDICATE('Bob') ) | ~( SINGLEPREDICATE('Alice') ) | DOUBLEPREDICATE('Bob', 'Alice') )",
+            "10.0: ( ~( SINGLEPREDICATE('Bob') ) | ~( SINGLEPREDICATE('Bob') ) | DOUBLEPREDICATE('Bob', 'Bob') )"
+        );
+        rule.groundAll(manager, store);
+        PSLTest.compareGroundRules(expected, rule, store);
+    }
 
-	@Test
-	public void testGroundArithmeticRuleString() {
-		GroundRuleStore store = new MemoryGroundRuleStore();
-		AtomManager manager = new SimpleAtomManager(database);
+    @Test
+    public void testGroundArithmeticRuleString() {
+        GroundRuleStore store = new MemoryGroundRuleStore();
+        AtomManager manager = new SimpleAtomManager(database);
 
-		Rule rule;
-		List<String> expected;
+        Rule rule;
+        List<String> expected;
 
-		// Unweighted (Not Squared)
-		rule = new UnweightedArithmeticRule(arithmeticBaseRule);
-		expected = Arrays.asList(
-			"1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Alice') = 1.0 .",
-			"1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Bob') = 1.0 .",
-			"1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Alice') = 1.0 .",
-			"1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Bob') = 1.0 ."
-		);
-		rule.groundAll(manager, store);
-		PSLTest.compareGroundRules(expected, rule, store);
+        // Unweighted (Not Squared)
+        rule = new UnweightedArithmeticRule(arithmeticBaseRule);
+        expected = Arrays.asList(
+            "1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Alice') = 1.0 .",
+            "1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Bob') = 1.0 .",
+            "1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Alice') = 1.0 .",
+            "1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Bob') = 1.0 ."
+        );
+        rule.groundAll(manager, store);
+        PSLTest.compareGroundRules(expected, rule, store);
 
-		// Weighted, Squared
-		rule = new WeightedArithmeticRule(arithmeticBaseRule,	10.0, true);
-		expected = Arrays.asList(
-			"10.0: 1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Alice') <= 1.0 ^2",
-			"10.0: 1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Alice') >= 1.0 ^2",
-			"10.0: 1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Bob') <= 1.0 ^2",
-			"10.0: 1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Bob') >= 1.0 ^2",
-			"10.0: 1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Alice') <= 1.0 ^2",
-			"10.0: 1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Alice') >= 1.0 ^2",
-			"10.0: 1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Bob') <= 1.0 ^2",
-			"10.0: 1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Bob') >= 1.0 ^2"
-		);
-		rule.groundAll(manager, store);
-		PSLTest.compareGroundRules(expected, rule, store);
+        // Weighted, Squared
+        rule = new WeightedArithmeticRule(arithmeticBaseRule, 10.0, true);
+        expected = Arrays.asList(
+            "10.0: 1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Alice') <= 1.0 ^2",
+            "10.0: 1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Alice') >= 1.0 ^2",
+            "10.0: 1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Bob') <= 1.0 ^2",
+            "10.0: 1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Bob') >= 1.0 ^2",
+            "10.0: 1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Alice') <= 1.0 ^2",
+            "10.0: 1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Alice') >= 1.0 ^2",
+            "10.0: 1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Bob') <= 1.0 ^2",
+            "10.0: 1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Bob') >= 1.0 ^2"
+        );
+        rule.groundAll(manager, store);
+        PSLTest.compareGroundRules(expected, rule, store);
 
-		// Weighted, Not Squared
-		rule = new WeightedArithmeticRule(arithmeticBaseRule,	10.0, false);
-		expected = Arrays.asList(
-			"10.0: 1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Alice') <= 1.0",
-			"10.0: 1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Alice') >= 1.0",
-			"10.0: 1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Bob') <= 1.0",
-			"10.0: 1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Bob') >= 1.0",
-			"10.0: 1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Alice') <= 1.0",
-			"10.0: 1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Alice') >= 1.0",
-			"10.0: 1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Bob') <= 1.0",
-			"10.0: 1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Bob') >= 1.0"
-		);
-		rule.groundAll(manager, store);
-		PSLTest.compareGroundRules(expected, rule, store);
-	}
+        // Weighted, Not Squared
+        rule = new WeightedArithmeticRule(arithmeticBaseRule, 10.0, false);
+        expected = Arrays.asList(
+            "10.0: 1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Alice') <= 1.0",
+            "10.0: 1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Alice') >= 1.0",
+            "10.0: 1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Bob') <= 1.0",
+            "10.0: 1.0 * SINGLEPREDICATE('Alice') + 1.0 * SINGLEPREDICATE('Bob') >= 1.0",
+            "10.0: 1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Alice') <= 1.0",
+            "10.0: 1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Alice') >= 1.0",
+            "10.0: 1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Bob') <= 1.0",
+            "10.0: 1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Bob') >= 1.0"
+        );
+        rule.groundAll(manager, store);
+        PSLTest.compareGroundRules(expected, rule, store);
+    }
 
-	@Test
-	public void testLogicalIntRule() {
-		// Base Rule: SingleIntPredicate('1') & SinglePredicate(A) & SinglePredicate(B) -> DoublePredicate(A, B)
-		Rule rule;
+    @Test
+    public void testLogicalIntRule() {
+        // Base Rule: SingleIntPredicate('1') & SinglePredicate(A) & SinglePredicate(B) -> DoublePredicate(A, B)
+        Rule rule;
 
-		Formula baseRule = new Implication(
-				new Conjunction(
-					new QueryAtom(singleIntPredicate, new UniqueIntID(1)),
-					new QueryAtom(singlePredicate, new Variable("A")),
-					new QueryAtom(singlePredicate, new Variable("B"))
-				),
-				new QueryAtom(doublePredicate, new Variable("A"), new Variable("B"))
-		);
+        Formula baseRule = new Implication(
+                new Conjunction(
+                    new QueryAtom(singleIntPredicate, new UniqueIntID(1)),
+                    new QueryAtom(singlePredicate, new Variable("A")),
+                    new QueryAtom(singlePredicate, new Variable("B"))
+                ),
+                new QueryAtom(doublePredicate, new Variable("A"), new Variable("B"))
+        );
 
-		// Unweighted (Not Squared)
-		rule = new UnweightedLogicalRule(baseRule);
-		assertEquals("( SINGLEINTPREDICATE('1') & SINGLEPREDICATE(A) & SINGLEPREDICATE(B) ) >> DOUBLEPREDICATE(A, B) .", rule.toString());
+        // Unweighted (Not Squared)
+        rule = new UnweightedLogicalRule(baseRule);
+        assertEquals("( SINGLEINTPREDICATE('1') & SINGLEPREDICATE(A) & SINGLEPREDICATE(B) ) >> DOUBLEPREDICATE(A, B) .", rule.toString());
 
-		// Weighted, Squared
-		rule = new WeightedLogicalRule(baseRule, 10.0, true);
-		assertEquals("10.0: ( SINGLEINTPREDICATE('1') & SINGLEPREDICATE(A) & SINGLEPREDICATE(B) ) >> DOUBLEPREDICATE(A, B) ^2", rule.toString());
+        // Weighted, Squared
+        rule = new WeightedLogicalRule(baseRule, 10.0, true);
+        assertEquals("10.0: ( SINGLEINTPREDICATE('1') & SINGLEPREDICATE(A) & SINGLEPREDICATE(B) ) >> DOUBLEPREDICATE(A, B) ^2", rule.toString());
 
-		// Weighted, Not Squared
-		rule = new WeightedLogicalRule(baseRule, 10.0, false);
-		assertEquals("10.0: ( SINGLEINTPREDICATE('1') & SINGLEPREDICATE(A) & SINGLEPREDICATE(B) ) >> DOUBLEPREDICATE(A, B)", rule.toString());
-	}
+        // Weighted, Not Squared
+        rule = new WeightedLogicalRule(baseRule, 10.0, false);
+        assertEquals("10.0: ( SINGLEINTPREDICATE('1') & SINGLEPREDICATE(A) & SINGLEPREDICATE(B) ) >> DOUBLEPREDICATE(A, B)", rule.toString());
+    }
 
-	@After
-	public void cleanup() {
-		database.close();
-		dataStore.close();
-	}
+    @After
+    public void cleanup() {
+        database.close();
+        dataStore.close();
+    }
 }

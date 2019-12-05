@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,61 +17,63 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
-import org.linqs.psl.reasoner.term.WeightedTerm;
-
-import java.util.List;
+import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.model.rule.WeightedGroundRule;
+import org.linqs.psl.reasoner.term.Hyperplane;
 
 /**
  * ADMMReasoner objective term of the form <br />
- * weight * coeffs^T * x
+ * weight * coefficients^T * x
  */
-public class LinearLossTerm extends ADMMObjectiveTerm implements WeightedTerm {
-	private final List<Float> coeffs;
-	private float weight;
+public class LinearLossTerm extends ADMMObjectiveTerm {
+    private final float[] coefficients;
 
-	/**
-	 * Caller releases control of |variables| and |coeffs|.
-	 */
-	LinearLossTerm(List<LocalVariable> variables, List<Float> coeffs, float weight) {
-		super(variables);
+    /**
+     * Caller releases control of |variables| and |coefficients|.
+     */
+    LinearLossTerm(GroundRule groundRule, Hyperplane<LocalVariable> hyperplane) {
+        super(hyperplane, groundRule);
 
-		assert(variables.size() == coeffs.size());
+        this.coefficients = hyperplane.getCoefficients();
+    }
 
-		this.coeffs = coeffs;
-		setWeight(weight);
-	}
+    @Override
+    public void minimize(float stepSize, float[] consensusValues) {
+        float weight = (float)((WeightedGroundRule)groundRule).getWeight();
+        for (int i = 0; i < size; i++) {
+            LocalVariable variable = variables[i];
 
-	@Override
-	public void setWeight(float weight) {
-		this.weight = weight;
-	}
+            float value = consensusValues[variable.getGlobalId()] - variable.getLagrange() / stepSize;
+            value -= (weight * coefficients[i] / stepSize);
 
-	@Override
-	public float getWeight() {
-		return weight;
-	}
+            variable.setValue(value);
+        }
+    }
 
-	@Override
-	public void minimize(float stepSize, float[] consensusValues) {
-		for (int i = 0; i < variables.size(); i++) {
-			LocalVariable variable = variables.get(i);
+    /**
+     * weight * coefficients^T * x
+     */
+    @Override
+    public float evaluate() {
+        float weight = (float)((WeightedGroundRule)groundRule).getWeight();
+        float value = 0.0f;
 
-			float value = consensusValues[variable.getGlobalId()] - variable.getLagrange() / stepSize;
-			value -= (weight * coeffs.get(i).floatValue() / stepSize);
+        for (int i = 0; i < size; i++) {
+            value += coefficients[i] * variables[i].getValue();
+        }
 
-			variable.setValue(value);
-		}
-	}
+        return weight * value;
+    }
 
-	/**
-	 * weight * coeffs^T * x
-	 */
-	@Override
-	public float evaluate() {
-		float value = 0.0f;
-		for (int i = 0; i < variables.size(); i++) {
-			value += coeffs.get(i).floatValue() * variables.get(i).getValue();
-		}
-		return weight * value;
-	}
+    @Override
+    public float evaluate(float[] consensusValues) {
+        float weight = (float)((WeightedGroundRule)groundRule).getWeight();
+        float value = 0.0f;
+
+        for (int i = 0; i < size; i++) {
+            value += coefficients[i] * consensusValues[variables[i].getGlobalId()];
+        }
+
+        return weight * value;
+    }
 }

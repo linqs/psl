@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,94 +36,94 @@ import java.util.Map;
  * toRule() can be called to get a fully formed rule from the partial.
 */
 public class RulePartial {
-	private Rule rule;
-	private Formula formula;
-	private ArithmeticRuleExpression arithmeticExpression;
-	private Map<SummationVariable, Formula> filters;
+    private Rule rule;
+    private Formula formula;
+    private ArithmeticRuleExpression arithmeticExpression;
+    private Map<SummationVariable, Formula> filters;
 
-	public RulePartial(Object ruleCore) {
-		if (ruleCore instanceof Rule) {
-			rule = (Rule)ruleCore;
-		} else if (ruleCore instanceof Formula) {
-			formula = (Formula)ruleCore;
-		} else if (ruleCore instanceof ArithmeticRuleExpression) {
-			arithmeticExpression = (ArithmeticRuleExpression)ruleCore;
-		} else {
-			throw new IllegalArgumentException(String.format(
-					"Expected Rule, Formula, or ArithmeticRuleExpression, got %s.",
-					ruleCore.getClass().getName()));
-		}
-	}
+    public RulePartial(Object ruleCore) {
+        if (ruleCore instanceof Rule) {
+            rule = (Rule)ruleCore;
+        } else if (ruleCore instanceof Formula) {
+            formula = (Formula)ruleCore;
+        } else if (ruleCore instanceof ArithmeticRuleExpression) {
+            arithmeticExpression = (ArithmeticRuleExpression)ruleCore;
+        } else {
+            throw new IllegalArgumentException(String.format(
+                    "Expected Rule, Formula, or ArithmeticRuleExpression, got %s.",
+                    ruleCore.getClass().getName()));
+        }
+    }
 
-	public RulePartial(ArithmeticRuleExpression arithmeticExpression, Map<SummationVariable, Formula> filters) {
-		this.arithmeticExpression = arithmeticExpression;
-		this.filters = filters;
-	}
+    public RulePartial(ArithmeticRuleExpression arithmeticExpression, Map<SummationVariable, Formula> filters) {
+        this.arithmeticExpression = arithmeticExpression;
+        this.filters = filters;
+    }
 
-	public boolean isRule() {
-		return rule != null;
-	}
+    public boolean isRule() {
+        return rule != null;
+    }
 
-	/**
-	 * Shortcut for toRule(null, null), which will create an unweighted rule.
-	 */
-	public Rule toRule() {
-		return toRule(null, null);
-	}
+    /**
+     * Shortcut for toRule(null, null), which will create an unweighted rule.
+     */
+    public Rule toRule() {
+        return toRule(null, null);
+    }
 
-	/**
-	 * Create a rule from the partial given the weight and squared.
-	 * If the partial is already a rule (isRule() == true), then nulls are expected.
-	 * Even if the partial is not a rule, then nulls are allowed if an unweighted rule is desired.
-	 * Weight and squared must either both be non-null, or both be null.
-	 */
-	public Rule toRule(Double weight, Boolean squared) {
-		if (weight == null && squared == null) {
-			if (rule == null) {
-				if (formula != null) {
-					return toUnweightedLogicalRule();
-				} else {
-					return toUnweightedArithmeticRule();
-				}
-			}
+    /**
+     * Create a rule from the partial given the weight and squared.
+     * If the partial is already a rule (isRule() == true), then nulls are expected.
+     * Even if the partial is not a rule, then nulls are allowed if an unweighted rule is desired.
+     * Weight and squared must either both be non-null, or both be null.
+     */
+    public Rule toRule(Double weight, Boolean squared) {
+        if (weight == null && squared == null) {
+            if (rule == null) {
+                if (formula != null) {
+                    return toUnweightedLogicalRule();
+                } else {
+                    return toUnweightedArithmeticRule();
+                }
+            }
 
-			return rule;
-		} else if (weight != null && squared != null) {
-			if (rule == null) {
-				if (formula != null) {
-					return toWeightedLogicalRule(weight.doubleValue(), squared.booleanValue());
-				} else {
-					return toWeightedArithmeticRule(weight.doubleValue(), squared.booleanValue());
-				}
-			}
+            return rule;
+        } else if (weight != null && squared != null) {
+            if (rule == null) {
+                if (formula != null) {
+                    return toWeightedLogicalRule(weight.doubleValue(), squared.booleanValue());
+                } else {
+                    return toWeightedArithmeticRule(weight.doubleValue(), squared.booleanValue());
+                }
+            }
 
-			throw new IllegalArgumentException("The partial is already a full rule, cannot specify weight/squared.");
-		}
+            throw new IllegalArgumentException("The partial is already a full rule, cannot specify weight/squared.");
+        }
 
-		throw new IllegalArgumentException("Either both weight and squared must be non-null, or both must be null. Found weight: " + weight + ", squared: " + squared + ".");
-	}
+        throw new IllegalArgumentException("Either both weight and squared must be non-null, or both must be null. Found weight: " + weight + ", squared: " + squared + ".");
+    }
 
-	private Rule toUnweightedLogicalRule() {
-		return new UnweightedLogicalRule(formula);
-	}
+    private Rule toUnweightedLogicalRule() {
+        return new UnweightedLogicalRule(formula);
+    }
 
-	private Rule toWeightedLogicalRule(double weight, boolean squared) {
-		return new WeightedLogicalRule(formula, weight, squared);
-	}
+    private Rule toWeightedLogicalRule(double weight, boolean squared) {
+        return new WeightedLogicalRule(formula, weight, squared);
+    }
 
-	private Rule toUnweightedArithmeticRule() {
-		if (filters == null) {
-			return new UnweightedArithmeticRule(arithmeticExpression);
-		}
+    private Rule toUnweightedArithmeticRule() {
+        if (filters == null) {
+            return new UnweightedArithmeticRule(arithmeticExpression);
+        }
 
-		return new UnweightedArithmeticRule(arithmeticExpression, filters);
-	}
+        return new UnweightedArithmeticRule(arithmeticExpression, filters);
+    }
 
-	private Rule toWeightedArithmeticRule(double weight, boolean squared) {
-		if (filters == null) {
-			return new WeightedArithmeticRule(arithmeticExpression, weight, squared);
-		}
+    private Rule toWeightedArithmeticRule(double weight, boolean squared) {
+        if (filters == null) {
+            return new WeightedArithmeticRule(arithmeticExpression, weight, squared);
+        }
 
-		return new WeightedArithmeticRule(arithmeticExpression, filters, weight, squared);
-	}
+        return new WeightedArithmeticRule(arithmeticExpression, filters, weight, squared);
+    }
 }

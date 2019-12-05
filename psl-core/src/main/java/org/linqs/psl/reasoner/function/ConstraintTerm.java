@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,30 +23,30 @@ package org.linqs.psl.reasoner.function;
  * Together these define an equality or inequality statement between the value of a function and constant value.
  */
 public class ConstraintTerm {
-	private final GeneralFunction function;
-	private final FunctionComparator comparator;
-	private final double value;
+    private final GeneralFunction function;
+    private final FunctionComparator comparator;
+    private final float value;
 
-	public ConstraintTerm(GeneralFunction function, FunctionComparator comparator, double value) {
-		this.function = function;
-		this.comparator = comparator;
-		this.value = value;
-	}
+    public ConstraintTerm(GeneralFunction function, FunctionComparator comparator, float value) {
+        this.function = function;
+        this.comparator = comparator;
+        this.value = value;
+    }
 
-	public GeneralFunction getFunction() {
-		return function;
-	}
+    public GeneralFunction getFunction() {
+        return function;
+    }
 
-	public FunctionComparator getComparator() {
-		return comparator;
-	}
+    public FunctionComparator getComparator() {
+        return comparator;
+    }
 
-	public double getValue() {
-		return value;
-	}
+    public float getValue() {
+        return value;
+    }
 
-	@Override
-	public String toString() {
-		return function.toString() + " " + comparator.toString() + " " + value;
-	}
+    @Override
+    public String toString() {
+        return function.toString() + " " + comparator.toString() + " " + value;
+    }
 }

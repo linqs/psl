@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,44 +17,70 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
-import org.linqs.psl.reasoner.term.Term;
-
-import java.util.List;
-
-import org.apache.commons.collections4.list.UnmodifiableList;
+import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.reasoner.term.Hyperplane;
+import org.linqs.psl.reasoner.term.ReasonerTerm;
 
 /**
  * A term in the objective to be optimized by an ADMMReasoner.
  */
-public abstract class ADMMObjectiveTerm implements Term {
-	protected final List<LocalVariable> variables;
+public abstract class ADMMObjectiveTerm implements ReasonerTerm {
+    protected final GroundRule groundRule;
+    protected final LocalVariable[] variables;
+    protected final int size;
 
-	/**
-	 * Caller releases control of |variables|.
-	 */
-	public ADMMObjectiveTerm(List<LocalVariable> variables) {
-		this.variables = variables;
-	}
+    /**
+     * Caller releases control of the hyperplane and all members of it.
+     */
+    public ADMMObjectiveTerm(Hyperplane<LocalVariable> hyperplane, GroundRule groundRule) {
+        this.variables = hyperplane.getVariables();
+        this.size = hyperplane.size();
+        this.groundRule = groundRule;
+    }
 
-	public void updateLagrange(float stepSize, float[] consensusValues) {
-		// Use index instead of iterator here so we can see clear results in the profiler.
-		// http://psy-lob-saw.blogspot.co.uk/2014/12/the-escape-of-arraylistiterator.html
-		for (int i = 0; i < variables.size(); i++) {
-			LocalVariable variable = variables.get(i);
-			variable.setLagrange(variable.getLagrange() + stepSize * (variable.getValue() - consensusValues[variable.getGlobalId()]));
-		}
-	}
+    public void updateLagrange(float stepSize, float[] consensusValues) {
+        // Use index instead of iterator here so we can see clear results in the profiler.
+        // http://psy-lob-saw.blogspot.co.uk/2014/12/the-escape-of-arraylistiterator.html
+        for (int i = 0; i < size; i++) {
+            LocalVariable variable = variables[i];
+            variable.setLagrange(variable.getLagrange() + stepSize * (variable.getValue() - consensusValues[variable.getGlobalId()]));
+        }
+    }
 
-	/**
-	 * Updates x to the solution of <br />
-	 * argmin f(x) + stepSize / 2 * \|x - z + y / stepSize \|_2^2 <br />
-	 * for the objective term f(x)
-	 */
-	public abstract void minimize(float stepSize, float[] consensusValues);
+    /**
+     * Updates x to the solution of <br />
+     * argmin f(x) + stepSize / 2 * \|x - z + y / stepSize \|_2^2 <br />
+     * for the objective term f(x)
+     */
+    public abstract void minimize(float stepSize, float[] consensusValues);
 
-	public abstract float evaluate();
+    /**
+     * Evaluate this potential using the local variables.
+     */
+    public abstract float evaluate();
 
-	public List<LocalVariable> getVariables() {
-		return new UnmodifiableList<LocalVariable>(variables);
-	}
+    /**
+     * Evaluate this potential using the given consensus values.
+     */
+    public abstract float evaluate(float[] consensusValues);
+
+    /**
+     * Get the variables used in this term.
+     * The caller should not modify the returned array, and should check size() for a reliable length.
+     */
+    public LocalVariable[] getVariables() {
+        return variables;
+    }
+
+    /**
+     * Get the number of variables in this term.
+     */
+    @Override
+    public int size() {
+        return size;
+    }
+
+    public GroundRule getGroundRule() {
+        return groundRule;
+    }
 }

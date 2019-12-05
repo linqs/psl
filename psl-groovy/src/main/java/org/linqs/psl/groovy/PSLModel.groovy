@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,9 @@ import org.linqs.psl.model.term.Term;
 import org.linqs.psl.parser.ModelLoader;
 import org.linqs.psl.parser.RulePartial;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Groovy class representing a PSL model.
  *
@@ -50,280 +53,284 @@ import org.linqs.psl.parser.RulePartial;
  * @author Eric Norris <enorris@cs.umd.edu>
  */
 public class PSLModel extends Model {
-	// Keys for Groovy syntactic sugar
-	private static final String predicateKey = 'predicate';
-	private static final String predicateArgsKey = 'types';
-	private static final String functionKey = 'function';
-	private static final String ruleKey = 'rule';
+    private static final Logger log = LoggerFactory.getLogger(PSLModel.class);
 
-	private static final String auxPredicateSeparator = '__';
+    // Keys for Groovy syntactic sugar
+    private static final String predicateKey = 'predicate';
+    private static final String predicateArgsKey = 'types';
+    private static final String functionKey = 'function';
+    private static final String ruleKey = 'rule';
 
-	// Storage for set comparisons
-	private int auxPredicateCounter = 0;
+    private static final String auxPredicateSeparator = '__';
 
-	private DataStore ds;
+    // Storage for set comparisons
+    private int auxPredicateCounter = 0;
 
-	// TODO: Documentation
-	public PSLModel(Object context, DataStore ds) {
-		this.ds = ds;
-		context.metaClass.propertyMissing = { String name ->
-			return lookupProperty(name);
-		}
-		context.metaClass.methodMissing = { String name, args ->
-			return createFormulaContainer(name, args);
-		}
-	}
+    private DataStore ds;
 
-	/**
-	 * - Looks up a Predicate with the given name, else
-	 * - Allows for "inverse" and "inv" syntactic sugar, or
-	 * - Creates a Variable with the given name
-	 * @param name	name of the property used
-	 * @return  	an Object corresponding to the name
-	 */
-	private Object lookupProperty(String name) {
-		/* Hacky fix for broken println */
-		if (name.equals("out"))
-			return System.out;
+    // TODO: Documentation
+    public PSLModel(Object context, DataStore ds) {
+        log.warn("The PSL Groovy interface has been deprecated, please use the Java interface instead.");
 
-		Predicate predicate = Predicate.get(name);
+        this.ds = ds;
+        context.metaClass.propertyMissing = { String name ->
+            return lookupProperty(name);
+        }
+        context.metaClass.methodMissing = { String name, args ->
+            return createFormulaContainer(name, args);
+        }
+    }
 
-		if (predicate != null)
-			return predicate;
+    /**
+     * - Looks up a Predicate with the given name, else
+     * - Allows for "inverse" and "inv" syntactic sugar, or
+     * - Creates a Variable with the given name
+     * @param name name of the property used
+     * @return an Object corresponding to the name
+     */
+    private Object lookupProperty(String name) {
+        /* Hacky fix for broken println */
+        if (name.equals("out"))
+            return System.out;
 
-		if (name == "inverse" || name == "inv")
-			return 'inverse';
+        Predicate predicate = Predicate.get(name);
 
-		if (name.charAt(0).isUpperCase())
-			return new GenericVariable(name, this);
+        if (predicate != null)
+            return predicate;
 
-		throw new RuntimeException("Unknown property: " + name);
-	}
+        if (name == "inverse" || name == "inv")
+            return 'inverse';
 
-	/**
-	 * Creates a FormulaContainer using the predicate specified by name.
-	 * @param name		the predicate to use for the Formula
-	 * @return			a FormulaContainer
-	 */
-	public Object createFormulaContainer(String name, Object[] args) {
-		Predicate pred = Predicate.get(name);
+        if (name.charAt(0).isUpperCase())
+            return new GenericVariable(name, this);
 
-		if (pred != null) {
-			Term[] terms = new Term[args.size()];
+        throw new RuntimeException("Unknown property: " + name);
+    }
 
-			for (int i = 0; i < terms.length; i ++) {
-				if (args[i] instanceof GenericVariable) {
-					terms[i]=args[i].toAtomVariable();
-				} else if ((args[i] instanceof Term)) {
-					terms[i] = (Term)args[i];
-				} else if (args[i] instanceof String) {
-					terms[i] = new StringAttribute(args[i]);
-				} else if (args[i] instanceof Double) {
-					terms[i] = new DoubleAttribute(args[i]);
-				} else if (args[i] instanceof Integer) {
-					terms[i] = new IntegerAttribute(args[i]);
-				} else
-					throw new IllegalArgumentException("The arguments to predicate ${name} must be terms");
-			}
+    /**
+     * Creates a FormulaContainer using the predicate specified by name.
+     * @param name the predicate to use for the Formula
+     * @return a FormulaContainer
+     */
+    public Object createFormulaContainer(String name, Object[] args) {
+        Predicate pred = Predicate.get(name);
 
-			return new FormulaContainer(new QueryAtom(pred, terms));
-		} else if (name == 'when') {
-			return args[0];
-		} else
-			throw new RuntimeException("Unknown method: " + name);
-	}
+        if (pred != null) {
+            Term[] terms = new Term[args.size()];
 
-	/*
-	 * Allows for syntactic sugar when creating rules, functions, and set comparisons.
-	 */
-	public Object add(Map args) {
-		if (args.containsKey(predicateKey)) {
-			String predicatename = args[predicateKey];
-			args.remove predicateKey;
-			return addPredicate(predicatename, args);
-		} else if (args.containsKey(functionKey)) {
-			String functionname = args[functionKey];
-			args.remove functionKey;
-			return addFunction(functionname, args);
-		} else if (args.containsKey(ruleKey)) {
-			if (args[ruleKey] instanceof FormulaContainer) {
-				FormulaContainer ruledef = args[ruleKey];
-				args.remove ruleKey;
-				return addRule(ruledef, args);
-			}
+            for (int i = 0; i < terms.length; i ++) {
+                if (args[i] instanceof GenericVariable) {
+                    terms[i]=args[i].toAtomVariable();
+                } else if ((args[i] instanceof Term)) {
+                    terms[i] = (Term)args[i];
+                } else if (args[i] instanceof String) {
+                    terms[i] = new StringAttribute(args[i]);
+                } else if (args[i] instanceof Double) {
+                    terms[i] = new DoubleAttribute(args[i]);
+                } else if (args[i] instanceof Integer) {
+                    terms[i] = new IntegerAttribute(args[i]);
+                } else
+                    throw new IllegalArgumentException("The arguments to predicate ${name} must be terms");
+            }
 
-			if (args[ruleKey] instanceof String) {
-				String ruledef = args[ruleKey];
-				args.remove ruleKey;
-				return addRule(ruledef, args);
-			}
+            return new FormulaContainer(new QueryAtom(pred, terms));
+        } else if (name == 'when') {
+            return args[0];
+        } else
+            throw new RuntimeException("Unknown method: " + name);
+    }
 
-			throw new IllegalArgumentException("Expected a formula or string, but got: ${args[ruleKey]}");
-		} else {
-			throw new IllegalArgumentException("Unrecognized element added to model: ${args}");
-		}
-	}
+    /*
+     * Allows for syntactic sugar when creating rules, functions, and set comparisons.
+     */
+    public Object add(Map args) {
+        if (args.containsKey(predicateKey)) {
+            String predicatename = args[predicateKey];
+            args.remove predicateKey;
+            return addPredicate(predicatename, args);
+        } else if (args.containsKey(functionKey)) {
+            String functionname = args[functionKey];
+            args.remove functionKey;
+            return addFunction(functionname, args);
+        } else if (args.containsKey(ruleKey)) {
+            if (args[ruleKey] instanceof FormulaContainer) {
+                FormulaContainer ruledef = args[ruleKey];
+                args.remove ruleKey;
+                return addRule(ruledef, args);
+            }
 
-	private Predicate addPredicate(String name, Map args) {
-		if (args.containsKey(predicateArgsKey)) {
-			ConstantType[] predArgs;
-			if (args[predicateArgsKey] instanceof List<?>) {
-				predArgs = ((List<?>) args[predicateArgsKey]).toArray(new ConstantType[1]);
-			} else if (args[predicateArgsKey] instanceof ConstantType) {
-				predArgs = new ConstantType[1];
-				predArgs[0] = args[predicateArgsKey];
-			} else {
-				throw new IllegalArgumentException("Must provide at least one ConstantType. " +
-					"Include multiple arguments as a list wrapped in [...].");
-			}
+            if (args[ruleKey] instanceof String) {
+                String ruledef = args[ruleKey];
+                args.remove ruleKey;
+                return addRule(ruledef, args);
+            }
 
-			StandardPredicate pred = StandardPredicate.get(name, predArgs);
-			ds.registerPredicate(pred);
-			return pred;
-		} else {
-			throw new IllegalArgumentException("Must provide at least one ConstantType. " +
-				"Include multiple arguments as a list wrapped in [...].");
-		}
-	}
+            throw new IllegalArgumentException("Expected a formula or string, but got: ${args[ruleKey]}");
+        } else {
+            throw new IllegalArgumentException("Unrecognized element added to model: ${args}");
+        }
+    }
 
-	private FunctionalPredicate addFunction(String name, Map args) {
-		if (Predicate.get(name) != null) {
-			throw new IllegalArgumentException("A similarity function with the name [${name}] has already been defined.");
-		}
+    private Predicate addPredicate(String name, Map args) {
+        if (args.containsKey(predicateArgsKey)) {
+            ConstantType[] predArgs;
+            if (args[predicateArgsKey] instanceof List<?>) {
+                predArgs = ((List<?>) args[predicateArgsKey]).toArray(new ConstantType[1]);
+            } else if (args[predicateArgsKey] instanceof ConstantType) {
+                predArgs = new ConstantType[1];
+                predArgs[0] = args[predicateArgsKey];
+            } else {
+                throw new IllegalArgumentException("Must provide at least one ConstantType. " +
+                    "Include multiple arguments as a list wrapped in [...].");
+            }
 
-		ExternalFunction implementation = null;
-		if (args.containsKey('implementation')) {
-			if (args['implementation'] instanceof ExternalFunction) {
-				implementation = args['implementation'];
-			} else {
-				throw new IllegalArgumentException("The implementation of an external function must implement the ExternalFunction interface");
-			}
-			args.remove 'implementation';
-		}
+            StandardPredicate pred = StandardPredicate.get(name, predArgs);
+            ds.registerPredicate(pred);
+            return pred;
+        } else {
+            throw new IllegalArgumentException("Must provide at least one ConstantType. " +
+                "Include multiple arguments as a list wrapped in [...].");
+        }
+    }
 
-		return ExternalFunctionalPredicate.get(name, implementation);
-	}
+    private FunctionalPredicate addFunction(String name, Map args) {
+        if (Predicate.get(name) != null) {
+            throw new IllegalArgumentException("A similarity function with the name [${name}] has already been defined.");
+        }
 
-	private StandardPredicate getBasicPredicate(Map args, String key) {
-		Predicate predicate = args[key];
-		if (predicate == null) {
-			throw new IllegalArgumentException("Need to define predicate via [${key}] argument label.");
-		}
+        ExternalFunction implementation = null;
+        if (args.containsKey('implementation')) {
+            if (args['implementation'] instanceof ExternalFunction) {
+                implementation = args['implementation'];
+            } else {
+                throw new IllegalArgumentException("The implementation of an external function must implement the ExternalFunction interface");
+            }
+            args.remove 'implementation';
+        }
 
-		if (!(predicate instanceof StandardPredicate)) {
-			throw new IllegalArgumentException("Expected basic predicate, but got: ${predicate}");
-		}
+        return ExternalFunctionalPredicate.get(name, implementation);
+    }
 
-		return predicate;
-	}
+    private StandardPredicate getBasicPredicate(Map args, String key) {
+        Predicate predicate = args[key];
+        if (predicate == null) {
+            throw new IllegalArgumentException("Need to define predicate via [${key}] argument label.");
+        }
 
-	/**
-	 * Alternative interface to addRules().
-	 */
-	public void addRules(String rules) {
-		addRules(new StringReader(rules));
-	}
+        if (!(predicate instanceof StandardPredicate)) {
+            throw new IllegalArgumentException("Expected basic predicate, but got: ${predicate}");
+        }
 
-	/**
-	 * Add all the rules from a reader.
-	 * Rules must be fully specified in their string form.
-	 */
-	public void addRules(Reader rules) {
-		Model model = ModelLoader.load(ds, rules);
-		for (Rule rule : model.getRules()) {
-			addRule(rule);
-		}
-	}
+        return predicate;
+    }
 
-	private Rule addRule(String stringRule, Map args) {
-		RulePartial partial = ModelLoader.loadRulePartial(ds, stringRule);
-		Rule rule;
+    /**
+     * Alternative interface to addRules().
+     */
+    public void addRules(String rules) {
+        addRules(new StringReader(rules));
+    }
 
-		Double weight = null;
-		Boolean squared = null;
+    /**
+     * Add all the rules from a reader.
+     * Rules must be fully specified in their string form.
+     */
+    public void addRules(Reader rules) {
+        Model model = ModelLoader.load(ds, rules);
+        for (Rule rule : model.getRules()) {
+            addRule(rule);
+        }
+    }
 
-		if (args.containsKey("weight") && isNumber(args.get('weight'))) {
-			weight = args.get("weight").doubleValue();
-		}
+    private Rule addRule(String stringRule, Map args) {
+        RulePartial partial = ModelLoader.loadRulePartial(ds, stringRule);
+        Rule rule;
 
-		if (args.containsKey("squared") && args.get('squared') instanceof Boolean) {
-			squared = args.get("squared").booleanValue();
-		}
+        Double weight = null;
+        Boolean squared = null;
 
-		if (partial.isRule()) {
-			if (weight != null || squared != null) {
-				throw new IllegalArgumentException("Rules with weight/squared specified in the string cannot accept any arguments.");
-			}
+        if (args.containsKey("weight") && isNumber(args.get('weight'))) {
+            weight = args.get("weight").doubleValue();
+        }
 
-			rule = partial.toRule();
-		} else {
-			if (weight == null && squared == null) {
-				throw new IllegalArgumentException("Rules without weight/squared specified in the string must accept them as arguments.");
-			}
+        if (args.containsKey("squared") && args.get('squared') instanceof Boolean) {
+            squared = args.get("squared").booleanValue();
+        }
 
-			rule = partial.toRule(weight, squared);
-		}
+        if (partial.isRule()) {
+            if (weight != null || squared != null) {
+                throw new IllegalArgumentException("Rules with weight/squared specified in the string cannot accept any arguments.");
+            }
 
-		addRule(rule);
-		return rule;
-	}
+            rule = partial.toRule();
+        } else {
+            if (weight == null && squared == null) {
+                throw new IllegalArgumentException("Rules without weight/squared specified in the string must accept them as arguments.");
+            }
 
-	private Rule addRule(FormulaContainer rule, Map args) {
-		boolean isFact = false;
-		boolean isSquared = true;
+            rule = partial.toRule(weight, squared);
+        }
 
-		if (args.containsKey('constraint')) {
-			if (!(args['constraint'] instanceof Boolean)) throw new IllegalArgumentException("The parameter [constraint] for a rule must be either TRUE or FALSE");
-			isFact = args['constraint'];
-		}
+        addRule(rule);
+        return rule;
+    }
 
-		if (args.containsKey('squared')) {
-			if (isFact) {
-				throw new IllegalArgumentException("Cannot set squared on a fact rule.");
-			}
+    private Rule addRule(FormulaContainer rule, Map args) {
+        boolean isFact = false;
+        boolean isSquared = true;
 
-			if (!(args['squared'] instanceof Boolean)) {
-				throw new IllegalArgumentException("The parameter [squared] for a rule must be either TRUE or FALSE");
-			}
+        if (args.containsKey('constraint')) {
+            if (!(args['constraint'] instanceof Boolean)) throw new IllegalArgumentException("The parameter [constraint] for a rule must be either TRUE or FALSE");
+            isFact = args['constraint'];
+        }
 
-			isSquared = args['squared'];
-		}
+        if (args.containsKey('squared')) {
+            if (isFact) {
+                throw new IllegalArgumentException("Cannot set squared on a fact rule.");
+            }
 
-		double weight = Double.NaN;
-		if (args.containsKey('weight')) {
-			if (isFact) {
-				throw new IllegalArgumentException("Cannot set a weight on a fact rule.");
-			}
+            if (!(args['squared'] instanceof Boolean)) {
+                throw new IllegalArgumentException("The parameter [squared] for a rule must be either TRUE or FALSE");
+            }
 
-			if (!isNumber(args['weight'])) {
-				throw new IllegalArgumentException("The weight parameter is expected to be a real number: ${args['weight'].class}");
-			}
+            isSquared = args['squared'];
+        }
 
-			weight = args['weight'];
-		}
+        double weight = Double.NaN;
+        if (args.containsKey('weight')) {
+            if (isFact) {
+                throw new IllegalArgumentException("Cannot set a weight on a fact rule.");
+            }
 
-		if (!Double.isNaN(weight) && isFact) {
-			throw new IllegalArgumentException("A rule cannot be a constraint and have a weight.");
-		}
+            if (!isNumber(args['weight'])) {
+                throw new IllegalArgumentException("The weight parameter is expected to be a real number: ${args['weight'].class}");
+            }
 
-		Formula ruleformula = rule.getFormula();
+            weight = args['weight'];
+        }
 
-		AbstractLogicalRule pslrule;
-		if (isFact) {
-			pslrule = new UnweightedLogicalRule(ruleformula);
-		} else {
-			pslrule = new WeightedLogicalRule(ruleformula, weight, isSquared);
-		}
+        if (!Double.isNaN(weight) && isFact) {
+            throw new IllegalArgumentException("A rule cannot be a constraint and have a weight.");
+        }
 
-		addRule(pslrule);
-		return pslrule;
-	}
+        Formula ruleformula = rule.getFormula();
 
-	private boolean isNumber(n) {
-		return (n instanceof Double || n instanceof Integer || n instanceof BigDecimal);
-	}
+        AbstractLogicalRule pslrule;
+        if (isFact) {
+            pslrule = new UnweightedLogicalRule(ruleformula);
+        } else {
+            pslrule = new WeightedLogicalRule(ruleformula, weight, isSquared);
+        }
 
-	public Predicate getPredicate(String name) {
-		return Predicate.get(name);
-	}
+        addRule(pslrule);
+        return pslrule;
+    }
+
+    private boolean isNumber(n) {
+        return (n instanceof Double || n instanceof Integer || n instanceof BigDecimal);
+    }
+
+    public Predicate getPredicate(String name) {
+        return Predicate.get(name);
+    }
 }

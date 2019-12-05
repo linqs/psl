@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,73 +23,73 @@ package org.linqs.psl.model.term;
  * Variables are wildcards used to match {@link Constant GroundTerms}.
  */
 public class Variable implements Term {
-	private final String name;
-	private final int hashcode;
+    private final String name;
+    private final int hashcode;
 
-	/**
-	 * Constructs a Variable, given a name.
-	 *
-	 * @param name A string ID
-	 */
-	public Variable(String name) {
-		if (name == null || !name.matches("^[a-zA-Z]\\w*")) {
-			throw new IllegalArgumentException("Variable name must begin with a-z or A-Z and contain only [a-zA-Z0-9_]. Invalid name: " + name);
-		}
+    /**
+     * Constructs a Variable, given a name.
+     *
+     * @param name A string ID
+     */
+    public Variable(String name) {
+        if (name == null || !name.matches("^[a-zA-Z]\\w*")) {
+            throw new IllegalArgumentException("Variable name must begin with a-z or A-Z and contain only [a-zA-Z0-9_]. Invalid name: " + name);
+        }
 
-		this.name = name;
-		hashcode = this.name.hashCode() * 1163;
-	}
+        this.name = name;
+        hashcode = this.name.hashCode() * 1163;
+    }
 
-	/**
-	 * @return the Variable's name
-	 */
-	public String getName() {
-		return name;
-	}
+    /**
+     * @return the Variable's name
+     */
+    public String getName() {
+        return name;
+    }
 
-	/**
-	 * @return {@link #getName()}
-	 */
-	@Override
-	public String toString() {
-		return getName();
-	}
+    /**
+     * @return {@link #getName()}
+     */
+    @Override
+    public String toString() {
+        return getName();
+    }
 
-	@Override
-	public int hashCode() {
-		return hashcode;
-	}
+    @Override
+    public int hashCode() {
+        return hashcode;
+    }
 
-	@Override
-	public boolean equals(Object other) {
-		if (other == this) {
-			return true;
-		}
+    @Override
+    public boolean equals(Object other) {
+        if (other == this) {
+            return true;
+        }
 
-		if (other == null || !(other instanceof Variable)) {
-			return false;
-		}
+        if (other == null || !(other instanceof Variable)) {
+            return false;
+        }
 
-		if (this.hashCode() != other.hashCode()) {
-			return false;
-		}
+        if (this.hashCode() != other.hashCode()) {
+            return false;
+        }
 
-		return getName().equals(((Variable)other).getName());
-	}
+        return getName().equals(((Variable)other).getName());
+    }
 
-	/**
-	 * Just use the name for comparison.
-	 */
-	 @Override
-	public int compareTo(Term other) {
-		if (other == null) {
-			return -1;
-		}
+    /**
+     * Just use the name for comparison.
+     */
+     @Override
+    public int compareTo(Term other) {
+        if (other == null) {
+            return -1;
+        }
 
-		if (!(other instanceof Variable)) {
-			return this.getClass().getName().compareTo(other.getClass().getName());
-		}
+        if (!(other instanceof Variable)) {
+            return this.getClass().getName().compareTo(other.getClass().getName());
+        }
 
-		return name.compareTo(((Variable)other).name);
-	}
+        return name.compareTo(((Variable)other).name);
+    }
 }

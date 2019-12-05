@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ package org.linqs.psl.model.atom;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
-import org.linqs.psl.reasoner.function.MutableAtomFunctionVariable;
+import org.linqs.psl.reasoner.term.ReasonerLocalVariable;
 
 /**
  * A {@link GroundAtom} with a truth value which can be modified.
@@ -28,47 +28,62 @@ import org.linqs.psl.reasoner.function.MutableAtomFunctionVariable;
  * A GroundAtom is instantiated as a RandomVariableAtom is BOTH of the following
  * conditions are met:
  * <ul>
- *   <li>it has a {@link StandardPredicate} that is open in the Atom's Database</li>
- *   <li>it is not persisted in one of its Database's read-only Partitions</li>
+ *  <li>it has a {@link StandardPredicate} that is open in the Atom's Database</li>
+ *  <li>it is not persisted in one of its Database's read-only Partitions</li>
  * </ul>
  */
-public class RandomVariableAtom extends GroundAtom {
-	protected RandomVariableAtom(StandardPredicate p, Constant[] args,
-			Database db, double value) {
-		super(p, args, db, value);
-	}
+public class RandomVariableAtom extends GroundAtom implements ReasonerLocalVariable {
+    /**
+     * Whether this atom is backed by a DataStore.
+     */
+    private boolean isPersisted;
 
-	@Override
-	public StandardPredicate getPredicate() {
-		return (StandardPredicate) predicate;
-	}
+    /**
+     * Whether this atom is in violation of an AtomManager's access policy.
+     * Typically an AtomManager (like the PersistedAtomManager) would just throw an exception,
+     * but exceptions may have been disabled for performance reasons.
+     */
+    private boolean isAccessException;
 
-	/**
-	 * Sets the truth value of this Atom.
-	 *
-	 * @param value  a truth value in [0,1]
-	 * @return this for convenience
-	 * @throws IllegalArgumentException  if value is not in [0,1]
-	 */
-	public RandomVariableAtom setValue(double value) {
-		//		if (0.0 <= value && value <= 1.0)
-		this.value = value;
-		//		else
-		//			throw new IllegalArgumentException("Value should be in [0,1] but is " + value);
+    /**
+     * Instantiation of GrondAtoms should typically be left to the Database so it can maintain a cache.
+     */
+    public RandomVariableAtom(StandardPredicate p, Constant[] args, float value) {
+        super(p, args, value);
+        isPersisted = false;
+        isAccessException = false;
+    }
 
-		return this;
-	}
+    @Override
+    public StandardPredicate getPredicate() {
+        return (StandardPredicate)predicate;
+    }
 
-	/**
-	 * Calls {@link Database#commit(RandomVariableAtom)} with this Atom
-	 * on the Database that instantiated it.
-	 */
-	public void commitToDB() {
-		db.commit(this);
-	}
+    @Override
+    public boolean isConstant() {
+        return false;
+    }
 
-	@Override
-	public MutableAtomFunctionVariable getVariable() {
-		return new MutableAtomFunctionVariable(this);
-	}
+    /**
+     * Sets the truth value of this Atom.
+     */
+    public void setValue(float value) {
+        this.value = value;
+    }
+
+    public void setPersisted(boolean isPersisted) {
+        this.isPersisted = isPersisted;
+    }
+
+    public boolean getPersisted() {
+        return isPersisted;
+    }
+
+    public void setAccessException(boolean isAccessException) {
+        this.isAccessException = isAccessException;
+    }
+
+    public boolean getAccessException() {
+        return isAccessException;
+    }
 }

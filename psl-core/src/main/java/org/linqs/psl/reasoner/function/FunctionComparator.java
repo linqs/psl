@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,15 +22,15 @@ package org.linqs.psl.reasoner.function;
  * numeric functions and values.
  */
 public enum FunctionComparator {
-	Equality, SmallerThan, LargerThan;
+    EQ, LTE, GTE;
 
-	@Override
-	public String toString() {
-		switch(this) {
-		case Equality: return "=";
-		case SmallerThan: return "<=";
-		case LargerThan: return ">=";
-		default: throw new IllegalStateException();
-		}
-	}
+    @Override
+    public String toString() {
+        switch(this) {
+        case EQ: return "=";
+        case LTE: return "<=";
+        case GTE: return ">=";
+        default: throw new IllegalStateException();
+        }
+    }
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,115 +30,115 @@ import org.linqs.psl.model.term.VariableTypeMap;
  * Note, the order in which formulas appear in an AbstractBranchFormula is important!
  */
 public abstract class AbstractBranchFormula<T extends AbstractBranchFormula<T>> implements Formula {
-	protected final Formula[] formulas;
+    protected final Formula[] formulas;
 
-	public AbstractBranchFormula(Formula... f) {
-		if (f.length < 2) {
-			throw new IllegalArgumentException("Must provide at least two formulas!");
-		}
+    public AbstractBranchFormula(Formula... f) {
+        if (f.length < 2) {
+            throw new IllegalArgumentException("Must provide at least two formulas!");
+        }
 
-		//TODO: Should we copy here?
-		formulas = f;
-		for (int i = 0; i < f.length; i++) {
-			if (formulas[i] == null) {
-				throw new IllegalArgumentException("Formulas must not be null!");
-			}
-		}
-	}
+        //TODO: Should we copy here?
+        formulas = f;
+        for (int i = 0; i < f.length; i++) {
+            if (formulas[i] == null) {
+                throw new IllegalArgumentException("Formulas must not be null!");
+            }
+        }
+    }
 
-	public int length() {
-		return formulas.length;
-	}
+    public int length() {
+        return formulas.length;
+    }
 
-	public Formula get(int pos) {
-		return formulas[pos];
-	}
+    public Formula get(int pos) {
+        return formulas[pos];
+    }
 
-	@Override
-	public VariableTypeMap collectVariables(VariableTypeMap varMap) {
-		for (int i = 0; i < formulas.length; i++) {
-			formulas[i].collectVariables(varMap);
-		}
-		return varMap;
-	}
+    @Override
+    public VariableTypeMap collectVariables(VariableTypeMap varMap) {
+        for (int i = 0; i < formulas.length; i++) {
+            formulas[i].collectVariables(varMap);
+        }
+        return varMap;
+    }
 
-	@Override
-	public Set<Atom> getAtoms(Set<Atom> atoms) {
-		for (int i = 0; i < formulas.length; i++) {
-			formulas[i].getAtoms(atoms);
-		}
-		return atoms;
-	}
+    @Override
+    public Set<Atom> getAtoms(Set<Atom> atoms) {
+        for (int i = 0; i < formulas.length; i++) {
+            formulas[i].getAtoms(atoms);
+        }
+        return atoms;
+    }
 
-	@Override
-	public int hashCode() {
-		return Arrays.hashCode(formulas);
-	}
+    @Override
+    public int hashCode() {
+        return Arrays.hashCode(formulas);
+    }
 
-	@Override
-	public boolean equals(Object oth) {
-		if (oth == this) {
-			return true;
-		}
+    @Override
+    public boolean equals(Object oth) {
+        if (oth == this) {
+            return true;
+        }
 
-		if (oth == null || !(getClass().isInstance(oth))) {
-			return false;
-		}
+        if (oth == null || !(getClass().isInstance(oth))) {
+            return false;
+        }
 
-		AbstractBranchFormula of = (AbstractBranchFormula)oth;
-		return Arrays.equals(formulas, of.formulas);
-	}
+        AbstractBranchFormula of = (AbstractBranchFormula)oth;
+        return Arrays.equals(formulas, of.formulas);
+    }
 
-	@Override
-	public String toString() {
-		StringBuilder s = new StringBuilder();
-		s.append("( ");
-		for (int i = 0; i < formulas.length; i++) {
-			if (i>0) {
-				s.append(" ").append(separatorString()).append(" ");
-			}
-			s.append(formulas[i]);
-		}
+    @Override
+    public String toString() {
+        StringBuilder s = new StringBuilder();
+        s.append("( ");
+        for (int i = 0; i < formulas.length; i++) {
+            if (i>0) {
+                s.append(" ").append(separatorString()).append(" ");
+            }
+            s.append(formulas[i]);
+        }
 
-		s.append(" )");
-		return s.toString();
-	}
+        s.append(" )");
+        return s.toString();
+    }
 
-	@Override
-	public Formula flatten() {
-		Set<Formula> flatComponents = new HashSet<Formula>();
+    @Override
+    public Formula flatten() {
+        Set<Formula> flatComponents = new HashSet<Formula>();
 
-		for (Formula component : formulas) {
-			// Check if the component is an instance of the current class.
-			// (Cannot use instanceof since we don't have a finite class to check against.)
-			// If it is, then we can flatten it into the current instance
-			// (eg A ^ (B ^ C) can get flattened into A ^ B ^ C).
-			if (this.getClass().isAssignableFrom(component.getClass())) {
-				// Flatten out the new component.
-				Formula[] newComponents = ((AbstractBranchFormula)component.flatten()).formulas;
-				for (Formula newComponent : newComponents) {
-					flatComponents.add(newComponent);
-				}
-			} else {
-				flatComponents.add(component);
-			}
-		}
+        for (Formula component : formulas) {
+            // Check if the component is an instance of the current class.
+            // (Cannot use instanceof since we don't have a finite class to check against.)
+            // If it is, then we can flatten it into the current instance
+            // (eg A ^ (B ^ C) can get flattened into A ^ B ^ C).
+            if (this.getClass().isAssignableFrom(component.getClass())) {
+                // Flatten out the new component.
+                Formula[] newComponents = ((AbstractBranchFormula)component.flatten()).formulas;
+                for (Formula newComponent : newComponents) {
+                    flatComponents.add(newComponent);
+                }
+            } else {
+                flatComponents.add(component);
+            }
+        }
 
-		// Ideally, we would do something like: return new T(flatComponents.toArray(new Formula[0]));
-		// However, we can't do that with generics.
-		// So, we have to reflexivly call the constructor in our top level class (this.getClass()).
-		try {
-			Formula[] args = flatComponents.toArray(new Formula[0]);
+        // Ideally, we would do something like: return new T(flatComponents.toArray(new Formula[0]));
+        // However, we can't do that with generics.
+        // So, we have to reflexivly call the constructor in our top level class (this.getClass()).
+        try {
+            Formula[] args = flatComponents.toArray(new Formula[0]);
 
-			// Note that we have to cast the arguments to an Object since we are using varargs
-			// (variadic arguments) in the constructors.
-			return (Formula)(this.getClass().getConstructor(Formula[].class).newInstance((Object)args));
-		} catch (NoSuchMethodException ex) {
-			throw new RuntimeException("AbstractBranchFormula does not have a constructor that takes an Array of Formula.", ex);
-		} catch (InstantiationException | IllegalAccessException | InvocationTargetException ex) {
-			throw new RuntimeException("AbstractBranchFormula could not be constructed.", ex);
-		}
-	}
+            // Note that we have to cast the arguments to an Object since we are using varargs
+            // (variadic arguments) in the constructors.
+            return (Formula)(this.getClass().getConstructor(Formula[].class).newInstance((Object)args));
+        } catch (NoSuchMethodException ex) {
+            throw new RuntimeException("AbstractBranchFormula does not have a constructor that takes an Array of Formula.", ex);
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException ex) {
+            throw new RuntimeException("AbstractBranchFormula could not be constructed.", ex);
+        }
+    }
 
-	protected abstract String separatorString();
+    protected abstract String separatorString();
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,10 @@ package org.linqs.psl.database;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.formula.FormulaAnalysis;
 import org.linqs.psl.model.term.Variable;
-
-import org.apache.commons.lang3.StringUtils;
+import org.linqs.psl.util.StringUtils;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -41,45 +41,56 @@ import java.util.Set;
  * it is instantiated in memory).
  */
 public class DatabaseQuery {
-	private final Formula formula;
-	private final boolean distinct;
+    private final Formula formula;
+    private final boolean distinct;
+    private final Set<Variable> ignoreVariables;
 
-	public DatabaseQuery(Formula formula) {
-		this(formula, true);
-	}
+    public DatabaseQuery(Formula formula) {
+        this(formula, true);
+    }
 
-	public DatabaseQuery(Formula formula, boolean distinct) {
-		this.formula = formula;
-		this.distinct = distinct;
-		validate(formula);
-	}
+    public DatabaseQuery(Formula formula, boolean distinct) {
+        this(formula, distinct, new HashSet<Variable>());
+    }
 
-	public Formula getFormula() {
-		return formula;
-	}
+    public DatabaseQuery(Formula formula, boolean distinct, Set<Variable> ignoreVariables) {
+        this.formula = formula;
+        this.distinct = distinct;
+        this.ignoreVariables = ignoreVariables;
 
-	public boolean getDistinct() {
-		return distinct;
-	}
+        validate(formula);
+    }
 
-	public static void validate(Formula formula) {
-		FormulaAnalysis analysis = new FormulaAnalysis(formula);
-		if (analysis.getNumDNFClauses() > 1 || analysis.getDNFClause(0).getNegLiterals().size() > 0) {
-			throw new IllegalArgumentException("Illegal query formula. " +
-					"Must be a conjunction of atoms or a single atom. " +
-					"Formula: " + formula);
-		}
+    public Formula getFormula() {
+        return formula;
+    }
 
-		Set<Variable> unboundVariables = analysis.getDNFClause(0).getUnboundVariables();
-		if (unboundVariables.size() > 0) {
-			Variable[] sortedVariables = unboundVariables.toArray(new Variable[unboundVariables.size()]);
-			Arrays.sort(sortedVariables);
+    public boolean getDistinct() {
+        return distinct;
+    }
 
-			throw new IllegalArgumentException(
-					"Any variable used in a negated (non-functional) predicate must also participate" +
-					" in a positive (non-functional) predicate." +
-					" The following variables do not meet this requirement: [" + StringUtils.join(sortedVariables, ", ") + "]."
-			);
-		}
-	}
+    public Set<Variable> getIgnoreVariables() {
+        return ignoreVariables;
+    }
+
+    public static void validate(Formula formula) {
+        FormulaAnalysis analysis = new FormulaAnalysis(formula);
+        if (analysis.getNumDNFClauses() > 1 || analysis.getDNFClause(0).getNegLiterals().size() > 0) {
+            throw new IllegalArgumentException("Illegal query formula. " +
+                    "Must be a conjunction of atoms or a single atom. " +
+                    "Formula: " + formula);
+        }
+
+        Set<Variable> unboundVariables = analysis.getDNFClause(0).getUnboundVariables();
+        if (unboundVariables.size() > 0) {
+            Variable[] sortedVariables = unboundVariables.toArray(new Variable[unboundVariables.size()]);
+            Arrays.sort(sortedVariables);
+
+            throw new IllegalArgumentException(
+                    "Any variable used in a negated (non-functional) predicate must also participate" +
+                    " in a positive (non-functional) predicate." +
+                    " The following variables do not meet this requirement: [" + StringUtils.join(", ", sortedVariables) + "]."
+            );
+        }
+    }
 }

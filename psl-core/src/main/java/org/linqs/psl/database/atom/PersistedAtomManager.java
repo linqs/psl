@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Variable;
+import org.linqs.psl.util.IteratorUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,123 +46,160 @@ import java.util.Set;
  * getAtom() is thread-safe.
  */
 public class PersistedAtomManager extends AtomManager {
-	private static final Logger log = LoggerFactory.getLogger(PersistedAtomManager.class);
+    private static final Logger log = LoggerFactory.getLogger(PersistedAtomManager.class);
 
-	/**
-	 * Prefix of property keys used by this class.
-	 */
-	public static final String CONFIG_PREFIX = "persistedatommanager";
+    /**
+     * Prefix of property keys used by this class.
+     */
+    public static final String CONFIG_PREFIX = "persistedatommanager";
 
-	/**
-	 * Whether or not to throw an exception on illegal access.
-	 * Note that in most cases, this indicates incorrectly formed data.
-	 * This should only be set to true when the user understands why these
-	 * exceptions are thrown in the first place and the grounding implications of
-	 * not having the atom initially in the database.
-	 */
-	public static final String THROW_ACCESS_EXCEPTION_KEY = CONFIG_PREFIX + ".throwaccessexception";
-	public static final boolean THROW_ACCESS_EXCEPTION_DEFAULT = true;
-	/**
-	 * The set of all persisted RandomVariableAtoms at the time of this AtomManager's
-	 * instantiation.
-	 */
-	protected final Set<RandomVariableAtom> persistedCache;
+    /**
+     * Whether or not to throw an exception on illegal access.
+     * Note that in most cases, this indicates incorrectly formed data.
+     * This should only be set to false when the user understands why these
+     * exceptions are thrown in the first place and the grounding implications of
+     * not having the atom initially in the database.
+     */
+    public static final String THROW_ACCESS_EXCEPTION_KEY = CONFIG_PREFIX + ".throwaccessexception";
+    public static final boolean THROW_ACCESS_EXCEPTION_DEFAULT = true;
 
-	/**
-	 * If false, ignore any atoms that would otherwise throw a PersistedAccessException.
-	 * Instead, just give a single warning and return the RVA as-is.
-	 */
-	private final boolean throwOnIllegalAccess;
-	private boolean warnOnIllegalAccess;
+    /**
+     * If false, ignore any atoms that would otherwise throw a PersistedAccessException.
+     * Instead, just give a single warning and return the RVA as-is.
+     */
+    private final boolean throwOnIllegalAccess;
+    private boolean warnOnIllegalAccess;
 
-	/**
-	 * Constructs a PersistedAtomManager with a built-in set of all the database's
-	 * persisted RandomVariableAtoms.
-	 *
-	 * @param db  the Database to query for all getAtom() calls.
-	 */
-	public PersistedAtomManager(Database db) {
-		super(db);
-		this.persistedCache = new HashSet<RandomVariableAtom>();
+    private int persistedAtomCount;
 
-		throwOnIllegalAccess = Config.getBoolean(THROW_ACCESS_EXCEPTION_KEY, THROW_ACCESS_EXCEPTION_DEFAULT);
-		warnOnIllegalAccess = !throwOnIllegalAccess;
+    public PersistedAtomManager(Database db) {
+        this(db, false);
+    }
 
-		buildPersistedAtomCache();
-	}
+    /**
+     * Constructs a PersistedAtomManager with a built-in set of all the database's persisted RandomVariableAtoms.
+     * @param prebuiltCache the database already has a populated atom cache, no need to build it again.
+     */
+    public PersistedAtomManager(Database db, boolean prebuiltCache) {
+        super(db);
 
-	private void buildPersistedAtomCache() {
-		// Iterate through all of the registered predicates in this database
-		for (StandardPredicate predicate : db.getDataStore().getRegisteredPredicates()) {
-			// Ignore any closed predicates, they will not return RandomVariableAtoms
-			if (db.isClosed(predicate)) {
-				// Make the database cache all the atoms from the closed predicates,
-				// but don't do anything with them now.
-				db.getAllGroundAtoms(predicate);
+        throwOnIllegalAccess = Config.getBoolean(THROW_ACCESS_EXCEPTION_KEY, THROW_ACCESS_EXCEPTION_DEFAULT);
+        warnOnIllegalAccess = !throwOnIllegalAccess;
 
-				continue;
-			}
+        if (prebuiltCache) {
+            persistedAtomCount = db.getCachedRVACount();
+        } else {
+            buildPersistedAtomCache();
+        }
+    }
 
-			for (RandomVariableAtom atom : db.getAllGroundRandomVariableAtoms(predicate)) {
-				persistedCache.add(atom);
-			}
-		}
-	}
+    private void buildPersistedAtomCache() {
+        persistedAtomCount = 0;
 
-	// This method is currently threadsafe, but if child classes edit the persisted cache,
-	// then they will be responsible for synchronization.
-	@Override
-	public GroundAtom getAtom(Predicate predicate, Constant... arguments) {
-		GroundAtom atom = db.getAtom(predicate, arguments);
-		if (!(atom instanceof RandomVariableAtom)) {
-			return atom;
-		}
-		RandomVariableAtom rvAtom = (RandomVariableAtom)atom;
+        // Iterate through all of the registered predicates in this database
+        for (StandardPredicate predicate : db.getDataStore().getRegisteredPredicates()) {
+            // Ignore any closed predicates, they will not return RandomVariableAtoms
+            if (db.isClosed(predicate)) {
+                // Make the database cache all the atoms from the closed predicates,
+                // but don't do anything with them now.
+                db.getAllGroundAtoms(predicate);
 
+                continue;
+            }
 
-		// Only check against the persisted cache if we need to warn or throw.
-		if ((throwOnIllegalAccess || warnOnIllegalAccess) && !persistedCache.contains(rvAtom)) {
-			if (throwOnIllegalAccess) {
-				throw new PersistedAccessException(rvAtom);
-			}
+            // First pull all the random variable atoms and mark them as persisted.
+            for (RandomVariableAtom atom : db.getAllGroundRandomVariableAtoms(predicate)) {
+                atom.setPersisted(true);
+                persistedAtomCount++;
+            }
 
-			warnOnIllegalAccess = false;
-			log.warn(String.format("Found a non-persisted RVA (%s)." +
-					" If you do not understand the implications of this warning," +
-					" check your configuration and set '%s' to false." +
-					" This warning will only be logged once.",
-					rvAtom, THROW_ACCESS_EXCEPTION_KEY));
-		}
+            // Now pull all the observed atoms so they will get cached.
+            // This will throw if any observed atoms were previously seen as RVAs.
+            db.getAllGroundObservedAtoms(predicate);
+        }
+    }
 
-		return rvAtom;
-	}
+    // This method is currently threadsafe, but if child classes edit the persisted cache,
+    // then they will be responsible for synchronization.
+    @Override
+    public GroundAtom getAtom(Predicate predicate, Constant... arguments) {
+        GroundAtom atom = db.getAtom(predicate, arguments);
+        if (!(atom instanceof RandomVariableAtom)) {
+            return atom;
+        }
+        RandomVariableAtom rvAtom = (RandomVariableAtom)atom;
 
-	/**
-	 * Commit all the atoms in this manager's persisted cache.
-	 */
-	public void commitPersistedAtoms() {
-		db.commit(persistedCache);
-	}
+        if (!rvAtom.getPersisted()) {
+            rvAtom.setAccessException(true);
+        }
 
-	public Set<RandomVariableAtom> getPersistedRVAtoms() {
-		return Collections.unmodifiableSet(persistedCache);
-	}
+        if (enableAccessExceptions && (throwOnIllegalAccess || warnOnIllegalAccess) && rvAtom.getAccessException()) {
+            reportAccessException(null, rvAtom);
+        }
 
-	protected void addToPersistedCache(Set<RandomVariableAtom> atoms) {
-		persistedCache.addAll(atoms);
-	}
+        return rvAtom;
+    }
 
-	public static class PersistedAccessException extends IllegalArgumentException {
-		public RandomVariableAtom atom;
+    /**
+     * Commit all the atoms in this manager's persisted cache.
+     */
+    public void commitPersistedAtoms() {
+        db.commitCachedAtoms(true);
+    }
 
-		public PersistedAccessException(RandomVariableAtom atom) {
-			super("Can only call getAtom() on persisted RandomVariableAtoms (RVAs)" +
-					" using a PersistedAtomManager." +
-					" Cannot access " + atom + "." +
-					" This typically means that provided data is insufficient." +
-					" An RVA (atom to be inferred (target)) was constructed during" +
-					" grounding that does not exist in the provided data.");
-			this.atom = atom;
-		}
-	}
+    public int getPersistedCount() {
+        return persistedAtomCount;
+    }
+
+    public Iterable<RandomVariableAtom> getPersistedRVAtoms() {
+        return IteratorUtils.filter(db.getAllCachedRandomVariableAtoms(), new IteratorUtils.FilterFunction<RandomVariableAtom>() {
+            @Override
+            public boolean keep(RandomVariableAtom atom) {
+                return atom.getPersisted();
+            }
+        });
+    }
+
+    protected void addToPersistedCache(Set<RandomVariableAtom> atoms) {
+        for (RandomVariableAtom atom : atoms) {
+            if (!atom.getPersisted()) {
+                atom.setPersisted(true);
+                persistedAtomCount++;
+            }
+        }
+    }
+
+    @Override
+    public void reportAccessException(RuntimeException ex, GroundAtom offendingAtom) {
+        if (throwOnIllegalAccess) {
+            if (ex == null) {
+                ex = new PersistedAccessException((RandomVariableAtom)offendingAtom);
+            }
+
+            throw ex;
+        }
+
+        if (warnOnIllegalAccess) {
+            warnOnIllegalAccess = false;
+            log.warn(String.format("Found a non-persisted RVA (%s)." +
+                    " If you do not understand the implications of this warning," +
+                    " check your configuration and set '%s' to true." +
+                    " This warning will only be logged once.",
+                    offendingAtom, THROW_ACCESS_EXCEPTION_KEY));
+        }
+    }
+
+    public static class PersistedAccessException extends IllegalArgumentException {
+        public RandomVariableAtom atom;
+
+        public PersistedAccessException(RandomVariableAtom atom) {
+            super("Can only call getAtom() on persisted RandomVariableAtoms (RVAs)" +
+                    " using a PersistedAtomManager." +
+                    " Cannot access " + atom + "." +
+                    " This typically means that provided data is insufficient." +
+                    " An RVA (atom to be inferred (target)) was constructed during" +
+                    " grounding that does not exist in the provided data.");
+            this.atom = atom;
+        }
+    }
 }

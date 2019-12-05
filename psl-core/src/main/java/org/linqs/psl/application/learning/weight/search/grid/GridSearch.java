@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,81 +33,81 @@ import java.util.List;
  * The weights searched over is set using configuration options.
  */
 public class GridSearch extends BaseGridSearch {
-	private static final Logger log = LoggerFactory.getLogger(GridSearch.class);
+    private static final Logger log = LoggerFactory.getLogger(GridSearch.class);
 
-	/**
-	 * Prefix of property keys used by this class.
-	 */
-	public static final String CONFIG_PREFIX = "gridsearch";
+    /**
+     * Prefix of property keys used by this class.
+     */
+    public static final String CONFIG_PREFIX = "gridsearch";
 
-	/**
-	 * A comma-separated list of possible weights.
-	 * These weights should be in some sorted order.
-	 */
-	public static final String POSSIBLE_WEIGHTS_KEY = CONFIG_PREFIX + ".weights";
-	public static final String POSSIBLE_WEIGHTS_DEFAULT = "0.001:0.01:0.1:1:10";
+    /**
+     * A comma-separated list of possible weights.
+     * These weights should be in some sorted order.
+     */
+    public static final String POSSIBLE_WEIGHTS_KEY = CONFIG_PREFIX + ".weights";
+    public static final String POSSIBLE_WEIGHTS_DEFAULT = "0.001:0.01:0.1:1:10";
 
-	/**
-	 * The delimiter to separate rule weights (and lication ids).
-	 * Note that we cannot use ',' because our configuration infrastructure will try
-	 * interpret it as a list of strings.
-	 */
-	public static final String DELIM = ":";
+    /**
+     * The delimiter to separate rule weights (and lication ids).
+     * Note that we cannot use ',' because our configuration infrastructure will try
+     * interpret it as a list of strings.
+     */
+    public static final String DELIM = ":";
 
-	protected final double[] possibleWeights;
+    protected final double[] possibleWeights;
 
-	public GridSearch(Model model, Database rvDB, Database observedDB) {
-		this(model.getRules(), rvDB, observedDB);
-	}
+    public GridSearch(Model model, Database rvDB, Database observedDB) {
+        this(model.getRules(), rvDB, observedDB);
+    }
 
-	public GridSearch(List<Rule> rules, Database rvDB, Database observedDB) {
-		super(rules, rvDB, observedDB);
+    public GridSearch(List<Rule> rules, Database rvDB, Database observedDB) {
+        super(rules, rvDB, observedDB);
 
-		possibleWeights = StringUtils.splitDouble(Config.getString(POSSIBLE_WEIGHTS_KEY, POSSIBLE_WEIGHTS_DEFAULT), DELIM);
-		if (possibleWeights.length == 0) {
-			throw new IllegalArgumentException("No weights provided for grid search.");
-		}
+        possibleWeights = StringUtils.splitDouble(Config.getString(POSSIBLE_WEIGHTS_KEY, POSSIBLE_WEIGHTS_DEFAULT), DELIM);
+        if (possibleWeights.length == 0) {
+            throw new IllegalArgumentException("No weights provided for grid search.");
+        }
 
-		maxNumLocations = (int)Math.pow(possibleWeights.length, mutableRules.size());
-		numLocations = maxNumLocations;
-	}
+        maxNumLocations = (int)Math.pow(possibleWeights.length, mutableRules.size());
+        numLocations = maxNumLocations;
+    }
 
-	@Override
-	protected void getWeights(double[] weights) {
-		int[] indexes = StringUtils.splitInt(currentLocation, DELIM);
-		assert(indexes.length == mutableRules.size());
+    @Override
+    protected void getWeights(double[] weights) {
+        int[] indexes = StringUtils.splitInt(currentLocation, DELIM);
+        assert(indexes.length == mutableRules.size());
 
-		for (int i = 0; i < mutableRules.size(); i++) {
-			weights[i] = possibleWeights[indexes[i]];
-		}
-	}
+        for (int i = 0; i < mutableRules.size(); i++) {
+            weights[i] = possibleWeights[indexes[i]];
+        }
+    }
 
-	@Override
-	protected boolean chooseNextLocation() {
-		// Start at all zeros.
-		if (currentLocation == null) {
-			currentLocation = StringUtils.join(new int[mutableRules.size()], DELIM);
-			return true;
-		}
+    @Override
+    protected boolean chooseNextLocation() {
+        // Start at all zeros.
+        if (currentLocation == null) {
+            currentLocation = StringUtils.join(DELIM, new int[mutableRules.size()]);
+            return true;
+        }
 
-		int[] indexes = StringUtils.splitInt(currentLocation, DELIM);
-		assert(indexes.length == mutableRules.size());
+        int[] indexes = StringUtils.splitInt(currentLocation, DELIM);
+        assert(indexes.length == mutableRules.size());
 
-		// Start at the last weight and move it.
-		// If it rolls over, move the one above it.
-		for (int i = mutableRules.size() - 1; i >= 0; i--) {
-			indexes[i]++;
+        // Start at the last weight and move it.
+        // If it rolls over, move the one above it.
+        for (int i = mutableRules.size() - 1; i >= 0; i--) {
+            indexes[i]++;
 
-			if (indexes[i] == possibleWeights.length) {
-				// Rollover and move to the next rule.
-				indexes[i] = 0;
-			} else {
-				// No rollover, stop changing weights.
-				break;
-			}
-		}
+            if (indexes[i] == possibleWeights.length) {
+                // Rollover and move to the next rule.
+                indexes[i] = 0;
+            } else {
+                // No rollover, stop changing weights.
+                break;
+            }
+        }
 
-		currentLocation = StringUtils.join(indexes, DELIM);
-		return true;
-	}
+        currentLocation = StringUtils.join(DELIM, indexes);
+        return true;
+    }
 }

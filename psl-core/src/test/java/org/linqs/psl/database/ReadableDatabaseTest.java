@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,10 +26,11 @@ import static org.junit.Assert.fail;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.linqs.psl.TestModelFactory;
+import org.linqs.psl.TestModel;
 import org.linqs.psl.application.inference.MPEInference;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.ReadableDatabase;
+import org.linqs.psl.database.QueryResultIterable;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
@@ -40,7 +41,7 @@ import org.linqs.psl.model.formula.Implication;
 import org.linqs.psl.model.function.ExternalFunction;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.ExternalFunctionalPredicate;
-import org.linqs.psl.model.predicate.SpecialPredicate;
+import org.linqs.psl.model.predicate.GroundingOnlyPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
@@ -53,186 +54,191 @@ import java.util.Set;
 import java.util.List;
 
 public class ReadableDatabaseTest {
-	@Test
-	public void testGetAtom() {
-		DatabaseFunction function = new DatabaseFunction() {
-			@Override
-			public void doWork(ReadableDatabase db, Constant arg) {
-				StandardPredicate predicate = StandardPredicate.get("Nice", ConstantType.UniqueStringID);
-				assertNotNull(db.getAtom(predicate, arg));
-			}
-		};
-		testHelper(function, "getAtom");
-	}
+    @Test
+    public void testGetAtom() {
+        DatabaseFunction function = new DatabaseFunction() {
+            @Override
+            public void doWork(ReadableDatabase db, Constant arg) {
+                StandardPredicate predicate = StandardPredicate.get("Nice", ConstantType.UniqueStringID);
+                assertNotNull(db.getAtom(predicate, arg));
+            }
+        };
+        testHelper(function, "getAtom");
+    }
 
-	@Test
-	public void testHasAtom() {
-		DatabaseFunction function = new DatabaseFunction() {
-			@Override
-			public void doWork(ReadableDatabase db, Constant arg){
-				StandardPredicate predicate = StandardPredicate.get("Nice", ConstantType.UniqueStringID);
-				assertTrue(db.hasAtom(predicate, arg));
-			}
-		};
-		testHelper(function, "hasAtom");
-	}
+    @Test
+    public void testHasAtom() {
+        DatabaseFunction function = new DatabaseFunction() {
+            @Override
+            public void doWork(ReadableDatabase db, Constant arg){
+                StandardPredicate predicate = StandardPredicate.get("Nice", ConstantType.UniqueStringID);
+                assertTrue(db.hasAtom(predicate, arg));
+            }
+        };
+        testHelper(function, "hasAtom");
+    }
 
-	@Test
-	public void testCountAllGroundAtoms() {
-		DatabaseFunction function = new DatabaseFunction() {
-			@Override
-			public void doWork(ReadableDatabase db, Constant arg) {
-				StandardPredicate predicate = StandardPredicate.get("Nice", ConstantType.UniqueStringID);
-				assertEquals(5, db.countAllGroundAtoms(predicate));
-			}
-		};
-		testHelper(function, "countAllGroundAtoms");
-	}
+    @Test
+    public void testCountAllGroundAtoms() {
+        DatabaseFunction function = new DatabaseFunction() {
+            @Override
+            public void doWork(ReadableDatabase db, Constant arg) {
+                StandardPredicate predicate = StandardPredicate.get("Nice", ConstantType.UniqueStringID);
+                assertEquals(5, db.countAllGroundAtoms(predicate));
+            }
+        };
+        testHelper(function, "countAllGroundAtoms");
+    }
 
-	@Test
-	public void testCountAllGroundRandomVariableAtoms() {
-		DatabaseFunction function = new DatabaseFunction() {
-			@Override
-			public void doWork(ReadableDatabase db, Constant arg) {
-				StandardPredicate predicate = StandardPredicate.get("Friends", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
-				assertEquals(20, db.countAllGroundRandomVariableAtoms(predicate));
-			}
-		};
-		testHelper(function, "countAllGroundRandomVariableAtoms");
-	}
+    @Test
+    public void testCountAllGroundRandomVariableAtoms() {
+        DatabaseFunction function = new DatabaseFunction() {
+            @Override
+            public void doWork(ReadableDatabase db, Constant arg) {
+                StandardPredicate predicate = StandardPredicate.get("Friends", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
+                assertEquals(20, db.countAllGroundRandomVariableAtoms(predicate));
+            }
+        };
+        testHelper(function, "countAllGroundRandomVariableAtoms");
+    }
 
-	@Test
-	public void testGetAllGroundAtoms() {
-		DatabaseFunction function = new DatabaseFunction() {
-			@Override
-			public void doWork(ReadableDatabase db, Constant arg) {
-				StandardPredicate predicate = StandardPredicate.get("Nice", ConstantType.UniqueStringID);
-				assertEquals(5, db.getAllGroundAtoms(predicate).size());
-			}
-		};
-		testHelper(function, "getAllGroundAtoms");
-	}
+    @Test
+    public void testGetAllGroundAtoms() {
+        DatabaseFunction function = new DatabaseFunction() {
+            @Override
+            public void doWork(ReadableDatabase db, Constant arg) {
+                StandardPredicate predicate = StandardPredicate.get("Nice", ConstantType.UniqueStringID);
+                assertEquals(5, db.getAllGroundAtoms(predicate).size());
+            }
+        };
+        testHelper(function, "getAllGroundAtoms");
+    }
 
-	@Test
-	public void testGetAllGroundRandomVariableAtoms() {
-		DatabaseFunction function = new DatabaseFunction() {
-			@Override
-			public void doWork(ReadableDatabase db, Constant arg) {
-				StandardPredicate predicate = StandardPredicate.get("Friends", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
-				assertEquals(20, db.getAllGroundRandomVariableAtoms(predicate).size());
-			}
-		};
-		testHelper(function, "getAllGroundRandomVariableAtoms");
-	}
+    @Test
+    public void testGetAllGroundRandomVariableAtoms() {
+        DatabaseFunction function = new DatabaseFunction() {
+            @Override
+            public void doWork(ReadableDatabase db, Constant arg) {
+                StandardPredicate predicate = StandardPredicate.get("Friends", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
+                assertEquals(20, db.getAllGroundRandomVariableAtoms(predicate).size());
+            }
+        };
+        testHelper(function, "getAllGroundRandomVariableAtoms");
+    }
 
-	@Test
-	public void testGetAllGroundObservedAtoms() {
-		DatabaseFunction function = new DatabaseFunction() {
-			@Override
-			public void doWork(ReadableDatabase db, Constant arg) {
-				StandardPredicate predicate = StandardPredicate.get("Nice", ConstantType.UniqueStringID);
-				assertEquals(5, db.getAllGroundObservedAtoms(predicate).size());
-			}
-		};
-		testHelper(function, "getAllGroundObservedAtoms");
-	}
+    @Test
+    public void testGetAllGroundObservedAtoms() {
+        DatabaseFunction function = new DatabaseFunction() {
+            @Override
+            public void doWork(ReadableDatabase db, Constant arg) {
+                StandardPredicate predicate = StandardPredicate.get("Nice", ConstantType.UniqueStringID);
+                assertEquals(5, db.getAllGroundObservedAtoms(predicate).size());
+            }
+        };
+        testHelper(function, "getAllGroundObservedAtoms");
+    }
 
-	@Test
-	public void testExecuteQuery() {
-		DatabaseFunction function = new DatabaseFunction() {
-			@Override
-			public void doWork(ReadableDatabase db, Constant arg) {
-				StandardPredicate predicate = StandardPredicate.get("Friends");
-				DatabaseQuery query = new DatabaseQuery(new QueryAtom(predicate, arg, new Variable("A")));
-				ResultList results = db.executeQuery(query);
-				assertNotNull(results);
-				assertEquals(4, results.size());
-			}
-		};
-		testHelper(function, "executeQuery");
-	}
+    @Test
+    public void testExecuteQuery() {
+        DatabaseFunction function = new DatabaseFunction() {
+            @Override
+            public void doWork(ReadableDatabase db, Constant arg) {
+                StandardPredicate predicate = StandardPredicate.get("Friends");
+                DatabaseQuery query = new DatabaseQuery(new QueryAtom(predicate, arg, new Variable("A")));
+                ResultList results = db.executeQuery(query);
+                assertNotNull(results);
+                assertEquals(4, results.size());
+            }
+        };
+        testHelper(function, "executeQuery");
+    }
 
-	@Test
-	public void testExecuteGroundingQuery() {
-		DatabaseFunction function = new DatabaseFunction() {
-			@Override
-			public void doWork(ReadableDatabase db, Constant arg) {
-				StandardPredicate predicate = StandardPredicate.get("Friends");
-				ResultList results = db.executeGroundingQuery(new QueryAtom(predicate, arg, new Variable("A")));
-				assertNotNull(results);
-				assertEquals(4, results.size());
-			}
-		};
-		testHelper(function, "executeGroundingQuery");
-	}
+    @Test
+    public void testExecuteGroundingQuery() {
+        DatabaseFunction function = new DatabaseFunction() {
+            @Override
+            public void doWork(ReadableDatabase db, Constant arg) {
+                StandardPredicate predicate = StandardPredicate.get("Friends");
+                QueryResultIterable results = db.executeGroundingQuery(new QueryAtom(predicate, arg, new Variable("A")));
+                assertNotNull(results);
 
-	@Test
-	public void testIsClosed() {
-		DatabaseFunction function = new DatabaseFunction() {
-			@Override
-			public void doWork(ReadableDatabase db, Constant arg) {
-				StandardPredicate predicate = StandardPredicate.get("Friends", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
-				assertFalse(db.isClosed(predicate));
-			}
-		};
-		testHelper(function, "isClosed");
-	}
+                int count = 0;
+                for (Constant[] row : results) {
+                    count++;
+                }
+                assertEquals(4, count);
+            }
+        };
+        testHelper(function, "executeGroundingQuery");
+    }
 
-	/**
-	 * Helper function for testing the ReadableDatabase interface functions.
-	 */
-	private void testHelper(DatabaseFunction function, String name) {
-		TestModelFactory.ModelInformation info = TestModelFactory.getModel();
-		Predicate functionPredicate = ExternalFunctionalPredicate.get(name + "_test", function);
+    @Test
+    public void testIsClosed() {
+        DatabaseFunction function = new DatabaseFunction() {
+            @Override
+            public void doWork(ReadableDatabase db, Constant arg) {
+                StandardPredicate predicate = StandardPredicate.get("Friends", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
+                assertFalse(db.isClosed(predicate));
+            }
+        };
+        testHelper(function, "isClosed");
+    }
 
-		// Add a rule using the new function.
-		// 10: Person(A) & Person(B) & Function(A) & (A != B) -> Friends(A, B) ^2
-		Formula ruleFormula = new Implication(
-			new Conjunction(
-				new QueryAtom(info.predicates.get("Person"), new Variable("A")),
-				new QueryAtom(info.predicates.get("Person"), new Variable("B")),
-				new QueryAtom(functionPredicate, new Variable("A")),
-				new QueryAtom(SpecialPredicate.NotEqual, new Variable("A"), new Variable("B"))
-			),
-			new QueryAtom(info.predicates.get("Friends"), new Variable("A"), new Variable("B"))
-		);
+    /**
+     * Helper function for testing the ReadableDatabase interface functions.
+     */
+    private void testHelper(DatabaseFunction function, String name) {
+        TestModel.ModelInformation info = TestModel.getModel();
+        Predicate functionPredicate = ExternalFunctionalPredicate.get(name + "_test", function);
 
-		Rule rule = new WeightedLogicalRule(ruleFormula, 11.0, true);
-		info.model.addRule(rule);
+        // Add a rule using the new function.
+        // 10: Person(A) & Person(B) & Function(A) & (A != B) -> Friends(A, B) ^2
+        Formula ruleFormula = new Implication(
+            new Conjunction(
+                new QueryAtom(info.predicates.get("Person"), new Variable("A")),
+                new QueryAtom(info.predicates.get("Person"), new Variable("B")),
+                new QueryAtom(functionPredicate, new Variable("A")),
+                new QueryAtom(GroundingOnlyPredicate.NotEqual, new Variable("A"), new Variable("B"))
+            ),
+            new QueryAtom(info.predicates.get("Friends"), new Variable("A"), new Variable("B"))
+        );
 
-		Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
-		Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
+        Rule rule = new WeightedLogicalRule(ruleFormula, 11.0, true);
+        info.model.addRule(rule);
 
-		MPEInference mpe = null;
+        Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
+        Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
 
-		mpe = new MPEInference(info.model, inferDB);
-		mpe.inference();
-		mpe.close();
-		inferDB.close();
-	}
+        MPEInference mpe = null;
 
-	/**
-	 * A database ExternalFunction.
-	 * Only returns 1, but keeps track of how many times it was called.
-	 * The number of arguments it accepts is set on construction.
-	 */
-	private abstract class DatabaseFunction implements ExternalFunction {
-		@Override
-		public int getArity() {
-			return 1;
-		}
+        mpe = new MPEInference(info.model, inferDB);
+        mpe.inference();
+        mpe.close();
+        inferDB.close();
+    }
 
-		@Override
-		public ConstantType[] getArgumentTypes() {
-			return new ConstantType[]{ConstantType.UniqueStringID};
-		}
+    /**
+     * A database ExternalFunction.
+     * Only returns 1, but keeps track of how many times it was called.
+     * The number of arguments it accepts is set on construction.
+     */
+    private abstract class DatabaseFunction implements ExternalFunction {
+        @Override
+        public int getArity() {
+            return 1;
+        }
 
-		@Override
-		public double getValue(ReadableDatabase db, Constant... args) {
-			doWork(db, args[0]);
-			return 1.0;
-		}
+        @Override
+        public ConstantType[] getArgumentTypes() {
+            return new ConstantType[]{ConstantType.UniqueStringID};
+        }
 
-		public abstract void doWork(ReadableDatabase db, Constant arg);
-	}
+        @Override
+        public double getValue(ReadableDatabase db, Constant... args) {
+            doWork(db, args[0]);
+            return 1.0;
+        }
+
+        public abstract void doWork(ReadableDatabase db, Constant arg);
+    }
 }

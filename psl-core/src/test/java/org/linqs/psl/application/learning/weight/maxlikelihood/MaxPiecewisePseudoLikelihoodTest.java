@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,14 +22,14 @@ import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningTest;
 
 public class MaxPiecewisePseudoLikelihoodTest extends WeightLearningTest {
-	public MaxPiecewisePseudoLikelihoodTest() {
-		super();
+    public MaxPiecewisePseudoLikelihoodTest() {
+        super();
 
-		assertBaseTest = false;
-	}
+        assertBaseTest = false;
+    }
 
-	@Override
-	protected WeightLearningApplication getWLA() {
-		return new MaxPiecewisePseudoLikelihood(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
-	}
+    @Override
+    protected WeightLearningApplication getWLA() {
+        return new MaxPiecewisePseudoLikelihood(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
+    }
 }

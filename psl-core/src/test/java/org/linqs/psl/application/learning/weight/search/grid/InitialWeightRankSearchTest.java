@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,15 +25,15 @@ import org.linqs.psl.config.Config;
 import org.linqs.psl.reasoner.admm.ADMMReasoner;
 
 public class InitialWeightRankSearchTest extends WeightLearningTest {
-	@Override
-	protected WeightLearningApplication getWLA() {
-		// Turn down the number of iterations of both ADMM and VotedPerceptron.
-		Config.setProperty(VotedPerceptron.NUM_STEPS_KEY, 5);
-		Config.setProperty(ADMMReasoner.MAX_ITER_KEY, 25);
+    @Override
+    protected WeightLearningApplication getWLA() {
+        // Turn down the number of iterations of both ADMM and VotedPerceptron.
+        Config.setProperty(VotedPerceptron.NUM_STEPS_KEY, 5);
+        Config.setProperty(ADMMReasoner.MAX_ITER_KEY, 25);
 
-		// Use the classic MLE.
-		WeightLearningApplication internalWLA = new MaxLikelihoodMPE(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
+        // Use the classic MLE.
+        WeightLearningApplication internalWLA = new MaxLikelihoodMPE(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
 
-		return new InitialWeightRankSearch(info.model.getRules(), internalWLA, weightLearningTrainDB, weightLearningTruthDB);
-	}
+        return new InitialWeightRankSearch(info.model.getRules(), internalWLA, weightLearningTrainDB, weightLearningTruthDB);
+    }
 }

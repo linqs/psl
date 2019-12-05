@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,45 +34,50 @@ import java.util.Set;
  * A simple constraint that fixes the truth value of a {@link RandomVariableAtom}
  */
 public class GroundValueConstraint implements UnweightedGroundRule {
-	private final RandomVariableAtom atom;
+    private final RandomVariableAtom atom;
 
-	private final double value;
+    private final float value;
 
-	public GroundValueConstraint(RandomVariableAtom atom, double value) {
-		this.atom = atom;
-		this.value = value;
-	}
+    public GroundValueConstraint(RandomVariableAtom atom, float value) {
+        this.atom = atom;
+        this.value = value;
+    }
 
-	public RandomVariableAtom getAtom() {
-		return atom;
-	}
+    public RandomVariableAtom getAtom() {
+        return atom;
+    }
 
-	@Override
-	public Set<GroundAtom> getAtoms() {
-		Set<GroundAtom> atoms = new HashSet<GroundAtom>();
-		atoms.add(atom);
-		return atoms;
-	}
+    @Override
+    public Set<GroundAtom> getAtoms() {
+        Set<GroundAtom> atoms = new HashSet<GroundAtom>();
+        atoms.add(atom);
+        return atoms;
+    }
 
-	@Override
-	public UnweightedRule getRule() {
-		return null;
-	}
+    @Override
+    public UnweightedRule getRule() {
+        return null;
+    }
 
-	@Override
-	public ConstraintTerm getConstraintDefinition() {
-		GeneralFunction sum = new GeneralFunction(false, false, 1);
-		sum.add(1.0, atom.getVariable());
-		return new ConstraintTerm(sum, FunctionComparator.Equality, value);
-	}
+    @Override
+    public ConstraintTerm getConstraintDefinition() {
+        GeneralFunction sum = new GeneralFunction(false, false, 1);
+        sum.add(1.0f, atom);
+        return new ConstraintTerm(sum, FunctionComparator.EQ, value);
+    }
 
-	@Override
-	public double getInfeasibility() {
-		return Math.abs(atom.getValue() - value);
-	}
+    @Override
+    public double getInfeasibility() {
+        return Math.abs(atom.getValue() - value);
+    }
 
-	@Override
-	public List<GroundRule> negate() {
-		throw new UnsupportedOperationException();
-	}
+    @Override
+    public List<GroundRule> negate() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String baseToString() {
+        return getConstraintDefinition().toString();
+    }
 }

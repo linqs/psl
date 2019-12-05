@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,57 +18,57 @@
 package org.linqs.psl.database;
 
 public class Partition {
-	/**
-	 * When grounding with lazy atoms, we will initially set their partition
-	 * value to this so that we can tell them apart.
-	 * Afterwards, they will be reset to the correct value (the write partition
-	 * of the database).
-	 * Note that no valid partition is actaully allowed to have negative values.
-	 */
-	public static final int LAZY_PARTITION_ID = -1;
+    /**
+     * When grounding with lazy atoms, we will initially set their partition
+     * value to this so that we can tell them apart.
+     * Afterwards, they will be reset to the correct value (the write partition
+     * of the database).
+     * Note that no valid partition is actaully allowed to have negative values.
+     */
+    public static final int LAZY_PARTITION_ID = -1;
 
-	private final int id;
-	private final String name;
+    private final int id;
+    private final String name;
 
-	/**
-	 * Sole constructor.
-	 *
-	 * @param id non-negative identifier
-	 */
-	public Partition(int id, String name) {
-		assert(id >= 0);
+    /**
+     * Sole constructor.
+     *
+     * @param id non-negative identifier
+     */
+    public Partition(int id, String name) {
+        assert(id >= 0);
 
-		this.id = id;
-		this.name = name;
-	}
+        this.id = id;
+        this.name = name;
+    }
 
-	public int getID() {
-		return id;
-	}
+    public int getID() {
+        return id;
+    }
 
-	public String getName(){
-		return name;
-	}
+    public String getName(){
+        return name;
+    }
 
-	public String toString() {
-		return "Partition[" + name + "]";
-	}
+    public String toString() {
+        return "Partition[" + name + "]";
+    }
 
-	@Override
-	public int hashCode() {
-		return id;
-	}
+    @Override
+    public int hashCode() {
+        return id;
+    }
 
-	@Override
-	public boolean equals(Object other) {
-		if (other == this) {
-			return true;
-		}
+    @Override
+    public boolean equals(Object other) {
+        if (other == this) {
+            return true;
+        }
 
-		if (other == null || !(other instanceof Partition)) {
-			return false;
-		}
+        if (other == null || !(other instanceof Partition)) {
+            return false;
+        }
 
-		return id == ((Partition)other).id;
-	}
+        return id == ((Partition)other).id;
+    }
 }

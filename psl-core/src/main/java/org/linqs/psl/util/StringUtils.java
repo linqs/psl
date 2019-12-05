@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,163 +17,192 @@
  */
 package org.linqs.psl.util;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
  * Various static String utilities.
  */
 public final class StringUtils {
-	public static final char DEFAULT_DELIM = ',';
+    // Static only.
+    private StringUtils() {}
 
-	// Static only.
-	private StringUtils() {}
+    public static int[] splitInt(String text, char delim) {
+        return splitInt(text, "" + delim);
+    }
 
-	public static int[] splitInt(String text) {
-		return splitInt(text, DEFAULT_DELIM);
-	}
+    public static int[] splitInt(String text, String delim) {
+        String[] parts = text.split(delim);
 
-	public static int[] splitInt(String text, char delim) {
-		return splitInt(text, "" + delim);
-	}
+        int[] ints = new int[parts.length];
+        for (int i = 0; i < parts.length; i++) {
+            ints[i] = Integer.parseInt(parts[i]);
+        }
 
-	public static int[] splitInt(String text, String delim) {
-		String[] parts = text.split(delim);
+        return ints;
+    }
 
-		int[] ints = new int[parts.length];
-		for (int i = 0; i < parts.length; i++) {
-			ints[i] = Integer.parseInt(parts[i]);
-		}
+    public static long[] splitLong(String text, char delim) {
+        return splitLong(text, "" + delim);
+    }
 
-		return ints;
-	}
+    public static long[] splitLong(String text, String delim) {
+        String[] parts = text.split(delim);
 
-	public static double[] splitDouble(String text) {
-		return splitDouble(text, DEFAULT_DELIM);
-	}
+        long[] longs = new long[parts.length];
+        for (int i = 0; i < parts.length; i++) {
+            longs[i] = Long.parseLong(parts[i]);
+        }
 
-	public static double[] splitDouble(String text, char delim) {
-		return splitDouble(text, "" + delim);
-	}
+        return longs;
+    }
 
-	public static double[] splitDouble(String text, String delim) {
-		String[] parts = text.split(delim);
+    public static float[] splitFloat(String text, char delim) {
+        return splitFloat(text, "" + delim);
+    }
 
-		double[] doubles = new double[parts.length];
-		for (int i = 0; i < parts.length; i++) {
-			doubles[i] = Double.parseDouble(parts[i]);
-		}
+    public static float[] splitFloat(String text, String delim) {
+        String[] parts = text.split(delim);
 
-		return doubles;
-	}
+        float[] floats = new float[parts.length];
+        for (int i = 0; i < parts.length; i++) {
+            floats[i] = Float.parseFloat(parts[i]);
+        }
 
-	public static String join(List<?> parts) {
-		return join(parts, DEFAULT_DELIM);
-	}
+        return floats;
+    }
 
-	public static String join(List<?> parts, char delim) {
-		return join(parts, "" + delim);
-	}
+    public static double[] splitDouble(String text, char delim) {
+        return splitDouble(text, "" + delim);
+    }
 
-	public static String join(List<?> parts, String delim) {
-		StringBuilder builder = new StringBuilder(parts.size() * 2 - 1);
+    public static double[] splitDouble(String text, String delim) {
+        String[] parts = text.split(delim);
 
-		for (int i = 0; i < parts.size(); i++) {
-			builder.append(parts.get(i));
+        double[] doubles = new double[parts.length];
+        for (int i = 0; i < parts.length; i++) {
+            doubles[i] = Double.parseDouble(parts[i]);
+        }
 
-			if (i != parts.size() - 1) {
-				builder.append(delim);
-			}
-		}
+        return doubles;
+    }
 
-		return builder.toString();
-	}
+    public static String join(char delim, Object... parts) {
+        return join("" + delim, parts);
+    }
 
-	public static String join(Object[] parts) {
-		return join(parts, DEFAULT_DELIM);
-	}
+    public static String join(String delim, Object... parts) {
+        StringBuilder builder = new StringBuilder(parts.length * 2 - 1);
 
-	public static String join(Object[] parts, char delim) {
-		return join(parts, "" + delim);
-	}
+        for (int i = 0; i < parts.length; i++) {
+            builder.append(parts[i]);
 
-	public static String join(Object[] parts, String delim) {
-		StringBuilder builder = new StringBuilder(parts.length * 2 - 1);
+            if (i != parts.length - 1) {
+                builder.append(delim);
+            }
+        }
 
-		for (int i = 0; i < parts.length; i++) {
-			builder.append(parts[i]);
+        return builder.toString();
+    }
 
-			if (i != parts.length - 1) {
-				builder.append(delim);
-			}
-		}
+    public static String join(char delim, int... parts) {
+        return join("" + delim, parts);
+    }
 
-		return builder.toString();
-	}
+    public static String join(String delim, int... parts) {
+        StringBuilder builder = new StringBuilder(parts.length * 2 - 1);
 
-	public static String join(int[] parts) {
-		return join(parts, DEFAULT_DELIM);
-	}
+        for (int i = 0; i < parts.length; i++) {
+            builder.append(parts[i]);
 
-	public static String join(int[] parts, char delim) {
-		return join(parts, "" + delim);
-	}
+            if (i != parts.length - 1) {
+                builder.append(delim);
+            }
+        }
 
-	public static String join(int[] parts, String delim) {
-		StringBuilder builder = new StringBuilder(parts.length * 2 - 1);
+        return builder.toString();
+    }
 
-		for (int i = 0; i < parts.length; i++) {
-			builder.append(parts[i]);
+    public static String join(char delim, long... parts) {
+        return join("" + delim, parts);
+    }
 
-			if (i != parts.length - 1) {
-				builder.append(delim);
-			}
-		}
+    public static String join(String delim, long... parts) {
+        StringBuilder builder = new StringBuilder(parts.length * 2 - 1);
 
-		return builder.toString();
-	}
+        for (int i = 0; i < parts.length; i++) {
+            builder.append(parts[i]);
 
-	public static String join(double[] parts) {
-		return join(parts, DEFAULT_DELIM);
-	}
+            if (i != parts.length - 1) {
+                builder.append(delim);
+            }
+        }
 
-	public static String join(double[] parts, char delim) {
-		return join(parts, "" + delim);
-	}
+        return builder.toString();
+    }
 
-	public static String join(double[] parts, String delim) {
-		StringBuilder builder = new StringBuilder(parts.length * 2 - 1);
+    public static String join(char delim, float... parts) {
+        return join("" + delim, parts);
+    }
 
-		for (int i = 0; i < parts.length; i++) {
-			builder.append(parts[i]);
+    public static String join(String delim, float... parts) {
+        StringBuilder builder = new StringBuilder(parts.length * 2 - 1);
 
-			if (i != parts.length - 1) {
-				builder.append(delim);
-			}
-		}
+        for (int i = 0; i < parts.length; i++) {
+            builder.append(parts[i]);
 
-		return builder.toString();
-	}
+            if (i != parts.length - 1) {
+                builder.append(delim);
+            }
+        }
 
-	public static String repeat(String text, int times) {
-		return repeat(text, "", times);
-	}
+        return builder.toString();
+    }
 
-	public static String repeat(String text, String delim, int times) {
-		if (times < 0) {
-			throw new IllegalArgumentException("Cannot repeat a string negative times.");
-		} else if (times == 0) {
-			return "";
-		}
+    public static String join(char delim, double... parts) {
+        return join("" + delim, parts);
+    }
 
-		StringBuilder builder = new StringBuilder(times * 2);
-		for (int i = 0; i < times; i++) {
-			builder.append(text);
+    public static String join(String delim, double... parts) {
+        StringBuilder builder = new StringBuilder(parts.length * 2 - 1);
 
-			if (i != (times - 1)) {
-				builder.append(delim);
-			}
-		}
+        for (int i = 0; i < parts.length; i++) {
+            builder.append(parts[i]);
 
-		return builder.toString();
-	}
+            if (i != parts.length - 1) {
+                builder.append(delim);
+            }
+        }
+
+        return builder.toString();
+    }
+
+    public static String repeat(String text, int times) {
+        return repeat(text, "", times);
+    }
+
+    public static String repeat(String text, String delim, int times) {
+        if (times < 0) {
+            throw new IllegalArgumentException("Cannot repeat a string negative times.");
+        } else if (times == 0) {
+            return "";
+        }
+
+        StringBuilder builder = new StringBuilder(times * 2);
+        for (int i = 0; i < times; i++) {
+            builder.append(text);
+
+            if (i != (times - 1)) {
+                builder.append(delim);
+            }
+        }
+
+        return builder.toString();
+    }
+
+    public static String sort(String string) {
+        char[] chars = string.toCharArray();
+        Arrays.sort(chars);
+        return new String(chars);
+    }
 }

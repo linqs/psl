@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,18 +25,18 @@ import org.linqs.psl.config.Config;
 import org.junit.After;
 
 public class MaxPseudoLikelihoodTest extends WeightLearningTest {
-	public MaxPseudoLikelihoodTest() {
-		super();
+    public MaxPseudoLikelihoodTest() {
+        super();
 
-		// TODO(eriq): MPLE is broken, fix it.
-		assertBaseTest = false;
-	}
+        // TODO(eriq): MPLE is broken, fix it.
+        assertBaseTest = false;
+    }
 
-	@Override
-	protected WeightLearningApplication getWLA() {
-		// Do less steps for tests.
-		Config.setProperty(VotedPerceptron.NUM_STEPS_KEY, 5);
+    @Override
+    protected WeightLearningApplication getWLA() {
+        // Do less steps for tests.
+        Config.setProperty(VotedPerceptron.NUM_STEPS_KEY, 5);
 
-		return new MaxPseudoLikelihood(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
-	}
+        return new MaxPseudoLikelihood(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
+    }
 }

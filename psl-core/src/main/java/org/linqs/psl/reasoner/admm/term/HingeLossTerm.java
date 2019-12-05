@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,79 +17,73 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
-import org.linqs.psl.reasoner.term.WeightedTerm;
-
-import java.util.List;
+import org.linqs.psl.reasoner.term.Hyperplane;
+import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.model.rule.WeightedGroundRule;
 
 /**
  * ADMMReasoner objective term of the form <br />
- * weight * max(coeffs^T * x - constant, 0)
+ * weight * max(coefficients^T * x - constant, 0)
  *
- * All coeffs must be non-zero.
+ * All coefficients must be non-zero.
  */
-public class HingeLossTerm extends HyperplaneTerm implements WeightedTerm {
-	private float weight;
+public class HingeLossTerm extends HyperplaneTerm {
+    public HingeLossTerm(GroundRule groundRule, Hyperplane<LocalVariable> hyperplane) {
+        super(groundRule, hyperplane);
+    }
 
-	HingeLossTerm(List<LocalVariable> variables, List<Float> coeffs, float constant, float weight) {
-		super(variables, coeffs, constant);
-		setWeight(weight);
-	}
+    @Override
+    public void minimize(float stepSize, float[] consensusValues) {
+        float weight = (float)((WeightedGroundRule)groundRule).getWeight();
+        float total = 0.0f;
 
-	@Override
-	public void setWeight(float weight) {
-		this.weight = weight;
-	}
+        // Minimizes without the linear loss, i.e., solves
+        // argmin stepSize/2 * \|x - z + y / stepSize \|_2^2
+        for (int i = 0; i < size; i++) {
+            LocalVariable variable = variables[i];
+            variable.setValue(consensusValues[variable.getGlobalId()] - variable.getLagrange() / stepSize);
+            total += (coefficients[i] * variable.getValue());
+        }
 
-	@Override
-	public float getWeight() {
-		return weight;
-	}
+        // If the linear loss is NOT active at the computed point, it is the solution...
+        if (total <= constant) {
+            return;
+        }
 
-	@Override
-	public void minimize(float stepSize, float[] consensusValues) {
-		// Initializes scratch data,
-		float total = 0.0f;
+        // Else, minimizes with the linear loss, i.e., solves
+        // argmin weight * coefficients^T * x + stepSize/2 * \|x - z + y / stepSize \|_2^2
+        total = 0.0f;
+        for (int i = 0; i < size; i++) {
+            LocalVariable variable = variables[i];
 
-		// Minimizes without the linear loss, i.e., solves
-		// argmin stepSize/2 * \|x - z + y / stepSize \|_2^2
-		for (int i = 0; i < variables.size(); i++) {
-			LocalVariable variable = variables.get(i);
-			variable.setValue(consensusValues[variable.getGlobalId()] - variable.getLagrange() / stepSize);
-			total += (coeffs.get(i).floatValue() * variable.getValue());
-		}
+            // TODO(eriq): We just took this step above. Is ADMM accidentally taking two steps?
+            variable.setValue(consensusValues[variable.getGlobalId()] - variable.getLagrange() / stepSize);
+            variable.setValue(variable.getValue() - weight * coefficients[i] / stepSize);
 
-		// If the linear loss is NOT active at the computed point, it is the solution...
-		if (total <= constant) {
-			return;
-		}
+            total += coefficients[i] * variable.getValue();
+        }
 
-		// Else, minimizes with the linear loss, i.e., solves
-		// argmin weight * coeffs^T * x + stepSize/2 * \|x - z + y / stepSize \|_2^2
-		total = 0.0f;
-		for (int i = 0; i < variables.size(); i++) {
-			LocalVariable variable = variables.get(i);
+        // If the linear loss IS active at the computed point, it is the solution...
+        if (total >= constant) {
+            return;
+        }
 
-			// TODO(eriq): We just took this step above. Is ADMM accidentally taking two steps?
-			variable.setValue(consensusValues[variable.getGlobalId()] - variable.getLagrange() / stepSize);
-			variable.setValue(variable.getValue() - weight * coeffs.get(i).floatValue() / stepSize);
+        // Else, the solution is on the hinge.
+        project(stepSize, consensusValues);
+    }
 
-			total += coeffs.get(i).floatValue() * variable.getValue();
-		}
+    /**
+     * weight * max(0.0, coefficients^T * x - constant)
+     */
+    @Override
+    public float evaluate() {
+        float weight = (float)((WeightedGroundRule)groundRule).getWeight();
+        return weight * Math.max(super.evaluate(), 0.0f);
+    }
 
-		// If the linear loss IS active at the computed point, it is the solution...
-		if (total >= constant) {
-			return;
-		}
-
-		// Else, the solution is on the hinge.
-		project(stepSize, consensusValues);
-	}
-
-	/**
-	 * weight * max(coeffs^T * x - constant, 0)
-	 */
-	@Override
-	public float evaluate() {
-		return weight * Math.max(super.evaluate(), 0.0f);
-	}
+    @Override
+    public float evaluate(float[] consensusValues) {
+        float weight = (float)((WeightedGroundRule)groundRule).getWeight();
+        return weight * Math.max(super.evaluate(consensusValues), 0.0f);
+    }
 }

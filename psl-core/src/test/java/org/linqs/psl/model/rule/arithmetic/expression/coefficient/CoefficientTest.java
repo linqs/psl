@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,36 +27,36 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class CoefficientTest {
-	@Test
-	// Avoid using cardinality so all end coefficients will be constants.
-	public void testSimplifyWithoutCardinality() {
-		Coefficient[] raw = new Coefficient[]{
-			new Add(new ConstantNumber(1), new ConstantNumber(2)),
-			new Add(new ConstantNumber(0), new ConstantNumber(3)),
-			new Add(new ConstantNumber(4), new ConstantNumber(0)),
+    @Test
+    // Avoid using cardinality so all end coefficients will be constants.
+    public void testSimplifyWithoutCardinality() {
+        Coefficient[] raw = new Coefficient[]{
+            new Add(new ConstantNumber(1), new ConstantNumber(2)),
+            new Add(new ConstantNumber(0), new ConstantNumber(3)),
+            new Add(new ConstantNumber(4), new ConstantNumber(0)),
 
-			new Subtract(new ConstantNumber(5), new ConstantNumber(6)),
-			new Subtract(new ConstantNumber(6), new ConstantNumber(5)),
-			new Subtract(new ConstantNumber(0), new ConstantNumber(7)),
-			new Subtract(new ConstantNumber(8), new ConstantNumber(0)),
+            new Subtract(new ConstantNumber(5), new ConstantNumber(6)),
+            new Subtract(new ConstantNumber(6), new ConstantNumber(5)),
+            new Subtract(new ConstantNumber(0), new ConstantNumber(7)),
+            new Subtract(new ConstantNumber(8), new ConstantNumber(0)),
 
-			new Multiply(new ConstantNumber(9), new ConstantNumber(10)),
-			new Multiply(new ConstantNumber(1), new ConstantNumber(11)),
-			new Multiply(new ConstantNumber(12), new ConstantNumber(1)),
-			new Multiply(new ConstantNumber(0), new ConstantNumber(13)),
-			new Multiply(new ConstantNumber(14), new ConstantNumber(0)),
+            new Multiply(new ConstantNumber(9), new ConstantNumber(10)),
+            new Multiply(new ConstantNumber(1), new ConstantNumber(11)),
+            new Multiply(new ConstantNumber(12), new ConstantNumber(1)),
+            new Multiply(new ConstantNumber(0), new ConstantNumber(13)),
+            new Multiply(new ConstantNumber(14), new ConstantNumber(0)),
 
-			new Divide(new ConstantNumber(15), new ConstantNumber(3)),
-			new Divide(new ConstantNumber(16), new ConstantNumber(1)),
-			new Divide(new ConstantNumber(0), new ConstantNumber(17)),
+            new Divide(new ConstantNumber(15), new ConstantNumber(3)),
+            new Divide(new ConstantNumber(16), new ConstantNumber(1)),
+            new Divide(new ConstantNumber(0), new ConstantNumber(17)),
 
-			new Min(new ConstantNumber(18), new ConstantNumber(19)),
-			new Min(new ConstantNumber(19), new ConstantNumber(18)),
+            new Min(new ConstantNumber(18), new ConstantNumber(19)),
+            new Min(new ConstantNumber(19), new ConstantNumber(18)),
 
-			new Max(new ConstantNumber(20), new ConstantNumber(21)),
-			new Max(new ConstantNumber(21), new ConstantNumber(20)),
+            new Max(new ConstantNumber(20), new ConstantNumber(21)),
+            new Max(new ConstantNumber(21), new ConstantNumber(20)),
 
-			new Min(
+            new Min(
             new Add(
                new Multiply(new ConstantNumber(4), new ConstantNumber(3)),
                new Divide(new ConstantNumber(15), new ConstantNumber(3))
@@ -66,20 +66,20 @@ public class CoefficientTest {
                new Max(new ConstantNumber(1), new ConstantNumber(2))
             )
          )
-		};
+        };
 
-		double[] expected = new double[]{
+        double[] expected = new double[]{
          // Add
-			3,
-			3,
-			4,
+            3,
+            3,
+            4,
          // Subtract
-			-1,
+            -1,
          1,
          -7,
          8,
          // Multiply
-			90,
+            90,
          11,
          12,
          0,
@@ -96,21 +96,21 @@ public class CoefficientTest {
          21,
          // Complex
          17
-		};
+        };
 
-		for (int i = 0; i < raw.length; i++) {
-			Coefficient simple = raw[i].simplify();
+        for (int i = 0; i < raw.length; i++) {
+            Coefficient simple = raw[i].simplify();
          if (!(simple instanceof ConstantNumber)) {
             fail(String.format("Expecting a ConstantNumber, found a %s.", simple.getClass().getName()));
          }
          
-			double actual = ((ConstantNumber)simple).value;
-			assertEquals(
-				String.format("Value mismatch on coefficient %d (%s). Expected [%f], found [%f]", i, raw[i], expected[i], actual),
-				expected[i],
-				actual,
+            double actual = ((ConstantNumber)simple).value;
+            assertEquals(
+                String.format("Value mismatch on coefficient %d (%s). Expected [%f], found [%f]", i, raw[i], expected[i], actual),
+                expected[i],
+                actual,
             MathUtils.EPSILON
-			);
-		}
-	}
+            );
+        }
+    }
 }

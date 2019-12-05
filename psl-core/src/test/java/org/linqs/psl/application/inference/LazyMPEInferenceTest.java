@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import org.linqs.psl.PSLTest;
-import org.linqs.psl.TestModelFactory;
+import org.linqs.psl.TestModel;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.model.Model;
@@ -57,185 +57,185 @@ import java.util.Map;
 import java.util.Set;
 
 public class LazyMPEInferenceTest {
-	private Database inferDB;
-	private Partition targetPartition;
-	private Set<StandardPredicate> allPredicates;
-	private Set<StandardPredicate> closedPredicates;
-	private TestModelFactory.ModelInformation info;
+    private Database inferDB;
+    private Partition targetPartition;
+    private Set<StandardPredicate> allPredicates;
+    private Set<StandardPredicate> closedPredicates;
+    private TestModel.ModelInformation info;
 
-	@Before
-	public void setup() {
-		initModel(true);
-	}
+    @Before
+    public void setup() {
+        initModel(true);
+    }
 
-	@After
-	public void cleanup() {
-		inferDB.close();
-		inferDB = null;
+    @After
+    public void cleanup() {
+        inferDB.close();
+        inferDB = null;
 
-		info.dataStore.close();
-		info = null;
-	}
+        info.dataStore.close();
+        info = null;
+    }
 
-	private void initModel(boolean useNice) {
-		if (inferDB != null) {
-			inferDB.close();
-			inferDB = null;
-		}
+    private void initModel(boolean useNice) {
+        if (inferDB != null) {
+            inferDB.close();
+            inferDB = null;
+        }
 
-		if (info != null) {
-			info.dataStore.close();
-			info = null;
-		}
+        if (info != null) {
+            info.dataStore.close();
+            info = null;
+        }
 
-		info = TestModelFactory.getModel(useNice);
+        info = TestModel.getModel(useNice);
 
-		// Get an empty partition so that no targets will exist in it and we will have to lazily instantiate them all.
-		targetPartition = info.dataStore.getPartition(TestModelFactory.PARTITION_UNUSED);
+        // Get an empty partition so that no targets will exist in it and we will have to lazily instantiate them all.
+        targetPartition = info.dataStore.getPartition(TestModel.PARTITION_UNUSED);
 
-		allPredicates = new HashSet<StandardPredicate>(info.predicates.values());
-		closedPredicates = new HashSet<StandardPredicate>(info.predicates.values());
-		closedPredicates.remove(info.predicates.get("Friends"));
+        allPredicates = new HashSet<StandardPredicate>(info.predicates.values());
+        closedPredicates = new HashSet<StandardPredicate>(info.predicates.values());
+        closedPredicates.remove(info.predicates.get("Friends"));
 
-		inferDB = info.dataStore.getDatabase(targetPartition, closedPredicates, info.observationPartition);
-	}
+        inferDB = info.dataStore.getDatabase(targetPartition, closedPredicates, info.observationPartition);
+    }
 
-	/**
-	 * A quick test that only checks to see if LazyMPEInference is running.
-	 * This is not a targeted or exhaustive test, just a starting point.
-	 */
-	@Test
-	public void testBase() {
-		LazyMPEInference mpe = new LazyMPEInference(info.model, inferDB);
+    /**
+     * A quick test that only checks to see if LazyMPEInference is running.
+     * This is not a targeted or exhaustive test, just a starting point.
+     */
+    @Test
+    public void testBase() {
+        LazyMPEInference mpe = new LazyMPEInference(info.model, inferDB);
 
-		// The Friends predicate should be empty.
-		assertEquals(0, inferDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends")));
+        // The Friends predicate should be empty.
+        assertEquals(0, inferDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends")));
 
-		mpe.inference();
+        mpe.inference();
 
-		// There are multiple optimal configuration to the first round of grounding (which snowballs later),
-		// but we know there should be at least 16 ground atoms and less than 20.
-		int groundCount = inferDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends"));
-		assertEquals(20, groundCount);
+        // There are multiple optimal configuration to the first round of grounding (which snowballs later),
+        // but we know there should be at least 16 ground atoms and less than 20.
+        int groundCount = inferDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends"));
+        assertEquals(20, groundCount);
 
-		mpe.close();
-	}
+        mpe.close();
+    }
 
-	@Test
-	public void testBaseNotNice() {
-		initModel(false);
+    @Test
+    public void testBaseNotNice() {
+        initModel(false);
 
-		LazyMPEInference mpe = new LazyMPEInference(info.model, inferDB);
+        LazyMPEInference mpe = new LazyMPEInference(info.model, inferDB);
 
-		// The Friends predicate should be empty.
-		assertEquals(0, inferDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends")));
+        // The Friends predicate should be empty.
+        assertEquals(0, inferDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends")));
 
-		mpe.inference();
+        mpe.inference();
 
-		// There are multiple optimal configuration to the first round of grounding,
-		// but we know that at least all 'Eugene's grounding will be excluded.
-		int groundCount = inferDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends"));
-		assertEquals(12, groundCount);
+        // There are multiple optimal configuration to the first round of grounding,
+        // but we know that at least all 'Eugene's grounding will be excluded.
+        int groundCount = inferDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends"));
+        assertEquals(12, groundCount);
 
-		mpe.close();
-	}
+        mpe.close();
+    }
 
-	/**
-	 * Ensure that simple arithmetic groundings (no summation atoms) works.
-	 */
-	@Test
-	public void testSimpleArithmeticBase() {
-		// 1.0: Friends(A, B) >= 0.5 ^2
-		List<Coefficient> coefficients = Arrays.asList(
-			(Coefficient)(new ConstantNumber(1))
-		);
+    /**
+     * Ensure that simple arithmetic groundings (no summation atoms) works.
+     */
+    @Test
+    public void testSimpleArithmeticBase() {
+        // 1.0: Friends(A, B) >= 0.5 ^2
+        List<Coefficient> coefficients = Arrays.asList(
+            (Coefficient)(new ConstantNumber(1))
+        );
 
-		List<SummationAtomOrAtom> atoms = Arrays.asList(
-			(SummationAtomOrAtom)(new QueryAtom(info.predicates.get("Friends"), new Variable("A"), new Variable("B")))
-		);
+        List<SummationAtomOrAtom> atoms = Arrays.asList(
+            (SummationAtomOrAtom)(new QueryAtom(info.predicates.get("Friends"), new Variable("A"), new Variable("B")))
+        );
 
-		Rule rule = new WeightedArithmeticRule(
-				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(0.5)),
-				1.0,
-				true
-		);
-		info.model.addRule(rule);
+        Rule rule = new WeightedArithmeticRule(
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(0.5f)),
+                1.0,
+                true
+        );
+        info.model.addRule(rule);
 
-		LazyMPEInference mpe = new LazyMPEInference(info.model, inferDB);
+        LazyMPEInference mpe = new LazyMPEInference(info.model, inferDB);
 
-		// The Friends predicate should be empty.
-		assertEquals(0, inferDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends")));
+        // The Friends predicate should be empty.
+        assertEquals(0, inferDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends")));
 
-		mpe.inference();
+        mpe.inference();
 
-		// There are multiple optimal configuration to the first round of grounding (which snowballs later),
-		// but we know there should be at least 16 ground atoms and less than 20.
-		int groundCount = inferDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends"));
-		assertEquals(20, groundCount);
+        // There are multiple optimal configuration to the first round of grounding (which snowballs later),
+        // but we know there should be at least 16 ground atoms and less than 20.
+        int groundCount = inferDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends"));
+        assertEquals(20, groundCount);
 
-		mpe.close();
-	}
+        mpe.close();
+    }
 
-	/**
-	 * Ensure that complex arithmetic groundings (has summation atoms) works.
-	 */
-	@Test
-	public void testComplexArithmeticBase() {
-		// |B| * Friends(A, +B) >= 1 {B: Nice(B)}
+    /**
+     * Ensure that complex arithmetic groundings (has summation atoms) works.
+     */
+    @Test
+    public void testComplexArithmeticBase() {
+        // |B| * Friends(A, +B) >= 1 {B: Nice(B)}
 
-		List<Coefficient> coefficients = Arrays.asList(
-			(Coefficient)(new Cardinality(new SummationVariable("B")))
-		);
+        List<Coefficient> coefficients = Arrays.asList(
+            (Coefficient)(new Cardinality(new SummationVariable("B")))
+        );
 
-		List<SummationAtomOrAtom> atoms = Arrays.asList(
-			(SummationAtomOrAtom)(new SummationAtom(
-				info.predicates.get("Friends"),
-				new SummationVariableOrTerm[]{new Variable("A"), new SummationVariable("B")}
-			))
-		);
+        List<SummationAtomOrAtom> atoms = Arrays.asList(
+            (SummationAtomOrAtom)(new SummationAtom(
+                info.predicates.get("Friends"),
+                new SummationVariableOrTerm[]{new Variable("A"), new SummationVariable("B")}
+            ))
+        );
 
-		Map<SummationVariable, Formula> filters = new HashMap<SummationVariable, Formula>();
-		filters.put(new SummationVariable("B"), new QueryAtom(info.predicates.get("Nice"), new Variable("B")));
+        Map<SummationVariable, Formula> filters = new HashMap<SummationVariable, Formula>();
+        filters.put(new SummationVariable("B"), new QueryAtom(info.predicates.get("Nice"), new Variable("B")));
 
-		Rule rule = new WeightedArithmeticRule(
-				new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LargerThan, new ConstantNumber(1.0)),
-				filters,
-				1.0,
-				true
-		);
-		info.model.addRule(rule);
+        Rule rule = new WeightedArithmeticRule(
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1.0f)),
+                filters,
+                1.0,
+                true
+        );
+        info.model.addRule(rule);
 
-		LazyMPEInference mpe = new LazyMPEInference(info.model, inferDB);
+        LazyMPEInference mpe = new LazyMPEInference(info.model, inferDB);
 
-		// The Friends predicate should be empty.
-		assertEquals(0, inferDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends")));
+        // The Friends predicate should be empty.
+        assertEquals(0, inferDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends")));
 
-		mpe.inference();
+        mpe.inference();
 
-		// There are multiple optimal configuration to the first round of grounding (which snowballs later),
-		// but we know there should be at least 16 ground atoms and less than 20.
-		int groundCount = inferDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends"));
-		assertEquals(20, groundCount);
+        // There are multiple optimal configuration to the first round of grounding (which snowballs later),
+        // but we know there should be at least 16 ground atoms and less than 20.
+        int groundCount = inferDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends"));
+        assertEquals(20, groundCount);
 
-		mpe.close();
-	}
+        mpe.close();
+    }
 
-	/**
-	 * Make sure lazy inference works even when everything is fully specified.
-	 */
-	@Test
-	public void testFullySpecified() {
-		Database fullTargetDB = info.dataStore.getDatabase(info.targetPartition, closedPredicates, info.observationPartition);
-		LazyMPEInference mpe = new LazyMPEInference(info.model, fullTargetDB);
+    /**
+     * Make sure lazy inference works even when everything is fully specified.
+     */
+    @Test
+    public void testFullySpecified() {
+        Database fullTargetDB = info.dataStore.getDatabase(info.targetPartition, closedPredicates, info.observationPartition);
+        LazyMPEInference mpe = new LazyMPEInference(info.model, fullTargetDB);
 
-		// The Friends predicate should be fully defined.
-		assertEquals(20, fullTargetDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends")));
+        // The Friends predicate should be fully defined.
+        assertEquals(20, fullTargetDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends")));
 
-		mpe.inference();
+        mpe.inference();
 
-		assertEquals(20, fullTargetDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends")));
+        assertEquals(20, fullTargetDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends")));
 
-		mpe.close();
-		fullTargetDB.close();
-	}
+        mpe.close();
+        fullTargetDB.close();
+    }
 }

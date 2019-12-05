@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,78 +24,97 @@ import org.linqs.psl.model.term.Variable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 public class RDBMSResultList implements ResultList {
-	private final Map<Variable, Integer> varMap;
-	private final List<Constant[]> results;
-	private final int arity;
+    private Map<Variable, Integer> varMap;
+    private List<Constant[]> results;
+    private int arity;
 
-	public RDBMSResultList(int arity) {
-		varMap = new HashMap<Variable,Integer>();
-		results = new ArrayList<Constant[]>();
-		this.arity = arity;
-	}
+    public RDBMSResultList(int arity) {
+        varMap = new HashMap<Variable,Integer>();
+        results = new ArrayList<Constant[]>();
+        this.arity = arity;
+    }
 
-	public void addResult(Constant[] res) {
-		assert res.length == arity;
-		results.add(res);
-	}
+    public void addResult(Constant[] res) {
+        assert res.length == arity;
+        results.add(res);
+    }
 
-	public void setVariable(Variable var, int pos) {
-		if (varMap.containsKey(var)) {
-			throw new IllegalArgumentException("Variable has already been set!");
-		}
+    public void setVariable(Variable var, int pos) {
+        if (varMap.containsKey(var)) {
+            throw new IllegalArgumentException("Variable has already been set!");
+        }
 
-		varMap.put(var, Integer.valueOf(pos));
-	}
+        varMap.put(var, Integer.valueOf(pos));
+    }
 
-	@Override
-	public Map<Variable, Integer> getVariableMap() {
-		return Collections.unmodifiableMap(varMap);
-	}
+    @Override
+    public Map<Variable, Integer> getVariableMap() {
+        return Collections.unmodifiableMap(varMap);
+    }
 
-	public int getPos(Variable var) {
-		return varMap.get(var);
-	}
+    public int getPos(Variable var) {
+        return varMap.get(var);
+    }
 
-	@Override
-	public Constant get(int resultNo, Variable var) {
-		return results.get(resultNo)[getPos(var)];
-	}
+    @Override
+    public Constant get(int index, Variable var) {
+        return results.get(index)[getPos(var)];
+    }
 
-	@Override
-	public Constant[] get(int resultNo) {
-		return results.get(resultNo);
-	}
+    @Override
+    public Constant[] get(int index) {
+        return results.get(index);
+    }
 
-	@Override
-	public int getArity() {
-		return arity;
-	}
+    @Override
+    public int getArity() {
+        return arity;
+    }
 
-	@Override
-	public int size() {
-		return results.size();
-	}
+    @Override
+    public int size() {
+        return results.size();
+    }
 
-	@Override
-	public String toString() {
-		StringBuilder s = new StringBuilder();
-		s.append("Size: ").append(size()).append("\n");
-		int len = getArity();
-		for (Constant[] res : results) {
-			for (int i = 0; i < len; i++) {
-				if (i > 0) {
-					s.append(", ");
-				}
-				s.append(res[i]);
-			}
-			s.append("\n");
-		}
-		s.append("-------");
+    @Override
+    public String toString() {
+        StringBuilder s = new StringBuilder();
+        s.append("Size: ").append(size()).append("\n");
+        int len = getArity();
+        for (Constant[] res : results) {
+            for (int i = 0; i < len; i++) {
+                if (i > 0) {
+                    s.append(", ");
+                }
+                s.append(res[i]);
+            }
+            s.append("\n");
+        }
+        s.append("-------");
 
-		return s.toString();
-	}
+        return s.toString();
+    }
+
+    @Override
+    public Iterator<Constant[]> iterator() {
+        return results.iterator();
+    }
+
+    @Override
+    public void close() {
+        if (varMap != null) {
+            varMap.clear();
+            varMap = null;
+        }
+
+        if (results != null) {
+            results.clear();
+            results = null;
+        }
+    }
 }

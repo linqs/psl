@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,11 +23,7 @@ import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.VariableTypeMap;
-import org.linqs.psl.reasoner.function.AtomFunctionVariable;
-
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.SetMultimap;
+import org.linqs.psl.reasoner.function.FunctionTerm;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -38,69 +34,65 @@ import java.util.Set;
  *
  * A GroundAtom has a truth value.
  */
-public abstract class GroundAtom extends Atom implements Comparable<GroundAtom> {
-	private static final Set<GroundRule> emptyGroundRules = ImmutableSet.of();
+public abstract class GroundAtom extends Atom implements Comparable<GroundAtom>, FunctionTerm {
+    protected float value;
 
-	protected final Database db;
-	protected double value;
+    protected GroundAtom(Predicate predicate, Constant[] args, float value) {
+        super(predicate, args);
+        this.value = value;
+    }
 
-	protected GroundAtom(Predicate predicate, Constant[] args, Database db, double value) {
-		super(predicate, args);
-		this.db = db;
-		this.value = value;
-	}
+    @Override
+    public Constant[] getArguments() {
+        return (Constant[])arguments;
+    }
 
-	public Database getDatabase() {
-		return db;
-	}
+    /**
+     * @return the truth value of this Atom
+     */
+    @Override
+    public float getValue() {
+        return value;
+    }
 
-	@Override
-	public Constant[] getArguments() {
-		return (Constant[])arguments;
-	}
+    @Override
+    public boolean isLinear() {
+        return true;
+    }
 
-	/**
-	 * @return the truth value of this Atom
-	 */
-	public double getValue() {
-		return value;
-	}
+    public String toStringWithValue() {
+        return super.toString() + " = " + getValue();
+    }
 
-	public String toStringWithValue() {
-		return super.toString() + " = " + getValue();
-	}
+    public VariableTypeMap collectVariables(VariableTypeMap varMap) {
+        // No Variables in GroundAtoms.
+        return varMap;
+    }
 
-	public abstract AtomFunctionVariable getVariable();
+    /**
+     * First order by value (descending), the predicate name (natural),
+     * and then the arguments (in order).
+     */
+    @Override
+    public int compareTo(GroundAtom other) {
+        if (this.getValue() < other.getValue()) {
+            return 1;
+        } else if (this.getValue() > other.getValue()) {
+            return -1;
+        } else {
+            int val = this.predicate.getName().compareTo(other.predicate.getName());
+            if (val != 0) {
+                return val;
+            }
 
-	public VariableTypeMap collectVariables(VariableTypeMap varMap) {
-		// No Variables in GroundAtoms.
-		return varMap;
-	}
+            for (int i = 0; i < this.arguments.length; i++) {
+                val = this.arguments[i].compareTo(other.arguments[i]);
+                if (val != 0) {
+                    return val;
+                }
+            }
 
-	/**
-	 * First order by value (descending), the predicate name (natural),
-	 * and then the arguments (in order).
-	 */
-	@Override
-	public int compareTo(GroundAtom other) {
-		if (this.getValue() < other.getValue()) {
-			return 1;
-		} else if (this.getValue() > other.getValue()) {
-			return -1;
-		} else {
-			int val = this.predicate.getName().compareTo(other.predicate.getName());
-			if (val != 0) {
-				return val;
-			}
-
-			for (int i = 0; i < this.arguments.length; i++) {
-				val = this.arguments[i].compareTo(other.arguments[i]);
-				if (val != 0) {
-					return val;
-				}
-			}
-
-			return 0;
-		}
-	}
+            return 0;
+        }
+    }
 }

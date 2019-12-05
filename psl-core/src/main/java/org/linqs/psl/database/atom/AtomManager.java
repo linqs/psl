@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ package org.linqs.psl.database.atom;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseQuery;
 import org.linqs.psl.database.ResultList;
+import org.linqs.psl.database.QueryResultIterable;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.predicate.Predicate;
@@ -41,55 +42,85 @@ import org.linqs.psl.model.term.Constant;
  * Atoms.
  */
 public abstract class AtomManager {
-	protected final Database db;
+    protected final Database db;
 
-	public AtomManager(Database db) {
-		this.db = db;
-	}
+    /**
+     * If the specific AtomManager supports access exceptions,
+     * then this will control if they are actually thrown.
+     */
+    protected boolean enableAccessExceptions;
 
-	/**
-	 * Returns the GroundAtom for the given Predicate and GroundTerms.
-	 *
-	 * This method must call {@link Database#getAtom(Predicate, Constant...)}
-	 * to actually retrieve the GroundAtom.
-	 *
-	 * @param predicate the Predicate of the Atom
-	 * @param arguments the GroundTerms of the Atom
-	 * @return the Atom
-	 */
-	public abstract GroundAtom getAtom(Predicate predicate, Constant... arguments);
+    public AtomManager(Database db) {
+        this.db = db;
+        this.enableAccessExceptions = true;
+    }
 
-	/**
-	 * Calls {@link Database#executeQuery(DatabaseQuery)} on the
-	 * encapsulated Database.
-	 *
-	 * @param query the query to execute
-	 * @return the query results exactly as returned by the Database
-	 */
-	public ResultList executeQuery(DatabaseQuery query) {
-		return db.executeQuery(query);
-	}
+    /**
+     * Returns the GroundAtom for the given Predicate and GroundTerms.
+     *
+     * This method must call {@link Database#getAtom(Predicate, Constant...)}
+     * to actually retrieve the GroundAtom.
+     *
+     * @param predicate the Predicate of the Atom
+     * @param arguments the GroundTerms of the Atom
+     * @return the Atom
+     */
+    public abstract GroundAtom getAtom(Predicate predicate, Constant... arguments);
 
-	/**
-	 * Calls {@link Database#executeGroundingQuery(Formula)} on the
-	 * encapsulated Database.
-	 */
-	public ResultList executeGroundingQuery(Formula formula) {
-		return db.executeGroundingQuery(formula);
-	}
+    /**
+     * Calls {@link Database#executeQuery(DatabaseQuery)} on the
+     * encapsulated Database.
+     *
+     * @param query the query to execute
+     * @return the query results exactly as returned by the Database
+     */
+    public ResultList executeQuery(DatabaseQuery query) {
+        return db.executeQuery(query);
+    }
 
-	/**
-	 * Calls {@link Database#isClosed(StandardPredicate)} on the
-	 * encapsulated Database.
-	 *
-	 * @param predicate the predicate to check
-	 * @return TRUE if predicate is closed in the Database
-	 */
-	public boolean isClosed(StandardPredicate predicate) {
-		return db.isClosed(predicate);
-	}
+    /**
+     * Calls {@link Database#executeGroundingQuery(Formula)} on the
+     * encapsulated Database.
+     */
+    public QueryResultIterable executeGroundingQuery(Formula formula) {
+        return db.executeGroundingQuery(formula);
+    }
 
-	public Database getDatabase() {
-		return db;
-	}
+    /**
+     * Calls {@link Database#isClosed(StandardPredicate)} on the
+     * encapsulated Database.
+     *
+     * @param predicate the predicate to check
+     * @return TRUE if predicate is closed in the Database
+     */
+    public boolean isClosed(StandardPredicate predicate) {
+        return db.isClosed(predicate);
+    }
+
+    public Database getDatabase() {
+        return db;
+    }
+
+    /**
+     * Set whether or not to throw access exceptions.
+     * @return the old setting for this value.
+     */
+    public boolean enableAccessExceptions(boolean newValue) {
+        boolean oldValue = enableAccessExceptions;
+        enableAccessExceptions = newValue;
+        return oldValue;
+    }
+
+    /**
+     * Get the number of RandomVariableAtoms cached by the database.
+     */
+    public int getCachedRVACount() {
+        return db.getCachedRVACount();
+    }
+
+    /**
+     * Decide whether or not to throw an access exception.
+     * This will bypass |enableAccessExceptions|.
+     */
+    public abstract void reportAccessException(RuntimeException ex, GroundAtom offendingAtom);
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,65 +33,65 @@ import org.linqs.psl.model.rule.arithmetic.expression.SummationVariableOrTerm;
 import org.linqs.psl.model.term.ConstantType;
 
 public class SummationAtomTest {
-	private DataStore dataStore;
+    private DataStore dataStore;
 
-	private StandardPredicate singlePredicate;
-	private StandardPredicate doublePredicate;
+    private StandardPredicate singlePredicate;
+    private StandardPredicate doublePredicate;
 
-	@Before
-	public void setup() {
-		dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Memory, this.getClass().getName(), true));
+    @Before
+    public void setup() {
+        dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Memory, this.getClass().getName(), true));
 
-		singlePredicate = StandardPredicate.get("SingleClosed", ConstantType.UniqueStringID);
-		dataStore.registerPredicate(singlePredicate);
+        singlePredicate = StandardPredicate.get("SingleClosed", ConstantType.UniqueStringID);
+        dataStore.registerPredicate(singlePredicate);
 
-		doublePredicate = StandardPredicate.get("DoubleClosed", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
-		dataStore.registerPredicate(doublePredicate);
-	}
+        doublePredicate = StandardPredicate.get("DoubleClosed", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
+        dataStore.registerPredicate(doublePredicate);
+    }
 
-	@Test
-	public void testValidateArgLength1() {
-		try {
-			new SummationAtom(singlePredicate, new SummationVariableOrTerm[]{});
-			fail("IllegalArgumentException not thrown when less than the number of arguments (1) was supplied.");
-		} catch (IllegalArgumentException ex) {
-			// Exception is expected.
-		}
+    @Test
+    public void testValidateArgLength1() {
+        try {
+            new SummationAtom(singlePredicate, new SummationVariableOrTerm[]{});
+            fail("IllegalArgumentException not thrown when less than the number of arguments (1) was supplied.");
+        } catch (IllegalArgumentException ex) {
+            // Exception is expected.
+        }
 
-		try {
-			new SummationAtom(singlePredicate, new SummationVariableOrTerm[]{
-					new SummationVariable("A"),
-					new SummationVariable("B")
-			});
-			fail("IllegalArgumentException not thrown when more than the number of arguments (1) was supplied.");
-		} catch (IllegalArgumentException ex) {
-			// Exception is expected.
-		}
-	}
+        try {
+            new SummationAtom(singlePredicate, new SummationVariableOrTerm[]{
+                    new SummationVariable("A"),
+                    new SummationVariable("B")
+            });
+            fail("IllegalArgumentException not thrown when more than the number of arguments (1) was supplied.");
+        } catch (IllegalArgumentException ex) {
+            // Exception is expected.
+        }
+    }
 
-	@Test
-	public void testValidateArgLength2() {
-		try {
-			new SummationAtom(doublePredicate, new SummationVariableOrTerm[]{new SummationVariable("A")});
-			fail("IllegalArgumentException not thrown when less than the number of arguments (2) was supplied.");
-		} catch (IllegalArgumentException ex) {
-			// Exception is expected.
-		}
+    @Test
+    public void testValidateArgLength2() {
+        try {
+            new SummationAtom(doublePredicate, new SummationVariableOrTerm[]{new SummationVariable("A")});
+            fail("IllegalArgumentException not thrown when less than the number of arguments (2) was supplied.");
+        } catch (IllegalArgumentException ex) {
+            // Exception is expected.
+        }
 
-		try {
-			new SummationAtom(doublePredicate, new SummationVariableOrTerm[]{
-					new SummationVariable("A"),
-					new SummationVariable("B"),
-					new SummationVariable("C")
-			});
-			fail("IllegalArgumentException not thrown when more than the number of arguments (2) was supplied.");
-		} catch (IllegalArgumentException ex) {
-			// Exception is expected.
-		}
-	}
+        try {
+            new SummationAtom(doublePredicate, new SummationVariableOrTerm[]{
+                    new SummationVariable("A"),
+                    new SummationVariable("B"),
+                    new SummationVariable("C")
+            });
+            fail("IllegalArgumentException not thrown when more than the number of arguments (2) was supplied.");
+        } catch (IllegalArgumentException ex) {
+            // Exception is expected.
+        }
+    }
 
-	@After
-	public void cleanup() {
-		dataStore.close();
-	}
+    @After
+    public void cleanup() {
+        dataStore.close();
+    }
 }

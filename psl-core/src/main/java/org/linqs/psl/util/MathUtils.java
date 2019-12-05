@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,136 +23,136 @@ import java.math.BigInteger;
  * Various static math utilities.
  */
 public final class MathUtils {
-	public static final double EPSILON = 1e-6;
-	public static final double RELAXED_EPSILON = 5e-3;
-	public static final double STRICT_EPSILON = 1e-8;
+    public static final double EPSILON = 1e-6;
+    public static final double RELAXED_EPSILON = 5e-3;
+    public static final double STRICT_EPSILON = 1e-8;
 
-	public static final double EPSILON_FLOAT = 1e-6f;
-	public static final double RELAXED_EPSILON_FLOAT = 5e-3f;
-	public static final double STRICT_EPSILON_FLOAT = 1e-8f;
+    public static final double EPSILON_FLOAT = 1e-6f;
+    public static final double RELAXED_EPSILON_FLOAT = 5e-3f;
+    public static final double STRICT_EPSILON_FLOAT = 1e-8f;
 
-	// Static only.
-	private MathUtils() {}
+    // Static only.
+    private MathUtils() {}
 
-	public static boolean signsMatch(int a, int b) {
-		return (a > 0 && b > 0) || (a < 0 && b < 0) || (a == 0 && b == 0);
-	}
+    public static boolean signsMatch(int a, int b) {
+        return (a > 0 && b > 0) || (a < 0 && b < 0) || (a == 0 && b == 0);
+    }
 
-	public static boolean signsMatch(float a, float b) {
-		return (a > 0 && b > 0) || (a < 0 && b < 0) || (isZero(a) && isZero(b));
-	}
+    public static boolean signsMatch(float a, float b) {
+        return (a > 0 && b > 0) || (a < 0 && b < 0) || (isZero(a) && isZero(b));
+    }
 
-	public static boolean signsMatch(double a, double b) {
-		return (a > 0 && b > 0) || (a < 0 && b < 0) || (isZero(a) && isZero(b));
-	}
+    public static boolean signsMatch(double a, double b) {
+        return (a > 0 && b > 0) || (a < 0 && b < 0) || (isZero(a) && isZero(b));
+    }
 
-	public static boolean equals(double a, double b) {
-		return equals(a, b, EPSILON);
-	}
+    public static boolean equals(double a, double b) {
+        return equals(a, b, EPSILON);
+    }
 
-	public static boolean equalsRelaxed(double a, double b) {
-		return equals(a, b, RELAXED_EPSILON);
-	}
+    public static boolean equalsRelaxed(double a, double b) {
+        return equals(a, b, RELAXED_EPSILON);
+    }
 
-	public static boolean equalsStrict(double a, double b) {
-		return equals(a, b, STRICT_EPSILON);
-	}
+    public static boolean equalsStrict(double a, double b) {
+        return equals(a, b, STRICT_EPSILON);
+    }
 
-	public static boolean equals(double a, double b, double epsilon) {
-		return Math.abs(a - b) <= epsilon;
-	}
+    public static boolean equals(double a, double b, double epsilon) {
+        return Math.abs(a - b) <= epsilon;
+    }
 
-	public static int compare(double a, double b) {
-		return compare(a, b, EPSILON);
-	}
+    public static int compare(double a, double b) {
+        return compare(a, b, EPSILON);
+    }
 
-	/**
-	 * A comparison method with the Comparator integer return semantics.
-	 */
-	public static int compare(double a, double b, double epsilon) {
-		if (equals(a, b, epsilon)) {
-			return 0;
-		}
+    /**
+     * A comparison method with the Comparator integer return semantics.
+     */
+    public static int compare(double a, double b, double epsilon) {
+        if (equals(a, b, epsilon)) {
+            return 0;
+        }
 
-		if (a < b) {
-			return -1;
-		}
+        if (a < b) {
+            return -1;
+        }
 
-		return 1;
-	}
+        return 1;
+    }
 
-	public static boolean isZero(double a) {
-		return equals(a, 0.0);
-	}
+    public static boolean isZero(double a) {
+        return equals(a, 0.0);
+    }
 
-	public static boolean isZero(double a, double epsilon) {
-		return equals(a, 0.0, epsilon);
-	}
+    public static boolean isZero(double a, double epsilon) {
+        return equals(a, 0.0, epsilon);
+    }
 
-	public static boolean equals(float a, float b) {
-		return equals(a, b, EPSILON_FLOAT);
-	}
+    public static boolean equals(float a, float b) {
+        return equals(a, b, EPSILON_FLOAT);
+    }
 
-	public static boolean equalsRelaxed(float a, float b) {
-		return equals(a, b, RELAXED_EPSILON_FLOAT);
-	}
+    public static boolean equalsRelaxed(float a, float b) {
+        return equals(a, b, RELAXED_EPSILON_FLOAT);
+    }
 
-	public static boolean equalsStrict(float a, float b) {
-		return equals(a, b, STRICT_EPSILON_FLOAT);
-	}
+    public static boolean equalsStrict(float a, float b) {
+        return equals(a, b, STRICT_EPSILON_FLOAT);
+    }
 
-	public static boolean equals(float a, float b, float epsilon) {
-		return Math.abs(a - b) <= epsilon;
-	}
+    public static boolean equals(float a, float b, float epsilon) {
+        return Math.abs(a - b) <= epsilon;
+    }
 
-	public static int compare(float a, float b) {
-		return compare(a, b, EPSILON_FLOAT);
-	}
+    public static int compare(float a, float b) {
+        return compare(a, b, EPSILON_FLOAT);
+    }
 
-	/**
-	 * A comparison method with the Comparator integer return semantics.
-	 */
-	public static int compare(float a, float b, float epsilon) {
-		if (equals(a, b, epsilon)) {
-			return 0;
-		}
+    /**
+     * A comparison method with the Comparator integer return semantics.
+     */
+    public static int compare(float a, float b, float epsilon) {
+        if (equals(a, b, epsilon)) {
+            return 0;
+        }
 
-		if (a < b) {
-			return -1;
-		}
+        if (a < b) {
+            return -1;
+        }
 
-		return 1;
-	}
+        return 1;
+    }
 
-	public static boolean isZero(float a) {
-		return equals(a, 0.0f);
-	}
+    public static boolean isZero(float a) {
+        return equals(a, 0.0f);
+    }
 
-	public static boolean isZero(float a, float epsilon) {
-		return equals(a, 0.0f, epsilon);
-	}
+    public static boolean isZero(float a, float epsilon) {
+        return equals(a, 0.0f, epsilon);
+    }
 
-	public static int smallFactorial(int number) {
-		if (number >= 16) {
-			throw new IllegalArgumentException("Too large a number for smallFactorial: " + number);
-		}
+    public static int smallFactorial(int number) {
+        if (number >= 16) {
+            throw new IllegalArgumentException("Too large a number for smallFactorial: " + number);
+        }
 
-		int result = 1;
+        int result = 1;
 
-		for (int factor = 2; factor <= number; factor++) {
-			result *= factor;
-		}
+        for (int factor = 2; factor <= number; factor++) {
+            result *= factor;
+        }
 
-		return result;
-	}
+        return result;
+    }
 
-	public static BigInteger factorial(BigInteger number) {
-		BigInteger result = BigInteger.valueOf(1);
+    public static BigInteger factorial(BigInteger number) {
+        BigInteger result = BigInteger.valueOf(1);
 
-		for (long factor = 2; factor <= number.longValue(); factor++) {
-			result = result.multiply(BigInteger.valueOf(factor));
-		}
+        for (long factor = 2; factor <= number.longValue(); factor++) {
+            result = result.multiply(BigInteger.valueOf(factor));
+        }
 
-		return result;
-	}
+        return result;
+    }
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@
 package org.linqs.psl.model.rule.arithmetic;
 
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.predicate.SpecialPredicate;
+import org.linqs.psl.model.predicate.GroundingOnlyPredicate;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
@@ -27,111 +27,97 @@ import org.linqs.psl.reasoner.function.GeneralFunction;
 import java.util.List;
 
 public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule implements WeightedGroundRule {
-	private double weight;
-	private final boolean squared;
+    protected WeightedGroundArithmeticRule(WeightedArithmeticRule rule, List<Float> coefficients,
+            List<GroundAtom> atoms, FunctionComparator comparator, float constant) {
+        super(rule, coefficients, atoms, comparator, constant);
+        validate();
+    }
 
-	protected WeightedGroundArithmeticRule(WeightedArithmeticRule rule, List<Double> coeffs,
-			List<GroundAtom> atoms, FunctionComparator comparator, double constant, boolean squared) {
-		super(rule, coeffs, atoms, comparator, constant);
+    protected WeightedGroundArithmeticRule(WeightedArithmeticRule rule, float[] coefficients, GroundAtom[] atoms,
+            FunctionComparator comparator, float constant) {
+        super(rule, coefficients, atoms, comparator, constant);
+        validate();
+    }
 
-		weight = Double.NaN;
-		this.squared = squared;
+    private void validate() {
+        if (FunctionComparator.EQ.equals(comparator)) {
+            throw new IllegalArgumentException("WeightedGroundArithmeticRules do not support equality comparators. "
+                    + "Create two ground rules instead, one with " + FunctionComparator.LTE + " and one with "
+                    + FunctionComparator.GTE + ".");
+        } else if (!FunctionComparator.LTE.equals(comparator) && !FunctionComparator.GTE.equals(comparator)) {
+            throw new IllegalArgumentException("Unrecognized comparator: " + comparator);
+        }
+    }
 
-		validate();
-	}
+    @Override
+    public WeightedRule getRule() {
+        return (WeightedRule)rule;
+    }
 
-	protected WeightedGroundArithmeticRule(WeightedArithmeticRule rule, double[] coeffs, GroundAtom[] atoms,
-			FunctionComparator comparator, double constant, boolean squared) {
-		super(rule, coeffs, atoms, comparator, constant);
+    @Override
+    public boolean isSquared() {
+        return ((WeightedRule)rule).isSquared();
+    }
 
-		weight = Double.NaN;
-		this.squared = squared;
+    @Override
+    public double getWeight() {
+        return ((WeightedRule)rule).getWeight();
+    }
 
-		validate();
-	}
+    @Override
+    public void setWeight(double weight) {
+        ((WeightedRule)rule).setWeight(weight);
+    }
 
-	private void validate() {
-		if (FunctionComparator.Equality.equals(comparator)) {
-			throw new IllegalArgumentException("WeightedGroundArithmeticRules do not support equality comparators. "
-					+ "Create two ground rules instead, one with " + FunctionComparator.SmallerThan + " and one with "
-					+ FunctionComparator.LargerThan + ".");
-		} else if (!FunctionComparator.SmallerThan.equals(comparator) && !FunctionComparator.LargerThan.equals(comparator)) {
-			throw new IllegalArgumentException("Unrecognized comparator: " + comparator);
-		}
-	}
+    @Override
+    public GeneralFunction getFunctionDefinition() {
+        GeneralFunction sum = new GeneralFunction(true, isSquared(), coefficients.length);
 
-	@Override
-	public WeightedRule getRule() {
-		return (WeightedRule)rule;
-	}
+        float termSign = FunctionComparator.GTE.equals(comparator) ? -1.0f : 1.0f;
+        for (int i = 0; i < coefficients.length; i++) {
+            // Skip any grounding only predicates.
+            if (atoms[i].getPredicate() instanceof GroundingOnlyPredicate) {
+                continue;
+            }
 
-	@Override
-	public boolean isSquared() {
-		return squared;
-	}
+            sum.add(termSign * coefficients[i], atoms[i]);
+        }
+        sum.add(-1.0f * termSign * constant);
 
-	@Override
-	public double getWeight() {
-		if (Double.isNaN(weight)) {
-			return getRule().getWeight();
-		}
-		return weight;
-	}
+        return sum;
+    }
 
-	@Override
-	public void setWeight(double weight) {
-		this.weight = weight;
-	}
+    @Override
+    public double getIncompatibility() {
+        return getIncompatibility(null, 0.0f);
+    }
 
-	@Override
-	public GeneralFunction getFunctionDefinition() {
-		GeneralFunction sum = new GeneralFunction(true, squared, coeffs.length);
+    @Override
+    public double getIncompatibility(GroundAtom replacementAtom, float replacementValue) {
+        float sum = 0.0f;
+        for (int i = 0; i < coefficients.length; i++) {
+            // Skip any grounding only predicates.
+            if (atoms[i].getPredicate() instanceof GroundingOnlyPredicate) {
+                continue;
+            }
 
-		double termSign = FunctionComparator.LargerThan.equals(comparator) ? -1.0 : 1.0;
-		for (int i = 0; i < coeffs.length; i++) {
-			// Skip any special predicates.
-			if (atoms[i].getPredicate() instanceof SpecialPredicate) {
-				continue;
-			}
+            if (atoms[i] == replacementAtom) {
+                sum += coefficients[i] * replacementValue;
+            } else {
+                sum += coefficients[i] * atoms[i].getValue();
+            }
+        }
+        sum -= constant;
 
-			sum.add(termSign * coeffs[i], atoms[i].getVariable());
-		}
-		sum.add(-1.0 * termSign * constant);
+        if (FunctionComparator.GTE.equals(comparator)) {
+            sum *= -1;
+        }
 
-		return sum;
-	}
+        return (isSquared()) ? Math.pow(Math.max(sum, 0.0f), 2) : Math.max(sum, 0.0f);
+    }
 
-	@Override
-	public double getIncompatibility() {
-		return getIncompatibility(null, 0);
-	}
-
-	@Override
-	public double getIncompatibility(GroundAtom replacementAtom, double replacementValue) {
-		double sum = 0.0;
-		for (int i = 0; i < coeffs.length; i++) {
-			// Skip any special predicates.
-			if (atoms[i].getPredicate() instanceof SpecialPredicate) {
-				continue;
-			}
-
-			if (atoms[i] == replacementAtom) {
-				sum += coeffs[i] * replacementValue;
-			} else {
-				sum += coeffs[i] * atoms[i].getValue();
-			}
-		}
-		sum -= constant;
-
-		if (FunctionComparator.LargerThan.equals(comparator)) {
-			sum *= -1;
-		}
-
-		return (squared) ? Math.pow(Math.max(sum, 0.0), 2) : Math.max(sum, 0.0);
-	}
-
-	@Override
-	public String toString() {
-		return "" + getWeight() + ": " + super.toString() + ((squared) ? " ^2" : "");
-	}
+    @Override
+    public String toString() {
+        return "" + getWeight() + ": " + baseToString() + ((isSquared()) ? " ^2" : "");
+    }
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,87 +31,87 @@ import java.util.Map;
  * Instead, they are constructed via the appropriate gegetthod in each subclass.
  */
 public abstract class Predicate {
-	private static Map<String, Predicate> predicates = new HashMap<String, Predicate>();
+    private static Map<String, Predicate> predicates = new HashMap<String, Predicate>();
 
-	private final String name;
-	private final ConstantType[] types;
+    private final String name;
+    private final ConstantType[] types;
 
-	protected Predicate(String name, ConstantType[] types) {
-		this(name, types, true);
-	}
+    protected Predicate(String name, ConstantType[] types) {
+        this(name, types, true);
+    }
 
-	protected Predicate(String name, ConstantType[] types, boolean checkName) {
-		if (checkName && !name.matches("\\w+")) {
-			throw new IllegalArgumentException("Predicate name must match: /\\w+/.");
-		}
+    protected Predicate(String name, ConstantType[] types, boolean checkName) {
+        if (checkName && !name.matches("\\w+")) {
+            throw new IllegalArgumentException("Predicate name must match: /\\w+/.");
+        }
 
-		if (name == null || name.length() == 0) {
-			throw new IllegalArgumentException("All predicates must have a non-zero length name.");
-		}
+        if (name == null || name.length() == 0) {
+            throw new IllegalArgumentException("All predicates must have a non-zero length name.");
+        }
 
-		if (types == null || types.length == 0) {
-			throw new IllegalArgumentException("All predicates must have at least one argument.");
-		}
+        if (types == null || types.length == 0) {
+            throw new IllegalArgumentException("All predicates must have at least one argument.");
+        }
 
-		this.name = name.toUpperCase();
-		this.types = types;
+        this.name = name.toUpperCase();
+        this.types = types;
 
-		if (predicates.containsKey(this.name)) {
-			throw new RuntimeException("Predicate with name '" + name + "' already exists.");
-		}
-		predicates.put(this.name, this);
-	}
+        if (predicates.containsKey(this.name)) {
+            throw new RuntimeException("Predicate with name '" + name + "' already exists.");
+        }
+        predicates.put(this.name, this);
+    }
 
-	/**
-	 * Returns the name of this Predicate.
-	 *
-	 * @return a string identifier for this Predicate
-	 */
-	public String getName() {
-		return name;
-	}
+    /**
+     * Returns the name of this Predicate.
+     *
+     * @return a string identifier for this Predicate
+     */
+    public String getName() {
+        return name;
+    }
 
-	/**
-	 * Returns the number of {@link Term Terms} that are related when using this Predicate.
-	 * In other words, the arity of a Predicate is the number of arguments it accepts.
-	 * For example, the Predicate Related(A, B) has an arity of 2.
-	 */
-	public int getArity() {
-		return types.length;
-	}
+    /**
+     * Returns the number of {@link Term Terms} that are related when using this Predicate.
+     * In other words, the arity of a Predicate is the number of arguments it accepts.
+     * For example, the Predicate Related(A, B) has an arity of 2.
+     */
+    public int getArity() {
+        return types.length;
+    }
 
-	/**
-	 * Returns the ArgumentType which a {@link Term} must have to be a valid
-	 * argument for a particular argument position of this Predicate.
-	 */
-	public ConstantType getArgumentType(int position) {
-		return types[position];
-	}
+    /**
+     * Returns the ArgumentType which a {@link Term} must have to be a valid
+     * argument for a particular argument position of this Predicate.
+     */
+    public ConstantType getArgumentType(int position) {
+        return types[position];
+    }
 
-	@Override
-	public String toString() {
-		StringBuilder builder = new StringBuilder();
-		builder.append(getName()).append("(");
-		for (int i = 0; i < types.length; i++) {
-			if (i > 0) {
-				builder.append(", ");
-			}
-			builder.append(types[i]);
-		}
-		builder.append(")");
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        builder.append(getName()).append("(");
+        for (int i = 0; i < types.length; i++) {
+            if (i > 0) {
+                builder.append(", ");
+            }
+            builder.append(types[i]);
+        }
+        builder.append(")");
 
-		return builder.toString();
-	}
+        return builder.toString();
+    }
 
-	public static Predicate get(String name)  {
-		return predicates.get(name.toUpperCase());
-	}
+    public static Predicate get(String name)  {
+        return predicates.get(name.toUpperCase());
+    }
 
-	/**
-	 * Clear out all active predicates.
-	 * This should ONLY be used in testing to set up for subsequent tests.
-	 */
-	public static void clearForTesting() {
-		predicates.clear();
-	}
+    /**
+     * Clear out all active predicates.
+     * This should ONLY be used in testing to set up for subsequent tests.
+     */
+    public static void clearForTesting() {
+        predicates.clear();
+    }
 }

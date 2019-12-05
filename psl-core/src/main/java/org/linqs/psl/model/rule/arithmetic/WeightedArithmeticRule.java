@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,95 +30,95 @@ import java.util.List;
 import java.util.Map;
 
 public class WeightedArithmeticRule extends AbstractArithmeticRule implements WeightedRule {
-	protected double weight;
-	protected boolean squared;
+    protected double weight;
+    protected boolean squared;
 
-	public WeightedArithmeticRule(ArithmeticRuleExpression expression, double weight, boolean squared) {
-		this(expression, weight, squared, expression.toString());
-	}
+    public WeightedArithmeticRule(ArithmeticRuleExpression expression, double weight, boolean squared) {
+        this(expression, weight, squared, expression.toString());
+    }
 
-	public WeightedArithmeticRule(ArithmeticRuleExpression expression, double weight, boolean squared, String name) {
-		this(expression, new HashMap<SummationVariable, Formula>(), weight, squared, name);
-	}
+    public WeightedArithmeticRule(ArithmeticRuleExpression expression, double weight, boolean squared, String name) {
+        this(expression, new HashMap<SummationVariable, Formula>(), weight, squared, name);
+    }
 
-	public WeightedArithmeticRule(ArithmeticRuleExpression expression, Map<SummationVariable, Formula> filterClauses,
-			double weight, boolean squared) {
-		this(expression, filterClauses, weight, squared, expression.toString());
-	}
+    public WeightedArithmeticRule(ArithmeticRuleExpression expression, Map<SummationVariable, Formula> filterClauses,
+            double weight, boolean squared) {
+        this(expression, filterClauses, weight, squared, expression.toString());
+    }
 
-	public WeightedArithmeticRule(ArithmeticRuleExpression expression, Map<SummationVariable, Formula> filterClauses,
-			double weight, boolean squared, String name) {
-		super(expression, filterClauses, name);
+    public WeightedArithmeticRule(ArithmeticRuleExpression expression, Map<SummationVariable, Formula> filterClauses,
+            double weight, boolean squared, String name) {
+        super(expression, filterClauses, name);
 
-		this.weight = weight;
-		this.squared = squared;
-	}
+        this.weight = weight;
+        this.squared = squared;
+    }
 
-	@Override
-	protected AbstractGroundArithmeticRule makeGroundRule(double[] coeffs, GroundAtom[] atoms,
-			FunctionComparator comparator, double c) {
-		return new WeightedGroundArithmeticRule(this, coeffs, atoms, comparator, c, squared);
-	}
+    @Override
+    protected AbstractGroundArithmeticRule makeGroundRule(float[] coeffs, GroundAtom[] atoms,
+            FunctionComparator comparator, float constant) {
+        return new WeightedGroundArithmeticRule(this, coeffs, atoms, comparator, constant);
+    }
 
-	@Override
-	protected AbstractGroundArithmeticRule makeGroundRule(List<Double> coeffs, List<GroundAtom> atoms,
-			FunctionComparator comparator, double c) {
-		return new WeightedGroundArithmeticRule(this, coeffs, atoms, comparator, c, squared);
-	}
+    @Override
+    protected AbstractGroundArithmeticRule makeGroundRule(List<Float> coeffs, List<GroundAtom> atoms,
+            FunctionComparator comparator, float constant) {
+        return new WeightedGroundArithmeticRule(this, coeffs, atoms, comparator, constant);
+    }
 
-	@Override
-	public boolean isSquared() {
-		return squared;
-	}
+    @Override
+    public boolean isSquared() {
+        return squared;
+    }
 
-	@Override
-	public double getWeight() {
-		return weight;
-	}
+    @Override
+    public double getWeight() {
+        return weight;
+    }
 
-	@Override
-	public void setWeight(double weight) {
-		this.weight = weight;
-	}
+    @Override
+    public void setWeight(double weight) {
+        this.weight = weight;
+    }
 
-	@Override
-	public String toString() {
-		StringBuilder s = new StringBuilder();
-		s.append(weight);
-		s.append(": ");
-		s.append(expression);
-		s.append((squared) ? " ^2" : "");
-		for (Map.Entry<SummationVariable, Formula> e : filters.entrySet()) {
-			s.append("\n{");
-			// Appends the corresponding Variable, not the SummationVariable, to leave out the '+'
-			s.append(e.getKey().getVariable());
-			s.append(" : ");
-			s.append(e.getValue());
-			s.append("}");
-		}
-		return s.toString();
-	}
+    @Override
+    public String toString() {
+        StringBuilder s = new StringBuilder();
+        s.append(weight);
+        s.append(": ");
+        s.append(expression);
+        s.append((squared) ? " ^2" : "");
+        for (Map.Entry<SummationVariable, Formula> e : filters.entrySet()) {
+            s.append("   {");
+            // Appends the corresponding Variable, not the SummationVariable, to leave out the '+'
+            s.append(e.getKey().getVariable());
+            s.append(" : ");
+            s.append(e.getValue());
+            s.append("}");
+        }
+        return s.toString();
+    }
 
-	@Override
-	public boolean isWeighted() {
-		return true;
-	}
+    @Override
+    public boolean isWeighted() {
+        return true;
+    }
 
-	@Override
-	public boolean equals(Object other) {
-		if (this == other) {
-			return true;
-		}
+    @Override
+    public boolean equals(Object other) {
+        if (this == other) {
+            return true;
+        }
 
-		if (other == null || this.getClass() != other.getClass()) {
-			return false;
-		}
+        if (other == null || this.getClass() != other.getClass()) {
+            return false;
+        }
 
-		WeightedArithmeticRule otherRule = (WeightedArithmeticRule)other;
-		if (this.squared != otherRule.squared || !MathUtils.equals(this.weight, otherRule.weight)) {
-			return false;
-		}
+        WeightedArithmeticRule otherRule = (WeightedArithmeticRule)other;
+        if (this.squared != otherRule.squared || !MathUtils.equals(this.weight, otherRule.weight)) {
+            return false;
+        }
 
-		return super.equals(other);
-	}
+        return super.equals(other);
+    }
 }

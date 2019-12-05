@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,44 +30,44 @@ import org.linqs.psl.util.IteratorUtils;
 import java.util.List;
 
 public class UnweightedGroundLogicalRule extends AbstractGroundLogicalRule
-		implements UnweightedGroundRule {
+        implements UnweightedGroundRule {
 
-	protected UnweightedGroundLogicalRule(UnweightedLogicalRule r, List<GroundAtom> posLiterals, List<GroundAtom> negLiterals, int rvaCount) {
-		super(r, posLiterals, negLiterals, rvaCount);
-	}
+    protected UnweightedGroundLogicalRule(UnweightedLogicalRule rule, List<GroundAtom> posLiterals, List<GroundAtom> negLiterals, short rvaCount) {
+        super(rule, posLiterals, negLiterals, rvaCount);
+    }
 
-	@Override
-	public UnweightedRule getRule() {
-		return (UnweightedRule)rule;
-	}
+    @Override
+    public UnweightedRule getRule() {
+        return (UnweightedRule)rule;
+    }
 
-	@Override
-	public double getInfeasibility() {
-		return Math.abs(function.getValue() - 1.0);
-	}
+    @Override
+    public double getInfeasibility() {
+        return dissatisfaction.getValue();
+    }
 
-	@Override
-	public ConstraintTerm getConstraintDefinition() {
-		return new ConstraintTerm(function, FunctionComparator.SmallerThan, 0.0);
-	}
+    @Override
+    public ConstraintTerm getConstraintDefinition() {
+        return new ConstraintTerm(dissatisfaction, FunctionComparator.LTE, 0.0f);
+    }
 
-	@Override
-	public String toString() {
-		return super.toString() + " .";
-	}
+    @Override
+    public String toString() {
+        return super.toString() + " .";
+    }
 
-	@Override
-	protected GroundRule instantiateNegatedGroundRule(
-			Formula disjunction, List<GroundAtom> positiveAtoms,
-			List<GroundAtom> negativeAtoms, String name) {
-		int rvaCount = 0;
-		for (GroundAtom atom : IteratorUtils.join(positiveAtoms, negativeAtoms)) {
-			if (atom instanceof RandomVariableAtom) {
-				rvaCount++;
-			}
-		}
+    @Override
+    protected GroundRule instantiateNegatedGroundRule(
+            Formula disjunction, List<GroundAtom> positiveAtoms,
+            List<GroundAtom> negativeAtoms, String name) {
+        short rvaCount = 0;
+        for (GroundAtom atom : IteratorUtils.join(positiveAtoms, negativeAtoms)) {
+            if (atom instanceof RandomVariableAtom) {
+                rvaCount++;
+            }
+        }
 
-		UnweightedLogicalRule newRule = new UnweightedLogicalRule(rule.getFormula(), name);
-		return new UnweightedGroundLogicalRule(newRule, positiveAtoms, negativeAtoms, rvaCount);
-	}
+        UnweightedLogicalRule newRule = new UnweightedLogicalRule(rule.getFormula(), name);
+        return new UnweightedGroundLogicalRule(newRule, positiveAtoms, negativeAtoms, rvaCount);
+    }
 }

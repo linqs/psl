@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,56 +25,56 @@ import org.linqs.psl.model.term.Constant;
  * A FunctionalPredicate which uses an {@link ExternalFunction} to compute truth values.
  */
 public class ExternalFunctionalPredicate extends FunctionalPredicate {
-	private final ExternalFunction extFun;
+    private final ExternalFunction extFun;
 
-	private ExternalFunctionalPredicate(String name, ExternalFunction extFun) {
-		super(name, extFun.getArgumentTypes());
-		this.extFun = extFun;
-	}
+    private ExternalFunctionalPredicate(String name, ExternalFunction extFun) {
+        super(name, extFun.getArgumentTypes());
+        this.extFun = extFun;
+    }
 
-	@Override
-	public double computeValue(ReadableDatabase db, Constant... args) {
-		return extFun.getValue(db, args);
-	}
+    @Override
+    public double computeValue(ReadableDatabase db, Constant... args) {
+        return extFun.getValue(db, args);
+    }
 
-	/**
-	 * Get the ExternalFunction this predicate uses to compute truth values.
-	 *
-	 * @return this predicate's ExternalFunction
-	 */
-	public ExternalFunction getExternalFunction() {
-		return extFun;
-	}
+    /**
+     * Get the ExternalFunction this predicate uses to compute truth values.
+     *
+     * @return this predicate's ExternalFunction
+     */
+    public ExternalFunction getExternalFunction() {
+        return extFun;
+    }
 
-	public static ExternalFunctionalPredicate get(String name) {
-		Predicate predicate = Predicate.get(name);
-		if (predicate == null) {
-			return null;
-		}
+    public static ExternalFunctionalPredicate get(String name) {
+        Predicate predicate = Predicate.get(name);
+        if (predicate == null) {
+            return null;
+        }
 
-		if (!(predicate instanceof ExternalFunctionalPredicate)) {
-			throw new ClassCastException("Predicate (" + name + ") is not a ExternalFunctionalPredicate.");
-		}
+        if (!(predicate instanceof ExternalFunctionalPredicate)) {
+            throw new ClassCastException("Predicate (" + name + ") is not a ExternalFunctionalPredicate.");
+        }
 
-		return (ExternalFunctionalPredicate)predicate;
-	}
+        return (ExternalFunctionalPredicate)predicate;
+    }
 
-	/**
-	 * Get a predicate if one already exists, othereise create a new one.
-	 */
-	public static ExternalFunctionalPredicate get(String name, ExternalFunction extFun) {
-		ExternalFunctionalPredicate predicate = get(name);
-		if (predicate == null) {
-			return new ExternalFunctionalPredicate(name, extFun);
-		}
+    /**
+     * Get a predicate if one already exists, otherwise create a new one.
+     */
+    public static ExternalFunctionalPredicate get(String name, ExternalFunction extFun) {
+        ExternalFunctionalPredicate predicate = get(name);
+        if (predicate == null) {
+            return new ExternalFunctionalPredicate(name, extFun);
+        }
 
-		if (!predicate.getExternalFunction().equals(extFun)) {
-			throw new IllegalArgumentException(
-					"External function mismatch for predicate " + predicate.getName() +
-					" Existing predicate: " + predicate.getExternalFunction() +
-					", Query Predicate: " + extFun);
-		}
+        if (!predicate.getExternalFunction().equals(extFun)) {
+            throw new IllegalArgumentException(
+                    "External function mismatch for predicate " + predicate.getName() +
+                    " Existing predicate: " + predicate.getExternalFunction() +
+                    ", Query Predicate: " + extFun);
+        }
 
-		return predicate;
-	}
+        return predicate;
+    }
 }

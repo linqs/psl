@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2017 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,49 +32,49 @@ import java.util.List;
  * See InitialWeightGridSearch for details.
  */
 public class InitialWeightRandomGridSearch extends RandomGridSearch {
-	private static final Logger log = LoggerFactory.getLogger(InitialWeightRandomGridSearch.class);
+    private static final Logger log = LoggerFactory.getLogger(InitialWeightRandomGridSearch.class);
 
-	private WeightLearningApplication internalWLA;
+    private WeightLearningApplication internalWLA;
 
-	public InitialWeightRandomGridSearch(Model model, WeightLearningApplication internalWLA, Database rvDB, Database observedDB) {
-		this(model.getRules(), internalWLA, rvDB, observedDB);
-	}
+    public InitialWeightRandomGridSearch(Model model, WeightLearningApplication internalWLA, Database rvDB, Database observedDB) {
+        this(model.getRules(), internalWLA, rvDB, observedDB);
+    }
 
-	public InitialWeightRandomGridSearch(List<Rule> rules, WeightLearningApplication internalWLA, Database rvDB, Database observedDB) {
-		super(rules, rvDB, observedDB);
+    public InitialWeightRandomGridSearch(List<Rule> rules, WeightLearningApplication internalWLA, Database rvDB, Database observedDB) {
+        super(rules, rvDB, observedDB);
 
-		this.internalWLA = internalWLA;
-	}
+        this.internalWLA = internalWLA;
+    }
 
-	@Override
-	protected void postInitGroundModel() {
-		// Init the internal WLA.
-		internalWLA.initGroundModel(
-			this.reasoner,
-			this.groundRuleStore,
-			this.termStore,
-			this.termGenerator,
-			this.atomManager,
-			this.trainingMap
-		);
-	}
+    @Override
+    protected void postInitGroundModel() {
+        // Init the internal WLA.
+        internalWLA.initGroundModel(
+            this.reasoner,
+            this.groundRuleStore,
+            this.termStore,
+            this.termGenerator,
+            this.atomManager,
+            this.trainingMap
+        );
+    }
 
-	@Override
-	protected double inspectLocation(double[] weights) {
-		// Just have the internal WLA learn and then get the loss as the score.
-		internalWLA.learn();
+    @Override
+    protected double inspectLocation(double[] weights) {
+        // Just have the internal WLA learn and then get the loss as the score.
+        internalWLA.learn();
 
-		// Save the learned weights.
-		for (int i = 0; i < mutableRules.size(); i++) {
-			weights[i] = mutableRules.get(i).getWeight();
-		}
+        // Save the learned weights.
+        for (int i = 0; i < mutableRules.size(); i++) {
+            weights[i] = mutableRules.get(i).getWeight();
+        }
 
-		return super.inspectLocation(weights);
-	}
+        return super.inspectLocation(weights);
+    }
 
-	@Override
-	public void close() {
-		super.close();
-		internalWLA.close();
-	}
+    @Override
+    public void close() {
+        super.close();
+        internalWLA.close();
+    }
 }

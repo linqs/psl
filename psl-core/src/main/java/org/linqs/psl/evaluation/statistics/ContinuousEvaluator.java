@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,103 +31,103 @@ import java.util.Map;
  * Compute various continuous statistics using a threshold.
  */
 public class ContinuousEvaluator extends Evaluator {
-	public enum RepresentativeMetric {
-		MAE,
-		MSE
-	}
+    public enum RepresentativeMetric {
+        MAE,
+        MSE
+    }
 
-	/**
-	 * Prefix of property keys used by this class.
-	 */
-	public static final String CONFIG_PREFIX = "continuousevaluator";
+    /**
+     * Prefix of property keys used by this class.
+     */
+    public static final String CONFIG_PREFIX = "continuousevaluator";
 
-	/**
-	 * The representative metric.
-	 * Default to MSE.
-	 * Must match a string from the RepresentativeMetric enum.
-	 */
-	public static final String REPRESENTATIVE_KEY = CONFIG_PREFIX + ".representative";
-	public static final String DEFAULT_REPRESENTATIVE = "MSE";
+    /**
+     * The representative metric.
+     * Default to MSE.
+     * Must match a string from the RepresentativeMetric enum.
+     */
+    public static final String REPRESENTATIVE_KEY = CONFIG_PREFIX + ".representative";
+    public static final String DEFAULT_REPRESENTATIVE = "MSE";
 
-	private RepresentativeMetric representative;
+    private RepresentativeMetric representative;
 
-	private int count;
-	private double absoluteError;
-	private double squaredError;
+    private int count;
+    private double absoluteError;
+    private double squaredError;
 
-	public ContinuousEvaluator() {
-		this(Config.getString(REPRESENTATIVE_KEY, DEFAULT_REPRESENTATIVE));
-	}
+    public ContinuousEvaluator() {
+        this(Config.getString(REPRESENTATIVE_KEY, DEFAULT_REPRESENTATIVE));
+    }
 
-	public ContinuousEvaluator(String representative) {
-		this(RepresentativeMetric.valueOf(representative.toUpperCase()));
-	}
+    public ContinuousEvaluator(String representative) {
+        this(RepresentativeMetric.valueOf(representative.toUpperCase()));
+    }
 
-	public ContinuousEvaluator(RepresentativeMetric representative) {
-		this.representative = representative;
+    public ContinuousEvaluator(RepresentativeMetric representative) {
+        this.representative = representative;
 
-		count = 0;
-		absoluteError = 0.0;
-		squaredError = 0.0;
-	}
+        count = 0;
+        absoluteError = 0.0;
+        squaredError = 0.0;
+    }
 
-	@Override
-	public void compute(TrainingMap trainingMap) {
-		compute(trainingMap, null);
-	}
+    @Override
+    public void compute(TrainingMap trainingMap) {
+        compute(trainingMap, null);
+    }
 
-	@Override
-	public void compute(TrainingMap trainingMap, StandardPredicate predicate) {
-		count = 0;
-		absoluteError = 0.0;
-		squaredError = 0.0;
+    @Override
+    public void compute(TrainingMap trainingMap, StandardPredicate predicate) {
+        count = 0;
+        absoluteError = 0.0;
+        squaredError = 0.0;
 
-		for (Map.Entry<GroundAtom, GroundAtom> entry : trainingMap.getFullMap()) {
-			if (predicate != null && entry.getKey().getPredicate() != predicate) {
-				continue;
-			}
+        for (Map.Entry<GroundAtom, GroundAtom> entry : trainingMap.getFullMap()) {
+            if (predicate != null && entry.getKey().getPredicate() != predicate) {
+                continue;
+            }
 
-			count++;
-			absoluteError += Math.abs(entry.getValue().getValue() - entry.getKey().getValue());
-			squaredError += Math.pow(entry.getValue().getValue() - entry.getKey().getValue(), 2);
-		}
-	}
+            count++;
+            absoluteError += Math.abs(entry.getValue().getValue() - entry.getKey().getValue());
+            squaredError += Math.pow(entry.getValue().getValue() - entry.getKey().getValue(), 2);
+        }
+    }
 
-	@Override
-	public double getRepresentativeMetric() {
-		switch (representative) {
-			case MAE:
-				return mae();
-			case MSE:
-				return mse();
-			default:
-				throw new IllegalStateException("Unknown representative metric: " + representative);
-		}
-	}
+    @Override
+    public double getRepresentativeMetric() {
+        switch (representative) {
+            case MAE:
+                return mae();
+            case MSE:
+                return mse();
+            default:
+                throw new IllegalStateException("Unknown representative metric: " + representative);
+        }
+    }
 
-	@Override
-	public boolean isHigherRepresentativeBetter() {
-		return false;
-	}
+    @Override
+    public boolean isHigherRepresentativeBetter() {
+        return false;
+    }
 
-	public double mae() {
-		if (count == 0) {
-			return 0.0;
-		}
+    public double mae() {
+        if (count == 0) {
+            return 0.0;
+        }
 
-		return absoluteError / count;
-	}
+        return absoluteError / count;
+    }
 
-	public double mse() {
-		if (count == 0) {
-			return 0.0;
-		}
+    public double mse() {
+        if (count == 0) {
+            return 0.0;
+        }
 
-		return squaredError / count;
-	}
+        return squaredError / count;
+    }
 
-	@Override
-	public String getAllStats() {
-		return String.format("MAE: %f, MSE: %f", mae(), mse());
-	}
+    @Override
+    public String getAllStats() {
+        return String.format("MAE: %f, MSE: %f", mae(), mse());
+    }
 }

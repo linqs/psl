@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import org.linqs.psl.model.atom.Atom;
  * Either a {@link SummationAtom} or {@link Atom}.
  * <p>
  * Hack for a union type (which is not directly supported in Java).
- * 
- * @author Stephen Bach
  */
-public interface SummationAtomOrAtom { }
+public interface SummationAtomOrAtom {
+    public int getArity();
+}

@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,22 +24,22 @@ import org.linqs.psl.util.MathUtils;
 import org.junit.Test;
 
 public class ContinuousEvaluatorTest extends EvaluatorTest<ContinuousEvaluator> {
-	@Override
-	protected ContinuousEvaluator getComputer() {
-		return new ContinuousEvaluator();
-	}
+    @Override
+    protected ContinuousEvaluator getComputer() {
+        return new ContinuousEvaluator();
+    }
 
-	@Test
-	public void testMAE() {
-		ContinuousEvaluator computer = new ContinuousEvaluator();
-		computer.compute(trainingMap, predicate);
-		assertEquals(0.32, computer.mae(), MathUtils.EPSILON);
-	}
+    @Test
+    public void testMAE() {
+        ContinuousEvaluator computer = new ContinuousEvaluator();
+        computer.compute(trainingMap, predicate);
+        assertEquals(0.32, computer.mae(), MathUtils.EPSILON);
+    }
 
-	@Test
-	public void testMSE() {
-		ContinuousEvaluator computer = new ContinuousEvaluator();
-		computer.compute(trainingMap, predicate);
-		assertEquals(0.16, computer.mse(), MathUtils.EPSILON);
-	}
+    @Test
+    public void testMSE() {
+        ContinuousEvaluator computer = new ContinuousEvaluator();
+        computer.compute(trainingMap, predicate);
+        assertEquals(0.16, computer.mse(), MathUtils.EPSILON);
+    }
 }

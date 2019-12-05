@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,126 +18,92 @@
 package org.linqs.psl.reasoner.term;
 
 import org.linqs.psl.config.Config;
+import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.model.rule.WeightedGroundRule;
+import org.linqs.psl.util.RandUtils;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
-import org.apache.commons.collections4.list.UnmodifiableList;
+public class MemoryTermStore<T extends ReasonerTerm> implements TermStore<T, RandomVariableAtom> {
+    public static final String CONFIG_PREFIX = "memorytermstore";
 
-public class MemoryTermStore<E extends Term> implements TermStore<E> {
-	public static final String CONFIG_PREFIX = "memorytermstore";
+    /**
+     * Initial size for the memory store.
+     */
+    public static final String INITIAL_SIZE_KEY = CONFIG_PREFIX + ".initialsize";
+    public static final int INITIAL_SIZE_DEFAULT = 5000;
 
-	/**
-	 * Initial size for the memory store.
-	 */
-	public static final String INITIAL_SIZE_KEY = CONFIG_PREFIX + ".initialsize";
-	public static final int INITIAL_SIZE_DEFAULT = 5000;
+    private ArrayList<T> store;
 
-	private ArrayList<E> store;
+    public MemoryTermStore() {
+        this(Config.getInt(INITIAL_SIZE_KEY, INITIAL_SIZE_DEFAULT));
+    }
 
-	/**
-	 * A mapping of ground rule to the term indexes associated with
-	 * that ground rule.
-	 * This is used for updating weights, so we only track weighted
-	 * ground rules and terms.
-	 * Note that it could be possible to generate multiple terms
-	 * for a single ground rule.
-	 */
-	private Map<WeightedGroundRule, List<Integer>> ruleMapping;
+    public MemoryTermStore(int initialSize) {
+        store = new ArrayList<T>(initialSize);
+    }
 
-	public MemoryTermStore() {
-		this(Config.getInt(INITIAL_SIZE_KEY, INITIAL_SIZE_DEFAULT));
-	}
+    @Override
+    public synchronized void add(GroundRule rule, T term) {
+        store.add(term);
+    }
 
-	public MemoryTermStore(int initialSize) {
-		store = new ArrayList<E>(initialSize);
-		ruleMapping = new HashMap<WeightedGroundRule, List<Integer>>(initialSize);
-	}
+    @Override
+    public void clear() {
+        if (store != null) {
+            store.clear();
+        }
+    }
 
-	@Override
-	public synchronized void add(GroundRule rule, E term) {
-		if (rule instanceof WeightedGroundRule && term instanceof WeightedTerm) {
-			if (!ruleMapping.containsKey((WeightedGroundRule)rule)) {
-				ruleMapping.put((WeightedGroundRule)rule, new LinkedList<Integer>());
-			}
+    @Override
+    public void close() {
+        clear();
 
-			ruleMapping.get((WeightedGroundRule)rule).add(new Integer(store.size()));
-		}
+        store = null;
+    }
 
-		store.add(term);
-	}
+    @Override
+    public T get(int index) {
+        return store.get(index);
+    }
 
-	@Override
-	public void clear() {
-		if (store != null) {
-			store.clear();
-		}
+    @Override
+    public int size() {
+        return store.size();
+    }
 
-		if (ruleMapping != null) {
-			ruleMapping.clear();
-		}
-	}
+    @Override
+    public void ensureCapacity(int capacity) {
+        assert(capacity >= 0);
 
-	@Override
-	public void close() {
-		clear();
+        if (capacity == 0) {
+            return;
+        }
 
-		store = null;
-		ruleMapping = null;
-	}
+        store.ensureCapacity(capacity);
+    }
 
-	@Override
-	public E get(int index) {
-		return store.get(index);
-	}
+    @Override
+    public Iterator<T> iterator() {
+        return store.iterator();
+    }
 
-	@Override
-	public int size() {
-		return store.size();
-	}
+    @Override
+    public Iterator<T> noWriteIterator() {
+        return iterator();
+    }
 
-	@Override
-	public void ensureCapacity(int capacity) {
-		assert(capacity >= 0);
+    @Override
+    public RandomVariableAtom createLocalVariable(RandomVariableAtom atom) {
+        return atom;
+    }
 
-		if (capacity == 0) {
-			return;
-		}
+    @Override
+    public void ensureVariableCapacity(int capacity) {
+    }
 
-		store.ensureCapacity(capacity);
-
-		// If the map is empty, then just reallocate it
-		// (since we can't add capacity).
-		if (ruleMapping.size() == 0) {
-			// The default load factor for Java HashMaps is 0.75.
-			ruleMapping = new HashMap<WeightedGroundRule, List<Integer>>((int)(capacity / 0.75));
-		}
-	}
-
-	@Override
-	public Iterator<E> iterator() {
-		return store.iterator();
-	}
-
-	@Override
-	public void updateWeight(WeightedGroundRule rule) {
-		List<Integer> indexes = ruleMapping.get(rule);
-		float weight = (float)rule.getWeight();
-
-		for (int i = 0; i < indexes.size(); i++) {
-			((WeightedTerm)store.get(indexes.get(i).intValue())).setWeight(weight);
-		}
-	}
-
-	@Override
-	public List<Integer> getTermIndices(WeightedGroundRule rule) {
-		return new UnmodifiableList<Integer>(ruleMapping.get(rule));
-	}
+    public void shuffle() {
+        RandUtils.shuffle(store);
+    }
 }

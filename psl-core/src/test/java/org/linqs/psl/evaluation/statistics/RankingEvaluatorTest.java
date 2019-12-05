@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2018 The Regents of the University of California
+ * Copyright 2013-2019 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,53 +24,53 @@ import org.linqs.psl.util.MathUtils;
 import org.junit.Test;
 
 public class RankingEvaluatorTest extends EvaluatorTest<RankingEvaluator> {
-	@Override
-	protected RankingEvaluator getComputer() {
-		return new RankingEvaluator();
-	}
+    @Override
+    protected RankingEvaluator getComputer() {
+        return new RankingEvaluator();
+    }
 
-	@Test
-	public void testAUROC() {
-		for (double threshold = 0.1; threshold <= 1.0; threshold += 0.1) {
-			RankingEvaluator computer = new RankingEvaluator(threshold);
-			computer.compute(trainingMap, predicate);
-			double value = computer.auroc();
+    @Test
+    public void testAUROC() {
+        for (double threshold = 0.1; threshold <= 1.0; threshold += 0.1) {
+            RankingEvaluator computer = new RankingEvaluator(threshold);
+            computer.compute(trainingMap, predicate);
+            double value = computer.auroc();
 
-			if (threshold <= 0.8) {
-				assertEquals("Threshold: " + threshold, 1.0, value, MathUtils.EPSILON);
-			} else {
-				assertEquals("Threshold: " + threshold, 1.0, value, MathUtils.EPSILON);
-			}
-		}
-	}
+            if (threshold <= 0.8) {
+                assertEquals("Threshold: " + threshold, 1.0, value, MathUtils.EPSILON);
+            } else {
+                assertEquals("Threshold: " + threshold, 1.0, value, MathUtils.EPSILON);
+            }
+        }
+    }
 
-	@Test
-	public void testPositiveAUPRC() {
-		for (double threshold = 0.1; threshold <= 1.0; threshold += 0.1) {
-			RankingEvaluator computer = new RankingEvaluator(threshold);
-			computer.compute(trainingMap, predicate);
-			double value = computer.positiveAUPRC();
+    @Test
+    public void testPositiveAUPRC() {
+        for (double threshold = 0.1; threshold <= 1.0; threshold += 0.1) {
+            RankingEvaluator computer = new RankingEvaluator(threshold);
+            computer.compute(trainingMap, predicate);
+            double value = computer.positiveAUPRC();
 
-			if (threshold <= 0.8) {
-				assertEquals("Threshold: " + threshold, 1.0, value, MathUtils.EPSILON);
-			} else {
-				assertEquals("Threshold: " + threshold, 1.0, value, MathUtils.EPSILON);
-			}
-		}
-	}
+            if (threshold <= 0.8) {
+                assertEquals("Threshold: " + threshold, 1.0, value, MathUtils.EPSILON);
+            } else {
+                assertEquals("Threshold: " + threshold, 1.0, value, MathUtils.EPSILON);
+            }
+        }
+    }
 
-	@Test
-	public void testNegativeAUPRC() {
-		for (double threshold = 0.1; threshold <= 1.0; threshold += 0.1) {
-			RankingEvaluator computer = new RankingEvaluator(threshold);
-			computer.compute(trainingMap, predicate);
-			double value = computer.negativeAUPRC();
+    @Test
+    public void testNegativeAUPRC() {
+        for (double threshold = 0.1; threshold <= 1.0; threshold += 0.1) {
+            RankingEvaluator computer = new RankingEvaluator(threshold);
+            computer.compute(trainingMap, predicate);
+            double value = computer.negativeAUPRC();
 
-			if (threshold <= 0.8) {
-				assertEquals("Threshold: " + threshold, 0.5, value, MathUtils.EPSILON);
-			} else {
-				assertEquals("Threshold: " + threshold, 0.5, value, MathUtils.EPSILON);
-			}
-		}
-	}
+            if (threshold <= 0.8) {
+                assertEquals("Threshold: " + threshold, 0.5, value, MathUtils.EPSILON);
+            } else {
+                assertEquals("Threshold: " + threshold, 0.5, value, MathUtils.EPSILON);
+            }
+        }
+    }
 }
