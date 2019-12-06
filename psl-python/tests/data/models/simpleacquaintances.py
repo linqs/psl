@@ -12,7 +12,7 @@ ADDITIONAL_PSL_OPTIONS = {'log4j.threshold': 'ERROR'}
 
 DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'simple-acquaintances', 'data'))
 
-def run():
+def run(data_dir=DATA_DIR):
     model = Model(MODEL_NAME)
 
     # Add Predicates
@@ -28,19 +28,19 @@ def run():
 
     # Add Data
 
-    path = os.path.join(DATA_DIR, 'knows_obs.txt')
+    path = os.path.join(data_dir, 'knows_obs.txt')
     knows_predicate.add_data_file(Partition.OBSERVATIONS, path)
 
-    path = os.path.join(DATA_DIR, 'lived_obs.txt')
+    path = os.path.join(data_dir, 'lived_obs.txt')
     lived_predicate.add_data_file(Partition.OBSERVATIONS, path)
 
-    path = os.path.join(DATA_DIR, 'likes_obs.txt')
+    path = os.path.join(data_dir, 'likes_obs.txt')
     likes_predicate.add_data_file(Partition.OBSERVATIONS, path)
 
-    path = os.path.join(DATA_DIR, 'knows_targets.txt')
+    path = os.path.join(data_dir, 'knows_targets.txt')
     knows_predicate.add_data_file(Partition.TARGETS, path)
 
-    path = os.path.join(DATA_DIR, 'knows_truth.txt')
+    path = os.path.join(data_dir, 'knows_truth.txt')
     knows_predicate.add_data_file(Partition.TRUTH, path)
 
     # Add Rules
