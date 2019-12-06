@@ -276,9 +276,6 @@ class Model(object):
 
             # Clean up and convert types.
             for i in range(len(data.columns) - 1):
-                # First, always string the single quotes that come from constants.
-                data[data.columns[i]] = data[data.columns[i]].apply(lambda val: re.sub(r"^'|'$", '', val))
-
                 if (predicate.types()[i] in Predicate.INT_TYPES):
                     data[data.columns[i]] = data[data.columns[i]].apply(lambda val: int(val))
                 elif (predicate.types()[i] in Predicate.FLOAT_TYPES):
