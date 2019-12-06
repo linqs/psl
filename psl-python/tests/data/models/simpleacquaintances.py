@@ -10,9 +10,9 @@ from pslpython.rule import Rule
 MODEL_NAME = 'simple-acquaintances'
 ADDITIONAL_PSL_OPTIONS = {'log4j.threshold': 'ERROR'}
 
-DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'simple-acquaintances', 'data'))
+DEFAULT_DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'simple-acquaintances', 'data'))
 
-def run(data_dir=DATA_DIR):
+def run(data_dir = DEFAULT_DATA_DIR):
     model = Model(MODEL_NAME)
 
     # Add Predicates

@@ -59,10 +59,10 @@ class TestModel(PSLTest):
         except PredicateError:
             # Expected
             pass
-    
+
     def test_numeric_data(self):
-        DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data', 'simple-acquaintances', 'numeric_data'))
-        results = tests.data.models.simpleacquaintances.run(DATA_DIR)
+        data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data', 'simple-acquaintances', 'numeric_data'))
+        results = tests.data.models.simpleacquaintances.run(data_dir)
 
         self.assertEquals(len(results), 1)
 
