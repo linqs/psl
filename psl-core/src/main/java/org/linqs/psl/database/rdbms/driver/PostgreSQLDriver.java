@@ -38,6 +38,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -54,15 +56,24 @@ import java.util.Map;
  * PostgreSQL Connection Wrapper.
  */
 public class PostgreSQLDriver implements DatabaseDriver {
-    public static final String DEFAULT_HOST = "localhost";
-    public static final String DEFAULT_PORT = "5432";
-
     public static final String CONFIG_PREFIX = "postgres";
 
     public static final String KEY_STATS_PERCENTAGE = CONFIG_PREFIX + ".statspercentage";
     public static final double DEFAULT_STATS_PERCENTAGE = 0.25;
 
+    public static final String KEY_HOST = CONFIG_PREFIX + ".host";
+    public static final String DEFAULT_HOST = "localhost";
+
+    public static final String KEY_PORT = CONFIG_PREFIX + ".port";
+    public static final String DEFAULT_PORT = "5432";
+
+    public static final String KEY_USER = CONFIG_PREFIX + ".user";
+    public static final String DEFAULT_USER = "";
+
+    public static final String KEY_PASSWORD = CONFIG_PREFIX + ".password";
+
     private static final int MAX_STATS = 10000;
+    private static final String ENCODING = "UTF-8";
 
     private static final Logger log = LoggerFactory.getLogger(PostgreSQLDriver.class);
 
@@ -70,11 +81,19 @@ public class PostgreSQLDriver implements DatabaseDriver {
     private final double statsPercentage;
 
     public PostgreSQLDriver(String databaseName, boolean clearDatabase) {
-        this(DEFAULT_HOST, DEFAULT_PORT, databaseName, clearDatabase);
+        this(Config.getString(KEY_HOST, DEFAULT_HOST), Config.getString(KEY_PORT, DEFAULT_PORT),
+                databaseName, clearDatabase);
     }
 
     public PostgreSQLDriver(String host, String port, String databaseName, boolean clearDatabase) {
-        this(String.format("jdbc:postgresql://%s:%s/%s?loggerLevel=OFF", host, port, databaseName), databaseName, clearDatabase);
+        this(host, port,
+                Config.getString(KEY_USER, DEFAULT_USER),
+                (String)Config.getUnloggedProperty(KEY_PASSWORD),
+                databaseName, clearDatabase);
+    }
+
+    public PostgreSQLDriver(String host, String port, String user, String password, String databaseName, boolean clearDatabase) {
+        this(formatConnectionString(host, port, user, password, databaseName), databaseName, clearDatabase);
     }
 
     public PostgreSQLDriver(String connectionString, String databaseName, boolean clearDatabase) {
@@ -432,6 +451,30 @@ public class PostgreSQLDriver implements DatabaseDriver {
             return new Integer(((Integer)bound).intValue());
         } else {
             return bound.toString();
+        }
+    }
+
+    private static String formatConnectionString(String host, String port, String user, String password, String databaseName) {
+        String connectionString = String.format(
+                "jdbc:postgresql://%s:%s/%s?loggerLevel=OFF",
+                urlEncode(host), urlEncode(port), urlEncode(databaseName));
+
+        if (user != null && user.length() > 0) {
+            connectionString += "&user=" + urlEncode(user);
+        }
+
+        if (password != null && password.length() > 0) {
+            connectionString += "&password=" + urlEncode(password);
+        }
+
+        return connectionString;
+    }
+
+    private static String urlEncode(String text) {
+        try {
+            return URLEncoder.encode(text, ENCODING);
+        } catch (UnsupportedEncodingException ex) {
+            throw new RuntimeException(String.format("Bad encoding: '%s'.", ENCODING), ex);
         }
     }
 
