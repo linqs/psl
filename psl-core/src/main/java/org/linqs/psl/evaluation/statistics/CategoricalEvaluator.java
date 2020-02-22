@@ -139,7 +139,7 @@ public class CategoricalEvaluator extends Evaluator {
 
         Set<GroundAtom> predictedCategories = getPredictedCategories(trainingMap, predicate);
 
-        for (GroundAtom truthAtom : trainingMap.getTruthAtoms()) {
+        for (GroundAtom truthAtom : trainingMap.getLabelMap().values()) {
             if (predicate != null && truthAtom.getPredicate() != predicate) {
                 continue;
             }
@@ -195,7 +195,7 @@ public class CategoricalEvaluator extends Evaluator {
         // or another Map<Constant, Object>, and so on.
         Map<Constant, Object> predictedCategories = null;
 
-        for (GroundAtom atom : trainingMap.getTargetAtoms()) {
+        for (GroundAtom atom : trainingMap.getLabelMap().keySet()) {
             if (atom.getPredicate() != predicate) {
                 continue;
             }

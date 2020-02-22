@@ -25,7 +25,7 @@ import org.junit.Test;
 
 public class ContinuousEvaluatorTest extends EvaluatorTest<ContinuousEvaluator> {
     @Override
-    protected ContinuousEvaluator getComputer() {
+    protected ContinuousEvaluator getEvaluator() {
         return new ContinuousEvaluator();
     }
 
@@ -33,13 +33,13 @@ public class ContinuousEvaluatorTest extends EvaluatorTest<ContinuousEvaluator> 
     public void testMAE() {
         ContinuousEvaluator computer = new ContinuousEvaluator();
         computer.compute(trainingMap, predicate);
-        assertEquals(0.32, computer.mae(), MathUtils.EPSILON);
+        assertEquals(0.40, computer.mae(), MathUtils.EPSILON);
     }
 
     @Test
     public void testMSE() {
         ContinuousEvaluator computer = new ContinuousEvaluator();
         computer.compute(trainingMap, predicate);
-        assertEquals(0.16, computer.mse(), MathUtils.EPSILON);
+        assertEquals(0.24, computer.mse(), MathUtils.EPSILON);
     }
 }

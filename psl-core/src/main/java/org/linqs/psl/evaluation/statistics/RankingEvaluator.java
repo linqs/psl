@@ -99,10 +99,10 @@ public class RankingEvaluator extends Evaluator {
 
     @Override
     public void compute(TrainingMap trainingMap, StandardPredicate predicate) {
-        truth = new ArrayList<GroundAtom>(trainingMap.getTrainingMap().size());
-        predicted = new ArrayList<GroundAtom>(trainingMap.getTrainingMap().size());
+        truth = new ArrayList<GroundAtom>(trainingMap.getLabelMap().size());
+        predicted = new ArrayList<GroundAtom>(trainingMap.getLabelMap().size());
 
-        for (Map.Entry<GroundAtom, GroundAtom> entry : trainingMap.getFullMap()) {
+        for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getLabelMap().entrySet()) {
             if (predicate != null && entry.getKey().getPredicate() != predicate) {
                 continue;
             }
@@ -182,13 +182,13 @@ public class RankingEvaluator extends Evaluator {
             double newY = tp / (double)(tp + fp);
             double newX = tp / (double)totalPositives;
 
-            area += 0.5 * (newX - prevX) * (newY + prevY);
+            area += 0.5 * (newX - prevX) * Math.abs(newY - prevY) + (newX - prevX) * newY;
             prevY = newY;
             prevX = newX;
         }
 
         // Add the final piece.
-        area += 0.5 * (1.0 - prevX) * (0.0 + prevY);
+        area += 0.5 * (1.0 - prevX) * Math.abs(0.0 - prevY) + (1.0 - prevX) * 0.0;
 
         return area;
     }
@@ -241,7 +241,7 @@ public class RankingEvaluator extends Evaluator {
 
             double newX = tn / (double)totalNegatives;
 
-            area += 0.5 * (prevX - newX) * (prevY + newY);
+            area += 0.5 * (prevX - newX) * Math.abs(newY - prevY) + (prevX - newX) * newY;
             prevY = newY;
             prevX = newX;
         }
@@ -262,6 +262,12 @@ public class RankingEvaluator extends Evaluator {
         }
 
         int totalNegatives = predicted.size() - totalPositives;
+
+        if (totalPositives == 0) {
+            return 0.0;
+        } else if (totalNegatives == 0) {
+            return 1.0;
+        }
 
         double area = 0.0;
         int tp = 0;
@@ -289,13 +295,13 @@ public class RankingEvaluator extends Evaluator {
             double newY = (double)tp / (double)totalPositives;
             double newX = (double)fp / (double)totalNegatives;
 
-            area += 0.5 * (newX - prevX) * (newY + prevY);
+            area += 0.5 * (newX - prevX) * Math.abs(newY - prevY) + (newX - prevX) * newY;
             prevY = newY;
             prevX = newX;
         }
 
         // Add the final piece.
-        area += 0.5 * (1.0 - prevX) * (1.0 + prevY);
+        area += 0.5 * (1.0 - prevX) * Math.abs(1.0 - prevY) + (1.0 - prevX) * 1.0;
 
         return area;
     }

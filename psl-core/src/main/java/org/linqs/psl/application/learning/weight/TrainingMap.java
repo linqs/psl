@@ -25,176 +25,168 @@ import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.util.IteratorUtils;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 /**
- * A class that keeps tracks of the mapping between a random variable
- * atom in one database (atom manager) and an observed atom in another
- * (as well as unmapped (latent) variables).
- * Can also optionally (controlled by constructor parameters) store the mapping of
- * observed atoms to all the truth atoms that do not have an associated RVA.
- * This optional mapping only makes sense for partially observed target predicates.
- * Building this additional map may be costly.
+ * A class that keeps tracks of the mapping between an RVA in one database (atom manager)
+ * and an observed atom in another (as well as unmapped (latent) variables).
+ * Any unobserved atoms in the truth database will be ignored.
+ *
+ * There are six situations that can arise when comparing the atoms from both databases.
+ * Here we will enumerate all the possibilities.
+ * The first item of the tuple represents the target database (atom manager),
+ * while the second item represents the truth database.
+ * The right hand side will say where this pair will be recorded.
+ *   (unobserved, observed) - Standard Label Map
+ *   (unobserved, not existent) - Latent Variables
+ *   (observed, observed) - Observed Map
+ *   (observed, not existent) - Missing Labels
+ *   (not existent, observed) - Missing Targets
+ *   (not existent, not existent) - Ignored
  */
 public class TrainingMap {
     /**
-     * The mapping between an atom and its observed truth value.
-     * We are actually trading away some memory in favor of maintainability here
-     * since we have a map with persisted atoms as the key as well as a set of persisted atoms
-     * in the parent class.
+     * The mapping between an RVA and its observed truth atom.
      */
-    private final Map<RandomVariableAtom, ObservedAtom> trainingMap;
+    private final Map<RandomVariableAtom, ObservedAtom> labelMap;
 
     /**
-     * The set of atoms that have no backing of an observed truth value.
-     */
-    private final Set<RandomVariableAtom> latentVariables;
-
-    /**
-     * A mapping like |trainingMap|, but containing all truth atoms that do
-     * not have an associated RVA (but instead has an observed atom).
-     * This is optionally populated based on constructor parameters.
+     * A mapping like the label mapping, but only contains target atoms that are observed.
      */
     private final Map<ObservedAtom, ObservedAtom> observedMap;
 
     /**
-     * Initializes the training map of RandomVariableAtoms ObservedAtoms.
-     * Any RandomVariableAtom from the atom manager that does not have a matching ObservedAtom
-     * in the Database are stored in the set of latent variables.
-     *
-     * @param rvAtomManager the atom manager containing the RandomVariableAtoms (any other atom types are ignored)
-     * @param observedDB the database containing matching ObservedAtoms
-     * @param fetchObservedPairs also fetch the observed atom counterparts for any truth atom that does not
-     *  have an associated RVA.
+     * The set of atoms that have no associated observed truth atom.
      */
-    public TrainingMap(PersistedAtomManager rvAtomManager, Database observedDB, boolean fetchObservedPairs) {
-        Map<RandomVariableAtom, ObservedAtom> tempTrainingMap = new HashMap<RandomVariableAtom, ObservedAtom>(rvAtomManager.getPersistedCount());
+    private final List<RandomVariableAtom> latentVariables;
+
+    /**
+     * Observed targets that do not have an associated observed truth atom.
+     */
+    private final List<ObservedAtom> missingLabels;
+
+    /**
+     * Observed truth atoms that do not have an associated target atom.
+     */
+    private final List<ObservedAtom> missingTargets;
+
+    /**
+     * Initializes the training map of RandomVariableAtoms ObservedAtoms.
+     *
+     * @param targets the atom manager containing the RandomVariableAtoms (any other atom types are ignored)
+     * @param truthDatabase the database containing matching ObservedAtoms
+     */
+    public TrainingMap(PersistedAtomManager targets, Database truthDatabase) {
+        Map<RandomVariableAtom, ObservedAtom> tempLabelMap = new HashMap<RandomVariableAtom, ObservedAtom>(targets.getPersistedCount());
         Map<ObservedAtom, ObservedAtom> tempObservedMap = new HashMap<ObservedAtom, ObservedAtom>();
-        Set<RandomVariableAtom> tempLatentVariables = new HashSet<RandomVariableAtom>();
+        List<RandomVariableAtom> tempLatentVariables = new ArrayList<RandomVariableAtom>();
+        List<ObservedAtom> tempMissingLabels = new ArrayList<ObservedAtom>();
+        List<ObservedAtom> tempMissingTargets = new ArrayList<ObservedAtom>();
 
-        Set<ObservedAtom> seenTruthAtoms = null;
-        if (fetchObservedPairs) {
-            seenTruthAtoms = new HashSet<ObservedAtom>(rvAtomManager.getPersistedCount());
-        }
+        Set<GroundAtom> seenTruthAtoms = new HashSet<GroundAtom>();
 
-        // Go through all the atoms that were already persisted and build a mapping.
-        for (RandomVariableAtom rvAtom : rvAtomManager.getPersistedRVAtoms()) {
-            // Query the observed database to see if this is observed or latent.
-            GroundAtom otherAtom = observedDB.getAtom(rvAtom.getPredicate(), rvAtom.getArguments());
 
-            if (otherAtom instanceof ObservedAtom) {
-                tempTrainingMap.put(rvAtom, (ObservedAtom)otherAtom);
 
-                if (fetchObservedPairs) {
-                    seenTruthAtoms.add((ObservedAtom)otherAtom);
+        for (GroundAtom targetAtom : targets.getDatabase().getAllCachedAtoms()) {
+            // Note that we do not want to create a non-existent atom.
+            GroundAtom truthAtom = truthDatabase.getAtom((StandardPredicate)targetAtom.getPredicate(), false, targetAtom.getArguments());
+
+            // Skip any truth atom that is not observed.
+            if (truthAtom != null && !(truthAtom instanceof ObservedAtom)) {
+                continue;
+            }
+
+            if (targetAtom instanceof RandomVariableAtom) {
+                if (truthAtom == null) {
+                    tempLatentVariables.add((RandomVariableAtom)targetAtom);
+                } else {
+                    seenTruthAtoms.add((ObservedAtom)truthAtom);
+                    tempLabelMap.put((RandomVariableAtom)targetAtom, (ObservedAtom)truthAtom);
                 }
             } else {
-                tempLatentVariables.add(rvAtom);
+                if (truthAtom == null) {
+                    tempMissingLabels.add((ObservedAtom)targetAtom);
+                } else {
+                    seenTruthAtoms.add((ObservedAtom)truthAtom);
+                    tempObservedMap.put((ObservedAtom)targetAtom, (ObservedAtom)truthAtom);
+                }
             }
         }
 
-        if (fetchObservedPairs) {
-            for (StandardPredicate predicate : observedDB.getDataStore().getRegisteredPredicates()) {
-                for (GroundAtom atom : observedDB.getAllGroundAtoms(predicate)) {
-                    if (!(atom instanceof ObservedAtom)) {
-                        continue;
-                    }
-                    ObservedAtom truthAtom = (ObservedAtom)atom;
-
-                    if (seenTruthAtoms.contains(truthAtom)) {
-                        continue;
-                    }
-
-                    GroundAtom otherAtom = null;
-                    try {
-                        otherAtom = rvAtomManager.getAtom(truthAtom.getPredicate(), truthAtom.getArguments());
-                    } catch (PersistedAtomManager.PersistedAccessException ex) {
-                        // There is no observed target atom associated with this truth one.
-                        continue;
-                    }
-
-                    if (otherAtom instanceof ObservedAtom) {
-                        tempObservedMap.put((ObservedAtom)otherAtom, truthAtom);
-                    } else {
-                        throw new IllegalStateException("Found a non-observed atom after we got all the RVA... was the data store changed under us?");
-                    }
+        for (StandardPredicate predicate : truthDatabase.getDataStore().getRegisteredPredicates()) {
+            for (GroundAtom truthAtom : truthDatabase.getAllGroundAtoms(predicate)) {
+                if (!(truthAtom instanceof ObservedAtom) || seenTruthAtoms.contains(truthAtom)) {
+                    continue;
                 }
+
+                boolean hasAtom = targets.getDatabase().hasAtom((StandardPredicate)truthAtom.getPredicate(), truthAtom.getArguments());
+                if (hasAtom) {
+                    // This shouldn't be possible (since we already iterated through the target atoms.
+                    throw new IllegalStateException("Un-persisted target atom: " + truthAtom);
+                }
+
+                tempMissingTargets.add((ObservedAtom)truthAtom);
             }
         }
 
         // Finalize the structures.
-        trainingMap = Collections.unmodifiableMap(tempTrainingMap);
+        labelMap = Collections.unmodifiableMap(tempLabelMap);
         observedMap = Collections.unmodifiableMap(tempObservedMap);
-        latentVariables = Collections.unmodifiableSet(tempLatentVariables);
+        latentVariables = Collections.unmodifiableList(tempLatentVariables);
+        missingLabels = Collections.unmodifiableList(tempMissingLabels);
+        missingTargets = Collections.unmodifiableList(tempMissingTargets);
     }
 
     /**
-     * Get the mapping of random to observed atoms.
+     * Get the mapping of unobserved targets to truth atoms.
      */
-    public Map<RandomVariableAtom, ObservedAtom> getTrainingMap() {
-        return trainingMap;
+    public Map<RandomVariableAtom, ObservedAtom> getLabelMap() {
+        return labelMap;
     }
 
     /**
-     * Get the mapping of observed to observed atoms.
-     * Optinally populated based on constructor parameters.
+     * Get the mapping of observed targets to truth atoms.
      */
     public Map<ObservedAtom, ObservedAtom> getObservedMap() {
         return observedMap;
     }
 
     /**
-     * Gets the latent variables seen by this manager.
+     * Gets the latent variables (unobserved targets without a truth atom).
      */
-    public Set<RandomVariableAtom> getLatentVariables() {
+    public List<RandomVariableAtom> getLatentVariables() {
         return latentVariables;
     }
 
-    public Iterable<GroundAtom> getTargetAtoms() {
-        return getTargetAtoms(false);
+    /**
+     * Gets observed targets that do not have an associated observed truth atom.
+     */
+    public List<ObservedAtom> getMissingLabels() {
+        return missingLabels;
     }
 
     /**
-     * Get all the target atoms (atoms for the RVA PAM) in one iterable.
+     * Gets observed truth atoms that do not have an associated target atom.
      */
-    public Iterable<GroundAtom> getTargetAtoms(boolean includeLatent) {
-        if (includeLatent) {
-            return IteratorUtils.join(
-                    (Collection<? extends GroundAtom>)(trainingMap.keySet()),
-                    (Collection<? extends GroundAtom>)(observedMap.keySet()),
-                    (Collection<? extends GroundAtom>)(latentVariables)
-            );
-        } else {
-            return IteratorUtils.join(
-                    (Collection<? extends GroundAtom>)(trainingMap.keySet()),
-                    (Collection<? extends GroundAtom>)(observedMap.keySet())
-            );
-        }
+    public List<ObservedAtom> getMissingTargets() {
+        return missingTargets;
     }
 
     /**
-     * Get all the truth atoms in one iterable.
+     * Get the full mapping of target to truth atoms (unobserved and observed).
      */
-    public Iterable<GroundAtom> getTruthAtoms() {
-        return IteratorUtils.join(
-                (Collection<? extends GroundAtom>)(trainingMap.values()),
-                (Collection<? extends GroundAtom>)(observedMap.values())
-        );
-    }
-
-    /**
-     * Get the full mapping of target to truth atoms (RVAs and observed).
-     */
-    // Casting non-static subclasses (ie Mep.Entry) can get iffy, so we just brute forced the case using Object.
+    // Casting non-static subclasses (ie Mep.Entry) can get iffy, so we just brute forced the cast using Object.
     @SuppressWarnings("unchecked")
     public Iterable<Map.Entry<GroundAtom, GroundAtom>> getFullMap() {
         Iterable<Map.Entry<? extends GroundAtom, ? extends GroundAtom>> temp = IteratorUtils.join(
-                (Collection<Map.Entry<? extends GroundAtom, ? extends GroundAtom>>)((Object)(trainingMap.entrySet())),
+                (Collection<Map.Entry<? extends GroundAtom, ? extends GroundAtom>>)((Object)(labelMap.entrySet())),
                 (Collection<Map.Entry<? extends GroundAtom, ? extends GroundAtom>>)((Object)(observedMap.entrySet()))
         );
 

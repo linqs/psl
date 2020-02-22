@@ -42,7 +42,7 @@ public abstract class EvaluatorTest<T extends Evaluator> {
     protected StandardPredicate predicate;
     protected TrainingMap trainingMap;
 
-    protected abstract T getComputer();
+    protected abstract T getEvaluator();
 
     @Before
     public void setUp() {
@@ -50,47 +50,38 @@ public abstract class EvaluatorTest<T extends Evaluator> {
                 H2DatabaseDriver.Type.Memory, this.getClass().getName(), true));
 
         predicate = StandardPredicate.get(
-                "DiscretePredictionComparatorTest_same"
-                , new ConstantType[]{ConstantType.UniqueIntID, ConstantType.UniqueIntID}
-            );
+                "EvaulatorTestPredicate",
+                new ConstantType[]{ConstantType.UniqueIntID, ConstantType.UniqueIntID});
         dataStore.registerPredicate(predicate);
 
         Partition targetPartition = dataStore.getPartition("targets");
         Partition truthPartition = dataStore.getPartition("truth");
 
-        // Create some canned ground inference atoms
-        Constant[][] cannedTerms = new Constant[5][];
-        cannedTerms[0] = new Constant[]{ new UniqueIntID(1), new UniqueIntID(1) };
-        cannedTerms[1] = new Constant[]{ new UniqueIntID(2), new UniqueIntID(2) };
-        cannedTerms[2] = new Constant[]{ new UniqueIntID(3), new UniqueIntID(3) };
-        cannedTerms[3] = new Constant[]{ new UniqueIntID(4), new UniqueIntID(4) };
-        cannedTerms[4] = new Constant[]{ new UniqueIntID(5), new UniqueIntID(5) };
-
-        // Insert the predicated values.
+        // Create five RVAs with values [1.0, 0.8, 0.6, 0.4, 0.2].
         Inserter inserter = dataStore.getInserter(predicate, targetPartition);
-        for (Constant[] terms : cannedTerms) {
-            inserter.insertValue(0.8, terms);
+        for (int i = 0; i < 5; i++) {
+            inserter.insertValue(1.0 - (i / 5.0), new UniqueIntID(i), new UniqueIntID(i));
         }
 
-        // create some ground truth atoms
-        Constant[][] baselineTerms = new Constant[4][];
-        baselineTerms[0] = new Constant[]{ new UniqueIntID(1), new UniqueIntID(1) };
-        baselineTerms[1] = new Constant[]{ new UniqueIntID(2), new UniqueIntID(2) };
-        baselineTerms[2] = new Constant[]{ new UniqueIntID(3), new UniqueIntID(3) };
-        baselineTerms[3] = new Constant[]{ new UniqueIntID(4), new UniqueIntID(4) };
-
-        // Insert the truth values.
+        // Create four truth atoms (note that this makes one latent target).
+        // Evens will have the value 1.0, odds will have 0.0.
         inserter = dataStore.getInserter(predicate, truthPartition);
-        for (Constant[] terms : baselineTerms) {
-            inserter.insertValue(1.0, terms);
+        for (int i = 0; i < 4; i++) {
+            inserter.insertValue((i % 2 == 0) ? 1.0 : 0.0, new UniqueIntID(i), new UniqueIntID(i));
         }
+
+        // The full map will be (target, truth):
+        // (1.0, 1.0)
+        // (0.8, 0.0)
+        // (0.6, 1.0)
+        // (0.4, 0.0)
 
         // Redefine the truth database with no atoms in the write partition.
         Database results = dataStore.getDatabase(targetPartition);
         Database truth = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
 
         PersistedAtomManager atomManager = new PersistedAtomManager(results);
-        trainingMap = new TrainingMap(atomManager, truth, true);
+        trainingMap = new TrainingMap(atomManager, truth);
 
         // Since we only need the map, we can close all the databases.
         results.close();
@@ -104,14 +95,14 @@ public abstract class EvaluatorTest<T extends Evaluator> {
     }
 
     /**
-     * Just make sure it runs, don't worry about specific numbers.
+     * Just make sure the evaluator runs, don't worry about specific numbers.
      */
     @Test
-    public void baseTest() {
-        Evaluator computer = getComputer();
-        computer.compute(trainingMap, predicate);
+    public void testBase() {
+        Evaluator evaluator = getEvaluator();
+        evaluator.compute(trainingMap, predicate);
 
-        boolean higherBetter = computer.isHigherRepresentativeBetter();
-        double score = computer.getRepresentativeMetric();
+        boolean higherBetter = evaluator.isHigherRepresentativeBetter();
+        double score = evaluator.getRepresentativeMetric();
     }
 }

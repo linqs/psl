@@ -106,7 +106,7 @@ public class DiscreteEvaluator extends Evaluator {
         tn = 0;
         fp = 0;
 
-        for (Map.Entry<GroundAtom, GroundAtom> entry : trainingMap.getFullMap()) {
+        for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getLabelMap().entrySet()) {
             if (predicate != null && entry.getKey().getPredicate() != predicate) {
                 continue;
             }

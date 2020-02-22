@@ -68,7 +68,7 @@ public abstract class Evaluator {
      */
     public void compute(Database rvDB, Database truthDB, StandardPredicate predicate, boolean rvDBCached) {
         PersistedAtomManager atomManager = new PersistedAtomManager(rvDB, rvDBCached);
-        TrainingMap map = new TrainingMap(atomManager, truthDB, true);
+        TrainingMap map = new TrainingMap(atomManager, truthDB);
         compute(map, predicate);
     }
 

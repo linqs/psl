@@ -276,16 +276,16 @@ public abstract class WeightLearningApplication implements ModelApplication {
         int termCount = termGenerator.generateTerms(groundRuleStore, termStore);
         log.debug("Generated {} objective terms from {} ground rules.", termCount, groundRuleStore.size());
 
-        TrainingMap trainingMap = new TrainingMap(atomManager, observedDB, false);
+        TrainingMap trainingMap = new TrainingMap(atomManager, observedDB);
         if (!supportsLatentVariables && trainingMap.getLatentVariables().size() > 0) {
-            Set<RandomVariableAtom> latentVariables = trainingMap.getLatentVariables();
+            List<RandomVariableAtom> latentVariables = trainingMap.getLatentVariables();
             throw new IllegalArgumentException(String.format(
                     "All RandomVariableAtoms must have corresponding ObservedAtoms, found %d latent variables." +
                     " Latent variables are not supported by this WeightLearningApplication (%s)." +
                     " Example latent variable: [%s].",
                     latentVariables.size(),
                     this.getClass().getName(),
-                    latentVariables.iterator().next()));
+                    latentVariables.get(0)));
         }
 
         Reasoner reasoner = (Reasoner)Config.getNewObject(REASONER_KEY, REASONER_DEFAULT);
@@ -350,10 +350,10 @@ public abstract class WeightLearningApplication implements ModelApplication {
         int groundCount = Grounding.groundAll(allRules, atomManager, latentGroundRuleStore);
 
         // Add in some constraints to peg the values of the non-latent variables.
-        for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getTrainingMap().entrySet()) {
+        for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getLabelMap().entrySet()) {
             latentGroundRuleStore.addGroundRule(new GroundValueConstraint(entry.getKey(), entry.getValue().getValue()));
         }
-        groundCount += trainingMap.getTrainingMap().size();
+        groundCount += trainingMap.getLabelMap().size();
 
         log.debug("Initializing latent objective terms for {} ground rules.", groundCount);
         termStore.ensureVariableCapacity(atomManager.getCachedRVACount());
@@ -496,7 +496,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
         inMPEState = false;
         inLatentMPEState = false;
 
-        for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getTrainingMap().entrySet()) {
+        for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getLabelMap().entrySet()) {
             entry.getKey().setValue(entry.getValue().getValue());
         }
     }
@@ -508,7 +508,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
         inMPEState = false;
         inLatentMPEState = false;
 
-        for (RandomVariableAtom atom : trainingMap.getTrainingMap().keySet()) {
+        for (RandomVariableAtom atom : trainingMap.getLabelMap().keySet()) {
             atom.setValue(0.0f);
         }
 

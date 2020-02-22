@@ -26,7 +26,7 @@ import org.junit.Test;
 // TODO(eriq): All the data needs to be reworked for this test.
 public class CategoricalEvaluatorTest extends EvaluatorTest<CategoricalEvaluator> {
     @Override
-    protected CategoricalEvaluator getComputer() {
+    protected CategoricalEvaluator getEvaluator() {
         return new CategoricalEvaluator();
     }
 

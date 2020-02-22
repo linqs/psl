@@ -25,52 +25,28 @@ import org.junit.Test;
 
 public class RankingEvaluatorTest extends EvaluatorTest<RankingEvaluator> {
     @Override
-    protected RankingEvaluator getComputer() {
+    protected RankingEvaluator getEvaluator() {
         return new RankingEvaluator();
     }
 
     @Test
     public void testAUROC() {
-        for (double threshold = 0.1; threshold <= 1.0; threshold += 0.1) {
-            RankingEvaluator computer = new RankingEvaluator(threshold);
-            computer.compute(trainingMap, predicate);
-            double value = computer.auroc();
-
-            if (threshold <= 0.8) {
-                assertEquals("Threshold: " + threshold, 1.0, value, MathUtils.EPSILON);
-            } else {
-                assertEquals("Threshold: " + threshold, 1.0, value, MathUtils.EPSILON);
-            }
-        }
+        RankingEvaluator evaluator = new RankingEvaluator();
+        evaluator.compute(trainingMap, predicate);
+        assertEquals(0.75, evaluator.auroc(), MathUtils.EPSILON);
     }
 
     @Test
     public void testPositiveAUPRC() {
-        for (double threshold = 0.1; threshold <= 1.0; threshold += 0.1) {
-            RankingEvaluator computer = new RankingEvaluator(threshold);
-            computer.compute(trainingMap, predicate);
-            double value = computer.positiveAUPRC();
-
-            if (threshold <= 0.8) {
-                assertEquals("Threshold: " + threshold, 1.0, value, MathUtils.EPSILON);
-            } else {
-                assertEquals("Threshold: " + threshold, 1.0, value, MathUtils.EPSILON);
-            }
-        }
+        RankingEvaluator evaluator = new RankingEvaluator();
+        evaluator.compute(trainingMap, predicate);
+        assertEquals(0.875, evaluator.positiveAUPRC(), MathUtils.EPSILON);
     }
 
     @Test
     public void testNegativeAUPRC() {
-        for (double threshold = 0.1; threshold <= 1.0; threshold += 0.1) {
-            RankingEvaluator computer = new RankingEvaluator(threshold);
-            computer.compute(trainingMap, predicate);
-            double value = computer.negativeAUPRC();
-
-            if (threshold <= 0.8) {
-                assertEquals("Threshold: " + threshold, 0.5, value, MathUtils.EPSILON);
-            } else {
-                assertEquals("Threshold: " + threshold, 0.5, value, MathUtils.EPSILON);
-            }
-        }
+        RankingEvaluator evaluator = new RankingEvaluator();
+        evaluator.compute(trainingMap, predicate);
+        assertEquals(13.0 / 24.0, evaluator.negativeAUPRC(), MathUtils.EPSILON);
     }
 }

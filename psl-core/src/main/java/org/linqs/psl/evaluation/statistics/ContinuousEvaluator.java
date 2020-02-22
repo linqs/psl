@@ -82,7 +82,7 @@ public class ContinuousEvaluator extends Evaluator {
         absoluteError = 0.0;
         squaredError = 0.0;
 
-        for (Map.Entry<GroundAtom, GroundAtom> entry : trainingMap.getFullMap()) {
+        for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getLabelMap().entrySet()) {
             if (predicate != null && entry.getKey().getPredicate() != predicate) {
                 continue;
             }
