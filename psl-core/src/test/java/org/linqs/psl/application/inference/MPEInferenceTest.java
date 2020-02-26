@@ -32,6 +32,8 @@ import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Implication;
 import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.arithmetic.WeightedArithmeticRule;
 import org.linqs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
 import org.linqs.psl.model.rule.arithmetic.expression.SummationAtomOrAtom;
@@ -174,6 +176,9 @@ public class MPEInferenceTest {
     public void testLogicalTautologyTrivial() {
         TestModel.ModelInformation info = TestModel.getModel();
 
+        // Clear out the model.
+        info.model.clear();
+
         // Friends(A, B) -> Friends(A, B)
         info.model.addRule(new WeightedLogicalRule(
             new Implication(
@@ -190,9 +195,9 @@ public class MPEInferenceTest {
 
         mpe.inference();
 
-        // There are 20 trivial rules.
-        assertEquals(72, mpe.getGroundRuleStore().size());
-        assertEquals(52, mpe.getTermStore().size());
+        // There are 20 ground rules, and they are all trivial.
+        assertEquals(20, mpe.getGroundRuleStore().size());
+        assertEquals(0, mpe.getTermStore().size());
 
         mpe.close();
         inferDB.close();
@@ -207,16 +212,16 @@ public class MPEInferenceTest {
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
         Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
         InferenceApplication mpe = new MPEInference(info.model, inferDB);
-                
+
         float preInferenceTotalValue = 0.0f;
         for (RandomVariableAtom atom : inferDB.getAllGroundRandomVariableAtoms(info.predicates.get("Friends"))) {
             preInferenceTotalValue += atom.getValue();
         }
 
         mpe.inference(true);
-        
+
         mpe.close();
-        
+
         // The database should be closed after inference to clear the cache before reading in values again.
         // This ensures that the values returned won't be from the cache.
         inferDB.close();
@@ -240,12 +245,12 @@ public class MPEInferenceTest {
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
         Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
         InferenceApplication mpe = new MPEInference(info.model, inferDB);
-                
+
         float preInferenceTotalValue = 0.0f;
         for (RandomVariableAtom atom : inferDB.getAllGroundRandomVariableAtoms(info.predicates.get("Friends"))) {
             preInferenceTotalValue += atom.getValue();
         }
-        
+
         mpe.inference(false);
 
         mpe.close();
