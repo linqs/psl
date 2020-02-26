@@ -58,7 +58,6 @@
     <modules>
         <module>psl-cli</module>
         <module>psl-core</module>
-        <module>psl-groovy</module>
         <module>psl-java</module>
         <module>psl-parser</module>
         <module>psl-python</module>
