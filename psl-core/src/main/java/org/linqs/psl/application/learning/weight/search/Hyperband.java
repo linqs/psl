@@ -94,8 +94,7 @@ public class Hyperband extends WeightLearningApplication {
     }
 
     public Hyperband(List<Rule> rules, Database rvDB, Database observedDB) {
-        // TODO(eriq): Latent variables?
-        super(rules, rvDB, observedDB, false);
+        super(rules, rvDB, observedDB);
 
         survival = Config.getInt(SURVIVAL_KEY, SURVIVAL_DEFAULT);
         if (survival < 1) {
@@ -158,7 +157,6 @@ public class Hyperband extends WeightLearningApplication {
 
                     // The weights have changed, so we are no longer in an MPE state.
                     inMPEState = false;
-                    inLatentMPEState = false;
 
                     double objective = run(config);
                     RunResult result = new RunResult(config, objective);
@@ -187,7 +185,6 @@ public class Hyperband extends WeightLearningApplication {
 
         // The weights have changed, so we are no longer in an MPE state.
         inMPEState = false;
-        inLatentMPEState = false;
 
         log.debug("Hyperband complete. Configurations examined: {}. Total budget: {}",  numEvaluatedConfigs, totalCost);
     }

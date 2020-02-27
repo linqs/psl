@@ -39,6 +39,6 @@ public class MaxLikelihoodMPE extends VotedPerceptron {
     }
 
     public MaxLikelihoodMPE(List<Rule> rules, Database rvDB, Database observedDB) {
-        super(rules, rvDB, observedDB, false);
+        super(rules, rvDB, observedDB);
     }
 }

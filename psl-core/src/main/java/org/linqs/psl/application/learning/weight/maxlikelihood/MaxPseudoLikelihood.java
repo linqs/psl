@@ -84,7 +84,7 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
     }
 
     public MaxPseudoLikelihood(List<Rule> rules, Database rvDB, Database observedDB) {
-        super(rules, rvDB, observedDB, false);
+        super(rules, rvDB, observedDB);
 
         bool = Config.getBoolean(BOOLEAN_KEY, BOOLEAN_DEFAULT);
 

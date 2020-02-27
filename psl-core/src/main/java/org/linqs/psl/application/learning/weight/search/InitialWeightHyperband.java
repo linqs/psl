@@ -62,7 +62,6 @@ public class InitialWeightHyperband extends Hyperband {
     }
 
     public InitialWeightHyperband(List<Rule> rules, Database rvDB, Database observedDB) {
-        // TODO(eriq): Latent variables?
         super(rules, rvDB, observedDB);
 
         // TODO(eriq): Can we generalizse to actual WLA?

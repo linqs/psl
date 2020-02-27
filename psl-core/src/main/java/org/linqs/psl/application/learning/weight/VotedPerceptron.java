@@ -158,9 +158,8 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
      */
     private double currentLoss;
 
-    public VotedPerceptron(List<Rule> rules, Database rvDB, Database observedDB,
-            boolean supportsLatentVariables) {
-        super(rules, rvDB, observedDB, supportsLatentVariables);
+    public VotedPerceptron(List<Rule> rules, Database rvDB, Database observedDB) {
+        super(rules, rvDB, observedDB);
 
         baseStepSize = Config.getDouble(STEP_SIZE_KEY, STEP_SIZE_DEFAULT);
         if (baseStepSize <= 0) {
@@ -281,7 +280,6 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
             }
 
             inMPEState = false;
-            inLatentMPEState = false;
 
             norm = Math.sqrt(norm);
 

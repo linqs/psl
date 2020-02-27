@@ -20,12 +20,19 @@ package org.linqs.psl.application.learning.weight.em;
 import org.linqs.psl.application.learning.weight.VotedPerceptron;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.grounding.GroundRuleStore;
+import org.linqs.psl.grounding.Grounding;
+import org.linqs.psl.model.atom.ObservedAtom;
+import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.misc.GroundValueConstraint;
+import org.linqs.psl.reasoner.term.TermStore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Abstract superclass for implementations of the expectation-maximization
@@ -58,12 +65,78 @@ public abstract class ExpectationMaximization extends VotedPerceptron {
 
     protected int emIteration;
 
+    protected GroundRuleStore latentGroundRuleStore;
+    protected TermStore latentTermStore;
+    protected boolean inLatentMPEState;
+
     public ExpectationMaximization(List<Rule> rules, Database rvDB,
             Database observedDB) {
-        super(rules, rvDB, observedDB, true);
+        super(rules, rvDB, observedDB);
 
         iterations = Config.getInt(ITER_KEY, ITER_DEFAULT);
         tolerance = Config.getDouble(TOLERANCE_KEY, TOLERANCE_DEFAULT);
+
+        inLatentMPEState = false;
+    }
+
+    @Override
+    protected void initGroundModel() {
+        super.initGroundModel();
+        initLatentGroundModel();
+    }
+
+    /**
+     * The same as initGroundModel, but for latent variables.
+     * Must be called after initGroundModel().
+     * Sets up a rule/term store stack meant for latent variables.
+     * The reasoner and TermGenerator can be reused (as they don't hold state).
+     * All non-latent variables (from the training map) will be pegged to their truth values.
+     */
+    protected void initLatentGroundModel() {
+        latentGroundRuleStore = (GroundRuleStore)Config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
+        latentTermStore = (TermStore)Config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
+
+        log.info("Grounding out latent model.");
+        int groundCount = Grounding.groundAll(allRules, atomManager, latentGroundRuleStore);
+
+        // Add in some constraints to peg the values of the non-latent variables.
+        for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getLabelMap().entrySet()) {
+            latentGroundRuleStore.addGroundRule(new GroundValueConstraint(entry.getKey(), entry.getValue().getValue()));
+        }
+        groundCount += trainingMap.getLabelMap().size();
+
+        log.debug("Initializing latent objective terms for {} ground rules.", groundCount);
+        termStore.ensureVariableCapacity(atomManager.getCachedRVACount());
+        @SuppressWarnings("unchecked")
+        int termCount = termGenerator.generateTerms(latentGroundRuleStore, latentTermStore);
+        log.debug("Generated {} latent objective terms from {} ground rules.", termCount, groundCount);
+    }
+
+    @SuppressWarnings("unchecked")
+    protected void computeLatentMPEState() {
+        if (inLatentMPEState) {
+            return;
+        }
+
+        latentTermStore.clear();
+        latentTermStore.ensureVariableCapacity(atomManager.getCachedRVACount());
+        termGenerator.generateTerms(latentGroundRuleStore, latentTermStore);
+
+        reasoner.optimize(latentTermStore);
+
+        inLatentMPEState = true;
+    }
+
+    @Override
+    protected void setLabeledRandomVariables() {
+        super.setLabeledRandomVariables();
+        inLatentMPEState = false;
+    }
+
+    @Override
+    protected void setDefaultRandomVariables() {
+        super.setDefaultRandomVariables();
+        inLatentMPEState = false;
     }
 
     @Override
@@ -92,13 +165,28 @@ public abstract class ExpectationMaximization extends VotedPerceptron {
             double regularizer = computeRegularizer();
             double objective = loss + regularizer;
 
-            log.info("Finished EM iteration {} with m-step norm {}. Loss: {}, regularizer: {}, objective: {}",
+            log.debug("Finished EM iteration {} with m-step norm {}. Loss: {}, regularizer: {}, objective: {}",
                     emIteration, change, loss, regularizer, objective);
 
             if (change <= tolerance) {
-                log.info("EM converged.");
+                log.debug("EM converged.");
                 break;
             }
+        }
+    }
+
+    @Override
+    public void close() {
+        super.close();
+
+        if (latentGroundRuleStore != null) {
+            latentGroundRuleStore.close();
+            latentGroundRuleStore = null;
+        }
+
+        if (latentTermStore != null) {
+            latentTermStore.close();
+            latentTermStore = null;
         }
     }
 

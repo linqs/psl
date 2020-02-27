@@ -79,7 +79,7 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
     }
 
     public LazyMaxLikelihoodMPE(List<Rule> rules, Database rvDB, Database observedDB) {
-        super(rules, rvDB, observedDB, false);
+        super(rules, rvDB, observedDB);
 
         maxRounds = Config.getInt(MAX_ROUNDS_KEY, MAX_ROUNDS_DEFAULT);
     }

@@ -74,7 +74,7 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
     }
 
     public BaseGridSearch(List<Rule> rules, Database rvDB, Database observedDB) {
-        super(rules, rvDB, observedDB, true);
+        super(rules, rvDB, observedDB);
 
         currentLocation = null;
 
@@ -82,11 +82,6 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
         numLocations = maxNumLocations;
 
         objectives = new HashMap<String, Double>();
-    }
-
-    // TODO(eriq): Remove once latent variables have been reworked in WL.
-    @Override
-    protected void initLatentGroundModel() {
     }
 
     @Override

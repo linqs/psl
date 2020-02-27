@@ -61,7 +61,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     private FloatMatrix blasYKnown;
 
     public GaussianProcessPrior(List<Rule> rules, Database rvDB, Database observedDB) {
-        super(rules, rvDB, observedDB, false);
+        super(rules, rvDB, observedDB);
 
         kernelType = GaussianProcessKernel.KernelType.valueOf(
                 Config.getString(KERNEL_KEY, KERNEL_DEFAULT).toUpperCase());

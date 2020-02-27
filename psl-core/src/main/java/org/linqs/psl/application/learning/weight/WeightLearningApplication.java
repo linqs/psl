@@ -111,8 +111,6 @@ public abstract class WeightLearningApplication implements ModelApplication {
 
     public static final int MIN_ADMM_STEPS = 3;
 
-    protected boolean supportsLatentVariables;
-
     protected Database rvDB;
     protected Database observedDB;
 
@@ -134,10 +132,8 @@ public abstract class WeightLearningApplication implements ModelApplication {
 
     protected Reasoner reasoner;
     protected GroundRuleStore groundRuleStore;
-    protected GroundRuleStore latentGroundRuleStore;
     protected TermGenerator termGenerator;
     protected TermStore termStore;
-    protected TermStore latentTermStore;
 
     protected Evaluator evaluator;
 
@@ -149,13 +145,10 @@ public abstract class WeightLearningApplication implements ModelApplication {
      * but besides that it is up to children to set to false when weights are changed.
      */
     protected boolean inMPEState;
-    protected boolean inLatentMPEState;
 
-    public WeightLearningApplication(List<Rule> rules, Database rvDB, Database observedDB,
-            boolean supportsLatentVariables) {
+    public WeightLearningApplication(List<Rule> rules, Database rvDB, Database observedDB) {
         this.rvDB = rvDB;
         this.observedDB = observedDB;
-        this.supportsLatentVariables = supportsLatentVariables;
 
         allRules = new ArrayList<Rule>();
         mutableRules = new ArrayList<WeightedRule>();
@@ -173,29 +166,19 @@ public abstract class WeightLearningApplication implements ModelApplication {
 
         groundModelInit = false;
         inMPEState = false;
-        inLatentMPEState = false;
 
         evaluator = (Evaluator)Config.getNewObject(EVALUATOR_KEY, EVALUATOR_DEFAULT);
     }
 
     /**
      * Learns new weights.
-     * <p>
      * The {@link RandomVariableAtom RandomVariableAtoms} in the distribution are those
      * persisted in the random variable Database when this method is called. All
      * RandomVariableAtoms which the Model might access must be persisted in the Database.
-     * <p>
-     * Each such RandomVariableAtom should have a corresponding {@link ObservedAtom}
-     * in the observed Database, unless the subclass implementation supports latent
-     * variables.
      */
     public void learn() {
         // Sets up the ground model.
         initGroundModel();
-
-        if (supportsLatentVariables) {
-            initLatentGroundModel();
-        }
 
         // Learns new weights.
         doLearn();
@@ -277,17 +260,6 @@ public abstract class WeightLearningApplication implements ModelApplication {
         log.debug("Generated {} objective terms from {} ground rules.", termCount, groundRuleStore.size());
 
         TrainingMap trainingMap = new TrainingMap(atomManager, observedDB);
-        if (!supportsLatentVariables && trainingMap.getLatentVariables().size() > 0) {
-            List<RandomVariableAtom> latentVariables = trainingMap.getLatentVariables();
-            throw new IllegalArgumentException(String.format(
-                    "All RandomVariableAtoms must have corresponding ObservedAtoms, found %d latent variables." +
-                    " Latent variables are not supported by this WeightLearningApplication (%s)." +
-                    " Example latent variable: [%s].",
-                    latentVariables.size(),
-                    this.getClass().getName(),
-                    latentVariables.get(0)));
-        }
-
         Reasoner reasoner = (Reasoner)Config.getNewObject(REASONER_KEY, REASONER_DEFAULT);
 
         initGroundModel(reasoner, groundRuleStore, termStore, termGenerator, atomManager, trainingMap);
@@ -335,33 +307,6 @@ public abstract class WeightLearningApplication implements ModelApplication {
      */
     protected void postInitGroundModel() {}
 
-    /**
-     * The same as initGroundModel, but for latent variables.
-     * Must be called after initGroundModel().
-     * Sets up a rule/term store stack meant for latent variables.
-     * The reasoner and TermGenerator can be reused (as they don't hold state).
-     * All non-latent variables (from the training map) will be pegged to their truth values.
-     */
-    protected void initLatentGroundModel() {
-        latentGroundRuleStore = (GroundRuleStore)Config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
-        latentTermStore = (TermStore)Config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
-
-        log.info("Grounding out latent model.");
-        int groundCount = Grounding.groundAll(allRules, atomManager, latentGroundRuleStore);
-
-        // Add in some constraints to peg the values of the non-latent variables.
-        for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getLabelMap().entrySet()) {
-            latentGroundRuleStore.addGroundRule(new GroundValueConstraint(entry.getKey(), entry.getValue().getValue()));
-        }
-        groundCount += trainingMap.getLabelMap().size();
-
-        log.debug("Initializing latent objective terms for {} ground rules.", groundCount);
-        termStore.ensureVariableCapacity(atomManager.getCachedRVACount());
-        @SuppressWarnings("unchecked")
-        int termCount = termGenerator.generateTerms(latentGroundRuleStore, latentTermStore);
-        log.debug("Generated {} latent objective terms from {} ground rules.", termCount, groundCount);
-    }
-
     @SuppressWarnings("unchecked")
     protected void computeMPEState() {
         if (inMPEState) {
@@ -375,21 +320,6 @@ public abstract class WeightLearningApplication implements ModelApplication {
         reasoner.optimize(termStore);
 
         inMPEState = true;
-    }
-
-    @SuppressWarnings("unchecked")
-    protected void computeLatentMPEState() {
-        if (inLatentMPEState) {
-            return;
-        }
-
-        termStore.clear();
-        termStore.ensureVariableCapacity(atomManager.getCachedRVACount());
-        termGenerator.generateTerms(groundRuleStore, termStore);
-
-        reasoner.optimize(latentTermStore);
-
-        inLatentMPEState = true;
     }
 
     /**
@@ -462,19 +392,9 @@ public abstract class WeightLearningApplication implements ModelApplication {
             groundRuleStore = null;
         }
 
-        if (latentGroundRuleStore != null) {
-            latentGroundRuleStore.close();
-            latentGroundRuleStore = null;
-        }
-
         if (termStore != null) {
             termStore.close();
             termStore = null;
-        }
-
-        if (latentTermStore != null) {
-            latentTermStore.close();
-            latentTermStore = null;
         }
 
         if (reasoner != null) {
@@ -494,7 +414,6 @@ public abstract class WeightLearningApplication implements ModelApplication {
      */
     protected void setLabeledRandomVariables() {
         inMPEState = false;
-        inLatentMPEState = false;
 
         for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getLabelMap().entrySet()) {
             entry.getKey().setValue(entry.getValue().getValue());
@@ -502,11 +421,10 @@ public abstract class WeightLearningApplication implements ModelApplication {
     }
 
     /**
-     * Set RandomVariableAtoms with training labels to their default values.
+     * Set all RandomVariableAtoms we know of to their default values.
      */
     protected void setDefaultRandomVariables() {
         inMPEState = false;
-        inLatentMPEState = false;
 
         for (RandomVariableAtom atom : trainingMap.getLabelMap().keySet()) {
             atom.setValue(0.0f);

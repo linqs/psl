@@ -65,7 +65,7 @@ public class MaxPiecewisePseudoLikelihood extends VotedPerceptron {
     }
 
     public MaxPiecewisePseudoLikelihood(List<Rule> rules, Database rvDB, Database observedDB) {
-        super(rules, rvDB, observedDB, false);
+        super(rules, rvDB, observedDB);
 
         maxNumSamples = Config.getInt(NUM_SAMPLES_KEY, NUM_SAMPLES_DEFAULT);
         numSamples = maxNumSamples;
