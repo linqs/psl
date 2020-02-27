@@ -129,7 +129,6 @@ public class Launcher {
 
     /**
      * Possible output the ground rules.
-     * 
      * @param path where to output the ground rules. Use stdout if null.
      */
     private void outputGroundRules(GroundRuleStore groundRuleStore, String path, boolean includeSatisfaction) {
@@ -321,7 +320,6 @@ public class Launcher {
 
     /**
      * Run eval.
-     * 
      * @param predictionDatabase can be passed in to speed up evaluation. If null, one will be created and closed internally.
      */
     private void evaluation(DataStore dataStore, Database predictionDatabase, Set<StandardPredicate> closedPredicates, String evalClassName) {

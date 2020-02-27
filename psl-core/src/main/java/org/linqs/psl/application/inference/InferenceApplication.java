@@ -40,7 +40,7 @@ import java.lang.reflect.InvocationTargetException;
 
 public abstract class InferenceApplication implements ModelApplication {
     private static final Logger log = LoggerFactory.getLogger(InferenceApplication.class);
-    
+
     /**
      * Prefix of property keys used by this class.
      */
