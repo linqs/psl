@@ -103,7 +103,7 @@ public class CoefficientTest {
          if (!(simple instanceof ConstantNumber)) {
             fail(String.format("Expecting a ConstantNumber, found a %s.", simple.getClass().getName()));
          }
-         
+
             double actual = ((ConstantNumber)simple).value;
             assertEquals(
                 String.format("Value mismatch on coefficient %d (%s). Expected [%f], found [%f]", i, raw[i], expected[i], actual),

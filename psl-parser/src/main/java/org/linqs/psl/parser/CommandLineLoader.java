@@ -45,7 +45,7 @@ import java.util.Properties;
 import java.util.Map;
 
 /**
- * Load the command line options into PSL Config's configuration values and 
+ * Load the command line options into PSL Config's configuration values and
  * log4j configuration appropriately. This is done by instatiating the object
  * of type CommandLine and object log of type Logger.
  */
@@ -101,8 +101,8 @@ public class CommandLineLoader {
             ex.printStackTrace(System.err);
         }
 
-		this.log = initLogger();
-		initConfig();
+        this.log = initLogger();
+        initConfig();
     }
 
     /**

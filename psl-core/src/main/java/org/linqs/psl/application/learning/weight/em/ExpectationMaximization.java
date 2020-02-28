@@ -85,6 +85,9 @@ public abstract class ExpectationMaximization extends VotedPerceptron {
         initLatentGroundModel();
     }
 
+    @Override
+    protected void postInitGroundModel() {}
+
     /**
      * The same as initGroundModel, but for latent variables.
      * Must be called after initGroundModel().

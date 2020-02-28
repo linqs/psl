@@ -51,7 +51,7 @@ public class SGDStreamingInference extends InferenceApplication {
     protected GroundRuleStore createGroundRuleStore() {
         return null;
     }
-    
+
     @Override
     protected TermGenerator createTermGenerator() {
         return null;

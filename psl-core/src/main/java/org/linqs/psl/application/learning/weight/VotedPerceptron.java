@@ -197,6 +197,19 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
         currentLoss = Double.NaN;
     }
 
+    protected void postInitGroundModel() {
+        if (trainingMap.getLatentVariables().size() > 0) {
+            log.warn("Latent variable(s) found when using a VotedPerceptron-based weight learning method ({})."
+                    + " VotedPerceptron uses gradients to update weights, but latent variables may make the gradients less accurate."
+                    + " Weight learning may still perform sufficiently."
+                    + " Found {} latent variables."
+                    + " Example latent variable: [{}].",
+                    this.getClass().getName(),
+                    trainingMap.getLatentVariables().size(),
+                    trainingMap.getLatentVariables().get(0));
+        }
+    }
+
     @Override
     protected void doLearn() {
         double[] avgWeights = new double[mutableRules.size()];
