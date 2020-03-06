@@ -42,6 +42,12 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     public static final String EARLY_STOPPING_KEY = CONFIG_PREFIX + ".earlyStopping";
     public static final boolean EARLY_STOPPING_DEFAULT = true;
 
+    public static final String INITIAL_WEIGHT_VALUE_KEY = CONFIG_PREFIX + ".initialweightvalue";
+    public static final float INITIAL_WEIGHT_VALUE_DEFAULT = 0.0f;
+
+    public static final String INITIAL_WEIGHT_STD_KEY = CONFIG_PREFIX + ".initialweightstd";
+    public static final float INITIAL_WEIGHT_STD_DEFAULT = 1.0f;
+
     public static final int MAX_RAND_INT_VAL = 100000000;
     public static final float SMALL_VALUE = 0.4f;
 
@@ -60,6 +66,9 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     private List<WeightConfig> exploredConfigs;
     private FloatMatrix blasYKnown;
 
+    private float initialWeightValue;
+    private float initialStdValue;
+
     public GaussianProcessPrior(List<Rule> rules, Database rvDB, Database observedDB) {
         super(rules, rvDB, observedDB);
 
@@ -71,6 +80,9 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         exploration = Config.getFloat(EXPLORATION_KEY, EXPLORATION_DEFAULT);
         randomConfigsOnly = Config.getBoolean(RANDOM_CONFIGS_ONLY_KEY, RANDOM_CONFIGS_ONLY_DEFAULT);
         earlyStopping = Config.getBoolean(EARLY_STOPPING_KEY, EARLY_STOPPING_DEFAULT);
+
+        initialWeightValue = Config.getFloat(INITIAL_WEIGHT_VALUE_KEY, INITIAL_WEIGHT_VALUE_DEFAULT);
+        initialStdValue = Config.getFloat(INITIAL_WEIGHT_STD_KEY, INITIAL_WEIGHT_STD_DEFAULT);
 
         space = GaussianProcessKernel.Space.valueOf(
                 Config.getString(GaussianProcessKernel.SPACE_KEY, GaussianProcessKernel.SPACE_DEFAULT));
@@ -354,7 +366,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         int bestConfig = -1;
         float curBestVal = -Float.MAX_VALUE;
         for (int i = 0; i < configs.size(); i++) {
-            float curVal = (configs.get(i).valueAndStd.value/exploration) + configs.get(i).valueAndStd.std;
+            float curVal = (configs.get(i).valueAndStd.value / exploration) + configs.get(i).valueAndStd.std;
             if (bestConfig == -1 || curVal > curBestVal) {
                 curBestVal = curVal;
                 bestConfig = i;
@@ -364,26 +376,26 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         return bestConfig;
     }
 
-    protected static class ValueAndStd {
+    protected class ValueAndStd {
         float value;
         float std;
 
-        ValueAndStd() {
-            this(0,1);
+        public ValueAndStd() {
+            this(initialWeightValue, initialStdValue);
         }
 
-        ValueAndStd(float value, float std) {
+        public ValueAndStd(float value, float std) {
             this.value = value;
             this.std = std;
         }
     }
 
-    protected static class WeightConfig {
+    protected class WeightConfig {
         public float[] config;
         public ValueAndStd valueAndStd;
 
         public WeightConfig(float[] config) {
-            this(config, 0, 1);
+            this(config, initialWeightValue, initialStdValue);
         }
 
         public WeightConfig(WeightConfig config) {
