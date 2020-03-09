@@ -236,10 +236,7 @@ public class ADMMReasoner implements Reasoner {
         }
 
         int iteration = 1;
-        while (
-                (iteration == 1 || primalRes > epsilonPrimal || dualRes > epsilonDual)
-                && (!objectiveBreak || (oldObjective == null || !MathUtils.equals(objective.objective, oldObjective.objective)))
-                && iteration <= maxIter) {
+        while (true) {
             // Zero out the iteration variables.
             primalRes = 0.0f;
             dualRes = 0.0f;
@@ -278,19 +275,52 @@ public class ADMMReasoner implements Reasoner {
             }
 
             iteration++;
-        }
 
-        objective = computeObjective(termStore, true);
+            if (breakOptimization(iteration, objective, oldObjective)) {
+                // Before we break, compute the objective so we can look for violated constraints.
+                objective = computeObjective(termStore, false);
 
-        if (objective.violatedConstraints > 0) {
-            log.warn("No feasible solution found. {} constraints violated.", objective.violatedConstraints);
+                // Check one more time if we should actually break.
+                if (breakOptimization(iteration, objective, oldObjective)) {
+                    break;
+                }
+            }
         }
 
         log.info("Optimization completed in {} iterations. Objective: {}, Feasible: {}, Primal res.: {}, Dual res.: {}",
                 iteration - 1, objective.objective, (objective.violatedConstraints == 0), primalRes, dualRes);
 
+        if (objective.violatedConstraints > 0) {
+            log.warn("No feasible solution found. {} constraints violated.", objective.violatedConstraints);
+            computeObjective(termStore, true);
+        }
+
         // Updates variables
         termStore.updateVariables(consensusValues);
+    }
+
+    private boolean breakOptimization(int iteration, ObjectiveResult objective, ObjectiveResult oldObjective) {
+        // Always break when the allocated iterations is up.
+        if (iteration >= maxIter) {
+            return true;
+        }
+
+        // Don't break if there are violated constraints.
+        if (objective != null && objective.violatedConstraints > 0) {
+            return false;
+        }
+
+        // Break if we have converged.
+        if (iteration > 1 && primalRes < epsilonPrimal && dualRes < epsilonDual) {
+            return true;
+        }
+
+        // Break if the objective has not changed.
+        if (objectiveBreak && oldObjective != null && MathUtils.equals(objective.objective, oldObjective.objective)) {
+            return true;
+        }
+
+        return false;
     }
 
     @Override
@@ -355,7 +385,7 @@ public class ADMMReasoner implements Reasoner {
                     violatedConstraints++;
 
                     if (logViolatedConstraints) {
-                        log.trace("Violated constraint: {}", term.getGroundRule());
+                        log.trace("    {}", term.getGroundRule());
                     }
                 }
             } else {
