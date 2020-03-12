@@ -301,7 +301,7 @@ public class ADMMReasoner implements Reasoner {
 
     private boolean breakOptimization(int iteration, ObjectiveResult objective, ObjectiveResult oldObjective) {
         // Always break when the allocated iterations is up.
-        if (iteration >= maxIter) {
+        if (iteration > maxIter) {
             return true;
         }
 
