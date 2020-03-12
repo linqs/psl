@@ -92,8 +92,6 @@ public class TrainingMap {
 
         Set<GroundAtom> seenTruthAtoms = new HashSet<GroundAtom>();
 
-
-
         for (GroundAtom targetAtom : targets.getDatabase().getAllCachedAtoms()) {
             // Note that we do not want to create a non-existent atom.
             GroundAtom truthAtom = truthDatabase.getAtom((StandardPredicate)targetAtom.getPredicate(), false, targetAtom.getArguments());
@@ -177,6 +175,14 @@ public class TrainingMap {
      */
     public List<ObservedAtom> getMissingTargets() {
         return missingTargets;
+    }
+
+    /**
+     * Get all the predictions (unobserved targets).
+     * This combines atoms from the label map and latent variables.
+     */
+    public Iterable<RandomVariableAtom> getAllPredictions() {
+        return IteratorUtils.join(labelMap.keySet(), latentVariables);
     }
 
     /**

@@ -187,7 +187,7 @@ public class CategoricalEvaluator extends Evaluator {
     /**
      * Build up a set that has all the atoms that represet the best categorical assignments.
      */
-    private Set<GroundAtom> getPredictedCategories(TrainingMap trainingMap, StandardPredicate predicate) {
+    protected Set<GroundAtom> getPredictedCategories(TrainingMap trainingMap, StandardPredicate predicate) {
         int numArgs = predicate.getArity();
 
         // This map will be as deep as the number of category arguments.
@@ -195,7 +195,7 @@ public class CategoricalEvaluator extends Evaluator {
         // or another Map<Constant, Object>, and so on.
         Map<Constant, Object> predictedCategories = null;
 
-        for (GroundAtom atom : trainingMap.getLabelMap().keySet()) {
+        for (GroundAtom atom : trainingMap.getAllPredictions()) {
             if (atom.getPredicate() != predicate) {
                 continue;
             }

@@ -48,8 +48,8 @@ public class RandomVariableAtom extends GroundAtom implements ReasonerLocalVaria
     /**
      * Instantiation of GrondAtoms should typically be left to the Database so it can maintain a cache.
      */
-    public RandomVariableAtom(StandardPredicate p, Constant[] args, float value) {
-        super(p, args, value);
+    public RandomVariableAtom(StandardPredicate predicate, Constant[] args, float value) {
+        super(predicate, args, value);
         isPersisted = false;
         isAccessException = false;
     }
