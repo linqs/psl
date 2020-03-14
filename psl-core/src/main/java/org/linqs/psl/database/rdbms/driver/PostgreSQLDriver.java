@@ -30,8 +30,7 @@ import org.linqs.psl.util.StringUtils;
 import com.healthmarketscience.sqlbuilder.CreateTableQuery;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONValue;
+import org.json.JSONArray;
 import org.postgresql.PGConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -336,16 +335,16 @@ public class PostgreSQLDriver implements DatabaseDriver {
 
         // Try to parse the bucket histogram.
         if (rawBounds != null) {
-            JSONArray histogram = parseJSONArray(rawBounds);
+            JSONArray histogram = new JSONArray(rawBounds);
 
-            if (histogram.size() > 0) {
+            if (histogram.length() > 0) {
                 bounds = new ArrayList<Comparable>();
                 counts = new ArrayList<Integer>();
 
-                int bucketCount = rowCount / (histogram.size() - 1);
+                int bucketCount = rowCount / (histogram.length() - 1);
                 bounds.add(convertHistogramBound(histogram.get(0)));
 
-                for (int i = 1; i < histogram.size(); i++) {
+                for (int i = 1; i < histogram.length(); i++) {
                     bounds.add(convertHistogramBound(histogram.get(i)));
                     counts.add(new Integer(bucketCount));
                 }
@@ -354,13 +353,13 @@ public class PostgreSQLDriver implements DatabaseDriver {
 
         // Check if the most common values were supplied.
         if (rawMostCommonVals != null) {
-            JSONArray mostCommonVals = parseJSONArray(rawMostCommonVals);
-            JSONArray mostCommonCounts = parseJSONArray(rawMostCommonCounts);
+            JSONArray mostCommonVals = new JSONArray(rawMostCommonVals);
+            JSONArray mostCommonCounts = new JSONArray(rawMostCommonCounts);
 
-            if (mostCommonVals.size() > 0) {
+            if (mostCommonVals.length() > 0) {
                 mostCommonHistogram = new HashMap<Comparable, Integer>();
 
-                for (int i = 0; i < mostCommonVals.size(); i++) {
+                for (int i = 0; i < mostCommonVals.length(); i++) {
                     // The most common values come in as proportion of the total rows in the table.
                     // So, we will normalize them to raw counts.
                     double proportion = ((Number)mostCommonCounts.get(i)).doubleValue();
@@ -433,15 +432,6 @@ public class PostgreSQLDriver implements DatabaseDriver {
 
             counts.set(bucketIndex, new Integer(counts.get(bucketIndex).intValue() + mostCommonHistogram.get(currentCommonValue).intValue()));
         }
-    }
-
-    private JSONArray parseJSONArray(String text) {
-        Object parsed = JSONValue.parse(text);
-        if (!(parsed instanceof JSONArray)) {
-            throw new IllegalStateException("Text in unexpected format. Expected JSON array, got: " + parsed.getClass().getName());
-        }
-
-        return (JSONArray)parsed;
     }
 
     private Comparable convertHistogramBound(Object bound) {
