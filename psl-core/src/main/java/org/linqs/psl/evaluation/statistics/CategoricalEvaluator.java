@@ -18,7 +18,7 @@
 package org.linqs.psl.evaluation.statistics;
 
 import org.linqs.psl.application.learning.weight.TrainingMap;
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
@@ -52,32 +52,6 @@ public class CategoricalEvaluator extends Evaluator {
 
     public static final String DELIM = ":";
 
-    /**
-     * Prefix of property keys used by this class.
-     */
-    public static final String CONFIG_PREFIX = "categoricalevaluator";
-
-    /**
-     * The index of the arguments in the predicate  (delimited by colons).
-     * The other arguments are treated as identifiers.
-     * Zero-indexed.
-     */
-    public static final String CATEGORY_INDEXES_KEY = CONFIG_PREFIX + ".categoryindexes";
-    public static final String DEFAULT_CATEGORY_INDEXES = "1";
-
-    /**
-     * The representative metric.
-     * Default to accuracy.
-     * Must match a string from the RepresentativeMetric enum.
-     */
-    public static final String REPRESENTATIVE_KEY = CONFIG_PREFIX + ".representative";
-    public static final String DEFAULT_REPRESENTATIVE = "ACCURACY";
-
-    /**
-     * The default predicate to use when none are supplied.
-     */
-    public static final String DEFAULT_PREDICATE_KEY = CONFIG_PREFIX + ".defaultpredicate";
-
     private Set<Integer> categoryIndexes;
     private RepresentativeMetric representative;
     private String defaultPredicate;
@@ -86,12 +60,12 @@ public class CategoricalEvaluator extends Evaluator {
     private int misses;
 
     public CategoricalEvaluator() {
-        this(RepresentativeMetric.valueOf(Config.getString(REPRESENTATIVE_KEY, DEFAULT_REPRESENTATIVE)),
-                StringUtils.splitInt(Config.getString(CATEGORY_INDEXES_KEY, DEFAULT_CATEGORY_INDEXES), DELIM));
+        this(RepresentativeMetric.valueOf(Options.EVAL_CAT_REPRESENTATIVE.getString()),
+                StringUtils.splitInt(Options.EVAL_CAT_CATEGORY_INDEXES.getString(), DELIM));
     }
 
     public CategoricalEvaluator(int... rawCategoryIndexes) {
-        this(DEFAULT_REPRESENTATIVE, rawCategoryIndexes);
+        this(Options.EVAL_CAT_REPRESENTATIVE.getString(), rawCategoryIndexes);
     }
 
     public CategoricalEvaluator(String representative, int... rawCategoryIndexes) {
@@ -102,7 +76,7 @@ public class CategoricalEvaluator extends Evaluator {
         this.representative = representative;
         setCategoryIndexes(rawCategoryIndexes);
 
-        defaultPredicate = Config.getString(DEFAULT_PREDICATE_KEY, null);
+        defaultPredicate = Options.EVAL_CAT_DEFAULT_PREDICATE.getString();
 
         hits = 0;
         misses = 0;

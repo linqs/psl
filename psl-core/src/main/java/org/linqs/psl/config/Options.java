@@ -17,6 +17,10 @@
  */
 package org.linqs.psl.config;
 
+import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
+import org.linqs.psl.evaluation.statistics.CategoricalEvaluator;
+import org.linqs.psl.evaluation.statistics.DiscreteEvaluator;
+import org.linqs.psl.evaluation.statistics.RankingEvaluator;
 import org.linqs.psl.reasoner.admm.ADMMReasoner;
 
 import org.json.JSONArray;
@@ -85,6 +89,55 @@ public class Options {
         "The size of steps to take for a random variable every iteration."
         + " Should be positive.",
         Option.FLAG_POSITIVE
+    );
+
+    public static final Option EVAL_CAT_CATEGORY_INDEXES = new Option(
+        "categoricalevaluator.categoryindexes",
+        "1",
+        "The indexes (zero-indexed) of arguments in the predicate that indicate a category."
+        + " The other arguments will be treaded as identifiers."
+    );
+
+    public static final Option EVAL_CAT_DEFAULT_PREDICATE = new Option(
+        "categoricalevaluator.defaultpredicate",
+        null,
+        "The default predicate to use when none are supplied."
+    );
+
+    public static final Option EVAL_CAT_REPRESENTATIVE = new Option(
+        "categoricalevaluator.representative",
+        CategoricalEvaluator.RepresentativeMetric.ACCURACY.toString(),
+        "The representative metric (see CategoricalEvaluator.RepresentativeMetric)."
+    );
+
+    public static final Option EVAL_CONT_REPRESENTATIVE = new Option(
+        "continuousevaluator.representative",
+        ContinuousEvaluator.RepresentativeMetric.MSE.toString(),
+        "The representative metric (see Continuousevaluator.RepresentativeMetric)."
+    );
+
+    public static final Option EVAL_DISCRETE_REPRESENTATIVE = new Option(
+        "discreteevaluator.representative",
+        DiscreteEvaluator.RepresentativeMetric.F1.toString(),
+        "The representative metric (see DiscreteEvaluator.RepresentativeMetric)."
+    );
+
+    public static final Option EVAL_DISCRETE_THRESHOLD = new Option(
+        "discreteevaluator.threshold",
+        0.5,
+        "The truth threshold."
+    );
+
+    public static final Option EVAL_RANKING_REPRESENTATIVE = new Option(
+        "rankingevaluator.representative",
+        RankingEvaluator.RepresentativeMetric.AUROC.toString(),
+        "The representative metric (see RankingEvaluator.RepresentativeMetric)."
+    );
+
+    public static final Option EVAL_RANKING_THRESHOLD = new Option(
+        "rankingevaluator.threshold",
+        0.5,
+        "The truth threshold."
     );
 
     // Static only.

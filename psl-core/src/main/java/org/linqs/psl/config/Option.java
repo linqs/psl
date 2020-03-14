@@ -59,6 +59,14 @@ public class Option {
         this(name, Float.valueOf(defaultValue), float.class, description, flags);
     }
 
+    public Option(String name, double defaultValue, String description) {
+        this(name, Double.valueOf(defaultValue), double.class, description, 0);
+    }
+
+    public Option(String name, double defaultValue, String description, int flags) {
+        this(name, Double.valueOf(defaultValue), double.class, description, flags);
+    }
+
     public Option(String name, Object defaultValue, Class<?> type, String description, int flags) {
         this.name = name;
         this.defaultValue = defaultValue;
@@ -117,6 +125,12 @@ public class Option {
 
     public float getFloat() {
         float value = Config.getFloat(name, ((Float)defaultValue).floatValue());
+        checkNumericFlags(value, "" + value);
+        return value;
+    }
+
+    public double getDouble() {
+        double value = Config.getDouble(name, ((Double)defaultValue).doubleValue());
         checkNumericFlags(value, "" + value);
         return value;
     }

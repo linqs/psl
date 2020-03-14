@@ -18,7 +18,7 @@
 package org.linqs.psl.evaluation.statistics;
 
 import org.linqs.psl.application.learning.weight.TrainingMap;
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
@@ -41,14 +41,6 @@ public class ContinuousEvaluator extends Evaluator {
      */
     public static final String CONFIG_PREFIX = "continuousevaluator";
 
-    /**
-     * The representative metric.
-     * Default to MSE.
-     * Must match a string from the RepresentativeMetric enum.
-     */
-    public static final String REPRESENTATIVE_KEY = CONFIG_PREFIX + ".representative";
-    public static final String DEFAULT_REPRESENTATIVE = "MSE";
-
     private RepresentativeMetric representative;
 
     private int count;
@@ -56,7 +48,7 @@ public class ContinuousEvaluator extends Evaluator {
     private double squaredError;
 
     public ContinuousEvaluator() {
-        this(Config.getString(REPRESENTATIVE_KEY, DEFAULT_REPRESENTATIVE));
+        this(Options.EVAL_CONT_REPRESENTATIVE.getString());
     }
 
     public ContinuousEvaluator(String representative) {
