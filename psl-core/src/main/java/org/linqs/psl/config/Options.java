@@ -17,11 +17,14 @@
  */
 package org.linqs.psl.config;
 
+import org.linqs.psl.grounding.MemoryGroundRuleStore;
 import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
 import org.linqs.psl.evaluation.statistics.CategoricalEvaluator;
 import org.linqs.psl.evaluation.statistics.DiscreteEvaluator;
 import org.linqs.psl.evaluation.statistics.RankingEvaluator;
 import org.linqs.psl.reasoner.admm.ADMMReasoner;
+import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
+import org.linqs.psl.reasoner.admm.term.ADMMTermGenerator;
 
 import org.json.JSONArray;
 
@@ -128,6 +131,41 @@ public class Options {
         "The truth threshold."
     );
 
+    public static final Option WLA_EM_ITERATIONS = new Option(
+        "em.iterations",
+        10,
+        "The number of iterations of expectation maximization to perform.",
+        Option.FLAG_POSITIVE
+    );
+
+    public static final Option WLA_EM_TOLERANCE = new Option(
+        "em.tolerance",
+        1e-3,
+        "The minimum absolute change in weights such that EM is considered converged.",
+        Option.FLAG_POSITIVE
+    );
+
+    public static final Option WLA_MPLE_BOOL = new Option(
+        "maxspeudolikelihood.bool",
+        false,
+        "If true, MaxPseudoLikelihood will treat RandomVariableAtoms as boolean valued."
+        + " This restricts the types of contraints supported."
+    );
+
+    public static final Option WLA_MPLE_MIN_WIDTH = new Option(
+        "maxspeudolikelihood.minwidth",
+        1e-2,
+        "Minimum width for bounds of integration.",
+        Option.FLAG_POSITIVE
+    );
+
+    public static final Option WLA_MPLE_NUM_SAMPLES = new Option(
+        "maxspeudolikelihood.numsamples",
+        10,
+        "The number of samples MPLE will use to approximate the integrals in the marginal computation.",
+        Option.FLAG_POSITIVE
+    );
+
     public static final Option EVAL_RANKING_REPRESENTATIVE = new Option(
         "rankingevaluator.representative",
         RankingEvaluator.RepresentativeMetric.AUROC.toString(),
@@ -138,6 +176,116 @@ public class Options {
         "rankingevaluator.threshold",
         0.5,
         "The truth threshold."
+    );
+
+    public static final Option WLA_VP_AVERAGE_STEPS = new Option(
+        "votedperceptron.averagesteps",
+        false,
+        "Whether to average all visited weights together for final output."
+    );
+
+    public static final Option WLA_VP_CLIP_NEGATIVE_WEIGHTS = new Option(
+        "votedperceptron.clipnegativeweights",
+        true,
+        "If true, then weights will not be allowed to go negative."
+    );
+
+    public static final Option WLA_VP_CUT_OBJECTIVE = new Option(
+        "votedperceptron.cutobjective",
+        false,
+        "If true, then cut the step size in half whenever the objective increases."
+    );
+
+    public static final Option WLA_VP_INERTIA = new Option(
+        "votedperceptron.inertia",
+        0.0,
+        "The inertia that is used for adaptive step sizes.",
+        Option.FLAG_NON_NEGATIVE | Option.FLAG_LT_ONE
+    );
+
+    public static final Option WLA_VP_L1 = new Option(
+        "votedperceptron.l1regularization",
+        0.0,
+        "The L1 regularizer.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option WLA_VP_L2 = new Option(
+        "votedperceptron.l2regularization",
+        0.0,
+        "The L2 regularizer.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option WLA_VP_NUM_STEPS = new Option(
+        "votedperceptron.numsteps",
+        25,
+        "The number of steps VotedPerceptron will take.",
+        Option.FLAG_POSITIVE
+    );
+
+    public static final Option WLA_VP_SCALE_GRADIENT = new Option(
+        "votedperceptron.scalegradient",
+        true,
+        "Whether to scale the gradient by the number of groundings."
+    );
+
+    public static final Option WLA_VP_STEP = new Option(
+        "votedperceptron.stepsize",
+        0.2,
+        "The gradient step size.",
+        Option.FLAG_POSITIVE
+    );
+
+    public static final Option WLA_VP_SCALE_STEP = new Option(
+        "votedperceptron.scalestepsize",
+        true,
+        "If true, then scale the step size down by the iteration."
+    );
+
+    public static final Option WLA_VP_ZERO_INITIAL_WEIGHTS = new Option(
+        "votedperceptron.zeroinitialweights",
+        false,
+        "If true, then start all weights at zero."
+    );
+
+    public static final Option WLA_EVAL = new Option(
+        "weightlearning.evaluator",
+        ContinuousEvaluator.class.getName(),
+        "The evaluatior to use during weight learning."
+        + " Not all weight learning methods will use the evaluator for decision making,"
+        + " but even those will typically output an evaluator score each iteration."
+    );
+
+    public static final Option WLA_GRS = new Option(
+        "weightlearning.groundrulestore",
+        MemoryGroundRuleStore.class.getName(),
+        "The ground rule storage to use during weight learning."
+    );
+
+    public static final Option WLA_RANDOM_WEIGHTS = new Option(
+        "weightlearning.randomweights",
+        false,
+        "Randomize weights before running."
+        + " The randomization will happen during ground model initialization."
+    );
+
+    public static final Option WLA_REASONER = new Option(
+        "weightlearning.reasoner",
+        ADMMReasoner.class.getName(),
+        "The reasoner used for interence during weight learning."
+    );
+
+    public static final Option WLA_TG = new Option(
+        "weightlearning.termgenerator",
+        ADMMTermGenerator.class.getName(),
+        "The term generator to use during weight learning."
+    );
+
+    public static final Option WLA_TS = new Option(
+        "weightlearning.termstore",
+        ADMMTermStore.class.getName(),
+        "The term storage to use during weight learning."
     );
 
     // Static only.

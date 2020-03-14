@@ -37,7 +37,7 @@ public class InitialWeightGridSearchTest extends WeightLearningTest {
         Config.setProperty(GridSearch.POSSIBLE_WEIGHTS_KEY, "1:10:100");
 
         // Turn down the number of iterations of both ADMM and VotedPerceptron.
-        Config.setProperty(VotedPerceptron.NUM_STEPS_KEY, 5);
+        Options.WLA_VP_NUM_STEPS.set(5);
         Options.ADMM_MAX_ITER.set(Integer.valueOf(25));
 
         // Use the classic MLE.

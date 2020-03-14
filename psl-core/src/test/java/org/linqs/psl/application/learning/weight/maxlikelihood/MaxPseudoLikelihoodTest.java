@@ -20,7 +20,7 @@ package org.linqs.psl.application.learning.weight.maxlikelihood;
 import org.linqs.psl.application.learning.weight.VotedPerceptron;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningTest;
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 
 import org.junit.After;
 
@@ -35,7 +35,7 @@ public class MaxPseudoLikelihoodTest extends WeightLearningTest {
     @Override
     protected WeightLearningApplication getWLA() {
         // Do less steps for tests.
-        Config.setProperty(VotedPerceptron.NUM_STEPS_KEY, 5);
+        Options.WLA_VP_NUM_STEPS.set(5);
 
         return new MaxPseudoLikelihood(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
     }

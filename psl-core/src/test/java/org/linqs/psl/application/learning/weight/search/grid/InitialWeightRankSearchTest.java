@@ -21,14 +21,13 @@ import org.linqs.psl.application.learning.weight.VotedPerceptron;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningTest;
 import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
-import org.linqs.psl.config.Config;
 import org.linqs.psl.config.Options;
 
 public class InitialWeightRankSearchTest extends WeightLearningTest {
     @Override
     protected WeightLearningApplication getWLA() {
         // Turn down the number of iterations of both ADMM and VotedPerceptron.
-        Config.setProperty(VotedPerceptron.NUM_STEPS_KEY, 5);
+        Options.WLA_VP_NUM_STEPS.set(5);
         Options.ADMM_MAX_ITER.set(Integer.valueOf(25));
 
         // Use the classic MLE.

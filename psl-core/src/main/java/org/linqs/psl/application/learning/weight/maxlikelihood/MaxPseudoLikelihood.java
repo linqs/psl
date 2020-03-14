@@ -18,7 +18,7 @@
 package org.linqs.psl.application.learning.weight.maxlikelihood;
 
 import org.linqs.psl.application.learning.weight.VotedPerceptron;
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.grounding.AtomRegisterGroundRuleStore;
 import org.linqs.psl.model.Model;
@@ -86,23 +86,17 @@ public class MaxPseudoLikelihood extends VotedPerceptron {
     public MaxPseudoLikelihood(List<Rule> rules, Database rvDB, Database observedDB) {
         super(rules, rvDB, observedDB);
 
-        bool = Config.getBoolean(BOOLEAN_KEY, BOOLEAN_DEFAULT);
+        bool = Options.WLA_MPLE_BOOL.getBoolean();
 
-        maxNumSamples = Config.getInt(NUM_SAMPLES_KEY, NUM_SAMPLES_DEFAULT);
+        maxNumSamples = Options.WLA_MPLE_NUM_SAMPLES.getInt();
         numSamples = maxNumSamples;
-        if (numSamples <= 0) {
-            throw new IllegalArgumentException("Number of samples must be positive integer.");
-        }
 
-        minWidth = Config.getDouble(MIN_WIDTH_KEY, MIN_WIDTH_DEFAULT);
-        if (minWidth <= 0) {
-            throw new IllegalArgumentException("Minimum width must be positive double.");
-        }
+        minWidth = Options.WLA_MPLE_MIN_WIDTH.getDouble();
 
         // Force initGroundModel to use a constraint blocker.
-        Config.setProperty(GROUND_RULE_STORE_KEY, AtomRegisterGroundRuleStore.class.getName());
-        Config.setProperty(TERM_STORE_KEY, ConstraintBlockerTermStore.class.getName());
-        Config.setProperty(TERM_GENERATOR_KEY, ConstraintBlockerTermGenerator.class.getName());
+        Options.WLA_GRS.set(AtomRegisterGroundRuleStore.class.getName());
+        Options.WLA_TS.set(ConstraintBlockerTermStore.class.getName());
+        Options.WLA_TG.set(ConstraintBlockerTermGenerator.class.getName());
         cutObjective = false;
     }
 

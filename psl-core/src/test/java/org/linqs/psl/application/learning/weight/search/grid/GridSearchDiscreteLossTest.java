@@ -20,6 +20,7 @@ package org.linqs.psl.application.learning.weight.search.grid;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningTest;
 import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.evaluation.statistics.DiscreteEvaluator;
 
 public class GridSearchDiscreteLossTest extends WeightLearningTest {
@@ -35,7 +36,7 @@ public class GridSearchDiscreteLossTest extends WeightLearningTest {
         Config.setProperty(GridSearch.POSSIBLE_WEIGHTS_KEY, "0.01:1:10");
 
         // Use MAE as an objective.
-        Config.setProperty(WeightLearningApplication.EVALUATOR_KEY, DiscreteEvaluator.class.getName());
+        Options.WLA_EVAL.set(DiscreteEvaluator.class.getName());
 
         return new GridSearch(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
     }

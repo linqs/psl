@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.application.learning.weight;
 
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
@@ -61,84 +61,6 @@ import java.util.Map;
 public abstract class VotedPerceptron extends WeightLearningApplication {
     private static final Logger log = LoggerFactory.getLogger(VotedPerceptron.class);
 
-    /**
-     * Prefix of property keys used by this class.
-     */
-    public static final String CONFIG_PREFIX = "votedperceptron";
-
-    /**
-     * Key for positive double property scaling the L2 regularization
-     * (\lambda / 2) * ||w||^2
-     */
-    public static final String L2_REGULARIZATION_KEY = CONFIG_PREFIX + ".l2regularization";
-    public static final double L2_REGULARIZATION_DEFAULT = 0.0;
-
-    /**
-     * Key for positive double property scaling the L1 regularization
-     * \gamma * |w|
-     */
-    public static final String L1_REGULARIZATION_KEY = CONFIG_PREFIX + ".l1regularization";
-    public static final double L1_REGULARIZATION_DEFAULT = 0.0;
-
-    /**
-     * Key for positive double property which will be multiplied with the
-     * objective gradient to compute a step.
-     */
-    public static final String STEP_SIZE_KEY = CONFIG_PREFIX + ".stepsize";
-    public static final double STEP_SIZE_DEFAULT = 0.2;
-
-    /**
-     * The inertia that is used for adaptive step sizes.
-     * Should be in [0, 1).
-     */
-    public static final String INERTIA_KEY = CONFIG_PREFIX + ".inertia";
-    public static final double INERTIA_DEFAULT = 0.00;
-
-    /**
-     * Key for Boolean property that indicates whether to scale gradient by
-     * number of groundings
-     */
-    public static final String SCALE_GRADIENT_KEY = CONFIG_PREFIX + ".scalegradient";
-    public static final boolean SCALE_GRADIENT_DEFAULT = true;
-
-    /**
-     * Key for Boolean property that indicates whether to average all visited
-     * weights together for final output.
-     */
-    public static final String AVERAGE_STEPS_KEY = CONFIG_PREFIX + ".averagesteps";
-    public static final boolean AVERAGE_STEPS_DEFAULT = false;
-
-    /**
-     * Key for positive integer property. VotedPerceptron will take this many
-     * steps to learn weights.
-     */
-    public static final String NUM_STEPS_KEY = CONFIG_PREFIX + ".numsteps";
-    public static final int NUM_STEPS_DEFAULT = 25;
-
-    /**
-     * If true, then weight will not be allowed to go negative (clipped at zero).
-     */
-    public static final String CLIP_NEGATIVE_WEIGHTS_KEY = CONFIG_PREFIX + ".clipnegativeweights";
-    public static final boolean CLIP_NEGATIVE_WEIGHTS_DEFAULT = true;
-
-    /**
-     * If true, then cut the step size in half whenever the objective increases.
-     */
-    public static final String CUT_OBJECTIVE_KEY = CONFIG_PREFIX + ".cutobjective";
-    public static final boolean CUT_OBJECTIVE_DEFAULT = false;
-
-    /**
-     * If true, then scale the step size down by the iteration.
-     */
-    public static final String SCALE_STEP_SIZE_KEY = CONFIG_PREFIX + ".scalestepsize";
-    public static final boolean SCALE_STEP_SIZE_DEFAULT = true;
-
-    /**
-     * If true, then start all weights at zero for learning.
-     */
-    public static final String ZERO_INITIAL_WEIGHTS_KEY = CONFIG_PREFIX + ".zeroinitialweights";
-    public static final boolean ZERO_INITIAL_WEIGHTS_DEFAULT = false;
-
     protected final double l2Regularization;
     protected final double l1Regularization;
     protected final boolean scaleGradient;
@@ -161,38 +83,20 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
     public VotedPerceptron(List<Rule> rules, Database rvDB, Database observedDB) {
         super(rules, rvDB, observedDB);
 
-        baseStepSize = Config.getDouble(STEP_SIZE_KEY, STEP_SIZE_DEFAULT);
-        if (baseStepSize <= 0) {
-            throw new IllegalArgumentException("Step size must be positive.");
-        }
-
-        inertia = Config.getDouble(INERTIA_KEY, INERTIA_DEFAULT);
-        if (inertia < 0 || inertia >= 1) {
-            throw new IllegalArgumentException("Inertia must be in [0, 1), found: " + inertia);
-        }
-
-        numSteps = Config.getInt(NUM_STEPS_KEY, NUM_STEPS_DEFAULT);
+        numSteps = Options.WLA_VP_NUM_STEPS.getInt();
         maxNumSteps = numSteps;
-        if (numSteps <= 0) {
-            throw new IllegalArgumentException("Number of steps must be positive.");
-        }
 
-        l2Regularization = Config.getDouble(L2_REGULARIZATION_KEY, L2_REGULARIZATION_DEFAULT);
-        if (l2Regularization < 0) {
-            throw new IllegalArgumentException("L2 regularization parameter must be non-negative.");
-        }
+        baseStepSize = Options.WLA_VP_STEP.getDouble();
+        inertia = Options.WLA_VP_INERTIA.getDouble();
+        l1Regularization = Options.WLA_VP_L1.getDouble();
+        l2Regularization = Options.WLA_VP_L2.getDouble();
 
-        l1Regularization = Config.getDouble(L1_REGULARIZATION_KEY, L1_REGULARIZATION_DEFAULT);
-        if (l1Regularization < 0) {
-            throw new IllegalArgumentException("L1 regularization parameter must be non-negative.");
-        }
-
-        scaleGradient = Config.getBoolean(SCALE_GRADIENT_KEY, SCALE_GRADIENT_DEFAULT);
-        averageSteps = Config.getBoolean(AVERAGE_STEPS_KEY, AVERAGE_STEPS_DEFAULT);
-        scaleStepSize = Config.getBoolean(SCALE_STEP_SIZE_KEY, SCALE_STEP_SIZE_DEFAULT);
-        zeroInitialWeights = Config.getBoolean(ZERO_INITIAL_WEIGHTS_KEY, ZERO_INITIAL_WEIGHTS_DEFAULT);
-        clipNegativeWeights = Config.getBoolean(CLIP_NEGATIVE_WEIGHTS_KEY, CLIP_NEGATIVE_WEIGHTS_DEFAULT);
-        cutObjective = Config.getBoolean(CUT_OBJECTIVE_KEY, CUT_OBJECTIVE_DEFAULT);
+        scaleGradient = Options.WLA_VP_SCALE_GRADIENT.getBoolean();
+        averageSteps = Options.WLA_VP_AVERAGE_STEPS.getBoolean();
+        scaleStepSize = Options.WLA_VP_SCALE_STEP.getBoolean();
+        zeroInitialWeights = Options.WLA_VP_ZERO_INITIAL_WEIGHTS.getBoolean();
+        clipNegativeWeights = Options.WLA_VP_CLIP_NEGATIVE_WEIGHTS.getBoolean();
+        cutObjective = Options.WLA_VP_CUT_OBJECTIVE.getBoolean();
 
         currentLoss = Double.NaN;
     }

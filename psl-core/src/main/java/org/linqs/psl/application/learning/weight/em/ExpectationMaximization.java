@@ -18,7 +18,7 @@
 package org.linqs.psl.application.learning.weight.em;
 
 import org.linqs.psl.application.learning.weight.VotedPerceptron;
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.grounding.Grounding;
@@ -41,25 +41,6 @@ import java.util.Map;
 public abstract class ExpectationMaximization extends VotedPerceptron {
     private static final Logger log = LoggerFactory.getLogger(ExpectationMaximization.class);
 
-    /**
-     * Prefix of property keys used by this class.
-     */
-    public static final String CONFIG_PREFIX = "em";
-
-    /**
-     * Key for positive int property for the number of iterations of expectation
-     * maximization to perform
-     */
-    public static final String ITER_KEY = CONFIG_PREFIX + ".iterations";
-    public static final int ITER_DEFAULT = 10;
-
-    /**
-     * Key for positive double property for the minimum absolute change in weights
-     * such that EM is considered converged
-     */
-    public static final String TOLERANCE_KEY = CONFIG_PREFIX + ".tolerance";
-    public static final double TOLERANCE_DEFAULT = 1e-3;
-
     protected final int iterations;
     protected final double tolerance;
 
@@ -73,8 +54,8 @@ public abstract class ExpectationMaximization extends VotedPerceptron {
             Database observedDB) {
         super(rules, rvDB, observedDB);
 
-        iterations = Config.getInt(ITER_KEY, ITER_DEFAULT);
-        tolerance = Config.getDouble(TOLERANCE_KEY, TOLERANCE_DEFAULT);
+        iterations = Options.WLA_EM_ITERATIONS.getInt();
+        tolerance = Options.WLA_EM_TOLERANCE.getDouble();
 
         inLatentMPEState = false;
     }
@@ -96,8 +77,8 @@ public abstract class ExpectationMaximization extends VotedPerceptron {
      * All non-latent variables (from the training map) will be pegged to their truth values.
      */
     protected void initLatentGroundModel() {
-        latentGroundRuleStore = (GroundRuleStore)Config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
-        latentTermStore = (TermStore)Config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
+        latentGroundRuleStore = (GroundRuleStore)Options.WLA_GRS.getNewObject();
+        latentTermStore = (TermStore)Options.WLA_TS.getNewObject();
 
         log.info("Grounding out latent model.");
         int groundCount = Grounding.groundAll(allRules, atomManager, latentGroundRuleStore);

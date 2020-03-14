@@ -18,7 +18,6 @@
 package org.linqs.psl.application.learning.weight;
 
 import org.linqs.psl.application.ModelApplication;
-import org.linqs.psl.config.Config;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.PersistedAtomManager;
@@ -62,53 +61,6 @@ import java.util.Set;
  */
 public abstract class WeightLearningApplication implements ModelApplication {
     private static final Logger log = LoggerFactory.getLogger(WeightLearningApplication.class);
-
-    /**
-     * Prefix of property keys used by this class.
-     */
-    public static final String CONFIG_PREFIX = "weightlearning";
-
-    /**
-     * The class to use for inference.
-     */
-    public static final String REASONER_KEY = CONFIG_PREFIX + ".reasoner";
-    public static final String REASONER_DEFAULT = ADMMReasoner.class.getName();
-
-    /**
-     * The class to use for ground rule storage.
-     */
-    public static final String GROUND_RULE_STORE_KEY = CONFIG_PREFIX + ".groundrulestore";
-    public static final String GROUND_RULE_STORE_DEFAULT = MemoryGroundRuleStore.class.getName();
-
-    /**
-     * The class to use for term storage.
-     * Should be compatible with REASONER_KEY.
-     */
-    public static final String TERM_STORE_KEY = CONFIG_PREFIX + ".termstore";
-    public static final String TERM_STORE_DEFAULT = ADMMTermStore.class.getName();
-
-    /**
-     * The class to use for term generator.
-     * Should be compatible with REASONER_KEY and TERM_STORE_KEY.
-     */
-    public static final String TERM_GENERATOR_KEY = CONFIG_PREFIX + ".termgenerator";
-    public static final String TERM_GENERATOR_DEFAULT = ADMMTermGenerator.class.getName();
-
-    /**
-     * An evalautor capable of producing a score for the current weight configuration.
-     * Child methods may use this at their own discrection.
-     * This is only used for logging/information, and not for gradients.
-     */
-    public static final String EVALUATOR_KEY = CONFIG_PREFIX + ".evaluator";
-    public static final String EVALUATOR_DEFAULT = ContinuousEvaluator.class.getName();
-
-    /**
-     * Randomize weights before running.
-     * The randomization will happen during ground model initialization.
-     */
-    public static final String RANDOM_WEIGHTS_KEY = CONFIG_PREFIX + ".randomweights";
-    public static final boolean RANDOM_WEIGHTS_DEFAULT = false;
-    public static final int MAX_RANDOM_WEIGHT = 100;
 
     public static final int MIN_ADMM_STEPS = 3;
 
@@ -168,7 +120,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
         groundModelInit = false;
         inMPEState = false;
 
-        evaluator = (Evaluator)Config.getNewObject(EVALUATOR_KEY, EVALUATOR_DEFAULT);
+        evaluator = (Evaluator)Options.WLA_EVAL.getNewObject();
     }
 
     /**
@@ -224,7 +176,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
         // Ensure all targets from the observed (truth) database exist in the RV database.
         ensureTargets(atomManager);
 
-        GroundRuleStore groundRuleStore = (GroundRuleStore)Config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
+        GroundRuleStore groundRuleStore = (GroundRuleStore)Options.WLA_GRS.getNewObject();
 
         log.info("Grounding out model.");
         int groundCount = Grounding.groundAll(allRules, atomManager, groundRuleStore);
@@ -251,8 +203,8 @@ public abstract class WeightLearningApplication implements ModelApplication {
             return;
         }
 
-        TermStore termStore = (TermStore)Config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
-        TermGenerator termGenerator = (TermGenerator)Config.getNewObject(TERM_GENERATOR_KEY, TERM_GENERATOR_DEFAULT);
+        TermStore termStore = (TermStore)Options.WLA_TS.getNewObject();
+        TermGenerator termGenerator = (TermGenerator)Options.WLA_TG.getNewObject();
 
         log.debug("Initializing objective terms for {} ground rules.", groundRuleStore.size());
         termStore.ensureVariableCapacity(atomManager.getCachedRVACount());
@@ -261,7 +213,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
         log.debug("Generated {} objective terms from {} ground rules.", termCount, groundRuleStore.size());
 
         TrainingMap trainingMap = new TrainingMap(atomManager, observedDB);
-        Reasoner reasoner = (Reasoner)Config.getNewObject(REASONER_KEY, REASONER_DEFAULT);
+        Reasoner reasoner = (Reasoner)Options.WLA_REASONER.getNewObject();
 
         initGroundModel(reasoner, groundRuleStore, termStore, termGenerator, atomManager, trainingMap);
     }
@@ -286,7 +238,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
         this.atomManager = atomManager;
         this.trainingMap = trainingMap;
 
-        if (Config.getBoolean(RANDOM_WEIGHTS_KEY, RANDOM_WEIGHTS_DEFAULT)) {
+        if (Options.WLA_RANDOM_WEIGHTS.getBoolean()) {
             initRandomWeights();
         }
 
@@ -298,7 +250,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
     private void initRandomWeights() {
         log.trace("Randomly Weighted Rules:");
         for (WeightedRule rule : mutableRules) {
-            rule.setWeight(RandUtils.nextInt(MAX_RANDOM_WEIGHT) + 1);
+            rule.setWeight(RandUtils.nextFloat());
             log.trace("    " + rule.toString());
         }
     }
